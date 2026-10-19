@@ -66,7 +66,7 @@ function update(){
  }
  if(!analysis.steps.length)$('explorerSteps').textContent='尚未添加条件：空间点有 3 个自由度。';
  $('explorerStrategy').textContent=r.inconsistent?'请核对高度 z 是否等于平面 ABC 在当前 (x,y) 的高度 '+(10+.3*trial.x+.4*trial.y).toFixed(2)+'；矛盾时不能画出满足全部条件的 K。':state.H&&state.P?'先由 k 确定 x、y，再沿 H 面投射线与平面 ABC 求交，得到 z；最后利用联系线绘制 k′、k″。':state.H?'由 k 固定 x、y，沿水平投射线改变高度 z；仅靠一个水平投影还不能确定正面、侧面投影的高度。':state.P&&state.Z?'已知平面及高度，交集通常是一条水平线。沿这条线选择试探点，再增加一个独立位置条件才可确定 K。':state.P?'K 在 ABC 平面内移动，z 随 x、y 改变；可以用平面内辅助直线求不同试探点的投影。':state.Z?'已知高度，只能在平行 H 面的定高平面内移动；还需要其他位置约束。':'先观察自由点在三维空间中的运动，再选择水平投影或平面从属条件。';
- const sample=r.inconsistent?trial:r.degrees===0?{x:r.particular[0],y:r.particular[1],z:r.particular[2]}:state.P?{x:trial.x,y:trial.y,z:10+.3*trial.x+.4*trial.y}:trial;
+ const sample=r.inconsistent?trial:r.degrees===0?{x:r.particular[0],y:r.particular[1],z:r.particular[2]}:state.P&&state.Z?{x:(trial.z-10-.4*trial.y)/.3,y:trial.y,z:trial.z}:state.P?{x:trial.x,y:trial.y,z:10+.3*trial.x+.4*trial.y}:trial;
  draw(r,sample);
 }
 for(const key of buttons)$('constraint'+key).addEventListener('change',e=>{state[key]=e.target.checked;update()});
