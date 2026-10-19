@@ -9,6 +9,8 @@
   <title>图学课堂 · 工程制图投影基础</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="content.js"></script>
+  <script defer src="labs/constraint-engine.js"></script>
+  <script defer src="question-strategies.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -67,7 +69,7 @@
         <section class="section-card" id="question-bank">
           <div class="section-title"><div><span class="kicker">PRACTICE ENGINE</span><h2>章节题型训练</h2><p>覆盖选择、判断、数值、排序、匹配、图上定位和线段绘制等八类互动题；每节另配纸面作图任务。</p></div><span class="difficulty" id="bankCount">74 题</span></div>
           <div class="filters"><label>题目范围 <select id="questionScope"><option value="current">当前课程</option><option value="all">全章综合</option><option value="wrong">全章首次答错</option></select></label><label>题型 <select id="questionType"><option value="all">全部题型</option><option value="single">单项选择</option><option value="multi">多项选择</option><option value="numeric">数值填空</option><option value="order">作图步骤排序</option><option value="truefalse">判断正误</option><option value="match">对应匹配</option><option value="plot">图上定位点</option><option value="plotline">图上绘制线段</option></select></label><button type="button" class="button secondary" id="shuffleQuestions">随机抽题</button></div>
-          <div class="question-frame"><p class="practice-guide" id="practiceGuide">先独立思考；提交后可查看参考答案与推导，错误题目会进入错题复练。</p><div class="question-meta"><span id="questionPosition">第 1 题</span><span id="questionBadge">单项选择</span></div><h3 id="questionText">正在准备题目…</h3><div id="answerArea"></div><div class="answer-actions"><button class="button primary" id="submitAnswer">检查答案</button><button class="button secondary" id="nextQuestion">下一题 →</button></div><div id="questionFeedback" role="status" aria-live="polite"></div></div>
+          <div class="question-frame"><p class="practice-guide" id="practiceGuide">先独立思考；提交后可查看参考答案与推导，错误题目会进入错题复练。</p><div class="question-meta"><span id="questionPosition">第 1 题</span><span id="questionBadge">单项选择</span></div><h3 id="questionText">正在准备题目…</h3><div id="answerArea"></div><div id="questionStrategy" class="question-strategy" hidden><button type="button" id="strategyToggle" class="button secondary" aria-expanded="false">查看本题约束分析策略</button><div id="strategyDetail" hidden aria-live="polite"></div></div><div class="answer-actions"><button class="button primary" id="submitAnswer">检查答案</button><button class="button secondary" id="nextQuestion">下一题 →</button></div><div id="questionFeedback" role="status" aria-live="polite"></div></div>
           <div class="quiz-footer"><span id="quizProgress">本节训练：0 / 0</span><button type="button" class="text-button" id="markComplete">完成本节学习 ✓</button></div>
         </section>
       </div>

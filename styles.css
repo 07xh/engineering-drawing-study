@@ -13,3 +13,6 @@
 .plot-tools p{margin:0}
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* 题目内联自由度策略：与题目保持同一上下文，默认折叠。 */
+.question-strategy{margin:14px 0;padding:12px;border:1px solid #cbded4;border-radius:12px;background:#f8fcfa}.question-strategy[hidden],#strategyDetail[hidden]{display:none}.question-strategy h4{margin:12px 0 6px}.question-strategy p{line-height:1.7}.question-strategy li{margin:8px 0;line-height:1.6}.strategy-note{font-size:.88rem;color:#55726d}
