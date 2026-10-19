@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#edf3ef">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta name="description" content="大学工程制图第二章：投影基础、点线面投影、动态三视图、原创题库与纸面作图训练。">
+  <title>图学课堂 · 工程制图投影基础</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="content.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+<div class="app" id="home">
+  <header class="topbar">
+    <div class="top-inner"><div class="brand"><span class="brand-mark">⌁</span><span>图学课堂 <small>ENGINEERING GRAPHICS</small></span></div>
+    <nav class="top-actions" aria-label="主要导航"><a href="#courses">课程</a><a href="#workbench">动画</a><a href="#question-bank">题库</a><a href="labs/v7.html">进阶实验室 ↗</a></nav></div>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div><span class="eyebrow">胡建生《工程制图与AutoCAD》第 3 版 · 第 2 章</span>
+      <h1>投影基础，<br><em>从看懂到会画。</em></h1>
+      <p>按高校教材学习逻辑，从三面投影体系进入点、直线、平面与立体。用可调参数的三视图、推导步骤、八种题目训练方式和纸面作图任务，避免只看动画、不理解作图。</p>
+      <div class="hero-actions"><a class="button primary" href="#courses">开始投影基础 →</a><a class="button secondary" href="#question-bank">打开章节题库</a></div>
+      <p class="subtle">独立原创教学内容 · 不包含教材原题扫描或配套答案 · 无需 CAD</p></div>
+      <aside class="hero-metrics"><span class="metric-label">我的学习概览 <span class="local-tag">本机记录</span></span>
+        <div class="hero-number"><strong id="progressDone">0</strong><span>/ 10 节已完成</span></div>
+        <div class="bar"><span id="progressBar"></span></div>
+        <div class="metric-grid"><div><strong id="statQuestions">74</strong><small>原创练习题</small></div><div><strong id="statAccuracy">—</strong><small>首次正确率</small></div></div>
+        <p class="subtle">无账号；答题与课程进度仅保存在当前浏览器。清除浏览器数据将丢失记录。</p>
+      </aside>
+    </section>
+    <section class="layout" id="courses">
+      <aside class="sidepanel" aria-label="课程目录">
+        <div class="side-heading"><span>COURSE MAP</span><h2>第 2 章 · 投影基础</h2><p>按知识逻辑拆为十节</p></div>
+        <div class="lesson-nav" id="lessonNav"></div>
+        <div class="side-footer"><a href="labs/v7.html">回到 v7 完整动态实验室 →</a><p>原有的三视图、几何作图、组合体和圆弧连接演示保留在独立页面。</p></div>
+      </aside>
+      <div class="maincol">
+        <section class="section-card" id="theory">
+          <div class="kicker" id="lessonCrumb">第 2 章 · 课堂 01</div>
+          <div class="lesson-header"><div><h2 id="lessonTitle">正在准备课程</h2><p id="lessonLead"></p></div><span class="difficulty" id="lessonDifficulty">课堂</span></div>
+          <div class="pillrow"><span id="lessonPages">教材位置</span><span id="lessonDuration">建议时长</span><span id="lessonBankSize">配套题量</span></div>
+          <h3 class="mini-title">知识框架 <span>先理解，再背结论</span></h3><div class="concepts" id="concepts"></div>
+          <div class="worked-example"><span class="kicker">TEACHER'S EXPLANATION</span><h3>例题与推导</h3><p id="workedExample"></p></div>
+        </section>
+        <section class="section-card" id="workbench">
+          <div class="section-title"><div><span class="kicker">INTERACTIVE DRAWING</span><h2>三面投影交互演示</h2><p>下方图形的点、线、面采用统一空间坐标计算。拖动进度条按作图顺序显示投影元素。</p></div><span class="difficulty">SVG · 可离线</span></div>
+          <div class="drawing-toolbar">
+            <div class="switchers" id="diagramMode"><button type="button" data-mode="point" class="selected">点 A</button><button type="button" data-mode="line">直线 AB</button><button type="button" data-mode="plane">平面 △ABC</button></div>
+            <div class="drawing-options"><label for="diagramPreset">几何条件</label><select id="diagramPreset"></select></div>
+          </div>
+          <div class="svg-panel"><svg id="diagram" viewBox="0 0 1050 365" role="img" aria-label="正立面、水平面、侧立面的对应投影，分别采用相同的三维坐标生成"></svg><div class="drawing-key"><span><i class="dot green"></i>原始投影</span><span><i class="dot gold"></i>辅助对应</span><span>V：正面 / H：水平 / W：侧面</span></div></div>
+          <div class="coordinate-row" id="pointSliders"></div>
+          <div class="player-controls"><button type="button" class="button primary" id="playButton">▶ 播放</button><button type="button" class="button secondary" id="restartButton">↺ 重新演示</button><label class="speed-label">播放速度 <select id="speed"><option value="0.5">慢速</option><option value="1" selected>标准</option><option value="1.7">快速</option></select></label></div>
+          <div class="timeline"><input type="range" min="0" max="100" step="1" value="100" id="timeline" aria-label="绘制进度"><output id="timelineOutput">100%</output></div>
+          <div class="stage-description"><strong id="drawStepName">完成投影</strong><p id="drawStepExplanation">同一空间几何元素的三个投影共享相同坐标。</p></div>
+          <p class="note">示意采用第一角画法对应的三个投影面分别展开平铺，三个视图分栏展示，便于观察对应的 x、y、z；它不是规范版式的完整工程图纸。图元尺寸为教学坐标值。</p>
+        </section>
+        <section class="section-card" id="method">
+          <div class="section-title"><div><span class="kicker">HOW TO SOLVE</span><h2>纸面作图四步法</h2><p>读懂过程后，请独立在纸上完成一遍。</p></div></div>
+          <div class="steps" id="drawingSteps"></div>
+          <div class="paper-assignment"><div><span class="kicker">PAPER ASSIGNMENT</span><h3>本节纸面作图任务</h3><p id="paperTask"></p></div><button class="button secondary" id="printButton">打印本节任务 ↗</button></div>
+          <div class="mistake-box"><h3>常见错误 · 建议先自查</h3><div id="mistakes"></div></div>
+        </section>
+        <section class="section-card" id="question-bank">
+          <div class="section-title"><div><span class="kicker">PRACTICE ENGINE</span><h2>章节题型训练</h2><p>覆盖选择、判断、数值、排序、匹配、图上定位和线段绘制等八类互动题；每节另配纸面作图任务。</p></div><span class="difficulty" id="bankCount">74 题</span></div>
+          <div class="filters"><label>题目范围 <select id="questionScope"><option value="current">当前课程</option><option value="all">全章综合</option><option value="wrong">全章首次答错</option></select></label><label>题型 <select id="questionType"><option value="all">全部题型</option><option value="single">单项选择</option><option value="multi">多项选择</option><option value="numeric">数值填空</option><option value="order">作图步骤排序</option><option value="truefalse">判断正误</option><option value="match">对应匹配</option><option value="plot">图上定位点</option><option value="plotline">图上绘制线段</option></select></label><button type="button" class="button secondary" id="shuffleQuestions">随机抽题</button></div>
+          <div class="question-frame"><p class="practice-guide" id="practiceGuide">先独立思考；提交后可查看参考答案与推导，错误题目会进入错题复练。</p><div class="question-meta"><span id="questionPosition">第 1 题</span><span id="questionBadge">单项选择</span></div><h3 id="questionText">正在准备题目…</h3><div id="answerArea"></div><div class="answer-actions"><button class="button primary" id="submitAnswer">检查答案</button><button class="button secondary" id="nextQuestion">下一题 →</button></div><div id="questionFeedback" role="status" aria-live="polite"></div></div>
+          <div class="quiz-footer"><span id="quizProgress">本节训练：0 / 0</span><button type="button" class="text-button" id="markComplete">完成本节学习 ✓</button></div>
+        </section>
+      </div>
+    </section>
+    <footer class="footer"><div><b>图学课堂</b> · 工程制图互动学习项目</div><p>课程参照胡建生《工程制图与AutoCAD》第 3 版公开目录组织；内容和算例独立编写。当前已包含几何体基础投影；复杂截交线、相贯线及组合体综合作图仍需扩展和教学复核。</p><a href="labs/v7.html">查看旧版完整教学实验室 ↗</a></footer>
+  </main>
+</div>
+</body>
+</html>
