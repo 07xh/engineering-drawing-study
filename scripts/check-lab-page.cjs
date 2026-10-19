@@ -10,4 +10,6 @@ for(const name of ['sheetPt','sheetDraw','isoPoint','projectionOf','isoPolygon',
 assert(!html.includes('id="standardView"'),'obsolete free-rotation reset button should be removed');
 assert(!html.includes("drag.mode==='camera'"),'free camera rotation must be disabled');
 for(const id of ['viewFront','viewSide','viewTop'])assert(html.includes("$(\'"+id+"\').onclick"),'missing fixed view handler '+id);
+for(const id of ['constraintExplorer','constraintH','constraintP','constraintZ','explorerDof','explorerLocus','explorerSteps','explorerStrategy','explorerSpace','explorerViews'])assert(html.includes('id="'+id+'"'),'missing shared-engine explorer '+id);
+assert(html.includes('src="constraint-engine.js"')&&html.includes('src="constraint-explorer.js"'),'shared engine scripts must be loaded');
 console.log('PASS lab inline JS syntax, fixed-view controls and coordinate explanation elements');
