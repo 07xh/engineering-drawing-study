@@ -20,5 +20,6 @@ jobs:
           node scripts/validate.cjs
           node scripts/check-constraints.cjs
           node scripts/check-lab-page.cjs
+          node scripts/check-k-drag.cjs
           node scripts/build-static.cjs
           test -f dist/labs/constraints.html
