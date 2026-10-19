@@ -1,0 +1,1996 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f7f4">
+<title>大学工程制图学习台 v7 · 教材投影基础</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: light-dark(#f3f6f3, #101713);
+  --surface: light-dark(#ffffff, #19231d);
+  --surface-2: light-dark(#edf3ee, #202e25);
+  --ink: light-dark(#17251c, #eaf4ec);
+  --muted: light-dark(#65746a, #a6b8ab);
+  --line: light-dark(#dbe5dc, #334438);
+  --accent: light-dark(#28794d, #8bd8a5);
+  --accent-strong: light-dark(#1d603b, #a9efbd);
+  --accent-soft: light-dark(#e2f3e7, #263f2d);
+  --amber: light-dark(#98651b, #edc57b);
+  --amber-soft: light-dark(#fff3d9, #42331d);
+  --red: light-dark(#a43e35, #f3a29a);
+  --shadow: 0 14px 38px light-dark(#243b2b0b, #00000024);
+  --radius: 20px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+.app-root { min-height: 100vh; background: var(--bg); }
+.topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(18px); background: light-dark(#f3f6f3e8, #101713e8); border-bottom: 1px solid var(--line); }
+.topbar-inner { max-width: 1240px; margin: auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.01em; }
+.brand-mark { width:38px; height:38px; border-radius:13px; display:grid; place-items:center; color:#fff; background:#28794d; font-weight:900; box-shadow: 0 5px 14px #28794d2b; }
+.brand small { display:block; color:var(--muted); font-size:11px; font-weight:600; letter-spacing:.05em; }
+.nav { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:6px; }
+.nav button { border:0; color:var(--muted); background:transparent; padding:9px 12px; border-radius:12px; }
+.nav button.active, .nav button:hover { color:var(--accent-strong); background:var(--accent-soft); }
+.container { width:min(1240px, 100%); margin:auto; padding:26px 24px 60px; }
+.hero { display:grid; grid-template-columns:1.35fr .85fr; gap:22px; align-items:stretch; }
+.hero-main { padding:32px; border-radius:28px; background:linear-gradient(135deg, var(--surface), var(--accent-soft)); border:1px solid var(--line); box-shadow:var(--shadow); position:relative; overflow:hidden; }
+.eyebrow { color:var(--accent); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:.13em; display:flex; align-items:center; gap:8px; }
+.eyebrow:before { content:""; width:23px; height:2px; border-radius:9px; background:currentColor; }
+h1 { font-size:clamp(27px, 4vw, 43px); line-height:1.2; letter-spacing:-.035em; margin:15px 0 12px; max-width:660px; }
+.hero p { color:var(--muted); max-width:650px; margin:0; }
+.chips { display:flex; gap:8px; flex-wrap:wrap; margin:22px 0 24px; }
+.chip { font-size:12px; border:1px solid var(--line); color:var(--muted); background:var(--surface); padding:6px 10px; border-radius:999px; }
+.actions { display:flex; flex-wrap:wrap; gap:10px; }
+.btn { border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:12px; padding:10px 15px; font-weight:750; transition:transform .15s, border-color .15s; }
+.btn:hover { transform:translateY(-1px); border-color:var(--accent); }
+.btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.btn.ghost { background:transparent; }
+.hero-side { border-radius:28px; padding:24px; background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; justify-content:space-between; box-shadow:var(--shadow); }
+.side-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.side-head h2 { margin:0; font-size:17px; }
+.status { padding:4px 9px; border-radius:99px; font-size:11px; color:var(--accent); background:var(--accent-soft); font-weight:800; }
+.progress-number { margin:18px 0 4px; font-size:38px; font-weight:850; letter-spacing:-.05em; }
+.progress-number span { font-size:14px; color:var(--muted); font-weight:600; letter-spacing:0; }
+.progress-track { background:var(--surface-2); height:8px; border-radius:99px; overflow:hidden; margin:13px 0 20px; }
+.progress-fill { background:var(--accent); height:100%; width:0%; border-radius:99px; transition:width .25s; }
+.stat-row { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.stat { padding:13px; border:1px solid var(--line); border-radius:15px; }
+.stat strong { display:block; font-size:20px; }
+.stat span { font-size:12px; color:var(--muted); }
+.section { margin-top:34px; scroll-margin-top:84px; }
+.section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; margin-bottom:16px; }
+.section-head h2 { margin:0; font-size:23px; letter-spacing:-.02em; }
+.section-head p { margin:5px 0 0; color:var(--muted); font-size:13px; }
+.section-kicker { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.12em; }
+.course-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; }
+.course-card { background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:19px; display:flex; flex-direction:column; gap:12px; min-height:228px; box-shadow:0 5px 22px #14291a05; }
+.course-card:hover { border-color:light-dark(#8cbea0, #50785a); }
+.course-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.course-icon { width:42px; height:42px; border-radius:14px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); font-size:20px; font-weight:900; }
+.course-level { color:var(--muted); font-size:11px; }
+.course-card h3 { margin:0; font-size:17px; }
+.course-card p { margin:0; color:var(--muted); font-size:13px; flex:1; }
+.course-footer { display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:13px; }
+.course-footer span { color:var(--muted); font-size:12px; }
+.text-btn { border:0; background:transparent; color:var(--accent); font-weight:800; padding:5px 0; }
+.layout { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr); gap:17px; align-items:start; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:21px; box-shadow:0 6px 24px #14291a05; }
+.panel h3 { font-size:17px; margin:0; }
+.panel-sub { color:var(--muted); font-size:13px; margin:6px 0 16px; }
+.lesson-tabs { display:flex; flex-wrap:wrap; gap:7px; margin:15px 0; }
+.lesson-tabs button { border:1px solid var(--line); border-radius:11px; padding:8px 12px; color:var(--muted); background:var(--surface); font-size:13px; }
+.lesson-tabs button.active { background:var(--accent-soft); color:var(--accent); border-color:light-dark(#a8d4b5,#45664b); font-weight:800; }
+.diagram-wrap { background:light-dark(#fbfcfa,#121a15); border:1px solid var(--line); border-radius:16px; padding:12px; overflow:hidden; }
+.diagram-wrap svg { width:100%; height:auto; display:block; max-height:340px; }
+.diagram-caption { display:flex; flex-wrap:wrap; gap:8px; color:var(--muted); font-size:11px; margin-top:10px; }
+.key { display:inline-flex; align-items:center; gap:6px; }
+.key i { width:17px; height:3px; background:var(--accent); display:inline-block; border-radius:5px; }
+.key .dashed { height:0; border-top:2px dashed var(--amber); background:transparent; }
+.step-line { display:flex; gap:10px; align-items:flex-start; padding:13px 0; border-bottom:1px solid var(--line); }
+.step-line:last-child { border-bottom:0; }
+.step-num { flex:none; display:grid; place-items:center; width:29px; height:29px; border-radius:10px; background:var(--surface-2); color:var(--muted); font-size:12px; font-weight:850; }
+.step-num.current { color:#fff; background:var(--accent); }
+.step-line strong { font-size:14px; display:block; margin-bottom:3px; }
+.step-line p { margin:0; color:var(--muted); font-size:12px; }
+.step-controls { display:flex; gap:8px; justify-content:space-between; margin-top:12px; }
+.note { border-radius:14px; padding:12px 14px; background:var(--amber-soft); color:var(--ink); font-size:12px; margin-top:14px; }
+.note strong { color:var(--amber); }
+.exercise-list { display:grid; gap:12px; }
+.question { border:1px solid var(--line); border-radius:16px; padding:15px; }
+.question p { font-weight:750; margin:0 0 12px; }
+.options { display:grid; gap:8px; }
+.option { border:1px solid var(--line); background:var(--surface); border-radius:11px; padding:9px 11px; display:flex; align-items:center; gap:9px; text-align:left; color:var(--ink); }
+.option .radio { width:16px; height:16px; border:1.5px solid var(--muted); border-radius:50%; flex:none; }
+.option.selected { border-color:var(--accent); background:var(--accent-soft); }
+.option.selected .radio { border:5px solid var(--accent); }
+.option.correct { border-color:var(--accent); }
+.option.wrong { border-color:var(--red); background:light-dark(#fff0ee,#392421); }
+.feedback { margin-top:10px; font-size:12px; color:var(--muted); min-height:18px; }
+.practice-layout { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+.checklist { display:grid; gap:9px; }
+.check-row { display:flex; gap:9px; align-items:flex-start; padding:10px 12px; border-radius:12px; background:var(--surface-2); font-size:13px; }
+.check-row input { accent-color:var(--accent); margin-top:4px; width:16px; height:16px; }
+.material-preview { border:1px solid var(--line); padding:18px; border-radius:14px; background:#fff; color:#17251c; }
+.material-preview h4 { margin:0 0 8px; font-size:15px; }
+.material-preview p { font-size:12px; color:#536259; margin:0 0 12px; }
+.small-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.small-card { border:1px solid #dbe5dc; border-radius:10px; padding:10px; font-size:11px; }
+.small-card b { display:block; margin-bottom:4px; font-size:12px; }
+.resource-list { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.resource { border:1px solid var(--line); border-radius:15px; background:var(--surface); padding:15px; }
+.resource strong { display:block; margin-bottom:5px; }
+.resource p { color:var(--muted); font-size:12px; margin:0; }
+.footer { border-top:1px solid var(--line); margin-top:38px; padding-top:18px; display:flex; justify-content:space-between; gap:15px; flex-wrap:wrap; color:var(--muted); font-size:12px; }
+ .geometry-diagram { background:light-dark(#fff,#121a15); }
+.geometry-diagram svg { max-height:360px; }
+#geometryTabs button { min-height:39px; }
+#geoCheckOptions .option { font-size:12px; }
+#geoCheckOptions .option:disabled { cursor:default; opacity:.9; }
+
+/* University-level engineering drawing modules */
+.core-intro { display:grid; grid-template-columns:1.3fr .7fr; gap:18px; padding:18px 20px; background:var(--surface); border:1px solid var(--line); border-radius:18px; margin-bottom:15px; align-items:center; }
+.core-intro strong { font-size:14px; }
+.core-intro p { margin:5px 0 0; color:var(--muted); font-size:13px; }
+.core-progress-head { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.core-progress-head strong { color:var(--accent); white-space:nowrap; }
+.core-module-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; margin-bottom:16px; }
+.core-module { min-width:0; display:grid; grid-template-columns:37px minmax(0,1fr) 16px; gap:10px; align-items:center; text-align:left; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 13px; }
+.core-module:hover,.core-module.active { border-color:var(--accent); background:var(--accent-soft); }
+.core-module-index { width:35px; height:35px; display:grid; place-items:center; border-radius:11px; background:var(--surface-2); color:var(--accent); font-size:12px; font-weight:850; }
+.core-module strong { display:block; font-size:13px; line-height:1.45; }
+.core-module small { display:block; color:var(--muted); font-size:11px; line-height:1.45; margin-top:3px; }
+.core-module-arrow { color:var(--muted); font-size:17px; }
+.core-workbench { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(310px,.8fr); gap:16px; align-items:start; }
+.core-title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.core-title-row h3 { margin:6px 0 0; font-size:20px; }
+.core-title-row .panel-sub { margin-bottom:8px; }
+.core-step-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:14px 0; }
+.core-step-tabs button { background:var(--surface); border:1px solid var(--line); color:var(--muted); border-radius:10px; padding:8px 5px; font-size:12px; }
+.core-step-tabs button.active { color:var(--accent); background:var(--accent-soft); border-color:var(--accent); font-weight:800; }
+
+.core-diagram svg { max-height:none; }
+/* Smooth, video-like drawing process */
+.motion-caption { margin-top:10px; padding:12px 14px; border:1px solid var(--line); border-radius:13px; background:linear-gradient(110deg,var(--surface),var(--accent-soft)); display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start; }
+.motion-caption-index { display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:var(--accent); color:white; font-weight:850; font-size:12px; }
+.motion-caption strong { display:block; font-size:13px; margin:1px 0 2px; }
+.motion-caption p { margin:0; color:var(--muted); font-size:12px; }
+#coreDiagram .motion-pen-tip { filter:drop-shadow(0 0 4px #28794d66); pointer-events:none; }
+#coreDiagram .motion-pen-tip-halo { fill:#28794d; opacity:.16; }
+#coreDiagram .motion-pen-tip-core { fill:#28794d; stroke:white; stroke-width:1.5; }
+#coreDiagram .motion-label { opacity:0; }
+#coreDiagram .motion-reveal { opacity:0; }
+#coreDiagram .profile-outline { stroke-linejoin:round; stroke-linecap:round; }
+#coreDiagram .profile-guide { stroke-dasharray:4 5; }
+#coreDiagram .profile-dimension { stroke-linecap:round; }
+@media (max-width:650px) { .motion-caption { padding:10px; } }
+
+/* Dynamic teaching animation: timeline, autoplay and drawn-on construction lines. */
+.animation-console { margin-top:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,var(--surface),var(--surface-2)); }
+.animation-console-head { display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:10px; }
+.animation-live-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); flex:none; }
+.animation-console-head strong { font-size:13px; }
+.animation-status { margin-left:auto; color:var(--muted); font-size:11px; }
+.animation-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.animation-controls .btn { padding:8px 12px; font-size:12px; }
+.animation-speed { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin-left:auto; }
+.animation-speed select { max-width:124px; color:var(--ink); border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:7px 9px; }
+.animation-timeline { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; margin-top:12px; }
+.animation-timeline input { width:100%; accent-color:var(--accent); cursor:pointer; }
+.animation-timeline span { font-size:11px; white-space:nowrap; color:var(--accent); font-weight:800; }
+.animation-help { color:var(--muted); font-size:11px; margin:8px 0 0; }
+#coreDiagram.diagram-appear { animation:diagram-arrive .42s ease-out both; }
+@keyframes diagram-arrive { from { opacity:.72; transform:translateY(5px) scale(.995); } to { opacity:1; transform:translateY(0) scale(1); } }
+#coreDiagram .motion-accent { filter:drop-shadow(0 0 1px #28794d22); }
+@media (prefers-reduced-motion: reduce) {
+  #coreDiagram.diagram-appear { animation:none; }
+  .animation-live-dot { box-shadow:none; }
+  * { scroll-behavior:auto !important; transition-duration:.01ms !important; }
+}
+@media (max-width:600px) {
+  .animation-console { padding:11px; }
+  .animation-status { width:100%; margin-left:18px; }
+  .animation-speed { margin-left:0; }
+  .animation-controls .btn { flex:1; }
+}
+
+.core-step-description { display:flex; align-items:flex-start; gap:12px; padding:15px 2px 3px; }
+.core-step-description strong { display:block; font-size:14px; margin:1px 0 3px; }
+.core-step-description p { margin:0; font-size:13px; color:var(--muted); }
+.core-nav { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-top:12px; padding-top:13px; border-top:1px solid var(--line); }
+.core-nav span { color:var(--muted); font-size:12px; }
+.core-task-panel h3 { margin:10px 0 15px; font-size:18px; }
+.core-task-block { padding:11px 0; border-bottom:1px solid var(--line); }
+.core-task-label { display:block; color:var(--accent); font-size:11px; letter-spacing:.08em; font-weight:850; margin-bottom:3px; }
+.core-task-block p { margin:0; font-size:13px; }
+.core-task-block ul { margin:0; padding-left:18px; color:var(--muted); font-size:12px; }
+.core-task-block li { padding:2px 0; }
+.core-question-box { margin-top:15px; border:1px solid var(--line); border-radius:15px; padding:14px; background:var(--surface-2); }
+.core-question-box > p { font-size:13px; font-weight:750; margin:7px 0 11px; }
+.core-question-box .option { font-size:12px; }
+.core-footnote { font-size:11px; color:var(--muted); margin:10px 0 0; }
+.core-reference-note { margin-top:14px; border-left:3px solid var(--accent); padding:11px 14px; background:var(--surface-2); color:var(--muted); border-radius:0 12px 12px 0; font-size:12px; }
+.core-reference-note strong { color:var(--ink); }
+@media (max-width:950px) { .core-module-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .core-workbench { grid-template-columns:1fr; } }
+@media (max-width:650px) { .core-intro { grid-template-columns:1fr; padding:15px; } .core-module-grid { grid-template-columns:1fr; } .core-title-row { flex-direction:column; } .core-title-row .chip { white-space:normal; } .core-step-tabs button { font-size:11px; } }
+
+.hidden { display:none !important; }
+.print-sheet { display:none; }
+#toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,18px); opacity:0; pointer-events:none; z-index:50; background:var(--ink); color:var(--surface); padding:10px 15px; border-radius:12px; box-shadow:var(--shadow); transition:.2s; font-size:13px; }
+#toast.show { opacity:1; transform:translate(-50%,0); }
+@media (max-width:900px) { .hero { grid-template-columns:1fr; } .course-grid { grid-template-columns:repeat(2,1fr); } .layout { grid-template-columns:1fr; } .resource-list { grid-template-columns:1fr; } }
+@media (max-width:600px) { .topbar-inner { padding:10px 14px; align-items:flex-start; flex-direction:column; } .nav { width:100%; justify-content:flex-start; overflow-x:auto; flex-wrap:nowrap; } .nav button { white-space:nowrap; } .container { padding:16px 13px 40px; } .hero-main { padding:22px; border-radius:22px; } .hero-side { padding:19px; border-radius:22px; } .course-grid { grid-template-columns:1fr; } .course-card { min-height:0; } .section-head h2 { font-size:20px; } .panel { padding:15px; } .practice-layout { grid-template-columns:1fr; } }
+@media print {
+  body { background:#fff !important; color:#111 !important; }
+  .app-root, .topbar, .container, #toast { display:none !important; }
+  .print-sheet { display:block !important; color:#111; font:12pt/1.6 "Microsoft YaHei", sans-serif; padding:12mm; }
+  .print-sheet h1 { font-size:20pt; }
+  .print-sheet .print-meta { margin:10px 0 20px; border-bottom:1px solid #aaa; padding-bottom:10px; }
+  .print-sheet .print-question { margin:18px 0; page-break-inside:avoid; }
+  .print-sheet .writing-space { height:52px; border-bottom:1px solid #bbb; margin-top:10px; }
+  .print-sheet .drawing-grid { height:72mm; border:1px solid #b6c1b8; margin-top:8px; background-image:linear-gradient(#e2e9e3 .35px, transparent .35px),linear-gradient(90deg, #e2e9e3 .35px, transparent .35px); background-size:5mm 5mm; }
+  .print-sheet svg { width:100%; max-height:310px; }
+}
+
+/* v6 | Geometrically determined circular-connection laboratory */
+.lab-feature { margin-top: 36px; }
+.lab-intro { display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
+.lab-intro p {max-width:850px;}
+.lab-banner { display:flex; flex-wrap:wrap; gap:8px; margin:15px 0 18px; }
+.lab-banner span { border:1px solid var(--line); border-radius:999px; padding:6px 10px; font-size:12px; color:var(--muted); }
+.lab-shell { background:var(--surface); border:1px solid var(--line); border-radius:23px; padding:18px; box-shadow:var(--shadow); }
+.lab-toolbar { display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.lab-toolbar h3 { margin:0 0 3px; font-size:18px; }
+.lab-toolbar p { margin:0; color:var(--muted); font-size:12px; }
+.lab-selector { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.lab-selector select, .lab-speed select { border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:11px; padding:9px 10px; font:inherit; font-size:12px; }
+.lab-workspace { display:grid; grid-template-columns:183px minmax(0,1fr) 280px; gap:13px; align-items:start; }
+.lab-sidebar,.lab-info { background:var(--surface-2); border-radius:17px; padding:14px; min-width:0; }
+.lab-sidebar h4,.lab-info h4 { font-size:12px; margin:0 0 12px; letter-spacing:.03em; }
+.lab-steps { display:grid; gap:5px; }
+.lab-stage { width:100%; text-align:left; display:flex; gap:9px; align-items:center; color:var(--muted); background:transparent; border:1px solid transparent; padding:9px 7px; border-radius:10px; font-size:12px; line-height:1.4; }
+.lab-stage .lab-number { flex:none; display:grid; place-items:center; width:25px; height:25px; background:var(--surface); border:1px solid var(--line); border-radius:9px; color:var(--muted); font-size:11px; font-weight:800; }
+.lab-stage.active { border-color:light-dark(#c0dec7,#456650); color:var(--accent-strong); background:var(--accent-soft); font-weight:750; }
+.lab-stage.active .lab-number { background:var(--accent);color:white;border-color:var(--accent); }
+.lab-stage.done:not(.active) .lab-number { background:light-dark(#daefe0,#31533c);color:var(--accent); }
+.lab-canvas-wrap { border:1px solid var(--line); border-radius:18px; overflow:hidden; background:light-dark(#fcfefa,#111b15); min-width:0; position:relative; }
+.lab-canvas-top { position:absolute; top:12px; left:13px; right:13px; display:flex; justify-content:space-between; gap:8px; z-index:1; pointer-events:none; }
+.lab-canvas-top span {font-size:11px;padding:4px 8px;border:1px solid light-dark(#dce9df,#3e5144);border-radius:8px;background:light-dark(#ffffffd9,#19291ce3);color:var(--muted);}
+#labSvg {display:block;width:100%;height:auto;aspect-ratio:840/520;touch-action:manipulation;}
+#labSvg.lab-practice-active { cursor:crosshair; }
+.lab-legend {display:flex;gap:13px;flex-wrap:wrap;padding:8px 12px 12px;color:var(--muted);font-size:11px;}
+.lab-legend span:before {content:' '; display:inline-block;width:15px;height:3px;border-radius:9px;background:var(--accent);margin-right:6px;vertical-align:middle;}
+.lab-legend span:nth-child(2):before {background:#b18a49;}
+.lab-legend span:nth-child(3):before {background:#6b93bd;}
+.lab-caption {padding:12px 13px;margin-top:12px;background:var(--accent-soft);border-radius:13px;}
+.lab-caption small {font-size:10px;color:var(--accent);font-weight:850;letter-spacing:.1em;}
+.lab-caption strong {display:block;margin:3px 0;font-size:15px;}
+.lab-caption p {margin:0;color:var(--muted);font-size:12px;min-height:39px;}
+.lab-formula { display:grid; gap:8px; margin-top:12px; }
+.lab-formula .lab-metric {background:var(--surface);border:1px solid var(--line);padding:10px 11px;border-radius:11px;}
+.lab-formula small {display:block;color:var(--muted);font-size:11px;}
+.lab-formula strong {display:block;color:var(--ink);font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums;}
+.lab-equation {font-size:12px;color:var(--ink);line-height:1.85;margin-top:11px;white-space:normal;overflow-wrap:anywhere;}
+.lab-reason {border-top:1px solid var(--line);margin-top:12px;padding-top:12px;color:var(--muted);font-size:12px;}
+.lab-reason b {color:var(--ink);}
+.lab-player {margin-top:15px;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2);}
+.lab-player-row {display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.lab-player .btn {font-size:12px;padding:8px 12px;}
+.lab-timeline {display:flex;align-items:center;gap:12px;margin-top:13px;}
+.lab-timeline input {width:100%;min-width:0;accent-color:var(--accent);cursor:pointer;}
+.lab-timeline output {color:var(--accent);font-size:12px;font-weight:750;white-space:nowrap;min-width:88px;text-align:right;font-variant-numeric:tabular-nums;}
+.lab-toggle {display:inline-flex;gap:7px;align-items:center;font-size:12px;color:var(--muted);cursor:pointer;}
+.lab-toggle input {accent-color:var(--accent);width:15px;height:15px;}
+.lab-hint {color:var(--muted);font-size:11px;margin:11px 0 0;}
+.lab-training {margin-top:15px;display:grid;grid-template-columns:1.2fr .8fr;gap:15px;}
+.lab-task {padding:17px;border:1px solid var(--line);border-radius:16px;}
+.lab-task h4 {margin:0 0 7px;font-size:15px;}
+.lab-task p {margin:0 0 11px;font-size:12px;color:var(--muted);}
+.lab-quiz-options {display:grid;gap:7px;}
+.lab-quiz-options button {border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;padding:10px 12px;border-radius:11px;font-size:12px;}
+.lab-quiz-options button:hover {border-color:var(--accent);}
+.lab-quiz-options button.correct {background:var(--accent-soft);border-color:var(--accent);}
+.lab-quiz-options button.wrong {background:light-dark(#fff0ee,#392421);border-color:var(--red);}
+.lab-quiz-feedback {min-height:18px;color:var(--muted);font-size:12px;margin:9px 0 0;}
+.lab-practice-status {padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2);color:var(--muted);font-size:12px;min-height:48px;margin:11px 0;}
+.lab-lesson-notes {border-left:3px solid var(--accent);padding-left:11px;color:var(--muted);font-size:12px;margin-top:13px;}
+.lab-lesson-notes strong {color:var(--ink);}
+.lab-frame-credits {color:var(--muted);font-size:11px;margin:11px 2px 0;}
+@media (max-width:1150px){.lab-workspace {grid-template-columns:160px minmax(0,1fr);} .lab-info{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;} .lab-info h4{grid-column:1/-1;margin-bottom:0;} .lab-formula{grid-template-columns:1fr 1fr;margin:0;} .lab-reason{margin-top:0;border-top:0;padding:0;}}
+@media (max-width:720px){.lab-workspace{grid-template-columns:1fr;} .lab-sidebar{padding:11px;} .lab-steps{display:flex;overflow-x:auto;gap:5px;} .lab-stage{min-width:122px;white-space:nowrap;} .lab-info{grid-column:auto;grid-template-columns:1fr;} .lab-info h4{grid-column:auto;} .lab-formula{grid-template-columns:1fr 1fr;} .lab-training{grid-template-columns:1fr;} .lab-shell{padding:12px;} .lab-player {padding:11px;} .lab-player-row .btn {flex:1;} }
+@media (max-width:420px){.lab-formula{grid-template-columns:1fr;} .lab-player-row .btn {min-width:calc(50% - 7px);} }
+@media (prefers-reduced-motion:reduce){.lab-stage,.lab-quiz-options button{transition:none!important}}
+
+
+/* v7: textbook-based projection course */
+.proj-feature{scroll-margin-top:82px}
+.proj-feature .section-kicker{color:var(--accent)}
+.proj-banner{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 18px}
+.proj-banner span{border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:5px 11px;font-size:12px;color:var(--muted)}
+.proj-shell{border:1px solid var(--line);background:var(--surface);padding:20px;border-radius:24px;box-shadow:var(--shadow)}
+.proj-course-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.proj-tab{min-width:0;display:flex;flex-direction:column;text-align:left;gap:2px;padding:12px;border:1px solid var(--line);background:var(--surface-2);border-radius:13px;color:var(--ink);cursor:pointer}
+.proj-tab[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.proj-tab small{color:var(--muted);font-size:11px;font-weight:600}
+.proj-tab strong{font-size:13px}
+.proj-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:10px 0 15px}
+.proj-top h3{font-size:22px;line-height:1.3;margin:3px 0 5px}
+.proj-top p{font-size:13px;color:var(--muted);margin:0;max-width:770px}
+.proj-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(275px,0.85fr);gap:17px;align-items:start}
+.proj-board{min-width:0;background:#fbfdfa;border:1px solid #d9e5dc;border-radius:18px;overflow:hidden;position:relative}
+.proj-board svg{display:block;width:100%;height:auto;aspect-ratio:960/495}
+.proj-caption{display:flex;justify-content:space-between;gap:7px;flex-wrap:wrap;color:#617367;background:#eef4ef;padding:8px 12px;font-size:11px}
+.proj-side{background:var(--surface-2);border:1px solid var(--line);border-radius:17px;padding:17px;min-width:0}
+.proj-side .proj-step-tag{font-size:11px;color:var(--accent);font-weight:850;letter-spacing:.08em}
+.proj-side h4{margin:5px 0 9px;font-size:17px}
+.proj-side p{font-size:13px;color:var(--muted);margin:0 0 10px}
+.proj-side .proj-rule{background:var(--surface);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.8;color:var(--ink)}
+.proj-side .proj-mistake{margin-top:11px;background:var(--amber-soft);padding:11px 12px;border-radius:10px;font-size:12px;color:var(--ink)}
+.proj-controls{margin-top:14px;background:var(--surface-2);border-radius:16px;padding:12px 14px}
+.proj-player{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.proj-player button{font-size:12px;padding:8px 11px}
+.proj-player label{font-size:12px;color:var(--muted)}
+.proj-player select{padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink)}
+.proj-time{display:flex;align-items:center;gap:10px;margin-top:11px}
+.proj-time input{flex:1;min-width:0;accent-color:var(--accent);cursor:pointer}
+.proj-time output{min-width:80px;font-variant-numeric:tabular-nums;font-size:12px;color:var(--accent);font-weight:800;text-align:right}
+.proj-param{display:flex;gap:11px;flex-wrap:wrap;padding:12px 0 4px}
+.proj-param label{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:12px;color:var(--muted);padding:7px 9px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+.proj-param label input[type=range]{width:110px;accent-color:var(--accent)}
+.proj-param label select{max-width:155px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px}
+.proj-param label b{min-width:33px;text-align:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.proj-under{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:17px}
+.proj-box{border:1px solid var(--line);border-radius:16px;padding:17px;min-width:0}
+.proj-box h4{margin:0 0 7px;font-size:15px}
+.proj-box p{color:var(--muted);font-size:13px;margin:3px 0 9px}
+.proj-question{font-size:14px;font-weight:750;color:var(--ink)}
+.proj-options{display:grid;gap:7px;margin-top:9px}
+.proj-options button{background:var(--surface);border:1px solid var(--line);color:var(--ink);text-align:left;padding:10px 12px;border-radius:10px;font-size:13px}
+.proj-options button:hover{border-color:var(--accent)}
+.proj-options button.right{border-color:var(--accent);background:var(--accent-soft)}
+.proj-options button.wrong{border-color:var(--red);background:light-dark(#fff0ef,#402c2a)}
+.proj-options button:disabled{cursor:default}
+.proj-feedback{min-height:32px;font-size:12px;line-height:1.7;color:var(--muted);margin-top:10px}
+.proj-notes{display:grid;gap:8px;color:var(--muted);font-size:12px;line-height:1.75}
+.proj-notes p{margin:0}
+.proj-lesson-complete{font-size:12px;font-weight:750;color:var(--accent)}
+.proj-print{margin-top:13px;border:1px dashed var(--line);border-radius:15px;padding:13px 16px;background:var(--surface-2)}
+.proj-print h4{font-size:14px;margin:0 0 4px}
+.proj-print p{color:var(--muted);font-size:12px;margin:0}
+.proj-print .btn{margin-top:9px;padding:7px 12px;font-size:12px}
+.proj-status{text-align:right;font-size:12px;color:var(--muted)}
+.proj-advanced-link{display:inline-flex;gap:6px;color:var(--accent);font-size:12px;font-weight:750;text-decoration:none;margin-top:9px}
+.proj-draw{stroke-linejoin:round;stroke-linecap:round}
+.proj-paper{display:none}
+@media(max-width:1020px){.proj-course-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.proj-layout{grid-template-columns:1fr}.proj-under{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.proj-shell{padding:12px}.proj-course-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.proj-layout{gap:12px}.proj-under{grid-template-columns:1fr}.proj-top h3{font-size:19px}.proj-time output{min-width:62px}.proj-player .btn{padding:8px 10px}.proj-board svg{min-height:205px}.proj-side{padding:13px}}
+@media(prefers-reduced-motion:reduce){.proj-tab,.proj-options button{transition:none!important}}
+@media print{.topbar,.hero,.section:not(#projection),.proj-controls,.proj-course-tabs,.proj-under,.proj-banner,.proj-print,.proj-param,.proj-side{display:none!important}.proj-shell,.proj-board{box-shadow:none;border:0}.proj-paper{display:block;page-break-before:always}#projection{margin:0}#projection .proj-layout{display:block}.proj-board svg{max-height:300px}.proj-paper .paper-grid{min-height:140px;background-image:linear-gradient(#bbb 1px,transparent 1px),linear-gradient(90deg,#bbb 1px,transparent 1px);background-size:10mm 10mm;margin-top:10px}}
+
+</style>
+</head>
+<body>
+<div class="app-root">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="brand-mark">制</div><div>工程制图学习台<small>ENGINEERING DRAWING · PAPER FIRST</small></div></div>
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-target="home">学习首页</button>
+        <button data-target="lessons">课程目录</button>
+        <button data-target="projection">第 2 章 · 投影基础 ★</button>
+        <button data-target="lab">几何推导实验室 ★</button>
+        <button data-target="coreStudio">大学核心专题</button>
+        <button data-target="geometryLesson">几何作图</button><button data-target="studio">互动演示</button>
+        <button data-target="practice">纸面练习</button>
+        <button data-target="resources">学习资料</button>
+      </nav>
+    </div>
+  </header>
+  <main class="container" id="home">
+    <section class="hero">
+      <div class="hero-main">
+        <div class="eyebrow">大学工程制图 · 核心训练</div>
+        <h1>先学懂点、线、面投影，<br>再攻克大学工程制图。</h1>
+        <p>按胡建生《工程制图与AutoCAD》第 3 版第 2 章顺序入门：投影法、三面投影体系、点、直线和平面的投影。先用可计算的动态模型建立空间概念，再回到纸面作图；原有组合体和圆弧连接实验室继续保留。</p>
+        <div class="chips"><span class="chip">大学课程主线</span><span class="chip">空间分析与投影</span><span class="chip">视图表达与读图</span><span class="chip">纸面完成作业</span></div>
+        <div class="actions"><button class="btn primary" type="button" onclick="document.getElementById('projection').scrollIntoView({behavior:'smooth'})">开始第 2 章投影基础　→</button><button class="btn" id="startBtn" type="button">大学核心专题 ↗</button><button class="btn" type="button" onclick="document.getElementById('lab').scrollIntoView({behavior:'smooth'})">体验精确作图动画 ↗</button><button class="btn ghost" id="printBtn">打印阶段练习</button></div>
+      </div>
+      <aside class="hero-side">
+        <div>
+          <div class="side-head"><h2>我的学习进度</h2><span class="status">试用版</span></div>
+          <div class="progress-number"><span id="completedCount">0</span><span> / 4 个基础单元已完成</span></div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <div class="stat-row"><div class="stat"><strong id="quizScore">—</strong><span>最近一次自测</span></div><div class="stat"><strong id="practiceCount">0 / 4</strong><span>纸面检查项目</span></div></div>
+        <p style="font-size:12px;color:var(--muted);margin:17px 0 0">提示：本原型使用本设备的浏览器保存进度。清理浏览器数据后，记录可能丢失。</p>
+      </aside>
+    </section>
+
+    <section class="section" id="lessons">
+      <div class="section-head"><div><div class="section-kicker">FOUNDATION REVIEW</div><h2>制图工具与旧课程</h2><p>基础单元保留为需要时查阅的工具课；主体学习路径从下方的大学核心专题展开。</p></div><span class="chip">基础查阅 · 4 个单元</span></div>
+      <div class="course-grid">
+        <article class="course-card"><div class="course-top"><div class="course-icon">线</div><span class="course-level">入门 · 约 10 分钟</span></div><h3>01　图线与制图基础</h3><p>认识粗实线、细实线、虚线、点画线，理解不同图线各自承担的表达任务。</p><div class="course-footer"><span id="status-lines">尚未完成</span><button class="text-btn open-lesson" data-lesson="0">开始学习 ↗</button></div></article>
+        <article class="course-card"><div class="course-top"><div class="course-icon">弧</div><span class="course-level">基础 · 约 20 分钟</span></div><h3>02　几何作图与圆弧连接</h3><p>用直尺、圆规和三角板完成垂直平分线、角平分线及直角内圆弧连接，理解每一步的几何依据。</p><div class="course-footer"><span id="status-geometry">尚未完成</span><button class="text-btn open-lesson" data-lesson="3">开始学习 ↗</button></div></article>
+        <article class="course-card"><div class="course-top"><div class="course-icon">投</div><span class="course-level">入门 · 约 15 分钟</span></div><h3>03　三视图与投影关系</h3><p>通过主视图、俯视图、左视图的联动，理解长对正、高平齐、宽相等。</p><div class="course-footer"><span id="status-views">尚未完成</span><button class="text-btn open-lesson" data-lesson="1">开始学习 ↗</button></div></article>
+        <article class="course-card"><div class="course-top"><div class="course-icon">体</div><span class="course-level">基础 · 约 20 分钟</span></div><h3>04　从组合体读懂形状</h3><p>先拆分基本形体，再逐个核对视图对应，建立从平面图样想象空间形状的习惯。</p><div class="course-footer"><span id="status-solid">尚未完成</span><button class="text-btn open-lesson" data-lesson="2">开始学习 ↗</button></div></article>
+      </div>
+    </section>
+
+
+
+<section class="section proj-feature" id="projection" aria-labelledby="projectionHeading">
+  <div class="section-head">
+    <div><div class="section-kicker">CHAPTER 02 · TEXTBOOK-ALIGNED FOUNDATION</div>
+      <h2 id="projectionHeading">投影基础 · 从点、直线到平面</h2>
+      <p>依据胡建生《工程制图与AutoCAD》第 3 版第 2 章目录编排，先理解投影法，再学习点、线、面的三面投影。讲解与算例为独立编写，不是教材原页复制。</p>
+    </div><span class="chip">当前推荐从这里开始</span>
+  </div>
+  <div class="proj-banner"><span>第 1 节 · 投影概念 P27</span><span>第 2 节 · 三视图 P29</span><span>第 3 节 · 点的投影 P33</span><span>第 4 节 · 直线的投影 P37</span><span>第 5 节 · 平面的投影 P41</span><span>第 6 节 · 几何体 P47（下一阶段）</span></div>
+  <div class="proj-shell">
+    <div class="proj-course-tabs" id="projTabs" role="tablist" aria-label="投影基础课程">
+      <button class="proj-tab" type="button" role="tab" data-proj="intro" aria-selected="true"><small>01 · P27–28</small><strong>投影法与投影面</strong></button>
+      <button class="proj-tab" type="button" role="tab" data-proj="views" aria-selected="false"><small>02 · P29–32</small><strong>三面体系与展开</strong></button>
+      <button class="proj-tab" type="button" role="tab" data-proj="point" aria-selected="false"><small>03 · P33–36</small><strong>点的三面投影</strong></button>
+      <button class="proj-tab" type="button" role="tab" data-proj="line" aria-selected="false"><small>04 · P37–40</small><strong>直线的投影</strong></button>
+      <button class="proj-tab" type="button" role="tab" data-proj="plane" aria-selected="false"><small>05 · P41–46</small><strong>平面的投影</strong></button>
+    </div>
+    <div class="proj-top"><div><div class="section-kicker" id="projChapter">第 2 章 · 第 1 节</div><h3 id="projTitle">正投影为什么能够表达形体？</h3><p id="projIntro">在固定的投影方向下，把空间点沿平行投射线投到一个平面上。工程制图常用正投影，投射线与投影面垂直。</p></div><span class="chip" id="projDifficulty">初学必学</span></div>
+    <div class="proj-layout">
+      <div class="proj-board">
+        <svg id="projSvg" viewBox="0 0 960 495" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="投影基础：主投影面、水平投影面、侧投影面与空间点线面的连续动画"></svg>
+        <div class="proj-caption"><span>V：正立投影面 · H：水平投影面 · W：侧立投影面</span><span>第一角画法展开图；右侧为空间轴测示意（坐标一致、不可直接跨图量距）</span></div>
+      </div>
+      <aside class="proj-side" aria-live="polite">
+        <div class="proj-step-tag" id="projStageNumber">STEP 1 / 5</div>
+        <h4 id="projStageTitle">先看投影方向</h4>
+        <p id="projStageDescription">观察从空间几何元素到各投影面的投射线。动画按真实坐标绘制投影。</p>
+        <div class="proj-rule"><strong>必须掌握</strong><div id="projRule">空间几何元素沿投射方向在投影面上形成图形。</div></div>
+        <div class="proj-mistake"><strong>容易混淆</strong><div id="projMistake">第一角画法中，俯视图在主视图下方。</div></div>
+        <div class="proj-lesson-complete" id="projCompleteState" style="margin-top:12px">本节尚未完成检测</div>
+      </aside>
+    </div>
+    <div class="proj-param" id="projParams" aria-label="改变空间几何条件"></div>
+    <div class="proj-controls">
+      <div class="proj-player">
+        <button class="btn primary" type="button" id="projPlay">▶ 播放推导</button>
+        <button class="btn" type="button" id="projPrevious">← 前一步</button>
+        <button class="btn" type="button" id="projNext">后一步 →</button>
+        <button class="btn" type="button" id="projReset">↺ 从头</button>
+        <label for="projSpeed">速度</label><select id="projSpeed"><option value="0.65">慢速</option><option value="1" selected>标准</option><option value="1.6">快速</option></select>
+        <span class="proj-status" id="projPlayStatus">可以拖动时间轴逐帧观察</span>
+      </div>
+      <div class="proj-time"><input type="range" id="projTimeline" min="0" max="1000" step="1" value="0" aria-label="投影过程时间轴"><output id="projTime">00:00 / 00:12</output></div>
+    </div>
+    <div class="proj-under">
+      <div class="proj-box"><h4>理解检查 · 本节两题</h4><p>先自己判断再选，答错会显示原因；每节两题都答对才记为掌握。</p><div class="proj-question" id="projQuestion">正在准备题目……</div><div class="proj-options" id="projOptions"></div><div class="proj-feedback" id="projFeedback" role="status"></div><button class="btn" type="button" id="projNextQuestion" hidden>继续下一题 →</button></div>
+      <div class="proj-box"><h4>纸面作图任务</h4><div class="proj-notes" id="projPaperTask"><p>在纸上绘制三面投影体系展开图，标出 V、H、W、O、X、Y、Z。</p></div><a class="proj-advanced-link" href="#coreStudio">学会投影后再进入组合体与剖视图 →</a><div class="proj-print"><h4>打印练习单</h4><p>附两道坐标题与一道平面投影题，适合脱离动画独立完成。</p><button class="btn" type="button" id="projPrint">打印本章练习</button></div></div>
+    </div>
+    <div class="proj-paper" id="projPrintSheet">
+      <h3>《工程制图与AutoCAD》 第 2 章 · 原创投影基础练习</h3>
+      <p>① 已知 A(x=40,y=20,z=30) mm。作 A 的 a、a′、a″ 三面投影，标注 O、X、Y、Z。</p>
+      <div class="paper-grid"></div>
+      <p>② 已知 B(15,40,55) mm 与 C(60,15,30) mm。求线段 BC 的三面投影，并计算 BC 的空间真实长度。</p>
+      <div class="paper-grid"></div>
+      <p>③ 已知 △DEF：D(15,10,25)、E(55,10,25)、F(25,45,25)，作三面投影，指出在哪个投影面反映实形。</p>
+      <div class="paper-grid"></div><p style="font-size:11px">说明：以上均为平台原创练习，坐标单位为毫米；与教材例题不一定相同。</p>
+    </div>
+  </div>
+</section>
+
+    <section class="section lab-feature" id="lab" aria-labelledby="labHeading">
+      <div class="section-head lab-intro"><div><div class="section-kicker">ADVANCED DRAWING STUDIO · NEW IN V6</div><h2 id="labHeading">几何推导实验室 · 双圆连接板</h2><p>参考吊钩分步作图的教学节奏，但采用独立编写的几何引擎与原创工件。以大学工程制图常见的<span style="color:var(--accent);font-weight:750">圆弧连接与公切线</span>为切入点，真正计算圆心、切点、切线和封闭轮廓，再将解题过程连续呈现。</p></div><span class="chip">第 1 章深化 · 可验证几何</span></div>
+      <div class="lab-banner"><span>真实切点计算</span><span>逐线作图</span><span>可逆时间轴</span><span>任意时刻暂停</span><span>切点定位练习</span><span>独立原创示例</span></div>
+      <div class="lab-shell">
+        <div class="lab-toolbar">
+          <div><h3>双圆偏置连接板 · 外公切线求解</h3><p>先定圆心与外形半径，再以辅助圆求切点，最后形成工程轮廓并完成尺寸校核。</p></div>
+          <div class="lab-selector"><label for="labVariant" style="font-size:12px;color:var(--muted)">切换算例</label><select id="labVariant"><option value="A">A · 偏置连接板</option><option value="B">B · 反向偏置连接板</option></select><button class="btn" id="labExport" type="button">↓ 导出 PNG</button></div>
+        </div>
+        <div class="lab-workspace">
+          <aside class="lab-sidebar"><h4>作图步骤 · 点击跳转</h4><div id="labSteps" class="lab-steps"></div></aside>
+          <div style="min-width:0">
+            <div class="lab-canvas-wrap">
+              <div class="lab-canvas-top"><span>正投影 · 原创几何模型</span><span id="labModeLabel">教学模式</span></div>
+              <svg id="labSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 520" role="img" aria-label="双圆连接板的圆心、辅助圆、切点、切线、轮廓与尺寸连续作图"></svg>
+              <div class="lab-legend"><span>最终轮廓</span><span>几何辅助</span><span>中心 / 尺寸</span></div>
+            </div>
+            <div class="lab-player" aria-label="播放控制">
+              <div class="lab-player-row">
+                <button type="button" class="btn primary" id="labPlay">▶ 播放</button><button type="button" class="btn" id="labPrev">← 上一阶段</button><button type="button" class="btn" id="labNext">下一阶段 →</button><button type="button" class="btn" id="labReset">↺ 重播</button>
+                <label class="lab-speed" for="labSpeed"><span style="font-size:12px;color:var(--muted)">速度 </span><select id="labSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+              </div>
+              <div class="lab-timeline"><input id="labTimeline" type="range" min="0" max="1000" step="1" value="0" aria-label="绘图动画时间轴"><output id="labTimeText">00:00 / 00:24</output></div>
+              <div class="lab-player-row" style="margin-top:10px"><label class="lab-toggle"><input id="labGuide" type="checkbox" checked>显示辅助线</label><label class="lab-toggle"><input id="labPauseAtEnd" type="checkbox" checked>完成后保持最终图</label><span id="labPlayerStatus" style="font-size:11px;color:var(--muted);margin-left:auto" aria-live="polite">就绪 · 可播放或拖动时间轴</span></div>
+              <p class="lab-hint">每条线都由计算得到的几何路径绘制；拖动时间轴会精确重建该时刻的图样。键盘：空格播放/暂停、←/→ 逐阶段。手机可触控操作。</p>
+            </div>
+          </div>
+          <aside class="lab-info">
+            <h4>当前步骤与计算依据</h4>
+            <div class="lab-caption" aria-live="polite"><small id="labStageBadge">阶段 01 / 09</small><strong id="labStageTitle">建立投影基准</strong><p id="labStageText">用水平基准线和坐标确定两个孔中心。</p></div>
+            <div class="lab-formula"><div class="lab-metric"><small>圆心距 D</small><strong id="labMetricD">—</strong></div><div class="lab-metric"><small>半径差 ΔR</small><strong id="labMetricDelta">—</strong></div><div class="lab-metric"><small>外公切线有效段长</small><strong id="labMetricT">—</strong></div><div class="lab-metric"><small>共切线数</small><strong>2 条</strong></div></div>
+            <div class="lab-equation" id="labEquation">计算：L = √(D² − ΔR²)</div>
+            <div class="lab-reason"><b>大学工程制图中的几何依据</b><div id="labReasonText" style="margin-top:5px">半径垂直于切线；等效辅助圆半径为两圆半径之差。</div></div>
+          </aside>
+        </div>
+        <div class="lab-training">
+          <div class="lab-task"><div class="section-kicker">PAPER PRACTICE · DRAW FIRST</div><h4>先试画，再核对：定位大圆上侧切点</h4><p>请在纸上完成圆心、辅助圆与公切线的分析。点击“开始定位练习”后，在图中点击你认为的<strong>大圆上侧切点</strong>；允许误差按屏幕示意坐标判定，并非纸面绘图精度标准。</p><div class="lab-player-row"><button class="btn primary" id="labPracticeStart" type="button">开始定位练习</button><button class="btn" id="labPracticeReveal" type="button">显示答案与理由</button></div><div class="lab-practice-status" id="labPracticeFeedback" aria-live="polite">练习未开始。建议先独立推导再查看演示。</div><div class="lab-lesson-notes"><strong>纸面作图验收</strong>：圆心定位正确；两条外公切线均与相应圆弧相切；轮廓没有断口、重线与不应存在的辅助线；中心线与尺寸表达遵循教师所用制图标准。</div></div>
+          <div class="lab-task"><div class="section-kicker">REASONING CHECK</div><h4 id="labQuizTitle">外公切线的辅助圆半径应如何确定？</h4><div class="lab-quiz-options" id="labQuizOptions"></div><p class="lab-quiz-feedback" id="labQuizFeedback" aria-live="polite">选择答案后查看推导解释。</p><p class="lab-hint">本模块题目和几何数据为独立设计的教学示例，不是课本原题，也不构成对任意图样的自动审图。</p></div>
+        </div>
+        <p class="lab-frame-credits">参考展示方式：<a href="https://emanonwang32.github.io/hook-drawing/" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">Hook Drawing</a>。本模块未复制其源码、吊钩图纸或素材。当前仅在浏览器中本地计算，不联网上传作业或数据。</p>
+      </div>
+    </section>
+
+    <section class="section" id="coreStudio">
+      <div class="section-head"><div><div class="section-kicker">UNIVERSITY ENGINEERING GRAPHICS</div><h2>大学工程制图核心专题</h2><p>围绕高校《工程制图 / 画法几何与工程制图》常见主线设置：空间几何分析、立体交线、组合体表达、图样阅读。每个专题包含分析路径、图样示意、关键判断和纸面输出任务。</p></div><span class="chip">核心专题 · 6 个模块</span></div>
+      <div class="core-intro">
+        <div><strong>使用方式</strong><p>先看给定条件与空间关系，再依次分析投影/表达方案；完成右侧判断后，把结果画回纸面。示意图是本平台原创教学图，不是教材原题，也不能替代课程指定的国家标准与教师要求。</p></div>
+        <div class="core-progress"><div class="core-progress-head"><span>核心专题进度</span><strong id="coreProgressText">0 / 6 已完成</strong></div><div class="progress-track"><div class="progress-fill" id="coreProgressFill"></div></div></div>
+      </div>
+      <div class="core-module-grid" id="coreModuleGrid">
+        <button class="core-module active" data-core-module="projection"><span class="core-module-index">01</span><span><strong>投影分析：点、线、面</strong><small>投影特性 · 相对位置 · 作图逻辑</small></span><span class="core-module-arrow">↗</span></button>
+        <button class="core-module" data-core-module="intersections"><span class="core-module-index">02</span><span><strong>截交线与相贯线</strong><small>特殊点、一般点、可见性判断</small></span><span class="core-module-arrow">↗</span></button>
+        <button class="core-module" data-core-module="composite"><span class="core-module-index">03</span><span><strong>组合体：补画第三视图</strong><small>形体分析 · 线面分析 · 投影对应</small></span><span class="core-module-arrow">↗</span></button>
+        <button class="core-module" data-core-module="sections"><span class="core-module-index">04</span><span><strong>视图、剖视与断面</strong><small>表达方案 · 剖切位置 · 线型选择</small></span><span class="core-module-arrow">↗</span></button>
+        <button class="core-module" data-core-module="part"><span class="core-module-index">05</span><span><strong>零件图阅读与尺寸体系</strong><small>视图选择 · 基准 · 技术要求</small></span><span class="core-module-arrow">↗</span></button>
+        <button class="core-module" data-core-module="assembly"><span class="core-module-index">06</span><span><strong>装配图阅读与拆画</strong><small>连接关系 · 序号明细 · 部件表达</small></span><span class="core-module-arrow">↗</span></button>
+      </div>
+      <div class="core-workbench">
+        <section class="panel core-visual-panel">
+          <div class="core-title-row"><div><div class="section-kicker" id="coreModuleKicker">MODULE 01 · PROJECTION</div><h3 id="coreModuleTitle">投影分析：点、线、面</h3><p class="panel-sub" id="coreModuleSubtitle">由空间条件推导各投影之间的对应关系，而不是只记口诀。</p></div><span class="chip" id="coreLevelChip">大学基础 · 概念与推理</span></div>
+          <div class="core-step-tabs" id="coreStepTabs" aria-label="专题分析步骤"><button class="active" data-core-step="0">01 条件</button><button data-core-step="1">02 分析</button><button data-core-step="2">03 作图</button><button data-core-step="3">04 校核</button></div>
+          <div class="diagram-wrap core-diagram"><svg id="coreDiagram" viewBox="0 0 640 440" role="img" aria-label="大学工程制图连续绘制过程动画"></svg><div class="diagram-caption"><span class="key"><i style="background:#28794d"></i>主要轮廓 / 关键点</span><span class="key"><i style="background:#b98734"></i>构造辅助 / 尺寸</span><span class="key"><i class="dashed"></i>投影或中心信息</span></div><div class="motion-caption" aria-live="polite"><span class="motion-caption-index" id="motionCaptionIndex">01</span><div><strong id="motionCaptionTitle">先建立基准</strong><p id="motionCaptionText">先明确投影/尺寸依据，再开始落笔。</p></div></div></div>
+          <div class="animation-console" aria-label="动态步骤演示控制台">
+            <div class="animation-console-head"><span class="animation-live-dot" aria-hidden="true"></span><strong>连续绘制动画</strong><span class="animation-status" id="coreAnimationStatus" aria-live="polite">已暂停 · 第 1 / 4 步</span></div>
+            <div class="animation-controls">
+              <button class="btn primary" id="corePlayBtn" type="button">▶ 播放绘制过程</button>
+              <button class="btn" id="coreReplayBtn" type="button">↺ 从头绘制</button>
+              <label class="animation-speed" for="coreSpeed">速度
+                <select id="coreSpeed"><option value="16000">慢速</option><option value="10500" selected>标准</option><option value="6500">快速</option></select>
+              </label>
+            </div>
+            <div class="animation-timeline"><input id="coreStepRange" type="range" min="0" max="100" step="1" value="0" aria-label="拖动绘制时间轴"><span id="coreTimelineLabel">0%</span></div>
+            <p class="animation-help">连续绘制模式：线条按真实绘制顺序逐段显现，辅助线、轮廓、孔、中心线和尺寸依次出现。可播放、暂停、续播或拖动时间轴定位；示意图不代表具体工件尺寸。</p>
+          </div>
+          <div class="core-step-description"><div class="step-num current" id="coreStepNumber">01</div><div><strong id="coreStepTitle">明确已知条件</strong><p id="coreStepDesc">先判断已知信息来自哪个投影面、哪些尺寸或位置关系已明确；不要未经分析就补线。</p></div></div>
+          <div class="core-nav"><button class="btn" id="corePrev">← 上一步</button><span id="coreStepCount">第 1 / 4 步</span><button class="btn primary" id="coreNext">下一步 →</button></div>
+        </section>
+        <aside class="panel core-task-panel">
+          <div class="eyebrow">ENGINEERING TASK</div><h3>本专题的学习产出</h3>
+          <div class="core-task-block"><span class="core-task-label">分析目标</span><p id="coreObjective">能够从给定投影条件推导其他投影，并解释推导依据。</p></div>
+          <div class="core-task-block"><span class="core-task-label">纸面输出</span><p id="coreOutput">画出投影关系草图，标明对应点与投影连线，写出判断理由。</p></div>
+          <div class="core-task-block"><span class="core-task-label">检查重点</span><ul id="coreChecklist"><li>三投影尺寸对应一致。</li><li>辅助线能说明几何依据。</li><li>没有只凭外形猜测线段位置。</li></ul></div>
+          <div class="core-question-box"><div class="section-kicker">CHECK YOUR REASONING</div><p id="coreQuestion">已知空间点的两个投影时，求第三投影应优先依据什么？</p><div class="options" id="coreOptions"></div><div class="feedback" id="coreFeedback" aria-live="polite"></div></div>
+          <button class="btn primary" id="coreCompleteBtn" style="width:100%;margin-top:14px">完成本专题 ✓</button>
+          <p class="core-footnote">完成条件：看完 4 步并答对判断题。此记录保存在当前浏览器，清除站点数据后可能丢失。</p>
+        </aside>
+      </div>
+      <div class="core-reference-note"><strong>教材对应说明：</strong>专题顺序参考大学工程图学课程常见结构，并映射到《工程制图与AutoCAD（第三版）》中的投影基础、组合体、图样基本/特殊表示法、零件图、装配图等章节。具体讲授深度以本校课程进度与任课教师要求为准。</div>
+    </section>
+
+    <section class="section" id="geometryLesson">
+      <div class="section-head"><div><div class="section-kicker">FOUNDATION TOOLBOX</div><h2>基础工具课：尺规作图与圆弧连接</h2><p>本区作为教材第一章的随查工具保留。大学核心主线请优先学习上方的投影、交线、组合体与工程图样专题。</p></div><span class="chip">直尺 · 圆规 · 铅笔</span></div>
+      <div class="layout">
+        <section class="panel">
+          <h3 id="geoTitle">垂直平分线</h3>
+          <p class="panel-sub" id="geoSubtitle">将线段两端作为圆心，用相同半径画弧，再连接两弧交点。</p>
+          <div class="lesson-tabs" id="geometryTabs" role="group" aria-label="选择几何作图方法">
+            <button class="active" data-method="bisector">① 垂直平分线</button>
+            <button data-method="angle">② 角平分线</button>
+            <button data-method="fillet">③ 圆弧连接</button>
+          </div>
+          <div class="diagram-wrap geometry-diagram"><svg id="geometrySvg" viewBox="0 0 520 310" role="img" aria-label="几何作图分步骤示意图"></svg>
+            <div class="diagram-caption"><span class="key"><i style="background:#9ca9a0"></i>已知线 / 辅助线</span><span class="key"><i style="background:#28794d"></i>本步重点或最终线</span><span class="key"><i class="dashed"></i>辅助定位</span></div>
+          </div>
+          <div class="step-controls"><button class="btn" id="geoPrev">← 上一步</button><span id="geoStepCount" style="align-self:center;color:var(--muted);font-size:12px">第 1 / 4 步</span><button class="btn primary" id="geoNext">下一步 →</button></div>
+        </section>
+        <aside class="panel">
+          <div class="eyebrow">DRAWING GUIDE</div><h3 id="geoStepTitle" style="margin-top:12px">第一步：画出已知线段</h3><p class="panel-sub" id="geoStepDesc">先画线段 AB。两个端点是后续作图的圆心。</p>
+          <div class="step-line"><span class="step-num current">器</span><div><strong>需要的工具</strong><p id="geoTools">直尺、圆规、铅笔、橡皮。</p></div></div>
+          <div class="step-line"><span class="step-num current">理</span><div><strong>几何依据</strong><p id="geoReason">到 A、B 两点距离相等的点，位于线段 AB 的垂直平分线上。</p></div></div>
+          <div class="note"><strong>容易出错的地方</strong><br><span id="geoMistake">两次画弧的圆规半径必须相同，并且要大于线段长度的一半，确保弧线相交。</span></div>
+          <div style="margin-top:15px;border-top:1px solid var(--line);padding-top:15px">
+            <h3 style="font-size:15px">本步理解检查</h3><p id="geoCheckQuestion" class="panel-sub">为什么两次画弧要使用相同半径？</p>
+            <div id="geoCheckOptions" class="options"><button class="option" data-geo-answer="0"><span class="radio"></span>让两个端点到交点的距离相同</button><button class="option" data-geo-answer="1"><span class="radio"></span>让线段看起来更粗</button><button class="option" data-geo-answer="2"><span class="radio"></span>让辅助线更短</button></div>
+            <div id="geoCheckFeedback" class="feedback" aria-live="polite"></div>
+          </div>
+          <button class="btn primary" id="geoComplete" style="width:100%;margin-top:14px">完成本方法 ✓</button>
+        </aside>
+      </div>
+      <div class="note" style="margin-top:14px"><strong>纸面练习建议</strong><br>拿出教材和作图工具，在空白纸上独立完成当前方法。网页示意图只帮助理解步骤，不代表实际作图比例或可直接用于交作业的标准图样。</div>
+    </section>
+
+    <section class="section" id="studio">
+      <div class="section-head"><div><div class="section-kicker">INTERACTIVE DEMO</div><h2>互动演示：三视图如何对应</h2><p>先观察一个带圆孔的长方体示意图。切换步骤，观察投影关系如何建立。</p></div><span class="chip">示意模型 · 非教材原题</span></div>
+      <div class="layout">
+        <section class="panel">
+          <h3>三视图关系演示</h3><p class="panel-sub">采用第一角画法的常见布置示意：俯视图在主视图下方，左视图在主视图右侧。</p>
+          <div class="lesson-tabs" id="demoTabs"><button class="active" data-step="0">① 认识视图</button><button data-step="1">② 找对应关系</button><button data-step="2">③ 检查图线</button></div>
+          <div class="diagram-wrap">
+            <svg id="viewsSvg" viewBox="0 0 580 360" role="img" aria-label="主视图、俯视图和左视图对应关系示意">
+              <defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#28794d"/></marker></defs>
+              <g fill="none" stroke="#344b3a" stroke-width="2.2" stroke-linejoin="round">
+                <rect x="65" y="65" width="190" height="110" rx="1" />
+                <circle cx="160" cy="120" r="27" />
+                <rect x="65" y="220" width="190" height="88" rx="1" />
+                <rect x="310" y="65" width="95" height="110" rx="1" />
+              </g>
+              <g id="hiddenLines" fill="none" stroke="#bd8b36" stroke-width="2" stroke-dasharray="7 5">
+                <path d="M133 220 V308 M187 220 V308 M310 93 H405 M310 147 H405" />
+              </g>
+              <g id="guideLines" fill="none" stroke="#28794d" stroke-width="1.6" stroke-dasharray="4 5" opacity="0">
+                <path d="M65 55 V315 M255 55 V315 M55 65 H415 M55 175 H415" />
+                <path d="M65 190 H255" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+                <path d="M270 65 V175" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+              </g>
+              <g font-family="sans-serif" font-size="13" fill="currentColor">
+                <text x="160" y="45" text-anchor="middle">主视图</text><text x="160" y="332" text-anchor="middle">俯视图</text><text x="357" y="45" text-anchor="middle">左视图</text>
+                <text x="445" y="91" font-size="11" opacity=".8">高度</text><text x="160" y="203" font-size="11" text-anchor="middle" opacity=".8">宽度对应</text>
+                <text x="430" y="229" font-size="11" opacity=".8" id="svgHint">示意图不按实际尺寸</text>
+              </g>
+              <g id="viewHighlight" fill="none" stroke="#28794d" stroke-width="4" opacity="0"><rect x="60" y="60" width="200" height="120" /></g>
+            </svg>
+            <div class="diagram-caption"><span class="key"><i></i>可见轮廓 / 对应辅助线</span><span class="key"><i class="dashed"></i>不可见轮廓（虚线示意）</span></div>
+          </div>
+          <div class="step-controls"><button class="btn" id="prevStep">← 上一步</button><button class="btn primary" id="nextStep">下一步 →</button></div>
+        </section>
+        <aside class="panel">
+          <div class="eyebrow">STEP GUIDE</div><h3 id="stepTitle" style="margin-top:12px">第一步：先辨认三个视图</h3><p class="panel-sub" id="stepDescription">不要急着画。先找到主视图、俯视图、左视图，确认每个视图分别从哪个方向观察物体。</p>
+          <div id="stepChecklist">
+            <div class="step-line"><span class="step-num current">01</span><div><strong>主视图</strong><p>优先表达物体主要形状特征的视图。</p></div></div>
+            <div class="step-line"><span class="step-num">02</span><div><strong>俯视图</strong><p>从物体上方向下观察，布置在主视图下方。</p></div></div>
+            <div class="step-line"><span class="step-num">03</span><div><strong>左视图</strong><p>从物体左侧向右观察，在该画法中布置在主视图右侧。</p></div></div>
+          </div>
+          <div class="note"><strong>记忆口诀</strong><br>长对正：主视图与俯视图的宽度对应。<br>高平齐：主视图与左视图的高度对应。<br>宽相等：俯视图与左视图的深度对应。</div>
+          <button class="btn primary" style="width:100%;margin-top:14px" id="markViews">我已理解，完成本单元</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="practice">
+      <div class="section-head"><div><div class="section-kicker">PAPER PRACTICE</div><h2>纸面练习与自测</h2><p>先独立作答，再提交检查。题目为本平台自编入门题，不是教材原题或标准答案集。</p></div><button class="btn" id="resetQuiz">重置作答</button></div>
+      <div class="layout">
+        <section class="panel"><h3>三道快速自测</h3><p class="panel-sub">每题选一个答案，提交后会显示解析。</p>
+          <div class="exercise-list" id="quizArea">
+            <div class="question" data-q="0"><p>1. 在第一角画法的常见布置中，俯视图通常放在主视图的哪个位置？</p><div class="options"><button class="option" data-value="0"><span class="radio"></span>A. 主视图上方</button><button class="option" data-value="1"><span class="radio"></span>B. 主视图下方</button><button class="option" data-value="2"><span class="radio"></span>C. 主视图左侧</button></div><div class="feedback"></div></div>
+            <div class="question" data-q="1"><p>2. 主视图与俯视图最直接对应的是哪一项？</p><div class="options"><button class="option" data-value="0"><span class="radio"></span>A. 高度相等</button><button class="option" data-value="1"><span class="radio"></span>B. 深度相等</button><button class="option" data-value="2"><span class="radio"></span>C. 宽度对正</button></div><div class="feedback"></div></div>
+            <div class="question" data-q="2"><p>3. 在通常的机械制图表达中，不可见的轮廓线一般用什么图线表示？</p><div class="options"><button class="option" data-value="0"><span class="radio"></span>A. 虚线</button><button class="option" data-value="1"><span class="radio"></span>B. 粗实线</button><button class="option" data-value="2"><span class="radio"></span>C. 波浪线</button></div><div class="feedback"></div></div>
+          </div>
+          <div class="actions" style="margin-top:15px"><button class="btn primary" id="submitQuiz">提交并查看解析</button><span id="quizFeedback" style="font-size:13px;color:var(--muted);align-self:center" aria-live="polite"></span></div>
+        </section>
+        <section class="panel"><h3>纸面绘图检查清单</h3><p class="panel-sub">完成练习时逐项打勾；这不是对图纸的自动评分。</p>
+          <div class="checklist" id="paperChecklist">
+            <label class="check-row"><input type="checkbox" data-check="0"> <span>我先读清题意，确认需要画哪些视图。</span></label>
+            <label class="check-row"><input type="checkbox" data-check="1"> <span>我用浅线定位，检查视图之间的对正关系。</span></label>
+            <label class="check-row"><input type="checkbox" data-check="2"> <span>我区分了可见轮廓线和不可见轮廓线。</span></label>
+            <label class="check-row"><input type="checkbox" data-check="3"> <span>我完成自查，擦除多余辅助线并检查整洁度。</span></label>
+          </div>
+          <div class="note" style="background:var(--accent-soft)"><strong style="color:var(--accent)">实用提醒</strong><br>第一遍重在关系正确；线型、粗细和尺寸标注可以在检查阶段再逐项完善。</div>
+          <button class="btn" id="printBtn2" style="width:100%;margin-top:14px">打印空白练习单</button>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" id="resources">
+      <div class="section-head"><div><div class="section-kicker">REFERENCE CORNER</div><h2>学习资料区</h2><p>先搭建学习框架，后续再按教材章节和公开资源逐条核验。</p></div></div>
+      <div class="resource-list">
+        <article class="resource"><strong>主教材：机械工业出版社</strong><p>《工程制图与AutoCAD（第3版）》胡建生，出版社目录包含投影基础、组合体、图样表示法、零件图、装配图和 AutoCAD 应用。平台按章节建立映射，但示例图与练习由本平台自编。</p><p><a href="https://www.cmpedu.com/books/book/5608586.htm" target="_blank" rel="noopener">查看出版社正式书目 ↗</a></p></article>
+        <article class="resource"><strong>高校教学大纲：湖南大学</strong><p>可用于核对零件图、装配图、尺寸与技术要求、识读和计算机绘图等课程目标。大纲是课程参考，不代表你的任课教师采用完全相同的要求。</p><p><a href="https://zygc.hnu.edu.cn/info/1005/1051.htm" target="_blank" rel="noopener">查看高校课程大纲 ↗</a></p></article>
+        <article class="resource"><strong>高校教学大纲：武汉轻工大学</strong><p>课程主线涵盖点线面投影、基本体及表面交线、组合体、机件表达方法、标准件、零件图与装配图，可作为大学层次专题覆盖面的交叉参照。</p><p><a href="https://hhxy.whpu.edu.cn/info/1032/1363.htm" target="_blank" rel="noopener">查看课程教学大纲 ↗</a></p></article>
+      </div>
+    </section>
+    <footer class="footer"><span>大学工程制图学习台 · 第三版课程原型</span><span>大学教材主线：投影 → 组合体 → 表达方法 → 零件图 → 装配图 · CAD 后置</span></footer>
+  </main>
+</div>
+<div class="print-sheet">
+  <h1>大学工程制图 · 阶段练习单</h1>
+  <div class="print-meta">姓名：________________　日期：________________　课程 / 章节：________________</div>
+  <div class="print-question"><b>一、概念自测</b><p>1. 第一角画法的常见布置中，俯视图通常放在主视图的什么位置？</p>A. 上方　　B. 下方　　C. 左侧<div class="writing-space"></div></div>
+  <div class="print-question"><p>2. 主视图与俯视图最直接对应的是哪一项？</p>A. 高度相等　　B. 深度相等　　C. 宽度对正<div class="writing-space"></div></div>
+  <div class="print-question"><p>3. 通常情况下，不可见轮廓线用什么图线表示？</p>A. 虚线　　B. 粗实线　　C. 波浪线<div class="writing-space"></div></div>
+  <div class="print-question"><b>二、作图自查</b><p>□ 视图数量正确　 □ 视图对正　 □ 线型使用正确　 □ 图面整洁</p><div class="writing-space" style="height:80px"></div></div>
+  <div class="print-question"><b>三、大学核心练习（自编题）</b><p>1. 给定一个由底座、立板和台阶组成的组合体，按形体分析法规划主视图，并补画第三视图。写出至少两条投影对应依据。</p><div class="drawing-grid"></div></div><div class="print-question"><p>2. 对带有内部孔腔的机件，说明选择全剖视图、半剖视图或局部剖视图时需考虑哪些条件。</p><div class="writing-space" style="height:55px"></div></div><div class="print-question"><p>3. 阅读一张轴套类零件图时，分别指出总体尺寸、定位尺寸和功能尺寸可能承担的作用；说明为什么尺寸不宜随意重复标注。</p><div class="writing-space" style="height:60px"></div></div><div class="print-question"><p>4. 对装配图，列出从标题栏、明细栏、视图到连接关系的读图顺序，并说明如何核对零件序号。</p><div class="writing-space" style="height:60px"></div></div><div class="print-question"><b>附加：尺规几何作图练习（自编题）</b><p>1. 画线段 AB = 80 mm，用圆规和直尺作出 AB 的垂直平分线，并标注中点 M。</p><div class="drawing-grid"></div></div>
+  <div class="print-question"><p>2. 自行画出一个锐角，采用尺规作图法作角平分线，并用量角器检查两侧角是否相等。</p><div class="drawing-grid"></div></div>
+  <div class="print-question"><p>3. 画出两条互相垂直的直线，要求用半径 R = 20 mm 的圆弧在直角内侧作相切连接，标出圆心和切点。</p><div class="drawing-grid"></div></div>
+  <p style="font-size:10pt;color:#555">说明：本练习单为平台自编入门练习，非教材原题。正式作业请遵循任课教师要求及适用的制图标准。打印时请选择“实际大小 / 100%”，并用直尺核对尺寸。</p>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  const STORE_KEY = 'ed-paper-learning-v1';
+  const fresh = { completed: [], answers: {}, submitted: false, score: null, checks: [false,false,false,false], step: 0, geometry: { method: 'bisector', step: 0, completedMethods: [] }, coreCompleted: [], coreAnswers: {}, coreModule: 'composite', coreStep: 0 };
+  let state = loadState();
+  state.geometry = { ...fresh.geometry, ...(state.geometry || {}) };
+  state.coreCompleted = Array.isArray(state.coreCompleted) ? state.coreCompleted : [];
+  state.coreAnswers = state.coreAnswers && typeof state.coreAnswers === 'object' ? state.coreAnswers : {};
+  state.coreModule = typeof state.coreModule === 'string' ? state.coreModule : 'composite';
+  function loadState() {
+    try { return { ...fresh, ...JSON.parse(localStorage.getItem(STORE_KEY) || '{}') }; }
+    catch { return { ...fresh }; }
+  }
+  function saveState() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { /* storage unavailable: session remains usable */ }
+    renderProgress();
+  }
+  function toast(message) {
+    const el = document.getElementById('toast'); el.textContent = message; el.classList.add('show');
+    window.clearTimeout(toast.timer); toast.timer = window.setTimeout(() => el.classList.remove('show'), 2200);
+  }
+  const unitKeys = ['lines','views','solid','geometry'];
+  const unitLabels = ['图线与制图基础','三视图与投影关系','从组合体读懂形状','几何作图与圆弧连接'];
+  function renderProgress() {
+    document.getElementById('completedCount').textContent = state.completed.length;
+    document.getElementById('progressFill').style.width = (state.completed.length / 4 * 100) + '%';
+    document.getElementById('quizScore').textContent = state.score === null ? '—' : state.score + ' / 3';
+    document.getElementById('practiceCount').textContent = state.checks.filter(Boolean).length + ' / 4';
+    unitKeys.forEach((key, i) => { const el = document.getElementById('status-' + key); if (el) el.textContent = state.completed.includes(i) ? '已完成 ✓' : '尚未完成'; });
+  }
+  function setCompleted(index) {
+    if (!state.completed.includes(index)) state.completed.push(index);
+    saveState(); toast('已记录：' + unitLabels[index]);
+  }
+  function goTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b === btn)); goTo(btn.dataset.target);
+  }));
+  document.getElementById('startBtn').addEventListener('click', () => { openCoreModule('composite'); });
+  document.querySelectorAll('.open-lesson').forEach(btn => btn.addEventListener('click', () => {
+    const n = Number(btn.dataset.lesson);
+    if (n === 0) { openBasicLesson(); } else if (n === 1) { openViewsLesson(); } else if (n === 2) { openSolidLesson(); } else { openGeometryLesson(); }
+  }));
+  // Course 1 opens a focused original explanation using the existing lesson area.
+  function openBasicLesson() {
+    document.getElementById('stepTitle').textContent = '第一课：先分清常见图线';
+    document.getElementById('stepDescription').textContent = '图线不是装饰：不同线型传递不同信息。画图前先确认每条线表达的是可见轮廓、不可见轮廓，还是中心位置。';
+    document.getElementById('stepChecklist').innerHTML = '<div class="step-line"><span class="step-num current">01</span><div><strong>粗实线</strong><p>通常用于可见轮廓和可见棱边。</p></div></div><div class="step-line"><span class="step-num">02</span><div><strong>细虚线</strong><p>通常用于不可见轮廓和不可见棱边。</p></div></div><div class="step-line"><span class="step-num">03</span><div><strong>细点画线</strong><p>常用于轴线、对称中心线等中心位置表达。</p></div></div>';
+    document.getElementById('demoTabs').classList.add('hidden');
+    document.getElementById('viewsSvg').classList.add('hidden');
+    let lineDemo = document.getElementById('lineDemo');
+    if (!lineDemo) { lineDemo = document.createElement('div'); lineDemo.id='lineDemo'; lineDemo.className='diagram-wrap'; lineDemo.innerHTML='<svg viewBox="0 0 520 230" role="img" aria-label="三种常见图线示意"><g font-family="sans-serif" font-size="14" fill="currentColor"><text x="20" y="40">粗实线 · 可见轮廓</text><text x="20" y="108">细虚线 · 不可见轮廓</text><text x="20" y="176">细点画线 · 中心线</text></g><path d="M180 35 H470" stroke="#344b3a" stroke-width="4"/><path d="M180 103 H470" stroke="#bd8b36" stroke-width="2" stroke-dasharray="8 5"/><path d="M180 171 H470" stroke="#28794d" stroke-width="2" stroke-dasharray="16 5 3 5"/></svg><p style="font-size:12px;color:var(--muted);margin:0">请对照教材中的线型示例，尤其留意粗细和间隔。</p>'; document.querySelector('.diagram-wrap').after(lineDemo); }
+    lineDemo.classList.remove('hidden'); document.getElementById('markViews').textContent = '我已理解，完成本单元'; document.getElementById('markViews').onclick = () => { setCompleted(0); goTo('lessons'); };
+    goTo('studio');
+  }
+  function openViewsLesson() {
+    document.getElementById('stepTitle').textContent = steps[state.step]?.title || '第一步：先辨认三个视图';
+    document.getElementById('stepDescription').textContent = steps[state.step]?.desc || '先辨认主视图、俯视图和左视图，再检查三者之间的投影对应关系。';
+    document.getElementById('demoTabs').classList.remove('hidden');
+    document.getElementById('viewsSvg').classList.remove('hidden');
+    const lineDemo = document.getElementById('lineDemo'); if (lineDemo) lineDemo.classList.add('hidden');
+    document.getElementById('markViews').textContent = '我已理解，完成本单元';
+    document.getElementById('markViews').onclick = () => { setCompleted(1); goTo('lessons'); };
+    showStep(state.step || 0);
+    goTo('studio');
+  }
+  function openSolidLesson() {
+    document.getElementById('stepTitle').textContent = '第三课：把复杂物体拆成基本形体';
+    document.getElementById('stepDescription').textContent = '读组合体时，先寻找大体轮廓，再把凸台、凹槽、孔等特征当作增减的基本形体，逐个核对它们在各视图中的投影。';
+    document.getElementById('stepChecklist').innerHTML = '<div class="step-line"><span class="step-num current">01</span><div><strong>看整体轮廓</strong><p>判断主体的大致长、宽、高关系。</p></div></div><div class="step-line"><span class="step-num">02</span><div><strong>分解局部结构</strong><p>按凸起、切除、孔槽等特征拆分，不要只盯一条线。</p></div></div><div class="step-line"><span class="step-num">03</span><div><strong>多个视图互证</strong><p>某个特征必须能在对应视图中找到合理的投影表达。</p></div></div>';
+    document.getElementById('demoTabs').classList.remove('hidden'); document.getElementById('viewsSvg').classList.remove('hidden'); const lineDemo = document.getElementById('lineDemo'); if(lineDemo) lineDemo.classList.add('hidden');
+    document.getElementById('markViews').textContent = '我已理解，完成本单元'; document.getElementById('markViews').onclick = () => { setCompleted(2); goTo('lessons'); };
+    goTo('studio');
+  }
+  // Interactive paper-first geometry construction lessons.
+  const geometryMethods = {
+    bisector: {
+      title: '垂直平分线', subtitle: '将线段两端作为圆心，用相同半径画弧，再连接两弧交点。', total: 4,
+      steps: [
+        {title:'第一步：画出已知线段 AB', desc:'先用直尺画出线段 AB，标出两个端点。此时不要急着画最终的垂线。', tools:'直尺、铅笔。', reason:'题目给出的线段是作图的基础；后续要找的是到 A、B 两点距离相等的位置。', mistake:'先确认端点标记清楚，避免后续把圆心放偏。'},
+        {title:'第二步：以 A、B 为圆心画等半径弧', desc:'把圆规半径设为同一个长度，且大于 AB 的一半。分别以 A、B 为圆心画弧，让弧在 AB 两侧相交。', tools:'圆规、铅笔。', reason:'弧的交点到 A 和 B 的距离都等于同一个圆规半径。', mistake:'不能在两次画弧之间改变圆规开口；半径太短时，两弧不会相交。'},
+        {title:'第三步：标出弧线交点 C、D', desc:'轻轻标记线段上方和下方的两个弧线交点 C、D。观察它们分别到 A、B 的距离。', tools:'圆规、铅笔。', reason:'C、D 都到 A、B 等距，因此 C、D 都在线段 AB 的垂直平分线上。', mistake:'必须取两条弧的交点，不能随意选弧上的点。'},
+        {title:'第四步：连接 C、D 并检查', desc:'用直尺连接 C、D。它与 AB 相交于中点，并与 AB 垂直；确认几何关系后再加深最终线。', tools:'直尺、三角板或圆规。', reason:'两个等距点确定垂直平分线；垂直平分线上的点到 A、B 距离相等。', mistake:'最后连的是两个交点 C、D，不是连接 A、B。'}
+      ]
+    },
+    angle: {
+      title: '角平分线', subtitle: '先用一个圆弧找出角两边上的等距点，再用相同半径画弧确定方向。', total: 4,
+      steps: [
+        {title:'第一步：画出已知角 ∠XOY', desc:'标出顶点 O 和两条射线。角平分线要从顶点出发，落在角的内部。', tools:'直尺、铅笔。', reason:'角平分线把一个角分成两个相等的角。', mistake:'不要把角平分线画到角外；先确认目标角的内部区域。'},
+        {title:'第二步：以 O 为圆心画弧', desc:'用任意合适的圆规半径，以 O 为圆心画弧，分别与两条边交于 A、B。', tools:'圆规、铅笔。', reason:'A、B 到 O 的距离相等，因为它们位于同一个圆弧上。', mistake:'圆弧要同时与角的两边相交；标记交点时不要选错边。'},
+        {title:'第三步：以 A、B 为圆心画等半径弧', desc:'圆规开口保持不变，分别以 A、B 为圆心，在角内部画弧并使两弧相交于 C。', tools:'圆规、铅笔。', reason:'C 到 A、B 的距离相等；结合 O 到 A、B 的等距关系，OC 就沿角平分线方向。', mistake:'两个辅助弧必须使用相同半径，且交点 C 应在角内。'},
+        {title:'第四步：连接 O、C', desc:'用直尺连接顶点 O 和交点 C，得到角平分线。可以用量角器检查两侧角度是否近似相等。', tools:'直尺、量角器（用于检查）。', reason:'OC 将角分成两个相等的角。量角器只用于复核，不替代几何作图逻辑。', mistake:'连线应从角顶点 O 出发，并经过两条辅助弧的交点 C。'}
+      ]
+    },
+    fillet: {
+      title: '直角内圆弧连接', subtitle: '给定半径 R，用两条距原直角边为 R 的平行线定位圆心，再画圆弧。', total: 3,
+      steps: [
+        {title:'第一步：确认直角和连接半径 R', desc:'先画出两条互相垂直的边，并确定题目给定的圆弧半径 R。这里用示意尺寸展示方法，不代替题目实际尺寸。', tools:'直尺、三角板、圆规、铅笔。', reason:'与两条垂直直线相切且半径为 R 的圆，其圆心到每条直线的垂直距离都等于 R。', mistake:'先确认圆弧要连接的是哪一侧；内圆弧和外圆弧的圆心位置不同。'},
+        {title:'第二步：用距离 R 的平行线确定圆心 O', desc:'在角内侧分别作两条与原边平行、距离均为 R 的辅助线。它们的交点就是圆心 O。', tools:'三角板、直尺、圆规。', reason:'圆心到两条相切直线的距离均为 R；因此偏移 R 的两条平行线交点确定圆心。', mistake:'偏移距离应是半径 R，而不是直径 2R；辅助线应位于待连接圆弧所在的一侧。'},
+        {title:'第三步：以 O 为圆心、R 为半径画连接弧', desc:'找到两条边上的切点：从 O 向两条边作垂线，垂足就是切点。以 O 为圆心、R 为半径画两切点之间的四分之一圆弧。', tools:'圆规、直尺或三角板。', reason:'半径在切点处垂直于切线，所以圆弧与两条直角边相切，连接平顺。', mistake:'不要直接用目测画弧；圆心、半径和两个切点共同决定正确的圆弧。'}
+      ]
+    }
+  };
+  let geometryAnswer = null;
+  function geometryQuestion(method) {
+    if (method === 'fillet') return { q:'直角内圆弧连接时，圆心由什么确定？', options:['距两条原直角边均为 R 的平行线交点','把直角顶点随便向外移动','距边的距离设为 2R'], correct:0, explain:'半径为 R 的圆与直线相切时，圆心到直线的垂直距离为 R。两条偏移线的交点确定圆心。' };
+    if (method === 'angle') return { q:'角平分线的定义是什么？', options:['将角分成两个相等的角的射线','与一条角边平行的直线','连接两条边上任意两点的线段'], correct:0, explain:'角平分线从顶点出发，把原角分为两个相等的角。' };
+    return { q:'作线段垂直平分线时，为什么两个圆弧的半径要相同？', options:['保证弧交点到 A、B 两点距离相等','让线段看起来更粗','让辅助线更短'], correct:0, explain:'两弧交点分别到 A、B 的距离等于相同的圆规半径，因此交点位于垂直平分线上。' };
+  }
+  function geometrySvg(method, step) {
+    const base = `<defs><marker id="geoArrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="#28794d"/></marker></defs>`;
+    if (method === 'bisector') {
+      const arcs = step >= 1 ? `<g fill="none" stroke="#bd8b36" stroke-width="1.6" stroke-dasharray="5 4" opacity=".95"><circle cx="130" cy="160" r="180"/><circle cx="390" cy="160" r="180"/></g>` : '';
+      const inter = step >= 2 ? `<g fill="#28794d"><circle cx="260" cy="35.7" r="4"/><circle cx="260" cy="284.3" r="4"/></g><g fill="currentColor" font-size="13"><text x="273" y="34">C</text><text x="273" y="290">D</text></g>` : '';
+      const finalLine = step >= 3 ? `<path d="M260 18 L260 292" stroke="#28794d" stroke-width="3.2"/><path d="M248 160 H272 M260 148 V172" stroke="#28794d" stroke-width="1.8"/><path d="M244 160 L244 166 L250 166" fill="none" stroke="#28794d" stroke-width="1.6"/>` : '';
+      return `${base}<g fill="none" stroke="#8f9b92" stroke-width="2.4"><path d="M130 160 H390"/></g>${arcs}${inter}${finalLine}<g fill="currentColor" font-size="14"><text x="118" y="186">A</text><text x="395" y="186">B</text><text x="260" y="218" text-anchor="middle" opacity=".72">AB</text>${step>=3?'<text x="278" y="240" fill="#28794d">垂直平分线</text>':''}</g><g stroke="currentColor" opacity=".75"><path d="M130 153 V167 M123 160 H137 M390 153 V167 M383 160 H397"/></g>`;
+    }
+    if (method === 'angle') {
+      const arc = step >= 1 ? `<path d="M212 235 A82 82 0 0 0 194 184" fill="none" stroke="#bd8b36" stroke-width="1.8" stroke-dasharray="5 4"/><circle cx="212" cy="235" r="3.5" fill="#bd8b36"/><circle cx="194" cy="184" r="3.5" fill="#bd8b36"/>` : '';
+      const crosses = step >= 2 ? `<g fill="none" stroke="#bd8b36" stroke-width="1.6" stroke-dasharray="5 4"><circle cx="212" cy="235" r="47"/><circle cx="194" cy="184" r="47"/></g><circle cx="239" cy="197" r="4" fill="#28794d"/><text x="249" y="191" font-size="13" fill="currentColor">C</text>` : '';
+      const finalLine = step >= 3 ? `<path d="M130 235 L390 139" stroke="#28794d" stroke-width="3.2"/><path d="M190 235 A60 60 0 0 0 187 214" fill="none" stroke="#28794d" stroke-width="1.6"/><text x="280" y="178" fill="#28794d" font-size="13">角平分线</text>` : '';
+      return `${base}<g fill="none" stroke="#8f9b92" stroke-width="2.5"><path d="M130 235 H445"/><path d="M130 235 L360 52"/></g>${arc}${crosses}${finalLine}<circle cx="130" cy="235" r="4" fill="currentColor"/><g fill="currentColor" font-size="14"><text x="113" y="255">O</text><text x="448" y="240">X</text><text x="362" y="48">Y</text>${step>=1?'<text x="217" y="252">A</text><text x="199" y="178">B</text>':''}</g><path d="M165 235 A35 35 0 0 0 157 208" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/>`;
+    }
+    const offsets = step >= 1 ? `<g fill="none" stroke="#bd8b36" stroke-width="1.6" stroke-dasharray="5 4"><path d="M235 35 V276"/><path d="M70 175 H480"/></g><circle cx="235" cy="175" r="4" fill="#28794d"/><text x="245" y="168" fill="currentColor" font-size="14">O</text>` : '';
+    const arc = step >= 2 ? `<path d="M235 230 A55 55 0 0 0 290 175" fill="none" stroke="#28794d" stroke-width="4"/><path d="M235 175 V230 M235 175 H290" fill="none" stroke="#28794d" stroke-width="1.8"/><circle cx="235" cy="230" r="3.5" fill="#28794d"/><circle cx="290" cy="175" r="3.5" fill="#28794d"/><text x="209" y="246" fill="currentColor" font-size="12">切点 T₁</text><text x="299" y="179" fill="currentColor" font-size="12">T₂</text><text x="252" y="205" fill="#28794d" font-size="13">R</text>` : '';
+    return `${base}<g fill="none" stroke="#8f9b92" stroke-width="2.5"><path d="M65 230 H290"/><path d="M290 38 V272"/></g>${offsets}${arc}<g fill="currentColor" font-size="14"><text x="300" y="248">原直角边</text><text x="65" y="250">原直角边</text><text x="304" y="30">90°</text>${step>=1?'<text x="79" y="166" opacity=".8">距边 R</text>':''}</g><path d="M278 230 V218 H290" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".8"/>`;
+  }
+  function renderGeometry() {
+    state.geometry = state.geometry || { ...fresh.geometry };
+    const method = geometryMethods[state.geometry.method] ? state.geometry.method : 'bisector';
+    const config = geometryMethods[method];
+    const index = Math.max(0, Math.min(config.total - 1, Number(state.geometry.step) || 0));
+    state.geometry.method = method; state.geometry.step = index;
+    document.getElementById('geoTitle').textContent = config.title;
+    document.getElementById('geoSubtitle').textContent = config.subtitle;
+    document.getElementById('geometrySvg').innerHTML = geometrySvg(method, index);
+    const step = config.steps[index];
+    document.getElementById('geoStepTitle').textContent = step.title;
+    document.getElementById('geoStepDesc').textContent = step.desc;
+    document.getElementById('geoTools').textContent = step.tools;
+    document.getElementById('geoReason').textContent = step.reason;
+    document.getElementById('geoMistake').textContent = step.mistake;
+    document.getElementById('geoStepCount').textContent = `第 ${index+1} / ${config.total} 步`;
+    document.getElementById('geoPrev').disabled = index === 0;
+    document.getElementById('geoPrev').style.opacity = index === 0 ? '.45' : '1';
+    document.getElementById('geoNext').textContent = index === config.total - 1 ? '本方法已到最后一步 ✓' : '下一步 →';
+    document.querySelectorAll('#geometryTabs button').forEach(btn => btn.classList.toggle('active', btn.dataset.method === method));
+    const q = geometryQuestion(method);
+    document.getElementById('geoCheckQuestion').textContent = q.q;
+    const opts = document.getElementById('geoCheckOptions');
+    opts.innerHTML = q.options.map((label,i)=>`<button class="option" data-geo-answer="${i}"><span class="radio"></span>${label}</button>`).join('');
+    geometryAnswer = null;
+    document.getElementById('geoCheckFeedback').textContent = '';
+    const done = (state.geometry.completedMethods || []).includes(method);
+    document.getElementById('geoComplete').textContent = done ? '本方法已完成 ✓' : '完成本方法 ✓';
+    saveState();
+    opts.querySelectorAll('.option').forEach(btn => btn.addEventListener('click', () => {
+      geometryAnswer = Number(btn.dataset.geoAnswer);
+      opts.querySelectorAll('.option').forEach(b => { b.classList.toggle('selected', b === btn); b.classList.remove('wrong'); });
+      if (geometryAnswer === q.correct) {
+        document.getElementById('geoCheckFeedback').textContent = '回答正确。' + q.explain;
+        opts.querySelectorAll('.option').forEach(b => { b.disabled = true; if (Number(b.dataset.geoAnswer) === q.correct) b.classList.add('correct'); });
+      } else {
+        document.getElementById('geoCheckFeedback').textContent = '再想一想：注意几何关系和给定条件。可以重新选择。';
+        btn.classList.add('wrong');
+      }
+    }));
+  }
+  function openGeometryLesson() {
+    document.getElementById('geometryLesson').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderGeometry();
+  }
+  document.querySelectorAll('#geometryTabs button').forEach(btn => btn.addEventListener('click', () => {
+    state.geometry.method = btn.dataset.method; state.geometry.step = 0; saveState(); renderGeometry();
+  }));
+  document.getElementById('geoPrev').addEventListener('click', () => { state.geometry.step = Math.max(0, Number(state.geometry.step || 0) - 1); renderGeometry(); });
+  document.getElementById('geoNext').addEventListener('click', () => {
+    const max = geometryMethods[state.geometry.method].total - 1;
+    if (state.geometry.step < max) { state.geometry.step += 1; renderGeometry(); }
+    else toast('已到最后一步，请按提示在纸面上复现。');
+  });
+  document.getElementById('geoComplete').addEventListener('click', () => {
+    const method = state.geometry.method;
+    const config = geometryMethods[method];
+    if (Number(state.geometry.step) < config.total - 1) { toast('请先完成当前方法的全部步骤演示。'); return; }
+    const q = geometryQuestion(method);
+    if (geometryAnswer !== q.correct) { toast('请先正确完成右侧的理解检查，再记录本方法。'); return; }
+    state.geometry.completedMethods = Array.from(new Set([...(state.geometry.completedMethods || []), method]));
+    if (state.geometry.completedMethods.length >= 3) setCompleted(3); else { saveState(); toast('已记录当前作图方法。完成另外的方法后，本单元也会标记为完成。'); }
+    renderGeometry();
+  });
+
+  const steps = [
+    {title:'第一步：先辨认三个视图', desc:'不要急着画。先找到主视图、俯视图、左视图，确认每个视图分别从哪个方向观察物体。', hint:'先识别方向', checklist:[['主视图','优先表达物体主要形状特征的视图。'],['俯视图','从物体上方向下观察，布置在主视图下方。'],['左视图','从物体左侧向右观察，在该画法中布置在主视图右侧。']]},
+    {title:'第二步：检查三个方向的对应', desc:'主视图和俯视图上下对正；主视图和左视图高度平齐；俯视图和左视图还要核对深度对应。绿色辅助线会帮助你观察对正关系。', hint:'观察对正关系', checklist:[['长对正','主视图与俯视图的宽度对应。'],['高平齐','主视图与左视图的高度对应。'],['宽相等','俯视图与左视图的深度对应。']]},
+    {title:'第三步：留意可见与不可见轮廓', desc:'可见轮廓一般用粗实线，不可见轮廓通常用虚线。不是每条内部边都可见，作图时要依据观察方向判断。', hint:'检查图线表达', checklist:[['实线','表示从该方向观察时可见的轮廓。'],['虚线','表示被物体遮挡的不可见轮廓。'],['最终检查','线型表达必须和物体的空间结构一致。']]}
+  ];
+  function showStep(index) {
+    state.step = Math.max(0, Math.min(2, index)); const s = steps[state.step];
+    document.getElementById('stepTitle').textContent = s.title; document.getElementById('stepDescription').textContent = s.desc;
+    document.getElementById('stepChecklist').innerHTML = s.checklist.map((item,i)=>`<div class="step-line"><span class="step-num ${i===0?'current':''}">${String(i+1).padStart(2,'0')}</span><div><strong>${item[0]}</strong><p>${item[1]}</p></div></div>`).join('');
+    document.getElementById('svgHint').textContent = s.hint;
+    document.getElementById('guideLines').setAttribute('opacity', state.step === 1 ? '1' : '0');
+    document.getElementById('viewHighlight').setAttribute('opacity', state.step === 0 ? '1' : '0');
+    document.getElementById('hiddenLines').setAttribute('opacity', state.step === 2 ? '1' : '.9');
+    document.querySelectorAll('#demoTabs button').forEach((b,i)=>b.classList.toggle('active', i===state.step));
+    document.getElementById('prevStep').disabled = state.step === 0; document.getElementById('prevStep').style.opacity = state.step === 0 ? '.45' : '1';
+    document.getElementById('nextStep').textContent = state.step === 2 ? '完成演示 ✓' : '下一步 →';
+  }
+  document.querySelectorAll('#demoTabs button').forEach(btn => btn.addEventListener('click',()=>{ showStep(Number(btn.dataset.step)); }));
+  document.getElementById('prevStep').addEventListener('click',()=>showStep(state.step-1));
+  document.getElementById('nextStep').addEventListener('click',()=>{ if(state.step<2) showStep(state.step+1); else { setCompleted(1); toast('三视图演示已完成'); } });
+  document.getElementById('markViews').onclick = () => setCompleted(1);
+  document.querySelectorAll('.question').forEach(q => q.querySelectorAll('.option').forEach(opt => opt.addEventListener('click',()=>{
+    if (state.submitted) return;
+    q.querySelectorAll('.option').forEach(b=>b.classList.remove('selected'));
+    opt.classList.add('selected'); state.answers[q.dataset.q] = Number(opt.dataset.value); saveState();
+  })));
+  const answers = [1,2,0];
+  const explanations = [
+    '第一角画法的常见布置中，俯视图在主视图下方。请注意，实际课程仍应以老师指定的投影画法和图样符号为准。',
+    '主视图和俯视图的长度方向对应，因此宽度对正；高度平齐是主视图与左视图的关系。',
+    '通常用细虚线表达不可见轮廓。线型、线宽的具体要求要与适用标准及课程要求保持一致。'
+  ];
+  function renderQuiz() {
+    document.querySelectorAll('.question').forEach(q=>{
+      const idx=Number(q.dataset.q), selected=state.answers[idx];
+      q.querySelectorAll('.option').forEach(opt=>{opt.classList.toggle('selected', selected===Number(opt.dataset.value)); opt.classList.remove('correct','wrong'); if(state.submitted && Number(opt.dataset.value)===answers[idx]) opt.classList.add('correct'); if(state.submitted && selected===Number(opt.dataset.value) && selected!==answers[idx]) opt.classList.add('wrong');});
+      q.querySelector('.feedback').textContent=state.submitted ? ((selected===answers[idx]?'回答正确。 ':'你的选择不正确。 ')+explanations[idx]) : '';
+    });
+    document.getElementById('quizFeedback').textContent = state.submitted ? `本次得分：${state.score} / 3` : '';
+    document.getElementById('submitQuiz').textContent = state.submitted ? '已提交 · 可重置再练' : '提交并查看解析';
+  }
+  document.getElementById('submitQuiz').addEventListener('click',()=>{
+    if(state.submitted) { toast('若想再练一遍，请先点“重置作答”'); return; }
+    if(Object.keys(state.answers).length<3) { toast('请先完成全部 3 道题'); return; }
+    state.score = answers.reduce((score,a,i)=>score+(state.answers[i]===a?1:0),0); state.submitted=true; saveState(); renderQuiz(); if(state.score===3) setCompleted(1);
+  });
+  document.getElementById('resetQuiz').addEventListener('click',()=>{ state.answers={}; state.submitted=false; state.score=null; saveState(); renderQuiz(); toast('作答已重置'); });
+  document.querySelectorAll('[data-check]').forEach(cb=>{
+    cb.checked=Boolean(state.checks[Number(cb.dataset.check)]);
+    cb.addEventListener('change',()=>{state.checks[Number(cb.dataset.check)]=cb.checked; saveState(); if(state.checks.every(Boolean)) toast('纸面检查清单已完成');});
+  });
+  const print = () => window.print(); document.getElementById('printBtn').addEventListener('click',print); document.getElementById('printBtn2').addEventListener('click',print);
+
+  // University-level core modules. Content is authored for this learning aid and cross-checked against public university syllabi.
+  const coreModules = {
+    projection: {
+      kicker:'MODULE 01 · DESCRIPTIVE GEOMETRY', title:'投影分析：点、线、面', subtitle:'由空间条件推导各投影之间的对应关系，而不是只记口诀。', level:'大学基础 · 概念与推理',
+      objective:'从给定投影条件推导其他投影，并说明点、线、面在不同投影位置下的表达特征。', output:'画出三投影关系草图，标明对应投影与投影连线，并用一句话解释推导依据。', checks:['先辨认几何元素相对投影面的空间位置。','对应点沿规定投影关系建立，不任意挪动。','特性判断应由空间位置推导，而不是由图面长短猜测。'],
+      steps:[['明确已知条件','先判断已知的是哪个投影、投影面体系如何布置，以及哪些尺寸或相对位置已经给定。','先把已知投影标清楚；不要未经分析就补线。'],['判断元素位置','区分一般位置与特殊位置的直线/平面。平行或垂直于投影面时，部分投影会呈现积聚、实形或长度不变等特性。','判断特性时要说出“相对哪个投影面”，避免只背结论。'],['建立投影对应','借助投影连线、基准线和必要的辅助线，从已有投影转移对应坐标；另一方向尺寸必须从相关视图获取。','投影转移关系要连续，不能以透视视觉感觉替代正投影。'],['校核几何一致性','回看对应尺寸、点的共线关系与特殊位置特性；若结果冲突，优先检查投影方向与坐标转移。','用投影关系复核，而不是仅检查图面是否“像”。']],
+      question:'已知空间点的两个投影及投影面体系，求第三投影应优先依据什么？', options:['各投影之间的对应坐标与投影连线关系','把第三个投影按视觉效果任意放在附近','按纸面比例把前两个投影简单缩放'], correct:0, explain:'第三投影必须服从正投影的对应关系。作图时应明确哪一方向的尺寸相等，并利用投影线或规定的转移方法建立对应。', diagram:'projection'
+    },
+    intersections: {
+      kicker:'MODULE 02 · INTERSECTION CURVES', title:'截交线与相贯线', subtitle:'用“特殊点—一般点—连线—可见性”形成稳定的求交路径。', level:'大学核心 · 空间交线',
+      objective:'理解立体被平面截切或两立体相交时，交线由哪些空间点构成，以及如何把空间交线准确落到视图中。', output:'在纸面图中标出交线的特殊点、一般点和可见性变化位置，再光滑连线。', checks:['先找轮廓交点、极限点等特殊点。','一般点须由同一辅助条件求得并投影到对应视图。','连线既要符合几何连续性，也要判别可见与不可见。'],
+      steps:[['识别相交对象','明确是平面截切立体，还是两个立体表面相交；分别检查交线落在哪些表面上。','先画出完整基本体，标记截切面或相交表面的范围。'],['优先确定特殊点','找交线与轮廓线的交点、最高/最低或最左/最右等极限点，以及可见性改变处。','特殊点能确定交线的大致边界，通常应优先求出。'],['求一般点并投影','采用适合该题的辅助平面/辅助线方法求交点，再依投影对应关系求出其余投影。','辅助条件必须同时与两个相交表面相容，不能孤立在单个视图上猜点。'],['光滑连线并判可见','按空间连续顺序连接各点，结合观察方向判断可见段与不可见段；必要时增加一般点检查形状。','相贯线通常按几何连续关系绘制；可见性由实际遮挡关系决定。']],
+      question:'求立体交线时，哪一种作图顺序更可靠？', options:['先画一条大致曲线，再把点随意放在线上','先求特殊点与一般点，再按空间连续性连线并判断可见性','只在一个视图中描出交线，其余视图照搬'], correct:1, explain:'交线需要由几何条件确定。特殊点约束边界，一般点补充形状，随后投影并检查连续性与遮挡关系。', diagram:'intersections'
+    },
+    composite: {
+      kicker:'MODULE 03 · COMPOSITE SOLIDS', title:'组合体：分析与补画第三视图', subtitle:'把形体分析和线面分析结合起来，避免逐条线孤立猜测。', level:'大学核心 · 综合作图',
+      objective:'将组合体拆解为基本体或局部结构，判断相邻表面的连接/相交关系，再求缺失视图。', output:'完成三视图草图；用不同颜色或文字标注至少两处形体单元及其对应投影。', checks:['先分析叠加、切割或相切等组合方式。','各形体在不同视图中的边线必须有对应依据。','交界线、虚线和对称结构要统一检查。'],
+      steps:[['确定组合方式','先判断基本体之间是叠加、切割、相贯还是切向连接，并从已有视图寻找分界线。','将大形体拆为可以独立识别的基本部分，不要立即补画所有细线。'],['建立形体单元对应','对每个组成部分分别追踪长、宽、高在三个视图中的投影范围。','每个可见转折应能在其他视图找到对应边或合理解释。'],['补画缺失视图','由已有两视图的尺寸与相对位置确定第三视图，必要时先画整体外轮廓，再补局部结构。','使用浅辅助线保证对应；先整体、后局部。'],['复核线面关系','检查交界线是否由真实表面相交产生、虚线是否确有遮挡、相同方向的尺寸是否一致。','若出现孤立线、对不上边或不合理封闭轮廓，应回到形体分析重新定位。']],
+      question:'补画组合体第三视图时，哪个起点更稳妥？', options:['把另外两个视图的每条线按外观逐条复制','先进行形体分析，再按投影对应关系逐块构造','先凭立体想象完成所有细节，最后再校尺寸'], correct:1, explain:'形体分析确定“是什么”，投影对应确定“画在哪里”；两者结合比孤立线段猜测更可靠。', diagram:'composite'
+    },
+    sections: {
+      kicker:'MODULE 04 · VIEWS & SECTIONS', title:'视图、剖视图与断面图', subtitle:'根据表达目的选择视图和剖切方式，突出内部结构并控制图样复杂度。', level:'大学核心 · 图样表达',
+      objective:'区分视图、剖视图与断面图的表达目的；根据对称性和内部结构选择合适的表达方案。', output:'为带孔/腔体的简化机件选择表达方法，画出剖切位置与剖面线，并写出选择理由。', checks:['剖切位置应能揭示目标内部结构。','剖视图中的剖切部分与未剖切可见结构必须区分。','剖面线、中心线与轮廓线不能互相混淆。'],
+      steps:[['明确要表达的结构','检查外形视图中是否存在大量虚线或无法清楚表达的内部结构，明确剖切的目的。','不要为了“看起来复杂”任意增加剖视；每个视图都应提供有效信息。'],['选择表达形式','依据机件结构、对称情况和需要表达的局部选择全剖、半剖或局部剖等形式；断面图用于表达剖切平面与机件相交所得的断面形状。','不同形式有适用条件，必须按教材与课程制图标准执行。'],['确定剖切位置与投射方向','使剖切平面通过需要展示的孔、槽或内部结构，并确认剖切符号与投射方向对应。','剖切线、剖切符号、字母标记及视图方向需相互一致。'],['检查剖面表达','剖面区域按规定绘制剖面线，保留必要的可见轮廓；检查中心线、虚线和剖面线是否造成歧义。','具体剖面线角度、间隔及特殊结构的规定画法，以课程采用的现行标准为准。']],
+      question:'剖视图中，被剖切平面切到的实体区域通常如何表达？', options:['以规定的剖面线表示该区域','全部涂成黑色，不画轮廓','用不可见轮廓虚线替代所有剖面线'], correct:0, explain:'剖面线用于区分剖切到的实体材料区域；必要轮廓仍应按相应线型绘制。特殊结构和相邻零件的画法需遵循适用标准。', diagram:'sections'
+    },
+    part: {
+      kicker:'MODULE 05 · DETAIL DRAWING', title:'零件图阅读与尺寸体系', subtitle:'把视图、尺寸、工艺结构和技术要求联系起来理解，而不只认符号。', level:'大学核心 · 工程图样',
+      objective:'按“视图表达—尺寸基准—结构功能—技术要求”的路径阅读零件图，并识别需要重点核对的信息。', output:'在一张示例零件图上圈出主要表达视图，分类标记总体/定位/功能相关尺寸，并列出技术要求检查项。', checks:['视图方案应清晰表达主要结构与加工特征。','尺寸应完整、清晰、合理，避免不必要的重复。','公差、表面结构及其他技术要求需结合功能和工艺理解。'],
+      steps:[['建立基准与识别条件','先确定零件的主要中心/对称基准，辨认已有视图、题给尺寸和需要表达的轮廓。','实际作图以题目数据为准；本动图的轮廓和尺寸符号只演示绘制顺序。'],['构造关键几何关系','先用中心线与构造圆弧限定孔、轮廓转折和圆弧连接位置。','半径、相切和同心等关系应由题目条件推导，不能靠屏幕图形估量。'],['连续绘制外形与孔','沿外轮廓的连续顺序连接直线和曲线，再完成内孔等主要结构。','相邻直线/圆弧需满足规定的连接关系；必要时可用相切条件检查。'],['补标注并复核','补齐中心线、尺寸基准与尺寸标注，最后核对轮廓闭合、孔的位置及技术要求。','示意图不含实际尺寸；真实零件图的尺寸、公差与表面要求必须来自题目或设计数据。']],
+      question:'零件图标注尺寸时，最基本的质量要求是什么？', options:['尽可能多地重复所有尺寸，便于读图','尺寸完整、清晰、合理，并避免不必要的重复标注','只标总体长宽高，其余尺寸都由制造者估计'], correct:1, explain:'工程图尺寸应能清楚、完整地定义零件，又应避免不必要的重复与矛盾；具体基准和尺寸安排需要结合零件功能、加工与测量要求。', diagram:'part'
+    },
+    assembly: {
+      kicker:'MODULE 06 · ASSEMBLY DRAWING', title:'装配图阅读与拆画思路', subtitle:'由总体功能进入组成、连接、运动关系，再把装配信息落实到零件。', level:'大学核心 · 部件表达',
+      objective:'从装配图中识别组成、连接定位关系、序号/明细栏、装配尺寸和工作原理，并理解拆画零件图的边界。', output:'按阅读顺序列出部件组成、主要连接形式、关键装配尺寸和需进一步确认的零件结构。', checks:['序号、引出线与明细栏应对应一致。','剖视/规定画法应按装配图规则理解。','拆画零件时区分图样给定信息与需要推断的细节。'],
+      steps:[['获取总体信息','先读标题栏、名称、用途和明细栏，建立“这是什么部件、由哪些零件构成”的总体认识。','不要先钻进局部细节；先把图面与明细栏建立对应。'],['识别组成与连接','结合主视图、剖视图和局部表达，追踪零件之间的接触、定位、紧固和可能的运动关系。','交界轮廓要区分零件分界与切剖表达，不要把相邻零件误看成一体。'],['核对序号和尺寸','检查序号是否指向相应零件，了解外形、安装、配合及必要的装配尺寸。','不是所有零件尺寸都在装配图中完整给出；零件自身尺寸通常需看零件图或按课程任务处理。'],['规划拆画零件图','先确认零件在装配中的功能和与相邻件的接口，再选择能表达其形状的视图与剖视。','不能从装配图中随意臆造无法唯一确定的内部细节或技术要求。']],
+      question:'阅读装配图时，较合理的顺序是什么？', options:['先看最小的局部线条，完全不看标题栏','先了解用途与明细，再联系视图分析组成、定位/连接关系和关键尺寸','按序号大小直接把所有零件拆开，不需分析相互关系'], correct:1, explain:'从总体到局部更容易建立结构模型。标题栏和明细栏提供整体信息，视图提供几何关系，尺寸与技术要求补充装配条件。', diagram:'assembly'
+    }
+  };
+  let coreSelection = null;
+  const coreModuleOrder = Object.keys(coreModules);
+  let coreAnimationRaf = null;
+  let coreAnimationProgress = 0;
+  let coreAnimationStartedAt = 0;
+  let coreAnimationDuration = 10500;
+  let coreAnimationComplete = false;
+  let coreDrawItems = [];
+  let coreDrawLabels = [];
+  let corePenTip = null;
+  let coreAnimationModule = null;
+  let coreLastCaptionStep = -1;
+
+  const coreStageAt = [0, 0.27, 0.53, 0.79];
+  const stageForProgress = (p) => p < 0.27 ? 0 : p < 0.53 ? 1 : p < 0.79 ? 2 : 3;
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+  function syncCoreAnimationUI() {
+    const range = document.getElementById('coreStepRange');
+    const label = document.getElementById('coreTimelineLabel');
+    const status = document.getElementById('coreAnimationStatus');
+    const button = document.getElementById('corePlayBtn');
+    if (!range || !label || !status || !button) return;
+    const step = Math.max(0, Math.min(3, Number(state.coreStep) || 0));
+    range.value = String(Math.round(coreAnimationProgress * 100));
+    label.textContent = `${Math.round(coreAnimationProgress * 100)}%`;
+    button.textContent = coreAnimationRaf !== null ? 'Ⅱ 暂停' : (coreAnimationComplete ? '▶ 播放一遍' : (coreAnimationProgress > 0 ? '▶ 继续绘制' : '▶ 播放绘制过程'));
+    status.textContent = coreAnimationRaf !== null
+      ? `连续绘制中 · ${Math.round(coreAnimationProgress * 100)}% · 阶段 ${step + 1}/4`
+      : (coreAnimationComplete ? '绘制完成 · 可拖动回看' : (coreAnimationProgress > 0 ? `已暂停 · ${Math.round(coreAnimationProgress * 100)}%` : '准备就绪 · 等待绘制'));
+  }
+
+  function updateCoreStageUI(step, persist = false) {
+    step = Math.max(0, Math.min(3, step));
+    state.coreStep = step;
+    const m = coreModules[state.coreModule];
+    if (!m) return;
+    const st = m.steps[step];
+    document.getElementById('coreStepNumber').textContent = String(step + 1).padStart(2, '0');
+    document.getElementById('coreStepTitle').textContent = st[0];
+    document.getElementById('coreStepDesc').textContent = st[1] + ' ' + st[2];
+    document.getElementById('coreStepCount').textContent = `第 ${step + 1} / 4 步`;
+    document.getElementById('corePrev').disabled = step === 0;
+    document.getElementById('corePrev').style.opacity = step === 0 ? '.45' : '1';
+    document.getElementById('coreNext').textContent = step === 3 ? '已到最后一步 ✓' : '下一步 →';
+    document.querySelectorAll('[data-core-step]').forEach(b => b.classList.toggle('active', Number(b.dataset.coreStep) === step));
+    document.getElementById('motionCaptionIndex').textContent = String(step + 1).padStart(2, '0');
+    document.getElementById('motionCaptionTitle').textContent = st[0];
+    document.getElementById('motionCaptionText').textContent = st[1] + ' ' + st[2];
+    coreLastCaptionStep = step;
+    if (persist) saveState();
+    syncCoreAnimationUI();
+  }
+
+  function stopCorePlayback(completed = false) {
+    if (coreAnimationRaf !== null) {
+      cancelAnimationFrame(coreAnimationRaf);
+      coreAnimationRaf = null;
+    }
+    coreAnimationComplete = completed;
+    syncCoreAnimationUI();
+  }
+
+  function paintCoreFrame(progress) {
+    coreAnimationProgress = clamp01(progress);
+    let activeItem = null;
+    let activeFraction = 0;
+    for (const item of coreDrawItems) {
+      const span = Math.max(0.0001, item.end - item.start);
+      const t = clamp01((coreAnimationProgress - item.start) / span);
+      const ease = t * t * (3 - 2 * t);
+      if (item.length > 0) {
+        if (t >= 1) {
+          item.el.style.strokeDasharray = item.originalDash;
+          item.el.style.strokeDashoffset = item.originalOffset;
+        } else {
+          item.el.style.strokeDasharray = `${item.length} ${item.length}`;
+          item.el.style.strokeDashoffset = `${item.length * (1 - ease)}`;
+          if (t > 0 && t < 1 && !activeItem) { activeItem = item; activeFraction = ease; }
+        }
+      }
+      if (item.fillBase !== null) item.el.style.fillOpacity = String(item.fillBase * (0.05 + 0.95 * ease));
+      if (item.opacityBase !== null && item.el.classList.contains('motion-reveal')) item.el.style.opacity = String(item.opacityBase * ease);
+    }
+    for (const label of coreDrawLabels) {
+      const t = clamp01((coreAnimationProgress - label.at) / 0.035);
+      label.el.style.opacity = String(t * t * (3 - 2 * t));
+    }
+    if (corePenTip) {
+      if (activeItem && activeItem.length > 0 && typeof activeItem.el.getPointAtLength === 'function') {
+        try {
+          const pt = activeItem.el.getPointAtLength(activeItem.length * activeFraction);
+          corePenTip.setAttribute('transform', `translate(${pt.x.toFixed(2)} ${pt.y.toFixed(2)})`);
+          corePenTip.setAttribute('opacity', '1');
+        } catch (_) { corePenTip.setAttribute('opacity', '0'); }
+      } else corePenTip.setAttribute('opacity', '0');
+    }
+    const step = stageForProgress(coreAnimationProgress);
+    if (step !== coreLastCaptionStep) updateCoreStageUI(step, true);
+    syncCoreAnimationUI();
+  }
+
+  function animateCoreDrawing() {
+    const svg = document.getElementById('coreDiagram');
+    if (!svg) return;
+    coreDrawItems = [];
+    coreDrawLabels = [];
+    corePenTip = null;
+    const candidates = Array.from(svg.querySelectorAll('path,line,polyline,polygon,circle,ellipse,rect'))
+      .filter(el => !el.closest('defs, pattern, marker, clipPath, mask') && !el.hasAttribute('data-no-draw'))
+      .filter(el => {
+        const cs = getComputedStyle(el);
+        return cs.stroke !== 'none' && cs.stroke !== 'rgba(0, 0, 0, 0)' && cs.stroke !== 'transparent';
+      });
+    const drawables = candidates.filter(el => !el.closest('svg > rect'));
+    const automatic = drawables.length ? 0.72 / drawables.length : 0.72;
+    drawables.forEach((el, i) => {
+      const style = getComputedStyle(el);
+      let length = 0;
+      try { length = el.getTotalLength ? el.getTotalLength() : 0; } catch (_) { length = 0; }
+      if (!Number.isFinite(length) || length < 1) return;
+      const start = el.dataset.motionStart !== undefined ? Number(el.dataset.motionStart) : (el.dataset.appear !== undefined ? Number(el.dataset.appear) : i * automatic);
+      const end = el.dataset.motionEnd !== undefined ? Number(el.dataset.motionEnd) : (el.dataset.appear !== undefined ? Math.min(1, start + .025) : Math.min(.78, start + automatic * .92));
+      const fill = style.fill;
+      const fillBase = (fill && fill !== 'none' && fill !== 'transparent') ? (Number(el.getAttribute('fill-opacity') || style.fillOpacity || 1)) : null;
+      coreDrawItems.push({el, length, start:clamp01(start), end:Math.max(clamp01(start)+.0001, clamp01(end)), originalDash:el.style.strokeDasharray || style.strokeDasharray || 'none', originalOffset:el.style.strokeDashoffset || '0', fillBase, opacityBase:el.dataset.appear !== undefined ? 1 : null});
+      if (fillBase !== null) el.style.fillOpacity = '0';
+      el.style.strokeDasharray = `${length} ${length}`;
+      el.style.strokeDashoffset = `${length}`;
+    });
+    svg.querySelectorAll('text').forEach((el, i) => {
+      if (!el.classList.contains('motion-label')) el.classList.add('motion-label');
+      const at = el.dataset.appear !== undefined ? Number(el.dataset.appear) : .78 + Math.min(.15, i * .008);
+      el.dataset.motionAppearAt = String(clamp01(at));
+      el.style.opacity = '0';
+      coreDrawLabels.push({el, at:clamp01(at)});
+    });
+    // A pen-tip indicator follows the line currently being drawn.
+    const ns = 'http://www.w3.org/2000/svg';
+    const tip = document.createElementNS(ns, 'g');
+    tip.setAttribute('id', 'corePenTip'); tip.setAttribute('class', 'motion-pen-tip'); tip.setAttribute('opacity', '0'); tip.style.pointerEvents = 'none';
+    const halo = document.createElementNS(ns, 'circle'); halo.setAttribute('r', '7'); halo.setAttribute('class', 'motion-pen-tip-halo');
+    const core = document.createElementNS(ns, 'circle'); core.setAttribute('r', '3.5'); core.setAttribute('class', 'motion-pen-tip-core');
+    tip.appendChild(halo); tip.appendChild(core); svg.appendChild(tip); corePenTip = tip;
+    // Labels are revealed on the animation clock instead of appearing before the drawing.
+    coreDrawItems.forEach(item => { if (item.el.dataset.appear !== undefined) item.el.style.opacity = '0'; });
+    paintCoreFrame(coreAnimationProgress);
+  }
+
+  function setCoreProgress(progress, doPaint = true) {
+    stopCorePlayback(false);
+    coreAnimationProgress = clamp01(progress);
+    coreAnimationComplete = coreAnimationProgress >= .999;
+    if (doPaint) paintCoreFrame(coreAnimationProgress);
+    else updateCoreStageUI(stageForProgress(coreAnimationProgress), true);
+    syncCoreAnimationUI();
+  }
+
+  function startCorePlayback() {
+    if (coreAnimationRaf !== null) return;
+    if (coreAnimationProgress >= 0.999) {
+      coreAnimationProgress = 0;
+      paintCoreFrame(0);
+    }
+    coreAnimationComplete = false;
+    const speedSelect = document.getElementById('coreSpeed');
+    coreAnimationDuration = Math.max(1800, Number(speedSelect && speedSelect.value) || 10500);
+    coreAnimationStartedAt = performance.now() - coreAnimationProgress * coreAnimationDuration;
+    const tick = (now) => {
+      const p = clamp01((now - coreAnimationStartedAt) / coreAnimationDuration);
+      paintCoreFrame(p);
+      if (p >= 1) {
+        coreAnimationRaf = null;
+        coreAnimationComplete = true;
+        syncCoreAnimationUI();
+      } else {
+        coreAnimationRaf = requestAnimationFrame(tick);
+      }
+    };
+    coreAnimationRaf = requestAnimationFrame(tick);
+    syncCoreAnimationUI();
+  }
+
+  function toggleCorePlayback() {
+    if (coreAnimationRaf !== null) stopCorePlayback(false);
+    else startCorePlayback();
+  }
+
+  function partProfileSvg() {
+    return `<defs>
+      <pattern id="profileGrid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="#d9e3db" stroke-width=".5" data-no-draw="true"/></pattern>
+      <marker id="profileArrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto-start-reverse"><path d="M0 0L7 3.5L0 7Z" fill="#28794d"/></marker>
+    </defs>
+    <rect x="0" y="0" width="640" height="440" rx="12" fill="#fbfcfa" data-no-draw="true"/>
+    <rect x="0" y="0" width="640" height="440" rx="12" fill="url(#profileGrid)" opacity=".72" data-no-draw="true"/>
+    <g fill="none" stroke="#b98734" stroke-width="1.5" stroke-linecap="round">
+      <path class="profile-guide" data-motion-start="0" data-motion-end=".10" d="M135 322H448"/>
+      <path class="profile-guide" data-motion-start=".02" data-motion-end=".12" d="M300 52V422"/>
+      <circle class="profile-guide" cx="300" cy="322" r="105" data-motion-start=".10" data-motion-end=".24"/>
+      <path class="profile-guide" data-motion-start=".17" data-motion-end=".28" d="M290 145 A100 100 0 0 1 374 220"/>
+      <path class="profile-guide" data-motion-start=".20" data-motion-end=".30" d="M253 178 A68 68 0 0 1 226 240"/>
+    </g>
+    <path id="partProfileOutline" class="profile-outline" fill="none" stroke="#24362a" stroke-width="2.8" data-motion-start=".25" data-motion-end=".70" d="M250 78 L296 78 L296 145 C296 177 308 198 335 216 C365 235 387 261 394 293 C403 330 389 362 362 384 C336 405 300 410 268 399 C234 387 211 363 202 331 C191 294 203 263 228 241 C248 224 254 207 254 178 L254 78 Z"/>
+    <circle class="profile-outline" cx="300" cy="322" r="48" fill="none" stroke="#24362a" stroke-width="2.6" data-motion-start=".69" data-motion-end=".79"/>
+    <g fill="none" stroke="#28794d" stroke-width="1.4" stroke-dasharray="13 4 3 4">
+      <path data-motion-start=".76" data-motion-end=".82" d="M151 322H447"/>
+      <path data-motion-start=".77" data-motion-end=".83" d="M300 47V422"/>
+    </g>
+    <g fill="none" stroke="#28794d" stroke-width="1.5" class="profile-dimension" marker-start="url(#profileArrow)" marker-end="url(#profileArrow)">
+      <path data-motion-start=".82" data-motion-end=".87" d="M250 57H296"/>
+      <path data-motion-start=".82" data-motion-end=".86" d="M250 61V73M296 61V73"/>
+      <path data-motion-start=".86" data-motion-end=".91" d="M252 322H348"/>
+      <path data-motion-start=".89" data-motion-end=".94" d="M202 263 Q194 249 202 236"/>
+    </g>
+    <g fill="#24362a" font-family="system-ui, sans-serif" font-size="13">
+      <text class="motion-label" data-appear=".08" x="312" y="57" fill="#b98734">轴线 / 基准</text>
+      <text class="motion-label" data-appear=".22" x="408" y="228" fill="#b98734">构造圆弧</text>
+      <text class="motion-label" data-appear=".42" x="397" y="275">外轮廓</text>
+      <text class="motion-label" data-appear=".73" x="357" y="320">内孔</text>
+      <text class="motion-label" data-appear=".86" x="260" y="47" text-anchor="middle" fill="#28794d">b（按题给尺寸）</text>
+      <text class="motion-label" data-appear=".91" x="300" y="310" text-anchor="middle" fill="#28794d">⌀D</text>
+      <text class="motion-label" data-appear=".94" x="210" y="228" fill="#28794d">R（按题给）</text>
+      <text class="motion-label" data-appear=".96" x="20" y="420" font-size="11" fill="#65746a">原创轮廓示意 · 非教材原题 · 尺寸以具体题目为准</text>
+    </g>
+    <g fill="#b98734" stroke="#fff" stroke-width="1.2"><circle class="motion-reveal" data-appear=".12" cx="300" cy="322" r="4"/><circle class="motion-reveal" data-appear=".72" cx="300" cy="322" r="4"/></g>`;
+  }
+
+  function coreDiagramSvg(moduleId, step) {
+    const grid = `<defs><pattern id="coreGrid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="#d9e3db" stroke-width=".5"/></pattern><pattern id="coreHatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><line x1="0" y1="0" x2="0" y2="8" stroke="#7f9183" stroke-width="1"/></pattern><marker id="coreArrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto-start-reverse"><path d="M0 0L7 3.5L0 7Z" fill="#28794d"/></marker></defs><rect x="0" y="0" width="640" height="350" rx="12" fill="#fbfcfa"/><rect x="0" y="0" width="640" height="350" rx="12" fill="url(#coreGrid)" opacity=".65"/>`;
+    const dim = '#6d7f71', green = '#28794d', amber = '#b98734', dark = '#36483b';
+    if (moduleId === 'projection') return `${grid}
+      <g fill="none" stroke="${dark}" stroke-width="2.2" stroke-linejoin="round"><path d="M48 150V70H105V48H220V150Z"/><path d="M48 207H220V268H48Z"/><path d="M330 48H420V150H330Z"/></g>
+      <g fill="none" stroke="${dim}" stroke-width="1.3" stroke-dasharray="5 5" opacity="${step>=1?1:.25}"><path d="M48 70H290M105 48V30H330M220 150H290M330 48H420M48 150V285H330M220 268H300V150"/><path d="M48 207V150M220 207V150"/></g>
+      <g fill="none" stroke="${green}" stroke-width="2.1"><path d="M105 70V207M220 150V268M330 48V150M420 48V150" opacity="${step>=2?1:.18}"/><path d="M48 150H220" opacity="${step>=3?1:.3}"/></g>
+      <g fill="${dark}" font-family="sans-serif" font-size="14"><text x="104" y="171" text-anchor="middle">主视图</text><text x="130" y="293" text-anchor="middle">俯视图</text><text x="375" y="171" text-anchor="middle">左视图</text><text x="48" y="42">示意组合轮廓</text></g>
+      <g fill="none" stroke="${amber}" stroke-width="1.6" stroke-dasharray="4 3" opacity="${step>=1?1:.15}"><path d="M105 70V48M220 48V150M330 48H420"/></g>
+      <g fill="${green}" font-family="sans-serif" font-size="12"><text x="238" y="98" opacity="${step>=2?1:.25}">对应高度</text><text x="78" y="316" opacity="${step>=2?1:.25}">长对正</text><text x="427" y="98" opacity="${step>=2?1:.25}">高平齐</text><text x="258" y="235" opacity="${step>=3?1:.25}">核对方向尺寸</text></g>`;
+    if (moduleId === 'intersections') return `${grid}
+      <g fill="none" stroke="${dark}" stroke-width="2.2"><path d="M75 90Q75 58 107 58H278Q310 58 310 90V220Q310 250 278 250H107Q75 250 75 220Z"/><ellipse cx="107" cy="155" rx="32" ry="97"/><ellipse cx="278" cy="155" rx="32" ry="97" opacity=".6"/></g>
+      <path d="M55 210L350 80" stroke="${amber}" stroke-width="2.5" opacity="${step>=1?1:.3}"/>
+      <path d="M80 199Q152 167 205 130T327 90" fill="none" stroke="${green}" stroke-width="3" opacity="${step>=2?1:.25}"/>
+      <g fill="${green}" stroke="#fff" stroke-width="1.3" opacity="${step>=1?1:.2}"><circle cx="80" cy="199" r="5"/><circle cx="155" cy="164" r="5"/><circle cx="205" cy="130" r="5"/><circle cx="327" cy="90" r="5"/></g>
+      <g fill="${dark}" font-size="13" font-family="sans-serif"><text x="75" y="35">回转体被倾斜平面截切（示意）</text><text x="367" y="92" fill="${amber}">截切平面</text><text x="367" y="124" fill="${green}" opacity="${step>=2?1:.35}">交线上的点</text><text x="367" y="156">特殊点先求</text><text x="367" y="180">一般点补形</text><text x="367" y="204">最后判可见性</text></g>`;
+    if (moduleId === 'composite') return `${grid}
+      <g stroke="${dark}" stroke-width="2" stroke-linejoin="round"><path d="M62 105L152 57L260 98L171 147Z" fill="#e2ece4"/><path d="M62 105L171 147V250L62 207Z" fill="#d3e0d6"/><path d="M171 147L260 98V201L171 250Z" fill="#c1d3c6"/><path d="M62 160L117 183L171 160L171 199L117 222L62 199Z" fill="#fbfcfa"/><path d="M117 183V222" fill="none" stroke="${amber}" stroke-width="2.5"/></g>
+      <g fill="none" stroke="${green}" stroke-width="2.2" opacity="${step>=1?1:.25}"><path d="M62 105L171 147L260 98M171 147V250"/><path d="M62 274H260" stroke-dasharray="5 4"/></g>
+      <g fill="none" stroke="${dark}" stroke-width="1.8"><rect x="352" y="65" width="103" height="69"/><rect x="352" y="205" width="103" height="55"/><path d="M352 95H390V65" stroke="${green}" opacity="${step>=2?1:.25}"/><path d="M385 205V260" stroke-dasharray="4 4" opacity="${step>=3?1:.25}"/></g>
+      <g fill="${dark}" font-family="sans-serif" font-size="13"><text x="180" y="30" text-anchor="middle">组合体：整体 → 单元 → 交界</text><text x="403" y="153" text-anchor="middle">主视图</text><text x="403" y="279" text-anchor="middle">俯 / 侧向校核</text><text x="475" y="94" fill="${green}" opacity="${step>=2?1:.3}">对应边</text><text x="475" y="116" fill="${amber}" opacity="${step>=3?1:.35}">交界线</text></g>`;
+    if (moduleId === 'sections') return `${grid}
+      <defs><pattern id="hatchSection" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#687e6e" stroke-width="1.1"/></pattern></defs>
+      <path d="M75 75H300V250H75Z M142 120H236V205H142Z" fill="url(#hatchSection)" fill-rule="evenodd" stroke="${dark}" stroke-width="2.4" opacity="${step>=2?1:.65}"/>
+      <rect x="142" y="120" width="94" height="85" fill="#fbfcfa" stroke="${dark}" stroke-width="2.1"/>
+      <path d="M46 162H328" stroke="${amber}" stroke-width="2" stroke-dasharray="7 5" opacity="${step>=1?1:.25}"/>
+      <path d="M345 75V250M337 75H354M337 250H354" stroke="${green}" stroke-width="2" opacity="${step>=3?1:.25}"/>
+      <g fill="${dark}" font-family="sans-serif" font-size="13"><text x="75" y="45">剖视示意：外部轮廓与内部空腔</text><text x="365" y="105" fill="${green}" opacity="${step>=2?1:.3}">剖面线</text><text x="365" y="135">材料区域</text><text x="365" y="165">空腔不填剖面线</text><text x="365" y="195" fill="${amber}" opacity="${step>=1?1:.3}">剖切位置</text><text x="365" y="225">继续保留必要轮廓</text></g>`;
+    if (moduleId === 'part') return `${grid}
+      <g fill="none" stroke="${dark}" stroke-width="2.2" stroke-linejoin="round"><path d="M65 125H112V98H163V112H250V142H310V170H250V200H163V214H112V187H65Z"/><path d="M45 156H330" stroke="${green}" stroke-width="1.4" stroke-dasharray="14 4 3 4" opacity="${step>=1?1:.25}"/></g>
+      <g fill="none" stroke="${green}" stroke-width="1.5" marker-start="url(#coreArrow)" marker-end="url(#coreArrow)"><path d="M65 78H310" opacity="${step>=1?1:.35}"/><path d="M65 84V118M310 84V136" opacity="${step>=1?1:.35}"/><path d="M343 98V214" opacity="${step>=2?1:.35}"/><path d="M337 98H315M337 214H315" opacity="${step>=2?1:.35}"/></g>
+      <g fill="${dark}" font-family="sans-serif" font-size="13"><text x="187" y="62" text-anchor="middle">轴类零件尺寸表达（示意，非标准图样）</text><text x="186" y="75" text-anchor="middle" fill="${green}" opacity="${step>=1?1:.35}">总体长度</text><text x="355" y="158" fill="${green}" opacity="${step>=2?1:.35}">直径/台阶</text><text x="385" y="220">基准与功能</text><text x="385" y="244">联系实际零件</text><text x="65" y="245">中心线 ≠ 可见轮廓</text></g>`;
+    return `${grid}
+      <g fill="none" stroke="${dark}" stroke-width="2.1" stroke-linejoin="round"><path d="M62 146H302V214H62Z" fill="#e3ece5"/><path d="M95 110H266V146H95Z" fill="#cadbce"/><path d="M130 65H230V110H130Z" fill="#d6e4d9"/><path d="M130 65V214M230 65V214" stroke-dasharray="5 4" opacity="${step>=2?1:.2}"/><path d="M44 180H323" stroke="${green}" stroke-width="1.3" stroke-dasharray="12 4 3 4"/></g>
+      <g fill="${dark}" font-size="13" font-family="sans-serif"><text x="62" y="34">装配关系分析示意（简化剖示）</text><text x="350" y="78" fill="${green}" opacity="${step>=1?1:.3}">1 · 主体</text><text x="350" y="112" fill="${green}" opacity="${step>=1?1:.3}">2 · 定位件</text><text x="350" y="146" fill="${green}" opacity="${step>=2?1:.3}">3 · 紧固件</text><text x="350" y="180">接触 / 定位</text><text x="350" y="204">连接 / 运动</text><text x="350" y="238" fill="${amber}" opacity="${step>=3?1:.4}">序号须对应明细栏</text></g>
+      <g fill="${green}" stroke="#fff" stroke-width="1.5"><circle cx="86" cy="151" r="11"/><circle cx="157" cy="117" r="11" opacity="${step>=1?1:.3}"/><circle cx="280" cy="154" r="11" opacity="${step>=2?1:.3}"/></g><g fill="#fff" font-family="sans-serif" font-weight="800" font-size="11" text-anchor="middle"><text x="86" y="155">1</text><text x="157" y="121" opacity="${step>=1?1:.3}">2</text><text x="280" y="158" opacity="${step>=2?1:.3}">3</text></g>`;
+  }
+  function renderCore() {
+    const id = coreModules[state.coreModule] ? state.coreModule : 'projection';
+    const m = coreModules[id]; const index = Math.max(0,Math.min(3,Number(state.coreStep)||0));
+    state.coreModule = id; state.coreStep = index;
+    document.getElementById('coreModuleKicker').textContent=m.kicker;
+    document.getElementById('coreModuleTitle').textContent=m.title;
+    document.getElementById('coreModuleSubtitle').textContent=m.subtitle;
+    document.getElementById('coreLevelChip').textContent=m.level;
+    document.getElementById('coreObjective').textContent=m.objective;
+    document.getElementById('coreOutput').textContent=m.output;
+    document.getElementById('coreChecklist').innerHTML=m.checks.map(x=>`<li>${x}</li>`).join('');
+    const diagramEl = document.getElementById('coreDiagram');
+    diagramEl.setAttribute('viewBox', id === 'part' ? '0 0 640 440' : '0 0 640 350');
+    diagramEl.innerHTML = id === 'part' ? partProfileSvg() : coreDiagramSvg(id,3);
+    animateCoreDrawing();
+    const st=m.steps[index];
+    document.getElementById('coreStepNumber').textContent=String(index+1).padStart(2,'0');
+    document.getElementById('coreStepTitle').textContent=st[0];
+    document.getElementById('coreStepDesc').textContent=st[1]+' '+st[2];
+    document.getElementById('coreStepCount').textContent=`第 ${index+1} / 4 步`;
+    document.getElementById('corePrev').disabled=index===0;
+    document.getElementById('corePrev').style.opacity=index===0?'.45':'1';
+    document.getElementById('coreNext').textContent=index===3?'已到最后一步 ✓':'下一步 →';
+    document.querySelectorAll('[data-core-step]').forEach(b=>b.classList.toggle('active',Number(b.dataset.coreStep)===index));
+    document.querySelectorAll('[data-core-module]').forEach(b=>{b.classList.toggle('active',b.dataset.coreModule===id); b.classList.toggle('completed',(state.coreCompleted||[]).includes(b.dataset.coreModule));});
+    document.getElementById('coreProgressText').textContent=`${(state.coreCompleted||[]).length} / 6 已完成`;
+    document.getElementById('coreProgressFill').style.width=`${(state.coreCompleted||[]).length/6*100}%`;
+    const q=m.question; document.getElementById('coreQuestion').textContent=q;
+    const opt=document.getElementById('coreOptions');
+    opt.innerHTML=m.options.map((t,i)=>`<button class="option" data-core-answer="${i}"><span class="radio"></span>${t}</button>`).join('');
+    coreSelection = null;
+    const alreadyCorrect = state.coreAnswers && state.coreAnswers[id] === m.correct;
+    document.getElementById('coreFeedback').textContent=alreadyCorrect?'已正确完成本专题判断题。 '+m.explain:'';
+    opt.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      const picked=Number(b.dataset.coreAnswer); coreSelection=picked;
+      opt.querySelectorAll('button').forEach(x=>{x.classList.toggle('selected',x===b);x.classList.remove('wrong','correct');});
+      if(picked===m.correct){ b.classList.add('correct'); document.getElementById('coreFeedback').textContent='判断正确。'+m.explain; state.coreAnswers=state.coreAnswers||{}; state.coreAnswers[id]=m.correct; saveState(); }
+      else { b.classList.add('wrong'); document.getElementById('coreFeedback').textContent='这个判断还不够准确。请回到当前步骤，检查题目中的投影、表达或读图条件后再试。'; }
+    }));
+    if(alreadyCorrect){ opt.querySelectorAll('button').forEach(b=>{if(Number(b.dataset.coreAnswer)===m.correct)b.classList.add('correct');}); }
+    const done=(state.coreCompleted||[]).includes(id);
+    document.getElementById('coreCompleteBtn').textContent=done?'本专题已完成 ✓':'完成本专题 ✓';
+    syncCoreAnimationUI();
+    saveState();
+  }
+  function openCoreModule(id) {
+    stopCorePlayback(false);
+    if (!coreModules[id]) id='projection';
+    coreAnimationProgress = 0; coreAnimationComplete = false; coreLastCaptionStep = -1;
+    state.coreModule=id; state.coreStep=0; saveState(); renderCore();
+    document.getElementById('coreStudio').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  document.querySelectorAll('[data-core-module]').forEach(b=>b.addEventListener('click',()=>openCoreModule(b.dataset.coreModule)));
+  document.querySelectorAll('[data-core-step]').forEach(b=>b.addEventListener('click',()=>{const st=Number(b.dataset.coreStep);setCoreProgress(st===0?0:st===1?.28:st===2?.54:1,true);}));
+  document.getElementById('corePrev').addEventListener('click',()=>{const st=Math.max(0,Number(state.coreStep||0)-1);setCoreProgress(coreStageAt[st],true);});
+  document.getElementById('coreNext').addEventListener('click',()=>{if(state.coreStep<3){const st=state.coreStep+1;setCoreProgress(st===1?.28:st===2?.54:1,true);}else toast('请结合右侧任务要求，在纸面上完成本专题输出。');});
+  document.getElementById('corePlayBtn').addEventListener('click',toggleCorePlayback);
+  document.getElementById('coreReplayBtn').addEventListener('click',()=>{stopCorePlayback(false);coreAnimationProgress=0;state.coreStep=0;saveState();renderCore();startCorePlayback();});
+  document.getElementById('coreStepRange').addEventListener('input',event=>{const p=Number(event.currentTarget.value)/100;setCoreProgress(p,true);});
+  document.getElementById('coreSpeed').addEventListener('change',()=>{if(coreAnimationRaf!==null){stopCorePlayback(false);startCorePlayback();}});
+  document.getElementById('coreCompleteBtn').addEventListener('click',()=>{
+    const id=state.coreModule, m=coreModules[id];
+    if(state.coreStep<3){toast('请先走完 4 个分析步骤，再完成专题判断。');return;}
+    if(!state.coreAnswers || state.coreAnswers[id]!==m.correct){toast('请先答对右侧的专题判断题，再记录完成状态。');return;}
+    state.coreCompleted=Array.from(new Set([...(state.coreCompleted||[]),id]));saveState();renderCore();toast('已记录：'+m.title);
+  });
+
+  showStep(Number(state.step)||0); renderQuiz(); renderProgress(); renderGeometry(); renderCore();
+})();
+</script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const svg = $('labSvg');
+  if (!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const DURATION_MS = 24000;
+  const stages = [
+    { at: 0,    until:.09, title:'建立投影基准', label:'建立基准', detail:'先确定坐标方向与水平基准，不依靠目测摆放圆心。', reason:'所有几何尺寸都对应到同一平面坐标系。' },
+    { at:.09, until:.19, title:'按坐标确定两个圆心',label:'定位圆心',detail:'先确定 O₁，再根据水平距离与竖向偏置定位 O₂，并建立圆心连线。',reason:'两个圆心间的直线长度由勾股关系求得；圆心位置明确之后才能进行切线推导。' },
+    { at:.19, until:.32, title:'绘制两端外圆',label:'绘制基圆',detail:'按照给定半径 R₁、R₂ 以圆心作圆，内孔暂不绘制，避免干扰切点判断。',reason:'公切线必须同时与两个外圆相切，而不仅仅连接两个视觉上接近的点。' },
+    { at:.32, until:.43, title:'建立半径差辅助圆',label:'等效辅助圆',detail:'以 O₁ 为圆心作半径 ΔR=R₁−R₂ 的辅助圆；再由 O₂ 向辅助圆作切线。',reason:'外公切线平移 R₂ 后可等效为从 O₂ 引出的辅助圆切线；半径差而不是半径和用于外公切线。' },
+    { at:.43, until:.54, title:'求两侧切点',label:'确定切点',detail:'辅助切线法向量 n 同时给出两圆切点：P₁=O₁+R₁n；P₂=O₂+R₂n。',reason:'切点处半径与公切线垂直。通过几何计算得到切点，而非在外圆上凭感觉找点。' },
+    { at:.54, until:.68, title:'作上下两条外公切线',label:'连接切线',detail:'分别连接同侧的 P₁、P₂，延长或缩短时保持切点不动。',reason:'当 (P₂−P₁)·n=0 时，连接线与两个切点半径均垂直，满足相切条件。' },
+    { at:.68, until:.84, title:'修剪轮廓并加深',label:'修剪加深',detail:'保留两个外圆位于连接板外侧的圆弧，并与两条切线形成一条连续封闭轮廓。',reason:'工程图样的外轮廓应平顺连接且不应留下无关的圆弧；辅助线可显示以便检验，成图时应移除。' },
+    { at:.84, until:.93, title:'绘制通孔与中心线',label:'孔与中心线',detail:'以已知圆心绘制两端通孔，中心线略超出孔轮廓；暂按二维轮廓处理。',reason:'图线类型是工程信息的一部分，中心线不应与可见轮廓粗实线混用。' },
+    { at:.93, until:1.001, title:'标注尺寸并完成校核',label:'尺寸与复核',detail:'核对水平、竖向圆心位置、直径尺寸，以及两条切线的接触关系。',reason:'本例为数学正确的原创二维教学图。正式制图仍需以课程采用的图线、字体、比例和尺寸标注标准为准。' }
+  ];
+  const examples = {
+    A: { dx:92,dy:26,r1:28,r2:18,h1:11,h2:8, name:'A · 偏置连接板'},
+    B: { dx:84,dy:-18,r1:24,r2:15,h1:9,h2:6, name:'B · 反向偏置连接板'}
+  };
+  const state = { progress:0, playing:false, speed:1, lastTime:0, raf:0, guide:true, model:'A', items:[], geometry:null, activeStage:-1, practice:false, attempts:0, answer:false, marker:null };
+  const fmt = (v,n=2) => Number(v).toFixed(n);
+  const clamp = (x,a=0,b=1) => Math.min(b,Math.max(a,x));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const smooth=(t)=>t*t*(3-2*t);
+  const vec=(x,y)=>({x,y});
+  const add=(a,b)=>vec(a.x+b.x,a.y+b.y);
+  const scale=(a,k)=>vec(a.x*k,a.y*k);
+  const dot=(a,b)=>a.x*b.x+a.y*b.y;
+  const sub=(a,b)=>vec(a.x-b.x,a.y-b.y);
+  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const color={main:'#256b48',guide:'#b58b44',center:'#6b93bd',hole:'#256b48',dim:'#6b93bd'};
+  const screenOrigin={x:267,y:296};
+  const k=3.04;
+  const pt=(p)=>vec(screenOrigin.x+k*p.x,screenOrigin.y-k*p.y);
+  const cp=(p)=>`${fmt(p.x)} ${fmt(p.y)}`;
+  const M=(p)=>'M '+cp(pt(p));
+  const L=(p)=>' L '+cp(pt(p));
+  const line=(p,q)=>M(p)+L(q);
+  function circlePath(c,r){
+    const p=pt(c),sr=r*k;
+    return `M ${fmt(p.x+sr)} ${fmt(p.y)} A ${fmt(sr)} ${fmt(sr)} 0 1 0 ${fmt(p.x-sr)} ${fmt(p.y)} A ${fmt(sr)} ${fmt(sr)} 0 1 0 ${fmt(p.x+sr)} ${fmt(p.y)}`;
+  }
+  function compute(config){
+    const C1=vec(0,0),C2=vec(config.dx,config.dy),d=sub(C2,C1),D=Math.hypot(d.x,d.y);
+    const diff=config.r1-config.r2;
+    if (!(D>Math.abs(diff)+1e-8)) throw new Error('圆心距不足以构造外公切线');
+    const u=scale(d,1/D),v=vec(-u.y,u.x);
+    const alpha=diff/D,beta=Math.sqrt(1-alpha*alpha);
+    const nPlus=add(scale(u,alpha),scale(v,beta));
+    const nMinus=add(scale(u,alpha),scale(v,-beta));
+    const make=(n)=>({ n, Q:scale(n,diff),P1:scale(n,config.r1),P2:add(C2,scale(n,config.r2)) });
+    const upper=make(nPlus),lower=make(nMinus);
+    function arc(cx,r,a0,a1){
+      while (a1<a0) a1+=Math.PI*2;
+      const count=82;
+      const points=Array.from({length:count+1},(_,i)=>{
+        const ang=lerp(a0,a1,i/count);
+        return vec(cx.x+r*Math.cos(ang),cx.y+r*Math.sin(ang));
+      });
+      return points;
+    }
+    const upAngle=Math.atan2(nPlus.y,nPlus.x),downAngle=Math.atan2(nMinus.y,nMinus.x);
+    const first=arc(C1,config.r1,upAngle,downAngle);
+    const second=arc(C2,config.r2,downAngle,upAngle);
+    const shape=[...first,lower.P2,...second,upper.P1];
+    const dPath=M(shape[0])+shape.slice(1).map(L).join('')+' Z';
+    const residuals=[upper,lower].map((v)=>({radial1:Math.abs(dot(sub(v.P2,v.P1),sub(v.P1,C1))),radial2:Math.abs(dot(sub(v.P2,v.P1),sub(v.P2,C2))),circ1:Math.abs(distance(v.P1,C1)-config.r1),circ2:Math.abs(distance(v.P2,C2)-config.r2)}));
+    return { config,C1,C2,D,diff,upper,lower,path:dPath,L:Math.sqrt(D*D-diff*diff),residuals };
+  }
+  function el(tag,attrs,parent){
+    const node=document.createElementNS(NS,tag);
+    Object.entries(attrs||{}).forEach(([name,value])=>node.setAttribute(name,String(value)));
+    if(parent) parent.appendChild(node);
+    return node;
+  }
+  function build(){
+    state.playing=false;state.lastTime=0;cancelAnimationFrame(state.raf);
+    state.practice=false;state.attempts=0;state.answer=false;state.marker=null;state.activeStage=-1;
+    state.geometry=compute(examples[state.model]);state.items=[];
+    const g=state.geometry,{config:c,C1,C2,upper,lower}=g;
+    $('labMetricD').textContent=fmt(g.D)+' mm';
+    $('labMetricDelta').textContent=fmt(g.diff,0)+' mm';
+    $('labMetricT').textContent=fmt(g.L)+' mm';
+    $('labEquation').textContent=`D=√(${c.dx}²+${c.dy}²)=${fmt(g.D)} mm；ΔR=${c.r1}−${c.r2}=${g.diff} mm；L=√(D²−ΔR²)=${fmt(g.L)} mm。`;
+    svg.replaceChildren();
+    const defs=el('defs',{},svg);
+    const pattern=el('pattern',{id:'labGrid',width:21,height:21,patternUnits:'userSpaceOnUse'},defs);
+    el('path',{d:'M 21 0 L 0 0 0 21',stroke:'#6f997d','stroke-width':.65,opacity:.12,fill:'none'},pattern);
+    el('rect',{width:840,height:520,fill:'#f9fcf9'},svg);
+    el('rect',{width:840,height:520,fill:'url(#labGrid)'},svg);
+    const work=el('g',{id:'labDrawing'},svg);
+    const finalFill=el('path',{d:g.path,fill:'#85c9a1','fill-opacity':0,stroke:'none','pointer-events':'none'},work);
+    state.finalFill=finalFill;
+    const sg=el('g',{id:'labStrokeGroup'},work);
+    const labels=el('g',{id:'labLabels'},work);
+    state.markerGroup=el('g',{id:'labPracticeOverlay'},svg);
+    function item(path,start,end,kind='guide',width=2,dash='',parent=sg){
+      const node=el('path',{d:path,fill:'none',stroke:color[kind],'stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round', ...(dash?{'stroke-dasharray':dash}:{})},parent);
+      let total=0;
+      try { total=node.getTotalLength(); }catch(e) {total=1;}
+      if(!Number.isFinite(total)||total<.0001)total=1;
+      // Dashed construction lines need two layers: their own dash pattern plus
+      // a continuously growing white stroke used as an SVG reveal mask.
+      // Otherwise a dashed line would pop into view all at once.
+      let revealStroke=null;
+      if(dash){
+        const id='labReveal'+String(state.items.length);
+        const mask=el('mask',{id,maskUnits:'userSpaceOnUse',x:0,y:0,width:840,height:520},defs);
+        revealStroke=el('path',{d:path,fill:'none',stroke:'white','stroke-width':width+3,
+          'stroke-linecap':'round','stroke-linejoin':'round',
+          'stroke-dasharray':`${total} ${total}`,'stroke-dashoffset':total},mask);
+        node.setAttribute('mask',`url(#${id})`);
+      }
+      state.items.push({node,start,end,kind,total,dash,revealStroke});
+      return node;
+    }
+    function label(content,p,start,end=.99,fill='#445a50',size=13,weight='600'){
+      const pos=pt(p);
+      const node=el('text',{x:fmt(pos.x),y:fmt(pos.y),fill,'font-size':size,'font-weight':weight,'font-family':'system-ui, PingFang SC, sans-serif'},labels);
+      node.textContent=content;
+      state.items.push({node,start,end,kind:fill==='#967138'?'guide-label':'label',text:true});
+      return node;
+    }
+    function dotPoint(p,start,kind='guide',r=3.4){
+      const pos=pt(p);const d=`M ${fmt(pos.x-r)} ${fmt(pos.y)} A ${r} ${r} 0 1 0 ${fmt(pos.x+r)} ${fmt(pos.y)} A ${r} ${r} 0 1 0 ${fmt(pos.x-r)} ${fmt(pos.y)}`;
+      item(d,start,start+.025,kind,2.5);
+    }
+    // 1: orthogonal datum and construction axes.
+    item(line(vec(-49,0),vec(146,0)),.005,.082,'center',1.7,'9 7');
+    item(line(vec(0,-67),vec(0,65)),.022,.089,'center',1.4,'8 6');
+    label('基准 0',vec(-47,-5),.06,.09,'#7290a5',11);
+    // 2: centers and center-to-center line.
+    dotPoint(C1,.095,'center');
+    dotPoint(C2,.135,'center');
+    item(line(C1,C2),.13,.186,'center',1.8,'7 5');
+    label('O₁',vec(-6,-6),.125,.18,'#446f91');
+    label('O₂',vec(c.dx+4,c.dy+7),.17,.22,'#446f91');
+    // 3: outer circles.
+    item(circlePath(C1,c.r1),.193,.259,'guide',1.8,'5 6');
+    item(circlePath(C2,c.r2),.257,.316,'guide',1.8,'5 6');
+    label(`R${c.r1}`,vec(-c.r1-12,8),.25,.32,'#967138',12);
+    label(`R${c.r2}`,vec(c.dx+c.r2+6,c.dy+5),.29,.34,'#967138',12);
+    // 4: equivalent reduced-radius circle and tangents from O2 to Q.
+    item(circlePath(C1,g.diff),.324,.371,'guide',2,'4 4');
+    for (const o of [upper,lower]) {
+      item(line(C2,o.Q),.358,.421,'guide',1.5,'7 5');
+      item(line(C1,o.Q),.377,.425,'guide',1.8,'3 4');
+    }
+    label('ΔR',vec(g.diff+3,-3),.375,.435,'#967138',12);
+    // 5: radial direction locates exact four touch points.
+    item(line(C1,upper.P1),.434,.465,'guide',1.8,'4 4');
+    item(line(C2,upper.P2),.447,.48,'guide',1.8,'4 4');
+    item(line(C1,lower.P1),.47,.503,'guide',1.8,'4 4');
+    item(line(C2,lower.P2),.485,.52,'guide',1.8,'4 4');
+    dotPoint(upper.P1,.462,'main',3);
+    dotPoint(upper.P2,.477,'main',3);
+    dotPoint(lower.P1,.508,'main',3);
+    dotPoint(lower.P2,.519,'main',3);
+    label('P₁',add(upper.P1,vec(-10,8)),.505,.553,'#256b48',12);
+    label('P₂',add(upper.P2,vec(-3,11)),.518,.553,'#256b48',12);
+    // 6: the true external tangents.
+    item(line(upper.P1,upper.P2),.542,.607,'main',2.8);
+    item(line(lower.P1,lower.P2),.605,.678,'main',2.8);
+    // 7: selected arcs + straight tangent lines, a closed convex outer contour.
+    item(g.path,.682,.842,'main',3.8);
+    // 8: two bores and center marks (inside external envelope).
+    item(circlePath(C1,c.h1),.846,.889,'hole',3);
+    item(circlePath(C2,c.h2),.889,.927,'hole',3);
+    // 9: horizontal and vertical coordinate dimensions.
+    const bottom=-47;
+    item(line(C1,vec(0,bottom-3)),.931,.944,'dim',1.25);
+    item(line(C2,vec(c.dx,bottom-3)),.939,.95,'dim',1.25);
+    item(line(vec(0,bottom),vec(c.dx,bottom)),.945,.961,'dim',1.35);
+    const tick=(x,y)=>line(vec(x-2,y-2),vec(x+2,y+2));
+    item(tick(0,bottom)+'' ,.953,.966,'dim',1.4);
+    item(tick(c.dx,bottom),.956,.969,'dim',1.4);
+    label(`${c.dx} mm`,vec(c.dx/2-12,bottom+5),.965,.986,'#50728e',13);
+    const dimx=145;
+    item(line(C1,vec(dimx+4,0)),.945,.965,'dim',1.2);
+    item(line(C2,vec(dimx+4,c.dy)),.948,.968,'dim',1.2);
+    item(line(vec(dimx,0),vec(dimx,c.dy)),.961,.982,'dim',1.4);
+    label(`偏置 ${Math.abs(c.dy)} mm`,vec(dimx+4,c.dy/2+3),.975,1,'#50728e',11);
+    label(`Ø${c.h1*2}`,vec(-c.h1+1,c.h1+6),.934,.965,'#50728e',12);
+    label(`Ø${c.h2*2}`,vec(c.dx-c.h2+1,c.dy+c.h2+5),.952,.99,'#50728e',12);
+    // Test-friendly geometry entry points, without exposing personal data.
+    svg.dataset.geometry=JSON.stringify({model:state.model,D:g.D,L:g.L,residuals:g.residuals.map(r=>Object.values(r).reduce((a,b)=>Math.max(a,b),0))});
+    $('labPracticeStart').textContent='开始定位练习';
+    $('labModeLabel').textContent='教学模式';
+    $('labPracticeFeedback').textContent='练习未开始。建议先独立推导再查看演示。';
+    $('labQuizFeedback').textContent='选择答案后查看推导解释。';
+    renderQuiz();
+    setProgress(0,true);
+  }
+  function stageOf(progress){
+    let active=0;
+    for(let i=0;i<stages.length;i++){ if(progress>=stages[i].at-1e-7)active=i; }
+    return active;
+  }
+  function redraw(){
+    const t=state.progress;
+    for(const item of state.items){
+      const start=item.start,end=item.end;
+      const f=clamp((t-start)/Math.max(end-start,.0001));
+      if(item.text){
+        item.node.style.opacity=String(item.kind==='guide-label'&&!state.guide?0:f);
+        continue;
+      }
+      const fade=item.kind==='guide'? (t>.78 ? lerp(1,.16,clamp((t-.78)/.14)):1):1;
+      const alpha=state.guide||item.kind!=='guide'?fade:0;
+      item.node.style.opacity=String(alpha);
+      const dashLength=item.total;
+      if(item.revealStroke){
+        item.revealStroke.style.strokeDashoffset=String(dashLength*(1-smooth(f)));
+        item.node.style.strokeDasharray=item.dash;
+        item.node.style.strokeDashoffset='0';
+      }else{
+        item.node.style.strokeDasharray=`${dashLength} ${dashLength}`;
+        item.node.style.strokeDashoffset=String(dashLength*(1-smooth(f)));
+      }
+    }
+    state.finalFill.setAttribute('fill-opacity',String(.17*clamp((t-.818)/.06)));
+    let curr=stageOf(t);
+    if(curr!==state.activeStage){
+      state.activeStage=curr;
+      const s=stages[curr];
+      $('labStageBadge').textContent=`阶段 ${String(curr+1).padStart(2,'0')} / 09`;
+      $('labStageTitle').textContent=s.title;
+      $('labStageText').textContent=s.detail;
+      $('labReasonText').textContent=s.reason;
+      document.querySelectorAll('#labSteps .lab-stage').forEach((b,i)=>{
+        b.classList.toggle('active',i===curr);b.classList.toggle('done',i<curr);
+        b.setAttribute('aria-current',i===curr?'step':'false');
+      });
+    }
+    const time=Math.round(t*DURATION_MS/1000);
+    $('labTimeline').value=String(Math.round(t*1000));
+    $('labTimeText').textContent=`00:${String(time).padStart(2,'0')} / 00:24`;
+    $('labPlay').textContent=state.playing?'❚❚ 暂停':'▶ 播放';
+    $('labPlayerStatus').textContent=state.practice?'定位练习中':state.playing?'连续绘制中':(t>=1?'绘制完成':'已暂停 · 随时拖动时间轴');
+    updatePracticeMarker();
+  }
+  function setProgress(t,force=false){
+    state.progress=clamp(t);
+    if(force)state.activeStage=-1;
+    redraw();
+  }
+  function stop(){
+    if(!state.playing)return;
+    state.playing=false;state.lastTime=0;cancelAnimationFrame(state.raf);
+    redraw();
+  }
+  function frame(now){
+    if(!state.playing)return;
+    if(!state.lastTime)state.lastTime=now;
+    const elapsed=Math.min(72,now-state.lastTime);
+    state.lastTime=now;
+    let newProgress=state.progress+elapsed*state.speed/DURATION_MS;
+    if(newProgress>=1){
+      if(!$('labPauseAtEnd').checked){newProgress=0;}
+      else {newProgress=1;state.playing=false;}
+    }
+    setProgress(newProgress);
+    if(state.playing)state.raf=requestAnimationFrame(frame);
+    else state.lastTime=0;
+  }
+  function start(){
+    if(state.practice){state.practice=false;$('labModeLabel').textContent='教学模式';}
+    if(state.playing){stop();return;}
+    if(state.progress>=1)state.progress=0;
+    state.playing=true;state.lastTime=0;
+    redraw();state.raf=requestAnimationFrame(frame);
+  }
+  function stopAt(t){stop();if(state.practice){state.practice=false;$('labModeLabel').textContent='教学模式';}setProgress(t,true);}
+  function buildStepButtons(){
+    const mount=$('labSteps');mount.replaceChildren();
+    stages.forEach((s,i)=>{
+      const b=document.createElement('button');b.type='button';b.className='lab-stage';
+      b.innerHTML=`<span class="lab-number">${String(i+1).padStart(2,'0')}</span><span>${s.label}</span>`;
+      b.addEventListener('click',()=>stopAt(s.at+.001));
+      mount.appendChild(b);
+    });
+  }
+  const questions=[
+    { q:'两外圆的外公切线，等效辅助圆半径应取什么？',answers:['R₁+R₂','|R₁−R₂|','R₁×R₂','圆心距 D'],correct:1,explain:'外公切线平移其中一个圆的半径后，问题化为从圆心向半径差辅助圆作切线；内公切线的等效距离才涉及半径和。' },
+    { q:'外公切线在圆上的切点必须满足什么关系？',answers:['切线与该半径平行','切线与该半径垂直','切点到另一圆心等于半径和','两个圆心一定等高'],correct:1,explain:'切点处，切线与通过切点的半径严格垂直。水平或偏置排列都不影响这一性质。' },
+    { q:'若 D=50 mm，R₁=18 mm，R₂=8 mm，外公切线段长为？',answers:['约 48.99 mm','40 mm','50 mm','约 30 mm'],correct:0,explain:'L=√(50²−(18−8)²)=√2400≈48.99 mm。不能直接把圆心距当成公切线长度。' }
+  ];
+  let qIndex=0;
+  function renderQuiz(){
+    const q=questions[qIndex];$('labQuizTitle').textContent=q.q;
+    const place=$('labQuizOptions');place.replaceChildren();
+    q.answers.forEach((ans,i)=>{
+      const b=document.createElement('button');b.type='button';b.textContent=String.fromCharCode(65+i)+' · '+ans;
+      b.addEventListener('click',()=>{
+        place.querySelectorAll('button').forEach(node=>node.disabled=true);
+        b.classList.add(i===q.correct?'correct':'wrong');
+        if(i!==q.correct)place.children[q.correct].classList.add('correct');
+        $('labQuizFeedback').textContent=(i===q.correct?'回答正确。':'这项不符合几何条件。')+q.explain;
+        try{ if(i===q.correct)localStorage.setItem('engineering_v6_lab_quiz_'+qIndex,'1');}catch(e){}
+        const next=document.createElement('button');next.type='button';next.className='btn';next.style.marginTop='6px';next.textContent='下一题 →';
+        next.addEventListener('click',()=>{qIndex=(qIndex+1)%questions.length;renderQuiz();$('labQuizFeedback').textContent='选择答案后查看推导解释。';});
+        place.appendChild(next);
+      });
+      place.appendChild(b);
+    });
+  }
+  function updatePracticeMarker(){
+    state.markerGroup.replaceChildren();
+    if(!state.marker&&!state.answer)return;
+    const p=state.marker||pt(state.geometry.upper.P1);
+    const good=state.marker?distance(p,pt(state.geometry.upper.P1))<=17:true;
+    const ring=el('circle',{cx:fmt(p.x),cy:fmt(p.y),r:10,stroke:good?'#228455':'#b05b45','stroke-width':2.4,fill:'none'},state.markerGroup);
+    el('path',{d:`M ${fmt(p.x-13)} ${fmt(p.y)} H ${fmt(p.x+13)} M ${fmt(p.x)} ${fmt(p.y-13)} V ${fmt(p.y+13)}`,stroke:good?'#228455':'#b05b45','stroke-width':1.8},state.markerGroup);
+    if(state.answer){
+      const answer=pt(state.geometry.upper.P1);
+      el('circle',{cx:fmt(answer.x),cy:fmt(answer.y),r:5,fill:'#228455',stroke:'white','stroke-width':2},state.markerGroup);
+    }
+  }
+  function enterPractice(){
+    stop();state.practice=true;state.answer=false;state.marker=null;state.attempts=0;
+    $('labModeLabel').textContent='切点定位练习';
+    $('labPracticeStart').textContent='重新定位练习';
+    $('labPracticeFeedback').textContent='请根据辅助圆与切线的法向方向，在大圆上侧点击切点位置。点击图形内部即可提交。';
+    setProgress(.427,true);
+  }
+  svg.addEventListener('click',(event)=>{
+    if(!state.practice)return;
+    const rect=svg.getBoundingClientRect();
+    const x=(event.clientX-rect.left)*840/rect.width;
+    const y=(event.clientY-rect.top)*520/rect.height;
+    const p=vec(x,y);state.marker=p;state.attempts++;
+    const trueP=pt(state.geometry.upper.P1);
+    const errPx=distance(p,trueP);
+    const errMm=errPx/k;
+    if(errPx<=17){
+      $('labPracticeFeedback').textContent=`切点位置符合当前屏幕判定容差（误差约 ${fmt(errMm,1)} 个图样单位）。关键依据：连接切点的半径必须垂直于外公切线。共尝试 ${state.attempts} 次。`;
+      state.practice=false;$('labModeLabel').textContent='已完成定位';
+      try{localStorage.setItem('engineering_v6_lab_practice','1');}catch(e){}
+    }else{
+      const hint=errPx>100?'与目标相距较远。先找出辅助圆的上侧切线方向，再沿大圆半径定位。':'已经接近。沿圆周微调，并检查切点半径是否垂直于切线。';
+      $('labPracticeFeedback').textContent=`第 ${state.attempts} 次：偏离参考切点约 ${fmt(errMm,1)} 个图样单位。${hint}`;
+    }
+    updatePracticeMarker();
+  });
+  function revealAnswer(){
+    stop();state.practice=false;state.answer=true;state.marker=null;
+    $('labModeLabel').textContent='答案校核';
+    setProgress(1,true);
+    const p=state.geometry.upper.P1;
+    $('labPracticeFeedback').textContent=`参考切点（以 O₁ 为原点，向上为正）：(${fmt(p.x)}, ${fmt(p.y)}) mm。由辅助圆法向 n 确定 P₁=O₁+R₁n；公切线方向向量必须与 n 垂直。`;
+  }
+  function exportPNG(){
+    // Export only the actual computed SVG snapshot, not any copyrighted reference image.
+    const clone=svg.cloneNode(true);
+    clone.removeAttribute('id');clone.removeAttribute('class');
+    clone.setAttribute('width','1680');clone.setAttribute('height','1040');
+    clone.setAttribute('viewBox','0 0 840 520');
+    clone.setAttribute('xmlns',NS);
+    const serialized=new XMLSerializer().serializeToString(clone);
+    const url=URL.createObjectURL(new Blob([serialized],{type:'image/svg+xml;charset=utf-8'}));
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');canvas.width=1680;canvas.height=1040;
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#f9fcf9';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob=>{
+        if(!blob){$('labPlayerStatus').textContent='导出失败：浏览器无法创建图片';return;}
+        const fileURL=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=fileURL;a.download=`工程制图_双圆连接板_${state.model}.png`;
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(fileURL),1000);
+      },'image/png');
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);$('labPlayerStatus').textContent='导出失败：当前浏览器不支持该 SVG 快照';};
+    img.src=url;
+  }
+  $('labPlay').addEventListener('click',start);
+  $('labPrev').addEventListener('click',()=>{const i=stageOf(state.progress);stopAt(stages[Math.max(0,i-1)].at+.001);});
+  $('labNext').addEventListener('click',()=>{const i=stageOf(state.progress);stopAt(stages[Math.min(stages.length-1,i+1)].at+.001);});
+  $('labReset').addEventListener('click',()=>stopAt(0));
+  $('labTimeline').addEventListener('input',e=>stopAt(Number(e.target.value)/1000));
+  $('labSpeed').addEventListener('change',e=>{state.speed=Number(e.target.value)||1;});
+  $('labGuide').addEventListener('change',e=>{state.guide=!!e.target.checked;redraw();});
+  $('labVariant').addEventListener('change',e=>{state.model=e.target.value;build();});
+  $('labPracticeStart').addEventListener('click',enterPractice);
+  $('labPracticeReveal').addEventListener('click',revealAnswer);
+  $('labExport').addEventListener('click',exportPNG);
+  document.addEventListener('keydown',(event)=>{
+    const node=event.target;
+    if(node && ['INPUT','SELECT','TEXTAREA','BUTTON'].includes(node.tagName))return;
+    if(!document.getElementById('lab').matches(':hover')&&!document.getElementById('lab').contains(document.activeElement))return;
+    if(event.code==='Space'){event.preventDefault();start();}
+    else if(event.code==='ArrowLeft'){event.preventDefault();$('labPrev').click();}
+    else if(event.code==='ArrowRight'){event.preventDefault();$('labNext').click();}
+  });
+  buildStepButtons();
+  build();
+  // Public, read-only geometry for test and reference calculations.
+  window.__drawingLabQA={geometry:()=>state.geometry,progress:()=>state.progress,stages:()=>stages.map(x=>({at:x.at,title:x.title}))};
+})();
+
+</script>
+<script>
+
+/* Projection v7: independent coordinate-based orthographic teaching module. */
+(function(){
+  'use strict';
+  const root=document.getElementById('projection');
+  if(!root)return;
+  const $=id=>document.getElementById(id);
+  const names={intro:'投影法和视图的基本概念',views:'三视图的形成及其对应关系',point:'点的投影',line:'直线的投影',plane:'平面的投影'};
+  const cfg={
+    intro:{name:'投影法与投影面',chapter:'第 2 章 · 第 1 节（P27）',title:'先认识正投影：从空间到平面',intro:'投影是空间几何向平面表达的基础。观察同一点如何沿垂直于投影面的方向形成正投影，再理解为什么需要多个投影面。',rule:'正投影：投射线互相平行，并且垂直于投影面。单个投影通常无法唯一确定空间位置。',mistake:'中心投影的投射线汇交于同一点；正投影采用互相平行且垂直于投影面的投射线。',paper:'先画投影面 V，标出投射线方向和空间点 A；再画 a′，判断为什么只凭 a′ 不能确定 A 的前后距离。',steps:[['确定空间点','一个空间点具有三个坐标，单个视图只能保留其中两个坐标。'],['沿正面方向投射','空间点沿垂直于 V 面的投射线落在正立投影面。'],['建立水平投影','从上方向下投射到 H 面，获得点的另一组坐标信息。'],['建立侧面投影','侧立投影 W 还可以表达高度与前后距离。'],['三个投影相互校核','同一空间点的三个投影必须满足两两共用坐标的关系。']]},
+    views:{name:'三面投影体系',chapter:'第 2 章 · 第 2 节（P29）',title:'V、H、W 如何展开成一张工程图？',intro:'正立面 V、水平面 H 和侧立面 W 相互垂直。第一角画法展开后，H 在 V 下方，W 在 V 右侧。',rule:'在展开后的三面投影中，正面和水平面共用 x；正面和侧面共用 z；水平面和侧面共用 y。',mistake:'不要把第一角画法和第三角画法的视图位置混淆。展开只是图纸布置方式，几何坐标仍然相同。',paper:'用三角板画出 V、H、W 展开图，标记共同原点 O、X、Y_H、Y_W、Z，写出三条坐标对应规律。',steps:[['三投影面体系','三个互相垂直的投影面交于同一个原点 O。'],['正面投影 V','以 x、z 表达正面投影的左右位置与高度。'],['水平投影 H','以 x、y 表达左右位置与前后距离。'],['侧面投影 W','以 y、z 表达前后距离与高度。'],['展开与投影对应','H 在 V 下、W 在 V 右；三个投影来自同一个空间对象。']]},
+    point:{name:'点的投影',chapter:'第 2 章 · 第 3 节（P33）',title:'A(x, y, z) 的三个投影如何确定？',intro:'把 x 理解为离侧面 W 的距离、y 为离正面 V 的距离、z 为离水平面 H 的距离。拖动滑块看三个投影同时变化。',rule:'a′(x,z) 与 a(x,y) 在同一条垂直于 X 轴的投影连线上；a′ 与 a″ 高平齐；a 和 a″ 对应同一个 y。',mistake:'同名投影区别：a′ 是正面投影，a 是水平投影，a″ 是侧面投影；不要把 y 和 z 的距离混用。',paper:'已知 A(40,20,30) mm，在纸上建立三面投影展开图，并分别定位 a′、a、a″。检查三条对应关系。',steps:[['给出空间点 A','改变 x/y/z 坐标，A 的真实位置随之改变。'],['寻找正面投影 a′','保留 x、z，舍去 y 方向的信息；a′ 位于 V 面。'],['寻找水平投影 a','保留 x、y，舍去 z 方向的信息；a 位于 H 面。'],['寻找侧面投影 a″','保留 y、z，舍去 x 方向的信息；a″ 位于 W 面。'],['检查三投影规律','a′ 与 a 对正，a′ 与 a″ 等高，a 与 a″ 前后距离相等。']]},
+    line:{name:'直线的投影',chapter:'第 2 章 · 第 4 节（P37）',title:'直线在不同投影面上为何长短不同？',intro:'两端点 A、B 的同面投影连起来，就是线段在该投影面上的投影。改变直线的位置类型，观察真长、积聚性和投影形状。',rule:'直线平行于投影面时，在该面上反映真长；垂直于投影面时，在该面上积聚为一点；一般倾斜时其投影缩短。',mistake:'只有与某投影面平行，才保证该面投影为真长；一般位置直线的三面投影通常都小于真长。',paper:'分别画一条水平线、正平线、铅垂线：比较它们在 V、H、W 面上的投影，并标出反映真长或积聚为点的投影。',steps:[['空间线段 AB','空间中两个不同点决定一条直线。'],['连接正面投影','连接 a′b′，读出 x、z 的变化。'],['连接水平投影','连接 ab，读出 x、y 的变化。'],['连接侧面投影','连接 a″b″，读出 y、z 的变化。'],['判断真长与积聚性','比较空间长度和各面投影长度；可切换特殊位置直线验证。']]},
+    plane:{name:'平面的投影',chapter:'第 2 章 · 第 5 节（P41）',title:'为什么一个三角形投影会变成一条线？',intro:'不共线的三点确定平面。不同朝向的平面投影可能保持实形、缩短变形，或者积聚成一条线。',rule:'平面平行于某投影面时在该面反映实形；平面垂直于某投影面时在该面积聚成直线；一般位置平面三个投影均为缩小变形的图形。',mistake:'投影为直线不表示原空间平面消失，而是因为从这个方向看过去，平面沿视线方向收缩。',paper:'已知 △DEF：D(15,10,25)、E(55,10,25)、F(25,45,25)，分别画正面、水平和侧面投影，判断哪一个是实形、哪些积聚成线。',steps:[['确定平面 △ABC','先确定三个不共线点的坐标。'],['投影到正面 V','连接 a′b′c′，观察正面所见的形状。'],['投影到水平面 H','连接 abc，判断是否反映实形或积聚性。'],['投影到侧面 W','连接 a″b″c″，观察侧面形状与其他投影的对应。'],['平面位置与投影特性','切换水平面、正平面、侧平面、一般位置平面进行对比。']]}
+  };
+  const qs={
+    intro:[{q:'正投影法的投射线满足哪组条件？',choices:['互相平行，且垂直于投影面','汇交于一点','互相平行，但不垂直于投影面'],correct:0,ex:'正投影属于平行投影，投射线与投影面垂直。'},{q:'为什么单独一个正投影通常不能确定空间点的唯一位置？',choices:['因为图纸总是不够大','因为投影会丢失沿投射方向的一个坐标','因为空间点必须画成圆'],correct:1,ex:'正面投影只有 x、z，沿 y 方向的不同空间点可以具有相同的正面投影。'}],
+    views:[{q:'按第一角画法展开，水平投影 H 通常位于 V 的哪里？',choices:['下方','上方','右侧'],correct:0,ex:'本课程采用第一角画法展开：H 在 V 下方，W 在 V 右侧。'},{q:'正面投影和侧面投影共同保留哪个坐标？',choices:['x','y','z（高度）'],correct:2,ex:'正面是 (x,z)，侧面是 (y,z)，两者共用 z 坐标。'}],
+    point:[{q:'空间点 A(40,20,30) 的正面投影 a′ 保留哪两个坐标？',choices:['x=40、y=20','x=40、z=30','y=20、z=30'],correct:1,ex:'正面投影保留 x、z；y 是点离 V 面的距离。'},{q:'若 A 的 y 从 20 增大到 35，x、z 不变，哪个投影的位置一定不变？',choices:['a′（正面投影）','a（水平投影）','a″（侧面投影）'],correct:0,ex:'正面投影仅取决于 x、z。水平和侧面投影使用 y，因此会变化。'}],
+    line:[{q:'一条直线平行于 H 面，则哪个投影反映真长？',choices:['正面 V','水平 H','侧面 W'],correct:1,ex:'与 H 面平行的直线，在 H 面上的正投影反映真长。'},{q:'铅垂线垂直于 H 面，它在 H 面上的投影是什么？',choices:['真实长度的线段','长度缩短的斜线','一个点'],correct:2,ex:'直线垂直于投影面时，所有空间点沿投射线重合，投影积聚成一点。'}],
+    plane:[{q:'水平面（平行于 H）的真实形状在哪个投影中显示？',choices:['正面 V','水平 H','侧面 W'],correct:1,ex:'水平面平行于 H，在 H 面上的投影反映实形。'},{q:'一个平面垂直于 V 面，它在 V 上的投影具有哪种性质？',choices:['积聚为一条直线','总是圆形','必定反映实形'],correct:0,ex:'平面垂直于某投影面时，平面在该投影面上积聚为一条直线。'}]
+  };
+  const STORAGE='engineering_projection_v7_2026';
+  let saved={};try{saved=JSON.parse(localStorage.getItem(STORAGE)||'{}')||{};}catch(e){}
+  const state={lesson:'intro',progress:0,playing:false,speed:1,stamp:null,raf:0,question:0,answers:saved.answers||{},x:40,y:28,z:36,lineType:'general',planeType:'horizontal'};
+  const O={x:337,y:242}, k=2.75;
+  const fmt=n=>Number(n.toFixed(1));
+  const xyz=p=>({v:{x:O.x-k*p.x,y:O.y-k*p.z},h:{x:O.x-k*p.x,y:O.y+k*p.y},w:{x:O.x+k*p.y,y:O.y-k*p.z},iso:{x:769-1.24*p.x+1.24*p.y,y:370+0.7*p.x+0.7*p.y-1.62*p.z}});
+  const num=(n)=>Number(n.toFixed(2));
+  const path=(d,start,end,color='#28794d',width=3,dash='')=>`<path class="proj-draw" data-start="${start}" data-end="${end}" d="${d}" fill="none" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
+  const line=(a,b,start,end,color='#28794d',width=3)=>path(`M${num(a.x)},${num(a.y)} L${num(b.x)},${num(b.y)}`,start,end,color,width);
+  const dot=(p,label,when,color='#257b53',dx=9,dy=-10)=>`<g data-show="${when}"><circle cx="${num(p.x)}" cy="${num(p.y)}" r="5" fill="${color}" stroke="white" stroke-width="1.5"/><text x="${num(p.x+dx)}" y="${num(p.y+dy)}" font-size="14" font-weight="750" fill="#24392d">${label}</text></g>`;
+  const poly=(p)=>p.map((v,i)=>`${i?'L':'M'}${num(v.x)} ${num(v.y)}`).join(' ')+' Z';
+  const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+  function typeLine(){
+    switch(state.lineType){
+      case 'horizontal':return [{x:14,y:12,z:31},{x:63,y:54,z:31}];
+      case 'frontal':return [{x:15,y:29,z:12},{x:65,y:29,z:66}];
+      case 'profile':return [{x:36,y:10,z:15},{x:36,y:62,z:62}];
+      case 'vertical':return [{x:36,y:29,z:12},{x:36,y:29,z:66}];
+      case 'front-normal':return [{x:36,y:14,z:39},{x:36,y:65,z:39}];
+      case 'general':default:return [{x:16,y:13,z:21},{x:64,y:57,z:65}];
+    }
+  }
+  function typePlane(){
+    switch(state.planeType){
+      case 'frontal':return [{x:14,y:29,z:15},{x:66,y:29,z:19},{x:35,y:29,z:68}];
+      case 'profile':return [{x:36,y:10,z:15},{x:36,y:61,z:25},{x:36,y:39,z:68}];
+      case 'general':return [{x:13,y:14,z:17},{x:63,y:16,z:31},{x:31,y:60,z:65}];
+      case 'horizontal':default:return [{x:13,y:13,z:35},{x:66,y:16,z:35},{x:33,y:60,z:35}];
+    }
+  }
+  function background(){
+    const x=O.x,y=O.y;
+    return `<defs><pattern id="projDots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.75" fill="#cbd9d0"/></pattern><marker id="projArr" viewBox="0 0 8 8" markerWidth="6" markerHeight="6" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="none" stroke="#556b5c" stroke-width="1.4"/></marker></defs>
+    <rect width="960" height="495" fill="#fafdfb"/><rect x="0" y="0" width="960" height="495" fill="url(#projDots)"/>
+    <rect x="65" y="23" width="270" height="216" fill="#e8f5ee" opacity=".52" rx="9"/>
+    <rect x="65" y="244" width="270" height="227" fill="#e9f0fc" opacity=".45" rx="9"/>
+    <rect x="339" y="23" width="238" height="216" fill="#fff5e5" opacity=".63" rx="9"/>
+    <rect x="595" y="23" width="344" height="448" fill="#f4f7f4" rx="12" stroke="#e0e9e1"/>
+    <g fill="#63756a" font-size="15" font-weight="750"><text x="79" y="47">V · 正面 (x,z)</text><text x="79" y="268">H · 水平面 (x,y)</text><text x="352" y="47">W · 侧面 (y,z)</text><text x="612" y="47">空间轴测示意（非比例）</text></g>
+    <g stroke="#677b6b" fill="none" stroke-width="2"><path d="M65 ${y} H573"/><path d="M${x} 25 V472"/></g>
+    <g fill="#4c6453" font-size="15" font-weight="650"><text x="324" y="260">O</text><text x="69" y="232">X</text><text x="348" y="28">Z</text><text x="351" y="467">Yₕ</text><text x="558" y="232">Y𝓌</text></g>
+    <g stroke="#8ea49a" fill="none" stroke-width="1.8" stroke-dasharray="5 5"><path d="M769 370 L661 431 M769 370 L875 433 M769 370 L769 251"/></g>
+    <g fill="#75897d" font-size="13"><text x="649" y="444">X</text><text x="881" y="442">Y</text><text x="775" y="248">Z</text><text x="782" y="386">O</text></g>`;
+  }
+  function buildGeometry(){
+    let s=background();
+    const m=state.lesson;
+    const pts=m==='line'?typeLine():m==='plane'?typePlane():[{x:state.x,y:state.y,z:state.z}];
+    const glyphs=['A','B','C'];
+    const stages={v:[.18,.43],h:[.43,.69],w:[.69,.91],iso:[.06,.18]};
+    const zones=['v','h','w'];
+    // Spatial location and 3D geometry are reconstructed from the same Cartesian coordinates.
+    const points=pts.map(xyz);
+    if(m==='plane'){
+      const ip=points.map(p=>p.iso);s+=`<path d="${poly(ip)}" fill="#a3d9b6" fill-opacity=".23" stroke="none" data-show=".08"/>`;
+    }
+    if(m==='line')s+=line(points[0].iso,points[1].iso,.07,.17,'#697dac',4);
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i],v=points[i];
+      // Coordinate box in the separate 3D schematic: O -> x -> y -> z.
+      const px=xyz({x:p.x,y:0,z:0}).iso;
+      const pxy=xyz({x:p.x,y:p.y,z:0}).iso;
+      const orig=xyz({x:0,y:0,z:0}).iso;
+      s+=line(orig,px,.06,.10,'#aac1af',1.4);
+      s+=line(px,pxy,.10,.14,'#aac1af',1.4);
+      s+=line(pxy,v.iso,.14,.18,'#aac1af',1.4);
+      s+=dot(v.iso,glyphs[i],.16,'#b88734');
+    }
+    if(m==='plane'){
+      for(const [z,t] of [['v',.18],['h',.44],['w',.7]]){
+        const projected=points.map(p=>p[z]);
+        s+=`<path d="${poly(projected)}" fill="${z==='v'?'#61a980':z==='h'?'#729acb':'#dcb979'}" fill-opacity=".18" data-show="${t+0.05}" />`;
+      }
+    }
+    for(const z of zones){
+      const [a,b]=stages[z];
+      const vs=points.map(p=>p[z]);
+      const prev=points.map(p=>p.iso);
+      // Orthographic coordinate guides stay inside each unfolded view; the
+      // separate axonometric inset is schematic, not a common metric plane.
+      for(let i=0;i<vs.length;i++){
+        const q=vs[i];
+        if(z==='v'){
+          s+=line({x:q.x,y:O.y},q,a+i*.008,b,'#b2bdad',1.35);
+          s+=line({x:O.x,y:q.y},q,a+i*.008,b,'#b2bdad',1.35);
+        }else if(z==='h'){
+          s+=line({x:q.x,y:O.y},q,a+i*.008,b,'#b2bdad',1.35);
+          s+=line({x:O.x,y:q.y},q,a+i*.008,b,'#b2bdad',1.35);
+        }else{
+          s+=line({x:O.x,y:q.y},q,a+i*.008,b,'#b2bdad',1.35);
+          s+=line({x:q.x,y:O.y},q,a+i*.008,b,'#b2bdad',1.35);
+        }
+      }
+      if(m==='line')s+=line(vs[0],vs[1],a+.055,b,'#28794d',3.6);
+      if(m==='plane'){
+        for(let i=0;i<3;i++)s+=line(vs[i],vs[(i+1)%3],a+.04+i*.025,b,'#28794d',3);
+      }
+      for(let i=0;i<vs.length;i++)s+=dot(vs[i],z==='v'?glyphs[i].toLowerCase()+'′':z==='h'?glyphs[i].toLowerCase():glyphs[i].toLowerCase()+'″',b-.04,'#257b53',8,-9);
+    }
+    // Correspondence lines are painted at the verification phase, from exact projections.
+    for(let i=0;i<points.length;i++){
+      const p=points[i];
+      s+=line(p.v,p.h,.91,.965,'#7da38d',1.7);
+      s+=line(p.v,p.w,.92,.985,'#7da38d',1.7);
+      // Transfer the identical y offset across the 45-degree miter line.
+      const elbowH={x:O.x,y:p.h.y};
+      const elbowW={x:p.w.x,y:O.y};
+      s+=line(p.h,elbowH,.932,.963,'#91a99a',1.35);
+      s+=line(elbowH,elbowW,.963,.998,'#91a99a',1.35);
+      s+=line(elbowW,p.w,.965,1,'#91a99a',1.35);
+    }
+    const p0=pts[0],p0c=points[0];
+    if((m==='point'||m==='intro'||m==='views')){
+      s+=`<g data-show=".96" font-size="14" fill="#2b6644" font-weight="650"><text x="614" y="76">A (${p0.x}, ${p0.y}, ${p0.z}) mm</text><text x="614" y="97">a′ = (x,z) · a = (x,y) · a″ = (y,z)</text></g>`;
+      s+=`<g data-show=".98" fill="#3b7953" font-size="14"><text x="614" y="117">三面共同确定 A 的空间位置</text></g>`;
+    }
+    if(m==='line'){
+      const d=dist(pts[0],pts[1]);const ds={v:Math.hypot(pts[0].x-pts[1].x,pts[0].z-pts[1].z),h:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y),w:Math.hypot(pts[0].y-pts[1].y,pts[0].z-pts[1].z)};
+      s+=`<g data-show=".94" fill="#2b6644" font-size="13"><text x="612" y="80">空间线段 AB = ${fmt(d)} mm</text><text x="612" y="102">V: ${fmt(ds.v)}　H: ${fmt(ds.h)}　W: ${fmt(ds.w)}</text><text x="612" y="123">${state.lineType==='horizontal'?'水平线：H 投影真长':state.lineType==='frontal'?'正平线：V 投影真长':state.lineType==='profile'?'侧平线：W 投影真长':state.lineType==='vertical'?'铅垂线：H 投影积聚为点':state.lineType==='front-normal'?'正垂线：V 投影积聚为点':'一般位置直线：三投影均缩短'}</text></g>`;
+    }
+    if(m==='plane')s+=`<g data-show=".94" fill="#2b6644" font-size="14"><text x="612" y="81">${state.planeType==='horizontal'?'水平面：H 显示实形':state.planeType==='frontal'?'正平面：V 显示实形':state.planeType==='profile'?'侧平面：W 显示实形':'一般位置平面：三个投影均变形'}</text><text x="612" y="104">拖动时间轴观察三组顶点投影</text></g>`;
+    return s;
+  }
+  let drawables=[],shows=[];
+  function rebuild(){
+    $('projSvg').innerHTML=buildGeometry();
+    drawables=[...$('projSvg').querySelectorAll('.proj-draw')].map(el=>{
+      const length=el.getTotalLength();return {el,start:+el.dataset.start,end:+el.dataset.end,length};
+    });
+    shows=[...$('projSvg').querySelectorAll('[data-show]')].map(el=>({el,at:+el.dataset.show}));
+    renderProgress();
+  }
+  function showPhase(p){
+    // Continuous per-segment drawing; no repeated innerHTML changes during playback.
+    for(const {el,start,end,length} of drawables){
+      const t=Math.max(0,Math.min(1,(p-start)/Math.max(.001,end-start)));
+      const eased=t*t*(3-2*t);
+      el.setAttribute('stroke-dasharray',`${length} ${length}`);
+      el.setAttribute('stroke-dashoffset',String(length*(1-eased)));
+      el.style.opacity=p<start?'0':'1';
+    }
+    for(const {el,at} of shows)el.style.opacity=p>=at?'1':'0';
+  }
+  function renderProgress(){
+    const p=state.progress;
+    showPhase(p);
+    $('projTimeline').value=String(Math.round(p*1000));
+    const sec=Math.floor(p*12);
+    $('projTime').textContent=`00:${String(sec).padStart(2,'0')} / 00:12`;
+    const idx=p>=1?4:Math.min(4,Math.floor(p*5));
+    const conf=cfg[state.lesson];
+    $('projStageNumber').textContent=`STEP ${idx+1} / 5`;
+    $('projStageTitle').textContent=conf.steps[idx][0];
+    $('projStageDescription').textContent=conf.steps[idx][1];
+  }
+  function stop(){state.playing=false;cancelAnimationFrame(state.raf);state.raf=0;state.stamp=null;$('projPlay').textContent='▶ 播放推导';}
+  function jump(p){stop();state.progress=Math.max(0,Math.min(1,p));renderProgress();$('projPlayStatus').textContent=state.progress>=1?'推导完成，可从头播放':'已定位到选定时间';}
+  function tick(ts){
+    if(!state.playing)return;
+    if(state.stamp===null)state.stamp=ts;
+    const delta=Math.max(0,Math.min(0.06,(ts-state.stamp)/1000));state.stamp=ts;
+    state.progress=Math.min(1,state.progress+delta*state.speed/12);
+    renderProgress();
+    if(state.progress>=1){stop();$('projPlayStatus').textContent='完整推导已结束';return;}
+    state.raf=requestAnimationFrame(tick);
+  }
+  function play(){
+    if(state.playing){stop();$('projPlayStatus').textContent='已暂停';return;}
+    if(state.progress>=1)state.progress=0;
+    state.playing=true;state.stamp=null;
+    $('projPlay').textContent='Ⅱ 暂停演示';$('projPlayStatus').textContent='正在连续推导';
+    state.raf=requestAnimationFrame(tick);
+  }
+  function parameters(){
+    const els=[];
+    if(['intro','views','point'].includes(state.lesson)){
+      for(const [axis,title] of [['x','x'],['y','y'],['z','z']]){
+        els.push(`<label>${title} <input type="range" min="8" max="69" value="${state[axis]}" data-coord="${axis}" aria-label="${title} 坐标"><b id="projVal${axis}">${state[axis]}</b> mm</label>`);
+      }
+    }else if(state.lesson==='line'){
+      els.push(`<label>空间直线类型 <select id="projLineKind"><option value="general">一般位置直线</option><option value="horizontal">水平线 ∥ H</option><option value="frontal">正平线 ∥ V</option><option value="profile">侧平线 ∥ W</option><option value="vertical">铅垂线 ⟂ H</option><option value="front-normal">正垂线 ⟂ V</option></select></label>`);
+    }else if(state.lesson==='plane'){
+      els.push(`<label>空间平面类型 <select id="projPlaneKind"><option value="horizontal">水平面 ∥ H</option><option value="frontal">正平面 ∥ V</option><option value="profile">侧平面 ∥ W</option><option value="general">一般位置平面</option></select></label>`);
+    }
+    els.push(`<span style="font-size:12px;color:var(--muted);align-self:center">改变坐标/类型后，可从当前时间轴位置继续观察。</span>`);
+    $('projParams').innerHTML=els.join('');
+    $('projParams').querySelectorAll('[data-coord]').forEach(el=>el.addEventListener('input',()=>{
+      const ax=el.dataset.coord;state[ax]=+el.value;$('projVal'+ax).textContent=el.value;rebuild();
+    }));
+    if($('projLineKind')){$('projLineKind').value=state.lineType;$('projLineKind').addEventListener('change',e=>{state.lineType=e.target.value;rebuild();});}
+    if($('projPlaneKind')){$('projPlaneKind').value=state.planeType;$('projPlaneKind').addEventListener('change',e=>{state.planeType=e.target.value;rebuild();});}
+  }
+  function save(){try{localStorage.setItem(STORAGE,JSON.stringify({answers:state.answers}));}catch(e){}}
+  function qKey(lesson,idx){return lesson+':'+idx;}
+  function complete(){const lesson=state.lesson;return [0,1].every(i=>state.answers[qKey(lesson,i)]===true);}
+  function quiz(){
+    const q=qs[state.lesson][state.question];
+    const result=state.answers[qKey(state.lesson,state.question)];
+    $('projQuestion').textContent=`${state.question+1} / 2　${q.q}`;
+    $('projOptions').innerHTML=q.choices.map((v,i)=>`<button type="button" data-choice="${i}">${'ABC'[i]}. ${v}</button>`).join('');
+    $('projFeedback').textContent=result===true?`已通过这一题。${q.ex}`:'先独立判断，再选择。';
+    if(result===true){const b=$('projOptions').querySelector(`[data-choice="${q.correct}"]`);if(b)b.classList.add('right');}
+    $('projNextQuestion').hidden=!(result===true && state.question===0);
+    $('projOptions').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+      const i=+b.dataset.choice;
+      if(i===q.correct){state.answers[qKey(state.lesson,state.question)]=true;save();b.classList.add('right');$('projFeedback').textContent=`回答正确。${q.ex}`;$('projNextQuestion').hidden=state.question!==0;}
+      else{b.classList.add('wrong');$('projFeedback').textContent=`还不对。${q.ex} 请重新选择。`;
+        setTimeout(()=>{b.classList.remove('wrong');},550);
+      }
+      updateCompletion();
+    }));
+  }
+  function updateCompletion(){
+    const n=Object.keys(cfg).filter(k=>[0,1].every(i=>state.answers[qKey(k,i)]===true)).length;
+    $('projCompleteState').textContent=complete()?'✓ 本节两题正确，已掌握':'本节尚未完成两题检测';
+    $('projDifficulty').textContent=`本章已掌握 ${n} / 5 节`;
+    root.querySelectorAll('.proj-tab').forEach(b=>{const ok=[0,1].every(i=>state.answers[qKey(b.dataset.proj,i)]===true);b.querySelector('small').style.color=ok?'var(--accent)':'';});
+  }
+  function selectLesson(lesson){
+    if(!cfg[lesson])return;
+    stop();state.lesson=lesson;state.progress=0;state.question=0;
+    const c=cfg[lesson];
+    $('projChapter').textContent=c.chapter;
+    $('projTitle').textContent=c.title;
+    $('projIntro').textContent=c.intro;
+    $('projRule').textContent=c.rule;
+    $('projMistake').textContent=c.mistake;
+    $('projPaperTask').innerHTML=`<p>${c.paper}</p><p><strong>自查：</strong>三个投影由同一个空间坐标系求出；不要把滑动演示代替纸面推理。</p>`;
+    $('projPlayStatus').textContent='点击播放或拖动时间轴开始';
+    root.querySelectorAll('.proj-tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.proj===lesson)));
+    parameters();rebuild();quiz();updateCompletion();
+  }
+  root.querySelectorAll('.proj-tab').forEach(b=>b.addEventListener('click',()=>selectLesson(b.dataset.proj)));
+  $('projPlay').addEventListener('click',play);
+  $('projPrevious').addEventListener('click',()=>jump(Math.max(0,Math.ceil(state.progress*5-.001)/5-.2)));
+  $('projNext').addEventListener('click',()=>jump(Math.min(1,Math.floor(state.progress*5+.001)/5+.2)));
+  $('projReset').addEventListener('click',()=>jump(0));
+  $('projTimeline').addEventListener('input',e=>jump(Number(e.target.value)/1000));
+  $('projSpeed').addEventListener('change',e=>{state.speed=Number(e.target.value)||1;});
+  $('projNextQuestion').addEventListener('click',()=>{state.question=1;quiz();});
+  $('projPrint').addEventListener('click',()=>window.print());
+  selectLesson('intro');
+  window.__projectionQA={getState:()=>({lesson:state.lesson,progress:state.progress,answers:state.answers}),pointCoordinates:()=>({A:{x:state.x,y:state.y,z:state.z},aPrime:{x:state.x,z:state.z},a:{x:state.x,y:state.y},aDoublePrime:{y:state.y,z:state.z}}),linePoints:typeLine,planePoints:typePlane};
+})();
+
+</script>
+</body>
+</html>
