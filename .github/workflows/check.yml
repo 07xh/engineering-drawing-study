@@ -19,5 +19,6 @@ jobs:
         run: |
           node scripts/validate.cjs
           node scripts/check-constraints.cjs
+          node scripts/check-lab-page.cjs
           node scripts/build-static.cjs
           test -f dist/labs/constraints.html
