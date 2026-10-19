@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const html=fs.readFileSync('labs/constraints.html','utf8');
-const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)];
+const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
 assert(scripts.length>0,'missing inline script');
 const script=scripts[0][1];
 const start=script.indexOf('const z=p=>');
@@ -12,8 +12,8 @@ assert(start>=0&&end>start,'geometry section not found');
 const segment=script.slice(start,end);
 const sliders={kx:{min:'12',max:'77'},ky:{min:'11',max:'77'}};
 const geometry=vm.runInNewContext(
-  'const $=id=>document.getElementById(id);\\n'+segment+
-  '\\n({z,iso,planeMove,candidatePosition,setConstraint:(o,n,h)=>{order=o;step=n;freeHeight=h},setCamera:(a,b,c)=>{yaw=a;pitch=b;zoom=c}})',
+  'const $=id=>document.getElementById(id);\n'+segment+
+  '\n({z,iso,planeMove,candidatePosition,setConstraint:(o,n,h)=>{order=o;step=n;freeHeight=h},setCamera:(a,b,c)=>{yaw=a;pitch=b;zoom=c}})',
   {document:{getElementById:id=>sliders[id]}}
 );
 const startPt={x:35,y:35};
