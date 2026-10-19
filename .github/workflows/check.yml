@@ -15,11 +15,16 @@ jobs:
           node --check app.js
           node --check content.js
           node --check scripts/check-constraints.cjs
+          node --check labs/constraint-engine.js
+          node --check scripts/check-constraint-engine.cjs
       - name: Validate lessons and questions
         run: |
           node scripts/validate.cjs
           node scripts/check-constraints.cjs
           node scripts/check-lab-page.cjs
           node scripts/check-k-drag.cjs
+          node scripts/check-constraint-engine.cjs
           node scripts/build-static.cjs
           test -f dist/labs/constraints.html
+          test -f dist/labs/analysis.html
+          test -f dist/labs/constraint-engine.js
