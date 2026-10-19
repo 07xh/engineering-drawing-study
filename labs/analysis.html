@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>自由度分析策略 · 图学课堂</title><style>
+:root{font-family:system-ui,"Noto Sans SC",sans-serif;color:#1c3941;background:#f1f6f4}*{box-sizing:border-box}body{margin:0}.wrap{max-width:980px;margin:auto;padding:24px 16px 60px}header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}a{color:#146b60}h1{font-size:clamp(1.5rem,4vw,2.2rem)}.card{background:white;border:1px solid #dce8e2;border-radius:16px;padding:18px;margin:14px 0}.muted{color:#55747a}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}button,select{font:inherit;border-radius:10px;border:1px solid #aac7be;padding:10px;background:white;color:#164a45}button{cursor:pointer}button.active{background:#186e63;color:white}button:focus-visible{outline:3px solid #e0a744}button:disabled{opacity:.45;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap}.status{font-weight:700;font-size:1.2rem;color:#176b60}.step{padding:12px 14px;border-left:4px solid #71b6a5;background:#f6faf8;margin:10px 0;border-radius:6px}.warning{border-left-color:#cc8240}.tag{font-size:.82rem;color:#4a646d}label{display:flex;gap:8px;align-items:center}.card p{line-height:1.75}#visual{max-width:100%;height:auto;display:block}small{color:#647a7d}
+</style></head><body><main class="wrap"><header><a href="../index.html">← 返回课程</a><a href="constraints.html">打开三投影面实验室</a></header>
+<h1>自由度分析策略实验室</h1><p class="muted">第一期：空间点的线性约束。每添加或移除一个条件，自动计算独立约束数、剩余自由度和几何可行位置。所有分析均由本地数学计算完成，不依赖 AI 猜测。</p>
+<section class="card"><h2>选择典型例题</h2><div class="grid" id="examples"></div><p id="problem" class="muted"></p></section>
+<section class="card"><h2>逐步添加已知条件</h2><div class="actions"><button id="add" type="button">添加下一条件</button><button id="undo" type="button">撤销一步</button><button id="reset" type="button">重新开始</button></div><div id="steps" aria-live="polite"></div></section>
+<section class="card"><h2>自动分析结果</h2><p class="status" id="status" aria-live="polite"></p><p id="summary"></p><svg id="visual" viewBox="0 0 700 220" role="img" aria-label="自由度随约束步骤变化的示意图"></svg><h3>推荐分析策略</h3><p id="strategy"></p></section>
+<section class="card"><h2>可自主尝试的约束</h2><p class="muted">在当前例题已添加的条件后，尝试再添加一个坐标条件。可用于观察独立、重复和矛盾约束。</p><div class="actions"><label>坐标轴 <select id="axis"><option value="x">x</option><option value="y">y</option><option value="z">z</option></select></label><label>坐标值 <select id="value"><option value="35">35</option><option value="40">40</option><option value="50">50</option><option value="65">65</option><option value="24.5">24.5</option></select></label><button id="try" type="button">添加试验条件</button></div><p class="muted">注意：自由度只适用于条件相容时；矛盾约束表示无解，不是自由度为 0。</p></section>
+</main><script src="constraint-engine.js"></script><script>
+(()=>{'use strict';const $=id=>document.getElementById(id),engine=window.DrawingConstraints;
+const examples=[
+ {name:'例题一：已知水平投影与平面',problem:'已知 K 的水平投影 k=(35,35)，且 K 位于平面 ABC：z=10+0.3x+0.4y。分析空间点 K 的确定过程。',strategy:'先由水平投影 k 确定 x、y；沿垂直 H 面的投射线寻找 K。再用平面 ABC 的辅助线或平面方程确定高度 z。纸面作图应保留投影联系线。',conditions:[{type:'projection',plane:'H',value:[35,35]},{type:'plane',normal:{x:-.3,y:-.4,z:1},offset:10}]},
+ {name:'例题二：已知正面与水平投影',problem:'已知点 P 的正面投影 p′=(40,50) 与水平投影 p=(40,35)，判断空间点是否唯一。',strategy:'正面投影确定 x、z，水平投影确定 x、y。两个投影共享 x 坐标，重复的 x 条件不再减少自由度。用“长对正”核对 x 是否一致。',conditions:[{type:'projection',plane:'V',value:[40,50]},{type:'projection',plane:'H',value:[40,35]}]},
+ {name:'例题三：点在直线与已知高度',problem:'已知点 P 在直线 L 上，L 经过 A=(10,20,15)，方向向量 d=(1,2,1)。又知 P 的高度 z=35。分析确定性。',strategy:'点在空间直线上通常只剩一个参数（1 自由度）。再给高度 z=35，如果直线不平行 H 面，则能确定直线上的唯一点。若直线高度不变，应检查重复或矛盾。',conditions:[{type:'line',point:{x:10,y:20,z:15},direction:{x:1,y:2,z:1}},{type:'coordinate',axis:'z',value:35}]}
+];
+let chosen=0,progress=0,extras=[];
+const label=c=>c.type==='projection'?'已知 '+c.plane+' 面投影 ('+c.value.join(', ')+')':c.type==='plane'?'点在已知平面上':c.type==='line'?'点在已知空间直线上':'已知 '+c.axis+'='+c.value;
+const fmt=n=>Number(n.toFixed(2));
+function render(){
+ const ex=examples[chosen],all=[...ex.conditions.slice(0,progress),...extras],res=engine.analyze(all);
+ $('examples').innerHTML=examples.map((e,i)=>'<button type="button" data-example="'+i+'" class="'+(chosen===i?'active':'')+'">'+e.name+'</button>').join('');
+ $('problem').textContent=ex.problem;
+ $('add').disabled=progress>=ex.conditions.length;$('undo').disabled=progress===0&&!extras.length;
+ $('steps').innerHTML='<p class="muted">初始：空间点有 3 个自由度。</p>'+res.steps.map((s,i)=>'<div class="step '+(s.status==='contradiction'?'warning':'')+'"><strong>第 '+(i+1)+' 步 · '+label(s.condition)+'</strong><p>'+s.explanation+'</p><small>'+(s.status==='redundant'?'重复约束':s.status==='contradiction'?'条件矛盾':'有效新增约束')+'</small></div>').join('');
+ $('status').textContent=res.result.inconsistent?'无解 · 约束矛盾':'剩余 '+res.result.degrees+' 个自由度';
+ $('summary').textContent=res.summary;
+ $('strategy').textContent=ex.strategy;
+ const counts=[3,...res.steps.map(s=>s.after)];
+ $('visual').innerHTML=counts.map((d,i)=>{const x=25+i*(650/Math.max(1,counts.length)),h=d===null?0:d*42;return '<rect x="'+x+'" y="'+(170-h)+'" width="34" height="'+h+'" rx="5" fill="'+(d===null?'#cb7544':'#349887')+'"/><text x="'+(x+17)+'" y="'+(162-h)+'" font-size="15" text-anchor="middle" fill="#244f51">'+(d===null?'无解':d)+'</text><text x="'+(x+17)+'" y="196" font-size="12" text-anchor="middle" fill="#55747a">'+(i===0?'初始':'第'+i+'步')+'</text>'}).join('')+'<line x1="20" y1="170" x2="690" y2="170" stroke="#b8cbc5"/>';
+}
+$('examples').onclick=e=>{const b=e.target.closest('[data-example]');if(!b)return;chosen=+b.dataset.example;progress=0;extras=[];render()};
+$('add').onclick=()=>{if(progress<examples[chosen].conditions.length){progress++;render()}};
+$('undo').onclick=()=>{if(extras.length)extras.pop();else progress=Math.max(0,progress-1);render()};
+$('reset').onclick=()=>{progress=0;extras=[];render()};
+$('try').onclick=()=>{extras.push({type:'coordinate',axis:$('axis').value,value:+$('value').value});render()};
+render();
+})();
+</script></body></html>
