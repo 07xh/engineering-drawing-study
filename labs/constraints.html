@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>自由度与约束实验室 · 图学课堂</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#193447;background:#f1f6f4}*{box-sizing:border-box}body{margin:0}header{background:#123e45;color:white;padding:18px max(18px,calc((100vw - 1100px)/2))}header a{color:#bfead8}main{max-width:1100px;margin:auto;padding:20px}h1{font-size:1.8rem;margin:0 0 8px}h2{font-size:1.2rem}.muted{color:#557078}.card{background:white;border:1px solid #d8e6e1;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 4px 15px #123e4509}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}button,select,input{font:inherit}button,select{padding:9px 12px;border-radius:9px;border:1px solid #b8d2c9;background:white;color:#173e41}button{cursor:pointer}button.active,.primary{background:#176b61;color:white;border-color:#176b61}button:disabled{opacity:.45;cursor:not-allowed}label{display:block;margin:10px 0}input[type=range]{width:min(270px,100%);vertical-align:middle}svg{width:100%;height:auto;background:#f9fcfb;border-radius:12px;border:1px solid #e0eae5}#status{background:#e9f5ef;padding:13px;border-radius:10px;line-height:1.8}#status.warn{background:#fff0df}small{color:#617980}.legend{font-size:.85rem;color:#4e6c70}.step{padding:9px 12px;border-left:3px solid #2b8b78;background:#f2f8f6;margin:8px 0}@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:12px}h1{font-size:1.45rem}}</style></head>
+<body><header><a href="../index.html">← 返回图学课堂</a>　/　互动实验室</header><main>
+<section class="card"><h1>自由度与约束实验室 · 第一阶段</h1><p>从空间平面 ABC 与点 K 出发，观察已知条件怎样限定位置，并验证为什么俯视图中的辅助线可以求出正面投影。全部视图来自同一套空间坐标。</p><p class="muted">教学原型：一般位置平面；暂不支持任意点线面创建或通用约束求解。</p></section>
+<section class="card"><h2>① 选择约束分析顺序</h2><div class="controls"><button id="orderH" class="active">先给水平投影 k</button><button id="orderP">先给平面条件</button><button id="next" class="primary">下一步</button><button id="reset">重新开始</button></div><p id="stepText" class="step" aria-live="polite"></p><div id="status" role="status"></div></section>
+<div class="grid"><section class="card"><h2>② 水平投影 H（俯视图）</h2><svg id="top" viewBox="0 0 350 290" role="img" aria-label="平面 ABC 的水平投影与辅助线"></svg><p class="legend">蓝色：平面边界　绿色：辅助线　橙色：点 k</p></section><section class="card"><h2>③ 正面投影 V（主视图）</h2><svg id="front" viewBox="0 0 350 290" role="img" aria-label="平面 ABC 的正面投影与辅助线"></svg><p class="legend">橙色虚线：由 k 确定的投影联系线</p></section></div>
+<section class="card"><h2>④ 改变条件与辅助线</h2><div class="grid"><div><label for="kx">k 的水平 x 坐标：<output id="kxOut"></output></label><input type="range" id="kx" min="12" max="77" value="35"><label for="ky">k 的水平 y 坐标：<output id="kyOut"></output></label><input type="range" id="ky" min="11" max="77" value="35"></div><div><label for="vertex">辅助线经过哪个平面顶点？</label><select id="vertex"><option value="A">经过 A，与 BC 相交</option><option value="B">经过 B，与 AC 相交</option><option value="C">经过 C，与 AB 相交</option></select><p id="auxInfo" class="muted"></p></div></div><p class="muted">滑块允许测试三角形内外的水平位置；超出三角形时会提示：K 仍可属于无限延伸的平面，但不属于有限三角形面片。</p></section>
+<section class="card"><h2>⑤ 为什么这种作图有效？</h2><div id="explain"></div><p><strong>关键结论：</strong>二维辅助线本身并不能凭空确定空间直线。必须先由平面已知边线上的两个对应空间点确定它，再求另一面投影。更换合法辅助线，不会改变最终 K 的空间位置。</p><p><small>几何约定：A=(10,10,17)、B=(80,10,38)、C=(20,80,48)，单位为教学坐标；平面 z=10+0.3x+0.4y。SVG 是投影教学图，不是符合国标排版的完整工程图。</small></p></section>
+</main><script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), A={x:10,y:10},B={x:80,y:10},C={x:20,y:80},v={A,B,C};
+const z=p=>10+.3*p.x+.4*p.y;
+let order='H',step=0;
+const cross=(a,b)=>a.x*b.y-a.y*b.x;
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+function intersection(p,q,r,s){const d=sub(q,p),e=sub(s,r),den=cross(d,e);if(Math.abs(den)<1e-9)return null;const t=cross(sub(r,p),e)/den;return {x:p.x+t*d.x,y:p.y+t*d.y}}
+const pt=(p,kind)=>[36+p.x*3.2,kind==='H'?268-p.y*2.9:268-z(p)*3.9];
+const point=(p,kind,color,label,r=4)=>{const [x,y]=pt(p,kind);return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+color+'"/><text x="'+(x+7)+'" y="'+(y-7)+'" fill="'+color+'" font-size="12">'+label+'</text>'};
+const line=(p,q,kind,color,width=2,dash='')=>{const [x,y]=pt(p,kind),[u,w]=pt(q,kind);return '<line x1="'+x+'" y1="'+y+'" x2="'+u+'" y2="'+w+'" stroke="'+color+'" stroke-width="'+width+'" '+(dash?'stroke-dasharray="'+dash+'"':'')+'/>'};
+const inside=k=>{const den=cross(sub(B,A),sub(C,A));const u=cross(sub(k,A),sub(C,A))/den,t=cross(sub(B,A),sub(k,A))/den;return u>=-1e-7&&t>=-1e-7&&u+t<=1+1e-7};
+function render(){const k={x:+$('kx').value,y:+$('ky').value};$('kxOut').textContent=k.x;$('kyOut').textContent=k.y;const name=$('vertex').value,other=({A:[B,C],B:[A,C],C:[A,B]})[name];const n=intersection(v[name],k,...other);const valid=!!n&&Number.isFinite(n.x)&&Number.isFinite(n.y);const isInside=inside(k);
+const first=order==='H'?'先已知水平投影 k：K 可以沿投射方向改变高度。':'先已知平面 ABC：K 可以在平面上改变位置。';
+const second=order==='H'?'再加 K∈ABC：投射线与一般位置平面相交，确定 K。':'再给水平投影 k：投射线与平面相交，确定 K。';
+$('stepText').textContent=['第 1 步：'+first,'第 2 步：'+second,'第 3 步：使用平面内辅助直线，将空间关系转换为两面投影作图。'][step];
+$('orderH').classList.toggle('active',order==='H');$('orderP').classList.toggle('active',order==='P');$('next').disabled=step===2;
+let top='<rect width="350" height="290" fill="#f9fcfb"/><polygon points="'+[A,B,C].map(p=>pt(p,'H').join(',')).join(' ')+'" fill="#dcefe9" stroke="#337aaf" stroke-width="2"/>';
+let front='<rect width="350" height="290" fill="#f9fcfb"/><polygon points="'+[A,B,C].map(p=>pt(p,'V').join(',')).join(' ')+'" fill="#e4f0f7" stroke="#337aaf" stroke-width="2"/>';
+for(const [key,p] of Object.entries(v)){top+=point(p,'H','#286fa5',key.toLowerCase());front+=point(p,'V','#286fa5',key.toLowerCase()+'′')}
+const showK=order==='H'||step>=1,showPlaneK=order==='P'||step>=1;
+if(showK){top+=point(k,'H','#cb812c','k',5);const [x]=pt(k,'V');front+='<line x1="'+x+'" y1="10" x2="'+x+'" y2="280" stroke="#cb812c" stroke-width="1.7" stroke-dasharray="5 5"/>'}
+if(showPlaneK&&step>=1){front+=point(k,'V','#cb812c','k′',5)}
+if(step===2&&valid){top+=line(v[name],n,'H','#168a6e',3)+point(n,'H','#168a6e','n');front+=line(v[name],n,'V','#168a6e',3)+point(n,'V','#168a6e','n′');}
+$('top').innerHTML=top;$('front').innerHTML=front;
+$('status').className=isInside?'':'warn';
+$('status').textContent=(isInside?'k 位于三角形 abc 内部。':'k 位于三角形 abc 外部：仍在无限延伸平面上，但不属于有限三角形面片。')+'　两种约束顺序的最终结果相同：K=('+k.x+', '+k.y+', '+z(k).toFixed(2)+')。';
+$('auxInfo').textContent=valid?'辅助直线经过 '+name+'，与对边所在直线相交于 N。N 的高度由平面及其边线决定；正面投影的辅助线连接 '+name+'′ 与 n′。':'当前辅助线与所选对边平行或退化，请更换顶点。';
+$('explain').innerHTML='<div class="step">① 平面由 A、B、C 的空间位置确定。</div><div class="step">② 俯视图中的辅助线与已知边线相交，得到可在另一面找到对应投影的点 N。</div><div class="step">③ 空间直线 '+name+'N 位于 ABC 平面内，它的正面投影由两端点的正面投影连接得到。</div><div class="step">④ k′ 同时位于该正面投影与经过 k 的投影联系线上，故可以求出。</div>';
+}
+$('orderH').onclick=()=>{order='H';step=0;render()};$('orderP').onclick=()=>{order='P';step=0;render()};$('next').onclick=()=>{step=Math.min(2,step+1);render()};$('reset').onclick=()=>{step=0;render()};['kx','ky','vertex'].forEach(id=>$(id).addEventListener('input',render));render();
+})();
+</script></body></html>
