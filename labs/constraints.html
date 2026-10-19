@@ -52,7 +52,7 @@ const first=order==='H'?'先已知水平投影 k：K 可以沿投射方向改变
 const second=order==='H'?'再加 K∈ABC：投射线与一般位置平面相交，确定 K。':'再给水平投影 k：投射线与平面相交，确定 K。';
 $('stepText').textContent=['第 1 步：'+first,'第 2 步：'+second,'第 3 步：使用平面内辅助直线，将空间关系转换为两面投影作图。'][step];
 $('orderH').classList.toggle('active',order==='H');$('orderP').classList.toggle('active',order==='P');$('next').disabled=step===2;
-const dof=step===0?1:0;const locus=step===0?(order==='H'?'直线：固定 x、y，只能沿 z 方向移动':'平面：z 随 x、y 改变，可在两个方向自由移动'):'交点：水平投射线与 ABC 平面相交，位置唯一';$('dofPanel').textContent='当前 K 的剩余自由度：'+dof+'　｜　可行位置：'+locus+'。';
+const dof=step===0?(order==='H'?1:2):0;const locus=step===0?(order==='H'?'直线：固定 x、y，只能沿 z 方向移动':'平面：z 随 x、y 改变，可在两个方向自由移动'):'交点：水平投射线与 ABC 平面相交，位置唯一';$('dofPanel').textContent='当前 K 的剩余自由度：'+dof+'　｜　可行位置：'+locus+'。';
 const showK=order==='H'||step>=1;
 let space='<rect width="700" height="420" fill="#f9fcfb"/>';
 if($('showPlanes').checked){const o={x:0,y:0,z:0},x={x:90,y:0,z:0},y={x:0,y:90,z:0},zz={x:0,y:0,z:85};space+=planePoly([o,x,{x:90,y:90,z:0},y],'H','#bdebd677','H');space+=planePoly([o,x,{x:90,y:0,z:85},zz],'V','#9ac5ed77','V');space+=planePoly([o,y,{x:0,y:90,z:85},zz],'W','#edb4c477','W');}
