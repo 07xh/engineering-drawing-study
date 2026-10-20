@@ -12,8 +12,8 @@ const compiler=evaluate('knowledge/solution-gate.js').VerifiedSolutionCompiler;
 const sourceRegistry=evaluate('labs/verified-exercises.js').VerifiedExerciseGeometry;
 const recipeRegistry=evaluate('labs/verified-solutions.js').VerifiedExerciseSolutions;
 const reviewed=know.entries.filter(x=>x.contentStatus==='page-reviewed');
-assert.equal(know.entries.length,72);
-assert.equal(reviewed.length,16);
+assert.equal(know.entries.length,92);
+assert.equal(reviewed.length,36);
 assert.equal(know.entries.filter(x=>x.contentStatus==='toc-only').length,56);
 for(const item of reviewed.filter(x=>x.visualMode)){
  const mode=geom.modeFor(item.id,item.chapter);

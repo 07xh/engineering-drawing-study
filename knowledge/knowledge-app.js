@@ -107,6 +107,7 @@ function show(id,scroll=false){
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  const visualLink=document.querySelector('.site-jump-visual');
  if(visualLink)visualLink.hidden=!lesson||!item.visualMode;
+ const lab=$('chapterLabLink');if(lab){const allowed=item.labLink==='../labs/tangent-constraint.html'&&lesson;lab.hidden=!allowed;if(allowed)lab.href=item.labLink;}
  try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
  if(scroll){
   $('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});
