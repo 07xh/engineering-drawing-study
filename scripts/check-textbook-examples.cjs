@@ -55,6 +55,9 @@ const elements=['textbookExample','bookExampleSvg','bookExamplePrev','bookExampl
  'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource'];
 for(const id of elements)assert(html.includes('id="'+id+'"'),'missing interactive lesson element '+id);
 assert(html.includes('id="bookExampleStepNav"'),'missing step navigation');
+assert(html.includes('id="bookExampleShowAux" checked'),'auxiliary lines should be visible by default');
+assert(ui.includes("item.style==='auxiliary')continue"),'hide only helper lines, not given or result geometry');
+assert(ui.includes("bookExampleShowAux').addEventListener('change'"),'auxiliary visibility must redraw current stage');
 assert(ui.includes("current.order.forEach((label,i)=>"),'step navigator must be generated from verified textbook stages');
 assert(ui.includes("button.addEventListener('click',()=>{index=i;render()})"),'step navigator must select a real geometry stage');
 assert(ui.includes("button.setAttribute('aria-current','step')"),'active step must be accessible');

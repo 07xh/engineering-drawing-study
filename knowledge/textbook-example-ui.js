@@ -12,6 +12,7 @@ function draw(frame){
  const board=$('bookExampleSvg');board.replaceChildren();
  svg('rect',{width:820,height:420,fill:'#fff'});
  for(const item of frame.shapes){
+  if(!$('bookExampleShowAux').checked && item.style==='auxiliary')continue;
   const col=colors[item.style]||'#657567';
   if(item.type==='line'){
    svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:col,
@@ -61,6 +62,7 @@ function show(topicId){
  $('bookExampleFidelity').textContent='来源与重绘边界：'+example.fidelity;
  render();
 }
+$('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
 $('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,index-1);render()}});
 $('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);render()}});
 $('bookExampleReset').addEventListener('click',()=>{if(current){index=0;render()}});
