@@ -9,6 +9,7 @@ const pt=(x,y)=>({x,y}),line=(a,b,kind='given')=>({type:'line',a,b,kind}),text=(
  rect=(x,y,w,h,kind='given')=>({type:'rect',x,y,w,h,kind}),
  poly=(points,kind='given')=>({type:'poly',points,kind});
 const common={
+ 'ch01-divide-and-polygons':{title:'圆规作内接三角形与六边形的几何原理',page:20,printedPage:14,steps:['识别圆心与一条直径','从下端点作等半径辅助圆弧','连接三个顶点理解正三角形','从上端点再作等半径辅助圆弧','连接六个圆周点并核对边长'],limit:'参考教材例1-4图1-25的作图关系，使用独立计算的圆周坐标重新演示；不是原书图形的逐线复制。'},
  'ch01-drawing-scale':{title:'绘图比例与实物尺寸',page:12,printedPage:6,steps:['画出 1:2 的简化形体','加入 1:1 的同一形体','再加入 2:1 的同一形体','核对标注数字不随比例变化'],limit:'仅借鉴教材图1-8的三种比例对照关系；独立重绘轮廓，非原书图形复刻或编号例题。'},
  'ch04-s01':{title:'三轴方向与轴测构图',page:90,printedPage:84,steps:['先识别三条轴测轴','沿对应轴方向依次取等向长度','延续相同方向补出各组平行棱','完成一个简单长方体的轴测投影'],limit:'轴测轴方向和长度比例的独立示意，非教材题图的具体尺寸或标准答案。'},
  'ch05-s02':{title:'剖视图的剖切与材料表达',page:110,printedPage:104,steps:['先认识外形和内部隐线','引入经过内部结构的剖切位置','显示剖切后的内部轮廓','为被切的材料区域加上概念性剖面线'],limit:'只表达剖视形成的基本思想；剖切线、线型及剖面线需以具体题目与适用标准核对。'},
@@ -78,10 +79,33 @@ function scaleDiagram(stage){
  if(stage===3)out.push(text(102,364,'绘图长度不同；实际尺寸标注保持一致'));
  return out;
 }
+function inscribedPolygons(stage){
+ const O=pt(322,187),R=120,t=Math.sqrt(3)*R/2;
+ const D=pt(O.x,O.y-R),B=pt(O.x,O.y+R);
+ const E=pt(O.x-t,O.y+R/2),F=pt(O.x+t,O.y+R/2);
+ const H=pt(O.x-t,O.y-R/2),G=pt(O.x+t,O.y-R/2);
+ const sh=[poly(Array.from({length:72},(_,k)=>pt(O.x+R*Math.cos(k*Math.PI/36),O.y+R*Math.sin(k*Math.PI/36))),'given'),
+  line(D,B,'axis'),text(O.x+7,O.y-4,'O'),text(D.x+9,D.y-7,'D'),text(B.x+9,B.y+20,'B')];
+ function arc(center,start,end){
+  for(let k=0;k<18;k++){
+   const a=(start+(end-start)*k/18)*Math.PI/180,b=(start+(end-start)*(k+1)/18)*Math.PI/180;
+   sh.push(line(pt(center.x+R*Math.cos(a),center.y+R*Math.sin(a)),
+    pt(center.x+R*Math.cos(b),center.y+R*Math.sin(b)),'auxiliary'));
+  }
+ }
+ if(stage>=1){arc(B,210,330);sh.push(text(E.x-22,E.y+18,'E'),text(F.x+9,F.y+18,'F'))}
+ if(stage>=2){sh.push(line(D,E,'auxiliary'),line(E,F,'auxiliary'),line(F,D,'auxiliary'))}
+ if(stage>=3){arc(D,30,150);sh.push(text(H.x-22,H.y-8,'H'),text(G.x+9,G.y-8,'G'))}
+ if(stage>=4){
+  const vertices=[D,H,E,B,F,G];
+  for(let k=0;k<6;k++)sh.push(line(vertices[k],vertices[(k+1)%6],'result'));
+ }
+ return sh;
+}
 function frame(id,step){
  const def=common[id];
  if(!def||!Number.isInteger(step)||step<0||step>=def.steps.length)return null;
- const shapes=id==='ch01-drawing-scale'?scaleDiagram(step):id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
+ const shapes=id==='ch01-divide-and-polygons'?inscribedPolygons(step):id==='ch01-drawing-scale'?scaleDiagram(step):id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
  return {id,step,steps:def.steps.length,title:def.title,action:def.steps[step],page:def.page,
   printedPage:def.printedPage,scope:def.limit,shapes};
 }
