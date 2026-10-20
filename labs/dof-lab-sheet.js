@@ -53,12 +53,14 @@ function markup(model,point,options={}){
   for(const g of transfer.guide)parts.push(line(g.from,g.to,'sheet-helper','data-kind="'+esc(g.kind)+'"'));
   parts.push('</g>');
  }
+ if(options.showTarget!==false){
  parts.push('<g class="sheet-target-projections">');
  for(const view of ['V','H','W']){
   const p=transfer.points[view];
   parts.push(dot(p,view==='V'?'p′':view==='H'?'p':'p″','sheet-target','data-target-view="'+view+'"'));
  }
  parts.push('</g>');
+ }
  parts.push(label({x:58,y:596},'线框预览：立体遮挡与虚实线尚未判定；目标点为当前约束的一组可行示例。','sheet-disclaimer'));
  return parts.join('');
 }
