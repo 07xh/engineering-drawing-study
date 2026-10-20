@@ -80,3 +80,9 @@ console.log('PASS four partial source-reviewed diagrams; no claims of exact comp
 for(const id of ['2-6-5','2-6-6'])assert(verifiedJs.includes("'"+id+"'"),'missing source-traced geometry '+id);
 assert((verifiedJs.match(/status:'partial'/g)||[]).length>=6,'all six source-reviewed 2-6 exercises must retain partial status');
 console.log('PASS 2-6-5 and 2-6-6 visible geometry and partial-source disclaimers');
+
+for(const id of ['revealPrev','revealNext','revealAll','revealRange','revealStatus'])assert(drawingHtml.includes('id="'+id+'"'),'missing progressive reveal control '+id);
+assert(drawingJs.includes('function updateReveal()'),'missing progressive source diagram reveal');
+assert(drawingJs.includes('sourceStage(kind)'),'source line categories must control reveal order');
+assert(drawingHtml.includes('prefers-reduced-motion:reduce'),'reveal animation must respect reduced motion');
+console.log('PASS progressive source geometry reveal controls and accessibility');
