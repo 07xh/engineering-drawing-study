@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),M=require('../knowledge/multi-point-constraints.js');
+const c=[{type:'fixed',point:'A',axis:'x',value:0},{type:'fixed',point:'A',axis:'y',value:0},{type:'horizontal',a:'A',b:'B'},{type:'fixed',point:'B',axis:'x',value:3}];
+let r=M.analyze({points:['A','B'],constraints:c});assert.equal(r.status,'unique');assert.equal(r.degrees,0);assert.equal(r.rank,4);
+r=M.analyze({points:['A','B'],constraints:c.slice(0,3)});assert.equal(r.degrees,1);
+r=M.analyze({points:['A','B'],constraints:[...c,{type:'horizontal',a:'A',b:'B'}]});assert.equal(r.steps.at(-1).status,'redundant');
+r=M.analyze({points:['A','B'],constraints:[...c,{type:'fixed',point:'B',axis:'x',value:4}]});assert.equal(r.status,'none');assert.equal(r.degrees,null);
+r=M.analyze({points:['A','B'],constraints:[{type:'coincident',a:'A',b:'B'}]});assert.equal(r.degrees,2);
+assert.throws(()=>M.analyze({points:['A','A'],constraints:[]}));
+assert.throws(()=>M.analyze({points:['A'],constraints:[{type:'distance',a:'A',b:'B',value:3}]}));
+console.log('PASS: multi-point rank, independent/redundant/conflicting constraints and unsupported nonlinear cases');
