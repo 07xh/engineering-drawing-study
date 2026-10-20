@@ -111,6 +111,8 @@ function render(){
  }
  draw(frame,added);
  updateInspector(items);
+ const selected=items.find(item=>shapeKey(item)===selectedShapeKey);
+ if(window.TextbookConstraintVisualUI)window.TextbookConstraintVisualUI.show(current,index,problem,selected?.label||null);
  const newLabels=[...new Set(added.map(shape=>shape.label).filter(Boolean))];
  $('bookExampleStageAddition').textContent=index===0?
   '已知条件：先辨认题目提供的点线与投影轴；此时不显示待求结果。':
@@ -186,7 +188,7 @@ function show(topicId){
   picker.append(option);
  }
  $('bookExamplePickerLabel').hidden=matches.length<2;
- if(!example){current=null;problem=null;return}
+ if(!example){current=null;problem=null;window.TextbookConstraintVisualUI?.clear();return}
  picker.value=example.id;
  activate(example);
 }
