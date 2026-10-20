@@ -56,7 +56,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="six-layer-course.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
 <script defer src="nonlinear-local-dof.js"></script>
 <script defer src="nonlinear-step-trace.js"></script>
 <script defer src="player-dof-summary.js"></script>
@@ -72,12 +72,12 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <header class="hero kb-hero" aria-labelledby="knowledgeHeading">
 <div class="kb-hero-copy"><div class="eyebrow">THE THIRD EDITION / 教材知识地图</div>
 <h1 id="knowledgeHeading">从教材第一章开始，系统学习工程制图。</h1>
-<p>按照胡建生《工程制图与 AutoCAD》第3版原书目录建立章节体系。已核对的知识点提供原创讲解和动态模型，其余内容明确显示建设进度。</p>
+<p>按照原书目录组织十二章课程。每条目录与知识专题都依照“问题—概念—推导—教材例题—自由度—结果核对”六层学习；已核对精讲和待核对导学明确区分。</p>
 <a class="kb-hero-jump" href="#knowledgeWorkspace">开始学习 <span aria-hidden="true">↓</span></a></div>
 <div class="stats kb-hero-stats" aria-label="知识库概况"><span class="stat" id="totalCards">正在加载</span><span class="stat" id="completedCards">本机已学 0 条</span><span class="stat">12 章教材 + 附录</span></div></header>
 <details class="kb-source-note">
 <summary><strong>资料说明</strong><span>依据完整教材第3版的目录建框架；未逐页核对的内容不会冒充课程讲解。</span><span class="kb-note-expand">查看详情</span></summary>
-<p>依据你上传的292页《工程制图与 AutoCAD》第3版重建。原书目录和章节起始页已经核对；第一至第三章已有初步知识讲解，其中部分重点知识包含完整推导；第四章及以后仍为待建设目录。印刷正文第1页对应PDF第7页。不会公开原PDF、原书扫描图或出版社答案，原有习题也不会因为题号相似就被自动认定为本书原题。</p></details>
+<p>十二章与附录全部分节已按原书目录核对并建立六层课程结构。第一至第三章的部分专题有已核对的原创精讲；第四至第十二章目前提供按分节编写的原创导学，尚未核对每一页正文和全部图例。正文印刷第1页对应PDF第7页。本站不公开教材整页、扫描图或出版社答案，未经核实的习题也不会自动获得标准答案。</p></details>
 <div class="toolbar kb-filterbar" role="search" aria-label="教材章节与知识点导航">
 <label>第几章<select id="chapterSelect"><option value="all">全部章节</option></select></label>
 <label>第几节<select id="sectionSelect"><option value="all">全部小节</option></select></label>
@@ -95,6 +95,25 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p><p id="detailStatusNotice" class="note" aria-live="polite"></p>
+<section id="sixLayerCourse" class="six-layer-course" aria-label="六层教材学习结构" hidden>
+  <div class="six-layer-heading">
+    <div><strong>六层递进学习</strong><p id="sixLayerSource" class="six-layer-source"></p></div>
+    <span id="sixLayerCount" class="six-layer-count">1 / 6</span>
+  </div>
+  <nav id="sixLayerNav" class="six-layer-nav" aria-label="六层课程导航"></nav>
+  <div class="six-layer-controls" role="group" aria-label="切换教学层次">
+    <button id="sixLayerPrev" type="button">← 上一层</button>
+    <button id="sixLayerNext" class="primary" type="button">下一层 →</button>
+  </div>
+  <article class="six-layer-stage" id="sixLayerStage" aria-live="polite">
+    <p class="six-layer-kicker" id="sixLayerKicker"></p>
+    <h3 id="sixLayerHeadline"></h3>
+    <p id="sixLayerText"></p>
+    <ol class="six-layer-details" id="sixLayerDetails"></ol>
+    <p class="six-layer-guidance" id="sixLayerGuidance"></p>
+    <div id="sixLayerExampleSlot" class="six-layer-example-slot" hidden></div>
+  </article>
+</section>
 <div id="verifiedLessonContent">
 <section class="deep-lesson" id="deepLesson" hidden aria-label="教材知识深度精讲">
 <div class="deep-header"><span class="deep-tag">重点精讲 · 展开原理而非只记结论</span><h3 id="deepQuestion"></h3></div>
