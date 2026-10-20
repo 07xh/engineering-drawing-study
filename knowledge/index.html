@@ -41,6 +41,13 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 .visual-stage-figure{position:sticky;top:12px;min-width:0}
 .visual-stage-notes{min-width:0;padding:12px;border:1px solid #e0ebe3;border-radius:12px;background:white}
 .visual-stage-notes p{line-height:1.75}
+.visual-legend{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 0;font-size:12px;color:#496354}
+.visual-legend span{display:inline-flex;align-items:center;gap:5px}
+.visual-swatch{width:23px;height:0;border-top:3px solid #277453;display:inline-block}
+.visual-swatch.guide{border-top:2px dashed #c0832d}
+.visual-swatch.axis{border-top:2px solid #96a9a0}
+.visual-stage-figure svg{max-width:100%;overflow:visible}
+
 @media(max-width:800px){.visual-stage-grid{grid-template-columns:minmax(0,1fr)}.visual-stage-figure{position:static}.visual-stage-notes{padding:10px}}
 
 .visual-guide{font-size:13px;color:#587466}.visual-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:12px 0}
@@ -147,7 +154,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <section id="visualLesson" class="detail" aria-label="原创三视图动态教学" hidden>
 <h3>动态几何演示 · 看图理解每一步</h3>
 <p id="visualSourceNote" class="note">这是原创教学几何模型，不是教材题答案。</p>
-<div class="visual-box"><h3 id="visualTitle"></h3><div class="visual-stage-grid"><div class="visual-stage-figure"><svg id="visualBoard" role="img" aria-label="第一角画法三面投影：正面左上、水平面左下、侧面右上以及45度转移线" viewBox="0 0 970 650"></svg></div><div class="visual-stage-notes" aria-label="当前图形的步骤讲解">
+<div class="visual-box"><h3 id="visualTitle"></h3><div class="visual-stage-grid"><div class="visual-stage-figure"><div class="visual-legend" aria-label="投影图线条图例"><span><i class="visual-swatch"></i>形体投影</span><span><i class="visual-swatch guide"></i>教学辅助线</span><span><i class="visual-swatch axis"></i>投影轴</span></div><svg id="visualBoard" role="img" aria-label="第一角画法三面投影：正面左上、水平面左下、侧面右上以及45度转移线" viewBox="0 0 970 650"></svg></div><div class="visual-stage-notes" aria-label="当前图形的步骤讲解">
 <div class="visual-tools">
 <button type="button" id="visualPrev">上一步</button>
 <button type="button" class="primary" id="visualNext">下一步</button>
