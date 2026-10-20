@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>自由几何建模 · 图学课堂</title><link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:#edf3ef;color:#224735}
+*{box-sizing:border-box}body{margin:0}.free-wrap{max-width:1380px;margin:0 auto;padding:18px 16px 60px}
+.free-panel{background:#fff;border:1px solid #d7e6dc;border-radius:16px;padding:17px;min-width:0}
+.free-wrap h1{font-size:clamp(24px,3vw,34px);margin:4px 0 8px}.free-wrap h2{font-size:17px;margin:0 0 10px}.free-wrap h3{font-size:15px;margin:8px 0}
+.free-wrap p{line-height:1.55;margin:7px 0}.free-muted{font-size:13px;color:#5b7667}
+.free-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:13px;margin:14px 0;align-items:start}
+.free-editors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:14px 0}
+.free-board{width:100%;height:auto;display:block;background:#fff;border:1px solid #d7e6dc;border-radius:12px}
+.free-space{touch-action:none;cursor:grab}.free-space.dragging{cursor:grabbing}
+.free-webgl{width:100%;height:clamp(290px,33vw,450px);border:1px solid #d7e6dc;border-radius:12px;overflow:hidden}
+.free-webgl[hidden]{display:none}.free-webgl canvas{display:block;width:100%;height:100%;touch-action:none}
+.free-tools{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0}
+.free-wrap button,.free-wrap input,.free-wrap select{font:inherit;min-height:39px;border:1px solid #accbbb;border-radius:9px;padding:8px;color:#224735;background:#fff}
+.free-wrap button{cursor:pointer}.free-wrap button.primary{background:#27754e;border-color:#27754e;color:#fff}
+.free-wrap button:disabled{opacity:.45;cursor:not-allowed}
+.free-wrap input[type=number]{max-width:100%;width:112px}
+.free-wrap input[type=checkbox]{min-height:auto;accent-color:#317958}
+.free-fields{display:flex;flex-wrap:wrap;gap:10px}
+.free-fields label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#526c5e;min-width:88px;flex:1 1 95px}
+.free-fields input{width:100%;min-width:0}
+.free-stat{display:flex;align-items:center;gap:15px;flex-wrap:wrap;padding:12px 15px;background:#e8f4eb;border-radius:12px}
+.free-stat strong{font-size:30px;font-variant-numeric:tabular-nums;color:#216d4b}
+.free-list{list-style:none;margin:9px 0 0;padding:0;display:grid;gap:7px}
+.free-list li{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:9px 10px;background:#f7faf7;border:1px solid #e0eae2;border-radius:10px;overflow-wrap:anywhere}
+.free-list li .actions{display:flex;flex-wrap:wrap;gap:5px}.free-list button{min-height:34px;padding:6px 9px;font-size:12px}
+.free-list li.current{border-color:#5b9e78;background:#edf8f1}
+.free-notice{border-left:3px solid #d39a49;background:#fff8ea;padding:9px 12px;font-size:13px}
+.free-help{color:#456f56;font-size:13px}.free-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:10px 0}
+.free-sheet-line{stroke:#367654;stroke-width:2;fill:none}.free-sheet-point{fill:#579673;stroke:#fff;stroke-width:1.4}
+.free-sheet-point-selected{fill:#d68b2a;stroke:#fff;stroke-width:2}.free-sheet-label{fill:#476b54;font-size:15px;font-weight:650}
+.free-sheet-axes .sheet-axis{stroke:#97afa0;stroke-width:1.6}
+.free-sheet-axes .sheet-miter{stroke:#a0b2a7;stroke-width:1.6;stroke-dasharray:7 5}
+.free-sheet-guides .sheet-helper{stroke:#d18a29;stroke-width:1.7;stroke-dasharray:7 5}
+.sheet-view-label{fill:#40684f;font-size:18px;font-weight:650}.sheet-axis-label{fill:#64806f;font-size:15px}
+.sheet-disclaimer{fill:#617b69;font-size:12px}.free-sheet-empty{font-size:18px;fill:#6b8675}
+@media(max-width:950px){.free-grid,.free-editors{grid-template-columns:1fr}}
+@media(max-width:560px){.free-wrap{padding:12px 9px 50px}.free-panel{padding:12px}.free-tools{gap:6px}.free-wrap button{padding:7px}}
+</style><link rel="stylesheet" href="../site-ui.css"></head>
+<body class="ui-refresh"><header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html">⌁ 图学课堂</a><nav class="site-nav" aria-label="实验室"><a href="dof-lab-v2.html">自由度实验室 2.0</a><a href="../knowledge/index.html">教材课程</a></nav></div></header>
+<main class="free-wrap">
+<section class="free-panel"><h1>自由几何建模 · 第一阶段</h1>
+<p>从一张空白纸开始，自己添加空间点、连接线段。三维模型与<strong>同一张工程图纸</strong>中的 V/H/W 三视图实时对应，45° 深度转移线始终保留。</p>
+<p class="free-muted">这是自定义学习实验，并非教材原题。当前仅编辑点和线段；建立面、整体约束求解、题目保存将在后续阶段开发。</p>
+<div class="free-stat"><div><strong id="freeDegrees">0</strong><span> 位置自由度（无约束）</span></div><div id="freeCounts">0 点 · 0 线段</div></div>
+<p id="freeMathNote" class="free-help">连接线段不会自动固定长度，因此不会减少自由度。</p></section>
+<div class="free-grid">
+ <section class="free-panel"><h2>三维自由空间</h2><p class="free-muted">点击点以选中；拖动旋转视角，下面按钮可以缩放。若设备无法使用 WebGL，会使用 SVG 观察器。</p>
+ <svg id="freeSpace" class="free-board free-space" role="img" aria-label="三维点线场景" viewBox="0 0 460 330"></svg>
+ <div id="freeThree" class="free-webgl" hidden aria-label="Three.js 三维点线观察器"></div>
+ <p id="freeViewerStatus" class="free-muted" aria-live="polite"></p>
+ <div class="free-tools"><button id="freeTurnLeft" type="button">左转</button><button id="freeTurnRight" type="button">右转</button><button id="freeZoomIn" type="button">放大</button><button id="freeZoomOut" type="button">缩小</button><button id="freeResetView" type="button">恢复观察</button></div></section>
+ <section class="free-panel"><h2>同纸三视图 · 第一角画法</h2><p class="free-muted">V 在左上、H 在左下、W 在右上。选中一个点时，显示等高联系线与 45° 深度转移步骤。</p>
+ <svg id="freeSheet" class="free-board" role="img" aria-label="同一张图纸的三视图和45度转移线" viewBox="0 0 960 620"></svg>
+ <div class="free-tools"><label><input type="checkbox" id="freeShowGuides" checked> 显示所选点的投影联系线</label></div></section>
+</div>
+<div class="free-editors">
+ <section class="free-panel"><h2>1. 创建与修改空间点</h2>
+ <form id="freePointForm"><div class="free-fields">
+ <label>点名（可留空自动编号）<input id="freePointName" placeholder="A、B、C…" maxlength="16"></label>
+ <label>x 坐标<input id="freeX" type="number" step="any" value="25" required></label>
+ <label>y 坐标<input id="freeY" type="number" step="any" value="20" required></label>
+ <label>z 坐标<input id="freeZ" type="number" step="any" value="35" required></label>
+ </div><div class="free-actions"><button class="primary" id="freeSavePoint" type="submit">添加空间点</button><button id="freeNewPoint" type="button">新建点</button><button id="freeDeletePoint" type="button" disabled>删除选中点</button></div></form>
+ <div class="free-actions"><span class="free-muted">移动选中点（每次 5 单位）：</span>
+ <button type="button" data-nudge="x:-5">X−</button><button type="button" data-nudge="x:5">X+</button>
+ <button type="button" data-nudge="y:-5">Y−</button><button type="button" data-nudge="y:5">Y+</button>
+ <button type="button" data-nudge="z:-5">Z−</button><button type="button" data-nudge="z:5">Z+</button></div>
+ <h3>空间点列表</h3><ul id="freePointList" class="free-list"></ul></section>
+ <section class="free-panel"><h2>2. 自由连接线段</h2>
+ <form id="freeEdgeForm"><div class="free-fields"><label>起点<select id="freeEdgeA" required></select></label><label>终点<select id="freeEdgeB" required></select></label></div>
+ <div class="free-actions"><button class="primary" id="freeAddEdge" type="submit">连接两个点</button></div></form>
+ <p class="free-muted">这里创建的是几何线段，不自动设置长度约束。线段两端位置会随顶点修改同步变化。</p>
+ <h3>线段列表</h3><ul id="freeEdgeList" class="free-list"></ul>
+ <div class="free-actions"><button id="freeUndo" type="button" disabled>撤销上一步</button><button id="freeClear" type="button" disabled>清空所有几何</button></div>
+ <p class="free-notice">当前仅计算未加约束时全部空间点的位置自由度。后续将支持任意选择目标点、距离、共线、共面等多对象约束。</p></section>
+</div>
+<p id="freeStatus" role="status" aria-live="polite" class="free-help"></p>
+</main>
+<script defer src="dof-lab-geometry.js"></script>
+<script defer src="dof-lab-spatial-svg.js"></script>
+<script defer src="free-geometry-core.js"></script>
+<script defer src="free-geometry-sheet.js"></script>
+<script defer src="free-geometry-spatial-svg.js"></script>
+<script defer src="dof-lab-three-bundle.js"></script>
+<script defer src="free-modeler-ui.js"></script>
+</body></html>
