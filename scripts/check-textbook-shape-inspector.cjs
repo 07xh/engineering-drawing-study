@@ -65,6 +65,8 @@ get('bookExampleNext').click();get('bookExampleNext').click();
 const hit=get('bookExampleSvg').children.find(x=>x.attributes['data-inspect-key']?.includes('45°深度转移'));
 assert(hit,'45-degree helper must be selectable at step 3');
 hit.click();
+assert.equal(get('bookExampleShapeInspector').open,true,'clicking a shape should reveal the compact explanation');
+assert.match(get('bookExampleShapeSummary').textContent,/45°/);
 assert.match(get('bookExampleShapeName').textContent,/45°/);
 assert.match(get('bookExampleShapeEffect').textContent,/不/);
 assert.equal(get('bookExampleSvg').children.filter(x=>x.attributes['data-hit']==='true').length,
@@ -82,6 +84,8 @@ let prevented=false;
 visibleHit.handlers.keydown({key:'Enter',preventDefault(){prevented=true}});
 assert(prevented,'Enter key must activate inspection');
 assert.equal(get('bookExampleShapeSelect').value,visibleHit.attributes['data-inspect-key']);
+window.TextbookExampleUI.show('ch01-divide-and-polygons');
+assert.equal(get('bookExampleShapeInspector').open,false,'new example should collapse old line explanation');
 window.TextbookExampleUI.show('unverified-topic');
 assert.equal(get('textbookExample').hidden,true);
 console.log('PASS '+shapeCount+' textbook geometry instances covered by source-scoped explanations; SVG pointer/keyboard/select/hide/state tests');
