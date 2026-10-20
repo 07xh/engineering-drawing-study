@@ -614,3 +614,8 @@ body.ui-refresh .six-layer-example-slot{margin:13px 0 0}
 body.ui-refresh .six-layer-example-slot .book-example{margin:0}
 @media(max-width:800px){body.ui-refresh .six-layer-nav{grid-template-columns:repeat(2,minmax(0,1fr))}body.ui-refresh .six-layer-nav button{padding:8px;font-size:12px}body.ui-refresh .six-layer-stage{padding:12px;min-height:170px}}
 @media(max-width:420px){body.ui-refresh .six-layer-nav{gap:5px}body.ui-refresh .six-layer-nav button{font-size:11px}}
+
+body.ui-refresh #sixLayerRelated[hidden]{display:none!important}
+body.ui-refresh .six-layer-related{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;border:1px dashed #afcfbb;border-radius:11px;padding:11px;background:#f5faf7}
+body.ui-refresh .six-layer-related strong{font-size:12px;width:100%;color:#35694d}
+body.ui-refresh .six-layer-related button{padding:8px 11px;min-height:36px;font-size:12px;text-align:left;background:#fff}
