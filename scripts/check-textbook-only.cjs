@@ -23,7 +23,7 @@ assert.equal(book.entries.length,110,'full textbook catalog must be preserved');
 assert.equal(book.entries.filter(x=>x.contentStatus==='page-reviewed').length,54);
 const lesson={};vm.runInNewContext(read('knowledge/lesson-depth.js'),lesson);
 const depth=lesson.TextbookDeepLessons;
-assert(depth&&depth.ids.length>=16,'need first wave of longer-than-summary lessons');
+assert(depth&&depth.ids.length>=28,'at least 28 source-grounded tutorials required');
 for(const id of depth.ids){
  const e=book.get(id),d=depth.get(id);
  assert(e&&e.contentStatus==='page-reviewed','deep lesson is not grounded in verified chapter: '+id);
