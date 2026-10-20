@@ -31,15 +31,19 @@ function render(){
  draw(frame);
  $('bookExampleCounter').textContent='步骤 '+(index+1)+' / '+current.order.length;
  const nav=$('bookExampleStepNav');nav.replaceChildren();
+ nav.setAttribute('role','group');nav.setAttribute('aria-label','教材例题步骤导航');
  current.order.forEach((label,i)=>{
   const button=document.createElement('button');
   button.type='button';button.textContent=String(i+1);
   button.title='第 '+(i+1)+' 步：'+label;
+  button.setAttribute('aria-pressed',String(i===index));
   button.setAttribute('aria-label',button.title);
   if(i===index){button.className='is-current';button.setAttribute('aria-current','step')}
   button.addEventListener('click',()=>{index=i;render()});
   nav.append(button);
  });
+ $('bookExampleSvg').setAttribute('role','img');
+ $('bookExampleSvg').setAttribute('aria-label',current.number+'：'+step+'。步骤 '+(index+1)+' / '+current.order.length);
  $('bookExampleStageTitle').textContent='课本作图 · '+(index+1)+' / '+current.order.length;
  $('bookExampleAction').textContent='本步按教材做：'+step;
  $('bookExampleReason').textContent='为什么这样作：'+current.why[index];
@@ -66,5 +70,16 @@ $('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,
 $('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);render()}});
 $('bookExampleReset').addEventListener('click',()=>{if(current){index=0;render()}});
 $('bookExampleFinal').addEventListener('click',()=>{if(current){index=current.order.length-1;render()}});
+// Arrow keys move between verified frames only while the example controls have focus.
+$('textbookExample').addEventListener('keydown',event=>{
+ if(!current||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+ const target=event.target;
+ if(!target||!target.closest||!target.closest('.book-example-guide'))return;
+ if(target.matches('input,textarea,select'))return;
+ if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
+ const next=Math.max(0,Math.min(current.order.length-1,index+(event.key==='ArrowRight'?1:-1)));
+ if(next===index)return;
+ event.preventDefault();index=next;render();
+});
 window.TextbookExampleUI={show};
 })();

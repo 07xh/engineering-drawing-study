@@ -64,6 +64,10 @@ assert(ui.includes("current.order.forEach((label,i)=>"),'step navigator must be 
 assert(ui.includes("button.addEventListener('click',()=>{index=i;render()})"),'step navigator must select a real geometry stage');
 assert(ui.includes("button.setAttribute('aria-current','step')"),'active step must be accessible');
 
+assert(ui.includes("setAttribute('aria-pressed',String(i===index))"),'step buttons must announce selected state');
+assert(ui.includes("setAttribute('aria-label',current.number+"),'SVG must expose current stage description');
+assert(ui.includes("addEventListener('keydown',event=>"),'keyboard step navigation missing');
+assert(ui.includes("target.closest('.book-example-guide')"),'keyboard shortcuts must stay scoped to the guide');
 for(const script of ['textbook-examples.js','textbook-example-geometry.js','textbook-example-ui.js'])
  assert(html.includes('src="'+script+'"'),'missing source-driven example library '+script);
 assert(ui.includes('source?.forTopic(topicId)'),'UI must only load linked textbook examples');
