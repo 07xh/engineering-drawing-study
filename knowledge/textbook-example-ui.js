@@ -9,19 +9,35 @@ let current=null,index=0,problem=null;
 const ns='http://www.w3.org/2000/svg';
 function svg(tag,attrs,content){const element=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))element.setAttribute(k,String(v));if(content!==undefined)element.textContent=content;$('bookExampleSvg').append(element);return element}
 const colors={given:'#2b7451',axis:'#758878',auxiliary:'#bc7f2e',mark:'#a36c35',result:'#216faf'};
-function draw(frame){
+// Compare consecutive textbook geometry frames, not prose-step numbers.
+function shapeKey(item){
+ return JSON.stringify(item.type==='line'?[item.type,item.style,item.label,item.a.x,item.a.y,item.b.x,item.b.y]:
+  [item.type,item.style,item.label,item.p.x,item.p.y]);
+}
+function stageDelta(frame){
+ if(index===0)return [];
+ const prior=geom.frame(current.id,index-1),seen=new Set(prior.shapes.map(shapeKey));
+ return frame.shapes.filter(item=>!seen.has(shapeKey(item)));
+}
+function draw(frame,added){
  const board=$('bookExampleSvg');board.replaceChildren();
+ const fresh=new Set(added.map(shapeKey)),highlight=$('bookExampleHighlight').checked;
  svg('rect',{width:820,height:420,fill:'#fff'});
  for(const item of frame.shapes){
   if(!$('bookExampleShowAux').checked && item.style==='auxiliary')continue;
   const col=colors[item.style]||'#657567';
+  const isNew=index>0&&fresh.has(shapeKey(item));
+  const attrs=highlight&&isNew?{class:'book-example-new-shape','data-new':'true'}:{};
   if(item.type==='line'){
+   if(highlight&&isNew)svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:'#e5b957',
+    'stroke-width':9,opacity:.34,'stroke-linecap':'round','aria-hidden':'true'});
    svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:col,
     'stroke-width':item.style==='result'?3.8:item.style==='given'?3:2,
-    'stroke-linecap':'round',
+    'stroke-linecap':'round',...attrs,
     ...(item.style==='auxiliary'||item.style==='axis'?{'stroke-dasharray':item.style==='axis'?'3 5':'8 5'}:{})});
   }else if(item.type==='point'){
-   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?6.5:5.4,fill:col});
+   if(highlight&&isNew)svg('circle',{cx:item.p.x,cy:item.p.y,r:11,fill:'#f5d986',opacity:.5,'aria-hidden':'true'});
+   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?6.5:5.4,fill:col,...attrs});
    svg('text',{x:item.p.x+8,y:item.p.y-9,'font-size':19,'font-weight':600,fill:col},item.label);
   }
  }
@@ -29,7 +45,13 @@ function draw(frame){
 function render(){
  if(!current)return;
  const frame=geom.frame(current.id,index),step=current.order[index];
- draw(frame);
+ const added=stageDelta(frame);
+ draw(frame,added);
+ const newLabels=[...new Set(added.map(shape=>shape.label).filter(Boolean))];
+ $('bookExampleStageAddition').textContent=index===0?
+  '已知条件：先辨认题目提供的点线与投影轴；此时不显示待求结果。':
+  !added.length?'本步未新增图线或点，主要用于检查已经建立的关系。':
+  '本步新增 '+added.length+' 个几何图元：'+newLabels.slice(0,4).join('、')+(newLabels.length>4?' 等':'')+'。';
  $('bookExampleCounter').textContent='步骤 '+(index+1)+' / '+current.order.length;
  const nav=$('bookExampleStepNav');nav.replaceChildren();
  nav.setAttribute('role','group');nav.setAttribute('aria-label','教材例题步骤导航');
@@ -72,6 +94,8 @@ function render(){
 let available=[];
 function activate(example){
  current=example;index=0;problem=null;
+ $('bookExampleDofDetails').open=false;
+ $('bookExampleCheckDetails').open=false;
  const sharedLink=$('bookExampleSharedPlayer');
  if(sharedLink)sharedLink.hidden=!example;
  if(!example)return;
@@ -106,6 +130,7 @@ $('bookExamplePicker').addEventListener('change',()=>{
  if(example)activate(example);
 });
 $('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
+$('bookExampleHighlight').addEventListener('change',()=>{if(current)render()});
 $('bookExampleZoom').addEventListener('click',()=>{
  const canvas=$('bookExampleCanvas'),zoom=canvas.classList.toggle('is-zoomed');
  $('bookExampleZoom').setAttribute('aria-pressed',String(zoom));
