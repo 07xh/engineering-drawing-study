@@ -3,6 +3,7 @@
 'use strict';
 function layout(points){
  const occupied=[];
+ const pointCenters=points.map(p=>p.xy);
  return points.map(point=>{
   const [x,y]=point.xy,name=point.name+({V:'′',H:'',W:'″'}[point.view]||'');
   const width=10+name.length*9,height=18;
@@ -11,7 +12,13 @@ function layout(points){
    const px=Math.max(5,Math.min(960-width,x+dx)),py=Math.max(20,Math.min(640,y+dy));
    const rect=[px,py-height,px+width,py+2];
    const overlap=occupied.reduce((sum,r)=>sum+Math.max(0,Math.min(rect[2],r[2])-Math.max(rect[0],r[0]))*Math.max(0,Math.min(rect[3],r[3])-Math.max(rect[1],r[1])),0);
-   return {x:px,y:py,rect,overlap};
+   // Prefer labels that avoid both previously placed text and every projection dot.
+   const dotOverlap=pointCenters.reduce((sum,[cx,cy])=>{
+    const nearX=Math.max(rect[0],Math.min(cx,rect[2]));
+    const nearY=Math.max(rect[1],Math.min(cy,rect[3]));
+    return sum+((cx-nearX)**2+(cy-nearY)**2<36?1000:0);
+   },0);
+   return {x:px,y:py,rect,overlap:overlap+dotOverlap};
   });
   candidates.sort((a,b)=>a.overlap-b.overlap);
   const best=candidates[0];occupied.push(best.rect);
