@@ -22,7 +22,10 @@ function stageDelta(frame){
 function selectable(item){
  return inspector?.explain(current.id,item)||null;
 }
-function visible(item){return $('bookExampleShowAux').checked||item.style!=='auxiliary'}
+function visible(item){
+ if(current?.id==='example-4-2'&&index===4&&item.style==='auxiliary')return false;
+ return $('bookExampleShowAux').checked||item.style!=='auxiliary';
+}
 function inspectable(frame){return frame.shapes.filter(item=>visible(item)&&selectable(item))}
 function pickShape(key,restoreFocus=false){
  selectedShapeKey=key;
@@ -50,7 +53,7 @@ function draw(frame,added){
  const fresh=new Set(added.map(shapeKey)),highlight=$('bookExampleHighlight').checked;
  svg('rect',{width:820,height:420,fill:'#fff'});
  for(const item of frame.shapes){
-  if(!$('bookExampleShowAux').checked && item.style==='auxiliary')continue;
+  if(!visible(item))continue;
   const col=colors[item.style]||'#657567';
   const isNew=index>0&&fresh.has(shapeKey(item));
   const attrs=highlight&&isNew?{class:'book-example-new-shape','data-new':'true'}:{};
