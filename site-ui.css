@@ -178,3 +178,11 @@ body.ui-refresh .site-topbar .site-more[open]>summary{border-color:#9abb9f;backg
  body.ui-refresh .site-more-menu{right:0}
  body.ui-refresh .site-disclosure summary{font-size:14px}
 }
+
+/* 兼容旧实验室可能定义的 header 全局规则：只重置新版统一导航本体。 */
+body.ui-refresh .site-topbar{padding:0!important;margin:0!important;max-width:none!important;background:rgba(255,255,255,.94)!important;color:#20382d!important}
+body.ui-refresh .site-topbar a{color:#3e6450}
+body.ui-refresh .site-topbar .site-more-menu{z-index:99}
+body.ui-refresh .site-topbar .site-brand{color:#244d39!important}
+body.ui-refresh #visualLesson:target,body.ui-refresh #drawingCanvas:target{scroll-margin-top:90px}
+body.ui-refresh .site-disclosure>summary{user-select:none}
