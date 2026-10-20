@@ -53,6 +53,22 @@ assert(research.safeReference({url:'https://evil.example/test',title:'x'})===nul
 assert(research.safeReference({url:'https://zh.wikipedia.org/wiki/%E6%8A%95%E5%BD%B1',title:'投影'})!==null);
 assert(research.safeReference({url:'https://doi.org/10.1000/xyz',title:'geometry'})!==null);
 assert(research.scoreReference({provider:'crossref',url:'https://doi.org/10.1000/xyz',title:'cone surface point projection'},research.detect('2-9-3',sourceRegistry.get('2-9-3'))).verifiedForExercise===false);
+const inspected=evaluate('labs/source-inspector.js').ChapterSourceInspector;
+let scannedCount=0;
+for(const id of sourceIds){
+ const parts=inspected.collect(sourceRegistry.get(id));
+ const stats=inspected.summary(sourceRegistry.get(id));
+ assert.equal(stats.total,parts.length,'incorrect item count '+id);
+ assert.equal(stats.complete,false,'source scan must not be presented as complete '+id);
+ assert(parts.every(x=>typeof inspected.explain(x,sourceRegistry.get(id))==='string'),'missing inspection rationale '+id);
+ scannedCount+=parts.length;
+}
+assert(scannedCount>100,'source inspector should count existing scanned-given line segments');
+const inspectorHtml=source('labs/chapter-drawing.html');
+const inspectorJS=source('labs/source-inspector-ui.js');
+assert(inspectorHtml.includes('id="sourceHighlight"')&&inspectorHtml.includes('id="inspectPanel"'),'source inspector overlay missing');
+assert(inspectorHtml.includes('src="source-inspector-ui.js"'),'source inspector script not loaded');
+assert(inspectorJS.includes('sourceHighlight')&&!inspectorJS.includes("lineFocus")&&!inspectorJS.includes('VerifiedExerciseSolutions'),'source highlights must be separate from answers');
 const valid={
  id:'test-geometry',status:'verified-complete',source:'教材第17页 · 人工复核样例',
  coordinateAudit:'verified',visibilityAudit:'verified',solutionAudit:'verified',
@@ -86,7 +102,7 @@ assert(searchUI.includes('mode:\'cors\''),'cors must be explicit');
 assert(searchUI.includes("credentials:'omit'"),'live lookup must not send credentials');
 assert(!searchUI.includes('innerHTML'),'web references must not be injected as HTML');
 assert(!searchUI.includes("appendChild(svg")&&!searchUI.includes("lineFocus"),'research must not modify verified line layer');
-for(const filename of ['knowledge/visual-model.js','knowledge/visual-ui.js','knowledge/research-core.js','knowledge/research-ui.js','knowledge/solution-gate.js','labs/verified-solutions.js']){
+for(const filename of ['knowledge/visual-model.js','knowledge/visual-ui.js','knowledge/research-core.js','knowledge/research-ui.js','knowledge/solution-gate.js','labs/verified-solutions.js','labs/source-inspector.js','labs/source-inspector-ui.js']){
  assert(source('scripts/build-static.cjs').includes("'"+filename+"'"),'static packaging missing '+filename);
 }
 console.log('PASS: 31 dynamic lessons, 28 fail-closed source checks, method review, live research UI, original-only geometry and checked frame compiler');
