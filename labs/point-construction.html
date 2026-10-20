@@ -34,10 +34,10 @@ footer{font-size:13px;color:#607965}
 <div class="variable"><label for="y">深度坐标 y <strong class="value" id="yValue">34</strong></label><input type="range" id="y" min="8" max="58" step="1" value="34"></div>
 <div class="variable"><label for="z">高度坐标 z <strong class="value" id="zValue">44</strong></label><input type="range" id="z" min="8" max="58" step="1" value="44"></div></div>
 <div class="legend"><span><i class="dot" style="background:#287552"></i>已知投影</span><span><i class="dot" style="background:#2873b8"></i>求出的第三投影</span><span><i class="dot" style="background:#bd8536"></i>辅助联系线</span><span><i class="dot" style="background:#b64d39"></i>故意设置的错误候选</span></div>
-<svg id="constructionBoard" viewBox="0 0 920 620" role="img" aria-label="第一角画法已知点的 V/H 投影和逐帧求出的 W 投影"></svg>
-<div class="control"><button id="prev" type="button">上一步</button><button id="next" type="button" class="primary">下一步</button><button id="restart" type="button">从头演示</button><span id="counter" aria-live="polite">1 / 5</span></div>
+<div class="unified-animation-workspace"><div class="unified-animation-figure"><svg id="constructionBoard" viewBox="0 0 920 620" role="img" aria-label="第一角画法已知点的 V/H 投影和逐帧求出的 W 投影"></svg>
+</div><div class="animation-side-explanation"><div class="control"><button id="prev" type="button">上一步</button><button id="next" type="button" class="primary">下一步</button><button id="restart" type="button">从头演示</button><span id="counter" aria-live="polite">1 / 5</span></div>
 <h2 id="statusTitle">已知两面投影</h2><p id="status"></p>
-</section>
+</div></div></section>
 <section class="card"><h2>② 用约束计算器验证答案</h2>
 <label><input type="checkbox" id="contradiction"> 故意把第三面投影的深度画错 8 个演示单位（观察系统能否发现矛盾）</label>
 <p id="checkResult" aria-live="polite"></p>
