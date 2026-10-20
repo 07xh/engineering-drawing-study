@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),r=require('../knowledge/drawing-action-renderer.js');
+const action={kind:'dimension',style:'mark',geometry:{x1:40,y1:40,x2:140,y2:40,offset:25},text:'100'};
+assert(r.validAction(action));
+const svg=r.svgMarkup({shapes:[action]});
+assert(svg.includes('x1="40" y1="65" x2="140" y2="65"'));
+assert.equal((svg.match(/<line /g)||[]).length,3);
+assert.equal((svg.match(/<path /g)||[]).length,2);
+assert(svg.includes('>100</text>'));
+assert(!r.validAction({...action,geometry:{...action.geometry,offset:Infinity}}));
+assert(!r.validAction({...action,geometry:{...action.geometry,x2:40}}));
+const legacy={...action,geometry:{x1:40,y1:40,x2:140,y2:40}};
+assert(r.validAction(legacy));assert.equal((r.svgMarkup({shapes:[legacy]}).match(/<line /g)||[]).length,1);
+console.log('PASS: optional dimension extension lines and arrows; legacy action remains valid');
