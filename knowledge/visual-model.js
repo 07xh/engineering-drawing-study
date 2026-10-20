@@ -86,7 +86,7 @@ function solidShapes(shapes,model,mode,view,stage,id){
   const apex=model.points.S,ratio=(upper-lower)/(upper-pt.z);
   const base=point(30+(pt.x-30)*ratio,30+(pt.y-30)*ratio,lower);
   line(shapes,view,projection(apex,view),projection(base,view),'construction','经过圆锥锥顶和 A 的母线');
-  if(id==='cone-circle'){
+  if((id==='cone-circle'||id==='ch02-cone')){
    const r=22*(upper-pt.z)/(upper-lower);
    if(view==='H')ring(shapes,view,projection(point(30,30,0),'H'),r*scale,'aux-circle','平行底面的辅助截圆');
    else{
