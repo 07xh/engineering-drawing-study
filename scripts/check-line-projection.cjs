@@ -91,3 +91,8 @@ assert(drawingHtml.includes('id="revealWhy"'),'missing per-line explanatory note
 assert(drawingJs.includes('function sourceSteps(item)'),'missing per-line progression');
 assert(drawingJs.includes('source-detail'),'point and text labels must follow reveal');
 console.log('PASS individual verified lines, rationale, and synchronized label reveal');
+
+assert(drawingHtml.includes('id="lineFocus"'),'missing per-line endpoint overlay');
+assert(drawingJs.includes('function lineExplanation(entry)'),'missing geometry-aware line explanation');
+assert(drawingJs.includes('长度仅表示当前数字化画布坐标'),'must distinguish drawing units from textbook dimensions');
+console.log('PASS traced-line direction explanation and endpoint markers');
