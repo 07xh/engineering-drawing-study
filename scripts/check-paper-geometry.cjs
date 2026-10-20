@@ -54,7 +54,7 @@ assert.throws(()=>core.regular('unsupported',4,0));
 const index=book.get('ch01-divide-and-polygons');
 assert(index&&index.pages[0]===13&&index.contentStatus==='page-reviewed');
 for(const id of ['ch01-divide-and-polygons','ch01-dimension-principle','ch01-dimension-elements','ch01-outline-dimensions']){
- const k=book.get(id);assert(k&&k.labLink==='../labs/paper-geometry.html','missing applicable paper lab '+id);
+ const k=book.get(id);assert(k&&['../labs/paper-geometry.html','../labs/paper-geometry.html?mode=dimension'].includes(k.labLink),'missing allowlisted paper lab '+id);
  assert.equal(k.visualMode,null,'planar paper topic must not use 3D VHW animation');
 }
 assert.equal(book.get('ch01-circle-tangent-principle').labLink,'../labs/tangent-constraint.html');
@@ -67,7 +67,8 @@ assert(html.includes('不是')||html.includes('并非原书原题图'),'original
 assert(html.includes('.inputs [hidden]{display:none!important}'),'hidden control groups must stay hidden even under author styles');
 assert(ui.includes('model.regular(mode,argument(),stage)'),'core math must actually feed UI');
 assert(!ui.includes('VerifiedExerciseSolutions')&&!ui.includes('verified-exercises.js'),'must not touch real scanned original solutions');
-assert(app.includes("paper=item.labLink==='../labs/paper-geometry.html'"),'knowledge UI allowlist must permit paper lab');
+assert(app.includes("paper=['../labs/paper-geometry.html','../labs/paper-geometry.html?mode=dimension'].includes(item.labLink)"),'knowledge UI allowlist must permit both exact lab paths');
+assert(ui.includes("group.includes(requestedMode)?requestedMode:'divide'"),'deep link must be safely matched to existing modes');
 const build=text('scripts/build-static.cjs');
 for(const f of ['labs/paper-geometry.html','labs/paper-geometry-core.js','labs/paper-geometry-ui.js'])assert(build.includes("'"+f+"'"),'missing build asset '+f);
 console.log('PASS paper geometry: '+stages+' validated frames, equal divisions, 3/4/6/8 polygons, 2→1→0 planar center DOF, edition-3 source and safe links');
