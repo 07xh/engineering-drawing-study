@@ -51,3 +51,12 @@ for(const id of ['search','chapterFilter','reviewFilter','visibleCount','empty']
 assert(chapterHtml.includes('function filterCards()'),'missing search filtering');
 assert(chapterHtml.includes("heading.hidden=shown===0"),'empty chapter headings must be hidden');
 console.log('PASS chapter topic search, section and review filters');
+
+const drawingHtml=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-drawing.html'),'utf8');
+const drawingJs=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-drawing.js'),'utf8');
+assert(chapterHtml.includes("drawLink.href='chapter-drawing.html#'+id"),'every exercise needs a drawing entry');
+for(const id of ['board','question','pen','eraser','undo','clear','grid'])assert(drawingHtml.includes('id="'+id+'"'),'missing drawing control '+id);
+assert(drawingJs.includes("function validStroke(s)"),'saved drawing input validation missing');
+assert(drawingJs.includes("records[current]=s;save();ink()"),'per-question drawing persistence missing');
+assert(drawingHtml.includes('不是教材原图'),'must disclose illustrative geometry');
+console.log('PASS 28 exercise drawing entries, clean geometry and pen controls');
