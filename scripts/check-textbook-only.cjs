@@ -30,7 +30,7 @@ for(const id of depth.ids){
  assert(d.stages.length>=3,'insufficient reasoning steps '+id);
  for(const field of ['question','logic','example','check','boundary'])
   assert(typeof d[field]==='string'&&d[field].length>=(field==='question'?12:field==='boundary'?22:28),'missing in-depth content '+id+'.'+field);
- assert(d.stages.every(s=>Array.from(s).length===3&&s.every(t=>typeof t==='string'&&t.length>=8)),'stage needs condition, explanation, constraints: '+id);
+ assert(d.stages.every(s=>Array.from(s).length===3&&s.every((t,i)=>typeof t==='string'&&t.length>=(i===0?3:i===1?18:10))),'stage needs title, explanation and constraint reason: '+id);
  assert(!d.example.includes('标准答案'),'concept narrative may not present itself as textbook answer');
 }
 assert(depth.ids.some(id=>id.startsWith('ch01-'))&&depth.ids.some(id=>id.startsWith('ch02-'))&&depth.ids.some(id=>id.startsWith('ch03-')),
