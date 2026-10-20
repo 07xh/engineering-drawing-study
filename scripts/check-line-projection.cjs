@@ -76,3 +76,7 @@ console.log('PASS source-review status and no generic substitution');
 for(const id of ['2-6-2','2-6-4'])assert(verifiedJs.includes("'"+id+"'"),'missing reviewed exercise '+id);
 assert((verifiedJs.match(/status:'partial'/g)||[]).length>=4,'source review must remain explicitly partial');
 console.log('PASS four partial source-reviewed diagrams; no claims of exact completion');
+
+for(const id of ['2-6-5','2-6-6'])assert(verifiedJs.includes("'"+id+"'"),'missing source-traced geometry '+id);
+assert((verifiedJs.match(/status:'partial'/g)||[]).length>=6,'all six source-reviewed 2-6 exercises must retain partial status');
+console.log('PASS 2-6-5 and 2-6-6 visible geometry and partial-source disclaimers');
