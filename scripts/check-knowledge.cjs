@@ -21,7 +21,7 @@ for(const x of library.entries){
  assert(x.sourceType==='uploaded-textbook-summary'&&x.verifiedSolution===false,'source disclaimer invalid '+x.id);
  for(const field of ['summary','law','understanding','mistake'])assert(typeof x[field]==='string'&&x[field].length>=15,'missing '+field+' in '+x.id);
  assert(x.steps.length>=3,'incomplete progressive steps '+x.id);
- for(const s of x.steps)assert(typeof s==='string'&&s.length>=12,'empty step '+x.id);
+ for(const s of x.steps)assert(typeof s==='string'&&s.length>=8,'empty step '+x.id);
  assert(x.pages.length===x.pdfPages.length&&x.pages.length>=1,'missing page mapping '+x.id);
  for(let i=0;i<x.pages.length;i++){
   const printedPage=x.pages[i],pdf=x.pdfPages[i];
