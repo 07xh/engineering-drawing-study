@@ -5,5 +5,5 @@ const problem=A.adapt(E.get('example-2-2'),G);
 assert.deepEqual(problem.steps.map(step=>T.analyze(step.localDofAnalysis).finalDegrees),[2,1,1,0,0]);
 assert.ok(problem.steps.every(step=>T.analyze(step.localDofAnalysis).atProvidedConfiguration));
 assert.ok(problem.steps.every(step=>step.constraintAnalysis.scope==='point-2d-linear'));
-assert.equal(A.adapt(E.get('example-1-1'),G).steps.some(step=>step.localDofAnalysis),false);
-console.log('PASS: textbook example 2-2 local DOF steps [2,1,1,0,0] without invented example 1-1 analysis');
+assert.ok(A.adapt(E.get('example-1-1'),G).steps.every(step=>step.localDofAnalysis));
+console.log('PASS: textbook example 2-2 local DOF steps [2,1,1,0,0] with independently verified example 1-1 model');
