@@ -60,7 +60,11 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <script defer src="nonlinear-local-dof.js"></script>
 <script defer src="nonlinear-step-trace.js"></script>
 <script defer src="player-dof-summary.js"></script>
-<script defer src="textbook-shape-inspector.js"></script><script defer src="textbook-example-ui.js"></script><script defer src="lesson-stage-mapping.js"></script>
+<script defer src="textbook-shape-inspector.js"></script>
+<script defer src="planar-point-constraints.js"></script>
+<script defer src="textbook-constraint-visual.js"></script>
+<script defer src="textbook-constraint-visual-ui.js"></script>
+<script defer src="textbook-example-ui.js"></script><script defer src="lesson-stage-mapping.js"></script>
 <script defer src="knowledge-app.js"></script>
 <link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="knowledge-ui.css"></head>
 <body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a></div></details></nav></div></header><div class="wrap" id="top">
@@ -142,6 +146,15 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
           <p class="book-example-shape-boundary">单条图线的说明不等于整步自由度计算；数值以本步约束计算为准。</p>
         </div>
       </details>
+      <section class="book-example-constraint-panel" id="bookExampleConstraintPanel" aria-label="交互式约束与自由度实验" hidden>
+        <div class="book-constraint-topline"><strong>约束可视化</strong><span>局部剩余自由度 <b id="bookExampleConstraintDegrees" aria-live="polite">—</b></span></div>
+        <p id="bookExampleConstraintState" class="book-constraint-state" aria-live="polite"></p>
+        <label class="book-example-aux-toggle"><input id="bookExampleConstraintVisible" type="checkbox" checked> 在图纸上叠加可行位置与移动方向</label>
+        <div id="bookExampleConstraintOptions" class="book-constraint-choices" role="group" aria-label="临时启用或取消定位约束"></div>
+        <p id="bookExampleConstraintLinked" class="book-constraint-linked"></p>
+        <p id="bookExampleConstraintExperiment" class="book-constraint-experiment" hidden>实验模式：临时取消了一个或多个条件；仅改变蓝色可行位置与本卡片自由度，不修改教材绘制过程或上方已核验的计算结果。</p>
+        <details class="book-constraint-scope"><summary>计算范围说明</summary><p id="bookExampleConstraintScope"></p></details>
+      </section>
       <div class="book-example-computed" id="bookExampleComputedDof" hidden aria-live="polite"><strong id="bookExampleComputedDofValue"></strong><span id="bookExampleComputedDofLabel"></span></div>
       <details class="book-example-more" id="bookExampleDofDetails">
         <summary>自由度变化与定位依据</summary>
