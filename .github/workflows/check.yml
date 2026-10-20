@@ -18,6 +18,8 @@ jobs:
           node --check labs/constraint-engine.js
           node --check labs/constraint-explorer.js
           node --check labs/teaching-steps.js
+          node --check labs/line-projection.js
+          node --check scripts/check-line-projection.cjs
           node --check question-strategies.js
           node --check scripts/check-question-strategies.cjs
           node --check scripts/check-constraint-engine.cjs
@@ -29,6 +31,7 @@ jobs:
           node scripts/check-k-drag.cjs
           node scripts/check-constraint-engine.cjs
           node scripts/check-explorer.cjs
+          node scripts/check-line-projection.cjs
           node scripts/check-question-strategies.cjs
           node scripts/build-static.cjs
           test -f dist/labs/constraints.html
@@ -36,4 +39,6 @@ jobs:
           test -f dist/labs/constraint-engine.js
           test -f dist/labs/constraint-explorer.js
           test -f dist/labs/teaching-steps.js
+          test -f dist/labs/line-projection.html
+          test -f dist/labs/line-projection.js
           test -f dist/question-strategies.js
