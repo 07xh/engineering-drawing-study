@@ -19,6 +19,7 @@ function render(){
  $('exercise261Count').textContent=stage?'证据 '+(step+1)+' / '+report.stages.length:'需要核对描图结构';
  $('exercise261Title').textContent=stage?stage.title:'无法安全显示逐帧证据';
  $('exercise261Why').textContent=stage?stage.why:'原始资料尚未完成校验；不会绘制任何猜测图形。';
+ $('exercise261Freedom').textContent=stage?stage.freedom:'当前没有足够资料计算点的约束关系。';
  const facts=$('exercise261Facts'),missing=$('exercise261Missing');facts.replaceChildren();missing.replaceChildren();
  for(const fact of report?.facts||[]){
   const li=document.createElement('li');
