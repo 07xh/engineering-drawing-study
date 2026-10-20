@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),model=require('../knowledge/visual-model.js');
+const ui=fs.readFileSync('knowledge/visual-ui.js','utf8');
+assert(ui.includes('previousLines=new Set('));
+assert(ui.includes("const isNew=!previousLines.has("));
+assert(ui.includes("attrs.opacity='0.78'"));
+const id='ch02-point-projection';
+const first=model.svgShapes(id,'ch02',1).shapes,second=model.svgShapes(id,'ch02',2).shapes;
+const key=s=>JSON.stringify([s.kind,s.view,s.xy,s.label]);
+const old=new Set(first.map(key));
+assert(second.some(s=>s.kind==='guide'&&!old.has(key(s))),'second stage needs a new correspondence guide');
+console.log('PASS: new line emphasis is tied to actual stage-to-stage geometry');

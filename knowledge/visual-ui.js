@@ -13,6 +13,8 @@ function render(){
  if(!entry||!data||!engine)return;
  const picture=data.svgShapes(entry.id,entry.chapter,stage),board=$('visualBoard');
  const showGuides=$('visualShowGuides').checked;
+ const previous=stage>0?data.svgShapes(entry.id,entry.chapter,stage-1).shapes:[];
+ const previousLines=new Set(previous.filter(s=>['line','guide','construction','transfer45'].includes(s.kind)).map(s=>JSON.stringify([s.kind,s.view,s.xy,s.label])));
  const placedLabels=window.ProjectionLabels.layout(picture.shapes.filter(s=>s.kind==='point'),picture.shapes.filter(s=>['line','guide','construction','axis','transfer45'].includes(s.kind)&& (showGuides||!['guide','construction','transfer45'].includes(s.kind))));
  let pointIndex=0;
  board.replaceChildren();board.setAttribute('viewBox','0 0 970 650');
@@ -32,6 +34,11 @@ function render(){
    const base=shape.kind==='axis'||shape.kind==='transfer45';
    const attrs={x1,y1,x2,y2,stroke:auxiliary?'#c0832d':base?'#96a9a0':'#277453','stroke-width':auxiliary?2.2:base?1.8:2.8,'stroke-linecap':'round'};
    if(auxiliary||shape.kind==='transfer45')attrs['stroke-dasharray']='7 5';
+   const isNew=!previousLines.has(JSON.stringify([shape.kind,shape.view,shape.xy,shape.label]));
+   if(stage>0&&isNew&&shape.kind!=='axis'){
+    attrs['stroke-width']=auxiliary?3.5:3.6;
+    attrs.opacity='1';
+   }else if(stage>0&&shape.kind!=='axis')attrs.opacity='0.78';
    elt('line',attrs,board);
    continue;
   }
