@@ -23,6 +23,13 @@ jobs:
           node --check knowledge/knowledge-data.js
           node --check knowledge/knowledge-app.js
           node --check scripts/check-knowledge.cjs
+          node --check knowledge/visual-model.js
+          node --check knowledge/visual-ui.js
+          node --check knowledge/research-core.js
+          node --check knowledge/research-ui.js
+          node --check knowledge/solution-gate.js
+          node --check labs/verified-solutions.js
+          node --check scripts/check-visual-research.cjs
           node --check scripts/check-method-library.cjs
           node --check labs/line-workbench-layout.js
           node --check scripts/check-line-projection.cjs
@@ -40,6 +47,7 @@ jobs:
           node scripts/check-line-projection.cjs
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
+          node scripts/check-visual-research.cjs
           node scripts/check-workbench-layout.cjs
           node scripts/check-question-strategies.cjs
           node scripts/build-static.cjs
@@ -54,5 +62,11 @@ jobs:
           test -f dist/knowledge/index.html
           test -f dist/knowledge/knowledge-data.js
           test -f dist/knowledge/knowledge-app.js
+          test -f dist/knowledge/visual-model.js
+          test -f dist/knowledge/visual-ui.js
+          test -f dist/knowledge/research-core.js
+          test -f dist/knowledge/research-ui.js
+          test -f dist/knowledge/solution-gate.js
+          test -f dist/labs/verified-solutions.js
           test -f dist/labs/line-workbench-layout.js
           test -f dist/question-strategies.js
