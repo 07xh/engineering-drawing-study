@@ -10,6 +10,7 @@ const result=model.scan(current);
 assert(result.safe===true,'current traced source topology should pass internal-only structural checks');
 assert(result.originalVerified===false&&result.solutionAllowed===false,'partial scans may not authorize original solutions');
 assert(result.stages.length===5,'five evidence review stages required');
+assert(result.stages.every(s=>typeof s.freedom==='string'&&s.freedom.length>=25),'each evidence stage must discuss conditional degrees of freedom');
 assert(result.facts.length===5);
 assert(result.missing.length>=5,'missing source evidence must stay visible');
 assert(result.internal.triangleVertices===3&&result.internal.twiceArea>0,'H plane triangle must be nondegenerate in current tracing');
@@ -45,7 +46,7 @@ for(const modify of cases){
  assert.equal(model.highlight(bad,scan,0).length,0,'unverified geometry must not be highlighted');
 }
 const html=read('labs/chapter-drawing.html'),ui=read('labs/exercise-261-ui.js'),answer=read('labs/chapter-drawing.js'),gate=read('knowledge/solution-gate.js');
-for(const id of ['sourceEvidence','exercise261Panel','exercise261Prev','exercise261Next','exercise261Status','exercise261Facts','exercise261Missing','exercise261Why'])assert(html.includes('id="'+id+'"'),'missing HTML id '+id);
+for(const id of ['sourceEvidence','exercise261Panel','exercise261Prev','exercise261Next','exercise261Status','exercise261Facts','exercise261Missing','exercise261Why','exercise261Freedom'])assert(html.includes('id="'+id+'"'),'missing HTML id '+id);
 assert(html.includes('src="exercise-261-evidence.js"')&&html.includes('src="exercise-261-ui.js"'),'missing source evidence scripts');
 assert(html.indexOf('src="exercise-261-evidence.js"')<html.indexOf('src="exercise-261-ui.js"'),'must load model first');
 assert(ui.includes("layer=$('sourceEvidence')"),'distinct overlay missing');
