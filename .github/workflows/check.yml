@@ -34,6 +34,7 @@ jobs:
           node --check knowledge/textbook-examples.js
           node --check knowledge/textbook-example-geometry.js
           node --check knowledge/textbook-example-ui.js
+          node --check knowledge/textbook-shape-inspector.js
           node --check scripts/check-textbook-examples.cjs
           node --check scripts/check-textbook-only.cjs
           node --check scripts/check-exercise-source-gate.cjs
