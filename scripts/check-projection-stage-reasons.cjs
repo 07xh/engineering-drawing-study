@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),model=require('../knowledge/visual-model.js');
+const ui=fs.readFileSync('knowledge/visual-ui.js','utf8');
+assert(ui.includes('const newlyAdded=guides.filter('));
+assert(ui.includes('本步骤新增的辅助几何：'));
+assert(ui.includes('本步骤没有新增辅助线'));
+const id='ch02-point-projection',s1=model.svgShapes(id,'ch02',1).shapes,s2=model.svgShapes(id,'ch02',2).shapes;
+const newGuides=s2.filter(s=>s.kind==='guide'&&!s1.some(p=>p.kind===s.kind&&p.label===s.label&&JSON.stringify(p.xy)===JSON.stringify(s.xy)));
+assert(newGuides.some(s=>s.label==='长对正：同 x'));
+console.log('PASS: stage-specific construction reasons derive from newly introduced geometry');
