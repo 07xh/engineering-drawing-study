@@ -78,6 +78,16 @@ function renderSteps(){
  $('stepNext').disabled=step>=current.steps.length;
  $('stepAll').disabled=step>=current.steps.length;
 }
+function syncDeepVisual(){
+ const visual=window.KnowledgeVisualUI;
+ if(!visual||!current||visual.getEntryId()!==current.id)return;
+ // The original 4-stage model is independent of the prose; align progress only,
+ // never claim each deep-lesson statement is a textbook-verified drawing step.
+ const deep=window.TextbookDeepLessons?.get(current.id);
+ if(!deep||!deep.stages.length)return;
+ const target=Math.round(deepStep/deep.stages.length*3);
+ visual.goTo(target);
+}
 function renderDepthStages(deep){
  const list=$('deepStages');list.replaceChildren();
  const total=deep.stages.length;deepStep=Math.max(1,Math.min(deepStep,total));
@@ -90,6 +100,7 @@ function renderDepthStages(deep){
  $('deepPrev').disabled=deepStep<=1;
  $('deepNext').disabled=deepStep>=total;
  $('deepAll').disabled=deepStep>=total;
+ syncDeepVisual();
 }
 function showDepth(item){
  const deep=window.TextbookDeepLessons&&window.TextbookDeepLessons.get(item.id);
@@ -137,6 +148,7 @@ function show(id,scroll=false){
  mark.textContent=completed.has(id)?'取消已学习标记':'标记已学习';
  $('markStatus').textContent=lesson?(completed.has(id)?'已在本机记录为学习过':'记录阅读进度，不等于熟练掌握'): '只有逐页核对的讲解才计入学习进度。';
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
+ if(lesson)syncDeepVisual();
  const visualLink=document.querySelector('.site-jump-visual');
  if(visualLink)visualLink.hidden=matchedTextbookExample||!lesson||!item.visualMode;
  if(matchedTextbookExample)$('visualLesson').hidden=true;

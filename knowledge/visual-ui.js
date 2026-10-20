@@ -63,11 +63,12 @@ function show(id){
  $('visualSourceNote').textContent='本模型依据第二章已核对的投影概念重新设计，仅演示单个代表点的约束过程；不是教材原图、整题的自由度证明或出版社标准解。';
  render();
 }
-function forward(){stage=Math.min(stage+1,3);render()}
-function back(){stage=Math.max(stage-1,0);render()}
-function reset(){stage=0;render()}
+function goTo(next){if(!entry)return;stage=Math.max(0,Math.min(3,Math.trunc(next)));render()}
+function forward(){goTo(stage+1)}
+function back(){goTo(stage-1)}
+function reset(){goTo(0)}
 $('visualNext').addEventListener('click',forward);
 $('visualPrev').addEventListener('click',back);
 $('visualReset').addEventListener('click',reset);
-window.KnowledgeVisualUI={show,render,forward,back};
+window.KnowledgeVisualUI={show,render,forward,back,goTo,getStage:()=>stage,getEntryId:()=>entry?.id||null};
 })();
