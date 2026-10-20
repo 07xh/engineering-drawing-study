@@ -45,6 +45,13 @@ function markup(state,options={}){
   ])parts.push(line(a,b,'sheet-helper','data-kind="'+kind+'"'));
   parts.push('</g>');
  }
+ parts.push('<g class="free-sheet-faces">');
+ for(const face of state.faces)for(const view of ['V','H','W']){
+  const ps=face.map(id=>points[id][view]);
+  const area=Math.abs((ps[1].x-ps[0].x)*(ps[2].y-ps[0].y)-(ps[1].y-ps[0].y)*(ps[2].x-ps[0].x));
+  if(area>1e-7)parts.push('<polygon points="'+ps.map(p=>f(p.x)+','+f(p.y)).join(' ')+'" class="free-sheet-face" data-face="'+esc(face.join('-'))+'" data-view="'+view+'"/>');
+ }
+ parts.push('</g>');
  parts.push('<g class="free-sheet-segments">');
  for(const edge of state.edges){
   for(const view of ['V','H','W']){
@@ -62,7 +69,7 @@ function markup(state,options={}){
  }
  parts.push('</g>');
  if(!state.points.length)parts.push(text({x:86,y:148},'空白图纸：添加空间点后自动生成三面投影','free-sheet-empty'));
- parts.push(text({x:44,y:595},'点线草图：线段不表示长度已约束；尚未创建面，故不判断虚实线。','sheet-disclaimer'));
+ parts.push(text({x:44,y:595},state.faces.length?'三角面拓扑预览：线段与三角面不锁定长度；未完成实体闭合/遮挡核验。':'点线草图：线段不表示长度已约束；尚未创建面，故不判断虚实线。','sheet-disclaimer'));
  return parts.join('');
 }
 return {project,markup};
