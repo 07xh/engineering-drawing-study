@@ -1,61 +1,86 @@
 'use strict';
-const assert=require('node:assert/strict');
-const fs=require('node:fs');
-const vm=require('node:vm');
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const js=fs.readFileSync('knowledge/knowledge-data.js','utf8');
 new vm.Script(js,{filename:'knowledge/knowledge-data.js'});
 new vm.Script(fs.readFileSync('knowledge/knowledge-app.js','utf8'),{filename:'knowledge/knowledge-app.js'});
-const context={};
-vm.runInNewContext(js,context);
-const library=context.DrawingKnowledge;
-assert(library&&typeof library.get==='function'&&typeof library.find==='function','knowledge library exports missing');
-assert(library.chapters.length===6,'six textbook units expected');
-assert(library.entries.length>=30,'knowledge cards missing');
-assert(new Set(library.entries.map(e=>e.id)).size===library.entries.length,'duplicate knowledge IDs');
-const printed=new Set(),pageMapping={31:1,32:3,33:2};
-const allowed=new Set(['views','point','line','plane','polyhedra','curved']);
-const ranges={'2-6':6,'2-7':6,'2-8':8,'2-9':8};
-for(const x of library.entries){
- assert(x.id&&x.title.length>=4,'unnamed knowledge card');
- assert(allowed.has(x.chapter),'unknown knowledge unit '+x.id);
- assert(x.sourceType==='uploaded-textbook-summary'&&x.verifiedSolution===false,'source disclaimer invalid '+x.id);
- for(const field of ['summary','law','understanding','mistake'])assert(typeof x[field]==='string'&&x[field].length>=15,'missing '+field+' in '+x.id);
- assert(x.steps.length>=3,'incomplete progressive steps '+x.id);
- for(const s of x.steps)assert(typeof s==='string'&&s.length>=8,'empty step '+x.id);
- assert(x.pages.length===x.pdfPages.length&&x.pages.length>=1,'missing page mapping '+x.id);
- for(let i=0;i<x.pages.length;i++){
-  const printedPage=x.pages[i],pdf=x.pdfPages[i];
-  assert(Number.isInteger(printedPage)&&printedPage>=31&&printedPage<=53,'invalid book page '+x.id);
-  assert(pdf===(pageMapping[printedPage]||printedPage-30),'incorrect PDF page number '+x.id);
-  printed.add(printedPage);
- }
- for(const ex of x.practice){
-  const bits=ex.split('-'),chapter=bits.slice(0,2).join('-');
-  assert(Number.isInteger(+bits[2])&&+bits[2]>=1&&+bits[2]<=ranges[chapter],'invalid exercise '+ex);
- }
+const ctx={};vm.runInNewContext(js,ctx);
+const lib=ctx.DrawingKnowledge,plain=x=>JSON.parse(JSON.stringify(x));
+assert(lib&&typeof lib.get==='function'&&typeof lib.find==='function');
+assert.equal(lib.chapters.length,13,'12 numbered chapters and appendices expected');
+assert.equal(lib.chapters.filter(c=>c.number).length,12,'all 12 printed chapters must exist');
+assert.equal(lib.sections.length,56,'53 chapter sections + 3 appendices from TOC');
+const catalog=lib.sections.filter(s=>s.chapter!=='appendix');
+assert.equal(catalog.length,53);
+assert.equal(lib.entries.length,72,'56 original TOC entries + 16 independently written verified teaching notes');
+assert.equal(new Set(lib.entries.map(x=>x.id)).size,72,'duplicated lesson IDs');
+const sectionById=Object.fromEntries(lib.sections.map(s=>[s.id,s]));
+const source=lib.source;
+assert.equal(source.pdfPages,292);
+assert.equal(source.tableOfContentsPdfPage,6);
+assert.equal(source.pdfOffset,6);
+assert.equal(source.printedEnd,284);
+assert(source.name.includes('AutoCAD')&&source.name.includes('第3版'));
+const starts=[2,27,54,84,97,122,143,169,187,196,208,225];
+assert.deepEqual(plain(lib.chapters.filter(c=>c.number).map(c=>c.startPage)),starts,'printed chapter starts differ from uploaded TOC');
+const sectionCount=[5,6,6,3,5,6,6,5,2,2,3,4];
+assert.deepEqual(plain(lib.chapters.filter(c=>c.number).map(c=>c.sectionCount)),sectionCount);
+for(const s of lib.sections){
+ assert(s.startPage>=2&&s.endPage<=283&&s.endPage>=s.startPage,'bad printed section range '+s.id);
+ assert.equal(s.pdfStartPage,s.startPage+6,'wrong PDF offset '+s.id);
+ assert.equal(s.pdfEndPage,s.endPage+6,'wrong PDF end '+s.id);
+ assert(lib.chapters.some(c=>c.id===s.chapter),'missing chapter '+s.id);
 }
-for(const [exerciseChapter,total] of Object.entries(ranges)){for(let n=1;n<=total;n++){const id=exerciseChapter+'-'+n;assert(library.entries.some(x=>x.practice.includes(id)),'no knowledge linked for '+id)}}
-assert(printed.size===23,'every page of the provided 23-page scan must be indexed');
-assert(library.source.pdfPages===23,'scan page count mismatch');
-assert(library.find('圆锥').length>=2,'Chinese full text search broken');
-assert(library.find('2-9-3').some(x=>x.id==='cone-generator'),'exercise references must be searchable');
-assert(library.find('','point').every(x=>x.chapter==='point'),'category filtering broken');
-const html=fs.readFileSync('knowledge/index.html','utf8');
-for(const id of ['knowledgeSearch','chapterSelect','progressSelect','resetFilters','knowledgeCards','knowledgeDetail','detailSteps','detailExercises','stepPrev','stepNext','stepAll','markRead','exerciseFilterStatus'])assert(html.includes('id="'+id+'"'),'missing knowledge UI control '+id);
-assert(html.includes('src="knowledge-data.js"')&&html.includes('src="knowledge-app.js"'),'knowledge data and UI must be loaded');
-const app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
-assert(app.includes('localStorage')&&app.includes('drawing-knowledge-read-v1'),'local learning records missing');
-assert(app.includes("new URLSearchParams(location.search).get('exercise')"),'exercise-specific study link missing');
-assert(app.includes('replaceChildren()'),'safe DOM element rendering missing');
-assert(app.includes('textContent'),'use textContent for uploaded-source summaries');
-const home=fs.readFileSync('index.html','utf8');
-const catalogue=fs.readFileSync('labs/chapter-26-29.html','utf8');
-const drawingHtml=fs.readFileSync('labs/chapter-drawing.html','utf8');
-const drawingJs=fs.readFileSync('labs/chapter-drawing.js','utf8');
-assert(home.includes('href="knowledge/index.html"'),'home knowledge entry missing');
-assert(catalogue.includes('knowledge/index.html?exercise='),'exercise index knowledge entry missing');
-assert(drawingHtml.includes('id="drawingKnowledgeLink"'),'exercise drawing knowledge entry missing');
-assert(drawingJs.includes('drawingKnowledgeLink')&&drawingJs.includes('encodeURIComponent(current)'),'exercise link not synced with selection');
+for(let c=1;c<=12;c++){
+ const id='ch'+String(c).padStart(2,'0'),items=lib.sections.filter(x=>x.chapter===id);
+ assert.equal(items.length,sectionCount[c-1],'wrong section count '+id);
+ assert.equal(items[0].startPage,starts[c-1]);
+ for(let j=1;j<items.length;j++)assert.equal(items[j-1].endPage+1,items[j].startPage,'noncontiguous chapter section ranges');
+}
+const oldIds=['view-layout','point-notation','cone-circle','sphere-point','plane-internal-line'];
+for(const id of oldIds)assert.equal(lib.get(id),null,'old self-summary unexpectedly survived: '+id);
+const outlines=lib.entries.filter(x=>x.contentStatus==='toc-only'),lessons=lib.entries.filter(x=>x.contentStatus==='page-reviewed');
+assert.equal(outlines.length,56);
+assert.equal(lessons.length,16);
+for(const item of outlines){
+ assert.equal(item.sourceType,'textbook-third-edition-index');
+ assert.equal(item.steps.length,0,'unreviewed chapter pretends to have step-by-step tutorial: '+item.id);
+ assert.equal(item.law,'','unreviewed chapter invents rules: '+item.id);
+ assert.equal(item.visualMode,null,'unreviewed section gets generic animation: '+item.id);
+ assert.equal(item.practice.length,0,'unreviewed section must not link old exercises');
+ assert(item.sourceDetails.includes('目录'),'TOC-only label missing');
+}
+for(const item of lessons){
+ assert.equal(item.chapter,'ch02','no fully reviewed teaching outside image-reviewed Ch2');
+ const s=sectionById[item.section];assert(s,'lesson not linked to chapter section '+item.id);
+ assert(item.pages[0]>=s.startPage&&item.pages[1]<=s.endPage,'lesson page range wrong '+item.id);
+ assert.equal(item.pdfPages[0],item.pages[0]+6);
+ assert.equal(item.pdfPages[1],item.pages[1]+6);
+ for(const field of ['summary','law','understanding','mistake'])assert(item[field].length>=20,'empty verified lesson component: '+item.id+'.'+field);
+ assert(item.steps.length>=3&&item.steps.every(x=>x.length>=10),'fake steps '+item.id);
+ assert(item.sourceType==='textbook-third-edition-explained');
+ assert(item.practice.length===0,'do not falsely label old 28 exercises as new textbook originals');
+ assert(item.verifiedSolution===false,'lesson is not an approved original textbook solution');
+}
+assert(lib.get('ch02-three-equalities').law.includes('长对正'));
+assert(lib.get('ch02-cone').visualMode==='cone');
+assert(lib.get('ch10-s01').contentStatus==='toc-only');
+assert(lib.find('建筑施工图').length>=2,'chapter name lookup missing');
+assert(lib.find('球面').length>=1);
+const html=fs.readFileSync('knowledge/index.html','utf8'),app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
+for(const id of ['knowledgeCards','knowledgeDetail','knowledgeSearch','chapterSelect','sectionSelect','coverageSelect',
+ 'progressSelect','resetFilters','verifiedLessonContent','detailStatusNotice','detailSteps','stepPrev','stepNext','stepAll',
+ 'markRead','visualLesson','visualBoard','exerciseFilterStatus'])assert(html.includes('id="'+id+'"'),'UI control lost '+id);
+assert(html.includes('12 章教材 + 附录'),'12 chapter hero status missing');
+assert(app.includes('drawing-textbook-3e-progress-v2'),'new edition requires independent progress key');
+assert(!app.includes("drawing-knowledge-read-v1"),'do not silently inherit old completion tracking');
+assert(app.includes('window.KnowledgeVisualUI.show(id)'),'retained visual interface missing');
+assert(app.includes("item.contentStatus==='page-reviewed'"),'reviewed-only lesson check absent');
+assert(app.includes('book.sections'),'section navigation not wired');
+assert(app.includes('item.contentStatus===\'toc-only\''),'TOC-only badge missing');
+assert(!app.includes('x.practice.includes(exercise)'),'legacy exercise-guessing filter must be removed');
+for(const path of ['knowledge/knowledge-data.js','knowledge/knowledge-app.js','knowledge/visual-model.js']){
+ assert(fs.readFileSync(path,'utf8').includes('ch02'),'new source data not referenced '+path);
+}
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
-for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(build.includes("'"+p+"'"),'static deployment missing '+p);
-console.log('PASS scanned textbook 23 pages, '+library.entries.length+' summarized concepts, six units, source citations, search, linked learning and safe static build');
+for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(build.includes("'"+p+"'"));
+console.log('PASS edition 3 textbook TOC (12 chapters / 53 sections / 3 appendices), 16 page-reviewed original lessons, 292 PDF mapping, no legacy knowledge, isolation and clear unverified states');
