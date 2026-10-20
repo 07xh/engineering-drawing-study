@@ -24,4 +24,8 @@ assert(html.includes("scene.classList.add('is-dragging')"),'touch drag state mus
 assert(html.includes("scene.classList.remove('is-dragging')"),'touch drag state must be cleared');
 assert(html.includes("if(r.degrees===2){const points=st.flags.Z"),'two-dimensional feasible loci must be projected onto all views');
 assert(html.includes('paint-order="stroke"'),'K labels need a contrast outline');
+assert(html.includes('id="teachingSteps"')&&html.includes('src="teaching-steps.js"'),'textbook steps must load');
+const teaching=fs.readFileSync('labs/teaching-steps.js','utf8');new vm.Script(teaching);
+assert(teaching.includes('window.setConstraintExplorerFlags(flags)'),'teaching steps must use shared engine');
+assert(teaching.includes("stage===3"),'auxiliary construction step required');
 console.log('PASS shared engine 3D/three-view explorer: all condition subsets, redundancy, contradictions and wiring');
