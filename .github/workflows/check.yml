@@ -15,6 +15,7 @@ jobs:
           node --check scripts/check-constraints.cjs
           node --check labs/constraint-engine.js
           node --check labs/dof-lab-geometry.js
+          node --check labs/dof-lab-sheet.js
           node --check labs/constraint-explorer.js
           node --check labs/teaching-steps.js
           node --check labs/method-library.js
@@ -64,6 +65,7 @@ jobs:
           node scripts/check-constraints.cjs
           node scripts/check-constraint-engine.cjs
           node scripts/check-dof-lab-geometry.cjs
+          node scripts/check-dof-lab-sheet.cjs
           node scripts/check-explorer.cjs
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
