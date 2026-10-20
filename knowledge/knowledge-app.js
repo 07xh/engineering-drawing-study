@@ -9,7 +9,7 @@ if(!book||!Array.isArray(book.entries)){$('knowledgeCount').textContent='第三�
 const chapters=Object.fromEntries(book.chapters.map(c=>[c.id,c]));
 const sections=Object.fromEntries(book.sections.map(s=>[s.id,s]));
 const key='drawing-textbook-3e-progress-v2',reviewed=new Set(book.entries.filter(x=>x.contentStatus==='page-reviewed').map(x=>x.id));
-let completed=new Set(),current=null,step=0;
+let completed=new Set(),current=null,step=0,deepStep=1;
 try{const saved=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(saved))completed=new Set(saved.filter(id=>reviewed.has(id)))}catch(e){}
 const search=$('knowledgeSearch'),ch=$('chapterSelect'),sec=$('sectionSelect'),coverage=$('coverageSelect'),progress=$('progressSelect');
 const exercise=new URLSearchParams(location.search).get('exercise');
@@ -78,6 +78,19 @@ function renderSteps(){
  $('stepNext').disabled=step>=current.steps.length;
  $('stepAll').disabled=step>=current.steps.length;
 }
+function renderDepthStages(deep){
+ const list=$('deepStages');list.replaceChildren();
+ const total=deep.stages.length;deepStep=Math.max(1,Math.min(deepStep,total));
+ deep.stages.slice(0,deepStep).forEach((stage,i)=>{
+  const li=e('li'),heading=e('strong',(i+1)+'．'+stage[0]),details=e('p',stage[1]);
+  const why=e('p','为什么：'+stage[2],'deep-why');
+  li.append(heading,details,why);list.append(li);
+ });
+ $('deepStepCount').textContent='原理讲解 '+deepStep+' / '+total+' 步';
+ $('deepPrev').disabled=deepStep<=1;
+ $('deepNext').disabled=deepStep>=total;
+ $('deepAll').disabled=deepStep>=total;
+}
 function showDepth(item){
  const deep=window.TextbookDeepLessons&&window.TextbookDeepLessons.get(item.id);
  const container=$('deepLesson');if(!container)return;
@@ -88,13 +101,10 @@ function showDepth(item){
  $('deepExample').textContent=deep.example;
  $('deepCheck').textContent=deep.check;
  $('deepBoundary').textContent='适用范围与来源界限：'+deep.boundary;
- const list=$('deepStages');list.replaceChildren();
- for(const stage of deep.stages){
-  const li=e('li'),heading=e('strong',stage[0]),details=e('p',stage[1]);
-  const why=e('p','为什么：'+stage[2],'deep-why');
-  li.append(heading,details,why);list.append(li);
- }
+ deepStep=1;renderDepthStages(deep);
 }
+for(const [id,delta] of [['deepPrev',-1],['deepNext',1]])$(id).addEventListener('click',()=>{const d=window.TextbookDeepLessons?.get(current?.id);if(d){deepStep+=delta;renderDepthStages(d)}});
+$('deepAll').addEventListener('click',()=>{const d=window.TextbookDeepLessons?.get(current?.id);if(d){deepStep=d.stages.length;renderDepthStages(d)}});
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;
