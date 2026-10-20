@@ -36,6 +36,7 @@ function update(){
  window.renderUnifiedConstraintLab?.();
 }
 window.updateConstraintExplorer=update;
+window.setConstraintExplorerFlags=function(flags){for(const key of ['H','P','Z'])state[key]=!!flags[key];update()};
 for(const key of ['H','P','Z'])$('constraint'+key).addEventListener('change',e=>{state[key]=e.target.checked;update()});
 for(const id of ['kx','ky','freeHeight'])$(id).addEventListener('input',update);
 $('constraintAll').onclick=()=>{state.H=true;state.P=true;state.Z=false;update()};
