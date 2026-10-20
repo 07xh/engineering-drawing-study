@@ -26,6 +26,8 @@ for(const id of g.ids){
  assert(g.frame(id,-1)===null);assert(g.frame(id,99)===null);
 }
 assert.equal(g.frame('not-real',0),null);
+const hex=g.frame('ch01-divide-and-polygons',4).shapes.filter(x=>x.type==='line'&&x.kind==='result');
+assert.equal(hex.length,6);
 assert.equal(g.frame('ch01-drawing-scale',3).shapes.filter(x=>x.type==='text'&&x.label==='20 mm').length,3);
 const html=fs.readFileSync('knowledge/index.html','utf8'),app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
