@@ -1,0 +1,66 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第三章 · 组合体与相交几何实验室 | 图学课堂</title>
+<meta name="description" content="依据工程制图第三章主题设计的原创动态实验：组合体三视图、截交线、相贯线的几何条件与自由度。">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{color-scheme:light}body{margin:0;background:#f1f6f2;color:#234a34;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.main{max-width:1120px;width:calc(100% - 30px);margin:18px auto 64px}
+.main h1{font-size:clamp(25px,4vw,36px);line-height:1.3;margin:12px 0}.main h2{font-size:19px}
+.main p{line-height:1.8}.crumb{font-size:13px;color:#617b6b}.crumb a{color:#21684b}
+.section{border:1px solid #d8e6dc;border-radius:16px;background:#fff;padding:clamp(15px,2.5vw,24px);margin:15px 0}
+.notice{background:#fff9ee;border-left:4px solid #b88b39;padding:11px 14px;border-radius:9px;color:#675231;font-size:13px}
+.tablist,.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tablist button,.toolbar button{font:inherit;padding:10px 15px;border-radius:10px;border:1px solid #bfd6c6;color:#256448;min-height:44px;background:#fff;cursor:pointer}
+.tablist button[aria-pressed=true],.toolbar button.primary{background:#236a4b;border-color:#236a4b;color:white}
+button:disabled{opacity:.44;cursor:not-allowed}
+.settings{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 8px;align-items:center}
+.settings label{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:13px;font-weight:650}
+.settings input[type=range]{width:min(210px,42vw);accent-color:#266f50;min-height:35px}
+.settings strong{min-width:25px}
+.scene{border:1px solid #d6e5da;border-radius:12px;overflow-x:auto;background:#fff}
+#compositeBoard{width:100%;min-width:690px;height:auto;display:block}
+.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:#64806d;margin:10px 0}
+.legend i{display:inline-block;background:var(--c);width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.toolbar{margin-top:13px}
+#compStepTitle{margin:15px 0 7px;font-size:19px}#compStepExplain{font-size:14px;color:#496454}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{text-align:center;padding:12px 7px;background:#eff7f0;border-radius:11px;font-size:12px;color:#5d7666}
+.metric strong{font-size:23px;display:block;color:#1a6743;font-variant-numeric:tabular-nums}
+#compAudit{background:#f4faf5;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.8}
+#compFreedom{font-size:13px;line-height:1.8;color:#476451}
+#compSource{color:#647a6d;font-size:12px}.settings [hidden]{display:none!important}
+@media(max-width:650px){.main{width:calc(100% - 22px)}.grid{gap:5px}.metric{font-size:11px}.metric strong{font-size:19px}.section{padding:13px}#compositeBoard{min-width:600px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style></head><body class="ui-refresh">
+<header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="主要导航">
+<a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">教材知识库</a><a href="chapter-26-29.html">独立练习</a>
+<details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><a href="paper-geometry.html">第一章尺规实验</a><a href="point-construction.html">第二章点投影</a><a href="source-fidelity.html">原图核验</a></div></details>
+</nav></div></header>
+<main class="main">
+<p class="crumb"><a href="../knowledge/index.html#ch03-s01">第三章 · 组合体</a> / 原创可验算动态实验</p>
+<h1>组合体、截交线与相贯曲线</h1>
+<p class="notice"><strong>证据范围：</strong>模型只根据你上传的《工程制图与 AutoCAD》第3版印刷第54～66页和相关绘图理论建立原创几何示例。坐标为画布演示单位；并非原教材图3-1等例图的复刻。真实零件遮挡、可见线和虚线还需要另外判定。</p>
+<section class="section"><h2>① 选择观察和验算主题</h2>
+<div class="tablist" role="group" aria-label="三种几何主题">
+<button id="tabComposite" type="button" aria-pressed="true">叠加组合体三视图</button>
+<button id="tabSection" type="button" aria-pressed="false">平面切割棱柱</button>
+<button id="tabIntersection" type="button" aria-pressed="false">两圆柱相贯曲线</button>
+</div>
+<div class="settings">
+<label id="compXField">凸台横向位置 x <input id="compX" type="range" min="-15" max="15" step="1" value="0"><strong id="compXValue">0</strong></label>
+<label id="compYField">凸台深度 y <input id="compY" type="range" min="32" max="60" step="1" value="48"><strong id="compYValue">48</strong></label>
+<label id="compHeightField" hidden>截平面参数 h <input id="compHeight" type="range" min="25" max="42" step="1" value="33"><strong id="compHeightValue">33</strong></label>
+<label id="compRadiusField" hidden>横向圆柱半径 r <input id="compRadius" type="range" min="18" max="28" step="1" value="24"><strong id="compRadiusValue">24</strong></label>
+</div></section>
+<section class="section"><h2>② 看图理解每一条条件</h2>
+<div class="legend"><span><i style="--c:#287552"></i>已知投影外框</span><span><i style="--c:#bd8635"></i>辅助线</span><span><i style="--c:#286fb0"></i>已求截面／交线</span><span><i style="--c:#819789"></i>验算</span></div>
+<div class="scene"><svg id="compositeBoard" viewBox="0 0 870 590" role="img" aria-label="第一角画法中各视图的原创组合体或交线演示"></svg></div>
+<div class="toolbar"><button id="compPrev" type="button">上一步</button><button id="compNext" type="button" class="primary">下一步</button><button id="compReset" type="button">从头演示</button><span id="compCounter" aria-live="polite">1 / 5</span></div>
+<h3 id="compStepTitle">已知条件</h3><p id="compStepExplain"></p></section>
+<section class="section"><h2>③ 自由度解释与几何验算</h2>
+<div class="grid"><div class="metric"><strong id="compDegree">—</strong>当前连续自由度</div>
+<div class="metric"><strong id="compValid">—</strong>数学约束检查</div><div class="metric"><strong id="compError">—</strong>最大残差</div></div>
+<p id="compFreedom"></p><p id="compAudit" role="status" aria-live="polite"></p>
+<p id="compSource"></p>
+<p class="crumb">第三章完整的“尺寸注法”和“看组合体视图”属于另一套教学步骤，本实验不把三维数学交线自动等同为最终的标准制图答案。</p></section>
+</main><script defer src="composite-geometry-core.js"></script><script defer src="composite-geometry-ui.js"></script>
+</body></html>
