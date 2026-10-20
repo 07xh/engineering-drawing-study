@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),renderer=require('../knowledge/drawing-action-renderer.js');
+const frame={stepId:'second',shapes:[{kind:'line',style:'given',stepId:'first',geometry:{x1:0,y1:0,x2:50,y2:0}},{kind:'line',style:'auxiliary',stepId:'second',geometry:{x1:0,y1:10,x2:50,y2:10}}]};
+const normal=renderer.svgMarkup(frame),filtered=renderer.svgMarkup(frame,{showAuxiliary:false}),unhighlighted=renderer.svgMarkup(frame,{highlightStep:false});
+assert(normal.includes('stroke-dasharray="7 5"'));
+assert(normal.includes('stroke-width="3.0999999999999996"')||normal.includes('stroke-width="3.1"'));
+assert(!filtered.includes('stroke-dasharray="7 5"'));
+assert(filtered.includes('stroke-width="2.6"'));
+assert(unhighlighted.includes('stroke-width="1.7"'));
+for(const id of ['showAuxiliary','highlightStep'])assert(fs.readFileSync('knowledge/drawing-player.html','utf8').includes('id="'+id+'"'));
+console.log('PASS: auxiliary-line filtering and current-step highlighting work without altering source frames');
