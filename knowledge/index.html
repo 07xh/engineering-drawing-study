@@ -60,7 +60,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <script defer src="nonlinear-local-dof.js"></script>
 <script defer src="nonlinear-step-trace.js"></script>
 <script defer src="player-dof-summary.js"></script>
-<script defer src="textbook-example-ui.js"></script><script defer src="lesson-stage-mapping.js"></script>
+<script defer src="textbook-shape-inspector.js"></script><script defer src="textbook-example-ui.js"></script><script defer src="lesson-stage-mapping.js"></script>
 <script defer src="knowledge-app.js"></script>
 <link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="knowledge-ui.css"></head>
 <body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a></div></details></nav></div></header><div class="wrap" id="top">
@@ -108,7 +108,8 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <div class="book-example-workspace">
   <div class="book-example-figure">
     <div class="book-example-figure-top"><strong>逐步作图</strong><span>绿色已知 · 橙色辅助 · 蓝色结果</span><button id="bookExampleZoom" type="button" aria-pressed="false" aria-controls="bookExampleSvg">放大查看</button></div>
-    <div class="book-example-canvas" id="bookExampleCanvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="img" aria-label="按课本例题步骤显示的投影和辅助线"></svg></div>
+    <div class="book-example-canvas" id="bookExampleCanvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="group" aria-label="可点选几何图元的教材例题作图纸"></svg></div>
+    <p class="book-example-tap-hint">点选图中的辅助线或关键点，可查看对应的作图依据；也可在右侧列表选择。</p>
   </div>
   <div class="book-example-guide" aria-label="右侧作图步骤与讲解">
     <div class="book-example-tools" aria-label="课本例题步骤控制">
@@ -130,6 +131,15 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
       <p id="bookExampleStageAddition" class="book-example-stage-addition" aria-live="polite"></p>
       <p id="bookExampleAction"></p>
       <p id="bookExampleReason"></p>
+      <section class="book-example-inspector" id="bookExampleShapeInspector" aria-labelledby="bookExampleShapeHeading">
+        <h5 id="bookExampleShapeHeading">图形元素解释</h5>
+        <label>查看点或线 <select id="bookExampleShapeSelect" aria-label="选择教材例题中已显示的点或线"></select></label>
+        <p id="bookExampleShapeName" class="book-example-shape-name" aria-live="polite"></p>
+        <p id="bookExampleShapeRole"></p>
+        <p id="bookExampleShapeReason"></p>
+        <p id="bookExampleShapeEffect"></p>
+        <p class="book-example-shape-boundary">单条图线的说明不等于整步自由度计算；数值以本步约束计算为准。</p>
+      </section>
       <div class="book-example-computed" id="bookExampleComputedDof" hidden aria-live="polite"><strong id="bookExampleComputedDofValue"></strong><span id="bookExampleComputedDofLabel"></span></div>
       <details class="book-example-more" id="bookExampleDofDetails">
         <summary>自由度变化与定位依据</summary>
