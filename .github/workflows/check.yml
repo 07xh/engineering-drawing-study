@@ -104,6 +104,7 @@ jobs:
           node scripts/check-nonlinear-angle.cjs
           node scripts/check-tangency-analysis.cjs
           node scripts/check-tangency-local-dof.cjs
+          node scripts/check-nonlinear-step-trace.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
