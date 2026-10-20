@@ -1,0 +1,32 @@
+/* 例题来源：用户提供的《工程制图与 AutoCAD》第3版，胡建生主编
+ * 例1-1：印刷p13 / PDF p19 / 图1-22；例2-2：印刷p34 / PDF p40 / 图2-14。
+ * 仅记录短篇原创步骤说明、页码与教材例题编号；不包含扫描、完整原文或出版社图。
+ * 动画示例的屏幕坐标经过归一化，不代表对原版线段尺寸/点位作像素级复刻。
+ */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TextbookExamples=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const all=[
+ {id:'example-1-1',number:'例 1-1',title:'直线 AB 七等分',chapter:'ch01',section:'ch01-s03',topics:['ch01-divide-and-polygons'],
+  printedPage:13,pdfPage:19,figure:'图 1-22',sourceStatus:'page-figure-reviewed',
+  known:'原书给出线段 AB，要求按尺规作图方法作七等分。教材以辅助射线、等距分点和平行线展示作图过程。',
+  goal:'求得 AB 上六个内部等分点，将 AB 分为七段相等部分。',
+  order:['保留教材已知线段 AB。','由 A 作辅助射线 AM，在射线上连续截取七段相等长度。','把第七个分点与 B 连接。','经过前六个等距分点分别作与第七点—B连线平行的直线。','取这些平行线与 AB 的交点，检查七段等距。'],
+  why:['A、B 为已知端点，内部各分点沿 AB 尚有可选位置。','射线的方向与每段的辅助长度可以自行选择，关键是七段相等。','末分点和 B 的连线建立相似三角形中的共同方向。','平行线产生相似三角形，使原线段上的对应位置按 1/7 递增。','AB 上的分点已被比例关系确定；逐段验算结果。'],
+  freedom:['目标分点在 AB 上的连续位置自由度：1（尚未指定对应比例）。','辅助射线可以任意选，不是目标分点本身的自由度。','仅连接末分点，尚未单独给全部内部求解点确定位置。','每条平行线与 AB 求交后，该分点在已知 AB 上的自由度为0。','六个分点均满足确定的等分比例，需检查各段实际相等。'],
+  check:'相邻分点间的距离，以及首尾两段，都应等于 |AB|/7；所有作出的转移线应平行。',
+  fidelity:'已核对例题编号、题意、图号和主要作图顺序。动画使用归一化几何坐标保留教材方法，不声称与出版社图1-22逐像素一致。'},
+ {id:'example-2-2',number:'例 2-2',title:'已知点 A 的两面投影，求第三面投影',chapter:'ch02',section:'ch02-s03',
+  topics:['ch02-point-coordinates','ch02-point-projection','ch02-three-equalities'],printedPage:34,pdfPage:40,figure:'图 2-14',
+  sourceStatus:'page-figure-reviewed',
+  known:'教材已给出点 A 的正面投影 a′ 和水平投影 a，要求按三面投影对应关系作出侧面投影 a″。',
+  goal:'在 W 面的展开位置求 a″，保持与 a′ 等高、与 a 的深度相对应。',
+  order:['保留已知投影 a′、a 及教材三面投影坐标轴。','通过 a′ 作平行于 X 轴的等高联系线，延伸到 W 视图区。','在 H 与 W 的深度转移区域使用 45° 辅助线，将 a 的深度移入 W 面。','过深度转移所得点作竖直联系线，与 a′ 的等高线相交。','交点标为 a″，同时核对高度和宽度对应关系。'],
+  why:['两幅已知投影必须属于同一个空间点，才可以恢复其余坐标。','V 和 W 投影保留相同高度，因此 a″ 一定位于等高联系线上。','H 与 W 投影保留相同深度；45° 辅助线是转移这个深度的一种纸面方法。','一个等高条件和一个深度条件交会，确定侧投影的位置。','结果与 a′ 高平齐、与 a 宽相等，符合第一角三面投影对应。'],
+  freedom:['一个空间点有三个位置坐标；已知V和H同名投影，在一致时已提供全部三个坐标。','未知侧投影若单独在 W 面寻找，有两个二维画纸位置坐标；等高后只剩1个。','45° 线负责读取H面的深度，不额外生成空间点自由度。','W 面的高度与深度两条独立条件确定 a″，画面位置自由度为0。','已知两面投影同名、坐标一致是必要前提；否则不应强行给出第三投影。'],
+  check:'a″与a′等高；a″到 W 面展开轴的横向距离，等于 a 在 H 面中表示的深度距离。',
+  fidelity:'教材例2-2图2-14步骤已核对；所用 a/a′ 的网页示意位置经过重排，不声称等于原书图2-14中每一根线的精确坐标。'}
+];
+const get=id=>all.find(x=>x.id===id)||null;
+const forTopic=id=>all.filter(x=>x.topics.includes(id));
+return {all,get,forTopic};
+});
