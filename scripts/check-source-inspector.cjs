@@ -1,0 +1,33 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const read=p=>fs.readFileSync(p,'utf8');
+const modelContext={};vm.runInNewContext(read('labs/source-inspector.js'),modelContext,{filename:'labs/source-inspector.js'});
+const geometryContext={};vm.runInNewContext(read('labs/verified-exercises.js'),geometryContext,{filename:'labs/verified-exercises.js'});
+const model=modelContext.ChapterSourceInspector,geometry=geometryContext.VerifiedExerciseGeometry;
+assert(model&&geometry,'missing source-only inspector or exercise registry');
+const groups={'2-6':6,'2-7':6,'2-8':8,'2-9':8};
+let tested=0,displayObjects=0;
+for(const [group,total] of Object.entries(groups))for(let n=1;n<=total;n++){
+ const id=group+'-'+n,source=geometry.get(id);
+ assert(source&&source.status==='partial','no safely labelled scanned source '+id);
+ const items=model.collect(source),summary=model.summary(source);
+ assert(items.length>0,'empty source item inspection '+id);
+ assert.equal(summary.total,items.length,'incorrect source object counter '+id);
+ assert.equal(summary.complete,false,'partial scan must not appear complete '+id);
+ assert(items.every(x=>model.kinds[x.kind]&&model.explain(x,source).includes('部分复刻')),'unexplained or mislabelled source '+id);
+ assert(items.every(x=>Array.isArray(x.geometry)&&x.geometry.every(Number.isFinite)),'invalid geometry '+id);
+ tested++;displayObjects+=items.length;
+}
+const demo={status:'partial',lines:[[1,2,30,2,'given'],[3,4,5,6,'axis'],[7,8,9,10,'transfer'],[4,5,6,7,'thin'],[-1,0,5,8,'given']],circles:[[20,20,10]],dots:[[20,20]],labels:[[20,20,'a']]};
+assert.equal(model.collect(demo).length,7,'invalid line should be excluded');
+assert.equal(model.collect({...demo,status:'unknown'}).length,0,'unverified registry must not be inspectable');
+const html=read('labs/chapter-drawing.html');
+for(const id of ['inspectPanel','sourceHighlight','inspectType','inspectPrev','inspectNext','inspectReset','inspectSummary','inspectExplain','inspectCount'])assert(html.includes('id="'+id+'"'),'missing inspector UI '+id);
+for(const path of ['source-inspector.js','source-inspector-ui.js'])assert(html.includes('src="'+path+'"'),'inspector asset missing '+path);
+const ui=read('labs/source-inspector-ui.js');
+assert(!ui.includes('innerHTML'),'untrusted captions must never use HTML injection');
+assert(ui.includes("selected=-1"),'first frame must start with no extra overlay');
+assert(!ui.includes('lineFocus')&&!ui.includes('verified-solutions'),'inspector must not access solution drawing layer');
+assert(read('scripts/build-static.cjs').includes("'labs/source-inspector.js'"),'inspector data excluded from static build');
+assert(read('scripts/build-static.cjs').includes("'labs/source-inspector-ui.js'"),'inspector UI excluded from static build');
+console.log('PASS: '+tested+' partial-scan diagrams, '+displayObjects+' original objects safely inspectable; no inferred solution overlays');
