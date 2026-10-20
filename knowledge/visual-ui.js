@@ -12,9 +12,11 @@ function elt(tag,attrs,parent,value){
 function render(){
  if(!entry||!data||!engine)return;
  const picture=data.svgShapes(entry.id,entry.chapter,stage),board=$('visualBoard');
+ const showGuides=$('visualShowGuides').checked;
  board.replaceChildren();board.setAttribute('viewBox','0 0 970 650');
  elt('rect',{width:970,height:650,fill:'#fff'},board);
  for(const shape of picture.shapes){
+  if(!showGuides&&['guide','construction','aux-circle','transfer45'].includes(shape.kind))continue;
   if(shape.kind==='panel'){
    const [x,y,w,h]=shape.rect;
    elt('rect',{x,y,width:w,height:h,rx:12,fill:shape.active?'#f3faf5':'#f9faf9',stroke:'#d6e7dc','stroke-width':1.2},board);
@@ -43,7 +45,7 @@ function render(){
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
  const guides=picture.shapes.filter(s=>['guide','construction','aux-circle','transfer45'].includes(s.kind));
  const explanations=[...new Set(guides.map(s=>s.label).filter(Boolean))];
- $('visualGeometryWhy').textContent=explanations.length?'本阶段可见的辅助几何：'+explanations.join('；')+'。这些线帮助对应投影关系，不单独证明整题唯一解。':'本阶段尚无辅助几何线；先观察已知投影面及形体位置。';
+ $('visualGeometryWhy').textContent=!showGuides?'辅助线当前已隐藏。开启“显示辅助线”后，可以对照图形查看各条定位与投影关系。':explanations.length?'本阶段可见的辅助几何：'+explanations.join('；')+'。这些线帮助对应投影关系，不单独证明整题唯一解。':'本阶段尚无辅助几何线；先观察已知投影面及形体位置。';
  $('visualTitle').textContent=picture.name+' · '+st.title;
  $('visualExplanation').textContent=st.why;
  $('visualDegree').textContent=report.degree===null?'无解或冲突条件':'代表点剩余 '+report.degree+' 个自由度';
@@ -73,5 +75,6 @@ function reset(){goTo(0)}
 $('visualNext').addEventListener('click',forward);
 $('visualPrev').addEventListener('click',back);
 $('visualReset').addEventListener('click',reset);
+$('visualShowGuides').addEventListener('change',render);
 window.KnowledgeVisualUI={show,render,forward,back,goTo,getStage:()=>stage,getEntryId:()=>entry?.id||null};
 })();

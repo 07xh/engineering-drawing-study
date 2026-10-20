@@ -44,6 +44,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 @media(max-width:800px){.visual-stage-grid{grid-template-columns:minmax(0,1fr)}.visual-stage-figure{position:static}.visual-stage-notes{padding:10px}}
 
 .visual-guide{font-size:13px;color:#587466}.visual-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:12px 0}
+.visual-guide-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#355f48;white-space:nowrap}.visual-guide-toggle input{width:18px;height:18px;accent-color:#277352}
 .degree-count{display:inline-block;padding:6px 10px;border-radius:8px;background:#e6f3ea;color:#286347;font-weight:700}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
@@ -150,7 +151,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <div class="visual-tools">
 <button type="button" id="visualPrev">上一步</button>
 <button type="button" class="primary" id="visualNext">下一步</button>
-<button type="button" id="visualReset">重新演示</button>
+<button type="button" id="visualReset">重新演示</button><label class="visual-guide-toggle"><input id="visualShowGuides" type="checkbox" checked>显示辅助线</label>
 <span id="visualStepCounter" class="step-count"></span>
 <span id="visualDegree" class="degree-count"></span>
 </div>
