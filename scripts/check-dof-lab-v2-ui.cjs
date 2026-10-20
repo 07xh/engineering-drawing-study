@@ -28,7 +28,7 @@ class Node{
 }
 function $(id){if(!elements.has(id)){const n=new Node();n.id=id;}return elements.get(id)}
 for(const id of [...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]))$(id);
-$('showGuides').checked=true;$('showWireframe').checked=true;
+$('showGuides').checked=true;$('showWireframe').checked=true;$('showHiddenEdges').checked=true;
 const document={getElementById:$,createElement:tag=>new Node(tag)};
 const win={DrawingConstraints:E,DrawingLabGeometry:G,DrawingLabSheet:S,DrawingLabState:State,DrawingLabSpatialPreview:Spatial};
 vm.runInNewContext(ui,{window:win,document},{filename:'labs/dof-lab-v2-ui.js'});
@@ -38,6 +38,12 @@ assert($('sheet').innerHTML.includes('class="sheet-miter"'));
 assert($('sheet').innerHTML.includes('正视图 V'));
 assert($('sheet').innerHTML.includes('俯视图 H'));
 assert($('sheet').innerHTML.includes('左视图 W'));
+assert($('sheet').innerHTML.includes('sheet-edge-hidden'), 'initial drawing should show occluded dashed edges');
+$('showHiddenEdges').checked=false;$('showHiddenEdges').events.change();
+assert(!$('sheet').innerHTML.includes('sheet-edge-hidden'),'hidden-edge toggle should suppress dashed occluded edges');
+assert($('sheet').innerHTML.includes('sheet-edge-visible'),'solid edges remain after hiding occluded edges');
+$('showHiddenEdges').checked=true;$('showHiddenEdges').events.change();
+assert($('sheet').innerHTML.includes('sheet-edge-hidden'),'hidden-edge toggle restores dashed edges');
 $('showHiddenEdges').checked=true;$('showHiddenEdges').events.change();
 assert($('sheet').innerHTML.includes('sheet-edge-hidden'));
 $('showHiddenEdges').checked=false;$('showHiddenEdges').events.change();
