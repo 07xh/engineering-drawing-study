@@ -14,7 +14,7 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
 .lab-v2 .webgl-view{width:100%;height:clamp(280px,32vw,460px);border:1px solid #d5e5da;border-radius:12px;overflow:hidden;background:#f8fcf9}.lab-v2 .webgl-view[hidden]{display:none}.lab-v2 .webgl-view canvas{touch-action:none;display:block;width:100%;height:100%}
 .lab-v2 .sheet-axis{stroke:#8caa98;stroke-width:1.6}.lab-v2 .sheet-miter{stroke:#a6b7ad;stroke-width:1.7;stroke-dasharray:7 5}
 .lab-v2 .sheet-axis-label,.lab-v2 .sheet-view-label{font-size:17px;fill:#40664d;font-weight:650}
-.lab-v2 .sheet-edge{stroke:#789988;stroke-width:1.8;fill:none}
+.lab-v2 .sheet-edge{stroke:#668a76;stroke-width:1.8;fill:none;stroke-linecap:round}\n.lab-v2 .sheet-edge-hidden{stroke:#8ba398;stroke-width:1.55;stroke-dasharray:7 5}\n.lab-v2 .sheet-edge-visible{stroke:#3d7054;stroke-width:2.1}
 .lab-v2 .sheet-helper{stroke:#d28b30;stroke-width:1.6;stroke-dasharray:7 5}
 .lab-v2 .sheet-target{fill:#d08025;stroke:#fff;stroke-width:1.5}
 .lab-v2 .sheet-point-label{font-size:16px;fill:#97591c;font-weight:700}
@@ -58,7 +58,7 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
   </section>
   <section class="pane"><h2>工程制图 · 单张三视图图纸</h2><p class="muted">第一角画法：V 左上、H 左下、W 右上。45° 线在右下，用于 H→W 的深度转移。</p>
    <svg id="sheet" class="display" viewBox="0 0 960 620" role="img" aria-label="同一张工程图纸上的 V、H、W 三视图与 45 度转移线"></svg>
-   <div class="toolbar"><label><input type="checkbox" id="showGuides" checked> 投影联系线</label><label><input type="checkbox" id="showWireframe" checked> 立体投影线框</label><label><input type="checkbox" id="showLabels"> 参考顶点</label></div>
+   <div class="toolbar"><label><input type="checkbox" id="showGuides" checked> 投影联系线</label><label><input type="checkbox" id="showHiddenEdges" checked> 显示不可见棱线（虚线）</label><label><input type="checkbox" id="showWireframe" checked> 立体投影线框</label><label><input type="checkbox" id="showLabels"> 参考顶点</label></div>
   </section>
  </div>
  <section class="editor" aria-labelledby="editorTitle"><h2 id="editorTitle">从零添加约束</h2>
@@ -85,7 +85,7 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
 </main>
 <script defer src="constraint-engine.js"></script>
 <script defer src="dof-lab-geometry.js"></script>
-<script defer src="dof-lab-sheet.js"></script>
+<script defer src="dof-lab-visibility.js"></script>\n<script defer src="dof-lab-sheet.js"></script>
 <script defer src="dof-lab-state.js"></script>
 <script defer src="dof-lab-spatial-svg.js"></script>
 <script defer src="dof-lab-three-bundle.js"></script>
