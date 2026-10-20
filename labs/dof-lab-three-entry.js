@@ -71,7 +71,11 @@ function mount(container,onSelect){
   return geometry;
  }
  function buildModel(model){
-  G.validate(model);
+  // An entirely empty free-drawing scene is valid. Fixed teaching models
+  // still receive the original full vertex/edge/face validation.
+  if(model.id?.startsWith('user-free-')&&Object.keys(model.points||{}).length===0){
+   if(model.edges?.length||model.faces?.length)throw Error('空白模型不能包含悬空棱或面');
+  }else G.validate(model);
   if(modelId===model.id)return;
   clear(solidRoot);markers=[];modelId=model.id;
   for(const [index,face] of model.faces.entries()){
