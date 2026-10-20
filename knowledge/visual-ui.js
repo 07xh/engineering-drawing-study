@@ -56,8 +56,10 @@ function render(){
  }
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
  const guides=picture.shapes.filter(s=>['guide','construction','aux-circle','transfer45'].includes(s.kind));
+ const newlyAdded=guides.filter(s=>!previous.some(p=>p.kind===s.kind&&p.view===s.view&&JSON.stringify(p.xy)===JSON.stringify(s.xy)&&p.label===s.label));
  const explanations=[...new Set(guides.map(s=>s.label).filter(Boolean))];
- $('visualGeometryWhy').textContent=!showGuides?'辅助线当前已隐藏。开启“显示辅助线”后，可以对照图形查看各条定位与投影关系。':explanations.length?'本阶段可见的辅助几何：'+explanations.join('；')+'。这些线帮助对应投影关系，不单独证明整题唯一解。':'本阶段尚无辅助几何线；先观察已知投影面及形体位置。';
+ const newReasons=[...new Set(newlyAdded.map(s=>s.label).filter(Boolean))];
+ $('visualGeometryWhy').textContent=!showGuides?'辅助线当前已隐藏。开启“显示辅助线”后，可以对照图形查看各条定位与投影关系。':newReasons.length?'本步骤新增的辅助几何：'+newReasons.join('；')+'。它们用于建立投影对应关系，并非整题唯一解的证明。':explanations.length?'本步骤没有新增辅助线；之前已建立的关系：'+explanations.join('；')+'。':'本步骤尚无辅助几何线；先观察已知投影面及形体位置。';
  $('visualTitle').textContent=picture.name+' · '+st.title;
  $('visualExplanation').textContent=st.why;
  $('visualDegree').textContent=report.degree===null?'无解或冲突条件':'代表点剩余 '+report.degree+' 个自由度';
