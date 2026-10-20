@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const book=require('../knowledge/knowledge-data.js');
+const examples=require('../knowledge/textbook-examples.js');
 const audit=require('../knowledge/textbook-page-audit.js');
 assert.equal(audit.pageCount,292,'user scan page count must be 292');
 assert.equal(audit.pages.length,292);
@@ -13,6 +14,14 @@ assert.equal(audit.get(290).printedPage,284);
 assert.equal(audit.get(0),null);assert.equal(audit.get(293),null);
 assert.equal(audit.summary().indexed,292);
 assert.equal(audit.summary().visuallySampled,30);
+assert.equal(audit.individuallyReviewedExamples.length,4);
+for(const ex of audit.individuallyReviewedExamples){
+ const canonical=examples.get(ex.id);assert(canonical);
+ assert.equal(ex.pdfPage,canonical.pdfPage);
+ assert.equal(ex.printedPage,canonical.printedPage);
+ assert.equal(ex.figure,canonical.figure);
+ assert.equal(audit.get(ex.pdfPage).fullyPageReviewed,false,'example verification is not a full page review');
+}
 assert.equal(audit.summary().fullyReviewed,0,
  'orientation samples may never count as fully reviewed pages');
 for(const page of audit.pages){
@@ -44,10 +53,11 @@ const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 for(const asset of ['knowledge/page-audit.html','knowledge/textbook-page-audit.js','knowledge/textbook-page-audit-ui.js']){
  assert(build.includes("'"+asset+"'"),'missing public audit asset '+asset);
 }
-for(const id of ['auditPages','auditChapter','auditCount','auditSampled','auditReviewed','auditWaiting']){
+for(const id of ['auditPages','auditChapter','auditCount','auditSampled','auditReviewed','auditWaiting','auditExampleCount','auditExampleLinks']){
  assert(html.includes('id="'+id+'"'),'dashboard element missing '+id);
 }
 assert(html.includes('src="textbook-page-audit.js"'));
+assert(html.indexOf('src="textbook-examples.js"')<html.indexOf('src="textbook-page-audit.js"'),'source examples must precede ledger');
 assert(ui.includes('data.pages'),'dashboard not connected to full PDF page ledger');
 assert(!html.includes('<iframe'),'do not embed source PDF');
-console.log('PASS 292-page scan register, 30 honest overview samples, 53 sections + 3 appendices mapped, zero false full-page verifications');
+console.log('PASS 292-page scan register, 30 honest overview samples, 4 individually checked textbook examples, zero false full-page verifications');
