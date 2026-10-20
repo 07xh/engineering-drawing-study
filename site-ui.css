@@ -189,3 +189,18 @@ body.ui-refresh .site-disclosure>summary{user-select:none}
 
 /* 默认浅色界面，不受旧实验室系统深色偏好影响。 */
 body.ui-refresh{color-scheme:light}
+
+/* Shared animated-teaching workspace: drawing left, controls and explanation right.
+ * Narrow viewports stack vertically. Geometry logic and question sources are unchanged. */
+.unified-animation-workspace{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:16px;align-items:start;margin:14px 0}
+.unified-animation-figure,.animation-side-explanation{min-width:0}
+.unified-animation-figure{position:sticky;top:88px}
+.unified-animation-figure>svg,.unified-animation-figure>.scene,.unified-animation-figure>.svg-wrap{display:block;width:100%;max-width:100%;min-width:0}
+.unified-animation-figure svg{display:block;width:100%;height:auto;min-width:0;max-width:100%}
+.animation-side-explanation{border:1px solid #d7e6da;border-radius:12px;padding:14px;background:#fff;line-height:1.75}
+.animation-side-explanation :is(.controls,.control,.toolbar){display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #e3eee6}
+.animation-side-explanation :is(.controls,.control,.toolbar)>button{flex:1 1 120px;min-height:43px}
+.animation-side-explanation :is(.controls,.control,.toolbar)>button:nth-of-type(2){font-weight:750}
+.animation-side-explanation h3,.animation-side-explanation h2{margin:10px 0;font-size:17px;line-height:1.5}
+.animation-side-explanation p{margin:9px 0;line-height:1.8}
+@media(max-width:850px){.unified-animation-workspace{grid-template-columns:minmax(0,1fr)}.unified-animation-figure{position:static}}
