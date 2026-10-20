@@ -22,6 +22,10 @@ assert.deepEqual(t.guide.map(x=>x.kind),['VH','height-VW','depth-HM','depth-MW']
 const engine=(cs)=>G.candidate(p,E.analyze(cs));
 assert.equal(engine([]).degrees,3);
 assert.equal(engine([{type:'projection',plane:'H',value:[35,22]}]).degrees,1);
+const h=engine([{type:'projection',plane:'H',value:[5,12]}]);
+assert.deepEqual(h.example,{x:5,y:12,z:51});
+const plane=engine([{type:'plane',normal:{x:0,y:0,z:1},offset:11}]);
+assert.deepEqual(plane.example,{x:35,y:22,z:11});
 assert.equal(engine([{type:'projection',plane:'V',value:[35,51]},{type:'projection',plane:'H',value:[35,22]}]).degrees,0);
 assert.deepEqual(engine([{type:'projection',plane:'V',value:[35,51]},{type:'projection',plane:'H',value:[35,22]}]).example,p);
 assert.equal(engine([{type:'coordinate',axis:'x',value:35},{type:'coordinate',axis:'x',value:40}]).kind,'none');
