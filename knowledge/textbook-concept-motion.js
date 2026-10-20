@@ -9,6 +9,7 @@ const pt=(x,y)=>({x,y}),line=(a,b,kind='given')=>({type:'line',a,b,kind}),text=(
  rect=(x,y,w,h,kind='given')=>({type:'rect',x,y,w,h,kind}),
  poly=(points,kind='given')=>({type:'poly',points,kind});
 const common={
+ 'ch01-drawing-scale':{title:'绘图比例与实物尺寸',page:12,printedPage:6,steps:['画出 1:2 的简化形体','加入 1:1 的同一形体','再加入 2:1 的同一形体','核对标注数字不随比例变化'],limit:'仅借鉴教材图1-8的三种比例对照关系；独立重绘轮廓，非原书图形复刻或编号例题。'},
  'ch04-s01':{title:'三轴方向与轴测构图',page:90,printedPage:84,steps:['先识别三条轴测轴','沿对应轴方向依次取等向长度','延续相同方向补出各组平行棱','完成一个简单长方体的轴测投影'],limit:'轴测轴方向和长度比例的独立示意，非教材题图的具体尺寸或标准答案。'},
  'ch05-s02':{title:'剖视图的剖切与材料表达',page:110,printedPage:104,steps:['先认识外形和内部隐线','引入经过内部结构的剖切位置','显示剖切后的内部轮廓','为被切的材料区域加上概念性剖面线'],limit:'只表达剖视形成的基本思想；剖切线、线型及剖面线需以具体题目与适用标准核对。'},
  'ch10-s01':{title:'建筑平面和立面的轴线对应',page:205,printedPage:199,steps:['建立用于定位的平面轴网','绘出墙体的基本平面位置','在立面建立建筑高度与标高参照','比较同一结构的平面与立面轴线对应'],limit:'抽象建筑轴网和标高的概念示意，非原书图10-3的准确复刻或建筑施工图。'}
@@ -61,10 +62,26 @@ function building(stage){
  }
  return sh;
 }
+function scaleDiagram(stage){
+ const out=[],variants=[{label:'1:2',w:62,x:45},{label:'1:1',w:112,x:230},{label:'2:1',w:178,x:430}];
+ for(let i=0;i<=Math.min(stage,2);i++){
+  const v=variants[i],w=v.w,h=w*17/20,n=w*12/20,d=w*4/20,x=v.x,y=193-h/2;
+  out.push(poly([pt(x,y),pt(x+w,y),pt(x+w,y+h),pt(x+(w+n)/2,y+h),
+   pt(x+(w+n)/2,y+h-d),pt(x+(w-n)/2,y+h-d),pt(x+(w-n)/2,y+h),pt(x,y+h)],'given'));
+  out.push(text(x+w*.28,74,v.label));
+  for(const ratio of [.25,.75]){
+   const cx=x+ratio*w,cy=y+.32*h,r=w*.09;
+   out.push(poly(Array.from({length:24},(_,k)=>pt(cx+r*Math.cos(k*Math.PI/12),cy+r*Math.sin(k*Math.PI/12))),'auxiliary'));
+  }
+  if(stage===3){out.push(line(pt(x,y+h+16),pt(x+w,y+h+16),'result'));out.push(text(x+w*.2,330,'20 mm'))}
+ }
+ if(stage===3)out.push(text(102,364,'绘图长度不同；实际尺寸标注保持一致'));
+ return out;
+}
 function frame(id,step){
  const def=common[id];
  if(!def||!Number.isInteger(step)||step<0||step>=def.steps.length)return null;
- const shapes=id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
+ const shapes=id==='ch01-drawing-scale'?scaleDiagram(step):id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
  return {id,step,steps:def.steps.length,title:def.title,action:def.steps[step],page:def.page,
   printedPage:def.printedPage,scope:def.limit,shapes};
 }
