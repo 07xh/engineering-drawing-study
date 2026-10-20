@@ -1,0 +1,51 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>两面投影求第三面 · 可验算作图实验室 | 图学课堂</title><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:#edf4ef;color:#203b2f}
+*{box-sizing:border-box}body{margin:0}a{color:#226d52}.wrap{max-width:1050px;margin:auto;padding:16px 16px 58px}
+header{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;padding:10px 0}
+nav{display:flex;flex-wrap:wrap;gap:15px}
+h1{font-size:clamp(23px,4vw,34px)}h2{font-size:20px}
+.card{background:#fff;border:1px solid #d4e5da;border-radius:16px;padding:clamp(15px,3vw,25px);margin:15px 0}
+.note{background:#fff9ed;border-left:4px solid #be923c;border-radius:8px;padding:11px 15px;line-height:1.8}
+label{font-size:14px}
+.variables{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:18px 0}
+.variable{background:#f4faf5;border-radius:12px;padding:12px}.variable label{display:block;margin-bottom:10px;font-weight:600}.variable input{width:100%;accent-color:#287552}
+strong.value{font-size:19px;margin-left:7px}
+svg{display:block;width:100%;height:auto;border-radius:10px;background:#fff;border:1px solid #d5e5d9;overflow:hidden}
+.control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:13px 0}
+button{font:inherit;color:#276448;min-height:44px;border-radius:9px;border:1px solid #afcdbb;padding:9px 14px;background:#f4faf5;cursor:pointer}
+button.primary{color:white;background:#277452;border-color:#277452}button:disabled{opacity:.45;cursor:not-allowed}
+#status{line-height:1.8}#checkResult{background:#edf6f0;padding:14px;border-radius:9px;line-height:1.7}
+#checkResult.bad{background:#fff0e8;color:#8c4931}
+.legend{display:flex;gap:15px;flex-wrap:wrap;color:#506a5b;font-size:13px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px}
+details{background:#f7faf8;padding:11px 14px;border-radius:10px;line-height:1.8}
+footer{font-size:13px;color:#607965}
+@media(max-width:600px){.variables{grid-template-columns:1fr;gap:9px}.wrap{padding:12px}.variable{padding:9px}}
+</style>
+</head><body><div class="wrap">
+<header><a href="../index.html"><strong>⌁ 图学课堂</strong></a><nav><a href="../knowledge/index.html">知识库</a><a href="source-fidelity.html">原题核验总览</a><a href="chapter-26-29.html">习题</a></nav></header>
+<h1>两面投影求第三面 · 可验算作图</h1>
+<p class="note"><strong>教学模型，不是教材原题。</strong> 拖动下面的 x、y、z 可以更改一个原创空间点。网站会重新计算正视图、俯视图及左视图，逐步画辅助线，最后独立代入线性约束引擎核对结果。这里的坐标是演示单位，不代表教材毫米尺寸。</p>
+<section class="card"><h2>① 自己改变空间点的位置</h2>
+<div class="variables">
+<div class="variable"><label for="x">横向坐标 x <strong class="value" id="xValue">26</strong></label><input type="range" id="x" min="8" max="58" step="1" value="26"></div>
+<div class="variable"><label for="y">深度坐标 y <strong class="value" id="yValue">34</strong></label><input type="range" id="y" min="8" max="58" step="1" value="34"></div>
+<div class="variable"><label for="z">高度坐标 z <strong class="value" id="zValue">44</strong></label><input type="range" id="z" min="8" max="58" step="1" value="44"></div></div>
+<div class="legend"><span><i class="dot" style="background:#287552"></i>已知投影</span><span><i class="dot" style="background:#2873b8"></i>求出的第三投影</span><span><i class="dot" style="background:#bd8536"></i>辅助联系线</span><span><i class="dot" style="background:#b64d39"></i>故意设置的错误候选</span></div>
+<svg id="constructionBoard" viewBox="0 0 920 620" role="img" aria-label="第一角画法已知点的 V/H 投影和逐帧求出的 W 投影"></svg>
+<div class="control"><button id="prev" type="button">上一步</button><button id="next" type="button" class="primary">下一步</button><button id="restart" type="button">从头演示</button><span id="counter" aria-live="polite">1 / 5</span></div>
+<h2 id="statusTitle">已知两面投影</h2><p id="status"></p>
+</section>
+<section class="card"><h2>② 用约束计算器验证答案</h2>
+<label><input type="checkbox" id="contradiction"> 故意把第三面投影的深度画错 8 个演示单位（观察系统能否发现矛盾）</label>
+<p id="checkResult" aria-live="polite"></p>
+<details><summary>为什么第三投影还需要验证？</summary>
+<p>正面投影给出 x、z，水平投影给出 x、y，两者已确定一个空间点。侧面投影应当同时满足 y、z。若第三视图给出不相同的深度，即使视觉上很接近，也与已有条件矛盾。约束计算只能检验当前原创坐标模型，不能代替教材原题的顶点对应、尺寸及可见性审核。</p>
+</details>
+</section>
+<footer>全部计算在浏览器本地完成，不调用 AI，也不会将教学示例作为任何教材题目的自动答案线。</footer>
+</div>
+<script defer src="constraint-engine.js"></script><script defer src="point-construction-core.js"></script><script defer src="point-construction-ui.js"></script>
+</body></html>
