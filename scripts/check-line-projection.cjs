@@ -15,3 +15,10 @@ assert(js.includes('if(practicePoints.length!==2)'),'require two endpoint answer
 assert(js.includes('distances.every(d=>d<=tolerance)'),'answer must use numeric coordinate tolerance');
 assert(js.includes('inPlane(p,practicePlane)'),'answer input must stay within requested view');
 console.log('PASS hidden-projection drawing practice and numeric grading wiring');
+
+for(const id of ['undoPractice','clearPractice'])assert(html.includes('id="'+id+'"'),'missing practice correction control '+id);
+assert(js.includes("const swapped=practicePoints.map"),'reversed endpoints must be accepted');
+assert(js.includes("practicePlane==='V'?'待求 V 面"),'hints must reflect missing plane');
+assert(js.includes("practice?'补图练习进行中"),'answer coordinates must not leak in practice');
+assert(js.includes("!showAnswer||(practice&&!revealed)"),'solution must remain hidden until reveal');
+console.log('PASS practice answer privacy, reversible endpoints and undo/clear controls');
