@@ -57,10 +57,10 @@ function render(){
 }
 function show(id){
  const record=window.DrawingKnowledge&&window.DrawingKnowledge.get(id);
- if(!record)return;
+ if(!record||record.contentStatus!=='page-reviewed'||!record.visualMode||data.modeFor(id,record.chapter)!==record.visualMode){entry=null;$('visualLesson').hidden=true;return}
  entry=record;stage=0;
  $('visualLesson').hidden=false;
- $('visualSourceNote').textContent='原创教学模型，不是教材第 2-6～2-9 习题原图或标准解；模型和原题作图区数据完全分离。';
+ $('visualSourceNote').textContent='本模型依据第二章已核对的投影概念重新设计，仅演示单个代表点的约束过程；不是教材原图、整题的自由度证明或出版社标准解。';
  render();
 }
 function forward(){stage=Math.min(stage+1,3);render()}
