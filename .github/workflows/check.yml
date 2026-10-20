@@ -31,6 +31,7 @@ jobs:
           node --check labs/method-library.js
           node --check knowledge/knowledge-data.js
           node --check knowledge/lesson-depth.js
+          node --check knowledge/six-layer-course.js
           node --check knowledge/textbook-examples.js
           node --check knowledge/textbook-example-geometry.js
           node --check knowledge/textbook-example-ui.js
@@ -90,6 +91,7 @@ jobs:
           node scripts/check-explorer.cjs
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
+          node scripts/check-six-layer-course.cjs
           node scripts/check-textbook-only.cjs
           node scripts/check-exercise-source-gate.cjs
           node scripts/check-textbook-examples.cjs
@@ -173,6 +175,7 @@ jobs:
           test -f dist/knowledge/knowledge-ui.css
           test -f dist/knowledge/knowledge-data.js
           test -f dist/knowledge/lesson-depth.js
+          test -f dist/knowledge/six-layer-course.js
           test -f dist/knowledge/textbook-examples.js
           test -f dist/knowledge/textbook-example-geometry.js
           test -f dist/knowledge/textbook-example-ui.js
