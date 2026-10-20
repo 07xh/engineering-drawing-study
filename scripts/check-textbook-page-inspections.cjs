@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const audit=require('../knowledge/textbook-page-audit.js');
 const scale=require('../knowledge/six-layer-course.js').forEntry('ch01-drawing-scale');
-assert.equal(audit.summary().detailedInspected,8);
+assert.equal(audit.summary().detailedInspected,16);
 for(let p=7;p<=14;p++){
  const x=audit.get(p);
  assert(x.detailedInspected);
