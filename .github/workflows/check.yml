@@ -110,6 +110,7 @@ jobs:
           node scripts/check-player-side-layout.cjs
           node scripts/check-player-dof-emphasis.cjs
           node scripts/check-player-constraint-reason-map.cjs
+          node scripts/check-player-textbook-only.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
