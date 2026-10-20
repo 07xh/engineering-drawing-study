@@ -7,7 +7,8 @@ const profiles={
  prism:{keywords:['棱柱','棱锥','棱台','表面','三视图','prism','pyramid','projection'],english:'orthographic projection of prism pyramid surfaces',alternatives:['利用同名顶点与投影联系线','按面片积聚性定位表面点'],pitfall:'不能把棱柱、棱锥与棱台的形体条件互相代替。'},
  cylinder:{keywords:['圆柱','圆台','母线','表面','projection','cylinder','surface'],english:'cylinder surface point orthographic projections',alternatives:['积聚圆周定位','沿已确认的柱面母线传递'],pitfall:'圆周同一条投射线可能有前后两个候选点。'},
  cone:{keywords:['圆锥','素线','辅助圆','截平面','cone','generator','auxiliary circle'],english:'cone surface point auxiliary generator circle projection',alternatives:['辅助素线法：通过锥顶构造真实素线','辅助圆法：过点作与底面平行的截圆'],pitfall:'辅助素线和辅助圆的半径、交点分支及前后可见性均须由原图确定。'},
- sphere:{keywords:['圆球','球面','圆周','辅助圆','sphere','spherical'],english:'sphere surface point auxiliary circle descriptive geometry',alternatives:['按球面高度构造截圆','根据可见半球选取与联系线相交的候选点'],pitfall:'球面点通常存在对称分支，不应只凭一条投影线确定点。'}
+ sphere:{keywords:['圆球','球面','圆周','辅助圆','sphere','spherical'],english:'sphere surface point auxiliary circle descriptive geometry',alternatives:['按球面高度构造截圆','根据可见半球选取与联系线相交的候选点'],pitfall:'球面点通常存在对称分支，不应只凭一条投影线确定点。'},
+ curvedUnknown:{keywords:['表面','投影','圆形','圆柱','圆锥','球面','圆','surface','projection','circle'],english:'descriptive geometry surface point circle cylinder sphere projection',alternatives:['先核对圆形投影表示何种回转体，再决定是否适用圆柱积聚线法','确认球面及辅助截圆条件后，再判断能否采用辅助圆法'],pitfall:'多个圆形投影不足以判断形体是圆柱还是圆球；若原题文字或点位模糊，不得选择某一形体生成答案。'}
 };
 const taskProfiles={};
 function register(group,prefix,last){for(let i=1;i<=last;i++)taskProfiles[prefix+'-'+i]=group}
@@ -16,13 +17,13 @@ register('pointLine','2-7',6);
 register('prism','2-8',8);
 register('cylinder','2-9',8);
 for(const id of ['2-9-3','2-9-4'])taskProfiles[id]='cone';
-for(const id of ['2-9-7','2-9-8'])taskProfiles[id]='sphere';
+for(const id of ['2-9-7','2-9-8'])taskProfiles[id]='curvedUnknown';
 function detect(id,original){
  const task=taskProfiles[id];if(!task)return null;
  const info=profiles[task],title=original&&typeof original.title==='string'?original.title:'';
  const special=['2-9-7','2-9-8'].includes(id);
  return {id,group:task,title,titleStatus:title?'部分扫描已标注':'缺失原图题意',query:(title?title.replace(/补全点的投影并判断空间位置/g,'曲面表面点的投影'):'工程制图 '+task)+' '+info.alternatives[0].replace(/：.*/,''),english:info.english,keywords:info.keywords,alternatives:info.alternatives,pitfall:info.pitfall,ambiguousShape:special,
-  shapeWarning:special?'本题含多个圆形投影，尚不能仅据局部扫描确认形体类别；以下球面方法仅供对照，必须先核对原图。':'题型识别来自现有教材部分描图，仍需逐项核验。',
+  shapeWarning:special?'本题含多个圆形投影，尚不能仅据局部扫描确认形体类别；应先核实圆柱或球面等形体条件，不能直接选某种方法。':'题型识别来自现有教材部分描图，仍需逐项核验。',
   sourceStatus:original&&original.status==='partial'?'教材原图仅部分录入':'原图完整性未确认'};
 }
 function requirements(id,original){
