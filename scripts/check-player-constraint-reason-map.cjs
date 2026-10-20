@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),E=require('../knowledge/textbook-examples.js'),G=require('../knowledge/textbook-example-geometry.js'),A=require('../knowledge/textbook-action-adapter.js'),fs=require('node:fs');
+const p=A.adapt(E.get('example-2-2'),G);
+assert.equal(p.steps[1].localDofExplanation.addedConstraint,'等高联系线：固定 a″ 的纵坐标');
+assert.equal(p.steps[3].localDofExplanation.addedConstraint,'深度定位线：固定 a″ 的横向位置');
+assert.equal(p.steps[2].localDofExplanation.addedConstraint,null);
+assert(p.steps.every(s=>s.localDofExplanation.scope.includes('归一化画纸')));
+const html=fs.readFileSync('knowledge/drawing-player.html','utf8'),ui=fs.readFileSync('knowledge/drawing-player-ui.js','utf8');
+assert(html.includes('id="constraintReason"'));assert(ui.includes('reasonData.addedConstraint'));
+assert(A.adapt(E.get('example-1-1'),G).steps.every(s=>!s.localDofExplanation));
+console.log('PASS: textbook step explanations map only verified example 2-2 constraints');
