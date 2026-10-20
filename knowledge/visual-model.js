@@ -16,16 +16,16 @@ const modes={
  sphere:{name:'圆球的三面投影',points:{A:point(42,30,30+Math.sqrt(340))},edges:[],solid:'sphere'}
 };
 function modeFor(id,chapter){
- if(['cone-views','cone-generator','cone-circle'].includes(id))return 'cone';
- if(['sphere-views','sphere-point'].includes(id))return 'sphere';
- if(['cylinder-views','cylinder-point'].includes(id))return 'cylinder';
- if(id.includes('pyramid')||id.includes('frustum'))return 'pyramid';
- if(id.includes('prism'))return 'prism';
- if(chapter==='curved')return 'cylinder';
- if(chapter==='polyhedra')return 'prism';
- if(chapter==='plane')return 'plane';
- if(chapter==='line')return 'line';
- return 'point';
+ // The 12-chapter textbook cannot use the old default point model for unrelated sections.
+ // Only specifically page-reviewed Ch.2 lesson topics have a matching *original* animation.
+ const modesByLesson={
+  'ch02-three-view-system':'prism','ch02-three-equalities':'point',
+  'ch02-point-projection':'point','ch02-point-coordinates':'point','ch02-relative-points':'point',
+  'ch02-line-two-points':'line','ch02-line-position':'line','ch02-point-on-line':'line',
+  'ch02-plane-definition':'plane','ch02-plane-special':'plane','ch02-point-on-plane':'plane',
+  'ch02-polyhedra':'pyramid','ch02-cylinder':'cylinder','ch02-cone':'cone','ch02-sphere':'sphere'
+ };
+ return Object.prototype.hasOwnProperty.call(modesByLesson,id)?modesByLesson[id]:null;
 }
 const origin={x:475,y:325},scale=4;
 const defs={
@@ -54,7 +54,8 @@ function constraints(model,stage){
  return out;
 }
 function analyze(engine,id,chapter,stage){
- const model=modes[modeFor(id,chapter)],result=engine.analyze(constraints(model,stage));
+ const mode=modeFor(id,chapter);if(!mode||!modes[mode])throw Error('此教材小节尚未核实，不能调用通用几何示意');
+ const model=modes[mode],result=engine.analyze(constraints(model,stage));
  return {mode:modeFor(id,chapter),degree:result.result.degrees,rank:result.result.rank,steps:result.steps,summary:engine.describe(result.result),scope:'仅分析这个原创模型中的一个代表点，线性约束的秩不等于整个立体或真实教材习题的全部自由度。'};
 }
 function line(shapes,view,a,b,kind='line',label=''){shapes.push({kind,view,xy:[...a,...b],label})}
@@ -86,7 +87,7 @@ function solidShapes(shapes,model,mode,view,stage,id){
   const apex=model.points.S,ratio=(upper-lower)/(upper-pt.z);
   const base=point(30+(pt.x-30)*ratio,30+(pt.y-30)*ratio,lower);
   line(shapes,view,projection(apex,view),projection(base,view),'construction','经过圆锥锥顶和 A 的母线');
-  if(id==='cone-circle'){
+  if((id==='cone-circle'||id==='ch02-cone')){
    const r=22*(upper-pt.z)/(upper-lower);
    if(view==='H')ring(shapes,view,projection(point(30,30,0),'H'),r*scale,'aux-circle','平行底面的辅助截圆');
    else{
@@ -116,7 +117,8 @@ function correspondence(model,stage,shapes){
 }
 function svgShapes(id,chapter,stage){
  if(!Number.isInteger(stage)||stage<0||stage>3)throw Error('无效的步骤序号');
- const mode=modeFor(id,chapter),model=modes[mode],shapes=[];
+ const mode=modeFor(id,chapter);if(!mode||!modes[mode])throw Error('此教材小节没有与正文一致的动画模型');
+ const model=modes[mode],shapes=[];
  for(const view of ['V','H','W']){
   const def=defs[view],active=view==='V'?stage>=1:view==='H'?stage>=2:stage>=3;
   shapes.push({kind:'panel',view,rect:def.rect,label:def.label,active});

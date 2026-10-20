@@ -11,8 +11,11 @@ const research=evaluate('knowledge/research-core.js').DrawingResearchCore;
 const compiler=evaluate('knowledge/solution-gate.js').VerifiedSolutionCompiler;
 const sourceRegistry=evaluate('labs/verified-exercises.js').VerifiedExerciseGeometry;
 const recipeRegistry=evaluate('labs/verified-solutions.js').VerifiedExerciseSolutions;
-assert.equal(know.entries.length,31);
-for(const item of know.entries){
+const reviewed=know.entries.filter(x=>x.contentStatus==='page-reviewed');
+assert.equal(know.entries.length,72);
+assert.equal(reviewed.length,16);
+assert.equal(know.entries.filter(x=>x.contentStatus==='toc-only').length,56);
+for(const item of reviewed.filter(x=>x.visualMode)){
  const mode=geom.modeFor(item.id,item.chapter);
  assert(geom.modes[mode],'model missing '+item.id);
  assert.deepEqual([0,1,2,3].map(i=>geom.analyze(engine,item.id,item.chapter,i).degree),[3,1,0,0],'DOF progression incorrect for '+item.id);
@@ -23,7 +26,7 @@ for(const item of know.entries){
   assert(stage.shapes.every(s=>!['circle','aux-circle'].includes(s.kind)||([s.cx,s.cy,s.r].every(Number.isFinite)&&s.r>0)),'nonfinite SVG circles');
  }
 }
-for(const [concept,type] of [['cone-circle','aux-circle'],['cone-generator','construction'],['sphere-point','aux-circle'],['cylinder-point','construction']]){
+for(const [concept,type] of [['ch02-cone','aux-circle'],['ch02-cone','construction'],['ch02-sphere','aux-circle'],['ch02-cylinder','construction']]){
  const item=know.get(concept),picture=geom.svgShapes(item.id,item.chapter,3);
  assert(picture.shapes.some(s=>s.kind===type),'concept-specific auxiliary geometry missing '+concept);
  assert(!geom.svgShapes(item.id,item.chapter,2).shapes.some(s=>s.kind==='construction'||s.kind==='aux-circle'),'assisted solution appears too early '+concept);
@@ -43,7 +46,7 @@ assert.equal(H[1]-origin.y,W[0]-origin.x,'H and W depth must match via 45-degree
 assert(Math.abs(Math.abs(V[0]-origin.x)/scale-xyz.x)<1e-8,'front x scale mismatch');
 assert.equal(geom.projection(xyz,'V')[1],origin.y-xyz.z*scale,'z direction invalid');
 assert.equal(geom.projection(xyz,'H')[1],origin.y+xyz.y*scale,'H view must be BELOW X axis');
-const last=geom.svgShapes('point-notation','point',3);
+const last=geom.svgShapes('ch02-point-projection','ch02',3);
 const transfer=last.shapes.find(s=>s.kind==='transfer45');
 assert(transfer,'45 degree transfer missing in last stage');
 assert.equal(transfer.xy[2]-transfer.xy[0],transfer.xy[3]-transfer.xy[1],'45 line must be true 45 degrees');
@@ -53,8 +56,8 @@ assert.equal(link[0].xy[0],link[0].xy[2],'V/H projector must be vertical');
 assert.equal(link[1].xy[1],link[1].xy[3],'V/W projector must be horizontal');
 assert.equal(link[2].xy[1],link[2].xy[3],'H to 45 transfer must be horizontal');
 assert.equal(link[3].xy[0],link[3].xy[2],'45 to W transfer must be vertical');
-assert.equal(geom.svgShapes('point-notation','point',2).shapes.some(s=>s.kind==='transfer45'),false,'45 transfer should not leak early');
-for(const item of know.entries){
+assert.equal(geom.svgShapes('ch02-point-projection','ch02',2).shapes.some(s=>s.kind==='transfer45'),false,'45 transfer should not leak early');
+for(const item of reviewed.filter(x=>x.visualMode)){
  for(let step=0;step<=3;step++){
   const shapes=geom.svgShapes(item.id,item.chapter,step).shapes;
   for(const s of shapes){
@@ -71,8 +74,10 @@ const sphere=geom.modes.sphere.points.A;
 assert(Math.abs((sphere.x-30)**2+(sphere.y-30)**2+(sphere.z-30)**2-22**2)<1e-6,'sphere point must be on example sphere');
 const cylinder=geom.modes.cylinder.points.A;
 assert(Math.abs((cylinder.x-30)**2+(cylinder.y-30)**2-22**2)<1e-6,'cylinder point must be on cylinder');
-assert(geom.modeFor('cone-circle','curved')==='cone');
-assert(geom.modeFor('sphere-point','curved')==='sphere');
+assert(geom.modeFor('ch02-cone','ch02')==='cone');
+assert(geom.modeFor('ch01-s01','ch01')===null,'unreviewed textbook sections must not get point model');
+assert(geom.modeFor('ch03-s01','ch03')===null,'non-projection chapters must never use generic point SVG');
+assert(geom.modeFor('ch02-sphere','ch02')==='sphere');
 const sourceIds=['2-6','2-7','2-8','2-9'].flatMap((section,i)=>Array.from({length:i<2?6:8},(_,n)=>section+'-'+(n+1)));
 assert.equal(sourceIds.length,28);
 assert.equal(recipeRegistry.ids.length,0,'verified recipe registry must be empty until scan review');
@@ -150,4 +155,4 @@ assert(!searchUI.includes("appendChild(svg")&&!searchUI.includes("lineFocus"),'r
 for(const filename of ['knowledge/visual-model.js','knowledge/visual-ui.js','knowledge/research-core.js','knowledge/research-ui.js','knowledge/solution-gate.js','labs/verified-solutions.js','labs/source-inspector.js','labs/source-inspector-ui.js']){
  assert(source('scripts/build-static.cjs').includes("'"+filename+"'"),'static packaging missing '+filename);
 }
-console.log('PASS: 31 dynamic lessons, 28 fail-closed source checks, method review, live research UI, original-only geometry and checked frame compiler');
+console.log('PASS: 16 checked chapter-2 lessons, unreviewed topics without animation, 28 fail-closed scans, live research and verified recipe gate');

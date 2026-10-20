@@ -63,8 +63,8 @@ for(const id of ['knowledgeCards','knowledgeDetail','visualLesson','knowledgeSea
  'stepNext','visualNext','detailLaw','detailMistake','markRead'])assert(known.includes('id="'+id+'"'),'knowledge element missing '+id);
 assert(known.includes('class="knowledge-workspace"'),'two-column knowledge structure not present');
 assert(known.includes('href="#visualLesson"'),'geometry jump not provided');
-assert(knownApp.includes('selection()')&&knownApp.includes('KnowledgeVisualUI.show(id)'),'search and diagram binding must remain live');
-assert(knownApp.includes("current&&current.id===item.id?' is-active'"),'selected knowledge state not visible');
+assert(knownApp.includes('filtered()')&&knownApp.includes('KnowledgeVisualUI.show(id)'),'new textbook filtering and diagram binding must remain live');
+assert(knownApp.includes("current?.id===item.id?' is-active'"),'selected textbook knowledge state not visible');
 const fidelity=read('labs/source-fidelity.html');
 assert(fidelity.includes('class="audit-workspace"')&&fidelity.includes('id="detail"'),'audit master-detail view missing');
 assert(fidelity.includes('id="list"')&&fidelity.includes('id="detailFindings"'),'audit reports preserved');

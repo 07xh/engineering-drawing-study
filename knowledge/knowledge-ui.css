@@ -239,3 +239,59 @@ body.ui-refresh #visualLesson{margin-top:18px}
 @media (prefers-reduced-motion:reduce){
   body.ui-refresh .kb-hero *,body.ui-refresh .kb-filterbar *{transition:none!important}
 }
+
+/* 第三版知识重构：章节与小节目录的可读布局，不改变原SVG与网站配色体系。 */
+body.ui-refresh .kb-filterbar{
+ grid-template-columns:minmax(210px,1.5fr) repeat(2,minmax(138px,1fr)) minmax(150px,1fr);
+}
+body.ui-refresh .kb-filterbar>label:first-child{grid-column:span 2}
+body.ui-refresh .kb-filterbar #resetFilters{grid-column:auto}
+body.ui-refresh #detailStatusNotice{
+ font-size:13px;line-height:1.85;margin:15px 0;
+}
+body.ui-refresh #detailStatusNotice.kb-review-note{
+ color:#215a3a;background:#edf7f0;border:1px solid #cfe6d6;
+ border-left:3px solid #60a478;padding:11px 14px;border-radius:10px;
+}
+body.ui-refresh #verifiedLessonContent[hidden],
+body.ui-refresh .site-jump-visual[hidden],
+body.ui-refresh #visualLesson[hidden]{display:none!important}
+body.ui-refresh #knowledgeCards .knowledge-card .pill{
+ max-width:100%;white-space:normal;overflow-wrap:anywhere
+}
+body.ui-refresh #knowledgeCards .knowledge-card .card-actions{margin-top:6px}
+body.ui-refresh .kb-source-note{scroll-margin-top:90px}
+body.ui-refresh .kb-hero p{max-width:780px}
+@media(max-width:1160px){
+ body.ui-refresh .kb-filterbar{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.ui-refresh .kb-filterbar>label:first-child{grid-column:1/-1}
+}
+@media(max-width:820px){
+ body.ui-refresh .kb-filterbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.ui-refresh .kb-filterbar>label:first-child{grid-column:1/-1}
+ body.ui-refresh .kb-filterbar #resetFilters{grid-column:1/-1}
+}
+@media(max-width:440px){
+ body.ui-refresh .kb-filterbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ body.ui-refresh .kb-filterbar>label:first-child{grid-column:1/-1}
+ body.ui-refresh .kb-filterbar>label{font-size:11px}
+ body.ui-refresh .kb-filterbar :is(input,select){padding:0 8px}
+}
+body.ui-refresh .knowledge-workspace .catalogue .kb-chapter-heading{
+ position:sticky;top:0;z-index:1;
+ margin:8px 0 3px;padding:10px 12px;border-radius:10px;
+ background:#eaf3ec;color:#285e42;
+ border-left:3px solid #6ba181;
+ font-size:13px;font-weight:800;line-height:1.5;
+}
+body.ui-refresh .knowledge-workspace .knowledge-card .source{
+ color:#637a6b;font-size:11px;
+}
+body.ui-refresh .kb-filterbar #coverageSelect{
+ background:#fff;color:#285e42;
+}
+@media(max-width:760px){
+ body.ui-refresh .knowledge-workspace .catalogue .kb-chapter-heading{
+  position:static;margin:12px 0 4px;
+ }
+}
