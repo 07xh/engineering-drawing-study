@@ -562,3 +562,28 @@ body.ui-refresh .book-example-inspector>summary{cursor:pointer;display:flex;gap:
 body.ui-refresh .book-example-inspector>summary span{font-size:12px;font-weight:600;color:#4e735a;overflow-wrap:anywhere}
 body.ui-refresh .book-example-inspector[open]>summary{border-bottom:1px solid #d8e5db}
 body.ui-refresh .book-example-inspector-body{padding:11px}
+
+
+/* Interactive feasible-locus overlay: compact first, no second static lecture. */
+body.ui-refresh #bookExampleConstraintPanel[hidden]{display:none!important}
+body.ui-refresh .book-example-constraint-panel{background:#f4f9fc;border:1px solid #c7dce9;border-radius:11px;padding:12px;margin:12px 0}
+body.ui-refresh .book-constraint-topline{display:flex;gap:8px;justify-content:space-between;align-items:baseline;flex-wrap:wrap}
+body.ui-refresh .book-constraint-topline strong{font-size:14px;color:#235477}
+body.ui-refresh .book-constraint-topline span{font-size:12px;color:#416b81}
+body.ui-refresh .book-constraint-topline b{font-size:19px;color:#166d96}
+body.ui-refresh .book-constraint-state{margin:6px 0 9px!important;padding:0!important;font-size:13px!important;font-weight:650;color:#246480!important;background:transparent!important;border:0!important}
+body.ui-refresh .book-constraint-choices{display:grid;gap:5px;margin:10px 0}
+body.ui-refresh .book-constraint-choice{display:flex;align-items:center;gap:8px;padding:8px 9px;border:1px solid #d5e5ec;background:#fff;border-radius:8px;font-size:12px;cursor:pointer}
+body.ui-refresh .book-constraint-choice input{accent-color:#28729d;width:17px;height:17px;flex:0 0 auto}
+body.ui-refresh .book-constraint-choice span{flex:1;line-height:1.45;font-weight:650;color:#265577}
+body.ui-refresh .book-constraint-choice small{font-size:11px;color:#617e8b;white-space:nowrap}
+body.ui-refresh .book-constraint-choice.is-linked{border-color:#4b92c0;box-shadow:inset 3px 0 #4b92c0}
+body.ui-refresh .book-example-constraint-panel p.book-constraint-linked{margin:8px 0!important;padding:0!important;background:transparent!important;border:0!important;color:#476d80!important;font-size:12px!important;line-height:1.55!important}
+body.ui-refresh .book-example-constraint-panel p.book-constraint-experiment{margin:8px 0!important;background:#fff5e9!important;color:#805b27!important;border:1px solid #eed6ae!important;padding:8px 10px!important;font-size:11px!important}
+body.ui-refresh .book-constraint-scope>summary{cursor:pointer;font-size:12px;color:#567489;font-weight:650}
+body.ui-refresh .book-constraint-scope p{margin:5px 0!important;padding:0!important;font-size:11px!important;color:#658092!important;background:transparent!important;border:0!important}
+body.ui-refresh .book-constraint-overlay{pointer-events:none}
+@media(max-width:460px){
+ body.ui-refresh .book-constraint-choice{flex-wrap:wrap}
+ body.ui-refresh .book-constraint-choice small{margin-left:25px}
+}
