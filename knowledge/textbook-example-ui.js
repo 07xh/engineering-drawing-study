@@ -4,7 +4,8 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id);
 const source=window.TextbookExamples,geom=window.TextbookExampleGeometry;
-let current=null,index=0;
+const adapter=window.TextbookActionAdapter,dof=window.DrawingPlayerDofSummary;
+let current=null,index=0,problem=null;
 const ns='http://www.w3.org/2000/svg';
 function svg(tag,attrs,content){const element=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))element.setAttribute(k,String(v));if(content!==undefined)element.textContent=content;$('bookExampleSvg').append(element);return element}
 const colors={given:'#2b7451',axis:'#758878',auxiliary:'#bc7f2e',mark:'#a36c35',result:'#216faf'};
@@ -47,7 +48,22 @@ function render(){
  $('bookExampleStageTitle').textContent='课本作图 · '+(index+1)+' / '+current.order.length;
  $('bookExampleAction').textContent='本步按教材做：'+step;
  $('bookExampleReason').textContent='为什么这样作：'+current.why[index];
- $('bookExampleDof').textContent='自由度/确定性：'+current.freedom[index]+'（'+frame.degreeTarget+'）';
+ $('bookExampleDof').textContent='教材步骤说明：'+current.freedom[index]+'（'+frame.degreeTarget+'）';
+ const badge=$('bookExampleComputedDof'),constraintNote=$('bookExampleConstraintReason');
+ badge.hidden=true;constraintNote.textContent='';
+ const currentStep=problem&&problem.steps[index],prior=index>0&&problem?problem.steps[index-1]:null;
+ if(currentStep?.localDofAnalysis){
+  try{
+   const summary=dof.summarize(currentStep.localDofAnalysis,prior?.localDofAnalysis||null);
+   if(summary.available){
+    badge.hidden=false;
+    $('bookExampleComputedDofValue').textContent=String(summary.currentDegrees);
+    $('bookExampleComputedDofLabel').textContent=summary.label+' · 剩余局部自由度';
+    const note=currentStep.localDofExplanation;
+    constraintNote.textContent=note?'计算依据：'+(note.addedConstraint||'本步未新增独立定位条件')+'。'+note.reason+' '+note.scope:'';
+   }else constraintNote.textContent='本步未显示计算自由度：'+summary.reason;
+  }catch(error){constraintNote.textContent='自由度计算未通过核验：'+error.message;}
+ }else constraintNote.textContent='本步没有经过核验的结构化几何约束，以上为教材步骤说明。';
  $('bookExampleAudit').textContent='本步核对：'+current.stageChecks[index]+(index===4?
   ' 数学验证：'+(frame.proof.maxResidual<1e-8?'通过':'未通过')+'。':'');
  $('bookExamplePrev').disabled=index===0;
@@ -57,9 +73,10 @@ function show(topicId){
  const view=$('textbookExample');if(!view)return;
  const matches=source?.forTopic(topicId)||[];
  const example=matches[0]||null;
- view.hidden=!example;current=example;index=0;
+ view.hidden=!example;current=example;index=0;problem=null;
  const sharedLink=$('bookExampleSharedPlayer');if(sharedLink)sharedLink.hidden=!example;
  if(!example)return;
+ try{problem=adapter.adapt(example,geom)}catch(error){problem=null}
  $('bookExampleTitle').textContent=example.number+' · '+example.title;
  $('bookExampleSource').textContent='《工程制图与 AutoCAD》第3版 · 印刷第'+example.printedPage+'页 / PDF第'+example.pdfPage+'页 · '+example.figure;
  $('bookExampleKnown').textContent='课本例题：'+example.known+' 目标：'+example.goal;
