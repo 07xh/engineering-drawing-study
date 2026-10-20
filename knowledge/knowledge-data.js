@@ -171,6 +171,10 @@ teach('ch02-s06','sphere','圆球的投影与球面取点',52,53,{
  understanding:'球面可能把不同的空间点投射到同一条视图关系上，需足够的独立信息消除歧义。',
  mistake:'在任何高度都画和球最大轮廓相同半径的辅助圆。',
  terms:['圆球','球面','截圆','球面点'],visualMode:'sphere'});
+// Rebuild the reading order around the book, not around legacy card insertion order.
+const order=new Map(sections.map((s,i)=>[s.id,i]));
+entries.sort((a,b)=>order.get(a.section)-order.get(b.section)||
+ (a.contentStatus==='toc-only'?-1:b.contentStatus==='toc-only'?1:0));
 function get(id){return entries.find(e=>e.id===id)||null}
 function find(query='',chapter='all'){
  const q=String(query).trim().toLowerCase();
