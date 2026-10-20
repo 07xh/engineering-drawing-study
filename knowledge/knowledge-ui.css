@@ -410,3 +410,19 @@ body.ui-refresh .book-example>.book-example-source:last-child{
  body.ui-refresh .book-example-pager button{font-size:13px}
  body.ui-refresh .book-example-figure-top span{font-size:10px}
 }
+
+/* Desktop: keep the directory in place; let each column scroll without page jumps. */
+@media(min-width:901px){
+ body.ui-refresh .knowledge-workspace{display:grid;grid-template-columns:minmax(285px,34%) minmax(0,1fr);gap:16px;align-items:stretch;height:min(82dvh,850px);min-height:460px}
+ body.ui-refresh .knowledge-workspace>.library{min-width:0;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;scroll-behavior:auto}
+ body.ui-refresh .knowledge-workspace>.library>.site-directory-hint{position:sticky;top:0;z-index:3;background:#f7faf8}
+ body.ui-refresh .knowledge-workspace>.library .catalogue{grid-template-columns:minmax(0,1fr)}
+ body.ui-refresh .knowledge-workspace>#knowledgeDetail{margin:0;min-width:0;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior-y:contain;scrollbar-gutter:stable;scroll-behavior:auto}
+ body.ui-refresh .knowledge-workspace>#knowledgeDetail:focus{outline-offset:-3px}
+ body.ui-refresh .knowledge-workspace #knowledgeDetail:not([hidden]){scroll-margin-top:0}
+}
+@media(max-width:900px){
+ body.ui-refresh .knowledge-workspace{height:auto;display:block}
+ body.ui-refresh .knowledge-workspace>.library,
+ body.ui-refresh .knowledge-workspace>#knowledgeDetail{overflow:visible;max-height:none}
+}
