@@ -114,6 +114,16 @@ function forEntry(id){
   levels[4].text='缩放只改变显示长度；实物几何自由度不会因此改变。仅知比例而未知实物长度，仍有一个长度未知量。';
   levels[5].text='检查图形相似、长度按比例变化、尺寸标注不变；正式出图应核对现行标准。';
  }
+ if(id==='ch01-divide-and-polygons'){
+  levels[0].headline='为什么等半径辅助圆弧可以定位圆内接多边形的顶点？';
+  levels[1].text='以已知圆的一条直径端点为圆心，用相同半径画辅助弧，可得到两个圆周交点。';
+  levels[2].text='原圆和辅助圆半径都为R，圆心间距也为R，交点与两圆心构成等边三角形，因而相邻圆心角为60°。';
+  levels[2].details=[{title:'从交点到六等分',body:'从直径的两个端点分别求交，可获得另外四个顶点；六个顶点沿圆周相隔60°。'},
+   {title:'为什么边长不同',body:'内接正六边形的边长为R；内接正三角形的边长为√3R，来自120°圆心角的弦长。'}];
+  levels[3].text='教材例1-1的七等分动画已核验；教材印刷第14页例1-4图1-25的圆规方法另提供五帧原创原理动画，暂不列作完整原书例题播放器。';
+  levels[4].text='只分析一个待求圆周点：已知在圆上时仍可沿圆周移动；再加到直径端点距离为R的独立条件，变为两个离散候选点，连续自由度降至0。';
+  levels[5].text='检查六个顶点共圆、六边形边长均为R、三角形边长均为√3R；注意两个交点分支都应正确保留。';
+ }
   return {id:item.id,title,section:section?.title||'',pages:[...item.pages],verified,
   status:verified?'page-reviewed':'toc-only',
   sourceNote:verified?'讲解已按现有教材核验记录重写；原书图未复制。':
