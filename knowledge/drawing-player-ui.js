@@ -9,6 +9,9 @@ function render(){
  reason.textContent=frame.explanation;
  document.getElementById('why').textContent=currentExample?'为什么这样作图：'+currentExample.why[index]:'';
  document.getElementById('freedom').textContent=currentExample?'约束与自由度：'+currentExample.freedom[index]:'';
+ const constraintReason=document.getElementById('constraintReason');
+ const reasonData=currentProblem?.steps[index]?.localDofExplanation;
+ constraintReason.textContent=reasonData?'计算依据：'+(reasonData.addedConstraint||'本步未增加新的定位约束')+'。'+reasonData.reason+' '+reasonData.scope:'';
  document.getElementById('stageCheck').textContent=currentExample?'本步检查：'+currentExample.stageChecks[index]:'';
  const math=document.getElementById('mathVerification');
  const dofBadge=document.getElementById('computedDof');
@@ -50,7 +53,7 @@ function load(id){
   document.getElementById('computedDof').hidden=true;
   document.getElementById('mathVerification').textContent='无法核验：播放器未成功载入。';
   document.getElementById('localDofVerification').textContent='无法核验：播放器未成功载入。';
-  for(const id of ['why','freedom','stageCheck'])document.getElementById(id).textContent='';reason.textContent='';counter.textContent='';status.textContent='播放器无法加载：'+error.message;previous.disabled=true;next.disabled=true}
+  for(const id of ['why','freedom','constraintReason','stageCheck'])document.getElementById(id).textContent='';reason.textContent='';counter.textContent='';status.textContent='播放器无法加载：'+error.message;previous.disabled=true;next.disabled=true}
 }
 previous.addEventListener('click',()=>{if(index>0){index--;render()}});
 next.addEventListener('click',()=>{if(index<frames.length-1){index++;render()}});
