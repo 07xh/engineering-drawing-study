@@ -107,6 +107,7 @@ jobs:
           node scripts/check-nonlinear-step-trace.cjs
           node scripts/check-player-local-dof.cjs
           node scripts/check-example-2-2-local-dof.cjs
+          node scripts/check-player-side-layout.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
