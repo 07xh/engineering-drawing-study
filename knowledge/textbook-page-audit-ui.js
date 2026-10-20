@@ -24,6 +24,7 @@ function render(){
  const summary=data.summary(chapter==='all'?null:chapter);
  $('auditCount').textContent=summary.indexed;
  $('auditSampled').textContent=summary.visuallySampled;
+ $('auditDetailed').textContent=summary.detailedInspected;
  $('auditReviewed').textContent=summary.fullyReviewed;
  $('auditWaiting').textContent=summary.awaitingFullReview;
  $('auditResult').textContent='当前显示 '+pages.length+' 页';
@@ -34,10 +35,14 @@ function render(){
   card.append(node('h3','PDF 第 '+page.pdfPage+' 页'+(page.printedPage?' · 原书第 '+page.printedPage+' 页':'')));
   const section=page.sectionId?sectionMap[page.sectionId]:null;
   card.append(node('span',page.fullyPageReviewed?'正文/图例/步骤均已核验':
-   page.visualSample?'已抽查 · 待逐条核验':'未完成逐页核验','flag'));
+   page.detailedInspected?'主题与图号已核对 · 全页待核验':page.visualSample?'已抽查 · 待逐条核验':'未完成逐页核验','flag'));
   if(section){card.append(node('p',(section.sectionNumber==='附录'?'':section.sectionNumber+' ')+section.title,'section'))}
   else card.append(node('p',page.part==='front'?'前置页（封面、前言或目录）':page.part==='back'?'后置资料':'章节之外的正文页'));
   if(page.visualSample)card.append(node('p','抽查内容：'+page.visualSample));
+  if(page.detailedInspection){const d=page.detailedInspection;
+   card.append(node('p','本页主题：'+d.topic));
+   card.append(node('p','已确认图表：'+(d.figures.join('、')||'无编号图表')));
+   card.append(node('p','核验边界：'+d.note));}
   if(!page.fullyPageReviewed)card.append(node('small','尚不能据此发布原书例题步骤和图形答案。'));
   grid.append(card);
  }
