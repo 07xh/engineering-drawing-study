@@ -4,9 +4,10 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TextbookActionAdapter=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 function key(s){return JSON.stringify(s)}
+function geometryKey(s){return s.type==='line'?key([s.type,s.a,s.b]):key([s.type,s.p])}
 function convert(shape){
  if(shape.type==='line')return {kind:'line',style:shape.style||'given',geometry:{x1:shape.a.x,y1:shape.a.y,x2:shape.b.x,y2:shape.b.y}};
- if(shape.type==='point')return {kind:'point',style:shape.style||'given',geometry:{x:shape.p.x,y:shape.p.y}};
+ if(shape.type==='point')return {kind:'point',style:shape.style||'given',label:shape.label||'',geometry:{x:shape.p.x,y:shape.p.y}};
  throw Error('尚不支持的教材图形类型');
 }
 function adapt(example,geometry){
@@ -16,7 +17,7 @@ function adapt(example,geometry){
  for(let i=0;i<example.order.length;i++){
   const frame=geometry.frame(example.id,i),actions=[];
   for(const shape of frame.shapes){
-   const fingerprint=key(shape);
+   const fingerprint=geometryKey(shape);
    if(seen.has(fingerprint))continue;
    seen.add(fingerprint);actions.push(convert(shape));
   }
