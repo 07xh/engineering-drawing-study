@@ -43,6 +43,9 @@ jobs:
           node --check labs/tangent-constraint-core.js
           node --check labs/tangent-constraint-ui.js
           node --check scripts/check-tangent-constraint.cjs
+          node --check labs/paper-geometry-core.js
+          node --check labs/paper-geometry-ui.js
+          node --check scripts/check-paper-geometry.cjs
           node --check scripts/check-fidelity-construction.cjs
           node --check scripts/check-source-inspector.cjs
           node --check scripts/check-visual-research.cjs
@@ -69,6 +72,7 @@ jobs:
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
           node scripts/check-tangent-constraint.cjs
+          node scripts/check-paper-geometry.cjs
           node scripts/check-exercise-261.cjs
           node scripts/check-workbench-layout.cjs
           node scripts/check-question-strategies.cjs
@@ -105,5 +109,8 @@ jobs:
           test -f dist/labs/tangent-constraint.html
           test -f dist/labs/tangent-constraint-core.js
           test -f dist/labs/tangent-constraint-ui.js
+          test -f dist/labs/paper-geometry.html
+          test -f dist/labs/paper-geometry-core.js
+          test -f dist/labs/paper-geometry-ui.js
           test -f dist/labs/line-workbench-layout.js
           test -f dist/question-strategies.js

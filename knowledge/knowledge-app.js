@@ -107,7 +107,7 @@ function show(id,scroll=false){
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  const visualLink=document.querySelector('.site-jump-visual');
  if(visualLink)visualLink.hidden=!lesson||!item.visualMode;
- const lab=$('chapterLabLink');if(lab){const allowed=item.labLink==='../labs/tangent-constraint.html'&&lesson;lab.hidden=!allowed;if(allowed)lab.href=item.labLink;}
+ const lab=$('chapterLabLink');if(lab){const tangent=item.labLink==='../labs/tangent-constraint.html',paper=['../labs/paper-geometry.html','../labs/paper-geometry.html?mode=dimension'].includes(item.labLink);const allowed=(tangent||paper)&&lesson;lab.hidden=!allowed;if(allowed){lab.href=item.labLink;lab.textContent=paper?'打开本节原创尺规作图与尺寸定位实验 ↗':'打开本节原创圆弧连接与自由度实验 ↗'}}
  try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
  if(scroll){
   $('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});

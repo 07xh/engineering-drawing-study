@@ -37,7 +37,7 @@ for(let r=22;r<=52;r++){
 assert.throws(()=>geo.compute(17,'left'),'invalid radius must not be accepted');
 assert.throws(()=>geo.compute(32,'unknown'),'unrecognized branch must not be accepted');
 assert.throws(()=>geo.frame(32,'left',5),'bad step must be rejected');
-for(const id of ['ch01-circle-tangent-principle','ch01-fillet-straight-lines','ch01-outline-dimensions','ch01-arc-classification','ch01-drawing-workflow']){
+for(const id of ['ch01-circle-tangent-principle','ch01-fillet-straight-lines','ch01-arc-classification','ch01-drawing-workflow']){
  const item=kb.get(id);
  assert(item&&item.contentStatus==='page-reviewed','unreviewed chapter 1 lesson linked to lab: '+id);
  assert.equal(item.labLink,'../labs/tangent-constraint.html');

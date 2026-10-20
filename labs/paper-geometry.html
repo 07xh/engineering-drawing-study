@@ -1,0 +1,60 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="工程制图第一章：原创线段等分、正多边形及定形定位尺寸逐帧作图与自由度分析。">
+<title>尺规作图与尺寸定位实验室 · 图学课堂</title>
+<link rel="stylesheet" href="../site-ui.css"><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+body{margin:0;background:#f0f6f1;color:#244c35;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+main{max-width:1090px;width:calc(100% - 30px);margin:18px auto 65px}
+h1{font-size:clamp(25px,4vw,36px);line-height:1.3;margin:10px 0}h2{font-size:19px}
+p{line-height:1.8}.notice{background:#fff9ec;color:#6a552f;border-left:4px solid #be8e3e;padding:13px 15px;border-radius:10px}
+.panel{margin:15px 0;padding:clamp(15px,2.4vw,24px);border:1px solid #d6e5db;border-radius:17px;background:#fff}
+.choice-bar{display:flex;flex-wrap:wrap;gap:9px}
+.choice-bar button,.controls button{min-height:45px;border:1px solid #c5d9ca;background:#fff;color:#2b6146;padding:10px 15px;border-radius:10px;font:inherit;cursor:pointer}
+.choice-bar button[aria-pressed=true],.controls button.primary{background:#256e4e;color:white;border-color:#256e4e}
+.choice-bar button:disabled,.controls button:disabled{opacity:.45;cursor:not-allowed}
+.inputs{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin:15px 0}
+.inputs label{display:flex;align-items:center;gap:9px;font-size:14px;flex-wrap:wrap}.inputs [hidden]{display:none!important}
+.inputs select,.inputs input[type=range]{min-height:43px}
+.inputs input[type=range]{width:min(270px,45vw);accent-color:#28754f}
+.inputs select{padding:8px;border:1px solid #bdd4c3;border-radius:9px;background:white}
+.svg-wrap{overflow-x:auto;border:1px solid #d7e6dc;border-radius:11px;overscroll-behavior-inline:contain}
+#paperBoard{display:block;width:100%;min-width:560px;height:auto;max-height:470px;background:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#5e7969;margin:12px 0}.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;background:var(--tone);margin-right:5px;vertical-align:-1px}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:13px 0}
+#paperTitle{font-size:19px;margin:16px 0 5px}#paperWhy{line-height:1.85;color:#415e4b;font-size:14px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}
+.metric{padding:12px 9px;border-radius:11px;background:#edf6ef;text-align:center;color:#4f725b;font-size:12px}
+.metric strong{display:block;color:#1f6343;font-size:22px;line-height:1.4}
+#paperAudit{font-size:13px;line-height:1.8;background:#f4f9f4;padding:13px;border-radius:10px}
+#paperScope{color:#526d59;font-size:13px}.crumb{color:#678271;font-size:13px}.crumb a{color:#286b4b}
+@media(max-width:600px){main{width:calc(100% - 22px)}.panel{padding:13px}.metrics{gap:5px}.metric{padding:8px 5px;font-size:11px}.metric strong{font-size:19px}#paperBoard{min-width:530px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style></head>
+<body class="ui-refresh">
+<header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a>
+<nav class="site-nav" aria-label="主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">教材知识库</a><a href="chapter-26-29.html">章节练习</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><a href="tangent-constraint.html">圆弧连接</a><a href="point-construction.html">三面投影</a><a href="source-fidelity.html">原题核验</a></div></details></nav></div></header>
+<main><p class="crumb"><a href="../knowledge/index.html#ch01-divide-and-polygons">第一章 · 几何作图</a> / 原创互动实验</p>
+<h1>线段等分、正多边形与尺寸定位</h1>
+<p class="notice"><strong>演示范围：</strong>依据老师提供的教材第3版第一章第13～14、21～22页的知识主题自行构造可检验模型。所有线、点及数值为原创教学示例，并非原书原题图、出版社配图或答案。参数仅采用画布单位，不能直接作为毫米尺寸。</p>
+<section class="panel" aria-label="选择作图主题"><h2>① 选择今天要理解的作图方法</h2>
+<div class="choice-bar" role="group" aria-label="作图主题">
+<button type="button" id="modeDivide" data-mode="divide" aria-pressed="true">线段等分</button>
+<button type="button" id="modePolygon" data-mode="polygon" aria-pressed="false">正多边形</button>
+<button type="button" id="modeDimension" data-mode="dimension" aria-pressed="false">定形与定位</button>
+</div>
+<div class="inputs"><label id="divideFields">等分段数 <input id="divisionCount" type="range" min="2" max="10" value="7" step="1"><strong id="divisionValue">7</strong></label>
+<label id="polygonFields" hidden>正多边形边数 <select id="polygonSides"><option value="3">3 · 三角形</option><option value="4">4 · 正方形</option><option value="6" selected>6 · 正六边形</option><option value="8">8 · 正八边形</option></select></label>
+<label id="dimensionXFields" hidden>水平定位距离 <input id="dimensionX" type="range" min="60" max="280" step="1" value="180"><strong id="dimensionXValue">180</strong></label>
+<label id="dimensionYFields" hidden>竖直定位距离 <input id="dimensionY" type="range" min="50" max="180" step="1" value="105"><strong id="dimensionYValue">105</strong></label>
+</div></section>
+<section class="panel"><h2>② 逐步出现辅助线和确定的几何</h2>
+<div class="legend"><span><i style="--tone:#24704f"></i>已知</span><span><i style="--tone:#bd852d"></i>辅助线</span><span><i style="--tone:#2479b8"></i>确定点/边</span><span><i style="--tone:#8a9e90"></i>检验线</span></div>
+<div class="svg-wrap"><svg id="paperBoard" role="img" aria-label="原创尺规作图逐步示意" viewBox="0 0 680 360"></svg></div>
+<div class="controls"><button type="button" id="paperPrev">上一步</button><button type="button" id="paperNext" class="primary">下一步</button><button type="button" id="paperRestart">重新演示</button><span id="paperCounter" aria-live="polite">1 / 5</span></div>
+<h3 id="paperTitle">已知条件</h3><p id="paperWhy"></p>
+</section>
+<section class="panel"><h2>③ 为什么这一步能够确定位置？</h2>
+<div class="metrics"><div class="metric"><strong id="paperDegree">—</strong>当前连续自由度</div><div class="metric"><strong id="paperValid">—</strong>数值约束验证</div><div class="metric"><strong id="paperError">—</strong>最大数值误差</div></div>
+<p id="paperScope"></p><p id="paperAudit" aria-live="polite"></p>
+<p class="crumb">若要学习圆与直线、两圆相切时的两个候选圆心，可以进入 <a href="tangent-constraint.html">圆弧连接与自由度实验室</a>。</p></section>
+</main><script defer src="paper-geometry-core.js"></script><script defer src="paper-geometry-ui.js"></script></body></html>
