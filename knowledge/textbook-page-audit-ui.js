@@ -3,6 +3,14 @@ const data=window.TextbookPageAudit,book=window.DrawingKnowledge;
 const $=id=>document.getElementById(id);
 if(!data||!book){$('auditResult').textContent='教材数据尚未加载';return}
 const select=$('auditChapter');
+const reviewedExamples=data.individuallyReviewedExamples||[];
+$('auditExampleCount').textContent='已单独核对 '+reviewedExamples.length+' 道教材例题（与整页核验不同）';
+const linkHolder=$('auditExampleLinks');
+for(const example of reviewedExamples){
+ const link=document.createElement('a');link.href='./index.html#'+encodeURIComponent(example.topic);
+ link.textContent=example.number+' · '+example.title+'（印刷第'+example.printedPage+'页） ↗';
+ link.style.display='inline-block';link.style.margin='7px 14px 0 0';linkHolder.append(link);
+}
 select.add(new Option('全部 292 页（包括前后资料）','all'));
 for(const chapter of book.chapters)select.add(new Option(chapter.name,chapter.id));
 const sectionMap=Object.fromEntries(book.sections.map(s=>[s.id,s]));
