@@ -43,6 +43,21 @@ $('status').textContent='A/G: ('+points[0].join(', ')+')；B/K: ('+points[1].joi
 const fields=$('fields');fields.replaceChildren();for(let i=0;i<2;i++)for(let k=0;k<3;k++){const lab=document.createElement('label'),id='p'+i+'c'+k;lab.htmlFor=id;lab.textContent=names[i].toUpperCase()+' 的 '+['x','y','z'][k]+'：'+points[i][k];const input=document.createElement('input');input.type='range';input.min='0';input.max='90';input.value=points[i][k];input.id=id;input.addEventListener('input',()=>{const next=points[i].slice();next[k]=+input.value;setPoint(i,next)});lab.append(input);fields.append(lab)}
 const a=points[0],b=points[1],eq=(i)=>a[i]===b[i];let cls=eq(0)&&eq(2)?'正垂线（垂直 V）':eq(0)&&eq(1)?'铅垂线（垂直 H）':eq(1)&&eq(2)?'侧垂线（垂直 W）':eq(0)?'侧平线（平行 W）':eq(1)?'正平线（平行 V）':eq(2)?'水平线（平行 H）':'一般位置直线';if(a.every((v,i)=>v===b[i]))cls='两端重合，无法确定直线';
 $('diagnosis').textContent='当前几何判断：'+cls+'。坐标差 Δx='+(b[0]-a[0])+'、Δy='+(b[1]-a[1])+'、Δz='+(b[2]-a[2])+'。';
+
+const constraints=[],engine=window.DrawingConstraints;
+if(c.type==='front')constraints.push({type:'coordinate',axis:'y',value:points[0][1]});
+if(c.type==='horizontal')constraints.push({type:'coordinate',axis:'z',value:points[0][2]});
+if(c.type==='profile')constraints.push({type:'coordinate',axis:'x',value:points[0][0]});
+if(c.type==='vnormal')constraints.push({type:'projection',plane:'V',value:[points[0][0],points[0][2]]});
+if(c.type==='konv')constraints.push({type:'coordinate',axis:'y',value:0});
+const result=engine.analyze(constraints).result;
+const fixed=3-result.degrees;
+const reason=c.type==='general'?'一般位置直线没有附加特殊位置约束':c.type==='vnormal'?'正垂线固定第二端点的 x、z':c.type==='konv'?'K 位于 V 面，固定 yK=0':c.type==='front'?'正平线要求两端 y 相同':c.type==='horizontal'?'水平线要求两端 z 相同':'侧平线要求两端 x 相同';
+$('dofAnalysis').textContent='自由度分析（以第一端点为已知，研究第二端点）：空间自由点有 3 个自由度；'+reason+'，提供 '+fixed+' 个独立条件；当前剩余 '+result.degrees+' 个自由度。整条直线两端均可自由移动时，第一端点也有相应自由度。';
+const notes=['先辨认题目给出的已知点、投影面及直线位置条件；观察坐标和剩余自由度。','先在 V 面定位两端正面投影，连接线段，标记两点高度 z。','由正面投影向下作垂直 X 轴的联系线，在 H 面按 y 距离定端点。','用 45° 转移线把 H 面的 y 距离转到 W 面，再从 V 面引水平联系线，确定侧面投影。','连接三面对应端点，核对长对正、高平齐、宽相等及本题的特殊位置条件。'];
+$('stepNote').textContent='第 '+(drawingStep+1)+' / 5 步：'+notes[drawingStep];
+for(const b of $('drawingSteps').querySelectorAll('button'))b.setAttribute('aria-current',Number(b.dataset.step)===drawingStep?'step':'false');
+$('transfer45').textContent='45° 转移线：'+(showTransfer45?'开':'关');$('transfer45').classList.toggle('active',showTransfer45);$('transfer45').setAttribute('aria-pressed',String(showTransfer45));
 $('solution').textContent=c.answer;$('solution').classList.toggle('hidden',!showAnswer);$('answer').textContent=showAnswer?'隐藏判断与步骤':'显示判断与作图步骤';$('guides').classList.toggle('active',guides);$('guides').setAttribute('aria-pressed',String(guides));
 }
 function choose(i){current=i;points=[cases[i].a.slice(),cases[i].b.slice()];showAnswer=false;drawingStep=4;for(const b of $('tasks').children)b.classList.toggle('active',+b.dataset.i===i);$('questionTitle').textContent=cases[i].id+' · '+cases[i].title;$('questionText').textContent=cases[i].text;$('questionHint').textContent='保留本题的几何约束；拖动或改变滑块后，其余投影由同一组三维坐标重新计算。';draw()}
