@@ -12,6 +12,10 @@ function markup(state,options={}){
  Free.validate(state);
  const points=Object.fromEntries(state.points.map(p=>[p.id,Spatial.project(p,options)]));
  const out=['<rect width="460" height="330" fill="#fbfdfb"/>'];
+ for(const face of state.faces){
+  const coords=face.map(id=>points[id]);
+  out.push('<polygon points="'+coords.map(p=>f(p.x)+','+f(p.y)).join(' ')+'" fill="#9fcfae" fill-opacity=".35" stroke="none" class="free-space-face"/>');
+ }
  for(const edge of state.edges){
   const a=points[edge.a],b=points[edge.b];
   out.push('<line x1="'+f(a.x)+'" y1="'+f(a.y)+'" x2="'+f(b.x)+'" y2="'+f(b.y)+'" stroke="#317959" stroke-width="2.8" data-segment="'+esc(edge.a)+'-'+esc(edge.b)+'"/>');
