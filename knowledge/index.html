@@ -37,6 +37,12 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 
 .visual-box{border:1px solid #d6e4db;border-radius:14px;padding:14px;background:#fbfdfb;overflow:hidden}
 .visual-box svg{display:block;width:100%;height:auto;min-height:185px;background:white;border-radius:10px}
+.visual-stage-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(270px,1fr);gap:16px;align-items:start}
+.visual-stage-figure{position:sticky;top:12px;min-width:0}
+.visual-stage-notes{min-width:0;padding:12px;border:1px solid #e0ebe3;border-radius:12px;background:white}
+.visual-stage-notes p{line-height:1.75}
+@media(max-width:800px){.visual-stage-grid{grid-template-columns:minmax(0,1fr)}.visual-stage-figure{position:static}.visual-stage-notes{padding:10px}}
+
 .visual-guide{font-size:13px;color:#587466}.visual-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:12px 0}
 .degree-count{display:inline-block;padding:6px 10px;border-radius:8px;background:#e6f3ea;color:#286347;font-weight:700}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
@@ -140,7 +146,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <section id="visualLesson" class="detail" aria-label="原创三视图动态教学" hidden>
 <h3>动态几何演示 · 看图理解每一步</h3>
 <p id="visualSourceNote" class="note">这是原创教学几何模型，不是教材题答案。</p>
-<div class="visual-box"><h3 id="visualTitle"></h3><svg id="visualBoard" role="img" aria-label="第一角画法三面投影：正面左上、水平面左下、侧面右上以及45度转移线" viewBox="0 0 970 650"></svg>
+<div class="visual-box"><h3 id="visualTitle"></h3><div class="visual-stage-grid"><div class="visual-stage-figure"><svg id="visualBoard" role="img" aria-label="第一角画法三面投影：正面左上、水平面左下、侧面右上以及45度转移线" viewBox="0 0 970 650"></svg></div><div class="visual-stage-notes" aria-label="当前图形的步骤讲解">
 <div class="visual-tools">
 <button type="button" id="visualPrev">上一步</button>
 <button type="button" class="primary" id="visualNext">下一步</button>
@@ -149,7 +155,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <span id="visualDegree" class="degree-count"></span>
 </div>
 <p id="visualExplanation"></p><p id="visualGeometryWhy" class="visual-guide" aria-live="polite"></p><p class="visual-guide" id="visualDetail"></p>
-<ol id="visualConstraintSteps"></ol>
+<ol id="visualConstraintSteps"></ol></div></div>
 </div><p class="visual-guide"><strong>读图提示：</strong>左上是正视图 V，左下是俯视图 H，右上是左视图 W。绿色为原创形体轮廓，橙色虚线为教学辅助关系，灰色为投影轴。先长对正、再高平齐，通过右下角 45° 线转换 H 与 W 的深度。</p>
 <p class="visual-guide">自由度数值来自网站共享的三维线性约束计算模块，仅针对模型内一个代表点；回转曲面和整张教材习题尚不能由这一个数值代表。</p>
 </section>
