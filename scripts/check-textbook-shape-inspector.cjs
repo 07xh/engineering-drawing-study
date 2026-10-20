@@ -53,7 +53,7 @@ const window={TextbookExamples:Examples,TextbookExampleGeometry:Geometry,Textboo
 get('bookExampleShowAux').checked=true;get('bookExampleHighlight').checked=true;
 vm.runInNewContext(ui,{document,window});
 window.TextbookExampleUI.show('ch02-point-projection');
-assert.match(get('bookExampleShapeReason').textContent,/高度|深度|参考/);
+assert.match(get('bookExampleShapeReason').textContent,/投影|高度|深度|参考/);
 assert.equal(get('bookExampleSvg').attributes.role,'group');
 assert(get('bookExampleSvg').children.some(x=>x.attributes['data-hit']==='true'),'SVG lacks touch hit targets');
 const firstKey=get('bookExampleShapeSelect').children[0].value;
