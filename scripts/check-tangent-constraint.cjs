@@ -41,7 +41,7 @@ for(const id of ['ch01-circle-tangent-principle','ch01-fillet-straight-lines','c
  const item=kb.get(id);
  assert(item&&item.contentStatus==='page-reviewed','unreviewed chapter 1 lesson linked to lab: '+id);
  assert.equal(item.labLink,'../labs/tangent-constraint.html');
- assert.equal(item.visualMode,null,'don't mislabel plane 2D model as 3D V/H/W');
+ assert.equal(item.visualMode,null,'do not mislabel planar 2D model as 3D V/H/W');
 }
 assert.equal(kb.get('ch01-s03').labLink,undefined,'unreviewed TOC entry should not contain a lab link');
 const html=source('labs/tangent-constraint.html'),ui=source('labs/tangent-constraint-ui.js');
