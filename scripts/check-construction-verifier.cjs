@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict'),V=require('../knowledge/construction-verifier.js');
+const steps=[{id:'given',objects:[{id:'lineA',kind:'line',dependsOn:[]},{id:'lineB',kind:'line',dependsOn:[]}]},{id:'construct',objects:[{id:'P',kind:'point',dependsOn:['lineA','lineB']}]}];
+const l=(a,b,offset)=>({type:'line',a,b,offset});
+let r=V.verify(steps,'P',{lineA:l(1,0,2),lineB:l(0,1,3)});
+assert.equal(r.status,'unique');assert.equal(r.solutionCount,1);assert.deepEqual(r.provenance,['lineA','lineB']);
+r=V.verify(steps,'P',{lineA:l(1,0,2),lineB:l(1,0,3)});assert.equal(r.status,'none');
+r=V.verify(steps,'P',{lineA:l(1,0,2),lineB:l(2,0,4)});assert.equal(r.status,'coincident');
+r=V.verify(steps,'P',{lineA:l(1,0,2)});assert.equal(r.status,'unsupported');
+const circular=[{id:'g',objects:[{id:'line',kind:'line',dependsOn:[]},{id:'circle',kind:'circle',dependsOn:[]},{id:'P',kind:'point',dependsOn:['line','circle']}]}];
+r=V.verify(circular,'P',{line:l(0,1,0),circle:{type:'circle',x:0,y:0,r:5}});assert.equal(r.status,'multiple');assert.equal(r.solutionCount,2);
+assert.throws(()=>V.verify(steps,'missing',{}));
+console.log('PASS: construction verification distinguishes unique, multiple, none, coincident and unsupported');
