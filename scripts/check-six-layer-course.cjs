@@ -55,7 +55,7 @@ const app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
 const css=fs.readFileSync('knowledge/knowledge-ui.css','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 for(const id of ['sixLayerCourse','sixLayerNav','sixLayerPrev','sixLayerNext','sixLayerHeadline',
- 'sixLayerText','sixLayerDetails','sixLayerSource','sixLayerExampleSlot','sixLayerGuidance']){
+ 'sixLayerText','sixLayerDetails','sixLayerSource','sixLayerExampleSlot','sixLayerRelated','sixLayerGuidance']){
  assert(html.includes('id="'+id+'"'),'missing UI '+id);
 }
 assert(html.includes('src="six-layer-course.js"'),'course library not loaded');
@@ -63,6 +63,7 @@ assert(html.indexOf('src="textbook-examples.js"')<html.indexOf('src="six-layer-c
 assert(html.indexOf('src="six-layer-course.js"')<html.indexOf('src="knowledge-app.js"'),'stage data needs to load before UI');
 assert(app.includes("mountSixLayerExample()"),'verified textbook player not moved into fourth layer');
 assert(app.includes('showSixLayer(item.id);'),'all knowledge entries must render six layers');
+assert(app.includes("button.addEventListener('click',()=>show(reference.id,true))"),'chapter-level guide must link source-reviewed topics');
 assert(app.includes("layer===3&&hasExample"),'unreviewed exercises must remain hidden');
 assert(app.includes("$('verifiedLessonContent').hidden=true"),'duplicated legacy panels must not overwhelm lessons');
 assert(app.includes('renderSixLayer()'),'six-stage navigation must be interactive');
