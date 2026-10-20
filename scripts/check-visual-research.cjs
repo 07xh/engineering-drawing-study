@@ -108,6 +108,12 @@ const inspectorJS=source('labs/source-inspector-ui.js');
 assert(inspectorHtml.includes('id="sourceHighlight"')&&inspectorHtml.includes('id="inspectPanel"'),'source inspector overlay missing');
 assert(inspectorHtml.includes('src="source-inspector-ui.js"'),'source inspector script not loaded');
 assert(inspectorJS.includes('sourceHighlight')&&!inspectorJS.includes("lineFocus")&&!inspectorJS.includes('VerifiedExerciseSolutions'),'source highlights must be separate from answers');
+for(const control of ['inspectReview','inspectNote','inspectSave','inspectCopy','inspectStats','inspectSaved'])assert(inspectorHtml.includes('id="'+control+'"'),'missing personal review control '+control);
+assert(inspectorJS.includes("drawing-source-review-v1"),'local-only source notes should be stored separately');
+assert(inspectorJS.includes("record.signature===JSON.stringify(item.geometry)"),'source notes must be invalidated when geometry changes');
+assert(inspectorJS.includes('reviews[exercise]'),'per-question review storage must not leak across questions');
+assert(inspectorJS.includes('report()'),'copyable personal audit summary is required');
+assert(!inspectorJS.includes('status=\'verified-complete\'')&&!inspectorJS.includes('solutionAudit')&&!inspectorJS.includes('sourceFingerprint'),'personal review must not override answer verification');
 const valid={
  id:'test-geometry',status:'verified-complete',source:'教材第17页 · 人工复核样例',
  coordinateAudit:'verified',visibilityAudit:'verified',solutionAudit:'verified',
