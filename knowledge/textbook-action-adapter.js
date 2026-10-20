@@ -5,8 +5,8 @@
 'use strict';
 function key(s){return JSON.stringify(s)}
 function convert(shape){
- if(shape.type==='line')return {kind:'line',geometry:{x1:shape.a.x,y1:shape.a.y,x2:shape.b.x,y2:shape.b.y}};
- if(shape.type==='point')return {kind:'point',geometry:{x:shape.p.x,y:shape.p.y}};
+ if(shape.type==='line')return {kind:'line',style:shape.style||'given',geometry:{x1:shape.a.x,y1:shape.a.y,x2:shape.b.x,y2:shape.b.y}};
+ if(shape.type==='point')return {kind:'point',style:shape.style||'given',geometry:{x:shape.p.x,y:shape.p.y}};
  throw Error('尚不支持的教材图形类型');
 }
 function adapt(example,geometry){
