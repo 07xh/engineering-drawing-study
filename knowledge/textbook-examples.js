@@ -16,7 +16,7 @@ const all=[
   check:'相邻分点间的距离，以及首尾两段，都应等于 |AB|/7；所有作出的转移线应平行。',
   fidelity:'已核对例题编号、题意、图号和主要作图顺序。动画使用归一化几何坐标保留教材方法，不声称与出版社图1-22逐像素一致。'},
  {id:'example-2-2',number:'例 2-2',title:'已知点 A 的两面投影，求第三面投影',chapter:'ch02',section:'ch02-s03',
-  topics:['ch02-point-coordinates','ch02-point-projection','ch02-three-equalities'],printedPage:34,pdfPage:40,figure:'图 2-14',
+  topics:['ch02-point-coordinates','ch02-point-projection'],printedPage:34,pdfPage:40,figure:'图 2-14',
   sourceStatus:'page-figure-reviewed',
   known:'教材已给出点 A 的正面投影 a′ 和水平投影 a，要求按三面投影对应关系作出侧面投影 a″。',
   goal:'在 W 面的展开位置求 a″，保持与 a′ 等高、与 a 的深度相对应。',
