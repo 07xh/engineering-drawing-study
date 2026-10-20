@@ -7,5 +7,5 @@ assert.match(html,/id="localDofVerification"/);
 assert.ok(html.indexOf('nonlinear-local-dof.js')<html.indexOf('nonlinear-step-trace.js'));
 assert.ok(html.indexOf('nonlinear-step-trace.js')<html.indexOf('drawing-player-ui.js'));
 assert.match(ui,/localDofAnalysis/);assert.match(ui,/尚未提供经过核验的多点构型/);
-assert.match(ui,/仅为当前构型的一阶分析/);
+assert.match(ui,/仅表示当前构型的一阶自由度/);
 console.log('PASS: local DOF panel guarded by verified structured step data');
