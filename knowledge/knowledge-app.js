@@ -137,10 +137,10 @@ function renderList(){
   const meta=e('div',undefined,'meta');
   meta.append(e('span',chapters[item.chapter]?.shortName||item.chapter,'pill'),
     e('span','教材 '+item.pages[0]+(item.pages[0]===item.pages[1]?'':'–'+item.pages[1])+' 页','source'));
-  const title=e('h3',item.title),description=e('p',item.contentStatus==='toc-only'?'目录索引 · 正文尚未逐页复核':item.summary);
-  const foot=e('div',undefined,'card-actions'),button=e('button',item.contentStatus==='toc-only'?'查看目录信息 →':'阅读知识与原理 →');
+  const title=e('h3',item.title),description=e('p',item.contentStatus==='toc-only'?'六层原创导学 · 教材正文和例图待逐页核对':item.summary);
+  const foot=e('div',undefined,'card-actions'),button=e('button',item.contentStatus==='toc-only'?'进入六层导学 →':'进入六层精讲 →');
   button.type='button';button.addEventListener('click',()=>show(item.id,true));
-  foot.append(button,e('span',item.contentStatus==='toc-only'?'待精读':completed.has(item.id)?'✓ 已阅读':'可学习','learned'));
+  foot.append(button,e('span',item.contentStatus==='toc-only'?'待逐页核对':completed.has(item.id)?'✓ 已阅读':'可学习','learned'));
   card.append(meta,title,description,foot);root.append(card);
  }
  syncTopicOptions(rows);
