@@ -69,11 +69,11 @@ function composite(arg,stage){
   shapes.push(line([front[0],150],[front[0],floor[1]],'guide','VH','横向定位：长对正'));
  }
  if(stage>=3){
+  shapes.push(line([O.wx,O.vy],[O.wx+220,O.vy+220],'transfer','cross','45°参考线'));
   const p=point(cx,cy,60),floor=proj(p,'H'),side=proj(p,'W');
   shapes.push(line(floor,[O.wx+S*cy,floor[1]],'guide','HW','深度向45°转移参考'));
   shapes.push(line([O.wx+S*cy,floor[1]],side,'guide','HW','侧面深度定位'));
  }
- if(stage>=4)shapes.push(line([O.wx,O.vy],[O.wx+220,O.vy+220],'transfer','cross','45°参考线'));
  const valid=top.x1>=bottom.x1&&top.x2<=bottom.x2&&top.y1>=bottom.y1&&top.y2<=bottom.y2&&top.z1===bottom.z2;
  return {shapes,valid,error:valid?0:1,details:'基座 110 × 72 × 16；凸台 36 × 28 × 44；凸台中心 x='+cx+'、y='+cy+'（画布数学单位）。',
   objectScope:'计算的是两个固定长宽高的轴向棱柱，在接触基座的条件下其凸台中心的两个平面定位自由度，不是复杂组合体整体运动的自由度。',
