@@ -40,3 +40,9 @@ assert(js.includes("function validDraft(d)"),'draft restore must validate persis
 assert(js.includes("practiceDrag={id:e.pointerId"),'student answer endpoints must be draggable');
 assert(js.includes("svg.classList.remove('pen-dragging')"),'pen drag must release touch state');
 console.log('PASS pen answer dragging and local draft save/restore');
+
+const fsChapter=require('node:fs');const chapterHtml=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-26-29.html'),'utf8');
+for(const n of ['2-6-1','2-6-6','2-7-1','2-7-6','2-8-1','2-8-8','2-9-1','2-9-8'])assert(chapterHtml.includes(n),'missing chapter index item '+n);
+assert(chapterHtml.includes('不是教材原文、原图或标准答案'),'source fidelity warning required');
+assert(chapterHtml.includes('仅表示已查看，不代表已答对'),'review marker must not imply grading');
+console.log('PASS chapter practice index and source disclaimers');
