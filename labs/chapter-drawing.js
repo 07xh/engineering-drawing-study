@@ -25,7 +25,39 @@ function strokes(){return (records[current]||[]).filter(validStroke).slice(0,200
 function save(){try{localStorage.setItem(storage,JSON.stringify(records))}catch(e){$('status').textContent='浏览器存储不可用，当前画线仅在本次打开期间保留。'}}
 function ink(){const g=$('ink');g.replaceChildren();strokes().forEach((s,i)=>{const node=el('line',{x1:s[0],y1:s[1],x2:s[2],y2:s[3],stroke:'#c4772d','stroke-width':3.2,'stroke-linecap':'round','data-index':i});g.append(node)});$('status').textContent=current+'：已保存 '+strokes().length+' 条个人画线'+(drawingEnabled?'（自由作图已开启）':'（已隐藏；仅查看原题）')}
 function renderDof(){const data=window.ChapterDofGuide.details(current),panel=$('dofPanel');panel.replaceChildren();const note=document.createElement('p');note.textContent=data.context;panel.append(note);for(const [plane,example] of Object.entries(data.example)){const item=document.createElement('div');item.className='dof-row';const strong=document.createElement('strong');strong.textContent=plane+' 面单点投影：剩余 1 个自由度（'+example.free+'）';const detail=document.createElement('p');detail.textContent=example.why;item.append(strong,detail);panel.append(item)}const step=data.steps[guideStep];$('guideTitle').textContent=step.title;$('guideWhy').textContent=step.why;$('guideLimit').textContent=step.remaining+' '+data.notice;$('guidePrev').disabled=guideStep===0;$('guideNext').disabled=guideStep===data.steps.length-1;const g=$('guides');g.replaceChildren();if(showGuide&&sourceSteps(window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current)).length){for(const [x1,y1,x2,y2] of step.lines){g.append(el('line',{x1,y1,x2,y2}))}}$('guideShow').disabled=!sourceSteps(window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current)).length;$('guideShow').setAttribute('aria-pressed',String(showGuide));$('guideShow').textContent=showGuide?'隐藏原理辅助线':'显示原理辅助线'}$('guidePrev').onclick=()=>{guideStep=Math.max(0,guideStep-1);renderDof()};$('guideNext').onclick=()=>{guideStep=Math.min(3,guideStep+1);renderDof()};$('guideShow').onclick=()=>{if(!sourceSteps(window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current)).length)return;showGuide=!showGuide;renderDof()};
-function choose(id){current=all.includes(id)?id:all[0];$('question').value=current;$('title').textContent=current+' · 交互作图练习';const verified=window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current);$('description').textContent=verified?verified.title:'本题教材任务描述与已知图尚未完成核对，暂不展示推测的题目要求。';$('sourceStatus').textContent=verified?'已核对部分原题已知线 · '+verified.source+' · 原图未完成全部复刻':'原题待核对 · 暂不显示通用替代图';$('fidelity').textContent=verified?verified.source+'：'+verified.note+' 目前仅核对了可辨认的已知线条，未完成全部细节复刻；不作为完整原题或标准答案。':'本题尚未完成教材原图核对，暂不展示任何通用替代示意。请勿把空白作图纸当成原题。';$('sourceAudit').hidden=!verified;$('sourceAudit').textContent=verified?'原图待校对：'+(verified.audit||verified.note)+'（仅录入部分可辨认图形；未核实完整教材原题。）':'';revealStep=0;base();updateReveal();ink();guideStep=0;showGuide=false;renderDof();try{history.replaceState(null,'','#'+current)}catch(e){}}
+// 公开资料核验的“解题方法库”与原题求解动画完全隔离：不向 SVG 添加猜测图形。
+let methodCount=1;
+function renderMethod(){
+ const item=window.DrawingMethodLibrary&&window.DrawingMethodLibrary.get(current);
+ const stepsEl=$('methodSteps'),sourcesEl=$('methodSources');
+ stepsEl.replaceChildren();sourcesEl.replaceChildren();
+ if(!item){$('methodTitle').textContent='暂无本题对应的教学方法';$('methodPremise').textContent='';$('methodNote').textContent='';$('methodProgress').textContent='';$('methodDisclaimer').textContent='没有可核实的参考方法，不自动填补答案。';for(const id of ['methodPrev','methodNext','methodAll'])$(id).disabled=true;return}
+ const total=item.steps.length;methodCount=Math.max(1,Math.min(total,methodCount));
+ $('methodTitle').textContent=item.title;
+ $('methodPremise').textContent='适用前提：'+item.premise;
+ $('methodNote').textContent='本题提醒：'+item.note;
+ $('methodDisclaimer').textContent=item.disclaimer;
+ $('methodProgress').textContent='教学思路 '+methodCount+' / '+total+' 步；与上方原题答案播放互不影响';
+ item.steps.slice(0,methodCount).forEach((step,i)=>{
+  const li=document.createElement('li'),title=document.createElement('strong'),reason=document.createElement('p'),degree=document.createElement('p');
+  title.textContent=(i+1)+'．'+step.action;
+  reason.className='reason';reason.textContent='为什么这样画：'+step.reason;
+  degree.className='degree';degree.textContent='自由度／条件：'+step.freedom;
+  li.append(title,reason,degree);stepsEl.append(li);
+ });
+ item.references.forEach(ref=>{
+  const li=document.createElement('li'),a=document.createElement('a');
+  a.href=ref.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=ref.name;
+  li.append(a);sourcesEl.append(li);
+ });
+ $('methodPrev').disabled=methodCount<=1;
+ $('methodNext').disabled=methodCount>=total;
+ $('methodAll').disabled=methodCount>=total;
+}
+$('methodPrev').onclick=()=>{methodCount=Math.max(1,methodCount-1);renderMethod()};
+$('methodNext').onclick=()=>{methodCount++;renderMethod()};
+$('methodAll').onclick=()=>{const item=window.DrawingMethodLibrary&&window.DrawingMethodLibrary.get(current);if(item){methodCount=item.steps.length;renderMethod()}};
+function choose(id){current=all.includes(id)?id:all[0];$('question').value=current;$('drawingKnowledgeLink').href='../knowledge/index.html?exercise='+encodeURIComponent(current);$('title').textContent=current+' · 交互作图练习';const verified=window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current);$('description').textContent=verified?verified.title:'本题教材任务描述与已知图尚未完成核对，暂不展示推测的题目要求。';$('sourceStatus').textContent=verified?'已核对部分原题已知线 · '+verified.source+' · 原图未完成全部复刻':'原题待核对 · 暂不显示通用替代图';$('fidelity').textContent=verified?verified.source+'：'+verified.note+' 目前仅核对了可辨认的已知线条，未完成全部细节复刻；不作为完整原题或标准答案。':'本题尚未完成教材原图核对，暂不展示任何通用替代示意。请勿把空白作图纸当成原题。';$('sourceAudit').hidden=!verified;$('sourceAudit').textContent=verified?'原图待校对：'+(verified.audit||verified.note)+'（仅录入部分可辨认图形；未核实完整教材原题。）':'';revealStep=0;base();updateReveal();ink();guideStep=0;showGuide=false;renderDof();methodCount=1;renderMethod();try{history.replaceState(null,'','#'+current)}catch(e){}}
 function pos(e){const m=svg.getScreenCTM();if(!m)return null;const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(m.inverse());return [Math.max(0,Math.min(960,Math.round(q.x))),Math.max(0,Math.min(520,Math.round(q.y)))]}
 function setDrawingEnabled(value){drawingEnabled=!!value;$('drawingToggle').checked=drawingEnabled;$('drawingTools').hidden=!drawingEnabled;$('ink').hidden=!drawingEnabled;start=null;ink()}
 function mode(t){tool=t;for(const id of ['pen','eraser']){$(id).classList.toggle('active',id===t);$(id).setAttribute('aria-pressed',String(id===t))}}
