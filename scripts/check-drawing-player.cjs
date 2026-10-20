@@ -12,7 +12,7 @@ for(const f of frames)assert(renderer.svgMarkup(f).includes('<circle'));
 const ui=fs.readFileSync('knowledge/drawing-player-ui.js','utf8');
 assert(ui.includes('renderer.frames(problem)')&&ui.includes('renderer.svgMarkup(frame,'));
 assert(html.includes('归一化重绘步骤'));
-for(const id of ['example-1-1','example-2-2'])assert(html.includes('value="'+id+'"'));
+for(const id of ['example-1-1','example-2-2','example-2-3'])assert(html.includes('value="'+id+'"'));
 for(const script of ['textbook-examples.js','textbook-example-geometry.js','textbook-action-adapter.js'])assert(html.includes('src="'+script+'"'));
 assert(ui.includes('TextbookActionAdapter.adapt')&&ui.includes('selector.addEventListener'));
 console.log('PASS: independent SVG player uses the shared schema and real accumulated frames');
