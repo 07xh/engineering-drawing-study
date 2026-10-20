@@ -78,9 +78,10 @@ assert(app.includes("item.contentStatus==='page-reviewed'"),'reviewed-only lesso
 assert(app.includes('book.sections'),'section navigation not wired');
 assert(app.includes('item.contentStatus===\'toc-only\''),'TOC-only badge missing');
 assert(!app.includes('x.practice.includes(exercise)'),'legacy exercise-guessing filter must be removed');
-for(const path of ['knowledge/knowledge-data.js','knowledge/knowledge-app.js','knowledge/visual-model.js']){
- assert(fs.readFileSync(path,'utf8').includes('ch02'),'new source data not referenced '+path);
+for(const path of ['knowledge/knowledge-data.js','knowledge/visual-model.js']){
+ assert(fs.readFileSync(path,'utf8').includes('ch02'),'new lesson mapping not referenced '+path);
 }
+assert(app.includes('book.sections')&&app.includes('book.chapters'),'viewer must derive chapters dynamically instead of hardcoding lesson IDs');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(build.includes("'"+p+"'"));
 console.log('PASS edition 3 textbook TOC (12 chapters / 53 sections / 3 appendices), 16 page-reviewed original lessons, 292 PDF mapping, no legacy knowledge, isolation and clear unverified states');
