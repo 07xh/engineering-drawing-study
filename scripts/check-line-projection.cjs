@@ -27,3 +27,10 @@ for(const id of ['exerciseProgress','clearProgress'])assert(html.includes('id="'
 assert(js.includes("if(distances.every(d=>d<=tolerance)){markCompleted();"),'completion must only follow successful grading');
 assert(js.includes("completed=new Set(stored.filter"),'saved progress must be filtered against real exercises');
 console.log('PASS local completion progress and safe reset controls');
+
+for(const id of ['retryWrong','retryCount','stepBack','stepForward','stepHistoryToggle','stepHistory'])assert(html.includes('id="'+id+'"'),'missing retry/history control '+id);
+assert(js.includes("else{markWrong();practiceUI("),'failed attempts must enter retry queue');
+assert(js.includes("wrong.delete(cases[current].id);saveWrong()"),'successful practice must remove retry entry');
+assert(js.includes("function goStep(n)"),'step navigation must be implemented');
+assert(js.includes("visitedSteps=new Set([4])"),'step history must reset between exercises');
+console.log('PASS retry queue and guided step navigation');
