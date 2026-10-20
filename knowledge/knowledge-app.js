@@ -78,6 +78,23 @@ function renderSteps(){
  $('stepNext').disabled=step>=current.steps.length;
  $('stepAll').disabled=step>=current.steps.length;
 }
+function showDepth(item){
+ const deep=window.TextbookDeepLessons&&window.TextbookDeepLessons.get(item.id);
+ const container=$('deepLesson');if(!container)return;
+ container.hidden=!(deep&&item.contentStatus==='page-reviewed');
+ if(!deep||item.contentStatus!=='page-reviewed')return;
+ $('deepQuestion').textContent=deep.question;
+ $('deepLogic').textContent=deep.logic;
+ $('deepExample').textContent=deep.example;
+ $('deepCheck').textContent=deep.check;
+ $('deepBoundary').textContent='适用范围与来源界限：'+deep.boundary;
+ const list=$('deepStages');list.replaceChildren();
+ for(const stage of deep.stages){
+  const li=e('li'),heading=e('strong',stage[0]),details=e('p',stage[1]);
+  const why=e('p','为什么：'+stage[2],'deep-why');
+  li.append(heading,details,why);list.append(li);
+ }
+}
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;
@@ -98,8 +115,9 @@ function show(id,scroll=false){
   $('detailLaw').textContent=item.law;$('detailUnderstanding').textContent=item.understanding;
   $('detailMistake').textContent=item.mistake;step=1;renderSteps();
  }
+ showDepth(item);
  const related=$('detailExercises');related.replaceChildren();
- if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；旧练习库仍独立保留，避免错误对应。','source'))}
+ if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；目前不自动关联任何未经原图核实的习题。只有你提交且与教材已核对的题目才能作为正式关联。','source'))}
  else for(const ex of item.practice){const a=e('a',ex+' · 进入练习');a.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(a)}
  const mark=$('markRead');mark.disabled=!lesson;
  mark.textContent=completed.has(id)?'取消已学习标记':'标记已学习';
@@ -142,6 +160,8 @@ window.addEventListener('hashchange',()=>{
  let id='';try{id=decodeURIComponent(location.hash.slice(1))}catch(e){return}
  if(book.get(id))show(id,false);
 });
+const selectedChapter=new URLSearchParams(location.search).get('chapter');
+if(selectedChapter&&chapters[selectedChapter])ch.value=selectedChapter;
 updateSectionOptions();renderList();
 let hash='';try{hash=decodeURIComponent(location.hash.slice(1))}catch(e){}
 if(book.get(hash))show(hash,false);
