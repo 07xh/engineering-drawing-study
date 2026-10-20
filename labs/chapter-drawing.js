@@ -8,7 +8,13 @@ function line(parent,x1,y1,x2,y2,attrs={}){parent.append(el('line',{x1,y1,x2,y2,
 function poly(parent,points){parent.append(el('polygon',{points,fill:'none',stroke:'#245d4d','stroke-width':3,'strokeLinejoin':'round'}))}
 function text(parent,x,y,value){const node=el('text',{x,y,fill:'#526b5e','font-size':17});node.textContent=value;parent.append(node)}
 function sourceStage(kind){return kind==='axis'?1:kind==='given'?2:3}
-function sourceSteps(item){return item&&Array.isArray(item.solutionSteps)?item.solutionSteps:[]}
+function sourceSteps(item){
+ // 历史 solutionSteps 字段、外部检索内容或通用方法都不能直接驱动教材答案层。
+ const gate=window.VerifiedSolutionCompiler,library=window.VerifiedExerciseSolutions;
+ const recipe=library&&typeof library.get==='function'?library.get(current):null;
+ if(!item||!gate||!recipe)return [];
+ return gate.compile({...item,id:current},recipe).steps;
+}
 function updateReveal(){const item=window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current),steps=sourceSteps(item),max=steps.length;revealStep=Math.max(0,Math.min(revealStep,max));$('revealRange').max=String(Math.max(1,max));$('revealRange').value=String(revealStep);$('revealPrev').disabled=!item||revealStep===0;$('revealNext').disabled=!item||revealStep===max;$('revealAll').disabled=!item||revealStep===max;const focus=$('lineFocus');focus.replaceChildren();if(!item){$('revealStatus').textContent='原题尚未核实';$('revealWhy').textContent='未核实原题不显示替代图。';return}for(let i=0;i<revealStep;i++){const step=steps[i];if(!step||!Array.isArray(step.lines))continue;for(const segment of step.lines){if(!Array.isArray(segment)||segment.length<4)continue;const [x1,y1,x2,y2]=segment;if(![x1,y1,x2,y2].every(Number.isFinite))continue;focus.append(el('line',{x1,y1,x2,y2,stroke:'#c4772d','stroke-width':2.5,'stroke-dasharray':step.kind==='construction'?'7 5':'none'}))}}$('revealStatus').textContent=max?'解题步骤 '+revealStep+' / '+max:'第一帧：显示全部已核对的原题已知条件';$('revealWhy').textContent=max?(revealStep?steps[revealStep-1].why:'请先观察原题全部已知条件。'):'本题标准作图步骤尚未核实，暂不播放推测的答案线。原题扫描中尚未辨认的细节也不会擅自补画。'}
 
 function base(){const g=$('background');g.replaceChildren();$('lineFocus').replaceChildren();g.append(el('rect',{width:960,height:520,fill:'#fff'}));if(grid){for(let x=40;x<960;x+=40)line(g,x,0,x,520,{stroke:'#e9eeea','stroke-width':1});for(let y=40;y<520;y+=40)line(g,0,y,960,y,{stroke:'#e9eeea','stroke-width':1})}
