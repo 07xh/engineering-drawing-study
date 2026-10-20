@@ -29,6 +29,16 @@ function render(){
  const frame=geom.frame(current.id,index),step=current.order[index];
  draw(frame);
  $('bookExampleCounter').textContent='步骤 '+(index+1)+' / '+current.order.length;
+ const nav=$('bookExampleStepNav');nav.replaceChildren();
+ current.order.forEach((label,i)=>{
+  const button=document.createElement('button');
+  button.type='button';button.textContent=String(i+1);
+  button.title='第 '+(i+1)+' 步：'+label;
+  button.setAttribute('aria-label',button.title);
+  if(i===index){button.className='is-current';button.setAttribute('aria-current','step')}
+  button.addEventListener('click',()=>{index=i;render()});
+  nav.append(button);
+ });
  $('bookExampleStageTitle').textContent='课本作图 · '+(index+1)+' / '+current.order.length;
  $('bookExampleAction').textContent='本步按教材做：'+step;
  $('bookExampleReason').textContent='为什么这样作：'+current.why[index];
