@@ -8,3 +8,10 @@ assert(js.includes('if(showTransfer45)'),'45 degree transfer must be switchable'
 assert(js.includes('engine.analyze(constraints).result'),'degrees of freedom must use shared engine');
 assert(js.includes("if(drawingStep>=3)"),'side projection must be gated by construction step');
 console.log('PASS standard first-angle V/H/W, 45-degree switch, drawing steps and shared DOF analysis');
+
+for(const id of ['practiceToggle','checkPractice','practiceHint','revealPractice','practiceInfo'])assert(html.includes('id="'+id+'"'),'missing practice control '+id);
+assert(js.includes('practice&&plane===practicePlane&&!revealed'),'target projection must be hidden');
+assert(js.includes('if(practicePoints.length!==2)'),'require two endpoint answers');
+assert(js.includes('distances.every(d=>d<=tolerance)'),'answer must use numeric coordinate tolerance');
+assert(js.includes('inPlane(p,practicePlane)'),'answer input must stay within requested view');
+console.log('PASS hidden-projection drawing practice and numeric grading wiring');
