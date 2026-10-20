@@ -90,9 +90,17 @@ function candidate(point,report){
  if(result.inconsistent)return {kind:'none',example:null,directions:[],degrees:null};
  if(!Number.isInteger(result.degrees)||!Array.isArray(result.particular)||!Array.isArray(result.directions))throw Error('线性约束结果无效');
  // For underconstrained sets, the supplied example position is NOT an inferred solution.
- const base=point;
  const xs=result.particular,ds=result.directions;
- const example=result.degrees===0?pt(xs[0],xs[1],xs[2]):({...point});
+ // Project trial location onto the affine solution locus; do not display an infeasible guess.
+ const basis=[];
+ for(const direction of ds){
+  const v=[...direction];
+  for(const e of basis){const inner=v.reduce((sum,x,i)=>sum+x*e[i],0);for(let i=0;i<3;i++)v[i]-=inner*e[i]}
+  const n=Math.hypot(...v);if(n>1e-10)basis.push(v.map(x=>x/n));
+ }
+ const coordinates=[...xs],trial=['x','y','z'].map((k,i)=>point[k]-xs[i]);
+ for(const e of basis){const amount=e.reduce((sum,x,i)=>sum+x*trial[i],0);for(let i=0;i<3;i++)coordinates[i]+=amount*e[i]}
+ const example=pt(...coordinates);
  return {kind:['point','line','plane','space'][result.degrees],example,directions:ds.map(d=>[...d]),
   degrees:result.degrees,exampleIsUnique:result.degrees===0,
   warning:result.degrees?'示意点仅为可行位置的样例，并不表示唯一解。':'线性相容条件确定此空间点的唯一位置。'};
