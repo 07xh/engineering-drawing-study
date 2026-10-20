@@ -410,3 +410,19 @@ body.ui-refresh .book-example>.book-example-source:last-child{
  body.ui-refresh .book-example-pager button{font-size:13px}
  body.ui-refresh .book-example-figure-top span{font-size:10px}
 }
+
+/* Compact lesson completion and optional source/related content. */
+body.ui-refresh .knowledge-bottom{display:grid;gap:9px;margin:15px 0 4px;padding:12px;border:1px solid #e0ebe2;border-radius:12px;background:#f9fcfa}
+body.ui-refresh .knowledge-bottom-main{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+body.ui-refresh .knowledge-bottom-main .backtop{margin-left:auto;white-space:nowrap}
+body.ui-refresh .knowledge-bottom-details{margin:0;border:1px solid #e4ede6;border-radius:9px;background:#fff;padding:0 10px}
+body.ui-refresh .knowledge-bottom-details>summary{cursor:pointer;padding:10px 2px;font-size:13px;font-weight:650;color:#3c6951;list-style:revert}
+body.ui-refresh .knowledge-bottom-details[open]{padding-bottom:10px}
+body.ui-refresh .knowledge-bottom-details .related{margin:6px 0 8px}
+body.ui-refresh .knowledge-bottom-details .source{margin:5px 0;line-height:1.7}
+body.ui-refresh .knowledge-bottom-details a.site-jump-visual{display:inline-block;margin:5px 9px 5px 0}
+body.ui-refresh .knowledge-page-footer{padding:8px 12px!important;margin:10px 0 0!important;border-top:1px solid #e6eee8}
+body.ui-refresh .knowledge-page-footer details{font-size:12px;color:#75867b}
+body.ui-refresh .knowledge-page-footer summary{cursor:pointer;display:inline-block}
+body.ui-refresh .knowledge-page-footer p{margin:8px 0 0}
+@media(max-width:650px){body.ui-refresh .knowledge-bottom-main .backtop{margin-left:0}body.ui-refresh .knowledge-bottom{padding:9px}}
