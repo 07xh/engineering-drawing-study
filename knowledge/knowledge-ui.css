@@ -312,3 +312,23 @@ body.ui-refresh .deep-example{background:#edf6f0;border-left:3px solid #72ac80;p
 body.ui-refresh .deep-check{background:#fff9ee;border-left:3px solid #c49c54;padding:5px 15px 13px;border-radius:9px;margin:15px 0}
 body.ui-refresh .deep-boundary{border-top:1px solid #dce8df;font-size:12px!important;color:#6b7b6c!important;padding-top:12px}
 @media(max-width:650px){body.ui-refresh .deep-lesson{padding:15px}body.ui-refresh .deep-stages{padding-left:20px}body.ui-refresh .deep-stages li{padding:12px}}
+
+/* 课本真实例题：在知识正文内穿插，而非另开原创模拟题库。 */
+body.ui-refresh #textbookExample[hidden]{display:none!important}
+body.ui-refresh .book-example{border:1px solid #b8d6c3;border-radius:16px;background:#f4faf5;padding:clamp(14px,2.2vw,22px);margin:18px 0 24px}
+body.ui-refresh .book-example-heading h3{color:#23583b;font-size:20px;line-height:1.5;margin:8px 0}
+body.ui-refresh .book-example-source{font-size:12px;line-height:1.75;color:#687d6c}
+body.ui-refresh .book-example>p{line-height:1.85;color:#385a44;font-size:14px}
+body.ui-refresh .book-example-canvas{background:#fff;border:1px solid #c9dbce;border-radius:11px;overflow-x:auto;margin:12px 0}
+body.ui-refresh #bookExampleSvg{width:100%;min-width:560px;height:auto;display:block;max-height:490px}
+body.ui-refresh .book-example-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+body.ui-refresh .book-example-tools button{min-height:42px;border:1px solid #b6d2c0;border-radius:9px;padding:9px 12px;background:white;color:#236849;cursor:pointer;font:inherit;font-size:13px}
+body.ui-refresh .book-example-tools button.primary{color:white;background:#276b4d;border-color:#276b4d}
+body.ui-refresh .book-example-tools button:disabled{opacity:.4;cursor:not-allowed}
+body.ui-refresh #bookExampleCounter{font-size:12px;font-weight:700;color:#4b6a57}
+body.ui-refresh #bookExampleStageTitle{font-size:17px;color:#28563e;margin:14px 0 7px}
+body.ui-refresh #bookExampleAction{background:#e5f2e8;padding:10px 12px;border-radius:9px}
+body.ui-refresh #bookExampleReason{background:#fff;padding:10px 12px;border-radius:9px;border:1px solid #e0ebe2}
+body.ui-refresh #bookExampleDof{border-left:3px solid #bc8a47;background:#fff9ec;padding:10px 12px;border-radius:9px}
+body.ui-refresh #bookExampleAudit{font-weight:650;font-size:13px}
+@media(max-width:650px){body.ui-refresh .book-example{padding:13px}body.ui-refresh #bookExampleSvg{min-width:520px}}
