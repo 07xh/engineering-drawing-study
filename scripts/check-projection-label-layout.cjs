@@ -18,4 +18,11 @@ for(const p of placed)for(const dot of crowded){
  const inside=dot.xy[0]>=p.labelX-6&&dot.xy[0]<=p.labelX+width+6&&dot.xy[1]>=p.labelY-24&&dot.xy[1]<=p.labelY+8;
  assert(!inside,'label overlaps a projection point');
 }
-console.log('PASS: deterministic projection label positions, dot clearance and script order');
+assert(labels.crossesRect([0,0,100,100],[40,40,60,60]));
+assert(!labels.crossesRect([0,0,100,0],[40,40,60,60]));
+const nearLine=[{name:'A',view:'V',xy:[200,200]}];
+const baseline=labels.layout(nearLine)[0];
+const obstructing=[{xy:[baseline.labelX-1,baseline.labelY-8,baseline.labelX+35,baseline.labelY-8]}];
+const adjusted=labels.layout(nearLine,obstructing)[0];
+assert(!(adjusted.labelX===baseline.labelX&&adjusted.labelY===baseline.labelY),'line avoidance did not move label');
+console.log('PASS: stable labels, projection point clearance and line collision avoidance');

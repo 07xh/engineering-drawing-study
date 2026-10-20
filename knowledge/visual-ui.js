@@ -13,7 +13,7 @@ function render(){
  if(!entry||!data||!engine)return;
  const picture=data.svgShapes(entry.id,entry.chapter,stage),board=$('visualBoard');
  const showGuides=$('visualShowGuides').checked;
- const placedLabels=window.ProjectionLabels.layout(picture.shapes.filter(s=>s.kind==='point'));
+ const placedLabels=window.ProjectionLabels.layout(picture.shapes.filter(s=>s.kind==='point'),picture.shapes.filter(s=>['line','guide','construction','axis','transfer45'].includes(s.kind)&& (showGuides||!['guide','construction','transfer45'].includes(s.kind))));
  let pointIndex=0;
  board.replaceChildren();board.setAttribute('viewBox','0 0 970 650');
  elt('rect',{width:970,height:650,fill:'#fff'},board);

@@ -1,7 +1,18 @@
 /* Deterministic collision-aware label placement for the original SVG lesson. */
 (function(root,factory){const api=factory();if(typeof module==='undefined')root.ProjectionLabels=api;else module.exports=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
-function layout(points){
+function crossesRect(segment,rect){
+ const [x1,y1,x2,y2]=segment,dx=x2-x1,dy=y2-y1;
+ let low=0,high=1;
+ for(const [p,q] of [[-dx,x1-rect[0]],[dx,rect[2]-x1],[-dy,y1-rect[1]],[dy,rect[3]-y1]]){
+  if(p===0){if(q<0)return false;continue}
+  const t=q/p;
+  if(p<0)low=Math.max(low,t);else high=Math.min(high,t);
+  if(low>high)return false;
+ }
+ return true;
+}
+function layout(points,lines=[]){
  const occupied=[];
  const pointCenters=points.map(p=>p.xy);
  return points.map(point=>{
@@ -18,12 +29,13 @@ function layout(points){
     const nearY=Math.max(rect[1],Math.min(cy,rect[3]));
     return sum+((cx-nearX)**2+(cy-nearY)**2<36?1000:0);
    },0);
-   return {x:px,y:py,rect,overlap:overlap+dotOverlap};
+   const lineOverlap=lines.reduce((sum,line)=>sum+(Array.isArray(line.xy)&&crossesRect(line.xy,rect)?250:0),0);
+   return {x:px,y:py,rect,overlap:overlap+dotOverlap+lineOverlap};
   });
   candidates.sort((a,b)=>a.overlap-b.overlap);
   const best=candidates[0];occupied.push(best.rect);
   return {...point,label:name,labelX:best.x,labelY:best.y};
  });
 }
-return {layout};
+return {layout,crossesRect};
 });
