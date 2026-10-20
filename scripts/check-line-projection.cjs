@@ -67,3 +67,8 @@ assert(drawingJs.includes('renderDof();'),'DOF panel not rendered on exercise se
 assert(dofJs.includes('verified:false'),'unverified textbook geometry must be disclosed');
 assert(dofJs.includes('自由度为 0'),'missing DOF convergence explanation');
 console.log('PASS per-exercise DOF concepts and why-line guidance');
+const verifiedJs=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/verified-exercises.js'),'utf8');
+assert(drawingHtml.includes('src="verified-exercises.js"'),'missing source-reviewed geometry module');
+assert(drawingJs.includes('本题教材原图尚未核实重绘'),'generic drawing must not stand in for unverified textbook');
+assert(verifiedJs.includes("'2-6-1'")&&verifiedJs.includes("'2-6-3'"),'missing first source-reviewed diagrams');
+console.log('PASS source-review status and no generic substitution');
