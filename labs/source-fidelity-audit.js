@@ -50,7 +50,7 @@ function inspection(id,source){
  {key:'occlusion',label:'可见性、虚线、前后位置',done:false},
  {key:'proof',label:'辅助线合法性与独立几何复算',done:false}
  ];
- return {id,sourceName:s&&s.source||'未提供',title:s&&s.title||'待核对原题',status:s&&s.status||'missing',description:s&&s.note||'尚未取得可核对的完整原始图。',displayElements,findings,blockers:blockers.length,procedural,
+ return {id,sourceName:s&&s.source||'未提供',title:s&&s.title||'待核对原题',status:s&&s.status||'missing',description:s&&s.note||'尚未取得可核对的完整原始图。',specificAudit:s&&typeof s.audit==='string'?s.audit:'',displayElements,findings,blockers:blockers.length,procedural,
   visualAvailable:!!s&&(lines.some(segmentValid)||circles.some(circleValid)||dots.some(pointValid)),
   solutionAvailable:false,
   verdict:'只能检查现有数字化资料的结构，未能证明它与纸质教材完全一致。所有教材待求答案线仍锁定。'};
@@ -63,6 +63,7 @@ function nextActions(report){
  const acts=[];
  if(report.status==='missing')acts.push('先取得完整原题扫描，并确认题目页码与对应编号。');
  if(report.status==='partial')acts.push('先对照完整原图，逐项确认当前已录入点、线、圆及图面文字。');
+ if(report.specificAudit)acts.push('本题特别核验：'+report.specificAudit);
  if(report.findings.some(f=>['transfer-angle','sloping-axis','invalid-line','invalid-circle','duplicate-line','zero-line'].includes(f.code)))acts.push('检查图形数据中机器标记的坐标或重复线；不能仅凭程序警告认定原书画错。');
  acts.push('确认原题尺寸和同名投影后，独立验算作图辅助线与可见性；全部完成前保留答案层锁定。');
  return acts;
