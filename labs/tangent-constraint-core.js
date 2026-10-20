@@ -1,7 +1,7 @@
 /* Original 2D tangency constraint model. NOT an exercise-solution or publisher diagram.
  * The fixed circle O,R and a straight line are synthetic teaching data.
  */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TangencyConstraint=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TangencyConstraint=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const fixed={ox:300,oy:155,R:50,lineY:245};
 const bounds={minR:22,maxR:52};
