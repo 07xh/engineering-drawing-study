@@ -95,10 +95,11 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <section class="deep-lesson" id="deepLesson" hidden aria-label="教材知识深度精讲">
 <div class="deep-header"><span class="deep-tag">重点精讲 · 展开原理而非只记结论</span><h3 id="deepQuestion"></h3></div>
 <div class="deep-logic"><h4>从概念推导</h4><p id="deepLogic"></p></div>
+<details class="deep-extended" id="deepMethodDetails" open><summary>本节原理深入推导与逐条作图依据</summary>
 <h4>逐条拆解约束和作图依据</h4><div class="step-toolbar" role="group" aria-label="精讲步骤导航"><button type="button" id="deepPrev">上一步</button><button type="button" id="deepNext" class="primary">下一步</button><button type="button" id="deepAll">查看全部</button><span id="deepStepCount" class="step-count" aria-live="polite"></span></div><ol id="deepStages" class="deep-stages"></ol>
 <div class="deep-example" hidden><h4>概念演示（暂停公开展示，逐步替换为课本例题）</h4><p id="deepExample"></p></div>
 <div class="deep-check"><h4>画完后怎样检查？</h4><p id="deepCheck"></p></div>
-<p id="deepBoundary" class="deep-boundary"></p>
+<p id="deepBoundary" class="deep-boundary"></p></details>
 </section>
 <section id="textbookExample" class="book-example" hidden aria-label="教材原版例题的分步作图">
 <div class="book-example-heading"><span class="deep-tag">教材例题 · 已对照原书图和解题过程</span><h3 id="bookExampleTitle"></h3>
@@ -121,28 +122,38 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
       </div>
       <span id="bookExampleCounter" aria-live="polite"></span>
       <label class="book-example-aux-toggle"><input type="checkbox" id="bookExampleShowAux" checked> 显示辅助线</label>
+      <label class="book-example-aux-toggle"><input type="checkbox" id="bookExampleHighlight" checked> 突出本步新增</label>
       <nav id="bookExampleStepNav" class="book-example-step-nav" aria-label="课本例题五步作图导航"></nav>
     </div>
     <div class="book-example-explanation">
-      <h4 id="bookExampleStageTitle"></h4>
+      <h4 id="bookExampleStageTitle" aria-live="polite"></h4>
+      <p id="bookExampleStageAddition" class="book-example-stage-addition" aria-live="polite"></p>
       <p id="bookExampleAction"></p>
       <p id="bookExampleReason"></p>
-      <p id="bookExampleDof"></p>
       <div class="book-example-computed" id="bookExampleComputedDof" hidden aria-live="polite"><strong id="bookExampleComputedDofValue"></strong><span id="bookExampleComputedDofLabel"></span></div>
-      <p id="bookExampleConstraintReason" class="book-example-constraint-note" aria-live="polite"></p>
-      <p id="bookExampleAudit"></p>
+      <details class="book-example-more" id="bookExampleDofDetails">
+        <summary>自由度变化与定位依据</summary>
+        <p id="bookExampleDof"></p>
+        <p id="bookExampleConstraintReason" class="book-example-constraint-note" aria-live="polite"></p>
+      </details>
+      <details class="book-example-more" id="bookExampleCheckDetails">
+        <summary>本步核对要点</summary>
+        <p id="bookExampleAudit"></p>
+      </details>
     </div>
   </div>
 </div>
 <p id="bookExampleFidelity" class="book-example-source"></p>
 <p class="book-example-source"><a id="bookExampleSharedPlayer" href="./drawing-player.html" hidden>在通用步骤播放器中打开本例题 ↗</a></p>
 </section>
+<details class="knowledge-extra-details" id="knowledgeSummaryDetails" open><summary>教材要点、归纳步骤与常见错误</summary>
 <h3>本节已核对的要点</h3><p id="detailLaw"></p>
 <h3>作图与理解步骤</h3>
 <div class="step-toolbar"><button id="stepPrev" type="button">上一步</button><button id="stepNext" type="button" class="primary">下一步</button><button id="stepAll" type="button">显示全部步骤</button><span id="stepCount" class="step-count" aria-live="polite"></span></div>
 <ol id="detailSteps" class="steps" aria-live="polite"></ol>
 <h3>约束与自由度的理解</h3><p class="understanding" id="detailUnderstanding"></p>
 <h3>易错点与核对要点</h3><p class="mistake" id="detailMistake"></p>
+</details>
 </div>
 <section class="knowledge-bottom" aria-label="本节学习进度与补充信息">
   <div class="knowledge-bottom-main">
