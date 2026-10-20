@@ -1,0 +1,58 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="图学课堂第一章圆弧连接原创几何教学：观察圆心轨迹、切点与自由度的逐帧变化。"><title>圆弧连接与自由度 · 图学课堂</title>
+<link rel="stylesheet" href="../site-ui.css"><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<style>
+:root{color-scheme:light}body{margin:0;background:#f2f7f3;color:#274a37;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.tangent-main{width:min(1090px,calc(100% - 30px));margin:20px auto 70px}
+.tangent-main h1{font-size:clamp(25px,4vw,36px);line-height:1.35;margin:10px 0}.tangent-main p{line-height:1.75}
+.panel{background:#fff;border:1px solid #d9e7dc;border-radius:17px;padding:clamp(14px,2vw,24px);margin-top:15px}
+.warning{background:#fff9ed;border-left:4px solid #ba8937;padding:12px 15px;border-radius:9px;color:#675032;font-size:14px}
+.choices{display:flex;flex-wrap:wrap;gap:15px;align-items:center}
+.choices label{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:650}
+.choices input[type=range]{width:min(260px,40vw);accent-color:#2d7654}
+.choices select{padding:10px;border:1px solid #bed5c4;border-radius:9px;min-height:43px;font:inherit;background:white}
+.dof-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}
+.dof-flow div{padding:13px 9px;text-align:center;background:#ebf5ee;border-radius:12px;font-size:12px;color:#3f6451}
+.dof-flow strong{display:block;font-size:24px;color:#215d41;font-variant-numeric:tabular-nums}
+.dof-flow div.active{background:#d6ebdc;outline:2px solid #71b189}
+svg{display:block;width:100%;height:auto;max-height:530px;min-height:200px;border:1px solid #d8e6dc;border-radius:12px;background:white;touch-action:pan-y}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+.controls button{min-height:44px;border:1px solid #b3cfbd;border-radius:9px;background:white;color:#285b42;padding:10px 14px;cursor:pointer;font:inherit}
+.controls button.primary{background:#276e4e;color:white;border-color:#276e4e}
+.controls button:disabled{opacity:.45;cursor:not-allowed}
+#stepTitle{font-size:20px;margin:12px 0 8px}#stepExplain{font-size:14px;line-height:1.85;color:#4b6654}
+#resultSummary{padding:12px 14px;border-radius:9px;background:#f1f8f3;font-size:13px;line-height:1.8}
+.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:#52705d;margin:12px 0}
+.legend span::before{content:"";display:inline-block;background:var(--c);width:10px;height:10px;margin-right:7px;border-radius:50%}
+.crumb{font-size:13px;color:#6b8470}.crumb a{color:#256847}
+@media(max-width:700px){.dof-flow{gap:5px}.dof-flow div{padding:9px 5px;font-size:11px}.dof-flow strong{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style></head>
+<body class="ui-refresh"><header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">教材知识库</a><a href="../labs/chapter-26-29.html">原有练习</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><a href="point-construction.html">第三投影演示</a><a href="analysis.html">三维自由度实验室</a><a href="source-fidelity.html">原图核验</a></div></details></nav></div></header>
+<main class="tangent-main">
+<p class="crumb"><a href="../knowledge/index.html?section=ch01-s03#ch01-circle-tangent-principle">第一章 · 几何作图</a> / 原创数学实验</p>
+<h1>圆弧连接：看懂圆心为什么这样确定</h1>
+<p class="warning"><strong>不是教材原题。</strong> 此图是依据第一章关于圆与圆、圆与直线相切的原理自行建立的原创计算模型。不会显示或复制教材例题图，也不代表已核实原题的具体答案。</p>
+<section class="panel" aria-label="几何参数">
+<h2>① 改变连接半径与解的分支</h2>
+<div class="choices">
+<label for="tangentRadius">连接半径 r <input id="tangentRadius" type="range" min="22" max="52" value="32" step="1"><strong id="radiusValue">32</strong></label>
+<label for="tangentSide">候选圆心位置 <select id="tangentSide"><option value="left">左侧候选</option><option value="right" selected>右侧候选</option></select></label>
+</div><p class="legend"><span style="--c:#367f5b">已知图形</span><span style="--c:#cb8f30">辅助圆/辅助线</span><span style="--c:#2475b6">选中的解</span><span style="--c:#999b9d">另一候选解</span></p>
+<svg id="tangentBoard" viewBox="0 0 650 315" role="img" aria-label="已知圆和水平线，以及逐步求出的连接圆心轨迹与切点"></svg>
+<div class="controls"><button id="tangentPrev" type="button">上一步</button><button id="tangentNext" type="button" class="primary">下一步</button><button id="tangentRestart" type="button">重新演示</button><span id="tangentCounter" aria-live="polite">1 / 5</span></div>
+<h3 id="stepTitle">① 看清已知条件</h3><p id="stepExplain"></p>
+</section>
+<section class="panel" aria-label="自由度与分支">
+<h2>② 自由度与几何验算</h2>
+<div class="dof-flow">
+<div id="degree2"><strong>2</strong>圆心位置完全未知</div>
+<div id="degree1"><strong>1</strong>直线相切约束</div>
+<div id="degree0"><strong>0</strong>再加外切距离约束</div>
+</div>
+<p id="resultSummary" role="status" aria-live="polite"></p>
+<p><strong>注意：</strong>连续自由度减为零，并不一定代表没有左右镜像、前后或其他离散候选。是否选左还是选右，要由题目实际轮廓与给定条件进一步确定。</p>
+<p><a href="../knowledge/index.html#ch01-arc-classification">回到教材第22页：已知弧、中间弧和连接弧</a></p>
+</section>
+</main><script defer src="tangent-constraint-core.js"></script><script defer src="tangent-constraint-ui.js"></script>
+</body></html>
