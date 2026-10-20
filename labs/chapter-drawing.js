@@ -1,7 +1,7 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id),svg=$('board'),NS='http://www.w3.org/2000/svg';
 const sections={'2-6':6,'2-7':6,'2-8':8,'2-9':8},all=Object.entries(sections).flatMap(([s,n])=>Array.from({length:n},(_,i)=>s+'-'+(i+1)));
-const storage='drawing-chapter-ink-v1';let records={},current='',tool='pen',grid=true,start=null,guideStep=0,showGuide=false,revealStep=3,drawingEnabled=false;
+const storage='drawing-chapter-ink-v1';let records={},current='',tool='pen',grid=false,start=null,guideStep=0,showGuide=false,revealStep=3,drawingEnabled=false;
 try{const data=JSON.parse(localStorage.getItem(storage)||'{}');if(data&&typeof data==='object'&&!Array.isArray(data))records=data}catch(e){}
 function el(tag,attrs){const node=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs||{}))node.setAttribute(k,v);return node}
 function line(parent,x1,y1,x2,y2,attrs={}){parent.append(el('line',{x1,y1,x2,y2,stroke:'#245d4d','stroke-width':2.8,'stroke-linecap':'round',...attrs}))}
