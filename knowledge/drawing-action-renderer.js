@@ -2,10 +2,12 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.DrawingActionRenderer=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const allowed=['point','line','circle','text'];
+const styles={given:{stroke:'#277453',width:2.6},auxiliary:{stroke:'#b67828',width:1.7,dash:'7 5'},axis:{stroke:'#77887c',width:1.4,dash:'3 5'},result:{stroke:'#216faf',width:3.2},mark:{stroke:'#99672c',width:2}};
 function finite(n){return typeof n==='number'&&Number.isFinite(n)}
 function validAction(a){
  if(!a||!allowed.includes(a.kind)||!a.geometry)return false;
  const g=a.geometry;
+ if(a.style!==undefined&&!Object.prototype.hasOwnProperty.call(styles,a.style))return false;
  if(a.kind==='point')return finite(g.x)&&finite(g.y);
  if(a.kind==='line')return [g.x1,g.y1,g.x2,g.y2].every(finite);
  if(a.kind==='circle')return [g.cx,g.cy,g.r].every(finite)&&g.r>0;
@@ -30,12 +32,13 @@ function svgMarkup(frame){
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  return frame.shapes.map(a=>{
   if(!validAction(a))throw Error('无效绘图动作');
-  const g=a.geometry,common=' fill="none" stroke="#277453" stroke-width="2"';
-  if(a.kind==='point')return '<circle cx="'+g.x+'" cy="'+g.y+'" r="4" fill="#277453"/>';
+  const g=a.geometry,sty=styles[a.style||'given'];
+  const common=' fill="none" stroke="'+sty.stroke+'" stroke-width="'+sty.width+'"'+(sty.dash?' stroke-dasharray="'+sty.dash+'"':'');
+  if(a.kind==='point')return '<circle cx="'+g.x+'" cy="'+g.y+'" r="4" fill="'+sty.stroke+'"/>';
   if(a.kind==='line')return '<line x1="'+g.x1+'" y1="'+g.y1+'" x2="'+g.x2+'" y2="'+g.y2+'"'+common+'/>';
   if(a.kind==='circle')return '<circle cx="'+g.cx+'" cy="'+g.cy+'" r="'+g.r+'"'+common+'/>';
-  return '<text x="'+g.x+'" y="'+g.y+'" fill="#265845">'+esc(a.text)+'</text>';
+  return '<text x="'+g.x+'" y="'+g.y+'" fill="'+sty.stroke+'">'+esc(a.text)+'</text>';
  }).join('');
 }
-return {allowed,validAction,frames,svgMarkup};
+return {allowed,styles,validAction,frames,svgMarkup};
 });
