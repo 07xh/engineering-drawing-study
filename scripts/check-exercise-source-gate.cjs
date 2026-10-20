@@ -18,6 +18,7 @@ assert.equal(reports.length,28);
 for(const report of reports){
  const item=source.get(report.id);
  assert(item&&item.status==='partial','unreviewed exercise was promoted: '+report.id);
+ if(item.audit){assert.equal(report.specificAudit,item.audit);assert(audit.nextActions(report).some(x=>x.includes(item.audit)),'specific scan warning hidden: '+report.id)}
  assert(report.blockers>0,'unreviewed exercise has no source blocker: '+report.id);
  assert.equal(report.solutionAvailable,false,'unverified answer unlocked: '+report.id);
  assert(report.findings.some(x=>x.code==='partial-source'),'partial source warning missing: '+report.id);
