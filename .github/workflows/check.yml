@@ -32,6 +32,9 @@ jobs:
           node --check labs/source-inspector.js
           node --check labs/source-inspector-ui.js
           node --check labs/source-fidelity-audit.js
+          node --check labs/exercise-261-evidence.js
+          node --check labs/exercise-261-ui.js
+          node --check scripts/check-exercise-261.cjs
           node --check labs/source-fidelity-ui.js
           node --check labs/point-construction-core.js
           node --check labs/point-construction-ui.js
@@ -58,6 +61,7 @@ jobs:
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
+          node scripts/check-exercise-261.cjs
           node scripts/check-workbench-layout.cjs
           node scripts/check-question-strategies.cjs
           node scripts/build-static.cjs
@@ -81,6 +85,8 @@ jobs:
           test -f dist/labs/source-inspector.js
           test -f dist/labs/source-inspector-ui.js
           test -f dist/labs/source-fidelity.html
+          test -f dist/labs/exercise-261-evidence.js
+          test -f dist/labs/exercise-261-ui.js
           test -f dist/labs/source-fidelity-audit.js
           test -f dist/labs/source-fidelity-ui.js
           test -f dist/labs/point-construction.html
