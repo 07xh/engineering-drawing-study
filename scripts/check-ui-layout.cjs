@@ -5,7 +5,7 @@ const read=file=>fs.readFileSync(file,'utf8');
 const pages=[
  'index.html','knowledge/index.html','labs/chapter-26-29.html',
  'labs/chapter-drawing.html','labs/source-fidelity.html','labs/point-construction.html',
- 'labs/analysis.html','labs/constraints.html','labs/line-projection.html','lessons/plane-projection.html'
+ 'labs/analysis.html','labs/constraints.html','labs/paper-geometry.html','labs/composite-geometry.html'
 ];
 const css=read('site-ui.css');
 assert(css.length>5000,'shared style bundle is unexpectedly empty');
@@ -28,7 +28,7 @@ for(const page of pages){
  assert(html.includes(expected),'UI stylesheet relative route invalid '+page);
  assert.deepEqual(uniqueIds(html),[],'duplicate DOM IDs in '+page);
  if(page==='index.html'){
-  assert(html.includes('class="top-actions"')&&html.includes('class="site-more"'),'home should use compact primary nav');
+  assert(html.includes('class="site-nav"')&&html.includes('class="site-more"'),'home should use textbook-only primary nav');
  }else{
   assert(html.includes('class="site-topbar"')&&html.includes('class="site-brand"'),'shared navigation missing '+page);
   assert(html.includes('class="site-nav"')&&html.includes('class="site-more"'),'collapsible cross-page tools missing '+page);
@@ -63,6 +63,7 @@ for(const id of ['knowledgeCards','knowledgeDetail','visualLesson','knowledgeSea
  'stepNext','visualNext','detailLaw','detailMistake','markRead'])assert(known.includes('id="'+id+'"'),'knowledge element missing '+id);
 assert(known.includes('class="knowledge-workspace"'),'two-column knowledge structure not present');
 assert(known.includes('href="#visualLesson"'),'geometry jump not provided');
+assert(known.includes('id="deepLesson"'),'deep textbook explanations must appear');
 assert(knownApp.includes('filtered()')&&knownApp.includes('KnowledgeVisualUI.show(id)'),'new textbook filtering and diagram binding must remain live');
 assert(knownApp.includes("current?.id===item.id?' is-active'"),'selected textbook knowledge state not visible');
 const fidelity=read('labs/source-fidelity.html');
