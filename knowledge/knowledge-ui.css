@@ -277,3 +277,21 @@ body.ui-refresh .kb-hero p{max-width:780px}
  body.ui-refresh .kb-filterbar>label{font-size:11px}
  body.ui-refresh .kb-filterbar :is(input,select){padding:0 8px}
 }
+body.ui-refresh .knowledge-workspace .catalogue .kb-chapter-heading{
+ position:sticky;top:0;z-index:1;
+ margin:8px 0 3px;padding:10px 12px;border-radius:10px;
+ background:#eaf3ec;color:#285e42;
+ border-left:3px solid #6ba181;
+ font-size:13px;font-weight:800;line-height:1.5;
+}
+body.ui-refresh .knowledge-workspace .knowledge-card .source{
+ color:#637a6b;font-size:11px;
+}
+body.ui-refresh .kb-filterbar #coverageSelect{
+ background:#fff;color:#285e42;
+}
+@media(max-width:760px){
+ body.ui-refresh .knowledge-workspace .catalogue .kb-chapter-heading{
+  position:static;margin:12px 0 4px;
+ }
+}
