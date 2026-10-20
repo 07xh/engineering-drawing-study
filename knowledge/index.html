@@ -34,8 +34,15 @@ button.primary{background:#277352;color:white;border-color:#277352}button[disabl
 footer{padding:30px 0;color:#6e8575;font-size:13px}
 @media(min-width:1250px){.library{grid-template-columns:minmax(0,1fr)}}@media(max-width:550px){.toolbar label{flex-basis:100%}.wrap{padding:12px 12px 52px}.hero{border-radius:16px}.catalogue{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.steps li{animation:appear .2s ease}@keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+
+.visual-box{border:1px solid #d6e4db;border-radius:14px;padding:14px;background:#fbfdfb;overflow:hidden}
+.visual-box svg{display:block;width:100%;height:auto;min-height:185px;background:white;border-radius:10px}
+.visual-guide{font-size:13px;color:#587466}.visual-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:12px 0}
+.degree-count{display:inline-block;padding:6px 10px;border-radius:8px;background:#e6f3ea;color:#286347;font-weight:700}
+#visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
+#visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="knowledge-app.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="knowledge-app.js"></script>
 </head>
 <body><div class="wrap" id="top">
 <nav class="top" aria-label="网站导航"><a class="brand" href="../index.html">⌁ 图学课堂 · 知识库</a><div class="links"><a href="../index.html">课程首页</a><a href="../labs/chapter-26-29.html">教材章节练习</a><a href="../labs/analysis.html">自由度实验室</a></div></nav>
@@ -63,6 +70,21 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <div class="step-toolbar"><button id="markRead" class="primary" type="button">标记已学过</button><span id="markStatus" class="step-count"></span></div>
 <p class="source" id="sourceNote"></p>
 <a href="#top" class="backtop">↑ 返回知识库顶部</a>
+</section>
+<section id="visualLesson" class="detail" aria-label="原创三视图动态教学" hidden>
+<h3>动态几何演示 · 看图理解每一步</h3>
+<p id="visualSourceNote" class="note">这是原创教学几何模型，不是教材题答案。</p>
+<div class="visual-box"><h3 id="visualTitle"></h3><svg id="visualBoard" role="img" aria-label="原创三面投影：正面、水平面和侧面分栏动态绘制" viewBox="0 0 970 332"></svg>
+<div class="visual-tools">
+<button type="button" id="visualPrev">上一步</button>
+<button type="button" class="primary" id="visualNext">下一步</button>
+<button type="button" id="visualReset">重新演示</button>
+<span id="visualStepCounter" class="step-count"></span>
+<span id="visualDegree" class="degree-count"></span>
+</div>
+<p id="visualExplanation"></p><p class="visual-guide" id="visualDetail"></p>
+<ol id="visualConstraintSteps"></ol>
+</div><p class="visual-guide">自由度数值来自网站共享的三维线性约束计算模块，仅针对模型内一个代表点；回转曲面和整张教材习题尚不能由这一个数值代表。</p>
 </section>
 <footer>图学课堂 · 第二章投影基础 · 个人阅读状态仅保存在当前浏览器；本页不会上传你提供的扫描文档。</footer>
 </div></body></html>
