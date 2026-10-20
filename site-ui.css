@@ -153,3 +153,28 @@ body.ui-refresh footer{margin-top:25px}
 }
 @media(prefers-reduced-motion:reduce){body.ui-refresh *,body.ui-refresh *::before,body.ui-refresh *::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 @media print{.site-topbar,.site-more,body.ui-refresh .site-disclosure>summary{display:none!important}body.ui-refresh .site-disclosure:not([open])>section{display:block!important}body.ui-refresh{background:#fff}}
+
+/* 小范围交互精修：显式当前卡片、知识阅读跳转及原题画布优先 */
+body.ui-refresh .site-directory-hint{font-size:13px;color:#62806c;margin:0 0 9px;padding:9px 12px;background:#eaf3ed;border-radius:9px}
+body.ui-refresh .knowledge-card.is-active{border-color:#398c63!important;box-shadow:inset 3px 0 #2f7854,0 6px 22px #2863411b!important;background:#f8fcf9}
+body.ui-refresh .knowledge-card.is-active h3{color:#236547}
+body.ui-refresh .site-jump-visual{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#1b6948;background:#e8f3eb;border:1px solid #c9e0d1;border-radius:9px;font-size:13px;font-weight:700;padding:9px 13px}
+body.ui-refresh .site-jump-visual:hover{background:#dcefe1}
+body.ui-refresh .site-workspace-title{padding-top:7px}
+body.ui-refresh #drawingCanvas{scroll-margin-top:84px}
+body.ui-refresh #exercise261Panel{border-left:4px solid #aacaba}
+body.ui-refresh #exercise261Panel[hidden]{display:none}
+body.ui-refresh .site-disclosure>summary:hover{background:#f3f8f4}
+body.ui-refresh .site-disclosure:focus-within{border-color:#b9d5c2}
+body.ui-refresh #drawingToggle{min-width:18px;min-height:18px}
+body.ui-refresh #question{padding:10px 13px;background:#fff}
+body.ui-refresh .site-topbar .site-more-menu a[aria-current=page]{background:#e4f1e7;color:#1c6347!important}
+body.ui-refresh .site-topbar .site-more[open]>summary{border-color:#9abb9f;background:#edf5ee}
+@media(min-width:1051px){body.ui-refresh .knowledge-workspace .library{max-height:calc(100vh - 100px);overflow-y:auto;scrollbar-gutter:stable;padding-right:4px}}
+@media(max-width:760px){
+ body.ui-refresh .site-directory-hint{font-size:12px}
+ body.ui-refresh .knowledge-workspace>.library{max-height:none;overflow:visible}
+ body.ui-refresh #drawingCanvas{scroll-margin-top:64px}
+ body.ui-refresh .site-more-menu{right:0}
+ body.ui-refresh .site-disclosure summary{font-size:14px}
+}
