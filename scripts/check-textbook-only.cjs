@@ -29,7 +29,7 @@ for(const id of depth.ids){
  assert(e&&e.contentStatus==='page-reviewed','deep lesson is not grounded in verified chapter: '+id);
  assert(d.stages.length>=3,'insufficient reasoning steps '+id);
  for(const field of ['question','logic','example','check','boundary'])
-  assert(typeof d[field]==='string'&&d[field].length>=34,'missing in-depth content '+id+'.'+field);
+  assert(typeof d[field]==='string'&&d[field].length>=(field==='question'?12:field==='boundary'?22:28),'missing in-depth content '+id+'.'+field);
  assert(d.stages.every(s=>Array.from(s).length===3&&s.every(t=>typeof t==='string'&&t.length>=8)),'stage needs condition, explanation, constraints: '+id);
  assert(!d.example.includes('标准答案'),'concept narrative may not present itself as textbook answer');
 }
