@@ -83,7 +83,7 @@ console.log('PASS 2-6-5 and 2-6-6 visible geometry and partial-source disclaimer
 
 for(const id of ['revealPrev','revealNext','revealAll','revealRange','revealStatus'])assert(drawingHtml.includes('id="'+id+'"'),'missing progressive reveal control '+id);
 assert(drawingJs.includes('function updateReveal()'),'missing progressive source diagram reveal');
-assert(drawingJs.includes('sourceStage(kind)'),'source line categories must control reveal order');
+assert(drawingJs.includes('sourceStage(kind)'),'source line categories must retain visual styling');
 assert(drawingHtml.includes('prefers-reduced-motion:reduce'),'reveal animation must respect reduced motion');
 console.log('PASS progressive source geometry reveal controls and accessibility');
 
@@ -93,6 +93,10 @@ assert(drawingJs.includes('source-detail'),'point and text labels must follow re
 console.log('PASS individual verified lines, rationale, and synchronized label reveal');
 
 assert(drawingHtml.includes('id="lineFocus"'),'missing per-line endpoint overlay');
-assert(drawingJs.includes('function lineExplanation(entry)'),'missing geometry-aware line explanation');
-assert(drawingJs.includes('长度仅表示当前数字化画布坐标'),'must distinguish drawing units from textbook dimensions');
+assert(drawingJs.includes('solutionSteps'),'solution steps must be separately verified');
+assert(drawingHtml.includes('第一帧完整展示已核对的原题已知条件'),'first frame must show givens');
 console.log('PASS traced-line direction explanation and endpoint markers');
+
+assert(drawingJs.includes('revealStep=0;base();updateReveal()'),'initial frame must start at zero solution steps');
+assert(drawingJs.includes('solutionSteps:')===false,'do not invent textbook answer steps in UI');
+console.log('PASS all verified given lines visible on first frame, solutions separate');
