@@ -58,11 +58,13 @@ function show(topicId){
  const matches=source?.forTopic(topicId)||[];
  const example=matches[0]||null;
  view.hidden=!example;current=example;index=0;
+ const sharedLink=$('bookExampleSharedPlayer');if(sharedLink)sharedLink.hidden=!example;
  if(!example)return;
  $('bookExampleTitle').textContent=example.number+' · '+example.title;
  $('bookExampleSource').textContent='《工程制图与 AutoCAD》第3版 · 印刷第'+example.printedPage+'页 / PDF第'+example.pdfPage+'页 · '+example.figure;
  $('bookExampleKnown').textContent='课本例题：'+example.known+' 目标：'+example.goal;
  $('bookExampleFidelity').textContent='来源与重绘边界：'+example.fidelity;
+ const shared=$('bookExampleSharedPlayer');if(shared){shared.hidden=false;shared.href='./drawing-player.html?example='+encodeURIComponent(example.id)}
  render();
 }
 $('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
