@@ -38,6 +38,18 @@ function renderSixLayer(){
  }
  const hasExample=(layerData.levels[3].examples||[]).length>0;
  $('sixLayerExampleSlot').hidden=!(layer===3&&hasExample);
+ const related=$('sixLayerRelated');related.replaceChildren();
+ related.hidden=!(layer===3&&!hasExample&&layerData.related.length);
+ if(!related.hidden){
+  const title=document.createElement('strong');title.textContent='进入本节已核对的专题精讲';
+  related.append(title);
+  for(const reference of layerData.related){
+   const button=document.createElement('button');button.type='button';
+   button.textContent=reference.title+' →';
+   button.addEventListener('click',()=>show(reference.id,true));
+   related.append(button);
+  }
+ }
  $('sixLayerGuidance').textContent=layer===3&&!hasExample?
   '该知识点暂未关联完整核验的原书例题；不展示自行猜测的图纸或答案。':
   layer===4&&hasExample?
