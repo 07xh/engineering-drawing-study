@@ -9,7 +9,63 @@ if(!book||!Array.isArray(book.entries)){$('knowledgeCount').textContent='第三�
 const chapters=Object.fromEntries(book.chapters.map(c=>[c.id,c]));
 const sections=Object.fromEntries(book.sections.map(s=>[s.id,s]));
 const key='drawing-textbook-3e-progress-v2',reviewed=new Set(book.entries.filter(x=>x.contentStatus==='page-reviewed').map(x=>x.id));
-let completed=new Set(),current=null,step=0,deepStep=1;
+let completed=new Set(),current=null,step=0,deepStep=1,layer=0,layerData=null;
+const sixLayer=window.SixLayerCourse;
+let exampleMounted=false;
+function mountSixLayerExample(){
+ if(exampleMounted)return;
+ const slot=$('sixLayerExampleSlot'),example=$('textbookExample');
+ if(slot&&example){slot.append(example);exampleMounted=true}
+}
+function renderSixLayer(){
+ const panel=$('sixLayerCourse');
+ if(!panel||!layerData){if(panel)panel.hidden=true;return}
+ panel.hidden=false;
+ const entry=layerData.levels[layer];
+ $('sixLayerSource').textContent=layerData.sourceNote+' · 印刷第 '+layerData.pages[0]+
+  (layerData.pages[0]===layerData.pages[1]?'':'—'+layerData.pages[1])+' 页';
+ $('sixLayerCount').textContent=(layer+1)+' / 6';
+ $('sixLayerKicker').textContent='第 '+(layer+1)+' 层 · '+entry.name;
+ $('sixLayerHeadline').textContent=entry.headline;
+ $('sixLayerText').textContent=entry.text;
+ const list=$('sixLayerDetails');list.replaceChildren();
+ for(const point of entry.details||[]){
+  const li=document.createElement('li'),title=document.createElement('strong'),body=document.createElement('p');
+  title.textContent=point.title;body.textContent=point.body;
+  li.append(title,body);
+  if(point.why){const why=document.createElement('p');why.className='six-layer-why';why.textContent='推导依据：'+point.why;li.append(why)}
+  list.append(li);
+ }
+ const hasExample=(layerData.levels[3].examples||[]).length>0;
+ $('sixLayerExampleSlot').hidden=!(layer===3&&hasExample);
+ $('sixLayerGuidance').textContent=layer===3&&!hasExample?
+  '该知识点暂未关联完整核验的原书例题；不展示自行猜测的图纸或答案。':
+  layer===4&&hasExample?
+  '第 4 层教材例题中可操作局部约束分析与条件开关；本层进一步理解独立条件的作用。':
+  layer===5?
+  '核查投影对应、尺寸与图线；目录导学的具体标准与数据仍须对照原书。':
+  layerData.verified?
+  '本层使用已核对的原创教材知识记录。':
+  '此内容为按教材目录编写的原创导学，尚未逐页核对原书正文。';
+ const nav=$('sixLayerNav');nav.replaceChildren();
+ layerData.levels.forEach((level,i)=>{
+  const button=document.createElement('button');
+  button.type='button';button.textContent=(i+1)+' · '+level.name;
+  button.setAttribute('aria-pressed',String(layer===i));
+  if(layer===i){button.className='is-current';button.setAttribute('aria-current','step')}
+  button.addEventListener('click',()=>{layer=i;renderSixLayer()});
+  nav.append(button);
+ });
+ $('sixLayerPrev').disabled=layer===0;
+ $('sixLayerNext').disabled=layer===5;
+ $('sixLayerNext').textContent=layer===5?'已到第六层':'下一层 →';
+}
+function showSixLayer(id){
+ if(!sixLayer?.forEntry){layerData=null;renderSixLayer();return}
+ layerData=sixLayer.forEntry(id);
+ layer=0;renderSixLayer();
+}
+
 try{const saved=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(saved))completed=new Set(saved.filter(id=>reviewed.has(id)))}catch(e){}
 const search=$('knowledgeSearch'),ch=$('chapterSelect'),sec=$('sectionSelect'),topic=$('topicSelect'),coverage=$('coverageSelect'),progress=$('progressSelect'),directory=$('knowledgeIndex');
 const exercise=new URLSearchParams(location.search).get('exercise');
@@ -129,6 +185,7 @@ $('deepAll').addEventListener('click',()=>{const d=window.TextbookDeepLessons?.g
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;
+ mountSixLayerExample();
  document.querySelectorAll('#knowledgeCards .knowledge-card').forEach(card=>card.classList.toggle('is-active',card.dataset.id===id));
  $('knowledgeDetail').hidden=false;
  $('detailChapter').textContent=chapters[item.chapter]?.name||'';
@@ -143,7 +200,7 @@ function show(id,scroll=false){
  $('verifiedLessonContent').hidden=!lesson;
  const notice=$('detailStatusNotice');
  notice.textContent=lesson?'已对照相应教材页面，提供重新撰写的知识讲解。动态模型仅是原创教学示例，不代表教材原题答案。':
-  '目前仅按原书目录建立本节索引，尚未完成对应正文、图例和作图步骤的逐页核对；暂不显示自行推测的结论、自由度数值或作图动画。';
+  '本节目录名称及页码已核对，提供六层原创导学，正文、图例和作图步骤尚未逐页核实；不显示自行推测的原书答案或自由度数值。';
  notice.className=lesson?'kb-review-note':'note';
  if(lesson){
   $('detailLaw').textContent=item.law;$('detailUnderstanding').textContent=item.understanding;
@@ -151,6 +208,8 @@ function show(id,scroll=false){
  }
  showDepth(item);
  if(window.TextbookExampleUI)window.TextbookExampleUI.show(item.id);
+ showSixLayer(item.id);
+ if(layerData)$('verifiedLessonContent').hidden=true;
  const matchedTextbookExample=!!(window.TextbookExamples&&window.TextbookExamples.forTopic(item.id).length);
  // Source-verified examples get diagram-first reading; separate prose stages remain available on demand.
  const detailedMethod=$('deepMethodDetails'),knowledgeSummary=$('knowledgeSummaryDetails');
@@ -191,6 +250,8 @@ function show(id,scroll=false){
   detail.focus({preventScroll:true});
  }
 }
+$('sixLayerPrev').addEventListener('click',()=>{if(layer>0){layer--;renderSixLayer()}});
+$('sixLayerNext').addEventListener('click',()=>{if(layer<5){layer++;renderSixLayer()}});
 $('stepPrev').onclick=()=>{step--;renderSteps()};
 $('stepNext').onclick=()=>{step++;renderSteps()};
 $('stepAll').onclick=()=>{if(current){step=current.steps.length;renderSteps()}};
