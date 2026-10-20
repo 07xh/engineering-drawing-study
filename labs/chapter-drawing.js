@@ -15,6 +15,7 @@ function base(){const g=$('background');g.replaceChildren();$('lineFocus').repla
 const item=window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(current);
 if(!item){text(g,120,170,'本题教材原图尚未核实重绘');text(g,120,215,'暂停通用图形代替原题；等待逐题核对扫描');return}
 item.lines.forEach(([x1,y1,x2,y2,kind],index)=>{const stage=sourceStage(kind);const node=el('line',{x1,y1,x2,y2,stroke:kind==='given'?'#245d4d':kind==='transfer'?'#b2742b':'#7f8d86','stroke-width':kind==='given'?2.8:1.6,'stroke-linecap':'round',class:'source-line','data-stage':stage,'data-index':index});if(kind==='transfer')node.setAttribute('stroke-dasharray','8 5');if(kind==='thin')node.setAttribute('stroke-dasharray','5 4');g.append(node)});
+for(const [cx,cy,r] of item.circles||[]){if([cx,cy,r].every(Number.isFinite)&&r>0)g.append(el('circle',{cx,cy,r,fill:'none',stroke:'#245d4d','stroke-width':2.8,class:'source-detail'}))}
 for(const [x,y] of item.dots||[])g.append(el('circle',{cx:x,cy:y,r:3.5,fill:'#245d4d',class:'source-detail'}));
 for(const [x,y,label] of item.labels||[]){const node=el('text',{x,y,fill:'#526b5e','font-size':17,class:'source-detail'});node.textContent=label;g.append(node)}
 updateReveal();
