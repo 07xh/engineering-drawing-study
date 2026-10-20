@@ -10,6 +10,7 @@ const pt=(x,y)=>({x,y}),line=(a,b,kind='given')=>({type:'line',a,b,kind}),text=(
  poly=(points,kind='given')=>({type:'poly',points,kind});
 const common={
  'ch01-divide-and-polygons':{title:'圆规作内接三角形与六边形的几何原理',page:20,printedPage:14,steps:['识别圆心与一条直径','从下端点作等半径辅助圆弧','连接三个顶点理解正三角形','从上端点再作等半径辅助圆弧','连接六个圆周点并核对边长'],limit:'参考教材例1-4图1-25的作图关系，使用独立计算的圆周坐标重新演示；不是原书图形的逐线复制。'},
+ 'ch01-internal-fillet':{title:'两圆弧内切连接的圆心轨迹',page:23,printedPage:17,steps:['辨认两段已知圆弧','以半径差作两个辅助圆','确定两个候选圆心并选分支','沿圆心连线确定切点','画连接圆弧并验证相切'],limit:'已查看教材印刷第17页例1-9、图1-31的构造关系。所有演示尺寸独立选取，非原书原图或完整题解。'},
  'ch01-drawing-scale':{title:'绘图比例与实物尺寸',page:12,printedPage:6,steps:['画出 1:2 的简化形体','加入 1:1 的同一形体','再加入 2:1 的同一形体','核对标注数字不随比例变化'],limit:'仅借鉴教材图1-8的三种比例对照关系；独立重绘轮廓，非原书图形复刻或编号例题。'},
  'ch04-s01':{title:'三轴方向与轴测构图',page:90,printedPage:84,steps:['先识别三条轴测轴','沿对应轴方向依次取等向长度','延续相同方向补出各组平行棱','完成一个简单长方体的轴测投影'],limit:'轴测轴方向和长度比例的独立示意，非教材题图的具体尺寸或标准答案。'},
  'ch05-s02':{title:'剖视图的剖切与材料表达',page:110,printedPage:104,steps:['先认识外形和内部隐线','引入经过内部结构的剖切位置','显示剖切后的内部轮廓','为被切的材料区域加上概念性剖面线'],limit:'只表达剖视形成的基本思想；剖切线、线型及剖面线需以具体题目与适用标准核对。'},
@@ -102,12 +103,43 @@ function inscribedPolygons(stage){
  }
  return sh;
 }
+
+function filletModel(){
+ const c1=pt(180,115),c2=pt(410,115),r1=40,r2=32,R=170;
+ const a=R-r1,b=R-r2,d=230;
+ const x=(a*a-b*b+d*d)/(2*d),y=Math.sqrt(a*a-x*x);
+ const o=pt(c1.x+x,c1.y+y),other=pt(c1.x+x,c1.y-y);
+ const m=pt(o.x+R*(c1.x-o.x)/a,o.y+R*(c1.y-o.y)/a);
+ const n=pt(o.x+R*(c2.x-o.x)/b,o.y+R*(c2.y-o.y)/b);
+ return {c1,c2,o,other,r1,r2,R,a,b,m,n};
+}
+function arc(c,r,from,to,kind){
+ return poly(Array.from({length:81},(_,i)=>{
+  const t=from+(to-from)*i/80;return pt(c.x+r*Math.cos(t),c.y+r*Math.sin(t));
+ }),kind);
+}
+function fillet(stage){
+ const {c1,c2,o,other,r1,r2,R,a,b,m,n}=filletModel();
+ const sh=[arc(c1,r1,-Math.PI,0,'given'),arc(c2,r2,-Math.PI,0,'given'),
+  text(c1.x,c1.y+19,'O1'),text(c2.x,c2.y+19,'O2')];
+ if(stage>=1)sh.push(arc(c1,a,0,2*Math.PI,'auxiliary'),arc(c2,b,0,2*Math.PI,'auxiliary'));
+ if(stage>=2)sh.push(text(o.x+8,o.y+16,'O'),text(other.x+8,other.y-8,'O*'));
+ if(stage>=3)sh.push(line(o,c1,'auxiliary'),line(o,c2,'auxiliary'),
+  line(c1,m,'auxiliary'),line(c2,n,'auxiliary'),text(m.x-18,m.y-9,'M'),text(n.x+8,n.y-9,'N'));
+ if(stage>=4){
+  let s=Math.atan2(m.y-o.y,m.x-o.x),e=Math.atan2(n.y-o.y,n.x-o.x);
+  if(e<s)e+=2*Math.PI;
+  sh.push(arc(o,R,s,e,'result'),text(292,25,'R'));
+ }
+ return sh;
+}
+
 function frame(id,step){
  const def=common[id];
  if(!def||!Number.isInteger(step)||step<0||step>=def.steps.length)return null;
- const shapes=id==='ch01-divide-and-polygons'?inscribedPolygons(step):id==='ch01-drawing-scale'?scaleDiagram(step):id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
+ const shapes=id==='ch01-divide-and-polygons'?inscribedPolygons(step):id==='ch01-internal-fillet'?fillet(step):id==='ch01-drawing-scale'?scaleDiagram(step):id==='ch04-s01'?axon(step):id==='ch05-s02'?section(step):building(step);
  return {id,step,steps:def.steps.length,title:def.title,action:def.steps[step],page:def.page,
   printedPage:def.printedPage,scope:def.limit,shapes};
 }
-return {ids:Object.keys(common),frame,definition:id=>common[id]||null};
+return {ids:Object.keys(common),frame,definition:id=>common[id]||null,filletModel};
 });
