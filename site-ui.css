@@ -108,7 +108,7 @@ body.ui-refresh #cards .card{padding:16px}
 body.ui-refresh #constructionBoard{background:#fff}
 body.ui-refresh footer{margin-top:25px}
 @media(max-width:1050px){
- body.ui-refresh .top-actions>a:nth-of-type(n+4){display:none}
+ body.ui-refresh .top-actions>a:nth-of-type(n+5){display:none}
  .site-nav>a:nth-of-type(n+4){display:none}
  body.ui-refresh .knowledge-workspace{grid-template-columns:minmax(220px,.82fr) minmax(0,1.2fr)}
  body.ui-refresh .audit-workspace{grid-template-columns:minmax(230px,.9fr) minmax(0,1.2fr)}
@@ -186,3 +186,6 @@ body.ui-refresh .site-topbar .site-more-menu{z-index:99}
 body.ui-refresh .site-topbar .site-brand{color:#244d39!important}
 body.ui-refresh #visualLesson:target,body.ui-refresh #drawingCanvas:target{scroll-margin-top:90px}
 body.ui-refresh .site-disclosure>summary{user-select:none}
+
+/* 默认浅色界面，不受旧实验室系统深色偏好影响。 */
+body.ui-refresh{color-scheme:light}
