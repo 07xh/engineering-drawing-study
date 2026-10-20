@@ -24,6 +24,7 @@ jobs:
           node --check knowledge/knowledge-app.js
           node --check scripts/check-knowledge.cjs
           node --check scripts/check-ui-layout.cjs
+          node --check scripts/check-knowledge-ui.cjs
           node --check knowledge/visual-model.js
           node --check knowledge/visual-ui.js
           node --check knowledge/research-core.js
@@ -60,6 +61,7 @@ jobs:
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
           node scripts/check-ui-layout.cjs
+          node scripts/check-knowledge-ui.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
@@ -77,6 +79,7 @@ jobs:
           test -f dist/labs/method-library.js
           test -f dist/site-ui.css
           test -f dist/knowledge/index.html
+          test -f dist/knowledge/knowledge-ui.css
           test -f dist/knowledge/knowledge-data.js
           test -f dist/knowledge/knowledge-app.js
           test -f dist/knowledge/visual-model.js
