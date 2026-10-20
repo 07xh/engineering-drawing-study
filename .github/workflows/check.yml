@@ -93,6 +93,7 @@ jobs:
           node scripts/check-planar-point-constraints.cjs
           node scripts/check-planar-intersections.cjs
           node scripts/check-unified-constraint-analysis.cjs
+          node scripts/check-geometry-dependency-graph.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
