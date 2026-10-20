@@ -25,6 +25,17 @@ function analyze({points,constraints}={}){
    }else{
     add([[c.a,-vy,vx],[c.b,vy,-vx],[c.c,uy,-ux],[c.d,-uy,ux]],ux*vy-uy*vx);
    }
+  }else if(c.type==='angle'){
+   // Unoriented angle between nonzero segments AB and CD, in radians [0, PI].
+   const a=p(c.a),b=p(c.b),d=p(c.c),e=p(c.d);
+   if(!finite(c.value)||c.value<0||c.value>Math.PI)throw Error('角度必须在0到π之间（弧度）');
+   const ux=b.x-a.x,uy=b.y-a.y,vx=e.x-d.x,vy=e.y-d.y;
+   const lu=Math.hypot(ux,uy),lv=Math.hypot(vx,vy);
+   if(lu<EPS||lv<EPS)throw Error('角度约束不能使用零长度线段');
+   const cosine=(ux*vx+uy*vy)/(lu*lv),target=Math.cos(c.value);
+   const gux=vx/(lu*lv)-cosine*ux/(lu*lu),guy=vy/(lu*lv)-cosine*uy/(lu*lu);
+   const gvx=ux/(lu*lv)-cosine*vx/(lv*lv),gvy=uy/(lu*lv)-cosine*vy/(lv*lv);
+   add([[c.a,-gux,-guy],[c.b,gux,guy],[c.c,-gvx,-gvy],[c.d,gvx,gvy]],cosine-target);
   }else if(c.type==='fixed'){
    const point=p(c.point);if(!['x','y'].includes(c.axis)||!finite(c.value))throw Error('固定坐标无效');
    const gradient=c.axis==='x'?[1,0]:[0,1];add([[c.point,...gradient]],point[c.axis]-c.value);
