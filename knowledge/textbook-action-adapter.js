@@ -36,6 +36,12 @@ function adapt(example,geometry){
    if(i>=1)localConstraints.push({type:'fixed',point:'aDouble',axis:'y',value:points.aPrime.y});
    if(i>=3)localConstraints.push({type:'fixed',point:'aDouble',axis:'x',value:target.x});
    step.localDofAnalysis={points:{aDouble:{x:target.x,y:target.y}},constraints:localConstraints};
+   step.localDofExplanation={
+    model:'归一化示意图中的侧投影画纸位置',
+    addedConstraint:i===1?'等高联系线：固定 a″ 的纵坐标':i===3?'深度定位线：固定 a″ 的横向位置':null,
+    reason:i===1?'正面投影与侧面投影保持同一高度；这一步只限制纵坐标，横向位置仍未确定。':i===3?'H 面深度转移后给出侧投影的横向位置；与等高条件共同确定示意点。':i===0?'尚未添加定位约束，画纸上的横、纵坐标均未限定。':i===2?'本步继续绘制深度转移辅助线，但目标点约束集合未增加新的独立条件。':'目标点位置已由等高与深度两个条件确定；后续检查不应再减少自由度。',
+    scope:'仅分析归一化画纸上的目标点，不表示空间点本身存在额外自由度。'
+   };
   }
   steps.push(step);
  }
