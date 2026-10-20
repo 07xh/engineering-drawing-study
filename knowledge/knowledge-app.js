@@ -55,6 +55,7 @@ function show(id,scroll=false){
  $('markRead').textContent=read.has(id)?'取消已学过标记':'标记已学过';
  $('markStatus').textContent=read.has(id)?'已记录：阅读过此知识':'阅读完成后可手动标记，不等于自动判定掌握';
  updateSteps();
+ if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  try{history.replaceState(null,'','#'+id)}catch(e){}
  if(scroll){$('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});$('knowledgeDetail').focus({preventScroll:true})}
 }
