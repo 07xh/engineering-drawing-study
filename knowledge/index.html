@@ -56,7 +56,8 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="six-layer-course.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="six-layer-course.js"></script><script defer src="textbook-page-audit.js"></script>
+<script defer src="textbook-concept-motion.js"></script><script defer src="textbook-concept-motion-ui.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
 <script defer src="nonlinear-local-dof.js"></script>
 <script defer src="nonlinear-step-trace.js"></script>
 <script defer src="player-dof-summary.js"></script>
@@ -110,6 +111,17 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
     <h3 id="sixLayerHeadline"></h3>
     <p id="sixLayerText"></p>
     <ol class="six-layer-details" id="sixLayerDetails"></ol>
+    <div id="sixLayerConceptSlot" class="six-layer-concept-slot" hidden>
+      <div class="six-layer-concept-title"><strong>原理动态图 · 重新绘制的概念示意</strong><span id="sixLayerConceptCounter">1 / 4 步</span></div>
+      <div class="six-layer-concept-board"><svg id="sixLayerConceptSvg" viewBox="0 0 650 380" role="img" aria-label="按知识原理逐步显示的几何示意"></svg></div>
+      <div class="six-layer-concept-buttons">
+       <button id="sixLayerConceptPrev" type="button">← 上一步</button>
+       <button id="sixLayerConceptNext" type="button">下一步 →</button>
+      </div>
+      <p id="sixLayerConceptAction" class="six-layer-concept-action"></p>
+      <p id="sixLayerConceptSource" class="six-layer-concept-source"></p>
+      <p id="sixLayerConceptScope" class="six-layer-concept-scope"></p>
+    </div>
     <p class="six-layer-guidance" id="sixLayerGuidance"></p>
     <div id="sixLayerExampleSlot" class="six-layer-example-slot" hidden></div>
     <div id="sixLayerRelated" class="six-layer-related" hidden></div>
