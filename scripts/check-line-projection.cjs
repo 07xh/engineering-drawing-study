@@ -72,3 +72,7 @@ assert(drawingHtml.includes('src="verified-exercises.js"'),'missing source-revie
 assert(drawingJs.includes('本题教材原图尚未核实重绘'),'generic drawing must not stand in for unverified textbook');
 assert(verifiedJs.includes("'2-6-1'")&&verifiedJs.includes("'2-6-3'"),'missing first source-reviewed diagrams');
 console.log('PASS source-review status and no generic substitution');
+
+for(const id of ['2-6-2','2-6-4'])assert(verifiedJs.includes("'"+id+"'"),'missing reviewed exercise '+id);
+assert((verifiedJs.match(/status:'partial'/g)||[]).length>=4,'source review must remain explicitly partial');
+console.log('PASS four partial source-reviewed diagrams; no claims of exact completion');
