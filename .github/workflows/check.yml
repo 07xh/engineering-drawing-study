@@ -77,6 +77,7 @@ jobs:
           node scripts/check-projection-point-labels.cjs
           node scripts/check-projection-label-layout.cjs
           node scripts/check-projection-stage-highlights.cjs
+          node scripts/check-projection-stage-reasons.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
