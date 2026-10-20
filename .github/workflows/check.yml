@@ -121,6 +121,7 @@ jobs:
           node scripts/check-composite-geometry.cjs
           node scripts/check-exercise-261.cjs
           node scripts/build-static.cjs
+          node scripts/check-static-site-dependencies.cjs
           test -f dist/labs/constraints.html
           test -f dist/labs/analysis.html
           test -f dist/labs/constraint-engine.js
