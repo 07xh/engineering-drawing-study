@@ -5,5 +5,5 @@ const ui=fs.readFileSync(path.join(__dirname,'../knowledge/drawing-player-ui.js'
 for(const id of ['computedDof','computedDofValue','computedDofLabel','mathVerification','localDofVerification'])assert.ok(html.includes('id="'+id+'"'));
 assert.match(html,/id="computedDof" hidden/);assert.match(html,/<details aria-label="数学约束核验结果">/);
 assert.match(ui,/dofBadge.hidden=true/);assert.match(ui,/dofBadge.hidden=false/);
-assert.match(ui,/String\(trace.finalDegrees\)/);
+assert.match(ui,/String\(summary.currentDegrees\)/);
 console.log('PASS: local DOF emphasis is hidden when no verified computation is available');
