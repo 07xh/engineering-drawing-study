@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#edf3ef">
+<meta name="description" content="图学课堂工程制图知识库：投影规律、点线面、棱柱棱锥与曲面立体，教材概念归纳和逐步解释。">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<title>投影基础知识库 | 图学课堂</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#203d30;background:#edf3ef;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}a{color:#176d53}button,a,input,select{outline-offset:3px}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e3a744}
+.wrap{max-width:1180px;margin:auto;padding:18px 18px 65px}
+.top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 0}.brand{font-size:20px;font-weight:800;color:#254f3c;text-decoration:none}.links{display:flex;gap:12px;flex-wrap:wrap;font-size:14px}
+.hero{background:linear-gradient(130deg,#225946,#3d8466);color:white;border-radius:22px;padding:clamp(20px,4vw,40px);margin:10px 0 20px}.hero .eyebrow{opacity:.83;letter-spacing:.12em;font-size:12px}.hero h1{font-size:clamp(29px,4vw,43px);margin:12px 0}.hero p{line-height:1.8;max-width:770px}.hero .stats{display:flex;gap:12px;flex-wrap:wrap;font-weight:600}.stat{background:#ffffff20;border:1px solid #ffffff3c;border-radius:14px;padding:8px 13px}
+.note{border-left:4px solid #bb893e;background:#fffaf0;border-radius:9px;padding:12px 16px;line-height:1.75;margin:12px 0 20px}
+.toolbar{background:white;padding:15px;border:1px solid #d8e6de;border-radius:17px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar label{display:flex;align-items:center;gap:7px;flex:1;min-width:175px;font-size:14px}.toolbar input,.toolbar select{border:1px solid #b8cec0;border-radius:10px;padding:10px;min-height:44px;width:100%;background:white;color:#233e31}.toolbar input[type=search]{flex:1}
+button{cursor:pointer;border-radius:10px;border:1px solid #b5cfc0;background:white;padding:10px 14px;min-height:42px;color:#205541}
+button.primary{background:#277352;color:white;border-color:#277352}button[disabled]{opacity:.46;cursor:not-allowed}
+.count{font-size:14px;color:#526f5b;margin:15px 3px}.empty{padding:22px;background:white;border-radius:13px;color:#536e60}
+.library{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.catalogue{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
+.knowledge-card{background:#fff;border:1px solid #d6e4db;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:190px}
+.knowledge-card h3{margin:0;font-size:17px;line-height:1.5}.knowledge-card p{font-size:14px;color:#536f60;line-height:1.7;flex:1;margin:0}
+.meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#526c5f}.pill{background:#eaf5ed;border-radius:99px;padding:4px 9px;color:#266248}
+.card-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}.card-actions button{font-size:13px;min-height:36px;padding:7px 10px}.is-read{border-color:#79ba94}.learned{color:#18794d;font-size:12px}
+.detail{background:#fff;border:1px solid #d6e4db;border-radius:18px;padding:clamp(16px,3vw,26px);margin-top:22px;scroll-margin-top:20px}
+.detail h2{margin:7px 0 12px;font-size:clamp(22px,3vw,27px)}.detail p{line-height:1.84}.detail h3{font-size:17px;margin:22px 0 8px}
+.understanding,.mistake{padding:13px 15px;border-radius:11px;line-height:1.8}.understanding{background:#edf6f1;color:#234e39}.mistake{background:#fff8e9;color:#70552b}
+.step-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}.step-count{font-size:13px;color:#5a7064}
+.steps{display:grid;gap:10px;padding-left:26px}.steps li{padding:13px 15px;line-height:1.75;background:#f5faf7;border-radius:10px;border:1px solid #e3ede7}
+.source{font-size:13px;color:#587466}.related{display:flex;flex-wrap:wrap;gap:9px}.related a{padding:7px 10px;border-radius:9px;background:#eaf5ed;font-size:14px;text-decoration:none}
+.backtop{display:inline-block;margin-top:25px;font-size:13px}
+footer{padding:30px 0;color:#6e8575;font-size:13px}
+@media(min-width:1250px){.library{grid-template-columns:minmax(0,1fr)}}@media(max-width:550px){.toolbar label{flex-basis:100%}.wrap{padding:12px 12px 52px}.hero{border-radius:16px}.catalogue{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.steps li{animation:appear .2s ease}@keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+</style>
+<script defer src="knowledge-data.js"></script><script defer src="knowledge-app.js"></script>
+</head>
+<body><div class="wrap" id="top">
+<nav class="top" aria-label="网站导航"><a class="brand" href="../index.html">⌁ 图学课堂 · 知识库</a><div class="links"><a href="../index.html">课程首页</a><a href="../labs/chapter-26-29.html">教材章节练习</a><a href="../labs/analysis.html">自由度实验室</a></div></nav>
+<header class="hero"><div class="eyebrow">KNOWLEDGE LIBRARY · 工程图学</div><h1>把投影规律，学成可用的知识。</h1><p>根据你提供的 23 页工程制图教材扫描，整理三视图、点、直线、平面以及棱柱、圆柱、圆锥和球体的知识。每条知识都有易懂的作图逻辑、常见错误和对应练习。</p><div class="stats"><span class="stat" id="totalCards">正在加载</span><span class="stat" id="completedCards">本机已学 0 条</span><span class="stat">6 个知识专题</span></div></header>
+<p class="note"><strong>资料边界：</strong>这里是依据你上传教材整理的原创学习笔记，不公开原 PDF、教材扫描图或出版社标准答案。页面引用“教材页码”方便你在自己的书中核对；“理解辅助”和“常见误区”属于补充说明。尚未核准的习题答案不会借知识卡冒充完整解答。</p>
+<div class="toolbar" role="search" aria-label="知识库搜索与筛选">
+<label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：圆锥、45°转移线、2-9-3" autocomplete="off"></label>
+<label>知识专题<select id="chapterSelect"><option value="all">全部专题</option></select></label>
+<label>学习情况<select id="progressSelect"><option value="all">全部知识</option><option value="unread">未学过</option><option value="read">已学过</option></select></label>
+<button type="button" id="resetFilters">清除筛选</button>
+</div>
+<p id="exerciseFilterStatus" class="note" hidden></p>
+<p id="knowledgeCount" class="count" role="status"></p>
+<div class="library"><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有匹配的知识条目。尝试更换关键词或清除筛选。</p></main></div>
+<section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
+<div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
+<h2 id="detailTitle"></h2><p id="detailSummary"></p>
+<h3>需要记住的规律</h3><p id="detailLaw"></p>
+<h3>纸上怎么画：逐步理解</h3>
+<div class="step-toolbar"><button id="stepPrev" type="button">上一步</button><button id="stepNext" type="button" class="primary">下一步</button><button id="stepAll" type="button">显示全部步骤</button><span id="stepCount" class="step-count" aria-live="polite"></span></div>
+<ol id="detailSteps" class="steps" aria-live="polite"></ol>
+<h3>为什么这样做</h3><p class="understanding" id="detailUnderstanding"></p>
+<h3>常见错误</h3><p class="mistake" id="detailMistake"></p>
+<h3>关联的纸面作图练习</h3><div class="related" id="detailExercises"></div>
+<div class="step-toolbar"><button id="markRead" class="primary" type="button">标记已学过</button><span id="markStatus" class="step-count"></span></div>
+<p class="source" id="sourceNote"></p>
+<a href="#top" class="backtop">↑ 返回知识库顶部</a>
+</section>
+<footer>图学课堂 · 第二章投影基础 · 个人阅读状态仅保存在当前浏览器；本页不会上传你提供的扫描文档。</footer>
+</div></body></html>
