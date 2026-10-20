@@ -542,3 +542,17 @@ body.ui-refresh .book-example-computed{margin:9px 0!important}
 @media(prefers-reduced-motion:reduce){
  body.ui-refresh .book-example-new-shape{filter:none}
 }
+
+
+/* Per-geometry explanations: clean diagram, keyboard/touch targets, responsive right panel. */
+body.ui-refresh .book-example-tap-hint{margin:5px 2px 0!important;color:#526f60!important;font-size:12px!important;line-height:1.5!important}
+body.ui-refresh .book-example-inspector{border:1px solid #c8ddcf;border-radius:11px;padding:12px;margin:13px 0;background:#f5faf6}
+body.ui-refresh .book-example-inspector h5{margin:0 0 9px;color:#265f43;font-size:14px}
+body.ui-refresh .book-example-inspector label{display:flex;gap:8px;flex-direction:column;color:#4b6e58;font-size:12px;font-weight:700}
+body.ui-refresh .book-example-inspector select{max-width:100%;width:100%;padding:8px 9px;min-height:40px;border:1px solid #b8d3c0;border-radius:8px;background:#fff;color:#244e36;font-size:13px}
+body.ui-refresh .book-example-inspector p{font-size:12px!important;line-height:1.65!important;margin:6px 0!important;padding:0!important;background:transparent!important;border:0!important;color:#355b43!important}
+body.ui-refresh .book-example-inspector .book-example-shape-name{font-size:14px!important;font-weight:800;color:#1d6341!important;margin:12px 0 5px!important}
+body.ui-refresh .book-example-inspector .book-example-shape-boundary{color:#677e6a!important;font-size:11px!important;border-top:1px solid #d8e5dc!important;padding-top:8px!important}
+body.ui-refresh #bookExampleSvg [data-hit="true"]{cursor:pointer}
+body.ui-refresh #bookExampleSvg [data-hit="true"]:focus-visible{outline:none;stroke:#2e5f92!important;stroke-opacity:.2}
+@media(max-width:790px){body.ui-refresh .book-example-inspector{padding:10px}body.ui-refresh .book-example-tap-hint{font-size:11px!important}}
