@@ -40,6 +40,9 @@ jobs:
           node --check labs/source-fidelity-ui.js
           node --check labs/point-construction-core.js
           node --check labs/point-construction-ui.js
+          node --check labs/tangent-constraint-core.js
+          node --check labs/tangent-constraint-ui.js
+          node --check scripts/check-tangent-constraint.cjs
           node --check scripts/check-fidelity-construction.cjs
           node --check scripts/check-source-inspector.cjs
           node --check scripts/check-visual-research.cjs
@@ -65,6 +68,7 @@ jobs:
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
+          node scripts/check-tangent-constraint.cjs
           node scripts/check-exercise-261.cjs
           node scripts/check-workbench-layout.cjs
           node scripts/check-question-strategies.cjs
@@ -98,5 +102,8 @@ jobs:
           test -f dist/labs/point-construction.html
           test -f dist/labs/point-construction-core.js
           test -f dist/labs/point-construction-ui.js
+          test -f dist/labs/tangent-constraint.html
+          test -f dist/labs/tangent-constraint-core.js
+          test -f dist/labs/tangent-constraint-ui.js
           test -f dist/labs/line-workbench-layout.js
           test -f dist/question-strategies.js
