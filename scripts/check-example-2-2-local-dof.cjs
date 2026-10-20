@@ -6,4 +6,7 @@ assert.deepEqual(problem.steps.map(step=>T.analyze(step.localDofAnalysis).finalD
 assert.ok(problem.steps.every(step=>T.analyze(step.localDofAnalysis).atProvidedConfiguration));
 assert.ok(problem.steps.every(step=>step.constraintAnalysis.scope==='point-2d-linear'));
 assert.ok(A.adapt(E.get('example-1-1'),G).steps.every(step=>step.localDofAnalysis));
+const coordinate=A.adapt(E.get('example-2-3'),G);
+assert.deepEqual(coordinate.steps.map(step=>T.analyze(step.localDofAnalysis).finalDegrees),[2,2,1,0,0]);
+assert.ok(coordinate.steps.every(step=>T.analyze(step.localDofAnalysis).atProvidedConfiguration));
 console.log('PASS: textbook example 2-2 local DOF steps [2,1,1,0,0] with independently verified example 1-1 model');
