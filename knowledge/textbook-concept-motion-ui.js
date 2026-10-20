@@ -33,7 +33,7 @@ function draw(){
  $('sixLayerConceptNext').disabled=step===frame.steps-1;
  const verified=source?.get(frame.page);
  $('sixLayerConceptSource').textContent='主题来源：教材印刷第'+frame.printedPage+'页 / PDF第'+frame.page+
-  '页'+(verified?.visualSample?' · 已初步查看相应扫描页面':'')+'；并非已核验原书例题。';
+  '页'+(verified?.detailedInspected?' · 已核对本页主题与图号':verified?.visualSample?' · 已初步查看相应扫描页面':'')+'；并非已核验原书例题。';
 }
 function show(id,layer){
  const slot=$('sixLayerConceptSlot');
