@@ -42,9 +42,9 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="knowledge-app.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="knowledge-app.js"></script>
 <link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="knowledge-ui.css"></head>
-<body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a><a href="../labs/line-projection.html">直线投影练习</a><a href="../labs/v7.html">历史实验室</a></div></details></nav></div></header><div class="wrap" id="top">
+<body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a></div></details></nav></div></header><div class="wrap" id="top">
 <p class="site-page-crumb"><a href="../index.html">课程首页</a><span>/</span>第三版教材知识体系</p>
 <header class="hero kb-hero" aria-labelledby="knowledgeHeading">
 <div class="kb-hero-copy"><div class="eyebrow">THE THIRD EDITION / 教材知识地图</div>
@@ -54,7 +54,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <div class="stats kb-hero-stats" aria-label="知识库概况"><span class="stat" id="totalCards">正在加载</span><span class="stat" id="completedCards">本机已学 0 条</span><span class="stat">12 章教材 + 附录</span></div></header>
 <details class="kb-source-note">
 <summary><strong>资料说明</strong><span>依据完整教材第3版的目录建框架；未逐页核对的内容不会冒充课程讲解。</span><span class="kb-note-expand">查看详情</span></summary>
-<p>依据你上传的292页《工程制图与 AutoCAD》第3版重建。原书目录和章节起始页已经核对；目前仅第二章部分内容完成逐页复核及原创讲解，其他章节先是目录索引。印刷正文第1页对应PDF第7页。不会公开原PDF、原书扫描图或出版社答案，原有习题也不会因为题号相似就被自动认定为本书原题。</p></details>
+<p>依据你上传的292页《工程制图与 AutoCAD》第3版重建。原书目录和章节起始页已经核对；第一至第三章已有初步知识讲解，其中部分重点知识包含完整推导；第四章及以后仍为待建设目录。印刷正文第1页对应PDF第7页。不会公开原PDF、原书扫描图或出版社答案，原有习题也不会因为题号相似就被自动认定为本书原题。</p></details>
 <div class="toolbar kb-filterbar" role="search" aria-label="知识库搜索与筛选">
 <label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：第三章、尺寸注法、点的投影" autocomplete="off"></label>
 <label>教材章节<select id="chapterSelect"><option value="all">全部章节</option></select></label><label>章节小节<select id="sectionSelect"><option value="all">全部小节</option></select></label><label>内容状态<select id="coverageSelect"><option value="all">全部状态</option><option value="page-reviewed">已核对讲解</option><option value="toc-only">仅目录索引</option></select></label>
@@ -67,7 +67,16 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p><p id="detailStatusNotice" class="note" aria-live="polite"></p>
-<div id="verifiedLessonContent"><h3>本节已核对的要点</h3><p id="detailLaw"></p>
+<div id="verifiedLessonContent">
+<section class="deep-lesson" id="deepLesson" hidden aria-label="教材知识深度精讲">
+<div class="deep-header"><span class="deep-tag">重点精讲 · 展开原理而非只记结论</span><h3 id="deepQuestion"></h3></div>
+<div class="deep-logic"><h4>从概念推导</h4><p id="deepLogic"></p></div>
+<h4>逐条拆解约束和作图依据</h4><ol id="deepStages" class="deep-stages"></ol>
+<div class="deep-example"><h4>概念演示（不是题库题目）</h4><p id="deepExample"></p></div>
+<div class="deep-check"><h4>画完后怎样检查？</h4><p id="deepCheck"></p></div>
+<p id="deepBoundary" class="deep-boundary"></p>
+</section>
+<h3>本节已核对的要点</h3><p id="detailLaw"></p>
 <h3>作图与理解步骤</h3>
 <div class="step-toolbar"><button id="stepPrev" type="button">上一步</button><button id="stepNext" type="button" class="primary">下一步</button><button id="stepAll" type="button">显示全部步骤</button><span id="stepCount" class="step-count" aria-live="polite"></span></div>
 <ol id="detailSteps" class="steps" aria-live="polite"></ol>

@@ -1,90 +1,61 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#edf3ef">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <meta name="description" content="依胡建生《工程制图与 AutoCAD》第3版重建的12章教材知识体系、投影自由度演示与原创练习区。">
-  <title>图学课堂 · 工程制图投影基础</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="site-ui.css">
-  <script defer src="content.js"></script>
-  <script defer src="labs/constraint-engine.js"></script>
-  <script defer src="question-strategies.js"></script>
-  <script defer src="app.js"></script>
-</head>
-<body class="ui-refresh">
-<div class="app" id="home">
-  <header class="topbar">
-    <div class="top-inner"><div class="brand"><span class="brand-mark">⌁</span><span>图学课堂 <small>ENGINEERING GRAPHICS</small></span></div>
-    <nav class="top-actions" aria-label="主要导航">
-  <a href="#courses">课程</a><a href="#workbench">动态作图</a><a href="#question-bank">课堂练习</a>
-  <a href="knowledge/index.html">知识库</a>
-  <details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习工具</span>
-  <a href="labs/chapter-26-29.html">教材 2-6～2-9 章节习题</a><a href="labs/chapter-drawing.html">原题作图练习</a>
-  <a href="labs/point-construction.html">第三投影逐步验算</a><a href="labs/source-fidelity.html">原图核验总览</a>
-  <a href="labs/analysis.html">自由度分析</a><a href="labs/constraints.html">三投影面实验室</a>
-  <a href="labs/line-projection.html">直线投影练习</a><a href="labs/v7.html">旧版实验室</a></div></details>
-</nav></div>
-  </header>
-  <main class="wrap">
-    <section class="hero">
-      <div><span class="eyebrow">胡建生《工程制图与AutoCAD》第 3 版 · 第 2 章</span>
-      <h1>投影基础，<br><em>从看懂到会画。</em></h1>
-      <p>按高校教材学习逻辑，从三面投影体系进入点、直线、平面与立体。用可调参数的三视图、推导步骤、八种题目训练方式和纸面作图任务，避免只看动画、不理解作图。</p>
-      <div class="hero-actions"><a class="button primary" href="#courses">开始投影基础 →</a><a class="button secondary" href="#question-bank">打开章节题库</a><a class="button secondary" href="knowledge/index.html">📚 按新版教材章节学习</a></div>
-      <p class="subtle">第三版教材的12章目录知识地图已独立重建 · 原创练习与未核验的教材原题分开 · 不公开原PDF</p></div>
-      <aside class="hero-metrics"><span class="metric-label">我的学习概览 <span class="local-tag">本机记录</span></span>
-        <div class="hero-number"><strong id="progressDone">0</strong><span>/ 10 节已完成</span></div>
-        <div class="bar"><span id="progressBar"></span></div>
-        <div class="metric-grid"><div><strong id="statQuestions">74</strong><small>原创练习题</small></div><div><strong id="statAccuracy">—</strong><small>首次正确率</small></div></div>
-        <p class="subtle">无账号；答题与课程进度仅保存在当前浏览器。清除浏览器数据将丢失记录。</p>
-      </aside>
-    </section>
-    <section class="layout" id="courses">
-      <aside class="sidepanel" aria-label="课程目录">
-        <div class="side-heading"><span>COURSE MAP</span><h2>第 2 章 · 投影基础</h2><p>按知识逻辑拆为十节</p></div>
-        <div class="lesson-nav" id="lessonNav"></div>
-        <div class="side-footer"><a href="labs/v7.html">回到 v7 完整动态实验室 →</a><p>原有的三视图、几何作图、组合体和圆弧连接演示保留在独立页面。</p></div>
-      </aside>
-      <div class="maincol">
-        <section class="section-card" id="theory">
-          <div class="kicker" id="lessonCrumb">第 2 章 · 课堂 01</div>
-          <div class="lesson-header"><div><h2 id="lessonTitle">正在准备课程</h2><p id="lessonLead"></p></div><span class="difficulty" id="lessonDifficulty">课堂</span></div>
-          <div class="pillrow"><span id="lessonPages">教材位置</span><span id="lessonDuration">建议时长</span><span id="lessonBankSize">配套题量</span></div>
-          <h3 class="mini-title">知识框架 <span>先理解，再背结论</span></h3><div class="concepts" id="concepts"></div>
-          <div class="worked-example"><span class="kicker">TEACHER'S EXPLANATION</span><h3>例题与推导</h3><p id="workedExample"></p></div>
-        </section>
-        <section class="section-card" id="workbench">
-          <div class="section-title"><div><span class="kicker">INTERACTIVE DRAWING</span><h2>三面投影交互演示</h2><p>下方图形的点、线、面采用统一空间坐标计算。拖动进度条按作图顺序显示投影元素。</p></div><span class="difficulty">SVG · 可离线</span></div>
-          <div class="drawing-toolbar">
-            <div class="switchers" id="diagramMode"><button type="button" data-mode="point" class="selected">点 A</button><button type="button" data-mode="line">直线 AB</button><button type="button" data-mode="plane">平面 △ABC</button></div>
-            <div class="drawing-options"><label for="diagramPreset">几何条件</label><select id="diagramPreset"></select></div>
-          </div>
-          <div class="svg-panel"><svg id="diagram" viewBox="0 0 1050 365" role="img" aria-label="正立面、水平面、侧立面的对应投影，分别采用相同的三维坐标生成"></svg><div class="drawing-key"><span><i class="dot green"></i>原始投影</span><span><i class="dot gold"></i>辅助对应</span><span>V：正面 / H：水平 / W：侧面</span></div></div>
-          <div class="coordinate-row" id="pointSliders"></div>
-          <div class="player-controls"><button type="button" class="button primary" id="playButton">▶ 播放</button><button type="button" class="button secondary" id="restartButton">↺ 重新演示</button><label class="speed-label">播放速度 <select id="speed"><option value="0.5">慢速</option><option value="1" selected>标准</option><option value="1.7">快速</option></select></label></div>
-          <div class="timeline"><input type="range" min="0" max="100" step="1" value="100" id="timeline" aria-label="绘制进度"><output id="timelineOutput">100%</output></div>
-          <div class="stage-description"><strong id="drawStepName">完成投影</strong><p id="drawStepExplanation">同一空间几何元素的三个投影共享相同坐标。</p></div>
-          <p class="note">示意采用第一角画法对应的三个投影面分别展开平铺，三个视图分栏展示，便于观察对应的 x、y、z；它不是规范版式的完整工程图纸。图元尺寸为教学坐标值。</p>
-        </section>
-        <section class="section-card" id="method">
-          <div class="section-title"><div><span class="kicker">HOW TO SOLVE</span><h2>纸面作图四步法</h2><p>读懂过程后，请独立在纸上完成一遍。</p></div></div>
-          <div class="steps" id="drawingSteps"></div>
-          <div class="paper-assignment"><div><span class="kicker">PAPER ASSIGNMENT</span><h3>本节纸面作图任务</h3><p id="paperTask"></p></div><button class="button secondary" id="printButton">打印本节任务 ↗</button></div>
-          <div class="mistake-box"><h3>常见错误 · 建议先自查</h3><div id="mistakes"></div></div>
-        </section>
-        <section class="section-card" id="question-bank">
-          <div class="section-title"><div><span class="kicker">PRACTICE ENGINE</span><h2>章节题型训练</h2><p>覆盖选择、判断、数值、排序、匹配、图上定位和线段绘制等八类互动题；每节另配纸面作图任务。</p></div><span class="difficulty" id="bankCount">74 题</span></div>
-          <div class="filters"><label>题目范围 <select id="questionScope"><option value="current">当前课程</option><option value="all">全章综合</option><option value="wrong">全章首次答错</option></select></label><label>题型 <select id="questionType"><option value="all">全部题型</option><option value="single">单项选择</option><option value="multi">多项选择</option><option value="numeric">数值填空</option><option value="order">作图步骤排序</option><option value="truefalse">判断正误</option><option value="match">对应匹配</option><option value="plot">图上定位点</option><option value="plotline">图上绘制线段</option></select></label><button type="button" class="button secondary" id="shuffleQuestions">随机抽题</button></div>
-          <div class="question-frame"><p class="practice-guide" id="practiceGuide">先独立思考；提交后可查看参考答案与推导，错误题目会进入错题复练。</p><div class="question-meta"><span id="questionPosition">第 1 题</span><span id="questionBadge">单项选择</span></div><h3 id="questionText">正在准备题目…</h3><div id="answerArea"></div><div id="questionStrategy" class="question-strategy" hidden><button type="button" id="strategyToggle" class="button secondary" aria-expanded="false">查看本题约束分析策略</button><div id="strategyDetail" hidden aria-live="polite"></div></div><div class="answer-actions"><button class="button primary" id="submitAnswer">检查答案</button><button class="button secondary" id="nextQuestion">下一题 →</button></div><div id="questionFeedback" role="status" aria-live="polite"></div></div>
-          <div class="quiz-footer"><span id="quizProgress">本节训练：0 / 0</span><button type="button" class="text-button" id="markComplete">完成本节学习 ✓</button></div>
-        </section>
-      </div>
-    </section>
-    <footer class="footer"><div><b>图学课堂</b> · 工程制图互动学习项目</div><p>课程参照胡建生《工程制图与AutoCAD》第 3 版公开目录组织；内容和算例独立编写。当前已包含几何体基础投影；复杂截交线、相贯线及组合体综合作图仍需扩展和教学复核。</p><a href="lessons/plane-projection.html">新课：平面的投影分步作图与交互练习 →</a> · <a href="labs/v7.html">查看旧版完整教学实验室 ↗</a></footer>
-  </main>
-</div>
-</body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="胡建生《工程制图与 AutoCAD》第3版学习门户：只展示教材知识以及已提交、待核实来源的习题，不提供原创模拟题库。">
+<meta name="theme-color" content="#eff5f0"><title>图学课堂 · 第三版教材知识与习题</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="site-ui.css">
+<style>
+:root{color-scheme:light}body{margin:0;background:#f2f6f2;color:#243d2e;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.home-wrap{max-width:1210px;width:calc(100% - 32px);margin:18px auto 65px}
+.hero-main{background:linear-gradient(116deg,#ecf7ee,#d9ecdf 70%,#eff8f0);border:1px solid #cde2d2;border-radius:20px;padding:clamp(22px,4vw,43px)}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:#377653;font-weight:800}
+.hero-main h1{font-size:clamp(29px,4.5vw,47px);line-height:1.22;max-width:850px;color:#173c2b;margin:11px 0}
+.hero-main p{max-width:780px;font-size:14px;line-height:1.8;color:#456451}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 15px;text-decoration:none;border-radius:10px;background:#246e4c;border:1px solid #246e4c;color:white!important;font-size:14px;font-weight:700;min-height:44px}
+.btn.light{background:white;color:#246e4c!important;border-color:#bdd7c4}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.stats span{background:#fffdf;border:1px solid #c9dfd0;color:#315d43;border-radius:9px;font-size:12px;font-weight:700;padding:8px 11px}
+.section{margin-top:28px}.section h2{font-size:23px;margin:0 0 6px;color:#224732}.section>p{font-size:13px;color:#667e6c;margin:0 0 15px;line-height:1.8}
+.chapter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.chapter{padding:16px;border-radius:15px;background:#fff;border:1px solid #d9e7dc;display:flex;flex-direction:column;gap:7px;text-decoration:none!important;min-height:130px}
+.chapter:hover{border-color:#82b295;box-shadow:0 5px 18px #174d3020}
+.chapter small{font-size:12px;color:#627d6c}.chapter strong{font-size:17px;line-height:1.4;color:#244b35}.chapter .state{font-size:12px;color:#446d52;background:#edf6ef;padding:4px 9px;border-radius:7px;align-self:flex-start}.chapter.pending .state{color:#88714f;background:#fff5e5}
+.private-note{border:1px solid #e9d6b4;border-left:4px solid #b88b3a;background:#fffaf1;border-radius:12px;padding:16px;line-height:1.8;color:#665437;font-size:13px}
+.exercise-row{display:grid;grid-template-columns:1.2fr .8fr;gap:13px}
+.exercise-card{border:1px solid #dce8de;border-radius:15px;padding:20px;background:#fff}
+.exercise-card h3{margin:0 0 8px}.exercise-card p{font-size:14px;line-height:1.8;color:#5e7767}
+.exercise-card .btn{margin-top:9px}
+.study-tools{display:flex;flex-wrap:wrap;gap:9px}.study-tools a{padding:10px 13px;background:#fff;border:1px solid #d6e5dc;border-radius:10px;text-decoration:none;color:#2e674a!important;font-size:13px}
+footer{color:#78887b;font-size:12px;padding:25px 0}
+@media(max-width:850px){.chapter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.exercise-row{grid-template-columns:1fr}}
+@media(max-width:570px){.home-wrap{width:calc(100% - 22px)}.chapter-grid{grid-template-columns:1fr}.hero-main{padding:22px 17px}.chapter{min-height:0}}
+</style></head>
+<body class="ui-refresh"><header class="site-topbar"><div class="site-topbar-inner">
+<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a>
+<nav class="site-nav" aria-label="主要导航"><a href="index.html" aria-current="page">教材首页</a><a href="knowledge/index.html">教材知识库</a><a href="labs/chapter-26-29.html">已提交习题</a>
+<details class="site-more"><summary>学习工具</summary><div class="site-more-menu"><a href="labs/chapter-drawing.html">已提交习题核对</a><a href="labs/source-fidelity.html">原图核验情况</a><a href="labs/point-construction.html">第二章投影演示</a><a href="labs/paper-geometry.html">第一章尺规演示</a><a href="labs/composite-geometry.html">第三章组合体演示</a></div></details></nav>
+</div></header><main class="home-wrap">
+<section class="hero-main"><span class="eyebrow">第三版教材 · 唯一课程体系</span>
+<h1>按你的教材学习，从知识原理到作图过程。</h1>
+<p>使用胡建生主编《工程制图与 AutoCAD》第3版建立课程体系。按原书12章、53节依次学习；讲解重点是为什么这样画、条件如何确定图形、怎样验证结果，而不是只阅读概念总结。</p>
+<div class="hero-actions"><a href="knowledge/index.html" class="btn">进入教材知识库 →</a><a href="labs/chapter-26-29.html" class="btn light">查看已提交习题</a></div>
+<div class="stats"><span>12章 · 53节 · 3个附录</span><span>已编写54条知识讲解</span><span>未核对内容明确标识</span></div></section>
+<section class="section" id="textbook"><h2>教材章节</h2><p>第一至第三章已进入详细知识讲解阶段；其余章节先按照原书目录展示，不冒充已经讲完。</p>
+<div class="chapter-grid">
+<a class="chapter" href="knowledge/index.html?chapter=ch01"><small>第一章 · 第2页起</small><strong>制图的基本知识和技能</strong><span class="state">20条详细知识</span></a>
+<a class="chapter" href="knowledge/index.html?chapter=ch02"><small>第二章 · 第27页起</small><strong>投影基础</strong><span class="state">16条详细知识</span></a>
+<a class="chapter" href="knowledge/index.html?chapter=ch03"><small>第三章 · 第54页起</small><strong>组合体</strong><span class="state">18条详细知识</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch04"><small>第四章 · 第84页起</small><strong>轴测图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch05"><small>第五章 · 第97页起</small><strong>图样的基本表示法</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch06"><small>第六章 · 第122页起</small><strong>图样中的特殊表示法</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch07"><small>第七章 · 第143页起</small><strong>零件图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch08"><small>第八章 · 第169页起</small><strong>装配图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch09"><small>第九章 · 第187页起</small><strong>金属焊接图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch10"><small>第十章 · 第196页起</small><strong>建筑施工图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch11"><small>第十一章 · 第208页起</small><strong>电气专业制图</strong><span class="state">正文待建设</span></a>
+<a class="chapter pending" href="knowledge/index.html?chapter=ch12"><small>第十二章 · 第225页起</small><strong>AutoCAD Mechanical软件的基本操作及应用</strong><span class="state">正文待建设</span></a></div></section>
+<section class="section" id="submitted-exercises"><h2>你提交的习题与教材题</h2><p>不再提供自编模拟题库。仅保留来自你提交资料的题目记录，以及以后从你上传教材中逐题核实的习题。</p>
+<div class="exercise-row"><div class="exercise-card"><h3>已提交习题 · 2-6～2-9</h3><p>目前登记了28条部分数字化题目。原图、页码与新版完整教材的对应关系尚待核验；未核对完整的题目不生成假设的答案线。</p><a href="labs/chapter-26-29.html" class="btn">查看已提交习题 →</a></div>
+<div class="exercise-card"><h3>教材原题 · 正在逐题核对</h3><p>教材中的原题需要按照老师提供的PDF原页确认题号、已知线、尺寸、同名投影和可见性。只有核对后的原题才会加入正式练习区。</p><a href="labs/source-fidelity.html" class="btn light">查看核验进度</a></div></div>
+<p class="private-note"><strong>版权与隐私：</strong>老师提供的PDF、原书扫描和专属原题解析不会放入公开GitHub或公开页面。完整原题的私人展示与动态答案，需要先做好真正的登录验证和受保护的文件存储。</p></section>
+<section class="section"><h2>与教材关联的动态教学</h2><p>保留用于解释教材原理的原创几何计算工具；它们不是新增习题，也不替代教材标准答案。</p><div class="study-tools"><a href="labs/paper-geometry.html">第一章 · 几何作图与定位</a><a href="labs/tangent-constraint.html">第一章 · 圆弧相切</a><a href="labs/point-construction.html">第二章 · 第三投影</a><a href="labs/composite-geometry.html">第三章 · 组合体与截交线</a></div></section>
+<footer>图学课堂 · 第三版教材唯一知识体系。旧原创题库及旧独立第二章课程不再发布。</footer></main></body></html>
