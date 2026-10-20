@@ -1,79 +1,134 @@
+/* 《工程制图与AutoCAD》第3版知识地图 UI
+   Newly indexed sections are not misrepresented as fully reviewed lessons.
+   Keeps prior v1 progress record untouched; new edition uses an independent key.
+*/
 (function(){'use strict';
 const book=window.DrawingKnowledge;
-if(!book||!Array.isArray(book.entries)){document.getElementById('knowledgeCount').textContent='知识数据加载失败，请刷新页面或检查本地文件是否完整。';return}
 const $=id=>document.getElementById(id);
-const chapterNames=Object.fromEntries(book.chapters.map(c=>[c.id,c.name]));
-const key='drawing-knowledge-read-v1';
-const validIds=new Set(book.entries.map(x=>x.id));
-let read=new Set(),current=null,step=1;
-try{const raw=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(raw))read=new Set(raw.filter(x=>validIds.has(x)))}catch(e){}
-const input=$('knowledgeSearch'),chapter=$('chapterSelect'),progress=$('progressSelect');
-const requestedExercise=new URLSearchParams(location.search).get('exercise');
-let exercise=/^2-[6-9]-(?:[1-9]|10)$/.test(requestedExercise||'')?requestedExercise:null;
-for(const c of book.chapters){const option=document.createElement('option');option.value=c.id;option.textContent=c.name;chapter.append(option)}
-$('totalCards').textContent=book.entries.length+' 条原创知识卡';
-function save(){try{localStorage.setItem(key,JSON.stringify([...read]))}catch(e){$('markStatus').textContent='此浏览器无法保存阅读记录。'}}
-function counter(){$('completedCards').textContent='本机已学 '+read.size+' / '+book.entries.length+' 条'}
-function selection(){
- return book.find(input.value,chapter.value).filter(x=>(!exercise||x.practice.includes(exercise))&&(progress.value==='all'||(progress.value==='read'?read.has(x.id):!read.has(x.id))))
+if(!book||!Array.isArray(book.entries)){$('knowledgeCount').textContent='第三版教材知识数据加载失败，请刷新网页。';return}
+const chapters=Object.fromEntries(book.chapters.map(c=>[c.id,c]));
+const sections=Object.fromEntries(book.sections.map(s=>[s.id,s]));
+const key='drawing-textbook-3e-progress-v2',reviewed=new Set(book.entries.filter(x=>x.contentStatus==='page-reviewed').map(x=>x.id));
+let completed=new Set(),current=null,step=0;
+try{const saved=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(saved))completed=new Set(saved.filter(id=>reviewed.has(id)))}catch(e){}
+const search=$('knowledgeSearch'),ch=$('chapterSelect'),sec=$('sectionSelect'),coverage=$('coverageSelect'),progress=$('progressSelect');
+const exercise=new URLSearchParams(location.search).get('exercise');
+for(const chapter of book.chapters){const option=document.createElement('option');option.value=chapter.id;option.textContent=chapter.name;ch.append(option)}
+$('totalCards').textContent=book.chapters.length-1+' 章 · '+book.sections.filter(s=>s.chapter!=='appendix').length+' 节';
+function counter(){
+ $('completedCards').textContent='本机已学习 '+completed.size+' / '+reviewed.size+' 个讲解';
 }
-function element(tag,cls,value){const e=document.createElement(tag);if(cls)e.className=cls;if(value!==undefined)e.textContent=value;return e}
-function searchView(){
+function e(tag,text,cls){
+ const node=document.createElement(tag);if(cls)node.className=cls;
+ if(text!==undefined)node.textContent=text;
+ return node;
+}
+function updateSectionOptions(){
+ const previousValue=sec.value;
+ sec.replaceChildren(new Option('全部小节','all'));
+ for(const section of book.sections.filter(s=>ch.value==='all'||s.chapter===ch.value)){
+  const option=new Option((section.sectionNumber==='附录'?'':section.sectionNumber+' ')+section.title,section.id);
+  sec.add(option);
+ }
+ if(Array.from(sec.options).some(x=>x.value===previousValue))sec.value=previousValue;
+ else sec.value='all';
+}
+function filtered(){
+ const q=search.value.trim().toLowerCase();
+ return book.entries.filter(item=>{
+  if(ch.value!=='all'&&item.chapter!==ch.value)return false;
+  if(sec.value!=='all'&&item.section!==sec.value)return false;
+  if(coverage.value!=='all'&&item.contentStatus!==coverage.value)return false;
+  if(progress.value==='read'&&!completed.has(item.id))return false;
+  if(progress.value==='unread'&&completed.has(item.id))return false;
+  const keyword=[item.title,item.summary,item.law,item.sectionNumber,chapters[item.chapter]?.name||'',
+    sections[item.section]?.title||'',...item.terms,String(item.pages.join('-'))].join(' ').toLowerCase();
+  return !q||keyword.includes(q);
+ });
+}
+function renderList(){
  const root=$('knowledgeCards');root.replaceChildren();
- const results=selection();$('knowledgeCount').textContent='显示 '+results.length+' / '+book.entries.length+' 条知识';
- $('empty').hidden=results.length!==0;$('exerciseFilterStatus').hidden=!exercise;
- if(exercise)$('exerciseFilterStatus').textContent='正在查看习题 '+exercise+' 的关联知识。点击“清除筛选”即可浏览全部知识条目。';
- for(const item of results){
-  const article=element('article','knowledge-card'+(read.has(item.id)?' is-read':'')+(current&&current.id===item.id?' is-active':''));article.dataset.id=item.id;
-  const meta=element('div','meta');meta.append(element('span','pill',chapterNames[item.chapter]),element('span','source','教材第 '+item.pages.join('、')+' 页'));
-  const h=element('h3','',item.title),p=element('p','',item.summary);
-  const actions=element('div','card-actions');
-  const button=element('button','', '学习知识 →');button.type='button';button.addEventListener('click',()=>show(item.id,true));
-  actions.append(button,element('span','learned',read.has(item.id)?'✓ 已学过':''));
-  article.append(meta,h,p,actions);root.append(article);
+ const rows=filtered(),note=$('exerciseFilterStatus');
+ $('knowledgeCount').textContent='共 '+book.entries.length+' 条目录与讲解记录 · 当前显示 '+rows.length+' 条';
+ $('empty').hidden=rows.length!==0;
+ note.hidden=!exercise;
+ if(exercise)note.textContent='来自旧章节练习 '+exercise+'：该练习尚未与本次完整教材核对，不能自动认定为原书同名原题。本页按新版教材目录展示，不据题号推测知识关联。';
+ for(const item of rows){
+  const card=e('article',undefined,'knowledge-card'+(completed.has(item.id)?' is-read':'')+(current?.id===item.id?' is-active':''));card.dataset.id=item.id;
+  const meta=e('div',undefined,'meta');
+  meta.append(e('span',chapters[item.chapter]?.shortName||item.chapter,'pill'),
+    e('span','教材 '+item.pages[0]+(item.pages[0]===item.pages[1]?'':'–'+item.pages[1])+' 页','source'));
+  const title=e('h3',item.title),description=e('p',item.contentStatus==='toc-only'?'目录索引 · 正文尚未逐页复核':item.summary);
+  const foot=e('div',undefined,'card-actions'),button=e('button',item.contentStatus==='toc-only'?'查看目录信息 →':'阅读知识与原理 →');
+  button.type='button';button.addEventListener('click',()=>show(item.id,true));
+  foot.append(button,e('span',item.contentStatus==='toc-only'?'待精读':completed.has(item.id)?'✓ 已阅读':'可学习','learned'));
+  card.append(meta,title,description,foot);root.append(card);
  }
  counter();
 }
-function updateSteps(){
+function renderSteps(){
  if(!current)return;
- const root=$('detailSteps');root.replaceChildren();step=Math.max(1,Math.min(step,current.steps.length));
- current.steps.slice(0,step).forEach((s,i)=>root.append(element('li','',(i+1)+'．'+s)));
+ const ul=$('detailSteps');ul.replaceChildren();
+ step=Math.max(1,Math.min(step,current.steps.length));
+ current.steps.slice(0,step).forEach((s,i)=>ul.append(e('li',(i+1)+'．'+s)));
  $('stepCount').textContent=step+' / '+current.steps.length+' 步';
- $('stepPrev').disabled=step<=1;$('stepNext').disabled=step>=current.steps.length;$('stepAll').disabled=step>=current.steps.length;
+ $('stepPrev').disabled=step<=1;
+ $('stepNext').disabled=step>=current.steps.length;
+ $('stepAll').disabled=step>=current.steps.length;
 }
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
- current=item;step=1;
- $('knowledgeDetail').hidden=false;
+ current=item;
  document.querySelectorAll('#knowledgeCards .knowledge-card').forEach(card=>card.classList.toggle('is-active',card.dataset.id===id));
- $('detailChapter').textContent=chapterNames[item.chapter];
- $('detailPages').textContent='教材印刷第 '+item.pages.join('、')+' 页 · 上传 PDF 第 '+item.pdfPages.join('、')+' 页';
- $('detailTitle').textContent=item.title;$('detailSummary').textContent=item.summary;$('detailLaw').textContent=item.law;
- $('detailUnderstanding').textContent=item.understanding;$('detailMistake').textContent=item.mistake;
- $('sourceNote').textContent='来源：'+book.source.name+'（PDF 对照页码已标注）。此条为原创归纳，不是原文或出版社标准答案。';
+ $('knowledgeDetail').hidden=false;
+ $('detailChapter').textContent=chapters[item.chapter]?.name||'';
+ $('detailPages').textContent='印刷第 '+item.pages[0]+(item.pages[0]===item.pages[1]?'':'–'+item.pages[1])+' 页 · PDF 第 '+item.pdfPages[0]+(item.pdfPages[0]===item.pdfPages[1]?'':'–'+item.pdfPages[1])+' 页';
+ $('detailTitle').textContent=item.title;
+ $('detailSummary').textContent=item.summary;
+ $('sourceNote').textContent='资料依据：'+book.source.name+'。'+item.sourceDetails+' · 教材原PDF与扫描图不进入公开网页。';
+ const lesson=item.contentStatus==='page-reviewed';
+ $('verifiedLessonContent').hidden=!lesson;
+ const notice=$('detailStatusNotice');
+ notice.textContent=lesson?'已对照相应教材页面，提供重新撰写的知识讲解。动态模型仅是原创教学示例，不代表教材原题答案。':
+  '目前仅按原书目录建立本节索引，尚未完成对应正文、图例和作图步骤的逐页核对；暂不显示自行推测的结论、自由度数值或作图动画。';
+ notice.className=lesson?'kb-review-note':'note';
+ if(lesson){
+  $('detailLaw').textContent=item.law;$('detailUnderstanding').textContent=item.understanding;
+  $('detailMistake').textContent=item.mistake;step=1;renderSteps();
+ }
  const related=$('detailExercises');related.replaceChildren();
- for(const ex of item.practice){const link=element('a','',ex+' · 去做题 ↗');link.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(link)}
- $('markRead').textContent=read.has(id)?'取消已学过标记':'标记已学过';
- $('markStatus').textContent=read.has(id)?'已记录：阅读过此知识':'阅读完成后可手动标记，不等于自动判定掌握';
- updateSteps();
+ if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；旧练习库仍独立保留，避免错误对应。','source'))}
+ else for(const ex of item.practice){const a=e('a',ex+' · 进入练习');a.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(a)}
+ const mark=$('markRead');mark.disabled=!lesson;
+ mark.textContent=completed.has(id)?'取消已学习标记':'标记已学习';
+ $('markStatus').textContent=lesson?(completed.has(id)?'已在本机记录为学习过':'记录阅读进度，不等于熟练掌握'): '只有逐页核对的讲解才计入学习进度。';
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
- try{history.replaceState(null,'','#'+id)}catch(e){}
- if(scroll){$('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});$('knowledgeDetail').focus({preventScroll:true})}
+ const visualLink=document.querySelector('.site-jump-visual');
+ if(visualLink)visualLink.hidden=!lesson||!item.visualMode;
+ try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
+ if(scroll){
+  $('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});
+  $('knowledgeDetail').focus({preventScroll:true});
+ }
 }
-$('stepPrev').onclick=()=>{step--;updateSteps()};
-$('stepNext').onclick=()=>{step++;updateSteps()};
-$('stepAll').onclick=()=>{if(current){step=current.steps.length;updateSteps()}};
+$('stepPrev').onclick=()=>{step--;renderSteps()};
+$('stepNext').onclick=()=>{step++;renderSteps()};
+$('stepAll').onclick=()=>{if(current){step=current.steps.length;renderSteps()}};
 $('markRead').onclick=()=>{
- if(!current)return;
- if(read.has(current.id))read.delete(current.id);else read.add(current.id);
- save();show(current.id,false);searchView();
+ if(!current||current.contentStatus!=='page-reviewed')return;
+ if(completed.has(current.id))completed.delete(current.id);else completed.add(current.id);
+ try{localStorage.setItem(key,JSON.stringify([...completed]))}catch(e){$('markStatus').textContent='当前浏览器无法保存阅读进度。'}
+ renderList();show(current.id,false);
 };
-for(const control of [input,chapter,progress])control.addEventListener('input',searchView);
-$('resetFilters').onclick=()=>{exercise=null;input.value='';chapter.value='all';progress.value='all';try{history.replaceState(null,'',location.pathname)}catch(e){}searchView()};
-window.addEventListener('hashchange',()=>{const id=decodeURIComponent(location.hash.slice(1));if(book.get(id))show(id,false)});
-searchView();
-let anchor='';
-try{anchor=decodeURIComponent(location.hash.slice(1))}catch(e){}
-if(book.get(anchor))show(anchor,false);
-else {const visible=selection();if(visible.length)show(visible[0].id,false)}
+ch.addEventListener('change',()=>{updateSectionOptions();renderList()});
+for(const ctl of [search,sec,coverage,progress])ctl.addEventListener('input',renderList);
+$('resetFilters').onclick=()=>{search.value='';ch.value='all';updateSectionOptions();sec.value='all';coverage.value='all';progress.value='all';renderList()};
+window.addEventListener('hashchange',()=>{
+ let id='';try{id=decodeURIComponent(location.hash.slice(1))}catch(e){return}
+ if(book.get(id))show(id,false);
+});
+updateSectionOptions();renderList();
+let hash='';try{hash=decodeURIComponent(location.hash.slice(1))}catch(e){}
+if(book.get(hash))show(hash,false);
+else {const rows=filtered(),preferred=rows.find(x=>x.contentStatus==='page-reviewed');if(preferred)show(preferred.id,false);else if(rows.length)show(rows[0].id,false)}
 })();
