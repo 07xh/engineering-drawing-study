@@ -30,7 +30,7 @@
 .free-list li.current{border-color:#5b9e78;background:#edf8f1}
 .free-notice{border-left:3px solid #d39a49;background:#fff8ea;padding:9px 12px;font-size:13px}
 .free-help{color:#456f56;font-size:13px}.free-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:10px 0}
-.free-sheet-line{stroke:#367654;stroke-width:2;fill:none}.free-sheet-point{fill:#579673;stroke:#fff;stroke-width:1.4}
+.free-sheet-face{fill:#97cda9;fill-opacity:.22;stroke:none}.free-sheet-line{stroke:#367654;stroke-width:2;fill:none}.free-sheet-point{fill:#579673;stroke:#fff;stroke-width:1.4}
 .free-sheet-point-selected{fill:#d68b2a;stroke:#fff;stroke-width:2}.free-sheet-label{fill:#476b54;font-size:15px;font-weight:650}
 .free-sheet-axes .sheet-axis{stroke:#97afa0;stroke-width:1.6}
 .free-sheet-axes .sheet-miter{stroke:#a0b2a7;stroke-width:1.6;stroke-dasharray:7 5}
@@ -44,8 +44,8 @@
 <main class="free-wrap">
 <section class="free-panel"><h1>自由几何建模 · 第一阶段</h1>
 <p>从一张空白纸开始，自己添加空间点、连接线段。三维模型与<strong>同一张工程图纸</strong>中的 V/H/W 三视图实时对应，45° 深度转移线始终保留。</p>
-<p class="free-muted">这是自定义学习实验，并非教材原题。当前仅编辑点和线段；建立面、整体约束求解、题目保存将在后续阶段开发。</p>
-<div class="free-stat"><div><strong id="freeDegrees">0</strong><span> 位置自由度（无约束）</span></div><div id="freeCounts">0 点 · 0 线段</div></div>
+<p class="free-muted">这是自定义学习实验，并非教材原题。当前可建立空间点、线段和有效三角面；复杂多边形、整体约束求解、题目保存仍在后续阶段。</p>
+<div class="free-stat"><div><strong id="freeDegrees">0</strong><span> 位置自由度（没有固定尺寸或坐标）</span></div><div id="freeCounts">0 点 · 0 线段</div></div>
 <p id="freeMathNote" class="free-help">连接线段不会自动固定长度，因此不会减少自由度。</p></section>
 <div class="free-grid">
  <section class="free-panel"><h2>三维自由空间</h2><p class="free-muted">点击点以选中；拖动旋转视角，下面按钮可以缩放。若设备无法使用 WebGL，会使用 SVG 观察器。</p>
@@ -77,6 +77,7 @@
  <h3>线段列表</h3><ul id="freeEdgeList" class="free-list"></ul>
  <div class="free-actions"><button id="freeUndo" type="button" disabled>撤销上一步</button><button id="freeClear" type="button" disabled>清空所有几何</button></div>
  <p class="free-notice">当前仅计算未加约束时全部空间点的位置自由度。后续将支持任意选择目标点、距离、共线、共面等多对象约束。</p></section>
+ <section class="free-panel"><h2>3. 用三个点建立三角面</h2><p class="free-muted">选择三个不共线的点，系统自动补齐三条边，并在三维空间与同纸三视图中显示半透明三角面。建面不锁定边长或刚性。</p><form id="freeFaceForm"><div class="free-fields"><label>点一<select id="freeFaceA" required></select></label><label>点二<select id="freeFaceB" required></select></label><label>点三<select id="freeFaceC" required></select></label></div><div class="free-actions"><button id="freeAddFace" type="submit" class="primary">建立三角面</button></div></form><h3>三角面列表</h3><ul id="freeFaceList" class="free-list"></ul></section>
 </div>
 <p id="freeStatus" role="status" aria-live="polite" class="free-help"></p>
 </main>
