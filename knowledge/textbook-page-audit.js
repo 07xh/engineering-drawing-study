@@ -4,9 +4,10 @@
  */
 (function(root,factory){
  const api=factory(typeof module==='object'&&module.exports?require('./knowledge-data.js'):root.DrawingKnowledge,
-  typeof module==='object'&&module.exports?require('./textbook-examples.js'):root.TextbookExamples);
+  typeof module==='object'&&module.exports?require('./textbook-examples.js'):root.TextbookExamples,
+ typeof module==='object'&&module.exports?require('./textbook-page-inspections.js'):root.TextbookPageInspections);
  if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TextbookPageAudit=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(book,examples){
+})(typeof globalThis!=='undefined'?globalThis:this,function(book,examples,inspections){
 'use strict';
 const pageCount=292,firstBody=7,lastBody=290;
 const samples=new Map([
@@ -59,7 +60,8 @@ const pages=Array.from({length:pageCount},(_,index)=>{
  return Object.freeze({pdfPage,printedPage,sectionId:section?.id||null,
   chapter:section?.chapter||null,part:pdfPage<=6?'front':pdfPage>=291?'back':'body',
   scanIndexed:true,extractedTextAvailable:false,
-  visualSample:samples.get(pdfPage)||null,fullyPageReviewed:full,
+  visualSample:samples.get(pdfPage)||null,detailedInspection:inspections?.get(pdfPage)||null,
+  detailedInspected:!!inspections?.get(pdfPage),fullyPageReviewed:full,
   evidence:entry?{...entry}:null});
 });
 function get(pdfPage){return Number.isInteger(pdfPage)&&pdfPage>=1&&pdfPage<=pageCount?pages[pdfPage-1]:null}
@@ -67,6 +69,7 @@ function forSection(sectionId){return pages.filter(p=>p.sectionId===sectionId)}
 function summary(chapter=null){
  const set=chapter?pages.filter(x=>x.chapter===chapter):pages;
  return {total:set.length,indexed:set.length,visuallySampled:set.filter(x=>x.visualSample).length,
+  detailedInspected:set.filter(x=>x.detailedInspected).length,
   fullyReviewed:set.filter(x=>x.fullyPageReviewed).length,
   awaitingFullReview:set.filter(x=>!x.fullyPageReviewed).length};
 }
@@ -85,5 +88,5 @@ const individuallyReviewedExamples=Object.freeze((examples?.all||[]).filter(x=>x
  id:x.id,number:x.number,title:x.title,pdfPage:x.pdfPage,printedPage:x.printedPage,figure:x.figure,topic:x.topics[0],
  note:'仅该例题的来源、图号与主要步骤经过单独核对；不代表整页图文及同页其他例题都完成逐页核验。'
 })));
-return Object.freeze({pageCount,pages,get,forSection,summary,figureSourceNotes,individuallyReviewedExamples,samplePages:[...samples.keys()]});
+return Object.freeze({pageCount,pages,get,forSection,summary,figureSourceNotes,individuallyReviewedExamples,inspections:inspections?.records||[],samplePages:[...samples.keys()]});
 });
