@@ -15,6 +15,8 @@ for(const [id,printed,pdf,figure] of sourceRows){
  assert.equal(example.order.length,5);
  assert.equal(example.why.length,5);
  assert.equal(example.freedom.length,5);
+ assert.equal(example.stageChecks.length,5,'every textbook stage needs a source-aligned check');
+ assert(example.stageChecks.every(x=>typeof x==='string'&&x.length>12));
  for(const topic of example.topics){
   const card=book.get(topic);
   assert(card?.contentStatus==='page-reviewed','example mapped to an unreviewed section');
