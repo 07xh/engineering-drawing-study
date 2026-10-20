@@ -100,3 +100,9 @@ console.log('PASS traced-line direction explanation and endpoint markers');
 assert(drawingJs.includes('revealStep=0;base();updateReveal()'),'initial frame must start at zero solution steps');
 assert(drawingJs.includes('本题标准作图步骤尚未核实'),'must disclose unverified solution steps');
 console.log('PASS all verified given lines visible on first frame, solutions separate');
+
+for(const id of ['drawingToggle','drawingTools'])assert(drawingHtml.includes('id="'+id+'"'),'missing optional drawing control '+id);
+assert(drawingHtml.includes('id="ink" hidden'),'saved ink must be hidden in view-only mode');
+assert(drawingJs.includes('if(!drawingEnabled)return;const p=pos(e)'),'pointerdown must be gated by drawing toggle');
+assert(drawingJs.includes('setDrawingEnabled(false);choose('),'view-only must be default');
+console.log('PASS default view-only and optional free drawing without deleting saved strokes');
