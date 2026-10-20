@@ -81,6 +81,7 @@ jobs:
           node scripts/check-projection-constraint-lessons.cjs
           node scripts/check-problem-schema.cjs
           node scripts/check-drawing-action-renderer.cjs
+          node scripts/check-drawing-player.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs

@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),schema=require('../knowledge/problem-schema.js'),renderer=require('../knowledge/drawing-action-renderer.js');
+const html=fs.readFileSync('knowledge/drawing-player.html','utf8');
+const scripts=['problem-schema.js','drawing-action-renderer.js','drawing-player-demo.js','drawing-player-ui.js'];
+for(const script of scripts)assert(html.includes('src="'+script+'"'));
+const context={window:{}};vm.runInNewContext(fs.readFileSync('knowledge/drawing-player-demo.js','utf8'),context);
+const p=context.window.DrawingPlayerDemo;assert(schema.validate(p).ok);
+const frames=renderer.frames(p);assert.equal(frames.length,3);
+assert.deepEqual(frames.map(f=>f.shapes.length),[2,3,4]);
+for(const f of frames)assert(renderer.svgMarkup(f).includes('<circle'));
+const ui=fs.readFileSync('knowledge/drawing-player-ui.js','utf8');
+assert(ui.includes('renderer.frames(problem)')&&ui.includes('renderer.svgMarkup(frame)'));
+assert(html.includes('原创测试数据'));
+console.log('PASS: independent SVG player uses the shared schema and real accumulated frames');
