@@ -20,4 +20,8 @@ const result=engine.analyze([H,P]).result;
 assert.deepEqual(result.particular.map(x=>Math.round(x*10)/10),[35,35,34.5]);
 assert.equal(engine.analyze([H,P,Z(34.5)]).steps[2].status,'redundant');
 assert.equal(engine.analyze([H,P,Z(65)]).steps[2].status,'contradiction');
+assert(html.includes("scene.classList.add('is-dragging')"),'touch drag state must be set');
+assert(html.includes("scene.classList.remove('is-dragging')"),'touch drag state must be cleared');
+assert(html.includes("if(r.degrees===2){const points=st.flags.Z"),'two-dimensional feasible loci must be projected onto all views');
+assert(html.includes('paint-order="stroke"'),'K labels need a contrast outline');
 console.log('PASS shared engine 3D/three-view explorer: all condition subsets, redundancy, contradictions and wiring');
