@@ -119,6 +119,7 @@ function show(id,scroll=false){
  if(window.TextbookExampleUI)window.TextbookExampleUI.show(item.id);
  const matchedTextbookExample=!!(window.TextbookExamples&&window.TextbookExamples.forTopic(item.id).length);
  const related=$('detailExercises');related.replaceChildren();
+ const relatedDetails=$('knowledgeRelatedDetails');if(relatedDetails)relatedDetails.open=false;
  if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；目前不自动关联任何未经原图核实的习题。只有你提交且与教材已核对的题目才能作为正式关联。','source'))}
  else for(const ex of item.practice){const a=e('a',ex+' · 进入练习');a.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(a)}
  const mark=$('markRead');mark.disabled=!lesson;
@@ -143,6 +144,7 @@ function show(id,scroll=false){
  }
  try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
  if(scroll){
+  // Keep the user's knowledge-list scroll position stable; only the detail pane should move.
   $('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});
   $('knowledgeDetail').focus({preventScroll:true});
  }
