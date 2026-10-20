@@ -44,9 +44,8 @@ function render(){
  $('bookExampleAction').textContent='本步按教材做：'+step;
  $('bookExampleReason').textContent='为什么这样作：'+current.why[index];
  $('bookExampleDof').textContent='自由度/确定性：'+current.freedom[index]+'（'+frame.degreeTarget+'）';
- $('bookExampleAudit').textContent=index===4?
- '结果检查：'+current.check+' 数学验证：'+(frame.proof.maxResidual<1e-8?'通过':'未通过')+'。':
- '本步仅展示教材解题顺序对应的已知条件与辅助关系；最终验算在最后一帧显示。';
+ $('bookExampleAudit').textContent='本步核对：'+current.stageChecks[index]+(index===4?
+  ' 数学验证：'+(frame.proof.maxResidual<1e-8?'通过':'未通过')+'。':'');
  $('bookExamplePrev').disabled=index===0;
  $('bookExampleNext').disabled=index===current.order.length-1;
 }
