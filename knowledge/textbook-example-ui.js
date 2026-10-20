@@ -69,21 +69,42 @@ function render(){
  $('bookExamplePrev').disabled=index===0;
  $('bookExampleNext').disabled=index===current.order.length-1;
 }
-function show(topicId){
- const view=$('textbookExample');if(!view)return;
- const matches=source?.forTopic(topicId)||[];
- const example=matches[0]||null;
- view.hidden=!example;current=example;index=0;problem=null;
- const sharedLink=$('bookExampleSharedPlayer');if(sharedLink)sharedLink.hidden=!example;
+let available=[];
+function activate(example){
+ current=example;index=0;problem=null;
+ const sharedLink=$('bookExampleSharedPlayer');
+ if(sharedLink)sharedLink.hidden=!example;
  if(!example)return;
  try{problem=adapter.adapt(example,geom)}catch(error){problem=null}
  $('bookExampleTitle').textContent=example.number+' · '+example.title;
  $('bookExampleSource').textContent='《工程制图与 AutoCAD》第3版 · 印刷第'+example.printedPage+'页 / PDF第'+example.pdfPage+'页 · '+example.figure;
  $('bookExampleKnown').textContent='课本例题：'+example.known+' 目标：'+example.goal;
  $('bookExampleFidelity').textContent='来源与重绘边界：'+example.fidelity;
- const shared=$('bookExampleSharedPlayer');if(shared){shared.hidden=false;shared.href='./drawing-player.html?example='+encodeURIComponent(example.id)}
+ if(sharedLink){sharedLink.hidden=false;sharedLink.href='./drawing-player.html?example='+encodeURIComponent(example.id)}
  render();
 }
+function show(topicId){
+ const view=$('textbookExample');if(!view)return;
+ const matches=source?.forTopic(topicId)||[];
+ available=matches;
+ const example=matches[0]||null;
+ view.hidden=!example;
+ const picker=$('bookExamplePicker');
+ picker.replaceChildren();
+ for(const entry of matches){
+  const option=document.createElement('option');
+  option.value=entry.id;option.textContent=entry.number+' · '+entry.title;
+  picker.append(option);
+ }
+ $('bookExamplePickerLabel').hidden=matches.length<2;
+ if(!example){current=null;problem=null;return}
+ picker.value=example.id;
+ activate(example);
+}
+$('bookExamplePicker').addEventListener('change',()=>{
+ const example=available.find(entry=>entry.id===$('bookExamplePicker').value);
+ if(example)activate(example);
+});
 $('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
 $('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,index-1);render()}});
 $('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);render()}});

@@ -72,6 +72,34 @@ function adapt(example,geometry){
     scope:'仅分析归一化画纸上的目标点，不表示空间点本身存在额外自由度。'
    };
   }
+  if(example.id==='example-2-3'){
+   // The source gives fixed spatial coordinates; this DOF trace concerns only
+   // the unplaced W-view mark a″ in the 2D teaching drawing.
+   const p=frame.proof;
+   if(!p||p.coordinates.x!==15||p.coordinates.y!==10||p.coordinates.z!==12||p.maxResidual>1e-8)
+    throw Error('例2-3坐标投影模型或源数据核验失败');
+   const conditions=[];
+   if(i>=2)conditions.push({type:'coordinate',axis:'y',value:p.aDouble.y});
+   if(i>=3)conditions.push({type:'coordinate',axis:'x',value:p.aDouble.x});
+   step.constraintAnalysis={scope:'point-2d-linear',conditions};
+   const constraints=[];
+   if(i>=2)constraints.push({type:'fixed',point:'aDouble',axis:'y',value:p.aDouble.y});
+   if(i>=3)constraints.push({type:'fixed',point:'aDouble',axis:'x',value:p.aDouble.x});
+   step.localDofAnalysis={points:{aDouble:{x:p.aDouble.x,y:p.aDouble.y}},constraints};
+   const explanation=[
+    '刚由 x=15mm 得到 aₓ，尚未对未绘制的侧投影点施加局部定位线。',
+    '已绘制水平投影 a，但在本分帧中侧投影的独立定位条件尚未逐一转移。',
+    '已知正面投影 a′ 提供 z=12mm，侧面点必须在对应的等高线上。',
+    '将水平投影 y=10mm 的深度送入 W 面，与等高线交会而唯一确定 a″。',
+    '本帧进行三投影数值及相互对应关系检查，不产生新的独立约束。'
+   ];
+   step.localDofExplanation={
+    model:'例2-3侧视图区待画 a″ 的局部画纸位置',
+    addedConstraint:i===2?'正面投影给出侧视图高度':i===3?'水平投影提供侧视图深度':null,
+    reason:explanation[i],
+    scope:'三维空间点 A 因题给完整坐标而始终自由度为0；2→2→1→0→0只表示网页分步定位侧投影点。'
+   };
+  }
   steps.push(step);
  }
  return {id:example.id,title:example.title,type:'other',status:'steps-verified',

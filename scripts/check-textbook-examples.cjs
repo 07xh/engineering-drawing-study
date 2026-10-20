@@ -6,8 +6,8 @@ const book=load('knowledge/knowledge-data.js','DrawingKnowledge');
 const catalog=load('knowledge/textbook-examples.js','TextbookExamples');
 const model=load('knowledge/textbook-example-geometry.js','TextbookExampleGeometry');
 assert(catalog&&model);
-assert.equal(catalog.all.length,2,'only real inspected textbook examples');
-const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14']];
+assert.equal(catalog.all.length,3,'only three inspected textbook examples');
+const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14'],['example-2-3',35,41,'图 2-16']];
 for(const [id,printed,pdf,figure] of sourceRows){
  const example=catalog.get(id);
  assert(example&&example.printedPage===printed&&example.pdfPage===pdf&&example.figure===figure);
@@ -49,6 +49,12 @@ assert(third.proof.heightAligned&&third.proof.depthAligned&&third.proof.xAligned
 assert(third.proof.points.aDouble.y===third.proof.points.aPrime.y);
 assert(Math.abs((third.proof.points.aDouble.x-third.proof.points.O.x)-
  (third.proof.points.a.y-third.proof.points.O.y))<1e-8);
+const coordinateProof=model.frame('example-2-3',4).proof;
+assert.deepEqual(JSON.parse(JSON.stringify(coordinateProof.measured)),{x:15,y:10,z:12});
+assert(coordinateProof.heightAligned&&coordinateProof.depthAligned);
+assert(!model.frame('example-2-3',2).shapes.some(x=>x.label==='a″'),'cannot reveal side projection before construction');
+assert(model.frame('example-2-3',3).shapes.some(x=>x.label==='a″'),'third projection missing');
+assert.equal(catalog.forTopic('ch02-point-coordinates').length,2,'both verified point examples must appear');
 assert.throws(()=>model.frame('example-1-1',-1));
 assert.throws(()=>model.frame('example-2-2',6));
 assert.throws(()=>model.frame('made-up-question',0),'unverified examples must fail closed');
@@ -57,6 +63,8 @@ const elements=['textbookExample','bookExampleSvg','bookExamplePrev','bookExampl
  'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource'];
 for(const id of elements)assert(html.includes('id="'+id+'"'),'missing interactive lesson element '+id);
 assert(html.includes('id="bookExampleStepNav"'),'missing step navigation');
+assert(html.includes('id="bookExamplePicker"'),'missing multiple-example selector');
+assert(ui.includes('available.find(entry=>entry.id==='),'selector must only open linked verified textbook examples');
 assert(html.includes('id="bookExampleShowAux" checked'),'auxiliary lines should be visible by default');
 assert(ui.includes("item.style==='auxiliary')continue"),'hide only helper lines, not given or result geometry');
 assert(ui.includes("bookExampleShowAux').addEventListener('change'"),'auxiliary visibility must redraw current stage');
@@ -101,4 +109,4 @@ for(const script of ['knowledge/textbook-examples.js','knowledge/textbook-exampl
  assert(builder.includes("'"+script+"'"),'static builder did not package '+script);
 const bannedPDFAssets=[...builder.matchAll(/'([^']+\.(?:pdf|jpg|jpeg|png))'/gi)].map(x=>x[1]);
 assert.deepEqual(bannedPDFAssets,[],'public build must not publish protected textbook scans');
-console.log('PASS real textbook Example 1-1 p13 Fig1-22 + Example 2-2 p34 Fig2-14: ten source-indexed frames, geometry proof, no guessed exercise, correct UI and safe packaging');
+console.log('PASS three source-verified textbook examples, fifteen frames, source coordinates, multi-example UI and safe public build');

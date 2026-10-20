@@ -17,4 +17,4 @@ assert.equal(point.label,'A');assert(player.svgMarkup({shapes:[point]}).includes
 assert(player.svgMarkup({shapes:[{...point,label:'<script>'}]}).includes('&lt;script&gt;'));
 const result=player.frames(adapter.adapt(examples.all[0],geometry));
 assert(result[result.length-1].shapes.length<=geometry.frame('example-1-1',4).shapes.length);
-console.log('PASS: two reviewed textbook examples preserve every source geometry shape in shared action frames');
+console.log('PASS: three reviewed textbook examples preserve every source geometry shape in shared action frames');

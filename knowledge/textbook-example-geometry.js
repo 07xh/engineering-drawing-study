@@ -1,4 +1,4 @@
-/* Source-mapped 2D animation for Example 1-1 (Fig 1-22) and Example 2-2 (Fig 2-14).
+/* Source-mapped 2D animation for examples 1-1, 2-2 and 2-3 (Figs 1-22, 2-14, 2-16).
  * Pixel positions are a normalized *rendering* of the book's method, not book artwork.
  * No separate invented question. Verification checks mathematical invariants of book steps.
  */
@@ -46,10 +46,54 @@ function thirdProjection(stage){
    degreeTarget:'侧投影 a″ 在纸面上的二维位置。已知同名 V、H 投影的空间点自身没有新增三维自由度。',
    note:'第三投影的联系线与45°深度转移顺序取自教材例2-2；已知点位置为归一化重绘，非原版图纸量测结果。'};
 }
+
+// 教材例2-3（图2-16）：已知坐标 (x,y,z)=(15,10,12) mm。
+// 图形单位：10像素/mm；三幅投影共享同一空间点，不把示意像素当做原图尺寸。
+function coordinateProjection(stage){
+ const scale=10,coordinates={x:15,y:10,z:12},O=pt(430,205);
+ const ax=pt(O.x-scale*coordinates.x,O.y);
+ const a=pt(ax.x,O.y+scale*coordinates.y);
+ const aPrime=pt(ax.x,O.y-scale*coordinates.z);
+ const aDouble=pt(O.x+scale*coordinates.y,aPrime.y);
+ const transfer=pt(aDouble.x,a.y),sideFoot=pt(aDouble.x,O.y);
+ const shapes=[
+  line(pt(70,O.y),pt(780,O.y),'axis','X / YW'),
+  line(pt(O.x,35),pt(O.x,410),'axis','Z / YH'),
+  line(O,pt(630,405),'axis','45°'),
+  dot(ax,'mark','aₓ')
+ ];
+ if(stage>=1){
+  shapes.push(line(ax,a,'auxiliary','向下 y=10'),dot(a,'result','a'));
+ }
+ if(stage>=2){
+  shapes.push(line(ax,aPrime,'auxiliary','向上 z=12'),dot(aPrime,'result','a′'));
+ }
+ if(stage>=3){
+  shapes.push(line(aPrime,aDouble,'auxiliary','同高联系线'));
+  shapes.push(line(a,transfer,'auxiliary','H面深度转移'));
+  shapes.push(line(transfer,aDouble,'auxiliary','W面深度定位'));
+  shapes.push(dot(aDouble,'result','a″'),dot(sideFoot,'mark','aYw'));
+ }
+ if(stage>=4){
+  shapes.push(line(aPrime,aDouble,'result','高平齐'));
+  shapes.push(line(O,sideFoot,'result','宽相等'));
+ }
+ const measured={x:(O.x-ax.x)/scale,y:(a.y-O.y)/scale,z:(O.y-aPrime.y)/scale};
+ const heightError=Math.abs(aDouble.y-aPrime.y);
+ const depthError=Math.abs(aDouble.x-O.x-(a.y-O.y));
+ const maxResidual=Math.max(heightError,depthError,
+  Math.abs(measured.x-coordinates.x),Math.abs(measured.y-coordinates.y),Math.abs(measured.z-coordinates.z));
+ return {stage,shapes,proof:{coordinates,measured,scale,O,ax,a,aPrime,aDouble,transfer,sideFoot,
+   heightAligned:heightError<1e-8,depthAligned:depthError<1e-8,maxResidual},
+  dof:stage<2?2:stage<3?1:0,
+  degreeTarget:'仅指侧面投影 a″ 尚未在画纸上完成定位的两个坐标；已给定(15,10,12)的空间点自由度始终为0。',
+  note:'教材例2-3图2-16按三项原书作图划分为五帧；最后一帧是网页额外的关系验算。'};
+}
 function frame(exampleId,stage){
  if(!Number.isInteger(stage)||stage<0||stage>4)throw Error('不支持的例题帧');
  if(exampleId==='example-1-1')return division(stage);
  if(exampleId==='example-2-2')return thirdProjection(stage);
+ if(exampleId==='example-2-3')return coordinateProjection(stage);
  throw Error('只允许播放已核对的课本例题');
 }
 return {frame};
