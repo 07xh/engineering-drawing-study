@@ -34,6 +34,7 @@ for(const x of library.entries){
   assert(Number.isInteger(+bits[2])&&+bits[2]>=1&&+bits[2]<=ranges[chapter],'invalid exercise '+ex);
  }
 }
+for(const [exerciseChapter,total] of Object.entries(ranges)){for(let n=1;n<=total;n++){const id=exerciseChapter+'-'+n;assert(library.entries.some(x=>x.practice.includes(id)),'no knowledge linked for '+id)}}
 assert(printed.size===23,'every page of the provided 23-page scan must be indexed');
 assert(library.source.pdfPages===23,'scan page count mismatch');
 assert(library.find('圆锥').length>=2,'Chinese full text search broken');
