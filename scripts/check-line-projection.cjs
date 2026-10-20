@@ -46,3 +46,8 @@ for(const n of ['2-6-1','2-6-6','2-7-1','2-7-6','2-8-1','2-8-8','2-9-1','2-9-8']
 assert(chapterHtml.includes('不是教材原文、原图或标准答案'),'source fidelity warning required');
 assert(chapterHtml.includes('仅表示已查看，不代表已答对'),'review marker must not imply grading');
 console.log('PASS chapter practice index and source disclaimers');
+
+for(const id of ['search','chapterFilter','reviewFilter','visibleCount','empty'])assert(chapterHtml.includes('id="'+id+'"'),'missing chapter filter '+id);
+assert(chapterHtml.includes('function filterCards()'),'missing search filtering');
+assert(chapterHtml.includes("heading.hidden=shown===0"),'empty chapter headings must be hidden');
+console.log('PASS chapter topic search, section and review filters');
