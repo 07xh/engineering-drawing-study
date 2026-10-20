@@ -53,7 +53,9 @@ function renderList(){
  $('empty').hidden=rows.length!==0;
  note.hidden=!exercise;
  if(exercise)note.textContent='来自旧章节练习 '+exercise+'：该练习尚未与本次完整教材核对，不能自动认定为原书同名原题。本页按新版教材目录展示，不据题号推测知识关联。';
+ let priorChapter='';
  for(const item of rows){
+  if(item.chapter!==priorChapter){priorChapter=item.chapter;root.append(e('h3',chapters[item.chapter]?.name||item.chapter,'kb-chapter-heading'))}
   const card=e('article',undefined,'knowledge-card'+(completed.has(item.id)?' is-read':'')+(current?.id===item.id?' is-active':''));card.dataset.id=item.id;
   const meta=e('div',undefined,'meta');
   meta.append(e('span',chapters[item.chapter]?.shortName||item.chapter,'pill'),
