@@ -71,6 +71,7 @@ function renderSixLayer(){
  $('sixLayerPrev').disabled=layer===0;
  $('sixLayerNext').disabled=layer===5;
  $('sixLayerNext').textContent=layer===5?'已到第六层':'下一层 →';
+ if(window.TextbookConceptMotionUI)window.TextbookConceptMotionUI.show(layerData.id,layer);
 }
 function showSixLayer(id){
  if(!sixLayer?.forEntry){layerData=null;renderSixLayer();return}
