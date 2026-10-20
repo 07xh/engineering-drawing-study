@@ -332,3 +332,5 @@ body.ui-refresh #bookExampleReason{background:#fff;padding:10px 12px;border-radi
 body.ui-refresh #bookExampleDof{border-left:3px solid #bc8a47;background:#fff9ec;padding:10px 12px;border-radius:9px}
 body.ui-refresh #bookExampleAudit{font-weight:650;font-size:13px}
 @media(max-width:650px){body.ui-refresh .book-example{padding:13px}body.ui-refresh #bookExampleSvg{min-width:520px}}
+
+body.ui-refresh .deep-example[hidden]{display:none!important}
