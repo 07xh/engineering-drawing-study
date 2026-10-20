@@ -53,7 +53,7 @@ assert(!ui.includes('VerifiedExerciseSolutions')&&!ui.includes('lineFocus')&&!ui
 assert(ui.includes('picture.geometry')&&ui.includes('picture.items'),'UI should use actual numerical solver');
 assert(html.includes('src="tangent-constraint-core.js"')&&html.includes('src="tangent-constraint-ui.js"'));
 const known=source('knowledge/index.html'),app=source('knowledge/knowledge-app.js');
-assert(known.includes('id="chapterLabLink"')&&app.includes("labLink==='../labs/tangent-constraint.html'"),'knowledge lab must use allowlisted link');
+assert(known.includes('id="chapterLabLink"')&&app.includes("'../labs/tangent-constraint.html':'打开原创圆弧连接与自由度实验"),'knowledge lab must use allowlisted link');
 assert(app.includes('lab.hidden=!allowed'),'unverified lesson must not show lab');
 for(const file of ['labs/tangent-constraint.html','labs/tangent-constraint-core.js','labs/tangent-constraint-ui.js'])assert(source('scripts/build-static.cjs').includes("'"+file+"'"),'build omitted '+file);
 console.log('PASS: Chapter 1 tangible paper-geometry lab, '+checks+' traced stage cases, 31 radii × 2 branches with verified tangencies, explicit continuous DOF and safe public separation');
