@@ -24,7 +24,7 @@ function searchView(){
  $('empty').hidden=results.length!==0;$('exerciseFilterStatus').hidden=!exercise;
  if(exercise)$('exerciseFilterStatus').textContent='正在查看习题 '+exercise+' 的关联知识。点击“清除筛选”即可浏览全部知识条目。';
  for(const item of results){
-  const article=element('article','knowledge-card'+(read.has(item.id)?' is-read':''));article.dataset.id=item.id;
+  const article=element('article','knowledge-card'+(read.has(item.id)?' is-read':'')+(current&&current.id===item.id?' is-active':''));article.dataset.id=item.id;
   const meta=element('div','meta');meta.append(element('span','pill',chapterNames[item.chapter]),element('span','source','教材第 '+item.pages.join('、')+' 页'));
   const h=element('h3','',item.title),p=element('p','',item.summary);
   const actions=element('div','card-actions');
@@ -45,6 +45,7 @@ function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;step=1;
  $('knowledgeDetail').hidden=false;
+ document.querySelectorAll('#knowledgeCards .knowledge-card').forEach(card=>card.classList.toggle('is-active',card.dataset.id===id));
  $('detailChapter').textContent=chapterNames[item.chapter];
  $('detailPages').textContent='教材印刷第 '+item.pages.join('、')+' 页 · 上传 PDF 第 '+item.pdfPages.join('、')+' 页';
  $('detailTitle').textContent=item.title;$('detailSummary').textContent=item.summary;$('detailLaw').textContent=item.law;
@@ -74,4 +75,5 @@ searchView();
 let anchor='';
 try{anchor=decodeURIComponent(location.hash.slice(1))}catch(e){}
 if(book.get(anchor))show(anchor,false);
+else {const visible=selection();if(visible.length)show(visible[0].id,false)}
 })();

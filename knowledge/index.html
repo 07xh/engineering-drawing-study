@@ -43,9 +43,9 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
 <script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="knowledge-app.js"></script>
-</head>
-<body><div class="wrap" id="top">
-<nav class="top" aria-label="网站导航"><a class="brand" href="../index.html">⌁ 图学课堂 · 知识库</a><div class="links"><a href="../index.html">课程首页</a><a href="../labs/chapter-26-29.html">教材章节练习</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/source-fidelity.html">原题核验总览</a></div></nav>
+<link rel="stylesheet" href="../site-ui.css"></head>
+<body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a><a href="../labs/line-projection.html">直线投影练习</a><a href="../labs/v7.html">历史实验室</a></div></details></nav></div></header><div class="wrap" id="top">
+<p class="site-page-crumb"><a href="../index.html">课程首页</a><span>/</span>投影基础知识库</p>
 <header class="hero"><div class="eyebrow">KNOWLEDGE LIBRARY · 工程图学</div><h1>把投影规律，学成可用的知识。</h1><p>根据你提供的 23 页工程制图教材扫描，整理三视图、点、直线、平面以及棱柱、圆柱、圆锥和球体的知识。每条知识都有易懂的作图逻辑、常见错误和对应练习。</p><div class="stats"><span class="stat" id="totalCards">正在加载</span><span class="stat" id="completedCards">本机已学 0 条</span><span class="stat">6 个知识专题</span></div></header>
 <p class="note"><strong>资料边界：</strong>这里是依据你上传教材整理的原创学习笔记，不公开原 PDF、教材扫描图或出版社标准答案。页面引用“教材页码”方便你在自己的书中核对；“理解辅助”和“常见误区”属于补充说明。尚未核准的习题答案不会借知识卡冒充完整解答。</p>
 <div class="toolbar" role="search" aria-label="知识库搜索与筛选">
@@ -56,7 +56,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 </div>
 <p id="exerciseFilterStatus" class="note" hidden></p>
 <p id="knowledgeCount" class="count" role="status"></p>
-<div class="library"><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有匹配的知识条目。尝试更换关键词或清除筛选。</p></main></div>
+<div class="knowledge-workspace"><div class="library"><p class="site-directory-hint">知识目录 · 点击任一条目，在右侧阅读完整讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有匹配的知识条目。尝试更换关键词或清除筛选。</p></main></div>
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p>
@@ -69,8 +69,10 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <h3>关联的纸面作图练习</h3><div class="related" id="detailExercises"></div>
 <div class="step-toolbar"><button id="markRead" class="primary" type="button">标记已学过</button><span id="markStatus" class="step-count"></span></div>
 <p class="source" id="sourceNote"></p>
+<div class="step-toolbar"><a class="site-jump-visual" href="#visualLesson">查看当前知识的动态投影演示 ↓</a></div>
 <a href="#top" class="backtop">↑ 返回知识库顶部</a>
 </section>
+</div>
 <section id="visualLesson" class="detail" aria-label="原创三视图动态教学" hidden>
 <h3>动态几何演示 · 看图理解每一步</h3>
 <p id="visualSourceNote" class="note">这是原创教学几何模型，不是教材题答案。</p>

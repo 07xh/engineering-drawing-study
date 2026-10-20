@@ -27,8 +27,8 @@ a.action{background:#277554;color:white;text-decoration:none;border-radius:8px;p
 .issue{line-height:1.65;margin:8px 0;font-size:14px}.blocker{color:#8e6429}.warning{color:#af613c}
 small,.muted{color:#5c7565}footer{margin-top:24px;font-size:13px;color:#688075}
 @media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr)}.wrap{padding:12px 12px 45px}}
-</style></head><body><div class="wrap">
-<header><a href="../index.html"><strong>⌁ 图学课堂</strong></a><nav><a href="../knowledge/index.html">投影知识库</a><a href="chapter-26-29.html">章节题库</a><a href="chapter-drawing.html">逐题核对</a></nav></header>
+</style><link rel="stylesheet" href="../site-ui.css"></head><body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a><a href="../labs/line-projection.html">直线投影练习</a><a href="../labs/v7.html">历史实验室</a></div></details></nav></div></header><div class="wrap">
+<p class="site-page-crumb"><a href="../index.html">课程首页</a><span>/</span><a href="chapter-26-29.html">章节习题</a><span>/</span>原图核验总览</p>
 <section class="hero"><div>工程制图 · 原题数据可靠性</div><h1>28 道习题 · 原图核验总览</h1>
 <p>先判断已经录入了哪些几何，再确认缺少哪些原题证据。页面只检查数字化线段的合法性及资料完整度，不会依据通用图形猜补原题答案。</p></section>
 <div class="stats" id="statistics" aria-live="polite"></div>
@@ -38,7 +38,7 @@ small,.muted{color:#5c7565}footer{margin-top:24px;font-size:13px;color:#688075}
 <label>选择章节<select id="section"><option value="all">所有章节</option><option value="2-6">2-6</option><option value="2-7">2-7</option><option value="2-8">2-8</option><option value="2-9">2-9</option></select></label>
 <label>资料状态<select id="filter"><option value="all">全部题目</option><option value="partial">部分已录入</option><option value="missing">暂无数据</option><option value="flags">需要检查结构疑点</option></select></label>
 </section>
-<p id="found" class="count" role="status"></p><div id="list"></div>
+<p id="found" class="count" role="status"></p><div class="audit-workspace"><div id="list"></div>
 <section id="detail" hidden tabindex="-1" aria-label="单题原图审核说明">
 <div class="row"><span class="status" id="detailStatus"></span><span id="detailSource" class="count"></span></div>
 <h2 id="detailTitle"></h2><p id="detailDescription"></p>
@@ -48,7 +48,7 @@ small,.muted{color:#5c7565}footer{margin-top:24px;font-size:13px;color:#688075}
 <h3>下一步应该核对什么</h3><ol id="detailActions"></ol>
 <p id="detailVerdict" class="note"></p>
 <div class="row"><a class="action" id="toExercise" href="chapter-drawing.html">进入本题，逐条高亮核对 →</a><a href="../knowledge/index.html" id="toKnowledge">阅读相关知识 →</a></div>
-</section>
+</section></div>
 <footer>本页没有保存或发布教材扫描图；全部审核说明面向私人学习和后续人工校验。不能用程序校验替代原图核实。</footer></div>
 <script defer src="verified-exercises.js"></script><script defer src="source-fidelity-audit.js"></script><script defer src="source-fidelity-ui.js"></script>
 </body></html>
