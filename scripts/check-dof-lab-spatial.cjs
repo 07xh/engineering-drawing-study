@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict');
+const G=require('../labs/dof-lab-geometry.js'),S=require('../labs/dof-lab-spatial-svg.js'),State=require('../labs/dof-lab-state.js');
+const model=G.preset('cuboid'),state=State.create();
+const no=State.compute(state),html=S.markup(model,no.point);
+assert(html.includes('class="locus-space"'));assert(html.includes('P*'));
+assert.equal((html.match(/stroke="#367455"/g)||[]).length,model.edges.length);
+assert.notEqual(S.project({x:10,y:20,z:30},{yaw:0}).x,S.project({x:10,y:20,z:30},{yaw:1}).x);
+const h=State.compute(State.apply(state,{type:'add',condition:{type:'projection',plane:'H',value:[35,22]}}));
+assert(S.markup(model,h.point).includes('class="locus-line"'));
+const pl=State.compute(State.apply(state,{type:'add',condition:{type:'plane',normal:{x:0,y:0,z:1},offset:40}}));
+assert(S.markup(model,pl.point).includes('class="locus-plane"'));
+const zero=State.compute(State.apply(h.state,{type:'add',condition:{type:'coordinate',axis:'z',value:51}}));
+assert(!S.markup(model,zero.point).includes('P*'));
+const bad=State.compute(State.apply(zero.state,{type:'add',condition:{type:'coordinate',axis:'z',value:6}}));
+assert(!S.markup(model,bad.point).includes('class="locus-point"'));
+assert(S.markup(model,bad.point).includes('条件矛盾'));
+console.log('PASS: rotating spatial preview and space/plane/line/point/none feasible-locus displays');
