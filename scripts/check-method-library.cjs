@@ -7,7 +7,7 @@ const lib=ctx.DrawingMethodLibrary;
 assert(lib&&typeof lib.get==='function','method library must export get()');
 const sections={'2-6':6,'2-7':6,'2-8':8,'2-9':8};
 const ids=Object.entries(sections).flatMap(([section,n])=>Array.from({length:n},(_,i)=>section+'-'+(i+1)));
-assert.deepEqual([...lib.ids].sort(),ids.sort(),'method reference should cover exactly the 28 exercises');
+assert.deepEqual(Array.from(lib.ids).sort(),ids.sort(),'method reference should cover exactly the 28 exercises');
 for(const id of ids){
  const item=lib.get(id);
  assert(item&&item.id===id,'missing method for '+id);
@@ -41,6 +41,6 @@ assert(drawing.includes('renderMethod();'),'method panel must update on selectio
 assert(drawing.includes('methodCount=1;renderMethod();'),'new exercise must start at first step');
 assert(drawing.includes("a.rel='noopener noreferrer'"),'external references must be safely linked');
 assert(drawing.includes("stepsEl.replaceChildren();sourcesEl.replaceChildren()"),'old question method DOM must reset');
-assert(!drawing.includes('lineFocus').toString().includes('NOOP_DO_NOT_CHECK'),'no-op placeholder');
+assert(drawing.includes("const focus=$('lineFocus')"),'original verified-solution overlay must remain intact');
 assert(build.includes("'labs/method-library.js'"),'static build must publish research method library');
 console.log('PASS 28 method mappings, step reasons, degree-of-freedom notes, external references, isolated UI and static publishing');
