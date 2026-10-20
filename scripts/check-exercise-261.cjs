@@ -22,7 +22,7 @@ for(let step=0;step<result.stages.length;step++){
   inspected.add(ref.index);
   const original=current.lines[ref.index];
   assert(original,'missing original source line');
-  assert.deepEqual(Array.from(ref.segment),original.slice(0,4),'highlight must exactly equal an existing segment');
+  assert.deepEqual(Array.from(ref.segment),Array.from(original.slice(0,4)),'highlight must exactly equal an existing segment');
   assert.equal(ref.kind,original[4]);
   assert(ref.segment.every(x=>Number.isFinite(x)&&x>=0&&x<=960),'invalid traced canvas bounds');
  }
