@@ -67,23 +67,33 @@ function forEntry(id){
  const guide=guides[id]||null;
  const section=book.sections.find(s=>s.id===item.section);
  const title=item.title;
- const intro=safe(deep?.question)||safe(guide?.[0])||('学习“'+title+'”主要能解决什么识图或作图问题？');
+ const intro=safe(deep?.question)||safe(guide?.[0])||
+  (related.length?'学习“'+title+'”时，如何把 '+related.slice(0,2).map(x=>'“'+x.title+'”').join('和')+' 联系成完整的作图与读图方法？':
+   '学习“'+title+'”主要能解决什么识图或作图问题？');
  let basics=safe(item.summary);
  if(!verified){
-  basics=safe(guide?.[1])||(related.length?'本节已有 '+related.length+' 项按教材核对的细分知识；请通过上方知识点导航进入对应专题。':'目前只核对了这节的章节名称和页码。');
+  basics=safe(guide?.[1])||(related.length?
+   related.slice(0,3).map(x=>x.summary).filter(Boolean).join(' '):
+   '目前只核对了这节的章节名称和页码。');
  }
- const principle=safe(deep?.logic)|| (verified?safe(item.understanding):safe(guide?.[2]))||
+ const principle=safe(deep?.logic)||
+  (verified?safe(item.understanding):safe(guide?.[2])||
+   related.slice(0,3).map(x=>x.law).filter(Boolean).join(' '))||
   '先区分已知条件、需要确定的量以及两者之间的几何关系，再判断结论是否由这些条件唯一确定。';
  const derivation=deep?.stages?.map((s,i)=>({title:s[0],body:s[1],why:s[2]}))||
   (verified?item.steps.map((s,i)=>({title:'推导步骤 '+(i+1),body:s,why:i===0?safe(item.understanding):''})):
+   related.length?related.slice(0,4).map(x=>({title:x.title,body:x.steps.join('；'),why:x.understanding})):
    [{title:'导学推理',body:principle,why:'这只是主题导学，须与原书图形和定义逐页对照。'}]);
  const exampleText=sourceExamples.length?'本知识点已关联经过题图和编号核对的教材例题，可在此直接按真实步骤播放重新绘制的动画。':
+  related.length?'本节目录包含 '+related.length+' 个已按教材核对的细分专题，进入相关专题可查验各自的教材例题与作图过程；本目录条目本身不直接声称存在已核对例题。':
   '本知识点尚无完整核验的教材例题动态图；不自动生成、猜测原书题目或答案。';
- const dofRaw=(verified?safe(item.understanding)||safe(deep?.stages?.[0]?.[2]):safe(guide?.[3]))||'';
+ const dofRaw=(verified?safe(item.understanding)||safe(deep?.stages?.[0]?.[2]):
+  safe(guide?.[3])||related.slice(0,3).map(x=>x.understanding).filter(Boolean).join(' '))||'';
  const dof=dofRaw.length>=22?dofRaw:
   (dofRaw?dofRaw+'。':'')+
   '需要先确定研究对象是一个纸面点、空间点还是整体形体，再核对每条新增条件是否真的独立。重复条件不额外降低自由度，未建立模型时不编造数值结果。';
- const check=safe(deep?.check)||(verified?safe(item.mistake):safe(guide?.[4]))||
+ const check=safe(deep?.check)||(verified?safe(item.mistake):
+  safe(guide?.[4])||related.slice(0,3).map(x=>x.mistake).filter(Boolean).join(' '))||
   '根据题目给出的投影、尺寸与线型条件逐项检查；不能只根据外形相似判断。';
  const levels=[
   {id:'question',name:names[0],headline:intro,text:'本节从实际读图或作图需要出发，先明确要解决的问题。',details:[]},
@@ -92,7 +102,7 @@ function forEntry(id){
   {id:'example',name:names[3],headline:'原书核验例题与逐步作图',text:exampleText,details:sourceExamples.map(x=>({title:x.number+' · '+x.title,body:'印刷第 '+x.printedPage+' 页 · '+x.figure+'；可使用下方播放控制逐步检查。'})),examples:sourceExamples.map(x=>x.id)},
   {id:'dof',name:names[4],headline:'已知量、独立条件与剩余自由度',text:dof,details:sourceExamples.length?
    [{title:'可视化约束实验',body:'本例题提供经过数学核验的局部纸面自由度演示；在步骤播放器中逐步启用和取消条件。'}]:
-   [{title:'核验说明',body:verified?'本节尚无配套已核验的数值约束模型；解释只涉及概念，不给出具体自由度数。':'这是原创建议性分析，不是教材原题计算结论。'}]},
+   [{title:'核验说明',body:verified?'本节尚无配套已核验的数值约束模型；解释只涉及概念，不给出具体自由度数。':'这里汇总与本节相关的已核对专题或原创导学，不是本节原题的数值自由度计算结论。'}]},
   {id:'check',name:names[5],headline:'投影、线型、尺寸和常见错误',text:check,details:verified&&safe(item.mistake)&&safe(deep?.check)?
    [{title:'易错点',body:item.mistake}]:[{title:'核对范围',body:'检查所画结果是否与该题所有已知投影及尺寸条件一致；若题图尚未核对，不给出标准答案。'}]}
  ];
