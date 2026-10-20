@@ -39,7 +39,9 @@ function render(){
   if(shape.kind==='point'){
    const [x,y]=shape.xy;
    elt('circle',{cx:x,cy:y,r:4.2,fill:'#277453'},board);
-   elt('text',{x:x+7,y:y-8,'font-size':12,fill:'#265845'},board,shape.name);
+   // Use projection notation to distinguish the same spatial point across views.
+   const suffix={V:'′',H:'',W:'″'}[shape.view]||'';
+   elt('text',{x:x+7,y:y-8,'font-size':12,fill:'#265845'},board,shape.name+suffix);
   }
  }
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
