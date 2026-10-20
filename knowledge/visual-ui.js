@@ -41,7 +41,9 @@ function render(){
    elt('circle',{cx:x,cy:y,r:4.2,fill:'#277453'},board);
    // Use projection notation to distinguish the same spatial point across views.
    const suffix={V:'′',H:'',W:'″'}[shape.view]||'';
-   elt('text',{x:x+7,y:y-8,'font-size':12,fill:'#265845'},board,shape.name+suffix);
+   const labelX=Math.min(930,Math.max(18,x+9));
+   const labelY=Math.max(20,y-11);
+   elt('text',{x:labelX,y:labelY,'font-size':14,'font-weight':600,fill:'#265845',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},board,shape.name+suffix);
   }
  }
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
