@@ -34,6 +34,9 @@ jobs:
           node --check knowledge/six-layer-course.js
           node --check knowledge/textbook-page-audit.js
           node --check knowledge/textbook-page-audit-ui.js
+          node --check knowledge/textbook-concept-motion.js
+          node --check knowledge/textbook-concept-motion-ui.js
+          node --check scripts/check-textbook-concept-motion.cjs
           node --check scripts/check-textbook-page-audit.cjs
           node --check knowledge/textbook-examples.js
           node --check knowledge/textbook-example-geometry.js
@@ -96,6 +99,7 @@ jobs:
           node scripts/check-knowledge.cjs
           node scripts/check-six-layer-course.cjs
           node scripts/check-textbook-page-audit.cjs
+          node scripts/check-textbook-concept-motion.cjs
           node scripts/check-textbook-only.cjs
           node scripts/check-exercise-source-gate.cjs
           node scripts/check-textbook-examples.cjs
@@ -183,6 +187,8 @@ jobs:
           test -f dist/knowledge/page-audit.html
           test -f dist/knowledge/textbook-page-audit.js
           test -f dist/knowledge/textbook-page-audit-ui.js
+          test -f dist/knowledge/textbook-concept-motion.js
+          test -f dist/knowledge/textbook-concept-motion-ui.js
           test -f dist/knowledge/textbook-examples.js
           test -f dist/knowledge/textbook-example-geometry.js
           test -f dist/knowledge/textbook-example-ui.js
