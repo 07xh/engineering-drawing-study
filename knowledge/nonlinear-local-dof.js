@@ -36,6 +36,21 @@ function analyze({points,constraints}={}){
    const gux=vx/(lu*lv)-cosine*ux/(lu*lu),guy=vy/(lu*lv)-cosine*uy/(lu*lu);
    const gvx=ux/(lu*lv)-cosine*vx/(lv*lv),gvy=uy/(lu*lv)-cosine*vy/(lv*lv);
    add([[c.a,-gux,-guy],[c.b,gux,guy],[c.c,-gvx,-gvy],[c.d,gvx,gvy]],cosine-target);
+  }else if(c.type==='circle-tangent-line'){
+   // Circle center is a point variable; radius and fixed line are constants.
+   const center=p(c.center),l=c.line;
+   if(!l||![l.a,l.b,l.offset,c.radius].every(finite)||Math.hypot(l.a,l.b)<EPS||c.radius<=0)throw Error('相切直线或半径无效');
+   const norm=Math.hypot(l.a,l.b),signed=(l.a*center.x+l.b*center.y-l.offset)/norm;
+   // Squared signed distance avoids absolute-value nondifferentiability.
+   add([[c.center,2*signed*l.a/norm,2*signed*l.b/norm]],signed*signed-c.radius*c.radius);
+  }else if(c.type==='circle-tangent-circle'){
+   // Fixed radii, variable centers. Mode distinguishes external/internal tangency.
+   const a=p(c.a),b=p(c.b);
+   if(![c.radiusA,c.radiusB].every(finite)||c.radiusA<=0||c.radiusB<=0||!['external','internal'].includes(c.mode))throw Error('双圆相切参数无效');
+   if(c.mode==='internal'&&Math.abs(c.radiusA-c.radiusB)<EPS)throw Error('等半径圆不存在非重合的内切构型');
+   const target=c.mode==='external'?c.radiusA+c.radiusB:Math.abs(c.radiusA-c.radiusB);
+   const dx=a.x-b.x,dy=a.y-b.y;
+   add([[c.a,2*dx,2*dy],[c.b,-2*dx,-2*dy]],dx*dx+dy*dy-target*target);
   }else if(c.type==='fixed'){
    const point=p(c.point);if(!['x','y'].includes(c.axis)||!finite(c.value))throw Error('固定坐标无效');
    const gradient=c.axis==='x'?[1,0]:[0,1];add([[c.point,...gradient]],point[c.axis]-c.value);

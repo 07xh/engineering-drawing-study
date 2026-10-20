@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),N=require('../knowledge/nonlinear-local-dof.js');
+let points={C:{x:0,y:2}};
+let r=N.analyze({points,constraints:[{type:'circle-tangent-line',center:'C',radius:2,line:{a:0,b:1,offset:0}}]});
+assert.equal(r.atProvidedConfiguration,true);assert.equal(r.rank,1);assert.equal(r.localDegrees,1);
+r=N.analyze({points,constraints:[{type:'circle-tangent-line',center:'C',radius:3,line:{a:0,b:1,offset:0}}]});assert.equal(r.atProvidedConfiguration,false);
+points={A:{x:0,y:0},B:{x:5,y:0}};
+r=N.analyze({points,constraints:[{type:'circle-tangent-circle',a:'A',b:'B',radiusA:3,radiusB:2,mode:'external'}]});
+assert.equal(r.atProvidedConfiguration,true);assert.equal(r.localDegrees,3);
+r=N.analyze({points:{A:{x:0,y:0},B:{x:3,y:0}},constraints:[{type:'circle-tangent-circle',a:'A',b:'B',radiusA:5,radiusB:2,mode:'internal'}]});assert.equal(r.atProvidedConfiguration,true);
+assert.throws(()=>N.analyze({points,constraints:[{type:'circle-tangent-circle',a:'A',b:'B',radiusA:2,radiusB:2,mode:'internal'}]}));
+console.log('PASS: tangency residuals and local DOF for fixed-radius circles');
