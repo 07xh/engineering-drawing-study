@@ -152,6 +152,10 @@ function show(id,scroll=false){
  showDepth(item);
  if(window.TextbookExampleUI)window.TextbookExampleUI.show(item.id);
  const matchedTextbookExample=!!(window.TextbookExamples&&window.TextbookExamples.forTopic(item.id).length);
+ // Source-verified examples get diagram-first reading; separate prose stages remain available on demand.
+ const detailedMethod=$('deepMethodDetails'),knowledgeSummary=$('knowledgeSummaryDetails');
+ if(detailedMethod)detailedMethod.open=!matchedTextbookExample;
+ if(knowledgeSummary)knowledgeSummary.open=!matchedTextbookExample;
  const related=$('detailExercises');related.replaceChildren();
  if(window.matchMedia('(min-width:901px)').matches)$('knowledgeDetail').scrollTop=0;
  const relatedDetails=$('knowledgeRelatedDetails');if(relatedDetails)relatedDetails.open=false;
