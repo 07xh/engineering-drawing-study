@@ -135,7 +135,7 @@ console.log('PASS all eight 2-9 source tracings, circular projections and unsolv
 for(let i=1;i<=8;i++){const item=verifiedGeometry.get('2-9-'+i);assert(item.status==='partial','source audit cannot mark incomplete drawings complete');assert(typeof item.audit==='string'&&item.audit.length>15,'missing scan-fidelity audit for 2-9-'+i);assert(!item.solutionSteps,'do not fabricate solutions')}
 assert(verifiedGeometry.get('2-9-3').dots.some(([x,y])=>x===199&&y===348),'known point b must have a dot');
 assert(drawingHtml.includes('id="sourceAudit"'),'source audit must be visible');
-assert(drawingJs.includes("verified&&verified.audit"),'audit text must follow selected exercise');
+assert(drawingJs.includes("verified.audit||verified.note"),'audit text must follow selected exercise');
 console.log('PASS eight source-fidelity audit notes and visible 2-9-3 point');
 
 for(const [section,count] of Object.entries({'2-6':6,'2-7':6,'2-8':8,'2-9':8})){for(let n=1;n<=count;n++){const id=section+'-'+n,item=verifiedGeometry.get(id);assert(item&&item.status==='partial','all 28 source exercises must stay partial '+id);assert(typeof item.note==='string'&&item.note.length>8,'all 28 need source fidelity notes '+id);assert(!item.solutionSteps,'no invented textbook solutions '+id)}}
