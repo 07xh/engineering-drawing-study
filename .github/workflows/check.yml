@@ -29,6 +29,9 @@ jobs:
           node --check knowledge/research-ui.js
           node --check knowledge/solution-gate.js
           node --check labs/verified-solutions.js
+          node --check labs/source-inspector.js
+          node --check labs/source-inspector-ui.js
+          node --check scripts/check-source-inspector.cjs
           node --check scripts/check-visual-research.cjs
           node --check scripts/check-method-library.cjs
           node --check labs/line-workbench-layout.js
@@ -48,6 +51,7 @@ jobs:
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
           node scripts/check-visual-research.cjs
+          node scripts/check-source-inspector.cjs
           node scripts/check-workbench-layout.cjs
           node scripts/check-question-strategies.cjs
           node scripts/build-static.cjs
@@ -68,5 +72,7 @@ jobs:
           test -f dist/knowledge/research-ui.js
           test -f dist/knowledge/solution-gate.js
           test -f dist/labs/verified-solutions.js
+          test -f dist/labs/source-inspector.js
+          test -f dist/labs/source-inspector-ui.js
           test -f dist/labs/line-workbench-layout.js
           test -f dist/question-strategies.js
