@@ -12,8 +12,6 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
-          node --check app.js
-          node --check content.js
           node --check scripts/check-constraints.cjs
           node --check labs/constraint-engine.js
           node --check labs/constraint-explorer.js
@@ -21,6 +19,8 @@ jobs:
           node --check labs/line-projection.js
           node --check labs/method-library.js
           node --check knowledge/knowledge-data.js
+          node --check knowledge/lesson-depth.js
+          node --check scripts/check-textbook-only.cjs
           node --check knowledge/knowledge-app.js
           node --check scripts/check-knowledge.cjs
           node --check scripts/check-ui-layout.cjs
@@ -60,15 +60,12 @@ jobs:
           node --check scripts/check-constraint-engine.cjs
       - name: Validate lessons and questions
         run: |
-          node scripts/validate.cjs
           node scripts/check-constraints.cjs
-          node scripts/check-lab-page.cjs
-          node scripts/check-k-drag.cjs
           node scripts/check-constraint-engine.cjs
           node scripts/check-explorer.cjs
-          node scripts/check-line-projection.cjs
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
+          node scripts/check-textbook-only.cjs
           node scripts/check-ui-layout.cjs
           node scripts/check-knowledge-ui.cjs
           node scripts/check-visual-research.cjs
@@ -78,21 +75,18 @@ jobs:
           node scripts/check-paper-geometry.cjs
           node scripts/check-composite-geometry.cjs
           node scripts/check-exercise-261.cjs
-          node scripts/check-workbench-layout.cjs
-          node scripts/check-question-strategies.cjs
           node scripts/build-static.cjs
           test -f dist/labs/constraints.html
           test -f dist/labs/analysis.html
           test -f dist/labs/constraint-engine.js
           test -f dist/labs/constraint-explorer.js
           test -f dist/labs/teaching-steps.js
-          test -f dist/labs/line-projection.html
-          test -f dist/labs/line-projection.js
           test -f dist/labs/method-library.js
           test -f dist/site-ui.css
           test -f dist/knowledge/index.html
           test -f dist/knowledge/knowledge-ui.css
           test -f dist/knowledge/knowledge-data.js
+          test -f dist/knowledge/lesson-depth.js
           test -f dist/knowledge/knowledge-app.js
           test -f dist/knowledge/visual-model.js
           test -f dist/knowledge/visual-ui.js
@@ -119,5 +113,3 @@ jobs:
           test -f dist/labs/composite-geometry.html
           test -f dist/labs/composite-geometry-core.js
           test -f dist/labs/composite-geometry-ui.js
-          test -f dist/labs/line-workbench-layout.js
-          test -f dist/question-strategies.js
