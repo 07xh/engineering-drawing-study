@@ -556,3 +556,9 @@ body.ui-refresh .book-example-inspector .book-example-shape-boundary{color:#677e
 body.ui-refresh #bookExampleSvg [data-hit="true"]{cursor:pointer}
 body.ui-refresh #bookExampleSvg [data-hit="true"]:focus-visible{outline:none;stroke:#2e5f92!important;stroke-opacity:.2}
 @media(max-width:790px){body.ui-refresh .book-example-inspector{padding:10px}body.ui-refresh .book-example-tap-hint{font-size:11px!important}}
+
+body.ui-refresh details.book-example-inspector{padding:0;overflow:hidden}
+body.ui-refresh .book-example-inspector>summary{cursor:pointer;display:flex;gap:4px;flex-wrap:wrap;align-items:baseline;padding:10px 12px;font-size:13px;font-weight:750;color:#285f43}
+body.ui-refresh .book-example-inspector>summary span{font-size:12px;font-weight:600;color:#4e735a;overflow-wrap:anywhere}
+body.ui-refresh .book-example-inspector[open]>summary{border-bottom:1px solid #d8e5db}
+body.ui-refresh .book-example-inspector-body{padding:11px}
