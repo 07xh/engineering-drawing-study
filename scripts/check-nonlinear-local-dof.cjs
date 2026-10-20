@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict'),N=require('../knowledge/nonlinear-local-dof.js');
+const points={A:{x:0,y:0},B:{x:3,y:4},C:{x:0,y:4},D:{x:3,y:4}};
+let r=N.analyze({points,constraints:[{type:'distance',a:'A',b:'B',value:5}]});
+assert.equal(r.rank,1);assert.equal(r.localDegrees,7);assert.equal(r.atProvidedConfiguration,true);assert.equal(r.globallyUnique,null);
+r=N.analyze({points,constraints:[{type:'distance',a:'A',b:'B',value:6}]});assert.equal(r.atProvidedConfiguration,false);
+r=N.analyze({points,constraints:[{type:'perpendicular',a:'A',b:'B',c:'C',d:'D'}]});assert.equal(r.rank,1);
+r=N.analyze({points:{A:{x:0,y:0},B:{x:0,y:0}},constraints:[{type:'distance',a:'A',b:'B',value:0}]});assert.equal(r.rank,0);assert.equal(r.localDegrees,4);
+assert.throws(()=>N.analyze({points,constraints:[{type:'angle',a:'A'}]}));
+console.log('PASS: local Jacobian degrees, residual validation, and singularity non-uniqueness');
