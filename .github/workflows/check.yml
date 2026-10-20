@@ -76,6 +76,7 @@ jobs:
           node scripts/check-constraint-engine.cjs
           node scripts/check-dof-lab-geometry.cjs
           node scripts/check-free-modeler-core.cjs
+          node scripts/check-free-modeler-faces.cjs
           node scripts/check-free-modeler-ui.cjs
           node scripts/check-dof-lab-sheet.cjs
           node scripts/check-dof-lab-visibility.cjs
