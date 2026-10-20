@@ -46,5 +46,7 @@
  $('inspectPrev').addEventListener('click',()=>{selected=Math.max(-1,selected-1);render()});
  $('inspectNext').addEventListener('click',()=>{selected=Math.min(filtered().length-1,selected+1);render()});
  $('inspectReset').addEventListener('click',()=>{selected=-1;render()});
+ $('question').addEventListener('change',()=>open($('question').value));
+ open($('question').value);
  window.ChapterSourceInspectorUI={open,render};
 })();
