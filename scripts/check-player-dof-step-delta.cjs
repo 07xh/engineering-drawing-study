@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict');
+const A=require('../knowledge/textbook-action-adapter.js'),E=require('../knowledge/textbook-examples.js'),G=require('../knowledge/textbook-example-geometry.js'),S=require('../knowledge/player-dof-summary.js');
+const steps=A.adapt(E.get('example-2-2'),G).steps;
+const summary=steps.map((s,i)=>S.summarize(s.localDofAnalysis,i?steps[i-1].localDofAnalysis:null));
+assert.deepEqual(summary.map(s=>s.currentDegrees),[2,1,1,0,0]);
+assert.deepEqual(summary.map(s=>s.removedDegrees),[null,1,0,1,0]);
+assert.equal(summary[2].label,'本步未减少局部自由度');
+assert.equal(summary[3].label,'本步减少 1 个局部自由度');
+assert.equal(S.summarize(null,null).available,false);
+assert.equal(S.summarize({points:{P:{x:4,y:0}},constraints:[{type:'fixed',point:'P',axis:'x',value:0}]},null).available,false);
+assert.throws(()=>S.summarize(steps[0].localDofAnalysis,{points:{Q:{x:0,y:0}},constraints:[]}),/目标点集合不同/);
+console.log('PASS: computed DOF delta by step and no badges for violated configurations');
