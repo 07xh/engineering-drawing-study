@@ -501,3 +501,44 @@ body.ui-refresh .book-example-canvas.is-zoomed #bookExampleSvg{min-width:820px}
  body.ui-refresh .kb-directory>.library{padding:0 9px 9px}
  body.ui-refresh .kb-directory .catalogue{grid-template-columns:1fr}
 }
+
+
+/* Source-verified step/geometry reading: compact main reason, optional detailed logic. */
+body.ui-refresh .deep-extended,
+body.ui-refresh .knowledge-extra-details{
+ margin:12px 0;border:1px solid #dce8df;border-radius:11px;background:#fff;overflow:hidden;
+}
+body.ui-refresh .deep-extended>summary,
+body.ui-refresh .knowledge-extra-details>summary{
+ cursor:pointer;padding:13px 15px;font-size:14px;color:#286147;font-weight:800;
+}
+body.ui-refresh .deep-extended[open],
+body.ui-refresh .knowledge-extra-details[open]{padding:0 14px 14px}
+body.ui-refresh .deep-extended[open]>summary,
+body.ui-refresh .knowledge-extra-details[open]>summary{margin:0 -14px 10px;background:#f1f8f3}
+body.ui-refresh .book-example-stage-addition{
+ font-size:12px!important;line-height:1.65!important;background:#f7faf7;
+ color:#476e54;border:1px solid #e0eae1;padding:7px 10px!important;
+}
+body.ui-refresh .book-example-more{
+ border:1px solid #e0ebe2;border-radius:9px;background:#fbfdfb;margin-top:10px;overflow:hidden;
+}
+body.ui-refresh .book-example-more>summary{
+ cursor:pointer;padding:11px 12px;font-weight:750;font-size:13px;color:#32684e;
+}
+body.ui-refresh .book-example-more[open]{padding:0 10px 10px}
+body.ui-refresh .book-example-more[open]>summary{margin:0 -10px 8px;background:#f0f6f1}
+body.ui-refresh .book-example-more p{margin:5px 0!important}
+body.ui-refresh .book-example-new-shape{filter:drop-shadow(0 0 2px #efd8a2)}
+body.ui-refresh #bookExampleSvg{overflow:visible}
+body.ui-refresh .book-example-figure{min-width:0}
+body.ui-refresh .book-example-workspace{grid-template-columns:minmax(0,1.12fr) minmax(280px,.88fr)}
+body.ui-refresh .book-example-explanation{min-width:0}
+body.ui-refresh .book-example-computed{margin:9px 0!important}
+@media(max-width:790px){
+ body.ui-refresh .book-example-workspace{grid-template-columns:minmax(0,1fr)}
+ body.ui-refresh .book-example-stage-addition{font-size:11px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.ui-refresh .book-example-new-shape{filter:none}
+}
