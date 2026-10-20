@@ -71,7 +71,7 @@ assert(html.includes('id="bookExampleShowAux" checked'),'auxiliary lines should 
 assert(ui.includes("item.style==='auxiliary')continue"),'hide only helper lines, not given or result geometry');
 assert(ui.includes("bookExampleShowAux').addEventListener('change'"),'auxiliary visibility must redraw current stage');
 assert(ui.includes("current.order.forEach((label,i)=>"),'step navigator must be generated from verified textbook stages');
-assert(ui.includes("button.addEventListener('click',()=>{index=i;render()})"),'step navigator must select a real geometry stage');
+assert(ui.includes("button.addEventListener('click',()=>{index=i;selectedShapeKey=null;render()})"),'step navigator must select a real geometry stage and update selection');
 assert(ui.includes("button.setAttribute('aria-current','step')"),'active step must be accessible');
 
 assert(ui.includes("setAttribute('aria-pressed',String(i===index))"),'step buttons must announce selected state');
