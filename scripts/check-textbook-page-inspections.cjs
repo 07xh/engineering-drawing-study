@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const audit=require('../knowledge/textbook-page-audit.js');
 const scale=require('../knowledge/six-layer-course.js').forEntry('ch01-drawing-scale');
 assert.equal(audit.summary().detailedInspected,16);
-for(let p=7;p<=14;p++){
+for(let p=7;p<=22;p++){
  const x=audit.get(p);
  assert(x.detailedInspected);
  assert(!x.fullyPageReviewed);
@@ -19,4 +19,4 @@ assert(html.includes('id="auditDetailed"'));
 const motion=require('../knowledge/textbook-concept-motion.js');
 assert.equal(motion.definition('ch01-drawing-scale').page,12);
 assert.equal(motion.frame('ch01-drawing-scale',3).shapes.filter(x=>x.type==='text'&&x.label==='20 mm').length,3);
-console.log('PASS eight source-page inventories and original six-layer scale lesson');
+console.log('PASS sixteen source-page inventories and original six-layer scale lesson');
