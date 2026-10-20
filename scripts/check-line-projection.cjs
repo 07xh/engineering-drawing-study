@@ -60,3 +60,10 @@ assert(drawingJs.includes("function validStroke(s)"),'saved drawing input valida
 assert(drawingJs.includes("records[current]=s;save();ink()"),'per-question drawing persistence missing');
 assert(drawingHtml.includes('不是教材原图'),'must disclose illustrative geometry');
 console.log('PASS 28 exercise drawing entries, clean geometry and pen controls');
+const dofJs=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-dof.js'),'utf8');
+for(const id of ['dofPanel','guidePrev','guideNext','guideShow','guideTitle','guideWhy','guideLimit','guides'])assert(drawingHtml.includes('id="'+id+'"'),'missing DOF panel control '+id);
+assert(drawingHtml.includes('src="chapter-dof.js"'),'DOF explanation module not loaded');
+assert(drawingJs.includes('renderDof();'),'DOF panel not rendered on exercise selection');
+assert(dofJs.includes('verified:false'),'unverified textbook geometry must be disclosed');
+assert(dofJs.includes('自由度为 0'),'missing DOF convergence explanation');
+console.log('PASS per-exercise DOF concepts and why-line guidance');
