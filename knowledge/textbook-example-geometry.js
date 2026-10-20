@@ -134,8 +134,8 @@ function isometricWedge(stage){
   ])shapes.push(line(project(...a),project(...b),'auxiliary','角部切除定位'));
  }
  if(stage>=4){
-  // Keep only the book's two-view givens, then add completed normalized solid.
-  shapes.splice(shapes.findIndex(x=>x.label==='长方体包络'));
+  // Keep all prior construction geometry in the source frame for step-player invariants.
+  // The inline drawing UI hides auxiliary material from the finished view instead.
   for(let i=0;i<base.length;i++){
    const a=base[i],b=base[(i+1)%base.length];
    addEdge(zBase(a),zBase(b),'楔形块底部轮廓');
