@@ -1,1 +1,10 @@
 'use strict';const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');const js=fs.readFileSync('labs/line-projection.js','utf8'),html=fs.readFileSync('labs/line-projection.html','utf8');new vm.Script(js,{filename:'labs/line-projection.js'});for(let i=1;i<=8;i++)assert(js.includes("id:'2-5-"+i+"'"),'missing exercise 2-5-'+i);for(const x of ['front','general','vnormal','konv','profile','horizontal'])assert(js.includes("type:'"+x+"'"),'missing line class '+x);for(const x of ['board','tasks','solution','diagnosis','fields'])assert(html.includes('id="'+x+'"'),'missing element '+x);assert(js.includes("svg.addEventListener('pointermove'"),'pointer drag required');assert(js.includes("svg.addEventListener('keydown'"),'keyboard support required');assert(js.includes("if(c.type==='konv'&&index===1)p[1]=0"),'K on V must be constrained');assert(js.includes("if(c.type==='front')p[1]=q[1]"),'front parallelism must hold');assert(js.includes("if(c.type==='horizontal')p[2]=q[2]"),'horizontal parallelism must hold');assert(js.includes("if(c.type==='vnormal'){p[0]=q[0];p[2]=q[2]}"),'normal line must stay perpendicular to V');console.log('PASS line-projection workshop: eight exercises, editable constraints and UI wiring');
+for(const id of ['transfer45','drawingSteps','stepNote','dofAnalysis'])assert(html.includes('id="'+id+'"'),'missing '+id);
+assert(html.includes('src="constraint-engine.js"'),'shared constraint engine must load before line workshop');
+assert(js.includes('const origin=[465,240]'),'standard VHW views must share common origin');
+assert(js.includes("plane==='V'?[origin[0]-p[0]*scale"),'V and H must share x projection coordinate');
+assert(js.includes("const t=[w[0],h[1]]"),'45 degree transfer must link H depth to W width');
+assert(js.includes('if(showTransfer45)'),'45 degree transfer must be switchable');
+assert(js.includes('engine.analyze(constraints).result'),'degrees of freedom must use shared engine');
+assert(js.includes("if(drawingStep>=3)"),'side projection must be gated by construction step');
+console.log('PASS standard first-angle V/H/W, 45-degree switch, drawing steps and shared DOF analysis');

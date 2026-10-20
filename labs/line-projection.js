@@ -9,30 +9,60 @@ const cases=[
 {id:'2-5-6',title:'水平线 AB：补全三投影',text:'AB ∥ H 面。改变端点在水平面内的位置，观察 a′b′ 和 a″b″ 的特征。',type:'horizontal',a:[18,70,45],b:[75,25,45],answer:'水平线：zA=zB。正面投影 a′b′平行 X 轴；侧面投影 a″b″平行 YW 轴；水平投影 ab 反映实长。'},
 {id:'2-5-7',title:'正平线 AB：补全三投影',text:'AB ∥ V 面。移动端点，观察三面投影与投影面倾角的关系。',type:'front',a:[20,36,20],b:[72,36,70],answer:'正平线：yA=yB。水平投影 ab 平行 X 轴；正面投影 a′b′反映实长，倾角可在 V 面投影中量取。'},
 {id:'2-5-8',title:'正垂线 EF：补全三投影',text:'EF ⟂ V 面，教材给出距 W 面 22 mm。移动端点的深度，观察正面投影积聚为一点。',type:'vnormal',a:[38,18,48],b:[38,78,48],answer:'正垂线：xE=xF 且 zE=zF。正面投影 e′(f′)积聚为一点；水平和侧面投影是线段。距 W 面 22 mm 在纸面按比例尺设置共同的 x 坐标。'}];
-let current=0,points=[],guides=true,showAnswer=false,drag=null;
-const axis={V:[70,215],H:[70,265],W:[545,215]},scale=2.4;
-const project=(p,plane)=>{const [ox,oy]=axis[plane];return plane==='V'?[ox+p[0]*scale,oy-p[2]*scale]:plane==='H'?[ox+p[0]*scale,oy+p[1]*scale]:[ox+p[1]*scale,oy-p[2]*scale]};
+let current=0,points=[],guides=true,showTransfer45=true,drawingStep=4,showAnswer=false,drag=null;
+const origin=[465,240],scale=2.4;
+const project=(p,plane)=>plane==='V'?[origin[0]-p[0]*scale,origin[1]-p[2]*scale]:plane==='H'?[origin[0]-p[0]*scale,origin[1]+p[1]*scale]:[origin[0]+p[1]*scale,origin[1]-p[2]*scale];
 const line=(a,b,stroke='#3c735c',dash='',width=3)=>'<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="'+stroke+'" stroke-width="'+width+'" '+(dash?'stroke-dasharray="'+dash+'"':'')+'/>';
 function constrain(p,index){const c=cases[current],q=points[1-index];p=p.map(v=>clamp(Math.round(v),0,90));if(c.type==='front')p[1]=q[1];if(c.type==='horizontal')p[2]=q[2];if(c.type==='profile')p[0]=q[0];if(c.type==='vnormal'){p[0]=q[0];p[2]=q[2]}if(c.type==='konv'&&index===1)p[1]=0;return p}
 function setPoint(index,p){points[index]=constrain(p,index);draw()}
 function labels(){return cases[current].type==='vnormal'?['e','f']:cases[current].type==='konv'?['g','k']:['a','b']}
 function draw(){
 const c=cases[current],names=labels();let out='<rect width="960" height="510" fill="#fbfdfb"/>';
-for(const plane of ['V','H','W']){const [ox,oy]=axis[plane];out+='<text x="'+ox+'" y="26" font-size="18" fill="#416d59" font-weight="700">'+plane+' 面</text>';out+=line([ox-12,oy],[ox+240,oy],'#64756c','',1.5);out+='<text x="'+(ox+240)+'" y="'+(oy-7)+'" fill="#64756c">'+(plane==='W'?'Yw':'X')+'</text>'}
-out+=line([500,42],[500,480],'#dce9df','4 6',1);
-for(const plane of ['V','H','W']){const a=project(points[0],plane),b=project(points[1],plane);out+=line(a,b);for(let i=0;i<2;i++){const p=project(points[i],plane),label=names[i]+(plane==='V'?'′':plane==='W'?'″':'');out+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5.5" fill="#206c58" stroke="white" stroke-width="2"/><text x="'+(p[0]+9)+'" y="'+(p[1]-10)+'" fill="#245b49" font-size="17" paint-order="stroke" stroke="white" stroke-width="4">'+label+'</text>'}}if(guides)for(let i=0;i<2;i++){const v=project(points[i],'V'),h=project(points[i],'H'),w=project(points[i],'W');out+=line(v,h,'#c28a30','5 6',1.6);out+=line([500,v[1]],w,'#c28a30','5 6',1.6)}
+
+const [ox,oy]=origin;
+out+=line([65,oy],[910,oy],'#53645a','',1.8)+line([ox,24],[ox,485],'#53645a','',1.8);
+out+='<text x="448" y="229">O</text><text x="60" y="231">X</text><text x="471" y="25">Z</text><text x="472" y="493">YH</text><text x="905" y="232">YW</text>';
+out+='<text x="180" y="40">V · 正面投影</text><text x="180" y="474">H · 水平投影</text><text x="675" y="40">W · 侧面投影</text>';
+if(showTransfer45){out+=line([ox,oy],[ox+224,oy+224],'#b78332','7 6',2);out+='<text x="676" y="461">45°</text>';}
+for(const plane of ['V','H','W']){
+ if((plane==='V'&&drawingStep<1)||(plane==='H'&&drawingStep<2)||(plane==='W'&&drawingStep<3))continue;
+ const a=project(points[0],plane),b=project(points[1],plane);out+=line(a,b);
+ for(let i=0;i<2;i++){const p=project(points[i],plane),label=names[i]+(plane==='V'?'′':plane==='W'?'″':'');out+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5.5" fill="#206c58" stroke="white" stroke-width="2"/><text x="'+(p[0]+9)+'" y="'+(p[1]-10)+'" fill="#245b49" font-size="17" paint-order="stroke" stroke="white" stroke-width="4">'+label+'</text>'}
+}
+if(guides)for(let i=0;i<2;i++){
+ const v=project(points[i],'V'),h=project(points[i],'H'),w=project(points[i],'W');
+ if(drawingStep>=2)out+=line(v,h,'#c28a30','5 6',1.6);
+ if(drawingStep>=3){out+=line([ox,v[1]],w,'#c28a30','5 6',1.6);
+ if(showTransfer45){const t=[w[0],h[1]];out+=line(h,t,'#c28a30','5 6',1.6)+line(t,w,'#c28a30','5 6',1.6);}
+ }
+}
 // Handles are deliberately attached to H and V; the original geometry is editable, not a screenshot.
-for(const plane of ['H','V'])for(let i=0;i<2;i++){const p=project(points[i],plane);out+='<g class="handle" data-index="'+i+'" data-plane="'+plane+'" tabindex="0" role="slider" aria-label="'+names[i]+' 点 '+plane+' 面投影，方向键可移动" aria-valuemin="0" aria-valuemax="90" aria-valuenow="'+points[i][0]+'"><circle class="hit" cx="'+p[0]+'" cy="'+p[1]+'" r="23"/><circle class="point" cx="'+p[0]+'" cy="'+p[1]+'" r="7" fill="#d99a35" stroke="white" stroke-width="2"/></g>'}
+for(const plane of ['H','V'])for(let i=0;i<2;i++){if(drawingStep<(plane==='V'?1:2))continue;const p=project(points[i],plane);out+='<g class="handle" data-index="'+i+'" data-plane="'+plane+'" tabindex="0" role="slider" aria-label="'+names[i]+' 点 '+plane+' 面投影，方向键可移动" aria-valuemin="0" aria-valuemax="90" aria-valuenow="'+points[i][0]+'"><circle class="hit" cx="'+p[0]+'" cy="'+p[1]+'" r="23"/><circle class="point" cx="'+p[0]+'" cy="'+p[1]+'" r="7" fill="#d99a35" stroke="white" stroke-width="2"/></g>'}
 $('board').innerHTML=out;
 $('status').textContent='A/G: ('+points[0].join(', ')+')；B/K: ('+points[1].join(', ')+')。拖动 H 图可修改 x、y；拖动 V 图可修改 x、z。特殊位置条件自动保持。';
 const fields=$('fields');fields.replaceChildren();for(let i=0;i<2;i++)for(let k=0;k<3;k++){const lab=document.createElement('label'),id='p'+i+'c'+k;lab.htmlFor=id;lab.textContent=names[i].toUpperCase()+' 的 '+['x','y','z'][k]+'：'+points[i][k];const input=document.createElement('input');input.type='range';input.min='0';input.max='90';input.value=points[i][k];input.id=id;input.addEventListener('input',()=>{const next=points[i].slice();next[k]=+input.value;setPoint(i,next)});lab.append(input);fields.append(lab)}
 const a=points[0],b=points[1],eq=(i)=>a[i]===b[i];let cls=eq(0)&&eq(2)?'正垂线（垂直 V）':eq(0)&&eq(1)?'铅垂线（垂直 H）':eq(1)&&eq(2)?'侧垂线（垂直 W）':eq(0)?'侧平线（平行 W）':eq(1)?'正平线（平行 V）':eq(2)?'水平线（平行 H）':'一般位置直线';if(a.every((v,i)=>v===b[i]))cls='两端重合，无法确定直线';
 $('diagnosis').textContent='当前几何判断：'+cls+'。坐标差 Δx='+(b[0]-a[0])+'、Δy='+(b[1]-a[1])+'、Δz='+(b[2]-a[2])+'。';
+
+const constraints=[],engine=window.DrawingConstraints;
+if(c.type==='front')constraints.push({type:'coordinate',axis:'y',value:points[0][1]});
+if(c.type==='horizontal')constraints.push({type:'coordinate',axis:'z',value:points[0][2]});
+if(c.type==='profile')constraints.push({type:'coordinate',axis:'x',value:points[0][0]});
+if(c.type==='vnormal')constraints.push({type:'projection',plane:'V',value:[points[0][0],points[0][2]]});
+if(c.type==='konv')constraints.push({type:'coordinate',axis:'y',value:0});
+const result=engine.analyze(constraints).result;
+const fixed=3-result.degrees;
+const reason=c.type==='general'?'一般位置直线没有附加特殊位置约束':c.type==='vnormal'?'正垂线固定第二端点的 x、z':c.type==='konv'?'K 位于 V 面，固定 yK=0':c.type==='front'?'正平线要求两端 y 相同':c.type==='horizontal'?'水平线要求两端 z 相同':'侧平线要求两端 x 相同';
+$('dofAnalysis').textContent='自由度分析（以第一端点为已知，研究第二端点）：空间自由点有 3 个自由度；'+reason+'，提供 '+fixed+' 个独立条件；当前剩余 '+result.degrees+' 个自由度。整条直线两端均可自由移动时，第一端点也有相应自由度。';
+const notes=['先辨认题目给出的已知点、投影面及直线位置条件；观察坐标和剩余自由度。','先在 V 面定位两端正面投影，连接线段，标记两点高度 z。','由正面投影向下作垂直 X 轴的联系线，在 H 面按 y 距离定端点。','用 45° 转移线把 H 面的 y 距离转到 W 面，再从 V 面引水平联系线，确定侧面投影。','连接三面对应端点，核对长对正、高平齐、宽相等及本题的特殊位置条件。'];
+$('stepNote').textContent='第 '+(drawingStep+1)+' / 5 步：'+notes[drawingStep];
+for(const b of $('drawingSteps').querySelectorAll('button'))b.setAttribute('aria-current',Number(b.dataset.step)===drawingStep?'step':'false');
+$('transfer45').textContent='45° 转移线：'+(showTransfer45?'开':'关');$('transfer45').classList.toggle('active',showTransfer45);$('transfer45').setAttribute('aria-pressed',String(showTransfer45));
 $('solution').textContent=c.answer;$('solution').classList.toggle('hidden',!showAnswer);$('answer').textContent=showAnswer?'隐藏判断与步骤':'显示判断与作图步骤';$('guides').classList.toggle('active',guides);$('guides').setAttribute('aria-pressed',String(guides));
 }
-function choose(i){current=i;points=[cases[i].a.slice(),cases[i].b.slice()];showAnswer=false;for(const b of $('tasks').children)b.classList.toggle('active',+b.dataset.i===i);$('questionTitle').textContent=cases[i].id+' · '+cases[i].title;$('questionText').textContent=cases[i].text;$('questionHint').textContent='保留本题的几何约束；拖动或改变滑块后，其余投影由同一组三维坐标重新计算。';draw()}
+function choose(i){current=i;points=[cases[i].a.slice(),cases[i].b.slice()];showAnswer=false;drawingStep=4;for(const b of $('tasks').children)b.classList.toggle('active',+b.dataset.i===i);$('questionTitle').textContent=cases[i].id+' · '+cases[i].title;$('questionText').textContent=cases[i].text;$('questionHint').textContent='保留本题的几何约束；拖动或改变滑块后，其余投影由同一组三维坐标重新计算。';draw()}
 cases.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c.id;b.dataset.i=i;b.onclick=()=>choose(i);$('tasks').append(b)});
-$('reset').onclick=()=>choose(current);$('guides').onclick=()=>{guides=!guides;draw()};$('answer').onclick=()=>{showAnswer=!showAnswer;draw()};$('random').onclick=()=>{const c=cases[current];points=[c.a.slice(),c.b.slice()];const d=Math.floor(Math.random()*23)-11;points[0]=points[0].map(v=>clamp(v+d,10,80));points[1]=points[1].map(v=>clamp(v+d,10,80));if(c.type==='konv')points[1][1]=0;if(c.type==='front')points[1][1]=points[0][1];if(c.type==='horizontal')points[1][2]=points[0][2];if(c.type==='profile'||c.type==='vnormal')points[1][0]=points[0][0];if(c.type==='vnormal')points[1][2]=points[0][2];draw()};
+for(const b of $('drawingSteps').querySelectorAll('button'))b.onclick=()=>{drawingStep=Number(b.dataset.step);draw()};$('transfer45').onclick=()=>{showTransfer45=!showTransfer45;draw()};$('reset').onclick=()=>choose(current);$('guides').onclick=()=>{guides=!guides;draw()};$('answer').onclick=()=>{showAnswer=!showAnswer;draw()};$('random').onclick=()=>{const c=cases[current];points=[c.a.slice(),c.b.slice()];const d=Math.floor(Math.random()*23)-11;points[0]=points[0].map(v=>clamp(v+d,10,80));points[1]=points[1].map(v=>clamp(v+d,10,80));if(c.type==='konv')points[1][1]=0;if(c.type==='front')points[1][1]=points[0][1];if(c.type==='horizontal')points[1][2]=points[0][2];if(c.type==='profile'||c.type==='vnormal')points[1][0]=points[0][0];if(c.type==='vnormal')points[1][2]=points[0][2];draw()};
 const svg=$('board');function svgXY(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const matrix=svg.getScreenCTM();return matrix?pt.matrixTransform(matrix.inverse()):null}
 svg.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-index]');if(!el)return;const p=svgXY(e);if(!p)return;drag={id:e.pointerId,index:+el.dataset.index,plane:el.dataset.plane,start:p,original:points[+el.dataset.index].slice()};svg.setPointerCapture(e.pointerId);e.preventDefault()});
 svg.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const p=svgXY(e);if(!p)return;const dx=(p.x-drag.start.x)/scale,dy=(p.y-drag.start.y)/scale;const next=drag.original.slice();next[0]+=dx;if(drag.plane==='H')next[1]+=dy;else next[2]-=dy;setPoint(drag.index,next);e.preventDefault()});
