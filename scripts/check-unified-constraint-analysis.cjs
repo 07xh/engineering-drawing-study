@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),A=require('../knowledge/constraint-analysis.js');
+let r=A.analyze({scope:'point-2d-linear',conditions:[{type:'coordinate',axis:'x',value:2}]});
+assert.equal(r.status,'continuous');assert.equal(r.degrees,1);assert.equal(r.solutionCount,null);
+r=A.analyze({scope:'point-2d-linear',conditions:[{type:'coordinate',axis:'x',value:2},{type:'coordinate',axis:'y',value:3}]});
+assert.equal(r.status,'unique');assert.equal(r.solutionCount,1);
+r=A.analyze({scope:'point-3d-linear',conditions:[{type:'projection',plane:'H',value:[2,3]}]});
+assert.equal(r.degrees,1);assert.equal(r.status,'continuous');
+r=A.analyze({scope:'point-2d-intersection',conditions:[{type:'line',a:0,b:1,offset:0},{type:'circle',x:0,y:0,r:5}]});
+assert.equal(r.status,'multiple');assert.equal(r.solutionCount,2);assert.equal(r.degrees,0);
+r=A.analyze({scope:'point-2d-intersection',conditions:[{type:'line',a:0,b:1,offset:10},{type:'circle',x:0,y:0,r:5}]});
+assert.equal(r.status,'none');assert.equal(r.solutionCount,0);
+assert.throws(()=>A.analyze({scope:'unknown',conditions:[]}));
+console.log('PASS: unified constraint facade preserves dimensions, multiplicity and unsatisfiable states');
