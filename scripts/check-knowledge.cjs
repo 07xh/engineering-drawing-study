@@ -11,8 +11,8 @@ assert.equal(lib.chapters.filter(c=>c.number).length,12,'all 12 printed chapters
 assert.equal(lib.sections.length,56,'53 chapter sections + 3 appendices from TOC');
 const catalog=lib.sections.filter(s=>s.chapter!=='appendix');
 assert.equal(catalog.length,53);
-assert.equal(lib.entries.length,92,'56 TOC entries + 20 Chapter 1 + 16 Chapter 2 reviewed lessons');
-assert.equal(new Set(lib.entries.map(x=>x.id)).size,92,'duplicated lesson IDs');
+assert.equal(lib.entries.length,110,'56 TOC entries + 20 Ch1 + 16 Ch2 + 18 Ch3 reviewed lessons');
+assert.equal(new Set(lib.entries.map(x=>x.id)).size,110,'duplicated lesson IDs');
 const sectionById=Object.fromEntries(lib.sections.map(s=>[s.id,s]));
 const source=lib.source;
 assert.equal(source.pdfPages,292);
@@ -50,7 +50,8 @@ const oldIds=['view-layout','point-notation','cone-circle','sphere-point','plane
 for(const id of oldIds)assert.equal(lib.get(id),null,'old self-summary unexpectedly survived: '+id);
 const outlines=lib.entries.filter(x=>x.contentStatus==='toc-only'),lessons=lib.entries.filter(x=>x.contentStatus==='page-reviewed');
 assert.equal(outlines.length,56);
-assert.equal(lessons.length,36);
+assert.equal(lessons.length,54);
+assert.equal(lessons.filter(x=>x.chapter==='ch03').length,18);
 assert.equal(lessons.filter(x=>x.chapter==='ch01').length,20);
 assert.equal(lessons.filter(x=>x.chapter==='ch02').length,16);
 for(const item of outlines){
@@ -62,7 +63,7 @@ for(const item of outlines){
  assert(item.sourceDetails.includes('目录'),'TOC-only label missing');
 }
 for(const item of lessons){
- assert(['ch01','ch02'].includes(item.chapter),'reviewed lesson outside inspected Chapters 1/2');
+ assert(['ch01','ch02','ch03'].includes(item.chapter),'reviewed lesson outside inspected Chapters 1/2/3');
  const s=sectionById[item.section];assert(s,'lesson not linked to chapter section '+item.id);
  assert(item.pages[0]>=s.startPage&&item.pages[1]<=s.endPage,'lesson page range wrong '+item.id);
  assert.equal(item.pdfPages[0],item.pages[0]+6);
@@ -81,6 +82,10 @@ assert(lib.entries.filter(x=>x.chapter==='ch01'&&x.contentStatus==='page-reviewe
 assert(lib.get('ch02-three-equalities').law.includes('长对正'));
 assert(lib.get('ch02-cone').visualMode==='cone');
 assert(lib.get('ch10-s01').contentStatus==='toc-only');
+assert.equal(lib.get('ch03-cylinder-cylinder').pages[0],64);
+assert.equal(lib.get('ch03-cylinder-cylinder').labLink,'../labs/composite-geometry.html?mode=intersection');
+assert.equal(lib.get('ch03-polyhedral-section').labLink,'../labs/composite-geometry.html?mode=section');
+assert.equal(lib.get('ch04-s01').contentStatus,'toc-only','fourth chapter has not been page-reviewed');
 assert(lib.find('建筑施工图').length>=2,'chapter name lookup missing');
 assert(lib.find('球面').length>=1);
 const html=fs.readFileSync('knowledge/index.html','utf8'),app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
@@ -101,4 +106,4 @@ for(const path of ['knowledge/knowledge-data.js','knowledge/visual-model.js']){
 assert(app.includes('book.sections')&&app.includes('book.chapters'),'viewer must derive chapters dynamically instead of hardcoding lesson IDs');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(build.includes("'"+p+"'"));
-console.log('PASS edition 3 textbook TOC (12 chapters / 53 sections / 3 appendices), 16 page-reviewed original lessons, 292 PDF mapping, no legacy knowledge, isolation and clear unverified states');
+console.log('PASS 12 chapters, 53 sections, 3 appendices, 54 page-reviewed lessons across chapters 1–3, 292-page PDF mapping and protected source scope');

@@ -107,7 +107,19 @@ function show(id,scroll=false){
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  const visualLink=document.querySelector('.site-jump-visual');
  if(visualLink)visualLink.hidden=!lesson||!item.visualMode;
- const lab=$('chapterLabLink');if(lab){const tangent=item.labLink==='../labs/tangent-constraint.html',paper=['../labs/paper-geometry.html','../labs/paper-geometry.html?mode=dimension'].includes(item.labLink);const allowed=(tangent||paper)&&lesson;lab.hidden=!allowed;if(allowed){lab.href=item.labLink;lab.textContent=paper?'打开本节原创尺规作图与尺寸定位实验 ↗':'打开本节原创圆弧连接与自由度实验 ↗'}}
+ const lab=$('chapterLabLink');if(lab){
+  const allowedLabs={
+   '../labs/tangent-constraint.html':'打开原创圆弧连接与自由度实验 ↗',
+   '../labs/paper-geometry.html':'打开原创尺规作图与等分实验 ↗',
+   '../labs/paper-geometry.html?mode=dimension':'打开原创尺寸定位实验 ↗',
+   '../labs/composite-geometry.html?mode=composite':'打开第三章原创组合体三视图实验 ↗',
+   '../labs/composite-geometry.html?mode=section':'打开第三章原创截交线实验 ↗',
+   '../labs/composite-geometry.html?mode=intersection':'打开第三章原创相贯线实验 ↗'
+  };
+  const allowed=lesson&&Object.prototype.hasOwnProperty.call(allowedLabs,item.labLink);
+  lab.hidden=!allowed;
+  if(allowed){lab.href=item.labLink;lab.textContent=allowedLabs[item.labLink]}
+ }
  try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
  if(scroll){
   $('knowledgeDetail').scrollIntoView({behavior:'smooth',block:'start'});
