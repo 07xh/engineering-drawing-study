@@ -87,6 +87,7 @@ jobs:
           node scripts/check-drawing-line-styles.cjs
           node scripts/check-drawing-step-highlight.cjs
           node scripts/check-drawing-arc-dimension.cjs
+          node scripts/check-drawing-dimension-extensions.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
