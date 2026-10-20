@@ -69,7 +69,7 @@ function markup(state,options={}){
  }
  parts.push('</g>');
  if(!state.points.length)parts.push(text({x:86,y:148},'空白图纸：添加空间点后自动生成三面投影','free-sheet-empty'));
- parts.push(text({x:44,y:595},'点线草图：线段不表示长度已约束；尚未创建面，故不判断虚实线。','sheet-disclaimer'));
+ parts.push(text({x:44,y:595},state.faces.length?'三角面拓扑预览：线段与三角面不锁定长度；未完成实体闭合/遮挡核验。':'点线草图：线段不表示长度已约束；尚未创建面，故不判断虚实线。','sheet-disclaimer'));
  return parts.join('');
 }
 return {project,markup};
