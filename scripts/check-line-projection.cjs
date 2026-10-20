@@ -98,5 +98,5 @@ assert(drawingHtml.includes('第一帧完整展示已核对的原题已知条件
 console.log('PASS traced-line direction explanation and endpoint markers');
 
 assert(drawingJs.includes('revealStep=0;base();updateReveal()'),'initial frame must start at zero solution steps');
-assert(drawingJs.includes('solutionSteps:')===false,'do not invent textbook answer steps in UI');
+assert(drawingJs.includes('本题标准作图步骤尚未核实'),'must disclose unverified solution steps');
 console.log('PASS all verified given lines visible on first frame, solutions separate');
