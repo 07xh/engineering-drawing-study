@@ -9,9 +9,9 @@ const modes={
  plane:{name:'空间三角面 ABC 的三面投影',points:p,edges:[['A','B'],['B','C'],['C','A']]},
  prism:{name:'三棱柱的三面投影',points:{A:point(17,14,12),B:point(51,14,12),C:point(30,48,12),D:point(17,14,52),E:point(51,14,52),F:point(30,48,52)},edges:[['A','B'],['B','C'],['C','A'],['D','E'],['E','F'],['F','D'],['A','D'],['B','E'],['C','F']]},
  pyramid:{name:'三棱锥的三面投影',points:{A:point(13,17,10),B:point(53,15,10),C:point(31,53,10),S:point(32,29,55)},edges:[['A','B'],['B','C'],['C','A'],['A','S'],['B','S'],['C','S']]},
- cylinder:{name:'直立圆柱的三面投影',points:{A:point(49,30,40)},edges:[],solid:'cylinder'},
+ cylinder:{name:'直立圆柱的三面投影',points:{A:point(52,30,40)},edges:[],solid:'cylinder'},
  cone:{name:'直圆锥的三面投影',points:{A:point(41,30,33),S:point(30,30,56)},edges:[],solid:'cone'},
- sphere:{name:'圆球的三面投影',points:{A:point(42,30,42)},edges:[],solid:'sphere'}
+ sphere:{name:'圆球的三面投影',points:{A:point(42,30,30+Math.sqrt(340))},edges:[],solid:'sphere'}
 };
 function modeFor(id,chapter){
  if(['cone-views','cone-generator','cone-circle'].includes(id))return 'cone';
@@ -66,8 +66,8 @@ function svgShapes(id,chapter,stage){
    for(const [name,pt] of Object.entries(model.points))shapes.push({kind:'point',view,name,xy:projection(pt,view)});
   }
  }
- if(stage>=2){const q=model.points[Object.keys(model.points)[0]],v=projection(q,'V'),h=projection(q,'H');shapes.push({kind:'guide',xy:[v[0],v[1],v[0],h[1]],text:'V/H 同 x'})}
- if(stage>=3){const q=model.points[Object.keys(model.points)[0]],v=projection(q,'V'),w=projection(q,'W');shapes.push({kind:'guide',xy:[w[0],v[1],w[0],w[1]],text:'V/W 同 z（示意）'})}
+ if(stage>=2){const q=model.points[Object.keys(model.points)[0]],v=projection(q,'V'),h=projection(q,'H');shapes.push({kind:'guide',xy:[v[0],v[1],v[0],289],text:'V 内 x 位置'},{kind:'guide',xy:[h[0],h[1],h[0],289],text:'H 内 x 位置'})}
+ if(stage>=3){const q=model.points[Object.keys(model.points)[0]],v=projection(q,'V'),w=projection(q,'W');shapes.push({kind:'guide',xy:[v[0],v[1],v[0]+18,v[1]],text:'V 内 z 位置'},{kind:'guide',xy:[w[0],w[1],w[0]+18,w[1]],text:'W 内 z 位置'})}
  return {name:model.name,stage,shapes,scope:'全部坐标与形体为原创教学数据；本动画不显示任何教材待求答案线。'};
 }
 return {modeFor,projection,stages,constraints,analyze,svgShapes,modes};
