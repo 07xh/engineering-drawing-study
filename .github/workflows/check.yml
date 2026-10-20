@@ -16,7 +16,6 @@ jobs:
           node --check labs/constraint-engine.js
           node --check labs/constraint-explorer.js
           node --check labs/teaching-steps.js
-          node --check labs/line-projection.js
           node --check labs/method-library.js
           node --check knowledge/knowledge-data.js
           node --check knowledge/lesson-depth.js
@@ -53,10 +52,6 @@ jobs:
           node --check scripts/check-source-inspector.cjs
           node --check scripts/check-visual-research.cjs
           node --check scripts/check-method-library.cjs
-          node --check labs/line-workbench-layout.js
-          node --check scripts/check-line-projection.cjs
-          node --check question-strategies.js
-          node --check scripts/check-question-strategies.cjs
           node --check scripts/check-constraint-engine.cjs
       - name: Validate lessons and questions
         run: |
