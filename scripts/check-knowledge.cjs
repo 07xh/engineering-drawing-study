@@ -36,6 +36,16 @@ for(let c=1;c<=12;c++){
  assert.equal(items[0].startPage,starts[c-1]);
  for(let j=1;j<items.length;j++)assert.equal(items[j-1].endPage+1,items[j].startPage,'noncontiguous chapter section ranges');
 }
+// Reading order: chapter -> section -> its reviewed notes, never 56 unrelated indexes first.
+for(let i=1;i<lib.entries.length;i++){
+ const before=lib.sections.findIndex(s=>s.id===lib.entries[i-1].section);
+ const after=lib.sections.findIndex(s=>s.id===lib.entries[i].section);
+ assert(before<=after,'knowledge list out of textbook reading order');
+}
+for(const s of lib.sections){
+ const group=lib.entries.filter(x=>x.section===s.id);
+ assert(group[0]?.id===s.id,'directory section must precede its own verified notes');
+}
 const oldIds=['view-layout','point-notation','cone-circle','sphere-point','plane-internal-line'];
 for(const id of oldIds)assert.equal(lib.get(id),null,'old self-summary unexpectedly survived: '+id);
 const outlines=lib.entries.filter(x=>x.contentStatus==='toc-only'),lessons=lib.entries.filter(x=>x.contentStatus==='page-reviewed');
