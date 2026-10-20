@@ -86,3 +86,8 @@ assert(drawingJs.includes('function updateReveal()'),'missing progressive source
 assert(drawingJs.includes('sourceStage(kind)'),'source line categories must control reveal order');
 assert(drawingHtml.includes('prefers-reduced-motion:reduce'),'reveal animation must respect reduced motion');
 console.log('PASS progressive source geometry reveal controls and accessibility');
+
+assert(drawingHtml.includes('id="revealWhy"'),'missing per-line explanatory note');
+assert(drawingJs.includes('function sourceSteps(item)'),'missing per-line progression');
+assert(drawingJs.includes('source-detail'),'point and text labels must follow reveal');
+console.log('PASS individual verified lines, rationale, and synchronized label reveal');
