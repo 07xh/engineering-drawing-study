@@ -98,6 +98,7 @@ jobs:
           node scripts/check-intersection-candidate-filter.cjs
           node scripts/check-construction-criteria.cjs
           node scripts/check-player-constraint-panel.cjs
+          node scripts/check-example-2-2-computed-dof.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs
