@@ -74,15 +74,20 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <details class="kb-source-note">
 <summary><strong>资料说明</strong><span>依据完整教材第3版的目录建框架；未逐页核对的内容不会冒充课程讲解。</span><span class="kb-note-expand">查看详情</span></summary>
 <p>依据你上传的292页《工程制图与 AutoCAD》第3版重建。原书目录和章节起始页已经核对；第一至第三章已有初步知识讲解，其中部分重点知识包含完整推导；第四章及以后仍为待建设目录。印刷正文第1页对应PDF第7页。不会公开原PDF、原书扫描图或出版社答案，原有习题也不会因为题号相似就被自动认定为本书原题。</p></details>
-<div class="toolbar kb-filterbar" role="search" aria-label="知识库搜索与筛选">
-<label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：第三章、尺寸注法、点的投影" autocomplete="off"></label>
-<label>教材章节<select id="chapterSelect"><option value="all">全部章节</option></select></label><label>章节小节<select id="sectionSelect"><option value="all">全部小节</option></select></label><label>内容状态<select id="coverageSelect"><option value="all">全部状态</option><option value="page-reviewed">已核对讲解</option><option value="toc-only">仅目录索引</option></select></label>
+<div class="toolbar kb-filterbar" role="search" aria-label="教材章节与知识点导航">
+<label>第几章<select id="chapterSelect"><option value="all">全部章节</option></select></label>
+<label>第几节<select id="sectionSelect"><option value="all">全部小节</option></select></label>
+<label>当前知识点<select id="topicSelect" aria-label="直接跳转知识点"><option value="">正在加载</option></select></label>
+<details class="kb-advanced-filters"><summary>搜索与更多筛选</summary><div class="kb-advanced-fields">
+<label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：三视图、尺寸注法、点的投影" autocomplete="off"></label>
+<label>内容状态<select id="coverageSelect"><option value="all">全部状态</option><option value="page-reviewed">已核对讲解</option><option value="toc-only">仅目录索引</option></select></label>
 <label>学习情况<select id="progressSelect"><option value="all">全部知识</option><option value="unread">未学过</option><option value="read">已学过</option></select></label>
 <button type="button" id="resetFilters">清除筛选</button>
+</div></details>
 </div>
 <p id="exerciseFilterStatus" class="note" hidden></p>
 <p id="knowledgeCount" class="count" role="status"></p>
-<div class="knowledge-workspace" id="knowledgeWorkspace"><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有找到对应的教材目录或已核对知识。可清除筛选重新查看。</p></main></div>
+<div class="knowledge-workspace" id="knowledgeWorkspace"><details class="kb-directory" id="knowledgeIndex"><summary><span>展开完整知识点目录</span><span id="knowledgeCurrentLocation" class="kb-current-path">请选择章节、节与知识点</span></summary><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有找到对应的教材目录或已核对知识。可清除筛选重新查看。</p></main></div></details>
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p><p id="detailStatusNotice" class="note" aria-live="polite"></p>
@@ -101,8 +106,8 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <p id="bookExampleKnown"></p>
 <div class="book-example-workspace">
   <div class="book-example-figure">
-    <div class="book-example-figure-top"><strong>逐步作图</strong><span>绿色已知 · 橙色辅助 · 蓝色结果</span></div>
-    <div class="book-example-canvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="img" aria-label="按课本例题步骤显示的投影和辅助线"></svg></div>
+    <div class="book-example-figure-top"><strong>逐步作图</strong><span>绿色已知 · 橙色辅助 · 蓝色结果</span><button id="bookExampleZoom" type="button" aria-pressed="false" aria-controls="bookExampleSvg">放大查看</button></div>
+    <div class="book-example-canvas" id="bookExampleCanvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="img" aria-label="按课本例题步骤显示的投影和辅助线"></svg></div>
   </div>
   <div class="book-example-guide" aria-label="右侧作图步骤与讲解">
     <div class="book-example-tools" aria-label="课本例题步骤控制">
