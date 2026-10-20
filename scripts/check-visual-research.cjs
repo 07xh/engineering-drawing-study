@@ -19,9 +19,19 @@ for(const item of know.entries){
  for(let i=0;i<4;i++){
   const stage=geom.svgShapes(item.id,item.chapter,i);
   assert(stage.shapes.filter(s=>s.kind==='panel').length===3,'wrong views');
-  assert(stage.shapes.every(s=>s.kind!=='line'&&s.kind!=='guide'||(s.xy.length===4&&s.xy.every(Number.isFinite))),'nonfinite SVG coordinate');
+  assert(stage.shapes.every(s=>!['line','guide','construction'].includes(s.kind)||(Array.isArray(s.xy)&&s.xy.length===4&&s.xy.every(Number.isFinite))),'nonfinite SVG coordinate');
+  assert(stage.shapes.every(s=>!['circle','aux-circle'].includes(s.kind)||([s.cx,s.cy,s.r].every(Number.isFinite)&&s.r>0)),'nonfinite SVG circles');
  }
 }
+for(const [concept,type] of [['cone-circle','aux-circle'],['cone-generator','construction'],['sphere-point','aux-circle'],['cylinder-point','construction']]){
+ const item=know.get(concept),picture=geom.svgShapes(item.id,item.chapter,3);
+ assert(picture.shapes.some(s=>s.kind===type),'concept-specific auxiliary geometry missing '+concept);
+ assert(!geom.svgShapes(item.id,item.chapter,2).shapes.some(s=>s.kind==='construction'||s.kind==='aux-circle'),'assisted solution appears too early '+concept);
+}
+const sphere=geom.modes.sphere.points.A;
+assert(Math.abs((sphere.x-30)**2+(sphere.y-30)**2+(sphere.z-30)**2-22**2)<1e-6,'sphere point must be on example sphere');
+const cylinder=geom.modes.cylinder.points.A;
+assert(Math.abs((cylinder.x-30)**2+(cylinder.y-30)**2-22**2)<1e-6,'cylinder point must be on cylinder');
 assert(geom.modeFor('cone-circle','curved')==='cone');
 assert(geom.modeFor('sphere-point','curved')==='sphere');
 const sourceIds=['2-6','2-7','2-8','2-9'].flatMap((section,i)=>Array.from({length:i<2?6:8},(_,n)=>section+'-'+(n+1)));
@@ -37,6 +47,7 @@ for(const id of sourceIds){
  assert(research.compareMethods(profile).every(x=>x.canDraw===false),'methods must be unverified '+id);
 }
 assert(research.detect('2-9-7',sourceRegistry.get('2-9-7')).ambiguousShape,'uncertain curved shape must be disclosed');
+assert.equal(research.detect('2-9-7',sourceRegistry.get('2-9-7')).group,'curvedUnknown','ambiguous shape must not be asserted as sphere');
 assert(research.safeReference({url:'http://x.test',title:'x'})===null);
 assert(research.safeReference({url:'https://evil.example/test',title:'x'})===null);
 assert(research.safeReference({url:'https://zh.wikipedia.org/wiki/%E6%8A%95%E5%BD%B1',title:'投影'})!==null);
