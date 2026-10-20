@@ -79,8 +79,10 @@ function forEntry(id){
    [{title:'导学推理',body:principle,why:'这只是主题导学，须与原书图形和定义逐页对照。'}]);
  const exampleText=sourceExamples.length?'本知识点已关联经过题图和编号核对的教材例题，可在此直接按真实步骤播放重新绘制的动画。':
   '本知识点尚无完整核验的教材例题动态图；不自动生成、猜测原书题目或答案。';
- const dof=safe(deep?.stages?.[0]?.[2])||(verified?safe(item.understanding):safe(guide?.[3]))||
-  '先识别未知几何量，再检查定位条件是否相互独立；未形成数值模型前不显示虚构的自由度。';
+ const dofRaw=(verified?safe(item.understanding)||safe(deep?.stages?.[0]?.[2]):safe(guide?.[3]))||'';
+ const dof=dofRaw.length>=22?dofRaw:
+  (dofRaw?dofRaw+'。':'')+
+  '需要先确定研究对象是一个纸面点、空间点还是整体形体，再核对每条新增条件是否真的独立。重复条件不额外降低自由度，未建立模型时不编造数值结果。';
  const check=safe(deep?.check)||(verified?safe(item.mistake):safe(guide?.[4]))||
   '根据题目给出的投影、尺寸与线型条件逐项检查；不能只根据外形相似判断。';
  const levels=[
