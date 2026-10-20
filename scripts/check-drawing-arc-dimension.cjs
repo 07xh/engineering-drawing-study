@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict'),r=require('../knowledge/drawing-action-renderer.js');
+const arc={kind:'arc',style:'result',geometry:{cx:100,cy:100,r:50,startAngle:0,endAngle:90}};
+assert(r.validAction(arc));assert(r.svgMarkup({shapes:[arc]}).includes('<path d="M 150 100 A 50 50 0 0 1'));
+assert(!r.validAction({...arc,geometry:{...arc.geometry,r:-1}}));
+assert(!r.validAction({...arc,geometry:{...arc.geometry,endAngle:361}}));
+const full={...arc,geometry:{...arc.geometry,endAngle:360}};
+assert(r.svgMarkup({shapes:[full]}).includes('<circle'));
+const dim={kind:'dimension',style:'mark',geometry:{x1:0,y1:40,x2:100,y2:40},text:'100 mm'};
+assert(r.validAction(dim));assert(r.svgMarkup({shapes:[dim]}).includes('100 mm'));
+assert(r.svgMarkup({shapes:[{...dim,text:'<svg>'}]}).includes('&lt;svg&gt;'));
+assert(!r.validAction({...dim,text:'x'.repeat(81)}));
+console.log('PASS: arc geometry and dimension labels validated, rendered and escaped');
