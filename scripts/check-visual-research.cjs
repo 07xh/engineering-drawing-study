@@ -56,7 +56,7 @@ assert.equal(link[0].xy[0],link[0].xy[2],'V/H projector must be vertical');
 assert.equal(link[1].xy[1],link[1].xy[3],'V/W projector must be horizontal');
 assert.equal(link[2].xy[1],link[2].xy[3],'H to 45 transfer must be horizontal');
 assert.equal(link[3].xy[0],link[3].xy[2],'45 to W transfer must be vertical');
-assert.equal(geom.svgShapes('point-notation','point',2).shapes.some(s=>s.kind==='transfer45'),false,'45 transfer should not leak early');
+assert.equal(geom.svgShapes('ch02-point-projection','ch02',2).shapes.some(s=>s.kind==='transfer45'),false,'45 transfer should not leak early');
 for(const item of reviewed.filter(x=>x.visualMode)){
  for(let step=0;step<=3;step++){
   const shapes=geom.svgShapes(item.id,item.chapter,step).shapes;
