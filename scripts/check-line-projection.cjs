@@ -34,3 +34,9 @@ assert(js.includes("wrong.delete(cases[current].id);saveWrong()"),'successful pr
 assert(js.includes("function goStep(n)"),'step navigation must be implemented');
 assert(js.includes("visitedSteps=new Set([4])"),'step history must reset between exercises');
 console.log('PASS retry queue and guided step navigation');
+
+for(const id of ['saveDraft','restoreDraft','draftStatus'])assert(html.includes('id="'+id+'"'),'missing draft UI '+id);
+assert(js.includes("function validDraft(d)"),'draft restore must validate persisted coordinates');
+assert(js.includes("practiceDrag={id:e.pointerId"),'student answer endpoints must be draggable');
+assert(js.includes("svg.classList.remove('pen-dragging')"),'pen drag must release touch state');
+console.log('PASS pen answer dragging and local draft save/restore');
