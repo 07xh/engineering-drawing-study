@@ -41,6 +41,9 @@ function render(){
   }
  }
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
+ const guides=picture.shapes.filter(s=>['guide','construction','aux-circle','transfer45'].includes(s.kind));
+ const explanations=[...new Set(guides.map(s=>s.label).filter(Boolean))];
+ $('visualGeometryWhy').textContent=explanations.length?'本阶段可见的辅助几何：'+explanations.join('；')+'。这些线帮助对应投影关系，不单独证明整题唯一解。':'本阶段尚无辅助几何线；先观察已知投影面及形体位置。';
  $('visualTitle').textContent=picture.name+' · '+st.title;
  $('visualExplanation').textContent=st.why;
  $('visualDegree').textContent=report.degree===null?'无解或冲突条件':'代表点剩余 '+report.degree+' 个自由度';
