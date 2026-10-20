@@ -13,6 +13,17 @@
 <button type="button" id="inspectPrev">上一项</button><button type="button" id="inspectNext">下一项</button><button type="button" id="inspectReset">清除高亮</button>
 <span id="inspectCount" class="muted" aria-live="polite">准备图形信息…</span></div>
 <p id="inspectExplain" class="hint" aria-live="polite"></p>
+<div class="toolbar">
+<label for="inspectReview">个人核对记录</label>
+<select id="inspectReview"><option value="pending">待核对</option><option value="checked">我已对照纸质原图</option><option value="uncertain">图形有疑点，需复查</option></select>
+<button type="button" id="inspectSave">保存本项核对记录</button>
+<button type="button" id="inspectCopy">复制本题核对摘要</button>
+</div>
+<label for="inspectNote" class="hint">核对笔记（可写原图上某个顶点、角度、尺寸或线型的疑点）</label>
+<textarea id="inspectNote" rows="2" maxlength="500" placeholder="例如：第 3 条辅助细线是否是原题已知线，需要对照更清晰扫描。" style="display:block;width:100%;font:inherit;margin:8px 0 10px;padding:10px;border:1px solid #b5cebf;border-radius:8px;min-height:65px"></textarea>
+<p class="muted" id="inspectStats" aria-live="polite"></p>
+<p class="muted" id="inspectSaved" aria-live="polite"></p>
+<p class="notice">这是<strong>个人阅读/核对笔记</strong>，只保存在当前浏览器。即使标记“已对照”，也不会改变仓库中的原图审核状态，不会解除标准答案播放限制。</p>
 </section>
 <div class="key"><span>深绿色：已录入的原题已知几何（仍待逐题复核）</span><span>蓝色：原题已知几何核对高亮；橙色：审核通过的解题步骤／自由作图笔迹</span><span>浅灰色：辅助网格（不是扫描透印）</span></div><p class="muted" id="status" aria-live="polite"></p><section class="card" aria-label="自由度与辅助线原理"><h2>自由度分析 · 为什么这样画辅助线</h2><p class="muted">以下文字用于解释通用投影原理，并非当前教材题的标准答案。只有在该题解题步骤经过核实后，才允许在原题图上叠加原理辅助线。</p><div id="dofPanel" aria-live="polite"></div><div class="toolbar"><button id="guidePrev" type="button">上一个原理</button><button id="guideNext" type="button">下一个原理</button><button id="guideShow" type="button" aria-pressed="false" disabled title="仅在本题已有核实的解题步骤时允许叠加辅助线">显示原理辅助线</button></div><h3 id="guideTitle"></h3><p id="guideWhy"></p><p id="guideLimit" class="muted"></p></section><section class="card" aria-label="检索资料补充的分步解题方法"><h2>检索补充 · 分步理解做题思路</h2><p class="method-note" id="methodDisclaimer">这些是根据高校教学资料独立整理的通用方法，不是对应教材题的已核实答案；不在原题图上画未经校验的辅助线。</p><h3 id="methodTitle">正在加载适用方法</h3><p id="methodPremise"></p><p id="methodNote" class="hint"></p><div class="toolbar"><button type="button" id="methodPrev">上一步思路</button><button type="button" id="methodNext">下一步思路</button><button type="button" id="methodAll">查看全部思路</button><span class="method-progress" id="methodProgress" aria-live="polite"></span></div><ol id="methodSteps" class="method-steps" aria-live="polite"></ol><h3>参考资料与适用范围</h3><p class="muted">以下链接用于核查解题原理，不等于原教材的官方解答。只有原图和计算核验通过后，具体答案线才能进入上方作图动画。</p><ul id="methodSources" class="source-links"></ul></section><section class="card" id="researchPanel" aria-label="联网检索与原题条件审核">
 <h2>联网检索参考方法 · 原题验证工作台</h2>

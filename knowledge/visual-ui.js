@@ -12,22 +12,24 @@ function elt(tag,attrs,parent,value){
 function render(){
  if(!entry||!data||!engine)return;
  const picture=data.svgShapes(entry.id,entry.chapter,stage),board=$('visualBoard');
- board.replaceChildren();board.setAttribute('viewBox','0 0 970 332');
- elt('rect',{width:970,height:332,fill:'#fff'},board);
+ board.replaceChildren();board.setAttribute('viewBox','0 0 970 650');
+ elt('rect',{width:970,height:650,fill:'#fff'},board);
  for(const shape of picture.shapes){
   if(shape.kind==='panel'){
    const [x,y,w,h]=shape.rect;
    elt('rect',{x,y,width:w,height:h,rx:12,fill:shape.active?'#f3faf5':'#f9faf9',stroke:'#d6e7dc','stroke-width':1.2},board);
-   elt('text',{x:x+13,y:55,'font-size':15,'font-weight':600,fill:'#416a55'},board,shape.label);
-   if(!shape.active)elt('text',{x:x+52,y:175,'font-size':14,fill:'#8b9f91'},board,'下一步显示');
+   elt('text',{x:x+13,y:y+21,'font-size':16,'font-weight':600,fill:'#416a55'},board,shape.label);
+   if(!shape.active)elt('text',{x:x+52,y:y+h/2,'font-size':14,fill:'#8b9f91'},board,'后续步骤显示');
    continue;
   }
-  if(['line','guide','construction'].includes(shape.kind)){
+  if(['line','guide','construction','axis','transfer45'].includes(shape.kind)){
    const [x1,y1,x2,y2]=shape.xy;
    const auxiliary=shape.kind==='guide'||shape.kind==='construction';
-   const attrs={x1,y1,x2,y2,stroke:auxiliary?'#bd8b3c':'#277453','stroke-width':auxiliary?2:2.8,'stroke-linecap':'round'};
-   if(auxiliary)attrs['stroke-dasharray']='6 5';
-   elt('line',attrs,board);continue;
+   const base=shape.kind==='axis'||shape.kind==='transfer45';
+   const attrs={x1,y1,x2,y2,stroke:auxiliary?'#c0832d':base?'#96a9a0':'#277453','stroke-width':auxiliary?2.2:base?1.8:2.8,'stroke-linecap':'round'};
+   if(auxiliary||shape.kind==='transfer45')attrs['stroke-dasharray']='7 5';
+   elt('line',attrs,board);
+   continue;
   }
   if(shape.kind==='circle'||shape.kind==='aux-circle'){
    const auxiliary=shape.kind==='aux-circle';

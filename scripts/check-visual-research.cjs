@@ -28,6 +28,45 @@ for(const [concept,type] of [['cone-circle','aux-circle'],['cone-generator','con
  assert(picture.shapes.some(s=>s.kind===type),'concept-specific auxiliary geometry missing '+concept);
  assert(!geom.svgShapes(item.id,item.chapter,2).shapes.some(s=>s.kind==='construction'||s.kind==='aux-circle'),'assisted solution appears too early '+concept);
 }
+// 严格第一角布局，不是 V/H/W 三栏横排：正面左上，俯视正下，左视正右。
+const {origin,scale,defs}=geom;
+assert(origin&&scale>0,'missing unified first-angle origin');
+assert.equal(defs.V.rect[0],defs.H.rect[0],'front and top should align on same horizontal region');
+assert(defs.H.rect[1]>defs.V.rect[1]+defs.V.rect[3],'top view must be below front view');
+assert(defs.W.rect[0]>defs.V.rect[0]+defs.V.rect[2],'left side view must be right of front');
+assert.equal(defs.W.rect[1],defs.V.rect[1],'front and side must be at same upper row');
+const xyz={x:23,y:37,z:41};
+const V=geom.projection(xyz,'V'),H=geom.projection(xyz,'H'),W=geom.projection(xyz,'W');
+assert.equal(V[0],H[0],'V and H must share x (长对正)');
+assert.equal(V[1],W[1],'V and W must share z (高平齐)');
+assert.equal(H[1]-origin.y,W[0]-origin.x,'H and W depth must match via 45-degree transfer');
+assert(Math.abs(Math.abs(V[0]-origin.x)/scale-xyz.x)<1e-8,'front x scale mismatch');
+assert.equal(geom.projection(xyz,'V')[1],origin.y-xyz.z*scale,'z direction invalid');
+assert.equal(geom.projection(xyz,'H')[1],origin.y+xyz.y*scale,'H view must be BELOW X axis');
+const last=geom.svgShapes('point-notation','point',3);
+const transfer=last.shapes.find(s=>s.kind==='transfer45');
+assert(transfer,'45 degree transfer missing in last stage');
+assert.equal(transfer.xy[2]-transfer.xy[0],transfer.xy[3]-transfer.xy[1],'45 line must be true 45 degrees');
+const link=last.shapes.filter(s=>s.kind==='guide');
+assert.equal(link.length,4,'must provide V/H, V/W, H/45 and 45/W correspondence guides');
+assert.equal(link[0].xy[0],link[0].xy[2],'V/H projector must be vertical');
+assert.equal(link[1].xy[1],link[1].xy[3],'V/W projector must be horizontal');
+assert.equal(link[2].xy[1],link[2].xy[3],'H to 45 transfer must be horizontal');
+assert.equal(link[3].xy[0],link[3].xy[2],'45 to W transfer must be vertical');
+assert.equal(geom.svgShapes('point-notation','point',2).shapes.some(s=>s.kind==='transfer45'),false,'45 transfer should not leak early');
+for(const item of know.entries){
+ for(let step=0;step<=3;step++){
+  const shapes=geom.svgShapes(item.id,item.chapter,step).shapes;
+  for(const s of shapes){
+   if(s.xy)assert(s.xy.every(n=>Number.isFinite(n)&&n>=0&&n<=970),'nonfinite/off-canvas scene line '+item.id);
+   if(['circle','aux-circle'].includes(s.kind))assert(s.r>0&&s.cx-s.r>=0&&s.cy-s.r>=0&&s.cx+s.r<=970&&s.cy+s.r<=650,'off-canvas circle '+item.id);
+   if(s.kind==='point')assert(s.xy.every(n=>n>=0&&n<=650||n>=0&&n<=970),'off-canvas point '+item.id);
+  }
+ }
+}
+const visualUi=source('knowledge/visual-ui.js');
+assert(visualUi.includes("viewBox','0 0 970 650'"),'first-angle board must be tall enough for H view');
+assert(visualUi.includes("'transfer45'"),'45 degree line renderer missing');
 const sphere=geom.modes.sphere.points.A;
 assert(Math.abs((sphere.x-30)**2+(sphere.y-30)**2+(sphere.z-30)**2-22**2)<1e-6,'sphere point must be on example sphere');
 const cylinder=geom.modes.cylinder.points.A;
@@ -69,6 +108,12 @@ const inspectorJS=source('labs/source-inspector-ui.js');
 assert(inspectorHtml.includes('id="sourceHighlight"')&&inspectorHtml.includes('id="inspectPanel"'),'source inspector overlay missing');
 assert(inspectorHtml.includes('src="source-inspector-ui.js"'),'source inspector script not loaded');
 assert(inspectorJS.includes('sourceHighlight')&&!inspectorJS.includes("lineFocus")&&!inspectorJS.includes('VerifiedExerciseSolutions'),'source highlights must be separate from answers');
+for(const control of ['inspectReview','inspectNote','inspectSave','inspectCopy','inspectStats','inspectSaved'])assert(inspectorHtml.includes('id="'+control+'"'),'missing personal review control '+control);
+assert(inspectorJS.includes("drawing-source-review-v1"),'local-only source notes should be stored separately');
+assert(inspectorJS.includes("rec.signature===JSON.stringify(item.geometry)"),'source notes must be invalidated when geometry changes');
+assert(inspectorJS.includes('reviews[exercise]'),'per-question review storage must not leak across questions');
+assert(inspectorJS.includes('report()'),'copyable personal audit summary is required');
+assert(!inspectorJS.includes('status=\'verified-complete\'')&&!inspectorJS.includes('solutionAudit')&&!inspectorJS.includes('sourceFingerprint'),'personal review must not override answer verification');
 const valid={
  id:'test-geometry',status:'verified-complete',source:'教材第17页 · 人工复核样例',
  coordinateAudit:'verified',visibilityAudit:'verified',solutionAudit:'verified',
