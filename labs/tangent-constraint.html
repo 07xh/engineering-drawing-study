@@ -39,11 +39,11 @@ svg{display:block;width:100%;height:auto;max-height:530px;min-height:200px;borde
 <label for="tangentRadius">连接半径 r <input id="tangentRadius" type="range" min="22" max="52" value="32" step="1"><strong id="radiusValue">32</strong></label>
 <label for="tangentSide">候选圆心位置 <select id="tangentSide"><option value="left">左侧候选</option><option value="right" selected>右侧候选</option></select></label>
 </div><p class="legend"><span style="--c:#367f5b">已知图形</span><span style="--c:#cb8f30">辅助圆/辅助线</span><span style="--c:#2475b6">选中的解</span><span style="--c:#999b9d">另一候选解</span></p>
-<svg id="tangentBoard" viewBox="0 0 650 315" role="img" aria-label="已知圆和水平线，以及逐步求出的连接圆心轨迹与切点"></svg>
-<div class="controls"><button id="tangentPrev" type="button">上一步</button><button id="tangentNext" type="button" class="primary">下一步</button><button id="tangentRestart" type="button">重新演示</button><span id="tangentCounter" aria-live="polite">1 / 5</span></div>
+<div class="unified-animation-workspace"><div class="unified-animation-figure"><svg id="tangentBoard" viewBox="0 0 650 315" role="img" aria-label="已知圆和水平线，以及逐步求出的连接圆心轨迹与切点"></svg>
+</div><div class="animation-side-explanation"><div class="controls"><button id="tangentPrev" type="button">上一步</button><button id="tangentNext" type="button" class="primary">下一步</button><button id="tangentRestart" type="button">重新演示</button><span id="tangentCounter" aria-live="polite">1 / 5</span></div>
 <h3 id="stepTitle">① 看清已知条件</h3><p id="stepExplain"></p>
 </section>
-<section class="panel" aria-label="自由度与分支">
+</div></div><section class="panel" aria-label="自由度与分支">
 <h2>② 自由度与几何验算</h2>
 <div class="dof-flow">
 <div id="degree2"><strong>2</strong>圆心位置完全未知</div>
