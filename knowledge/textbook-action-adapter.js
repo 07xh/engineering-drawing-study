@@ -21,7 +21,17 @@ function adapt(example,geometry){
    if(seen.has(fingerprint))continue;
    seen.add(fingerprint);actions.push(convert(shape));
   }
-  steps.push({id:'step-'+(i+1),explanation:example.order[i],actions});
+  const step={id:'step-'+(i+1),explanation:example.order[i],actions};
+  if(example.id==='example-2-2'){
+   // Only the normalized drawing's W-view target is solved here; not the book's pixel coordinates.
+   const points=frame.proof&&frame.proof.points;
+   if(!points)throw Error('缺少已核验的例2-2示意投影坐标');
+   const conditions=[];
+   if(i>=1)conditions.push({type:'coordinate',axis:'y',value:points.aPrime.y});
+   if(i>=3)conditions.push({type:'coordinate',axis:'x',value:points.aDouble.x});
+   step.constraintAnalysis={scope:'point-2d-linear',conditions};
+  }
+  steps.push(step);
  }
  return {id:example.id,title:example.title,type:'other',status:'steps-verified',
   source:{book:'工程制图与 AutoCAD 第3版',page:example.printedPage},
