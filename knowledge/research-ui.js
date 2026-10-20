@@ -11,7 +11,7 @@ function referenceLink(label,url){const a=make('a',label);a.href=url;a.target='_
 function render(id){
  const original=window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(id);
  const profile=core.detect(id,original);if(!profile)return;
- current=id;latest++;if(controller){controller.abort();controller=null}
+ current=id;latest++;if(controller){controller.abort();controller=null}$('researchSearch').disabled=false
  $('researchTitle').textContent=id+' · '+(profile.title||'待核对原题');
  $('researchClassification').textContent='题型初判：'+profile.group+'。'+profile.shapeWarning;
  $('researchQuery').value=profile.query;
@@ -72,8 +72,8 @@ async function search(){
  const id=current,profile=core.detect(id,window.VerifiedExerciseGeometry&&window.VerifiedExerciseGeometry.get(id));if(!profile)return;
  const raw=$('researchQuery').value.trim();if(raw.length<2||raw.length>110){$('researchStatus').textContent='请填写 2～110 字的检索主题，不要输入私密信息。';return}
  const now=Date.now();if(now-lastRun<4000){$('researchStatus').textContent='请求过于频繁，稍后再试。';return}
- lastRun=now;const serial=++latest;controller=new AbortController();
- const timer=setTimeout(()=>controller&&controller.abort(),11500);
+ lastRun=now;const serial=++latest;controller=new AbortController();const activeController=controller;
+ const timer=setTimeout(()=>activeController.abort(),11500);
  $('researchSearch').disabled=true;$('researchResults').replaceChildren();
  $('researchStatus').textContent='正在检索公开条目与文献元数据，不传输教材 PDF 或个人笔迹……';
  try{
