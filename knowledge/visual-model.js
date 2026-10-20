@@ -1,5 +1,5 @@
 /* 原创教学几何模型：与教材原题、标准答案分离。 */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.KnowledgeVisual=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.KnowledgeVisual=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
 'use strict';
 const point=(x,y,z)=>({x,y,z});
 const p={A:point(20,18,42),B:point(53,43,14),C:point(16,49,19)};
