@@ -131,15 +131,17 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
       <p id="bookExampleStageAddition" class="book-example-stage-addition" aria-live="polite"></p>
       <p id="bookExampleAction"></p>
       <p id="bookExampleReason"></p>
-      <section class="book-example-inspector" id="bookExampleShapeInspector" aria-labelledby="bookExampleShapeHeading">
-        <h5 id="bookExampleShapeHeading">图形元素解释</h5>
-        <label>查看点或线 <select id="bookExampleShapeSelect" aria-label="选择教材例题中已显示的点或线"></select></label>
-        <p id="bookExampleShapeName" class="book-example-shape-name" aria-live="polite"></p>
-        <p id="bookExampleShapeRole"></p>
-        <p id="bookExampleShapeReason"></p>
-        <p id="bookExampleShapeEffect"></p>
-        <p class="book-example-shape-boundary">单条图线的说明不等于整步自由度计算；数值以本步约束计算为准。</p>
-      </section>
+      <details class="book-example-inspector" id="bookExampleShapeInspector">
+        <summary id="bookExampleShapeHeading">图形元素解释：<span id="bookExampleShapeSummary">可点击图纸查看</span></summary>
+        <div class="book-example-inspector-body">
+          <label>查看点或线 <select id="bookExampleShapeSelect" aria-label="选择教材例题中已显示的点或线"></select></label>
+          <p id="bookExampleShapeName" class="book-example-shape-name" aria-live="polite"></p>
+          <p id="bookExampleShapeRole"></p>
+          <p id="bookExampleShapeReason"></p>
+          <p id="bookExampleShapeEffect"></p>
+          <p class="book-example-shape-boundary">单条图线的说明不等于整步自由度计算；数值以本步约束计算为准。</p>
+        </div>
+      </details>
       <div class="book-example-computed" id="bookExampleComputedDof" hidden aria-live="polite"><strong id="bookExampleComputedDofValue"></strong><span id="bookExampleComputedDofLabel"></span></div>
       <details class="book-example-more" id="bookExampleDofDetails">
         <summary>自由度变化与定位依据</summary>
