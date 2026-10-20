@@ -13,6 +13,8 @@ function render(){
  if(!entry||!data||!engine)return;
  const picture=data.svgShapes(entry.id,entry.chapter,stage),board=$('visualBoard');
  const showGuides=$('visualShowGuides').checked;
+ const placedLabels=window.ProjectionLabels.layout(picture.shapes.filter(s=>s.kind==='point'));
+ let pointIndex=0;
  board.replaceChildren();board.setAttribute('viewBox','0 0 970 650');
  elt('rect',{width:970,height:650,fill:'#fff'},board);
  for(const shape of picture.shapes){
@@ -40,10 +42,9 @@ function render(){
    const [x,y]=shape.xy;
    elt('circle',{cx:x,cy:y,r:4.2,fill:'#277453'},board);
    // Use projection notation to distinguish the same spatial point across views.
-   const suffix={V:'′',H:'',W:'″'}[shape.view]||'';
-   const labelX=Math.min(930,Math.max(18,x+9));
-   const labelY=Math.max(20,y-11);
-   elt('text',{x:labelX,y:labelY,'font-size':14,'font-weight':600,fill:'#265845',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},board,shape.name+suffix);
+   const placed=placedLabels[pointIndex++];
+   const labelX=placed.labelX,labelY=placed.labelY;
+   elt('text',{x:labelX,y:labelY,'font-size':14,'font-weight':600,fill:'#265845',stroke:'#fff','stroke-width':3,'paint-order':'stroke'},board,placed.label);
   }
  }
  const st=data.stages()[stage],report=data.analyze(engine,entry.id,entry.chapter,stage);
