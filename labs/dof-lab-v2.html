@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自由度实验室 2.0 · 图学课堂</title><link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#214434;background:#edf3ef}*{box-sizing:border-box}body{margin:0}
+main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
+.lab-v2 .intro,.lab-v2 .pane,.lab-v2 .editor{background:#fff;border:1px solid #d4e3d8;border-radius:16px;padding:16px;margin:12px 0}
+.lab-v2 h1{font-size:clamp(23px,3vw,35px);margin:4px 0}.lab-v2 h2{font-size:17px;margin:0 0 8px}
+.lab-v2 p{line-height:1.6;margin:8px 0}.lab-v2 .muted{font-size:13px;color:#647b6b}
+.lab-v2 .workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.16fr);gap:13px;align-items:start}
+.lab-v2 .workspace .pane{margin:0;min-width:0}
+.lab-v2 .display{display:block;width:100%;height:auto;max-width:100%;border:1px solid #d5e5da;background:#fff;border-radius:12px}
+.lab-v2 .spatial{touch-action:none;cursor:grab}.lab-v2 .spatial.dragging{cursor:grabbing}
+.lab-v2 .sheet-axis{stroke:#8caa98;stroke-width:1.6}.lab-v2 .sheet-miter{stroke:#a6b7ad;stroke-width:1.7;stroke-dasharray:7 5}
+.lab-v2 .sheet-axis-label,.lab-v2 .sheet-view-label{font-size:17px;fill:#40664d;font-weight:650}
+.lab-v2 .sheet-edge{stroke:#789988;stroke-width:1.8;fill:none}
+.lab-v2 .sheet-helper{stroke:#d28b30;stroke-width:1.6;stroke-dasharray:7 5}
+.lab-v2 .sheet-target{fill:#d08025;stroke:#fff;stroke-width:1.5}
+.lab-v2 .sheet-point-label{font-size:16px;fill:#97591c;font-weight:700}
+.lab-v2 .sheet-vertex{fill:#6e9e7d}.lab-v2 .sheet-vertex-selected{fill:#d3872a}
+.lab-v2 .sheet-disclaimer{font-size:12px;fill:#607568}
+.lab-v2 .toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.lab-v2 input,.lab-v2 select,.lab-v2 button{font:inherit;border:1px solid #b9d0c1;border-radius:9px;padding:9px;color:#214434;background:white;min-height:40px}
+.lab-v2 input[type=number]{width:108px;max-width:100%}
+.lab-v2 input[type=checkbox]{min-height:0;accent-color:#277751}
+.lab-v2 button{cursor:pointer}.lab-v2 button.primary{background:#28744f;color:white;border-color:#28744f}
+.lab-v2 button:disabled{opacity:.46;cursor:not-allowed}.lab-v2 .fields{display:flex;flex-wrap:wrap;gap:10px}
+.lab-v2 .fields label{display:flex;flex-direction:column;gap:4px;min-width:90px;font-size:12px;color:#4a6b53}
+.lab-v2 .field-group{border:0;padding:0;margin:0}.lab-v2 .field-group legend{font-size:14px;font-weight:650;margin:0 0 7px}
+.lab-v2 .dof-result{display:flex;align-items:center;gap:15px;flex-wrap:wrap;background:#eaf5ec;padding:12px 14px;border-radius:12px}
+.lab-v2 .dof-result strong{font-size:32px;font-variant-numeric:tabular-nums;color:#1c6949}
+.lab-v2 .dof-result.is-conflict{background:#fff2e7}.lab-v2 .dof-result.is-conflict strong{color:#9a4a25}
+.lab-v2 .conditions{padding:0;list-style:none;display:grid;gap:8px}
+.lab-v2 .condition{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px;border:1px solid #e1eae3;border-radius:10px;background:#f9fbfa}
+.lab-v2 .condition>div:first-child{min-width:0;overflow-wrap:anywhere}.lab-v2 .condition button{padding:7px;min-height:36px;font-size:12px}
+.lab-v2 .condition .mini{font-size:12px;color:#637b69}.lab-v2 .condition .actions{display:flex;gap:4px;flex-wrap:wrap}
+.lab-v2 .condition.off{opacity:.54}.lab-v2 .notice{border-left:3px solid #ca943f;background:#fff9ed;padding:10px;border-radius:8px}
+@media(max-width:930px){.lab-v2 .workspace{grid-template-columns:1fr}}
+@media(max-width:600px){main.lab-v2{padding:12px 10px 45px}.lab-v2 .intro,.lab-v2 .pane,.lab-v2 .editor{padding:12px}.lab-v2 .fields label{flex:1 1 110px}.lab-v2 input[type=number]{width:100%}}
+</style><link rel="stylesheet" href="../site-ui.css"></head>
+<body class="ui-refresh"><header class="site-topbar"><div class="site-topbar-inner"><a href="../index.html" class="site-brand">⌁ 图学课堂</a><nav class="site-nav" aria-label="实验室导航"><a href="../knowledge/index.html">教材知识库</a><a href="analysis.html">旧版实验室</a><a href="constraints.html">三投影面实验室</a></nav></div></header>
+<main class="lab-v2">
+ <section class="intro"><h1>自由度实验室 2.0</h1>
+ <p>从零创建空间点 P 的约束，实时观察三维参考立体、同一张工程图纸的 V / H / W 三视图，以及自由度变化。</p>
+ <p class="muted">本页为独立的几何教学实验：三个预设立体是固定参考模型，约束只作用于自由空间点 P，暂不等于整个刚体的 6 自由度，也不代表教材习题答案。</p></section>
+ <section class="toolbar" aria-label="场景设置"><label for="solid">参考立体</label><select id="solid"><option value="cuboid">长方体</option><option value="triangular-prism">三棱柱</option><option value="pyramid">四棱锥</option></select>
+ <label for="selectedVertex">选中参考顶点</label><select id="selectedVertex"><option value="">不选中</option></select>
+ <button type="button" id="resetView">恢复观察角度</button>
+ </section>
+ <div class="workspace">
+  <section class="pane"><h2>三维空间与可行位置</h2><p class="muted">拖动图形旋转、用按钮缩放。橙色 P* 是满足当前约束的一个示例位置，虚线/半透明区域表示仍可移动的自由方向。</p>
+   <svg id="space" class="display spatial" viewBox="0 0 460 330" role="img" aria-label="可拖动旋转的三维教学参考立体和空间点 P"></svg>
+   <div class="toolbar"><button type="button" id="zoomIn">放大</button><button type="button" id="zoomOut">缩小</button><button type="button" id="turnLeft">左转</button><button type="button" id="turnRight">右转</button></div>
+   <p id="pointCoordinates" class="muted" aria-live="polite"></p>
+  </section>
+  <section class="pane"><h2>工程制图 · 单张三视图图纸</h2><p class="muted">第一角画法：V 左上、H 左下、W 右上。45° 线在右下，用于 H→W 的深度转移。</p>
+   <svg id="sheet" class="display" viewBox="0 0 960 620" role="img" aria-label="同一张工程图纸上的 V、H、W 三视图与 45 度转移线"></svg>
+   <div class="toolbar"><label><input type="checkbox" id="showGuides" checked> 投影联系线</label><label><input type="checkbox" id="showWireframe" checked> 立体投影线框</label><label><input type="checkbox" id="showLabels"> 参考顶点</label></div>
+  </section>
+ </div>
+ <section class="editor" aria-labelledby="editorTitle"><h2 id="editorTitle">从零添加约束</h2>
+  <p class="muted">空间点 P 起始没有条件。添加、编辑、禁用或删除后自动重新计算。你可以先给 H 投影，再给高度，观察剩余自由度从 3 → 1 → 0。</p>
+  <form id="conditionForm">
+   <fieldset class="field-group"><legend>新增或修改条件</legend>
+    <div class="toolbar"><label for="conditionType">条件类型</label><select id="conditionType">
+    <option value="projection">已知某面投影</option><option value="coordinate">固定一个坐标</option>
+    <option value="plane">点在给定平面上</option><option value="line">点在给定空间直线上</option>
+    </select></div><div id="conditionInputs" class="fields"></div>
+    <div class="toolbar"><button class="primary" id="saveCondition" type="submit">添加条件</button><button id="cancelEdit" type="button" hidden>取消编辑</button><button id="undo" type="button">撤销上一次修改</button><button id="clear" type="button">清空约束</button></div>
+   </fieldset>
+  </form>
+  <h3>当前约束</h3><ol id="conditionList" class="conditions"></ol>
+  <div id="dofResult" class="dof-result" aria-live="polite"><strong id="degrees">3</strong><span id="status">剩余自由度</span><span id="rank">独立约束数：0</span></div>
+  <p id="analysis" aria-live="polite"></p>
+  <p id="scope" class="notice">自由度只针对空间点 P。图纸上的辅助线用于解释已知投影，不会被额外计入空间条件。</p>
+  <details><summary>设置试探位置 P*（约束不完整时使用）</summary><div class="fields" id="trialInputs">
+  <label>x <input type="number" id="trialX" value="35" step="any"></label>
+  <label>y <input type="number" id="trialY" value="22" step="any"></label>
+  <label>z <input type="number" id="trialZ" value="51" step="any"></label></div><p class="muted">试探位置会自动投影到满足当前条件的可行集合；如果出现无解则不绘制目标点。</p></details>
+ </section>
+ <p class="muted" id="uiStatus" role="status"></p>
+</main>
+<script defer src="constraint-engine.js"></script>
+<script defer src="dof-lab-geometry.js"></script>
+<script defer src="dof-lab-sheet.js"></script>
+<script defer src="dof-lab-state.js"></script>
+<script defer src="dof-lab-spatial-svg.js"></script>
+<script defer src="dof-lab-v2-ui.js"></script>
+</body></html>
