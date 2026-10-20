@@ -30,6 +30,12 @@ function adapt(example,geometry){
    if(i>=1)conditions.push({type:'coordinate',axis:'y',value:points.aPrime.y});
    if(i>=3)conditions.push({type:'coordinate',axis:'x',value:points.aDouble.x});
    step.constraintAnalysis={scope:'point-2d-linear',conditions};
+   // Compute local DOF of the normalized W-view target only, not original book pixels.
+   const target=points.aDouble;
+   const localConstraints=[];
+   if(i>=1)localConstraints.push({type:'fixed',point:'aDouble',axis:'y',value:points.aPrime.y});
+   if(i>=3)localConstraints.push({type:'fixed',point:'aDouble',axis:'x',value:target.x});
+   step.localDofAnalysis={points:{aDouble:{x:target.x,y:target.y}},constraints:localConstraints};
   }
   steps.push(step);
  }
