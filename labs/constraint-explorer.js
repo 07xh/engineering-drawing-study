@@ -35,6 +35,7 @@ function update(){
  $('explorerStrategy').textContent=r.inconsistent?'当前条件无解。请检查高度是否等于平面在 (x,y) 处的高度 '+(10+.3*x+.4*y).toFixed(2)+'。':state.H&&state.P?'由 k 确定 x、y，再沿水平投射线与 ABC 平面相交求出 z；用联系线绘制正面和侧面投影。':state.P&&state.Z?'定高平面与 ABC 的交集是一条直线；沿交线寻找满足其他条件的点。':state.H?'k 确定 x、y，沿竖直投射线寻找 K；仍需高度或平面从属条件。':state.P?'K 可在 ABC 平面内移动；选择平面内辅助线求相应投影。':state.Z?'高度固定，K 可在水平面内移动；仍需确定水平位置。':'自由点有三个位置自由度，先添加已知投影或平面条件。';
  window.renderUnifiedConstraintLab?.();
 }
+window.updateConstraintExplorer=update;
 for(const key of ['H','P','Z'])$('constraint'+key).addEventListener('change',e=>{state[key]=e.target.checked;update()});
 for(const id of ['kx','ky','freeHeight'])$(id).addEventListener('input',update);
 $('constraintAll').onclick=()=>{state.H=true;state.P=true;state.Z=false;update()};
