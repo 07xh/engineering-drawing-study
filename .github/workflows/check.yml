@@ -17,6 +17,8 @@ jobs:
           node --check scripts/check-constraints.cjs
           node --check labs/constraint-engine.js
           node --check labs/dof-lab-geometry.js
+          node --check labs/free-geometry-core.js
+          node --check labs/free-geometry-sheet.js
           node --check labs/dof-lab-sheet.js
           node --check labs/dof-lab-visibility.js
           node --check labs/dof-lab-state.js
@@ -71,6 +73,7 @@ jobs:
           node scripts/check-constraints.cjs
           node scripts/check-constraint-engine.cjs
           node scripts/check-dof-lab-geometry.cjs
+          node scripts/check-free-modeler-core.cjs
           node scripts/check-dof-lab-sheet.cjs
           node scripts/check-dof-lab-visibility.cjs
           node scripts/check-dof-lab-state.cjs
