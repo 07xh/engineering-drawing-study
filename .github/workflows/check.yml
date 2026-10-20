@@ -10,6 +10,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install pinned WebGL build dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
       - name: Check JavaScript syntax
         run: |
           node --check scripts/check-constraints.cjs
@@ -133,6 +135,7 @@ jobs:
           node scripts/check-exercise-261.cjs
           node scripts/build-static.cjs
           node scripts/check-static-site-dependencies.cjs
+          node scripts/check-three-viewer-bundle.cjs
           test -f dist/labs/constraints.html
           test -f dist/labs/analysis.html
           test -f dist/labs/dof-lab-v2.html

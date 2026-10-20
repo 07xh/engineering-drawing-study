@@ -4,6 +4,7 @@ const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.D
 const $=id=>document.getElementById(id);
 if(!Store||!Geom||!Sheet||!Spatial){$('uiStatus').textContent='实验室脚本未完整加载';return}
 let state=Store.create(),history=[],editing=null,selectedVertex='',yaw=.72,pitch=.52,zoom=1,drag=null;
+let viewer=null;
 const schemas={
  coordinate:[{id:'axis',label:'坐标轴',kind:'select',values:['x','y','z'],default:'x'},{id:'value',label:'固定值',kind:'number',default:35}],
  projection:[{id:'plane',label:'投影面',kind:'select',values:['H','V','W'],default:'H'},
@@ -107,7 +108,8 @@ function render(){
  $('scope').textContent=report.scope+' '+(result.inconsistent?'当前没有可行空间点，请检查冲突条件。':candidate.warning);
  $('pointCoordinates').textContent=result.inconsistent?'不存在满足全部条件的 P。':(result.degrees?'当前 P* 是可行位置样例：':'确定的空间点 P：')+
   ' ('+['x','y','z'].map(k=>Number(candidate.example[k].toFixed(2))).join('，')+')';
- $('space').innerHTML=Spatial.markup(model,candidate,{yaw,pitch,zoom,selectedVertex});
+ if(viewer)viewer.update(model,candidate,{selectedVertex});
+ else $('space').innerHTML=Spatial.markup(model,candidate,{yaw,pitch,zoom,selectedVertex});
  $('sheet').innerHTML=result.inconsistent?
   Sheet.markup(model,state.trial,{showTarget:false,showGuides:false,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex}):
   Sheet.markup(model,candidate.example,{showGuides:$('showGuides').checked,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex});
@@ -154,11 +156,18 @@ spatial.addEventListener('pointermove',event=>{
 });
 function endDrag(event){if(drag&&event.pointerId===drag.id){drag=null;spatial.classList.remove('dragging')}}
 spatial.addEventListener('pointerup',endDrag);spatial.addEventListener('pointercancel',endDrag);
-$('turnLeft').addEventListener('click',()=>{yaw-=.2;render()});
-$('turnRight').addEventListener('click',()=>{yaw+=.2;render()});
-$('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.5,zoom*1.15);render()});
-$('zoomOut').addEventListener('click',()=>{zoom=Math.max(.5,zoom/1.15);render()});
-$('resetView').addEventListener('click',()=>{yaw=.72;pitch=.52;zoom=1;render()});
+$('turnLeft').addEventListener('click',()=>{if(viewer)viewer.turn(-.2);else{yaw-=.2;render()}});
+$('turnRight').addEventListener('click',()=>{if(viewer)viewer.turn(.2);else{yaw+=.2;render()}});
+$('zoomIn').addEventListener('click',()=>{if(viewer)viewer.zoom(1.15);else{zoom=Math.min(2.5,zoom*1.15);render()}});
+$('zoomOut').addEventListener('click',()=>{if(viewer)viewer.zoom(1/1.15);else{zoom=Math.max(.5,zoom/1.15);render()}});
+$('resetView').addEventListener('click',()=>{if(viewer)viewer.resetCamera();else{yaw=.72;pitch=.52;zoom=1;render()}});
+try{
+ viewer=window.DrawingLabThreeViewer?.mount($('threeSpace'),id=>{
+  selectedVertex=id;$('selectedVertex').value=id;render();
+ })||null;
+ if(viewer){$('threeSpace').hidden=false;$('space').hidden=true;$('rendererStatus').textContent='Three.js 三维模式：触屏或鼠标旋转、双指缩放、点击顶点同步选中。'}
+ else $('rendererStatus').textContent='此设备不支持所需 WebGL 功能，已自动使用 SVG 三维预览。';
+}catch(error){viewer=null;$('rendererStatus').textContent='WebGL 初始化不可用，已启用 SVG 预览。'}
 $('conditionType').value='projection';showFields('projection');renderFields();render();
 window.DrawingLabV2Controller={getState:()=>JSON.parse(JSON.stringify(state)),apply:action=>{mutate(action);renderFields()},getAnalysis:()=>Store.compute(state).analysis};
 })();

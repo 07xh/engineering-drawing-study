@@ -16,4 +16,16 @@ const forbidden=["content.js","question-strategies.js","app.js","styles.css","la
 for(const file of forbidden){
  if(fs.existsSync(path.join(out,file)))throw new Error('Retired course/quiz asset leaked into public build: '+file);
 }
+
+/* Bundle pinned Three.js at build time. The published page never requests a CDN.
+ * Only V2 needs WebGL; unsupported devices retain the existing SVG fallback.
+ */
+const esbuild=require('esbuild');
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/dof-lab-three-entry.js')],
+ outfile:path.join(out,'labs/dof-lab-three-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
 console.log('Textbook-only public site ready:',files.length,'assets');
