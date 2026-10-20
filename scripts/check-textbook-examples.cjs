@@ -6,8 +6,8 @@ const book=load('knowledge/knowledge-data.js','DrawingKnowledge');
 const catalog=load('knowledge/textbook-examples.js','TextbookExamples');
 const model=load('knowledge/textbook-example-geometry.js','TextbookExampleGeometry');
 assert(catalog&&model);
-assert.equal(catalog.all.length,3,'only three inspected textbook examples');
-const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14'],['example-2-3',35,41,'图 2-16']];
+assert.equal(catalog.all.length,4,'four individually verified textbook examples');
+const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14'],['example-2-3',35,41,'图 2-16'],['example-4-2',87,93,'图 4-5']];
 for(const [id,printed,pdf,figure] of sourceRows){
  const example=catalog.get(id);
  assert(example&&example.printedPage===printed&&example.pdfPage===pdf&&example.figure===figure);
@@ -19,7 +19,8 @@ for(const [id,printed,pdf,figure] of sourceRows){
  assert(example.stageChecks.every(x=>typeof x==='string'&&x.length>12));
  for(const topic of example.topics){
   const card=book.get(topic);
-  assert(card?.contentStatus==='page-reviewed','example mapped to an unreviewed section');
+  assert(card&&(card.contentStatus==='page-reviewed'||example.id==='example-4-2'&&card.id==='ch04-s02'),
+   'an example may attach to a catalog-only section only when that individual example has been source-reviewed');
   assert.equal(card.chapter,example.chapter);
   assert.equal(card.section,example.section,'example mapped outside textbook section');
   assert(catalog.forTopic(topic).some(x=>x.id===id));
@@ -55,6 +56,11 @@ assert(coordinateProof.heightAligned&&coordinateProof.depthAligned);
 assert(!model.frame('example-2-3',2).shapes.some(x=>x.label==='a″'),'cannot reveal side projection before construction');
 assert(model.frame('example-2-3',3).shapes.some(x=>x.label==='a″'),'third projection missing');
 assert.equal(catalog.forTopic('ch02-point-coordinates').length,2,'both verified point examples must appear');
+const wedge=model.frame('example-4-2',4);
+assert(wedge.shapes.some(s=>s.label==='楔形块顶边'&&s.style==='result'),'example 4-2 should show wedge result');
+assert(!model.frame('example-4-2',0).shapes.some(s=>s.style==='result'),'wedge answer must remain hidden until constructed');
+assert(wedge.proof.maxResidual<1e-8);
+assert.equal(wedge.dof,null,'no numeric local DOF can be inferred for a whole wedge solid');
 assert.throws(()=>model.frame('example-1-1',-1));
 assert.throws(()=>model.frame('example-2-2',6));
 assert.throws(()=>model.frame('made-up-question',0),'unverified examples must fail closed');
@@ -115,4 +121,4 @@ for(const script of ['knowledge/textbook-examples.js','knowledge/textbook-exampl
  assert(builder.includes("'"+script+"'"),'static builder did not package '+script);
 const bannedPDFAssets=[...builder.matchAll(/'([^']+\.(?:pdf|jpg|jpeg|png))'/gi)].map(x=>x[1]);
 assert.deepEqual(bannedPDFAssets,[],'public build must not publish protected textbook scans');
-console.log('PASS three source-verified textbook examples, fifteen frames, source coordinates, multi-example UI and safe public build');
+console.log('PASS four source-verified textbook examples, twenty geometry frames, source coordinates, multi-example UI and safe public build');
