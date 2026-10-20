@@ -63,7 +63,8 @@ $('undo').events.click();assert.equal($('degrees').textContent,'0');
 $('clear').events.click();assert.equal($('degrees').textContent,'3');
 assert.equal(win.DrawingLabV2Controller.getState().conditions.length,0);
 $('solid').value='pyramid';$('solid').events.change();assert.equal(win.DrawingLabV2Controller.getState().modelId,'pyramid');
-$('field-offset').value=''; // this field is still plane from last choice.
+$('conditionType').value='plane';$('conditionType').events.change();
+$('field-offset').value='';
 submit();assert.match($('uiStatus').textContent,/必须填写有效数字/);
 assert.equal(win.DrawingLabV2Controller.getState().conditions.length,0);
 console.log('PASS: actual V2 experiment page renders both views, edits constraints, rejects invalid input, handles conflict and undo');
