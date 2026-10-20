@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict'),E=require('../knowledge/planar-intersections.js');
+const L=(a,b,offset)=>({type:'line',a,b,offset}),C=(x,y,r)=>({type:'circle',x,y,r});
+const near=(a,b)=>assert(Math.abs(a-b)<1e-7,`${a} != ${b}`);
+let r=E.intersect(L(1,0,3),L(0,1,4));assert.equal(r.status,'unique');near(r.solutions[0].x,3);near(r.solutions[0].y,4);
+assert.equal(E.intersect(L(1,0,3),L(2,0,6)).status,'coincident');
+assert.equal(E.intersect(L(1,0,3),L(1,0,4)).status,'none');
+r=E.intersect(L(0,1,0),C(0,0,5));assert.equal(r.status,'multiple');assert.equal(r.solutionCount,2);near(Math.abs(r.solutions[0].x),5);
+r=E.intersect(L(0,1,5),C(0,0,5));assert.equal(r.status,'unique');
+assert.equal(E.intersect(L(0,1,6),C(0,0,5)).status,'none');
+r=E.intersect(C(0,0,5),C(8,0,5));assert.equal(r.status,'multiple');near(Math.abs(r.solutions[0].y),3);
+assert.equal(E.intersect(C(0,0,5),C(10,0,5)).status,'unique');
+assert.equal(E.intersect(C(0,0,5),C(20,0,5)).status,'none');
+assert.equal(E.intersect(C(0,0,5),C(0,0,5)).status,'coincident');
+assert.equal(E.intersect(C(0,0,5),C(0,0,4)).status,'none');
+assert.throws(()=>E.intersect(C(0,0,0),L(1,0,0)));
+assert.throws(()=>E.intersect(L(0,0,0),C(0,0,5)));
+console.log('PASS: planar line/circle intersection unique, multiple, coincident, impossible and invalid');
