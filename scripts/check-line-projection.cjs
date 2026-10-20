@@ -131,3 +131,9 @@ console.log('PASS chapter 2-8 surface point partial givens, boundaries and unsol
 for(let i=1;i<=8;i++){const id='2-9-'+i,item=verifiedGeometry.get(id);assert(item&&item.status==='partial','missing partial scanned source '+id);assert(item.lines.length+(item.circles||[]).length>=8,'missing source geometry '+id);assert(!item.solutionSteps,'do not invent solutions '+id);for(const [x1,y1,x2,y2] of item.lines)assert([x1,y1,x2,y2].every(Number.isFinite)&&x1>=0&&x2>=0&&y1>=0&&y2>=0&&x1<=960&&x2<=960&&y1<=520&&y2<=520,'source line outside board '+id);for(const [cx,cy,r] of item.circles||[])assert([cx,cy,r].every(Number.isFinite)&&cx-r>=0&&cx+r<=960&&cy-r>=0&&cy+r<=520,'circle outside board '+id)}
 assert(drawingJs.includes('item.circles||[]'),'circular projection must render');
 console.log('PASS all eight 2-9 source tracings, circular projections and unsolved state');
+
+for(let i=1;i<=8;i++){const item=verifiedGeometry.get('2-9-'+i);assert(item.status==='partial','source audit cannot mark incomplete drawings complete');assert(typeof item.audit==='string'&&item.audit.length>15,'missing scan-fidelity audit for 2-9-'+i);assert(!item.solutionSteps,'do not fabricate solutions')}
+assert(verifiedGeometry.get('2-9-3').dots.some(([x,y])=>x===199&&y===348),'known point b must have a dot');
+assert(drawingHtml.includes('id="sourceAudit"'),'source audit must be visible');
+assert(drawingJs.includes("verified&&verified.audit"),'audit text must follow selected exercise');
+console.log('PASS eight source-fidelity audit notes and visible 2-9-3 point');
