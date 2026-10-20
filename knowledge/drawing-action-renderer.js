@@ -12,7 +12,8 @@ function validAction(a){
  if(a.kind==='line')return [g.x1,g.y1,g.x2,g.y2].every(finite);
  if(a.kind==='circle')return [g.cx,g.cy,g.r].every(finite)&&g.r>0;
  if(a.kind==='arc')return [g.cx,g.cy,g.r,g.startAngle,g.endAngle].every(finite)&&g.r>0&&g.endAngle>g.startAngle&&g.endAngle-g.startAngle<=360;
- if(a.kind==='dimension')return [g.x1,g.y1,g.x2,g.y2].every(finite)&&typeof a.text==='string'&&a.text.length<=80;
+ if(a.kind==='dimension')return [g.x1,g.y1,g.x2,g.y2].every(finite)&&typeof a.text==='string'&&a.text.length<=80&&
+  (g.offset===undefined||(finite(g.offset)&&Math.abs(g.offset)<=1000&&Math.hypot(g.x2-g.x1,g.y2-g.y1)>0));
  return finite(g.x)&&finite(g.y)&&typeof a.text==='string'&&a.text.length<=120;
 }
 function frames(problem){
@@ -51,9 +52,21 @@ function svgMarkup(frame,options){
    return '<path d="M '+start.x+' '+start.y+' A '+g.r+' '+g.r+' 0 '+(span>180?1:0)+' 1 '+end.x+' '+end.y+'"'+common+'/>';
   }
   if(a.kind==='dimension'){
-   const midX=(g.x1+g.x2)/2,midY=(g.y1+g.y2)/2;
-   return '<line x1="'+g.x1+'" y1="'+g.y1+'" x2="'+g.x2+'" y2="'+g.y2+'"'+common+'/>'+
-    '<text x="'+midX+'" y="'+(midY-7)+'" fill="'+sty.stroke+'" text-anchor="middle" font-size="15">'+esc(a.text)+'</text>';
+   const dx=g.x2-g.x1,dy=g.y2-g.y1,length=Math.hypot(dx,dy);
+   const offset=g.offset||0,nx=length?-dy/length:0,ny=length?dx/length:0;
+   const x1=g.x1+nx*offset,y1=g.y1+ny*offset,x2=g.x2+nx*offset,y2=g.y2+ny*offset;
+   const midX=(x1+x2)/2,midY=(y1+y2)/2;
+   let parts='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'"'+common+'/>';
+   if(g.offset!==undefined){
+    const extension=(ax,ay,bx,by)=>'<line x1="'+(ax+nx*2*Math.sign(offset||1))+'" y1="'+(ay+ny*2*Math.sign(offset||1))+'" x2="'+(bx+nx*4*Math.sign(offset||1))+'" y2="'+(by+ny*4*Math.sign(offset||1))+'"'+common+'/>';
+    parts+=extension(g.x1,g.y1,x1,y1)+extension(g.x2,g.y2,x2,y2);
+    if(length>=20){
+     const ux=dx/length,uy=dy/length;
+     const arrow=(x,y,dir)=>'<path d="M '+x+' '+y+' L '+(x+dir*ux*9+nx*3)+' '+(y+dir*uy*9+ny*3)+' L '+(x+dir*ux*9-nx*3)+' '+(y+dir*uy*9-ny*3)+' Z" fill="'+sty.stroke+'"/>';
+     parts+=arrow(x1,y1,1)+arrow(x2,y2,-1);
+    }
+   }
+   return parts+'<text x="'+midX+'" y="'+(midY-7)+'" fill="'+sty.stroke+'" text-anchor="middle" font-size="15">'+esc(a.text)+'</text>';
   }
   return '<text x="'+g.x+'" y="'+g.y+'" fill="'+sty.stroke+'">'+esc(a.text)+'</text>';
  }).join('');
