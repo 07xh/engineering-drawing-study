@@ -1,0 +1,11 @@
+{
+ "name": "engineering-drawing-study-viewer",
+ "version": "0.1.0",
+ "private": true,
+ "description": "Build-only bundled Three.js viewer for the DOF learning laboratory",
+ "type": "commonjs",
+ "devDependencies": {
+  "three": "0.186.1",
+  "esbuild": "0.28.2"
+ }
+}
