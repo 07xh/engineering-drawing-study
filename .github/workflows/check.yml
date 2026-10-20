@@ -66,6 +66,7 @@ jobs:
           node scripts/check-knowledge.cjs
           node scripts/check-textbook-only.cjs
           node scripts/check-textbook-examples.cjs
+          node scripts/check-animation-workspace.cjs
           node scripts/check-ui-layout.cjs
           node scripts/check-knowledge-ui.cjs
           node scripts/check-visual-research.cjs
