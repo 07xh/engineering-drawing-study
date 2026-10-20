@@ -28,6 +28,7 @@ footer{padding-top:34px;font-size:12px;color:#708578}
 @media(max-width:640px){.container{padding:14px 12px 40px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 <script defer src="knowledge-data.js"></script>
+<script defer src="textbook-examples.js"></script>
 <script defer src="textbook-page-audit.js"></script>
 <script defer src="textbook-page-audit-ui.js"></script>
 </head><body><div class="container">
@@ -41,6 +42,7 @@ footer{padding-top:34px;font-size:12px;color:#708578}
 <div class="stat"><strong id="auditWaiting">—</strong><span>尚待全面核验页面</span></div>
 </div>
 <p class="note">重要说明：<b>索引完成 ≠ 页面逐条核验完成</b>。标记“初步抽查”的页面只核对了章节点和可见图例；不能据此宣布原书例题的尺寸、线型、空间结构与解题步骤已全部准确。完整六层课程和原书例题数以独立的已核验记录为准。</p>
+<div class="note" id="auditExampleOverview" aria-label="已核实的单道教材例题"><strong id="auditExampleCount"></strong><div id="auditExampleLinks"></div></div>
 <div class="controls"><label for="auditChapter">查看章节</label><select id="auditChapter" aria-label="选择教材章节"></select><span id="auditResult" role="status"></span></div>
 <div class="pages" id="auditPages" aria-label="教材页码与来源进度"></div>
 <footer>来源：用户提供的292页扫描PDF，仅显示索引、原创摘要与核验标记；不包含出版社内容副本。</footer>
