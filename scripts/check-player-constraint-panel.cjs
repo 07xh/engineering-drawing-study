@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const html=fs.readFileSync('knowledge/drawing-player.html','utf8'),ui=fs.readFileSync('knowledge/drawing-player-ui.js','utf8');
+assert(html.includes('id="mathVerification"'));
+assert(html.includes('src="constraint-analysis.js"'));
+assert(html.includes('src="../labs/constraint-engine.js"'));
+assert(ui.includes('currentProblem?.steps[index]?.constraintAnalysis'));
+assert(ui.includes('window.DrawingConstraintAnalysis.analyze(request)'));
+assert(ui.includes('尚无经过核验的结构化数学约束'));
+new vm.Script(ui);
+console.log('PASS: player explicitly distinguishes textbook prose from computed constraint results');
