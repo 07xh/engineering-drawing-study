@@ -116,6 +116,8 @@ function show(id,scroll=false){
   $('detailMistake').textContent=item.mistake;step=1;renderSteps();
  }
  showDepth(item);
+ if(window.TextbookExampleUI)window.TextbookExampleUI.show(item.id);
+ const matchedTextbookExample=!!(window.TextbookExamples&&window.TextbookExamples.forTopic(item.id).length);
  const related=$('detailExercises');related.replaceChildren();
  if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；目前不自动关联任何未经原图核实的习题。只有你提交且与教材已核对的题目才能作为正式关联。','source'))}
  else for(const ex of item.practice){const a=e('a',ex+' · 进入练习');a.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(a)}
@@ -124,7 +126,8 @@ function show(id,scroll=false){
  $('markStatus').textContent=lesson?(completed.has(id)?'已在本机记录为学习过':'记录阅读进度，不等于熟练掌握'): '只有逐页核对的讲解才计入学习进度。';
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  const visualLink=document.querySelector('.site-jump-visual');
- if(visualLink)visualLink.hidden=!lesson||!item.visualMode;
+ if(visualLink)visualLink.hidden=matchedTextbookExample||!lesson||!item.visualMode;
+ if(matchedTextbookExample)$('visualLesson').hidden=true;
  const lab=$('chapterLabLink');if(lab){
   const allowedLabs={
    '../labs/tangent-constraint.html':'打开原创圆弧连接与自由度实验 ↗',
@@ -134,7 +137,7 @@ function show(id,scroll=false){
    '../labs/composite-geometry.html?mode=section':'打开第三章原创截交线实验 ↗',
    '../labs/composite-geometry.html?mode=intersection':'打开第三章原创相贯线实验 ↗'
   };
-  const allowed=lesson&&Object.prototype.hasOwnProperty.call(allowedLabs,item.labLink);
+  const allowed=!matchedTextbookExample&&lesson&&Object.prototype.hasOwnProperty.call(allowedLabs,item.labLink);
   lab.hidden=!allowed;
   if(allowed){lab.href=item.labLink;lab.textContent=allowedLabs[item.labLink]}
  }
