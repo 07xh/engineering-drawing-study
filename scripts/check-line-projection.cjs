@@ -116,3 +116,8 @@ console.log('PASS verified exercise wording and uncluttered first-frame source s
 const verifiedContext={};vm.runInNewContext(fs.readFileSync('labs/verified-exercises.js','utf8'),verifiedContext);const verifiedGeometry=verifiedContext.VerifiedExerciseGeometry;
 for(const id of ['2-7-1','2-7-2','2-7-3']){const item=verifiedGeometry.get(id);assert(item&&item.status==='partial','2-7 source tracing must be explicitly partial: '+id);assert(item.lines.length>=9,'missing source line details '+id);assert(!item.solutionSteps,'do not invent textbook solutions for '+id);for(const [x1,y1,x2,y2] of item.lines)assert([x1,y1,x2,y2].every(Number.isFinite)&&x1>=0&&x2>=0&&y1>=0&&y2>=0&&x1<=960&&x2<=960&&y1<=520&&y2<=520,'source geometry outside board '+id)}
 console.log('PASS 2-7-1 through 2-7-3 partial source tracings and coordinate bounds');
+
+for(const id of ['2-7-4','2-7-5','2-7-6']){const item=verifiedGeometry.get(id);assert(item&&item.status==='partial','source scan trace must remain partial: '+id);assert(item.lines.length>=7,'source givens incomplete '+id);assert(!item.solutionSteps,'unverified solution must not be animated: '+id);for(const [x1,y1,x2,y2] of item.lines)assert([x1,y1,x2,y2].every(Number.isFinite)&&x1>=0&&x2>=0&&y1>=0&&y2>=0&&x1<=960&&x2<=960&&y1<=520&&y2<=520,'geometry outside SVG canvas '+id)}
+assert(verifiedGeometry.get('2-7-5').title.includes('30 mm'),'source dimensional requirement must be preserved');
+assert(verifiedGeometry.get('2-7-6').title.includes('正平线'),'source AC plane constraint must be preserved');
+console.log('PASS textbook 2-7-4 to 2-7-6 source givens, bounds and unsolved status');
