@@ -47,11 +47,12 @@ function edgeSelections(){
 }
 function faceSelections(){
  const controls=['freeFaceA','freeFaceB','freeFaceC'].map($);
- const prev=controls.map(c=>c.value);
+ const prev=controls.map(c=>c.value),used=new Set();
  for(let index=0;index<3;index++){
   const select=controls[index];select.replaceChildren();
   for(const p of state.points){const opt=el('option',p.id);opt.value=p.id;select.append(opt)}
-  select.value=state.points.some(p=>p.id===prev[index])?prev[index]:(state.points[index]?.id||state.points[0]?.id||'');
+  const candidate=state.points.some(p=>p.id===prev[index])&&!used.has(prev[index])?prev[index]:(state.points.find(p=>!used.has(p.id))?.id||state.points[0]?.id||'');
+  select.value=candidate;if(candidate)used.add(candidate);
  }
  $('freeAddFace').disabled=state.points.length<3;
 }
