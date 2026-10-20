@@ -45,10 +45,20 @@ function edgeSelections(){
  b.value=state.points.some(p=>p.id===keepB)?keepB:(state.points.find(p=>p.id!==a.value)?.id||a.value);
  $('freeAddEdge').disabled=state.points.length<2;
 }
+function faceSelections(){
+ const controls=['freeFaceA','freeFaceB','freeFaceC'].map($);
+ const prev=controls.map(c=>c.value);
+ for(let index=0;index<3;index++){
+  const select=controls[index];select.replaceChildren();
+  for(const p of state.points){const opt=el('option',p.id);opt.value=p.id;select.append(opt)}
+  select.value=state.points.some(p=>p.id===prev[index])?prev[index]:(state.points[index]?.id||state.points[0]?.id||'');
+ }
+ $('freeAddFace').disabled=state.points.length<3;
+}
 function render(){
  const summary=Free.summary(state),model=Free.asModel(state);
  $('freeDegrees').textContent=String(summary.unconstrainedDegrees);
- $('freeCounts').textContent=summary.points+' 点 · '+summary.segments+' 线段';
+ $('freeCounts').textContent=summary.points+' 点 · '+summary.segments+' 线段 · '+summary.faces+' 三角面';
  $('freeMathNote').textContent=summary.note;
  $('freeDeletePoint').disabled=!selected();
  const list=$('freePointList');list.replaceChildren();
@@ -71,7 +81,19 @@ function render(){
   actions.append(button('删除',()=>{try{mutate({type:'remove-edge',a:edge.a,b:edge.b});$('freeStatus').textContent='线段已删除。'}catch(error){$('freeStatus').textContent=error.message}}));
   row.append(actions);edges.append(row);
  }
+ const faces=$('freeFaceList');faces.replaceChildren();
+ if(!summary.faces)faces.append(el('li','还没有三角面。请选三个非共线点。'));
+ for(const face of state.faces){
+  const row=el('li');row.append(el('span',face.join(' — ')));
+  const actions=el('div');actions.className='actions';
+  actions.append(button('删除',()=>{
+   try{mutate({type:'remove-face',vertices:face});$('freeStatus').textContent='已删除三角面，原有边线保留。'}
+   catch(error){$('freeStatus').textContent=error.message}
+  }));
+  row.append(actions);faces.append(row);
+ }
  edgeSelections();
+ faceSelections();
  $('freeSheet').innerHTML=Sheet.markup(state,{selectedPoint,showGuides:$('freeShowGuides').checked});
  if(viewer)viewer.update(model,{kind:'none',degrees:null,example:null,directions:[]},{selectedVertex:selectedPoint});
  else $('freeSpace').innerHTML=Spatial.markup(state,{selectedPoint,yaw,pitch,zoom});
@@ -103,6 +125,14 @@ $('freeEdgeForm').addEventListener('submit',event=>{
  event.preventDefault();
  try{mutate({type:'add-edge',a:$('freeEdgeA').value,b:$('freeEdgeB').value});$('freeStatus').textContent='线段已建立；未施加固定长度约束。'}
  catch(error){$('freeStatus').textContent='线段未添加：'+error.message}
+});
+$('freeFaceForm').addEventListener('submit',event=>{
+ event.preventDefault();
+ try{
+  const vertices=[$('freeFaceA').value,$('freeFaceB').value,$('freeFaceC').value];
+  mutate({type:'add-face',vertices});
+  $('freeStatus').textContent='三角面已建立，三维空间和三视图同步更新。边长与角度仍未被锁定。';
+ }catch(error){$('freeStatus').textContent='无法建立三角面：'+error.message}
 });
 $('freeUndo').addEventListener('click',()=>{
  if(!history.length)return;
