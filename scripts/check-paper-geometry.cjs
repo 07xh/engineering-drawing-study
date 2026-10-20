@@ -58,7 +58,7 @@ for(const id of ['ch01-divide-and-polygons','ch01-dimension-principle','ch01-dim
  assert.equal(k.visualMode,null,'planar paper topic must not use 3D VHW animation');
 }
 assert.equal(book.get('ch01-circle-tangent-principle').labLink,'../labs/tangent-constraint.html');
-assert.equal(book.get('ch03-s01').contentStatus,'toc-only','unreviewed chapters must remain outline only');
+assert.equal(book.get('ch04-s01').contentStatus,'toc-only','later unreviewed chapters must remain outline only');
 const html=text('labs/paper-geometry.html'),ui=text('labs/paper-geometry-ui.js'),app=text('knowledge/knowledge-app.js');
 for(const id of ['paperBoard','modeDivide','modePolygon','modeDimension','divisionCount','polygonSides','dimensionX','dimensionY','paperPrev','paperNext','paperRestart','paperCounter','paperDegree','paperValid','paperError','paperScope']){
  assert(html.includes('id="'+id+'"'),'control not found '+id);
@@ -67,7 +67,7 @@ assert(html.includes('不是')||html.includes('并非原书原题图'),'original
 assert(html.includes('.inputs [hidden]{display:none!important}'),'hidden control groups must stay hidden even under author styles');
 assert(ui.includes('model.regular(mode,argument(),stage)'),'core math must actually feed UI');
 assert(!ui.includes('VerifiedExerciseSolutions')&&!ui.includes('verified-exercises.js'),'must not touch real scanned original solutions');
-assert(app.includes("paper=['../labs/paper-geometry.html','../labs/paper-geometry.html?mode=dimension'].includes(item.labLink)"),'knowledge UI allowlist must permit both exact lab paths');
+assert(app.includes("'../labs/paper-geometry.html':'打开原创尺规作图与等分实验")&&app.includes("'../labs/paper-geometry.html?mode=dimension':'打开原创尺寸定位实验"),'knowledge UI allowlist must permit both exact lab paths');
 assert(ui.includes("group.includes(requestedMode)?requestedMode:'divide'"),'deep link must be safely matched to existing modes');
 const build=text('scripts/build-static.cjs');
 for(const f of ['labs/paper-geometry.html','labs/paper-geometry-core.js','labs/paper-geometry-ui.js'])assert(build.includes("'"+f+"'"),'missing build asset '+f);
