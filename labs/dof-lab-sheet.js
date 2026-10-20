@@ -1,7 +1,7 @@
-/* First-angle single-sheet SVG renderer, purely derived from DrawingLabGeometry.
- * Wireframe reference projections: do not imply verified hidden-line/visibility decisions.
+/* First-angle single-sheet SVG for convex planar teaching polyhedra.
+ * Hidden edge segments are classified geometrically, not assumed per vertex.
  */
-(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./dof-lab-geometry.js'):root.DrawingLabGeometry);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.DrawingLabSheet=api;})(typeof globalThis!=='undefined'?globalThis:this,function(G){
+(function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./dof-lab-geometry.js'):root.DrawingLabGeometry,typeof module==='object'&&module.exports?require('./dof-lab-visibility.js'):root.DrawingLabVisibility);if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.DrawingLabSheet=api;})(typeof globalThis!=='undefined'?globalThis:this,function(G,Visibility){
 'use strict';
 const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const f=n=>{if(!Number.isFinite(n))throw Error('图纸包含无效坐标');return Number(n.toFixed(3))};
@@ -15,7 +15,7 @@ function dot(p,labelText,css,extra=''){
  return '<circle cx="'+f(p.x)+'" cy="'+f(p.y)+'" r="5" class="'+css+'" '+extra+'/>'+label({x:p.x+9,y:p.y-9},labelText,'sheet-point-label');
 }
 function markup(model,point,options={}){
- if(!G||typeof G.geometry!=='function')throw Error('统一投影引擎未加载');
+ if(!G||typeof G.geometry!=='function'||!Visibility||typeof Visibility.analyze!=='function')throw Error('投影与可见性引擎未加载');
  const modelData=G.geometry(model),transfer=G.transfer(point),o=G.ORIGIN;
  const wire=options.showWireframe!==false,showGuides=options.showGuides!==false;
  const showLabels=options.showLabels===true,selected=options.selectedVertex||null;
@@ -34,11 +34,18 @@ function markup(model,point,options={}){
  '</g>'
  ];
  if(wire){
+  const visibility=Visibility.analyze(model);
   parts.push('<g class="sheet-object-projections">');
-  for(const view of ['V','H','W']){
-   for(const edge of modelData.views[view].edges){
-    parts.push(line(edge.from,edge.to,'sheet-edge'));
+  // Paint hidden edges first, then visible edges; coincident projected edges
+  // must read as solid when a nearer visible outline is on top.
+  for(const hidden of [true,false])for(const view of ['V','H','W']){
+   for(const edge of visibility[view]){
+    if(edge.hidden!==hidden||(hidden&&options.showHiddenEdges===false))continue;
+    parts.push(line(edge.from,edge.to,'sheet-edge '+(hidden?'sheet-edge-hidden':'sheet-edge-visible'),
+      'data-view="'+view+'" data-edge="'+esc(edge.a)+'-'+esc(edge.b)+'"'));
    }
+  }
+  for(const view of ['V','H','W']){
    if(showLabels){
     for(const [id,p] of Object.entries(modelData.views[view].points)){
      parts.push('<circle cx="'+f(p.x)+'" cy="'+f(p.y)+'" r="'+(selected===id?'5':'3.4')+'" class="'+(selected===id?'sheet-vertex-selected':'sheet-vertex')+'" data-vertex="'+esc(id)+'" data-view="'+view+'"/>');
@@ -61,7 +68,7 @@ function markup(model,point,options={}){
  }
  parts.push('</g>');
  }
- parts.push(label({x:58,y:596},'线框预览：立体遮挡与虚实线尚未判定；目标点为当前约束的一组可行示例。','sheet-disclaimer'));
+ parts.push(label({x:58,y:596},'凸多面体的虚实线依据投影遮挡计算；曲面和复杂非凸形体尚未支持。','sheet-disclaimer'));
  return parts.join('');
 }
 return {markup};

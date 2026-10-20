@@ -6,7 +6,7 @@ const html=fs.readFileSync('labs/dof-lab-v2.html','utf8');
 const ui=fs.readFileSync('labs/dof-lab-v2-ui.js','utf8');
 for(const file of ['constraint-engine.js','dof-lab-geometry.js','dof-lab-sheet.js','dof-lab-state.js','dof-lab-spatial-svg.js','dof-lab-v2-ui.js'])
  assert(html.includes('src="'+file+'"'),file+' must load');
-for(const id of ['solid','selectedVertex','space','sheet','conditionForm','conditionType','conditionInputs','saveCondition','cancelEdit','undo','clear','conditionList','degrees','rank','status','dofResult','analysis','scope','trialX','trialY','trialZ','showGuides','showWireframe','showLabels','pointCoordinates','uiStatus'])
+for(const id of ['solid','selectedVertex','space','sheet','conditionForm','conditionType','conditionInputs','saveCondition','cancelEdit','undo','clear','conditionList','degrees','rank','status','dofResult','analysis','scope','trialX','trialY','trialZ','showGuides','showHiddenEdges','showWireframe','showLabels','pointCoordinates','uiStatus'])
  assert(html.includes('id="'+id+'"'),id+' missing in interactive page');
 assert(html.includes('同一张工程图纸')&&html.includes('45°'));
 const elements=new Map();
@@ -28,7 +28,7 @@ class Node{
 }
 function $(id){if(!elements.has(id)){const n=new Node();n.id=id;}return elements.get(id)}
 for(const id of [...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]))$(id);
-$('showGuides').checked=true;$('showWireframe').checked=true;
+$('showGuides').checked=true;$('showWireframe').checked=true;$('showHiddenEdges').checked=true;
 const document={getElementById:$,createElement:tag=>new Node(tag)};
 const win={DrawingConstraints:E,DrawingLabGeometry:G,DrawingLabSheet:S,DrawingLabState:State,DrawingLabSpatialPreview:Spatial};
 vm.runInNewContext(ui,{window:win,document},{filename:'labs/dof-lab-v2-ui.js'});
@@ -38,6 +38,17 @@ assert($('sheet').innerHTML.includes('class="sheet-miter"'));
 assert($('sheet').innerHTML.includes('正视图 V'));
 assert($('sheet').innerHTML.includes('俯视图 H'));
 assert($('sheet').innerHTML.includes('左视图 W'));
+assert($('sheet').innerHTML.includes('sheet-edge-hidden'), 'initial drawing should show occluded dashed edges');
+$('showHiddenEdges').checked=false;$('showHiddenEdges').events.change();
+assert(!$('sheet').innerHTML.includes('sheet-edge-hidden'),'hidden-edge toggle should suppress dashed occluded edges');
+assert($('sheet').innerHTML.includes('sheet-edge-visible'),'solid edges remain after hiding occluded edges');
+$('showHiddenEdges').checked=true;$('showHiddenEdges').events.change();
+assert($('sheet').innerHTML.includes('sheet-edge-hidden'),'hidden-edge toggle restores dashed edges');
+$('showHiddenEdges').checked=true;$('showHiddenEdges').events.change();
+assert($('sheet').innerHTML.includes('sheet-edge-hidden'));
+$('showHiddenEdges').checked=false;$('showHiddenEdges').events.change();
+assert(!$('sheet').innerHTML.includes('sheet-edge-hidden'));
+$('showHiddenEdges').checked=true;$('showHiddenEdges').events.change();
 const submit=()=>$('conditionForm').events.submit({preventDefault(){}});
 submit(); // default H projection (35,22).
 assert.equal($('degrees').textContent,'1');

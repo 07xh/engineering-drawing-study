@@ -111,8 +111,8 @@ function render(){
  if(viewer)viewer.update(model,candidate,{selectedVertex});
  else $('space').innerHTML=Spatial.markup(model,candidate,{yaw,pitch,zoom,selectedVertex});
  $('sheet').innerHTML=result.inconsistent?
-  Sheet.markup(model,state.trial,{showTarget:false,showGuides:false,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex}):
-  Sheet.markup(model,candidate.example,{showGuides:$('showGuides').checked,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex});
+  Sheet.markup(model,state.trial,{showTarget:false,showGuides:false,showWireframe:$('showWireframe').checked,showHiddenEdges:$('showHiddenEdges').checked,showLabels:$('showLabels').checked,selectedVertex}):
+  Sheet.markup(model,candidate.example,{showGuides:$('showGuides').checked,showWireframe:$('showWireframe').checked,showHiddenEdges:$('showHiddenEdges').checked,showLabels:$('showLabels').checked,selectedVertex});
  if(result.inconsistent){
   // The shared sheet must never depict the trial point as a solution to contradictory constraints.
   $('sheet').insertAdjacentHTML('beforeend','<text x="50" y="570" fill="#a44e38" font-size="19">约束冲突：没有可行投影点</text>');
@@ -135,7 +135,7 @@ $('undo').addEventListener('click',()=>{if(!history.length)return;state=history.
 $('clear').addEventListener('click',()=>{try{mutate({type:'clear'});stopEdit()}catch(error){$('uiStatus').textContent=error.message}});
 $('solid').addEventListener('change',()=>{try{mutate({type:'set-model',value:$('solid').value});renderFields()}catch(error){$('uiStatus').textContent=error.message}});
 $('selectedVertex').addEventListener('change',()=>{selectedVertex=$('selectedVertex').value;render()});
-for(const id of ['showGuides','showWireframe','showLabels'])$(id).addEventListener('change',render);
+for(const id of ['showGuides','showHiddenEdges','showWireframe','showLabels'])$(id).addEventListener('change',render);
 for(const id of ['trialX','trialY','trialZ'])$(id).addEventListener('change',()=>{
  try{
   const values=['X','Y','Z'].map(k=>{const v=$('trial'+k).value;if(!v.trim()||!Number.isFinite(Number(v)))throw Error('试探点坐标无效');return Number(v)});
