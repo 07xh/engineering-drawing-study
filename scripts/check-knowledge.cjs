@@ -11,8 +11,8 @@ assert.equal(lib.chapters.filter(c=>c.number).length,12,'all 12 printed chapters
 assert.equal(lib.sections.length,56,'53 chapter sections + 3 appendices from TOC');
 const catalog=lib.sections.filter(s=>s.chapter!=='appendix');
 assert.equal(catalog.length,53);
-assert.equal(lib.entries.length,72,'56 original TOC entries + 16 independently written verified teaching notes');
-assert.equal(new Set(lib.entries.map(x=>x.id)).size,72,'duplicated lesson IDs');
+assert.equal(lib.entries.length,92,'56 TOC entries + 20 Chapter 1 + 16 Chapter 2 reviewed lessons');
+assert.equal(new Set(lib.entries.map(x=>x.id)).size,92,'duplicated lesson IDs');
 const sectionById=Object.fromEntries(lib.sections.map(s=>[s.id,s]));
 const source=lib.source;
 assert.equal(source.pdfPages,292);
@@ -50,7 +50,9 @@ const oldIds=['view-layout','point-notation','cone-circle','sphere-point','plane
 for(const id of oldIds)assert.equal(lib.get(id),null,'old self-summary unexpectedly survived: '+id);
 const outlines=lib.entries.filter(x=>x.contentStatus==='toc-only'),lessons=lib.entries.filter(x=>x.contentStatus==='page-reviewed');
 assert.equal(outlines.length,56);
-assert.equal(lessons.length,16);
+assert.equal(lessons.length,36);
+assert.equal(lessons.filter(x=>x.chapter==='ch01').length,20);
+assert.equal(lessons.filter(x=>x.chapter==='ch02').length,16);
 for(const item of outlines){
  assert.equal(item.sourceType,'textbook-third-edition-index');
  assert.equal(item.steps.length,0,'unreviewed chapter pretends to have step-by-step tutorial: '+item.id);
@@ -60,7 +62,7 @@ for(const item of outlines){
  assert(item.sourceDetails.includes('目录'),'TOC-only label missing');
 }
 for(const item of lessons){
- assert.equal(item.chapter,'ch02','no fully reviewed teaching outside image-reviewed Ch2');
+ assert(['ch01','ch02'].includes(item.chapter),'reviewed lesson outside inspected Chapters 1/2');
  const s=sectionById[item.section];assert(s,'lesson not linked to chapter section '+item.id);
  assert(item.pages[0]>=s.startPage&&item.pages[1]<=s.endPage,'lesson page range wrong '+item.id);
  assert.equal(item.pdfPages[0],item.pages[0]+6);
@@ -71,6 +73,11 @@ for(const item of lessons){
  assert(item.practice.length===0,'do not falsely label old 28 exercises as new textbook originals');
  assert(item.verifiedSolution===false,'lesson is not an approved original textbook solution');
 }
+assert(lib.get('ch01-arc-classification').law.includes('连接弧'));
+assert.equal(lib.get('ch01-arc-classification').pages[0],22);
+assert.equal(lib.get('ch01-arc-classification').labLink,'../labs/tangent-constraint.html');
+assert.equal(lib.get('ch01-circle-tangent-principle').pages[0],15);
+assert(lib.entries.filter(x=>x.chapter==='ch01'&&x.contentStatus==='page-reviewed').every(x=>x.visualMode===null),'Chapter 1 must not be mapped to generic 3D point animation');
 assert(lib.get('ch02-three-equalities').law.includes('长对正'));
 assert(lib.get('ch02-cone').visualMode==='cone');
 assert(lib.get('ch10-s01').contentStatus==='toc-only');
