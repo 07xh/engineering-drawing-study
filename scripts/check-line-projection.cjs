@@ -58,7 +58,7 @@ assert(chapterHtml.includes("drawLink.href='chapter-drawing.html#'+id"),'every e
 for(const id of ['board','question','pen','eraser','undo','clear','grid'])assert(drawingHtml.includes('id="'+id+'"'),'missing drawing control '+id);
 assert(drawingJs.includes("function validStroke(s)"),'saved drawing input validation missing');
 assert(drawingJs.includes("records[current]=s;save();ink()"),'per-question drawing persistence missing');
-assert(drawingHtml.includes('不是教材原图'),'must disclose illustrative geometry');
+assert(drawingHtml.includes('未核实题目不显示替代图'),'must disclose unverified source geometry');
 console.log('PASS 28 exercise drawing entries, clean geometry and pen controls');
 const dofJs=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-dof.js'),'utf8');
 for(const id of ['dofPanel','guidePrev','guideNext','guideShow','guideTitle','guideWhy','guideLimit','guides'])assert(drawingHtml.includes('id="'+id+'"'),'missing DOF panel control '+id);
