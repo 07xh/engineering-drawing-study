@@ -3,9 +3,10 @@
  * reconstruct publisher pages here. Update reviews only after direct page review.
  */
 (function(root,factory){
- const api=factory(typeof module==='object'&&module.exports?require('./knowledge-data.js'):root.DrawingKnowledge);
+ const api=factory(typeof module==='object'&&module.exports?require('./knowledge-data.js'):root.DrawingKnowledge,
+  typeof module==='object'&&module.exports?require('./textbook-examples.js'):root.TextbookExamples);
  if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.TextbookPageAudit=api;
-})(typeof globalThis!=='undefined'?globalThis:this,function(book){
+})(typeof globalThis!=='undefined'?globalThis:this,function(book,examples){
 'use strict';
 const pageCount=292,firstBody=7,lastBody=290;
 const samples=new Map([
@@ -80,5 +81,9 @@ const figureSourceNotes=Object.freeze([
  {chapter:'ch11',printedPage:208,pdfPage:214,topic:'电气图的逻辑连接',status:'visual-sampled',note:'电路原理图连接关系不视为机械几何自由度。'},
  {chapter:'ch12',printedPage:225,pdfPage:231,topic:'AutoCAD Mechanical 界面与文件',status:'visual-sampled',note:'教材软件版本步骤可能过时，不能据旧截图保证当前软件效果。'}
 ]);
-return Object.freeze({pageCount,pages,get,forSection,summary,figureSourceNotes,samplePages:[...samples.keys()]});
+const individuallyReviewedExamples=Object.freeze((examples?.all||[]).filter(x=>x.sourceStatus==='page-figure-reviewed').map(x=>Object.freeze({
+ id:x.id,number:x.number,title:x.title,pdfPage:x.pdfPage,printedPage:x.printedPage,figure:x.figure,topic:x.topics[0],
+ note:'仅该例题的来源、图号与主要步骤经过单独核对；不代表整页图文及同页其他例题都完成逐页核验。'
+})));
+return Object.freeze({pageCount,pages,get,forSection,summary,figureSourceNotes,individuallyReviewedExamples,samplePages:[...samples.keys()]});
 });
