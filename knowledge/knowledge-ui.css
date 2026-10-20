@@ -619,3 +619,17 @@ body.ui-refresh #sixLayerRelated[hidden]{display:none!important}
 body.ui-refresh .six-layer-related{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;border:1px dashed #afcfbb;border-radius:11px;padding:11px;background:#f5faf7}
 body.ui-refresh .six-layer-related strong{font-size:12px;width:100%;color:#35694d}
 body.ui-refresh .six-layer-related button{padding:8px 11px;min-height:36px;font-size:12px;text-align:left;background:#fff}
+
+/* Original geometry concept animations, distinct from source-verified textbook examples. */
+body.ui-refresh #sixLayerConceptSlot[hidden]{display:none!important}
+body.ui-refresh .six-layer-concept-slot{margin:12px 0;border:1px solid #d7e5dd;border-radius:12px;padding:12px;background:white}
+body.ui-refresh .six-layer-concept-title{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap;color:#225b42}
+body.ui-refresh .six-layer-concept-title strong{font-size:13px}
+body.ui-refresh .six-layer-concept-title span{font-size:11px;color:#63816c}
+body.ui-refresh .six-layer-concept-board{margin-top:9px;overflow:hidden;border:1px solid #e1ebe5;border-radius:10px}
+body.ui-refresh .six-layer-concept-board svg{display:block;width:100%;height:auto;max-height:400px;background:white}
+body.ui-refresh .six-layer-concept-buttons{display:flex;gap:9px;margin:11px 0 8px}
+body.ui-refresh .six-layer-concept-buttons button{min-height:38px;font-size:12px}
+body.ui-refresh .six-layer-concept-slot p{margin:6px 0!important;padding:0!important;line-height:1.65!important;font-size:12px!important;background:transparent!important;color:#557060!important;border:0!important}
+body.ui-refresh .six-layer-concept-slot p.six-layer-concept-action{font-weight:750;color:#2c624b!important;font-size:13px!important}
+body.ui-refresh .six-layer-concept-slot p.six-layer-concept-scope{font-size:11px!important;color:#687c70!important}
