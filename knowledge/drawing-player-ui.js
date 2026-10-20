@@ -11,6 +11,14 @@ function render(){
  document.getElementById('freedom').textContent=currentExample?'约束与自由度：'+currentExample.freedom[index]:'';
  document.getElementById('stageCheck').textContent=currentExample?'本步检查：'+currentExample.stageChecks[index]:'';
  const math=document.getElementById('mathVerification');
+ const local=document.getElementById('localDofVerification');
+ const localRequest=currentProblem?.steps[index]?.localDofAnalysis;
+ if(!localRequest){local.textContent='本步尚未提供经过核验的多点构型与非线性约束，不能自动判断局部自由度。';}
+ else try{
+  const trace=window.DrawingNonlinearStepTrace.analyze(localRequest);
+  const last=trace.steps[trace.steps.length-1];
+  local.textContent='局部自由度：'+trace.initialDegrees+' → '+trace.finalDegrees+'；'+(last?'最后一项约束：'+(last.classification==='locally-independent'?'一阶独立':'一阶冗余')+'，减少 '+last.removedLocalDegrees+' 个局部自由度；':'尚未加入约束；')+(trace.atProvidedConfiguration?'给定构型满足约束。':'给定构型不满足全部约束。')+' 注意：仅为当前构型的一阶分析，不代表全局唯一。';
+ }catch(error){local.textContent='局部自由度核验失败：'+error.message;}
  const request=currentProblem?.steps[index]?.constraintAnalysis;
  if(!request){math.textContent='本步尚无经过核验的结构化数学约束；上方为教材步骤解释，不是自动计算结果。';}
  else try{
@@ -35,6 +43,7 @@ function load(id){
   render();
  }catch(error){frames=[];currentExample=null;currentProblem=null;board.replaceChildren();
   document.getElementById('mathVerification').textContent='无法核验：播放器未成功载入。';
+  document.getElementById('localDofVerification').textContent='无法核验：播放器未成功载入。';
   for(const id of ['why','freedom','stageCheck'])document.getElementById(id).textContent='';reason.textContent='';counter.textContent='';status.textContent='播放器无法加载：'+error.message;previous.disabled=true;next.disabled=true}
 }
 previous.addEventListener('click',()=>{if(index>0){index--;render()}});
