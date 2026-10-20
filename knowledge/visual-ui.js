@@ -22,13 +22,16 @@ function render(){
    if(!shape.active)elt('text',{x:x+52,y:175,'font-size':14,fill:'#8b9f91'},board,'下一步显示');
    continue;
   }
-  if(shape.kind==='line'||shape.kind==='guide'){
+  if(['line','guide','construction'].includes(shape.kind)){
    const [x1,y1,x2,y2]=shape.xy;
-   const attrs={x1,y1,x2,y2,stroke:shape.kind==='guide'?'#bd8b3c':'#277453','stroke-width':shape.kind==='guide'?2:2.8,'stroke-linecap':'round'};
-   if(shape.kind==='guide')attrs['stroke-dasharray']='6 5';
+   const auxiliary=shape.kind==='guide'||shape.kind==='construction';
+   const attrs={x1,y1,x2,y2,stroke:auxiliary?'#bd8b3c':'#277453','stroke-width':auxiliary?2:2.8,'stroke-linecap':'round'};
+   if(auxiliary)attrs['stroke-dasharray']='6 5';
    elt('line',attrs,board);continue;
   }
-  if(shape.kind==='circle'){elt('circle',{cx:shape.cx,cy:shape.cy,r:shape.r,stroke:'#277453','stroke-width':3,fill:'none'},board);continue}
+  if(shape.kind==='circle'||shape.kind==='aux-circle'){
+   const auxiliary=shape.kind==='aux-circle';
+   elt('circle',{cx:shape.cx,cy:shape.cy,r:shape.r,stroke:auxiliary?'#bd8b3c':'#277453','stroke-width':auxiliary?2:3,fill:'none',...(auxiliary?{'stroke-dasharray':'6 5'}:{})},board);continue}
   if(shape.kind==='point'){
    const [x,y]=shape.xy;
    elt('circle',{cx:x,cy:y,r:4.2,fill:'#277453'},board);
