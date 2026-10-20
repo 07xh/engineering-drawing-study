@@ -8,7 +8,7 @@ const Core=require('../knowledge/textbook-constraint-visual.js');
 const Planar=require('../knowledge/planar-point-constraints.js');
 const degrees={'example-1-1':[1,1,1,0,0],'example-2-2':[2,1,1,0,0],'example-2-3':[2,2,1,0,0]};
 let seen=0;
-for(const example of Examples.all){
+for(const example of Examples.all.filter(x=>Object.prototype.hasOwnProperty.call(degrees,x.id))){
  const adapted=Adapter.adapt(example,Geometry);
  assert.equal(adapted.steps.length,5);
  for(let stage=0;stage<5;stage++){
@@ -51,6 +51,9 @@ for(const example of Examples.all){
   seen++;
  }
 }
+const wedge=Examples.get('example-4-2');
+assert(wedge&&Core.stageModel(wedge,3,Adapter.adapt(wedge,Geometry))===null,
+ 'parametric whole-body source example must not fabricate a point-DOF model');
 const dummy=Adapter.adapt(Examples.get('example-2-2'),Geometry);
 assert.equal(Core.stageModel({...Examples.get('example-2-2'),sourceStatus:'partial'},3,dummy),null);
 assert.equal(Core.stageModel({id:'made-up',sourceStatus:'page-figure-reviewed'},2,dummy),null);
