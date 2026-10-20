@@ -45,6 +45,13 @@ function markup(state,options={}){
   ])parts.push(line(a,b,'sheet-helper','data-kind="'+kind+'"'));
   parts.push('</g>');
  }
+ parts.push('<g class="free-sheet-faces">');
+ for(const face of state.faces)for(const view of ['V','H','W']){
+  const ps=face.map(id=>points[id][view]);
+  const area=Math.abs((ps[1].x-ps[0].x)*(ps[2].y-ps[0].y)-(ps[1].y-ps[0].y)*(ps[2].x-ps[0].x));
+  if(area>1e-7)parts.push('<polygon points="'+ps.map(p=>f(p.x)+','+f(p.y)).join(' ')+'" class="free-sheet-face" data-face="'+esc(face.join('-'))+'" data-view="'+view+'"/>');
+ }
+ parts.push('</g>');
  parts.push('<g class="free-sheet-segments">');
  for(const edge of state.edges){
   for(const view of ['V','H','W']){
