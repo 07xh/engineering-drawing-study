@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const g=require('../knowledge/textbook-concept-motion.js');
 const audit=require('../knowledge/textbook-page-audit.js');
 const book=require('../knowledge/knowledge-data.js');
-assert.deepEqual(g.ids,['ch01-drawing-scale','ch04-s01','ch05-s02','ch10-s01']);
+assert.deepEqual(g.ids,['ch01-divide-and-polygons','ch01-drawing-scale','ch04-s01','ch05-s02','ch10-s01']);
 let frames=0;
 for(const id of g.ids){
  const lesson=book.get(id);assert(lesson,'must refer to real third-edition section');
