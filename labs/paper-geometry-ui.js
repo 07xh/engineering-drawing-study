@@ -61,5 +61,6 @@ $('paperPrev').addEventListener('click',()=>{stage=Math.max(0,stage-1);view()});
 $('paperNext').addEventListener('click',()=>{stage=Math.min(4,stage+1);view()});
 $('paperRestart').addEventListener('click',()=>{stage=0;view()});
 for(const field of ['divisionCount','polygonSides','dimensionX','dimensionY'])$(field).addEventListener('input',()=>{stage=0;view()});
-setMode('divide');
+const requestedMode=new URLSearchParams(location.search).get('mode');
+setMode(group.includes(requestedMode)?requestedMode:'divide');
 })();
