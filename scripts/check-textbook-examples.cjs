@@ -60,7 +60,9 @@ assert.throws(()=>model.frame('example-2-2',6));
 assert.throws(()=>model.frame('made-up-question',0),'unverified examples must fail closed');
 const html=read('knowledge/index.html'),ui=read('knowledge/textbook-example-ui.js'),app=read('knowledge/knowledge-app.js');
 const elements=['textbookExample','bookExampleSvg','bookExamplePrev','bookExampleNext','bookExampleReset','bookExampleFinal',
- 'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource'];
+ 'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource',
+ 'bookExampleStageAddition','bookExampleHighlight','bookExampleDofDetails','bookExampleCheckDetails',
+ 'deepMethodDetails','knowledgeSummaryDetails'];
 for(const id of elements)assert(html.includes('id="'+id+'"'),'missing interactive lesson element '+id);
 assert(html.includes('id="bookExampleStepNav"'),'missing step navigation');
 assert(html.includes('id="bookExamplePicker"'),'missing multiple-example selector');
@@ -80,6 +82,10 @@ for(const script of ['textbook-examples.js','textbook-example-geometry.js','text
  assert(html.includes('src="'+script+'"'),'missing source-driven example library '+script);
 assert(ui.includes('source?.forTopic(topicId)'),'UI must only load linked textbook examples');
 assert(ui.includes('geom.frame(current.id,index)'),'geometry library must power staged playback');
+assert(ui.includes('function stageDelta(frame)'),'new shapes must be identified from real adjacent textbook frames');
+assert(ui.includes('geom.frame(current.id,index-1)'),'highlight comparison must use previous verified drawing stage');
+assert(ui.includes("bookExampleHighlight').addEventListener('change'"),'highlight toggle must re-render the current step');
+assert(app.includes("detailedMethod.open=!matchedTextbookExample"),'verified examples should prioritize the animated figure over duplicate prose blocks');
 assert(app.includes('TextbookExampleUI.show(item.id)'),'viewer must display examples inside knowledge');
 assert(app.includes('matchedTextbookExample'),'old generic demonstration must be separated from book example');
 // Layout regression: controls AND explanations must be to the right of a reduced-size diagram.
