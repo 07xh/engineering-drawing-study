@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),N=require('../knowledge/nonlinear-local-dof.js');
+const points={A:{x:0,y:0},B:{x:2,y:0},C:{x:0,y:0},D:{x:0,y:3}};
+let r=N.analyze({points,constraints:[{type:'angle',a:'A',b:'B',c:'C',d:'D',value:Math.PI/2}]});
+assert.equal(r.atProvidedConfiguration,true);assert.equal(r.rank,1);assert.equal(r.localDegrees,7);
+r=N.analyze({points,constraints:[{type:'angle',a:'A',b:'B',c:'C',d:'D',value:Math.PI/3}]});
+assert.equal(r.atProvidedConfiguration,false);
+r=N.analyze({points,constraints:[{type:'angle',a:'A',b:'B',c:'C',d:'D',value:0}]});
+assert.equal(r.rank,1);
+assert.throws(()=>N.analyze({points,constraints:[{type:'angle',a:'A',b:'A',c:'C',d:'D',value:1}]}),/零长度/);
+assert.throws(()=>N.analyze({points,constraints:[{type:'angle',a:'A',b:'B',c:'C',d:'D',value:4}]}),/角度/);
+console.log('PASS: angular residual, local rank, invalid and zero-length geometry');
