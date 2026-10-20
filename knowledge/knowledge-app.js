@@ -11,7 +11,7 @@ const sections=Object.fromEntries(book.sections.map(s=>[s.id,s]));
 const key='drawing-textbook-3e-progress-v2',reviewed=new Set(book.entries.filter(x=>x.contentStatus==='page-reviewed').map(x=>x.id));
 let completed=new Set(),current=null,step=0,deepStep=1;
 try{const saved=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(saved))completed=new Set(saved.filter(id=>reviewed.has(id)))}catch(e){}
-const search=$('knowledgeSearch'),ch=$('chapterSelect'),sec=$('sectionSelect'),coverage=$('coverageSelect'),progress=$('progressSelect');
+const search=$('knowledgeSearch'),ch=$('chapterSelect'),sec=$('sectionSelect'),topic=$('topicSelect'),coverage=$('coverageSelect'),progress=$('progressSelect'),directory=$('knowledgeIndex');
 const exercise=new URLSearchParams(location.search).get('exercise');
 for(const chapter of book.chapters){const option=document.createElement('option');option.value=chapter.id;option.textContent=chapter.name;ch.append(option)}
 $('totalCards').textContent=book.chapters.length-1+' 章 · '+book.sections.filter(s=>s.chapter!=='appendix').length+' 节';
@@ -46,6 +46,15 @@ function filtered(){
   return !q||keyword.includes(q);
  });
 }
+function syncTopicOptions(rows){
+ topic.replaceChildren();
+ if(!rows.length){topic.add(new Option('没有符合条件的知识点',''));topic.disabled=true;return}
+ topic.disabled=false;
+ for(const item of rows){
+  topic.add(new Option((item.contentStatus==='toc-only'?'[待核对] ':'')+item.title,item.id));
+ }
+ topic.value=rows.some(item=>item.id===current?.id)?current.id:rows[0].id;
+}
 function renderList(){
  const root=$('knowledgeCards');root.replaceChildren();
  const rows=filtered(),note=$('exerciseFilterStatus');
@@ -66,6 +75,7 @@ function renderList(){
   foot.append(button,e('span',item.contentStatus==='toc-only'?'待精读':completed.has(item.id)?'✓ 已阅读':'可学习','learned'));
   card.append(meta,title,description,foot);root.append(card);
  }
+ syncTopicOptions(rows);
  counter();
 }
 function renderSteps(){
@@ -124,6 +134,9 @@ function show(id,scroll=false){
  $('detailChapter').textContent=chapters[item.chapter]?.name||'';
  $('detailPages').textContent='印刷第 '+item.pages[0]+(item.pages[0]===item.pages[1]?'':'–'+item.pages[1])+' 页 · PDF 第 '+item.pdfPages[0]+(item.pdfPages[0]===item.pdfPages[1]?'':'–'+item.pdfPages[1])+' 页';
  $('detailTitle').textContent=item.title;
+ const path=$('knowledgeCurrentLocation');
+ if(path)path.textContent=(chapters[item.chapter]?.shortName||chapters[item.chapter]?.name||'')+' / '+(sections[item.section]?.sectionNumber||'')+' '+item.title;
+ if(Array.from(topic.options).some(option=>option.value===id))topic.value=id;
  $('detailSummary').textContent=item.summary;
  $('sourceNote').textContent='资料依据：'+book.source.name+'。'+item.sourceDetails+' · 教材原PDF与扫描图不进入公开网页。';
  const lesson=item.contentStatus==='page-reviewed';
@@ -167,14 +180,10 @@ function show(id,scroll=false){
  }
  try{history.replaceState(null,'','#'+encodeURIComponent(id))}catch(e){}
  if(scroll){
-  // Keep the user's knowledge-list scroll position stable; only the detail pane should move.
+  // The catalogue is no longer a permanent sidebar; let the lesson use all available width.
+  if(directory)directory.open=false;
   const detail=$('knowledgeDetail');
-  if(window.matchMedia('(min-width:901px)').matches){
-   // Keep the left catalogue at its current position; scroll only the lesson pane.
-   detail.scrollTop=0;
-  }else{
-   detail.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
-  }
+  detail.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
   detail.focus({preventScroll:true});
  }
 }
@@ -187,9 +196,16 @@ $('markRead').onclick=()=>{
  try{localStorage.setItem(key,JSON.stringify([...completed]))}catch(e){$('markStatus').textContent='当前浏览器无法保存阅读进度。'}
  renderList();show(current.id,false);
 };
-ch.addEventListener('change',()=>{updateSectionOptions();renderList()});
-for(const ctl of [search,sec,coverage,progress])ctl.addEventListener('input',renderList);
-$('resetFilters').onclick=()=>{search.value='';ch.value='all';updateSectionOptions();sec.value='all';coverage.value='all';progress.value='all';renderList()};
+function applyFilters(){
+ renderList();
+ const rows=filtered();
+ if(!rows.length){current=null;$('knowledgeDetail').hidden=true;const path=$('knowledgeCurrentLocation');if(path)path.textContent='未找到匹配内容';return}
+ if(!rows.some(item=>item.id===current?.id)||$('knowledgeDetail').hidden)show(topic.value,false);
+}
+ch.addEventListener('change',()=>{updateSectionOptions();applyFilters()});
+for(const ctl of [search,sec,coverage,progress])ctl.addEventListener('input',applyFilters);
+topic.addEventListener('change',()=>{if(topic.value)show(topic.value,true)});
+$('resetFilters').onclick=()=>{search.value='';ch.value='all';updateSectionOptions();sec.value='all';coverage.value='all';progress.value='all';applyFilters()};
 window.addEventListener('hashchange',()=>{
  let id='';try{id=decodeURIComponent(location.hash.slice(1))}catch(e){return}
  if(book.get(id))show(id,false);
