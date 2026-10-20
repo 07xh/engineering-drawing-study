@@ -1,8 +1,9 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),schema=require('../knowledge/problem-schema.js'),renderer=require('../knowledge/drawing-action-renderer.js');
 const html=fs.readFileSync('knowledge/drawing-player.html','utf8');
-const scripts=['problem-schema.js','drawing-action-renderer.js','drawing-player-demo.js','drawing-player-ui.js'];
+const scripts=['problem-schema.js','drawing-action-renderer.js','drawing-player-ui.js'];
 for(const script of scripts)assert(html.includes('src="'+script+'"'));
+assert(!html.includes('value="demo"'));assert(!html.includes('src="drawing-player-demo.js"'));
 const context={window:{}};vm.runInNewContext(fs.readFileSync('knowledge/drawing-player-demo.js','utf8'),context);
 const p=context.window.DrawingPlayerDemo;assert(schema.validate(p).ok);
 const frames=renderer.frames(p);assert.equal(frames.length,3);

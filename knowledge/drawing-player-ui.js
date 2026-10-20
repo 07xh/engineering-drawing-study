@@ -39,14 +39,14 @@ function render(){
 }
 function load(id){
  try{
-  const example=id==='demo'?null:window.TextbookExamples.get(id);
-  if(id!=='demo'&&!example)throw Error('找不到经过核验的教材例题');
-  const problem=example?window.TextbookActionAdapter.adapt(example,window.TextbookExampleGeometry):window.DrawingPlayerDemo;
+  const example=window.TextbookExamples.get(id);
+  if(!example)throw Error('找不到经过核验的教材例题');
+  const problem=window.TextbookActionAdapter.adapt(example,window.TextbookExampleGeometry);
   const result=contract.validate(problem);if(!result.ok)throw Error(result.errors.join('；'));
   const prepared=renderer.frames(problem);if(!prepared.length)throw Error('没有可播放的作图步骤');
   frames=prepared;index=0;currentExample=example;currentProblem=problem;
-  document.getElementById('problemTitle').textContent=example?example.number+' · '+example.title:problem.title;
-  source.textContent=example?'教材印刷第'+example.printedPage+'页 · '+example.figure+'。'+example.fidelity:'原创播放器测试数据，不是教材题。';
+  document.getElementById('problemTitle').textContent=example.number+' · '+example.title;
+  source.textContent='教材印刷第'+example.printedPage+'页 · '+example.figure+'。'+example.fidelity;
   status.textContent='已载入 '+frames.length+' 个步骤；动画使用统一题目格式。';
   render();
  }catch(error){frames=[];currentExample=null;currentProblem=null;board.replaceChildren();
