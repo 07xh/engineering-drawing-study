@@ -109,7 +109,7 @@ function render(){
   ' ('+['x','y','z'].map(k=>Number(candidate.example[k].toFixed(2))).join('，')+')';
  $('space').innerHTML=Spatial.markup(model,candidate,{yaw,pitch,zoom,selectedVertex});
  $('sheet').innerHTML=result.inconsistent?
-  Sheet.markup(model,state.trial,{showGuides:false,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex}).replace(/<g class="sheet-target-projections">[\s\S]*?<\/g>/,'<g class="sheet-target-projections"></g>'):
+  Sheet.markup(model,state.trial,{showTarget:false,showGuides:false,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex}):
   Sheet.markup(model,candidate.example,{showGuides:$('showGuides').checked,showWireframe:$('showWireframe').checked,showLabels:$('showLabels').checked,selectedVertex});
  if(result.inconsistent){
   // The shared sheet must never depict the trial point as a solution to contradictory constraints.
