@@ -28,6 +28,8 @@ for(const id of g.ids){
 assert.equal(g.frame('not-real',0),null);
 const hex=g.frame('ch01-divide-and-polygons',4).shapes.filter(x=>x.type==='line'&&x.kind==='result');
 assert.equal(hex.length,6);
+for(const edge of hex)assert(Math.abs(Math.hypot(edge.b.x-edge.a.x,edge.b.y-edge.a.y)-120)<1e-7,'regular hexagon edge must equal R');
+assert(!g.frame('ch01-divide-and-polygons',0).shapes.some(x=>x.kind==='result'));
 assert.equal(g.frame('ch01-drawing-scale',3).shapes.filter(x=>x.type==='text'&&x.label==='20 mm').length,3);
 const html=fs.readFileSync('knowledge/index.html','utf8'),app=fs.readFileSync('knowledge/knowledge-app.js','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
