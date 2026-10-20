@@ -25,7 +25,9 @@ function selectable(item){
 function visible(item){return $('bookExampleShowAux').checked||item.style!=='auxiliary'}
 function inspectable(frame){return frame.shapes.filter(item=>visible(item)&&selectable(item))}
 function pickShape(key,restoreFocus=false){
- selectedShapeKey=key;render();
+ selectedShapeKey=key;
+ $('bookExampleShapeInspector').open=true;
+ render();
  if(restoreFocus){
   const targets=$('bookExampleSvg').querySelectorAll?.('[data-inspect-key]')||[];
   const target=[...targets].find(node=>node.getAttribute('data-inspect-key')===key);
@@ -86,11 +88,13 @@ function updateInspector(items){
  const detail=chosen&&selectable(chosen);
  select.disabled=!detail;
  if(!detail){
+  $('bookExampleShapeSummary').textContent='当前没有可检查的图元';
   for(const id of ['bookExampleShapeName','bookExampleShapeRole','bookExampleShapeReason','bookExampleShapeEffect'])
    $(id).textContent='本帧没有可检查的几何元素。';
   return;
  }
  select.value=selectedShapeKey;
+ $('bookExampleShapeSummary').textContent=detail.name;
  $('bookExampleShapeName').textContent=detail.name;
  $('bookExampleShapeRole').textContent='图中作用：'+detail.role;
  $('bookExampleShapeReason').textContent='为什么画它：'+detail.reason;
@@ -154,6 +158,7 @@ function render(){
 let available=[];
 function activate(example){
  current=example;index=0;problem=null;selectedShapeKey=null;
+ $('bookExampleShapeInspector').open=false;
  $('bookExampleDofDetails').open=false;
  $('bookExampleCheckDetails').open=false;
  const sharedLink=$('bookExampleSharedPlayer');
