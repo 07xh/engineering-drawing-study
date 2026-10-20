@@ -106,6 +106,12 @@ $('bookExamplePicker').addEventListener('change',()=>{
  if(example)activate(example);
 });
 $('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
+$('bookExampleZoom').addEventListener('click',()=>{
+ const canvas=$('bookExampleCanvas'),zoom=canvas.classList.toggle('is-zoomed');
+ $('bookExampleZoom').setAttribute('aria-pressed',String(zoom));
+ $('bookExampleZoom').textContent=zoom?'适应屏幕':'放大查看';
+ if(!zoom)canvas.scrollLeft=0;
+});
 $('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,index-1);render()}});
 $('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);render()}});
 $('bookExampleReset').addEventListener('click',()=>{if(current){index=0;render()}});
