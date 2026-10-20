@@ -112,3 +112,7 @@ assert(drawingJs.includes("verified?verified.title:"),'verified task wording mus
 assert(drawingJs.includes("tool='pen',grid=false"),'source geometry view must start without grid');
 assert(drawingJs.includes("原题待核对"),'unverified exercise must not present fabricated task');
 console.log('PASS verified exercise wording and uncluttered first-frame source status');
+
+const verifiedContext={};vm.runInNewContext(fs.readFileSync('labs/verified-exercises.js','utf8'),verifiedContext);const verifiedGeometry=verifiedContext.VerifiedExerciseGeometry;
+for(const id of ['2-7-1','2-7-2','2-7-3']){const item=verifiedGeometry.get(id);assert(item&&item.status==='partial','2-7 source tracing must be explicitly partial: '+id);assert(item.lines.length>=9,'missing source line details '+id);assert(!item.solutionSteps,'do not invent textbook solutions for '+id);for(const [x1,y1,x2,y2] of item.lines)assert([x1,y1,x2,y2].every(Number.isFinite)&&x1>=0&&x2>=0&&y1>=0&&y2>=0&&x1<=960&&x2<=960&&y1<=520&&y2<=520,'source geometry outside board '+id)}
+console.log('PASS 2-7-1 through 2-7-3 partial source tracings and coordinate bounds');
