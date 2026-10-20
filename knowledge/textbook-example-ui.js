@@ -19,8 +19,8 @@ function draw(frame){
     'stroke-linecap':'round',
     ...(item.style==='auxiliary'||item.style==='axis'?{'stroke-dasharray':item.style==='axis'?'3 5':'8 5'}:{})});
   }else if(item.type==='point'){
-   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?5.4:4.3,fill:col});
-   svg('text',{x:item.p.x+8,y:item.p.y-9,'font-size':13,fill:col},item.label);
+   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?6.5:5.4,fill:col});
+   svg('text',{x:item.p.x+8,y:item.p.y-9,'font-size':19,'font-weight':600,fill:col},item.label);
   }
  }
 }

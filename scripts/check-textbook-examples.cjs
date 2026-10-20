@@ -60,6 +60,28 @@ assert(ui.includes('source?.forTopic(topicId)'),'UI must only load linked textbo
 assert(ui.includes('geom.frame(current.id,index)'),'geometry library must power staged playback');
 assert(app.includes('TextbookExampleUI.show(item.id)'),'viewer must display examples inside knowledge');
 assert(app.includes('matchedTextbookExample'),'old generic demonstration must be separated from book example');
+// Layout regression: controls AND explanations must be to the right of a reduced-size diagram.
+const workspace=html.indexOf('<div class="book-example-workspace">');
+const figure=html.indexOf('<div class="book-example-figure">',workspace);
+const guide=html.indexOf('<div class="book-example-guide"',workspace);
+const figureSvg=html.indexOf('id="bookExampleSvg"',figure);
+const prev=html.indexOf('id="bookExamplePrev"',guide);
+const next=html.indexOf('id="bookExampleNext"',guide);
+const explanation=html.indexOf('<div class="book-example-explanation">',guide);
+const action=html.indexOf('id="bookExampleAction"',explanation);
+const freedom=html.indexOf('id="bookExampleDof"',explanation);
+const fidelity=html.indexOf('id="bookExampleFidelity"',explanation);
+assert(workspace>0&&figure>workspace&&figureSvg>figure&&figureSvg<guide,
+ 'example drawing must appear in the left panel before the right-side guide');
+assert(guide>figureSvg&&prev>guide&&next>prev&&explanation>next&&action>explanation&&freedom>action&&fidelity>freedom,
+ 'step controls and explanation must appear together to the right of the diagram');
+const styles=read('knowledge/knowledge-ui.css');
+assert(styles.includes('.book-example-workspace')&&styles.includes('grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)'),
+ 'desktop book example requires two columns');
+assert(styles.includes('@container bookExample (max-width:690px)')&&styles.includes('grid-template-columns:minmax(0,1fr)'),
+ 'book example must stack responsively in a narrow containing panel');
+assert(styles.includes('min-width:0;max-height:none'),'SVG should scale down without causing horizontal overflow');
+assert(ui.includes("'font-size':19"),'diagram labels must remain legible when drawing is smaller');
 const builder=read('scripts/build-static.cjs');
 for(const script of ['knowledge/textbook-examples.js','knowledge/textbook-example-geometry.js','knowledge/textbook-example-ui.js'])
  assert(builder.includes("'"+script+"'"),'static builder did not package '+script);

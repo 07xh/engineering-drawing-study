@@ -334,3 +334,79 @@ body.ui-refresh #bookExampleAudit{font-weight:650;font-size:13px}
 @media(max-width:650px){body.ui-refresh .book-example{padding:13px}body.ui-refresh #bookExampleSvg{min-width:520px}}
 
 body.ui-refresh .deep-example[hidden]{display:none!important}
+
+/* 教材例题双栏阅读：图左、步骤控制与详细解析右；容器适配而非固定屏幕宽度。 */
+body.ui-refresh .book-example{container-name:bookExample;container-type:inline-size}
+body.ui-refresh .book-example-workspace{
+ display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
+ gap:16px;align-items:start;margin:14px 0;
+}
+body.ui-refresh .book-example-figure,
+body.ui-refresh .book-example-guide{min-width:0}
+body.ui-refresh .book-example-figure{position:sticky;top:90px;align-self:start}
+body.ui-refresh .book-example-figure-top{
+ display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+ gap:6px;padding:0 3px 8px;font-size:12px;color:#326347;
+}
+body.ui-refresh .book-example-figure-top span{font-size:11px;color:#6a8272}
+body.ui-refresh .book-example-canvas{
+ margin:0;overflow:hidden;border:1px solid #c9dbce;border-radius:12px;
+ background:#fff;
+}
+body.ui-refresh #bookExampleSvg{
+ display:block;width:100%;height:auto;min-width:0;max-height:none;
+}
+body.ui-refresh .book-example-guide{
+ padding:14px;background:#fff;border:1px solid #dce9df;
+ border-radius:12px;
+}
+body.ui-refresh .book-example-tools{
+ display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:0 0 14px;
+ padding-bottom:13px;border-bottom:1px solid #e1ebe3;
+}
+body.ui-refresh .book-example-pager{
+ display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+body.ui-refresh .book-example-pager button{
+ width:100%;font-weight:750;font-size:14px;min-height:46px;
+}
+body.ui-refresh .book-example-tools-secondary{
+ display:flex;flex-wrap:wrap;gap:8px;
+}
+body.ui-refresh .book-example-tools-secondary button{
+ flex:1 1 125px;font-size:12px;min-height:40px;background:#f4f9f5;
+}
+body.ui-refresh #bookExampleCounter{
+ display:block;align-self:flex-start;color:#2c6848;
+ background:#eaf5ed;padding:5px 10px;border-radius:999px;font-weight:750;
+}
+body.ui-refresh .book-example-explanation h4{
+ margin:0 0 12px!important;color:#28563e;font-size:17px;
+ line-height:1.5;
+}
+body.ui-refresh .book-example-explanation p{
+ margin:8px 0!important;line-height:1.8;font-size:13px;
+ padding:10px 12px;border-radius:9px;
+}
+body.ui-refresh #bookExampleAction{background:#e5f2e8}
+body.ui-refresh #bookExampleReason{background:#f8fbf8;border:1px solid #e0ebe2}
+body.ui-refresh #bookExampleDof{border-left:3px solid #bc8a47;background:#fff9ec}
+body.ui-refresh #bookExampleAudit{background:#f1f7f3;font-weight:650}
+body.ui-refresh .book-example>.book-example-source:last-child{
+ margin-top:12px;padding-top:11px;border-top:1px solid #d6e6da;
+}
+@container bookExample (max-width:690px){
+ .book-example-workspace{grid-template-columns:minmax(0,1fr)}
+ .book-example-figure{position:static}
+ .book-example-figure-top{padding-top:3px}
+ .book-example-tools-secondary button{flex:1 1 115px}
+}
+@media(max-width:790px){
+ body.ui-refresh .book-example-workspace{grid-template-columns:minmax(0,1fr)}
+ body.ui-refresh .book-example-figure{position:static}
+}
+@media(max-width:460px){
+ body.ui-refresh .book-example-guide{padding:11px}
+ body.ui-refresh .book-example-pager button{font-size:13px}
+ body.ui-refresh .book-example-figure-top span{font-size:10px}
+}
