@@ -58,7 +58,7 @@ assert(chapterHtml.includes("drawLink.href='chapter-drawing.html#'+id"),'every e
 for(const id of ['board','question','pen','eraser','undo','clear','grid'])assert(drawingHtml.includes('id="'+id+'"'),'missing drawing control '+id);
 assert(drawingJs.includes("function validStroke(s)"),'saved drawing input validation missing');
 assert(drawingJs.includes("records[current]=s;save();ink()"),'per-question drawing persistence missing');
-assert(drawingHtml.includes('不是教材原图'),'must disclose illustrative geometry');
+assert(drawingHtml.includes('未核实题目不显示替代图'),'must disclose unverified source geometry');
 console.log('PASS 28 exercise drawing entries, clean geometry and pen controls');
 const dofJs=fsChapter.readFileSync(require('node:path').resolve(__dirname,'../labs/chapter-dof.js'),'utf8');
 for(const id of ['dofPanel','guidePrev','guideNext','guideShow','guideTitle','guideWhy','guideLimit','guides'])assert(drawingHtml.includes('id="'+id+'"'),'missing DOF panel control '+id);
@@ -80,3 +80,9 @@ console.log('PASS four partial source-reviewed diagrams; no claims of exact comp
 for(const id of ['2-6-5','2-6-6'])assert(verifiedJs.includes("'"+id+"'"),'missing source-traced geometry '+id);
 assert((verifiedJs.match(/status:'partial'/g)||[]).length>=6,'all six source-reviewed 2-6 exercises must retain partial status');
 console.log('PASS 2-6-5 and 2-6-6 visible geometry and partial-source disclaimers');
+
+for(const id of ['revealPrev','revealNext','revealAll','revealRange','revealStatus'])assert(drawingHtml.includes('id="'+id+'"'),'missing progressive reveal control '+id);
+assert(drawingJs.includes('function updateReveal()'),'missing progressive source diagram reveal');
+assert(drawingJs.includes('sourceStage(kind)'),'source line categories must control reveal order');
+assert(drawingHtml.includes('prefers-reduced-motion:reduce'),'reveal animation must respect reduced motion');
+console.log('PASS progressive source geometry reveal controls and accessibility');
