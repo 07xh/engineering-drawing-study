@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),E=require('../knowledge/planar-point-constraints.js');
+const x=v=>({type:'coordinate',axis:'x',value:v});
+const y=v=>({type:'coordinate',axis:'y',value:v});
+let a=E.analyze([x(20),y(30)]);
+assert.equal(a.result.degrees,0);assert.deepEqual(a.result.particular,[20,30]);
+assert.deepEqual(a.steps.map(s=>s.status),['independent','independent']);
+a=E.analyze([{type:'through-points',p:{x:0,y:0},q:{x:10,y:10}},x(5)]);
+assert.equal(a.result.degrees,0);assert(Math.abs(a.result.particular[1]-5)<1e-8);
+a=E.analyze([x(5),x(5)]);assert.equal(a.result.degrees,1);assert.equal(a.steps[1].status,'redundant');
+a=E.analyze([x(5),x(6)]);assert.equal(a.result.degrees,null);assert.equal(a.steps[1].status,'contradiction');
+a=E.analyze([]);assert.equal(a.result.degrees,2);
+assert.throws(()=>E.analyze([{type:'through-points',p:{x:1,y:1},q:{x:1,y:1}}]));
+assert.throws(()=>E.analyze([{type:'line',a:0,b:0,offset:0}]));
+console.log('PASS: planar point linear constraints, intersection, redundancy and contradiction');
