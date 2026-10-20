@@ -22,7 +22,7 @@ function division(stage){
  const parallels=Array.from({length:6},(_,j)=>{const i=j+1;const v=pt(points[i].x-marks[i].x,points[i].y-marks[i].y);return Math.abs(v.x*direct.y-v.y*direct.x)});
  const crossError=Math.max(...parallels);
  return {stage,shapes,proof:{sevenSegments:points.slice(1).every((p,i)=>near(p.x-points[i].x,target)),
-  sixParallelLines:parallels.every(x=>x<1e-8),maxResidual:Math.max(residual,crossError),AB:A,B,marks,points},
+  sixParallelLines:parallels.every(x=>x<1e-8),maxResidual:Math.max(residual,crossError),A,B,marks,points},
   dof:stage<3?1:0,
   degreeTarget:'一个沿已知 AB 移动的待求等分点（不是整道题、全部辅助线的总自由度）',
   note:'七等分及相似三角形的作图顺序取自教材例1-1；画布长度和辅助射线角度经归一化重绘。'};
