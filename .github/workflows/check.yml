@@ -36,6 +36,7 @@ jobs:
           node --check knowledge/textbook-example-ui.js
           node --check knowledge/textbook-shape-inspector.js
           node --check scripts/check-textbook-examples.cjs
+          node --check scripts/check-textbook-shape-inspector.cjs
           node --check scripts/check-textbook-only.cjs
           node --check scripts/check-exercise-source-gate.cjs
           node --check knowledge/knowledge-app.js
@@ -90,6 +91,7 @@ jobs:
           node scripts/check-textbook-only.cjs
           node scripts/check-exercise-source-gate.cjs
           node scripts/check-textbook-examples.cjs
+          node scripts/check-textbook-shape-inspector.cjs
           node scripts/check-animation-workspace.cjs
           node scripts/check-ui-layout.cjs
           node scripts/check-knowledge-ui.cjs
@@ -171,6 +173,7 @@ jobs:
           test -f dist/knowledge/textbook-examples.js
           test -f dist/knowledge/textbook-example-geometry.js
           test -f dist/knowledge/textbook-example-ui.js
+          test -f dist/knowledge/textbook-shape-inspector.js
           test -f dist/knowledge/knowledge-app.js
           test -f dist/knowledge/visual-model.js
           test -f dist/knowledge/visual-ui.js
