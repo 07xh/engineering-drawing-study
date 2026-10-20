@@ -106,7 +106,15 @@ function forEntry(id){
   {id:'check',name:names[5],headline:'投影、线型、尺寸和常见错误',text:check,details:verified&&safe(item.mistake)&&safe(deep?.check)?
    [{title:'易错点',body:item.mistake}]:[{title:'核对范围',body:'检查所画结果是否与该题所有已知投影及尺寸条件一致；若题图尚未核对，不给出标准答案。'}]}
  ];
- return {id:item.id,title,section:section?.title||'',pages:[...item.pages],verified,
+ if(id==='ch01-drawing-scale'){
+  levels[0].headline='同一实物画大或画小，为什么标注尺寸不变？';
+  levels[1].text='比例是图上长度与实物长度的比。1:2、1:1、2:1分别意味着绘图长度为实物长度的0.5、1、2倍。';
+  levels[2].text='若实物长度为20 mm，则三种比例对应图上长度10、20、40 mm，三幅图仍标注20 mm。';
+  levels[3].text='教材图1-8是比例对照示意，不是编号例题；尚未关联完整核验的原书作图例题。';
+  levels[4].text='缩放只改变显示长度；实物几何自由度不会因此改变。仅知比例而未知实物长度，仍有一个长度未知量。';
+  levels[5].text='检查图形相似、长度按比例变化、尺寸标注不变；正式出图应核对现行标准。';
+ }
+  return {id:item.id,title,section:section?.title||'',pages:[...item.pages],verified,
   status:verified?'page-reviewed':'toc-only',
   sourceNote:verified?'讲解已按现有教材核验记录重写；原书图未复制。':
    '仅原书目录和页码已核验；本页是原创导学草稿，未完成本节正文与例图的逐页核验。',
