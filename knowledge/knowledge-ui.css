@@ -442,3 +442,9 @@ body.ui-refresh .knowledge-page-footer p{margin:8px 0 0}
  body.ui-refresh .knowledge-workspace>.library,
  body.ui-refresh .knowledge-workspace>#knowledgeDetail{overflow:visible;max-height:none}
 }
+
+/* Book example: jump to a verified construction stage without altering the source model. */
+body.ui-refresh .book-example-step-nav{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:9px 0 3px}
+body.ui-refresh .book-example-step-nav button{flex:0 0 auto;min-width:36px;min-height:36px;padding:6px 9px;border:1px solid #c9dccd;border-radius:9px;background:#f7faf7;color:#326548;font-size:13px;font-weight:700}
+body.ui-refresh .book-example-step-nav button.is-current{background:#286b4b;color:#fff;border-color:#286b4b}
+body.ui-refresh .book-example-step-nav button:focus-visible{outline:3px solid #e3a744;outline-offset:2px}

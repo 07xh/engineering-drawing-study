@@ -54,6 +54,11 @@ const html=read('knowledge/index.html'),ui=read('knowledge/textbook-example-ui.j
 const elements=['textbookExample','bookExampleSvg','bookExamplePrev','bookExampleNext','bookExampleReset','bookExampleFinal',
  'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource'];
 for(const id of elements)assert(html.includes('id="'+id+'"'),'missing interactive lesson element '+id);
+assert(html.includes('id="bookExampleStepNav"'),'missing step navigation');
+assert(ui.includes("current.order.forEach((label,i)=>"),'step navigator must be generated from verified textbook stages');
+assert(ui.includes("button.addEventListener('click',()=>{index=i;render()})"),'step navigator must select a real geometry stage');
+assert(ui.includes("button.setAttribute('aria-current','step')"),'active step must be accessible');
+
 for(const script of ['textbook-examples.js','textbook-example-geometry.js','textbook-example-ui.js'])
  assert(html.includes('src="'+script+'"'),'missing source-driven example library '+script);
 assert(ui.includes('source?.forTopic(topicId)'),'UI must only load linked textbook examples');
