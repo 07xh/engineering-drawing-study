@@ -4,8 +4,8 @@
 (function(){'use strict';
 const $=id=>document.getElementById(id);
 const source=window.TextbookExamples,geom=window.TextbookExampleGeometry;
-const adapter=window.TextbookActionAdapter,dof=window.DrawingPlayerDofSummary;
-let current=null,index=0,problem=null;
+const adapter=window.TextbookActionAdapter,dof=window.DrawingPlayerDofSummary,inspector=window.TextbookShapeInspector;
+let current=null,index=0,problem=null,selectedShapeKey=null;
 const ns='http://www.w3.org/2000/svg';
 function svg(tag,attrs,content){const element=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs||{}))element.setAttribute(k,String(v));if(content!==undefined)element.textContent=content;$('bookExampleSvg').append(element);return element}
 const colors={given:'#2b7451',axis:'#758878',auxiliary:'#bc7f2e',mark:'#a36c35',result:'#216faf'};
@@ -19,6 +19,30 @@ function stageDelta(frame){
  const prior=geom.frame(current.id,index-1),seen=new Set(prior.shapes.map(shapeKey));
  return frame.shapes.filter(item=>!seen.has(shapeKey(item)));
 }
+function selectable(item){
+ return inspector?.explain(current.id,item)||null;
+}
+function visible(item){return $('bookExampleShowAux').checked||item.style!=='auxiliary'}
+function inspectable(frame){return frame.shapes.filter(item=>visible(item)&&selectable(item))}
+function pickShape(key,restoreFocus=false){
+ selectedShapeKey=key;render();
+ if(restoreFocus){
+  const targets=$('bookExampleSvg').querySelectorAll?.('[data-inspect-key]')||[];
+  const target=[...targets].find(node=>node.getAttribute('data-inspect-key')===key);
+  target?.focus?.({preventScroll:true});
+ }
+}
+function bindHit(node,item,key){
+ const info=selectable(item);if(!info)return;
+ node.setAttribute('data-inspect-key',key);
+ node.setAttribute('role','button');node.setAttribute('tabindex','0');
+ node.setAttribute('aria-pressed',String(selectedShapeKey===key));
+ node.setAttribute('aria-label','查看'+info.name+'的作图依据');
+ node.addEventListener('click',()=>pickShape(key,true));
+ node.addEventListener('keydown',event=>{
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();pickShape(key,true)}
+ });
+}
 function draw(frame,added){
  const board=$('bookExampleSvg');board.replaceChildren();
  const fresh=new Set(added.map(shapeKey)),highlight=$('bookExampleHighlight').checked;
@@ -28,25 +52,61 @@ function draw(frame,added){
   const col=colors[item.style]||'#657567';
   const isNew=index>0&&fresh.has(shapeKey(item));
   const attrs=highlight&&isNew?{class:'book-example-new-shape','data-new':'true'}:{};
+  const picked=selectedShapeKey===shapeKey(item);
   if(item.type==='line'){
    if(highlight&&isNew)svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:'#e5b957',
-    'stroke-width':9,opacity:.34,'stroke-linecap':'round','aria-hidden':'true'});
+    'stroke-width':9,opacity:.34,'stroke-linecap':'round','aria-hidden':'true','pointer-events':'none'});
+   if(picked)svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:'#487eac',
+    'stroke-width':14,opacity:.26,'aria-hidden':'true','pointer-events':'none'});
    svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:col,
     'stroke-width':item.style==='result'?3.8:item.style==='given'?3:2,
-    'stroke-linecap':'round',...attrs,
+    'stroke-linecap':'round',...attrs,'pointer-events':'none',
     ...(item.style==='auxiliary'||item.style==='axis'?{'stroke-dasharray':item.style==='axis'?'3 5':'8 5'}:{})});
+   const hit=svg('line',{x1:item.a.x,y1:item.a.y,x2:item.b.x,y2:item.b.y,stroke:'transparent',
+    'stroke-width':20,'pointer-events':'stroke','data-hit':'true'});
+   bindHit(hit,item,shapeKey(item));
   }else if(item.type==='point'){
-   if(highlight&&isNew)svg('circle',{cx:item.p.x,cy:item.p.y,r:11,fill:'#f5d986',opacity:.5,'aria-hidden':'true'});
-   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?6.5:5.4,fill:col,...attrs});
-   svg('text',{x:item.p.x+8,y:item.p.y-9,'font-size':19,'font-weight':600,fill:col},item.label);
+   if(highlight&&isNew)svg('circle',{cx:item.p.x,cy:item.p.y,r:11,fill:'#f5d986',opacity:.5,'aria-hidden':'true','pointer-events':'none'});
+   if(picked)svg('circle',{cx:item.p.x,cy:item.p.y,r:15,stroke:'#487eac','stroke-width':4,opacity:.72,fill:'none','aria-hidden':'true','pointer-events':'none'});
+   svg('circle',{cx:item.p.x,cy:item.p.y,r:item.style==='result'?6.5:5.4,fill:col,...attrs,'pointer-events':'none'});
+   svg('text',{x:item.p.x+8,y:item.p.y-9,'font-size':19,'font-weight':600,fill:col,'pointer-events':'none'},item.label);
+   const hit=svg('circle',{cx:item.p.x,cy:item.p.y,r:14,fill:'transparent','pointer-events':'all','data-hit':'true'});
+   bindHit(hit,item,shapeKey(item));
   }
  }
+}
+function updateInspector(items){
+ const select=$('bookExampleShapeSelect');select.replaceChildren();
+ for(const shape of items){
+  const data=selectable(shape),option=document.createElement('option');
+  option.value=shapeKey(shape);option.textContent=data.name+' · '+data.role;
+  select.append(option);
+ }
+ const chosen=items.find(item=>shapeKey(item)===selectedShapeKey);
+ const detail=chosen&&selectable(chosen);
+ select.disabled=!detail;
+ if(!detail){
+  for(const id of ['bookExampleShapeName','bookExampleShapeRole','bookExampleShapeReason','bookExampleShapeEffect'])
+   $(id).textContent='本帧没有可检查的几何元素。';
+  return;
+ }
+ select.value=selectedShapeKey;
+ $('bookExampleShapeName').textContent=detail.name;
+ $('bookExampleShapeRole').textContent='图中作用：'+detail.role;
+ $('bookExampleShapeReason').textContent='为什么画它：'+detail.reason;
+ $('bookExampleShapeEffect').textContent='约束意义：'+detail.effect;
 }
 function render(){
  if(!current)return;
  const frame=geom.frame(current.id,index),step=current.order[index];
- const added=stageDelta(frame);
+ const added=stageDelta(frame),items=inspectable(frame);
+ if(!items.some(item=>shapeKey(item)===selectedShapeKey)){
+  const firstAdded=added.find(item=>visible(item)&&selectable(item)&&item.style==='auxiliary')||
+   added.find(item=>visible(item)&&selectable(item))||items[0];
+  selectedShapeKey=firstAdded?shapeKey(firstAdded):null;
+ }
  draw(frame,added);
+ updateInspector(items);
  const newLabels=[...new Set(added.map(shape=>shape.label).filter(Boolean))];
  $('bookExampleStageAddition').textContent=index===0?
   '已知条件：先辨认题目提供的点线与投影轴；此时不显示待求结果。':
@@ -62,10 +122,10 @@ function render(){
   button.setAttribute('aria-pressed',String(i===index));
   button.setAttribute('aria-label',button.title);
   if(i===index){button.className='is-current';button.setAttribute('aria-current','step')}
-  button.addEventListener('click',()=>{index=i;render()});
+  button.addEventListener('click',()=>{index=i;selectedShapeKey=null;render()});
   nav.append(button);
  });
- $('bookExampleSvg').setAttribute('role','img');
+ $('bookExampleSvg').setAttribute('role','group');
  $('bookExampleSvg').setAttribute('aria-label',current.number+'：'+step+'。步骤 '+(index+1)+' / '+current.order.length);
  $('bookExampleStageTitle').textContent='课本作图 · '+(index+1)+' / '+current.order.length;
  $('bookExampleAction').textContent='本步按教材做：'+step;
@@ -93,7 +153,7 @@ function render(){
 }
 let available=[];
 function activate(example){
- current=example;index=0;problem=null;
+ current=example;index=0;problem=null;selectedShapeKey=null;
  $('bookExampleDofDetails').open=false;
  $('bookExampleCheckDetails').open=false;
  const sharedLink=$('bookExampleSharedPlayer');
@@ -130,6 +190,7 @@ $('bookExamplePicker').addEventListener('change',()=>{
  if(example)activate(example);
 });
 $('bookExampleShowAux').addEventListener('change',()=>{if(current)render()});
+$('bookExampleShapeSelect').addEventListener('change',()=>{if(current)pickShape($('bookExampleShapeSelect').value)});
 $('bookExampleHighlight').addEventListener('change',()=>{if(current)render()});
 $('bookExampleZoom').addEventListener('click',()=>{
  const canvas=$('bookExampleCanvas'),zoom=canvas.classList.toggle('is-zoomed');
@@ -137,10 +198,10 @@ $('bookExampleZoom').addEventListener('click',()=>{
  $('bookExampleZoom').textContent=zoom?'适应屏幕':'放大查看';
  if(!zoom)canvas.scrollLeft=0;
 });
-$('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,index-1);render()}});
-$('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);render()}});
-$('bookExampleReset').addEventListener('click',()=>{if(current){index=0;render()}});
-$('bookExampleFinal').addEventListener('click',()=>{if(current){index=current.order.length-1;render()}});
+$('bookExamplePrev').addEventListener('click',()=>{if(current){index=Math.max(0,index-1);selectedShapeKey=null;render()}});
+$('bookExampleNext').addEventListener('click',()=>{if(current){index=Math.min(current.order.length-1,index+1);selectedShapeKey=null;render()}});
+$('bookExampleReset').addEventListener('click',()=>{if(current){index=0;selectedShapeKey=null;render()}});
+$('bookExampleFinal').addEventListener('click',()=>{if(current){index=current.order.length-1;selectedShapeKey=null;render()}});
 // Arrow keys move between verified frames only while the example controls have focus.
 $('textbookExample').addEventListener('keydown',event=>{
  if(!current||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
@@ -150,7 +211,7 @@ $('textbookExample').addEventListener('keydown',event=>{
  if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
  const next=Math.max(0,Math.min(current.order.length-1,index+(event.key==='ArrowRight'?1:-1)));
  if(next===index)return;
- event.preventDefault();index=next;render();
+ event.preventDefault();index=next;selectedShapeKey=null;render();
 });
 window.TextbookExampleUI={show};
 })();
