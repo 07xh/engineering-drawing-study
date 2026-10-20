@@ -64,6 +64,6 @@ next.addEventListener('click',()=>{if(index<frames.length-1){index++;render()}})
 selector.addEventListener('change',()=>load(selector.value));
 for(const id of ['showAuxiliary','highlightStep'])document.getElementById(id).addEventListener('change',()=>{if(frames.length)render()});
 const initial=new URLSearchParams(location.search).get('example');
-if(initial&&['example-1-1','example-2-2'].includes(initial))selector.value=initial;
+if(initial&&window.TextbookExamples.get(initial)&&Array.from(selector.options).some(option=>option.value===initial))selector.value=initial;
 load(selector.value);
 })();
