@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict'),T=require('../knowledge/tangency-analysis.js');
+let r=T.circleLine({x:0,y:2,r:2},{a:0,b:1,offset:0});assert.equal(r.status,'tangent');assert.deepEqual(r.tangentPoint,{x:0,y:0});
+assert.equal(T.circleLine({x:0,y:3,r:2},{a:0,b:1,offset:0}).status,'separate');
+assert.equal(T.circleLine({x:0,y:1,r:2},{a:0,b:1,offset:0}).status,'secant');
+r=T.circleCircle({x:0,y:0,r:3},{x:5,y:0,r:2});assert.equal(r.status,'externally-tangent');assert.deepEqual(r.tangentPoint,{x:3,y:0});
+r=T.circleCircle({x:0,y:0,r:5},{x:3,y:0,r:2});assert.equal(r.status,'internally-tangent');assert.deepEqual(r.tangentPoint,{x:5,y:0});
+r=T.circleCircle({x:3,y:0,r:2},{x:0,y:0,r:5});assert.equal(r.status,'internally-tangent');assert.deepEqual(r.tangentPoint,{x:5,y:0});
+assert.equal(T.circleCircle({x:0,y:0,r:5},{x:0,y:0,r:5}).status,'coincident');
+assert.equal(T.circleCircle({x:0,y:0,r:5},{x:0,y:0,r:2}).status,'concentric');
+assert.equal(T.circleCircle({x:0,y:0,r:2},{x:6,y:0,r:2}).status,'separate');
+assert.equal(T.circleCircle({x:0,y:0,r:5},{x:1,y:0,r:2}).status,'contained');
+assert.equal(T.circleCircle({x:0,y:0,r:3},{x:4,y:0,r:3}).status,'intersecting');
+assert.throws(()=>T.circleLine({x:0,y:0,r:0},{a:1,b:0,offset:0}));
+console.log('PASS: tangency geometry classification and tangent-point positions');
