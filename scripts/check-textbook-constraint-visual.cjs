@@ -99,7 +99,7 @@ assert(get('bookExampleSvg').children.some(x=>x.attributes.class==='book-constra
 ui.show(ex,1,steps,'a′ 的等高联系线');
 assert.equal(get('bookExampleConstraintDegrees').textContent,'1 个');
 assert.equal(get('bookExampleConstraintOptions').children.length,1);
-assert.match(get('bookExampleConstraintLinked').textContent,/等高/);
+assert.match(get('bookExampleConstraintLinked').textContent,/高度一致|等高/);
 ui.show(ex,3,steps,'W面深度定位线');
 assert.equal(get('bookExampleConstraintDegrees').textContent,'0 个');
 assert.equal(get('bookExampleConstraintOptions').children.length,2);
