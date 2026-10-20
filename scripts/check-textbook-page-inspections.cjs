@@ -19,4 +19,4 @@ assert(html.includes('id="auditDetailed"'));
 const motion=require('../knowledge/textbook-concept-motion.js');
 assert.equal(motion.definition('ch01-drawing-scale').page,12);
 assert.equal(motion.frame('ch01-drawing-scale',3).shapes.filter(x=>x.type==='text'&&x.label==='20 mm').length,3);
-console.log('PASS twenty-four source-page inventories and original six-layer scale lesson');
+console.log('PASS twenty-four verified source-page inventories and original six-layer scale lesson');
