@@ -103,6 +103,7 @@ function inscribedPolygons(stage){
  }
  return sh;
 }
+function internalFilletGeometry(){return {R:170,r1:40,r2:32};}
 function frame(id,step){
  const def=common[id];
  if(!def||!Number.isInteger(step)||step<0||step>=def.steps.length)return null;
