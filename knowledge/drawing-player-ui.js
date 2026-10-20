@@ -5,7 +5,7 @@ const previous=document.getElementById('previous'),next=document.getElementById(
 let frames=[],index=0;
 function render(){
  const frame=frames[index];
- board.innerHTML=renderer.svgMarkup(frame);
+ board.innerHTML=renderer.svgMarkup(frame,{showAuxiliary:document.getElementById('showAuxiliary').checked,highlightStep:document.getElementById('highlightStep').checked});
  reason.textContent=frame.explanation;
  counter.textContent=(index+1)+' / '+frames.length;
  previous.disabled=index===0;next.disabled=index===frames.length-1;
@@ -27,6 +27,7 @@ function load(id){
 previous.addEventListener('click',()=>{if(index>0){index--;render()}});
 next.addEventListener('click',()=>{if(index<frames.length-1){index++;render()}});
 selector.addEventListener('change',()=>load(selector.value));
+for(const id of ['showAuxiliary','highlightStep'])document.getElementById(id).addEventListener('change',()=>{if(frames.length)render()});
 const initial=new URLSearchParams(location.search).get('example');
 if(initial&&['example-1-1','example-2-2'].includes(initial))selector.value=initial;
 load(selector.value);
