@@ -17,6 +17,7 @@ jobs:
           node --check scripts/check-constraints.cjs
           node --check labs/constraint-engine.js
           node --check labs/constraint-explorer.js
+          node --check labs/teaching-steps.js
           node --check question-strategies.js
           node --check scripts/check-question-strategies.cjs
           node --check scripts/check-constraint-engine.cjs
@@ -34,4 +35,5 @@ jobs:
           test -f dist/labs/analysis.html
           test -f dist/labs/constraint-engine.js
           test -f dist/labs/constraint-explorer.js
+          test -f dist/labs/teaching-steps.js
           test -f dist/question-strategies.js
