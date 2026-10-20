@@ -27,14 +27,19 @@ function frames(problem){
  }
  return result;
 }
-function svgMarkup(frame){
+function svgMarkup(frame,options){
+ const opts=options||{};
+ const showAux=opts.showAuxiliary!==false;
+ const highlight=opts.highlightStep!==false;
  if(!frame||!Array.isArray(frame.shapes))throw Error('无效动画帧');
  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- return frame.shapes.map(a=>{
+ return frame.shapes.filter(a=>showAux||a.style!=='auxiliary').map(a=>{
   if(!validAction(a))throw Error('无效绘图动作');
   const g=a.geometry,sty=styles[a.style||'given'];
-  const common=' fill="none" stroke="'+sty.stroke+'" stroke-width="'+sty.width+'"'+(sty.dash?' stroke-dasharray="'+sty.dash+'"':'');
-  if(a.kind==='point')return '<circle cx="'+g.x+'" cy="'+g.y+'" r="4" fill="'+sty.stroke+'"/>'+(a.label?'<text x="'+(g.x+8)+'" y="'+(g.y-9)+'" fill="'+sty.stroke+'" font-size="17">'+esc(a.label)+'</text>':'');
+  const active=highlight&&a.stepId===frame.stepId;
+  const strokeWidth=active?sty.width+1.4:sty.width;
+  const common=' fill="none" stroke="'+sty.stroke+'" stroke-width="'+strokeWidth+'"'+(sty.dash?' stroke-dasharray="'+sty.dash+'"':'');
+  if(a.kind==='point')return '<circle cx="'+g.x+'" cy="'+g.y+'" r="'+(active?5.5:4)+'" fill="'+sty.stroke+'"/>'+(a.label?'<text x="'+(g.x+8)+'" y="'+(g.y-9)+'" fill="'+sty.stroke+'" font-size="17">'+esc(a.label)+'</text>':'');
   if(a.kind==='line')return '<line x1="'+g.x1+'" y1="'+g.y1+'" x2="'+g.x2+'" y2="'+g.y2+'"'+common+'/>';
   if(a.kind==='circle')return '<circle cx="'+g.cx+'" cy="'+g.cy+'" r="'+g.r+'"'+common+'/>';
   return '<text x="'+g.x+'" y="'+g.y+'" fill="'+sty.stroke+'">'+esc(a.text)+'</text>';
