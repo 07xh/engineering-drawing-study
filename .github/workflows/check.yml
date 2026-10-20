@@ -71,6 +71,7 @@ jobs:
           node scripts/check-animation-workspace.cjs
           node scripts/check-ui-layout.cjs
           node scripts/check-knowledge-ui.cjs
+          node scripts/check-lesson-stage-mapping.cjs
           node scripts/check-visual-research.cjs
           node scripts/check-source-inspector.cjs
           node scripts/check-fidelity-construction.cjs

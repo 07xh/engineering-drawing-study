@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {mapStep}=require('../knowledge/lesson-stage-mapping.js');
+assert.deepEqual([1,2,3].map(i=>mapStep(i,3)),[0,2,3]);
+assert.deepEqual([1,2,3,4].map(i=>mapStep(i,4)),[0,1,2,3]);
+assert.equal(mapStep(1,1),0);
+assert.equal(mapStep(0,3),0);
+assert.equal(mapStep(99,3),3);
+assert.throws(()=>mapStep(1,0));
+const html=fs.readFileSync('knowledge/index.html','utf8');
+const js=fs.readFileSync('knowledge/knowledge-app.js','utf8');
+assert(html.indexOf('src="lesson-stage-mapping.js"')<html.indexOf('src="knowledge-app.js"'));
+assert(js.includes('LessonStageMapping.mapStep(deepStep,deep.stages.length,4)'));
+console.log('PASS: stage mapping preserves first/last frame and loads before lesson UI');

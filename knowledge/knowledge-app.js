@@ -85,7 +85,7 @@ function syncDeepVisual(){
  // never claim each deep-lesson statement is a textbook-verified drawing step.
  const deep=window.TextbookDeepLessons?.get(current.id);
  if(!deep||!deep.stages.length)return;
- const target=Math.round(deepStep/deep.stages.length*3);
+ const target=window.LessonStageMapping.mapStep(deepStep,deep.stages.length,4);
  visual.goTo(target);
 }
 function renderDepthStages(deep){
