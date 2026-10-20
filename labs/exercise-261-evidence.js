@@ -39,11 +39,11 @@ function scan(source){
  const structureOk=top.length===1&&hEdges.length===3&&hpts.length===3&&twiceArea>EPS&&
     correspondence&&angle45.length===1;
  const stages=[
- {title:'先辨认投影轴',why:'现有描图记录了一条水平轴、竖直轴与一条约45°的转移参考线；这些仍需与教材原图核对。',indices:[...horizontalAxis,...verticalAxis,...angle45].map(o=>o.i)},
- {title:'识别上方已知投影',why:'当前数字描图中的上方线段为水平线。仅凭这一视图还不能确认空间三角面的全部位置及题上字母。',indices:top.map(o=>o.i)},
- {title:'检查下方三角形边',why:'已录入下方三条相连线段构成非退化三角形；它们在画布上是几何图形，但还不等于纸质原题已精确复刻。',indices:hEdges.map(o=>o.i)},
- {title:'核对同名投影的横向关系',why:'三条已录入竖直细线与下方三个顶点的横向坐标相合，符合长对正的形式条件；字母和空间点对应仍须查原书。',indices:vertical.map(o=>o.i)},
- {title:'仅整理待求方法，不画答案',why:'若原图确认上方三点等高且与下方三点对应，可进一步研究是否为水平面，再依高平齐、宽相等求第三投影。现在没有原图证据，不生成任何求作点或答案线。',indices:[]}
+ {title:'先辨认投影轴',freedom:'投影轴只规定坐标基准，不是空间点的定位约束；单个未知空间点仍有3个坐标自由度。',why:'现有描图记录了一条水平轴、竖直轴与一条约45°的转移参考线；这些仍需与教材原图核对。',indices:[...horizontalAxis,...verticalAxis,...angle45].map(o=>o.i)},
+ {title:'识别上方已知投影',freedom:'如果某个点的 V 投影真正确定，该点的 x、z 已知，单点一般还剩深度 y 这1个自由度；点名仍未核对。',why:'当前数字描图中的上方线段为水平线。仅凭这一视图还不能确认空间三角面的全部位置及题上字母。',indices:top.map(o=>o.i)},
+ {title:'检查下方三角形边',freedom:'单独已知某个点的 H 投影只能固定 x、y，通常仍缺高度 z；不能仅凭下方三角形推断第三投影。',why:'已录入下方三条相连线段构成非退化三角形；它们在画布上是几何图形，但还不等于纸质原题已精确复刻。',indices:hEdges.map(o=>o.i)},
+ {title:'核对同名投影的横向关系',freedom:'若 V/H 的同名点身份经原图确认，V 给 x、z，H 给 x、y，通常可使该单点自由度降为0；目前只验证画布 x 坐标对齐。',why:'三条已录入竖直细线与下方三个顶点的横向坐标相合，符合长对正的形式条件；字母和空间点对应仍须查原书。',indices:vertical.map(o=>o.i)},
+ {title:'仅整理待求方法，不画答案',freedom:'“每个同名点坐标唯一”并不自动等于“整个平面、连边与可见性都已核实”；仍需独立检查题意及所有图线。',why:'若原图确认上方三点等高且与下方三点对应，可进一步研究是否为水平面，再依高平齐、宽相等求第三投影。现在没有原图证据，不生成任何求作点或答案线。',indices:[]}
  ];
  const facts=[
  {label:'轴线关系',ok:horizontalAxis.length===1&&verticalAxis.length===1,detail:'已识别画布中的横向轴和竖向轴。'},
