@@ -1,4 +1,4 @@
-/* Original SVG concept motion models grounded in textbook topics,
+/* Original SVG concept motion models grounded in reviewed textbook topics,
  * not publisher drawings, source examples or verified book answer solutions.
  * Geometry and dimensions here are intentionally independent demonstration values.
  */
