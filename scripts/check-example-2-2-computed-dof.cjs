@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict'),E=require('../knowledge/textbook-examples.js'),G=require('../knowledge/textbook-example-geometry.js'),A=require('../knowledge/textbook-action-adapter.js'),C=require('../knowledge/constraint-analysis.js');
+const p=A.adapt(E.get('example-2-2'),G);
+const degrees=p.steps.map(step=>C.analyze(step.constraintAnalysis).degrees);
+assert.deepEqual(degrees,[2,1,1,0,0]);
+const end=C.analyze(p.steps[4].constraintAnalysis);
+assert.equal(end.status,'unique');
+const expected=G.frame('example-2-2',4).proof.points.aDouble;
+assert.deepEqual(end.details.result.particular,[expected.x,expected.y]);
+const other=A.adapt(E.get('example-1-1'),G);
+assert(other.steps.every(s=>!s.constraintAnalysis));
+console.log('PASS: textbook example 2-2 normalized W-view computed DOF 2→1→1→0→0');
