@@ -62,7 +62,9 @@ function render(){
  $('visualGeometryWhy').textContent=!showGuides?'辅助线当前已隐藏。开启“显示辅助线”后，可以对照图形查看各条定位与投影关系。':newReasons.length?'本步骤新增的辅助几何：'+newReasons.join('；')+'。它们用于建立投影对应关系，并非整题唯一解的证明。':explanations.length?'本步骤没有新增辅助线；之前已建立的关系：'+explanations.join('；')+'。':'本步骤尚无辅助几何线；先观察已知投影面及形体位置。';
  $('visualTitle').textContent=picture.name+' · '+st.title;
  $('visualExplanation').textContent=st.why;
+ const lesson=window.ProjectionConstraintLessons.describe(stage,report.degree);
  $('visualDegree').textContent=report.degree===null?'无解或冲突条件':'代表点剩余 '+report.degree+' 个自由度';
+ $('visualConstraintReason').textContent=lesson.text+(lesson.consistent?'':' 当前约束计算结果与教学预期不一致，请核查模型。');
  $('visualDetail').textContent=report.scope+' '+report.summary;
  $('visualStepCounter').textContent=(stage+1)+' / '+data.stages().length;
  $('visualPrev').disabled=stage===0;$('visualNext').disabled=stage===3;
