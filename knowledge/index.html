@@ -42,7 +42,7 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="knowledge-app.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-example-ui.js"></script><script defer src="knowledge-app.js"></script>
 <link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="knowledge-ui.css"></head>
 <body class="ui-refresh"><header class="site-topbar" role="banner"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="全站主要导航"><a href="../index.html">课程首页</a><a href="../knowledge/index.html" aria-current="page">知识库</a><a href="../labs/chapter-26-29.html">章节习题</a><details class="site-more"><summary>更多工具</summary><div class="site-more-menu"><span>专项学习</span><a href="../labs/chapter-drawing.html">原题作图</a><a href="../labs/point-construction.html">第三投影逐步验算</a><a href="../labs/analysis.html">自由度实验室</a><a href="../labs/source-fidelity.html">原图核验总览</a><a href="../labs/constraints.html">三投影面实验室</a></div></details></nav></div></header><div class="wrap" id="top">
 <p class="site-page-crumb"><a href="../index.html">课程首页</a><span>/</span>第三版教材知识体系</p>
@@ -75,6 +75,25 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <div class="deep-example"><h4>概念演示（不是题库题目）</h4><p id="deepExample"></p></div>
 <div class="deep-check"><h4>画完后怎样检查？</h4><p id="deepCheck"></p></div>
 <p id="deepBoundary" class="deep-boundary"></p>
+</section>
+<section id="textbookExample" class="book-example" hidden aria-label="教材原版例题的分步作图">
+<div class="book-example-heading"><span class="deep-tag">教材例题 · 已对照原书图和解题过程</span><h3 id="bookExampleTitle"></h3>
+<p id="bookExampleSource" class="book-example-source"></p></div>
+<p id="bookExampleKnown"></p>
+<div class="book-example-canvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="img" aria-label="按课本例题步骤显示的投影和辅助线"></svg></div>
+<div class="book-example-tools">
+<button type="button" id="bookExamplePrev">上一步</button>
+<button type="button" class="primary" id="bookExampleNext">下一步</button>
+<button type="button" id="bookExampleReset">重新从已知条件播放</button>
+<button type="button" id="bookExampleFinal">查看全部步骤</button>
+<span id="bookExampleCounter" aria-live="polite"></span>
+</div>
+<h4 id="bookExampleStageTitle"></h4>
+<p id="bookExampleAction"></p>
+<p id="bookExampleReason"></p>
+<p id="bookExampleDof"></p>
+<p id="bookExampleAudit"></p>
+<p id="bookExampleFidelity" class="book-example-source"></p>
 </section>
 <h3>本节已核对的要点</h3><p id="detailLaw"></p>
 <h3>作图与理解步骤</h3>
