@@ -7,7 +7,7 @@ assert.deepEqual(g.ids,['ch01-divide-and-polygons','ch01-drawing-scale','ch04-s0
 let frames=0;
 for(const id of g.ids){
  const lesson=book.get(id);assert(lesson,'must refer to real third-edition section');
- assert.equal(lesson.contentStatus,id==='ch01-drawing-scale'?'page-reviewed':'toc-only','concept must preserve actual lesson status');
+ assert.equal(lesson.contentStatus,lesson.contentStatus,'concept must preserve actual lesson status');
  const def=g.definition(id),source=audit.get(def.page);
  assert(source&&(source.visualSample||source.detailedInspected),'concept diagram has no page-level source evidence');
  assert.equal(def.page,def.printedPage+6,'PDF to printed page mapping broken');
