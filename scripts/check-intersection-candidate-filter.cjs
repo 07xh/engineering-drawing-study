@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict'),F=require('../knowledge/intersection-candidate-filter.js');
+const r={solutions:[{x:-3,y:4},{x:3,y:4}]};
+assert.equal(F.filter(r,[]).status,'multiple');
+let a=F.filter(r,[{type:'x-greater',value:0}]);assert.equal(a.status,'unique');assert.equal(a.solutions[0].x,3);
+a=F.filter(r,[{type:'nearer-to',point:{x:5,y:4}}]);assert.equal(a.status,'unique');assert.equal(a.solutions[0].x,3);
+a=F.filter(r,[{type:'nearer-to',point:{x:0,y:4}}]);assert.equal(a.status,'multiple');
+a=F.filter(r,[{type:'y-less',value:0}]);assert.equal(a.status,'none');
+assert.throws(()=>F.filter(r,[{type:'nearer-to',point:{x:NaN,y:0}}]));
+assert.throws(()=>F.filter(r,[{type:'invented'}]));
+console.log('PASS: explicit candidate filtering preserves ties and rejects unsupported criteria');
