@@ -22,3 +22,8 @@ assert(js.includes("practicePlane==='V'?'待求 V 面"),'hints must reflect miss
 assert(js.includes("practice?'补图练习进行中"),'answer coordinates must not leak in practice');
 assert(js.includes("!showAnswer||(practice&&!revealed)"),'solution must remain hidden until reveal');
 console.log('PASS practice answer privacy, reversible endpoints and undo/clear controls');
+
+for(const id of ['exerciseProgress','clearProgress'])assert(html.includes('id="'+id+'"'),'missing progress control '+id);
+assert(js.includes("if(distances.every(d=>d<=tolerance)){markCompleted();"),'completion must only follow successful grading');
+assert(js.includes("completed=new Set(stored.filter"),'saved progress must be filtered against real exercises');
+console.log('PASS local completion progress and safe reset controls');
