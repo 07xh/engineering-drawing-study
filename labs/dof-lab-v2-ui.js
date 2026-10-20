@@ -159,6 +159,6 @@ $('turnRight').addEventListener('click',()=>{yaw+=.2;render()});
 $('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.5,zoom*1.15);render()});
 $('zoomOut').addEventListener('click',()=>{zoom=Math.max(.5,zoom/1.15);render()});
 $('resetView').addEventListener('click',()=>{yaw=.72;pitch=.52;zoom=1;render()});
-showFields('projection');renderFields();render();
+$('conditionType').value='projection';showFields('projection');renderFields();render();
 window.DrawingLabV2Controller={getState:()=>JSON.parse(JSON.stringify(state)),apply:action=>{mutate(action);renderFields()},getAnalysis:()=>Store.compute(state).analysis};
 })();
