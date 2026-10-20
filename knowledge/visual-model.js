@@ -54,7 +54,8 @@ function constraints(model,stage){
  return out;
 }
 function analyze(engine,id,chapter,stage){
- const model=modes[modeFor(id,chapter)],result=engine.analyze(constraints(model,stage));
+ const mode=modeFor(id,chapter);if(!mode||!modes[mode])throw Error('此教材小节尚未核实，不能调用通用几何示意');
+ const model=modes[mode],result=engine.analyze(constraints(model,stage));
  return {mode:modeFor(id,chapter),degree:result.result.degrees,rank:result.result.rank,steps:result.steps,summary:engine.describe(result.result),scope:'仅分析这个原创模型中的一个代表点，线性约束的秩不等于整个立体或真实教材习题的全部自由度。'};
 }
 function line(shapes,view,a,b,kind='line',label=''){shapes.push({kind,view,xy:[...a,...b],label})}
@@ -116,7 +117,8 @@ function correspondence(model,stage,shapes){
 }
 function svgShapes(id,chapter,stage){
  if(!Number.isInteger(stage)||stage<0||stage>3)throw Error('无效的步骤序号');
- const mode=modeFor(id,chapter),model=modes[mode],shapes=[];
+ const mode=modeFor(id,chapter);if(!mode||!modes[mode])throw Error('此教材小节没有与正文一致的动画模型');
+ const model=modes[mode],shapes=[];
  for(const view of ['V','H','W']){
   const def=defs[view],active=view==='V'?stage>=1:view==='H'?stage>=2:stage>=3;
   shapes.push({kind:'panel',view,rect:def.rect,label:def.label,active});
