@@ -51,6 +51,14 @@ function analyze({points,constraints}={}){
    const target=c.mode==='external'?c.radiusA+c.radiusB:Math.abs(c.radiusA-c.radiusB);
    const dx=a.x-b.x,dy=a.y-b.y;
    add([[c.a,2*dx,2*dy],[c.b,-2*dx,-2*dy]],dx*dx+dy*dy-target*target);
+  }else if(c.type==='on-line'){
+   // One variable point constrained to a fixed 2D straight line: a*x+b*y=offset.
+   const point=p(c.point),l=c.line;
+   if(!l||![l.a,l.b,l.offset].every(finite))throw Error('直线约束系数无效');
+   const norm=Math.hypot(l.a,l.b);
+   if(norm<EPS)throw Error('直线约束不能使用零法向量');
+   const a=l.a/norm,b=l.b/norm,offset=l.offset/norm;
+   add([[c.point,a,b]],a*point.x+b*point.y-offset);
   }else if(c.type==='fixed'){
    const point=p(c.point);if(!['x','y'].includes(c.axis)||!finite(c.value))throw Error('固定坐标无效');
    const gradient=c.axis==='x'?[1,0]:[0,1];add([[c.point,...gradient]],point[c.axis]-c.value);

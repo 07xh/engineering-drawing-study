@@ -7,5 +7,5 @@ assert.equal(p.steps[2].localDofExplanation.addedConstraint,null);
 assert(p.steps.every(s=>s.localDofExplanation.scope.includes('归一化画纸')));
 const html=fs.readFileSync('knowledge/drawing-player.html','utf8'),ui=fs.readFileSync('knowledge/drawing-player-ui.js','utf8');
 assert(html.includes('id="constraintReason"'));assert(ui.includes('reasonData.addedConstraint'));
-assert(A.adapt(E.get('example-1-1'),G).steps.every(s=>!s.localDofExplanation));
-console.log('PASS: textbook step explanations map only verified example 2-2 constraints');
+assert(A.adapt(E.get('example-1-1'),G).steps.every(s=>s.localDofExplanation.scope.includes('Q1')));
+console.log('PASS: textbook step explanations map both reviewed textbook examples to grounded constraints');
