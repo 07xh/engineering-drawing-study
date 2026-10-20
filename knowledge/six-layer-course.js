@@ -85,7 +85,7 @@ function forEntry(id){
    related.length?related.slice(0,4).map(x=>({title:x.title,body:x.steps.join('；'),why:x.understanding})):
    [{title:'导学推理',body:principle,why:'这只是主题导学，须与原书图形和定义逐页对照。'}]);
  const exampleText=sourceExamples.length?'本知识点已关联经过题图和编号核对的教材例题，可在此直接按真实步骤播放重新绘制的动画。':
-  related.length?'本节目录包含 '+related.length+' 个已按教材核对的细分专题，进入相关专题可查验各自的教材例题与作图过程；本目录条目本身不直接声称存在已核对例题。':
+  related.length?'本节目录包含 '+related.length+' 个已按教材核对的细分专题，进入相关专题可查验各自的教材例题与作图过程；本目录条目本身尚未核验独立教材例题，不能冒充完整原题解答。':
   '本知识点尚无完整核验的教材例题动态图；不自动生成、猜测原书题目或答案。';
  const dofRaw=(verified?safe(item.understanding)||safe(deep?.stages?.[0]?.[2]):
   safe(guide?.[3])||related.slice(0,3).map(x=>x.understanding).filter(Boolean).join(' '))||'';
