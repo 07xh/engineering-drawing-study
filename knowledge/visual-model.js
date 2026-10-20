@@ -9,8 +9,8 @@ const modes={
  plane:{name:'空间三角面 ABC 的三面投影',points:p,edges:[['A','B'],['B','C'],['C','A']]},
  prism:{name:'三棱柱的三面投影',points:{A:point(17,14,12),B:point(51,14,12),C:point(30,48,12),D:point(17,14,52),E:point(51,14,52),F:point(30,48,52)},edges:[['A','B'],['B','C'],['C','A'],['D','E'],['E','F'],['F','D'],['A','D'],['B','E'],['C','F']]},
  pyramid:{name:'三棱锥的三面投影',points:{A:point(13,17,10),B:point(53,15,10),C:point(31,53,10),S:point(32,29,55)},edges:[['A','B'],['B','C'],['C','A'],['A','S'],['B','S'],['C','S']]},
- cylinder:{name:'直立圆柱的三面投影',points:{A:point(52,30,40)},edges:[],solid:'cylinder'},
- cone:{name:'直圆锥的三面投影',points:{A:point(41,30,33),S:point(30,30,56)},edges:[],solid:'cone'},
+ cylinder:{name:'直立圆柱的三面投影',points:{A:point(41,30+11*Math.sqrt(3),40)},edges:[],solid:'cylinder'},
+ cone:{name:'直圆锥的三面投影',points:{A:point(30+22*23/47*0.5,30+22*23/47*Math.sqrt(3)/2,33),S:point(30,30,56)},edges:[],solid:'cone'},
  sphere:{name:'圆球的三面投影',points:{A:point(42,30,30+Math.sqrt(340))},edges:[],solid:'sphere'}
 };
 function modeFor(id,chapter){
@@ -60,6 +60,28 @@ function svgShapes(id,chapter,stage){
     for(const segment of [[cx-r,hi,cx-r,lo],[cx+r,hi,cx+r,lo],[cx-r,hi,cx+r,hi],[cx-r,lo,cx+r,lo]])shapes.push({kind:'line',view,xy:segment});
    }else{
     for(const segment of [[cx,hi,cx-r,lo],[cx,hi,cx+r,lo],[cx-r,lo,cx+r,lo]])shapes.push({kind:'line',view,xy:segment});
+   }
+   if(stage>=3&&model.points.A){
+    const pt=model.points.A,xy=projection(pt,view);
+    if(mode==='cylinder'){
+     const top=projection({x:pt.x,y:pt.y,z:56},view);
+     const bottom=projection({x:pt.x,y:pt.y,z:9},view);
+     shapes.push({kind:'construction',view,xy:[...top,...bottom],label:'过点的柱面母线'});
+    }else if(mode==='cone'){
+     const a=model.points.S;
+     const base={x:30+(pt.x-30)*(56-9)/(56-pt.z),y:30+(pt.y-30)*(56-9)/(56-pt.z),z:9};
+     shapes.push({kind:'construction',view,xy:[...projection(a,view),...projection(base,view)],label:'过锥顶的素线'});
+     if(id==='cone-circle'){
+      const r=22*(56-pt.z)/47;
+      if(view==='H')shapes.push({kind:'aux-circle',view,cx:def.ox+30*3.1,cy:def.oy-30*3.1,r:r*3.1,label:'等高辅助截圆'});
+      else shapes.push({kind:'construction',view,xy:[def.ox+(30-r)*3.1,xy[1],def.ox+(30+r)*3.1,xy[1]],label:'定高截线'});
+     }
+    }else if(mode==='sphere'){
+     const r=Math.sqrt(Math.max(0,22*22-(pt.z-30)*(pt.z-30)));
+     if(view==='H')shapes.push({kind:'aux-circle',view,cx:def.ox+30*3.1,cy:def.oy-30*3.1,r:r*3.1,label:'球面等高辅助截圆'});
+     else shapes.push({kind:'construction',view,xy:[def.ox+(30-r)*3.1,xy[1],def.ox+(30+r)*3.1,xy[1]],label:'截平面投影'});
+    }
+    shapes.push({kind:'point',view,name:'A',xy});
    }
   }else{
    for(const [a,b] of model.edges)shapes.push({kind:'line',view,xy:[...projection(model.points[a],view),...projection(model.points[b],view)]});
