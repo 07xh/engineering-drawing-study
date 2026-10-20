@@ -98,6 +98,7 @@ jobs:
           node scripts/check-method-library.cjs
           node scripts/check-knowledge.cjs
           node scripts/check-six-layer-course.cjs
+          node scripts/check-textbook-page-inspections.cjs
           node scripts/check-textbook-page-audit.cjs
           node scripts/check-textbook-concept-motion.cjs
           node scripts/check-textbook-only.cjs
