@@ -106,3 +106,9 @@ assert(drawingHtml.includes('id="ink" hidden'),'saved ink must be hidden in view
 assert(drawingJs.includes('if(!drawingEnabled)return;const p=pos(e)'),'pointerdown must be gated by drawing toggle');
 assert(drawingJs.includes('setDrawingEnabled(false);choose('),'view-only must be default');
 console.log('PASS default view-only and optional free drawing without deleting saved strokes');
+
+assert(drawingHtml.includes('id="sourceStatus"'),'exercise source status must be visible');
+assert(drawingJs.includes("verified?verified.title:"),'verified task wording must take precedence over generic exercise description');
+assert(drawingJs.includes("tool='pen',grid=false"),'source geometry view must start without grid');
+assert(drawingJs.includes("原题待核对"),'unverified exercise must not present fabricated task');
+console.log('PASS verified exercise wording and uncluttered first-frame source status');
