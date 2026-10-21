@@ -61,7 +61,7 @@ test('reject missing origin, HTTP, credentials, path, query, port, redirect host
   assert.throws(()=>verifyOrigin(value,HOST));
 });
 test('private/internal hosts and IP addresses forbidden',()=>{
- for(const host of ['localhost','foo.local','machine.internal','127.0.0.1','192.168.1.4','10.1.2.3','[::1]'])
+ for(const host of ['localhost','foo.local','machine.internal','127.0.0.1','192.168.1.4','10.1.2.3','[::1]','[::ffff:127.0.0.1]'])
   assert.throws(()=>verifyOrigin('https://'+host,host.startsWith('[')?'['+host.slice(1):host));
 });
 test('bad timeouts and unknown fetch implementations are rejected',async()=>{
