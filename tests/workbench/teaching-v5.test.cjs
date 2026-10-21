@@ -122,9 +122,12 @@ test('actual DA-03 projection builds only verified four-guide sequence',()=>{
  const p=A.projectionPlan({knownViews:{V:[15,12],H:[15,10]},
   sheetTransform:{origin:{x:100,y:100},scale:2}},13);
  assert.equal(p.status,'ready');assert.equal(p.revision,13);
- assert.equal(p.mathematicallyVerified,true);assert.equal(p.steps.length,4);
- assert.deepEqual(p.steps.map(s=>s.id),['guide_1','guide_2','guide_3','guide_4']);
+ assert.equal(p.mathematicallyVerified,true);assert.equal(p.steps.length,5);
+ assert.deepEqual(p.steps.map(s=>s.id),['guide_1','guide_2','guide_3','guide_4','third-view']);
  assert.equal(p.steps[3].actions[0].kind,'line');
+ assert.equal(p.steps[4].actions[0].kind,'point');
+ assert.equal(p.steps[4].actions[0].id,'result-W');
+ assert.equal(p.givens.length,2);
  assert.ok(p.timing.totalMs>0);
  assert.ok(T.frame(p.timing,p.timing.totalMs).done);
 });
