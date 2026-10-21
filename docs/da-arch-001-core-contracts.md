@@ -59,3 +59,57 @@ The standalone `DA-ARCH-001 core mathematics` workflow runs only syntax and inde
 2. Coordinate independent CI file changes from PR #113 and PR #123; do not merge or rewrite them here.
 3. Decide future support for solver conditioning, exact tolerance policies, section/intersection visibility, and versioned migrations.
 4. Coordinate review of any future public static build allowlist changes with the release/security specialty.
+
+
+## Independent audit fixes and freeze constraints (2026-10-21)
+
+The independent six-case negative audit from PR #145 has been incorporated into this
+branch's `tests/math/contract-audit-regressions.test.cjs` along with positive
+and negative integration cases. Contract validation now checks both shape and
+cross-record semantics:
+
+- A `Constraint.targetIds[]` target must be present in `Problem.geometry[].id`.
+  For multi-point constraints, targetIds must exactly match the point identifiers
+  explicitly used in the typed condition's data. Named geometry IDs and mesh-local
+  vertex IDs are not interchangeable.
+- Step dependencies must reference *earlier* steps (self/future references fail).
+  Step constraintIds and targetIds must exist in the Problem arrays. A step
+  solveResultRef requires an optional `Problem.solveResults[]` entry with that id.
+  Unversioned legacy steps lacking these optional references continue to work.
+- `Constraint.data` is validated for each (scope,type), including required
+  numeric fields and elementary degeneracy guards. A nested `data.type` is invalid
+  and cannot override the typed outer constraint in the legacy adapter.
+- Discrete `multiple`, `none`, `continuous`, `coincident` and undetermined
+  results cannot assert `globallyUnique:true`. An analytic/linear `unique`
+  result must have solutionCount 1 and degrees 0. `localDegrees` remains a
+  first-order Jacobian diagnostic only and does not imply global uniqueness.
+- Geometric `arc` is a 2D mathematical drawing-plane primitive with
+  `data: {center:{x,y}, radius, startAngle, endAngle, direction:'cw'|'ccw'}`.
+  Angles are in **degrees**; ccw requires increasing angle, cw decreasing;
+  nonzero span at most 360 degrees; this is model geometry, **not pixel space**.
+- Legacy ConstructionStep drawing `arc` actions retain the old SVG renderer
+  shape `{cx,cy,r,startAngle,endAngle}`, where endAngle>startAngle, span <=360,
+  corresponding to the existing increasing screen-angle convention. They must
+  be converted explicitly by the renderer adapter; a mathematically ccw
+  model arc must never be silently rendered with the wrong sweep.
+- `Problem.source` remains compatible with old textbook `{book,page}`.
+  Explicit `{kind:'generated',generatorId}` may represent synthetic test or
+  parameterized problems; `{kind:'user-input',confirmed:boolean}` represents
+  direct input. Automatic solving of unconfirmed user inputs is rejected.
+  Neither path invents textbook page citations or bypasses the separate
+  textbook source/answer review statuses.
+
+### Known limits at the v1 boundary
+These validators do not provide a geometric existence proof or guarantee that
+a user-provided natural-language explanation is true. Numerical tolerances of
+existing solvers still differ by scope. `mesh` checks basic vertex references,
+edge duplication and non-collinear faces, not closed-solid manifold topology,
+self-intersection or visibility. The point solver's constrained unique solution
+may be returned as coordinates only where its legacy engine actually computes
+them. Drawn helper lines still need a proof/explanation record generated from
+verified solution data.
+
+**Freeze gate:** New `core` + inherited CI and independent negative regression
+must all pass on the final PR head; 02/03/07 integration requests and 09
+security review must be addressed before 00 announces final `v1.0.0` freeze.
+The GitHub PR and this document alone do not declare the interface frozen.
