@@ -7,13 +7,17 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
+const COMMIT_SHA=/^[0-9a-f]{40}$/;
+const DIGEST=/^[0-9a-f]{64}$/;
 const TEST_NAMES=Object.freeze([
- 'audit-public-dist.test.cjs','github-evidence.test.cjs','production-smoke.test.cjs','release-plan.test.cjs',
+ 'artifact-manifest.test.cjs','audit-public-dist.test.cjs','github-evidence.test.cjs','production-smoke.test.cjs','release-plan.test.cjs',
  'release-simulator.test.cjs',
  'release-readiness.test.cjs','verify-pr-diff.test.cjs','security-ci-gate.test.cjs'
 ]);
-function securityCiGate({root=path.resolve(__dirname,'../..'),spawn=spawnSync,audit}={}){
+function securityCiGate({root=path.resolve(__dirname,'../..'),spawn=spawnSync,audit,
+ sourceSha=process.env.GITHUB_SHA,buildManifest}={}){
  const blocked=[];
+ if(!COMMIT_SHA.test(sourceSha||''))blocked.push('trusted 40-character Git commit SHA is required');
  let canonical;
  try{canonical=fs.realpathSync(root);}catch{return {ok:false,status:'blocked',reasons:['repository root inaccessible']};}
  const dist=path.join(canonical,'dist'),folder=path.join(canonical,'tests','security');
@@ -37,8 +41,15 @@ function securityCiGate({root=path.resolve(__dirname,'../..'),spawn=spawnSync,au
  try{artifact=typeof audit==='function'?audit(dist):require('./audit-public-dist.cjs').auditPublicDist(dist);}
  catch(error){return {ok:false,status:'blocked',reasons:['artifact inventory audit failed to execute: '+String(error.name||'Error')]};}
  if(!artifact||artifact.ok!==true)return {ok:false,status:'blocked',reasons:['public artifact inventory did not pass',...(artifact?.errors||[])]};
+ let manifest;
+ try{manifest=typeof buildManifest==='function'?buildManifest({root:dist,sourceSha}):
+   require('./artifact-manifest.cjs').buildArtifactManifest({root:dist,sourceSha});}
+ catch(error){return {ok:false,status:'blocked',reasons:['public build SHA-256 manifest failed: '+String(error.message||'Error')]};}
+ if(!manifest||manifest.sourceSha!==sourceSha||!DIGEST.test(manifest.digest||'')||
+    !Array.isArray(manifest.assets)||manifest.assets.length!==artifact.files?.length)
+   return {ok:false,status:'blocked',reasons:['public build SHA-256 manifest incomplete or mismatched']};
  return {ok:true,status:'local-build-security-pass-only',securityTestFiles:TEST_NAMES.length,
-  publishedAssetFiles:artifact.files?.length??null};
+  sourceSha,publicSha256:manifest.digest,publishedAssetFiles:artifact.files.length};
 }
 if(require.main===module){
  const result=securityCiGate();
