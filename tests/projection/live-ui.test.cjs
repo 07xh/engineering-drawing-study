@@ -24,7 +24,7 @@ test('input revision invalidation happens before recompute; no stale computed po
  assert.match(script,/solution=null;teaching=null;shownStep=0/);
  assert.match(script,/if\(s\.status==='unique'&&teaching\?\.status==='ready'&&learningMode==='full'\)/);
  assert.match(script,/teaching\.steps\.slice\(0,shownStep\)/);
- assert.match(script,/if\(shownStep===s\.steps\.length\)/);
+ assert.match(script,/if\(shownStep===s\.steps\.length&&\(!stageClock\|\|stageClock\.snapshot\(\)\.done\)\)/);
 });
 test('input and keyboard accessible live controls are wired',()=>{
  for(const id of ['paperSvg','pairSelect','firstU','firstV','secondU','secondV','scaleInput',
@@ -68,15 +68,26 @@ test('direct XYZ input and guide toggle are present in the published UI',()=>{
 
 function createInteractivePage(){
  const vm=require('node:vm');
+ let virtualNow=0,taskId=0;
+ const animationTasks=new Map();
+ const performance={now:()=>virtualNow};
+ const requestAnimationFrame=fn=>{animationTasks.set(++taskId,fn);return taskId};
+ const cancelAnimationFrame=id=>animationTasks.delete(id);
+ const advance=delta=>{
+  if(!Number.isFinite(delta)||delta<0)throw new TypeError('invalid frame delta');
+  virtualNow+=delta;
+  const tasks=[...animationTasks.values()];animationTasks.clear();
+  for(const task of tasks)task(virtualNow);
+ };
  const values={pairSelect:'XYZ',firstU:'15',firstV:'12',secondU:'15',
-  secondV:'10',spaceX:'15',spaceY:'10',spaceZ:'12',scaleInput:'4'};
+  secondV:'10',animationSpeed:'1',spaceX:'15',spaceY:'10',spaceZ:'12',scaleInput:'4'};
  const ids=['paperSvg','pairSelect','spaceInputs','projectionInputs','firstU',
   'firstV','secondU','secondV','spaceX','spaceY','spaceZ','scaleInput','showGuides',
   'firstULabel','firstVLabel','secondULabel','secondVLabel','recompute','resetExample',
   'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter',
   'learningMode','fullControls','hintControls','drawControls','hintReveal',
   'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus',
-  'playPause'];
+  'playPause','animationSpeed'];
  const elements=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],hidden:false,
   firstChild:{textContent:''},classList:{toggle(){}},
@@ -109,9 +120,15 @@ function createInteractivePage(){
    return require('../../workbench/verified-projection-drawing.cjs');
   if(id==='../workbench/verified-plan-v5-bridge.cjs')
    return require('../../workbench/verified-plan-v5-bridge.cjs');
+  if(id==='../workbench/teaching-timeline-v5.js')
+   return require('../../workbench/teaching-timeline-v5.js');
+  if(id==='../workbench/teaching-motion-v5.js')
+   return require('../../workbench/teaching-motion-v5.js');
   throw Error('unexpected runtime module '+id);
  };
- vm.runInNewContext(script,{require:nodeRequire,document});
+ vm.runInNewContext(script,{require:nodeRequire,document,performance,
+  requestAnimationFrame,cancelAnimationFrame,
+  window:{matchMedia:()=>({matches:false})}});
  const get=id=>elements.get(id);
  const fire=(id,event)=>{const el=get(id);assert.equal(typeof el.listeners[event],'function');
   el.listeners[event]()};
@@ -123,7 +140,7 @@ function createInteractivePage(){
   for(const n of get('paperSvg').children)visit(n);
   return out;
  };
- return {get,fire,allSvgNodes};
+ return {get,fire,allSvgNodes,advance};
 }
 
 test('real UI computes XYZ, all three V/H/W results, and mathematical guide toggle',()=>{
@@ -298,4 +315,29 @@ test('when the input changes the shared teaching plan cannot retain a prior draw
  assert.equal(get('stepCounter').textContent,'0 / 4');
  assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,0);
  assert.match(get('solveStatus').textContent,/28, 10, 12/);
+});
+
+test('V5 real point guide animates across frames and speed change preserves proof-backed math',()=>{
+ const page=createInteractivePage(),{get,fire,advance,allSvgNodes}=page;
+ const guides=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
+ assert.equal(get('stepCounter').textContent,'0 / 4');
+ fire('playPause','click');advance(300);
+ assert.equal(guides().length,1);
+ const partial=guides()[0];
+ const original=solveProjection({knownPoint:{x:15,y:10,z:12},
+  sheetTransform:{origin:{x:360,y:210},scale:4}}).steps[0];
+ const initialLength=Math.hypot(Number(partial.attributes.x2)-original.from.x,
+  Number(partial.attributes.y2)-original.from.y);
+ const targetLength=Math.hypot(original.to.x-original.from.x,original.to.y-original.from.y);
+ assert.ok(initialLength>0&&initialLength<targetLength);
+ get('animationSpeed').value='2';fire('animationSpeed','change');
+ advance(600);
+ assert.ok(guides().length>=2);
+ assert.equal(allSvgNodes().filter(n=>n.tag==='text'&&String(n.textContent).startsWith('由空间点投影')).length,0);
+ fire('playPause','click');assert.equal(get('playPause').textContent,'自动播放');
+ advance(10000);
+ assert.equal(guides().length,2,'paused guide should not progress on external clocks');
+ get('spaceX').value='-4';fire('spaceX','input');
+ assert.equal(guides().length,0,'revision change clears old animation');
+ assert.equal(get('stepCounter').textContent,'0 / 4');
 });

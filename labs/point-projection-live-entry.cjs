@@ -4,6 +4,8 @@ const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
 const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
+const TimelineV5=require('../workbench/teaching-timeline-v5.js');
+const MotionV5=require('../workbench/teaching-motion-v5.js');
 (function(){
   const SVG='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById(id);
@@ -14,11 +16,28 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   const BOARD={x:360,y:210};
   let solution=null,teaching=null,shownStep=0,revision=0;
   let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
-  let pointer=null,playTimer=null;
+  let pointer=null,playTimer=null,stageClock=null;
+  const liveGuideNodes=new Map();
   const reducedMotion=()=>typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  function pausePlayback(){
+    if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null;}
+    if(stageClock)stageClock.pause(performance.now());
+  }
   function stopPlayback(){
-    if(playTimer!==null){clearInterval(playTimer);playTimer=null;}
+    if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null;}
+    stageClock=null;
+  }
+  function paintCurrentGuide(){
+    if(!stageClock||!solution||teaching?.status!=='ready'||
+        learningMode!=='full'||!$('showGuides').checked)return;
+    const frame=stageClock.snapshot();
+    if(!frame.activeActionId)return;
+    const index=frame.completedIds.length;
+    const verified=teaching.steps[index]?.actions?.find(a=>a.kind==='line');
+    const node=liveGuideNodes.get(index);
+    if(node&&verified)MotionV5.updateSvg(node,verified,
+      frame.actionFractions[frame.activeActionId]);
   }
 
   function el(tag,attributes={},value){
@@ -105,7 +124,7 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     svg.append(el('text',{x:x+7,y:y-8,'font-size':13,fill:'#63766a'},'O'));
   }
   function render(){
-    const svg=$('paperSvg');svg.replaceChildren();axes(svg);
+    const svg=$('paperSvg');svg.replaceChildren();liveGuideNodes.clear();axes(svg);
     const s=solution,pair=$('pairSelect').value;
     if(s){
       const {origin,scale}=s.userInput.sheetTransform;
@@ -117,12 +136,14 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
         if($('showGuides').checked){
           // Render ONLY from the R1 proof-backed steps, already converted by
           // the shared R2 V5 bridge. Do not recompute guides in the SVG layer.
-          for(const step of teaching.steps.slice(0,shownStep))
+          for(const [i,step] of teaching.steps.slice(0,shownStep).entries())
             for(const action of step.actions)
-              if(action.kind==='line')
-                svg.append(line(action.geometry.from,action.geometry.to,COLOR.guide,2.2,'7 5'));
+              if(action.kind==='line'){
+                const guide=line(action.geometry.from,action.geometry.to,COLOR.guide,2.2,'7 5');
+                liveGuideNodes.set(i,guide);svg.append(guide);
+              }
         }
-        if(shownStep===s.steps.length){
+        if(shownStep===s.steps.length&&(!stageClock||stageClock.snapshot().done)){
           for(const name of ['V','H','W']){
             if(s.knownPoint||!s.knownViews.includes(name))
               svg.append(point(s.sheet[name],s.knownPoint?'由空间点投影 '+name:'求得 '+name,COLOR.computed));
@@ -144,7 +165,8 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     $('previous').disabled=!active||!full||shownStep===0;
     $('next').disabled=!active||!full||shownStep>=max;
     $('restart').disabled=!active||!full||shownStep===0;
-    $('playPause').disabled=!active||!full||shownStep>=max||reducedMotion();
+    $('playPause').disabled=!active||!full||reducedMotion()||
+      (shownStep>=max&&(!stageClock||stageClock.snapshot().done));
     $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
     $('hintReveal').disabled=!active||!hint||hintStep>=max;
     $('hintCounter').textContent=hintStep+' / '+max;
@@ -182,6 +204,7 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
         }catch(error){$('drawStatus').textContent='无法数学判题：'+error.message;}
       }
     }
+    paintCurrentGuide();
   }
   function resetPair(){
     const pair=$('pairSelect').value;
@@ -206,9 +229,9 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   $('showGuides').addEventListener('change',render);
   $('recompute').addEventListener('click',compute);
   $('resetExample').addEventListener('click',()=>{$('pairSelect').value='VH';$('scaleInput').value='4';resetPair();});
-  $('previous').addEventListener('click',()=>{if(solution?.status!=='unique')return;
+  $('previous').addEventListener('click',()=>{stopPlayback();if(solution?.status!=='unique')return;
     shownStep=Math.max(0,shownStep-1);render();});
-  $('next').addEventListener('click',()=>{if(solution?.status!=='unique')return;
+  $('next').addEventListener('click',()=>{stopPlayback();if(solution?.status!=='unique')return;
     shownStep=Math.min(solution.steps.length,shownStep+1);render();});
   $('restart').addEventListener('click',()=>{stopPlayback();shownStep=0;render();});
   $('learningMode').addEventListener('change',()=>{
@@ -221,18 +244,42 @@ const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     hintStep=Math.min(solution.steps.length,hintStep+1);render();
   });
   $('playPause').addEventListener('click',()=>{
-    if(playTimer!==null){stopPlayback();render();return;}
-    if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()||
-       shownStep>=solution.steps.length)return;
-    playTimer=setInterval(()=>{
-      if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()){
+    if(playTimer!==null){pausePlayback();render();return;}
+    if(learningMode!=='full'||solution?.status!=='unique'||
+       teaching?.status!=='ready'||teaching.revision!==revision||reducedMotion())return;
+    const max=solution.steps.length,clock=()=>performance.now();
+    if(shownStep>=max&&(!stageClock||stageClock.snapshot().done))return;
+    if(!stageClock){
+      // Use verified R1/V5 construction action durations; never fabricate geometry.
+      const playbackSteps=teaching.steps.slice(0,max).map(st=>({
+        id:st.id,dependsOn:st.dependsOn,
+        actions:st.actions.map(a=>({...a,durationMs:1200}))
+      }));
+      stageClock=TimelineV5.createPlayer(TimelineV5.compileTimeline(playbackSteps,
+        {gapMs:0}),{speed:Number($('animationSpeed').value),revision});
+      stageClock.seekStep(shownStep,clock());
+    }
+    stageClock.play(clock());
+    const tick=()=>{
+      if(!stageClock||learningMode!=='full'||solution?.revision!==revision||
+          teaching?.revision!==revision||reducedMotion()){
         stopPlayback();render();return;
       }
-      shownStep=Math.min(solution.steps.length,shownStep+1);
-      if(shownStep===solution.steps.length)stopPlayback();
-      render();
-    },1200);
+      const status=stageClock.snapshot(clock());
+      const active=status.activeActionId!==null;
+      const visible=Math.min(max,status.completedIds.length+(active?1:0));
+      if(visible!==shownStep){shownStep=visible;render();}
+      paintCurrentGuide();
+      if(status.done){stopPlayback();shownStep=max;render();return;}
+      playTimer=requestAnimationFrame(tick);
+    };
+    playTimer=requestAnimationFrame(tick);
     render();
+  });
+  $('animationSpeed').addEventListener('change',()=>{
+    const speed=Number($('animationSpeed').value);
+    TimelineV5.validateSpeed(speed);
+    if(stageClock)stageClock.setSpeed(speed,performance.now());
   });
   $('undoDraw').addEventListener('click',()=>{
     if(learningMode!=='draw'||!studentStrokes.length)return;
