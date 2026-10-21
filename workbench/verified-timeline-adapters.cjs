@@ -47,7 +47,18 @@ function projectionPlan(args={},revision=0){
  const steps=r.steps.map((s,i)=>step(s.id,
     ['V/H 联系线','正侧高度联系线','45° 深度转移','深度转至侧面'][i],
     s.explanation,[action(s.id,'line',{from:s.from,to:s.to})],s.dependsOn));
- return ready({status:'ready',source:'03-validated-first-angle',revision,
+ const givens=(r.knownViews||[]).map(name=>({
+   id:'given-'+name,kind:'point',geometry:{center:{...r.sheet[name]},radius:5},role:'given',name
+ }));
+ const missing=['V','H','W'].filter(name=>!r.knownViews.includes(name));
+ if(missing.length===1){
+   const name=missing[0];
+   steps.push(step('third-view','标记'+name+' 面投影',
+    '此投影点来自经数学验证的空间唯一解；不是根据动画位置猜测。',
+    [action('result-'+name,'point',{center:{...r.sheet[name]},radius:5})],
+    [steps.at(-1).id]));
+ }
+ return ready({status:'ready',source:'03-validated-first-angle',revision,givens,
    solverStatus:r.status,resultRef:r.resultId,steps,
    diagnostic:'第一角 V/H/W 投影与 45° 深度联系线，保留真实求解器的线性约束证明',
    residualMm:r.maxResidual});
