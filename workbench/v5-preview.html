@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>DraftAI V5｜真实数学验证的动态制图播放器</title>
+<link rel="stylesheet" href="v5-preview.css">
+</head>
+<body>
+<header class="header"><div><strong>DraftAI <span>V5</span></strong><small>统一动画播放器 · 数学验证演示</small></div>
+ <div class="header-sub">07 专项 / 独立预览 · 非生产页面</div></header>
+<main class="shell">
+ <div class="heading"><div><h1>让每一步作图，都有迹可循</h1><p>数学结果来自现有 02 / 03 求解器；动画只决定展示方式，不自行推测答案。</p></div>
+ <div class="verified-note">真实求解器 · 可调速 · 双向定位</div></div>
+ <section class="settings" aria-label="例题条件">
+  <div class="row"><label for="case">演示类型</label><select id="case">
+  <option value="projection">点的三面投影 · V/H 推出 W</option>
+  <option value="circle">两圆圆弧连接 · 候选与有向 G1</option>
+  <option value="segments">两有限线段圆弧连接</option>
+  </select></div>
+  <div class="fields" id="projectionFields">
+    <label>正面 V 横坐标 (mm)<input data-parameter="vu" type="number" step="any" value="15"></label>
+    <label>正面 V 竖坐标 (mm)<input data-parameter="vv" type="number" step="any" value="12"></label>
+    <label>水平 H 横坐标 (mm)<input data-parameter="hu" type="number" step="any" value="15"></label>
+    <label>水平 H 纵坐标 (mm)<input data-parameter="hv" type="number" step="any" value="10"></label>
+  </div>
+  <div class="fields" id="filletFields" hidden>
+    <label>第一圆 X (mm)<input data-parameter="x1" type="number" step="any" value="0"></label>
+    <label>第一圆 Y (mm)<input data-parameter="y1" type="number" step="any" value="0"></label>
+    <label>第一圆半径 (mm)<input data-parameter="r1" type="number" step="any" value="5"></label>
+    <label>第二圆 X (mm)<input data-parameter="x2" type="number" step="any" value="20"></label>
+    <label>第二圆 Y (mm)<input data-parameter="y2" type="number" step="any" value="0"></label>
+    <label>第二圆半径 (mm)<input data-parameter="r2" type="number" step="any" value="5"></label>
+  </div>
+  <div class="fields" id="segmentFields" hidden>
+    <label>线段 1 起点 X<input data-parameter="a1x" type="number" value="0" step="any"></label>
+    <label>线段 1 起点 Y<input data-parameter="a1y" type="number" value="0" step="any"></label>
+    <label>线段 1 终点 X<input data-parameter="b1x" type="number" value="30" step="any"></label>
+    <label>线段 1 终点 Y<input data-parameter="b1y" type="number" value="0" step="any"></label>
+    <label>线段 2 起点 X<input data-parameter="a2x" type="number" value="30" step="any"></label>
+    <label>线段 2 起点 Y<input data-parameter="a2y" type="number" value="0" step="any"></label>
+    <label>线段 2 终点 X<input data-parameter="b2x" type="number" value="30" step="any"></label>
+    <label>线段 2 终点 Y<input data-parameter="b2y" type="number" value="30" step="any"></label>
+  </div>
+  <div class="fields compact" id="arcOptions" hidden>
+    <label>连接半径 (mm)<input data-parameter="rf" type="number" min="0.01" value="10" step="any"></label>
+    <label>候选圆心<select id="branch"><option value="">请选择真实候选</option></select></label>
+    <label>圆弧方向<select id="direction"><option value="">请选择</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
+    <label>轮廓 1 走向<select id="travel1"><option value="">请选择</option><option value="ccw">逆时针（圆）</option><option value="cw">顺时针（圆）</option></select></label>
+    <label>轮廓 2 走向<select id="travel2"><option value="">请选择</option><option value="ccw">逆时针（圆）</option><option value="cw">顺时针（圆）</option></select></label>
+  </div>
+  <div class="row"><button id="recalculate" type="button" class="plain">重新计算并清空旧动画</button><span class="micro">修改任何条件都会立即使旧结果失效</span></div>
+ </section>
+ <div class="workspace">
+  <section class="paper-panel">
+   <div class="panel-head"><div><h2>实时作图画布</h2><span>第一角法 / 数学验证图元</span></div>
+    <label class="toggle"><input type="checkbox" id="focus" checked> 自动聚焦</label></div>
+   <div class="paper-viewport"><svg id="paper" viewBox="0 0 720 440" role="img" aria-label="来自真实求解器的工程制图动态步骤"><g id="background"></g><g id="givens"></g><g id="drawings"></g></svg></div>
+   <div class="legend"><span><i class="given"></i>已知</span><span><i class="aux"></i>辅助构造</span><span><i class="result"></i>经验证结果</span></div>
+   <div class="playback">
+    <div class="play-actions"><button id="prev" type="button" aria-label="上一步">⟵ 上一步</button><button id="play" type="button" class="accent">▶ 播放</button><button id="next" type="button" aria-label="下一步">下一步 ⟶</button><button id="restart" type="button">↺ 重播</button></div>
+    <div class="progress-row"><label for="progress">进度</label><input type="range" id="progress" min="0" max="1000" step="1" value="0"><output id="progressText">0%</output></div>
+    <div class="play-options"><label for="speed">播放速度 <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1× 标准</option><option value="1.5">1.5×</option><option value="1.7">1.7×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+     <label class="toggle"><input type="checkbox" id="paperMode"> 黑白纸面</label><label class="toggle"><input type="checkbox" id="reduce"> 减少动效</label>
+     <span id="time">0.0 / 0.0 秒</span></div>
+   </div>
+  </section>
+  <aside class="guide-panel"><div class="panel-head"><div><h2>作图步骤与数学依据</h2><span>点击步骤或图元可跳转</span></div><strong id="counter">0 / 0</strong></div>
+   <div id="gate" class="gate" role="status" aria-live="polite">尚未计算</div>
+   <article class="active-step"><div class="eyebrow">正在演示</div><h3 id="stepTitle">已知条件</h3><p id="stepText">输入条件后将调用数学求解器。</p></article>
+   <nav id="stepList" class="step-list" aria-label="作图步骤导航"></nav>
+   <div class="proof"><div><small>计算来源</small><strong id="source">—</strong></div><div><small>模型残差</small><strong id="residual">未计算</strong></div></div>
+   <div class="safe">条件不足、候选未选、方向冲突或数学验证失败时，播放器不显示未经证明的结果。</div>
+  </aside>
+ </div>
+ <footer>V5 隔离开发预览 · 仅在本地构建，不进入 Cloudflare 生产静态资源清单 · 用户输入不是教材原题</footer>
+</main>
+<script defer src="v5-preview-bundle.js"></script>
+</body>
+</html>
