@@ -589,6 +589,11 @@ body.ui-refresh .book-constraint-overlay{pointer-events:none}
 }
 
 /* Progressive six-level course reader */
+body.ui-refresh .kb-topic-navigation{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-block:1px solid #dfebe2;margin:16px 0}
+body.ui-refresh .kb-topic-navigation button{min-height:44px;max-width:100%;white-space:normal}
+body.ui-refresh .kb-topic-navigation button:disabled{opacity:.5;cursor:default}
+body.ui-refresh #empty button{display:block;margin-top:10px;min-height:44px}
+@media(max-width:550px){body.ui-refresh .kb-topic-navigation{flex-wrap:wrap}body.ui-refresh .kb-topic-navigation .source{order:-1;flex-basis:100%;text-align:center}body.ui-refresh .kb-topic-navigation button{flex:1;font-size:13px;padding:8px}}
 body.ui-refresh #sixLayerCourse[hidden],body.ui-refresh #sixLayerExampleSlot[hidden]{display:none!important}
 body.ui-refresh .six-layer-course{margin:14px 0 8px;border:1px solid #d4e7dd;background:#fff;border-radius:17px;padding:clamp(12px,2.5vw,20px)}
 body.ui-refresh .six-layer-heading{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}

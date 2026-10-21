@@ -109,6 +109,8 @@ jobs:
           node scripts/check-animation-workspace.cjs
           node scripts/check-ui-layout.cjs
           node scripts/check-knowledge-ui.cjs
+          node scripts/check-study-navigation.cjs
+          node scripts/check-point-coach.cjs
           node scripts/check-lesson-stage-mapping.cjs
           node scripts/check-visual-construction-explanations.cjs
           node scripts/check-projection-guide-alignment.cjs

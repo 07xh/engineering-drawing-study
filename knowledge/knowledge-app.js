@@ -87,6 +87,17 @@ $('totalCards').textContent=book.chapters.length-1+' 章 · '+book.sections.filt
 function counter(){
  $('completedCards').textContent='本机已学习 '+completed.size+' / '+reviewed.size+' 个讲解';
 }
+function updateTopicNavigation(){
+ const rows=filtered(),position=rows.findIndex(item=>item.id===current?.id);
+ $('previousTopic').disabled=position<=0;
+ $('nextTopic').disabled=position<0||position>=rows.length-1;
+ $('topicPosition').textContent=position<0?'当前知识点不在筛选结果中':'筛选结果 '+(position+1)+' / '+rows.length;
+}
+function moveTopic(offset){
+ const rows=filtered(),position=rows.findIndex(item=>item.id===current?.id);
+ if(position<0||!rows[position+offset])return;
+ show(rows[position+offset].id,true);
+}
 function e(tag,text,cls){
  const node=document.createElement(tag);if(cls)node.className=cls;
  if(text!==undefined)node.textContent=text;
@@ -198,6 +209,7 @@ $('deepAll').addEventListener('click',()=>{const d=window.TextbookDeepLessons?.g
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;
+ try{localStorage.setItem('drawing-textbook-3e-last-topic',item.id)}catch(e){}
  mountSixLayerExample();
  document.querySelectorAll('#knowledgeCards .knowledge-card').forEach(card=>card.classList.toggle('is-active',card.dataset.id===id));
  $('knowledgeDetail').hidden=false;
@@ -234,10 +246,12 @@ function show(id,scroll=false){
  if(!item.practice.length){related.append(e('p','本节目前没有已核对到本书原题的习题关联；目前不自动关联任何未经原图核实的习题。只有你提交且与教材已核对的题目才能作为正式关联。','source'))}
  else for(const ex of item.practice){const a=e('a',ex+' · 进入练习');a.href='../labs/chapter-drawing.html#'+encodeURIComponent(ex);related.append(a)}
  const mark=$('markRead');mark.disabled=!lesson;
+ mark.setAttribute('aria-pressed',String(completed.has(id)));
  mark.textContent=completed.has(id)?'取消已学习标记':'标记已学习';
  $('markStatus').textContent=lesson?(completed.has(id)?'已在本机记录为学习过':'记录阅读进度，不等于熟练掌握'): '只有逐页核对的讲解才计入学习进度。';
  if(window.KnowledgeVisualUI)window.KnowledgeVisualUI.show(id);
  if(lesson)syncDeepVisual();
+ updateTopicNavigation();
  const visualLink=document.querySelector('.site-jump-visual');
  if(visualLink)visualLink.hidden=matchedTextbookExample||!lesson||!item.visualMode;
  if(matchedTextbookExample)$('visualLesson').hidden=true;
@@ -270,26 +284,43 @@ $('stepNext').onclick=()=>{step++;renderSteps()};
 $('stepAll').onclick=()=>{if(current){step=current.steps.length;renderSteps()}};
 $('markRead').onclick=()=>{
  if(!current||current.contentStatus!=='page-reviewed')return;
+ const id=current.id;
  if(completed.has(current.id))completed.delete(current.id);else completed.add(current.id);
- try{localStorage.setItem(key,JSON.stringify([...completed]))}catch(e){$('markStatus').textContent='当前浏览器无法保存阅读进度。'}
- renderList();show(current.id,false);
+ let saved=true;
+ try{localStorage.setItem(key,JSON.stringify([...completed]))}catch(e){saved=false}
+ applyFilters();
+ if(!saved)$('completedCards').textContent+=' · 本次进度未保存，刷新后可能丢失';
+ if(current?.id===id&&!saved)$('markStatus').textContent='当前浏览器无法保存阅读进度，刷新后可能丢失。';
 };
 function applyFilters(){
  renderList();
  const rows=filtered();
  if(!rows.length){current=null;$('knowledgeDetail').hidden=true;const path=$('knowledgeCurrentLocation');if(path)path.textContent='未找到匹配内容';return}
  if(!rows.some(item=>item.id===current?.id)||$('knowledgeDetail').hidden)show(topic.value,false);
+ else updateTopicNavigation();
 }
 ch.addEventListener('change',()=>{updateSectionOptions();applyFilters()});
 for(const ctl of [search,sec,coverage,progress])ctl.addEventListener('input',applyFilters);
 topic.addEventListener('change',()=>{if(topic.value)show(topic.value,true)});
 $('resetFilters').onclick=()=>{search.value='';ch.value='all';updateSectionOptions();sec.value='all';coverage.value='all';progress.value='all';applyFilters()};
+$('clearEmptyFilters').onclick=()=>{search.value='';ch.value='all';updateSectionOptions();sec.value='all';coverage.value='page-reviewed';progress.value='all';applyFilters()};
+$('previousTopic').onclick=()=>moveTopic(-1);
+$('nextTopic').onclick=()=>moveTopic(1);
 window.addEventListener('hashchange',()=>{
  let id='';try{id=decodeURIComponent(location.hash.slice(1))}catch(e){return}
- if(book.get(id))show(id,false);
+ const item=book.get(id);if(!item)return;
+ if(!filtered().some(row=>row.id===id)){
+  search.value='';ch.value=item.chapter;updateSectionOptions();sec.value='all';coverage.value=item.contentStatus==='toc-only'?'all':'page-reviewed';progress.value='all';renderList();
+ }
+ show(id,false);
 });
 const selectedChapter=new URLSearchParams(location.search).get('chapter');
 if(selectedChapter&&chapters[selectedChapter])ch.value=selectedChapter;
+// Keep chapter links and bookmarked pending lessons reachable while defaulting to reviewed lessons.
+let initialTopic='';try{initialTopic=decodeURIComponent(location.hash.slice(1))}catch(e){}
+const initialEntry=book.get(initialTopic);
+coverage.value=initialEntry?.contentStatus==='toc-only'||(selectedChapter&&!book.entries.some(x=>x.chapter===selectedChapter&&x.contentStatus==='page-reviewed'))?'all':'page-reviewed';
+if(initialEntry){ch.value=initialEntry.chapter;sec.value='all'}
 updateSectionOptions();renderList();
 let hash='';try{hash=decodeURIComponent(location.hash.slice(1))}catch(e){}
 if(book.get(hash))show(hash,false);

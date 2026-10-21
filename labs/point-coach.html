@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="亲手补出点的第三面投影：尝试作图、逐级提示、针对性反馈、换参数独立重做。">
+<title>第三面投影陪练 · 图学课堂</title><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="point-coach.css">
+<script defer src="point-construction-core.js"></script><script defer src="point-coach-core.js"></script><script defer src="point-coach-ui.js"></script></head>
+<body class="ui-refresh"><a class="coach-skip" href="#workspace">跳到作图工作台</a>
+<header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>图学课堂<small>ENGINEERING GRAPHICS</small></span></a><nav class="site-nav" aria-label="主要导航"><a href="point-coach.html" aria-current="page">学习陪练</a><a href="../knowledge/index.html">教材知识库</a><details class="site-more"><summary>相关工具</summary><div class="site-more-menu"><a href="point-construction.html">投影参数实验</a><a href="../knowledge/index.html#ch02-point-coordinates">点的投影知识</a></div></details></nav></div></header>
+<main class="coach-wrap"><header class="coach-intro"><p class="coach-eyebrow">第一单元 / 点的三面投影</p><h1>这一次，自己把 a″ 画出来。</h1><p>已知正面投影 a′ 和水平投影 a，在左视图 W 区定位同名点 a″，再说明依据。</p><p class="coach-scope">原创概念训练 · 第一角画法 · 图中数值为演示单位，不是教材原题或毫米尺寸。</p></header>
+<section class="coach-dashboard" aria-label="本机学习记录"><div><span>本次任务</span><strong id="taskState">尚未完成</strong></div><div><span>提示下完成</span><strong id="guidedCount">0 组</strong></div><div><span>独立完成</span><strong id="independentCount">0 组</strong></div><div><span>下次复习</span><strong id="reviewState">完成后安排</strong></div></section>
+<p id="storageStatus" class="coach-storage" role="status">学习记录仅保存在当前浏览器，不会自动跨设备同步。</p>
+<div class="coach-taskbar"><p id="taskLabel">先尝试定位，遇到困难再求助。</p><button type="button" id="newTask">换一组参数，独立重做 →</button></div>
+<div class="coach-workspace" id="workspace">
+<section class="coach-figure" aria-labelledby="boardHeading"><div class="coach-figure-heading"><h2 id="boardHeading">两面已知，补第三面</h2><span id="modeBadge">自己尝试</span></div>
+<p class="coach-board-help" id="boardHelp">点击右上 W 区放点。也可用右侧输入框精确定位；手机上输入框在图下方。</p>
+<button id="zoomBoard" type="button" aria-pressed="false">放大看图</button>
+<div class="coach-board-viewport" id="boardViewport"><svg id="coachBoard" viewBox="0 0 920 620" role="img" aria-labelledby="boardHeading" aria-describedby="boardHelp"></svg></div>
+<p id="candidateStatus" class="coach-candidate" role="status">尚未放置候选点 a″。</p>
+<div class="coach-legend"><span>● 实心点：已知投影</span><span>◇ 菱形：你的候选点</span><span>┄ 虚线：辅助联系线</span></div>
+<section id="explanationPanel" class="coach-explanation" hidden aria-label="分步讲解"><div class="coach-controls"><button id="explainPrev" type="button">上一步</button><span id="explainCount" role="status"></span><button id="explainNext" type="button">下一步</button><button id="backPractice" type="button">返回自己作答</button></div><h3 id="explainTitle"></h3><p id="explainWhy"></p></section>
+</section>
+<section class="coach-answer" aria-labelledby="answerHeading"><p class="coach-eyebrow" id="attemptStage">01 / 尝试作图</p><h2 id="answerHeading">确定两个位置条件</h2><p>在 W 面，向右表示深度，向上表示高度。读已知投影，填写你的判断。</p>
+<form id="answerForm"><div class="coach-inputs"><label for="candidateY">深度 y<input id="candidateY" type="number" min="0" max="70" step="1" inputmode="numeric" placeholder="0–70" required></label><label for="candidateZ">高度 z<input id="candidateZ" type="number" min="0" max="70" step="1" inputmode="numeric" placeholder="0–70" required></label></div>
+<fieldset><legend>为什么这个点的位置能确定？</legend><label><input type="radio" name="reason" value="height-depth">与 a′ 等高，同时与 a 的深度对应。</label><label><input type="radio" name="reason" value="height-only">只要与 a′ 等高，位置就唯一。</label><label><input type="radio" name="reason" value="x-height">把正面投影的 x 和 z 直接搬到 W 面。</label></fieldset>
+<div class="coach-controls"><button class="coach-primary" id="checkAnswer" type="submit">检查位置与依据</button><button id="resetAttempt" type="button">清除本次作答</button></div></form>
+<div id="answerFeedback" class="coach-feedback" role="status" tabindex="-1" hidden></div>
+<div id="successPanel" class="coach-success" hidden><h3 id="successTitle"></h3><p id="successText"></p><button id="nextPractice" type="button" class="coach-primary">换参数，检验是否真的会了 →</button><p>想对照教材？<a href="../knowledge/drawing-player.html?example=example-2-2">查看已核验教材例 2-2 的分步讲解</a>。教材示意位置经过归一化重排。</p></div>
+<section class="coach-support" aria-labelledby="supportHeading"><h3 id="supportHeading">卡住了，可以逐步求助</h3><p>求助不会扣分。本题会记为“提示下完成”；换参数不借助帮助完成，才记为“独立完成”。检查错误后的反馈也计为帮助。</p><div class="coach-controls"><button id="hintButton" type="button">给我一点提示 · 0/3</button><button id="explainButton" type="button">看分步讲解</button><button id="modelButton" type="button">理解空间关系</button></div><ol id="hintList"></ol></section>
+</section></div>
+<section id="spatialPanel" class="coach-spatial" hidden aria-labelledby="spatialHeading"><div><p class="coach-eyebrow">空间理解 / 辅助学习</p><h2 id="spatialHeading">同一个点，三个观察方向</h2><p>拖动观察角度，看 A 向 V、H、W 面分别投影。每幅投影只保留其中两个坐标；展开后的纸面位置仍以工作台为准。</p><label for="modelAngle">旋转观察角度<input id="modelAngle" type="range" min="20" max="70" value="40"></label><p id="modelCoordinates"></p></div><svg id="spatialBoard" viewBox="0 0 520 400" role="img" aria-label="可旋转观察角度的空间点和三面投影示意"></svg></section>
+<details class="coach-records"><summary>查看最近学习记录</summary><ul id="recordList"></ul><p>“独立完成”只说明本次无需提示完成定位和选择依据，不等于已经掌握整章内容。复习日期是本地建议，不会发送提醒。</p></details>
+<footer class="coach-footer"><a href="../knowledge/index.html#ch02-point-coordinates">回教材理解原理</a><span>→</span><a href="../index.html">回学习首页</a></footer>
+<noscript><p>本学习单元需要启用 JavaScript。你仍可阅读<a href="../knowledge/index.html">教材知识库</a>。</p></noscript>
+</main></body></html>

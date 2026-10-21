@@ -92,10 +92,16 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 </div>
 <p id="exerciseFilterStatus" class="note" hidden></p>
 <p id="knowledgeCount" class="count" role="status"></p>
-<div class="knowledge-workspace" id="knowledgeWorkspace"><details class="kb-directory" id="knowledgeIndex"><summary><span>展开完整知识点目录</span><span id="knowledgeCurrentLocation" class="kb-current-path">请选择章节、节与知识点</span></summary><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有找到对应的教材目录或已核对知识。可清除筛选重新查看。</p></main></div></details>
+<p id="empty" class="empty" role="status" hidden>没有符合条件的知识点。<button type="button" id="clearEmptyFilters">清除筛选，查看已核对讲解</button></p>
+<div class="knowledge-workspace" id="knowledgeWorkspace"><details class="kb-directory" id="knowledgeIndex"><summary><span>展开完整知识点目录</span><span id="knowledgeCurrentLocation" class="kb-current-path">请选择章节、节与知识点</span></summary><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div></main></div></details>
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p><p id="detailStatusNotice" class="note" aria-live="polite"></p>
+<nav class="kb-topic-navigation" aria-label="切换知识点">
+<button id="previousTopic" type="button">← 上一知识点</button>
+<span id="topicPosition" class="source" role="status"></span>
+<button id="nextTopic" type="button">下一知识点 →</button>
+</nav>
 <section id="sixLayerCourse" class="six-layer-course" aria-label="六层教材学习结构" hidden>
   <div class="six-layer-heading">
     <div><strong>六层递进学习</strong><p id="sixLayerSource" class="six-layer-source"></p></div>
