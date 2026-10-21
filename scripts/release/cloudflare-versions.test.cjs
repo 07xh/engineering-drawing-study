@@ -70,3 +70,52 @@ test('missing credential, HTTP failure and invalid JSON do not reveal token',asy
   fetchImpl:async()=>({status:200,json:async()=>{throw Error('bad json')}})});
  await assert.rejects(()=>bad.versions(),/JSON invalid/);
 });
+
+test('official Beta Workers Versions response supports complete two-page enumeration',async()=>{
+ const oneHundred=Array.from({length:100},(_,i)=>({
+  id:'00000000-0000-4000-8000-'+String(i+1).padStart(12,'0'),
+  annotations:{'workers/tag':'draftai-'+SHA}
+ }));
+ const extra={id:'10000000-0000-4000-8000-000000000001',
+  annotations:{'workers/tag':'draftai-'+BEFORE}};
+ const requests=[];
+ const client=createCloudflareClient({accountId:ACCOUNT,token:'read-worker-token',
+  fetchImpl:async(url,opt)=>{
+   requests.push({url,opt});
+   const page=url.endsWith('page=1')?oneHundred:url.endsWith('page=2')?[extra]:null;
+   return {status:200,json:async()=>({success:true,result:page,
+    result_info:{total_count:101}})};
+  }});
+ const list=await client.versions();
+ assert.equal(list.length,101);
+ assert.equal(requests.length,2);
+ assert(requests.every(v=>v.url.includes('/accounts/'+ACCOUNT+'/workers/workers/engineering-drawing-study/versions?')));
+ assert(requests.every(v=>v.opt.method==='GET'));
+ assert.equal(list[100].annotations['workers/tag'],'draftai-'+BEFORE);
+});
+test('rejects documented legacy Scripts Versions result.items rather than silently trusting wrong schema',async()=>{
+ const api=createCloudflareClient({accountId:ACCOUNT,token:'read-worker-token',
+  fetchImpl:async()=>({status:200,json:async()=>({success:true,result:{items:[{id:UUID}]}})})});
+ await assert.rejects(()=>api.versions(),/malformed/);
+});
+test('incomplete version pagination or repeated version IDs are rejected',async()=>{
+ const v={id:UUID,annotations:{'workers/tag':'draftai-'+BEFORE}};
+ const incomplete=createCloudflareClient({accountId:ACCOUNT,token:'read-worker-token',
+  fetchImpl:async()=>({status:200,json:async()=>({success:true,result:[v],result_info:{total_count:4}})})});
+ await assert.rejects(()=>incomplete.versions(),/truncated/);
+ const repeated=createCloudflareClient({accountId:ACCOUNT,token:'read-worker-token',
+  fetchImpl:async()=>({status:200,json:async()=>({success:true,result:[v,v]})})});
+ await assert.rejects(()=>repeated.versions(),/repeated/);
+});
+test('first documented Scripts deployment is active; an empty response is rejected',async()=>{
+ const a={id:UUID,created_on:'2026-10-21T13:00:00Z',versions:[{version_id:NEW,percentage:100}]};
+ const b={id:NEW,created_on:'2026-10-20T13:00:00Z',versions:[{version_id:UUID,percentage:100}]};
+ const {api}=service({reply:{deployments:[a,b]}});
+ assert.equal((await api.active()).versionId,NEW);
+ const empty=service({reply:{deployments:[]}}).api;
+ await assert.rejects(()=>empty.active(),/unavailable/);
+});
+test('a deployment response without a deployment ID cannot confirm activation',async()=>{
+ const bad=service({reply:{versions:[{version_id:NEW,percentage:100}]}}).api;
+ await assert.rejects(()=>bad.promote(NEW,'validated'),/verify/);
+});

@@ -1,0 +1,42 @@
+# DA-09 auto merge: DEFAULT OFF. Triggered only by a completed PR security run.
+# This workflow runs from the trusted default branch, not untrusted PR source.
+# Only a single, tiny same-repository CSS edit can be squash-merged automatically.
+name: DraftAI guarded PR auto merge
+on:
+  workflow_run:
+    workflows:
+      - DraftAI release security
+    types:
+      - completed
+# GitHub's default GITHUB_TOKEN is read-only. A scoped, separate merge
+# token is required, because GITHUB_TOKEN merges do not trigger push CI.
+# Never check out or execute untrusted PR code here.
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+concurrency:
+  group: draftai-guarded-merge
+  cancel-in-progress: false
+jobs:
+  merge-safe-css:
+    name: merge-safe-css
+    if: ${{ vars.DRAFTAI_AUTO_MERGE_ENABLED == 'true' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == '07xh/engineering-drawing-study' && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted default branch, not PR code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact PR diff, protected main and required CI before squash merge
+        env:
+          DRAFTAI_AUTO_MERGE_ENABLED: ${{ vars.DRAFTAI_AUTO_MERGE_ENABLED }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFTAI_MERGE_TOKEN: ${{ secrets.DRAFTAI_MERGE_TOKEN }}
+        run: node scripts/release/auto-merge.cjs
