@@ -1,0 +1,51 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f0f6f1"><title>两圆连接圆弧 · DraftAI</title>
+<link rel="stylesheet" href="../site-ui.css"><style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#294531;background:#f1f6f2;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}.shell{max-width:1380px;margin:auto;padding:16px}.shell>a{font-size:14px;color:#287250}
+h1{font-size:clamp(23px,3.2vw,34px);margin:12px 0 4px}.intro{color:#5b7362;font-size:14px;line-height:1.75;margin:0 0 17px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);gap:16px}
+.panel{border:1px solid #d4e5da;background:white;padding:16px;border-radius:16px;min-width:0}h2{font-size:18px;margin:0 0 12px}
+#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px}svg{display:block;min-width:600px;width:100%;height:auto}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}label{display:grid;gap:5px;font-size:12px;color:#3c654b}
+input,select,button{font:inherit;border-radius:9px;min-height:44px}input,select{background:#fff;width:100%;border:1px solid #bdd3c4;padding:9px}
+button{padding:9px 13px;border:1px solid #a9cdb4;background:white;color:#1d6744;cursor:pointer}
+button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}
+.card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
+.legend{font-size:12px;color:#617b67;line-height:1.8}.note{font-size:12px;color:#6a796a;line-height:1.8}
+@media(max-width:940px){.workspace{grid-template-columns:1fr}.panel.controls{order:-1}}
+@media(max-width:550px){.shell{padding:9px}.panel{padding:11px}svg{min-width:510px}}
+</style></head><body><main class="shell">
+<a href="../index.html">← 返回首页</a><h1>两圆连接圆弧 · 真实数学实验</h1>
+<p class="intro">调整两圆和连接半径，先求出全部候选圆心；你必须亲自选择分支与顺／逆时针圆弧方向。输入原轮廓方向后才能验证有向 G1 连续性。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
+<div class="workspace">
+<section class="panel"><h2>左侧 · 圆心、切点与辅助圆弧</h2>
+<div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆相切几何和候选圆心"></svg></div>
+<p class="legend">绿色：已知圆　橙色虚线：圆心辅助轨迹　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
+<p class="note">可用下一步查看：辅助圆轨迹 → 候选圆心 → 两个切点 → 已明确方向的连接弧。多解不会自动选第一种。</p>
+</section>
+<section class="panel controls">
+<h2>右侧 · 参数与步骤</h2>
+<div class="fields">
+<label>圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
+<label>圆 1 中心 y<input type="number" id="y1" step="any" value="0"></label>
+<label>圆 1 半径<input type="number" id="r1" step="any" value="5"></label>
+<label>圆 1 相切<select id="mode1"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label>圆 2 中心 x<input type="number" id="x2" step="any" value="20"></label>
+<label>圆 2 中心 y<input type="number" id="y2" step="any" value="0"></label>
+<label>圆 2 半径<input type="number" id="r2" step="any" value="5"></label>
+<label>圆 2 相切<select id="mode2"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label>连接圆弧半径<input type="number" id="filletRadius" step="any" value="10"></label>
+<label>候选中心<select id="branch"><option value="">请先选择候选</option><option value="center-1">中心 1</option><option value="center-2">中心 2</option></select></label>
+<label>连接弧方向<select id="direction"><option value="">请明确选择</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
+<label>已知圆 1 轮廓方向<select id="travel1"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+<label>已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+</div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
+<p class="card" id="status" aria-live="polite">正在求解……</p>
+<h2>作图步骤</h2>
+<div class="actions"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button></div>
+<div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
+<p class="note" id="counter">0 / 4</p>
+<p class="note">所有运算在本机浏览器运行。未声明分支或方向时只显示候选数据，不伪造已核验有限连接弧。</p>
+</section></div></main><script defer src="circle-fillet-live-bundle.js"></script></body></html>

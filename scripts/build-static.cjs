@@ -13,6 +13,7 @@ const files = [
   'robots.txt',
   'labs/point-coach.html',
   'labs/point-projection-live.html',
+  'labs/circle-fillet-live.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -95,6 +96,16 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/point-projection-live-entry.cjs')],
  outfile:path.join(out,'labs/point-projection-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Verified P0 two-circle tangency is bundled into a public standalone tool.
+ * Internal source/tests, private textbook records and synthetic fixtures stay out.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/circle-fillet-live-entry.cjs')],
+ outfile:path.join(out,'labs/circle-fillet-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
