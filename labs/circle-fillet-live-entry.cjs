@@ -392,7 +392,7 @@ const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.
   if(strokes.length>200)strokes.shift();
   redoStrokes=[];render();
  });
- svg.addEventListener('pointercancel',()=>{pointer=null});
- svg.addEventListener('lostpointercapture',()=>{pointer=null});
+ svg.addEventListener('pointercancel',()=>{pointer=null;render()});
+ svg.addEventListener('lostpointercapture',()=>{pointer=null;render()});
  compute();
 })();
