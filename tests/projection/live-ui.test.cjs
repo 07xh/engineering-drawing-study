@@ -109,6 +109,8 @@ function createInteractivePage(){
    return require('../../workbench/verified-projection-drawing.cjs');
   if(id==='../workbench/teaching-timeline-v5.js')
    return require('../../workbench/teaching-timeline-v5.js');
+  if(id==='../workbench/teaching-motion-v5.js')
+   return require('../../workbench/teaching-motion-v5.js');
   throw Error('unexpected runtime module '+id);
  };
  vm.runInNewContext(script,{require:nodeRequire,document});
