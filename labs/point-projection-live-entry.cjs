@@ -3,6 +3,7 @@
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
+const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 (function(){
   const SVG='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById(id);
@@ -13,11 +14,12 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
   const BOARD={x:360,y:210};
   let solution=null,shownStep=0,revision=0;
   let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
-  let pointer=null,playTimer=null;
+  let pointer=null,playTimer=null,stageClock=null;
   const reducedMotion=()=>typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   function stopPlayback(){
-    if(playTimer!==null){clearInterval(playTimer);playTimer=null;}
+    if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null;}
+    stageClock=null;
   }
 
   function el(tag,attributes={},value){
@@ -189,9 +191,9 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
   $('showGuides').addEventListener('change',render);
   $('recompute').addEventListener('click',compute);
   $('resetExample').addEventListener('click',()=>{$('pairSelect').value='VH';$('scaleInput').value='4';resetPair();});
-  $('previous').addEventListener('click',()=>{if(solution?.status!=='unique')return;
+  $('previous').addEventListener('click',()=>{stopPlayback();if(solution?.status!=='unique')return;
     shownStep=Math.max(0,shownStep-1);render();});
-  $('next').addEventListener('click',()=>{if(solution?.status!=='unique')return;
+  $('next').addEventListener('click',()=>{stopPlayback();if(solution?.status!=='unique')return;
     shownStep=Math.min(solution.steps.length,shownStep+1);render();});
   $('restart').addEventListener('click',()=>{stopPlayback();shownStep=0;render();});
   $('learningMode').addEventListener('change',()=>{
@@ -207,15 +209,33 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
     if(playTimer!==null){stopPlayback();render();return;}
     if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()||
        shownStep>=solution.steps.length)return;
-    playTimer=setInterval(()=>{
-      if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()){
+    const max=solution.steps.length;
+    const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
+      id:'projection-'+(i+1),actions:[{id:'guide-'+(i+1),kind:'line',durationMs:1200}]
+    })),{gapMs:0});
+    const clock=()=>performance.now();
+    stageClock=TimelineV5.createPlayer(timeline,{
+      speed:Number($('animationSpeed').value),revision});
+    stageClock.seekStep(shownStep,clock());stageClock.play(clock());
+    const tick=()=>{
+      if(!stageClock||learningMode!=='full'||solution?.status!=='unique'||reducedMotion()){
         stopPlayback();render();return;
       }
-      shownStep=Math.min(solution.steps.length,shownStep+1);
-      if(shownStep===solution.steps.length)stopPlayback();
-      render();
-    },1200);
+      const status=stageClock.snapshot(clock());
+      if(status.completedIds.length!==shownStep){
+        shownStep=Math.min(max,status.completedIds.length);
+        if(shownStep>=max){stopPlayback();render();return;}
+        render();
+      }
+      playTimer=requestAnimationFrame(tick);
+    };
+    playTimer=requestAnimationFrame(tick);
     render();
+  });
+  $('animationSpeed').addEventListener('change',()=>{
+    const speed=Number($('animationSpeed').value);
+    TimelineV5.validateSpeed(speed);
+    if(stageClock)stageClock.setSpeed(speed,performance.now());
   });
   $('undoDraw').addEventListener('click',()=>{
     if(learningMode!=='draw'||!studentStrokes.length)return;
