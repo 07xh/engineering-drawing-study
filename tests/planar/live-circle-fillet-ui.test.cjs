@@ -68,6 +68,16 @@ test('existing teaching page contains finite segment controls, not a second page
 });
 function interactiveFillet(){
  const vm=require('node:vm');
+ let time=0,frameId=0;
+ const frames=new Map();
+ const performance={now:()=>time};
+ const requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId};
+ const cancelAnimationFrame=id=>frames.delete(id);
+ const advance=ms=>{
+  if(!Number.isFinite(ms)||ms<0)throw new TypeError('invalid frame time');
+  time+=ms;const due=[...frames.values()];frames.clear();
+  for(const fn of due)fn(time);
+ };
  const values={modeSelect:'circles',animationSpeed:'1',x1:'0',y1:'0',r1:'5',mode1:'external',
   x2:'20',y2:'0',r2:'5',mode2:'external',filletRadius:'10',
   branch:'',direction:'',travel1:'',travel2:'',
@@ -119,7 +129,8 @@ function interactiveFillet(){
   '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js')
  };
- vm.runInNewContext(entry,{document,require:id=>{
+ vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
+ window:{matchMedia:()=>({matches:false})},require:id=>{
   if(!Object.hasOwn(modules,id))throw Error('Unexpected bundle require '+id);
   return modules[id];
  }});
@@ -131,7 +142,7 @@ function interactiveFillet(){
   for(const n of get('diagram').children)walk(n);
   return out;
  };
- return {get,fire,collect,circle,line};
+ return {get,fire,collect,circle,line,advance};
 }
 test('line mode enumerates genuine finite tangent candidates and a verified six-step SVG arc',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
@@ -424,4 +435,31 @@ test('cancelled curved pen stroke never earns credit and different pointers cann
  board.listeners.pointerup({pointerId:6,button:0,clientX:240,clientY:220});
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
  assert.match(get('drawStatus').textContent,/尚未绘制/);
+});
+
+test('V5 live fillet clock changes speed without recalculating real selected G1 branch',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ assert.match(get('status').textContent,/两端有向 G1 已经通过向量检验/);
+ fire('playPause','click');
+ advance(600);assert.equal(get('counter').textContent,'0 / 6');
+ get('animationSpeed').value='2';fire('animationSpeed','change');
+ advance(300);assert.equal(get('counter').textContent,'1 / 6');
+ fire('playPause','click');
+ advance(2400);
+ assert.equal(get('counter').textContent,'1 / 6','paused player must remain on the same mathematical step');
+ assert.equal(collect().some(n=>n.tag==='path'),false);
+ fire('playPause','click');advance(10000);
+ assert.equal(get('counter').textContent,'6 / 6');
+ assert.equal(collect().filter(n=>n.tag==='path').length,1);
+ assert.match(get('status').textContent,/有向 G1/);
+ get('line1Ay').value='3';fire('line1Ay','input');
+ assert.equal(get('counter').textContent,'0 / 3');
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ advance(20000);
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
 });
