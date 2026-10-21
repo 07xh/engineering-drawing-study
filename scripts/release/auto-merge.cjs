@@ -84,13 +84,17 @@ async function tryAutoMerge({enabled,payload,read,inspect,merge}={}){
 }
 async function main(){
  if(process.env.DRAFTAI_AUTO_MERGE_ENABLED!=='true')return;
+ // GitHub's default GITHUB_TOKEN suppresses push-triggered workflows after
+ // bot merges. A dedicated GitHub App/PAT token is mandatory for real CI cascade.
  const token=process.env.GITHUB_TOKEN;
+ const mergeToken=process.env.DRAFTAI_MERGE_TOKEN;
+ if(!mergeToken)throw Error('dedicated merge token is not configured');
  const payload=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
  const prReader=makeSafeReader({token});
  const mainReader=makeGithubReader({token});
  const read=path=>(path==='/branches/main'||/^\/commits\/[0-9a-f]{40}\/check-runs\?per_page=100$/.test(path))?
   mainReader(path):prReader(path);
- const merge=mergeRestClient({token});
+ const merge=mergeRestClient({token:mergeToken});
  const result=await tryAutoMerge({enabled:true,payload,read,merge});
  console.log(JSON.stringify(result));
  if(result.status!=='merged')process.exitCode=1;
