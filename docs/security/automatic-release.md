@@ -127,3 +127,31 @@ Suggested future CI order, **only after 00 authorizes the workflow file**:
     node tests/security/security-ci-gate.cjs
 
 Before selecting the \`release-security\` status as a GitHub Required Check, install/merge its workflow correctly and confirm it runs unconditionally on unrelated PRs. The existing main workflow currently has no Cloudflare secret scope; keep the security runner and production deployment credentials in **separate trust domains**. Future automatic merge/deployment is blocked until: main protection, Cloudflare upload-only verification, actual artifact-provenance validation at the *merged* main SHA, protected release credentials, smoke/rollback rehearsal and 00/09 acceptance.
+
+
+## Stage 1E: real read-only GitHub PR evidence + in-memory rollback rehearsal
+
+**These modules make the safety logic testable and observable; they do not enable automated production deployment.**
+
+### GitHub evidence collection (source + 10 tests)
+
+- \`tests/security/github-evidence.cjs\` implements a GET-only read adapter pinned to \`https://api.github.com/repos/07xh/engineering-drawing-study\`. It rejects arbitrary hosts/paths, mutation APIs, invalid PR numbers, unauthorised HTTP status, malformed JSON, missing/truncated Git trees and nonmatching Git commit/tree SHA. API credentials are never included in returned errors or logs.
+- To prove exact low-risk PR changes, it reads \`/pulls/{number}\`, \`/pulls/{number}/files?per_page=100&page=1\` and \`page=2\`, \`/commits/{headSha}\` to obtain the true commit tree SHA, and \`/git/trees/{treeSha}?recursive=1\`. The collector rejects all PRs with more than one file or wrong origin and feeds the result into the existing \`verify-pr-diff.cjs\`. **It returns only \`trusted-read-diff-only\`, never production approval.**
+- The collector does **not** fetch branch-protection / required check evidence or Cloudflare Worker versions. The future release controller must independently verify those with the appropriate permissions and the **actual merged main commit SHA**, not merely a PR's head SHA.
+- \`tests/security/github-evidence.test.cjs\`: 10 tests exercising the read-only transport, PR provenance, pagination, wrong repository, stale trees, unexpected CSS imports, HTTP 403/404/500, malformed API JSON and network failures. All network responses are mocked; **no real GitHub API connection was exercised by the local test suite**.
+
+### Release/rollback simulation (source + 14 tests)
+
+- \`tests/security/release-simulator.cjs\` performs a fully deterministic **in-memory-only** rehearsal of the \`createReleasePlan\` result, including concurrency lock, active-version recheck, immutable uploaded version SHA binding, simulated promotion, simulated production smoke, rollback after smoke failure, and manual-intervention state after rollback failure.
+- It uses an internal simulator brand; arbitrary external production transports are not accepted, and it has **no fetch, deployment CLI, filesystem writes, Cloudflare SDK or access to secrets**. A successful result is tagged \`simulated-success\` and \`productionDeploymentOccurred:false\`. It is **not** an implementation of real Cloudflare promotion.
+- \`tests/security/release-simulator.test.cjs\`: 14 tests exercising success, smoke failure, network exception, rollback failure, activation failure, stale active version, mismatched Worker version SHA, missing upload, failing checks, unprotected main, fake adapter rejection, lock contention, invalid IDs and repeat-release prevention.
+
+### Full offline test evidence and CI inventory
+
+- Security test suite now defines **84 test cases**: previous 60 + GitHub evidence 10 + in-memory release simulator 14.
+- Local Node.js 22 command \`node --test tests/security/*.test.cjs\` was executed; TAP output: **84 tests / 84 pass / 0 fail / 0 skipped**. This is a local mocked/in-memory test suite, not a live Cloudflare rehearsal.
+- The unified \`tests/security/security-ci-gate.cjs\` now requires **all eight** security test groups, not just the original six. A missing group makes the gate fail closed. Its two relevant count assertions were updated to expect eight test files/nine subprocess arguments.
+- GitHub PR #155 is still Draft; the existing \`Validate study site\` CI does **not** run the 84 tests. The inactive \`docs/security/release-security.workflow.example.yml\` can be promoted to \`.github/workflows/**\` **only after explicit 00 approval of the shared file lock**, in a separately reviewable PR and after the test files are available in the correct branch.
+- For the four new Github-evidence/simulator files, GitHub blob SHAs were checked against local git hash-object outputs; they matched exactly. No privilege to merge main or deploy production was exercised.
+
+**Remaining P0 blockers**: protected main and Rulesets absent; Cloudflare upload-only setting saved state unverified; Active Production Version ID/commit and domain not verified; required CI checks not installed; real Cloudflare deployment driver, production smoke, rollback and audit log not implemented or rehearsed; mathematical contract PR #144 not merged/frozen. The objective is still unattended release **only for independently verified low-risk changes** after first safe end-to-end approval by 00/09.
