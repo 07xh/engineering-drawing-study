@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f0f6f1"><title>两圆连接圆弧 · DraftAI</title>
+<meta name="theme-color" content="#f0f6f1"><title>平面圆弧连接 · DraftAI</title>
 <link rel="stylesheet" href="../site-ui.css"><style>
 :root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#294531;background:#f1f6f2;color-scheme:light}
 *{box-sizing:border-box}body{margin:0}.shell{max-width:1380px;margin:auto;padding:16px}.shell>a{font-size:14px;color:#287250}
@@ -13,34 +13,47 @@ button{padding:9px 13px;border:1px solid #a9cdb4;background:white;color:#1d6744;
 button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor:not-allowed}
 .actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}
 .card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
-.legend{font-size:12px;color:#617b67;line-height:1.8}.note{font-size:12px;color:#6a796a;line-height:1.8}
+.legend{font-size:12px;color:#617b67;line-height:1.8}[hidden]{display:none!important}.note{font-size:12px;color:#6a796a;line-height:1.8}
 @media(max-width:940px){.workspace{grid-template-columns:1fr}.panel.controls{order:-1}}
 @media(max-width:550px){.shell{padding:9px}.panel{padding:11px}svg{min-width:510px}}
 </style></head><body><main class="shell">
-<a href="../index.html">← 返回首页</a><h1>两圆连接圆弧 · 真实数学实验</h1>
-<p class="intro">调整两圆和连接半径，先求出全部候选圆心；你必须亲自选择分支与顺／逆时针圆弧方向。输入原轮廓方向后才能验证有向 G1 连续性。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
+<a href="../index.html">← 返回首页</a><h1>平面圆弧连接 · 真实数学实验</h1>
+<p class="intro">支持两圆连接和两条有限线段连接，参数改变即使用真实数学求解器重新计算；你需要明确选择有效圆心、旋向和原轮廓走向才能验证有向 G1。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
 <div class="workspace">
-<section class="panel"><h2>左侧 · 圆心、切点与辅助圆弧</h2>
-<div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆相切几何和候选圆心"></svg></div>
-<p class="legend">绿色：已知圆　橙色虚线：圆心辅助轨迹　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
+<section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
+<div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
+<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
 <p class="note">可用下一步查看：辅助圆轨迹 → 候选圆心 → 两个切点 → 已明确方向的连接弧。多解不会自动选第一种。</p>
 </section>
 <section class="panel controls">
 <h2>右侧 · 参数与步骤</h2>
+<label>题型<select id="modeSelect"><option value="circles">两圆圆弧连接</option><option value="segments">两条有限线段圆弧连接</option></select></label>
 <div class="fields">
-<label>圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
-<label>圆 1 中心 y<input type="number" id="y1" step="any" value="0"></label>
-<label>圆 1 半径<input type="number" id="r1" step="any" value="5"></label>
-<label>圆 1 相切<select id="mode1"><option value="external">外切</option><option value="internal">内切</option></select></label>
-<label>圆 2 中心 x<input type="number" id="x2" step="any" value="20"></label>
-<label>圆 2 中心 y<input type="number" id="y2" step="any" value="0"></label>
-<label>圆 2 半径<input type="number" id="r2" step="any" value="5"></label>
-<label>圆 2 相切<select id="mode2"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label class="circle-only">圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
+<label class="circle-only">圆 1 中心 y<input type="number" id="y1" step="any" value="0"></label>
+<label class="circle-only">圆 1 半径<input type="number" id="r1" step="any" value="5"></label>
+<label class="circle-only">圆 1 相切<select id="mode1"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label class="circle-only">圆 2 中心 x<input type="number" id="x2" step="any" value="20"></label>
+<label class="circle-only">圆 2 中心 y<input type="number" id="y2" step="any" value="0"></label>
+<label class="circle-only">圆 2 半径<input type="number" id="r2" step="any" value="5"></label>
+<label class="circle-only">圆 2 相切<select id="mode2"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label class="line-only" hidden>线段 1 起点 x<input type="number" id="line1Ax" step="any" value="-20"></label>
+<label class="line-only" hidden>线段 1 起点 y<input type="number" id="line1Ay" step="any" value="0"></label>
+<label class="line-only" hidden>线段 1 终点 x<input type="number" id="line1Bx" step="any" value="20"></label>
+<label class="line-only" hidden>线段 1 终点 y<input type="number" id="line1By" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 起点 x<input type="number" id="line2Ax" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 起点 y<input type="number" id="line2Ay" step="any" value="-20"></label>
+<label class="line-only" hidden>线段 2 终点 x<input type="number" id="line2Bx" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 终点 y<input type="number" id="line2By" step="any" value="20"></label>
+<label class="line-only" hidden>线段 1 圆心侧<select id="lineSide1"><option value="">两侧均检查</option><option value="1">沿 A→B 左侧 +</option><option value="-1">沿 A→B 右侧 −</option></select></label>
+<label class="line-only" hidden>线段 2 圆心侧<select id="lineSide2"><option value="">两侧均检查</option><option value="1">沿 A→B 左侧 +</option><option value="-1">沿 A→B 右侧 −</option></select></label>
+<label class="line-only" hidden>线段 1 接入方向<select id="lineTravel1"><option value="">待明确</option><option value="forward">A→B 到切点</option><option value="reverse">B→A 到切点</option></select></label>
+<label class="line-only" hidden>线段 2 离开方向<select id="lineTravel2"><option value="">待明确</option><option value="forward">由切点向 B</option><option value="reverse">由切点向 A</option></select></label>
 <label>连接圆弧半径<input type="number" id="filletRadius" step="any" value="10"></label>
 <label>候选中心<select id="branch"><option value="">请先选择候选</option><option value="center-1">中心 1</option><option value="center-2">中心 2</option></select></label>
 <label>连接弧方向<select id="direction"><option value="">请明确选择</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
-<label>已知圆 1 轮廓方向<select id="travel1"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
-<label>已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+<label class="circle-only">已知圆 1 轮廓方向<select id="travel1"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+<label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
 <h2>作图步骤</h2>
