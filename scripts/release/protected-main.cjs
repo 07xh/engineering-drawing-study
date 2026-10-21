@@ -54,7 +54,7 @@ async function checkProtectedMain({sha,read}={}){
    return deny('incomplete GitHub check results');
   for(const name of REQUIRED){
    const runs=checks.check_runs.filter(x=>x?.name===name && x?.head_sha===sha);
-   if(runs.length!==1||runs[0].status!=='completed'||runs[0].conclusion!=='success')
+   if(runs.length<1||runs.some(check=>check.status!=='completed'||check.conclusion!=='success'))
     return deny('missing/stale/failing required check: '+name);
   }
   const again=await read('/branches/main');
