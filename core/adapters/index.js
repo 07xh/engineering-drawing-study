@@ -5,5 +5,6 @@ module.exports={
  ...require('./legacy-problem.js'),
  ...require('./planar-consumer.js'),
  ...require('./model-arc-svg.js'),
- ...require('./consumer-gate.js')
+ ...require('./consumer-gate.js'),
+ ...require('./pending-point.js')
 };
