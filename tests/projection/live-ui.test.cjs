@@ -24,7 +24,7 @@ test('input revision invalidation happens before recompute; no stale computed po
  assert.match(script,/solution=null;teaching=null;shownStep=0/);
  assert.match(script,/if\(s\.status==='unique'&&teaching\?\.status==='ready'&&learningMode==='full'\)/);
  assert.match(script,/teaching\.steps\.slice\(0,shownStep\)/);
- assert.match(script,/if\(shownStep===s\.steps\.length\)/);
+ assert.match(script,/if\(shownStep===s\.steps\.length&&\(!stageClock\|\|stageClock\.snapshot\(\)\.done\)\)/);
 });
 test('input and keyboard accessible live controls are wired',()=>{
  for(const id of ['paperSvg','pairSelect','firstU','firstV','secondU','secondV','scaleInput',
