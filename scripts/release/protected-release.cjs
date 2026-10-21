@@ -39,7 +39,7 @@ async function runProtectedRelease({
     typeof cloudflare.active!=='function'||typeof cloudflare.promote!=='function'||
     typeof upload!=='function'||typeof smoke!=='function')
   return {status:'blocked',reason:'trusted adapters or evidence unavailable'};
- let prior,candidate,source;
+ let prior,candidate,source,activatedDeploymentId;
  try{
   source=await waitForMainChecks({sha,read});
   const first=await cloudflare.active();
@@ -60,11 +60,14 @@ async function runProtectedRelease({
   if(!again.ok||again.previousSha!==source.previousSha)
    throw Error('main SHA or required checks changed after upload');
   prior=first.versionId;
-  await cloudflare.promote(candidate,'DraftAI verified CSS main '+sha);
+  activatedDeploymentId=await cloudflare.promote(candidate,'DraftAI verified CSS main '+sha);
+  if(!UUID.test(activatedDeploymentId||''))
+   throw Error('Cloudflare did not provide the immutable deployment ID');
   const result=await smoke({origin,expectedHost});
   if(!result?.ok)throw Error('post-deploy public/privacy smoke failed');
   const final=await cloudflare.active();
-  if(final.versionId!==candidate)throw Error('production did not retain candidate version');
+  if(final.versionId!==candidate||final.deploymentId!==activatedDeploymentId)
+   throw Error('production deployment ID or version changed after smoke');
   return {status:'deployed-and-verified',sourceSha:sha,versionId:candidate,previousVersionId:prior,
    publicSha256:attested.digest};
  }catch(error){
@@ -73,13 +76,19 @@ async function runProtectedRelease({
   if(prior&&candidate){
    try{
     const state=await cloudflare.active();
-    if(state.versionId===candidate){
+    if(state.versionId===candidate&&state.deploymentId===activatedDeploymentId){
      await cloudflare.promote(prior,'DraftAI automatic rollback after failed smoke '+sha);
      const rolled=await cloudflare.active();
      if(rolled.versionId!==prior)throw Error('previous Worker Version not restored');
      return {status:'rolled-back',reason:'post-deployment verification failed',previousVersionId:prior};
     }
-    return {status:'manual-intervention',reason:'production state changed; automatic rollback aborted'};
+    // If Cloudflare POST succeeded but its response was lost, we may not
+    // know the deployment ID. Never roll back someone else's deployment.
+    if(!activatedDeploymentId&&state.versionId===candidate)
+     return {status:'manual-intervention',reason:'candidate active but deployment ID unverified'};
+    if(state.versionId===prior)
+     return {status:'blocked',reason:'new release not active; no rollback necessary'};
+    return {status:'manual-intervention',reason:'production deployment ID/version changed; automatic rollback aborted'};
    }catch{return {status:'manual-intervention',reason:'automatic rollback could not be verified'};}
   }
   return {status:'blocked',reason:String(error?.message||'release preflight or upload failed')};
