@@ -14,9 +14,11 @@ for(const p of retired){
 for(const phrase of ['74 题','74 道','原创练习题','题型训练','第 2 章 · 课堂','旧版实验室','labs/v7.html','question-bank']){
  assert(!home.includes(phrase),'retired mock question/lesson still appears on the front page: '+phrase);
 }
-assert(home.includes('第三版教材 · 唯一课程体系'),'homepage not linked to correct edition');
-assert(home.includes('已提交习题'),'submitted exercise entry missing');
-for(let i=1;i<=12;i++)assert(home.includes('?chapter=ch'+String(i).padStart(2,'0')),'missing textbook chapter '+i);
+// The home is now a public geometry-tools entry; textbook data remains as a
+// source-audited legacy reference rather than a compulsory home chapter menu.
+assert(home.includes('DraftAI')&&home.includes('公开学习工具'),'public geometry home missing');
+assert(home.includes('knowledge/index.html'),'source-index reference must remain reachable');
+assert(home.includes('AI 识图尚未开放'),'AI availability must be truthful');
 const ctx={};vm.runInNewContext(read('knowledge/knowledge-data.js'),ctx);
 const book=ctx.DrawingKnowledge;
 assert.equal(book.entries.length,110,'full textbook catalog must be preserved');
@@ -55,4 +57,4 @@ for(const path of ['knowledge/index.html','labs/chapter-26-29.html','labs/chapte
  assert(!s.includes('href="'+old+'"')&&!s.includes('href="../labs/'+old+'"')&&!s.includes('href="../'+old+'"'),
   'published page links to removed quiz/old course: '+path+' -> '+old);
 }
-console.log('PASS: textbook-only homepage and public build, no old original question files, 28 submitted partial exercises retained, '+depth.ids.length+' deep lessons tied to verified chapters');
+console.log('PASS: public geometry home and preserved source-audited textbook data, 28 partial exercises answer-locked, '+depth.ids.length+' source-grounded deep lessons');
