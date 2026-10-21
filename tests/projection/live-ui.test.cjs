@@ -22,7 +22,7 @@ test('live P0 projection page uses local bundled solver and not a fake static an
 test('input revision invalidation happens before recompute; no stale computed points',()=>{
  assert.match(script,/revision\+\+/);
  assert.match(script,/solution=null;shownStep=0/);
- assert.match(script,/if\(s\.status==='unique'\)/);
+ assert.match(script,/if\(s\.status==='unique'&&learningMode==='full'\)/);
  assert.match(script,/\.guides\.slice\(0,shownStep\)/);
  assert.match(script,/if\(shownStep===s\.steps\.length\)/);
 });
@@ -73,11 +73,16 @@ function createInteractivePage(){
  const ids=['paperSvg','pairSelect','spaceInputs','projectionInputs','firstU',
   'firstV','secondU','secondV','spaceX','spaceY','spaceZ','scaleInput','showGuides',
   'firstULabel','firstVLabel','secondULabel','secondVLabel','recompute','resetExample',
-  'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter'];
+  'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter',
+  'learningMode','fullControls','hintControls','drawControls','hintReveal',
+  'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus',
+  'playPause'];
  const elements=new Map(ids.map(id=>[id,{
-  id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],
+  id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],hidden:false,
   firstChild:{textContent:''},classList:{toggle(){}},
   addEventListener(kind,callback){this.listeners[kind]=callback},
+  getBoundingClientRect(){return {left:0,top:0,width:720,height:470}},
+  setPointerCapture(){},
   replaceChildren(...nodes){this.children=[...nodes]},
   append(...nodes){this.children.push(...nodes)},
   get valueAsNumber(){return this.value.trim()===''?NaN:Number(this.value)},
@@ -100,6 +105,8 @@ function createInteractivePage(){
    return require('../../engines/projection/point-projection.cjs');
   if(id==='../core/projection/conventions.js')
    return require('../../core/projection/conventions.js');
+  if(id==='../workbench/verified-projection-drawing.cjs')
+   return require('../../workbench/verified-projection-drawing.cjs');
   throw Error('unexpected runtime module '+id);
  };
  vm.runInNewContext(script,{require:nodeRequire,document});
@@ -158,4 +165,108 @@ test('UI mode switch recalculates via real VH solver and rejects invalid XYZ wit
  get('scaleInput').value='0';fire('scaleInput','input');
  assert.match(get('solveStatus').textContent,/显示比例/);
  assert.equal(get('next').disabled,true);
+});
+
+test('three modes are present on the SAME real-solver site, with accessible pen controls',()=>{
+ for(const id of ['learningMode','fullControls','hintControls','drawControls','hintReveal',
+  'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus','playPause']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ for(const mode of ['full','hint','draw'])assert.match(html,new RegExp('value="'+mode+'"'));
+ assert.match(script,/gradeProjectionDrawing\(s\.steps,studentStrokes/);
+ assert.match(script,/pointerdown/);assert.match(script,/pointerup/);
+ assert.match(script,/pointercancel/);assert.match(html,/touch-action:none/);
+ assert.match(html,/prefers-reduced-motion/);
+ assert.doesNotMatch(script,/innerHTML\s*=|XMLHttpRequest|fetch\(/);
+});
+test('hint mode shows reasons without exposing future computed SVG guide or W answer',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(get('hintControls').hidden,false);
+ assert.equal(get('fullControls').hidden,true);
+ assert.equal(get('next').disabled,true);
+ const seen=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
+ assert.equal(seen().length,0);
+ fire('hintReveal','click');
+ assert.match(get('stepExplanation').textContent,/正面与水平投影/);
+ assert.equal(get('hintCounter').textContent,'1 / 4');
+ for(let i=0;i<5;i++)fire('hintReveal','click');
+ assert.equal(get('hintCounter').textContent,'4 / 4');
+ assert.equal(get('hintReveal').disabled,true);
+ assert.equal(seen().length,0);
+ assert.equal(allSvgNodes().filter(n=>n.tag==='text'&&String(n.textContent).startsWith('由空间点投影 ')).length,0);
+});
+test('student pen strokes are graded against actual 4 mathematical guides without revealing answers',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ const result=solveProjection({knownPoint:{x:15,y:10,z:12},
+  sheetTransform:{origin:{x:360,y:210},scale:4}});
+ const lineNodes=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8');
+ const draw=(from,to,id)=>{
+  const svg=get('paperSvg');
+  svg.listeners.pointerdown({pointerId:id,button:0,clientX:from.x,clientY:from.y});
+  svg.listeners.pointerup({pointerId:id,button:0,clientX:to.x,clientY:to.y});
+ };
+ assert.equal(get('next').disabled,true);
+ assert.equal(get('drawControls').hidden,false);
+ assert.equal(get('fullControls').hidden,true);
+ assert.equal(lineNodes().length,0);
+ for(let i=0;i<4;i++)draw(result.steps[i].from,result.steps[i].to,i+1);
+ assert.equal(lineNodes().length,4);
+ assert.match(get('drawStatus').textContent,/已验证 4 \/ 4/);
+ assert.match(get('drawStatus').textContent,/全部通过/);
+ assert.equal(allSvgNodes().some(n=>n.tag==='text'&&String(n.textContent).startsWith('由空间点投影 ')),false);
+ fire('undoDraw','click');
+ assert.equal(lineNodes().length,3);
+ assert.match(get('drawStatus').textContent,/已验证 3 \/ 4/);
+ fire('redoDraw','click');
+ assert.equal(lineNodes().length,4);
+ assert.match(get('drawStatus').textContent,/已验证 4 \/ 4/);
+ fire('clearDraw','click');
+ assert.equal(lineNodes().length,0);
+ assert.match(get('drawStatus').textContent,/已验证 0 \/ 4/);
+});
+test('incorrect, repeated and stale student lines cannot certify all guides',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ const result=solveProjection({knownPoint:{x:15,y:10,z:12},
+  sheetTransform:{origin:{x:360,y:210},scale:4}});
+ const svg=get('paperSvg'),draw=(from,to,id)=>{
+  svg.listeners.pointerdown({pointerId:id,button:0,clientX:from.x,clientY:from.y});
+  svg.listeners.pointerup({pointerId:id,button:0,clientX:to.x,clientY:to.y});
+ };
+ for(let i=0;i<4;i++)draw(result.steps[0].from,result.steps[0].to,i+10);
+ assert.match(get('drawStatus').textContent,/已验证 1 \/ 4/);
+ assert.match(get('drawStatus').textContent,/额外线条 3/);
+ const before=allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length;
+ assert.equal(before,4);
+ get('spaceX').value='21';fire('spaceX','input');
+ assert.match(get('solveStatus').textContent,/21, 10, 12/);
+ assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
+ assert.match(get('drawStatus').textContent,/已验证 0 \/ 4/);
+ get('spaceY').value='';fire('spaceY','input');
+ assert.match(get('drawStatus').textContent,/不能判题/);
+ assert.equal(get('paperSvg').classList===undefined,false);
+ const savedCount=allSvgNodes().length;
+ draw({x:280,y:160},{x:280,y:250},900);
+ assert.equal(allSvgNodes().length,savedCount,'nonunique/invalid state must refuse touch drawings');
+});
+test('input zoom change clears old touch strokes; mode switching does not expose draw answer',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ const guide=solveProjection({knownPoint:{x:15,y:10,z:12},
+  sheetTransform:{origin:{x:360,y:210},scale:4}}).steps[0];
+ const svg=get('paperSvg');
+ svg.listeners.pointerdown({pointerId:1,button:0,clientX:guide.from.x,clientY:guide.from.y});
+ svg.listeners.pointerup({pointerId:1,button:0,clientX:guide.to.x,clientY:guide.to.y});
+ assert.match(get('drawStatus').textContent,/1 \/ 4/);
+ get('scaleInput').value='8';fire('scaleInput','input');
+ assert.match(get('drawStatus').textContent,/0 \/ 4/);
+ fire('undoDraw','click');assert.equal(get('undoDraw').disabled,true);
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(allSvgNodes().some(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8'),false);
+ assert.equal(allSvgNodes().some(n=>n.tag==='line'&&n.attributes.stroke==='#c28133'),false);
+ get('learningMode').value='full';fire('learningMode','change');
+ fire('next','click');
+ assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,1);
 });
