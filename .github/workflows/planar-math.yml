@@ -1,0 +1,33 @@
+# 09 scoped, unprivileged math CI for DA-02-A and subsequent planar modules.
+# Run for every PR, even docs-only changes; no path filters and no deployment step.
+name: DraftAI planar mathematics
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: planar-math-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  planar-math:
+    name: planar-math
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify independent planar math and degeneracy regressions
+        run: node --test tests/planar/*.test.cjs
