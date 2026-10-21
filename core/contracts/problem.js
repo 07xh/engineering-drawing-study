@@ -47,13 +47,13 @@ function validateProblem(p){
  const priorSteps=new Set();
  for(const step of steps){
   if(!object(step))continue;
-  for(const dep of step.dependsOn||[]){
+  for(const dep of Array.isArray(step.dependsOn)?step.dependsOn:[]){
    if(!priorSteps.has(dep))errors.push('ConstructionStep '+step.id+' 依赖不存在、未来或自身步骤 '+dep);
   }
-  for(const ref of step.constraintIds||[]){
+  for(const ref of Array.isArray(step.constraintIds)?step.constraintIds:[]){
    if(!constraintIds.has(ref))errors.push('ConstructionStep '+step.id+' 引用了不存在的 Constraint '+ref);
   }
-  for(const ref of step.targetIds||[]){
+  for(const ref of Array.isArray(step.targetIds)?step.targetIds:[]){
    if(!geometryIds.has(ref))errors.push('ConstructionStep '+step.id+' 引用了不存在的 Geometry '+ref);
   }
   if(step.solveResultRef!==undefined&&!resultIds.has(step.solveResultRef))
