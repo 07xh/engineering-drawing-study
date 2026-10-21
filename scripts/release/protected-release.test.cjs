@@ -2,6 +2,13 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {runProtectedRelease,uploadWithPinnedWrangler,waitForMainChecks}=require('./protected-release.cjs');
 const SHA='1'.repeat(40),PREVIOUS='2'.repeat(40);
+const {RULES_PATH}=require('./main-rules.cjs');
+const RULES=[
+ {type:'pull_request',parameters:{allowed_merge_methods:['squash'],required_approving_review_count:0}},
+ {type:'non_fast_forward'},{type:'deletion'},{type:'required_linear_history'},
+ {type:'required_status_checks',parameters:{strict_required_status_checks_policy:true,
+ required_status_checks:[{context:'validate'},{context:'release-security'}]}}
+];
 const OLD='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',NEW='bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
 const OLD_DEP='cccccccc-dddd-eeee-ffff-aaaaaaaaaaaa',NEW_DEP='dddddddd-eeee-ffff-aaaa-bbbbbbbbbbbb';
 function fixture({smokeOk=true,failRollback=false,failUpload=false,protectedMain=true,activeOld=true}={}){
@@ -14,6 +21,7 @@ function fixture({smokeOk=true,failRollback=false,failUpload=false,protectedMain
    active=id;dep=NEW_DEP;return NEW_DEP}
  };
  const git={
+  [RULES_PATH]:RULES,
   '/branches/main':{protected:protectedMain,commit:{sha:SHA}},
   ['/commits/'+SHA]:{sha:SHA,parents:[{sha:PREVIOUS}],files:[{
    filename:'site-ui.css',status:'modified',additions:1,deletions:1,changes:2,
