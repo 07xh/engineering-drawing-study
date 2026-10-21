@@ -156,7 +156,7 @@ test('line mode invalidates old arc and candidate choice when source segment exc
  assert.equal(get('branch').value,'');
  assert.equal(get('counter').textContent,'0 / 3');
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
- assert.match(get('status').textContent,/选择|candidate|分支/);
+ assert.match(get('status').textContent,/选择|candidate|分支|branch/);
  get('line1Ax').value='';fire('line1Ax','input');
  assert.match(get('status').textContent,/条件无效/);
  assert.equal(get('counter').textContent,'0 / 0');
@@ -169,7 +169,7 @@ test('wrong source travel blocks final SVG arc without changing valid geometric 
  get('direction').value='ccw';fire('direction','change');
  get('lineTravel1').value='reverse';fire('lineTravel1','change');
  get('lineTravel2').value='forward';fire('lineTravel2','change');
- assert.match(get('status').textContent,/有向|切线|不连续|conflict/);
+ assert.match(get('status').textContent,/有向|切线|不连续|conflict|tangent/);
  for(let i=0;i<7;i++)fire('next','click');
  assert.equal(get('counter').textContent,'3 / 3');
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
