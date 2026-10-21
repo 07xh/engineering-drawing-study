@@ -7,6 +7,7 @@
 const fs=require('node:fs');
 const {makeSafeReader,collectPullRequestDiff}=require('../../tests/security/github-evidence.cjs');
 const {makeGithubReader}=require('./protected-main.cjs');
+const {RULES_PATH,assessMainRules}=require('./main-rules.cjs');
 const REPO='07xh/engineering-drawing-study',SHA=/^[0-9a-f]{40}$/;
 const REQUIRED=Object.freeze(['validate','release-security']);
 function targetOfWorkflowRun(payload){
@@ -27,6 +28,8 @@ async function checkSafeAutoMerge({payload,read,inspect=collectPullRequestDiff}=
   main=await read('/branches/main');
   if(main?.protected!==true||!SHA.test(main?.commit?.sha||''))
    return refuse('main lacks enforceable GitHub branch protection');
+  const effective=assessMainRules(await read(RULES_PATH),{autoMerge:true});
+  if(!effective.ok)return refuse('main rules not safe for automated merging: '+effective.reasons.join('; '));
   const diff=await inspect({prNumber:target.number,read});
   if(diff?.verified!==true||diff.headSha!==target.headSha||
      diff.changedFiles?.length!==1||diff.changedFiles[0]!=='site-ui.css')
@@ -44,6 +47,8 @@ async function checkSafeAutoMerge({payload,read,inspect=collectPullRequestDiff}=
    if(matched.length<1||matched.some(check=>check.status!=='completed'||check.conclusion!=='success'))
     return refuse('required check not successful: '+name);
   }
+  const finalRules=assessMainRules(await read(RULES_PATH),{autoMerge:true});
+  if(!finalRules.ok)return refuse('main rules changed during merge eligibility check');
   const after=await read('/branches/main');
   if(after?.protected!==true||after.commit?.sha!==main.commit.sha)
    return refuse('main moved during automatic merge review');
@@ -92,7 +97,7 @@ async function main(){
  const payload=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
  const prReader=makeSafeReader({token});
  const mainReader=makeGithubReader({token});
- const read=path=>(path==='/branches/main'||/^\/commits\/[0-9a-f]{40}\/check-runs\?per_page=100$/.test(path))?
+ const read=path=>(path==='/branches/main'||path===RULES_PATH||/^\/commits\/[0-9a-f]{40}\/check-runs\?per_page=100$/.test(path))?
   mainReader(path):prReader(path);
  const merge=mergeRestClient({token:mergeToken});
  const result=await tryAutoMerge({enabled:true,payload,read,merge});
