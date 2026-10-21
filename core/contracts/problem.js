@@ -1,6 +1,7 @@
 'use strict';
 const {object,identifier,report,SCHEMA_VERSION,noDuplicateIds}=require('./common.js');
 const {validateGeometry}=require('./geometry.js');
+const {validateUnknownTarget}=require('./unknown-target.js');
 const {validateConstraint}=require('./constraint.js');
 const {validateConstructionStep}=require('./construction-step.js');
 const {validateSolveResult}=require('./solve-result.js');
@@ -30,13 +31,16 @@ function validateProblem(p){
  if(!Array.isArray(p.givens))errors.push('Problem.givens 必须是数组');
  if(!Array.isArray(p.steps))errors.push('Problem.steps 必须是数组');
  if(p.geometry!==undefined&&!Array.isArray(p.geometry))errors.push('Problem.geometry 必须是数组');
+ if(p.unknowns!==undefined&&!Array.isArray(p.unknowns))errors.push('Problem.unknowns 必须是数组');
  if(p.constraints!==undefined&&!Array.isArray(p.constraints))errors.push('Problem.constraints 必须是数组');
  if(p.solveResults!==undefined&&!Array.isArray(p.solveResults))errors.push('Problem.solveResults 必须是数组');
  const geometry=Array.isArray(p.geometry)?p.geometry:[],
+  unknowns=Array.isArray(p.unknowns)?p.unknowns:[],
   constraints=Array.isArray(p.constraints)?p.constraints:[],
   steps=Array.isArray(p.steps)?p.steps:[],
   results=Array.isArray(p.solveResults)?p.solveResults:[];
  for(const g of geometry)errors.push(...validateGeometry(g).errors);
+ for(const u of unknowns)errors.push(...validateUnknownTarget(u).errors);
  for(const c of constraints)errors.push(...validateConstraint(c).errors);
  for(const s of steps)errors.push(...validateConstructionStep(s).errors);
  for(const r of results)errors.push(...validateSolveResult(r).errors);
@@ -46,13 +50,16 @@ function validateProblem(p){
   return new Set(ids);
  }
  const geometryIds=uniqueById(geometry,'Geometry');
+ const unknownIds=uniqueById(unknowns,'UnknownTarget');
+ for(const id of unknownIds)if(geometryIds.has(id))errors.push('未知点与已知 Geometry 的 id 不得重叠：'+id);
+ const declaredTargets=new Set([...geometryIds,...unknownIds]);
  const constraintIds=uniqueById(constraints,'Constraint');
  const resultIds=uniqueById(results,'SolveResult');
  uniqueById(steps,'ConstructionStep');
  if(results.some(r=>!identifier(r?.id)))errors.push('被 Problem 引用的 SolveResult 必须含唯一 id');
  for(const c of constraints){
   if(Array.isArray(c?.targetIds))
-   for(const id of c.targetIds)if(!geometryIds.has(id))errors.push('Constraint '+c.id+' 引用了不存在的 Geometry '+id);
+   for(const id of c.targetIds)if(!declaredTargets.has(id))errors.push('Constraint '+c.id+' 引用了不存在的 Geometry/UnknownTarget '+id);
  }
  const priorSteps=new Set();
  for(const step of steps){
