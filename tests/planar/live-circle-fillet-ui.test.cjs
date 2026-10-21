@@ -73,7 +73,7 @@ function interactiveFillet(){
   branch:'',direction:'',travel1:'',travel2:'',
   line1Ax:'-20',line1Ay:'0',line1Bx:'20',line1By:'0',
   line2Ax:'0',line2Ay:'-20',line2Bx:'0',line2By:'20',
-  lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:''};
+  lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:'',drawTool:'line'};
  const ids=[...Object.keys(values),'diagram','calculate','prev','next','reset',
   'status','counter','stepTitle','stepText','learningMode','fullControls',
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
@@ -115,7 +115,8 @@ function interactiveFillet(){
   '../engines/planar/directed-circle-fillet.cjs':require('../../engines/planar/directed-circle-fillet.cjs'),
   '../engines/planar/two-segment-fillet.cjs':require('../../engines/planar/two-segment-fillet.cjs'),
   '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs'),
-  '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs')
+  '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs'),
+  '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs')
  };
  vm.runInNewContext(entry,{document,require:id=>{
   if(!Object.hasOwn(modules,id))throw Error('Unexpected bundle require '+id);
@@ -220,7 +221,7 @@ test('three teaching modes use real fillet page and do not add duplicate public 
   'hintNext','hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus','playPause']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
- assert.match(entry,/gradeFilletOffsetLines\(input,strokes/);
+ assert.match(entry,/gradeFilletOffsetLines\(input,lines/);
  assert.match(entry,/pointerdown/);
  assert.match(entry,/pointerup/);
  assert.match(entry,/pointercancel/);
@@ -287,10 +288,10 @@ test('real two-segment pen drawings match TWO mathematically generated offset li
 test('circle-mode draw grader and missing G1 branch are explicitly unsupported',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
  get('learningMode').value='draw';fire('learningMode','change');
- assert.match(get('drawStatus').textContent,/尚未支持/);
+ assert.match(get('drawStatus').textContent,/请先确定/);
  assert.equal(get('checkDraw').disabled,true);
  get('modeSelect').value='segments';fire('modeSelect','change');
- assert.match(get('drawStatus').textContent,/请先选择/);
+ assert.match(get('drawStatus').textContent,/请先确定/);
  assert.equal(get('checkDraw').disabled,true);
  const svg=get('diagram');
  svg.listeners.pointerdown({pointerId:1,button:0,clientX:200,clientY:140});
@@ -309,4 +310,117 @@ test('mode switch returns to full lesson and its existing 6-frame G1 arc workflo
  for(let i=0;i<6;i++)fire('next','click');
  assert.equal(get('counter').textContent,'6 / 6');
  assert.equal(collect().filter(n=>n.tag==='path').length,1);
+});
+
+test('arc tool exists for both model categories and verifies continuous pen sampling',()=>{
+ assert.equal((html.match(/id="drawTool"/g)||[]).length,1);
+ assert.match(entry,/gradeFilletArcDrawing\(input,attempts\.at\(-1\)/);
+ assert.match(entry,/pointermove/);
+ assert.match(entry,/points:pointer\.points/);
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ const args={first:{a:{x:-20,y:0},b:{x:20,y:0}},
+ second:{a:{x:0,y:-20},b:{x:0,y:20}},
+ filletRadius:10,branchId:'s++',direction:'ccw',
+ firstTravel:'forward',secondTravel:'forward'};
+ const a=require('../../engines/planar/directed-two-segment-fillet.cjs')
+  .chooseFiniteTwoSegmentArc(args).geometry.data;
+ const samples=Array.from({length:33},(_,i)=>{
+  const theta=(a.startAngle+(a.endAngle-a.startAngle)*i/32)*Math.PI/180;
+  return {x:360+8*(a.center.x+a.radius*Math.cos(theta)),
+   y:220-8*(a.center.y+a.radius*Math.sin(theta))};
+ });
+ const board=get('diagram'),event=(p,id)=>({pointerId:id,button:0,clientX:p.x,clientY:p.y});
+ board.listeners.pointerdown(event(samples[0],5));
+ for(let i=1;i<32;i++)board.listeners.pointermove(event(samples[i],5));
+ board.listeners.pointerup(event(samples[32],5));
+ assert.match(get('drawStatus').textContent,/手绘圆弧数学验证通过/);
+ assert.match(get('drawStatus').textContent,/不能据此认定全部辅助线/);
+ assert.equal(collect().filter(x=>x.tag==='polyline'&&x.attributes.stroke==='#8651a8').length,1);
+ assert.equal(collect().filter(x=>x.tag==='path').length,0);
+ fire('undoDraw','click');
+ assert.match(get('drawStatus').textContent,/尚未绘制连接圆弧/);
+ fire('redoDraw','click');
+ assert.match(get('drawStatus').textContent,/手绘圆弧数学验证通过/);
+ get('line1Ay').value='2';fire('line1Ay','input');
+ assert.equal(collect().filter(x=>x.tag==='polyline').length,0);
+ assert.equal(get('undoDraw').disabled,true);
+});
+test('a straight chord cannot masquerade as a mathematically verified arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ const selected=require('../../engines/planar/directed-two-segment-fillet.cjs')
+  .chooseFiniteTwoSegmentArc({first:{a:{x:-20,y:0},b:{x:20,y:0}},
+   second:{a:{x:0,y:-20},b:{x:0,y:20}},filletRadius:10,
+   branchId:'s++',direction:'ccw',firstTravel:'forward',secondTravel:'forward'});
+ const toSheet=q=>({x:360+q.x*8,y:220-q.y*8});
+ const first=toSheet(selected.contacts.first),last=toSheet(selected.contacts.second);
+ const samples=Array.from({length:21},(_,i)=>({
+  x:first.x+(last.x-first.x)*i/20,y:first.y+(last.y-first.y)*i/20
+ }));
+ const board=get('diagram'),evt=(p,id)=>({pointerId:id,button:0,clientX:p.x,clientY:p.y});
+ board.listeners.pointerdown(evt(samples[0],9));
+ for(let i=1;i<20;i++)board.listeners.pointermove(evt(samples[i],9));
+ board.listeners.pointerup(evt(samples[20],9));
+ assert.match(get('drawStatus').textContent,/尚未通过数学验证/);
+ assert.doesNotMatch(get('drawStatus').textContent,/数学验证通过/);
+ assert.equal(collect().filter(x=>x.tag==='polyline').length,1);
+});
+test('two-circle branch with explicit directed G1 can grade the actual handwritten curved connection',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ assert.equal(get('checkDraw').disabled,false);
+ const args={first:{center:{x:0,y:0},radius:5},
+  second:{center:{x:20,y:0},radius:5},filletRadius:10,
+  firstMode:'external',secondMode:'external',branchId:'center-1',
+  direction:'cw',knownFirstTravel:'ccw',knownSecondTravel:'ccw'};
+ const a=require('../../engines/planar/directed-circle-fillet.cjs')
+   .chooseDirectedFillet(args).geometry.data;
+ const samples=Array.from({length:49},(_,i)=>{
+  const theta=(a.startAngle+(a.endAngle-a.startAngle)*i/48)*Math.PI/180;
+  return {x:360+8*(a.center.x+a.radius*Math.cos(theta)),
+   y:220-8*(a.center.y+a.radius*Math.sin(theta))};
+ });
+ const board=get('diagram'),evt=(p,id)=>({pointerId:id,button:0,clientX:p.x,clientY:p.y});
+ board.listeners.pointerdown(evt(samples[0],13));
+ for(let i=1;i<48;i++)board.listeners.pointermove(evt(samples[i],13));
+ board.listeners.pointerup(evt(samples[48],13));
+ assert.match(get('drawStatus').textContent,/手绘圆弧数学验证通过/);
+ assert.match(get('drawStatus').textContent,/有限已知圆弧范围/);
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
+});
+test('cancelled curved pen stroke never earns credit and different pointers cannot finish it',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ const board=get('diagram');
+ board.listeners.pointerdown({pointerId:6,button:0,clientX:220,clientY:210});
+ board.listeners.pointermove({pointerId:6,button:0,clientX:230,clientY:215});
+ board.listeners.pointerup({pointerId:7,button:0,clientX:240,clientY:220});
+ board.listeners.pointercancel();
+ board.listeners.pointerup({pointerId:6,button:0,clientX:240,clientY:220});
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
+ assert.match(get('drawStatus').textContent,/尚未绘制/);
 });

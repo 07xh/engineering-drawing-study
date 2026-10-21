@@ -24,7 +24,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <div class="workspace">
 <section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
 <div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
-<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：自己画的辅助线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
+<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：学生绘制的辅助线或弧线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
 <p class="note">可用下一步查看：辅助圆轨迹 → 候选圆心 → 两个切点 → 已明确方向的连接弧。多解不会自动选第一种。</p>
 </section>
 <section class="panel controls">
@@ -59,10 +59,12 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
 <h2>数学教学模式</h2>
-<label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（有限线段辅助线）</option></select></label>
+<label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">自动播放</button></div>
 <div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
-<div id="drawControls" hidden><p class="note">当前仅验算两条有限线段的两条偏移辅助线。请先选择经过 G1 验证的有效连接分支；触笔/鼠标直接在左侧图纸画线。</p>
+<div id="drawControls" hidden>
+<label>绘图工具<select id="drawTool"><option value="line">偏移辅助直线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option></select></label>
+<p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
 <div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
 <p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p></div>
 <div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
