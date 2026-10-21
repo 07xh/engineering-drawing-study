@@ -59,10 +59,10 @@ for (const file of files) {
 const publicFiles=new Set(files);
 for(const file of files.filter(name=>name.endsWith('.html'))){
  const dest=path.join(out,file),html=fs.readFileSync(dest,'utf8');
- const adjusted=html.replace(/(\\bhref=["'])([^"']+)(["'])/g,(whole,head,href,tail)=>{
-  if(/^(?:#|\\/\\/|https?:|mailto:|tel:|javascript:|data:)/i.test(href))return whole;
+ const adjusted=html.replace(/(\bhref=["'])([^"']+)(["'])/g,(whole,head,href,tail)=>{
+  if(/^(?:#|\/\/|https?:|mailto:|tel:|javascript:|data:)/i.test(href))return whole;
   const local=href.split(/[?#]/,1)[0];
-  if(!/\\.html?$/i.test(local))return whole;
+  if(!/\.html?$/i.test(local))return whole;
   const normalized=path.posix.normalize(local.startsWith('/')?local.slice(1):path.posix.join(path.posix.dirname(file),local));
   if(publicFiles.has(normalized))return whole;
   const target=path.posix.relative(path.posix.dirname(file),'public-use.html');
