@@ -167,3 +167,22 @@ test('real finite-segment fillet refuses unchosen and unverified candidate',()=>
  const no=A.segmentFilletPlan(input);
  assert.equal(no.status,'not-verified');assert.equal(no.mathematicallyVerified,false);
 });
+
+test('actual DA-02 finite-segment interior G1 solution animates verified offset and final arc',()=>{
+ const {finiteTwoSegmentFillets}=require('../../engines/planar/two-segment-fillet.cjs');
+ const input={first:{a:{x:0,y:0},b:{x:30,y:0}},
+  second:{a:{x:30,y:0},b:{x:30,y:30}},filletRadius:5};
+ const solved=finiteTwoSegmentFillets(input);
+ const candidate=(solved.candidates||[]).find(c=>
+  Math.hypot(c.center.x-25,c.center.y-5)<1e-6);
+ assert.ok(candidate,'interior finite segment candidate must exist');
+ const p=A.segmentFilletPlan({...input,branchId:candidate.id,direction:'ccw',
+  firstTravel:'forward',secondTravel:'forward'},undefined,4);
+ assert.equal(p.status,'ready',p.reason);
+ assert.equal(p.mathematicallyVerified,true);
+ assert.equal(p.selectedBranchId,candidate.id);
+ assert.equal(p.revision,4);
+ assert.ok(p.steps.some(s=>s.actions.some(a=>a.kind==='line')));
+ assert.equal(p.steps.at(-1).actions.at(-1).kind,'arc');
+ assert.ok(p.timing.totalMs>0);
+});
