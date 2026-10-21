@@ -68,7 +68,7 @@ test('existing teaching page contains finite segment controls, not a second page
 });
 function interactiveFillet(){
  const vm=require('node:vm');
- const values={modeSelect:'circles',x1:'0',y1:'0',r1:'5',mode1:'external',
+ const values={modeSelect:'circles',animationSpeed:'1',x1:'0',y1:'0',r1:'5',mode1:'external',
   x2:'20',y2:'0',r2:'5',mode2:'external',filletRadius:'10',
   branch:'',direction:'',travel1:'',travel2:'',
   line1Ax:'-20',line1Ay:'0',line1Bx:'20',line1By:'0',
@@ -77,7 +77,7 @@ function interactiveFillet(){
  const ids=[...Object.keys(values),'diagram','calculate','prev','next','reset',
   'status','counter','stepTitle','stepText','learningMode','fullControls',
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
-  'clearDraw','checkDraw','drawStatus','playPause'];
+  'clearDraw','checkDraw','drawStatus','playPause','animationSpeed'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -116,7 +116,8 @@ function interactiveFillet(){
   '../engines/planar/two-segment-fillet.cjs':require('../../engines/planar/two-segment-fillet.cjs'),
   '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs'),
   '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs'),
-  '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs')
+  '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
+  '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js')
  };
  vm.runInNewContext(entry,{document,require:id=>{
   if(!Object.hasOwn(modules,id))throw Error('Unexpected bundle require '+id);
