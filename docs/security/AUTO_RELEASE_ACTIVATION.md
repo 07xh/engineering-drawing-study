@@ -34,7 +34,7 @@ Root directory = /
 Secrets（绝不要粘贴到聊天、Issue、PR 或 git）：
 - CLOUDFLARE_ACCOUNT_ID：Worker 所属账户 ID。
 - CLOUDFLARE_API_TOKEN：尽可能窄权限的 Worker 脚本读写与部署令牌，限制到相关 Worker。
-- DRAFTAI_MERGE_TOKEN：仅面向本仓库、无管理绕过权的专用 GitHub App installation token 或 fine-grained PAT，具备实际合并所需的 PR/Contents 写权限。不得复用默认 GITHUB_TOKEN。GitHub 官方明确，GITHUB_TOKEN 造成的 push 通常不会触发后续 Actions，会让自动合并后续生产 CI 断链。
+- DRAFTAI_MERGE_TOKEN：当前工作流实现要求将**专用、非管理员、仅限本仓库的 fine-grained PAT**配置为 Secret，授予合并所需的 Pull Requests/Contents 写权限，设置有限有效期并安排轮换。不得复用默认 GITHUB_TOKEN。GitHub App 安装令牌通常短期有效，**不能把一次生成的安装令牌永久当作 Secret**；若改用 GitHub App，须另行接入每次工作流动态签发令牌的步骤。GitHub 官方明确，GITHUB_TOKEN 造成的 push 通常不会触发后续 Actions，会让自动合并后的生产 CI 断链。
 
 Variables（初始开关都为 false）：
 - DRAFTAI_PRODUCTION_ORIGIN：经核实的 HTTPS 生产根地址。
