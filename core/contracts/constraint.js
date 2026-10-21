@@ -59,6 +59,17 @@ function validateConstraint(c){
  if(!Object.hasOwn(byScope,c.scope)||!byScope[c.scope].includes(c.type))errors.push('Constraint.scope/type 不支持');
  if(!Array.isArray(c.targetIds)||!c.targetIds.length||!c.targetIds.every(identifier)||!noDuplicateIds(c.targetIds))errors.push('Constraint.targetIds 无效');
  if(!validateData(c.scope,c.type,c.data))errors.push('Constraint.data 与 scope/type 不匹配、缺少参数或包含退化对象');
+ if(['multi-point-2d-linear','multi-point-2d-local-jacobian'].includes(c.scope)&&object(c.data)&&Array.isArray(c.targetIds)){
+  const d=c.data, refs=[];
+  if(['fixed','point-on-line','on-line'].includes(c.type))refs.push(d.point);
+  if(['coincident','horizontal','vertical','distance','parallel','perpendicular','angle','circle-tangent-circle'].includes(c.type))
+   refs.push(d.a,d.b);
+  if(['parallel','perpendicular','angle'].includes(c.type))refs.push(d.c,d.d);
+  if(c.type==='circle-tangent-line')refs.push(d.center);
+  if(c.type==='linear'&&Array.isArray(d.terms))refs.push(...d.terms.map(t=>t?.point));
+  if(refs.length&&(!refs.every(id=>c.targetIds.includes(id))||
+    c.targetIds.some(id=>!refs.includes(id))))errors.push('Constraint.targetIds 与 data 中引用的点不一致');
+ }
  if(!['given','derived','reviewed'].includes(c.source))errors.push('Constraint.source 无效');
  return report(errors);
 }
