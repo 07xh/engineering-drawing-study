@@ -5,6 +5,7 @@
  * actual published Worker must still be bound to the same immutable SHA.
  */
 const {inspectAddedCss}=require('../../tests/security/verify-pr-diff.cjs');
+const {RULES_PATH,assessMainRules}=require('./main-rules.cjs');
 const REPO='07xh/engineering-drawing-study';
 const API='https://api.github.com/repos/'+REPO;
 const SHA=/^[a-f0-9]{40}$/;
@@ -16,7 +17,7 @@ function makeGithubReader({token,fetchImpl=globalThis.fetch}={}){
  safeToken(token);
  if(typeof fetchImpl!=='function')throw Error('fetch unavailable');
  return async function get(path){
-  if(!/^\/(?:branches\/main|commits\/[a-f0-9]{40}(?:\/check-runs\?per_page=100)?)$/.test(path))
+  if(!(/^\/(?:branches\/main|commits\/[a-f0-9]{40}(?:\/check-runs\?per_page=100)?)$/.test(path)||path===RULES_PATH))
    throw Error('forbidden GitHub read path');
   let response;
   try{response=await fetchImpl(API+path,{method:'GET',redirect:'error',signal:AbortSignal.timeout(12000),
@@ -36,6 +37,8 @@ async function checkProtectedMain({sha,read}={}){
   main=await read('/branches/main');
   if(main?.protected!==true||main?.commit?.sha!==sha)
    return deny('main unprotected or changed while validating');
+  const effective=assessMainRules(await read(RULES_PATH));
+  if(!effective.ok)return deny('main effective protection rules invalid: '+effective.reasons.join('; '));
   commit=await read('/commits/'+sha);
   if(commit?.sha!==sha||!Array.isArray(commit.parents)||commit.parents.length!==1 ||
      !SHA.test(commit.parents[0]?.sha||'')||commit?.files?.length!==1)
@@ -57,6 +60,8 @@ async function checkProtectedMain({sha,read}={}){
    if(runs.length<1||runs.some(check=>check.status!=='completed'||check.conclusion!=='success'))
     return deny('missing/stale/failing required check: '+name);
   }
+  const finalRules=assessMainRules(await read(RULES_PATH));
+  if(!finalRules.ok)return deny('main rules changed before release');
   const again=await read('/branches/main');
   if(again?.protected!==true||again?.commit?.sha!==sha)
    return deny('main changed during final verification');
