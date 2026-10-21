@@ -1,0 +1,37 @@
+# DA-09-REL-AUTO-001: read-only release-security CI.
+# NO GitHub write permissions, Cloudflare credentials, merge or deployment steps.
+# The protected main Required Check should be configured only after this job
+# is observed to run for all PRs, including docs-only changes.
+name: DraftAI release security
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+permissions:
+  contents: read
+concurrency:
+  group: release-security-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+jobs:
+  release-security:
+    name: release-security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout audited commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned build dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Build public assets
+        run: node scripts/build-static.cjs
+      - name: Run complete security unit suite
+        run: node --test tests/security/*.test.cjs
+      - name: Enforce source-bound SHA-256 and public dist inventory
+        run: node tests/security/security-ci-gate.cjs
