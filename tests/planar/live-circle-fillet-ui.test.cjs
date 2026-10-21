@@ -75,12 +75,16 @@ function interactiveFillet(){
   line2Ax:'0',line2Ay:'-20',line2Bx:'0',line2By:'20',
   lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:''};
  const ids=[...Object.keys(values),'diagram','calculate','prev','next','reset',
-  'status','counter','stepTitle','stepText'];
+  'status','counter','stepTitle','stepText','learningMode','fullControls',
+  'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
+  'clearDraw','checkDraw','drawStatus','playPause'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
   get valueAsNumber(){return this.value.trim()===''?NaN:Number(this.value)},
   addEventListener(type,handler){this.listeners[type]=handler},
+  getBoundingClientRect(){return {left:0,top:0,width:720,height:440}},
+  setPointerCapture(){},
   append(...elements){this.children.push(...elements)},
   replaceChildren(...elements){this.children=[...elements]}
  }]));
@@ -97,8 +101,11 @@ function interactiveFillet(){
    return {tag:'option',value:'',textContent:''};
   },
   createElementNS(_ns,tag){
-   return {tag,attributes:{},children:[],textContent:'',
+   return {tag,attributes:{},children:[],listeners:{},textContent:'',
     setAttribute(k,v){this.attributes[k]=String(v)},
+    addEventListener(type,handler){this.listeners[type]=handler},
+    getBoundingClientRect(){return {left:0,top:0,width:720,height:440}},
+    setPointerCapture(){},
     append(...elements){this.children.push(...elements)}
    };
   }
@@ -107,7 +114,8 @@ function interactiveFillet(){
   '../engines/planar/circle-circle-fillet.cjs':require('../../engines/planar/circle-circle-fillet.cjs'),
   '../engines/planar/directed-circle-fillet.cjs':require('../../engines/planar/directed-circle-fillet.cjs'),
   '../engines/planar/two-segment-fillet.cjs':require('../../engines/planar/two-segment-fillet.cjs'),
-  '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs')
+  '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs'),
+  '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs')
  };
  vm.runInNewContext(entry,{document,require:id=>{
   if(!Object.hasOwn(modules,id))throw Error('Unexpected bundle require '+id);
@@ -205,4 +213,100 @@ test('parallel continuous centers do not display guessed finite arc',()=>{
  for(let i=0;i<7;i++)fire('next','click');
  assert.equal(get('counter').textContent,'3 / 3');
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
+});
+
+test('three teaching modes use real fillet page and do not add duplicate public route',()=>{
+ for(const id of ['learningMode','fullControls','hintControls','drawControls',
+  'hintNext','hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus','playPause']){
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ }
+ assert.match(entry,/gradeFilletOffsetLines\(input,strokes/);
+ assert.match(entry,/pointerdown/);
+ assert.match(entry,/pointerup/);
+ assert.match(entry,/pointercancel/);
+ assert.match(html,/touch-action:none/);
+ assert.doesNotMatch(entry,/fetch\(|XMLHttpRequest|innerHTML\s*=|localStorage/);
+});
+test('hint mode prevents future auxiliary loci, circle centers and completed SVG arcs',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(get('hintControls').hidden,false);
+ assert.equal(get('fullControls').hidden,true);
+ assert.equal(get('next').disabled,true);
+ for(let i=0;i<6;i++)fire('hintNext','click');
+ assert.equal(get('hintCounter').textContent,'6 / 6');
+ assert.equal(get('hintNext').disabled,true);
+ assert.match(get('stepText').textContent,/有向 G1/);
+ const scene=collect();
+ assert.equal(scene.filter(n=>n.tag==='path').length,0);
+ assert.equal(scene.filter(n=>n.tag==='line'&&n.attributes.stroke==='#c38536').length,0);
+ assert.equal(scene.some(n=>n.tag==='text'&&/^s[+-]{2}$/.test(n.textContent)),false);
+});
+test('real two-segment pen drawings match TWO mathematically generated offset lines only',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ const raw={first:{a:{x:-20,y:0},b:{x:20,y:0}},
+  second:{a:{x:0,y:-20},b:{x:0,y:20}},filletRadius:10,branchId:'s++',
+  direction:'ccw',firstTravel:'forward',secondTravel:'forward'};
+ const steps=require('../../engines/planar/directed-two-segment-fillet.cjs')
+  .chooseFiniteTwoSegmentArc(raw).steps.filter(s=>s.kind==='offset-line');
+ const svg=get('diagram');
+ const drag=(line,id)=>{
+  const sheet=q=>({x:360+q.x*8,y:220-q.y*8});
+  const from=sheet(line.geometry.a),to=sheet(line.geometry.b);
+  svg.listeners.pointerdown({pointerId:id,button:0,clientX:from.x,clientY:from.y});
+  svg.listeners.pointerup({pointerId:id,button:0,clientX:to.x,clientY:to.y});
+ };
+ assert.equal(get('drawControls').hidden,false);
+ assert.equal(get('fullControls').hidden,true);
+ assert.equal(get('next').disabled,true);
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ drag(steps[0],1);
+ assert.match(get('drawStatus').textContent,/辅助线 1 \/ 2/);
+ drag(steps[1],2);
+ assert.match(get('drawStatus').textContent,/辅助线 2 \/ 2/);
+ assert.match(get('drawStatus').textContent,/最终圆弧仍需分别验证/);
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,2);
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ fire('undoDraw','click');assert.match(get('drawStatus').textContent,/辅助线 1 \/ 2/);
+ fire('redoDraw','click');assert.match(get('drawStatus').textContent,/辅助线 2 \/ 2/);
+ get('line1Ay').value='1';fire('line1Ay','input');
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
+ assert.equal(get('undoDraw').disabled,true);
+});
+test('circle-mode draw grader and missing G1 branch are explicitly unsupported',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.match(get('drawStatus').textContent,/尚未支持/);
+ assert.equal(get('checkDraw').disabled,true);
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ assert.match(get('drawStatus').textContent,/请先选择/);
+ assert.equal(get('checkDraw').disabled,true);
+ const svg=get('diagram');
+ svg.listeners.pointerdown({pointerId:1,button:0,clientX:200,clientY:140});
+ svg.listeners.pointerup({pointerId:1,button:0,clientX:520,clientY:140});
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
+});
+test('mode switch returns to full lesson and its existing 6-frame G1 arc workflow',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ get('learningMode').value='hint';fire('learningMode','change');
+ get('learningMode').value='full';fire('learningMode','change');
+ for(let i=0;i<6;i++)fire('next','click');
+ assert.equal(get('counter').textContent,'6 / 6');
+ assert.equal(collect().filter(n=>n.tag==='path').length,1);
 });
