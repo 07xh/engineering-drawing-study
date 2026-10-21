@@ -31,6 +31,18 @@ const {toSheet}=require('../core/projection/conventions.js');
   const format=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
   function projectInput(){
     const pair=$('pairSelect').value;
+    const ratio=$('scaleInput').valueAsNumber;
+    if(!Number.isFinite(ratio)||ratio<.1||ratio>20)throw Error('显示比例必须在 0.1 到 20 之间');
+    const sheetTransform={origin:BOARD,scale:ratio};
+    if(pair==='XYZ'){
+      const xyz=['spaceX','spaceY','spaceZ'].map(id=>{
+        const input=$(id);
+        if(input.value.trim()===''||!Number.isFinite(input.valueAsNumber))
+          throw Error('空间点 x、y、z 必须都是有效的数学坐标');
+        return input.valueAsNumber;
+      });
+      return {knownPoint:{x:xyz[0],y:xyz[1],z:xyz[2]},sheetTransform};
+    }
     const values=inputs.map(id=>{
       const input=$(id);
       if(input.value.trim()==='')throw Error('请填写全部四个投影坐标');
@@ -38,10 +50,8 @@ const {toSheet}=require('../core/projection/conventions.js');
       if(!Number.isFinite(n))throw Error('投影坐标必须是有效数值');
       return n;
     });
-    const ratio=$('scaleInput').valueAsNumber;
-    if(!Number.isFinite(ratio)||ratio<.1||ratio>20)throw Error('显示比例必须在 0.1 到 20 之间');
     return {knownViews:{[pair[0]]:values.slice(0,2),[pair[1]]:values.slice(2,4)},
-      sheetTransform:{origin:BOARD,scale:ratio}};
+      sheetTransform};
   }
   function invalid(reason){
     solution=null;shownStep=0;$('solveStatus').textContent='输入尚未有效：'+reason;render();
@@ -53,7 +63,8 @@ const {toSheet}=require('../core/projection/conventions.js');
     try{given=projectInput();solution={...solveProjection(given),userInput:given,revision};
       const s=solution;
       $('solveStatus').textContent=s.status==='unique'
-        ?'已求出空间点 P = ('+['x','y','z'].map(k=>format(s.point[k])).join(', ')+') mm；最大残差：'+format(s.maxResidual)+' mm。'
+        ?(s.knownPoint?'已按空间点坐标计算 P = (':'已从两面投影求出 P = (')+
+         ['x','y','z'].map(k=>format(s.point[k])).join(', ')+') mm；最大残差：'+format(s.maxResidual)+' mm。'
         :s.status==='none'?'给定投影矛盾，无解。未显示第三投影和推测辅助线。'
         :'投影条件不足，无法唯一确定空间点。';
     }catch(e){return invalid(e.message||'输入无效');}
@@ -82,10 +93,14 @@ const {toSheet}=require('../core/projection/conventions.js');
         svg.append(point(xy,'已知 '+name,COLOR.known));
       }
       if(s.status==='unique'){
-        for(const guide of s.guides.slice(0,shownStep))svg.append(line(guide.from,guide.to,COLOR.guide,2.2,'7 5'));
+        if($('showGuides').checked){
+          for(const guide of s.guides.slice(0,shownStep))
+            svg.append(line(guide.from,guide.to,COLOR.guide,2.2,'7 5'));
+        }
         if(shownStep===s.steps.length){
           for(const name of ['V','H','W']){
-            if(!s.knownViews.includes(name))svg.append(point(s.sheet[name],'求得 '+name,COLOR.computed));
+            if(s.knownPoint||!s.knownViews.includes(name))
+              svg.append(point(s.sheet[name],s.knownPoint?'由空间点投影 '+name:'求得 '+name,COLOR.computed));
           }
         }
       }
@@ -98,21 +113,33 @@ const {toSheet}=require('../core/projection/conventions.js');
     $('stepCounter').textContent=shownStep+' / '+max;
     $('stepTitle').textContent=shownStep===0?'第 0 步｜观察已知条件':'第 '+shownStep+' 步｜辅助线';
     $('stepExplanation').textContent=shownStep===0
-      ?'题目已知 '+pair.split('').map(x=>planes[x]).join(' 与 ')+'，先按输入位置显示两个已知投影；空间点尚不能靠页面位置猜测。'
+      ?(pair==='XYZ'
+        ?'题目已知空间点 P(x,y,z)，由实际坐标求解三面投影；逐步显示对应线与 45° 深度转移。'
+        :'题目已知 '+pair.split('').map(x=>planes[x]).join(' 与 ')+'，先按输入位置显示两个已知投影；空间点尚不能靠页面位置猜测。')
       :s.steps[shownStep-1].explanation+
         (shownStep===max?' 交点与第三投影已用求解器验证，现在标出蓝色结果点。':'');
   }
   function resetPair(){
-    const pair=$('pairSelect').value,values=demos[pair].flat();
-    for(let i=0;i<inputs.length;i++)$(inputs[i]).value=String(values[i]);
-    $('firstULabel').firstChild.textContent=planes[pair[0]]+' u（mm）';
-    $('firstVLabel').firstChild.textContent=planes[pair[0]]+' v（mm）';
-    $('secondULabel').firstChild.textContent=planes[pair[1]]+' u（mm）';
-    $('secondVLabel').firstChild.textContent=planes[pair[1]]+' v（mm）';
+    const pair=$('pairSelect').value;
+    $('spaceInputs').classList.toggle('hidden',pair!=='XYZ');
+    $('projectionInputs').classList.toggle('hidden',pair==='XYZ');
+    if(pair==='XYZ'){
+      for(const [id,value] of [['spaceX',15],['spaceY',10],['spaceZ',12]])
+        $(id).value=String(value);
+    }else{
+      const values=demos[pair].flat();
+      for(let i=0;i<inputs.length;i++)$(inputs[i]).value=String(values[i]);
+      $('firstULabel').firstChild.textContent=planes[pair[0]]+' u（mm）';
+      $('firstVLabel').firstChild.textContent=planes[pair[0]]+' v（mm）';
+      $('secondULabel').firstChild.textContent=planes[pair[1]]+' u（mm）';
+      $('secondVLabel').firstChild.textContent=planes[pair[1]]+' v（mm）';
+    }
     compute();
   }
   $('pairSelect').addEventListener('change',resetPair);
-  for(const id of [...inputs,'scaleInput'])$(id).addEventListener('input',compute);
+  for(const id of [...inputs,'spaceX','spaceY','spaceZ','scaleInput'])
+    $(id).addEventListener('input',compute);
+  $('showGuides').addEventListener('change',render);
   $('recompute').addEventListener('click',compute);
   $('resetExample').addEventListener('click',()=>{$('pairSelect').value='VH';$('scaleInput').value='4';resetPair();});
   $('previous').addEventListener('click',()=>{if(solution?.status!=='unique')return;
