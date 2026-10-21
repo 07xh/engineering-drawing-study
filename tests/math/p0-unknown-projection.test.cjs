@@ -92,7 +92,7 @@ test('solve gate refuses unknown target not in Problem, or duplicate result id',
  assert.throws(()=>A.solvePendingPoint(p,'Other'));
  assert.throws(()=>A.solvePendingPoint({...p,solveResults:[{
   ...A.solvePendingPoint(p,'P').result
- }],'P'),/编号重复/);
+ }]},'P'),/编号重复/);
 });
 
 test('P0: 1e12 model coordinate with 10mm conflicting V/H x must not align',()=>{
