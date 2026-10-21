@@ -69,14 +69,14 @@ test('direct XYZ input and guide toggle are present in the published UI',()=>{
 function createInteractivePage(){
  const vm=require('node:vm');
  const values={pairSelect:'XYZ',firstU:'15',firstV:'12',secondU:'15',
-  secondV:'10',spaceX:'15',spaceY:'10',spaceZ:'12',scaleInput:'4'};
+  secondV:'10',animationSpeed:'1',spaceX:'15',spaceY:'10',spaceZ:'12',scaleInput:'4'};
  const ids=['paperSvg','pairSelect','spaceInputs','projectionInputs','firstU',
   'firstV','secondU','secondV','spaceX','spaceY','spaceZ','scaleInput','showGuides',
   'firstULabel','firstVLabel','secondULabel','secondVLabel','recompute','resetExample',
   'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter',
   'learningMode','fullControls','hintControls','drawControls','hintReveal',
   'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus',
-  'playPause'];
+  'playPause','animationSpeed'];
  const elements=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],hidden:false,
   firstChild:{textContent:''},classList:{toggle(){}},
@@ -107,6 +107,8 @@ function createInteractivePage(){
    return require('../../core/projection/conventions.js');
   if(id==='../workbench/verified-projection-drawing.cjs')
    return require('../../workbench/verified-projection-drawing.cjs');
+  if(id==='../workbench/teaching-timeline-v5.js')
+   return require('../../workbench/teaching-timeline-v5.js');
   throw Error('unexpected runtime module '+id);
  };
  vm.runInNewContext(script,{require:nodeRequire,document});
