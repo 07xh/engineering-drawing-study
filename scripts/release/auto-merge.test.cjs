@@ -3,6 +3,13 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {targetOfWorkflowRun,checkSafeAutoMerge,mergeRestClient,tryAutoMerge}=require('./auto-merge.cjs');
 const SHA='1'.repeat(40),MAIN='2'.repeat(40),MERGED='3'.repeat(40);
 const REPO='07xh/engineering-drawing-study';
+const {RULES_PATH}=require('./main-rules.cjs');
+const RULES=[
+ {type:'pull_request',parameters:{allowed_merge_methods:['squash'],required_approving_review_count:0}},
+ {type:'non_fast_forward'},{type:'deletion'},{type:'required_linear_history'},
+ {type:'required_status_checks',parameters:{strict_required_status_checks_policy:true,
+ required_status_checks:[{context:'validate'},{context:'release-security'}]}}
+];
 function fixture(overrides={}){
  const payload={workflow_run:{event:'pull_request',conclusion:'success',head_sha:SHA,
   head_repository:{full_name:REPO},pull_requests:[{number:19}]}};
@@ -13,6 +20,7 @@ function fixture(overrides={}){
   {name:'validate',head_sha:SHA,status:'completed',conclusion:'success'},
   {name:'release-security',head_sha:SHA,status:'completed',conclusion:'success'}]};
  const map={'/branches/main':main,'/pulls/19':pr,
+[RULES_PATH]:RULES,
   ['/commits/'+SHA+'/check-runs?per_page=100']:checks,...overrides};
  const called=[];return {payload,called,read:async p=>{called.push(p);return map[p]},
   inspect:async()=>({verified:true,headSha:SHA,changedFiles:['site-ui.css']}),
@@ -44,7 +52,7 @@ test('stale draft conflict, fork and different base branch fail closed',async()=
   {base:{ref:'main',sha:SHA,repo:{full_name:REPO}}}];
  for(const c of changes){
   const x=fixture(),base=await x.read('/pulls/19');
-  x.read=async p=>p==='/pulls/19'?{...base,...c}:p==='/branches/main'?{protected:true,commit:{sha:MAIN}}:
+  x.read=async p=>p===RULES_PATH?RULES:p==='/pulls/19'?{...base,...c}:p==='/branches/main'?{protected:true,commit:{sha:MAIN}}:
    {total_count:2,check_runs:[{name:'validate',head_sha:SHA,status:'completed',conclusion:'success'},
       {name:'release-security',head_sha:SHA,status:'completed',conclusion:'success'}]};
   assert.equal((await checkSafeAutoMerge(x)).ok,false);
@@ -107,7 +115,7 @@ test('duplicate successful validate runs may pass, any failed duplicate blocks',
  const oldChecks=await x.read(path);
  const good={name:'validate',head_sha:SHA,status:'completed',conclusion:'success'};
  const list=[...oldChecks.check_runs,good];
- const shared=(items)=>async p=>p===path?{total_count:items.length,check_runs:items}:
+ const shared=(items)=>async p=>p===RULES_PATH?RULES:p===path?{total_count:items.length,check_runs:items}:
   p==='/branches/main'?{protected:true,commit:{sha:MAIN}}:
   p==='/pulls/19'?{head:{sha:SHA,repo:{full_name:REPO}},
    base:{ref:'main',sha:MAIN,repo:{full_name:REPO}},
