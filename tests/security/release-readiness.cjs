@@ -1,4 +1,5 @@
 'use strict';
+const {verifyPullRequestDiff}=require('./verify-pr-diff.cjs');
 /**
  * Read-only, fail-closed eligibility classifier for DA-09.
  * IMPORTANT: This function does not query GitHub, approve a PR, merge or deploy.
@@ -49,6 +50,14 @@ function evaluateReleaseReadiness(context) {
     blocked.push('verified preview and sensitive-path denial are required');
   if (context.metadataFromTrustedApi !== true)
     blocked.push('CI must fetch PR, checks, SHA and deployment evidence from trusted APIs');
+  // Only accept an exact, complete PR diff bound to the same tested commit.
+  // Snapshot authenticity itself must be established by a privileged reader.
+  const diff=verifyPullRequestDiff(context.diffEvidence);
+  const reviewed=Array.isArray(context.changedFiles)?context.changedFiles:[];
+  if(!diff.eligible || context.diffEvidence?.pullRequest?.head?.sha!==context.headSha ||
+     diff.approvedFiles.length!==reviewed.length ||
+     !reviewed.every(file=>diff.approvedFiles.includes(file)))
+    blocked.push('unverified PR diff or incomplete changed-file provenance');
   const checks = Array.isArray(context.checks) ? context.checks : [];
   for (const name of REQUIRED_CHECKS) {
     const matches = checks.filter(c => c && c.name === name);
