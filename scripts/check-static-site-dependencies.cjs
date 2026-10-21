@@ -22,7 +22,8 @@ function scan(dir){
   }
  }
 }
-assert(fs.existsSync(path.join(root,'knowledge/drawing-player.html')),'linked drawing player was not packaged');
+assert(fs.existsSync(path.join(root,'public-use.html')),'public-use disclosure was not packaged');
+for(const banned of ['knowledge/index.html','knowledge/drawing-player.html','labs/verified-exercises.js','labs/source-fidelity.html','labs/chapter-26-29.html','labs/chapter-drawing.html'])assert(!fs.existsSync(path.join(root,banned)),'textbook-only resource leaked into public build: '+banned);
 assert(!fs.existsSync(path.join(root,'knowledge/drawing-player-demo.js')),'internal demo should never ship');
 scan(root);
 assert.deepEqual(broken,[],'broken local links/assets in static build');
