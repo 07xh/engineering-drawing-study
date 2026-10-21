@@ -118,7 +118,7 @@ test('invalid source, unsupported tool type, too many actions and nonfinite circ
  assert.equal(grade('circles',args,[{...a[0],center:{x:NaN,y:1}}],
   {branchId:'center-1',revision:7}).status,'incorrect');
 });
-test('source geometry and student's chosen tools are never mutated',()=>{
+test("source geometry and student's chosen tools are never mutated",()=>{
  const args=S(),a=ruler(args,'s++'),prior=JSON.stringify({args,a});
  grade('segments',args,a,{branchId:'s++',revision:7});
  assert.equal(JSON.stringify({args,a}),prior);
