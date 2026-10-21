@@ -21,7 +21,7 @@ test('live P0 projection page uses local bundled solver and not a fake static an
 });
 test('input revision invalidation happens before recompute; no stale computed points',()=>{
  assert.match(script,/revision\+\+/);
- assert.match(script,/solution=null;shownStep=0/);
+ assert.match(script,/solution=null;teaching=null;shownStep=0/);
  assert.match(script,/if\(s\.status==='unique'&&teaching\?\.status==='ready'&&learningMode==='full'\)/);
  assert.match(script,/teaching\.steps\.slice\(0,shownStep\)/);
  assert.match(script,/if\(shownStep===s\.steps\.length\)/);
