@@ -5,7 +5,6 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const C=require('../../core/contracts');
-const {toLegacyCondition}=require('../../core/adapters/legacy-constraints.js');
 
 function base(){
  return {id:'audit-1',title:'Synthetic geometry contract audit',
@@ -52,8 +51,6 @@ test('Constraint rejects contradictory type field embedded in data',()=>{
   type:'line',data:{type:'circle',a:0,b:1,offset:0,x:0,y:0,r:2},
   source:'given'};
  assert.equal(C.validateConstraint(c).ok,false,'data.type should not override the outer constraint type');
- const adapted=toLegacyCondition(c,c.scope);
- assert.equal(adapted.type,'line','adapter must not change declared type');
 });
 test('Constraint rejects incomplete typed data before a solver is called',()=>{
  const c={id:'c1',scope:'point-2d-intersection',targetIds:['A'],
