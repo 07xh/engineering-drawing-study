@@ -5,6 +5,7 @@ const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cj
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
 const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-drawing.cjs');
 const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.cjs');
+const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
@@ -13,10 +14,10 @@ const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
  const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
- let playTimer=null,statusMessage='';
+ let playTimer=null,stageClock=null,statusMessage='';
  const reducedMotion=()=>typeof window!=='undefined'&&
    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
- const stopPlayback=()=>{if(playTimer!==null){clearInterval(playTimer);playTimer=null}};
+ const stopPlayback=()=>{if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null}stageClock=null};
  const fmt=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
  const elem=(tag,attr={},value)=>{
   const e=document.createElementNS(SVG,tag);
@@ -328,13 +329,32 @@ const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.
   const max=$('modeSelect').value==='segments'
    ?(chosen?.status==='selected'?6:centers.candidates.length||centers.continuousFamilies.length?3:0):4;
   if(stage>=max)return;
-  playTimer=setInterval(()=>{
-   if(learningMode!=='full'||reducedMotion()){stopPlayback();render();return;}
-   stage=Math.min(max,stage+1);
-   if(stage>=max)stopPlayback();
-   render();
-  },1200);
+  const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
+   id:'fillet-'+(i+1),actions:[{id:'construction-'+(i+1),kind:'highlight',durationMs:1200}]
+  })),{gapMs:0});
+  const clock=()=>performance.now();
+  stageClock=TimelineV5.createPlayer(timeline,{
+   speed:Number($('animationSpeed').value),revision});
+  stageClock.seekStep(stage,clock());stageClock.play(clock());
+  const tick=()=>{
+   if(!stageClock||learningMode!=='full'||!centers||reducedMotion()){
+    stopPlayback();render();return;
+   }
+   const snapshot=stageClock.snapshot(clock());
+   if(snapshot.completedIds.length!==stage){
+    stage=Math.min(max,snapshot.completedIds.length);
+    if(stage>=max){stopPlayback();render();return;}
+    render();
+   }
+   playTimer=requestAnimationFrame(tick);
+  };
+  playTimer=requestAnimationFrame(tick);
   render();
+ });
+ $('animationSpeed').addEventListener('change',()=>{
+  const speed=Number($('animationSpeed').value);
+  TimelineV5.validateSpeed(speed);
+  if(stageClock)stageClock.setSpeed(speed,performance.now());
  });
  for(const [button,kind] of [['undoDraw','undo'],['redoDraw','redo'],['clearDraw','clear']]){
   $(button).addEventListener('click',()=>{
