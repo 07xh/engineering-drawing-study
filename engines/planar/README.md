@@ -30,7 +30,9 @@ The return value **enumerates all candidate centers** and supplies independent r
 
 ## Test matrix / boundaries
 
-`tests/planar/offset-tangency.test.cjs` covers 20 tests: two centers, exact and near tangency, separation with no solution, invalid/missing inputs, signed normals, diagonal line, negative side, zero/tiny line, radius validation, residuals, input immutability, translation, scaling and reversed line orientation.
+`tests/planar/offset-tangency.test.cjs` covers 23 tests: two centers, exact and near tangency, separation with no solution, invalid/missing inputs, signed normals, diagonal line, negative side, zero/tiny line, radius validation, residuals, input immutability, translation, scaling, rotation, reversed line orientation, symmetric contact, and a deterministic 48-case numerical sample.
+
+Verified on Node.js v22.16.0 against the exact GitHub blob contents: **23 passed, 0 failed**. The test blob SHA is `99ca101465fc3f98f5503ce6678df7b827b72618`; source blob SHA is `5bd12c01a3deeb03f39a7112711e254605d58249`. GitHub Actions has not yet run the dedicated planar test file.
 
 Standalone Node 22 command:
 
