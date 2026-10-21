@@ -3,6 +3,7 @@
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
+const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
 (function(){
   const SVG='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById(id);
@@ -11,7 +12,7 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
   const inputs=['firstU','firstV','secondU','secondV'];
   const COLOR={known:'#23744b',computed:'#236eb5',guide:'#c28133',axis:'#8a9d90'};
   const BOARD={x:360,y:210};
-  let solution=null,shownStep=0,revision=0;
+  let solution=null,teaching=null,shownStep=0,revision=0;
   let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
   let pointer=null,playTimer=null;
   const reducedMotion=()=>typeof window!=='undefined'&&
@@ -62,14 +63,25 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
       sheetTransform};
   }
   function invalid(reason){
-    stopPlayback();solution=null;shownStep=0;hintStep=0;studentStrokes=[];redoStrokes=[];pointer=null;$('solveStatus').textContent='输入尚未有效：'+reason;render();
+    stopPlayback();solution=null;teaching=null;shownStep=0;hintStep=0;studentStrokes=[];redoStrokes=[];pointer=null;$('solveStatus').textContent='输入尚未有效：'+reason;render();
   }
   function compute(){
     revision++;
     stopPlayback();studentStrokes=[];redoStrokes=[];hintStep=0;pointer=null;
-    solution=null;shownStep=0; // erase old mathematically-derived state before reading input
+    solution=null;teaching=null;shownStep=0; // erase old mathematically-derived state before reading input
     let given;
-    try{given=projectInput();solution={...solveProjection(given),userInput:given,revision};
+    try{
+      given=projectInput();
+      const solved=solveProjection(given);
+      const plan=pointTimeline(given,revision);
+      // Both consumers must derive exactly the same spatial point from current
+      // user input. Reject divergent states rather than drawing mixed answers.
+      if(solved.status==='unique'&&
+         (plan.status!=='ready'||plan.revision!==revision||
+          !['x','y','z'].every(k=>Object.is(solved.point[k],plan.originalLesson.result.point[k]))))
+        throw Error('真实数学结果与统一教学步骤不一致，已拒绝显示旧答案');
+      teaching=plan;
+      solution={...solved,userInput:given,revision};
       const s=solution;
       $('solveStatus').textContent=s.status==='unique'
         ?(s.knownPoint?'已按空间点坐标计算 P = (':'已从两面投影求出 P = (')+
@@ -101,10 +113,14 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
         const uv=s.userInput.knownViews[name],xy=toSheet(name,{u:uv[0],v:uv[1]}, {origin,scale});
         svg.append(point(xy,'已知 '+name,COLOR.known));
       }
-      if(s.status==='unique'&&learningMode==='full'){
+      if(s.status==='unique'&&teaching?.status==='ready'&&learningMode==='full'){
         if($('showGuides').checked){
-          for(const guide of s.guides.slice(0,shownStep))
-            svg.append(line(guide.from,guide.to,COLOR.guide,2.2,'7 5'));
+          // Render ONLY from the R1 proof-backed steps, already converted by
+          // the shared R2 V5 bridge. Do not recompute guides in the SVG layer.
+          for(const step of teaching.steps.slice(0,shownStep))
+            for(const action of step.actions)
+              if(action.kind==='line')
+                svg.append(line(action.geometry.from,action.geometry.to,COLOR.guide,2.2,'7 5'));
         }
         if(shownStep===s.steps.length){
           for(const name of ['V','H','W']){
@@ -118,7 +134,8 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
       }
     }
     svg.classList.toggle('draw-active',learningMode==='draw'&&!!s&&s.status==='unique');
-    const active=!!s&&s.status==='unique'&&s.globallyUnique===true&&s.degrees===0;
+    const active=!!s&&s.status==='unique'&&s.globallyUnique===true&&s.degrees===0&&
+      teaching?.status==='ready'&&teaching.revision===s.revision;
     const full=learningMode==='full',hint=learningMode==='hint',drawing=learningMode==='draw';
     $('fullControls').hidden=!full;
     $('hintControls').hidden=!hint;
@@ -143,12 +160,12 @@ const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing
       ?(pair==='XYZ'
         ?'题目已知空间点 P(x,y,z)，由实际坐标求解三面投影；逐步显示对应线与 45° 深度转移。'
         :'题目已知 '+pair.split('').map(x=>planes[x]).join(' 与 ')+'，先按输入位置显示两个已知投影；空间点尚不能靠页面位置猜测。')
-      :s.steps[shownStep-1].explanation+
+      :teaching.steps[shownStep-1].explanation+
         (shownStep===max?' 交点与第三投影已用求解器验证，现在标出蓝色结果点。':'');
     if(hint){
       $('stepExplanation').textContent=!active?'条件不足，不能生成标准提示':
         hintStep===0?'先观察已知投影与坐标轴，试着判断应使用哪些投影联系线。':
-          s.steps[hintStep-1].explanation;
+          teaching.steps[hintStep-1].explanation;
     }
     if(drawing){
       $('stepExplanation').textContent='请在画纸上完成投影联系线；判题只检查真实数学辅助线，不提前显示答案。';
