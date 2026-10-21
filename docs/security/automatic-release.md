@@ -57,3 +57,22 @@ The first PR deliberately does **not** change .github/workflows, scripts/build-s
 
 Tracking: Issues #143, #152, #153; PR #144.
 Cloudflare command source: https://developers.cloudflare.com/workers/wrangler/commands/workers/
+
+
+## Stage 1B: actual packaged-file audit (implemented in the same draft PR)
+
+- tests/security/audit-public-dist.cjs audits the **actual directory tree** produced by scripts/build-static.cjs; it requires exactly 39 audited static files and the generated labs/dof-lab-three-bundle.js (40 total). Unexpected files, private source directories, required-file omissions and symlinks fail closed.
+- tests/security/audit-public-dist.test.cjs supplies eight additional positive/negative scenarios including unexpected knowledge/index.html and labs/verified-exercises.js.
+- The reviewed 39-entry list was mechanically compared against the current main build script (main SHA 55625e46efe933fb3c5a8a918a9bd32c5451c423). No mismatch: 39 static files + 1 JS bundle = 40 expected files.
+- Local isolated Node.js v22 run: node --test tests/security/*.test.cjs — **18/18 tests passed, 0 failed** (10 readiness cases and 8 artifact cases).
+- After a real repository build, use: node tests/security/audit-public-dist.cjs dist. This checks the emitted directory tree and exits nonzero for mismatches. **It has not yet been added to existing GitHub Actions or run against the real dist from GitHub in this PR.**
+- An exact path allowlist cannot detect unsafe JavaScript or sensitive strings inside an otherwise approved file. Static links, leak/secret scans, runtime 404, provenance review and production preview are additional independent required gates.
+
+### 00/09 approval required for new CI integration
+
+The current .github/workflows/check.yml is shared and its modification needs 00 approval / file lock. Do **not** silently change it as part of this isolated 09 branch. A later separate authorized workflow PR should invoke both commands:
+
+    node --test tests/security/*.test.cjs
+    node tests/security/audit-public-dist.cjs dist
+
+Run the artifact command **after** node scripts/build-static.cjs, not before. Preserve the existing 09/00 production stop until Cloudflare upload-only configuration is confirmed saved, main is protected, and mathematical compatibility issues are closed.
