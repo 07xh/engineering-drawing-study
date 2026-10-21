@@ -8,8 +8,10 @@ on:
       - DraftAI release security
     types:
       - completed
+# Write scope is limited to the trusted default-branch workflow_run.
+# No untrusted PR code is checked out or executed.
 permissions:
-  contents: read
+  contents: write
   checks: read
   pull-requests: write
 concurrency:
