@@ -1,10 +1,21 @@
 'use strict';
+
+function sampleDiff(headSha){
+ const blob='b'.repeat(40);
+ return {repository:'07xh/engineering-drawing-study',
+  pullRequest:{base:{ref:'main'},head:{sha:headSha,repo:{full_name:'07xh/engineering-drawing-study'}},state:'open',draft:false,mergeable:true,changed_files:1},
+  files:[{filename:'site-ui.css',sha:blob,status:'modified',additions:1,deletions:1,changes:2,
+   patch:'@@ -1 +1 @@\n-.nav {color:red}\n+.nav {color:blue}'}],
+  filesComplete:true,headTree:{forCommitSha:headSha,truncated:false,tree:[{path:'site-ui.css',sha:blob,mode:'100644',type:'blob'}]}
+ };
+}
+
 const test=require('node:test');const assert=require('node:assert/strict');
 const {REQUIRED_CHECKS}=require('./release-readiness.cjs');
 const {createReleasePlan}=require('./release-plan.cjs');
 const SHA='1'.repeat(40),OLD='aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',NEW='bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
 const ready=()=>({repository:'07xh/engineering-drawing-study',targetBranch:'main',headSha:SHA,artifactSha:SHA,
- draft:false,mergeConflicts:false,changedFiles:['site-ui.css'],mainProtected:true,noAdminBypass:true,
+ draft:false,mergeConflicts:false,changedFiles:['site-ui.css'],diffEvidence:sampleDiff(SHA),mainProtected:true,noAdminBypass:true,
  productionBuildUploadsOnly:true,previousActiveVersionId:OLD,verifiedPreview:true,
  privateRoutesDenied:true,metadataFromTrustedApi:true,
  checks:REQUIRED_CHECKS.map(name=>({name,sha:SHA,status:'completed',conclusion:'success'}))});
