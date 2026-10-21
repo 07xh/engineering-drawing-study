@@ -59,3 +59,32 @@ https://developers.cloudflare.com/workers/versions-and-deployments/
 https://developers.cloudflare.com/workers/wrangler/commands/workers/
 https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/deployments/
 https://docs.github.com/en/actions/concepts/security/github_token
+
+
+## 新增 P0：核验实际生效的 Main Ruleset，不只看 protected=true
+
+自动合并与自动发布现在会通过 GitHub 的只读 API
+\`GET /repos/07xh/engineering-drawing-study/rules/branches/main?per_page=100&page=1\`
+核验**真正处于 active 状态并应用于 main 的规则**，而不再仅凭 \`main.protected=true\` 即可继续发布。
+
+在 GitHub Settings → Rules → Rulesets，为 \`main\` 正式启用并验收以下五类规则：
+
+1. \`pull_request\`：修改 main 必须先通过 PR；试点 CSS 无人值守合并必须允许 \`squash\` 且有效规则的 \`required_approving_review_count=0\`。若设置必须人工审核，则脚本会阻断自动合并，仍可由人审核后再继续发布。
+2. \`required_status_checks\`：必须明确要求 \`validate\` 和 \`release-security\` 两项稳定检查，且 \`strict_required_status_checks_policy=true\`，避免相对过期 main 的 PR 无条件合并。
+3. \`non_fast_forward\`：禁止强推。
+4. \`deletion\`：禁止删除 main。
+5. \`required_linear_history\`：维持线性历史，以便将受控 squash main 提交与已验收 Worker Version 绑定。
+
+**注意**：本项目当前通过的 CI 是开发分支中执行的 \`release-security\`；直到相关 PR 经 00 串行验收并整合进入 \`main\`，这个检查都不能视为生产主分支已受保护。也不要提前把尚不存在的检查设置为 Required。
+
+### 规则核验边界
+
+GitHub 只读 API 可提供“哪些规则实际生效”的证据，但对于缺少管理权限的 token，**规则集的 \`bypass_actors\` 可能被省略**。因此不能将“规则检查通过”宣称为“已经证明管理员或应用没有绕过权限”。00/09 需要从 GitHub 管理控制台逐项确认无不受控绕过，留下只读验收记录。若控制台有分支保护但没有可读的活动 Ruleset，本自动化**保守拒绝自动发布**，直到迁移到有可验证证据的活动 Ruleset。
+
+### 最近一次真实 Actions
+
+在 \`feat/09-guarded-auto-merge-20261021\` 分支的新规则核验开发中，\`release-security\` 真实 Actions 成功完成 **97/97 基础安全测试 + 53/53 生产发布/自动合并/有效规则测试**，实际网站构建和 **40** 项 \`dist\` 文件审计成功。此记录仅证明**当前分支候选代码与离线/模拟场景**通过检查；没有配置 GitHub 主分支保护、没有执行真实 Cloudflare 发布，也没有验收真实回滚。
+
+参考 GitHub 文档：
+https://docs.github.com/en/rest/repos/rules#get-rules-for-a-branch
+https://docs.github.com/en/rest/repos/rules#get-a-repository-ruleset
