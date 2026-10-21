@@ -6,6 +6,7 @@
  */
 const fs=require('node:fs');
 const {makeSafeReader,collectPullRequestDiff}=require('../../tests/security/github-evidence.cjs');
+const {makeGithubReader}=require('./protected-main.cjs');
 const REPO='07xh/engineering-drawing-study',SHA=/^[0-9a-f]{40}$/;
 const REQUIRED=Object.freeze(['validate','release-security']);
 function targetOfWorkflowRun(payload){
@@ -85,7 +86,10 @@ async function main(){
  if(process.env.DRAFTAI_AUTO_MERGE_ENABLED!=='true')return;
  const token=process.env.GITHUB_TOKEN;
  const payload=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
- const read=makeSafeReader({token});
+ const prReader=makeSafeReader({token});
+ const mainReader=makeGithubReader({token});
+ const read=path=>(path==='/branches/main'||/^\/commits\/[0-9a-f]{40}\/check-runs\?per_page=100$/.test(path))?
+  mainReader(path):prReader(path);
  const merge=mergeRestClient({token});
  const result=await tryAutoMerge({enabled:true,payload,read,merge});
  console.log(JSON.stringify(result));
