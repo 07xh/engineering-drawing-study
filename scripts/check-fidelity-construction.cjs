@@ -74,5 +74,6 @@ assert(workUI.includes('result.inconsistent'),'contradictory third-view candidat
 assert(!workUI.includes('lineFocus')&&!workUI.includes('VerifiedExerciseGeometry'),'construction must not modify textbook answer layer');
 for(const page of ['labs/chapter-26-29.html','labs/chapter-drawing.html','knowledge/index.html'])assert(read(page).includes('source-fidelity.html'),'source audit not linked '+page);
 assert(read('labs/chapter-drawing.js').includes("drawingAuditLink").valueOf(),'current exercise must update audit deeplink');
-for(const asset of ['labs/source-fidelity.html','labs/source-fidelity-audit.js','labs/source-fidelity-ui.js','labs/point-construction.html','labs/point-construction-core.js','labs/point-construction-ui.js'])assert(read('scripts/build-static.cjs').includes("'"+asset+"'"),'static build omitted '+asset);
+for(const asset of ['labs/point-construction.html','labs/point-construction-core.js','labs/point-construction-ui.js'])assert(read('scripts/build-static.cjs').includes("'"+asset+"'"),'public geometry build omitted '+asset);
+for(const asset of ['labs/source-fidelity.html','labs/source-fidelity-audit.js','labs/source-fidelity-ui.js','labs/verified-exercises.js'])assert(!read('scripts/build-static.cjs').includes("'"+asset+"'"),'source-only user-traced textbook asset must not ship: '+asset);
 console.log('PASS: 28 source audits remain locked, input anomalies flagged, 27 coordinate scenarios x 5 construction frames, contradiction proof and UI routing');
