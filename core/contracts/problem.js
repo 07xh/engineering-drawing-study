@@ -16,7 +16,17 @@ function validateProblem(p){
  if(typeof p.title!=='string'||!p.title.trim())errors.push('Problem.title 无效');
  if(!types.includes(p.type))errors.push('Problem.type 不支持');
  if(!statuses.includes(p.status))errors.push('Problem.status 不支持');
- if(!object(p.source)||typeof p.source.book!=='string'||!p.source.book.trim()||!Number.isInteger(p.source.page)||p.source.page<1)errors.push('Problem.source 必须提供教材名称和有效页码');
+ if(!object(p.source))errors.push('Problem.source 必须提供明确来源');
+ else if(p.source.kind===undefined||p.source.kind==='textbook'){
+  if(typeof p.source.book!=='string'||!p.source.book.trim()||!Number.isInteger(p.source.page)||p.source.page<1)
+   errors.push('教材来源必须提供名称与有效页码');
+ }else if(p.source.kind==='generated'){
+  if(!identifier(p.source.generatorId))errors.push('生成题目需要可靠的 generatorId');
+ }else if(p.source.kind==='user-input'){
+  if(typeof p.source.confirmed!=='boolean')errors.push('用户输入必须明确标记是否确认条件');
+  if(p.renderMode!=='manual-steps'&&p.source.confirmed!==true)
+   errors.push('未经用户确认的输入不得开启自动求解');
+ }else errors.push('Problem.source.kind 不支持');
  if(!Array.isArray(p.givens))errors.push('Problem.givens 必须是数组');
  if(!Array.isArray(p.steps))errors.push('Problem.steps 必须是数组');
  if(p.geometry!==undefined&&!Array.isArray(p.geometry))errors.push('Problem.geometry 必须是数组');
