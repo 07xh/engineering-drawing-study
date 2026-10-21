@@ -36,8 +36,10 @@ jobs:
         run: npm install --no-package-lock --no-audit --no-fund
       - name: Rebuild verified public site
         run: node scripts/build-static.cjs
-      - name: Re-run full unprivileged tests
-        run: node --test tests/security/*.test.cjs scripts/release/*.test.cjs
+      # The separate security-ci-gate step runs all 9 security suites exactly once.
+      # Release-controller tests remain mandatory and run independently here.
+      - name: Re-run release controller tests without production secrets
+        run: node --test scripts/release/*.test.cjs
       - name: Verify release SHA-bound built assets before loading cloud secrets
         env:
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
