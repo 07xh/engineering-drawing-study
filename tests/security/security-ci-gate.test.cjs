@@ -15,7 +15,7 @@ const okAudit=()=>({ok:true,files:['index.html']});
 test('complete test inventory and audited dist yields local-only PASS',t=>{
  const root=fixture(t),result=securityCiGate({root,spawn:okRun,audit:okAudit});
  assert.equal(result.ok,true);assert.equal(result.status,'local-build-security-pass-only');
- assert.equal(result.securityTestFiles,6);assert.equal(result.publishedAssetFiles,1);
+ assert.equal(result.securityTestFiles,8);assert.equal(result.publishedAssetFiles,1);
 });
 test('missing security test means fail-closed before execution',t=>{
  const root=fixture(t);fs.unlinkSync(path.join(root,'tests','security',TEST_NAMES[0]));
@@ -51,7 +51,7 @@ test('runner uses fixed paths and a non-secret environment allowlist',t=>{
  let observed;
  securityCiGate({root,spawn:(binary,args,options)=>{observed={binary,args,options};return okRun()},audit:okAudit});
  assert.equal(observed.binary,process.execPath);
- assert.equal(observed.args[0],'--test');assert.equal(observed.args.length,7);
+ assert.equal(observed.args[0],'--test');assert.equal(observed.args.length,9);
  for(const name of TEST_NAMES)assert(observed.args.some(x=>x===path.join(root,'tests','security',name)));
  assert.equal(Object.hasOwn(observed.options.env,'CF_API_TOKEN'),false);
  assert.equal(Object.hasOwn(observed.options.env,'GITHUB_TOKEN'),false);
