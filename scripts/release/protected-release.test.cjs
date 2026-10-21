@@ -81,3 +81,58 @@ test('required checks eventually green; nonpending failure blocks',async()=>{
  const broken=fixture({protectedMain:false});
  await assert.rejects(()=>waitForMainChecks({sha:SHA,read:broken.read,tries:1}));
 });
+
+test('other writer deploying same version cannot be overwritten by our rollback',async()=>{
+ const f=fixture({smokeOk:false});
+ let rollbacks=0,activeCall=0;
+ const fake={
+  ...f.cloudflare,
+  active:async()=>{
+   const state=await f.cloudflare.active();
+   activeCall++;
+   // after our promotion, an external writer created a new deployment
+   // pointing at exactly the SAME Worker Version ID.
+   if(activeCall>=3&&state.versionId===NEW)
+    return {versionId:NEW,deploymentId:'eeeeeeee-ffff-aaaa-bbbb-cccccccccccc'};
+   return state;
+  },
+  promote:async(id,message)=>{
+   if(id===OLD)rollbacks++;
+   return f.cloudflare.promote(id,message);
+  }
+ };
+ const result=await invoke(f,{cloudflare:fake});
+ assert.equal(result.status,'manual-intervention');
+ assert.equal(rollbacks,0);
+ assert.equal(f.active,NEW);
+});
+test('lost deployment-POST confirmation never rolls back an unverified deployment ID',async()=>{
+ const f=fixture({smokeOk:true});
+ let called=0;
+ const fake={...f.cloudflare,promote:async(id,msg)=>{
+   called++;
+   await f.cloudflare.promote(id,msg);
+   throw Error('network acknowledgement lost');
+ }};
+ const result=await invoke(f,{cloudflare:fake});
+ assert.equal(result.status,'manual-intervention');
+ assert.equal(called,1);
+ assert.equal(f.active,NEW);
+});
+test('wrong deployment ID on final smoke verification fails closed',async()=>{
+ const f=fixture();
+ let reads=0,rollbacks=0;
+ const fake={...f.cloudflare,active:async()=>{
+   const current=await f.cloudflare.active();
+   reads++;
+   if(reads>=3&&current.versionId===NEW)
+    return {versionId:NEW,deploymentId:'eeeeeeee-ffff-aaaa-bbbb-cccccccccccc'};
+   return current;
+ },promote:async(id,msg)=>{
+   if(id===OLD)rollbacks++;
+   return f.cloudflare.promote(id,msg);
+ }};
+ const result=await invoke(f,{cloudflare:fake});
+ assert.equal(result.status,'manual-intervention');
+ assert.equal(rollbacks,0);
+});
