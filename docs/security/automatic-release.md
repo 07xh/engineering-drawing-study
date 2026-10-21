@@ -76,3 +76,34 @@ The current .github/workflows/check.yml is shared and its modification needs 00 
     node tests/security/audit-public-dist.cjs dist
 
 Run the artifact command **after** node scripts/build-static.cjs, not before. Preserve the existing 09/00 production stop until Cloudflare upload-only configuration is confirmed saved, main is protected, and mathematical compatibility issues are closed.
+
+
+## Stage 1C: read-only production smoke and immutable release plan
+
+- \`tests/security/production-smoke.cjs\` sends **unprivileged HTTPS GET only** with an exact trusted hostname, \`redirect:'manual'\`, no credentials and timeout. It rejects local/IP/internal endpoints, extra path/query/auth and wrong host.
+- Success expects 200/text/html on \`/\`, \`/public-use.html\`, \`/labs/point-coach.html\`; and 404 on \`/knowledge/index.html\`, \`/labs/verified-exercises.js\`, \`/labs/source-fidelity.html\`, \`/core/contracts/problem.js\`, \`/tests/security/release-readiness.cjs\`.
+- \`production-smoke.test.cjs\`: **11 passing mocked cases** for private leakage, missing public pages, redirect, wrong host/content type, network errors and invalid input. **This has not been run against the live production domain.**
+- Example manual read-only CLI, only after the production domain has been independently verified:
+
+    DRAFTAI_PRODUCTION_ORIGIN=https://example.your-domain.tld DRAFTAI_PRODUCTION_HOST=example.your-domain.tld node tests/security/production-smoke.cjs
+
+  The domain above is a placeholder. The trusted controller—not a PR—must supply the real allowlisted domain. HTTP response checks do not prove a particular Worker version SHA is active.
+- \`tests/security/release-plan.cjs\` produces a **pure, non-executing** promotion/rollback plan: revalidate trusted GitHub/Cloudflare evidence, select exact candidate Worker Version ID, run post-deploy smoke, restore previous active Version ID on failure, and record an audit trail.
+- \`release-plan.test.cjs\`: **7 passing cases** for missing metadata, wrong Worker/environment, invalid/identical versions, stale source SHA, missing rollback/concurrency evidence and failed required checks.
+- A result labeled \`plan-only-not-authorized\` **is not deployment approval**. There is no Cloudflare promotion API call, GitHub merge, secret, or privileged workflow in this PR.
+
+**Important commit binding:** Under squash-merge or merge-commit workflows, PR HEAD SHA is not the protected \`main\` merge SHA. The future controller must independently verify/build/test the **actual immutable main commit**, associate the candidate Worker Version ID with it and recheck main protection before activation. PR fixture SHA equality alone is not a production proof.
+
+**Real-world rollback:** Reverting a Worker code version does not revert KV/R2/D1 state migrations. Automatically publishing database migrations, authorization/config/secret changes or mathematical solver changes remains prohibited without separate 00/09 governance.
+
+### CI integration (still requires 00 shared workflow file lock)
+
+After \`tests/security/**\` has been merged and the separate workflow branch is authorized, a stable always-running non-filtered CI job can execute:
+
+    node --test tests/security/*.test.cjs
+    node scripts/build-static.cjs
+    node tests/security/audit-public-dist.cjs dist
+
+Only the first two commands are independent of actual production. The post-deployment smoke CLI belongs in a separate trusted, privileged deployment controller after version activation. An untrusted PR job must not receive Cloudflare production secrets.
+
+Security test inventory in this draft PR: **36 cases** (10 initial readiness, 8 distribution inventory, 11 live-smoke mock, 7 release-plan mock). The newly added 18 Stage 1C tests were run locally with Node.js 22 and passed; the existing site CI does **not yet execute these 36 tests**. No live deployment, main merge, branch protection change or production site request has occurred.
