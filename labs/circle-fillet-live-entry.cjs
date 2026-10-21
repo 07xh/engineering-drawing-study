@@ -4,6 +4,7 @@ const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.c
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
 const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-drawing.cjs');
+const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
@@ -206,12 +207,23 @@ const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-draw
    $('stepTitle').textContent='第 '+stage+' 步';
    $('stepText').textContent=copy[stage];
   }
-  if(drawing&&isSegments&&chosen?.status==='selected'&&chosen.g1Verified===true){
-   for(const stroke of strokes)svg.append(elem('line',{
-    x1:stroke.from.x,y1:stroke.from.y,x2:stroke.to.x,y2:stroke.to.y,
-    stroke:'#8651a8','stroke-width':3.2}));
+  if(drawing&&chosen?.status==='selected'&&chosen.g1Verified===true){
+   for(const stroke of strokes){
+    if(stroke.kind==='arc')svg.append(elem('polyline',{
+     points:stroke.points.map(p=>p.x+','+p.y).join(' '),
+     stroke:'#8651a8','stroke-width':3.2,fill:'none'}));
+    else svg.append(elem('line',{
+     x1:stroke.from.x,y1:stroke.from.y,x2:stroke.to.x,y2:stroke.to.y,
+     stroke:'#8651a8','stroke-width':3.2}));
+   }
+   if(pointer?.tool==='arc'&&pointer.points.length>1)
+    svg.append(elem('polyline',{
+     points:pointer.points.map(p=>p.x+','+p.y).join(' '),
+     stroke:'#ad83c7','stroke-width':2.5,fill:'none'}));
   }
-  svg.classList?.toggle?.('draw-active',drawing&&isSegments&&chosen?.status==='selected'&&chosen.g1Verified===true);
+  svg.classList?.toggle?.('draw-active',drawing&&
+    chosen?.status==='selected'&&chosen.g1Verified===true&&
+    ($('drawTool').value==='arc'||isSegments));
   $('prev').disabled=!full||stage===0;
   $('next').disabled=!full||stage>=max;
   $('playPause').disabled=!full||stage>=max||max===0||reducedMotion();
@@ -224,7 +236,8 @@ const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-draw
   $('undoDraw').disabled=!drawing||strokes.length===0;
   $('redoDraw').disabled=!drawing||redoStrokes.length===0;
   $('clearDraw').disabled=!drawing||strokes.length===0;
-  $('checkDraw').disabled=!drawing||!isSegments||!verified;
+  $('checkDraw').disabled=!drawing||!verified||
+   ($('drawTool').value==='line'&&!isSegments);
   if(hint){
    $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
    $('stepText').textContent=hintStep===0?
@@ -236,15 +249,30 @@ const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-draw
        '检查明确的旋向与轮廓走向，两端有向 G1 必须一致。'][hintStep-1];
   }
   if(drawing){
-   $('stepTitle').textContent='自己作图｜有限线段辅助线验证';
-   $('stepText').textContent='仅对两条真正的半径偏移辅助线按数学毫米单位判题；这不是完整圆弧成品判分。';
-   if(!isSegments)$('drawStatus').textContent='两圆的曲线手绘判题尚未支持，请切到完整教学或提示模式。';
-   else if(!verified)$('drawStatus').textContent='请先选择圆心分支、弧向和两条线段的走向，获得有向 G1 数学验证。';
+   const arcTool=$('drawTool').value==='arc';
+   $('stepTitle').textContent=arcTool?'自己作图｜手绘有向圆弧':'自己作图｜有限线段辅助线';
+   $('stepText').textContent=arcTool
+    ?'验证真实圆弧的两个切点、数学半径与指定旋向；不能由这一步推断所有辅助作图都已完成。'
+    :'只验证两条有限线段的半径偏移辅助线，不代表整条连接圆弧已经完成。';
+   if(!verified)$('drawStatus').textContent='请先确定有效圆心分支、弧向和两个原轮廓走向，完成有向 G1 数学验证。';
+   else if(!arcTool&&!isSegments)$('drawStatus').textContent='两圆的辅助圆手绘尚未支持；可以选“手绘有向连接圆弧”工具。';
    else{
     try{
-     const result=gradeFilletOffsetLines(input,strokes,{origin:O,scale,revision});
-     $('drawStatus').textContent='辅助线 '+result.matchedCount+' / '+result.targetCount+
-       '；额外笔迹 '+result.extraCount+'。'+result.reason;
+     if(arcTool){
+      const attempts=strokes.filter(st=>st.kind==='arc');
+      const result=gradeFilletArcDrawing(input,attempts.at(-1)??null,{
+       kind:isSegments?'segments':'circles',origin:O,scale,revision});
+      $('drawStatus').textContent=attempts.length>1?
+       '检测到多条弧线，请撤销多余弧线后再判题。':
+       (result.status==='correct'?'手绘圆弧数学验证通过。':
+        result.status==='incomplete'?'尚未绘制连接圆弧。':
+        '连接弧尚未通过数学验证。')+result.reason;
+     }else{
+      const lines=strokes.filter(st=>st.kind==='line');
+      const result=gradeFilletOffsetLines(input,lines,{origin:O,scale,revision});
+      $('drawStatus').textContent='辅助线 '+result.matchedCount+' / '+result.targetCount+
+       '；额外直线 '+result.extraCount+'。'+result.reason;
+     }
     }catch(e){$('drawStatus').textContent='无法验证：'+e.message;}
    }
   }
@@ -317,6 +345,7 @@ const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-draw
    render();
   });
  }
+ $('drawTool').addEventListener('change',()=>{pointer=null;render()});
  $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
  const svg=$('diagram');
  function eventPoint(event){
@@ -327,19 +356,39 @@ const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-draw
     y:Math.max(0,Math.min(440,(event.clientY-rect.top)*440/rect.height))};
  }
  svg.addEventListener('pointerdown',event=>{
-  if(learningMode!=='draw'||$('modeSelect').value!=='segments'||
-     chosen?.status!=='selected'||!chosen.g1Verified||event.button>0)return;
+  if(learningMode!=='draw'||chosen?.status!=='selected'||!chosen.g1Verified||
+     ($('drawTool').value==='line'&&$('modeSelect').value!=='segments')||
+     event.button>0)return;
   const from=eventPoint(event);if(!from)return;
-  pointer={id:event.pointerId,revision,from};svg.setPointerCapture?.(event.pointerId);
+  const tool=$('drawTool').value;
+  pointer={id:event.pointerId,revision,from,tool,
+   points:tool==='arc'?[from]:[]};
+  svg.setPointerCapture?.(event.pointerId);
+ });
+ svg.addEventListener('pointermove',event=>{
+  if(!pointer||pointer.id!==event.pointerId||pointer.tool!=='arc')return;
+  const p=eventPoint(event);if(!p)return;
+  const last=pointer.points[pointer.points.length-1];
+  if(Math.hypot(p.x-last.x,p.y-last.y)>=2&&pointer.points.length<800){
+   pointer.points.push(p);render();
+  }
  });
  svg.addEventListener('pointerup',event=>{
   if(!pointer||pointer.id!==event.pointerId)return;
-  const origin=pointer;pointer=null;
+  const old=pointer;pointer=null;
   const to=eventPoint(event);
-  if(!to||origin.revision!==revision||learningMode!=='draw'||
+  if(!to||old.revision!==revision||learningMode!=='draw'||
      chosen?.status!=='selected'||!chosen.g1Verified)return;
-  if(Math.hypot(to.x-origin.from.x,to.y-origin.from.y)<3)return;
-  strokes.push({from:origin.from,to,revision});
+  if(old.tool==='arc'){
+   const end=old.points[old.points.length-1];
+   if(Math.hypot(to.x-end.x,to.y-end.y)>=1&&old.points.length<800)
+    old.points.push(to);
+   if(old.points.length<2)return;
+   strokes.push({kind:'arc',points:old.points,revision});
+  }else{
+   if(Math.hypot(to.x-old.from.x,to.y-old.from.y)<3)return;
+   strokes.push({kind:'line',from:old.from,to,revision});
+  }
   if(strokes.length>200)strokes.shift();
   redoStrokes=[];render();
  });
