@@ -28,6 +28,6 @@ const ui=read('labs/source-inspector-ui.js');
 assert(!ui.includes('innerHTML'),'untrusted captions must never use HTML injection');
 assert(ui.includes("selected=-1"),'first frame must start with no extra overlay');
 assert(!ui.includes('lineFocus')&&!ui.includes('verified-solutions'),'inspector must not access solution drawing layer');
-assert(read('scripts/build-static.cjs').includes("'labs/source-inspector.js'"),'inspector data excluded from static build');
-assert(read('scripts/build-static.cjs').includes("'labs/source-inspector-ui.js'"),'inspector UI excluded from static build');
+assert(!read('scripts/build-static.cjs').includes("'labs/source-inspector.js'"),'source-traced inspector must be excluded from public build');
+assert(!read('scripts/build-static.cjs').includes("'labs/source-inspector-ui.js'"),'source-traced inspector UI must be excluded from public build');
 console.log('PASS: '+tested+' partial-scan diagrams, '+displayObjects+' original objects safely inspectable; no inferred solution overlays');

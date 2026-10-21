@@ -105,5 +105,5 @@ for(const path of ['knowledge/knowledge-data.js','knowledge/visual-model.js']){
 }
 assert(app.includes('book.sections')&&app.includes('book.chapters'),'viewer must derive chapters dynamically instead of hardcoding lesson IDs');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
-for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(build.includes("'"+p+"'"));
+for(const p of ['knowledge/index.html','knowledge/knowledge-data.js','knowledge/knowledge-app.js'])assert(!build.includes("'"+p+"'"),'textbook-only lesson resource must stay outside public build: '+p);
 console.log('PASS 12 chapters, 53 sections, 3 appendices, 54 page-reviewed lessons across chapters 1–3, 292-page PDF mapping and protected source scope');

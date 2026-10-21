@@ -49,7 +49,7 @@ for(const id of ['sixLayerConceptSlot','sixLayerConceptSvg','sixLayerConceptPrev
  assert(html.includes('id="'+id+'"'));
 }
 for(const path of ['knowledge/textbook-concept-motion.js','knowledge/textbook-concept-motion-ui.js'])
- assert(build.includes("'"+path+"'"));
+ assert(!build.includes("'"+path+"'"),'textbook concept data must stay source-only: '+path);
 assert(html.indexOf('src="textbook-page-audit.js"')<html.indexOf('src="textbook-concept-motion-ui.js"'));
 assert(app.includes('TextbookConceptMotionUI.show(layerData.id,layer)'));
 class Node{

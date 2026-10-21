@@ -63,5 +63,5 @@ for(const selector of ['body.ui-refresh .kb-filterbar','body.ui-refresh .kb-filt
 }
 assert(css.includes('@media (max-width:980px)')&&css.includes('@media (max-width:760px)')
  &&css.includes('@media (max-width:440px)'),'desktop / tablet / mobile breakpoints missing');
-assert(builder.includes("'knowledge/knowledge-ui.css'"),'static builder will not publish knowledge UI CSS');
+assert(!builder.includes("'knowledge/knowledge-ui.css'"),'source-only textbook CSS must not ship with public tools');
 console.log('PASS knowledge UI: title/eyebrow/body contrast, compact layout, original knowledge app controls, tablet breakpoints, static asset');

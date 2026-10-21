@@ -56,5 +56,5 @@ assert(!ui.includes("lineFocus")&&!ui.includes("VerifiedExerciseSolutions")&&!ui
 assert(answer.includes('return gate.compile({...item,id:current},recipe).steps'),'answer gate must remain active');
 assert(gate.includes("source.status!=='verified-complete'"),'partial solution gate must remain active');
 const build=read('scripts/build-static.cjs');
-for(const asset of ['labs/exercise-261-evidence.js','labs/exercise-261-ui.js'])assert(build.includes("'"+asset+"'"),'missing deployment asset '+asset);
+for(const asset of ['labs/exercise-261-evidence.js','labs/exercise-261-ui.js'])assert(!build.includes("'"+asset+"'"),'private-source exercise audit must not ship '+asset);
 console.log('PASS 2-6-1: original existing lines only, 5 audited evidence stages, textbook answer gate intact, partial scan and missing source declared');

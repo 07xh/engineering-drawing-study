@@ -119,7 +119,7 @@ assert(styles.includes('min-width:0;max-height:none'),'SVG should scale down wit
 assert(ui.includes("'font-size':19"),'diagram labels must remain legible when drawing is smaller');
 const builder=read('scripts/build-static.cjs');
 for(const script of ['knowledge/textbook-examples.js','knowledge/textbook-example-geometry.js','knowledge/textbook-example-ui.js'])
- assert(builder.includes("'"+script+"'"),'static builder did not package '+script);
+ assert(!builder.includes("'"+script+"'"),'textbook example must stay out of public geometry build: '+script);
 const bannedPDFAssets=[...builder.matchAll(/'([^']+\.(?:pdf|jpg|jpeg|png))'/gi)].map(x=>x[1]);
 assert.deepEqual(bannedPDFAssets,[],'public build must not publish protected textbook scans');
 console.log('PASS four source-verified textbook examples, twenty geometry frames, source coordinates, multi-example UI and safe public build');
