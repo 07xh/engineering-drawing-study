@@ -1,0 +1,61 @@
+# DraftAI 自动合并与正式自动发布｜启用指南
+
+状态：代码已在独立 PR 开发和 CI 测试；截至 2026-10-21，主分支未保护、Cloudflare 配置保存状态及 Active Version 未核实，因此真正的无人值守生产发布尚未启用。不要把代码完成视为上线成功。
+
+## 系统模块和依赖顺序
+
+1. PR #155：离线发布资格、Git SHA/文件校验、私密路径审计和回滚模拟。
+2. PR #156：真正运行的 GitHub Actions release-security 检查，无路径过滤、无部署凭据，执行 97 项安全测试及真实 dist 40 文件指纹审计。
+3. PR #157：受保护 main 的自动发布和故障回滚代码。只允许范围极窄的 site-ui.css 修改，拒绝数学内核、CI、权限、密钥、教材、构建等高风险变更。
+4. PR #158：带 SHA 锁定的自动 squash 合并。必须在 main 受保护、PR 来自原仓库、源代码 diff 可验证、两个检查 validate 和 release-security 全部成功后才能执行。
+
+这些都是叠加式独立 PR，#156 目标为 #155 开发分支，#157 目标为 #156，#158 目标为 #157。00 必须先验收 Cloudflare 上传模式，再安排安全 rebase/cherry-pick，确认各自变更文件与 commit，按序进行。不能未经差异审查直接把全部叠加 PR 并入 main。
+
+## GitHub 主分支保护（由具有管理员权限的账户配置）
+
+Settings → Rules → Rulesets（或 Branches）→ 新建针对 main 的规则：强制 Pull Request，禁止 force push/删除/无审批绕过，要求 linear history/squash merge，配置 stable required checks 为 validate 和 release-security。注意必须先让这两个检查真正存在于 main，确认普通 CSS-only PR 上均会运行，再启用为 required；不要把有 paths filter 的数学工作流直接设置为所有 PR 的 required check。
+
+这里的“自动批准”实际是符合规则后执行自动 squash 合并，不是虚构一份人工代码审核。数学、认证、密钥、存储迁移、部署配置和其余非白名单修改始终需 00/09 审查。
+
+## Cloudflare Workers 构建设置（先保存后复查）
+
+Workers & Pages → engineering-drawing-study → Settings → Build：
+Production branch = main
+Build command = node scripts/build-static.cjs
+Deploy command = npx wrangler versions upload
+Root directory = /
+
+保存设置、刷新确认仍为 upload-only。不要保留 npx wrangler deploy 作为 Git 主分支直接触发命令；否则合并 main 可能绕开项目内的所有发布门禁直接生产上线。
+
+从 Deployments 查看旧 100% Active Worker Version ID、生产 URL、上线时间，并核实私有资料页面返回 404。注意 Worker 版本回滚不回退 KV、R2、D1 数据。
+
+## GitHub Secrets and variables → Actions（仅管理员一次性配置）
+
+Secrets（绝不要粘贴到聊天、Issue、PR 或 git）：
+- CLOUDFLARE_ACCOUNT_ID：Worker 所属账户 ID。
+- CLOUDFLARE_API_TOKEN：尽可能窄权限的 Worker 脚本读写与部署令牌，限制到相关 Worker。
+- DRAFTAI_MERGE_TOKEN：仅面向本仓库、无管理绕过权的专用 GitHub App installation token 或 fine-grained PAT，具备实际合并所需的 PR/Contents 写权限。不得复用默认 GITHUB_TOKEN。GitHub 官方明确，GITHUB_TOKEN 造成的 push 通常不会触发后续 Actions，会让自动合并后续生产 CI 断链。
+
+Variables（初始开关都为 false）：
+- DRAFTAI_PRODUCTION_ORIGIN：经核实的 HTTPS 生产根地址。
+- DRAFTAI_PRODUCTION_HOST：生产 URL 的准确 hostname。
+- DRAFTAI_BOOTSTRAP_ACTIVE_VERSION：首次老版本缺少 Git SHA 标签时，由管理员从 Cloudflare 确认的旧 Active Worker Version UUID。
+- DRAFTAI_AUTO_MERGE_ENABLED：false。
+- DRAFTAI_AUTO_RELEASE_ENABLED：false。
+
+建议创建 GitHub production environment，限制部署分支和凭据可见性；若环境要求每次人工批准，将不符合无人值守目标，需在首次 00/09 安全验收后改为自动规则控制。
+
+## 初次启用验收
+
+第一阶段（仍 false）：验证保护 main、两个真实 CI、upload-only 已保存、生产 Active Version 与回滚地址及凭据均已正确配置。
+第二阶段：在明确不会污染生产的隔离预览中演练低风险 CSS PR，确认专用合并令牌确实触发新 main push 的 validate 与 release-security；Worker upload 必须带 draftai-完整40字符GitSHA 标签。
+第三阶段：00/09 受控演练一次生产上线/故障回滚，核对 Worker Version、部署来源、GitSHA、公开页面 200 HTML、内部源路径 404 及旧版本恢复。
+最后由管理员将 DRAFTAI_AUTO_MERGE_ENABLED 和 DRAFTAI_AUTO_RELEASE_ENABLED 切换为 true。自此只有最严格、低风险、经全部测试通过的 CSS 改动自动合并和自动发布，高风险更新默认停止。
+
+重要限制：这是代码和 CI 可执行方案，不代表本聊天已获得 Cloudflare 控制台权限、GitHub ruleset 管理权限或生产部署令牌。本轮未启用开关、未合并 main、未做真实生产部署。
+
+参考：
+https://developers.cloudflare.com/workers/versions-and-deployments/
+https://developers.cloudflare.com/workers/wrangler/commands/workers/
+https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/deployments/
+https://docs.github.com/en/actions/concepts/security/github_token
