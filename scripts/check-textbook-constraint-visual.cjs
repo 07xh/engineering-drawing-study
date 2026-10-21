@@ -73,7 +73,7 @@ for(const id of ['bookExampleConstraintPanel','bookExampleConstraintOptions','bo
 }
 for(const p of ['planar-point-constraints.js','textbook-constraint-visual.js','textbook-constraint-visual-ui.js']){
  assert(html.includes('src="'+p+'"'),'missing browser dependency '+p);
- assert(builder.includes("'knowledge/"+p+"'"),'missing production asset '+p);
+ assert(!builder.includes("'knowledge/"+p+"'"),'textbook constraint lesson must not be bundled: '+p);
 }
 assert(html.indexOf('src="planar-point-constraints.js"')<html.indexOf('src="textbook-constraint-visual.js"'));
 assert(html.indexOf('src="textbook-constraint-visual-ui.js"')<html.indexOf('src="textbook-example-ui.js"'));
