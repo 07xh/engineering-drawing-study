@@ -44,7 +44,10 @@ async function checkProtectedMain({sha,read}={}){
   if(f?.filename!=='site-ui.css'||f.status!=='modified'||f.previous_filename!==undefined||
      !Number.isSafeInteger(f.additions)||!Number.isSafeInteger(f.deletions)||
      f.additions<1||f.deletions<0||f.additions>24||f.deletions>24||
-     f.changes!==f.additions+f.deletions||inspectAddedCss(f.patch)!==null)
+     f.changes!==f.additions+f.deletions||inspectAddedCss(f.patch)!==null ||
+     typeof f.patch!=='string' ||
+     f.patch.split('\\n').filter(x=>x.startsWith('+')&&!x.startsWith('+++')).length!==f.additions ||
+     f.patch.split('\\n').filter(x=>x.startsWith('-')&&!x.startsWith('---')).length!==f.deletions)
    return deny('main update is not eligible low-risk CSS');
   checks=await read('/commits/'+sha+'/check-runs?per_page=100');
   if(!Array.isArray(checks?.check_runs)||checks.total_count!==checks.check_runs.length)
