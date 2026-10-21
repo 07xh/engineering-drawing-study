@@ -33,5 +33,7 @@ jobs:
         run: node scripts/build-static.cjs
       - name: Run complete security unit suite
         run: node --test tests/security/*.test.cjs
+      - name: Test protected main release controller offline (no credentials)
+        run: node --test scripts/release/*.test.cjs
       - name: Enforce source-bound SHA-256 and public dist inventory
         run: node tests/security/security-ci-gate.cjs
