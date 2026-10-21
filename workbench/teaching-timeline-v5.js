@@ -10,7 +10,8 @@
  const DURATIONS=Object.freeze({line:900,circle:1500,arc:1500,point:260,highlight:380,hold:600});
  const finite=n=>typeof n==='number'&&Number.isFinite(n);
  const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
- const validId=id=>typeof id==='string'&&/^[a-zA-Z][\w-]{0,79}$/.test(id);
+ /* Signed offset branches from verified 02 math use IDs such as s++-offset1. */
+ const validId=id=>typeof id==='string'&&/^[a-zA-Z][\w+\-]{0,79}$/.test(id);
  const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
  function validateSpeed(speed){
   if(!finite(speed)||speed<0.25||speed>4)throw new RangeError('speed must be in [0.25,4]');
