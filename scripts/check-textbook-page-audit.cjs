@@ -51,7 +51,7 @@ const html=fs.readFileSync('knowledge/page-audit.html','utf8');
 const ui=fs.readFileSync('knowledge/textbook-page-audit-ui.js','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 for(const asset of ['knowledge/page-audit.html','knowledge/textbook-page-audit.js','knowledge/textbook-page-audit-ui.js']){
- assert(build.includes("'"+asset+"'"),'missing public audit asset '+asset);
+ assert(!build.includes("'"+asset+"'"),'textbook audit must stay out of public build '+asset);
 }
 for(const id of ['auditPages','auditChapter','auditCount','auditSampled','auditReviewed','auditWaiting','auditExampleCount','auditExampleLinks']){
  assert(html.includes('id="'+id+'"'),'dashboard element missing '+id);
