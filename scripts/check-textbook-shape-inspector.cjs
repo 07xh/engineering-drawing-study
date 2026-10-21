@@ -31,7 +31,7 @@ for(const id of ['bookExampleShapeInspector','bookExampleShapeSelect','bookExamp
  'bookExampleShapeReason','bookExampleShapeEffect'])assert(html.includes('id="'+id+'"'),id+' missing');
 assert(html.indexOf('src="textbook-shape-inspector.js"')<html.indexOf('src="textbook-example-ui.js"'),
  'inspector must load before UI');
-assert(build.includes("'knowledge/textbook-shape-inspector.js'"),'inspector not built');
+assert(!build.includes("'knowledge/textbook-shape-inspector.js'"),'source-only textbook inspector must not be publicly bundled');
 assert(ui.includes('function bindHit(node,item,key)'), 'clickable geometry not connected');
 assert(ui.includes("node.addEventListener('keydown',event=>"),'shape inspection lacks keyboard activation');
 class Node{
