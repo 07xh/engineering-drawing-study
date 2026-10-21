@@ -5,6 +5,9 @@ const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cj
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
 const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-drawing.cjs');
 const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.cjs');
+const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
+ require('../workbench/verified-ruler-tools.cjs');
+const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
@@ -14,6 +17,8 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
  const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
+ let digitalActions=[],digitalError='',snappedCenter=null;
+ let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
  let playTimer=null,stageClock=null,statusMessage='';
  const reducedMotion=()=>typeof window!=='undefined'&&
    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -80,6 +85,8 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
  }
  function compute(){
   stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
+  digitalActions=[];digitalError='';snappedCenter=null;
+  centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
   centers=null;chosen=null;input=null;stage=0;hintStep=0;
   try{
    let args=parse();
@@ -208,6 +215,13 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
    $('stepTitle').textContent='第 '+stage+' 步';
    $('stepText').textContent=copy[stage];
   }
+  if(drawing&&input){
+   for(const action of digitalActions){
+    if(action.kind==='line')svg.append(drawLine(action.from,action.to,'#8651a8','4 4'));
+    if(action.kind==='circle')svg.append(ring(action.center,action.radius,'#8651a8','4 4'));
+   }
+   if(snappedCenter)svg.append(dot(snappedCenter,'#8651a8','已选圆心'));
+  }
   if(drawing&&chosen?.status==='selected'&&chosen.g1Verified===true){
    for(const stroke of strokes){
     if(stroke.kind==='arc')svg.append(elem('polyline',{
@@ -222,9 +236,10 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
      points:pointer.points.map(p=>p.x+','+p.y).join(' '),
      stroke:'#ad83c7','stroke-width':2.5,fill:'none'}));
   }
-  svg.classList?.toggle?.('draw-active',drawing&&
-    chosen?.status==='selected'&&chosen.g1Verified===true&&
-    ($('drawTool').value==='arc'||isSegments));
+  svg.classList?.toggle?.('draw-active',drawing&&(
+    ($('drawTool').value==='snap'&&!!input&&!!$('branch').value)||
+    (chosen?.status==='selected'&&chosen.g1Verified===true&&
+     ($('drawTool').value==='arc'||isSegments))));
   $('prev').disabled=!full||stage===0;
   $('next').disabled=!full||stage>=max;
   $('playPause').disabled=!full||stage>=max||max===0||reducedMotion();
@@ -237,6 +252,23 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   $('undoDraw').disabled=!drawing||strokes.length===0;
   $('redoDraw').disabled=!drawing||redoStrokes.length===0;
   $('clearDraw').disabled=!drawing||strokes.length===0;
+  $('addDigital').disabled=!drawing||!input||digitalActions.length>=64;
+  $('undoDigital').disabled=!drawing||digitalActions.length===0;
+  $('clearDigital').disabled=!drawing||digitalActions.length===0;
+  $('checkDigital').disabled=!drawing||!input;
+  if(drawing){
+   try{
+    if(!input)$('digitalStatus').textContent='当前题目条件无效，不能构造数学辅助轨迹。';
+    else{
+     const result=gradeStudentAuxiliaries(isSegments?'segments':'circles',
+      input,digitalActions,{branchId:$('branch').value,revision});
+     $('digitalStatus').textContent=digitalError||(
+      '数字尺规辅助轨迹 '+result.matchedCount+' / '+result.requiredCount+
+      '；额外／错误构造 '+result.extraCount+'。'+result.reason);
+    }
+   }catch(error){$('digitalStatus').textContent='无法验证尺规步骤：'+error.message;}
+   $('centerSnapStatus').textContent=centerSnapMessage;
+  }
   $('checkDraw').disabled=!drawing||!verified||
    ($('drawTool').value==='line'&&!isSegments);
   if(hint){
@@ -367,6 +399,36 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
  }
  $('drawTool').addEventListener('change',()=>{pointer=null;render()});
  $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
+ $('addDigital').addEventListener('click',()=>{
+  if(learningMode!=='draw'||!input)return;
+  try{
+   const sourceId=$('digitalSource').value;
+   if(!['first','second'].includes(sourceId)||digitalActions.length>=64)
+    throw new RangeError('请选源对象，且尺规步骤不能超过 64 条');
+   const field=$('digitalValue');
+   if(field.value.trim()===''||!Number.isFinite(field.valueAsNumber))
+    throw new TypeError('请输入有效的偏移距离或圆规半径（mm）');
+   const value=field.valueAsNumber;
+   const action=$('modeSelect').value==='segments'
+    ?constructParallelLine(input[sourceId],value,{revision})
+    :constructConcentricCircle(input[sourceId],value,{revision});
+   digitalActions.push({...action,sourceId});
+   digitalError='';render();
+  }catch(error){digitalError='尺规构造失败：'+error.message;render();}
+ });
+ $('undoDigital').addEventListener('click',()=>{
+  if(learningMode!=='draw')return;
+  digitalActions.pop();digitalError='';render();
+ });
+ $('clearDigital').addEventListener('click',()=>{
+  if(learningMode!=='draw')return;
+  digitalActions=[];snappedCenter=null;digitalError='';
+  centerSnapMessage='尺规和圆心选择已清空。';render();
+ });
+ $('checkDigital').addEventListener('click',()=>{if(learningMode==='draw'){
+  digitalError='';render();
+ }});
+
  const svg=$('diagram');
  function eventPoint(event){
   const rect=svg.getBoundingClientRect();
@@ -376,11 +438,26 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     y:Math.max(0,Math.min(440,(event.clientY-rect.top)*440/rect.height))};
  }
  svg.addEventListener('pointerdown',event=>{
-  if(learningMode!=='draw'||chosen?.status!=='selected'||!chosen.g1Verified||
-     ($('drawTool').value==='line'&&$('modeSelect').value!=='segments')||
-     event.button>0)return;
+  if(learningMode!=='draw'||!input||event.button>0)return;
   const from=eventPoint(event);if(!from)return;
   const tool=$('drawTool').value;
+  if(tool==='snap'){
+   try{
+    const selected=snapChosenFilletCenter(
+     $('modeSelect').value==='segments'?'segments':'circles',
+     input,{x:(from.x-O.x)/scale,y:(O.y-from.y)/scale,revision},
+     {branchId:$('branch').value,revision});
+    snappedCenter=selected.status==='verified-center'?selected.snappedPoint:null;
+    centerSnapMessage=selected.status==='verified-center'
+     ?'候选圆心数学吸附通过；仍须验证真实切点、弧向及 G1。'
+     :selected.reason;
+   }catch(error){
+    snappedCenter=null;centerSnapMessage='圆心数学吸附失败：'+error.message;
+   }
+   render();return;
+  }
+  if(chosen?.status!=='selected'||!chosen.g1Verified||
+     (tool==='line'&&$('modeSelect').value!=='segments'))return;
   pointer={id:event.pointerId,revision,from,tool,
    points:tool==='arc'?[from]:[]};
   svg.setPointerCapture?.(event.pointerId);
