@@ -2,9 +2,17 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {makeGithubReader,checkProtectedMain}=require('./protected-main.cjs');
 const SHA='a'.repeat(40),BEFORE='b'.repeat(40);
+const {RULES_PATH}=require('./main-rules.cjs');
+const RULES=[
+ {type:'pull_request',parameters:{allowed_merge_methods:['squash'],required_approving_review_count:0}},
+ {type:'non_fast_forward'},{type:'deletion'},{type:'required_linear_history'},
+ {type:'required_status_checks',parameters:{strict_required_status_checks_policy:true,
+ required_status_checks:[{context:'validate'},{context:'release-security'}]}}
+];
 function fixture(overrides={}){
  const data={
   '/branches/main':{protected:true,commit:{sha:SHA}},
+  [RULES_PATH]:RULES,
   ['/commits/'+SHA]:{sha:SHA,parents:[{sha:BEFORE}],files:[{
    filename:'site-ui.css',status:'modified',additions:1,deletions:1,changes:2,
    patch:'@@ -1 +1 @@\n-.a{color:red}\n+.a{color:blue}'}]},
@@ -18,7 +26,7 @@ function fixture(overrides={}){
 test('protected main with green required checks and safe squash CSS passes',async()=>{
  const x=fixture(),r=await checkProtectedMain({sha:SHA,read:x.read});
  assert.deepEqual(r,{ok:true,sha:SHA,previousSha:BEFORE,changedFile:'site-ui.css'});
- assert.equal(x.calls,4);
+ assert.equal(x.calls,6);
 });
 test('unprotected branch or moved main rejected',async()=>{
  for(const branch of [{protected:false,commit:{sha:SHA}},{protected:true,commit:{sha:BEFORE}}]){
