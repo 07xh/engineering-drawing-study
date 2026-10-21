@@ -30,7 +30,8 @@ const emptyBase={
  unit:'input-math-unit',
  uniquenessScope:'fixed finite segments, fixed radius and optional signed sides',
  directedG1Verified:false,
- finiteSourceContactsVerified:true,
+ // Evidence exists only when a finite contact or clipped family exists.
+ finiteSourceContactsVerified:false,
  finiteArcSweepVerified:false
 };
 function finiteTwoSegmentFillets({
@@ -115,7 +116,9 @@ function finiteTwoSegmentFillets({
     reason:'overlap of two finite offset line segments yields a bounded continuous center family'});
   }
  }
- const result={...emptyBase,candidates:accepted,candidateCount:accepted.length,
+ const result={...emptyBase,
+  finiteSourceContactsVerified:accepted.length>0||families.length>0,
+  candidates:accepted,candidateCount:accepted.length,
   continuousFamilies:families,rejectedCandidates:rejected,
   angularSeparationSine:math.angularSeparationSine};
  if(math.status==='unstable')
