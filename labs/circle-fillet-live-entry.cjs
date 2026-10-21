@@ -40,7 +40,6 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
   };
   const branch=$('branch').value,direction=$('direction').value;
   if($('modeSelect').value==='segments'){
-   const side=id=>$(id).value===''?{}:{value:Number($(id).value)};
    const args={
     first:{a:{x:n('line1Ax'),y:n('line1Ay')},b:{x:n('line1Bx'),y:n('line1By')}},
     second:{a:{x:n('line2Ax'),y:n('line2Ay')},b:{x:n('line2Bx'),y:n('line2By')}},
