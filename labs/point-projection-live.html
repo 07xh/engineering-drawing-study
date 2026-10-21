@@ -13,7 +13,7 @@ input,select{width:100%;padding:10px;border-radius:9px;border:1px solid #bacfc1;
 button{min-height:44px;padding:10px 14px;border:1px solid #a8c6b3;background:#fff;color:#246845;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
 button.primary{background:#246d4b;color:white;border-color:#246d4b}button:disabled{opacity:.42;cursor:not-allowed}
 button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #3476c1;outline-offset:2px}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.actions button{flex:1}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.actions button{flex:1}.actions .rate-select{flex:1 1 110px;min-width:105px;max-width:156px;display:grid;gap:4px;align-self:center;font-size:11px}.rate-select select{width:100%}
 .status{border:1px solid #dbe7df;background:#f5f9f6;padding:12px;border-radius:11px;font-size:14px}[hidden]{display:none!important}
 .steps{border-radius:12px;background:#f5f9f6;padding:13px;min-height:95px;font-size:14px}
 .steps strong{display:block;font-size:15px;margin-bottom:8px}.steps p{margin:0}
@@ -54,7 +54,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <h2>数学作图与教学模式</h2>
 <label for="learningMode">学习模式
 <select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示（不提前展示解）</option><option value="draw">自己作图（数学关系判题）</option></select></label>
-<div class="actions" id="fullControls"><button type="button" id="previous">上一步</button><button type="button" id="next" class="primary">下一步</button><button type="button" id="restart">从头演示</button><button type="button" id="playPause">自动播放</button></div>
+<div class="actions" id="fullControls"><button type="button" id="previous">上一步</button><button type="button" id="next" class="primary">下一步</button><button type="button" id="restart">从头演示</button><button type="button" id="playPause">自动播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label></div>
 <div id="hintControls" hidden><p class="note">每次只提供一条数学理由，不显示未来答案图形。</p><button type="button" id="hintReveal">下一条提示</button><p class="note" id="hintCounter">0 / 4</p></div>
 <div id="drawControls" hidden><p class="note">在左侧画纸上用鼠标或触笔绘制直线，系统按模型毫米单位校验共线、方向与有效覆盖，不要求端点与像素完全重合。</p>
 <div class="actions"><button type="button" id="undoDraw">撤销</button><button type="button" id="redoDraw">重做</button><button type="button" id="clearDraw">清空</button><button type="button" class="primary" id="checkDraw">检查作图</button></div>
