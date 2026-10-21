@@ -1,0 +1,29 @@
+name: DA-ARCH-001 core mathematics
+on:
+  push:
+    branches:
+      - 'feat/da-arch-001-*'
+    paths:
+      - 'core/**'
+      - 'tests/math/**'
+      - '.github/workflows/core-math.yml'
+  pull_request:
+    paths:
+      - 'core/**'
+      - 'tests/math/**'
+      - '.github/workflows/core-math.yml'
+permissions:
+  contents: read
+jobs:
+  math:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate new CommonJS modules
+        run: |
+          find core -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Run independent mathematical contract tests
+        run: node --test tests/math/*.test.cjs
