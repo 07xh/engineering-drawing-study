@@ -4,6 +4,7 @@ const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
+const MotionV5=require('../workbench/teaching-motion-v5.js');
 (function(){
   const SVG='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById(id);
@@ -15,11 +16,25 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   let solution=null,shownStep=0,revision=0;
   let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
   let pointer=null,playTimer=null,stageClock=null;
+  const liveGuideNodes=new Map();
   const reducedMotion=()=>typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  function pausePlayback(){
+    if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null;}
+    if(stageClock)stageClock.pause(performance.now());
+  }
   function stopPlayback(){
     if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null;}
     stageClock=null;
+  }
+  function paintCurrentGuide(){
+    if(!stageClock||!solution||learningMode!=='full')return;
+    const frame=stageClock.snapshot();
+    if(!frame.activeActionId)return;
+    const i=frame.completedIds.length,step=solution.steps[i],node=liveGuideNodes.get(i);
+    if(node&&step)MotionV5.updateSvg(node,
+      {kind:'line',geometry:{from:step.from,to:step.to}},
+      frame.actionFractions[frame.activeActionId]);
   }
 
   function el(tag,attributes={},value){
@@ -95,7 +110,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     svg.append(el('text',{x:x+7,y:y-8,'font-size':13,fill:'#63766a'},'O'));
   }
   function render(){
-    const svg=$('paperSvg');svg.replaceChildren();axes(svg);
+    const svg=$('paperSvg');svg.replaceChildren();liveGuideNodes.clear();axes(svg);
     const s=solution,pair=$('pairSelect').value;
     if(s){
       const {origin,scale}=s.userInput.sheetTransform;
@@ -105,14 +120,19 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
       }
       if(s.status==='unique'&&learningMode==='full'){
         if($('showGuides').checked){
-          for(const guide of s.guides.slice(0,shownStep))
-            svg.append(line(guide.from,guide.to,COLOR.guide,2.2,'7 5'));
+          for(const [i,guide] of s.guides.slice(0,shownStep).entries()){
+            const stroke=line(guide.from,guide.to,COLOR.guide,2.2,'7 5');
+            liveGuideNodes.set(i,stroke);
+            svg.append(stroke);
+          }
         }
         if(shownStep===s.steps.length){
+         if(!stageClock||stageClock.snapshot().completedIds.length>=s.steps.length){
           for(const name of ['V','H','W']){
             if(s.knownPoint||!s.knownViews.includes(name))
               svg.append(point(s.sheet[name],s.knownPoint?'由空间点投影 '+name:'求得 '+name,COLOR.computed));
           }
+         }
         }
       }
       if(s.status==='unique'&&learningMode==='draw'){
@@ -129,7 +149,8 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     $('previous').disabled=!active||!full||shownStep===0;
     $('next').disabled=!active||!full||shownStep>=max;
     $('restart').disabled=!active||!full||shownStep===0;
-    $('playPause').disabled=!active||!full||shownStep>=max||reducedMotion();
+    $('playPause').disabled=!active||!full||reducedMotion()||
+      (shownStep>=max&&(!stageClock||stageClock.snapshot().done));
     $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
     $('hintReveal').disabled=!active||!hint||hintStep>=max;
     $('hintCounter').textContent=hintStep+' / '+max;
@@ -167,6 +188,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
         }catch(error){$('drawStatus').textContent='无法数学判题：'+error.message;}
       }
     }
+    paintCurrentGuide();
   }
   function resetPair(){
     const pair=$('pairSelect').value;
@@ -206,27 +228,29 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     hintStep=Math.min(solution.steps.length,hintStep+1);render();
   });
   $('playPause').addEventListener('click',()=>{
-    if(playTimer!==null){stopPlayback();render();return;}
-    if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()||
-       shownStep>=solution.steps.length)return;
-    const max=solution.steps.length;
-    const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
-      id:'projection-'+(i+1),actions:[{id:'guide-'+(i+1),kind:'line',durationMs:1200}]
-    })),{gapMs:0});
-    const clock=()=>performance.now();
-    stageClock=TimelineV5.createPlayer(timeline,{
-      speed:Number($('animationSpeed').value),revision});
-    stageClock.seekStep(shownStep,clock());stageClock.play(clock());
+    if(playTimer!==null){pausePlayback();render();return;}
+    if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion())return;
+    const max=solution.steps.length,clock=()=>performance.now();
+    if(shownStep>=max&&(!stageClock||stageClock.snapshot().done))return;
+    if(!stageClock){
+      const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
+        id:'projection-'+(i+1),actions:[{id:'guide-'+(i+1),kind:'line',durationMs:1200}]
+      })),{gapMs:0});
+      stageClock=TimelineV5.createPlayer(timeline,{
+        speed:Number($('animationSpeed').value),revision});
+      stageClock.seekStep(shownStep,clock());
+    }
+    stageClock.play(clock());
     const tick=()=>{
       if(!stageClock||learningMode!=='full'||solution?.status!=='unique'||reducedMotion()){
         stopPlayback();render();return;
       }
       const status=stageClock.snapshot(clock());
-      if(status.completedIds.length!==shownStep){
-        shownStep=Math.min(max,status.completedIds.length);
-        if(shownStep>=max){stopPlayback();render();return;}
-        render();
-      }
+      const active=status.activeActionId!==null;
+      const visible=Math.min(max,status.completedIds.length+(active?1:0));
+      if(visible!==shownStep){shownStep=visible;render();}
+      paintCurrentGuide();
+      if(status.done){stopPlayback();shownStep=max;render();return;}
       playTimer=requestAnimationFrame(tick);
     };
     playTimer=requestAnimationFrame(tick);
