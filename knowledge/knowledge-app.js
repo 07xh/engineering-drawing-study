@@ -198,6 +198,7 @@ $('deepAll').addEventListener('click',()=>{const d=window.TextbookDeepLessons?.g
 function show(id,scroll=false){
  const item=book.get(id);if(!item)return;
  current=item;
+ try{localStorage.setItem('drawing-textbook-3e-last-topic',item.id)}catch(e){}
  mountSixLayerExample();
  document.querySelectorAll('#knowledgeCards .knowledge-card').forEach(card=>card.classList.toggle('is-active',card.dataset.id===id));
  $('knowledgeDetail').hidden=false;
@@ -290,6 +291,11 @@ window.addEventListener('hashchange',()=>{
 });
 const selectedChapter=new URLSearchParams(location.search).get('chapter');
 if(selectedChapter&&chapters[selectedChapter])ch.value=selectedChapter;
+// Keep chapter links and bookmarked pending lessons reachable while defaulting to reviewed lessons.
+let initialTopic='';try{initialTopic=decodeURIComponent(location.hash.slice(1))}catch(e){}
+const initialEntry=book.get(initialTopic);
+coverage.value=initialEntry?.contentStatus==='toc-only'||(selectedChapter&&!book.entries.some(x=>x.chapter===selectedChapter&&x.contentStatus==='page-reviewed'))?'all':'page-reviewed';
+if(initialEntry){ch.value=initialEntry.chapter;sec.value='all'}
 updateSectionOptions();renderList();
 let hash='';try{hash=decodeURIComponent(location.hash.slice(1))}catch(e){}
 if(book.get(hash))show(hash,false);
