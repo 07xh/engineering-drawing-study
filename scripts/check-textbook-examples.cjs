@@ -6,8 +6,8 @@ const book=load('knowledge/knowledge-data.js','DrawingKnowledge');
 const catalog=load('knowledge/textbook-examples.js','TextbookExamples');
 const model=load('knowledge/textbook-example-geometry.js','TextbookExampleGeometry');
 assert(catalog&&model);
-assert.equal(catalog.all.length,3,'only three inspected textbook examples');
-const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14'],['example-2-3',35,41,'图 2-16']];
+assert.equal(catalog.all.length,4,'four individually verified textbook examples');
+const sourceRows=[['example-1-1',13,19,'图 1-22'],['example-2-2',34,40,'图 2-14'],['example-2-3',35,41,'图 2-16'],['example-4-2',87,93,'图 4-5']];
 for(const [id,printed,pdf,figure] of sourceRows){
  const example=catalog.get(id);
  assert(example&&example.printedPage===printed&&example.pdfPage===pdf&&example.figure===figure);
@@ -19,7 +19,8 @@ for(const [id,printed,pdf,figure] of sourceRows){
  assert(example.stageChecks.every(x=>typeof x==='string'&&x.length>12));
  for(const topic of example.topics){
   const card=book.get(topic);
-  assert(card?.contentStatus==='page-reviewed','example mapped to an unreviewed section');
+  assert(card&&(card.contentStatus==='page-reviewed'||example.id==='example-4-2'&&card.id==='ch04-s02'),
+   'an example may attach to a catalog-only section only when that individual example has been source-reviewed');
   assert.equal(card.chapter,example.chapter);
   assert.equal(card.section,example.section,'example mapped outside textbook section');
   assert(catalog.forTopic(topic).some(x=>x.id===id));
@@ -55,21 +56,29 @@ assert(coordinateProof.heightAligned&&coordinateProof.depthAligned);
 assert(!model.frame('example-2-3',2).shapes.some(x=>x.label==='a″'),'cannot reveal side projection before construction');
 assert(model.frame('example-2-3',3).shapes.some(x=>x.label==='a″'),'third projection missing');
 assert.equal(catalog.forTopic('ch02-point-coordinates').length,2,'both verified point examples must appear');
+const wedge=model.frame('example-4-2',4);
+assert(wedge.shapes.some(s=>s.label==='楔形块顶边'&&s.style==='result'),'example 4-2 should show wedge result');
+assert(!model.frame('example-4-2',0).shapes.some(s=>s.style==='result'),'wedge answer must remain hidden until constructed');
+assert(wedge.proof.maxResidual<1e-8);
+assert.equal(wedge.dof,null,'no numeric local DOF can be inferred for a whole wedge solid');
 assert.throws(()=>model.frame('example-1-1',-1));
 assert.throws(()=>model.frame('example-2-2',6));
 assert.throws(()=>model.frame('made-up-question',0),'unverified examples must fail closed');
 const html=read('knowledge/index.html'),ui=read('knowledge/textbook-example-ui.js'),app=read('knowledge/knowledge-app.js');
 const elements=['textbookExample','bookExampleSvg','bookExamplePrev','bookExampleNext','bookExampleReset','bookExampleFinal',
- 'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource'];
+ 'bookExampleAction','bookExampleReason','bookExampleDof','bookExampleAudit','bookExampleSource',
+ 'bookExampleStageAddition','bookExampleHighlight','bookExampleDofDetails','bookExampleCheckDetails',
+ 'deepMethodDetails','knowledgeSummaryDetails'];
 for(const id of elements)assert(html.includes('id="'+id+'"'),'missing interactive lesson element '+id);
 assert(html.includes('id="bookExampleStepNav"'),'missing step navigation');
 assert(html.includes('id="bookExamplePicker"'),'missing multiple-example selector');
 assert(ui.includes('available.find(entry=>entry.id==='),'selector must only open linked verified textbook examples');
 assert(html.includes('id="bookExampleShowAux" checked'),'auxiliary lines should be visible by default');
-assert(ui.includes("item.style==='auxiliary')continue"),'hide only helper lines, not given or result geometry');
+assert(ui.includes("if(!visible(item))continue;"),'the SVG renderer must use the shared helper-visibility policy');
+assert(ui.includes("return $('bookExampleShowAux').checked||item.style!=='auxiliary';"),'hiding auxiliary geometry must preserve given and result lines');
 assert(ui.includes("bookExampleShowAux').addEventListener('change'"),'auxiliary visibility must redraw current stage');
 assert(ui.includes("current.order.forEach((label,i)=>"),'step navigator must be generated from verified textbook stages');
-assert(ui.includes("button.addEventListener('click',()=>{index=i;render()})"),'step navigator must select a real geometry stage');
+assert(ui.includes("button.addEventListener('click',()=>{index=i;selectedShapeKey=null;render()})"),'step navigator must select a real geometry stage and update selection');
 assert(ui.includes("button.setAttribute('aria-current','step')"),'active step must be accessible');
 
 assert(ui.includes("setAttribute('aria-pressed',String(i===index))"),'step buttons must announce selected state');
@@ -80,6 +89,10 @@ for(const script of ['textbook-examples.js','textbook-example-geometry.js','text
  assert(html.includes('src="'+script+'"'),'missing source-driven example library '+script);
 assert(ui.includes('source?.forTopic(topicId)'),'UI must only load linked textbook examples');
 assert(ui.includes('geom.frame(current.id,index)'),'geometry library must power staged playback');
+assert(ui.includes('function stageDelta(frame)'),'new shapes must be identified from real adjacent textbook frames');
+assert(ui.includes('geom.frame(current.id,index-1)'),'highlight comparison must use previous verified drawing stage');
+assert(ui.includes("bookExampleHighlight').addEventListener('change'"),'highlight toggle must re-render the current step');
+assert(app.includes("detailedMethod.open=!matchedTextbookExample"),'verified examples should prioritize the animated figure over duplicate prose blocks');
 assert(app.includes('TextbookExampleUI.show(item.id)'),'viewer must display examples inside knowledge');
 assert(app.includes('matchedTextbookExample'),'old generic demonstration must be separated from book example');
 // Layout regression: controls AND explanations must be to the right of a reduced-size diagram.
@@ -109,4 +122,4 @@ for(const script of ['knowledge/textbook-examples.js','knowledge/textbook-exampl
  assert(builder.includes("'"+script+"'"),'static builder did not package '+script);
 const bannedPDFAssets=[...builder.matchAll(/'([^']+\.(?:pdf|jpg|jpeg|png))'/gi)].map(x=>x[1]);
 assert.deepEqual(bannedPDFAssets,[],'public build must not publish protected textbook scans');
-console.log('PASS three source-verified textbook examples, fifteen frames, source coordinates, multi-example UI and safe public build');
+console.log('PASS four source-verified textbook examples, twenty geometry frames, source coordinates, multi-example UI and safe public build');

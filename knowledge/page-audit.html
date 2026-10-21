@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教材逐页核验进度 · 图学课堂</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:#eff5f0;color:#233f31}
+*{box-sizing:border-box}body{margin:0}.container{max-width:1160px;margin:auto;padding:20px 18px 70px}
+a{color:#276d50}.header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+h1{font-size:clamp(24px,4vw,35px);margin:28px 0 12px}
+.intro{line-height:1.8;color:#4d6c59;max-width:840px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}
+.stat{border:1px solid #d4e5d9;border-radius:12px;background:white;padding:15px}
+.stat strong{font-size:26px;display:block}.stat span{font-size:12px;color:#526e5f}
+.note{padding:12px 14px;border-radius:10px;background:#fdf8ec;border:1px solid #e9d5a9;font-size:13px;line-height:1.7}
+.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+.controls select{background:#fff;border:1px solid #aac7b5;border-radius:8px;min-height:43px;padding:9px;max-width:100%;min-width:260px}
+.pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:9px}
+.page{border:1px solid #d8e6dc;border-radius:12px;background:#fff;padding:12px 14px;min-width:0}
+.page h3{margin:0 0 7px;font-size:15px}
+.page p{margin:5px 0;font-size:12px;color:#60776a;line-height:1.6}
+.page small{font-size:11px;color:#6b8176}
+.page.sample{border-color:#a8c6ad}
+.flag{display:inline-block;font-size:11px;padding:4px 7px;border-radius:999px;background:#f1f3f1;color:#5e6f66}
+.page.sample .flag{background:#e8f3e9;color:#326d45}
+.section{font-size:12px;color:#365f47;line-height:1.5}
+.empty{padding:15px}
+footer{padding-top:34px;font-size:12px;color:#708578}
+@media(max-width:640px){.container{padding:14px 12px 40px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script defer src="knowledge-data.js"></script>
+<script defer src="textbook-examples.js"></script>
+<script defer src="textbook-page-inspections.js"></script>
+<script defer src="textbook-page-audit.js"></script>
+<script defer src="textbook-page-audit-ui.js"></script>
+</head><body><div class="container">
+<nav class="header"><strong>图学课堂 · 教材核验台账</strong><div><a href="./index.html">返回六层课程</a>　<a href="../index.html">课程首页</a></div></nav>
+<h1>292 页教材 · 逐页核验进度</h1>
+<p class="intro">基于用户提供的《工程制图与 AutoCAD》第3版扫描教材，建立每页编号、所属章节、知识点来源与核验状态。台账只记录来源与工作进度，不公开原书扫描图或全文。</p>
+<div class="stats" aria-label="页数核验统计">
+<div class="stat"><strong id="auditCount">—</strong><span>扫描页索引</span></div>
+<div class="stat"><strong id="auditSampled">—</strong><span>已做初步视觉抽查的页面</span></div>
+<div class="stat"><strong id="auditReviewed">—</strong><span>全面核对正文、图例和步骤的页面</span></div>
+<div class="stat"><strong id="auditWaiting">—</strong><span>尚待全面核验页面</span></div>
+</div>
+<p class="note"><strong id="auditDetailed">—</strong> 页已单独检查主题与图号，仍待正文、尺寸及作图步骤完整核验。</p>
+<p class="note">重要说明：<b>索引完成 ≠ 页面逐条核验完成</b>。标记“初步抽查”的页面只核对了章节点和可见图例；不能据此宣布原书例题的尺寸、线型、空间结构与解题步骤已全部准确。完整六层课程和原书例题数以独立的已核验记录为准。</p>
+<div class="note" id="auditExampleOverview" aria-label="已核实的单道教材例题"><strong id="auditExampleCount"></strong><div id="auditExampleLinks"></div></div>
+<div class="controls"><label for="auditChapter">查看章节</label><select id="auditChapter" aria-label="选择教材章节"></select><span id="auditResult" role="status"></span></div>
+<div class="pages" id="auditPages" aria-label="教材页码与来源进度"></div>
+<footer>来源：用户提供的292页扫描PDF，仅显示索引、原创摘要与核验标记；不包含出版社内容副本。</footer>
+</div></body></html>

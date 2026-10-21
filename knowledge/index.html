@@ -56,10 +56,15 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 #visualConstraintSteps{padding-left:22px;line-height:1.75;color:#4b6457;font-size:13px}
 #visualConstraintSteps:empty{display:none}
 </style>
-<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
+<script defer src="knowledge-data.js"></script><script defer src="../labs/constraint-engine.js"></script><script defer src="visual-model.js"></script><script defer src="projection-labels.js"></script><script defer src="projection-constraint-lessons.js"></script><script defer src="visual-ui.js"></script><script defer src="lesson-depth.js"></script><script defer src="textbook-examples.js"></script><script defer src="six-layer-course.js"></script><script defer src="textbook-page-audit.js"></script>
+<script defer src="textbook-page-inspections.js"></script><script defer src="textbook-concept-motion.js"></script><script defer src="textbook-concept-motion-ui.js"></script><script defer src="textbook-example-geometry.js"></script><script defer src="textbook-action-adapter.js"></script>
 <script defer src="nonlinear-local-dof.js"></script>
 <script defer src="nonlinear-step-trace.js"></script>
 <script defer src="player-dof-summary.js"></script>
+<script defer src="textbook-shape-inspector.js"></script>
+<script defer src="planar-point-constraints.js"></script>
+<script defer src="textbook-constraint-visual.js"></script>
+<script defer src="textbook-constraint-visual-ui.js"></script>
 <script defer src="textbook-example-ui.js"></script><script defer src="lesson-stage-mapping.js"></script>
 <script defer src="knowledge-app.js"></script>
 <link rel="stylesheet" href="../site-ui.css"><link rel="stylesheet" href="knowledge-ui.css"></head>
@@ -68,32 +73,69 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <header class="hero kb-hero" aria-labelledby="knowledgeHeading">
 <div class="kb-hero-copy"><div class="eyebrow">THE THIRD EDITION / 教材知识地图</div>
 <h1 id="knowledgeHeading">从教材第一章开始，系统学习工程制图。</h1>
-<p>按照胡建生《工程制图与 AutoCAD》第3版原书目录建立章节体系。已核对的知识点提供原创讲解和动态模型，其余内容明确显示建设进度。</p>
+<p>按照原书目录组织十二章课程。每条目录与知识专题都依照“问题—概念—推导—教材例题—自由度—结果核对”六层学习；已核对精讲和待核对导学明确区分。</p>
 <a class="kb-hero-jump" href="#knowledgeWorkspace">开始学习 <span aria-hidden="true">↓</span></a></div>
 <div class="stats kb-hero-stats" aria-label="知识库概况"><span class="stat" id="totalCards">正在加载</span><span class="stat" id="completedCards">本机已学 0 条</span><span class="stat">12 章教材 + 附录</span></div></header>
 <details class="kb-source-note">
 <summary><strong>资料说明</strong><span>依据完整教材第3版的目录建框架；未逐页核对的内容不会冒充课程讲解。</span><span class="kb-note-expand">查看详情</span></summary>
-<p>依据你上传的292页《工程制图与 AutoCAD》第3版重建。原书目录和章节起始页已经核对；第一至第三章已有初步知识讲解，其中部分重点知识包含完整推导；第四章及以后仍为待建设目录。印刷正文第1页对应PDF第7页。不会公开原PDF、原书扫描图或出版社答案，原有习题也不会因为题号相似就被自动认定为本书原题。</p></details>
-<div class="toolbar kb-filterbar" role="search" aria-label="知识库搜索与筛选">
-<label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：第三章、尺寸注法、点的投影" autocomplete="off"></label>
-<label>教材章节<select id="chapterSelect"><option value="all">全部章节</option></select></label><label>章节小节<select id="sectionSelect"><option value="all">全部小节</option></select></label><label>内容状态<select id="coverageSelect"><option value="all">全部状态</option><option value="page-reviewed">已核对讲解</option><option value="toc-only">仅目录索引</option></select></label>
+<p>十二章与附录全部分节已按原书目录核对并建立六层课程结构。第一至第三章的部分专题有已核对的原创精讲；第四至第十二章目前提供按分节编写的原创导学，尚未核对每一页正文和全部图例。正文印刷第1页对应PDF第7页。本站不公开教材整页、扫描图或出版社答案，未经核实的习题也不会自动获得标准答案。<a href="./page-audit.html">查看全书292页来源与核验进度 ↗</a></p></details>
+<div class="toolbar kb-filterbar" role="search" aria-label="教材章节与知识点导航">
+<label>第几章<select id="chapterSelect"><option value="all">全部章节</option></select></label>
+<label>第几节<select id="sectionSelect"><option value="all">全部小节</option></select></label>
+<label>当前知识点<select id="topicSelect" aria-label="直接跳转知识点"><option value="">正在加载</option></select></label>
+<details class="kb-advanced-filters"><summary>搜索与更多筛选</summary><div class="kb-advanced-fields">
+<label>搜索知识<input type="search" id="knowledgeSearch" placeholder="例如：三视图、尺寸注法、点的投影" autocomplete="off"></label>
+<label>内容状态<select id="coverageSelect"><option value="all">全部状态</option><option value="page-reviewed">已核对讲解</option><option value="toc-only">六层导学 · 正文待核验</option></select></label>
 <label>学习情况<select id="progressSelect"><option value="all">全部知识</option><option value="unread">未学过</option><option value="read">已学过</option></select></label>
 <button type="button" id="resetFilters">清除筛选</button>
+</div></details>
 </div>
 <p id="exerciseFilterStatus" class="note" hidden></p>
 <p id="knowledgeCount" class="count" role="status"></p>
-<div class="knowledge-workspace" id="knowledgeWorkspace"><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有找到对应的教材目录或已核对知识。可清除筛选重新查看。</p></main></div>
+<div class="knowledge-workspace" id="knowledgeWorkspace"><details class="kb-directory" id="knowledgeIndex"><summary><span>展开完整知识点目录</span><span id="knowledgeCurrentLocation" class="kb-current-path">请选择章节、节与知识点</span></summary><div class="library"><p class="site-directory-hint">按原教材章节整理 · 选择条目查看核实状态与讲解</p><main><div class="catalogue" id="knowledgeCards" aria-label="知识卡片列表"></div><p class="empty" id="empty" hidden>没有找到对应的教材目录或已核对知识。可清除筛选重新查看。</p></main></div></details>
 <section class="detail" id="knowledgeDetail" aria-label="知识详解" hidden tabindex="-1">
 <div class="meta"><span class="pill" id="detailChapter"></span><span class="source" id="detailPages"></span></div>
 <h2 id="detailTitle"></h2><p id="detailSummary"></p><p id="detailStatusNotice" class="note" aria-live="polite"></p>
+<section id="sixLayerCourse" class="six-layer-course" aria-label="六层教材学习结构" hidden>
+  <div class="six-layer-heading">
+    <div><strong>六层递进学习</strong><p id="sixLayerSource" class="six-layer-source"></p></div>
+    <span id="sixLayerCount" class="six-layer-count">1 / 6</span>
+  </div>
+  <nav id="sixLayerNav" class="six-layer-nav" aria-label="六层课程导航"></nav>
+  <div class="six-layer-controls" role="group" aria-label="切换教学层次">
+    <button id="sixLayerPrev" type="button">← 上一层</button>
+    <button id="sixLayerNext" class="primary" type="button">下一层 →</button>
+  </div>
+  <article class="six-layer-stage" id="sixLayerStage" aria-live="polite">
+    <p class="six-layer-kicker" id="sixLayerKicker"></p>
+    <h3 id="sixLayerHeadline"></h3>
+    <p id="sixLayerText"></p>
+    <ol class="six-layer-details" id="sixLayerDetails"></ol>
+    <div id="sixLayerConceptSlot" class="six-layer-concept-slot" hidden>
+      <div class="six-layer-concept-title"><strong>原理动态图 · 重新绘制的概念示意</strong><span id="sixLayerConceptCounter">1 / 4 步</span></div>
+      <div class="six-layer-concept-board"><svg id="sixLayerConceptSvg" viewBox="0 0 650 380" role="img" aria-label="按知识原理逐步显示的几何示意"></svg></div>
+      <div class="six-layer-concept-buttons">
+       <button id="sixLayerConceptPrev" type="button">← 上一步</button>
+       <button id="sixLayerConceptNext" type="button">下一步 →</button>
+      </div>
+      <p id="sixLayerConceptAction" class="six-layer-concept-action"></p>
+      <p id="sixLayerConceptSource" class="six-layer-concept-source"></p>
+      <p id="sixLayerConceptScope" class="six-layer-concept-scope"></p>
+    </div>
+    <p class="six-layer-guidance" id="sixLayerGuidance"></p>
+    <div id="sixLayerExampleSlot" class="six-layer-example-slot" hidden></div>
+    <div id="sixLayerRelated" class="six-layer-related" hidden></div>
+  </article>
+</section>
 <div id="verifiedLessonContent">
 <section class="deep-lesson" id="deepLesson" hidden aria-label="教材知识深度精讲">
 <div class="deep-header"><span class="deep-tag">重点精讲 · 展开原理而非只记结论</span><h3 id="deepQuestion"></h3></div>
 <div class="deep-logic"><h4>从概念推导</h4><p id="deepLogic"></p></div>
+<details class="deep-extended" id="deepMethodDetails" open><summary>本节原理深入推导与逐条作图依据</summary>
 <h4>逐条拆解约束和作图依据</h4><div class="step-toolbar" role="group" aria-label="精讲步骤导航"><button type="button" id="deepPrev">上一步</button><button type="button" id="deepNext" class="primary">下一步</button><button type="button" id="deepAll">查看全部</button><span id="deepStepCount" class="step-count" aria-live="polite"></span></div><ol id="deepStages" class="deep-stages"></ol>
 <div class="deep-example" hidden><h4>概念演示（暂停公开展示，逐步替换为课本例题）</h4><p id="deepExample"></p></div>
 <div class="deep-check"><h4>画完后怎样检查？</h4><p id="deepCheck"></p></div>
-<p id="deepBoundary" class="deep-boundary"></p>
+<p id="deepBoundary" class="deep-boundary"></p></details>
 </section>
 <section id="textbookExample" class="book-example" hidden aria-label="教材原版例题的分步作图">
 <div class="book-example-heading"><span class="deep-tag">教材例题 · 已对照原书图和解题过程</span><h3 id="bookExampleTitle"></h3>
@@ -101,8 +143,9 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
 <p id="bookExampleKnown"></p>
 <div class="book-example-workspace">
   <div class="book-example-figure">
-    <div class="book-example-figure-top"><strong>逐步作图</strong><span>绿色已知 · 橙色辅助 · 蓝色结果</span></div>
-    <div class="book-example-canvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="img" aria-label="按课本例题步骤显示的投影和辅助线"></svg></div>
+    <div class="book-example-figure-top"><strong>逐步作图</strong><span>绿色已知 · 橙色辅助 · 蓝色结果</span><button id="bookExampleZoom" type="button" aria-pressed="false" aria-controls="bookExampleSvg">放大查看</button></div>
+    <div class="book-example-canvas" id="bookExampleCanvas"><svg id="bookExampleSvg" viewBox="0 0 820 420" role="group" aria-label="可点选几何图元的教材例题作图纸"></svg></div>
+    <p class="book-example-tap-hint">点选图中的辅助线或关键点，可查看对应的作图依据；也可在右侧列表选择。</p>
   </div>
   <div class="book-example-guide" aria-label="右侧作图步骤与讲解">
     <div class="book-example-tools" aria-label="课本例题步骤控制">
@@ -116,28 +159,58 @@ footer{padding:30px 0;color:#6e8575;font-size:13px}
       </div>
       <span id="bookExampleCounter" aria-live="polite"></span>
       <label class="book-example-aux-toggle"><input type="checkbox" id="bookExampleShowAux" checked> 显示辅助线</label>
+      <label class="book-example-aux-toggle"><input type="checkbox" id="bookExampleHighlight" checked> 突出本步新增</label>
       <nav id="bookExampleStepNav" class="book-example-step-nav" aria-label="课本例题五步作图导航"></nav>
     </div>
     <div class="book-example-explanation">
-      <h4 id="bookExampleStageTitle"></h4>
+      <h4 id="bookExampleStageTitle" aria-live="polite"></h4>
+      <p id="bookExampleStageAddition" class="book-example-stage-addition" aria-live="polite"></p>
       <p id="bookExampleAction"></p>
       <p id="bookExampleReason"></p>
-      <p id="bookExampleDof"></p>
+      <details class="book-example-inspector" id="bookExampleShapeInspector">
+        <summary id="bookExampleShapeHeading">图形元素解释：<span id="bookExampleShapeSummary">可点击图纸查看</span></summary>
+        <div class="book-example-inspector-body">
+          <label>查看点或线 <select id="bookExampleShapeSelect" aria-label="选择教材例题中已显示的点或线"></select></label>
+          <p id="bookExampleShapeName" class="book-example-shape-name" aria-live="polite"></p>
+          <p id="bookExampleShapeRole"></p>
+          <p id="bookExampleShapeReason"></p>
+          <p id="bookExampleShapeEffect"></p>
+          <p class="book-example-shape-boundary">单条图线的说明不等于整步自由度计算；数值以本步约束计算为准。</p>
+        </div>
+      </details>
+      <section class="book-example-constraint-panel" id="bookExampleConstraintPanel" aria-label="交互式约束与自由度实验" hidden>
+        <div class="book-constraint-topline"><strong>约束可视化</strong><span>局部剩余自由度 <b id="bookExampleConstraintDegrees" aria-live="polite">—</b></span></div>
+        <p id="bookExampleConstraintState" class="book-constraint-state" aria-live="polite"></p>
+        <label class="book-example-aux-toggle"><input id="bookExampleConstraintVisible" type="checkbox" checked> 在图纸上叠加可行位置与移动方向</label>
+        <div id="bookExampleConstraintOptions" class="book-constraint-choices" role="group" aria-label="临时启用或取消定位约束"></div>
+        <p id="bookExampleConstraintLinked" class="book-constraint-linked"></p>
+        <p id="bookExampleConstraintExperiment" class="book-constraint-experiment" hidden>实验模式：临时取消了一个或多个条件；仅改变蓝色可行位置与本卡片自由度，不修改教材绘制过程或上方已核验的计算结果。</p>
+        <details class="book-constraint-scope"><summary>计算范围说明</summary><p id="bookExampleConstraintScope"></p></details>
+      </section>
       <div class="book-example-computed" id="bookExampleComputedDof" hidden aria-live="polite"><strong id="bookExampleComputedDofValue"></strong><span id="bookExampleComputedDofLabel"></span></div>
-      <p id="bookExampleConstraintReason" class="book-example-constraint-note" aria-live="polite"></p>
-      <p id="bookExampleAudit"></p>
+      <details class="book-example-more" id="bookExampleDofDetails">
+        <summary>自由度变化与定位依据</summary>
+        <p id="bookExampleDof"></p>
+        <p id="bookExampleConstraintReason" class="book-example-constraint-note" aria-live="polite"></p>
+      </details>
+      <details class="book-example-more" id="bookExampleCheckDetails">
+        <summary>本步核对要点</summary>
+        <p id="bookExampleAudit"></p>
+      </details>
     </div>
   </div>
 </div>
 <p id="bookExampleFidelity" class="book-example-source"></p>
 <p class="book-example-source"><a id="bookExampleSharedPlayer" href="./drawing-player.html" hidden>在通用步骤播放器中打开本例题 ↗</a></p>
 </section>
+<details class="knowledge-extra-details" id="knowledgeSummaryDetails" open><summary>教材要点、归纳步骤与常见错误</summary>
 <h3>本节已核对的要点</h3><p id="detailLaw"></p>
 <h3>作图与理解步骤</h3>
 <div class="step-toolbar"><button id="stepPrev" type="button">上一步</button><button id="stepNext" type="button" class="primary">下一步</button><button id="stepAll" type="button">显示全部步骤</button><span id="stepCount" class="step-count" aria-live="polite"></span></div>
 <ol id="detailSteps" class="steps" aria-live="polite"></ol>
 <h3>约束与自由度的理解</h3><p class="understanding" id="detailUnderstanding"></p>
 <h3>易错点与核对要点</h3><p class="mistake" id="detailMistake"></p>
+</details>
 </div>
 <section class="knowledge-bottom" aria-label="本节学习进度与补充信息">
   <div class="knowledge-bottom-main">

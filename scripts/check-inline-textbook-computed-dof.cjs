@@ -26,11 +26,24 @@ const ctx={document,window};
 vm.runInNewContext(fs.readFileSync('knowledge/textbook-example-ui.js','utf8'),ctx);
 const show=window.TextbookExampleUI.show;
 show('ch01-divide-and-polygons');
+assert.match(get('bookExampleStageAddition').textContent,/已知条件/);
 assert.equal(get('bookExampleComputedDof').hidden,false);
 assert.equal(get('bookExampleComputedDofValue').textContent,'1');
 assert.match(get('bookExampleConstraintReason').textContent,/AB/);
 get('bookExampleNext').click();get('bookExampleNext').click();
 assert.equal(get('bookExampleComputedDofValue').textContent,'1');
+assert.match(get('bookExampleStageAddition').textContent,/本步新增/);
+assert(get('bookExampleSvg').children.some(node=>node.attributes['data-new']==='true'),
+ 'new construction line should be marked in the current frame');
+get('bookExampleHighlight').checked=false;
+get('bookExampleHighlight').handlers.change();
+assert(!get('bookExampleSvg').children.some(node=>node.attributes['data-new']==='true'),
+ 'highlight switch off must remove emphasis without hiding any construction stage');
+assert.equal(get('bookExampleComputedDofValue').textContent,'1','switching emphasis cannot alter constraints');
+get('bookExampleHighlight').checked=true;
+get('bookExampleHighlight').handlers.change();
+assert(get('bookExampleSvg').children.some(node=>node.attributes['data-new']==='true'),
+ 're-enabling highlight restores new lines for current stage');
 get('bookExampleNext').click();
 assert.equal(get('bookExampleComputedDofValue').textContent,'0');
 assert.match(get('bookExampleComputedDofLabel').textContent,/减少 1/);
@@ -45,6 +58,8 @@ assert.equal(get('bookExamplePicker').children.length,2);
 get('bookExamplePicker').value='example-2-3';
 get('bookExamplePicker').handlers.change();
 assert.equal(get('bookExampleComputedDofValue').textContent,'2');
+assert.equal(get('bookExampleDofDetails').open,false,'switching textbook example collapses detailed explanation');
+assert.equal(get('bookExampleCheckDetails').open,false,'switching textbook example collapses verification list');
 get('bookExampleNext').click();
 assert.equal(get('bookExampleComputedDofValue').textContent,'2');
 get('bookExampleNext').click();
