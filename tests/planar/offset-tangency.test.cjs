@@ -208,3 +208,62 @@ test('scope does not claim uniqueness for unsupplied finite arcs or line segment
   assert.match(r.uniquenessScope, /external tangency/);
   assert.ok(!Object.prototype.hasOwnProperty.call(r,'globallyUnique'));
 });
+
+test('rotation covariance preserves tangent centers and contact points', () => {
+  const angle = Math.PI / 5;
+  const c = Math.cos(angle), s = Math.sin(angle);
+  const rotate = p => ({ x: c * p.x - s * p.y, y: s * p.x + c * p.y });
+  const input = basic();
+  const original = externalLineCircleFillets(input);
+  const transformed = externalLineCircleFillets({
+    ...input,
+    line: { a: rotate(input.line.a), b: rotate(input.line.b) },
+    circle: { center: rotate(input.circle.center), radius: input.circle.radius }
+  });
+  assert.equal(transformed.status, original.status);
+  for (let i = 0; i < original.candidateCount; i++) {
+    for (const key of ['center', 'lineContact', 'circleContact']) {
+      const predicted = rotate(original.candidates[i][key]);
+      close(transformed.candidates[i][key].x, predicted.x);
+      close(transformed.candidates[i][key].y, predicted.y);
+    }
+  }
+});
+
+test('circle centered on offset line gives two symmetric tangent solutions', () => {
+  const result = externalLineCircleFillets({
+    ...basic(), circle: { center: { x: 1, y: 3 }, radius: 8 }
+  });
+  assert.equal(result.status, 'multiple');
+  close(result.candidates[0].center.x, -10);
+  close(result.candidates[1].center.x, 12);
+  for (const candidate of result.candidates) close(candidate.maxResidual, 0);
+});
+
+test('deterministic numerical sample retains zero residuals and no false uniqueness', () => {
+  let seenMultiple = 0, seenNone = 0;
+  for (const angle of [0, Math.PI / 7, Math.PI / 2, Math.PI * 0.9]) {
+    const tx = Math.cos(angle), ty = Math.sin(angle);
+    const nx = -ty, ny = tx;
+    const line = { a: { x: -12 * tx, y: -12 * ty },
+      b: { x: 12 * tx, y: 12 * ty } };
+    for (const offset of [-30, -10, 0, 3, 12, 30]) {
+      const center = { x: 2 * tx + offset * nx, y: 2 * ty + offset * ny };
+      for (const side of [-1, 1]) {
+        const result = externalLineCircleFillets({ line,
+          circle: { center, radius: 5 }, filletRadius: 2, side });
+        if (result.status === 'none') seenNone++;
+        if (result.status === 'multiple') seenMultiple++;
+        assert.equal(result.candidateCount, result.candidates.length);
+        assert.ok(result.candidates.length <= 2);
+        for (const candidate of result.candidates) {
+          assert.ok(candidate.maxResidual <= 1e-7);
+          close(signedDistance(candidate.center, line), side * 2);
+          close(Math.hypot(candidate.center.x - center.x,
+            candidate.center.y - center.y), 7);
+        }
+      }
+    }
+  }
+  assert.ok(seenNone > 0 && seenMultiple > 0);
+});
