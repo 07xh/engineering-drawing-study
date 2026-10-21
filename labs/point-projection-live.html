@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f0f6f1"><title>点的三面投影 · DraftAI</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#25432f;background:#f1f6f2;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}.shell{max-width:1380px;padding:18px;margin:auto}h1{font-size:clamp(24px,3vw,34px);margin:0 0 6px}p{line-height:1.6}.intro{font-size:14px;color:#557362;margin:0 0 20px}
+.frame{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:15px;align-items:start}.paper,.controls{background:#fff;border:1px solid #d6e5db;border-radius:16px;padding:16px;min-width:0}
+.board-viewport{width:100%;overflow:auto;border:1px solid #dfe9e2;border-radius:12px;background:#fff}
+svg{display:block;min-width:600px;width:100%;height:auto}h2{margin:0 0 12px;font-size:19px}
+.inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}label{display:grid;gap:5px;font-size:13px;color:#3c6550}
+input,select{width:100%;padding:10px;border-radius:9px;border:1px solid #bacfc1;font:inherit;background:#fff;min-height:44px}
+button{min-height:44px;padding:10px 14px;border:1px solid #a8c6b3;background:#fff;color:#246845;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+button.primary{background:#246d4b;color:white;border-color:#246d4b}button:disabled{opacity:.42;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #3476c1;outline-offset:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}.actions button{flex:1}
+.status{border:1px solid #dbe7df;background:#f5f9f6;padding:12px;border-radius:11px;font-size:14px}
+.steps{border-radius:12px;background:#f5f9f6;padding:13px;min-height:95px;font-size:14px}
+.steps strong{display:block;font-size:15px;margin-bottom:8px}.steps p{margin:0}
+.note{font-size:12px;color:#607769;margin-top:12px}.tag{display:inline-block;padding:5px 9px;border:1px solid #b9d8c5;border-radius:100px;background:#ecf8ef;font-size:12px;color:#246447}
+.toplink{display:inline-block;margin-bottom:12px;font-size:13px;color:#256e4c}
+.hidden{display:none!important}.legend{font-size:12px;margin-top:10px;color:#587464}
+@media(max-width:900px){.frame{grid-template-columns:1fr}.controls{order:-1}}@media(max-width:550px){.shell{padding:10px}.paper,.controls{padding:11px}.inputs{grid-template-columns:repeat(2,minmax(0,1fr))}svg{min-width:520px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+</style></head><body>
+<main class="shell">
+<a class="toplink" href="../index.html">← 返回 DraftAI 首页</a>
+<h1>点的三面投影 · 可计算教学工作台</h1>
+<p class="intro">第一角法 · 同一张画纸展示 V / H / W 与 45° 深度转移。左侧是真实计算图纸，右侧可修改已知投影并逐步理解辅助线。此工具只求解单个空间点，不是教材原题答案。</p>
+<div class="frame">
+<section class="paper" aria-labelledby="paper-title"><h2 id="paper-title">投影图纸 <span class="tag">模型 mm · 画纸 px</span></h2>
+<div class="board-viewport"><svg id="paperSvg" viewBox="0 0 720 470" role="img" aria-label="正面、水平和侧面第一角法投影，含四条计算的辅助线"></svg></div>
+<p class="legend">绿色＝题目已知投影　蓝色＝由数学求解得到　橙色虚线＝辅助联系线　灰色＝参考轴</p>
+<p class="note">画纸位置只用于展示；不会用屏幕像素反推空间坐标。负坐标可能出现在参考轴的另一侧，可调整显示比例。</p></section>
+<section class="controls" aria-label="求解条件及步骤控制">
+<h2>已知条件</h2>
+<label for="pairSelect">选择已知的两个投影
+<select id="pairSelect"><option value="VH">正面 V ＋ 水平 H</option><option value="VW">正面 V ＋ 侧面 W</option><option value="HW">水平 H ＋ 侧面 W</option></select></label>
+<div class="inputs" id="projectionInputs">
+<label id="firstULabel">第一个投影 u（mm）<input id="firstU" type="number" step="any" value="15" required></label>
+<label id="firstVLabel">第一个投影 v（mm）<input id="firstV" type="number" step="any" value="12" required></label>
+<label id="secondULabel">第二个投影 u（mm）<input id="secondU" type="number" step="any" value="15" required></label>
+<label id="secondVLabel">第二个投影 v（mm）<input id="secondV" type="number" step="any" value="10" required></label>
+</div>
+<label for="scaleInput">画纸比例（px/mm）<input id="scaleInput" type="number" min="0.1" max="20" step="0.5" value="4"></label>
+<div class="actions"><button type="button" id="recompute" class="primary">重新计算</button><button type="button" id="resetExample">恢复示例</button></div>
+<p class="status" id="solveStatus" role="status" aria-live="polite">准备计算…</p>
+<h2>辅助线分步讲解</h2>
+<div class="actions"><button type="button" id="previous">上一步</button><button type="button" id="next" class="primary">下一步</button><button type="button" id="restart">从头演示</button></div>
+<div class="steps"><strong id="stepTitle">已知条件</strong><p id="stepExplanation">先观察题目给出的两组投影坐标。</p></div>
+<p class="note" id="stepCounter">0 / 4</p>
+<p class="note">无解、数据矛盾、欠约束时，立即隐藏推测的第三投影和所有结果辅助线。所有计算在浏览器本地完成，不上传题图或个人资料。</p>
+</section></div></main>
+<script defer src="point-projection-live-bundle.js"></script>
+</body></html>

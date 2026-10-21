@@ -12,6 +12,7 @@ const files = [
   'favicon.svg',
   'robots.txt',
   'labs/point-coach.html',
+  'labs/point-projection-live.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -83,6 +84,17 @@ const esbuild=require('esbuild');
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/dof-lab-three-entry.js')],
  outfile:path.join(out,'labs/dof-lab-three-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Only the P0 point engine and its verified dependencies are bundled for the
+ * public interactive page. The source files, synthetic fixtures, math tests,
+ * internal docs and private textbook content remain outside dist.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/point-projection-live-entry.cjs')],
+ outfile:path.join(out,'labs/point-projection-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
