@@ -3,6 +3,7 @@ const {circleCircleFilletCenters}=require('../engines/planar/circle-circle-fille
 const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.cjs');
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
+const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-drawing.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
@@ -10,6 +11,11 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
   'line1Ax','line1Ay','line1Bx','line1By','line2Ax','line2Ay','line2Bx','line2By',
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
  const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,stage=0;
+ let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
+ let playTimer=null,statusMessage='';
+ const reducedMotion=()=>typeof window!=='undefined'&&
+   !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ const stopPlayback=()=>{if(playTimer!==null){clearInterval(playTimer);playTimer=null}};
  const fmt=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
  const elem=(tag,attr={},value)=>{
   const e=document.createElementNS(SVG,tag);
@@ -66,12 +72,13 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
    option.value=value;option.textContent=label;selector.append(option);
   };
   add('','请选择有效候选圆心');
-  for(const c of result.candidates??[])add(c.id,c.id+' ('+
-   fmt(c.center.x)+', '+fmt(c.center.y)+')');
+  for(const c of result.candidates??[])add(c.id,learningMode==='full'?c.id+' ('+
+   fmt(c.center.x)+', '+fmt(c.center.y)+')':c.id);
   selector.value=(result.candidates??[]).some(c=>c.id===previous)?previous:'';
  }
  function compute(){
-  centers=null;chosen=null;input=null;stage=0;
+  stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
+  centers=null;chosen=null;input=null;stage=0;hintStep=0;
   try{
    let args=parse();
    const isSegments=$('modeSelect').value==='segments';
@@ -88,12 +95,12 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
     result.status==='none'?'当前相切条件无解。':
     result.status==='unstable'?'当前条件数值不稳定，拒绝推测圆心。':
     '存在连续多解，不能自动选定连接圆心。';
-   $('status').textContent=short+' '+(
+   statusMessage=short+' '+(
     picked.status==='selected'
      ?'已选 '+picked.selectedId+'，连接弧扫掠 '+fmt(picked.sweepDegrees)+'°。'+
       (picked.g1Verified?'两端有向 G1 已经通过向量检验。':'尚未提供完整轮廓走向，仅验证无向相切。')
      :picked.reason||'尚未给出有限弧段。');
-  }catch(e){$('status').textContent='条件无效：'+(e.message||'请重新填写');}
+  }catch(e){statusMessage='条件无效：'+(e.message||'请重新填写');}
   render();
  }
  function drawArc(svg,g){
@@ -112,7 +119,14 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
   for(let y=10;y<440;y+=30)svg.append(elem('line',{x1:0,y1:y,x2:720,y2:y,stroke:'#edf1ed','stroke-width':.65}));
   svg.append(elem('line',{x1:0,y1:O.y,x2:720,y2:O.y,stroke:'#93a49a','stroke-width':1}));
   svg.append(elem('line',{x1:O.x,y1:0,x2:O.x,y2:440,stroke:'#93a49a','stroke-width':1}));
-  const isSegments=$('modeSelect').value==='segments';
+  const isSegments=$('modeSelect').value==='segments',full=learningMode==='full';
+  const hint=learningMode==='hint',drawing=learningMode==='draw';
+  $('fullControls').hidden=!full;
+  $('hintControls').hidden=!hint;
+  $('drawControls').hidden=!drawing;
+  $('status').textContent=!input||full?statusMessage:
+   chosen?.status==='selected'?'已经选定数学分支；此模式不展示圆心坐标或成品圆弧。':
+   '条件尚不足以生成经验证的最终弧段；请选择合适条件后再学习。';
   let max=0;
   if(input&&isSegments){
    svg.append(drawLine(input.first.a,input.first.b));
@@ -121,7 +135,7 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
    svg.append(dot(input.first.b,'#257650','B₁'));
    svg.append(dot(input.second.a,'#257650','A₂'));
    svg.append(dot(input.second.b,'#257650','B₂'));
-   if(stage>=1){
+   if(full&&stage>=1){
     const drawn=new Set();
     const loci=(centers?.candidates??[]).map(c=>c.steps)
       .concat((centers?.continuousFamilies??[]).map(f=>[
@@ -137,23 +151,23 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
      }
     }
    }
-   if(stage>=3){
+   if(full&&stage>=3){
     for(const c of centers?.candidates??[])svg.append(dot(c.center,'#9d6529',c.id));
     for(const f of centers?.continuousFamilies??[]){
      svg.append(drawLine(f.start.center,f.end.center,'#c38536','3 3'));
     }
    }
-   if(stage>=4&&chosen?.contacts){
+   if(full&&stage>=4&&chosen?.contacts){
     svg.append(dot(chosen.contacts.first,'#2477b0','T₁'));
     svg.append(dot(chosen.contacts.second,'#2477b0','T₂'));
    }
-   if(stage>=5&&chosen?.trimmedSourceSegments){
+   if(full&&stage>=5&&chosen?.trimmedSourceSegments){
     for(const key of ['first','second']){
      const line=chosen.trimmedSourceSegments[key].segment;
      svg.append(drawLine(line.a,line.b,'#236eb5'));
     }
    }
-   if(chosen?.status==='selected'&&chosen.geometry&&stage>=6)drawArc(svg,chosen.geometry);
+   if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=6)drawArc(svg,chosen.geometry);
    const exists=!!(centers?.candidates?.length||centers?.continuousFamilies?.length);
    max=exists?(chosen?.status==='selected'?6:3):0;
    $('stepTitle').textContent='第 '+stage+' 步';
@@ -169,17 +183,17 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
     svg.append(ring(input.second.center,input.second.radius,'#257650'));
     svg.append(dot(input.first.center,'#257650','O₁'));
     svg.append(dot(input.second.center,'#257650','O₂'));
-    if(centers?.auxiliary&&stage>=1){
+    if(full&&centers?.auxiliary&&stage>=1){
      svg.append(ring(centers.auxiliary.firstLocus.center,centers.auxiliary.firstLocus.radius,'#c38536','7 6'));
      svg.append(ring(centers.auxiliary.secondLocus.center,centers.auxiliary.secondLocus.radius,'#c38536','7 6'));
     }
-    if(centers?.candidates&&stage>=2)for(const c of centers.candidates)
+    if(full&&centers?.candidates&&stage>=2)for(const c of centers.candidates)
      svg.append(dot(c.center,'#9d6529',c.id));
-    if(chosen?.contacts&&stage>=3){
+    if(full&&chosen?.contacts&&stage>=3){
      svg.append(dot(chosen.contacts.first,'#2477b0','T₁'));
      svg.append(dot(chosen.contacts.second,'#2477b0','T₂'));
     }
-    if(chosen?.status==='selected'&&chosen.geometry&&stage>=4)drawArc(svg,chosen.geometry);
+    if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=4)drawArc(svg,chosen.geometry);
    }
    max=centers?4:0;
    const copy=[
@@ -192,9 +206,48 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
    $('stepTitle').textContent='第 '+stage+' 步';
    $('stepText').textContent=copy[stage];
   }
-  $('prev').disabled=stage===0;
-  $('next').disabled=stage>=max;
+  if(drawing&&isSegments&&chosen?.status==='selected'&&chosen.g1Verified===true){
+   for(const stroke of strokes)svg.append(elem('line',{
+    x1:stroke.from.x,y1:stroke.from.y,x2:stroke.to.x,y2:stroke.to.y,
+    stroke:'#8651a8','stroke-width':3.2}));
+  }
+  svg.classList?.toggle?.('draw-active',drawing&&isSegments&&chosen?.status==='selected'&&chosen.g1Verified===true);
+  $('prev').disabled=!full||stage===0;
+  $('next').disabled=!full||stage>=max;
+  $('playPause').disabled=!full||stage>=max||max===0||reducedMotion();
+  $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
   $('counter').textContent=stage+' / '+max;
+  const verified=chosen?.status==='selected'&&chosen.g1Verified===true;
+  const hintMax=verified?(isSegments?6:4):0;
+  $('hintNext').disabled=!hint||hintStep>=hintMax||hintMax===0;
+  $('hintCounter').textContent=hintStep+' / '+hintMax;
+  $('undoDraw').disabled=!drawing||strokes.length===0;
+  $('redoDraw').disabled=!drawing||redoStrokes.length===0;
+  $('clearDraw').disabled=!drawing||strokes.length===0;
+  $('checkDraw').disabled=!drawing||!isSegments||!verified;
+  if(hint){
+   $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
+   $('stepText').textContent=hintStep===0?
+    '先判断相切条件、可行候选分支及几何约束；不会提前展示图形答案。':
+    isSegments?chosen.steps[hintStep-1].reason:
+      ['根据连接半径构造第一个辅助圆心轨迹。',
+       '再构造第二个辅助圆心轨迹，候选圆心是轨迹的交点。',
+       '将圆心与已知圆心相连，确定真实相切点。',
+       '检查明确的旋向与轮廓走向，两端有向 G1 必须一致。'][hintStep-1];
+  }
+  if(drawing){
+   $('stepTitle').textContent='自己作图｜有限线段辅助线验证';
+   $('stepText').textContent='仅对两条真正的半径偏移辅助线按数学毫米单位判题；这不是完整圆弧成品判分。';
+   if(!isSegments)$('drawStatus').textContent='两圆的曲线手绘判题尚未支持，请切到完整教学或提示模式。';
+   else if(!verified)$('drawStatus').textContent='请先选择圆心分支、弧向和两条线段的走向，获得有向 G1 数学验证。';
+   else{
+    try{
+     const result=gradeFilletOffsetLines(input,strokes,{origin:O,scale,revision});
+     $('drawStatus').textContent='辅助线 '+result.matchedCount+' / '+result.targetCount+
+       '；额外笔迹 '+result.extraCount+'。'+result.reason;
+    }catch(e){$('drawStatus').textContent='无法验证：'+e.message;}
+   }
+  }
  }
 
  for(const id of FIELDS){
@@ -209,14 +262,24 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
   for(const node of document.querySelectorAll('.line-only'))node.hidden=!isSegments;
   compute();
  });
- $('calculate').addEventListener('click',compute);
- $('prev').addEventListener('click',()=>{stage=Math.max(0,stage-1);render()});
+ $('learningMode').addEventListener('change',()=>{
+  stopPlayback();
+  learningMode=$('learningMode').value;
+  if(!['full','hint','draw'].includes(learningMode))learningMode='full';
+  stage=0;hintStep=0;pointer=null;
+  if(centers)refreshCandidates(centers);
+  render();
+ });
+  $('calculate').addEventListener('click',compute);
+ $('prev').addEventListener('click',()=>{stopPlayback();if(learningMode!=='full')return;
+  stage=Math.max(0,stage-1);render()});
  $('next').addEventListener('click',()=>{
   const max=$('modeSelect').value==='segments'
    ?(chosen?.status==='selected'?6:
       (centers?.candidates?.length||centers?.continuousFamilies?.length?3:0))
    :(centers?4:0);
-  stage=Math.min(max,stage+1);render();
+  if(learningMode!=='full')return;
+  stopPlayback();stage=Math.min(max,stage+1);render();
  });
  $('reset').addEventListener('click',()=>{
   for(const [id,value] of Object.entries({x1:0,y1:0,r1:5,mode1:'external',
@@ -226,5 +289,61 @@ const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segmen
    lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:''}))$(id).value=String(value);
   compute();
  });
+ $('hintNext').addEventListener('click',()=>{
+  if(learningMode!=='hint'||chosen?.status!=='selected'||!chosen.g1Verified)return;
+  hintStep=Math.min($('modeSelect').value==='segments'?6:4,hintStep+1);
+  render();
+ });
+ $('playPause').addEventListener('click',()=>{
+  if(playTimer!==null){stopPlayback();render();return;}
+  if(learningMode!=='full'||!centers||reducedMotion())return;
+  const max=$('modeSelect').value==='segments'
+   ?(chosen?.status==='selected'?6:centers.candidates.length||centers.continuousFamilies.length?3:0):4;
+  if(stage>=max)return;
+  playTimer=setInterval(()=>{
+   if(learningMode!=='full'||reducedMotion()){stopPlayback();render();return;}
+   stage=Math.min(max,stage+1);
+   if(stage>=max)stopPlayback();
+   render();
+  },1200);
+  render();
+ });
+ for(const [button,kind] of [['undoDraw','undo'],['redoDraw','redo'],['clearDraw','clear']]){
+  $(button).addEventListener('click',()=>{
+   if(learningMode!=='draw')return;
+   if(kind==='undo'&&strokes.length)redoStrokes.push(strokes.pop());
+   if(kind==='redo'&&redoStrokes.length)strokes.push(redoStrokes.pop());
+   if(kind==='clear'){strokes=[];redoStrokes=[];pointer=null;}
+   render();
+  });
+ }
+ $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
+ const svg=$('diagram');
+ function eventPoint(event){
+  const rect=svg.getBoundingClientRect();
+  if(!rect||!rect.width||!rect.height||
+     !Number.isFinite(event.clientX)||!Number.isFinite(event.clientY))return null;
+  return {x:Math.max(0,Math.min(720,(event.clientX-rect.left)*720/rect.width)),
+    y:Math.max(0,Math.min(440,(event.clientY-rect.top)*440/rect.height))};
+ }
+ svg.addEventListener('pointerdown',event=>{
+  if(learningMode!=='draw'||$('modeSelect').value!=='segments'||
+     chosen?.status!=='selected'||!chosen.g1Verified||event.button>0)return;
+  const from=eventPoint(event);if(!from)return;
+  pointer={id:event.pointerId,revision,from};svg.setPointerCapture?.(event.pointerId);
+ });
+ svg.addEventListener('pointerup',event=>{
+  if(!pointer||pointer.id!==event.pointerId)return;
+  const origin=pointer;pointer=null;
+  const to=eventPoint(event);
+  if(!to||origin.revision!==revision||learningMode!=='draw'||
+     chosen?.status!=='selected'||!chosen.g1Verified)return;
+  if(Math.hypot(to.x-origin.from.x,to.y-origin.from.y)<3)return;
+  strokes.push({from:origin.from,to,revision});
+  if(strokes.length>200)strokes.shift();
+  redoStrokes=[];render();
+ });
+ svg.addEventListener('pointercancel',()=>{pointer=null});
+ svg.addEventListener('lostpointercapture',()=>{pointer=null});
  compute();
 })();
