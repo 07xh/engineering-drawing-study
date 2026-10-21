@@ -72,3 +72,14 @@ test('wrong HTTP response, JSON and network errors never pass',async()=>{
  const get=makeGithubReader({token:'read-token-123',fetchImpl:async()=>{throw Error('offline')}});
  await assert.rejects(()=>get('/branches/main'),/request failed/);
 });
+
+test('multiple all-success required check runs are allowed; failed duplicate blocks',async()=>{
+ const original=fixture();
+ const key='/commits/'+SHA+'/check-runs?per_page=100';
+ const checks=await original.read(key);
+ const good={name:'validate',head_sha:SHA,status:'completed',conclusion:'success'};
+ const ok=fixture({[key]:{total_count:3,check_runs:[...checks.check_runs,good]}});
+ assert.equal((await checkProtectedMain({sha:SHA,read:ok.read})).ok,true);
+ const notOk=fixture({[key]:{total_count:3,check_runs:[...checks.check_runs,{...good,conclusion:'failure'}]}});
+ assert.equal((await checkProtectedMain({sha:SHA,read:notOk.read})).ok,false);
+});
