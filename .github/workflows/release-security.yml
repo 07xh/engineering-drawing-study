@@ -31,8 +31,8 @@ jobs:
         run: npm install --no-package-lock --no-audit --no-fund
       - name: Build public assets
         run: node scripts/build-static.cjs
-      - name: Run complete security unit suite
-        run: node --test tests/security/*.test.cjs
+      # security-ci-gate runs and verifies all 9 audited security test suites itself.
+      # Do not invoke the same 97 tests a second time: this is the fail-closed entrypoint.
       - name: Test protected main release controller offline (no credentials)
         run: node --test scripts/release/*.test.cjs
       - name: Enforce source-bound SHA-256 and public dist inventory
