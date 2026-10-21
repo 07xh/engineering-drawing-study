@@ -41,7 +41,7 @@ async function checkSafeAutoMerge({payload,read,inspect=collectPullRequestDiff}=
    return refuse('required checks incomplete');
   for(const name of REQUIRED){
    const matched=checks.check_runs.filter(x=>x?.name===name&&x.head_sha===target.headSha);
-   if(matched.length!==1||matched[0].status!=='completed'||matched[0].conclusion!=='success')
+   if(matched.length<1||matched.some(check=>check.status!=='completed'||check.conclusion!=='success'))
     return refuse('required check not successful: '+name);
   }
   const after=await read('/branches/main');
