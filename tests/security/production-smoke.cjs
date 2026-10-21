@@ -23,7 +23,7 @@ function verifyOrigin(origin,expectedHost){
     url.pathname!=='/'||url.port||url.hostname!==expectedHost)
   throw Error('production origin must be root HTTPS URL with exactly expected host');
  const host=url.hostname.toLowerCase();
- if(isIP(host)||host==='localhost'||host.endsWith('.localhost')||
+ if(isIP(host)||host.startsWith('[')||host.includes(':')||host==='localhost'||host.endsWith('.localhost')||
     host.endsWith('.local')||host.endsWith('.internal')||!host.includes('.'))
   throw Error('local/private hostname is forbidden');
  return url.origin;
