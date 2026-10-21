@@ -21,6 +21,7 @@ test('two true finite perpendicular segments retain four distinct centers',()=>{
  assert.deepEqual(r.candidates.map(c=>c.id),orig.candidates.map(c=>c.id));
  assert.equal(r.continuousFamilies.length,0);
  assert.equal(r.finiteArcSweepVerified,false);
+ assert.equal(r.finiteSourceContactsVerified,true);
  assert.equal(r.directedG1Verified,false);
  for(const c of r.candidates){
   assert.equal(c.sourceContactsOnSegments,true);
@@ -37,6 +38,7 @@ test('short first finite segment rejects all 4 infinite-line candidate centers',
  const b=both(),r=solve({...b,first:{a:{x:-2,y:0},b:{x:2,y:0}}});
  assert.equal(r.status,'none');assert.equal(r.candidateCount,0);
  assert.equal(r.solutionCount,0);assert.equal(r.rejectedCandidates.length,4);
+ assert.equal(r.finiteSourceContactsVerified,false);
  assert.ok(r.rejectedCandidates.every(x=>!x.firstInRange&&x.secondInRange));
  assert.deepEqual(r.candidates,[]);
 });
@@ -83,6 +85,7 @@ test('true infinite parallel family clipped to overlapping finite offset segment
  assert.equal(r.candidateCount,0);assert.equal(r.solutionCount,null);
  assert.equal(r.continuousDegreesOfFreedom,1);
  assert.equal(r.continuousFamilies.length,1);
+ assert.equal(r.finiteSourceContactsVerified,true);
  const f=r.continuousFamilies[0];
  assert.deepEqual(f.centerParameterRange,[6,14]);
  assert.deepEqual(f.start.center,{x:-4,y:3});
@@ -143,6 +146,7 @@ test('near-parallel ill-conditioned geometry stays unstable after finite filteri
  const r=solve(p);
  assert.equal(r.status,'unstable');assert.equal(r.solutionCount,null);
  assert.equal(r.candidateCount,0);assert.equal(r.continuousFamilies.length,0);
+ assert.equal(r.finiteSourceContactsVerified,false);
 });
 
 test('explicit side filtering limits returned tangent branches',()=>{
