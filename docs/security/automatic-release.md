@@ -107,3 +107,23 @@ After \`tests/security/**\` has been merged and the separate workflow branch is 
 Only the first two commands are independent of actual production. The post-deployment smoke CLI belongs in a separate trusted, privileged deployment controller after version activation. An untrusted PR job must not receive Cloudflare production secrets.
 
 Security test inventory in this draft PR: **36 cases** (10 initial readiness, 8 distribution inventory, 11 live-smoke mock, 7 release-plan mock). The newly added 18 Stage 1C tests were run locally with Node.js 22 and passed; the existing site CI does **not yet execute these 36 tests**. No live deployment, main merge, branch protection change or production site request has occurred.
+
+
+## Stage 1D: PR diff provenance gate + complete no-secret CI entrypoint
+
+These are preparatory safety components in PR #155, **not** an active automated release or review system.
+
+1. \`tests/security/verify-pr-diff.cjs\` now inspects the exact trusted PR file list and the full Git tree at the PR head SHA. Only a single modified \`site-ui.css\` regular-file blob may pass the preliminary *diff-only-eligible* classification. Pagination must be proven complete; PR metadata must identify this repo and \`main\`; blob SHAs and addition/deletion counts must match the patch and tree. Renames, deletes, symlinks, gitlinks, executable mode, missing/truncated patches, large diffs, remote CSS URLs/@imports, hidden-element rules and escape obfuscation fail closed. This is still not a semantic proof of CSS safety.
+2. \`release-readiness.cjs\` now **requires** the above complete diff verification bound to the same PR head, as well as the prior checks/rollback/protection safeguards. A caller-provided \`metadataFromTrustedApi:true\` boolean is not an authority; trusted CI must fetch snapshots using its own read permissions. It must verify pagination and tree data itself.
+3. \`tests/security/security-ci-gate.cjs\` is a zero-Cloudflare-credential, nonprivileged command to run all **six** security test files, then verify the already-built \`dist/\` against the audited 40-file public inventory. Missing tests/dist, symlinks, test failures/timeouts, and leaked/extra assets block the result. Its child Node test process receives an allowlisted environment without API tokens. Output status \`local-build-security-pass-only\` means precisely that; it never authorizes a production action.
+4. \`docs/security/release-security.workflow.example.yml\` is an **inactive, valid YAML template**: \`pull_request\` and \`push main\`, fixed \`release-security\` job with no path filter, read-only \`contents\` permission, Node 22 build and the security-ci-gate command. It resides under \`docs/\`; it is **not** a GitHub Actions workflow until 00 grants a shared \`.github/workflows/**\` lock and a separate audited PR introduces it.
+
+Current test inventory: **60 declared test cases** (previous 36 plus 14 diff-provenance checks, 8 CI-gate checks and 2 new readiness-binding checks). In this stage, the **40 checks** across the modified production-smoke, release-plan, diff-provenance and CI-gate test files were executed together locally with Node 22 and passed (40/40). The full 60-case CI suite has **not yet** been executed by GitHub Actions, because shared workflow modification awaits 00 approval. The inactive YAML template was parsed and checked for non-deployment permissions separately.
+
+Suggested future CI order, **only after 00 authorizes the workflow file**:
+
+    npm install --no-package-lock --no-audit --no-fund
+    node scripts/build-static.cjs
+    node tests/security/security-ci-gate.cjs
+
+Before selecting the \`release-security\` status as a GitHub Required Check, install/merge its workflow correctly and confirm it runs unconditionally on unrelated PRs. The existing main workflow currently has no Cloudflare secret scope; keep the security runner and production deployment credentials in **separate trust domains**. Future automatic merge/deployment is blocked until: main protection, Cloudflare upload-only verification, actual artifact-provenance validation at the *merged* main SHA, protected release credentials, smoke/rollback rehearsal and 00/09 acceptance.
