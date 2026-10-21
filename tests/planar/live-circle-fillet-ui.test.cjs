@@ -457,8 +457,9 @@ test('V5 live fillet clock changes speed without recalculating real selected G1 
  assert.equal(get('counter').textContent,'6 / 6');
  assert.equal(collect().filter(n=>n.tag==='path').length,1);
  assert.match(get('status').textContent,/有向 G1/);
- get('line1Ay').value='3';fire('line1Ay','input');
- assert.equal(get('counter').textContent,'0 / 3');
+ get('line1Ay').value='';fire('line1Ay','input');
+ assert.equal(get('counter').textContent,'0 / 0');
+ assert.match(get('status').textContent,/条件无效/);
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
  advance(20000);
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
