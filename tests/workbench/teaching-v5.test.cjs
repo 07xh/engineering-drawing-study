@@ -12,6 +12,8 @@ const steps=[
 ];
 const compiled=()=>T.compileTimeline(steps,{gapMs:200});
 test('timebase compiles deterministic action ordering, step boundaries and empty step',()=>{
+ const signed=T.compileTimeline([{id:'s++-offset1',actions:[{id:'s++-arc',kind:'arc'}]}]);
+ assert.equal(signed.steps[0].id,'s++-offset1');
  const t=compiled();
  assert.equal(t.totalMs,1000+200+2000+1000+200+200);
  assert.deepEqual(t.segments.map(a=>a.id),['g0','a1','a2']);
