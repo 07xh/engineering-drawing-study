@@ -153,6 +153,6 @@ assert(searchUI.includes("credentials:'omit'"),'live lookup must not send creden
 assert(!searchUI.includes('innerHTML'),'web references must not be injected as HTML');
 assert(!searchUI.includes("appendChild(svg")&&!searchUI.includes("lineFocus"),'research must not modify verified line layer');
 for(const filename of ['knowledge/visual-model.js','knowledge/visual-ui.js','knowledge/research-core.js','knowledge/research-ui.js','knowledge/solution-gate.js','labs/verified-solutions.js','labs/source-inspector.js','labs/source-inspector-ui.js']){
- assert(source('scripts/build-static.cjs').includes("'"+filename+"'"),'static packaging missing '+filename);
+ assert(!source('scripts/build-static.cjs').includes("'"+filename+"'"),'source-only lesson/solution should not be publicly bundled '+filename);
 }
 console.log('PASS: 16 checked chapter-2 lessons, unreviewed topics without animation, 28 fail-closed scans, live research and verified recipe gate');
