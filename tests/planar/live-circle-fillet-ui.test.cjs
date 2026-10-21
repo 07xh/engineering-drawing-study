@@ -221,7 +221,7 @@ test('three teaching modes use real fillet page and do not add duplicate public 
   'hintNext','hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus','playPause']){
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  }
- assert.match(entry,/gradeFilletOffsetLines\(input,strokes/);
+ assert.match(entry,/gradeFilletOffsetLines\(input,lines/);
  assert.match(entry,/pointerdown/);
  assert.match(entry,/pointerup/);
  assert.match(entry,/pointercancel/);
@@ -291,7 +291,7 @@ test('circle-mode draw grader and missing G1 branch are explicitly unsupported',
  assert.match(get('drawStatus').textContent,/请先确定/);
  assert.equal(get('checkDraw').disabled,true);
  get('modeSelect').value='segments';fire('modeSelect','change');
- assert.match(get('drawStatus').textContent,/请先选择/);
+ assert.match(get('drawStatus').textContent,/请先确定/);
  assert.equal(get('checkDraw').disabled,true);
  const svg=get('diagram');
  svg.listeners.pointerdown({pointerId:1,button:0,clientX:200,clientY:140});
