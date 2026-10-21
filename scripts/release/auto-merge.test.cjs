@@ -100,3 +100,19 @@ test('untrusted webhook events do not cause even a read',async()=>{
  const r=await tryAutoMerge({...x,enabled:true});
  assert.equal(r.status,'blocked');assert.deepEqual(x.called,[]);
 });
+
+test('duplicate successful validate runs may pass, any failed duplicate blocks',async()=>{
+ const x=fixture();
+ const path='/commits/'+SHA+'/check-runs?per_page=100';
+ const oldChecks=await x.read(path);
+ const good={name:'validate',head_sha:SHA,status:'completed',conclusion:'success'};
+ const list=[...oldChecks.check_runs,good];
+ const shared=(items)=>async p=>p===path?{total_count:items.length,check_runs:items}:
+  p==='/branches/main'?{protected:true,commit:{sha:MAIN}}:
+  p==='/pulls/19'?{head:{sha:SHA,repo:{full_name:REPO}},
+   base:{ref:'main',sha:MAIN,repo:{full_name:REPO}},
+   draft:false,mergeable:true,mergeable_state:'clean',state:'open'}:null;
+ assert.equal((await checkSafeAutoMerge({...x,read:shared(list)})).ok,true);
+ const bad=[...oldChecks.check_runs,{...good,conclusion:'failure'}];
+ assert.equal((await checkSafeAutoMerge({...x,read:shared(bad)})).ok,false);
+});
