@@ -6,14 +6,16 @@
 h1{font-size:clamp(23px,3.2vw,34px);margin:12px 0 4px}.intro{color:#5b7362;font-size:14px;line-height:1.75;margin:0 0 17px}
 .workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);gap:16px}
 .panel{border:1px solid #d4e5da;background:white;padding:16px;border-radius:16px;min-width:0}h2{font-size:18px;margin:0 0 12px}
-#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px}svg{display:block;min-width:600px;width:100%;height:auto}
+#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px}svg{display:block;min-width:600px;width:100%;height:auto}svg.draw-active{touch-action:none;cursor:crosshair}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}label{display:grid;gap:5px;font-size:12px;color:#3c654b}
 input,select,button{font:inherit;border-radius:9px;min-height:44px}input,select{background:#fff;width:100%;border:1px solid #bdd3c4;padding:9px}
 button{padding:9px 13px;border:1px solid #a9cdb4;background:white;color:#1d6744;cursor:pointer}
 button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor:not-allowed}
 .actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}
 .card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
-.legend{font-size:12px;color:#617b67;line-height:1.8}[hidden]{display:none!important}.note{font-size:12px;color:#6a796a;line-height:1.8}
+.legend{font-size:12px;color:#617b67;line-height:1.8}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #3476c1;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}[hidden]{display:none!important}.note{font-size:12px;color:#6a796a;line-height:1.8}
 @media(max-width:940px){.workspace{grid-template-columns:1fr}.panel.controls{order:-1}}
 @media(max-width:550px){.shell{padding:9px}.panel{padding:11px}svg{min-width:510px}}
 </style></head><body><main class="shell">
@@ -22,7 +24,7 @@ button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor
 <div class="workspace">
 <section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
 <div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
-<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
+<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：自己画的辅助线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
 <p class="note">可用下一步查看：辅助圆轨迹 → 候选圆心 → 两个切点 → 已明确方向的连接弧。多解不会自动选第一种。</p>
 </section>
 <section class="panel controls">
@@ -56,8 +58,13 @@ button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor
 <label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
-<h2>作图步骤</h2>
-<div class="actions"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button></div>
+<h2>数学教学模式</h2>
+<label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（有限线段辅助线）</option></select></label>
+<div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">自动播放</button></div>
+<div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
+<div id="drawControls" hidden><p class="note">当前仅验算两条有限线段的两条偏移辅助线。请先选择经过 G1 验证的有效连接分支；触笔/鼠标直接在左侧图纸画线。</p>
+<div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
+<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p></div>
 <div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
 <p class="note" id="counter">0 / 4</p>
 <p class="note">所有运算在本机浏览器运行。未声明分支或方向时只显示候选数据，不伪造已核验有限连接弧。</p>
