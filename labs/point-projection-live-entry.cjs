@@ -2,6 +2,7 @@
 /* Real, user-editable single-point math. No textbook answers or external API. */
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
+const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
 (function(){
   const SVG='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById(id);
@@ -11,6 +12,13 @@ const {toSheet}=require('../core/projection/conventions.js');
   const COLOR={known:'#23744b',computed:'#236eb5',guide:'#c28133',axis:'#8a9d90'};
   const BOARD={x:360,y:210};
   let solution=null,shownStep=0,revision=0;
+  let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
+  let pointer=null,playTimer=null;
+  const reducedMotion=()=>typeof window!=='undefined'&&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  function stopPlayback(){
+    if(playTimer!==null){clearInterval(playTimer);playTimer=null;}
+  }
 
   function el(tag,attributes={},value){
     const node=document.createElementNS(SVG,tag);
@@ -54,10 +62,11 @@ const {toSheet}=require('../core/projection/conventions.js');
       sheetTransform};
   }
   function invalid(reason){
-    solution=null;shownStep=0;$('solveStatus').textContent='输入尚未有效：'+reason;render();
+    stopPlayback();solution=null;shownStep=0;hintStep=0;studentStrokes=[];redoStrokes=[];pointer=null;$('solveStatus').textContent='输入尚未有效：'+reason;render();
   }
   function compute(){
     revision++;
+    stopPlayback();studentStrokes=[];redoStrokes=[];hintStep=0;pointer=null;
     solution=null;shownStep=0; // erase old mathematically-derived state before reading input
     let given;
     try{given=projectInput();solution={...solveProjection(given),userInput:given,revision};
@@ -92,7 +101,7 @@ const {toSheet}=require('../core/projection/conventions.js');
         const uv=s.userInput.knownViews[name],xy=toSheet(name,{u:uv[0],v:uv[1]}, {origin,scale});
         svg.append(point(xy,'已知 '+name,COLOR.known));
       }
-      if(s.status==='unique'){
+      if(s.status==='unique'&&learningMode==='full'){
         if($('showGuides').checked){
           for(const guide of s.guides.slice(0,shownStep))
             svg.append(line(guide.from,guide.to,COLOR.guide,2.2,'7 5'));
@@ -104,20 +113,58 @@ const {toSheet}=require('../core/projection/conventions.js');
           }
         }
       }
+      if(s.status==='unique'&&learningMode==='draw'){
+        for(const stroke of studentStrokes)svg.append(line(stroke.from,stroke.to,'#8651a8',3.3));
+      }
     }
-    const active=!!s&&s.status==='unique';
+    svg.classList.toggle('draw-active',learningMode==='draw'&&!!s&&s.status==='unique');
+    const active=!!s&&s.status==='unique'&&s.globallyUnique===true&&s.degrees===0;
+    const full=learningMode==='full',hint=learningMode==='hint',drawing=learningMode==='draw';
+    $('fullControls').hidden=!full;
+    $('hintControls').hidden=!hint;
+    $('drawControls').hidden=!drawing;
     const max=active?s.steps.length:0;
-    $('previous').disabled=!active||shownStep===0;
-    $('next').disabled=!active||shownStep>=max;
-    $('restart').disabled=!active||shownStep===0;
+    $('previous').disabled=!active||!full||shownStep===0;
+    $('next').disabled=!active||!full||shownStep>=max;
+    $('restart').disabled=!active||!full||shownStep===0;
+    $('playPause').disabled=!active||!full||shownStep>=max||reducedMotion();
+    $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
+    $('hintReveal').disabled=!active||!hint||hintStep>=max;
+    $('hintCounter').textContent=hintStep+' / '+max;
+    $('undoDraw').disabled=!drawing||!studentStrokes.length;
+    $('redoDraw').disabled=!drawing||!redoStrokes.length;
+    $('clearDraw').disabled=!drawing||!studentStrokes.length;
+    $('checkDraw').disabled=!drawing||!active;
     $('stepCounter').textContent=shownStep+' / '+max;
-    $('stepTitle').textContent=shownStep===0?'第 0 步｜观察已知条件':'第 '+shownStep+' 步｜辅助线';
+    $('stepTitle').textContent=drawing?'自己作图｜数学检查':
+      hint?'逐步提示｜'+hintStep+' / '+max:
+      shownStep===0?'第 0 步｜观察已知条件':'第 '+shownStep+' 步｜辅助线';
     $('stepExplanation').textContent=shownStep===0
       ?(pair==='XYZ'
         ?'题目已知空间点 P(x,y,z)，由实际坐标求解三面投影；逐步显示对应线与 45° 深度转移。'
         :'题目已知 '+pair.split('').map(x=>planes[x]).join(' 与 ')+'，先按输入位置显示两个已知投影；空间点尚不能靠页面位置猜测。')
       :s.steps[shownStep-1].explanation+
         (shownStep===max?' 交点与第三投影已用求解器验证，现在标出蓝色结果点。':'');
+    if(hint){
+      $('stepExplanation').textContent=!active?'条件不足，不能生成标准提示':
+        hintStep===0?'先观察已知投影与坐标轴，试着判断应使用哪些投影联系线。':
+          s.steps[hintStep-1].explanation;
+    }
+    if(drawing){
+      $('stepExplanation').textContent='请在画纸上完成投影联系线；判题只检查真实数学辅助线，不提前显示答案。';
+      if(!active){$('drawStatus').textContent='当前没有经数学验证的唯一解，不能判题。';}
+      else{
+        try{
+          const grade=gradeProjectionDrawing(s.steps,studentStrokes,{
+            scale:s.userInput.sheetTransform.scale,revision:s.revision
+          });
+          $('drawStatus').textContent='已验证 '+grade.matchedCount+' / '+grade.targetCount+
+            ' 条辅助线；额外线条 '+grade.extraCount+'。'+
+            (grade.status==='correct'?'全部通过模型毫米单位的几何验证！':
+              '请检查尚未符合方向或线段覆盖要求的辅助线。');
+        }catch(error){$('drawStatus').textContent='无法数学判题：'+error.message;}
+      }
+    }
   }
   function resetPair(){
     const pair=$('pairSelect').value;
@@ -146,6 +193,72 @@ const {toSheet}=require('../core/projection/conventions.js');
     shownStep=Math.max(0,shownStep-1);render();});
   $('next').addEventListener('click',()=>{if(solution?.status!=='unique')return;
     shownStep=Math.min(solution.steps.length,shownStep+1);render();});
-  $('restart').addEventListener('click',()=>{shownStep=0;render();});
+  $('restart').addEventListener('click',()=>{stopPlayback();shownStep=0;render();});
+  $('learningMode').addEventListener('change',()=>{
+    stopPlayback();learningMode=$('learningMode').value;
+    if(!['full','hint','draw'].includes(learningMode))learningMode='full';
+    shownStep=0;hintStep=0;pointer=null;render();
+  });
+  $('hintReveal').addEventListener('click',()=>{
+    if(learningMode!=='hint'||solution?.status!=='unique')return;
+    hintStep=Math.min(solution.steps.length,hintStep+1);render();
+  });
+  $('playPause').addEventListener('click',()=>{
+    if(playTimer!==null){stopPlayback();render();return;}
+    if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()||
+       shownStep>=solution.steps.length)return;
+    playTimer=setInterval(()=>{
+      if(learningMode!=='full'||solution?.status!=='unique'||reducedMotion()){
+        stopPlayback();render();return;
+      }
+      shownStep=Math.min(solution.steps.length,shownStep+1);
+      if(shownStep===solution.steps.length)stopPlayback();
+      render();
+    },1200);
+    render();
+  });
+  $('undoDraw').addEventListener('click',()=>{
+    if(learningMode!=='draw'||!studentStrokes.length)return;
+    redoStrokes.push(studentStrokes.pop());render();
+  });
+  $('redoDraw').addEventListener('click',()=>{
+    if(learningMode!=='draw'||!redoStrokes.length)return;
+    studentStrokes.push(redoStrokes.pop());render();
+  });
+  $('clearDraw').addEventListener('click',()=>{
+    if(learningMode!=='draw')return;
+    studentStrokes=[];redoStrokes=[];pointer=null;render();
+  });
+  $('checkDraw').addEventListener('click',()=>{
+    if(learningMode==='draw')render();
+  });
+  const svg=$('paperSvg');
+  function canvasPosition(event){
+    const rect=svg.getBoundingClientRect();
+    if(!rect?.width||!rect?.height||!Number.isFinite(event.clientX)||
+       !Number.isFinite(event.clientY))return null;
+    // SVG viewBox 720×470; map touch/pen positions through the current view.
+    return {x:Math.max(0,Math.min(720,(event.clientX-rect.left)*720/rect.width)),
+            y:Math.max(0,Math.min(470,(event.clientY-rect.top)*470/rect.height))};
+  }
+  svg.addEventListener('pointerdown',event=>{
+    if(learningMode!=='draw'||solution?.status!=='unique'||event.button>0)return;
+    const from=canvasPosition(event);
+    if(!from)return;
+    pointer={id:event.pointerId,from,revision:solution.revision};
+    svg.setPointerCapture?.(event.pointerId);
+  });
+  svg.addEventListener('pointerup',event=>{
+    if(!pointer||pointer.id!==event.pointerId)return;
+    const old=pointer;pointer=null;
+    const to=canvasPosition(event);
+    if(!to||learningMode!=='draw'||solution?.status!=='unique'||
+       old.revision!==solution.revision)return;
+    if(Math.hypot(to.x-old.from.x,to.y-old.from.y)<3)return;
+    studentStrokes.push({from:old.from,to,revision:solution.revision});
+    if(studentStrokes.length>200)studentStrokes.shift();
+    redoStrokes=[];render();
+  });
+  svg.addEventListener('pointercancel',()=>{pointer=null});
   resetPair();
 })();
