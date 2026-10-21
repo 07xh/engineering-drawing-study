@@ -47,6 +47,7 @@ jobs:
           node --check scripts/check-textbook-examples.cjs
           node --check scripts/check-textbook-shape-inspector.cjs
           node --check scripts/check-textbook-only.cjs
+          node --check scripts/check-public-entry.cjs
           node --check scripts/check-exercise-source-gate.cjs
           node --check knowledge/knowledge-app.js
           node --check scripts/check-knowledge.cjs
@@ -102,6 +103,7 @@ jobs:
           node scripts/check-textbook-page-audit.cjs
           node scripts/check-textbook-concept-motion.cjs
           node scripts/check-textbook-only.cjs
+          node scripts/check-public-entry.cjs
           node scripts/check-exercise-source-gate.cjs
           node scripts/check-textbook-examples.cjs
           node scripts/check-textbook-shape-inspector.cjs
