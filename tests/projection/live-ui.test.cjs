@@ -21,9 +21,9 @@ test('live P0 projection page uses local bundled solver and not a fake static an
 });
 test('input revision invalidation happens before recompute; no stale computed points',()=>{
  assert.match(script,/revision\+\+/);
- assert.match(script,/solution=null;shownStep=0/);
- assert.match(script,/if\(s\.status==='unique'&&learningMode==='full'\)/);
- assert.match(script,/\.guides\.slice\(0,shownStep\)/);
+ assert.match(script,/solution=null;teaching=null;shownStep=0/);
+ assert.match(script,/if\(s\.status==='unique'&&teaching\?\.status==='ready'&&learningMode==='full'\)/);
+ assert.match(script,/teaching\.steps\.slice\(0,shownStep\)/);
  assert.match(script,/if\(shownStep===s\.steps\.length\)/);
 });
 test('input and keyboard accessible live controls are wired',()=>{
@@ -107,6 +107,8 @@ function createInteractivePage(){
    return require('../../core/projection/conventions.js');
   if(id==='../workbench/verified-projection-drawing.cjs')
    return require('../../workbench/verified-projection-drawing.cjs');
+  if(id==='../workbench/verified-plan-v5-bridge.cjs')
+   return require('../../workbench/verified-plan-v5-bridge.cjs');
   throw Error('unexpected runtime module '+id);
  };
  vm.runInNewContext(script,{require:nodeRequire,document});
@@ -269,4 +271,31 @@ test('input zoom change clears old touch strokes; mode switching does not expose
  get('learningMode').value='full';fire('learningMode','change');
  fire('next','click');
  assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,1);
+});
+
+test('official point page uses the same proof-backed drawing line coordinates as R1/V5',()=>{
+ const {pointTimeline}=require('../../workbench/verified-plan-v5-bridge.cjs');
+ const p=createInteractivePage();
+ const plan=pointTimeline({knownPoint:{x:15,y:10,z:12},
+   sheetTransform:{origin:{x:360,y:210},scale:4}},1);
+ assert.equal(plan.status,'ready');
+ for(let i=0;i<4;i++)p.fire('next','click');
+ const visible=p.allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
+ assert.equal(visible.length,4);
+ for(let i=0;i<4;i++){
+  const data=plan.steps[i].actions[0].geometry;
+  assert.equal(Number(visible[i].attributes.x1),data.from.x);
+  assert.equal(Number(visible[i].attributes.y1),data.from.y);
+  assert.equal(Number(visible[i].attributes.x2),data.to.x);
+  assert.equal(Number(visible[i].attributes.y2),data.to.y);
+ }
+});
+test('when the input changes the shared teaching plan cannot retain a prior drawable frame',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ for(let i=0;i<4;i++)fire('next','click');
+ assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,4);
+ get('spaceX').value='28';fire('spaceX','input');
+ assert.equal(get('stepCounter').textContent,'0 / 4');
+ assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,0);
+ assert.match(get('solveStatus').textContent,/28, 10, 12/);
 });
