@@ -69,5 +69,5 @@ assert(app.includes("layer===3&&hasExample"),'unreviewed exercises must remain h
 assert(app.includes("$('verifiedLessonContent').hidden=true"),'duplicated legacy panels must not overwhelm lessons');
 assert(app.includes('renderSixLayer()'),'six-stage navigation must be interactive');
 assert(css.includes('.six-layer-nav'),'course navigation has no styling');
-assert(build.includes("'knowledge/six-layer-course.js'"),'course asset not packaged for deployment');
+assert(!build.includes("'knowledge/six-layer-course.js'"),'source-only textbook course must not ship with public geometry tools');
 console.log('PASS six-layer learning: 110 entries, 54 reviewed, 56 directory guides, 39 later/appendix guides, 28 deeper lessons, '+linked+' textbook-linked topics');
