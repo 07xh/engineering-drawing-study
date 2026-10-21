@@ -165,65 +165,12 @@ jobs:
           node scripts/check-exercise-261.cjs
           node scripts/build-static.cjs
           node scripts/check-static-site-dependencies.cjs
-          node scripts/check-three-viewer-bundle.cjs
-          test -f dist/labs/constraints.html
-          test -f dist/labs/analysis.html
-          test -f dist/labs/dof-lab-v2.html
+          test -f dist/index.html
+          test -f dist/public-use.html
+          test -f dist/labs/point-coach.html
           test -f dist/labs/free-modeler.html
-          test -f dist/labs/free-modeler-ui.js
-          test -f dist/labs/free-geometry-core.js
-          test -f dist/labs/free-geometry-sheet.js
-          test -f dist/labs/free-geometry-spatial-svg.js
-          test -f dist/labs/dof-lab-v2-ui.js
-          test -f dist/labs/dof-lab-geometry.js
-          test -f dist/labs/dof-lab-sheet.js
-          test -f dist/labs/dof-lab-visibility.js
-          test -f dist/labs/dof-lab-state.js
-          test -f dist/labs/constraint-engine.js
-          test -f dist/labs/constraint-explorer.js
-          test -f dist/labs/teaching-steps.js
-          test -f dist/labs/method-library.js
-          test -f dist/site-ui.css
-          test -f dist/knowledge/index.html
-          test -f dist/knowledge/knowledge-ui.css
-          test -f dist/knowledge/knowledge-data.js
-          test -f dist/knowledge/lesson-depth.js
-          test -f dist/knowledge/six-layer-course.js
-          test -f dist/knowledge/page-audit.html
-          test -f dist/knowledge/textbook-page-audit.js
-          test -f dist/knowledge/textbook-page-audit-ui.js
-          test -f dist/knowledge/textbook-concept-motion.js
-          test -f dist/knowledge/textbook-concept-motion-ui.js
-          test -f dist/knowledge/textbook-examples.js
-          test -f dist/knowledge/textbook-example-geometry.js
-          test -f dist/knowledge/textbook-example-ui.js
-          test -f dist/knowledge/textbook-shape-inspector.js
-          test -f dist/knowledge/textbook-constraint-visual.js
-          test -f dist/knowledge/textbook-constraint-visual-ui.js
-          test -f dist/knowledge/planar-point-constraints.js
-          test -f dist/knowledge/knowledge-app.js
-          test -f dist/knowledge/visual-model.js
-          test -f dist/knowledge/visual-ui.js
-          test -f dist/knowledge/research-core.js
-          test -f dist/knowledge/research-ui.js
-          test -f dist/knowledge/solution-gate.js
-          test -f dist/labs/verified-solutions.js
-          test -f dist/labs/source-inspector.js
-          test -f dist/labs/source-inspector-ui.js
-          test -f dist/labs/source-fidelity.html
-          test -f dist/labs/exercise-261-evidence.js
-          test -f dist/labs/exercise-261-ui.js
-          test -f dist/labs/source-fidelity-audit.js
-          test -f dist/labs/source-fidelity-ui.js
-          test -f dist/labs/point-construction.html
-          test -f dist/labs/point-construction-core.js
-          test -f dist/labs/point-construction-ui.js
+          test -f dist/labs/dof-lab-v2.html
           test -f dist/labs/tangent-constraint.html
-          test -f dist/labs/tangent-constraint-core.js
-          test -f dist/labs/tangent-constraint-ui.js
-          test -f dist/labs/paper-geometry.html
-          test -f dist/labs/paper-geometry-core.js
-          test -f dist/labs/paper-geometry-ui.js
-          test -f dist/labs/composite-geometry.html
-          test -f dist/labs/composite-geometry-core.js
-          test -f dist/labs/composite-geometry-ui.js
+          test ! -e dist/knowledge/index.html
+          test ! -e dist/labs/verified-exercises.js
+          node scripts/check-three-viewer-bundle.cjs
