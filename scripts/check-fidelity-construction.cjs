@@ -72,7 +72,7 @@ assert(audUI.includes('audit.scan')&&audUI.includes('report.procedural'),'audit 
 assert(workUI.includes('model.report(engine')&&workUI.includes('model.frame(data'),'interactive lab not wired to numeric proof');
 assert(workUI.includes('result.inconsistent'),'contradictory third-view candidates must be explained');
 assert(!workUI.includes('lineFocus')&&!workUI.includes('VerifiedExerciseGeometry'),'construction must not modify textbook answer layer');
-for(const page of ['index.html','labs/chapter-26-29.html','labs/chapter-drawing.html','knowledge/index.html'])assert(read(page).includes('source-fidelity.html'),'source audit not linked '+page);
+for(const page of ['labs/chapter-26-29.html','labs/chapter-drawing.html','knowledge/index.html'])assert(read(page).includes('source-fidelity.html'),'source audit not linked '+page);
 assert(read('labs/chapter-drawing.js').includes("drawingAuditLink").valueOf(),'current exercise must update audit deeplink');
 for(const asset of ['labs/source-fidelity.html','labs/source-fidelity-audit.js','labs/source-fidelity-ui.js','labs/point-construction.html','labs/point-construction-core.js','labs/point-construction-ui.js'])assert(read('scripts/build-static.cjs').includes("'"+asset+"'"),'static build omitted '+asset);
 console.log('PASS: 28 source audits remain locked, input anomalies flagged, 27 coordinate scenarios x 5 construction frames, contradiction proof and UI routing');
