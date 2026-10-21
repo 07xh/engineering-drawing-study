@@ -15,8 +15,9 @@ function toLegacySvgArc(arc,{origin,scale,style='result'}={}){
  if(!check.ok||arc.kind!=='arc')throw Error('必须提供有效的二维模型圆弧');
  if(!vec(origin,['x','y'])||!finite(scale)||scale<=0)throw Error('必须提供有效的像素原点与正比例');
  const d=arc.data,ccw=d.direction==='ccw';
- const startAngle=ccw?-d.endAngle:-d.startAngle;
- const endAngle=ccw?-d.startAngle:-d.endAngle;
+ const angle=n=>n===0?0:n; // canonicalize -0 for strict contract consumers
+ const startAngle=angle(ccw?-d.endAngle:-d.startAngle);
+ const endAngle=angle(ccw?-d.startAngle:-d.endAngle);
  const action={kind:'arc',style,geometry:{
   cx:origin.x+scale*d.center.x,cy:origin.y-scale*d.center.y,
   r:scale*d.radius,startAngle,endAngle
