@@ -83,11 +83,14 @@ function interactiveFillet(){
   branch:'',direction:'',travel1:'',travel2:'',
   line1Ax:'-20',line1Ay:'0',line1Bx:'20',line1By:'0',
   line2Ax:'0',line2Ay:'-20',line2Bx:'0',line2By:'20',
-  lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:'',drawTool:'line'};
+  lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:'',
+  drawTool:'line',digitalSource:'first',digitalValue:'10'};
  const ids=[...Object.keys(values),'diagram','calculate','prev','next','reset',
   'status','counter','stepTitle','stepText','learningMode','fullControls',
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
-  'clearDraw','checkDraw','drawStatus','playPause','animationSpeed'];
+  'clearDraw','checkDraw','drawStatus','playPause','animationSpeed',
+  'addDigital','undoDigital','clearDigital','checkDigital',
+  'digitalStatus','centerSnapStatus'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -127,6 +130,8 @@ function interactiveFillet(){
   '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs'),
   '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs'),
   '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
+  '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
+  '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
@@ -463,4 +468,86 @@ test('V5 live fillet clock changes speed without recalculating real selected G1 
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
  advance(20000);
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
+});
+
+test('real page includes digital compass/ruler, source choice, and math snap affordance',()=>{
+ for(const id of ['digitalSource','digitalValue','addDigital','undoDigital',
+  'clearDigital','checkDigital','digitalStatus','centerSnapStatus'])
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ assert.match(html,/<option value="snap">/);
+ assert.match(entry,/constructParallelLine\(input\[sourceId\],value/);
+ assert.match(entry,/constructConcentricCircle\(input\[sourceId\],value/);
+ assert.match(entry,/gradeStudentAuxiliaries\(isSegments/);
+ assert.match(entry,/snapChosenFilletCenter\(/);
+ assert.doesNotMatch(entry,/innerHTML\s*=|localStorage|fetch\(/);
+});
+test('digital signed ruler on the existing finite-segment page scores TWO independent student guides',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.match(get('digitalStatus').textContent,/0 \/ 2/);
+ get('digitalSource').value='first';get('digitalValue').value='10';fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/1 \/ 2/);
+ get('digitalSource').value='second';fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/2 \/ 2/);
+ assert.match(get('digitalStatus').textContent,/仍须独立确定切点/);
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,2);
+ fire('undoDigital','click');
+ assert.match(get('digitalStatus').textContent,/1 \/ 2/);
+ fire('clearDigital','click');
+ assert.match(get('digitalStatus').textContent,/0 \/ 2/);
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
+});
+test('wrong numeric radius for student compass fails even though geometry is drawable',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('digitalSource').value='first';get('digitalValue').value='12';fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/0 \/ 2/);
+ get('digitalValue').value='15';fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/1 \/ 2/);
+ get('digitalSource').value='second';fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/2 \/ 2/);
+ assert.match(get('digitalStatus').textContent,/额外／错误构造 1/);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#8651a8').length,3);
+});
+test('digital construction with missing candidate does not disclose an automatic center',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/必须明确选择有效分支/);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#9d6529').length,0);
+});
+test('student chooses candidate center by tapping actual page in screen coordinates',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='snap';fire('drawTool','change');
+ const args={first:{center:{x:0,y:0},radius:5},
+  second:{center:{x:20,y:0},radius:5},filletRadius:10,
+  firstMode:'external',secondMode:'external'};
+ const selected=circleCircleFilletCenters(args).candidates.find(x=>x.id==='center-1');
+ assert.ok(selected);
+ const svg=get('diagram');
+ svg.listeners.pointerdown({pointerId:15,button:0,
+  clientX:360+selected.center.x*8,clientY:220-selected.center.y*8});
+ assert.match(get('centerSnapStatus').textContent,/候选圆心数学吸附通过/);
+ assert.match(get('centerSnapStatus').textContent,/仍须验证真实切点/);
+ assert.equal(collect().filter(n=>n.tag==='text'&&n.textContent==='已选圆心').length,1);
+ svg.listeners.pointerdown({pointerId:16,button:0,clientX:50,clientY:50});
+ assert.doesNotMatch(get('centerSnapStatus').textContent,/数学吸附通过/);
+ assert.equal(collect().filter(n=>n.tag==='text'&&n.textContent==='已选圆心').length,0);
+});
+test('input revision clears previous geometric ruler actions and snapped center',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ fire('addDigital','click');
+ assert.match(get('digitalStatus').textContent,/1 \/ 2/);
+ get('line1Ay').value='3';fire('line1Ay','input');
+ assert.equal(get('undoDigital').disabled,true);
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
+ assert.match(get('centerSnapStatus').textContent,/已清空/);
 });
