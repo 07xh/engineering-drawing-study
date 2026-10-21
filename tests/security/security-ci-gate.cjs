@@ -8,7 +8,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawnSync}=require('node:child_process');
 const TEST_NAMES=Object.freeze([
- 'audit-public-dist.test.cjs','production-smoke.test.cjs','release-plan.test.cjs',
+ 'audit-public-dist.test.cjs','github-evidence.test.cjs','production-smoke.test.cjs','release-plan.test.cjs',
+ 'release-simulator.test.cjs',
  'release-readiness.test.cjs','verify-pr-diff.test.cjs','security-ci-gate.test.cjs'
 ]);
 function securityCiGate({root=path.resolve(__dirname,'../..'),spawn=spawnSync,audit}={}){
