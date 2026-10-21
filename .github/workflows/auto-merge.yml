@@ -8,12 +8,13 @@ on:
       - DraftAI release security
     types:
       - completed
-# Write scope is limited to the trusted default-branch workflow_run.
-# No untrusted PR code is checked out or executed.
+# GitHub's default GITHUB_TOKEN is read-only. A scoped, separate merge
+# token is required, because GITHUB_TOKEN merges do not trigger push CI.
+# Never check out or execute untrusted PR code here.
 permissions:
-  contents: write
+  contents: read
   checks: read
-  pull-requests: write
+  pull-requests: read
 concurrency:
   group: draftai-guarded-merge
   cancel-in-progress: false
@@ -37,4 +38,5 @@ jobs:
         env:
           DRAFTAI_AUTO_MERGE_ENABLED: ${{ vars.DRAFTAI_AUTO_MERGE_ENABLED }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFTAI_MERGE_TOKEN: ${{ secrets.DRAFTAI_MERGE_TOKEN }}
         run: node scripts/release/auto-merge.cjs
