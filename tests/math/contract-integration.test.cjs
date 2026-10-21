@@ -81,3 +81,13 @@ test('unique, multiple, no solutions and local DOF have consistent cardinality',
   globallyUnique:null,degrees:null,localDegrees:1,proofLevel:'local-first-order'};
  assert.equal(C.validateSolveResult(local).ok,true);
 });
+
+test('generated and confirmed user-input problems preserve provenance without fabricated textbook page',()=>{
+ const generated={...problem(),source:{kind:'generated',generatorId:'DA03'}};
+ assert.equal(C.validateProblem(generated).ok,true);
+ const user={...generated,source:{kind:'user-input',confirmed:true},renderMode:'constraint-engine'};
+ assert.equal(C.validateProblem(user).ok,true);
+ assert.equal(C.validateProblem({...user,source:{kind:'user-input',confirmed:false}}).ok,false);
+ assert.equal(C.validateProblem({...user,source:{kind:'textbook'}}).ok,false);
+ assert.equal(C.validateProblem({...user,source:{kind:'unexpected'}}).ok,false);
+});
