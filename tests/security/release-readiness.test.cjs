@@ -1,4 +1,15 @@
 'use strict';
+
+function sampleDiff(headSha){
+ const blob='b'.repeat(40);
+ return {repository:'07xh/engineering-drawing-study',
+  pullRequest:{base:{ref:'main'},head:{sha:headSha,repo:{full_name:'07xh/engineering-drawing-study'}},state:'open',draft:false,mergeable:true,changed_files:1},
+  files:[{filename:'site-ui.css',sha:blob,status:'modified',additions:1,deletions:1,changes:2,
+   patch:'@@ -1 +1 @@\n-.nav {color:red}\n+.nav {color:blue}'}],
+  filesComplete:true,headTree:{forCommitSha:headSha,truncated:false,tree:[{path:'site-ui.css',sha:blob,mode:'100644',type:'blob'}]}
+ };
+}
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {evaluateReleaseReadiness, REQUIRED_CHECKS, validPath} = require('./release-readiness.cjs');
@@ -8,7 +19,7 @@ function candidate(overrides = {}) {
   return {
     repository:'07xh/engineering-drawing-study', targetBranch:'main',
     headSha:sha, artifactSha:sha, draft:false,mergeConflicts:false,
-    changedFiles:['site-ui.css'],mainProtected:true,noAdminBypass:true,
+    changedFiles:['site-ui.css'],diffEvidence:sampleDiff(sha),mainProtected:true,noAdminBypass:true,
     productionBuildUploadsOnly:true,previousActiveVersionId:version,
     verifiedPreview:true,privateRoutesDenied:true,metadataFromTrustedApi:true,
     checks:REQUIRED_CHECKS.map(name=>({name,sha,status:'completed',conclusion:'success'})),
@@ -77,4 +88,14 @@ test('empty or malformed context blocks instead of crashing',()=>{
   const result=evaluateReleaseReadiness(value);
   assert.equal(result.eligible,false);
  }
+});
+
+test('diff evidence missing, stale or changed by PR author blocks approval',()=>{
+ isBlocked(candidate({diffEvidence:null}),'unverified PR diff');
+ isBlocked(candidate({diffEvidence:{...sampleDiff(sha),filesComplete:false}}),'unverified PR diff');
+ isBlocked(candidate({diffEvidence:sampleDiff('f'.repeat(40))}),'unverified PR diff');
+});
+test('diff evidence must match declared changed-file list exactly',()=>{
+ isBlocked(candidate({changedFiles:['other.css']}),'unverified PR diff');
+ isBlocked(candidate({changedFiles:['site-ui.css','other.css']}),'unverified PR diff');
 });
