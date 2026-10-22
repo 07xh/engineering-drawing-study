@@ -124,3 +124,90 @@ test('supported line and mixed classroom types produce safe feedback without fab
   assert.match(v.scope,/不代表整道工程制图习题/);
  }
 });
+
+test('wrong compass radius, center and duplicates give distinct solver-grounded corrections',()=>{
+ const correct=guides();
+ const [one,two]=correct;
+ const cases=[
+  {actions:[{...one,radius:one.radius+1},two],code:'compass-radius',text:/圆规辅助圆半径未满足/},
+  {actions:[{...one,center:{x:one.center.x+2,y:one.center.y}},two],code:'compass-center',text:/圆心未与对应已知对象同心/},
+  {actions:[one,two,one],code:'duplicate',text:/撤销重复构造/}
+ ];
+ for(const c of cases){
+  const source=grade(args,{auxiliaries:c.actions});
+  const issue=source.verification.auxiliaries.diagnostics;
+  assert.ok(issue.some(x=>x.code===c.code));
+  const user=explain(source);
+  assert.equal(user.stages[0].status,'review');
+  assert.match(user.stages[0].detail,c.text);
+  assert.doesNotMatch(JSON.stringify(user),/"snappedPoint"|"expectedRadius"|"signedOffsetMm"/);
+ }
+});
+test('real two finite-segment offset sign, distance and misplaced line are distinguished',()=>{
+ const {constructParallelLine}=require('../../workbench/verified-ruler-tools.cjs');
+ const a={first:{a:{x:-20,y:0},b:{x:20,y:0}},
+  second:{a:{x:0,y:-20},b:{x:0,y:20}},filletRadius:10};
+ const valid=(offset)=>({...constructParallelLine(a.first,offset,{revision}),sourceId:'first'});
+ const cases=[
+  {action:valid(-10),code:'offset-side',expected:/有符号偏移方向与当前选定分支不一致/},
+  {action:valid(11),code:'offset-distance',expected:/偏移距离不符合连接半径条件/},
+  {action:{...valid(10),from:{x:-19,y:10}},code:'offset-geometry',expected:/线段笔迹未满足/}
+ ];
+ for(const c of cases){
+  const result=assessFilletStudentProgress('segments',a,
+   {auxiliaries:[c.action]}, {branchId:'s++',revision,origin,scale});
+  const hint=fromProgress(result,{kind:'segments',revision});
+  assert.ok(result.verification.auxiliaries.diagnostics.some(x=>x.code===c.code));
+  assert.match(hint.stages[0].detail,c.expected);
+  assert.doesNotMatch(hint.stages[0].detail,/正确偏移值[:：]\s*\d/);
+ }
+});
+test('tangent marks distinguish wrong source, repeated contact and off-contact in model millimeters',()=>{
+ const c=circleCircleFilletCenters(args).candidates.find(x=>x.id===branchId);
+ const right={kind:'tangent-point',sourceId:'first',point:c.contacts.first,revision};
+ const cases=[
+  {marks:[{...right,point:c.contacts.second}],code:'source-mismatch',
+   text:/所选原始对象不一致/},
+  {marks:[right,right],code:'duplicate-contact',text:/撤销重复切点/},
+  {marks:[{...right,point:{x:c.contacts.first.x+3,y:c.contacts.first.y+2}}],
+   code:'off-contact',text:/未满足该对象与连接圆弧的接触位置容差/}
+ ];
+ for(const item of cases){
+  const g=grade(args,{tangentMarks:item.marks});
+  assert.ok(g.verification.contacts.diagnostics.some(x=>x.code===item.code));
+  const note=explain(g);
+  assert.match(note.stages[2].detail,item.text);
+  assert.equal(note.stages[2].verified,false);
+ }
+});
+test('student arc correction distinguishes sparse strokes, reversed traversal and radial displacement',()=>{
+ const g=chooseDirectedFillet(args).geometry.data;
+ const points=Array.from({length:49},(_,i)=>{
+  const t=(g.startAngle+(g.endAngle-g.startAngle)*i/48)*Math.PI/180;
+  return {x:origin.x+scale*(g.center.x+g.radius*Math.cos(t)),
+   y:origin.y-scale*(g.center.y+g.radius*Math.sin(t))};
+ });
+ for(const item of [
+  {points:[points[0],points[48]],code:'enoughSamples',text:/笔迹采样点不足/},
+  {points:points.slice().reverse(),code:'traversalDirectionValid',text:/逆向回退/},
+  {points:points.map(p=>({x:p.x+16,y:p.y})),code:'radiusWithinTolerance',
+   text:/弧线弯曲半径未满足|起点或终点没有/}
+ ]){
+  const result=grade(args,{arcStrokes:[{revision,points:item.points}]});
+  assert.equal(result.verification.arc.status,'incorrect');
+  assert.equal(result.verification.arc.checks[item.code],false);
+  assert.match(explain(result).stages[3].detail,item.text);
+ }
+});
+test('diagnostic text ignores arbitrary injected messages, unexpected sources and out-of-range index',()=>{
+ const g=grade(args,{auxiliaries:guides().slice(0,1)});
+ const altered={...g,verification:{...g.verification,auxiliaries:{
+  ...g.verification.auxiliaries,diagnostics:[
+   {sourceId:'wrong',index:0,code:'compass-radius'},
+   {sourceId:'first',index:1000,code:'offset-side'},
+   {sourceId:'first',index:0,code:'<script>alert(1)</script>'}
+  ]}}};
+ const note=explain(altered);
+ assert.equal(note.status,'in-progress');
+ assert.doesNotMatch(JSON.stringify(note),/<script>|偏移方向与当前选定分支/);
+});
