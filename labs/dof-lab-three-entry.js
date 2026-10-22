@@ -4,9 +4,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import SyncV5 from '../workbench/dof-synchronized-reveal.cjs';
+import ReasonV5 from '../workbench/dof-step-explanations.cjs';
 
 // Shared presentation logic is bundled locally even when WebGL is unavailable.
 window.DrawingLabSyncV5=SyncV5;
+window.DrawingLabStepReasons=ReasonV5;
 
 (function(){
 'use strict';
