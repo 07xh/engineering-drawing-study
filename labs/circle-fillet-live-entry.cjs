@@ -9,6 +9,7 @@ const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
  require('../workbench/verified-ruler-tools.cjs');
 const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
 const {gradeStudentTangentPoints}=require('../workbench/verified-tangent-point-drawing.cjs');
+const {assessFilletStudentProgress}=require('../workbench/verified-student-fillet-progress.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
@@ -20,7 +21,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
  const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,teaching=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
- let digitalActions=[],digitalError='',snappedCenter=null;
+ let digitalActions=[],digitalError='',snappedCenter=null,studentCenterTap=null;
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
  let playTimer=null,stageClock=null,animatedArcNode=null,statusMessage='';
  const reducedMotion=()=>typeof window!=='undefined'&&
@@ -115,7 +116,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  }
  function compute(){
   stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
-  digitalActions=[];digitalError='';snappedCenter=null;
+  digitalActions=[];digitalError='';snappedCenter=null;studentCenterTap=null;
   centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
   centers=null;chosen=null;input=null;teaching=null;stage=0;hintStep=0;
   try{
@@ -297,7 +298,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     if(stroke.kind==='arc')svg.append(elem('polyline',{
      points:stroke.points.map(p=>p.x+','+p.y).join(' '),
      stroke:'#8651a8','stroke-width':3.2,fill:'none'}));
-    else svg.append(elem('line',{
+    else if(stroke.kind==='line')svg.append(elem('line',{
      x1:stroke.from.x,y1:stroke.from.y,x2:stroke.to.x,y2:stroke.to.y,
      stroke:'#8651a8','stroke-width':3.2}));
    }
@@ -340,6 +341,22 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     }
    }catch(error){$('digitalStatus').textContent='无法验证尺规步骤：'+error.message;}
    $('centerSnapStatus').textContent=centerSnapMessage;
+   if(input){
+    try{
+     const grade=assessFilletStudentProgress(isSegments?'segments':'circles',
+       input,{
+        auxiliaries:digitalActions,centerMark:studentCenterTap,
+        tangentMarks:strokes.filter(st=>st.kind==='tangent-point'),
+        arcStrokes:strokes.filter(st=>st.kind==='arc')
+       },{branchId:$('branch').value,revision,origin:O,scale});
+     const labels={'auxiliary-loci':'辅助轨迹','chosen-center':'候选圆心',
+      'contact-points':'两个切点','directed-arc':'连接弧'};
+     $('learningProgress').textContent='已通过 '+grade.verifiedCount+
+      ' / '+grade.supportedStageCount+' 项受支持的数学构造：'+
+      grade.stages.map(x=>labels[x.id]+(x.ok?' ✓':' 待核验')).join(' · ')+
+      '。'+grade.reason;
+    }catch(e){$('learningProgress').textContent='无法计算联合进度：'+e.message;}
+   }else $('learningProgress').textContent='输入条件无效，无法进行联合数学判题。';
   }
   $('checkDraw').disabled=!drawing||!input||
    ($('drawTool').value!=='tangent'&&(!verified||
@@ -516,7 +533,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  });
  $('clearDigital').addEventListener('click',()=>{
   if(learningMode!=='draw')return;
-  digitalActions=[];snappedCenter=null;digitalError='';
+  digitalActions=[];snappedCenter=null;studentCenterTap=null;digitalError='';
   centerSnapMessage='尺规和圆心选择已清空。';render();
  });
  $('checkDigital').addEventListener('click',()=>{if(learningMode==='draw'){
@@ -546,10 +563,13 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   }
   if(tool==='snap'){
    try{
+    const rawTap={x:(from.x-O.x)/scale,y:(O.y-from.y)/scale,revision};
+    // Preserve the actual student tap as evidence; the snapped mathematical
+    // center must NOT be reused as an invented student input.
+    studentCenterTap=rawTap;
     const selected=snapChosenFilletCenter(
      $('modeSelect').value==='segments'?'segments':'circles',
-     input,{x:(from.x-O.x)/scale,y:(O.y-from.y)/scale,revision},
-     {branchId:$('branch').value,revision});
+     input,rawTap,{branchId:$('branch').value,revision});
     snappedCenter=selected.status==='verified-center'?selected.snappedPoint:null;
     centerSnapMessage=selected.status==='verified-center'
      ?'候选圆心数学吸附通过；仍须验证真实切点、弧向及 G1。'

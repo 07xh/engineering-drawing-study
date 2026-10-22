@@ -92,7 +92,7 @@ function interactiveFillet(){
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
   'clearDraw','checkDraw','drawStatus','playPause','animationSpeed',
   'addDigital','undoDigital','clearDigital','checkDigital',
-  'digitalStatus','centerSnapStatus'];
+  'digitalStatus','centerSnapStatus','learningProgress'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -135,6 +135,7 @@ function interactiveFillet(){
   '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
   '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
   '../workbench/verified-tangent-point-drawing.cjs':require('../../workbench/verified-tangent-point-drawing.cjs'),
+  '../workbench/verified-student-fillet-progress.cjs':require('../../workbench/verified-student-fillet-progress.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs')
@@ -743,4 +744,73 @@ test('tangent tool explicitly blocks branch auto-selection and does not pretend 
  get('diagram').listeners.pointerdown({pointerId:1,button:0,clientX:390,clientY:220});
  assert.match(get('drawStatus').textContent,/先选择题目实际存在的圆心分支/);
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
+});
+
+test('real full student four-stage math progress appears without claiming the textbook problem is solved',()=>{
+ assert.equal((html.match(/id="learningProgress"/g)||[]).length,1);
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.match(get('learningProgress').textContent,/已通过 0 \/ 4/);
+ const raw=require('../../engines/planar/circle-circle-fillet.cjs')
+  .circleCircleFilletCenters({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external'});
+ const c=raw.candidates.find(x=>x.id==='center-1');
+ for(const source of ['first','second']){
+  get('digitalSource').value=source;
+  get('digitalValue').value=String(raw.auxiliary[source+'Locus'].radius);
+  fire('addDigital','click');
+ }
+ assert.match(get('learningProgress').textContent,/已通过 1 \/ 4/);
+ const board=get('diagram'),tap=(p,id)=>{
+  board.listeners.pointerdown({pointerId:id,button:0,
+   clientX:360+8*p.x,clientY:220-8*p.y});
+ };
+ get('drawTool').value='snap';fire('drawTool','change');
+ tap(c.center,11);
+ assert.match(get('learningProgress').textContent,/已通过 2 \/ 4/);
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';tap(c.contacts.first,12);
+ get('digitalSource').value='second';tap(c.contacts.second,13);
+ assert.match(get('learningProgress').textContent,/已通过 3 \/ 4/);
+ get('drawTool').value='arc';fire('drawTool','change');
+ const g=require('../../engines/planar/directed-circle-fillet.cjs')
+  .chooseDirectedFillet({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},
+   filletRadius:10,firstMode:'external',secondMode:'external',
+   branchId:'center-1',direction:'cw',
+   knownFirstTravel:'ccw',knownSecondTravel:'ccw'}).geometry.data;
+ const samples=Array.from({length:49},(_,i)=>{
+  const angle=(g.startAngle+(g.endAngle-g.startAngle)*i/48)*Math.PI/180;
+  return {x:360+8*(g.center.x+g.radius*Math.cos(angle)),
+   y:220-8*(g.center.y+g.radius*Math.sin(angle))};
+ });
+ const mouse=(p,id)=>({pointerId:id,button:0,clientX:p.x,clientY:p.y});
+ board.listeners.pointerdown(mouse(samples[0],14));
+ for(let i=1;i<48;i++)board.listeners.pointermove(mouse(samples[i],14));
+ board.listeners.pointerup(mouse(samples[48],14));
+ assert.match(get('learningProgress').textContent,/已通过 4 \/ 4/);
+ assert.match(get('learningProgress').textContent,/未证明完整教材题/);
+ fire('undoDraw','click');
+ assert.match(get('learningProgress').textContent,/已通过 3 \/ 4/);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.match(get('learningProgress').textContent,/已通过 0 \/ 4/);
+});
+test('actual student center tap is not replaced by hidden perfect snap geometry for progress',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='snap';fire('drawTool','change');
+ const c=require('../../engines/planar/circle-circle-fillet.cjs')
+  .circleCircleFilletCenters({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external'}).candidates[0];
+ get('diagram').listeners.pointerdown({pointerId:1,button:0,
+  clientX:360+8*(c.center.x+1.7),clientY:220-8*c.center.y});
+ assert.match(get('learningProgress').textContent,/已通过 0 \/ 4/);
+ assert.match(get('centerSnapStatus').textContent,/未满足|失败/);
 });

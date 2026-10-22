@@ -78,7 +78,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <p class="note">新增“点选切点”：先在尺规区选择已知对象 1 或 2，再点选图纸上的切点；可以先于弧向／G1 判题，但不会自动显示真实切点。重复、选错对象、超出有效范围均不能通过。</p>
 <p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
 <div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
-<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p></div>
+<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">支持的四项学生构造：辅助轨迹、圆心、切点与连接弧。逐项数学核验，不等于整道工程制图题完成。</p></div>
 <div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
 <p class="note" id="counter">0 / 4</p>
 <p class="note">所有运算在本机浏览器运行。未声明分支或方向时只显示候选数据，不伪造已核验有限连接弧。</p>
