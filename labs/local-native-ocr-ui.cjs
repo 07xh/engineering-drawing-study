@@ -7,10 +7,13 @@ const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {rankDimensionLinks}=
  require('../recognition/dimension-notation-candidates.cjs');
+const {chooseOcrRadiusPrefill}=
+ require('../recognition/reviewed-ocr-radius-prefill.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalNativeOcr({
  image,photoInput,photoClear,run,clear,overlay,status,selector,associate,
- sourceField,fieldReview,getCurves=()=>[],recognize=detectBrowserDimensionCandidates
+ sourceField,fieldReview,prefillButton,unitConfirmed,applyPrefill=()=>{},
+ getCurves=()=>[],recognize=detectBrowserDimensionCandidates
 }){
  let epoch=0,candidates=[];
  const item=(value,label)=>{
@@ -20,7 +23,7 @@ function attachLocalNativeOcr({
  function reset(){
   epoch++;candidates=[];overlay.replaceChildren();overlay.hidden=true;
   selector.replaceChildren(item('','尚无 R/Φ 文字候选'));
-  run.disabled=false;associate.disabled=true;
+  run.disabled=false;associate.disabled=true;prefillButton.disabled=true;
   status.textContent='浏览器原生文字识别为可选实验功能；原图不上传。识别结果需要人工核对。';
  }
  function drawCandidates(){
@@ -41,6 +44,7 @@ function attachLocalNativeOcr({
   }
   overlay.hidden=candidates.length===0;
   associate.disabled=candidates.length===0;
+  prefillButton.disabled=candidates.length===0;
  }
  function describeSelected(){
   const dim=candidates.find(x=>x.id===selector.value);
@@ -57,11 +61,12 @@ function attachLocalNativeOcr({
     nearby.map(x=>x.geometryCandidateId).join('、'):'暂无线索')+
    '。OCR 不会填入毫米尺寸，必须人工复核。';
  }
- photoInput.addEventListener('change',reset);
- photoClear.addEventListener('click',reset);
- image.addEventListener('load',reset);
- image.addEventListener('error',reset);
- clear.addEventListener('click',reset);
+ const changedPhoto=()=>{unitConfirmed.checked=false;reset();};
+ photoInput.addEventListener('change',changedPhoto);
+ photoClear.addEventListener('click',changedPhoto);
+ image.addEventListener('load',changedPhoto);
+ image.addEventListener('error',changedPhoto);
+ clear.addEventListener('click',changedPhoto);
  selector.addEventListener('change',describeSelected);
  run.addEventListener('click',async()=>{
   reset();
@@ -90,6 +95,23 @@ function attachLocalNativeOcr({
    '本地识别到 '+candidates.length+
    ' 条 R/Φ 尺寸候选。请选择文字检查可能关联的圆弧，再确认实际毫米尺寸。':
    '当前图片未识别到可靠的 R/Φ 标注候选；不代表图纸没有尺寸。';
+ });
+ prefillButton.addEventListener('click',()=>{
+  const dim=candidates.find(x=>x.id===selector.value);
+  const outcome=chooseOcrRadiusPrefill(dim,sourceField.value,{
+   unitAcknowledged:unitConfirmed.checked
+  });
+  if(outcome.status!=='ready-to-prefill'){
+   status.textContent=outcome.reason;return;
+  }
+  const linked=fieldReview.markCandidate(dim);
+  if(!linked.ok){status.textContent=linked.reason;return;}
+  try{applyPrefill(outcome.field,outcome.value);}
+  catch(error){status.textContent=error instanceof Error?
+   error.message:'cannot prefill radius';return;}
+  status.textContent='已预填 OCR 建议半径 '+outcome.value+
+   ' mm，但尚未确认其正确性。旧动画已失效，请重新核对数值、'+
+   '确认该字段及全部解题条件后再查看数学结果。';
  });
  associate.addEventListener('click',()=>{
   const dim=candidates.find(x=>x.id===selector.value);
