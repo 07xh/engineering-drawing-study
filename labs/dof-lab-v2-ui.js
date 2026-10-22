@@ -29,6 +29,10 @@ function syncStatusVisual(time){
  $('syncProgress').disabled=!valid;
  $('syncProgress').value=valid?String(Math.round(frame.ratio*1000)):'1000';
  $('syncPercent').textContent=valid?Math.round(frame.ratio*100)+'%':'—';
+ $('syncProgress').setAttribute('aria-valuetext',valid?
+  '已完成 '+Math.round(frame.ratio*100)+'%；'+
+  (frame.done?'全部步骤完成':'第 '+(frame.activeStepIndex+1)+' 步'):
+  '尚未开始同步动画');
  const index=valid?frame.activeStepIndex:-1;
  $('syncExplanation').textContent=valid?
    (syncPlan.steps[Math.max(index,0)].title+' · '+syncPlan.label):
@@ -37,10 +41,11 @@ function syncStatusVisual(time){
 }
 function animateSync(time){
  syncFrame=null;
- if(!syncPlayer)return;
+ if(!syncPlayer||document.hidden)return;
  if(syncStatusVisual(time))syncFrame=requestAnimationFrame(animateSync);
 }
 function runSync(){
+ if(document.hidden)return;
  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
  if(syncPlayer){
   const current=syncPlayer.snapshot(performance.now());
@@ -240,6 +245,23 @@ $('syncProgress').addEventListener('input',()=>{
  syncPlayer.pause(performance.now());
  syncPlayer.seekProgress(Number($('syncProgress').value)/1000,performance.now());
  syncStatusVisual();
+});
+// A hidden Android browser tab must not fast-forward a drawing by consuming
+// all wall-clock time while the user is away. Return paused; resume is explicit.
+document.addEventListener?.('visibilitychange',()=>{
+ if(document.hidden){
+  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+  if(syncPlayer){syncPlayer.pause(performance.now());syncStatusVisual();}
+ }
+});
+const motionPreference=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+motionPreference?.addEventListener?.('change',event=>{
+ if(event.matches&&syncPlayer){
+  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+  syncPlayer.pause(performance.now());
+  syncPlayer.seekMs(syncPlan.timeline.totalMs,performance.now());
+  syncStatusVisual();
+ }
 });
 try{
  viewer=window.DrawingLabThreeViewer?.mount($('threeSpace'),id=>{
