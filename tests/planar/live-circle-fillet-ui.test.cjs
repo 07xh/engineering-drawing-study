@@ -1539,3 +1539,69 @@ test('V5 student mathematics feedback resets on input revision and persists acro
  assert.doesNotMatch(get('studentFeedbackSummary').textContent,/4 \/ 4/);
  assert.doesNotMatch(get('studentFeedbackAux').textContent,/已核验 ·/);
 });
+
+test('actual invalid student compass radius is diagnosed without supplying an answer',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('digitalSource').value='first';
+ get('digitalValue').value='99';fire('addDigital','click');
+ assert.match(get('studentFeedbackAux').textContent,/圆规辅助圆半径未满足/);
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/应该输入|正确半径是/);
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+ fire('undoDigital','click');
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/具体检查：对象 1/);
+});
+test('real offset sign error is reported from model-mm grader and removed on undo',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('digitalSource').value='first';
+ get('digitalValue').value='-10';fire('addDigital','click');
+ assert.match(get('studentFeedbackAux').textContent,/有符号偏移方向与当前选定分支不一致/);
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/正确(方向|偏移|符号)[:：=]/);
+ fire('clearDigital','click');
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/具体检查：对象 1/);
+});
+test('real wrong-source contact tap pinpoints selected object without exposing target contact coordinates',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';
+ const chosen=require('../../engines/planar/circle-circle-fillet.cjs')
+  .circleCircleFilletCenters({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external'}).candidates.find(c=>c.id==='center-1');
+ get('diagram').listeners.pointerdown({pointerId:61,button:0,
+  clientX:360+8*chosen.contacts.second.x,clientY:220-8*chosen.contacts.second.y});
+ assert.match(get('studentFeedbackContacts').textContent,/所选原始对象不一致/);
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+ assert.doesNotMatch(get('studentFeedbackContacts').textContent,/\(\s*-?\d+(?:\.\d+)?\s*,\s*-?\d/);
+});
+test('student drawn two-point arc receives specific sampling guidance, no full-problem pass',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ for(const [id,value] of [['branch','center-1'],['direction','cw'],
+  ['travel1','ccw'],['travel2','ccw']]){
+  get(id).value=value;fire(id,'change');
+ }
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ const g=require('../../engines/planar/directed-circle-fillet.cjs')
+  .chooseDirectedFillet({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external',
+   branchId:'center-1',direction:'cw',
+   knownFirstTravel:'ccw',knownSecondTravel:'ccw'}).geometry.data;
+ const pos=theta=>({x:360+8*(g.center.x+g.radius*Math.cos(theta*Math.PI/180)),
+  y:220-8*(g.center.y+g.radius*Math.sin(theta*Math.PI/180))});
+ const start=pos(g.startAngle),end=pos(g.endAngle),board=get('diagram');
+ const ptr=(q,id)=>({pointerId:id,button:0,clientX:q.x,clientY:q.y});
+ board.listeners.pointerdown(ptr(start,62));
+ board.listeners.pointerup(ptr(end,62));
+ assert.match(get('studentFeedbackArc').textContent,/笔迹采样点不足/);
+ assert.doesNotMatch(get('studentFeedbackSummary').textContent,/4 \/ 4/);
+ fire('undoDraw','click');
+ assert.doesNotMatch(get('studentFeedbackArc').textContent,/笔迹采样点不足/);
+});
