@@ -132,7 +132,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(index===i)btn.setAttribute('aria-current','step');
    btn.addEventListener('click',()=>{
     stopClock();
-    draw(session.seekStep(i,{now:performance.now()}));
+    draw(session.seekStep(i,performance.now()));
    });
    list.append(btn);
   }
@@ -170,7 +170,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       'data-action':a.id});
      Motion.updateSvg(node,a,f);
      node.addEventListener('click',()=>{
-      stopClock();draw(session.seekStep(i,{now:performance.now()}));
+      stopClock();draw(session.seekStep(i,performance.now()));
      });
      drawing.append(node);
     }
@@ -218,20 +218,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  });
  $('prev').addEventListener('click',()=>{
   stopClock();const snap=session.snapshot(performance.now());
-  draw(session.seekStep(Math.max(0,snap.playback.activeStepIndex-1),
-   {now:performance.now()}));
+  draw(session.seekStep(Math.max(0,snap.playback.activeStepIndex-1),performance.now()));
  });
  $('next').addEventListener('click',()=>{
   stopClock();const snap=session.snapshot(performance.now());
   draw(session.seekStep(Math.min(snap.plan.steps.length,
-   Math.max(0,snap.playback.activeStepIndex)+1),{now:performance.now()}));
+   Math.max(0,snap.playback.activeStepIndex)+1),performance.now()));
  });
  $('restart').addEventListener('click',()=>{
-  stopClock();draw(session.seekProgress(0,{now:performance.now()}));
+  stopClock();draw(session.seekProgress(0,performance.now()));
  });
  $('progress').addEventListener('input',()=>{
-  stopClock();draw(session.seekProgress(Number($('progress').value)/1000,
-   {now:performance.now()}));
+  stopClock();draw(session.seekProgress(Number($('progress').value)/1000,performance.now()));
  });
  grid();buildFields(kind);
 })();
