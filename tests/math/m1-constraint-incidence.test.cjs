@@ -50,3 +50,16 @@ test('malformed arrays and unbounded inputs cannot bypass structural validation'
  assert.throws(()=>build({geometry:Array(2049).fill(p('A')),constraints:[]}),/size budget/);
  assert.throws(()=>build({geometry:[],constraints:Array(4097).fill(fixed('xA','A'))}),/size budget/);
 });
+
+test('oversized sparse arrays are rejected on length before any dense allocation',()=>{
+ assert.throws(()=>build({geometry:new Array(1_000_000),constraints:[]}),/size budget/);
+ assert.throws(()=>build({geometry:[p('A')],constraints:[{...fixed('x','A'),targetIds:new Array(20_000)}]}),/size budget/);
+ const sparseTargets=['A','B'];delete sparseTargets[1];
+ assert.throws(()=>build({geometry:[p('A'),p('B')],
+  constraints:[{...coincident('AB','A','B'),targetIds:sparseTargets}]}),/target list must be dense/);
+});
+test('surface geometry is deferred rather than implicitly treated as solved point topology',()=>{
+ const circle={id:'C',kind:'circle',space:'drawing-2d',unit:'mm',
+  data:{center:{x:0,y:0},radius:3}};
+ assert.throws(()=>build({geometry:[circle],constraints:[]}),/point geometry only/);
+});
