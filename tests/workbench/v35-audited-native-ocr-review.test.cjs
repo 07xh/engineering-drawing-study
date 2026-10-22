@@ -53,7 +53,7 @@ function setup({kind='two-circles',text='R12',recognize}={}){
  const values=defaultValues(kind);
  const ui=attachLocalNativeOcr({...c,fieldReview,
   getCurves:()=>[],getValues:()=>values,getRevision:()=>9,
-  recognize:recognize||async()=>({status:'ok',candidates:[recognized(text)]})});
+  recognize:recognize||(async()=>({status:'ok',candidates:[recognized(text)]}))});
  return {c,state,values,ui,evidence,restore(){global.document=original}};
 }
 test('R12 OCR may be human-corrected to R10 but cannot directly verify other geometry',async()=>{
