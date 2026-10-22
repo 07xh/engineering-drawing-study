@@ -14,7 +14,7 @@ function assessFilletStudentProgress(kind,args,{
 }={},{
  branchId,revision=0,origin,scale,toleranceMm=0.75
 }={}){
- if(!['segments','circles'].includes(kind)||!revisionOK(revision)||
+ if(!['segments','circles','segment-circle'].includes(kind)||!revisionOK(revision)||
     !Array.isArray(arcStrokes)||arcStrokes.length>64)
   throw new TypeError('valid fillet mode, revision and bounded student arcs required');
  const opts={branchId,revision};
@@ -49,14 +49,17 @@ function assessFilletStudentProgress(kind,args,{
  ];
  const verifiedCount=stages.filter(s=>s.ok).length;
  const finiteSourceArcCount=kind==='circles'
-  ?Number(args?.first?.arc!==undefined)+Number(args?.second?.arc!==undefined):0;
+  ?Number(args?.first?.arc!==undefined)+Number(args?.second?.arc!==undefined):
+  kind==='segment-circle'?Number(args?.circle?.arc!==undefined):0;
  // A completed *student* four-stage proof includes source-arc membership
  // only if explicit finite given arcs exist and BOTH source contacts and
  // the independently verified G1 arc were scored from the same chosen branch.
  // It does not certify dimensions, remaining contour, textbook or full answer.
  const finiteSourceArcsVerified=finiteSourceArcCount>0&&
   verifiedCount===4&&contacts.contactLocationsVerified===true&&
-  arc.sourceProofVerified===true&&arc.geometryValidated===true;
+  arc.sourceProofVerified===true&&arc.geometryValidated===true&&
+  (kind!=='segment-circle'||(
+    contacts.sourceBoundsVerified===true&&arc.sourceBoundsVerified===true));
  return {kind,revision,selectedBranchId:branchId||null,
   status:verifiedCount===4?'all-supported-stages-verified':'in-progress',
   supportedStageCount:4,verifiedCount,stages,

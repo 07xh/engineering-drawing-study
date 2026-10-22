@@ -93,7 +93,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
-<p class="note">“有限线段＋圆／有限已知圆弧”已支持真实数学求解、V5 动态教学，以及学生自己标记两个切点、手绘有向连接弧的数学验证。此题型暂不支持数字尺规辅助轨迹与圆心吸附评分；显示的 2 项进度并不代表整题完成。</p>
+<p class="note">“有限线段＋圆／有限已知圆弧”支持真实求解、V5 教学、数字化偏移线与同心辅助圆、学生自主圆心点选、两切点及有向圆弧判题。四项已支持的构造全部正确也不等于整道教材题完成。</p>
 <h2>数学教学模式</h2>
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
@@ -121,7 +121,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <p class="note">新增“点选切点”：先在尺规区选择已知对象 1 或 2，再点选图纸上的切点；可以先于弧向／G1 判题，但不会自动显示真实切点。重复、选错对象、超出有效范围均不能通过。</p>
 <p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
 <div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
-<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">支持的四项学生构造：辅助轨迹、圆心、切点与连接弧。逐项数学核验，不等于整道工程制图题完成。</p></div>
+<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">三类圆弧题均按辅助轨迹、候选圆心、两个切点及连接圆弧四项独立验算；有限已知圆弧切点必须在给定角度范围内，但不代表整道教材题完成。</p></div>
 <div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
 <section id="filletProof" class="card" aria-labelledby="filletProofHeading" hidden>
 <h3 id="filletProofHeading">V5 · 本步数学依据与核验</h3>

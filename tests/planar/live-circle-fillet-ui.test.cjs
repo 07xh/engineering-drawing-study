@@ -508,9 +508,9 @@ test('real page includes digital compass/ruler, source choice, and math snap aff
   'clearDigital','checkDigital','digitalStatus','centerSnapStatus'])
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  assert.match(html,/<option value="snap">/);
- assert.match(entry,/constructParallelLine\(input\[sourceId\],value/);
- assert.match(entry,/constructConcentricCircle\(input\[sourceId\],value/);
- assert.match(entry,/gradeStudentAuxiliaries\(isSegments/);
+ assert.match(entry,/constructParallelLine\(mode==='segment-circle'\?input\.segment:input\[sourceId\]/);
+ assert.match(entry,/constructConcentricCircle\(mode==='segment-circle'\?input\.circle:input\[sourceId\]/);
+ assert.match(entry,/gradeStudentAuxiliaries\(currentKind,input,digitalActions/);
  assert.match(entry,/snapChosenFilletCenter\(/);
  assert.doesNotMatch(entry,/innerHTML\s*=|localStorage|fetch\(/);
 });
@@ -542,7 +542,7 @@ test('wrong numeric radius for student compass fails even though geometry is dra
  assert.match(get('digitalStatus').textContent,/1 \/ 2/);
  get('digitalSource').value='second';fire('addDigital','click');
  assert.match(get('digitalStatus').textContent,/2 \/ 2/);
- assert.match(get('digitalStatus').textContent,/额外／错误构造 1/);
+ assert.match(get('digitalStatus').textContent,/额外或错误构造 1/);
  assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#8651a8').length,3);
 });
 test('digital construction with missing candidate does not disclose an automatic center',()=>{
@@ -973,9 +973,9 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  get('learningMode').value='draw';fire('learningMode','change');
  assert.equal(get('drawTool').disabled,false);
  assert.equal(get('drawTool').value,'tangent');
- assert.equal(get('checkDigital').disabled,true,'digital ruler is still unsupported in mixed mode');
+ assert.equal(get('checkDigital').disabled,false,'mixed construction now has a real mathematics grader');
  assert.equal(get('checkDraw').disabled,false);
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  const input={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
   circle:{center:{x:0,y:5},radius:8},filletRadius:10,side:1,
   branchId:'candidate-1',direction:'ccw',
@@ -991,7 +991,7 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  get('digitalSource').value='second';
  board.listeners.pointerdown(ev(toSheet(solved.contacts.second),6));
  assert.match(get('drawStatus').textContent,/学生切点 2 \/ 2/);
- assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ assert.match(get('learningProgress').textContent,/1 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true').length,0);
  get('drawTool').value='arc';fire('drawTool','change');
  assert.equal(get('checkDraw').disabled,false);
@@ -1004,13 +1004,13 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  for(let i=1;i<48;i++)board.listeners.pointermove(ev(points[i],7));
  board.listeners.pointerup(ev(points[48],7));
  assert.match(get('drawStatus').textContent,/手绘连接弧数学验证通过/);
- assert.match(get('learningProgress').textContent,/2 \/ 2/);
- assert.match(get('learningProgress').textContent,/不包括辅助尺规、圆心吸附或完整教材题/);
+ assert.match(get('learningProgress').textContent,/2 \/ 4/);
+ assert.match(get('learningProgress').textContent,/未完成步骤不能冒充已证明/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
- fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 2/);
- fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 2/);
+ fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 4/);
+ fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 4/);
  get('mixR').value='9';fire('mixR','input');
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
  get('learningMode').value='hint';fire('learningMode','change');
  for(let i=0;i<5;i++)fire('hintNext','click');
@@ -1034,28 +1034,87 @@ test('mixed source finite arc filters branches in draw mode and forbids impossib
   board.listeners.pointerdown({pointerId:id,button:0,
    clientX:360+8*where.x,clientY:220-8*where.y});
  }
- assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ assert.match(get('learningProgress').textContent,/1 \/ 4/);
  get('mixArcStart').value='60';get('mixArcEnd').value='90';
  fire('mixArcStart','input');
  assert.deepEqual(get('branch').children.map(x=>x.value),['']);
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
 });
-test('mixed student drawing cannot use unsupported straight-line or center snap tools',()=>{
+test('mixed student drawing blocks free-line painting but allows explicit mathematical center snap',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
  get('modeSelect').value='segment-circle';fire('modeSelect','change');
  get('learningMode').value='draw';fire('learningMode','change');
  get('drawTool').value='snap';fire('drawTool','change');
- assert.equal(get('drawTool').value,'tangent');
+ assert.equal(get('drawTool').value,'snap');
  get('drawTool').value='line';fire('drawTool','change');
  assert.equal(get('drawTool').value,'tangent');
- assert.equal(get('addDigital').disabled,true);
+ assert.equal(get('addDigital').disabled,false);
  const board=get('diagram');
  board.listeners.pointerdown({pointerId:3,button:0,clientX:400,clientY:230});
  assert.match(get('drawStatus').textContent,/先选择题目实际存在的圆心分支/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
 });
 
+test('mixed finite segment+circle completes all four real student math construction scopes on the same page',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('branch').value='candidate-1';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('mixLineTravel').value='forward';fire('mixLineTravel','change');
+ get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ const args={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
+  circle:{center:{x:0,y:5},radius:8},filletRadius:10,side:1,
+  branchId:'candidate-1',direction:'ccw',
+  lineTravel:'forward',knownCircleTravel:'cw'};
+ const center=require('../../engines/planar/segment-circle-fillet.cjs')
+  .finiteSegmentCircleFillets(args).candidates.find(c=>c.id==='candidate-1');
+ assert.ok(center);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
+ for(const [source,value] of [['first',10],['second',18]]){
+  get('digitalSource').value=source;
+  get('digitalValue').value=String(value);
+  fire('addDigital','click');
+ }
+ assert.match(get('learningProgress').textContent,/1 \/ 4/);
+ assert.match(get('digitalStatus').textContent,/辅助轨迹 2 \/ 2/);
+ const board=get('diagram');
+ const tap=(point,id)=>board.listeners.pointerdown({pointerId:id,button:0,
+  clientX:360+8*point.x,clientY:220-8*point.y});
+ get('drawTool').value='snap';fire('drawTool','change');
+ assert.equal(get('drawTool').value,'snap');
+ tap(center.center,31);
+ assert.match(get('learningProgress').textContent,/2 \/ 4/);
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';tap(center.lineContact,32);
+ get('digitalSource').value='second';tap(center.circleContact,33);
+ assert.match(get('learningProgress').textContent,/3 \/ 4/);
+ get('drawTool').value='arc';fire('drawTool','change');
+ const geometry=require('../../engines/planar/directed-segment-circle-fillet.cjs')
+  .chooseDirectedSegmentCircleFillet(args).geometry.data;
+ const points=Array.from({length:49},(_,k)=>{
+  const angle=(geometry.startAngle+
+   (geometry.endAngle-geometry.startAngle)*k/48)*Math.PI/180;
+  return {x:360+8*(geometry.center.x+geometry.radius*Math.cos(angle)),
+   y:220-8*(geometry.center.y+geometry.radius*Math.sin(angle))};
+ });
+ const evt=(point,id)=>({pointerId:id,button:0,clientX:point.x,clientY:point.y});
+ board.listeners.pointerdown(evt(points[0],34));
+ for(let j=1;j<48;j++)board.listeners.pointermove(evt(points[j],34));
+ board.listeners.pointerup(evt(points[48],34));
+ assert.match(get('learningProgress').textContent,/4 \/ 4/);
+ assert.match(get('learningProgress').textContent,/未证明完整教材题/);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
+ fire('undoDraw','click');
+ assert.match(get('learningProgress').textContent,/3 \/ 4/);
+ get('mixArcExtent').value='finite';fire('mixArcExtent','change');
+ get('mixArcStart').value='50';get('mixArcEnd').value='90';
+ fire('mixArcStart','input');
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
+ assert.equal(get('addDigital').disabled,false);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
+});
 test('V5 proof panel follows actual circle solver steps without revealing final G1 early',()=>{
  const p=interactiveFillet(),{get,fire}=p;
  assert.equal(get('filletProof').hidden,false);
