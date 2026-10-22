@@ -18,7 +18,8 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .local-photo{padding:12px;background:#f5faf6;border:1px solid #d8e6da;border-radius:12px;margin-bottom:14px}
 .local-photo img{display:block;width:100%;max-height:320px;object-fit:contain;background:white;border:1px solid #d8e6da;border-radius:9px;margin-top:9px}
 .local-photo img[hidden]{display:none}
-.photo-stage{position:relative;max-height:360px;overflow:auto;touch-action:pan-y}
+.photo-stage{max-height:360px;overflow:auto;touch-action:pan-y}
+.photo-canvas{position:relative;width:100%}
 .photo-stage img{max-height:none;margin:0}
 .photo-stage svg{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .photo-stage svg[hidden]{display:none}
@@ -70,10 +71,10 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
 <div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button></div>
 <p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
-<div class="photo-stage" id="photoStage">
+<div class="photo-stage" id="photoStage"><div class="photo-canvas">
 <img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
 <svg id="sourceOverlay" aria-label="框选原题中几何条件的来源区域" hidden></svg>
-</div>
+</div></div>
 <div class="source-review">
 <label><input type="checkbox" id="sourceReviewEnabled"> 启用图片条件逐项核对（严格模式）</label>
 <label for="sourceField">要标记来源的条件
