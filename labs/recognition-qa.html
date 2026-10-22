@@ -101,7 +101,12 @@ small{font-size:12px;color:#667f6e}
 <button id="qaZoomReset" type="button">原始适屏</button>
 <button id="qaZoomIn" type="button">放大 +</button>
 </div>
-<p class="hint">显示比例：<output id="qaZoomLevel">100%</output>。放大时可在图纸区域滚动浏览；缩放不会改变原图坐标或已有标注。</p>
+<p class="hint">显示比例：<output id="qaZoomLevel">100%</output>。放大后自动切换为浏览模式，手指可以拖动画面；需要描图时再切换为标注模式。</p>
+<div class="buttons" role="group" aria-label="图纸操作模式">
+<button id="qaModePan" type="button" aria-pressed="false">浏览图纸 · 拖动查看</button>
+<button id="qaModeDraw" type="button" aria-pressed="true">手工标注 · 描图</button>
+</div>
+<p class="hint" id="qaModeStatus" aria-live="polite">标注模式：单指拖动创建人工真值；如需移动放大图纸，请先切换浏览模式。</p>
 <div class="buttons">
 <button id="qaTouchCheck" type="button">开始五点触控坐标自检</button>
 <button id="qaTouchStop" type="button">结束自检</button>
