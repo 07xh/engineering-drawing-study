@@ -42,6 +42,22 @@ function at({motion,reasons,frame,revision,mode='full'}={}){
   basis:'没有新的数学绘图动作。',check:'不存在经过验证的最终连接弧。',
   step:index+1,action:0,totalActions:0,percent:completed?100:0,canClaimFinal:false
  });
+ if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>motion.timeline.totalMs||
+    frame.totalMs!==motion.timeline.totalMs||
+    frame.done!==(frame.elapsedMs===motion.timeline.totalMs)||
+    !step.actions.every(action=>{
+     const fraction=frame.actionFractions?.[action.id];
+     return Number.isFinite(fraction)&&fraction>=0&&fraction<=1;
+    }))
+  return fallback('blocked','某条笔迹的时间或完成比例无效，拒绝生成数学解释');
+ // The ordered construction must never start a later pen before the prior
+ // pen has been fully drawn; check this separately from final G1 proofs.
+ for(let k=1;k<step.actions.length;k++){
+  if(frame.actionFractions[step.actions[k].id]>0&&
+     frame.actionFractions[step.actions[k-1].id]<1)
+   return fallback('blocked','存在颠倒顺序的绘图帧，停止数学解释');
+ }
  const selectedIndex=step.actions.findIndex(action=>{
   const f=frame.actionFractions?.[action.id];return typeof f==='number'&&f<1;
  });
