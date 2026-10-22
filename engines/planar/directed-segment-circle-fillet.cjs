@@ -84,7 +84,8 @@ function chooseDirectedSegmentCircleFillet(args={}){
  if(!finite(maxG1Mismatch)||maxG1Mismatch>G1_TOL)
   return {status:'direction-conflict',candidateIds:ids,selectedId:chosen.id,
    geometry:null,arcPreview:geometry,steps:[],g1Verified:false,
-   maxG1Mismatch,reason:'选定连接弧与线段或已知圆弧的有向切线不连续'};
+   maxG1Mismatch,directionChecks:checks,
+   reason:'选定连接弧与线段或已知圆弧的有向切线不连续'};
  const steps=[
   {id:'offset-line',kind:'offset-line',role:'auxiliary',
    reason:'在指定线段法向一侧作距离为连接半径的平行辅助线',
