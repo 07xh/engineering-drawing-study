@@ -27,10 +27,12 @@ test('live UI consumes both real candidate and finite directed G1 solvers',()=>{
  assert.match(entry,/chooseDirectedFillet\(args\)/);
  assert.doesNotMatch(entry,/innerHTML\s*=|fetch\(|XMLHttpRequest|localStorage/);
 });
-test('SVG sweep direction explicitly converts model ccw to screen flag 0',()=>{
- assert.match(entry,/a\.direction==='cw'\?1:0/);
- assert.match(entry,/Math\.abs\(a\.endAngle-a\.startAngle\)>180\?1:0/);
+test('directed fillet is converted from proved model geometry using V5 motion',()=>{
+ assert.match(entry,/MotionV5\.projectArcFromVerifiedModel/);
+ assert.match(entry,/MotionV5\.updateSvg/);
+ assert.match(entry,/chosen\.g1Verified===true/);
  assert.match(entry,/chosen\?\.status==='selected'/);
+ assert.doesNotMatch(entry,/Math\.abs\(a\.endAngle-a\.startAngle\)>180\?1:0/);
 });
 test('circle fillet public whitelist and home navigation preserve source privacy',()=>{
  assert.match(build,/'labs\/circle-fillet-live\.html'/);
@@ -550,4 +552,63 @@ test('input revision clears previous geometric ruler actions and snapped center'
  assert.equal(get('undoDigital').disabled,true);
  assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
  assert.match(get('centerSnapStatus').textContent,/已清空/);
+});
+
+test('two verified finite-segment fillets draw the SAME SVG node progressively while advancing',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ assert.match(get('status').textContent,/两端有向 G1/);
+ const paths=()=>collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true');
+ fire('playPause','click');advance(6000);
+ assert.equal(get('counter').textContent,'5 / 6');
+ assert.equal(paths().length,0);
+ advance(400);
+ assert.equal(paths().length,1,'final approved arc should start appearing during its step');
+ const node=paths()[0],early=node.attributes.d;
+ assert.match(early,/ A /);
+ advance(400);
+ assert.equal(paths()[0],node,'per-frame animation must update the same SVG element');
+ const halfway=node.attributes.d;
+ assert.notEqual(early,halfway,'visible sweep must expand');
+ get('animationSpeed').value='0.5';fire('animationSpeed','change');
+ advance(400);
+ const slowed=paths()[0].attributes.d;
+ assert.notEqual(slowed,halfway,'changing speed keeps sweep moving rather than restarting');
+ fire('playPause','click');
+ const frozen=paths()[0].attributes.d;
+ advance(2000);
+ assert.equal(paths()[0].attributes.d,frozen,'pause preserves existing directed sweep');
+ fire('playPause','click');
+ advance(3000);
+ assert.equal(get('counter').textContent,'6 / 6');
+ assert.equal(paths().length,1);
+ assert.equal(paths()[0].attributes.opacity,'1');
+});
+test('verified two-circle fillet animates but incomplete G1 inputs never paint an answer',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ const paths=()=>collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true');
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ fire('playPause','click');advance(4800);
+ assert.equal(paths().length,0,'no asserted G1 travel = no arc, even at final step');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ assert.match(get('status').textContent,/两端有向 G1/);
+ fire('playPause','click');advance(3600);
+ assert.equal(get('counter').textContent,'3 / 4');
+ assert.equal(paths().length,0);
+ advance(700);assert.equal(paths().length,1);
+ const start=paths()[0].attributes.d;assert.match(start,/ A /);
+ advance(700);
+ assert.notEqual(paths()[0].attributes.d,start,'verified circle fillet should grow');
+ advance(600);
+ assert.equal(get('counter').textContent,'4 / 4');
+ assert.equal(paths().length,1);
+ get('r2').value='';fire('r2','input');
+ assert.equal(paths().length,0,'invalid radius clears stale animation and confirmed result');
+ advance(12000);assert.equal(paths().length,0);
 });
