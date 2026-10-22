@@ -88,6 +88,10 @@ function interactiveFillet(){
   line1Ax:'-20',line1Ay:'0',line1Bx:'20',line1By:'0',
   line2Ax:'0',line2Ay:'-20',line2Bx:'0',line2By:'20',
   lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:'',
+  mixAx:'-25',mixAy:'0',mixBx:'25',mixBy:'0',
+  mixX:'0',mixY:'5',mixR:'8',mixArcExtent:'full',
+  mixArcStart:'155',mixArcEnd:'175',mixArcDirection:'ccw',
+  mixSide:'1',mixLineTravel:'',mixCircleTravel:'',
   drawTool:'line',digitalSource:'first',digitalValue:'10'};
  const ids=[...Object.keys(values),'diagram','calculate','prev','next','reset',
   'status','counter','stepTitle','stepText','learningMode','fullControls',
@@ -107,12 +111,14 @@ function interactiveFillet(){
  }]));
  const circle=[{hidden:false},{hidden:false}];
  const line=[{hidden:true},{hidden:true}];
+ const mixed=[{hidden:true},{hidden:true}];
  const document={
   getElementById(id){
    if(!elems.has(id))throw Error('Missing input '+id);
    return elems.get(id);
   },
-  querySelectorAll(sel){return sel==='.circle-only'?circle:sel==='.line-only'?line:[]},
+  querySelectorAll(sel){return sel==='.circle-only'?circle:
+   sel==='.line-only'?line:sel==='.mixed-only'?mixed:[]},
   createElement(tag){
    assert.equal(tag,'option');
    return {tag:'option',value:'',textContent:''};
@@ -132,6 +138,8 @@ function interactiveFillet(){
   '../engines/planar/directed-circle-fillet.cjs':require('../../engines/planar/directed-circle-fillet.cjs'),
   '../engines/planar/two-segment-fillet.cjs':require('../../engines/planar/two-segment-fillet.cjs'),
   '../engines/planar/directed-two-segment-fillet.cjs':require('../../engines/planar/directed-two-segment-fillet.cjs'),
+  '../engines/planar/segment-circle-fillet.cjs':require('../../engines/planar/segment-circle-fillet.cjs'),
+  '../engines/planar/directed-segment-circle-fillet.cjs':require('../../engines/planar/directed-segment-circle-fillet.cjs'),
   '../workbench/verified-fillet-offset-drawing.cjs':require('../../workbench/verified-fillet-offset-drawing.cjs'),
   '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
   '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
@@ -155,7 +163,7 @@ function interactiveFillet(){
   for(const n of get('diagram').children)walk(n);
   return out;
  };
- return {get,fire,collect,circle,line,advance};
+ return {get,fire,collect,circle,line,mixed,advance};
 }
 test('line mode enumerates genuine finite tangent candidates and a verified six-step SVG arc',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
@@ -871,4 +879,90 @@ test('finite arc angular degeneracy fails closed rather than drawing a full inpu
  assert.match(get('status').textContent,/条件无效/);
  assert.equal(collect().filter(n=>n.attributes?.['data-given-source-arc']==='true').length,0);
  assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+});
+
+test('third mode uses the SAME public fillet teaching page with actual finite segment+circle inputs',()=>{
+ assert.match(html,/<option value="segment-circle">/);
+ for(const id of ['mixAx','mixAy','mixBx','mixBy','mixX','mixY','mixR',
+  'mixArcExtent','mixArcStart','mixArcEnd','mixArcDirection','mixSide',
+  'mixLineTravel','mixCircleTravel'])
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ assert.match(entry,/chooseDirectedSegmentCircleFillet\(args\)/);
+ assert.match(entry,/filletTimeline\(isSegments\?'segments':isMixed\?'segment-circle':'circles'/);
+ const p=interactiveFillet(),{get,fire,circle,line,mixed}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ assert.ok(mixed.every(n=>n.hidden===false));
+ assert.ok(circle.every(n=>n.hidden===true));
+ assert.ok(line.every(n=>n.hidden===true));
+ assert.deepEqual(get('branch').children.map(x=>x.value),
+  ['','candidate-1','candidate-2']);
+});
+test('student explicitly chooses real candidate and two source travels, then V5 paints exact five-step mathematical arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('branch').value='candidate-1';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('mixLineTravel').value='forward';fire('mixLineTravel','change');
+ get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
+ const args={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
+  circle:{center:{x:0,y:5},radius:8},filletRadius:10,side:1,
+  branchId:'candidate-1',direction:'ccw',lineTravel:'forward',knownCircleTravel:'cw'};
+ const plan=require('../../workbench/verified-plan-v5-bridge.cjs')
+  .filletTimeline('segment-circle',args,{origin:{x:360,y:220},scale:8},1);
+ assert.equal(plan.status,'ready');assert.equal(plan.steps.length,5);
+ for(let i=0;i<5;i++)fire('next','click');
+ assert.equal(get('counter').textContent,'5 / 5');
+ const paths=collect().filter(n=>n.tag==='path');
+ assert.equal(paths.length,1);
+ assert.equal(paths[0].attributes.d,require('../../workbench/teaching-motion-v5.js')
+  .actionShapeAttrs(plan.steps[4].actions[0],1).d);
+ assert.equal(paths[0].attributes['data-verified-arc'],'true');
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c38536').length,1);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536').length,1);
+});
+test('candidate without explicit G1 travels can show only bounded exploratory steps, not a false final arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('branch').value='candidate-1';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ for(let i=0;i<8;i++)fire('next','click');
+ assert.equal(get('counter').textContent,'3 / 3');
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ get('mixLineTravel').value='reverse';fire('mixLineTravel','change');
+ get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ assert.match(get('status').textContent,/不连续|冲突|轮廓/);
+});
+test('finite known circle arc removes excluded candidate ID and never fabricates the supporting full circle',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('mixArcExtent').value='finite';fire('mixArcExtent','change');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['','candidate-1']);
+ const given=collect().filter(n=>n.tag==='path'&&n.attributes['data-given-source-arc']==='true');
+ assert.equal(given.length,1);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#257650').length,0);
+ get('mixArcStart').value='60';get('mixArcEnd').value='90';
+ fire('mixArcStart','input');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['']);
+ assert.equal(collect().filter(n=>n.attributes['data-verified-arc']==='true').length,0);
+});
+test('mixed student draw mode is visibly unsupported and cannot reuse other types mathematics grades',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('branch').value='candidate-1';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('mixLineTravel').value='forward';fire('mixLineTravel','change');
+ get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.equal(get('drawTool').disabled,true);
+ assert.equal(get('checkDigital').disabled,true);
+ assert.equal(get('checkDraw').disabled,true);
+ assert.match(get('drawStatus').textContent,/尚未支持/);
+ assert.match(get('learningProgress').textContent,/暂无学生联合评分/);
+ get('diagram').listeners.pointerdown({pointerId:9,button:0,clientX:400,clientY:220});
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
+ get('learningMode').value='hint';fire('learningMode','change');
+ for(let i=0;i<5;i++)fire('hintNext','click');
+ assert.equal(get('hintCounter').textContent,'5 / 5');
+ assert.equal(collect().filter(n=>n.attributes['data-verified-arc']==='true').length,0);
 });
