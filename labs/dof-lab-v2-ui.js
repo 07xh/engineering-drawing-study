@@ -17,7 +17,8 @@ function syncStatusVisual(time){
  Sync.paintSpace($('space'),viewer,visual);
  const valid=visual.ready;
  $('syncPlay').textContent=state?.playing?'暂停同步动画':'播放同步作图';
- $('syncPlay').disabled=!(syncPlayer&&valid)||state.done&&!state.playing;
+ $('syncPlay').disabled=syncPlayer?(!valid||state.done&&!state.playing):
+  Store.compute(state).analysis.result.inconsistent;
  $('syncRestart').disabled=!valid;
  $('syncProgress').disabled=!valid;
  $('syncProgress').value=valid?String(Math.round(state.ratio*1000)):'1000';
