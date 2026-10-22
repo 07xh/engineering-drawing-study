@@ -125,6 +125,14 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="local-photo" id="rasterDraftPanel" aria-label="照片图元和毫米比例人工审核">
 <h3>照片图元校正与导入（实验）</h3>
 <p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。 线圆连接时，请根据有向端点明确选择法向 +1／−1；检测器可能把线段端点顺序反过来。</p>
+<div class="source-review" aria-label="使用已保存的本地人工图元标注">
+<h4>导入此前人工描绘的图元（可选）</h4>
+<p>先在上方选择与标注文件完全相同的本地原图，再选择从「本地识图质量验收」导出的人工标注 JSON。点击导入后，浏览器只在本机比较原图 SHA-256；线段和完整圆会作为<strong>未经本工作台再次审核的候选</strong>出现，OCR 文字、局部圆弧和箭头不会自动变成数学条件。</p>
+<label for="rasterTruthFile">本地人工标注 JSON
+<input id="rasterTruthFile" type="file" accept=".json,application/json"></label>
+<div class="controls"><button id="rasterTruthImport" type="button">核对同一原图并导入待审核几何</button></div>
+<p id="rasterTruthStatus" role="status" aria-live="polite" class="vector-status">尚未导入标注；不会自动上传原图或使用 OCR 结果。</p>
+</div>
 <svg id="rasterDraftPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="原题检测候选的安全线圆几何预览"></svg>
 <div class="fields">
 <label for="rasterFirst">源图元一<select id="rasterFirst"><option value="">先检测图元</option></select></label>
