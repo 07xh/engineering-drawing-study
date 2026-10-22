@@ -1,0 +1,88 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {createPhotoQualitySession}=require('../../recognition/photo-quality-session.cjs');
+const {scenarios}=require('../recognition/synthetic-quality-scenes.cjs');
+const scene=kind=>scenarios().find(x=>x.detector===kind&&x.truth.length);
+test('real local Hough pixels require a human ground-truth annotation before scoring',()=>{
+ const s=scene('line'),q=createPhotoQualitySession();
+ q.loadImage({width:s.image.width,height:s.image.height},s.image);
+ assert.ok(q.snapshot().predictions.length>=1);
+ const pending=q.report();
+ assert.equal(pending.status,'needs-manual-annotations');
+ assert.equal(pending.precision,null);
+ const id=q.addAnnotation({kind:'line',from:s.truth[0].from,to:s.truth[0].to});
+ assert.match(id,/^truth_\d+$/);
+ const result=q.report();
+ assert.equal(result.status,'evaluated');
+ assert.equal(result.metrics.byKind.line.tp,1);
+ assert.equal(result.metrics.byKind.line.fn,0);
+ assert.equal(result.imageBytesIncluded,false);
+ assert.equal(result.filenameIncluded,false);
+ assert.equal(result.noModelMillimetres,true);
+ assert.equal(result.independentReview,false);
+});
+test('real local raster curve evidence is only image px and is independently annotated',()=>{
+ const s=scene('curve'),q=createPhotoQualitySession();
+ q.loadImage({width:s.image.width,height:s.image.height},s.image);
+ const tr=s.truth[0];
+ q.addAnnotation({kind:tr.kind,center:tr.center,radius:tr.radius});
+ const r=q.report();
+ assert.equal(r.metrics.byKind.circle.tp,1);
+ assert.equal(r.metrics.byKind.circle.fn,0);
+ assert.ok(q.snapshot().predictions.every(x=>x.coordinateSpace==='original-image-px'));
+});
+test('a new image clears all old annotations and prevents stale positive accuracy',()=>{
+ const s=scene('line'),q=createPhotoQualitySession();
+ const size={width:s.image.width,height:s.image.height};
+ q.loadImage(size,s.image);
+ q.addAnnotation({kind:'line',from:s.truth[0].from,to:s.truth[0].to});
+ const rev=q.snapshot().revision;
+ assert.equal(q.report().status,'evaluated');
+ q.loadImage(size,s.image);
+ assert.ok(q.snapshot().revision>rev);
+ assert.deepEqual(q.snapshot().annotations,[]);
+ assert.equal(q.report().status,'needs-manual-annotations');
+ assert.equal(q.removeAnnotation('truth_1'),false);
+ q.reset();assert.equal(q.report().status,'no-image');
+});
+test('malformed replacement also destroys previous valid report',()=>{
+ const s=scene('line'),q=createPhotoQualitySession();
+ q.loadImage({width:s.image.width,height:s.image.height},s.image);
+ q.addAnnotation({kind:'line',from:s.truth[0].from,to:s.truth[0].to});
+ assert.throws(()=>q.loadImage({width:0,height:20},s.image));
+ assert.equal(q.report().status,'no-image');
+});
+test('annotations are defensive copies, bounded, and invalid coordinates fail closed',()=>{
+ const s=scene('line'),q=createPhotoQualitySession();
+ q.loadImage({width:s.image.width,height:s.image.height},s.image);
+ assert.throws(()=>q.addAnnotation({kind:'circle',center:{x:999,y:999},radius:3}));
+ assert.throws(()=>q.addAnnotation({kind:'dimension',bbox:[0,0,55,0],text:'R8'}));
+ assert.throws(()=>q.addAnnotation({kind:'arrow',tip:{x:NaN,y:10}}));
+ const annotation={kind:'line',from:{x:20,y:60},to:{x:175,y:60}};
+ const id=q.addAnnotation(annotation);
+ annotation.from.x=300;
+ const snap=q.snapshot();
+ assert.equal(snap.annotations[0].from.x,20);
+ snap.annotations[0].from.x=-999;
+ assert.equal(q.snapshot().annotations[0].from.x,20);
+ assert.equal(q.removeAnnotation(id),true);
+ assert.equal(q.report().status,'needs-manual-annotations');
+});
+test('no image file bytes or personal filenames can leak from session report',()=>{
+ const s=scene('line'),q=createPhotoQualitySession();
+ const frame=structuredClone(s.image);
+ q.loadImage({width:frame.width,height:frame.height},frame);
+ q.addAnnotation({kind:'line',from:s.truth[0].from,to:s.truth[0].to});
+ const result=q.report(),serialized=JSON.stringify(result);
+ assert.ok(serialized.length<18000);
+ assert.doesNotMatch(serialized,/Uint8Array|Uint8ClampedArray|image\/png|filename|blob|data:image/i);
+ assert.equal(result.source,'user-selected-local-image-unverified-rights');
+ assert.equal(result.notRealWorldAccuracy,true);
+});
+test('reject distorted aspect ratios and refuse to treat pixel radii as mm',()=>{
+ const s=scene('curve'),q=createPhotoQualitySession();
+ assert.throws(()=>q.loadImage({width:4000,height:40},s.image),/aspect ratio/);
+ assert.equal(q.report().status,'no-image');
+ assert.throws(()=>q.addAnnotation({kind:'circle',center:{x:10,y:10},radius:3}));
+});
