@@ -9,6 +9,7 @@ const Geom=require('../../labs/dof-lab-geometry.js');
 const Sheet=require('../../labs/dof-lab-sheet.js');
 const Spatial=require('../../labs/dof-lab-spatial-svg.js');
 const Sync=require('../../workbench/dof-synchronized-reveal.cjs');
+const Reasons=require('../../workbench/dof-step-explanations.cjs');
 function createPage(){
  let now=0,id=0,reduced=false,motionHandler=null;
  const frames=new Map(),elements=new Map();
@@ -47,6 +48,7 @@ function createPage(){
   addEventListener(type,fn){docListeners[type]=fn}};
  const window={DrawingLabState:State,DrawingLabGeometry:Geom,
   DrawingLabSheet:Sheet,DrawingLabSpatialPreview:Spatial,DrawingLabSyncV5:Sync,
+  DrawingLabStepReasons:Reasons,
   matchMedia(){return {get matches(){return reduced},
    addEventListener(type,fn){if(type==='change')motionHandler=fn}}}};
  const raf=fn=>{frames.set(++id,fn);return id};
@@ -243,4 +245,59 @@ test('mobile reduced-motion mode still supports discrete verified stages without
  fire('syncPrevious','click');
  assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
  assert.equal(frames.size,0);
+});
+
+test('V5 explanation panel follows stage 1-5, rewind, completion, and original geometry',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ assert.match(get('syncReasonDof').textContent,/独立约束秩 0，剩余自由度 3/);
+ fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ assert.match(get('syncReasonBasis').textContent,/高度 z 相同/);
+ assert.match(get('syncReasonDof').textContent,/辅助作图线/);
+ assert.match(get('syncReasonEvidence').textContent,/尚无用户约束/);
+ fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/H → 45°/);
+ assert.match(get('syncReasonCheck').textContent,/miterOn45/);
+ fire('syncPrevious','click');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ fire('syncNext','click');fire('syncNext','click');fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/示例位置 P\*/);
+ assert.match(get('syncReasonCheck').textContent,/尚未完成目标点显现/);
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().progress,1);
+ assert.doesNotMatch(get('syncReasonCheck').textContent,/当前仍处于结果步骤/);
+ fire('syncPrevious','click');
+ assert.match(get('syncReasonCheck').textContent,/尚未完成目标点显现/);
+});
+test('V5 explanatory proof reports independent, redundant and inconsistent constraints without fake DOF',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'projection',plane:'H',value:[15,10]}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonDof').textContent,/独立约束秩 2；空间点剩余 1 个自由度/);
+ assert.match(get('syncReasonEvidence').textContent,/新增 2 个独立约束，自由度 3 → 1/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'x',value:15}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonEvidence').textContent,/冗余，未增加独立约束/);
+ assert.match(get('syncReasonDof').textContent,/剩余 1 个自由度/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:12}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonDof').textContent,/秩 3；空间点剩余 0 个自由度/);
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:13}});
+ assert.match(get('syncReasonTitle').textContent,/约束冲突/);
+ assert.match(get('syncReasonDof').textContent,/不能把无解记作 0 个自由度/);
+ assert.equal(get('syncNext').disabled,true);
+});
+test('V5 scrubbing explanation checks are coupled to exact verified time frame',()=>{
+ const p=createPage(),{get,fire}=p;
+ fire('syncPlay','click');
+ get('syncProgress').value='1000';fire('syncProgress','input');
+ assert.match(get('syncReasonTitle').textContent,/示例位置 P\*/);
+ get('syncProgress').value='0';fire('syncProgress','input');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ H/);
+ assert.match(get('syncReasonCheck').textContent,/sameX/);
 });
