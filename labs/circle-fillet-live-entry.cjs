@@ -16,6 +16,7 @@ const {assessFilletStudentProgress}=require('../workbench/verified-student-fille
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
+const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','arcExtent1','arcStart1','arcEnd1','arcDirection1',
@@ -26,7 +27,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   'mixAx','mixAy','mixBx','mixBy','mixX','mixY','mixR',
   'mixArcExtent','mixArcStart','mixArcEnd','mixArcDirection','mixSide',
   'mixLineTravel','mixCircleTravel'];
- const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,teaching=null,stage=0;
+ const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,teaching=null,reasons=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
  let digitalActions=[],digitalError='',snappedCenter=null,studentCenterTap=null;
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
@@ -157,7 +158,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
   digitalActions=[];digitalError='';snappedCenter=null;studentCenterTap=null;
   centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
-  centers=null;chosen=null;input=null;teaching=null;stage=0;hintStep=0;
+  centers=null;chosen=null;input=null;teaching=null;reasons=null;stage=0;hintStep=0;
   try{
    let args=parse();
    const isSegments=$('modeSelect').value==='segments';
@@ -185,6 +186,9 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
       Math.hypot(actual.center.x-arc.center.x,actual.center.y-arc.center.y)>1e-8)
      throw Error('圆弧证明与教学步骤结果不一致，已拒绝显示');
    }
+   // Read only verified R1/02 output; blocked reasons never become an answer.
+   const sourceKind=isSegments?'segments':isMixed?'segment-circle':'circles';
+   reasons=ReasonsV5.build(plan,{kind:sourceKind,revision});
    centers=result;chosen=picked;input=args;teaching=plan;
    const short=result.status==='multiple'?'存在 '+result.candidateCount+' 个有效候选圆心。':
     result.status==='unique'?'存在 1 个有效候选圆心。':
@@ -230,6 +234,25 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
      MotionV5.updateSvg(path,action,1);svg.append(path);
     }else throw Error('不支持的统一教学动作：'+action.kind);
    }
+ }
+ function paintV5Reasons(){
+  // Full explanation is deliberately absent from hint and student drawing modes.
+  const panel=$('filletProof');panel.hidden=learningMode!=='full';
+  if(panel.hidden)return;
+  const explanation=ReasonsV5.at(reasons,{revision,stage,mode:learningMode});
+  $('filletProofTitle').textContent=explanation.status==='ready'?
+   '第 '+explanation.step+' / '+explanation.total+' 步 · 已选分支的数学依据':
+   explanation.status==='intro'?'观察阶段 · 尚未推导结果':
+   '验证尚不完整 · 不展示圆弧结果';
+  $('filletProofWhy').textContent=explanation.why||explanation.reason;
+  $('filletProofBasis').textContent=explanation.basis||
+   '需要明确数学有效的分支、原轮廓方向和弧向；不自动推测。';
+  $('filletProofCheck').textContent=explanation.check||
+   '未经验证的辅助轨迹和连接圆弧均不能当成标准解。';
+  $('filletProofEvidence').textContent=explanation.evidence||
+   '尚未通过有向 G1 数学验证，不提供模型残差或结果证明。';
+  $('filletProofScope').textContent=explanation.scope||
+   '本页仅解释真实数学求解能支持的内容，不代替整本教材题验收。';
  }
  function render(){
   const svg=$('diagram');svg.replaceChildren();animatedArcNode=null;
@@ -491,6 +514,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     }catch(e){$('drawStatus').textContent='无法验证：'+e.message;}
    }
   }
+  paintV5Reasons();
  }
 
  for(const id of FIELDS){
