@@ -79,8 +79,9 @@ function qualify(truth,pred,{lineTolerancePx,circleTolerancePx,
 function quality(tp,fp,fn){
  const precision=tp+fp?tp/(tp+fp):null;
  const recall=tp+fn?tp/(tp+fn):null;
- const f1=precision===null||recall===null?null:
-  precision+recall?2*precision*recall/(precision+recall):0;
+ const f1=tp+fp+fn===0?null:tp===0?0:
+  precision!==null&&recall!==null&&precision+recall?
+   2*precision*recall/(precision+recall):0;
  return {tp,fp,fn,precision,recall,f1};
 }
 function evaluateRecognitionProposals(dataset,{
