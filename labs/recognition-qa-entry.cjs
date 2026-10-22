@@ -6,6 +6,8 @@ const {imagePointFromClient,createPhotoQaGesture}=
  require('./photo-qa-pointer-geometry.cjs');
 const {createPhotoTouchCheck}=
  require('./photo-qa-touch-check.cjs');
+const {inspectLocalQaCapabilities}=
+ require('./photo-qa-capability-check.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {fingerprintLocalPhoto,fingerprintManualTruth}=
@@ -24,6 +26,23 @@ const {createAnnotationPack}=
  const status=$('status'),table=$('metrics');
  let imageUrl=null,generation=0,zoom=1,interactionMode='annotate',ocrRequest=0,comparisonRevision=null;
  function message(value){status.textContent=value;}
+ $('qaCapabilities').addEventListener('click',()=>{
+  // Deliberately exclude userAgent, device IDs and all selected image bytes.
+  const info=inspectLocalQaCapabilities(window,document);
+  const flags=info.api;
+  $('qaCapabilityResult').textContent=[
+   'Canvas 本地识图：'+(flags.canvas2D?'可检测到 API':'当前不可用'),
+   '原图本地预览：'+(flags.localObjectUrl?'可检测到 API':'当前不可用'),
+   'PointerEvent 触控：'+(flags.pointerEvents?'可检测到 API':'当前不可用'),
+   'Web Crypto SHA-256：'+(info.originalPhotoHashUsable?
+    '可能可用（需实际核验文件）':'不可确认'),
+   '原生 TextDetector：'+(flags.nativeTextDetectorPresent?
+    '发现 API，但能否识别工程图仍须按按钮实测':'未发现，OCR 保持未评测'),
+   '安全上下文：'+(flags.secureContext?'是':'否'),
+   '只检查 API 是否存在；未读取图片、未上传数据、未获取设备身份，'+
+    '不代表硬件或识图准确率通过。'
+  ].join('\n');
+ });
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
  function node(name,attrs={}){
