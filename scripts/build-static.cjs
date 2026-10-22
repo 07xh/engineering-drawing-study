@@ -14,6 +14,7 @@ const files = [
   'labs/point-coach.html',
   'labs/point-projection-live.html',
   'labs/circle-fillet-live.html',
+  'labs/auto-fillet-live.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -111,3 +112,13 @@ esbuild.buildSync({
 });
 
 console.log('DraftAI public geometry site ready:',files.length,'assets');
+
+/* V3.1 opt-in public local-only confirmed geometry editor. No upload/OCR or
+ * private user files: bundle only explicitly reviewed math/V5 consumers.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/auto-fillet-live-entry.cjs')],
+ outfile:path.join(out,'labs/auto-fillet-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
