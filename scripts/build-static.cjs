@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+const uiRelease = process.argv.includes('--ui-release');
 const uiPreview = process.argv.includes('--ui-preview');
 const out = path.join(root, uiPreview ? 'dist-ui-next' : 'dist');
 // Public distribution contains geometry learning tools only. Textbook-related source
@@ -16,6 +17,8 @@ const files = [
   'labs/point-projection-live.html',
   'labs/circle-fillet-live.html',
   'labs/auto-fillet-live.html',
+  'labs/cylinder-cut-live.html',
+  'labs/recognition-qa.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -124,8 +127,31 @@ esbuild.buildSync({
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
 
+
+/* Explicit local-only QA view. No uploaded image assets, benchmark fixture
+ * sources or private datasets are distributed with this browser bundle.
+ * Images stay inside the visitor's device, via object URL and local Canvas.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/recognition-qa-entry.cjs')],
+ outfile:path.join(out,'labs/recognition-qa-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Independent V3.8 cylinder-cut geometry experiment. Bundled entirely
+ * client-side; no user image, private textbook or raw math files in dist.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/cylinder-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/cylinder-cut-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
 // Preview is opt-in: the production build and source pages stay unchanged.
-if(uiPreview){
- require('../ui-next/enhance-page.cjs').applyPreview(out);
- console.log('DraftAI next UI preview ready: dist-ui-next');
+if(uiPreview || uiRelease){
+ require('../ui-next/enhance-page.cjs').applyPreview(out, {preview: !uiRelease});
+ console.log('DraftAI unified UI ready:', out);
 }
+

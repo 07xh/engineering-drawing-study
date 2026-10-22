@@ -41,7 +41,7 @@ test('all public pages preserve control IDs, values, hidden states and applicati
 test('preview has isolated output and default production build remains legacy',()=>{
  assert.match(buildSource,/--ui-preview/);
  assert.match(buildSource,/dist-ui-next/);
- assert.match(buildSource,/if\s*\(uiPreview\)/);
+ assert.match(buildSource,/if\s*\(uiPreview \|\| uiRelease\)/);
  const {after}=enhance('labs/auto-fillet-live.html');
  assert.equal(after.querySelector('link[href="../ui-next.css"]').getAttribute('rel'),'stylesheet');
  assert.ok(after.querySelector('script[src="../ui-next.js"][defer]'));

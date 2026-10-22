@@ -25,3 +25,11 @@ test('preview output is isolated, application bundles match production and priva
   assert.notEqual(check.status,0,'preview dependency scan must reject a missing preview script');
  }finally{fs.writeFileSync(asset,bytes);}
 });
+
+test('release candidate uses production directory and removes preview badge',()=>{
+ build(['--ui-release']);
+ const html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
+ assert.match(html,/next-home-hero/);
+ assert.doesNotMatch(html,/新版预览/);
+ assert.equal(run(['scripts/check-static-site-dependencies.cjs']).status,0);
+});
