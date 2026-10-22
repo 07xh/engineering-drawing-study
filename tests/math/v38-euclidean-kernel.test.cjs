@@ -36,3 +36,10 @@ test('nonzero products never silently underflow to a zero geometric fact',()=>{
  assert.equal(m.dot([1e-300,0],[1e300,0]),1);
  assert.equal(m.multiplyFinite(0,1e-200),0);
 });
+
+test('shared vectors reject dimensions other than two or three',()=>{
+ assert.throws(()=>m.vector([1],1),TypeError);
+ assert.throws(()=>m.vector([],0),TypeError);
+ assert.throws(()=>m.vector([1,2,3,4],4),TypeError);
+ assert.deepEqual(m.vector([2,3],2),[2,3]);
+});
