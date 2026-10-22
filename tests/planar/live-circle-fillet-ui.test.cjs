@@ -106,9 +106,16 @@ function interactiveFillet(){
   'filletStrokeBasis','filletStrokeCheck','filletStrokePercent',
   'studentMathFeedback','studentFeedbackSummary','studentFeedbackNext',
   'studentFeedbackScope','studentFeedbackAux','studentFeedbackCenter',
-  'studentFeedbackContacts','studentFeedbackArc'];
+  'studentFeedbackContacts','studentFeedbackArc',
+  'paperMono','paperFocus','paperResetView','paperPicked','drawingWrap'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
+  checked:id==='paperFocus',attributes:{},classes:new Set(),
+  get classList(){return {toggle:(k,on)=>{
+   if(on)this.classes.add(k);else this.classes.delete(k);
+  },contains:k=>this.classes.has(k)};},
+  setAttribute(k,v){this.attributes[k]=String(v)},
+  getAttribute(k){return this.attributes[k]??null},
   disabled:false,textContent:'',
   get valueAsNumber(){return this.value.trim()===''?NaN:Number(this.value)},
   addEventListener(type,handler){this.listeners[type]=handler},
