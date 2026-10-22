@@ -8,7 +8,8 @@ test('preview output is isolated, application bundles match production and priva
  build([]);const before=fs.readFileSync(path.join(root,'dist/index.html'));
  build(['--ui-preview']);
  assert.deepEqual(fs.readFileSync(path.join(root,'dist/index.html')),before,'preview must not touch production output');
- assert.doesNotMatch(before.toString(),/ui-next\.js|next-home-hero/);
+ assert.match(before.toString(),/next-home-hero/);
+ assert.doesNotMatch(before.toString(),/新版预览/);
  const html=fs.readFileSync(path.join(root,'dist-ui-next/index.html'),'utf8');
  assert.match(html,/next-home-hero/);assert.match(html,/ui-next\.js/);
  for(const bundle of ['auto-fillet-live','point-projection-live','circle-fillet-live'])

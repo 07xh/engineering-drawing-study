@@ -38,7 +38,7 @@ test('all public pages preserve control IDs, values, hidden states and applicati
   }
  }
 });
-test('preview has isolated output and default production build remains legacy',()=>{
+test('preview has isolated output and production uses the same unified UI',()=>{
  assert.match(buildSource,/--ui-preview/);
  assert.match(buildSource,/dist-ui-next/);
  assert.match(buildSource,/if\s*\(uiPreview \|\| uiRelease\)/);
