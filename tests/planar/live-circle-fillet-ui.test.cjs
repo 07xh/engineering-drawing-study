@@ -1633,6 +1633,8 @@ test('clicking actual revealed solver auxiliary circle selects and highlights it
  assert.ok(shape);
  get('diagram').listeners.click({target:shape});
  assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助圆/);
+ assert.equal(get('counter').textContent,'1 / 4');
+ assert.match(get('filletProofTitle').textContent,/第 1 \/ 4 步/);
  assert.ok(collect().some(x=>x.attributes?.['data-v5-selected']==='true'));
  assert.notEqual(get('diagram').attributes.viewBox,'0 0 720 440');
 });
@@ -1680,4 +1682,35 @@ test('auto focus smoothly tracks actual partial pen; manual reset restores whole
  assert.equal(get('diagram').attributes.viewBox,'0 0 720 440');
  advance(500);
  assert.equal(get('diagram').attributes.viewBox,'0 0 720 440');
+});
+
+test('finite two-segment verified offset line can be picked and returns to its correct step',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ for(const [id,v] of [['branch','s++'],['direction','ccw'],
+  ['lineTravel1','forward'],['lineTravel2','forward']]){
+  get(id).value=v;fire(id,'change');
+ }
+ fire('next','click');fire('next','click');
+ const first=collect().find(x=>x.tag==='line'&&x.attributes?.['data-v5-pick']);
+ assert.ok(first,'offset derived from verified finite-line solver must be selectable');
+ get('diagram').listeners.click({target:first});
+ assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助线/);
+ assert.equal(get('counter').textContent,'1 / 6');
+ assert.match(get('filletProofTitle').textContent,/第 1 \/ 6 步/);
+});
+test('verified segment-circle offset line click follows exact stage, does not leak final arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ for(const [id,v] of [['branch','candidate-1'],['direction','ccw'],
+  ['mixLineTravel','forward'],['mixCircleTravel','cw']]){
+  get(id).value=v;fire(id,'change');
+ }
+ fire('next','click');fire('next','click');
+ const line=collect().find(x=>x.tag==='line'&&x.attributes?.['data-v5-pick']);
+ assert.ok(line);
+ get('diagram').listeners.click({target:line});
+ assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助线/);
+ assert.equal(get('counter').textContent,'1 / 5');
+ assert.equal(collect().filter(x=>x.attributes?.['data-verified-arc']==='true').length,0);
 });
