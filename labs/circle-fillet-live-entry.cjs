@@ -298,7 +298,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     if(stroke.kind==='arc')svg.append(elem('polyline',{
      points:stroke.points.map(p=>p.x+','+p.y).join(' '),
      stroke:'#8651a8','stroke-width':3.2,fill:'none'}));
-    else svg.append(elem('line',{
+    else if(stroke.kind==='line')svg.append(elem('line',{
      x1:stroke.from.x,y1:stroke.from.y,x2:stroke.to.x,y2:stroke.to.y,
      stroke:'#8651a8','stroke-width':3.2}));
    }
