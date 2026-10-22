@@ -126,3 +126,75 @@ test('requested samples are bounded by original specialist solver',()=>{
  const a=cut('cylinder-lateral',cylinder,plane(p(0,0,15),p(1,0,1)),{samples:16});
  assert.equal(a.geometryVerifiedWithinLegacyScope,true);
 });
+
+
+test('real 04 sphere-plane analytic circle enters the SINGLE conservative M2 evidence envelope',()=>{
+ const sphere={center:p(0,0,0),radiusMm:5,modelUnit:'mm'};
+ const pl={...plane(p(0,0,3),p(0,0,2)),modelUnit:'mm'};
+ const e=cut('sphere-surface',sphere,pl,{samples:32});
+ assert.equal(validateSolveResult(e).ok,true);
+ assert.equal(e.status,'undetermined');
+ assert.equal(e.scope,'sphere-surface-plane-intersection');
+ assert.equal(e.solverId,'sphere-plane');
+ assert.equal(e.sourceMethod,'internal-specialist-recomputation');
+ assert.equal(e.legacyStatus,'ready');
+ assert.equal(e.geometryVerifiedWithinSpecialistScope,true);
+ assert.equal(e.geometryVerifiedWithinLegacyScope,true);
+ assert.equal(e.sourceProblemConfirmed,false);
+ assert.equal(e.modelUnit,'mm');
+ assert.equal(e.globallyUnique,null);
+ assert.equal(e.solutionCount,null);
+ assert.equal(e.proofLevel,'none');
+ assert.equal(e.proofOfGlobalUniqueness,false);
+ assert.equal(e.visibilityVerified,false);
+ assert.ok(e.maxResidual>=0);
+ assert.ok(Object.isFrozen(e));
+});
+
+test('real sphere tangency is scoped geometry only, never proof of global uniqueness',()=>{
+ const sphere={center:p(0,0,0),radiusMm:5,modelUnit:'mm'};
+ const pl={...plane(p(0,0,5),p(0,0,1)),modelUnit:'mm'};
+ const e=cut('sphere-surface',sphere,pl);
+ assert.equal(validateSolveResult(e).ok,true);
+ assert.equal(e.legacyStatus,'tangent-point');
+ assert.equal(e.geometryVerifiedWithinSpecialistScope,true);
+ assert.equal(e.maxResidual,0);
+ assert.equal(e.status,'undetermined');
+ assert.equal(e.globallyUnique,null);
+ assert.equal(e.proofLevel,'none');
+});
+
+test('sphere nonintersection, near tangent and underresolved world scale do not grant proof',()=>{
+ const sphere={center:p(0,0,0),radiusMm:5,modelUnit:'mm'};
+ for(const z of [8,5+1e-9]){
+  const e=cut('sphere-surface',sphere,{...plane(p(0,0,z),p(0,0,1)),modelUnit:'mm'});
+  assert.equal(e.geometryVerifiedWithinSpecialistScope,false);
+  assert.equal(e.maxResidual,null);
+  assert.equal(e.status,'undetermined');
+  assert.equal(e.globallyUnique,null);
+ }
+ const tiny={center:p(1e7,0,0),radiusMm:1e-6,modelUnit:'mm'};
+ const pl={...plane(p(1e7,0,0),p(0,0,1)),modelUnit:'mm'};
+ const blocked=cut('sphere-surface',tiny,pl);
+ assert.equal(blocked.geometryVerifiedWithinSpecialistScope,false);
+ assert.equal(blocked.sourceProblemConfirmed,false);
+});
+
+test('sphere data origin cannot be laundered through forged positive caller result',()=>{
+ for(const result of [
+  {status:'ready',verified:true,modelUnit:'mm',maxResidualMm:0},
+  {status:'tangent-point',verified:true,modelUnit:'mm',maxResidualMm:0},
+  {status:'ready',verified:true,modelUnit:'mm',maxResidualMm:0,
+   curve:{analyticCurveVerified:true}},
+ ])assert.throws(()=>sectionEvidence({result,solverId:'sphere-plane'}),/untrusted verified/);
+ const solid={center:p(0,0,0),radiusMm:5,modelUnit:'mm'};
+ const pl={...plane(p(0,0,2),p(0,0,1)),modelUnit:'mm'};
+ const good={kind:'sphere-surface',solid,plane:pl,frame:'model-mm-3d',unit:'mm'};
+ for(const invalid of [
+  {...good,unit:'image-px'}, {...good,frame:'sheet-px'},
+  {...good,result:{status:'ready',verified:true,maxResidualMm:0}},
+  {...good,solverId:'untrusted-sphere'}, {...good,solid:{...solid,modelUnit:undefined}},
+  {...good,plane:{...pl,modelUnit:'px'}},
+  {...good,kind:'sphere-volume'}, {...good,samples:1}
+ ])assert.throws(()=>solve(invalid));
+});
