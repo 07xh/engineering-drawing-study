@@ -7,6 +7,7 @@
  */
 const {circleCircleFilletCenters}=require('../engines/planar/circle-circle-fillet.cjs');
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
+const {finiteSegmentCircleFillets}=require('../engines/planar/segment-circle-fillet.cjs');
 const {offsetLine}=require('../engines/planar/offset-tangency.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const pt=p=>p&&typeof p==='object'&&finite(p.x)&&finite(p.y);
@@ -24,7 +25,7 @@ function isSameLine(a,b){
 function gradeStudentAuxiliaries(kind,args,actions,{branchId,revision=0}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('nonnegative input revision required');
- if(kind!=='segments'&&kind!=='circles')
+ if(!['segments','circles','segment-circle'].includes(kind))
   throw new TypeError('supported geometric kind required');
  if(!Array.isArray(actions)||actions.length>64)
   throw new TypeError('bounded student construction actions required');
@@ -34,7 +35,7 @@ function gradeStudentAuxiliaries(kind,args,actions,{branchId,revision=0}={}){
    throw new TypeError('stale or invalid student action '+i);
  }
  const solved=kind==='segments'?finiteTwoSegmentFillets(args):
-  circleCircleFilletCenters(args);
+  kind==='segment-circle'?finiteSegmentCircleFillets(args):circleCircleFilletCenters(args);
  const base={kind,revision,proofScope:'two-user-constructed-auxiliary-loci-only',
   arcG1Verified:false,completeProblemVerified:false,
   sourceStatus:solved.status,requiredCount:2,
@@ -49,19 +50,22 @@ function gradeStudentAuxiliaries(kind,args,actions,{branchId,revision=0}={}){
  const matched=new Set();
  for(const a of actions){
   if(matched.has(a.sourceId))continue;
-  if(kind==='segments'){
-   const sign=selected.sides?.[a.sourceId];
+  if(kind==='segments'||kind==='segment-circle'&&a.sourceId==='first'){
+   const sign=kind==='segment-circle'?args.side:selected.sides?.[a.sourceId];
    const offset=sign*args.filletRadius;
    if(!Number.isFinite(offset)||Math.abs(offset)<1e-9||
       a.kind!=='line'||a.tool!=='parallel-ruler'||
       !finite(a.signedOffsetMm)||
       Math.abs(a.signedOffsetMm-offset)>errorTolerance*Math.max(1,Math.abs(offset)))
     continue;
-   const expected=offsetLine(args[a.sourceId],offset);
+   const expected=offsetLine(kind==='segment-circle'?args.segment:args[a.sourceId],offset);
    if(isSameLine(a,expected))matched.add(a.sourceId);
   }else{
-   const guide=solved.auxiliary?.[a.sourceId+'Locus'];
-   if(!guide||a.kind!=='circle'||a.tool!=='concentric-compass'||
+   const guide=kind==='segment-circle'?
+    {center:solved.auxiliary?.circleCenter,radius:solved.auxiliary?.centerLocusRadius}:
+    solved.auxiliary?.[a.sourceId+'Locus'];
+   if(!guide||!pt(guide.center)||!finite(guide.radius)||guide.radius<=0||
+      a.kind!=='circle'||a.tool!=='concentric-compass'||
       !pt(a.center)||!finite(a.radius)||a.radius<=0)continue;
    if(distance(a.center,guide.center)<=errorTolerance*Math.max(1,guide.radius)&&
       Math.abs(a.radius-guide.radius)<=errorTolerance*Math.max(1,guide.radius))
