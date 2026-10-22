@@ -81,7 +81,9 @@ function interactiveFillet(){
   for(const fn of due)fn(time);
  };
  const values={modeSelect:'circles',animationSpeed:'1',x1:'0',y1:'0',r1:'5',mode1:'external',
-  x2:'20',y2:'0',r2:'5',mode2:'external',filletRadius:'10',
+  arcExtent1:'full',arcStart1:'300',arcEnd1:'330',arcDirection1:'ccw',
+  x2:'20',y2:'0',r2:'5',mode2:'external',
+  arcExtent2:'full',arcStart2:'215',arcEnd2:'245',arcDirection2:'ccw',filletRadius:'10',
   branch:'',direction:'',travel1:'',travel2:'',
   line1Ax:'-20',line1Ay:'0',line1Bx:'20',line1By:'0',
   line2Ax:'0',line2Ay:'-20',line2Bx:'0',line2By:'20',
@@ -813,4 +815,60 @@ test('actual student center tap is not replaced by hidden perfect snap geometry 
   clientX:360+8*(c.center.x+1.7),clientY:220-8*c.center.y});
  assert.match(get('learningProgress').textContent,/已通过 0 \/ 4/);
  assert.match(get('centerSnapStatus').textContent,/未满足|失败/);
+});
+
+test('finite original-circle arcs filter center branches and draw only given source sectors',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ assert.equal(collect().filter(n=>n.attributes?.['data-given-source-arc']==='true').length,0);
+ get('arcExtent1').value='finite';fire('arcExtent1','change');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['','center-1']);
+ const given=collect().filter(n=>n.attributes?.['data-given-source-arc']==='true');
+ assert.equal(given.length,1);
+ assert.equal(given[0].tag,'path');
+ assert.match(given[0].attributes.d,/ A /);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#257650').length,1);
+ assert.match(get('status').textContent,/1 个|唯一|有限|center/);
+ get('arcExtent2').value='finite';fire('arcExtent2','change');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['','center-1']);
+ assert.equal(collect().filter(n=>n.attributes?.['data-given-source-arc']==='true').length,2);
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ for(let i=0;i<4;i++)fire('next','click');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,1);
+});
+test('finite sector clipping can remove every circle tangent candidate and final SVG',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('arcExtent1').value='finite';fire('arcExtent1','change');
+ get('arcStart1').value='30';fire('arcStart1','input');
+ get('arcEnd1').value='60';fire('arcEnd1','input');
+ get('arcExtent2').value='finite';fire('arcExtent2','change');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['']);
+ for(let i=0;i<4;i++)fire('next','click');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+ assert.equal(get('branch').value,'');
+});
+test('changing finite arc restrictions invalidates selected previous branch and drawn student constructions',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ for(let i=0;i<4;i++)fire('next','click');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,1);
+ get('arcExtent1').value='finite';fire('arcExtent1','change');
+ get('arcStart1').value='30';fire('arcStart1','input');
+ get('arcEnd1').value='60';fire('arcEnd1','input');
+ assert.equal(get('branch').value,'');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+});
+test('finite arc angular degeneracy fails closed rather than drawing a full input circle',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('arcExtent1').value='finite';fire('arcExtent1','change');
+ get('arcStart1').value='40';fire('arcStart1','input');
+ get('arcEnd1').value='40';fire('arcEnd1','input');
+ assert.match(get('status').textContent,/条件无效/);
+ assert.equal(collect().filter(n=>n.attributes?.['data-given-source-arc']==='true').length,0);
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
 });
