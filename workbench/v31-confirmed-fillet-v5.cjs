@@ -10,6 +10,7 @@
 const {normalizeProblem,solveFiniteFillet}=
  require('../engines/constraints-2d/finite-fillet-gate.cjs');
 const {filletTimeline}=require('./verified-plan-v5-bridge.cjs');
+const {projectVerifiedPlan}=require('./verified-intent-projection.cjs');
 const {assertVerifiedArcParity}=require('./verified-v5-arc-parity.cjs');
 
 const typeToLegacy=Object.freeze({
@@ -122,7 +123,32 @@ function confirmedFilletTimeline(input){
  // Never accept a pretty but mathematically reversed or displaced SVG arc.
  assertVerifiedArcParity({sourceArc:arc,contacts:candidate.contacts,
   sheet:renderSheet,action:actual});
- return {...playback,source:'V3.1 confirmed-mm geometry + verified 02 G1',
+ // #377 F2: the source-backed semantic intent projection is now the drawing
+ // path consumed by the existing session/V5. The original trusted V5 plan
+ // remains an independent parity oracle; no new player is created.
+ const intentV5=projectVerifiedPlan(typeToLegacy[problem.kind],
+  solverInput,renderSheet,problem.revision);
+ if(intentV5.status!=='ready'||intentV5.mathematicallyVerified!==true||
+    intentV5.revision!==problem.revision||
+    intentV5.selectedBranchId!==selectedId||
+    intentV5.intents?.length!==playback.steps.length||
+    JSON.stringify(intentV5.steps)!==JSON.stringify(playback.steps)||
+    JSON.stringify(intentV5.timing)!==JSON.stringify(playback.timing)||
+    intentV5.intents.some((intent,i)=>
+     intent.sourceRevision!==problem.revision||
+     intent.branchId!==selectedId||
+     intent.id!==playback.steps[i].id||
+     JSON.stringify(intent.dependsOn)!==
+      JSON.stringify(playback.steps[i].dependsOn)||
+     JSON.stringify(intent.outputEntityIds)!==
+      JSON.stringify(playback.steps[i].actions.map(a=>a.id))))
+  throw new RangeError('F2 intent-to-V5 projection differs from verified original timeline');
+ return {...playback,
+  // V5 truly consumes the steps and timebase produced with the intent DAG.
+  steps:intentV5.steps,timing:intentV5.timing,
+  constructionIntentPrototype:intentV5.intents,
+  intentSchema:'draftai-r1-intent-projection/0.1',
+  source:'V3.1 confirmed-mm geometry + verified 02 G1',
   proofScope:solved.proofScope,
   selectedBranchId:selectedId,
   typedMathEvidence:{kind:problem.kind,unit:'mm',revision:problem.revision,
