@@ -5,7 +5,8 @@
  "description": "Build-only bundled Three.js viewer for the DOF learning laboratory",
  "type": "commonjs",
  "devDependencies": {
-  "three": "0.186.1",
-  "esbuild": "0.28.2"
+  "esbuild": "0.28.2",
+  "linkedom": "0.18.12",
+  "three": "0.186.1"
  }
 }

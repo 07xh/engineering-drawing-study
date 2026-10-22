@@ -174,3 +174,16 @@ jobs:
           test ! -e dist/knowledge/index.html
           test ! -e dist/labs/verified-exercises.js
           node scripts/check-three-viewer-bundle.cjs
+
+      - name: Verify isolated next UI and real solver compatibility
+        run: |
+          node --test tests/ui/*.test.cjs
+          node scripts/build-static.cjs --ui-preview
+          node scripts/check-static-site-dependencies.cjs --ui-preview
+
+      - name: Retain next UI preview for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: draftai-ui-next-preview
+          path: dist-ui-next/
+          retention-days: 7
