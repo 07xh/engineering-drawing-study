@@ -6,10 +6,16 @@
  * A caller must obtain the plan from verified-teaching-plan's real solvers.
  */
 const {verifiedTeachingActionToV5}=require('./construction-step-v5-adapter.cjs');
+const {adaptDirectedFillet}=require('./verified-teaching-plan.cjs');
 const Timeline=require('./teaching-timeline-v5.js');
 const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const validId=x=>typeof x==='string'&&x.length>0&&x.length<=160;
-function projectVerifiedPlan(plan,sheet){
+function projectVerifiedPlan(kind,input,sheet,revision=0){
+ if(!['circles','segments','segment-circle'].includes(kind))
+  throw new TypeError('unsupported specialist kind');
+ // Recompute from actual input at the trust boundary; never accept a caller-
+ // supplied plan whose proof.verified flag could be forged.
+ const plan=adaptDirectedFillet(kind,input,{revision});
  if(!record(plan)||plan.schema!=='draftai-teaching-plan/0.1'||
   plan.readiness!=='ready'||plan.proof?.verified!==true||
   !Number.isSafeInteger(plan.revision)||plan.revision<0||
