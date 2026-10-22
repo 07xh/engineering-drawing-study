@@ -22,7 +22,7 @@ const {createAnnotationPack}=
  const viewport=$('qaViewport'),gesture=createPhotoQaGesture();
  const touchCheck=createPhotoTouchCheck();
  const status=$('status'),table=$('metrics');
- let imageUrl=null,generation=0,zoom=1,ocrRequest=0,comparisonRevision=null;
+ let imageUrl=null,generation=0,zoom=1,interactionMode='annotate',ocrRequest=0,comparisonRevision=null;
  function message(value){status.textContent=value;}
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
@@ -169,7 +169,7 @@ const {createAnnotationPack}=
  }
  function clearImage(){
   generation++;ocrRequest++;$('qaOcr').disabled=false;
-  touchCheck.cancel();gesture.reset();setZoom(1);session.reset();
+  touchCheck.cancel();gesture.reset();setZoom(1);setInteractionMode('annotate');session.reset();
   $('qaTouchResult').textContent='当前未进行触控坐标自检。';
   if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
   image.removeAttribute('src');
@@ -266,6 +266,21 @@ const {createAnnotationPack}=
    message('OCR 候选校验失败：'+(error instanceof Error?error.message:'无效文字来源'));
   }
  });
+ function setInteractionMode(mode){
+  if(mode!=='pan'&&mode!=='annotate')throw new TypeError('invalid photo pointer mode');
+  interactionMode=mode;
+  gesture.reset();
+  overlay.style.touchAction=mode==='pan'?'pan-x pan-y':'none';
+  overlay.style.cursor=mode==='pan'?'grab':'crosshair';
+  $('qaModePan').setAttribute('aria-pressed',String(mode==='pan'));
+  $('qaModeDraw').setAttribute('aria-pressed',String(mode==='annotate'));
+  $('qaModeStatus').textContent=mode==='pan'?
+   '浏览模式：可用单指拖动放大图纸进行水平/垂直滚动，不会添加人工标注。':
+   '标注模式：单指在图上描绘真值；如需滚动画面，请切换浏览模式。';
+  draw();
+ }
+ $('qaModePan').addEventListener('click',()=>setInteractionMode('pan'));
+ $('qaModeDraw').addEventListener('click',()=>setInteractionMode('annotate'));
  function setZoom(value){
   zoom=Math.min(3,Math.max(1,Number(value)||1));
   // Changing the image display width scales both image and SVG equally.
@@ -273,7 +288,9 @@ const {createAnnotationPack}=
   viewport.style.width=String(Math.round(zoom*100))+'%';
   $('qaZoomLevel').textContent=Math.round(zoom*100)+'%';
   gesture.reset();
-  draw();
+  if(zoom>1&&interactionMode==='annotate'&&touchCheck.snapshot().status!=='active')
+   setInteractionMode('pan');
+  else draw();
  }
  $('qaZoomIn').addEventListener('click',()=>setZoom(zoom+.25));
  $('qaZoomOut').addEventListener('click',()=>setZoom(zoom-.25));
@@ -299,7 +316,7 @@ const {createAnnotationPack}=
  $('qaTouchCheck').addEventListener('click',()=>{
   const snap=session.snapshot();
   if(!snap.ready){message('请先打开本地照片并运行识图检测。');return;}
-  gesture.reset();
+  gesture.reset();setInteractionMode('annotate');
   touchCheckStatus(touchCheck.start(snap.image));
   draw();
   message('五点触控自检已开始：请在图中依次点击橙色十字。');
@@ -313,7 +330,8 @@ const {createAnnotationPack}=
   return imagePointFromClient(event,overlay.getBoundingClientRect(),size);
  }
  overlay.addEventListener('pointerdown',event=>{
-  if(!session.snapshot().ready||event.pointerType==='mouse'&&event.button!==0)
+  if(interactionMode==='pan'||!session.snapshot().ready||
+   event.pointerType==='mouse'&&event.button!==0)
    return;
   const kind=touchCheck.snapshot().status==='active'?'touch-check':$('qaTool').value;
   const result=gesture.down(event.pointerId,fromPointer(event),kind);
@@ -325,9 +343,11 @@ const {createAnnotationPack}=
   }
  });
  overlay.addEventListener('pointermove',event=>{
+  if(interactionMode==='pan')return;
   if(gesture.move(event.pointerId,fromPointer(event)))draw();
  });
  overlay.addEventListener('pointerup',event=>{
+  if(interactionMode==='pan')return;
   const result=gesture.up(event.pointerId,fromPointer(event));
   if(result.status==='completed'){
    const g=result.gesture;
