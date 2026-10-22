@@ -69,9 +69,9 @@ function renderShape(shape,layer,stepIndex){
 }
 function exportVerifiedFilletSvg(input, options={}){
   if(!options||typeof options!=='object'||Array.isArray(options)||
-     Object.keys(options).some(k=>!['expectedRevision','includeGuides'].includes(k)))
+     Object.keys(options).some(k=>!['expectedRevision','includeGuides','completedSteps'].includes(k)))
     throw new TypeError('unsupported SVG export option');
-  const {expectedRevision,includeGuides=true}=options;
+  const {expectedRevision,includeGuides=true,completedSteps}=options;
   if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0||typeof includeGuides!=='boolean')
     throw new TypeError('expected current revision and boolean includeGuides required');
   // No untrusted claim of mathematical validation can enter this API.
@@ -82,12 +82,17 @@ function exportVerifiedFilletSvg(input, options={}){
      plan.revision!==expectedRevision||
      plan.typedMathEvidence.revision!==expectedRevision)
     throw new RangeError('SVG export requires current-revision verified G1 construction');
+  const totalSteps=plan.steps.length;
+  const visibleSteps=completedSteps===undefined?totalSteps:completedSteps;
+  if(!Number.isSafeInteger(visibleSteps)||visibleSteps<0||visibleSteps>totalSteps)
+    throw new RangeError('completedSteps must be within the verified V5 timeline');
+  const isFinalSheet=visibleSteps===totalSteps;
   const problem=normalizeProblem(input.problem);
   const sheet=input.sheet===undefined?DEFAULT_SHEET:input.sheet;
   if(!sheet||!validPoint(sheet.origin)||!finite(sheet.scale)||sheet.scale<=0)
     throw new TypeError('invalid verified sheet transform');
   const source=givens(problem,sheet);
-  const actions=[];
+  const actions=[],allActions=[];
   const usedIds=new Set(source.map(a=>a.id));
   for(const [i,step] of plan.steps.entries()){
     if(!Array.isArray(step.actions))throw new TypeError('invalid V5 step');
@@ -95,13 +100,19 @@ function exportVerifiedFilletSvg(input, options={}){
       if(typeof action.id!=='string'||usedIds.has(action.id))
         throw new TypeError('duplicate or missing verified action ID');
       usedIds.add(action.id);
-      if(includeGuides||step.role==='result')actions.push({shape:action,index:i,
-        layer:step.role==='result'?'result':'guide'});
+      const indexed={shape:action,index:i,
+        layer:step.role==='result'?'result':'guide'};
+      allActions.push(indexed);
+      if(i<visibleSteps&&(includeGuides||step.role==='result'))
+        actions.push(indexed);
     }
   }
-  if(!actions.some(a=>a.layer==='result'&&a.shape.kind==='arc'))
+  if(!allActions.some(a=>a.layer==='result'&&a.shape.kind==='arc'))
     throw new RangeError('verified result arc missing');
-  const bounds=[...source,...actions.map(a=>a.shape)].map(boundsOfShape);
+  // Use the full verified construction as common framing: all process sheets
+  // retain the exact same viewBox and do not jump when a new guide appears.
+  const bounds=[...source,...allActions.map(a=>a.shape)].map(boundsOfShape);
+  const finalArcVisible=actions.some(a=>a.layer==='result'&&a.shape.kind==='arc');
   const left=Math.min(...bounds.map(b=>b.left));
   const right=Math.max(...bounds.map(b=>b.right));
   const top=Math.min(...bounds.map(b=>b.top));
@@ -111,16 +122,21 @@ function exportVerifiedFilletSvg(input, options={}){
   const width=Math.max(right-left+2*margin,40);
   const height=Math.max(bottom-top+2*margin,40);
   [x,y,width,height].forEach(scalar);
+  const title=isFinalSheet?'DraftAI 已验证的圆弧连接工程图':
+    'DraftAI 已验证作图过程 · 第'+visibleSteps+'/'+totalSteps+'步';
+  const description=isFinalSheet?
+    '仅验证所选圆弧连接分支与有向 G1，不证明全局唯一解。':
+    '所选解已经数学验证；本图只展示前'+visibleSteps+'步，未代表最终作图完成或全局唯一解。';
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="'+
     [x,y,width,height].map(scalar).join(' ')+'" role="img">\n'+
-    '<title>DraftAI 已验证的圆弧连接工程图</title>\n'+
-    '<desc>仅验证所选圆弧连接分支与有向 G1，不证明全局唯一解。</desc>\n'+
+    '<title>'+title+'</title>\n'+
+    '<desc>'+description+'</desc>\n'+
     '<g id="given">'+source.map(s=>renderShape(s,'given',null)).join('')+'</g>\n'+
     '<g id="construction">'+actions.map(a=>renderShape(a.shape,a.layer,a.index)).join('')+'</g>\n'+
     '</svg>\n';
   return {svg,revision:plan.revision,selectedBranchId:plan.selectedBranchId,
-    includedGuides:includeGuides,actionCount:actions.length,
-    originalStepCount:plan.steps.length,proofScope:plan.proofScope,
-    globallyUnique:plan.typedMathEvidence.globallyUnique};
+    includedGuides:includeGuides,actionCount:actions.length,completedSteps:visibleSteps,
+    originalStepCount:totalSteps,isFinalSheet,finalArcVisible,
+    proofScope:plan.proofScope,globallyUnique:plan.typedMathEvidence.globallyUnique};
 }
 module.exports={exportVerifiedFilletSvg};
