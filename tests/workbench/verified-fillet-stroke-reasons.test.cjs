@@ -31,8 +31,12 @@ function verified(kind,revision=12){
  assert.equal(reasons.status,'ready');
  return {motion,reasons,revision};
 }
+function stamped(timeline,ms,revision){
+ return {...Timeline.frame(timeline,ms),revision};
+}
 function current(options,ms){
- return Narration.at({...options,frame:Timeline.frame(options.motion.timeline,ms)});
+ return Narration.at({...options,
+  frame:stamped(options.motion.timeline,ms,options.revision)});
 }
 test('V5 first and second mathematically sourced auxiliary circles give different frame-synchronized explanations',()=>{
  const sample=verified('circles');
@@ -80,19 +84,19 @@ test('V5 exploratory construction can describe a real candidate but cannot claim
   .circleCircleFilletCenters(inputs.circles);
  const motion=Progressive.build({kind:'circles',centers,chosen:null,teaching:null,
   verified:false,revision:8,origin,scale,max:4});
- const first=Narration.at({motion,reasons:null,frame:Timeline.frame(motion.timeline,800),
+ const first=Narration.at({motion,reasons:null,frame:stamped(motion.timeline,800,8),
   revision:8});
  assert.equal(first.status,'drawing');
  assert.match(first.title,/第 2 条圆心辅助圆轨迹/);
  assert.equal(first.canClaimFinal,false);
  const last=Narration.at({motion,reasons:null,
-  frame:Timeline.frame(motion.timeline,motion.timeline.totalMs),revision:8});
+  frame:stamped(motion.timeline,motion.timeline.totalMs,8),revision:8});
  assert.equal(last.canClaimFinal,false);
  assert.doesNotMatch(last.check,/双侧有向 G1 验证通过/);
 });
 test('invalid frame, old revision, mismatched proof and hidden learning modes fail closed',()=>{
  const x=verified('circles',7);
- const frame=Timeline.frame(x.motion.timeline,300);
+ const frame=stamped(x.motion.timeline,300,7);
  assert.equal(Narration.at({...x,frame,revision:8}).status,'unverified');
  assert.equal(Narration.at({...x,frame,revision:7,mode:'hint'}).status,'hidden');
  assert.equal(Narration.at({...x,frame,revision:7,mode:'draw'}).status,'hidden');
