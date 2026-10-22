@@ -12,12 +12,19 @@ const dense=a=>Array.isArray(a)&&Array.from({length:a.length},
 const scopeSpace=scope=>scope==='point-3d-linear'?'model-3d':'drawing-2d';
 
 function buildConstraintIncidence({geometry,constraints}={}){
- if(!dense(geometry)||!dense(constraints))
+ // Reject unbounded lengths before dense() allocates an index-check array.
+ if(!Array.isArray(geometry)||!Array.isArray(constraints))
   throw new TypeError('geometry and constraints must be dense arrays');
  if(geometry.length>MAX_GEOMETRY||constraints.length>MAX_CONSTRAINTS)
   throw new RangeError('constraint incidence graph exceeds size budget');
+ if(!dense(geometry)||!dense(constraints))
+  throw new TypeError('geometry and constraints must be dense arrays');
  const items=new Map(),byPoint=new Map(),byConstraint=new Map();
  for(const g of geometry){
+  // First M1 release models constrained point incidences only. Arbitrary
+  // mesh/curve topology belongs to dedicated, separately bounded engines.
+  if(!g||g.kind!=='point')
+   throw new TypeError('M1 incidence accepts point geometry only');
   const check=validateGeometry(g);
   if(!check.ok)throw new TypeError('invalid geometry: '+check.errors.join('; '));
   if(items.has(g.id))throw new TypeError('duplicate geometry id: '+g.id);
@@ -26,6 +33,19 @@ function buildConstraintIncidence({geometry,constraints}={}){
  }
  let incidences=0;
  for(const c of constraints){
+  // Validate caller-controlled list budgets before legacy schema walks it.
+  if(Array.isArray(c?.targetIds)){
+   if(c.targetIds.length>MAX_INCIDENCES)
+    throw new RangeError('constraint target list exceeds size budget');
+   if(!dense(c.targetIds))
+    throw new TypeError('constraint target list must be dense');
+  }
+  if(c?.type==='linear'&&Array.isArray(c.data?.terms)){
+   if(c.data.terms.length>MAX_INCIDENCES)
+    throw new RangeError('constraint term list exceeds size budget');
+   if(!dense(c.data.terms))
+    throw new TypeError('constraint term list must be dense');
+  }
   const check=validateConstraint(c);
   if(!check.ok)throw new TypeError('invalid constraint: '+check.errors.join('; '));
   if(byConstraint.has(c.id))throw new TypeError('duplicate constraint id: '+c.id);
