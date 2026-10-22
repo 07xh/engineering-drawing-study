@@ -23,7 +23,12 @@ function assessFilletStudentProgress(kind,args,{
   snapChosenFilletCenter(kind,args,centerMark,{...opts,toleranceMm});
  const contacts=gradeStudentTangentPoints(kind,args,tangentMarks,{...opts,toleranceMm});
  let arc;
- if(arcStrokes.length>1)
+ // The composed proof must use the student's explicitly chosen branch.
+ // Do not let a prefilled args.branchId silently bypass empty/mismatched UI selection.
+ if(typeof branchId!=='string'||!branchId||args?.branchId!==branchId)
+  arc={status:'not-verified',gradeScope:'one-directed-arc-only',
+   reason:'未明确选择与当前题目一致的真实圆心分支，禁止把独立圆弧判分计为通过'};
+ else if(arcStrokes.length>1)
   arc={status:'incorrect',gradeScope:'one-directed-arc-only',
    reason:'学生绘制了多条连接弧；请先撤销多余笔迹，不得挑一条自动算正确'};
  else
