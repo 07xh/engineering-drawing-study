@@ -74,3 +74,35 @@ test('M2 normalized rank and checked residual are independent of input geometry 
  assert.equal(a.rankEstimate,b.rankEstimate);assert.equal(a.localDegreesEstimate,b.localDegreesEstimate);
  assert.deepEqual(a.normalizedResiduals,b.normalizedResiduals);
 });
+
+test('09 actual legacy affine engine rank matches new analytic model-mm rows',()=>{
+ const legacy=require('../../knowledge/multi-point-constraints.js');
+ const cases=[
+  {geometry:[point('P')],constraints:[fixed('a','P','x',0)]},
+  {geometry:[point('P')],constraints:[
+   fixed('a','P','x',0),fixed('b','P','x',0)]},
+  {geometry:[point('A'),point('B')],constraints:[
+   fixed('x','A','x',0),fixed('y','A','y',0),pair('t','coincident','A','B')]},
+  {geometry:[point('A'),point('B')],constraints:[
+   pair('h','horizontal','A','B'),pair('v','vertical','A','B')]},
+  {geometry:[point('A'),point('B',10,0)],constraints:[
+   fixed('ax','A','x',0),pair('h','horizontal','A','B'),fixed('by','B','y',0)]}
+ ];
+ for(const {geometry,constraints} of cases){
+  const old=legacy.analyze({points:geometry.map(x=>x.id),
+   constraints:constraints.map(x=>({type:x.type,...x.data}))});
+  const newer=run(geometry,constraints);
+  assert.equal(newer.status,'local-numeric-evidence');
+  assert.equal(newer.rankEstimate,old.rank);
+  assert.equal(newer.localDegreesEstimate,old.degrees);
+  assert.equal(newer.proofOfGlobalUniqueness,false);
+  assert.equal(newer.proofOfExistence,false);
+ }
+ const contradiction=[fixed('z','P','x',0),fixed('w','P','x',1)];
+ const rLegacy=legacy.analyze({points:['P'],constraints:contradiction.map(x=>({
+  type:x.type,...x.data}))});
+ const rNew=run([point('P')],contradiction);
+ assert.equal(rLegacy.status,'none'); // within exact finite affine linear equations
+ assert.equal(rNew.status,'configuration-residual-failed');
+ assert.equal(rNew.proofOfNonexistence,false); // current point mismatch is not global 'none'
+});

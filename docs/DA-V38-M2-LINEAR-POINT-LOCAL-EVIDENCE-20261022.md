@@ -7,3 +7,6 @@ The result distinguishes graph connectivity, numeric local rank/local DOF, and r
 Test scope: genuine fixed point constraints, rank independence/redundancy, conflicting current configurations, actual two-equation coincidence, horizontal/vertical, large-origin 10mm contradiction, wrong frames and nonlinear constraints, input order, numeric conditioning. Run `node --test tests/math/m2-linear-point-local-evidence.test.cjs` and all five exact-head GitHub CI workflows. No production consumers, public pages, Cloudflare, image/OCR, authentication or old solver modifications.
 
 Shared core/** code is high-risk: keep PR Draft until independent 00/09 signed-off math audit, downstream version/ownership agreement and exact-head CI success. Rollback revert isolated commit; existing math paths do not import this new module.
+## 09 增补：与现有原版求解器逐案对照
+
+新增直接调用原 `knowledge/multi-point-constraints.js` 的独立对照回归：固定坐标、重复坐标、两点重合、水平+竖直、混合冗余共五类输入对比原版方程秩/自由度；矛盾案例保留原版有限仿射方程 `none` 与新局部数值审计 `configuration-residual-failed` 的不同证明范围。不能把新诊断自动升级为全局 `none/unique`。
