@@ -19,7 +19,8 @@ const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2});
 const views=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
 const closedFailure=(reason,sourceStatus='unverified')=>({
  status:'blocked',reason,sourceStatus,boundaryEdges:[],capChords:[],
- contourLoops:[],boundaryVerified:false,completeSolidIntersectionVerified:false,
+ contourLoops:[],boundaryVerified:false,solidSectionPerimeterVerified:false,
+ completeSolidIntersectionVerified:false,
  visibilityVerified:false,v5StepsReady:false,globallyUnique:null
 });
 function finiteCylinderSectionBoundary(cylinder,plane,{samplesPerTurn=64}={}){
@@ -159,7 +160,8 @@ function finiteCylinderSectionBoundary(cylinder,plane,{samplesPerTurn=64}={}){
    'topology-precision');
  return {
   status:'ready',sourceStatus:side.status,
-  boundaryVerified:true,completeSolidIntersectionVerified:true,
+  boundaryVerified:true,solidSectionPerimeterVerified:true,
+  completeSolidIntersectionVerified:false,
   proofScope:'1D plane-section perimeter of finite Z-axis right circular solid cylinder; not filled area, visibility or V5',
   modelUnit:'mm',globallyUnique:null,
   boundaryEdges:joinedEdges,capChords,contourLoops,nodes,
