@@ -113,3 +113,60 @@ test('04 input model is never mutated by shared math and projection',()=>{
  assert.equal(JSON.stringify([s,p]),before);
  assert.deepEqual(a,b);
 });
+
+
+test('09 independent large-coordinate oracle and normal reversal preserve sphere cut',()=>{
+ const center=vec(2500000,-1800000,900000);
+ const s=sphere(center,25);
+ const point=vec(center.x,center.y,center.z+12);
+ const a=cut(s,plane(point,vec(0,0,4)),{samples:32});
+ const b=cut(s,plane(point,vec(0,0,-8)),{samples:32});
+ assert.equal(a.status,'ready');
+ assert.equal(b.status,'ready');
+ near(a.curve.radiusMm,Math.sqrt(625-144),1e-7);
+ near(b.curve.radiusMm,a.curve.radiusMm,1e-9);
+ assert.deepEqual(a.curve.center,point);
+ assert.deepEqual(b.curve.center,point);
+ for(const result of [a,b])for(let i=0;i<result.points.length;i++){
+  const x=result.points[i];
+  near(Math.hypot(x.x-center.x,x.y-center.y,x.z-center.z),25,1e-6);
+  near(x.z,point.z,1e-6);
+  assert.equal(result.projections[i].V.u,x.x);
+  assert.equal(result.projections[i].V.v,x.z);
+  assert.equal(result.projections[i].H.v,x.y);
+  assert.equal(result.projections[i].W.u,x.y);
+  assert.equal(result.visibilityVerified,false);
+  assert.equal(result.globallyUnique,null);
+ }
+});
+
+test('09 ULP-sensitive large-coordinate tiny sphere fails closed but resolved scale works',()=>{
+ const far=vec(1e7,0,0);
+ const tiny=1e-6;
+ const blocked=cut(sphere(far,tiny),plane(far),{samples:24});
+ assert.equal(blocked.status,'undetermined');
+ assert.equal(blocked.verified,false);
+ assert.equal(blocked.curve,null);
+ assert.deepEqual(blocked.points,[]);
+ const resolved=cut(sphere(vec(0,0,0),tiny),plane(),{samples:24});
+ assert.equal(resolved.status,'ready');
+ near(resolved.curve.radiusMm,tiny,1e-12);
+ assert.equal(resolved.globallyUnique,null);
+});
+
+test('09 equivalent plane normal scales and reversed sign do not upgrade uniqueness',()=>{
+ const s=sphere(vec(1,-2,3),9);
+ const p=vec(1,-2,7);
+ const scales=[.001,1,10];
+ let expected=null;
+ for(const k of scales)for(const sign of [-1,1]){
+  const result=cut(s,plane(p,vec(k*sign,0,0)),{samples:16});
+  assert.equal(result.status,'ready');
+  near(result.curve.radiusMm,9,1e-7);
+  near(result.curve.center.x,1,1e-8);
+  assert.equal(result.curve.analyticCurveVerified,true);
+  assert.equal(result.globallyUnique,null);
+  if(expected===null)expected=result.curve.radiusMm;
+  else near(result.curve.radiusMm,expected,1e-8);
+ }
+});
