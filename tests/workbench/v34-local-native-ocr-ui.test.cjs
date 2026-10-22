@@ -163,3 +163,26 @@ test('OCR association UI uses leader endpoints, never silently certifies a circl
   assert.equal(ctx.linked.length,0);
  }finally{ctx.restore();}
 });
+
+test('OCR review displays two-stroke bent leader hypotheses without approving values',async()=>{
+ const lines=[
+  {id:'line_1',kind:'line',coordinateSpace:'original-image-px',
+   bbox:[160,210,45,1],from:{x:160,y:210},to:{x:205,y:210}},
+  {id:'line_2',kind:'line',coordinateSpace:'original-image-px',
+   bbox:[205,210,75,90],from:{x:205,y:210},to:{x:280,y:300}}
+ ];
+ const ctx=setup({getLines:()=>lines});
+ try{
+  await ctx.nodes.run.fire('click');
+  ctx.nodes.selector.value='ocr_1';
+  await ctx.nodes.selector.fire('change');
+  assert.match(ctx.nodes.status.textContent,/line_1 → line_2 → curve_1/);
+  assert.match(ctx.nodes.status.textContent,/总端点误差 10px/);
+  assert.match(ctx.nodes.status.textContent,/折点与箭头未验证/);
+  assert.equal(ctx.linked.length,0);
+  lines.pop();
+  ctx.api.refreshAssociations();
+  assert.match(ctx.nodes.status.textContent,/未找到符合折点间隙与转角条件/);
+  assert.equal(ctx.linked.length,0);
+ }finally{ctx.restore();}
+});
