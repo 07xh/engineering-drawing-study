@@ -35,6 +35,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .ocr-math-accept{display:flex;flex-direction:row;gap:8px;align-items:center;margin:8px 0}.ocr-math-accept input{width:20px;min-height:20px;flex:none}
 .local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
 .vector-preview{display:block;width:100%;height:140px;background:#fff;border:1px solid #d8e6da;border-radius:9px;margin:9px 0}.vector-confirm{display:flex;flex-direction:row;align-items:center;gap:9px;margin:10px 0}.vector-confirm input{width:auto;min-height:20px;flex:0 0 auto}.vector-status{font-size:12px;color:#576e5b;line-height:1.55;margin:8px 0}
+.raster-edits{display:grid;gap:9px;margin:10px 0}.raster-edit-group{background:#fff;border:1px solid #d8e6da;border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.raster-edit-group strong{grid-column:1/-1;font-size:12px;color:#365e45}.raster-edit-group label{min-width:0}
 .vector-annotation-review{display:grid;gap:8px;margin-top:10px}.vector-annotation-row{padding:9px;background:white;border:1px solid #d8e6da;border-radius:9px;display:grid;gap:7px}.vector-annotation-row span{font-size:12px;overflow-wrap:anywhere;color:#496e56}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 label{font-size:12px;color:#4c6c58;display:grid;gap:5px}
@@ -119,6 +120,26 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </div>
 <p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
 </div>
+</div>
+<div class="local-photo" id="rasterDraftPanel" aria-label="照片图元和毫米比例人工审核">
+<h3>照片图元校正与导入（实验）</h3>
+<p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。</p>
+<svg id="rasterDraftPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="原题检测候选的安全线圆几何预览"></svg>
+<div class="fields">
+<label for="rasterFirst">源图元一<select id="rasterFirst"><option value="">先检测图元</option></select></label>
+<label for="rasterSecond">源图元二<select id="rasterSecond"><option value="">先检测图元</option></select></label>
+</div>
+<div id="rasterEdits" class="raster-edits" aria-label="人工修改已选图元的像素端点圆心和半径"></div>
+<div class="fields">
+<label for="rasterMmPerPx">人工校准：毫米／像素<input id="rasterMmPerPx" type="number" step="any" min="0" placeholder="从已知尺寸独立校准"></label>
+<label for="rasterYAxis">图纸 Y 方向<select id="rasterYAxis"><option value="down">向下为正</option><option value="up">向上为正</option></select></label>
+<label for="rasterOriginX">原点 X（原图像素）<input id="rasterOriginX" type="number" step="any" value="0"></label>
+<label for="rasterOriginY">原点 Y（原图像素）<input id="rasterOriginY" type="number" step="any" value="0"></label>
+<label for="rasterFilletRadius">目标连接 R（毫米）<input id="rasterFilletRadius" type="number" min="0" step="any" placeholder="从真实题目核对"></label>
+</div>
+<label class="vector-confirm" for="rasterAccept"><input id="rasterAccept" type="checkbox">我已核对所选图元、修改的原图像素坐标、毫米比例、原点及目标连接 R</label>
+<div class="controls"><button type="button" id="rasterApply">把审核后的照片几何导入毫米数学条件</button></div>
+<p id="rasterStatus" class="vector-status" role="status" aria-live="polite">尚未检测图元。照片不会上传。</p>
 </div>
 <div class="local-photo" id="localVectorPanel">
 <label for="vectorSvg">SVG 矢量图（本地提取线段与圆，不上传）

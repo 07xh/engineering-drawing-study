@@ -64,7 +64,10 @@ function attachLocalCurveCandidates({image,photoInput,photoClear,
    }
    overlay.hidden=false;
    onCandidates(proposals.map(x=>locateCandidate(x,
-    {width:w,height:h},{width:originalW,height:originalH})));
+    {width:w,height:h},{width:originalW,height:originalH})),{
+     raw:proposals,analysis:{width:w,height:h},
+     original:{width:originalW,height:originalH}
+    });
    status.textContent='本地发现 '+proposals.filter(x=>x.kind==='circle').length+
     ' 个整圆候选、'+proposals.filter(x=>x.kind==='arc').length+
     ' 个圆弧候选。可能误检、漏检或把相交线当成其他轮廓；'+
