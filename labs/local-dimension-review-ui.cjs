@@ -6,13 +6,13 @@
  */
 const {detectBrowserDimensionCandidates}=require('../recognition/browser-native-dimension-ocr.cjs');
 function attachLocalDimensionReview({
- image,photoInput,photoClear,kind,run,clear,candidateSelect,
+ image,photoInput,photoClear,kind,run,clear,candidateSelect,fieldSelect,
  reviewedValue,accept,stage,status,fieldReview,
  getValues,getRevision,detectImpl=detectBrowserDimensionCandidates,
  dom=document
 }){
  for(const element of [image,photoInput,photoClear,kind,run,clear,candidateSelect,
-  reviewedValue,accept,stage,status,fieldReview])
+  reviewedValue,accept,stage,status,fieldReview,fieldSelect])
   if(!element)throw new TypeError('native dimension review controls missing');
  if(typeof getValues!=='function'||typeof getRevision!=='function'||
   typeof detectImpl!=='function')throw new TypeError('current reviewed field values required');
@@ -26,7 +26,7 @@ function attachLocalDimensionReview({
   candidateSelect.replaceChildren(opt('','请先在本地检测 R/Φ 文字'));
   candidateSelect.value='';
   reviewedValue.value='';accept.checked=false;
-  stage.disabled=true;
+  stage.disabled=true;run.disabled=false;
   status.textContent='候选文字未确认；仅支持当前浏览器原生 OCR，所有尺寸仍需人工核对。';
  };
  const current=()=>candidates.find(c=>c.id===candidateSelect.value);
@@ -42,6 +42,7 @@ function attachLocalDimensionReview({
  clear.addEventListener('click',reset);
  kind.addEventListener('change',reset);
  candidateSelect.addEventListener('change',refresh);
+ fieldSelect.addEventListener('change',()=>{accept.checked=false;});
  reviewedValue.addEventListener('input',()=>{accept.checked=false;});
  run.addEventListener('click',async()=>{
   reset();
