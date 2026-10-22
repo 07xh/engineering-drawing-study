@@ -98,7 +98,9 @@ function interactiveFillet(){
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
   'clearDraw','checkDraw','drawStatus','playPause','animationSpeed',
   'addDigital','undoDigital','clearDigital','checkDigital',
-  'digitalStatus','centerSnapStatus','learningProgress'];
+  'digitalStatus','centerSnapStatus','learningProgress',
+  'filletProof','filletProofTitle','filletProofWhy','filletProofBasis',
+  'filletProofCheck','filletProofEvidence','filletProofScope'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -148,7 +150,8 @@ function interactiveFillet(){
   '../workbench/verified-student-fillet-progress.cjs':require('../../workbench/verified-student-fillet-progress.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
-  '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs')
+  '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
+  '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
  window:{matchMedia:()=>({matches:false})},require:id=>{
@@ -965,4 +968,78 @@ test('mixed student draw mode is visibly unsupported and cannot reuse other type
  for(let i=0;i<5;i++)fire('hintNext','click');
  assert.equal(get('hintCounter').textContent,'5 / 5');
  assert.equal(collect().filter(n=>n.attributes['data-verified-arc']==='true').length,0);
+});
+
+test('V5 proof panel follows actual circle solver steps without revealing final G1 early',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ assert.equal(get('filletProof').hidden,false);
+ assert.match(get('filletProofTitle').textContent,/验证尚不完整/);
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ assert.match(get('status').textContent,/两端有向 G1/);
+ assert.match(get('filletProofTitle').textContent,/观察阶段/);
+ for(let n=1;n<=3;n++){
+  fire('next','click');
+  assert.match(get('filletProofTitle').textContent,new RegExp('第 '+n+' / 4 步'));
+  assert.ok(get('filletProofWhy').textContent.length>10);
+  assert.match(get('filletProofEvidence').textContent,/不会提前展示最终圆弧/);
+  assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+ }
+ fire('next','click');
+ assert.match(get('filletProofTitle').textContent,/第 4 \/ 4 步/);
+ assert.match(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+ assert.match(get('filletProofScope').textContent,/并非完整教材题/);
+ fire('prev','click');
+ assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+});
+test('V5 proof panel is hidden in hint and drawing modes even when full solution was validated',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ for(let n=0;n<4;n++)fire('next','click');
+ assert.match(get('filletProofEvidence').textContent,/G1/);
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(get('filletProof').hidden,true);
+ assert.equal(get('hintControls').hidden,false);
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.equal(get('filletProof').hidden,true);
+ assert.equal(get('drawControls').hidden,false);
+ get('learningMode').value='full';fire('learningMode','change');
+ assert.equal(get('filletProof').hidden,false);
+ assert.match(get('filletProofTitle').textContent,/观察阶段/);
+});
+test('V5 proof panel represents six real finite-segment construction steps and invalidates old proofs',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ for(let n=0;n<6;n++)fire('next','click');
+ assert.match(get('filletProofTitle').textContent,/第 6 \/ 6 步/);
+ assert.match(get('filletProofEvidence').textContent,/G1/);
+ get('line1Ax').value='0';fire('line1Ax','input');
+ assert.match(get('filletProofTitle').textContent,/验证尚不完整/);
+ assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+});
+test('V5 finite segment-circle teaching uses five verified steps and guards invalid finite source arcs',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('branch').value='candidate-1';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('mixLineTravel').value='forward';fire('mixLineTravel','change');
+ get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
+ assert.match(get('status').textContent,/两端有向 G1/);
+ for(let n=0;n<5;n++)fire('next','click');
+ assert.match(get('filletProofTitle').textContent,/第 5 \/ 5 步/);
+ assert.match(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+ get('mixArcExtent').value='finite';fire('mixArcExtent','change');
+ get('mixArcStart').value='60';fire('mixArcStart','input');
+ get('mixArcEnd').value='80';fire('mixArcEnd','input');
+ assert.match(get('filletProofTitle').textContent,/验证尚不完整/);
+ assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
 });
