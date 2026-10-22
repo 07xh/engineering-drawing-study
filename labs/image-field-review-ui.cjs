@@ -1,6 +1,8 @@
 'use strict';
 /** Manual image-region association and explicit per-dimension confirmation UI. */
 const {createFieldReview}=require('../recognition/image-field-review.cjs');
+const {stageReviewedImageDimension}=
+ require('../recognition/reviewed-image-dimension-field.cjs');
 const {kinds}=require('./auto-fillet-form.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachImageFieldReview({
@@ -104,6 +106,22 @@ function attachImageFieldReview({
  render();
  return Object.freeze({
   setKind,edited(field){state.edited(field);render();},
+  confirmNotation({candidate,reviewedTextValueMm,currentModelValueMm,accepted,revision}){
+   if(!mode.checked||!state.image)
+    throw new RangeError('Enable strict review and load an original image first');
+   const evidence=stageReviewedImageDimension({
+    fieldReview:state,candidate,field:fieldSelect.value,
+    reviewedTextValueMm,currentModelValueMm,accepted,revision
+   });
+   // Re-enter the OCR candidate ID ONLY as untrusted image provenance;
+   // this does not confer OCR or metric certainty.
+   if(/^ocr_[0-9]+$/.test(evidence.sourceId)){
+    state.mark(fieldSelect.value,evidence.bbox,evidence.sourceId);
+    state.confirm(fieldSelect.value,currentModelValueMm);
+   }
+   render();onUpdate();
+   return evidence;
+  },
   markCandidate(candidate){
    if(!mode.checked||!state.image)
     return {ok:false,reason:'请先打开图片并开启严格核对模式'};

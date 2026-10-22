@@ -308,7 +308,10 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    // Existing field editing event invalidates prior accepted math/timeline.
    input.dispatchEvent(new Event('input',{bubbles:true}));
   },
-  getCurves:()=>geometryCandidates.curve
+  getCurves:()=>geometryCandidates.curve,
+  reviewedValue:$('ocrCorrectedValue'),reviewAccept:$('ocrNumericAccept'),
+  reviewButton:$('confirmOcrNumeric'),getValues:values,
+  getRevision:()=>session?.revision??0
  });
  $('associateCandidate').addEventListener('click',()=>{
   const id=$('sourceCandidate').value;

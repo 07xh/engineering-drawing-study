@@ -13,9 +13,20 @@ const SVG='http://www.w3.org/2000/svg';
 function attachLocalNativeOcr({
  image,photoInput,photoClear,run,clear,overlay,status,selector,associate,
  sourceField,fieldReview,prefillButton,unitConfirmed,applyPrefill=()=>{},
- getCurves=()=>[],recognize=detectBrowserDimensionCandidates
+ getCurves=()=>[],recognize=detectBrowserDimensionCandidates,
+ reviewedValue=null,reviewAccept=null,reviewButton=null,
+ getValues=()=>({}),getRevision=()=>0
 }){
  let epoch=0,candidates=[];
+ const hasReview=Boolean(reviewedValue||reviewAccept||reviewButton);
+ if(hasReview&&(!reviewedValue||!reviewAccept||!reviewButton||
+   typeof fieldReview?.confirmNotation!=='function'||
+   typeof getValues!=='function'||typeof getRevision!=='function'))
+  throw new TypeError('audited OCR review controls must all be wired');
+ const clearReview=()=>{
+  if(!hasReview)return;
+  reviewAccept.checked=false;reviewButton.disabled=true;reviewedValue.value='';
+ };
  const item=(value,label)=>{
   const opt=document.createElement('option');
   opt.value=value;opt.textContent=label;return opt;
@@ -24,6 +35,7 @@ function attachLocalNativeOcr({
   epoch++;candidates=[];overlay.replaceChildren();overlay.hidden=true;
   selector.replaceChildren(item('','尚无 R/Φ 文字候选'));
   run.disabled=false;associate.disabled=true;prefillButton.disabled=true;
+  clearReview();
   status.textContent='浏览器原生文字识别为可选实验功能；原图不上传。识别结果需要人工核对。';
  }
  function drawCandidates(){
@@ -48,7 +60,9 @@ function attachLocalNativeOcr({
  }
  function describeSelected(){
   const dim=candidates.find(x=>x.id===selector.value);
+  clearReview();
   if(!dim)return;
+  if(hasReview){reviewedValue.value=String(dim.numericValue);reviewButton.disabled=false;}
   let nearby=[];
   try{
    nearby=rankDimensionLinks(dim,getCurves(),
@@ -68,6 +82,28 @@ function attachLocalNativeOcr({
  image.addEventListener('error',changedPhoto);
  clear.addEventListener('click',changedPhoto);
  selector.addEventListener('change',describeSelected);
+ if(hasReview){
+  sourceField.addEventListener('change',()=>{reviewAccept.checked=false;});
+  reviewedValue.addEventListener('input',()=>{reviewAccept.checked=false;});
+  reviewButton.addEventListener('click',()=>{
+   const dim=candidates.find(x=>x.id===selector.value);
+   if(!dim){status.textContent='请先选择一条待审核的 R/Φ 文字。';return;}
+   const value=reviewedValue.value.trim()===''?NaN:reviewedValue.valueAsNumber;
+   try{
+    const evidence=fieldReview.confirmNotation({
+     candidate:dim,reviewedTextValueMm:value,
+     currentModelValueMm:getValues()[sourceField.value],
+     accepted:reviewAccept.checked,revision:getRevision()
+    });
+    reviewAccept.checked=false;
+    status.textContent='已人工核对 '+evidence.sourceText+' → '+evidence.field+
+     ' 的毫米值。还须逐项核对其余条件并执行最终确认；OCR 并非数学证明。';
+   }catch(error){
+    reviewAccept.checked=false;
+    status.textContent='OCR 标注未确认：'+(error instanceof Error?error.message:'输入无效');
+   }
+  });
+ }
  run.addEventListener('click',async()=>{
   reset();
   const thisEpoch=epoch;
