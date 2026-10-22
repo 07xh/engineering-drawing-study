@@ -10,6 +10,7 @@ const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
+const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs');
 
 (function(){
  'use strict';
@@ -29,6 +30,7 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
   const node=document.createElement('option');node.value=value;node.textContent=text;return node;
  };
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
+ let exportUi=null;
  let fieldReview=null;
  let geometryCandidates={line:[],curve:[]};
  function updateCandidateChoices(){
@@ -228,6 +230,7 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
   $('progressText').textContent=Math.round(frac*100)+'%';
   $('play').textContent=verified&&snap.playback.playing?'Ⅱ 暂停':'▶ 播放';
   for(const id of ['play','prev','next','restart','progress'])$(id).disabled=!verified;
+  exportUi?.update(verified);
  }
  function tick(){
   raf=null;
@@ -301,6 +304,24 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
   $('candidateStatus').textContent=result.reason;
  });
  grid();buildFields(kind);
+ exportUi=attachVerifiedFilletDownloads({
+  fullButton:$('saveVerifiedSvg'),stepsButton:$('saveVerifiedSteps'),
+  includeGuides:$('exportGuides'),status:$('exportStatus'),
+  getCurrent:()=>{
+   if(!session)return {ready:false};
+   const snap=session.snapshot(performance.now());
+   if(!snap.ready||!snap.plan||snap.plan.mathematicallyVerified!==true||
+      !session.canRender(snap.revision)||snap.playback?.revision!==snap.revision)
+    return {ready:false};
+   // Strict source review must have been accepted for this same revision.
+   // Never export the visible SVG or fall back to unreviewed values.
+   const current=input();
+   if(!current||current.problem?.revision!==snap.revision)
+    return {ready:false};
+   return {ready:true,input:current,revision:snap.revision};
+  }
+ });
+ exportUi.update(session.snapshot(performance.now()).ready);
  localVector=attachLocalVectorReview({
   file:$('vectorSvg'),kind:$('kind'),first:$('vectorFirst'),
   second:$('vectorSecond'),mmPerPx:$('vectorMmPerPx'),
@@ -321,5 +342,5 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
    recompute(); // #248 session invalidates the old verified timeline before solving.
   }
  });
- window.addEventListener('pagehide',()=>localVector?.release());
+ window.addEventListener('pagehide',()=>{localVector?.release();exportUi?.release();});
 })();
