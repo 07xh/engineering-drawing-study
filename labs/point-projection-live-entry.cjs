@@ -351,6 +351,35 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
     if(learningMode==='draw')render();
   });
   const svg=$('paperSvg');
+  svg.addEventListener('click',event=>{
+    if(learningMode!=='full'||!$('showGuides').checked||
+      teaching?.status!=='ready')return;
+    const target=event.target,id=target?.getAttribute?.('data-v5-pick')||
+      target?.attributes?.['data-v5-pick'];
+    const index=Number(target?.getAttribute?.('data-v5-step')||
+      target?.attributes?.['data-v5-step']);
+    if(!id||!Number.isSafeInteger(index)||index<0||
+       !teaching.steps[index]?.actions.some(a=>a.id===id)||
+       !(stageClock?.snapshot().actionFractions?.[id]>0||shownStep>index))return;
+    if(playTimer!==null)pausePlayback();
+    if(stageClock){
+      const now=performance.now();
+      stageClock.pause(now);
+      stageClock.seekStep(index+1,now);
+    }
+    shownStep=index+1;
+    selectedGuide={id,step:index,revision};
+    render();
+  });
+  $('projectionMono').addEventListener('change',()=>{
+    $('projectionViewport').classList.toggle('paper-mono',
+     !!$('projectionMono').checked);
+  });
+  $('projectionFocus').addEventListener('change',()=>updateCamera(true));
+  $('projectionViewReset').addEventListener('click',()=>{
+    $('projectionFocus').checked=false;selectedGuide=null;
+    paperCamera=defaultCamera();render();
+  });
   function canvasPosition(event){
     const rect=svg.getBoundingClientRect();
     if(!rect?.width||!rect?.height||!Number.isFinite(event.clientX)||
