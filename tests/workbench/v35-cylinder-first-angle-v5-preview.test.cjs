@@ -109,6 +109,11 @@ test('analytic polyline error bound is honest and shrinks as visual subdivisions
  assert.equal(coarse.sampledPolylineOnly,true);
  assert.ok(coarse.chordErrorUpperBoundMm>0);
  assert.ok(fine.steps.at(-1).actions.length>coarse.steps.at(-1).actions.length);
+ assert.ok(fine.steps.every(step=>step.actions.length<=64),
+  'high-resolution curves must be chunked to respect V5 action limits');
+ assert.equal(fine.steps.filter(step=>step.id.startsWith('sampled-section-')).length,6);
+ for(let i=1;i<fine.steps.length;i++)
+  assert.deepEqual(fine.steps[i].dependsOn,[fine.steps[i-1].id]);
 });
 test('horizontal section remains an actual circular analytic cross-section',()=>{
  const r=build(cylinder(),plane(pt(0,0,15),pt(0,0,1)),{samples:32,ordinaryDivisions:4});
