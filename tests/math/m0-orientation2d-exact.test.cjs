@@ -73,3 +73,13 @@ test('M0 deterministic integer-grid regression agrees with independent BigInt de
     assert.equal(sign(a, b, c), expected, 'integer grid sample ' + i);
   }
 });
+
+test('M0 freezes one validated coordinate snapshot before any exact binary64 evaluation', () => {
+  const p = [0, 0];
+  let xReads = 0, yReads = 0;
+  Object.defineProperty(p, 0, {configurable:true, get(){xReads++; return xReads===1?0:1e308;}});
+  Object.defineProperty(p, 1, {configurable:true, get(){yReads++; return yReads===1?0:NaN;}});
+  assert.equal(sign(p, [1, 0], [0, 1]), 1);
+  assert.equal(xReads, 1);
+  assert.equal(yReads, 1);
+});
