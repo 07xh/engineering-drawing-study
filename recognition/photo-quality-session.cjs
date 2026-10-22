@@ -15,8 +15,10 @@ const bounded=i=>i&&Number.isSafeInteger(i.width)&&Number.isSafeInteger(i.height
 const clone=x=>JSON.parse(JSON.stringify(x));
 function createPhotoQualitySession(){
  let original=null,truth=[],predictions=[],rejected=[],revision=0,nextId=0;
+ let imageVersion=0,ocrEvaluated=false;
  function reset(){
-  revision++;original=null;truth=[];predictions=[];rejected=[];
+  revision++;imageVersion++;ocrEvaluated=false;
+  original=null;truth=[];predictions=[];rejected=[];
  }
  function loadImage(originalSize,frame){
   // New image invalidates even a previously accepted report immediately,
@@ -79,6 +81,33 @@ function createPhotoQualitySession(){
   predictions=clean;
   return snapshot();
  }
+ /**
+  * Optional native OCR result accepted only for the exact loaded photo.
+  * No image bytes, file name or calibrated OCR probability are saved.
+  */
+ function acceptNativeOcr(expectedImageVersion,candidates){
+  if(!original||expectedImageVersion!==imageVersion)return false;
+  if(!Array.isArray(candidates)||candidates.length>150)
+   throw new TypeError('bounded local OCR candidate list required');
+  const next=[];
+  for(const item of candidates){
+   if(!item||typeof item.id!=='string'||
+    !/^ocr_(?:[0-9]+|join_[0-9]+_[0-9]+)$/.test(item.id)||
+    item.coordinateSpace!=='original-image-px'||item.confirmed!==false||
+    typeof item.sourceText!=='string'||item.sourceText.length>80)
+    throw new TypeError('unexpected unconfirmed native OCR candidate');
+   next.push({
+    id:item.id,kind:'dimension',coordinateSpace:'original-image-px',
+    bbox:item.bbox,text:item.sourceText
+   });
+  }
+  // Verify the whole list and ID uniqueness transactionally.
+  const retained=predictions.filter(x=>x.kind!=='dimension');
+  const validated=clone([...retained,...next]);
+  evaluateRecognitionProposals({image:original,truth:[],predictions:validated});
+  predictions=validated;ocrEvaluated=true;revision++;
+  return true;
+ }
  function addAnnotation(value){
   if(!original)throw new Error('load a local photo before annotating');
   if(truth.length>=100)throw new RangeError('too many manual annotations');
@@ -118,11 +147,11 @@ function createPhotoQualitySession(){
  function clearAnnotations(){truth=[];revision++;}
  function snapshot(){
   return clone({
-   revision,ready:!!original,image:original,
+   revision,imageVersion,ready:!!original,image:original,
    annotations:truth,predictions,
    rejectedPredictions:rejected,
-   evaluatedKinds:['line','circle','arc','arrow'],
-   notRunKinds:['dimension'],
+   evaluatedKinds:['line','circle','arc','arrow',...(ocrEvaluated?['dimension']:[])],
+   notRunKinds:ocrEvaluated?[]:['dimension'],
    imageBytesRetained:false
   });
  }
@@ -132,12 +161,13 @@ function createPhotoQualitySession(){
    return {status:'needs-manual-annotations',revision,
     image:clone(original),predictionCount:predictions.length,
     precision:null,recall:null,notRealWorldAccuracy:true};
-  const evaluatedKinds=['line','circle','arc','arrow'];
+  const evaluatedKinds=['line','circle','arc','arrow',...(ocrEvaluated?['dimension']:[])];
   const unmeasured=truth.filter(x=>!evaluatedKinds.includes(x.kind));
   const measured=truth.filter(x=>evaluatedKinds.includes(x.kind));
   if(measured.length===0)return clone({
    status:'needs-evaluable-annotations',revision,
-   notRunKinds:['dimension'],unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
+   notRunKinds:ocrEvaluated?[]:['dimension'],
+   unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
    precision:null,recall:null,notRealWorldAccuracy:true
   });
   return clone({
@@ -148,7 +178,7 @@ function createPhotoQualitySession(){
    image:original,annotationCount:truth.length,
    evaluatedAnnotationCount:measured.length,
    unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
-   evaluatedKinds,notRunKinds:['dimension'],
+   evaluatedKinds,notRunKinds:ocrEvaluated?[]:['dimension'],
    candidateCount:predictions.length,
    rejectedPredictions:rejected,
    metrics:evaluateRecognitionProposals({
@@ -159,7 +189,7 @@ function createPhotoQualitySession(){
    independentReview:false
   });
  }
- return Object.freeze({reset,loadImage,addAnnotation,removeAnnotation,
+ return Object.freeze({reset,loadImage,acceptNativeOcr,addAnnotation,removeAnnotation,
   clearAnnotations,snapshot,report});
 }
 module.exports={createPhotoQualitySession};
