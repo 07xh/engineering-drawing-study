@@ -104,3 +104,45 @@ test('progress module rejects excess arc traces and never modifies student data'
  assert.throws(()=>assess('segments',args,{...d,arcStrokes:Array(65).fill(d.arcStrokes[0])},
   {...sheet,branchId:args.branchId}),/bounded/);
 });
+
+test('four real student constructions on TWO finite source arcs verify bounded contact scope',()=>{
+ const args=circles();
+ args.first.arc={startAngle:300,endAngle:330,direction:'ccw'};
+ args.second.arc={startAngle:215,endAngle:245,direction:'ccw'};
+ const drawing=complete('circles',args);
+ const result=assess('circles',args,drawing,{...sheet,branchId:args.branchId});
+ assert.equal(result.verifiedCount,4);
+ assert.equal(result.finiteSourceArcCount,2);
+ assert.equal(result.sourceFiniteCircularArcsVerified,true);
+ assert.equal(result.fullProblemVerified,false);
+ assert.match(result.reason,/给定有限圆弧的切点范围/);
+ assert.match(result.reason,/完整教材题.*仍待验证/);
+});
+test('single finite given arc is checked without pretending the other full circle is a limited arc',()=>{
+ const args=circles();
+ args.first.arc={startAngle:300,endAngle:330,direction:'ccw'};
+ const result=assess('circles',args,complete('circles',args),
+  {...sheet,branchId:args.branchId});
+ assert.equal(result.verifiedCount,4);
+ assert.equal(result.finiteSourceArcCount,1);
+ assert.equal(result.sourceFiniteCircularArcsVerified,true);
+ assert.equal(result.fullProblemVerified,false);
+});
+test('missing source-contact marks prevents the claim that finite source bounds were verified by the student',()=>{
+ const args=circles();
+ args.first.arc={startAngle:300,endAngle:330,direction:'ccw'};
+ args.second.arc={startAngle:215,endAngle:245,direction:'ccw'};
+ const drawing=complete('circles',args);
+ drawing.tangentMarks=[];
+ const result=assess('circles',args,drawing,{...sheet,branchId:args.branchId});
+ assert.equal(result.verifiedCount,3);
+ assert.equal(result.sourceFiniteCircularArcsVerified,false);
+ assert.equal(result.finiteSourceArcCount,2);
+});
+test('changing finite source arc excludes prior circle-1 branch; old progress cannot be called verified',()=>{
+ const args=circles(),drawing=complete('circles',args);
+ args.first.arc={startAngle:30,endAngle:60,direction:'ccw'};
+ const result=assess('circles',args,drawing,{...sheet,branchId:args.branchId});
+ assert.notEqual(result.status,'all-supported-stages-verified');
+ assert.equal(result.sourceFiniteCircularArcsVerified,false);
+});
