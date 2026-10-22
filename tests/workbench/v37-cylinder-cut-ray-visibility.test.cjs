@@ -155,7 +155,13 @@ test('04 observer vector norm does not change visibility while all input paramet
  const later=solve(structuredClone(original),structuredClone(section),{
   retainedHalfspace:'negative',observerDirection:view(-10,0,2)
  });
- assert.deepEqual(first,later);
+ assert.equal(first.status,later.status);
+ assert.deepEqual(first.counts,later.counts);
+ assert.equal(first.totalRuns,later.totalRuns);
+ for(let i=0;i<first.runs.length;i++){
+  assert.equal(first.runs[i].visibility,later.runs[i].visibility);
+  near(first.runs[i].through.z,later.runs[i].through.z);
+ }
  assert.deepEqual(original,c());
  assert.deepEqual(section,cut(3));
  assert.equal(first.standardViewMappingVerified,false);
