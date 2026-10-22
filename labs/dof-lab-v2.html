@@ -41,7 +41,10 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
 .lab-v2 .sync-controls{padding:12px 14px;background:#f4f9f5;border:1px solid #d9e7db;border-radius:12px;margin-top:12px}
 .lab-v2 .sync-controls h3{font-size:15px;margin:0 0 7px}
 .lab-v2 .sync-controls .sync-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.lab-v2 .sync-controls .sync-row>button{min-width:110px}
+.lab-v2 .sync-controls .sync-row>button{min-width:110px;min-height:44px;touch-action:manipulation}
+.lab-v2 .sync-controls .sync-row>button:focus-visible,.lab-v2 .sync-controls input:focus-visible,.lab-v2 .sync-controls select:focus-visible{outline:3px solid #25865e;outline-offset:2px}
+.lab-v2 .sync-step-count{font-size:12px;color:#42664f;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:600px){.lab-v2 .sync-controls{padding:10px}.lab-v2 .sync-controls .sync-row>button{flex:1 1 100px}.lab-v2 .sync-controls input[type=range]{flex-basis:100%}}
 .lab-v2 .sync-controls label{font-size:12px;display:inline-flex;align-items:center;gap:6px}
 .lab-v2 .sync-controls input[type=range]{flex:1 1 190px;min-width:120px;accent-color:#278257}
 .lab-v2 .sync-controls output{font-size:12px;font-variant-numeric:tabular-nums;min-width:38px}
@@ -77,12 +80,15 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
     <div class="sync-row">
      <button id="syncPlay" class="primary" type="button">播放同步作图</button>
      <button id="syncRestart" type="button" disabled>回到起点</button>
+     <button id="syncPrevious" type="button" disabled aria-label="返回上一个已验证的教学步骤">上一步</button>
+     <button id="syncNext" type="button" aria-label="进入下一个已验证的教学步骤">下一步</button>
+     <output id="syncStep" class="sync-step-count" aria-live="polite">未开始</output>
      <label for="syncSpeed">速度<select id="syncSpeed">
       <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
       <option value="1" selected>1×</option><option value="1.5">1.5×</option>
       <option value="2">2×</option><option value="3">3×</option><option value="4">4×</option>
      </select></label>
-     <label for="syncProgress">进度</label><input id="syncProgress" type="range" min="0" max="1000" step="1" value="1000" disabled>
+     <label for="syncProgress">进度（也可用键盘方向键）</label><input id="syncProgress" type="range" min="0" max="1000" step="1" value="1000" disabled>
      <output id="syncPercent" for="syncProgress">—</output>
     </div>
     <p class="sync-description" id="syncExplanation" aria-live="polite">
