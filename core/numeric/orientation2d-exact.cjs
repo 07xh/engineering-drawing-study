@@ -15,12 +15,17 @@ const words = new DataView(new ArrayBuffer(8));
 
 function point2(value, label) {
   if (!Array.isArray(value) || value.length !== 2 ||
-      !Object.hasOwn(value, 0) || !Object.hasOwn(value, 1) ||
-      typeof value[0] !== 'number' || !Number.isFinite(value[0]) ||
-      typeof value[1] !== 'number' || !Number.isFinite(value[1])) {
+      !Object.hasOwn(value, 0) || !Object.hasOwn(value, 1)) {
     throw new TypeError(label + ' must be a dense finite 2D point');
   }
-  return value;
+  // Read each coordinate only once before exact arithmetic. User-supplied
+  // accessor-backed arrays must not change values after validation.
+  const x = value[0], y = value[1];
+  if (typeof x !== 'number' || !Number.isFinite(x) ||
+      typeof y !== 'number' || !Number.isFinite(y)) {
+    throw new TypeError(label + ' must be a dense finite 2D point');
+  }
+  return [x, y];
 }
 
 // A finite binary64 value is represented exactly as significand * 2^exponent.
@@ -57,10 +62,10 @@ const COLLINEAR = Object.freeze({ sign: 0, orientation: 'collinear',
   exactForBinary64Inputs: true });
 
 function orientation2D(a, b, c) {
-  point2(a, 'a'); point2(b, 'b'); point2(c, 'c');
-  const ax = dyadic(a[0]), ay = dyadic(a[1]);
-  const bx = dyadic(b[0]), by = dyadic(b[1]);
-  const cx = dyadic(c[0]), cy = dyadic(c[1]);
+  const pa = point2(a, 'a'), pb = point2(b, 'b'), pc = point2(c, 'c');
+  const ax = dyadic(pa[0]), ay = dyadic(pa[1]);
+  const bx = dyadic(pb[0]), by = dyadic(pb[1]);
+  const cx = dyadic(pc[0]), cy = dyadic(pc[1]);
   const abx = difference(bx, ax), aby = difference(by, ay);
   const acx = difference(cx, ax), acy = difference(cy, ay);
   const determinant = difference(product(abx, acy), product(aby, acx));
