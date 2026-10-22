@@ -102,6 +102,10 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <label for="ocrDimensionSelect">本地 OCR 尺寸候选（需要人工确认）
 <select id="ocrDimensionSelect"><option value="">请先尝试识别 R/Φ 标注</option></select></label>
 <div class="controls"><button type="button" id="associateOcr">将所选 OCR 位置关联到半径条件</button></div>
+<label class="vector-confirm" for="ocrUnitConfirmed">
+<input type="checkbox" id="ocrUnitConfirmed">我已核对原图尺寸标注的单位为毫米（文字未注明 mm 时必须勾选）
+</label>
+<div class="controls"><button type="button" id="prefillOcrRadius">使用所选 OCR 建议半径预填当前字段（仍需人工复核）</button></div>
 <p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
 <div class="controls">
 <button type="button" id="confirmSource">确认当前数值与框选区域相符</button>
