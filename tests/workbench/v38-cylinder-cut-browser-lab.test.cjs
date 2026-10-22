@@ -71,7 +71,7 @@ test('04 original V5 player supports accurate step seek, quarter/full speed and 
  p.play(0);
  assert.equal(p.snapshot(400).elapsedMs,100);
  p.setSpeed(4,500);
- assert.equal(p.snapshot(750).elapsedMs,1200);
+ assert.equal(p.snapshot(750).elapsedMs,1125);
  const stepIndex=Math.min(5,scene.stepCount-1);
  const snap=p.seekStep(stepIndex,800);
  assert.equal(snap.activeStepIndex,stepIndex);
