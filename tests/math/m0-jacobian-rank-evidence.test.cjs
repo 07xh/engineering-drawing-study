@@ -90,3 +90,64 @@ test('invalid tolerance and sweep bounds are rejected',()=>{
   for(const maxSweeps of [0,101,1.5,NaN])
     assert.throws(()=>diagnose([[1]],{maxSweeps}));
 });
+
+
+// M0-C2: geometry-derived Jacobians, rather than only abstract matrices.
+// These rows are dimensionless after caller-declared variable/residual scaling.
+test('distance constraint: shrinking or enlarging the same nondegenerate geometry preserves estimated rank',()=>{
+  // For f=|A-B|²-d², df/d(Ax,Ay,Bx,By)=(2dx,2dy,-2dx,-2dy).
+  for(const d of [1e-12,1e-6,1,1e6,1e12]){
+    const result=diagnose([[2*d,0,-2*d,0]]);
+    assert.equal(result.rankEstimate,1,'distance='+d);
+    assert.equal(result.localDegreesEstimate,3,'distance='+d);
+    assert.equal(result.proofOfExistence,false);
+  }
+});
+
+test('two circles: local full rank at an intersection cannot imply globally unique',()=>{
+  // Circles center (0,0) and (8,0), radius 5 intersect in (4,+/-3).
+  // f1=x²+y²-25; f2=(x-8)²+y²-25.
+  for(const y of [3,-3]){
+    const r=diagnose([[8,2*y],[-8,2*y]]);
+    assert.equal(r.rankEstimate,2);
+    assert.equal(r.localDegreesEstimate,0);
+    assert.equal(r.globallyUnique,null);
+    assert.equal(r.solutionCount,null);
+    assert.equal(r.proofOfGlobalUniqueness,false);
+  }
+});
+
+test('near-tangent circles: scale separation and threshold sensitivity are explicit',()=>{
+  // Two circle-center gradients at P=(0,delta), centers=(-5,0)/(+5,0).
+  const model=delta=>[[10,2*delta],[-10,2*delta]];
+  assert.equal(diagnose(model(0)).rankEstimate,1);
+  assert.equal(diagnose(model(1e-6)).rankEstimate,2);
+  const near=diagnose(model(1e-10));
+  assert.equal(near.status,'undetermined');
+  assert.equal(near.thresholdSensitive,true);
+  assert.equal(near.proofOfExistence,false);
+});
+
+test('coincident points: zero-distance squared residual has zero Jacobian, no existence claim',()=>{
+  const r=diagnose([[0,0,0,0]]);
+  assert.equal(r.rankEstimate,0);
+  assert.equal(r.localDegreesEstimate,4);
+  assert.equal(r.proofOfExistence,false);
+  assert.equal(r.globallyUnique,null);
+});
+
+test('inconsistent constraints can have full rank at a supplied non-solution',()=>{
+  // f1=x-0, f2=y-0 at sample point (x,y)=(10,20): both violated.
+  // Rank cannot establish that this supplied configuration solves the equations.
+  const r=diagnose([[1,0],[0,1]]);
+  assert.equal(r.rankEstimate,2);
+  assert.equal(r.proofOfExistence,false);
+  assert.equal(r.globallyUnique,null);
+});
+
+test('insufficient Jacobi sweeps explicitly block a reliable rank status',()=>{
+  const r=diagnose([[1,2,3],[4,5,6],[7,8,10]],{maxSweeps:1});
+  assert.equal(r.converged,false);
+  assert.equal(r.status,'undetermined');
+  assert.equal(r.proofOfGlobalUniqueness,false);
+});
