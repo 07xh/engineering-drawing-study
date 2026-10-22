@@ -3,6 +3,9 @@ const {circleCircleFilletCenters}=require('../engines/planar/circle-circle-fille
 const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.cjs');
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
+const {finiteSegmentCircleFillets}=require('../engines/planar/segment-circle-fillet.cjs');
+const {chooseDirectedSegmentCircleFillet}=
+ require('../engines/planar/directed-segment-circle-fillet.cjs');
 const {gradeFilletOffsetLines}=require('../workbench/verified-fillet-offset-drawing.cjs');
 const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.cjs');
 const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
@@ -19,7 +22,10 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   'x2','y2','r2','mode2','arcExtent2','arcStart2','arcEnd2','arcDirection2','filletRadius',
   'branch','direction','travel1','travel2',
   'line1Ax','line1Ay','line1Bx','line1By','line2Ax','line2Ay','line2Bx','line2By',
-  'lineSide1','lineSide2','lineTravel1','lineTravel2'];
+  'lineSide1','lineSide2','lineTravel1','lineTravel2',
+  'mixAx','mixAy','mixBx','mixBy','mixX','mixY','mixR',
+  'mixArcExtent','mixArcStart','mixArcEnd','mixArcDirection','mixSide',
+  'mixLineTravel','mixCircleTravel'];
  const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,teaching=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
  let digitalActions=[],digitalError='',snappedCenter=null,studentCenterTap=null;
@@ -112,6 +118,19 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     ...($('lineTravel1').value?{firstTravel:$('lineTravel1').value}:{}),
     ...($('lineTravel2').value?{secondTravel:$('lineTravel2').value}:{})};
   }
+  if($('modeSelect').value==='segment-circle'){
+   const finiteSource=$('mixArcExtent').value==='finite'?{arc:{
+    startAngle:n('mixArcStart'),endAngle:n('mixArcEnd'),
+    direction:$('mixArcDirection').value}}:{};
+   const model={segment:{a:{x:n('mixAx'),y:n('mixAy')},
+     b:{x:n('mixBx'),y:n('mixBy')}},
+    circle:{center:{x:n('mixX'),y:n('mixY')},radius:n('mixR'),...finiteSource},
+    filletRadius:n('filletRadius'),side:Number($('mixSide').value)};
+   return {...model,...(branch?{branchId:branch}:{}),
+    ...(direction?{direction}:{}),
+    ...($('mixLineTravel').value?{lineTravel:$('mixLineTravel').value}:{}),
+    ...($('mixCircleTravel').value?{knownCircleTravel:$('mixCircleTravel').value}:{})};
+  }
   const givenArc=i=>$('arcExtent'+i).value==='finite'?{arc:{
    startAngle:n('arcStart'+i),endAngle:n('arcEnd'+i),
    direction:$('arcDirection'+i).value}}:{};
@@ -142,14 +161,18 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   try{
    let args=parse();
    const isSegments=$('modeSelect').value==='segments';
-   const result=isSegments?finiteTwoSegmentFillets(args):circleCircleFilletCenters(args);
+   const isMixed=$('modeSelect').value==='segment-circle';
+   const result=isSegments?finiteTwoSegmentFillets(args):
+    isMixed?finiteSegmentCircleFillets(args):circleCircleFilletCenters(args);
    refreshCandidates(result);
    // A parameter change can invalidate the previously selected branch.
    // Re-parse after revalidating the actual candidate IDs so a stale branch
    // cannot be used as a fabricated final answer.
    args=parse();
-   const picked=isSegments?chooseFiniteTwoSegmentArc(args):chooseDirectedFillet(args);
-   const plan=filletTimeline(isSegments?'segments':'circles',args,{origin:O,scale},revision);
+   const picked=isSegments?chooseFiniteTwoSegmentArc(args):
+    isMixed?chooseDirectedSegmentCircleFillet(args):chooseDirectedFillet(args);
+   const plan=filletTimeline(isSegments?'segments':isMixed?'segment-circle':'circles',
+    args,{origin:O,scale},revision);
    if(picked.status==='selected'&&picked.g1Verified===true&&
      (plan.status!=='ready'||plan.revision!==revision||
       plan.selectedBranchId!==picked.selectedId))
@@ -215,7 +238,8 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   for(let y=10;y<440;y+=30)svg.append(elem('line',{x1:0,y1:y,x2:720,y2:y,stroke:'#edf1ed','stroke-width':.65}));
   svg.append(elem('line',{x1:0,y1:O.y,x2:720,y2:O.y,stroke:'#93a49a','stroke-width':1}));
   svg.append(elem('line',{x1:O.x,y1:0,x2:O.x,y2:440,stroke:'#93a49a','stroke-width':1}));
-  const isSegments=$('modeSelect').value==='segments',full=learningMode==='full';
+  const isSegments=$('modeSelect').value==='segments',
+   isMixed=$('modeSelect').value==='segment-circle',full=learningMode==='full';
   const hint=learningMode==='hint',drawing=learningMode==='draw';
   $('fullControls').hidden=!full;
   $('hintControls').hidden=!hint;
