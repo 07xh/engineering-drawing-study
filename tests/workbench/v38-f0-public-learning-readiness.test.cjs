@@ -47,5 +47,5 @@ test('F0 no unreviewed mathematical answer or proof is inferred from a static HT
  assert.match(entry,/checked\.status==='ready-for-math'/);
  assert.match(entry,/return checked\.status==='ready-for-math'\?checked\.input:null/);
  assert.match(entry,/if\(verified\)/);
- assert.match(entry,/\$('result')\.hidden=!verified/);
+ assert.ok(entry.includes("$('result').hidden=!verified;"), 'verified result visibility guard missing');
 });
