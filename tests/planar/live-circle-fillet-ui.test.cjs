@@ -151,7 +151,8 @@ function interactiveFillet(){
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
-  '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs')
+  '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs'),
+  '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
  window:{matchMedia:()=>({matches:false})},require:id=>{
@@ -1114,4 +1115,105 @@ test('V5 finite segment-circle teaching uses five verified steps and guards inva
  get('mixArcEnd').value='80';fire('mixArcEnd','input');
  assert.match(get('filletProofTitle').textContent,/验证尚不完整/);
  assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+});
+
+
+test('V5 default two-circle auxiliary LOCUS strokes grow progressively instead of flashing at step boundary',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ const guides=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ assert.equal(get('branch').value,'','default has no chosen candidate');
+ fire('playPause','click');
+ advance(150);
+ assert.equal(get('counter').textContent,'0 / 4');
+ assert.equal(guides().length,1,'first actual auxiliary circle starts tracing');
+ const node=guides()[0],first=node.attributes['stroke-dasharray'];
+ assert.match(first,/^[0-9.e+-]+ [0-9.e+-]+$/);
+ assert.ok(Number(first.split(' ')[0])>0);
+ advance(140);
+ assert.equal(guides()[0],node,'updates the SAME circle node during the stroke');
+ assert.notEqual(guides()[0].attributes['stroke-dasharray'],first);
+ fire('playPause','click');
+ const frozen=guides()[0].attributes['stroke-dasharray'];
+ advance(5000);
+ assert.equal(guides()[0].attributes['stroke-dasharray'],frozen,'paused guide is frozen');
+ fire('playPause','click');advance(1100);
+ assert.equal(get('counter').textContent,'1 / 4');
+ const painted=collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536'&&n.attributes.fill==='none');
+ assert.equal(painted.length,2,'both real auxiliary circles remain after the step completes');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0,
+  'no branch means no final answer');
+});
+test('verified two-circle G1 still traces both radius loci in sequence before revealing the directed arc',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ fire('playPause','click');
+ advance(220);
+ const pending=collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ assert.equal(pending.length,1);
+ const firstDash=pending[0].attributes['stroke-dasharray'];
+ assert.notEqual(firstDash,'none');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+ advance(520);
+ const second=collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ assert.equal(second.length,2,'second verified locus now starts tracing');
+ assert.notEqual(second[1].attributes['stroke-dasharray'],'none');
+ advance(530);
+ assert.equal(get('counter').textContent,'1 / 4');
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536'&&n.attributes.fill==='none').length,2);
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+});
+test('V5 line fillet draws each exact solver offset as a moving endpoint, keeps one SVG node per stroke',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ const lines=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='line');
+ fire('playPause','click');advance(300);
+ assert.equal(get('counter').textContent,'0 / 6');
+ assert.equal(lines().length,1);
+ const first=lines()[0],a=Number(first.attributes.x1),b=Number(first.attributes.x2);
+ assert.notEqual(a,b,'actual line segment is partially visible');
+ const old=b;advance(300);
+ assert.equal(lines()[0],first);
+ assert.notEqual(Number(lines()[0].attributes.x2),old);
+ advance(650);
+ assert.equal(get('counter').textContent,'1 / 6');
+ const all=collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c38536');
+ assert.ok(all.length>=1);
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+});
+test('V5 true mixed segment-circle first line and concentric circle animate without unverified arc',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ // The exploratory mode is mathematically valid even without a selected branch.
+ fire('playPause','click');advance(400);
+ const line=collect().filter(n=>n.attributes?.['data-v5-progressive']==='line');
+ assert.equal(line.length,1);
+ assert.notEqual(line[0].attributes.x1,line[0].attributes.x2);
+ advance(1100);
+ const circles=collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ assert.equal(circles.length,1);
+ assert.notEqual(circles[0].attributes['stroke-dasharray'],'none');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+});
+test('V5 input revision and learning mode switch destroy partially animated auxiliary shapes',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ const guides=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']);
+ fire('playPause','click');advance(300);
+ assert.ok(guides().length);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.equal(guides().length,0,'stale solver locus is erased immediately');
+ advance(12000);
+ assert.equal(guides().length,0);
+ fire('playPause','click');advance(300);
+ assert.ok(guides().length);
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(guides().length,0);
+ advance(4000);
+ assert.equal(guides().length,0);
 });
