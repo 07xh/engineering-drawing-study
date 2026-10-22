@@ -15,7 +15,8 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
- const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
+ const FIELDS=['x1','y1','r1','mode1','arcExtent1','arcStart1','arcEnd1','arcDirection1',
+  'x2','y2','r2','mode2','arcExtent2','arcStart2','arcEnd2','arcDirection2','filletRadius',
   'branch','direction','travel1','travel2',
   'line1Ax','line1Ay','line1Bx','line1By','line2Ax','line2Ay','line2Bx','line2By',
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
@@ -64,6 +65,22 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  const sheet=p=>({x:O.x+scale*p.x,y:O.y-scale*p.y});
  const ring=(center,radius,color,dash='')=>elem('circle',{cx:sheet(center).x,cy:sheet(center).y,r:scale*radius,
    fill:'none',stroke:color,'stroke-width':2,'stroke-dasharray':dash||'none'});
+ const knownOutline=(circleSpec)=>{
+  if(!circleSpec.arc)return ring(circleSpec.center,circleSpec.radius,'#257650');
+  const a=circleSpec.arc,positive=(v)=>(v%360+360)%360;
+  const sweep=positive(a.direction==='ccw'?
+   a.endAngle-a.startAngle:a.startAngle-a.endAngle);
+  // A pure coordinate conversion. The core solver has already verified
+  // this proper source arc. Do not infer a full circle on the drawing.
+  const signedEnd=a.startAngle+(a.direction==='ccw'?sweep:-sweep);
+  const model={center:circleSpec.center,radius:circleSpec.radius,
+   startAngle:a.startAngle,endAngle:signedEnd,direction:a.direction};
+  const projected=MotionV5.projectArcFromVerifiedModel(model,{origin:O,scale});
+  const outline=elem('path',{stroke:'#257650','stroke-width':2,fill:'none',
+   'data-given-source-arc':'true'});
+  MotionV5.updateSvg(outline,{kind:'arc',geometry:projected},1);
+  return outline;
+ };
  const drawLine=(a,b,color='#257650',dash='')=>{
   const start=sheet(a),end=sheet(b);
   return elem('line',{x1:start.x,y1:start.y,x2:end.x,y2:end.y,
@@ -95,8 +112,11 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     ...($('lineTravel1').value?{firstTravel:$('lineTravel1').value}:{}),
     ...($('lineTravel2').value?{secondTravel:$('lineTravel2').value}:{})};
   }
-  const args={first:{center:{x:n('x1'),y:n('y1')},radius:n('r1')},
-   second:{center:{x:n('x2'),y:n('y2')},radius:n('r2')},
+  const givenArc=i=>$('arcExtent'+i).value==='finite'?{arc:{
+   startAngle:n('arcStart'+i),endAngle:n('arcEnd'+i),
+   direction:$('arcDirection'+i).value}}:{};
+  const args={first:{center:{x:n('x1'),y:n('y1')},radius:n('r1'),...givenArc(1)},
+   second:{center:{x:n('x2'),y:n('y2')},radius:n('r2'),...givenArc(2)},
    filletRadius:n('filletRadius'),firstMode:$('mode1').value,secondMode:$('mode2').value};
   return {...args,...(branch?{branchId:branch}:{}),...(direction?{direction}:{}),
    ...($('travel1').value?{knownFirstTravel:$('travel1').value}:{}),
@@ -256,8 +276,8 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
       '观察所有有效圆心（或平行条件下的连续族），先选分支和走向才能继续。'][stage];
   }else{
    if(input){
-    svg.append(ring(input.first.center,input.first.radius,'#257650'));
-    svg.append(ring(input.second.center,input.second.radius,'#257650'));
+    svg.append(knownOutline(input.first));
+    svg.append(knownOutline(input.second));
     svg.append(dot(input.first.center,'#257650','O₁'));
     svg.append(dot(input.second.center,'#257650','O₂'));
     if(full&&!proofReady&&centers?.auxiliary&&stage>=1){
@@ -411,7 +431,8 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  }
 
  for(const id of FIELDS){
-  const selectIds=['mode1','mode2','branch','direction','travel1','travel2',
+  const selectIds=['mode1','mode2','arcExtent1','arcExtent2','arcDirection1','arcDirection2',
+   'branch','direction','travel1','travel2',
    'lineSide1','lineSide2','lineTravel1','lineTravel2'];
   $(id).addEventListener(selectIds.includes(id)?'change':'input',compute);
  }
@@ -443,7 +464,10 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  });
  $('reset').addEventListener('click',()=>{
   for(const [id,value] of Object.entries({x1:0,y1:0,r1:5,mode1:'external',
-   x2:20,y2:0,r2:5,mode2:'external',filletRadius:10,branch:'',direction:'',
+   arcExtent1:'full',arcStart1:300,arcEnd1:330,arcDirection1:'ccw',
+   x2:20,y2:0,r2:5,mode2:'external',
+   arcExtent2:'full',arcStart2:215,arcEnd2:245,arcDirection2:'ccw',
+   filletRadius:10,branch:'',direction:'',
    travel1:'',travel2:'',line1Ax:-20,line1Ay:0,line1Bx:20,line1By:0,
    line2Ax:0,line2Ay:-20,line2Bx:0,line2By:20,
    lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:''}))$(id).value=String(value);
