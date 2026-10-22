@@ -9,6 +9,7 @@ const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
  require('../workbench/verified-ruler-tools.cjs');
 const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
+const MotionV5=require('../workbench/teaching-motion-v5.js');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
@@ -19,10 +20,37 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
  let digitalActions=[],digitalError='',snappedCenter=null;
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
- let playTimer=null,stageClock=null,statusMessage='';
+ let playTimer=null,stageClock=null,animatedArcNode=null,statusMessage='';
  const reducedMotion=()=>typeof window!=='undefined'&&
    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
- const stopPlayback=()=>{if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null}stageClock=null};
+ const stopPlayback=()=>{
+  if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null}
+  stageClock=null;animatedArcNode=null;
+ };
+ const pausePlayback=()=>{
+  if(playTimer!==null){cancelAnimationFrame(playTimer);playTimer=null}
+  if(stageClock)stageClock.pause(performance.now());
+ };
+ // Screen projection is performed by V5. Never recompute an arc from its SVG pixels.
+ const verifiedArc=()=>chosen?.status==='selected'&&chosen.g1Verified===true&&
+   chosen.geometry?.kind==='arc'&&chosen.geometry?.data&&
+   (chosen.selectedId===input?.branchId)&&
+   chosen.geometry.data.direction===input?.direction;
+ const arcSegment=()=>stageClock?.timeline.segments.at(-1);
+ const paintCurrentArc=()=>{
+  if(learningMode!=='full'||!stageClock||!verifiedArc()||
+     stageClock.snapshot().revision!==revision||!stageClock.canRender(revision))return;
+  const seg=arcSegment();
+  if(!seg||seg.kind!=='arc')return;
+  const snapshot=stageClock.snapshot();
+  const fraction=snapshot.actionFractions[seg.id];
+  if(!(fraction>0)||fraction>=1)return;
+  if(!animatedArcNode)animatedArcNode=drawArc($('diagram'),chosen.geometry,0);
+  MotionV5.updateSvg(animatedArcNode,{
+    kind:'arc',
+    geometry:MotionV5.projectArcFromVerifiedModel(chosen.geometry.data,{origin:O,scale})
+  },fraction);
+ };
  const fmt=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
  const elem=(tag,attr={},value)=>{
   const e=document.createElementNS(SVG,tag);
@@ -112,17 +140,17 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   }catch(e){statusMessage='条件无效：'+(e.message||'请重新填写');}
   render();
  }
- function drawArc(svg,g){
-  const a=g.data, start=a.startAngle*Math.PI/180,end=a.endAngle*Math.PI/180;
-  const startPoint=sheet({x:a.center.x+a.radius*Math.cos(start),y:a.center.y+a.radius*Math.sin(start)});
-  const endPoint=sheet({x:a.center.x+a.radius*Math.cos(end),y:a.center.y+a.radius*Math.sin(end)});
-  const large=Math.abs(a.endAngle-a.startAngle)>180?1:0,sweep=a.direction==='cw'?1:0;
-  const d='M '+startPoint.x+' '+startPoint.y+' A '+a.radius*scale+' '+a.radius*scale+
-   ' 0 '+large+' '+sweep+' '+endPoint.x+' '+endPoint.y;
-  svg.append(elem('path',{d,stroke:'#246da5','stroke-width':3.5,fill:'none'}));
+ function drawArc(svg,g,fraction=1){
+  // G1 and selected branch are checked by the caller. This is strictly the
+  // verified model arc transformed to a sheet-space SVG path, not a solver.
+  const transformed=MotionV5.projectArcFromVerifiedModel(g.data,{origin:O,scale});
+  const node=elem('path',{stroke:'#246da5','stroke-width':3.5,
+    fill:'none','stroke-linecap':'round','data-verified-arc':'true'});
+  MotionV5.updateSvg(node,{kind:'arc',geometry:transformed},fraction);
+  svg.append(node);return node;
  }
  function render(){
-  const svg=$('diagram');svg.replaceChildren();
+  const svg=$('diagram');svg.replaceChildren();animatedArcNode=null;
   svg.append(elem('rect',{width:720,height:440,fill:'#fff'}));
   for(let x=30;x<720;x+=30)svg.append(elem('line',{x1:x,y1:0,x2:x,y2:440,stroke:'#edf1ed','stroke-width':.65}));
   for(let y=10;y<440;y+=30)svg.append(elem('line',{x1:0,y1:y,x2:720,y2:y,stroke:'#edf1ed','stroke-width':.65}));
@@ -176,7 +204,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
      svg.append(drawLine(line.a,line.b,'#236eb5'));
     }
    }
-   if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=6)drawArc(svg,chosen.geometry);
+   if(full&&verifiedArc()&&stage>=6)drawArc(svg,chosen.geometry);
    const exists=!!(centers?.candidates?.length||centers?.continuousFamilies?.length);
    max=exists?(chosen?.status==='selected'?6:3):0;
    $('stepTitle').textContent='第 '+stage+' 步';
@@ -202,7 +230,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
      svg.append(dot(chosen.contacts.first,'#2477b0','T₁'));
      svg.append(dot(chosen.contacts.second,'#2477b0','T₂'));
     }
-    if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=4)drawArc(svg,chosen.geometry);
+    if(full&&verifiedArc()&&stage>=4)drawArc(svg,chosen.geometry);
    }
    max=centers?4:0;
    const copy=[
@@ -242,7 +270,8 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
      ($('drawTool').value==='arc'||isSegments))));
   $('prev').disabled=!full||stage===0;
   $('next').disabled=!full||stage>=max;
-  $('playPause').disabled=!full||stage>=max||max===0||reducedMotion();
+  $('playPause').disabled=!full||max===0||reducedMotion()||
+   (stage>=max&&(!stageClock||stageClock.snapshot().done));
   $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
   $('counter').textContent=stage+' / '+max;
   const verified=chosen?.status==='selected'&&chosen.g1Verified===true;
@@ -356,18 +385,27 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   render();
  });
  $('playPause').addEventListener('click',()=>{
-  if(playTimer!==null){stopPlayback();render();return;}
+  if(playTimer!==null){pausePlayback();render();return;}
   if(learningMode!=='full'||!centers||reducedMotion())return;
   const max=$('modeSelect').value==='segments'
    ?(chosen?.status==='selected'?6:centers.candidates.length||centers.continuousFamilies.length?3:0):4;
-  if(stage>=max)return;
-  const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
-   id:'fillet-'+(i+1),actions:[{id:'construction-'+(i+1),kind:'highlight',durationMs:1200}]
-  })),{gapMs:0});
   const clock=()=>performance.now();
-  stageClock=TimelineV5.createPlayer(timeline,{
-   speed:Number($('animationSpeed').value),revision});
-  stageClock.seekStep(stage,clock());stageClock.play(clock());
+  if(stage>=max&&(!stageClock||stageClock.snapshot().done))return;
+  if(!stageClock){
+   const arcReady=verifiedArc();
+   const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
+    id:'fillet-'+(i+1),actions:[{
+     id:'construction-'+(i+1),
+     // Last step is a real arc only after explicit mathematical G1 validation.
+     kind:i===max-1&&arcReady?'arc':'highlight',
+     durationMs:i===max-1&&arcReady?1600:1200
+    }]
+   })),{gapMs:0});
+   stageClock=TimelineV5.createPlayer(timeline,{
+    speed:Number($('animationSpeed').value),revision});
+   stageClock.seekStep(stage,clock());
+  }
+  stageClock.play(clock());
   const tick=()=>{
    if(!stageClock||learningMode!=='full'||!centers||reducedMotion()){
     stopPlayback();render();return;
@@ -378,10 +416,12 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     if(stage>=max){stopPlayback();render();return;}
     render();
    }
+   paintCurrentArc();
    playTimer=requestAnimationFrame(tick);
   };
   playTimer=requestAnimationFrame(tick);
   render();
+  paintCurrentArc();
  });
  $('animationSpeed').addEventListener('change',()=>{
   const speed=Number($('animationSpeed').value);
