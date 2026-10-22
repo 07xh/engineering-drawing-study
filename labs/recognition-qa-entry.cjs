@@ -2,6 +2,8 @@
 const {createPhotoQualitySession}=require('../recognition/photo-quality-session.cjs');
 const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
+const {detectBrowserDimensionCandidates}=
+ require('../recognition/browser-native-dimension-ocr.cjs');
 (function(){
  const $=id=>document.getElementById(id);
  const svgNs='http://www.w3.org/2000/svg';
@@ -71,7 +73,7 @@ const {createManualPhotoAnnotation}=
   }
   if(r.status==='needs-evaluable-annotations'){
    const p=document.createElement('p');
-   p.textContent='已标注尺寸文字，但本实验页未运行 OCR 文字识别，'+
+   p.textContent='已标注尺寸文字，但当前照片尚未运行受支持的 OCR 文字识别，'+
     '因此不能把文字标注算成“漏检”。请标注直线、圆、圆弧或箭头后计算；'+
     '尺寸识别暂显示“未评测”。';
    table.append(p);return;
@@ -89,8 +91,10 @@ const {createManualPhotoAnnotation}=
   table.append(p);
   const noOCR=document.createElement('p');
   noOCR.textContent='本次实际运行：直线、圆、圆弧、疑似箭头。'+
-   '尺寸文字 OCR 未运行，排除在召回率分母之外；'+
-   '待评测的文字标注 '+r.unevaluatedAnnotations.length+' 个。';
+   (r.notRunKinds.includes('dimension')?
+    '尺寸文字 OCR 未运行，排除在召回率分母之外；待评测文字标注 '+
+     r.unevaluatedAnnotations.length+' 个。':
+    '浏览器原生 OCR 已运行；尺寸文字已纳入本张图的对照统计。');
   table.append(noOCR);
   const t=document.createElement('table');
   const head=document.createElement('tr');
@@ -181,6 +185,37 @@ const {createManualPhotoAnnotation}=
   }catch(error){
    session.reset();render();
    message('识别失败：'+(error instanceof Error?error.message:'未知错误'));
+  }
+ });
+ $('qaOcr').addEventListener('click',async()=>{
+  const before=session.snapshot();
+  if(!before.ready||stage.hidden){
+   message('请先打开图片并运行本地几何识别。');return;
+  }
+  const epoch=generation,imageVersion=before.imageVersion;
+  const button=$('qaOcr');
+  button.disabled=true;
+  message('正在尝试调用当前浏览器的原生 TextDetector…');
+  let result;
+  try{result=await detectBrowserDimensionCandidates(image);}
+  catch(error){result={status:'error',candidates:[],
+   reason:error instanceof Error?error.message:'native OCR failed'};}
+  button.disabled=false;
+  // Stale OCR must never be scored against a replacement or re-analyzed photo.
+  if(epoch!==generation||session.snapshot().imageVersion!==imageVersion)return;
+  if(result.status!=='ok'){
+   message(result.status==='unsupported'?
+    '当前浏览器没有原生 TextDetector：OCR 未评测，不会算成漏检。':
+    '本地 OCR 无法完成：'+String(result.reason||result.status));
+   return;
+  }
+  try{
+   if(!session.acceptNativeOcr(imageVersion,result.candidates))return;
+   render();
+   message('浏览器原生 OCR 已运行，得到 '+result.candidates.length+
+    ' 个 R/Φ 候选。请手工标注真实文字框对照；OCR 结果不等于数学答案。');
+  }catch(error){
+   message('OCR 候选校验失败：'+(error instanceof Error?error.message:'无效文字来源'));
   }
  });
  function fromPointer(event){
