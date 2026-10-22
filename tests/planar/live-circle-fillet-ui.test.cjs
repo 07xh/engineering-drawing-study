@@ -1279,12 +1279,15 @@ test('touch seeking pauses timeline, keeps same partial stroke and resumes norma
  fire('playPause','click');advance(300);
  const before=strokes()[0].attributes['stroke-dasharray'];
  get('filletProgress').value='140';fire('filletProgress','input');
- const sought=strokes()[0].attributes['stroke-dasharray'];
+ assert.equal(strokes().length,2,'seek crosses the first completed locus');
+ const sought=strokes()[1].attributes['stroke-dasharray'];
+ assert.notEqual(sought,'none','second auxiliary locus is still tracing');
  assert.notEqual(sought,before);
  advance(2000);
- assert.equal(strokes()[0].attributes['stroke-dasharray'],sought);
+ assert.equal(strokes()[1].attributes['stroke-dasharray'],sought);
  fire('playPause','click');advance(100);
- assert.notEqual(strokes()[0].attributes['stroke-dasharray'],sought);
+ assert.notEqual(strokes()[1].attributes['stroke-dasharray'],sought,
+  'resume continues on second partially drawn locus, not completed first circle');
 });
 test('hidden Android tab pauses frame clock and return does not fast-forward',()=>{
  const p=interactiveFillet(),{get,fire,advance,collect,setHidden}=p;
