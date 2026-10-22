@@ -143,7 +143,7 @@ function mockControl(value=''){
 }
 function mockVectorDom(){
  const ids=['file','kind','first','second','mmPerPx','originX','originY',
-  'yAxis','filletRadiusMm','accepted','apply','status','preview'];
+  'yAxis','filletRadiusMm','accepted','apply','status','preview','annotations'];
  const c=Object.fromEntries(ids.map(id=>[id,mockControl()]));
  c.kind.value='two-segments';
  c.mmPerPx.value='1';c.mmPerPx.valueAsNumber=1;
@@ -178,7 +178,7 @@ test('browser local-file event safely redraws only normalized primitives and req
  assert.equal(applied.length,1);
  assert.equal(applied[0].fields.a1x,-10);
  assert.equal(c.accepted.checked,false);
- assert.match(c.status.textContent,/已根据您确认/);
+ assert.match(c.status.textContent,/已完成逐项检查/);
 });
 test('stale asynchronous SVG read may never overwrite a newer local file',async()=>{
  const {attachLocalVectorReview}=require('../../labs/local-vector-svg-review-ui.cjs');

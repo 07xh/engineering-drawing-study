@@ -308,6 +308,7 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
   yAxis:$('vectorYAxis'),filletRadiusMm:$('vectorFilletRadius'),
   accepted:$('vectorAccept'),apply:$('vectorApply'),
   status:$('vectorStatus'),preview:$('vectorPreview'),
+  annotations:$('vectorAnnotations'),
   onApply:result=>{
    for(const [field,value] of Object.entries(result.fields)){
     const input=$('geo-'+field);
