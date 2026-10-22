@@ -63,7 +63,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">自动播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label></div>
 <div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
 <div id="drawControls" hidden>
-<label>绘图工具<select id="drawTool"><option value="line">自由画辅助线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option><option value="snap">点选候选圆心（数学吸附）</option></select></label>
+<label>绘图工具<select id="drawTool"><option value="line">自由画辅助线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option><option value="snap">点选候选圆心（数学吸附）</option><option value="tangent">点选切点（选已知对象 1／2）</option></select></label>
 <fieldset style="border:1px solid #d4e5da;border-radius:12px;padding:11px;margin:12px 0">
 <legend style="padding:0 7px;font-size:13px;font-weight:700">数字化尺规 · 自己构造辅助轨迹</legend>
 <p class="note">先选择上方候选圆心分支，再选择已知对象和偏移量。两线段使用有符号垂直距离；两圆使用圆规半径。不会自动填写正确构造数据，也不会把辅助轨迹通过视为整题完成。</p>
@@ -75,6 +75,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <p class="card" id="digitalStatus" role="status" aria-live="polite">请选择候选分支后自行构造辅助轨迹。</p>
 <p class="note" id="centerSnapStatus" role="status" aria-live="polite">使用上方“点选候选圆心”工具，在画纸上点选认为正确的交点；吸附仅在数学容差内有效。</p>
 </fieldset>
+<p class="note">新增“点选切点”：先在尺规区选择已知对象 1 或 2，再点选图纸上的切点；可以先于弧向／G1 判题，但不会自动显示真实切点。重复、选错对象、超出有效范围均不能通过。</p>
 <p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
 <div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
 <p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p></div>
