@@ -4,8 +4,10 @@ const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
-const {fingerprintLocalPhoto}=
+const {fingerprintLocalPhoto,fingerprintManualTruth}=
  require('../recognition/local-photo-fingerprint.cjs');
+const {createPhotoQaBaseline,comparePhotoQaBaseline}=
+ require('../recognition/photo-qa-baseline.cjs');
 const {createAnnotationPack}=
  require('../recognition/photo-annotation-replay.cjs');
 (function(){
@@ -14,7 +16,7 @@ const {createAnnotationPack}=
  const session=createPhotoQualitySession();
  const image=$('qaImage'),overlay=$('qaOverlay'),stage=$('qaStage');
  const status=$('status'),table=$('metrics');
- let imageUrl=null,generation=0,drag=null,ocrRequest=0;
+ let imageUrl=null,generation=0,drag=null,ocrRequest=0,comparisonRevision=null;
  function message(value){status.textContent=value;}
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
@@ -70,6 +72,9 @@ const {createAnnotationPack}=
  function render(){
   draw();
   const r=session.report(),s=session.snapshot();
+  if(comparisonRevision!==s.revision){
+   $('qaDiff').textContent='';comparisonRevision=null;
+  }
   table.replaceChildren();
   if(r.status==='no-image'){
    const p=document.createElement('p');p.textContent='请先选择图片并运行本地识别。';
@@ -342,6 +347,68 @@ const {createAnnotationPack}=
   }catch(error){
    if(replayStillCurrent(t))message('导入已拒绝，原标注保持不变：'+
     (error instanceof Error?error.message:'文件无效'));
+  }finally{button.disabled=false;}
+ });
+
+ $('qaSaveBaseline').addEventListener('click',async()=>{
+  const t=replayToken();
+  if(!t||session.report().status!=='evaluated'){
+   message('请先对原图标注并完成当前识图质量评测。');return;
+  }
+  const button=$('qaSaveBaseline');button.disabled=true;
+  try{
+   const [photoSha256,truthSha256]=await Promise.all([
+    fingerprintLocalPhoto(t.file),
+    fingerprintManualTruth(t.snapshot.annotations)
+   ]);
+   if(!replayStillCurrent(t))return;
+   const baseline=createPhotoQaBaseline({
+    snapshot:t.snapshot,report:session.report(),photoSha256,truthSha256
+   });
+   downloadJson(baseline,'draftai-photo-qa-baseline.json');
+   message('已保存单张图的识图质量基线。仅含图片及标注指纹、各类 TP/FP/FN，'+
+    '不包含照片或原图文件名；指纹仍可能具有识别性。');
+  }catch(error){
+   if(replayStillCurrent(t))message('基线保存失败：'+
+    (error instanceof Error?error.message:'格式错误'));
+  }finally{button.disabled=false;}
+ });
+ $('qaCompareBaseline').addEventListener('click',async()=>{
+  const t=replayToken(),selected=$('qaBaselineFile').files?.[0];
+  if(!t||session.report().status!=='evaluated'){
+   message('请先检测原图并恢复或标齐人工真值。');return;
+  }
+  if(!selected||selected.size===0||selected.size>150*1024){
+   message('请先选择有效且小于 150 KB 的基线 JSON 文件。');return;
+  }
+  const button=$('qaCompareBaseline');button.disabled=true;
+  try{
+   const [photoSha256,truthSha256,content]=await Promise.all([
+    fingerprintLocalPhoto(t.file),
+    fingerprintManualTruth(t.snapshot.annotations),
+    selected.text()
+   ]);
+   if(!replayStillCurrent(t))return;
+   const comparison=comparePhotoQaBaseline(JSON.parse(content),{
+    snapshot:t.snapshot,report:session.report(),photoSha256,truthSha256
+   });
+   comparisonRevision=session.snapshot().revision;
+   const rows=Object.entries(comparison.byKind).map(([kind,v])=>
+    kind+'：命中变化 '+(v.deltaTP>=0?'+':'')+v.deltaTP+
+    '，误检变化 '+(v.deltaFP>=0?'+':'')+v.deltaFP+
+    '，漏检变化 '+(v.deltaFN>=0?'+':'')+v.deltaFN+
+    '，召回变化 '+(v.deltaRecall===null?'不可比较':
+     (v.deltaRecall*100).toFixed(2)+' 个百分点'));
+   $('qaDiff').textContent='已确认同一图片、同一标注和相同检测范围。'+
+    rows.join('；')+'。仅一张图的诊断变化，不代表普遍准确率提升。';
+   message('基线比较完成。未改变当前标注、检测结果或数学解题状态。');
+  }catch(error){
+   if(replayStillCurrent(t)){
+    $('qaDiff').textContent='';
+    comparisonRevision=null;
+    message('基线比较已拒绝：'+
+     (error instanceof Error?error.message:'数据无效'));
+   }
   }finally{button.disabled=false;}
  });
  $('qaExport').addEventListener('click',()=>{

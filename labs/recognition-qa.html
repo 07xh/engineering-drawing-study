@@ -75,7 +75,16 @@ small{font-size:12px;color:#667f6e}
 <div class="buttons">
 <button id="qaLoadTruth" type="button">核对原图并导入标注</button>
 </div>
-<h2>4. 查看误差</h2>
+<h2>4. 比较前后两次识图结果</h2>
+<p class="hint">请先完成当前照片的人工标注，保存一次质量基线。以后用相同原图和同一组人工标注重新运行识别，就能比较 TP、FP、FN 和召回率变化。不同图片或标注不能强行比较。</p>
+<div class="buttons">
+<button id="qaSaveBaseline" type="button">保存本次质量基线</button>
+</div>
+<label>选择以前保存的质量基线 JSON
+<input id="qaBaselineFile" type="file" accept=".json,application/json"></label>
+<div class="buttons"><button id="qaCompareBaseline" type="button">核验条件并对比结果</button></div>
+<div id="qaDiff" role="status" aria-live="polite"></div>
+<h2>5. 查看误差</h2>
 <div id="metrics" aria-live="polite"><p>请先本地打开图片并运行识别。</p></div>
 <div class="buttons">
 <button id="qaExport" type="button">导出无图片 JSON 报告</button>
