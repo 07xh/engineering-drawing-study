@@ -18,8 +18,16 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
       !rows[0].length||rows[0].length>64)
     throw new RangeError('Jacobian must be a nonempty matrix of at most 64x64');
   const m=rows.length,n=rows[0].length;
-  if(rows.some(row=>!Array.isArray(row)||row.length!==n||row.some(v=>!finite(v))))
-    throw new TypeError('Jacobian rows must be rectangular and finite');
+  // Array#some and Array#flat skip holes. A missing coefficient is not zero:
+  // validate indexed ownership before taking the zero-matrix fast path.
+  for(let i=0;i<m;i++){
+    if(!Object.hasOwn(rows,i)||!Array.isArray(rows[i])||rows[i].length!==n)
+      throw new TypeError('Jacobian rows must be rectangular and finite');
+    for(let j=0;j<n;j++){
+      if(!Object.hasOwn(rows[i],j)||!finite(rows[i][j]))
+        throw new TypeError('Jacobian entries must be present and finite');
+    }
+  }
   if(!finite(relativeThreshold)||relativeThreshold<MIN_THRESHOLD||relativeThreshold>=1)
     throw new RangeError('relativeThreshold must be finite and between 64*EPS and 1');
   if(!Number.isInteger(maxSweeps)||maxSweeps<1||maxSweeps>100)
@@ -36,7 +44,7 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
   // Scaling the whole matrix first avoids overflow in column inner products.
   // Singular values are returned as ratios; no absolute unit is implied.
   const a=rows.map(row=>row.map(v=>v/scale));
-  let converged=false,sweeps=0;
+  let converged=false,sweeps=0,numericUnderflowDetected=false;
   for(let sweep=0;sweep<maxSweeps;sweep++){
     sweeps=sweep+1;
     let rotated=false;
@@ -46,7 +54,16 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
         const x=a[i][p],y=a[i][q];
         alpha+=x*x; beta+=y*y; gamma+=x*y;
       }
-      if(alpha===0||beta===0||gamma===0)continue;
+      if(alpha===0||beta===0||gamma===0){
+        // Squared column norms and dot products can underflow even when
+        // entries are finite and nonzero (e.g. 1e-200). Do not certify
+        // convergence or a condition number for this unresolved pair.
+        if((alpha===0&&a.some(row=>row[p]!==0))||
+           (beta===0&&a.some(row=>row[q]!==0))||
+           (gamma===0&&a.some(row=>row[p]!==0&&row[q]!==0&&row[p]*row[q]===0)))
+          numericUnderflowDetected=true;
+        continue;
+      }
       if(Math.abs(gamma)<=PAIR_COS_TOLERANCE*Math.sqrt(alpha)*Math.sqrt(beta))continue;
       rotated=true;
       const tau=(beta-alpha)/(2*gamma);
@@ -73,9 +90,10 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
   const estimate=smallest===0?null:1/smallest;
   return {...base,matrixMaxEntry:scale,singularRatios:ratios,
     rankEstimate:rank,localDegreesEstimate:n-rank,
-    conditionEstimate:finite(estimate)?estimate:null,
-    converged,sweeps,thresholdSensitive:sensitive,
-    status:(!converged||sensitive)?'undetermined':
+    conditionEstimate:!numericUnderflowDetected&&finite(estimate)?estimate:null,
+    converged:converged&&!numericUnderflowDetected,sweeps,
+    thresholdSensitive:sensitive,numericUnderflowDetected,
+    status:(!converged||sensitive||numericUnderflowDetected)?'undetermined':
       (rank<n?'rank-deficient':'full-column-rank')};
 }
 module.exports={diagnoseJacobian,DEFAULT_RELATIVE_THRESHOLD,MIN_THRESHOLD};
