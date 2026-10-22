@@ -385,7 +385,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
   render();
  });
  $('playPause').addEventListener('click',()=>{
-  if(playTimer!==null){pausePlayback();render();return;}
+  if(playTimer!==null){pausePlayback();render();paintCurrentArc();return;}
   if(learningMode!=='full'||!centers||reducedMotion())return;
   const max=$('modeSelect').value==='segments'
    ?(chosen?.status==='selected'?6:centers.candidates.length||centers.continuousFamilies.length?3:0):4;
