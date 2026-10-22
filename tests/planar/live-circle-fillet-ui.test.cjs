@@ -508,9 +508,9 @@ test('real page includes digital compass/ruler, source choice, and math snap aff
   'clearDigital','checkDigital','digitalStatus','centerSnapStatus'])
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  assert.match(html,/<option value="snap">/);
- assert.match(entry,/constructParallelLine\(input\[sourceId\],value/);
- assert.match(entry,/constructConcentricCircle\(input\[sourceId\],value/);
- assert.match(entry,/gradeStudentAuxiliaries\(isSegments/);
+ assert.match(entry,/constructParallelLine\(mode==='segment-circle'\?input\.segment:input\[sourceId\]/);
+ assert.match(entry,/constructConcentricCircle\(mode==='segment-circle'\?input\.circle:input\[sourceId\]/);
+ assert.match(entry,/gradeStudentAuxiliaries\(currentKind,input,digitalActions/);
  assert.match(entry,/snapChosenFilletCenter\(/);
  assert.doesNotMatch(entry,/innerHTML\s*=|localStorage|fetch\(/);
 });
@@ -542,7 +542,7 @@ test('wrong numeric radius for student compass fails even though geometry is dra
  assert.match(get('digitalStatus').textContent,/1 \/ 2/);
  get('digitalSource').value='second';fire('addDigital','click');
  assert.match(get('digitalStatus').textContent,/2 \/ 2/);
- assert.match(get('digitalStatus').textContent,/额外／错误构造 1/);
+ assert.match(get('digitalStatus').textContent,/额外或错误构造 1/);
  assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#8651a8').length,3);
 });
 test('digital construction with missing candidate does not disclose an automatic center',()=>{
@@ -1005,7 +1005,7 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  board.listeners.pointerup(ev(points[48],7));
  assert.match(get('drawStatus').textContent,/手绘连接弧数学验证通过/);
  assert.match(get('learningProgress').textContent,/2 \/ 4/);
- assert.match(get('learningProgress').textContent,/未证明完整教材题/);
+ assert.match(get('learningProgress').textContent,/未完成步骤不能冒充已证明/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
  fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 4/);
  fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 4/);
