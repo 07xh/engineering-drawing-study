@@ -26,6 +26,10 @@ function geometrySummary(source){
   shapes:result.draft.candidates.filter(c=>c.geometry).map(c=>({
    id:c.id,kind:c.kind,geometry:c.geometry})),
   hasLabels:result.draft.candidates.some(c=>c.kind==='dimension'||c.kind==='note'),
+  labels:result.draft.candidates.filter(c=>c.kind==='dimension'||c.kind==='note').map(c=>({
+   id:c.id,kind:c.kind,text:c.kind==='note'?c.text:c.dimension.rawText,
+   dimension:c.dimension?{...c.dimension,refs:[...c.dimension.refs]}:null
+  })),
   image:{width:result.draft.image.width,height:result.draft.image.height}};
 }
 function formFields(prepared){
@@ -46,14 +50,64 @@ function formFields(prepared){
   throw new RangeError('model geometry contains a nonfinite value');
  return fields;
 }
+function checkedAnnotationReviews(summary,selectedIds,reviews,filletRadiusMm){
+ const labels=summary.labels;
+ if(!labels.length){
+  if(reviews!==undefined&&(!Array.isArray(reviews)||reviews.length))
+   throw new TypeError('no annotations exist to review');
+  return {byId:new Map(),provenance:[]};
+ }
+ if(!Array.isArray(reviews)||reviews.length!==labels.length)
+  throw new RangeError('SVG contains text or dimensions requiring separate manual confirmation');
+ const found=new Map(),provenance=[];
+ for(const review of reviews){
+  if(!review||typeof review!=='object'||Array.isArray(review)||
+     typeof review.id!=='string'||found.has(review.id)||
+     review.confirmed!==true)
+   throw new TypeError('each annotation requires a distinct explicit human confirmation');
+  for(const key of Object.keys(review))
+   if(!['id','decision','sourceId','valueMm','confirmed'].includes(key))
+    throw new TypeError('unsupported annotation review property');
+  const candidate=labels.find(c=>c.id===review.id);
+  if(!candidate)throw new TypeError('review references unknown SVG annotation');
+  if(!['reject','source-circle','target-radius'].includes(review.decision))
+   throw new TypeError('annotation needs a reject, source-circle or target-radius decision');
+  if(review.decision!=='reject'){
+   const d=candidate.dimension;
+   if(!d||!['radius','diameter'].includes(d.kind)||
+      typeof review.valueMm!=='number'||!Number.isFinite(review.valueMm)||
+      review.valueMm<=0)
+    throw new RangeError('R/Φ review needs a valid positive human-confirmed mm value');
+   if(review.decision==='source-circle'){
+    const selected=summary.shapes.find(c=>c.id===review.sourceId);
+    if(!selected||selected.kind!=='circle'||!selectedIds.includes(review.sourceId))
+     throw new TypeError('dimension must link to an explicitly selected source circle');
+   }else{
+    if(d.kind!=='radius'||review.sourceId!==undefined)
+     throw new TypeError('target connection radius must be R, not Φ or a source');
+    const tolerance=1e-3+1e-3*Math.abs(review.valueMm);
+    if(typeof filletRadiusMm!=='number'||!Number.isFinite(filletRadiusMm)||
+       Math.abs(review.valueMm-filletRadiusMm)>tolerance)
+     throw new RangeError('target R dimension conflicts with confirmed fillet radius');
+   }
+  }else if(review.sourceId!==undefined||review.valueMm!==undefined){
+   throw new TypeError('rejected text may not provide source or math values');
+  }
+  found.set(review.id,review);
+  provenance.push({annotationId:review.id,decision:review.decision,
+   ...(review.decision==='source-circle'?{sourceId:review.sourceId,valueMm:review.valueMm}:{}),
+   ...(review.decision==='target-radius'?{target:'filletRadius',valueMm:review.valueMm}:{})
+  });
+ }
+ if(labels.some(label=>!found.has(label.id)))
+  throw new RangeError('all SVG text or dimension labels must be explicitly reviewed');
+ return {byId:found,provenance};
+}
 function prepareLocalVectorImport({source,kind,firstId,secondId,originX,originY,
- mmPerPx,yAxis,filletRadiusMm,accepted}={}){
+ mmPerPx,yAxis,filletRadiusMm,accepted,annotationReviews}={}){
  if(accepted!==true)throw new TypeError('human review checkbox must be explicitly accepted');
  if(!Object.hasOwn(sourceKeys,kind))throw new RangeError('unsupported vector fillet kind');
  const summary=geometrySummary(source);
- // Unreviewed drawing labels often determine the actual answer. Never discard
- // or auto-reject them to manufacture apparent mathematical completeness.
- if(summary.hasLabels)throw new RangeError('SVG contains text or dimensions requiring separate manual confirmation');
  const fields=sourceKeys[kind],keys=Object.keys(fields);
  const ids=[firstId,secondId];
  if(ids.some(id=>typeof id!=='string'||!id)||ids[0]===ids[1])
@@ -65,10 +119,17 @@ function prepareLocalVectorImport({source,kind,firstId,secondId,originX,originY,
    throw new TypeError('selected source type or ID disagrees with drawing');
   chosen[key]=ids[i];
  }
+ const annotations=checkedAnnotationReviews(summary,ids,annotationReviews,filletRadiusMm);
  let draft=summary.draft;
  for(const c of draft.candidates){
-  draft=reviewCandidate(draft,{id:c.id,expectedRevision:draft.revision,
-   decision:ids.includes(c.id)?'confirmed':'rejected'});
+  let decision=ids.includes(c.id)?'confirmed':'rejected',patch={};
+  const reviewed=annotations.byId.get(c.id);
+  if(reviewed?.decision==='source-circle'){
+   decision='confirmed';
+   patch={dimension:{...c.dimension,
+    value:reviewed.valueMm,unit:'mm',refs:[reviewed.sourceId]}};
+  }
+  draft=reviewCandidate(draft,{id:c.id,expectedRevision:draft.revision,decision,patch});
  }
  const metric={frame:'drawing-px',originPx:{x:originX,y:originY},
   mmPerPx,yAxis,reviewedBy:'user',revision:draft.revision};
@@ -77,7 +138,7 @@ function prepareLocalVectorImport({source,kind,firstId,secondId,originX,originY,
   options:kind==='segment-circle'?{side:1}:{}});
  return {kind,fields:formFields(prepared),sourceIds:chosen,
   reviewedDraftRevision:draft.revision,
-  imageProvenance:prepared.provenance,
+  imageProvenance:{...prepared.provenance,annotationReviews:annotations.provenance},
   metricStatement:'Scale is user reviewed, not automatically inferred from SVG pixels'};
 }
 module.exports={MAX_BYTES,checkFile,geometrySummary,formFields,prepareLocalVectorImport};
