@@ -15,6 +15,9 @@ function haltSync(){
 function syncStatusVisual(time){
  if(!Sync){
   $('syncPlay').disabled=true;
+  $('syncPrevious').disabled=true;
+  $('syncNext').disabled=true;
+  $('syncStep').textContent='静态模式';
   $('syncExplanation').textContent='本环境未加载 V5 同步播放器，原有自由度计算与静态投影仍可使用。';
   return false;
  }
@@ -26,6 +29,12 @@ function syncStatusVisual(time){
  $('syncPlay').disabled=syncPlayer?(!valid||frame.done&&!frame.playing):
   Store.compute(state).analysis.result.inconsistent;
  $('syncRestart').disabled=!valid;
+ $('syncPrevious').disabled=!valid||frame.elapsedMs<=0;
+ $('syncNext').disabled=syncPlayer?(!valid||frame.done):
+  Store.compute(state).analysis.result.inconsistent;
+ $('syncStep').textContent=valid?(frame.done?
+  '全部 '+syncPlan.steps.length+' 步完成':
+  '第 '+(frame.activeStepIndex+1)+' / '+syncPlan.steps.length+' 步'):'未开始';
  $('syncProgress').disabled=!valid;
  $('syncProgress').value=valid?String(Math.round(frame.ratio*1000)):'1000';
  $('syncPercent').textContent=valid?Math.round(frame.ratio*100)+'%':'—';
@@ -44,26 +53,45 @@ function animateSync(time){
  if(!syncPlayer||document.hidden)return;
  if(syncStatusVisual(time))syncFrame=requestAnimationFrame(animateSync);
 }
-function runSync(){
- if(document.hidden)return;
- if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
- if(syncPlayer){
-  const current=syncPlayer.snapshot(performance.now());
-  if(current.done)syncPlayer.seekStep(0,performance.now());
-  if(current.playing)syncPlayer.pause(performance.now());
-  else if(reducedMotion())syncPlayer.seekMs(syncPlan.timeline.totalMs,performance.now());
-  else syncPlayer.play(performance.now());
- }else{
-  const report=Store.compute(state);
-  syncPlan=Sync.build(report,{revision:syncRevision});
-  if(syncPlan.status!=='ready'){
-   $('syncExplanation').textContent=syncPlan.reason;syncPlan=null;return;
-  }
-  syncPlayer=Sync.createPlayer(syncPlan,{speed:Number($('syncSpeed').value)});
-  if(reducedMotion())syncPlayer.seekMs(syncPlan.timeline.totalMs,performance.now());
-  else syncPlayer.play(performance.now());
+function ensureSync(){
+ if(!Sync||document.hidden)return false;
+ if(syncPlayer)return true;
+ const report=Store.compute(state);
+ const plan=Sync.build(report,{revision:syncRevision});
+ if(plan.status!=='ready'){
+  $('syncExplanation').textContent=plan.reason;return false;
  }
- if(syncStatusVisual(performance.now()))syncFrame=requestAnimationFrame(animateSync);
+ syncPlan=plan;
+ syncPlayer=Sync.createPlayer(plan,{speed:Number($('syncSpeed').value)});
+ return true;
+}
+function runSync(){
+ if(!ensureSync())return;
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ const now=performance.now(),current=syncPlayer.snapshot(now);
+ if(current.done)syncPlayer.seekStep(0,now);
+ if(current.playing)syncPlayer.pause(now);
+ else if(reducedMotion())syncPlayer.seekMs(syncPlan.timeline.totalMs,now);
+ else syncPlayer.play(now);
+ if(syncStatusVisual(now))syncFrame=requestAnimationFrame(animateSync);
+}
+function stepSync(direction){
+ if(direction!==1&&direction!==-1)throw new RangeError('invalid teaching step direction');
+ if(!ensureSync())return;
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ const now=performance.now();
+ syncPlayer.pause(now);
+ const current=syncPlayer.snapshot(now);
+ const n=syncPlan.timeline.steps.length;
+ let target;
+ if(direction===1)target=Math.min(n,current.activeStepIndex+1);
+ else if(current.done)target=n-1;
+ else {
+  const currentStep=syncPlan.timeline.steps[Math.max(0,current.activeStepIndex)];
+  target=current.elapsedMs>currentStep.startMs+1?currentStep.index:Math.max(0,currentStep.index-1);
+ }
+ syncPlayer.seekStep(target,now);
+ syncStatusVisual(now);
 }
 const schemas={
  coordinate:[{id:'axis',label:'坐标轴',kind:'select',values:['x','y','z'],default:'x'},{id:'value',label:'固定值',kind:'number',default:35}],
@@ -229,6 +257,8 @@ $('zoomIn').addEventListener('click',()=>{if(viewer)viewer.zoom(1.15);else{zoom=
 $('zoomOut').addEventListener('click',()=>{if(viewer)viewer.zoom(1/1.15);else{zoom=Math.max(.5,zoom/1.15);render()}});
 $('resetView').addEventListener('click',()=>{if(viewer)viewer.resetCamera();else{yaw=.72;pitch=.52;zoom=1;render()}});
 $('syncPlay').addEventListener('click',runSync);
+$('syncPrevious').addEventListener('click',()=>stepSync(-1));
+$('syncNext').addEventListener('click',()=>stepSync(1));
 $('syncRestart').addEventListener('click',()=>{
  if(!syncPlayer)return;
  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
