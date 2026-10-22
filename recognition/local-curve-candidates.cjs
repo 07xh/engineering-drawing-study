@@ -102,9 +102,11 @@ function detectCurveCandidates(frame,{minRadius=10,minArcDegrees=72,maxCandidate
   const rmsMax=Math.max(1.4,f.radius*.035);
   if(f.radialRms>rmsMax)continue;
   const circle=f.coverageDeg>=326;
-  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
-  const minx=Math.min(...xs),maxx=Math.max(...xs),
-   miny=Math.min(...ys),maxy=Math.max(...ys);
+  let minx=w,maxx=0,miny=h,maxy=0;
+  for(const p of points){
+   minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);
+   miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);
+  }
   // Tiny numerical radius or nearly straight strokes must not be promoted.
   if(maxx-minx<6||maxy-miny<6)continue;
   const center={x:Number(f.center.x.toFixed(2)),
