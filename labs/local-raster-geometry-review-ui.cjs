@@ -4,25 +4,59 @@ const {candidateDraftFromRaster}=
  require('../recognition/raster-primitive-draft.cjs');
 const {shapeKeys,prepareReviewedRasterImport}=
  require('./local-raster-fillet-import.cjs');
+const {suggestMillimetresPerImagePixel}=
+ require('./manual-raster-scale-calibration.cjs');
 
 function attachLocalRasterReview({
  image,photoInput,photoClear,kind,first,second,preview,edits,
  originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
+ scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus,
  accepted,apply,status,onApply,dom=document
 }){
  for(const node of [image,photoInput,photoClear,kind,first,second,preview,
-  edits,originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,accepted,apply,status])
+  edits,originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
+  accepted,apply,status])
   if(!node)throw new TypeError('incomplete local raster review UI controls');
+ const scaleNodes=[scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus];
+ const hasScaleControls=scaleNodes.every(Boolean);
+ if(!hasScaleControls&&scaleNodes.some(Boolean))
+  throw new TypeError('partial optional raster scale assistant controls');
  if(typeof onApply!=='function')throw new TypeError('current workbench hook required');
  const SVG='http://www.w3.org/2000/svg';
  const parts={line:null,curve:null};
- let draft=null,controls={},generation=0;
+ let draft=null,controls={},generation=0,derivedScale=null;
  const option=(value,label)=>{
   const node=dom.createElement('option');node.value=value;node.textContent=label;
   return node;
  };
  const changed=()=>{accepted.checked=false;};
+ function invalidateDerivedScale(){
+  if(!hasScaleControls){changed();return;}
+  if(derivedScale){
+   mmPerPx.value='';
+   derivedScale=null;
+   scaleStatus.textContent='已编辑标注线段或已知尺寸，旧的建议比例已失效；请重新校准。';
+  }
+  scaleReviewed.checked=false;
+  changed();
+ }
+ function updateScaleSources(){
+  if(!hasScaleControls)return;
+  const selected=scaleSource.value;
+  scaleSource.replaceChildren(option('','请选择已核对真实长度的完整线段'));
+  for(const id of [first.value,second.value]){
+   if(controls[id]?.['from.x']&&controls[id]?.['to.x']){
+    const item=draft?.candidates.find(x=>x.id===id);
+    if(item?.kind==='segment')scaleSource.append(
+     option(id,'有限线段 '+id+'（端点需与真实尺寸对应）'));
+   }
+  }
+  if([...scaleSource.options].some(x=>x.value===selected))scaleSource.value=selected;
+  else scaleSource.value='';
+ }
  function reset(){
+  invalidateDerivedScale();
+  if(hasScaleControls){scaleSource.value='';scaleLength.value='';}
   generation++;parts.line=null;parts.curve=null;draft=null;
   preview.replaceChildren();edits.replaceChildren();
   updateSelectors();
@@ -57,6 +91,7 @@ function attachLocalRasterReview({
     ['center.y','圆心 Y',source.geometry.center.y],
     ['radiusPx','半径（像素）',source.geometry.radiusPx]];
  function drawEdits(){
+  invalidateDerivedScale();
   edits.replaceChildren();controls={};
   for(const id of [first.value,second.value]){
    const candidate=draft?.candidates.find(c=>c.id===id);
@@ -73,11 +108,12 @@ function attachLocalRasterReview({
     const input=dom.createElement('input');
     input.type='number';input.step='any';input.value=String(value);
     input.inputMode='decimal';
-    input.addEventListener('input',changed);
+    input.addEventListener('input',invalidateDerivedScale);
     label.append(input);container.append(label);mapping[key]=input;
    }
    controls[id]=mapping;edits.append(container);
   }
+  updateScaleSources();
   changed();
  }
  function updateSelectors(){
@@ -135,6 +171,43 @@ function attachLocalRasterReview({
    parts[group]=null;
   else parts[group]=rawInfo;
   changed();renderDraft();
+ }
+ if(hasScaleControls){
+ scaleSource.addEventListener('change',invalidateDerivedScale);
+ scaleLength.addEventListener('input',invalidateDerivedScale);
+ scaleReviewed.addEventListener('change',changed);
+ mmPerPx.addEventListener('input',()=>{
+  derivedScale=null;
+  scaleStatus.textContent='已手动更改毫米／像素比例，请重新确认所有相关条件。';
+ });
+ scaleCalculate.addEventListener('click',()=>{
+  try{
+   if(!draft)throw new RangeError('请先检测和选择需要校准的原题图元');
+   const id=scaleSource.value;
+   const source=draft.candidates.find(item=>item.id===id);
+   const inputs=controls[id];
+   if(source?.kind!=='segment'||!inputs)
+    throw new TypeError('只能使用两项已选源图元中的有限线段');
+   const num=key=>value(inputs[key]);
+   const suggestion=suggestMillimetresPerImagePixel({
+    from:{x:num('from.x'),y:num('from.y')},
+    to:{x:num('to.x'),y:num('to.y')},
+    knownLengthMm:value(scaleLength),image:draft.image,
+    sourceId:id,explicitlyReviewed:scaleReviewed.checked
+   });
+   mmPerPx.value=String(suggestion.mmPerPx);
+   derivedScale={sourceId:id,mmPerPx:suggestion.mmPerPx};
+   changed();
+   scaleStatus.textContent='建议比例 '+suggestion.mmPerPx.toPrecision(8)+
+    ' mm/像素（原图基线 '+suggestion.pixelLength.toFixed(2)+
+    ' 像素，人工核对长度 '+suggestion.knownLengthMm+
+    ' mm）。这不是透视校正或完整数学验证；仍须审核所有条件。';
+  }catch(error){
+   invalidateDerivedScale();
+   scaleStatus.textContent='比例校准失败：'+
+    (error instanceof Error?error.message:'请输入有效已知长度');
+  }
+ });
  }
  for(const el of [first,second])el.addEventListener('change',drawEdits);
  kind.addEventListener('change',updateSelectors);

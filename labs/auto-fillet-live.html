@@ -130,6 +130,19 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <label for="rasterSecond">源图元二<select id="rasterSecond"><option value="">先检测图元</option></select></label>
 </div>
 <div id="rasterEdits" class="raster-edits" aria-label="人工修改已选图元的像素端点圆心和半径"></div>
+<div class="source-review" id="rasterScalePanel" aria-label="从人工确认的已知长度计算像素比例">
+<h4>使用已知尺寸校准毫米比例（可选）</h4>
+<p>如果图纸明确标出选中整条线段的真实长度（毫米），可辅助计算毫米／像素。只适用于同一张经过校正、近似均匀缩放的题图；斜拍透视可能使这一比例不适用于别处。此步骤不会自动证明几何条件或选择解分支。</p>
+<label for="rasterScaleSource">已知真实长度的线段来源
+<select id="rasterScaleSource"><option value="">请先选中有实际尺寸标注的线段</option></select></label>
+<label for="rasterScaleLength">这条完整线段的实际长度（毫米；必须从题图独立核对）
+<input id="rasterScaleLength" type="number" inputmode="decimal" min="0" step="any" placeholder="例如：实际端点间距 30 mm"></label>
+<label class="vector-confirm" for="rasterScaleReviewed">
+<input id="rasterScaleReviewed" type="checkbox">我确认选中的完整线段两端点与图纸上的实际尺寸相对应，且单位为毫米
+</label>
+<div class="controls"><button id="rasterScaleCalculate" type="button">根据已核对长度计算建议比例</button></div>
+<p id="rasterScaleStatus" class="vector-status" role="status" aria-live="polite">未校准。可继续手动输入毫米／像素；不能把图像检测像素直接当作毫米。</p>
+</div>
 <div class="fields">
 <label for="rasterMmPerPx">人工校准：毫米／像素<input id="rasterMmPerPx" type="number" step="any" min="0" placeholder="从已知尺寸独立校准"></label>
 <label for="rasterYAxis">图纸 Y 方向<select id="rasterYAxis"><option value="down">向下为正</option><option value="up">向上为正</option></select></label>
