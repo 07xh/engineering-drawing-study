@@ -38,6 +38,16 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
 .lab-v2 .condition>div:first-child{min-width:0;overflow-wrap:anywhere}.lab-v2 .condition button{padding:7px;min-height:36px;font-size:12px}
 .lab-v2 .condition .mini{font-size:12px;color:#637b69}.lab-v2 .condition .actions{display:flex;gap:4px;flex-wrap:wrap}
 .lab-v2 .condition.off{opacity:.54}.lab-v2 .notice{border-left:3px solid #ca943f;background:#fff9ed;padding:10px;border-radius:8px}
+.lab-v2 .sync-controls{padding:12px 14px;background:#f4f9f5;border:1px solid #d9e7db;border-radius:12px;margin-top:12px}
+.lab-v2 .sync-controls h3{font-size:15px;margin:0 0 7px}
+.lab-v2 .sync-controls .sync-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.lab-v2 .sync-controls .sync-row>button{min-width:110px}
+.lab-v2 .sync-controls label{font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.lab-v2 .sync-controls input[type=range]{flex:1 1 190px;min-width:120px;accent-color:#278257}
+.lab-v2 .sync-controls output{font-size:12px;font-variant-numeric:tabular-nums;min-width:38px}
+.lab-v2 .sync-caption{font-size:12px;line-height:1.5;color:#55705d;margin:7px 0}
+.lab-v2 .sync-description{font-size:12px;line-height:1.6;color:#667d6d;margin:7px 0 0}
+
 @media(max-width:930px){.lab-v2 .workspace{grid-template-columns:1fr}}
 @media(max-width:600px){main.lab-v2{padding:12px 10px 45px}.lab-v2 .intro,.lab-v2 .pane,.lab-v2 .editor{padding:12px}.lab-v2 .fields label{flex:1 1 110px}.lab-v2 input[type=number]{width:100%}}
 </style><link rel="stylesheet" href="../site-ui.css"></head>
@@ -61,6 +71,24 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
   <section class="pane"><h2>工程制图 · 单张三视图图纸</h2><p class="muted">第一角画法：V 左上、H 左下、W 右上。45° 线在右下，用于 H→W 的深度转移。</p>
    <svg id="sheet" class="display" viewBox="0 0 960 620" role="img" aria-label="同一张工程图纸上的 V、H、W 三视图与 45 度转移线"></svg>
    <div class="toolbar"><label><input type="checkbox" id="showGuides" checked> 投影联系线</label><label><input type="checkbox" id="showHiddenEdges" checked> 显示不可见棱线（虚线）</label><label><input type="checkbox" id="showWireframe" checked> 立体投影线框</label><label><input type="checkbox" id="showLabels"> 参考顶点</label></div>
+   <section class="sync-controls" aria-label="三维与三视图同步动画">
+    <h3>V5 · 三维 / 三视图同步作图</h3>
+    <p class="sync-caption" id="syncCaption" role="status">读取当前约束状态；空间点 P 和工程图纸共用同一套几何结果。</p>
+    <div class="sync-row">
+     <button id="syncPlay" class="primary" type="button">播放同步作图</button>
+     <button id="syncRestart" type="button" disabled>回到起点</button>
+     <label for="syncSpeed">速度<select id="syncSpeed">
+      <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option><option value="1.5">1.5×</option>
+      <option value="2">2×</option><option value="3">3×</option><option value="4">4×</option>
+     </select></label>
+     <label for="syncProgress">进度</label><input id="syncProgress" type="range" min="0" max="1000" step="1" value="1000" disabled>
+     <output id="syncPercent" for="syncProgress">—</output>
+    </div>
+    <p class="sync-description" id="syncExplanation" aria-live="polite">
+     播放时依次描绘四条 V/H/W 联系线，随后同步显示空间点与投影点。欠约束时只表示一个可行示例 P*，绝不宣称唯一解。
+    </p>
+   </section>
   </section>
  </div>
  <section class="editor" aria-labelledby="editorTitle"><h2 id="editorTitle">从零添加约束</h2>
