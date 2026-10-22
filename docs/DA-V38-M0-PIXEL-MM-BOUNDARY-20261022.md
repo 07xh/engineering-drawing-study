@@ -30,3 +30,7 @@ Run `node --check core/numeric/reviewed-pixel-frame.cjs` and `node --test tests/
 ## Release / rollback
 
 `core/**` is high risk under #152: open Draft PR, request independent 00/09 audit before any merge. PR CI green ≠ merged ≠ deployed. Revert the isolated changes to roll back. The module is not imported by existing solvers, so this delivery does **not** claim a working new-photo end-to-end solver.
+
+## 00 审计追加：一次性来源快照
+
+在本 PR 的独立数值审查中发现，JavaScript 属性 getter 可能在“验证字段”与“冻结数据”之间返回不一致内容。现在原图 `id/revision/width/height`、审核比例 `mmPerPx/sourceId/imageId/revision`、审核坐标原点 `x/y` 与轴向在入口只读取一次，并在本地不可变快照上验证、储存；回归用 getter 在第二次读取时返回 `Infinity/NaN/其他 ID`，确认不会污染已审核毫米结果。该加固仍不保证源 UI 真正有人审核，也不引入加密图像指纹或透视校正。
