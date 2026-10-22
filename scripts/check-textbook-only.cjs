@@ -14,9 +14,9 @@ for(const p of retired){
 for(const phrase of ['74 题','74 道','原创练习题','题型训练','第 2 章 · 课堂','旧版实验室','labs/v7.html','question-bank']){
  assert(!home.includes(phrase),'retired mock question/lesson still appears on the front page: '+phrase);
 }
-// The home is now a public geometry-tools entry; textbook data remains as a
-// source-audited legacy reference rather than a compulsory home chapter menu.
-assert(home.includes('DraftAI')&&home.includes('公开学习工具'),'public geometry home missing');
+// The home must present the AI-solving V3.1 direction; former textbook assets remain
+// source-audited references and must not become a compulsory course menu.
+assert(home.includes('DraftAI')&&home.includes('现有数学与作图基础组件')&&home.includes('产品主流程：识图 → 求解 → 自动作图'),'V3.1 public homepage positioning missing');
 assert(home.includes('href="public-use.html"'),'public source boundary must remain reachable');
 assert(home.includes('AI 识图尚未开放'),'AI availability must be truthful');
 const ctx={};vm.runInNewContext(read('knowledge/knowledge-data.js'),ctx);

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="DraftAI 公开几何学习工具的功能范围、资料保护与使用说明。">
+<meta name="description" content="DraftAI 个人 AI 工程制图自动解题与动态作图系统的当前能力、研发边界及隐私说明。">
 <meta name="theme-color" content="#eff5f0">
 <title>公开范围与使用说明 · DraftAI</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -22,24 +22,24 @@ summary{font-weight:750;cursor:pointer}
 </head>
 <body class="ui-refresh">
 <header class="site-topbar"><div class="site-topbar-inner">
-<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>工程制图 · 几何学习工具</small></span></a>
+<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>工程制图 · AI 自动解题与作图</small></span></a>
 <nav class="site-nav" aria-label="主要导航"><a href="index.html">返回首页</a><a href="labs/point-coach.html">投影陪练</a><a href="labs/free-modeler.html">几何实验室</a></nav>
 </div></header>
 <main>
 <h1>公开范围与使用说明</h1>
-<p>DraftAI 目前主要提供公开可访问的工程制图几何学习工具，适合在学习基础投影、尺规作图及几何约束时辅助理解。功能状态以实际页面为准。</p>
+<p>DraftAI 的唯一产品方向是个人 AI 工程制图自动解题与动态作图：识别题图、确认条件、通过数学引擎求解、生成真实作图步骤，再由 V5 绘制动画。项目仍在建设中，目前公开可用的是部分数学、投影与几何绘图基础模块；实际支持范围以各工具为准。</p>
 <section><h2>哪些内容是公开的？</h2>
-<p>公开构建仅包括首页、点投影陪练、自由度实验室、自由几何建模、圆弧相切教学演示，以及必要的基础绘图与约束算法。旧版教材课程、教材例题和用户提交习题的描图数据不随公开网站打包。</p>
-<p>部分几何演示为限定参数的教学模型，不能直接用作所有工程制图题目的标准答案。</p></section>
+<p>公开构建仅包括首页、部分投影/自由度/几何建模/圆弧求解工具，以及必要的基础绘图与约束算法。教材专属课程、例题及用户题图描图数据不随公开网站打包。现有实验工具将作为新版自动解题系统的可复用组件。</p>
+<p>部分几何演示为限定输入条件的数学实验，不能直接视作任意新工程图题目的完整答案。</p></section>
 <section><h2>AI 识图状态</h2><p><span class="state">尚未向公众开放</span></p>
-<p>目前没有提供可用的 AI 图片上传和自动解题入口。请勿将本网站的现有几何演示理解为已上线的通用 AI 解题服务。</p>
+<p>当前尚无可用的 AI 图片上传与陌生题端到端自动解题入口。研发遵循数学基础 → 二维求解 → 自动 ConstructionStep → V5 动画 → AI 图像识别接入的顺序。请勿将现有基础几何工具误认为已上线的通用识图解题服务。</p>
 <p>如未来启用 AI 识图，会先说明图片处理方式、模型服务、上传限制和相应的保护措施。</p></section>
 <section><h2>个人资料与浏览器记录</h2>
 <p>请不要向公开网站页面、公开 GitHub 仓库或公开问题反馈提交个人作业原图、完整受版权保护的教材扫描文件、密钥和其他私密资料。</p>
 <p>部分现有学习工具可能使用浏览器本地存储保存设置或学习进度。本地记录通常不会自动同步到其他设备，清除浏览器数据也可能移除这些记录。</p>
 <p>网站目前未提供统一的私人云端题库。未来如有个人资料上传功能，需先建立受保护的存储和身份验证机制。</p></section>
 <section><h2>教材与学习答案</h2>
-<p>知识索引用于帮助理解几何原理和作图方法。未经充分核实的原题和解答不应作为标准答案使用。</p>
+<p>旧知识索引及教材研究资料不是产品核心入口。未经真实几何与来源核验的原题和解答不作为标准答案使用。</p>
 <p>公开工具不提供完整教材 PDF 的公开下载。使用教材原图和其他受限制资料时，需要尊重来源与相关授权。</p></section>
 <section><h2>有问题怎么办？</h2>
 <p>如果遇到几何计算或界面错误，可通过项目的 <a href="https://github.com/07xh/engineering-drawing-study/issues" rel="noopener noreferrer">GitHub Issues</a> 反馈可公开的问题描述，但不要公开个人照片、课本扫描页、登录信息或密钥。</p>
