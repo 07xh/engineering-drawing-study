@@ -36,6 +36,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  let fieldReview=null;
  let nativeOcrUi=null;
  let geometryCandidates={line:[],curve:[]};
+ let arrowHints=[];
  function updateCandidateChoices(){
   const select=$('sourceCandidate'),previous=select.value;
   select.replaceChildren(option('','请选择检测候选'));
@@ -45,8 +46,10 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
     '图元')+' '+item.id+'（待核对）'));
   select.value=choices.some(x=>x.id===previous)?previous:'';
  }
- function receivedCandidates(group,values){
-  geometryCandidates[group]=values;updateCandidateChoices();
+ function receivedCandidates(group,values,sourceMeta){
+  geometryCandidates[group]=values;
+  if(group==='line')arrowHints=Array.isArray(sourceMeta?.arrowHints)?sourceMeta.arrowHints:[];
+  updateCandidateChoices();
   nativeOcrUi?.refreshAssociations();
  }
  let localVector=null;
@@ -319,6 +322,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   },
   getCurves:()=>geometryCandidates.curve,
   getLines:()=>geometryCandidates.line,
+  getArrowHints:()=>arrowHints,
   reviewedValue:$('ocrCorrectedValue'),reviewAccept:$('ocrNumericAccept'),
   reviewButton:$('confirmOcrNumeric'),getValues:values,
   getRevision:()=>session?.revision??0

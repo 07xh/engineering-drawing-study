@@ -11,13 +11,16 @@ const {rankLeaderLineLinks}=
  require('../recognition/dimension-leader-association.cjs');
 const {bentLeaderCandidates}=
  require('../recognition/bent-leader-candidates.cjs');
+const {leaderArrowHint}=
+ require('../recognition/arrow-leader-evidence.cjs');
 const {chooseOcrRadiusPrefill}=
  require('../recognition/reviewed-ocr-radius-prefill.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalNativeOcr({
  image,photoInput,photoClear,run,clear,overlay,status,selector,associate,
  sourceField,fieldReview,prefillButton,unitConfirmed,applyPrefill=()=>{},
- getCurves=()=>[],getLines=()=>[],recognize=detectBrowserDimensionCandidates,
+ getCurves=()=>[],getLines=()=>[],getArrowHints=()=>[],
+ recognize=detectBrowserDimensionCandidates,
  reviewedValue=null,reviewAccept=null,reviewButton=null,
  getValues=()=>({}),getRevision=()=>0
 }){
@@ -78,13 +81,15 @@ function attachLocalNativeOcr({
    '两段折线引出线候选（折点与箭头未验证）：'+
    bent.map(x=>x.firstLeaderCandidateId+' → '+x.secondLeaderCandidateId+
     ' → '+x.geometryCandidateId+
-    '，总端点误差 '+x.totalEndpointErrorPx+'px，转角 '+x.turnDegrees+'°')
+    '，总端点误差 '+x.totalEndpointErrorPx+'px，转角 '+x.turnDegrees+'°'+
+    (leaderArrowHint(x,getArrowHints())?'（终点有疑似V形笔画，非箭头证明）':''))
     .join('；')+'。':
    '未找到符合折点间隙与转角条件的两段引线。';
   const leaderText=leaders.length?
    '可能的尺寸引线（未验证箭头）'+leaders.map(x=>
     x.leaderCandidateId+' → '+x.geometryCandidateId+
-    '，端点误差 '+x.totalEndpointErrorPx+'px').join('；')+'。':
+    '，端点误差 '+x.totalEndpointErrorPx+'px'+
+    (leaderArrowHint(x,getArrowHints())?'（端点有疑似V形笔画，非箭头证明）':'')).join('；')+'。':
    '未找到可靠的尺寸引线候选（不代表图中没有引线）。';
   status.textContent='OCR 候选 '+dim.sourceText+
    ' → 提议半径 '+dim.proposedRadiusValue+
