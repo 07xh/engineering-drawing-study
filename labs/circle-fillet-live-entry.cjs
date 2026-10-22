@@ -884,6 +884,33 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  }});
 
  const svg=$('diagram');
+ // Select only already-painted, solver-authored V5 elements. This is disabled
+ // in student pen mode so taps never replace the student's own drawing.
+ svg.addEventListener('click',event=>{
+  if(learningMode!=='full')return;
+  const target=event.target;
+  const id=target?.getAttribute?.('data-v5-pick')||
+   target?.attributes?.['data-v5-pick'];
+  const rawStep=target?.getAttribute?.('data-v5-step')||
+   target?.attributes?.['data-v5-step'];
+  const index=Number(rawStep);
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  if(!id||!Number.isSafeInteger(index)||index<0||
+     !plan?.[index]?.actions.some(a=>a.id===id))return;
+  const kind=plan[index].actions.find(a=>a.id===id).kind;
+  pickedAction={id,step:index,kind,revision};
+  render();
+  paintCurrentConstruction();
+ });
+ $('paperMono').addEventListener('change',()=>{
+  $('drawingWrap').classList?.toggle?.('paper-mono',!!$('paperMono').checked);
+ });
+ $('paperFocus').addEventListener('change',()=>updatePaperView(true));
+ $('paperResetView').addEventListener('click',()=>{
+  $('paperFocus').checked=false;
+  pickedAction=null;paperCamera=fullCamera();
+  render();paintCurrentConstruction();
+ });
  function eventPoint(event){
   const rect=svg.getBoundingClientRect();
   if(!rect||!rect.width||!rect.height||
