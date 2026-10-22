@@ -81,3 +81,19 @@ test('browser QA explicitly offers opt-in OCR with honest unsupported and stale-
  assert.match(ui,/session\.acceptNativeOcr\(imageVersion,result\.candidates\)/);
  assert.doesNotMatch(ui,/\bfetch\s*\(|XMLHttpRequest|localStorage/);
 });
+
+test('unannotated geometry types are excluded rather than falsely counted as FP',()=>{
+ const q=setup();
+ q.addAnnotation({kind:'dimension',bbox:[15,20,45,20],text:'R12'});
+ const version=q.snapshot().imageVersion;
+ q.acceptNativeOcr(version,[sample()]);
+ const r=q.report();
+ assert.deepEqual(r.scoredKinds,['dimension']);
+ assert.equal(r.scoredCandidateCount,1);
+ assert.ok(r.candidateCount>r.scoredCandidateCount,
+  'actual raster circle proposals should not be treated as false OCR predictions');
+ assert.equal(r.metrics.micro.tp,1);
+ assert.equal(r.metrics.micro.fp,0);
+ assert.equal(r.requiresExhaustiveTruthPerScoredKind,true);
+ assert.ok(r.unscoredKinds.includes('circle'));
+});
