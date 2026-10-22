@@ -51,9 +51,10 @@ test('F2 changing branch or invalid revision cannot recycle a prior projection',
  const original=projectVerifiedPlan('segments',data,sheet,11);
  assert.equal(original.status,'ready');
  data.branchId='nonexistent-branch';
- const rejected=projectVerifiedPlan('segments',data,sheet,12);
- assert.equal(rejected.status,'not-verified');
- assert.deepEqual(rejected.steps,[]);
+ // Existing specialist solver rejects an unknown branch with an exception.
+ // An exception is fail-closed; never reinterpret it as an animated result.
+ assert.throws(()=>projectVerifiedPlan('segments',data,sheet,12),
+  /branchId is not an actual finite-contact candidate/);
  assert.equal(original.revision,11);
  assert.throws(()=>projectVerifiedPlan('segments',segment(),sheet,-1),/revision/);
 });
