@@ -7,6 +7,7 @@
 const {vector,multiplyFinite}=require('./euclidean-kernel.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 function affine(matrix,dimension){
+ if(dimension!==2&&dimension!==3)throw new TypeError('affine dimension must be 2 or 3');
  const n=dimension+1;
  if(!Array.isArray(matrix)||matrix.length!==n||
    !Array.from({length:n},(_,i)=>Object.hasOwn(matrix,i)&&
