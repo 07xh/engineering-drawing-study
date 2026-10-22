@@ -158,3 +158,89 @@ test('changing OS reduced-motion preference finishes display without high-motion
  assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
  assert.equal(get('syncPlay').disabled,true);
 });
+
+
+test('V5 next-step and previous-step controls seek verified guides, not unproved target',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ assert.equal(get('syncNext').disabled,false);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(get('syncStep').textContent,'未开始');
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().degreeStatus,'sample');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(get('syncPrevious').disabled,false);
+ assert.equal(get('syncProgress').disabled,false);
+ assert.equal(p.frames.size,0,'manual steps must not spawn an animation loop');
+ fire('syncPrevious','click');
+ assert.equal(Number(get('syncProgress').value),0);
+ assert.equal(get('syncPrevious').disabled,true);
+ fire('syncNext','click');
+ fire('syncNext','click');
+ fire('syncNext','click');
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 5 \/ 5 步/);
+ assert.equal(get('syncPlay').disabled,false);
+ assert.equal(get('syncNext').disabled,false,'result step is not yet complete');
+ assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
+ assert.ok(window.DrawingLabV2Controller.getSync().progress<1);
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().progress,1);
+ assert.equal(get('syncNext').disabled,true);
+ assert.equal(get('syncPlay').disabled,true);
+ assert.match(get('syncStep').textContent,/全部 5 步完成/);
+ fire('syncPrevious','click');
+ assert.match(get('syncStep').textContent,/第 5 \/ 5 步/);
+ assert.ok(window.DrawingLabV2Controller.getSync().progress<1);
+ assert.equal(get('syncNext').disabled,false);
+});
+test('V5 rewind while halfway through a guide restarts that mathematical stage',()=>{
+ const p=createPage(),{get,fire,advance,frames}=p;
+ fire('syncPlay','click');
+ advance(330);
+ const before=Number(get('syncProgress').value);
+ assert.ok(before>0);
+ fire('syncPrevious','click');
+ assert.equal(Number(get('syncProgress').value),0);
+ assert.equal(frames.size,0);
+ assert.match(get('syncPlay').textContent,/播放/);
+ fire('syncPlay','click');
+ advance(500);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0,'manual seek pauses RAF');
+});
+test('step controls invalidate stale geometry after each constraint change and block contradictions',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ fire('syncNext','click');
+ assert.ok(window.DrawingLabV2Controller.getSync().progress>0);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'projection',plane:'H',value:[15,10]}});
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(get('syncNext').disabled,false);
+ assert.equal(get('syncStep').textContent,'未开始');
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:12}});
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().degreeStatus,'unique');
+ assert.match(get('syncExplanation').textContent,/唯一确定的空间点/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:13}});
+ assert.equal(get('syncNext').disabled,true);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+ assert.match(get('syncCaption').textContent,/无解/);
+});
+test('mobile reduced-motion mode still supports discrete verified stages without RAF',()=>{
+ const p=createPage(),{get,fire,frames,setReduced}=p;
+ setReduced(true);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0);
+ assert.ok(Number(get('syncProgress').value)>0);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 3 \/ 5 步/);
+ fire('syncPrevious','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0);
+});
