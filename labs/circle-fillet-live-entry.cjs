@@ -36,6 +36,74 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
  let playTimer=null,stageClock=null,autoplayPlan=null,statusMessage='';
  const activeActionNodes=new Map();
+
+ let pickedAction=null;
+ let paperCamera={x:0,y:0,width:720,height:440};
+ const fullCamera=()=>({x:0,y:0,width:720,height:440});
+ const markSelectable=(node,action,index)=>{
+  if(!action?.id||!['line','circle','point','arc'].includes(action.kind))return node;
+  node.setAttribute('data-v5-pick',action.id);
+  node.setAttribute('data-v5-step',String(index));
+  node.setAttribute('data-v5-kind',action.kind);
+  if(pickedAction?.id===action.id&&pickedAction.revision===revision)
+   node.setAttribute('data-v5-selected','true');
+  return node;
+ };
+ const actionBounds=a=>{
+  const g=a?.geometry;
+  if(!g)return null;
+  let b;
+  if(a.kind==='line'&&g.from&&g.to)
+   b={minX:Math.min(g.from.x,g.to.x),maxX:Math.max(g.from.x,g.to.x),
+    minY:Math.min(g.from.y,g.to.y),maxY:Math.max(g.from.y,g.to.y)};
+  else if(['circle','arc','point'].includes(a.kind)&&g.center){
+   const radius=a.kind==='point'?12:g.radius;
+   b={minX:g.center.x-radius,maxX:g.center.x+radius,
+    minY:g.center.y-radius,maxY:g.center.y+radius};
+  }
+  return b&&Object.values(b).every(Number.isFinite)?b:null;
+ };
+ const selectedVisible=()=>{
+  if(learningMode!=='full')return null;
+  const frame=stageClock?.canRender(revision)?stageClock.snapshot():null;
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  if(!plan)return null;
+  if(pickedAction?.revision===revision){
+   const action=plan[pickedAction.step]?.actions.find(a=>a.id===pickedAction.id);
+   if(action&&(frame?frame.actionFractions?.[action.id]>0:stage>pickedAction.step))
+    return action;
+  }
+  if(!frame||frame.done)return null;
+  const current=plan[frame.activeStepIndex]?.actions||[];
+  return current.find(a=>frame.actionFractions?.[a.id]>0&&
+   frame.actionFractions?.[a.id]<1)||
+   current.find(a=>frame.actionFractions?.[a.id]>0)||null;
+ };
+ const updatePaperView=(snap=false)=>{
+  const action=$('paperFocus').checked?selectedVisible():null;
+  const b=actionBounds(action);
+  const zoom=b?Math.max(1,Math.min(1.7,720/(b.maxX-b.minX+70),
+   440/(b.maxY-b.minY+70))):1;
+  const target=b?MotionV5.focus(b,{width:720,height:440,zoom}):fullCamera();
+  paperCamera=MotionV5.cameraTowards(paperCamera,target,snap?1000:16,170,
+   snap||reducedMotion());
+  $('diagram').setAttribute?.('viewBox',[
+   paperCamera.x,paperCamera.y,paperCamera.width,paperCamera.height].join(' '));
+ };
+ const syncPaperPick=()=>{
+  if(learningMode!=='full'){
+   $('paperPicked').textContent='仅完整教学支持选择数学图线。';return;
+  }
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  const a=plan?.[pickedAction?.step]?.actions.find(v=>v.id===pickedAction?.id);
+  if(!a||pickedAction.revision!==revision){
+   $('paperPicked').textContent='点击已经绘出的辅助线、辅助圆或连接弧，可查看数学步骤。';
+   return;
+  }
+  $('paperPicked').textContent='已选第 '+(pickedAction.step+1)+' 步 · '+
+   ({line:'辅助线',circle:'辅助圆',point:'投影点',arc:'有向连接弧'}[a.kind]||'几何图元')+
+   '；选择只定位步骤，不改变数学结果。';
+ };
  const reducedMotion=()=>typeof window!=='undefined'&&
    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
  const stopPlayback=()=>{
@@ -233,7 +301,8 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   selector.value=(result.candidates??[]).some(c=>c.id===previous)?previous:'';
  }
  function compute(){
-  stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
+  stopPlayback();revision++;pickedAction=null;paperCamera=fullCamera();
+  strokes=[];redoStrokes=[];pointer=null;
   digitalActions=[];digitalError='';snappedCenter=null;studentCenterTap=null;
   centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
   centers=null;chosen=null;input=null;teaching=null;reasons=null;stage=0;hintStep=0;
