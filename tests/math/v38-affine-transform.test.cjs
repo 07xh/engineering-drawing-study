@@ -24,3 +24,16 @@ test('rejects projective, nonfinite and overflowing transforms',()=>{
  assert.throws(()=>transformPoint([[1,0,0],[0,Infinity,0],[0,0,1]],[1,2]),TypeError);
  assert.throws(()=>transformPoint([[1e308,0,0],[0,1,0],[0,0,1]],[1e308,0]),RangeError);
 });
+
+test('rejects sparse affine matrix rows and top-level holes',()=>{
+ const holeInRow=[[1,,0],[0,1,0],[0,0,1]];
+ const holeInMatrix=[[1,0,0],,[0,0,1]];
+ assert.throws(()=>affine(holeInRow,2),TypeError);
+ assert.throws(()=>affine(holeInMatrix,2),TypeError);
+});
+test('affine products fail closed when two nonzero factors multiply to zero',()=>{
+ const tiny=[[1e-200,0,0],[0,1,0],[0,0,1]];
+ assert.throws(()=>transformPoint(tiny,[1e-200,2]),/underflow/);
+ assert.throws(()=>transformDirection(tiny,[1e-200,2]),/underflow/);
+ assert.throws(()=>composeAffine(tiny,tiny,2),/underflow/);
+});
