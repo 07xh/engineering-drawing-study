@@ -10,6 +10,7 @@
 const {normalizeProblem,solveFiniteFillet}=
  require('../engines/constraints-2d/finite-fillet-gate.cjs');
 const {filletTimeline}=require('./verified-plan-v5-bridge.cjs');
+const {assertVerifiedArcParity}=require('./verified-v5-arc-parity.cjs');
 
 const typeToLegacy=Object.freeze({
  'two-segments':'segments',
@@ -92,8 +93,10 @@ function confirmedFilletTimeline(input){
   [travelFields[1]]:selection[travelFields[1]]
  };
  // The original 02 solvers, not OCR or the UI, recompute and verify G1.
+ const renderSheet=input.sheet===undefined?
+  {origin:{x:360,y:220},scale:8}:input.sheet;
  const playback=filletTimeline(typeToLegacy[problem.kind],
-  solverInput,input.sheet,problem.revision);
+  solverInput,renderSheet,problem.revision);
  if(playback.status!=='ready'||playback.mathematicallyVerified!==true)
   return blocked(problem.revision,'blocked',
    playback.reason||playback.originalLesson?.result?.reason||
@@ -115,6 +118,10 @@ function confirmedFilletTimeline(input){
     !actual||actual.geometry===null||
     !Array.isArray(playback.steps)||playback.steps.length<3)
   throw new RangeError('independent mathematical evidence disagrees with V5 plan');
+ // Verify actual V5 output still ends at both independently solved contacts.
+ // Never accept a pretty but mathematically reversed or displaced SVG arc.
+ assertVerifiedArcParity({sourceArc:arc,contacts:candidate.contacts,
+  sheet:renderSheet,action:actual});
  return {...playback,source:'V3.1 confirmed-mm geometry + verified 02 G1',
   proofScope:solved.proofScope,
   selectedBranchId:selectedId,
