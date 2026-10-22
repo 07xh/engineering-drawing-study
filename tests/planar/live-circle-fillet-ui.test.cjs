@@ -101,7 +101,9 @@ function interactiveFillet(){
   'addDigital','undoDigital','clearDigital','checkDigital',
   'digitalStatus','centerSnapStatus','learningProgress',
   'filletProof','filletProofTitle','filletProofWhy','filletProofBasis',
-  'filletProofCheck','filletProofEvidence','filletProofScope'];
+  'filletProofCheck','filletProofEvidence','filletProofScope',
+  'filletStrokeLive','filletStrokeTitle','filletStrokeWhy',
+  'filletStrokeBasis','filletStrokeCheck','filletStrokePercent'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -159,7 +161,8 @@ function interactiveFillet(){
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
   '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs'),
-  '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs')
+  '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs'),
+  '../workbench/verified-fillet-stroke-reasons.cjs':require('../../workbench/verified-fillet-stroke-reasons.cjs')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
  window:{matchMedia:()=>motion},require:id=>{
@@ -1323,4 +1326,77 @@ test('math input changes erase stale seeked construction and restore zero-time s
  assert.equal(moving().length,0);
  assert.equal(get('filletProgressLabel').textContent,'0%');
  assert.equal(get('filletProgress').value,'0');
+});
+
+test('V5 page narration tracks stroke #1, stroke #2 and reverse scrubbing without G1 leakage',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ assert.equal(get('filletStrokeLive').hidden,true);
+ get('filletProgress').value='60';fire('filletProgress','input');
+ assert.equal(get('filletStrokeLive').hidden,false);
+ assert.match(get('filletStrokeTitle').textContent,/第 1 条圆心辅助圆轨迹/);
+ assert.match(get('filletStrokeBasis').textContent,/轨迹/);
+ assert.match(get('filletStrokePercent').textContent,/第 1 步，第 1 \/ 2 笔/);
+ assert.doesNotMatch(get('filletStrokeCheck').textContent,/双侧有向 G1 验证通过/);
+ get('filletProgress').value='175';fire('filletProgress','input');
+ assert.match(get('filletStrokeTitle').textContent,/第 2 条圆心辅助圆轨迹/);
+ assert.match(get('filletStrokePercent').textContent,/第 1 步，第 2 \/ 2 笔/);
+ get('filletProgress').value='25';fire('filletProgress','input');
+ assert.match(get('filletStrokeTitle').textContent,/第 1 条圆心辅助圆轨迹/);
+ fire('filletRestart','click');
+ assert.equal(get('filletStrokeLive').hidden,true);
+});
+test('V5 frame-by-frame narration from play, pause and resumed clock stays aligned',()=>{
+ const p=interactiveFillet(),{get,fire,advance}=p;
+ fire('playPause','click');advance(300);
+ assert.match(get('filletStrokeTitle').textContent,/第 1 条圆心辅助圆轨迹/);
+ const first=get('filletStrokePercent').textContent;
+ advance(520);
+ assert.match(get('filletStrokeTitle').textContent,/第 2 条圆心辅助圆轨迹/);
+ assert.notEqual(get('filletStrokePercent').textContent,first);
+ fire('playPause','click');
+ const paused=get('filletStrokePercent').textContent;
+ advance(5000);
+ assert.equal(get('filletStrokePercent').textContent,paused);
+ fire('playPause','click');advance(90);
+ assert.notEqual(get('filletStrokePercent').textContent,paused);
+});
+test('V5 final proof and residual appear only after the selected G1 arc is COMPLETE',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ for(const [id,v] of [['branch','center-1'],['direction','cw'],
+  ['travel1','ccw'],['travel2','ccw']]){
+  get(id).value=v;fire(id,'change');
+ }
+ get('filletProgress').value='850';fire('filletProgress','input');
+ assert.match(get('filletStrokeTitle').textContent,/有向连接圆弧/);
+ assert.doesNotMatch(get('filletStrokeCheck').textContent,/双侧有向 G1 验证通过|最大残差/);
+ assert.doesNotMatch(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+ get('filletProgress').value='1000';fire('filletProgress','input');
+ assert.match(get('filletStrokeCheck').textContent,/双侧有向 G1 验证通过/);
+ assert.match(get('filletProofEvidence').textContent,/双侧有向 G1 验证通过/);
+ get('filletProgress').value='850';fire('filletProgress','input');
+ assert.doesNotMatch(get('filletStrokeCheck').textContent,/双侧有向 G1 验证通过/);
+});
+test('V5 explanation source resets on math edits, changing to hint or own drawing',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('filletProgress').value='150';fire('filletProgress','input');
+ assert.equal(get('filletStrokeLive').hidden,false);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.equal(get('filletStrokeLive').hidden,true);
+ get('filletProgress').value='150';fire('filletProgress','input');
+ assert.equal(get('filletStrokeLive').hidden,false);
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(get('filletStrokeLive').hidden,true);
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.equal(get('filletStrokeLive').hidden,true);
+ get('learningMode').value='full';fire('learningMode','change');
+ assert.equal(get('filletStrokeLive').hidden,true);
+});
+test('V5 mixed geometry has real line and auxiliary-circle narration without an unverified arc',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('filletProgress').value='60';fire('filletProgress','input');
+ assert.match(get('filletStrokeTitle').textContent,/有限线段的半径偏移线/);
+ get('filletProgress').value='450';fire('filletProgress','input');
+ assert.match(get('filletStrokeTitle').textContent,/同心辅助圆/);
+ assert.doesNotMatch(get('filletStrokeCheck').textContent,/G1 验证通过/);
 });
