@@ -377,7 +377,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   stage=Math.max(0,stage-1);render()});
  $('next').addEventListener('click',()=>{
   const max=$('modeSelect').value==='segments'
-   ?(chosen?.status==='selected'?6:
+   ?(teaching?.status==='ready'?teaching.steps.length:
       (centers?.candidates?.length||centers?.continuousFamilies?.length?3:0))
    :(centers?4:0);
   if(learningMode!=='full')return;
@@ -400,11 +400,17 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   if(playTimer!==null){stopPlayback();render();return;}
   if(learningMode!=='full'||!centers||reducedMotion())return;
   const max=$('modeSelect').value==='segments'
-   ?(chosen?.status==='selected'?6:centers.candidates.length||centers.continuousFamilies.length?3:0):4;
+   ?(teaching?.status==='ready'?teaching.steps.length:
+      (centers.candidates.length||centers.continuousFamilies.length?3:0)):4;
   if(stage>=max)return;
-  const timeline=TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
-   id:'fillet-'+(i+1),actions:[{id:'construction-'+(i+1),kind:'highlight',durationMs:1200}]
-  })),{gapMs:0});
+  // A mathematically verified branch uses the real R1/V5 action durations,
+  // not fabricated highlight-only animation steps. Exploratory candidate
+  // browsing remains the legacy discrete teaching preview.
+  const proofPlayback=teaching?.status==='ready'&&teaching.revision===revision;
+  const timeline=proofPlayback?teaching.timing:
+   TimelineV5.compileTimeline(Array.from({length:max},(_,i)=>({
+    id:'fillet-'+(i+1),actions:[{id:'construction-'+(i+1),kind:'highlight',durationMs:1200}]
+   })),{gapMs:0});
   const clock=()=>performance.now();
   stageClock=TimelineV5.createPlayer(timeline,{
    speed:Number($('animationSpeed').value),revision});
@@ -414,8 +420,11 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     stopPlayback();render();return;
    }
    const snapshot=stageClock.snapshot(clock());
-   if(snapshot.completedIds.length!==stage){
-    stage=Math.min(max,snapshot.completedIds.length);
+   const finishedSteps=proofPlayback
+    ?timeline.steps.filter(step=>step.endMs<=snapshot.elapsedMs).length
+    :snapshot.completedIds.length;
+   if(finishedSteps!==stage){
+    stage=Math.min(max,finishedSteps);
     if(stage>=max){stopPlayback();render();return;}
     render();
    }
