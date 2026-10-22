@@ -946,7 +946,7 @@ test('finite known circle arc removes excluded candidate ID and never fabricates
  assert.deepEqual(get('branch').children.map(x=>x.value),['']);
  assert.equal(collect().filter(n=>n.attributes['data-verified-arc']==='true').length,0);
 });
-test('mixed student draw mode is visibly unsupported and cannot reuse other types mathematics grades',()=>{
+test('mixed student draw mode grades true source-specific tangent taps and pen arc, not other tools',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
  get('modeSelect').value='segment-circle';fire('modeSelect','change');
  get('branch').value='candidate-1';fire('branch','change');
@@ -954,15 +954,87 @@ test('mixed student draw mode is visibly unsupported and cannot reuse other type
  get('mixLineTravel').value='forward';fire('mixLineTravel','change');
  get('mixCircleTravel').value='cw';fire('mixCircleTravel','change');
  get('learningMode').value='draw';fire('learningMode','change');
- assert.equal(get('drawTool').disabled,true);
- assert.equal(get('checkDigital').disabled,true);
- assert.equal(get('checkDraw').disabled,true);
- assert.match(get('drawStatus').textContent,/尚未支持/);
- assert.match(get('learningProgress').textContent,/暂无学生联合评分/);
- get('diagram').listeners.pointerdown({pointerId:9,button:0,clientX:400,clientY:220});
+ assert.equal(get('drawTool').disabled,false);
+ assert.equal(get('drawTool').value,'tangent');
+ assert.equal(get('checkDigital').disabled,true,'digital ruler is still unsupported in mixed mode');
+ assert.equal(get('checkDraw').disabled,false);
+ assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ const input={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
+  circle:{center:{x:0,y:5},radius:8},filletRadius:10,side:1,
+  branchId:'candidate-1',direction:'ccw',
+  lineTravel:'forward',knownCircleTravel:'cw'};
+ const solved=require('../../engines/planar/directed-segment-circle-fillet.cjs')
+  .chooseDirectedSegmentCircleFillet(input);
+ assert.equal(solved.status,'selected');assert.equal(solved.g1Verified,true);
+ const board=get('diagram'),ev=(q,id)=>({
+  pointerId:id,button:0,clientX:q.x,clientY:q.y
+ }),toSheet=m=>({x:360+8*m.x,y:220-8*m.y});
+ get('digitalSource').value='first';
+ board.listeners.pointerdown(ev(toSheet(solved.contacts.first),5));
+ get('digitalSource').value='second';
+ board.listeners.pointerdown(ev(toSheet(solved.contacts.second),6));
+ assert.match(get('drawStatus').textContent,/学生切点 2 \/ 2/);
+ assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ assert.equal(collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true').length,0);
+ get('drawTool').value='arc';fire('drawTool','change');
+ assert.equal(get('checkDraw').disabled,false);
+ const g=solved.geometry.data;
+ const points=Array.from({length:49},(_,i)=>{
+  const a=(g.startAngle+(g.endAngle-g.startAngle)*i/48)*Math.PI/180;
+  return toSheet({x:g.center.x+g.radius*Math.cos(a),y:g.center.y+g.radius*Math.sin(a)});
+ });
+ board.listeners.pointerdown(ev(points[0],7));
+ for(let i=1;i<48;i++)board.listeners.pointermove(ev(points[i],7));
+ board.listeners.pointerup(ev(points[48],7));
+ assert.match(get('drawStatus').textContent,/手绘连接弧数学验证通过/);
+ assert.match(get('learningProgress').textContent,/2 \/ 2/);
+ assert.match(get('learningProgress').textContent,/不包括辅助尺规、圆心吸附或完整教材题/);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
+ fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 2/);
+ get('mixR').value='9';fire('mixR','input');
+ assert.match(get('learningProgress').textContent,/0 \/ 2/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
  get('learningMode').value='hint';fire('learningMode','change');
  for(let i=0;i<5;i++)fire('hintNext','click');
- assert.equal(get('hintCounter').textContent,'5 / 5');
  assert.equal(collect().filter(n=>n.attributes['data-verified-arc']==='true').length,0);
+});
+test('mixed source finite arc filters branches in draw mode and forbids impossible taps',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('mixArcExtent').value='finite';fire('mixArcExtent','change');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['','candidate-1']);
+ get('branch').value='candidate-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ const args={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
+  circle:{center:{x:0,y:5},radius:8,arc:{startAngle:155,endAngle:175,direction:'ccw'}},
+  filletRadius:10,side:1};
+ const c=require('../../engines/planar/segment-circle-fillet.cjs')
+  .finiteSegmentCircleFillets(args).candidates[0];
+ const board=get('diagram');
+ for(const [id,side,where] of [[1,'first',c.lineContact],[2,'second',c.circleContact]]){
+  get('digitalSource').value=side;
+  board.listeners.pointerdown({pointerId:id,button:0,
+   clientX:360+8*where.x,clientY:220-8*where.y});
+ }
+ assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ get('mixArcStart').value='60';get('mixArcEnd').value='90';
+ fire('mixArcStart','input');
+ assert.deepEqual(get('branch').children.map(x=>x.value),['']);
+ assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
+});
+test('mixed student drawing cannot use unsupported straight-line or center snap tools',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='snap';fire('drawTool','change');
+ assert.equal(get('drawTool').value,'tangent');
+ get('drawTool').value='line';fire('drawTool','change');
+ assert.equal(get('drawTool').value,'tangent');
+ assert.equal(get('addDigital').disabled,true);
+ const board=get('diagram');
+ board.listeners.pointerdown({pointerId:3,button:0,clientX:400,clientY:230});
+ assert.match(get('drawStatus').textContent,/先选择题目实际存在的圆心分支/);
+ assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
 });
