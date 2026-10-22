@@ -10,16 +10,19 @@ const {validateSolveResult}=require('../contracts/solve-result.js');
 const {prismPlaneSection}=require('../../engines/spatial/sections/rectangular-prism-plane.cjs');
 const {pyramidPlaneSection}=require('../../engines/spatial/sections/rectangular-pyramid-plane.cjs');
 const {intersectCylinderSidePlane}=require('../../engines/spatial/sections/axis-cylinder-plane.cjs');
+const {planeSphereSurfaceSection}=require('../../engines/spatial/sections/sphere-plane.cjs');
+const M0=require('../numeric/euclidean-kernel.cjs');
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
 const known=new Set(['ready','none','clipped','undetermined','degenerate',
- 'boundary-degenerate','two-generators','tangent-generator']);
-const positive=new Set(['ready','two-generators','tangent-generator']);
+ 'boundary-degenerate','two-generators','tangent-generator','tangent-point']);
+const positive=new Set(['ready','two-generators','tangent-generator','tangent-point']);
 const solverNames=Object.freeze({
  'rectangular-prism':'rectangular-prism-plane',
  'rectangular-pyramid':'rectangular-pyramid-plane',
- 'cylinder-lateral':'axis-cylinder-plane'
+ 'cylinder-lateral':'axis-cylinder-plane',
+ 'sphere-surface':'sphere-plane'
 });
 const xyz=p=>record(p)&&['x','y','z'].every(k=>finite(p[k]));
 function checkResult(result,solverId,scope){
@@ -56,6 +59,7 @@ function packet(result,solverId,scope,internallyVerified){
  return Object.freeze({...evidence,diagnostics:Object.freeze(diagnostics),
   modelUnit:internallyVerified?'mm':null,legacyStatus:result.status,
   geometryVerifiedWithinLegacyScope:internallyVerified,
+  geometryVerifiedWithinSpecialistScope:internallyVerified,
   sourceMethod:internallyVerified?'internal-specialist-recomputation':'untrusted-caller-result',
   sourceProblemConfirmed:false,visibilityVerified:false,
   proofOfGlobalUniqueness:false});
@@ -104,6 +108,67 @@ function assertCylinderProof(result){
  }
 }
 /**
+ * Independently audit the 04 sphere specialist's bounded analytic geometry.
+ * All operations reuse the shared M0 numerical kernel. The result still
+ * cannot become a globally-unique SolveResult or a verified V5 plan.
+ */
+function assertSphereProof(result,sphere,plane){
+ const isCircle=result.status==='ready';
+ const isTangent=result.status==='tangent-point';
+ if(!isCircle&&!isTangent||
+    result.sourceSphereVerified!==true||result.sourcePlaneVerified!==true||
+    result.globallyUnique!==null||result.modelUnit!=='mm')
+  throw new TypeError('sphere surface result lacks scoped source proof');
+ const center=sphere.center,radius=sphere.radiusMm;
+ const points=result.points;
+ if(!record(center)||!xyz(center)||!record(plane.point)||!xyz(plane.point)||
+    !record(plane.normal)||!xyz(plane.normal)||
+    !finite(radius)||radius<=0||!Array.isArray(points)||
+    points.length<(isCircle?17:1)||points.length>(isCircle?129:1)||
+    points.some(p=>!xyz(p)))
+  throw new TypeError('sphere source or checked points are invalid');
+ if(isCircle){
+  if(result.geometryKind!=='sphere-surface-plane-circle'||
+     !record(result.curve)||result.curve.kind!=='analytic-circle-3d'||
+     result.curve.analyticCurveVerified!==true||result.curve.closed!==true||
+     result.curve.sampledPolylineOnly!==true||
+     !xyz(result.curve.center)||!xyz(result.curve.axisU)||!xyz(result.curve.axisV)||
+     !xyz(result.curve.normal)||!finite(result.curve.radiusMm)||result.curve.radiusMm<=0)
+   throw new TypeError('sphere circle lacks analytic section invariants');
+ }else if(result.geometryKind!=='sphere-surface-plane-tangency'||
+          !xyz(result.point)||result.curve!==null)
+  throw new TypeError('sphere tangent is not one verified source point');
+ const scale=Math.max(1,radius,
+  ...['x','y','z'].map(k=>Math.abs(center[k])),
+  ...['x','y','z'].map(k=>Math.abs(plane.point[k])));
+ const tol=Math.max(1e-8*Math.max(1,radius),64*Number.EPSILON*scale)*4;
+ const centerVector=[center.x,center.y,center.z];
+ const planeVector=[plane.point.x,plane.point.y,plane.point.z];
+ const normalVector=[plane.normal.x,plane.normal.y,plane.normal.z];
+ const normal=M0.normalize(normalVector);
+ const signed=M0.dot(M0.subtract(centerVector,planeVector),normal);
+ const foot=centerVector.map((c,k)=>c-signed*normal[k]);
+ if(isCircle){
+  if(Math.abs(M0.norm(M0.subtract(
+   [result.curve.center.x,result.curve.center.y,result.curve.center.z],foot)))>tol)
+   throw new TypeError('sphere section center fails independent plane projection');
+  const expectedRadius=Math.sqrt(Math.max(0,(radius-Math.abs(signed))*(radius+Math.abs(signed))));
+  if(!finite(expectedRadius)||Math.abs(result.curve.radiusMm-expectedRadius)>tol)
+   throw new TypeError('sphere circle radius fails independent intersection identity');
+ }else {
+  if(M0.norm(M0.subtract([result.point.x,result.point.y,result.point.z],foot))>tol)
+   throw new TypeError('sphere tangent point differs from plane foot');
+ }
+ for(const p of points){
+  const v=[p.x,p.y,p.z];
+  const radiusResidual=Math.abs(M0.norm(M0.subtract(v,centerVector))-radius);
+  const planeResidual=Math.abs(M0.dot(M0.subtract(v,planeVector),normal));
+  if(!finite(radiusResidual)||!finite(planeResidual)||
+     Math.max(radiusResidual,planeResidual)>tol)
+   throw new TypeError('sphere point fails independent source-surface residual');
+ }
+}
+/**
  * Recomputes a section internally from explicit model-millimetre input.
  * No caller-provided result or forged solver callback is accepted. Source
  * photo / ProblemDraft confirmation still belongs to the upstream gate.
@@ -119,18 +184,22 @@ function solveVerifiedSectionEvidence(input){
   throw new TypeError('explicit model-mm-3d/mm input required');
  if(!record(solid)||!record(plane))
   throw new TypeError('solid and plane are required');
- if(samples!==undefined&&kind!=='cylinder-lateral')
-  throw new TypeError('samples only apply to cylinder lateral solver');
+ if(samples!==undefined&&!['cylinder-lateral','sphere-surface'].includes(kind))
+  throw new TypeError('samples only apply to analytic curve solvers');
+ const options=samples===undefined?{}:{samples};
  const result=kind==='rectangular-prism'?prismPlaneSection(solid,plane):
   kind==='rectangular-pyramid'?pyramidPlaneSection(solid,plane):
-   intersectCylinderSidePlane(solid,plane,samples===undefined?{}:{samples});
- const scope=kind==='cylinder-lateral'?
-  'finite-cylinder-lateral-plane-intersection':'finite-solid-plane-section-perimeter';
+  kind==='cylinder-lateral'?intersectCylinderSidePlane(solid,plane,options):
+   planeSphereSurfaceSection(solid,plane,options);
+ const scope=kind==='cylinder-lateral'? 'finite-cylinder-lateral-plane-intersection':
+  kind==='sphere-surface'?'sphere-surface-plane-intersection':
+  'finite-solid-plane-section-perimeter';
  const solverId=solverNames[kind];
  checkResult(result,solverId,scope);
  if(!positive.has(result.status)||result.verified!==true)
   return packet(result,solverId,scope,false);
  if(kind==='cylinder-lateral')assertCylinderProof(result);
+ else if(kind==='sphere-surface')assertSphereProof(result,solid,plane);
  else assertPolygonProof(result);
  return packet(result,solverId,scope,true);
 }
