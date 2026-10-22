@@ -37,12 +37,15 @@ function projectVerifiedPlan(kind,input,sheet,revision=0){
   const intent=Object.freeze({
    schema:'draftai-r1-intent-projection/0.1',
    id:step.id,purpose:step.rule||step.id,
-   inputEntityIds:Object.freeze([...step.dependsOn]),
+   // Step dependencies are not geometry entity identifiers.
+   inputEntityIds:Object.freeze([]),
    outputEntityIds:Object.freeze(step.actions.map(a=>a.id)),
    dependsOn:Object.freeze([...step.dependsOn]),
    sourceSolver:plan.solver,sourceRevision:plan.revision,
    branchId:plan.result?.selectedBranch??null,
+   // Do not fabricate persistent result IDs when solver does not supply one.
    evidenceRef:step.provenance?.solverResultId||plan.result?.resultId||null,
+   evidenceSource:step.provenance?.source||plan.solver||null,
    explanation:step.explanation
   });
   intents.push(intent);
