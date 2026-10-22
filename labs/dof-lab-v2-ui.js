@@ -1,16 +1,39 @@
 /* 图学课堂自由度实验室2.0：单点线性约束编辑器 + 共用双视图状态。 */
 (function(){'use strict';
-const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.DrawingLabSheet,Spatial=window.DrawingLabSpatialPreview,Sync=window.DrawingLabSyncV5;
+const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.DrawingLabSheet,Spatial=window.DrawingLabSpatialPreview,Sync=window.DrawingLabSyncV5,Reasons=window.DrawingLabStepReasons;
 const $=id=>document.getElementById(id);
 if(!Store||!Geom||!Sheet||!Spatial){$('uiStatus').textContent='实验室脚本未完整加载';return}
 let state=Store.create(),history=[],editing=null,selectedVertex='',yaw=.72,pitch=.52,zoom=1,drag=null;
-let viewer=null,syncPlayer=null,syncPlan=null,syncRevision=0,syncFrame=null;
+let viewer=null,syncPlayer=null,syncPlan=null,syncLesson=null,syncRevision=0,syncFrame=null;
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 function haltSync(){
  if(!Sync)return;
  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
  if(syncPlayer)syncPlayer.invalidate(syncRevision+1,performance.now());
- syncPlayer=null;syncPlan=null;syncRevision++;
+ syncPlayer=null;syncPlan=null;syncLesson=null;syncRevision++;
+}
+function showProof(frame){
+ const details=Reasons?.at(syncLesson,frame);
+ const report=details?.ready?null:Store.compute(state);
+ const result=report?.analysis?.result;
+ const available=details?.ready===true;
+ $('syncReasonTitle').textContent=available?details.title:
+  result?.inconsistent?'约束冲突 · 无可行解':'等待播放 · 投影解释准备就绪';
+ $('syncReasonWhy').textContent=available?details.why:
+  '点击「下一步」或播放，按照第一角法逐条展示经过核验的联系线。';
+ $('syncReasonBasis').textContent=available?details.basis:
+  '同名坐标、V/W 等高与 H/W 等深、45° 辅助转移。';
+ $('syncReasonDof').textContent=available?details.freedom:
+  result?.inconsistent?'约束矛盾，不能把无解记作 0 个自由度。':
+  '当前独立约束秩 '+(result?.rank??'—')+
+  '，剩余自由度 '+(result?.degrees??'—')+
+  '；辅助作图线不会新增几何条件。';
+ $('syncReasonCheck').textContent=available?details.check:
+  result?.inconsistent?'无解：禁止播放结果动画。':
+  '尚未播放；开始后逐步显示几何关系校验结果。';
+ $('syncReasonEvidence').textContent=available?details.evidence:
+  result?.inconsistent?'请修改冲突的已知条件。':
+  '用户约束的独立性由线性约束求解器核验，不按辅助线数量计算。';
 }
 function syncStatusVisual(time){
  if(!Sync){
@@ -19,9 +42,10 @@ function syncStatusVisual(time){
   $('syncNext').disabled=true;
   $('syncStep').textContent='静态模式';
   $('syncExplanation').textContent='本环境未加载 V5 同步播放器，原有自由度计算与静态投影仍可使用。';
-  return false;
+  showProof();return false;
  }
  const frame=syncPlayer?.snapshot(time),visual=Sync.presentation(syncPlan,frame);
+ showProof(frame);
  Sync.paintSheet($('sheet'),syncPlan,visual);
  Sync.paintSpace($('space'),viewer,visual);
  const valid=visual.ready;
@@ -60,6 +84,14 @@ function ensureSync(){
  const plan=Sync.build(report,{revision:syncRevision});
  if(plan.status!=='ready'){
   $('syncExplanation').textContent=plan.reason;return false;
+ }
+ if(Reasons){
+  const lesson=Reasons.build(report,plan);
+  if(lesson.status!=='ready'){
+   $('syncExplanation').textContent=lesson.reason;
+   return false;
+  }
+  syncLesson=lesson;
  }
  syncPlan=plan;
  syncPlayer=Sync.createPlayer(plan,{speed:Number($('syncSpeed').value)});
