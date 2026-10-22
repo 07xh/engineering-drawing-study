@@ -22,6 +22,8 @@ test('F2 real verified finite-segment fillet yields intent DAG and existing V5',
  for(const [i,intent] of projected.intents.entries()){
   assert.deepEqual(intent.dependsOn,source.steps[i].dependsOn);
   assert.deepEqual(intent.outputEntityIds,source.steps[i].actions.map(a=>a.id));
+  assert.deepEqual(intent.inputEntityIds,[],'step IDs must not masquerade as geometry entities');
+  assert.equal(typeof intent.evidenceSource,'string');
   assert.equal(intent.sourceRevision,12);
   assert.equal(intent.sourceSolver,source.solver);
  }
