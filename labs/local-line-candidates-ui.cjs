@@ -53,7 +53,9 @@ function attachLocalLineCandidates({
    }
    overlay.hidden=false;
    onCandidates(lines.map(x=>mapLeaderCandidate(x,
-    {width,height},{width:originalW,height:originalH})));
+    {width,height},{width:originalW,height:originalH})),{
+     raw:lines,analysis:{width,height},original:{width:originalW,height:originalH}
+    });
    status.textContent='本地检测得到 '+lines.length+
     ' 条直线候选（紫色虚线）；仅供对照，可能漏检或误检。' +
     '不能直接作为毫米几何或标准答案，仍需人工核对。';

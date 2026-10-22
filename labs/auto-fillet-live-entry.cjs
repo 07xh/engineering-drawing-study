@@ -7,6 +7,7 @@ const {createConfirmedFilletSession}=
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
 const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
+const {attachLocalRasterReview}=require('./local-raster-geometry-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
@@ -49,6 +50,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   nativeOcrUi?.refreshAssociations();
  }
  let localVector=null;
+ let rasterReview=null;
  function stopClock(){
   if(raf!==null){cancelAnimationFrame(raf);raf=null;}
  }
@@ -128,6 +130,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  function recompute(){
   if(!session)return;
   localVector?.markFormEdited();
+  rasterReview?.markFormEdited();
   stopClock();
   refreshCandidates();
   const current=input(),old=session.revision;
@@ -287,13 +290,17 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectLines'),
   clear:$('clearLines'),overlay:$('detectedLineOverlay'),
-  status:$('lineStatus'),onCandidates:items=>receivedCandidates('line',items)
+  status:$('lineStatus'),onCandidates:(items,raw)=>{
+   receivedCandidates('line',items);rasterReview?.update('line',raw);
+  }
  });
  attachLocalCurveCandidates({
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectCurves'),
   clear:$('clearCurves'),overlay:$('detectedCurveOverlay'),
-  status:$('curveStatus'),onCandidates:items=>receivedCandidates('curve',items)
+  status:$('curveStatus'),onCandidates:(items,raw)=>{
+   receivedCandidates('curve',items);rasterReview?.update('curve',raw);
+  }
  });
  nativeOcrUi=attachLocalNativeOcr({
   image:$('photoPreview'),photoInput:$('problemPhoto'),
@@ -346,6 +353,33 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   }
  });
  exportUi.update(session.snapshot(performance.now()).ready);
+ rasterReview=attachLocalRasterReview({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),kind:$('kind'),
+  first:$('rasterFirst'),second:$('rasterSecond'),
+  preview:$('rasterDraftPreview'),edits:$('rasterEdits'),
+  originX:$('rasterOriginX'),originY:$('rasterOriginY'),
+  mmPerPx:$('rasterMmPerPx'),yAxis:$('rasterYAxis'),
+  filletRadiusMm:$('rasterFilletRadius'),
+  accepted:$('rasterAccept'),apply:$('rasterApply'),
+  status:$('rasterStatus'),
+  onApply:result=>{
+   // A photo import must not carry over previously accepted source reviews.
+   // Require each current numeric field to be confirmed from the photo.
+   if(!$('sourceReviewEnabled').checked){
+    $('sourceReviewEnabled').checked=true;
+    $('sourceReviewEnabled').dispatchEvent(new Event('change',{bubbles:true}));
+   }
+   for(const [name,value] of Object.entries(result.fields)){
+    const control=$('geo-'+name);
+    if(!control)throw new RangeError('missing current field '+name);
+    control.value=String(value);
+    fieldReview?.edited(name);
+   }
+   for(const name of ['branch','direction','travel1','travel2'])$(name).value='';
+   recompute();
+  }
+ });
  localVector=attachLocalVectorReview({
   file:$('vectorSvg'),kind:$('kind'),first:$('vectorFirst'),
   second:$('vectorSecond'),mmPerPx:$('vectorMmPerPx'),
@@ -366,5 +400,5 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    recompute(); // #248 session invalidates the old verified timeline before solving.
   }
  });
- window.addEventListener('pagehide',()=>{localVector?.release();exportUi?.release();});
+ window.addEventListener('pagehide',()=>{localVector?.release();rasterReview?.release();exportUi?.release();});
 })();
