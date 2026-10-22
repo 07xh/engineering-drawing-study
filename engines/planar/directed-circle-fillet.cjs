@@ -67,8 +67,12 @@ function chooseDirectedFillet(args={}){
    circles:[solved.auxiliary.firstLocus,solved.auxiliary.secondLocus]},
   {id:'center-intersection',role:'auxiliary',reason:'两条圆心轨迹的交点产生全部候选',
    candidateIds:ids,selectedId:candidate.id,center:{...candidate.center}},
-  {id:'contact-points',role:'auxiliary',reason:'圆心连线上的半径关系确定两个切点',
-   contacts:candidate.contacts,maxResidual:candidate.maxResidual},
+  {id:'contact-points',role:'auxiliary',
+   reason:solved.finiteSourceArcCount?
+    '圆心连线确定切点，并逐一验证切点位于给定有限圆弧范围内':
+    '圆心连线上的半径关系确定两个切点',
+   contacts:candidate.contacts,maxResidual:candidate.maxResidual,
+   sourceArcRangeVerified:candidate.sourceArcRangeVerified===true},
   {id:'directed-fillet',role:'result',reason:strict?
    '显式验证连接弧与两条已知轮廓的有向 G1 连续性':
    '仅验证无向相切；未提供两条原轮廓的走向，不能宣称有向 G1 已证明',
@@ -78,6 +82,9 @@ function chooseDirectedFillet(args={}){
   center:candidate.center,contacts:candidate.contacts,
   geometry:g,steps,sweepDegrees:sweep,
   maxTangencyResidual:candidate.maxResidual,maxG1Mismatch:strict?maxG1Mismatch:null,
+  sourceFiniteArcCount:solved.finiteSourceArcCount||0,
+  sourceArcRangeVerified:candidate.sourceArcRangeVerified===true||
+    !solved.finiteSourceArcCount,
   g1Verified:strict,reason:strict?'切点与两端有向 G1 均已数学检验':'尚未验证已知轮廓进入/离开方向'};
 }
 module.exports={chooseDirectedFillet};
