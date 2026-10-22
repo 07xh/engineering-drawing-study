@@ -6,6 +6,10 @@ const {imagePointFromClient,createPhotoQaGesture}=
  require('./photo-qa-pointer-geometry.cjs');
 const {createPhotoTouchCheck}=
  require('./photo-qa-touch-check.cjs');
+const {scrollToImagePoint}=
+ require('./photo-qa-viewport-scroll.cjs');
+const {buildTouchDiagnosticReport}=
+ require('./photo-qa-touch-report.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {fingerprintLocalPhoto,fingerprintManualTruth}=
@@ -281,6 +285,19 @@ const {createAnnotationPack}=
  }
  $('qaModePan').addEventListener('click',()=>setInteractionMode('pan'));
  $('qaModeDraw').addEventListener('click',()=>setInteractionMode('annotate'));
+ function focusTouchTarget(){
+  const check=touchCheck.snapshot();
+  const imageSize=session.snapshot().image;
+  if(check.status!=='active'||!check.target||!imageSize)return;
+  const rendered=overlay.getBoundingClientRect();
+  const position=scrollToImagePoint(imageSize,check.target,{
+   width:rendered.width,height:rendered.height
+  },{width:stage.clientWidth,height:stage.clientHeight});
+  if(position){
+   stage.scrollLeft=position.left;
+   stage.scrollTop=position.top;
+  }
+ }
  function setZoom(value){
   zoom=Math.min(3,Math.max(1,Number(value)||1));
   // Changing the image display width scales both image and SVG equally.
@@ -291,6 +308,7 @@ const {createAnnotationPack}=
   if(zoom>1&&interactionMode==='annotate'&&touchCheck.snapshot().status!=='active')
    setInteractionMode('pan');
   else draw();
+  focusTouchTarget();
  }
  $('qaZoomIn').addEventListener('click',()=>setZoom(zoom+.25));
  $('qaZoomOut').addEventListener('click',()=>setZoom(zoom-.25));
@@ -319,11 +337,23 @@ const {createAnnotationPack}=
   gesture.reset();setInteractionMode('annotate');
   touchCheckStatus(touchCheck.start(snap.image));
   draw();
+  focusTouchTarget();
   message('五点触控自检已开始：请在图中依次点击橙色十字。');
  });
  $('qaTouchStop').addEventListener('click',()=>{
   gesture.reset();touchCheckStatus(touchCheck.cancel());draw();
  });
+ $('qaTouchExport').addEventListener('click',()=>{
+  try{
+   const report=buildTouchDiagnosticReport(touchCheck.snapshot());
+   downloadJson(report,'draftai-touch-diagnostic.json');
+   message('已主动导出五点偏差数据；不含原图、原文件名或设备标识。');
+  }catch(error){
+   message('请先完成同一张图的五点触控自检：'+
+    (error instanceof Error?error.message:'数据无效'));
+  }
+ });
+
  function fromPointer(event){
   const size=session.snapshot().image;
   if(!size)return null;
@@ -353,6 +383,7 @@ const {createAnnotationPack}=
    const g=result.gesture;
    if(g.kind==='touch-check'){
     touchCheckStatus(touchCheck.tap(g.last));
+    focusTouchTarget();
    }else{
     try{
      const annotation=createManualPhotoAnnotation(g.kind,g.start,g.last,{
