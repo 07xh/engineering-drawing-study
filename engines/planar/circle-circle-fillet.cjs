@@ -11,8 +11,43 @@ function numeric(value,label){if(typeof value!=='number'||!Number.isFinite(value
 function pos(value,label){numeric(value,label);if(value<=0)throw new RangeError(label+' must be positive');return value;}
 function pt(v,label){if(!v||typeof v!=='object')throw new TypeError(label+' required');
  return {x:numeric(v.x,label+'.x'),y:numeric(v.y,label+'.y')};}
+const deg=Math.PI/180;
+const wrap=angle=>((angle%360)+360)%360;
+function finiteArc(input,label){
+ if(!input||typeof input!=='object'||Array.isArray(input))
+  throw new TypeError(label+' must be a directed finite arc');
+ const start=numeric(input.startAngle,label+'.startAngle');
+ const end=numeric(input.endAngle,label+'.endAngle');
+ if(!['cw','ccw'].includes(input.direction))
+  throw new RangeError(label+'.direction must be cw or ccw');
+ const difference=end-start;
+ // Nonempty proper arc only. A full source circle is represented by an
+ // absent arc field, not a degenerate start=end or ambiguous 360° winding.
+ if(!Number.isFinite(difference)||Math.abs(difference)>=360||
+    Math.abs(difference)<=1e-11)
+  throw new RangeError(label+' must have a nonzero proper angular extent under 360 degrees');
+ const sweepDegrees=wrap(input.direction==='ccw'?difference:-difference);
+ if(!(sweepDegrees>1e-11)&&sweepDegrees!==360)
+  throw new RangeError(label+' contains no measurable directed arc');
+ return {startAngle:start,endAngle:end,direction:input.direction,sweepDegrees};
+}
+function contactOnFiniteArc(circleSpec,contact,epsilon){
+ if(!circleSpec.arc)return true;
+ const arc=circleSpec.arc;
+ const angle=wrap(Math.atan2(contact.y-circleSpec.center.y,
+   contact.x-circleSpec.center.x)/deg);
+ const advance=wrap(arc.direction==='ccw'?
+   angle-arc.startAngle:arc.startAngle-angle);
+ const toleranceDegrees=Math.atan2(epsilon*Math.max(1,circleSpec.radius),
+   circleSpec.radius)/deg;
+ // Account for floating-point error at either true endpoint; never
+ // accept points in a missing portion of the supporting full circle.
+ return advance<=arc.sweepDegrees+toleranceDegrees||
+   360-advance<=toleranceDegrees;
+}
 function circle(input,label){if(!input||typeof input!=='object')throw new TypeError(label+' required');
- return {center:pt(input.center,label+'.center'),radius:pos(input.radius,label+'.radius')};}
+ return {center:pt(input.center,label+'.center'),radius:pos(input.radius,label+'.radius'),
+  ...(input.arc===undefined?{}:{arc:finiteArc(input.arc,label+'.arc')})};}
 function locusRadius(R,r,mode){
  if(mode==='external')return R+r;
  if(mode==='internal')return Math.abs(R-r);
@@ -78,13 +113,28 @@ function circleCircleFilletCenters({first,second,filletRadius,firstMode='externa
    residuals:res,maxResidual,unorientedTangentContinuity:true,
    arcDirection:null,arcSweep:null};
  };
- const candidates=h===0?[make(0,1)]:[make(-1,1),make(1,2)];
- return {status:candidates.length===1?'unique':'multiple',
-  scope:'two-given-circles-and-fixed-fillet-radius',unit,
-  reason:'All discrete center candidates returned; no arc traversal direction is inferred',
-  candidateCount:candidates.length,candidates,
-  continuousDegreesOfFreedom:0,provenArcDirection:false,
+ const rawCandidates=h===0?[make(0,1)]:[make(-1,1),make(1,2)];
+ // Preserve IDs from the full supporting circles. Filtering must never
+ // silently relabel center-2 to center-1 after an input arc is shortened.
+ const excludedCandidates=[],candidates=[];
+ for(const c of rawCandidates){
+  const arcChecks={first:contactOnFiniteArc(A,c.contacts.first,eps),
+   second:contactOnFiniteArc(B,c.contacts.second,eps)};
+  if(arcChecks.first&&arcChecks.second)
+   candidates.push({...c,sourceArcChecks:arcChecks,sourceArcRangeVerified:true});
+  else excludedCandidates.push({id:c.id,
+   invalidSources:Object.keys(arcChecks).filter(k=>!arcChecks[k])});
+ }
+ const finiteSourceArcCount=Number(!!A.arc)+Number(!!B.arc);
+ const status=candidates.length===0?'none':candidates.length===1?'unique':'multiple';
+ return {status,scope:'two-given-circles-and-fixed-fillet-radius',unit,
+  reason:candidates.length===0?
+   'Supporting circles intersect but contact lies outside a given finite source arc':
+   'All candidates on the given source-arc ranges returned; connection traversal remains unproven',
+  candidateCount:candidates.length,candidates,excludedCandidates,finiteSourceArcCount,
+  continuousDegreesOfFreedom:candidates.length===0?null:0,
+  provenArcDirection:false,
   auxiliary:{firstLocus:{center:A.center,radius:a},secondLocus:{center:B.center,radius:b},
    separation:d,tangencyModes:{first:firstMode,second:secondMode}}};
 }
-module.exports={DEFAULT_EPSILON,circleCircleFilletCenters};
+module.exports={DEFAULT_EPSILON,circleCircleFilletCenters,contactOnFiniteArc};
