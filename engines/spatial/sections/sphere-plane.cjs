@@ -42,11 +42,19 @@ function planeSphereSurfaceSection(sphere,plane,{samples=48}={}){
  const {center,point,normal:n,radius:r}=validate(sphere,plane);
  if(!Number.isSafeInteger(samples)||samples<16||samples>128)
   throw new RangeError('circle visualization samples must be 16..128');
+ // A tiny radius on very large absolute coordinates cannot be distinguished
+ // from coordinate rounding. Reject such positive evidence rather than
+ // accepting visually plausible samples within an overly large absolute EPS.
+ const coordinateScale=Math.max(1,...center.map(Math.abs),...point.map(Math.abs));
+ const resolutionMm=64*Number.EPSILON*coordinateScale;
+ if(r<=16*resolutionMm)
+  return response('undetermined','sphere feature under-resolved at absolute model coordinates');
  const signed=M0.dot(M0.subtract(center,point),n);
  const distance=Math.abs(signed);
  if(!finite(distance))throw new RangeError('nonfinite signed plane distance');
  const gap=r-distance;
- const eps=1e-8*Math.max(1,r);
+ // Both feature scale and absolute-coordinate ULP matter near tangency.
+ const eps=Math.max(1e-8*Math.max(1,r),resolutionMm);
  if(gap< -eps)return response('none','plane misses sphere surface by more than tolerance');
  // Numerical near-tangencies are not silently turned into a zero-radius
  // circle or a unique mathematical tangency. Only exact represented equality
