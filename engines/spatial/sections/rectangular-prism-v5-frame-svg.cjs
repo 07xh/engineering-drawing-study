@@ -123,6 +123,95 @@ function createPrismV5SvgScene(box,plane,{
   if(inputSignature!==JSON.stringify({box,plane,retainedHalfspace,observerDirections}))
    throw new RangeError('prism geometry modified; rebuild verified scene');
  }
+
+ const inspected=new Map(),segments=new Map(timing.segments.map(x=>[x.id,x]));
+ const register=(action,layer,stepIndex)=>{
+  if(inspected.has(action.id))throw new TypeError('duplicate reviewed source action');
+  inspected.set(action.id,{action,layer,stepIndex});
+ };
+ for(const action of givens)register(action,'given',null);
+ for(const [index,step] of steps.entries())
+  for(const action of step.actions)register(action,step.role,index);
+ function boundsOf(action){
+  const a=Motion.actionShapeAttrs(action,1);
+  if(action.kind==='line')return {
+   minX:Math.min(a.x1,a.x2),maxX:Math.max(a.x1,a.x2),
+   minY:Math.min(a.y1,a.y2),maxY:Math.max(a.y1,a.y2)};
+  if(action.kind==='point')return {
+   minX:a.cx-a.r,maxX:a.cx+a.r,minY:a.cy-a.r,maxY:a.cy+a.r};
+  throw new TypeError('unrecognized reviewed prism drawing action');
+ }
+ function focusBox(actions){
+  if(!actions.length)throw new RangeError('cannot focus an empty step');
+  const x=actions.map(boundsOf);
+  const minX=Math.min(...x.map(b=>b.minX)),maxX=Math.max(...x.map(b=>b.maxX));
+  const minY=Math.min(...x.map(b=>b.minY)),maxY=Math.max(...x.map(b=>b.maxY));
+  const ratio=sheet.width/sheet.height,padding=40;
+  const w=Math.min(sheet.width,Math.max(320,maxX-minX+padding*2,
+   (maxY-minY+padding*2)*ratio)),h=w/ratio;
+  const cx=(minX+maxX)/2,cy=(minY+maxY)/2;
+  const vx=Math.min(sheet.width-w,Math.max(0,cx-w/2)),
+   vy=Math.min(sheet.height-h,Math.max(0,cy-h/2));
+  return Object.freeze({x:vx,y:vy,width:w,height:h,
+   viewBox:[vx,vy,w,h].map(number).join(' ')});
+ }
+ function focusOnAction({actionId,expectedRevision}={}){
+  check(expectedRevision);
+  const item=inspected.get(actionId);
+  if(!item)throw new RangeError('not a trusted prism drawing action');
+  return focusBox([item.action]);
+ }
+ function focusOnStep({stepIndex,expectedRevision}={}){
+  check(expectedRevision);
+  if(!Number.isSafeInteger(stepIndex)||stepIndex<0||stepIndex>=steps.length)
+   throw new RangeError('unknown prism V5 step');
+  return focusBox(steps[stepIndex].actions);
+ }
+ function inspectAt({x,y,elapsedMs,expectedRevision,tolerancePx=12}={}){
+  check(expectedRevision);
+  if(![x,y,elapsedMs,tolerancePx].every(finite)||tolerancePx<=0||
+    tolerancePx>32||x<0||x>sheet.width||y<0||y>sheet.height||
+    elapsedMs<0||elapsedMs>timing.totalMs)
+   throw new RangeError('invalid screen pick or timeline position');
+  const fractions=Timeline.frame(timing,elapsedMs).actionFractions;
+  let chosen=null,bestDistance=Infinity,bestPriority=-1;
+  for(const [id,item] of inspected){
+   const progress=item.layer==='given'?1:fractions[id];
+   if(!finite(progress)||progress<=0)continue;
+   const a=Motion.actionShapeAttrs(item.action,progress);
+   let distance;
+   if(item.action.kind==='line'){
+    const dx=a.x2-a.x1,dy=a.y2-a.y1,len=dx*dx+dy*dy;
+    const t=len>1e-14?Math.min(1,Math.max(0,
+     ((x-a.x1)*dx+(y-a.y1)*dy)/len)):0;
+    distance=Math.hypot(x-a.x1-t*dx,y-a.y1-t*dy);
+   }else if(item.action.kind==='point'){
+    distance=Math.max(0,Math.hypot(x-a.cx,y-a.cy)-a.r);
+   }else continue;
+   const priority=item.layer==='result'?2:item.layer==='guide'?1:0;
+   if(distance<=tolerancePx&&
+      (distance<bestDistance-1e-6||
+       (Math.abs(distance-bestDistance)<=1e-6&&priority>bestPriority))){
+    chosen={id,...item};bestDistance=distance;bestPriority=priority;
+   }
+  }
+  if(!chosen)return null;
+  const segment=segments.get(chosen.id);
+  const match=/^prism-section-([1-6])-(V|H|W)$/.exec(chosen.id);
+  const visibility=chosen.layer==='result'?
+   (visibilityRequested?evidenceByAction.get(chosen.action.sourceSectionEdgeId+'-'+match[2]):
+    'undetermined'):null;
+  return Object.freeze({
+   actionId:chosen.id,layer:chosen.layer,
+   stepIndex:chosen.stepIndex,
+   stepId:chosen.stepIndex===null?null:steps[chosen.stepIndex].id,
+   sourceSectionEdgeId:chosen.action.sourceSectionEdgeId||null,
+   visibility,view:match?match[2]:null,
+   distancePx:bestDistance,
+   seekMs:segment?segment.startMs+Math.min(segment.durationMs*0.75,450):0
+  });
+ }
+
  function renderFrame({elapsedMs,expectedRevision}={}){
   check(expectedRevision);
   if(!finite(elapsedMs)||elapsedMs<0||elapsedMs>timing.totalMs)
@@ -179,6 +268,7 @@ function createPrismV5SvgScene(box,plane,{
    id:s.id,title:s.title,startMs:s.startMs,endMs:s.endMs
   }))),
   createPlayer({speed=1}={}){return Timeline.createPlayer(timing,{speed,revision});},
+  inspectAt,focusOnAction,focusOnStep,
   modelGeometryVerified:true,
   visibilityEvidenceMode:visibilityRequested?'explicit-observer-rays':'unconfirmed',
   visibilityCounts:Object.freeze(counts),
