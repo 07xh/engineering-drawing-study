@@ -90,7 +90,19 @@ function gradeFilletArcDrawing(args,stroke,{kind,origin,scale,revision,tolerance
  const angleAllowedDegrees=Math.min(7,Math.max(2,tolerance/g.radius/RAD));
  const correct=enough&&continuous&&nearStart<=tolerance&&nearEnd<=tolerance&&
     maxRadialResidualMm<=tolerance&&sweepResidualDegrees<=angleAllowedDegrees;
+ // Each diagnostic is an independently checked BOOLEAN. Neither the arc
+ // geometry nor any ideal contact coordinates are exposed in student feedback.
+ const checks={
+  enoughSamples:enough,
+  endpointsWithinTolerance:nearStart<=tolerance&&nearEnd<=tolerance,
+  radiusWithinTolerance:maxRadialResidualMm<=tolerance,
+  sampleSpacingValid:largestAngularGap<=MAX_SAMPLE_GAP,
+  traversalDirectionValid:backwardMotion<=3*RAD,
+  nondegenerate:actualLength>0&&finite(actualLength),
+  sweepWithinTolerance:sweepResidualDegrees<=angleAllowedDegrees
+ };
  return {...base,status:correct?'correct':'incorrect',
+  checks,
   geometryValidated:correct,sampleCount:stroke.points.length,
   maxRadialResidualMm,endpointResidualMm:{start:nearStart,end:nearEnd},
   sweepResidualDegrees,largestAngularGapDegrees:largestAngularGap/RAD,

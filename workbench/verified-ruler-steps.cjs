@@ -47,36 +47,60 @@ function gradeStudentAuxiliaries(kind,args,actions,{branchId,revision=0}={}){
   '学生必须明确选择有效分支，再验证针对该分支的辅助轨迹'};
  const selected=solved.candidates.find(c=>c.id===branchId);
  if(!selected)return {...base,status:'invalid-branch',reason:'候选分支不属于实际求解结果'};
- const matched=new Set();
- for(const a of actions){
-  if(matched.has(a.sourceId))continue;
-  if(kind==='segments'||kind==='segment-circle'&&a.sourceId==='first'){
+ const matched=new Set(),diagnostics=[];
+ const flag=(index,a,code)=>diagnostics.push({index,sourceId:a.sourceId,code});
+ for(const [index,a] of actions.entries()){
+  const lineMode=kind==='segments'||kind==='segment-circle'&&a.sourceId==='first';
+  if(lineMode){
    const sign=kind==='segment-circle'?args.side:selected.sides?.[a.sourceId];
    const offset=sign*args.filletRadius;
-   if(!Number.isFinite(offset)||Math.abs(offset)<1e-9||
-      a.kind!=='line'||a.tool!=='parallel-ruler'||
-      !finite(a.signedOffsetMm)||
-      Math.abs(a.signedOffsetMm-offset)>errorTolerance*Math.max(1,Math.abs(offset)))
-    continue;
+   if(!Number.isFinite(offset)||Math.abs(offset)<1e-9){
+    flag(index,a,'ungradeable');continue;
+   }
+   if(a.kind!=='line'||a.tool!=='parallel-ruler'){
+    flag(index,a,'tool-mismatch');continue;
+   }
+   if(!finite(a.signedOffsetMm)){
+    flag(index,a,'offset-distance');continue;
+   }
+   const eps=errorTolerance*Math.max(1,Math.abs(offset));
+   if(Math.abs(a.signedOffsetMm-offset)>eps){
+    const magnitudeOK=Math.abs(Math.abs(a.signedOffsetMm)-Math.abs(offset))<=eps;
+    flag(index,a,magnitudeOK?'offset-side':'offset-distance');continue;
+   }
    const expected=offsetLine(kind==='segment-circle'?args.segment:args[a.sourceId],offset);
-   if(isSameLine(a,expected))matched.add(a.sourceId);
+   if(!isSameLine(a,expected)){
+    flag(index,a,'offset-geometry');continue;
+   }
   }else{
    const guide=kind==='segment-circle'?
     {center:solved.auxiliary?.circleCenter,radius:solved.auxiliary?.centerLocusRadius}:
     solved.auxiliary?.[a.sourceId+'Locus'];
-   if(!guide||!pt(guide.center)||!finite(guide.radius)||guide.radius<=0||
-      a.kind!=='circle'||a.tool!=='concentric-compass'||
-      !pt(a.center)||!finite(a.radius)||a.radius<=0)continue;
-   if(distance(a.center,guide.center)<=errorTolerance*Math.max(1,guide.radius)&&
-      Math.abs(a.radius-guide.radius)<=errorTolerance*Math.max(1,guide.radius))
-    matched.add(a.sourceId);
+   if(!guide||!pt(guide.center)||!finite(guide.radius)||guide.radius<=0){
+    flag(index,a,'ungradeable');continue;
+   }
+   if(a.kind!=='circle'||a.tool!=='concentric-compass'){
+    flag(index,a,'tool-mismatch');continue;
+   }
+   if(!pt(a.center)||distance(a.center,guide.center)>
+      errorTolerance*Math.max(1,guide.radius)){
+    flag(index,a,'compass-center');continue;
+   }
+   if(!finite(a.radius)||a.radius<=0||
+      Math.abs(a.radius-guide.radius)>errorTolerance*Math.max(1,guide.radius)){
+    flag(index,a,'compass-radius');continue;
+   }
   }
+  if(matched.has(a.sourceId)){
+   flag(index,a,'duplicate');continue;
+  }
+  matched.add(a.sourceId);
  }
  const matchedCount=matched.size,extraCount=actions.length-matchedCount;
  return {...base,status:matchedCount===2&&extraCount===0?'correct':
    matchedCount===0?'incorrect':'partial',
   matchedCount,extraCount,remainingSources:['first','second'].filter(n=>!matched.has(n)),
-  selectedBranchId:branchId,
+  selectedBranchId:branchId,diagnostics,
   reason:matchedCount===2&&extraCount===0
    ?'两条学生自建辅助轨迹符合当前数学分支；仍须独立确定切点、弧向与有向 G1'
    :'检查学生选择的源对象、法向偏移符号、半径或重复构造'};

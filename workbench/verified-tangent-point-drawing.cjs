@@ -57,13 +57,20 @@ function gradeStudentTangentPoints(kind,args,marks,{
       chosen.contactSegments[id].t>=0&&chosen.contactSegments[id].t<=1))))
   return {...base,status:'not-gradeable',reason:
    '该圆心没有两处真实有效切点的数学证明'};
- const matched=new Map();
+ const matched=new Map(),diagnostics=[];
  let extraCount=0;
- for(const m of marks){
+ for(const [index,m] of marks.entries()){
   const residualMm=dist(m.point,contacts[m.sourceId]);
   if(!finite(residualMm))throw new RangeError('point distance overflow');
   if(residualMm>toleranceMm||matched.has(m.sourceId)){
-   extraCount++;continue;
+   extraCount++;
+   const other=m.sourceId==='first'?'second':'first';
+   const wrongSource=residualMm>toleranceMm&&
+    dist(m.point,contacts[other])<=toleranceMm;
+   const code=wrongSource?'source-mismatch':
+    residualMm<=toleranceMm?'duplicate-contact':'off-contact';
+   diagnostics.push({index,sourceId:m.sourceId,code});
+   continue;
   }
   matched.set(m.sourceId,residualMm);
  }
@@ -72,7 +79,7 @@ function gradeStudentTangentPoints(kind,args,marks,{
  const remainingSources=SIDES.filter(side=>!matched.has(side));
  return {...base,status:complete?'correct':
     matchedCount===0?(marks.length?'incorrect':'incomplete'):'partial',
-  selectedBranchId:branchId,matchedCount,extraCount,
+  selectedBranchId:branchId,matchedCount,extraCount,diagnostics,
   remainingSources,
   residualsMm:Object.fromEntries(matched),
   contactLocationsVerified:complete,
