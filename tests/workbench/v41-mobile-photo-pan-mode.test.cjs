@@ -27,7 +27,7 @@ test('native scroll mode prevents pointer capture and manual truth gestures',()=
 test('zoom and local five-target diagnostic keep explicit annotation mode safety',()=>{
  assert.match(js,/if\(zoom>1&&interactionMode==='annotate'&&touchCheck\.snapshot\(\)\.status!=='active'\)/);
  assert.match(js,/setInteractionMode\('pan'\)/);
- assert.match(js,/gesture\.reset\(\);setInteractionMode\('annotate'\);\s*session\.reset/);
+ assert.match(js,/touchCheck\.cancel\(\);gesture\.reset\(\);setZoom\(1\);setInteractionMode\('annotate'\);session\.reset\(\)/);
  assert.match(js,/gesture\.reset\(\);setInteractionMode\('annotate'\);\s*touchCheckStatus/);
 });
 test('original pixel coordinates remain invariant when drawing is resumed after panning',()=>{
