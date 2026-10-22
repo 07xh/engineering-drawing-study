@@ -2,16 +2,22 @@
 (function(){'use strict';
 const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.DrawingLabSheet,Spatial=window.DrawingLabSpatialPreview,Sync=window.DrawingLabSyncV5;
 const $=id=>document.getElementById(id);
-if(!Store||!Geom||!Sheet||!Spatial||!Sync){$('uiStatus').textContent='实验室脚本或 V5 同步播放器未完整加载';return}
+if(!Store||!Geom||!Sheet||!Spatial){$('uiStatus').textContent='实验室脚本未完整加载';return}
 let state=Store.create(),history=[],editing=null,selectedVertex='',yaw=.72,pitch=.52,zoom=1,drag=null;
 let viewer=null,syncPlayer=null,syncPlan=null,syncRevision=0,syncFrame=null;
 const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 function haltSync(){
+ if(!Sync)return;
  if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
  if(syncPlayer)syncPlayer.invalidate(syncRevision+1,performance.now());
  syncPlayer=null;syncPlan=null;syncRevision++;
 }
 function syncStatusVisual(time){
+ if(!Sync){
+  $('syncPlay').disabled=true;
+  $('syncExplanation').textContent='本环境未加载 V5 同步播放器，原有自由度计算与静态投影仍可使用。';
+  return false;
+ }
  const frame=syncPlayer?.snapshot(time),visual=Sync.presentation(syncPlan,frame);
  Sync.paintSheet($('sheet'),syncPlan,visual);
  Sync.paintSpace($('space'),viewer,visual);
