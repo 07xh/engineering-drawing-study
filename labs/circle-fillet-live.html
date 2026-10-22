@@ -6,7 +6,19 @@
 h1{font-size:clamp(23px,3.2vw,34px);margin:12px 0 4px}.intro{color:#5b7362;font-size:14px;line-height:1.75;margin:0 0 17px}
 .workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);gap:16px}
 .panel{border:1px solid #d4e5da;background:white;padding:16px;border-radius:16px;min-width:0}h2{font-size:18px;margin:0 0 12px}
-#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px}svg{display:block;min-width:600px;width:100%;height:auto}svg.draw-active{touch-action:none;cursor:crosshair}
+#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px;transition:background .12s}
+#drawingWrap.paper-mono{background:#fff;border-color:#333}
+#drawingWrap.paper-mono #diagram [stroke]:not([stroke="none"]){stroke:#222!important}
+#drawingWrap.paper-mono #diagram [fill]:not([fill="none"]):not([fill="#fff"]){fill:#222!important}
+#drawingWrap.paper-mono #diagram rect[fill]{fill:#fff!important}
+#diagram [data-v5-pick]{cursor:pointer;pointer-events:stroke}
+#diagram [data-v5-pick][data-v5-selected="true"]{stroke:#bd6419!important;stroke-width:4.2!important}
+#drawingWrap.paper-mono #diagram [data-v5-pick][data-v5-selected="true"]{stroke:#000!important;stroke-width:4.2!important}
+.paper-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:9px 0;font-size:13px}
+.paper-toolbar label{display:flex;align-items:center;gap:5px}
+.paper-toolbar input[type="checkbox"]{width:auto;min-height:18px;min-width:18px;padding:0;accent-color:#256e49}
+.paper-toolbar button{min-height:40px}
+.paper-picked{font-size:12px;line-height:1.6;color:#446350}svg{display:block;min-width:600px;width:100%;height:auto}svg.draw-active{touch-action:none;cursor:crosshair}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}label{display:grid;gap:5px;font-size:12px;color:#3c654b}
 input,select,button{font:inherit;border-radius:9px;min-height:44px}input,select{background:#fff;width:100%;border:1px solid #bdd3c4;padding:9px}
 button{padding:9px 13px;border:1px solid #a9cdb4;background:white;color:#1d6744;cursor:pointer}
@@ -49,6 +61,12 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <p class="intro">支持完整圆、有限已知圆弧及两条有限线段连接；有限圆弧需设置起止角与弧向（沿数学坐标轴正向为 CCW），两个切点必须各自处于给定弧段内。参数改变即使用真实数学求解器重新计算；你需要明确选择有效圆心、旋向和原轮廓走向才能验证有向 G1。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
 <div class="workspace">
 <section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
+<div class="paper-toolbar" aria-label="V5 工程图纸交互">
+<label><input id="paperMono" type="checkbox"> 黑白制图</label>
+<label><input id="paperFocus" type="checkbox" checked> 自动聚焦绘制位置</label>
+<button id="paperResetView" type="button">复位图纸视野</button>
+</div>
+<p id="paperPicked" class="paper-picked" role="status" aria-live="polite">完整教学可点击已绘制的辅助线或圆弧，查看所属数学步骤。</p>
 <div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
 <p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：学生绘制的辅助线或弧线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
 <p class="note">可用下一步查看：辅助圆轨迹 → 有效候选圆心 → 两个切点 → 已明确方向的连接弧。选择有限圆弧时，绿色图线只显示给定弧段，不绘制未经给出的整圆。未标为“有限”的起止角不参与限制；多解不会自动选第一种。</p>
