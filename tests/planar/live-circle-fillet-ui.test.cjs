@@ -135,7 +135,8 @@ function interactiveFillet(){
   '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
   '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
-  '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js')
+  '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
+  '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
  window:{matchMedia:()=>({matches:false})},require:id=>{
@@ -612,4 +613,73 @@ test('verified two-circle fillet animates but incomplete G1 inputs never paint a
  get('r2').value='';fire('r2','input');
  assert.equal(paths().length,0,'invalid radius clears stale animation and confirmed result');
  advance(12000);assert.equal(paths().length,0);
+});
+
+test('public finite line fillet step SVG is byte-identical to verified R1/V5 action coordinates',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ const args={first:{a:{x:-20,y:0},b:{x:20,y:0}},
+  second:{a:{x:0,y:-20},b:{x:0,y:20}},filletRadius:10,
+  branchId:'s++',direction:'ccw',firstTravel:'forward',secondTravel:'forward'};
+ const plan=require('../../workbench/verified-plan-v5-bridge.cjs')
+   .filletTimeline('segments',args,{origin:{x:360,y:220},scale:8},1);
+ assert.equal(plan.status,'ready');assert.equal(plan.steps.length,6);
+ for(let i=0;i<6;i++)fire('next','click');
+ const actual=collect().filter(n=>n.tag==='path');
+ assert.equal(actual.length,1);
+ assert.equal(actual[0].attributes['data-verified-arc'],'true');
+ const math=require('../../workbench/teaching-motion-v5.js')
+  .actionShapeAttrs(plan.steps.at(-1).actions[0],1);
+ assert.equal(actual[0].attributes.d,math.d);
+ assert.equal(collect().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c38536').length,2);
+ assert.equal(get('counter').textContent,'6 / 6');
+});
+test('public two-circle lesson also uses same exact directed R1/V5 mathematical arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('direction').value='cw';fire('direction','change');
+ get('travel1').value='ccw';fire('travel1','change');
+ get('travel2').value='ccw';fire('travel2','change');
+ for(let i=0;i<4;i++)fire('next','click');
+ const args={first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external',branchId:'center-1',
+   direction:'cw',knownFirstTravel:'ccw',knownSecondTravel:'ccw'};
+ const plan=require('../../workbench/verified-plan-v5-bridge.cjs')
+  .filletTimeline('circles',args,{origin:{x:360,y:220},scale:8},1);
+ assert.equal(plan.status,'ready');
+ const paths=collect().filter(n=>n.tag==='path');
+ assert.equal(paths.length,1);
+ assert.equal(paths[0].attributes.d,require('../../workbench/teaching-motion-v5.js')
+  .actionShapeAttrs(plan.steps.at(-1).actions[0],1).d);
+});
+test('arc still advances frame-by-frame with the SAME SVG node after shared plan integration',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ get('lineTravel1').value='forward';fire('lineTravel1','change');
+ get('lineTravel2').value='forward';fire('lineTravel2','change');
+ const paths=()=>collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true');
+ fire('playPause','click');advance(6000);
+ assert.equal(get('counter').textContent,'5 / 6');
+ advance(400);
+ assert.equal(paths().length,1);
+ const node=paths()[0],first=node.attributes.d;
+ advance(300);
+ assert.equal(paths()[0],node);
+ assert.notEqual(paths()[0].attributes.d,first);
+});
+test('without a complete directed G1 proof, a selected branch never renders its final SVG arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('direction').value='ccw';fire('direction','change');
+ for(let i=0;i<8;i++)fire('next','click');
+ assert.equal(get('counter').textContent,'3 / 3');
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
 });
