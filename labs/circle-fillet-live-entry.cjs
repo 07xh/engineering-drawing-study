@@ -381,7 +381,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
      points:pointer.points.map(p=>p.x+','+p.y).join(' '),
      stroke:'#ad83c7','stroke-width':2.5,fill:'none'}));
   }
-  svg.classList?.toggle?.('draw-active',drawing&&(
+  svg.classList?.toggle?.('draw-active',drawing&&!isMixed&&(
     ($('drawTool').value==='tangent'&&!!input)||
     ($('drawTool').value==='snap'&&!!input&&!!$('branch').value)||
     (chosen?.status==='selected'&&chosen.g1Verified===true&&
@@ -393,17 +393,22 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
   $('counter').textContent=stage+' / '+max;
   const verified=chosen?.status==='selected'&&chosen.g1Verified===true;
-  const hintMax=verified?(isSegments?6:4):0;
+  const hintMax=verified?(isSegments?6:isMixed?5:4):0;
   $('hintNext').disabled=!hint||hintStep>=hintMax||hintMax===0;
   $('hintCounter').textContent=hintStep+' / '+hintMax;
   $('undoDraw').disabled=!drawing||strokes.length===0;
   $('redoDraw').disabled=!drawing||redoStrokes.length===0;
   $('clearDraw').disabled=!drawing||strokes.length===0;
-  $('addDigital').disabled=!drawing||!input||digitalActions.length>=64;
+  $('drawTool').disabled=!drawing||isMixed;
+  $('addDigital').disabled=!drawing||!input||isMixed||digitalActions.length>=64;
   $('undoDigital').disabled=!drawing||digitalActions.length===0;
   $('clearDigital').disabled=!drawing||digitalActions.length===0;
-  $('checkDigital').disabled=!drawing||!input;
-  if(drawing){
+  $('checkDigital').disabled=!drawing||!input||isMixed;
+  if(drawing&&isMixed){
+   $('digitalStatus').textContent='本题型目前只开放真实数学教学；数字尺规及联合学生评分尚未接入。';
+   $('learningProgress').textContent='线段＋圆：暂无学生联合评分，不能使用两圆／两线段的 4 项成绩。';
+   $('centerSnapStatus').textContent='本题型尚未开放学生圆心吸附评分。';
+  }else if(drawing){
    try{
     if(!input)$('digitalStatus').textContent='当前题目条件无效，不能构造数学辅助轨迹。';
     else{
@@ -432,7 +437,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     }catch(e){$('learningProgress').textContent='无法计算联合进度：'+e.message;}
    }else $('learningProgress').textContent='输入条件无效，无法进行联合数学判题。';
   }
-  $('checkDraw').disabled=!drawing||!input||
+  $('checkDraw').disabled=!drawing||!input||isMixed||
    ($('drawTool').value!=='tangent'&&(!verified||
     ($('drawTool').value==='line'&&!isSegments)));
   if(hint){
@@ -443,7 +448,11 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
      ?teaching.steps[hintStep-1].explanation:
        '数学证明链尚未完成，请先确认候选分支与原轮廓走向。';
   }
-  if(drawing){
+  if(drawing&&isMixed){
+   $('stepTitle').textContent='线段＋圆｜自主作图待接入';
+   $('stepText').textContent='数学求解与完整教学已经支持；该题型的学生尺规和手绘判题暂不开放，不能挪用其他题型的成绩。';
+   $('drawStatus').textContent='当前题型学生绘图自动评分尚未支持；请使用完整教学或逐步提示模式。';
+  }else if(drawing){
    const arcTool=$('drawTool').value==='arc',tangentTool=$('drawTool').value==='tangent';
    $('stepTitle').textContent=tangentTool?'自己作图｜两处真实切点':
     arcTool?'自己作图｜手绘有向圆弧':'自己作图｜有限线段辅助线';
@@ -487,14 +496,16 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  for(const id of FIELDS){
   const selectIds=['mode1','mode2','arcExtent1','arcExtent2','arcDirection1','arcDirection2',
    'branch','direction','travel1','travel2',
-   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
+   'lineSide1','lineSide2','lineTravel1','lineTravel2',
+   'mixArcExtent','mixArcDirection','mixSide','mixLineTravel','mixCircleTravel'];
   $(id).addEventListener(selectIds.includes(id)?'change':'input',compute);
  }
  $('modeSelect').addEventListener('change',()=>{
   $('branch').value='';
-  const isSegments=$('modeSelect').value==='segments';
-  for(const node of document.querySelectorAll('.circle-only'))node.hidden=isSegments;
-  for(const node of document.querySelectorAll('.line-only'))node.hidden=!isSegments;
+  const mode=$('modeSelect').value;
+  for(const node of document.querySelectorAll('.circle-only'))node.hidden=mode!=='circles';
+  for(const node of document.querySelectorAll('.line-only'))node.hidden=mode!=='segments';
+  for(const node of document.querySelectorAll('.mixed-only'))node.hidden=mode!=='segment-circle';
   compute();
  });
  $('learningMode').addEventListener('change',()=>{
@@ -512,7 +523,9 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   const max=$('modeSelect').value==='segments'
    ?(verifiedArc()?teaching.steps.length:
       (centers?.candidates?.length||centers?.continuousFamilies?.length?3:0))
-   :(centers?4:0);
+   :$('modeSelect').value==='segment-circle'
+    ?(verifiedArc()?teaching.steps.length:(centers?.candidates?.length?3:0)):
+    (centers?4:0);
   if(learningMode!=='full')return;
   stopPlayback();stage=Math.min(max,stage+1);render();
  });
@@ -524,12 +537,16 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
    filletRadius:10,branch:'',direction:'',
    travel1:'',travel2:'',line1Ax:-20,line1Ay:0,line1Bx:20,line1By:0,
    line2Ax:0,line2Ay:-20,line2Bx:0,line2By:20,
-   lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:''}))$(id).value=String(value);
+   lineSide1:'',lineSide2:'',lineTravel1:'',lineTravel2:'',
+   mixAx:-25,mixAy:0,mixBx:25,mixBy:0,mixX:0,mixY:5,mixR:8,
+   mixArcExtent:'full',mixArcStart:155,mixArcEnd:175,mixArcDirection:'ccw',
+   mixSide:1,mixLineTravel:'',mixCircleTravel:''}))$(id).value=String(value);
   compute();
  });
  $('hintNext').addEventListener('click',()=>{
   if(learningMode!=='hint'||chosen?.status!=='selected'||!chosen.g1Verified)return;
-  hintStep=Math.min($('modeSelect').value==='segments'?6:4,hintStep+1);
+  hintStep=Math.min($('modeSelect').value==='segments'?6:
+   $('modeSelect').value==='segment-circle'?5:4,hintStep+1);
   render();
  });
  $('playPause').addEventListener('click',()=>{
@@ -537,7 +554,9 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   if(learningMode!=='full'||!centers||reducedMotion())return;
   const max=$('modeSelect').value==='segments'
    ?(verifiedArc()?teaching.steps.length:
-      (centers.candidates.length||centers.continuousFamilies.length?3:0)):4;
+      (centers.candidates.length||centers.continuousFamilies.length?3:0))
+   :$('modeSelect').value==='segment-circle'
+    ?(verifiedArc()?teaching.steps.length:(centers.candidates.length?3:0)):4;
   const clock=()=>performance.now();
   if(stage>=max&&(!stageClock||stageClock.snapshot().done))return;
   if(!stageClock){
@@ -589,7 +608,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
  $('drawTool').addEventListener('change',()=>{pointer=null;render()});
  $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
  $('addDigital').addEventListener('click',()=>{
-  if(learningMode!=='draw'||!input)return;
+  if(learningMode!=='draw'||!input||$('modeSelect').value==='segment-circle')return;
   try{
    const sourceId=$('digitalSource').value;
    if(!['first','second'].includes(sourceId)||digitalActions.length>=64)
@@ -627,7 +646,8 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     y:Math.max(0,Math.min(440,(event.clientY-rect.top)*440/rect.height))};
  }
  svg.addEventListener('pointerdown',event=>{
-  if(learningMode!=='draw'||!input||event.button>0)return;
+  if(learningMode!=='draw'||!input||
+     $('modeSelect').value==='segment-circle'||event.button>0)return;
   const from=eventPoint(event);if(!from)return;
   const tool=$('drawTool').value;
   if(tool==='tangent'){
