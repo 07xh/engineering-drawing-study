@@ -69,6 +69,13 @@ const {createManualPhotoAnnotation}=
    const p=document.createElement('p');p.textContent='请先选择图片并运行本地识别。';
    table.append(p);return;
   }
+  if(r.status==='needs-evaluable-annotations'){
+   const p=document.createElement('p');
+   p.textContent='已标注尺寸文字，但本实验页未运行 OCR 文字识别，'+
+    '因此不能把文字标注算成“漏检”。请标注直线、圆、圆弧或箭头后计算；'+
+    '尺寸识别暂显示“未评测”。';
+   table.append(p);return;
+  }
   if(r.status==='needs-manual-annotations'){
    const p=document.createElement('p');
    p.textContent='已得到 '+r.predictionCount+
@@ -80,6 +87,11 @@ const {createManualPhotoAnnotation}=
    s.predictions.length+' 个 · 格式错误被拒候选 '+s.rejectedPredictions.length+
    ' 个。';
   table.append(p);
+  const noOCR=document.createElement('p');
+  noOCR.textContent='本次实际运行：直线、圆、圆弧、疑似箭头。'+
+   '尺寸文字 OCR 未运行，排除在召回率分母之外；'+
+   '待评测的文字标注 '+r.unevaluatedAnnotations.length+' 个。';
+  table.append(noOCR);
   const t=document.createElement('table');
   const head=document.createElement('tr');
   for(const key of ['类型','命中','误检','漏检','精确率','召回率','F1']){
