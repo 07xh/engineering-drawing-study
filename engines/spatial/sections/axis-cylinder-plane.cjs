@@ -39,10 +39,8 @@ function sideResidual(p,c){
   const d=Math.hypot(p.x-c.baseCenter.x,p.y-c.baseCenter.y);
   return d-c.radiusMm;
 }
-function projections(p){
-  // Model projections only; no first-angle paper offsets or visibility claims.
-  return {V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}};
-}
+// Shared model projection: never convert from/to sheet-px in math solvers.
+const {project:projections}=require('../../../core/projection/conventions.js');
 function intersectFiniteSegmentPlane(segment,plane){
   const pl=normalizePlane(plane);
   if(!plain(segment)||!point(segment.a)||!point(segment.b))
