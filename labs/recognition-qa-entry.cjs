@@ -2,13 +2,15 @@
 const {createPhotoQualitySession}=require('../recognition/photo-quality-session.cjs');
 const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
+const {detectBrowserDimensionCandidates}=
+ require('../recognition/browser-native-dimension-ocr.cjs');
 (function(){
  const $=id=>document.getElementById(id);
  const svgNs='http://www.w3.org/2000/svg';
  const session=createPhotoQualitySession();
  const image=$('qaImage'),overlay=$('qaOverlay'),stage=$('qaStage');
  const status=$('status'),table=$('metrics');
- let imageUrl=null,generation=0,drag=null;
+ let imageUrl=null,generation=0,drag=null,ocrRequest=0;
  function message(value){status.textContent=value;}
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
@@ -71,7 +73,7 @@ const {createManualPhotoAnnotation}=
   }
   if(r.status==='needs-evaluable-annotations'){
    const p=document.createElement('p');
-   p.textContent='已标注尺寸文字，但本实验页未运行 OCR 文字识别，'+
+   p.textContent='已标注尺寸文字，但当前照片尚未运行受支持的 OCR 文字识别，'+
     '因此不能把文字标注算成“漏检”。请标注直线、圆、圆弧或箭头后计算；'+
     '尺寸识别暂显示“未评测”。';
    table.append(p);return;
@@ -89,9 +91,15 @@ const {createManualPhotoAnnotation}=
   table.append(p);
   const noOCR=document.createElement('p');
   noOCR.textContent='本次实际运行：直线、圆、圆弧、疑似箭头。'+
-   '尺寸文字 OCR 未运行，排除在召回率分母之外；'+
-   '待评测的文字标注 '+r.unevaluatedAnnotations.length+' 个。';
+   (r.notRunKinds.includes('dimension')?
+    '尺寸文字 OCR 未运行，排除在召回率分母之外；待评测文字标注 '+
+     r.unevaluatedAnnotations.length+' 个。':
+    '浏览器原生 OCR 已运行；尺寸文字已纳入本张图的对照统计。');
   table.append(noOCR);
+  const coverage=document.createElement('p');
+  coverage.textContent='只有已被人工标注的图元类别参与误检统计；'+
+   '其他类别尚未评测。所选类别也应标齐全部真实对象。';
+  table.append(coverage);
   const t=document.createElement('table');
   const head=document.createElement('tr');
   for(const key of ['类型','命中','误检','漏检','精确率','召回率','F1']){
@@ -121,7 +129,7 @@ const {createManualPhotoAnnotation}=
   table.append(caption);
  }
  function clearImage(){
-  generation++;
+  generation++;ocrRequest++;$('qaOcr').disabled=false;
   drag=null;session.reset();
   if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
   image.removeAttribute('src');
@@ -157,6 +165,7 @@ const {createManualPhotoAnnotation}=
   $('qaFile').value='';clearImage();message('照片与所有旧标注已清除。');
  });
  $('qaAnalyze').addEventListener('click',()=>{
+  ocrRequest++;$('qaOcr').disabled=false;
   if(stage.hidden||!image.naturalWidth||!image.naturalHeight){
    message('请先打开本地图片。');return;
   }
@@ -181,6 +190,39 @@ const {createManualPhotoAnnotation}=
   }catch(error){
    session.reset();render();
    message('识别失败：'+(error instanceof Error?error.message:'未知错误'));
+  }
+ });
+ $('qaOcr').addEventListener('click',async()=>{
+  const before=session.snapshot();
+  if(!before.ready||stage.hidden){
+   message('请先打开图片并运行本地几何识别。');return;
+  }
+  const epoch=generation,imageVersion=before.imageVersion;
+  const request=++ocrRequest;
+  const button=$('qaOcr');
+  button.disabled=true;
+  message('正在尝试调用当前浏览器的原生 TextDetector…');
+  let result;
+  try{result=await detectBrowserDimensionCandidates(image);}
+  catch(error){result={status:'error',candidates:[],
+   reason:error instanceof Error?error.message:'native OCR failed'};}
+  // Stale OCR must never be scored against a replacement or re-analyzed photo.
+  if(epoch!==generation||session.snapshot().imageVersion!==imageVersion||
+   request!==ocrRequest)return;
+  button.disabled=false;
+  if(result.status!=='ok'){
+   message(result.status==='unsupported'?
+    '当前浏览器没有原生 TextDetector：OCR 未评测，不会算成漏检。':
+    '本地 OCR 无法完成：'+String(result.reason||result.status));
+   return;
+  }
+  try{
+   if(!session.acceptNativeOcr(imageVersion,result.candidates))return;
+   render();
+   message('浏览器原生 OCR 已运行，得到 '+result.candidates.length+
+    ' 个 R/Φ 候选。请手工标注真实文字框对照；OCR 结果不等于数学答案。');
+  }catch(error){
+   message('OCR 候选校验失败：'+(error instanceof Error?error.message:'无效文字来源'));
   }
  });
  function fromPointer(event){

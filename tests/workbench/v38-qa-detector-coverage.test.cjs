@@ -64,8 +64,8 @@ test('public QA correctly distinguishes unrun OCR, local arrow detection and rea
  const session=fs.readFileSync('recognition/photo-quality-session.cjs','utf8');
  const ui=fs.readFileSync('labs/recognition-qa-entry.cjs','utf8');
  assert.match(session,/detectArrowWingCandidates\(frame,candidateLines/);
- assert.match(session,/notRunKinds:\['dimension'\]/);
- assert.match(session,/truth:measured,predictions/);
+ assert.match(session,/notRunKinds:ocrEvaluated\?\[\]:\['dimension'\]/);
+ assert.match(session,/truth:measured,predictions:scoredPredictions/);
  assert.match(ui,/needs-evaluable-annotations/);
  assert.match(ui,/尺寸文字 OCR 未运行/);
  assert.doesNotMatch(session,/solveFiniteFillet|session\.replace|XMLHttpRequest|fetch\(/);

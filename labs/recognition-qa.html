@@ -45,6 +45,7 @@ small{font-size:12px;color:#667f6e}
 <input id="qaFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <div class="buttons">
 <button id="qaAnalyze" type="button" class="primary">运行本地识别</button>
+<button id="qaOcr" type="button">本地 OCR 检测 R/Φ（可选）</button>
 <button id="qaReset" type="button">清除图片</button>
 </div>
 <h2>2. 人工标注原图</h2>
@@ -69,7 +70,7 @@ small{font-size:12px;color:#667f6e}
 <div class="buttons">
 <button id="qaExport" type="button">导出无图片 JSON 报告</button>
 </div>
-<p class="hint">只有标注至少一个真实图元后才计算精确率与召回率。照片字节和原文件名不会写入报告、浏览器存储或网络。报告中的文字匹配结果与像素误差也不能证明毫米尺寸或 G1 连续性。</p>
+<p class="hint">只有标注至少一个已运行检测器的真实图元后才计算精确率与召回率；若浏览器不支持 TextDetector，文字识别显示未评测。照片字节和原文件名不会写入报告、浏览器存储或网络。报告中的文字匹配结果与像素误差也不能证明毫米尺寸或 G1 连续性。</p>
 <p id="status" role="status" aria-live="polite">尚未选择题图。</p>
 </section>
 <section class="panel" aria-label="本地图片与识别核对">
