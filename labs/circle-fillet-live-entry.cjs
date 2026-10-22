@@ -9,13 +9,15 @@ const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
  require('../workbench/verified-ruler-tools.cjs');
 const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
+const MotionV5=require('../workbench/teaching-motion-v5.js');
+const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','x2','y2','r2','mode2','filletRadius',
   'branch','direction','travel1','travel2',
   'line1Ax','line1Ay','line1Bx','line1By','line2Ax','line2Ay','line2Bx','line2By',
   'lineSide1','lineSide2','lineTravel1','lineTravel2'];
- const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,stage=0;
+ const O={x:360,y:220},scale=8;let centers=null,chosen=null,input=null,teaching=null,stage=0;
  let learningMode='full',hintStep=0,revision=0,strokes=[],redoStrokes=[],pointer=null;
  let digitalActions=[],digitalError='',snappedCenter=null;
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
@@ -87,7 +89,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
   digitalActions=[];digitalError='';snappedCenter=null;
   centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
-  centers=null;chosen=null;input=null;stage=0;hintStep=0;
+  centers=null;chosen=null;input=null;teaching=null;stage=0;hintStep=0;
   try{
    let args=parse();
    const isSegments=$('modeSelect').value==='segments';
@@ -98,7 +100,22 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
    // cannot be used as a fabricated final answer.
    args=parse();
    const picked=isSegments?chooseFiniteTwoSegmentArc(args):chooseDirectedFillet(args);
-   centers=result;chosen=picked;input=args;
+   const plan=filletTimeline(isSegments?'segments':'circles',args,
+    {origin:O,scale},revision);
+   if(picked.status==='selected'&&picked.g1Verified===true&&
+      (plan.status!=='ready'||plan.revision!==revision||
+       plan.selectedBranchId!==picked.selectedId))
+     throw Error('求解结果与统一作图证明链不一致，禁止展示未经验证的圆弧');
+   if(plan.status==='ready'){
+     const arc=plan.originalLesson.result.arc;
+     const actual=picked.geometry?.data;
+     if(!actual||!['startAngle','endAngle','radius'].every(
+       key=>Math.abs(arc[key]-actual[key])<1e-8)||
+       arc.direction!==actual.direction||
+       Math.hypot(arc.center.x-actual.center.x,arc.center.y-actual.center.y)>1e-8)
+       throw Error('圆弧数学定义与教学结果不一致，已拒绝展示');
+   }
+   centers=result;chosen=picked;input=args;teaching=plan;
    const short=result.status==='multiple'?'存在 '+result.candidateCount+' 个有效候选圆心。':
     result.status==='unique'?'存在 1 个有效候选圆心。':
     result.status==='none'?'当前相切条件无解。':
@@ -121,6 +138,30 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
    ' 0 '+large+' '+sweep+' '+endPoint.x+' '+endPoint.y;
   svg.append(elem('path',{d,stroke:'#246da5','stroke-width':3.5,fill:'none'}));
  }
+ function appendVerifiedSteps(svg,count){
+  if(teaching?.status!=='ready'||teaching.revision!==revision)return;
+  for(const step of teaching.steps.slice(0,count)){
+   for(const action of step.actions){
+    const color=step.role==='result'?'#246da5':
+      step.id.includes('trim')?'#236eb5':'#c38536';
+    const g=action.geometry;
+    if(action.kind==='line')
+     svg.append(elem('line',{x1:g.from.x,y1:g.from.y,x2:g.to.x,y2:g.to.y,
+      stroke:color,'stroke-width':2,'stroke-dasharray':
+       step.id.includes('trim')?'none':'7 6'}));
+    else if(action.kind==='circle')
+     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:g.radius,
+      stroke:color,'stroke-width':2,fill:'none','stroke-dasharray':'7 6'}));
+    else if(action.kind==='point')
+     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:4.5,fill:color}));
+    else if(action.kind==='arc'){
+     const attr=MotionV5.actionShapeAttrs(action,1);
+     svg.append(elem('path',{d:attr.d,stroke:color,
+      'stroke-width':3.5,fill:'none'}));
+    }else throw Error('不支持的统一教学动作：'+action.kind);
+   }
+  }
+ }
  function render(){
   const svg=$('diagram');svg.replaceChildren();
   svg.append(elem('rect',{width:720,height:440,fill:'#fff'}));
@@ -136,6 +177,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
   $('status').textContent=!input||full?statusMessage:
    chosen?.status==='selected'?'已经选定数学分支；此模式不展示圆心坐标或成品圆弧。':
    '条件尚不足以生成经验证的最终弧段；请选择合适条件后再学习。';
+  const proofReady=full&&teaching?.status==='ready'&&teaching.revision===revision;
   let max=0;
   if(input&&isSegments){
    svg.append(drawLine(input.first.a,input.first.b));
@@ -144,7 +186,7 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
    svg.append(dot(input.first.b,'#257650','B₁'));
    svg.append(dot(input.second.a,'#257650','A₂'));
    svg.append(dot(input.second.b,'#257650','B₂'));
-   if(full&&stage>=1){
+   if(full&&!proofReady&&stage>=1){
     const drawn=new Set();
     const loci=(centers?.candidates??[]).map(c=>c.steps)
       .concat((centers?.continuousFamilies??[]).map(f=>[
@@ -160,30 +202,30 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
      }
     }
    }
-   if(full&&stage>=3){
+   if(full&&!proofReady&&stage>=3){
     for(const c of centers?.candidates??[])svg.append(dot(c.center,'#9d6529',c.id));
     for(const f of centers?.continuousFamilies??[]){
      svg.append(drawLine(f.start.center,f.end.center,'#c38536','3 3'));
     }
    }
-   if(full&&stage>=4&&chosen?.contacts){
+   if(full&&!proofReady&&stage>=4&&chosen?.contacts){
     svg.append(dot(chosen.contacts.first,'#2477b0','T₁'));
     svg.append(dot(chosen.contacts.second,'#2477b0','T₂'));
    }
-   if(full&&stage>=5&&chosen?.trimmedSourceSegments){
+   if(full&&!proofReady&&stage>=5&&chosen?.trimmedSourceSegments){
     for(const key of ['first','second']){
      const line=chosen.trimmedSourceSegments[key].segment;
      svg.append(drawLine(line.a,line.b,'#236eb5'));
     }
    }
-   if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=6)drawArc(svg,chosen.geometry);
+   if(proofReady)appendVerifiedSteps(svg,stage);
    const exists=!!(centers?.candidates?.length||centers?.continuousFamilies?.length);
-   max=exists?(chosen?.status==='selected'?6:3):0;
+   max=exists?(proofReady?teaching.steps.length:3):0;
    $('stepTitle').textContent='第 '+stage+' 步';
    $('stepText').textContent=stage===0
     ?'先观察两条有限线段，切点必须位于各自的真实端点之间。'
-    :chosen?.status==='selected'&&chosen.steps?.[stage-1]
-     ?chosen.steps[stage-1].reason:
+    :proofReady&&teaching.steps[stage-1]
+     ?teaching.steps[stage-1].explanation:
      ['','沿第一条直线作半径距离偏移线。','沿第二条直线作半径距离偏移线。',
       '观察所有有效圆心（或平行条件下的连续族），先选分支和走向才能继续。'][stage];
   }else{
@@ -192,17 +234,17 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     svg.append(ring(input.second.center,input.second.radius,'#257650'));
     svg.append(dot(input.first.center,'#257650','O₁'));
     svg.append(dot(input.second.center,'#257650','O₂'));
-    if(full&&centers?.auxiliary&&stage>=1){
+    if(full&&!proofReady&&centers?.auxiliary&&stage>=1){
      svg.append(ring(centers.auxiliary.firstLocus.center,centers.auxiliary.firstLocus.radius,'#c38536','7 6'));
      svg.append(ring(centers.auxiliary.secondLocus.center,centers.auxiliary.secondLocus.radius,'#c38536','7 6'));
     }
-    if(full&&centers?.candidates&&stage>=2)for(const c of centers.candidates)
+    if(full&&!proofReady&&centers?.candidates&&stage>=2)for(const c of centers.candidates)
      svg.append(dot(c.center,'#9d6529',c.id));
-    if(full&&chosen?.contacts&&stage>=3){
+    if(full&&!proofReady&&chosen?.contacts&&stage>=3){
      svg.append(dot(chosen.contacts.first,'#2477b0','T₁'));
      svg.append(dot(chosen.contacts.second,'#2477b0','T₂'));
     }
-    if(full&&chosen?.status==='selected'&&chosen.geometry&&stage>=4)drawArc(svg,chosen.geometry);
+    if(proofReady)appendVerifiedSteps(svg,stage);
    }
    max=centers?4:0;
    const copy=[
@@ -213,7 +255,8 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
     '在明确圆心分支和 cw/ccw 方向后画出有限圆弧；如已知原轮廓方向冲突，则不显示未通过 G1 的结果。'
    ];
    $('stepTitle').textContent='第 '+stage+' 步';
-   $('stepText').textContent=copy[stage];
+   $('stepText').textContent=proofReady&&stage>0
+    ?teaching.steps[stage-1].explanation:copy[stage];
   }
   if(drawing&&input){
    for(const action of digitalActions){
@@ -275,11 +318,9 @@ const TimelineV5=require('../workbench/teaching-timeline-v5.js');
    $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
    $('stepText').textContent=hintStep===0?
     '先判断相切条件、可行候选分支及几何约束；不会提前展示图形答案。':
-    isSegments?chosen.steps[hintStep-1].reason:
-      ['根据连接半径构造第一个辅助圆心轨迹。',
-       '再构造第二个辅助圆心轨迹，候选圆心是轨迹的交点。',
-       '将圆心与已知圆心相连，确定真实相切点。',
-       '检查明确的旋向与轮廓走向，两端有向 G1 必须一致。'][hintStep-1];
+    teaching?.status==='ready'&&teaching.revision===revision
+     ?teaching.steps[hintStep-1].explanation:
+       '数学证明链尚未完成，请确认圆心分支与原轮廓走向。';
   }
   if(drawing){
    const arcTool=$('drawTool').value==='arc';
