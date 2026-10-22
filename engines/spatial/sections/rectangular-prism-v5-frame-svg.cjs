@@ -7,6 +7,7 @@
  * claim of national-standard visibility is allowed in the SVG.
  */
 const {prismSectionV5Preview}=require('./rectangular-prism-v5-preview.cjs');
+const {classifyPrismSectionVisibility}=require('./rectangular-prism-cut-visibility.cjs');
 const Timeline=require('../../../workbench/teaching-timeline-v5.js');
 const Motion=require('../../../workbench/teaching-motion-v5.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -17,19 +18,27 @@ function number(n){
 const idCheck=s=>typeof s==='string'&&/^[a-z][a-z0-9_+-]{0,79}$/i.test(s);
 const escape=s=>String(s).replace(/[&<>"']/g,c=>
  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
-function element(action,fraction,layer){
+function element(action,fraction,layer,certifiedVisibility=null){
  if(!idCheck(action.id)||!['given','guide','result'].includes(layer))
   throw new TypeError('invalid verified prism action ID');
  const a=Motion.actionShapeAttrs(action,fraction);
  if(layer==='result'&&action.visibility!=='undetermined')
-  throw new TypeError('uncertified prism visibility must remain undetermined');
+  throw new TypeError('unverified prism source must keep uncertain visibility');
+ if(layer!=='result'&&certifiedVisibility!==null)
+  throw new TypeError('cannot attach result visibility to input or guides');
+ if(layer==='result'&&
+  !['visible','hidden','undetermined',null].includes(certifiedVisibility))
+  throw new TypeError('invalid model ray classification');
+ const visibility=layer==='result'?certifiedVisibility||'undetermined':null;
  const style=layer==='given'?
   {stroke:'#344253',dash:'none',width:1.8}:
   layer==='guide'?
    {stroke:'#8195a4',dash:'4 4',width:1.2}:
+   visibility==='visible'?{stroke:'#205544',dash:'none',width:2}:
+   visibility==='hidden'?{stroke:'#485364',dash:'7 4',width:1.7}:
    {stroke:'#b26b19',dash:'2 5',width:2};
  const mark=' data-action="'+escape(action.id)+'" data-layer="'+layer+'"';
- const hint=layer==='result'?' data-visibility="undetermined" data-source="'+
+ const hint=layer==='result'?' data-visibility="'+visibility+'" data-source="'+
   escape(action.sourceSectionEdgeId)+'"':'';
  if(action.kind==='line'){
   return '<line x1="'+number(a.x1)+'" y1="'+number(a.y1)+
@@ -44,7 +53,9 @@ function element(action,fraction,layer){
  }
  throw new TypeError('unsupported prism V5 SVG action');
 }
-function createPrismV5SvgScene(box,plane,{revision=0}={}){
+function createPrismV5SvgScene(box,plane,{
+ revision=0,retainedHalfspace,observerDirections
+}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('nonnegative model revision required');
  const plan=prismSectionV5Preview(box,plane);
@@ -54,7 +65,48 @@ function createPrismV5SvgScene(box,plane,{revision=0}={}){
    status:'blocked',reason:plan.reason||'unverified prism section',
    revision,renderFrame(){throw new RangeError('no verified prism V5 frame');}
   });
- const inputSignature=JSON.stringify({box,plane});
+ // No model visibility is inferred from a V/H/W label. The default,
+ // with no explicit kept halfspace AND three observer rays, remains uncertain.
+ const visibilityRequested=retainedHalfspace!==undefined||
+  observerDirections!==undefined;
+ const evidenceByAction=new Map(),viewEvidence={};
+ const counts={visible:0,hidden:0,undetermined:0};
+ const views=['V','H','W'];
+ if(visibilityRequested){
+  if(!['positive','negative'].includes(retainedHalfspace)||
+    !observerDirections||typeof observerDirections!=='object'||
+    Array.isArray(observerDirections)||
+    Object.keys(observerDirections).sort().join(',')!=='H,V,W')
+   throw new TypeError('complete kept halfspace and three reviewed V/H/W observer rays required');
+  for(const view of views){
+   const evidence=classifyPrismSectionVisibility(box,plane,{
+    retainedHalfspace,observerDirection:observerDirections[view]
+   });
+   if(evidence.status!=='ready'||evidence.sourcePerimeterVerified!==true||
+     evidence.totalEdges!==plan.sectionEdgeCount)
+    return Object.freeze({
+     status:'blocked',revision,reason:evidence.reason||'invalid observer ray proof',
+     renderFrame(){throw new RangeError('no verified prism visibility');}
+    });
+   viewEvidence[view]=Object.freeze({
+    observerDirection:evidence.observerDirection,
+    counts:Object.freeze({...evidence.counts}),
+    edgeInteriorsVerified:evidence.edgeInteriorsVerified
+   });
+   for(const edge of evidence.edgeRuns){
+    if(!/^section-edge-[1-6]$/.test(edge.sourceEdgeId))
+     throw new TypeError('untrusted prism section edge ID');
+    const key=edge.sourceEdgeId+'-'+view;
+    if(evidenceByAction.has(key))
+     throw new TypeError('duplicate prism face ray evidence');
+    evidenceByAction.set(key,edge.visibility);
+    counts[edge.visibility]++;
+   }
+  }
+  if(evidenceByAction.size!==3*plan.sectionEdgeCount)
+   throw new RangeError('incomplete model ray evidence');
+ }else counts.undetermined=3*plan.sectionEdgeCount;
+ const inputSignature=JSON.stringify({box,plane,retainedHalfspace,observerDirections});
  if(inputSignature.length>10000)throw new RangeError('unbounded model input');
  const {givens,steps,timing,sheet}=plan;
  if(sheet.width!==960||sheet.height!==680)
@@ -68,7 +120,7 @@ function createPrismV5SvgScene(box,plane,{revision=0}={}){
  function check(expectedRevision){
   if(expectedRevision!==revision)
    throw new RangeError('stale prism drawing revision');
-  if(inputSignature!==JSON.stringify({box,plane}))
+  if(inputSignature!==JSON.stringify({box,plane,retainedHalfspace,observerDirections}))
    throw new RangeError('prism geometry modified; rebuild verified scene');
  }
  function renderFrame({elapsedMs,expectedRevision}={}){
@@ -81,12 +133,24 @@ function createPrismV5SvgScene(box,plane,{revision=0}={}){
    const fraction=at.actionFractions[action.id];
    if(!finite(fraction)||fraction<=0)continue;
    if(step.role==='guide')guides.push(element(action,fraction,'guide'));
-   else if(step.role==='result')results.push(element(action,fraction,'result'));
+   else if(step.role==='result'){
+    const match=/^prism-section-([1-6])-(V|H|W)$/.exec(action.id);
+    if(!match||action.sourceSectionEdgeId!=='section-edge-'+match[1])
+     throw new TypeError('result action and mathematical edge source mismatch');
+    const status=visibilityRequested?
+     evidenceByAction.get(action.sourceSectionEdgeId+'-'+match[2]):null;
+    if(visibilityRequested&&!status)
+     throw new TypeError('missing verified model edge-ray evidence');
+    results.push(element(action,fraction,'result',status));
+   }
    else throw new TypeError('invalid verified section step');
   }
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="960" height="680" viewBox="0 0 960 680" role="img">'+
    '<title>DraftAI 棱柱截交线真实数学动态作图</title>'+
-   '<desc>三视图线型未完成工程制图可见性认证。截面轮廓为准确有限棱边求交，颜色与虚点线仅为待审核提示。</desc>'+
+   '<desc>长方棱柱真实解析求交；'+
+   (visibilityRequested?'可见与遮挡来自明确保留半空间和各视图观察射线的截线开区间判断。':
+     '观察方向和保留材料未确认，全部截线仍为待审核线型。')+
+   '截线端点、标准第一角法和其它实体遮挡均未审定。</desc>'+
    '<rect x="0" y="0" width="960" height="680" fill="white"/>'+
    '<g id="prism-source">'+base.join('')+'</g>'+
    '<g id="prism-guides">'+guides.join('')+'</g>'+
@@ -96,8 +160,15 @@ function createPrismV5SvgScene(box,plane,{revision=0}={}){
    activeStepIndex:at.activeStepIndex,activeActionId:at.activeActionId,
    completeActions:at.completedIds.length,
    counts:Object.freeze({givens:base.length,guides:guides.length,
-    results:results.length,visibilityUndetermined:results.length}),
-   modelGeometryVerified:true,visibilityVerified:false,
+    results:results.length,
+    visibilityUndetermined:results.filter(x=>x.includes('data-visibility="undetermined"')).length,
+    visibilityVisible:results.filter(x=>x.includes('data-visibility="visible"')).length,
+    visibilityHidden:results.filter(x=>x.includes('data-visibility="hidden"')).length}),
+   modelGeometryVerified:true,
+   openEdgeRayVisibilityVerified:visibilityRequested&&counts.undetermined===0,
+   visibilityVerified:visibilityRequested&&counts.undetermined===0,
+   firstAngleConventionSignedOff:false,
+   boundaryEndpointsVerified:false,
    completeEngineeringDrawingVerified:false});
  }
  return Object.freeze({status:'ready',revision,
@@ -108,7 +179,13 @@ function createPrismV5SvgScene(box,plane,{revision=0}={}){
    id:s.id,title:s.title,startMs:s.startMs,endMs:s.endMs
   }))),
   createPlayer({speed=1}={}){return Timeline.createPlayer(timing,{speed,revision});},
-  modelGeometryVerified:true,visibilityVerified:false,
+  modelGeometryVerified:true,
+  visibilityEvidenceMode:visibilityRequested?'explicit-observer-rays':'unconfirmed',
+  visibilityCounts:Object.freeze(counts),
+  observerEvidence:Object.freeze(viewEvidence),
+  openEdgeRayVisibilityVerified:visibilityRequested&&counts.undetermined===0,
+  visibilityVerified:visibilityRequested&&counts.undetermined===0,
+  boundaryEndpointsVerified:false,
   firstAngleConventionSignedOff:false,
   productionUiIntegrated:false,
   renderFrame
