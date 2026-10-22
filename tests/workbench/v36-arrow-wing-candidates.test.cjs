@@ -69,3 +69,13 @@ test('detector is local-only evidence and never a model-mm dimension or G1 proof
  assert.doesNotMatch(src,/solveFiniteFillet|session\.replace|globallyUnique/);
  assert.match(src,/arrowheadVerified:false/);
 });
+
+test('line review UI draws arrows only as separate unverified local image evidence',()=>{
+ const fs=require('node:fs');
+ const ui=fs.readFileSync('labs/local-line-candidates-ui.cjs','utf8');
+ assert.match(ui,/detectArrowWingCandidates\(/);
+ assert.match(ui,/data-unconfirmed-arrow/);
+ assert.match(ui,/arrowHints:arrowHints\.map/);
+ assert.match(ui,/疑似箭头端点/);
+ assert.doesNotMatch(ui,/session\.replace|solveFiniteFillet/);
+});
