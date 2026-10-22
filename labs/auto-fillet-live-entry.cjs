@@ -6,6 +6,7 @@ const {createConfirmedFilletSession}=
  require('../workbench/v31-fillet-session.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
+const {attachLocalDimensionReview}=require('./local-dimension-review-ui.cjs');
 const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
@@ -32,6 +33,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
  let exportUi=null;
  let fieldReview=null;
+ let nativeOcrUi=null;
  let geometryCandidates={line:[],curve:[]};
  function updateCandidateChoices(){
   const select=$('sourceCandidate'),previous=select.value;
@@ -280,6 +282,15 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    if(session)recompute();
   }
  });
+ nativeOcrUi=attachLocalDimensionReview({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),kind:$('kind'),
+  run:$('detectOcr'),clear:$('clearOcr'),
+  candidateSelect:$('ocrCandidate'),fieldSelect:$('sourceField'),
+  reviewedValue:$('ocrReviewedValue'),accept:$('ocrAccept'),
+  stage:$('ocrStage'),status:$('ocrReviewStatus'),
+  fieldReview,getValues:values,getRevision:()=>session?.revision??0
+ });
  attachLocalLineCandidates({
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectLines'),
@@ -342,5 +353,5 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    recompute(); // #248 session invalidates the old verified timeline before solving.
   }
  });
- window.addEventListener('pagehide',()=>{localVector?.release();exportUi?.release();});
+ window.addEventListener('pagehide',()=>{localVector?.release();exportUi?.release();nativeOcrUi?.release();});
 })();
