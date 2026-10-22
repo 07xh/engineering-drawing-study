@@ -298,6 +298,36 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
      ?teaching.steps[stage-1].explanation:
      ['','沿第一条直线作半径距离偏移线。','沿第二条直线作半径距离偏移线。',
       '观察所有有效圆心（或平行条件下的连续族），先选分支和走向才能继续。'][stage];
+  }else if(input&&isMixed){
+   svg.append(drawLine(input.segment.a,input.segment.b));
+   svg.append(knownOutline(input.circle));
+   svg.append(dot(input.segment.a,'#257650','A'));
+   svg.append(dot(input.segment.b,'#257650','B'));
+   svg.append(dot(input.circle.center,'#257650','O'));
+   if(full&&!proofReady&&centers?.auxiliary&&stage>=1){
+    const line=centers.auxiliary.offsetLine;
+    svg.append(drawLine(line.a,line.b,'#c38536','7 6'));
+   }
+   if(full&&!proofReady&&centers?.auxiliary&&stage>=2){
+    const aux=centers.auxiliary;
+    svg.append(ring(aux.circleCenter,aux.centerLocusRadius,'#c38536','7 6'));
+   }
+   if(full&&!proofReady&&stage>=3){
+    for(const c of centers?.candidates??[])
+     svg.append(dot(c.center,'#9d6529',c.id));
+   }
+   if(proofReady)appendVerifiedSteps(svg,stage);
+   max=proofReady?teaching.steps.length:centers?.candidates?.length?3:0;
+   const prompts=[
+    '先观察有限线段和给定完整圆／有限圆弧；切点必须位于已知轮廓上。',
+    '在线段指定法向一侧作距离为连接半径的平行辅助线。',
+    '以已知圆心为圆心作半径 R+r 的辅助圆心轨迹。',
+    '偏移线与辅助圆的交点是有效候选圆心；必须独立选择合法分支。'
+   ];
+   $('stepTitle').textContent='第 '+stage+' 步';
+   $('stepText').textContent=stage===0?prompts[0]:
+    proofReady&&teaching.steps[stage-1]
+     ?teaching.steps[stage-1].explanation:prompts[stage];
   }else{
    if(input){
     svg.append(knownOutline(input.first));
