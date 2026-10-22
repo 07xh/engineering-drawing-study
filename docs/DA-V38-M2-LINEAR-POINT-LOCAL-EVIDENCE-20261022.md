@@ -1,0 +1,12 @@
+# V3.8 M1/M2 · Real analytic local evidence for bounded point constraints
+
+Related: #340 and #343. The opt-in `core/constraints/linear-point-local-evidence.cjs` is NOT a second generic solver. It consumes existing typed 2D model-mm point geometry and already validated `multi-point-2d-linear` constraints for ONLY fixed/coincident/horizontal/vertical cases. It constructs its own actual analytic equation rows from point values and constraint data, reuses `core/constraints/constraint-incidence.cjs` for structure and existing M0 `normalizeLocalSystem` + `diagnoseJacobian` for dimensionless numerical rank. It does not accept caller-forged derivative rows, and source input is snapshotted once. Bounded: 1–32 points, 1–64 constraints/equation rows.
+
+The result distinguishes graph connectivity, numeric local rank/local DOF, and residual compliance at the supplied point configuration. All proof-of-existence/nonexistence/global-uniqueness flags remain false; `globallyUnique:null`. Zero local DOF is not proof of a unique global solution, and a violated constraint at a provided configuration does not establish the equations have no solution. Numerical near-singularity reports undetermined rather than certifying rank. A floating precision resolution guard prevents large drawing origin coordinates from erasing smaller-than-tolerance offsets. It is a local diagnostic, not a complete analytic interval solver, a universal ConstraintGraph or a replacement for 02/03/04 professional solvers.
+
+Test scope: genuine fixed point constraints, rank independence/redundancy, conflicting current configurations, actual two-equation coincidence, horizontal/vertical, large-origin 10mm contradiction, wrong frames and nonlinear constraints, input order, numeric conditioning. Run `node --test tests/math/m2-linear-point-local-evidence.test.cjs` and all five exact-head GitHub CI workflows. No production consumers, public pages, Cloudflare, image/OCR, authentication or old solver modifications.
+
+Shared core/** code is high-risk: keep PR Draft until independent 00/09 signed-off math audit, downstream version/ownership agreement and exact-head CI success. Rollback revert isolated commit; existing math paths do not import this new module.
+## 09 增补：与现有原版求解器逐案对照
+
+新增直接调用原 `knowledge/multi-point-constraints.js` 的独立对照回归：固定坐标、重复坐标、两点重合、水平+竖直、混合冗余共五类输入对比原版方程秩/自由度；矛盾案例保留原版有限仿射方程 `none` 与新局部数值审计 `configuration-residual-failed` 的不同证明范围。不能把新诊断自动升级为全局 `none/unique`。
