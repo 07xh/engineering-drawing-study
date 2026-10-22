@@ -102,6 +102,11 @@ small{font-size:12px;color:#667f6e}
 <button id="qaZoomIn" type="button">放大 +</button>
 </div>
 <p class="hint">显示比例：<output id="qaZoomLevel">100%</output>。放大时可在图纸区域滚动浏览；缩放不会改变原图坐标或已有标注。</p>
+<div class="buttons">
+<button id="qaTouchCheck" type="button">开始五点触控坐标自检</button>
+<button id="qaTouchStop" type="button">结束自检</button>
+</div>
+<p class="hint" id="qaTouchResult" aria-live="polite">自检不会更改识别候选、人工标注或误差报告。请依次点击图中的橙色十字；结果仅是点按偏差参考。</p>
 <div id="qaStage" class="stage" hidden>
 <div id="qaViewport" class="qaViewport">
 <img id="qaImage" alt="用户选择的本地工程题图">
