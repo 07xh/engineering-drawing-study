@@ -24,9 +24,15 @@ function auditRealCircleFilletCenters(problem,{
   throw new TypeError('this 02 consumer only supports two given circles');
  if(!Number.isSafeInteger(expectedRevision)||expectedRevision!==typed.revision)
   throw new RangeError('current reviewed problem revision required');
+ // This numeric-only M2 consumer certifies auxiliary center-locus residuals,
+ // not the contact-angle interval of a finite source arc. Although the
+ // specialist gate now supports bounded source arcs, preserve this narrower
+ // consumer's proof scope until its independent arc-membership audit lands.
+ if(typed.geometry.first.arc!==undefined||typed.geometry.second.arc!==undefined)
+  throw new TypeError('unsupported field arc in numeric-only M2 consumer');
  const solved=solveFiniteFillet(typed);
- // The typed 02 gate governs candidate IDs and given complete-circle
- // inner/outer modes. Finite source arcs are explicitly unsupported here.
+ // The typed 02 gate governs candidate IDs for full source circles,
+ // while this wrapper independently checks both center-locus equations.
  const first=typed.geometry.first,second=typed.geometry.second;
  const mode1=typed.options.firstMode??'external';
  const mode2=typed.options.secondMode??'external';

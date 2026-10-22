@@ -32,8 +32,20 @@ const segment=(s,label)=>{
  return {a,b};
 };
 const circle=(c,label)=>{
- keys(c,['center','radius'],label);
- return {center:point(c.center,label+'.center'),radius:radius(c.radius,label+'.radius')};
+ keys(c,['center','radius','arc'],label);
+ const source={center:point(c.center,label+'.center'),radius:radius(c.radius,label+'.radius')};
+ // The existing 02 specialist owns directed finite source-arc normalization.
+ // Snapshot optional human-reviewed arc parameters once, then delegate its
+ // angular validity test. Do not invent a second angle-membership formula.
+ const requestedArc=c.arc;
+ if(requestedArc===undefined)return source;
+ keys(requestedArc,['startAngle','endAngle','direction'],label+'.arc');
+ const {startAngle,endAngle,direction}=requestedArc;
+ const raw={startAngle,endAngle,direction};
+ const checked=require('../planar/circle-circle-fillet.cjs')
+  .normalizeKnownCircle({...source,arc:raw},label);
+ return {...source,arc:{startAngle:checked.arc.startAngle,
+  endAngle:checked.arc.endAngle,direction:checked.arc.direction}};
 };
 const side=(x,label)=>{
  if(x!==undefined&&x!==1&&x!==-1)throw new RangeError(label+' must be +1 or -1');
@@ -102,6 +114,14 @@ function solveFiniteFillet(input,{solvers}={}){
   if(p.kind==='segment-circle'&&
      (c.lineContactOnSegment!==true||c.sourceArcRangeVerified!==true))
    throw new TypeError('bounded source contacts not verified');
+  // A supporting-circle contact is not a finite-arc contact. When the user
+  // limits either given circle to a directed arc, only the actual specialist
+  // may assert angular membership for BOTH source contacts.
+  if(p.kind==='two-circles'&&
+     (p.geometry.first.arc!==undefined||p.geometry.second.arc!==undefined)&&
+     (c.sourceArcRangeVerified!==true||
+      c.sourceArcChecks?.first!==true||c.sourceArcChecks?.second!==true))
+   throw new TypeError('finite source-circle arc contacts not verified');
   return {branchId:c.id,center:point(c.center,'candidate '+i+' center'),
    contacts:{first:contactA,second:contactB},
    maxResidual:c.maxResidual,finiteSourceContactsVerified:true,
