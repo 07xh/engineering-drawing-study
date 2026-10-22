@@ -45,8 +45,7 @@ function gradeStudentTangentPoints(kind,args,marks,{
  if(!chosen.contacts||!SIDES.every(id=>pt(chosen.contacts[id]))||
    !finite(chosen.maxResidual)||chosen.maxResidual>1e-7||
    (kind==='segments'&&(!chosen.sourceContactsOnSegments||
-    !SIDES.every(id=>chosen.contactSegments?.[id]?.inRange===undefined&&
-      finite(chosen.contactSegments?.[id]?.t)&&
+    !SIDES.every(id=>finite(chosen.contactSegments?.[id]?.t)&&
       chosen.contactSegments[id].t>=0&&chosen.contactSegments[id].t<=1))))
   return {...base,status:'not-gradeable',reason:
    '该圆心没有两处真实有效切点的数学证明'};
