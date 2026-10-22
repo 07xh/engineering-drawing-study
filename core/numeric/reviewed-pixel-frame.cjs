@@ -13,16 +13,21 @@ const finite=v=>typeof v==='number'&&Number.isFinite(v);
 const identifier=v=>typeof v==='string'&&/^[A-Za-z0-9_-]{1,120}$/.test(v);
 const revision=v=>Number.isSafeInteger(v)&&v>=0;
 function pair(v,name){
- if(!record(v)||!Object.hasOwn(v,'x')||!Object.hasOwn(v,'y')||
-    !finite(v.x)||!finite(v.y))throw new TypeError(name+' requires finite x/y');
- return {x:v.x,y:v.y};
+ if(!record(v)||!Object.hasOwn(v,'x')||!Object.hasOwn(v,'y'))
+  throw new TypeError(name+' requires finite x/y');
+ const x=v.x,y=v.y;
+ if(!finite(x)||!finite(y))throw new TypeError(name+' requires finite x/y');
+ return {x,y};
 }
 function imageInfo(image){
- if(!record(image)||!identifier(image.id)||!revision(image.revision)||
-    !Number.isSafeInteger(image.width)||!Number.isSafeInteger(image.height)||
-    image.width<24||image.height<24||image.width>10000||image.height>10000)
+ if(!record(image))
   throw new TypeError('original image id, revision and supported pixel dimensions required');
- return {id:image.id,revision:image.revision,width:image.width,height:image.height};
+ const {id,revision:rev,width,height}=image;
+ if(!identifier(id)||!revision(rev)||
+    !Number.isSafeInteger(width)||!Number.isSafeInteger(height)||
+    width<24||height<24||width>10000||height>10000)
+  throw new TypeError('original image id, revision and supported pixel dimensions required');
+ return {id,revision:rev,width,height};
 }
 function inside(p,image){
  if(p.x<0||p.y<0||p.x>image.width||p.y>image.height)
@@ -31,26 +36,30 @@ function inside(p,image){
 function createReviewedPixelFrame({image,scale,origin,approved}={}){
  const source=imageInfo(image);
  if(approved!==true)throw new TypeError('explicit frame approval required');
- if(!record(scale)||scale.frame!==FRAME||
-    scale.unit!=='mm/original-image-px'||scale.reviewed!==true||
-    !identifier(scale.sourceId)||!identifier(scale.imageId)||
-    !revision(scale.revision)||scale.imageId!==source.id||
-    scale.revision!==source.revision||!finite(scale.mmPerPx)||
-    scale.mmPerPx<MIN_SCALE||scale.mmPerPx>MAX_SCALE)
+ if(!record(scale))
   throw new TypeError('current human-reviewed image-bound mm/pixel scale required');
- if(!record(origin)||origin.reviewed!==true||
-    !['up','down'].includes(origin.modelYDirection))
+ const {frame,unit,reviewed,sourceId,imageId,revision:scaleRevision,mmPerPx}=scale;
+ if(frame!==FRAME||unit!=='mm/original-image-px'||reviewed!==true||
+    !identifier(sourceId)||!identifier(imageId)||
+    !revision(scaleRevision)||imageId!==source.id||
+    scaleRevision!==source.revision||!finite(mmPerPx)||
+    mmPerPx<MIN_SCALE||mmPerPx>MAX_SCALE)
+  throw new TypeError('current human-reviewed image-bound mm/pixel scale required');
+ if(!record(origin))
   throw new TypeError('reviewed pixel/model origins and explicit model Y direction required');
- const pixel=pair(origin.pixel,'pixel origin');
- const modelMm=pair(origin.modelMm,'model mm origin');
+ const {reviewed:originReviewed,modelYDirection,pixel:pixelInput,modelMm:modelInput}=origin;
+ if(originReviewed!==true||!['up','down'].includes(modelYDirection))
+  throw new TypeError('reviewed pixel/model origins and explicit model Y direction required');
+ const pixel=pair(pixelInput,'pixel origin');
+ const modelMm=pair(modelInput,'model mm origin');
  inside(pixel,source);
- const saved=Object.freeze({image:Object.freeze(source),mmPerPx:scale.mmPerPx,
+ const saved=Object.freeze({image:Object.freeze(source),mmPerPx,
   pixelOrigin:Object.freeze(pixel),modelOrigin:Object.freeze(modelMm),
-  modelYDirection:origin.modelYDirection,scaleSourceId:scale.sourceId});
+  modelYDirection,scaleSourceId:sourceId});
  const context=Object.freeze({schema:'draftai-reviewed-pixel-frame/1',
   sourceFrame:FRAME,targetFrame:TARGET,modelUnit:'mm',
   imageId:source.id,imageRevision:source.revision,
-  scaleSourceId:scale.sourceId,status:'user-reviewed-provisional',
+  scaleSourceId:sourceId,status:'user-reviewed-provisional',
   uniformScaleProven:false,perspectiveCorrectionPerformed:false,
   geometricAccuracyProven:false});
  contexts.set(context,saved);
