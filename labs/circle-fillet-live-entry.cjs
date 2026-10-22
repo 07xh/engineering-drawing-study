@@ -528,12 +528,16 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   }
   if(drawing&&isMixed){
    const tool=$('drawTool').value;
-   $('stepTitle').textContent=tool==='arc'?'线段＋圆｜手绘连接弧':'线段＋圆｜自行确定两个切点';
+   $('stepTitle').textContent=tool==='arc'?'线段＋圆｜手绘连接弧':
+    tool==='snap'?'线段＋圆｜自主选择候选圆心':
+    tool==='tangent'?'线段＋圆｜自行确定两个切点':'线段＋圆｜数字化尺规';
    $('stepText').textContent=tool==='arc'?
-    '从线段切点开始，到给定圆或有限弧的切点结束，绘制满足有向 G1 的连接弧；数学评分不代表整题完成。':
-    '先选已知对象 1（线段）或 2（圆／有限圆弧），分别在画纸标记切点；暂不支持其他尺规工具。';
+    '从有限线段切点到给定圆弧切点画出有向 G1 连接弧；不代表整题完成。':
+    tool==='snap'?'自行选择有效分支再点选圆心，数学吸附不会代替选答案。':
+    '按已知对象分别构造偏移线与辅助圆，并点选自己计算的两个切点。';
    if(!['tangent','arc'].includes(tool))
-    $('drawStatus').textContent='该题型只开放学生切点和手绘连接弧；请先切换绘图工具。';
+    $('drawStatus').textContent=tool==='snap'?centerSnapMessage:
+     '请使用上方数字尺规构造辅助轨迹，或切换点选切点和手绘圆弧工具。';
    else try{
     if(tool==='tangent'){
      const r=gradeStudentTangentPoints('segment-circle',input,
