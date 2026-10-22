@@ -33,7 +33,7 @@ function explainStage(id,item,evidence){
    evidence.remainingSources.filter(id=>Object.hasOwn(SOURCE,id)).map(id=>SOURCE[id]):[];
   const text=(count===0?'尚未核验任何学生辅助轨迹。':
    '已核验 '+count+' / 2 条学生辅助轨迹。')+
-   (remaining.length?' 请自行构造'+remaining.join('、')+'对应的辅助轨迹。':'')+
+   (remaining.length?' 请自行构造'+remaining.join('、')+' 对应的辅助轨迹。':'')+
    (extra?' 检测到 '+extra+' 条额外、重复或不符合当前分支的构造；请核对并撤销多余笔迹。':'')+
    ' 核对源对象、偏移侧、距离或圆规半径；系统不会替你填写数值。';
   return {state:extra||item.status==='incorrect'?'review':count?'partial':'pending',detail:text};
