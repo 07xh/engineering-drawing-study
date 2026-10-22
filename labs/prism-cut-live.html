@@ -29,6 +29,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .board svg{width:100%;height:auto;display:block;max-height:75vh}
 .board.no-guides #prism-guides{display:none}
 .board.mono #prism-cut-unknown-visibility *{stroke:#555!important;fill:#555!important}
+#rayControls{border:1px solid #deebe2;background:#f7fbf7;padding:9px;border-radius:12px}
+#rayControls[hidden]{display:none}
 .legend{font-size:12px;color:#516a5b;margin:10px 0}
 .legend strong{color:#945516}
 .playbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}
@@ -52,7 +54,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 </div></header>
 <main class="wrap">
 <h1>长方棱柱斜截面 · 动态作图</h1>
-<p class="sub">手工确认长方棱柱和切平面 → 真实 12 条空间棱求交 → 三视投影与 45° 辅助线 → V5 逐步绘制截面。截线虚实关系尚未独立验证，所有结果显示为<strong>待审核线型</strong>，不可直接作为工程制图标准答案。</p>
+<p class="sub">手工确认棱柱和切平面 → 真实 12 条空间棱求交 → 同纸三视图和 45° 辅助线 → V5 逐笔作图。默认保持待审核线型；明确选择材料保留侧和 V/H/W 各自的观察方向后，才提供限定模型截面开边的射线可见性结果。</p>
 <div class="layout">
 <section class="card" aria-label="棱柱和截平面输入条件">
 <h2>已知棱柱尺寸 · 毫米</h2>
@@ -74,13 +76,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label for="ny">nY<input id="ny" type="number" value="1" step="any"></label>
 <label for="nz">nZ<input id="nz" type="number" value="1" step="any"></label>
 </div>
+<h2>截交线可见性（需人工确认）</h2>
+<label for="visibilityMode">线型计算模式
+<select id="visibilityMode"><option value="unconfirmed" selected>未确认视向：全部待审核</option><option value="rays">按明确观察射线计算模型可见性</option></select></label>
+<div id="rayControls">
+<label for="retainedHalfspace">截切后保留哪一侧实体
+<select id="retainedHalfspace"><option value="" selected>请选择保留材料的一侧</option><option value="negative">平面法向负侧（≤0）</option><option value="positive">平面法向正侧（≥0）</option></select></label>
+<div class="pair">
+<label for="viewV">V 主视图的观察方向
+<select id="viewV"><option value="" selected>请确认</option><option value="-1">从 Y 负方向看</option><option value="1">从 Y 正方向看</option></select></label>
+<label for="viewH">H 俯视图的观察方向
+<select id="viewH"><option value="" selected>请确认</option><option value="1">从 Z 正方向看</option><option value="-1">从 Z 负方向看</option></select></label>
+<label for="viewW">W 侧视图的观察方向
+<select id="viewW"><option value="" selected>请确认</option><option value="-1">从 X 负方向看</option><option value="1">从 X 正方向看</option></select></label>
+</div></div>
+<p class="helper">观察方向表示从图元指向观察者；这些数学选项尚未获得第一角法制图标准签收。未完整确认时拒绝启用射线线型，保留原待审核结果。</p>
 <div class="toolbar"><button id="reset" type="button">恢复六边形示例</button><button class="primary" id="solve" type="button">重新求解并绘图</button></div>
 <div id="status" role="status" aria-live="polite" class="notice">等待计算。</div>
 </section>
 <section class="card" aria-label="棱柱截面 V5 动态作图">
 <h2>同纸三视图 · 真实 V5 逐笔作图</h2>
 <div id="board" class="board" role="img" aria-label="数学证明的棱柱截面三视图及逐笔辅助线动画"></div>
-<p class="legend">深色：已知外轮廓　浅虚线：辅助线　<strong>橙色点虚线：可见性尚未核验的截面轮廓</strong></p>
+<p class="legend">深色：已知轮廓　浅虚线：辅助线　绿色实线：按指定射线可见　深灰虚线：按指定射线遮挡　<strong>橙色点虚线：待判定</strong>。所有线型仍未获正式制图标准签收。</p>
+<p id="rayStatus" class="helper" role="status" aria-live="polite">默认未确认：截面所有结果保留待审核线型。</p>
 <div class="playbar">
 <button id="previous" type="button" disabled>← 上一步</button>
 <button class="primary" id="play" type="button" disabled>▶ 播放</button>
@@ -100,7 +118,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <p class="helper" id="stepDetail">点击步骤可以跳转到真实作图时间。</p>
 </section>
 </div>
-<p class="sub" style="margin-top:18px">该实验使用浏览器本地计算，不上传任何图形。暂不支持任意旋转棱柱、棱锥、照片 AI 识图、端面共面退化截面、隐藏线认证与正式第一角法国标审核。</p>
+<p class="sub" style="margin-top:18px">所有计算均在本地浏览器运行，不上传模型。射线证据仅对应一个已知长方棱柱的截面边开区间，尚未验证角点/其它物体遮挡及正式第一角法线型。暂不支持任意旋转棱柱、棱锥、照片 AI 识图或端面共面退化截面。</p>
 </main>
 <script defer src="prism-cut-live-bundle.js"></script>
 </body>
