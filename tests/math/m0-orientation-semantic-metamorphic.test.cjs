@@ -20,9 +20,9 @@ test('M0 orientation obeys cyclic invariance and antisymmetry', () => {
     const s = orientation2D(a, b, c).sign;
     assert.equal(orientation2D(b, c, a).sign, s);
     assert.equal(orientation2D(c, a, b).sign, s);
-    assert.equal(orientation2D(a, c, b).sign, -s);
-    assert.equal(orientation2D(b, a, c).sign, -s);
-    assert.equal(orientation2D(c, b, a).sign, -s);
+    assert.equal(orientation2D(a, c, b).sign, s === 0 ? 0 : -s);
+    assert.equal(orientation2D(b, a, c).sign, s === 0 ? 0 : -s);
+    assert.equal(orientation2D(c, b, a).sign, s === 0 ? 0 : -s);
   }
 });
 
