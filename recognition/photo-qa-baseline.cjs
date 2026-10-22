@@ -13,8 +13,10 @@ function exactKeys(x,keys){
  return object(x)&&Object.keys(x).every(key=>keys.includes(key))&&
   keys.every(key=>Object.hasOwn(x,key));
 }
-function counts(source){
- if(!exactKeys(source,['tp','fp','fn'])||
+function counts(source,strict=false){
+ if(!(strict?exactKeys(source,['tp','fp','fn']):
+  (object(source)&&['tp','fp','fn'].every(k=>Object.hasOwn(source,k))&&
+   Object.keys(source).every(k=>['tp','fp','fn','precision','recall','f1'].includes(k))))||
   ![source.tp,source.fp,source.fn].every(x=>
    Number.isSafeInteger(x)&&x>=0&&x<=200))
   throw new TypeError('invalid nonnegative recognition counts');
@@ -41,7 +43,7 @@ function inspectBaseline(b){
  const totals={tp:0,fp:0,fn:0};
  for(const kind of b.scoredKinds){
   if(!Object.hasOwn(b.byKind,kind))throw new TypeError('missing baseline kind');
-  const c=counts(b.byKind[kind]);
+  const c=counts(b.byKind[kind],true);
   for(const key of ['tp','fp','fn'])totals[key]+=c[key];
  }
  if(totals.tp+totals.fn===0)throw new TypeError('no annotated ground truth to compare');
