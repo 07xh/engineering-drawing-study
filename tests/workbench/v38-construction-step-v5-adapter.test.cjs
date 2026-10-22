@@ -103,3 +103,79 @@ test('pixel frames, bad transforms, invalid dependencies and stale source are re
  assert.throws(()=>wrap([step('A',[point(Number.MAX_VALUE,0)])]),/overflow/);
  assert.throws(()=>wrap([]),/1..300/);
 });
+
+
+const {verifiedTeachingActionToV5:trustedAction}=
+ require('../../workbench/construction-step-v5-adapter.cjs');
+const Bridge=require('../../workbench/verified-plan-v5-bridge.cjs');
+
+test('actual 03 projection remains in source sheet-px through the shared V5 converter',()=>{
+ const lesson=Bridge.pointTimeline({knownViews:{V:[15,12],H:[15,10]},
+  sheetTransform:{origin:{x:100,y:100},scale:2}},8);
+ assert.equal(lesson.status,'ready');
+ assert.equal(lesson.mathematicallyVerified,true);
+ assert.equal(lesson.steps.length,5);
+ assert.equal(lesson.steps[0].actions[0].kind,'line');
+ assert.deepEqual(lesson.steps[0].actions[0].geometry.from,
+  lesson.originalLesson.steps[0].actions[0].from);
+ assert.equal(lesson.steps.at(-1).id,'third-view');
+ assert.deepEqual(lesson.steps.at(-1).actions[0].geometry.center,
+  lesson.originalLesson.sheet.W);
+});
+
+test('actual 02 directed two-circle fillet retains proven G1 and arc sweep after shared V5 migration',()=>{
+ const input={
+  first:{center:{x:0,y:0},radius:5},
+  second:{center:{x:20,y:0},radius:5},
+  filletRadius:10,firstMode:'external',secondMode:'external',
+  branchId:'center-1',direction:'cw',
+  knownFirstTravel:'ccw',knownSecondTravel:'ccw'
+ };
+ const result=Bridge.filletTimeline('circles',input,{origin:{x:360,y:220},scale:8},5);
+ assert.equal(result.status,'ready');
+ assert.equal(result.mathematicallyVerified,true);
+ assert.equal(result.selectedBranchId,'center-1');
+ const last=result.steps.at(-1).actions[0];
+ assert.equal(last.kind,'arc');
+ assert.ok(last.geometry.sweepRadians>0);
+ assert.ok(Math.abs(last.geometry.radius-80)<1e-8);
+ assert.match(Motion.actionShapeAttrs(last,1).d,/ A /);
+ assert.equal(Timeline.frame(result.timing,result.timing.totalMs).done,true);
+});
+
+test('one shared 07 converter preserves model arcs and rejects fake direction or pixel arcs',()=>{
+ const s={origin:{x:100,y:200},scale:10};
+ const a=trustedAction({id:'arc_1',kind:'arc',coordinateSpace:'model-mm',
+  center:{x:2,y:3},radius:4,startAngle:0,endAngle:90,direction:'ccw'},s);
+ assert.equal(a.kind,'arc');
+ assert.deepEqual(a.geometry.center,{x:120,y:170});
+ assert.equal(a.geometry.radius,40);
+ assert.ok(a.geometry.sweepRadians<0);
+ assert.match(Motion.actionShapeAttrs(a,1).d,/ A /);
+ assert.throws(()=>trustedAction({...a,kind:'arc',coordinateSpace:'sheet-px'},s));
+ assert.throws(()=>trustedAction({id:'bad',kind:'arc',coordinateSpace:'model-mm',
+  center:{x:0,y:0},radius:1,startAngle:0,endAngle:90,direction:'cw'},s),
+  /direction conflict/);
+ const projected=trustedAction({id:'guide',kind:'line',coordinateSpace:'sheet-px',
+  from:{x:150,y:80},to:{x:190,y:80}},s);
+ assert.deepEqual(projected.geometry.from,{x:150,y:80});
+ assert.deepEqual(projected.geometry.to,{x:190,y:80});
+ const modeled=trustedAction({id:'model-guide',kind:'line',coordinateSpace:'model-mm',
+  from:{x:2,y:3},to:{x:5,y:6}},s);
+ assert.deepEqual(modeled.geometry.from,{x:120,y:170});
+ assert.deepEqual(modeled.geometry.to,{x:150,y:140});
+ assert.ok(!Object.hasOwn(modeled,'mathematicallyVerified'));
+});
+
+test('unselected 02 branches do not start rendering through shared V5 adapter',()=>{
+ const input={
+  first:{center:{x:0,y:0},radius:5},
+  second:{center:{x:20,y:0},radius:5},
+  filletRadius:10,firstMode:'external',secondMode:'external',
+  direction:'cw',knownFirstTravel:'ccw',knownSecondTravel:'ccw'
+ };
+ const result=Bridge.filletTimeline('circles',input,{origin:{x:360,y:220},scale:8},9);
+ assert.equal(result.status,'not-verified');
+ assert.equal(result.mathematicallyVerified,false);
+ assert.deepEqual(result.steps,[]);
+});
