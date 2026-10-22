@@ -9,7 +9,7 @@ function element(){
  return {files:[],value:'',src:'',hidden:true,textContent:'',
   handlers,attrs,
   addEventListener:(k,fn)=>{handlers[k]=fn},
-  removeAttribute:(k)=>{delete attrs[k];if(k==='src')this.src=''}
+  removeAttribute(k){delete this.attrs[k];if(k==='src')this.src=''}
  };
 }
 test('local image file gate allows bounded JPG/PNG/WebP only',()=>{
