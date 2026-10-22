@@ -86,7 +86,7 @@ test('UI keeps candidate selection and final mm confirmation in distinct control
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(entry,/markCandidate\(candidate\)/);
  assert.match(entry,/onCandidates:items=>receivedCandidates/);
- assert.match(lineUi,/locateCandidate/);
+ assert.match(lineUi,/mapLeaderCandidate/);
  assert.match(curveUi,/locateCandidate/);
  assert.match(fieldUi,/state\.mark\(fieldSelect\.value,candidate\.bbox,candidate\.id\)/);
  assert.match(fieldUi,/请再次确认当前毫米数值/);
