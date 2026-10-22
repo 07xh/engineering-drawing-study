@@ -37,3 +37,10 @@ test('affine products fail closed when two nonzero factors multiply to zero',()=
  assert.throws(()=>transformDirection(tiny,[1e-200,2]),/underflow/);
  assert.throws(()=>composeAffine(tiny,tiny,2),/underflow/);
 });
+
+test('affine matrix contract accepts only 2D/3D transforms',()=>{
+ assert.throws(()=>affine([[1]],0),TypeError);
+ assert.throws(()=>affine([[1]],-1),TypeError);
+ assert.throws(()=>affine([[1,0],[0,1]],1),TypeError);
+ assert.deepEqual(affine([[1,0,0],[0,1,0],[0,0,1]],2),[[1,0,0],[0,1,0],[0,0,1]]);
+});
