@@ -8,6 +8,7 @@
 const {normalizedLine,offsetLine,signedDistance}=require('../engines/planar/offset-tangency.cjs');
 const {circleCircleFilletCenters}=require('../engines/planar/circle-circle-fillet.cjs');
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
+const {finiteSegmentCircleFillets}=require('../engines/planar/segment-circle-fillet.cjs');
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const pt=p=>!!p&&typeof p==='object'&&finite(p.x)&&finite(p.y);
 const revisionCheck=n=>{
@@ -44,14 +45,14 @@ function constructConcentricCircle(source,radiusMm,{revision=0}={}){
 }
 function snapChosenFilletCenter(kind,args,stroke,{branchId,revision=0,toleranceMm=0.75}={}){
  revisionCheck(revision);
- if(kind!=='circles'&&kind!=='segments')
+ if(!['circles','segments','segment-circle'].includes(kind))
   throw new TypeError('supported fillet kind required');
  if(!finite(toleranceMm)||toleranceMm<=0||toleranceMm>2)
   throw new RangeError('positive mm snapping tolerance <=2 required');
  if(!stroke||!pt(stroke)||stroke.revision!==revision)
   throw new TypeError('invalid or stale student-selected point');
  const result=kind==='circles'?circleCircleFilletCenters(args):
-  finiteTwoSegmentFillets(args);
+  kind==='segment-circle'?finiteSegmentCircleFillets(args):finiteTwoSegmentFillets(args);
  const base={kind,revision,proofScope:'selected-center-only',
   arcG1Verified:false,completeProblemVerified:false,
   sourceStatus:result.status};
@@ -64,7 +65,11 @@ function snapChosenFilletCenter(kind,args,stroke,{branchId,revision=0,toleranceM
  const chosen=result.candidates.find(c=>c.id===branchId);
  if(!chosen)return {...base,status:'invalid-branch',
   reason:'学生选择的分支不属于真实有限候选集合'};
- if(!pt(chosen.center)||!finite(chosen.maxResidual)||chosen.maxResidual>1e-7)
+ if(!pt(chosen.center)||!finite(chosen.maxResidual)||chosen.maxResidual>1e-7||
+    (kind==='segment-circle'&&(
+     chosen.lineContactOnSegment!==true||chosen.sourceArcRangeVerified!==true||
+     chosen.sourceArcChecks?.circle!==true||!finite(chosen.segmentParameter)||
+     chosen.segmentParameter<0||chosen.segmentParameter>1)))
   return {...base,status:'not-gradeable',reason:'候选圆心没有通过求解器残差验证'};
  const gap=Math.hypot(stroke.x-chosen.center.x,stroke.y-chosen.center.y);
  if(!finite(gap))throw new RangeError('distance overflow');
