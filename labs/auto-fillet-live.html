@@ -32,6 +32,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .source-review .controls button{flex:1 1 140px}
 .source-status{font-size:12px;color:#526d58;line-height:1.65;margin:8px 0}
 .source-status[role=status]{overflow-wrap:anywhere}
+.ocr-review{margin-top:13px;border-top:1px solid #d8e6da;padding-top:10px}.ocr-review label{margin:9px 0}.ocr-review .ocr-accept{display:flex;flex-direction:row;gap:8px;align-items:center}.ocr-review .ocr-accept input{width:20px;min-height:20px;flex:none}
 .local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
 .vector-preview{display:block;width:100%;height:140px;background:#fff;border:1px solid #d8e6da;border-radius:9px;margin:9px 0}.vector-confirm{display:flex;flex-direction:row;align-items:center;gap:9px;margin:10px 0}.vector-confirm input{width:auto;min-height:20px;flex:0 0 auto}.vector-status{font-size:12px;color:#576e5b;line-height:1.55;margin:8px 0}
 .vector-annotation-review{display:grid;gap:8px;margin-top:10px}.vector-annotation-row{padding:9px;background:white;border:1px solid #d8e6da;border-radius:9px;display:grid;gap:7px}.vector-annotation-row span{font-size:12px;overflow-wrap:anywhere;color:#496e56}
@@ -101,6 +102,15 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <button type="button" id="acceptSources" class="primary">确认全部条件并解题</button>
 </div>
 <p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
+<div class="ocr-review" aria-label="原题本机文字候选人工核验">
+<p class="muted">本机原生 OCR（实验）：仅识别 R/Φ 等尺寸文字候选。浏览器不支持时不会运行识别，也不会上传题图或生成数学答案。</p>
+<div class="controls"><button type="button" id="detectOcr">识别本地尺寸文字</button><button type="button" id="clearOcr">清除文字候选</button></div>
+<label for="ocrCandidate">待核验 R/Φ 文字<select id="ocrCandidate"><option value="">先检测本地文字</option></select></label>
+<label for="ocrReviewedValue">人工核对后的标注数值（毫米；Φ 填直径）<input type="number" id="ocrReviewedValue" step="any" min="0" placeholder="请检查原题，必要时修正"></label>
+<label class="ocr-accept"><input type="checkbox" id="ocrAccept">我核对了原题文字、当前选择的数学字段及其毫米数值</label>
+<div class="controls"><button type="button" id="ocrStage" disabled>确认这条文字与当前字段对应</button></div>
+<p id="ocrReviewStatus" class="source-status" role="status" aria-live="polite">候选只是未核验文字。必须启用严格模式、确认当前字段，并逐项审核全部条件。</p>
+</div>
 </div>
 </div>
 <div class="local-photo" id="localVectorPanel">
