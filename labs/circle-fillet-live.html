@@ -19,6 +19,9 @@ button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor
 .playback-scrub input[type=range]{flex:1 1 230px;width:100%;min-height:34px;accent-color:#236c49;touch-action:pan-x;padding:0;cursor:pointer}
 .playback-scrub output{min-width:66px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:#42664f}
 .playback-scrub button{flex:0 1 auto}
+#filletStrokeLive{display:grid;gap:6px;justify-items:stretch}
+#filletStrokeLive[hidden]{display:none}
+#filletStrokePercent{justify-self:end}
 @media(max-width:550px){.playback-scrub button{width:100%}}
 #filletProof{margin-top:12px;display:grid;gap:9px}
 #filletProof h3{font-size:15px;margin:0}
@@ -126,7 +129,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <section id="filletProof" class="card" aria-labelledby="filletProofHeading" hidden>
 <h3 id="filletProofHeading">V5 · 本步数学依据与核验</h3>
 <p id="filletProofTitle" class="note" aria-live="polite">等待经核验的作图步骤</p>
-<div id="filletStrokeLive" class="playback-scrub" hidden aria-label="当前真实笔迹的作图依据" style="display:grid">
+<div id="filletStrokeLive" class="playback-scrub" hidden aria-label="当前真实笔迹的作图依据">
 <strong id="filletStrokeTitle" aria-live="polite">当前笔迹尚未开始</strong>
 <p id="filletStrokeWhy" style="margin:0;font-size:13px">播放或拖动进度后显示当前笔迹。</p>
 <p id="filletStrokeBasis" style="margin:0;font-size:12px;color:#42664f"></p>
