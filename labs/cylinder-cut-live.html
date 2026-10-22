@@ -30,6 +30,11 @@ summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-botto
 .board svg{width:100%;height:auto;display:block;max-height:72vh;aspect-ratio:960/680}
 .board.hide-guides #construction-guides{display:none}
 .board.monochrome [data-visibility="undetermined"]{stroke:#666!important;fill:#666!important}
+.board [data-action]{cursor:crosshair}
+.board [data-selected="true"]{stroke:#08794d!important;stroke-width:4!important;filter:drop-shadow(0 0 3px #55b67a)}
+.board circle[data-selected="true"]:not([fill="none"]){fill:#08794d!important}
+.board:focus-visible{outline:2px solid #198157;outline-offset:3px}
+
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#607769;margin:11px 0}
 .swatch{display:inline-block;width:23px;height:3px;margin-right:5px;vertical-align:middle;background:#323b44}
 .swatch.guide{background:repeating-linear-gradient(90deg,#8794a5 0 5px,transparent 5px 9px)}
@@ -100,7 +105,8 @@ summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-botto
 </section>
 <section class="card" aria-label="逐步三视图动态图纸">
 <div class="hd"><h2>真实作图过程</h2><span id="counts">等待求解</span></div>
-<div id="board" class="board" role="img" aria-label="V 主视、H 俯视、W 侧视与真实截交线逐笔动画"></div>
+<div id="board" class="board" role="region" tabindex="0" aria-label="V 主视、H 俯视、W 侧视真实截交线，可点击已绘图线定位步骤"></div>
+<p id="pickedInfo" class="helper" role="status" aria-live="polite">轻触已绘出的图线，可选中线条并定位对应作图步骤。</p>
 <div class="legend"><span><i class="swatch"></i>已知图</span>
 <span><i class="swatch guide"></i>辅助线</span>
 <span><i class="swatch"></i>可见实线</span>
@@ -121,6 +127,8 @@ summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-botto
 </select></label>
 <label for="guides"><input id="guides" type="checkbox" checked>显示辅助线</label>
 <label for="mono"><input id="mono" type="checkbox">黑白模式</label>
+<label for="autofocus"><input id="autofocus" type="checkbox" checked>自动聚焦当前步骤</label>
+<button id="fit" type="button">查看整张图纸</button>
 <button id="save" type="button" disabled>保存当前 SVG</button>
 </div>
 <div class="stepbox"><h2>作图步骤</h2><nav id="steps" aria-label="真实计算作图步骤"></nav></div>
