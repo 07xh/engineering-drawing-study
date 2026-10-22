@@ -50,6 +50,15 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
 .lab-v2 .sync-controls output{font-size:12px;font-variant-numeric:tabular-nums;min-width:38px}
 .lab-v2 .sync-caption{font-size:12px;line-height:1.5;color:#55705d;margin:7px 0}
 .lab-v2 .sync-description{font-size:12px;line-height:1.6;color:#667d6d;margin:7px 0 0}
+.lab-v2 .sheet-lesson{display:grid;grid-template-columns:minmax(0,1fr) minmax(225px,.48fr);gap:12px;align-items:start}
+.lab-v2 .sync-proof{min-width:0;border:1px solid #d8e8dc;background:#f8fbf9;border-radius:12px;padding:12px;display:grid;gap:10px;align-content:start}
+.lab-v2 .sync-proof h3{font-size:16px;margin:0;color:#24563e}
+.lab-v2 .sync-proof dl{margin:0;display:grid;gap:10px}
+.lab-v2 .sync-proof dt{font-size:12px;font-weight:700;color:#426851;margin-bottom:3px}
+.lab-v2 .sync-proof dd{font-size:13px;line-height:1.6;overflow-wrap:anywhere;margin:0;color:#345545}
+.lab-v2 .sync-proof dd.is-evidence{font-size:12px}
+@media(max-width:1250px){.lab-v2 .workspace{grid-template-columns:1fr}}
+@media(max-width:700px){.lab-v2 .sheet-lesson{grid-template-columns:1fr}.lab-v2 .sync-proof{padding:11px}}
 
 @media(max-width:930px){.lab-v2 .workspace{grid-template-columns:1fr}}
 @media(max-width:600px){main.lab-v2{padding:12px 10px 45px}.lab-v2 .intro,.lab-v2 .pane,.lab-v2 .editor{padding:12px}.lab-v2 .fields label{flex:1 1 110px}.lab-v2 input[type=number]{width:100%}}
@@ -72,7 +81,20 @@ main.lab-v2{max-width:1360px;margin:auto;padding:18px 16px 65px}
    <p id="pointCoordinates" class="muted" aria-live="polite"></p>
   </section>
   <section class="pane"><h2>工程制图 · 单张三视图图纸</h2><p class="muted">第一角画法：V 左上、H 左下、W 右上。45° 线在右下，用于 H→W 的深度转移。</p>
-   <svg id="sheet" class="display" viewBox="0 0 960 620" role="img" aria-label="同一张工程图纸上的 V、H、W 三视图与 45 度转移线"></svg>
+   <div class="sheet-lesson">
+    <svg id="sheet" class="display" viewBox="0 0 960 620" role="img" aria-label="同一张工程图纸上的 V、H、W 三视图与 45 度转移线"></svg>
+    <aside class="sync-proof" aria-labelledby="syncReasonHeading">
+     <h3 id="syncReasonHeading">为什么这样画？</h3>
+     <p class="muted" id="syncReasonTitle" aria-live="polite">尚未开始逐步作图</p>
+     <dl>
+      <div><dt>本步为什么画</dt><dd id="syncReasonWhy">跟随作图步骤展示经过验证的投影关系。</dd></div>
+      <div><dt>依据的数学关系</dt><dd id="syncReasonBasis">第一角 V/H/W 投影及 45° 深度转移。</dd></div>
+      <div><dt>自由度与独立条件</dt><dd id="syncReasonDof">空间点自由度来自真实几何约束，而非辅助线数量。</dd></div>
+      <div><dt>结果校验</dt><dd id="syncReasonCheck">每步仅引用已核验的投影数据。</dd></div>
+      <div><dt>已启用条件如何起作用</dt><dd id="syncReasonEvidence" class="is-evidence">添加条件后显示独立性、冗余性与自由度变化。</dd></div>
+     </dl>
+    </aside>
+   </div>
    <div class="toolbar"><label><input type="checkbox" id="showGuides" checked> 投影联系线</label><label><input type="checkbox" id="showHiddenEdges" checked> 显示不可见棱线（虚线）</label><label><input type="checkbox" id="showWireframe" checked> 立体投影线框</label><label><input type="checkbox" id="showLabels"> 参考顶点</label></div>
    <section class="sync-controls" aria-label="三维与三视图同步动画">
     <h3>V5 · 三维 / 三视图同步作图</h3>

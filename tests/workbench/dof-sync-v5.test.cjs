@@ -132,12 +132,16 @@ test('public DOF tool gets accessible playback UI and bundled 3D/SVG fallback',(
  const webgl=read('labs/dof-lab-three-entry.js'),svg=read('labs/dof-lab-spatial-svg.js');
  const build=read('scripts/build-static.cjs');
  for(const id of ['syncPlay','syncRestart','syncSpeed','syncProgress','syncPercent',
-  'syncExplanation','syncCaption','syncPrevious','syncNext','syncStep'])assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
+  'syncExplanation','syncCaption','syncPrevious','syncNext','syncStep',
+  'syncReasonHeading','syncReasonTitle','syncReasonWhy','syncReasonBasis',
+  'syncReasonDof','syncReasonCheck','syncReasonEvidence'])assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
  assert.match(html,/P\*/);
  assert.match(ui,/Sync\.build\(report,\{revision:syncRevision\}\)/);
  assert.match(ui,/haltSync\(\)/);
  assert.match(ui,/syncPlayer\.seekProgress/);
  assert.match(webgl,/window\.DrawingLabSyncV5=SyncV5/);
+ assert.match(webgl,/window\.DrawingLabStepReasons=ReasonV5/);
+ assert.match(ui,/Reasons\.build\(report,plan\)/);
  assert.match(webgl,/function setTargetOpacity/);
  assert.match(svg,/class="locus-label"/);
  assert.match(build,/dof-lab-three-entry\.js/);
