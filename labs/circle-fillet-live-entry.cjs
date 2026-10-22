@@ -898,6 +898,16 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   if(!id||!Number.isSafeInteger(index)||index<0||
      !plan?.[index]?.actions.some(a=>a.id===id))return;
   const kind=plan[index].actions.find(a=>a.id===id).kind;
+  if(playTimer!==null)pausePlayback();
+  // The user clicked an already visible solver-backed action, so they may
+  // safely navigate to that action's completed teaching step. No future
+  // geometry outside this step is revealed.
+  const now=performance.now(),nextStage=Math.min(availableStages(),index+1);
+  if(stageClock?.canRender(revision)){
+   stageClock.pause(now);
+   stageClock.seekStep(nextStage,now);
+  }
+  stage=nextStage;
   pickedAction={id,step:index,kind,revision};
   render();
   paintCurrentConstruction();
