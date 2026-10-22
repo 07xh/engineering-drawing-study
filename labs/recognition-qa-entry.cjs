@@ -4,6 +4,10 @@ const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
+const {fingerprintLocalPhoto}=
+ require('../recognition/local-photo-fingerprint.cjs');
+const {createAnnotationPack}=
+ require('../recognition/photo-annotation-replay.cjs');
 (function(){
  const $=id=>document.getElementById(id);
  const svgNs='http://www.w3.org/2000/svg';
@@ -273,6 +277,72 @@ const {detectBrowserDimensionCandidates}=
  });
  $('qaClearTruth').addEventListener('click',()=>{
   session.clearAnnotations();render();message('人工标注已清除，检测结果仍保留。');
+ });
+ function downloadJson(value,filename){
+  const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.append(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+ }
+ function replayToken(){
+  const snap=session.snapshot();
+  const file=$('qaFile').files?.[0];
+  if(!snap.ready||!file||stage.hidden)return null;
+  return {file,epoch:generation,imageVersion:snap.imageVersion,
+   revision:snap.revision,snapshot:snap};
+ }
+ function replayStillCurrent(t){
+  const now=session.snapshot();
+  return generation===t.epoch&&now.ready&&
+   now.imageVersion===t.imageVersion&&now.revision===t.revision&&
+   $('qaFile').files?.[0]===t.file;
+ }
+ $('qaSaveTruth').addEventListener('click',async()=>{
+  const t=replayToken();
+  if(!t){message('请先打开原图并运行本地识别。');return;}
+  if(t.snapshot.annotations.length===0){
+   message('请先标注至少一个真实图元。');return;
+  }
+  const button=$('qaSaveTruth');button.disabled=true;
+  try{
+   // Hash only in response to this explicit export click.
+   const sha=await fingerprintLocalPhoto(t.file);
+   if(!replayStillCurrent(t))return;
+   const pack=createAnnotationPack(t.snapshot,sha);
+   downloadJson(pack,'draftai-photo-annotations.json');
+   message('已在本地导出标注基准。包含图片 SHA-256 和手工输入文字，'+
+    '可能具有识别性，不含原图字节或文件名。');
+  }catch(error){
+   if(replayStillCurrent(t))message('标注导出失败：'+
+    (error instanceof Error?error.message:'未知错误'));
+  }finally{button.disabled=false;}
+ });
+ $('qaLoadTruth').addEventListener('click',async()=>{
+  const t=replayToken(),packFile=$('qaTruthFile').files?.[0];
+  if(!t){message('请先打开原图并运行本地识别。');return;}
+  if(!packFile||packFile.size===0||packFile.size>150*1024){
+   message('请选择不超过 150 KB 的人工标注 JSON 文件。');return;
+  }
+  const button=$('qaLoadTruth');button.disabled=true;
+  try{
+   // Read only selected user files, never upload or auto-persist anything.
+   const [sha,content]=await Promise.all([
+    fingerprintLocalPhoto(t.file),packFile.text()
+   ]);
+   if(!replayStillCurrent(t))return;
+   const pack=JSON.parse(content);
+   const done=session.restoreAnnotations(t.imageVersion,pack,sha);
+   if(!done)return;
+   drag=null;render();
+   message('已核对原图 SHA-256 和尺寸，恢复 '+
+    session.snapshot().annotations.length+
+    ' 条手工标注。当前检测候选与 OCR 执行状态保持不变。');
+  }catch(error){
+   if(replayStillCurrent(t))message('导入已拒绝，原标注保持不变：'+
+    (error instanceof Error?error.message:'文件无效'));
+  }finally{button.disabled=false;}
  });
  $('qaExport').addEventListener('click',()=>{
   const r=session.report();
