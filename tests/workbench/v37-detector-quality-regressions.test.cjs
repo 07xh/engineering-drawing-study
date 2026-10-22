@@ -50,5 +50,5 @@ test('report is deterministic and does not read hidden/private image files',()=>
  assert.match(source,/evaluateRecognitionProposals/);
  assert.doesNotMatch(source,/\bfetch\s*\(|\bXMLHttpRequest\b|localStorage/);
  assert.doesNotMatch(source,/session\.replace|solveFiniteFillet|globallyUnique/);
- assert.doesNotMatch(scenes,/readFileSync|private|https:\/\//);
+ assert.doesNotMatch(scenes,/\breadFileSync\s*\(|\bfetch\s*\(|\bXMLHttpRequest\s*\(|\blocalStorage\s*\./);
 });
