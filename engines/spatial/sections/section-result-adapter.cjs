@@ -23,11 +23,11 @@ function adaptSectionResult(solidType, raw) {
     xyz(e.from) && xyz(e.to));
   const geometryVerified = verified && validVertices && validPerimeter &&
     vertices.length >= 3 && perimeter.length >= 3 &&
-    raw.modelUnit === 'mm' && status === 'unique';
+    raw.modelUnit === 'mm' && (status === 'unique' || status === 'ready');
   return {
     schemaVersion: 'v3.7-section-1',
     solidType,
-    status: geometryVerified ? 'unique' : (status === 'unique' ? 'undetermined' : status),
+    status: geometryVerified ? 'unique' : ((status === 'unique' || status === 'ready') ? 'undetermined' : status),
     verified: geometryVerified,
     modelUnit: 'mm',
     vertices: geometryVerified ? vertices.map(v => ({id:v.id, point:copyPoint(v.point)})) : [],
