@@ -13,10 +13,10 @@ function scene(c=cylinder(),pl=plane(),dirs=rays()){
 }
 const whole=s=>s.renderFrame({elapsedMs:s.totalMs,expectedRevision:4});
 function resultSegment(svg){
- const m=svg.match(/<line x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"[^>]*data-action="(vis-[VHW]-[0-9]+-[0-9]+)" data-visibility="(visible|hidden|undetermined)"/);
+ const m=svg.match(/<line x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"[^>]*data-visibility="(visible|hidden|undetermined)"[^>]*data-action="(vis-[VHW]-[0-9]+-[0-9]+)"/);
  assert.ok(m,'true render must contain discoverable result geometry ID');
  return {a:{x:Number(m[1]),y:Number(m[2])},
-  b:{x:Number(m[3]),y:Number(m[4])},id:m[5],visibility:m[6]};
+  b:{x:Number(m[3]),y:Number(m[4])},id:m[6],visibility:m[5]};
 }
 test('04 source-backed scene exposes stable result action ID in actual rendered SVG',()=>{
  const s=scene(),f=whole(s),line=resultSegment(f.svg);
