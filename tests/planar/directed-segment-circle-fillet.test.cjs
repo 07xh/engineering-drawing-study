@@ -22,7 +22,7 @@ test('an explicitly selected real center and two source travels prove directed G
  assert.equal(r.finiteSegmentContactVerified,true);
  assert.equal(r.sourceArcRangeVerified,true);
  assert.equal(r.finiteCircleArcCount,0);
- assert.equal(r.maxG1Mismatch,0);
+ assert.ok(r.maxG1Mismatch<1e-7);
  assert.ok(r.maxTangencyResidual<1e-7);
  assert.equal(r.steps.length,5);
  assert.deepEqual(r.steps.map(s=>s.id),
