@@ -155,7 +155,7 @@ function cylinderCapSectionV5Preview(cylinder,plane,{samplesPerTurn=64}={}){
    maxResidualMm:proof.maxResidualMm,
    maxJoinMismatchMm:proof.maxJoinMismatchMm,
    topologyClosed:true,
-   3dSolidSectionInteriorVerified:false,
+   solidSectionInteriorVerified:false,
    hiddenLineVisibilityVerified:false,
    sharedM2ContractSigned:false}
  };
