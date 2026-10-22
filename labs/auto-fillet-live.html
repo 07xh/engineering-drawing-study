@@ -236,7 +236,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </div>
 <div class="controls"><button id="prev" type="button">← 上一步</button><button id="play" type="button" class="primary">▶ 播放</button><button id="next" type="button">下一步 →</button><button id="restart" type="button">重新播放</button></div>
 <div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
-<div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label></div>
+<div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label><label for="autoFit" style="display:flex;align-items:center;gap:8px"><input id="autoFit" type="checkbox" checked style="min-height:20px;width:20px;flex:none">自动适应图纸</label></div>
 <h2 style="margin-top:22px">计算生成的作图步骤</h2>
 <nav id="stepList" aria-label="真实数学作图步骤"></nav>
 <p class="muted" id="stepDetail">选择一步后查看它的几何依据。</p>
