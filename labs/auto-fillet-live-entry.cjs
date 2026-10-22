@@ -5,6 +5,8 @@ const {solveFiniteFillet}=require('../engines/constraints-2d/finite-fillet-gate.
 const {createConfirmedFilletSession}=
  require('../workbench/v31-fillet-session.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {fitVerifiedDrawingView}=
+ require('../workbench/verified-fillet-view-fit.cjs');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
 const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachLocalRasterReview}=require('./local-raster-geometry-review-ui.cjs');
@@ -204,6 +206,19 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    (result.reason?' '+result.reason:'');
   $('paperWrap').classList.toggle('mono',$('monochrome').value==='mono');
   givens();
+  // Fit to *confirmed* source geometry and current proof-backed V5 steps.
+  // Never derive a camera from unreviewed photo pixels or old revisions.
+  let nextView='0 0 720 440';
+  if($('autoFit').checked){
+   try{
+    const confirmed=input();
+    if(confirmed&&confirmed.problem?.revision===snap.revision){
+     nextView=fitVerifiedDrawingView({problem:confirmed.problem,sheet,
+      steps:verified?result.steps:[]}).viewBox;
+    }
+   }catch(_){/* Invalid inputs retain the safe base view. */}
+  }
+  $('paper').setAttribute('viewBox',nextView);
   const drawing=$('drawing');drawing.replaceChildren();
   if(verified){
    const fractions=snap.playback.actionFractions;
@@ -261,6 +276,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   draw(snap);if(snap.playback?.playing)animate();
  });
  $('monochrome').addEventListener('change',()=>draw(session.snapshot(performance.now())));
+ $('autoFit').addEventListener('change',()=>draw(session.snapshot(performance.now())));
  $('play').addEventListener('click',()=>{
   stopClock();let snap=session.snapshot(performance.now());
   snap=snap.playback?.playing?session.pause(performance.now()):session.play(performance.now());
