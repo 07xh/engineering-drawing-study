@@ -106,7 +106,7 @@ function fromProgress(grade,{kind,revision}={}){
   '已核验本页支持的四类学生数学构造；请另行核查完整教材题的尺寸与未建模要求。';
  return Object.freeze({
   status:verifiedCount===4?'supported-complete':'in-progress',
-  headline:'学生数学构造已核验 '+verifiedCount+' / 4,
+  headline:'学生数学构造已核验 '+verifiedCount+' / 4',
   next,details:stages.map(s=>s.name+'：'+s.detail).join('\n'),
   stages:Object.freeze(stages),verifiedCount,scope:scoped
  });
