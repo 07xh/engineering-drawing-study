@@ -19,6 +19,7 @@ function createPage(){
   append(...nodes){this.children.push(...nodes)},
   replaceChildren(...nodes){this.children=[...nodes]},
   setAttribute(name,value){this.attributes[name]=String(value)},
+  insertAdjacentHTML(_position,html){this.innerHTML+=html},
   getAttribute(name){return this.attributes[name]},
   addEventListener(type,fn){this.listeners[type]=fn},
   setPointerCapture(){},
