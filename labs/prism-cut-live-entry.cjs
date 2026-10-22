@@ -11,7 +11,8 @@ const {createPrismV5SvgScene}=
   px:'0',py:'0',pz:'12',nx:'1',ny:'1',nz:'1',
   visibilityMode:'unconfirmed',retainedHalfspace:'',
   viewV:'',viewH:'',viewW:''};
- const state={scene:null,player:null,rev:0,raf:null,last:null,urls:new Set()};
+ const state={scene:null,player:null,rev:0,raf:null,last:null,
+  urls:new Set(),selected:null,focusKey:'',viewBox:'0 0 960 680'};
  const time=()=>performance.now();
  function message(value,bad=false){
   $('status').textContent=value;$('status').dataset.error=bad?'true':'false';
@@ -26,6 +27,8 @@ const {createPrismV5SvgScene}=
  }
  function invalidate(){
   stop();state.rev++;state.scene=null;state.player=null;state.last=null;
+  state.selected=null;state.focusKey='';state.viewBox='0 0 960 680';
+  $('pickedInfo').textContent='轻触已画出的图线以定位步骤和空间来源。';
   disabled(true);
   $('board').replaceChildren();$('steps').replaceChildren();
   $('seek').value='0';$('percentage').textContent='0%';
@@ -43,6 +46,87 @@ const {createPrismV5SvgScene}=
   }
   return checkedPrismFields(raw);
  }
+
+ function clearSelection(){
+  state.selected=null;state.focusKey='';
+  $('pickedInfo').textContent='轻触已画出的图线以定位步骤和空间来源。';
+ }
+ function paperPoint(event,svg){
+  const matrix=svg.getScreenCTM?.();
+  if(matrix&&typeof svg.createSVGPoint==='function'){
+   const p=svg.createSVGPoint();
+   p.x=event.clientX;p.y=event.clientY;
+   const point=p.matrixTransform(matrix.inverse());
+   return {x:point.x,y:point.y};
+  }
+  const box=svg.getBoundingClientRect(),v=svg.viewBox.baseVal;
+  if(box.width<=0||box.height<=0)throw new RangeError('non-visible SVG viewport');
+  return {x:v.x+(event.clientX-box.left)*v.width/box.width,
+   y:v.y+(event.clientY-box.top)*v.height/box.height};
+ }
+ function decorate(frame){
+  const svg=$('board').querySelector('svg');
+  if(!svg||!state.scene)return;
+  if(state.selected){
+   for(const node of svg.querySelectorAll('[data-action]')){
+    if(node.getAttribute('data-action')===state.selected.actionId){
+     node.setAttribute('data-selected','true');break;
+    }
+   }
+  }
+  let key='full';
+  if($('autofocus').checked&&state.selected)
+   key='action-'+state.selected.actionId;
+  else if($('autofocus').checked&&frame.elapsedMs>0&&frame.activeStepIndex>=0)
+   key='step-'+frame.activeStepIndex;
+  if(key!==state.focusKey){
+   state.focusKey=key;
+   try{
+    const result=key.startsWith('action-')?
+     state.scene.focusOnAction({
+      actionId:state.selected.actionId,expectedRevision:state.rev
+     }):key.startsWith('step-')?
+      state.scene.focusOnStep({
+       stepIndex:frame.activeStepIndex,expectedRevision:state.rev
+      }):null;
+    state.viewBox=result?.viewBox||'0 0 960 680';
+   }catch(error){
+    state.viewBox='0 0 960 680';
+    $('pickedInfo').textContent='当前步骤聚焦失败：'+error.message;
+   }
+  }
+  svg.setAttribute('viewBox',state.viewBox);
+ }
+ function inspectClick(event){
+  if(!state.scene||!state.player)return;
+  const svg=$('board').querySelector('svg');
+  if(!svg||!svg.contains(event.target))return;
+  try{
+   const pt=paperPoint(event,svg),t=time();
+   const snapshot=state.player.snapshot(t);
+   const hit=state.scene.inspectAt({
+    ...pt,elapsedMs:snapshot.elapsedMs,expectedRevision:state.rev,
+    tolerancePx:12
+   });
+   if(!hit){
+    clearSelection();draw(snapshot.elapsedMs);return;
+   }
+   stop();
+   state.selected=hit;state.focusKey='';
+   const clock=time();
+   if(hit.stepIndex!==null)
+    state.player.seekMs(hit.seekMs,clock);
+   draw(state.player.snapshot(clock).elapsedMs);
+   const status=hit.visibility?
+    ' · '+({visible:'模型可见',hidden:'模型遮挡',
+     undetermined:'线型待审核'}[hit.visibility]):'';
+   $('pickedInfo').textContent='图元 '+hit.actionId+
+    (hit.stepIndex===null?' · 原始已知图':
+     ' · 第 '+(hit.stepIndex+1)+' 步')+
+    (hit.sourceSectionEdgeId?' · 来源 '+hit.sourceSectionEdgeId:'')+
+    status+'。选择结果是针对当前数学输入，非完整制图标准答案。';
+  }catch(error){invalidate();message('图线定位已阻断：'+error.message,true);}
+ }
  function draw(elapsed){
   if(!state.scene||!state.player)return;
   try{
@@ -51,6 +135,7 @@ const {createPrismV5SvgScene}=
    });
    state.last=frame;
    $('board').innerHTML=frame.svg; // proof-derived, no user HTML.
+   decorate(frame);
    $('seek').value=String(Math.round(1000*frame.elapsedMs/frame.totalMs));
    $('percentage').textContent=Math.round(100*frame.elapsedMs/frame.totalMs)+'%';
    const step=s.steps[frame.activeStepIndex];
@@ -105,7 +190,7 @@ const {createPrismV5SvgScene}=
     button.addEventListener('click',()=>{
      if(state.scene!==s||!state.player)return;
      try{
-      stop();
+      stop();clearSelection();
       const x=state.player.seekStep(i,time());
       draw(x.elapsedMs);
      }catch(error){invalidate();message(error.message,true);}
@@ -139,6 +224,7 @@ const {createPrismV5SvgScene}=
    if(snapshot.playing){
     stop();draw(snapshot.elapsedMs);
    }else{
+    clearSelection();
     if(snapshot.done)state.player.seekStep(0,clock);
     state.player.play(clock);$('play').textContent='Ⅱ 暂停';
     if(state.raf===null)state.raf=requestAnimationFrame(tick);
@@ -148,7 +234,8 @@ const {createPrismV5SvgScene}=
  function next(delta){
   if(!state.player||!state.scene)return;
   try{
-   stop();const t=time(),snapshot=state.player.snapshot(t);
+   stop();clearSelection();
+   const t=time(),snapshot=state.player.snapshot(t);
    const target=Math.max(0,Math.min(state.scene.stepCount,
     snapshot.activeStepIndex+delta));
    const stepped=state.player.seekStep(target,t);
@@ -199,6 +286,7 @@ const {createPrismV5SvgScene}=
   $('next').addEventListener('click',()=>next(1));
   $('seek').addEventListener('input',()=>{
    if(!state.player)return;
+   clearSelection();
    try{
     const x=state.player.seekProgress(Number($('seek').value)/1000,time());
     draw(x.elapsedMs);
@@ -214,6 +302,21 @@ const {createPrismV5SvgScene}=
   });
   $('mono').addEventListener('change',()=>{
    $('board').classList.toggle('mono',$('mono').checked);
+  });
+  $('board').addEventListener('click',inspectClick);
+  $('board').addEventListener('keydown',event=>{
+   if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+    event.preventDefault();
+    next(event.key==='ArrowLeft'?-1:1);
+   }
+  });
+  $('autofocus').addEventListener('change',()=>{
+   state.focusKey='';
+   if(state.last)draw(state.last.elapsedMs);
+  });
+  $('fit').addEventListener('click',()=>{
+   $('autofocus').checked=false;clearSelection();
+   if(state.last)draw(state.last.elapsedMs);
   });
   $('save').addEventListener('click',save);
   window.addEventListener('pagehide',()=>{
