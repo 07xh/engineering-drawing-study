@@ -65,7 +65,17 @@ small{font-size:12px;color:#667f6e}
 <button id="qaUndo" type="button">撤销上一标注</button>
 <button id="qaClearTruth" type="button">清除全部标注</button>
 </div>
-<h2>3. 查看误差</h2>
+<h2>3. 保存或复用人工标注</h2>
+<p class="hint">标注包不包含原图，但包含你手工输入的文字与原图片 SHA-256 指纹，可能具有识别性，请勿随意公开。只有同一张原图文件才能导入。不会自动保存或上传。</p>
+<div class="buttons">
+<button id="qaSaveTruth" type="button">导出人工标注基准</button>
+</div>
+<label>选择此前自己导出的标注 JSON 文件
+<input id="qaTruthFile" type="file" accept=".json,application/json"></label>
+<div class="buttons">
+<button id="qaLoadTruth" type="button">核对原图并导入标注</button>
+</div>
+<h2>4. 查看误差</h2>
 <div id="metrics" aria-live="polite"><p>请先本地打开图片并运行识别。</p></div>
 <div class="buttons">
 <button id="qaExport" type="button">导出无图片 JSON 报告</button>
