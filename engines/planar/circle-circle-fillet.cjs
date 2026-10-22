@@ -137,4 +137,7 @@ function circleCircleFilletCenters({first,second,filletRadius,firstMode='externa
   auxiliary:{firstLocus:{center:A.center,radius:a},secondLocus:{center:B.center,radius:b},
    separation:d,tangencyModes:{first:firstMode,second:secondMode}}};
 }
-module.exports={DEFAULT_EPSILON,circleCircleFilletCenters,contactOnFiniteArc};
+// Shared validated source-circle representation for other finite-arc solvers.
+// Reuse the exact same angular normalization/contact-membership semantics.
+module.exports={DEFAULT_EPSILON,circleCircleFilletCenters,contactOnFiniteArc,
+ normalizeKnownCircle:circle};
