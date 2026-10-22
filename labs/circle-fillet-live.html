@@ -14,6 +14,16 @@ button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor
 .actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}.actions .rate-select{flex:1 1 110px;min-width:105px;max-width:156px;display:grid;gap:4px;align-self:center;font-size:11px}.rate-select select{width:100%}
 .card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
 .legend{font-size:12px;color:#617b67;line-height:1.8}
+.student-math-feedback{display:grid;gap:9px;margin:11px 0;border:1px solid #cfe1d5;background:#f8fbf9;border-radius:12px;padding:12px}
+.student-math-feedback[hidden]{display:none}
+.student-math-feedback h3{margin:0;font-size:15px}
+.student-math-feedback p{font-size:12px;line-height:1.6;margin:0}
+.student-math-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.student-math-grid div{border:1px solid #dce8df;background:white;border-radius:9px;padding:8px;min-width:0}
+.student-math-grid strong{font-size:12px;display:block}
+.student-math-grid span{font-size:12px;line-height:1.55;overflow-wrap:anywhere;display:block;margin-top:3px}
+@media(max-width:560px){.student-math-grid{grid-template-columns:1fr}}
+
 .playback-scrub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 13px;border:1px solid #d6e7d9;background:#f7fbf8;border-radius:12px;padding:10px}
 .playback-scrub label{flex:1 1 100%;font-size:13px;font-weight:650}
 .playback-scrub input[type=range]{flex:1 1 230px;width:100%;min-height:34px;accent-color:#236c49;touch-action:pan-x;padding:0;cursor:pointer}
@@ -124,7 +134,19 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <p class="note">新增“点选切点”：先在尺规区选择已知对象 1 或 2，再点选图纸上的切点；可以先于弧向／G1 判题，但不会自动显示真实切点。重复、选错对象、超出有效范围均不能通过。</p>
 <p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
 <div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
-<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">三类圆弧题均按辅助轨迹、候选圆心、两个切点及连接圆弧四项独立验算；有限已知圆弧切点必须在给定角度范围内，但不代表整道教材题完成。</p></div>
+<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">三类圆弧题均按辅助轨迹、候选圆心、两个切点及连接圆弧四项独立验算；有限已知圆弧切点必须在给定角度范围内，但不代表整道教材题完成。</p>
+<section id="studentMathFeedback" class="student-math-feedback" aria-labelledby="studentFeedbackTitle" hidden>
+<h3 id="studentFeedbackTitle">学生每步数学反馈</h3>
+<p id="studentFeedbackSummary">仅依据你自己完成的辅助线、圆心、切点与圆弧验证。</p>
+<p id="studentFeedbackNext" aria-live="off">请先自行构造题目要求的几何条件。</p>
+<div class="student-math-grid">
+<div><strong>① 辅助轨迹</strong><span id="studentFeedbackAux">待核验</span></div>
+<div><strong>② 圆心定位</strong><span id="studentFeedbackCenter">待核验</span></div>
+<div><strong>③ 切点定位</strong><span id="studentFeedbackContacts">待核验</span></div>
+<div><strong>④ 圆弧连接</strong><span id="studentFeedbackArc">待核验</span></div>
+</div>
+<p id="studentFeedbackScope">只能证明当前学生提交的局部几何条件，不代表整道教材题完成。</p>
+</section></div>
 <div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
 <section id="filletProof" class="card" aria-labelledby="filletProofHeading" hidden>
 <h3 id="filletProofHeading">V5 · 本步数学依据与核验</h3>
