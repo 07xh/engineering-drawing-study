@@ -63,7 +63,7 @@ test('new QA page exposes image, overlay, manual tools and optional JSON export 
  assert.match(js,/session\.loadImage/);
  assert.match(js,/session\.addAnnotation/);
  assert.match(js,/session\.report/);
- assert.match(js,/imageBytes/); // privacy explanation remains in the output contract
+ assert.match(js,/JSON\.stringify\(r,null,2\)/); // local, user-triggered export
  assert.match(js,/pointerdown/);
  assert.match(js,/pointercancel/);
  assert.match(js,/URL\.revokeObjectURL/);
