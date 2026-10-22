@@ -5,6 +5,7 @@ const {solveFiniteFillet}=require('../engines/constraints-2d/finite-fillet-gate.
 const {createConfirmedFilletSession}=
  require('../workbench/v31-fillet-session.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
 
 (function(){
  'use strict';
@@ -231,5 +232,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  $('progress').addEventListener('input',()=>{
   stopClock();draw(session.seekProgress(Number($('progress').value)/1000,performance.now()));
  });
+ attachLocalImagePreview({input:$('problemPhoto'),image:$('photoPreview'),
+  status:$('photoStatus'),clear:$('clearPhoto')});
  grid();buildFields(kind);
 })();
