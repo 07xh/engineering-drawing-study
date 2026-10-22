@@ -134,6 +134,7 @@ function interactiveFillet(){
   '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
   '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
   '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
+  '../workbench/verified-tangent-point-drawing.cjs':require('../../workbench/verified-tangent-point-drawing.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs')
@@ -681,5 +682,65 @@ test('without a complete directed G1 proof, a selected branch never renders its 
  get('direction').value='ccw';fire('direction','change');
  for(let i=0;i<8;i++)fire('next','click');
  assert.equal(get('counter').textContent,'3 / 3');
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+});
+
+test('source-specific tangent tool grades TWO student marks before directed G1 while hiding expected contacts',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ get('branch').value='s++';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='tangent';fire('drawTool','change');
+ assert.equal(get('checkDraw').disabled,false,'contacts do not require selected directed arc');
+ assert.equal(collect().filter(n=>n.tag==='text'&&/T[₁₂]/.test(n.textContent)).length,0);
+ const args={first:{a:{x:-20,y:0},b:{x:20,y:0}},
+  second:{a:{x:0,y:-20},b:{x:0,y:20}},filletRadius:10};
+ const chosen=require('../../engines/planar/two-segment-fillet.cjs')
+  .finiteTwoSegmentFillets(args).candidates.find(c=>c.id==='s++');
+ const board=get('diagram');
+ const tap=(side,id)=>{
+  get('digitalSource').value=side;
+  const c=chosen.contacts[side];
+  board.listeners.pointerdown({pointerId:id,button:0,
+   clientX:360+8*c.x,clientY:220-8*c.y});
+ };
+ tap('first',5);
+ assert.match(get('drawStatus').textContent,/学生切点 1 \/ 2/);
+ tap('second',6);
+ assert.match(get('drawStatus').textContent,/学生切点 2 \/ 2/);
+ assert.match(get('drawStatus').textContent,/还需独立验证连接弧/);
+ assert.equal(collect().filter(n=>n.tag==='text'&&/我标的 T/.test(n.textContent)).length,2);
+ assert.equal(collect().filter(n=>n.tag==='path').length,0);
+ fire('undoDraw','click');assert.match(get('drawStatus').textContent,/学生切点 1 \/ 2/);
+ fire('redoDraw','click');assert.match(get('drawStatus').textContent,/学生切点 2 \/ 2/);
+ get('line1Ay').value='1';fire('line1Ay','input');
+ assert.equal(collect().filter(n=>n.tag==='text'&&/我标的 T/.test(n.textContent)).length,0);
+ assert.equal(get('undoDraw').disabled,true);
+});
+test('repeated tap on one true tangent does not earn the second tangent point',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';
+ const args={first:{center:{x:0,y:0},radius:5},
+  second:{center:{x:20,y:0},radius:5},filletRadius:10,
+  firstMode:'external',secondMode:'external'};
+ const contact=require('../../engines/planar/circle-circle-fillet.cjs')
+   .circleCircleFilletCenters(args).candidates.find(c=>c.id==='center-1').contacts.first;
+ const board=get('diagram');
+ for(let id=1;id<=2;id++)board.listeners.pointerdown({pointerId:id,button:0,
+  clientX:360+8*contact.x,clientY:220-8*contact.y});
+ assert.match(get('drawStatus').textContent,/学生切点 1 \/ 2/);
+ assert.match(get('drawStatus').textContent,/重复或错误标记 1/);
+ assert.equal(get('drawTool').value,'tangent');
+});
+test('tangent tool explicitly blocks branch auto-selection and does not pretend to complete G1',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';
+ get('diagram').listeners.pointerdown({pointerId:1,button:0,clientX:390,clientY:220});
+ assert.match(get('drawStatus').textContent,/先选择题目实际存在的圆心分支/);
  assert.equal(collect().filter(n=>n.tag==='path').length,0);
 });
