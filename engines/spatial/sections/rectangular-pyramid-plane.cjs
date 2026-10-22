@@ -10,7 +10,8 @@ const mul=(a,t)=>({x:a.x*t,y:a.y*t,z:a.z*t});
 const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
 const cross=(a,b)=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x});
 const size=a=>Math.hypot(a.x,a.y,a.z);
-const projection=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
+// Preserve exact V/H/W model coordinates through the single shared projection contract.
+const {project:projection}=require('../../../core/projection/conventions.js');
 const fail=(status,reason)=>({status,reason,verified:false,perimeterVerified:false,
  vertices:[],perimeter:[],modelUnit:'mm',visibilityVerified:false,
  firstAngleConventionSignedOff:false,v5StepsReady:false,globallyUnique:null});
