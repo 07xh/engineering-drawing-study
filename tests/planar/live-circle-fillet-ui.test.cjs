@@ -97,6 +97,7 @@ function interactiveFillet(){
   'status','counter','stepTitle','stepText','learningMode','fullControls',
   'hintControls','drawControls','hintNext','hintCounter','undoDraw','redoDraw',
   'clearDraw','checkDraw','drawStatus','playPause','animationSpeed',
+  'filletProgress','filletProgressLabel','filletRestart',
   'addDigital','undoDigital','clearDigital','checkDigital',
   'digitalStatus','centerSnapStatus','learningProgress',
   'filletProof','filletProofTitle','filletProofWhy','filletProofBasis',
@@ -114,7 +115,13 @@ function interactiveFillet(){
  const circle=[{hidden:false},{hidden:false}];
  const line=[{hidden:true},{hidden:true}];
  const mixed=[{hidden:true},{hidden:true}];
+ const docListeners={};let motionHandler=null;
+ const motion={matches:false,addEventListener(type,fn){
+  if(type==='change')motionHandler=fn;
+ }};
  const document={
+  hidden:false,
+  addEventListener(type,fn){docListeners[type]=fn},
   getElementById(id){
    if(!elems.has(id))throw Error('Missing input '+id);
    return elems.get(id);
@@ -155,7 +162,7 @@ function interactiveFillet(){
   '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
- window:{matchMedia:()=>({matches:false})},require:id=>{
+ window:{matchMedia:()=>motion},require:id=>{
   if(!Object.hasOwn(modules,id))throw Error('Unexpected bundle require '+id);
   return modules[id];
  }});
@@ -167,7 +174,13 @@ function interactiveFillet(){
   for(const n of get('diagram').children)walk(n);
   return out;
  };
- return {get,fire,collect,circle,line,mixed,advance};
+ const setHidden=value=>{
+  document.hidden=!!value;docListeners.visibilitychange?.();
+ };
+ const setReduced=value=>{
+  motion.matches=!!value;motionHandler?.({matches:motion.matches});
+ };
+ return {get,fire,collect,circle,line,mixed,advance,setHidden,setReduced};
 }
 test('line mode enumerates genuine finite tangent candidates and a verified six-step SVG arc',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
@@ -1216,4 +1229,95 @@ test('V5 input revision and learning mode switch destroy partially animated auxi
  assert.equal(guides().length,0);
  advance(4000);
  assert.equal(guides().length,0);
+});
+
+test('V5 pen slider truly traces partial auxiliary circles and rewinds their SVG circumference',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ const circles=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ assert.equal(get('filletProgress').disabled,false);
+ get('filletProgress').value='50';fire('filletProgress','input');
+ assert.equal(get('counter').textContent,'0 / 4');
+ assert.equal(circles().length,1);
+ const first=circles()[0].attributes['stroke-dasharray'];
+ assert.match(first,/^\S+ \S+$/);
+ get('filletProgress').value='175';fire('filletProgress','input');
+ assert.equal(circles().length,2);
+ assert.notEqual(circles()[1].attributes['stroke-dasharray'],'none');
+ get('filletProgress').value='25';fire('filletProgress','input');
+ assert.equal(circles().length,1);
+ assert.notEqual(circles()[0].attributes['stroke-dasharray'],first);
+ assert.equal(get('filletProgressLabel').textContent,'3%');
+});
+test('seek into only the verified G1 final step; rewind removes its result',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ for(const [id,v] of [['branch','center-1'],['direction','cw'],
+  ['travel1','ccw'],['travel2','ccw']]){get(id).value=v;fire(id,'change')}
+ const arcs=()=>collect().filter(n=>n.attributes?.['data-verified-arc']==='true');
+ get('filletProgress').value='850';fire('filletProgress','input');
+ assert.equal(get('counter').textContent,'3 / 4');
+ assert.equal(arcs().length,1);
+ const partial=arcs()[0].attributes.d;
+ get('filletProgress').value='1000';fire('filletProgress','input');
+ assert.equal(get('counter').textContent,'4 / 4');
+ assert.equal(get('filletProgressLabel').textContent,'100%');
+ assert.notEqual(arcs()[0].attributes.d,partial);
+ get('filletProgress').value='0';fire('filletProgress','input');
+ assert.equal(get('counter').textContent,'0 / 4');
+ assert.equal(arcs().length,0);
+});
+test('no branch never leaks unverified G1 on slider; restart clears progress',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('filletProgress').value='950';fire('filletProgress','input');
+ assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
+ fire('filletRestart','click');
+ assert.equal(get('counter').textContent,'0 / 4');
+ assert.equal(get('filletProgressLabel').textContent,'0%');
+});
+test('touch seeking pauses timeline, keeps same partial stroke and resumes normally',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect}=p;
+ const strokes=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ fire('playPause','click');advance(300);
+ const before=strokes()[0].attributes['stroke-dasharray'];
+ get('filletProgress').value='140';fire('filletProgress','input');
+ const sought=strokes()[0].attributes['stroke-dasharray'];
+ assert.notEqual(sought,before);
+ advance(2000);
+ assert.equal(strokes()[0].attributes['stroke-dasharray'],sought);
+ fire('playPause','click');advance(100);
+ assert.notEqual(strokes()[0].attributes['stroke-dasharray'],sought);
+});
+test('hidden Android tab pauses frame clock and return does not fast-forward',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect,setHidden}=p;
+ const strokes=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ fire('playPause','click');advance(300);
+ const old=strokes()[0].attributes['stroke-dasharray'];
+ setHidden(true);advance(60000);
+ assert.equal(strokes()[0].attributes['stroke-dasharray'],old);
+ assert.equal(get('playPause').textContent,'逐笔播放');
+ setHidden(false);advance(30000);
+ assert.equal(strokes()[0].attributes['stroke-dasharray'],old);
+ fire('playPause','click');advance(150);
+ assert.notEqual(strokes()[0].attributes['stroke-dasharray'],old);
+});
+test('live reduced motion stops RAF while allowing discrete math-backed scrubbing',()=>{
+ const p=interactiveFillet(),{get,fire,advance,collect,setReduced}=p;
+ const strokes=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']==='circle');
+ fire('playPause','click');advance(200);
+ setReduced(true);
+ const frozen=strokes()[0].attributes['stroke-dasharray'];
+ advance(5000);
+ assert.equal(strokes()[0].attributes['stroke-dasharray'],frozen);
+ assert.equal(get('playPause').disabled,true);
+ get('filletProgress').value='400';fire('filletProgress','input');
+ assert.equal(get('filletProgressLabel').textContent,'40%');
+});
+test('math input changes erase stale seeked construction and restore zero-time scrubber',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ const moving=()=>collect().filter(n=>n.attributes?.['data-v5-progressive']);
+ get('filletProgress').value='150';fire('filletProgress','input');
+ assert.ok(moving().length);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.equal(moving().length,0);
+ assert.equal(get('filletProgressLabel').textContent,'0%');
+ assert.equal(get('filletProgress').value,'0');
 });
