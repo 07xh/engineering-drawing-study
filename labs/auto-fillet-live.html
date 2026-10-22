@@ -35,6 +35,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .ocr-math-accept{display:flex;flex-direction:row;gap:8px;align-items:center;margin:8px 0}.ocr-math-accept input{width:20px;min-height:20px;flex:none}
 .local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
 .vector-preview{display:block;width:100%;height:140px;background:#fff;border:1px solid #d8e6da;border-radius:9px;margin:9px 0}.vector-confirm{display:flex;flex-direction:row;align-items:center;gap:9px;margin:10px 0}.vector-confirm input{width:auto;min-height:20px;flex:0 0 auto}.vector-status{font-size:12px;color:#576e5b;line-height:1.55;margin:8px 0}
+.raster-scale-help{border:1px solid #d9e5db;border-radius:10px;margin:12px 0;padding:12px;background:#f9fcfa}.raster-scale-help h4{font-size:13px;margin:0 0 6px}.raster-scale-help p{font-size:12px;line-height:1.6}
 .raster-edits{display:grid;gap:9px;margin:10px 0}.raster-edit-group{background:#fff;border:1px solid #d8e6da;border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.raster-edit-group strong{grid-column:1/-1;font-size:12px;color:#365e45}.raster-edit-group label{min-width:0}
 .vector-annotation-review{display:grid;gap:8px;margin-top:10px}.vector-annotation-row{padding:9px;background:white;border:1px solid #d8e6da;border-radius:9px;display:grid;gap:7px}.vector-annotation-row span{font-size:12px;overflow-wrap:anywhere;color:#496e56}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -154,6 +155,19 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="controls"><button id="rasterCrossCalculate" type="button">比较两条已核对尺寸的比例</button></div>
 <p id="rasterCrossStatus" class="vector-status" role="status" aria-live="polite">尚未进行第二基线核对；不能据此声称整张题图的比例准确。</p>
 </div>
+</div>
+<div class="raster-scale-help" aria-label="人工关联圆尺寸的毫米比例建议">
+<h4>通过已知圆 R／Φ 辅助校准比例（可选）</h4>
+<p class="muted">选择当前已选整圆，核对其像素半径和题目 R／Φ 数值（单位毫米）。这里只给出建议值，不会自动确认比例或解题。</p>
+<div class="fields">
+<label for="rasterScaleCircle">被标注的来源整圆<select id="rasterScaleCircle"><option value="">先选源图元</option></select></label>
+<label for="rasterScaleKind">原图尺寸类型<select id="rasterScaleKind"><option value="radius">R — 半径</option><option value="diameter">Φ — 直径</option></select></label>
+<label for="rasterScaleValue">人工核对的 R／Φ 毫米值<input type="number" id="rasterScaleValue" min="0" step="any" placeholder="核对原题后填写"></label>
+</div>
+<div class="controls"><button type="button" id="rasterScaleSuggest">提出比例建议</button></div>
+<label class="vector-confirm" for="rasterScaleConfirm"><input type="checkbox" id="rasterScaleConfirm">我核对了原题单位、R／Φ 数值、所属整圆和修改后的像素半径</label>
+<div class="controls"><button type="button" id="rasterScaleUse" disabled>采用已核对的毫米／像素建议</button></div>
+<p id="rasterCircleScaleStatus" class="vector-status" role="status" aria-live="polite">未生成比例建议。不能用 OCR 文字直接证实几何。</p>
 </div>
 <div class="fields">
 <label for="rasterMmPerPx">人工校准：毫米／像素<input id="rasterMmPerPx" type="number" step="any" min="0" placeholder="从已知尺寸独立校准"></label>
