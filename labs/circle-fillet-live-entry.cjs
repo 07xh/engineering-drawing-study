@@ -8,6 +8,7 @@ const {gradeFilletArcDrawing}=require('../workbench/verified-fillet-arc-drawing.
 const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
  require('../workbench/verified-ruler-tools.cjs');
 const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
+const {gradeStudentTangentPoints}=require('../workbench/verified-tangent-point-drawing.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
@@ -287,6 +288,9 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
     if(action.kind==='circle')svg.append(ring(action.center,action.radius,'#8651a8','4 4'));
    }
    if(snappedCenter)svg.append(dot(snappedCenter,'#8651a8','已选圆心'));
+   // Student-owned marks: NEVER draw computed expected tangent contacts here.
+   for(const mark of strokes.filter(st=>st.kind==='tangent-point'))
+    svg.append(dot(mark.point,'#8651a8',mark.sourceId==='first'?'我标的 T₁':'我标的 T₂'));
   }
   if(drawing&&chosen?.status==='selected'&&chosen.g1Verified===true){
    for(const stroke of strokes){
@@ -303,6 +307,7 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
      stroke:'#ad83c7','stroke-width':2.5,fill:'none'}));
   }
   svg.classList?.toggle?.('draw-active',drawing&&(
+    ($('drawTool').value==='tangent'&&!!input)||
     ($('drawTool').value==='snap'&&!!input&&!!$('branch').value)||
     (chosen?.status==='selected'&&chosen.g1Verified===true&&
      ($('drawTool').value==='arc'||isSegments))));
@@ -336,8 +341,9 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
    }catch(error){$('digitalStatus').textContent='无法验证尺规步骤：'+error.message;}
    $('centerSnapStatus').textContent=centerSnapMessage;
   }
-  $('checkDraw').disabled=!drawing||!verified||
-   ($('drawTool').value==='line'&&!isSegments);
+  $('checkDraw').disabled=!drawing||!input||
+   ($('drawTool').value!=='tangent'&&(!verified||
+    ($('drawTool').value==='line'&&!isSegments)));
   if(hint){
    $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
    $('stepText').textContent=hintStep===0?
@@ -347,12 +353,23 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
        '数学证明链尚未完成，请先确认候选分支与原轮廓走向。';
   }
   if(drawing){
-   const arcTool=$('drawTool').value==='arc';
-   $('stepTitle').textContent=arcTool?'自己作图｜手绘有向圆弧':'自己作图｜有限线段辅助线';
-   $('stepText').textContent=arcTool
-    ?'验证真实圆弧的两个切点、数学半径与指定旋向；不能由这一步推断所有辅助作图都已完成。'
+   const arcTool=$('drawTool').value==='arc',tangentTool=$('drawTool').value==='tangent';
+   $('stepTitle').textContent=tangentTool?'自己作图｜两处真实切点':
+    arcTool?'自己作图｜手绘有向圆弧':'自己作图｜有限线段辅助线';
+   $('stepText').textContent=tangentTool
+    ?'先选源对象 1 或 2，再点选你算出的切点。只验证数学位置，不替你选择分支，也不把切点正确当作整题完成。':
+    arcTool?'验证真实圆弧的两个切点、数学半径与指定旋向；不能由这一步推断所有辅助作图都已完成。'
     :'只验证两条有限线段的半径偏移辅助线，不代表整条连接圆弧已经完成。';
-   if(!verified)$('drawStatus').textContent='请先确定有效圆心分支、弧向和两个原轮廓走向，完成有向 G1 数学验证。';
+   if(tangentTool){
+    try{
+     const grade=gradeStudentTangentPoints(isSegments?'segments':'circles',
+      input,strokes.filter(st=>st.kind==='tangent-point'),
+      {branchId:$('branch').value,revision});
+     $('drawStatus').textContent='学生切点 '+grade.matchedCount+' / '+grade.requiredCount+
+      '；重复或错误标记 '+grade.extraCount+'。'+grade.reason;
+    }catch(error){$('drawStatus').textContent='切点数学验证失败：'+error.message;}
+   }
+   else if(!verified)$('drawStatus').textContent='请先确定有效圆心分支、弧向和两个原轮廓走向，完成有向 G1 数学验证。';
    else if(!arcTool&&!isSegments)$('drawStatus').textContent='两圆的辅助圆手绘尚未支持；可以选“手绘有向连接圆弧”工具。';
    else{
     try{
@@ -518,6 +535,15 @@ const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
   if(learningMode!=='draw'||!input||event.button>0)return;
   const from=eventPoint(event);if(!from)return;
   const tool=$('drawTool').value;
+  if(tool==='tangent'){
+   const sourceId=$('digitalSource').value;
+   if(!['first','second'].includes(sourceId))return;
+   // Tap coordinates are mapped back to model-mm before grading.
+   strokes.push({kind:'tangent-point',sourceId,revision,
+    point:{x:(from.x-O.x)/scale,y:(O.y-from.y)/scale}});
+   if(strokes.length>200)strokes.shift();
+   redoStrokes=[];render();return;
+  }
   if(tool==='snap'){
    try{
     const selected=snapChosenFilletCenter(
