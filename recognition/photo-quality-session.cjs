@@ -164,6 +164,8 @@ function createPhotoQualitySession(){
   const evaluatedKinds=['line','circle','arc','arrow',...(ocrEvaluated?['dimension']:[])];
   const unmeasured=truth.filter(x=>!evaluatedKinds.includes(x.kind));
   const measured=truth.filter(x=>evaluatedKinds.includes(x.kind));
+  const scoredKinds=[...new Set(measured.map(x=>x.kind))];
+  const scoredPredictions=predictions.filter(x=>scoredKinds.includes(x.kind));
   if(measured.length===0)return clone({
    status:'needs-evaluable-annotations',revision,
    notRunKinds:ocrEvaluated?[]:['dimension'],
@@ -179,10 +181,13 @@ function createPhotoQualitySession(){
    evaluatedAnnotationCount:measured.length,
    unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
    evaluatedKinds,notRunKinds:ocrEvaluated?[]:['dimension'],
+   scoredKinds,unscoredKinds:evaluatedKinds.filter(x=>!scoredKinds.includes(x)),
+   requiresExhaustiveTruthPerScoredKind:true,
    candidateCount:predictions.length,
+   scoredCandidateCount:scoredPredictions.length,
    rejectedPredictions:rejected,
    metrics:evaluateRecognitionProposals({
-    image:original,truth:measured,predictions
+    image:original,truth:measured,predictions:scoredPredictions
    }),
    imageBytesIncluded:false,filenameIncluded:false,
    noModelMillimetres:true,notRealWorldAccuracy:true,
