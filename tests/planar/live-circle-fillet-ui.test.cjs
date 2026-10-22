@@ -973,9 +973,9 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  get('learningMode').value='draw';fire('learningMode','change');
  assert.equal(get('drawTool').disabled,false);
  assert.equal(get('drawTool').value,'tangent');
- assert.equal(get('checkDigital').disabled,true,'digital ruler is still unsupported in mixed mode');
+ assert.equal(get('checkDigital').disabled,false,'mixed construction now has a real mathematics grader');
  assert.equal(get('checkDraw').disabled,false);
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  const input={segment:{a:{x:-25,y:0},b:{x:25,y:0}},
   circle:{center:{x:0,y:5},radius:8},filletRadius:10,side:1,
   branchId:'candidate-1',direction:'ccw',
@@ -991,7 +991,7 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  get('digitalSource').value='second';
  board.listeners.pointerdown(ev(toSheet(solved.contacts.second),6));
  assert.match(get('drawStatus').textContent,/学生切点 2 \/ 2/);
- assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ assert.match(get('learningProgress').textContent,/1 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='path'&&n.attributes['data-verified-arc']==='true').length,0);
  get('drawTool').value='arc';fire('drawTool','change');
  assert.equal(get('checkDraw').disabled,false);
@@ -1004,13 +1004,13 @@ test('mixed student draw mode grades true source-specific tangent taps and pen a
  for(let i=1;i<48;i++)board.listeners.pointermove(ev(points[i],7));
  board.listeners.pointerup(ev(points[48],7));
  assert.match(get('drawStatus').textContent,/手绘连接弧数学验证通过/);
- assert.match(get('learningProgress').textContent,/2 \/ 2/);
- assert.match(get('learningProgress').textContent,/不包括辅助尺规、圆心吸附或完整教材题/);
+ assert.match(get('learningProgress').textContent,/2 \/ 4/);
+ assert.match(get('learningProgress').textContent,/未证明完整教材题/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,1);
- fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 2/);
- fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 2/);
+ fire('undoDraw','click');assert.match(get('learningProgress').textContent,/1 \/ 4/);
+ fire('redoDraw','click');assert.match(get('learningProgress').textContent,/2 \/ 4/);
  get('mixR').value='9';fire('mixR','input');
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
  get('learningMode').value='hint';fire('learningMode','change');
  for(let i=0;i<5;i++)fire('hintNext','click');
@@ -1034,22 +1034,22 @@ test('mixed source finite arc filters branches in draw mode and forbids impossib
   board.listeners.pointerdown({pointerId:id,button:0,
    clientX:360+8*where.x,clientY:220-8*where.y});
  }
- assert.match(get('learningProgress').textContent,/1 \/ 2/);
+ assert.match(get('learningProgress').textContent,/1 \/ 4/);
  get('mixArcStart').value='60';get('mixArcEnd').value='90';
  fire('mixArcStart','input');
  assert.deepEqual(get('branch').children.map(x=>x.value),['']);
- assert.match(get('learningProgress').textContent,/0 \/ 2/);
+ assert.match(get('learningProgress').textContent,/0 \/ 4/);
  assert.equal(collect().filter(n=>n.tag==='polyline').length,0);
 });
-test('mixed student drawing cannot use unsupported straight-line or center snap tools',()=>{
+test('mixed student drawing blocks free-line painting but allows explicit mathematical center snap',()=>{
  const p=interactiveFillet(),{get,fire,collect}=p;
  get('modeSelect').value='segment-circle';fire('modeSelect','change');
  get('learningMode').value='draw';fire('learningMode','change');
  get('drawTool').value='snap';fire('drawTool','change');
- assert.equal(get('drawTool').value,'tangent');
+ assert.equal(get('drawTool').value,'snap');
  get('drawTool').value='line';fire('drawTool','change');
  assert.equal(get('drawTool').value,'tangent');
- assert.equal(get('addDigital').disabled,true);
+ assert.equal(get('addDigital').disabled,false);
  const board=get('diagram');
  board.listeners.pointerdown({pointerId:3,button:0,clientX:400,clientY:230});
  assert.match(get('drawStatus').textContent,/先选择题目实际存在的圆心分支/);
