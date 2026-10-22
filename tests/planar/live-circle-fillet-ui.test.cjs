@@ -1535,6 +1535,7 @@ test('V5 student mathematics feedback resets on input revision and persists acro
  assert.match(get('studentFeedbackArc').textContent,/尚未提交完整手绘弧|有向 G1/);
  get('filletRadius').value='11';fire('filletRadius','input');
  assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
- assert.match(get('studentFeedbackNext').textContent,/分支/);
+ assert.match(get('studentFeedbackNext').textContent,/辅助轨迹|分支/);
  assert.doesNotMatch(get('studentFeedbackSummary').textContent,/4 \/ 4/);
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/已核验 ·/);
 });
