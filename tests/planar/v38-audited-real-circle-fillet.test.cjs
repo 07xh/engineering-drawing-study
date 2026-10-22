@@ -53,7 +53,8 @@ test('02 concentric equal loci remain coincident, never guessed as one valid bra
  assert.equal(result.suitableForV5,false);
 });
 test('02 equal internal circle/fillet radii block degenerate locus with no fabricated M2 circle',()=>{
- const input=sample({options:{firstMode:'internal',secondMode:'external'}});
+ const input=sample({geometry:{first:{...first,radius:10},second},
+  options:{firstMode:'internal',secondMode:'external'}});
  const result=verified(input);
  assert.equal(result.status,'unsupported-degenerate-locus');
  assert.equal(result.numericEvidence,null);
