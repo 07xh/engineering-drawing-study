@@ -28,6 +28,9 @@ function assessFilletStudentProgress(kind,args,{
  if(typeof branchId!=='string'||!branchId||args?.branchId!==branchId)
   arc={status:'not-verified',gradeScope:'one-directed-arc-only',
    reason:'未明确选择与当前题目一致的真实圆心分支，禁止把独立圆弧判分计为通过'};
+ else if(contacts.status==='invalid-branch')
+  arc={status:'not-verified',gradeScope:'one-directed-arc-only',
+   reason:'原候选分支因新几何输入或有限已知圆弧截取而无效，不得沿用旧的圆弧判分'};
  else if(arcStrokes.length>1)
   arc={status:'incorrect',gradeScope:'one-directed-arc-only',
    reason:'学生绘制了多条连接弧；请先撤销多余笔迹，不得挑一条自动算正确'};
