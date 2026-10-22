@@ -15,9 +15,12 @@ function attachLocalRasterReview({
 }){
  for(const node of [image,photoInput,photoClear,kind,first,second,preview,
   edits,originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
-  scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus,
   accepted,apply,status])
   if(!node)throw new TypeError('incomplete local raster review UI controls');
+ const scaleNodes=[scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus];
+ const hasScaleControls=scaleNodes.every(Boolean);
+ if(!hasScaleControls&&scaleNodes.some(Boolean))
+  throw new TypeError('partial optional raster scale assistant controls');
  if(typeof onApply!=='function')throw new TypeError('current workbench hook required');
  const SVG='http://www.w3.org/2000/svg';
  const parts={line:null,curve:null};
@@ -28,6 +31,7 @@ function attachLocalRasterReview({
  };
  const changed=()=>{accepted.checked=false;};
  function invalidateDerivedScale(){
+  if(!hasScaleControls){changed();return;}
   if(derivedScale){
    mmPerPx.value='';
    derivedScale=null;
@@ -37,6 +41,7 @@ function attachLocalRasterReview({
   changed();
  }
  function updateScaleSources(){
+  if(!hasScaleControls)return;
   const selected=scaleSource.value;
   scaleSource.replaceChildren(option('','请选择已核对真实长度的完整线段'));
   for(const id of [first.value,second.value]){
@@ -51,7 +56,7 @@ function attachLocalRasterReview({
  }
  function reset(){
   invalidateDerivedScale();
-  scaleSource.value='';scaleLength.value='';
+  if(hasScaleControls){scaleSource.value='';scaleLength.value='';}
   generation++;parts.line=null;parts.curve=null;draft=null;
   preview.replaceChildren();edits.replaceChildren();
   updateSelectors();
@@ -167,6 +172,7 @@ function attachLocalRasterReview({
   else parts[group]=rawInfo;
   changed();renderDraft();
  }
+ if(hasScaleControls){
  scaleSource.addEventListener('change',invalidateDerivedScale);
  scaleLength.addEventListener('input',invalidateDerivedScale);
  scaleReviewed.addEventListener('change',changed);
@@ -202,6 +208,7 @@ function attachLocalRasterReview({
     (error instanceof Error?error.message:'请输入有效已知长度');
   }
  });
+ }
  for(const el of [first,second])el.addEventListener('change',drawEdits);
  kind.addEventListener('change',updateSelectors);
  for(const el of [originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide]){
