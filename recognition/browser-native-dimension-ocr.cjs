@@ -6,7 +6,8 @@
  * uploads, scripts, network requests, persistent storage, or fake OCR.
  * Its outputs remain UNSIGNED candidates, never metric geometry or a solution.
  */
-const {parseTextCandidates}=require('./dimension-notation-candidates.cjs');
+const {parseTextCandidates,joinSplitDimensionTokens}=
+ require('./dimension-notation-candidates.cjs');
 
 function validImage(image){
  const w=image?.naturalWidth,h=image?.naturalHeight;
@@ -37,7 +38,28 @@ function normalizeNativeDetections(found,analysis,original){
    confidence:0};
   tokens.push(token);
  }
- return parseTextCandidates(tokens,original);
+ const direct=parseTextCandidates(tokens,original);
+ const joined=joinSplitDimensionTokens(tokens,original);
+ const combined=parseTextCandidates(joined,original);
+ // Prefer native whole-token detection when the split proposal duplicates it.
+ const overlap=(a,b)=>{
+  const [ax,ay,aw,ah]=a,[bx,by,bw,bh]=b;
+  const w=Math.max(0,Math.min(ax+aw,bx+bw)-Math.max(ax,bx));
+  const h=Math.max(0,Math.min(ay+ah,by+bh)-Math.max(ay,by));
+  const intersection=w*h;
+  return intersection/(aw*ah+bw*bh-intersection)||0;
+ };
+ const supplemental=[];
+ for(let i=0;i<combined.length;i++){
+  const candidate=combined[i];
+  if(direct.some(existing=>existing.dimensionKind===candidate.dimensionKind&&
+   existing.numericValue===candidate.numericValue&&
+   overlap(existing.bbox,candidate.bbox)>.65))continue;
+  supplemental.push({...candidate,
+   sourceTokenIds:[...joined[i].sourceTokenIds],
+   syntheticJoin:true,recognitionScore:0});
+ }
+ return [...direct,...supplemental].slice(0,150);
 }
 async function detectBrowserDimensionCandidates(image,{
  TextDetectorCtor=typeof TextDetector==='function'?TextDetector:null,
