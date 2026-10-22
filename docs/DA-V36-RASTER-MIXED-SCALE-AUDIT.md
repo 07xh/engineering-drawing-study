@@ -1,0 +1,11 @@
+# DraftAI 08 V3.6 · Same-photo mixed scale audit, finite ruler versus whole circle
+
+This narrowly scoped additive diagnostic compares **two independently user-reviewed scale statements** against the **same current revision** of an unconfirmed photo ProblemDraft. It does not infer image units, solve geometry, prove camera perspective, claim unique mathematical answers or modify the visible workbench.
+
+User-provided evidence A: explicit finite-line candidate ID, corrected endpoints and separately verified complete line length in millimetres (existing #319 bounded 10px baseline formula). Evidence B: a *different*, explicitly selected full-circle candidate ID, corrected center and pixel radius, manually verified R/Φ dimension value in millimetres (existing #320 two-stage circle formula). Both explicit booleans must be true; the function recomputes the two rates using the existing checked helpers. Values come from one validated current ProblemDraft and its original-image pixel coordinate frame; stale drafts, wrong IDs/kinds, boundary errors, bogus units, nonfinite lengths, absent consent and partial arcs fail closed.
+
+A relative difference above illustrative **3%** is returned as `inconsistent-review-required` and `mayReuseCurrentScaleSuggestion:false`. At or below the threshold is only `not-inconsistent-under-heuristic`, **not** proof of geometric or image calibration accuracy. The function never averages different rates, sets mm/px fields, marks source geometry accepted or calls the real solver/V5. Return flags `globallyUniformScaleProven:false`, `perspectiveCorrectionPerformed:false`, `mathematicalProof:false`, `globallyUnique:null`.
+
+Changed files only `labs/manual-raster-mixed-scale-audit.cjs`, `tests/workbench/v36-raster-mixed-scale-audit.test.cjs`, this documentation. No public page, auth, image upload, OCR runtime, math, CI workflows or Worker settings. Under existing workbench GitHub CI suite; require exact-HEAD all five math/planar-math/projection/workbench/validate + Cloudflare preview success before merge.
+
+**Next:** optional button in shared raster review panel and controller wiring after 00/09 integration review. Real three *previously unseen user-authorized photographs* with diagram OCR and independent math proof remain R0 acceptance, not accomplished by synthetic fixtures.
