@@ -104,6 +104,16 @@ function attachImageFieldReview({
  render();
  return Object.freeze({
   setKind,edited(field){state.edited(field);render();},
+  markCandidate(candidate){
+   if(!mode.checked||!state.image)
+    return {ok:false,reason:'请先打开图片并开启严格核对模式'};
+   if(!candidate||candidate.coordinateSpace!=='original-image-px')
+    return {ok:false,reason:'候选图像来源无效'};
+   try{state.mark(fieldSelect.value,candidate.bbox,candidate.id);}
+   catch(error){return {ok:false,reason:error.message};}
+   render();onUpdate();
+   return {ok:true,reason:'已关联来源区域；请再次确认当前毫米数值'};
+  },
   isEnabled(){return mode.checked;},
   reviewedInput(kind,numbers,selection,revision){
    if(kind!==state.kind)return {status:'needs-confirmation',input:null};
