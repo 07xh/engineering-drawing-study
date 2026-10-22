@@ -434,7 +434,7 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   $('next').disabled=!full||stage>=max;
   $('playPause').disabled=!full||max===0||reducedMotion()||
    (stage>=max&&(!stageClock||stageClock.snapshot().done));
-  $('playPause').textContent=playTimer===null?'自动播放':'暂停播放';
+  $('playPause').textContent=playTimer===null?'逐笔播放':'暂停播放';
   $('counter').textContent=stage+' / '+max;
   const verified=chosen?.status==='selected'&&chosen.g1Verified===true;
   const hintMax=verified?(isSegments?6:isMixed?5:4):0;
