@@ -6,6 +6,7 @@ const {createConfirmedFilletSession}=
  require('../workbench/v31-fillet-session.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
+const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 
 (function(){
  'use strict';
@@ -25,6 +26,7 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
   const node=document.createElement('option');node.value=value;node.textContent=text;return node;
  };
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
+ let fieldReview=null;
  function stopClock(){
   if(raf!==null){cancelAnimationFrame(raf);raf=null;}
  }
@@ -38,11 +40,16 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
   const fields=kinds[kind].fields.map(x=>x[0]).concat('filletRadius');
   if(fields.some(id=>!Number.isFinite(data[id])||!$('geo-'+id)?.value.trim()))
    return null;
-  return buildConfirmedInput(kind,data,{
+  const selection={
    branchId:$('branch').value,direction:$('direction').value,
    [kinds[kind].travels[0][0]]:$('travel1').value,
    [kinds[kind].travels[1][0]]:$('travel2').value
-  },session?.revision??0);
+  };
+  if(fieldReview?.isEnabled()){
+   const checked=fieldReview.reviewedInput(kind,data,selection,session?.revision??0);
+   return checked.status==='ready-for-math'?checked.input:null;
+  }
+  return buildConfirmedInput(kind,data,selection,session?.revision??0);
  }
  function choiceOptions(element,values,selected){
   element.replaceChildren(option('','请先选择'));
@@ -58,9 +65,13 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
    const wrapper=document.createElement('label');wrapper.textContent=label;
    const entry=document.createElement('input');entry.type='number';entry.step='any';
    entry.id='geo-'+id;entry.value=String(def[id]);entry.inputMode='decimal';
-   entry.addEventListener('input',recompute);
+   entry.addEventListener('input',()=>{
+    fieldReview?.edited(id);
+    recompute();
+   });
    wrapper.append(entry);group.append(wrapper);
   }
+  fieldReview?.setKind(kind);
   choiceOptions($('direction'),['cw','ccw'],choices.direction);
   $('travel1Label').textContent=spec.travels[0][1];
   $('travel2Label').textContent=spec.travels[1][1];
@@ -70,9 +81,14 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
   $('branch').value='';
   refreshCandidates(choices.branchId);
   const current=input();
-  session=createConfirmedFilletSession(current,{now:performance.now(),
+  // The controller always starts from known structured math, but a strict
+  // source-review mode immediately invalidates that temporary preview.
+  const initial=current||buildConfirmedInput(kind,def,choices,0);
+  session=createConfirmedFilletSession(initial,{now:performance.now(),
    speed:Number($('speed').value)});
-  draw(session.snapshot(performance.now()));
+  const snapshot=current?session.snapshot(performance.now()):
+   session.replace(null,{expectedRevision:session.revision,now:performance.now()});
+  draw(snapshot);
  }
  function refreshCandidates(preference){
   const b=$('branch'),wanted=preference??b.value;
@@ -234,5 +250,14 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
  });
  attachLocalImagePreview({input:$('problemPhoto'),image:$('photoPreview'),
   status:$('photoStatus'),clear:$('clearPhoto')});
+ fieldReview=attachImageFieldReview({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),mode:$('sourceReviewEnabled'),
+  overlay:$('sourceOverlay'),fieldSelect:$('sourceField'),
+  confirmButton:$('confirmSource'),acceptButton:$('acceptSources'),
+  status:$('sourceStatus'),values,onUpdate:()=>{
+   if(session)recompute();
+  }
+ });
  grid();buildFields(kind);
 })();
