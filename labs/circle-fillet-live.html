@@ -80,7 +80,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
-<p class="note">“有限线段＋圆”已接入真实数学求解与 V5 教学。此题型当前支持完整教学与逐步提示；学生尺规和自由绘制自动判题仍待专项接入，页面会明确提示，不会借用两圆或两线段的成绩。</p>
+<p class="note">“有限线段＋圆／有限已知圆弧”已支持真实数学求解、V5 动态教学，以及学生自己标记两个切点、手绘有向连接弧的数学验证。此题型暂不支持数字尺规辅助轨迹与圆心吸附评分；显示的 2 项进度并不代表整题完成。</p>
 <h2>数学教学模式</h2>
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">自动播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label></div>
