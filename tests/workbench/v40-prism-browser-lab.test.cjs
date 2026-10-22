@@ -72,7 +72,7 @@ test('04 browser event binding uses real V5 snapshots and rejects revisions afte
  const entry=read('labs/prism-cut-live-entry.cjs');
  assert.match(entry,/createPrismV5SvgScene/);
  assert.match(entry,/expectedRevision:state\.rev/);
- assert.match(entry,/scene\.createPlayer/);
+ assert.match(entry,/\.createPlayer\(/);
  assert.match(entry,/state\.player\.seekStep/);
  assert.match(entry,/state\.player\.seekProgress/);
  assert.match(entry,/state\.player\.setSpeed/);
