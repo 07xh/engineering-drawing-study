@@ -368,6 +368,9 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   originX:$('rasterOriginX'),originY:$('rasterOriginY'),
   mmPerPx:$('rasterMmPerPx'),yAxis:$('rasterYAxis'),
   filletRadiusMm:$('rasterFilletRadius'),lineSide:$('rasterLineSide'),
+  scaleSource:$('rasterScaleSource'),scaleLength:$('rasterScaleLength'),
+  scaleReviewed:$('rasterScaleReviewed'),
+  scaleCalculate:$('rasterScaleCalculate'),scaleStatus:$('rasterScaleStatus'),
   accepted:$('rasterAccept'),apply:$('rasterApply'),
   status:$('rasterStatus'),
   onApply:result=>{
