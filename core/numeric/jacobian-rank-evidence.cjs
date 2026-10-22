@@ -43,8 +43,16 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
 
   // Scaling the whole matrix first avoids overflow in column inner products.
   // Singular values are returned as ratios; no absolute unit is implied.
-  const a=rows.map(row=>row.map(v=>v/scale));
-  let converged=false,sweeps=0,numericUnderflowDetected=false;
+  // A small nonzero Jacobian coefficient can vanish while scaling by
+  // the largest entry (e.g. 1e-308 / 1e308 -> 0). Once lost, a rank claim
+  // based on this scaled matrix would be unsupported.
+  let numericUnderflowDetected=false;
+  const a=rows.map(row=>row.map(v=>{
+    const normalized=v/scale;
+    if(v!==0&&normalized===0)numericUnderflowDetected=true;
+    return normalized;
+  }));
+  let converged=false,sweeps=0;
   for(let sweep=0;sweep<maxSweeps;sweep++){
     sweeps=sweep+1;
     let rotated=false;
