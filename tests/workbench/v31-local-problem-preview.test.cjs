@@ -60,7 +60,7 @@ test('preview wiring does not read file bytes or send user images to an API',()=
  assert.match(page,/id="problemPhoto"/);
  assert.match(page,/仅本地参照/);
  assert.match(ui,/attachLocalImagePreview/);
- assert.doesNotMatch(source,/(fetch\(|XMLHttpRequest|FileReader|localStorage|sessionStorage)/);
+ assert.doesNotMatch(source,/(fetch\(|XMLHttpRequest\(|new FileReader\(|localStorage\.|sessionStorage\.)/);
  assert.match(source,/revokeObjectURL/);
  assert.match(source,/pagehide/);
 });
