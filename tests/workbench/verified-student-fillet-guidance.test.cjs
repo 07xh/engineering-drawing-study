@@ -53,7 +53,7 @@ test('duplicate student compass marks cannot be counted as 2 verified guides',()
  assert.match(feedback.stages[0].detail,/额外、重复/);
  assert.match(feedback.stages[0].detail,/撤销多余笔迹/);
 });
-test('a student's wrong center and incomplete contact marks yield precise but non-revealing next steps',()=>{
+test("a student's wrong center and incomplete contact marks yield precise but non-revealing next steps",()=>{
  const chosen=circleCircleFilletCenters(args).candidates.find(c=>c.id===branchId);
  const wrong=explain(grade(args,{auxiliaries:guides(),
   centerMark:{x:chosen.center.x+1.5,y:chosen.center.y,revision}}));
