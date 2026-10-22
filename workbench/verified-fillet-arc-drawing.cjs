@@ -9,23 +9,33 @@
  */
 const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.cjs');
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
+const {chooseDirectedSegmentCircleFillet}=
+ require('../engines/planar/directed-segment-circle-fillet.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const pt=p=>!!p&&typeof p==='object'&&finite(p.x)&&finite(p.y);
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const RAD=Math.PI/180;
 const MAX_SAMPLE_GAP=30*RAD;
 function gradeFilletArcDrawing(args,stroke,{kind,origin,scale,revision,toleranceMm=0.75}={}){
- if(kind!=='circles'&&kind!=='segments')throw new TypeError('recognized geometry kind required');
+ if(!['circles','segments','segment-circle'].includes(kind))throw new TypeError('recognized geometry kind required');
  if(!pt(origin)||!finite(scale)||scale<=0||
     !finite(toleranceMm)||toleranceMm<=0||toleranceMm>2||
     !Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('valid sheet origin, scale, positive mm tolerance and revision required');
- const solved=kind==='circles'?chooseDirectedFillet(args):chooseFiniteTwoSegmentArc(args);
+ const solved=kind==='circles'?chooseDirectedFillet(args):
+  kind==='segment-circle'?chooseDirectedSegmentCircleFillet(args):
+  chooseFiniteTwoSegmentArc(args);
  const fullProof=solved.status==='selected'&&solved.g1Verified===true&&
    !!solved.geometry&&!!solved.contacts&&
-   (kind==='circles'||solved.finiteArcSweepVerified===true);
+   (kind==='circles'?(solved.sourceArcRangeVerified===true):
+    kind==='segment-circle'?
+     solved.finiteSegmentContactVerified===true&&solved.sourceArcRangeVerified===true:
+     solved.finiteArcSweepVerified===true);
  const base={gradeScope:'single-directed-fillet-arc-only',kind,revision,
-  sourceProofVerified:fullProof,geometryValidated:false};
+  sourceProofVerified:fullProof,geometryValidated:false,
+  sourceBoundsVerified:kind==='segment-circle'?solved.sourceArcRangeVerified===true&&
+   solved.finiteSegmentContactVerified===true:
+    kind==='circles'?solved.sourceArcRangeVerified===true:undefined};
  if(!fullProof)return {...base,status:'not-verified',sampleCount:0,
   reason:'需选择真实有效分支、明确圆弧方向并通过两端有向 G1，才可判曲线'};
  if(stroke===null||stroke===undefined)
@@ -86,7 +96,9 @@ function gradeFilletArcDrawing(args,stroke,{kind,origin,scale,revision,tolerance
   sweepResidualDegrees,largestAngularGapDegrees:largestAngularGap/RAD,
   backwardMotionDegrees:backwardMotion/RAD,toleranceMm:tolerance,
   reason:correct
-   ?'手绘圆弧的模型半径、两个切点、连续曲率轨迹与有向扫角已验证；不能据此认定全部辅助线或有限已知圆弧范围正确'
+   ?kind==='segment-circle'?
+    '线段切点与给定有限圆弧范围均经数学求解器核实，且学生圆弧半径、两端切点、连续轨迹与有向扫角已通过；尚不能代表全部辅助线或整题正确':
+    '手绘圆弧的模型半径、两个切点、连续曲率轨迹与有向扫角已验证；不能据此认定全部辅助线或有限已知圆弧范围正确'
    :'手绘弧未同时满足切点、半径残差、连续采样与规定旋向的数学检验'};
 }
 module.exports={gradeFilletArcDrawing};
