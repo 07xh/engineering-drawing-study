@@ -1,7 +1,7 @@
 'use strict';
 /** Local image RGBA inspection and untrusted line preview, no OCR or math. */
 const {detectLineCandidates}=require('../recognition/local-line-candidates.cjs');
-const {locateCandidate}=require('../recognition/source-candidate-link.cjs');
+const {mapLeaderCandidate}=require('../recognition/dimension-leader-association.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalLineCandidates({
  image,photoInput,photoClear,run,clear,overlay,status,onCandidates=()=>{}
@@ -52,7 +52,7 @@ function attachLocalLineCandidates({
     overlay.append(node);
    }
    overlay.hidden=false;
-   onCandidates(lines.map(x=>locateCandidate(x,
+   onCandidates(lines.map(x=>mapLeaderCandidate(x,
     {width,height},{width:originalW,height:originalH})));
    status.textContent='本地检测得到 '+lines.length+
     ' 条直线候选（紫色虚线）；仅供对照，可能漏检或误检。' +
