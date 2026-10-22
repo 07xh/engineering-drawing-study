@@ -145,6 +145,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
      'data-v5-progressive':action.kind,
      ...(action.kind==='arc'?{'data-verified-arc':'true'}:{})
     });
+    markSelectable(node,action,snapshot.activeStepIndex);
     $('diagram').append(node);activeActionNodes.set(action.id,node);
    }
    // A line grows its end coordinate; a circle exposes increasing
@@ -152,6 +153,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
    MotionV5.updateSvg(node,action,fraction);
    if(action.kind==='point')node.setAttribute('opacity',String(fraction));
   }
+  updatePaperView();
  };
  const availableStages=()=>{
   if(!centers)return 0;
@@ -360,24 +362,24 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  }
  function appendVerifiedSteps(svg,count){
   if(teaching?.status!=='ready'||teaching.revision!==revision)return;
-  for(const step of teaching.steps.slice(0,count))
+  for(const [index,step] of teaching.steps.slice(0,count).entries())
    for(const action of step.actions){
     const g=action.geometry;
     const color=step.role==='result'?'#246da5':
       step.id.includes('trim')?'#236eb5':'#c38536';
     if(action.kind==='line')
-     svg.append(elem('line',{x1:g.from.x,y1:g.from.y,x2:g.to.x,y2:g.to.y,
+     svg.append(markSelectable(elem('line',{x1:g.from.x,y1:g.from.y,x2:g.to.x,y2:g.to.y,
       stroke:color,'stroke-width':2,
-      'stroke-dasharray':step.id.includes('trim')?'none':'7 6'}));
+      'stroke-dasharray':step.id.includes('trim')?'none':'7 6'}),action,index));
     else if(action.kind==='circle')
-     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:g.radius,
-      stroke:color,'stroke-width':2,fill:'none','stroke-dasharray':'7 6'}));
+     svg.append(markSelectable(elem('circle',{cx:g.center.x,cy:g.center.y,r:g.radius,
+      stroke:color,'stroke-width':2,fill:'none','stroke-dasharray':'7 6'}),action,index));
     else if(action.kind==='point')
-     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:4.5,fill:color}));
+     svg.append(markSelectable(elem('circle',{cx:g.center.x,cy:g.center.y,r:4.5,fill:color}),action,index));
     else if(action.kind==='arc'){
      const path=elem('path',{stroke:'#246da5','stroke-width':3.5,
       fill:'none','stroke-linecap':'round','data-verified-arc':'true'});
-     MotionV5.updateSvg(path,action,1);svg.append(path);
+     MotionV5.updateSvg(path,action,1);svg.append(markSelectable(path,action,index));
     }else throw Error('不支持的统一教学动作：'+action.kind);
    }
  }
@@ -713,6 +715,8 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   }
   paintV5Reasons();
   syncStrokeProgress();
+  syncPaperPick();
+  updatePaperView(true);
  }
 
  for(const id of FIELDS){
