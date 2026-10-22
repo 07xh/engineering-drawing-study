@@ -112,13 +112,13 @@ test('04 invalid progress and unsafe revision never yield a drawable standard an
  const s=make();
  for(const ms of [-1,NaN,Infinity,s.totalMs+1,'300',null])
   assert.throws(()=>s.renderFrame({elapsedMs:ms,expectedRevision:7}),/elapsedMs/);
- for(const revision of [NaN,-1,'7',0])
+ for(const revision of [NaN,-1,'7',null])
   assert.throws(()=>make({revision}),/revision/);
 });
 test('04 real geometry changes the delivered result SVG; no prebuilt screenshot substitutions',()=>{
  const a=make();
  const b=make({c:cylinder(3,16,p(10,-2,4)),
-  pl:plane(p(10,-2,7),p(1,0,1))});
+  pl:plane(p(10,-2,8),p(1,0,1))});
  assert.equal(a.status,'ready');assert.equal(b.status,'ready');
  assert.notEqual(shot(a,a.totalMs).svg,shot(b,b.totalMs).svg);
  assert.notEqual(a.totalMs,0);assert.notEqual(b.totalMs,0);
