@@ -186,7 +186,6 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
       Math.hypot(actual.center.x-arc.center.x,actual.center.y-arc.center.y)>1e-8)
      throw Error('圆弧证明与教学步骤结果不一致，已拒绝显示');
    }
-   // Read only verified R1/02 output; blocked reasons never become an answer.
    const sourceKind=isSegments?'segments':isMixed?'segment-circle':'circles';
    reasons=ReasonsV5.build(plan,{kind:sourceKind,revision});
    centers=result;chosen=picked;input=args;teaching=plan;
@@ -404,11 +403,14 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
      points:pointer.points.map(p=>p.x+','+p.y).join(' '),
      stroke:'#ad83c7','stroke-width':2.5,fill:'none'}));
   }
-  svg.classList?.toggle?.('draw-active',drawing&&!isMixed&&(
-    ($('drawTool').value==='tangent'&&!!input)||
-    ($('drawTool').value==='snap'&&!!input&&!!$('branch').value)||
-    (chosen?.status==='selected'&&chosen.g1Verified===true&&
-     ($('drawTool').value==='arc'||isSegments))));
+  svg.classList?.toggle?.('draw-active',drawing&&(
+    (isMixed&&!!input&&($('drawTool').value==='tangent'||
+      ($('drawTool').value==='arc'&&verifiedArc())))||
+    (!isMixed&&(
+     ($('drawTool').value==='tangent'&&!!input)||
+     ($('drawTool').value==='snap'&&!!input&&!!$('branch').value)||
+     (chosen?.status==='selected'&&chosen.g1Verified===true&&
+      ($('drawTool').value==='arc'||isSegments))))));
   $('prev').disabled=!full||stage===0;
   $('next').disabled=!full||stage>=max;
   $('playPause').disabled=!full||max===0||reducedMotion()||
@@ -422,15 +424,34 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
   $('undoDraw').disabled=!drawing||strokes.length===0;
   $('redoDraw').disabled=!drawing||redoStrokes.length===0;
   $('clearDraw').disabled=!drawing||strokes.length===0;
-  $('drawTool').disabled=!drawing||isMixed;
+  $('drawTool').disabled=!drawing;
   $('addDigital').disabled=!drawing||!input||isMixed||digitalActions.length>=64;
   $('undoDigital').disabled=!drawing||digitalActions.length===0;
   $('clearDigital').disabled=!drawing||digitalActions.length===0;
   $('checkDigital').disabled=!drawing||!input||isMixed;
   if(drawing&&isMixed){
-   $('digitalStatus').textContent='本题型目前只开放真实数学教学；数字尺规及联合学生评分尚未接入。';
-   $('learningProgress').textContent='线段＋圆：暂无学生联合评分，不能使用两圆／两线段的 4 项成绩。';
+   $('digitalStatus').textContent='线段＋圆：数字尺规辅助线与圆心吸附仍待支持；已开放学生两切点和有向连接弧独立数学判题。';
    $('centerSnapStatus').textContent='本题型尚未开放学生圆心吸附评分。';
+   if(!input){
+    $('learningProgress').textContent='当前题目输入无效，不能进行学生数学判题。';
+   }else{
+    try{
+     const contacts=gradeStudentTangentPoints('segment-circle',input,
+      strokes.filter(st=>st.kind==='tangent-point'),
+      {branchId:$('branch').value,revision});
+     const curves=strokes.filter(st=>st.kind==='arc');
+     const arc=curves.length>1?
+      {status:'incorrect',reason:'多条手绘弧不能自动选一条作为正确答案'}:
+      gradeFilletArcDrawing(input,curves[0]??null,
+       {kind:'segment-circle',origin:O,scale,revision});
+     const contactOK=contacts.status==='correct',arcOK=arc.status==='correct';
+     $('learningProgress').textContent='线段＋圆：已验证 '+
+      (Number(contactOK)+Number(arcOK))+' / 2 项受支持的数学构造：'+
+      '两个切点'+(contactOK?' ✓':' 待核验')+' · 有向连接弧'+
+      (arcOK?' ✓':' 待核验')+
+      '。不包括辅助尺规、圆心吸附或完整教材题。';
+    }catch(e){$('learningProgress').textContent='无法验证学生混合题型进度：'+e.message;}
+   }
   }else if(drawing){
    try{
     if(!input)$('digitalStatus').textContent='当前题目条件无效，不能构造数学辅助轨迹。';
@@ -460,9 +481,12 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
     }catch(e){$('learningProgress').textContent='无法计算联合进度：'+e.message;}
    }else $('learningProgress').textContent='输入条件无效，无法进行联合数学判题。';
   }
-  $('checkDraw').disabled=!drawing||!input||isMixed||
-   ($('drawTool').value!=='tangent'&&(!verified||
-    ($('drawTool').value==='line'&&!isSegments)));
+  const drawKind=$('drawTool').value;
+  $('checkDraw').disabled=!drawing||!input||
+   (isMixed?!['tangent','arc'].includes(drawKind)||
+      (drawKind==='arc'&&!verified):
+    drawKind!=='tangent'&&(!verified||
+     (drawKind==='line'&&!isSegments)));
   if(hint){
    $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
    $('stepText').textContent=hintStep===0?
@@ -472,9 +496,30 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
        '数学证明链尚未完成，请先确认候选分支与原轮廓走向。';
   }
   if(drawing&&isMixed){
-   $('stepTitle').textContent='线段＋圆｜自主作图待接入';
-   $('stepText').textContent='数学求解与完整教学已经支持；该题型的学生尺规和手绘判题暂不开放，不能挪用其他题型的成绩。';
-   $('drawStatus').textContent='当前题型学生绘图自动评分尚未支持；请使用完整教学或逐步提示模式。';
+   const tool=$('drawTool').value;
+   $('stepTitle').textContent=tool==='arc'?'线段＋圆｜手绘连接弧':'线段＋圆｜自行确定两个切点';
+   $('stepText').textContent=tool==='arc'?
+    '从线段切点开始，到给定圆或有限弧的切点结束，绘制满足有向 G1 的连接弧；数学评分不代表整题完成。':
+    '先选已知对象 1（线段）或 2（圆／有限圆弧），分别在画纸标记切点；暂不支持其他尺规工具。';
+   if(!['tangent','arc'].includes(tool))
+    $('drawStatus').textContent='该题型只开放学生切点和手绘连接弧；请先切换绘图工具。';
+   else try{
+    if(tool==='tangent'){
+     const r=gradeStudentTangentPoints('segment-circle',input,
+      strokes.filter(st=>st.kind==='tangent-point'),
+      {branchId:$('branch').value,revision});
+     $('drawStatus').textContent='学生切点 '+r.matchedCount+' / 2；额外或错误标记 '+r.extraCount+'。'+r.reason;
+    }else{
+     const arcs=strokes.filter(st=>st.kind==='arc');
+     const result=arcs.length>1?
+      {status:'incorrect',reason:'请撤销多余曲线，仅保留一条连接弧'}:
+      gradeFilletArcDrawing(input,arcs[0]??null,
+       {kind:'segment-circle',origin:O,scale,revision});
+     $('drawStatus').textContent=(result.status==='correct'?'手绘连接弧数学验证通过。':
+      result.status==='incomplete'?'尚未绘制连接弧。':
+      '连接弧尚未通过有向数学检验。')+result.reason;
+    }
+   }catch(e){$('drawStatus').textContent='本题型学生作图验证失败：'+e.message;}
   }else if(drawing){
    const arcTool=$('drawTool').value==='arc',tangentTool=$('drawTool').value==='tangent';
    $('stepTitle').textContent=tangentTool?'自己作图｜两处真实切点':
@@ -530,6 +575,7 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
   for(const node of document.querySelectorAll('.circle-only'))node.hidden=mode!=='circles';
   for(const node of document.querySelectorAll('.line-only'))node.hidden=mode!=='segments';
   for(const node of document.querySelectorAll('.mixed-only'))node.hidden=mode!=='segment-circle';
+  if(mode==='segment-circle')$('drawTool').value='tangent';
   compute();
  });
  $('learningMode').addEventListener('change',()=>{
@@ -629,7 +675,13 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
    render();
   });
  }
- $('drawTool').addEventListener('change',()=>{pointer=null;render()});
+ $('drawTool').addEventListener('change',()=>{
+  pointer=null;
+  if($('modeSelect').value==='segment-circle'&&
+    !['tangent','arc'].includes($('drawTool').value))
+   $('drawTool').value='tangent';
+  render();
+ });
  $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
  $('addDigital').addEventListener('click',()=>{
   if(learningMode!=='draw'||!input||$('modeSelect').value==='segment-circle')return;
@@ -670,10 +722,10 @@ const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
     y:Math.max(0,Math.min(440,(event.clientY-rect.top)*440/rect.height))};
  }
  svg.addEventListener('pointerdown',event=>{
-  if(learningMode!=='draw'||!input||
-     $('modeSelect').value==='segment-circle'||event.button>0)return;
+  if(learningMode!=='draw'||!input||event.button>0)return;
   const from=eventPoint(event);if(!from)return;
   const tool=$('drawTool').value;
+  if($('modeSelect').value==='segment-circle'&&!['tangent','arc'].includes(tool))return;
   if(tool==='tangent'){
    const sourceId=$('digitalSource').value;
    if(!['first','second'].includes(sourceId))return;
