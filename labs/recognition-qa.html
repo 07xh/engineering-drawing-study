@@ -41,7 +41,10 @@ small{font-size:12px;color:#667f6e}
 <p>本工具只在当前浏览器中处理你自己制作或获授权的图片。紫色虚线为算法候选，绿色实线为你手工标注的真值。指标只能反映本次标注的对照结果，不代表数学标准答案。</p>
 <div class="layout">
 <section class="panel" aria-label="测试控制台">
-<h2>1. 打开题图并检测</h2>
+<h2>1. 检查当前浏览器并打开题图</h2>
+<div class="buttons"><button id="qaCapabilities" type="button">检查安卓浏览器识图支持情况</button></div>
+<pre id="qaCapabilityResult" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">尚未运行浏览器能力自检。本地检查不读取图片或设备身份。</pre>
+
 <label>本地工程题图（JPG / PNG / WebP）
 <input id="qaFile" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <div class="buttons">
