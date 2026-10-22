@@ -1,13 +1,16 @@
 'use strict';
 /* DraftAI 04: strictly local reviewed-prism V5 drawing experiment. */
-const {fields,checkedPrismFields}=require('./prism-cut-form.cjs');
+const {fields,checkedPrismFields,checkedPrismObserverFields}=
+ require('./prism-cut-form.cjs');
 const {createPrismV5SvgScene}=
  require('../engines/spatial/sections/rectangular-prism-v5-frame-svg.cjs');
 (function(){
  'use strict';
  const $=id=>document.getElementById(id);
  const initial={sizeX:'10',sizeY:'10',sizeZ:'10',
-  px:'0',py:'0',pz:'12',nx:'1',ny:'1',nz:'1'};
+  px:'0',py:'0',pz:'12',nx:'1',ny:'1',nz:'1',
+  visibilityMode:'unconfirmed',retainedHalfspace:'',
+  viewV:'',viewH:'',viewW:''};
  const state={scene:null,player:null,rev:0,raf:null,last:null,urls:new Set()};
  const time=()=>performance.now();
  function message(value,bad=false){
@@ -27,6 +30,7 @@ const {createPrismV5SvgScene}=
   $('board').replaceChildren();$('steps').replaceChildren();
   $('seek').value='0';$('percentage').textContent='0%';
   $('measure').textContent='等待新数学证明。';
+  $('rayStatus').textContent='输入已改变，原视向射线判定已失效。';
   $('stepDetail').textContent='数据已变更，旧作图步骤不再有效。';
   message('条件已更新，旧结果已失效。请确认输入并重新求解。',true);
  }
@@ -52,7 +56,9 @@ const {createPrismV5SvgScene}=
    const step=s.steps[frame.activeStepIndex];
    $('stepDetail').textContent=step?
     '正在执行：'+step.title+' · 已绘制 '+frame.completeActions+
-      ' 笔。橙色截线表示可见性仍需确认。':
+      ' 笔。'+(s.visibilityEvidenceMode==='explicit-observer-rays'?
+       '线型来自显式空间视向；并非正式标准答案。':
+       '橙色截线表示可见性仍需确认。') :
     '已知投影就绪，辅助线将在相应步骤逐笔出现。';
    for(const item of $('steps').querySelectorAll('button[data-step]')){
     if(Number(item.dataset.step)===frame.activeStepIndex)
@@ -75,7 +81,16 @@ const {createPrismV5SvgScene}=
   invalidate();
   try{
    const input=fieldsNow();
-   const s=createPrismV5SvgScene(input.box,input.plane,{revision:state.rev});
+   const observer=checkedPrismObserverFields({
+    mode:$('visibilityMode').value,
+    retainedHalfspace:$('retainedHalfspace').value,
+    viewV:$('viewV').value,
+    viewH:$('viewH').value,
+    viewW:$('viewW').value
+   });
+   const s=createPrismV5SvgScene(input.box,input.plane,{
+    revision:state.rev,...observer
+   });
    if(s.status!=='ready'){
     message('暂不能绘图：'+s.reason+'。请调整截平面条件。',true);
     return;
@@ -99,11 +114,23 @@ const {createPrismV5SvgScene}=
    }
    $('measure').textContent='数学截面：'+s.sectionEdgeCount+' 边 · 面积 '+
     s.areaMm2.toFixed(3)+' mm² · 周长 '+
-    s.perimeterMm.toFixed(3)+' mm。线型仍待审核。';
+    s.perimeterMm.toFixed(3)+' mm。正式国标线型仍待审核。';
+   const counts=s.visibilityCounts;
+   $('rayStatus').textContent=s.visibilityEvidenceMode==='explicit-observer-rays'?
+    '指定视向的截面开边：可见 '+counts.visible+'、遮挡 '+
+    counts.hidden+'、不确定 '+counts.undetermined+
+    '；仅为模型空间射线结论，端点和正式第一角法均未签收。':
+    '未确认材料侧与观察方向：全部 '+counts.undetermined+
+    ' 段投影均为待审核线型。';
    draw(0);
    message('数学截面和 V5 逐笔图元已验证，共 '+s.stepCount+
-    ' 个步骤。当前没有通过隐藏线与第一角法国标认证。');
-  }catch(error){message('求解条件被拒绝：'+error.message,true);}
+    ' 个步骤。'+(s.visibilityEvidenceMode==='explicit-observer-rays'?
+     '按已确认的射线生成模型开边线型。':'未确认观察射线，全部线型待审核。')+
+    '正式第一角法标准尚未验收。');
+  }catch(error){
+   $('rayStatus').textContent='输入尚未满足完整的材料侧和三个视向确认条件。';
+   message('求解条件被拒绝：'+error.message,true);
+  }
  }
  function play(){
   if(!state.player||!state.scene)return;
@@ -143,7 +170,7 @@ const {createPrismV5SvgScene}=
    a.href=url;a.download='draftai-prism-section-'+state.rev+'.svg';
    document.body.appendChild(a);
    try{a.click();}finally{a.remove();}
-   message('浏览器已发起本地 SVG 保存。截面虚实线尚未审定。');
+   message('浏览器已发起本地 SVG 保存。空间可见性和正式制图标准的验收范围不同。');
    setTimeout(()=>{if(state.urls.delete(url))URL.revokeObjectURL(url);},3000);
   }catch(error){
    if(url&&state.urls.delete(url))URL.revokeObjectURL(url);
@@ -156,8 +183,15 @@ const {createPrismV5SvgScene}=
    $(k).addEventListener('change',update);
   }
   $('solve').addEventListener('click',update);
+  $('visibilityMode').addEventListener('change',()=>{
+   $('rayControls').hidden=$('visibilityMode').value!=='rays';
+   update();
+  });
+  for(const id of ['retainedHalfspace','viewV','viewH','viewW'])
+   $(id).addEventListener('change',update);
   $('reset').addEventListener('click',()=>{
    for(const [k,v] of Object.entries(initial))$(k).value=v;
+   $('rayControls').hidden=true;
    update();
   });
   $('play').addEventListener('click',play);
@@ -185,6 +219,7 @@ const {createPrismV5SvgScene}=
   window.addEventListener('pagehide',()=>{
    stop();for(const u of state.urls)URL.revokeObjectURL(u);state.urls.clear();
   });
+  $('rayControls').hidden=$('visibilityMode').value!=='rays';
   update();
  }
  if(document.readyState==='loading')
