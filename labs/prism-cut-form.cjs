@@ -20,4 +20,30 @@ function checkedPrismFields(raw){
    normal:{x:n.nx,y:n.ny,z:n.nz}}
  };
 }
-module.exports={fields,checkedPrismFields};
+
+/**
+ * Do not infer the three viewing directions from page labels or default
+ * to an unreviewed first-angle convention. All choices must be explicit.
+ */
+function checkedPrismObserverFields(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))
+  throw new TypeError('explicit model observer settings required');
+ if(raw.mode==='unconfirmed')return {};
+ if(raw.mode!=='rays')
+  throw new TypeError('observer evidence mode must be explicitly selected');
+ if(!['positive','negative'].includes(raw.retainedHalfspace))
+  throw new TypeError('choose which side of the plane contains retained material');
+ for(const k of ['viewV','viewH','viewW'])
+  if(!['1','-1'].includes(raw[k]))
+   throw new TypeError('confirm '+k+' viewing direction before ray analysis');
+ return {
+  retainedHalfspace:raw.retainedHalfspace,
+  observerDirections:{
+   V:{x:0,y:Number(raw.viewV),z:0},
+   H:{x:0,y:0,z:Number(raw.viewH)},
+   W:{x:Number(raw.viewW),y:0,z:0}
+  }
+ };
+}
+module.exports={fields,checkedPrismFields,checkedPrismObserverFields};
+
