@@ -20,7 +20,8 @@ const dimension=()=>({
  bbox:[100,200,70,24],coordinateSpace:'original-image-px',
  unitHint:'drawing-unit-unconfirmed',confirmed:false
 });
-function setup({recognize=async()=>({status:'ok',candidates:[dimension()]}),applyPrefill=()=>{}}={}){
+function setup({recognize=async()=>({status:'ok',candidates:[dimension()]}),
+ applyPrefill=()=>{},getLines=()=>[]}={}){
  const nodes={image:control(),photoInput:control(),photoClear:control(),
   run:control(),clear:control(),overlay:control(),status:control(),
   selector:control(),associate:control(),sourceField:control(),
@@ -37,7 +38,7 @@ function setup({recognize=async()=>({status:'ok',candidates:[dimension()]}),appl
  const api=attach({...nodes,fieldReview,applyPrefill,
   getCurves:()=>[{id:'curve_1',kind:'circle',
    coordinateSpace:'original-image-px',bbox:[90,180,200,180]}],
-  recognize});
+  getLines,recognize});
  return {nodes,linked,api,restore(){global.document=original}};
 }
 test('OCR recognition displays local untrusted annotation and requires explicit association',async()=>{
@@ -140,5 +141,25 @@ test('OCR cannot prefill non-radius coordinate even with user unit confirmation'
   await ctx.nodes.prefillButton.fire('click');
   assert.deepEqual(applied,[]);
   assert.deepEqual(ctx.linked,[]);
+ }finally{ctx.restore();}
+});
+
+test('OCR association UI uses leader endpoints, never silently certifies a circle',async()=>{
+ const lines=[{id:'line_1',kind:'line',coordinateSpace:'original-image-px',
+  bbox:[95,183,35,22],from:{x:130,y:205},to:{x:95,y:183}}];
+ const ctx=setup({getLines:()=>lines});
+ try{
+  await ctx.nodes.run.fire('click');
+  ctx.nodes.selector.value='ocr_1';
+  await ctx.nodes.selector.fire('change');
+  assert.match(ctx.nodes.status.textContent,/line_1 → curve_1/);
+  assert.match(ctx.nodes.status.textContent,/端点误差 3px/);
+  assert.match(ctx.nodes.status.textContent,/未验证箭头/);
+  assert.match(ctx.nodes.status.textContent,/人工核对/);
+  assert.equal(ctx.linked.length,0,'leader proposal cannot confirm source');
+  lines.splice(0);
+  ctx.api.refreshAssociations();
+  assert.match(ctx.nodes.status.textContent,/未找到可靠的尺寸引线候选/);
+  assert.equal(ctx.linked.length,0);
  }finally{ctx.restore();}
 });
