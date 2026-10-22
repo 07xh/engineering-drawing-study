@@ -18,7 +18,7 @@ test('full 3 DOF: P* remains a feasible SAMPLE in synchronized space + paper',()
  const report=initial(),plan=Sync.build(report,{revision:1});
  assert.equal(report.analysis.result.degrees,3);
  assert.equal(plan.degreeStatus,'sample');assert.equal(plan.degrees,3);
- assert.match(plan.label,/P\*.*不是唯一解/);
+ assert.match(plan.label,/P\*.*(?:不代表|不是)唯一解/);
  assert.equal(plan.steps.length,5);
  assert.equal(plan.guides.length,4);
  assert.equal(plan.timeline.segments.length,5);
