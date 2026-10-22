@@ -1,10 +1,58 @@
 /* 图学课堂自由度实验室2.0：单点线性约束编辑器 + 共用双视图状态。 */
 (function(){'use strict';
-const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.DrawingLabSheet,Spatial=window.DrawingLabSpatialPreview;
+const Store=window.DrawingLabState,Geom=window.DrawingLabGeometry,Sheet=window.DrawingLabSheet,Spatial=window.DrawingLabSpatialPreview,Sync=window.DrawingLabSyncV5;
 const $=id=>document.getElementById(id);
-if(!Store||!Geom||!Sheet||!Spatial){$('uiStatus').textContent='实验室脚本未完整加载';return}
+if(!Store||!Geom||!Sheet||!Spatial||!Sync){$('uiStatus').textContent='实验室脚本或 V5 同步播放器未完整加载';return}
 let state=Store.create(),history=[],editing=null,selectedVertex='',yaw=.72,pitch=.52,zoom=1,drag=null;
-let viewer=null;
+let viewer=null,syncPlayer=null,syncPlan=null,syncRevision=0,syncFrame=null;
+const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+function haltSync(){
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ if(syncPlayer)syncPlayer.invalidate(syncRevision+1,performance.now());
+ syncPlayer=null;syncPlan=null;syncRevision++;
+}
+function syncStatusVisual(time){
+ const state=syncPlayer?.snapshot(time),visual=Sync.presentation(syncPlan,state);
+ Sync.paintSheet($('sheet'),syncPlan,visual);
+ Sync.paintSpace($('space'),viewer,visual);
+ const valid=visual.ready;
+ $('syncPlay').textContent=state?.playing?'暂停同步动画':'播放同步作图';
+ $('syncPlay').disabled=!(syncPlayer&&valid)||state.done&&!state.playing;
+ $('syncRestart').disabled=!valid;
+ $('syncProgress').disabled=!valid;
+ $('syncProgress').value=valid?String(Math.round(state.ratio*1000)):'1000';
+ $('syncPercent').textContent=valid?Math.round(state.ratio*100)+'%':'—';
+ const index=valid?state.activeStepIndex:-1;
+ $('syncExplanation').textContent=valid?
+   (syncPlan.steps[Math.max(index,0)].title+' · '+syncPlan.label):
+   '按播放按钮，从当前真实约束条件绘制四条第一角联系线，最后同步出现三维 P 与 V/H/W 投影。';
+ return state?.playing===true;
+}
+function animateSync(time){
+ syncFrame=null;
+ if(!syncPlayer)return;
+ if(syncStatusVisual(time))syncFrame=requestAnimationFrame(animateSync);
+}
+function runSync(){
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ if(syncPlayer){
+  const current=syncPlayer.snapshot(performance.now());
+  if(current.done)syncPlayer.seekStep(0,performance.now());
+  if(current.playing)syncPlayer.pause(performance.now());
+  else if(reducedMotion())syncPlayer.seekMs(syncPlan.timeline.totalMs,performance.now());
+  else syncPlayer.play(performance.now());
+ }else{
+  const report=Store.compute(state);
+  syncPlan=Sync.build(report,{revision:syncRevision});
+  if(syncPlan.status!=='ready'){
+   $('syncExplanation').textContent=syncPlan.reason;syncPlan=null;return;
+  }
+  syncPlayer=Sync.createPlayer(syncPlan,{speed:Number($('syncSpeed').value)});
+  if(reducedMotion())syncPlayer.seekMs(syncPlan.timeline.totalMs,performance.now());
+  else syncPlayer.play(performance.now());
+ }
+ if(syncStatusVisual(performance.now()))syncFrame=requestAnimationFrame(animateSync);
+}
 const schemas={
  coordinate:[{id:'axis',label:'坐标轴',kind:'select',values:['x','y','z'],default:'x'},{id:'value',label:'固定值',kind:'number',default:35}],
  projection:[{id:'plane',label:'投影面',kind:'select',values:['H','V','W'],default:'H'},
@@ -54,6 +102,7 @@ function readCondition(){
 }
 function mutate(action){
  const next=Store.apply(state,action);
+ haltSync();
  history.push(state);if(history.length>50)history.shift();
  state=next;render();
 }
@@ -113,6 +162,12 @@ function render(){
  $('sheet').innerHTML=result.inconsistent?
   Sheet.markup(model,state.trial,{showTarget:false,showGuides:false,showWireframe:$('showWireframe').checked,showHiddenEdges:$('showHiddenEdges').checked,showLabels:$('showLabels').checked,selectedVertex}):
   Sheet.markup(model,candidate.example,{showGuides:$('showGuides').checked,showWireframe:$('showWireframe').checked,showHiddenEdges:$('showHiddenEdges').checked,showLabels:$('showLabels').checked,selectedVertex});
+ // Every repaint reuses the exact same affine-constrained point and projection map.
+ syncStatusVisual();
+ $('syncCaption').textContent=result.inconsistent?
+  '无解：无法启动同步动画':result.degrees===0?
+  '唯一解 P：空间点与 V/H/W 投影共享同一组坐标':
+  '当前自由度 '+result.degrees+'：P* 仅代表一个可行示例位置，不是唯一答案';
  if(result.inconsistent){
   // The shared sheet must never depict the trial point as a solution to contradictory constraints.
   $('sheet').insertAdjacentHTML('beforeend','<text x="50" y="570" fill="#a44e38" font-size="19">约束冲突：没有可行投影点</text>');
@@ -131,7 +186,7 @@ $('conditionForm').addEventListener('submit',event=>{
  }catch(error){$('uiStatus').textContent='条件无效：'+error.message}
 });
 $('cancelEdit').addEventListener('click',stopEdit);
-$('undo').addEventListener('click',()=>{if(!history.length)return;state=history.pop();stopEdit();render()});
+$('undo').addEventListener('click',()=>{if(!history.length)return;haltSync();state=history.pop();stopEdit();render()});
 $('clear').addEventListener('click',()=>{try{mutate({type:'clear'});stopEdit()}catch(error){$('uiStatus').textContent=error.message}});
 $('solid').addEventListener('change',()=>{try{mutate({type:'set-model',value:$('solid').value});renderFields()}catch(error){$('uiStatus').textContent=error.message}});
 $('selectedVertex').addEventListener('change',()=>{selectedVertex=$('selectedVertex').value;render()});
@@ -161,6 +216,24 @@ $('turnRight').addEventListener('click',()=>{if(viewer)viewer.turn(.2);else{yaw+
 $('zoomIn').addEventListener('click',()=>{if(viewer)viewer.zoom(1.15);else{zoom=Math.min(2.5,zoom*1.15);render()}});
 $('zoomOut').addEventListener('click',()=>{if(viewer)viewer.zoom(1/1.15);else{zoom=Math.max(.5,zoom/1.15);render()}});
 $('resetView').addEventListener('click',()=>{if(viewer)viewer.resetCamera();else{yaw=.72;pitch=.52;zoom=1;render()}});
+$('syncPlay').addEventListener('click',runSync);
+$('syncRestart').addEventListener('click',()=>{
+ if(!syncPlayer)return;
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ syncPlayer.pause(performance.now());syncPlayer.seekStep(0,performance.now());syncStatusVisual();
+});
+$('syncSpeed').addEventListener('change',()=>{
+ const speed=Number($('syncSpeed').value);
+ if(syncPlayer)syncPlayer.setSpeed(speed,performance.now());
+ syncStatusVisual();
+});
+$('syncProgress').addEventListener('input',()=>{
+ if(!syncPlayer)return;
+ if(syncFrame!==null){cancelAnimationFrame(syncFrame);syncFrame=null}
+ syncPlayer.pause(performance.now());
+ syncPlayer.seekProgress(Number($('syncProgress').value)/1000,performance.now());
+ syncStatusVisual();
+});
 try{
  viewer=window.DrawingLabThreeViewer?.mount($('threeSpace'),id=>{
   selectedVertex=id;$('selectedVertex').value=id;render();
@@ -169,5 +242,9 @@ try{
  else $('rendererStatus').textContent='此设备不支持所需 WebGL 功能，已自动使用 SVG 三维预览。';
 }catch(error){viewer=null;$('rendererStatus').textContent='WebGL 初始化不可用，已启用 SVG 预览。'}
 $('conditionType').value='projection';showFields('projection');renderFields();render();
-window.DrawingLabV2Controller={getState:()=>JSON.parse(JSON.stringify(state)),apply:action=>{mutate(action);renderFields()},getAnalysis:()=>Store.compute(state).analysis};
+window.DrawingLabV2Controller={getState:()=>JSON.parse(JSON.stringify(state)),
+ apply:action=>{mutate(action);renderFields()},
+ getAnalysis:()=>Store.compute(state).analysis,
+ getSync:()=>syncPlan?{status:syncPlan.status,degreeStatus:syncPlan.degreeStatus,
+  progress:syncPlayer?.snapshot().ratio||0}:null};
 })();
