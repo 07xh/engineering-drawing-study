@@ -106,9 +106,16 @@ function interactiveFillet(){
   'filletStrokeBasis','filletStrokeCheck','filletStrokePercent',
   'studentMathFeedback','studentFeedbackSummary','studentFeedbackNext',
   'studentFeedbackScope','studentFeedbackAux','studentFeedbackCenter',
-  'studentFeedbackContacts','studentFeedbackArc'];
+  'studentFeedbackContacts','studentFeedbackArc',
+  'paperMono','paperFocus','paperResetView','paperPicked','drawingWrap'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
+  checked:id==='paperFocus',attributes:{},classes:new Set(),
+  get classList(){return {toggle:(k,on)=>{
+   if(on)this.classes.add(k);else this.classes.delete(k);
+  },contains:k=>this.classes.has(k)};},
+  setAttribute(k,v){this.attributes[k]=String(v)},
+  getAttribute(k){return this.attributes[k]??null},
   disabled:false,textContent:'',
   get valueAsNumber(){return this.value.trim()===''?NaN:Number(this.value)},
   addEventListener(type,handler){this.listeners[type]=handler},
@@ -1604,4 +1611,106 @@ test('student drawn two-point arc receives specific sampling guidance, no full-p
  assert.doesNotMatch(get('studentFeedbackSummary').textContent,/4 \/ 4/);
  fire('undoDraw','click');
  assert.doesNotMatch(get('studentFeedbackArc').textContent,/笔迹采样点不足/);
+});
+
+
+test('V5 production paper tools exist and are scoped to mathematical SVG actions',()=>{
+ for(const id of ['paperMono','paperFocus','paperResetView','paperPicked','drawingWrap'])
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ assert.match(entry,/MotionV5\.focus\(b/);
+ assert.match(entry,/MotionV5\.cameraTowards\(paperCamera,target/);
+ assert.match(entry,/markSelectable\(node,action,snapshot\.activeStepIndex\)/);
+ assert.match(html,/#drawingWrap\.paper-mono #diagram \[stroke="#edf1ed"\]/);
+});
+test('clicking actual revealed solver auxiliary circle selects and highlights its step',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ for(const [id,value] of [['branch','center-1'],['direction','cw'],
+  ['travel1','ccw'],['travel2','ccw']]){
+  get(id).value=value;fire(id,'change');
+ }
+ fire('next','click');
+ const shape=collect().find(x=>x.attributes?.['data-v5-pick']&&x.tag==='circle');
+ assert.ok(shape);
+ get('diagram').listeners.click({target:shape});
+ assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助圆/);
+ assert.equal(get('counter').textContent,'1 / 4');
+ assert.match(get('filletProofTitle').textContent,/第 1 \/ 4 步/);
+ assert.ok(collect().some(x=>x.attributes?.['data-v5-selected']==='true'));
+ assert.notEqual(get('diagram').attributes.viewBox,'0 0 720 440');
+});
+test('unverified future lines cannot be clicked; changing input clears selected old proof',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('diagram').listeners.click({target:{attributes:{'data-v5-pick':'forged',
+  'data-v5-step':'0'}}});
+ assert.match(get('paperPicked').textContent,/点击已经绘出/);
+ for(const [id,value] of [['branch','center-1'],['direction','cw'],
+  ['travel1','ccw'],['travel2','ccw']]){
+  get(id).value=value;fire(id,'change');
+ }
+ assert.equal(collect().filter(x=>x.attributes?.['data-v5-pick']).length,0);
+ fire('next','click');
+ const node=collect().find(x=>x.attributes?.['data-v5-pick']);
+ get('diagram').listeners.click({target:node});
+ assert.match(get('paperPicked').textContent,/已选第/);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.match(get('paperPicked').textContent,/点击已经绘出/);
+ assert.equal(get('diagram').attributes.viewBox,'0 0 720 440');
+});
+test('monochrome paper toggles visually without altering math or student pen modes',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('paperMono').checked=true;fire('paperMono','change');
+ assert.equal(get('drawingWrap').classList.contains('paper-mono'),true);
+ assert.ok(collect().some(x=>x.attributes?.stroke==='#257650'));
+ get('paperMono').checked=false;fire('paperMono','change');
+ assert.equal(get('drawingWrap').classList.contains('paper-mono'),false);
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('diagram').listeners.click({target:{attributes:{
+  'data-v5-pick':'forged','data-v5-step':'0'}}});
+ assert.match(get('paperPicked').textContent,/仅完整教学/);
+ assert.equal(get('studentMathFeedback').hidden,false);
+});
+test('auto focus smoothly tracks actual partial pen; manual reset restores whole drawing',()=>{
+ const p=interactiveFillet(),{get,fire,advance}=p;
+ assert.equal(get('paperFocus').checked,true);
+ fire('playPause','click');advance(260);
+ assert.notEqual(get('diagram').attributes.viewBox,'0 0 720 440');
+ const before=get('diagram').attributes.viewBox;
+ advance(300);
+ assert.notEqual(get('diagram').attributes.viewBox,before);
+ fire('paperResetView','click');
+ assert.equal(get('paperFocus').checked,false);
+ assert.equal(get('diagram').attributes.viewBox,'0 0 720 440');
+ advance(500);
+ assert.equal(get('diagram').attributes.viewBox,'0 0 720 440');
+});
+
+test('finite two-segment verified offset line can be picked and returns to its correct step',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ for(const [id,v] of [['branch','s++'],['direction','ccw'],
+  ['lineTravel1','forward'],['lineTravel2','forward']]){
+  get(id).value=v;fire(id,'change');
+ }
+ fire('next','click');fire('next','click');
+ const first=collect().find(x=>x.tag==='line'&&x.attributes?.['data-v5-pick']);
+ assert.ok(first,'offset derived from verified finite-line solver must be selectable');
+ get('diagram').listeners.click({target:first});
+ assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助线/);
+ assert.equal(get('counter').textContent,'1 / 6');
+ assert.match(get('filletProofTitle').textContent,/第 1 \/ 6 步/);
+});
+test('verified segment-circle offset line click follows exact stage, does not leak final arc',()=>{
+ const p=interactiveFillet(),{get,fire,collect}=p;
+ get('modeSelect').value='segment-circle';fire('modeSelect','change');
+ for(const [id,v] of [['branch','candidate-1'],['direction','ccw'],
+  ['mixLineTravel','forward'],['mixCircleTravel','cw']]){
+  get(id).value=v;fire(id,'change');
+ }
+ fire('next','click');fire('next','click');
+ const line=collect().find(x=>x.tag==='line'&&x.attributes?.['data-v5-pick']);
+ assert.ok(line);
+ get('diagram').listeners.click({target:line});
+ assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助线/);
+ assert.equal(get('counter').textContent,'1 / 5');
+ assert.equal(collect().filter(x=>x.attributes?.['data-verified-arc']==='true').length,0);
 });

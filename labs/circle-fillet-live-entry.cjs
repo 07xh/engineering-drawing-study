@@ -36,6 +36,74 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  let centerSnapMessage='使用点选圆心工具，在画纸上选择经数学计算存在的候选交点。';
  let playTimer=null,stageClock=null,autoplayPlan=null,statusMessage='';
  const activeActionNodes=new Map();
+
+ let pickedAction=null;
+ let paperCamera={x:0,y:0,width:720,height:440};
+ const fullCamera=()=>({x:0,y:0,width:720,height:440});
+ const markSelectable=(node,action,index)=>{
+  if(!action?.id||!['line','circle','point','arc'].includes(action.kind))return node;
+  node.setAttribute('data-v5-pick',action.id);
+  node.setAttribute('data-v5-step',String(index));
+  node.setAttribute('data-v5-kind',action.kind);
+  if(pickedAction?.id===action.id&&pickedAction.revision===revision)
+   node.setAttribute('data-v5-selected','true');
+  return node;
+ };
+ const actionBounds=a=>{
+  const g=a?.geometry;
+  if(!g)return null;
+  let b;
+  if(a.kind==='line'&&g.from&&g.to)
+   b={minX:Math.min(g.from.x,g.to.x),maxX:Math.max(g.from.x,g.to.x),
+    minY:Math.min(g.from.y,g.to.y),maxY:Math.max(g.from.y,g.to.y)};
+  else if(['circle','arc','point'].includes(a.kind)&&g.center){
+   const radius=a.kind==='point'?12:g.radius;
+   b={minX:g.center.x-radius,maxX:g.center.x+radius,
+    minY:g.center.y-radius,maxY:g.center.y+radius};
+  }
+  return b&&Object.values(b).every(Number.isFinite)?b:null;
+ };
+ const selectedVisible=()=>{
+  if(learningMode!=='full')return null;
+  const frame=stageClock?.canRender(revision)?stageClock.snapshot():null;
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  if(!plan)return null;
+  if(pickedAction?.revision===revision){
+   const action=plan[pickedAction.step]?.actions.find(a=>a.id===pickedAction.id);
+   if(action&&(frame?frame.actionFractions?.[action.id]>0:stage>pickedAction.step))
+    return action;
+  }
+  if(!frame||frame.done)return null;
+  const current=plan[frame.activeStepIndex]?.actions||[];
+  return current.find(a=>frame.actionFractions?.[a.id]>0&&
+   frame.actionFractions?.[a.id]<1)||
+   current.find(a=>frame.actionFractions?.[a.id]>0)||null;
+ };
+ const updatePaperView=(snap=false)=>{
+  const action=$('paperFocus').checked?selectedVisible():null;
+  const b=actionBounds(action);
+  const zoom=b?Math.max(1,Math.min(1.7,720/(b.maxX-b.minX+70),
+   440/(b.maxY-b.minY+70))):1;
+  const target=b?MotionV5.focus(b,{width:720,height:440,zoom}):fullCamera();
+  paperCamera=MotionV5.cameraTowards(paperCamera,target,snap?1000:16,170,
+   snap||reducedMotion());
+  $('diagram').setAttribute?.('viewBox',[
+   paperCamera.x,paperCamera.y,paperCamera.width,paperCamera.height].join(' '));
+ };
+ const syncPaperPick=()=>{
+  if(learningMode!=='full'){
+   $('paperPicked').textContent='仅完整教学支持选择数学图线。';return;
+  }
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  const a=plan?.[pickedAction?.step]?.actions.find(v=>v.id===pickedAction?.id);
+  if(!a||pickedAction.revision!==revision){
+   $('paperPicked').textContent='点击已经绘出的辅助线、辅助圆或连接弧，可查看数学步骤。';
+   return;
+  }
+  $('paperPicked').textContent='已选第 '+(pickedAction.step+1)+' 步 · '+
+   ({line:'辅助线',circle:'辅助圆',point:'投影点',arc:'有向连接弧'}[a.kind]||'几何图元')+
+   '；选择只定位步骤，不改变数学结果。';
+ };
  const reducedMotion=()=>typeof window!=='undefined'&&
    !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
  const stopPlayback=()=>{
@@ -77,6 +145,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
      'data-v5-progressive':action.kind,
      ...(action.kind==='arc'?{'data-verified-arc':'true'}:{})
     });
+    markSelectable(node,action,snapshot.activeStepIndex);
     $('diagram').append(node);activeActionNodes.set(action.id,node);
    }
    // A line grows its end coordinate; a circle exposes increasing
@@ -84,6 +153,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
    MotionV5.updateSvg(node,action,fraction);
    if(action.kind==='point')node.setAttribute('opacity',String(fraction));
   }
+  updatePaperView();
  };
  const availableStages=()=>{
   if(!centers)return 0;
@@ -233,7 +303,8 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   selector.value=(result.candidates??[]).some(c=>c.id===previous)?previous:'';
  }
  function compute(){
-  stopPlayback();revision++;strokes=[];redoStrokes=[];pointer=null;
+  stopPlayback();revision++;pickedAction=null;paperCamera=fullCamera();
+  strokes=[];redoStrokes=[];pointer=null;
   digitalActions=[];digitalError='';snappedCenter=null;studentCenterTap=null;
   centerSnapMessage='题目条件已改变：旧圆心选择和尺规步骤已清空。';
   centers=null;chosen=null;input=null;teaching=null;reasons=null;stage=0;hintStep=0;
@@ -291,24 +362,24 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  }
  function appendVerifiedSteps(svg,count){
   if(teaching?.status!=='ready'||teaching.revision!==revision)return;
-  for(const step of teaching.steps.slice(0,count))
+  for(const [index,step] of teaching.steps.slice(0,count).entries())
    for(const action of step.actions){
     const g=action.geometry;
     const color=step.role==='result'?'#246da5':
       step.id.includes('trim')?'#236eb5':'#c38536';
     if(action.kind==='line')
-     svg.append(elem('line',{x1:g.from.x,y1:g.from.y,x2:g.to.x,y2:g.to.y,
+     svg.append(markSelectable(elem('line',{x1:g.from.x,y1:g.from.y,x2:g.to.x,y2:g.to.y,
       stroke:color,'stroke-width':2,
-      'stroke-dasharray':step.id.includes('trim')?'none':'7 6'}));
+      'stroke-dasharray':step.id.includes('trim')?'none':'7 6'}),action,index));
     else if(action.kind==='circle')
-     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:g.radius,
-      stroke:color,'stroke-width':2,fill:'none','stroke-dasharray':'7 6'}));
+     svg.append(markSelectable(elem('circle',{cx:g.center.x,cy:g.center.y,r:g.radius,
+      stroke:color,'stroke-width':2,fill:'none','stroke-dasharray':'7 6'}),action,index));
     else if(action.kind==='point')
-     svg.append(elem('circle',{cx:g.center.x,cy:g.center.y,r:4.5,fill:color}));
+     svg.append(markSelectable(elem('circle',{cx:g.center.x,cy:g.center.y,r:4.5,fill:color}),action,index));
     else if(action.kind==='arc'){
      const path=elem('path',{stroke:'#246da5','stroke-width':3.5,
       fill:'none','stroke-linecap':'round','data-verified-arc':'true'});
-     MotionV5.updateSvg(path,action,1);svg.append(path);
+     MotionV5.updateSvg(path,action,1);svg.append(markSelectable(path,action,index));
     }else throw Error('不支持的统一教学动作：'+action.kind);
    }
  }
@@ -644,6 +715,8 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   }
   paintV5Reasons();
   syncStrokeProgress();
+  syncPaperPick();
+  updatePaperView(true);
  }
 
  for(const id of FIELDS){
@@ -811,6 +884,43 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
  }});
 
  const svg=$('diagram');
+ // Select only already-painted, solver-authored V5 elements. This is disabled
+ // in student pen mode so taps never replace the student's own drawing.
+ svg.addEventListener('click',event=>{
+  if(learningMode!=='full')return;
+  const target=event.target;
+  const id=target?.getAttribute?.('data-v5-pick')||
+   target?.attributes?.['data-v5-pick'];
+  const rawStep=target?.getAttribute?.('data-v5-step')||
+   target?.attributes?.['data-v5-step'];
+  const index=Number(rawStep);
+  const plan=autoplayPlan?.steps||teaching?.steps;
+  if(!id||!Number.isSafeInteger(index)||index<0||
+     !plan?.[index]?.actions.some(a=>a.id===id))return;
+  const kind=plan[index].actions.find(a=>a.id===id).kind;
+  if(playTimer!==null)pausePlayback();
+  // The user clicked an already visible solver-backed action, so they may
+  // safely navigate to that action's completed teaching step. No future
+  // geometry outside this step is revealed.
+  const now=performance.now(),nextStage=Math.min(availableStages(),index+1);
+  if(stageClock?.canRender(revision)){
+   stageClock.pause(now);
+   stageClock.seekStep(nextStage,now);
+  }
+  stage=nextStage;
+  pickedAction={id,step:index,kind,revision};
+  render();
+  paintCurrentConstruction();
+ });
+ $('paperMono').addEventListener('change',()=>{
+  $('drawingWrap').classList?.toggle?.('paper-mono',!!$('paperMono').checked);
+ });
+ $('paperFocus').addEventListener('change',()=>updatePaperView(true));
+ $('paperResetView').addEventListener('click',()=>{
+  $('paperFocus').checked=false;
+  pickedAction=null;paperCamera=fullCamera();
+  render();paintCurrentConstruction();
+ });
  function eventPoint(event){
   const rect=svg.getBoundingClientRect();
   if(!rect||!rect.width||!rect.height||
