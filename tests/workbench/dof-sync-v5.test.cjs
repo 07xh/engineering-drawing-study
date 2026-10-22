@@ -144,3 +144,41 @@ test('public DOF tool gets accessible playback UI and bundled 3D/SVG fallback',(
  assert.match(html,/dof-lab-three-bundle\.js/);
  assert.doesNotMatch(ui,/fetch\(|XMLHttpRequest|localStorage/);
 });
+
+
+test('tampered rank, affine proof or fake zero-degree uniqueness never receives a teaching result',()=>{
+ const base=initial();
+ const badRank={...base,analysis:{...base.analysis,result:{
+  ...base.analysis.result,rank:3,degrees:0}},
+  point:{...base.point,degrees:0,kind:'point',exampleIsUnique:true}};
+ assert.equal(Sync.build(badRank).status,'blocked');
+ const fakeParticular={...base,analysis:{...base.analysis,result:{
+  ...base.analysis.result,particular:[900,700,500]}}};
+ assert.equal(Sync.build(fakeParticular).status,'blocked');
+ const activeNotSolved={...base,active:[{type:'coordinate',axis:'x',value:18}]};
+ assert.equal(Sync.build(activeNotSolved).status,'blocked');
+ const bogusPoint={...base,point:{...base.point,
+  example:{...base.point.example,x:1e7}}};
+ assert.equal(Sync.build(bogusPoint).status,'blocked');
+});
+test('mathematical gate rejects a feasible-line sample that does not satisfy H projection',()=>{
+ const withH=Store.apply(Store.create(),{type:'add',
+  condition:{type:'projection',plane:'H',value:[15,10]}});
+ const valid=Store.compute(withH);
+ assert.equal(Sync.build(valid).degreeStatus,'sample');
+ const bad={...valid,point:{...valid.point,example:{...valid.point.example,y:14}}};
+ assert.equal(Sync.build(bad).status,'blocked','wrong projected depth cannot be animated');
+});
+test('repeated, redundant constraints preserve unique proof and avoid false conflicts',()=>{
+ let state=Store.create();
+ state=Store.apply(state,{type:'add',condition:{type:'projection',plane:'V',value:[35,51]}});
+ state=Store.apply(state,{type:'add',condition:{type:'projection',plane:'H',value:[35,22]}});
+ state=Store.apply(state,{type:'add',condition:{type:'coordinate',axis:'x',value:35}});
+ const report=Store.compute(state);
+ assert.equal(report.analysis.result.degrees,0);
+ const plan=Sync.build(report,{revision:31});
+ assert.equal(plan.degreeStatus,'unique');
+ assert.deepEqual(plan.modelPoint,{x:35,y:22,z:51});
+ const player=Sync.createPlayer(plan,{speed:4});
+ player.play(0);assert.equal(Sync.presentation(plan,player.snapshot(9000)).targetOpacity,1);
+});
