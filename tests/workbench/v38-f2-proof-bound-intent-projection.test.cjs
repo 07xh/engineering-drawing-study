@@ -13,7 +13,7 @@ const input=()=>({
 });
 test('F2 real verified finite-segment fillet yields intent DAG and existing V5',()=>{
  const source=adaptDirectedFillet('segments',input(),{revision:12});
- const projected=projectVerifiedPlan(source,sheet);
+ const projected=projectVerifiedPlan('segments',input(),sheet,12);
  assert.equal(projected.status,'ready');
  assert.equal(projected.revision,12);
  assert.equal(projected.selectedBranchId,'s++');
@@ -31,16 +31,16 @@ test('F2 real verified finite-segment fillet yields intent DAG and existing V5',
 test('F2 missing branch fails closed and produces no intent or timeline',()=>{
  const data=input();delete data.branchId;
  const source=adaptDirectedFillet('segments',data,{revision:13});
- const projected=projectVerifiedPlan(source,sheet);
+ const projected=projectVerifiedPlan('segments',data,sheet,13);
  assert.equal(projected.status,'not-verified');
  assert.deepEqual(projected.intents,[]);
  assert.deepEqual(projected.steps,[]);
  assert.equal(projected.mathematicallyVerified,false);
  assert.equal(projected.timing,undefined);
 });
-test('F2 forged forward dependency is rejected, never silently reordered',()=>{
+test('F2 forged proof-bearing plan cannot be passed as trusted solver input',()=>{
  const source=adaptDirectedFillet('segments',input(),{revision:14});
  const steps=source.steps.map(x=>({...x,dependsOn:[...x.dependsOn]}));
  steps[0].dependsOn=['future-step'];
- assert.throws(()=>projectVerifiedPlan({...source,steps},sheet),/dependency/);
+ assert.throws(()=>projectVerifiedPlan({...source,steps},sheet),/unsupported specialist kind/);
 });
