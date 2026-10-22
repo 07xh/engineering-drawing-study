@@ -33,6 +33,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
  let exportUi=null;
  let fieldReview=null;
+ let nativeOcrUi=null;
  let geometryCandidates={line:[],curve:[]};
  function updateCandidateChoices(){
   const select=$('sourceCandidate'),previous=select.value;
@@ -45,6 +46,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  }
  function receivedCandidates(group,values){
   geometryCandidates[group]=values;updateCandidateChoices();
+  nativeOcrUi?.refreshAssociations();
  }
  let localVector=null;
  function stopClock(){
@@ -293,7 +295,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   clear:$('clearCurves'),overlay:$('detectedCurveOverlay'),
   status:$('curveStatus'),onCandidates:items=>receivedCandidates('curve',items)
  });
- attachLocalNativeOcr({
+ nativeOcrUi=attachLocalNativeOcr({
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectOcr'),clear:$('clearOcr'),
   overlay:$('nativeOcrOverlay'),status:$('nativeOcrStatus'),
@@ -309,6 +311,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    input.dispatchEvent(new Event('input',{bubbles:true}));
   },
   getCurves:()=>geometryCandidates.curve,
+  getLines:()=>geometryCandidates.line,
   reviewedValue:$('ocrCorrectedValue'),reviewAccept:$('ocrNumericAccept'),
   reviewButton:$('confirmOcrNumeric'),getValues:values,
   getRevision:()=>session?.revision??0
