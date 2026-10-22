@@ -7,7 +7,7 @@
  */
 const IDS=Object.freeze({
  circles:['auxiliary-loci','center-intersection','contact-points','directed-fillet'],
- segments:['offset-first','offset-second','center-intersection','perpendicular-feet',
+ segments:['offset-line','offset-line','intersection','perpendicular-feet',
   'finite-segment-trim','directed-arc'],
  'segment-circle':['offset-line','concentric-locus','center-intersection',
   'contact-points','directed-fillet']
@@ -16,6 +16,7 @@ const BASIS=Object.freeze({
  'auxiliary-loci':'由两个已知圆的内切／外切方式和连接半径，作满足圆心距离条件的两条辅助轨迹。',
  'offset-first':'第一条有限线段的连接圆心轨迹是距离该直线为指定连接半径的偏移线。',
  'offset-second':'第二条有限线段采用相同的距离约束；两条偏移线只是候选圆心的构造轨迹。',
+ 'intersection':'两条有效偏移线的交点形成候选圆心，仍需选择有限线段和方向合法的一支。',
  'offset-line':'连接圆心到给定直线的垂直距离应等于连接半径，候选圆心在线段的偏移线上。',
  'concentric-locus':'连接圆心到给定圆心的距离取决于内切／外切关系；由已验证模型给出对应辅助圆。',
  'center-intersection':'连接圆心必须同时满足两个已知轮廓的距离约束；交点是候选，不能在多解时自动指定唯一答案。',
@@ -32,6 +33,7 @@ const CHECK=Object.freeze({
  'offset-line':'已使用指定侧的有限线段偏移轨迹，尚未输出最终圆弧。',
  'concentric-locus':'已使用给定圆的合法半径关系辅助圆，尚未输出最终圆弧。',
  'center-intersection':'圆心来自求解器提供的显式候选分支；其他几何候选仍须独立保留。',
+ 'intersection':'圆心必须满足两条偏移直线的相交条件，且切点必须落在有限原线段内。',
  'contact-points':'切点由真实分支计算；有限原圆弧切点必须在用户给定的起止角区间内。',
  'perpendicular-feet':'垂足与两有限线段位置已验算，不能把无限直线上的垂足直接当作合法切点。',
  'finite-segment-trim':'有限截取与已知行进方向已由数学求解器核对；不是无限直线的任意延长。',
@@ -61,20 +63,26 @@ function build(teaching,{kind,revision}={}){
     !finite(result.maxResidual)||result.maxResidual<0||result.maxResidual>1e-7||
     !finite(result.maxG1Mismatch)||result.maxG1Mismatch<0||result.maxG1Mismatch>1e-7||
     teaching.steps.length!==ids.length||
-    teaching.steps.some((step,index)=>step.id!==ids[index]||
+    teaching.steps.some((step,index)=>
+     (kind==='segments'?step.role==='result'&&index<ids.length-1||
+       step.id!==result.selectedBranch+'-'+
+        ['offset1','offset2','intersection','perpendiculars','trim','arc'][index]||
+       step.role==='result'&&index!==ids.length-1:
+      step.id!==ids[index])||
      !Array.isArray(step.actions)||step.actions.length===0||
      !step.actions.every(action=>['line','circle','point','arc'].includes(action.kind)))||
     teaching.steps.at(-1)?.actions?.some(action=>action.kind!=='arc'))
   return message('blocked','证明链、候选分支、数值残差或实际作图动作不一致；停止结果解释。');
- if(kind==='segments'&&result.finiteArcSweepVerified!==true)
-  return message('blocked','有限线段的真实连接弧扫角未通过验证。');
  if(kind==='segment-circle'&&
     (result.finiteSegmentContactVerified!==true||result.sourceArcRangeVerified!==true))
   return message('blocked','线段切点或给定圆弧范围未通过数学验证。');
  const steps=teaching.steps.map((step,i)=>{
-  const isFinal=ENDS.has(step.id);
+  const concept=kind==='segments'?ids[i]:step.id;
+  const why=kind==='segments'&&i===0?BASIS['offset-first']:
+   kind==='segments'&&i===1?BASIS['offset-second']:BASIS[concept];
+  const isFinal=ENDS.has(concept);
   return Object.freeze({id:step.id,title:step.explanation,
-   why:BASIS[step.id],basis:step.explanation,check:CHECK[step.id],
+   why,basis:step.explanation,check:CHECK[concept],
    evidence:isFinal?
      '双侧有向 G1 验证通过；模型切点最大残差 '+result.maxResidual.toExponential(2)+
      ' mm；G1 向量最大不匹配 '+result.maxG1Mismatch.toExponential(2)+'。':
