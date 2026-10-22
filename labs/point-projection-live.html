@@ -7,6 +7,18 @@
 *{box-sizing:border-box}body{margin:0}.shell{max-width:1380px;padding:18px;margin:auto}h1{font-size:clamp(24px,3vw,34px);margin:0 0 6px}p{line-height:1.6}.intro{font-size:14px;color:#557362;margin:0 0 20px}
 .frame{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:15px;align-items:start}.paper,.controls{background:#fff;border:1px solid #d6e5db;border-radius:16px;padding:16px;min-width:0}
 .board-viewport{width:100%;overflow:auto;border:1px solid #dfe9e2;border-radius:12px;background:#fff}
+.board-viewport.paper-mono #paperSvg [stroke]:not([stroke="none"]){stroke:#222!important}
+.board-viewport.paper-mono #paperSvg [stroke="#eef3ef"]{stroke:#dedede!important}
+.board-viewport.paper-mono #paperSvg [stroke="#8a9d90"]{stroke:#888!important}
+.board-viewport.paper-mono #paperSvg [fill]:not([fill="none"]):not([fill="#fff"]){fill:#222!important}
+.board-viewport.paper-mono #paperSvg rect[fill]{fill:#fff!important}
+#paperSvg [data-v5-pick]{cursor:pointer;pointer-events:visiblePainted}
+#paperSvg [data-v5-pick][data-v5-selected="true"]{stroke:#b75e13!important;stroke-width:4.1!important}
+.board-viewport.paper-mono #paperSvg [data-v5-pick][data-v5-selected="true"]{stroke:#000!important;stroke-width:4.1!important}
+.paper-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+.paper-tools label{display:flex;gap:5px;align-items:center}
+.paper-tools input[type="checkbox"]{width:19px;height:19px;min-height:19px;padding:0}
+.paper-tools button{min-height:40px}
 svg{display:block;min-width:600px;width:100%;height:auto}svg.draw-active{touch-action:none;cursor:crosshair}h2{margin:0 0 12px;font-size:19px}
 .inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}label{display:grid;gap:5px;font-size:13px;color:#3c6550}
 input,select{width:100%;padding:10px;border-radius:9px;border:1px solid #bacfc1;font:inherit;background:#fff;min-height:44px}
@@ -29,7 +41,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 <p class="intro">第一角法 · 同一张画纸展示 V / H / W 与 45° 深度转移。左侧是真实计算图纸，右侧可输入空间点坐标或任意两面已知投影，并逐步理解辅助线。此工具只求解单个空间点，不是教材原题答案。</p>
 <div class="frame">
 <section class="paper" aria-labelledby="paper-title"><h2 id="paper-title">投影图纸 <span class="tag">模型 mm · 画纸 px</span></h2>
-<div class="board-viewport"><svg id="paperSvg" viewBox="0 0 720 470" role="img" aria-label="正面、水平和侧面第一角法投影，含四条计算的辅助线"></svg></div>
+<div class="paper-tools" aria-label="点投影 V5 图纸交互">
+<label><input id="projectionMono" type="checkbox"> 黑白制图</label>
+<label><input id="projectionFocus" type="checkbox" checked> 自动聚焦</label>
+<button id="projectionViewReset" type="button">复位图纸视野</button>
+</div>
+<p class="note" id="projectionPicked" role="status" aria-live="polite">完整教学可点选已经绘制的投影联系线，定位对应数学步骤。</p>
+<div class="board-viewport" id="projectionViewport"><svg id="paperSvg" viewBox="0 0 720 470" role="img" aria-label="正面、水平和侧面第一角法投影，含四条计算的辅助线"></svg></div>
 <p class="legend">绿色＝题目已知投影　蓝色＝空间坐标推导得到或由投影求解　橙色虚线＝辅助联系线　紫色＝学生绘线　灰色＝参考轴</p>
 <p class="note">画纸位置只用于展示；不会用屏幕像素反推空间坐标。负坐标可能出现在参考轴的另一侧，可调整显示比例。</p></section>
 <section class="controls" aria-label="求解条件及步骤控制">
