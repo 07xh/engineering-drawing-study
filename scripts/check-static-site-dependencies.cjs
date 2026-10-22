@@ -1,7 +1,8 @@
 'use strict';
 /* Verify actual build output, not merely repository source files. */
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'../dist'),broken=[];
+const uiPreview=process.argv.includes('--ui-preview');
+const root=path.resolve(__dirname,uiPreview?'../dist-ui-next':'../dist'),broken=[];
 function scan(dir){
  for(const e of fs.readdirSync(dir,{withFileTypes:true})){
   const file=path.join(dir,e.name);
@@ -27,4 +28,4 @@ for(const banned of ['knowledge/index.html','knowledge/drawing-player.html','lab
 assert(!fs.existsSync(path.join(root,'knowledge/drawing-player-demo.js')),'internal demo should never ship');
 scan(root);
 assert.deepEqual(broken,[],'broken local links/assets in static build');
-console.log('PASS: every local JS/CSS/page/image link in packaged HTML resolves inside dist');
+console.log('PASS: every local JS/CSS/page/image link in packaged HTML resolves inside '+path.basename(root));

@@ -2,7 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const out = path.join(root, 'dist');
+const uiPreview = process.argv.includes('--ui-preview');
+const out = path.join(root, uiPreview ? 'dist-ui-next' : 'dist');
 // Public distribution contains geometry learning tools only. Textbook-related source
 // and user-submitted traced exercise data stay out of the published assets.
 const files = [
@@ -122,3 +123,9 @@ esbuild.buildSync({
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
+
+// Preview is opt-in: the production build and source pages stay unchanged.
+if(uiPreview){
+ require('../ui-next/enhance-page.cjs').applyPreview(out);
+ console.log('DraftAI next UI preview ready: dist-ui-next');
+}
