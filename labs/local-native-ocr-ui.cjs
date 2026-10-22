@@ -9,6 +9,8 @@ const {rankDimensionLinks}=
  require('../recognition/dimension-notation-candidates.cjs');
 const {rankLeaderLineLinks}=
  require('../recognition/dimension-leader-association.cjs');
+const {bentLeaderCandidates}=
+ require('../recognition/bent-leader-candidates.cjs');
 const {chooseOcrRadiusPrefill}=
  require('../recognition/reviewed-ocr-radius-prefill.cjs');
 const SVG='http://www.w3.org/2000/svg';
@@ -65,12 +67,20 @@ function attachLocalNativeOcr({
   clearReview();
   if(!dim)return;
   if(hasReview){reviewedValue.value=String(dim.numericValue);reviewButton.disabled=false;}
-  let nearby=[],leaders=[];
+  let nearby=[],leaders=[],bent=[];
   try{
    const dimensions={width:image.naturalWidth,height:image.naturalHeight};
    leaders=rankLeaderLineLinks(dim,getLines(),getCurves(),dimensions);
+   bent=bentLeaderCandidates(dim,getLines(),getCurves(),dimensions);
    nearby=rankDimensionLinks(dim,getCurves(),dimensions);
-  }catch(_){nearby=[];leaders=[];}
+  }catch(_){nearby=[];leaders=[];bent=[];}
+  const bentText=bent.length?
+   '两段折线引出线候选（折点与箭头未验证）：'+
+   bent.map(x=>x.firstLeaderCandidateId+' → '+x.secondLeaderCandidateId+
+    ' → '+x.geometryCandidateId+
+    '，总端点误差 '+x.totalEndpointErrorPx+'px，转角 '+x.turnDegrees+'°')
+    .join('；')+'。':
+   '未找到符合折点间隙与转角条件的两段引线。';
   const leaderText=leaders.length?
    '可能的尺寸引线（未验证箭头）'+leaders.map(x=>
     x.leaderCandidateId+' → '+x.geometryCandidateId+
@@ -79,7 +89,7 @@ function attachLocalNativeOcr({
   status.textContent='OCR 候选 '+dim.sourceText+
    ' → 提议半径 '+dim.proposedRadiusValue+
    '（'+(dim.unitHint==='mm-explicit'?'含 mm 字样':'图纸单位尚未核实')+
-   '）。'+leaderText+'按区域邻近的备选圆/弧：'+(nearby.length?
+   '）。'+bentText+leaderText+'按区域邻近的备选圆/弧：'+(nearby.length?
     nearby.map(x=>x.geometryCandidateId).join('、'):'暂无线索')+
    '。以上仅供人工核对，不会选择唯一图元或写入数学条件。';
  }
