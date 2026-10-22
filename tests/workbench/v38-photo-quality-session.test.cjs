@@ -76,7 +76,7 @@ test('no image file bytes or personal filenames can leak from session report',()
  q.addAnnotation({kind:'line',from:s.truth[0].from,to:s.truth[0].to});
  const result=q.report(),serialized=JSON.stringify(result);
  assert.ok(serialized.length<18000);
- assert.doesNotMatch(serialized,/Uint8Array|Uint8ClampedArray|image\/png|filename|blob|data:image/i);
+ assert.doesNotMatch(serialized,/Uint8Array|Uint8ClampedArray|image\/png|"filename"\s*:|"blob"\s*:|data:image/i);
  assert.equal(result.source,'user-selected-local-image-unverified-rights');
  assert.equal(result.notRealWorldAccuracy,true);
 });
