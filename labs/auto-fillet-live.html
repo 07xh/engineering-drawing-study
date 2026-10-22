@@ -18,6 +18,19 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .local-photo{padding:12px;background:#f5faf6;border:1px solid #d8e6da;border-radius:12px;margin-bottom:14px}
 .local-photo img{display:block;width:100%;max-height:320px;object-fit:contain;background:white;border:1px solid #d8e6da;border-radius:9px;margin-top:9px}
 .local-photo img[hidden]{display:none}
+.photo-stage{max-height:360px;overflow:auto;touch-action:pan-y}
+.photo-canvas{position:relative;width:100%}
+.photo-stage img{max-height:none;margin:0}
+.photo-stage svg{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.photo-stage svg[hidden]{display:none}
+.source-review{margin-top:10px;padding-top:8px;border-top:1px solid #d7e6db}
+.source-review[hidden]{display:none}
+.source-review label{margin:8px 0}
+.source-review label:has(input[type="checkbox"]){display:flex;align-items:center;gap:8px}
+.source-review input[type="checkbox"]{width:18px;min-height:18px;height:18px;flex:none;accent-color:#226d49}
+.source-review .controls button{flex:1 1 140px}
+.source-status{font-size:12px;color:#526d58;line-height:1.65;margin:8px 0}
+.source-status[role=status]{overflow-wrap:anywhere}
 .local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 label{font-size:12px;color:#4c6c58;display:grid;gap:5px}
@@ -51,7 +64,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>AI 工程制图自动解题</small></span></a><nav class="site-nav"><a href="../index.html">返回首页</a><a href="circle-fillet-live.html">原有圆弧解题工具</a></nav></div></header>
 <main class="wrap">
 <h1>二维自动解题工作台</h1>
-<p class="muted">修改题目的几何条件，系统会重新计算候选圆心和切点，并按真实数学依据绘制辅助线与连接弧。当前接受手动确认的数字条件，<strong>AI 图片识别尚未上线</strong>；这里不是预置 SVG 答案播放器。</p>
+<p class="muted">修改题目的几何条件，系统会重新计算候选圆心和切点，并按真实数学依据绘制辅助线与连接弧。当前支持手动确认的数字条件与原图逐项来源核对，<strong>AI 图片识别尚未上线</strong>；这里不是预置 SVG 答案播放器。</p>
 <div class="layout">
 <section class="panel" aria-label="工程图条件编辑">
 <h2>已知条件</h2>
@@ -60,7 +73,20 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
 <div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button></div>
 <p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
+<div class="photo-stage" id="photoStage"><div class="photo-canvas">
 <img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
+<svg id="sourceOverlay" aria-label="框选原题中几何条件的来源区域" hidden></svg>
+</div></div>
+<div class="source-review">
+<label><input type="checkbox" id="sourceReviewEnabled"> 启用图片条件逐项核对（严格模式）</label>
+<label for="sourceField">要标记来源的条件
+<select id="sourceField"></select></label>
+<div class="controls">
+<button type="button" id="confirmSource">确认当前数值与框选区域相符</button>
+<button type="button" id="acceptSources" class="primary">确认全部条件并解题</button>
+</div>
+<p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
+</div>
 </div>
 <label for="kind">题型<select id="kind"><option value="two-segments">两有限线段圆弧连接</option><option value="segment-circle">有限线段与圆连接</option><option value="two-circles">两圆圆弧连接</option></select></label>
 <div class="fields" id="fields" style="margin-top:12px"></div>
