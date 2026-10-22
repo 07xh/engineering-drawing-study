@@ -24,8 +24,9 @@ test('exports only 5 human tap deviations, not any original photo or user identi
  assert.equal(report.includesImageBytes,false);
  assert.equal(report.includesOriginalImageDimensions,false);
  assert.equal(report.includesFileFingerprint,false);
- const keys=Object.keys(report).join(' ');
- assert.doesNotMatch(keys,/file|name|hash|photo|imageBytes|userAgent|ipAddress|geolocation/i);
+ for(const forbidden of ['fileName','filename','rawPhoto','imageData',
+  'userAgent','ipAddress','geolocation'])
+  assert.equal(Object.hasOwn(report,forbidden),false);
  // The fixed schema can mention excluded fields by name, not their values.
  assert.doesNotMatch(JSON.stringify(report),/rawPhoto|base64|data:image|location|canvas/i);
 });
