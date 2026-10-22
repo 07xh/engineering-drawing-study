@@ -165,11 +165,18 @@ function cylinderSectionV5Preview(cylinder,plane,{ordinaryDivisions=8,samples=64
    if(Math.hypot(a.x-b.x,a.y-b.y)>1e-8)
     actions.push(line('curve-'+view+'-'+(j+1),a,b));
   }
-  const id='sampled-section-'+view;
-  steps.push({id,dependsOn:[steps.at(-1).id],role:'result',
-   title:view+' 面截线（解析求交的折线近似）',
-   explanation:'解析交线已经经过模型级验证；屏幕折线是有限分段近似，未计算遮挡线型。',
-   actions});
+  // V5 intentionally caps each step to 100 actions. Subdivide longer
+  // presentation polylines without weakening that shared safety limit.
+  const chunks=Math.ceil(actions.length/64);
+  if(!chunks)throw new RangeError('analytic projection has no visible curve edges');
+  for(let part=0;part<chunks;part++){
+   const last=part===chunks-1;
+   const id='sampled-section-'+view+(last?'':'-part-'+(part+1));
+   steps.push({id,dependsOn:[steps.at(-1).id],role:'result',
+    title:view+' 面截线（解析求交的折线近似）'+(chunks>1?' · '+(part+1)+'/'+chunks:''),
+    explanation:'解析交线已经经过模型级验证；屏幕折线是有限分段近似，未计算遮挡线型。',
+    actions:actions.slice(part*64,(part+1)*64)});
+  }
  }
  const timing=Timeline.compileTimeline(steps);
  // Presentation actions can be exercised through original V5 renderer; no
