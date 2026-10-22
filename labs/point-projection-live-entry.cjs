@@ -18,6 +18,57 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
   let learningMode='full',hintStep=0,studentStrokes=[],redoStrokes=[];
   let pointer=null,playTimer=null,stageClock=null;
   const liveGuideNodes=new Map();
+
+  let selectedGuide=null;
+  let paperCamera={x:0,y:0,width:720,height:470};
+  const defaultCamera=()=>({x:0,y:0,width:720,height:470});
+  const markSelectable=(node,action,index)=>{
+    if(action?.kind!=='line'||!action.id)return node;
+    node.setAttribute('data-v5-pick',action.id);
+    node.setAttribute('data-v5-step',String(index));
+    if(selectedGuide?.id===action.id&&selectedGuide.revision===revision)
+      node.setAttribute('data-v5-selected','true');
+    return node;
+  };
+  const activeFocus=()=>{
+    if(learningMode!=='full'||!$('projectionFocus').checked||
+      !$('showGuides').checked||teaching?.status!=='ready')return null;
+    const frame=stageClock?.snapshot();
+    if(selectedGuide?.revision===revision){
+      const a=teaching.steps[selectedGuide.step]?.actions.find(v=>v.id===selectedGuide.id);
+      if(a&&(frame?frame.actionFractions?.[a.id]>0:shownStep>selectedGuide.step))return a;
+    }
+    if(!frame||frame.done)return null;
+    return teaching.steps[frame.completedIds.length]?.actions.find(a=>
+      a.kind==='line'&&frame.actionFractions?.[a.id]>0)||null;
+  };
+  const updateCamera=(snap=false)=>{
+    const geometry=activeFocus()?.geometry;let target=defaultCamera();
+    if(geometry?.from&&geometry?.to){
+      const bounds={minX:Math.min(geometry.from.x,geometry.to.x),
+       maxX:Math.max(geometry.from.x,geometry.to.x),
+       minY:Math.min(geometry.from.y,geometry.to.y),
+       maxY:Math.max(geometry.from.y,geometry.to.y)};
+      if(Object.values(bounds).every(Number.isFinite)){
+       const zoom=Math.max(1,Math.min(1.7,
+        720/(bounds.maxX-bounds.minX+80),470/(bounds.maxY-bounds.minY+80)));
+       target=MotionV5.focus(bounds,{width:720,height:470,zoom});
+      }
+    }
+    paperCamera=MotionV5.cameraTowards(paperCamera,target,snap?1000:16,170,
+     snap||reducedMotion());
+    $('paperSvg').setAttribute?.('viewBox',[
+      paperCamera.x,paperCamera.y,paperCamera.width,paperCamera.height].join(' '));
+  };
+  const pickedText=()=>{
+    const action=teaching?.steps?.[selectedGuide?.step]?.actions.find(a=>
+     a.id===selectedGuide?.id);
+    $('projectionPicked').textContent=learningMode!=='full'?
+      '学生自己作图和提示模式不允许点选标准答案联系线。':
+      !action||selectedGuide.revision!==revision?
+      '点击已经绘制的投影联系线，可定位到它的数学步骤。':
+      '已选第 '+(selectedGuide.step+1)+' 条经验证投影联系线；步骤说明已定位。';
+  };
   const reducedMotion=()=>typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
   function pausePlayback(){
@@ -82,11 +133,11 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
       sheetTransform};
   }
   function invalid(reason){
-    stopPlayback();solution=null;teaching=null;shownStep=0;hintStep=0;studentStrokes=[];redoStrokes=[];pointer=null;$('solveStatus').textContent='输入尚未有效：'+reason;render();
+    stopPlayback();selectedGuide=null;paperCamera=defaultCamera();solution=null;teaching=null;shownStep=0;hintStep=0;studentStrokes=[];redoStrokes=[];pointer=null;$('solveStatus').textContent='输入尚未有效：'+reason;render();
   }
   function compute(){
     revision++;
-    stopPlayback();studentStrokes=[];redoStrokes=[];hintStep=0;pointer=null;
+    stopPlayback();selectedGuide=null;paperCamera=defaultCamera();studentStrokes=[];redoStrokes=[];hintStep=0;pointer=null;
     solution=null;teaching=null;shownStep=0; // erase old mathematically-derived state before reading input
     let given;
     try{
@@ -140,6 +191,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
             for(const action of step.actions)
               if(action.kind==='line'){
                 const guide=line(action.geometry.from,action.geometry.to,COLOR.guide,2.2,'7 5');
+                markSelectable(guide,action,i);
                 liveGuideNodes.set(i,guide);svg.append(guide);
               }
         }
@@ -205,6 +257,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
       }
     }
     paintCurrentGuide();
+    pickedText();updateCamera(playTimer===null||learningMode!=='full');
   }
   function resetPair(){
     const pair=$('pairSelect').value;
@@ -270,6 +323,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
       const visible=Math.min(max,status.completedIds.length+(active?1:0));
       if(visible!==shownStep){shownStep=visible;render();}
       paintCurrentGuide();
+      updateCamera();
       if(status.done){stopPlayback();shownStep=max;render();return;}
       playTimer=requestAnimationFrame(tick);
     };
@@ -297,6 +351,35 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
     if(learningMode==='draw')render();
   });
   const svg=$('paperSvg');
+  svg.addEventListener('click',event=>{
+    if(learningMode!=='full'||!$('showGuides').checked||
+      teaching?.status!=='ready')return;
+    const target=event.target,id=target?.getAttribute?.('data-v5-pick')||
+      target?.attributes?.['data-v5-pick'];
+    const index=Number(target?.getAttribute?.('data-v5-step')||
+      target?.attributes?.['data-v5-step']);
+    if(!id||!Number.isSafeInteger(index)||index<0||
+       !teaching.steps[index]?.actions.some(a=>a.id===id)||
+       !(stageClock?.snapshot().actionFractions?.[id]>0||shownStep>index))return;
+    if(playTimer!==null)pausePlayback();
+    if(stageClock){
+      const now=performance.now();
+      stageClock.pause(now);
+      stageClock.seekStep(index+1,now);
+    }
+    shownStep=index+1;
+    selectedGuide={id,step:index,revision};
+    render();
+  });
+  $('projectionMono').addEventListener('change',()=>{
+    $('projectionViewport').classList.toggle('paper-mono',
+     !!$('projectionMono').checked);
+  });
+  $('projectionFocus').addEventListener('change',()=>updateCamera(true));
+  $('projectionViewReset').addEventListener('click',()=>{
+    $('projectionFocus').checked=false;selectedGuide=null;
+    paperCamera=defaultCamera();render();
+  });
   function canvasPosition(event){
     const rect=svg.getBoundingClientRect();
     if(!rect?.width||!rect?.height||!Number.isFinite(event.clientX)||

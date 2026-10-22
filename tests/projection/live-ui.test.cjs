@@ -87,10 +87,17 @@ function createInteractivePage(){
   'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter',
   'learningMode','fullControls','hintControls','drawControls','hintReveal',
   'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus',
-  'playPause','animationSpeed'];
+  'playPause','animationSpeed','projectionMono','projectionFocus',
+  'projectionViewReset','projectionPicked','projectionViewport'];
  const elements=new Map(ids.map(id=>[id,{
-  id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],hidden:false,
-  firstChild:{textContent:''},classList:{toggle(){}},
+  id,value:values[id]??'',checked:id==='showGuides'||id==='projectionFocus',
+  listeners:{},children:[],hidden:false,attributes:{},classes:new Set(),
+  setAttribute(k,v){this.attributes[k]=String(v)},
+  getAttribute(k){return this.attributes[k]??null},
+  get classList(){return {toggle:(c,on)=>{
+   if(on)this.classes.add(c);else this.classes.delete(c);
+  },contains:c=>this.classes.has(c)};},
+  firstChild:{textContent:''},
   addEventListener(kind,callback){this.listeners[kind]=callback},
   getBoundingClientRect(){return {left:0,top:0,width:720,height:470}},
   setPointerCapture(){},
@@ -107,6 +114,7 @@ function createInteractivePage(){
   createElementNS(_namespace,tag){
    return {tag,attributes:{},children:[],textContent:'',
     setAttribute(name,value){this.attributes[name]=String(value)},
+    getAttribute(name){return this.attributes[name]??null},
     append(...nodes){this.children.push(...nodes)}
    };
   }
@@ -340,4 +348,65 @@ test('V5 real point guide animates across frames and speed change preserves proo
  get('spaceX').value='-4';fire('spaceX','input');
  assert.equal(guides().length,0,'revision change clears old animation');
  assert.equal(get('stepCounter').textContent,'0 / 4');
+});
+
+
+test('point V5 production paper controls are included and mathematically wired',()=>{
+ for(const id of ['projectionMono','projectionFocus','projectionViewReset','projectionPicked','projectionViewport'])
+  assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
+ assert.match(script,/MotionV5\.focus\(bounds/);
+ assert.match(script,/MotionV5\.cameraTowards\(paperCamera,target/);
+ assert.match(script,/markSelectable\(guide,action,i\)/);
+});
+test('clicking actually painted point projection guide navigates corresponding teaching step',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ fire('next','click');fire('next','click');
+ const nodes=allSvgNodes().filter(n=>n.attributes?.['data-v5-pick']);
+ assert.equal(nodes.length,2);
+ get('paperSvg').listeners.click({target:nodes[0]});
+ assert.equal(get('stepCounter').textContent,'1 / 4');
+ assert.match(get('projectionPicked').textContent,/已选第 1 条/);
+ assert.match(get('stepTitle').textContent,/第 1 步/);
+ assert.ok(allSvgNodes().some(n=>n.attributes?.['data-v5-selected']==='true'));
+ assert.equal(allSvgNodes().filter(n=>n.tag==='text'&&
+  n.textContent.startsWith('由空间点投影')).length,0);
+});
+test('forged future line rejected and changing projection inputs clears stale selected step',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ const svg=get('paperSvg');
+ svg.listeners.click({target:{attributes:{'data-v5-pick':'forged','data-v5-step':'0'}}});
+ assert.match(get('projectionPicked').textContent,/点击已经绘制/);
+ fire('next','click');
+ const node=allSvgNodes().find(n=>n.attributes?.['data-v5-pick']);
+ svg.listeners.click({target:node});
+ assert.match(get('projectionPicked').textContent,/已选第 1 条/);
+ get('spaceX').value='22';fire('spaceX','input');
+ assert.match(get('projectionPicked').textContent,/点击已经绘制/);
+ assert.equal(svg.attributes.viewBox,'0 0 720 470');
+});
+test('projection black-white paper changes presentation only and leaves student draw mode untouched',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ get('projectionMono').checked=true;fire('projectionMono','change');
+ assert.equal(get('projectionViewport').classList.contains('paper-mono'),true);
+ assert.ok(allSvgNodes().some(n=>n.attributes.stroke==='#8a9d90'));
+ get('projectionMono').checked=false;fire('projectionMono','change');
+ assert.equal(get('projectionViewport').classList.contains('paper-mono'),false);
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('paperSvg').listeners.click({target:{attributes:{'data-v5-pick':'fake','data-v5-step':'0'}}});
+ assert.match(get('projectionPicked').textContent,/学生自己作图/);
+ assert.equal(get('drawControls').hidden,false);
+});
+test('projection V5 camera follows partial real guide and manual reset preserves whole paper',()=>{
+ const p=createInteractivePage(),{get,fire,advance}=p;
+ assert.equal(get('projectionFocus').checked,true);
+ fire('playPause','click');advance(300);
+ assert.notEqual(get('paperSvg').attributes.viewBox,'0 0 720 470');
+ const first=get('paperSvg').attributes.viewBox;
+ advance(200);
+ assert.notEqual(get('paperSvg').attributes.viewBox,first);
+ fire('projectionViewReset','click');
+ assert.equal(get('projectionFocus').checked,false);
+ assert.equal(get('paperSvg').attributes.viewBox,'0 0 720 470');
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.equal(get('paperSvg').attributes.viewBox,'0 0 720 470');
 });
