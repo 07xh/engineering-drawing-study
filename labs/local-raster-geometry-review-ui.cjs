@@ -2,6 +2,7 @@
 /** Browser-local raster proposal review. A picker, not an AI proof engine. */
 const {candidateDraftFromRaster}=
  require('../recognition/raster-primitive-draft.cjs');
+const {validateDraft}=require('../recognition/problem-draft.cjs');
 const {shapeKeys,prepareReviewedRasterImport}=
  require('./local-raster-fillet-import.cjs');
 const {suggestMillimetresPerImagePixel}=
@@ -219,6 +220,38 @@ function attachLocalRasterReview({
     (error instanceof Error?error.message:'无效像素图元');
   }
  }
+ /**
+  * Install an existing QA annotations pack only after the browser has
+  * verified original-file SHA256 using Web Crypto and adapter validation.
+  * Replaces detector proposals with still-unconfirmed image-pixel geometry.
+  */
+ function useManualDraft(input,{samePhotoFingerprintChecked=false}={}){
+  if(samePhotoFingerprintChecked!==true)
+   throw new TypeError('manual draft import requires original photo SHA-256 verification');
+  const checked=validateDraft(input);
+  const file=photoInput.files?.[0];
+  if(!file||image.hidden||
+    checked.image.width!==image.naturalWidth||
+    checked.image.height!==image.naturalHeight||
+    checked.image.byteLength!==file.size||
+    checked.image.mediaType!==file.type)
+   throw new RangeError('manual draft and current displayed photo differ');
+  if(!checked.candidates.length||
+   checked.candidates.some(c=>!['segment','circle'].includes(c.kind)||
+     c.reviewStatus!=='unconfirmed'||c.method!=='manual'))
+   throw new TypeError('manual source geometries must be still unconfirmed finite lines/circles');
+  // Mutation only after full validation. Any prior detector proposals are
+  // replaced rather than merged with IDs from an unrelated image.
+  parts.line=null;parts.curve=null;
+  generation++;draft=checked;
+  updateSelectors();previewShapes();
+  status.textContent='已读取 '+checked.candidates.length+
+   ' 个同一原题上的人工线段/整圆草稿，均尚未通过当前解题审核。'+
+   '请选择两个源图元、检查像素位置、毫米比例、原点与目标 R；'+
+   '明确确认数学分支与行进方向后才可能运行 V5。';
+  return Object.freeze({generation,importedCount:checked.candidates.length,
+    status:'needs-human-geometry-and-mm-review'});
+ }
  function update(group,rawInfo){
   if(!['line','curve'].includes(group))throw new TypeError('unknown detector source');
   if(!rawInfo||!Array.isArray(rawInfo.raw)||!rawInfo.raw.length)
@@ -421,7 +454,7 @@ function attachLocalRasterReview({
  });
  reset();
  return Object.freeze({
-  update,reset,release:reset,markFormEdited:changed,
+  update,useManualDraft,reset,release:reset,markFormEdited:changed,
   get draft(){return draft;},get generation(){return generation}
  });
 }
