@@ -134,7 +134,8 @@ function interactiveFillet(){
   '../workbench/verified-fillet-arc-drawing.cjs':require('../../workbench/verified-fillet-arc-drawing.cjs'),
   '../workbench/verified-ruler-tools.cjs':require('../../workbench/verified-ruler-tools.cjs'),
   '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
-  '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js')
+  '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
+  '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js')
  };
  vm.runInNewContext(entry,{document,performance,requestAnimationFrame,cancelAnimationFrame,
  window:{matchMedia:()=>({matches:false})},require:id=>{
