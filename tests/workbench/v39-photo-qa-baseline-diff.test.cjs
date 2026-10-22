@@ -47,7 +47,7 @@ test('synthetic changed detection outcome preserves denominator and reports prec
  assert.equal(line.deltaFN,1);
  assert.equal(line.deltaFP,2-prior.fp);
  assert.equal(line.deltaRecall,-1);
- assert.equal(line.deltaF1,-1);
+ assert.equal(line.deltaF1,Number((-2/(2+prior.fp)).toFixed(6)));
 });
 test('different photo, photo dimensions, manual truth or unrun detector coverage is incomparable',()=>{
  const state=setup(),baseline=createPhotoQaBaseline(params(state));
