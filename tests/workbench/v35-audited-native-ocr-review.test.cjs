@@ -154,7 +154,8 @@ test('HTML, original-image review integration and native detector remain local-o
  for(const id of ['ocrCorrectedValue','ocrNumericAccept','confirmOcrNumeric'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(entry,/getRevision:\(\)=>session\?\.revision\?\?0/);
- assert.match(entry,/fieldReview,getValues:values/);
+ assert.match(entry,/sourceField:\$\('sourceField'\),fieldReview/);
+ assert.match(entry,/getValues:values/);
  assert.match(ui,/fieldReview\.confirmNotation/);
  assert.match(review,/stageReviewedImageDimension/);
  assert.doesNotMatch(ui,/(fetch\(|XMLHttpRequest|localStorage|sessionStorage|innerHTML)/);
