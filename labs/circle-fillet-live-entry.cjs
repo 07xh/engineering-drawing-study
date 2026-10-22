@@ -460,6 +460,7 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   }
   svg.classList?.toggle?.('draw-active',drawing&&(
     (isMixed&&!!input&&($('drawTool').value==='tangent'||
+      ($('drawTool').value==='snap'&&!!$('branch').value)||
       ($('drawTool').value==='arc'&&verifiedArc())))||
     (!isMixed&&(
      ($('drawTool').value==='tangent'&&!!input)||
@@ -480,68 +481,43 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   $('redoDraw').disabled=!drawing||redoStrokes.length===0;
   $('clearDraw').disabled=!drawing||strokes.length===0;
   $('drawTool').disabled=!drawing;
-  $('addDigital').disabled=!drawing||!input||isMixed||digitalActions.length>=64;
+  $('addDigital').disabled=!drawing||!input||digitalActions.length>=64;
   $('undoDigital').disabled=!drawing||digitalActions.length===0;
   $('clearDigital').disabled=!drawing||digitalActions.length===0;
-  $('checkDigital').disabled=!drawing||!input||isMixed;
-  if(drawing&&isMixed){
-   $('digitalStatus').textContent='线段＋圆：数字尺规辅助线与圆心吸附仍待支持；已开放学生两切点和有向连接弧独立数学判题。';
-   $('centerSnapStatus').textContent='本题型尚未开放学生圆心吸附评分。';
-   if(!input){
-    $('learningProgress').textContent='当前题目输入无效，不能进行学生数学判题。';
-   }else{
-    try{
-     const contacts=gradeStudentTangentPoints('segment-circle',input,
-      strokes.filter(st=>st.kind==='tangent-point'),
-      {branchId:$('branch').value,revision});
-     const curves=strokes.filter(st=>st.kind==='arc');
-     const arc=curves.length>1?
-      {status:'incorrect',reason:'多条手绘弧不能自动选一条作为正确答案'}:
-      gradeFilletArcDrawing(input,curves[0]??null,
-       {kind:'segment-circle',origin:O,scale,revision});
-     const contactOK=contacts.status==='correct',arcOK=arc.status==='correct';
-     $('learningProgress').textContent='线段＋圆：已验证 '+
-      (Number(contactOK)+Number(arcOK))+' / 2 项受支持的数学构造：'+
-      '两个切点'+(contactOK?' ✓':' 待核验')+' · 有向连接弧'+
-      (arcOK?' ✓':' 待核验')+
-      '。不包括辅助尺规、圆心吸附或完整教材题。';
-    }catch(e){$('learningProgress').textContent='无法验证学生混合题型进度：'+e.message;}
-   }
-  }else if(drawing){
+  $('checkDigital').disabled=!drawing||!input;
+  if(drawing){
+   const currentKind=isSegments?'segments':isMixed?'segment-circle':'circles';
    try{
-    if(!input)$('digitalStatus').textContent='当前题目条件无效，不能构造数学辅助轨迹。';
+    if(!input)$('digitalStatus').textContent='输入无效，无法构造辅助轨迹。';
     else{
-     const result=gradeStudentAuxiliaries(isSegments?'segments':'circles',
-      input,digitalActions,{branchId:$('branch').value,revision});
-     $('digitalStatus').textContent=digitalError||(
+     const result=gradeStudentAuxiliaries(currentKind,input,digitalActions,
+      {branchId:$('branch').value,revision});
+     $('digitalStatus').textContent=digitalError||
       '数字尺规辅助轨迹 '+result.matchedCount+' / '+result.requiredCount+
-      '；额外／错误构造 '+result.extraCount+'。'+result.reason);
+      '；额外或错误构造 '+result.extraCount+'。'+result.reason;
     }
-   }catch(error){$('digitalStatus').textContent='无法验证尺规步骤：'+error.message;}
+   }catch(e){$('digitalStatus').textContent='尺规判题失败：'+e.message;}
    $('centerSnapStatus').textContent=centerSnapMessage;
    if(input){
     try{
-     const grade=assessFilletStudentProgress(isSegments?'segments':'circles',
-       input,{
-        auxiliaries:digitalActions,centerMark:studentCenterTap,
-        tangentMarks:strokes.filter(st=>st.kind==='tangent-point'),
-        arcStrokes:strokes.filter(st=>st.kind==='arc')
-       },{branchId:$('branch').value,revision,origin:O,scale});
+     const grade=assessFilletStudentProgress(currentKind,input,{
+      auxiliaries:digitalActions,centerMark:studentCenterTap,
+      tangentMarks:strokes.filter(st=>st.kind==='tangent-point'),
+      arcStrokes:strokes.filter(st=>st.kind==='arc')
+     },{branchId:$('branch').value,revision,origin:O,scale});
      const labels={'auxiliary-loci':'辅助轨迹','chosen-center':'候选圆心',
       'contact-points':'两个切点','directed-arc':'连接弧'};
      $('learningProgress').textContent='已通过 '+grade.verifiedCount+
       ' / '+grade.supportedStageCount+' 项受支持的数学构造：'+
       grade.stages.map(x=>labels[x.id]+(x.ok?' ✓':' 待核验')).join(' · ')+
       '。'+grade.reason;
-    }catch(e){$('learningProgress').textContent='无法计算联合进度：'+e.message;}
-   }else $('learningProgress').textContent='输入条件无效，无法进行联合数学判题。';
+    }catch(e){$('learningProgress').textContent='联合数学判题失败：'+e.message;}
+   }else $('learningProgress').textContent='题目输入无效，无法验证数学构造。';
   }
   const drawKind=$('drawTool').value;
   $('checkDraw').disabled=!drawing||!input||
-   (isMixed?!['tangent','arc'].includes(drawKind)||
-      (drawKind==='arc'&&!verified):
-    drawKind!=='tangent'&&(!verified||
-     (drawKind==='line'&&!isSegments)));
+   (drawKind!=='tangent'&&drawKind!=='snap'&&(!verified||
+      (drawKind==='line'&&!isSegments&&!isMixed)));
   if(hint){
    $('stepTitle').textContent='逐步提示｜'+hintStep+' / '+hintMax;
    $('stepText').textContent=hintStep===0?
@@ -744,14 +720,13 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
  }
  $('drawTool').addEventListener('change',()=>{
   pointer=null;
-  if($('modeSelect').value==='segment-circle'&&
-    !['tangent','arc'].includes($('drawTool').value))
+  if($('modeSelect').value==='segment-circle'&&$('drawTool').value==='line')
    $('drawTool').value='tangent';
   render();
  });
  $('checkDraw').addEventListener('click',()=>{if(learningMode==='draw')render()});
  $('addDigital').addEventListener('click',()=>{
-  if(learningMode!=='draw'||!input||$('modeSelect').value==='segment-circle')return;
+  if(learningMode!=='draw'||!input)return;
   try{
    const sourceId=$('digitalSource').value;
    if(!['first','second'].includes(sourceId)||digitalActions.length>=64)
@@ -760,9 +735,12 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
    if(field.value.trim()===''||!Number.isFinite(field.valueAsNumber))
     throw new TypeError('请输入有效的偏移距离或圆规半径（mm）');
    const value=field.valueAsNumber;
-   const action=$('modeSelect').value==='segments'
-    ?constructParallelLine(input[sourceId],value,{revision})
-    :constructConcentricCircle(input[sourceId],value,{revision});
+   const mode=$('modeSelect').value;
+   const action=mode==='segments'||mode==='segment-circle'&&sourceId==='first'
+    ?constructParallelLine(mode==='segment-circle'?input.segment:input[sourceId],
+      value,{revision})
+    :constructConcentricCircle(mode==='segment-circle'?input.circle:input[sourceId],
+      value,{revision});
    digitalActions.push({...action,sourceId});
    digitalError='';render();
   }catch(error){digitalError='尺规构造失败：'+error.message;render();}
@@ -792,7 +770,7 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   if(learningMode!=='draw'||!input||event.button>0)return;
   const from=eventPoint(event);if(!from)return;
   const tool=$('drawTool').value;
-  if($('modeSelect').value==='segment-circle'&&!['tangent','arc'].includes(tool))return;
+  if($('modeSelect').value==='segment-circle'&&tool==='line')return;
   if(tool==='tangent'){
    const sourceId=$('digitalSource').value;
    if(!['first','second'].includes(sourceId))return;
@@ -809,7 +787,8 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
     // center must NOT be reused as an invented student input.
     studentCenterTap=rawTap;
     const selected=snapChosenFilletCenter(
-     $('modeSelect').value==='segments'?'segments':'circles',
+     $('modeSelect').value==='segments'?'segments':
+      $('modeSelect').value==='segment-circle'?'segment-circle':'circles',
      input,rawTap,{branchId:$('branch').value,revision});
     snappedCenter=selected.status==='verified-center'?selected.snappedPoint:null;
     centerSnapMessage=selected.status==='verified-center'
