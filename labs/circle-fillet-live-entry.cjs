@@ -18,6 +18,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
 const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
 const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs');
+const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
 (function(){
  const SVG='http://www.w3.org/2000/svg',$=id=>document.getElementById(id);
  const FIELDS=['x1','y1','r1','mode1','arcExtent1','arcStart1','arcEnd1','arcDirection1',
@@ -91,6 +92,26 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
    :$('modeSelect').value==='segment-circle'
     ?(verifiedArc()?teaching.steps.length:(centers.candidates.length?3:0)):4;
  };
+ const syncLiveExplanation=()=>{
+  const panel=$('filletStrokeLive');
+  const frame=stageClock?.canRender(revision)?stageClock.snapshot():null;
+  if(learningMode!=='full'||!autoplayPlan||!frame){
+   panel.hidden=true;return;
+  }
+  const detail=StrokeReasonV5.at({
+   motion:autoplayPlan,reasons,frame,revision,mode:learningMode
+  });
+  if(!['drawing','stage-finished','complete','no-action'].includes(detail.status)){
+   panel.hidden=true;return;
+  }
+  panel.hidden=false;
+  $('filletStrokeTitle').textContent=detail.title;
+  $('filletStrokeWhy').textContent=detail.why;
+  $('filletStrokeBasis').textContent=detail.basis;
+  $('filletStrokeCheck').textContent=detail.check;
+  $('filletStrokePercent').textContent=detail.percent+'% · 第 '+
+   detail.step+' 步，第 '+detail.action+' / '+detail.totalActions+' 笔';
+ };
  const syncStrokeProgress=()=>{
   const max=availableStages();
   const frame=stageClock?.canRender(revision)?stageClock.snapshot():null;
@@ -104,6 +125,7 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
   $('filletProgress').setAttribute?.('aria-valuetext',
    '已完成 '+percent+'%；'+(frame?.done?'全部步骤完成':
     '第 '+Math.min(max,stage+1)+' / '+max+' 步'));
+  syncLiveExplanation();
  };
  const ensureAutoplayClock=()=>{
   if(stageClock&&autoplayPlan&&stageClock.canRender(revision))return true;
