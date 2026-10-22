@@ -28,7 +28,7 @@ function createFieldReview(){
  function mark(field,bbox,detectorCandidateId=null){
   if(detectorCandidateId!==null&&
     (typeof detectorCandidateId!=='string'||
-     !/^(line|curve)_[0-9]+$/.test(detectorCandidateId)))
+     !/^(line|curve|ocr)_[0-9]+$/.test(detectorCandidateId)))
    throw new TypeError('unsupported detector candidate id');
   if(!image||!fieldList(kind).includes(field))throw new RangeError('image or field missing');
   const id='src_'+field;

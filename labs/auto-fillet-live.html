@@ -23,7 +23,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .photo-stage img{max-height:none;margin:0}
 .photo-stage svg{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .photo-stage svg[hidden]{display:none}
-.photo-stage svg.candidate-lines,.photo-stage svg.candidate-curves{pointer-events:none}
+.photo-stage svg.candidate-lines,.photo-stage svg.candidate-curves,.photo-stage svg.candidate-ocr{pointer-events:none}
 .source-review{margin-top:10px;padding-top:8px;border-top:1px solid #d7e6db}
 .source-review[hidden]{display:none}
 .source-review label{margin:8px 0}
@@ -78,7 +78,10 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <button type="button" id="detectLines">检测直线候选（实验）</button>
 <button type="button" id="clearLines">清除候选线</button>
 <button type="button" id="detectCurves">检测圆与圆弧（实验）</button>
-<button type="button" id="clearCurves">清除圆弧候选</button></div>
+<button type="button" id="clearCurves">清除圆弧候选</button>
+<button type="button" id="detectOcr">识别 R/Φ 文字（实验）</button>
+<button type="button" id="clearOcr">清除文字候选</button></div>
+<p id="nativeOcrStatus" role="status" aria-live="polite">OCR 依赖浏览器原生支持，识别内容仅为待确认线索。</p>
 <p id="curveStatus" role="status" aria-live="polite">圆与圆弧候选仅在本机检测，不代表几何尺寸。</p>
 <p id="lineStatus" role="status" aria-live="polite">直线候选检测仅在本机运行，不作为已验证图形。</p>
 <p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
@@ -86,6 +89,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
 <svg id="detectedLineOverlay" class="candidate-lines" aria-label="本地检测的尚未核对直线候选" hidden></svg>
 <svg id="detectedCurveOverlay" class="candidate-curves" aria-label="本地检测的尚未核对圆及圆弧候选" hidden></svg>
+<svg id="nativeOcrOverlay" class="candidate-ocr" aria-label="本地 OCR 待复核尺寸文字区域" hidden></svg>
 <svg id="sourceOverlay" aria-label="框选原题中几何条件的来源区域" hidden></svg>
 </div></div>
 <div class="source-review">
@@ -95,6 +99,9 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <label for="sourceCandidate">可关联的检测候选（图像像素，未经核实）
 <select id="sourceCandidate"><option value="">先检测直线、圆或圆弧候选</option></select></label>
 <div class="controls"><button type="button" id="associateCandidate">将所选候选区域关联到当前条件</button></div>
+<label for="ocrDimensionSelect">本地 OCR 尺寸候选（需要人工确认）
+<select id="ocrDimensionSelect"><option value="">请先尝试识别 R/Φ 标注</option></select></label>
+<div class="controls"><button type="button" id="associateOcr">将所选 OCR 位置关联到半径条件</button></div>
 <p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
 <div class="controls">
 <button type="button" id="confirmSource">确认当前数值与框选区域相符</button>
