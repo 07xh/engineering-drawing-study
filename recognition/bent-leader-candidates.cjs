@@ -76,6 +76,7 @@ function bentLeaderCandidates(dimension,lines,curves,image,{
       dimensionId:dimension.id,
       firstLeaderCandidateId:first.id,
       secondLeaderCandidateId:second.id,
+      finalTipEndpoint:secondReversed?'from':'to',
       geometryCandidateId:curve.id,
       textEndpointDistancePx:Number(textGap.toFixed(2)),
       jointEndpointDistancePx:Number(jointGap.toFixed(2)),
