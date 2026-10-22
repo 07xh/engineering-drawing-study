@@ -6,6 +6,7 @@ const {createConfirmedFilletSession}=
  require('../workbench/v31-fillet-session.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
+const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 
@@ -28,6 +29,7 @@ const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
  };
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
  let fieldReview=null;
+ let localVector=null;
  function stopClock(){
   if(raf!==null){cancelAnimationFrame(raf);raf=null;}
  }
@@ -106,6 +108,7 @@ const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
  }
  function recompute(){
   if(!session)return;
+  localVector?.markFormEdited();
   stopClock();
   refreshCandidates();
   const current=input(),old=session.revision;
@@ -267,4 +270,24 @@ const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
   status:$('lineStatus')
  });
  grid();buildFields(kind);
+ localVector=attachLocalVectorReview({
+  file:$('vectorSvg'),kind:$('kind'),first:$('vectorFirst'),
+  second:$('vectorSecond'),mmPerPx:$('vectorMmPerPx'),
+  originX:$('vectorOriginX'),originY:$('vectorOriginY'),
+  yAxis:$('vectorYAxis'),filletRadiusMm:$('vectorFilletRadius'),
+  accepted:$('vectorAccept'),apply:$('vectorApply'),
+  status:$('vectorStatus'),preview:$('vectorPreview'),
+  onApply:result=>{
+   for(const [field,value] of Object.entries(result.fields)){
+    const input=$('geo-'+field);
+    if(!input)throw new RangeError('missing current numeric field '+field);
+    input.value=String(value);
+    fieldReview?.edited(field);
+   }
+   // A valid source does not choose a mathematically legitimate branch/G1 sweep.
+   for(const field of ['branch','direction','travel1','travel2'])$(field).value='';
+   recompute(); // #248 session invalidates the old verified timeline before solving.
+  }
+ });
+ window.addEventListener('pagehide',()=>localVector?.release());
 })();
