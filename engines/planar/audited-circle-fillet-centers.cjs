@@ -1,7 +1,7 @@
 'use strict';
 /**
  * V3.8 02 opt-in real-consumer integration of the single M2 residual audit.
- * Recompute actual bounded-source 02 fillet candidates, independently
+ * Recompute actual complete-circle 02 fillet candidates, independently
  * recheck their two analytic model-mm center loci, never infer uniqueness,
  * G1 continuity, source-image accuracy or approved V5 construction.
  */
@@ -25,8 +25,8 @@ function auditRealCircleFilletCenters(problem,{
  if(!Number.isSafeInteger(expectedRevision)||expectedRevision!==typed.revision)
   throw new RangeError('current reviewed problem revision required');
  const solved=solveFiniteFillet(typed);
- // The 02 gate is the sole authority for actual candidate identity, finite
- // source-arc clipping and chosen inner/outer tangency assumptions.
+ // The typed 02 gate governs candidate IDs and given complete-circle
+ // inner/outer modes. Finite source arcs are explicitly unsupported here.
  const first=typed.geometry.first,second=typed.geometry.second;
  const mode1=typed.options.firstMode??'external';
  const mode2=typed.options.secondMode??'external';
@@ -65,7 +65,7 @@ function auditRealCircleFilletCenters(problem,{
   candidateCount:solved.candidates.length,
   branchIds:Object.freeze(solved.candidates.map(c=>c.branchId)),
   numericEvidence:proof,
-  // 02 source-arc membership and center loci alone cannot determine sweep.
+  // Full-circle center loci alone cannot prove sweep, finite contact or G1.
   suitableForV5:false,independentGlobalProof:false,globallyUnique:null
  });
 }
