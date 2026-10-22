@@ -92,4 +92,52 @@ function constructionStepsToV5(input){
   verificationScope:null,provenanceVerified:false
  });
 }
-module.exports={constructionStepsToV5};
+
+/**
+ * Exact presentation bridge for existing, independently proof-gated R1
+ * teaching plans. The caller (verified-plan-v5-bridge) MUST recompute with
+ * domain solvers and check plan.proof. This returns a V5 shape, not proof.
+ * Consolidates previously duplicated 07 model-mm/sheet-px conversion here.
+ * In contrast to legacy core/1 SVG arcs, the R1 contract carries explicit
+ * mathematical startAngle/endAngle and signed cw/ccw direction.
+ */
+function verifiedTeachingActionToV5(a,sheet){
+ requireSheet(sheet);
+ if(!record(a)||typeof a.id!=='string'||!a.id||
+    !['line','point','circle','arc'].includes(a.kind))
+  throw new TypeError('unsupported normalized teaching action');
+ const isSheet=a.coordinateSpace==='sheet-px';
+ const isModel=a.coordinateSpace==='model-mm';
+ if(!isSheet&&!isModel)throw new TypeError('unknown geometry coordinate space');
+ let geometry;
+ if(a.kind==='arc'){
+  if(!isModel)throw new TypeError('a directed arc must be mathematical model geometry');
+  geometry=Motion.projectArcFromVerifiedModel(a,sheet);
+ }else if(a.kind==='line'){
+  if(!record(a.from)||!record(a.to)||
+     ![a.from.x,a.from.y,a.to.x,a.to.y].every(finite))
+   throw new TypeError('invalid construction endpoints');
+  const from=isSheet?{x:a.from.x,y:a.from.y}:toSheet(a.from.x,a.from.y,sheet);
+  const to=isSheet?{x:a.to.x,y:a.to.y}:toSheet(a.to.x,a.to.y,sheet);
+  const len=Math.hypot(from.x-to.x,from.y-to.y);
+  if(!finite(len)||len<=1e-9)
+   throw new RangeError('zero-length or overflowing rendered guide');
+  geometry={from,to};
+ }else if(a.kind==='point'){
+  if(!isModel||!record(a.at)||!finite(a.at.x)||!finite(a.at.y))
+   throw new TypeError('point must be in model math coordinates');
+  geometry={center:toSheet(a.at.x,a.at.y,sheet),radius:4};
+ }else {
+  if(!isModel||!record(a.center)||!finite(a.center.x)||
+     !finite(a.center.y)||!finite(a.radius)||a.radius<=0)
+   throw new TypeError('circle must be in model math units');
+  const radius=a.radius*sheet.scale;
+  if(!finite(radius)||radius<=0)throw new RangeError('radius conversion overflow');
+  geometry={center:toSheet(a.center.x,a.center.y,sheet),radius};
+ }
+ const out={id:a.id,kind:a.kind,geometry};
+ Motion.actionShapeAttrs(out,1);
+ return out;
+}
+
+module.exports={constructionStepsToV5,verifiedTeachingActionToV5};
