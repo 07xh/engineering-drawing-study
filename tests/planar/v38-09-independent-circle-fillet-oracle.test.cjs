@@ -78,10 +78,22 @@ test('09 same two branch center geometry survives mm scaling and distant transla
   for(let i=0;i<ys.length;i++)eq(ys[i],originalY[i],1e-5);
  }
 });
-test('09 typed 02 gate rejects source finite arcs even if specialized 02 solver supports them',()=>{
- const input=sample();
+test('09 typed 02 gate now accepts reviewed finite source arcs without inventing G1',()=>{
+ const input=sample(),original=solve(input);
+ assert.deepEqual(original.candidates.map(c=>c.branchId),['center-1','center-2']);
  input.geometry.first.arc={startAngle:0,endAngle:180,direction:'ccw'};
- assert.throws(()=>solve(input),/unsupported field arc/);
+ const upper=solve(input);
+ assert.equal(upper.status,'unique');
+ assert.deepEqual(upper.candidates.map(c=>c.branchId),['center-2']);
+ independentExternalResiduals(input,upper);
+ assert.equal(upper.candidates[0].finiteSourceContactsVerified,true);
+ assert.equal(upper.globallyUnique,null);
+ assert.equal(upper.directedG1Verified,false);
+ assert.equal(upper.finishedArcVerified,false);
+ // A malformed finite source arc still fails closed rather than becoming
+ // an unconstrained supporting full circle.
+ input.geometry.first.arc={startAngle:0,endAngle:360,direction:'ccw'};
+ assert.throws(()=>solve(input),/proper angular extent/);
 });
 test('09 malformed model units, source revision and invalid radii remain rejected',()=>{
  const input=sample();
