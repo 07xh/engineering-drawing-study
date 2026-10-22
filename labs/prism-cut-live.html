@@ -29,6 +29,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .board svg{width:100%;height:auto;display:block;max-height:75vh}
 .board.no-guides #prism-guides{display:none}
 .board.mono #prism-cut-unknown-visibility *{stroke:#555!important;fill:#555!important}
+.board [data-action]{cursor:crosshair}
+.board [data-selected="true"]{stroke:#167ed0!important;stroke-width:4!important;filter:drop-shadow(0 0 3px #8bbdf2)}
+.board circle[data-selected="true"]{fill:#167ed0!important}
+.board:focus-visible{outline:2px solid #167ed0;outline-offset:3px}
 #rayControls{border:1px solid #deebe2;background:#f7fbf7;padding:9px;border-radius:12px}
 #rayControls[hidden]{display:none}
 .legend{font-size:12px;color:#516a5b;margin:10px 0}
@@ -96,7 +100,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 </section>
 <section class="card" aria-label="棱柱截面 V5 动态作图">
 <h2>同纸三视图 · 真实 V5 逐笔作图</h2>
-<div id="board" class="board" role="img" aria-label="数学证明的棱柱截面三视图及逐笔辅助线动画"></div>
+<div id="board" class="board" role="region" tabindex="0" aria-label="数学证明的棱柱截面动态图，可点击已绘出的图线定位相应作图步骤"></div>
+<p class="helper" id="pickedInfo" role="status" aria-live="polite">轻触已画出的图线以定位步骤和空间来源。</p>
 <p class="legend">深色：已知轮廓　浅虚线：辅助线　绿色实线：按指定射线可见　深灰虚线：按指定射线遮挡　<strong>橙色点虚线：待判定</strong>。所有线型仍未获正式制图标准签收。</p>
 <p id="rayStatus" class="helper" role="status" aria-live="polite">默认未确认：截面所有结果保留待审核线型。</p>
 <div class="playbar">
@@ -110,6 +115,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label for="speed">速度 <select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
 <label for="guides"><input id="guides" type="checkbox" checked>辅助线</label>
 <label for="mono"><input id="mono" type="checkbox">黑白显示</label>
+<label for="autofocus"><input id="autofocus" type="checkbox" checked>自动聚焦当前步骤</label>
+<button id="fit" type="button">查看整张图纸</button>
 <button id="save" type="button" disabled>保存当前 SVG</button>
 </div>
 <p id="measure" class="helper">尚未计算截面面积和周长。</p>
