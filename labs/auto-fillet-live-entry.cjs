@@ -9,6 +9,7 @@ const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
 const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
+const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
 
 (function(){
  'use strict';
@@ -268,6 +269,12 @@ const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
   photoClear:$('clearPhoto'),run:$('detectLines'),
   clear:$('clearLines'),overlay:$('detectedLineOverlay'),
   status:$('lineStatus')
+ });
+ attachLocalCurveCandidates({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),run:$('detectCurves'),
+  clear:$('clearCurves'),overlay:$('detectedCurveOverlay'),
+  status:$('curveStatus')
  });
  grid();buildFields(kind);
  localVector=attachLocalVectorReview({
