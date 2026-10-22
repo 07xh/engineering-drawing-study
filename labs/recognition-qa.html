@@ -110,8 +110,9 @@ small{font-size:12px;color:#667f6e}
 <div class="buttons">
 <button id="qaTouchCheck" type="button">开始五点触控坐标自检</button>
 <button id="qaTouchStop" type="button">结束自检</button>
+<button id="qaTouchExport" type="button">导出五点诊断 JSON</button>
 </div>
-<p class="hint" id="qaTouchResult" aria-live="polite">自检不会更改识别候选、人工标注或误差报告。请依次点击图中的橙色十字；结果仅是点按偏差参考。</p>
+<p class="hint" id="qaTouchResult" aria-live="polite">自检不会更改识别候选、人工标注或误差报告。开始后会自动定位下一个橙色十字；全部五点完成才能主动导出不含原图的 JSON。结果仅是人手点按偏差参考。</p>
 <div id="qaStage" class="stage" hidden>
 <div id="qaViewport" class="qaViewport">
 <img id="qaImage" alt="用户选择的本地工程题图">
