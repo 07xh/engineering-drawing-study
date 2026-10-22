@@ -257,7 +257,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
       }
     }
     paintCurrentGuide();
-    pickedText();updateCamera(true);
+    pickedText();updateCamera(playTimer===null||learningMode!=='full');
   }
   function resetPair(){
     const pair=$('pairSelect').value;
