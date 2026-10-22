@@ -15,6 +15,7 @@ const files = [
   'labs/point-projection-live.html',
   'labs/circle-fillet-live.html',
   'labs/auto-fillet-live.html',
+  'labs/cylinder-cut-live.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -119,6 +120,16 @@ console.log('DraftAI public geometry site ready:',files.length,'assets');
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/auto-fillet-live-entry.cjs')],
  outfile:path.join(out,'labs/auto-fillet-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* V3.8 public opt-in cylinder section laboratory. Math/ray/style are bundled
+ * locally, without private textbooks, OCR uploads or CDN dependencies.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/cylinder-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/cylinder-cut-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
