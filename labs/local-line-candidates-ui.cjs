@@ -1,13 +1,14 @@
 'use strict';
 /** Local image RGBA inspection and untrusted line preview, no OCR or math. */
 const {detectLineCandidates}=require('../recognition/local-line-candidates.cjs');
+const {locateCandidate}=require('../recognition/source-candidate-link.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalLineCandidates({
- image,photoInput,photoClear,run,clear,overlay,status
+ image,photoInput,photoClear,run,clear,overlay,status,onCandidates=()=>{}
 }){
  let lines=[];
  function reset(){
-  lines=[];overlay.replaceChildren();overlay.hidden=true;
+  lines=[];overlay.replaceChildren();overlay.hidden=true;onCandidates([]);
   status.textContent='尚未分析图片。检测只在本机运行；候选线段不代表已验证的数学条件。';
  }
  photoInput.addEventListener('change',reset);
@@ -51,6 +52,8 @@ function attachLocalLineCandidates({
     overlay.append(node);
    }
    overlay.hidden=false;
+   onCandidates(lines.map(x=>locateCandidate(x,
+    {width,height},{width:originalW,height:originalH})));
    status.textContent='本地检测得到 '+lines.length+
     ' 条直线候选（紫色虚线）；仅供对照，可能漏检或误检。' +
     '不能直接作为毫米几何或标准答案，仍需人工核对。';
