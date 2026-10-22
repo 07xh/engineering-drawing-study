@@ -14,6 +14,12 @@ button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor
 .actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}.actions .rate-select{flex:1 1 110px;min-width:105px;max-width:156px;display:grid;gap:4px;align-self:center;font-size:11px}.rate-select select{width:100%}
 .card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
 .legend{font-size:12px;color:#617b67;line-height:1.8}
+.playback-scrub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 13px;border:1px solid #d6e7d9;background:#f7fbf8;border-radius:12px;padding:10px}
+.playback-scrub label{flex:1 1 100%;font-size:13px;font-weight:650}
+.playback-scrub input[type=range]{flex:1 1 230px;width:100%;min-height:34px;accent-color:#236c49;touch-action:pan-x;padding:0;cursor:pointer}
+.playback-scrub output{min-width:66px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:#42664f}
+.playback-scrub button{flex:0 1 auto}
+@media(max-width:550px){.playback-scrub button{width:100%}}
 #filletProof{margin-top:12px;display:grid;gap:9px}
 #filletProof h3{font-size:15px;margin:0}
 #filletProof dl{display:grid;gap:10px;margin:0}
@@ -92,6 +98,12 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
 <p class="note" style="flex:1 1 100%;margin:0">看辅助线、辅助圆和切点逐渐画出，请使用「逐笔播放」；「下一步」会立即显示该步骤的完整图形。系统开启减少动态效果时可使用静态步进。</p></div>
+<div class="playback-scrub" id="filletScrubBar">
+<label for="filletProgress">笔迹进度（拖动到任意一步的中间，支持触屏与方向键）</label>
+<input id="filletProgress" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="圆弧连接逐笔作图进度">
+<output id="filletProgressLabel" for="filletProgress" aria-live="off">0%</output>
+<button id="filletRestart" type="button">回到起点</button>
+</div>
 <div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
 <div id="drawControls" hidden>
 <label>绘图工具<select id="drawTool"><option value="line">自由画辅助线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option><option value="snap">点选候选圆心（数学吸附）</option><option value="tangent">点选切点（选已知对象 1／2）</option></select></label>
