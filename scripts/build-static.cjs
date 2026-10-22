@@ -167,3 +167,11 @@ if(uiPreview || uiRelease){
  console.log('DraftAI unified UI ready:', out);
 }
 
+// Identity-only asset: whoever can read deployed dist can compare this SHA
+// with protected GitHub main. Never confuse an artifact manifest with a
+// verified live deployment, and never emit CI environment secrets.
+const info=require('./public-build-provenance.cjs').writePublicBuildInfo(out,{
+ repoRoot:root,preview:uiPreview
+});
+console.log('DraftAI public asset commit:',info.sourceCommit||'unavailable');
+
