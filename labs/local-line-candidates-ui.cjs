@@ -1,6 +1,7 @@
 'use strict';
 /** Local image RGBA inspection and untrusted line preview, no OCR or math. */
 const {detectLineCandidates}=require('../recognition/local-line-candidates.cjs');
+const {detectArrowWingCandidates}=require('../recognition/local-arrow-wing-candidates.cjs');
 const {mapLeaderCandidate}=require('../recognition/dimension-leader-association.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalLineCandidates({
@@ -40,6 +41,7 @@ function attachLocalLineCandidates({
     minLength:Math.max(24,Math.floor(Math.min(width,height)*.17)),
     maxCandidates:16
    });
+   const arrowHints=detectArrowWingCandidates({width,height,data:rgba.data},lines);
    overlay.setAttribute('viewBox','0 0 '+originalW+' '+originalH);
    for(const l of lines){
     const node=document.createElementNS(SVG,'line');
@@ -51,13 +53,28 @@ function attachLocalLineCandidates({
     }))node.setAttribute(key,String(value));
     overlay.append(node);
    }
+   for(const proposal of arrowHints){
+    const mark=document.createElementNS(SVG,'circle');
+    for(const [name,value] of Object.entries({
+     cx:proposal.tip.x*originalW/width,
+     cy:proposal.tip.y*originalH/height,
+     r:5,fill:'none',stroke:'#d8842d','stroke-width':2,
+     'stroke-dasharray':'3 2','data-unconfirmed-arrow':proposal.id,
+     'aria-label':'疑似箭头笔画，未经确认'
+    }))mark.setAttribute(name,String(value));
+    overlay.append(mark);
+   }
    overlay.hidden=false;
    onCandidates(lines.map(x=>mapLeaderCandidate(x,
     {width,height},{width:originalW,height:originalH})),{
-     raw:lines,analysis:{width,height},original:{width:originalW,height:originalH}
+     raw:lines,analysis:{width,height},original:{width:originalW,height:originalH},
+     arrowHints:arrowHints.map(x=>({...x,
+      tip:{x:x.tip.x*originalW/width,y:x.tip.y*originalH/height},
+      coordinateSpace:'original-image-px'}))
     });
    status.textContent='本地检测得到 '+lines.length+
-    ' 条直线候选（紫色虚线）；仅供对照，可能漏检或误检。' +
+    ' 条直线候选（紫色虚线）及 '+arrowHints.length+
+    ' 处疑似箭头端点（橙色虚圈，未经验证）；可能漏检或误检。' +
     '不能直接作为毫米几何或标准答案，仍需人工核对。';
   }catch(e){
    reset();status.textContent='本地候选检测失败：'+
