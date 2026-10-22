@@ -77,6 +77,14 @@ function convertVerified(plan,sheet){
   proofScope:plan.proof.scope,solver:plan.solver,
   residualMm:plan.result.maxResidual,
   g1Residual:plan.result.maxG1Mismatch??null,
+  // R1 source-bound evidence is carried through animation unchanged.
+  // No renderer may claim clipped source arcs are valid from a pretty SVG.
+  ...(plan.type==='directed-fillet'?{sourceBounds:{
+   finiteGivenCircleArcCount:plan.result.sourceFiniteArcCount??0,
+   contactArcMembershipVerified:plan.result.sourceArcRangeVerified??null,
+   finiteSegmentContactVerified:plan.result.finiteSegmentContactVerified??null,
+   evidence:plan.result.sourceBoundsProof??null
+  }}:{}),
   originalLesson:plan};
 }
 function pointTimeline(input={},revision=0){
