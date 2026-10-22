@@ -10,6 +10,7 @@ const {attachLocalVectorReview}=require('./local-vector-svg-review-ui.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
+const {attachLocalNativeOcr}=require('./local-native-ocr-ui.cjs');
 const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs');
 
 (function(){
@@ -291,6 +292,14 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   photoClear:$('clearPhoto'),run:$('detectCurves'),
   clear:$('clearCurves'),overlay:$('detectedCurveOverlay'),
   status:$('curveStatus'),onCandidates:items=>receivedCandidates('curve',items)
+ });
+ attachLocalNativeOcr({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),run:$('detectOcr'),clear:$('clearOcr'),
+  overlay:$('nativeOcrOverlay'),status:$('nativeOcrStatus'),
+  selector:$('ocrDimensionSelect'),associate:$('associateOcr'),
+  sourceField:$('sourceField'),fieldReview,
+  getCurves:()=>geometryCandidates.curve
  });
  $('associateCandidate').addEventListener('click',()=>{
   const id=$('sourceCandidate').value;
