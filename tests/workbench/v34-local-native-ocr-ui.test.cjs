@@ -20,10 +20,11 @@ const dimension=()=>({
  bbox:[100,200,70,24],coordinateSpace:'original-image-px',
  unitHint:'drawing-unit-unconfirmed',confirmed:false
 });
-function setup({recognize=async()=>({status:'ok',candidates:[dimension()]})}={}){
+function setup({recognize=async()=>({status:'ok',candidates:[dimension()]}),applyPrefill=()=>{}}={}){
  const nodes={image:control(),photoInput:control(),photoClear:control(),
   run:control(),clear:control(),overlay:control(),status:control(),
-  selector:control(),associate:control(),sourceField:control()};
+  selector:control(),associate:control(),sourceField:control(),
+  prefillButton:control(),unitConfirmed:control()};
  const linked=[];nodes.sourceField.value='filletRadius';
  const original=global.document;
  global.document={
@@ -33,7 +34,7 @@ function setup({recognize=async()=>({status:'ok',candidates:[dimension()]})}={})
  const fieldReview={markCandidate(c){
   linked.push(c);return {ok:true,reason:'review source linked'};
  }};
- const api=attach({...nodes,fieldReview,
+ const api=attach({...nodes,fieldReview,applyPrefill,
   getCurves:()=>[{id:'curve_1',kind:'circle',
    coordinateSpace:'original-image-px',bbox:[90,180,200,180]}],
   recognize});
@@ -101,10 +102,43 @@ test('public UI preserves manual review; OCR is never fed directly to SolveResul
  const entry=fs.readFileSync('labs/auto-fillet-live-entry.cjs','utf8');
  const html=fs.readFileSync('labs/auto-fillet-live.html','utf8');
  for(const id of ['detectOcr','clearOcr','nativeOcrOverlay',
-  'ocrDimensionSelect','associateOcr','nativeOcrStatus'])
+  'ocrDimensionSelect','associateOcr','nativeOcrStatus',
+  'prefillOcrRadius','ocrUnitConfirmed'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(entry,/attachLocalNativeOcr/);
  assert.match(source,/fieldReview\.markCandidate\(dim\)/);
  assert.match(source,/epoch!==thisEpoch/);
  assert.doesNotMatch(source,/session\.replace|solveFiniteFillet|localStorage|XMLHttpRequest/);
+});
+
+test('OCR prefill requires user unit acknowledgement and a separate verified source link',async()=>{
+ const applied=[];
+ const ctx=setup({applyPrefill:(field,value)=>applied.push([field,value])});
+ try{
+  await ctx.nodes.run.fire('click');ctx.nodes.selector.value='ocr_1';
+  assert.equal(ctx.nodes.prefillButton.disabled,false);
+  await ctx.nodes.prefillButton.fire('click');
+  assert.equal(applied.length,0);
+  assert.match(ctx.nodes.status.textContent,/units must be explicitly acknowledged/);
+  ctx.nodes.unitConfirmed.checked=true;
+  await ctx.nodes.prefillButton.fire('click');
+  assert.deepEqual(applied,[['filletRadius',12]]);
+  assert.equal(ctx.linked.length,1);
+  assert.equal(ctx.linked[0].confirmed,false);
+  assert.match(ctx.nodes.status.textContent,/旧动画已失效/);
+  await ctx.nodes.photoInput.fire('change');
+  assert.equal(ctx.nodes.unitConfirmed.checked,false);
+ }finally{ctx.restore();}
+});
+test('OCR cannot prefill non-radius coordinate even with user unit confirmation',async()=>{
+ const applied=[];
+ const ctx=setup({applyPrefill:(field,value)=>applied.push([field,value])});
+ try{
+  await ctx.nodes.run.fire('click');ctx.nodes.selector.value='ocr_1';
+  ctx.nodes.sourceField.value='a1x';
+  ctx.nodes.unitConfirmed.checked=true;
+  await ctx.nodes.prefillButton.fire('click');
+  assert.deepEqual(applied,[]);
+  assert.deepEqual(ctx.linked,[]);
+ }finally{ctx.restore();}
 });
