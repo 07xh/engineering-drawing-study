@@ -7,6 +7,7 @@ const {createConfirmedFilletSession}=
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {attachLocalImagePreview}=require('./local-problem-preview.cjs');
 const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
+const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 
 (function(){
  'use strict';
@@ -258,6 +259,12 @@ const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
   status:$('sourceStatus'),values,onUpdate:()=>{
    if(session)recompute();
   }
+ });
+ attachLocalLineCandidates({
+  image:$('photoPreview'),photoInput:$('problemPhoto'),
+  photoClear:$('clearPhoto'),run:$('detectLines'),
+  clear:$('clearLines'),overlay:$('detectedLineOverlay'),
+  status:$('lineStatus')
  });
  grid();buildFields(kind);
 })();
