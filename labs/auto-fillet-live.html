@@ -142,6 +142,18 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </label>
 <div class="controls"><button id="rasterScaleCalculate" type="button">根据已核对长度计算建议比例</button></div>
 <p id="rasterScaleStatus" class="vector-status" role="status" aria-live="polite">未校准。可继续手动输入毫米／像素；不能把图像检测像素直接当作毫米。</p>
+<div class="source-review" aria-label="第二已知尺寸交叉检查">
+<h4>可选：第二条已知长度交叉核对</h4>
+<p>有第二条真实尺寸明确的完整线段时，可对照两个独立比例。结果相差超过 3% 会提示复查透视、端点或尺寸对应；3% 只是诊断阈值，不代表工业制图公差。</p>
+<label for="rasterCrossSource">另一条独立线段<select id="rasterCrossSource"><option value="">请选择另一条已标尺寸的线段</option></select></label>
+<label for="rasterCrossLength">第二条线段的人工确认长度（毫米）
+<input id="rasterCrossLength" type="number" inputmode="decimal" min="0" step="any" placeholder="例如 45"></label>
+<label class="vector-confirm" for="rasterCrossReviewed">
+<input id="rasterCrossReviewed" type="checkbox">我已核对第二条完整线段的端点、实际尺寸与毫米单位
+</label>
+<div class="controls"><button id="rasterCrossCalculate" type="button">比较两条已核对尺寸的比例</button></div>
+<p id="rasterCrossStatus" class="vector-status" role="status" aria-live="polite">尚未进行第二基线核对；不能据此声称整张题图的比例准确。</p>
+</div>
 </div>
 <div class="fields">
 <label for="rasterMmPerPx">人工校准：毫米／像素<input id="rasterMmPerPx" type="number" step="any" min="0" placeholder="从已知尺寸独立校准"></label>

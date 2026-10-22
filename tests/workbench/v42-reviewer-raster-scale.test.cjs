@@ -62,7 +62,7 @@ test('actual R0 solver page exposes opt-in reviewed calibration UI without math 
  assert.match(js,/mmPerPx\.value=String\(suggestion\.mmPerPx\)/);
  assert.match(js,/input\.addEventListener\('input',invalidateDerivedScale\)/);
  assert.match(js,/scaleLength\.addEventListener\('input',invalidateDerivedScale\)/);
- assert.match(js,/scaleSource\.addEventListener\('change',invalidateDerivedScale\)/);
+ assert.match(js,/scaleSource\.addEventListener\('change',\(\)=>\{\s*invalidateDerivedScale\(\);updateCrossSources\(\);/);
  assert.match(js,/accepted\.checked=false/);
  assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|localStorage|solveFiniteFillet/);
 });

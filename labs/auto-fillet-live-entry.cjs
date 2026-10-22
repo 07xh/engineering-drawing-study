@@ -371,6 +371,9 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   scaleSource:$('rasterScaleSource'),scaleLength:$('rasterScaleLength'),
   scaleReviewed:$('rasterScaleReviewed'),
   scaleCalculate:$('rasterScaleCalculate'),scaleStatus:$('rasterScaleStatus'),
+  crossSource:$('rasterCrossSource'),crossLength:$('rasterCrossLength'),
+  crossReviewed:$('rasterCrossReviewed'),
+  crossCalculate:$('rasterCrossCalculate'),crossStatus:$('rasterCrossStatus'),
   accepted:$('rasterAccept'),apply:$('rasterApply'),
   status:$('rasterStatus'),
   onApply:result=>{

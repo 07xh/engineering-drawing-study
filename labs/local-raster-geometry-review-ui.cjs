@@ -6,11 +6,14 @@ const {shapeKeys,prepareReviewedRasterImport}=
  require('./local-raster-fillet-import.cjs');
 const {suggestMillimetresPerImagePixel}=
  require('./manual-raster-scale-calibration.cjs');
+const {compareReviewedRulers}=
+ require('./manual-raster-ruler-crosscheck.cjs');
 
 function attachLocalRasterReview({
  image,photoInput,photoClear,kind,first,second,preview,edits,
  originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
  scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus,
+ crossSource,crossLength,crossReviewed,crossCalculate,crossStatus,
  accepted,apply,status,onApply,dom=document
 }){
  for(const node of [image,photoInput,photoClear,kind,first,second,preview,
@@ -21,6 +24,12 @@ function attachLocalRasterReview({
  const hasScaleControls=scaleNodes.every(Boolean);
  if(!hasScaleControls&&scaleNodes.some(Boolean))
   throw new TypeError('partial optional raster scale assistant controls');
+ const crossNodes=[crossSource,crossLength,crossReviewed,crossCalculate,crossStatus];
+ const hasCrossControls=crossNodes.every(Boolean);
+ if(!hasCrossControls&&crossNodes.some(Boolean))
+  throw new TypeError('partial second-ruler crosscheck controls');
+ if(hasCrossControls&&!hasScaleControls)
+  throw new TypeError('second ruler requires first-ruler scale assistant');
  if(typeof onApply!=='function')throw new TypeError('current workbench hook required');
  const SVG='http://www.w3.org/2000/svg';
  const parts={line:null,curve:null};
@@ -31,6 +40,10 @@ function attachLocalRasterReview({
  };
  const changed=()=>{accepted.checked=false;};
  function invalidateDerivedScale(){
+  if(hasCrossControls){
+   crossStatus.textContent='尚未完成可比较的两条独立比例复核。';
+   crossReviewed.checked=false;
+  }
   if(!hasScaleControls){changed();return;}
   if(derivedScale){
    mmPerPx.value='';
@@ -39,6 +52,17 @@ function attachLocalRasterReview({
   }
   scaleReviewed.checked=false;
   changed();
+ }
+ function updateCrossSources(){
+  if(!hasCrossControls)return;
+  const prev=crossSource.value;
+  crossSource.replaceChildren(option('','请选择与第一条不同的已知长度线段'));
+  const firstSource=scaleSource.value;
+  for(const id of [first.value,second.value]){
+   if(id!==firstSource&&controls[id]?.['from.x']&&controls[id]?.['to.x'])
+    crossSource.append(option(id,'第二条独立线段 '+id));
+  }
+  crossSource.value=[...crossSource.options].some(x=>x.value===prev)?prev:'';
  }
  function updateScaleSources(){
   if(!hasScaleControls)return;
@@ -53,10 +77,12 @@ function attachLocalRasterReview({
   }
   if([...scaleSource.options].some(x=>x.value===selected))scaleSource.value=selected;
   else scaleSource.value='';
+  updateCrossSources();
  }
  function reset(){
   invalidateDerivedScale();
   if(hasScaleControls){scaleSource.value='';scaleLength.value='';}
+  if(hasCrossControls){crossSource.value='';crossLength.value='';}
   generation++;parts.line=null;parts.curve=null;draft=null;
   preview.replaceChildren();edits.replaceChildren();
   updateSelectors();
@@ -173,7 +199,9 @@ function attachLocalRasterReview({
   changed();renderDraft();
  }
  if(hasScaleControls){
- scaleSource.addEventListener('change',invalidateDerivedScale);
+ scaleSource.addEventListener('change',()=>{
+  invalidateDerivedScale();updateCrossSources();
+ });
  scaleLength.addEventListener('input',invalidateDerivedScale);
  scaleReviewed.addEventListener('change',changed);
  mmPerPx.addEventListener('input',()=>{
@@ -208,6 +236,61 @@ function attachLocalRasterReview({
     (error instanceof Error?error.message:'请输入有效已知长度');
   }
  });
+
+ if(hasCrossControls){
+  crossSource.addEventListener('change',()=>{
+   crossReviewed.checked=false;crossStatus.textContent='第二条线段已变更，请重新确认。';
+   changed();
+  });
+  crossLength.addEventListener('input',()=>{
+   crossReviewed.checked=false;crossStatus.textContent='第二条实际尺寸已变更，请重新确认。';
+   changed();
+  });
+  crossReviewed.addEventListener('change',changed);
+  crossCalculate.addEventListener('click',()=>{
+   try{
+    if(!draft||!derivedScale)throw new RangeError('请先完成人工确认的第一条线段比例校准');
+    const aId=derivedScale.sourceId,bId=crossSource.value;
+    if(!bId||aId===bId)throw new TypeError('第二条尺寸必须对应不同线段');
+    const details=id=>{
+     const fields=controls[id],candidate=draft.candidates.find(x=>x.id===id);
+     if(!fields||candidate?.kind!=='segment')
+      throw new TypeError('仅支持已选择的两个完整有限线段');
+     return {from:{x:value(fields['from.x']),y:value(fields['from.y'])},
+      to:{x:value(fields['to.x']),y:value(fields['to.y'])}};
+    };
+    const firstLine=details(aId),secondLine=details(bId);
+    const a=suggestMillimetresPerImagePixel({
+     ...firstLine,knownLengthMm:value(scaleLength),
+     image:draft.image,sourceId:aId,explicitlyReviewed:scaleReviewed.checked
+    });
+    if(Math.abs(a.mmPerPx-derivedScale.mmPerPx)>
+     1e-10*Math.max(1,a.mmPerPx))
+     throw new RangeError('第一条基线已变更，请重新校准');
+    const b=suggestMillimetresPerImagePixel({
+     ...secondLine,knownLengthMm:value(crossLength),
+     image:draft.image,sourceId:bId,explicitlyReviewed:crossReviewed.checked
+    });
+    const comparison=compareReviewedRulers(a,b);
+    changed();
+    if(!comparison.mayReusePrimarySuggestion){
+     derivedScale=null;mmPerPx.value='';
+     crossStatus.textContent='两条已核对线段推得的毫米比例不一致（偏差 '+
+      (comparison.relativeDifference*100).toFixed(2)+
+      '%，诊断阈值 3%）。已清空第一条建议比例；请检查透视、端点、单位及尺寸对应，不得直接使用本次比例。';
+     scaleStatus.textContent='双基线不一致；之前建议比例已失效。';
+    }else{
+     crossStatus.textContent='两条线段建议比例在 3% 诊断范围内（差 '+
+      (comparison.relativeDifference*100).toFixed(2)+
+      '%）。这不证明全图无透视畸变；仍须人工审核所有数学条件。';
+    }
+   }catch(error){
+    changed();
+    crossStatus.textContent='第二基线核对未通过：'+
+     (error instanceof Error?error.message:'无效图纸尺寸');
+   }
+  });
+ }
  }
  for(const el of [first,second])el.addEventListener('change',drawEdits);
  kind.addEventListener('change',updateSelectors);
