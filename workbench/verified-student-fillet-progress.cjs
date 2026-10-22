@@ -45,15 +45,26 @@ function assessFilletStudentProgress(kind,args,{
    scope:arc.gradeScope}
  ];
  const verifiedCount=stages.filter(s=>s.ok).length;
+ const finiteSourceArcCount=kind==='circles'
+  ?Number(args?.first?.arc!==undefined)+Number(args?.second?.arc!==undefined):0;
+ // A completed *student* four-stage proof includes source-arc membership
+ // only if explicit finite given arcs exist and BOTH source contacts and
+ // the independently verified G1 arc were scored from the same chosen branch.
+ // It does not certify dimensions, remaining contour, textbook or full answer.
+ const finiteSourceArcsVerified=finiteSourceArcCount>0&&
+  verifiedCount===4&&contacts.contactLocationsVerified===true&&
+  arc.sourceProofVerified===true&&arc.geometryValidated===true;
  return {kind,revision,selectedBranchId:branchId||null,
   status:verifiedCount===4?'all-supported-stages-verified':'in-progress',
   supportedStageCount:4,verifiedCount,stages,
   verification:{auxiliaries:guide,center,contacts,arc},
   proofScope:'four-supported-student-fillet-constructions-only',
   fullProblemVerified:false,
-  sourceFiniteCircularArcsVerified:false,
+  finiteSourceArcCount,sourceFiniteCircularArcsVerified:finiteSourceArcsVerified,
   reason:verifiedCount===4
-   ?'已验证当前题型支持的四项学生构造；未证明完整教材题、有限已知圆弧范围或其他未建模条件'
-   :'根据分项状态继续检查辅助轨迹、圆心、两个切点和连接弧，未完成步骤不能冒充已证明'};
+   ?(finiteSourceArcsVerified
+      ?'已验证四项学生数学构造及给定有限圆弧的切点范围；完整教材题的尺寸、其他线段与未建模条件仍待验证'
+      :'已验证当前题型支持的四项学生构造；未证明完整教材题或其他未建模条件')
+   :'根据分项状态继续检查辅助轨迹、圆心、两个切点和连接弧；有限圆弧范围和未完成步骤不能冒充已证明'};
 }
 module.exports={assessFilletStudentProgress};
