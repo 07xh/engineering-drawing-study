@@ -15,6 +15,7 @@ const files = [
   'labs/point-projection-live.html',
   'labs/circle-fillet-live.html',
   'labs/auto-fillet-live.html',
+  'labs/cylinder-cut-live.html',
   'labs/recognition-qa.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
@@ -132,6 +133,16 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/recognition-qa-entry.cjs')],
  outfile:path.join(out,'labs/recognition-qa-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Independent V3.8 cylinder-cut geometry experiment. Bundled entirely
+ * client-side; no user image, private textbook or raw math files in dist.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/cylinder-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/cylinder-cut-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
