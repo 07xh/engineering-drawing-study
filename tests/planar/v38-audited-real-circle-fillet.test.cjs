@@ -26,15 +26,20 @@ test('02 actual two-circle candidates consume shared M2 numerical evidence witho
  assert.equal(result.globallyUnique,null);
  assert.ok(Object.isFrozen(result));
 });
-test('02 finite source arc removes one real candidate without relabeling branch',()=>{
- const input=sample({geometry:{first:{...first,arc:{
-   startAngle:0,endAngle:180,direction:'ccw'}},second}});
+test('02 tangent center loci have one real candidate without claiming global uniqueness',()=>{
+ const input=sample({geometry:{first,second:{center:{x:30,y:0},radius:5}}});
  const raw=solve(input),result=verified(input);
- assert.equal(raw.status,'unique');assert.deepEqual(raw.candidates.map(c=>c.branchId),['center-2']);
+ assert.equal(raw.status,'unique');
+ assert.deepEqual(raw.candidates.map(c=>c.branchId),['center-1']);
  assert.equal(result.status,'candidate-loci-consistent');
- assert.deepEqual(result.branchIds,['center-2']);
+ assert.deepEqual(result.branchIds,['center-1']);
  assert.equal(result.globallyUnique,null);
  assert.equal(result.suitableForV5,false);
+});
+test('02 finite source arcs remain unsupported by this typed 02 gate, not silently treated as circles',()=>{
+ const input=sample({geometry:{first:{...first,arc:{
+   startAngle:0,endAngle:180,direction:'ccw'}},second}});
+ assert.throws(()=>verified(input),/unsupported field arc/);
 });
 test('02 non-intersecting auxiliary loci have no numerical candidate evidence and no false none proof',()=>{
  const input=sample({geometry:{first,second:{center:{x:50,y:0},radius:5}}});

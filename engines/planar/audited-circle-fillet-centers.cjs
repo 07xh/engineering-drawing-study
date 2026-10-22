@@ -24,7 +24,7 @@ function auditRealCircleFilletCenters(problem,{
   throw new TypeError('this 02 consumer only supports two given circles');
  if(!Number.isSafeInteger(expectedRevision)||expectedRevision!==typed.revision)
   throw new RangeError('current reviewed problem revision required');
- const solved=solveFiniteFillet(problem);
+ const solved=solveFiniteFillet(typed);
  // The 02 gate is the sole authority for actual candidate identity, finite
  // source-arc clipping and chosen inner/outer tangency assumptions.
  const first=typed.geometry.first,second=typed.geometry.second;
