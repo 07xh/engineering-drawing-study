@@ -93,10 +93,15 @@ test('invalid tolerance and sweep bounds are rejected',()=>{
 
 
 // M0-C2: geometry-derived Jacobians, rather than only abstract matrices.
-// These rows are dimensionless after caller-declared variable/residual scaling.
+// Rows are dimensionless; fixed-unit 1 mm scaling is stated explicitly below.
 test('distance constraint: shrinking or enlarging the same nondegenerate geometry preserves estimated rank',()=>{
   // For f=|A-B|²-d², df/d(Ax,Ay,Bx,By)=(2dx,2dy,-2dx,-2dy).
-  for(const d of [1e-12,1e-6,1,1e6,1e12]){
+  // x'=x/(1 mm), f'=(|A-B|²-d²)/(1 mm)², hence df'/dx'=2*(d/1 mm).
+  // This deliberately uses one declared reference unit rather than an
+  // adaptive local feature scale, to test rank sensitivity to coefficients.
+  const referenceMm=1;
+  for(const distanceMm of [1e-12,1e-6,1,1e6,1e12]){
+    const d=distanceMm/referenceMm;
     const result=diagnose([[2*d,0,-2*d,0]]);
     assert.equal(result.rankEstimate,1,'distance='+d);
     assert.equal(result.localDegreesEstimate,3,'distance='+d);
