@@ -4,6 +4,8 @@ const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
 const {imagePointFromClient,createPhotoQaGesture}=
  require('./photo-qa-pointer-geometry.cjs');
+const {createPhotoTouchCheck}=
+ require('./photo-qa-touch-check.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {fingerprintLocalPhoto,fingerprintManualTruth}=
@@ -18,6 +20,7 @@ const {createAnnotationPack}=
  const session=createPhotoQualitySession();
  const image=$('qaImage'),overlay=$('qaOverlay'),stage=$('qaStage');
  const viewport=$('qaViewport'),gesture=createPhotoQaGesture();
+ const touchCheck=createPhotoTouchCheck();
  const status=$('status'),table=$('metrics');
  let imageUrl=null,generation=0,zoom=1,ocrRequest=0,comparisonRevision=null;
  function message(value){status.textContent=value;}
@@ -61,6 +64,29 @@ const {createAnnotationPack}=
    addShape(a.kind,a,'#a161bb',true);
   for(const a of snapshot.annotations)
    addShape(a.kind,a,'#18764c',false);
+  const check=touchCheck.snapshot();
+  if(check.status==='active'&&check.target){
+   // Crosshair size is 13 CSS pixels even on a 300% zoomed drawing:
+   // convert visual marker dimensions back to the SVG's original pixels.
+   const rect=overlay.getBoundingClientRect();
+   if(rect.width>0&&rect.height>0){
+    const radius=13*snapshot.image.width/rect.width;
+    const x=check.target.x,y=check.target.y;
+    const marker=node('circle',{
+     cx:x,cy:y,r:radius,stroke:'#db7b13',
+     'stroke-width':Math.max(1,radius/6),fill:'none',
+     'data-touch-check':'target'
+    });
+    overlay.append(marker);
+    const cross=node('path',{
+     d:'M '+(x-radius*1.5)+' '+y+' L '+(x+radius*1.5)+' '+y+
+      ' M '+x+' '+(y-radius*1.5)+' L '+x+' '+(y+radius*1.5),
+     stroke:'#db7b13','stroke-width':Math.max(1,radius/8),
+     fill:'none','pointer-events':'none'
+    });
+    overlay.append(cross);
+   }
+  }
   const drag=gesture.snapshot();
   if(drag?.last&&drag.kind!=='arrow'){
    try{
@@ -143,7 +169,8 @@ const {createAnnotationPack}=
  }
  function clearImage(){
   generation++;ocrRequest++;$('qaOcr').disabled=false;
-  gesture.reset();setZoom(1);session.reset();
+  touchCheck.cancel();gesture.reset();setZoom(1);session.reset();
+  $('qaTouchResult').textContent='当前未进行触控坐标自检。';
   if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
   image.removeAttribute('src');
   image.onload=null;image.onerror=null;
@@ -197,7 +224,8 @@ const {createAnnotationPack}=
    session.loadImage({width:w0,height:h0},{
     width,height,data:pixels.data
    });
-   gesture.reset();
+   gesture.reset();touchCheck.cancel();
+   $('qaTouchResult').textContent='图片重新检测后，自检已重置。';
    render();
    message('本地检测已完成。现在标注真实图元；重新识别会清除旧标注。');
   }catch(error){
@@ -252,6 +280,33 @@ const {createAnnotationPack}=
  $('qaZoomReset').addEventListener('click',()=>{
   setZoom(1);stage.scrollLeft=0;stage.scrollTop=0;
  });
+ function touchCheckStatus(result){
+  const display=$('qaTouchResult');
+  if(result.status==='active'){
+   display.textContent='自检进行中：请点击橙色十字 '+(result.index+1)+
+    '/'+result.total+'，已测最大点按偏差 '+
+    (result.maxErrorPx===null?'—':result.maxErrorPx+' 原图像素')+
+    '。这包括人为点按偏差，不是硬件认证。';
+  }else if(result.status==='complete'){
+   display.textContent='五点触控自检完成。平均点按偏差 '+
+    result.meanErrorPx+' 原图像素，最大 '+result.maxErrorPx+
+    ' 原图像素。请自行检查触点放置及手机显示缩放；'+
+    '此结果不等于设备触控精度认证。';
+  }else{
+   display.textContent='自检已停止，不影响已有识图候选和人工真值。';
+  }
+ }
+ $('qaTouchCheck').addEventListener('click',()=>{
+  const snap=session.snapshot();
+  if(!snap.ready){message('请先打开本地照片并运行识图检测。');return;}
+  gesture.reset();
+  touchCheckStatus(touchCheck.start(snap.image));
+  draw();
+  message('五点触控自检已开始：请在图中依次点击橙色十字。');
+ });
+ $('qaTouchStop').addEventListener('click',()=>{
+  gesture.reset();touchCheckStatus(touchCheck.cancel());draw();
+ });
  function fromPointer(event){
   const size=session.snapshot().image;
   if(!size)return null;
@@ -260,7 +315,8 @@ const {createAnnotationPack}=
  overlay.addEventListener('pointerdown',event=>{
   if(!session.snapshot().ready||event.pointerType==='mouse'&&event.button!==0)
    return;
-  const result=gesture.down(event.pointerId,fromPointer(event),$('qaTool').value);
+  const kind=touchCheck.snapshot().status==='active'?'touch-check':$('qaTool').value;
+  const result=gesture.down(event.pointerId,fromPointer(event),kind);
   if(result.status==='ignored')return;
   event.preventDefault();
   overlay.setPointerCapture?.(event.pointerId);
@@ -274,15 +330,19 @@ const {createAnnotationPack}=
  overlay.addEventListener('pointerup',event=>{
   const result=gesture.up(event.pointerId,fromPointer(event));
   if(result.status==='completed'){
-   try{
-    const g=result.gesture;
-    const annotation=createManualPhotoAnnotation(g.kind,g.start,g.last,{
-     text:$('qaText').value,coverageDeg:Number($('qaCoverage').value)
-    });
-    const id=session.addAnnotation(annotation);
-    message('已添加人工标注 '+id+'。可继续标注或导出本地报告。');
-   }catch(error){
-    message('标注未保存：'+(error instanceof Error?error.message:'坐标无效'));
+   const g=result.gesture;
+   if(g.kind==='touch-check'){
+    touchCheckStatus(touchCheck.tap(g.last));
+   }else{
+    try{
+     const annotation=createManualPhotoAnnotation(g.kind,g.start,g.last,{
+      text:$('qaText').value,coverageDeg:Number($('qaCoverage').value)
+     });
+     const id=session.addAnnotation(annotation);
+     message('已添加人工标注 '+id+'。可继续标注或导出本地报告。');
+    }catch(error){
+     message('标注未保存：'+(error instanceof Error?error.message:'坐标无效'));
+    }
    }
   }else if(result.status==='outside-cancelled'){
    message('抬起位置已离开图片，本次标注未保存。');
