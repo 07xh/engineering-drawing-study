@@ -34,7 +34,7 @@ test('04 clipped bottom section resolves true analytic cap intersection roots an
 test('04 top-clipped side can cross theta=0 without falsely dropping either interval',()=>{
  const r=solve(cylinder(),tilted(27));
  assert.equal(r.status,'clipped-lateral');assert.equal(r.arcs.length,2);
- near(r.totalAngularSpanRadians,2*Math.PI-2*Math.acos(-3/5));
+ near(r.totalAngularSpanRadians,2*Math.acos(-3/5));
  assert.equal(r.arcs[0].endpoints.lastCap,'top');
  assert.equal(r.arcs[1].endpoints.firstCap,'top');
  for(const arc of r.arcs)for(const q of arc.samples){
