@@ -23,6 +23,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .photo-stage img{max-height:none;margin:0}
 .photo-stage svg{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .photo-stage svg[hidden]{display:none}
+.photo-stage svg.candidate-lines{pointer-events:none}
 .source-review{margin-top:10px;padding-top:8px;border-top:1px solid #d7e6db}
 .source-review[hidden]{display:none}
 .source-review label{margin:8px 0}
@@ -71,10 +72,14 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="local-photo">
 <label for="problemPhoto">原题图片（仅本地参照，不会上传）
 <input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
-<div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button></div>
+<div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button>
+<button type="button" id="detectLines">检测直线候选（实验）</button>
+<button type="button" id="clearLines">清除候选线</button></div>
+<p id="lineStatus" role="status" aria-live="polite">直线候选检测仅在本机运行，不作为已验证图形。</p>
 <p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
 <div class="photo-stage" id="photoStage"><div class="photo-canvas">
 <img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
+<svg id="detectedLineOverlay" class="candidate-lines" aria-label="本地检测的尚未核对直线候选" hidden></svg>
 <svg id="sourceOverlay" aria-label="框选原题中几何条件的来源区域" hidden></svg>
 </div></div>
 <div class="source-review">
