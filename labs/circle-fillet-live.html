@@ -29,7 +29,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 </section>
 <section class="panel controls">
 <h2>右侧 · 参数与步骤</h2>
-<label>题型<select id="modeSelect"><option value="circles">两圆圆弧连接</option><option value="segments">两条有限线段圆弧连接</option></select></label>
+<label>题型<select id="modeSelect"><option value="circles">两圆圆弧连接</option><option value="segments">两条有限线段圆弧连接</option><option value="segment-circle">有限线段＋圆／有限圆弧连接</option></select></label>
 <div class="fields">
 <label class="circle-only">圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
 <label class="circle-only">圆 1 中心 y<input type="number" id="y1" step="any" value="0"></label>
@@ -47,6 +47,20 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label class="circle-only">圆 2 弧起点角（°）<input id="arcStart2" type="number" step="any" value="215"></label>
 <label class="circle-only">圆 2 弧终点角（°）<input id="arcEnd2" type="number" step="any" value="245"></label>
 <label class="circle-only">圆 2 允许弧向<select id="arcDirection2"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="mixed-only" hidden>已知线段 A x<input type="number" id="mixAx" step="any" value="-25"></label>
+<label class="mixed-only" hidden>已知线段 A y<input type="number" id="mixAy" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知线段 B x<input type="number" id="mixBx" step="any" value="25"></label>
+<label class="mixed-only" hidden>已知线段 B y<input type="number" id="mixBy" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知圆心 x<input type="number" id="mixX" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知圆心 y<input type="number" id="mixY" step="any" value="5"></label>
+<label class="mixed-only" hidden>已知圆半径<input type="number" id="mixR" step="any" value="8"></label>
+<label class="mixed-only" hidden>已知轮廓<select id="mixArcExtent"><option value="full">完整圆</option><option value="finite">有限圆弧</option></select></label>
+<label class="mixed-only" hidden>已知弧起点角（°）<input type="number" id="mixArcStart" step="any" value="155"></label>
+<label class="mixed-only" hidden>已知弧终点角（°）<input type="number" id="mixArcEnd" step="any" value="175"></label>
+<label class="mixed-only" hidden>已知弧范围方向<select id="mixArcDirection"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="mixed-only" hidden>线段偏移侧<select id="mixSide"><option value="1">法线正侧 ＋</option><option value="-1">法线负侧 －</option></select></label>
+<label class="mixed-only" hidden>线段行进方向<select id="mixLineTravel"><option value="">待明确</option><option value="forward">A → B</option><option value="reverse">B → A</option></select></label>
+<label class="mixed-only" hidden>已知圆轮廓行进方向<select id="mixCircleTravel"><option value="">待明确</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
 <label class="line-only" hidden>线段 1 起点 x<input type="number" id="line1Ax" step="any" value="-20"></label>
 <label class="line-only" hidden>线段 1 起点 y<input type="number" id="line1Ay" step="any" value="0"></label>
 <label class="line-only" hidden>线段 1 终点 x<input type="number" id="line1Bx" step="any" value="20"></label>
@@ -66,6 +80,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
+<p class="note">“有限线段＋圆”已接入真实数学求解与 V5 教学。此题型当前支持完整教学与逐步提示；学生尺规和自由绘制自动判题仍待专项接入，页面会明确提示，不会借用两圆或两线段的成绩。</p>
 <h2>数学教学模式</h2>
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">自动播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label></div>
