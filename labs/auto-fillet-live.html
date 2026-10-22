@@ -139,6 +139,17 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <h2>计算结果与逐笔动画</h2>
 <div id="paperWrap" class="paper"><svg id="paper" viewBox="0 0 720 440" role="img" aria-label="几何条件及经验证的辅助线和圆弧"><g id="grid"></g><g id="givens"></g><g id="drawing"></g></svg></div>
 <div class="legend"><span><i class="dot"></i>已知图形</span><span><i class="dot aux"></i>辅助线与辅助圆</span><span><i class="dot final"></i>验证后的连接弧</span></div>
+<div class="local-photo" aria-label="验证图纸导出">
+  <div class="controls">
+    <button type="button" id="saveVerifiedSvg" disabled>保存完整 SVG 图纸</button>
+    <button type="button" id="saveVerifiedSteps" disabled>下载分步图纸 ZIP</button>
+  </div>
+  <label for="exportGuides" style="display:flex;align-items:center;gap:8px">
+    <input id="exportGuides" type="checkbox" checked style="min-height:20px;width:20px;flex:none">
+    保留辅助线和辅助圆
+  </label>
+  <p id="exportStatus" role="status" aria-live="polite">只有当前题目数学验证通过后才能下载；图纸在浏览器本地生成。</p>
+</div>
 <div class="controls"><button id="prev" type="button">← 上一步</button><button id="play" type="button" class="primary">▶ 播放</button><button id="next" type="button">下一步 →</button><button id="restart" type="button">重新播放</button></div>
 <div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
 <div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label></div>
