@@ -144,5 +144,12 @@ test('V5 DOF: tests check all published required V5 dependencies and no sources'
     assert.ok(html.includes('src="'+path.basename(route)+'"'),'HTML missing dependency '+route);
   }
  }
- for(const route of PRIVATE)assert.ok(!build.includes("'"+route+"'"),'private path in allowlist');
+ // Bundling a private entrypoint is legitimate: it must NOT be copied verbatim.
+ // Inspect only the actual public copy allowlist, never the esbuild entrypoint text.
+ const start=build.indexOf('const files = [');
+ const end=build.indexOf('];',start);
+ assert.ok(start>=0&&end>start);
+ const copyAllowlist=build.slice(start,end+2);
+ for(const route of PRIVATE)
+  assert.ok(!copyAllowlist.includes("'"+route+"'"),'private path in public copy allowlist: '+route);
 });
