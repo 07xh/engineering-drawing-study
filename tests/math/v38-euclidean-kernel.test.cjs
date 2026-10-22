@@ -20,3 +20,19 @@ test('fail closed on nonfinite, zero normals and intermediate overflow',()=>{
  assert.throws(()=>m.dot([1e308,1],[1e308,1]),RangeError);
  assert.throws(()=>m.subtract([1e308,0],[-1e308,0]),RangeError);
 });
+
+test('rejects sparse vector holes, not just nonfinite elements',()=>{
+ const sparse2=[1,,];
+ const sparse3=[1,,3];
+ assert.throws(()=>m.vector(sparse2,2),TypeError);
+ assert.throws(()=>m.dot(sparse2,[2,3]),TypeError);
+ assert.throws(()=>m.cross3(sparse3,[1,2,3]),TypeError);
+});
+test('nonzero products never silently underflow to a zero geometric fact',()=>{
+ assert.throws(()=>m.multiplyFinite(1e-200,1e-200),/underflow/);
+ assert.throws(()=>m.dot([1e-200,0],[1e-200,0]),/underflow/);
+ assert.throws(()=>m.cross3([1e-200,0,0],[0,1e-200,0]),/underflow/);
+ assert.equal(m.multiplyFinite(1e-100,1e-100),1e-200);
+ assert.equal(m.dot([1e-300,0],[1e300,0]),1);
+ assert.equal(m.multiplyFinite(0,1e-200),0);
+});
