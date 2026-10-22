@@ -1,12 +1,13 @@
 'use strict';
 /** On-device circle/arc proposals over a local photo; never a mm SolveResult. */
 const {detectCurveCandidates}=require('../recognition/local-curve-candidates.cjs');
+const {locateCandidate}=require('../recognition/source-candidate-link.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalCurveCandidates({image,photoInput,photoClear,
- run,clear,overlay,status}){
+ run,clear,overlay,status,onCandidates=()=>{}}){
  let proposals=[];
  const reset=()=>{
-  proposals=[];overlay.replaceChildren();overlay.hidden=true;
+  proposals=[];overlay.replaceChildren();overlay.hidden=true;onCandidates([]);
   status.textContent='尚未检测圆弧；紫色/蓝色候选只供参考，不是已验证图元。';
  };
  photoInput.addEventListener('change',reset);
@@ -62,6 +63,8 @@ function attachLocalCurveCandidates({image,photoInput,photoClear,
     overlay.append(element);
    }
    overlay.hidden=false;
+   onCandidates(proposals.map(x=>locateCandidate(x,
+    {width:w,height:h},{width:originalW,height:originalH})));
    status.textContent='本地发现 '+proposals.filter(x=>x.kind==='circle').length+
     ' 个整圆候选、'+proposals.filter(x=>x.kind==='arc').length+
     ' 个圆弧候选。可能误检、漏检或把相交线当成其他轮廓；'+
