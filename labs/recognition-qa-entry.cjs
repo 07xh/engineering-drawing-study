@@ -2,6 +2,8 @@
 const {createPhotoQualitySession}=require('../recognition/photo-quality-session.cjs');
 const {createManualPhotoAnnotation}=
  require('./photo-qa-annotation-gestures.cjs');
+const {imagePointFromClient,createPhotoQaGesture}=
+ require('./photo-qa-pointer-geometry.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {fingerprintLocalPhoto,fingerprintManualTruth}=
@@ -15,8 +17,9 @@ const {createAnnotationPack}=
  const svgNs='http://www.w3.org/2000/svg';
  const session=createPhotoQualitySession();
  const image=$('qaImage'),overlay=$('qaOverlay'),stage=$('qaStage');
+ const viewport=$('qaViewport'),gesture=createPhotoQaGesture();
  const status=$('status'),table=$('metrics');
- let imageUrl=null,generation=0,drag=null,ocrRequest=0,comparisonRevision=null;
+ let imageUrl=null,generation=0,zoom=1,ocrRequest=0,comparisonRevision=null;
  function message(value){status.textContent=value;}
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
@@ -58,6 +61,7 @@ const {createAnnotationPack}=
    addShape(a.kind,a,'#a161bb',true);
   for(const a of snapshot.annotations)
    addShape(a.kind,a,'#18764c',false);
+  const drag=gesture.snapshot();
   if(drag?.last&&drag.kind!=='arrow'){
    try{
     const tentative=createManualPhotoAnnotation(drag.kind,
@@ -139,7 +143,7 @@ const {createAnnotationPack}=
  }
  function clearImage(){
   generation++;ocrRequest++;$('qaOcr').disabled=false;
-  drag=null;session.reset();
+  gesture.reset();setZoom(1);session.reset();
   if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
   image.removeAttribute('src');
   image.onload=null;image.onerror=null;
@@ -193,7 +197,7 @@ const {createAnnotationPack}=
    session.loadImage({width:w0,height:h0},{
     width,height,data:pixels.data
    });
-   drag=null;
+   gesture.reset();
    render();
    message('本地检测已完成。现在标注真实图元；重新识别会清除旧标注。');
   }catch(error){
@@ -234,47 +238,63 @@ const {createAnnotationPack}=
    message('OCR 候选校验失败：'+(error instanceof Error?error.message:'无效文字来源'));
   }
  });
+ function setZoom(value){
+  zoom=Math.min(3,Math.max(1,Number(value)||1));
+  // Changing the image display width scales both image and SVG equally.
+  // Pointer conversion uses the actual SVG client rect, not cached CSS dims.
+  viewport.style.width=String(Math.round(zoom*100))+'%';
+  $('qaZoomLevel').textContent=Math.round(zoom*100)+'%';
+  gesture.reset();
+  draw();
+ }
+ $('qaZoomIn').addEventListener('click',()=>setZoom(zoom+.25));
+ $('qaZoomOut').addEventListener('click',()=>setZoom(zoom-.25));
+ $('qaZoomReset').addEventListener('click',()=>{
+  setZoom(1);stage.scrollLeft=0;stage.scrollTop=0;
+ });
  function fromPointer(event){
-  const rect=overlay.getBoundingClientRect();
-  if(!rect.width||!rect.height)return null;
   const size=session.snapshot().image;
   if(!size)return null;
-  const x=(event.clientX-rect.left)/rect.width*size.width;
-  const y=(event.clientY-rect.top)/rect.height*size.height;
-  if(x<0||y<0||x>size.width||y>size.height)return null;
-  return {x,y};
+  return imagePointFromClient(event,overlay.getBoundingClientRect(),size);
  }
  overlay.addEventListener('pointerdown',event=>{
-  if(!session.snapshot().ready)return;
-  const p=fromPointer(event);
-  if(!p)return;
+  if(!session.snapshot().ready||event.pointerType==='mouse'&&event.button!==0)
+   return;
+  const result=gesture.down(event.pointerId,fromPointer(event),$('qaTool').value);
+  if(result.status==='ignored')return;
   event.preventDefault();
-  drag={id:event.pointerId,start:p,last:p,kind:$('qaTool').value};
   overlay.setPointerCapture?.(event.pointerId);
+  if(result.status==='multitouch-cancelled'){
+   draw();message('检测到多指接触，本次标注已取消。请使用单指拖动。');
+  }
  });
  overlay.addEventListener('pointermove',event=>{
-  if(!drag||event.pointerId!==drag.id)return;
-  const p=fromPointer(event);
-  if(p){drag.last=p;draw();}
+  if(gesture.move(event.pointerId,fromPointer(event)))draw();
  });
- function finish(event){
-  if(!drag||event.pointerId!==drag.id)return;
-  const current=drag;drag=null;
-  const last=fromPointer(event)||current.last;
-  try{
-   const annotation=createManualPhotoAnnotation(current.kind,current.start,last,{
-    text:$('qaText').value,
-    coverageDeg:Number($('qaCoverage').value)
-   });
-   const id=session.addAnnotation(annotation);
-   message('已添加人工标注 '+id+'。可继续标注其他图元或导出本地报告。');
-  }catch(error){
-   message('标注未保存：'+(error instanceof Error?error.message:'坐标无效'));
+ overlay.addEventListener('pointerup',event=>{
+  const result=gesture.up(event.pointerId,fromPointer(event));
+  if(result.status==='completed'){
+   try{
+    const g=result.gesture;
+    const annotation=createManualPhotoAnnotation(g.kind,g.start,g.last,{
+     text:$('qaText').value,coverageDeg:Number($('qaCoverage').value)
+    });
+    const id=session.addAnnotation(annotation);
+    message('已添加人工标注 '+id+'。可继续标注或导出本地报告。');
+   }catch(error){
+    message('标注未保存：'+(error instanceof Error?error.message:'坐标无效'));
+   }
+  }else if(result.status==='outside-cancelled'){
+   message('抬起位置已离开图片，本次标注未保存。');
   }
-  render();
- }
- overlay.addEventListener('pointerup',finish);
- overlay.addEventListener('pointercancel',()=>{drag=null;draw();});
+  draw();render();
+ });
+ overlay.addEventListener('pointercancel',event=>{
+  gesture.cancel(event.pointerId);draw();
+ });
+ overlay.addEventListener('lostpointercapture',event=>{
+  gesture.cancel(event.pointerId);draw();
+ });
  $('qaUndo').addEventListener('click',()=>{
   const a=session.snapshot().annotations;
   if(a.length){session.removeAnnotation(a[a.length-1].id);render();
@@ -340,7 +360,7 @@ const {createAnnotationPack}=
    const pack=JSON.parse(content);
    const done=session.restoreAnnotations(t.imageVersion,pack,sha);
    if(!done)return;
-   drag=null;render();
+   gesture.reset();render();
    message('已核对原图 SHA-256 和尺寸，恢复 '+
     session.snapshot().annotations.length+
     ' 条手工标注。当前检测候选与 OCR 执行状态保持不变。');
