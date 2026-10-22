@@ -45,17 +45,23 @@
 5. 专项 `status:'ready'` 与 `core/contracts/solve-result.js` 的 `unique/multiple/continuous/coincident/none/unsupported/undetermined` 是不同层语义。**不得把 section ready 自动改成 unique**。即便截交几何已验算，也不自动证明视图线型、裁剪内域、全局唯一或 V5 全流程。
 6. `docs/unified-problem-contract.md` 属于旧教材导入协议；`core/contracts/problem.js` 才是当前形式契约候选。旧课程协议可保留历史，但不得作为新个人解题产品的核心真值。
 
-## 3. 并发 PR 不重复造轮子
+## 3. 并行数学 PR 的真实集成状态（2026-10-22 更新）
 
-| PR | 范围 | 状态与处置 |
+本次在 **保留上述原始 main 审计基线** 的情况下，通过五组当前 HEAD CI、审计反例及 PR 合并证明，逐一完成以下窄范围增量：
+
+| PR | 复用 / 数值加固对象 | GitHub 状态（合并提交） |
 |---|---|---|
-| #231 | Jacobian 稀疏输入/下溢加固 | Draft，不得忽略；需 01+09 高风险核验 |
-| #351 | `core/numeric/euclidean-kernel.cjs`、`affine-transform.cjs` | Draft，Vec2/Vec3、矩阵应以此为复用候选；不要重新实现相同功能 |
-| #353 | `orientation2d-exact.cjs` | Draft，精确计算对象仅限输入 binary64 数，不等于 OCR 原始数据精确性 |
-| #354 | `reviewed-pixel-frame.cjs` | Draft，像素转 mm 是人工审核的来源边界，不等于透视校正证明 |
-| #337 | `section-result-adapter.cjs` | Draft，最多是兼容层，不得当作 M1/M2 已完成 |
+| #355 | 00 数学资产审计、迁移矩阵与截交投影迁移前对照 | **merged** `1edfe9d13454` |
+| #356 | 04 圆柱/棱柱/棱锥 V/H/W 投影函数复用已有 `core/projection.project` | **merged** `10d2a1b2c37e` |
+| #351 | `euclidean-kernel.cjs`、`affine-transform.cjs`；2D/3D 输入、稀疏矩阵和乘积下溢反例 | **merged** `e37556b8d98c` |
+| #353 | `orientation2d-exact.cjs`；binary64 精确方向、单次来源快照 | **merged** `373c22bd1175` |
+| #354 | `reviewed-pixel-frame.cjs`；人工审查原图像素→模型 mm、版本/来源快照 | **merged** `da45b05531f3` |
+| #231 | `jacobian-rank-evidence.cjs`；稀疏输入、乘法下溢、全局归一化丢失非零元素返回 undetermined | **merged** `30a85bc17f49` |
+| #337 | `section-result-adapter.cjs` | **Draft，未合并**；兼容结果包装不代表 M1/M2 核心已完成 |
 
-上述均需刷新最新 HEAD / CI / 审核后单独签收；**本 PR 不触碰这些文件**。
+**本次合并与数学能力的边界**：前五个基础与投影迁移能力在代码中真实存在，但仅部分正式求解器消费共享 M0；`core/numeric` 其他工具依然为 opt-in。#231 修复的是局部数值秩证据，不是已验算的 SVD 或全局唯一性证明。#337 维持 Draft，不能以包装状态代替真实几何求解与证明。
+
+最新合并后主分支 `main@30a85bc17f497586076e867e01fec82788d0e352` 的 math、planar、point-projection、workbench、validate 五组 GitHub Actions 均为 success。此前 `da45b05531f3` 有一次 Workbench CI 失败（真实 HTTP 交换用例 `r5-production-learning-site.test.cjs:42` 返回 `unverified`，校验测试超时阈值为 600ms）；最新 main 已通过。该历史异常单独归类为发布/网络测试稳定性待查项，不能把它当作本次数学公式错误，也不能因重跑通过就宣称问题永久消失。
 
 ## 4. 接口冻结候选（非正式冻结）
 
@@ -67,9 +73,9 @@
 
 ## 5. 本层验收与后续逐阶段门禁
 
-**A0 本层（文档+安全对照测试）**：新增 `tests/math/v38-legacy-spatial-projection-parity.test.cjs`，用真实圆柱、棱柱、棱锥截交结果对照共享 `project`，核验失败闭锁、视图与画纸隔离；不修改任何生产求解器。运行 `node --test tests/math/*.test.cjs` 及现有五组 Actions，在 exact PR HEAD 通过后可作为低风险回归基线合并；不能仅凭这些测试宣布 M0 冻结。
+**A0 数学资产与对照基线：已完成。** #355 的文件级迁移矩阵及五个跨层回归已合并，#356 将三份重复 V/H/W 投影改为共享实现，旧解析求解器和测试保持不变。两者各自 exact HEAD 五组 CI 通过。
 
-**A1 基础冻结（01/00/09）**：先审 #231、#351、#353、#354，补充单位、形状和浮点反例；从这里冻结共享 Vec/Transform/Frame/Residual/Predicate 合同，才允许生产调用。
+**A1 共享 M0 基础工具：已交付第一批，但不能宣称整体冻结。** #351/#353/#354/#231 已经分别完成负例加固与合并；需补全带版本的公共数学 API 签收、正式单位/坐标帧契约、各专项调用迁移矩阵和更系统的精度基准，00/09 才能判断 M0 整体验收。
 
 **B M1/M2（01/09）**：构造共享 ConstraintGraph 和多分支/自由度/失败闭锁的 SolveResult；对不一致条件、连续族、退化输入、局部 rank 满但离散多解均保留独立证据。未经证明不得发布 globallyUnique。
 
