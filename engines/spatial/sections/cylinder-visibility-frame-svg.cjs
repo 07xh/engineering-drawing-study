@@ -125,8 +125,12 @@ function createCylinderVisibilitySvgScene(cylinder,plane,options={}){
  }
  return Object.freeze({
   status:'ready',revision,totalMs:timing.totalMs,
-  stepCount:steps.length,visibilityLineStylesFullyVerified:
-   plan.visibilityLineStylesFullyVerified,
+  stepCount:steps.length,
+  stepDescriptors:Object.freeze(timing.steps.map(s=>Object.freeze({
+   id:s.id,title:s.title,startMs:s.startMs,endMs:s.endMs
+  }))),
+  createPlayer({speed=1}={}){return Timeline.createPlayer(timing,{speed,revision});},
+  visibilityLineStylesFullyVerified:plan.visibilityLineStylesFullyVerified,
   productionUiIntegrated:false,
   firstAngleObserverConventionsSignedOff:false,
   renderFrame
