@@ -12,22 +12,22 @@ function haltSync(){
  syncPlayer=null;syncPlan=null;syncRevision++;
 }
 function syncStatusVisual(time){
- const state=syncPlayer?.snapshot(time),visual=Sync.presentation(syncPlan,state);
+ const frame=syncPlayer?.snapshot(time),visual=Sync.presentation(syncPlan,frame);
  Sync.paintSheet($('sheet'),syncPlan,visual);
  Sync.paintSpace($('space'),viewer,visual);
  const valid=visual.ready;
- $('syncPlay').textContent=state?.playing?'暂停同步动画':'播放同步作图';
- $('syncPlay').disabled=syncPlayer?(!valid||state.done&&!state.playing):
+ $('syncPlay').textContent=frame?.playing?'暂停同步动画':'播放同步作图';
+ $('syncPlay').disabled=syncPlayer?(!valid||frame.done&&!frame.playing):
   Store.compute(state).analysis.result.inconsistent;
  $('syncRestart').disabled=!valid;
  $('syncProgress').disabled=!valid;
- $('syncProgress').value=valid?String(Math.round(state.ratio*1000)):'1000';
- $('syncPercent').textContent=valid?Math.round(state.ratio*100)+'%':'—';
- const index=valid?state.activeStepIndex:-1;
+ $('syncProgress').value=valid?String(Math.round(frame.ratio*1000)):'1000';
+ $('syncPercent').textContent=valid?Math.round(frame.ratio*100)+'%':'—';
+ const index=valid?frame.activeStepIndex:-1;
  $('syncExplanation').textContent=valid?
    (syncPlan.steps[Math.max(index,0)].title+' · '+syncPlan.label):
    '按播放按钮，从当前真实约束条件绘制四条第一角联系线，最后同步出现三维 P 与 V/H/W 投影。';
- return state?.playing===true;
+ return frame?.playing===true;
 }
 function animateSync(time){
  syncFrame=null;
