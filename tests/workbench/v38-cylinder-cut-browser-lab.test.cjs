@@ -104,7 +104,7 @@ test('04 existing explicit public build includes lab, but does not expand exposu
  assert.doesNotMatch(script,/'engines\/spatial\/sections\/cylinder-visibility-frame-svg\.cjs'/);
 });
 test('04 invalid or blocked geometry renders no animation but remains human-editable',()=>{
- const v={...values(),pz:-6};
+ const v={...values(),pz:-15};
  const model=checkedGeometry(v);
  const scene=create(model.cylinder,model.plane,{...model.options,revision:0});
  assert.equal(scene.status,'blocked');
