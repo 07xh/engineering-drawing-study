@@ -49,3 +49,22 @@ test('ordinary full-rank Jacobian remains a local-only numerical estimate',()=>{
   assert.equal(r.proofOfExistence,false);
   assert.equal(r.globallyUnique,null);
 });
+
+test('P2 audit: global normalization must flag a nonzero coefficient lost to underflow',()=>{
+  // Mathematically diag(1e308, 1e-308) has rank 2, but ordinary global
+  // scaling to largest absolute entry turns the second value into zero.
+  // No rank or finite condition estimate may be certified from that loss.
+  const r=diagnose([[1e308,0],[0,1e-308]]);
+  assert.equal(r.status,'undetermined');
+  assert.equal(r.numericUnderflowDetected,true);
+  assert.equal(r.converged,false);
+  assert.equal(r.conditionEstimate,null);
+  assert.equal(r.globallyUnique,null);
+  assert.equal(r.proofOfExistence,false);
+});
+test('P2 audit: uniformly tiny, but representable, input keeps its actual rank',()=>{
+  const r=diagnose([[1e-300,0],[0,2e-300]]);
+  assert.equal(r.numericUnderflowDetected,false);
+  assert.equal(r.status,'full-column-rank');
+  assert.equal(r.rankEstimate,2);
+});
