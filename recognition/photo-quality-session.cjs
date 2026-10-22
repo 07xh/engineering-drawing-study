@@ -6,6 +6,7 @@
  */
 const {detectLineCandidates} = require('./local-line-candidates.cjs');
 const {detectCurveCandidates} = require('./local-curve-candidates.cjs');
+const {detectArrowWingCandidates} = require('./local-arrow-wing-candidates.cjs');
 const {evaluateRecognitionProposals} = require('./recognition-quality-metrics.cjs');
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const bounded=i=>i&&Number.isSafeInteger(i.width)&&Number.isSafeInteger(i.height)&&
@@ -40,11 +41,18 @@ function createPhotoQualitySession(){
   const candidateCurves=detectCurveCandidates(frame,{
    minRadius:10,minArcDegrees:75,maxCandidates:16
   });
+  const candidateArrows=detectArrowWingCandidates(frame,candidateLines,{
+   maxCandidates:16
+  });
   const transformed=[];
   for(const line of candidateLines)transformed.push({
    id:line.id,kind:'line',coordinateSpace:'original-image-px',
    from:{x:line.from.x*scaleX,y:line.from.y*scaleY},
    to:{x:line.to.x*scaleX,y:line.to.y*scaleY}
+  });
+  for(const arrow of candidateArrows)transformed.push({
+   id:arrow.id,kind:'arrow',coordinateSpace:'original-image-px',
+   tip:{x:arrow.tip.x*scaleX,y:arrow.tip.y*scaleY}
   });
   for(const curve of candidateCurves)transformed.push({
    id:curve.id,kind:curve.kind,coordinateSpace:'original-image-px',
@@ -113,6 +121,8 @@ function createPhotoQualitySession(){
    revision,ready:!!original,image:original,
    annotations:truth,predictions,
    rejectedPredictions:rejected,
+   evaluatedKinds:['line','circle','arc','arrow'],
+   notRunKinds:['dimension'],
    imageBytesRetained:false
   });
  }
@@ -122,16 +132,27 @@ function createPhotoQualitySession(){
    return {status:'needs-manual-annotations',revision,
     image:clone(original),predictionCount:predictions.length,
     precision:null,recall:null,notRealWorldAccuracy:true};
+  const evaluatedKinds=['line','circle','arc','arrow'];
+  const unmeasured=truth.filter(x=>!evaluatedKinds.includes(x.kind));
+  const measured=truth.filter(x=>evaluatedKinds.includes(x.kind));
+  if(measured.length===0)return clone({
+   status:'needs-evaluable-annotations',revision,
+   notRunKinds:['dimension'],unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
+   precision:null,recall:null,notRealWorldAccuracy:true
+  });
   return clone({
    schema:'draftai-local-photo-quality-report/1',
    status:'evaluated',revision,
    source:'user-selected-local-image-unverified-rights',
    labelProvenance:'one-user-manually-annotated-not-independently-audited',
    image:original,annotationCount:truth.length,
+   evaluatedAnnotationCount:measured.length,
+   unevaluatedAnnotations:unmeasured.map(x=>({id:x.id,kind:x.kind})),
+   evaluatedKinds,notRunKinds:['dimension'],
    candidateCount:predictions.length,
    rejectedPredictions:rejected,
    metrics:evaluateRecognitionProposals({
-    image:original,truth,predictions
+    image:original,truth:measured,predictions
    }),
    imageBytesIncluded:false,filenameIncluded:false,
    noModelMillimetres:true,notRealWorldAccuracy:true,
