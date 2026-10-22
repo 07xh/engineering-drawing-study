@@ -152,3 +152,78 @@ test('unsupported categories and old/invalid math inputs cannot produce verified
  assert.throws(()=>fillet('circles',{...circleInput(),branchId:'fiction'}));
  assert.throws(()=>fillet('segments',segmentInput(),{revision:NaN}),/revision/);
 });
+
+const segmentCircleInput=()=>({
+ segment:{a:{x:-15,y:0},b:{x:15,y:0}},
+ circle:{center:{x:0,y:5},radius:8},
+ filletRadius:3,side:1,branchId:'candidate-1',direction:'ccw',
+ lineTravel:'forward',knownCircleTravel:'cw'
+});
+test('real segment-circle directed G1 becomes five normalized model-mm proof steps',()=>{
+ const p=fillet('segment-circle',segmentCircleInput(),{revision:19});
+ assert.equal(p.readiness,'ready');assert.equal(p.proof.verified,true);
+ assert.equal(p.stepCount,5);assert.equal(p.revision,19);
+ assert.equal(p.kind,'segment-circle');assert.equal(p.result.selectedBranch,'candidate-1');
+ assert.equal(p.result.finiteSegmentContactVerified,true);
+ assert.equal(p.result.g1Verified,true);
+ assert.equal(p.result.arc.direction,'ccw');
+ assert.deepEqual(p.steps.map(s=>s.id),[
+  'offset-line','concentric-locus','center-intersection','contact-points','directed-fillet'
+ ]);
+ assert.deepEqual(p.steps.flatMap(s=>s.actions.map(a=>a.kind)),
+  ['line','circle','point','point','point','arc']);
+ assert.ok(p.steps.every(s=>s.actions.every(a=>a.coordinateSpace==='model-mm')));
+ assert.equal(p.steps[1].actions[0].radius,11);
+ assert.equal(p.steps[4].actions[0].direction,'ccw');
+ assert.ok(p.steps.every((s,i)=>i===0||s.dependsOn[0]===p.steps[i-1].id));
+});
+test('selected center among multiple segment-circle candidates does not imply global uniqueness',()=>{
+ const p=fillet('segment-circle',segmentCircleInput());
+ assert.equal(p.result.globallyUnique,false);
+ assert.deepEqual(p.result.candidateIds,['candidate-1','candidate-2']);
+});
+test('segment-circle cannot animate a branch not explicitly selected',()=>{
+ const a=segmentCircleInput();delete a.branchId;
+ const p=fillet('segment-circle',a);
+ assert.equal(p.readiness,'requires-choice');
+ assert.equal(p.result.status,'branch-choice-required');
+ assert.equal(p.steps.length,0);
+ assert.equal(p.proof.verified,false);
+});
+test('segment-circle missing a source travel never passes verified lesson step gate',()=>{
+ const a=segmentCircleInput();delete a.knownCircleTravel;
+ const p=fillet('segment-circle',a);
+ assert.equal(p.readiness,'blocked');assert.equal(p.proof.verified,false);
+ assert.equal(p.result.status,'selected');assert.equal(p.steps.length,0);
+});
+test('segment-circle contradictory direction and missing source-sector contacts block output',()=>{
+ const args=segmentCircleInput();args.knownCircleTravel='ccw';
+ const r=fillet('segment-circle',args);
+ assert.equal(r.readiness,'blocked');assert.equal(r.result.status,'direction-conflict');
+ assert.deepEqual(r.steps,[]);
+ const excluded=segmentCircleInput();
+ excluded.circle.arc={startAngle:60,endAngle:90,direction:'ccw'};
+ assert.equal(fillet('segment-circle',excluded).result.status,'none');
+});
+test('finite given circle source arc proof is carried into R1 without claiming full textbook correctness',()=>{
+ const args=segmentCircleInput();
+ const raw=require('../../engines/planar/segment-circle-fillet.cjs')
+  .finiteSegmentCircleFillets(args).candidates[0];
+ const theta=Math.atan2(raw.circleContact.y-args.circle.center.y,
+  raw.circleContact.x-args.circle.center.x)*180/Math.PI;
+ args.circle.arc={startAngle:theta-8,endAngle:theta+8,direction:'ccw'};
+ const p=fillet('segment-circle',args);
+ assert.equal(p.readiness,'ready');
+ assert.equal(p.result.finiteCircleArcCount,1);
+ assert.equal(p.result.sourceArcRangeVerified,true);
+ assert.equal(p.result.g1Verified,true);
+ assert.equal(p.proof.scope,'selected-directed-fillet');
+});
+test('segment-circle invalid result cannot invent SVG paths or mutation of input',()=>{
+ const args=segmentCircleInput(),snapshot=JSON.stringify(args);
+ const a=fillet('segment-circle',args,{revision:5});
+ assert.equal(JSON.stringify(args),snapshot);
+ assert.ok(a.steps.at(-1).actions[0].kind==='arc');
+ assert.equal(Object.hasOwn(a.steps.at(-1).actions[0],'svgPath'),false);
+ assert.throws(()=>fillet('segment-circle',args,{revision:-1}),/revision/);
+});
