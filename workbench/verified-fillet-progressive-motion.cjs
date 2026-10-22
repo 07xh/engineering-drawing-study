@@ -81,7 +81,7 @@ function build({kind,centers,chosen,teaching,verified,revision,origin,scale,max}
   return {id:step.id,dependsOn:i?[steps[i-1].id]:[],
    actions:acts.map(a=>({id:a.id,kind:a.kind,durationMs:duration/acts.length}))};
  }),{gapMs:0});
- return {status:'ready',revision,verified,steps,timeline};
+ return {status:'ready',revision,kind,verified,steps,timeline};
 }
 function completedSteps(timeline,snapshot){
  if(!timeline||!snapshot)throw new TypeError('V5 clock required');
