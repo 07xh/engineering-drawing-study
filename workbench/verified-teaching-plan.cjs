@@ -11,6 +11,8 @@
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.cjs');
 const {chooseFiniteTwoSegmentArc}=require('../engines/planar/directed-two-segment-fillet.cjs');
+const {chooseDirectedSegmentCircleFillet}=
+ require('../engines/planar/directed-segment-circle-fillet.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -109,9 +111,59 @@ function adaptPointProjection(input,{revision=0}={}){
    unit:'mm',resultId:solved.resultId},
   steps,{sheet:solved.sheet});
 }
+function adaptDirectedSegmentCircle(input,{revision=0}={}){
+ version(revision);
+ const solver='engines/planar/directed-segment-circle-fillet';
+ const result=chooseDirectedSegmentCircleFillet(input);
+ const candidateIds=[...(result.candidateIds||[])];
+ const ready=result.status==='selected'&&result.g1Verified===true&&
+  result.finiteSegmentContactVerified===true&&result.sourceArcRangeVerified===true&&
+  result.geometry&&result.contacts&&point(result.contacts.first)&&
+  point(result.contacts.second)&&finite(result.maxTangencyResidual)&&
+  result.maxTangencyResidual<=1e-7&&finite(result.maxG1Mismatch)&&
+  result.maxG1Mismatch<=1e-7;
+ if(!ready)return blocked('directed-fillet',revision,solver,result.status,
+  result.reason||'selected real segment-circle G1 proof missing',candidateIds,
+  {kind:'segment-circle'});
+ const finalArc=arc(result.geometry);
+ demand(Array.isArray(result.steps)&&result.steps.length===5,
+  'expected 5 real segment-circle construction steps');
+ const steps=result.steps.map((step,i)=>{
+  let actions;
+  switch(step.id){
+   case 'offset-line':
+    actions=[{id:'segment_offset_line',
+     ...segment(step.geometry.a,step.geometry.b,'model-mm')}];break;
+   case 'concentric-locus':
+    actions=[{id:'circle_center_locus',
+     ...circle(step.geometry.center,step.geometry.radius)}];break;
+   case 'center-intersection':
+    actions=[{id:'chosen_segment_circle_center',...mark(step.point)}];break;
+   case 'contact-points':
+    actions=[{id:'segment_contact',...mark(step.contacts.first)},
+     {id:'circle_contact',...mark(step.contacts.second)}];break;
+   case 'directed-fillet':
+    actions=[{id:'verified_segment_circle_arc',...finalArc}];break;
+   default:throw new RangeError('unsupported verified segment-circle construction step');
+  }
+  return {id:step.id,dependsOn:i?[result.steps[i-1].id]:[],
+   rule:step.kind,role:step.role,explanation:step.reason,
+   provenance:{source:solver,selectedBranch:result.selectedId},actions};
+ });
+ return verifiedPlan('directed-fillet',revision,solver,{
+  status:'selected',candidateIds,globallyUnique:candidateIds.length===1?null:false,
+  selectedBranch:result.selectedId,maxResidual:result.maxTangencyResidual,
+  maxG1Mismatch:result.maxG1Mismatch,g1Verified:true,
+  finiteSegmentContactVerified:true,
+  finiteCircleArcCount:result.finiteCircleArcCount,
+  sourceArcRangeVerified:result.sourceArcRangeVerified,
+  unit:'mm',arc:finalArc
+ },steps,{kind:'segment-circle'});
+}
 function adaptDirectedFillet(kind,input,{revision=0}={}){
  version(revision);
- demand(['circles','segments'].includes(kind),'unsupported fillet source kind');
+ demand(['circles','segments','segment-circle'].includes(kind),'unsupported fillet source kind');
+ if(kind==='segment-circle')return adaptDirectedSegmentCircle(input,{revision});
  const solver=kind==='circles'
   ?'engines/planar/directed-circle-fillet'
   :'engines/planar/directed-two-segment-fillet';
@@ -168,4 +220,4 @@ function adaptDirectedFillet(kind,input,{revision=0}={}){
   g1Verified:true,unit:'mm',arc:finalArc
  },steps,{kind});
 }
-module.exports={adaptPointProjection,adaptDirectedFillet};
+module.exports={adaptPointProjection,adaptDirectedFillet,adaptDirectedSegmentCircle};
