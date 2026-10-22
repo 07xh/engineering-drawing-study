@@ -156,6 +156,8 @@ function adaptDirectedSegmentCircle(input,{revision=0}={}){
   maxG1Mismatch:result.maxG1Mismatch,g1Verified:true,
   finiteSegmentContactVerified:true,
   finiteCircleArcCount:result.finiteCircleArcCount,
+  // Same explicit proof provenance contract as the two-source-circle solver.
+  sourceFiniteArcCount:result.finiteCircleArcCount,
   sourceArcRangeVerified:result.sourceArcRangeVerified,
   unit:'mm',arc:finalArc
  },steps,{kind:'segment-circle'});
@@ -173,7 +175,13 @@ function adaptDirectedFillet(kind,input,{revision=0}={}){
   s.contacts&&point(s.contacts.first)&&point(s.contacts.second)&&
   finite(s.maxTangencyResidual)&&s.maxTangencyResidual<=1e-7&&
   finite(s.maxG1Mismatch)&&s.maxG1Mismatch<=1e-7&&
-  (kind==='circles'||s.finiteArcSweepVerified===true);
+  (kind==='circles'
+   ?(s.sourceArcRangeVerified===true&&
+      Number.isSafeInteger(s.sourceFiniteArcCount)&&
+      s.sourceFiniteArcCount>=0&&s.sourceFiniteArcCount<=2&&
+      s.sourceFiniteArcCount===
+       Number(input.first?.arc!==undefined)+Number(input.second?.arc!==undefined))
+   :s.finiteArcSweepVerified===true);
  if(!ready)
   return blocked('directed-fillet',revision,solver,s.status,
    s.reason||'directed G1 mathematical proof absent',candidateIds,{kind});
@@ -217,7 +225,12 @@ function adaptDirectedFillet(kind,input,{revision=0}={}){
   status:'selected',globallyUnique:candidateIds.length===1?null:false,
   candidateIds,selectedBranch:s.selectedId,
   maxResidual:s.maxTangencyResidual,maxG1Mismatch:s.maxG1Mismatch,
-  g1Verified:true,unit:'mm',arc:finalArc
+  g1Verified:true,unit:'mm',arc:finalArc,
+  ...(kind==='circles'?{
+   sourceFiniteArcCount:s.sourceFiniteArcCount,
+   sourceArcRangeVerified:s.sourceArcRangeVerified,
+   sourceBoundsProof:'recomputed-two-source-circle-contact-membership'
+  }:{})
  },steps,{kind});
 }
 module.exports={adaptPointProjection,adaptDirectedFillet,adaptDirectedSegmentCircle};
