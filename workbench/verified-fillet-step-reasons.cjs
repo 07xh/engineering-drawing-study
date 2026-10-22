@@ -64,10 +64,9 @@ function build(teaching,{kind,revision}={}){
     !finite(result.maxG1Mismatch)||result.maxG1Mismatch<0||result.maxG1Mismatch>1e-7||
     teaching.steps.length!==ids.length||
     teaching.steps.some((step,index)=>
-     (kind==='segments'?step.role==='result'&&index<ids.length-1||
+     (kind==='segments'?
        step.id!==result.selectedBranch+'-'+
-        ['offset1','offset2','intersection','perpendiculars','trim','arc'][index]||
-       step.role==='result'&&index!==ids.length-1:
+        ['offset1','offset2','intersection','perpendiculars','trim','arc'][index]:
       step.id!==ids[index])||
      !Array.isArray(step.actions)||step.actions.length===0||
      !step.actions.every(action=>['line','circle','point','arc'].includes(action.kind)))||
