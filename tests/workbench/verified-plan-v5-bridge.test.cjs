@@ -129,3 +129,59 @@ test('recomputations give deterministic timebase without manufactured steps',()=
  assert.equal(player.canRender(3),false);
  assert.equal(player.canRender(4),false);
 });
+
+const segmentCircle=()=>({segment:{a:{x:-15,y:0},b:{x:15,y:0}},
+ circle:{center:{x:0,y:5},radius:8},
+ filletRadius:3,side:1,branchId:'candidate-1',direction:'ccw',
+ lineTravel:'forward',knownCircleTravel:'cw'});
+test('actual R1 line+circle G1 yields one consistent V5 proof-backed five-action timeline',()=>{
+ const result=Bridge.filletTimeline('segment-circle',segmentCircle(),sheet,23);
+ assert.equal(result.status,'ready');assert.equal(result.mathematicallyVerified,true);
+ assert.equal(result.selectedBranchId,'candidate-1');assert.equal(result.revision,23);
+ assert.equal(result.steps.length,5);assert.ok(result.timing.totalMs>0);
+ assert.deepEqual(result.steps.map(s=>s.actions.map(a=>a.kind)),[
+  ['line'],['circle'],['point'],['point','point'],['arc']]);
+ assert.equal(result.steps[1].actions[0].geometry.radius,88);
+ assert.equal(result.originalLesson.result.g1Verified,true);
+ assert.equal(result.originalLesson.result.finiteSegmentContactVerified,true);
+ const arc=result.steps.at(-1).actions[0].geometry;
+ assert.ok(arc.sweepRadians<0,'model CCW appears SVG CW after flipping y');
+ near(arc.radius,24);
+ const attrs=Motion.actionShapeAttrs(result.steps.at(-1).actions[0],1);
+ assert.match(attrs.d,/ A /);
+});
+test('line-circle V5 uses true source mm and preserves proof across display scale changes',()=>{
+ const input=segmentCircle();
+ const one=Bridge.filletTimeline('segment-circle',input,sheet,3);
+ const scaled=Bridge.filletTimeline('segment-circle',input,
+  {origin:{x:100,y:150},scale:16},3);
+ assert.deepEqual(one.steps.map(s=>s.id),scaled.steps.map(s=>s.id));
+ const a=one.steps.at(-1).actions[0].geometry,b=scaled.steps.at(-1).actions[0].geometry;
+ near(b.radius,a.radius*2);
+ near(b.sweepRadians,a.sweepRadians);
+ assert.deepEqual(one.originalLesson.steps,scaled.originalLesson.steps);
+});
+test('no selected branch, missing travel, and invalid given arc cannot leak drawable V5 arc',()=>{
+ const a=segmentCircle();delete a.branchId;
+ const p=Bridge.filletTimeline('segment-circle',a,sheet,8);
+ assert.equal(p.status,'not-verified');assert.deepEqual(p.steps,[]);
+ a.branchId='candidate-1';delete a.lineTravel;
+ assert.equal(Bridge.filletTimeline('segment-circle',a,sheet).status,'not-verified');
+ const forbidden=segmentCircle();
+ forbidden.circle.arc={startAngle:60,endAngle:90,direction:'ccw'};
+ const n=Bridge.filletTimeline('segment-circle',forbidden,sheet);
+ assert.equal(n.status,'not-verified');assert.equal(n.mathematicallyVerified,false);
+});
+test('bounded given circle source arc is retained as mathematical evidence in line-circle V5',()=>{
+ const args=segmentCircle();
+ const candidate=require('../../engines/planar/segment-circle-fillet.cjs')
+  .finiteSegmentCircleFillets(args).candidates[0];
+ const t=Math.atan2(candidate.circleContact.y-args.circle.center.y,
+  candidate.circleContact.x-args.circle.center.x)*180/Math.PI;
+ args.circle.arc={startAngle:t-8,endAngle:t+8,direction:'ccw'};
+ const p=Bridge.filletTimeline('segment-circle',args,sheet,5);
+ assert.equal(p.status,'ready');
+ assert.equal(p.originalLesson.result.finiteCircleArcCount,1);
+ assert.equal(p.originalLesson.result.sourceArcRangeVerified,true);
+ assert.equal(p.steps.length,5);
+});
