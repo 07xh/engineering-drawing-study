@@ -25,14 +25,18 @@ function createFieldReview(){
   image={width,height};return true;
  };
  const setKind=next=>{fieldList(next);kind=next;reset();};
- function mark(field,bbox){
+ function mark(field,bbox,detectorCandidateId=null){
+  if(detectorCandidateId!==null&&
+    (typeof detectorCandidateId!=='string'||
+     !/^(line|curve)_[0-9]+$/.test(detectorCandidateId)))
+   throw new TypeError('unsupported detector candidate id');
   if(!image||!fieldList(kind).includes(field))throw new RangeError('image or field missing');
   const id='src_'+field;
   const candidate={id,kind:field.startsWith('r')||field==='filletRadius'
    ?'dimension':'geometry',bbox,confidence:0};
   sourceIndex({schema:'draftai-recognition-candidates/0.1',image,
    annotations:[candidate]});
-  regions.set(field,{candidate,confirmed:false,value:null});
+  regions.set(field,{candidate,confirmed:false,value:null,detectorCandidateId});
   accepted=false;
  }
  function confirm(field,value){
@@ -72,11 +76,17 @@ function createFieldReview(){
    return [id,{value:item.value,sourceId:item.candidate.id,
     confirmed:item.confirmed}];
   }));
-  return prepareConfirmedFillet(draft,{kind,unit:'mm',fields,selection,revision,
+  const result=prepareConfirmedFillet(draft,{kind,unit:'mm',fields,selection,revision,
    userAccepted:accepted});
+  if(result.status==='ready-for-math'){
+   for(const id of required())result.fieldSources[id].detectorCandidateId=
+    regions.get(id).detectorCandidateId;
+  }
+  return result;
  }
  const boxes=()=>[...regions.entries()].map(([field,item])=>({
-  field,bbox:[...item.candidate.bbox],confirmed:item.confirmed
+  field,bbox:[...item.candidate.bbox],confirmed:item.confirmed,
+  detectorCandidateId:item.detectorCandidateId
  }));
  return Object.freeze({setImage,setKind,mark,confirm,edited,accept,progress,
   review,boxes,required,get image(){return image?{...image}:null},

@@ -30,6 +30,19 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
  };
  let session=null,kind='two-segments',raf=null,renderedStepsKey='';
  let fieldReview=null;
+ let geometryCandidates={line:[],curve:[]};
+ function updateCandidateChoices(){
+  const select=$('sourceCandidate'),previous=select.value;
+  select.replaceChildren(option('','请选择检测候选'));
+  const choices=[...geometryCandidates.line,...geometryCandidates.curve];
+  for(const item of choices)
+   select.append(option(item.id,({line:'线段',circle:'圆',arc:'圆弧'}[item.kind]||
+    '图元')+' '+item.id+'（待核对）'));
+  select.value=choices.some(x=>x.id===previous)?previous:'';
+ }
+ function receivedCandidates(group,values){
+  geometryCandidates[group]=values;updateCandidateChoices();
+ }
  let localVector=null;
  function stopClock(){
   if(raf!==null){cancelAnimationFrame(raf);raf=null;}
@@ -268,13 +281,24 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectLines'),
   clear:$('clearLines'),overlay:$('detectedLineOverlay'),
-  status:$('lineStatus')
+  status:$('lineStatus'),onCandidates:items=>receivedCandidates('line',items)
  });
  attachLocalCurveCandidates({
   image:$('photoPreview'),photoInput:$('problemPhoto'),
   photoClear:$('clearPhoto'),run:$('detectCurves'),
   clear:$('clearCurves'),overlay:$('detectedCurveOverlay'),
-  status:$('curveStatus')
+  status:$('curveStatus'),onCandidates:items=>receivedCandidates('curve',items)
+ });
+ $('associateCandidate').addEventListener('click',()=>{
+  const id=$('sourceCandidate').value;
+  const candidate=[...geometryCandidates.line,...geometryCandidates.curve]
+   .find(x=>x.id===id);
+  if(!candidate){
+   $('candidateStatus').textContent='先检测图像并选择真实的候选区域。';
+   return;
+  }
+  const result=fieldReview.markCandidate(candidate);
+  $('candidateStatus').textContent=result.reason;
  });
  grid();buildFields(kind);
  localVector=attachLocalVectorReview({
