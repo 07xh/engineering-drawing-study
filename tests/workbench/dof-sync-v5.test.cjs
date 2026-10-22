@@ -132,7 +132,7 @@ test('public DOF tool gets accessible playback UI and bundled 3D/SVG fallback',(
  const webgl=read('labs/dof-lab-three-entry.js'),svg=read('labs/dof-lab-spatial-svg.js');
  const build=read('scripts/build-static.cjs');
  for(const id of ['syncPlay','syncRestart','syncSpeed','syncProgress','syncPercent',
-  'syncExplanation','syncCaption'])assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
+  'syncExplanation','syncCaption','syncPrevious','syncNext','syncStep'])assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
  assert.match(html,/P\*/);
  assert.match(ui,/Sync\.build\(report,\{revision:syncRevision\}\)/);
  assert.match(ui,/haltSync\(\)/);
@@ -182,4 +182,24 @@ test('repeated, redundant constraints preserve unique proof and avoid false conf
  assert.deepEqual(plan.modelPoint,{x:35,y:22,z:51});
  const player=Sync.createPlayer(plan,{speed:4});
  player.play(0);assert.equal(Sync.presentation(plan,player.snapshot(9000)).targetOpacity,1);
+});
+
+test('V5 discrete stage start keeps the 3D/P-star outcome withheld until explicit completion',()=>{
+ const plan=Sync.build(initial(),{revision:45}),clock=Sync.createPlayer(plan);
+ const steps=plan.timeline.steps;
+ assert.equal(steps.length,5);
+ for(let index=0;index<steps.length;index++){
+  const shot=clock.seekStep(index,1000+index);
+  const visual=Sync.presentation(plan,shot);
+  assert.equal(visual.ready,true);
+  assert.equal(visual.targetOpacity,0,'no result before the verified final step action');
+  assert.deepEqual(visual.guideFractions,steps.slice(0,4).map((_,j)=>j<index?1:0));
+  assert.equal(shot.activeStepIndex,index);
+ }
+ let atEnd=clock.seekStep(5,2000),visual=Sync.presentation(plan,atEnd);
+ assert.equal(atEnd.done,true);assert.equal(visual.targetOpacity,1);
+ assert.deepEqual(visual.guideFractions,[1,1,1,1]);
+ atEnd=clock.seekStep(4,2001);visual=Sync.presentation(plan,atEnd);
+ assert.equal(atEnd.done,false);
+ assert.equal(visual.targetOpacity,0,'previous step must retract verified target reveal');
 });
