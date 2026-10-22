@@ -4,6 +4,11 @@
 const {newDraft, draftReadiness} = require('./problem-draft.cjs');
 const {checkImage} = require('./page-transforms.cjs');
 const MAX_SOURCE_BYTES = 250_000;
+const sourceByteLength = source => {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(source).length;
+  if (typeof Buffer !== 'undefined') return Buffer.byteLength(source,'utf8');
+  throw new TypeError('UTF-8 size validation unavailable');
+};
 const MAX_GEOMETRIES = 128;
 const MAX_LABELS = 48;
 const ALLOWED = Object.freeze({
@@ -110,7 +115,7 @@ function parseVectorLabel(value){
   return null;
 }
 function extractSvgCandidates(source){
-  if(typeof source!=='string'||Buffer.byteLength(source,'utf8')>MAX_SOURCE_BYTES)
+  if(typeof source!=='string'||sourceByteLength(source)>MAX_SOURCE_BYTES)
     throw new RangeError('offline SVG source exceeds limit');
   if(/<!|<\?|&(?:#|[a-zA-Z])|[\x00-\x08\x0b-\x1f]/.test(source))
     throw new TypeError('unsupported SVG declarations, entities or control characters');
@@ -162,7 +167,7 @@ function extractSvgCandidates(source){
       const v=a.viewBox?.split(/[ ,]+/).map(Number);
       if(v&&(v.length!==4||v.some(x=>!finite(x))||v[0]!==0||v[1]!==0||v[2]!==width||v[3]!==height))
         throw new TypeError('SVG viewBox transform not supported');
-      img=checkImage({width,height,byteLength:Buffer.byteLength(source,'utf8'),mediaType:'image/svg+xml'});
+      img=checkImage({width,height,byteLength:sourceByteLength(source),mediaType:'image/svg+xml'});
     } else if(tag==='svg')throw new TypeError('nested SVG not supported');
     if(tag==='line')addSegment({x:number(a.x1,'x1'),y:number(a.y1,'y1')},{x:number(a.x2,'x2'),y:number(a.y2,'y2')});
     if(tag==='circle'){

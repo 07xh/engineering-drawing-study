@@ -33,6 +33,7 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .source-status{font-size:12px;color:#526d58;line-height:1.65;margin:8px 0}
 .source-status[role=status]{overflow-wrap:anywhere}
 .local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
+.vector-preview{display:block;width:100%;height:140px;background:#fff;border:1px solid #d8e6da;border-radius:9px;margin:9px 0}.vector-confirm{display:flex;flex-direction:row;align-items:center;gap:9px;margin:10px 0}.vector-confirm input{width:auto;min-height:20px;flex:0 0 auto}.vector-status{font-size:12px;color:#576e5b;line-height:1.55;margin:8px 0}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 label{font-size:12px;color:#4c6c58;display:grid;gap:5px}
 input,select,button{font:inherit;min-height:44px;border-radius:10px}
@@ -92,6 +93,24 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </div>
 <p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
 </div>
+</div>
+<div class="local-photo" id="localVectorPanel">
+<label for="vectorSvg">SVG 矢量图（本地提取线段与圆，不上传）
+<input id="vectorSvg" type="file" accept=".svg,image/svg+xml"></label>
+<svg id="vectorPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="从本地 SVG 安全重建的线段与圆"></svg>
+<p id="vectorStatus" class="vector-status" role="status" aria-live="polite">仅支持简单直线、整圆和基础 SVG；图片照片请使用上方本地参照区。含文字或尺寸标注的 SVG 须另行确认，当前不直接导入。</p>
+<div class="fields">
+<label for="vectorFirst">已核验图元一<select id="vectorFirst"><option value="">请选择</option></select></label>
+<label for="vectorSecond">已核验图元二<select id="vectorSecond"><option value="">请选择</option></select></label>
+<label for="vectorMmPerPx">比例：每像素对应毫米<input id="vectorMmPerPx" type="number" step="any" min="0" placeholder="请手动校准"></label>
+<label for="vectorYAxis">图纸 Y 轴<select id="vectorYAxis"><option value="down">向下为正</option><option value="up">向上为正</option></select></label>
+<label for="vectorOriginX">图纸原点 X（像素）<input id="vectorOriginX" type="number" step="any" value="0"></label>
+<label for="vectorOriginY">图纸原点 Y（像素）<input id="vectorOriginY" type="number" step="any" value="0"></label>
+<label for="vectorFilletRadius">连接圆弧 R（毫米）<input id="vectorFilletRadius" type="number" step="any" min="0" placeholder="用户核验后填写"></label>
+</div>
+<label class="vector-confirm" for="vectorAccept"><input id="vectorAccept" type="checkbox">我已人工核对图元、原点、毫米比例及连接半径；未选择的图元不采用</label>
+<div class="controls"><button id="vectorApply" type="button">将确认的 SVG 条件导入求解器</button></div>
+<p>当前不自动识别照片、推断单位或关联 R/Φ 标注；结果仍须选择真实解分支与轮廓方向。</p>
 </div>
 <label for="kind">题型<select id="kind"><option value="two-segments">两有限线段圆弧连接</option><option value="segment-circle">有限线段与圆连接</option><option value="two-circles">两圆圆弧连接</option></select></label>
 <div class="fields" id="fields" style="margin-top:12px"></div>
