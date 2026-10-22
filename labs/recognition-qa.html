@@ -19,7 +19,8 @@ input,select{width:100%;background:white;color:#1b3928}
 button{cursor:pointer;background:#fff;color:#176747}.primary{background:#20704b;color:white}
 .buttons{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.buttons button{flex:1 1 115px}
 button:disabled{opacity:.45;cursor:not-allowed}
-.stage{position:relative;width:100%;border:1px solid #d3e2d8;border-radius:12px;overflow:hidden;background:#fafdfb;touch-action:none}
+.stage{position:relative;width:100%;max-height:70vh;border:1px solid #d3e2d8;border-radius:12px;overflow:auto;background:#fafdfb;overscroll-behavior:contain}
+.qaViewport{position:relative;width:100%;transform-origin:top left}
 .stage img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
 .stage svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .stage[hidden]{display:none}
@@ -95,9 +96,17 @@ small{font-size:12px;color:#667f6e}
 <section class="panel" aria-label="本地图片与识别核对">
 <h2>原图、识别候选和人工真值</h2>
 <div class="legend"><span class="pred">识别候选</span><span class="truth">手工真值</span></div>
+<div class="buttons" aria-label="图纸放大缩小">
+<button id="qaZoomOut" type="button">缩小 −</button>
+<button id="qaZoomReset" type="button">原始适屏</button>
+<button id="qaZoomIn" type="button">放大 +</button>
+</div>
+<p class="hint">显示比例：<output id="qaZoomLevel">100%</output>。放大时可在图纸区域滚动浏览；缩放不会改变原图坐标或已有标注。</p>
 <div id="qaStage" class="stage" hidden>
+<div id="qaViewport" class="qaViewport">
 <img id="qaImage" alt="用户选择的本地工程题图">
 <svg id="qaOverlay" aria-label="手工标注直线、圆、圆弧、文字和箭头" role="img"></svg>
+</div>
 </div>
 <p class="hint">手机可以用手指拖动画线、画圆、框选标注；箭头用点选。标注区域按图片原始像素保存，不会自动推断毫米比例。图片更换或重新识别会清除旧标注和指标。</p>
 </section>
