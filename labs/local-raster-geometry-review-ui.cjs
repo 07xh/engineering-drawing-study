@@ -7,11 +7,11 @@ const {shapeKeys,prepareReviewedRasterImport}=
 
 function attachLocalRasterReview({
  image,photoInput,photoClear,kind,first,second,preview,edits,
- originX,originY,mmPerPx,yAxis,filletRadiusMm,
+ originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
  accepted,apply,status,onApply,dom=document
 }){
  for(const node of [image,photoInput,photoClear,kind,first,second,preview,
-  edits,originX,originY,mmPerPx,yAxis,filletRadiusMm,accepted,apply,status])
+  edits,originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,accepted,apply,status])
   if(!node)throw new TypeError('incomplete local raster review UI controls');
  if(typeof onApply!=='function')throw new TypeError('current workbench hook required');
  const SVG='http://www.w3.org/2000/svg';
@@ -81,6 +81,9 @@ function attachLocalRasterReview({
   changed();
  }
  function updateSelectors(){
+  lineSide.disabled=kind.value!=='segment-circle';
+  lineSide.value='';
+  changed();
   const requirements=shapeKeys[kind.value]||{};
   for(const [index,element] of [first,second].entries()){
    const name=Object.keys(requirements)[index],needed=requirements[name];
@@ -135,7 +138,7 @@ function attachLocalRasterReview({
  }
  for(const el of [first,second])el.addEventListener('change',drawEdits);
  kind.addEventListener('change',updateSelectors);
- for(const el of [originX,originY,mmPerPx,yAxis,filletRadiusMm]){
+ for(const el of [originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide]){
   el.addEventListener('input',changed);el.addEventListener('change',changed);
  }
  photoInput.addEventListener('change',reset);
@@ -168,7 +171,9 @@ function attachLocalRasterReview({
     firstId:selected[0],secondId:selected[1],edits:corrected,
     originX:value(originX),originY:value(originY),
     mmPerPx:value(mmPerPx),yAxis:yAxis.value,
-    filletRadiusMm:value(filletRadiusMm),accepted:accepted.checked
+    filletRadiusMm:value(filletRadiusMm),
+    lineSide:kind.value==='segment-circle'?Number(lineSide.value):undefined,
+    accepted:accepted.checked
    });
    onApply(result);changed();
    status.textContent='已把人工确认的图元与比例转换成毫米条件。'+

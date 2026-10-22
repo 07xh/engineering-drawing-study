@@ -21,7 +21,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  const sheet={origin:{x:360,y:220},scale:5};
  const map=p=>({x:sheet.origin.x+sheet.scale*p.x,
   y:sheet.origin.y-sheet.scale*p.y});
- const controlNames=['branch','direction','travel1','travel2'];
+ const controlNames=['branch','direction','travel1','travel2','circleSide'];
  const fmt=n=>Number.isFinite(n)?Number(n.toFixed(5)).toString():'—';
  const svg=(tag,attrs={})=>{
   const node=document.createElementNS(SVG,tag);
@@ -72,6 +72,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    [kinds[kind].travels[0][0]]:$('travel1').value,
    [kinds[kind].travels[1][0]]:$('travel2').value
   };
+  if(kind==='segment-circle')selection.side=Number($('circleSide').value);
   if(fieldReview?.isEnabled()){
    const checked=fieldReview.reviewedInput(kind,data,selection,session?.revision??0);
    return checked.status==='ready-for-math'?checked.input:null;
@@ -99,6 +100,8 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    wrapper.append(entry);group.append(wrapper);
   }
   fieldReview?.setKind(kind);
+  $('circleSide').disabled=kind!=='segment-circle';
+  $('circleSide').value='1';
   choiceOptions($('direction'),['cw','ccw'],choices.direction);
   $('travel1Label').textContent=spec.travels[0][1];
   $('travel2Label').textContent=spec.travels[1][1];
@@ -294,7 +297,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   photoClear:$('clearPhoto'),run:$('detectLines'),
   clear:$('clearLines'),overlay:$('detectedLineOverlay'),
   status:$('lineStatus'),onCandidates:(items,raw)=>{
-   receivedCandidates('line',items);rasterReview?.update('line',raw);
+   receivedCandidates('line',items,raw);rasterReview?.update('line',raw);
   }
  });
  attachLocalCurveCandidates({
@@ -364,7 +367,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   preview:$('rasterDraftPreview'),edits:$('rasterEdits'),
   originX:$('rasterOriginX'),originY:$('rasterOriginY'),
   mmPerPx:$('rasterMmPerPx'),yAxis:$('rasterYAxis'),
-  filletRadiusMm:$('rasterFilletRadius'),
+  filletRadiusMm:$('rasterFilletRadius'),lineSide:$('rasterLineSide'),
   accepted:$('rasterAccept'),apply:$('rasterApply'),
   status:$('rasterStatus'),
   onApply:result=>{
@@ -380,6 +383,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
     control.value=String(value);
     fieldReview?.edited(name);
    }
+   $('circleSide').value=result.kind==='segment-circle'?String(result.lineSide):'1';
    for(const name of ['branch','direction','travel1','travel2'])$(name).value='';
    recompute();
   }
@@ -400,6 +404,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
     fieldReview?.edited(field);
    }
    // A valid source does not choose a mathematically legitimate branch/G1 sweep.
+   $('circleSide').value='1';
    for(const field of ['branch','direction','travel1','travel2'])$(field).value='';
    recompute(); // #248 session invalidates the old verified timeline before solving.
   }

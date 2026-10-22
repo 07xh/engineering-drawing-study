@@ -37,13 +37,17 @@ function checkPixelGeometry(candidate,edited){
 }
 function prepareReviewedRasterImport({
  draft,expectedRevision,kind,firstId,secondId,edits,
- originX,originY,mmPerPx,yAxis,filletRadiusMm,accepted
+ originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,accepted
 }={}){
  if(accepted!==true)
   throw new TypeError('explicit human geometry and scale review acceptance required');
  const d=validateDraft(draft);
  if(!Number.isSafeInteger(expectedRevision)||expectedRevision!==d.revision)
   throw new RangeError('stale raster candidate draft revision');
+ if(kind==='segment-circle'&&lineSide!==1&&lineSide!==-1)
+  throw new TypeError('explicit reviewed line-circle side +1 or -1 required');
+ if(kind!=='segment-circle'&&lineSide!==undefined)
+  throw new TypeError('line-circle side cannot be applied to other R0 types');
  const names=shapeKeys[kind];
  if(!names)throw new RangeError('unsupported raster R0 type');
  const fields=Object.keys(names),ids=[firstId,secondId];
@@ -89,10 +93,10 @@ function prepareReviewedRasterImport({
  const prepared=prepareConfirmedFillet({
   draft:reviewed,expectedRevision:reviewed.revision,
   calibration,kind,sourceIds:chosen,filletRadiusMm,
-  options:kind==='segment-circle'?{side:1}:{}
+  options:kind==='segment-circle'?{side:lineSide}:{}
  });
  return {
-  kind,fields:formFields(prepared),
+  kind,fields:formFields(prepared),lineSide,
   reviewedDraftRevision:reviewed.revision,sourceIds:chosen,
   sourceFrame:'original-image-px',
   geometrySourceReviewed:true,metricCalibrationMathematicallyProven:false,

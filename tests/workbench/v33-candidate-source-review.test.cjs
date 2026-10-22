@@ -86,7 +86,8 @@ test('UI keeps candidate selection and final mm confirmation in distinct control
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(entry,/markCandidate\(candidate\)/);
  assert.match(entry,/onCandidates:\(items,raw\)=>\{/);
- assert.match(entry,/receivedCandidates\('line',items\)/);
+ assert.match(entry,/receivedCandidates\('line',items,raw\)/);
+ assert.match(entry,/getArrowHints:\(\)=>arrowHints/);
  assert.match(entry,/receivedCandidates\('curve',items\)/);
  assert.match(entry,/rasterReview\?\.update\('line',raw\)/);
  assert.match(entry,/rasterReview\?\.update\('curve',raw\)/);

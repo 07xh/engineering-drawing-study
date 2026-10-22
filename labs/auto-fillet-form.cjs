@@ -62,13 +62,19 @@ function buildConfirmedInput(kind,values,choice={},revision=0){
   ?{first:segment(1),second:segment(2)}
   :kind==='segment-circle'?{segment:segment(1),circle:circle(1)}
    :{first:circle(1),second:circle(2)};
+ const explicitSide=choice?.side;
+ if(explicitSide!==undefined&&explicitSide!==''&&
+    (kind!=='segment-circle'||(explicitSide!==1&&explicitSide!==-1)))
+  throw new RangeError('signed line-circle side must be +1 or -1');
+ const lineCircleSide=kind==='segment-circle'&&explicitSide!==undefined&&explicitSide!==''?
+  explicitSide:1;
  const selection={};
  for(const key of ['branchId','direction',...spec.travels.map(x=>x[0])]){
   const v=choice[key];
   if(v!==undefined&&v!=='')selection[key]=v;
  }
  return {problem:{kind,unit:'mm',revision,filletRadius:n('filletRadius'),
-  geometry,options:kind==='segment-circle'?{side:1}:{}},
+  geometry,options:kind==='segment-circle'?{side:lineCircleSide}:{}},
   selection,sheet:{origin:{x:360,y:220},scale:5}};
 }
 function defaultValues(kind){
