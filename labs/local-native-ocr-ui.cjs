@@ -7,13 +7,15 @@ const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {rankDimensionLinks}=
  require('../recognition/dimension-notation-candidates.cjs');
+const {rankLeaderLineLinks}=
+ require('../recognition/dimension-leader-association.cjs');
 const {chooseOcrRadiusPrefill}=
  require('../recognition/reviewed-ocr-radius-prefill.cjs');
 const SVG='http://www.w3.org/2000/svg';
 function attachLocalNativeOcr({
  image,photoInput,photoClear,run,clear,overlay,status,selector,associate,
  sourceField,fieldReview,prefillButton,unitConfirmed,applyPrefill=()=>{},
- getCurves=()=>[],recognize=detectBrowserDimensionCandidates,
+ getCurves=()=>[],getLines=()=>[],recognize=detectBrowserDimensionCandidates,
  reviewedValue=null,reviewAccept=null,reviewButton=null,
  getValues=()=>({}),getRevision=()=>0
 }){
@@ -63,17 +65,23 @@ function attachLocalNativeOcr({
   clearReview();
   if(!dim)return;
   if(hasReview){reviewedValue.value=String(dim.numericValue);reviewButton.disabled=false;}
-  let nearby=[];
+  let nearby=[],leaders=[];
   try{
-   nearby=rankDimensionLinks(dim,getCurves(),
-    {width:image.naturalWidth,height:image.naturalHeight});
-  }catch(_){nearby=[];}
+   const dimensions={width:image.naturalWidth,height:image.naturalHeight};
+   leaders=rankLeaderLineLinks(dim,getLines(),getCurves(),dimensions);
+   nearby=rankDimensionLinks(dim,getCurves(),dimensions);
+  }catch(_){nearby=[];leaders=[];}
+  const leaderText=leaders.length?
+   '可能的尺寸引线（未验证箭头）'+leaders.map(x=>
+    x.leaderCandidateId+' → '+x.geometryCandidateId+
+    '，端点误差 '+x.totalEndpointErrorPx+'px').join('；')+'。':
+   '未找到可靠的尺寸引线候选（不代表图中没有引线）。';
   status.textContent='OCR 候选 '+dim.sourceText+
    ' → 提议半径 '+dim.proposedRadiusValue+
    '（'+(dim.unitHint==='mm-explicit'?'含 mm 字样':'图纸单位尚未核实')+
-   '）；可能相关的圆/弧：'+(nearby.length?
+   '）。'+leaderText+'按区域邻近的备选圆/弧：'+(nearby.length?
     nearby.map(x=>x.geometryCandidateId).join('、'):'暂无线索')+
-   '。OCR 不会填入毫米尺寸，必须人工复核。';
+   '。以上仅供人工核对，不会选择唯一图元或写入数学条件。';
  }
  const changedPhoto=()=>{unitConfirmed.checked=false;reset();};
  photoInput.addEventListener('change',changedPhoto);
@@ -163,6 +171,7 @@ function attachLocalNativeOcr({
    linked.reason;
  });
  reset();
- return Object.freeze({reset,get count(){return candidates.length}});
+ return Object.freeze({reset,refreshAssociations(){if(selector.value)describeSelected();},
+  get count(){return candidates.length}});
 }
 module.exports={attachLocalNativeOcr};
