@@ -62,7 +62,7 @@ test('opposite arc direction is NOT valid merely because two contacts satisfy un
 test('changing the source line travel must reject discontinuous G1',()=>{
  const r=choose({...basic(),lineTravel:'reverse'});
  assert.equal(r.status,'direction-conflict');
- assert.equal(r.directionChecks.find(c=>c.source==='segment'),undefined);
+ assert.ok(r.directionChecks.find(c=>c.source==='segment').vectorMismatch>1);
  assert.equal(r.g1Verified,false);
 });
 test('wrong known source circle travel conflicts with the proven fillet tangent',()=>{
