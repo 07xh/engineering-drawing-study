@@ -10,7 +10,7 @@ const Sheet=require('../../labs/dof-lab-sheet.js');
 const Spatial=require('../../labs/dof-lab-spatial-svg.js');
 const Sync=require('../../workbench/dof-synchronized-reveal.cjs');
 function createPage(){
- let now=0,id=0;
+ let now=0,id=0,reduced=false,motionHandler=null;
  const frames=new Map(),elements=new Map();
  const make=tag=>({
   tag,children:[],attributes:{},listeners:{},
@@ -42,10 +42,13 @@ function createPage(){
  get('showLabels').checked=false;
  for(const [id,value] of [['trialX',35],['trialY',22],['trialZ',51]])
   get(id).value=String(value);
- const document={getElementById:get,createElement:make,querySelectorAll(){return []}};
+ const docListeners={};
+ const document={hidden:false,getElementById:get,createElement:make,querySelectorAll(){return []},
+  addEventListener(type,fn){docListeners[type]=fn}};
  const window={DrawingLabState:State,DrawingLabGeometry:Geom,
   DrawingLabSheet:Sheet,DrawingLabSpatialPreview:Spatial,DrawingLabSyncV5:Sync,
-  matchMedia(){return {matches:false}}};
+  matchMedia(){return {get matches(){return reduced},
+   addEventListener(type,fn){if(type==='change')motionHandler=fn}}}};
  const raf=fn=>{frames.set(++id,fn);return id};
  const cancel=i=>frames.delete(i);
  const context={document,window,performance:{now:()=>now},
@@ -62,7 +65,13 @@ function createPage(){
   const list=[...frames.values()];frames.clear();
   for(const fn of list)fn(now);
  };
- return {get,fire,advance,window,frames};
+ const setHidden=value=>{
+  document.hidden=!!value;docListeners.visibilitychange?.();
+ };
+ const setReduced=value=>{
+  reduced=!!value;motionHandler?.({matches:reduced});
+ };
+ return {get,fire,advance,window,frames,document,setHidden,setReduced};
 }
 test('real page initializes with P-star and does not hide the playback button',()=>{
  const p=createPage();
@@ -119,4 +128,33 @@ test('real page can seek to finish while preserving sample-not-unique truth',()=
  assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
  assert.equal(get('syncPlay').disabled,true);
  fire('syncRestart','click');assert.equal(Number(get('syncProgress').value),0);
+});
+
+test('Android background tab pauses V5 at its actual progress; manual resumption does not skip drawing',()=>{
+ const p=createPage(),{get,fire,advance,setHidden,frames}=p;
+ fire('syncPlay','click');advance(450);
+ const before=Number(get('syncProgress').value);
+ assert.ok(before>0&&before<1000);
+ assert.ok(frames.size>0);
+ setHidden(true);
+ assert.equal(frames.size,0,'background tab cancels all V5 animation callbacks');
+ assert.match(get('syncPlay').textContent,/播放/);
+ advance(60000);
+ assert.equal(Number(get('syncProgress').value),before,'hidden tab does not fast-forward the point');
+ setHidden(false);advance(30000);
+ assert.equal(Number(get('syncProgress').value),before,'return requires explicit resume');
+ fire('syncPlay','click');advance(200);
+ const after=Number(get('syncProgress').value);
+ assert.ok(after>before&&after<1000,'drawing continues from the paused progress');
+ assert.match(get('syncProgress').attributes['aria-valuetext'],/已完成/);
+});
+test('changing OS reduced-motion preference finishes display without high-motion frames',()=>{
+ const p=createPage(),{get,fire,advance,setReduced,frames}=p;
+ fire('syncPlay','click');advance(300);
+ assert.ok(Number(get('syncProgress').value)<1000);
+ setReduced(true);
+ assert.equal(Number(get('syncProgress').value),1000);
+ assert.equal(frames.size,0);
+ assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
+ assert.equal(get('syncPlay').disabled,true);
 });
