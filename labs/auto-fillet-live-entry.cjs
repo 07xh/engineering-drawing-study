@@ -299,6 +299,15 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   overlay:$('nativeOcrOverlay'),status:$('nativeOcrStatus'),
   selector:$('ocrDimensionSelect'),associate:$('associateOcr'),
   sourceField:$('sourceField'),fieldReview,
+  prefillButton:$('prefillOcrRadius'),unitConfirmed:$('ocrUnitConfirmed'),
+  applyPrefill:(field,value)=>{
+   const input=$('geo-'+field);
+   if(!input||!Number.isFinite(value)||value<=0)
+    throw new RangeError('invalid radius field proposal');
+   input.value=String(value);
+   // Existing field editing event invalidates prior accepted math/timeline.
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+  },
   getCurves:()=>geometryCandidates.curve
  });
  $('associateCandidate').addEventListener('click',()=>{
