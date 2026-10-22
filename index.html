@@ -52,7 +52,7 @@ footer a{color:#3b7957}
 <nav class="site-nav" aria-label="主要导航">
 <a href="index.html" aria-current="page">首页</a>
 <a href="labs/point-projection-live.html">三面投影解题</a>
-<a href="labs/circle-fillet-live.html">圆弧连接解题</a>
+<a href="labs/auto-fillet-live.html">二维自动解题</a><a href="labs/circle-fillet-live.html">圆弧连接解题</a>
 <a href="labs/free-modeler.html">自由建模</a>
 <details class="site-more"><summary>更多工具</summary><div class="site-more-menu">
 <a href="labs/point-coach.html">原版投影陪练</a>
@@ -71,7 +71,8 @@ footer a{color:#3b7957}
 <h1>上传工程图题，自动求解并动态作图。</h1>
 <p>这是一个面向个人学习的 AI 工程制图自动解题与动态作图系统。目标是识别陌生二维题图、确认尺寸条件、完成可验证的数学求解，再自动生成 V5 逐笔作图动画。当前正优先建设数学求解闭环，尚未开放 AI 图片上传；下方可体验已具备的基础几何功能。</p>
 <div class="hero-actions">
-<a class="home-btn" href="labs/point-projection-live.html">体验现有三面投影求解 →</a>
+<a class="home-btn" href="labs/auto-fillet-live.html">体验二维自动解题与动态作图 →</a>
+<a class="home-btn secondary" href="labs/point-projection-live.html">三面投影求解 →</a>
 <a class="home-btn secondary" href="labs/circle-fillet-live.html">体验现有圆弧连接求解 →</a>
 <a class="home-btn secondary" href="labs/free-modeler.html">查看现有几何实验室</a>
 </div>
@@ -100,6 +101,7 @@ footer a{color:#3b7957}
 <h2>现有数学与作图基础组件</h2>
 <p class="intro">以下是新版自动解题系统可以复用的现有模块，不是产品的课程主线。现阶段支持范围有限，不能把专项示例当作陌生题图的完整标准答案。</p>
 <div class="tool-grid">
+<a class="tool-card" href="labs/auto-fillet-live.html"><span class="tool-icon" aria-hidden="true">◎</span><strong>二维自动解题 · 动态作图</strong><p>手动确认有限线段或圆的尺寸、选定解分支后，数学求解器自动生成 V5 作图步骤。修改条件立即重算，旧答案自动失效；尚不支持 AI 图片识别。</p><span class="tool-status">打开新的自动解题工作台 →</span></a>
 <a class="tool-card" href="labs/circle-fillet-live.html"><span class="tool-icon" aria-hidden="true">⑧</span><strong>圆弧连接 · 智能尺规作图</strong><p>支持两圆和两有限线段；真实计算候选圆心、切点与有向 G1，并可用数字尺规构造辅助轨迹、点选圆心进行数学核验。</p><span class="tool-status">打开真实圆弧计算 →</span></a>
 <a class="tool-card" href="labs/point-projection-live.html"><span class="tool-icon" aria-hidden="true">⑦</span><strong>三面投影 · 动态数学求解</strong><p>输入空间点 XYZ 或任意两面投影，计算完整 V/H/W，并用统一步骤查看 45° 深度转移和进行学生辅助线数学检查。</p><span class="tool-status">已接入数学求解器 →</span></a>
 <a class="tool-card" href="labs/point-coach.html"><span class="tool-icon" aria-hidden="true">①</span><strong>点投影陪练</strong><p>根据已知投影定位第三面投影，获得提示、空间说明和作图反馈。</p><span class="tool-status">进入工具 →</span></a>
