@@ -82,4 +82,54 @@ function rankDimensionLinks(dimension,geometry,image,{maxMatches=4}={}){
   a.geometryCandidateId.localeCompare(b.geometryCandidateId));
  return suggestions.slice(0,maxMatches);
 }
-module.exports={parseNotation,parseTextCandidates,rankDimensionLinks};
+/**
+ * Some native detectors split "R8" into independently boxed "R" and "8".
+ * Combine only adjacent, same-baseline, similarly sized tokens in original
+ * image pixels. Keep ALL combinations as untrusted alternatives; no math.
+ *
+ * Caller must first validate raw tokens using parseTextCandidates, which
+ * rejects malformed IDs, bounding boxes and unbounded candidate arrays.
+ */
+function joinSplitDimensionTokens(tokens,image,{maxPairs=40}={}){
+ if(!isImage(image)||!Array.isArray(tokens)||tokens.length>150||
+  !Number.isInteger(maxPairs)||maxPairs<1||maxPairs>80)
+  throw new TypeError('invalid original-image OCR token pairing input');
+ const proposals=[];
+ for(let i=0;i<tokens.length;i++){
+  const prefix=tokens[i];
+  if(typeof prefix?.text!=='string'||
+   !/^\s*[RrΦφØø⌀∅]\s*$/u.test(prefix.text)||
+   !isBox(prefix.bbox,image))continue;
+  const [px,py,pw,ph]=prefix.bbox;
+  for(let j=0;j<tokens.length;j++){
+   if(i===j||proposals.length>=maxPairs)continue;
+   const suffix=tokens[j];
+   if(typeof suffix?.text!=='string'||
+    !/^\s*\d{1,6}(?:[.,]\d{1,3})?\s*(?:mm|毫米)?\s*$/iu.test(suffix.text)||
+    !isBox(suffix.bbox,image))continue;
+   const [sx,sy,sw,sh]=suffix.bbox;
+   const height=Math.max(ph,sh),short=Math.min(ph,sh);
+   if(short/height<.55)continue;
+   const gap=sx-(px+pw);
+   if(gap<-.15*height||gap>Math.min(16,height*.7))continue;
+   const vertical=Math.abs(py+ph/2-(sy+sh/2));
+   if(vertical>height*.4)continue;
+   const text=(prefix.text.trim()+suffix.text.trim());
+   if(!parseNotation(text))continue;
+   const left=Math.min(px,sx),top=Math.min(py,sy);
+   const right=Math.max(px+pw,sx+sw),bottom=Math.max(py+ph,sy+sh);
+   proposals.push({
+    id:'ocr_join_'+(i+1)+'_'+(j+1),
+    text,confidence:Math.min(prefix.confidence,suffix.confidence),
+    bbox:[left,top,right-left,bottom-top],
+    sourceTokenIds:[prefix.id,suffix.id],
+    syntheticJoin:true
+   });
+  }
+  if(proposals.length>=maxPairs)break;
+ }
+ return proposals;
+}
+
+module.exports={parseNotation,parseTextCandidates,rankDimensionLinks,
+ joinSplitDimensionTokens};
