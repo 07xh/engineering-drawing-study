@@ -83,6 +83,40 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
    if(action.kind==='point')node.setAttribute('opacity',String(fraction));
   }
  };
+ const availableStages=()=>{
+  if(!centers)return 0;
+  return $('modeSelect').value==='segments'
+   ?(verifiedArc()?teaching.steps.length:
+      (centers.candidates.length||centers.continuousFamilies.length?3:0))
+   :$('modeSelect').value==='segment-circle'
+    ?(verifiedArc()?teaching.steps.length:(centers.candidates.length?3:0)):4;
+ };
+ const syncStrokeProgress=()=>{
+  const max=availableStages();
+  const frame=stageClock?.canRender(revision)?stageClock.snapshot():null;
+  const ratio=frame?frame.ratio:max?stage/max:0;
+  const r=Math.max(0,Math.min(1,ratio));
+  const percent=Math.round(r*100);
+  $('filletProgress').value=String(Math.round(r*1000));
+  $('filletProgress').disabled=learningMode!=='full'||max===0;
+  $('filletRestart').disabled=learningMode!=='full'||(stage===0&&!frame?.elapsedMs);
+  $('filletProgressLabel').textContent=percent+'%';
+  $('filletProgress').setAttribute?.('aria-valuetext',
+   '已完成 '+percent+'%；'+(frame?.done?'全部步骤完成':
+    '第 '+Math.min(max,stage+1)+' / '+max+' 步'));
+ };
+ const ensureAutoplayClock=()=>{
+  if(stageClock&&autoplayPlan&&stageClock.canRender(revision))return true;
+  const max=availableStages();
+  if(!max)return false;
+  autoplayPlan=ProgressiveV5.build({kind:$('modeSelect').value,
+   centers,chosen,teaching,verified:!!verifiedArc(),
+   revision,origin:O,scale,max});
+  stageClock=TimelineV5.createPlayer(autoplayPlan.timeline,{
+   speed:Number($('animationSpeed').value),revision});
+  stageClock.seekStep(stage,performance.now());
+  return true;
+ };
  const fmt=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
  const elem=(tag,attr={},value)=>{
   const e=document.createElementNS(SVG,tag);
@@ -581,6 +615,7 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
    }
   }
   paintV5Reasons();
+  syncStrokeProgress();
  }
 
  for(const id of FIELDS){
@@ -643,29 +678,16 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
  $('playPause').addEventListener('click',()=>{
   if(playTimer!==null){pausePlayback();render();paintCurrentConstruction();return;}
   if(learningMode!=='full'||!centers||reducedMotion())return;
-  const max=$('modeSelect').value==='segments'
-   ?(verifiedArc()?teaching.steps.length:
-      (centers.candidates.length||centers.continuousFamilies.length?3:0))
-   :$('modeSelect').value==='segment-circle'
-    ?(verifiedArc()?teaching.steps.length:(centers.candidates.length?3:0)):4;
+  const max=availableStages();
+  if(!max||stage>=max&&(!stageClock||stageClock.snapshot().done))return;
+  if(!ensureAutoplayClock())return;
   const now=()=>performance.now();
-  if(stage>=max&&(!stageClock||stageClock.snapshot().done))return;
-  if(!stageClock){
-   autoplayPlan=ProgressiveV5.build({
-    kind:$('modeSelect').value,centers,chosen,teaching,
-    verified:!!verifiedArc(),revision,origin:O,scale,max
-   });
-   stageClock=TimelineV5.createPlayer(autoplayPlan.timeline,{
-    speed:Number($('animationSpeed').value),revision});
-   stageClock.seekStep(stage,now());
-  }
   stageClock.play(now());
   const tick=()=>{
    if(!stageClock||learningMode!=='full'||!centers||reducedMotion()){
     stopPlayback();render();return;
    }
    const snapshot=stageClock.snapshot(now());
-   // Multiple line/circle/point actions belong to ONE teaching step.
    const completed=ProgressiveV5.completedSteps(stageClock.timeline,snapshot);
    if(completed!==stage){
     stage=Math.min(max,completed);
@@ -673,10 +695,38 @@ const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs
     render();
    }
    paintCurrentConstruction();
+   syncStrokeProgress();
    playTimer=requestAnimationFrame(tick);
   };
   playTimer=requestAnimationFrame(tick);
   render();paintCurrentConstruction();
+ });
+ $('filletProgress').addEventListener('input',()=>{
+  if(learningMode!=='full'||!ensureAutoplayClock())return;
+  if(playTimer!==null)pausePlayback();
+  const progress=Number($('filletProgress').value);
+  if(!Number.isFinite(progress))return;
+  const ratio=Math.max(0,Math.min(1,progress/1000));
+  const now=performance.now();
+  stageClock.pause(now);
+  const frame=stageClock.seekMs(ratio*stageClock.timeline.totalMs,now);
+  stage=ProgressiveV5.completedSteps(stageClock.timeline,frame);
+  render();paintCurrentConstruction();
+ });
+ $('filletRestart').addEventListener('click',()=>{
+  if(learningMode!=='full')return;
+  stopPlayback();stage=0;render();
+ });
+ document.addEventListener?.('visibilitychange',()=>{
+  if(document.hidden&&playTimer!==null){
+   pausePlayback();render();paintCurrentConstruction();
+  }
+ });
+ const motionMedia=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+ motionMedia?.addEventListener?.('change',event=>{
+  if(event.matches&&playTimer!==null){
+   pausePlayback();render();paintCurrentConstruction();
+  }
  });
  $('animationSpeed').addEventListener('change',()=>{
   const speed=Number($('animationSpeed').value);
