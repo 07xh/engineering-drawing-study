@@ -1065,7 +1065,7 @@ test('V5 default two-circle auxiliary LOCUS strokes grow progressively instead o
  assert.equal(guides()[0].attributes['stroke-dasharray'],frozen,'paused guide is frozen');
  fire('playPause','click');advance(1100);
  assert.equal(get('counter').textContent,'1 / 4');
- const painted=collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536');
+ const painted=collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536'&&n.attributes.fill==='none');
  assert.equal(painted.length,2,'both real auxiliary circles remain after the step completes');
  assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0,
   'no branch means no final answer');
@@ -1089,7 +1089,7 @@ test('verified two-circle G1 still traces both radius loci in sequence before re
  assert.notEqual(second[1].attributes['stroke-dasharray'],'none');
  advance(530);
  assert.equal(get('counter').textContent,'1 / 4');
- assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536').length,2);
+ assert.equal(collect().filter(n=>n.tag==='circle'&&n.attributes.stroke==='#c38536'&&n.attributes.fill==='none').length,2);
  assert.equal(collect().filter(n=>n.attributes?.['data-verified-arc']==='true').length,0);
 });
 test('V5 line fillet draws each exact solver offset as a moving endpoint, keeps one SVG node per stroke',()=>{
