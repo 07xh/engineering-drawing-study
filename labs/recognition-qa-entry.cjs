@@ -6,6 +6,8 @@ const {imagePointFromClient,createPhotoQaGesture}=
  require('./photo-qa-pointer-geometry.cjs');
 const {createPhotoTouchCheck}=
  require('./photo-qa-touch-check.cjs');
+const {scrollToImagePoint}=
+ require('./photo-qa-viewport-scroll.cjs');
 const {detectBrowserDimensionCandidates}=
  require('../recognition/browser-native-dimension-ocr.cjs');
 const {fingerprintLocalPhoto,fingerprintManualTruth}=
@@ -22,7 +24,7 @@ const {createAnnotationPack}=
  const viewport=$('qaViewport'),gesture=createPhotoQaGesture();
  const touchCheck=createPhotoTouchCheck();
  const status=$('status'),table=$('metrics');
- let imageUrl=null,generation=0,zoom=1,ocrRequest=0,comparisonRevision=null;
+ let imageUrl=null,generation=0,zoom=1,ocrRequest=0,comparisonRevision=null,panMode=false;
  function message(value){status.textContent=value;}
  const numbers=n=>n===null||n===undefined?'—':
   typeof n==='number'?Number(n.toFixed(3)).toString():String(n);
@@ -169,7 +171,7 @@ const {createAnnotationPack}=
  }
  function clearImage(){
   generation++;ocrRequest++;$('qaOcr').disabled=false;
-  touchCheck.cancel();gesture.reset();setZoom(1);session.reset();
+  touchCheck.cancel();gesture.reset();setPanMode(false);setZoom(1);session.reset();
   $('qaTouchResult').textContent='当前未进行触控坐标自检。';
   if(imageUrl){URL.revokeObjectURL(imageUrl);imageUrl=null;}
   image.removeAttribute('src');
@@ -266,6 +268,33 @@ const {createAnnotationPack}=
    message('OCR 候选校验失败：'+(error instanceof Error?error.message:'无效文字来源'));
   }
  });
+ function setPanMode(enabled){
+  panMode=!!enabled;
+  gesture.reset();
+  if(panMode&&touchCheck.snapshot().status==='active'){
+   touchCheck.cancel();
+   $('qaTouchResult').textContent='移动图纸时已结束触控坐标自检。';
+  }
+  stage.classList.toggle('is-panning',panMode);
+  $('qaPanMode').setAttribute('aria-pressed',panMode?'true':'false');
+  $('qaMarkMode').setAttribute('aria-pressed',panMode?'false':'true');
+  draw();
+ }
+ $('qaPanMode').addEventListener('click',()=>setPanMode(true));
+ $('qaMarkMode').addEventListener('click',()=>setPanMode(false));
+ function focusTouchTarget(){
+  const t=touchCheck.snapshot();
+  const imageSize=session.snapshot().image;
+  if(t.status!=='active'||!t.target||!imageSize)return;
+  const rect=overlay.getBoundingClientRect();
+  const scroll=scrollToImagePoint(imageSize,t.target,{
+   width:rect.width,height:rect.height
+  },{width:stage.clientWidth,height:stage.clientHeight});
+  if(scroll){
+   stage.scrollLeft=scroll.left;
+   stage.scrollTop=scroll.top;
+  }
+ }
  function setZoom(value){
   zoom=Math.min(3,Math.max(1,Number(value)||1));
   // Changing the image display width scales both image and SVG equally.
@@ -274,6 +303,7 @@ const {createAnnotationPack}=
   $('qaZoomLevel').textContent=Math.round(zoom*100)+'%';
   gesture.reset();
   draw();
+  focusTouchTarget();
  }
  $('qaZoomIn').addEventListener('click',()=>setZoom(zoom+.25));
  $('qaZoomOut').addEventListener('click',()=>setZoom(zoom-.25));
@@ -299,9 +329,10 @@ const {createAnnotationPack}=
  $('qaTouchCheck').addEventListener('click',()=>{
   const snap=session.snapshot();
   if(!snap.ready){message('请先打开本地照片并运行识图检测。');return;}
-  gesture.reset();
+  setPanMode(false);
   touchCheckStatus(touchCheck.start(snap.image));
   draw();
+  focusTouchTarget();
   message('五点触控自检已开始：请在图中依次点击橙色十字。');
  });
  $('qaTouchStop').addEventListener('click',()=>{
@@ -313,7 +344,7 @@ const {createAnnotationPack}=
   return imagePointFromClient(event,overlay.getBoundingClientRect(),size);
  }
  overlay.addEventListener('pointerdown',event=>{
-  if(!session.snapshot().ready||event.pointerType==='mouse'&&event.button!==0)
+  if(panMode||!session.snapshot().ready||event.pointerType==='mouse'&&event.button!==0)
    return;
   const kind=touchCheck.snapshot().status==='active'?'touch-check':$('qaTool').value;
   const result=gesture.down(event.pointerId,fromPointer(event),kind);
@@ -333,6 +364,7 @@ const {createAnnotationPack}=
    const g=result.gesture;
    if(g.kind==='touch-check'){
     touchCheckStatus(touchCheck.tap(g.last));
+    focusTouchTarget();
    }else{
     try{
      const annotation=createManualPhotoAnnotation(g.kind,g.start,g.last,{
