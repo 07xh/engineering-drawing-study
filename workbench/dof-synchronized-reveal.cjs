@@ -90,4 +90,8 @@ function paintSpace(svg,viewer,visual){
    node.setAttribute('opacity',String(opacity));
  }
 }
-module.exports={build,presentation,paintSheet,paintSpace};
+function createPlayer(plan,{speed=1}={}){
+ if(plan?.status!=='ready')throw new TypeError('cannot animate unverified/contradictory space point');
+ return T.createPlayer(plan.timeline,{speed,revision:plan.revision});
+}
+module.exports={build,createPlayer,presentation,paintSheet,paintSpace};
