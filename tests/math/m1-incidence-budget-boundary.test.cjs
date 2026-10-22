@@ -19,16 +19,13 @@ test('M1 budget rejects one geometry above maximum before traversing contents',(
  assert.throws(()=>buildConstraintIncidence({geometry,constraints:[]}),/size budget/);
 });
 
-test('M1 rejects duplicate target IDs rather than claiming independent incidence',()=>{
+test('M1 rejects repeated target IDs with a real schema error',()=>{
  const c=coincident('same','A','A');
- // Whether schema permits repeated point identifiers or rejects them, it must never prove uniqueness.
- try{
-  const r=buildConstraintIncidence({geometry:[point('A')],constraints:[c]});
-  assert.equal(r.proofOfUniqueness,false);
-  assert.equal(r.numericRank,null);
- }catch(e){
-  assert.ok(e instanceof Error);
- }
+ // An assertion failure must never be swallowed as if it were input rejection.
+ assert.throws(
+  ()=>buildConstraintIncidence({geometry:[point('A')],constraints:[c]}),
+  /invalid constraint.*targetIds/i
+ );
 });
 
 test('M1 validates constraint references even when geometry is empty',()=>{
