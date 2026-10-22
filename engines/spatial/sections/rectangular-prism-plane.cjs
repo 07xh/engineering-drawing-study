@@ -21,7 +21,8 @@ const cross=(a,b)=>({
  z:a.x*b.y-a.y*b.x});
 const length=v=>Math.hypot(v.x,v.y,v.z);
 const distance=(a,b)=>length(sub(a,b));
-const projection=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
+// Preserve exact V/H/W model coordinates through the single shared projection contract.
+const {project:projection}=require('../../../core/projection/conventions.js');
 const fail=(status,reason)=>({status,reason,vertices:[],perimeter:[],
  modelUnit:'mm',verified:false,perimeterVerified:false,
  visibilityVerified:false,v5StepsReady:false,globallyUnique:null});
