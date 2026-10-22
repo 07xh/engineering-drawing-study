@@ -253,7 +253,7 @@ test('V5 explanation panel follows stage 1-5, rewind, completion, and original g
  fire('syncNext','click');
  assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
  assert.match(get('syncReasonBasis').textContent,/高度 z 相同/);
- assert.match(get('syncReasonDof').textContent,/辅助作图线/);
+ assert.match(get('syncReasonDof').textContent,/画联系线.*不新增独立约束/);
  assert.match(get('syncReasonEvidence').textContent,/尚无用户约束/);
  fire('syncNext','click');
  assert.match(get('syncReasonTitle').textContent,/H → 45°/);
