@@ -245,6 +245,25 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   $('stepDetail').textContent=verified?
    (result.steps[active]?.explanation||result.steps.at(-1)?.explanation||'数学验证通过'):
    '条件未通过数学验证，暂不绘制辅助线及答案。';
+  // Present only provenance produced with the verified current solver
+  // revision. This does not reverse-engineer intent from finished SVG paths.
+  const activeStep=verified?(result.steps[active]||result.steps.at(-1)):null;
+  const intentIndex=activeStep?result.steps.indexOf(activeStep):-1;
+  const intent=intentIndex>=0?result.constructionIntentPrototype?.[intentIndex]:null;
+  const traceReady=!!(verified&&activeStep&&intent&&
+   intent.id===activeStep.id&&
+   intent.sourceRevision===snap.revision&&
+   intent.branchId===result.selectedBranchId&&
+   typeof intent.evidenceSource==='string'&&intent.evidenceSource.length>0&&
+   JSON.stringify(intent.dependsOn)===JSON.stringify(activeStep.dependsOn)&&
+   JSON.stringify(intent.outputEntityIds)===
+    JSON.stringify(activeStep.actions.map(a=>a.id)));
+  $('intentDetails').hidden=!traceReady;
+  $('intentTrace').textContent=traceReady?
+   '本步依据当前已验证的真实数学结果生成。依赖先前 '+
+    intent.dependsOn.length+' 个作图步骤，生成 '+intent.outputEntityIds.length+
+    ' 个图元；所选分支 '+result.selectedBranchId+
+    '，条件版本 '+snap.revision+'。这是局部构造证据，不代表全局唯一解。':'';
   const proof=result.typedMathEvidence;
   $('result').hidden=!verified;
   if(verified&&proof)$('result').textContent='当前 revision '+snap.revision+
