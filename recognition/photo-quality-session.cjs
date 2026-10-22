@@ -8,6 +8,7 @@ const {detectLineCandidates} = require('./local-line-candidates.cjs');
 const {detectCurveCandidates} = require('./local-curve-candidates.cjs');
 const {detectArrowWingCandidates} = require('./local-arrow-wing-candidates.cjs');
 const {evaluateRecognitionProposals} = require('./recognition-quality-metrics.cjs');
+const {validateAnnotationPack}=require('./photo-annotation-replay.cjs');
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const bounded=i=>i&&Number.isSafeInteger(i.width)&&Number.isSafeInteger(i.height)&&
  i.width>=32&&i.height>=32&&i.width<=10000&&i.height<=10000&&
@@ -139,6 +140,18 @@ function createPhotoQualitySession(){
   revision++;
   return id;
  }
+ /**
+  * Import only after the UI verified the original file SHA-256, and only
+  * against the exact current photo epoch. All validation precedes mutation.
+  */
+ function restoreAnnotations(expectedImageVersion,pack,sha256){
+  if(!original||expectedImageVersion!==imageVersion)return false;
+  const restored=validateAnnotationPack(pack,{image:original,sha256});
+  const maxId=Math.max(...restored.map(a=>Number(a.id.slice(6))),0);
+  if(maxId>10000000)throw new RangeError('annotation ID exceeds replay budget');
+  truth=restored;nextId=Math.max(nextId,maxId);revision++;
+  return true;
+ }
  function removeAnnotation(id){
   const at=truth.findIndex(x=>x.id===id);
   if(at<0)return false;
@@ -194,7 +207,7 @@ function createPhotoQualitySession(){
    independentReview:false
   });
  }
- return Object.freeze({reset,loadImage,acceptNativeOcr,addAnnotation,removeAnnotation,
+ return Object.freeze({reset,loadImage,acceptNativeOcr,restoreAnnotations,addAnnotation,removeAnnotation,
   clearAnnotations,snapshot,report});
 }
 module.exports={createPhotoQualitySession};
