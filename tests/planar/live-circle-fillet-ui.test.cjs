@@ -103,7 +103,10 @@ function interactiveFillet(){
   'filletProof','filletProofTitle','filletProofWhy','filletProofBasis',
   'filletProofCheck','filletProofEvidence','filletProofScope',
   'filletStrokeLive','filletStrokeTitle','filletStrokeWhy',
-  'filletStrokeBasis','filletStrokeCheck','filletStrokePercent'];
+  'filletStrokeBasis','filletStrokeCheck','filletStrokePercent',
+  'studentMathFeedback','studentFeedbackSummary','studentFeedbackNext',
+  'studentFeedbackScope','studentFeedbackAux','studentFeedbackCenter',
+  'studentFeedbackContacts','studentFeedbackArc'];
  const elems=new Map(ids.map(id=>[id,{
   id,value:values[id]??'',listeners:{},children:[],hidden:false,
   disabled:false,textContent:'',
@@ -157,6 +160,7 @@ function interactiveFillet(){
   '../workbench/verified-ruler-steps.cjs':require('../../workbench/verified-ruler-steps.cjs'),
   '../workbench/verified-tangent-point-drawing.cjs':require('../../workbench/verified-tangent-point-drawing.cjs'),
   '../workbench/verified-student-fillet-progress.cjs':require('../../workbench/verified-student-fillet-progress.cjs'),
+   '../workbench/verified-student-fillet-guidance.cjs':require('../../workbench/verified-student-fillet-guidance.cjs'),
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
@@ -1459,4 +1463,79 @@ test('V5 mixed geometry has real line and auxiliary-circle narration without an 
  get('filletProgress').value='450';fire('filletProgress','input');
  assert.match(get('filletStrokeTitle').textContent,/同心辅助圆/);
  assert.doesNotMatch(get('filletStrokeCheck').textContent,/G1 验证通过/);
+});
+
+test('student-focused V5 guidance is hidden outside draw mode, never shows standard coordinates',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ assert.equal(get('studentMathFeedback').hidden,true);
+ get('learningMode').value='draw';fire('learningMode','change');
+ assert.equal(get('studentMathFeedback').hidden,false);
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+ assert.match(get('studentFeedbackNext').textContent,/先自行选定有效.*分支/);
+ assert.match(get('studentFeedbackScope').textContent,/不代表整道工程制图习题/);
+ assert.doesNotMatch(get('studentFeedbackNext').textContent,/\(.*,\s*-?\d/);
+ get('learningMode').value='hint';fire('learningMode','change');
+ assert.equal(get('studentMathFeedback').hidden,true);
+ get('learningMode').value='full';fire('learningMode','change');
+ assert.equal(get('studentMathFeedback').hidden,true);
+});
+test('actual user compass actions immediately update 0/4, partial, verified and undo feedback',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ const r=require('../../engines/planar/circle-circle-fillet.cjs')
+  .circleCircleFilletCenters({first:{center:{x:0,y:0},radius:5},
+    second:{center:{x:20,y:0},radius:5},filletRadius:10,
+    firstMode:'external',secondMode:'external'});
+ get('digitalSource').value='first';
+ get('digitalValue').value=String(r.auxiliary.firstLocus.radius);
+ fire('addDigital','click');
+ assert.match(get('studentFeedbackAux').textContent,/已核验 1 \/ 2/);
+ assert.match(get('studentFeedbackAux').textContent,/对象 2/);
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+ get('digitalSource').value='second';
+ get('digitalValue').value=String(r.auxiliary.secondLocus.radius);
+ fire('addDigital','click');
+ assert.match(get('studentFeedbackAux').textContent,/已核验 ·/);
+ assert.match(get('studentFeedbackNext').textContent,/圆心/);
+ assert.match(get('studentFeedbackSummary').textContent,/1 \/ 4/);
+ fire('undoDigital','click');
+ assert.match(get('studentFeedbackAux').textContent,/已核验 1 \/ 2/);
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+});
+test('student center and tangent taps give stage-local evidence; never print expected positions',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ const chosen=require('../../engines/planar/circle-circle-fillet.cjs')
+  .circleCircleFilletCenters({first:{center:{x:0,y:0},radius:5},
+   second:{center:{x:20,y:0},radius:5},filletRadius:10,
+   firstMode:'external',secondMode:'external'}).candidates.find(x=>x.id==='center-1');
+ const board=get('diagram'),tap=(v,id)=>board.listeners.pointerdown({
+   pointerId:id,button:0,clientX:360+8*v.x,clientY:220-8*v.y});
+ get('drawTool').value='snap';fire('drawTool','change');
+ tap({x:chosen.center.x+1.5,y:chosen.center.y},45);
+ assert.match(get('studentFeedbackCenter').textContent,/毫米容差/);
+ tap(chosen.center,46);
+ assert.match(get('studentFeedbackCenter').textContent,/已核验 ·/);
+ get('drawTool').value='tangent';fire('drawTool','change');
+ get('digitalSource').value='first';tap(chosen.contacts.first,47);
+ assert.match(get('studentFeedbackContacts').textContent,/已核验 1 \/ 2/);
+ assert.match(get('studentFeedbackContacts').textContent,/对象 2/);
+ get('digitalSource').value='second';tap(chosen.contacts.second,48);
+ assert.match(get('studentFeedbackContacts').textContent,/已核验 ·/);
+ assert.match(get('studentFeedbackArc').textContent,/待处理/);
+ assert.doesNotMatch(get('studentFeedbackNext').textContent,/\(\s*-?[0-9.]+\s*,/);
+});
+test('V5 student mathematics feedback resets on input revision and persists across real tool choices',()=>{
+ const p=interactiveFillet(),{get,fire}=p;
+ get('branch').value='center-1';fire('branch','change');
+ get('learningMode').value='draw';fire('learningMode','change');
+ get('drawTool').value='arc';fire('drawTool','change');
+ assert.match(get('studentFeedbackArc').textContent,/尚未提交完整手绘弧|有向 G1/);
+ get('filletRadius').value='11';fire('filletRadius','input');
+ assert.match(get('studentFeedbackSummary').textContent,/0 \/ 4/);
+ assert.match(get('studentFeedbackNext').textContent,/辅助轨迹|分支/);
+ assert.doesNotMatch(get('studentFeedbackSummary').textContent,/4 \/ 4/);
+ assert.doesNotMatch(get('studentFeedbackAux').textContent,/已核验 ·/);
 });

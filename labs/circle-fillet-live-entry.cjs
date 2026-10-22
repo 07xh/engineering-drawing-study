@@ -13,6 +13,7 @@ const {constructParallelLine,constructConcentricCircle,snapChosenFilletCenter}=
 const {gradeStudentAuxiliaries}=require('../workbench/verified-ruler-steps.cjs');
 const {gradeStudentTangentPoints}=require('../workbench/verified-tangent-point-drawing.cjs');
 const {assessFilletStudentProgress}=require('../workbench/verified-student-fillet-progress.cjs');
+const {fromProgress:studentFeedback}=require('../workbench/verified-student-fillet-guidance.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
 const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
@@ -343,6 +344,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   $('fullControls').hidden=!full;
   $('hintControls').hidden=!hint;
   $('drawControls').hidden=!drawing;
+  $('studentMathFeedback').hidden=!drawing;
   $('status').textContent=!input||full?statusMessage:
    chosen?.status==='selected'?'已经选定数学分支；此模式不展示圆心坐标或成品圆弧。':
    '条件尚不足以生成经验证的最终弧段；请选择合适条件后再学习。';
@@ -533,8 +535,32 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
       ' / '+grade.supportedStageCount+' 项受支持的数学构造：'+
       grade.stages.map(x=>labels[x.id]+(x.ok?' ✓':' 待核验')).join(' · ')+
       '。'+grade.reason;
-    }catch(e){$('learningProgress').textContent='联合数学判题失败：'+e.message;}
-   }else $('learningProgress').textContent='题目输入无效，无法验证数学构造。';
+     // Reuse the independent student grading envelope; no hidden ideal
+     // coordinates, signed offsets or tangent locations enter the UI.
+     const feedback=studentFeedback(grade,{kind:currentKind,revision});
+     $('studentFeedbackSummary').textContent=feedback.headline;
+     $('studentFeedbackNext').textContent=feedback.next;
+     $('studentFeedbackScope').textContent=feedback.scope;
+     for(const [i,id] of ['studentFeedbackAux','studentFeedbackCenter',
+      'studentFeedbackContacts','studentFeedbackArc'].entries()){
+      const item=feedback.stages[i];
+      $(id).textContent=item?(item.verified?'已核验 · ':'待处理 · ')+item.detail:
+       '无法核验当前数学数据';
+     }
+    }catch(e){
+     $('learningProgress').textContent='联合数学判题失败：'+e.message;
+     $('studentFeedbackSummary').textContent='此题暂不能核验学生作图';
+     $('studentFeedbackNext').textContent='检查题目输入和有效候选分支；不显示可能失效的旧结论。';
+     for(const id of ['studentFeedbackAux','studentFeedbackCenter',
+      'studentFeedbackContacts','studentFeedbackArc'])$(id).textContent='未验证';
+    }
+   }else{
+    $('learningProgress').textContent='题目输入无效，无法验证数学构造。';
+    $('studentFeedbackSummary').textContent='无法验证当前输入';
+    $('studentFeedbackNext').textContent='先检查半径、原轮廓与分支输入，然后重新画图。';
+    for(const id of ['studentFeedbackAux','studentFeedbackCenter',
+     'studentFeedbackContacts','studentFeedbackArc'])$(id).textContent='未验证';
+   }
   }
   const drawKind=$('drawTool').value;
   $('checkDraw').disabled=!drawing||!input||
