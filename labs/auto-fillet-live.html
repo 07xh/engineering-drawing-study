@@ -15,6 +15,10 @@ a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color
 .layout{display:grid;grid-template-columns:minmax(270px,.8fr) minmax(0,1.5fr);gap:14px;align-items:start}
 .panel{background:white;border:1px solid #d7e6db;border-radius:17px;padding:16px;min-width:0}
 .panel h2{font-size:18px;margin:0 0 12px}
+.local-photo{padding:12px;background:#f5faf6;border:1px solid #d8e6da;border-radius:12px;margin-bottom:14px}
+.local-photo img{display:block;width:100%;max-height:320px;object-fit:contain;background:white;border:1px solid #d8e6da;border-radius:9px;margin-top:9px}
+.local-photo img[hidden]{display:none}
+.local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
 .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 label{font-size:12px;color:#4c6c58;display:grid;gap:5px}
 input,select,button{font:inherit;min-height:44px;border-radius:10px}
@@ -51,6 +55,13 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="layout">
 <section class="panel" aria-label="工程图条件编辑">
 <h2>已知条件</h2>
+<div class="local-photo">
+<label for="problemPhoto">原题图片（仅本地参照，不会上传）
+<input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button></div>
+<p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
+<img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
+</div>
 <label for="kind">题型<select id="kind"><option value="two-segments">两有限线段圆弧连接</option><option value="segment-circle">有限线段与圆连接</option><option value="two-circles">两圆圆弧连接</option></select></label>
 <div class="fields" id="fields" style="margin-top:12px"></div>
 <div class="fields" style="margin-top:12px">

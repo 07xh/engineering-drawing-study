@@ -65,7 +65,9 @@ test('public workbench does not pretend to provide AI upload or private storage'
  const builder=fs.readFileSync('scripts/build-static.cjs','utf8');
  const home=fs.readFileSync('index.html','utf8');
  assert.match(page,/AI 图片识别尚未上线/);
- assert.doesNotMatch(page,/<input[^>]+type=["']file["']/i);
+ assert.match(page,/id="problemPhoto"/);
+ assert.match(page,/仅本地参照/);
+ assert.match(entry,/attachLocalImagePreview/);
  assert.doesNotMatch(entry,/(fetch\(|XMLHttpRequest|localStorage|sessionStorage|document\.cookie)/);
  assert.match(builder,/auto-fillet-live-entry.cjs/);
  assert.match(builder,/auto-fillet-live-bundle.js/);
