@@ -150,7 +150,7 @@ function renderVisibilityActionSvg(action,progress=1){
     action.style?.strokeDasharray!==s.strokeDasharray)
   throw new TypeError('inconsistent declared visibility stroke style');
  const attrs=Motion.actionShapeAttrs(action,progress);
- const common=' data-visibility="'+action.visibility+'" data-source="'+
+ const common=' data-action="'+action.id+'" data-visibility="'+action.visibility+'" data-source="'+
   action.sourceEdgeId.replace(/[^a-zA-Z0-9_-]/g,'')+'"';
  if(action.kind==='point')return '<circle cx="'+numeric(attrs.cx)+
   '" cy="'+numeric(attrs.cy)+'" r="'+numeric(attrs.r)+
