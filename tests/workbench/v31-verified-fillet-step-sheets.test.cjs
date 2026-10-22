@@ -51,7 +51,10 @@ test('each intermediate step contains only current-and-earlier actions; no futur
   for(const found of svg.matchAll(/data-step="(\d+)"/g))
     assert.ok(Number(found[1])<i, 'step '+found[1]+' must not appear on page '+i);
   if(i<result.totalSteps){
-   assert.doesNotMatch(svg,/data-layer="result"/);
+   // Intermediate contact points may legitimately have role=result.
+   // They are geometrically proven steps, not the completed connecting arc.
+   assert.equal(result.sheets[i].finalArcVisible,false);
+   assert.doesNotMatch(svg,/<path[^>]*data-layer="result"/);
    assert.match(svg,/未代表最终作图完成/);
   }
   if(i>0)assert.ok(tags(svg)>=tags(result.sheets[i-1].svg));
