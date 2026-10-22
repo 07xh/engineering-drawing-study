@@ -139,7 +139,7 @@ test('after field alteration existing V5 session clears formerly verified geomet
 
 function control(value=''){
  const handlers={};
- return {value,handlers,children:[],checked:false,hidden:false,
+ return {value,handlers,children:[],get options(){return this.children},checked:false,hidden:false,
   textContent:'',files:[],naturalWidth:120,naturalHeight:120,
   valueAsNumber:NaN,attributes:{},
   addEventListener(name,fn){handlers[name]=fn;},
@@ -152,7 +152,9 @@ function control(value=''){
 function uiControls(){
  const names=['image','photoInput','photoClear','kind','first','second', 'lineSide',
   'preview','edits','originX','originY','mmPerPx','yAxis',
-  'filletRadiusMm','accepted','apply','status'];
+  'filletRadiusMm','scaleSource','scaleLength','scaleReviewed','scaleCalculate','scaleStatus',
+  'scaleCircle','scaleKind','scaleValue','scaleSuggest',
+  'scaleConfirm','scaleUse','circleScaleStatus','accepted','apply','status'];
  const c=Object.fromEntries(names.map(name=>[name,control()]));
  c.kind.value='two-segments';c.photoInput.files=[{size:4096,type:'image/png'}];
  c.originX.value='50';c.originY.value='70';c.mmPerPx.value='1';
@@ -202,7 +204,8 @@ test('the public workbench wires raw geometry callbacks and turns on strict phot
  for(const id of ['rasterDraftPanel','rasterDraftPreview','rasterEdits',
   'rasterFirst','rasterSecond','rasterMmPerPx','rasterOriginX',
   'rasterOriginY','rasterYAxis','rasterFilletRadius','rasterAccept',
-  'rasterApply','rasterStatus','rasterLineSide','circleSide'])
+  'rasterApply','rasterStatus','rasterLineSide','circleSide',
+  'rasterScaleCircle','rasterScaleSuggest','rasterScaleConfirm','rasterScaleUse'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(entry,/attachLocalRasterReview/);
  assert.match(entry,/rasterReview\?\.update\('line',raw\)/);

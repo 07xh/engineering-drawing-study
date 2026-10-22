@@ -8,12 +8,15 @@ const {suggestMillimetresPerImagePixel}=
  require('./manual-raster-scale-calibration.cjs');
 const {compareReviewedRulers}=
  require('./manual-raster-ruler-crosscheck.cjs');
+const {proposeCircleScale,acceptCircleScale}=
+ require('./local-raster-circle-scale.cjs');
 
 function attachLocalRasterReview({
  image,photoInput,photoClear,kind,first,second,preview,edits,
  originX,originY,mmPerPx,yAxis,filletRadiusMm,lineSide,
  scaleSource,scaleLength,scaleReviewed,scaleCalculate,scaleStatus,
  crossSource,crossLength,crossReviewed,crossCalculate,crossStatus,
+ scaleCircle,scaleKind,scaleValue,scaleSuggest,scaleConfirm,scaleUse,circleScaleStatus,
  accepted,apply,status,onApply,dom=document
 }){
  for(const node of [image,photoInput,photoClear,kind,first,second,preview,
@@ -30,26 +33,39 @@ function attachLocalRasterReview({
   throw new TypeError('partial second-ruler crosscheck controls');
  if(hasCrossControls&&!hasScaleControls)
   throw new TypeError('second ruler requires first-ruler scale assistant');
+ const circleScaleNodes=[scaleCircle,scaleKind,scaleValue,
+  scaleSuggest,scaleConfirm,scaleUse,circleScaleStatus];
+ const hasCircleScaleControls=circleScaleNodes.every(Boolean);
+ if(!hasCircleScaleControls&&circleScaleNodes.some(Boolean))
+  throw new TypeError('partial optional R/Φ scale assistant controls');
  if(typeof onApply!=='function')throw new TypeError('current workbench hook required');
  const SVG='http://www.w3.org/2000/svg';
  const parts={line:null,curve:null};
- let draft=null,controls={},generation=0,derivedScale=null;
+ let draft=null,controls={},generation=0,derivedScale=null,circleScaleProposal=null;
  const option=(value,label)=>{
   const node=dom.createElement('option');node.value=value;node.textContent=label;
   return node;
  };
  const changed=()=>{accepted.checked=false;};
+ function invalidateCircleScale(){
+  if(!hasCircleScaleControls)return;
+  circleScaleProposal=null;
+  scaleConfirm.checked=false;
+  scaleUse.disabled=true;
+ }
  function invalidateDerivedScale(){
+  invalidateCircleScale();
   if(hasCrossControls){
    crossStatus.textContent='尚未完成可比较的两条独立比例复核。';
    crossReviewed.checked=false;
   }
-  if(!hasScaleControls){changed();return;}
   if(derivedScale){
    mmPerPx.value='';
    derivedScale=null;
-   scaleStatus.textContent='已编辑标注线段或已知尺寸，旧的建议比例已失效；请重新校准。';
+   if(hasScaleControls)
+    scaleStatus.textContent='已更改比例关联条件；旧的毫米／像素建议已失效，请重新核对。';
   }
+  if(!hasScaleControls){changed();return;}
   scaleReviewed.checked=false;
   changed();
  }
@@ -82,6 +98,7 @@ function attachLocalRasterReview({
  function reset(){
   invalidateDerivedScale();
   if(hasScaleControls){scaleSource.value='';scaleLength.value='';}
+  invalidateCircleScale();
   if(hasCrossControls){crossSource.value='';crossLength.value='';}
   generation++;parts.line=null;parts.curve=null;draft=null;
   preview.replaceChildren();edits.replaceChildren();
@@ -119,6 +136,10 @@ function attachLocalRasterReview({
  function drawEdits(){
   invalidateDerivedScale();
   edits.replaceChildren();controls={};
+  if(hasCircleScaleControls){
+   scaleCircle.replaceChildren(option('','先选择真实来源整圆'));
+   scaleCircle.value='';
+  }
   for(const id of [first.value,second.value]){
    const candidate=draft?.candidates.find(c=>c.id===id);
    if(!candidate||controls[id])continue;
@@ -140,6 +161,13 @@ function attachLocalRasterReview({
    controls[id]=mapping;edits.append(container);
   }
   updateScaleSources();
+  if(hasCircleScaleControls){
+   for(const id of [first.value,second.value]){
+    const source=draft?.candidates.find(c=>c.id===id&&c.kind==='circle');
+    if(source)scaleCircle.append(option(id,source.id+' · 需人工核对的完整圆'));
+   }
+   invalidateCircleScale();
+  }
   changed();
  }
  function updateSelectors(){
@@ -205,6 +233,7 @@ function attachLocalRasterReview({
  scaleLength.addEventListener('input',invalidateDerivedScale);
  scaleReviewed.addEventListener('change',changed);
  mmPerPx.addEventListener('input',()=>{
+  invalidateCircleScale();
   derivedScale=null;
   scaleStatus.textContent='已手动更改毫米／像素比例，请重新确认所有相关条件。';
  });
@@ -223,6 +252,7 @@ function attachLocalRasterReview({
     knownLengthMm:value(scaleLength),image:draft.image,
     sourceId:id,explicitlyReviewed:scaleReviewed.checked
    });
+   invalidateCircleScale();
    mmPerPx.value=String(suggestion.mmPerPx);
    derivedScale={sourceId:id,mmPerPx:suggestion.mmPerPx};
    changed();
@@ -291,6 +321,56 @@ function attachLocalRasterReview({
    }
   });
  }
+ }
+
+ if(hasCircleScaleControls){
+  function circleScaleInput(){
+   if(!draft)throw new RangeError('scan image and select a source circle first');
+   const circleId=scaleCircle.value;
+   const selected=[first.value,second.value];
+   const source=draft.candidates.find(c=>c.id===circleId);
+   if(!selected.includes(circleId)||source?.kind!=='circle'||!controls[circleId])
+    throw new TypeError('scale must link one of the selected complete circles');
+   const sourceInputs=controls[circleId];
+   return {draft,expectedRevision:draft.revision,circleId,
+    editedCircle:{center:{x:value(sourceInputs['center.x']),y:value(sourceInputs['center.y'])},
+     radiusPx:value(sourceInputs.radiusPx)},
+    dimensionKind:scaleKind.value,reviewedValueMm:value(scaleValue)};
+  }
+  scaleSuggest.addEventListener('click',()=>{
+   invalidateCircleScale();
+   try{
+    circleScaleProposal=proposeCircleScale(circleScaleInput());
+    scaleUse.disabled=false;
+    circleScaleStatus.textContent='圆尺寸建议比例 '+circleScaleProposal.mmPerPx.toPrecision(7)+
+     ' mm/像素。尚未确认，不能直接作为工程数学证明。';
+   }catch(error){
+    circleScaleStatus.textContent='圆尺寸校准建议失败：'+
+     (error instanceof Error?error.message:'请核对圈选与标注');
+   }
+  });
+  scaleUse.addEventListener('click',()=>{
+   try{
+    const confirmed=acceptCircleScale({
+     proposal:circleScaleProposal,...circleScaleInput(),
+     confirmed:scaleConfirm.checked
+    });
+    invalidateDerivedScale(); // An old line/ruler calibration cannot silently remain active.
+    mmPerPx.value=String(confirmed.mmPerPx);
+    derivedScale={sourceId:confirmed.circleId,mmPerPx:confirmed.mmPerPx};
+    invalidateCircleScale();changed();
+    circleScaleStatus.textContent='已人工采用圆 R/Φ 比例建议 '+confirmed.mmPerPx.toPrecision(7)+
+     ' mm/像素。仍必须复核全部条件；图像比例未被独立证明。';
+   }catch(error){
+    invalidateCircleScale();changed();
+    circleScaleStatus.textContent='拒绝采用圆尺寸比例：'+
+     (error instanceof Error?error.message:'请重新核对');
+   }
+  });
+  for(const control of [scaleCircle,scaleKind,scaleValue]){
+   control.addEventListener('input',invalidateDerivedScale);
+   control.addEventListener('change',invalidateDerivedScale);
+  }
  }
  for(const el of [first,second])el.addEventListener('change',drawEdits);
  kind.addEventListener('change',updateSelectors);

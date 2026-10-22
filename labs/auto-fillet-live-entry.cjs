@@ -374,6 +374,10 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   crossSource:$('rasterCrossSource'),crossLength:$('rasterCrossLength'),
   crossReviewed:$('rasterCrossReviewed'),
   crossCalculate:$('rasterCrossCalculate'),crossStatus:$('rasterCrossStatus'),
+  scaleCircle:$('rasterScaleCircle'),scaleKind:$('rasterScaleKind'),
+  scaleValue:$('rasterScaleValue'),scaleSuggest:$('rasterScaleSuggest'),
+  scaleConfirm:$('rasterScaleConfirm'),scaleUse:$('rasterScaleUse'),
+  circleScaleStatus:$('rasterCircleScaleStatus'),
   accepted:$('rasterAccept'),apply:$('rasterApply'),
   status:$('rasterStatus'),
   onApply:result=>{
