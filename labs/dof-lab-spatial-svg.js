@@ -54,7 +54,7 @@ function markup(model,locus,view={}){
   for(const dir of [[1,0,0],[0,1,0],[0,0,1]])addLine(addVec(P,dir,-17),addVec(P,dir,17),'locus-space');
  }
  out.push('<circle cx="'+f(point.x)+'" cy="'+f(point.y)+'" r="6.5" fill="#d98524" stroke="#fff" stroke-width="2" class="locus-point"/>');
- out.push('<text x="'+f(point.x+9)+'" y="'+f(point.y-11)+'" font-size="15" font-weight="700" fill="#885513">P'+(locus.degrees?'*':'')+'</text>');
+ out.push('<text x="'+f(point.x+9)+'" y="'+f(point.y-11)+'" font-size="15" font-weight="700" fill="#885513" class="locus-label">P'+(locus.degrees?'*':'')+'</text>');
  out.push('<text x="13" y="315" font-size="12" fill="#53705c">固定立体仅供参照；橙色为目标点与可行位置，当前为交互 SVG 预览。</text>');
  return out.join('');
 }
