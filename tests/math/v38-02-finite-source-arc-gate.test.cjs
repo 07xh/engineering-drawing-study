@@ -9,7 +9,7 @@ const {finiteSegmentCircleFillets:rawSegmentCircle}=
 const first={center:{x:0,y:0},radius:5};
 const second={center:{x:20,y:0},radius:5};
 const source=(arc)=>({kind:'two-circles',unit:'mm',revision:24,
- geometry:{first:{...first,...(arc?{arc}:{})},second},
+ geometry:{first:{...first,...(arc!==undefined?{arc}:{})},second},
  filletRadius:10,options:{firstMode:'external',secondMode:'external'}});
 const upper={startAngle:0,endAngle:180,direction:'ccw'};
 const lower={startAngle:180,endAngle:360,direction:'ccw'};
