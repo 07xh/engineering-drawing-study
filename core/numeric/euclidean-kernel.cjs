@@ -6,6 +6,7 @@
  */
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 function vector(value,dimension){
+ if(dimension!==2&&dimension!==3)throw new TypeError('vector dimension must be 2 or 3');
  if(!Array.isArray(value)||value.length!==dimension||
     !Array.from({length:dimension},(_,i)=>Object.hasOwn(value,i)&&finite(value[i])).every(Boolean))
   throw new TypeError('expected finite '+dimension+'D vector');
