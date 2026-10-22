@@ -82,3 +82,27 @@ test('two independent point conversions preserve scale and directional geometry'
  assert.equal(a.y,b.y);
  assert.ok(Object.isFrozen(b));
 });
+
+test('reviewed source, origin and scale are each snapshotted once before conversion',()=>{
+ let sourceReads=0,scaleReads=0,originReads=0;
+ const flickeringImage={...image};
+ Object.defineProperty(flickeringImage,'id',{get(){
+  sourceReads++;return sourceReads===1?image.id:'unexpected-photo';
+ }});
+ const flickeringScale={...scale};
+ Object.defineProperty(flickeringScale,'mmPerPx',{get(){
+  scaleReads++;return scaleReads===1?0.5:Infinity;
+ }});
+ const pixel={...origin.pixel};
+ Object.defineProperty(pixel,'x',{get(){
+  originReads++;return originReads===1?100:NaN;
+ }});
+ const c=create({image:flickeringImage,scale:flickeringScale,
+   origin:{...origin,pixel}});
+ const point=convert(c);
+ assert.equal(point.x,20); assert.equal(point.y,25);
+ assert.equal(c.imageId,image.id);
+ assert.equal(sourceReads,1);
+ assert.equal(scaleReads,1);
+ assert.equal(originReads,1);
+});
