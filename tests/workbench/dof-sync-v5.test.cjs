@@ -157,9 +157,10 @@ test('tampered rank, affine proof or fake zero-degree uniqueness never receives 
  assert.equal(Sync.build(fakeParticular).status,'blocked');
  const activeNotSolved={...base,active:[{type:'coordinate',axis:'x',value:18}]};
  assert.equal(Sync.build(activeNotSolved).status,'blocked');
- const bogusPoint={...base,point:{...base.point,
+ // With zero constraints, any finite sample is allowed: don't falsely reject it.
+ const unconstrainedSample={...base,point:{...base.point,
   example:{...base.point.example,x:1e7}}};
- assert.equal(Sync.build(bogusPoint).status,'blocked');
+ assert.equal(Sync.build(unconstrainedSample).degreeStatus,'sample');
 });
 test('mathematical gate rejects a feasible-line sample that does not satisfy H projection',()=>{
  const withH=Store.apply(Store.create(),{type:'add',
