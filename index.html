@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="DraftAI 数学驱动的工程制图学习平台：真实三面投影、平面圆弧连接、数字尺规与学生数学判题；AI 识图尚未公开开放。">
+<meta name="description" content="DraftAI 个人 AI 工程制图自动解题与动态作图系统：数学几何求解优先，逐步接入题图识别、条件确认、自动作图步骤与 V5 动画。AI 图像上传目前尚未上线。">
 <meta name="theme-color" content="#eff5f0">
-<title>DraftAI · 工程制图智能解题与动态教学</title>
+<title>DraftAI · AI 工程制图自动解题与动态作图</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="site-ui.css">
 <style>
@@ -48,7 +48,7 @@ footer a{color:#3b7957}
 </head>
 <body class="ui-refresh">
 <header class="site-topbar"><div class="site-topbar-inner">
-<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>工程制图 · 几何学习工具</small></span></a>
+<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>工程制图 · AI 自动解题与作图</small></span></a>
 <nav class="site-nav" aria-label="主要导航">
 <a href="index.html" aria-current="page">首页</a>
 <a href="labs/point-projection-live.html">三面投影解题</a>
@@ -67,41 +67,26 @@ footer a{color:#3b7957}
 </div></header>
 <main class="home-wrap">
 <section class="hero-main">
-<span class="eyebrow">DRAFTAI · VERIFIED GEOMETRY LEARNING</span>
-<h1>看懂工程图，从每一条辅助线开始。</h1>
-<p>以真实数学求解为基础，学习同纸三面投影、圆弧相切、辅助线的构造与验证。改变几何条件，系统重新计算；使用手写笔或数字尺规自己作图，逐步理解为什么可以这样画。</p>
+<span class="eyebrow">DRAFTAI · AI GEOMETRY SOLVER & ANIMATION</span>
+<h1>上传工程图题，自动求解并动态作图。</h1>
+<p>这是一个面向个人学习的 AI 工程制图自动解题与动态作图系统。目标是识别陌生二维题图、确认尺寸条件、完成可验证的数学求解，再自动生成 V5 逐笔作图动画。当前正优先建设数学求解闭环，尚未开放 AI 图片上传；下方可体验已具备的基础几何功能。</p>
 <div class="hero-actions">
-<a class="home-btn" href="labs/point-projection-live.html">从三面投影开始 →</a>
-<a class="home-btn secondary" href="labs/circle-fillet-live.html">练习圆弧连接与数学尺规 →</a>
-<a class="home-btn secondary" href="labs/free-modeler.html">进入自由几何实验室</a>
+<a class="home-btn" href="labs/point-projection-live.html">体验现有三面投影求解 →</a>
+<a class="home-btn secondary" href="labs/circle-fillet-live.html">体验现有圆弧连接求解 →</a>
+<a class="home-btn secondary" href="labs/free-modeler.html">查看现有几何实验室</a>
 </div>
-<div class="home-tags"><span>无需注册即可使用基础工具</span><span>第一角法 · 45°转移线</span><span>基础几何与自由度分析</span></div>
-</section>
-
-<section class="section" id="tools">
-<h2>公开学习工具</h2>
-<p class="intro">优先使用真实数学求解的三面投影和圆弧连接工作台；其他工具侧重专项实验。学生工具的辅助线验证不等于整道题的标准答案，复杂题型仍在逐步开发。</p>
-<div class="tool-grid">
-<a class="tool-card" href="labs/circle-fillet-live.html"><span class="tool-icon" aria-hidden="true">⑧</span><strong>圆弧连接 · 智能尺规作图</strong><p>支持两圆和两有限线段；真实计算候选圆心、切点与有向 G1，并可用数字尺规构造辅助轨迹、点选圆心进行数学核验。</p><span class="tool-status">打开真实圆弧计算 →</span></a>
-<a class="tool-card" href="labs/point-projection-live.html"><span class="tool-icon" aria-hidden="true">⑦</span><strong>三面投影 · 动态数学教学</strong><p>输入空间点 XYZ 或任意两面投影，计算完整 V/H/W，并用统一步骤查看 45° 深度转移和进行学生辅助线数学检查。</p><span class="tool-status">已接入数学求解器 →</span></a>
-<a class="tool-card" href="labs/point-coach.html"><span class="tool-icon" aria-hidden="true">①</span><strong>点投影陪练</strong><p>根据已知投影定位第三面投影，获得提示、空间说明和作图反馈。</p><span class="tool-status">进入工具 →</span></a>
-<a class="tool-card" href="labs/dof-lab-v2.html"><span class="tool-icon" aria-hidden="true">②</span><strong>同纸三视图与自由度</strong><p>在同一张纸上理解正、水平和侧面投影，观察辅助线与条件限制。</p><span class="tool-status">进入工具 →</span></a>
-<a class="tool-card" href="labs/free-modeler.html"><span class="tool-icon" aria-hidden="true">③</span><strong>自由几何实验室</strong><p>尝试建立空间点、线和简单面，查看三维模型与对应投影。</p><span class="tool-status">进入工具 →</span></a>
-<a class="tool-card" href="labs/tangent-constraint.html"><span class="tool-icon" aria-hidden="true">④</span><strong>圆弧相切实验</strong><p>调整教学示例的连接半径与候选圆心，理解圆心轨迹和切点验证。</p><span class="tool-status">进入工具 →</span></a>
-<a class="tool-card" href="labs/paper-geometry.html"><span class="tool-icon" aria-hidden="true">⑤</span><strong>尺规几何</strong><p>观察几何作图中的辅助线、构造关系和结果检查。</p><span class="tool-status">进入工具 →</span></a>
-<a class="tool-card" href="labs/composite-geometry.html"><span class="tool-icon" aria-hidden="true">⑥</span><strong>组合体几何</strong><p>体验组合体空间关系及可视化分析；该工具不等于任意组合体自动求解。</p><span class="tool-status">进入工具 →</span></a>
-</div>
+<div class="home-tags"><span>唯一主线：识图 → 确认 → 数学 → 真实步骤 → 动画</span><span>数学底层先行</span><span>AI 上传功能开发中</span></div>
 </section>
 
 <section class="section" id="ai">
-<h2>AI 看题功能与私人资料</h2>
-<p class="intro">先确保基础几何工具可靠，再逐步接入识图、条件确认和自动求解。</p>
+<h2>产品主流程：识图 → 求解 → 自动作图</h2>
+<p class="intro">先验收数学基础和二维真实求解，再将自动构造步骤接入 V5 动画；识图和条件确认按已验证的接口接入。</p>
 <div class="notice-grid">
 <div class="info-panel">
 <span class="status-pill">AI 识图尚未开放</span>
-<h3>未来：上传题图 → 确认条件 → 动态求解</h3>
-<p>目前没有面向公众开放的 AI 图片上传与解题接口，也未提供可用的私人 AI 上传入口。新增功能必须先完成几何验证、接口鉴权、调用额度和隐私检查。</p>
-<p>现阶段可先使用上面的几何工具理解投影和辅助线。</p>
+<h3>目标：上传题图 → 确认条件 → 验证计算 → V5 动态作图</h3>
+<p>目前没有可用的 AI 图片上传与端到端自动解题接口，也没有私密题图上传入口。新功能必须通过数学验证，并完成身份认证、调用额度和隐私检查后才能开放。</p>
+<p>现阶段可体验已通过基础验证的投影和圆弧连接工具。</p>
 </div>
 <div class="info-panel">
 <h3>公开工具与私人资料分开</h3>
@@ -111,8 +96,23 @@ footer a{color:#3b7957}
 </div>
 </div>
 </section>
-<p class="release-note">学习提醒：当前真实自动解题范围以点的三面投影和已支持的圆弧连接为主；学生数字尺规目前只核验相应的辅助构造和候选圆心，不能替代整道工程制图题目的完整数学证明。其他工具各有范围限制，请核对原题尺寸与投影关系。</p>
-<footer>DraftAI · 面向工程制图学习的公开几何工具 · <a href="public-use.html">使用说明与隐私边界</a></footer>
+<section class="section" id="tools">
+<h2>现有数学与作图基础组件</h2>
+<p class="intro">以下是新版自动解题系统可以复用的现有模块，不是产品的课程主线。现阶段支持范围有限，不能把专项示例当作陌生题图的完整标准答案。</p>
+<div class="tool-grid">
+<a class="tool-card" href="labs/circle-fillet-live.html"><span class="tool-icon" aria-hidden="true">⑧</span><strong>圆弧连接 · 智能尺规作图</strong><p>支持两圆和两有限线段；真实计算候选圆心、切点与有向 G1，并可用数字尺规构造辅助轨迹、点选圆心进行数学核验。</p><span class="tool-status">打开真实圆弧计算 →</span></a>
+<a class="tool-card" href="labs/point-projection-live.html"><span class="tool-icon" aria-hidden="true">⑦</span><strong>三面投影 · 动态数学求解</strong><p>输入空间点 XYZ 或任意两面投影，计算完整 V/H/W，并用统一步骤查看 45° 深度转移和进行学生辅助线数学检查。</p><span class="tool-status">已接入数学求解器 →</span></a>
+<a class="tool-card" href="labs/point-coach.html"><span class="tool-icon" aria-hidden="true">①</span><strong>点投影陪练</strong><p>根据已知投影定位第三面投影，获得提示、空间说明和作图反馈。</p><span class="tool-status">进入工具 →</span></a>
+<a class="tool-card" href="labs/dof-lab-v2.html"><span class="tool-icon" aria-hidden="true">②</span><strong>同纸三视图与自由度</strong><p>在同一张纸上理解正、水平和侧面投影，观察辅助线与条件限制。</p><span class="tool-status">进入工具 →</span></a>
+<a class="tool-card" href="labs/free-modeler.html"><span class="tool-icon" aria-hidden="true">③</span><strong>自由几何实验室</strong><p>尝试建立空间点、线和简单面，查看三维模型与对应投影。</p><span class="tool-status">进入工具 →</span></a>
+<a class="tool-card" href="labs/tangent-constraint.html"><span class="tool-icon" aria-hidden="true">④</span><strong>圆弧相切实验</strong><p>调整现有几何示例的连接半径与候选圆心，查看圆心轨迹和切点验证。</p><span class="tool-status">进入工具 →</span></a>
+<a class="tool-card" href="labs/paper-geometry.html"><span class="tool-icon" aria-hidden="true">⑤</span><strong>尺规几何</strong><p>观察几何作图中的辅助线、构造关系和结果检查。</p><span class="tool-status">进入工具 →</span></a>
+<a class="tool-card" href="labs/composite-geometry.html"><span class="tool-icon" aria-hidden="true">⑥</span><strong>组合体几何</strong><p>体验组合体空间关系及可视化分析；该工具不等于任意组合体自动求解。</p><span class="tool-status">进入工具 →</span></a>
+</div>
+</section>
+
+<p class="release-note">功能边界：目前支持的数学求解以部分三面投影和圆弧连接为主，尚未实现任意题图的 AI 自动识别与完整解题。数字尺规只能核验相应的辅助构造和候选圆心，其他题型须以实际求解结果与残差验证为准。</p>
+<footer>DraftAI · 个人 AI 工程制图自动解题与动态作图系统（在建） · <a href="public-use.html">使用说明与隐私边界</a></footer>
 </main>
 </body>
 </html>
