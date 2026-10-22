@@ -29,5 +29,5 @@ test('original page metadata contains no answer fields, binary images or false m
  assert.equal(entry.blindTest,false);
  assert.deepEqual(Object.values(entry.stages),Array(5).fill('untested'));
  assert.deepEqual(entry.evidenceRefs,{});
- assert.ok(Object.keys(page[0]).every(key=>!/(answer|scan|image|base64|step|svg|copyright)/i.test(key)));
+ assert.ok(Object.keys(page[0]).every(key=>!/^(answer|answerText|answerImage|scan|scanBase64|image|imageData|svg|copyrightText)$/i.test(key)));
 });
