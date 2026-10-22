@@ -53,7 +53,9 @@ function request(data,changes={}){
  return {draft,expectedRevision:draft.revision,
   kind:data.kind,firstId:data.firstId,secondId:data.secondId,edits,
   originX:50,originY:70,mmPerPx:1,yAxis:'down',
-  filletRadiusMm:data.filletRadiusMm,accepted:true,...changes};
+  filletRadiusMm:data.filletRadiusMm,
+  lineSide:data.kind==='segment-circle'?1:undefined,
+  accepted:true,...changes};
 }
 test('actual raster candidate descriptions become all 3 real math/G1/V5 types only after user review',()=>{
  for(const data of Object.values(pair)){
@@ -148,7 +150,7 @@ function control(value=''){
  };
 }
 function uiControls(){
- const names=['image','photoInput','photoClear','kind','first','second',
+ const names=['image','photoInput','photoClear','kind','first','second', 'lineSide',
   'preview','edits','originX','originY','mmPerPx','yAxis',
   'filletRadiusMm','accepted','apply','status'];
  const c=Object.fromEntries(names.map(name=>[name,control()]));
@@ -200,7 +202,7 @@ test('the public workbench wires raw geometry callbacks and turns on strict phot
  for(const id of ['rasterDraftPanel','rasterDraftPreview','rasterEdits',
   'rasterFirst','rasterSecond','rasterMmPerPx','rasterOriginX',
   'rasterOriginY','rasterYAxis','rasterFilletRadius','rasterAccept',
-  'rasterApply','rasterStatus'])
+  'rasterApply','rasterStatus','rasterLineSide','circleSide'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(entry,/attachLocalRasterReview/);
  assert.match(entry,/rasterReview\?\.update\('line',raw\)/);
@@ -208,5 +210,31 @@ test('the public workbench wires raw geometry callbacks and turns on strict phot
  assert.match(entry,/sourceReviewEnabled'\)\.checked=true/);
  assert.match(entry,/fieldReview\?\.edited\(name\)/);
  assert.match(entry,/session\.replace\(current/);
+ assert.match(entry,/selection\.side=Number\(\$\('circleSide'\)\.value\)/);
+ assert.match(entry,/circleSide'\)\.value=result\.kind/);
+ assert.match(entry,/receivedCandidates\('line',items,raw\)/);
+ assert.match(entry,/getArrowHints:\(\)=>arrowHints/);
  assert.doesNotMatch(ui,/(fetch\(|XMLHttpRequest|innerHTML|insertAdjacentHTML|localStorage|sessionStorage)/);
+});
+
+test('raster source line can be reversed but its explicitly selected signed side must reverse too',()=>{
+ const {solveFiniteFillet}=require('../../engines/constraints-2d/finite-fillet-gate.cjs');
+ const base=request(pair.mixed);
+ const regular=prepareReviewedRasterImport(base);
+ const reversedEdits={...base.edits,
+  line_1:{from:{...base.edits.line_1.to},to:{...base.edits.line_1.from}}};
+ const reversed=prepareReviewedRasterImport({...base,edits:reversedEdits,lineSide:-1});
+ const solve=p=>solveFiniteFillet(buildConfirmedInput(p.kind,p.fields,{side:p.lineSide},p.reviewedDraftRevision).problem);
+ const first=solve(regular),second=solve(reversed);
+ assert.ok(first.candidates.length>0);
+ assert.equal(first.candidates.length,second.candidates.length);
+ for(const a of first.candidates)
+  assert.ok(second.candidates.some(b=>Math.hypot(a.center.x-b.center.x,
+   a.center.y-b.center.y)<1e-8),'same geometric locus regardless of raster endpoint order');
+});
+test('mixed raster source cannot silently inherit +1 or invalid oriented line side',()=>{
+ for(const side of [undefined,0,2,-2,NaN]){
+  const req=request(pair.mixed,{lineSide:side});
+  assert.throws(()=>prepareReviewedRasterImport(req),/line-circle side/);
+ }
 });

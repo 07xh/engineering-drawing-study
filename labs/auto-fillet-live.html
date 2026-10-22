@@ -123,7 +123,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </div>
 <div class="local-photo" id="rasterDraftPanel" aria-label="照片图元和毫米比例人工审核">
 <h3>照片图元校正与导入（实验）</h3>
-<p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。</p>
+<p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。 线圆连接时，请根据有向端点明确选择法向 +1／−1；检测器可能把线段端点顺序反过来。</p>
 <svg id="rasterDraftPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="原题检测候选的安全线圆几何预览"></svg>
 <div class="fields">
 <label for="rasterFirst">源图元一<select id="rasterFirst"><option value="">先检测图元</option></select></label>
@@ -136,6 +136,12 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <label for="rasterOriginX">原点 X（原图像素）<input id="rasterOriginX" type="number" step="any" value="0"></label>
 <label for="rasterOriginY">原点 Y（原图像素）<input id="rasterOriginY" type="number" step="any" value="0"></label>
 <label for="rasterFilletRadius">目标连接 R（毫米）<input id="rasterFilletRadius" type="number" min="0" step="any" placeholder="从真实题目核对"></label>
+<label for="rasterLineSide">线段与圆连接：已核对的有向线法向侧别
+<select id="rasterLineSide" disabled>
+<option value="">需明确选择圆弧圆心位于哪一侧</option>
+<option value="1">法向 +1：沿编辑线段起点→终点，(−Δy, Δx)</option>
+<option value="-1">法向 −1：上述法向反侧</option>
+</select></label>
 </div>
 <label class="vector-confirm" for="rasterAccept"><input id="rasterAccept" type="checkbox">我已核对所选图元、修改的原图像素坐标、毫米比例、原点及目标连接 R</label>
 <div class="controls"><button type="button" id="rasterApply">把审核后的照片几何导入毫米数学条件</button></div>
@@ -165,6 +171,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="fields" id="fields" style="margin-top:12px"></div>
 <div class="fields" style="margin-top:12px">
 <label for="branch">解分支（真实候选）<select id="branch"><option value="">请选择候选圆心</option></select></label>
+<label for="circleSide">线段与圆：已核对的有向法向侧<select id="circleSide" disabled><option value="1">法向 +1（原手动默认）</option><option value="-1">法向 −1（反向）</option></select></label>
 <label for="direction">结果圆弧方向<select id="direction"><option value="">请选择方向</option><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
 <label for="travel1"><span id="travel1Label">原轮廓 1 方向</span><select id="travel1"></select></label>
 <label for="travel2"><span id="travel2Label">原轮廓 2 方向</span><select id="travel2"></select></label>
