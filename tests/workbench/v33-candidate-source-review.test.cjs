@@ -85,7 +85,11 @@ test('UI keeps candidate selection and final mm confirmation in distinct control
  for(const id of ['sourceCandidate','associateCandidate','candidateStatus'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(entry,/markCandidate\(candidate\)/);
- assert.match(entry,/onCandidates:items=>receivedCandidates/);
+ assert.match(entry,/onCandidates:\(items,raw\)=>\{/);
+ assert.match(entry,/receivedCandidates\('line',items\)/);
+ assert.match(entry,/receivedCandidates\('curve',items\)/);
+ assert.match(entry,/rasterReview\?\.update\('line',raw\)/);
+ assert.match(entry,/rasterReview\?\.update\('curve',raw\)/);
  assert.match(lineUi,/mapLeaderCandidate/);
  assert.match(curveUi,/locateCandidate/);
  assert.match(fieldUi,/state\.mark\(fieldSelect\.value,candidate\.bbox,candidate\.id\)/);
