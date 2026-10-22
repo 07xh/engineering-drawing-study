@@ -83,7 +83,15 @@ function at({motion,reasons,frame,revision,mode='full'}={}){
   status:finished?'complete':selectedIndex<0?'stage-finished':'drawing',
   title:shape+(completed?' · 绘制完成':fraction<=0?' · 尚未下笔':' · 绘制中'),
   why:stepText,
-  basis:detail?.basis||scope+'；使用求解器的真实 '+NAMES[action.kind]+' 动作。',
+  basis:detail?.basis||(
+   action.kind==='circle'?
+    '以已知圆心、连接半径与相切距离关系作候选圆心辅助轨迹；这不是最后的有向连接弧。':
+   action.kind==='line'?
+    '候选圆心到原直线的法向距离由连接半径给出；有限线段范围仍需另外核对。':
+   action.kind==='point'?
+    '标记既有圆心距离轨迹相交或垂足求出的候选位置；多个分支时不得断言唯一。':
+    '依据已验证的有限切点、给定半径及方向逐渐绘出连接弧；未绘完不发表最终残差。'
+  ),
   check:checked,
   step:index+1,action:j+1,totalActions:step.actions.length,
   percent:completed?100:pct(fraction),canClaimFinal:finished
