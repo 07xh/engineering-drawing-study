@@ -87,10 +87,17 @@ function createInteractivePage(){
   'previous','next','restart','solveStatus','stepTitle','stepExplanation','stepCounter',
   'learningMode','fullControls','hintControls','drawControls','hintReveal',
   'hintCounter','undoDraw','redoDraw','clearDraw','checkDraw','drawStatus',
-  'playPause','animationSpeed'];
+  'playPause','animationSpeed','projectionMono','projectionFocus',
+  'projectionViewReset','projectionPicked','projectionViewport'];
  const elements=new Map(ids.map(id=>[id,{
-  id,value:values[id]??'',checked:id==='showGuides',listeners:{},children:[],hidden:false,
-  firstChild:{textContent:''},classList:{toggle(){}},
+  id,value:values[id]??'',checked:id==='showGuides'||id==='projectionFocus',
+  listeners:{},children:[],hidden:false,attributes:{},classes:new Set(),
+  setAttribute(k,v){this.attributes[k]=String(v)},
+  getAttribute(k){return this.attributes[k]??null},
+  get classList(){return {toggle:(c,on)=>{
+   if(on)this.classes.add(c);else this.classes.delete(c);
+  },contains:c=>this.classes.has(c)};},
+  firstChild:{textContent:''},
   addEventListener(kind,callback){this.listeners[kind]=callback},
   getBoundingClientRect(){return {left:0,top:0,width:720,height:470}},
   setPointerCapture(){},
@@ -107,6 +114,7 @@ function createInteractivePage(){
   createElementNS(_namespace,tag){
    return {tag,attributes:{},children:[],textContent:'',
     setAttribute(name,value){this.attributes[name]=String(value)},
+    getAttribute(name){return this.attributes[name]??null},
     append(...nodes){this.children.push(...nodes)}
    };
   }
