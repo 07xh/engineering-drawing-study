@@ -15,6 +15,7 @@ const files = [
   'robots.txt',
   'labs/point-coach.html',
   'labs/point-projection-live.html',
+  'labs/two-point-v5-live.html',
   'labs/circle-fillet-live.html',
   'labs/auto-fillet-live.html',
   'labs/cylinder-cut-live.html',
@@ -102,6 +103,14 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/point-projection-live-entry.cjs')],
  outfile:path.join(out,'labs/point-projection-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* User-confirmed two-point P3 preview, no private source images or answer keys. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/two-point-v5-live-entry.cjs')],
+ outfile:path.join(out,'labs/two-point-v5-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
