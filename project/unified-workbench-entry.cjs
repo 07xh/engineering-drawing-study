@@ -102,9 +102,32 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   msg('项目已打开；恢复后不继承数学验证。');
   render();void showPhoto();
  }
+ function updateRecentCard(items,available){
+  const card=document.getElementById('recent');
+  if(!card)return;
+  const heading=card.querySelector('.next-home-empty-title');
+  const note=card.querySelector('.next-home-empty-note');
+  const action=card.querySelector('.next-home-continue-button');
+  const link=card.querySelector('.next-home-card-heading a');
+  if(!heading||!note||!action)return;
+  if(!available){
+   heading.textContent='本机存储暂不可用';
+   note.textContent='无法读取项目记录，当前编辑不会冒充已保存。';
+  }else if(items.length){
+   heading.textContent='本机已保存 '+items.length+' 个项目';
+   note.textContent='选择上方项目列表继续修改；恢复后需要重新进行数学验证。';
+  }else{
+   heading.textContent='暂无可恢复的本机项目';
+   note.textContent='从上方统一项目工作台新建项目后，会保存在当前设备。';
+  }
+  action.textContent=items.length?'继续本机项目':'打开统一项目工作台';
+  action.href='#project-workbench';
+  if(link){link.href='#project-workbench';link.textContent='进入项目工作台 →';}
+ }
  async function refreshList(){
   if(!store)return;
   projectList=await store.listProjects();
+  updateRecentCard(projectList,true);
   const selector=$('v7-projects');
   selector.replaceChildren();
   const empty=document.createElement('option');empty.value='';
@@ -270,7 +293,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  async function boot(){
   try{store=await openLocalProjects();}
-  catch(e){msg('本机存储不可用：仅临时操作；'+e.message,true);}
+  catch(e){msg('本机存储不可用：仅临时操作；'+e.message,true);
+   updateRecentCard([],false);}
   if(store){
    await refreshList();
    if(projectList.length){
