@@ -7,14 +7,44 @@ const crypto=require('node:crypto');
 const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)
  ?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
 const digest=x=>crypto.createHash('sha256').update(stable(x)).digest('hex');
+const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+function finiteTree(x,seen=new Set()){
+ if(typeof x==='number')return Number.isFinite(x);
+ if(x===null||typeof x==='string'||typeof x==='boolean')return true;
+ if(typeof x!=='object'||seen.has(x))return false;
+ seen.add(x);
+ const ok=(Array.isArray(x)?x:Object.values(x));
+ const valid=ok.every(v=>finiteTree(v,seen));
+ seen.delete(x);
+ return valid;
+}
+function validGeometry(g){
+ if(!object(g)||!finiteTree(g)||typeof g.type!=='string')return false;
+ if(g.type==='line'||g.type==='segment'){
+  const a=g.start,b=g.end;
+  return Array.isArray(a)&&Array.isArray(b)&&a.length===2&&b.length===2&&
+   a.every(Number.isFinite)&&b.every(Number.isFinite)&&
+   Math.hypot(a[0]-b[0],a[1]-b[1])>0;
+ }
+ if(g.type==='point')
+  return Array.isArray(g.at)&&g.at.length===2&&g.at.every(Number.isFinite);
+ if(g.type==='circle')
+  return Array.isArray(g.center)&&g.center.length===2&&g.center.every(Number.isFinite)&&
+   typeof g.radius==='number'&&Number.isFinite(g.radius)&&g.radius>0;
+ return false; // unsupported geometry must be explicitly contracted, never guessed
+}
 function isolateReviewedProblem(input){
  if(!input||typeof input!=='object'||!Array.isArray(input.entities))
   return {status:'not-verified',reason:'entities missing'};
- const allowed=input.entities.filter(e=>e&&e.role==='known-condition');
+ if(!Number.isSafeInteger(input.sourceRevision)||input.sourceRevision<0)
+  return {status:'not-verified',reason:'invalid source revision'};
+ if(input.entities.some(e=>!object(e)||!['known-condition','reference-answer'].includes(e.role)))
+  return {status:'not-verified',reason:'unknown or conflicting entity role'};
+ const allowed=input.entities.filter(e=>e.role==='known-condition');
  const forbidden=input.entities.filter(e=>e&&e.role!=='known-condition');
  if(!allowed.length)return {status:'not-verified',reason:'no reviewed known conditions'};
  if(allowed.some(e=>e.reviewed!==true||typeof e.id!=='string'||!e.id||
-   !e.geometry||typeof e.geometry!=='object'||!e.unitVerified))
+   !validGeometry(e.geometry)||e.unitVerified!=='mm'))
   return {status:'not-verified',reason:'unreviewed geometry or units'};
  if(new Set(allowed.map(e=>e.id)).size!==allowed.length)
   return {status:'not-verified',reason:'duplicate condition ids'};
