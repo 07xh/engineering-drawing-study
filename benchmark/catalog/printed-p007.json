@@ -1,0 +1,46 @@
+[
+  {
+    "printedPage": 7,
+    "questionLabel": "1-7-1",
+    "textbookChapter": null,
+    "topic": "两孔对称支架的复合圆弧连接与切点作图",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 7,
+    "questionLabel": "1-7-2",
+    "textbookChapter": null,
+    "topic": "圆环与基座的多圆弧相切连接",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 7,
+    "questionLabel": "1-7-3",
+    "textbookChapter": null,
+    "topic": "三孔轮廓的复合圆弧切点连接",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 7,
+    "questionLabel": "1-7-4",
+    "textbookChapter": null,
+    "topic": "轴对称长轮廓的变半径圆弧过渡",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]

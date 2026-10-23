@@ -1,0 +1,79 @@
+[
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-1-1",
+    "textbookChapter": null,
+    "topic": "图框及标题栏放置规范选择",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-1-2",
+    "textbookChapter": null,
+    "topic": "图框及标题栏方向规范选择",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-1-3",
+    "textbookChapter": null,
+    "topic": "图纸留边尺寸规范",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-2",
+    "textbookChapter": null,
+    "topic": "角度尺寸标注正误判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-3",
+    "textbookChapter": null,
+    "topic": "圆与圆弧的直径半径尺寸练习",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-4",
+    "textbookChapter": null,
+    "topic": "半径尺寸标注正误判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 4,
+    "questionLabel": "1-4-5",
+    "textbookChapter": null,
+    "topic": "径向和线性尺寸标注练习",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]
