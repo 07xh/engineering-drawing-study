@@ -127,3 +127,15 @@ test('04 underresolved tiny-radius cone at huge coordinates must fail closed',()
  assert.equal(r.status,'undetermined');
  assert.equal(r.verified,false);
 });
+
+test('04 only exactly horizontal plane is a mathematical circle, not nearly horizontal oblique',()=>{
+ const n=P(1e-15,0,1),r=solve(C(),Pl(P(0,0,6),n));
+ assert.equal(r.status,'ready');
+ assert.equal(r.curve.conicType,'ellipse');
+ assert.ok(r.curve.radialBoundsMm.max>r.curve.radialBoundsMm.min);
+});
+test('04 inherited geometry coordinate is not accepted as model-space evidence',()=>{
+ const bad=Object.assign(Object.create({x:0}),{y:0,z:0});
+ assert.throws(()=>solve(C(bad),Pl()),/bounded upright finite cone/);
+ assert.throws(()=>solve(C(),Pl(bad)),/bounded finite model-mm plane/);
+});

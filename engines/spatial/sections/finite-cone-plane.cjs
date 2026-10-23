@@ -8,7 +8,7 @@ const M0=require('../../../core/numeric/euclidean-kernel.cjs');
 const {project}=require('../../../core/projection/conventions.js');
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
-const xyz=x=>obj(x)&&['x','y','z'].every(k=>finite(x[k])&&Math.abs(x[k])<=1e7)&&
+const xyz=x=>obj(x)&&['x','y','z'].every(k=>Object.hasOwn(x,k)&&finite(x[k])&&Math.abs(x[k])<=1e7)&&
  Object.keys(x).every(k=>['x','y','z'].includes(k));
 const copy=p=>({x:p.x,y:p.y,z:p.z});
 const vec=p=>M0.vector([p.x,p.y,p.z],3);
@@ -86,7 +86,7 @@ function conePlaneFullEllipse(cone,plane,{samples=64}={}){
  return {status:'ready',verified:true,modelUnit:'mm',
   geometryKind:'finite-upright-cone-lateral-full-ellipse',
   curve:{kind:'analytic-cone-plane-ellipse',
-   conicType:lateral<1e-14?'circle':'ellipse',parameterRadians:[0,2*Math.PI],
+   conicType:lateral===0?'circle':'ellipse',parameterRadians:[0,2*Math.PI],
    closed:true,apex:copy(apex),
    normal:{x:n[0],y:n[1],z:n[2]},
    numeratorMm:d,denominator:{constant:s,cosCoeff:-n[0],sinCoeff:-n[1]},
