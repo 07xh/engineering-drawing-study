@@ -30,7 +30,7 @@ function homeHTML(){return `
     <p class="next-home-lead">确认题目条件，查看逐笔作图。图纸、步骤与投影关系都在同一工作台中。</p>
     <div class="next-home-hero-actions">
      <a class="next-home-edit" href="labs/auto-fillet-live.html">＋ 开始解题</a>
-     <a class="next-home-example" href="labs/cone-cut-live.html">查看圆锥示例 →</a>
+     <a class="next-home-example" href="labs/circle-fillet-live.html">查看圆弧连接 →</a>
     </div>
     <p class="next-home-capability">当前提供部分题型的条件求解与动态作图；任意图片自动识别尚未开放。</p>
     <div class="next-home-strengths" aria-label="核心功能">
@@ -40,48 +40,65 @@ function homeHTML(){return `
     </div>
    </div>
    <div class="next-home-intro-sheet">
-  <div class="next-home-paper" data-next-illustration data-projection-example="right-circular-cone" aria-label="正圆锥三视图，同纸第一角法；无斜截曲线">
-   <div class="next-home-paper-top"><strong>正圆锥三视图</strong><span>第一角法 · V / H / W</span></div>
-   <svg viewBox="0 0 960 620" role="img" aria-label="正圆锥三视图：V 主视图在左上、H 俯视图在左下、W 左视图在右上；投影对应并带45度宽度转移线">
-    <rect x="9" y="9" width="942" height="602" fill="#fff" stroke="#c8d5e5" stroke-width="1.8"/>
-    <!-- Construction lines have geometric correspondence. Horizontal length
-         x(V)=x(H); height y(V)=y(W); depth on H maps to x(W)
-         across the 45-degree miter at (550,335). -->
-    <g data-projection-guides="true" fill="none" stroke="#b2c5dd" stroke-width="1.15" stroke-linecap="round">
-     <!-- Height correspondence -->
-     <path d="M245 82H685 M345 300H785"/>
-     <!-- Long alignment, V to H -->
-     <path d="M145 300V470 M345 300V470"/>
-     <!-- Width/depth transfers, H to 45-degree miter to W -->
-     <path d="M245 370H585V300 M345 470H685V300 M245 570H785V300"/>
-     <path data-miter="45-degree" d="M550 335L785 570"/>
+  <div class="next-home-paper next-home-fillet-paper" data-next-illustration data-construction-example="right-angle-fillet" aria-label="R40 圆弧连接几何构造示例，解析几何关系计算">
+   <div class="next-home-paper-top"><strong>圆弧连接 · R40</strong><span>直线相切构造 · 单位 mm</span></div>
+   <svg viewBox="0 0 960 620" role="img" aria-label="两条互相垂直的直线以 R40 圆弧连接，显示圆心 O、切点 T1 T2 与辅助等距线">
+    <rect x="9" y="9" width="942" height="602" fill="#fff" stroke="#cbd9e9" stroke-width="1.8" rx="4"/>
+    <g stroke="#edf3fa" fill="none" stroke-width="1">
+     <path d="M42 84H918 M42 515H918 M90 42V576 M869 42V576"/>
     </g>
-    <!-- Standard thin chain centerlines, distinct from construction and object edges -->
-    <g data-projection-axes="true" fill="none" stroke="#9aabc2" stroke-width="1.1" stroke-dasharray="12 5 2 5">
-     <path d="M245 62V316 M685 62V316"/>
-     <path d="M245 348V585 M128 470H363"/>
+    <g fill="#546985" font-family="system-ui,sans-serif" font-size="17">
+     <text x="57" y="66">平面几何 · 两直线内圆角</text>
+     <text x="709" y="66">几何构造步骤示例</text>
     </g>
-    <g fill="#516985" font-family="system-ui,sans-serif" font-size="19">
-     <text x="52" y="52">V 主视图</text>
-     <text x="52" y="356">H 俯视图</text>
-     <text x="558" y="52">W 左视图</text>
-     <text x="801" y="574" font-size="16">45°</text>
+    <!-- One drawing-unit model: four SVG units correspond to 1 mm.
+         Fillet center (512,280), radius 160 SVG units = 40 mm.
+         Horizontal line y=440, vertical line x=672.
+         Tangency T1=(512,440), T2=(672,280). -->
+    <g data-construction-extensions="true" fill="none" stroke="#a3b4ca" stroke-width="1.6" stroke-dasharray="9 8">
+     <path d="M512 440H672 V280"/>
+     <path d="M512 155V475"/>
+     <path d="M385 280H710"/>
     </g>
-    <!-- All three projections come from ONE upright cone of radius 100
-         and projected height 218. No unverified oblique-section curves. -->
-    <g data-projection-view="V" fill="none" stroke="#1c304b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-     <path d="M245 82L145 300H345Z"/>
+    <g data-construction-guides="true" fill="none" stroke="#8db5e8" stroke-width="1.75" stroke-dasharray="7 6">
+     <path data-radius-to-t1="true" d="M512 280V440"/>
+     <path data-radius-to-t2="true" d="M512 280H672"/>
     </g>
-    <g data-projection-view="H" fill="none" stroke="#1c304b" stroke-width="2.8">
-     <circle cx="245" cy="470" r="100"/>
+    <g data-profile="true" fill="none" stroke="#1e304b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+     <path data-horizontal-line="true" d="M150 440H512"/>
+     <path data-vertical-line="true" d="M672 280V123"/>
     </g>
-    <g data-projection-view="W" fill="none" stroke="#1c304b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-     <path d="M685 82L585 300H785Z"/>
+    <path data-fillet-radius-mm="40" data-px-per-mm="4" data-fillet-arc="true"
+       d="M512 440 A160 160 0 0 0 672 280" fill="none" stroke="#0871f5" stroke-width="5.5" stroke-linecap="round"/>
+    <g stroke="#0871f5" stroke-width="1.7" fill="#fff">
+     <circle data-fillet-center="true" cx="512" cy="280" r="5.5"/>
+     <circle data-tangent="t1" cx="512" cy="440" r="5.5"/>
+     <circle data-tangent="t2" cx="672" cy="280" r="5.5"/>
+    </g>
+    <g fill="#254f89" font-family="system-ui,sans-serif" font-size="19">
+     <text x="486" y="258">O</text>
+     <text x="465" y="474">T₁</text>
+     <text x="690" y="274">T₂</text>
+    </g>
+    <g data-radius-mark="true" fill="none" stroke="#577fae" stroke-width="2.2" stroke-linecap="round">
+     <path d="M512 280L625.137 393.137"/>
+     <path d="M617 388L630 399L622 382"/>
+    </g>
+    <rect x="567" y="325" width="77" height="34" rx="7" fill="#eaf3ff" stroke="#c9defa"/>
+    <text x="605" y="349" text-anchor="middle" fill="#0866ef" font-size="22" font-weight="650" font-family="system-ui,sans-serif">R40</text>
+    <g font-family="system-ui,sans-serif" font-size="16" fill="#6b809d">
+     <text x="575" y="473">原直角顶点</text>
+     <text x="54" y="555">辅助等距线确定圆心，半径与两条直线均保持相切。</text>
+    </g>
+    <g fill="none" stroke="#cfdaea" stroke-width="1.2">
+     <path d="M565 460L670 443"/>
+    </g>
+    <g fill="#5d7090" font-family="system-ui,sans-serif" font-size="15">
+     <text x="733" y="559">示意尺寸 · mm</text>
     </g>
    </svg>
-   <div class="next-home-paper-caption">规范三视图示例 · 非题目计算结果。斜截线须进入求解工作台计算，不在首页编造。</div>
+   <div class="next-home-paper-caption">解析几何构造示例，非上传题目答案。切点、圆心及 R40 半径关系一致。</div>
   </div>
-
    </div>
   </div>
  </section>
