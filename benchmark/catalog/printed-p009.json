@@ -1,0 +1,68 @@
+[
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-1",
+    "textbookChapter": null,
+    "topic": "规定斜度线段补画",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-2",
+    "textbookChapter": null,
+    "topic": "平面轮廓斜度构造与标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-3",
+    "textbookChapter": null,
+    "topic": "四心近似椭圆作图",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-4",
+    "textbookChapter": null,
+    "topic": "规定锥度轴外轮廓补画",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-5",
+    "textbookChapter": null,
+    "topic": "圆锥轮廓锥度构造与标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 9,
+    "questionLabel": "1-9-6",
+    "textbookChapter": null,
+    "topic": "辅助同心圆近似椭圆作图",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]
