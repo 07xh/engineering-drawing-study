@@ -6,5 +6,6 @@ module.exports={
  ...require('./geometry.js'),
  ...require('./constraint.js'),
  ...require('./solve-result.js'),
- ...require('./construction-step.js')
+ ...require('./construction-step.js'),
+ ...require('./construction-intent.js')
 };
