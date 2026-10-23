@@ -105,6 +105,7 @@ jobs:
           node scripts/check-textbook-only.cjs
           node scripts/check-public-entry.cjs
           node scripts/check-exercise-source-gate.cjs
+          node scripts/check-partial-exercise-player.cjs
           node scripts/check-textbook-examples.cjs
           node scripts/check-textbook-shape-inspector.cjs
           node scripts/check-textbook-constraint-visual.cjs
