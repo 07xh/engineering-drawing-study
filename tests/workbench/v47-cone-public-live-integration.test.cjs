@@ -24,7 +24,10 @@ test('07 public cone page contains all confirmed-source and V5 playback controls
  assert.match(html,/截线线段为解析曲线的采样近似|折线仅近似解析截线/);
  assert.match(html,/未确认：所有截线线型待审核/);
  assert.match(html,/人工|确认/);
- assert.doesNotMatch(html,/<input[^>]+type="file"/);
+ assert.match(html,/id="coneSourceFile" type="file" accept="image\/png,image\/jpeg,image\/webp"/);
+ assert.match(html,/id="coneSourcePreview"/);
+ assert.match(html,/id="coneSourceClear"/);
+ assert.match(html,/不上传、不自动识图/);
 });
 test('07 real browser entry uses ONE verified M3 ConstructionStep/V5 contract and native Motion',()=>{
  const src=read('labs/cone-cut-live-entry.cjs');
