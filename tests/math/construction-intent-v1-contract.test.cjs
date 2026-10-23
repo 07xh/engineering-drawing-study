@@ -75,3 +75,14 @@ test('03 projection guide may be explicitly sheet-px; mathematical unique needs 
  assert.equal(check(a).ok,true,check(a).errors.join(', '));
  assert.equal(checkDAG([a]).ok,true);
 });
+
+test('F2 line intent refuses finite endpoints with overflowing span',()=>{
+ const a=sample(),op={
+  id:'guide_1',kind:'line',coordinateSpace:'model-mm',
+  geometry:{from:p(Number.MAX_VALUE,0),to:p(-Number.MAX_VALUE,0)}
+ };
+ assert.equal(check({...a,outputEntityIds:['guide_1'],operations:[op]}).ok,
+  false,'finite endpoints must not produce an infinite line length');
+ const safe={...op,geometry:{from:p(-10,0),to:p(10,0)}};
+ assert.equal(check({...a,outputEntityIds:['guide_1'],operations:[safe]}).ok,true);
+});
