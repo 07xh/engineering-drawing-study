@@ -154,3 +154,122 @@ body.ui-next .next-canvas-tools output{font-size:12px;color:var(--next-muted);mi
 body.ui-next .next-canvas-tools button{font-size:13px;min-width:44px}
 body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap)>svg{width:calc(100% * var(--next-zoom,1))!important;max-width:none!important}
 @media(max-width:600px){body.ui-next .next-workspace-title{align-items:flex-start;flex-direction:column}body.ui-next .next-canvas-tools{width:100%}body.ui-next .next-canvas-tools [data-next-focus]{margin-left:auto}}
+
+
+/* V6 production UI refinement: the original blue-and-white shell remains the
+ * only deployed interface. It does not restyle engineering-drawing evidence. */
+body.ui-next {
+  --next-bg:#f5f8fd;
+  --next-paper:#fff;
+  --next-text:#17253d;
+  --next-muted:#637189;
+  --next-line:#d9e4f2;
+  --next-blue:#0866ef;
+  --next-tint:#eaf3ff;
+}
+body.ui-next .next-main {padding-top:14px!important}
+body.ui-next .next-sidebar {gap:14px;padding:18px 12px}
+body.ui-next .next-sidebar-note {display:none}
+body.ui-next .next-start {background:var(--next-blue)}
+body.ui-next .next-sidebar nav a[aria-current=page] {color:var(--next-blue);background:var(--next-tint)}
+body.ui-next .next-stages {
+  margin:7px 0 8px;
+  padding:5px;
+  gap:4px;
+}
+body.ui-next .next-stages button {
+  min-height:36px;
+  padding:5px 7px;
+  font-size:12px;
+}
+body.ui-next .next-status-area {margin-bottom:8px}
+body.ui-next .next-workspace-title {margin-bottom:7px}
+body.ui-next .next-canvas {padding:13px}
+body.ui-next .next-canvas>h2 {margin:0 0 8px;font-size:16px}
+body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+  max-height:min(58dvh,550px);
+  overflow:auto;
+}
+body.ui-next .next-context-panel {padding:12px}
+body.ui-next .next-context-panel :is(h2,h3) {margin-bottom:8px}
+body.ui-next .next-playback {
+  padding:9px 12px;
+  gap:8px;
+  border-color:var(--next-line);
+}
+body.ui-next .next-playback :is(button,select) {min-height:44px}
+body.ui-next .next-playback #fullControls {margin:0}
+body.ui-next .next-context-panel #stepList button[aria-current=step] {
+  border-color:var(--next-blue);
+  background:var(--next-tint);
+  color:var(--next-blue);
+}
+body.ui-next .next-context-panel :is(.completed,.step-complete,[data-status=complete],[data-complete=true]) {
+  color:var(--next-blue);
+}
+body.ui-next .next-home {padding-top:12px!important}
+body.ui-next .next-home-hero {
+  gap:22px;
+  padding:4px 0 16px;
+}
+body.ui-next .next-home-hero h1 {
+  font-size:clamp(28px,3.2vw,44px);
+  line-height:1.25;
+  margin:0 0 10px;
+}
+body.ui-next .next-home-intro {
+  font-size:15px;
+  line-height:1.55;
+  margin:0;
+}
+body.ui-next .next-home-actions {margin:14px 0;gap:12px}
+body.ui-next .next-home-boundary {line-height:1.55}
+body.ui-next .next-home-sheet figcaption {padding:10px 14px}
+body.ui-next .next-sheet-caption {padding:8px 12px;gap:10px}
+body.ui-next .next-home-section {margin:16px 0 22px}
+body.ui-next .next-home-shortflow {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  background:white;
+  border:1px solid var(--next-line);
+  border-radius:10px;
+  padding:12px 17px;
+}
+body.ui-next .next-home-shortflow h2 {font-size:16px;margin:0}
+body.ui-next .next-home-shortflow p {margin:0;color:var(--next-muted);font-size:13px}
+body.ui-next .next-section-heading {margin-bottom:10px}
+body.ui-next .next-section-heading h2 {font-size:20px}
+body.ui-next .next-tool-grid {gap:10px}
+body.ui-next .next-tool-card {
+  min-height:135px;
+  padding:14px;
+  gap:4px;
+}
+body.ui-next .next-tool-number {margin-bottom:2px}
+body.ui-next .next-tool-card h3 {font-size:16px;margin:0}
+body.ui-next .next-tool-card p {font-size:12px;line-height:1.55;margin:0 0 7px}
+body.ui-next .next-knowledge {padding:16px 20px;gap:20px}
+body.ui-next .next-knowledge h2 {font-size:18px}
+body.ui-next .next-knowledge p:not(.next-eyebrow) {line-height:1.55}
+@media(max-width:850px) {
+  body.ui-next .next-canvas {padding:10px}
+  body.ui-next .next-playback {
+    position:sticky;
+    bottom:4px;
+    z-index:25;
+    box-shadow:0 8px 22px rgba(21,68,128,.15);
+  }
+  body.ui-next .next-stages {overflow-x:auto;flex-wrap:nowrap}
+  body.ui-next .next-stages button {min-width:max-content;flex:0 0 auto}
+}
+@media(max-width:520px) {
+  body.ui-next .next-home-hero h1 {font-size:30px}
+  body.ui-next .next-home-shortflow {padding:10px;gap:6px}
+  body.ui-next .next-tool-card {padding:13px}
+  body.ui-next .next-playback {padding:7px}
+  body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+    max-height:49dvh;
+  }
+}
