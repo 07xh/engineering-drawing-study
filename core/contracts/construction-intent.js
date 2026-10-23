@@ -106,5 +106,6 @@ function validateConstructionIntentDAG(intents){
  }
  return report(errors);
 }
-module.exports={CONSTRUCTION_INTENT_VERSION,KINDS,SPACES,validAction,
- validSource,validateConstructionIntent,validateConstructionIntentDAG};
+module.exports={CONSTRUCTION_INTENT_VERSION,KINDS,SPACES,
+ validIntentOperation:validAction,validIntentSource:validSource,
+ validateConstructionIntent,validateConstructionIntentDAG};
