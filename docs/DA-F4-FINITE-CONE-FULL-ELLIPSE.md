@@ -1,4 +1,4 @@
-# 04 / F4 — Finite circular cone oblique full-ellipse solver (draft)
+# 04 / F4 — Finite circular cone oblique full-ellipse M3 solver (merged #405)
 
 New independently scoped M3 specialist `engines/spatial/sections/finite-cone-plane.cjs`. Follows #372, #346 and #152. It does not add any shared math core, 3D ConstructionIntent schema, or V5 player.
 
@@ -18,8 +18,8 @@ The solver rechecks every sampled 3D point against **both independent equations*
 
 ## Fail-closed unsupported cases
 
-Plane too steep, vertical, generator-parallel, through/near apex, cap clipping or cap rim touch, under-resolved features, and unstable residuals return an explicitly non-ready status. Safe disjoint planes may return `none`. No silently inferred parabola/hyperbola, unverified cap chord, visibility, filled solid cut, first-angle paper composition, V5 workbench steps, global uniqueness or textbook answer.
+For `conePlaneFullEllipse` only: planes too steep, vertical, generator-parallel, through/near apex, cap clipping or cap rim touch, under-resolved features, and unstable residuals return an explicitly non-ready status. The separately merged `conePlaneClippedEllipseBoundary` (#416) addresses one strict elliptical clipping regime. Safe disjoint planes may return `none`. No silently inferred parabola/hyperbola, unverified cap chord, visibility, filled solid cut, first-angle paper composition, V5 workbench steps, global uniqueness or textbook answer.
 
-## Integration gates
+## Actual integration and remaining proof boundary
 
-New code is a **Draft** specialist. Retain existing 04 prism/pyramid/cylinder/sphere solvers and old tests; do not replace them. Requires independent 04/09 mathematics review and 00 approval of exact HEAD CI, cap and tangent counterexamples, and a reviewed 3D evidence/Intent-to-single-V5 consumer contract. Per requested sequence, complete #394 -> #395 -> #396 -> #397 first. Rollback: remove only two new files.
+This M3 full-ellipse specialist was merged to main via #405 on 2026-10-23; strict cap-clipped boundary support followed via #416. Both had all applicable latest-HEAD GitHub Actions successful before merge. Legacy requirements for distinct 00/09 GitHub reviewers and pending #394–#396 approvals are obsolete under current #152. Preserve existing 04 prism/pyramid/cylinder/sphere solvers and their tests. Remaining work is validated 3D evidence/Intent-to-single-V5 integration, hidden-line and sheet layout proof, real problems and production Active verification. Rollback by reverting each corresponding isolated merge commit.
