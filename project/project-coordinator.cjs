@@ -6,7 +6,7 @@
  */
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
-const TASKS = Object.freeze(['planar', 'projection', 'exploration']);
+const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
 const VIEWS = Object.freeze(['V', 'H', 'W', '3D']);
 const KINDS = Object.freeze(['point', 'line', 'plane', 'edge', 'solid']);
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,79}$/;
