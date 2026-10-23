@@ -1228,3 +1228,156 @@ body.ui-next .next-home-fillet-paper .next-home-paper-caption {
   max-height:min(48dvh,410px);
  }
 }
+
+
+/* V6.6 | Homepage paper-first hero, tuned against the user's tablet screenshot.
+   Presentation-only: SVG fillet coordinates, real solver and player remain intact.
+   Removes stretch-forced blank height; uses existing right-side info cards. */
+body.ui-next .next-home-v64 {
+ align-items:start;
+ row-gap:10px;
+ margin-bottom:10px;
+}
+body.ui-next .next-home-v64 .next-home-drawing {
+ padding:13px 12px;
+ align-self:start;
+}
+body.ui-next .next-home-intro-block {
+ grid-template-columns:minmax(0,.81fr) minmax(0,1.19fr);
+ align-items:center;
+ gap:12px;
+}
+body.ui-next .next-home-intro-copy {
+ padding:8px 3px 8px 7px;
+ justify-content:center;
+}
+body.ui-next .next-home-kicker {
+ margin:0 0 11px;
+ padding:5px 11px;
+}
+body.ui-next .next-home-intro-copy h1 {
+ font-size:clamp(26px,2.55vw,39px);
+ margin:0 0 10px;
+ line-height:1.22;
+}
+body.ui-next .next-home-lead {
+ font-size:clamp(13px,1.05vw,15px);
+ line-height:1.58;
+ max-width:33ch;
+}
+body.ui-next .next-home-hero-actions {
+ margin:17px 0 10px;
+ gap:8px;
+}
+body.ui-next .next-home-hero-actions a {
+ min-height:44px;
+ padding:9px 12px;
+}
+body.ui-next .next-home-capability {
+ font-size:11px;
+ line-height:1.5;
+ margin:0 0 11px;
+}
+body.ui-next .next-home-strengths {
+ gap:4px;
+ padding-top:10px;
+ align-items:start;
+}
+body.ui-next .next-home-strengths>div {
+ display:flex;
+ flex-direction:column;
+ gap:4px;
+ padding:2px 7px 0 0;
+}
+body.ui-next .next-home-strengths>div+div {padding-left:9px}
+body.ui-next .next-home-strengths svg {
+ width:22px;height:22px;
+ color:#0866ef;
+ padding:3px;
+ border-radius:50%;
+ background:#edf5ff;
+ box-sizing:content-box;
+}
+body.ui-next .next-home-strengths strong {
+ font-size:12px;
+ line-height:1.35;
+}
+body.ui-next .next-home-strengths span {
+ font-size:10.5px;
+ line-height:1.45;
+ margin-top:0;
+}
+body.ui-next .next-home-intro-sheet {
+ padding:5px 5px 8px 0;
+ max-width:100%;
+ min-width:0;
+}
+body.ui-next .next-home-intro-sheet::before {
+ inset:10px 0 2px 12px;
+ transform:rotate(-1deg);
+}
+body.ui-next .next-home-intro-sheet>.next-home-fillet-paper {
+ transform:none;
+ width:100%;
+ margin:0;
+}
+body.ui-next .next-home-intro-sheet .next-home-fillet-paper svg {
+ width:100%;
+ height:auto;
+ aspect-ratio:525 / 387;
+ max-height:min(68dvh,490px);
+ object-fit:contain;
+}
+body.ui-next .next-home-intro-sheet .next-home-paper-top {
+ padding:7px 9px;
+}
+body.ui-next .next-home-intro-sheet .next-home-paper-caption {
+ padding:7px 9px;
+ line-height:1.4;
+ font-size:10px;
+}
+body.ui-next .next-home-v64 .next-home-workflow {
+ align-self:start;
+ grid-template-rows:auto auto;
+ gap:11px;
+}
+body.ui-next .next-home-v64 .next-home-workflow-card {
+ padding:14px;
+ min-height:0;
+}
+body.ui-next .next-home-v64 .next-home-continue {
+ min-height:0;
+}
+body.ui-next .next-home-v64 .next-home-library {
+ min-height:140px;
+}
+body.ui-next .next-home-categories {
+ margin-top:9px;
+}
+@media(min-width:1001px) and (max-width:1230px) {
+ body.ui-next .next-home-intro-block {
+  grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);
+  gap:8px;
+ }
+ body.ui-next .next-home-intro-copy {padding:3px}
+ body.ui-next .next-home-hero-actions a {padding:8px 9px}
+ body.ui-next .next-home-strengths svg {width:19px;height:19px}
+}
+@media(min-width:641px) and (max-width:790px) {
+ body.ui-next .next-home-intro-block {
+  grid-template-columns:1fr;
+ }
+ body.ui-next .next-home-intro-copy {padding:5px 9px}
+ body.ui-next .next-home-intro-sheet {width:min(100%,650px);margin:0 auto}
+}
+@media(max-width:640px) {
+ body.ui-next .next-home-intro-copy {padding:4px}
+ body.ui-next .next-home-intro-sheet {padding:4px 2px 9px}
+ body.ui-next .next-home-intro-sheet .next-home-fillet-paper svg {
+  aspect-ratio:525 / 387;
+  max-height:min(55dvh,480px);
+ }
+ body.ui-next .next-home-strengths {gap:6px}
+ body.ui-next .next-home-strengths>div {padding:2px}
+ body.ui-next .next-home-v64 .next-home-library {min-height:0}
+}
