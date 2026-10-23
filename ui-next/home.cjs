@@ -39,13 +39,57 @@ function homeHTML(){return `
    <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片" hidden>
    <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
    <p class="v7-warning">原图仅供人工读取：当前不自动识别未知题型、不读取教材答案。下面坐标必须自行核对。</p>
-   <fieldset><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
+   <label>当前项目题型 <select id="v7-task" aria-label="切换同一项目的求解任务">
+    <option value="projection">点的 V/H/W 三面投影</option>
+    <option value="planar">二维两线段圆弧连接 · 正式 V5</option>
+    <option value="exploration">长方体截平面 · 限定证据预览</option>
+   </select></label>
+   <p class="v7-note">更换题型会清除本项目旧对象和已确认条件，保留原题图片。所有步骤仍来自对应正式数学入口。</p>
+   <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
     <label>x <input id="v7-x" type="number" step="any" value="15"></label>
     <label>y <input id="v7-y" type="number" step="any" value="10"></label>
     <label>z <input id="v7-z" type="number" step="any" value="12"></label>
    </div><button type="button" id="v7-stage">提交待确认条件</button>
    <button type="button" id="v7-confirm">核对并确认条件</button>
    <button type="button" id="v7-solve" class="v7-primary">重新数学求解与作图</button></fieldset>
+   <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other">提交当前题型条件</button>
+    <button type="button" id="v7-confirm-other">核对并确认</button>
+    <button type="button" id="v7-solve-other" class="v7-primary">运行现有 M3 数学</button></div>
+
+   <fieldset data-v7-task="planar" hidden>
+    <legend>二维圆弧连接 · 两条有限线段（模型 mm）</legend>
+    <p class="v7-note">分别确认两条线段端点、半径、求解分支及行进方向。实际圆心与切点由现有 02 M3 求解，不由页面写死。</p>
+    <div class="v7-xyz">
+     <label>线段 1 A.x <input id="v7-f-ax" type="number" value="-20" step="any"></label>
+     <label>A.y <input id="v7-f-ay" type="number" value="0" step="any"></label>
+     <label>B.x <input id="v7-f-bx" type="number" value="20" step="any"></label>
+     <label>B.y <input id="v7-f-by" type="number" value="0" step="any"></label>
+     <label>线段 2 C.x <input id="v7-f-cx" type="number" value="0" step="any"></label>
+     <label>C.y <input id="v7-f-cy" type="number" value="-20" step="any"></label>
+     <label>D.x <input id="v7-f-dx" type="number" value="0" step="any"></label>
+     <label>D.y <input id="v7-f-dy" type="number" value="20" step="any"></label>
+     <label>连接半径 R <input id="v7-f-radius" type="number" min="0" step="any" value="10"></label>
+     <label>分支 <select id="v7-f-branch"><option value="s++">s++</option><option value="s+-">s+-</option><option value="s-+">s-+</option><option value="s--">s--</option></select></label>
+     <label>圆弧方向 <select id="v7-f-direction"><option value="ccw">逆时针</option><option value="cw">顺时针</option></select></label>
+     <label>线段 1 行进 <select id="v7-f-first"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+     <label>线段 2 行进 <select id="v7-f-second"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+    </div>
+   </fieldset>
+   <fieldset data-v7-task="exploration" hidden>
+    <legend>长方体及任意截平面（模型 mm）</legend>
+    <p class="v7-warning">空间 M3 目前仅输出限定几何证据：显示原立体线框和对应 V/H/W，不代表截线、遮挡或逐笔动画已经验收。</p>
+    <div class="v7-xyz">
+     <label>宽 X <input id="v7-p-width" type="number" step="any" value="10"></label>
+     <label>深 Y <input id="v7-p-depth" type="number" step="any" value="10"></label>
+     <label>高 Z <input id="v7-p-height" type="number" step="any" value="10"></label>
+     <label>平面点 x <input id="v7-p-px" type="number" step="any" value="0"></label>
+     <label>平面点 y <input id="v7-p-py" type="number" step="any" value="0"></label>
+     <label>平面点 z <input id="v7-p-pz" type="number" step="any" value="12"></label>
+     <label>法向 x <input id="v7-p-nx" type="number" step="any" value="1"></label>
+     <label>法向 y <input id="v7-p-ny" type="number" step="any" value="1"></label>
+     <label>法向 z <input id="v7-p-nz" type="number" step="any" value="1"></label>
+    </div>
+   </fieldset>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
    <div class="v7-advanced"><strong>更多已存在专业工具</strong>
    <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
@@ -54,7 +98,7 @@ function homeHTML(){return `
   <section class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="统一求解结果的正面 V、水平 H、侧面 W 与 V5 作图"></svg>
-   <div class="v7-spatial"><div class="v7-line"><strong>同一几何结果的空间视图</strong><span>仅点投影，非 CAD 实体</span></div>
+   <div class="v7-spatial"><div class="v7-line"><strong>同一数学场景的空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
     <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
@@ -67,7 +111,7 @@ function homeHTML(){return `
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
    <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p class="v7-warning">目前正式贯通的是已确认空间点的 V/H/W。其他题型继续保留原有专业工具；不能把空间预览当成整题自动解答。</p>
+   <p class="v7-warning">点投影与两线段圆弧连接可复用正式 V5。长方体仅呈现已确认原立体和局部数学证据，不推测截交线、虚实线或动画。</p>
   </section>
  </div>
 </section>
