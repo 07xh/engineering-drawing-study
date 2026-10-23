@@ -24,9 +24,13 @@ function validAction(a){
     !SPACES.includes(a.coordinateSpace)||!object(a.geometry)||
     !exactKeys(a,['id','kind','coordinateSpace','geometry']))return false;
  const g=a.geometry;
- if(a.kind==='line')return exactKeys(g,['from','to'])&&
-  point(g.from)&&point(g.to)&&
-  Math.hypot(g.from.x-g.to.x,g.from.y-g.to.y)>1e-12;
+ if(a.kind==='line'){
+  if(!exactKeys(g,['from','to'])||!point(g.from)||!point(g.to))return false;
+  // Finite endpoints can still overflow on subtraction/hypot.
+  // A numerically unrepresentable model segment is not a valid intent.
+  const length=Math.hypot(g.from.x-g.to.x,g.from.y-g.to.y);
+  return finite(length)&&length>1e-12;
+ }
  if(a.kind==='point')return exactKeys(g,['at'])&&point(g.at);
  if(a.kind==='circle')return a.coordinateSpace==='model-mm'&&
   exactKeys(g,['center','radius'])&&point(g.center)&&finite(g.radius)&&g.radius>0;
