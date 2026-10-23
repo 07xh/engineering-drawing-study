@@ -27,7 +27,7 @@
   });
   function setCanvasFocus(on){
    document.body.classList.toggle('next-focus-canvas',on);
-   if(focusControl){focusControl.setAttribute('aria-pressed',String(on));focusControl.textContent=on?'退出专注画布':'专注画布';}
+   if(focusControl){focusControl.setAttribute('aria-pressed',String(on));const label=on?'退出专注图纸':'专注图纸';focusControl.setAttribute('aria-label',label);focusControl.setAttribute('title',label);focusControl.setAttribute('data-ui-tip',label);}
   }
   function syncRailButtons(){
    for(const control of document.querySelectorAll('[data-next-open-panel]')){
