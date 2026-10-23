@@ -21,6 +21,56 @@ const TOOLS=[
 ];
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","cone-cut-live","cylinder-cut-live","prism-cut-live","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
+<section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
+ <div class="v7-head"><div><p class="next-home-kicker">V7 · 同一份本机项目</p><h1 id="v7-title">统一项目工作台</h1>
+ <p>本机原图 → 人工确认毫米条件 → 真实数学 → 第一角 V/H/W、空间视图与单一 V5</p></div>
+ <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
+ <div class="v7-bar" aria-label="项目操作">
+  <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
+  <button type="button" id="v7-open">打开项目</button><button type="button" id="v7-new">新建项目</button>
+  <button type="button" id="v7-export">导出 .daiproject</button>
+  <label class="v7-file-control">导入项目包<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
+  <button type="button" id="v7-delete" class="v7-danger">删除当前项目</button>
+ </div>
+ <div class="v7-layout">
+  <section class="v7-card v7-input" aria-label="题图和条件审核"><h2>原图与条件</h2>
+   <label>项目名称<input id="v7-title-input" maxlength="120" value="未命名项目" autocomplete="off"></label>
+   <label class="v7-file-control">选择本机原题图片<input id="v7-image-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
+   <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片" hidden>
+   <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
+   <p class="v7-warning">原图仅供人工读取：当前不自动识别未知题型、不读取教材答案。下面坐标必须自行核对。</p>
+   <fieldset><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
+    <label>x <input id="v7-x" type="number" step="any" value="15"></label>
+    <label>y <input id="v7-y" type="number" step="any" value="10"></label>
+    <label>z <input id="v7-z" type="number" step="any" value="12"></label>
+   </div><button type="button" id="v7-stage">提交待确认条件</button>
+   <button type="button" id="v7-confirm">核对并确认条件</button>
+   <button type="button" id="v7-solve" class="v7-primary">重新数学求解与作图</button></fieldset>
+   <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
+   <div class="v7-advanced"><strong>更多已存在专业工具</strong>
+   <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
+   <a href="labs/recognition-qa.html">本机识图候选检查</a></div>
+  </section>
+  <section class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
+   <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label></div>
+   <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="统一求解结果的正面 V、水平 H、侧面 W 与 V5 作图"></svg>
+   <div class="v7-spatial"><div class="v7-line"><strong>同一几何结果的空间视图</strong><span>仅点投影，非 CAD 实体</span></div>
+    <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
+    <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>
+    <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
+   <p class="v7-note" id="v7-selection">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
+  </section>
+  <section class="v7-card v7-steps" aria-label="统一 V5 播放与数学证据"><h2>真实作图步骤 · V5</h2>
+   <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+   <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
+   <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
+   <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
+    <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
+   <div id="v7-step-list" aria-label="可点选作图步骤"></div>
+   <p class="v7-warning">目前正式贯通的是已确认空间点的 V/H/W。其他题型继续保留原有专业工具；不能把空间预览当成整题自动解答。</p>
+  </section>
+ </div>
+</section>
 <section class="next-home-hero next-home-workbench next-home-v64" id="ai" aria-label="工程制图解题首页">
  <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
   <div class="next-home-intro-block">
