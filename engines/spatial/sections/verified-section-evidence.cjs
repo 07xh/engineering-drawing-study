@@ -7,6 +7,7 @@
  * recomputes whitelisted sections; caller-provided result.verified is NOT proof.
  */
 const {validateSolveResult}=require('../../../core/contracts/solve-result.js');
+const {validateGeometry}=require('../../../core/contracts/geometry.js');
 const {prismPlaneSection}=require('./rectangular-prism-plane.cjs');
 const {pyramidPlaneSection}=require('./rectangular-pyramid-plane.cjs');
 const {intersectCylinderSidePlane}=require('./axis-cylinder-plane.cjs');
@@ -174,6 +175,25 @@ function assertSphereProof(result,sphere,plane){
  }
 }
 /**
+ * Expose ONLY the already audited straight-edged section boundary as shared
+ * Geometry. This does not certify any face interior, hidden line, global
+ * uniqueness or V5. No second intersection calculation or SVG-specific shape.
+ */
+function verifiedPolygonPerimeterGeometry(result){
+ const points=result.vertices.map(({point})=>Object.freeze({
+  x:point.x,y:point.y,z:point.z
+ }));
+ const geometry={id:'Section1',kind:'polyline',space:'model-3d',unit:'mm',
+  data:{points,closed:true}};
+ const checked=validateGeometry(geometry);
+ if(!checked.ok)
+  throw new TypeError('specialist polygon cannot enter shared Geometry Scene: '+
+   checked.errors.join('; '));
+ return Object.freeze({...geometry,data:Object.freeze({
+  points:Object.freeze(points),closed:true
+ })});
+}
+/**
  * Recomputes a section internally from explicit model-millimetre input.
  * No caller-provided result or forged solver callback is accepted. Source
  * photo / ProblemDraft confirmation still belongs to the upstream gate.
@@ -206,6 +226,10 @@ function solveVerifiedSectionEvidence(input){
  if(kind==='cylinder-lateral')assertCylinderProof(result);
  else if(kind==='sphere-surface')assertSphereProof(result,solid,plane);
  else assertPolygonProof(result,plane,solid,kind);
- return packet(result,solverId,scope,true);
+ const evidence=packet(result,solverId,scope,true);
+ if(kind==='rectangular-prism'||kind==='rectangular-pyramid')
+  return Object.freeze({...evidence,
+   sectionPerimeterGeometry:verifiedPolygonPerimeterGeometry(result)});
+ return evidence;
 }
 module.exports={solveVerifiedSectionEvidence};
