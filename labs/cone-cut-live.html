@@ -46,10 +46,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 @media(max-width:490px){.wrap{padding:12px 10px 40px}.panel{padding:12px}.actions button,.playbar button{flex:1}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
-#cone3dSvg{display:block;width:100%;max-height:300px;border:1px solid #dce9dd;border-radius:12px;background:#f8fbff}
+#cone3dSvg{display:block;width:100%;max-height:300px;border:1px solid #dce9dd;border-radius:12px;background:#f8fbff;touch-action:pan-y}
 .cone-spatial-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}
 .cone-spatial-controls label{flex:1 1 160px;margin:0}
-.cone-spatial-controls input{min-height:24px;padding:0}
+.cone-spatial-controls input{min-height:44px;padding:0}
 [data-cone-3d-point]{cursor:pointer;outline-offset:4px}
 [data-cone-3d-point]:focus-visible{outline:2px solid #176eaa}
 </style>
@@ -112,7 +112,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label for="coneTilt">俯仰视角<input id="coneTilt" type="range" min="5" max="85" value="25"></label>
 </div>
 <p id="cone3dStatus" class="small" role="status" aria-live="polite">尚未确认空间几何条件。</p>
-<p class="small">仅显示解析模型的线框、数学截线与示意截平面范围；不是已证明的切后实体、连续遮挡或制图标准线型。点击三维特殊点可定位到同一个 V5 步骤。</p>
+<p class="small">仅显示解析模型的线框、数学截线与示意截平面范围；不是已证明的切后实体、连续遮挡或制图标准线型。在手机上左右拖动三维空白区域可旋转方位角，俯仰角用滑块调整；点选空间截线可在三视图中定位对应采样点。点击特殊点可定位到同一个 V5 步骤。</p>
 </section>
 
 <svg id="coneSvg" viewBox="0 0 960 680" role="img" aria-label="解析圆锥截线 V H W 三视图动态作图">
