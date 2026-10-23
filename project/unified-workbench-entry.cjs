@@ -7,6 +7,7 @@ const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
+const {reviewDoubleScale}=require('./source-calibration.cjs');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -264,6 +265,28 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   return {id:POINT,kind:'point',spatialId:POINT+'_3D',
     projections:{V:[POINT+'_V'],H:[POINT+'_H'],W:[POINT+'_W']}};
  }
+
+ function hydrateCalibration(project){
+  const c=project.source.calibration;
+  $('v7-cal-rotation').value=String(project.source.rotationDeg);
+  if(c?.method==='manual-two-scale'&&c.measurements?.length===2){
+   for(let i=0;i<2;i++){
+    $('v7-cal-px'+(i+1)).value=String(c.measurements[i].pixelDistance);
+    $('v7-cal-mm'+(i+1)).value=String(c.measurements[i].mmDistance);
+   }
+  }
+ }
+ function calibrationStatus(source){
+  const c=source.calibration;
+  if(!source.imageId)return '尚未选择原图：比例输入不会获得确认资格。';
+  if(!c)return '原图尚未完成独立双比例核对，不可直接把像素当毫米。';
+  if(c.method!=='manual-two-scale')
+   return '历史项目只有单比例尺：需要两组独立的人工量测重新复核。';
+  return '两组人工量测一致：'+c.mmPerPixel.toPrecision(7)+
+   ' mm/px，差异 '+(100*c.relativeDisagreement).toFixed(3)+
+   '%；数值一致不等于照片内容已自动识别。';
+ }
+
  function mount(project){
   stopAnimation();closePhoto();
   if(unsub)unsub();unsub=null;
@@ -278,6 +301,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
+  hydrateCalibration(project);
   $('v7-c-objects').value='';
   if(project.task==='composition')refreshComposition();
   $('v7-projects').value=project.id;
@@ -469,6 +493,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  $('v7-cal-status').textContent=calibrationStatus(snap.source);
+  $('v7-cal-apply').disabled=!snap.source.imageId;
+  $('v7-cal-clear').disabled=!snap.source.imageId||snap.source.calibration===null;
   $('v7-task').value=snap.task;
   for(const fieldset of root.querySelectorAll('fieldset[data-v7-task]'))
     fieldset.hidden=fieldset.dataset.v7Task!==snap.task;
@@ -540,6 +567,46 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   }
   await makeNew();
  }
+
+ const scaleEntries=[
+  ['v7-cal-px1','v7-cal-mm1'],['v7-cal-px2','v7-cal-mm2']
+ ];
+ $('v7-cal-apply').addEventListener('click',()=>call(async()=>{
+  if(!coordinator?.snapshot().source.imageId)throw Error('请先保存原始图片');
+  const measurements=scaleEntries.map(([px,mm])=>({
+   pixelDistance:numberFrom(px),mmDistance:numberFrom(mm)
+  }));
+  const calibration=reviewDoubleScale(measurements);
+  coordinator.setImageGeometry({
+   rotationDeg:Number($('v7-cal-rotation').value),calibration
+  });
+  msg('已记录两组一致的人工比例；原题旧条件和 V5 已全部失效。');
+ }));
+ $('v7-cal-clear').addEventListener('click',()=>call(async()=>{
+  if(!coordinator?.snapshot().source.imageId)throw Error('没有已保存原图');
+  coordinator.setImageGeometry({
+   rotationDeg:Number($('v7-cal-rotation').value),calibration:null
+  });
+  msg('已清除来源比例；所有旧条件须重新确认。');
+ }));
+ for(const [px,mm]of scaleEntries){
+  for(const id of [px,mm])$(''+id).addEventListener('input',()=>{
+   const snap=coordinator?.snapshot();
+   if(snap?.source.calibration){
+    coordinator.setImageGeometry({rotationDeg:snap.source.rotationDeg,calibration:null});
+    msg('比例数字已修改，旧比例与数学答案立即失效；请完成两组独立复核。');
+   }
+  });
+ }
+ $('v7-cal-rotation').addEventListener('change',()=>call(async()=>{
+  const snap=coordinator?.snapshot();
+  if(!snap?.source.imageId)throw Error('请先选择原图再标记方向');
+  coordinator.setImageGeometry({
+   rotationDeg:Number($('v7-cal-rotation').value),calibration:null
+  });
+  msg('原图方向变化，原有双比例与全部条件已失效。');
+ }));
+
  $('v7-new').addEventListener('click',()=>call(makeNew));
  $('v7-open').addEventListener('click',()=>call(async()=>{
   if(!store)throw Error('本机存储不可用');
