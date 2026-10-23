@@ -36,7 +36,17 @@ function homeHTML(){return `
   <section class="v7-card v7-input" aria-label="题图和条件审核"><h2>原图与条件</h2>
    <label>项目名称<input id="v7-title-input" maxlength="120" value="未命名项目" autocomplete="off"></label>
    <label class="v7-file-control">选择本机原题图片<input id="v7-image-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
-   <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片" hidden>
+   <div id="v7-photo-box" class="v7-photo-box" hidden>
+    <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片，点击确定量测端点" hidden>
+    <svg id="v7-photo-marks" viewBox="0 0 1 1" preserveAspectRatio="xMidYMid meet"
+     aria-label="原图两组量测线段及端点" aria-hidden="true"></svg>
+   </div>
+   <label>在原图上量测 <select id="v7-photo-segment">
+    <option value="0">第 1 段：点选两个端点</option>
+    <option value="1">第 2 段：点选两个端点</option></select>
+   </label>
+   <button type="button" id="v7-photo-clear">重选当前段的两个端点</button>
+   <p id="v7-photo-point-status" class="v7-note" role="status">选择原图后，依次点击两端点，像素长度会自动填写；毫米长度仍需人工确认。</p>
    <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
    <fieldset class="v7-source-calibration">
     <legend>原图双比例尺核对（人工量测）</legend>
