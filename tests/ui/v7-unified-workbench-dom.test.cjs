@@ -45,6 +45,8 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   require('../../project/unified-workbench-entry.cjs');
   for(let i=0;i<12&&!$('v7-review').textContent.includes('尚未提交');i++)await tick();
   assert.match($('v7-review').textContent,/尚未提交/, $('v7-save').textContent);
+  assert.match(document.querySelector('#recent .next-home-empty-title').textContent,/本机存储暂不可用/);
+  assert.equal(document.querySelector('#recent .next-home-continue-button').getAttribute('href'),'#project-workbench');
   assert.match($('v7-proof').textContent,/未计算/);
   click('v7-solve');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/,'unconfirmed click cannot forge a result');
