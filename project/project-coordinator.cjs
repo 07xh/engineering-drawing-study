@@ -224,6 +224,13 @@ function createCoordinator(initial, hooks = {}) {
     setCamera(camera) {
       return updateView({camera: {...project.view.camera, ...camera}});
     },
+    renameProject(title) {
+      const next=snapshot();
+      next.title=title;
+      requireValid(next);
+      project=next; // Metadata-only edit: never changes a mathematical proof.
+      emit('view');return snapshot();
+    },
     setMode(mode) { return updateView({mode}); },
     setOverlays(overlays) {return updateView({overlays: {...project.view.overlays, ...overlays}});},
     selectObject(id) { return updateView({selectedObjectId: id}); },
