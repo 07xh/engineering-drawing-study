@@ -92,7 +92,11 @@ function deriveGeometryScene({geometry,revision,branchId=null,resultId=null}={})
     fail('统一场景需要有限数量的已计算 Geometry 对象');
   if (!Number.isSafeInteger(revision) || revision<0)
     fail('统一场景缺少有效的输入版本');
-  if (branchId!==null && !identifier(branchId)) fail('场景分支 ID 不合法');
+  // Canonical M3 branch IDs include signs (e.g. s++-offset1). The same
+  // bounded, whitespace-free grammar as the single V5 timeline applies.
+  if (branchId!==null && !(typeof branchId==='string' &&
+      /^[A-Za-z][\\w+\\-]{0,79}$/.test(branchId)))
+    fail('场景分支 ID 不合法');
   if (resultId!==null && !identifier(resultId)) fail('结果引用 ID 不合法');
   const ids = new Set(), objects = [];
   for(const g of geometry){
