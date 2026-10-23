@@ -98,4 +98,135 @@ function conePlaneFullEllipse(cone,plane,{samples=64}={}){
   visibilityVerified:false,sectionInteriorVerified:false,
   firstAngleLayoutVerified:false,v5StepsReady:false};
 }
-module.exports={conePlaneFullEllipse};
+
+/**
+ * Independent cap-chord topology for the part of a strict elliptical
+ * lateral intersection lying inside a finite cone. Does not infer the
+ * filled disk, visibility, auxiliary steps or global model uniqueness.
+ */
+function conePlaneClippedEllipseBoundary(cone,plane,{samplesPerArc=64}={}){
+ const {apex,n,base,point,r,h}=validate(cone,plane,samplesPerArc);
+ const coordScale=Math.max(1,...vec(apex).map(Math.abs),...vec(point).map(Math.abs));
+ const resolution=64*Number.EPSILON*coordScale;
+ const eps=Math.max(1e-9*Math.max(r,h),resolution);
+ if(r<=32*resolution||h<=32*resolution)
+  return blocked('undetermined','feature under-resolved at model coordinate magnitude');
+ const m=Math.hypot(n[0],n[1]),s=n[2]*h/r;
+ if(!finite(s)||Math.abs(s)<=m+64*Number.EPSILON)
+  return blocked('unsupported-conic','strict elliptic section required');
+ const d=M0.dot(M0.subtract(vec(apex),vec(point)),n);
+ if(Math.abs(d)<=eps)
+  return blocked('apex-degenerate','section contacts or nears cone apex');
+ if(d*n[2]<0)return blocked('none','plane lies beyond apex');
+ const lower=Math.abs(d)/(Math.abs(s)+m);
+ const upper=Math.abs(d)/(Math.abs(s)-m);
+ if(!finite(lower)||!finite(upper))
+  return blocked('undetermined','unrepresentable radial bounds');
+ if(lower>r+eps)return blocked('none','plane misses finite cone');
+ if(lower>=r-eps)
+  return blocked('boundary-degenerate','plane tangent or nearly tangent to base rim');
+ if(upper<r-eps)
+  return blocked('not-clipped','entire ellipse lies strictly inside cone: use full ellipse solver');
+ if(upper<=r+eps||m<=1e-12)
+  return blocked('boundary-degenerate','plane nearly tangent to cap rim or coincident with base');
+ // Normalize angular constraint to u*(nx cos + ny sin)/m <= limit.
+ // This range is ONE arc on S1, with ends precisely on the base disk rim.
+ const u=Math.sign(s),limit=(Math.abs(s)-Math.abs(d)/r)/m;
+ if(!finite(limit)||limit<=-1||limit>=1)
+  return blocked('boundary-degenerate','cap angular bounds not separated');
+ const phi=Math.atan2(u*n[1],u*n[0]),alpha=Math.acos(limit);
+ if(!finite(alpha)||alpha<=1e-8||Math.PI-alpha<=1e-8)
+  return blocked('boundary-degenerate','cap arc angular width not resolved');
+ const thetaStart=phi+alpha,thetaEnd=phi+2*Math.PI-alpha;
+ const param=theta=>{
+  const cs=Math.cos(theta),sn=Math.sin(theta);
+  const denom=s-n[0]*cs-n[1]*sn;
+  const rho=d/denom;
+  return {rho,point:{x:base.x+rho*cs,y:base.y+rho*sn,
+   z:apex.z-(h/r)*rho}};
+ };
+ const planeResidual=q=>Math.abs(M0.dot(M0.subtract(vec(q),vec(point)),n));
+ const surfaceResidual=q=>Math.abs(
+  Math.hypot(q.x-base.x,q.y-base.y)-r*(apex.z-q.z)/h);
+ const sidePoints=[],projected=[];let maxResidualMm=0;
+ for(let i=0;i<=samplesPerArc;i++){
+  const theta=thetaStart+(thetaEnd-thetaStart)*i/samplesPerArc;
+  const {rho,point:q}=param(theta);
+  if(!finite(rho)||!xyz(q)||rho<=0||rho>r+eps||
+   q.z<base.z-4*eps||q.z>apex.z+4*eps)
+   return blocked('undetermined','finite lateral arc out of source bounds');
+  const error=Math.max(planeResidual(q),surfaceResidual(q),
+   Math.max(0,base.z-q.z,q.z-apex.z));
+  if(!finite(error)||error>8*eps)
+   return blocked('undetermined','lateral arc surface or plane residual failed');
+  maxResidualMm=Math.max(maxResidualMm,error);
+  sidePoints.push(q);projected.push(project(q));
+ }
+ // Independently intersect the plane with the bottom CAP CIRCLE. This is
+ // not a copied lateral endpoint calculation; equality of both is checked.
+ const offset=n[0]*(base.x-point.x)+n[1]*(base.y-point.y)+
+  n[2]*(base.z-point.z);
+ const signedDistance=offset/m;
+ const halfSquared=(r-Math.abs(signedDistance))*(r+Math.abs(signedDistance));
+ if(!finite(signedDistance)||Math.abs(signedDistance)>=r-eps||
+  !finite(halfSquared)||halfSquared<=0)
+  return blocked('boundary-degenerate','cap chord is tangent or unresolved');
+ const half=Math.sqrt(halfSquared),ux=n[0]/m,uy=n[1]/m;
+ const foot={x:base.x-signedDistance*ux,y:base.y-signedDistance*uy,z:base.z};
+ const capA={x:foot.x-half*uy,y:foot.y+half*ux,z:base.z};
+ const capB={x:foot.x+half*uy,y:foot.y-half*ux,z:base.z};
+ const first=sidePoints[0],last=sidePoints.at(-1);
+ const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ const errorA=Math.max(distance(first,capA),distance(last,capB));
+ const errorB=Math.max(distance(first,capB),distance(last,capA));
+ const joinMismatchMm=Math.min(errorA,errorB);
+ if(!xyz(capA)||!xyz(capB)||!finite(joinMismatchMm)||
+  joinMismatchMm>8*eps)
+  return blocked('undetermined','cap roots disagree with lateral arc endpoints');
+ const midpoint={x:(capA.x+capB.x)/2,y:(capA.y+capB.y)/2,z:base.z};
+ const capMargin=r-Math.hypot(midpoint.x-base.x,midpoint.y-base.y);
+ const capResidual=Math.max(planeResidual(capA),planeResidual(capB),
+  planeResidual(midpoint),surfaceResidual(capA),surfaceResidual(capB),
+  Math.abs(capA.z-base.z),Math.abs(capB.z-base.z));
+ if(!finite(capResidual)||capResidual>8*eps||capMargin<=eps)
+  return blocked('undetermined','cap chord failed independent disk and plane checks');
+ maxResidualMm=Math.max(maxResidualMm,capResidual,joinMismatchMm);
+ // Return actual connected two-edge graph, not merely visual samples.
+ const chordFrom=errorA<=errorB?capB:capA;
+ const chordTo=errorA<=errorB?capA:capB;
+ return {
+  status:'ready',verified:true,modelUnit:'mm',
+  geometryKind:'finite-cone-clipped-ellipse-lateral-arc-plus-cap-chord',
+  sourceSurfaceVerified:true,sourcePlaneVerified:true,
+  boundaryVerified:true,solidSectionPerimeterVerified:true,
+  completeSolidIntersectionVerified:false,
+  boundaryEdges:[
+   {id:'lateral-arc-1',kind:'analytic-lateral-arc',
+    fromNode:0,toNode:1,start:first,end:last,
+    angularInterval:[thetaStart,thetaEnd],analyticCurveVerified:true,
+    sampledPolylineOnly:true,points:sidePoints,projections:projected},
+   {id:'cap-chord-1',kind:'cap-chord',
+    fromNode:1,toNode:0,start:chordFrom,end:chordTo,
+    midpoint,lengthMm:2*half,capInteriorVerified:true,
+    projectedEndpoints:{start:project(chordFrom),end:project(chordTo)}}
+  ],
+  contourLoops:[{id:'contour-1',closed:true,
+   traversal:[{edgeId:'lateral-arc-1',fromNode:0,toNode:1},
+    {edgeId:'cap-chord-1',fromNode:1,toNode:0}]}],
+  curve:{kind:'analytic-clipped-cone-plane-ellipse',
+   numeratorMm:d,normal:{x:n[0],y:n[1],z:n[2]},
+   denominator:{constant:s,cosCoeff:-n[0],sinCoeff:-n[1]},
+   radialBoundsMm:{min:lower,max:upper},
+   parameterRadians:[thetaStart,thetaEnd],closed:false,
+   analyticCurveVerified:true,sampledPolylineOnly:true},
+  capChord:{start:chordFrom,end:chordTo,midpoint,
+   lengthMm:2*half,capInteriorVerified:true},
+  points:sidePoints,projections:projected,
+  maxResidualMm,joinMismatchMm,globallyUnique:null,
+  proofScope:'finite upright cone one-dimensional lateral ellipse arc plus planar base disk chord',
+  visibilityVerified:false,sectionInteriorVerified:false,
+  firstAngleLayoutVerified:false,v5StepsReady:false
+ };
+}
+
+module.exports={conePlaneFullEllipse,conePlaneClippedEllipseBoundary};
