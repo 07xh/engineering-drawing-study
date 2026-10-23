@@ -170,3 +170,62 @@ test('missing referenced original image must prevent a false recoverable project
   await assert.rejects(() => store.saveProject(p), /原图尚未成功保存/);
   assert.deepEqual(await store.listProjects(), []);
 });
+
+
+test('portable .daiproject packs confirmed inputs and original pixels without solver results', async () => {
+  const original = await openLocalProjects(fakeIndexedDB());
+  const p = newProject({id:'bundleA', task:'projection'});
+  p.source.imageId='imageA';
+  const image = new Blob(['own original image bytes'],{type:'image/png'});
+  await original.putImage('imageA',image);
+  await original.saveProject(p);
+  const file = await original.exportBundle('bundleA');
+  assert.equal(file.type,'application/x-draftai-project');
+  assert.ok(file.size > image.size);
+  const unpacked = await (require('../../project/local-project-store.cjs').parseProjectBundle(file));
+  assert.equal(unpacked.project.id,'bundleA');
+  assert.equal(Object.hasOwn(unpacked.project,'verified'),false);
+  assert.equal(await unpacked.image.text(),await image.text());
+  const target = await openLocalProjects(fakeIndexedDB());
+  assert.equal((await target.importBundle(file)).id,'bundleA');
+  assert.equal((await target.readProject('bundleA')).project.source.imageId,'imageA');
+  assert.equal(await (await target.readImage('imageA')).text(),await image.text());
+  await assert.rejects(() => target.importBundle(file),/已经存在/);
+});
+test('portable project without an image imports, but images must never be invented', async () => {
+  const source=await openLocalProjects(fakeIndexedDB());
+  await source.saveProject(newProject({id:'blank'}));
+  const blob=await source.exportBundle('blank');
+  const target=await openLocalProjects(fakeIndexedDB());
+  await target.importBundle(blob);
+  assert.equal((await target.readProject('blank')).project.source.imageId,null);
+  await assert.rejects(() => require('../../project/local-project-store.cjs')
+    .createProjectBundle(newProject({id:'bad'}),new Blob(['x'],{type:'image/png'})),/额外夹带/);
+});
+test('corrupt project bundles and forged verified status fail before any store write', async () => {
+  const {createProjectBundle,parseProjectBundle}=
+    require('../../project/local-project-store.cjs');
+  const p=newProject({id:'tamper'});p.source.imageId='photo';
+  const original=await createProjectBundle(p,new Blob(['abcdefghij'],{type:'image/png'}));
+  const bytes=new Uint8Array(await original.arrayBuffer());
+  bytes[bytes.length-1]^=1;
+  await assert.rejects(() => parseProjectBundle(new Blob([bytes])),/摘要不一致/);
+  const forged={...newProject({id:'forged'}),verified:true};
+  const json=JSON.stringify({format:'draftai-project-bundle',version:1,project:forged,image:null});
+  const bad=new Blob(['DAIPROJECT/1\n',String(new TextEncoder().encode(json).length),'\n',json]);
+  await assert.rejects(() => parseProjectBundle(bad),/不得|已验证|verified/);
+  const factory=fakeIndexedDB();const store=await openLocalProjects(factory);
+  await assert.rejects(() => store.importBundle(new Blob([bytes])),/摘要不一致/);
+  assert.equal(factory.db.data.projects.size,0);
+  assert.equal(factory.db.data.images.size,0);
+});
+test('failed bundle transaction is atomic for project and private image', async () => {
+  const {createProjectBundle}=require('../../project/local-project-store.cjs');
+  const p=newProject({id:'atomic'});p.source.imageId='atomicImage';
+  const file=await createProjectBundle(p,new Blob(['abc'],{type:'image/png'}));
+  const factory=fakeIndexedDB(); const store=await openLocalProjects(factory);
+  factory.db.failures.put=true;
+  await assert.rejects(()=>store.importBundle(file),/空间不足/);
+  assert.equal(factory.db.data.projects.size,0);
+  assert.equal(factory.db.data.images.size,0);
+});
