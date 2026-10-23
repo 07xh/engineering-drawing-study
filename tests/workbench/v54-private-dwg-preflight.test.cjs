@@ -29,7 +29,8 @@ test('09 an AC1018 source with 184x95 thumbnail does NOT claim CAD entities or f
 });
 test('09 malicious or incomplete thumbnails cannot become a validated textbook geometry oracle',()=>{
  assert.throws(()=>preflightTextbookDwg(Buffer.alloc(10)),/bounded/);
- assert.throws(()=>preflightTextbookDwg(dwg({pointer:1190})),/pointer/);
+ const escaped=dwg();escaped.writeUInt32LE(1190,13);
+ assert.throws(()=>preflightTextbookDwg(escaped),/pointer/);
  assert.throws(()=>preflightTextbookDwg(dwg({corrupt:true})),/bounds/);
  assert.throws(()=>preflightTextbookDwg(dwg({width:0})),/dimensions/);
  assert.throws(()=>preflightTextbookDwg(dwg({height:0})),/dimensions/);
