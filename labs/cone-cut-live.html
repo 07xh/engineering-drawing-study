@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="DraftAI 圆锥斜截真实数学求解与统一 V5 逐笔动态作图预览。">
+<title>圆锥斜截交线 · DraftAI V5 数学实验台</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#284334;background:#f2f7f2}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1380px;margin:auto;padding:20px 14px 50px}
+h1{font-size:clamp(23px,3.5vw,33px);margin:13px 0 8px}h2{font-size:17px;margin:0 0 12px}
+p{line-height:1.65}.intro{font-size:13px;color:#576f5c;margin:0 0 18px}
+.layout{display:grid;grid-template-columns:minmax(270px,330px) minmax(0,1fr);gap:16px;align-items:start}
+.panel{background:#fff;border:1px solid #d7e6da;border-radius:16px;padding:17px;min-width:0}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+label{display:grid;gap:5px;margin-bottom:10px;font-size:12px;color:#456451}
+input,select,button{font:inherit;min-height:42px;border-radius:9px}
+input,select{width:100%;border:1px solid #bed5c6;padding:7px 9px;color:#294e38;background:white}
+button{border:1px solid #afd0b9;background:#fff;color:#246b45;cursor:pointer;padding:8px 12px}
+button.primary{color:white;background:#256e4c;border-color:#256e4c}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1b8d66;outline-offset:2px}
+.confirm{display:flex;align-items:start;gap:9px;line-height:1.5}
+.confirm input{width:19px;height:19px;min-height:19px;flex:0 0 auto;margin:0}
+.actions,.playbar,.tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.playbar input{flex:1 1 160px}.playbar output{min-width:44px;text-align:right}
+.tools input[type=checkbox]{width:19px;height:19px;min-height:19px}
+.tools label{display:flex;align-items:center;gap:6px;margin:0}.tools select{width:auto}
+.notice{font-size:12px;line-height:1.7;padding:12px;border:1px solid #d6e7d8;border-radius:10px;background:#f5faf6;min-height:42px}
+.notice[data-error=true]{background:#fff7ed;border-color:#efd1a8;color:#864b23}
+.small{font-size:12px;color:#5e7965;line-height:1.7}
+#coneSvg{display:block;width:100%;height:auto;border:1px solid #dce9dd;background:white;border-radius:12px;max-height:75vh;touch-action:pan-y}
+[data-cone-action]{cursor:pointer}
+[data-cone-selected=true]{stroke:#176eaa!important;stroke-width:4!important}
+#coneSteps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:220px;overflow:auto}
+#coneSteps button{text-align:left;font-size:12px;white-space:normal}
+#coneSteps button[aria-current=step]{background:#e6f3e8;border-color:#659d78}
+#coneSeek{min-width:140px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}#coneSteps{grid-template-columns:1fr}#coneSvg{max-height:none}}
+@media(max-width:490px){.wrap{padding:12px 10px 40px}.panel{padding:12px}.actions button,.playbar button{flex:1}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="site-topbar"><div class="site-topbar-inner">
+<a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>数学验证 · 单一 V5 动画</small></span></a>
+<nav class="site-nav"><a href="../index.html">首页</a><a href="cylinder-cut-live.html">圆柱斜截</a><a href="prism-cut-live.html">棱柱斜截</a></nav>
+</div></header>
+<main class="wrap">
+<h1>圆锥斜截 · 真解与动态三视图</h1>
+<p class="intro">确认圆锥和截平面条件 → M3 解析圆锥截线与数学残差 → 真实母线 ConstructionStep → V/H/W 分离画纸和 45° 辅助线 → 同一 V5 逐笔播放。仅供单个直立有限圆锥实验，截线线段为解析曲线的采样近似。</p>
+<div class="layout">
+<section class="panel" aria-label="圆锥截平面条件">
+<h2>01 · 手动确认几何条件 (mm)</h2>
+<div class="two">
+<label for="coneRadius">底圆半径<input id="coneRadius" type="number" value="5" min="0.001" step="any"></label>
+<label for="coneHeight">圆锥高度<input id="coneHeight" type="number" value="10" min="0.001" step="any"></label>
+</div>
+<p class="small">当前模型底面中心固定 (0,0,0)，圆锥轴线为 +Z；不推断任意图片中的三维模型。</p>
+<label for="coneKind">截交线类型
+<select id="coneKind"><option value="full-ellipse">完整椭圆截线</option><option value="clipped-ellipse">底面裁剪椭圆与真实底面弦</option></select>
+</label>
+<div class="two">
+<label for="conePx">切平面点 X<input id="conePx" type="number" value="0" step="any"></label>
+<label for="conePy">切平面点 Y<input id="conePy" type="number" value="0" step="any"></label>
+<label for="conePz">切平面点 Z<input id="conePz" type="number" value="6" step="any"></label>
+</div>
+<div class="two">
+<label for="coneNx">法向 X<input id="coneNx" type="number" value="1" step="any"></label>
+<label for="coneNy">法向 Y<input id="coneNy" type="number" value="0" step="any"></label>
+<label for="coneNz">法向 Z<input id="coneNz" type="number" value="3" step="any"></label>
+</div>
+<label for="coneSamples">解析曲线呈现采样数
+<select id="coneSamples"><option value="32">32</option><option value="64" selected>64</option><option value="128">128</option><option value="256">256</option></select></label>
+<label for="coneKept">可见性计算：保留哪侧材料
+<select id="coneKept"><option value="" selected>未确认：所有截线线型待审核</option><option value="positive">保留法向正侧</option><option value="negative">保留法向负侧</option></select></label>
+<p class="small">选择保留侧后，观察方向必须为本试验声明的 V→−Y、H→+Z、W→+X；只显示开区间数学证据，切触与端点不认证。</p>
+<label class="confirm" for="coneConfirm"><input id="coneConfirm" type="checkbox"><span>我已确认上述数学条件及单位；允许本地计算与生成预览。</span></label>
+<div class="actions"><button type="button" id="coneReset">恢复示例</button><button id="coneSolve" class="primary" type="button">重新求解与生成动画</button></div>
+<div class="notice" id="coneStatus" role="status" aria-live="polite">请核对条件并勾选确认。</div>
+</section>
+<section class="panel" aria-label="圆锥统一 V5 图纸">
+<h2>02 · 真母线 → 逐笔截交线</h2>
+<svg id="coneSvg" viewBox="0 0 960 680" role="img" aria-label="解析圆锥截线 V H W 三视图动态作图">
+<g aria-hidden="true" fill="#5e7261" font-size="17" font-family="system-ui">
+<text x="30" y="35">V 主视</text><text x="30" y="370">H 俯视</text><text x="530" y="35">W 侧视</text>
+</g><g id="coneDraw"></g></svg>
+<p class="small">辅助母线为已验证数学构造；结果折线仅近似解析截线。默认橙色待审核；蓝绿色表示指定射线的可见开区间、灰色表示隐藏开区间（不等于制图国标线型）。</p>
+<div class="playbar">
+<button id="coneBack" disabled type="button">← 上一步</button>
+<button id="conePlay" class="primary" disabled type="button">▶ 播放</button>
+<button id="coneForward" disabled type="button">下一步 →</button>
+<input id="coneSeek" type="range" min="0" max="1000" value="0" disabled aria-label="V5 动态作图进度">
+<output id="conePercent" for="coneSeek">0%</output>
+</div>
+<div class="tools">
+<label for="coneSpeed">速度<select id="coneSpeed"><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+<label for="coneGuides"><input id="coneGuides" type="checkbox" checked>辅助线</label>
+<label for="coneMono"><input id="coneMono" type="checkbox">黑白模式</label>
+<label for="coneFocus"><input id="coneFocus" type="checkbox">自动聚焦</label>
+<button id="coneFit" type="button">查看整张图纸</button>
+</div>
+<p id="conePicked" class="small" role="status" aria-live="polite">绘制后可点选已出现的线段查看来源步骤。</p>
+<h2>03 · 数学作图步骤</h2>
+<p id="coneStepLabel" class="small">尚未生成。</p>
+<nav id="coneSteps" aria-label="圆锥 V5 步骤导航"></nav>
+<p id="coneProof" class="small">不包含用户原题图片、教材答案或 AI 识图。浏览器仅运行已验证的数学模型；最终空间遮挡、国标线型和端点仍未完成正式签收。</p>
+</section>
+</div>
+</main>
+<script src="cone-cut-live-bundle.js" defer></script>
+</body>
+</html>

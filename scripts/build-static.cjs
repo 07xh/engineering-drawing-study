@@ -21,6 +21,7 @@ const files = [
   'labs/auto-fillet-live.html',
   'labs/cylinder-cut-live.html',
   'labs/prism-cut-live.html',
+  'labs/cone-cut-live.html',
   'labs/recognition-qa.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
@@ -175,6 +176,16 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/prism-cut-live-entry.cjs')],
  outfile:path.join(out,'labs/prism-cut-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Bounded cone analytic geometry + canonical guides + ONE V5 player.
+ * No private textbook images, benchmark answers or remote AI services.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/cone-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/cone-cut-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
