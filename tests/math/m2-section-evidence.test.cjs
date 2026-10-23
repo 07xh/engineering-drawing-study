@@ -1,8 +1,9 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {sectionEvidence,solveVerifiedSectionEvidence:solve}=
- require('../../core/results/section-evidence.cjs');
+const {sectionEvidence}=require('../../core/results/section-evidence.cjs');
+const {solveVerifiedSectionEvidence:solve}=
+ require('../../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../../core/contracts/solve-result.js');
 const {prismPlaneSection}=require('../../engines/spatial/sections/rectangular-prism-plane.cjs');
 const {pyramidPlaneSection}=require('../../engines/spatial/sections/rectangular-pyramid-plane.cjs');
@@ -197,4 +198,23 @@ test('sphere data origin cannot be laundered through forged positive caller resu
   {...good,plane:{...pl,modelUnit:'px'}},
   {...good,kind:'sphere-volume'}, {...good,samples:1}
  ])assert.throws(()=>solve(invalid));
+});
+
+test('01/09 M2 section evidence has no upward dependency on M3 specialist dispatch',()=>{
+ const fs=require('node:fs');
+ const file=require.resolve('../../core/results/section-evidence.cjs');
+ const source=fs.readFileSync(file,'utf8');
+ const core=require('../../core/results/section-evidence.cjs');
+ const specialist=require('../../engines/spatial/sections/verified-section-evidence.cjs');
+ assert.deepEqual(Object.keys(core),['sectionEvidence']);
+ assert.equal(typeof specialist.solveVerifiedSectionEvidence,'function');
+ assert.doesNotMatch(source,/require\s*\(\s*['"][^'"]*engines\//,
+  'M2 cannot import a professional M3 solver');
+ const forged={status:'ready',verified:true,modelUnit:'mm',maxResidualMm:0};
+ assert.throws(()=>core.sectionEvidence({result:forged,solverId:'sphere-plane'}),
+  /untrusted verified/);
+ assert.throws(()=>specialist.solveVerifiedSectionEvidence({
+  kind:'sphere-surface',solid:{},plane:{},frame:'model-mm-3d',
+  unit:'mm',result:forged
+ }),/forged section-proof input/);
 });
