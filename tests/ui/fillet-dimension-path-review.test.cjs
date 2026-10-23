@@ -16,7 +16,7 @@ for(const next of [false,true]){
   const old=app.get('result').textContent;
   app.click('ocrPathReviewButton');
   assert.equal(app.get('result').textContent,old);
-  assert.match(app.get('ocrPathStatus').textContent,/尚未人工确认/);
+  assert.match(app.get('ocrPathStatus').textContent,/请先载入原图/);
   app.set('geo-filletRadius','0','input');
   assert.equal(app.get('saveVerifiedSvg').disabled,true);
   assert.equal(app.get('result').hidden,true);
