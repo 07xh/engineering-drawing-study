@@ -8,7 +8,7 @@ const {verifiedLiveIntentTimeline}=require('./verified-live-intent-v1.cjs');
 const TimelineV5=require('./teaching-timeline-v5.js');
 
 function compileConfirmedTwoPoint(input){
-  if(!input||input.confirmedBy!=='user'||!Number.isSafeInteger(input.revision)||input.revision<1||
+  if(!input||!input.sheetTransform||!input.sheetTransform.origin||!['x','y'].every(k=>Number.isFinite(input.sheetTransform.origin[k]))||!Number.isFinite(input.sheetTransform.scale)||input.sheetTransform.scale<=0||input.confirmedBy!=='user'||!Number.isSafeInteger(input.revision)||input.revision<1||
     input.unit!=='mm'||!Array.isArray(input.points)||input.points.length!==2)
     throw new TypeError('two-point exercise requires explicit user confirmation and mm units');
   const ids=new Set();
