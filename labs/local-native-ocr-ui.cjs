@@ -26,7 +26,7 @@ function attachLocalNativeOcr({
  reviewedValue=null,reviewAccept=null,reviewButton=null,
  getValues=()=>({}),getRevision=()=>0,pathReview=null
 }){
- let epoch=0,candidates=[],reviewedPath=null,pathCandidates=[];
+ let epoch=0,candidates=[],reviewedPath=null,reviewedRequest=null,reviewedRevision=null,pathCandidates=[];
  const hasReview=Boolean(reviewedValue||reviewAccept||reviewButton);
  if(hasReview&&(!reviewedValue||!reviewAccept||!reviewButton||
    typeof fieldReview?.confirmNotation!=='function'||
@@ -43,7 +43,7 @@ function attachLocalNativeOcr({
   pathReview.text,pathReview.units,pathReview.leader,
   pathReview.curve,pathReview.arrow,pathReview.final]:[];
  const clearPathReview=()=>{
-  reviewedPath=null;
+  reviewedPath=null;reviewedRequest=null;reviewedRevision=null;
   if(!pathReview)return;
   pathCandidates=[];
   pathReview.selector.replaceChildren(item('','未选中尺寸或原图候选'));
@@ -161,14 +161,14 @@ function attachLocalNativeOcr({
  selector.addEventListener('change',describeSelected);
  if(pathReview){
   pathReview.selector.addEventListener('change',()=>{
-   reviewedPath=null;
+   reviewedPath=null;reviewedRequest=null;reviewedRevision=null;
    for(const check of pathChecks)check.checked=false;
    pathReview.answers.value='unknown';
    pathReview.button.disabled=!pathReview.selector.value;
    pathReview.status.textContent='请逐项核对所选 OCR 文字、引线、箭头和目标圆弧。';
   });
   for(const node of [...pathChecks,pathReview.answers,reviewedValue])
-   node.addEventListener('input',()=>{reviewedPath=null;});
+   node.addEventListener('input',()=>{reviewedPath=null;reviewedRequest=null;reviewedRevision=null;});
   pathReview.button.addEventListener('click',()=>{
    try{
     const dimension=candidates.find(x=>x.id===selector.value);
@@ -178,7 +178,7 @@ function attachLocalNativeOcr({
      return;
     }
     const revision=getRevision();
-    const result=reviewDimensionPath({
+    const proofInput={
      dimension,lines:getLines(),curves:getCurves(),arrows:getArrowHints(),
      image:{width:image.naturalWidth,height:image.naturalHeight},
      selectedPathId:pathReview.selector.value,
@@ -192,8 +192,9 @@ function attachLocalNativeOcr({
      arrowReviewed:pathReview.arrow.checked,
      finalAccepted:pathReview.final.checked,
      answerMark:pathReview.answers.value
-    });
-    reviewedPath=result;
+    };
+    const result=reviewDimensionPath(proofInput);
+    reviewedPath=result;reviewedRequest=proofInput;reviewedRevision=revision;
     pathReview.final.checked=false;
     pathReview.status.textContent='已记录人工关联 '+
      result.dimensionCandidateId+' → '+
@@ -202,7 +203,7 @@ function attachLocalNativeOcr({
      ' mm。仅像素来源与文字经人工核对，几何比例、求解和原题盲测均未认证。'+
      (result.answerMark==='contains-answers'?' 原图含参考答案，不可计为盲测。':'');
    }catch(error){
-    reviewedPath=null;pathReview.final.checked=false;
+    reviewedPath=null;reviewedRequest=null;reviewedRevision=null;pathReview.final.checked=false;
     pathReview.status.textContent='关联未通过审核：'+
      (error instanceof Error?error.message:'无效审核');
    }
@@ -291,6 +292,17 @@ function attachLocalNativeOcr({
  reset();
  return Object.freeze({reset,refreshAssociations(){if(selector.value)describeSelected();},
   get count(){return candidates.length},
-  get reviewedPath(){return reviewedPath}});
+  get reviewedPath(){return reviewedPath},
+  getReviewForDraft(revision){
+   // The original user review is returned only while both image epoch and
+   // original mathematical UI revision are unchanged. This remains source
+   // evidence; the mathematical adapter RECHECKS everything against draft.
+   if(!reviewedPath||!reviewedRequest||
+      reviewedRequest.sourceEpoch!==epoch||
+      getRevision()!==reviewedRevision||
+      !Number.isSafeInteger(revision)||revision<0)return null;
+   return {...reviewedRequest,sourceEpoch:epoch,currentSourceEpoch:epoch,
+    revision,expectedRevision:revision};
+  }});
 }
 module.exports={attachLocalNativeOcr};
