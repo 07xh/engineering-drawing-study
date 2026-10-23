@@ -102,6 +102,8 @@ function homeHTML(){return `
      <option value="point2d">二维点</option><option value="point3d">空间点</option>
      <option value="segment2d">二维线段</option><option value="segment3d">空间线段</option>
      <option value="circle">二维圆</option><option value="arc">二维有向圆弧</option>
+     <option value="polyline2d">二维有序折线</option>
+     <option value="polyline3d">空间有序折线</option>
      <option value="prism">长方体网格（空间）</option>
     </select></label>
     <p class="v7-note">坐标 A 是点或起点、圆心、长方体最小角；B 是终点或长方体最大角。圆和圆弧使用半径与角度。</p>
@@ -117,6 +119,14 @@ function homeHTML(){return `
      <label>终止角 (°) <input id="v7-c-end" type="number" step="any" value="90"></label>
      <label>圆弧方向 <select id="v7-c-direction"><option value="ccw">逆时针</option><option value="cw">顺时针</option></select></label>
     </div>
+    <label>折线顶点（每行一顶点，二维 x,y；三维 x,y,z）
+     <textarea id="v7-c-points" rows="4" spellcheck="false" placeholder="0,0
+10,0
+10,10">0,0
+10,0
+10,10</textarea>
+    </label>
+    <label class="v7-closed-toggle"><input type="checkbox" id="v7-c-closed"> 首尾闭合（仅连接最后一点和第一点，不填充表面）</label>
     <div class="v7-compose-actions">
      <button id="v7-c-new" type="button">新对象</button>
      <button id="v7-c-stage" type="button">保存为待确认条件</button>
