@@ -7,6 +7,7 @@ const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layou
 const {homeHTML}=require('./home.cjs');
 const NAV=[
  ['index.html','首页'],
+ ['index.html#project-workbench','统一项目'],
  ['labs/auto-fillet-live.html','AI 解题'],
  ['index.html#plane','平面作图'],
  ['index.html#projection','三视图与投影'],
@@ -18,6 +19,7 @@ const NAV=[
 ];
 const NAV_ICONS={
  '首页':'<path d="M3 11.5L12 4l9 7.5v8.5h-6v-6H9v6H3z"/>',
+ '统一项目':'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M7 9h10 M7 13h10 M7 17h6"/>',
  'AI 解题':'<path d="M4 5h16v14H4z M8 10l3 3 5-6 M8 3v2 M16 3v2"/>',
  '平面作图':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
  '三视图与投影':'<path d="M12 3l8 5v9l-8 5-8-5V8z M12 3v10 M4 8l8 5 8-5 M12 13v9"/>',
@@ -59,11 +61,14 @@ function enhancePage(html,{page,preview=true}){
  if(page==='public-use.html')main.classList.add('next-disclosure');
  document.body.prepend(fragment(document,`<a class="next-skip" href="#${main.id}">跳到主要内容</a>
  <header class="next-topbar"><a class="next-brand" href="${root}index.html"><span class="next-brand-emblem" aria-hidden="true">D</span> DraftAI<small>工程制图自动解题</small></a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<details class="next-menu"><summary>导航菜单</summary><nav aria-label="移动端导航">${links}</nav></details></header>
- <aside class="next-sidebar"><a class="next-start" href="${root}labs/auto-fillet-live.html" aria-label="开始解题" title="开始解题" data-ui-tip="开始解题"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16 M4 12h16"/></svg><span class="next-nav-label">开始解题</span></a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
+ <aside class="next-sidebar"><a class="next-start" href="${root}index.html#project-workbench" aria-label="开始解题" title="开始解题" data-ui-tip="开始解题"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16 M4 12h16"/></svg><span class="next-nav-label">开始解题</span></a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
-  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.6-home-20261023">'));
+  if(page==='index.html')document.head.append(fragment(document,
+   '<meta name="draftai-ui-release" content="v7-unified-project-20261024">'+
+   '<link rel="stylesheet" href="project/workbench-ui.css">'+
+   '<script defer src="project/unified-workbench-bundle.js"></script>'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){
