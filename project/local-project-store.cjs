@@ -168,9 +168,20 @@ function createStore(db) {
   function putImage(id, blob) {
     if (!isId(id)) return Promise.reject(new Error('图片 ID 无效'));
     try { ensureImage(blob); } catch (error) { return Promise.reject(error); }
-    return operation(['images'], 'readwrite', (store, done) => {
-      store('images').put({id, blob, type: blob.type, size: blob.size});
-      done({id, type: blob.type, size: blob.size});
+    // Image IDs identify immutable originals. Overwriting the same ID would
+    // silently change a reviewed project's source without changing revision,
+    // leaving stale confirmed dimensions and V5 steps attached to new pixels.
+    return operation(['images'], 'readwrite', (store, done, fail) => {
+      const images = store('images');
+      const existing = images.get(id);
+      existing.onsuccess = () => {
+        if (existing.result) {
+          fail(new Error('原图 ID 已存在；请选择新 ID 并使旧项目审核失效'));
+          return;
+        }
+        images.put({id, blob, type: blob.type, size: blob.size});
+        done({id, type: blob.type, size: blob.size});
+      };
     });
   }
   function readImage(id) {
