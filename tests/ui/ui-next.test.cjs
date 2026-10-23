@@ -91,7 +91,7 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
  }
 });
 
-test('V6.4 homepage puts first-angle checked paper next to entry actions',()=>{
+test('V6.5 homepage puts accurate arc construction next to entry actions',()=>{
  const {after:document}=enhance('index.html');
  const dashboard=document.querySelector('.next-home-workbench');
  assert.ok(dashboard,'new homepage workbench must be the first screen');
@@ -100,13 +100,13 @@ test('V6.4 homepage puts first-angle checked paper next to entry actions',()=>{
  assert.ok(svg,'one-sheet preview missing');
  assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
  const labels=svg.textContent;
- for(const label of ['V 主视图','H 俯视图','W 左视图','45°'])
+ for(const label of ['R40','T₁','T₂','平面几何'])
   assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
  assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
  for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
   assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
  assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
- assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.4-home-20261023"]'),'verifiable homepage release marker missing');
+ assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.5-home-20261023"]'),'verifiable homepage release marker missing');
  assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
  assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
  assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
@@ -117,7 +117,7 @@ test('V6.4 home reflects reference-two structure and original topic hierarchy wi
  const first=document.querySelector('.next-home-v64');
  assert.ok(first?.querySelector('.next-home-intro-block'),'hero has intro + large paper');
  assert.ok(first.querySelector('.next-home-intro-copy h1'),'clear primary action');
- assert.ok(first.querySelector('.next-home-intro-sheet [data-projection-example="right-circular-cone"]'),'independently checked drawing retained');
+ assert.ok(first.querySelector('.next-home-intro-sheet [data-construction-example="right-angle-fillet"]'),'independently checked fillet drawing retained');
  assert.ok(first.querySelector('.next-home-workflow #recent'),'recent history location');
  assert.ok(first.querySelector('.next-home-workflow #knowledge'),'my problems location');
  assert.match(document.querySelector('#recent').textContent,/暂无可恢复的解题记录/);
@@ -135,50 +135,43 @@ test('V6.4 home reflects reference-two structure and original topic hierarchy wi
  for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
  assert.ok(document.querySelector('.next-home-more-tools:not([open])'),'all labs can stay collapsed');
 });
-test('homepage cone projection has actual first-angle geometric correspondence',()=>{
+test('homepage R40 fillet obeys exact radius and two orthogonal tangencies',()=>{
  const {after:document}=enhance('index.html');
- const svg=document.querySelector('[data-projection-example="right-circular-cone"] svg');
- assert.ok(svg,'source must explicitly describe the elementary cone example');
- const readTriangle=(view)=>{
-  const shape=svg.querySelector('[data-projection-view="'+view+'"] path');
-  assert.ok(shape,'missing orthographic projection '+view);
-  const match=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)H(-?\d+)Z$/.exec(shape.getAttribute('d'));
-  assert.ok(match,'cone silhouette must consist of a symmetric triangle '+view);
-  return {apexX:+match[1],apexY:+match[2],leftX:+match[3],baseY:+match[4],rightX:+match[5]};
- };
- const v=readTriangle('V'),w=readTriangle('W');
- const c=svg.querySelector('[data-projection-view="H"] circle');
- assert.ok(c,'cone plan must be an undistorted circle');
- const cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy'),r=+c.getAttribute('r');
- assert.ok(r>0);
- // Long alignment (V-H), height alignment (V-W), width equality (H-W).
- assert.equal(cx,v.apexX);
- assert.equal(v.leftX,cx-r);
- assert.equal(v.rightX,cx+r);
- assert.equal(v.apexY,w.apexY);
- assert.equal(v.baseY,w.baseY);
- assert.equal(w.apexX-w.leftX,r);
- assert.equal(w.rightX-w.apexX,r);
- assert.equal(v.rightX-v.leftX,2*r);
- assert.equal(w.rightX-w.leftX,2*r);
- // The 45-degree miter transfers plan depths to W widths.
- const miter=svg.querySelector('[data-miter="45-degree"]');
- assert.ok(miter);
- const m=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)$/.exec(miter.getAttribute('d'));
- assert.ok(m,'miter must be a true line');
- const [x0,y0,x1,y1]=m.slice(1).map(Number);
- assert.equal(x1-x0,y1-y0,'miter must be exactly 45 degrees');
- assert.equal(w.apexX,x0+(cy-y0),'plan center must project to W center');
- assert.equal(w.leftX,x0+(cy-r-y0),'plan near edge must project to W left edge');
- assert.equal(w.rightX,x0+(cy+r-y0),'plan far edge must project to W right edge');
- assert.equal(x1,w.rightX);
- assert.equal(y1,cy+r);
- assert.equal(v.apexY<w.baseY,true,'upright cone apex belongs above base');
- assert.equal(svg.querySelectorAll('ellipse').length,0,'uncalculated plan ellipse not permitted');
- assert.equal(svg.querySelectorAll('[data-projection-view]').length,3);
- assert.match(document.querySelector('.next-home-paper-caption').textContent,/斜截线须进入求解工作台计算/);
+ const sheet=document.querySelector('[data-construction-example="right-angle-fillet"]');
+ assert.ok(sheet,'the hero must show the new fillet instead of the old cone');
+ const svg=sheet.querySelector('svg');
+ assert.ok(svg);
+ const arc=svg.querySelector('[data-fillet-arc="true"]');
+ const m=/^M(\\d+) (\\d+) A(\\d+) (\\d+) 0 0 0 (\\d+) (\\d+)$/.exec(arc.getAttribute('d'));
+ assert.ok(m,'fillet must be a true circular quarter arc, not decorative Bezier');
+ const [x1,y1,rx,ry,x2,y2]=m.slice(1).map(Number);
+ assert.equal(rx,ry,'a fillet arc must be circular');
+ const scale=Number(arc.getAttribute('data-px-per-mm'));
+ assert.equal(rx/scale,40,'the displayed R40 dimension must match the radius');
+ const center=svg.querySelector('[data-fillet-center="true"]');
+ const cx=+center.getAttribute('cx'),cy=+center.getAttribute('cy');
+ const t1=svg.querySelector('[data-tangent="t1"]'),t2=svg.querySelector('[data-tangent="t2"]');
+ assert.equal(+t1.getAttribute('cx'),x1);
+ assert.equal(+t1.getAttribute('cy'),y1);
+ assert.equal(+t2.getAttribute('cx'),x2);
+ assert.equal(+t2.getAttribute('cy'),y2);
+ assert.equal(x1,cx,'horizontal-line tangency radius must be vertical');
+ assert.equal(y1,cy+rx);
+ assert.equal(x2,cx+rx,'vertical-line tangency radius must be horizontal');
+ assert.equal(y2,cy);
+ const horizontal=/^M(\\d+) (\\d+)H(\\d+)$/.exec(svg.querySelector('[data-horizontal-line]').getAttribute('d'));
+ const vertical=/^M(\\d+) (\\d+)V(\\d+)$/.exec(svg.querySelector('[data-vertical-line]').getAttribute('d'));
+ assert.ok(horizontal&&vertical,'both true-line sections must exist');
+ assert.equal(+horizontal[2],y1);
+ assert.equal(+horizontal[3],x1,'horizontal line must end at T1');
+ assert.equal(+vertical[1],x2);
+ assert.equal(+vertical[2],y2,'vertical line must start at T2');
+ assert.equal(svg.querySelectorAll('[data-fillet-arc]').length,1,'one real fillet');
+ assert.equal(svg.querySelectorAll('[data-construction-guides] [data-radius-to-t1], [data-construction-guides] [data-radius-to-t2]').length,2);
+ assert.match(sheet.querySelector('.next-home-paper-caption').textContent,/非上传题目答案/);
+ assert.ok(document.querySelector('.next-home-example[href="labs/circle-fillet-live.html"]'));
+ assert.ok(!document.querySelector('[data-projection-example="right-circular-cone"]'),'old repeated cone must be replaced');
 });
-
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
