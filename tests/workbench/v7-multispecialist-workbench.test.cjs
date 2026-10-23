@@ -46,8 +46,11 @@ test('planar inputs use existing 02 M3 canonical intent and the same V5 clock',(
   'pure planar must not invent a solid');
  assert.equal(c.canExport(),true);
  const version=c.snapshot().revision;
+ const persistedBefore=exportProject(c.snapshot());
  c.selectSceneGeometry('Given1');
  assert.equal(c.selectedGeometryId(),'Given1');
+ assert.equal(exportProject(c.snapshot()),persistedBefore,
+  'derived object selection must not alter the local project file');
  assert.equal(c.snapshot().revision,version);
  assert.equal(c.canExport(),true);
  assert.equal(c.snapshot().view.selectedObjectId,null,
