@@ -13,13 +13,57 @@ const {filletTimeline,pointTimeline}=require('./verified-plan-v5-bridge.cjs');
 const {verifiedConstructionIntentV1}=require('./verified-construction-intent-v1.cjs');
 const {verifiedPolygonIntentTimeline}=require('./verified-polygon-intent-v1.cjs');
 const {assertM3ToV5Consistency}=require('./m3-v5-consistency-gate.cjs');
+const {solveVerifiedSectionEvidence}=
+ require('../engines/spatial/sections/verified-section-evidence.cjs');
+const {validateSolveResult}=require('../core/contracts/solve-result.js');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const FILLET_KINDS=new Set(['segments','circles','segment-circle']);
 const DEFAULT_POINT_SHEET={origin:{x:360,y:175},scale:4};
+const SPATIAL_KINDS=new Set([
+ 'rectangular-prism','rectangular-pyramid','cylinder-lateral','sphere-surface'
+]);
+/**
+ * Run a spatial M3 specialist through the SAME unified request boundary.
+ * This returns independently recomputed, limited-scope M2 evidence ONLY.
+ * No geometry, visibility, ConstructionIntent, DAG or V5 are fabricated.
+ * The true 3D->first-angle->V5 path must separately pass its own proofs.
+ */
+function evaluateScopedSpatialSection({input,revision,sheet}){
+ if(sheet!==undefined&&sheet!==null)
+  throw new TypeError('spatial 3D proof cannot accept a 2D sheet conversion');
+ if(!input||typeof input!=='object'||Array.isArray(input)||
+    !SPATIAL_KINDS.has(input.kind))
+  throw new TypeError('unsupported scoped 3D section');
+ const evidence=solveVerifiedSectionEvidence(input); // trusted M3 re-solve
+ const checked=validateSolveResult(evidence);
+ if(!checked.ok)throw new TypeError('invalid canonical M2 spatial evidence');
+ const qualified=evidence.geometryVerifiedWithinSpecialistScope===true;
+ if(qualified&&(evidence.globallyUnique!==null||
+    evidence.sourceProblemConfirmed!==false||
+    evidence.visibilityVerified!==false||
+    evidence.proofOfGlobalUniqueness!==false))
+  throw new TypeError('scoped proof cannot certify a full spatial answer');
+ return Object.freeze({
+  status:qualified?'geometry-only':'not-verified',
+  kind:'spatial-section',specialistKind:input.kind,revision,
+  solveResult:evidence,mathematicallyVerified:false,
+  geometryVerifiedWithinSpecialistScope:qualified,
+  verifiedVisibility:false,sourceProblemConfirmed:false,
+  constructionIntents:[],steps:[],timing:null,
+  unifiedMathPipeline:qualified?'m3-scoped-evidence-only/1':'m3-blocked/1',
+  // Explicit acceptance boundary: mathematical scoped geometry != drawable
+  // 3D/2D projection, original-image provenance or real-exercise success.
+  v5Ready:false,realExerciseAccepted:false
+ });
+}
 
 function evaluateUnifiedMath({kind,input,sheet,revision=0}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current input revision required');
+ if(input?.revision!==undefined&&input.revision!==revision)
+  throw new RangeError('stale specialist input revision');
+ if(kind==='spatial-section')
+  return evaluateScopedSpatialSection({input,revision,sheet});
  if(kind==='inscribed-polygon'){
   if(input?.revision!==revision)
    throw new RangeError('stale polygon input revision');
