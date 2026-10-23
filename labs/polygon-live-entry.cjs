@@ -4,7 +4,7 @@
  * canonical Intent; this file only CONSUMES the existing 07 V5 player/motion.
  * No OCR, static textbook answers, alternative geometry engine or animation.
  */
-const {verifiedPolygonIntentTimeline}=require('../workbench/verified-polygon-intent-v1.cjs');
+const {verifiedPolygonIntentTimeline}=require('../integration/unified-math-runtime.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
