@@ -21,7 +21,7 @@ test('07 public cone page contains all confirmed-source and V5 playback controls
  ])assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/cone-cut-live-bundle\.js/);
  assert.match(html,/max-width:900px/);
- assert.match(html,/截线线段为解析曲线的采样近似|折线仅近似解析截线/);
+ assert.match(html,/截交线为近似绘制/);
  assert.match(html,/未确认：所有截线线型待审核/);
  assert.match(html,/人工|确认/);
  assert.match(html,/id="coneSourceFile" type="file" accept="image\/png,image\/jpeg,image\/webp"/);
