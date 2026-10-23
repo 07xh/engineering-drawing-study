@@ -79,7 +79,7 @@ function homeHTML(){return `
     <h1 id="next-home-drawing-title">工程制图自动解题</h1>
     <p class="next-home-lead">确认条件，查看逐笔作图和完整工程图纸。</p>
     <div class="next-home-hero-actions">
-     <a class="next-home-edit" href="labs/auto-fillet-live.html">＋ 开始解题</a>
+     <a class="next-home-edit" href="#project-workbench">＋ 开始解题</a>
      <a class="next-home-example" href="labs/circle-fillet-live.html">查看圆弧连接 →</a>
     </div>
     <p class="next-home-capability">当前提供部分题型的条件求解与动态作图；任意图片自动识别尚未开放。</p>
