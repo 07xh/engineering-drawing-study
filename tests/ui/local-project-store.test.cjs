@@ -190,7 +190,7 @@ test('portable .daiproject packs confirmed inputs and original pixels without so
   assert.equal((await target.importBundle(file)).id,'bundleA');
   assert.equal((await target.readProject('bundleA')).project.source.imageId,'imageA');
   assert.equal(await (await target.readImage('imageA')).text(),await image.text());
-  await assert.rejects(() => target.importBundle(file),/已经存在/);
+  await assert.rejects(() => target.importBundle(file),/已存在/);
 });
 test('portable project without an image imports, but images must never be invented', async () => {
   const source=await openLocalProjects(fakeIndexedDB());
