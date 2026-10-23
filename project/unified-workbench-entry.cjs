@@ -5,7 +5,8 @@
  */
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
-const {createUnifiedProjectSession,SHEET}=require('./unified-workbench-session.cjs');
+const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
+const {validateGeometry}=require('../core/contracts/geometry.js');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -18,6 +19,89 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const prismInputs=['v7-p-width','v7-p-depth','v7-p-height','v7-p-px',
   'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
  const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs];
+ const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
+  'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end','v7-c-direction'];
+ const geometryId=id=>/^([A-Za-z][A-Za-z0-9_-]{0,79})$/.test(id);
+ function compositionCandidate(){
+  const id=$('v7-c-id').value.trim(),kind=$('v7-c-kind').value;
+  if(!geometryId(id))throw Error('对象 ID 必须由字母开头，只含数字、字母、下划线或横线');
+  const a=['v7-c-ax','v7-c-ay','v7-c-az'].map(numberFrom);
+  const b=['v7-c-bx','v7-c-by','v7-c-bz'].map(numberFrom);
+  const p=(x,y)=>({x,y}),v=(x,y,z)=>({x,y,z});
+  let data,space,type,projectKind;
+  const center=p(a[0],a[1]);
+  if(kind==='point2d'){type='point';space='drawing-2d';data=center;projectKind='point';}
+  else if(kind==='point3d'){type='point';space='model-3d';data=v(...a);projectKind='point';}
+  else if(kind==='segment2d'){type='segment';space='drawing-2d';data={
+   start:center,end:p(b[0],b[1])};projectKind='edge';}
+  else if(kind==='segment3d'){type='segment';space='model-3d';data={
+   start:v(...a),end:v(...b)};projectKind='edge';}
+  else if(kind==='circle'){type='circle';space='drawing-2d';
+   data={center,radius:numberFrom('v7-c-radius')};projectKind='edge';}
+  else if(kind==='arc'){type='arc';space='drawing-2d';
+   data={center,radius:numberFrom('v7-c-radius'),
+    startAngle:numberFrom('v7-c-start'),endAngle:numberFrom('v7-c-end'),
+    direction:$('v7-c-direction').value};projectKind='edge';}
+  else if(kind==='prism'){
+   if(b.some((n,i)=>n<=a[i]))throw Error('长方体最大角坐标必须严格大于最小角');
+   type='mesh';space='model-3d';projectKind='solid';
+   data=prismMesh({solid:{min:v(...a),max:v(...b)}}).data;
+  }else throw Error('不支持的手工几何对象');
+  const geometry={id,kind:type,space,unit:'mm',data};
+  const check=validateGeometry(geometry);
+  if(!check.ok)throw Error('输入几何无效：'+check.errors.join('；'));
+  const spatial=space==='model-3d';
+  const model={id,kind:projectKind,spatialId:spatial?id+'_3D':null,
+    projections:{V:spatial?[id+'_V']:[],H:spatial?[id+'_H']:[],
+      W:spatial?[id+'_W']:[]}};
+  return {geometry,model};
+ }
+ function compositionFormFrom(g){
+  const d=g?.data;if(!d)return;
+  const type=g.kind==='mesh'?'prism':g.kind==='point'?
+   (g.space==='drawing-2d'?'point2d':'point3d'):
+   g.kind==='segment'?(g.space==='drawing-2d'?'segment2d':'segment3d'):
+   g.kind;
+  $('v7-c-kind').value=type;
+  $('v7-c-id').value=g.id;
+  let a,b;
+  if(type==='prism'){
+   const pts=Object.values(d.points);
+   a=[Math.min(...pts.map(p=>p.x)),Math.min(...pts.map(p=>p.y)),Math.min(...pts.map(p=>p.z))];
+   b=[Math.max(...pts.map(p=>p.x)),Math.max(...pts.map(p=>p.y)),Math.max(...pts.map(p=>p.z))];
+  }else if(g.kind==='segment'){
+   a=[d.start.x,d.start.y,d.start.z??0];b=[d.end.x,d.end.y,d.end.z??0];
+  }else{
+   const pt=g.kind==='point'?d:d.center;
+   a=[pt.x,pt.y,pt.z??0];b=[10,10,10];
+  }
+  ['v7-c-ax','v7-c-ay','v7-c-az'].forEach((id,i)=>$(id).value=String(a[i]));
+  ['v7-c-bx','v7-c-by','v7-c-bz'].forEach((id,i)=>$(id).value=String(b[i]));
+  if(g.kind==='circle'||g.kind==='arc')$('v7-c-radius').value=String(d.radius);
+  if(g.kind==='arc'){
+   $('v7-c-start').value=String(d.startAngle);
+   $('v7-c-end').value=String(d.endAngle);
+   $('v7-c-direction').value=d.direction;
+  }
+ }
+ function refreshComposition(){
+  const snapshot=coordinator?.snapshot();if(!snapshot||snapshot.task!=='composition')return;
+  const select=$('v7-c-objects'),chosen=select.value;
+  select.replaceChildren();
+  const blank=document.createElement('option');blank.value='';blank.textContent='新增对象';
+  select.append(blank);
+  for(const obj of snapshot.objects){
+   const option=document.createElement('option');option.value=obj.id;
+   const approved=snapshot.conditions.find(c=>c.objectId===obj.id)?.confirmed===true;
+   option.textContent=(approved?'✓ ':'○ ')+obj.id+' · '+obj.kind;
+   select.append(option);
+  }
+  select.value=snapshot.objects.some(o=>o.id===chosen)?chosen:'';
+  const approved=snapshot.conditions.filter(c=>c.confirmed).length;
+  $('v7-c-status').textContent='对象 '+snapshot.objects.length+
+    ' 个，已确认 '+approved+' 个。未确认的对象不会出现在场景预览。';
+ }
+
  const taskObjects={
   projection:{id:'Point1',kind:'point',spatialId:'Point1_3D',
    projections:{V:['Point1_V'],H:['Point1_H'],W:['Point1_W']}},
@@ -70,7 +154,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function preview(){
   const snap=coordinator?.snapshot(),out=session?.readSnapshot();
   return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
-    out.kind==='prism-evidence'&&out.verified===false?out:null;
+    ['prism-evidence','composition-evidence'].includes(out.kind)&&out.verified===false?out:null;
  }
  function selectable(node,view,rep,id){
   const pick=()=>coordinator.selectRepresentation(view,rep);
@@ -165,6 +249,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
+  $('v7-c-objects').value='';
+  if(project.task==='composition')refreshComposition();
   $('v7-projects').value=project.id;
   msg('项目已打开；恢复后不继承数学验证。');
   render();void showPhoto();
@@ -357,10 +443,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-task').value=snap.task;
   for(const fieldset of root.querySelectorAll('fieldset[data-v7-task]'))
     fieldset.hidden=fieldset.dataset.v7Task!==snap.task;
-  root.querySelector('.v7-nonpoint-actions').hidden=snap.task==='projection';
+  root.querySelector('.v7-nonpoint-actions').hidden=snap.task==='projection'||snap.task==='composition';
+  refreshComposition();
   $('v7-spatial-boundary').textContent=snap.task==='planar'?
    '纯二维数学不制造三维立体':snap.task==='exploration'?
-   '长方体线框；截交线和可见性尚未签收':'点投影（非实体 CAD）';
+   '长方体线框；截交线和可见性尚未签收':snap.task==='composition'?
+   '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
   $('v7-mode').value=snap.view.mode;
   $('v7-yaw').value=String(snap.view.camera.yaw);
   $('v7-pitch').value=String(snap.view.camera.pitch);
@@ -377,6 +465,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
+     partial.kind==='composition-evidence'?
+      '仅确认了手工输入的几何对象并验证其基本数学格式；不是 M3 独立求解，不具备 ConstructionIntent/V5 动画或可见性证明。':
      '限定证据：M3 已独立核验专业范围内的截切几何；下方仅为已知长方体的 V/H/W 和空间线框。截线、隐藏边与 V5 均未获证明，不可播放。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   $('v7-selection').textContent=snap.view.selectedObjectId?
@@ -442,6 +532,66 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   populateTaskFields(coordinator.snapshot());
   msg('题型已切换；原图保留，旧数学条件、分支和动画全部失效。');
  }));
+
+ $('v7-c-new').addEventListener('click',()=>{
+  $('v7-c-objects').value='';
+  $('v7-c-id').value='Object'+String((coordinator?.snapshot().objects.length||0)+1);
+ });
+ $('v7-c-objects').addEventListener('change',()=>{
+  const p=coordinator?.snapshot(),id=$('v7-c-objects').value;
+  const c=p?.conditions.find(c=>c.objectId===id);
+  if(c?.value?.geometry)compositionFormFrom(c.value.geometry);
+  else if(id)$('v7-c-id').value=id;
+  if(id)coordinator?.selectObject(id);
+ });
+ $('v7-c-stage').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')throw Error('请先选择多对象编辑任务');
+  const {geometry,model}=compositionCandidate(),p=coordinator.snapshot();
+  const chosen=$('v7-c-objects').value;
+  if(chosen&&chosen!==model.id)throw Error('改名请先删除旧对象，再建立新的稳定对象 ID');
+  if(p.objects.some(x=>x.id===model.id)&&chosen!==model.id)
+   throw Error('项目中已存在此对象 ID，请选择已有对象或输入新的 ID');
+  if(!p.objects.some(x=>x.id===model.id))coordinator.putObject(model);
+  else coordinator.putObject(model);
+  coordinator.putCondition({id:'geo_'+geometry.id,objectId:geometry.id,
+   sourceCandidateId:null,confirmed:false,
+   value:{type:'manual-geometry',unit:'mm',imageId:p.source.imageId,geometry}});
+  $('v7-c-objects').value=geometry.id;
+  msg('几何 '+geometry.id+' 已暂存，必须点击确认才能显示场景。');
+ }));
+ $('v7-c-confirm').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')throw Error('请先进入多对象编辑');
+  const id=$('v7-c-objects').value||$('v7-c-id').value.trim();
+  coordinator.confirmCondition('geo_'+id);
+  msg('对象 '+id+' 已由人工确认；场景预览仍不代表已求解。');
+ }));
+ $('v7-c-remove').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')throw Error('当前不是多对象项目');
+  const id=$('v7-c-objects').value;
+  if(!id)throw Error('先从列表选择要删除的对象');
+  coordinator.deleteObject(id);$('v7-c-objects').value='';
+  msg('已删除 '+id+'，全部旧几何预览失效。');
+ }));
+ $('v7-c-render').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')throw Error('当前不是多对象项目');
+  stopAnimation();
+  const result=session.solve();
+  if(result.kind!=='composition-evidence'||result.verified!==false||
+      result.clock!==null||coordinator.canExport())
+   throw Error('手工几何被错误授予解题证明资格');
+  msg('已显示 '+result.scene.objects.length+' 个已确认几何对象；未运行专业 M3，V5 禁用。');
+ }));
+ for(const id of compositionFields)
+  for(const event of ['input','change'])$(id).addEventListener(event,()=>{
+   if(!coordinator||coordinator.snapshot().task!=='composition'||id==='v7-c-id')return;
+   const selected=$('v7-c-objects').value;
+   const row=coordinator.snapshot().conditions.find(c=>c.objectId===selected);
+   if(row){
+    coordinator.deleteCondition(row.id);
+    msg('对象字段已修改：旧确认与预览失效，请重新保存并确认。');
+   }
+  });
+
  $('v7-stage-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator)throw Error('请先新建本机项目');
   const task=coordinator.snapshot().task;
