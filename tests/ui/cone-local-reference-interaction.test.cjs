@@ -48,7 +48,7 @@ test('09 real cone UI: choose local image invalidates running V5, demands new co
   assert.equal(e.image.hidden,true);
   e.finish();
   assert.equal(e.image.hidden,false);
-  assert.match(a.get('coneSourceStatus').textContent,/不识别图片/);
+  assert.match(a.get('coneSourceStatus').textContent,/OCR 仅产生待审 R\/Φ 文字候选/);
   assert.doesNotMatch(a.get('coneSourceStatus').textContent,/已通过原题盲测/);
   e.solve();
   assert.equal(a.get('coneSteps').children.length,16);
