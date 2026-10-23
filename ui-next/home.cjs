@@ -19,6 +19,7 @@ const TOOLS=[
  ['constraints','几何约束','查看几何条件的关系。','打开工具'],
  ['analysis','约束分析','核对几何条件。','打开工具']
 ];
+const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","cone-cut-live","cylinder-cut-live","prism-cut-live","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
 <section class="next-home-hero next-home-workbench" aria-label="DraftAI 开始解题">
  <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
@@ -77,19 +78,15 @@ function homeHTML(){return `
    <a href="labs/point-projection-live.html"><span class="next-home-quick-icon">03</span><span>点的三面投影</span><span aria-hidden="true">›</span></a>
    <a href="labs/polygon-live.html"><span class="next-home-quick-icon">04</span><span>正多边形作图</span><span aria-hidden="true">›</span></a>
   </div></div>
-  <div class="next-home-workflow-card"><h2>操作步骤</h2><ol class="next-home-guide-steps">
-   <li><span>1</span><div><strong>输入题目条件</strong><small>选择已有题型并核对尺寸</small></div></li>
-   <li><span>2</span><div><strong>计算并确认结果</strong><small>存在多个解时自行选择</small></div></li>
-   <li><span>3</span><div><strong>逐笔观看作图</strong><small>支持上一笔、下一笔与调速</small></div></li>
-  </ol><p class="next-home-boundary">目前支持部分题型；任意图片自动识别尚未开放。</p></div>
+  <section class="next-home-workflow-card next-home-library" id="knowledge"><h2>我的题目</h2><p>题库尚未接入，可先使用已开放的作图工具。</p><a href="labs/auto-fillet-live.html">进入解题工作台 →</a><p class="next-home-boundary">任意图片自动识别尚未开放。</p></section>
  </aside>
 </section>
 <section class="next-home-section next-home-shortflow" id="ai"><strong>解题流程</strong><span>输入条件 → 计算 → 动态作图</span></section>
 <section class="next-home-section" id="tools">
  <div class="next-section-heading"><h2>更多作图工具</h2><span>按需要打开</span></div>
- <details class="next-home-more-tools"><summary>查看全部工具</summary><div class="next-tool-grid">${TOOLS.map(([slug,label,description,action],i)=>`<a class="next-tool-card" href="labs/${slug}.html"><span class="next-tool-number">${String(i+1)}</span><h3>${label}</h3><p>${description}</p><span class="next-tool-action">${action} →</span></a>`).join("")}</div></details>
+ <details class="next-home-more-tools"><summary>按类别查看题型与辅助工具</summary>${CATEGORIES.map(([category,slugs])=>`<section class="next-home-tool-group"><h3>${category}</h3><div class="next-tool-grid">${TOOLS.filter(([slug])=>slugs.includes(slug)).map(([slug,label,description,action])=>`<a class="next-tool-card" href="labs/${slug}.html"><h3>${label}</h3><p>${description}</p><span class="next-tool-action">${action} →</span></a>`).join("")}</div></section>`).join("")}</details>
 </section>
-<section class="next-knowledge" id="knowledge"><div><h2>我的题目</h2><p>题库尚未接入。当前请使用上面的真实解题工具。</p></div><div class="next-knowledge-links"><a href="labs/auto-fillet-live.html">二维作图 →</a><a href="labs/circle-fillet-live.html">圆弧连接 →</a><a href="labs/point-projection-live.html">三面投影 →</a></div></section>
-<footer class="next-footer"><span>DraftAI · 工程制图自动解题与动态作图</span><a href="public-use.html">支持范围与隐私说明 →</a></footer>
+
+<footer class="next-footer"><span>DraftAI · 工程制图自动解题与动态作图</span><a href="public-use.html">帮助与用户协议 →</a></footer>
 `;}
 module.exports={homeHTML};

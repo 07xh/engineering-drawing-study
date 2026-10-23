@@ -223,6 +223,28 @@ test('V6.2 CSS keeps the paper large while preserving its aspect ratio and safe 
  assert.match(css,/@media\(max-width:850px\)/);
 });
 
+
+test('V6.2 home groups all accessible tools without large empty My Problems block',()=>{
+ const {after:document}=enhance('index.html');
+ const groups=[...document.querySelectorAll('.next-home-tool-group')];
+ assert.equal(groups.length,3,'core geometry, projections, auxiliary tools need explicit groups');
+ const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
+ assert.equal(links.length,18,'all existing published special-purpose tools remain reachable');
+ assert.equal(new Set(links).size,18,'tool entries should not repeat');
+ const my=document.querySelector('#knowledge');
+ assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
+ assert.match(my.textContent,/题库尚未接入/,'no fictional persistent history');
+ const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
+ assert.deepEqual(sidebar,['AI 解题','题型中心','我的题目','帮助与协议']);
+});
+test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
+ const {after:document}=enhance('public-use.html');
+ assert.match(document.querySelector('main h1').textContent,/帮助与用户协议/);
+ assert.ok(document.querySelector('main details'),'long technical disclosures must be optional');
+ assert.match(document.querySelector('main').textContent,/尚未向公众开放/);
+ assert.match(document.querySelector('main').textContent,/个人资料/);
+});
+
 test('keyboard panel navigation and Escape restore presentation without changing application controls',()=>{
  const {after:document}=enhance('labs/auto-fillet-live.html');
  require('../../ui-next/ui-next.js').initUI(document);
