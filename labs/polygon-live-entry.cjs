@@ -4,7 +4,7 @@
  * canonical Intent; this file only CONSUMES the existing 07 V5 player/motion.
  * No OCR, static textbook answers, alternative geometry engine or animation.
  */
-const {verifiedPolygonIntentTimeline}=require('../workbench/verified-polygon-intent-v1.cjs');
+const {evaluateUnifiedMath}=require('../workbench/unified-math-pipeline.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -157,7 +157,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     sideCount:Number($('polygonSides').value),
     firstVertexAngleDeg,direction:$('polygonDirection').value,
     revision,sourceConfirmed:$('polygonConfirm').checked};
-   const result=verifiedPolygonIntentTimeline(input,sheet);
+   const result=evaluateUnifiedMath({kind:'inscribed-polygon',input,sheet,revision});
    if(result.status!=='ready'){
     status('无法生成已验证作图：'+result.reason);
     return;
