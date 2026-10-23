@@ -12,7 +12,9 @@
 const {filletTimeline,pointTimeline}=require('./verified-plan-v5-bridge.cjs');
 const {verifiedConstructionIntentV1}=require('./verified-construction-intent-v1.cjs');
 const {verifiedPolygonIntentTimeline}=require('./verified-polygon-intent-v1.cjs');
-const {assertM3ToV5Consistency}=require('./m3-v5-consistency-gate.cjs');
+const {assertM3ToV5Consistency,assertConeM3ToV5Consistency}=require('./m3-v5-consistency-gate.cjs');
+const {classifyConePlane}=require('../engines/spatial/sections/cone-plane-classifier.cjs');
+const {coneSpatialV5Preview}=require('./cone-spatial-v5-preview.cjs');
 const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
@@ -57,6 +59,62 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
  });
 }
 
+/**
+ * Official typed M3 boundary for the already-supported finite-cone branches.
+ * The 04 analytic solver chooses the actual cut; source-backed Spatial Intent
+ * and the ONE V5 player are reused. 3D visibility and textbook-answer proof
+ * remain explicitly unverified. Never accept caller-provided solve evidence.
+ */
+function evaluateConePlaneSection({input,revision,sheet}){
+ if(sheet!==undefined&&sheet!==null)
+  throw new TypeError('3D cone uses verified first-angle layout, not an injected 2D sheet');
+ const allowed=['kind','cone','plane','sourceConfirmed','samples','requestedKind',
+  'retainedHalfspace','observerDirections'];
+ if(!input||typeof input!=='object'||Array.isArray(input)||
+    Object.keys(input).some(k=>!allowed.includes(k))||
+    input.kind!=='cone-plane')
+  throw new TypeError('trusted cone-plane parameters required, not caller proof');
+ const blocked=(status,reason,classification=null)=>Object.freeze({
+  status,reason,kind:'cone-plane-section',revision,sectionClassification:classification,
+  mathematicallyVerified:status==='none',
+  geometryVerifiedWithinSpecialistScope:status==='none',
+  verifiedVisibility:false,sourceProblemConfirmed:false,
+  spatialConstructionIntent:null,canonicalSpatialIntentVerified:false,
+  steps:[],timing:null,player:null,v5Ready:false,
+  v5ProjectionPreviewReady:false,realExerciseAccepted:false,
+  unifiedMathPipeline:'m3-spatial-cone-classification/1'
+ });
+ if(input.sourceConfirmed!==true)
+  return blocked('not-verified','cone and cutting plane need confirmed model-mm parameters');
+ const samples=input.samples===undefined?64:input.samples;
+ const classification=classifyConePlane(input.cone,input.plane,{samples});
+ if(classification.status==='none')
+  return blocked('none',classification.reason,classification);
+ if(classification.status!=='ready')
+  return blocked('not-verified',classification.reason,classification);
+ const requestedKind=input.requestedKind??'auto';
+ if(!['auto','full-ellipse','clipped-ellipse'].includes(requestedKind))
+  throw new TypeError('unsupported section routing request');
+ if(requestedKind!=='auto'&&requestedKind!==classification.kind)
+  return blocked('not-verified','所选截线类型与实际数学分类不一致，请切换自动判断',classification);
+ const proofOptions={kind:classification.kind,sourceConfirmed:true,
+  revision,samples,presentationMode:'split-sheet',provenGuideDag:true};
+ if(input.retainedHalfspace!==undefined)
+  proofOptions.retainedHalfspace=input.retainedHalfspace;
+ if(input.observerDirections!==undefined)
+  proofOptions.observerDirections=input.observerDirections;
+ const preview=coneSpatialV5Preview(input.cone,input.plane,proofOptions);
+ if(preview.status!=='preview-only')
+  throw new RangeError('classified cone cut disagrees with trusted V5 source');
+ assertConeM3ToV5Consistency({preview,revision});
+ return Object.freeze({...preview,kind:'cone-plane-section',
+  sectionClassification:classification,
+  spatialConstructionIntent:preview.spatialIntent,
+  canonicalSpatialIntentVerified:true,
+  unifiedMathPipeline:'m3-spatial-intent-single-v5-preview/1',
+  sourceProblemConfirmed:false,v5Ready:false,realExerciseAccepted:false
+ });
+}
 function evaluateUnifiedMath({kind,input,sheet,revision=0}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current input revision required');
@@ -64,6 +122,8 @@ function evaluateUnifiedMath({kind,input,sheet,revision=0}={}){
   throw new RangeError('stale specialist input revision');
  if(kind==='spatial-section')
   return evaluateScopedSpatialSection({input,revision,sheet});
+ if(kind==='cone-plane-section')
+  return evaluateConePlaneSection({input,revision,sheet});
  if(kind==='inscribed-polygon'){
   if(input?.revision!==revision)
    throw new RangeError('stale polygon input revision');

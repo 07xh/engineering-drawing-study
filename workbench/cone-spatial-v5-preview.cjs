@@ -270,4 +270,4 @@ function coneSpatialV5Preview(cone,plane,options={}){
   },
   presentationKind:'sampled-projection-polyline-not-exact-compass-construction'};
 }
-module.exports={coneSpatialV5Preview};
+module.exports={coneSpatialV5Preview,coneFirstAngleSheetLayout:separateTransforms};

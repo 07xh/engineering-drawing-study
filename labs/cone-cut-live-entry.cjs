@@ -4,8 +4,10 @@
  * M3 -> ConstructionStep -> spatial V5 composed plan / existing V5 Motion.
  * No mock geometry, OCR, remote provider, second player or proof promotion.
  */
-const {coneSpatialV5Preview}=
+const {coneFirstAngleSheetLayout}=
  require('../workbench/cone-spatial-v5-preview.cjs');
+const {evaluateUnifiedMath}=
+ require('../workbench/unified-math-pipeline.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {curvePaths}=require('../workbench/v51-curve-paths.cjs');
 const {knownConeOutlines}=require('../workbench/v51-known-cone-outlines.cjs');
@@ -28,7 +30,7 @@ const {coneLinkedSpatialScene}=
   'coneNx','coneNy','coneNz'];
  const config=['coneKind','coneSamples','coneKept'];
  const defaults={coneRadius:'5',coneHeight:'10',conePx:'0',conePy:'0',
-  conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'full-ellipse',
+  conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'auto',
   coneSamples:'64',coneKept:''};
  let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null,faceEvidence=null,orbitGesture=null;
  const reference=createLocalPhotoReference();
@@ -276,6 +278,21 @@ const {coneLinkedSpatialScene}=
    throw new TypeError(id+' 必须是有限数值');
   return el.valueAsNumber;
  }
+ // An empty geometric intersection still has a fully defined source cone.
+ // Reuse the SAME first-angle sheet transform and source-outline renderer;
+ // never manufacture a solved cut or a V5 player for empty geometry.
+ function showUncutConeViews(cone){
+  const layout=coneFirstAngleSheetLayout(cone);
+  const group=$('coneDraw'),palette=conePalette();
+  group.replaceChildren();
+  $('coneSvg').setAttribute('viewBox','0 0 960 680');
+  $('coneSvg').querySelector('g[aria-hidden=true]')?.setAttribute('fill',palette.known);
+  for(const outline of knownConeOutlines(cone,layout.transforms)){
+   group.append(create(outline.kind,{...outline.attrs,
+    fill:'none',stroke:palette.known,'stroke-width':1.5,
+    'data-known-outline':outline.id,'pointer-events':'none'}));
+  }
+ }
  function solve(){
   stop();
   if(player&&player.canRender(revision))player.invalidate(revision+1,now());
@@ -289,7 +306,7 @@ const {coneLinkedSpatialScene}=
       z:number('conePz')},
     normal:{x:number('coneNx'),y:number('coneNy'),z:number('coneNz')},
     modelUnit:'mm'};
-   const kind=$('coneKind').value;
+   const requestedKind=$('coneKind').value;
    const samples=Number($('coneSamples').value);
    const kept=$('coneKept').value;
    // Observer vectors are an explicit, restricted local coordinate choice.
@@ -300,20 +317,33 @@ const {coneLinkedSpatialScene}=
      V:{x:0,y:-1,z:0},H:{x:0,y:0,z:1},W:{x:1,y:0,z:0}
     }
    }:{};
-   const answer=coneSpatialV5Preview(cone,plane,{
-    kind,samples,revision,sourceConfirmed:true,
-    presentationMode:'split-sheet',provenGuideDag:true,...evidence
+   const answer=evaluateUnifiedMath({
+    kind:'cone-plane-section',revision,
+    input:{kind:'cone-plane',cone,plane,requestedKind,samples,
+     sourceConfirmed:true,...evidence}
    });
+   if(answer.status==='none'&&
+      answer.sectionClassification?.separationVerified===true){
+    showUncutConeViews(cone);
+    $('coneStepLabel').textContent='截平面与有限圆锥无交线；无截线步骤或动画。';
+    $('conePicked').textContent='完整圆锥 V/H/W 三视图保留。';
+    $('coneProof').textContent='M3 已验证有限圆锥与截平面分离，未生成交线、截线步骤或 V5 动画。仅显示输入圆锥的第一角法已知轮廓；不是被截切实体，也不宣称标准虚实线。';
+    status('已完成空间计算：截平面与有限圆锥无交线。保留完整 V/H/W 三视图。');
+    return;
+   }
    if(answer.status!=='preview-only'||
       answer.mathematicallyVerified!==true||
       answer.canonicalGuideDagConnected!==true||
       answer.canonicalGuideStepCount!==12||
       answer.spatialIntent?.source?.v5StepsReady!==false||
-      answer.publicWorkbenchConnected!==false)
+      answer.publicWorkbenchConnected!==false||
+      answer.canonicalSpatialIntentVerified!==true||
+      answer.unifiedMathPipeline!=='m3-spatial-intent-single-v5-preview/1')
    {
     status('无法生成已验证的圆锥作图预览：'+
      (answer.reason||'数学证据不完整')+'。',true);return;
    }
+   const kind=answer.sectionClassification.kind;
    plan=answer;
    faceEvidence=kept?coneSolidFaceRayEvidence(answer.spatialIntent,{
     retainedHalfspace:kept}):null;

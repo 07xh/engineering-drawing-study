@@ -173,3 +173,46 @@ test('09 cone playback uses one clock even when RAF timestamp lags behind play c
   assert.match(app.get('coneStatus').textContent,/已就绪/);
  }
 });
+
+test('09 auto cone classification retains truthful full first-angle views for an empty section',()=>{
+ for(const next of [false,true]){
+  const app=mount(page,{next});
+  assert.equal(app.get('coneKind').value,'auto');
+  app.set('conePz','12','input');
+  const state=solve(app);
+  assert.match(state,/无交线/);
+  assert.equal(app.get('coneStatus').dataset.error,'false');
+  assert.equal(app.get('conePlay').disabled,true);
+  assert.equal(app.get('coneSteps').children.length,0);
+  assert.equal(app.get('coneDraw').querySelectorAll('[data-known-outline]').length,3);
+  assert.equal(app.get('coneDraw').querySelectorAll('[data-curve-id]').length,0);
+  assert.equal(app.get('coneSvg').getAttribute('viewBox'),'0 0 960 680');
+  assert.match(app.get('coneProof').textContent,/未生成交线/);
+  // Changing the model must invalidate the old displayed silhouette.
+  app.set('coneRadius','7','input');
+  assert.equal(app.get('coneDraw').children.length,0);
+  app.set('conePz','6','input');
+  assert.match(solve(app),/V5 动画已就绪/);
+  assert.ok(app.get('coneDraw').querySelector('[data-known-outline]'));
+  assert.equal(app.get('conePlay').disabled,false);
+ }
+});
+test('09 automatic finite cone detects base-clipped ellipse without manual type',()=>{
+ const app=mount(page,{next:true});
+ app.set('conePz','1','input');
+ assert.equal(app.get('coneKind').value,'auto');
+ assert.match(solve(app),/已就绪/);
+ assert.match(app.get('coneProof').textContent,/裁剪椭圆与底面截弦/);
+ assert.ok(app.get('coneSteps').children.length>0);
+});
+test('09 unsupported steep cuts are not mislabeled as no intersection',()=>{
+ const app=mount(page,{next:true});
+ app.set('conePx','1','input');
+ app.set('conePz','5','input');
+ app.set('coneNx','1','input');
+ app.set('coneNy','0','input');
+ app.set('coneNz','0','input');
+ assert.match(solve(app),/无法生成已验证的圆锥作图预览/);
+ assert.equal(app.get('conePlay').disabled,true);
+ assert.equal(app.get('coneDraw').children.length,0);
+});
