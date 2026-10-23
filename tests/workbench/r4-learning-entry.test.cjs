@@ -11,7 +11,7 @@ test('verified mathematics MVP routes remain reachable during AI product transit
  assert.ok(nav);assert.ok(hero);
  for(const route of ['labs/point-projection-live.html','labs/circle-fillet-live.html']){
   assert.ok(nav.includes('href="'+route+'"'),route);
-  assert.ok(hero.includes('href="'+route+'"'),route);
+  assert.ok(hero.includes('href="'+route+'"')||home.includes('<a class="tool-card" href="'+route+'"'),route);
  }
  assert.match(home,/智能尺规作图/);
  assert.match(home,/三面投影 · 动态数学求解/);
@@ -23,10 +23,10 @@ test('existing study companion, modeler and separate experiments remain navigabl
   assert.ok(home.includes('href="'+route+'"'),route);
 });
 test('V3.1 homepage discloses solver limits, privacy boundary and unavailable image upload',()=>{
- assert.match(home,/数字尺规只能核验相应的辅助构造和候选圆心/);
- assert.match(home,/尚未实现任意题图的 AI 自动识别与完整解题/);
- assert.match(home,/AI 识图尚未开放/);
- assert.match(home,/公开工具与私人资料分开/);
+ assert.match(home,/当前不支持上传任意题图后自动完成解答/);
+ assert.match(home,/图片自动识别仍在开发中/);
+ assert.match(home,/部分题型仍在完善中/);
+ assert.match(home,/href="public-use.html"/);
  assert.doesNotMatch(home,/<input\b[^>]*type=["']file["']/i);
  assert.doesNotMatch(home,/<form\b/i);
  assert.ok(home.includes('href="public-use.html"'));
@@ -34,9 +34,9 @@ test('V3.1 homepage discloses solver limits, privacy boundary and unavailable im
 
 test('V3.1 sole homepage positioning is AI geometry solving with mathematics-first rollout',()=>{
  assert.match(home,/<title>DraftAI · AI 工程制图自动解题与动态作图<\/title>/);
- assert.match(home,/上传工程图题，自动求解并动态作图/);
- assert.match(home,/唯一主线：识图 → 确认 → 数学 → 真实步骤 → 动画/);
- assert.match(home,/先验收数学基础和二维真实求解/);
+ assert.match(home,/工程制图解题 · 动态作图/);
+ assert.match(home,/选择题型、调整条件，查看逐笔作图过程/);
+ assert.match(home,/class="ui-refresh workbench-blue"/);
  assert.ok(home.indexOf('id="ai"')<home.indexOf('id="tools"'));
  assert.doesNotMatch(home,/三面投影 · 动态数学教学/);
 });

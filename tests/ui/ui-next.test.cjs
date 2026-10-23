@@ -90,6 +90,72 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
   assert.ok(after.getElementById('learningMode').closest('[data-next-panel="steps"]'),page);
  }
 });
+
+test('V6.1 published homepage places first-angle paper before secondary tools',()=>{
+ const {after:document}=enhance('index.html');
+ const dashboard=document.querySelector('.next-home-workbench');
+ assert.ok(dashboard,'new homepage workbench must be the first screen');
+ assert.ok(dashboard.querySelector('.next-home-drawing'),'large drawing region missing');
+ const svg=dashboard.querySelector('.next-home-paper svg');
+ assert.ok(svg,'one-sheet preview missing');
+ assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
+ const labels=svg.textContent;
+ for(const label of ['V 主视图','H 俯视图','W 左视图','45°'])
+  assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
+ assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
+ for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
+  assert.ok(dashboard.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
+ assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
+ assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.1-home-20261023"]'),'verifiable homepage release marker missing');
+ assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
+ assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
+ assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
+});
+
+test('homepage cone projection has actual first-angle geometric correspondence',()=>{
+ const {after:document}=enhance('index.html');
+ const svg=document.querySelector('[data-projection-example="right-circular-cone"] svg');
+ assert.ok(svg,'source must explicitly describe the elementary cone example');
+ const readTriangle=(view)=>{
+  const shape=svg.querySelector('[data-projection-view="'+view+'"] path');
+  assert.ok(shape,'missing orthographic projection '+view);
+  const match=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)H(-?\d+)Z$/.exec(shape.getAttribute('d'));
+  assert.ok(match,'cone silhouette must consist of a symmetric triangle '+view);
+  return {apexX:+match[1],apexY:+match[2],leftX:+match[3],baseY:+match[4],rightX:+match[5]};
+ };
+ const v=readTriangle('V'),w=readTriangle('W');
+ const c=svg.querySelector('[data-projection-view="H"] circle');
+ assert.ok(c,'cone plan must be an undistorted circle');
+ const cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy'),r=+c.getAttribute('r');
+ assert.ok(r>0);
+ // Long alignment (V-H), height alignment (V-W), width equality (H-W).
+ assert.equal(cx,v.apexX);
+ assert.equal(v.leftX,cx-r);
+ assert.equal(v.rightX,cx+r);
+ assert.equal(v.apexY,w.apexY);
+ assert.equal(v.baseY,w.baseY);
+ assert.equal(w.apexX-w.leftX,r);
+ assert.equal(w.rightX-w.apexX,r);
+ assert.equal(v.rightX-v.leftX,2*r);
+ assert.equal(w.rightX-w.leftX,2*r);
+ // The 45-degree miter transfers plan depths to W widths.
+ const miter=svg.querySelector('[data-miter="45-degree"]');
+ assert.ok(miter);
+ const m=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)$/.exec(miter.getAttribute('d'));
+ assert.ok(m,'miter must be a true line');
+ const [x0,y0,x1,y1]=m.slice(1).map(Number);
+ assert.equal(x1-x0,y1-y0,'miter must be exactly 45 degrees');
+ assert.equal(w.apexX,x0+(cy-y0),'plan center must project to W center');
+ assert.equal(w.leftX,x0+(cy-r-y0),'plan near edge must project to W left edge');
+ assert.equal(w.rightX,x0+(cy+r-y0),'plan far edge must project to W right edge');
+ assert.equal(x1,w.rightX);
+ assert.equal(y1,cy+r);
+ assert.equal(v.apexY<w.baseY,true,'upright cone apex belongs above base');
+ assert.equal(svg.querySelectorAll('ellipse').length,0,'uncalculated plan ellipse not permitted');
+ assert.equal(svg.querySelectorAll('[data-projection-view]').length,3);
+ assert.match(document.querySelector('.next-home-paper-caption').textContent,/斜截线须进入求解工作台计算/);
+});
+
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
@@ -100,6 +166,85 @@ test('start page offers actual solver entries and honest knowledge boundaries',(
  for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(after.querySelector('a[href="'+page+'"]'),page+' discoverable');
  assert.ok(after.querySelector('[data-next-illustration]'));
 });
+
+test('V6.2 preserves full-size drawing and source contracts in seven workbenches',()=>{
+ const cases=[
+  ['labs/auto-fillet-live.html','paper','play'],
+  ['labs/point-projection-live.html','paperSvg','next'],
+  ['labs/circle-fillet-live.html','diagram','next'],
+  ['labs/cone-cut-live.html','coneSvg','conePlay'],
+  ['labs/cylinder-cut-live.html','board','play'],
+  ['labs/prism-cut-live.html','board','play'],
+  ['labs/polygon-live.html','polygonSvg','polygonPlay']
+ ];
+ for(const [page,figure,play] of cases){
+  const {after}=enhance(page),layout=after.querySelector('.next-workspace');
+  assert.ok(layout,page+' must use single drawing-first layout');
+  assert.equal(layout.getAttribute('data-next-side'),'none',page+' conditions should not consume drawing space initially');
+  assert.ok(after.getElementById(figure).closest('.next-canvas'),page+' drawing stays first');
+  assert.ok(after.getElementById(play).closest('.next-playback'),page+' playback is immediately below paper');
+  assert.ok(after.querySelector('[data-next-open-panel="conditions"]'),page+' conditions remain discoverable');
+  assert.ok(after.querySelector('[data-next-open-panel="steps"]'),page+' steps remain discoverable');
+  assert.ok(after.querySelector('[data-next-close-panel]'),page+' panels must be closable');
+  assert.ok(after.querySelector('[data-next-panel="conditions"]'),page+' actual conditions preserved');
+  assert.ok(after.querySelector('[data-next-panel="steps"]'),page+' step list preserved');
+ }
+});
+test('V6.2 changing panels does not overwrite values or break mobile-friendly drawing state',()=>{
+ const {after:document}=enhance('labs/auto-fillet-live.html');
+ const control=document.getElementById('vectorFilletRadius');
+ const before=control.value;
+ const solver=document.getElementById('play');
+ solver.disabled=true;
+ require('../../ui-next/ui-next.js').initUI(document);
+ const layout=document.querySelector('.next-workspace');
+ assert.equal(layout.dataset.nextSide,'none');
+ document.querySelector('[data-next-open-panel="conditions"]').click();
+ assert.equal(layout.dataset.nextSide,'conditions');
+ assert.equal(document.querySelector('[data-next-open-panel="conditions"]').getAttribute('aria-expanded'),'true');
+ assert.equal(document.querySelector('[data-next-panel="conditions"]').hidden,false);
+ document.querySelector('[data-next-open-panel="steps"]').click();
+ assert.equal(layout.dataset.nextSide,'steps');
+ assert.equal(document.querySelector('[data-next-panel="conditions"]').hidden,true);
+ document.querySelector('[data-next-close-panel]').click();
+ assert.equal(layout.dataset.nextSide,'none');
+ assert.equal(document.querySelector('[data-next-open-panel="steps"]').getAttribute('aria-expanded'),'false');
+ assert.equal(control.value,before);
+ assert.equal(solver.disabled,true,'layout must not bypass disabled solver/playback controls');
+});
+test('V6.2 CSS keeps the paper large while preserving its aspect ratio and safe zoom',()=>{
+ const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
+ assert.match(css,/V6\.2: final drawing-first layout/);
+ assert.match(css,/data-next-side="none"/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/object-fit:contain/);
+ assert.match(css,/max-height:min\(73dvh,780px\)/);
+ assert.match(css,/width:calc\(100% \* var\(--next-zoom,1\)\)/);
+ assert.match(css,/@media\(max-width:850px\)/);
+});
+
+
+test('V6.2 home groups all accessible tools without large empty My Problems block',()=>{
+ const {after:document}=enhance('index.html');
+ const groups=[...document.querySelectorAll('.next-home-tool-group')];
+ assert.equal(groups.length,3,'core geometry, projections, auxiliary tools need explicit groups');
+ const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
+ assert.equal(links.length,18,'all existing published special-purpose tools remain reachable');
+ assert.equal(new Set(links).size,18,'tool entries should not repeat');
+ const my=document.querySelector('#knowledge');
+ assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
+ assert.match(my.textContent,/题库尚未接入/,'no fictional persistent history');
+ const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
+ assert.deepEqual(sidebar,['AI 解题','题型中心','我的题目','帮助与协议']);
+});
+test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
+ const {after:document}=enhance('public-use.html');
+ assert.match(document.querySelector('main h1').textContent,/帮助与用户协议/);
+ assert.ok(document.querySelector('main details'),'long technical disclosures must be optional');
+ assert.match(document.querySelector('main').textContent,/尚未向公众开放/);
+ assert.match(document.querySelector('main').textContent,/个人资料/);
+});
+
 test('keyboard panel navigation and Escape restore presentation without changing application controls',()=>{
  const {after:document}=enhance('labs/auto-fillet-live.html');
  require('../../ui-next/ui-next.js').initUI(document);

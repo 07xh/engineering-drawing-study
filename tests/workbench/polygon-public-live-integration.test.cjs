@@ -29,7 +29,7 @@ test('07 controls and action selection exist on public page without private mate
   'polygonSvg','polygonDraw','polygonPicked'];
  for(const id of ids)assert.match(page,new RegExp('id="'+id+'"'));
  assert.match(page,/polygon-live-bundle\.js/);
- assert.match(page,/暂不支持题图自动识别/);
+ assert.match(page,/暂不支持任意图片自动识别/);
  assert.doesNotMatch(page,/教材答案图片|答案扫描|API_KEY|sk-[a-zA-Z0-9]/);
 });
 test('07 public build includes opt-in tool only through existing esbuild and whitelist',()=>{

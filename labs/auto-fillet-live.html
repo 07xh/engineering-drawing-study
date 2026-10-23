@@ -65,12 +65,13 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 @media(max-width:820px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:400px){.controls button{flex:1 1 40%}.fields{gap:7px}}
 </style>
+<link rel="stylesheet" href="../workbench-blue.css">
 </head>
-<body>
+<body class="workbench-blue">
 <header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>AI 工程制图自动解题</small></span></a><nav class="site-nav"><a href="../index.html">返回首页</a><a href="circle-fillet-live.html">原有圆弧解题工具</a><a href="recognition-qa.html">本地识图质量验收</a></nav></div></header>
 <main class="wrap">
-<h1>二维自动解题工作台</h1>
-<p class="muted">修改题目的几何条件，系统会重新计算候选圆心和切点，并按真实数学依据绘制辅助线与连接弧。当前支持手动确认的数字条件与原图逐项来源核对，<strong>AI 图片识别尚未上线</strong>；这里不是预置 SVG 答案播放器。</p>
+<h1>二维自动解题</h1>
+<p class="workbench-intro">修改题目条件，查看计算结果和逐笔作图。图片自动识别尚未开放。</p>
 <div class="layout">
 <section class="panel" aria-label="工程图条件编辑">
 <h2>已知条件</h2>
@@ -170,6 +171,21 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <button id="dimensionDraftApply" type="button" disabled>把预检通过的条件填入现有工作台（仍需逐项确认）</button>
 </div>
 <p id="dimensionDraftM3Status" class="source-status" role="status" aria-live="polite">不选唯一数学分支，不自动启动 V5。</p>
+</details>
+<details id="privatePhotoCaseDetails" class="source-review">
+<summary>保存本机原题识图／数学／V5 逐题核验记录</summary>
+<p class="source-status">仅在你的设备上生成 JSON，不上传原题、参考答案或图片。记录当前照片的 SHA-256、OCR/线段/圆弧/箭头候选、人工审核后的 ProblemDraft、双比例尺、现有 M3 与单 V5 校验状态（如已完成）。SHA-256 可用于识别相同图片，可能属于隐私信息；请勿公开分享。</p>
+<label for="privatePhotoCaseRole">请检查原题图片是否含参考答案
+<select id="privatePhotoCaseRole">
+<option value="unknown">尚未确认（不能计入盲测）</option>
+<option value="asserted-unmarked-question">我观察到不含参考答案（仍需独立验收）</option>
+<option value="answer-marked-reference">包含参考答案／红色解题标注（排除盲测）</option>
+</select></label>
+<label class="vector-confirm" for="privatePhotoCaseAccept">
+<input id="privatePhotoCaseAccept" type="checkbox">我确认只在本机导出，知悉图像指纹与文字标注可能涉及隐私，并理解这不是原题自动解题合格证书
+</label>
+<div class="controls"><button type="button" id="privatePhotoCaseSave">保存当前题目私有证据 JSON</button></div>
+<p id="privatePhotoCaseStatus" class="source-status" role="status" aria-live="polite">未记录。请选择原题，按顺序完成识图候选、人工审核、M3 和 V5；即使记录完毕，实际教材无答案盲测仍需独立签收。</p>
 </details>
 <p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
 <div class="controls">
@@ -277,9 +293,21 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div id="result" hidden></div>
 </section>
 <section class="panel" aria-label="真实动态作图">
-<h2>计算结果与逐笔动画</h2>
+<h2>工程图纸 · 动态作图</h2>
 <div id="paperWrap" class="paper"><svg id="paper" viewBox="0 0 720 440" role="img" aria-label="几何条件及经验证的辅助线和圆弧"><g id="grid"></g><g id="givens"></g><g id="drawing"></g></svg></div>
 <div class="legend"><span><i class="dot"></i>已知图形</span><span><i class="dot aux"></i>辅助线与辅助圆</span><span><i class="dot final"></i>验证后的连接弧</span></div>
+
+<div class="draftai-playdock" aria-label="绘图播放控制">
+<div class="controls"><button id="prev" type="button">← 上一步</button><button id="play" type="button" class="primary">▶ 播放</button><button id="next" type="button">下一步 →</button><button id="restart" type="button">重新播放</button></div>
+<div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
+<div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label><label for="autoFit" style="display:flex;align-items:center;gap:8px"><input id="autoFit" type="checkbox" checked style="min-height:20px;width:20px;flex:none">自动适应图纸</label></div>
+</div><!-- /draftai-playdock -->
+<aside class="workbench-step-rail" aria-label="作图步骤">
+<h2 class="workbench-steps-title">作图步骤</h2>
+<nav id="stepList" aria-label="真实数学作图步骤"></nav>
+<p class="muted" id="stepDetail">选择步骤查看作图说明。</p>
+ <details id="intentDetails" hidden class="local-photo"><summary>详细作图依据</summary><p id="intentTrace" class="muted"></p></details>
+<details class="workbench-extra" id="exportDetails"><summary>导出图纸</summary>
 <div class="local-photo" aria-label="验证图纸导出">
   <div class="controls">
     <button type="button" id="saveVerifiedSvg" disabled>保存完整 SVG 图纸</button>
@@ -291,16 +319,11 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
   </label>
   <p id="exportStatus" role="status" aria-live="polite">只有当前题目数学验证通过后才能下载；图纸在浏览器本地生成。</p>
 </div>
-<div class="controls"><button id="prev" type="button">← 上一步</button><button id="play" type="button" class="primary">▶ 播放</button><button id="next" type="button">下一步 →</button><button id="restart" type="button">重新播放</button></div>
-<div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
-<div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label><label for="autoFit" style="display:flex;align-items:center;gap:8px"><input id="autoFit" type="checkbox" checked style="min-height:20px;width:20px;flex:none">自动适应图纸</label></div>
-<h2 style="margin-top:22px">计算生成的作图步骤</h2>
-<nav id="stepList" aria-label="真实数学作图步骤"></nav>
-<p class="muted" id="stepDetail">选择一步后查看它的几何依据。</p>
- <details id="intentDetails" hidden class="local-photo"><summary>查看本步作图依据（可折叠）</summary><p id="intentTrace" class="muted"></p></details>
+</details>
+</aside>
 </section>
 </div>
-<footer>V3.1 手动条件自动解题 · 浏览器本地计算 · 不采集、上传或保存题图 · 数学求解支持范围为有限线段/整圆的指定圆弧连接；尚不代表任意二维工程图均可自动求解。</footer>
+<footer>当前支持部分圆弧连接题型；条件必须确认后才能求解。图片只在本机显示，不会上传。</footer>
 </main>
 <script defer src="auto-fillet-live-bundle.js"></script>
 </body>

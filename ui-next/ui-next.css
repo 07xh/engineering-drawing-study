@@ -154,3 +154,532 @@ body.ui-next .next-canvas-tools output{font-size:12px;color:var(--next-muted);mi
 body.ui-next .next-canvas-tools button{font-size:13px;min-width:44px}
 body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap)>svg{width:calc(100% * var(--next-zoom,1))!important;max-width:none!important}
 @media(max-width:600px){body.ui-next .next-workspace-title{align-items:flex-start;flex-direction:column}body.ui-next .next-canvas-tools{width:100%}body.ui-next .next-canvas-tools [data-next-focus]{margin-left:auto}}
+
+
+/* V6 production UI refinement: the original blue-and-white shell remains the
+ * only deployed interface. It does not restyle engineering-drawing evidence. */
+body.ui-next {
+  --next-bg:#f5f8fd;
+  --next-paper:#fff;
+  --next-text:#17253d;
+  --next-muted:#637189;
+  --next-line:#d9e4f2;
+  --next-blue:#0866ef;
+  --next-tint:#eaf3ff;
+}
+body.ui-next .next-main {padding-top:14px!important}
+body.ui-next .next-sidebar {gap:14px;padding:18px 12px}
+body.ui-next .next-sidebar-note {display:none}
+body.ui-next .next-start {background:var(--next-blue)}
+body.ui-next .next-sidebar nav a[aria-current=page] {color:var(--next-blue);background:var(--next-tint)}
+body.ui-next .next-stages {
+  margin:7px 0 8px;
+  padding:5px;
+  gap:4px;
+}
+body.ui-next .next-stages button {
+  min-height:36px;
+  padding:5px 7px;
+  font-size:12px;
+}
+body.ui-next .next-status-area {margin-bottom:8px}
+body.ui-next .next-workspace-title {margin-bottom:7px}
+body.ui-next .next-canvas {padding:13px}
+body.ui-next .next-canvas>h2 {margin:0 0 8px;font-size:16px}
+body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+  max-height:min(58dvh,550px);
+  overflow:auto;
+}
+body.ui-next .next-context-panel {padding:12px}
+body.ui-next .next-context-panel :is(h2,h3) {margin-bottom:8px}
+body.ui-next .next-playback {
+  padding:9px 12px;
+  gap:8px;
+  border-color:var(--next-line);
+}
+body.ui-next .next-playback :is(button,select) {min-height:44px}
+body.ui-next .next-playback #fullControls {margin:0}
+body.ui-next .next-context-panel #stepList button[aria-current=step] {
+  border-color:var(--next-blue);
+  background:var(--next-tint);
+  color:var(--next-blue);
+}
+body.ui-next .next-context-panel :is(.completed,.step-complete,[data-status=complete],[data-complete=true]) {
+  color:var(--next-blue);
+}
+body.ui-next .next-home {padding-top:12px!important}
+body.ui-next .next-home-hero {
+  gap:22px;
+  padding:4px 0 16px;
+}
+body.ui-next .next-home-hero h1 {
+  font-size:clamp(28px,3.2vw,44px);
+  line-height:1.25;
+  margin:0 0 10px;
+}
+body.ui-next .next-home-intro {
+  font-size:15px;
+  line-height:1.55;
+  margin:0;
+}
+body.ui-next .next-home-actions {margin:14px 0;gap:12px}
+body.ui-next .next-home-boundary {line-height:1.55}
+body.ui-next .next-home-sheet figcaption {padding:10px 14px}
+body.ui-next .next-sheet-caption {padding:8px 12px;gap:10px}
+body.ui-next .next-home-section {margin:16px 0 22px}
+body.ui-next .next-home-shortflow {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  background:white;
+  border:1px solid var(--next-line);
+  border-radius:10px;
+  padding:12px 17px;
+}
+body.ui-next .next-home-shortflow h2 {font-size:16px;margin:0}
+body.ui-next .next-home-shortflow p {margin:0;color:var(--next-muted);font-size:13px}
+body.ui-next .next-section-heading {margin-bottom:10px}
+body.ui-next .next-section-heading h2 {font-size:20px}
+body.ui-next .next-tool-grid {gap:10px}
+body.ui-next .next-tool-card {
+  min-height:135px;
+  padding:14px;
+  gap:4px;
+}
+body.ui-next .next-tool-number {margin-bottom:2px}
+body.ui-next .next-tool-card h3 {font-size:16px;margin:0}
+body.ui-next .next-tool-card p {font-size:12px;line-height:1.55;margin:0 0 7px}
+body.ui-next .next-knowledge {padding:16px 20px;gap:20px}
+body.ui-next .next-knowledge h2 {font-size:18px}
+body.ui-next .next-knowledge p:not(.next-eyebrow) {line-height:1.55}
+@media(max-width:850px) {
+  body.ui-next .next-canvas {padding:10px}
+  body.ui-next .next-playback {
+    position:sticky;
+    bottom:4px;
+    z-index:25;
+    box-shadow:0 8px 22px rgba(21,68,128,.15);
+  }
+  body.ui-next .next-stages {overflow-x:auto;flex-wrap:nowrap}
+  body.ui-next .next-stages button {min-width:max-content;flex:0 0 auto}
+}
+@media(max-width:520px) {
+  body.ui-next .next-home-hero h1 {font-size:30px}
+  body.ui-next .next-home-shortflow {padding:10px;gap:6px}
+  body.ui-next .next-tool-card {padding:13px}
+  body.ui-next .next-playback {padding:7px}
+  body.ui-next .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+    max-height:49dvh;
+  }
+}
+
+
+/* V6.1: Actual first screen of the published homepage, not a preview overlay.
+ * Preserves existing blue/white brand system; drawing geometry uses separate
+ * semantic strokes and is explicitly marked as non-solver illustration. */
+body.ui-next .next-home {padding-top:6px!important}
+body.ui-next .next-home-workbench {
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(240px,285px);
+ align-items:start;
+ gap:14px;
+ padding:0;
+ margin:0;
+}
+body.ui-next .next-home-drawing,
+body.ui-next .next-home-workflow-card {
+ background:#fff;
+ border:1px solid var(--next-line);
+ border-radius:13px;
+ box-shadow:0 5px 18px rgba(26,68,132,.035);
+ min-width:0;
+}
+body.ui-next .next-home-drawing {padding:12px}
+body.ui-next .next-home-drawing-top {
+ display:flex;align-items:center;justify-content:space-between;
+ gap:12px;margin-bottom:10px;
+}
+body.ui-next .next-home-drawing-top h1 {
+ font-size:clamp(20px,2.1vw,27px);line-height:1.25;
+ margin:3px 0 3px;letter-spacing:-.025em;
+}
+body.ui-next .next-home-drawing-top p {
+ font-size:12px;line-height:1.5;color:var(--next-muted);margin:0;
+}
+body.ui-next .next-home-release {
+ display:inline-block;font-size:10px;line-height:1.3;font-weight:650;
+ color:var(--next-blue);background:var(--next-tint);
+ border:1px solid #c4d9fa;padding:3px 7px;border-radius:6px;
+}
+body.ui-next .next-home-edit {
+ display:inline-flex;align-items:center;justify-content:center;
+ border:1px solid var(--next-blue);border-radius:8px;flex-shrink:0;
+ background:var(--next-blue);color:white!important;
+ padding:9px 12px;min-height:44px;
+ text-decoration:none;font-size:13px;font-weight:650;
+}
+body.ui-next .next-home-edit:hover,
+body.ui-next .next-home-drawing-actions .next-primary-link:hover {background:#0758cf}
+body.ui-next .next-home-paper {
+ border:1px solid #d5e1ee;
+ border-radius:9px;
+ background:#fff;
+ overflow:hidden;
+}
+body.ui-next .next-home-paper-top {
+ display:flex;justify-content:space-between;align-items:center;gap:9px;
+ padding:8px 11px;background:#f8fbff;border-bottom:1px solid #dce7f3;
+}
+body.ui-next .next-home-paper-top strong {font-size:13px;color:#21344f}
+body.ui-next .next-home-paper-top span {font-size:11px;color:var(--next-muted)}
+body.ui-next .next-home-paper svg {
+ display:block;width:100%;height:auto;max-width:100%;
+ max-height:min(65dvh,610px);
+ object-fit:contain;
+}
+body.ui-next .next-home-paper-caption {
+ border-top:1px solid #e4ebf5;
+ padding:6px 10px;color:#718098;
+ font-size:11px;line-height:1.5;text-align:center;
+}
+body.ui-next .next-home-drawing-actions {
+ display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+ padding:10px 0 1px;
+}
+body.ui-next .next-home-drawing-actions a {
+ display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+ border:1px solid #d4e2f5;border-radius:8px;
+ background:#f8fbff;padding:9px 13px;font-size:13px;
+ color:#2459bf;text-decoration:none;
+}
+body.ui-next .next-home-drawing-actions .next-primary-link {
+ border-color:var(--next-blue);background:var(--next-blue);color:white;
+}
+body.ui-next .next-home-workflow {display:grid;gap:12px;min-width:0}
+body.ui-next .next-home-workflow-card {padding:13px}
+body.ui-next .next-home-workflow-card h2 {
+ font-size:17px;margin:0 0 11px;line-height:1.3;
+}
+body.ui-next .next-home-quick-links {display:grid;gap:5px}
+body.ui-next .next-home-quick-links a {
+ display:grid;grid-template-columns:32px minmax(0,1fr) 14px;
+ align-items:center;gap:8px;min-height:47px;
+ border-radius:9px;text-decoration:none;color:#263955;
+ background:#f7faff;padding:5px 8px;font-size:13px;
+}
+body.ui-next .next-home-quick-links a:hover,
+body.ui-next .next-home-quick-links a:focus-visible {
+ background:var(--next-tint);color:var(--next-blue);
+}
+body.ui-next .next-home-quick-icon {
+ display:inline-flex;align-items:center;justify-content:center;
+ height:28px;width:28px;border:1px solid #c8dcfb;
+ border-radius:50%;color:var(--next-blue);
+ background:#fff;font-size:11px;font-weight:650;
+}
+body.ui-next .next-home-guide-steps {
+ list-style:none;padding:0;margin:0;display:grid;gap:9px;
+}
+body.ui-next .next-home-guide-steps li {
+ display:flex;gap:9px;align-items:flex-start;
+ padding:0;
+}
+body.ui-next .next-home-guide-steps li>span {
+ display:inline-flex;width:27px;height:27px;flex:0 0 27px;
+ justify-content:center;align-items:center;
+ border:1px solid #b4d2fa;border-radius:50%;
+ background:var(--next-tint);color:var(--next-blue);
+ font-size:12px;font-weight:750;
+}
+body.ui-next .next-home-guide-steps li strong {
+ display:block;font-size:13px;color:#263955;font-weight:650;
+}
+body.ui-next .next-home-guide-steps li small {
+ display:block;font-size:11px;color:var(--next-muted);line-height:1.55;
+}
+body.ui-next .next-home-workflow .next-home-boundary {
+ margin:12px 0 0;padding:9px;
+ background:#f8fbff;border:1px solid #e2ebf7;
+ border-radius:8px;font-size:11px;line-height:1.6;
+}
+body.ui-next .next-home-shortflow {
+ margin:11px 0 14px;padding:10px 13px;
+ display:flex;gap:13px;align-items:center;flex-wrap:wrap;
+}
+body.ui-next .next-home-shortflow>strong {font-size:14px}
+body.ui-next .next-home-shortflow>span {font-size:13px;color:var(--next-muted)}
+body.ui-next .next-home-more-tools {
+ border:1px solid var(--next-line);border-radius:12px;background:#fff;
+}
+body.ui-next .next-home-more-tools>summary {
+ list-style:none;padding:11px 15px;min-height:44px;font-size:13px;
+ color:var(--next-blue);font-weight:650;
+}
+body.ui-next .next-home-more-tools>summary::-webkit-details-marker {display:none}
+body.ui-next .next-home-more-tools>summary::after {content:"⌄";float:right}
+body.ui-next .next-home-more-tools[open]>summary::after {content:"⌃"}
+body.ui-next .next-home-more-tools .next-tool-grid {padding:10px}
+body.ui-next .next-section-heading>span {font-size:12px;color:var(--next-muted)}
+@media(max-width:1100px) {
+ body.ui-next .next-home-workbench {grid-template-columns:minmax(0,1fr) 260px}
+}
+@media(max-width:810px) {
+ body.ui-next .next-home-workbench {grid-template-columns:1fr}
+ body.ui-next .next-home-workflow {grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.ui-next .next-home-paper svg {max-height:53dvh}
+}
+@media(max-width:560px) {
+ body.ui-next .next-home-drawing {padding:8px}
+ body.ui-next .next-home-drawing-top {flex-wrap:wrap}
+ body.ui-next .next-home-workflow {grid-template-columns:1fr}
+ body.ui-next .next-home-paper svg {max-height:45dvh}
+ body.ui-next .next-home-paper-top {flex-wrap:wrap}
+ body.ui-next .next-home-drawing-actions a {flex:1 1 42%;padding:8px 6px}
+ body.ui-next .next-home-quick-links {grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.ui-next .next-home-quick-links a {grid-template-columns:27px minmax(0,1fr);font-size:12px}
+ body.ui-next .next-home-quick-links a>span:last-child {display:none}
+}
+
+
+/* V6.2: final drawing-first layout. Geometry and mathematical SVG stay untouched.
+   Default fit preserves each SVG's intrinsic viewBox aspect ratio; zoom is optional.
+   Closed panels do NOT reserve unused columns. */
+@media(min-width:1101px) {
+ body.ui-next {padding-left:98px}
+ body.ui-next .next-topbar {margin-left:-98px;width:calc(100% + 98px);height:58px}
+ body.ui-next .next-sidebar {
+   width:98px;top:58px;padding:12px 7px;gap:13px;
+ }
+ body.ui-next .next-sidebar nav {gap:6px}
+ body.ui-next .next-sidebar nav a {
+   min-height:56px;padding:8px 3px;
+   font-size:12px;font-weight:600;line-height:1.35;
+   text-align:center;justify-content:center;overflow-wrap:anywhere;
+ }
+ body.ui-next .next-start {
+   color:#fff!important;padding:8px 4px;text-align:center;
+   font-size:12px;min-height:48px;
+ }
+}
+body.ui-next .next-start,
+body.ui-next .next-sidebar a.next-start,
+body.ui-next .next-home-edit,
+body.ui-next a.next-primary-link {
+  color:#fff!important;
+  text-shadow:none!important;
+}
+body.ui-next .next-main {
+ max-width:1900px!important;
+ padding:10px 14px 18px!important;
+}
+body.ui-next .next-workspace-title {
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;margin:0 0 8px;
+}
+body.ui-next .next-workspace-caption {
+ font-size:12px;line-height:1.35;
+}
+body.ui-next .next-canvas-tools {
+ display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+}
+body.ui-next .next-canvas-tools button {
+ min-width:44px;min-height:44px;
+ padding:7px 10px;font-size:12px;
+ background:#fff;color:#315278;
+ border:1px solid #d6e3f4;border-radius:8px;
+}
+body.ui-next .next-canvas-tools [data-next-open-panel][aria-expanded=true] {
+ color:var(--next-blue);background:var(--next-tint);border-color:#93c1ff;
+}
+body.ui-next .next-canvas-tools [data-next-close-panel] {
+ background:#f7faff;
+}
+body.ui-next .next-workspace {
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-rows:minmax(0,auto) auto;
+ gap:7px 10px;align-items:start;
+ width:100%;min-width:0;
+}
+body.ui-next .next-workspace[data-next-side]:not([data-next-side="none"]) {
+ grid-template-columns:minmax(0,1fr) clamp(245px,23vw,318px);
+}
+body.ui-next .next-workspace>.next-canvas {
+ grid-column:1;grid-row:1;
+ padding:10px;overflow:hidden;
+ width:100%;min-width:0;
+ border:1px solid var(--next-line);
+}
+body.ui-next .next-workspace>.next-context {
+ grid-column:2;grid-row:1 / span 2;
+ position:sticky;top:70px;
+ max-height:calc(100dvh - 90px);
+ overflow:auto;min-width:0;
+ border:1px solid var(--next-line);
+}
+body.ui-next .next-workspace[data-next-side="none"]>.next-context {
+ display:none!important;
+}
+body.ui-next .next-workspace>.next-playback {
+ grid-column:1;grid-row:2;
+ width:100%;min-width:0;
+ margin:0;
+ padding:7px 10px;
+ display:flex;gap:8px;
+}
+body.ui-next .next-canvas>h2 {font-size:16px;margin:0 0 6px}
+body.ui-next .next-context .next-context-panel {padding:11px}
+body.ui-next .next-context :is(h2,h3) {font-size:15px;margin-bottom:7px}
+body.ui-next .next-context .next-source-group {margin-bottom:7px}
+body.ui-next .next-context .next-hint {line-height:1.5}
+body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+ width:100%;height:auto;
+ max-height:min(73dvh,780px);
+ overflow:auto;overscroll-behavior:contain;
+ margin:0;background:#fff;border-radius:6px;
+}
+body.ui-next .next-workspace .next-canvas :is(#paper,#paperSvg,#diagram,#coneSvg,#polygonSvg) {
+ display:block;
+ width:100%;height:auto;
+ max-width:100%;
+ max-height:min(74dvh,780px);
+ object-fit:contain;
+}
+body.ui-next .next-workspace .next-canvas :is(#paper,#paperSvg,#diagram) {
+ max-height:none;
+}
+/* Honor existing CSS viewBox zoom without distorting the drawn coordinate system. */
+body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap)>svg {
+ width:calc(100% * var(--next-zoom,1))!important;
+ height:auto!important;
+ max-width:none!important;max-height:none;
+}
+body.ui-next .next-specialized .next-canvas #board {
+ width:100%;max-width:100%;
+ min-height:clamp(340px,60dvh,720px);
+ overflow:auto;
+}
+body.ui-next .next-specialized #coneSvg,
+body.ui-next .next-specialized #polygonSvg {
+ width:100%;max-width:100%;
+ height:auto;max-height:min(73dvh,780px);
+ object-fit:contain;
+}
+body.ui-next .next-specialized .next-context .workbench-step-rail {
+ width:100%;position:static;max-height:none;overflow:visible;
+ display:block;
+}
+body.ui-next .next-specialized .next-context :is(#coneSteps,#polygonStepList,#steps) {
+ max-height:48dvh;overflow-y:auto;overscroll-behavior:contain;
+}
+body.ui-next .next-specialized .next-playback :is(.playbar,.controls) {
+ display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+ flex:1 1 390px;margin:0;padding:0;
+ border:0;background:transparent;
+}
+body.ui-next .next-specialized .next-playback :is(.playbar,.controls) button {
+ min-height:44px;
+}
+body.ui-next .next-specialized .next-playback :is(.tools) {
+ display:flex;flex-wrap:wrap;align-items:center;
+ gap:7px;max-width:100%;margin:0;
+}
+body.ui-next .next-specialized .next-playback :is(.tools) :is(label,button) {
+ min-height:44px;
+}
+body.ui-next .next-specialized .next-playback :is(#coneSeek,#seek,#polygonSeek) {
+ flex:1 1 170px;min-width:90px;
+ accent-color:var(--next-blue);
+}
+body.ui-next .next-stages {
+ padding:4px;margin:5px 0 6px;gap:3px;
+}
+body.ui-next .next-stages button {
+ font-size:12px;min-height:34px;padding:4px 6px;
+}
+body.ui-next .next-status-area {margin:0 0 6px}
+body.ui-next .next-status-area .status {padding:6px 10px}
+body.ui-next .next-workspace .next-playback button {
+ min-height:44px;
+}
+body.ui-next .next-playback :is(.fields,.seek) {min-width:0}
+body.ui-next .next-workspace .next-playback :is(.actions,.controls) {
+ flex-wrap:wrap;align-items:center;gap:5px;
+}
+body.ui-next.next-focus-canvas .next-workspace {grid-template-columns:minmax(0,1fr)!important}
+body.ui-next.next-focus-canvas .next-context {display:none!important}
+/* Tablet/mobile: don't cover the drawing when a Next-step event opens steps. */
+@media(max-width:850px) {
+ body.ui-next .next-workspace,
+ body.ui-next .next-workspace[data-next-side]:not([data-next-side="none"]) {
+   grid-template-columns:minmax(0,1fr)!important;
+ }
+ body.ui-next .next-workspace>.next-canvas {
+   grid-column:1;grid-row:1;min-width:0;padding:7px;
+ }
+ body.ui-next .next-workspace>.next-playback {
+   grid-column:1;grid-row:2;position:sticky;
+   bottom:3px;z-index:25;
+   box-shadow:0 5px 22px rgba(12,66,125,.12);
+ }
+ body.ui-next .next-workspace>.next-context {
+   grid-column:1;grid-row:3;position:static;
+   max-height:48dvh;overflow:auto;
+ }
+ body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+   max-height:61dvh;
+ }
+ body.ui-next .next-specialized #coneSvg,
+ body.ui-next .next-specialized #polygonSvg {max-height:61dvh}
+ body.ui-next .next-canvas-tools {width:100%}
+ body.ui-next .next-stages {overflow-x:auto;flex-wrap:nowrap}
+ body.ui-next .next-stages button {flex:0 0 auto;white-space:nowrap}
+}
+@media(max-width:520px) {
+ body.ui-next .next-main {padding:7px 8px 14px!important}
+ body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+   max-height:57dvh;
+ }
+ body.ui-next .next-specialized #coneSvg,
+ body.ui-next .next-specialized #polygonSvg {max-height:57dvh}
+ body.ui-next .next-workspace .next-playback {padding:6px}
+ body.ui-next .next-canvas-tools button {padding:6px 8px}
+ body.ui-next .next-workspace-caption {display:none}
+ body.ui-next .next-specialized .next-playback .tools {gap:4px}
+}
+
+
+/* V6.2 homepage support content: compact, organized, never replacing paper. */
+body.ui-next .next-home-workflow .next-home-library {
+ padding:13px;gap:7px;
+}
+body.ui-next .next-home-library>h2 {margin:0 0 6px;font-size:16px}
+body.ui-next .next-home-library>p {
+ margin:0 0 8px;color:var(--next-muted);
+ font-size:12px;line-height:1.55;
+}
+body.ui-next .next-home-library>a {
+ min-height:44px;display:inline-flex;align-items:center;
+ color:var(--next-blue);font-size:13px;text-decoration:none;
+}
+body.ui-next .next-home-tool-group {
+ margin:0 10px 10px;padding:9px 10px 13px;
+ border-top:1px solid var(--next-line);
+}
+body.ui-next .next-home-tool-group>h3 {
+ margin:0 0 10px;font-size:15px;font-weight:650;
+ color:#234368;
+}
+body.ui-next .next-home-tool-group .next-tool-grid {padding:0}
+body.ui-next .next-home-tool-group .next-tool-card {
+ min-height:112px;padding:12px;
+}
+body.ui-next .next-home-tool-group .next-tool-card h3 {font-size:14px}
+body.ui-next .next-home-workbench .next-home-paper {
+ min-height:0;
+}
+@media(max-width:650px) {
+ body.ui-next .next-home-tool-group {margin:0 6px 8px;padding:8px}
+ body.ui-next .next-home-workflow .next-home-library {padding:11px}
+}

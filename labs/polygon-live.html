@@ -42,8 +42,9 @@ small,.small{font-size:12px;color:#607868;line-height:1.65}
 @media(max-width:780px){.grid{grid-template-columns:1fr}.panel{padding:14px}.page{padding:0 10px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 </style>
+<link rel="stylesheet" href="../workbench-blue.css">
 </head>
-<body class="ui-refresh">
+<body class="ui-refresh workbench-blue">
 <header class="site-topbar"><div class="site-topbar-inner">
 <a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>数学驱动 · 唯一 V5 动态作图</small></span></a>
 <nav class="site-nav" aria-label="主要导航">
@@ -52,11 +53,11 @@ small,.small{font-size:12px;color:#607868;line-height:1.65}
 <a href="point-projection-live.html">三面投影</a>
 </nav></div></header>
 <main class="page">
-<h1>圆内接正三角形 / 正六边形</h1>
-<p>先手动确认圆心、半径、首顶点角度和绘制方向，系统再由真实 M3 数学求解器计算顶点、边与面积，经正式 ConstructionIntent 生成唯一 V5 逐笔动画。暂不支持题图自动识别。</p>
+<h1>正多边形作图</h1>
+<p class="workbench-intro">设置半径和方向，查看正三角形或正六边形的逐笔作图。</p>
 <div class="grid">
 <section class="panel inputs" aria-label="手动确认已知条件">
-<h2>01 · 条件确认</h2>
+<h2>题目条件</h2>
 <label for="polygonSides">题型
 <select id="polygonSides"><option value="3">圆内接正三角形</option><option value="6" selected>圆内接正六边形</option></select></label>
 <div class="double">
@@ -72,7 +73,7 @@ small,.small{font-size:12px;color:#607868;line-height:1.65}
 <div class="small">未提供旋转方向或未确认条件时不输出已验证标准图。面积与边长由求解器计算，非页面预设答案。</div>
 </section>
 <section class="panel output" aria-label="真实逐笔动画">
-<h2>02 · 正式 Intent / V5 逐笔作图</h2>
+<h2>工程图纸 · 动态作图</h2>
 <div id="polygonStatus" class="status" role="status" aria-live="polite">请先确认参数，然后点击重新求解。</div>
 <svg id="polygonSvg" viewBox="0 0 720 460" aria-label="数学求解生成的动态工程作图">
 <g aria-hidden="true" stroke="#e5efe8" stroke-width="1">
@@ -94,7 +95,7 @@ small,.small{font-size:12px;color:#607868;line-height:1.65}
 <strong id="polygonStepLabel">尚无可播放数学步骤</strong>
 <div class="small" id="polygonPicked">逐笔绘制后，可以点选线段回到对应步骤。</div>
 <div id="polygonStepList" aria-label="逐步作图导航"></div>
-<div class="hints small" id="polygonProof">目前仅支持已确认参数下的正三角形、正六边形；不是 OCR、真实原书盲测或任意正多边形的证明。</div>
+<details class="workbench-extra"><summary>当前支持范围</summary><div class="hints small" id="polygonProof">目前支持正三角形和正六边形的已确认参数作图，暂不支持任意图片自动识别。</div></details>
 </section>
 </div>
 </main>

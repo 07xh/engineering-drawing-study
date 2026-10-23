@@ -11,6 +11,7 @@ const files = [
   'index.html',
   'public-use.html',
   'site-ui.css',
+  'workbench-blue.css',
   'favicon.svg',
   'robots.txt',
   'labs/point-coach.html',

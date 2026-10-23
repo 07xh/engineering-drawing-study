@@ -16,6 +16,8 @@ const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
 const {attachLocalNativeOcr}=require('./local-native-ocr-ui.cjs');
 const {attachReviewedDimensionDraftUi}=
  require('./local-reviewed-dimension-draft-ui.cjs');
+const {attachPrivatePhotoCaseExport}=
+ require('./private-photo-exercise-export.cjs');
 const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs');
 
 (function(){
@@ -491,6 +493,28 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    $('circleSide').value=$('dimensionDraftSide').value;
    for(const name of ['branch','direction','travel1','travel2'])$(name).value='';
    recompute();
+  }
+ });
+ attachPrivatePhotoCaseExport({
+  fileInput:$('problemPhoto'),photoClear:$('clearPhoto'),
+  image:$('photoPreview'),role:$('privatePhotoCaseRole'),
+  accepted:$('privatePhotoCaseAccept'),
+  button:$('privatePhotoCaseSave'),status:$('privatePhotoCaseStatus'),
+  getEvidence:()=>dimensionDraftUi?.getEvidenceSnapshot()??null,
+  getGeneration:()=>rasterReview?.generation??0,
+  getCandidates:()=>({
+   lines:structuredClone(geometryCandidates.line),
+   curves:structuredClone(geometryCandidates.curve),
+   arrows:structuredClone(arrowHints),
+   ocr:nativeOcrUi?.getCurrentCandidates()??[]
+  }),
+  getCurrentLive:()=>{
+   const typed=input();
+   if(!typed||!session||!session.canRender(session.revision))
+    return {input:null,ready:false};
+   const snapshot=session.snapshot(performance.now());
+   return {input:typed,ready:snapshot.ready===true&&
+    snapshot.plan?.mathematicallyVerified===true};
   }
  });
  for(const id of ['problemPhoto','clearPhoto'])

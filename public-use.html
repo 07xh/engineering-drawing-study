@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="DraftAI 个人 AI 工程制图自动解题与动态作图系统的当前能力、研发边界及隐私说明。">
-<meta name="theme-color" content="#eff5f0">
-<title>公开范围与使用说明 · DraftAI</title>
+<meta name="theme-color" content="#f5f8fd">
+<title>帮助与用户协议 · DraftAI</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="site-ui.css">
 <style>
-body{margin:0;background:#f2f6f2;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+body{margin:0;background:#f5f8fd;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
 main{width:min(840px,calc(100% - 28px));margin:26px auto 70px}
-main h1{font-size:clamp(27px,4vw,38px);color:#214833;margin:0 0 12px}
-main p,main li{font-size:14px;line-height:1.9;color:#4e6d5a}
-main h2{font-size:19px;margin:0 0 12px;color:#225038}
-main section{border:1px solid #d8e7dd;background:#fff;border-radius:16px;padding:clamp(18px,3vw,26px);margin-top:15px}
+main h1{font-size:clamp(27px,4vw,38px);color:#17253d;margin:0 0 12px}
+main p,main li{font-size:14px;line-height:1.9;color:#637189}
+main h2{font-size:19px;margin:0 0 12px;color:#17253d}
+main section{border:1px solid #d9e4f2;background:#fff;border-radius:16px;padding:clamp(18px,3vw,26px);margin-top:15px}
 main section p:last-child{margin-bottom:0}
-main a{color:#23674c}
+main a{color:#0866ef}
 summary{font-weight:750;cursor:pointer}
 .state{display:inline-block;font-size:12px;color:#8b612d;background:#fff3e2;border-radius:20px;padding:5px 10px}
 </style>
@@ -26,24 +26,26 @@ summary{font-weight:750;cursor:pointer}
 <nav class="site-nav" aria-label="主要导航"><a href="index.html">返回首页</a><a href="labs/point-coach.html">投影陪练</a><a href="labs/free-modeler.html">几何实验室</a></nav>
 </div></header>
 <main>
-<h1>公开范围与使用说明</h1>
-<p>DraftAI 的唯一产品方向是个人 AI 工程制图自动解题与动态作图：识别题图、确认条件、通过数学引擎求解、生成真实作图步骤，再由 V5 绘制动画。项目仍在建设中，目前公开可用的是部分数学、投影与几何绘图基础模块；实际支持范围以各工具为准。</p>
-<section><h2>哪些内容是公开的？</h2>
-<p>公开构建仅包括首页、部分投影/自由度/几何建模/圆弧求解工具，以及必要的基础绘图与约束算法。教材专属课程、例题及用户题图描图数据不随公开网站打包。现有实验工具将作为新版自动解题系统的可复用组件。</p>
-<p>部分几何演示为限定输入条件的数学实验，不能直接视作任意新工程图题目的完整答案。</p></section>
-<section><h2>AI 识图状态</h2><p><span class="state">尚未向公众开放</span></p>
-<p>当前尚无可用的 AI 图片上传与陌生题端到端自动解题入口。研发遵循数学基础 → 二维求解 → 自动 ConstructionStep → V5 动画 → AI 图像识别接入的顺序。请勿将现有基础几何工具误认为已上线的通用识图解题服务。</p>
-<p>如未来启用 AI 识图，会先说明图片处理方式、模型服务、上传限制和相应的保护措施。</p></section>
-<section><h2>个人资料与浏览器记录</h2>
-<p>请不要向公开网站页面、公开 GitHub 仓库或公开问题反馈提交个人作业原图、完整受版权保护的教材扫描文件、密钥和其他私密资料。</p>
-<p>部分现有学习工具可能使用浏览器本地存储保存设置或学习进度。本地记录通常不会自动同步到其他设备，清除浏览器数据也可能移除这些记录。</p>
-<p>网站目前未提供统一的私人云端题库。未来如有个人资料上传功能，需先建立受保护的存储和身份验证机制。</p></section>
-<section><h2>教材与学习答案</h2>
-<p>旧知识索引及教材研究资料不是产品核心入口。未经真实几何与来源核验的原题和解答不作为标准答案使用。</p>
-<p>公开工具不提供完整教材 PDF 的公开下载。使用教材原图和其他受限制资料时，需要尊重来源与相关授权。</p></section>
-<section><h2>有问题怎么办？</h2>
-<p>如果遇到几何计算或界面错误，可通过项目的 <a href="https://github.com/07xh/engineering-drawing-study/issues" rel="noopener noreferrer">GitHub Issues</a> 反馈可公开的问题描述，但不要公开个人照片、课本扫描页、登录信息或密钥。</p>
-<p><a href="index.html">← 返回 DraftAI 首页</a></p></section>
+<h1>帮助与用户协议</h1>
+<p>DraftAI 用于工程制图解题与逐笔作图。选择题型、确认条件、查看图纸和步骤。</p>
+<section><h2>如何使用</h2>
+<p>从“AI 解题”或“题型中心”进入对应工作台；修改题目条件后重新求解。播放、上一步、下一步和图纸缩放均在图纸附近。</p>
+<p>当前支持有限的圆弧连接、点投影、正多边形及部分基本体截切条件。遇到多解、缺失条件或未经核对的图元时，需要先人工确认。</p></section>
+<section><h2>使用须知</h2>
+<p>图纸和步骤仅在其适用条件与验证通过时作为解题参考；工程尺寸、投影位置及线型仍应按题目要求复核。未通过验证的结果不应视为完整标准答案。</p>
+<p>本站是持续完善中的个人工具，不能保证每张工程题图都能自动识别或求解。</p></section>
+<section><h2>数据与隐私</h2>
+<p>部分已有功能使用浏览器本地计算或本地存储；是否保存、导出及是否联网，以各功能的实际提示为准。个人资料、登录密钥和受限制的教材原图请不要提交到公开 GitHub 页面。</p>
+<p>网站尚无统一的个人云端题库；清理浏览器数据可能清除本地记录。</p></section>
+<section><details><summary>AI 识图是否已经开放？</summary>
+<p><span class="state">尚未向公众开放</span> 通用图片识别和任意陌生题目一键解答尚未完成。已提供的本地图像检测与人工确认功能不等于自动解题已通过验收。</p>
+</details></section>
+<section><details><summary>哪些内容可公开使用？</summary>
+<p>公开页面提供有限题型的计算和作图工具。教材专属资料与用户私有原图不会作为公开站点资源打包；部分实验仍需逐题验证。</p>
+</details></section>
+<section><h2>问题反馈</h2>
+<p>如发现错误，可在 <a href="https://github.com/07xh/engineering-drawing-study/issues" rel="noopener noreferrer">GitHub Issues</a> 提供不包含个人信息的复现步骤。</p>
+<p><a href="index.html">← 返回首页</a></p></section>
 </main>
 </body>
 </html>

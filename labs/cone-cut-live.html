@@ -53,18 +53,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 [data-cone-3d-point]{cursor:pointer;outline-offset:4px}
 [data-cone-3d-point]:focus-visible{outline:2px solid #176eaa}
 </style>
+<link rel="stylesheet" href="../workbench-blue.css">
 </head>
-<body>
+<body class="workbench-blue">
 <header class="site-topbar"><div class="site-topbar-inner">
 <a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>数学验证 · 单一 V5 动画</small></span></a>
 <nav class="site-nav"><a href="../index.html">首页</a><a href="cylinder-cut-live.html">圆柱斜截</a><a href="prism-cut-live.html">棱柱斜截</a></nav>
 </div></header>
 <main class="wrap">
-<h1>圆锥斜截 · 真解与动态三视图</h1>
-<p class="intro">确认圆锥和截平面条件 → M3 解析圆锥截线与数学残差 → 真实母线 ConstructionStep → V/H/W 分离画纸和 45° 辅助线 → 同一 V5 逐笔播放。仅供单个直立有限圆锥实验，截线线段为解析曲线的采样近似。</p>
+<h1>圆锥斜截</h1>
+<p class="workbench-intro">确认尺寸和截平面，查看同纸三视图与逐笔作图。</p>
 <div class="layout">
 <section class="panel" aria-label="圆锥截平面条件">
-<h2>01 · 手动确认几何条件 (mm)</h2>
+<h2>题目条件（mm）</h2>
 <details id="coneSourcePanel" class="source-reference">
 <summary>可选：本地查看原题图片（不上传、不自动识图）</summary>
 <p class="small">从设备选择原题照片或习题截图，仅在当前浏览器显示，供你人工读取和核对已知条件。支持 PNG/JPEG/WebP，最大 15 MB。当前仅可选用本机 OCR 提取 R/Φ 文字候选，图元关联、截平面和整题识别尚未实现；带答案的图不可计为无答案盲测通过。</p>
@@ -119,23 +120,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <div class="notice" id="coneStatus" role="status" aria-live="polite">请核对条件并勾选确认。</div>
 </section>
 <section class="panel" aria-label="圆锥统一 V5 图纸">
-<h2>02 · 真母线 → 逐笔截交线</h2>
-<section aria-label="圆锥已验证空间几何三维联动预览">
-<h2>02A · 三维空间理解（同一 V5 步骤）</h2>
-<svg id="cone3dSvg" viewBox="0 0 360 275" role="group" aria-label="可转动的三维圆锥、切平面与截交线空间示意"><g id="cone3dDraw"></g></svg>
-<div class="cone-spatial-controls">
-<label for="coneOrbit">旋转视角（方位角）<input id="coneOrbit" type="range" min="-180" max="180" value="35"></label>
-<label for="coneTilt">俯仰视角<input id="coneTilt" type="range" min="5" max="85" value="25"></label>
-</div>
-<p id="cone3dStatus" class="small" role="status" aria-live="polite">尚未确认空间几何条件。</p>
-<p class="small">仅显示解析模型的线框、数学截线与示意截平面范围；不是已证明的切后实体、连续遮挡或制图标准线型。在手机上左右拖动三维空白区域可旋转方位角，俯仰角用滑块调整；点选空间截线可在三视图中定位对应采样点。点击特殊点可定位到同一个 V5 步骤。</p>
-</section>
+<h2>工程图纸 · 第一角法</h2>
+
 
 <svg id="coneSvg" viewBox="0 0 960 680" role="img" aria-label="解析圆锥截线 V H W 三视图动态作图">
 <g aria-hidden="true" fill="#5e7261" font-size="17" font-family="system-ui">
 <text x="30" y="35">V 主视</text><text x="30" y="370">H 俯视</text><text x="530" y="35">W 侧视</text>
 </g><g id="coneDraw"></g></svg>
-<p class="small">辅助母线为已验证数学构造；结果折线仅近似解析截线。默认橙色待审核；蓝绿色表示指定射线的可见开区间、灰色表示隐藏开区间（不等于制图国标线型）。</p>
+<details class="workbench-extra"><summary>图线说明</summary><p class="small">截交线为近似绘制。图线颜色用于区分可见性验证状态，不代表最终国标线型。</p></details>
 <div class="playbar">
 <button id="coneBack" disabled type="button">← 上一步</button>
 <button id="conePlay" class="primary" disabled type="button">▶ 播放</button>
@@ -151,10 +143,24 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <button id="coneFit" type="button">查看整张图纸</button>
 </div>
 <p id="conePicked" class="small" role="status" aria-live="polite">绘制后可点选已出现的线段查看来源步骤。</p>
-<h2>03 · 数学作图步骤</h2>
+<aside class="workbench-step-rail" aria-label="作图步骤">
+<h2>作图步骤</h2>
 <p id="coneStepLabel" class="small">尚未生成。</p>
 <nav id="coneSteps" aria-label="圆锥 V5 步骤导航"></nav>
-<p id="coneProof" class="small">不包含用户原题图片、教材答案或 AI 识图。浏览器仅运行已验证的数学模型；最终空间遮挡、国标线型和端点仍未完成正式签收。</p>
+<details class="workbench-extra" id="coneSpatialDrawer"><summary>三维辅助查看</summary>
+<section aria-label="圆锥已验证空间几何三维联动预览">
+<h2>02A · 三维空间理解（同一 V5 步骤）</h2>
+<svg id="cone3dSvg" viewBox="0 0 360 275" role="group" aria-label="可转动的三维圆锥、切平面与截交线空间示意"><g id="cone3dDraw"></g></svg>
+<div class="cone-spatial-controls">
+<label for="coneOrbit">旋转视角（方位角）<input id="coneOrbit" type="range" min="-180" max="180" value="35"></label>
+<label for="coneTilt">俯仰视角<input id="coneTilt" type="range" min="5" max="85" value="25"></label>
+</div>
+<p id="cone3dStatus" class="small" role="status" aria-live="polite">尚未确认空间几何条件。</p>
+<p class="small">仅显示解析模型的线框、数学截线与示意截平面范围；不是已证明的切后实体、连续遮挡或制图标准线型。在手机上左右拖动三维空白区域可旋转方位角，俯仰角用滑块调整；点选空间截线可在三视图中定位对应采样点。点击特殊点可定位到同一个 V5 步骤。</p>
+</section>
+</details>
+<details class="workbench-extra"><summary>当前支持范围</summary><p id="coneProof" class="small">当前仅支持已确认参数的圆锥斜截示例；部分可见性和标准线型仍需核验。</p></details>
+</aside>
 </section>
 </div>
 </main>

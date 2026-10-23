@@ -3,9 +3,9 @@
 const {parseHTML}=require('linkedom');
 const path=require('node:path');
 const fs=require('node:fs');
-const {enhanceAuto,enhanceTeaching}=require('./workbench-layout.cjs');
+const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layout.cjs');
 const {homeHTML}=require('./home.cjs');
-const NAV=[['labs/auto-fillet-live.html','解题工作台'],['index.html#knowledge','知识与方法'],['index.html#tools','几何工具'],['public-use.html','使用与隐私']];
+const NAV=[['labs/auto-fillet-live.html','AI 解题'],['index.html#tools','题型中心'],['index.html#knowledge','我的题目'],['public-use.html','帮助与协议']];
 function relative(page,target){
  const [file,hash]=target.split('#');
  return path.posix.relative(path.posix.dirname(page),file)+(hash?'#'+hash:'');
@@ -32,12 +32,14 @@ function enhancePage(html,{page,preview=true}){
  if(page==='labs/auto-fillet-live.html')enhanceAuto(document,main);
  if(page==='labs/point-projection-live.html')enhanceTeaching(document,main,{projection:true});
  if(page==='labs/circle-fillet-live.html')enhanceTeaching(document,main,{projection:false});
+ if(['labs/cone-cut-live.html','labs/cylinder-cut-live.html','labs/prism-cut-live.html','labs/polygon-live.html'].includes(page))enhanceDrawingLab(document,main,{page});
  if(page==='public-use.html')main.classList.add('next-disclosure');
  document.body.prepend(fragment(document,`<a class="next-skip" href="#${main.id}">跳到主要内容</a>
  <header class="next-topbar"><a class="next-brand" href="${root}index.html"><span aria-hidden="true">D /</span> DraftAI<small>工程制图 · 个人解题工作区</small></a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<details class="next-menu"><summary>导航菜单</summary><nav aria-label="移动端导航">${links}</nav></details></header>
- <aside class="next-sidebar"><a class="next-start" href="${root}labs/auto-fillet-live.html">开始解题 →</a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note">图纸、条件、作图依据<br>在同一工作区查看。<a href="${root}index.html">返回开始页</a></div></aside>`));
+ <aside class="next-sidebar"><a class="next-start" href="${root}labs/auto-fillet-live.html">开始解题</a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
  document.head.append(fragment(document,`<link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
- const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f3f5f8';
+ const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
+  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.1-home-20261023">'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){
