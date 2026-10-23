@@ -28,7 +28,10 @@ test('07 opt-in per-view open-ray proof maps onto EXISTING V5 strokes, not a sec
  const c=cone(),p=plane(),out=run(c,p,options());
  assert.equal(out.status,'preview-only');
  assert.equal(out.rayEvidence.status,'open-ray-evidence');
- assert.equal(out.rayEvidence.sourceOpenIntervalsVerified,true);
+ assert.equal(out.rayEvidence.partitionCoverageVerified,true);
+ assert.equal(out.rayEvidence.allViewOpenIntervalsCertified,false);
+ assert.equal(out.rayEvidence.views.V.allOpenIntervalsCertified,false);
+ assert.equal(out.rayEvidence.views.W.allOpenIntervalsCertified,true);
  assert.equal(out.visibilityVerified,false);
  assert.equal(out.visibilityEndpointsVerified,false);
  assert.equal(out.completeRayOcclusionVerified,false);
