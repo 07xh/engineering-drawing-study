@@ -82,9 +82,11 @@ test('09 group parser refuses truncated malicious or binary CAD and unknown mode
  assert.throws(()=>extractDxfForReview(Buffer.alloc(0)),/nonempty/);
  assert.throws(()=>extractDxfForReview(Buffer.from('0\nSECTION\n2\nENTITIES\n0\nLINE\n10\nNaN\n')),
   /incomplete|truncated/);
- assert.throws(()=>extractDxfForReview(raw([
+ const malformed=extractDxfForReview(raw([
   ['LINE',[[10,0],[20,0],[11,'Infinity'],[21,2]]]
- ])),/invalid numerical|unsupported/);
+ ]));
+ assert.equal(malformed.entities[0].status,'unsupported');
+ assert.match(malformed.entities[0].reason,/invalid numerical/);
  const r=extractDxfForReview(raw([
   ['LINE',[[10,0],[20,0],[11,2],[21,3]]]
  ],0));
