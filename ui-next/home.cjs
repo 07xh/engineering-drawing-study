@@ -27,29 +27,25 @@ function homeHTML(){return `
    <div class="next-home-intro-copy">
     <p class="next-home-kicker">DraftAI · 个人工程制图工作台</p>
     <h1 id="next-home-drawing-title">工程制图自动解题</h1>
-    <p class="next-home-lead">确认题目条件，查看逐笔作图。图纸、步骤与投影关系都在同一工作台中。</p>
+    <p class="next-home-lead">确认条件，查看逐笔作图和完整工程图纸。</p>
     <div class="next-home-hero-actions">
      <a class="next-home-edit" href="labs/auto-fillet-live.html">＋ 开始解题</a>
      <a class="next-home-example" href="labs/circle-fillet-live.html">查看圆弧连接 →</a>
     </div>
     <p class="next-home-capability">当前提供部分题型的条件求解与动态作图；任意图片自动识别尚未开放。</p>
     <div class="next-home-strengths" aria-label="核心功能">
-     <div><strong>按题型解答</strong><span>圆弧、投影、截切等</span></div>
-     <div><strong>逐笔观看</strong><span>辅助线与作图步骤</span></div>
-     <div><strong>投影对应</strong><span>同纸 V/H/W 视图</span></div>
+     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 20V5h14v15H5z M5 20 19 5"/></svg><strong>按题型解答</strong><span>圆弧、投影、截切</span></div>
+     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/></svg><strong>逐笔观看</strong><span>辅助线与作图步骤</span></div>
+     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2 20 6v12l-8 4-8-4V6z M4 6l8 4 8-4 M12 10v12"/></svg><strong>投影对应</strong><span>同纸 V/H/W 视图</span></div>
     </div>
    </div>
    <div class="next-home-intro-sheet">
   <div class="next-home-paper next-home-fillet-paper" data-next-illustration data-construction-example="right-angle-fillet" aria-label="R40 圆弧连接几何构造示例，解析几何关系计算">
    <div class="next-home-paper-top"><strong>圆弧连接 · R40</strong><span>直线相切构造 · 单位 mm</span></div>
-   <svg viewBox="0 0 960 620" role="img" aria-label="两条互相垂直的直线以 R40 圆弧连接，显示圆心 O、切点 T1 T2 与辅助等距线">
-    <rect x="9" y="9" width="942" height="602" fill="#fff" stroke="#cbd9e9" stroke-width="1.8" rx="4"/>
+   <svg viewBox="260 106 525 387" role="img" preserveAspectRatio="xMidYMid meet" aria-label="放大的 R40 圆弧连接工程作图：水平线、竖直线、圆心 O、切点 T1 与 T2 及辅助构造线">
+    <rect x="266" y="111" width="513" height="377" fill="#fff" stroke="#dce6f3" stroke-width="1.5" rx="3"/>
     <g stroke="#edf3fa" fill="none" stroke-width="1">
-     <path d="M42 84H918 M42 515H918 M90 42V576 M869 42V576"/>
-    </g>
-    <g fill="#546985" font-family="system-ui,sans-serif" font-size="17">
-     <text x="57" y="66">平面几何 · 两直线内圆角</text>
-     <text x="709" y="66">几何构造步骤示例</text>
+     <path d="M280 440H762 M280 280H762"/>
     </g>
     <!-- One drawing-unit model: four SVG units correspond to 1 mm.
          Fillet center (512,280), radius 160 SVG units = 40 mm.
@@ -65,7 +61,7 @@ function homeHTML(){return `
      <path data-radius-to-t2="true" d="M512 280H672"/>
     </g>
     <g data-profile="true" fill="none" stroke="#1e304b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-     <path data-horizontal-line="true" d="M150 440H512"/>
+     <path data-horizontal-line="true" d="M290 440H512"/>
      <path data-vertical-line="true" d="M672 280V123"/>
     </g>
     <path data-fillet-radius-mm="40" data-px-per-mm="4" data-fillet-arc="true"
@@ -86,18 +82,14 @@ function homeHTML(){return `
     </g>
     <rect x="567" y="325" width="77" height="34" rx="7" fill="#eaf3ff" stroke="#c9defa"/>
     <text x="605" y="349" text-anchor="middle" fill="#0866ef" font-size="22" font-weight="650" font-family="system-ui,sans-serif">R40</text>
-    <g font-family="system-ui,sans-serif" font-size="16" fill="#6b809d">
+    <g font-family="system-ui,sans-serif" font-size="15" fill="#667d99">
      <text x="575" y="473">原直角顶点</text>
-     <text x="54" y="555">辅助等距线确定圆心，半径与两条直线均保持相切。</text>
     </g>
     <g fill="none" stroke="#cfdaea" stroke-width="1.2">
-     <path d="M565 460L670 443"/>
-    </g>
-    <g fill="#5d7090" font-family="system-ui,sans-serif" font-size="15">
-     <text x="733" y="559">示意尺寸 · mm</text>
+     <path d="M570 454L670 443"/>
     </g>
    </svg>
-   <div class="next-home-paper-caption">解析几何构造示例，非上传题目答案。切点、圆心及 R40 半径关系一致。</div>
+   <div class="next-home-paper-caption">R40 圆弧连接 · 圆心与两个切点经过几何核算。非上传题目答案。</div>
   </div>
    </div>
   </div>
