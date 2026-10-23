@@ -124,9 +124,13 @@ function verifiedTeachingActionToV5(a,sheet){
    throw new RangeError('zero-length or overflowing rendered guide');
   geometry={from,to};
  }else if(a.kind==='point'){
-  if(!isModel||!record(a.at)||!finite(a.at.x)||!finite(a.at.y))
-   throw new TypeError('point must be in model math coordinates');
-  geometry={center:toSheet(a.at.x,a.at.y,sheet),radius:4};
+  if(!record(a.at)||!finite(a.at.x)||!finite(a.at.y))
+   throw new TypeError('point must have finite coordinates');
+  // 03 first-angle projection has independently proven sheet-px transfer
+  // points; explicit sheet space is consumed unchanged, never scaled twice.
+  // This presentation-only converter cannot itself issue a math proof.
+  geometry={center:isModel?toSheet(a.at.x,a.at.y,sheet):
+   {x:a.at.x,y:a.at.y},radius:4};
  }else {
   if(!isModel||!record(a.center)||!finite(a.center.x)||
      !finite(a.center.y)||!finite(a.radius)||a.radius<=0)
