@@ -41,7 +41,7 @@ function decode(input,requested){
   throw new TypeError('DWG is not ASCII DXF: export privately with a trusted CAD application');
  const latin=input.toString('latin1');
  const explicit=typeof requested==='string'&&requested!=='auto'?requested:null;
- const headerCodepage=/\n9\r?\n\$DWGCODEPAGE\r?\n3\r?\n([^\r\n]+)/.exec('\n'+latin.replace(/\r\n/g,'\n'));
+ const headerCodepage=/\n\s*9\n\$DWGCODEPAGE\n\s*3\n([^\n]+)/.exec('\n'+latin.replace(/\r\n?/g,'\n'));
  const cp=headerCodepage?.[1]?.trim()?.toUpperCase()||'';
  const encoding=explicit||(
   cp==='ANSI_936'||cp==='ANSI_949'||cp==='ANSI_950'?'gb18030':
@@ -193,7 +193,7 @@ function extractRecord(record,index){
  };
  if(!TYPES.has(kind))return {...common,geometry:null,annotation:null,
   status:'unsupported',reason:'unsupported CAD entity type'};
- if(common.paperSpace||common.layout?.toLowerCase()==='layout1')
+ if(common.paperSpace||(common.layout&&common.layout.toLowerCase()!=='model'))
   return {...common,geometry:null,annotation:null,status:'unsupported',
    reason:'paper-space CAD entity not part of unambiguous model conditions'};
  const ext=vector(g,210,220,230);
