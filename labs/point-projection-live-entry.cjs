@@ -3,7 +3,7 @@
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
-const {pointTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
+const {verifiedLiveIntentTimeline}=require('../workbench/verified-live-intent-v1.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -143,7 +143,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
     try{
       given=projectInput();
       const solved=solveProjection(given);
-      const plan=pointTimeline(given,revision);
+      const plan=verifiedLiveIntentTimeline('point-projection',given,null,revision);
       // Both consumers must derive exactly the same spatial point from current
       // user input. Reject divergent states rather than drawing mixed answers.
       if(solved.status==='unique'&&
