@@ -93,7 +93,7 @@ function prismMesh(data){
   data:{points,edges,faces}};
 }
 
-const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','mesh']);
+const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','polyline','mesh']);
 function confirmedCompositionGeometry(data){
  if(!data||data.task!=='composition'||!Number.isSafeInteger(data.revision)||
    !Array.isArray(data.objects)||!Array.isArray(data.conditions)||
