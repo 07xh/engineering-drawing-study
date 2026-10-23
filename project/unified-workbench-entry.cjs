@@ -8,6 +8,7 @@ const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
+const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -199,6 +200,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
+ let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
  const gid=prefix=>{
    const b=new Uint8Array(12);crypto.getRandomValues(b);
@@ -228,10 +230,41 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const clock=session?.readSnapshot()?.clock;
   if(clock?.snapshot().playing)clock.pause(performance.now());
  }
+
+ function paintPhotoMarkers(){
+  const img=$('v7-photo'),svg=$('v7-photo-marks');
+  svg.replaceChildren();
+  if(!img.naturalWidth||!img.naturalHeight)return;
+  svg.setAttribute('viewBox','0 0 '+img.naturalWidth+' '+img.naturalHeight);
+  const colors=['#e25740','#1d85a5'];
+  for(let i=0;i<2;i++){
+   const pts=photoMarkers[i],color=colors[i];
+   for(const [n,p] of pts.entries()){
+    svg.append(shape('circle',{cx:p.x,cy:p.y,r:Math.max(3,img.naturalWidth/300),
+     fill:color,stroke:'#fff','stroke-width':Math.max(1,img.naturalWidth/900)}));
+    svg.append(shape('text',{x:p.x+6,y:p.y-6,'font-size':Math.max(9,img.naturalWidth/80),
+     fill:color},String(i+1)+'.'+String(n+1)));
+   }
+   if(pts.length===2)
+    svg.append(shape('line',{x1:pts[0].x,y1:pts[0].y,
+     x2:pts[1].x,y2:pts[1].y,stroke:color,
+     'stroke-width':Math.max(1.5,img.naturalWidth/400)}));
+  }
+ }
+ function photoMarkMessage(){
+  const group=Number($('v7-photo-segment').value);
+  const points=photoMarkers[group];
+  return '第 '+(group+1)+' 组：'+points.length+'/2 个端点。'+
+    (points.length===2?'像素跨度 '+measuredPixels(points).toFixed(3)+
+     ' px；还需核对对应的实际毫米长度。':'点击原图的两个已知尺寸端点。');
+ }
+
  function closePhoto(){
   imageEpoch++;if(imageURL)URL.revokeObjectURL(imageURL);
   imageURL=null;$('v7-photo').hidden=true;
+  $('v7-photo-box').hidden=true;
   $('v7-photo').removeAttribute('src');
+  $('v7-photo-marks').replaceChildren();
  }
  async function showPhoto(){
   closePhoto();
@@ -247,6 +280,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    imageURL=URL.createObjectURL(blob);
    $('v7-photo').src=imageURL;
    $('v7-photo').hidden=false;
+   $('v7-photo-box').hidden=false;
+   paintPhotoMarkers();
    $('v7-image-status').textContent='原图保存在本机 · '+Math.ceil(blob.size/1024)+' KiB；所有标注必须人工确认。';
   }catch(e){if(epoch===imageEpoch)msg(e.message,true);}
  }
@@ -268,11 +303,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  function hydrateCalibration(project){
   const c=project.source.calibration;
+  photoMarkers=[[],[]];
   $('v7-cal-rotation').value=String(project.source.rotationDeg);
   if(c?.method==='manual-two-scale'&&c.measurements?.length===2){
    for(let i=0;i<2;i++){
     $('v7-cal-px'+(i+1)).value=String(c.measurements[i].pixelDistance);
     $('v7-cal-mm'+(i+1)).value=String(c.measurements[i].mmDistance);
+    if(c.measurements[i].pixelPoints)
+     photoMarkers[i]=c.measurements[i].pixelPoints.map(p=>({x:p.x,y:p.y}));
    }
   }
  }
@@ -302,6 +340,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
   hydrateCalibration(project);
+  $('v7-photo-segment').value='0';
+  $('v7-photo-point-status').textContent=photoMarkMessage();
   $('v7-c-objects').value='';
   if(project.task==='composition')refreshComposition();
   $('v7-projects').value=project.id;
@@ -571,10 +611,52 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const scaleEntries=[
   ['v7-cal-px1','v7-cal-mm1'],['v7-cal-px2','v7-cal-mm2']
  ];
+
+ $('v7-photo').addEventListener('load',paintPhotoMarkers);
+ $('v7-photo-segment').addEventListener('change',()=>{
+  $('v7-photo-point-status').textContent=photoMarkMessage();
+ });
+ $('v7-photo-clear').addEventListener('click',()=>{
+  const i=Number($('v7-photo-segment').value);
+  if(i!==0&&i!==1)return;
+  photoMarkers[i]=[];paintPhotoMarkers();
+  const source=coordinator?.snapshot()?.source;
+  if(source?.calibration)
+   coordinator.setImageGeometry({rotationDeg:source.rotationDeg,calibration:null});
+  $('v7-photo-point-status').textContent=photoMarkMessage();
+ });
+ $('v7-photo').addEventListener('click',()=>call(async()=>{
+  const source=coordinator?.snapshot()?.source;
+  const img=$('v7-photo');
+  if(!source?.imageId||img.hidden)throw Error('请先保存原图');
+ }));
+ // Image coordinate capture runs from actual user pointer events.
+ $('v7-photo').addEventListener('pointerup',e=>call(async()=>{
+  const source=coordinator?.snapshot()?.source;
+  const img=$('v7-photo');
+  if(!source?.imageId||img.hidden)throw Error('请先保存原图');
+  const i=Number($('v7-photo-segment').value);
+  if(i!==0&&i!==1)throw Error('未知的量测组');
+  const pt=clientToPhoto({clientX:e.clientX,clientY:e.clientY,
+   rect:img.getBoundingClientRect(),
+   naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight});
+  if(photoMarkers[i].length===2)photoMarkers[i]=[];
+  photoMarkers[i].push(pt);
+  if(photoMarkers[i].length===2){
+   const pixels=measuredPixels(photoMarkers[i]);
+   $('v7-cal-px'+(i+1)).value=String(pixels);
+   if(source.calibration)
+    coordinator.setImageGeometry({rotationDeg:source.rotationDeg,calibration:null});
+  }
+  paintPhotoMarkers();
+  $('v7-photo-point-status').textContent=photoMarkMessage();
+ }));
+
  $('v7-cal-apply').addEventListener('click',()=>call(async()=>{
   if(!coordinator?.snapshot().source.imageId)throw Error('请先保存原始图片');
-  const measurements=scaleEntries.map(([px,mm])=>({
-   pixelDistance:numberFrom(px),mmDistance:numberFrom(mm)
+  const measurements=scaleEntries.map(([px,mm],i)=>({
+   pixelDistance:numberFrom(px),mmDistance:numberFrom(mm),
+   ...(photoMarkers[i].length===2?{pixelPoints:photoMarkers[i].map(p=>({x:p.x,y:p.y}))}:{})
   }));
   const calibration=reviewDoubleScale(measurements);
   coordinator.setImageGeometry({
@@ -591,6 +673,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }));
  for(const [px,mm]of scaleEntries){
   for(const id of [px,mm])$(''+id).addEventListener('input',()=>{
+   if(id===px){
+    photoMarkers[scaleEntries.findIndex(v=>v[0]===px)]=[];
+    paintPhotoMarkers();
+   }
    const snap=coordinator?.snapshot();
    if(snap?.source.calibration){
     coordinator.setImageGeometry({rotationDeg:snap.source.rotationDeg,calibration:null});
@@ -604,7 +690,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   coordinator.setImageGeometry({
    rotationDeg:Number($('v7-cal-rotation').value),calibration:null
   });
-  msg('原图方向变化，原有双比例与全部条件已失效。');
+  photoMarkers=[[],[]];paintPhotoMarkers();
+  msg('原图方向变化，旧像素量测、双比例与全部条件已失效。');
  }));
 
  $('v7-new').addEventListener('click',()=>call(makeNew));
@@ -763,7 +850,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   ensureImage(file);
   const id=gid('Image');
   await store.putImage(id,file);
-  coordinator.setImage(id);await saving;await showPhoto();
+  coordinator.setImage(id);
+  photoMarkers=[[],[]];await saving;await showPhoto();
   msg('原图本机保存成功；旧确认条件已失效，请重新核对。');
   $('v7-image-input').value='';
  }));
