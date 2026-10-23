@@ -21,7 +21,7 @@ const TOOLS=[
 ];
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","cone-cut-live","cylinder-cut-live","prism-cut-live","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
-<section class="next-home-hero next-home-workbench next-home-v64" aria-label="工程制图解题首页">
+<section class="next-home-hero next-home-workbench next-home-v64" id="ai" aria-label="工程制图解题首页">
  <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
   <div class="next-home-intro-block">
    <div class="next-home-intro-copy">
