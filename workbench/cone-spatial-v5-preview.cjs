@@ -7,6 +7,8 @@
  */
 const {verifiedConeSpatialIntent}=require('./verified-cone-spatial-intent.cjs');
 const {toSheet,fromSheet}=require('../core/projection/conventions.js');
+const {coneV5OpenRayEvidence}=
+ require('./cone-open-ray-v5-mapping.cjs');
 const Timeline=require('./teaching-timeline-v5.js');
 const Motion=require('./teaching-motion-v5.js');
 const VIEWS=['V','H','W'];
@@ -47,7 +49,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
  if(!options||typeof options!=='object'||Array.isArray(options))
   throw new TypeError('finite reviewed cone options required');
  const allowed=['kind','sourceConfirmed','revision','sheetTransform',
-  'samples','presentationMode'];
+  'samples','presentationMode','retainedHalfspace','observerDirections'];
  if(Object.keys(options).some(k=>!allowed.includes(k)))
   throw new TypeError('untrusted caller-supplied proof or drawing input');
  const {kind='full-ellipse',sourceConfirmed=false,revision=0,samples=64,
@@ -72,6 +74,16 @@ function coneSpatialV5Preview(cone,plane,options={}){
     result.spatialIntent.operation.samplePoints.length!==samples+1)
   throw new RangeError('spatial source proof scope mismatch');
  const source=result.spatialIntent;
+ const rayRequested=options.retainedHalfspace!==undefined||
+  options.observerDirections!==undefined;
+ if(rayRequested&&(options.retainedHalfspace===undefined||
+                   options.observerDirections===undefined))
+  throw new TypeError('both retained halfspace and reviewed three-view rays required');
+ const rayEvidence=rayRequested?coneV5OpenRayEvidence(cone,plane,{
+  kind,samples,sourceConfirmed,retainedHalfspace:options.retainedHalfspace,
+  observerDirections:options.observerDirections,
+  analytic:source.operation.analytic
+ }):null;
  const split=presentationMode==='split-sheet';
  const layout=split?separateTransforms(cone):null;
  const position={V:[],H:[],W:[]};
@@ -99,7 +111,9 @@ function coneSpatialV5Preview(cone,plane,options={}){
   }
  }
  const signature=JSON.stringify({cone,plane,kind,sourceConfirmed,revision,samples,
-  presentationMode,sheetTransform:options.sheetTransform});
+  presentationMode,sheetTransform:options.sheetTransform,
+  retainedHalfspace:options.retainedHalfspace,
+  observerDirections:options.observerDirections});
  if(signature.length>10000)throw new RangeError('unbounded cone input');
  const steps=[];
  const append=(id,title,role,actions)=>{
@@ -144,10 +158,17 @@ function coneSpatialV5Preview(cone,plane,options={}){
   for(let i=1;i<=samples;i++){
    const from=position[view][i-1],to=position[view][i];
    if(distance(from,to)<1e-9)continue;
+   const certified=distance(from,to)>=1e-8&&rayEvidence
+    ?rayEvidence.views[view].lateral[i-1]:'undetermined';
    actions.push(action('cone_'+view+'_lateral_'+i,from,to,{
     sourceBoundary:'analytic-cone-lateral',
     sourceSpatialIntentId:source.id,sourceRevision:revision,
-    visibility:'undetermined',sampledPolylineOnly:true
+    visibility:certified,
+    visibilityProof:certified==='undetermined'?
+     'unverified-or-silhouette-boundary':'analytic-open-ray-only',
+    endpointVisibilityVerified:false,
+    wholeProjectedStrokeOcclusionVerified:false,
+    sampledPolylineOnly:true
    }));
   }
   if(kind==='clipped-ellipse'){
@@ -157,18 +178,25 @@ function coneSpatialV5Preview(cone,plane,options={}){
    if(!chord||dist3(last,chord.start)>tol||dist3(first,chord.end)>tol)
     throw new RangeError('directed cone cap chord lacks verified topology');
    const from=position[view][samples],to=position[view][0];
-   if(distance(from,to)>=1e-9||split)
+   if(distance(from,to)>=1e-9||split){
+    const certified=distance(from,to)>=1e-8&&rayEvidence
+     ?rayEvidence.views[view].capChord:'undetermined';
     actions.push(action('cone_'+view+'_cap_chord',from,to,{
      sourceBoundary:'verified-cone-cap-chord',sourceSpatialIntentId:source.id,
-     sourceRevision:revision,visibility:'undetermined'
+     sourceRevision:revision,visibility:certified,
+     visibilityProof:certified==='undetermined'?
+      'unverified-cap-or-projected-point':'analytic-open-ray-only',
+     endpointVisibilityVerified:false,
+     wholeProjectedStrokeOcclusionVerified:false
     }));
+   }
   }
   if(!actions.length)throw new RangeError('no drawable cone projection');
   for(let i=0;i<actions.length;i+=GROUP){
    const batch=actions.slice(i,i+GROUP),part=i/GROUP;
    // Keep backward-compatible step identifiers for the 64-sample default.
    const id=actions.length<=GROUP?'cone_'+view:'cone_'+view+'_'+(part+1);
-   append(id,view+' sampled analytic cone section, visibility unknown',
+   append(id,view+' sampled analytic cone section, open-ray proof scoped to interiors',
     'result',batch);
   }
  }
@@ -177,12 +205,18 @@ function coneSpatialV5Preview(cone,plane,options={}){
  const timing=Timeline.compileTimeline(steps,{durations:{line:65},gapMs:120});
  const stillCurrent=(currentRevision=revision)=>currentRevision===revision&&
   JSON.stringify({cone,plane,kind,sourceConfirmed,revision,samples,
-   presentationMode,sheetTransform:options.sheetTransform})===signature;
+   presentationMode,sheetTransform:options.sheetTransform,
+   retainedHalfspace:options.retainedHalfspace,
+   observerDirections:options.observerDirections})===signature;
  return {status:'preview-only',revision,spatialIntent:source,
   mathematicallyVerified:true,firstAngleCoordinateMappingVerified:true,
   firstAngleLayoutVerified:false,visibilityVerified:false,
   constructionStepsReady:false,publicWorkbenchConnected:false,
   v5ProjectionPreviewReady:true,
+  rayEvidence,
+  visualLineStylesApplied:false,
+  visibilityEndpointsVerified:false,
+  completeRayOcclusionVerified:false,
   presentationMode,splitSheet:split?layout.sheet:null,
   viewPositions:split?position:null,
   steps,timing,player:Timeline.createPlayer(timing,{revision}),
