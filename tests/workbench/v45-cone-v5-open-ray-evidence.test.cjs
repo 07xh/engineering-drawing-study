@@ -130,8 +130,8 @@ test('07 default legacy workbench has UNKNOWN visibility, same step IDs and no n
 test('09 explicit correct axis vectors required: W ray reversal and missing conditions fail closed',()=>{
  const c=cone(),p=plane();
  for(const bad of [
-  {observerDirections:options().observerDirections},
-  {retainedHalfspace:'positive'},
+  {observerDirections:options().observerDirections,retainedHalfspace:undefined},
+  {retainedHalfspace:'positive',observerDirections:undefined},
   {retainedHalfspace:'outside',observerDirections:options().observerDirections},
   {retainedHalfspace:'positive',observerDirections:{
    V:P(0,1,0),H:P(0,0,1),W:P(1,0,0)}},
