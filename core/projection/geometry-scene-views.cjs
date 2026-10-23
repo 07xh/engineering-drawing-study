@@ -120,8 +120,25 @@ function deriveGeometryScene({geometry,revision,branchId=null,resultId=null}={})
     ids.add(entity.id);
     objects.push(entity);
   }
+  // A computed sub-geometry can belong to another existing Geometry object.
+  // Resolve owner identity only from the SAME scene; never turn a derived
+  // section edge into an independently confirmed input or solver state.
+  const byId=new Map(objects.map(obj=>[obj.id,obj]));
+  const owned=objects.map(obj=>{
+    let owner=obj,steps=0;
+    const seen=new Set([obj.id]);
+    while(owner.model.parentObjectId!==undefined){
+      const parentId=owner.model.parentObjectId;
+      if(!identifier(parentId)||!byId.has(parentId)||seen.has(parentId)||
+         ++steps>objects.length)
+        fail('派生 Geometry 的父对象 ID 不存在或形成循环');
+      seen.add(parentId);
+      owner=byId.get(parentId);
+    }
+    return {...obj,selectionObjectId:owner.id};
+  });
   return deepFreeze({schema:SCHEMA,revision,branchId,resultId,coordinateUnit:'mm',
-    viewMethod:'first-angle-orthographic',objects,
+    viewMethod:'first-angle-orthographic',objects:owned,
     evidence:{
       math:'requires-canonical-solve-result',
       visibility:'undetermined',
@@ -135,6 +152,7 @@ function projectSelectionLinks(scene) {
   // representation per plane, without recomputing 3D geometry in the view UI.
   return scene.objects.map(obj => ({
     objectId: obj.id,kind:obj.kind,
+    selectionObjectId:obj.selectionObjectId??obj.id,
     representations: Object.fromEntries(['drawing','V','H','W','3D'].map(view => [
       view, obj.representations[view]===null ? null : {
         objectId:obj.id,view,entityKey:JSON.stringify([obj.id,view])
