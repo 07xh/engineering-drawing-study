@@ -97,9 +97,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <label for="coneHeight">圆锥高度<input id="coneHeight" type="number" value="10" min="0.001" step="any"></label>
 </div>
 <p class="small">当前模型底面中心固定 (0,0,0)，圆锥轴线为 +Z；不推断任意图片中的三维模型。</p>
-<label for="coneKind">截交线类型
-<select id="coneKind"><option value="full-ellipse">完整椭圆截线</option><option value="clipped-ellipse">底面裁剪椭圆与真实底面弦</option></select>
+<label for="coneKind">截线判断
+<select id="coneKind"><option value="auto" selected>自动判断（推荐）</option><option value="full-ellipse">指定完整椭圆（兼容）</option><option value="clipped-ellipse">指定底面裁剪椭圆（兼容）</option></select>
 </label>
+<p class="small">会先检查截平面是否与有限圆锥相交，再自动区分完整截线和底面裁剪截线。无交线时仍保留圆锥 V/H/W 三视图；尚未实现的其他圆锥曲线会明确提示，不会伪造 V5 作图。</p>
 <div class="two">
 <label for="conePx">切平面点 X<input id="conePx" type="number" value="0" step="any"></label>
 <label for="conePy">切平面点 Y<input id="conePy" type="number" value="0" step="any"></label>
