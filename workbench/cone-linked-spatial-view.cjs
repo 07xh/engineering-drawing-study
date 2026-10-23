@@ -7,6 +7,8 @@
  */
 const {validateSpatialConstructionIntent}=
  require('../core/contracts/spatial-construction-intent.js');
+const {coneCutSolidPresentation}=
+ require('./cone-cut-solid-presentation.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const xyz=p=>p&&['x','y','z'].every(k=>finite(p[k]));
 const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
@@ -21,7 +23,7 @@ const unit=p=>{const n=Math.hypot(p.x,p.y,p.z);
 const guideIndices=n=>[0,Math.floor(n/4),Math.floor(n/2),
  Math.floor(3*n/4)];
 function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
- width=360,height=300}={}){
+ width=360,height=300,retainedHalfspace=null}={}){
  const check=validateSpatialConstructionIntent(intent);
  if(!check.ok||intent.source.mathStatus!=='ready')
   throw new TypeError('confirmed, validated analytic M3 spatial intent required');
@@ -30,6 +32,8 @@ function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
     elevationDeg < 5||elevationDeg > 85||
     width < 160||width > 2000||height < 150||height > 2000)
   throw new RangeError('bounded 3D presentation camera required');
+ const mesh=retainedHalfspace===null?null:
+  coneCutSolidPresentation(intent,{retainedHalfspace});
  const op=intent.operation,c=op.cone,b=c.baseCenter;
  const apex={x:b.x,y:b.y,z:b.z+c.heightMm};
  const samples=op.samplePoints,segments=[];
@@ -50,7 +54,8 @@ function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
  const ca=Math.cos(a),sa=Math.sin(a),ce=Math.cos(e),se=Math.sin(e);
  const flat=p=>{const d=sub(p,b);
   return {x:ca*d.x-sa*d.y,y:ce*d.z-se*(sa*d.x+ca*d.y)};};
- const all=[apex,...rim,...patch,...samples];
+ const all=[apex,...rim,...patch,...samples,
+  ...(mesh?.vertices||[]).map(v=>v.world)];
  const flattened=all.map(flat);
  const xMin=Math.min(...flattened.map(p=>p.x)),xMax=Math.max(...flattened.map(p=>p.x));
  const yMin=Math.min(...flattened.map(p=>p.y)),yMax=Math.max(...flattened.map(p=>p.y));
@@ -59,6 +64,7 @@ function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
   throw new RangeError('unrepresentable spatial presentation projection');
  const scale=Math.min((width-36)/spanX,(height-36)/spanY);
  if(!finite(scale)||scale<=0)throw new RangeError('invalid 3D camera scale');
+ const depth=p=>{const d=sub(p,b);return se*d.z+ce*(sa*d.x+ca*d.y);};
  const screen=p=>{const q=flat(p);return {
   x:width/2+(q.x-(xMin+xMax)/2)*scale,
   y:height/2-(q.y-(yMin+yMax)/2)*scale
@@ -74,6 +80,14 @@ function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
   index,guideOrdinal:j,sourceStepId:'cone_generator_'+j+'_V',
   point:sourcePoints[index]
  }));
+ const filled=mesh?.status==='sampled-closed-cut-mesh'?{
+  ...mesh,triangles:mesh.triangles.map(face=>({
+   kind:face.kind,
+   points:face.indices.map(i=>screen(mesh.vertices[i].world)),
+   averageDepth:face.indices.reduce((sum,i)=>
+    sum+depth(mesh.vertices[i].world),0)/3
+  })).sort((a,b)=>a.averageDepth-b.averageDepth)
+ }:mesh;
  const cap=op.capChord&&{from:screen(op.capChord.start),
   to:screen(op.capChord.end)};
  return {
@@ -81,7 +95,7 @@ function coneLinkedSpatialScene(intent,{azimuthDeg=35,elevationDeg=25,
   azimuthDeg,elevationDeg,width,height,
   apex:screen(apex),rim:rim.map(screen),rails:rails.map(pair=>pair.map(screen)),
   cuttingPlanePatch:patch.map(screen),sourcePoints,anchors,segments,
-  capChord:cap,projectionOnly:true,modelSourceVerified:true,
+  cutSolid:filled,capChord:cap,projectionOnly:true,modelSourceVerified:true,
   physicalCutSolidVerified:false,visibilityVerified:false,
   trueSilhouetteVerified:false,planePatchSchematic:true,
   constructionStepTimelineOwnedByV5:true
