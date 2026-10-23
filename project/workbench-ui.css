@@ -1,0 +1,52 @@
+/* Real V7 project workbench; the old specialist routes remain available. */
+body.ui-next .v7-workspace{color:#1a314b;margin:0 0 28px;display:block}
+body.ui-next .v7-head{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:0 0 14px;padding:12px 2px}
+body.ui-next .v7-head h1{font-size:clamp(24px,2.5vw,32px);margin:0 0 5px}
+body.ui-next .v7-head p{margin:0;color:#657790;font-size:13px}
+body.ui-next #v7-save{font-size:12px;color:#246f56;max-width:380px}
+body.ui-next #v7-save[data-error=true]{color:#ab483d}
+body.ui-next .v7-bar{display:flex;gap:9px;align-items:end;flex-wrap:wrap;margin:0 0 13px;padding:12px;border-radius:12px;background:#fff;border:1px solid #dce5f1}
+body.ui-next .v7-bar label{margin:0;min-width:175px}
+body.ui-next .v7-bar select{min-width:175px;max-width:230px;width:100%;display:block}
+body.ui-next .v7-layout{display:grid;grid-template-columns:minmax(245px, .88fr) minmax(340px,1.9fr) minmax(235px,.85fr);gap:14px;align-items:start}
+body.ui-next .v7-card{background:#fff;border:1px solid #dce5f1;border-radius:14px;padding:17px;min-width:0}
+body.ui-next .v7-card h2{font-size:17px;line-height:1.4;margin:0 0 13px}
+body.ui-next .v7-card label{display:block;font-size:13px;margin:0 0 11px;color:#405773}
+body.ui-next .v7-card input:not([type=checkbox]):not([type=range]),body.ui-next .v7-card select{width:100%;display:block;min-height:41px;margin-top:5px;padding:6px 9px}
+body.ui-next .v7-xyz{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+body.ui-next .v7-xyz label{min-width:0}
+body.ui-next .v7-input fieldset{border:1px solid #dbe4f0;border-radius:10px;padding:11px;margin:14px 0}
+body.ui-next .v7-input legend{font-weight:700;font-size:13px}
+body.ui-next .v7-input fieldset button{width:100%;margin:4px 0}
+body.ui-next .v7-primary{background:#245ee8!important;border-color:#245ee8!important;color:#fff!important;font-weight:700}
+body.ui-next .v7-danger{color:#a53c36;background:#fff7f7}
+body.ui-next .v7-file-control{position:relative;display:inline-flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border:1px dashed #9db3d6;border-radius:8px;color:#2359ad;padding:9px 12px;cursor:pointer;min-height:44px;text-align:center;font-size:13px}
+body.ui-next .v7-file-control input[type=file]{max-width:200px;font-size:11px}
+body.ui-next .v7-note{font-size:12px;line-height:1.65;color:#61728b;margin:9px 0}
+body.ui-next .v7-warning{font-size:12px;line-height:1.65;color:#765f3f;background:#fffbf1;border:1px solid #f1e7cf;border-radius:9px;padding:8px 10px}
+body.ui-next #v7-photo{display:block;width:100%;max-height:220px;object-fit:contain;margin:10px 0;border-radius:9px;background:#f4f6fa;border:1px solid #dfe6ee}
+body.ui-next .v7-advanced{display:flex;flex-wrap:wrap;gap:9px;border-top:1px solid #e3e9f2;padding-top:12px;font-size:12px}
+body.ui-next .v7-advanced strong{width:100%}
+body.ui-next .v7-line{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body.ui-next .v7-line h2,body.ui-next .v7-line label{margin:0}
+body.ui-next .v7-line select{width:auto;min-width:130px}
+body.ui-next #v7-sheet{display:block;width:100%;background:#fff;border:1px solid #dfe6f3;border-radius:10px;touch-action:pan-y}
+body.ui-next .v7-spatial{margin-top:12px;border:1px solid #dce5f2;border-radius:11px;padding:10px;background:#f9fbff}
+body.ui-next .v7-spatial .v7-line strong{font-size:13px}
+body.ui-next .v7-spatial .v7-line span{font-size:11px;color:#6a7d98}
+body.ui-next #v7-3d{display:block;width:100%;height:auto;max-height:230px}
+body.ui-next .v7-spatial .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+body.ui-next .v7-spatial input[type=range]{width:100%}
+body.ui-next .v7-controls{display:flex;gap:5px}
+body.ui-next .v7-controls button{flex:1 1 0;padding:7px 5px;font-size:12px}
+body.ui-next .v7-steps input[type=range]{width:100%}
+body.ui-next .v7-steps .v7-line label{display:inline-flex;align-items:center;gap:4px;min-height:40px;font-size:12px}
+body.ui-next .v7-steps #v7-step-list{display:grid;gap:5px;max-height:220px;overflow:auto;margin:10px 0}
+body.ui-next .v7-steps #v7-step-list button{text-align:left;font-size:12px;white-space:normal;border:1px solid #dce5f1;background:#f9fbfe;color:#33475f;border-radius:7px;padding:9px}
+body.ui-next .v7-steps #v7-step-list button[aria-current=step]{background:#e9f1ff;border-color:#5081ec;color:#194eae}
+body.ui-next .v7-workspace button:hover:not(:disabled){border-color:#4679df}
+body.ui-next .v7-workspace [role=button]{cursor:pointer}
+@media(max-width:1320px){body.ui-next .v7-layout{grid-template-columns:minmax(250px,.9fr) minmax(380px,1.65fr)}body.ui-next .v7-steps{grid-column:1/-1}}
+@media(max-width:860px){body.ui-next .v7-layout{grid-template-columns:1fr}body.ui-next .v7-steps{grid-column:auto}body.ui-next .v7-head{align-items:start}body.ui-next .v7-card{padding:13px}body.ui-next #v7-sheet{max-height:none}}
+@media(max-width:520px){body.ui-next .v7-bar{padding:9px}body.ui-next .v7-bar>*{flex:1 1 135px}body.ui-next .v7-input .v7-xyz{gap:5px}body.ui-next .v7-xyz input{padding:5px!important}body.ui-next .v7-card{padding:11px}}
+@media(prefers-reduced-motion:reduce){body.ui-next .v7-workspace *{scroll-behavior:auto!important}}
