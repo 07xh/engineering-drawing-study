@@ -147,7 +147,7 @@ test('09 competitors require individual review; TWO independent rulers create ex
 });
 test('09 true M3 preflight calculates possible branches but never chooses nor plays until explicit transfer',()=>{
  const a=mount();a.preparedSource();
- a.check('alternativesChecked');a.click('attach');
+ a.check('alternativesChecked');a.check('commit');a.click('attach');
  assert.equal(a.gate.status,'dimension-attached-to-existing-draft');
  a.set('targetRadius','10','input');a.set('side','1');
  a.check('m3Accept');a.click('preflight');
@@ -177,7 +177,7 @@ test('09 a mismatched second-ruler scale or changed OCR/photo blocks every M3 tr
 });
 test('09 changing any accepted scale, source or M3 condition invalidates prior permission and no old V5 remains',()=>{
  const a=mount();a.preparedSource();a.check('alternativesChecked');
- a.click('attach');a.set('targetRadius','10','input');a.set('side','1');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');a.set('side','1');
  a.check('m3Accept');a.click('preflight');
  assert.equal(a.controls.apply.disabled,false);
  a.set('rulerAMm','22','input');
