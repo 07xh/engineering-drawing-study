@@ -167,3 +167,26 @@ test('saved project data cannot restore a verified claim; source image bytes rem
   assert.ok(!file.includes('isVerified'));
   assert.equal(createCoordinator(importProject(file)).canExport(), false);
 });
+
+test('a new candidate cannot self-promote by passing confirmed true to putCondition', () => {
+  const c = make();
+  c.putObject(point());
+  c.putCondition({...condition(), confirmed: true});
+  assert.equal(c.snapshot().conditions[0].confirmed, false);
+  c.confirmCondition('c1');
+  assert.equal(c.snapshot().conditions[0].confirmed, true);
+  c.putCondition({...condition(), confirmed: true, value: {units: 'mm', xyz: [7, 3, 2]}});
+  assert.equal(c.snapshot().conditions[0].confirmed, false, 'edited data needs explicit reconfirmation');
+});
+
+test('confirmed marks on replaced photos cannot be reapproved for a different original', () => {
+  const c = make();
+  c.setImage('imgOld');
+  c.putCondition({id: 'mark1', objectId: null, sourceCandidateId: null,
+    confirmed: true, value: {kind: 'pixel-mark', imageId: 'imgOld', x: 20, y: 30}});
+  c.confirmCondition('mark1');
+  assert.equal(c.snapshot().conditions[0].confirmed, true);
+  c.setImage('imgNew');
+  assert.equal(c.snapshot().conditions[0].confirmed, false);
+  assert.throws(() => c.confirmCondition('mark1'), /旧图片/);
+});
