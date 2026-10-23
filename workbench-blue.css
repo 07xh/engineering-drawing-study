@@ -152,6 +152,43 @@ body.workbench-blue .home-btn.secondary { color:var(--wb-blue-dark)!important;bo
 body.workbench-blue .status-pill { background:var(--wb-blue-tint);color:var(--wb-blue-dark);border-color:#c4dbfc }
 body.workbench-blue .section { margin-top:20px }
 body.workbench-blue .section h2 { color:var(--wb-ink) }
+/* Wide display: source conditions | the uninterrupted paper | step rail. */
+@media (min-width:1200px) {
+  body.workbench-blue .layout > :is([aria-label="真实动态作图"],[aria-label="圆锥统一 V5 图纸"]) {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(205px,245px);
+    grid-template-rows:auto;
+    align-items:start;
+    gap:9px 12px;
+  }
+  body.workbench-blue .layout > :is([aria-label="真实动态作图"],[aria-label="圆锥统一 V5 图纸"]) > :not(.workbench-step-rail) {
+    grid-column:1;
+    min-width:0;
+  }
+  body.workbench-blue .layout .workbench-step-rail {
+    grid-column:2;
+    grid-row:1 / span 10;
+    border:1px solid var(--wb-border);
+    background:#fff;
+    border-radius:12px;
+    padding:12px;
+    max-height:calc(100dvh - 112px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+  body.workbench-blue .workbench-step-rail > h2 {
+    font-size:16px;
+    margin:0 0 9px!important;
+  }
+  body.workbench-blue .workbench-step-rail :is(#stepList,#coneSteps) {
+    max-height:calc(100dvh - 310px);
+  }
+}
+body.workbench-blue .workbench-step-rail { min-width:0 }
+body.workbench-blue .workbench-step-rail > h2 { font-size:16px;margin:15px 0 8px }
+body.workbench-blue .workbench-step-rail .muted { line-height:1.55 }
+body.workbench-blue .workbench-step-rail details { font-size:12px }
+body.workbench-blue #coneStepLabel { margin:3px 0 9px }
 /* Keep every V/H/W projection together in the existing SVG; never
  * reorder, split, or transform individual projected views with CSS. */
 @media (max-width:880px) {
