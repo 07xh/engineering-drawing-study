@@ -1,7 +1,7 @@
 'use strict';
 const {object,identifier,finite,vec,report,noDuplicateIds,finiteTree}=require('./common.js');
 const EPS=1e-9;
-const kinds=['point','line','segment','circle','arc','plane','mesh'];
+const kinds=['point','line','segment','polyline','circle','arc','plane','mesh'];
 const spaces=['model-3d','drawing-2d'];
 const norm=(v,axes)=>vec(v,axes)?Math.hypot(...axes.map(k=>v[k])):0;
 function validateGeometry(g){
@@ -17,6 +17,26 @@ function validateGeometry(g){
  if(g.kind==='line'&&(!vec(data.point,axes)||norm(data.direction,axes)<=EPS))errors.push('直线位置或方向无效');
  if(g.kind==='segment'&&(!vec(data.start,axes)||!vec(data.end,axes)||
     Math.hypot(...axes.map(k=>data.end[k]-data.start[k]))<=EPS))errors.push('线段端点无效');
+ // A polyline is an explicit sequence of STRAIGHT finite edges only. It is
+ // not proof of an analytic curve, a polygon interior, or line visibility.
+ if(g.kind==='polyline'){
+  const points=data.points,closed=data.closed;
+  if(!Array.isArray(points)||points.length<2||points.length>2048||
+     typeof closed!=='boolean'||(closed&&points.length<3)||
+     Object.keys(data).some(k=>!['points','closed'].includes(k))||
+     !points.every(p=>vec(p,axes)))errors.push('折线必须是有限有序点、明确闭合状态和有效模型坐标');
+  else{
+   const count=closed?points.length:points.length-1;
+   for(let i=0;i<count;i++){
+    const a=points[i],b=points[(i+1)%points.length];
+    const span=Math.hypot(...axes.map(k=>b[k]-a[k]));
+    if(!finite(span)||span<=EPS){
+     errors.push('折线有重复相邻点、零长度或数值溢出边');
+     break;
+    }
+   }
+  }
+ }
  if(g.kind==='circle'&&(g.space!=='drawing-2d'||!vec(data.center,['x','y'])||
     !finite(data.radius)||data.radius<=0))errors.push('圆仅支持二维有效圆心与正半径');
  if(g.kind==='arc'){
