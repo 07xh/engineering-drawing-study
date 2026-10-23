@@ -6,6 +6,7 @@
  * No OCR, geometric detector, alternate M3, ConstructionIntent or V5 player.
  */
 const {reviewCandidate}=require('../recognition/problem-draft.cjs');
+const {proposeDimensionPaths}=require('../recognition/reviewed-dimension-path.cjs');
 const {makeDimensionConstraint,prepareSpecialistInput}=
  require('../recognition/reviewed-path-dimension-draft.cjs');
 const {solveFiniteFillet}=
@@ -61,6 +62,11 @@ function attachReviewedDimensionDraftUi({
  let sourceProof=null;
  function invalidate(){
   clearResults('审核选项已改变，请重新提交尺寸关联并检查两条比例尺。');
+ }
+ function invalidateM3(){
+  prepared=null;solution=null;
+  C.preflight.disabled=!accepted;C.apply.disabled=true;
+  C.m3Status.textContent='M3 参数或源线段已改变；此前的数学求解与 V5 导入许可作废。';
  }
  function render(){
   reset();
@@ -135,11 +141,13 @@ function attachReviewedDimensionDraftUi({
    throw new TypeError('逐项图元复核、两独立比例尺及提交确认缺一不可');
   const a=C.rulerA.value,b=C.rulerB.value;
   if(!a||!b||a===b)throw new TypeError('必须选择两条不同的已确认线段');
-  const path=sourceProof.selectedPathId.split(':');
-  const target=path.at(-1);
+  const pathParts=sourceProof.selectedPathId.split(':');
+  const target=pathParts.at(-1);
+  const path=proposeDimensionPaths(sourceProof).proposals.find(x=>
+   x.id===sourceProof.selectedPathId);
+  if(!path)throw new RangeError('reviewed source path is no longer present');
   const required=new Set([a,b,target,C.segment.value,
-   ...sourceProof.lines.filter(x=>
-    sourceProof.selectedPathId.includes(x.id)).map(x=>x.id)]);
+   ...path.leaderCandidateIds]);
   if(!C.segment.value)throw new TypeError('请选定实际用于 M3 的有限线段');
   for(const id of required)
    if(!selections.has(id)||selections.get(id).value!=='confirmed')
@@ -226,9 +234,13 @@ function attachReviewedDimensionDraftUi({
  }});
  for(const id of ['rulerA','rulerAMm','rulerB','rulerBMm','originX',
   'originY','yAxis','scaleChecked','geometryChecked',
-  'alternativesChecked','segment','targetRadius','side','m3Accept']){
+  'alternativesChecked']){
   const el=C[id];el.addEventListener('input',invalidate);
   el.addEventListener('change',invalidate);
+ }
+ for(const id of ['segment','targetRadius','side','m3Accept']){
+  const el=C[id];el.addEventListener('input',invalidateM3);
+  el.addEventListener('change',invalidateM3);
  }
  reset();
  return Object.freeze({reset,get status(){return accepted?.status??'unreviewed'},
