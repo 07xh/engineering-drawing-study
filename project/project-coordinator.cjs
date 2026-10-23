@@ -16,9 +16,10 @@ const finite = x => typeof x === 'number' && Number.isFinite(x);
 
 function jsonValue(value, depth = 0) {
   if (depth > 12) return false;
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (value === null || typeof value === 'boolean') return true;
+  if (typeof value === 'string') return value.length <= 10000 && !/^data:(?:image|application\/octet-stream)/i.test(value);
   if (typeof value === 'number') return finite(value);
-  if (Array.isArray(value)) return value.length <= 200 && value.every(x => jsonValue(x, depth + 1));
+  if (Array.isArray(value)) return value.length <= 5000 && value.every(x => jsonValue(x, depth + 1));
   return plain(value) && Object.keys(value).length <= 100 &&
     Object.entries(value).every(([k, v]) => k !== '__proto__' && k !== 'constructor' &&
       k !== 'prototype' && jsonValue(v, depth + 1));
@@ -201,11 +202,13 @@ function createCoordinator(initial, hooks = {}) {
     deleteCondition(id) { return commit(p => {p.conditions = p.conditions.filter(c => c.id !== id);}); },
     setImage(imageId) { return commit(p => {
       if (imageId !== null && !isId(imageId)) throw new Error('无效原图 ID');
+      if (p.source.imageId === imageId) return;
       p.source = {imageId, rotationDeg: 0, calibration: null};
       // Previously reviewed conditions require new confirmation on image replacement.
       p.conditions = p.conditions.map(c => ({...c, confirmed: false}));
     }); },
     setImageGeometry({rotationDeg, calibration}) { return commit(p => {
+      if (p.source.rotationDeg === rotationDeg && same(p.source.calibration, calibration)) return;
       p.source.rotationDeg = rotationDeg;
       p.source.calibration = copy(calibration);
       p.conditions = p.conditions.map(c => ({...c, confirmed: false}));
