@@ -148,3 +148,32 @@ test('04 structural validator rejects nonfinite, dimension confusion and fabrica
   assert.equal(validate(wrong).ok,false);
  }
 });
+
+test('09 independently check oriented 3D contour closure before downstream animation',()=>{
+ const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ const full=accepted('full-ellipse',plane(),11,64);
+ assert.equal(full.status,'ready');
+ const closed=full.spatialIntent.operation;
+ assert.equal(closed.capChord,null);
+ assert.ok(distance(closed.samplePoints[0],closed.samplePoints.at(-1))<1e-7,
+  'complete analytic ellipse must close at the sampled seam');
+ for(const n of [P(1,0,3),P(-1,0,-3)]){
+  const clipped=accepted('clipped-ellipse',plane(P(0,0,1),n),12,64);
+  assert.equal(clipped.status,'ready');
+  const g=clipped.spatialIntent.operation;
+  assert.equal(g.analytic.closed,false);
+  assert.ok(distance(g.samplePoints.at(-1),g.capChord.start)<1e-7,
+   'directed cap chord must START at lateral arc end');
+  assert.ok(distance(g.capChord.end,g.samplePoints[0])<1e-7,
+   'directed cap chord must END at lateral arc start');
+  assert.ok(distance(g.samplePoints[0],g.samplePoints.at(-1))>1,
+   'clipped arc must not be misrepresented as a closed lateral curve');
+  // A structurally valid Intent is not a mathematical topology proof.
+  const reversed=structuredClone(clipped.spatialIntent);
+  [reversed.operation.capChord.start,reversed.operation.capChord.end]=
+   [reversed.operation.capChord.end,reversed.operation.capChord.start];
+  assert.equal(validate(reversed).ok,true);
+  assert.notEqual(distance(reversed.operation.capChord.start,g.samplePoints.at(-1))<1e-7,true);
+  assert.equal(clipped.spatialIntent.source.v5StepsReady,false);
+ }
+});
