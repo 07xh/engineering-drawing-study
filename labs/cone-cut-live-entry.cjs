@@ -377,6 +377,28 @@ const {coneLinkedSpatialScene}=
    '：V/H/W 三视图出现蓝色投影定位标记。标记只解释同一 XYZ，'+
    '并不声明尚未播放的投影作图步骤已经完成。';
  }
+ // Presentation colors only; uncertain strokes stay mathematically undetermined.
+ // A colored preview never certifies complete occlusion or engineering line style.
+ const CONE_PALETTES=Object.freeze({
+  color:Object.freeze({
+   known:'#536b89',guide:'#4787c9',visible:'#1d8069',
+   hidden:'#7562a1',undetermined:'#bd762b',curve:'#bd762b',
+   selected:'#176eaa',faceCut:'#efb45c',faceBase:'#8bacce',
+   faceBody:'#86b2d9',faceCutEdge:'#b98126',faceEdge:'#6685a0',
+   plane:'#e9b453',planeEdge:'#b17a23',rail:'#90a5bc',
+   rim:'#54789e',spatial:'#20876b',anchor:'#317a75'
+  }),
+  mono:Object.freeze({
+   known:'#515151',guide:'#929292',visible:'#333333',
+   hidden:'#5e5e5e',undetermined:'#777777',curve:'#777777',
+   selected:'#272727',faceCut:'#b2b2b2',faceBase:'#d2d2d2',
+   faceBody:'#c3c3c3',faceCutEdge:'#676767',faceEdge:'#858585',
+   plane:'#bbbbbb',planeEdge:'#777777',rail:'#aaa',
+   rim:'#666',spatial:'#555',anchor:'#666'
+  })
+ });
+ function conePalette(){return $('coneMono').checked?CONE_PALETTES.mono:CONE_PALETTES.color;}
+
  function paintSpatial(frame){
   if(!plan||!player||!player.canRender(revision)||!plan.stillCurrent(revision))return;
   // A display camera consumes ALREADY verified M3 xyz. It cannot solve,
@@ -387,6 +409,7 @@ const {coneLinkedSpatialScene}=
    retainedHalfspace:$('coneKept').value||null
   });
   const group=$('cone3dDraw');group.replaceChildren();
+  const palette=conePalette();
   const pts=p=>p.map(q=>q.x.toFixed(3)+','+q.y.toFixed(3)).join(' ');
   const shape=(tag,attrs,parent=group)=>{
    const el=create(tag,attrs);parent.append(el);return el;
@@ -397,24 +420,24 @@ const {coneLinkedSpatialScene}=
     const section=face.kind==='cut-face';
     const base=face.kind==='base';
     shape('polygon',{points:pts(face.points),
-     fill:section?'#efb45c':base?'#8bacce':'#86b2d9',
+     fill:section?palette.faceCut:base?palette.faceBase:palette.faceBody,
      'fill-opacity':section?'.87':'.73',
-     stroke:section?'#b98126':'#6685a0',
+     stroke:section?palette.faceCutEdge:palette.faceEdge,
      'stroke-width':'.6',
      'data-cone-solid-face':face.kind});
    }
   }else{
    shape('polygon',{points:pts(scene.cuttingPlanePatch),
-    fill:'#e9b453','fill-opacity':'.18',stroke:'#b17a23',
+    fill:palette.plane,'fill-opacity':'.18',stroke:palette.planeEdge,
     'stroke-width':'1.2','stroke-dasharray':'5 4'});
    for(const rail of scene.rails){
     const [a,b]=rail;
     shape('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
-     stroke:'#90a5bc','stroke-width':'1.25','stroke-dasharray':'3 4'});
+     stroke:palette.rail,'stroke-width':'1.25','stroke-dasharray':'3 4'});
    }
    shape('polyline',{points:pts(scene.rim),fill:'none',
-    stroke:'#54789e','stroke-width':'1.8'});
-   shape('circle',{cx:scene.apex.x,cy:scene.apex.y,r:3,fill:'#54789e'});
+    stroke:palette.rim,'stroke-width':'1.8'});
+   shape('circle',{cx:scene.apex.x,cy:scene.apex.y,r:3,fill:palette.rim});
   }
   for(const segment of scene.segments){
    const fraction=frame.actionFractions[segment.sourceActionId]??0;
@@ -425,7 +448,7 @@ const {coneLinkedSpatialScene}=
    };
    const active=selectedSpatial===segment.index;
    shape('line',{x1:from.x,y1:from.y,x2:to.x,y2:to.y,
-    stroke:active?'#176eaa':'#20876b',
+    stroke:active?palette.selected:palette.spatial,
     'stroke-width':active?3.8:2.6,'stroke-linecap':'round',
     'data-cone-3d-segment':segment.index});
    // Separate wide SVG hit stroke improves mobile point selection without
@@ -448,7 +471,7 @@ const {coneLinkedSpatialScene}=
    shape('line',{x1:f.x,y1:f.y,
     x2:f.x+(t.x-f.x)*chordProgress,
     y2:f.y+(t.y-f.y)*chordProgress,
-    stroke:'#20876b','stroke-width':'2.6'});
+    stroke:palette.spatial,'stroke-width':'2.6'});
   }
   // ONLY the four mathematically proven 3D generator intersections are
   // interactive. Each jumps to its EXISTING canonical V guide step.
@@ -461,8 +484,8 @@ const {coneLinkedSpatialScene}=
    const active=selectedSpatial===anchor.index;
    const mark=shape('circle',{cx:anchor.point.screen.x,
     cy:anchor.point.screen.y,r:active?6:4.6,
-    fill:active?'#176eaa':drawn?'#20876b':'white',
-    stroke:active?'#176eaa':'#317a75','stroke-width':'2',
+    fill:active?palette.selected:drawn?palette.spatial:'white',
+    stroke:active?palette.selected:palette.anchor,'stroke-width':'2',
     'data-cone-3d-point':anchor.index,tabindex:'0',role:'button',
     'aria-label':'空间交点 P'+(anchor.guideOrdinal+1)+'，定位二维 V5 作图步骤'});
    const pick=()=>{
@@ -483,7 +506,7 @@ const {coneLinkedSpatialScene}=
   if(selectedSpatial!==null&&scene.sourcePoints[selectedSpatial]){
    const target=scene.sourcePoints[selectedSpatial].screen;
    shape('circle',{cx:target.x,cy:target.y,r:7,fill:'none',
-    stroke:'#176eaa','stroke-width':'2.8',
+    stroke:palette.selected,'stroke-width':'2.8',
     'pointer-events':'none','data-cone-3d-selected':selectedSpatial});
   }
   const solidLabel=solid?'切后实体三角网格（'+
@@ -509,9 +532,10 @@ const {coneLinkedSpatialScene}=
   if(!plan||!player||!player.canRender(revision)||
      !plan.stillCurrent(revision)||!frame)return;
   const group=$('coneDraw');group.replaceChildren();
-  const mono=$('coneMono').checked,showGuides=$('coneGuides').checked;
+  const palette=conePalette(),showGuides=$('coneGuides').checked;
+  $('coneSvg').querySelector('g[aria-hidden=true]')?.setAttribute('fill',palette.known);
   for(const outline of knownConeOutlines(plan.spatialIntent.operation.cone,plan.viewTransforms)){
-   group.append(create(outline.kind,{...outline.attrs,fill:'none',stroke:'#68717a','stroke-width':1.5,'data-known-outline':outline.id,'pointer-events':'none'}));
+   group.append(create(outline.kind,{...outline.attrs,fill:'none',stroke:palette.known,'stroke-width':1.5,'data-known-outline':outline.id,'pointer-events':'none'}));
   }
   let focus=null;
   for(const [index,step] of plan.steps.entries()){
@@ -522,9 +546,9 @@ const {coneLinkedSpatialScene}=
     const label=step.role==='guide'?'guide':action.wholeProjectedStrokeOcclusionVerified===true?action.visibility:'undetermined';
     // This is explanatory mathematical coloring only, NOT certified SVG
     // line style or whole projected-chord occlusion.
-    const color=mono?'#373737':label==='guide'?'#9a9eaa':
-     label==='visible'?'#1d8069':label==='hidden'?'#5c6d7c':'#a7adb5';
     const selectedNow=selected?.id===action.id&&selected.revision===revision;
+    const color=selectedNow?palette.selected:label==='guide'?palette.guide:
+     label==='visible'?palette.visible:label==='hidden'?palette.hidden:palette.undetermined;
     const el=create(action.kind==='line'?'line':'circle',{
      stroke:color,'stroke-width':selectedNow?4:step.role==='guide'?1.5:2.6,
      'stroke-dasharray':step.role==='guide'?'6 6':
@@ -575,12 +599,12 @@ const {coneLinkedSpatialScene}=
    }
   }
   for(const path of curvePaths(plan.steps,frame)){
-   group.append(create('path',{d:path.d,fill:'none',stroke:'#a7adb5','stroke-width':2.6,'stroke-linejoin':'round','pointer-events':'none','data-curve-id':path.id,'data-curve-actions':path.actionIds.join(' '),'data-curve-revision':path.sourceRevision,'data-chord-error-px':path.maxChordDeviationPx??'unverified'}));
+   group.append(create('path',{d:path.d,fill:'none',stroke:palette.curve,'stroke-width':2.6,'stroke-linejoin':'round','pointer-events':'none','data-curve-id':path.id,'data-curve-actions':path.actionIds.join(' '),'data-curve-revision':path.sourceRevision,'data-chord-error-px':path.maxChordDeviationPx??'unverified'}));
   }
   if(selected?.revision===revision){
    const picked=plan.steps.flatMap(s=>s.actions).find(a=>a.id===selected.id);
    if(picked?.sourceBoundary==='analytic-cone-lateral'&&(frame.actionFractions[picked.id]??0)>0){
-    const overlay=create('line',{stroke:'#176eaa','stroke-width':4,'pointer-events':'none','data-curve-selected':picked.id});
+    const overlay=create('line',{stroke:palette.selected,'stroke-width':4,'pointer-events':'none','data-curve-selected':picked.id});
     Motion.updateSvg(overlay,picked,frame.actionFractions[picked.id]);group.append(overlay);
    }
   }
@@ -589,12 +613,12 @@ const {coneLinkedSpatialScene}=
    for(const view of ['V','H','W']){
     const q=link.views[view].sheetPx;
     const ring=create('circle',{cx:q.x,cy:q.y,r:7,
-     fill:'none',stroke:'#176eaa','stroke-width':'2.7',
+     fill:'none',stroke:palette.selected,'stroke-width':'2.7',
      'pointer-events':'none','data-cone-view-focus':view,
      'data-cone-source-index':selectedSpatial});
     const cross=create('path',{d:'M'+(q.x-10)+' '+q.y+
      'H'+(q.x+10)+' M'+q.x+' '+(q.y-10)+'V'+(q.y+10),
-     fill:'none',stroke:'#176eaa','stroke-width':'1.3',
+     fill:'none',stroke:palette.selected,'stroke-width':'1.3',
      'pointer-events':'none'});
     group.append(ring,cross);
    }

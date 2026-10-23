@@ -68,6 +68,44 @@ test('09 real DOM progressive playback, step seek, monochrome and guide toggles 
   assert.equal(app.get('coneSteps').children.length,16);
  }
 });
+test('09 color toggle changes known cone outlines, uncertain V5 curves and 3D preview in both shells',()=>{
+ for(const next of [false,true]){
+  const app=mount(page,{next});solve(app);
+  app.set('coneSeek','1000','input');
+  const stroke=sel=>app.get('coneDraw').querySelector(sel)?.getAttribute('stroke');
+  const face=()=>app.get('cone3dDraw').querySelector('polygon')?.getAttribute('fill');
+  const proof=app.get('coneProof').textContent;
+  const status=app.get('coneStatus').textContent;
+  const outline='[data-known-outline]';
+  const curve='[data-curve-id]';
+  const unknown='[data-cone-visibility=undetermined]';
+  assert.ok(stroke(curve),'actual displayed continuous cone curve required');
+  assert.ok(stroke(unknown),'unverified evidence stays visibly marked');
+  assert.equal(app.get('coneMono').checked,false);
+  assert.equal(stroke(outline),'#536b89');
+  assert.equal(stroke(curve),'#bd762b');
+  assert.equal(stroke(unknown),'#bd762b');
+  assert.equal(face(),'#e9b453');
+  assert.equal(app.get('coneSvg').querySelector('g[aria-hidden=true]').getAttribute('fill'),'#536b89');
+
+  app.get('coneMono').checked=true;emit(app,'coneMono');
+  assert.equal(stroke(outline),'#515151');
+  assert.equal(stroke(curve),'#777777');
+  assert.equal(stroke(unknown),'#777777');
+  assert.equal(face(),'#bbbbbb');
+  assert.equal(app.get('coneSvg').querySelector('g[aria-hidden=true]').getAttribute('fill'),'#515151');
+
+  app.get('coneMono').checked=false;emit(app,'coneMono');
+  assert.equal(stroke(outline),'#536b89');
+  assert.equal(stroke(curve),'#bd762b');
+  assert.equal(face(),'#e9b453');
+  assert.equal(app.get('coneProof').textContent,proof,'color never changes proof scope');
+  assert.equal(app.get('coneStatus').textContent,status,'color never reruns mathematics');
+  assert.equal(app.get('conePercent').textContent,'100%');
+  assert.ok(app.get('coneDraw').querySelector(unknown),'color never upgrades occlusion');
+ }
+});
+
 test('09 changing any source condition invalidates old player, requires a NEW confirmation and discards shapes',()=>{
  for(const next of [false,true]){
   const app=mount(page,{next});solve(app);
