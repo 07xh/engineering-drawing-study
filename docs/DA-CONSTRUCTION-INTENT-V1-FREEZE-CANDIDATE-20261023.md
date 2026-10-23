@@ -9,8 +9,8 @@
 每一条 Intent 都保有以下**显式**信息：
 
 - `id`、`purpose`（作图目的）、`role`（given/auxiliary/result）；
-- `dependsOn`（前置**作图步骤 ID**）、`inputEntityIds`（有证据的**几何实体 ID**；未知保留空数组，不得捏造）、`outputEntityIds`（必须与 operations 的真实 ID 严格一致）；
-- `operations` 是具体语义原语：`line`、`point`、`circle`、`directed-arc`，记录明确坐标与必要尺寸；不从最终 SVG 坐标反推作图语义；
+- `dependsOn`（前置**作图步骤 ID**）、`inputEntityIds`（有证据的**几何实体 ID**；未知保留空数组，不得捏造；本版只能引用前序 Intent 已输出的图元，外部 ProblemDraft 图元绑定尚未冻结）、`outputEntityIds`（必须与 operations 的真实 ID 严格一致）；
+- `operations` 是具体语义原语：`line`、`point`、`circle`、`directed-arc`，记录明确坐标与必要尺寸；本版二维坐标只允许 `x/y`，不得附带 `z` 冒充空间作图；步骤 ID 与几何输出 ID 不得相互冒用；不从最终 SVG 坐标反推作图语义；
 - `source` 包含真实专业求解器名称、来源 revision、模型单位 mm、proofScope/proofLevel、可为空但**不可伪造**的 resultId、明确选择的 branchId、证据来源与 verified 结果的状态类别。多解场景必须有实际分支选择；只有来自真正证明过的唯一解可声明 unique。
 
 `directed-arc` **必须**是 model-mm 的有向圆弧，度数用模型空间 y 向上约定，`cw` 角差负、`ccw` 角差正，开区间限制在 0–360°；旧的 SVG 顺向/角度拼接不许冒充数学圆弧。

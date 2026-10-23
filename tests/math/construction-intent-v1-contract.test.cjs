@@ -86,3 +86,34 @@ test('F2 line intent refuses finite endpoints with overflowing span',()=>{
  const safe={...op,geometry:{from:p(-10,0),to:p(10,0)}};
  assert.equal(check({...a,outputEntityIds:['guide_1'],operations:[safe]}).ok,true);
 });
+
+test('F2 2D coordinates reject hidden 3D or ambiguous extra fields',()=>{
+ const a=sample(),arc=a.operations[0];
+ for(const replacement of [
+  {...arc,geometry:{...arc.geometry,center:{x:0,y:0,z:8}}},
+  {...arc,geometry:{...arc.geometry,center:{x:0,y:0,frame:'sheet-px'}}},
+  {id:'point_1',kind:'point',coordinateSpace:'sheet-px',
+   geometry:{at:{x:0,y:0,z:3}}},
+  {id:'line_1',kind:'line',coordinateSpace:'model-mm',
+   geometry:{from:{x:0,y:0,z:8},to:p(5,7)}}
+ ]){
+  assert.equal(check({...a,outputEntityIds:[replacement.id],
+   operations:[replacement]}).ok,false,
+   '2D Intent must not silently accept 3D or extra coordinate metadata');
+ }
+});
+test('F2 DAG validates prior geometry provenance, not only step IDs',()=>{
+ const first=sample();
+ const makeSecond=(inputEntityIds=[],id='guide_2')=>({
+  ...sample(),id:'step_2',dependsOn:['step_1'],
+  inputEntityIds,outputEntityIds:[id],
+  operations:[{id,kind:'line',coordinateSpace:'model-mm',
+   geometry:{from:p(0,0),to:p(1,0)}}]
+ });
+ assert.equal(checkDAG([first,makeSecond(['arc_1'])]).ok,true);
+ assert.equal(checkDAG([first,makeSecond(['never_emitted'])]).ok,false);
+ assert.equal(checkDAG([first,makeSecond(['step_1'])]).ok,false);
+ assert.equal(checkDAG([first,makeSecond(['guide_2'])]).ok,false);
+ assert.equal(checkDAG([first,makeSecond([], 'step_2')]).ok,false);
+ assert.equal(checkDAG([{...first,id:'arc_1'},makeSecond()]).ok,false);
+});
