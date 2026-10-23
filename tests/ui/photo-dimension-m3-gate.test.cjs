@@ -221,3 +221,18 @@ test('09 changing photo source generation after actual M3 prevents stale transfe
  assert.equal(a.filled.length,0);
  assert.equal(a.controls.apply.disabled,true);
 });
+
+test('09 actual photo M3 preflight requires witnessed isolation and rechecks binding on transfer',()=>{
+ const code=fs.readFileSync('labs/local-reviewed-dimension-draft-ui.cjs','utf8');
+ assert.match(code,/isolateReviewedDraft\(accepted/);
+ assert.match(code,/isolation\.status!=='reviewed-conditions-isolated'/);
+ assert.match(code,/isolationSourceBinding/);
+ const a=mount();a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.ok(['unique','multiple'].includes(a.gate.m3Status));
+ a.click('apply');
+ assert.equal(a.filled.length,1);
+ assert.equal(a.filled[0].requiresFinalFieldReview,true);
+ assert.equal(a.filled[0].requiresBranchSelection,true);
+});

@@ -9,6 +9,7 @@ const {reviewCandidate}=require('../recognition/problem-draft.cjs');
 const {proposeDimensionPaths}=require('../recognition/reviewed-dimension-path.cjs');
 const {makeDimensionConstraint,prepareSpecialistInput}=
  require('../recognition/reviewed-path-dimension-draft.cjs');
+const {isolateReviewedDraft}=require('../workbench/reviewed-draft-m3-isolation.cjs');
 const {solveFiniteFillet}=
  require('../engines/constraints-2d/finite-fillet-gate.cjs');
 const {formFields}=require('./local-vector-svg-import.cjs');
@@ -189,6 +190,8 @@ function attachReviewedDimensionDraftUi({
   if(!C.m3Accept.checked)throw new TypeError('必须另外确认 M3 模型输入及连接侧别');
   if(!['1','-1'].includes(C.side.value))
    throw new TypeError('明确选择连接线段圆的一侧 +1/-1');
+  const isolation=isolateReviewedDraft(accepted,{expectedRevision:accepted.draft.revision,currentDraft:accepted.draft});
+  if(isolation.status!=='reviewed-conditions-isolated')throw new RangeError('经审核来源与双比例尺 M3 隔离检查失败：'+isolation.reason);
   const doc=prepareSpecialistInput(accepted,{
    currentDraft:accepted.draft,expectedRevision:accepted.draft.revision,
    kind:'segment-circle',sourceIds:{segment:C.segment.value,circle:accepted.sourceTargetId},
@@ -199,7 +202,7 @@ function attachReviewedDimensionDraftUi({
   if(!['unique','multiple'].includes(analytic.status)||
      !analytic.candidates.length)
    throw new RangeError('现有 M3 没有离散已验证可用解：'+analytic.status);
-  prepared=doc;solution=analytic;
+  prepared={...doc,isolationSourceBinding:isolation.sourceBinding,isolationInputHash:isolation.solverInputHash};solution=analytic;
   lastPrepared=doc;lastM3=analytic;C.apply.disabled=false;
   C.m3Status.textContent='已用原有 M3 解析求解器得到 '+analytic.candidateCount+
    ' 个经过有限几何检查的候选解，状态 '+analytic.status+
@@ -207,6 +210,7 @@ function attachReviewedDimensionDraftUi({
  }
  function apply(){
   if(!freshness()||!prepared||!solution||
+    isolateReviewedDraft(accepted,{expectedRevision:accepted?.draft?.revision,currentDraft:accepted?.draft}).sourceBinding!==prepared.isolationSourceBinding||
     !['unique','multiple'].includes(solution.status))
    throw new RangeError('当前来源未通过现有 M3 求解或已变化');
   const fields=formFields({problem:prepared.problem});

@@ -209,4 +209,5 @@ function prepareSpecialistInput(attached,{
   answerIsolationVerified:false,blindExerciseAccepted:false
  });
 }
-module.exports={makeDimensionConstraint,prepareSpecialistInput};
+function isWitnessedReviewedDimension(value){return object(value)&&witnessed.has(value);}
+module.exports={makeDimensionConstraint,prepareSpecialistInput,isWitnessedReviewedDimension};
