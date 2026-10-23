@@ -93,10 +93,19 @@ test('04 clipped ellipse reuses certified oriented cap chord, projected into all
    assert.ok(a,'cap chord must not be lost in view '+view);
    assert.equal(a.sourceBoundary,'verified-cone-cap-chord');
    assert.equal(a.visibility,'undetermined');
-   near(a.geometry.from.x,r.viewPositions[view].at(-1).x);
-   near(a.geometry.from.y,r.viewPositions[view].at(-1).y);
-   near(a.geometry.to.x,r.viewPositions[view][0].x);
-   near(a.geometry.to.y,r.viewPositions[view][0].y);
+   const endpoint=r.viewPositions[view].at(-1);
+   const start=r.viewPositions[view][0];
+   if(a.kind==='line'){
+    near(a.geometry.from.x,endpoint.x);
+    near(a.geometry.from.y,endpoint.y);
+    near(a.geometry.to.x,start.x);
+    near(a.geometry.to.y,start.y);
+   }else{
+    assert.equal(a.kind,'point'); // View-direction collapse is geometric.
+    near(a.geometry.center.x,endpoint.x);
+    near(a.geometry.center.y,endpoint.y);
+    assert.ok(Math.hypot(endpoint.x-start.x,endpoint.y-start.y)<1e-8);
+   }
   }
   assert.equal(r.spatialIntent.source.visibilityVerified,false);
  }
