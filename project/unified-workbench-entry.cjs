@@ -6,7 +6,7 @@
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {createUnifiedProjectSession,SHEET}=require('./unified-workbench-session.cjs');
-const {toSheet}=require('../core/projection/conventions.js');
+const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
  const $=id=>document.getElementById(id),root=$('project-workbench');
@@ -218,10 +218,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   return verified?.clock?.canRender(coordinator.snapshot().revision)?verified:null;
  }
 
- function drawnPoint(p,sheet=SHEET){
-  return {x:sheet.origin.x+sheet.scale*p.x,
-   y:sheet.origin.y-sheet.scale*p.y};
- }
+
  function drawV5(svg,solved,colors){
   if(!$('v7-guides').checked)return;
   const frame=solved.clock.snapshot();
@@ -236,183 +233,102 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    svg.append(node);
   }
  }
- function renderPlanarPaper(svg,solved,snap){
-  // The planar solver owns mathematical Geometry. Projection/3D stays null.
-  const colors=$('v7-mono').checked?{known:'#333',derived:'#333',guide:'#777'}:
-    {known:'#1d5879',derived:'#0b7a65',guide:'#cf963d'};
-  const model=solved.scene.objects;
-  svg.append(shape('rect',{width:720,height:460,fill:'#fff'}));
-  for(const item of model.filter(x=>x.kind==='segment')){
-   const g=item.model.data,a=drawnPoint(g.start),b=drawnPoint(g.end);
-   line(svg,a.x,a.y,b.x,b.y,colors.known);
-  }
-  const arc=model.find(x=>x.kind==='arc');
-  const frame=solved.clock.snapshot();
-  if(arc&&frame.done){
-   const g=arc.model.data;
-   const geometry=Motion.projectArcFromVerifiedModel(g,SHEET);
-   const result=Motion.arc(geometry.center,geometry.radius,
-     geometry.startRadians,geometry.sweepRadians,1);
-   const path=shape('path',{d:result.d,fill:'none',stroke:colors.derived,'stroke-width':4});
-   const pick=()=>coordinator.selectObject('Fillet1');
-   path.setAttribute('tabindex','0');path.setAttribute('role','button');
-   path.setAttribute('aria-label','选择已验证圆弧 Fillet1');
-   path.addEventListener('click',pick);
-   path.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){
-     e.preventDefault();pick();
-   }});
-   svg.append(path);
-  }
-  drawV5(svg,solved,colors);
-  // Auto-fit presentation only. V5 action positions remain the original sheet pixels.
-  const pointList=[];
-  for(const item of model){
-   const d=item.model.data;
-   if(item.kind==='segment')pointList.push(d.start,d.end);
-   if(item.kind==='arc'){
-    pointList.push({x:d.center.x-d.radius,y:d.center.y-d.radius},
-     {x:d.center.x+d.radius,y:d.center.y+d.radius});
+ function compiled(){
+  const snap=coordinator?.snapshot(),out=current()||preview();
+  if(!snap||!out?.scene)return null;
+  // V5 is the only authority that can reveal constructed Geometry.
+  const frame=out.clock?.snapshot();
+  const hidden=out.kind==='planar-fillet'&&!frame.done?['Fillet1']:[];
+  return compileGeometryScene(out.scene,{
+   sheet:SHEET,camera:snap.view.camera,selectedObjectId:snap.view.selectedObjectId,
+   hiddenObjectIds:hidden
+  });
+ }
+ function drawPrimitives(svg,primitives,viewKind,snap,frame,monochrome){
+  const known=new Set(snap.objects.map(o=>o.id));
+  for(const item of primitives){
+   // A named 3D point's third projection is released by the verified V5
+   // timeline, not by the generic Geometry Scene visualizer.
+   if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;
+   const selected=snap.view.selectedObjectId===item.objectId;
+   const dashed=item.visibility==='undetermined'||item.viewportOnly;
+   const stroke=selected?(monochrome?'#111':'#ef6730'):
+    item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
+    monochrome?'#323232':item.objectId==='Fillet1'?'#147f65':'#2773a7';
+   const attrs={...item.attrs,fill:item.kind==='circle'&&!item.fill?stroke:'none',
+    stroke, 'stroke-width':selected?3.2:item.kind==='path'?3.1:1.8};
+   if(item.fill==='none')attrs.fill='none';
+   if(dashed)attrs['stroke-dasharray']='5 4';
+   // All primitives carry the exact mathematics-derived stable Geometry ID.
+   const node=shape(item.kind==='line'?'line':item.kind==='path'?'path':'circle',attrs);
+   if(item.objectId){
+    node.setAttribute('data-geometry-id',item.objectId);
+    node.setAttribute('data-geometry-view',item.view);
+    if(item.visibility==='undetermined')
+     node.setAttribute('data-visibility','undetermined');
    }
-  }
-  if(pointList.length){
-   const px=pointList.map(p=>drawnPoint(p));
-   const minX=Math.min(...px.map(p=>p.x)),maxX=Math.max(...px.map(p=>p.x));
-   const minY=Math.min(...px.map(p=>p.y)),maxY=Math.max(...px.map(p=>p.y));
-   const width=Math.max(300,(maxX-minX)*1.22),height=Math.max(220,(maxY-minY)*1.22);
-   svg.setAttribute('viewBox',[((minX+maxX)-width)/2,
-    ((minY+maxY)-height)/2,width,height].join(' '));
+   if(item.objectId&&known.has(item.objectId)){
+    const label=item.objectId==='Point1'&&viewKind==='paper'?
+      '选择 '+item.view+' 投影点':
+      item.objectId==='Fillet1'&&item.kind==='path'?
+      '选择已验证圆弧 Fillet1':
+      '选择 '+item.objectId+' 的 '+item.view+' 表达';
+    node.setAttribute('tabindex','0');node.setAttribute('role','button');
+    node.setAttribute('aria-label',label);
+    const pick=()=>coordinator.selectObject(item.objectId);
+    node.addEventListener('click',pick);
+    node.addEventListener('keydown',e=>{
+     if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
+    });
+   }
+   svg.append(node);
   }
  }
- function renderPrismPaper(svg,partial,snap){
-  const model=partial.scene.objects[0],size=model.model.data.points;
-  const max=Math.max(1,...Object.values(size).flatMap(p=>[Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
-  const layout={origin:SHEET.origin,scale:Math.min(SHEET.scale,135/max)};
-  const selected=snap.view.selectedObjectId===model.id;
-  for(const view of ['V','H','W']){
-   const face=model.representations[view];
-   for(const e of face.edges){
-    if(e.projection.kind!=='segment')continue;
-    const a=toSheet(view,e.projection.start,layout);
-    const b=toSheet(view,e.projection.end,layout);
-    const n=line(svg,a.x,a.y,b.x,b.y,
-     selected?'#ec7839':$('v7-mono').checked?'#444':'#52789f','4 3');
-    n.setAttribute('stroke-width',selected?'3':'1.8');
-    selectable(n,view,model.id+'_'+view,model.id);
-   }
-  }
-  text(svg,22,456,'所有边仅为已知长方体的正投影；虚实线尚未验证', '#9b633f');
- }
-
  function renderPaper(){
   const svg=$('v7-sheet');svg.replaceChildren();
-  const state=coordinator?.snapshot();
-  if(state?.task==='planar'){
-   const plan=current();if(plan?.kind==='planar-fillet')
-    renderPlanarPaper(svg,plan,state);
-   else svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
-   return;
-  }
+  const snap=coordinator?.snapshot();if(!snap)return;
   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
-  for(let x=0;x<=720;x+=40)line(svg,x,0,x,460,'#eef3fa');
-  for(let y=0;y<=460;y+=40)line(svg,0,y,720,y,'#eef3fa');
-  line(svg,0,SHEET.origin.y,720,SHEET.origin.y,'#6b83aa');
-  line(svg,SHEET.origin.x,0,SHEET.origin.x,460,'#6b83aa');
-  line(svg,SHEET.origin.x,SHEET.origin.y,SHEET.origin.x+160,SHEET.origin.y+160,'#b5c5d7','5 5');
-  text(svg,24,28,'V · 正面');
-  text(svg,24,442,'H · 水平');
-  text(svg,590,28,'W · 侧面');
-  const snap=coordinator?.snapshot();
-  if(!snap)return;
-  const zoom=snap.view.paper.zoom;
-  svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
-    230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
-  const partial=preview();
-  if(partial){renderPrismPaper(svg,partial,snap);return;}
-  const solved=current();if(!solved)return;
-  const colors=$('v7-mono').checked?
-   {given:'#222',derived:'#555',guide:'#777',selected:'#000'}:
-   {given:'#1873a8',derived:'#16734c',guide:'#d19847',selected:'#ec5b2d'};
-  const frame=solved.clock.snapshot();
-  const active=snap.view.selectedObjectId===POINT;
-  const coords=solved.scene.objects[0].representations;
-  for(const view of ['V','H','W']){
-   if(view==='W'&&!frame.done)continue;
-   const p=toSheet(view,coords[view].at,SHEET);
-   const el=shape('circle',{cx:p.x,cy:p.y,r:active?8:6,
-      fill:view==='W'?colors.derived:colors.given,
-      stroke:active?colors.selected:'#fff','stroke-width':active?3:1.5,
-      tabindex:0,role:'button','aria-label':'选择 '+view+' 投影点'});
-   const pick=()=>coordinator.selectRepresentation(view,POINT+'_'+view);
-   el.addEventListener('click',pick);
-   el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
-   svg.append(el);text(svg,p.x+11,p.y-9,'P'+view,colors.given);
+  const planar=snap.task==='planar';
+  if(!planar){
+   for(let x=0;x<=720;x+=40)line(svg,x,0,x,460,'#eef3fa');
+   for(let y=0;y<=460;y+=40)line(svg,0,y,720,y,'#eef3fa');
+   line(svg,0,SHEET.origin.y,720,SHEET.origin.y,'#6b83aa');
+   line(svg,SHEET.origin.x,0,SHEET.origin.x,460,'#6b83aa');
+   text(svg,24,28,'V · 正面');
+   text(svg,24,442,'H · 水平');
+   text(svg,590,28,'W · 侧面');
   }
-  if($('v7-guides').checked){
-   for(const step of solved.plan.steps)for(const action of step.actions){
-    const fraction=frame.actionFractions[action.id]||0;
-    if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
-    const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
-    const n=shape(tag,{fill:action.kind==='point'?colors.derived:'none',
-      stroke:colors.guide,'stroke-width':2,'stroke-dasharray':action.kind==='line'?'5 5':'none'});
-    Motion.updateSvg(n,action,fraction);
-    svg.append(n);
+  const result=compiled(),active=current(),frame=active?.clock.snapshot();
+  if(result){
+   drawPrimitives(svg,result.paper,'paper',snap,frame,$('v7-mono').checked);
+   if(result.warnings.length)
+    text(svg,22,450,result.warnings[0], '#986945');
+   if(!planar&&preview())
+    text(svg,22,432,'三视图网格仅为投影：虚实边尚未证明','#986945');
+   if(planar){
+    const b=result.paperBounds;
+    if(b)svg.setAttribute('viewBox',[b.x,b.y,b.width,b.height].join(' '));
    }
+  }
+  if(!planar){
+   const zoom=snap.view.paper.zoom;
+   svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
+    230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
+  }
+  if(active){
+   const colors=$('v7-mono').checked?{derived:'#333',guide:'#777'}:
+    {derived:'#1970a9',guide:'#c18d39'};
+   drawV5(svg,active,colors);
   }
  }
  function renderSpatial(){
   const svg=$('v7-3d');svg.replaceChildren();
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
-  // A planar Geometry Scene has NO 3D data. Never call the spatial renderer.
-  if(coordinator?.snapshot().task==='planar')return;
-  const scoped=preview();
-  if(scoped){
-   const snap=coordinator.snapshot(),mesh=scoped.scene.objects[0];
-   const points=mesh.model.data.points;
-   const ext=Math.max(1,...Object.values(points).flatMap(p=>[
-    Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
-   const scale=82/ext,yaw=snap.view.camera.yaw*Math.PI/180;
-   const pitch=snap.view.camera.pitch*Math.PI/180;
-   const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-   const project=p=>{
-    const x=p.x*c-p.y*s,depth=p.x*s+p.y*c;
-    return {x:215+x*scale,y:167-(p.z*cp-depth*sp)*scale};
-   };
-   for(const [a,b]of mesh.model.data.edges){
-    const p=project(points[a]),q=project(points[b]);
-    const edge=line(svg,p.x,p.y,q.x,q.y,
-     snap.view.selectedObjectId===mesh.id?'#df744b':'#577a9e','4 3');
-    selectable(edge,'3D','Solid1_3D',mesh.id);
-   }
-   text(svg,14,21,'三维原始长方体（无遮挡证明；所有边虚线）','#91563d');
-   return;
-  }
-  const solved=current();if(!solved)return;
-  const snap=coordinator.snapshot(),p=solved.scene.objects[0].representations['3D'].data;
-  const yaw=snap.view.camera.yaw*Math.PI/180,pitch=snap.view.camera.pitch*Math.PI/180;
-  const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-  const extent=Math.max(10,Math.abs(p.x),Math.abs(p.y),Math.abs(p.z));
-  const factor=80/extent;
-  function xy(v){
-   const xx=v.x*c-v.y*s,depth=v.x*s+v.y*c;
-   return {x:250+factor*xx,y:118-factor*(v.z*cp-depth*sp)};
-  }
-  const o=xy({x:0,y:0,z:0});
-  const axes=[['x',{x:extent,y:0,z:0},'#bb6472'],['y',{x:0,y:extent,z:0},'#46846b'],
-   ['z',{x:0,y:0,z:extent},'#5d7abc']];
-  for(const [name,v,color] of axes){
-   const q=xy(v);line(svg,o.x,o.y,q.x,q.y,color);
-   text(svg,q.x+6,q.y-4,name,color);
-  }
-  const point=xy(p),selected=snap.view.selectedObjectId===POINT;
-  const dot=shape('circle',{cx:point.x,cy:point.y,r:selected?10:7,
-    fill:$('v7-mono').checked?'#333':'#226be9',
-    stroke:selected?'#e86c30':'#fff','stroke-width':3,tabindex:0,
-    role:'button','aria-label':'选择空间点 P'});
-  const pick=()=>coordinator.selectRepresentation('3D',POINT+'_3D');
-  dot.addEventListener('click',pick);
-  dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}});
-  svg.append(dot);
-  text(svg,point.x+12,point.y-8,'P('+[p.x,p.y,p.z].join(', ')+') mm');
+  const snap=coordinator?.snapshot();if(!snap)return;
+  const result=compiled();if(!result)return;
+  drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked);
+  if(result.spatial.some(p=>p.visibility==='undetermined'))
+   text(svg,14,22,'空间网格线框 · 不推测隐藏边','#986945');
  }
  function renderSteps(){
   const list=$('v7-step-list'),solved=current();
