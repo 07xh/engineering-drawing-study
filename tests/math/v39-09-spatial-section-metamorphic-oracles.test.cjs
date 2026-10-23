@@ -116,3 +116,101 @@ test('04 source-boundary degeneracies cannot be upgraded into a verified cut',()
   assert.equal(result.globallyUnique,null);
  }
 });
+
+const {planeSphereSurfaceSection}=
+ require('../../engines/spatial/sections/sphere-plane.cjs');
+const {finiteCylinderSectionBoundary}=
+ require('../../engines/spatial/sections/finite-cylinder-section-boundary.cjs');
+const sphere=(center,radiusMm)=>({center,radiusMm,modelUnit:'mm'});
+const spherePlane=(point,normal)=>({point,normal,modelUnit:'mm'});
+const sphereResidual=(q,c,r)=>Math.abs(
+ Math.hypot(q.x-c.x,q.y-c.y,q.z-c.z)-r);
+const planeResidual=(q,point,normal)=>{
+ const n=Math.hypot(normal.x,normal.y,normal.z);
+ return Math.abs(((q.x-point.x)*normal.x+
+  (q.y-point.y)*normal.y+(q.z-point.z)*normal.z)/n);
+};
+function checkAnalyticSphereCircle(result,c,r,cut){
+ assert.equal(result.status,'ready');
+ assert.equal(result.verified,true);
+ assert.equal(result.curve.kind,'analytic-circle-3d');
+ assert.equal(result.curve.analyticCurveVerified,true);
+ assert.equal(result.curve.sampledPolylineOnly,true);
+ assert.equal(result.points.length,33);
+ assert.equal(result.maxResidualMm>=0,true);
+ for(let i=0;i<result.points.length;i++){
+  const p=result.points[i];
+  assert.ok(sphereResidual(p,c,r)<1e-6);
+  assert.ok(planeResidual(p,cut.point,cut.normal)<1e-6);
+  assert.deepEqual(result.projections[i].V,{u:p.x,v:p.z});
+  assert.deepEqual(result.projections[i].H,{u:p.x,v:p.y});
+  assert.deepEqual(result.projections[i].W,{u:p.y,v:p.z});
+ }
+ assert.equal(result.globallyUnique,null);
+ assert.equal(result.visibilityVerified,false);
+ assert.equal(result.firstAngleLayoutVerified,false);
+ assert.equal(result.sectionInteriorVerified,false);
+ assert.equal(result.v5StepsReady,false);
+}
+test('04 sphere oblique surface section preserves analytic radius and residual under model translation/scaling',()=>{
+ const center=P(4,-2,8),cut=spherePlane(P(4,-2,10),P(0,0,3));
+ const a=planeSphereSurfaceSection(sphere(center,7),cut,{samples:32});
+ checkAnalyticSphereCircle(a,center,7,cut);
+ close(a.curve.radiusMm,Math.sqrt(45));
+ close(a.curve.center.z,10);
+ const k=2,t=P(100,-70,25);
+ const c2=shift(scaled(center,k),t);
+ const p2=spherePlane(shift(scaled(cut.point,k),t),P(0,0,-9));
+ const b=planeSphereSurfaceSection(sphere(c2,7*k),p2,{samples:32});
+ checkAnalyticSphereCircle(b,c2,7*k,p2);
+ close(b.curve.radiusMm,k*a.curve.radiusMm);
+ for(const axis of ['x','y','z'])
+  close(b.curve.center[axis],a.curve.center[axis]*k+t[axis]);
+ // Normal direction alters drawing-basis parameterization, but not the
+ // underlying unoriented circle; never compare sample array indices.
+ assert.equal(a.curve.closed,b.curve.closed);
+});
+test('04 sphere near-tangency never promotes uncertain samples into a circle',()=>{
+ const c=P(0,0,0),s=sphere(c,5);
+ const exact=planeSphereSurfaceSection(s,spherePlane(P(0,0,5),P(0,0,1)));
+ assert.equal(exact.status,'tangent-point');
+ assert.equal(exact.curve,null);
+ assert.equal(exact.globallyUnique,null);
+ for(const delta of [-1e-9,1e-9]){
+  const result=planeSphereSurfaceSection(s,
+   spherePlane(P(0,0,5+delta),P(0,0,-2)));
+  assert.equal(result.status,'undetermined');
+  assert.equal(result.verified,false);
+  assert.deepEqual(result.points,[]);
+  assert.equal(result.curve,null);
+ }
+});
+test('04 cylinder cap-chord perimeter is translation, scale and normal-rescale invariant',()=>{
+ const cylinder={baseCenter:P(0,0,0),radiusMm:5,heightMm:30};
+ const cut=plane(P(0,0,3),P(1,0,1));
+ const a=finiteCylinderSectionBoundary(cylinder,cut,{samplesPerTurn:64});
+ assert.equal(a.status,'ready');assert.equal(a.boundaryVerified,true);
+ assert.equal(a.capChords.length,1);assert.equal(a.contourLoops.length,1);
+ assert.equal(a.capChords[0].capInteriorVerified,true);
+ close(a.capChords[0].lengthMm,8);
+ const k=2,t=P(100,-70,25);
+ const c2={baseCenter:shift(scaled(cylinder.baseCenter,k),t),
+  radiusMm:cylinder.radiusMm*k,heightMm:cylinder.heightMm*k};
+ const cut2=plane(shift(scaled(cut.point,k),t),P(7,0,7));
+ const b=finiteCylinderSectionBoundary(c2,cut2,{samplesPerTurn:64});
+ assert.equal(b.status,'ready');assert.equal(b.boundaryVerified,true);
+ assert.equal(b.capChords.length,a.capChords.length);
+ assert.equal(b.contourLoops.length,a.contourLoops.length);
+ close(b.capChords[0].lengthMm,k*a.capChords[0].lengthMm);
+ for(const axis of ['x','y','z']){
+  close(b.capChords[0].midpoint[axis],
+   k*a.capChords[0].midpoint[axis]+t[axis]);
+ }
+ for(const res of [a,b]){
+  assert.equal(res.completeSolidIntersectionVerified,false);
+  assert.equal(res.sectionInteriorVerified,false);
+  assert.equal(res.visibilityVerified,false);
+  assert.equal(res.v5StepsReady,false);
+  assert.equal(res.globallyUnique,null);
+ }
+});
