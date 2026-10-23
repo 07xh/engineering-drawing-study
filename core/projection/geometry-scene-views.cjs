@@ -16,11 +16,6 @@ const COPY = value => JSON.parse(JSON.stringify(value));
 const EPS = 1e-12;
 function fail(message) { throw new Error(message); }
 function xyz(point) { return {x:point.x, y:point.y, z:point.z}; }
-function addVector(a, b) {
-  const p = {x:a.x+b.x,y:a.y+b.y,z:a.z+b.z};
-  if (!Object.values(p).every(finite)) fail('空间直线坐标超出有限计算范围');
-  return p;
-}
 function viewPoint(p, view) { return project(p)[view]; }
 function viewSegment(start, end, view) {
   const a = viewPoint(start,view),b = viewPoint(end,view);
@@ -32,8 +27,11 @@ function viewSegment(start, end, view) {
     : {kind:'segment', start:a, end:b};
 }
 function viewLine(data, view) {
-  const p = viewPoint(data.point,view),q = viewPoint(addVector(data.point,data.direction),view);
-  const delta = {u:q.u-p.u,v:q.v-p.v};
+  const p = viewPoint(data.point,view);
+  // Orthographic projection is linear: project the direction directly.
+  // Subtracting project(point + direction) - project(point) loses small
+  // directions at large model coordinates (catastrophic cancellation).
+  const delta = viewPoint(data.direction,view);
   const span = Math.hypot(delta.u,delta.v);
   if (!finite(span)) fail('投影直线方向超出数值范围');
   return span <= EPS
@@ -56,6 +54,9 @@ function viewMesh(data,view) {
 function deriveOne(g) {
   const c=validateGeometry(g);
   if(!c.ok)fail('不合法的几何对象 '+String(g?.id)+': '+c.errors.join('；'));
+  // A scene labelled in millimetres must never silently upgrade a unitless
+  // or unspecified geometry into millimetres; scale and residuals depend on it.
+  if(g.unit!=='mm')fail('统一场景仅接受明确标为 mm 的 Geometry 单位');
   if(g.space==='drawing-2d') {
     return {id:g.id,kind:g.kind,space:g.space,model:COPY(g),
       representations:{drawing:COPY(g),V:null,H:null,W:null,'3D':null},
