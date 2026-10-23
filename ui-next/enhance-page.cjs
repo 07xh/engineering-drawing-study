@@ -5,12 +5,27 @@ const path=require('node:path');
 const fs=require('node:fs');
 const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layout.cjs');
 const {homeHTML}=require('./home.cjs');
-const NAV=[['labs/auto-fillet-live.html','AI 解题'],['index.html#tools','题型中心'],['index.html#knowledge','我的题目'],['public-use.html','帮助与协议']];
+const NAV=[
+ ['index.html','首页'],
+ ['labs/auto-fillet-live.html','AI 解题'],
+ ['index.html#plane','平面作图'],
+ ['index.html#projection','三视图与投影'],
+ ['index.html#section','截交与相贯'],
+ ['index.html#knowledge','我的题目'],
+ ['index.html#recent','历史记录'],
+ ['index.html#tools','更多工具'],
+ ['public-use.html','帮助与协议']
+];
 const NAV_ICONS={
- 'AI 解题':'<path d="M4 6h16v12H4z M7 3v3 M17 3v3 M7 18v3 M17 18v3 M9 10l2 2 4-4"/>',
- '题型中心':'<path d="M3 5h7l2 2h9v12H3z M8 11h8 M8 15h5"/>',
- '我的题目':'<path d="M8 3h8l4 4v14H4V3z M8 12l2 2 5-5 M8 18h8"/>',
- '帮助与协议':'<circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.6 2.6 0 0 1 5.1.8c0 1.8-2.7 2-2.7 4 M12 17.5v.5"/>'
+ '首页':'<path d="M3 11.5L12 4l9 7.5v8.5h-6v-6H9v6H3z"/>',
+ 'AI 解题':'<path d="M4 5h16v14H4z M8 10l3 3 5-6 M8 3v2 M16 3v2"/>',
+ '平面作图':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
+ '三视图与投影':'<path d="M12 3l8 5v9l-8 5-8-5V8z M12 3v10 M4 8l8 5 8-5 M12 13v9"/>',
+ '截交与相贯':'<path d="M5 18V7a7 3 0 0 1 14 0v11a7 3 0 0 1-14 0 M5 7a7 3 0 0 0 14 0 M3 10l18 6"/>',
+ '我的题目':'<path d="M7 3h9l4 4v14H4V3z M8 12l3 3 5-6"/>',
+ '历史记录':'<path d="M4 5v5h5 M5 10a8 8 0 1 1-.2 5 M12 7v5l3 2"/>',
+ '更多工具':'<path d="M18 4a4 4 0 0 0-4 5l-9 9 3 3 9-9a4 4 0 0 0 5-4l-3 2-3-3z"/>',
+ '帮助与协议':'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 1c0 2-3 2-3 4 M12 18h.01"/>'
 };
 function iconFor(label){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+NAV_ICONS[label]+'</svg>';}
 
@@ -48,7 +63,7 @@ function enhancePage(html,{page,preview=true}){
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
-  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.1-home-20261023">'));
+  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.4-home-20261023">'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){

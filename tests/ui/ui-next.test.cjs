@@ -91,7 +91,7 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
  }
 });
 
-test('V6.1 published homepage places first-angle paper before secondary tools',()=>{
+test('V6.4 homepage puts first-angle checked paper next to entry actions',()=>{
  const {after:document}=enhance('index.html');
  const dashboard=document.querySelector('.next-home-workbench');
  assert.ok(dashboard,'new homepage workbench must be the first screen');
@@ -104,14 +104,37 @@ test('V6.1 published homepage places first-angle paper before secondary tools',(
   assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
  assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
  for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
-  assert.ok(dashboard.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
+  assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
  assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
- assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.1-home-20261023"]'),'verifiable homepage release marker missing');
+ assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.4-home-20261023"]'),'verifiable homepage release marker missing');
  assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
  assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
  assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
 });
 
+test('V6.4 home reflects reference-two structure and original topic hierarchy without fake records',()=>{
+ const {after:document}=enhance('index.html');
+ const first=document.querySelector('.next-home-v64');
+ assert.ok(first?.querySelector('.next-home-intro-block'),'hero has intro + large paper');
+ assert.ok(first.querySelector('.next-home-intro-copy h1'),'clear primary action');
+ assert.ok(first.querySelector('.next-home-intro-sheet [data-projection-example="right-circular-cone"]'),'independently checked drawing retained');
+ assert.ok(first.querySelector('.next-home-workflow #recent'),'recent history location');
+ assert.ok(first.querySelector('.next-home-workflow #knowledge'),'my problems location');
+ assert.match(document.querySelector('#recent').textContent,/暂无可恢复的解题记录/);
+ assert.match(document.querySelector('#knowledge').textContent,/题库尚未接入/);
+ assert.doesNotMatch(document.querySelector('#recent').textContent,/2024|上次编辑：/,'do not invent personal history');
+ const categories=[...document.querySelectorAll('.next-home-category-grid>a')];
+ assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面作图','三视图与投影','截交与相贯','组合体作图']);
+ for(const href of ['labs/circle-fillet-live.html','labs/point-projection-live.html','labs/cone-cut-live.html','labs/composite-geometry.html'])
+  assert.ok(categories.some(a=>a.getAttribute('href')===href),'actual category tool '+href);
+ const nav=document.querySelector('.next-sidebar');
+ assert.ok(nav.querySelector('a[href="index.html#plane"]'),'plane task is direct');
+ assert.ok(nav.querySelector('a[href="index.html#projection"]'),'projection task is direct');
+ assert.ok(nav.querySelector('a[href="index.html#section"]'),'section task is direct');
+ assert.ok(nav.querySelector('a[href="index.html#recent"]'),'history anchor is real');
+ for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
+ assert.ok(document.querySelector('.next-home-more-tools:not([open])'),'all labs can stay collapsed');
+});
 test('homepage cone projection has actual first-angle geometric correspondence',()=>{
  const {after:document}=enhance('index.html');
  const svg=document.querySelector('[data-projection-example="right-circular-cone"] svg');
@@ -235,7 +258,7 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
  assert.match(my.textContent,/题库尚未接入/,'no fictional persistent history');
  const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
- assert.deepEqual(sidebar,['AI 解题','题型中心','我的题目','帮助与协议']);
+ assert.deepEqual(sidebar,['首页','AI 解题','平面作图','三视图与投影','截交与相贯','我的题目','历史记录','更多工具','帮助与协议']);
 });
 test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
  const {after:document}=enhance('public-use.html');
@@ -252,7 +275,7 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   const favicon=document.querySelector('link[rel="icon"][type="image/svg+xml"]');
   assert.equal(favicon?.getAttribute('href'),root+'favicon.svg',page+' must reference shared blue icon');
   const side=[...document.querySelectorAll('.next-sidebar nav a')];
-  assert.equal(side.length,4,page+' compact task navigation');
+  assert.equal(side.length,9,page+' compact task navigation');
   for(const link of side){
    assert.ok(link.getAttribute('aria-label'),page+' accessible label');
    assert.ok(link.getAttribute('data-ui-tip'),page+' long-press tooltip');
