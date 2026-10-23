@@ -1,0 +1,90 @@
+[
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-1",
+    "textbookChapter": null,
+    "topic": "三视图中局部缺线补全",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-2",
+    "textbookChapter": null,
+    "topic": "两投影视图缺线补全",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-3",
+    "textbookChapter": null,
+    "topic": "有凹槽结构的投影视图缺线补全",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-4",
+    "textbookChapter": null,
+    "topic": "槽形构件的投影视图缺线补全",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-5",
+    "textbookChapter": null,
+    "topic": "已知主俯视图补左视图",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-6",
+    "textbookChapter": null,
+    "topic": "已知主俯视图补左视图含隐线",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-7",
+    "textbookChapter": null,
+    "topic": "已知主俯视图补左视图带斜面",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 12,
+    "questionLabel": "2-3-8",
+    "textbookChapter": null,
+    "topic": "已知主左视图补俯视图",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]

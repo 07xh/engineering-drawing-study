@@ -1,0 +1,52 @@
+# DraftAI ConstructionIntent 1.0.0｜正式合并的二维结构契约
+
+> **当前状态（2026-10-23）**：#394 已正式合并 main（`accba5ff`），#395 专业消费方和 #396 公开工作台代码也均合并（`15537d2`、`ebe202e`）。**本契约已不再处于等待签收状态**；按最新 [#152](https://github.com/07xh/engineering-drawing-study/issues/152) 单人维护制度自动验收合并，无额外账号或 00/09 人工审批。仍须单独核实生产 Active、真实浏览器/Android 与原题盲测。唯一权威架构 [#372](https://github.com/07xh/engineering-drawing-study/issues/372)；不改 M0–M5 划分，也不引入第二个 SolveResult 或 V5 播放器。对应迁移任务 #341、#348、#377。
+
+## 1. 单一语义数据接口
+
+`core/contracts/construction-intent.js` 导出版本 `draftai-construction-intent/1.0.0` 与 `validateConstructionIntent`、`validateConstructionIntentDAG`。
+
+每一条 Intent 都保有以下**显式**信息：
+
+- `id`、`purpose`（作图目的）、`role`（given/auxiliary/result）；
+- `dependsOn`（前置**作图步骤 ID**）、`inputEntityIds`（有证据的**几何实体 ID**；未知保留空数组，不得捏造；本版只能引用前序 Intent 已输出的图元，外部 ProblemDraft 图元绑定尚未冻结）、`outputEntityIds`（必须与 operations 的真实 ID 严格一致）；
+- `operations` 是具体语义原语：`line`、`point`、`circle`、`directed-arc`，记录明确坐标与必要尺寸；本版二维坐标只允许 `x/y`，不得附带 `z` 冒充空间作图；步骤 ID 与几何输出 ID 不得相互冒用；不从最终 SVG 坐标反推作图语义；
+- `source` 包含真实专业求解器名称、来源 revision、模型单位 mm、proofScope/proofLevel、可为空但**不可伪造**的 resultId、明确选择的 branchId、证据来源与 verified 结果的状态类别。多解场景必须有实际分支选择；只有来自真正证明过的唯一解可声明 unique。
+
+`directed-arc` **必须**是 model-mm 的有向圆弧，度数用模型空间 y 向上约定，`cw` 角差负、`ccw` 角差正，开区间限制在 0–360°；旧的 SVG 顺向/角度拼接不许冒充数学圆弧。
+
+第一角投影已求出的纸面辅助联系线允许 `sheet-px` 的 `line`/ `point`，但不能混标成 model-mm 几何；既有 07 `verifiedTeachingActionToV5` 仍是唯一 sheet 转换消费方。未来空间视图/截交曲线必须通过另行评审的扩展契约，不能把 3D 三元坐标硬塞给 2D 点。
+
+## 2. 证明边界
+
+结构校验**不能**自行证明任意客户端提交的 `source` 为真。可信步骤只能由 02–06 专业求解器内部重新计算，经 M2/领域残差、分支、有限性、有向切触等门禁通过后产生。07 只消费意图并编译现有 ConstructionStep / V5，不把 V5 已绘结果反向标记为可信证明。09 负责独立反例。
+
+从 0 开始的 `revision` 必须源于当前已确认问题；条件修改、分支切换、步骤播放恢复需要一致性验证。跨 revision/proofScope/branch 的 Intent 不得混在一个 DAG；缺少前置步骤、重名图元和绕过证明的动作必须拒绝。
+
+## 3. 首批兼容与扩展清单
+
+| 专项 | 算法与已有资产 | 意图坐标 / 证明范围 | 迁移策略 |
+| --- | --- | --- | --- |
+| 02 | 有限线段–线段、线段–圆、两圆有向 G1 | model-mm 有向 arc；已选 branch 和双端 G1 | 复用 R1 真实求解器、#388 的 arc 校验及 #391 的旧新 V5 等价 oracle |
+| 03 | 三维点在 V/H/W 第一角投影 | 已证明三维点，纸面辅助 guide 为 sheet-px | 由 `adaptPointProjection` 真实解生成 Intent；复用唯一 V5 并逐步转移 |
+| 04 | 圆柱/棱柱/棱锥斜截 | 不应冒充 model-mm-2d 的 3D 曲线 | 待单独增加空间语义原语与可见性证明 |
+| 05 | 相贯线 | 求交分支和可见性证据必需 | 待专业算法、数学反例和 V5 回归通过后逐题型集成 |
+| 06 | 组合体三视图/补漏线 | 可能多解、线型可见性 | 先多解释验证，不声明全球唯一 |
+
+## 4. 正式契约及后续修改的验收边界（按 #152 自动验证合并）
+
+- [x] 01｜#394 已合并：二维 Intent schema、实体依赖和输入输出 ID 结构验证；不构成数学证据真实性认证
+- [x] 02｜#395 已合并：三类真实 G1 圆弧的已选分支、接触、方向、残差及新旧 V5 parity 的现有范围测试
+- [x] 03｜#395 已合并：现有点投影 V/H/W、45° 辅助联系线、模型 mm 与纸面 px 分离
+- [x] 07｜#396 已合并：两类公开工作台入口走同一 Intent→V5 代码，版本/分支失效、时间线回归在 CI 通过
+- [x] 09｜现有数学负例：重复实体、DAG 祖先、跨版本/分支、方向与退化拒绝；对无法认证的来源保持安全边界
+- [x] 合并记录：#394→#395→#396 按最新 HEAD 适用 CI 成功，主分支回归工作台 976/976
+- [ ] 尚待独立实际环境验证：生产 Active SHA、公开 HTTPS/Android 交互、真正无答案原书识图盲测
+
+**现状：#394、#395、#396 已依序合并 main，本节不再设置旧式人工签收阻断。** 后续高风险改动必须通过独立方法的数学反例、旧新等价回归与最新 HEAD 适用 CI；合格直接合并。保留原有 R1 数学求解器与单一 V5 作回滚/回归对照。网站 build 成功不代表 Cloudflare Production Active SHA、浏览器/Android 和原书端到端已验收。
+
+### DAG 前置实体约束（正式契约）
+`inputEntityIds` 只有在其几何生产步骤位于当前步骤显式 `dependsOn` 的直接或传递祖先中才有效；即使该图元恰好在数组中较早出现，也不能借由拓扑顺序绕过作图依赖。独立分支并行步骤不允许偷偷相互消费实体。上述约束属于结构完整性检查，仍不得替代数学领域求解器的独立证明。
+
+### 09 来源字段顺序与极端数值回归
+等值 `source` 元信息采用确定的排序字段比较，不因 JSON 属性插入顺序差异错误判定为不同 revision/proof/branch；元信息实际变化仍拒绝。新回归覆盖靠近正负 360° 的有向弧边界、超大角度减法/舍入、极短线段阈值与大坐标精度塌缩。结构合同不证明极小圆半径、高条件数构造或跨尺度数学唯一性，仍以领域求解器及 09 证明证据为准。

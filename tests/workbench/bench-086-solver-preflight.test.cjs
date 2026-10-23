@@ -68,8 +68,8 @@ test('#380 changing paper scale never changes actual specialized mathematics',()
 
 test('#380 preflight is not exercise-book success: original catalog remains unsolved',()=>{
  const book=buildReport(loadCatalog());
- assert.equal(book.pagesIndexed,6);
- assert.equal(book.originalExercises,29);
+ assert.equal(book.pagesIndexed,12);
+ assert.equal(book.originalExercises,56);
  assert.equal(book.solved,0);
  assert.equal(book.fullBookSolvedRate,null);
  const sample=runPreflight();

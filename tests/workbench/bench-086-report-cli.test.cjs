@@ -7,14 +7,14 @@ const path=require('node:path');
 const {loadCatalog,buildReport,formatMarkdown}=
  require('../../scripts/report-bench-086.cjs');
 
-test('first six indexed printed pages report 29 unsolved exercises without invented book-wide rate',()=>{
+test('twelve indexed printed pages report 56 unsolved exercises without invented book-wide rate',()=>{
  const list=loadCatalog();
  const r=buildReport(list);
  assert.equal(r.format,'draftai-bench086-metadata-progress/1');
  assert.equal(r.bookPages,86);
- assert.equal(r.pagesIndexed,6);
- assert.equal(r.pagesNotIndexed,80);
- assert.equal(r.originalExercises,29);
+ assert.equal(r.pagesIndexed,12);
+ assert.equal(r.pagesNotIndexed,74);
+ assert.equal(r.originalExercises,56);
  assert.equal(r.solved,0);
  assert.equal(r.inventoryComplete,false);
  assert.equal(r.fullBookSolvedRate,null);

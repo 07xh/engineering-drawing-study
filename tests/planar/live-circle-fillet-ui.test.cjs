@@ -171,6 +171,7 @@ function interactiveFillet(){
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
+  '../workbench/verified-live-intent-v1.cjs':require('../../workbench/verified-live-intent-v1.cjs'),
   '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs'),
   '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs'),
   '../workbench/verified-fillet-stroke-reasons.cjs':require('../../workbench/verified-fillet-stroke-reasons.cjs')
@@ -919,7 +920,7 @@ test('third mode uses the SAME public fillet teaching page with actual finite se
   'mixLineTravel','mixCircleTravel'])
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id);
  assert.match(entry,/chooseDirectedSegmentCircleFillet\(args\)/);
- assert.match(entry,/filletTimeline\(isSegments\?'segments':isMixed\?'segment-circle':'circles'/);
+ assert.match(entry,/verifiedLiveIntentTimeline\(isSegments\?'segments':isMixed\?'segment-circle':'circles'/);
  const p=interactiveFillet(),{get,fire,circle,line,mixed}=p;
  get('modeSelect').value='segment-circle';fire('modeSelect','change');
  assert.ok(mixed.every(n=>n.hidden===false));

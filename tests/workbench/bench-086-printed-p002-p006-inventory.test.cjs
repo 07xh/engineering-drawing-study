@@ -9,7 +9,8 @@ const assert=require('node:assert/strict');
 const {loadCatalog,buildReport}=require('../../scripts/report-bench-086.cjs');
 const {validateEntry,makeId}=require('../../benchmark/exercise-coverage.cjs');
 
-const expectedByPage=new Map([[2,3],[3,7],[4,7],[5,6],[6,5],[86,1]]);
+const expectedByPage=new Map([[2,3],[3,7],[4,7],[5,6],[6,5],
+ [7,4],[8,3],[9,6],[10,4],[11,2],[12,8],[86,1]]);
 
 test('real-book inventory preserves printed page/question IDs and never counts image parts twice',()=>{
  const entries=loadCatalog();
@@ -30,7 +31,7 @@ test('real-book inventory preserves printed page/question IDs and never counts i
    'source or answer payload leaked into metadata');
  }
  assert.deepEqual([...actual.entries()].sort((a,b)=>a[0]-b[0]),[...expectedByPage.entries()]);
- assert.equal(entries.length,29);
+ assert.equal(entries.length,56);
  const ids=new Set(entries.map(e=>makeId(e)));
  assert.ok(ids.has('BENCH-086-P006-Q1-6-2'),'real circle-inscribed triangle indexed');
  assert.ok(ids.has('BENCH-086-P004-Q1-4-1-3'),'nested original subquestion preserved');
@@ -38,14 +39,14 @@ test('real-book inventory preserves printed page/question IDs and never counts i
  for(let i=1;i<=8;i++)assert.ok(!ids.has('BENCH-086-P086-Q12-4-'+i));
 });
 
-test('real-book statistics remain incomplete even after first six printed pages are cataloged',()=>{
+test('real-book statistics remain incomplete while only twelve printed pages are cataloged',()=>{
  const result=buildReport(loadCatalog());
  assert.equal(result.bookPages,86);
- assert.equal(result.pagesIndexed,6);
- assert.equal(result.pagesNotIndexed,80);
- assert.equal(result.originalExercises,29);
+ assert.equal(result.pagesIndexed,12);
+ assert.equal(result.pagesNotIndexed,74);
+ assert.equal(result.originalExercises,56);
  assert.equal(result.solved,0);
- assert.equal(result.pending,29);
+ assert.equal(result.pending,56);
  assert.equal(result.safeHandling,0);
  assert.equal(result.inventoryComplete,false);
  assert.equal(result.fullBookSolvedRate,null);
