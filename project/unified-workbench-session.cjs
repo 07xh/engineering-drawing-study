@@ -9,6 +9,7 @@ const {evaluateUnifiedMath}=require('../workbench/unified-math-pipeline.cjs');
 const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 function verifiedPointFromInputs(data){
@@ -91,6 +92,39 @@ function prismMesh(data){
  return {id:'Solid1',kind:'mesh',space:'model-3d',unit:'mm',
   data:{points,edges,faces}};
 }
+
+const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','mesh']);
+function confirmedCompositionGeometry(data){
+ if(!data||data.task!=='composition'||!Number.isSafeInteger(data.revision)||
+   !Array.isArray(data.objects)||!Array.isArray(data.conditions)||
+   !data.objects.length||data.objects.length>100||
+   data.objects.length!==data.conditions.length)
+  throw new Error('多对象项目必须逐项提供已确认的几何输入');
+ const refs=new Map(data.objects.map(o=>[o.id,o]));
+ if(refs.size!==data.objects.length)throw new Error('几何对象身份重复');
+ const seen=new Set(),geometry=[];
+ for(const c of data.conditions){
+  const g=c?.value?.geometry;
+  if(!c||c.confirmed!==true||c.sourceCandidateId!==null||
+    c.value?.type!=='manual-geometry'||c.value?.imageId!==data.source?.imageId||
+    !g||c.value.unit!=='mm'||Object.keys(c.value).some(k=>
+      !['type','geometry','unit','imageId'].includes(k)))
+   throw new Error('多对象必须逐项由人工核对并确认当前原图');
+  const object=refs.get(c.objectId);
+  if(!object||g.id!==object.id||seen.has(g.id)||
+    !SUPPORTED_MANUAL_KINDS.has(g.kind)||g.unit!=='mm'||
+    !['drawing-2d','model-3d'].includes(g.space))
+   throw new Error('多对象身份、空间或受限类型无效');
+  const check=validateGeometry(g);
+  if(!check.ok)throw new Error('手工几何输入不合法：'+check.errors.join('；'));
+  seen.add(g.id);
+  // Project conditions are user-provided facts, not mathematically solved
+  // results: never mark them verified or schedule ConstructionStep/V5.
+  geometry.push(g);
+ }
+ return geometry;
+}
+
 function resultBase(data){return {projectId:data.projectId,inputRevision:data.revision};}
 
 function createUnifiedProjectSession(){
@@ -105,6 +139,15 @@ function createUnifiedProjectSession(){
   dispose(){latest=null;current=null;clock=null;listeners.clear();},
   solve(){
    current=null;clock=null;
+   if(latest?.task==='composition'){
+    const geometry=confirmedCompositionGeometry(latest);
+    const scene=deriveGeometryScene({geometry,
+      revision:latest.revision,resultId:'ManualGeometryEvidence'});
+    current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
+      verified:false,status:'confirmed-input-only',scene,
+      links:projectSelectionLinks(scene),plan:null,clock:null});
+    emit();return current;
+   }
    if(latest?.task==='planar'){
     const input=verifiedPlanarFillet(latest);
     // Existing unified M3 proves this branch and independently matches
@@ -181,4 +224,5 @@ function createUnifiedProjectSession(){
  return api;
 }
 module.exports={createUnifiedProjectSession,verifiedPointFromInputs,
- verifiedPlanarFillet,verifiedPrismSection,prismMesh,SHEET};
+ verifiedPlanarFillet,verifiedPrismSection,prismMesh,
+ confirmedCompositionGeometry,SHEET};

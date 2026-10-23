@@ -43,6 +43,7 @@ function homeHTML(){return `
     <option value="projection">点的 V/H/W 三面投影</option>
     <option value="planar">二维两线段圆弧连接 · 正式 V5</option>
     <option value="exploration">长方体截平面 · 限定证据预览</option>
+    <option value="composition">多对象几何编辑 · 人工确认的场景预览</option>
    </select></label>
    <p class="v7-note">更换题型会清除本项目旧对象和已确认条件，保留原题图片。所有步骤仍来自对应正式数学入口。</p>
    <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
@@ -89,6 +90,41 @@ function homeHTML(){return `
      <label>法向 y <input id="v7-p-ny" type="number" step="any" value="1"></label>
      <label>法向 z <input id="v7-p-nz" type="number" step="any" value="1"></label>
     </div>
+   </fieldset>
+
+   <fieldset data-v7-task="composition" hidden>
+    <legend>多对象几何 · 同一个本机项目</legend>
+    <p class="v7-warning">这里整理人工核对的已知几何，并不是自动求解。每个对象必须确认；不生成已证明的虚实线或 V5 答案。</p>
+    <label>已录入对象 <select id="v7-c-objects" aria-label="选择或编辑项目中的对象">
+     <option value="">新增对象</option></select></label>
+    <label>对象 ID（英文字母开头）<input id="v7-c-id" maxlength="80" value="ObjectA" autocomplete="off"></label>
+    <label>数学几何类型 <select id="v7-c-kind">
+     <option value="point2d">二维点</option><option value="point3d">空间点</option>
+     <option value="segment2d">二维线段</option><option value="segment3d">空间线段</option>
+     <option value="circle">二维圆</option><option value="arc">二维有向圆弧</option>
+     <option value="prism">长方体网格（空间）</option>
+    </select></label>
+    <p class="v7-note">坐标 A 是点或起点、圆心、长方体最小角；B 是终点或长方体最大角。圆和圆弧使用半径与角度。</p>
+    <div class="v7-xyz">
+     <label>A.x <input id="v7-c-ax" type="number" step="any" value="0"></label>
+     <label>A.y <input id="v7-c-ay" type="number" step="any" value="0"></label>
+     <label>A.z <input id="v7-c-az" type="number" step="any" value="0"></label>
+     <label>B.x <input id="v7-c-bx" type="number" step="any" value="10"></label>
+     <label>B.y <input id="v7-c-by" type="number" step="any" value="10"></label>
+     <label>B.z <input id="v7-c-bz" type="number" step="any" value="10"></label>
+     <label>半径 (mm) <input id="v7-c-radius" type="number" min="0" step="any" value="8"></label>
+     <label>起始角 (°) <input id="v7-c-start" type="number" step="any" value="0"></label>
+     <label>终止角 (°) <input id="v7-c-end" type="number" step="any" value="90"></label>
+     <label>圆弧方向 <select id="v7-c-direction"><option value="ccw">逆时针</option><option value="cw">顺时针</option></select></label>
+    </div>
+    <div class="v7-compose-actions">
+     <button id="v7-c-new" type="button">新对象</button>
+     <button id="v7-c-stage" type="button">保存为待确认条件</button>
+     <button id="v7-c-confirm" type="button">确认当前对象</button>
+     <button id="v7-c-remove" type="button" class="v7-danger">删除选中对象</button>
+     <button id="v7-c-render" type="button" class="v7-primary">显示已确认几何场景</button>
+    </div>
+    <p id="v7-c-status" class="v7-note" role="status">没有已确认对象。</p>
    </fieldset>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
    <div class="v7-advanced"><strong>更多已存在专业工具</strong>
