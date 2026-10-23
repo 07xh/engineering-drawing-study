@@ -14,12 +14,13 @@ const SPACES=Object.freeze(['model-mm','sheet-px']);
 const PROOF_STATES=Object.freeze(['selected','unique']);
 const PROOF_LEVELS=Object.freeze(['analytic','linear-algebra','selected-directed-g1']);
 const branchIdentifier=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_+.-]{0,79}$/.test(x);
+const semanticId=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_+.-]{0,159}$/.test(x);
 const isIdList=x=>Array.isArray(x)&&x.length<=300&&
- x.every(identifier)&&noDuplicateIds(x);
+ x.every(semanticId)&&noDuplicateIds(x);
 const point=p=>object(p)&&finite(p.x)&&finite(p.y);
 const exactKeys=(x,keys)=>Object.keys(x).every(k=>keys.includes(k));
 function validAction(a){
- if(!object(a)||!identifier(a.id)||!KINDS.includes(a.kind)||
+ if(!object(a)||!semanticId(a.id)||!KINDS.includes(a.kind)||
     !SPACES.includes(a.coordinateSpace)||!object(a.geometry)||
     !exactKeys(a,['id','kind','coordinateSpace','geometry']))return false;
  const g=a.geometry;
@@ -63,7 +64,7 @@ function validateConstructionIntent(intent){
   'inputEntityIds','outputEntityIds','operations','source']))
   errors.push('unknown or noncanonical intent field');
  if(intent.schema!==CONSTRUCTION_INTENT_VERSION)errors.push('schema version mismatch');
- if(!identifier(intent.id))errors.push('invalid intent ID');
+ if(!semanticId(intent.id))errors.push('invalid intent ID');
  if(typeof intent.purpose!=='string'||!intent.purpose.trim()||
   intent.purpose.length>160)errors.push('invalid semantic purpose');
  if(!['auxiliary','given','result'].includes(intent.role))errors.push('invalid role');
