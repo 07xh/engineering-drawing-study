@@ -26,6 +26,73 @@ function verifiedPointFromInputs(data){
     throw new Error('点对象身份与求解输入不一致');
   return {x:v.xyz[0],y:v.xyz[1],z:v.xyz[2]};
 }
+
+const P=(x,y,z)=>({x,y,z});
+const pair=(a)=>({x:a[0],y:a[1]});
+function verifiedInput(data,{task,type,objectId}){
+ if(!data||data.task!==task||!Number.isSafeInteger(data.revision)||
+    !Array.isArray(data.conditions)||data.conditions.length!==1||
+    data.objects?.length!==1||data.objects[0]?.id!==objectId)
+  throw new Error('当前项目对象或已确认的求解条件不完整');
+ const c=data.conditions[0],v=c?.value;
+ if(c.confirmed!==true||c.objectId!==objectId||
+    v?.type!==type||v?.unit!=='mm'||
+    v.imageId!==data.source?.imageId)
+  throw new Error('必须人工确认与当前原图对应的模型 mm 条件');
+ return v;
+}
+const okPair=a=>Array.isArray(a)&&a.length===2&&a.every(finite)&&
+ a.every(n=>Math.abs(n)<=100000);
+const okTriple=a=>Array.isArray(a)&&a.length===3&&a.every(finite);
+function verifiedPlanarFillet(data){
+ const v=verifiedInput(data,{task:'planar',type:'segment-fillet',objectId:'Fillet1'});
+ if(![v.first,v.second].every(a=>Array.isArray(a)&&a.length===2&&a.every(okPair))||
+   !finite(v.filletRadius)||v.filletRadius<=0||v.filletRadius>100000||
+   !['s++','s+-','s-+','s--'].includes(v.branchId)||
+   !['cw','ccw'].includes(v.direction)||
+   !['forward','reverse'].includes(v.firstTravel)||
+   !['forward','reverse'].includes(v.secondTravel))
+  throw new Error('二维线段端点、连接半径或已选择的数学分支无效');
+ return {
+   first:{a:pair(v.first[0]),b:pair(v.first[1])},
+   second:{a:pair(v.second[0]),b:pair(v.second[1])},
+   filletRadius:v.filletRadius,branchId:v.branchId,direction:v.direction,
+   firstTravel:v.firstTravel,secondTravel:v.secondTravel
+ };
+}
+function verifiedPrismSection(data){
+ const v=verifiedInput(data,{task:'exploration',type:'prism-section',objectId:'Solid1'});
+ if(!okTriple(v.size)||v.size.some(x=>x<=0||x>100000)||
+   !okTriple(v.planePoint)||v.planePoint.some(x=>Math.abs(x)>100000)||
+   !okTriple(v.planeNormal)||Math.hypot(...v.planeNormal)<=1e-9)
+  throw new Error('长方体尺寸和截平面必须是有限、非退化的毫米条件');
+ return {kind:'rectangular-prism',
+  solid:{min:P(0,0,0),max:P(...v.size)},
+  plane:{point:P(...v.planePoint),normal:P(...v.planeNormal)},
+  frame:'model-mm-3d',unit:'mm'};
+}
+function prismMesh(data){
+ const min=data.solid.min,max=data.solid.max;
+ const points={};
+ for(let a=0;a<2;a++)for(let b=0;b<2;b++)for(let c=0;c<2;c++){
+  const id='V'+a+b+c;
+  points[id]=P(a?max.x:min.x,b?max.y:min.y,c?max.z:min.z);
+ }
+ const ids=Object.keys(points),edges=[];
+ for(const [i,k] of ids.entries())for(const l of ids.slice(i+1)){
+  const distance=[0,1,2].filter(j=>k[j+1]!==l[j+1]).length;
+  if(distance===1)edges.push([k,l]);
+ }
+ const faces=[
+  ['V000','V100','V110','V010'],['V001','V101','V111','V011'],
+  ['V000','V100','V101','V001'],['V010','V110','V111','V011'],
+  ['V000','V010','V011','V001'],['V100','V110','V111','V101']
+ ];
+ return {id:'Solid1',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points,edges,faces}};
+}
+function resultBase(data){return {projectId:data.projectId,inputRevision:data.revision};}
+
 function createUnifiedProjectSession(){
  let latest=null,current=null,clock=null;
  const listeners=new Set(),emit=()=>{for(const f of listeners)f();};
@@ -38,6 +105,52 @@ function createUnifiedProjectSession(){
   dispose(){latest=null;current=null;clock=null;listeners.clear();},
   solve(){
    current=null;clock=null;
+   if(latest?.task==='planar'){
+    const input=verifiedPlanarFillet(latest);
+    // Existing unified M3 proves this branch and independently matches
+    // canonical ConstructionIntent -> DAG -> ONE V5. No local solver.
+    const plan=evaluateUnifiedMath({kind:'segments',input,sheet:SHEET,revision:latest.revision});
+    if(plan.status!=='ready'||plan.canonicalVerified!==true||
+       plan.mathematicallyVerified!==true||!plan.timing||
+       !Array.isArray(plan.steps)||!plan.steps.length)
+      throw new Error('当前圆弧分支无法通过已有 M3 与统一 V5 数学审核');
+    const arc=plan.originalLesson?.result?.arc;
+    if(!arc||!finite(arc.radius)||!finite(arc.center?.x)||!finite(arc.center?.y)||
+       !finite(arc.startAngle)||!finite(arc.endAngle)||
+       !['cw','ccw'].includes(arc.direction))
+      throw new Error('已验证圆弧缺少完整的模型 mm 几何证据');
+    const geometry=[
+     {id:'Given1',kind:'segment',space:'drawing-2d',unit:'mm',
+      data:{start:input.first.a,end:input.first.b}},
+     {id:'Given2',kind:'segment',space:'drawing-2d',unit:'mm',
+      data:{start:input.second.a,end:input.second.b}},
+     {id:'Fillet1',kind:'arc',space:'drawing-2d',unit:'mm',
+      data:{center:arc.center,radius:arc.radius,startAngle:arc.startAngle,
+       endAngle:arc.endAngle,direction:arc.direction}}
+    ];
+    const scene=deriveGeometryScene({geometry,revision:latest.revision,
+      resultId:'FilletResult',branchId:plan.selectedBranchId});
+    clock=Timeline.createPlayer(plan.timing,{revision:latest.revision});
+    current=Object.freeze({...resultBase(latest),verified:true,kind:'planar-fillet',
+     status:'unique',plan,scene,links:projectSelectionLinks(scene),clock,
+     residualMm:plan.residualMm??null});
+    emit();return current;
+   }
+   if(latest?.task==='exploration'){
+    const input=verifiedPrismSection(latest);
+    // Spatial M3 provides only scoped partial proof. Never invent V5.
+    const evidence=evaluateUnifiedMath({kind:'spatial-section',input,
+      revision:latest.revision});
+    if(evidence.status!=='geometry-only'||
+       evidence.geometryVerifiedWithinSpecialistScope!==true)
+      throw new Error('当前截切几何证据不充分；已拒绝显示推测截交线');
+    const scene=deriveGeometryScene({geometry:[prismMesh(input)],
+      revision:latest.revision,resultId:'PrismEvidence'});
+    current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
+      verified:false,status:'geometry-only',evidence,scene,
+      links:projectSelectionLinks(scene),plan:null,clock:null});
+    emit();return current;
+   }
    const point=verifiedPointFromInputs(latest);
    const knownViews={V:[point.x,point.z],H:[point.x,point.y]};
    const input={knownViews,sheetTransform:SHEET};
@@ -67,4 +180,5 @@ function createUnifiedProjectSession(){
  };
  return api;
 }
-module.exports={createUnifiedProjectSession,verifiedPointFromInputs,SHEET};
+module.exports={createUnifiedProjectSession,verifiedPointFromInputs,
+ verifiedPlanarFillet,verifiedPrismSection,prismMesh,SHEET};
