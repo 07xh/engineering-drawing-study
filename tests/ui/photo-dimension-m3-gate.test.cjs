@@ -199,6 +199,29 @@ test('09 actual public entry uses current OCR/raster modules, existing typed M3 
  assert.doesNotMatch(control,/compileTimeline|createPlayer|new TextDetector|fetch\(|localStorage|XMLHttpRequest/);
 });
 
+test('09 changing second independently reviewed ruler after actual M3 revokes transfer',()=>{
+ const a=mount();a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.equal(a.controls.apply.disabled,false);
+ a.set('rulerBMm','31','input');
+ assert.equal(a.controls.apply.disabled,true);
+ assert.equal(a.controls.preflight.disabled,true);
+ assert.equal(a.gate.m3Status,'not-executed');
+ a.click('apply');
+ assert.equal(a.filled.length,0);
+});
+test('09 changing photo source generation after actual M3 prevents stale transfer',()=>{
+ const a=mount();a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.equal(a.controls.apply.disabled,false);
+ a.invalidatePhoto();
+ a.click('apply');
+ assert.equal(a.filled.length,0);
+ assert.equal(a.controls.apply.disabled,true);
+});
+
 test('09 actual photo M3 preflight requires witnessed isolation and rechecks binding on transfer',()=>{
  const code=fs.readFileSync('labs/local-reviewed-dimension-draft-ui.cjs','utf8');
  assert.match(code,/isolateReviewedDraft\(accepted/);
