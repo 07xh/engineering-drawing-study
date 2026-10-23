@@ -14,11 +14,11 @@ for(const p of retired){
 for(const phrase of ['74 题','74 道','原创练习题','题型训练','第 2 章 · 课堂','旧版实验室','labs/v7.html','question-bank']){
  assert(!home.includes(phrase),'retired mock question/lesson still appears on the front page: '+phrase);
 }
-// The home must present the AI-solving V3.1 direction; former textbook assets remain
-// source-audited references and must not become a compulsory course menu.
-assert(home.includes('DraftAI')&&home.includes('现有数学与作图基础组件')&&home.includes('产品主流程：识图 → 求解 → 自动作图'),'V3.1 public homepage positioning missing');
+// V6 home must stay concise, expose available solvers, and not regress into a textbook menu.
+// Former textbook assets remain source-audited references.
+assert(home.includes('DraftAI')&&home.includes('选择解题工具')&&home.includes('工程制图解题 · 动态作图'),'V6 public solver-first homepage positioning missing');
 assert(home.includes('href="public-use.html"'),'public source boundary must remain reachable');
-assert(home.includes('AI 识图尚未开放'),'AI availability must be truthful');
+assert(home.includes('图片自动识别仍在开发中')&&home.includes('当前不支持上传任意题图后自动完成解答'),'AI availability must be truthful');
 const ctx={};vm.runInNewContext(read('knowledge/knowledge-data.js'),ctx);
 const book=ctx.DrawingKnowledge;
 assert.equal(book.entries.length,110,'full textbook catalog must be preserved');
