@@ -107,7 +107,7 @@ test('V6.5 homepage puts accurate arc construction next to entry actions',()=>{
   assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
  assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
  assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.5-home-20261023"]'),'verifiable homepage release marker missing');
- assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
+ assert.match(dashboard.textContent,/非上传题目答案/,'hero must identify geometry drawing as an example');
  assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
  assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
 });
