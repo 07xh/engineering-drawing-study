@@ -157,7 +157,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
    if(!chord||dist3(last,chord.start)>tol||dist3(first,chord.end)>tol)
     throw new RangeError('directed cone cap chord lacks verified topology');
    const from=position[view][samples],to=position[view][0];
-   if(distance(from,to)>=1e-9)
+   if(distance(from,to)>=1e-9||split)
     actions.push(action('cone_'+view+'_cap_chord',from,to,{
      sourceBoundary:'verified-cone-cap-chord',sourceSpatialIntentId:source.id,
      sourceRevision:revision,visibility:'undetermined'
