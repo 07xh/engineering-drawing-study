@@ -34,6 +34,20 @@ function viewSegment(start, end, view) {
     ? {kind:'point', at:a, collapsedFrom:'segment'}
     : {kind:'segment', start:a, end:b};
 }
+// A 3D polyline is piecewise linear, never an interpolated analytic curve.
+// Every explicitly known edge projects under the ONE first-angle convention;
+// the projected edge may collapse to a point and remains visibly uncertain.
+function viewPolyline(data,view) {
+ const points=data.points.map(p=>viewPoint(p,view)),spans=[];
+ const n=data.closed?data.points.length:data.points.length-1;
+ for(let i=0;i<n;i++){
+  const j=(i+1)%data.points.length;
+  spans.push({fromIndex:i,toIndex:j,
+   projection:viewSegment(data.points[i],data.points[j],view)});
+ }
+ return {kind:'polyline-projection',points,closed:data.closed,spans,
+  topology:'ordered-piecewise-linear',visibility:'undetermined'};
+}
 function viewLine(data, view) {
   const p = viewPoint(data.point,view);
   // Orthographic projection is linear: project the direction directly.
@@ -77,6 +91,7 @@ function deriveOne(g) {
       representations[view]=viewSegment(g.data.start,g.data.end,view);
     else if(g.kind==='line') representations[view]=viewLine(g.data,view);
     else if(g.kind==='mesh') representations[view]=viewMesh(g.data,view);
+    else if(g.kind==='polyline') representations[view]=viewPolyline(g.data,view);
     else if(g.kind==='plane') {
       // An infinite plane has no finite 2D boundary. Deriving a clipped sheet
       // polygon would invent a viewport-dependent geometric construction.
