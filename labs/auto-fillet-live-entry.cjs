@@ -14,6 +14,8 @@ const {attachImageFieldReview}=require('./image-field-review-ui.cjs');
 const {attachLocalLineCandidates}=require('./local-line-candidates-ui.cjs');
 const {attachLocalCurveCandidates}=require('./local-curve-candidates-ui.cjs');
 const {attachLocalNativeOcr}=require('./local-native-ocr-ui.cjs');
+const {attachReviewedDimensionDraftUi}=
+ require('./local-reviewed-dimension-draft-ui.cjs');
 const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs');
 
 (function(){
@@ -37,6 +39,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  let exportUi=null;
  let fieldReview=null;
  let nativeOcrUi=null;
+ let dimensionDraftUi=null;
  let geometryCandidates={line:[],curve:[]};
  let arrowHints=[];
  function updateCandidateChoices(){
@@ -53,6 +56,7 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   if(group==='line')arrowHints=Array.isArray(sourceMeta?.arrowHints)?sourceMeta.arrowHints:[];
   updateCandidateChoices();
   nativeOcrUi?.refreshAssociations();
+  dimensionDraftUi?.reset();
  }
  let localVector=null;
  let rasterReview=null;
@@ -440,6 +444,60 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
    recompute();
   }
  });
+ const gateNames=['refresh','geometry','candidates','rulerA','rulerAMm',
+  'rulerB','rulerBMm','originX','originY','yAxis','scaleChecked',
+  'geometryChecked','alternativesChecked','commit','attach','status',
+  'segment','targetRadius','side','m3Accept','preflight','apply','m3Status'];
+ const gateMapping={
+  refresh:'dimensionDraftRefresh',geometry:'dimensionDraftGeometry',
+  candidates:'dimensionDraftCandidates',
+  rulerA:'dimensionRulerA',rulerAMm:'dimensionRulerAMm',
+  rulerB:'dimensionRulerB',rulerBMm:'dimensionRulerBMm',
+  originX:'dimensionDraftOriginX',originY:'dimensionDraftOriginY',
+  yAxis:'dimensionDraftYAxis',
+  scaleChecked:'dimensionDraftScaleChecked',
+  geometryChecked:'dimensionDraftGeometryChecked',
+  alternativesChecked:'dimensionDraftAlternativesChecked',
+  commit:'dimensionDraftCommit',attach:'dimensionDraftAttach',
+  status:'dimensionDraftStatus',segment:'dimensionDraftSegment',
+  targetRadius:'dimensionDraftTargetRadius',side:'dimensionDraftSide',
+  m3Accept:'dimensionDraftM3Accept',
+  preflight:'dimensionDraftPreflight',apply:'dimensionDraftApply',
+  m3Status:'dimensionDraftM3Status'
+ };
+ dimensionDraftUi=attachReviewedDimensionDraftUi({
+  controls:Object.fromEntries(gateNames.map(key=>[key,$(gateMapping[key])])),
+  getDraft:()=>rasterReview?.draft??null,
+  getGeneration:()=>rasterReview?.generation??-1,
+  getReviewForDraft:rev=>nativeOcrUi?.getReviewForDraft(rev)??null,
+  onPrepared:({fields})=>{
+   // Deliberate transfer to existing math form: preserves its own strict
+   // per-field review, G1 branch/direction selection and ONE V5 session.
+   if($('kind').value!=='segment-circle'){
+    $('kind').value='segment-circle';
+    $('kind').dispatchEvent(new Event('change',{bubbles:true}));
+   }
+   if(!$('sourceReviewEnabled').checked){
+    $('sourceReviewEnabled').checked=true;
+    $('sourceReviewEnabled').dispatchEvent(new Event('change',{bubbles:true}));
+   }
+   for(const [name,value] of Object.entries(fields)){
+    const field=$('geo-'+name);
+    if(!field||!Number.isFinite(value))
+     throw new RangeError('missing confirmed model-mm field '+name);
+    field.value=String(value);
+    fieldReview?.edited(name);
+   }
+   $('circleSide').value=$('dimensionDraftSide').value;
+   for(const name of ['branch','direction','travel1','travel2'])$(name).value='';
+   recompute();
+  }
+ });
+ for(const id of ['problemPhoto','clearPhoto'])
+  $(id).addEventListener('change',()=>dimensionDraftUi?.reset());
+ $('clearPhoto').addEventListener('click',()=>dimensionDraftUi?.reset());
+ $('photoPreview').addEventListener('load',()=>dimensionDraftUi?.reset());
+ $('photoPreview').addEventListener('error',()=>dimensionDraftUi?.reset());
  localVector=attachLocalVectorReview({
   file:$('vectorSvg'),kind:$('kind'),first:$('vectorFirst'),
   second:$('vectorSecond'),mmPerPx:$('vectorMmPerPx'),
