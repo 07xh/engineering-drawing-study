@@ -63,7 +63,7 @@ function enhancePage(html,{page,preview=true}){
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
-  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.5-home-20261023">'));
+  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.6-home-20261023">'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){
