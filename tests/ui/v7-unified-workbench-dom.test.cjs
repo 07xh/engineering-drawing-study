@@ -8,6 +8,33 @@ const {homeHTML}=require('../../ui-next/home.cjs');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D selection',async()=>{
  const {document,window}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
+ // LinkeDOM is intentionally lightweight: emulate standard browser form setters
+ // so this tests the actual production event bindings, not its DOM omissions.
+ const nativeCreate=document.createElement.bind(document);
+ const adapt=el=>{
+  if(!el||el.nodeType!==1)return el;
+  for(const name of ['disabled','hidden','checked']){
+   Object.defineProperty(el,name,{configurable:true,
+    get(){return this.hasAttribute(name);},
+    set(v){if(v)this.setAttribute(name,'');else this.removeAttribute(name);}});
+  }
+  if(['INPUT','SELECT','OPTION'].includes(el.tagName)){
+   Object.defineProperty(el,'value',{configurable:true,
+    get(){
+     if(Object.hasOwn(this,'__v7Value'))return this.__v7Value;
+     if(this.tagName==='SELECT'){
+      const option=this.querySelector('option[selected]')||this.querySelector('option');
+      return option?option.value:'';
+     }
+     return this.getAttribute('value')??'';
+    },
+    set(v){this.__v7Value=String(v);}});
+  }
+  return el;
+ };
+ for(const el of document.querySelectorAll('*'))adapt(el);
+ Object.defineProperty(document,'createElement',{configurable:true,
+  value:tag=>adapt(nativeCreate(tag))});
  const original={document:global.document,window:global.window};
  global.document=document;global.window=window;
  global.requestAnimationFrame=cb=>setImmediate(()=>cb(performance.now()));
