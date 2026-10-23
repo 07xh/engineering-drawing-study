@@ -1,6 +1,6 @@
 'use strict';
 /**
- * ConstructionIntent 1.0.0 contract proposal — #372 / #341.
+ * ConstructionIntent 1.0.0 canonical 2D structural contract — merged #394; #372 governs mathematical evidence.
  * This is a STRUCTURAL validator, NOT a mathematical proof issuer.
  *
  * Only M3's re-computed, proof-checked specialist adapter may construct

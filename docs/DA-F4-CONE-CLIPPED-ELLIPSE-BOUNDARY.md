@@ -1,6 +1,6 @@
-# DraftAI 04: clipped conical ellipse / base cap chord proof (Draft)
+# DraftAI 04: clipped conical ellipse / base cap chord proof (merged #416)
 
-Stacked on PR #405 and governed by #372, #152 and #346. Reuses the original cone validator, shared M0 kernel and V/H/W projection. Does not create a second geometry core, versioned Intent or V5 player.
+Integrated on current main as #416 after #405, governed by #372, #152 and #346. Reuses the original cone validator, shared M0 kernel and V/H/W projection. Does not create a second geometry core, versioned Intent or V5 player.
 
 For a finite upright cone with radius R, height H and apex A, plane point Q and unit normal n, the full lateral conic has analytic polar radius rho(t)=d/(s-nx*cos(t)-ny*sin(t)), where d=(A-Q) dot n and s=nz*H/R. In the strict ellipse case |s|>m=hypot(nx,ny), the global radial interval is [|d|/(|s|+m),|d|/(|s|-m)].
 

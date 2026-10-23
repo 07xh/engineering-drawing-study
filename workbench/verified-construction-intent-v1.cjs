@@ -5,7 +5,7 @@
  *
  * Nothing accepts a caller-supplied "verified plan". Every use recomputes
  * the real R1 specialist solver and checks independent old-path parity.
- * Do not switch production to this until #394 and 00/09 signoff pass.
+ * The 02/03 public workbench integration is already merged in #396; subsequent changes follow #152's current-head CI and mathematical evidence requirements.
  */
 const {adaptDirectedFillet,adaptPointProjection}=
  require('./verified-teaching-plan.cjs');
