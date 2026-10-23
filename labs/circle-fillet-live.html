@@ -58,11 +58,11 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}[hidden]{display:none!important}.note{font-size:12px;color:#6a796a;line-height:1.8}
 @media(max-width:940px){.workspace{grid-template-columns:1fr}.panel.controls{order:-1}}
 @media(max-width:550px){.shell{padding:9px}.panel{padding:11px}svg{min-width:510px}}
-</style></head><body><main class="shell">
+</style><link rel="stylesheet" href="../workbench-blue.css"></head><body class="workbench-blue"><main class="shell">
 <a href="../index.html">← 返回首页</a><h1>平面圆弧连接 · 真实数学实验</h1>
-<p class="intro">支持完整圆、有限已知圆弧及两条有限线段连接；有限圆弧需设置起止角与弧向（沿数学坐标轴正向为 CCW），两个切点必须各自处于给定弧段内。参数改变即使用真实数学求解器重新计算；你需要明确选择有效圆心、旋向和原轮廓走向才能验证有向 G1。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
+<p class="workbench-intro">调整圆弧连接条件，查看辅助作图、切点与连接结果。</p>
 <div class="workspace">
-<section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
+<section class="panel"><h2>工程图纸 · 动态作图</h2>
 <div class="paper-toolbar" aria-label="V5 工程图纸交互">
 <label><input id="paperMono" type="checkbox"> 黑白制图</label>
 <label><input id="paperFocus" type="checkbox" checked> 自动聚焦绘制位置</label>
@@ -70,11 +70,21 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 </div>
 <p id="paperPicked" class="paper-picked" role="status" aria-live="polite">完整教学可点击已绘制的辅助线或圆弧，查看所属数学步骤。</p>
 <div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
+<div class="draftai-playdock" aria-label="绘图播放控制">
+<div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+<p class="note" style="flex:1 1 100%;margin:0">看辅助线、辅助圆和切点逐渐画出，请使用「逐笔播放」；「下一步」会立即显示该步骤的完整图形。系统开启减少动态效果时可使用静态步进。</p></div>
+<div class="playback-scrub" id="filletScrubBar">
+<label for="filletProgress">笔迹进度（拖动到任意一步的中间，支持触屏与方向键）</label>
+<input id="filletProgress" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="圆弧连接逐笔作图进度">
+<output id="filletProgressLabel" for="filletProgress" aria-live="off">0%</output>
+<button id="filletRestart" type="button">回到起点</button>
+</div>
+</div>
 <p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：学生绘制的辅助线或弧线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
 <p class="note">可用下一步查看：辅助圆轨迹 → 有效候选圆心 → 两个切点 → 已明确方向的连接弧。选择有限圆弧时，绿色图线只显示给定弧段，不绘制未经给出的整圆。未标为“有限”的起止角不参与限制；多解不会自动选第一种。</p>
 </section>
 <section class="panel controls">
-<h2>右侧 · 参数与步骤</h2>
+<h2>题目条件</h2>
 <label>题型<select id="modeSelect"><option value="circles">两圆圆弧连接</option><option value="segments">两条有限线段圆弧连接</option><option value="segment-circle">有限线段＋圆／有限圆弧连接</option></select></label>
 <div class="fields">
 <label class="circle-only">圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
@@ -127,16 +137,10 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
 <p class="note">“有限线段＋圆／有限已知圆弧”支持真实求解、V5 教学、数字化偏移线与同心辅助圆、学生自主圆心点选、两切点及有向圆弧判题。四项已支持的构造全部正确也不等于整道教材题完成。</p>
-<h2>数学教学模式</h2>
+<h2>作图方式</h2>
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
-<div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
-<p class="note" style="flex:1 1 100%;margin:0">看辅助线、辅助圆和切点逐渐画出，请使用「逐笔播放」；「下一步」会立即显示该步骤的完整图形。系统开启减少动态效果时可使用静态步进。</p></div>
-<div class="playback-scrub" id="filletScrubBar">
-<label for="filletProgress">笔迹进度（拖动到任意一步的中间，支持触屏与方向键）</label>
-<input id="filletProgress" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="圆弧连接逐笔作图进度">
-<output id="filletProgressLabel" for="filletProgress" aria-live="off">0%</output>
-<button id="filletRestart" type="button">回到起点</button>
-</div>
+
+
 <div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
 <div id="drawControls" hidden>
 <label>绘图工具<select id="drawTool"><option value="line">自由画辅助线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option><option value="snap">点选候选圆心（数学吸附）</option><option value="tangent">点选切点（选已知对象 1／2）</option></select></label>

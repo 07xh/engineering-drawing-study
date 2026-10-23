@@ -22,7 +22,7 @@ const uniqueIds=source=>{
 };
 for(const page of pages){
  const html=read(page),dir=path.dirname(page);
- assert(html.includes('class="ui-refresh"'),'UI class not enabled '+page);
+ assert(/<body[^>]*class="[^"]*\bui-refresh\b[^"]*"/.test(html),'UI class not enabled '+page);
  assert(html.includes('site-ui.css'),'UI stylesheet missing '+page);
  const expected=page==='index.html'?'href="site-ui.css"':'href="../site-ui.css"';
  assert(html.includes(expected),'UI stylesheet relative route invalid '+page);

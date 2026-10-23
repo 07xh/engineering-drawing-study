@@ -7,12 +7,12 @@ const guide=fs.readFileSync('public-use.html','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 const files=['labs/point-coach.html','labs/dof-lab-v2.html','labs/free-modeler.html','labs/tangent-constraint.html','labs/paper-geometry.html','labs/composite-geometry.html'];
 assert(home.includes('DraftAI'),'public product name missing');
-assert(home.includes('现有数学与作图基础组件')&&home.includes('产品主流程：识图 → 求解 → 自动作图'),'V3.1 AI geometry solving landing sections missing');
+assert(home.includes('选择解题工具')&&home.includes('工程制图解题 · 动态作图'),'V6 concise solver landing missing');
 for(const f of files){
  assert(fs.existsSync(f),'public learning page missing: '+f);
  assert(home.includes('href="'+f+'"'),'public learning entry missing: '+f);
 }
-assert(home.includes('AI 识图尚未开放'),'AI capability must be clearly marked as not launched');
+assert(home.includes('图片自动识别仍在开发中')&&home.includes('当前不支持上传任意题图后自动完成解答'),'AI capability must be clearly marked as not launched');
 assert(!/<input\b[^>]*type=["']file["']/i.test(home),'no AI upload UI should appear before secure backend');
 assert(!/<form\b/i.test(home),'public homepage must not pretend to accept private submissions');
 assert(home.includes('href="public-use.html"'),'public use disclosure missing');
