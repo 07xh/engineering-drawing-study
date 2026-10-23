@@ -100,13 +100,13 @@ test('V6.5 homepage puts accurate arc construction next to entry actions',()=>{
  assert.ok(svg,'one-sheet preview missing');
  assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
  const labels=svg.textContent;
- for(const label of ['R40','T₁','T₂','平面几何'])
-  assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
+ for(const label of ['R40','T₁','T₂','O'])
+  assert.ok(labels.includes(label),'required fillet construction label missing: '+label);
  assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
  for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
   assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
  assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
- assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.5-home-20261023"]'),'verifiable homepage release marker missing');
+ assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.6-home-20261023"]'),'verifiable homepage release marker missing');
  assert.match(dashboard.textContent,/非上传题目答案/,'hero must identify geometry drawing as an example');
  assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
  assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
@@ -172,6 +172,37 @@ test('homepage R40 fillet obeys exact radius and two orthogonal tangencies',()=>
  assert.ok(document.querySelector('.next-home-example[href="labs/circle-fillet-live.html"]'));
  assert.ok(!document.querySelector('[data-projection-example="right-circular-cone"]'),'old repeated cone must be replaced');
 });
+
+test('V6.6 enlarged homepage SVG keeps the verified R40 construction fully visible',()=>{
+ const {after:document}=enhance('index.html');
+ const hero=document.querySelector('.next-home-v64');
+ const sheet=hero.querySelector('[data-construction-example="right-angle-fillet"]');
+ assert.ok(sheet,'hero drawing remains linked to actual fillet example');
+ const svg=sheet.querySelector('svg');
+ const [minX,minY,width,height]=svg.getAttribute('viewBox').trim().split(' ').filter(Boolean).map(Number);
+ assert.ok(width>0&&height>0);
+ assert.ok(width<=550&&height<=400,'SVG viewBox must tightly frame construction');
+ assert.ok(minX<=290 && minY<=123,'known horizontal/vertical segments remain visible');
+ const arc=svg.querySelector('[data-fillet-arc="true"]');
+ assert.ok(arc,'no artistic replacement of the verified arc');
+ for(const [x,y] of [[512,440],[672,280],[512,280],[672,123],[290,440],[465,474]]){
+  assert.ok(x>=minX&&x<=minX+width&&y>=minY&&y<=minY+height,
+   'key geometry or dimension label must remain inside clipped sheet');
+ }
+ assert.ok(hero.querySelectorAll('.next-home-strengths svg').length===3,'three feature icons replace verbose space');
+ assert.ok(document.querySelector('.next-home-workflow #recent'),'keep genuine recent-task card');
+ assert.ok(document.querySelector('.next-home-workflow #knowledge'),'keep honest my-problems card');
+ assert.equal(hero.querySelectorAll('.next-home-intro-sheet [data-next-illustration]').length,1,
+  'exactly one paper view');
+ const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
+ assert.ok(css.includes('V6.6 | Homepage paper-first hero'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,.81fr) minmax(0,1.19fr)'));
+ assert.ok(css.includes('aspect-ratio:525 / 387'));
+ assert.ok(css.includes('align-items:start'));
+ assert.ok(css.includes('@media(min-width:641px) and (max-width:790px)'));
+
+});
+
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
