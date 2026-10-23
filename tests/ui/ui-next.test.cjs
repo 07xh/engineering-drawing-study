@@ -100,8 +100,8 @@ test('V6.5 homepage puts accurate arc construction next to entry actions',()=>{
  assert.ok(svg,'one-sheet preview missing');
  assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
  const labels=svg.textContent;
- for(const label of ['R40','T₁','T₂','平面几何'])
-  assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
+ for(const label of ['R40','T₁','T₂','O'])
+  assert.ok(labels.includes(label),'required fillet construction label missing: '+label);
  assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
  for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
   assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
