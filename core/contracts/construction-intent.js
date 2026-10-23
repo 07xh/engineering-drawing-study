@@ -81,7 +81,11 @@ function validateConstructionIntent(intent){
  if(!Array.isArray(intent.operations)||intent.operations.length<1||
     intent.operations.length>40||intent.operations.some(x=>!validAction(x)))
   errors.push('invalid geometry operations');
+ // Do not inspect operation.id until all items are validated. Invalid
+ // untrusted operations (including null) must return a failed validation
+ // report, never throw while checking the output-entity parity.
  if(Array.isArray(intent.operations)&&isIdList(intent.outputEntityIds)&&
+    intent.operations.every(validAction)&&
     JSON.stringify(intent.outputEntityIds)!==
       JSON.stringify(intent.operations.map(x=>x.id)))
   errors.push('output IDs must match semantic actions exactly');
