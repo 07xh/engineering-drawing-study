@@ -27,6 +27,8 @@ function addTools(document,main,layout,title){
  tools.querySelector('[data-next-zoom=out]').disabled=true;
  tools.append(element(document,'output',{'data-next-zoom-label':'','aria-live':'polite'},'100%'));
  tools.append(element(document,'button',{type:'button','data-next-focus':'','aria-pressed':'false'},'专注画布'));
+ for(const [panel,label] of [['conditions','修改条件'],['steps','作图步骤']])tools.append(element(document,'button',{type:'button','data-next-open-panel':panel,'aria-expanded':'false'},label));
+ tools.append(element(document,'button',{type:'button','data-next-close-panel':'','aria-label':'收起侧边面板'},'收起面板'));
  header.append(tools);
  main.insertBefore(header,layout);
 }
@@ -40,7 +42,7 @@ function scopeDetails(document,main){
 function enhanceAuto(document,main){
  const layout=main.querySelector('.layout');
  const [conditions,canvas]=[...layout.children];
- layout.className='next-workspace';canvas.classList.add('next-canvas');
+ layout.className='next-workspace';layout.dataset.nextSide='none';canvas.classList.add('next-canvas');
  conditions.classList.add('next-condition-content');
  for(const [id,label] of [['problemPhoto','原图参照与候选检测'],['rasterDraftPanel','照片图元校正与毫米比例'],['vectorSvg','SVG 图元与尺寸确认']]){
   const source=document.getElementById(id);if(!source)continue;
@@ -79,7 +81,7 @@ module.exports={enhanceAuto,element,createContext,addTools,scopeDetails};
 function enhanceTeaching(document,main,{projection}){
  const layout=main.querySelector(projection?'.frame':'.workspace');
  const [canvas,conditions]=[...layout.children];
- layout.className='next-workspace';canvas.classList.add('next-canvas');
+ layout.className='next-workspace';layout.dataset.nextSide='none';canvas.classList.add('next-canvas');
  const conditionPanel=element(document,'section');conditions.replaceWith(conditionPanel);conditionPanel.append(conditions);
  const steps=element(document,'section');
  const headings=[...conditions.querySelectorAll(':scope > h2')];
@@ -99,3 +101,59 @@ function enhanceTeaching(document,main,{projection}){
  scopeDetails(document,main);
 }
 module.exports.enhanceTeaching=enhanceTeaching;
+
+/* Specialized drawing pages use exactly the same layout and preserve the original
+ * app-owned SVG, step navigation and playback nodes. No second solver/player. */
+function enhanceDrawingLab(document,main,{page}){
+ const polygon=page==='labs/polygon-live.html';
+ const cone=page==='labs/cone-cut-live.html';
+ const layout=main.querySelector(polygon?'.grid':'.layout');
+ if(!layout)throw new Error('Missing drawing layout '+page);
+ const [conditions,canvas]=[...layout.children];
+ if(!conditions||!canvas)throw new Error('Missing condition/canvas '+page);
+ layout.className='next-workspace next-specialized';
+ layout.dataset.nextSide='none';
+ canvas.classList.add('next-canvas');
+ conditions.classList.add('next-condition-content');
+ const conditionPanel=element(document,'section');
+ conditions.replaceWith(conditionPanel);conditionPanel.append(conditions);
+ const steps=element(document,'section');
+ if(cone){
+  const rail=canvas.querySelector('.workbench-step-rail');
+  if(!rail)throw new Error('Cone step rail missing');
+  steps.append(rail);
+ } else if(polygon){
+  steps.append(element(document,'h2',{},'作图步骤'));
+  for(const id of ['polygonStepLabel','polygonPicked','polygonStepList']){
+   const node=document.getElementById(id);if(node)steps.append(node);
+  }
+ } else {
+  const box=canvas.querySelector('.stepbox');
+  if(box)steps.append(box);
+  else {
+   const nav=document.getElementById('steps');
+   if(!nav)throw new Error('Drawing steps missing '+page);
+   const heading=nav.previousElementSibling;
+   if(heading?.tagName==='H2')steps.append(heading);
+   steps.append(nav);
+  }
+  const detail=document.getElementById('stepDetail');if(detail)steps.append(detail);
+ }
+ const playback=element(document,'section',{class:'next-playback','aria-label':'动态作图播放控制'});
+ if(polygon){
+  const controls=canvas.querySelector('.controls');
+  const seek=document.getElementById('polygonSeek');
+  if(!controls||!seek)throw new Error('Polygon controls missing');
+  playback.append(controls,seek);
+ }else{
+  const playbar=canvas.querySelector('.playbar');
+  const tools=canvas.querySelector('.tools');
+  if(!playbar||!tools)throw new Error('Drawing playback missing '+page);
+  playback.append(playbar,tools);
+ }
+ const context=createContext(document,[['conditions','题目条件',conditionPanel],['steps','作图步骤',steps]]);
+ layout.append(canvas,context,playback);
+ addTools(document,main,layout,cone?'圆锥斜截 · 同纸三视图':polygon?'正多边形 · 动态作图':page.includes('prism')?'棱柱截切 · 同纸三视图':'圆柱截切 · 同纸三视图');
+ scopeDetails(document,main);
+}
+module.exports.enhanceDrawingLab=enhanceDrawingLab;

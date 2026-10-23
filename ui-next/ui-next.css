@@ -440,3 +440,211 @@ body.ui-next .next-section-heading>span {font-size:12px;color:var(--next-muted)}
  body.ui-next .next-home-quick-links a {grid-template-columns:27px minmax(0,1fr);font-size:12px}
  body.ui-next .next-home-quick-links a>span:last-child {display:none}
 }
+
+
+/* V6.2: final drawing-first layout. Geometry and mathematical SVG stay untouched.
+   Default fit preserves each SVG's intrinsic viewBox aspect ratio; zoom is optional.
+   Closed panels do NOT reserve unused columns. */
+@media(min-width:1101px) {
+ body.ui-next {padding-left:98px}
+ body.ui-next .next-topbar {margin-left:-98px;width:calc(100% + 98px);height:58px}
+ body.ui-next .next-sidebar {
+   width:98px;top:58px;padding:12px 7px;gap:13px;
+ }
+ body.ui-next .next-sidebar nav {gap:6px}
+ body.ui-next .next-sidebar nav a {
+   min-height:56px;padding:8px 3px;
+   font-size:12px;font-weight:600;line-height:1.35;
+   text-align:center;justify-content:center;overflow-wrap:anywhere;
+ }
+ body.ui-next .next-start {
+   color:#fff!important;padding:8px 4px;text-align:center;
+   font-size:12px;min-height:48px;
+ }
+}
+body.ui-next .next-start,
+body.ui-next .next-sidebar a.next-start,
+body.ui-next .next-home-edit,
+body.ui-next a.next-primary-link {
+  color:#fff!important;
+  text-shadow:none!important;
+}
+body.ui-next .next-main {
+ max-width:1900px!important;
+ padding:10px 14px 18px!important;
+}
+body.ui-next .next-workspace-title {
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;margin:0 0 8px;
+}
+body.ui-next .next-workspace-caption {
+ font-size:12px;line-height:1.35;
+}
+body.ui-next .next-canvas-tools {
+ display:flex;flex-wrap:wrap;gap:5px;align-items:center;
+}
+body.ui-next .next-canvas-tools button {
+ min-width:44px;min-height:44px;
+ padding:7px 10px;font-size:12px;
+ background:#fff;color:#315278;
+ border:1px solid #d6e3f4;border-radius:8px;
+}
+body.ui-next .next-canvas-tools [data-next-open-panel][aria-expanded=true] {
+ color:var(--next-blue);background:var(--next-tint);border-color:#93c1ff;
+}
+body.ui-next .next-canvas-tools [data-next-close-panel] {
+ background:#f7faff;
+}
+body.ui-next .next-workspace {
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ grid-template-rows:minmax(0,auto) auto;
+ gap:7px 10px;align-items:start;
+ width:100%;min-width:0;
+}
+body.ui-next .next-workspace[data-next-side]:not([data-next-side="none"]) {
+ grid-template-columns:minmax(0,1fr) clamp(245px,23vw,318px);
+}
+body.ui-next .next-workspace>.next-canvas {
+ grid-column:1;grid-row:1;
+ padding:10px;overflow:hidden;
+ width:100%;min-width:0;
+ border:1px solid var(--next-line);
+}
+body.ui-next .next-workspace>.next-context {
+ grid-column:2;grid-row:1 / span 2;
+ position:sticky;top:70px;
+ max-height:calc(100dvh - 90px);
+ overflow:auto;min-width:0;
+ border:1px solid var(--next-line);
+}
+body.ui-next .next-workspace[data-next-side="none"]>.next-context {
+ display:none!important;
+}
+body.ui-next .next-workspace>.next-playback {
+ grid-column:1;grid-row:2;
+ width:100%;min-width:0;
+ margin:0;
+ padding:7px 10px;
+ display:flex;gap:8px;
+}
+body.ui-next .next-canvas>h2 {font-size:16px;margin:0 0 6px}
+body.ui-next .next-context .next-context-panel {padding:11px}
+body.ui-next .next-context :is(h2,h3) {font-size:15px;margin-bottom:7px}
+body.ui-next .next-context .next-source-group {margin-bottom:7px}
+body.ui-next .next-context .next-hint {line-height:1.5}
+body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+ width:100%;height:auto;
+ max-height:min(73dvh,780px);
+ overflow:auto;overscroll-behavior:contain;
+ margin:0;background:#fff;border-radius:6px;
+}
+body.ui-next .next-workspace .next-canvas :is(#paper,#paperSvg,#diagram,#coneSvg,#polygonSvg) {
+ display:block;
+ width:100%;height:auto;
+ max-width:100%;
+ max-height:min(74dvh,780px);
+ object-fit:contain;
+}
+body.ui-next .next-workspace .next-canvas :is(#paper,#paperSvg,#diagram) {
+ max-height:none;
+}
+/* Honor existing CSS viewBox zoom without distorting the drawn coordinate system. */
+body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap)>svg {
+ width:calc(100% * var(--next-zoom,1))!important;
+ height:auto!important;
+ max-width:none!important;max-height:none;
+}
+body.ui-next .next-specialized .next-canvas #board {
+ width:100%;max-width:100%;
+ min-height:clamp(340px,60dvh,720px);
+ overflow:auto;
+}
+body.ui-next .next-specialized #coneSvg,
+body.ui-next .next-specialized #polygonSvg {
+ width:100%;max-width:100%;
+ height:auto;max-height:min(73dvh,780px);
+ object-fit:contain;
+}
+body.ui-next .next-specialized .next-context .workbench-step-rail {
+ width:100%;position:static;max-height:none;overflow:visible;
+ display:block;
+}
+body.ui-next .next-specialized .next-context :is(#coneSteps,#polygonStepList,#steps) {
+ max-height:48dvh;overflow-y:auto;overscroll-behavior:contain;
+}
+body.ui-next .next-specialized .next-playback :is(.playbar,.controls) {
+ display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+ flex:1 1 390px;margin:0;padding:0;
+ border:0;background:transparent;
+}
+body.ui-next .next-specialized .next-playback :is(.playbar,.controls) button {
+ min-height:44px;
+}
+body.ui-next .next-specialized .next-playback :is(.tools) {
+ display:flex;flex-wrap:wrap;align-items:center;
+ gap:7px;max-width:100%;margin:0;
+}
+body.ui-next .next-specialized .next-playback :is(.tools) :is(label,button) {
+ min-height:44px;
+}
+body.ui-next .next-specialized .next-playback :is(#coneSeek,#seek,#polygonSeek) {
+ flex:1 1 170px;min-width:90px;
+ accent-color:var(--next-blue);
+}
+body.ui-next .next-stages {
+ padding:4px;margin:5px 0 6px;gap:3px;
+}
+body.ui-next .next-stages button {
+ font-size:12px;min-height:34px;padding:4px 6px;
+}
+body.ui-next .next-status-area {margin:0 0 6px}
+body.ui-next .next-status-area .status {padding:6px 10px}
+body.ui-next .next-workspace .next-playback button {
+ min-height:44px;
+}
+body.ui-next .next-playback :is(.fields,.seek) {min-width:0}
+body.ui-next .next-workspace .next-playback :is(.actions,.controls) {
+ flex-wrap:wrap;align-items:center;gap:5px;
+}
+body.ui-next.next-focus-canvas .next-workspace {grid-template-columns:minmax(0,1fr)!important}
+body.ui-next.next-focus-canvas .next-context {display:none!important}
+/* Tablet/mobile: don't cover the drawing when a Next-step event opens steps. */
+@media(max-width:850px) {
+ body.ui-next .next-workspace,
+ body.ui-next .next-workspace[data-next-side]:not([data-next-side="none"]) {
+   grid-template-columns:minmax(0,1fr)!important;
+ }
+ body.ui-next .next-workspace>.next-canvas {
+   grid-column:1;grid-row:1;min-width:0;padding:7px;
+ }
+ body.ui-next .next-workspace>.next-playback {
+   grid-column:1;grid-row:2;position:sticky;
+   bottom:3px;z-index:25;
+   box-shadow:0 5px 22px rgba(12,66,125,.12);
+ }
+ body.ui-next .next-workspace>.next-context {
+   grid-column:1;grid-row:3;position:static;
+   max-height:48dvh;overflow:auto;
+ }
+ body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+   max-height:61dvh;
+ }
+ body.ui-next .next-specialized #coneSvg,
+ body.ui-next .next-specialized #polygonSvg {max-height:61dvh}
+ body.ui-next .next-canvas-tools {width:100%}
+ body.ui-next .next-stages {overflow-x:auto;flex-wrap:nowrap}
+ body.ui-next .next-stages button {flex:0 0 auto;white-space:nowrap}
+}
+@media(max-width:520px) {
+ body.ui-next .next-main {padding:7px 8px 14px!important}
+ body.ui-next .next-workspace .next-canvas :is(#paperWrap,#projectionViewport,#drawingWrap) {
+   max-height:57dvh;
+ }
+ body.ui-next .next-specialized #coneSvg,
+ body.ui-next .next-specialized #polygonSvg {max-height:57dvh}
+ body.ui-next .next-workspace .next-playback {padding:6px}
+ body.ui-next .next-canvas-tools button {padding:6px 8px}
+ body.ui-next .next-workspace-caption {display:none}
+ body.ui-next .next-specialized .next-playback .tools {gap:4px}
+}
