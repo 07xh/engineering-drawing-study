@@ -12,6 +12,7 @@ const files = [
   'public-use.html',
   'site-ui.css',
   'workbench-blue.css',
+  'project/workbench-ui.css',
   'favicon.svg',
   'robots.txt',
   'labs/point-coach.html',
@@ -187,6 +188,14 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/cone-cut-live-entry.cjs')],
  outfile:path.join(out,'labs/cone-cut-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Production V7 homepage: one local project session, existing M3/Geometry/V5. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'project/unified-workbench-entry.cjs')],
+ outfile:path.join(out,'project/unified-workbench-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });

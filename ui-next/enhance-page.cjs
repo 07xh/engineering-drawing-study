@@ -59,11 +59,15 @@ function enhancePage(html,{page,preview=true}){
  if(page==='public-use.html')main.classList.add('next-disclosure');
  document.body.prepend(fragment(document,`<a class="next-skip" href="#${main.id}">跳到主要内容</a>
  <header class="next-topbar"><a class="next-brand" href="${root}index.html"><span class="next-brand-emblem" aria-hidden="true">D</span> DraftAI<small>工程制图自动解题</small></a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<details class="next-menu"><summary>导航菜单</summary><nav aria-label="移动端导航">${links}</nav></details></header>
- <aside class="next-sidebar"><a class="next-start" href="${root}labs/auto-fillet-live.html" aria-label="开始解题" title="开始解题" data-ui-tip="开始解题"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16 M4 12h16"/></svg><span class="next-nav-label">开始解题</span></a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
+ <aside class="next-sidebar"><a class="next-start" href="${root}index.html#project-workbench" aria-label="开始解题" title="开始解题" data-ui-tip="开始解题"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16 M4 12h16"/></svg><span class="next-nav-label">开始解题</span></a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
-  if(page==='index.html')document.head.append(fragment(document,'<meta name="draftai-ui-release" content="v6.6-home-20261023">'));
+  if(page==='index.html')document.head.append(fragment(document,
+   '<meta name="draftai-ui-release" content="v6.6-home-20261023">'+
+   '<meta name="draftai-project-workbench" content="v7-real-20261024">'+
+   '<link rel="stylesheet" href="project/workbench-ui.css">'+
+   '<script defer src="project/unified-workbench-bundle.js"></script>'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){
