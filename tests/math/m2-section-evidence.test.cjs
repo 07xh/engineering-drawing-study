@@ -1,8 +1,9 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {sectionEvidence,solveVerifiedSectionEvidence:solve}=
- require('../../core/results/section-evidence.cjs');
+const {sectionEvidence}=require('../../core/results/section-evidence.cjs');
+const {solveVerifiedSectionEvidence:solve}=
+ require('../../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../../core/contracts/solve-result.js');
 const {prismPlaneSection}=require('../../engines/spatial/sections/rectangular-prism-plane.cjs');
 const {pyramidPlaneSection}=require('../../engines/spatial/sections/rectangular-pyramid-plane.cjs');
