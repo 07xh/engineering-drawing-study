@@ -7,6 +7,8 @@
 const {coneSpatialV5Preview}=
  require('../workbench/cone-spatial-v5-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {coneLinkedSpatialScene}=
+ require('../workbench/cone-linked-spatial-view.cjs');
 (function(){
  const $=id=>document.getElementById(id);
  const SVG='http://www.w3.org/2000/svg';
@@ -16,7 +18,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const defaults={coneRadius:'5',coneHeight:'10',conePx:'0',conePy:'0',
   conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'full-ellipse',
   coneSamples:'64',coneKept:''};
- let revision=0,plan=null,player=null,raf=null,selected=null;
+ let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null;
  const now=()=>performance.now();
  const create=(tag,attrs={})=>{
   const el=document.createElementNS(SVG,tag);
@@ -39,6 +41,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  function clear(){
   $('coneDraw').replaceChildren();
+  $('cone3dDraw').replaceChildren();
+  $('cone3dStatus').textContent='尚未确认空间几何条件。';
+  selectedSpatial=null;
   $('coneSteps').replaceChildren();
   $('coneSvg').setAttribute('viewBox','0 0 960 680');
   $('coneSeek').value='0';
@@ -129,6 +134,91 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     minY:g.center.y-6,maxY:g.center.y+6};
   return null;
  }
+
+ function paintSpatial(frame){
+  if(!plan||!player||!player.canRender(revision)||!plan.stillCurrent(revision))return;
+  // A display camera consumes ALREADY verified M3 xyz. It cannot solve,
+  // modify the V/H/W coordinate system, certify visibility or own playback.
+  const scene=coneLinkedSpatialScene(plan.spatialIntent,{
+   azimuthDeg:Number($('coneOrbit').value),
+   elevationDeg:Number($('coneTilt').value),width:360,height:275
+  });
+  const group=$('cone3dDraw');group.replaceChildren();
+  const pts=p=>p.map(q=>q.x.toFixed(3)+','+q.y.toFixed(3)).join(' ');
+  const shape=(tag,attrs,parent=group)=>{
+   const el=create(tag,attrs);parent.append(el);return el;
+  };
+  shape('polygon',{points:pts(scene.cuttingPlanePatch),
+   fill:'#e9b453','fill-opacity':'.18',stroke:'#b17a23',
+   'stroke-width':'1.2','stroke-dasharray':'5 4'});
+  for(const rail of scene.rails){
+   const [a,b]=rail;
+   shape('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+    stroke:'#90a5bc','stroke-width':'1.25','stroke-dasharray':'3 4'});
+  }
+  shape('polyline',{points:pts(scene.rim),fill:'none',
+   stroke:'#54789e','stroke-width':'1.8'});
+  shape('circle',{cx:scene.apex.x,cy:scene.apex.y,r:3,fill:'#54789e'});
+  for(const segment of scene.segments){
+   const fraction=frame.actionFractions[segment.sourceActionId]??0;
+   if(fraction<=0)continue;
+   const from=segment.from,to={
+    x:from.x+(segment.to.x-from.x)*fraction,
+    y:from.y+(segment.to.y-from.y)*fraction
+   };
+   const active=selectedSpatial===segment.index;
+   shape('line',{x1:from.x,y1:from.y,x2:to.x,y2:to.y,
+    stroke:active?'#176eaa':'#20876b',
+    'stroke-width':active?3.8:2.6,'stroke-linecap':'round',
+    'data-cone-3d-segment':segment.index});
+  }
+  const chordProgress=frame.actionFractions.cone_V_cap_chord??0;
+  if(scene.capChord&&chordProgress>0){
+   const f=scene.capChord.from,t=scene.capChord.to;
+   shape('line',{x1:f.x,y1:f.y,
+    x2:f.x+(t.x-f.x)*chordProgress,
+    y2:f.y+(t.y-f.y)*chordProgress,
+    stroke:'#20876b','stroke-width':'2.6'});
+  }
+  // ONLY the four mathematically proven 3D generator intersections are
+  // interactive. Each jumps to its EXISTING canonical V guide step.
+  for(const anchor of scene.anchors){
+   const index=plan.steps.findIndex(s=>s.sourceStepId===anchor.sourceStepId);
+   if(index<0)throw new TypeError('spatial anchor has no canonical V5 step');
+   const linked=plan.steps[index].actions.at(-1);
+   if(linked.kind!=='point')throw new TypeError('nonpoint spatial guide');
+   const drawn=(frame.actionFractions[linked.id]??0)>0;
+   const active=selectedSpatial===anchor.index;
+   const mark=shape('circle',{cx:anchor.point.screen.x,
+    cy:anchor.point.screen.y,r:active?6:4.6,
+    fill:active?'#176eaa':drawn?'#20876b':'white',
+    stroke:active?'#176eaa':'#317a75','stroke-width':'2',
+    'data-cone-3d-point':anchor.index,tabindex:'0',role:'button',
+    'aria-label':'空间交点 P'+(anchor.guideOrdinal+1)+'，定位二维 V5 作图步骤'});
+   const pick=()=>{
+    if(!plan||!player||!plan.stillCurrent(revision))return;
+    stop();$('coneGuides').checked=true;
+    player.seekStep(index+1,now());
+    selected={id:linked.id,revision,step:index};
+    selectedSpatial=anchor.index;paint();
+    $('conePicked').textContent='空间交点 P'+(anchor.guideOrdinal+1)+
+     ' 已定位到真实二维 V 投影母线步骤；可切换 H/W 视图继续检查。';
+   };
+   mark.addEventListener('click',pick);
+   mark.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
+   });
+  }
+  if(selectedSpatial!==null&&scene.sourcePoints[selectedSpatial]){
+   const p=scene.sourcePoints[selectedSpatial].world;
+   $('cone3dStatus').textContent='选中 M3 空间点（mm）：('+[
+    p.x,p.y,p.z].map(n=>n.toFixed(3)).join(', ')+
+    ') · 二维投影与三维视角使用同一数学来源。';
+  }else $('cone3dStatus').textContent=
+   '同一 V5 进度 '+Math.round(frame.ratio*100)+
+   '% · 旋转仅改变观察角度，不修改已确认的几何解。';
+ }
+
  function paint(frame=player?.snapshot()){
   if(!plan||!player||!player.canRender(revision)||
      !plan.stillCurrent(revision)||!frame)return;
@@ -161,6 +251,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     Motion.updateSvg(el,action,fraction);
     const pick=()=>{
      selected={id:action.id,revision,step:index};
+     const guide=step.sourceStepId?.match(/^cone_generator_(\d+)_[VHW]$/);
+     const lateral=action.id.match(/^cone_[VHW]_lateral_(\d+)$/);
+     selectedSpatial=guide?
+      Math.floor(Number(guide[1])*(plan.spatialIntent.operation.samplePoints.length-1)/4):
+      lateral?Number(lateral[1]):null;
      player.pause(now());stop();
      const proof=action.visibilityProof||'辅助线位置由已证数学步骤计算';
      $('conePicked').textContent='第 '+(index+1)+' 步：'+
@@ -194,6 +289,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    else button.removeAttribute('aria-current');
   }
   $('conePlay').textContent=frame.playing?'Ⅱ 暂停':'▶ 播放';
+  paintSpatial(frame);
  }
  function makeSteps(){
   const nav=$('coneSteps');nav.replaceChildren();
@@ -256,6 +352,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    player.setSpeed(Number($('coneSpeed').value),now());paint();
    if(wasPlaying&&raf===null)raf=requestAnimationFrame(tick);
   });
+  for(const id of ['coneOrbit','coneTilt'])
+   $(id).addEventListener('input',()=>paint());
   for(const id of ['coneGuides','coneMono','coneFocus'])
    $(id).addEventListener('change',()=>paint());
   $('coneFit').addEventListener('click',()=>{
