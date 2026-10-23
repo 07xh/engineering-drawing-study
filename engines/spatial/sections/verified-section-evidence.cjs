@@ -12,6 +12,8 @@ const {pyramidPlaneSection}=require('./rectangular-pyramid-plane.cjs');
 const {intersectCylinderSidePlane}=require('./axis-cylinder-plane.cjs');
 const {planeSphereSurfaceSection}=require('./sphere-plane.cjs');
 const M0=require('../../../core/numeric/euclidean-kernel.cjs');
+const {auditPolygonPlaneResidual}=
+ require('./independent-polygon-plane-audit.cjs');
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
@@ -69,7 +71,7 @@ function packet(result,solverId,scope,internallyVerified){
  * with verified:true) cannot cross the proof boundary. Positive flags fail
  * closed, rather than being "laundered" through a SolveResult-like wrapper.
  */
-function assertPolygonProof(result){
+function assertPolygonProof(result,plane,solid,kind){
  if(result.perimeterVerified!==true||result.proof?.polygonDegreeTwo!==true||
     !Array.isArray(result.vertices)||!Array.isArray(result.perimeter)||
     result.vertices.length<3||result.vertices.length>6||
@@ -84,6 +86,15 @@ function assertPolygonProof(result){
      ['x','y','z'].some(k=>edge.from[k]!==vertex.point[k]||edge.to[k]!==next.point[k]))
    throw new TypeError('polygon section source-edge coordinates not connected');
  }
+ const extent=kind==='rectangular-prism'
+  ?Math.max(...['x','y','z'].map(k=>solid.max[k]-solid.min[k]))
+  :Math.max(solid.base.maxX-solid.base.minX,
+   solid.base.maxY-solid.base.minY,solid.apex.z-solid.base.z);
+ const audit=auditPolygonPlaneResidual(vertices,plane,{
+  modelExtentMm:extent,claimedMaxResidualMm:result.maxResidualMm
+ });
+ if(!audit.ok)
+  throw new TypeError('polygon section independently fails original plane residual');
 }
 function assertCylinderProof(result){
  if(result.status==='ready'){
@@ -194,7 +205,7 @@ function solveVerifiedSectionEvidence(input){
   return packet(result,solverId,scope,false);
  if(kind==='cylinder-lateral')assertCylinderProof(result);
  else if(kind==='sphere-surface')assertSphereProof(result,solid,plane);
- else assertPolygonProof(result);
+ else assertPolygonProof(result,plane,solid,kind);
  return packet(result,solverId,scope,true);
 }
 module.exports={solveVerifiedSectionEvidence};
