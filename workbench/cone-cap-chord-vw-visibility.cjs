@@ -1,11 +1,5 @@
 'use strict';
-/**
- * Strict interior bottom-cap chord ray test for V(-Y) and W(+X).
- * For points on z=baseZ the cone has zero lateral radius, hence an
- * orthographic horizontal ray at that z cannot meet the cone except
- * on the base rim. This proves chord interior is NOT occluded by the
- * finite cone for horizontal observer rays. Endpoints excluded.
- */
+/** Conservative V/W visibility: bottom disk ray overlap prevents a lateral-only proof. */
 const {coneCapChordTopOcclusion}=require('./cone-cap-chord-top-occlusion.cjs');
 function coneCapChordVWVisibility(cone,plane,options={}){
  const base=coneCapChordTopOcclusion(cone,plane,options);
@@ -25,13 +19,13 @@ function coneCapChordVWVisibility(cone,plane,options={}){
  const views={...base.views};
  for(const view of ['V','W']){
   views[view]=base.views[view].map(s=>s.kind==='cap-chord'?{
-   ...s,visibility:'visible-interior',
-   visibilityProof:'horizontal-ray-at-base-height-has-no-lateral-cone-intersection',
+   ...s,visibility:'undetermined',
+   visibilityProof:'bottom-disk-ray-overlap-requires-solid-occlusion-proof',
    endpointsVisibility:'undetermined'}:s);
  }
  return {...base,views,
-  capChordHorizontalInteriorVisibility:'visible',
-  capChordVWInteriorVisibilityVerified:true,
+  capChordHorizontalInteriorVisibility:'undetermined',
+  capChordVWInteriorVisibilityVerified:false,
   capChordVisibilityVerified:false,
   completeSolidVisibilityVerified:false,
   fullContourPresentationVerified:false};
