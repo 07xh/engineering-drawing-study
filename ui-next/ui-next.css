@@ -859,3 +859,32 @@ body.ui-next .next-canvas :is(svg,#coneSvg,#polygonSvg) {
  body.ui-next .next-sidebar :is(.next-rail-link,.next-start) svg {display:none}
  body.ui-next .next-workspace .next-canvas {padding:7px!important}
 }
+
+
+/* Contextual compact controls: no large labels next to the paper. */
+body.ui-next .next-canvas-tools {gap:4px}
+body.ui-next .next-canvas-tools [data-ui-tip] {
+ display:inline-flex;align-items:center;justify-content:center;
+ width:40px;min-width:40px;height:40px;min-height:40px;
+ padding:6px!important;
+ position:relative;
+}
+body.ui-next .next-canvas-tools [data-ui-tip] svg {
+ width:19px;height:19px;display:block;flex:0 0 19px;
+}
+body.ui-next .next-canvas-tools [data-ui-tip]:is(:hover,:focus-visible,:active)::after {
+ content:attr(data-ui-tip);
+ position:absolute;top:calc(100% + 7px);right:0;
+ z-index:45;padding:6px 10px;
+ background:#183453;color:#fff;
+ font-size:12px;font-weight:500;
+ white-space:nowrap;border-radius:7px;line-height:1.5;
+ pointer-events:none;box-shadow:0 4px 12px rgba(10,32,71,.15);
+}
+body.ui-next .next-canvas-tools output {font-size:11px;min-width:32px}
+@media(max-width:650px){
+ body.ui-next .next-canvas-tools {flex-wrap:wrap;justify-content:flex-start}
+ body.ui-next .next-canvas-tools [data-ui-tip] {
+  width:44px;min-width:44px;height:44px;min-height:44px;
+ }
+}
