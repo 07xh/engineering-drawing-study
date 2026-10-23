@@ -6,6 +6,7 @@
  * never leaves the device, and this cannot validate what the photograph depicts.
  */
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
+const {measuredPixels}=require('./photo-measurements.cjs');
 const TOLERANCE=0.02;
 function reviewDoubleScale(rows){
  if(!Array.isArray(rows)||rows.length!==2)throw new Error('必须提供两组独立的图像尺度量测');
@@ -14,10 +15,16 @@ function reviewDoubleScale(rows){
     m.pixelDistance<=0||m.mmDistance<=0||
     m.pixelDistance>1e7||m.mmDistance>1e7)
    throw new Error('第 '+(index+1)+' 组像素与毫米长度必须是有效正数');
+  if(m.pixelPoints!==undefined){
+   const actual=measuredPixels(m.pixelPoints);
+   if(Math.abs(actual-m.pixelDistance)>Math.max(1e-6,actual*1e-9))
+    throw new Error('第 '+(index+1)+' 组像素端点与记录长度不一致');
+  }
   const mmPerPixel=m.mmDistance/m.pixelDistance;
   if(!finite(mmPerPixel)||mmPerPixel<1e-8||mmPerPixel>1e8)
    throw new Error('第 '+(index+1)+' 组模型与图片比例超出可验证范围');
-  return {pixelDistance:m.pixelDistance,mmDistance:m.mmDistance,mmPerPixel};
+  return {pixelDistance:m.pixelDistance,mmDistance:m.mmDistance,mmPerPixel,
+   pixelPoints:m.pixelPoints===undefined?undefined:m.pixelPoints.map(p=>({x:p.x,y:p.y}))};
  });
  const mmPerPixel=(values[0].mmPerPixel+values[1].mmPerPixel)/2;
  const relativeDisagreement=
@@ -27,8 +34,10 @@ function reviewDoubleScale(rows){
   throw new Error('两组独立比例不一致（超过 2%），请重新量测原图');
  return Object.freeze({mmPerPixel,confirmedBy:'ManualTwoScale',
   method:'manual-two-scale',
-  measurements:values.map(({pixelDistance,mmDistance})=>
-   Object.freeze({pixelDistance,mmDistance})),
+  measurements:values.map(({pixelDistance,mmDistance,pixelPoints})=>
+   Object.freeze({...{pixelDistance,mmDistance},
+    ...(pixelPoints===undefined?{}:{pixelPoints:Object.freeze(pixelPoints.map(
+     p=>Object.freeze({x:p.x,y:p.y})))})})),
   relativeDisagreement});
 }
 function validSavedCalibration(c){
