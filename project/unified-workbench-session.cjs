@@ -187,7 +187,14 @@ function createUnifiedProjectSession(){
     if(evidence.status!=='geometry-only'||
        evidence.geometryVerifiedWithinSpecialistScope!==true)
       throw new Error('当前截切几何证据不充分；已拒绝显示推测截交线');
-    const scene=deriveGeometryScene({geometry:[prismMesh(input)],
+    // The specialist has already computed and independently checked these
+    // actual finite intersection edges. The full 3D visibility and the V5
+    // section-construction chain are still NOT verified.
+    const perimeter=evidence.sectionPerimeterGeometry;
+    if(perimeter?.kind!=='polyline'||perimeter.space!=='model-3d')
+      throw new Error('M3 未提供已独立审核的截交多边形，不能显示猜测交线');
+    const scene=deriveGeometryScene({
+      geometry:[prismMesh(input),perimeter],
       revision:latest.revision,resultId:'PrismEvidence'});
     current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
       verified:false,status:'geometry-only',evidence,scene,
