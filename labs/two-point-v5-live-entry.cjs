@@ -24,8 +24,10 @@ function solve(){clear();revision++;try{
  draw();
  }catch(e){clear();$('status').textContent='拒绝作图：'+e.message;}}
 $('solve').addEventListener('click',solve);
-for(const id of ['ax','ay','az','bx','by','bz','confirmed'])$(id).addEventListener('input',()=>{revision++;clear();$('status').textContent='条件已修改，请重新确认并计算。';$('confirmed').checked=false;});
-$('previous').addEventListener('click',()=>{if(!current)return;stop();const f=current.player.snapshot();const i=current.timeline.steps.findIndex(s=>s.startMs>=f.elapsedMs);current.player.seekStep(Math.max(0,(i<0?current.timeline.steps.length:i)-1),performance.now());draw();});
+for(const id of ['ax','ay','az','bx','by','bz'])$(id).addEventListener('input',()=>{revision++;clear();$('status').textContent='条件已修改，请重新确认并计算。';$('confirmed').checked=false;});
+$('previous').addEventListener('click',()=>{if(!current)return;const now=performance.now();current.player.pause(now);stop();const f=current.player.snapshot();const steps=current.timeline.steps;const i=steps.findIndex(s=>s.startMs>=f.elapsedMs-1);const target=i<0?steps.length-1:(Math.abs(steps[i].startMs-f.elapsedMs)<1?i-1:i-1);current.player.seekStep(Math.max(0,target),now);draw();});
 $('next').addEventListener('click',()=>{if(!current)return;stop();const f=current.player.snapshot();const i=current.timeline.steps.findIndex(s=>s.startMs>f.elapsedMs);current.player.seekStep(i<0?current.timeline.steps.length:i,performance.now());draw();});
 $('speed').addEventListener('change',()=>{if(current)current.player.setSpeed(Number($('speed').value),performance.now());});
 $('play').addEventListener('click',()=>{if(!current)return;if(playing){stop();current.player.pause(performance.now());return;}current.player.play(performance.now());playing=true;raf=requestAnimationFrame(tick);});
+
+$('confirmed').addEventListener('change',()=>{revision++;clear();$('status').textContent=$('confirmed').checked?'条件已确认，请点击确认并计算。':'已取消原题确认。';});
