@@ -142,7 +142,7 @@ test('homepage R40 fillet obeys exact radius and two orthogonal tangencies',()=>
  const svg=sheet.querySelector('svg');
  assert.ok(svg);
  const arc=svg.querySelector('[data-fillet-arc="true"]');
- const m=/^M(\\d+) (\\d+) A(\\d+) (\\d+) 0 0 0 (\\d+) (\\d+)$/.exec(arc.getAttribute('d'));
+ const m=/^M(\d+) (\d+) A(\d+) (\d+) 0 0 0 (\d+) (\d+)$/.exec(arc.getAttribute('d'));
  assert.ok(m,'fillet must be a true circular quarter arc, not decorative Bezier');
  const [x1,y1,rx,ry,x2,y2]=m.slice(1).map(Number);
  assert.equal(rx,ry,'a fillet arc must be circular');
@@ -159,8 +159,8 @@ test('homepage R40 fillet obeys exact radius and two orthogonal tangencies',()=>
  assert.equal(y1,cy+rx);
  assert.equal(x2,cx+rx,'vertical-line tangency radius must be horizontal');
  assert.equal(y2,cy);
- const horizontal=/^M(\\d+) (\\d+)H(\\d+)$/.exec(svg.querySelector('[data-horizontal-line]').getAttribute('d'));
- const vertical=/^M(\\d+) (\\d+)V(\\d+)$/.exec(svg.querySelector('[data-vertical-line]').getAttribute('d'));
+ const horizontal=/^M(\d+) (\d+)H(\d+)$/.exec(svg.querySelector('[data-horizontal-line]').getAttribute('d'));
+ const vertical=/^M(\d+) (\d+)V(\d+)$/.exec(svg.querySelector('[data-vertical-line]').getAttribute('d'));
  assert.ok(horizontal&&vertical,'both true-line sections must exist');
  assert.equal(+horizontal[2],y1);
  assert.equal(+horizontal[3],x1,'horizontal line must end at T1');
