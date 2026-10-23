@@ -128,6 +128,8 @@ function createInteractivePage(){
    return require('../../workbench/verified-projection-drawing.cjs');
   if(id==='../workbench/verified-plan-v5-bridge.cjs')
    return require('../../workbench/verified-plan-v5-bridge.cjs');
+  if(id==='../workbench/verified-live-intent-v1.cjs')
+   return require('../../workbench/verified-live-intent-v1.cjs');
   if(id==='../workbench/teaching-timeline-v5.js')
    return require('../../workbench/teaching-timeline-v5.js');
   if(id==='../workbench/teaching-motion-v5.js')
