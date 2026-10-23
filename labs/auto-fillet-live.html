@@ -130,6 +130,45 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="controls"><button type="button" id="ocrPathReviewButton" disabled>记录已人工核对的关联</button></div>
 <p id="ocrPathStatus" class="source-status" role="status" aria-live="polite">尚无可审核的尺寸、引线、箭头或图元链路。</p>
 </details>
+<details id="dimensionDraftGate" class="source-review">
+<summary>把审核结果写入 ProblemDraft · 两条比例尺与 M3 输入预检</summary>
+<p class="source-status">先在上方审核 OCR 文字—引线—整圆，再检测原图线段和圆。下面每个图元都需要你对照原图确认或逐项排除，不能自动把检测结果视为真值。本入口只支持 R/Φ→完整圆；局部圆弧和其他题型保留待审。</p>
+<div class="controls"><button id="dimensionDraftRefresh" type="button">读取本次已审核来源与图元</button></div>
+<p id="dimensionDraftGeometry" class="source-status">尚未读取原图尺寸来源。</p>
+<div id="dimensionDraftCandidates" class="raster-edits" aria-label="逐个检查检测到的原图像素图元"></div>
+<div class="raster-edits">
+<label for="dimensionRulerA">第一条独立尺寸线段
+<select id="dimensionRulerA" disabled><option value="">先读取图元</option></select></label>
+<label for="dimensionRulerAMm">第一条完整线段在原题中标注的实际长度（毫米）
+<input id="dimensionRulerAMm" type="number" step="any" min="0" placeholder="人工核实"></label>
+<label for="dimensionRulerB">第二条不同的尺寸线段
+<select id="dimensionRulerB" disabled><option value="">先读取图元</option></select></label>
+<label for="dimensionRulerBMm">第二条线段的实际长度（毫米）
+<input id="dimensionRulerBMm" type="number" step="any" min="0" placeholder="人工核实"></label>
+<label for="dimensionDraftOriginX">原图模型原点 X（像素）
+<input id="dimensionDraftOriginX" type="number" step="any" value="0"></label>
+<label for="dimensionDraftOriginY">原图模型原点 Y（像素）
+<input id="dimensionDraftOriginY" type="number" step="any" value="0"></label>
+<label for="dimensionDraftYAxis">经人工核对的工程数学 Y 方向
+<select id="dimensionDraftYAxis"><option value="up">向上为正</option><option value="down">向下为正</option></select></label>
+</div>
+<label class="vector-confirm" for="dimensionDraftScaleChecked"><input id="dimensionDraftScaleChecked" type="checkbox">两条线段的完整像素端点、各自实际毫米长度及单位已经独立核对；不能以 OCR 推断比例</label>
+<label class="vector-confirm" for="dimensionDraftGeometryChecked"><input id="dimensionDraftGeometryChecked" type="checkbox">我逐一审核了本列表中的所有图元，确认所选圆及引线像素位置、类别与原图一致</label>
+<label class="vector-confirm" for="dimensionDraftAlternativesChecked"><input id="dimensionDraftAlternativesChecked" type="checkbox">我逐条看过竞争的文字—引线—圆弧候选，明确选择上述关联；不声称全局唯一解</label>
+<label class="vector-confirm" for="dimensionDraftCommit"><input id="dimensionDraftCommit" type="checkbox">提交此轮来源审核，只写入已有 ProblemDraft 尺寸约束（不播放动画）</label>
+<div class="controls"><button id="dimensionDraftAttach" type="button" disabled>生成经核对的 ProblemDraft 尺寸约束</button></div>
+<p id="dimensionDraftStatus" class="source-status" role="status" aria-live="polite">尚未生成数学约束；检测和人工审核均不代表已解题。</p>
+<label for="dimensionDraftTargetRadius">本题另外确认的连接圆弧目标半径 R（毫米）
+<input id="dimensionDraftTargetRadius" type="number" min="0" step="any" placeholder="必须从题图单独核对"></label>
+<label for="dimensionDraftSide">本题已确认的有限线段—圆连接侧别
+<select id="dimensionDraftSide"><option value="">未选择，不能进入求解</option><option value="1">+1</option><option value="-1">-1</option></select></label>
+<label class="vector-confirm" for="dimensionDraftM3Accept"><input id="dimensionDraftM3Accept" type="checkbox">确认完整几何、目标 R、侧别，允许执行现有 M3 输入契约预检；若有多解仍需人工选择</label>
+<div class="controls">
+<button id="dimensionDraftPreflight" type="button" disabled>验证现有 M3 求解器输入</button>
+<button id="dimensionDraftApply" type="button" disabled>把预检通过的条件填入现有工作台（仍需逐项确认）</button>
+</div>
+<p id="dimensionDraftM3Status" class="source-status" role="status" aria-live="polite">不选唯一数学分支，不自动启动 V5。</p>
+</details>
 <p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
 <div class="controls">
 <button type="button" id="confirmSource">确认当前数值与框选区域相符</button>
