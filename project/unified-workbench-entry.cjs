@@ -20,7 +20,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
  const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs];
  const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
-  'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end','v7-c-direction'];
+  'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end',
+  'v7-c-direction','v7-c-points','v7-c-closed'];
  const geometryId=id=>/^([A-Za-z][A-Za-z0-9_-]{0,79})$/.test(id);
  function compositionCandidate(){
   const id=$('v7-c-id').value.trim(),kind=$('v7-c-kind').value;
@@ -42,6 +43,26 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    data={center,radius:numberFrom('v7-c-radius'),
     startAngle:numberFrom('v7-c-start'),endAngle:numberFrom('v7-c-end'),
     direction:$('v7-c-direction').value};projectKind='edge';}
+  else if(kind==='polyline2d'||kind==='polyline3d'){
+   type='polyline';space=kind==='polyline2d'?'drawing-2d':'model-3d';
+   projectKind='edge';
+   const raw=$('v7-c-points').value;
+   if(raw.length>120000)throw Error('折线输入过长，拒绝处理');
+   const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+   if(lines.length<2||lines.length>2048)throw Error('折线需有 2 至 2048 个有序顶点');
+   const dim=space==='drawing-2d'?2:3;
+   const points=lines.map((line,i)=>{
+    const parts=line.split(/[\s,\uFF0C]+/);
+    if(parts.length!==dim||parts.some(x=>
+        !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(x)))
+      throw Error('第 '+(i+1)+' 行必须是 '+dim+' 个有效十进制坐标');
+    const values=parts.map(Number);
+    if(values.some(v=>!Number.isFinite(v)||Math.abs(v)>100000))
+      throw Error('第 '+(i+1)+' 行坐标超出有效 mm 范围');
+    return dim===2?p(...values):v(...values);
+   });
+   data={points,closed:$('v7-c-closed').checked===true};
+  }
   else if(kind==='prism'){
    if(b.some((n,i)=>n<=a[i]))throw Error('长方体最大角坐标必须严格大于最小角');
    type='mesh';space='model-3d';projectKind='solid';
@@ -62,6 +83,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    (g.space==='drawing-2d'?'point2d':'point3d'):
    g.kind==='segment'?(g.space==='drawing-2d'?'segment2d':'segment3d'):
    g.kind;
+  if(g.kind==='polyline'){
+   $('v7-c-kind').value=g.space==='drawing-2d'?'polyline2d':'polyline3d';
+   $('v7-c-points').value=d.points.map(p=>
+    [p.x,p.y,...(g.space==='model-3d'?[p.z]:[])].join(',')).join('\n');
+   $('v7-c-closed').checked=d.closed;
+   $('v7-c-id').value=g.id;
+   return;
+  }
   $('v7-c-kind').value=type;
   $('v7-c-id').value=g.id;
   let a,b;
