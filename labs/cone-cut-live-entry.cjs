@@ -13,6 +13,10 @@ const {coneSolidFaceRayEvidence}=
  require('../workbench/cone-solid-face-ray-evidence.cjs');
 const {createLocalPhotoReference}=
  require('../recognition/local-photo-reference.cjs');
+const {detectBrowserDimensionCandidates}=
+ require('../recognition/browser-native-dimension-ocr.cjs');
+const {reviewConeBaseRadiusCandidate}=
+ require('../recognition/reviewed-cone-image-radius.cjs');
 const {coneLinkedSpatialScene}=
  require('../workbench/cone-linked-spatial-view.cjs');
 (function(){
@@ -26,6 +30,7 @@ const {coneLinkedSpatialScene}=
   coneSamples:'64',coneKept:''};
  let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null,faceEvidence=null;
  const reference=createLocalPhotoReference();
+ let ocrSequence=0,ocrCandidates=[],reviewedRadius=null;
  const now=()=>performance.now();
  const create=(tag,attrs={})=>{
   const el=document.createElementNS(SVG,tag);
@@ -71,8 +76,110 @@ const {coneLinkedSpatialScene}=
   clear();disable(true);
   status('条件已改变，旧解和动画已作废。请重新确认输入并求解。',true);
  }
+ function resetOcr(ready=false){
+  ++ocrSequence;ocrCandidates=[];reviewedRadius=null;
+  const selector=$('coneOcrCandidate');selector.replaceChildren();
+  const option=document.createElement('option');
+  option.value='';option.textContent='尚无已核对尺寸候选';selector.append(option);
+  selector.disabled=true;
+  $('coneOcrRun').disabled=!ready;
+  $('coneOcrApply').disabled=true;
+  $('coneOcrReviewedValue').disabled=true;
+  $('coneOcrReviewedValue').value='';
+  for(const id of ['coneOcrUnits','coneOcrLink','coneOcrAccept'])
+   $(id).checked=false;
+  $('coneOcrAnswers').value='unknown';
+  $('coneOcrStatus').textContent=ready?
+   '本机 OCR 仅提供文字候选；需人工确认单位、底圆归属和数值。':
+   '请先载入本地原题；图片及 OCR 均不构成独立解题证据。';
+ }
+ function resetCandidateAcceptance(){
+  reviewedRadius=null;
+  $('coneOcrAccept').checked=false;
+ }
+ async function runNativeOcr(){
+  const proof=reference.snapshot();
+  if(!proof.ready){$('coneOcrStatus').textContent='先载入并解码原题图片。';return;}
+  resetOcr(true);
+  const sequence=ocrSequence,epoch=proof.epoch;
+  $('coneOcrRun').disabled=true;
+  $('coneOcrStatus').textContent='正在本地执行浏览器原生 TextDetector；不上传原图。';
+  let output;
+  try{output=await detectBrowserDimensionCandidates($('coneSourcePreview'));}
+  catch(error){output={status:'error',candidates:[],reason:String(error.message||error)};}
+  if(sequence!==ocrSequence||!reference.snapshot().ready||
+     epoch!==reference.snapshot().epoch)return;
+  $('coneOcrRun').disabled=false;
+  if(output.status!=='ok'){
+   $('coneOcrStatus').textContent='无法获取本机 OCR：'+
+    String(output.reason||output.status)+'。请手动填写，不会生成猜测尺寸。';
+   return;
+  }
+  // Existing OCR is a candidate extractor, not image-to-geometry proof.
+  ocrCandidates=output.candidates.slice(0,150);
+  const selector=$('coneOcrCandidate');selector.replaceChildren();
+  const placeholder=document.createElement('option');
+  placeholder.value='';placeholder.textContent='请选择需要复核的 R/Φ 文字';
+  selector.append(placeholder);
+  for(const candidate of ocrCandidates){
+   const option=document.createElement('option');
+   option.value=candidate.id;
+   option.textContent=candidate.sourceText+' · '+
+    (candidate.dimensionKind==='diameter'?'直径':'半径')+
+    '（未经核对）';
+   selector.append(option);
+  }
+  selector.disabled=ocrCandidates.length===0;
+  $('coneOcrStatus').textContent=ocrCandidates.length?
+   '找到 '+ocrCandidates.length+' 条候选。请看原图确认它是否真的指向圆锥底圆；不会自动计算。':
+   '未检测到支持的 R/Φ 尺寸。请手动填写，不代表原图无尺寸。';
+ }
+ function ocrCandidateChanged(){
+  resetCandidateAcceptance();
+  const candidate=ocrCandidates.find(x=>x.id===$('coneOcrCandidate').value);
+  $('coneOcrReviewedValue').disabled=!candidate;
+  $('coneOcrReviewedValue').value=candidate?String(candidate.numericValue):'';
+  $('coneOcrApply').disabled=!candidate;
+  $('coneOcrUnits').checked=false;
+  $('coneOcrLink').checked=false;
+  $('coneOcrStatus').textContent=candidate?
+   '请人工复核 OCR 文本 '+candidate.sourceText+
+   '；直径要先除以 2，归属圆锥底圆必须由你确认。':
+   '未选尺寸，不允许把 OCR 结果填写为数学条件。';
+ }
+ function applyReviewedRadius(){
+  const candidate=ocrCandidates.find(x=>x.id===$('coneOcrCandidate').value);
+  try{
+   const info=reference.snapshot();
+   if(!info.ready)throw new RangeError('本地参考图已更换或删除');
+   const proposal=reviewConeBaseRadiusCandidate({
+    candidate,image:info.dimensions,
+    sourceEpoch:info.epoch,currentSourceEpoch:reference.snapshot().epoch,
+    reviewedTextValueMm:$('coneOcrReviewedValue').valueAsNumber,
+    unitsConfirmed:$('coneOcrUnits').checked,
+    baseCircleLinkConfirmed:$('coneOcrLink').checked,
+    userAccepted:$('coneOcrAccept').checked,
+    answerMark:$('coneOcrAnswers').value
+   });
+   // Explicit user-triggered prefill only. The OLD source solution is stale;
+   // never mark new conditions confirmed or trigger the existing M3/V5.
+   invalidate(true);
+   $('coneRadius').value=String(proposal.radiusMm);
+   resetCandidateAcceptance();
+   reviewedRadius=proposal;
+   $('coneOcrStatus').textContent='已人工核对 '+proposal.sourceText+
+    ' → 底圆半径 '+proposal.radiusMm+
+    ' mm，仅填入可编辑条件。还需确认高度、截平面及最终数学输入。'+
+    (proposal.sourceContainsMarkedAnswer?'原图含参考答案，绝不计入无答案盲测。':
+     '原图答案隔离未经独立验证，暂不计入盲测。');
+  }catch(error){
+   $('coneOcrAccept').checked=false;
+   $('coneOcrStatus').textContent='未采用 OCR 尺寸：'+
+    String(error.message||error);
+  }
+ }
  function clearPhotoReference(clearInput=true){
-  reference.clear();
+  reference.clear();resetOcr(false);
   const img=$('coneSourcePreview');
   img.onload=null;img.onerror=null;
   img.removeAttribute('src');img.hidden=true;
@@ -112,10 +219,11 @@ const {coneLinkedSpatialScene}=
       img.naturalWidth,img.naturalHeight))return;
      img.hidden=false;
      $('coneSourceClear').disabled=false;
+     resetOcr(true);
      $('coneSourceStatus').textContent=
       '本地参考图片已显示（'+img.naturalWidth+'×'+
       img.naturalHeight+'）。请人工填写圆锥与截平面条件；'+
-      '本页不识别图片或校验答案，不能计为原题盲测通过。';
+      '本机可选 OCR 仅产生待审 R/Φ 文字候选；不能自动判定图元归属、解题或盲测通过。';
     }catch(error){
      // The reference session already rejected/revoked the unsafe blob.
      // Still update the UI: rejectImage() on this OLD epoch now returns false.
@@ -185,6 +293,13 @@ const {coneLinkedSpatialScene}=
     ['V','H','W'].map(v=>v+'='+faceEvidence.views[v].cutFace.visibility).join('、')+
     '；切触、边缘、轮廓和完整遮挡尚未证明。':
     ' 截切平面严格内部射线可见性尚未认证。';
+   const reviewNote=reviewedRadius&&
+    reviewedRadius.imageEpoch===reference.snapshot().epoch&&
+    Number($('coneRadius').value)===reviewedRadius.radiusMm?
+    ' 底圆半径由本地 OCR 候选经人工核对填入；仅该字段具备候选来源，其余条件仍来自人工输入。'+
+    (reviewedRadius.sourceContainsMarkedAnswer?
+     '原图包含参考答案，禁止计入无答案盲测。':
+     '答案隔离没有独立验证，禁止计入盲测。'):'';
    const referenceNote=reference.snapshot().sourceAttached?
     ' 本地原题图仅作为人工转录参照；未自动识图、无答案隔离证明或原题整题验收。':'';
    $('coneProof').textContent='数学源：有限直立圆锥解析'+
@@ -195,7 +310,7 @@ const {coneLinkedSpatialScene}=
       '、隐藏 '+counts.hidden+'、未确定 '+counts.undetermined+'。':
       '未确认保留材料侧：结果线型全部待审核。')+
     ' 线段为解析曲线的折线近似；端点、真实线型、图纸规范、照片识别和完整实体均尚未验收。'+
-    faceNote+referenceNote;
+    faceNote+referenceNote+reviewNote;
    status('几何模型与单一 V5 动画已就绪。可逐笔播放、回退、调速和点选图元；不是完整国标工程制图答案。');
   }catch(error){
    plan=null;player=null;clear();disable(true);
@@ -482,11 +597,19 @@ const {coneLinkedSpatialScene}=
  }
  function init(){
   for(const id of [...numeric,...config]){
-   $(id).addEventListener('input',()=>invalidate(true));
+   $(id).addEventListener('input',()=>{
+    reviewedRadius=null;invalidate(true);
+   });
   }
   $('coneConfirm').addEventListener('change',()=>invalidate(false));
   $('coneSolve').addEventListener('click',solve);
   $('coneSourceFile').addEventListener('change',sourceFileChanged);
+  $('coneOcrRun').addEventListener('click',runNativeOcr);
+  $('coneOcrCandidate').addEventListener('change',ocrCandidateChanged);
+  for(const id of ['coneOcrReviewedValue','coneOcrUnits',
+   'coneOcrLink','coneOcrAnswers','coneOcrAccept'])
+   $(id).addEventListener('input',()=>{reviewedRadius=null;});
+  $('coneOcrApply').addEventListener('click',applyReviewedRadius);
   $('coneSourceClear').addEventListener('click',()=>{
    invalidate(true);clearPhotoReference();
   });
@@ -521,6 +644,7 @@ const {coneLinkedSpatialScene}=
    if(raf!==null)cancelAnimationFrame(raf);raf=null;
    if(player&&player.canRender(revision))player.pause(now());
   });
+  resetOcr(false);
   clear();disable(true);status('请确认全部数学条件后开始求解。');
  }
  if(document.readyState==='loading')

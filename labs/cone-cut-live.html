@@ -67,13 +67,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 <h2>01 · 手动确认几何条件 (mm)</h2>
 <details id="coneSourcePanel" class="source-reference">
 <summary>可选：本地查看原题图片（不上传、不自动识图）</summary>
-<p class="small">从设备选择原题照片或习题截图，仅在当前浏览器显示，供你人工读取和核对已知条件。支持 PNG/JPEG/WebP，最大 15 MB。识图功能尚未接入此页面；含红色答案标注的图片不能计为无答案盲测通过。</p>
+<p class="small">从设备选择原题照片或习题截图，仅在当前浏览器显示，供你人工读取和核对已知条件。支持 PNG/JPEG/WebP，最大 15 MB。当前仅可选用本机 OCR 提取 R/Φ 文字候选，图元关联、截平面和整题识别尚未实现；带答案的图不可计为无答案盲测通过。</p>
 <label for="coneSourceFile">原题参考图片
 <input id="coneSourceFile" type="file" accept="image/png,image/jpeg,image/webp">
 </label>
 <img id="coneSourcePreview" alt="仅供人工核对的本地原题参考图片" hidden>
 <div class="actions"><button id="coneSourceClear" type="button" disabled>清除本地题图</button></div>
 <p id="coneSourceStatus" class="small" role="status" aria-live="polite">未选择图片。当前仍使用手动填写的模型毫米条件。</p>
+<fieldset id="coneOcrReview" class="source-reference">
+<legend>本机 OCR 尺寸候选（只辅助人工确认）</legend>
+<p class="small">调用已有浏览器 TextDetector（如设备支持），仅识别 R/Φ 尺寸文字候选，不识别圆锥、引线归属、截平面或完整题意。请逐项复核，识别失败可继续手动输入。</p>
+<button type="button" id="coneOcrRun" disabled>本机查找 R/Φ 候选</button>
+<label for="coneOcrCandidate">候选尺寸
+<select id="coneOcrCandidate" disabled><option value="">尚无尺寸候选</option></select></label>
+<label for="coneOcrReviewedValue">人工核实的尺寸文字数值（毫米，直径不是半径）
+<input id="coneOcrReviewedValue" type="number" min="0.001" step="any" placeholder="先选择候选" disabled></label>
+<label class="confirm" for="coneOcrUnits"><input id="coneOcrUnits" type="checkbox">确认教材该尺寸采用毫米</label>
+<label class="confirm" for="coneOcrLink"><input id="coneOcrLink" type="checkbox">确认此尺寸和引出线确实指向<strong>本题圆锥底圆</strong>，而非其他圆或辅助图</label>
+<label for="coneOcrAnswers">原始图是否带参考答案
+<select id="coneOcrAnswers"><option value="unknown">不确定，禁止计为盲测</option><option value="contains-answers">包含答案/红色标注</option><option value="no-visible-answers">检查后未见答案（也不等于独立盲测）</option></select></label>
+<label class="confirm" for="coneOcrAccept"><input id="coneOcrAccept" type="checkbox">已亲自复核尺寸文字、目标图元及单位；只把数值填入可编辑半径框，不自动求解</label>
+<button id="coneOcrApply" type="button" disabled>填入底圆半径（仍需总确认）</button>
+<p class="small" id="coneOcrStatus" role="status" aria-live="polite">请先载入原题图片；识别候选均未经核验。</p>
+</fieldset>
 </details>
 <div class="two">
 <label for="coneRadius">底圆半径<input id="coneRadius" type="number" value="5" min="0.001" step="any"></label>
