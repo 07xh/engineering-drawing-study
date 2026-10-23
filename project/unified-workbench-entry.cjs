@@ -355,18 +355,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const frame=out.clock?.snapshot();
   const hidden=out.kind==='planar-fillet'&&!frame.done?['Fillet1']:[];
   return compileGeometryScene(out.scene,{
-   sheet:SHEET,camera:snap.view.camera,selectedObjectId:snap.view.selectedObjectId,
+   sheet:SHEET,camera:snap.view.camera,selectedObjectId:coordinator.selectedGeometryId(),
    hiddenObjectIds:hidden
   });
  }
  function drawPrimitives(svg,primitives,viewKind,snap,frame,monochrome){
-  const known=new Set(snap.objects.map(o=>o.id));
+  // Math-output object IDs may be derived rather than saved input objects.
   for(const item of primitives){
    // A named 3D point's third projection is released by the verified V5
    // timeline, not by the generic Geometry Scene visualizer.
    if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;
-   const rootId=item.selectionObjectId??item.objectId;
-   const selected=snap.view.selectedObjectId===rootId;
+   const selected=coordinator.selectedGeometryId()===item.objectId;
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
@@ -383,16 +382,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     if(item.visibility==='undetermined')
      node.setAttribute('data-visibility','undetermined');
    }
-   if(item.objectId&&rootId&&known.has(rootId)){
+   if(item.objectId){
     const label=item.objectId==='Point1'&&viewKind==='paper'?
       '选择 '+item.view+' 投影点':
       item.objectId==='Fillet1'&&item.kind==='path'?
       '选择已验证圆弧 Fillet1':
-      '选择 '+item.objectId+(rootId!==item.objectId?'（关联 '+rootId+'）':'')+
-       ' 的 '+item.view+' 表达';
+      '选择 '+item.objectId+' 的 '+item.view+' 表达';
     node.setAttribute('tabindex','0');node.setAttribute('role','button');
     node.setAttribute('aria-label',label);
-    const pick=()=>coordinator.selectObject(rootId);
+    const pick=()=>coordinator.selectSceneGeometry(item.objectId);
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
@@ -500,9 +498,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       '仅确认了手工输入的几何对象并验证其基本数学格式；不是 M3 独立求解，不具备 ConstructionIntent/V5 动画或可见性证明。':
      '限定证据：M3 已独立核验截交多边形顶点与有序直边；下方是同源长方体及截交边的 V/H/W、三维线框。遮挡、完整切后实体与 V5 均未证明，不可播放。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
-  $('v7-selection').textContent=snap.view.selectedObjectId?
-    '已选稳定对象 '+snap.view.selectedObjectId+'，数学结果与视图修订未改变。':
-    '点选真实几何图元，在当前项目中定位其稳定对象 ID。';
+  const activeGeometry=coordinator.selectedGeometryId();
+  $('v7-selection').textContent=activeGeometry?
+    '已选 Geometry 对象 '+activeGeometry+'；同一场景的全部可用表达同步高亮，未更改数学输入。':
+    '点选正式数学场景的任意已知或派生图元，按稳定对象 ID 高亮。';
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';

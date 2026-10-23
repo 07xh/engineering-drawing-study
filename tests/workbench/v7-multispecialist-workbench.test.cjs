@@ -45,11 +45,23 @@ test('planar inputs use existing 02 M3 canonical intent and the same V5 clock',(
  assert.equal(r.scene.objects[2].representations['3D'],null,
   'pure planar must not invent a solid');
  assert.equal(c.canExport(),true);
+ const version=c.snapshot().revision;
+ const persistedBefore=exportProject(c.snapshot());
+ c.selectSceneGeometry('Given1');
+ assert.equal(c.selectedGeometryId(),'Given1');
+ assert.equal(exportProject(c.snapshot()),persistedBefore,
+  'derived object selection must not alter the local project file');
+ assert.equal(c.snapshot().revision,version);
+ assert.equal(c.canExport(),true);
+ assert.equal(c.snapshot().view.selectedObjectId,null,
+  'math-derived selection must not leak into persisted project state');
+ assert.throws(()=>c.selectSceneGeometry('ForgedGeometry'),/不属于/);
  c.setCamera({yaw:46});
  assert.equal(c.currentResult(),r);
  c.putCondition({id:'coords',objectId:'Fillet1',sourceCandidateId:null,
   confirmed:true,value:{...planar,filletRadius:12}});
  assert.equal(c.currentResult(),null);
+ assert.equal(c.selectedGeometryId(),null,'stale derived selection must be revoked');
  assert.equal(r.clock.canRender(c.snapshot().revision),false);
  assert.throws(()=>s.solve(),/确认/);
  c.dispose();
@@ -73,9 +85,6 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(r.scene.objects.length,2);
  const perimeter=r.scene.objects[1];
  assert.equal(perimeter.id,'Section1');
- assert.equal(perimeter.selectionObjectId,'Solid1');
- assert.equal(perimeter.model.parentObjectId,'Solid1');
- assert.equal(r.links.find(x=>x.objectId==='Section1').selectionObjectId,'Solid1');
  assert.equal(perimeter.kind,'polyline');
  assert.equal(perimeter.model.data.closed,true);
  assert.ok(perimeter.model.data.points.length>=3&&
@@ -147,4 +156,25 @@ test('single homepage contains both real specialist scopes but no alternative ne
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.equal((html.match(/id="v7-sheet"/g)||[]).length,1);
  assert.equal((html.match(/id="v7-play"/g)||[]).length,1);
+});
+
+test('scoped section perimeter is selectable in all projections without promoting V5 proof',()=>{
+ const {coordinator:c,session:s}=start('exploration',prism);
+ c.confirmCondition('coords');
+ const r=s.solve();
+ const perimeter=r.scene.objects.find(o=>o.id==='Section1');
+ assert.ok(perimeter,'M3 must provide independently audited section perimeter');
+ assert.equal(perimeter.kind,'polyline');
+ const revision=c.snapshot().revision;
+ c.selectSceneGeometry('Section1');
+ assert.equal(c.selectedGeometryId(),'Section1');
+ assert.equal(c.snapshot().revision,revision);
+ assert.equal(c.canExport(),false);
+ c.setCamera({yaw:61});
+ assert.equal(c.selectedGeometryId(),'Section1');
+ assert.equal(s.readSnapshot(),r);
+ c.setImage('FreshImage');
+ assert.equal(c.selectedGeometryId(),null);
+ assert.throws(()=>c.selectSceneGeometry('Section1'),/不属于/);
+ c.dispose();
 });
