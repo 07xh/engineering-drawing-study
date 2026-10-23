@@ -50,15 +50,17 @@ function enhanceAuto(document,main){
  }
  const conditionPanel=element(document,'section');conditions.replaceWith(conditionPanel);conditionPanel.append(conditions);
  const stepPanel=element(document,'section');stepPanel.append(element(document,'h2',{},'作图步骤'));
- for(const id of ['stepList','stepDetail'])stepPanel.append(document.getElementById(id));
+ for(const id of ['stepList','stepDetail','intentDetails']){const node=document.getElementById(id);if(node)stepPanel.append(node);}
  stepPanel.append(element(document,'p',{class:'next-hint'},'选择一步，查看辅助线与作图说明。'));
  const reviewPanel=element(document,'section');reviewPanel.append(element(document,'h2',{},'复核与导出'));
  reviewPanel.append(element(document,'p',{class:'next-hint'},'仅当前条件和所选分支通过数学验证后，才可导出。所选分支不代表全局唯一解。'));
  reviewPanel.append(document.getElementById('result'));
- reviewPanel.append(document.getElementById('saveVerifiedSvg').closest('.local-photo'));
+ reviewPanel.append(document.getElementById('exportDetails')||document.getElementById('saveVerifiedSvg').closest('.local-photo'));
  const playback=element(document,'section',{class:'next-playback','aria-label':'动态作图播放控制'});
  for(const node of [document.getElementById('play').closest('.controls'),document.getElementById('progress').closest('.seek'),document.getElementById('speed').closest('.fields')])playback.append(node);
- const statusArea=element(document,'div',{class:'next-status-area'});statusArea.append(document.getElementById('status'));
+ canvas.querySelector('.draftai-playdock')?.remove();
+  canvas.querySelector('.workbench-step-rail')?.remove();
+  const statusArea=element(document,'div',{class:'next-status-area'});statusArea.append(document.getElementById('status'));
  const context=createContext(document,[['conditions','条件与来源',conditionPanel],['steps','作图步骤',stepPanel],['review','复核导出',reviewPanel]]);
  // Only the drawing heading remains in the central canvas.
  for(const h of [...canvas.querySelectorAll(':scope > h2')].slice(1))h.remove();
@@ -87,7 +89,8 @@ function enhanceTeaching(document,main,{projection}){
  const playback=element(document,'section',{class:'next-playback','aria-label':'动态作图播放控制'});
  playback.append(document.getElementById('fullControls'));
  const scrub=document.getElementById('filletScrubBar');if(scrub)playback.append(scrub);
- const status=element(document,'div',{class:'next-status-area'});
+ canvas.querySelector('.draftai-playdock')?.remove();
+  const status=element(document,'div',{class:'next-status-area'});
  status.append(conditions.querySelector(projection?'#solveStatus':'#status'));
  const context=createContext(document,[['conditions','条件与求解',conditionPanel],['steps','步骤与自主作图',steps]]);
  layout.append(canvas,context,playback);layout.before(status);
