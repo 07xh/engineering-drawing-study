@@ -90,6 +90,28 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
   assert.ok(after.getElementById('learningMode').closest('[data-next-panel="steps"]'),page);
  }
 });
+
+test('V6.1 published homepage places first-angle paper before secondary tools',()=>{
+ const {after:document}=enhance('index.html');
+ const dashboard=document.querySelector('.next-home-workbench');
+ assert.ok(dashboard,'new homepage workbench must be the first screen');
+ assert.ok(dashboard.querySelector('.next-home-drawing'),'large drawing region missing');
+ const svg=dashboard.querySelector('.next-home-paper svg');
+ assert.ok(svg,'one-sheet preview missing');
+ assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
+ const labels=svg.textContent;
+ for(const label of ['V 主视图','H 俯视图','W 左视图','45°'])
+  assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
+ assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
+ for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
+  assert.ok(dashboard.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
+ assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
+ assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.1-home-20261023"]'),'verifiable homepage release marker missing');
+ assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
+ assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
+ assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
+});
+
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
