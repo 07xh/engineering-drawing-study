@@ -3,10 +3,18 @@
  * M2 -> M3 boundary: only reviewed problem conditions may enter the solver.
  * A reference answer is a separate post-solve comparison artifact.
  */
-const crypto=require('node:crypto');
+// Deterministic browser-safe FNV-1a fingerprint; NOT a cryptographic signature.
+function fingerprint(str){
+ let h=2166136261;
+ for(let i=0;i<str.length;i++){
+  h^=str.charCodeAt(i);
+  h=Math.imul(h,16777619);
+ }
+ return (h>>>0).toString(16).padStart(8,'0');
+}
 const stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)
  ?Object.fromEntries(Object.entries(v).sort(([a],[b])=>a.localeCompare(b))):v);
-const digest=x=>crypto.createHash('sha256').update(stable(x)).digest('hex');
+const digest=x=>fingerprint(stable(x));
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 function finiteTree(x,seen=new Set()){
  if(typeof x==='number')return Number.isFinite(x);
