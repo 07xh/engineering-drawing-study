@@ -22,6 +22,75 @@ function ensureImage(blob) {
       !TYPES.has(blob.type) || blob.size === 0 || blob.size > MAX_IMAGE_BYTES)
     throw new Error('仅接受 25 MB 以内的 PNG/JPEG/WebP 原图');
 }
+
+const BUNDLE_MAGIC = 'DAIPROJECT/1\n';
+const BUNDLE_FORMAT = 'draftai-project-bundle';
+const MAX_HEADER_BYTES = 2 * 1024 * 1024;
+const MAX_BUNDLE_BYTES = MAX_IMAGE_BYTES + MAX_HEADER_BYTES + 64;
+const codec = () => new TextEncoder();
+async function digestImage(blob) {
+  const subtle = typeof globalThis !== 'undefined' && globalThis.crypto?.subtle;
+  if (!subtle) throw new Error('本机缺少安全摘要能力，不能验证项目原图完整性');
+  const hash = new Uint8Array(await subtle.digest('SHA-256', await blob.arrayBuffer()));
+  return Array.from(hash, x => x.toString(16).padStart(2, '0')).join('');
+}
+async function createProjectBundle(project, image = null) {
+  const safe = importProject(exportProject(project));
+  if (safe.source.imageId === null && image !== null)
+    throw new Error('未关联原图的项目不可额外夹带图片');
+  if (safe.source.imageId !== null) ensureImage(image);
+  const info = image === null ? null : {
+    id: safe.source.imageId, type: image.type, size: image.size,
+    sha256: await digestImage(image)
+  };
+  const header = codec().encode(JSON.stringify({
+    format: BUNDLE_FORMAT, version: 1, project: safe, image: info
+  }));
+  if (header.byteLength > MAX_HEADER_BYTES) throw new Error('项目元数据过大');
+  const pieces = [BUNDLE_MAGIC, String(header.byteLength), '\n', header];
+  if (image !== null) pieces.push(image);
+  const bundle = new Blob(pieces, {type: 'application/x-draftai-project'});
+  if (bundle.size > MAX_BUNDLE_BYTES) throw new Error('项目包超出大小限制');
+  return bundle;
+}
+async function parseProjectBundle(bundle) {
+  if (typeof Blob === 'undefined' || !(bundle instanceof Blob) ||
+      bundle.size > MAX_BUNDLE_BYTES || bundle.size < BUNDLE_MAGIC.length + 3)
+    throw new Error('项目包大小或类型无效');
+  const prefix = await bundle.slice(0, 64).text();
+  const match = /^DAIPROJECT\/1\n([1-9]\d{0,6})\n/.exec(prefix);
+  if (!match) throw new Error('不支持的项目包格式');
+  const length = Number(match[1]);
+  if (length > MAX_HEADER_BYTES || match[0].length + length > bundle.size)
+    throw new Error('项目包元数据长度无效');
+  const offset = match[0].length + length;
+  let header;
+  try {
+    header = JSON.parse(new TextDecoder('utf-8', {fatal: true})
+      .decode(await bundle.slice(match[0].length, offset).arrayBuffer()));
+  } catch { throw new Error('项目包元数据损坏'); }
+  if (!header || header.format !== BUNDLE_FORMAT || header.version !== 1)
+    throw new Error('不支持的项目包版本');
+  const project = importProject(JSON.stringify(header.project));
+  if (header.image === null) {
+    if (project.source.imageId !== null || offset !== bundle.size)
+      throw new Error('项目包缺少原图或存在多余数据');
+    return {project, image: null};
+  }
+  const meta = header.image;
+  if (!meta || meta.id !== project.source.imageId ||
+      !TYPES.has(meta.type) || !Number.isSafeInteger(meta.size) ||
+      meta.size < 1 || meta.size > MAX_IMAGE_BYTES ||
+      !/^[a-f0-9]{64}$/.test(meta.sha256) ||
+      bundle.size - offset !== meta.size)
+    throw new Error('项目原图 ID、格式、大小或摘要信息无效');
+  const image = new Blob([bundle.slice(offset)], {type: meta.type});
+  ensureImage(image);
+  if (await digestImage(image) !== meta.sha256)
+    throw new Error('项目原图摘要不一致，拒绝导入损坏图片');
+  return {project, image};
+}
+
 function createStore(db) {
   if (!db || typeof db.transaction !== 'function') throw new Error('IndexedDB 未连接');
   function operation(names, mode, work) {
@@ -139,7 +208,41 @@ function createStore(db) {
       };
     });
   }
+
+  async function exportBundle(id) {
+    const row = await readProject(id);
+    if (!row) throw new Error('需要导出的本机项目不存在');
+    const imageId = row.project.source.imageId;
+    const image = imageId === null ? null : await readImage(imageId);
+    if (imageId !== null && !image) throw new Error('项目原图丢失，拒绝不完整导出');
+    return createProjectBundle(row.project, image);
+  }
+  async function importBundle(bundle) {
+    // Validate the entire archive and its digest before opening a write tx.
+    const {project, image} = await parseProjectBundle(bundle);
+    const row = {id: project.id, savedAt: new Date().toISOString(), project};
+    return operation(['projects','images'], 'readwrite', (store, done, fail) => {
+      const prior = store('projects').get(project.id);
+      prior.onsuccess = () => {
+        if (prior.result) { fail(new Error('同 ID 项目已存在，拒绝覆盖本机记录')); return; }
+        const finish = () => {
+          if (image !== null) store('images').put({
+            id: project.source.imageId, blob: image, type: image.type, size: image.size
+          });
+          store('projects').put(row);
+          done({id: project.id, savedAt: row.savedAt});
+        };
+        if (image === null) {finish();return;}
+        const existing = store('images').get(project.source.imageId);
+        existing.onsuccess = () => {
+          if (existing.result) {fail(new Error('图片 ID 已存在，拒绝覆盖其他项目原图'));return;}
+          finish();
+        };
+      };
+    });
+  }
   return {readProject, listProjects, saveProject, putImage, readImage, deleteProject,
+    exportBundle, importBundle,
     close() { db.close(); }};
 }
 function openLocalProjects(factory = typeof globalThis !== 'undefined' ? globalThis.indexedDB : null) {
@@ -174,4 +277,4 @@ function openLocalProjects(factory = typeof globalThis !== 'undefined' ? globalT
   });
 }
 module.exports = {DB_NAME, DB_VERSION, MAX_IMAGE_BYTES, ensureImage,
-  openLocalProjects, createStore};
+  openLocalProjects, createStore, createProjectBundle, parseProjectBundle};
