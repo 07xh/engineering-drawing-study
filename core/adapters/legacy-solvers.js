@@ -34,6 +34,29 @@ function solve(request){
  const scope=request.scope;
  if(!['point-3d-linear','point-2d-linear','point-2d-intersection','multi-point-2d-linear','multi-point-2d-local-jacobian'].includes(scope))
   return packageResult({status:'unsupported',scope,solverId:'none',diagnostics:['当前阶段尚无该题型的可信数学求解器']});
+ // Opt-in typed M1/M2 path. Unlike the old count-only multi-point adapter,
+ // this computes coordinate geometry from verified algebraic equalities.
+ // Legacy requests without typed geometry retain the old solver as oracle.
+ // No external source-confirmation/visual-playback permission is minted here.
+ if(scope==='multi-point-2d-linear'&&Object.hasOwn(request,'geometry')){
+  const allowed=['scope','geometry','constraints','sourceRevision','featureScaleMm',
+   'absoluteToleranceMm','relativeTolerance'];
+  if(Object.keys(request).some(key=>!allowed.includes(key)))
+   throw new TypeError('unrecognized typed M2 solve input');
+  const {solveLinearPointSystem}=require('../constraints/linear-point-global-solver.cjs');
+  const m2=solveLinearPointSystem({
+   geometry:request.geometry,constraints:request.constraints,
+   sourceRevision:request.sourceRevision,featureScaleMm:request.featureScaleMm,
+   absoluteToleranceMm:request.absoluteToleranceMm,
+   relativeTolerance:request.relativeTolerance??0
+  });
+  return packageResult({...m2.solveResult,scope,
+   mathEvidenceScope:m2.solveResult.scope,
+   solverId:'core-m2-planar-affine',
+   sourceRevision:m2.sourceRevision,unit:'mm',
+   computedGeometry:m2.solvedGeometry,
+   sourceConfirmed:false,readyForV5:false});
+ }
  const conditions=toLegacyConditions(request.constraints,scope);
  if(scope==='point-3d-linear'||scope==='point-2d-linear'){
   const r=facade.analyze({scope,conditions});
