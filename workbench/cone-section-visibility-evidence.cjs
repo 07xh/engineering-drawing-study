@@ -9,6 +9,8 @@ const {project}=require('../core/projection/conventions.js');
 const finite=Number.isFinite;
 const dirs={V:{x:0,y:-1,z:0},H:{x:0,y:0,z:1},W:{x:1,y:0,z:0}};
 const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+// Ray direction is explicitly from the surface point toward the observer.
+// V looks along -Y, H along +Z and W along +X in this coordinate system.
 function coneSectionVisibilityEvidence(cone,plane,options={}){
  const source=verifiedConeSpatialIntent(cone,plane,options);
  if(source.status!=='ready')
@@ -29,6 +31,7 @@ function coneSectionVisibilityEvidence(cone,plane,options={}){
    const B=2*(q.x*d.x+q.y*d.y+k*k*q.z*d.z);
    let occluded=false,ambiguous=false,nearest=null;
    if(Math.abs(A)<=1e-14){
+    // A near-linear ray may be tangent/degenerate; do not certify visibility.
     ambiguous=true;
    }else{
     const t=-B/A;
@@ -48,6 +51,9 @@ function coneSectionVisibilityEvidence(cone,plane,options={}){
    const normal={x:q.x,y:q.y,z:k*k*q.z};
    const norm=Math.hypot(normal.x,normal.y,normal.z);
    if(norm<=tolerance||Math.abs(dot(normal,d))/norm<1e-7)ambiguous=true;
+   // The H view can be blocked by the planar base disk only for rays
+   // pointing toward -Z. Our H ray is +Z, so the base lies behind
+   // lateral points. This does not certify cap boundary presentation.
    entries.push({projection:project(p)[view],
     visibility:ambiguous?'undetermined':occluded?'occluded':'visible',
     lateralRayIntersectionMm:nearest});
