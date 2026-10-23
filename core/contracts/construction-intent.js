@@ -13,6 +13,7 @@ const KINDS=Object.freeze(['line','point','circle','directed-arc']);
 const SPACES=Object.freeze(['model-mm','sheet-px']);
 const PROOF_STATES=Object.freeze(['selected','unique']);
 const PROOF_LEVELS=Object.freeze(['analytic','linear-algebra','selected-directed-g1']);
+const branchIdentifier=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_+.-]{0,79}$/.test(x);
 const isIdList=x=>Array.isArray(x)&&x.length<=300&&
  x.every(identifier)&&noDuplicateIds(x);
 const point=p=>object(p)&&finite(p.x)&&finite(p.y);
@@ -50,7 +51,7 @@ function validSource(s){
   typeof s.evidenceSource!=='string'||!s.evidenceSource||
   s.evidenceSource.length>180||
   (s.resultId!==null&&!identifier(s.resultId))||
-  (s.branchId!==null&&!identifier(s.branchId)))return false;
+  (s.branchId!==null&&!branchIdentifier(s.branchId)))return false;
  if(s.status==='selected'&&s.branchId===null)return false;
  if(s.status==='unique'&&s.branchId!==null)return false;
  return true;
