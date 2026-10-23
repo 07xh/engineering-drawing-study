@@ -1,0 +1,68 @@
+[
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-1",
+    "textbookChapter": null,
+    "topic": "带圆孔的对称外轮廓尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-2",
+    "textbookChapter": null,
+    "topic": "阶梯轮廓与同心半圆尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-3",
+    "textbookChapter": null,
+    "topic": "圆角矩形板与孔群尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-4",
+    "textbookChapter": null,
+    "topic": "圆周等分孔群尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-5",
+    "textbookChapter": null,
+    "topic": "圆角外轮廓与斜槽尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 5,
+    "questionLabel": "1-5-6",
+    "textbookChapter": null,
+    "topic": "台阶轮廓与斜面尺寸标注",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]

@@ -1,0 +1,79 @@
+[
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-1",
+    "textbookChapter": null,
+    "topic": "制图单位与图纸基本规范选择",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-2",
+    "textbookChapter": null,
+    "topic": "不同绘图比例的尺寸标注判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-3",
+    "textbookChapter": null,
+    "topic": "放大比例尺寸数值判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-4",
+    "textbookChapter": null,
+    "topic": "图样尺寸标注错误辨析",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-5",
+    "textbookChapter": null,
+    "topic": "线性尺寸数字书写规范判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-6",
+    "textbookChapter": null,
+    "topic": "圆弧尺寸与半径直径标注判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 3,
+    "questionLabel": "1-3-7",
+    "textbookChapter": null,
+    "topic": "直径符号标注规范判别",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]

@@ -2,7 +2,7 @@
 /**
  * #380 metadata-only benchmark progress reporter.
  * Reports INDEX progress, never claims full-book solve coverage while
- * 85 other pages and individual exercise inventory remain unaudited.
+ * remaining printed pages and the full question inventory are unaudited.
  */
 const fs=require('node:fs');
 const path=require('node:path');
