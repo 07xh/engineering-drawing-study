@@ -1,0 +1,57 @@
+[
+  {
+    "printedPage": 6,
+    "questionLabel": "1-6-1",
+    "textbookChapter": null,
+    "topic": "线段五等分及几何正三角形构造",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 6,
+    "questionLabel": "1-6-2",
+    "textbookChapter": null,
+    "topic": "圆内接正三角形构造",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 6,
+    "questionLabel": "1-6-3",
+    "textbookChapter": null,
+    "topic": "圆内接正六边形构造",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 6,
+    "questionLabel": "1-6-4",
+    "textbookChapter": null,
+    "topic": "同心圆与三孔圆周等分构造",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 6,
+    "questionLabel": "1-6-5",
+    "textbookChapter": null,
+    "topic": "圆内多弧旋转曲线构造",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]

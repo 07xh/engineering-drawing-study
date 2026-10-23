@@ -66,10 +66,10 @@ test('#380 changing paper scale never changes actual specialized mathematics',()
  assert.deepEqual(a.steps.map(s=>s.id),b.steps.map(s=>s.id));
 });
 
-test('#380 preflight is not exercise-book success: original catalog remains unchanged',()=>{
+test('#380 preflight is not exercise-book success: original catalog remains unsolved',()=>{
  const book=buildReport(loadCatalog());
- assert.equal(book.pagesIndexed,1);
- assert.equal(book.originalExercises,1);
+ assert.equal(book.pagesIndexed,12);
+ assert.equal(book.originalExercises,56);
  assert.equal(book.solved,0);
  assert.equal(book.fullBookSolvedRate,null);
  const sample=runPreflight();
