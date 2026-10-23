@@ -9,6 +9,8 @@ const assert=require('node:assert/strict');
 const {evaluateUnifiedMath:run}=
  require('../../workbench/unified-math-pipeline.cjs');
 const {validateSolveResult}=require('../../core/contracts/solve-result.js');
+const {validateGeometry}=require('../../core/contracts/geometry.js');
+const {project,VIEWS}=require('../../core/projection/conventions.js');
 const p=(x,y,z)=>({x,y,z});
 const plane=(point,normal)=>({point,normal});
 const input=(kind,solid,pl,extras={})=>({
@@ -49,6 +51,25 @@ for(const example of fixtures){
   assert.equal(response.solveResult.proofOfGlobalUniqueness,false);
   assert.equal(response.solveResult.visibilityVerified,false);
   assert.equal(response.solveResult.sourceProblemConfirmed,false);
+  if(example.kind==='rectangular-prism'||example.kind==='rectangular-pyramid'){
+   const g=response.sectionPerimeterGeometry;
+   assert.ok(g,'trusted M3 must expose audited finite polygon geometry');
+   assert.equal(validateGeometry(g).ok,true);
+   assert.equal(g.kind,'polyline');
+   assert.equal(g.data.closed,true);
+   assert.equal(Object.isFrozen(g.data.points),true);
+   const n=example.plane.normal,origin=example.plane.point;
+   const d=Math.hypot(n.x,n.y,n.z);
+   for(const q of g.data.points){
+    // Independently recompute source plane residual from confirmed input.
+    const residual=(n.x*(q.x-origin.x)+n.y*(q.y-origin.y)+
+     n.z*(q.z-origin.z))/d;
+    assert.ok(Math.abs(residual)<=1e-6);
+    for(const view of VIEWS)assert.ok(
+     Number.isFinite(project(q)[view].u)&&Number.isFinite(project(q)[view].v));
+   }
+  }else assert.equal(response.sectionPerimeterGeometry,null,
+   'sampled cylinder/sphere curves must not be disguised as proven straight polygons');
   assert.equal(JSON.stringify(example),before);
   assert.equal(Object.isFrozen(response),true);
  });
@@ -59,12 +80,13 @@ test('unified pipeline blocks a no-intersection or clipped 3D section',()=>{
  assert.equal(absent.status,'not-verified');
  assert.equal(absent.geometryVerifiedWithinSpecialistScope,false);
  assert.equal(absent.v5Ready,false);
+ assert.equal(absent.sectionPerimeterGeometry,null);
  assert.equal(absent.solveResult.maxResidual,null);
  assert.deepEqual(absent.steps,[]);
 });
 test('unified spatial entry fails closed on fake source, units, revision and injected evidence',()=>{
  const prism=fixtures[0];
- for(const field of ['verified','result','solveResult','constructionIntents']){
+ for(const field of ['verified','result','solveResult','constructionIntents','sectionPerimeterGeometry']){
   assert.throws(()=>cut({...prism,[field]:{verified:true}}));
  }
  assert.throws(()=>cut({...prism,unit:'px'}),/model-mm/);
