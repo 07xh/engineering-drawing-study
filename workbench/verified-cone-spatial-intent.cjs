@@ -93,6 +93,12 @@ function verifiedConeSpatialIntent(cone,plane,{
    sheets[view].push({x:sheet.x,y:sheet.y});
   }
  }
+ // M5 topology invariant: an analytically complete lateral loop must actually
+ // join at its sampled seam. Sampling itself never establishes the proof.
+ const curveStart=solved.points[0],curveEnd=solved.points.at(-1);
+ const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ if(kind==='full-ellipse'&&distance(curveStart,curveEnd)>8*eps)
+  return blocked(revision,'full cone ellipse has a disconnected presentation seam');
  let chord=null;
  if(kind==='clipped-ellipse'){
   chord={start:point(solved.capChord.start),end:point(solved.capChord.end)};
@@ -103,6 +109,12 @@ function verifiedConeSpatialIntent(cone,plane,{
       Math.abs(Math.hypot(q.x-cone.baseCenter.x,q.y-cone.baseCenter.y)-
        cone.radiusMm)>8*eps||planeDistance(q)>8*eps))
    return blocked(revision,'base chord boundary or residual invalid');
+  // The cap chord must run from the LAST lateral point back to the FIRST.
+  // Two individually valid plane/cap points are not a proven closed contour
+  // without this directed connectivity check.
+  if(distance(start,curveEnd)>8*eps||
+     distance(endPoint,curveStart)>8*eps)
+   return blocked(revision,'oriented cap chord does not close lateral arc');
  }
  const intent={
   schema:VERSION,id:'cone-section-'+revision,revision,
