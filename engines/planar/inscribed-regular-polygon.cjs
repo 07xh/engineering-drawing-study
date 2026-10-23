@@ -86,12 +86,18 @@ function regularPolygonInCircle(input={}){
  }
  const actualArea=Math.abs(signedDoubleArea/2);
  const areaErrorMm2=Math.abs(actualArea-expectedArea);
+ // All length residuals must scale with the actual confirmed radius.
+ // An absolute 1e-8 mm floor wrongly certifies tiny polygons whose vertex
+ // coordinates lose significant digits near large translated centers.
+ const areaResidualMm=areaErrorMm2/r;
+ const relativeAreaError=areaErrorMm2/expectedArea;
  const mmResidual=Math.max(maxRadiusError,maxChordError,centroidError,
-  areaErrorMm2/Math.max(1,r));
- const toleranceMm=1e-8*Math.max(1,r);
+  areaResidualMm);
+ const toleranceMm=1e-8*r;
  const windingVerified=sign*signedDoubleArea>0;
- if(!finite(mmResidual)||!windingVerified||mmResidual>toleranceMm)
-  return {...unresolved('undetermined','regular-polygon residual/winding proof failed'),
+ if(!finite(mmResidual)||!finite(relativeAreaError)||
+    relativeAreaError>1e-8||!windingVerified||mmResidual>toleranceMm)
+  return {...unresolved('undetermined','regular-polygon precision or winding proof failed'),
    sideCount:n,revision:input.revision};
  const solveResult=checkedSolveResult({
   status:'unique',scope:'02/inscribed-regular-polygon/fixed-orientation',
@@ -110,8 +116,8 @@ function regularPolygonInCircle(input={}){
   vertices,edges,sideLengthMm:expectedSide,
   perimeterMm:n*expectedSide,areaMm2:expectedArea,
   maxRadiusErrorMm:maxRadiusError,maxChordErrorMm:maxChordError,
-  centroidErrorMm:centroidError,areaErrorMm2,maxResidualMm:mmResidual,
-  toleranceMm,windingVerified,constructionReady:false,
+  centroidErrorMm:centroidError,areaErrorMm2,relativeAreaError,
+  maxResidualMm:mmResidual,toleranceMm,windingVerified,constructionReady:false,
   solveResult};
 }
 module.exports={regularPolygonInCircle};
