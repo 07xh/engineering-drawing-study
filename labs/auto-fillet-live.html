@@ -172,6 +172,21 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 </div>
 <p id="dimensionDraftM3Status" class="source-status" role="status" aria-live="polite">不选唯一数学分支，不自动启动 V5。</p>
 </details>
+<details id="privatePhotoCaseDetails" class="source-review">
+<summary>保存本机原题识图／数学／V5 逐题核验记录</summary>
+<p class="source-status">仅在你的设备上生成 JSON，不上传原题、参考答案或图片。记录当前照片的 SHA-256、OCR/线段/圆弧/箭头候选、人工审核后的 ProblemDraft、双比例尺、现有 M3 与单 V5 校验状态（如已完成）。SHA-256 可用于识别相同图片，可能属于隐私信息；请勿公开分享。</p>
+<label for="privatePhotoCaseRole">请检查原题图片是否含参考答案
+<select id="privatePhotoCaseRole">
+<option value="unknown">尚未确认（不能计入盲测）</option>
+<option value="asserted-unmarked-question">我观察到不含参考答案（仍需独立验收）</option>
+<option value="answer-marked-reference">包含参考答案／红色解题标注（排除盲测）</option>
+</select></label>
+<label class="vector-confirm" for="privatePhotoCaseAccept">
+<input id="privatePhotoCaseAccept" type="checkbox">我确认只在本机导出，知悉图像指纹与文字标注可能涉及隐私，并理解这不是原题自动解题合格证书
+</label>
+<div class="controls"><button type="button" id="privatePhotoCaseSave">保存当前题目私有证据 JSON</button></div>
+<p id="privatePhotoCaseStatus" class="source-status" role="status" aria-live="polite">未记录。请选择原题，按顺序完成识图候选、人工审核、M3 和 V5；即使记录完毕，实际教材无答案盲测仍需独立签收。</p>
+</details>
 <p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
 <div class="controls">
 <button type="button" id="confirmSource">确认当前数值与框选区域相符</button>

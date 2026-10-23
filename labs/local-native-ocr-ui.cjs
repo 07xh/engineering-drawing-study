@@ -293,6 +293,7 @@ function attachLocalNativeOcr({
  return Object.freeze({reset,refreshAssociations(){if(selector.value)describeSelected();},
   get count(){return candidates.length},
   get reviewedPath(){return reviewedPath},
+  getCurrentCandidates(){return structuredClone(candidates);},
   getReviewForDraft(revision){
    // The original user review is returned only while both image epoch and
    // original mathematical UI revision are unchanged. This remains source

@@ -29,9 +29,10 @@ function attachReviewedDimensionDraftUi({
  };
  const choice=(id,label)=>{const o=node('option',label);o.value=id;return o;};
  let source=null,accepted=null,prepared=null,solution=null;
+ let lastPrepared=null,lastM3=null;
  let selections=new Map(),snapshot='',sourceGeneration=-1,reviewId='';
  function clearResults(reason){
-  accepted=null;prepared=null;solution=null;
+  accepted=null;prepared=null;solution=null;lastPrepared=null;lastM3=null;
   C.preflight.disabled=true;C.apply.disabled=true;C.m3Accept.checked=false;
   C.commit.checked=false;
   C.status.textContent=reason||'来源已改变，请重新审核后生成 ProblemDraft。';
@@ -64,7 +65,7 @@ function attachReviewedDimensionDraftUi({
   clearResults('审核选项已改变，请重新提交尺寸关联并检查两条比例尺。');
  }
  function invalidateM3(){
-  prepared=null;solution=null;
+  prepared=null;solution=null;lastPrepared=null;lastM3=null;
   C.preflight.disabled=!accepted;C.apply.disabled=true;
   C.m3Status.textContent='M3 参数或源线段已改变；此前的数学求解与 V5 导入许可作废。';
  }
@@ -198,7 +199,8 @@ function attachReviewedDimensionDraftUi({
   if(!['unique','multiple'].includes(analytic.status)||
      !analytic.candidates.length)
    throw new RangeError('现有 M3 没有离散已验证可用解：'+analytic.status);
-  prepared=doc;solution=analytic;C.apply.disabled=false;
+  prepared=doc;solution=analytic;
+  lastPrepared=doc;lastM3=analytic;C.apply.disabled=false;
   C.m3Status.textContent='已用原有 M3 解析求解器得到 '+analytic.candidateCount+
    ' 个经过有限几何检查的候选解，状态 '+analytic.status+
    '。未自动选择任一分支，尚未通过 G1 与 V5 逐笔作图最终验收。';
@@ -243,7 +245,22 @@ function attachReviewedDimensionDraftUi({
   el.addEventListener('change',invalidateM3);
  }
  reset();
- return Object.freeze({reset,get status(){return accepted?.status??'unreviewed'},
-  get m3Status(){return solution?.status??'not-executed'}});
+ return Object.freeze({reset,
+  getEvidenceSnapshot(){
+   // Never expose a stale photo, old OCR verdict, or derived result when the
+   // source generation/revision has changed. Read-only, user-local snapshot.
+   if(!freshness())return null;
+   return {
+    sourceRevision:source.revision,sourceGeneration,
+    reviewedAssociation:structuredClone(sourceProof),
+    acceptedDraft:accepted?structuredClone(accepted.draft):null,
+    calibration:accepted?structuredClone(accepted.calibration):null,
+    preparedProblem:lastPrepared?structuredClone(lastPrepared.problem):null,
+    actualM3:lastM3?structuredClone(lastM3):null
+   };
+  },
+  get status(){return accepted?.status??'unreviewed'},
+  get m3Status(){return solution?.status??'not-executed'}
+ });
 }
 module.exports={attachReviewedDimensionDraftUi};
