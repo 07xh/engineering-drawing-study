@@ -179,7 +179,7 @@ test('V6.6 enlarged homepage SVG keeps the verified R40 construction fully visib
  const sheet=hero.querySelector('[data-construction-example="right-angle-fillet"]');
  assert.ok(sheet,'hero drawing remains linked to actual fillet example');
  const svg=sheet.querySelector('svg');
- const [minX,minY,width,height]=svg.getAttribute('viewBox').split(/\\s+/).map(Number);
+ const [minX,minY,width,height]=svg.getAttribute('viewBox').trim().split(' ').filter(Boolean).map(Number);
  assert.ok(width>0&&height>0);
  assert.ok(width<=550&&height<=400,'SVG viewBox must tightly frame construction');
  assert.ok(minX<=290 && minY<=123,'known horizontal/vertical segments remain visible');
@@ -195,11 +195,12 @@ test('V6.6 enlarged homepage SVG keeps the verified R40 construction fully visib
  assert.equal(hero.querySelectorAll('.next-home-intro-sheet [data-next-illustration]').length,1,
   'exactly one paper view');
  const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
- assert.match(css,/V6\\.6 \\| Homepage paper-first hero/);
- assert.match(css,/grid-template-columns:minmax\\(0,\\.81fr\\) minmax\\(0,1\\.19fr\\)/);
- assert.match(css,/aspect-ratio:525 \\/ 387/);
- assert.match(css,/align-items:start/);
- assert.match(css,/@media\\(min-width:641px\\) and \\(max-width:790px\\)/);
+ assert.ok(css.includes('V6.6 | Homepage paper-first hero'));
+ assert.ok(css.includes('grid-template-columns:minmax(0,.81fr) minmax(0,1.19fr)'));
+ assert.ok(css.includes('aspect-ratio:525 / 387'));
+ assert.ok(css.includes('align-items:start'));
+ assert.ok(css.includes('@media(min-width:641px) and (max-width:790px)'));
+
 });
 
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
