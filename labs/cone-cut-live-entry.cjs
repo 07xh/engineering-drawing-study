@@ -160,7 +160,6 @@ const {coneLinkedSpatialScene}=
    // never mark new conditions confirmed or trigger the existing M3/V5.
    invalidate(true);
    $('coneRadius').value=String(proposal.radiusMm);
-   reviewedRadius=proposal;
    resetCandidateAcceptance();
    reviewedRadius=proposal;
    $('coneOcrStatus').textContent='已人工核对 '+proposal.sourceText+
@@ -219,7 +218,7 @@ const {coneLinkedSpatialScene}=
      $('coneSourceStatus').textContent=
       '本地参考图片已显示（'+img.naturalWidth+'×'+
       img.naturalHeight+'）。请人工填写圆锥与截平面条件；'+
-      '本页不识别图片或校验答案，不能计为原题盲测通过。';
+      '本机可选 OCR 仅产生待审 R/Φ 文字候选；不能自动判定图元归属、解题或盲测通过。';
     }catch(error){
      // The reference session already rejected/revoked the unsafe blob.
      // Still update the UI: rejectImage() on this OLD epoch now returns false.
