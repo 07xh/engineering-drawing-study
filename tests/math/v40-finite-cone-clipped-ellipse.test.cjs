@@ -141,3 +141,34 @@ test('04 solver is deterministic and does not modify source geometry',()=>{
  verify(a,c,p);assert.deepEqual(a,b);
  assert.equal(JSON.stringify([c,p]),snapshot);
 });
+
+test('04 independent inclined cap-circle oracle works for normals tilted in both x and y',()=>{
+ for(const normal of [P(1,2,6),P(-1,2,6),P(1,-2,-6),
+  P(-1,-2,-6),P(3,1,9)]){
+  const c=C(P(2,-3,5),5,10),p=Pl(P(2,-3,6),normal);
+  const result=solve(c,p);verify(result,c,p);
+  const offset=normal.x*(c.baseCenter.x-p.point.x)+
+   normal.y*(c.baseCenter.y-p.point.y)+
+   normal.z*(c.baseCenter.z-p.point.z);
+  const distance=Math.abs(offset)/Math.hypot(normal.x,normal.y);
+  const expected=2*Math.sqrt(c.radiusMm*c.radiusMm-distance*distance);
+  near(result.capChord.lengthMm,expected);
+  near(result.capChord.midpoint.z,c.baseCenter.z);
+  const cap=result.capChord;
+  for(const q of [cap.start,cap.end]){
+   near((q.x-p.point.x)*normal.x+(q.y-p.point.y)*normal.y+
+    (q.z-p.point.z)*normal.z,0);
+   near(Math.hypot(q.x-c.baseCenter.x,q.y-c.baseCenter.y),5);
+  }
+ }
+});
+test('04 no finite truncated ellipse can be accepted by only the sampled segment ends',()=>{
+ const c=C(),p=Pl(),r=solve(c,p,{samplesPerArc:32});
+ assert.equal(r.status,'ready');
+ assert.equal(r.curve.analyticCurveVerified,true);
+ assert.equal(r.curve.sampledPolylineOnly,true);
+ assert.ok(r.curve.parameterRadians[1]-r.curve.parameterRadians[0]>0);
+ assert.ok(r.curve.radialBoundsMm.min<c.radiusMm);
+ assert.ok(r.curve.radialBoundsMm.max>c.radiusMm);
+ assert.ok(r.joinMismatchMm<=1e-6);
+});
