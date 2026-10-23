@@ -124,3 +124,24 @@ test('result revision and branch are preserved without upgrading any mathematica
  assert.equal(next.evidence.v5,'requires-verified-construction-intent');
  assert.equal(Object.hasOwn(next,'verified'),false);
 });
+
+// Shared M0/M3 invariants: do not let a view adapter invent units or lose geometry.
+test('spatial line direction remains stable near the floating-point integer limit',()=>{
+ const origin={x:2**53,y:2**53,z:2**53};
+ const line={id:'FarAxis',kind:'line',space:'model-3d',unit:'mm',
+  data:{point:origin,direction:{x:1,y:2,z:3}}};
+ const object=deriveGeometryScene({...space,geometry:[line]}).objects[0];
+ assert.deepEqual(object.representations.V.direction,{u:1,v:3});
+ assert.deepEqual(object.representations.H.direction,{u:1,v:2});
+ assert.deepEqual(object.representations.W.direction,{u:2,v:3});
+ for(const view of P.VIEWS)assert.equal(object.representations[view].kind,'line');
+});
+test('model mm scene never silently asserts mm for missing or unitless coordinates',()=>{
+ for(const unit of [undefined,'unitless']){
+  const g=point('UnknownUnit',3,4,5);
+  if(unit===undefined)delete g.unit; else g.unit=unit;
+  assert.throws(()=>deriveGeometryScene({...space,geometry:[g]}),/mm/);
+ }
+ const g=point('ValidMm',3,4,5);
+ assert.equal(deriveGeometryScene({...space,geometry:[g]}).coordinateUnit,'mm');
+});
