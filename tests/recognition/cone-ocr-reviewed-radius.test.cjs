@@ -67,7 +67,7 @@ test('09 duplicate/free-form/non-R text or forged OCR value never becomes model 
  assert.throws(()=>review(opts({...c,proposedRadiusValue:500})));
  assert.throws(()=>review(opts({...c,id:'other_1'})));
  assert.throws(()=>review(opts({...c,bbox:[100,50,1000,80]})));
- assert.throws(()=>review(opts(null)),/untrusted/);
+ assert.throws(()=>review(opts(c,{candidate:null})),/untrusted/);
  const unknown=normalizeNativeDetections([{
   rawValue:'M12',boundingBox:{x:0,y:0,width:40,height:20}
  }],{width:1000,height:600},image);
