@@ -8,9 +8,8 @@ const {homeHTML}=require('../../ui-next/home.cjs');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D selection',async()=>{
  const {document,window}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
- const original={document:global.document,window:global.window,crypto:global.crypto};
+ const original={document:global.document,window:global.window};
  global.document=document;global.window=window;
- global.crypto=require('node:crypto').webcrypto;
  global.requestAnimationFrame=cb=>setImmediate(()=>cb(performance.now()));
  global.cancelAnimationFrame=clearImmediate;
  const $=id=>document.getElementById(id);
@@ -49,7 +48,6 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-step-list').querySelectorAll('button').length,0);
  }finally{
   global.document=original.document;global.window=original.window;
-  global.crypto=original.crypto;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;
  }
 });
