@@ -23,6 +23,7 @@ const {compareReviewedRulers}=
 const {prepareConfirmedFillet}=
  require('../integration/v31-confirmed-svg-fillet-v5.cjs');
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
+const witnessed=new WeakSet();
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const exact=(x,y)=>Number.isSafeInteger(x)&&Number.isSafeInteger(y)&&x===y;
 const bboxClose=(x,b)=>Array.isArray(b)&&b.length===4&&
@@ -95,6 +96,18 @@ function makeDimensionConstraint({
   solverReady:false,constructionIntentReady:false,
   globallyUnique:null,blindExerciseAccepted:false
  });
+ for(const id of review.leaderCandidateIds){
+  const raw=association.lines.find(x=>x.id===id);
+  const checked=d.candidates.find(x=>x.id===id);
+  const g=checked?.geometry;
+  const same=(a,b)=>finite(a)&&finite(b)&&Math.abs(a-b)<=1e-6;
+  if(!raw||checked?.kind!=='segment'||
+     checked.reviewStatus!=='confirmed'||g?.frame!=='drawing-px'||
+     !bboxClose(checked.bbox,raw.bbox)||
+     !['from','to'].every(k=>same(g[k]?.x,raw[k]?.x)&&
+      same(g[k]?.y,raw[k]?.y)))
+   throw new TypeError('reviewed leader must match current confirmed ProblemDraft segment');
+ }
  const {first,second,originPx,yAxis}=calibration;
  if(!object(first)||!object(second)||first.sourceId===second.sourceId)
   throw new TypeError('two distinct human-confirmed source ruler segments required');
@@ -144,7 +157,7 @@ function makeDimensionConstraint({
  });
  const metric={frame:'drawing-px',originPx:{x:originPx.x,y:originPx.y},
   mmPerPx,yAxis,reviewedBy:'user',revision:output.revision};
- return Object.freeze({
+ const result=Object.freeze({
   status:'dimension-attached-to-existing-draft',
   draft:output,calibration:Object.freeze(metric),
   readiness:draftReadiness(output),
@@ -159,6 +172,8 @@ function makeDimensionConstraint({
   globallyUnique:null,answerMark:review.answerMark,
   answerIsolationVerified:false,blindExerciseAccepted:false
  });
+ witnessed.add(result);
+ return result;
 }
 /**
  * The ONLY optional next step uses the existing M3 input preflight; no
@@ -166,11 +181,15 @@ function makeDimensionConstraint({
  * Other unconfirmed candidates and unresolved dimensions block this gate.
  */
 function prepareSpecialistInput(attached,{
- kind,sourceIds,filletRadiusMm,options={},expectedRevision
+ kind,sourceIds,filletRadiusMm,options={},expectedRevision,currentDraft
 }={}){
- if(attached?.status!=='dimension-attached-to-existing-draft'||
+ if(!object(attached)||!witnessed.has(attached)||
+    attached.status!=='dimension-attached-to-existing-draft'||
     attached.solverReady!==false||!attached.draft||
-    !exact(expectedRevision,attached.draft.revision))
+    !exact(expectedRevision,attached.draft.revision)||
+    !currentDraft||!exact(currentDraft.revision,expectedRevision)||
+    JSON.stringify(validateDraft(currentDraft))!==
+     JSON.stringify(validateDraft(attached.draft)))
   throw new TypeError('current reviewed ProblemDraft dimension required');
  // The actual R0 M3 gate verifies ALL selected source geometries, remaining
  // dimension-to-mm residuals, explicit side/mode and the full input contract.
