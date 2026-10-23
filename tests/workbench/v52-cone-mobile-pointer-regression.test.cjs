@@ -33,7 +33,7 @@ test('07 mobile horizontal one-finger orbit uses same spatial model and V5 playe
  assert.match(html,/#cone3dSvg\{[^}]*touch-action:pan-y/);
  assert.match(html,/\.cone-spatial-controls input\{min-height:44px/);
  assert.match(html,/左右拖动三维空白区域/);
- assert.match(code,/evaluateUnifiedMath\\(\\{/);
+ assert.match(code,/evaluateUnifiedMath\(\{/);
  assert.match(code,/kind:'cone-plane-section'/);
  assert.match(code,/coneLinkedSpatialScene\(plan\.spatialIntent/);
  assert.doesNotMatch(code,/function\s+(?:createPlayer|compileTimeline|conePlaneFullEllipse)\s*\(/);
