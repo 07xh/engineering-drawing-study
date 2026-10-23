@@ -123,9 +123,12 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.ok(sectionV,'audited intersection is in shared V/H/W scene');
   sectionV.dispatchEvent(new window.Event('click',{bubbles:true}));
   assert.match($('v7-selection').textContent,/Section1/);
-  const sectionW=$('v7-sheet').querySelector('[data-geometry-id="Section1"][data-geometry-view="W"]');
-  assert.ok(sectionW);
-  assert.equal(sectionV.getAttribute('stroke'),sectionW.getAttribute('stroke'));
+  const selectedV=$('v7-sheet').querySelector('[data-geometry-id="Section1"][data-geometry-view="V"]');
+  const selectedW=$('v7-sheet').querySelector('[data-geometry-id="Section1"][data-geometry-view="W"]');
+  assert.ok(selectedV&&selectedW,'both views must redraw after selecting the M3 object');
+  assert.equal(selectedV.getAttribute('stroke'),'#ef6730','V must be selected');
+  assert.equal(selectedW.getAttribute('stroke'),selectedV.getAttribute('stroke'),
+    'the same Geometry ID must be highlighted in W without math recalculation');
   assert.ok(section3D.length>=3&&section3D.length<=6,
    'actual M3 verified section polygon is visible as bounded straight edges');
   assert.equal(sectionSheet.length,section3D.length*3,
