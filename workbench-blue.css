@@ -189,6 +189,89 @@ body.workbench-blue .workbench-step-rail > h2 { font-size:16px;margin:15px 0 8px
 body.workbench-blue .workbench-step-rail .muted { line-height:1.55 }
 body.workbench-blue .workbench-step-rail details { font-size:12px }
 body.workbench-blue #coneStepLabel { margin:3px 0 9px }
+/* The other existing solvers reuse the same blue shell and nearby controls. */
+body.workbench-blue :is(.workspace,.frame,.grid) > :is(.panel,.paper) {
+  border-color:var(--wb-border);
+}
+body.workbench-blue .draftai-playdock .actions {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:2px 0;
+}
+body.workbench-blue .draftai-playdock .actions > button {
+  min-height:44px;
+}
+body.workbench-blue .draftai-playdock :is(.playback-scrub,.seek) {
+  border:0;
+  margin:5px 0 0;
+  padding:4px;
+  background:transparent;
+}
+body.workbench-blue :is(#diagram,#paperSvg) {
+  max-width:100%;
+  min-width:0;
+  height:auto;
+}
+body.workbench-blue #fullControls .rate-select { min-width:105px }
+body.workbench-blue .paper-tools { margin:4px 0 7px }
+body.workbench-blue :is(.paper-picked,.legend) { margin:6px 0 }
+body.workbench-blue :is(#studentMathFeedback,#filletProof,.steps) {
+  border-color:var(--wb-border);
+  background:#f8fbff;
+}
+body.workbench-blue :is(#polygonStatus,#solveStatus) {
+  background:var(--wb-blue-tint);
+  color:#285389;
+}
+body.workbench-blue :is(.tag,#polygonStepList button[aria-current="step"]) {
+  background:var(--wb-blue-tint);
+  color:var(--wb-blue-dark);
+  border-color:#bfdbff;
+}
+body.workbench-blue .workbench-step-rail :is(.step-complete,[data-status="complete"],[data-complete="true"],[aria-checked="true"]) {
+  color:var(--wb-blue);
+}
+@media (min-width:901px) {
+  body.workbench-blue .workspace > .panel:first-child,
+  body.workbench-blue .frame > .paper,
+  body.workbench-blue .grid > .output {
+    position:sticky;
+    top:72px;
+    max-height:calc(100dvh - 84px);
+    overflow:auto;
+    overscroll-behavior:contain;
+  }
+}
+@media (max-width:900px) {
+  body.workbench-blue :is(.workspace,.frame,.grid) {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  body.workbench-blue .frame > .controls,
+  body.workbench-blue .grid > .inputs { order:0 }
+  body.workbench-blue .frame > .paper,
+  body.workbench-blue .grid > .output { order:-1 }
+  body.workbench-blue :is(.workspace,.frame,.grid) > :is(.panel,.paper,.controls,.inputs,.output) {
+    width:100%;
+    position:static;
+    max-height:none;
+    overflow:visible;
+  }
+  body.workbench-blue :is(#diagram,#paperSvg,#polygonSvg) {
+    min-width:0;
+    max-width:100%;
+  }
+  body.workbench-blue .workspace .draftai-playdock,
+  body.workbench-blue .frame .draftai-playdock {
+    position:sticky;
+    bottom:4px;
+    z-index:15;
+    box-shadow:0 5px 22px rgba(29,65,119,.13);
+  }
+}
 /* Keep every V/H/W projection together in the existing SVG; never
  * reorder, split, or transform individual projected views with CSS. */
 @media (max-width:880px) {
