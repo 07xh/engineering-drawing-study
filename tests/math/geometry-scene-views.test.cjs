@@ -145,3 +145,17 @@ test('model mm scene never silently asserts mm for missing or unitless coordinat
  const g=point('ValidMm',3,4,5);
  assert.equal(deriveGeometryScene({...space,geometry:[g]}).coordinateUnit,'mm');
 });
+
+test('the canonical 2D/3D scene is deeply immutable while leaving source Geometry untouched',()=>{
+ const original=point('A',12,8,5);
+ const scene=deriveGeometryScene({...space,geometry:[original]});
+ assert.ok(Object.isFrozen(scene));
+ assert.ok(Object.isFrozen(scene.objects));
+ assert.ok(Object.isFrozen(scene.objects[0].model.data));
+ assert.ok(Object.isFrozen(scene.objects[0].representations.H.at));
+ assert.throws(()=>{scene.objects[0].model.data.z=999;},TypeError);
+ assert.throws(()=>{scene.objects.push({id:'forged'});},TypeError);
+ assert.throws(()=>{scene.objects[0].representations.V.at.u=123;},TypeError);
+ assert.equal(original.data.z,5);
+ assert.deepEqual(scene.objects[0].representations.H.at,{u:12,v:8});
+});

@@ -13,6 +13,14 @@ const {project, VIEWS} = require('./conventions.js');
 
 const SCHEMA = 'draftai-geometry-scene-views/1.0.0';
 const COPY = value => JSON.parse(JSON.stringify(value));
+// Shared scene snapshots are immutable math presentations, not mutable UI caches.
+function deepFreeze(value) {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
 const EPS = 1e-12;
 function fail(message) { throw new Error(message); }
 function xyz(point) { return {x:point.x, y:point.y, z:point.z}; }
@@ -93,13 +101,13 @@ function deriveGeometryScene({geometry,revision,branchId=null,resultId=null}={})
     ids.add(entity.id);
     objects.push(entity);
   }
-  return {schema:SCHEMA,revision,branchId,resultId,coordinateUnit:'mm',
+  return deepFreeze({schema:SCHEMA,revision,branchId,resultId,coordinateUnit:'mm',
     viewMethod:'first-angle-orthographic',objects,
     evidence:{
       math:'requires-canonical-solve-result',
       visibility:'undetermined',
       v5:'requires-verified-construction-intent'
-    }};
+    }});
 }
 function projectSelectionLinks(scene) {
   if(!scene || scene.schema!==SCHEMA || !Array.isArray(scene.objects))
