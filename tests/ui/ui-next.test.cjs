@@ -266,6 +266,7 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
 });
 test('V6.3 wide desktop shows editable conditions + paper + steps without touching solver state',()=>{
  const {after:document}=enhance('labs/auto-fillet-live.html');
+ const previousMatchMedia=document.defaultView.matchMedia;
  document.defaultView.matchMedia=()=>({matches:true});
  const r=document.querySelector('.next-workspace');
  const condition=document.querySelector('[data-next-panel="conditions"]');
@@ -295,6 +296,8 @@ test('V6.3 wide desktop shows editable conditions + paper + steps without touchi
  assert.equal(r.dataset.nextSide,'none');
  assert.equal(input.value,'19.75');
  assert.equal(play.disabled,true);
+ if(previousMatchMedia===undefined)delete document.defaultView.matchMedia;
+ else document.defaultView.matchMedia=previousMatchMedia;
 });
 test('V6.3 sheet remains proportional with wide grid rails and short icon controls',()=>{
  const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
