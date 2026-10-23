@@ -124,6 +124,12 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
    'limited specialist proof never certifies hidden-line styles');
   assert.equal($('v7-play').disabled,true,
    'a scoped polygon is not yet a verified complete V5 construction');
+  section3D[0].dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.match($('v7-selection').textContent,/Solid1/,
+   'a computed section is selected through its stable source solid identity');
+  assert.ok($('v7-sheet').querySelector('[data-geometry-id="Section1"]'));
+  assert.equal($('v7-play').disabled,true,
+   'selecting 2D/3D derived results must not mint a V5 clock');
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';
