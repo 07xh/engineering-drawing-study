@@ -17,6 +17,7 @@ const files = [
   'labs/point-projection-live.html',
   'labs/two-point-v5-live.html',
   'labs/circle-fillet-live.html',
+  'labs/polygon-live.html',
   'labs/auto-fillet-live.html',
   'labs/cylinder-cut-live.html',
   'labs/prism-cut-live.html',
@@ -121,6 +122,14 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/circle-fillet-live-entry.cjs')],
  outfile:path.join(out,'labs/circle-fillet-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* The existing canonical Intent polygon tool, bundled local-only. No new player. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/polygon-live-entry.cjs')],
+ outfile:path.join(out,'labs/polygon-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });

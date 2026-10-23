@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#eff5f0">
+<title>DraftAI · 正多边形真实数学动态作图</title>
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f6f2;color:#243d2e;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+.page{max-width:1200px;margin:20px auto 50px;padding:0 16px}
+h1{margin:12px 0 8px;font-size:clamp(22px,3vw,34px)}
+h2{font-size:17px;margin:0 0 12px}
+p{line-height:1.7;color:#557161}
+.panel{background:white;border:1px solid #d6e7d9;border-radius:16px;padding:18px}
+.grid{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:16px}
+.inputs{display:grid;gap:10px;align-content:start}
+.inputs label{display:grid;gap:5px;font-weight:650;font-size:13px}
+.inputs input:not([type=checkbox]),.inputs select{font:inherit;padding:10px;border:1px solid #bed5c5;border-radius:8px;background:#fff;color:#274632;min-width:0;width:100%}
+.inputs label.confirm{display:flex;align-items:start;gap:9px;font-weight:500}
+.inputs .double{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+button{font:inherit;cursor:pointer;border:1px solid #91bba3;padding:9px 12px;border-radius:9px;background:#fff;color:#216243}
+button.primary{background:#24754c;color:#fff;border-color:#24754c;font-weight:700}
+button:disabled{opacity:.5;cursor:not-allowed}
+.controls{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.controls label{font-size:13px}
+#polygonSvg{display:block;background:#fff;border:1px solid #e0eae2;border-radius:10px;width:100%;max-height:560px;touch-action:pan-y}
+[data-v5-pick]{cursor:pointer}
+[data-v5-pick]:focus-visible{outline:3px solid #f3a549}
+[data-v5-selected=true]{stroke:#dc6728!important;stroke-width:4!important}
+.output{display:grid;gap:12px;align-content:start}
+.status{background:#eef6f0;border-radius:9px;padding:12px;color:#245d3e;min-height:48px;font-size:14px}
+small,.small{font-size:12px;color:#607868;line-height:1.65}
+#polygonStepList{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow:auto}
+#polygonStepList button{font-size:12px;padding:7px}
+#polygonStepList button[aria-current=step]{background:#dceee1;border-color:#6ea889}
+#polygonSeek{width:100%}
+.hints{border-top:1px solid #e0eae2;margin-top:10px;padding-top:10px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}.panel{padding:14px}.page{padding:0 10px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body class="ui-refresh">
+<header class="site-topbar"><div class="site-topbar-inner">
+<a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>数学驱动 · 唯一 V5 动态作图</small></span></a>
+<nav class="site-nav" aria-label="主要导航">
+<a href="../index.html">首页</a>
+<a href="auto-fillet-live.html">二维圆弧解题</a>
+<a href="point-projection-live.html">三面投影</a>
+</nav></div></header>
+<main class="page">
+<h1>圆内接正三角形 / 正六边形</h1>
+<p>先手动确认圆心、半径、首顶点角度和绘制方向，系统再由真实 M3 数学求解器计算顶点、边与面积，经正式 ConstructionIntent 生成唯一 V5 逐笔动画。暂不支持题图自动识别。</p>
+<div class="grid">
+<section class="panel inputs" aria-label="手动确认已知条件">
+<h2>01 · 条件确认</h2>
+<label for="polygonSides">题型
+<select id="polygonSides"><option value="3">圆内接正三角形</option><option value="6" selected>圆内接正六边形</option></select></label>
+<div class="double">
+<label for="polygonX">圆心 X (mm)<input id="polygonX" type="number" step="any" value="0"></label>
+<label for="polygonY">圆心 Y (mm)<input id="polygonY" type="number" step="any" value="0"></label>
+</div>
+<label for="polygonRadius">外接圆半径 (mm)<input id="polygonRadius" type="number" min="0.000001" step="any" value="25"></label>
+<label for="polygonAngle">首顶点角度 (°，数学坐标系)<input id="polygonAngle" type="number" min="0" max="359.9999" step="any" value="90"></label>
+<label for="polygonDirection">顶点遍历方向
+<select id="polygonDirection"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="confirm" for="polygonConfirm"><input id="polygonConfirm" type="checkbox"><span>我已核对这些条件及单位，允许据此计算（仅本地浏览器）。</span></label>
+<button class="primary" id="polygonSolve" type="button">重新求解并生成真实作图</button>
+<div class="small">未提供旋转方向或未确认条件时不输出已验证标准图。面积与边长由求解器计算，非页面预设答案。</div>
+</section>
+<section class="panel output" aria-label="真实逐笔动画">
+<h2>02 · 正式 Intent / V5 逐笔作图</h2>
+<div id="polygonStatus" class="status" role="status" aria-live="polite">请先确认参数，然后点击重新求解。</div>
+<svg id="polygonSvg" viewBox="0 0 720 460" aria-label="数学求解生成的动态工程作图">
+<g aria-hidden="true" stroke="#e5efe8" stroke-width="1">
+<path d="M 0 230 H 720 M 360 0 V 460" fill="none"></path>
+</g>
+<g id="polygonDraw"></g>
+</svg>
+<div class="controls">
+<button id="polygonPlay" type="button" disabled>播放</button>
+<button id="polygonBack" type="button" disabled>上一步</button>
+<button id="polygonForward" type="button" disabled>下一步</button>
+<button id="polygonRestart" type="button" disabled>回到起点</button>
+<label for="polygonSpeed">速度</label>
+<select id="polygonSpeed"><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select>
+<label><input type="checkbox" id="polygonMono"> 黑白图纸</label>
+<label><input type="checkbox" id="polygonFocus"> 自动聚焦</label>
+</div>
+<input id="polygonSeek" type="range" min="0" max="1000" value="0" disabled aria-label="V5 动画进度">
+<strong id="polygonStepLabel">尚无可播放数学步骤</strong>
+<div class="small" id="polygonPicked">逐笔绘制后，可以点选线段回到对应步骤。</div>
+<div id="polygonStepList" aria-label="逐步作图导航"></div>
+<div class="hints small" id="polygonProof">目前仅支持已确认参数下的正三角形、正六边形；不是 OCR、真实原书盲测或任意正多边形的证明。</div>
+</section>
+</div>
+</main>
+<script src="polygon-live-bundle.js" defer></script>
+</body>
+</html>
