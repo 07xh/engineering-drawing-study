@@ -95,7 +95,7 @@ function deriveGeometryScene({geometry,revision,branchId=null,resultId=null}={})
   // Canonical M3 branch IDs include signs (e.g. s++-offset1). The same
   // bounded, whitespace-free grammar as the single V5 timeline applies.
   if (branchId!==null && !(typeof branchId==='string' &&
-      /^[A-Za-z][\\w+\\-]{0,79}$/.test(branchId)))
+      /^[A-Za-z][A-Za-z0-9_+-]{0,79}$/.test(branchId)))
     fail('场景分支 ID 不合法');
   if (resultId!==null && !identifier(resultId)) fail('结果引用 ID 不合法');
   const ids = new Set(), objects = [];
