@@ -89,10 +89,13 @@ function representationPaper(obj,paper,sheet,warnings){
   else if(rep.kind==='segment')segment(paper,p(rep.start),p(rep.end),
     obj,view);
   else if(rep.kind==='line'){
-   const at=p(rep.point),v=rep.direction,dist=Math.hypot(v.u,v.v);
+   const at=p(rep.point),v=rep.direction;
+   const dx=v.u*sheet.scale*(view==='W'?1:-1);
+   const dy=v.v*sheet.scale*(view==='H'?1:-1);
+   const dist=Math.hypot(dx,dy);
    if(dist<=EPS)fail('空间直线投影方向退化但未被几何场景标注');
-   segment(paper,{x:at.x-180*v.u/dist,y:at.y-180*(p({u:0,v:v.v}).y-p({u:0,v:0}).y)/Math.abs(sheet.scale)*Math.sign(sheet.scale)/dist},
-    {x:at.x+180*v.u/dist,y:at.y+180*(p({u:0,v:v.v}).y-p({u:0,v:0}).y)/Math.abs(sheet.scale)*Math.sign(sheet.scale)/dist},
+   segment(paper,{x:at.x-180*dx/dist,y:at.y-180*dy/dist},
+    {x:at.x+180*dx/dist,y:at.y+180*dy/dist},
     obj,view,{viewportOnly:true});
   }else if(rep.kind==='mesh-projection'){
    if(rep.visibility!=='undetermined')fail('不能接受未经证明的网格可见性');
@@ -123,8 +126,9 @@ function modelVertices(scene){
  return points;
 }
 function span(points){
- if(!points.length)return 1;
- return Math.max(1,...points.flatMap(p=>[Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
+ let largest=1;
+ for(const p of points)largest=Math.max(largest,Math.abs(p.x),Math.abs(p.y),Math.abs(p.z));
+ return largest;
 }
 function spatialCamera(scene,camera,spatial,warnings){
  const vertices=modelVertices(scene),extent=span(vertices);
@@ -135,10 +139,11 @@ function spatialCamera(scene,camera,spatial,warnings){
   return {x:dx,y:-(p.z*cp-depth*sp)};
  }
  const orientedPoints=vertices.map(oriented);
- const low={x:Math.min(0,...orientedPoints.map(p=>p.x)),
-  y:Math.min(0,...orientedPoints.map(p=>p.y))};
- const high={x:Math.max(0,...orientedPoints.map(p=>p.x)),
-  y:Math.max(0,...orientedPoints.map(p=>p.y))};
+ const low={x:0,y:0},high={x:0,y:0};
+ for(const p of orientedPoints){
+  low.x=Math.min(low.x,p.x);low.y=Math.min(low.y,p.y);
+  high.x=Math.max(high.x,p.x);high.y=Math.max(high.y,p.y);
+ }
  const factor=Math.min(7,180/Math.max(1,high.x-low.x),
   170/Math.max(1,high.y-low.y));
  const center={x:(low.x+high.x)/2,y:(low.y+high.y)/2};
