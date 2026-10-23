@@ -19,7 +19,7 @@ test('M3 verifies empty finite-solid cuts on apex side, below base and off-axis'
  }
 });
 test('M3 does not misreport an intersecting vertical plane or apex touch as empty',()=>{
- const vertical=classify(C(),F(P(0,0,5),P(1,0,0)));
+ const vertical=classify(C(),F(P(1,0,5),P(1,0,0)));
  assert.equal(vertical.status,'unsupported-conic');
  assert.equal(vertical.verified,false);
  const apex=classify(C(),F(P(0,0,10),P(0,0,1)));
