@@ -8,8 +8,9 @@ const {homeHTML}=require('../../ui-next/home.cjs');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D selection',async()=>{
  const {document,window}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
- const original={document:global.document,window:global.window};
+ const original={document:global.document,window:global.window,crypto:global.crypto};
  global.document=document;global.window=window;
+ global.crypto=require('node:crypto').webcrypto;
  global.requestAnimationFrame=cb=>setImmediate(()=>cb(performance.now()));
  global.cancelAnimationFrame=clearImmediate;
  const $=id=>document.getElementById(id);
@@ -17,6 +18,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
  try{
   require('../../project/unified-workbench-entry.cjs');
   for(let i=0;i<12&&!$('v7-review').textContent.includes('尚未提交');i++)await tick();
+  assert.match($('v7-review').textContent,/尚未提交/, $('v7-save').textContent);
   assert.match($('v7-proof').textContent,/未计算/);
   click('v7-solve');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/,'unconfirmed click cannot forge a result');
@@ -47,6 +49,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-step-list').querySelectorAll('button').length,0);
  }finally{
   global.document=original.document;global.window=original.window;
+  global.crypto=original.crypto;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;
  }
 });
