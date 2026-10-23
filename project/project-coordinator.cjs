@@ -117,12 +117,16 @@ function createCoordinator(initial, hooks = {}) {
   let project = copy(requireValid(initial));
   const listeners = new Set(), past = [], future = [];
   let adapter = null, unsubscribe = null;
+  // Derived M3 Geometry may not exist as an input object. Keep its selection
+  // transient: NEVER persist it as a confirmed project condition or ID.
+  let selectedSceneGeometryId = null;
   const emit = kind => {
     const snap = snapshot();
     for (const listener of listeners) listener({kind, revision: project.revision, project: snap});
   };
   function snapshot() { return copy(project); }
   function notifySolver() {
+    selectedSceneGeometryId = null;
     if (!adapter) return;
     adapter.stopPlayback();
     adapter.invalidate();
@@ -243,8 +247,29 @@ function createCoordinator(initial, hooks = {}) {
     },
     setMode(mode) { return updateView({mode}); },
     setOverlays(overlays) {return updateView({overlays: {...project.view.overlays, ...overlays}});},
-    selectObject(id) { return updateView({selectedObjectId: id}); },
+    selectedGeometryId() {
+      return selectedSceneGeometryId || project.view.selectedObjectId;
+    },
+    selectSceneGeometry(id) {
+      if(!isId(id))throw new Error('无效的 Geometry 对象身份');
+      const result=adapter?.readSnapshot();
+      if(!result||result.projectId!==project.id||
+         result.inputRevision!==project.revision||
+         result.scene?.schema!=='draftai-geometry-scene-views/1.0.0'||
+         !result.scene.objects.some(o=>o.id===id))
+        throw new Error('对象不属于当前数学场景，拒绝旧版本选择');
+      if(project.objects.some(o=>o.id===id))return api.selectObject(id);
+      // No input revision change, no solver call, no saved project mutation.
+      selectedSceneGeometryId=id;
+      emit('view');
+      return id;
+    },
+    selectObject(id) {
+      selectedSceneGeometryId=null;
+      return updateView({selectedObjectId:id});
+    },
     selectRepresentation(view, id) {
+      selectedSceneGeometryId=null;
       if (!VIEWS.includes(view)) throw new Error('未知投影视图');
       const found = project.objects.find(o =>
         (view === '3D' ? o.spatialId === id : o.projections[view].includes(id)));
@@ -284,6 +309,7 @@ function createCoordinator(initial, hooks = {}) {
     },
     canExport() { return !!api.currentResult(); },
     detachSolver() {
+      selectedSceneGeometryId=null;
       if (unsubscribe) unsubscribe();
       unsubscribe = null;
       if (adapter) adapter.dispose();
