@@ -166,6 +166,63 @@ test('start page offers actual solver entries and honest knowledge boundaries',(
  for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(after.querySelector('a[href="'+page+'"]'),page+' discoverable');
  assert.ok(after.querySelector('[data-next-illustration]'));
 });
+
+test('V6.2 preserves full-size drawing and source contracts in seven workbenches',()=>{
+ const cases=[
+  ['labs/auto-fillet-live.html','paper','play'],
+  ['labs/point-projection-live.html','paperSvg','next'],
+  ['labs/circle-fillet-live.html','diagram','next'],
+  ['labs/cone-cut-live.html','coneSvg','conePlay'],
+  ['labs/cylinder-cut-live.html','board','play'],
+  ['labs/prism-cut-live.html','board','play'],
+  ['labs/polygon-live.html','polygonSvg','polygonPlay']
+ ];
+ for(const [page,figure,play] of cases){
+  const {after}=enhance(page),layout=after.querySelector('.next-workspace');
+  assert.ok(layout,page+' must use single drawing-first layout');
+  assert.equal(layout.getAttribute('data-next-side'),'none',page+' conditions should not consume drawing space initially');
+  assert.ok(after.getElementById(figure).closest('.next-canvas'),page+' drawing stays first');
+  assert.ok(after.getElementById(play).closest('.next-playback'),page+' playback is immediately below paper');
+  assert.ok(after.querySelector('[data-next-open-panel="conditions"]'),page+' conditions remain discoverable');
+  assert.ok(after.querySelector('[data-next-open-panel="steps"]'),page+' steps remain discoverable');
+  assert.ok(after.querySelector('[data-next-close-panel]'),page+' panels must be closable');
+  assert.ok(after.querySelector('[data-next-panel="conditions"]'),page+' actual conditions preserved');
+  assert.ok(after.querySelector('[data-next-panel="steps"]'),page+' step list preserved');
+ }
+});
+test('V6.2 changing panels does not overwrite values or break mobile-friendly drawing state',()=>{
+ const {after:document}=enhance('labs/auto-fillet-live.html');
+ const control=document.getElementById('vectorFilletRadius');
+ const before=control.value;
+ const solver=document.getElementById('play');
+ solver.disabled=true;
+ require('../../ui-next/ui-next.js').initUI(document);
+ const layout=document.querySelector('.next-workspace');
+ assert.equal(layout.dataset.nextSide,'none');
+ document.querySelector('[data-next-open-panel="conditions"]').click();
+ assert.equal(layout.dataset.nextSide,'conditions');
+ assert.equal(document.querySelector('[data-next-open-panel="conditions"]').getAttribute('aria-expanded'),'true');
+ assert.equal(document.querySelector('[data-next-panel="conditions"]').hidden,false);
+ document.querySelector('[data-next-open-panel="steps"]').click();
+ assert.equal(layout.dataset.nextSide,'steps');
+ assert.equal(document.querySelector('[data-next-panel="conditions"]').hidden,true);
+ document.querySelector('[data-next-close-panel]').click();
+ assert.equal(layout.dataset.nextSide,'none');
+ assert.equal(document.querySelector('[data-next-open-panel="steps"]').getAttribute('aria-expanded'),'false');
+ assert.equal(control.value,before);
+ assert.equal(solver.disabled,true,'layout must not bypass disabled solver/playback controls');
+});
+test('V6.2 CSS keeps the paper large while preserving its aspect ratio and safe zoom',()=>{
+ const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
+ assert.match(css,/V6\.2: final drawing-first layout/);
+ assert.match(css,/data-next-side="none"/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\)/);
+ assert.match(css,/object-fit:contain/);
+ assert.match(css,/max-height:min\(73dvh,780px\)/);
+ assert.match(css,/width:calc\(100% \* var\(--next-zoom,1\)\)/);
+ assert.match(css,/@media\(max-width:850px\)/);
+});
+
 test('keyboard panel navigation and Escape restore presentation without changing application controls',()=>{
  const {after:document}=enhance('labs/auto-fillet-live.html');
  require('../../ui-next/ui-next.js').initUI(document);
