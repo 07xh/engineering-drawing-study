@@ -18,6 +18,7 @@ const {coneSpatialV5Preview}=require('./cone-spatial-v5-preview.cjs');
 const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
+const {validateGeometry}=require('../core/contracts/geometry.js');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const FILLET_KINDS=new Set(['segments','circles','segment-circle']);
 const DEFAULT_POINT_SHEET={origin:{x:360,y:175},scale:4};
@@ -40,6 +41,16 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
  const checked=validateSolveResult(evidence);
  if(!checked.ok)throw new TypeError('invalid canonical M2 spatial evidence');
  const qualified=evidence.geometryVerifiedWithinSpecialistScope===true;
+ // Only the specialist's independently audited perimeter may cross to a
+ // Geometry Scene. Never synthesize one from screen coordinates or claim V5.
+ const sectionGeometry=qualified?evidence.sectionPerimeterGeometry??null:null;
+ if(sectionGeometry!==null){
+  const check=validateGeometry(sectionGeometry);
+  if(!check.ok||sectionGeometry.kind!=='polyline'||
+     sectionGeometry.space!=='model-3d'||sectionGeometry.unit!=='mm'||
+     sectionGeometry.data.closed!==true)
+   throw new TypeError('specialist section perimeter violates shared Geometry contract');
+ }
  if(qualified&&(evidence.globallyUnique!==null||
     evidence.sourceProblemConfirmed!==false||
     evidence.visibilityVerified!==false||
@@ -48,7 +59,8 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
  return Object.freeze({
   status:qualified?'geometry-only':'not-verified',
   kind:'spatial-section',specialistKind:input.kind,revision,
-  solveResult:evidence,mathematicallyVerified:false,
+  solveResult:evidence,sectionPerimeterGeometry:sectionGeometry,
+  mathematicallyVerified:false,
   // Only independently audited polygon perimeter edges; never full
   // visibility, retained solid, global SolveResult or V5 authorization.
   sectionPerimeterGeometry:qualified?(evidence.sectionPerimeterGeometry??null):null,
