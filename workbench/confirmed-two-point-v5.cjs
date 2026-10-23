@@ -26,13 +26,15 @@ function compileConfirmedTwoPoint(input){
   if(!ids.has('A')||!ids.has('B'))throw new TypeError('A and B both required');
   // Separate canonical DAGs: never pretend that their union is one proof.
   const steps=results.flatMap(({id,result})=>result.steps.map((step,i)=>({
-    ...step,id:id+':'+step.id,
-    actions:step.actions.map((a,j)=>({...a,id:id+':'+a.id}))
+    ...step,id:id+'-'+step.id,
+    dependsOn:Array.isArray(step.dependsOn)?step.dependsOn.map(dep=>id+'-'+dep):undefined,
+    actions:step.actions.map((a,j)=>({...a,id:id+'-'+a.id}))
   })));
   const actionIds=steps.flatMap(s=>s.actions.map(a=>a.id));
   if(new Set(actionIds).size!==actionIds.length)throw new RangeError('duplicate V5 action IDs');
+  const timeline=TimelineV5.compileTimeline(steps);
+  const player=TimelineV5.createPlayer(timeline,{revision:input.revision});
   return Object.freeze({revision:input.revision,confirmed:true,points:results,steps,
-    // Player integration must use existing V5 API; no alternative renderer.
-    canonicalVerified:true});
+    timeline,player,canonicalVerified:true});
 }
 module.exports={compileConfirmedTwoPoint};
