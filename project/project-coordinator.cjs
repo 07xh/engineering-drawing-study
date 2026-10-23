@@ -174,6 +174,7 @@ function createCoordinator(initial, hooks = {}) {
     putObject(object) {
       return commit(p => {
         const i = p.objects.findIndex(o => o.id === object?.id);
+        if (!jsonValue(object)) throw new Error('对象包含不可序列化字段');
         const next = copy(object);
         if (i < 0) p.objects.push(next); else p.objects[i] = next;
       });
@@ -188,6 +189,7 @@ function createCoordinator(initial, hooks = {}) {
     putCondition(condition) {
       return commit(p => {
         const i = p.conditions.findIndex(c => c.id === condition?.id);
+        if (!jsonValue(condition)) throw new Error('条件包含不可序列化字段');
         const next = copy(condition);
         if (i < 0) p.conditions.push(next); else p.conditions[i] = next;
       });
