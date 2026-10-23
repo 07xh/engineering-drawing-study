@@ -23,10 +23,8 @@ test('09 M4 edited branch cannot reuse stale verified timeline',()=>{
  const valid=live('segments',structuredClone(source),sheet,102);
  assert.equal(valid.status,'ready');
  const edited={...source,branchId:'not-a-selected-solver-branch'};
- const result=live('segments',edited,sheet,103);
- assert.notEqual(result.status,'ready');
- assert.deepEqual(result.steps,[]);
- assert.notEqual(result.canonicalVerified,true);
+ assert.throws(()=>live('segments',edited,sheet,103),
+  {name:'RangeError',message:'branchId is not an actual finite-contact candidate'});
 });
 test('09 M4 missing traversal direction cannot create a verified drawable timeline',()=>{
  const input={...source};delete input.direction;
