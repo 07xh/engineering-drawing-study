@@ -93,6 +93,9 @@ function makePrivatePhotoCase({
  if(!reviewedAssociation||!plain(reviewedAssociation))
   throw new TypeError('review evidence missing for a math-bound source');
  const reviewed=reviewDimensionPath(reviewedAssociation);
+ if(reviewed.answerMark==='contains-answers'&&
+    sourceRole==='asserted-unmarked-question')
+  throw new TypeError('marked-answer source cannot be relabeled as an unmarked original');
  if(!safe(reviewedAssociation.sourceEpoch)||
    reviewedAssociation.sourceEpoch!==reviewedAssociation.currentSourceEpoch||
    reviewed.imageEpoch!==undefined)
