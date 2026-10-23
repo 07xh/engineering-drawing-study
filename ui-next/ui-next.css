@@ -648,3 +648,38 @@ body.ui-next.next-focus-canvas .next-context {display:none!important}
  body.ui-next .next-workspace-caption {display:none}
  body.ui-next .next-specialized .next-playback .tools {gap:4px}
 }
+
+
+/* V6.2 homepage support content: compact, organized, never replacing paper. */
+body.ui-next .next-home-workflow .next-home-library {
+ padding:13px;gap:7px;
+}
+body.ui-next .next-home-library>h2 {margin:0 0 6px;font-size:16px}
+body.ui-next .next-home-library>p {
+ margin:0 0 8px;color:var(--next-muted);
+ font-size:12px;line-height:1.55;
+}
+body.ui-next .next-home-library>a {
+ min-height:44px;display:inline-flex;align-items:center;
+ color:var(--next-blue);font-size:13px;text-decoration:none;
+}
+body.ui-next .next-home-tool-group {
+ margin:0 10px 10px;padding:9px 10px 13px;
+ border-top:1px solid var(--next-line);
+}
+body.ui-next .next-home-tool-group>h3 {
+ margin:0 0 10px;font-size:15px;font-weight:650;
+ color:#234368;
+}
+body.ui-next .next-home-tool-group .next-tool-grid {padding:0}
+body.ui-next .next-home-tool-group .next-tool-card {
+ min-height:112px;padding:12px;
+}
+body.ui-next .next-home-tool-group .next-tool-card h3 {font-size:14px}
+body.ui-next .next-home-workbench .next-home-paper {
+ min-height:0;
+}
+@media(max-width:650px) {
+ body.ui-next .next-home-tool-group {margin:0 6px 8px;padding:8px}
+ body.ui-next .next-home-workflow .next-home-library {padding:11px}
+}
