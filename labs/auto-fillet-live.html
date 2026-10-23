@@ -158,6 +158,8 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <label class="vector-confirm" for="dimensionDraftCommit"><input id="dimensionDraftCommit" type="checkbox">提交此轮来源审核，只写入已有 ProblemDraft 尺寸约束（不播放动画）</label>
 <div class="controls"><button id="dimensionDraftAttach" type="button" disabled>生成经核对的 ProblemDraft 尺寸约束</button></div>
 <p id="dimensionDraftStatus" class="source-status" role="status" aria-live="polite">尚未生成数学约束；检测和人工审核均不代表已解题。</p>
+<label for="dimensionDraftSegment">实际参与线段—圆求解的有限源线段（与校准尺不一定相同）
+<select id="dimensionDraftSegment" disabled><option value="">先审核源图元</option></select></label>
 <label for="dimensionDraftTargetRadius">本题另外确认的连接圆弧目标半径 R（毫米）
 <input id="dimensionDraftTargetRadius" type="number" min="0" step="any" placeholder="必须从题图单独核对"></label>
 <label for="dimensionDraftSide">本题已确认的有限线段—圆连接侧别
