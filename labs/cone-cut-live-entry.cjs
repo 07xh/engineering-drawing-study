@@ -9,6 +9,8 @@ const {coneSpatialV5Preview}=
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {coneSpatialProjectionFocus}=
  require('../workbench/cone-spatial-projection-focus.cjs');
+const {coneSolidFaceRayEvidence}=
+ require('../workbench/cone-solid-face-ray-evidence.cjs');
 const {createLocalPhotoReference}=
  require('../recognition/local-photo-reference.cjs');
 const {coneLinkedSpatialScene}=
@@ -22,7 +24,7 @@ const {coneLinkedSpatialScene}=
  const defaults={coneRadius:'5',coneHeight:'10',conePx:'0',conePy:'0',
   conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'full-ellipse',
   coneSamples:'64',coneKept:''};
- let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null;
+ let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null,faceEvidence=null;
  const reference=createLocalPhotoReference();
  const now=()=>performance.now();
  const create=(tag,attrs={})=>{
@@ -48,6 +50,7 @@ const {coneLinkedSpatialScene}=
   $('coneDraw').replaceChildren();
   $('cone3dDraw').replaceChildren();
   $('cone3dStatus').textContent='尚未确认空间几何条件。';
+  faceEvidence=null;
   selectedSpatial=null;
   $('coneSteps').replaceChildren();
   $('coneSvg').setAttribute('viewBox','0 0 960 680');
@@ -171,9 +174,17 @@ const {coneLinkedSpatialScene}=
     status('无法生成已验证的圆锥作图预览：'+
      (answer.reason||'数学证据不完整')+'。',true);return;
    }
-   plan=answer;player=answer.createPlayer({speed:Number($('coneSpeed').value)});
+   plan=answer;
+   faceEvidence=kept?coneSolidFaceRayEvidence(answer.spatialIntent,{
+    retainedHalfspace:kept}):null;
+   player=answer.createPlayer({speed:Number($('coneSpeed').value)});
    disable(false);makeSteps();paint();
    const counts=answer.rayEvidence?.counts;
+   const faceNote=faceEvidence?.status==='strict-face-interior-evidence'?
+    ' 截切平面严格内部射线证据：'+
+    ['V','H','W'].map(v=>v+'='+faceEvidence.views[v].cutFace.visibility).join('、')+
+    '；切触、边缘、轮廓和完整遮挡尚未证明。':
+    ' 截切平面严格内部射线可见性尚未认证。';
    const referenceNote=reference.snapshot().sourceAttached?
     ' 本地原题图仅作为人工转录参照；未自动识图、无答案隔离证明或原题整题验收。':'';
    $('coneProof').textContent='数学源：有限直立圆锥解析'+
@@ -184,7 +195,7 @@ const {coneLinkedSpatialScene}=
       '、隐藏 '+counts.hidden+'、未确定 '+counts.undetermined+'。':
       '未确认保留材料侧：结果线型全部待审核。')+
     ' 线段为解析曲线的折线近似；端点、真实线型、图纸规范、照片识别和完整实体均尚未验收。'+
-    referenceNote;
+    faceNote+referenceNote;
    status('几何模型与单一 V5 动画已就绪。可逐笔播放、回退、调速和点选图元；不是完整国标工程制图答案。');
   }catch(error){
    plan=null;player=null;clear();disable(true);
@@ -332,12 +343,16 @@ const {coneLinkedSpatialScene}=
    scene.cutSolid?.status==='not-supported'?
    '裁剪截线尚无已验证的完整切后体网格，保留线框示意。':
    '未选择保留侧，当前仅显示三维线框与示意截平面。';
+  const faceNote=faceEvidence?.status==='strict-face-interior-evidence'?
+   ' 截切面严格内部：'+['V','H','W'].map(v=>v+' '+
+    faceEvidence.views[v].cutFace.visibility).join(' / ')+
+   '（边缘和连续遮挡待证明）。':'';
   if(selectedSpatial!==null&&scene.sourcePoints[selectedSpatial]){
    const p=scene.sourcePoints[selectedSpatial].world;
-   $('cone3dStatus').textContent=solidLabel+' 选中 M3 空间点（mm）：('+[
+   $('cone3dStatus').textContent=solidLabel+faceNote+' 选中 M3 空间点（mm）：('+[
     p.x,p.y,p.z].map(n=>n.toFixed(3)).join(', ')+
     ') · 二维投影与三维视角使用同一数学来源。';
-  }else $('cone3dStatus').textContent=solidLabel+' 同一 V5 进度 '+Math.round(frame.ratio*100)+
+  }else $('cone3dStatus').textContent=solidLabel+faceNote+' 同一 V5 进度 '+Math.round(frame.ratio*100)+
    '% · 旋转仅改变观察角度，不修改已确认的几何解。';
  }
 
