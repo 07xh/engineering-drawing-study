@@ -79,7 +79,7 @@ function assertConeM3ToV5Consistency({preview,revision}={}){
    if(a.sourceSpatialIntentId!==undefined&&a.sourceSpatialIntentId!==source.id)
     throw new RangeError('different spatial source in V5 action');
    if(a.sourceBoundary!=='analytic-cone-lateral')continue;
-   const match=/^cone_([VHW])_lateral_(\\d+)$/.exec(a.id);
+   const match=/^cone_([VHW])_lateral_(\d+)$/.exec(a.id);
    if(!match)throw new RangeError('unidentified cone lateral V5 action');
    const view=match[1],i=Number(match[2]);
    const points=preview.viewPositions?.[view];
