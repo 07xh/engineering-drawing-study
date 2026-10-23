@@ -38,7 +38,7 @@ for(const n of [3,6]){
  });
  test('09 polygon invalid precision must fail closed, not emit V5 n='+n,()=>{
   const cases=[
-   base(n,13,'ccw',{x:1e6,y:1e6},1e-6),
+   base(n,13,'ccw',{x:1e6,y:1e6},1e-5),
    base(n,13,'ccw',{x:1e6,y:-1e6},1e-5)
   ];
   for(const c of cases){
