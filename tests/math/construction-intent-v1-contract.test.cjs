@@ -117,3 +117,23 @@ test('F2 DAG validates prior geometry provenance, not only step IDs',()=>{
  assert.equal(checkDAG([first,makeSecond([], 'step_2')]).ok,false);
  assert.equal(checkDAG([{...first,id:'arc_1'},makeSecond()]).ok,false);
 });
+
+test('F2 DAG entity-input provenance must follow declared transitive dependencies',()=>{
+ const first=sample();
+ const step=(id,dependsOn,inputEntityIds,output)=>({
+  ...sample(),id,dependsOn,inputEntityIds,outputEntityIds:[output],
+  operations:[{id:output,kind:'point',coordinateSpace:'model-mm',
+   geometry:{at:p(1,2)}}]
+ });
+ const middle=step('step_2',['step_1'],[],'point_2');
+ const valid=step('step_3',['step_2'],['arc_1'],'point_3');
+ assert.equal(checkDAG([first,middle,valid]).ok,true,
+  'transitive ancestor is an allowed producer');
+ const sibling=step('step_2',[],[],'point_2');
+ assert.equal(checkDAG([first,sibling,step('step_3',['step_2'],['arc_1'],'point_3')]).ok,
+  false,'topologically earlier sibling is not a declared dependency');
+ assert.equal(checkDAG([first,step('step_2',[],['arc_1'],'point_2')]).ok,
+  false,'an undeclared direct parent must not supply input geometry');
+ assert.equal(checkDAG([first,step('step_2',['step_1'],['arc_1'],'point_2')]).ok,
+  true,'direct declared parent may supply geometry');
+});

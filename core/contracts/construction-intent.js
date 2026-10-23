@@ -94,7 +94,8 @@ function validateConstructionIntentDAG(intents){
  const errors=[];
  if(!Array.isArray(intents)||!intents.length||intents.length>300)
   return report(['1..300 intents required']);
- const steps=new Set(),entities=new Set();
+ const steps=new Set(),entities=new Set(),entityOwners=new Map();
+ const stepAncestors=new Map();
  let source=null;
  for(const [index,intent] of intents.entries()){
   const check=validateConstructionIntent(intent);
@@ -104,19 +105,31 @@ function validateConstructionIntentDAG(intents){
    errors.push('intent ID collides with previous geometry entity '+intent.id);
   if(intent.dependsOn.some(dep=>!steps.has(dep)))
    errors.push('missing or forward dependency '+intent.id);
+  // Consuming geometry also declares a dependency on the construction that
+  // actually produced it. Topological order alone does not prove that
+  // dependency: a renderer may execute independent sibling steps out of order.
+  const ancestors=new Set();
+  for(const dep of intent.dependsOn){
+   ancestors.add(dep);
+   for(const ancestor of stepAncestors.get(dep)||[])ancestors.add(ancestor);
+  }
   // The 1.0.0 DAG has no external-entity declaration. Until a reviewed
   // ProblemDraft binding exists, every nonempty geometry input MUST be a
   // previously produced geometric entity, never a step ID or a future output.
   for(const id of intent.inputEntityIds){
    if(!entities.has(id))
     errors.push('missing or forward geometry input '+id);
+   else if(!ancestors.has(entityOwners.get(id)))
+    errors.push('geometry input producer is not an ancestor '+id);
   }
   for(const op of intent.operations){
    if(steps.has(op.id)||op.id===intent.id)
     errors.push('geometry entity ID collides with a step ID '+op.id);
    if(entities.has(op.id))errors.push('duplicate output entity '+op.id);
    entities.add(op.id);
+   entityOwners.set(op.id,intent.id);
   }
+  stepAncestors.set(intent.id,ancestors);
   const key=JSON.stringify(intent.source);
   if(source!==null&&key!==source)
    errors.push('mixed source revision/proof/branch in DAG');
