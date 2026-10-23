@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="DraftAI 斜截圆柱动态作图实验：真实解析求交、三视图逐笔绘制、45°辅助线和显式视线遮挡判断。">
+<title>斜截圆柱动态作图 · DraftAI 实验工作台</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#22382d;background:#f1f7f3;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1450px;padding:20px 16px 50px;margin:auto}
+h1{font-size:clamp(23px,3.5vw,34px);margin:15px 0 6px;letter-spacing:-.025em}
+.sub{font-size:13px;color:#597264;line-height:1.7;max-width:1000px;margin:0 0 17px}
+.layout{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:16px;align-items:start}
+.card{background:white;border:1px solid #d8e8dc;border-radius:18px;padding:18px;min-width:0;box-shadow:0 6px 28px #152b1a09}
+.card h2{font-size:17px;margin:0 0 12px}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+label{font-size:12px;display:grid;gap:5px;color:#4d6b59;margin-bottom:8px}
+input,select,button{font:inherit;min-height:42px;border-radius:10px}
+input,select{width:100%;padding:8px 10px;border:1px solid #bfd4c4;background:white;color:#234030}
+button{cursor:pointer;border:1px solid #b9d4c1;background:#fff;color:#256748;padding:8px 13px}
+button.primary{background:#266b49;color:#fff;border-color:#266b49}
+button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #559b6b;outline-offset:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.actions button{flex:1 1 auto;min-width:92px}
+details{border-top:1px solid #e6eee8;padding-top:12px;margin-top:13px}
+summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-bottom:12px}
+.notice{padding:11px 12px;border-radius:10px;border:1px solid #d7e6d9;background:#f6faf6;color:#42634c;font-size:12px;line-height:1.6}
+.notice[data-error="true"]{border-color:#e4c9a9;background:#fff8ed;color:#865226}
+.board{background:#fff;border:1px solid #dae8de;border-radius:14px;overflow:hidden}
+.board svg{width:100%;height:auto;display:block;max-height:72vh;aspect-ratio:960/680}
+.board.hide-guides #construction-guides{display:none}
+.board.monochrome [data-visibility="undetermined"]{stroke:#666!important;fill:#666!important}
+.board [data-action]{cursor:crosshair}
+.board [data-selected="true"]{stroke:#08794d!important;stroke-width:4!important;filter:drop-shadow(0 0 3px #55b67a)}
+.board circle[data-selected="true"]:not([fill="none"]){fill:#08794d!important}
+.board:focus-visible{outline:2px solid #198157;outline-offset:3px}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#607769;margin:11px 0}
+.swatch{display:inline-block;width:23px;height:3px;margin-right:5px;vertical-align:middle;background:#323b44}
+.swatch.guide{background:repeating-linear-gradient(90deg,#8794a5 0 5px,transparent 5px 9px)}
+.swatch.hidden{background:repeating-linear-gradient(90deg,#424242 0 8px,transparent 8px 13px)}
+.swatch.unknown{background:repeating-linear-gradient(90deg,#a16207 0 2px,transparent 2px 8px)}
+.playbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.playbar button{min-width:92px}.playbar input[type=range]{flex:1;min-width:140px}
+.playbar output{font-size:12px;min-width:42px;color:#35604a;text-align:right}
+.tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.tools label{display:flex;gap:5px;align-items:center;margin:0}.tools input[type=checkbox]{min-height:18px;width:18px}
+.tools select{width:auto;min-height:37px;padding:5px 10px}.tools button{min-height:37px}
+.stepbox{margin-top:18px}.stepbox h2{margin:0 0 9px}
+#steps{max-height:230px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#steps button{text-align:left;white-space:normal;min-height:42px;font-size:12px}
+#steps button[aria-current="step"]{background:#e4f2e8;border-color:#72a882;color:#145c35}
+.helper{font-size:12px;color:#5e7667;line-height:1.65;margin:10px 0 0}
+.hd{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px}.hd span{font-size:11px;color:#78907f}
+@media(max-width:960px){.layout{grid-template-columns:1fr}.board svg{max-height:none}#steps{grid-template-columns:1fr}}
+@media(max-width:500px){.wrap{padding:14px 11px 40px}.card{padding:12px}.pair{gap:7px}.playbar button{flex:1 1 30%}.playbar input[type=range]{order:2;flex:1 1 65%}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="site-topbar"><div class="site-topbar-inner">
+<a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>AI 工程制图自动解题</small></span></a>
+<nav class="site-nav"><a href="../index.html">返回首页</a><a href="auto-fillet-live.html">二维圆弧工具</a></nav>
+</div></header>
+<main class="wrap">
+<h1>斜截圆柱 · 动态作图实验室</h1>
+<p class="sub">这是供个人研究的真实几何实验：修改圆柱与截平面，系统重新解析求交，再依数学残差、端盖截线拓扑和观察方向逐笔生成同纸三视图。不是教材预置动画，也不是任意题图 AI 自动识别。</p>
+<div class="layout">
+<section class="card" aria-label="圆柱和斜截平面条件">
+<h2>已知数学条件 <span style="font-size:12px;color:#70907a">单位 mm</span></h2>
+<div class="pair">
+<label for="radius">圆柱半径 R<input id="radius" type="number" value="5" min="0.001" step="any"></label>
+<label for="height">圆柱高度 H<input id="height" type="number" value="30" min="0.001" step="any"></label>
+</div>
+<p class="helper">本实验固定圆柱轴线为 Z 轴，圆柱底面中心为 (0,0,0)。</p>
+<details open>
+<summary>截平面位置与法向</summary>
+<div class="pair">
+<label for="px">平面点 X<input id="px" type="number" value="0" step="any"></label>
+<label for="py">平面点 Y<input id="py" type="number" value="0" step="any"></label>
+<label for="pz">平面点 Z<input id="pz" type="number" value="3" step="any"></label>
+</div>
+<div class="pair">
+<label for="nx">法向 X<input id="nx" type="number" value="1" step="any"></label>
+<label for="ny">法向 Y<input id="ny" type="number" value="1" step="any"></label>
+<label for="nz">法向 Z<input id="nz" type="number" value="1" step="any"></label>
+</div>
+</details>
+<details open>
+<summary>切除侧与观察方向（必须确认）</summary>
+<label for="kept">保留截平面的哪侧实体
+<select id="kept"><option value="negative" selected>保留法向负侧（≤0）</option>
+<option value="positive">保留法向正侧（≥0）</option></select></label>
+<label for="vdir">V 主视图：朝观察者方向
+<select id="vdir"><option value="-1" selected>从 Y 负方向看</option><option value="1">从 Y 正方向看</option></select></label>
+<label for="hdir">H 俯视图：朝观察者方向
+<select id="hdir"><option value="1" selected>从 Z 正方向看</option><option value="-1">从 Z 负方向看</option></select></label>
+<label for="wdir">W 侧视图：朝观察者方向
+<select id="wdir"><option value="-1" selected>从 X 负方向看</option><option value="1">从 X 正方向看</option></select></label>
+<p class="helper">V、H、W 的图面位置是研究性第一角法排版；具体正负观察方向及标准线型尚待投影专项审核。切除侧不同，隐藏线可能完全不同。</p>
+</details>
+<div class="actions"><button id="reset" type="button">恢复示例参数</button>
+<button id="recompute" class="primary" type="button">重新计算并绘图</button></div>
+<div id="status" class="notice" role="status" aria-live="polite">数学求解及模型验证尚未启动。</div>
+</section>
+<section class="card" aria-label="逐步三视图动态图纸">
+<div class="hd"><h2>真实作图过程</h2><span id="counts">等待求解</span></div>
+<div id="board" class="board" role="region" tabindex="0" aria-label="V 主视、H 俯视、W 侧视真实截交线，可点击已绘图线定位步骤"></div>
+<p id="pickedInfo" class="helper" role="status" aria-live="polite">轻触已绘出的图线，可选中线条并定位对应作图步骤。</p>
+<div class="legend"><span><i class="swatch"></i>已知图</span>
+<span><i class="swatch guide"></i>辅助线</span>
+<span><i class="swatch"></i>可见实线</span>
+<span><i class="swatch hidden"></i>遮挡虚线</span>
+<span><i class="swatch unknown"></i>待判定</span></div>
+<div class="playbar">
+<button id="previous" disabled type="button">← 上一步</button>
+<button id="play" class="primary" disabled type="button">▶ 播放</button>
+<button id="next" disabled type="button">下一步 →</button>
+<input id="seek" type="range" min="0" max="1000" value="0" disabled aria-label="作图动画进度">
+<output id="percentage" for="seek">0%</output>
+</div>
+<div class="tools">
+<label for="speed">速度 <select id="speed">
+<option value=".25">0.25×</option><option value=".5">0.5×</option>
+<option value="1" selected>1×</option><option value="1.5">1.5×</option>
+<option value="2">2×</option><option value="3">3×</option><option value="4">4×</option>
+</select></label>
+<label for="guides"><input id="guides" type="checkbox" checked>显示辅助线</label>
+<label for="mono"><input id="mono" type="checkbox">黑白模式</label>
+<label for="autofocus"><input id="autofocus" type="checkbox" checked>自动聚焦当前步骤</label>
+<button id="fit" type="button">查看整张图纸</button>
+<button id="save" type="button" disabled>保存当前 SVG</button>
+</div>
+<div class="stepbox"><h2>作图步骤</h2><nav id="steps" aria-label="真实计算作图步骤"></nav></div>
+<p id="stepDetail" class="helper">选择步骤可跳转到对应的真实绘制进度，修改条件会使旧动画失效。</p>
+</section>
+</div>
+<p class="sub" style="margin-top:17px">安全与精度说明：仅浏览器本地计算，不上传数据；圆柱截线由解析数学求交，屏幕曲线采用有界采样近似。此页面是实验性动态作图工具，尚未实现照片自动识别、截面填充、任意轴线圆柱及工程规范的完整线型验收。</p>
+</main>
+<script defer src="cylinder-cut-live-bundle.js"></script>
+</body>
+</html>

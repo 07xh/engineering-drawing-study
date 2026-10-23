@@ -1,0 +1,191 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f0f6f1"><title>平面圆弧连接 · DraftAI</title>
+<link rel="stylesheet" href="../site-ui.css"><style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#294531;background:#f1f6f2;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}.shell{max-width:1380px;margin:auto;padding:16px}.shell>a{font-size:14px;color:#287250}
+h1{font-size:clamp(23px,3.2vw,34px);margin:12px 0 4px}.intro{color:#5b7362;font-size:14px;line-height:1.75;margin:0 0 17px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(310px,1fr);gap:16px}
+.panel{border:1px solid #d4e5da;background:white;padding:16px;border-radius:16px;min-width:0}h2{font-size:18px;margin:0 0 12px}
+#drawingWrap{width:100%;overflow:auto;border:1px solid #d8e9dd;border-radius:12px;transition:background .12s}
+#drawingWrap.paper-mono{background:#fff;border-color:#333}
+#drawingWrap.paper-mono #diagram [stroke]:not([stroke="none"]){stroke:#222!important}
+#drawingWrap.paper-mono #diagram [stroke="#edf1ed"]{stroke:#dfdfdf!important}
+#drawingWrap.paper-mono #diagram [stroke="#93a49a"]{stroke:#8b8b8b!important}
+#drawingWrap.paper-mono #diagram [fill]:not([fill="none"]):not([fill="#fff"]){fill:#222!important}
+#drawingWrap.paper-mono #diagram rect[fill]{fill:#fff!important}
+#diagram [data-v5-pick]{cursor:pointer;pointer-events:visiblePainted}
+#diagram [data-v5-pick][data-v5-selected="true"]{stroke:#bd6419!important;stroke-width:4.2!important}
+#drawingWrap.paper-mono #diagram [data-v5-pick][data-v5-selected="true"]{stroke:#000!important;stroke-width:4.2!important}
+.paper-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:9px 0;font-size:13px}
+.paper-toolbar label{display:flex;align-items:center;gap:5px}
+.paper-toolbar input[type="checkbox"]{width:auto;min-height:18px;min-width:18px;padding:0;accent-color:#256e49}
+.paper-toolbar button{min-height:40px}
+.paper-picked{font-size:12px;line-height:1.6;color:#446350}svg{display:block;min-width:600px;width:100%;height:auto}svg.draw-active{touch-action:none;cursor:crosshair}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}label{display:grid;gap:5px;font-size:12px;color:#3c654b}
+input,select,button{font:inherit;border-radius:9px;min-height:44px}input,select{background:#fff;width:100%;border:1px solid #bdd3c4;padding:9px}
+button{padding:9px 13px;border:1px solid #a9cdb4;background:white;color:#1d6744;cursor:pointer}
+button.primary{background:#236c49;color:white}button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}.actions button{flex:1}.actions .rate-select{flex:1 1 110px;min-width:105px;max-width:156px;display:grid;gap:4px;align-self:center;font-size:11px}.rate-select select{width:100%}
+.card{background:#f4faf5;border:1px solid #d8e9db;border-radius:11px;padding:12px;font-size:14px;line-height:1.65}
+.legend{font-size:12px;color:#617b67;line-height:1.8}
+.student-math-feedback{display:grid;gap:9px;margin:11px 0;border:1px solid #cfe1d5;background:#f8fbf9;border-radius:12px;padding:12px}
+.student-math-feedback[hidden]{display:none}
+.student-math-feedback h3{margin:0;font-size:15px}
+.student-math-feedback p{font-size:12px;line-height:1.6;margin:0}
+.student-math-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.student-math-grid div{border:1px solid #dce8df;background:white;border-radius:9px;padding:8px;min-width:0}
+.student-math-grid strong{font-size:12px;display:block}
+.student-math-grid span{font-size:12px;line-height:1.55;overflow-wrap:anywhere;display:block;margin-top:3px}
+@media(max-width:560px){.student-math-grid{grid-template-columns:1fr}}
+
+.playback-scrub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 13px;border:1px solid #d6e7d9;background:#f7fbf8;border-radius:12px;padding:10px}
+.playback-scrub label{flex:1 1 100%;font-size:13px;font-weight:650}
+.playback-scrub input[type=range]{flex:1 1 230px;width:100%;min-height:34px;accent-color:#236c49;touch-action:pan-x;padding:0;cursor:pointer}
+.playback-scrub output{min-width:66px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:#42664f}
+.playback-scrub button{flex:0 1 auto}
+#filletStrokeLive{display:grid;gap:6px;justify-items:stretch}
+#filletStrokeLive[hidden]{display:none}
+#filletStrokePercent{justify-self:end}
+@media(max-width:550px){.playback-scrub button{width:100%}}
+#filletProof{margin-top:12px;display:grid;gap:9px}
+#filletProof h3{font-size:15px;margin:0}
+#filletProof dl{display:grid;gap:10px;margin:0}
+#filletProof dt{font-size:12px;font-weight:700;color:#236c49}
+#filletProof dd{font-size:13px;line-height:1.65;margin:2px 0 0;overflow-wrap:anywhere}
+#filletProof .proofScope{font-size:12px;color:#617b67}
+#filletProof[hidden]{display:none}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #3476c1;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}[hidden]{display:none!important}.note{font-size:12px;color:#6a796a;line-height:1.8}
+@media(max-width:940px){.workspace{grid-template-columns:1fr}.panel.controls{order:-1}}
+@media(max-width:550px){.shell{padding:9px}.panel{padding:11px}svg{min-width:510px}}
+</style></head><body><main class="shell">
+<a href="../index.html">← 返回首页</a><h1>平面圆弧连接 · 真实数学实验</h1>
+<p class="intro">支持完整圆、有限已知圆弧及两条有限线段连接；有限圆弧需设置起止角与弧向（沿数学坐标轴正向为 CCW），两个切点必须各自处于给定弧段内。参数改变即使用真实数学求解器重新计算；你需要明确选择有效圆心、旋向和原轮廓走向才能验证有向 G1。数学单位 mm，画纸为示意比例。并非任意教材原题答案。</p>
+<div class="workspace">
+<section class="panel"><h2>左侧 · 已知几何、切点与辅助线</h2>
+<div class="paper-toolbar" aria-label="V5 工程图纸交互">
+<label><input id="paperMono" type="checkbox"> 黑白制图</label>
+<label><input id="paperFocus" type="checkbox" checked> 自动聚焦绘制位置</label>
+<button id="paperResetView" type="button">复位图纸视野</button>
+</div>
+<p id="paperPicked" class="paper-picked" role="status" aria-live="polite">完整教学可点击已绘制的辅助线或圆弧，查看所属数学步骤。</p>
+<div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
+<p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：学生绘制的辅助线或弧线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
+<p class="note">可用下一步查看：辅助圆轨迹 → 有效候选圆心 → 两个切点 → 已明确方向的连接弧。选择有限圆弧时，绿色图线只显示给定弧段，不绘制未经给出的整圆。未标为“有限”的起止角不参与限制；多解不会自动选第一种。</p>
+</section>
+<section class="panel controls">
+<h2>右侧 · 参数与步骤</h2>
+<label>题型<select id="modeSelect"><option value="circles">两圆圆弧连接</option><option value="segments">两条有限线段圆弧连接</option><option value="segment-circle">有限线段＋圆／有限圆弧连接</option></select></label>
+<div class="fields">
+<label class="circle-only">圆 1 中心 x<input type="number" id="x1" step="any" value="0"></label>
+<label class="circle-only">圆 1 中心 y<input type="number" id="y1" step="any" value="0"></label>
+<label class="circle-only">圆 1 半径<input type="number" id="r1" step="any" value="5"></label>
+<label class="circle-only">圆 1 相切<select id="mode1"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label class="circle-only">圆 1 已知轮廓<select id="arcExtent1"><option value="full">完整圆（默认）</option><option value="finite">有限圆弧</option></select></label>
+<label class="circle-only">圆 1 弧起点角（°）<input id="arcStart1" type="number" step="any" value="300"></label>
+<label class="circle-only">圆 1 弧终点角（°）<input id="arcEnd1" type="number" step="any" value="330"></label>
+<label class="circle-only">圆 1 允许弧向<select id="arcDirection1"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="circle-only">圆 2 中心 x<input type="number" id="x2" step="any" value="20"></label>
+<label class="circle-only">圆 2 中心 y<input type="number" id="y2" step="any" value="0"></label>
+<label class="circle-only">圆 2 半径<input type="number" id="r2" step="any" value="5"></label>
+<label class="circle-only">圆 2 相切<select id="mode2"><option value="external">外切</option><option value="internal">内切</option></select></label>
+<label class="circle-only">圆 2 已知轮廓<select id="arcExtent2"><option value="full">完整圆（默认）</option><option value="finite">有限圆弧</option></select></label>
+<label class="circle-only">圆 2 弧起点角（°）<input id="arcStart2" type="number" step="any" value="215"></label>
+<label class="circle-only">圆 2 弧终点角（°）<input id="arcEnd2" type="number" step="any" value="245"></label>
+<label class="circle-only">圆 2 允许弧向<select id="arcDirection2"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="mixed-only" hidden>已知线段 A x<input type="number" id="mixAx" step="any" value="-25"></label>
+<label class="mixed-only" hidden>已知线段 A y<input type="number" id="mixAy" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知线段 B x<input type="number" id="mixBx" step="any" value="25"></label>
+<label class="mixed-only" hidden>已知线段 B y<input type="number" id="mixBy" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知圆心 x<input type="number" id="mixX" step="any" value="0"></label>
+<label class="mixed-only" hidden>已知圆心 y<input type="number" id="mixY" step="any" value="5"></label>
+<label class="mixed-only" hidden>已知圆半径<input type="number" id="mixR" step="any" value="8"></label>
+<label class="mixed-only" hidden>已知轮廓<select id="mixArcExtent"><option value="full">完整圆</option><option value="finite">有限圆弧</option></select></label>
+<label class="mixed-only" hidden>已知弧起点角（°）<input type="number" id="mixArcStart" step="any" value="155"></label>
+<label class="mixed-only" hidden>已知弧终点角（°）<input type="number" id="mixArcEnd" step="any" value="175"></label>
+<label class="mixed-only" hidden>已知弧范围方向<select id="mixArcDirection"><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label class="mixed-only" hidden>线段偏移侧<select id="mixSide"><option value="1">法线正侧 ＋</option><option value="-1">法线负侧 －</option></select></label>
+<label class="mixed-only" hidden>线段行进方向<select id="mixLineTravel"><option value="">待明确</option><option value="forward">A → B</option><option value="reverse">B → A</option></select></label>
+<label class="mixed-only" hidden>已知圆轮廓行进方向<select id="mixCircleTravel"><option value="">待明确</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
+<label class="line-only" hidden>线段 1 起点 x<input type="number" id="line1Ax" step="any" value="-20"></label>
+<label class="line-only" hidden>线段 1 起点 y<input type="number" id="line1Ay" step="any" value="0"></label>
+<label class="line-only" hidden>线段 1 终点 x<input type="number" id="line1Bx" step="any" value="20"></label>
+<label class="line-only" hidden>线段 1 终点 y<input type="number" id="line1By" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 起点 x<input type="number" id="line2Ax" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 起点 y<input type="number" id="line2Ay" step="any" value="-20"></label>
+<label class="line-only" hidden>线段 2 终点 x<input type="number" id="line2Bx" step="any" value="0"></label>
+<label class="line-only" hidden>线段 2 终点 y<input type="number" id="line2By" step="any" value="20"></label>
+<label class="line-only" hidden>线段 1 圆心侧<select id="lineSide1"><option value="">两侧均检查</option><option value="1">沿 A→B 左侧 +</option><option value="-1">沿 A→B 右侧 −</option></select></label>
+<label class="line-only" hidden>线段 2 圆心侧<select id="lineSide2"><option value="">两侧均检查</option><option value="1">沿 A→B 左侧 +</option><option value="-1">沿 A→B 右侧 −</option></select></label>
+<label class="line-only" hidden>线段 1 接入方向<select id="lineTravel1"><option value="">待明确</option><option value="forward">A→B 到切点</option><option value="reverse">B→A 到切点</option></select></label>
+<label class="line-only" hidden>线段 2 离开方向<select id="lineTravel2"><option value="">待明确</option><option value="forward">由切点向 B</option><option value="reverse">由切点向 A</option></select></label>
+<label>连接圆弧半径<input type="number" id="filletRadius" step="any" value="10"></label>
+<label>候选中心<select id="branch"><option value="">请先选择候选</option><option value="center-1">中心 1</option><option value="center-2">中心 2</option></select></label>
+<label>连接弧方向<select id="direction"><option value="">请明确选择</option><option value="cw">顺时针 CW</option><option value="ccw">逆时针 CCW</option></select></label>
+<label class="circle-only">已知圆 1 轮廓方向<select id="travel1"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+<label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
+</div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
+<p class="card" id="status" aria-live="polite">正在求解……</p>
+<p class="note">“有限线段＋圆／有限已知圆弧”支持真实求解、V5 教学、数字化偏移线与同心辅助圆、学生自主圆心点选、两切点及有向圆弧判题。四项已支持的构造全部正确也不等于整道教材题完成。</p>
+<h2>数学教学模式</h2>
+<label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
+<div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
+<p class="note" style="flex:1 1 100%;margin:0">看辅助线、辅助圆和切点逐渐画出，请使用「逐笔播放」；「下一步」会立即显示该步骤的完整图形。系统开启减少动态效果时可使用静态步进。</p></div>
+<div class="playback-scrub" id="filletScrubBar">
+<label for="filletProgress">笔迹进度（拖动到任意一步的中间，支持触屏与方向键）</label>
+<input id="filletProgress" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="圆弧连接逐笔作图进度">
+<output id="filletProgressLabel" for="filletProgress" aria-live="off">0%</output>
+<button id="filletRestart" type="button">回到起点</button>
+</div>
+<div id="hintControls" hidden><p class="note">只逐条解释数学理由，不展示未来辅助线、圆心、切点或完成的连接弧。</p><button id="hintNext" type="button">下一条提示</button><p class="note" id="hintCounter">0 / 6</p></div>
+<div id="drawControls" hidden>
+<label>绘图工具<select id="drawTool"><option value="line">自由画辅助线（仅两线段）</option><option value="arc">手绘有向连接圆弧（两圆／两线段）</option><option value="snap">点选候选圆心（数学吸附）</option><option value="tangent">点选切点（选已知对象 1／2）</option></select></label>
+<fieldset style="border:1px solid #d4e5da;border-radius:12px;padding:11px;margin:12px 0">
+<legend style="padding:0 7px;font-size:13px;font-weight:700">数字化尺规 · 自己构造辅助轨迹</legend>
+<p class="note">先选择上方候选圆心分支，再选择已知对象和偏移量。两线段使用有符号垂直距离；两圆使用圆规半径。不会自动填写正确构造数据，也不会把辅助轨迹通过视为整题完成。</p>
+<div class="fields">
+<label>已知对象<select id="digitalSource"><option value="first">直线／圆 1</option><option value="second">直线／圆 2</option></select></label>
+<label>有符号偏移或圆规半径（mm）<input id="digitalValue" type="number" step="any" value="10"></label>
+</div>
+<div class="actions"><button id="addDigital" class="primary" type="button">构造辅助轨迹</button><button id="undoDigital" type="button">撤销尺规步骤</button><button id="clearDigital" type="button">清空尺规</button><button id="checkDigital" type="button">验证两条辅助轨迹</button></div>
+<p class="card" id="digitalStatus" role="status" aria-live="polite">请选择候选分支后自行构造辅助轨迹。</p>
+<p class="note" id="centerSnapStatus" role="status" aria-live="polite">使用上方“点选候选圆心”工具，在画纸上点选认为正确的交点；吸附仅在数学容差内有效。</p>
+</fieldset>
+<p class="note">新增“点选切点”：先在尺规区选择已知对象 1 或 2，再点选图纸上的切点；可以先于弧向／G1 判题，但不会自动显示真实切点。重复、选错对象、超出有效范围均不能通过。</p>
+<p class="note">请先选择经数学验证的圆心分支、连接弧方向及原轮廓走向。用触笔、鼠标或手指在左侧画纸上绘制。曲线检查包括模型半径、两切点、旋向和连续轨迹；不会把仅画出弧线等同于整题全部正确。</p>
+<div class="actions"><button id="undoDraw" type="button">撤销</button><button id="redoDraw" type="button">重做</button><button id="clearDraw" type="button">清空</button><button id="checkDraw" class="primary" type="button">数学检查</button></div>
+<p class="card" id="drawStatus" role="status" aria-live="polite">当前未判题</p><p class="card" id="learningProgress" role="status" aria-live="polite">三类圆弧题均按辅助轨迹、候选圆心、两个切点及连接圆弧四项独立验算；有限已知圆弧切点必须在给定角度范围内，但不代表整道教材题完成。</p>
+<section id="studentMathFeedback" class="student-math-feedback" aria-labelledby="studentFeedbackTitle" hidden>
+<h3 id="studentFeedbackTitle">学生每步数学反馈</h3>
+<p id="studentFeedbackSummary">仅依据你自己完成的辅助线、圆心、切点与圆弧验证。</p>
+<p id="studentFeedbackNext" aria-live="off">请先自行构造题目要求的几何条件。</p>
+<div class="student-math-grid">
+<div><strong>① 辅助轨迹</strong><span id="studentFeedbackAux">待核验</span></div>
+<div><strong>② 圆心定位</strong><span id="studentFeedbackCenter">待核验</span></div>
+<div><strong>③ 切点定位</strong><span id="studentFeedbackContacts">待核验</span></div>
+<div><strong>④ 圆弧连接</strong><span id="studentFeedbackArc">待核验</span></div>
+</div>
+<p id="studentFeedbackScope">只能证明当前学生提交的局部几何条件，不代表整道教材题完成。</p>
+</section></div>
+<div class="card"><strong id="stepTitle">第 0 步</strong><p id="stepText">先观察两条题给圆。</p></div>
+<section id="filletProof" class="card" aria-labelledby="filletProofHeading" hidden>
+<h3 id="filletProofHeading">V5 · 本步数学依据与核验</h3>
+<p id="filletProofTitle" class="note" aria-live="polite">等待经核验的作图步骤</p>
+<div id="filletStrokeLive" class="playback-scrub" hidden aria-label="当前真实笔迹的作图依据">
+<strong id="filletStrokeTitle" aria-live="polite">当前笔迹尚未开始</strong>
+<p id="filletStrokeWhy" style="margin:0;font-size:13px">播放或拖动进度后显示当前笔迹。</p>
+<p id="filletStrokeBasis" style="margin:0;font-size:12px;color:#42664f"></p>
+<p id="filletStrokeCheck" style="margin:0;font-size:12px;color:#42664f"></p>
+<output id="filletStrokePercent" aria-live="off">0%</output>
+</div>
+<dl>
+<div><dt>为什么这样画</dt><dd id="filletProofWhy"></dd></div>
+<div><dt>数学依据</dt><dd id="filletProofBasis"></dd></div>
+<div><dt>本步核验范围</dt><dd id="filletProofCheck"></dd></div>
+<div><dt>数学残差与证明状态</dt><dd id="filletProofEvidence"></dd></div>
+</dl>
+<p id="filletProofScope" class="proofScope">辅助构造不代表整道教材习题已经完成。</p>
+</section>
+<p class="note" id="counter">0 / 4</p>
+<p class="note">所有运算在本机浏览器运行。未声明分支或方向时只显示候选数据，不伪造已核验有限连接弧。</p>
+</section></div></main><script defer src="circle-fillet-live-bundle.js"></script></body></html>

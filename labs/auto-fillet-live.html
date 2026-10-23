@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="DraftAI 二维工程制图自动解题：输入或修正数学几何尺寸，真实求圆心切点，再用 V5 动态绘制辅助线与连接弧。">
+<title>二维自动解题工作台 · DraftAI V3.1</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+:root{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#284a37;background:#f2f7f3;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}
+.wrap{max-width:1390px;margin:auto;padding:17px 16px 36px}
+a{color:#23714b}h1{font-size:clamp(24px,4vw,36px);margin:14px 0 6px}.muted{color:#607b68;line-height:1.7;font-size:13px}
+.layout{display:grid;grid-template-columns:minmax(270px,.8fr) minmax(0,1.5fr);gap:14px;align-items:start}
+.panel{background:white;border:1px solid #d7e6db;border-radius:17px;padding:16px;min-width:0}
+.panel h2{font-size:18px;margin:0 0 12px}
+.local-photo{padding:12px;background:#f5faf6;border:1px solid #d8e6da;border-radius:12px;margin-bottom:14px}
+.local-photo img{display:block;width:100%;max-height:320px;object-fit:contain;background:white;border:1px solid #d8e6da;border-radius:9px;margin-top:9px}
+.local-photo img[hidden]{display:none}
+.photo-stage{max-height:360px;overflow:auto;touch-action:pan-y}
+.photo-canvas{position:relative;width:100%}
+.photo-stage img{max-height:none;margin:0}
+.photo-stage svg{display:block;position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.photo-stage svg[hidden]{display:none}
+.photo-stage svg.candidate-lines,.photo-stage svg.candidate-curves,.photo-stage svg.candidate-ocr{pointer-events:none}
+.source-review{margin-top:10px;padding-top:8px;border-top:1px solid #d7e6db}
+.source-review[hidden]{display:none}
+.source-review label{margin:8px 0}
+.source-review label:has(input[type="checkbox"]){display:flex;align-items:center;gap:8px}
+.source-review input[type="checkbox"]{width:18px;min-height:18px;height:18px;flex:none;accent-color:#226d49}
+.source-review .controls button{flex:1 1 140px}
+.source-status{font-size:12px;color:#526d58;line-height:1.65;margin:8px 0}
+.source-status[role=status]{overflow-wrap:anywhere}
+.ocr-math-accept{display:flex;flex-direction:row;gap:8px;align-items:center;margin:8px 0}.ocr-math-accept input{width:20px;min-height:20px;flex:none}
+.local-photo p{margin:6px 0 0;font-size:12px;color:#577662;line-height:1.55}
+.vector-preview{display:block;width:100%;height:140px;background:#fff;border:1px solid #d8e6da;border-radius:9px;margin:9px 0}.vector-confirm{display:flex;flex-direction:row;align-items:center;gap:9px;margin:10px 0}.vector-confirm input{width:auto;min-height:20px;flex:0 0 auto}.vector-status{font-size:12px;color:#576e5b;line-height:1.55;margin:8px 0}
+.raster-scale-help{border:1px solid #d9e5db;border-radius:10px;margin:12px 0;padding:12px;background:#f9fcfa}.raster-scale-help h4{font-size:13px;margin:0 0 6px}.raster-scale-help p{font-size:12px;line-height:1.6}
+.raster-edits{display:grid;gap:9px;margin:10px 0}.raster-edit-group{background:#fff;border:1px solid #d8e6da;border-radius:9px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.raster-edit-group strong{grid-column:1/-1;font-size:12px;color:#365e45}.raster-edit-group label{min-width:0}
+.vector-annotation-review{display:grid;gap:8px;margin-top:10px}.vector-annotation-row{padding:9px;background:white;border:1px solid #d8e6da;border-radius:9px;display:grid;gap:7px}.vector-annotation-row span{font-size:12px;overflow-wrap:anywhere;color:#496e56}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{font-size:12px;color:#4c6c58;display:grid;gap:5px}
+input,select,button{font:inherit;min-height:44px;border-radius:10px}
+input,select{width:100%;padding:8px;border:1px solid #bbd4c4;background:#fff;color:#233d2c}
+button{border:1px solid #adcfb9;background:#fff;color:#256e4b;padding:8px 13px;cursor:pointer}
+button.primary{background:#226d49;color:white;border-color:#226d49}
+button:disabled{opacity:.45;cursor:not-allowed}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.controls button{flex:1;white-space:nowrap}
+.status{padding:12px;border-radius:11px;background:#f2f8f4;border:1px solid #d7e9dc;line-height:1.7;font-size:13px;min-height:58px;overflow-wrap:anywhere}
+.status[aria-invalid="true"]{background:#fff8ec;border-color:#e9d5ab}
+.paper{width:100%;overflow:hidden;border:1px solid #dde8e0;border-radius:13px;background:#fefefe}
+.paper svg{display:block;width:100%;height:auto;min-height:230px}
+.paper.mono [data-drawing]{stroke:#222!important}.paper.mono [data-result]{stroke:#000!important}
+[data-action]{cursor:pointer;pointer-events:visiblePainted}
+[data-action]:focus-visible{stroke-width:5}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#617b67;margin:10px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:#26764c}.dot.aux{background:#ba9044}.dot.final{background:#266da8}
+.seek{display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap}.seek label{flex:0 0 auto}.seek input{flex:1;min-width:100px;padding:0;min-height:34px}
+#stepList{display:grid;gap:6px;max-height:280px;overflow:auto}
+#stepList button{text-align:left;min-height:42px;white-space:normal}
+#stepList button[aria-current="step"]{background:#e6f2ea;border-color:#5c9d72}
+#result{font-size:13px;line-height:1.75;border-top:1px solid #e6ede8;margin-top:12px;padding-top:11px}
+footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:400px){.controls button{flex:1 1 40%}.fields{gap:7px}}
+</style>
+</head>
+<body>
+<header class="site-topbar"><div class="site-topbar-inner"><a class="site-brand" href="../index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>AI 工程制图自动解题</small></span></a><nav class="site-nav"><a href="../index.html">返回首页</a><a href="circle-fillet-live.html">原有圆弧解题工具</a><a href="recognition-qa.html">本地识图质量验收</a></nav></div></header>
+<main class="wrap">
+<h1>二维自动解题工作台</h1>
+<p class="muted">修改题目的几何条件，系统会重新计算候选圆心和切点，并按真实数学依据绘制辅助线与连接弧。当前支持手动确认的数字条件与原图逐项来源核对，<strong>AI 图片识别尚未上线</strong>；这里不是预置 SVG 答案播放器。</p>
+<div class="layout">
+<section class="panel" aria-label="工程图条件编辑">
+<h2>已知条件</h2>
+<div class="local-photo">
+<label for="problemPhoto">原题图片（仅本地参照，不会上传）
+<input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<div class="controls" style="margin:7px 0 0"><button type="button" id="clearPhoto">清除本地图像</button>
+<button type="button" id="detectLines">检测直线候选（实验）</button>
+<button type="button" id="clearLines">清除候选线</button>
+<button type="button" id="detectCurves">检测圆与圆弧（实验）</button>
+<button type="button" id="clearCurves">清除圆弧候选</button>
+<button type="button" id="detectOcr">识别 R/Φ 文字（实验）</button>
+<button type="button" id="clearOcr">清除文字候选</button></div>
+<p id="nativeOcrStatus" role="status" aria-live="polite">OCR 依赖浏览器原生支持，识别内容仅为待确认线索。</p>
+<p id="curveStatus" role="status" aria-live="polite">圆与圆弧候选仅在本机检测，不代表几何尺寸。</p>
+<p id="lineStatus" role="status" aria-live="polite">直线候选检测仅在本机运行，不作为已验证图形。</p>
+<p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
+<div class="photo-stage" id="photoStage"><div class="photo-canvas">
+<img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
+<svg id="detectedLineOverlay" class="candidate-lines" aria-label="本地检测的尚未核对直线候选" hidden></svg>
+<svg id="detectedCurveOverlay" class="candidate-curves" aria-label="本地检测的尚未核对圆及圆弧候选" hidden></svg>
+<svg id="nativeOcrOverlay" class="candidate-ocr" aria-label="本地 OCR 待复核尺寸文字区域" hidden></svg>
+<svg id="sourceOverlay" aria-label="框选原题中几何条件的来源区域" hidden></svg>
+</div></div>
+<div class="source-review">
+<label><input type="checkbox" id="sourceReviewEnabled"> 启用图片条件逐项核对（严格模式）</label>
+<label for="sourceField">要标记来源的条件
+<select id="sourceField"></select></label>
+<label for="sourceCandidate">可关联的检测候选（图像像素，未经核实）
+<select id="sourceCandidate"><option value="">先检测直线、圆或圆弧候选</option></select></label>
+<div class="controls"><button type="button" id="associateCandidate">将所选候选区域关联到当前条件</button></div>
+<label for="ocrDimensionSelect">本地 OCR 尺寸候选（需要人工确认）
+<select id="ocrDimensionSelect"><option value="">请先尝试识别 R/Φ 标注</option></select></label>
+<div class="controls"><button type="button" id="associateOcr">将所选 OCR 位置关联到半径条件</button></div>
+<label class="vector-confirm" for="ocrUnitConfirmed">
+<input type="checkbox" id="ocrUnitConfirmed">我已核对原图尺寸标注的单位为毫米（文字未注明 mm 时必须勾选）
+</label>
+<div class="controls"><button type="button" id="prefillOcrRadius">使用所选 OCR 建议半径预填当前字段（仍需人工复核）</button></div>
+<label for="ocrCorrectedValue">人工核对的 R/Φ 标注数值（毫米；Φ 输入直径）
+<input id="ocrCorrectedValue" type="number" min="0" step="any" placeholder="核对原图后可修正"></label>
+<label class="ocr-math-accept"><input id="ocrNumericAccept" type="checkbox">我已核对这条文字、当前数学字段和毫米数值</label>
+<div class="controls"><button id="confirmOcrNumeric" type="button" disabled>核验本条尺寸并确认当前字段</button></div>
+<p class="source-status">预填仅是建议；核验 R/Φ 后，也必须逐项确认所有条件，再执行最终验收。</p>
+<p id="candidateStatus" class="source-status" role="status" aria-live="polite">关联只标记原图区域，不会自动填入工程尺寸。仍需逐项确认。</p>
+<div class="controls">
+<button type="button" id="confirmSource">确认当前数值与框选区域相符</button>
+<button type="button" id="acceptSources" class="primary">确认全部条件并解题</button>
+</div>
+<p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
+</div>
+</div>
+<div class="local-photo" id="rasterDraftPanel" aria-label="照片图元和毫米比例人工审核">
+<h3>照片图元校正与导入（实验）</h3>
+<p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。 线圆连接时，请根据有向端点明确选择法向 +1／−1；检测器可能把线段端点顺序反过来。</p>
+<svg id="rasterDraftPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="原题检测候选的安全线圆几何预览"></svg>
+<div class="fields">
+<label for="rasterFirst">源图元一<select id="rasterFirst"><option value="">先检测图元</option></select></label>
+<label for="rasterSecond">源图元二<select id="rasterSecond"><option value="">先检测图元</option></select></label>
+</div>
+<div id="rasterEdits" class="raster-edits" aria-label="人工修改已选图元的像素端点圆心和半径"></div>
+<div class="source-review" id="rasterScalePanel" aria-label="从人工确认的已知长度计算像素比例">
+<h4>使用已知尺寸校准毫米比例（可选）</h4>
+<p>如果图纸明确标出选中整条线段的真实长度（毫米），可辅助计算毫米／像素。只适用于同一张经过校正、近似均匀缩放的题图；斜拍透视可能使这一比例不适用于别处。此步骤不会自动证明几何条件或选择解分支。</p>
+<label for="rasterScaleSource">已知真实长度的线段来源
+<select id="rasterScaleSource"><option value="">请先选中有实际尺寸标注的线段</option></select></label>
+<label for="rasterScaleLength">这条完整线段的实际长度（毫米；必须从题图独立核对）
+<input id="rasterScaleLength" type="number" inputmode="decimal" min="0" step="any" placeholder="例如：实际端点间距 30 mm"></label>
+<label class="vector-confirm" for="rasterScaleReviewed">
+<input id="rasterScaleReviewed" type="checkbox">我确认选中的完整线段两端点与图纸上的实际尺寸相对应，且单位为毫米
+</label>
+<div class="controls"><button id="rasterScaleCalculate" type="button">根据已核对长度计算建议比例</button></div>
+<p id="rasterScaleStatus" class="vector-status" role="status" aria-live="polite">未校准。可继续手动输入毫米／像素；不能把图像检测像素直接当作毫米。</p>
+<div class="source-review" aria-label="第二已知尺寸交叉检查">
+<h4>可选：第二条已知长度交叉核对</h4>
+<p>有第二条真实尺寸明确的完整线段时，可对照两个独立比例。结果相差超过 3% 会提示复查透视、端点或尺寸对应；3% 只是诊断阈值，不代表工业制图公差。</p>
+<label for="rasterCrossSource">另一条独立线段<select id="rasterCrossSource"><option value="">请选择另一条已标尺寸的线段</option></select></label>
+<label for="rasterCrossLength">第二条线段的人工确认长度（毫米）
+<input id="rasterCrossLength" type="number" inputmode="decimal" min="0" step="any" placeholder="例如 45"></label>
+<label class="vector-confirm" for="rasterCrossReviewed">
+<input id="rasterCrossReviewed" type="checkbox">我已核对第二条完整线段的端点、实际尺寸与毫米单位
+</label>
+<div class="controls"><button id="rasterCrossCalculate" type="button">比较两条已核对尺寸的比例</button></div>
+<p id="rasterCrossStatus" class="vector-status" role="status" aria-live="polite">尚未进行第二基线核对；不能据此声称整张题图的比例准确。</p>
+</div>
+</div>
+<div class="raster-scale-help" aria-label="人工关联圆尺寸的毫米比例建议">
+<h4>通过已知圆 R／Φ 辅助校准比例（可选）</h4>
+<p class="muted">选择当前已选整圆，核对其像素半径和题目 R／Φ 数值（单位毫米）。这里只给出建议值，不会自动确认比例或解题。</p>
+<div class="fields">
+<label for="rasterScaleCircle">被标注的来源整圆<select id="rasterScaleCircle"><option value="">先选源图元</option></select></label>
+<label for="rasterScaleKind">原图尺寸类型<select id="rasterScaleKind"><option value="radius">R — 半径</option><option value="diameter">Φ — 直径</option></select></label>
+<label for="rasterScaleValue">人工核对的 R／Φ 毫米值<input type="number" id="rasterScaleValue" min="0" step="any" placeholder="核对原题后填写"></label>
+</div>
+<div class="controls"><button type="button" id="rasterScaleSuggest">提出比例建议</button></div>
+<label class="vector-confirm" for="rasterScaleConfirm"><input type="checkbox" id="rasterScaleConfirm">我核对了原题单位、R／Φ 数值、所属整圆和修改后的像素半径</label>
+<div class="controls"><button type="button" id="rasterScaleUse" disabled>采用已核对的毫米／像素建议</button></div>
+<p id="rasterCircleScaleStatus" class="vector-status" role="status" aria-live="polite">未生成比例建议。不能用 OCR 文字直接证实几何。</p>
+</div>
+<div class="fields">
+<label for="rasterMmPerPx">人工校准：毫米／像素<input id="rasterMmPerPx" type="number" step="any" min="0" placeholder="从已知尺寸独立校准"></label>
+<label for="rasterYAxis">图纸 Y 方向<select id="rasterYAxis"><option value="down">向下为正</option><option value="up">向上为正</option></select></label>
+<label for="rasterOriginX">原点 X（原图像素）<input id="rasterOriginX" type="number" step="any" value="0"></label>
+<label for="rasterOriginY">原点 Y（原图像素）<input id="rasterOriginY" type="number" step="any" value="0"></label>
+<label for="rasterFilletRadius">目标连接 R（毫米）<input id="rasterFilletRadius" type="number" min="0" step="any" placeholder="从真实题目核对"></label>
+<label for="rasterLineSide">线段与圆连接：已核对的有向线法向侧别
+<select id="rasterLineSide" disabled>
+<option value="">需明确选择圆弧圆心位于哪一侧</option>
+<option value="1">法向 +1：沿编辑线段起点→终点，(−Δy, Δx)</option>
+<option value="-1">法向 −1：上述法向反侧</option>
+</select></label>
+</div>
+<label class="vector-confirm" for="rasterAccept"><input id="rasterAccept" type="checkbox">我已核对所选图元、修改的原图像素坐标、毫米比例、原点及目标连接 R</label>
+<div class="controls"><button type="button" id="rasterApply">把审核后的照片几何导入毫米数学条件</button></div>
+<p id="rasterStatus" class="vector-status" role="status" aria-live="polite">尚未检测图元。照片不会上传。</p>
+</div>
+<div class="local-photo" id="localVectorPanel">
+<label for="vectorSvg">SVG 矢量图（本地提取线段与圆，不上传）
+<input id="vectorSvg" type="file" accept=".svg,image/svg+xml"></label>
+<svg id="vectorPreview" class="vector-preview" viewBox="0 0 160 160" role="img" aria-label="从本地 SVG 安全重建的线段与圆"></svg>
+<p id="vectorStatus" class="vector-status" role="status" aria-live="polite">仅支持简单直线、整圆和基础 SVG；图片照片请使用上方本地参照区。含文字或尺寸标注的 SVG 可以逐项核对，但不可未经确认自动推断答案。</p>
+<div class="fields">
+<label for="vectorFirst">已核验图元一<select id="vectorFirst"><option value="">请选择</option></select></label>
+<label for="vectorSecond">已核验图元二<select id="vectorSecond"><option value="">请选择</option></select></label>
+<label for="vectorMmPerPx">比例：每像素对应毫米<input id="vectorMmPerPx" type="number" step="any" min="0" placeholder="请手动校准"></label>
+<label for="vectorYAxis">图纸 Y 轴<select id="vectorYAxis"><option value="down">向下为正</option><option value="up">向上为正</option></select></label>
+<label for="vectorOriginX">图纸原点 X（像素）<input id="vectorOriginX" type="number" step="any" value="0"></label>
+<label for="vectorOriginY">图纸原点 Y（像素）<input id="vectorOriginY" type="number" step="any" value="0"></label>
+<label for="vectorFilletRadius">连接圆弧 R（毫米）<input id="vectorFilletRadius" type="number" step="any" min="0" placeholder="用户核验后填写"></label>
+</div>
+<div class="vector-annotation-review" id="vectorAnnotations" aria-label="SVG 尺寸标注逐项核对"></div>
+<p class="muted">含 R/Φ 标注时，请明确关联已选圆、标为目标连接 R，或单独弃用；尺寸错误可修正毫米值。未经明确确认的标注不得进入求解。</p>
+<label class="vector-confirm" for="vectorAccept"><input id="vectorAccept" type="checkbox">我已人工核对图元、原点、毫米比例及连接半径；未选择的图元不采用</label>
+<div class="controls"><button id="vectorApply" type="button">将确认的 SVG 条件导入求解器</button></div>
+<p>当前不自动识别照片、推断单位或关联 R/Φ 标注；结果仍须选择真实解分支与轮廓方向。</p>
+</div>
+<label for="kind">题型<select id="kind"><option value="two-segments">两有限线段圆弧连接</option><option value="segment-circle">有限线段与圆连接</option><option value="two-circles">两圆圆弧连接</option></select></label>
+<div class="fields" id="fields" style="margin-top:12px"></div>
+<div class="fields" style="margin-top:12px">
+<label for="branch">解分支（真实候选）<select id="branch"><option value="">请选择候选圆心</option></select></label>
+<label for="circleSide">线段与圆：已核对的有向法向侧<select id="circleSide" disabled><option value="1">法向 +1（原手动默认）</option><option value="-1">法向 −1（反向）</option></select></label>
+<label for="direction">结果圆弧方向<select id="direction"><option value="">请选择方向</option><option value="ccw">逆时针 CCW</option><option value="cw">顺时针 CW</option></select></label>
+<label for="travel1"><span id="travel1Label">原轮廓 1 方向</span><select id="travel1"></select></label>
+<label for="travel2"><span id="travel2Label">原轮廓 2 方向</span><select id="travel2"></select></label>
+</div>
+<p class="muted">多解必须选择分支。圆弧顺逆和两侧轮廓走向必须匹配，才能获得经双侧 G1 验证的完整连接弧。</p>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<div id="result" hidden></div>
+</section>
+<section class="panel" aria-label="真实动态作图">
+<h2>计算结果与逐笔动画</h2>
+<div id="paperWrap" class="paper"><svg id="paper" viewBox="0 0 720 440" role="img" aria-label="几何条件及经验证的辅助线和圆弧"><g id="grid"></g><g id="givens"></g><g id="drawing"></g></svg></div>
+<div class="legend"><span><i class="dot"></i>已知图形</span><span><i class="dot aux"></i>辅助线与辅助圆</span><span><i class="dot final"></i>验证后的连接弧</span></div>
+<div class="local-photo" aria-label="验证图纸导出">
+  <div class="controls">
+    <button type="button" id="saveVerifiedSvg" disabled>保存完整 SVG 图纸</button>
+    <button type="button" id="saveVerifiedSteps" disabled>下载分步图纸 ZIP</button>
+  </div>
+  <label for="exportGuides" style="display:flex;align-items:center;gap:8px">
+    <input id="exportGuides" type="checkbox" checked style="min-height:20px;width:20px;flex:none">
+    保留辅助线和辅助圆
+  </label>
+  <p id="exportStatus" role="status" aria-live="polite">只有当前题目数学验证通过后才能下载；图纸在浏览器本地生成。</p>
+</div>
+<div class="controls"><button id="prev" type="button">← 上一步</button><button id="play" type="button" class="primary">▶ 播放</button><button id="next" type="button">下一步 →</button><button id="restart" type="button">重新播放</button></div>
+<div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
+<div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label><label for="autoFit" style="display:flex;align-items:center;gap:8px"><input id="autoFit" type="checkbox" checked style="min-height:20px;width:20px;flex:none">自动适应图纸</label></div>
+<h2 style="margin-top:22px">计算生成的作图步骤</h2>
+<nav id="stepList" aria-label="真实数学作图步骤"></nav>
+<p class="muted" id="stepDetail">选择一步后查看它的几何依据。</p>
+ <details id="intentDetails" hidden class="local-photo"><summary>查看本步作图依据（可折叠）</summary><p id="intentTrace" class="muted"></p></details>
+</section>
+</div>
+<footer>V3.1 手动条件自动解题 · 浏览器本地计算 · 不采集、上传或保存题图 · 数学求解支持范围为有限线段/整圆的指定圆弧连接；尚不代表任意二维工程图均可自动求解。</footer>
+</main>
+<script defer src="auto-fillet-live-bundle.js"></script>
+</body>
+</html>

@@ -2,7 +2,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const out = path.join(root, 'dist');
+const uiPreview = process.argv.includes('--ui-preview');
+const uiRelease = !uiPreview;
+const out = path.join(root, uiPreview ? 'dist-ui-next' : 'dist');
 // Public distribution contains geometry learning tools only. Textbook-related source
 // and user-submitted traced exercise data stay out of the published assets.
 const files = [
@@ -12,6 +14,12 @@ const files = [
   'favicon.svg',
   'robots.txt',
   'labs/point-coach.html',
+  'labs/point-projection-live.html',
+  'labs/circle-fillet-live.html',
+  'labs/auto-fillet-live.html',
+  'labs/cylinder-cut-live.html',
+  'labs/prism-cut-live.html',
+  'labs/recognition-qa.html',
   'labs/point-coach.css',
   'labs/point-coach-core.js',
   'labs/point-coach-ui.js',
@@ -87,4 +95,83 @@ esbuild.buildSync({
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
 
+/* Only the P0 point engine and its verified dependencies are bundled for the
+ * public interactive page. The source files, synthetic fixtures, math tests,
+ * internal docs and private textbook content remain outside dist.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/point-projection-live-entry.cjs')],
+ outfile:path.join(out,'labs/point-projection-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Verified P0 two-circle tangency is bundled into a public standalone tool.
+ * Internal source/tests, private textbook records and synthetic fixtures stay out.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/circle-fillet-live-entry.cjs')],
+ outfile:path.join(out,'labs/circle-fillet-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
 console.log('DraftAI public geometry site ready:',files.length,'assets');
+
+/* V3.1 opt-in public local-only confirmed geometry editor. No upload/OCR or
+ * private user files: bundle only explicitly reviewed math/V5 consumers.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/auto-fillet-live-entry.cjs')],
+ outfile:path.join(out,'labs/auto-fillet-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+
+/* Explicit local-only QA view. No uploaded image assets, benchmark fixture
+ * sources or private datasets are distributed with this browser bundle.
+ * Images stay inside the visitor's device, via object URL and local Canvas.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/recognition-qa-entry.cjs')],
+ outfile:path.join(out,'labs/recognition-qa-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Independent V3.8 cylinder-cut geometry experiment. Bundled entirely
+ * client-side; no user image, private textbook or raw math files in dist.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/cylinder-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/cylinder-cut-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+
+/* Local-only, proof-backed finite rectangular prism section V5 lab.
+ * Uncertified line visibility remains visibly undetermined.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/prism-cut-live-entry.cjs')],
+ outfile:path.join(out,'labs/prism-cut-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+// Unified UI is production default; preview output remains isolated.
+if(uiPreview || uiRelease){
+ require('../ui-next/enhance-page.cjs').applyPreview(out, {preview: !uiRelease});
+ console.log('DraftAI unified UI ready:', out);
+}
+
+// Identity-only asset: whoever can read deployed dist can compare this SHA
+// with protected GitHub main. Never confuse an artifact manifest with a
+// verified live deployment, and never emit CI environment secrets.
+const info=require('./public-build-provenance.cjs').writePublicBuildInfo(out,{
+ repoRoot:root,preview:uiPreview
+});
+console.log('DraftAI public asset commit:',info.sourceCommit||'unavailable');
+

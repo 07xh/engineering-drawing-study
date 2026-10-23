@@ -3,6 +3,12 @@
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import SyncV5 from '../workbench/dof-synchronized-reveal.cjs';
+import ReasonV5 from '../workbench/dof-step-explanations.cjs';
+
+// Shared presentation logic is bundled locally even when WebGL is unavailable.
+window.DrawingLabSyncV5=SyncV5;
+window.DrawingLabStepReasons=ReasonV5;
 
 (function(){
 'use strict';
@@ -28,7 +34,7 @@ function mount(container,onSelect){
  scene.add(solidRoot,pointRoot);
  scene.add(new THREE.AxesHelper(76));
  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
- let markers=[],modelId=null,disposed=false,framePending=false;
+ let markers=[],modelId=null,disposed=false,framePending=false,targetMarker=null,targetOpacity=1;
  container.append(canvas);
  const disposeItem=item=>{
   if(item.geometry)item.geometry.dispose();
@@ -105,7 +111,7 @@ function mount(container,onSelect){
   line.computeLineDistances();pointRoot.add(line);
  }
  function drawLocus(result){
-  clear(pointRoot);
+  clear(pointRoot);targetMarker=null;
   if(result.kind==='none'||!G.pointValid(result.example))return;
   const p=vec(result.example),dirs=(result.directions||[]).map(d=>new THREE.Vector3(...d).normalize());
   if(result.degrees===1&&dirs[0])drawLine(p.clone().addScaledVector(dirs[0],-130),p.clone().addScaledVector(dirs[0],130));
@@ -127,8 +133,15 @@ function mount(container,onSelect){
     drawLine(p.clone().addScaledVector(v,-24),p.clone().addScaledVector(v,24));
    }
   }
-  const marker=new THREE.Mesh(new THREE.SphereGeometry(3.3,16,12),new THREE.MeshBasicMaterial({color:0xf19a27,depthTest:false}));
-  marker.position.copy(p);pointRoot.add(marker);
+  const marker=new THREE.Mesh(new THREE.SphereGeometry(3.3,16,12),
+   new THREE.MeshBasicMaterial({color:0xf19a27,depthTest:false,transparent:true,opacity:targetOpacity}));
+  marker.position.copy(p);marker.visible=targetOpacity>0;pointRoot.add(marker);targetMarker=marker;
+ }
+ function setTargetOpacity(value){
+  if(!Number.isFinite(value))throw new TypeError('invalid spatial reveal fraction');
+  targetOpacity=Math.max(0,Math.min(1,value));
+  if(targetMarker){targetMarker.material.opacity=targetOpacity;targetMarker.visible=targetOpacity>0;}
+  requestDraw();
  }
  function update(model,locus,opts={}){
   if(disposed)return;
@@ -162,7 +175,7 @@ function mount(container,onSelect){
   controls.dispose();clear(solidRoot);clear(pointRoot);renderer.dispose();canvas.remove();
  }
  resize();
- return {update,zoom,turn,resetCamera,dispose};
+ return {update,setTargetOpacity,zoom,turn,resetCamera,dispose};
 }
 window.DrawingLabThreeViewer={mount};
 })();

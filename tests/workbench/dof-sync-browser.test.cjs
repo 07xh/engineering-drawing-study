@@ -1,0 +1,303 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.resolve(__dirname,'../..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const State=require('../../labs/dof-lab-state.js');
+const Geom=require('../../labs/dof-lab-geometry.js');
+const Sheet=require('../../labs/dof-lab-sheet.js');
+const Spatial=require('../../labs/dof-lab-spatial-svg.js');
+const Sync=require('../../workbench/dof-synchronized-reveal.cjs');
+const Reasons=require('../../workbench/dof-step-explanations.cjs');
+function createPage(){
+ let now=0,id=0,reduced=false,motionHandler=null;
+ const frames=new Map(),elements=new Map();
+ const make=tag=>({
+  tag,children:[],attributes:{},listeners:{},
+  value:'',checked:true,disabled:false,hidden:false,textContent:'',innerHTML:'',
+  style:{},classList:{add(){},remove(){},toggle(){}},
+  append(...nodes){this.children.push(...nodes)},
+  replaceChildren(...nodes){this.children=[...nodes]},
+  setAttribute(name,value){this.attributes[name]=String(value)},
+  insertAdjacentHTML(_position,html){this.innerHTML+=html},
+  getAttribute(name){return this.attributes[name]},
+  addEventListener(type,fn){this.listeners[type]=fn},
+  setPointerCapture(){},
+  focus(){},
+  get valueAsNumber(){return this.value.trim()===''?NaN:Number(this.value)},
+  getBoundingClientRect(){return {left:0,top:0,width:460,height:330}}
+ });
+ const get=id=>{
+  if(!elements.has(id)){
+   const el=make('div');el.id=id;elements.set(id,el);
+  }
+  return elements.get(id);
+ };
+ get('conditionType').value='projection';
+ get('solid').value='cuboid';get('syncSpeed').value='1';
+ get('syncProgress').value='1000';
+ get('showGuides').checked=true;
+ get('showWireframe').checked=true;
+ get('showHiddenEdges').checked=true;
+ get('showLabels').checked=false;
+ for(const [id,value] of [['trialX',35],['trialY',22],['trialZ',51]])
+  get(id).value=String(value);
+ const docListeners={};
+ const document={hidden:false,getElementById:get,createElement:make,querySelectorAll(){return []},
+  addEventListener(type,fn){docListeners[type]=fn}};
+ const window={DrawingLabState:State,DrawingLabGeometry:Geom,
+  DrawingLabSheet:Sheet,DrawingLabSpatialPreview:Spatial,DrawingLabSyncV5:Sync,
+  DrawingLabStepReasons:Reasons,
+  matchMedia(){return {get matches(){return reduced},
+   addEventListener(type,fn){if(type==='change')motionHandler=fn}}}};
+ const raf=fn=>{frames.set(++id,fn);return id};
+ const cancel=i=>frames.delete(i);
+ const context={document,window,performance:{now:()=>now},
+  requestAnimationFrame:raf,cancelAnimationFrame:cancel};
+ vm.runInNewContext(read('labs/dof-lab-v2-ui.js'),context,
+  {filename:'dof-lab-v2-ui.js',timeout:5000});
+ const fire=(which,event)=>{
+  const el=get(which);
+  assert.equal(typeof el.listeners[event],'function',which+' lacks '+event);
+  el.listeners[event]({preventDefault(){},target:el});
+ };
+ const advance=delta=>{
+  now+=delta;
+  const list=[...frames.values()];frames.clear();
+  for(const fn of list)fn(now);
+ };
+ const setHidden=value=>{
+  document.hidden=!!value;docListeners.visibilitychange?.();
+ };
+ const setReduced=value=>{
+  reduced=!!value;motionHandler?.({matches:reduced});
+ };
+ return {get,fire,advance,window,frames,document,setHidden,setReduced};
+}
+test('real page initializes with P-star and does not hide the playback button',()=>{
+ const p=createPage();
+ assert.match(p.get('syncCaption').textContent,/P\*/);
+ assert.match(p.get('pointCoordinates').textContent,/P\*/);
+ assert.equal(p.get('syncPlay').disabled,false);
+ assert.equal(p.get('syncRestart').disabled,true);
+ assert.equal(p.get('syncProgress').disabled,true);
+ assert.equal(p.window.DrawingLabV2Controller.getSync(),null);
+});
+test('real page synchronizes playback then clears stale timeline after editing constraints',()=>{
+ const p=createPage(),{get,fire,advance,window}=p;
+ fire('syncPlay','click');
+ assert.match(get('syncPlay').textContent,/暂停/);
+ const original=window.DrawingLabV2Controller.getSync();
+ assert.equal(original.degreeStatus,'sample');
+ advance(360);
+ assert.ok(Number(get('syncProgress').value)>0);
+ get('syncSpeed').value='2';fire('syncSpeed','change');
+ advance(1000);
+ assert.ok(Number(get('syncProgress').value)>100);
+ fire('syncPlay','click');assert.match(get('syncPlay').textContent,/播放/);
+ const stopped=get('syncProgress').value;advance(1000);
+ assert.equal(get('syncProgress').value,stopped);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'projection',plane:'H',value:[15,10]}});
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+ assert.match(get('syncCaption').textContent,/P\*/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:12}});
+ assert.equal(get('degrees').textContent,'0');
+ assert.match(get('syncCaption').textContent,/唯一解 P/);
+ fire('syncPlay','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().degreeStatus,'unique');
+ fire('syncRestart','click');assert.equal(Number(get('syncProgress').value),0);
+});
+test('contradictory point constraints block real UI player and never expose solved target',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'x',value:15}});
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'x',value:16}});
+ assert.match(get('syncCaption').textContent,/无解/);
+ assert.equal(get('syncPlay').disabled,true);
+ assert.match(get('pointCoordinates').textContent,/不存在满足/);
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+});
+test('real page can seek to finish while preserving sample-not-unique truth',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ fire('syncPlay','click');
+ get('syncProgress').value='1000';fire('syncProgress','input');
+ assert.equal(Number(get('syncProgress').value),1000);
+ assert.equal(window.DrawingLabV2Controller.getSync().progress,1);
+ assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
+ assert.equal(get('syncPlay').disabled,true);
+ fire('syncRestart','click');assert.equal(Number(get('syncProgress').value),0);
+});
+
+test('Android background tab pauses V5 at its actual progress; manual resumption does not skip drawing',()=>{
+ const p=createPage(),{get,fire,advance,setHidden,frames}=p;
+ fire('syncPlay','click');advance(450);
+ const before=Number(get('syncProgress').value);
+ assert.ok(before>0&&before<1000);
+ assert.ok(frames.size>0);
+ setHidden(true);
+ assert.equal(frames.size,0,'background tab cancels all V5 animation callbacks');
+ assert.match(get('syncPlay').textContent,/播放/);
+ advance(60000);
+ assert.equal(Number(get('syncProgress').value),before,'hidden tab does not fast-forward the point');
+ setHidden(false);advance(30000);
+ assert.equal(Number(get('syncProgress').value),before,'return requires explicit resume');
+ fire('syncPlay','click');advance(200);
+ const after=Number(get('syncProgress').value);
+ assert.ok(after>before&&after<1000,'drawing continues from the paused progress');
+ assert.match(get('syncProgress').attributes['aria-valuetext'],/已完成/);
+});
+test('changing OS reduced-motion preference finishes display without high-motion frames',()=>{
+ const p=createPage(),{get,fire,advance,setReduced,frames}=p;
+ fire('syncPlay','click');advance(300);
+ assert.ok(Number(get('syncProgress').value)<1000);
+ setReduced(true);
+ assert.equal(Number(get('syncProgress').value),1000);
+ assert.equal(frames.size,0);
+ assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
+ assert.equal(get('syncPlay').disabled,true);
+});
+
+
+test('V5 next-step and previous-step controls seek verified guides, not unproved target',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ assert.equal(get('syncNext').disabled,false);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(get('syncStep').textContent,'未开始');
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().degreeStatus,'sample');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(get('syncPrevious').disabled,false);
+ assert.equal(get('syncProgress').disabled,false);
+ assert.equal(p.frames.size,0,'manual steps must not spawn an animation loop');
+ fire('syncPrevious','click');
+ assert.equal(Number(get('syncProgress').value),0);
+ assert.equal(get('syncPrevious').disabled,true);
+ fire('syncNext','click');
+ fire('syncNext','click');
+ fire('syncNext','click');
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 5 \/ 5 步/);
+ assert.equal(get('syncPlay').disabled,false);
+ assert.equal(get('syncNext').disabled,false,'result step is not yet complete');
+ assert.match(get('syncExplanation').textContent,/P\*.*不代表唯一解/);
+ assert.ok(window.DrawingLabV2Controller.getSync().progress<1);
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().progress,1);
+ assert.equal(get('syncNext').disabled,true);
+ assert.equal(get('syncPlay').disabled,true);
+ assert.match(get('syncStep').textContent,/全部 5 步完成/);
+ fire('syncPrevious','click');
+ assert.match(get('syncStep').textContent,/第 5 \/ 5 步/);
+ assert.ok(window.DrawingLabV2Controller.getSync().progress<1);
+ assert.equal(get('syncNext').disabled,false);
+});
+test('V5 rewind while halfway through a guide restarts that mathematical stage',()=>{
+ const p=createPage(),{get,fire,advance,frames}=p;
+ fire('syncPlay','click');
+ advance(330);
+ const before=Number(get('syncProgress').value);
+ assert.ok(before>0);
+ fire('syncPrevious','click');
+ assert.equal(Number(get('syncProgress').value),0);
+ assert.equal(frames.size,0);
+ assert.match(get('syncPlay').textContent,/播放/);
+ fire('syncPlay','click');
+ advance(500);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0,'manual seek pauses RAF');
+});
+test('step controls invalidate stale geometry after each constraint change and block contradictions',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ fire('syncNext','click');
+ assert.ok(window.DrawingLabV2Controller.getSync().progress>0);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'projection',plane:'H',value:[15,10]}});
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(get('syncNext').disabled,false);
+ assert.equal(get('syncStep').textContent,'未开始');
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:12}});
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().degreeStatus,'unique');
+ assert.match(get('syncExplanation').textContent,/唯一确定的空间点/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:13}});
+ assert.equal(get('syncNext').disabled,true);
+ assert.equal(get('syncPrevious').disabled,true);
+ assert.equal(window.DrawingLabV2Controller.getSync(),null);
+ assert.match(get('syncCaption').textContent,/无解/);
+});
+test('mobile reduced-motion mode still supports discrete verified stages without RAF',()=>{
+ const p=createPage(),{get,fire,frames,setReduced}=p;
+ setReduced(true);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0);
+ assert.ok(Number(get('syncProgress').value)>0);
+ fire('syncNext','click');
+ assert.match(get('syncStep').textContent,/第 3 \/ 5 步/);
+ fire('syncPrevious','click');
+ assert.match(get('syncStep').textContent,/第 2 \/ 5 步/);
+ assert.equal(frames.size,0);
+});
+
+test('V5 explanation panel follows stage 1-5, rewind, completion, and original geometry',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ assert.match(get('syncReasonDof').textContent,/独立约束秩 0，剩余自由度 3/);
+ fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ assert.match(get('syncReasonBasis').textContent,/高度 z 相同/);
+ assert.match(get('syncReasonDof').textContent,/画联系线.*不新增独立约束/);
+ assert.match(get('syncReasonEvidence').textContent,/尚无用户约束/);
+ fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/H → 45°/);
+ assert.match(get('syncReasonCheck').textContent,/miterOn45/);
+ fire('syncPrevious','click');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ fire('syncNext','click');fire('syncNext','click');fire('syncNext','click');
+ assert.match(get('syncReasonTitle').textContent,/示例位置 P\*/);
+ assert.match(get('syncReasonCheck').textContent,/尚未完成目标点显现/);
+ fire('syncNext','click');
+ assert.equal(window.DrawingLabV2Controller.getSync().progress,1);
+ assert.doesNotMatch(get('syncReasonCheck').textContent,/当前仍处于结果步骤/);
+ fire('syncPrevious','click');
+ assert.match(get('syncReasonCheck').textContent,/尚未完成目标点显现/);
+});
+test('V5 explanatory proof reports independent, redundant and inconsistent constraints without fake DOF',()=>{
+ const p=createPage(),{get,fire,window}=p;
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'projection',plane:'H',value:[15,10]}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonDof').textContent,/独立约束秩 2；空间点剩余 1 个自由度/);
+ assert.match(get('syncReasonEvidence').textContent,/新增 2 个独立约束，自由度 3 → 1/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'x',value:15}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonEvidence').textContent,/冗余，未增加独立约束/);
+ assert.match(get('syncReasonDof').textContent,/剩余 1 个自由度/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:12}});
+ fire('syncNext','click');
+ assert.match(get('syncReasonDof').textContent,/秩 3；空间点剩余 0 个自由度/);
+ assert.match(get('syncReasonTitle').textContent,/V ↔ W/);
+ window.DrawingLabV2Controller.apply({type:'add',condition:{
+  type:'coordinate',axis:'z',value:13}});
+ assert.match(get('syncReasonTitle').textContent,/约束冲突/);
+ assert.match(get('syncReasonDof').textContent,/不能把无解记作 0 个自由度/);
+ assert.equal(get('syncNext').disabled,true);
+});
+test('V5 scrubbing explanation checks are coupled to exact verified time frame',()=>{
+ const p=createPage(),{get,fire}=p;
+ fire('syncPlay','click');
+ get('syncProgress').value='1000';fire('syncProgress','input');
+ assert.match(get('syncReasonTitle').textContent,/示例位置 P\*/);
+ get('syncProgress').value='0';fire('syncProgress','input');
+ assert.match(get('syncReasonTitle').textContent,/V ↔ H/);
+ assert.match(get('syncReasonCheck').textContent,/sameX/);
+});

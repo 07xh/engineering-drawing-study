@@ -1,0 +1,15 @@
+# DraftAI V3.6 / 08-C7 — human-linked R/Φ circle metric scale suggestion
+
+Related to #233, #234, #240, #243. This increment extends the existing browser-local raster candidate correction panel, not an OCR model or a new math engine.
+
+**Problem:** pixel geometry and engineering millimetres were previously separated by a wholly manual mm-per-pixel field. Users frequently have a circle labelled `R20` or `Φ40` plus a measured source circle pixel radius. A *suggestion* can be computed from this **independent, human-reviewed correspondence** without claiming image recognition or geometric proof.
+
+**Implemented:** `proposeCircleScale` accepts a validated current-revision unconfirmed ProblemDraft, the user's explicitly selected **complete** source circle ID (never an arc/line), edited center and source-image pixel radius, human checked annotation kind `radius` or `diameter`, and a strictly positive verified-number input in **mm**. Returns `mmPerPx = (dimensionKind==='diameter' ? valueMm/2 : valueMm) / radiusPx`; rejects out-of-image corrections, invalid kinds/IDs, stale draft revisions, NaN/Infinity/zero/overflow and unknown geometry. Its status is **needs-human-review** and `metricCalibrationMathematicallyProven:false`.
+
+`acceptCircleScale` requires a *separate* `confirmed:true` event and exact match against **current** source/revision/edited circle/R-vs-Φ/mm value. Changed conditions invalidate the prior suggestion. Browser control shows the proposal, and then a second checkbox/button fills the existing `mmPerPx` field; it **never** auto-checks the final raster geometry acceptance, copies any OCR result without user validation, or calls math directly. The user must still separately confirm original photo source, target connecting R, side and G1 branch before the same 02/V5 solver runs. Pixel circle fits and OCR text never prove the source circle is correct; the assumed isotropic scale can also be wrong for tilted photography.
+
+**Privacy and rollout:** no image upload, network requests, storage, raw untrusted image HTML, OCR inference, new backend, auth/CI/build setting changes, core math or V5 changes. The new options are confined to `labs/auto-fillet-live.html`, `labs/auto-fillet-live-entry.cjs`, `labs/local-raster-geometry-review-ui.cjs`, one new scale math helper `labs/local-raster-circle-scale.cjs`, plus workbench tests and this document. Existing 09 local photo QA stays separate. Rollback single squash commit.
+
+Regression `tests/workbench/v36-raster-circle-scale.test.cjs` tests R/Φ equivalence, corrected geometry, edited-label/current-revision invalidation, forbidden arc/incorrect circle, out-of-bounds, no source consent, real 02/G1/V5 after *separate* full review, and browser controls never automatically accept final math.
+
+**Remaining R0 acceptance:** three authorized previously unseen photographs processed from pixels with typed source and annotation correction, perspective handling and negative incomplete/incorrect dimensions; Android/browser manual testing, production Active SHA. The synthetic three-scene smoke #279 does not satisfy photographed-image acceptance.

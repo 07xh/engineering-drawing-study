@@ -7,7 +7,7 @@ const guide=fs.readFileSync('public-use.html','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 const files=['labs/point-coach.html','labs/dof-lab-v2.html','labs/free-modeler.html','labs/tangent-constraint.html','labs/paper-geometry.html','labs/composite-geometry.html'];
 assert(home.includes('DraftAI'),'public product name missing');
-assert(home.includes('公开学习工具'),'geometry-led landing section missing');
+assert(home.includes('现有数学与作图基础组件')&&home.includes('产品主流程：识图 → 求解 → 自动作图'),'V3.1 AI geometry solving landing sections missing');
 for(const f of files){
  assert(fs.existsSync(f),'public learning page missing: '+f);
  assert(home.includes('href="'+f+'"'),'public learning entry missing: '+f);

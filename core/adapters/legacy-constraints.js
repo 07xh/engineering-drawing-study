@@ -4,8 +4,11 @@ function toLegacyCondition(c,scope){
  const checked=validateConstraint(c);
  if(!checked.ok)throw Error('统一约束无效：'+checked.errors.join('；'));
  if(scope!==c.scope)throw Error('不得混用不同求解范围的约束');
- // Preserve the old solver's condition shape and never mutate caller data.
- return {type:c.type,...JSON.parse(JSON.stringify(c.data))};
+ // The typed outer discriminant is authoritative; caller payload must never
+ // change the solver route, even if a future validator regresses.
+ const data=JSON.parse(JSON.stringify(c.data));
+ delete data.type;
+ return {...data,type:c.type};
 }
 function toLegacyConditions(constraints,scope){
  if(!Object.hasOwn(byScope,scope))throw Error('未知求解范围：'+scope);
