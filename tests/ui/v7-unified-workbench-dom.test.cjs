@@ -113,6 +113,32 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Solid1"][data-geometry-view="V"]').length,12);
   assert.equal($('v7-3d').querySelectorAll('[data-visibility="undetermined"]').length,12);
   assert.equal($('v7-sheet').querySelectorAll('[data-visibility="undetermined"]').length,36);
+  // Same original homepage, one local project, two independently confirmed
+  // manual geometry inputs and NO implied solved math or V5 entitlement.
+  $('v7-task').value='composition';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  assert.equal(document.querySelector('fieldset[data-v7-task=composition]').hidden,false);
+  $('v7-c-id').value='PointA';$('v7-c-kind').value='point3d';
+  click('v7-c-stage');await tick();await tick();
+  click('v7-c-confirm');await tick();await tick();
+  click('v7-c-new');await tick();
+  $('v7-c-id').value='CircleB';$('v7-c-kind').value='circle';
+  click('v7-c-stage');await tick();await tick();
+  click('v7-c-confirm');await tick();await tick();
+  click('v7-c-render');await tick();await tick();
+  assert.match($('v7-proof').textContent,/手工输入的几何/,$('v7-save').textContent);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="PointA"]').length,3);
+  assert.ok($('v7-sheet').querySelector('[data-geometry-id="CircleB"]'));
+  assert.equal($('v7-3d').querySelectorAll('[data-geometry-id="PointA"]').length,1);
+  $('v7-c-radius').value='12';
+  $('v7-c-radius').dispatchEvent(new window.Event('input',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="CircleB"]').length,0);
+
  }finally{
   global.document=original.document;global.window=original.window;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;
