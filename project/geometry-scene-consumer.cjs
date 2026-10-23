@@ -56,6 +56,14 @@ function planarObject(obj,paper,sheet,warnings){
  if(obj.kind==='point')return point(paper,planar(d,sheet),obj,'drawing');
  if(obj.kind==='segment')return segment(paper,planar(d.start,sheet),
    planar(d.end,sheet),obj,'drawing');
+ if(obj.kind==='polyline'){
+  const end=d.closed?d.points.length:d.points.length-1;
+  for(let i=0;i<end;i++)
+   segment(paper,planar(d.points[i],sheet),
+    planar(d.points[(i+1)%d.points.length],sheet),obj,'drawing',
+    {segmentIndex:i});
+  return;
+ }
  if(obj.kind==='circle'){
   const c=planar(d.center,sheet);
   return add(paper,make('circle',{cx:c.x,cy:c.y,r:d.radius*sheet.scale},
@@ -108,6 +116,17 @@ function representationPaper(obj,paper,sheet,warnings){
       edgeIds:[edge.fromId,edge.toId],collapsedFrom:'segment'});
     else fail('未知网格棱投影');
    }
+  }else if(rep.kind==='polyline-projection'){
+   if(rep.visibility!=='undetermined')fail('不能升级未经证明的截线可见性');
+   for(const edge of rep.spans){
+    const extra={visibility:'undetermined',segmentIndex:edge.fromIndex};
+    if(edge.projection.kind==='segment')
+     segment(paper,p(edge.projection.start),p(edge.projection.end),obj,view,extra);
+    else if(edge.projection.kind==='point')
+     point(paper,p(edge.projection.at),obj,view,
+      {...extra,collapsedFrom:'segment'});
+    else fail('未知折线投影边类型');
+   }
   }else if(rep.kind==='unbounded-plane'){
    warnings.push(obj.id+': 无限平面无可绘制有限边界');
   }else fail('不支持的正式投影类型 '+rep.kind);
@@ -121,6 +140,7 @@ function modelVertices(scene){
   if(obj.kind==='point')take(d);
   else if(obj.kind==='segment'){take(d.start);take(d.end);}
   else if(obj.kind==='mesh')for(const p of Object.values(d.points))take(p);
+  else if(obj.kind==='polyline')for(const p of d.points)take(p);
   else if(obj.kind==='line')take(d.point);
  }
  return points;
@@ -161,6 +181,12 @@ function spatialCamera(scene,camera,spatial,warnings){
    for(const [a,b] of d.edges)
     segment(spatial,project(d.points[a]),project(d.points[b]),
      obj,'3D',{visibility:'undetermined',edgeIds:[a,b]});
+  }else if(obj.kind==='polyline'){
+   const end=d.closed?d.points.length:d.points.length-1;
+   for(let i=0;i<end;i++)
+    segment(spatial,project(d.points[i]),
+     project(d.points[(i+1)%d.points.length]),obj,'3D',
+     {visibility:'undetermined',segmentIndex:i});
   }else if(obj.kind==='line'){
    const u=d.direction,n=Math.hypot(u.x,u.y,u.z);
    const half=extent/Math.max(n,EPS);
