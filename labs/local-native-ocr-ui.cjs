@@ -172,6 +172,11 @@ function attachLocalNativeOcr({
   pathReview.button.addEventListener('click',()=>{
    try{
     const dimension=candidates.find(x=>x.id===selector.value);
+    if(!dimension||!pathReview.selector.value){
+     pathReview.status.textContent=
+      '请先载入原图、选择 OCR 尺寸并选定候选引线与圆弧关系。';
+     return;
+    }
     const revision=getRevision();
     const result=reviewDimensionPath({
      dimension,lines:getLines(),curves:getCurves(),arrows:getArrowHints(),
