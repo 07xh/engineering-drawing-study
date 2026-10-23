@@ -1,24 +1,19 @@
-# DraftAI 07｜独立 synthetic 工作台 UI 壳
+# DraftAI 07｜历史 synthetic 工作台原型（非生产入口）
 
-**UI fixture only / no solver / not a textbook answer.** 关联 Issue #150、总控 #143、分支制度 #152。不是冻结契约 v1 的实现，也不进入生产构建。
+> **历史原型；本页旧审批与架构前置要求已废止。** 当前以 [现行规则](../docs/CURRENT-RULES.md)、[数学契约 #372](https://github.com/07xh/engineering-drawing-study/issues/372)、[统一项目工作台 #497](https://github.com/07xh/engineering-drawing-study/issues/497) 为准。不要把该原型当成公开端到端识图解题应用。
 
-## 用途与边界
-- 仅使用两个本目录 synthetic 屏幕坐标样本，测试左图右解、完整教学/逐步提示/自己作图、两步回放、错误态、可选三维占位、键盘/触笔画线。
-- 无 core、engines、教材图片、个人资料、外部 CDN；不能计算第三视图、切点、相切圆心、虚实线、残差、自由度或唯一标准答案。
-- 错误态只保留已知图形；solveGate 为纯消费者状态门禁草案，不是几何证明器；学生画线在内存中单独存放，不写回 fixture。
-- 本项目没有更改正式首页、旧课程、生产发布或静态白名单。
+## 保留原因
 
-## 验收命令
-从仓库根运行：node --test tests/workbench/*.test.cjs
+本目录中的 `index.html` 与 synthetic fixture 用于回归输入交互、布局、错误态和旧 V5 适配行为；页面样本并非真实题图、可信 SolveResult 或教材答案。目录中后来新增的受测几何/V5 库应以其具体生产消费入口判定，不可因为原型过时而整体删除。
 
-覆盖顺序/引用和非法数值、状态跳转及禁用、合成样本、提示不泄露、输入更改失效、学生绘图撤销重做、手机布局 CSS/键盘/指针事件结构。
+该原型本身不计算截交线、切点、虚实线、残差或唯一标准解；历史 `solveGate` 状态草案不是数学证明。
 
-## 冻结后正式接入条件
-1. 总控与 09 先批准 #144 合并/冻结和发布安全；由 00 从当时最新 main 创建正式 feat/07-step-workbench-v1。
-2. #148/#149 的数学输入输出、结果状态、逐帧对象 ID 和解析依据通过验收；工作台只读消费，绝不自行推导答案。
-3. 建立稳定候选 branch id、候选分支到步骤的映射、solveResultRef/targetIds/dependsOn 的验证以及输入 revision 防旧结果回写。
-4. 01 定义 Arc2D 数学角度，02 验证分支与几何，07 仅在坐标/单位/方向转换经核验后输出旧 SVG 圆弧动作。
-5. UI 自动化和实机（360/390/430 手机；768/800/1024 平板；1280/1365 桌面）要核查分栏、触笔命中、按钮 >=44px、键盘操作、独立画布滚动、无横向页面溢出和减少动画。
+## 验收与迁移原则
 
-## 当前已知测试限制
-本地 Node 单测与静态 UI 检查成功；Chromium/Playwright 页面导航被本执行环境策略阻断（ERR_BLOCKED_BY_ADMINISTRATOR），因此**未完成真实浏览器/安卓平板/桌面视觉验收**，不得声称已部署或完成真实数学接入。
+- 原型回归：`node --test tests/workbench/*.test.cjs`。
+- **不再等待 #144 冻结、00/09 外部账号批准等已废止条件**；按 #152 最新 HEAD 适用 CI、数学反例/安全验收处理 PR。
+- 正式入口应使用唯一 ProblemDraft / SolveResult / ConstructionIntent / ConstructionStep DAG / V5 和 #497 项目协调、IndexedDB；原型 fixture 不得自动升格为可信解。
+- 更改用户确认条件、来源或修订号时必须阻断旧步骤；三维/二维使用稳定对象 ID、共同投影，三维视口交互不能触发重求解。
+- 旧页面要退出前，检查所有入口、链接、构建引用、回归用例和回滚路径；历史实验与可验证对照优先保留在高级工具中。
+
+**验收状态警告**：静态或 Node 测试通过，不代表浏览器、Android、Cloudflare 生产部署或真实原题已经通过验收。
