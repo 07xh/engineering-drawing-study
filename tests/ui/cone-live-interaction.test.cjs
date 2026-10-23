@@ -117,3 +117,20 @@ test('09 explicit material halfspace produces limited ray labels without new sta
  assert.ok(app.get('coneDraw').querySelector('[data-cone-visibility=undetermined]'));
  assert.equal(app.get('coneSvg').getAttribute('viewBox'),'0 0 960 680');
 });
+
+test('09 cone playback uses one clock even when RAF timestamp lags behind play click',()=>{
+ for(const next of [false,true]){
+  const app=mount(page,{next});solve(app);
+  app.click('conePlay');
+  const pending=[...app.frames.values()][0];
+  assert.equal(typeof pending,'function');
+  app.frames.clear();
+  // This timestamp would throw 'clock moved backwards' with the old V5 loop.
+  pending(-1);
+  assert.doesNotMatch(app.get('coneStatus').textContent,/动画验证失败/);
+  assert.equal(app.get('conePlay').disabled,false);
+  app.advance(450);
+  assert.notEqual(app.get('conePercent').textContent,'0%');
+  assert.match(app.get('coneStatus').textContent,/已就绪/);
+ }
+});
