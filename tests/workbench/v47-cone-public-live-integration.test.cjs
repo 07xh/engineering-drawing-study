@@ -34,10 +34,10 @@ test('07 real browser entry uses ONE verified M3 ConstructionStep/V5 contract an
  const src=read('labs/cone-cut-live-entry.cjs');
  assert.match(src,/require\('\.\.\/workbench\/cone-spatial-v5-preview\.cjs'\)/);
  assert.match(src,/require\('\.\.\/workbench\/teaching-motion-v5\.js'\)/);
- assert.match(src,/evaluateUnifiedMath\\(\\{/);
+ assert.match(src,/evaluateUnifiedMath\(\{/);
  assert.match(src,/kind:'cone-plane-section'/);
  assert.match(src,/canonicalSpatialIntentVerified!==true/);
- assert.doesNotMatch(src,/coneSpatialV5Preview\\(cone,plane/);
+ assert.doesNotMatch(src,/coneSpatialV5Preview\(cone,plane/);
  assert.match(read('workbench/unified-math-pipeline.cjs'),/presentationMode:'split-sheet',provenGuideDag:true/);
  assert.match(src,/sourceConfirmed:true/);
  assert.match(src,/canonicalGuideStepCount!==12/);
