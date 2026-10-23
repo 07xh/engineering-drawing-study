@@ -198,3 +198,18 @@ test('09 actual public entry uses current OCR/raster modules, existing typed M3 
  assert.match(control,/solveFiniteFillet\(/);
  assert.doesNotMatch(control,/compileTimeline|createPlayer|new TextDetector|fetch\(|localStorage|XMLHttpRequest/);
 });
+
+test('09 actual photo M3 preflight requires witnessed isolation and rechecks binding on transfer',()=>{
+ const code=fs.readFileSync('labs/local-reviewed-dimension-draft-ui.cjs','utf8');
+ assert.match(code,/isolateReviewedDraft\(accepted/);
+ assert.match(code,/isolation\.status!=='reviewed-conditions-isolated'/);
+ assert.match(code,/isolationSourceBinding/);
+ const a=mount();a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.ok(['unique','multiple'].includes(a.gate.m3Status));
+ a.click('apply');
+ assert.equal(a.filled.length,1);
+ assert.equal(a.filled[0].requiresFinalFieldReview,true);
+ assert.equal(a.filled[0].requiresBranchSelection,true);
+});
