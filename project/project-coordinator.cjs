@@ -4,6 +4,7 @@
  * This module owns confirmed inputs, view selection and revision identity.
  * It intentionally does NOT own SolveResult, ConstructionIntent, DAG or V5 state.
  */
+const {validSavedCalibration}=require('./source-calibration.cjs');
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
 const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
@@ -52,8 +53,8 @@ function validateProject(p) {
   if (!plain(p.source) || (p.source.imageId !== null && !isId(p.source.imageId)) ||
       ![0, 90, 180, 270].includes(p.source.rotationDeg) ||
       (p.source.calibration !== null &&
-       (!plain(p.source.calibration) || !finite(p.source.calibration.mmPerPixel) ||
-        p.source.calibration.mmPerPixel <= 0 || !isId(p.source.calibration.confirmedBy)))) {
+       (!plain(p.source.calibration) || !validSavedCalibration(p.source.calibration) ||
+        !isId(p.source.calibration.confirmedBy)))) {
     errors.push('原图及比例校准信息无效');
   }
   if (!Array.isArray(p.objects) || p.objects.length > 2000 ||
