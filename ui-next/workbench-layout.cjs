@@ -22,13 +22,28 @@ function addTools(document,main,layout,title){
  const header=element(document,'div',{class:'next-workspace-title'});
  header.append(element(document,'p',{class:'next-workspace-caption'},title));
  const tools=element(document,'div',{class:'next-canvas-tools','aria-label':'画布显示控制'});
- for(const [action,label,aria] of [['out','−','缩小图纸'],['fit','适合画布','恢复图纸大小'],['in','＋','放大图纸']])
-  tools.append(element(document,'button',{type:'button','data-next-zoom':action,'aria-label':aria},label));
+ const icons={
+  out:'<path d="M5 12h14"/>',
+  in:'<path d="M5 12h14 M12 5v14"/>',
+  fit:'<path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5"/>',
+  focus:'<path d="M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5"/>',
+  conditions:'<path d="M4 5h16v14H4z M9 5v14 M13 10h4 M13 14h4"/>',
+  steps:'<path d="M8 6h12 M8 12h12 M8 18h12 M3 6h1 M3 12h1 M3 18h1"/>',
+  close:'<path d="M5 5l14 14 M19 5L5 19"/>'
+ };
+ const make=(name,attrs,label)=>{
+  const n=element(document,'button',{type:'button','aria-label':label,title:label,'data-ui-tip':label,...attrs});
+  n.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+icons[name]+'</svg>';
+  tools.append(n);return n;
+ };
+ for(const [action,label] of [['out','缩小图纸'],['fit','适应图纸'],['in','放大图纸']])
+  make(action,{'data-next-zoom':action},label);
  tools.querySelector('[data-next-zoom=out]').disabled=true;
  tools.append(element(document,'output',{'data-next-zoom-label':'','aria-live':'polite'},'100%'));
- tools.append(element(document,'button',{type:'button','data-next-focus':'','aria-pressed':'false'},'专注画布'));
- for(const [panel,label] of [['conditions','修改条件'],['steps','作图步骤']])tools.append(element(document,'button',{type:'button','data-next-open-panel':panel,'aria-expanded':'false'},label));
- tools.append(element(document,'button',{type:'button','data-next-close-panel':'','aria-label':'收起侧边面板'},'收起面板'));
+ make('focus',{'data-next-focus':'','aria-pressed':'false'},'专注图纸');
+ for(const [key,label] of [['conditions','修改条件'],['steps','查看步骤']])
+  make(key,{'data-next-open-panel':key,'aria-expanded':'false'},label);
+ make('close',{'data-next-close-panel':''},'收起面板');
  header.append(tools);
  main.insertBefore(header,layout);
 }

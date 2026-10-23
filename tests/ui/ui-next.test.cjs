@@ -245,6 +245,75 @@ test('help page uses practical guidance while retaining accurate AI and data bou
  assert.match(document.querySelector('main').textContent,/个人资料/);
 });
 
+test('V6.3 compact navigation keeps every task reachable and all favicons blue',()=>{
+ for(const page of ['index.html','labs/auto-fillet-live.html','labs/cone-cut-live.html','labs/cylinder-cut-live.html']){
+  const {after:document}=enhance(page);
+  const root=page.includes('/')?'../':'';
+  const favicon=document.querySelector('link[rel="icon"][type="image/svg+xml"]');
+  assert.equal(favicon?.getAttribute('href'),root+'favicon.svg',page+' must reference shared blue icon');
+  const side=[...document.querySelectorAll('.next-sidebar nav a')];
+  assert.equal(side.length,4,page+' compact task navigation');
+  for(const link of side){
+   assert.ok(link.getAttribute('aria-label'),page+' accessible label');
+   assert.ok(link.getAttribute('data-ui-tip'),page+' long-press tooltip');
+   assert.ok(link.querySelector('svg'),page+' genuine visible icon');
+  }
+  assert.ok(document.querySelector('.next-sidebar .next-start svg'),page+' launch icon');
+ }
+ const svg=fs.readFileSync(path.join(root,'favicon.svg'),'utf8');
+ assert.match(svg,/#0871f5/);
+ assert.doesNotMatch(svg,/#266f4a/);
+});
+test('V6.3 wide desktop shows editable conditions + paper + steps without touching solver state',()=>{
+ const {after:document}=enhance('labs/auto-fillet-live.html');
+ const previousMatchMedia=document.defaultView.matchMedia;
+ document.defaultView.matchMedia=()=>({matches:true});
+ const r=document.querySelector('.next-workspace');
+ const condition=document.querySelector('[data-next-panel="conditions"]');
+ const step=document.querySelector('[data-next-panel="steps"]');
+ const input=document.getElementById('vectorFilletRadius');input.value='19.75';
+ const play=document.getElementById('play');play.disabled=true;
+ require('../../ui-next/ui-next.js').initUI(document);
+ assert.equal(r.dataset.nextSide,'both');
+ assert.equal(r.dataset.nextConditions,'open');
+ assert.equal(r.dataset.nextSteps,'open');
+ assert.equal(condition.hidden,false);
+ assert.equal(step.hidden,false);
+ const toggleCondition=document.querySelector('[data-next-open-panel="conditions"]');
+ const toggleSteps=document.querySelector('[data-next-open-panel="steps"]');
+ toggleCondition.click();
+ assert.equal(r.dataset.nextConditions,'closed');
+ assert.equal(condition.hidden,true);
+ toggleCondition.click();
+ assert.equal(r.dataset.nextConditions,'open');
+ assert.equal(condition.hidden,false);
+ toggleSteps.click();
+ assert.equal(r.dataset.nextSteps,'closed');
+ toggleSteps.click();
+ assert.equal(r.dataset.nextSteps,'open');
+ assert.equal(step.hidden,false);
+ document.querySelector('[data-next-close-panel]').click();
+ assert.equal(r.dataset.nextSide,'none');
+ assert.equal(input.value,'19.75');
+ assert.equal(play.disabled,true);
+ if(previousMatchMedia===undefined)delete document.defaultView.matchMedia;
+ else document.defaultView.matchMedia=previousMatchMedia;
+});
+test('V6.3 sheet remains proportional with wide grid rails and short icon controls',()=>{
+ const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
+ assert.match(css,/V6\.3 \| Compact tool rail/);
+ assert.match(css,/grid-template-columns:clamp\(184px,15\.4vw,216px\) minmax\(0,1fr\) clamp\(185px,15\.2vw,212px\)/);
+ assert.match(css,/object-fit:contain/);
+ assert.match(css,/\.next-context\s*\{\s*display:contents!important/);
+ assert.match(css,/@media\(max-width:1159px\)/);
+ const {after:document}=enhance('labs/point-projection-live.html');
+ for(const key of ['fit','in','out']){
+  const control=document.querySelector('[data-next-zoom="'+key+'"]');
+  assert.ok(control.querySelector('svg'),'zoom '+key+' is an icon');
+  assert.ok(control.getAttribute('aria-label'),'zoom '+key+' has accessible name');
+ }
+ assert.ok(document.querySelector('[data-next-focus] svg'));
+});
 test('keyboard panel navigation and Escape restore presentation without changing application controls',()=>{
  const {after:document}=enhance('labs/auto-fillet-live.html');
  require('../../ui-next/ui-next.js').initUI(document);
