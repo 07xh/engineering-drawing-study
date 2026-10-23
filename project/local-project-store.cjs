@@ -80,9 +80,20 @@ function createStore(db) {
     try { safe = importProject(exportProject(project)); }
     catch (error) { return Promise.reject(error); }
     const record = {id: safe.id, savedAt: new Date().toISOString(), project: safe};
-    return operation(['projects'], 'readwrite', (store, done) => {
-      store('projects').put(record);
-      done({id: safe.id, savedAt: record.savedAt});
+    return operation(['projects', 'images'], 'readwrite', (store, done, fail) => {
+      const persist = () => {
+        store('projects').put(record);
+        done({id: safe.id, savedAt: record.savedAt});
+      };
+      if (safe.source.imageId === null) { persist(); return; }
+      const image = store('images').get(safe.source.imageId);
+      image.onsuccess = () => {
+        if (!image.result) {
+          fail(new Error('原图尚未成功保存，拒绝创建无法完整恢复的项目')); return;
+        }
+        try { ensureImage(image.result.blob); persist(); }
+        catch (error) { fail(new Error('原图无法恢复：' + error.message)); }
+      };
     });
   }
   function putImage(id, blob) {
