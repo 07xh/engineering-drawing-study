@@ -615,11 +615,13 @@ const {coneLinkedSpatialScene}=
    nav.append(b);
   });
  }
- function tick(time){
+ function tick(_frameTimestamp){
   raf=null;
   if(!player||!plan||!player.canRender(revision))return;
   try{
-   const frame=player.snapshot(time);paint(frame);
+   // The RAF timestamp can predate performance.now() used by click/seek/pause.
+   // Use one monotonic clock for every V5 player command, including frames.
+   const frame=player.snapshot(now());paint(frame);
    if(frame.playing)raf=requestAnimationFrame(tick);
   }catch(e){invalidate(false);status('动画验证失败：'+e.message,true);}
  }
