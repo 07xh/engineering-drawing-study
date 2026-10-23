@@ -113,7 +113,8 @@ test('09 explicit material halfspace produces limited ray labels without new sta
  assert.match(app.get('coneProof').textContent,/端点.*尚未验收/);
  assert.match(app.get('coneStatus').textContent,/不是完整国标工程制图答案/);
  app.set('coneSeek','1000','input');
- assert.ok(app.get('coneDraw').querySelector('[data-cone-visibility=hidden]'));
+ assert.equal(app.get('coneDraw').querySelector('[data-cone-visibility=hidden]'),null,'open rays cannot certify whole strokes');
+ assert.ok(app.get('coneDraw').querySelector('[data-curve-id]'));
  assert.ok(app.get('coneDraw').querySelector('[data-cone-visibility=undetermined]'));
  assert.equal(app.get('coneSvg').getAttribute('viewBox'),'0 0 960 680');
 });

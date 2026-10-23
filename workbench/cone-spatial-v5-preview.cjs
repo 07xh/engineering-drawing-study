@@ -193,7 +193,8 @@ function coneSpatialV5Preview(cone,plane,options={}){
    const certified=distance(from,to)>=1e-8&&rayEvidence
     ?rayEvidence.views[view].lateral[i-1]:'undetermined';
    actions.push(action('cone_'+view+'_lateral_'+i,from,to,{
-    sourceBoundary:'analytic-cone-lateral',
+    sourceBoundary:'analytic-cone-lateral',view,branchId:kind,
+    parameterRadians:[i-1,i].map(j=>source.operation.analytic.parameterRadians[0]+(source.operation.analytic.parameterRadians[1]-source.operation.analytic.parameterRadians[0])*j/samples),
     sourceSpatialIntentId:source.id,sourceRevision:revision,
     visibility:certified,
     visibilityProof:certified==='undetermined'?
@@ -203,6 +204,8 @@ function coneSpatialV5Preview(cone,plane,options={}){
     sampledPolylineOnly:true
    }));
   }
+  // One six-second budget per projected curve, independent of tessellation.
+  for(const a of actions)a.durationMs=6000/actions.length;
   if(kind==='clipped-ellipse'){
    const chord=source.operation.capChord;
    const first=source.operation.samplePoints[0],last=source.operation.samplePoints.at(-1);
@@ -253,7 +256,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
   visibilityEndpointsVerified:false,
   completeRayOcclusionVerified:false,
   presentationMode,splitSheet:split?layout.sheet:null,
-  viewPositions:split?position:null,
+  viewPositions:split?position:null,viewTransforms:split?layout.transforms:null,
   steps,timing,player:Timeline.createPlayer(timing,{revision}),
   stillCurrent,
   createPlayer({speed=1}={}){
