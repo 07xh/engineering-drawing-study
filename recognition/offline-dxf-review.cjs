@@ -71,7 +71,8 @@ function pairStream(content){
 function parseSections(pairs){
  let active=null,expectName=false,ended=false;
  const headers=[],entities=[],unsupportedSections=new Set();
- let current=null;
+ const blockDefinitions=[];
+ let current=null,activeBlock=null,blockHeader=false,blockMemberCount=0;
  function flush(){if(current){entities.push(current);current=null;}}
  for(let i=0;i<pairs.length;i++){
   const p=pairs[i],v=p.value.trim().toUpperCase();
@@ -89,6 +90,8 @@ function parseSections(pairs){
   }
   if(p.code===0&&v==='ENDSEC'){
    flush();if(!active)throw new TypeError('unpaired ENDSEC');
+   if(active==='BLOCKS'&&activeBlock!==null)
+    throw new TypeError('unclosed BLOCK definition in DXF');
    active=null;continue;
   }
   if(p.code===0&&v==='EOF'){
@@ -97,6 +100,30 @@ function parseSections(pairs){
   }
   if(!active)throw new TypeError('DXF group outside SECTION');
   if(active==='HEADER'){headers.push(p);continue;}
+  if(active==='BLOCKS'){
+   // BLOCK definitions carry geometry that is NOT in ENTITIES. Do not
+   // silently treat such a source as fully decoded without block expansion.
+   if(p.code===0){
+    if(v==='BLOCK'){
+     if(activeBlock)throw new TypeError('nested BLOCK definition');
+     if(blockDefinitions.length>=1000)throw new RangeError('too many CAD blocks');
+     activeBlock={name:null,memberEntityTypes:[]};
+     blockDefinitions.push(activeBlock);blockHeader=true;
+    }else if(v==='ENDBLK'){
+     if(!activeBlock)throw new TypeError('orphan CAD ENDBLK');
+     activeBlock=null;blockHeader=false;
+    }else{
+     if(!activeBlock)throw new TypeError('entity outside BLOCK definition');
+     blockHeader=false;blockMemberCount++;
+     if(blockMemberCount>ENTITY_LIMIT)throw new RangeError('too many embedded block entities');
+     activeBlock.memberEntityTypes.push(v);
+    }
+   }else if(blockHeader&&p.code===2){
+    if(activeBlock.name!==null)throw new TypeError('duplicate BLOCK name');
+    activeBlock.name=p.value.slice(0,160);
+   }
+   continue;
+  }
   if(active!=='ENTITIES')continue;
   if(p.code===0){flush();current={kind:v,groups:[]};
    if(entities.length>=ENTITY_LIMIT)throw new RangeError('too many CAD entities');
@@ -106,7 +133,10 @@ function parseSections(pairs){
   }
  }
  if(!ended||active||!entities.length)throw new TypeError('incomplete/empty DXF ENTITIES stream');
- return {headers,entities,unsupportedSections:[...unsupportedSections]};
+ return {headers,entities,unsupportedSections:[...unsupportedSections],
+  blockDefinitions:blockDefinitions.map(b=>({name:b.name,
+   memberEntityTypes:b.memberEntityTypes})),
+  blockMemberCount};
 }
 function headerValues(header){
  const vars={};let key=null;
@@ -236,12 +266,16 @@ function extractDxfForReview(bytes,{encoding='auto',sourceDwgSha256=null}={}){
     (typeof sourceDwgSha256!=='string'||!/^[a-f0-9]{64}$/.test(sourceDwgSha256)))
   throw new TypeError('source DWG fingerprint must be explicit lowercase SHA-256');
  const {decoded,codepage,encoding:used}=decode(bytes,encoding);
- const {headers,entities,unsupportedSections}=parseSections(pairStream(decoded));
+ const {headers,entities,unsupportedSections,blockDefinitions,blockMemberCount}=parseSections(pairStream(decoded));
  const rows=entities.map(extractRecord),counts={};
  for(const e of rows)counts[e.dxfType]=(counts[e.dxfType]||0)+1;
  const unsupported=rows.filter(e=>e.status==='unsupported').length;
  const dimensions=rows.filter(e=>e.dxfType==='DIMENSION'&&e.status==='candidate-only').length;
  const annotations=rows.filter(e=>e.annotation!==null).length;
+ const insertReferences=rows.filter(e=>e.dxfType==='INSERT').length;
+ const dimensionsWithAppearanceBlocks=rows.filter(e=>e.dxfType==='DIMENSION'&&
+  e.annotation?.blockName).length;
+ const blocksUnexpanded=blockMemberCount>0||insertReferences>0;
  return Object.freeze({
   schema:'draftai-cad-source-review/1.0.0',
   status:'requires-human-review',
@@ -249,13 +283,26 @@ function extractDxfForReview(bytes,{encoding='auto',sourceDwgSha256=null}={}){
    byteLength:bytes.length,encoding:used,sourceDwgSha256,
    cadConversionVerified:false,answerIsolationVerified:false},
   units:headerValues(headers),
-  unsupportedSections,counts,entities:rows,
+  unsupportedSections,
+  blockCoverage:{definitionCount:blockDefinitions.length,
+   definitions:blockDefinitions,
+   memberEntityCount:blockMemberCount,
+   insertReferenceCount:insertReferences,
+   dimensionAppearanceBlockCount:dimensionsWithAppearanceBlocks,
+   blockGeometryExpansionVerified:false,
+   sourceBlockGeometryUnexpanded:blocksUnexpanded,
+   cadEntityExtractionComplete:false},
+  counts,entities:rows,
   audit:{entityCount:rows.length,candidateCount:rows.length-unsupported,
    unsupportedCount:unsupported,annotationCount:annotations,
    unassociatedDimensionCount:dimensions,
    modelMmConfirmed:false,allGeometryReviewed:false,
    sourceKnownOrAnswerSeparated:false,
-   allRequiredCadEntitiesSupported:unsupported===0,
+   allRequiredCadEntitiesSupported:unsupported===0&&!blocksUnexpanded,
+   allRequiredBlockGeometryExpanded:!blocksUnexpanded,
+   dimensionDefinitionAndAppearanceFullyChecked:false,
+   unexpandedCADBlockEntityCount:blockMemberCount,
+   insertionReferencesNeedingReview:insertReferences,
    readyForM3:false,readyForConstructionIntent:false,
    readyForV5:false,wholeTextbookProblemVerified:false}
  });
