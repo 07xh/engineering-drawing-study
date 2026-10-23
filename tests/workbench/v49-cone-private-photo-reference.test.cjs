@@ -15,7 +15,7 @@ const photo=(type='image/jpeg',size=100)=>({type,size,name:'PRIVATE_BOOK_ANSWER_
 test('08 local source URL is short-lived, data-free, never certifies an original blind answer',()=>{
  const b=browser(),session=createLocalPhotoReference();
  const first=session.attach(photo(),b.urls);
- assert.equal(first.epoch,1+1); // attach always invalidates previous reference
+ assert.equal(first.epoch,1); // attach invalidates the previous source epoch
  assert.equal(first.url,'blob:test-1');
  let state=session.snapshot();
  assert.equal(state.ready,false);
