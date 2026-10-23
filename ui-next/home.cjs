@@ -21,9 +21,25 @@ const TOOLS=[
 ];
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","cone-cut-live","cylinder-cut-live","prism-cut-live","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
-<section class="next-home-hero next-home-workbench" aria-label="DraftAI 开始解题">
+<section class="next-home-hero next-home-workbench next-home-v64" aria-label="工程制图解题首页">
  <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
-  <div class="next-home-drawing-top"><div><span class="next-home-release" data-draftai-release="v6.1-home">V6.1</span><h1 id="next-home-drawing-title">工程制图自动解题</h1><p>打开题型，确认条件，查看逐笔作图。</p></div><a class="next-home-edit" href="labs/auto-fillet-live.html">开始解题 →</a></div>
+  <div class="next-home-intro-block">
+   <div class="next-home-intro-copy">
+    <p class="next-home-kicker">DraftAI · 个人工程制图工作台</p>
+    <h1 id="next-home-drawing-title">工程制图自动解题</h1>
+    <p class="next-home-lead">确认题目条件，查看逐笔作图。图纸、步骤与投影关系都在同一工作台中。</p>
+    <div class="next-home-hero-actions">
+     <a class="next-home-edit" href="labs/auto-fillet-live.html">＋ 开始解题</a>
+     <a class="next-home-example" href="labs/cone-cut-live.html">查看圆锥示例 →</a>
+    </div>
+    <p class="next-home-capability">当前提供部分题型的条件求解与动态作图；任意图片自动识别尚未开放。</p>
+    <div class="next-home-strengths" aria-label="核心功能">
+     <div><strong>按题型解答</strong><span>圆弧、投影、截切等</span></div>
+     <div><strong>逐笔观看</strong><span>辅助线与作图步骤</span></div>
+     <div><strong>投影对应</strong><span>同纸 V/H/W 视图</span></div>
+    </div>
+   </div>
+   <div class="next-home-intro-sheet">
   <div class="next-home-paper" data-next-illustration data-projection-example="right-circular-cone" aria-label="正圆锥三视图，同纸第一角法；无斜截曲线">
    <div class="next-home-paper-top"><strong>正圆锥三视图</strong><span>第一角法 · V / H / W</span></div>
    <svg viewBox="0 0 960 620" role="img" aria-label="正圆锥三视图：V 主视图在左上、H 俯视图在左下、W 左视图在右上；投影对应并带45度宽度转移线">
@@ -65,28 +81,34 @@ function homeHTML(){return `
    </svg>
    <div class="next-home-paper-caption">规范三视图示例 · 非题目计算结果。斜截线须进入求解工作台计算，不在首页编造。</div>
   </div>
-  <div class="next-home-drawing-actions">
-   <a class="next-primary-link" href="labs/cone-cut-live.html">打开圆锥斜截</a>
-   <a href="labs/point-projection-live.html">三面投影</a>
-   <a href="labs/circle-fillet-live.html">圆弧连接</a>
+
+   </div>
   </div>
  </section>
- <aside class="next-home-workflow" aria-label="解题操作">
-  <div class="next-home-workflow-card"><h2>选择题型</h2><div class="next-home-quick-links">
-   <a href="labs/auto-fillet-live.html"><span class="next-home-quick-icon">01</span><span>二维自动解题</span><span aria-hidden="true">›</span></a>
-   <a href="labs/cone-cut-live.html"><span class="next-home-quick-icon">02</span><span>圆锥斜截</span><span aria-hidden="true">›</span></a>
-   <a href="labs/point-projection-live.html"><span class="next-home-quick-icon">03</span><span>点的三面投影</span><span aria-hidden="true">›</span></a>
-   <a href="labs/polygon-live.html"><span class="next-home-quick-icon">04</span><span>正多边形作图</span><span aria-hidden="true">›</span></a>
-  </div></div>
-  <section class="next-home-workflow-card next-home-library" id="knowledge"><h2>我的题目</h2><p>题库尚未接入，可先使用已开放的作图工具。</p><a href="labs/auto-fillet-live.html">进入解题工作台 →</a><p class="next-home-boundary">任意图片自动识别尚未开放。</p></section>
+ <aside class="next-home-workflow" aria-label="最近任务与我的题目">
+  <section class="next-home-workflow-card next-home-continue" id="recent">
+   <div class="next-home-card-heading"><h2>继续解题</h2><a href="labs/auto-fillet-live.html">进入工作台 →</a></div>
+   <div class="next-home-empty-illustration" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="6" width="34" height="36" rx="5"/><path d="M14 16h20M14 23h15M14 30h10"/><path d="M32 30l4 4-4 4"/></svg></div>
+   <p class="next-home-empty-title">暂无可恢复的解题记录</p>
+   <p class="next-home-empty-note">历史进度同步尚未接入，不会在这里显示虚构的“上次编辑”。</p>
+   <a class="next-home-continue-button" href="labs/auto-fillet-live.html">打开现有解题工具</a>
+  </section>
+  <section class="next-home-workflow-card next-home-library" id="knowledge">
+   <div class="next-home-card-heading"><h2>我的题目</h2><a href="#tools">选择题型 →</a></div>
+   <div class="next-home-library-empty"><span aria-hidden="true">▤</span><div><strong>题库尚未接入</strong><p>当前可先从下方题型中心进入已有的作图功能。</p></div></div>
+  </section>
  </aside>
 </section>
-<section class="next-home-section next-home-shortflow" id="ai"><strong>解题流程</strong><span>输入条件 → 计算 → 动态作图</span></section>
-<section class="next-home-section" id="tools">
- <div class="next-section-heading"><h2>更多作图工具</h2><span>按需要打开</span></div>
- <details class="next-home-more-tools"><summary>按类别查看题型与辅助工具</summary>${CATEGORIES.map(([category,slugs])=>`<section class="next-home-tool-group"><h3>${category}</h3><div class="next-tool-grid">${TOOLS.filter(([slug])=>slugs.includes(slug)).map(([slug,label,description,action])=>`<a class="next-tool-card" href="labs/${slug}.html"><h3>${label}</h3><p>${description}</p><span class="next-tool-action">${action} →</span></a>`).join("")}</div></section>`).join("")}</details>
+<section class="next-home-section next-home-categories" id="tools">
+ <div class="next-section-heading"><h2>选择题型开始解题</h2><a href="#all-tools">查看全部工具 →</a></div>
+ <div class="next-home-category-grid">
+  <a class="next-home-category-card next-cat-plane" id="plane" href="labs/circle-fillet-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="14" y="17" width="42" height="39"/><path d="M14 56L56 17 M14 37l10 8 15-21"/></svg><span><strong>平面作图</strong><small>圆弧连接、正多边形与基本辅助作图</small></span><b aria-hidden="true">→</b></a>
+  <a class="next-home-category-card next-cat-projection" id="projection" href="labs/point-projection-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M36 7l18 11v20L36 50 18 38V18z M36 7v22 M18 18l18 11 18-11 M36 29v21 M17 54l19 11 19-11"/></svg><span><strong>三视图与投影</strong><small>第一角法、对应关系与投影作图</small></span><b aria-hidden="true">→</b></a>
+  <a class="next-home-category-card next-cat-section" id="section" href="labs/cone-cut-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 57V20a16 7 0 0 1 32 0v37a16 7 0 0 1-32 0 M20 20a16 7 0 0 0 32 0 M20 57a16 7 0 0 0 32 0"/><path d="M14 28L60 43" stroke-dasharray="5 4"/></svg><span><strong>截交与相贯</strong><small>圆锥、圆柱、棱柱等空间题型</small></span><b aria-hidden="true">→</b></a>
+  <a class="next-home-category-card next-cat-composite" id="composite" href="labs/composite-geometry.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M13 27l23-13 23 13v27L36 67 13 54z M13 27l23 13 23-13 M36 40v27 M23 20v21"/></svg><span><strong>组合体作图</strong><small>组合体投影、识图与形体分析</small></span><b aria-hidden="true">→</b></a>
+ </div>
+ <details class="next-home-more-tools" id="all-tools"><summary>展开全部题型及辅助工具</summary>${CATEGORIES.map(([category,slugs])=>`<section class="next-home-tool-group"><h3>${category}</h3><div class="next-tool-grid">${TOOLS.filter(([slug])=>slugs.includes(slug)).map(([slug,label,description,action])=>`<a class="next-tool-card" href="labs/${slug}.html"><h3>${label}</h3><p>${description}</p><span class="next-tool-action">${action} →</span></a>`).join("")}</div></section>`).join("")}</details>
 </section>
-
 <footer class="next-footer"><span>DraftAI · 工程制图自动解题与动态作图</span><a href="public-use.html">帮助与用户协议 →</a></footer>
 `;}
 module.exports={homeHTML};
