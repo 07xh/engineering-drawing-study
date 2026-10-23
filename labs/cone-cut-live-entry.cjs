@@ -141,24 +141,39 @@ const {coneLinkedSpatialScene}=
   // modify the V/H/W coordinate system, certify visibility or own playback.
   const scene=coneLinkedSpatialScene(plan.spatialIntent,{
    azimuthDeg:Number($('coneOrbit').value),
-   elevationDeg:Number($('coneTilt').value),width:360,height:275
+   elevationDeg:Number($('coneTilt').value),width:360,height:275,
+   retainedHalfspace:$('coneKept').value||null
   });
   const group=$('cone3dDraw');group.replaceChildren();
   const pts=p=>p.map(q=>q.x.toFixed(3)+','+q.y.toFixed(3)).join(' ');
   const shape=(tag,attrs,parent=group)=>{
    const el=create(tag,attrs);parent.append(el);return el;
   };
-  shape('polygon',{points:pts(scene.cuttingPlanePatch),
-   fill:'#e9b453','fill-opacity':'.18',stroke:'#b17a23',
-   'stroke-width':'1.2','stroke-dasharray':'5 4'});
-  for(const rail of scene.rails){
-   const [a,b]=rail;
-   shape('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
-    stroke:'#90a5bc','stroke-width':'1.25','stroke-dasharray':'3 4'});
+  const solid=scene.cutSolid?.status==='sampled-closed-cut-mesh';
+  if(solid){
+   for(const face of scene.cutSolid.triangles){
+    const section=face.kind==='cut-face';
+    const base=face.kind==='base';
+    shape('polygon',{points:pts(face.points),
+     fill:section?'#efb45c':base?'#8bacce':'#86b2d9',
+     'fill-opacity':section?'.87':'.73',
+     stroke:section?'#b98126':'#6685a0',
+     'stroke-width':'.6',
+     'data-cone-solid-face':face.kind});
+   }
+  }else{
+   shape('polygon',{points:pts(scene.cuttingPlanePatch),
+    fill:'#e9b453','fill-opacity':'.18',stroke:'#b17a23',
+    'stroke-width':'1.2','stroke-dasharray':'5 4'});
+   for(const rail of scene.rails){
+    const [a,b]=rail;
+    shape('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+     stroke:'#90a5bc','stroke-width':'1.25','stroke-dasharray':'3 4'});
+   }
+   shape('polyline',{points:pts(scene.rim),fill:'none',
+    stroke:'#54789e','stroke-width':'1.8'});
+   shape('circle',{cx:scene.apex.x,cy:scene.apex.y,r:3,fill:'#54789e'});
   }
-  shape('polyline',{points:pts(scene.rim),fill:'none',
-   stroke:'#54789e','stroke-width':'1.8'});
-  shape('circle',{cx:scene.apex.x,cy:scene.apex.y,r:3,fill:'#54789e'});
   for(const segment of scene.segments){
    const fraction=frame.actionFractions[segment.sourceActionId]??0;
    if(fraction<=0)continue;
@@ -209,13 +224,18 @@ const {coneLinkedSpatialScene}=
     if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
    });
   }
+  const solidLabel=solid?'切后实体三角网格（'+
+   (scene.cutSolid.retainedPiece==='apex'?'保留锥尖侧':'保留底面侧')+
+   '）：封闭网格仅为解析边界的离散近似，完整遮挡仍未证明。':
+   scene.cutSolid?.status==='not-supported'?
+   '裁剪截线尚无已验证的完整切后体网格，保留线框示意。':
+   '未选择保留侧，当前仅显示三维线框与示意截平面。';
   if(selectedSpatial!==null&&scene.sourcePoints[selectedSpatial]){
    const p=scene.sourcePoints[selectedSpatial].world;
-   $('cone3dStatus').textContent='选中 M3 空间点（mm）：('+[
+   $('cone3dStatus').textContent=solidLabel+' 选中 M3 空间点（mm）：('+[
     p.x,p.y,p.z].map(n=>n.toFixed(3)).join(', ')+
     ') · 二维投影与三维视角使用同一数学来源。';
-  }else $('cone3dStatus').textContent=
-   '同一 V5 进度 '+Math.round(frame.ratio*100)+
+  }else $('cone3dStatus').textContent=solidLabel+' 同一 V5 进度 '+Math.round(frame.ratio*100)+
    '% · 旋转仅改变观察角度，不修改已确认的几何解。';
  }
 
