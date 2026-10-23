@@ -390,7 +390,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
    if(!planar&&preview())
-    text(svg,22,432,'三视图网格仅为投影：虚实边尚未证明','#986945');
+    text(svg,22,432,'实体与已算截交边的投影：虚实线及 V5 尚未证明','#986945');
    if(planar){
     const b=result.paperBounds;
     if(b)svg.setAttribute('viewBox',[b.x,b.y,b.width,b.height].join(' '));
@@ -467,7 +467,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     partial?
      partial.kind==='composition-evidence'?
       '仅确认了手工输入的几何对象并验证其基本数学格式；不是 M3 独立求解，不具备 ConstructionIntent/V5 动画或可见性证明。':
-     '限定证据：M3 已独立核验专业范围内的截切几何；下方仅为已知长方体的 V/H/W 和空间线框。截线、隐藏边与 V5 均未获证明，不可播放。':
+     '限定证据：M3 已独立核验截交多边形顶点与有序直边；下方是同源长方体及截交边的 V/H/W、三维线框。遮挡、完整切后实体与 V5 均未证明，不可播放。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   $('v7-selection').textContent=snap.view.selectedObjectId?
     '已选稳定对象 '+snap.view.selectedObjectId+'，数学结果与视图修订未改变。':

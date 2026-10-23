@@ -70,6 +70,31 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(c.currentResult(),null);
  assert.equal(c.canExport(),false);
  assert.equal(r.scene.objects[0].kind,'mesh');
+ assert.equal(r.scene.objects.length,2);
+ const perimeter=r.scene.objects[1];
+ assert.equal(perimeter.id,'Section1');
+ assert.equal(perimeter.kind,'polyline');
+ assert.equal(perimeter.model.data.closed,true);
+ assert.ok(perimeter.model.data.points.length>=3&&
+  perimeter.model.data.points.length<=6);
+ assert.equal(perimeter.model.data.points.length,
+  perimeter.representations.V.spans.length);
+ assert.equal(r.evidence.sectionPerimeterGeometry?.id,'Section1');
+ assert.equal(r.scene.evidence.v5,'requires-verified-construction-intent');
+ assert.equal(perimeter.representations.V.visibility,'undetermined');
+ assert.equal(perimeter.representations.H.visibility,'undetermined');
+ for(const p of perimeter.model.data.points){
+  // Independent original plane residual, not solver-reported maxResidual.
+  const plane=[1,1,1],origin=[0,0,12];
+  const residual=plane.reduce((sum,k,i)=>sum+k*([p.x,p.y,p.z][i]-origin[i]),0)/
+   Math.sqrt(3);
+  assert.ok(Math.abs(residual)<1e-6);
+ }
+ for(const view of ['V','H','W']){
+  const r2=perimeter.representations[view];
+  assert.equal(r2.kind,'polyline-projection');
+  assert.ok(r2.spans.every(e=>e.projection.kind==='segment'||e.projection.kind==='point'));
+ }
  assert.equal(r.scene.objects[0].representations.V.edges.length,12);
  assert.equal(r.scene.objects[0].representations.H.visibility,'undetermined');
  assert.equal(r.scene.objects[0].representations.W.visibility,'undetermined');

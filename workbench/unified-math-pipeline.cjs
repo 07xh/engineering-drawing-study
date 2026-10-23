@@ -49,6 +49,9 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
   status:qualified?'geometry-only':'not-verified',
   kind:'spatial-section',specialistKind:input.kind,revision,
   solveResult:evidence,mathematicallyVerified:false,
+  // Only independently audited polygon perimeter edges; never full
+  // visibility, retained solid, global SolveResult or V5 authorization.
+  sectionPerimeterGeometry:qualified?(evidence.sectionPerimeterGeometry??null):null,
   geometryVerifiedWithinSpecialistScope:qualified,
   verifiedVisibility:false,sourceProblemConfirmed:false,
   constructionIntents:[],steps:[],timing:null,

@@ -111,8 +111,19 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.ok($('v7-sheet').querySelector('[aria-label="选择 Solid1 的 V 表达"]'));
   assert.ok($('v7-3d').querySelector('[aria-label="选择 Solid1 的 3D 表达"]'));
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Solid1"][data-geometry-view="V"]').length,12);
-  assert.equal($('v7-3d').querySelectorAll('[data-visibility="undetermined"]').length,12);
-  assert.equal($('v7-sheet').querySelectorAll('[data-visibility="undetermined"]').length,36);
+  assert.equal($('v7-3d').querySelectorAll('[data-geometry-id="Solid1"][data-visibility="undetermined"]').length,12);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Solid1"][data-visibility="undetermined"]').length,36);
+  const section3D=$('v7-3d').querySelectorAll('[data-geometry-id="Section1"]');
+  const sectionSheet=$('v7-sheet').querySelectorAll('[data-geometry-id="Section1"]');
+  assert.ok(section3D.length>=3&&section3D.length<=6,
+   'actual M3 verified section polygon is visible as bounded straight edges');
+  assert.equal(sectionSheet.length,section3D.length*3,
+   'one spatial section projects into all three first-angle views');
+  assert.ok([...section3D,...sectionSheet].every(el=>
+   el.getAttribute('data-visibility')==='undetermined'),
+   'limited specialist proof never certifies hidden-line styles');
+  assert.equal($('v7-play').disabled,true,
+   'a scoped polygon is not yet a verified complete V5 construction');
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';
