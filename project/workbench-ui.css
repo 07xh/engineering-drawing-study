@@ -74,3 +74,8 @@ body.ui-next .v7-source-calibration .v7-xyz{grid-template-columns:repeat(2,minma
 body.ui-next .v7-cal-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 body.ui-next .v7-cal-actions button{font-size:12px;min-height:40px}
 @media(max-width:520px){body.ui-next .v7-cal-actions{grid-template-columns:1fr}}
+
+body.ui-next .v7-photo-box{position:relative;border:1px solid #dfe6ee;border-radius:9px;background:#f4f6fa;overflow:hidden;margin:10px 0;touch-action:manipulation}
+body.ui-next #v7-photo{display:block;width:100%;max-height:220px;height:auto;object-fit:contain;cursor:crosshair;border:none;margin:0}
+body.ui-next #v7-photo-marks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+body.ui-next #v7-photo-clear{font-size:12px;padding:7px 9px}
