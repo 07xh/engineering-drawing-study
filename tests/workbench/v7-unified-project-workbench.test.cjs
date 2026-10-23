@@ -53,14 +53,15 @@ test('candidate remains untrusted until explicit review, then trusted 03 M3→V5
 });
 test('photo changes, edits, undo and reload revoke all V5 and export authority',()=>{
  const {coord,session}=start();
- coord.putCondition(condition());
+ coord.setImage('OriginalA');
+ coord.putCondition(condition([15,10,12],'OriginalA'));
  coord.confirmCondition('coords');
  const r=session.solve(),oldRev=coord.snapshot().revision;
  coord.setCamera({yaw:55,pitch:20});
  coord.selectRepresentation('W','Point1_W');
  assert.equal(coord.snapshot().revision,oldRev);
  assert.equal(coord.currentResult(),r);
- coord.putCondition(condition([20,10,12]));
+ coord.putCondition(condition([20,10,12],'OriginalA'));
  assert.equal(coord.canExport(),false);
  assert.equal(r.clock.canRender(coord.snapshot().revision),false);
  assert.throws(()=>session.solve(),/确认/);
