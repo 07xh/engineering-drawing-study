@@ -13,6 +13,8 @@ const {bentLeaderCandidates}=
  require('../recognition/bent-leader-candidates.cjs');
 const {leaderArrowHint}=
  require('../recognition/arrow-leader-evidence.cjs');
+const {proposeDimensionPaths,reviewDimensionPath}=
+ require('../recognition/reviewed-dimension-path.cjs');
 const {chooseOcrRadiusPrefill}=
  require('../recognition/reviewed-ocr-radius-prefill.cjs');
 const SVG='http://www.w3.org/2000/svg';
@@ -22,14 +24,66 @@ function attachLocalNativeOcr({
  getCurves=()=>[],getLines=()=>[],getArrowHints=()=>[],
  recognize=detectBrowserDimensionCandidates,
  reviewedValue=null,reviewAccept=null,reviewButton=null,
- getValues=()=>({}),getRevision=()=>0
+ getValues=()=>({}),getRevision=()=>0,pathReview=null
 }){
- let epoch=0,candidates=[];
+ let epoch=0,candidates=[],reviewedPath=null,pathCandidates=[];
  const hasReview=Boolean(reviewedValue||reviewAccept||reviewButton);
  if(hasReview&&(!reviewedValue||!reviewAccept||!reviewButton||
    typeof fieldReview?.confirmNotation!=='function'||
    typeof getValues!=='function'||typeof getRevision!=='function'))
   throw new TypeError('audited OCR review controls must all be wired');
+ if(pathReview){
+  const keys=['selector','status','text','units','leader','curve','arrow',
+   'answers','final','button'];
+  if(keys.some(key=>!pathReview[key])||!reviewedValue||
+     typeof getRevision!=='function')
+   throw new TypeError('complete existing OCR path-review controls required');
+ }
+ const pathChecks=pathReview?[
+  pathReview.text,pathReview.units,pathReview.leader,
+  pathReview.curve,pathReview.arrow,pathReview.final]:[];
+ const clearPathReview=()=>{
+  reviewedPath=null;
+  if(!pathReview)return;
+  pathCandidates=[];
+  pathReview.selector.replaceChildren(item('','未选中尺寸或原图候选'));
+  pathReview.selector.disabled=true;pathReview.button.disabled=true;
+  for(const check of pathChecks)check.checked=false;
+  pathReview.answers.value='unknown';
+  pathReview.status.textContent='尚未人工确认文字、引线、箭头与曲线关联。';
+ };
+ function renderPaths(){
+  clearPathReview();
+  if(!pathReview)return;
+  const dimension=candidates.find(x=>x.id===selector.value);
+  if(!dimension)return;
+  try{
+   const result=proposeDimensionPaths({
+    dimension,lines:getLines(),curves:getCurves(),
+    arrows:getArrowHints(),
+    image:{width:image.naturalWidth,height:image.naturalHeight}
+   });
+   pathCandidates=result.proposals;
+   pathReview.selector.replaceChildren(item('','选择文字到圆/圆弧的待审路径'));
+   for(const candidate of pathCandidates){
+    const label=candidate.pathKind==='straight'?'直引线':
+     candidate.pathKind==='bent'?'折引线':'仅邻近';
+    pathReview.selector.append(item(candidate.id,
+     label+' '+candidate.leaderCandidateIds.join('→')+
+     ' → '+candidate.curveCandidateId+
+     (candidate.arrowHint?'（发现 V 形线索，尚未确认）':'（无箭头证明）')+
+     ' · 像素误差 '+candidate.endpointErrorPx));
+   }
+   pathReview.selector.disabled=pathCandidates.length===0;
+   pathReview.status.textContent=pathCandidates.length?
+    '找到 '+pathCandidates.length+
+    ' 个待审关联路径。每条都要核对原图，不能自动选择唯一图元。':
+    '当前线段／圆弧候选不足或没有可匹配的关系；不允许猜测归属。';
+  }catch(error){
+   pathReview.status.textContent='不能安全创建关联候选：'+
+    (error instanceof Error?error.message:'无效像素来源');
+  }
+ }
  const clearReview=()=>{
   if(!hasReview)return;
   reviewAccept.checked=false;reviewButton.disabled=true;reviewedValue.value='';
@@ -42,7 +96,7 @@ function attachLocalNativeOcr({
   epoch++;candidates=[];overlay.replaceChildren();overlay.hidden=true;
   selector.replaceChildren(item('','尚无 R/Φ 文字候选'));
   run.disabled=false;associate.disabled=true;prefillButton.disabled=true;
-  clearReview();
+  clearReview();clearPathReview();
   status.textContent='浏览器原生文字识别为可选实验功能；原图不上传。识别结果需要人工核对。';
  }
  function drawCandidates(){
@@ -67,7 +121,7 @@ function attachLocalNativeOcr({
  }
  function describeSelected(){
   const dim=candidates.find(x=>x.id===selector.value);
-  clearReview();
+  clearReview();renderPaths();
   if(!dim)return;
   if(hasReview){reviewedValue.value=String(dim.numericValue);reviewButton.disabled=false;}
   let nearby=[],leaders=[],bent=[];
@@ -105,6 +159,55 @@ function attachLocalNativeOcr({
  image.addEventListener('error',changedPhoto);
  clear.addEventListener('click',changedPhoto);
  selector.addEventListener('change',describeSelected);
+ if(pathReview){
+  pathReview.selector.addEventListener('change',()=>{
+   reviewedPath=null;
+   for(const check of pathChecks)check.checked=false;
+   pathReview.answers.value='unknown';
+   pathReview.button.disabled=!pathReview.selector.value;
+   pathReview.status.textContent='请逐项核对所选 OCR 文字、引线、箭头和目标圆弧。';
+  });
+  for(const node of [...pathChecks,pathReview.answers,reviewedValue])
+   node.addEventListener('input',()=>{reviewedPath=null;});
+  pathReview.button.addEventListener('click',()=>{
+   try{
+    const dimension=candidates.find(x=>x.id===selector.value);
+    if(!dimension||!pathReview.selector.value){
+     pathReview.status.textContent=
+      '请先载入原图、选择 OCR 尺寸并选定候选引线与圆弧关系。';
+     return;
+    }
+    const revision=getRevision();
+    const result=reviewDimensionPath({
+     dimension,lines:getLines(),curves:getCurves(),arrows:getArrowHints(),
+     image:{width:image.naturalWidth,height:image.naturalHeight},
+     selectedPathId:pathReview.selector.value,
+     sourceEpoch:epoch,currentSourceEpoch:epoch,
+     expectedRevision:revision,revision,
+     reviewedTextValueMm:reviewedValue.valueAsNumber,
+     unitsConfirmed:pathReview.units.checked,
+     textConfirmed:pathReview.text.checked,
+     pathConfirmed:pathReview.leader.checked,
+     curveConfirmed:pathReview.curve.checked,
+     arrowReviewed:pathReview.arrow.checked,
+     finalAccepted:pathReview.final.checked,
+     answerMark:pathReview.answers.value
+    });
+    reviewedPath=result;
+    pathReview.final.checked=false;
+    pathReview.status.textContent='已记录人工关联 '+
+     result.dimensionCandidateId+' → '+
+     result.leaderCandidateIds.join('→')+' → '+
+     result.curveCandidateId+'；尺寸建议半径 '+result.proposedRadiusMm+
+     ' mm。仅像素来源与文字经人工核对，几何比例、求解和原题盲测均未认证。'+
+     (result.answerMark==='contains-answers'?' 原图含参考答案，不可计为盲测。':'');
+   }catch(error){
+    reviewedPath=null;pathReview.final.checked=false;
+    pathReview.status.textContent='关联未通过审核：'+
+     (error instanceof Error?error.message:'无效审核');
+   }
+  });
+ }
  if(hasReview){
   sourceField.addEventListener('change',()=>{reviewAccept.checked=false;});
   reviewedValue.addEventListener('input',()=>{reviewAccept.checked=false;});
@@ -187,6 +290,7 @@ function attachLocalNativeOcr({
  });
  reset();
  return Object.freeze({reset,refreshAssociations(){if(selector.value)describeSelected();},
-  get count(){return candidates.length}});
+  get count(){return candidates.length},
+  get reviewedPath(){return reviewedPath}});
 }
 module.exports={attachLocalNativeOcr};
