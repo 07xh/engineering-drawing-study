@@ -5,11 +5,14 @@
  * This is an input evidence gate, never a solver or a uniqueness proof.
  */
 const {validateDraft}=require('../recognition/problem-draft.cjs');
+const {isWitnessedReviewedDimension}=
+ require('../recognition/reviewed-path-dimension-draft.cjs');
 const {isolateReviewedProblem}=require('./reviewed-problem-math-isolation.cjs');
 const finite=Number.isFinite;
 function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
  try{
-  if(attached?.status!=='dimension-attached-to-existing-draft'||
+  if(!isWitnessedReviewedDimension(attached)||
+     attached?.status!=='dimension-attached-to-existing-draft'||
      attached.geometryAndDimensionReviewed!==true||
      attached.calibration?.reviewedBy!=='user'||
      !finite(attached.calibration.mmPerPx)||attached.calibration.mmPerPx<=0||
