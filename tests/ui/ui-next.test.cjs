@@ -208,7 +208,12 @@ test('start page offers actual solver entries and honest knowledge boundaries',(
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
  assert.match(after.querySelector('#knowledge').textContent,/题库.*尚未接入/);
  assert.ok(after.querySelector('a[href="labs/auto-fillet-live.html"]'));
- assert.equal(after.querySelectorAll('input[type=file],form').length,0);
+ // V7 adds local-only image and .daiproject inputs, never a network upload form.
+ assert.equal(after.querySelectorAll('form').length,0);
+ assert.equal(after.querySelectorAll('#project-workbench input[type=file]').length,2);
+ assert.ok(after.getElementById('v7-photo'));
+ assert.ok(after.getElementById('v7-confirm'));
+ assert.ok(after.getElementById('v7-solve'));
  assert.doesNotMatch(after.body.textContent,/已保存 · 示例|题库已接入|任意题图一键解答/);
  for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(after.querySelector('a[href="'+page+'"]'),page+' discoverable');
  assert.ok(after.querySelector('[data-next-illustration]'));
