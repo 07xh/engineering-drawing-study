@@ -62,7 +62,7 @@ function homeHTML(){return `
      <path d="M685 82L585 300H785Z"/>
     </g>
    </svg>
-   <div class="next-home-paper-caption">规范位置示例：完整正圆锥的三视图。斜截线须进入求解工作台计算，不在首页编造。</div>
+   <div class="next-home-paper-caption">规范三视图示例 · 非题目计算结果。斜截线须进入求解工作台计算，不在首页编造。</div>
   </div>
   <div class="next-home-drawing-actions">
    <a class="next-primary-link" href="labs/cone-cut-live.html">打开圆锥斜截</a>
