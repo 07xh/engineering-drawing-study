@@ -46,3 +46,17 @@ test('09 M4 invalid revision cannot be treated as fresh verified proof',()=>{
   notDrawable(()=>live('point-projection',structuredClone(good),null,revision));
  }
 });
+
+test('09 M4 same point with a new revision keeps geometry but refreshes proof provenance',()=>{
+ const old=live('point-projection',structuredClone(good),null,203);
+ const fresh=live('point-projection',structuredClone(good),null,204);
+ assert.equal(old.status,'ready');
+ assert.equal(fresh.status,'ready');
+ assert.equal(old.canonicalVerified,true);
+ assert.equal(fresh.canonicalVerified,true);
+ assert.deepEqual(old.steps,fresh.steps);
+ assert.deepEqual(old.timing,fresh.timing);
+ assert.notDeepEqual(old.constructionIntents,fresh.constructionIntents);
+ assert.ok(old.constructionIntents.every(i=>i.source.revision===203));
+ assert.ok(fresh.constructionIntents.every(i=>i.source.revision===204));
+});
