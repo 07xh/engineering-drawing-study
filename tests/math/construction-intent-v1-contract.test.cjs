@@ -137,3 +137,36 @@ test('F2 DAG entity-input provenance must follow declared transitive dependencie
  assert.equal(checkDAG([first,step('step_2',['step_1'],['arc_1'],'point_2')]).ok,
   true,'direct declared parent may supply geometry');
 });
+
+test('F2 identical proof source with reordered JSON keys is one DAG source',()=>{
+ const first=sample();
+ const other={...sample(),id:'step_2',dependsOn:['step_1'],
+  outputEntityIds:['point_2'],operations:[{
+   id:'point_2',kind:'point',coordinateSpace:'model-mm',
+   geometry:{at:p(4,5)}
+  }]};
+ const reversed=Object.fromEntries(Object.entries(first.source).reverse());
+ assert.equal(checkDAG([first,{...other,source:reversed}]).ok,true);
+ assert.equal(checkDAG([first,{...other,source:{...reversed,revision:13}}]).ok,false);
+ assert.equal(checkDAG([first,{...other,source:{...reversed,branchId:'s--'}}]).ok,false);
+});
+test('F2 extreme floating-point direction and primitive length boundaries',()=>{
+ const first=sample(),base=first.operations[0];
+ const withOp=op=>({...first,outputEntityIds:[op.id],operations:[op]});
+ const sweep=(startAngle,endAngle,direction)=>withOp({...base,geometry:{
+  ...base.geometry,startAngle,endAngle,direction}});
+ assert.equal(check(sweep(0,360-1e-8,'ccw')).ok,true);
+ assert.equal(check(sweep(0,360-1e-10,'ccw')).ok,false);
+ assert.equal(check(sweep(0,-360+1e-8,'cw')).ok,true);
+ assert.equal(check(sweep(0,-360+1e-10,'cw')).ok,false);
+ assert.equal(check(sweep(1e300,-1e300,'cw')).ok,false);
+ assert.equal(check(sweep(1e300,1e300+45,'ccw')).ok,false);
+ const line={id:'guide_1',kind:'line',coordinateSpace:'model-mm',
+  geometry:{from:p(0,0),to:p(1e-12,0)}};
+ assert.equal(check(withOp(line)).ok,false);
+ assert.equal(check(withOp({...line,geometry:{
+  from:p(0,0),to:p(2e-12,0)}})).ok,true);
+ const huge=2**53;
+ assert.equal(check(withOp({...line,geometry:{
+  from:p(huge,0),to:p(huge+1,0)}})).ok,false);
+});
