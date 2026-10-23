@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DraftAI｜本机项目工作台</title>
+<link rel="stylesheet" href="center.css">
+</head><body>
+<main class="da-project-main">
+ <div class="project-heading"><div><p class="project-eyebrow">DraftAI · 本机项目工作台 / V7 首批预览</p><h1>我的工程制图项目</h1><p>一份项目管理原图、人工标注和条件确认。现有求解器与 V5 尚未接入本页，不能在这里导出已验证答案。</p></div><a href="../index.html">返回首页</a></div>
+ <section class="project-toolbar" aria-label="项目管理">
+  <label>项目名称<input id="newTitle" maxlength="120" placeholder="例如：圆弧连接练习"></label>
+  <label>项目任务<select id="newTask"><option value="planar">二维几何解题</option><option value="projection">空间投影</option><option value="exploration">几何探索</option></select></label>
+  <button id="createProject" type="button">＋ 新建本机项目</button>
+  <label class="project-import">打开项目文件<input id="importFile" type="file" accept=".daiproject,application/octet-stream"></label>
+  <label>继续本机项目<select id="storedProjects" aria-label="本机已保存项目"><option value="">暂无可恢复项目</option></select></label>
+  <button id="openSaved" type="button" disabled>恢复项目</button>
+ </section>
+ <section id="projectWorkspace" class="project-workspace" hidden>
+  <div class="project-meta">
+   <div><h2 id="projectTitle">未命名项目</h2><p id="projectTask"></p></div>
+   <div class="project-actions"><button id="saveNow" type="button">保存到本机</button><button id="exportBundle" type="button">下载完整项目</button><button id="deleteSaved" type="button">删除本机项目</button></div>
+  </div>
+  <div class="project-layout">
+   <section class="project-sheet" aria-labelledby="imageTitle">
+    <div class="project-panel-head"><h3 id="imageTitle">题图与手动标注</h3><div class="project-sheet-actions">
+     <label>更换原图<input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp"></label>
+     <button id="fitImage" type="button">适合窗口</button>
+     <button id="zoomOut" type="button" aria-label="缩小">−</button><button id="zoomIn" type="button" aria-label="放大">＋</button>
+    </div></div>
+    <div class="project-canvas-help" id="canvasHelp">原图保留在当前设备。上传后可缩放、平移，点选图上位置添加待确认标记。</div>
+    <div id="imageViewport" class="project-image-viewport" role="region" aria-label="原图与标注共用视口" tabindex="0">
+      <div id="imageSurface" class="project-image-surface" hidden>
+       <img id="projectImage" alt="当前项目的原始工程制图题图" draggable="false">
+       <svg id="annotationSvg" xmlns="http://www.w3.org/2000/svg" aria-label="待确认与已确认的图像标注"></svg>
+      </div>
+      <p id="emptyImage">尚未选择题图；可先建立无图项目。</p>
+    </div>
+    <div class="project-view-controls"><label><input id="markMode" type="checkbox"> 在图上点选添加标记</label><label>标记说明<input id="markLabel" placeholder="例如：已知点 A、尺寸 R20" maxlength="120"></label></div>
+    <p class="project-legend"><span>○ 待确认标记</span><span>● 已确认标记</span><span>蓝色：当前选中</span></p>
+   </section>
+   <aside class="project-inspector" aria-label="人工条件确认">
+     <div class="project-panel-head"><h3>条件与来源</h3><div><button id="undoProject" type="button">撤销</button><button id="redoProject" type="button">重做</button></div></div>
+     <p>标记只记录图片像素位置和来源描述，不自动解释为毫米几何条件。核对后才能确认；确认不代表数学求解通过。</p>
+     <ol id="conditionList" class="project-condition-list"></ol>
+     <div id="noConditions">暂无标注。打开图片，开启“点选添加标记”。</div>
+     <div class="project-solver-notice">
+      <strong>求解与 V5 作图</strong>
+      <p>本页尚未绑定已有求解会话。请继续使用现有题型求解器；输入不会被自动复制，避免不可信候选绕过审核。</p>
+      <a href="../labs/auto-fillet-live.html">二维圆弧连接</a> · <a href="../labs/point-projection-live.html">点的三面投影</a> · <a href="../labs/cylinder-cut-live.html">圆柱截切</a>
+     </div>
+   </aside>
+  </div>
+ </section>
+ <p id="projectStatus" class="project-status" role="status" aria-live="polite">正在检测本机项目存储能力…</p>
+</main>
+<script defer src="center-bundle.js"></script>
+</body></html>
