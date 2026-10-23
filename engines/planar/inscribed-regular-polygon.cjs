@@ -110,7 +110,7 @@ function regularPolygonInCircle(input={}){
   vertices,edges,sideLengthMm:expectedSide,
   perimeterMm:n*expectedSide,areaMm2:expectedArea,
   maxRadiusErrorMm:maxRadiusError,maxChordErrorMm:maxChordError,
-  centroidErrorMm,areaErrorMm2,maxResidualMm:mmResidual,
+  centroidErrorMm:centroidError,areaErrorMm2,maxResidualMm:mmResidual,
   toleranceMm,windingVerified,constructionReady:false,
   solveResult};
 }
