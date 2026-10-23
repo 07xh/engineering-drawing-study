@@ -116,6 +116,7 @@ function coneV5OpenRayEvidence(cone,plane,{
    capChord:kind==='clipped-ellipse'?cap:null,
    observerDirection:Object.freeze(directions[view]),
    intervalCount:laterals.length,
+   allOpenIntervalsCertified:proof.openIntervalsVerified===true,
    sourceScope:'open-analytic-boundary-interval'
   });
  }
@@ -124,7 +125,8 @@ function coneV5OpenRayEvidence(cone,plane,{
   retainedHalfspace,
   observerDirections:Object.freeze(directions),
   views:Object.freeze(views),counts:Object.freeze(counts),
-  sourceOpenIntervalsVerified:true,
+  partitionCoverageVerified:true,
+  allViewOpenIntervalsCertified:VIEWS.every(v=>views[v].allOpenIntervalsCertified),
   sourceBoundaryEndpointsVerified:false,
   projectedChordOcclusionVerified:false,
   completeVisibilityVerified:false,
