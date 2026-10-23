@@ -16,10 +16,6 @@ const COPY = value => JSON.parse(JSON.stringify(value));
 const EPS = 1e-12;
 function fail(message) { throw new Error(message); }
 function xyz(point) { return {x:point.x, y:point.y, z:point.z}; }
-function modelUV(point) {
-  const mapped = project(point);
-  return Object.fromEntries(VIEWS.map(v => [v, mapped[v]]));
-}
 function addVector(a, b) {
   const p = {x:a.x+b.x,y:a.y+b.y,z:a.z+b.z};
   if (!Object.values(p).every(finite)) fail('空间直线坐标超出有限计算范围');
