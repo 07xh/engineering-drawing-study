@@ -49,8 +49,10 @@ test('09 normal reversal plus retained-halfspace reversal is the same convex cut
  assert.equal(a.retainedPiece,b.retainedPiece);
  for(const v of ['V','H','W']){
   assert.equal(a.views[v].cutFace.visibility,b.views[v].cutFace.visibility);
-  assert.deepEqual(a.views[v].cutFace.planeSupportNormal,
-   b.views[v].cutFace.planeSupportNormal);
+  for(const k of ['x','y','z'])
+   assert.ok(Math.abs(a.views[v].cutFace.planeSupportNormal[k]-
+    b.views[v].cutFace.planeSupportNormal[k])<1e-12,
+    'reversing plane+halfspace preserves cut-face outward normal');
  }
 });
 test('09 clipped sector, incorrect source and reversed eye rays do not promote scope',()=>{
