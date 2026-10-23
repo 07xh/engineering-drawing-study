@@ -138,7 +138,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
  }
  // A V5 step can hold at most 100 actions. Chunk the actual source segments
  // instead of constraining the specialist solver to a lower sample budget.
- const GROUP=64;
+ const GROUP=96;
  for(const view of VIEWS){
   const actions=[];
   for(let i=1;i<=samples;i++){
