@@ -18,12 +18,13 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   require('../../project/unified-workbench-entry.cjs');
   for(let i=0;i<12&&!$('v7-review').textContent.includes('尚未提交');i++)await tick();
   assert.match($('v7-proof').textContent,/未计算/);
-  assert.ok($('v7-solve').disabled,'cannot solve before explicit confirmation');
+  click('v7-solve');await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/,'unconfirmed click cannot forge a result');
   click('v7-stage');await tick();await tick();
   assert.match($('v7-review').textContent,/待确认/);
-  assert.equal($('v7-solve').disabled,true);
+  assert.match($('v7-proof').textContent,/未计算/);
   click('v7-confirm');await tick();await tick();
-  assert.equal($('v7-solve').disabled,false);
+  assert.match($('v7-review').textContent,/已人工确认/);
   click('v7-solve');await tick();await tick();
   assert.match($('v7-proof').textContent,/M3.*ConstructionIntent.*V5/);
   assert.ok($('v7-step-list').querySelector('button'));
@@ -43,7 +44,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   $('v7-x').value='23';
   click('v7-stage');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
-  assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
  }finally{
   global.document=original.document;global.window=original.window;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;
