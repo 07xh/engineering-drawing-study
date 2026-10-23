@@ -2,7 +2,7 @@
 /**
  * Exact horizontal orthographic ray test for finite upright right cone.
  * At fixed z, solid cross-section is a closed disk with radius
- * R(z)=r*(z-baseZ)/h. An observer at -Y or +X sees the first disk
+ * R(z)=r*(apexZ-z)/h. An observer at -Y or +X sees the first disk
  * boundary along its ray. This proves visibility of lateral points
  * at STRICT interior heights, without deciding coincident base-cap rays.
  */
@@ -16,7 +16,7 @@ function coneHorizontalSolidRay(cone,point,view,{epsilon=1e-9}={}){
  const z=point.z-cone.baseCenter.z;
  if(z<=epsilon||z>=cone.heightMm-epsilon)
   return {status:'undetermined',reason:'base or apex degeneracy; cap-ray convention required'};
- const radius=cone.radiusMm*z/cone.heightMm;
+ const radius=cone.radiusMm*(cone.heightMm-z)/cone.heightMm;
  const x=point.x-cone.baseCenter.x,y=point.y-cone.baseCenter.y;
  if(Math.abs(Math.hypot(x,y)-radius)>epsilon*Math.max(1,radius))
   return {status:'undetermined',reason:'point not certified on cone lateral surface'};
