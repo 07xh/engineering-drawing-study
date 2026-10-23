@@ -81,7 +81,11 @@ function validateConstructionIntent(intent){
  if(!Array.isArray(intent.operations)||intent.operations.length<1||
     intent.operations.length>40||intent.operations.some(x=>!validAction(x)))
   errors.push('invalid geometry operations');
+ // Do not inspect operation.id until all items are validated. Invalid
+ // untrusted operations (including null) must return a failed validation
+ // report, never throw while checking the output-entity parity.
  if(Array.isArray(intent.operations)&&isIdList(intent.outputEntityIds)&&
+    intent.operations.every(validAction)&&
     JSON.stringify(intent.outputEntityIds)!==
       JSON.stringify(intent.operations.map(x=>x.id)))
   errors.push('output IDs must match semantic actions exactly');
@@ -130,7 +134,11 @@ function validateConstructionIntentDAG(intents){
    entityOwners.set(op.id,intent.id);
   }
   stepAncestors.set(intent.id,ancestors);
-  const key=JSON.stringify(intent.source);
+  // The source metadata identifies evidence semantically, not by the order
+  // its JSON object keys were inserted. Only canonical validSource objects
+  // reach this line, so a sorted key-value vector is deterministic.
+  const key=JSON.stringify(Object.keys(intent.source).sort()
+   .map(k=>[k,intent.source[k]]));
   if(source!==null&&key!==source)
    errors.push('mixed source revision/proof/branch in DAG');
   source=source??key;
