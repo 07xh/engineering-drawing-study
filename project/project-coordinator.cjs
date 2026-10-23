@@ -224,6 +224,16 @@ function createCoordinator(initial, hooks = {}) {
     setCamera(camera) {
       return updateView({camera: {...project.view.camera, ...camera}});
     },
+    setTask(task) {
+      if(!TASKS.includes(task)) throw new Error('不支持的项目数学任务类型');
+      return commit(p=>{
+        if(p.task===task)return;
+        // A different specialist must never inherit the previous confirmed
+        // inputs, object identity, selection, or playback authorization.
+        p.task=task;p.objects=[];p.conditions=[];
+        p.view.selectedObjectId=null;
+      });
+    },
     renameProject(title) {
       const next=snapshot();
       next.title=title;

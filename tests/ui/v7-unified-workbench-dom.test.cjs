@@ -75,6 +75,34 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   click('v7-stage');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  // Same page, same project: change task, re-confirm, reuse canonical V5.
+  $('v7-task').value='planar';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  assert.equal(document.querySelector('fieldset[data-v7-task=planar]').hidden,false);
+  click('v7-stage-other');await tick();await tick();
+  assert.match($('v7-review').textContent,/待确认/);
+  click('v7-confirm-other');await tick();await tick();
+  click('v7-solve-other');await tick();await tick();
+  assert.match($('v7-proof').textContent,/已验证的二维圆弧连接/,$('v7-save').textContent);
+  assert.ok($('v7-step-list').querySelector('button'));
+  $('v7-seek').value='1000';
+  $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));
+  assert.ok($('v7-sheet').querySelector('path[aria-label="选择已验证圆弧 Fillet1"]'));
+  assert.equal($('v7-3d').hidden,false,'spatial panel may be hidden as a group');
+  // New spatial task must revoke previous V5; only scoped evidence, no player.
+  $('v7-task').value='exploration';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/);
+  click('v7-stage-other');await tick();await tick();
+  click('v7-confirm-other');await tick();await tick();
+  click('v7-solve-other');await tick();await tick();
+  assert.match($('v7-proof').textContent,/限定证据/,$('v7-save').textContent);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  assert.equal($('v7-play').disabled,true,'M3 geometry-only cannot play V5');
+  assert.ok($('v7-sheet').querySelector('[aria-label="选择 Solid1 的 V 表达"]'));
+  assert.ok($('v7-3d').querySelector('[aria-label="选择 Solid1 的 3D 表达"]'));
  }finally{
   global.document=original.document;global.window=original.window;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;

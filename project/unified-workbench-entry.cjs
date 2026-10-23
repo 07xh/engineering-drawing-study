@@ -13,6 +13,76 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  if(!root)return;
  const NS='http://www.w3.org/2000/svg',POINT='Point1';
  const xyzIds=['v7-x','v7-y','v7-z'];
+ const filletInputs=['v7-f-ax','v7-f-ay','v7-f-bx','v7-f-by','v7-f-cx','v7-f-cy','v7-f-dx','v7-f-dy','v7-f-radius'];
+ const filletOptions=['v7-f-branch','v7-f-direction','v7-f-first','v7-f-second'];
+ const prismInputs=['v7-p-width','v7-p-depth','v7-p-height','v7-p-px',
+  'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
+ const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs];
+ const taskObjects={
+  projection:{id:'Point1',kind:'point',spatialId:'Point1_3D',
+   projections:{V:['Point1_V'],H:['Point1_H'],W:['Point1_W']}},
+  planar:{id:'Fillet1',kind:'edge',spatialId:null,
+   projections:{V:[],H:[],W:[]}},
+  exploration:{id:'Solid1',kind:'solid',spatialId:'Solid1_3D',
+   projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}}
+ };
+ const fieldsForTask=task=>task==='projection'?xyzIds:
+  task==='planar'?[...filletInputs,...filletOptions]:prismInputs;
+ const numberFrom=id=>{
+  const raw=$(id).value;
+  if(raw.trim()===''||!Number.isFinite(Number(raw))||Math.abs(Number(raw))>100000)
+   throw new Error('坐标、尺寸必须填写有效且有限的模型 mm 数值');
+  return Number(raw);
+ };
+ function fieldsToValue(task,imageId){
+  if(task==='projection')
+   return {type:'point-xyz',unit:'mm',xyz:xyzIds.map(numberFrom),imageId};
+  if(task==='planar'){
+   const v=filletInputs.map(numberFrom);
+   return {type:'segment-fillet',unit:'mm',
+    first:[[v[0],v[1]],[v[2],v[3]]],
+    second:[[v[4],v[5]],[v[6],v[7]]],filletRadius:v[8],
+    branchId:$('v7-f-branch').value,direction:$('v7-f-direction').value,
+    firstTravel:$('v7-f-first').value,secondTravel:$('v7-f-second').value,imageId};
+  }
+  const v=prismInputs.map(numberFrom);
+  return {type:'prism-section',unit:'mm',size:v.slice(0,3),
+   planePoint:v.slice(3,6),planeNormal:v.slice(6,9),imageId};
+ }
+ function populateTaskFields(project){
+  $('v7-task').value=project.task;
+  const v=project.conditions.find(x=>x.id==='coords')?.value;
+  if(!v)return;
+  if(project.task==='projection'&&v.type==='point-xyz'&&Array.isArray(v.xyz))
+   xyzIds.forEach((id,i)=>$(id).value=String(v.xyz[i]));
+  if(project.task==='planar'&&v.type==='segment-fillet'){
+   const a=[...v.first[0],...v.first[1],...v.second[0],...v.second[1],v.filletRadius];
+   filletInputs.forEach((id,i)=>$(id).value=String(a[i]));
+   for(const [id,key] of [['v7-f-branch','branchId'],['v7-f-direction','direction'],
+    ['v7-f-first','firstTravel'],['v7-f-second','secondTravel']])
+     $(id).value=v[key];
+  }
+  if(project.task==='exploration'&&v.type==='prism-section'){
+   const a=[...v.size,...v.planePoint,...v.planeNormal];
+   prismInputs.forEach((id,i)=>$(id).value=String(a[i]));
+  }
+ }
+ function preview(){
+  const snap=coordinator?.snapshot(),out=session?.readSnapshot();
+  return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
+    out.kind==='prism-evidence'&&out.verified===false?out:null;
+ }
+ function selectable(node,view,rep,id){
+  const pick=()=>coordinator.selectRepresentation(view,rep);
+  node.setAttribute('tabindex','0');node.setAttribute('role','button');
+  node.setAttribute('aria-label','选择 '+id+' 的 '+view+' 表达');
+  node.addEventListener('click',pick);
+  node.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){
+   e.preventDefault();pick();
+  }});
+  return node;
+ }
+
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
  let sessionStatus='尚未创建项目',projectList=[];
@@ -94,10 +164,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    render();
   });
   $('v7-title-input').value=project.title;
-  const value=project.conditions.find(c=>c.id==='coords')?.value;
-  if(value?.type==='point-xyz'&&Array.isArray(value.xyz))
-   xyzIds.forEach((id,i)=>{$(id).value=String(value.xyz[i]);});
-  else xyzIds.forEach((id,i)=>{$(id).value=String([15,10,12][i]);});
+  populateTaskFields(project);
   $('v7-projects').value=project.id;
   msg('项目已打开；恢复后不继承数学验证。');
   render();void showPhoto();
@@ -150,8 +217,101 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const verified=coordinator?.currentResult();
   return verified?.clock?.canRender(coordinator.snapshot().revision)?verified:null;
  }
+
+ function drawnPoint(p,sheet=SHEET){
+  return {x:sheet.origin.x+sheet.scale*p.x,
+   y:sheet.origin.y-sheet.scale*p.y};
+ }
+ function drawV5(svg,solved,colors){
+  if(!$('v7-guides').checked)return;
+  const frame=solved.clock.snapshot();
+  for(const step of solved.plan.steps)for(const action of step.actions){
+   const fraction=frame.actionFractions[action.id]||0;
+   if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
+   const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
+   const node=shape(tag,{fill:action.kind==='point'?colors.derived:'none',
+    stroke:colors.guide,'stroke-width':2,
+    'stroke-dasharray':action.kind==='line'?'5 5':'none'});
+   Motion.updateSvg(node,action,fraction);
+   svg.append(node);
+  }
+ }
+ function renderPlanarPaper(svg,solved,snap){
+  // The planar solver owns mathematical Geometry. Projection/3D stays null.
+  const colors=$('v7-mono').checked?{known:'#333',derived:'#333',guide:'#777'}:
+    {known:'#1d5879',derived:'#0b7a65',guide:'#cf963d'};
+  const model=solved.scene.objects;
+  svg.append(shape('rect',{width:720,height:460,fill:'#fff'}));
+  for(const item of model.filter(x=>x.kind==='segment')){
+   const g=item.model.data,a=drawnPoint(g.start),b=drawnPoint(g.end);
+   line(svg,a.x,a.y,b.x,b.y,colors.known);
+  }
+  const arc=model.find(x=>x.kind==='arc');
+  const frame=solved.clock.snapshot();
+  if(arc&&frame.done){
+   const g=arc.model.data;
+   const geometry=Motion.projectArcFromVerifiedModel(g,SHEET);
+   const result=Motion.arc(geometry.center,geometry.radius,
+     geometry.startRadians,geometry.sweepRadians,1);
+   const path=shape('path',{d:result.d,fill:'none',stroke:colors.derived,'stroke-width':4});
+   const pick=()=>coordinator.selectObject('Fillet1');
+   path.setAttribute('tabindex','0');path.setAttribute('role','button');
+   path.setAttribute('aria-label','选择已验证圆弧 Fillet1');
+   path.addEventListener('click',pick);
+   path.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){
+     e.preventDefault();pick();
+   }});
+   svg.append(path);
+  }
+  drawV5(svg,solved,colors);
+  // Auto-fit presentation only. V5 action positions remain the original sheet pixels.
+  const pointList=[];
+  for(const item of model){
+   const d=item.model.data;
+   if(item.kind==='segment')pointList.push(d.start,d.end);
+   if(item.kind==='arc'){
+    pointList.push({x:d.center.x-d.radius,y:d.center.y-d.radius},
+     {x:d.center.x+d.radius,y:d.center.y+d.radius});
+   }
+  }
+  if(pointList.length){
+   const px=pointList.map(p=>drawnPoint(p));
+   const minX=Math.min(...px.map(p=>p.x)),maxX=Math.max(...px.map(p=>p.x));
+   const minY=Math.min(...px.map(p=>p.y)),maxY=Math.max(...px.map(p=>p.y));
+   const width=Math.max(300,(maxX-minX)*1.22),height=Math.max(220,(maxY-minY)*1.22);
+   svg.setAttribute('viewBox',[((minX+maxX)-width)/2,
+    ((minY+maxY)-height)/2,width,height].join(' '));
+  }
+ }
+ function renderPrismPaper(svg,partial,snap){
+  const model=partial.scene.objects[0],size=model.model.data.points;
+  const max=Math.max(1,...Object.values(size).flatMap(p=>[Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
+  const layout={origin:SHEET.origin,scale:Math.min(SHEET.scale,135/max)};
+  const selected=snap.view.selectedObjectId===model.id;
+  for(const view of ['V','H','W']){
+   const face=model.representations[view];
+   for(const e of face.edges){
+    if(e.projection.kind!=='segment')continue;
+    const a=toSheet(view,e.projection.start,layout);
+    const b=toSheet(view,e.projection.end,layout);
+    const n=line(svg,a.x,a.y,b.x,b.y,
+     selected?'#ec7839':$('v7-mono').checked?'#444':'#52789f','4 3');
+    n.setAttribute('stroke-width',selected?'3':'1.8');
+    selectable(n,view,model.id+'_'+view,model.id);
+   }
+  }
+  text(svg,22,456,'所有边仅为已知长方体的正投影；虚实线尚未验证', '#9b633f');
+ }
+
  function renderPaper(){
   const svg=$('v7-sheet');svg.replaceChildren();
+  const state=coordinator?.snapshot();
+  if(state?.task==='planar'){
+   const plan=current();if(plan?.kind==='planar-fillet')
+    renderPlanarPaper(svg,plan,state);
+   else svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
+   return;
+  }
   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
   for(let x=0;x<=720;x+=40)line(svg,x,0,x,460,'#eef3fa');
   for(let y=0;y<=460;y+=40)line(svg,0,y,720,y,'#eef3fa');
@@ -166,6 +326,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const zoom=snap.view.paper.zoom;
   svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
     230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
+  const partial=preview();
+  if(partial){renderPrismPaper(svg,partial,snap);return;}
   const solved=current();if(!solved)return;
   const colors=$('v7-mono').checked?
    {given:'#222',derived:'#555',guide:'#777',selected:'#000'}:
@@ -200,6 +362,30 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function renderSpatial(){
   const svg=$('v7-3d');svg.replaceChildren();
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
+  // A planar Geometry Scene has NO 3D data. Never call the spatial renderer.
+  if(coordinator?.snapshot().task==='planar')return;
+  const scoped=preview();
+  if(scoped){
+   const snap=coordinator.snapshot(),mesh=scoped.scene.objects[0];
+   const points=mesh.model.data.points;
+   const ext=Math.max(1,...Object.values(points).flatMap(p=>[
+    Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
+   const scale=82/ext,yaw=snap.view.camera.yaw*Math.PI/180;
+   const pitch=snap.view.camera.pitch*Math.PI/180;
+   const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+   const project=p=>{
+    const x=p.x*c-p.y*s,depth=p.x*s+p.y*c;
+    return {x:215+x*scale,y:167-(p.z*cp-depth*sp)*scale};
+   };
+   for(const [a,b]of mesh.model.data.edges){
+    const p=project(points[a]),q=project(points[b]);
+    const edge=line(svg,p.x,p.y,q.x,q.y,
+     snap.view.selectedObjectId===mesh.id?'#df744b':'#577a9e','4 3');
+    selectable(edge,'3D','Solid1_3D',mesh.id);
+   }
+   text(svg,14,21,'三维原始长方体（无遮挡证明；所有边虚线）','#91563d');
+   return;
+  }
   const solved=current();if(!solved)return;
   const snap=coordinator.snapshot(),p=solved.scene.objects[0].representations['3D'].data;
   const yaw=snap.view.camera.yaw*Math.PI/180,pitch=snap.view.camera.pitch*Math.PI/180;
@@ -252,23 +438,37 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  $('v7-task').value=snap.task;
+  for(const fieldset of root.querySelectorAll('fieldset[data-v7-task]'))
+    fieldset.hidden=fieldset.dataset.v7Task!==snap.task;
+  root.querySelector('.v7-nonpoint-actions').hidden=snap.task==='projection';
+  $('v7-spatial-boundary').textContent=snap.task==='planar'?
+   '纯二维数学不制造三维立体':snap.task==='exploration'?
+   '长方体线框；截交线和可见性尚未签收':'点投影（非实体 CAD）';
   $('v7-mode').value=snap.view.mode;
   $('v7-yaw').value=String(snap.view.camera.yaw);
   $('v7-pitch').value=String(snap.view.camera.pitch);
+  const partial=preview();
   const condition=snap.conditions.find(c=>c.id==='coords');
   $('v7-review').textContent=!condition?'尚未提交空间坐标；当前没有可求解条件。':
    condition.confirmed?'当前条件已人工确认（修订 v'+snap.revision+'）。':'有待确认的条件；不能自动生成标准答案。';
+  $('v7-confirm-other').disabled=snap.task==='projection'||!condition||condition.confirmed;
+  $('v7-solve-other').disabled=snap.task==='projection'||!condition||!condition.confirmed;
   $('v7-confirm').disabled=!condition||condition.confirmed;
   $('v7-solve').disabled=!condition||!condition.confirmed;
   $('v7-proof').textContent=solved?
-    '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm；图像自动识别及任意空间体未签收。':
-    '未计算／条件失效；恢复项目不可继承“已验证”资格。';
-  $('v7-selection').textContent=snap.view.selectedObjectId===POINT?
-    '已选择对象 Point1：二维各投影及三维空间点共用稳定身份。':
-    '点选 V/H/W 或三维点，对同一个数学对象同步高亮。';
+    (solved.kind==='planar-fillet'?
+     '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
+     '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
+    partial?
+     '限定证据：M3 已独立核验专业范围内的截切几何；下方仅为已知长方体的 V/H/W 和空间线框。截线、隐藏边与 V5 均未获证明，不可播放。':
+     '未计算／条件失效；恢复项目不可继承“已验证”资格。';
+  $('v7-selection').textContent=snap.view.selectedObjectId?
+    '已选稳定对象 '+snap.view.selectedObjectId+'，数学结果与视图修订未改变。':
+    '点选真实几何图元，在当前项目中定位其稳定对象 ID。';
   const mode=snap.view.mode;
-  $('v7-sheet').hidden=mode==='3d';
-  root.querySelector('.v7-spatial').hidden=mode==='2d';
+  $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
+  root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';
   const ready=!!solved;
   for(const id of ['v7-back','v7-play','v7-next','v7-seek','v7-speed'])
    $(id).disabled=!ready;
@@ -316,6 +516,57 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   coordinator.renameProject($('v7-title-input').value.trim());
   await saving;await refreshList();
  }));
+
+ $('v7-task').addEventListener('change',()=>call(async()=>{
+  if(!coordinator)return;
+  const selected=$('v7-task').value;
+  stopAnimation();coordinator.setTask(selected);
+  if(selected==='planar')coordinator.setMode('2d');
+  else coordinator.setMode('split');
+  populateTaskFields(coordinator.snapshot());
+  msg('题型已切换；原图保留，旧数学条件、分支和动画全部失效。');
+ }));
+ $('v7-stage-other').addEventListener('click',()=>call(async()=>{
+  if(!coordinator)throw Error('请先新建本机项目');
+  const task=coordinator.snapshot().task;
+  if(task==='projection')throw Error('点投影请使用上方坐标入口');
+  const object=taskObjects[task];
+  if(!object)throw Error('尚未开放的专业求解任务');
+  if(!coordinator.snapshot().objects.some(o=>o.id===object.id))
+   coordinator.putObject(object);
+  const imageId=coordinator.snapshot().source.imageId;
+  coordinator.putCondition({id:'coords',objectId:object.id,
+   sourceCandidateId:null,confirmed:false,value:fieldsToValue(task,imageId)});
+  msg('几何输入已存为候选；请亲自核对原题、尺寸及所选分支。');
+ }));
+ $('v7-confirm-other').addEventListener('click',()=>call(async()=>{
+  if(!coordinator||coordinator.snapshot().task==='projection')
+   throw Error('当前没有可确认的专业输入');
+  coordinator.confirmCondition('coords');
+  msg('数学条件已人工确认；现在可调用已有专业 M3。');
+ }));
+ $('v7-solve-other').addEventListener('click',()=>call(async()=>{
+  if(!coordinator||coordinator.snapshot().task==='projection')
+   throw Error('专业求解任务未选择');
+  stopAnimation();
+  const result=session.solve();
+  if(result.verified===true&&coordinator.currentResult()===result)
+   msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
+  else if(result.kind==='prism-evidence'&&result.verified===false)
+   msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
+  else throw Error('专业数学结果未通过门禁');
+ }));
+ for(const id of allConditionFields){
+  for(const type of ['input','change'])$(id).addEventListener(type,()=>{
+   if(!coordinator)return;
+   // Merely typing a new input must destroy any old verified math.
+   if(coordinator.snapshot().conditions.some(c=>c.id==='coords')){
+    stopAnimation();coordinator.deleteCondition('coords');
+    msg('条件字段已编辑；旧解和动画已失效，请重新提交并人工确认。');
+   }
+  });
+ }
+
  $('v7-stage').addEventListener('click',()=>call(async()=>{
   if(!coordinator)throw Error('请先新建项目');
   const xyz=xyzIds.map(id=>{

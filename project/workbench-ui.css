@@ -50,3 +50,14 @@ body.ui-next .v7-workspace [role=button]{cursor:pointer}
 @media(max-width:860px){body.ui-next .v7-layout{grid-template-columns:1fr}body.ui-next .v7-steps{grid-column:auto}body.ui-next .v7-head{align-items:start}body.ui-next .v7-card{padding:13px}body.ui-next #v7-sheet{max-height:none}}
 @media(max-width:520px){body.ui-next .v7-bar{padding:9px}body.ui-next .v7-bar>*{flex:1 1 135px}body.ui-next .v7-input .v7-xyz{gap:5px}body.ui-next .v7-xyz input{padding:5px!important}body.ui-next .v7-card{padding:11px}}
 @media(prefers-reduced-motion:reduce){body.ui-next .v7-workspace *{scroll-behavior:auto!important}}
+
+/* V7 planar/solid specialists inhabit the SAME original project input rail. */
+body.ui-next .v7-input fieldset[data-v7-task]{margin:13px 0}
+body.ui-next .v7-nonpoint-actions{display:grid;grid-template-columns:1fr;gap:7px}
+body.ui-next .v7-nonpoint-actions button{width:100%}
+body.ui-next .v7-input .v7-xyz{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:6px}
+body.ui-next .v7-input fieldset[data-v7-task=planar] .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ui-next .v7-input .v7-xyz label{font-size:11px;min-width:0;overflow-wrap:anywhere}
+body.ui-next .v7-input .v7-xyz input,body.ui-next .v7-input .v7-xyz select{font-size:13px;padding:5px}
+body.ui-next #v7-task{font-weight:650}
+@media(max-width:520px){body.ui-next .v7-input fieldset[data-v7-task=planar] .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}}

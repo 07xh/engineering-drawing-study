@@ -159,3 +159,14 @@ test('the canonical 2D/3D scene is deeply immutable while leaving source Geometr
  assert.equal(original.data.z,5);
  assert.deepEqual(scene.objects[0].representations.H.at,{u:12,v:8});
 });
+
+test('canonical signed M3 branches survive Geometry Scene without unbounded labels',()=>{
+ const geometry=[point('Point1',8,6,4)];
+ for(const branchId of ['s++','s+-','s-+','s--','s++-offset1']){
+  const result=deriveGeometryScene({...space,geometry,branchId});
+  assert.equal(result.branchId,branchId);
+ }
+ for(const branchId of ['s ++','..','x'.repeat(81),'bad/branch']){
+  assert.throws(()=>deriveGeometryScene({...space,geometry,branchId}),/分支 ID/);
+ }
+});
