@@ -183,7 +183,8 @@ function verifiedPolygonPerimeterGeometry(result){
  const points=result.vertices.map(({point})=>Object.freeze({
   x:point.x,y:point.y,z:point.z
  }));
- const geometry={id:'Section1',kind:'polyline',space:'model-3d',unit:'mm',
+ const geometry={id:'Section1',parentObjectId:'Solid1',
+  kind:'polyline',space:'model-3d',unit:'mm',
   data:{points,closed:true}};
  const checked=validateGeometry(geometry);
  if(!checked.ok)

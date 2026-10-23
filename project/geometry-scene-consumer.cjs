@@ -17,7 +17,9 @@ function finiteAttrs(attrs){
 }
 function make(kind,attrs,obj,view,extra={}){
  return Object.freeze({kind,attrs:Object.freeze(finiteAttrs(attrs)),
-  objectId:obj?.id??null,view,...extra});
+  objectId:obj?.id??null,
+  selectionObjectId:obj?.selectionObjectId??obj?.id??null,
+  view,...extra});
 }
 function add(target,primitive){
  if(target.length>=CAP)fail('单页图元超过安全上限');

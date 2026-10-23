@@ -365,7 +365,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    // A named 3D point's third projection is released by the verified V5
    // timeline, not by the generic Geometry Scene visualizer.
    if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;
-   const selected=snap.view.selectedObjectId===item.objectId;
+   const rootId=item.selectionObjectId??item.objectId;
+   const selected=snap.view.selectedObjectId===rootId;
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
@@ -382,15 +383,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     if(item.visibility==='undetermined')
      node.setAttribute('data-visibility','undetermined');
    }
-   if(item.objectId&&known.has(item.objectId)){
+   if(item.objectId&&rootId&&known.has(rootId)){
     const label=item.objectId==='Point1'&&viewKind==='paper'?
       '选择 '+item.view+' 投影点':
       item.objectId==='Fillet1'&&item.kind==='path'?
       '选择已验证圆弧 Fillet1':
-      '选择 '+item.objectId+' 的 '+item.view+' 表达';
+      '选择 '+item.objectId+(rootId!==item.objectId?'（关联 '+rootId+'）':'')+
+       ' 的 '+item.view+' 表达';
     node.setAttribute('tabindex','0');node.setAttribute('role','button');
     node.setAttribute('aria-label',label);
-    const pick=()=>coordinator.selectObject(item.objectId);
+    const pick=()=>coordinator.selectObject(rootId);
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}

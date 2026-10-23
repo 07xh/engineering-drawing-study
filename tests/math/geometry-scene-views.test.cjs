@@ -170,3 +170,34 @@ test('canonical signed M3 branches survive Geometry Scene without unbounded labe
   assert.throws(()=>deriveGeometryScene({...space,geometry,branchId}),/分支 ID/);
  }
 });
+
+test('derived Geometry selects stable root owner in both 2D and 3D without solver re-entry',()=>{
+ const source=point('Source',3,4,5);
+ const perimeter=segment('Derived', {x:0,y:0,z:0},{x:1,y:0,z:1});
+ perimeter.parentObjectId='Source';
+ const scene=deriveGeometryScene({...space,geometry:[perimeter,source]});
+ const derived=scene.objects.find(x=>x.id==='Derived');
+ assert.equal(derived.selectionObjectId,'Source');
+ assert.equal(derived.model.parentObjectId,'Source');
+ assert.equal(derived.representations.V.kind,'segment');
+ const links=projectSelectionLinks(scene).find(x=>x.objectId==='Derived');
+ assert.equal(links.selectionObjectId,'Source');
+ assert.deepEqual(JSON.parse(links.representations.W.entityKey),['Derived','W']);
+ assert.equal(scene.objects.find(x=>x.id==='Source').selectionObjectId,'Source');
+ assert.equal(perimeter.parentObjectId,'Source','source object must stay untouched');
+ assert.equal(scene.evidence.v5,'requires-verified-construction-intent');
+});
+test('missing, self and cyclic parent geometry cannot spoof a selected or verified object',()=>{
+ const q=point('Child',0,0,0);
+ for(const parent of ['Missing','Child','bad name']){
+  assert.throws(()=>deriveGeometryScene({...space,geometry:[{
+   ...q,parentObjectId:parent}]}),/父对象/);
+ }
+ const a={...point('A',0,0,0),parentObjectId:'B'};
+ const b={...point('B',1,0,0),parentObjectId:'A'};
+ assert.throws(()=>deriveGeometryScene({...space,geometry:[a,b]}),/循环/);
+ const c={...point('C',2,0,0),parentObjectId:'B'};
+ const stable=deriveGeometryScene({...space,geometry:[a,b] .map(o=>(
+  o.id==='A'?{...o,parentObjectId:undefined}:{...o,parentObjectId:'A'})).concat(c)});
+ assert.equal(stable.objects.find(x=>x.id==='C').selectionObjectId,'A');
+});

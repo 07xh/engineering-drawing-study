@@ -73,6 +73,9 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(r.scene.objects.length,2);
  const perimeter=r.scene.objects[1];
  assert.equal(perimeter.id,'Section1');
+ assert.equal(perimeter.selectionObjectId,'Solid1');
+ assert.equal(perimeter.model.parentObjectId,'Solid1');
+ assert.equal(r.links.find(x=>x.objectId==='Section1').selectionObjectId,'Solid1');
  assert.equal(perimeter.kind,'polyline');
  assert.equal(perimeter.model.data.closed,true);
  assert.ok(perimeter.model.data.points.length>=3&&
