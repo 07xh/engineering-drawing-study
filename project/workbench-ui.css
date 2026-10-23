@@ -61,3 +61,11 @@ body.ui-next .v7-input .v7-xyz label{font-size:11px;min-width:0;overflow-wrap:an
 body.ui-next .v7-input .v7-xyz input,body.ui-next .v7-input .v7-xyz select{font-size:13px;padding:5px}
 body.ui-next #v7-task{font-weight:650}
 @media(max-width:520px){body.ui-next .v7-input fieldset[data-v7-task=planar] .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* One existing project input rail, no iframe or new specialist workbench. */
+body.ui-next .v7-compose-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+body.ui-next .v7-compose-actions button{font-size:12px;padding:8px 6px}
+body.ui-next .v7-compose-actions .v7-primary{grid-column:1/-1}
+body.ui-next fieldset[data-v7-task=composition] .v7-xyz{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ui-next #v7-c-objects{font-size:12px}
+@media(max-width:520px){body.ui-next .v7-compose-actions{grid-template-columns:1fr}body.ui-next .v7-compose-actions .v7-primary{grid-column:auto}}
