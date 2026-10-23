@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 test('07 actual public polygon page binds verified M3 -> canonical Intent -> existing V5',()=>{
  const source=read('labs/polygon-live-entry.cjs');
- assert.match(source,/require\('\.\.\/workbench\/verified-polygon-intent-v1\.cjs'\)/);
+ assert.match(source,/require\('\.\.\/integration\/unified-math-runtime\.cjs'\)/);
  assert.match(source,/verifiedPolygonIntentTimeline\(input,sheet\)/);
  assert.match(source,/Timeline\.createPlayer\(result\.timing/);
  assert.match(source,/Motion\.updateSvg\(el,action,fraction\)/);
