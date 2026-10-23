@@ -7,6 +7,8 @@
 const {coneSpatialV5Preview}=
  require('../workbench/cone-spatial-v5-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {curvePaths}=require('../workbench/v51-curve-paths.cjs');
+const {knownConeOutlines}=require('../workbench/v51-known-cone-outlines.cjs');
 const {coneSpatialProjectionFocus}=
  require('../workbench/cone-spatial-projection-focus.cjs');
 const {coneSolidFaceRayEvidence}=
@@ -508,22 +510,25 @@ const {coneLinkedSpatialScene}=
      !plan.stillCurrent(revision)||!frame)return;
   const group=$('coneDraw');group.replaceChildren();
   const mono=$('coneMono').checked,showGuides=$('coneGuides').checked;
+  for(const outline of knownConeOutlines(plan.spatialIntent.operation.cone,plan.viewTransforms)){
+   group.append(create(outline.kind,{...outline.attrs,fill:'none',stroke:'#68717a','stroke-width':1.5,'data-known-outline':outline.id,'pointer-events':'none'}));
+  }
   let focus=null;
   for(const [index,step] of plan.steps.entries()){
    if(step.role==='guide'&&!showGuides)continue;
    for(const action of step.actions){
     const fraction=frame.actionFractions[action.id]??0;
     if(fraction<=0)continue;
-    const label=step.role==='guide'?'guide':action.visibility||'undetermined';
+    const label=step.role==='guide'?'guide':action.wholeProjectedStrokeOcclusionVerified===true?action.visibility:'undetermined';
     // This is explanatory mathematical coloring only, NOT certified SVG
     // line style or whole projected-chord occlusion.
     const color=mono?'#373737':label==='guide'?'#9a9eaa':
-     label==='visible'?'#1d8069':label==='hidden'?'#5c6d7c':'#b17521';
+     label==='visible'?'#1d8069':label==='hidden'?'#5c6d7c':'#a7adb5';
     const selectedNow=selected?.id===action.id&&selected.revision===revision;
     const el=create(action.kind==='line'?'line':'circle',{
      stroke:color,'stroke-width':selectedNow?4:step.role==='guide'?1.5:2.6,
      'stroke-dasharray':step.role==='guide'?'6 6':
-      label==='hidden'?'8 5':label==='undetermined'?'2 6':'none',
+      label==='hidden'?'8 5':'none',
      'stroke-linecap':'round',fill:action.kind==='point'?color:'none',
      'vector-effect':'non-scaling-stroke',
      'data-cone-action':action.id,'data-cone-step':index,
@@ -552,6 +557,7 @@ const {coneLinkedSpatialScene}=
     el.addEventListener('keydown',event=>{
      if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
     });
+    if(action.sourceBoundary==='analytic-cone-lateral')el.setAttribute('stroke-opacity','0');
     group.append(el);
     // A visually narrow construction line has a >=18px invisible hit
     // stroke; points get an 11px hit radius. Both use existing Motion.
@@ -566,6 +572,16 @@ const {coneLinkedSpatialScene}=
     group.append(hit);
     if(selectedNow)focus=action;
     else if(!focus&&fraction<1&&fraction>0)focus=action;
+   }
+  }
+  for(const path of curvePaths(plan.steps,frame)){
+   group.append(create('path',{d:path.d,fill:'none',stroke:'#a7adb5','stroke-width':2.6,'stroke-linejoin':'round','pointer-events':'none','data-curve-id':path.id,'data-curve-actions':path.actionIds.join(' '),'data-curve-revision':path.sourceRevision,'data-chord-error-px':path.maxChordDeviationPx??'unverified'}));
+  }
+  if(selected?.revision===revision){
+   const picked=plan.steps.flatMap(s=>s.actions).find(a=>a.id===selected.id);
+   if(picked?.sourceBoundary==='analytic-cone-lateral'&&(frame.actionFractions[picked.id]??0)>0){
+    const overlay=create('line',{stroke:'#176eaa','stroke-width':4,'pointer-events':'none','data-curve-selected':picked.id});
+    Motion.updateSvg(overlay,picked,frame.actionFractions[picked.id]);group.append(overlay);
    }
   }
   if(selectedSpatial!==null){
