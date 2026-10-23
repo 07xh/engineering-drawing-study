@@ -120,7 +120,7 @@ function auditedCadConditions(source,session){
   independentBlindAnswerIsolationVerified:false,
   dxfOriginalDwgEquivalenceVerified:false,
   firstAngleCoordinateTransformVerified:false,
-  3dSolidReconstructedAndVerified:false,
+  '3dSolidReconstructedAndVerified':false,
   dimensionConstraintsMathematicallyVerified:false,
   readyForIndependentSemanticInterpretation:inputReviewComplete,
   readyForM3:false,readyForConstructionIntent:false,readyForV5:false,
