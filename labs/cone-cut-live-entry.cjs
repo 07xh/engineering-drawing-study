@@ -7,6 +7,8 @@
 const {coneSpatialV5Preview}=
  require('../workbench/cone-spatial-v5-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {createLocalPhotoReference}=
+ require('../recognition/local-photo-reference.cjs');
 const {coneLinkedSpatialScene}=
  require('../workbench/cone-linked-spatial-view.cjs');
 (function(){
@@ -19,6 +21,7 @@ const {coneLinkedSpatialScene}=
   conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'full-ellipse',
   coneSamples:'64',coneKept:''};
  let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null;
+ const reference=createLocalPhotoReference();
  const now=()=>performance.now();
  const create=(tag,attrs={})=>{
   const el=document.createElementNS(SVG,tag);
@@ -62,6 +65,65 @@ const {coneLinkedSpatialScene}=
   if(resetConfirm)$('coneConfirm').checked=false;
   clear();disable(true);
   status('条件已改变，旧解和动画已作废。请重新确认输入并求解。',true);
+ }
+ function clearPhotoReference(clearInput=true){
+  reference.clear();
+  const img=$('coneSourcePreview');
+  img.onload=null;img.onerror=null;
+  img.removeAttribute('src');img.hidden=true;
+  if(clearInput)$('coneSourceFile').value='';
+  $('coneSourceClear').disabled=true;
+  $('coneSourceStatus').textContent=
+   '未选择图片。当前仍使用手动填写的模型毫米条件。';
+ }
+ function showRejectedSource(message){
+  const img=$('coneSourcePreview');
+  img.onload=null;img.onerror=null;
+  img.removeAttribute('src');img.hidden=true;
+  $('coneSourceClear').disabled=true;
+  $('coneSourceFile').value='';
+  $('coneSourceStatus').textContent=message+
+   '；未从图片提取任何数学条件，也未生成原题答案。';
+ }
+ function imageFailed(ticket,message){
+  if(!reference.rejectImage(ticket.epoch))return;
+  showRejectedSource(message);
+ }
+ function sourceFileChanged(){
+  // Loading another exercise invalidates the prior source/player, even if
+  // the replacement is malformed. Never cache source bytes in the solver.
+  const file=$('coneSourceFile').files?.[0];
+  invalidate(true);
+  clearPhotoReference(false);
+  if(!file)return;
+  let ticket;
+  try{
+   ticket=reference.attach(file,URL);
+   $('coneSourceStatus').textContent='正在本地检查图片尺寸……';
+   const img=$('coneSourcePreview');
+   img.onload=()=>{
+    try{
+     if(!reference.confirmImage(ticket.epoch,
+      img.naturalWidth,img.naturalHeight))return;
+     img.hidden=false;
+     $('coneSourceClear').disabled=false;
+     $('coneSourceStatus').textContent=
+      '本地参考图片已显示（'+img.naturalWidth+'×'+
+      img.naturalHeight+'）。请人工填写圆锥与截平面条件；'+
+      '本页不识别图片或校验答案，不能计为原题盲测通过。';
+    }catch(error){
+     // The reference session already rejected/revoked the unsafe blob.
+     // Still update the UI: rejectImage() on this OLD epoch now returns false.
+     showRejectedSource('图片尺寸不符合安全范围');
+    }
+   };
+   img.onerror=()=>imageFailed(ticket,'无法解码选定图片');
+   img.src=ticket.url;
+  }catch(error){
+   clearPhotoReference();
+   $('coneSourceStatus').textContent='本地图片被拒绝：'+
+    String(error.message||error);
+  }
  }
  function number(id){
   const el=$(id);
@@ -110,6 +172,8 @@ const {coneLinkedSpatialScene}=
    plan=answer;player=answer.createPlayer({speed:Number($('coneSpeed').value)});
    disable(false);makeSteps();paint();
    const counts=answer.rayEvidence?.counts;
+   const referenceNote=reference.snapshot().sourceAttached?
+    ' 本地原题图仅作为人工转录参照；未自动识图、无答案隔离证明或原题整题验收。':'';
    $('coneProof').textContent='数学源：有限直立圆锥解析'+
     (kind==='full-ellipse'?'完整椭圆':'裁剪椭圆与底面截弦')+
     '，已证实辅助母线 ConstructionStep '+answer.canonicalGuideStepCount+
@@ -117,7 +181,8 @@ const {coneLinkedSpatialScene}=
     (counts?'三视图开区间证据：可见 '+counts.visible+
       '、隐藏 '+counts.hidden+'、未确定 '+counts.undetermined+'。':
       '未确认保留材料侧：结果线型全部待审核。')+
-    ' 线段为解析曲线的折线近似；端点、真实线型、图纸规范、照片识别和完整实体均尚未验收。';
+    ' 线段为解析曲线的折线近似；端点、真实线型、图纸规范、照片识别和完整实体均尚未验收。'+
+    referenceNote;
    status('几何模型与单一 V5 动画已就绪。可逐笔播放、回退、调速和点选图元；不是完整国标工程制图答案。');
   }catch(error){
    plan=null;player=null;clear();disable(true);
@@ -334,9 +399,14 @@ const {coneLinkedSpatialScene}=
   }
   $('coneConfirm').addEventListener('change',()=>invalidate(false));
   $('coneSolve').addEventListener('click',solve);
+  $('coneSourceFile').addEventListener('change',sourceFileChanged);
+  $('coneSourceClear').addEventListener('click',()=>{
+   invalidate(true);clearPhotoReference();
+  });
   $('coneReset').addEventListener('click',()=>{
    for(const [id,value] of Object.entries(defaults))$(id).value=value;
    $('coneConfirm').checked=false;invalidate(false);
+   clearPhotoReference();
   });
   $('conePlay').addEventListener('click',toggle);
   $('coneBack').addEventListener('click',()=>step(-1));
@@ -360,6 +430,7 @@ const {coneLinkedSpatialScene}=
    $('coneFocus').checked=false;selected=null;paint();
   });
   window.addEventListener('pagehide',()=>{
+   clearPhotoReference();
    if(raf!==null)cancelAnimationFrame(raf);raf=null;
    if(player&&player.canRender(revision))player.pause(now());
   });
