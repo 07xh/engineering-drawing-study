@@ -71,8 +71,7 @@ const {createLocalPhotoReference}=
   $('coneSourceStatus').textContent=
    '未选择图片。当前仍使用手动填写的模型毫米条件。';
  }
- function imageFailed(ticket,message){
-  if(!reference.rejectImage(ticket.epoch))return;
+ function showRejectedSource(message){
   const img=$('coneSourcePreview');
   img.onload=null;img.onerror=null;
   img.removeAttribute('src');img.hidden=true;
@@ -80,6 +79,10 @@ const {createLocalPhotoReference}=
   $('coneSourceFile').value='';
   $('coneSourceStatus').textContent=message+
    '；未从图片提取任何数学条件，也未生成原题答案。';
+ }
+ function imageFailed(ticket,message){
+  if(!reference.rejectImage(ticket.epoch))return;
+  showRejectedSource(message);
  }
  function sourceFileChanged(){
   // Loading another exercise invalidates the prior source/player, even if
@@ -103,7 +106,11 @@ const {createLocalPhotoReference}=
       '本地参考图片已显示（'+img.naturalWidth+'×'+
       img.naturalHeight+'）。请人工填写圆锥与截平面条件；'+
       '本页不识别图片或校验答案，不能计为原题盲测通过。';
-    }catch(error){imageFailed(ticket,'图片尺寸不符合安全范围');}
+    }catch(error){
+     // The reference session already rejected/revoked the unsafe blob.
+     // Still update the UI: rejectImage() on this OLD epoch now returns false.
+     showRejectedSource('图片尺寸不符合安全范围');
+    }
    };
    img.onerror=()=>imageFailed(ticket,'无法解码选定图片');
    img.src=ticket.url;
