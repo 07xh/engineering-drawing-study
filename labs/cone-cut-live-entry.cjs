@@ -24,7 +24,7 @@ const {coneLinkedSpatialScene}=
  const defaults={coneRadius:'5',coneHeight:'10',conePx:'0',conePy:'0',
   conePz:'6',coneNx:'1',coneNy:'0',coneNz:'3',coneKind:'full-ellipse',
   coneSamples:'64',coneKept:''};
- let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null,faceEvidence=null;
+ let revision=0,plan=null,player=null,raf=null,selected=null,selectedSpatial=null,faceEvidence=null,orbitGesture=null;
  const reference=createLocalPhotoReference();
  const now=()=>performance.now();
  const create=(tag,attrs={})=>{
@@ -41,6 +41,36 @@ const {coneLinkedSpatialScene}=
   raf=null;
   if(player&&player.canRender(revision))player.pause(now());
   $('conePlay').textContent='▶ 播放';
+ }
+ function freezeBeforeTap(event){
+  // V5 DOM nodes are rebuilt during playback. Pause on pointerdown so the
+  // same hit target survives until Android emits click/pointerup.
+  if(event.isPrimary!==false&&player&&player.canRender(revision))stop();
+ }
+ function beginOrbit(event){
+  if(!plan||!plan.stillCurrent(revision)||
+     (event.pointerType!=='touch'&&event.pointerType!=='pen')||
+     event.target.closest?.('[data-cone-3d-point],[data-cone-3d-segment-hit]'))
+   return;
+  orbitGesture={id:event.pointerId,x:event.clientX,
+   azimuth:Number($('coneOrbit').value)};
+  $('cone3dSvg').setPointerCapture?.(event.pointerId);
+ }
+ function moveOrbit(event){
+  if(!orbitGesture||event.pointerId!==orbitGesture.id||!plan)return;
+  const delta=event.clientX-orbitGesture.x;
+  if(Math.abs(delta)<2)return;
+  const az=Math.max(-180,Math.min(180,
+   orbitGesture.azimuth+delta*0.7));
+  $('coneOrbit').value=String(az);
+  paint();
+ }
+ function endOrbit(event){
+  if(orbitGesture&&event.pointerId===orbitGesture.id){
+   orbitGesture=null;
+   if($('cone3dSvg').hasPointerCapture?.(event.pointerId))
+    $('cone3dSvg').releasePointerCapture(event.pointerId);
+  }
  }
  function disable(disabled){
   for(const id of ['coneBack','conePlay','coneForward','coneSeek'])
@@ -289,6 +319,7 @@ const {coneLinkedSpatialScene}=
     tabindex:'0',role:'button',
     'aria-label':'空间截交线第 '+segment.index+' 段，定位三视图投影'});
    const pick=()=>focusSpatialSample(segment.index);
+   hit.addEventListener('pointerdown',freezeBeforeTap);
    hit.addEventListener('click',pick);
    hit.addEventListener('keydown',event=>{
     if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
@@ -326,6 +357,7 @@ const {coneLinkedSpatialScene}=
     $('conePicked').textContent='空间交点 P'+(anchor.guideOrdinal+1)+
      ' 已定位到真实二维 V 投影母线步骤；可切换 H/W 视图继续检查。';
    };
+   mark.addEventListener('pointerdown',freezeBeforeTap);
    mark.addEventListener('click',pick);
    mark.addEventListener('keydown',event=>{
     if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
@@ -400,11 +432,23 @@ const {coneLinkedSpatialScene}=
       '；点选不改变任何数学证明。';
      paint();
     };
+    el.addEventListener('pointerdown',freezeBeforeTap);
     el.addEventListener('click',pick);
     el.addEventListener('keydown',event=>{
      if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
     });
     group.append(el);
+    // A visually narrow construction line has a >=18px invisible hit
+    // stroke; points get an 11px hit radius. Both use existing Motion.
+    const hit=create(action.kind==='line'?'line':'circle',{
+     stroke:'transparent','stroke-width':'18',
+     fill:'transparent','pointer-events':action.kind==='line'?'stroke':'all',
+     'data-cone-action-hit':action.id,'aria-hidden':'true'});
+    Motion.updateSvg(hit,action,fraction);
+    if(action.kind==='point')hit.setAttribute('r','11');
+    hit.addEventListener('pointerdown',freezeBeforeTap);
+    hit.addEventListener('click',pick);
+    group.append(hit);
     if(selectedNow)focus=action;
     else if(!focus&&fraction<1&&fraction>0)focus=action;
    }
@@ -511,6 +555,11 @@ const {coneLinkedSpatialScene}=
   });
   for(const id of ['coneOrbit','coneTilt'])
    $(id).addEventListener('input',()=>paint());
+  $('cone3dSvg').addEventListener('pointerdown',beginOrbit);
+  $('cone3dSvg').addEventListener('pointermove',moveOrbit);
+  $('cone3dSvg').addEventListener('pointerup',endOrbit);
+  $('cone3dSvg').addEventListener('pointercancel',endOrbit);
+  $('cone3dSvg').addEventListener('lostpointercapture',endOrbit);
   for(const id of ['coneGuides','coneMono','coneFocus'])
    $(id).addEventListener('change',()=>paint());
   $('coneFit').addEventListener('click',()=>{
