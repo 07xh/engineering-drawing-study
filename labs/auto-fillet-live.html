@@ -293,6 +293,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="seek"><label for="progress">动画进度</label><input id="progress" type="range" min="0" max="1000" value="0" step="1"><output id="progressText">0%</output></div>
 <div class="fields"><label for="speed">动画速度<select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select></label><label for="monochrome">显示模式<select id="monochrome"><option value="color">区分彩色图线</option><option value="mono">黑白图纸</option></select></label><label for="autoFit" style="display:flex;align-items:center;gap:8px"><input id="autoFit" type="checkbox" checked style="min-height:20px;width:20px;flex:none">自动适应图纸</label></div>
 </div><!-- /draftai-playdock -->
+<aside class="workbench-step-rail" aria-label="作图步骤">
 <h2 class="workbench-steps-title">作图步骤</h2>
 <nav id="stepList" aria-label="真实数学作图步骤"></nav>
 <p class="muted" id="stepDetail">选择步骤查看作图说明。</p>
@@ -310,6 +311,7 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
   <p id="exportStatus" role="status" aria-live="polite">只有当前题目数学验证通过后才能下载；图纸在浏览器本地生成。</p>
 </div>
 </details>
+</aside>
 </section>
 </div>
 <footer>当前支持部分圆弧连接题型；条件必须确认后才能求解。图片只在本机显示，不会上传。</footer>
