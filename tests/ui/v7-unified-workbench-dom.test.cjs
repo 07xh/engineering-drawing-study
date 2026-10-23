@@ -47,6 +47,12 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.match($('v7-review').textContent,/尚未提交/, $('v7-save').textContent);
   assert.match(document.querySelector('#recent .next-home-empty-title').textContent,/本机存储暂不可用/);
   assert.equal(document.querySelector('#recent .next-home-continue-button').getAttribute('href'),'#project-workbench');
+  for(const id of ['v7-cal-px1','v7-cal-mm1','v7-cal-px2','v7-cal-mm2',
+    'v7-cal-rotation','v7-cal-apply','v7-cal-clear','v7-cal-status'])
+    assert.ok($(id),'missing calibration control '+id);
+  click('v7-cal-apply');await tick();await tick();
+  assert.match($('v7-save').textContent,/请先保存原始图片/,
+    'image-free measurements cannot be misrepresented as reviewed source');
   assert.match($('v7-proof').textContent,/未计算/);
   click('v7-solve');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/,'unconfirmed click cannot forge a result');

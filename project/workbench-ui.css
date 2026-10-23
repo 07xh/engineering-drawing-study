@@ -69,3 +69,8 @@ body.ui-next .v7-compose-actions .v7-primary{grid-column:1/-1}
 body.ui-next fieldset[data-v7-task=composition] .v7-xyz{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 body.ui-next #v7-c-objects{font-size:12px}
 @media(max-width:520px){body.ui-next .v7-compose-actions{grid-template-columns:1fr}body.ui-next .v7-compose-actions .v7-primary{grid-column:auto}}
+
+body.ui-next .v7-source-calibration .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ui-next .v7-cal-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+body.ui-next .v7-cal-actions button{font-size:12px;min-height:40px}
+@media(max-width:520px){body.ui-next .v7-cal-actions{grid-template-columns:1fr}}

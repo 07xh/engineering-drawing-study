@@ -38,6 +38,27 @@ function homeHTML(){return `
    <label class="v7-file-control">选择本机原题图片<input id="v7-image-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
    <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片" hidden>
    <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
+   <fieldset class="v7-source-calibration">
+    <legend>原图双比例尺核对（人工量测）</legend>
+    <p class="v7-note">对原图中两段独立的已知长度，分别录入对应像素长度和实际毫米长度；两次所得 mm/px 相差超过 2% 时拒绝确认。不上传图片，不自动识图。</p>
+    <div class="v7-xyz">
+     <label>第 1 段像素 <input id="v7-cal-px1" type="number" step="any" value="100"></label>
+     <label>第 1 段毫米 <input id="v7-cal-mm1" type="number" step="any" value="20"></label>
+     <label>第 2 段像素 <input id="v7-cal-px2" type="number" step="any" value="150"></label>
+     <label>第 2 段毫米 <input id="v7-cal-mm2" type="number" step="any" value="30"></label>
+    </div>
+    <label>原图方向（只记录来源，不修改原始像素）
+     <select id="v7-cal-rotation"><option value="0">0°</option>
+      <option value="90">90°</option><option value="180">180°</option>
+      <option value="270">270°</option></select>
+    </label>
+    <div class="v7-cal-actions">
+     <button type="button" id="v7-cal-apply">核对并保存双比例</button>
+     <button type="button" id="v7-cal-clear">清除已确认比例</button>
+    </div>
+    <p id="v7-cal-status" class="v7-note" role="status">没有完成双比例核对；不能把像素自动当作毫米坐标。</p>
+   </fieldset>
+
    <p class="v7-warning">原图仅供人工读取：当前不自动识别未知题型、不读取教材答案。下面坐标必须自行核对。</p>
    <label>当前项目题型 <select id="v7-task" aria-label="切换同一项目的求解任务">
     <option value="projection">点的 V/H/W 三面投影</option>
