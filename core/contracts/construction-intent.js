@@ -17,7 +17,10 @@ const branchIdentifier=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_+.-]{0,79}$/
 const semanticId=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_+.-]{0,159}$/.test(x);
 const isIdList=x=>Array.isArray(x)&&x.length<=300&&
  x.every(semanticId)&&noDuplicateIds(x);
-const point=p=>object(p)&&finite(p.x)&&finite(p.y);
+// Coordinates are exactly 2D here; 3D values require a separately
+// reviewed spatial Intent schema, never an extra z component in a 2D point.
+const point=p=>object(p)&&exactKeys(p,['x','y'])&&
+ Object.keys(p).length===2&&finite(p.x)&&finite(p.y);
 const exactKeys=(x,keys)=>Object.keys(x).every(k=>keys.includes(k));
 function validAction(a){
  if(!object(a)||!semanticId(a.id)||!KINDS.includes(a.kind)||
@@ -97,9 +100,20 @@ function validateConstructionIntentDAG(intents){
   const check=validateConstructionIntent(intent);
   if(!check.ok){errors.push('intent '+index+': '+check.errors.join('; '));continue;}
   if(steps.has(intent.id))errors.push('duplicate intent ID '+intent.id);
+  if(entities.has(intent.id))
+   errors.push('intent ID collides with previous geometry entity '+intent.id);
   if(intent.dependsOn.some(dep=>!steps.has(dep)))
    errors.push('missing or forward dependency '+intent.id);
+  // The 1.0.0 DAG has no external-entity declaration. Until a reviewed
+  // ProblemDraft binding exists, every nonempty geometry input MUST be a
+  // previously produced geometric entity, never a step ID or a future output.
+  for(const id of intent.inputEntityIds){
+   if(!entities.has(id))
+    errors.push('missing or forward geometry input '+id);
+  }
   for(const op of intent.operations){
+   if(steps.has(op.id)||op.id===intent.id)
+    errors.push('geometry entity ID collides with a step ID '+op.id);
    if(entities.has(op.id))errors.push('duplicate output entity '+op.id);
    entities.add(op.id);
   }
