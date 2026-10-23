@@ -7,6 +7,8 @@
 const {coneSpatialV5Preview}=
  require('../workbench/cone-spatial-v5-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {coneSpatialProjectionFocus}=
+ require('../workbench/cone-spatial-projection-focus.cjs');
 const {createLocalPhotoReference}=
  require('../recognition/local-photo-reference.cjs');
 const {coneLinkedSpatialScene}=
@@ -200,6 +202,23 @@ const {coneLinkedSpatialScene}=
   return null;
  }
 
+ function focusSpatialSample(index){
+  if(!plan||!player||!player.canRender(revision)||
+     !plan.stillCurrent(revision))return;
+  const link=coneSpatialProjectionFocus(plan,index);
+  // Step seek acts on SAME V5 instance. The other view markers are
+  // explanation overlays, not replayed or already drawn ConstructionSteps.
+  stop();
+  player.seekMs(link.views.V.actionEndMs,now());
+  selectedSpatial=index;
+  selected={id:link.views.V.sourceActionId,
+   step:link.views.V.sourceStepIndex,revision};
+  $('coneFocus').checked=false;
+  paint();
+  $('conePicked').textContent='已定位数学空间采样点 '+index+
+   '：V/H/W 三视图出现蓝色投影定位标记。标记只解释同一 XYZ，'+
+   '并不声明尚未播放的投影作图步骤已经完成。';
+ }
  function paintSpatial(frame){
   if(!plan||!player||!player.canRender(revision)||!plan.stillCurrent(revision))return;
   // A display camera consumes ALREADY verified M3 xyz. It cannot solve,
@@ -251,6 +270,18 @@ const {coneLinkedSpatialScene}=
     stroke:active?'#176eaa':'#20876b',
     'stroke-width':active?3.8:2.6,'stroke-linecap':'round',
     'data-cone-3d-segment':segment.index});
+   // Separate wide SVG hit stroke improves mobile point selection without
+   // changing the geometric line width or introducing another player.
+   const hit=shape('line',{x1:from.x,y1:from.y,x2:to.x,y2:to.y,
+    stroke:'transparent','stroke-width':'15','pointer-events':'stroke',
+    'data-cone-3d-segment-hit':segment.index,
+    tabindex:'0',role:'button',
+    'aria-label':'空间截交线第 '+segment.index+' 段，定位三视图投影'});
+   const pick=()=>focusSpatialSample(segment.index);
+   hit.addEventListener('click',pick);
+   hit.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
+   });
   }
   const chordProgress=frame.actionFractions.cone_V_cap_chord??0;
   if(scene.capChord&&chordProgress>0){
@@ -288,6 +319,12 @@ const {coneLinkedSpatialScene}=
    mark.addEventListener('keydown',event=>{
     if(event.key==='Enter'||event.key===' '){event.preventDefault();pick();}
    });
+  }
+  if(selectedSpatial!==null&&scene.sourcePoints[selectedSpatial]){
+   const target=scene.sourcePoints[selectedSpatial].screen;
+   shape('circle',{cx:target.x,cy:target.y,r:7,fill:'none',
+    stroke:'#176eaa','stroke-width':'2.8',
+    'pointer-events':'none','data-cone-3d-selected':selectedSpatial});
   }
   const solidLabel=solid?'切后实体三角网格（'+
    (scene.cutSolid.retainedPiece==='apex'?'保留锥尖侧':'保留底面侧')+
@@ -357,6 +394,21 @@ const {coneLinkedSpatialScene}=
     else if(!focus&&fraction<1&&fraction>0)focus=action;
    }
   }
+  if(selectedSpatial!==null){
+   const link=coneSpatialProjectionFocus(plan,selectedSpatial);
+   for(const view of ['V','H','W']){
+    const q=link.views[view].sheetPx;
+    const ring=create('circle',{cx:q.x,cy:q.y,r:7,
+     fill:'none',stroke:'#176eaa','stroke-width':'2.7',
+     'pointer-events':'none','data-cone-view-focus':view,
+     'data-cone-source-index':selectedSpatial});
+    const cross=create('path',{d:'M'+(q.x-10)+' '+q.y+
+     'H'+(q.x+10)+' M'+q.x+' '+(q.y-10)+'V'+(q.y+10),
+     fill:'none',stroke:'#176eaa','stroke-width':'1.3',
+     'pointer-events':'none'});
+    group.append(ring,cross);
+   }
+  }
   if($('coneFocus').checked&&focus){
    const box=bounds(focus);
    if(box){
@@ -383,7 +435,7 @@ const {coneLinkedSpatialScene}=
    b.type='button';b.textContent=(index+1)+' · '+step.title;
    b.addEventListener('click',()=>{
     if(!player||!plan||!plan.stillCurrent(revision))return;
-    stop();selected=null;
+    stop();selected=null;selectedSpatial=null;
     player.seekStep(index,now());paint();
    });
    nav.append(b);
@@ -408,7 +460,7 @@ const {coneLinkedSpatialScene}=
  }
  function step(delta){
   if(!player||!plan)return;
-  stop();selected=null;
+  stop();selected=null;selectedSpatial=null;
   const index=player.snapshot().activeStepIndex;
   player.seekStep(Math.max(0,Math.min(plan.steps.length,index+delta)),now());
   paint();
@@ -433,7 +485,7 @@ const {coneLinkedSpatialScene}=
   $('coneForward').addEventListener('click',()=>step(1));
   $('coneSeek').addEventListener('input',()=>{
    if(!player)return;
-   stop();selected=null;
+   stop();selected=null;selectedSpatial=null;
    player.seekProgress(Number($('coneSeek').value)/1000,now());paint();
   });
   $('coneSpeed').addEventListener('change',()=>{
