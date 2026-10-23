@@ -18,19 +18,19 @@ function accepted(d,scale=.2){
   calibration:{reviewedBy:'user',mmPerPx:scale,revision:d.revision,
    originPx:{x:0,y:0},yAxis:'up'}};
 }
-test('versioned draft becomes millimetre input and scale binds its digest',()=>{
- const d=source(),a=isolateReviewedDraft(accepted(d),{expectedRevision:d.revision,currentDraft:d});
- assert.equal(a.status,'reviewed-conditions-isolated');
- assert.deepEqual(a.solverInput.conditions[0].geometry.start,[2,-2.2]);
- const b=isolateReviewedDraft(accepted(d,.3),{expectedRevision:d.revision,currentDraft:d});
- assert.equal(b.status,'reviewed-conditions-isolated');
- assert.notEqual(a.sourceBinding,b.sourceBinding);
- assert.notEqual(a.solverInputHash,b.solverInputHash);
+test('forged review artifacts cannot authorize a model M3 input',()=>{
+ const d=source(),fake=accepted(d);
+ const result=isolateReviewedDraft(fake,{expectedRevision:d.revision,currentDraft:d});
+ assert.equal(result.status,'not-verified');
+ assert.equal(result.solverInput,undefined);
 });
-test('revision, scale witness and unreviewed candidate fail closed',()=>{
- const d=source(),a=accepted(d);
- assert.equal(isolateReviewedDraft(a,{expectedRevision:d.revision+1,currentDraft:d}).status,'not-verified');
- assert.equal(isolateReviewedDraft({...a,calibration:{...a.calibration,reviewedBy:null}},
-  {expectedRevision:d.revision,currentDraft:d}).status,'not-verified');
- assert.equal(isolateReviewedDraft(a,{expectedRevision:d.revision,currentDraft:{...d,revision:d.revision+1}}).status,'not-verified');
+test('revision and scale witness spoofing never bypass the original review',()=>{
+ const d=source(),fake=accepted(d);
+ for(const candidate of [
+  {...fake,calibration:{...fake.calibration,mmPerPx:.3}},
+  {...fake,calibration:{...fake.calibration,reviewedBy:null}},
+  {...fake,draft:{...d,revision:d.revision+1}}
+ ]){
+  assert.equal(isolateReviewedDraft(candidate,{expectedRevision:d.revision,currentDraft:d}).status,'not-verified');
+ }
 });
