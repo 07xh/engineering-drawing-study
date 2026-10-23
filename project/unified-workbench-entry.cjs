@@ -217,8 +217,101 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const verified=coordinator?.currentResult();
   return verified?.clock?.canRender(coordinator.snapshot().revision)?verified:null;
  }
+
+ function drawnPoint(p,sheet=SHEET){
+  return {x:sheet.origin.x+sheet.scale*p.x,
+   y:sheet.origin.y-sheet.scale*p.y};
+ }
+ function drawV5(svg,solved,colors){
+  if(!$('v7-guides').checked)return;
+  const frame=solved.clock.snapshot();
+  for(const step of solved.plan.steps)for(const action of step.actions){
+   const fraction=frame.actionFractions[action.id]||0;
+   if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
+   const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
+   const node=shape(tag,{fill:action.kind==='point'?colors.derived:'none',
+    stroke:colors.guide,'stroke-width':2,
+    'stroke-dasharray':action.kind==='line'?'5 5':'none'});
+   Motion.updateSvg(node,action,fraction);
+   svg.append(node);
+  }
+ }
+ function renderPlanarPaper(svg,solved,snap){
+  // The planar solver owns mathematical Geometry. Projection/3D stays null.
+  const colors=$('v7-mono').checked?{known:'#333',derived:'#333',guide:'#777'}:
+    {known:'#1d5879',derived:'#0b7a65',guide:'#cf963d'};
+  const model=solved.scene.objects;
+  svg.append(shape('rect',{width:720,height:460,fill:'#fff'}));
+  for(const item of model.filter(x=>x.kind==='segment')){
+   const g=item.model.data,a=drawnPoint(g.start),b=drawnPoint(g.end);
+   line(svg,a.x,a.y,b.x,b.y,colors.known);
+  }
+  const arc=model.find(x=>x.kind==='arc');
+  const frame=solved.clock.snapshot();
+  if(arc&&frame.done){
+   const g=arc.model.data;
+   const geometry=Motion.projectArcFromVerifiedModel(g,SHEET);
+   const result=Motion.arc(geometry.center,geometry.radius,
+     geometry.startRadians,geometry.sweepRadians,1);
+   const path=shape('path',{d:result.d,fill:'none',stroke:colors.derived,'stroke-width':4});
+   const pick=()=>coordinator.selectObject('Fillet1');
+   path.setAttribute('tabindex','0');path.setAttribute('role','button');
+   path.setAttribute('aria-label','选择已验证圆弧 Fillet1');
+   path.addEventListener('click',pick);
+   path.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){
+     e.preventDefault();pick();
+   }});
+   svg.append(path);
+  }
+  drawV5(svg,solved,colors);
+  // Auto-fit presentation only. V5 action positions remain the original sheet pixels.
+  const pointList=[];
+  for(const item of model){
+   const d=item.model.data;
+   if(item.kind==='segment')pointList.push(d.start,d.end);
+   if(item.kind==='arc'){
+    pointList.push({x:d.center.x-d.radius,y:d.center.y-d.radius},
+     {x:d.center.x+d.radius,y:d.center.y+d.radius});
+   }
+  }
+  if(pointList.length){
+   const px=pointList.map(p=>drawnPoint(p));
+   const minX=Math.min(...px.map(p=>p.x)),maxX=Math.max(...px.map(p=>p.x));
+   const minY=Math.min(...px.map(p=>p.y)),maxY=Math.max(...px.map(p=>p.y));
+   const width=Math.max(300,(maxX-minX)*1.22),height=Math.max(220,(maxY-minY)*1.22);
+   svg.setAttribute('viewBox',[((minX+maxX)-width)/2,
+    ((minY+maxY)-height)/2,width,height].join(' '));
+  }
+ }
+ function renderPrismPaper(svg,partial,snap){
+  const model=partial.scene.objects[0],size=model.model.data.points;
+  const max=Math.max(1,...Object.values(size).flatMap(p=>[Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
+  const layout={origin:SHEET.origin,scale:Math.min(SHEET.scale,135/max)};
+  const selected=snap.view.selectedObjectId===model.id;
+  for(const view of ['V','H','W']){
+   const face=model.representations[view];
+   for(const e of face.edges){
+    if(e.projection.kind!=='segment')continue;
+    const a=toSheet(view,e.projection.start,layout);
+    const b=toSheet(view,e.projection.end,layout);
+    const n=line(svg,a.x,a.y,b.x,b.y,
+     selected?'#ec7839':$('v7-mono').checked?'#444':'#52789f','4 3');
+    n.setAttribute('stroke-width',selected?'3':'1.8');
+    selectable(n,view,model.id+'_'+view,model.id);
+   }
+  }
+  text(svg,22,456,'所有边仅为已知长方体的正投影；虚实线尚未验证', '#9b633f');
+ }
+
  function renderPaper(){
   const svg=$('v7-sheet');svg.replaceChildren();
+  const state=coordinator?.snapshot();
+  if(state?.task==='planar'){
+   const plan=current();if(plan?.kind==='planar-fillet')
+    renderPlanarPaper(svg,plan,state);
+   else svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
+   return;
+  }
   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
   for(let x=0;x<=720;x+=40)line(svg,x,0,x,460,'#eef3fa');
   for(let y=0;y<=460;y+=40)line(svg,0,y,720,y,'#eef3fa');
@@ -233,6 +326,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const zoom=snap.view.paper.zoom;
   svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
     230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
+  const partial=preview();
+  if(partial){renderPrismPaper(svg,partial,snap);return;}
   const solved=current();if(!solved)return;
   const colors=$('v7-mono').checked?
    {given:'#222',derived:'#555',guide:'#777',selected:'#000'}:
@@ -267,6 +362,28 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function renderSpatial(){
   const svg=$('v7-3d');svg.replaceChildren();
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
+  const scoped=preview();
+  if(scoped){
+   const snap=coordinator.snapshot(),mesh=scoped.scene.objects[0];
+   const points=mesh.model.data.points;
+   const ext=Math.max(1,...Object.values(points).flatMap(p=>[
+    Math.abs(p.x),Math.abs(p.y),Math.abs(p.z)]));
+   const scale=82/ext,yaw=snap.view.camera.yaw*Math.PI/180;
+   const pitch=snap.view.camera.pitch*Math.PI/180;
+   const c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+   const project=p=>{
+    const x=p.x*c-p.y*s,depth=p.x*s+p.y*c;
+    return {x:215+x*scale,y:167-(p.z*cp-depth*sp)*scale};
+   };
+   for(const [a,b]of mesh.model.data.edges){
+    const p=project(points[a]),q=project(points[b]);
+    const edge=line(svg,p.x,p.y,q.x,q.y,
+     snap.view.selectedObjectId===mesh.id?'#df744b':'#577a9e','4 3');
+    selectable(edge,'3D','Solid1_3D',mesh.id);
+   }
+   text(svg,14,21,'三维原始长方体（无遮挡证明；所有边虚线）','#91563d');
+   return;
+  }
   const solved=current();if(!solved)return;
   const snap=coordinator.snapshot(),p=solved.scene.objects[0].representations['3D'].data;
   const yaw=snap.view.camera.yaw*Math.PI/180,pitch=snap.view.camera.pitch*Math.PI/180;
