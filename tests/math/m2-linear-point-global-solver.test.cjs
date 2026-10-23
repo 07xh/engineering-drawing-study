@@ -142,7 +142,7 @@ test('M2 permutation invariance and typed finite model-mm boundaries',()=>{
  assert.throws(()=>run(Array.from({length:33},(_,i)=>pt('P'+i)),
   [fixed('x','P0','x',0)]),/bounded/);
  assert.throws(()=>run([pt('A')],[fixed('x','A','x',0)],
-  {sourceRevision:-1}),/revision/);
+  {sourceRevision:-1}),/sourceRevision/);
  assert.throws(()=>run([pt('A')],[fixed('x','A','x',0)],
   {featureScaleMm:0}),/characteristicScale/);
 });
