@@ -38,7 +38,7 @@ test('#410 original-book 2-4-3 only inspected/derived givens: no blind-pass or u
  assert.equal(exercise.printedPage,13);
  assert.equal(exercise.pdfPage,14);
  assert.equal(exercise.questionLabel,'2-4-3');
- assert.equal(exercise.sourceOriginalQuestionConfirmed,false);
+ assert.equal(exercise.sourceOriginalQuestionConfirmed,false);\n assert.equal(exercise.sourceUnitConfirmed,false);\n assert.equal(exercise.solverUnitAssumption,'mm');
  assert.equal(exercise.blindTest,false);
  assert.equal(exercise.answerHidden,false);
  assert.equal(exercise.bookSolved,false);
