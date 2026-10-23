@@ -1,0 +1,190 @@
+/* DraftAI V6: drawing-first, single-blue UI shell.
+ * Presentation only. Keep geometry SVG stroke semantics, solver contracts,
+ * projection correspondence and existing element IDs untouched.
+ */
+body.workbench-blue {
+  --wb-blue:#0866ef;
+  --wb-blue-dark:#0756c9;
+  --wb-blue-tint:#eaf3ff;
+  --wb-border:#d9e4f2;
+  --wb-bg:#f5f8fd;
+  --wb-ink:#18253d;
+  --wb-muted:#66758b;
+  background:var(--wb-bg);
+  color:var(--wb-ink);
+  color-scheme:light;
+}
+body.workbench-blue .site-topbar {
+  background:rgba(255,255,255,.97);
+  border-bottom:1px solid var(--wb-border);
+}
+body.workbench-blue .site-brand { color:var(--wb-ink)!important }
+body.workbench-blue .site-brand-icon,
+body.workbench-blue .home-btn,
+body.workbench-blue button.primary,
+body.workbench-blue .home-btn:not(.secondary) {
+  background:var(--wb-blue);
+  border-color:var(--wb-blue);
+  color:white!important;
+}
+body.workbench-blue :is(button.primary,.home-btn:not(.secondary)):hover {
+  background:var(--wb-blue-dark);
+}
+body.workbench-blue :is(a, .site-more>summary) { color:var(--wb-blue-dark) }
+body.workbench-blue :is(.site-nav a[aria-current="page"], .site-more-menu a:hover) {
+  background:var(--wb-blue-tint);
+  color:var(--wb-blue-dark)!important;
+}
+body.workbench-blue :is(.panel,.paper,.controls,.info-panel,.tool-card,.hero-main,.site-disclosure) {
+  border-color:var(--wb-border);
+  box-shadow:0 3px 14px rgba(22,68,130,.035);
+}
+body.workbench-blue :is(h1,h2,h3,strong) { color:var(--wb-ink) }
+body.workbench-blue :is(.muted,.intro,.note,.small,.legend,footer,.tool-card p) {
+  color:var(--wb-muted);
+}
+body.workbench-blue :is(input:not([type="checkbox"]), select, textarea) {
+  border-color:#cad9eb;
+  color:var(--wb-ink);
+}
+body.workbench-blue :is(input[type="range"],input[type="checkbox"]) {
+  accent-color:var(--wb-blue);
+}
+body.workbench-blue :is(button,input,select,textarea,a,summary):focus-visible {
+  outline:3px solid #87b7ff!important;
+  outline-offset:2px;
+}
+body.workbench-blue button:not(.primary) {
+  border-color:#d0dff0;
+  color:#244b83;
+}
+body.workbench-blue button:not(.primary):not(:disabled):hover {
+  background:var(--wb-blue-tint);
+  border-color:#8db7f8;
+}
+body.workbench-blue :is(.status,.notice,.card,.local-photo,.source-reference,.info-panel) {
+  border-color:var(--wb-border);
+}
+body.workbench-blue :is(.status,.notice,.local-photo,.source-reference) {
+  background:#f7faff;
+}
+body.workbench-blue :is(#stepList,#coneSteps,#polygonStepList) button[aria-current="step"],
+body.workbench-blue #stepList button.active {
+  background:var(--wb-blue-tint);
+  border-color:#9cc6ff;
+  color:var(--wb-blue-dark);
+}
+body.workbench-blue :is(#paperPicked,#projectionPicked,#conePicked,#polygonPicked) {
+  font-size:12px;
+}
+body.workbench-blue .workbench-intro {
+  font-size:13px;
+  line-height:1.45;
+  margin:0 0 10px;
+  color:var(--wb-muted);
+}
+body.workbench-blue :is(.layout,.workspace,.frame,.grid) { gap:12px }
+body.workbench-blue .layout > .panel { padding:13px }
+body.workbench-blue .layout > .panel > h2 { font-size:16px;margin:0 0 8px }
+body.workbench-blue :is(.layout,.workspace) > :is(.panel,.paper) { min-width:0 }
+body.workbench-blue .layout {
+  grid-template-columns:minmax(260px,300px) minmax(0,1fr);
+  align-items:start;
+}
+body.workbench-blue .layout > :is([aria-label="真实动态作图"],[aria-label="圆锥统一 V5 图纸"]) {
+  position:sticky;
+  top:72px;
+  max-height:calc(100dvh - 84px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+body.workbench-blue :is(#paperWrap,#drawingWrap,.board-viewport,#projectionViewport) {
+  border-color:var(--wb-border);
+  background:#fff;
+}
+body.workbench-blue :is(#paperWrap svg,#coneSvg,#polygonSvg) {
+  max-height:min(52dvh,530px);
+  object-fit:contain;
+}
+body.workbench-blue .paper svg { min-height:0 }
+body.workbench-blue :is(.playbar,.draftai-playdock,.playback-scrub) {
+  background:#f7faff;
+  border:1px solid var(--wb-border);
+  border-radius:12px;
+  padding:8px;
+}
+body.workbench-blue .draftai-playdock .controls,
+body.workbench-blue .draftai-playdock .seek { margin:5px 0 }
+body.workbench-blue .draftai-playdock button,
+body.workbench-blue .playbar button { min-height:44px }
+body.workbench-blue :is(#stepList,#coneSteps) {
+  max-height:min(22dvh,190px);
+  overflow-y:auto;
+}
+body.workbench-blue .workbench-extra {
+  margin-top:10px;
+  border:1px solid var(--wb-border);
+  border-radius:11px;
+  background:#fbfdff;
+}
+body.workbench-blue .workbench-extra > summary {
+  cursor:pointer;
+  padding:11px 12px;
+  font-size:13px;
+  font-weight:650;
+  color:#31517a;
+}
+body.workbench-blue .workbench-extra > :not(summary) { margin:10px 12px }
+body.workbench-blue .workbench-extra :is(h2,h3) { font-size:15px }
+body.workbench-blue .workbench-extra:focus-within { border-color:#9bc3fc }
+body.workbench-blue #cone3dSvg { max-height:270px }
+body.workbench-blue .tool-card { min-height:142px;padding:16px;gap:7px }
+body.workbench-blue .tool-icon { background:var(--wb-blue-tint);color:var(--wb-blue) }
+body.workbench-blue .tool-status { color:var(--wb-blue-dark) }
+body.workbench-blue .hero-main {
+  background:linear-gradient(115deg,#eaf3ff,#f9fbff 74%);
+  padding:clamp(19px,3vw,30px);
+}
+body.workbench-blue .hero-main h1 { color:var(--wb-ink);font-size:clamp(25px,3.3vw,37px) }
+body.workbench-blue .hero-main p { line-height:1.55;color:var(--wb-muted) }
+body.workbench-blue .home-btn.secondary { color:var(--wb-blue-dark)!important;border-color:#bcd4f8 }
+body.workbench-blue .status-pill { background:var(--wb-blue-tint);color:var(--wb-blue-dark);border-color:#c4dbfc }
+body.workbench-blue .section { margin-top:20px }
+body.workbench-blue .section h2 { color:var(--wb-ink) }
+/* Keep every V/H/W projection together in the existing SVG; never
+ * reorder, split, or transform individual projected views with CSS. */
+@media (max-width:880px) {
+  body.workbench-blue .layout { display:flex;flex-direction:column;gap:10px }
+  body.workbench-blue .layout > .panel { width:100% }
+  body.workbench-blue .layout > :is([aria-label="真实动态作图"],[aria-label="圆锥统一 V5 图纸"]) {
+    order:-1;
+    position:static;
+    max-height:none;
+    overflow:visible;
+  }
+  body.workbench-blue :is(#paperWrap svg,#coneSvg,#polygonSvg) {
+    max-height:min(52dvh,490px);
+    width:100%;
+  }
+  body.workbench-blue :is(.draftai-playdock,.playbar) {
+    position:sticky;
+    bottom:4px;
+    z-index:15;
+    box-shadow:0 5px 22px rgba(29,65,119,.13);
+  }
+  body.workbench-blue #stepList,
+  body.workbench-blue #coneSteps { max-height:135px }
+}
+@media (max-width:550px) {
+  body.workbench-blue :is(.wrap,.shell,.page) { padding-left:10px;padding-right:10px }
+  body.workbench-blue .layout > .panel { padding:10px }
+  body.workbench-blue :is(#paperWrap svg,#coneSvg) { max-height:48dvh }
+  body.workbench-blue .draftai-playdock .controls { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px }
+  body.workbench-blue .draftai-playdock .controls > button { padding:8px 5px;min-width:0 }
+  body.workbench-blue .draftai-playdock .controls #restart { grid-column:span 3 }
+  body.workbench-blue .home-wrap { width:calc(100% - 20px) }
+}
+@media (prefers-reduced-motion:reduce) {
+  body.workbench-blue :is(.tool-card,button) { transition:none }
+}
