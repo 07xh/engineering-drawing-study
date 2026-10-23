@@ -49,3 +49,22 @@ test('large verified stroke preserves full sheet view and no false focus',()=>{
  eq(actionViewBox(line),FULL);
  eq(actionBounds(line),{minX:0,maxX:720,minY:0,maxY:470});
 });
+
+test('public two-point controls are wired to the same verified V5 action IDs',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const root=path.resolve(__dirname,'../..');
+ const html=fs.readFileSync(path.join(root,'labs/two-point-v5-live.html'),'utf8');
+ const client=fs.readFileSync(path.join(root,'labs/two-point-v5-live-entry.cjs'),'utf8');
+ for(const id of ['mono','focus','viewReset']){
+  assert.ok(html.includes('id="'+id+'"'),id+' missing from public controls');
+  assert.ok(client.includes("$('"+id+"').addEventListener"),id+' unbound');
+ }
+ assert.match(client,/compileConfirmedTwoPoint\(/);
+ assert.match(client,/Motion\.updateSvg\(visible,action,fraction\)/);
+ assert.match(client,/Motion\.updateSvg\(hit,action,fraction\)/);
+ assert.match(client,/hit\.setAttribute\('stroke-width','30'\)/);
+ assert.match(client,/hit\.setAttribute\('tabindex','0'\)/);
+ assert.match(client,/current\.player\.seekStep\(stepIndex\+1,now\)/);
+ assert.match(client,/actionViewBox\(action\)/);
+ assert.doesNotMatch(html,/(?:base64|data:image|private-answer-overlaid-workbook)/i);
+});
