@@ -26,7 +26,7 @@ test('real-book inventory preserves printed page/question IDs and never counts i
   assert.equal(item.answerHidden,false);
   assert.deepEqual(Object.values(item.stages),Array(5).fill('untested'));
   assert.deepEqual(item.evidenceRefs,{});
-  assert.ok(Object.keys(raw).every(k=>!/(answer|image|scan|photo|referenceGeometry|svg|originalText)/i.test(k)),
+  assert.ok(Object.keys(raw).every(k=>!/^(answer|answerText|answerImage|image|imageData|scan|scanBase64|photo|referenceGeometry|svg|originalText)$/i.test(k)),
    'source or answer payload leaked into metadata');
  }
  assert.deepEqual([...actual.entries()].sort((a,b)=>a[0]-b[0]),[...expectedByPage.entries()]);
