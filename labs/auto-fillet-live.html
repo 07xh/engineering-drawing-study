@@ -75,7 +75,6 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="layout">
 <section class="panel" aria-label="工程图条件编辑">
 <h2>已知条件</h2>
-<details class="workbench-extra" id="photoDetails"><summary>照片与尺寸审核</summary>
 <div class="local-photo">
 <label for="problemPhoto">原题图片（仅本地参照，不会上传）
 <input id="problemPhoto" type="file" accept="image/png,image/jpeg,image/webp"></label>
@@ -181,8 +180,6 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <p id="sourceStatus" class="source-status" role="status" aria-live="polite">关闭严格模式时，仍可直接输入毫米尺寸解题。</p>
 </div>
 </div>
-</details>
-<details class="workbench-extra" id="rasterDetails"><summary>照片图元与比例校准</summary>
 <div class="local-photo" id="rasterDraftPanel" aria-label="照片图元和毫米比例人工审核">
 <h3>照片图元校正与导入（实验）</h3>
 <p>先在上方检测直线和圆，再选择两项真实源图元。检测只给出像素候选，必须修改核对坐标、比例与连接 R；部分圆弧暂不冒充整圆。 线圆连接时，请根据有向端点明确选择法向 +1／−1；检测器可能把线段端点顺序反过来。</p>
@@ -247,8 +244,6 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="controls"><button type="button" id="rasterApply">把审核后的照片几何导入毫米数学条件</button></div>
 <p id="rasterStatus" class="vector-status" role="status" aria-live="polite">尚未检测图元。照片不会上传。</p>
 </div>
-</details>
-<details class="workbench-extra" id="vectorDetails"><summary>SVG 图形导入与核对</summary>
 <div class="local-photo" id="localVectorPanel">
 <label for="vectorSvg">SVG 矢量图（本地提取线段与圆，不上传）
 <input id="vectorSvg" type="file" accept=".svg,image/svg+xml"></label>
@@ -269,7 +264,6 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <div class="controls"><button id="vectorApply" type="button">将确认的 SVG 条件导入求解器</button></div>
 <p>当前不自动识别照片、推断单位或关联 R/Φ 标注；结果仍须选择真实解分支与轮廓方向。</p>
 </div>
-</details>
 <label for="kind">题型<select id="kind"><option value="two-segments">两有限线段圆弧连接</option><option value="segment-circle">有限线段与圆连接</option><option value="two-circles">两圆圆弧连接</option></select></label>
 <div class="fields" id="fields" style="margin-top:12px"></div>
 <div class="fields" style="margin-top:12px">
