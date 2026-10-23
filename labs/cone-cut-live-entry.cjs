@@ -575,7 +575,7 @@ const {coneLinkedSpatialScene}=
    }
   }
   for(const path of curvePaths(plan.steps,frame)){
-   group.append(create('path',{d:path.d,fill:'none',stroke:'#a7adb5','stroke-width':2.6,'stroke-linejoin':'round','pointer-events':'none','data-curve-id':path.id,'data-curve-actions':path.actionIds.join(' '),'data-curve-revision':path.sourceRevision}));
+   group.append(create('path',{d:path.d,fill:'none',stroke:'#a7adb5','stroke-width':2.6,'stroke-linejoin':'round','pointer-events':'none','data-curve-id':path.id,'data-curve-actions':path.actionIds.join(' '),'data-curve-revision':path.sourceRevision,'data-chord-error-px':path.maxChordDeviationPx??'unverified'}));
   }
   if(selected?.revision===revision){
    const picked=plan.steps.flatMap(s=>s.actions).find(a=>a.id===selected.id);

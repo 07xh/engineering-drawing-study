@@ -12,9 +12,10 @@ function curvePaths(steps,frame){
    action.visibilityProof,action.branchId,action.view||action.id.split('_')[1]].join(':');
   const end={x:g.from.x+(g.to.x-g.from.x)*fraction,y:g.from.y+(g.to.y-g.from.y)*fraction};
   if(action.breakBefore||!current||current.key!==key||current.end.x!==g.from.x||current.end.y!==g.from.y){
-   current={id:action.id,key,sourceRevision:action.sourceRevision,actionIds:[],stepIds:[],parameterIntervals:[],d:'M '+g.from.x+' '+g.from.y,end:g.from};paths.push(current);
+   current={id:action.id,key,sourceRevision:action.sourceRevision,actionIds:[],stepIds:[],parameterIntervals:[],maxChordDeviationPx:0,d:'M '+g.from.x+' '+g.from.y,end:g.from};paths.push(current);
   }
   current.d+=' L '+end.x+' '+end.y;current.end=end;
+  current.maxChordDeviationPx=current.maxChordDeviationPx===null||!Number.isFinite(action.maxChordDeviationPx)?null:Math.max(current.maxChordDeviationPx,action.maxChordDeviationPx);
   current.parameterIntervals.push(action.parameterRadians??null);current.actionIds.push(action.id);current.stepIds.push(step.id);
   // Source only certifies open rays; the displayed chord is still a preview.
   current.visibility='undetermined';

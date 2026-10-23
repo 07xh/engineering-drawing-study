@@ -15,6 +15,7 @@ const {convertProvenConeGuideSteps}=
  require('./cone-constructionsteps-v5.cjs');
 const Timeline=require('./teaching-timeline-v5.js');
 const Motion=require('./teaching-motion-v5.js');
+const {coneCertifiedDisplaySegments}=require('./cone-certified-display-segments.cjs');
 const VIEWS=['V','H','W'];
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
@@ -93,6 +94,9 @@ function coneSpatialV5Preview(cone,plane,options={}){
  }):null;
  const split=presentationMode==='split-sheet';
  const layout=split?separateTransforms(cone):null;
+ const display=coneCertifiedDisplaySegments(cone,plane,{...proofOptions,viewTransforms:layout?.transforms});
+ const displayDelta=(source.operation.analytic.parameterRadians[1]-source.operation.analytic.parameterRadians[0])/samples;
+ const displayBound=display.status==='bounded-display-approximation'?display.secondDerivativeBoundPx*displayDelta*displayDelta/8:null;
  const position={V:[],H:[],W:[]};
  const tol=Math.max(1e-7*Math.max(1,cone.radiusMm,cone.heightMm),
   128*Number.EPSILON*Math.max(1,
@@ -194,6 +198,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
     ?rayEvidence.views[view].lateral[i-1]:'undetermined';
    actions.push(action('cone_'+view+'_lateral_'+i,from,to,{
     sourceBoundary:'analytic-cone-lateral',view,branchId:kind,
+    maxChordDeviationPx:displayBound,errorBoundMethod:displayBound===null?null:'analytic-second-derivative-supremum',
     parameterRadians:[i-1,i].map(j=>source.operation.analytic.parameterRadians[0]+(source.operation.analytic.parameterRadians[1]-source.operation.analytic.parameterRadians[0])*j/samples),
     sourceSpatialIntentId:source.id,sourceRevision:revision,
     visibility:certified,

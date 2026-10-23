@@ -56,7 +56,7 @@ function coneCertifiedDisplaySegments(cone,plane,options={}){
   });
  }
  return {status:'bounded-display-approximation',revision:source.revision,
-  views,maxErrorPx,mathematicallyExactPolyline:false,
+  views,maxErrorPx,secondDerivativeBoundPx:curvatureBound,mathematicallyExactPolyline:false,
   exactAnalyticCurvePreserved:true,capChordVisibilityVerified:false,
   fullContourV5Ready:false,publicWorkbenchConnected:false};
 }
