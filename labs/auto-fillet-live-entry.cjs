@@ -363,7 +363,14 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   getArrowHints:()=>arrowHints,
   reviewedValue:$('ocrCorrectedValue'),reviewAccept:$('ocrNumericAccept'),
   reviewButton:$('confirmOcrNumeric'),getValues:values,
-  getRevision:()=>session?.revision??0
+  getRevision:()=>session?.revision??0,
+  pathReview:{
+   selector:$('ocrPathSelect'),status:$('ocrPathStatus'),
+   text:$('ocrPathText'),units:$('ocrPathUnits'),
+   leader:$('ocrPathLeader'),curve:$('ocrPathCurve'),
+   arrow:$('ocrPathArrow'),answers:$('ocrPathAnswers'),
+   final:$('ocrPathFinal'),button:$('ocrPathReviewButton')
+  }
  });
  $('associateCandidate').addEventListener('click',()=>{
   const id=$('sourceCandidate').value;
