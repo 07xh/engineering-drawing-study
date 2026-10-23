@@ -162,3 +162,11 @@ test('unsupported project versions and embedded image data cannot be saved', asy
   await assert.rejects(() => store.saveProject(embedded), /不可序列化/);
   assert.equal(factory.db.data.projects.size, 0);
 });
+
+test('missing referenced original image must prevent a false recoverable project record', async () => {
+  const factory = fakeIndexedDB();
+  const store = await openLocalProjects(factory);
+  const p = newProject({id: 'study1'});p.source.imageId = 'noImage';
+  await assert.rejects(() => store.saveProject(p), /原图尚未成功保存/);
+  assert.deepEqual(await store.listProjects(), []);
+});
