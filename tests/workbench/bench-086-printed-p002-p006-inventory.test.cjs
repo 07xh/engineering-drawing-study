@@ -9,7 +9,8 @@ const assert=require('node:assert/strict');
 const {loadCatalog,buildReport}=require('../../scripts/report-bench-086.cjs');
 const {validateEntry,makeId}=require('../../benchmark/exercise-coverage.cjs');
 
-const expectedByPage=new Map([[2,3],[3,7],[4,7],[5,6],[6,5],\n [7,4],[8,3],[9,6],[10,4],[11,2],[12,8],[86,1]]);
+const expectedByPage=new Map([[2,3],[3,7],[4,7],[5,6],[6,5],
+ [7,4],[8,3],[9,6],[10,4],[11,2],[12,8],[86,1]]);
 
 test('real-book inventory preserves printed page/question IDs and never counts image parts twice',()=>{
  const entries=loadCatalog();
