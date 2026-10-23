@@ -24,8 +24,13 @@ const version=(revision)=>{
  return revision;
 };
 function segment(from,to,space){
- demand(point(from)&&point(to)&&Math.hypot(from.x-to.x,from.y-to.y)>1e-9,
-  'invalid construction segment');
+ demand(point(from)&&point(to),'invalid construction segment');
+ const length=Math.hypot(from.x-to.x,from.y-to.y);
+ // Coincident first-angle transfer guides are mathematical points, not
+ // zero-length drawable lines. Preserve the original solver evidence.
+ if(length<=1e-9&&space==='sheet-px')
+  return {kind:'point',coordinateSpace:space,at:copy(to)};
+ demand(length>1e-9,'invalid construction segment');
  return {kind:'line',coordinateSpace:space,from:copy(from),to:copy(to)};
 }
 function circle(center,radius){

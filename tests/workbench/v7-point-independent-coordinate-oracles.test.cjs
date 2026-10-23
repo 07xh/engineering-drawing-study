@@ -48,7 +48,7 @@ for(const xyz of [[15,10,12],[-7,4,-9],[2.5,-3.75,8.125]]){
 
 // Known degenerate case: coincident first-angle guide endpoints are not
 // drawable line segments. Preserve the regression without certifying V5.
-test('origin point must not be falsely marked V5-ready',()=>{
+test('origin point uses valid coincident-guide marks in single V5',()=>{
  const c=createCoordinator(newProject({id:'OriginCase',task:'projection'}));
  const s=createUnifiedProjectSession();c.attachSolver(s);
  c.putObject({id:'Point1',kind:'point',spatialId:'Point1_3D',
@@ -56,7 +56,12 @@ test('origin point must not be falsely marked V5-ready',()=>{
  c.putCondition({id:'coords',objectId:'Point1',sourceCandidateId:null,
   confirmed:false,value:{type:'point-xyz',unit:'mm',xyz:[0,0,0],imageId:null}});
  c.confirmCondition('coords');
- assert.throws(()=>s.solve(),/invalid construction segment/);
- assert.equal(c.canExport(),false);
+ const result=s.solve();
+ assert.equal(result.verified,true);
+ assert.deepEqual(result.scene.objects[0].representations.V.at,{u:0,v:0});
+ assert.deepEqual(result.scene.objects[0].representations.H.at,{u:0,v:0});
+ assert.deepEqual(result.scene.objects[0].representations.W.at,{u:0,v:0});
+ assert.ok(result.plan.steps.some(step=>step.actions.some(action=>action.kind==='point')));
+ assert.equal(result.clock.canRender(c.snapshot().revision),true);
  c.dispose();
 });
