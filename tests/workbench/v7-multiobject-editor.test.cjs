@@ -94,3 +94,35 @@ test('geometry input must have unique matching IDs, mm and bounded known represe
  assert.throws(()=>confirmedCompositionGeometry({...x,conditions:[]}),/逐项/);
  c.dispose();
 });
+
+test('an ordered 2D curve and a closed 3D space curve share one user-confirmed scene',()=>{
+ const {coordinator:c,session:s}=start();
+ const curve2={id:'Polyline2',kind:'polyline',space:'drawing-2d',unit:'mm',
+  data:{points:[{x:0,y:0},{x:10,y:0},{x:10,y:20}],closed:false}};
+ const curve3={id:'Polyline3',kind:'polyline',space:'model-3d',unit:'mm',
+  data:{points:[{x:0,y:0,z:0},{x:6,y:0,z:0},{x:6,y:4,z:3}],closed:true}};
+ add(c,curve2);add(c,curve3);
+ const result=s.solve();
+ assert.equal(result.kind,'composition-evidence');
+ assert.equal(result.clock,null);
+ assert.equal(result.verified,false);
+ assert.equal(result.scene.objects[0].representations['3D'],null);
+ for(const view of ['V','H','W']){
+  const rep=result.scene.objects[1].representations[view];
+  assert.equal(rep.kind,'polyline-projection');
+  assert.equal(rep.spans.length,3);
+  assert.equal(rep.visibility,'undetermined');
+ }
+ assert.equal(result.scene.objects[1].representations['3D'].data.closed,true);
+ c.setCamera({yaw:-20,pitch:18});
+ assert.equal(s.readSnapshot(),result);
+ c.dispose();
+});
+test('untrusted zero-length or malformed polyline input fails closed',()=>{
+ const {coordinator:c,session:s}=start();
+ const bad={id:'Polyline',kind:'polyline',space:'model-3d',unit:'mm',
+  data:{points:[{x:0,y:0,z:0},{x:0,y:0,z:0}],closed:false}};
+ add(c,bad);
+ assert.throws(()=>s.solve(),/折线|几何输入不合法/);
+ c.dispose();
+});

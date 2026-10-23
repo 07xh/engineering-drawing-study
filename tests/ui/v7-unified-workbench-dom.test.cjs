@@ -18,7 +18,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
     get(){return this.hasAttribute(name);},
     set(v){if(v)this.setAttribute(name,'');else this.removeAttribute(name);}});
   }
-  if(['INPUT','SELECT','OPTION'].includes(el.tagName)){
+  if(['INPUT','SELECT','OPTION','TEXTAREA'].includes(el.tagName)){
    Object.defineProperty(el,'value',{configurable:true,
     get(){
      if(Object.hasOwn(this,'__v7Value'))return this.__v7Value;
@@ -149,6 +149,28 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="CircleB"]').length,0);
+  // Reuse the same project editor for ordered 2D and 3D curves, not a new page.
+  click('v7-c-remove');await tick();await tick();
+  click('v7-c-new');$('v7-c-id').value='Curve2';
+  $('v7-c-kind').value='polyline2d';
+  $('v7-c-points').value='0,0\n10,0\n10,10';
+  $('v7-c-closed').checked=false;
+  click('v7-c-stage');await tick();await tick();
+  click('v7-c-confirm');await tick();await tick();
+  click('v7-c-new');$('v7-c-id').value='Curve3';
+  $('v7-c-kind').value='polyline3d';
+  $('v7-c-points').value='0,0,0\n10,0,0\n10,10,6';
+  $('v7-c-closed').checked=true;
+  click('v7-c-stage');await tick();await tick();
+  click('v7-c-confirm');await tick();await tick();
+  click('v7-c-render');await tick();await tick();
+  assert.match($('v7-proof').textContent,/手工输入的几何/,$('v7-save').textContent);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Curve2"]').length,2);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Curve3"]').length,9);
+  assert.equal($('v7-3d').querySelectorAll('[data-geometry-id="Curve3"]').length,3);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  assert.equal($('v7-play').disabled,true);
+
 
  }finally{
   global.document=original.document;global.window=original.window;
