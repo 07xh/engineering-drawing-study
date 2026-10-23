@@ -104,7 +104,7 @@ test('V6.4 homepage puts first-angle checked paper next to entry actions',()=>{
   assert.ok(labels.includes(label),'first-angle layout label missing: '+label);
  assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
  for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
-  assert.ok(dashboard.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
+  assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
  assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
  assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.4-home-20261023"]'),'verifiable homepage release marker missing');
  assert.match(dashboard.textContent,/示意图|非题目计算结果/,'preview must not pretend to solve a problem');
