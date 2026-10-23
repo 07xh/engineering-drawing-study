@@ -1,0 +1,35 @@
+[
+  {
+    "printedPage": 8,
+    "questionLabel": "1-8-1",
+    "textbookChapter": null,
+    "topic": "非对称挂钩与多半径圆弧综合轮廓",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 8,
+    "questionLabel": "1-8-2",
+    "textbookChapter": null,
+    "topic": "三孔板多圆弧连续连接图形",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  },
+  {
+    "printedPage": 8,
+    "questionLabel": "1-8-3",
+    "textbookChapter": null,
+    "topic": "三孔支座复合圆弧轮廓",
+    "solver": null,
+    "kind": "original-exercise",
+    "result": "unreviewed",
+    "blindTest": false,
+    "answerHidden": false
+  }
+]
