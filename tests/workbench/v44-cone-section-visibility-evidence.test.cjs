@@ -12,9 +12,14 @@ for(const [kind,z] of [['full-ellipse',6],['clipped-ellipse',1]]){
   assert.equal(r.visibilityVerified,false);
   assert.equal(r.continuousCurveVisibilityVerified,false);
   assert.equal(r.capOcclusionVerified,false);
+  assert.equal(r.retainedHalfspace,null);
+  assert.equal(r.cutSolidOpenRayProofConnected,false);
+  assert.equal(r.noHalfspaceDefaultsToUnknown,true);
   for(const v of ['V','H','W']){
    assert.equal(r.views[v].length,65);
-   assert.ok(r.views[v].every(e=>['visible','occluded','undetermined'].includes(e.visibility)));
+   assert.ok(r.views[v].every(e=>e.visibility==='undetermined'));
+   assert.ok(r.views[v].every(e=>['visible','occluded','undetermined'].includes(e.uncutConeVisibility)));
+   assert.ok(r.views[v].every(e=>e.cutSolidScope==='no-reviewed-retained-halfspace'));
   }
  });
 }
