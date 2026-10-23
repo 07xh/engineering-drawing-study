@@ -191,6 +191,7 @@ function createCoordinator(initial, hooks = {}) {
         const i = p.conditions.findIndex(c => c.id === condition?.id);
         if (!jsonValue(condition)) throw new Error('条件包含不可序列化字段');
         const next = copy(condition);
+        next.confirmed = false; // Only confirmCondition can promote candidates.
         if (i < 0) p.conditions.push(next); else p.conditions[i] = next;
       });
     },
@@ -198,6 +199,8 @@ function createCoordinator(initial, hooks = {}) {
       return commit(p => {
         const condition = p.conditions.find(c => c.id === id);
         if (!condition) throw new Error('条件不存在');
+        if (condition.value?.imageId && condition.value.imageId !== p.source.imageId)
+          throw new Error('标注来自旧图片，必须在当前原图重新标记');
         condition.confirmed = true;
       });
     },
