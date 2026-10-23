@@ -16,7 +16,7 @@ const {assessFilletStudentProgress}=require('../workbench/verified-student-fille
 const {fromProgress:studentFeedback}=require('../workbench/verified-student-fillet-guidance.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
 const MotionV5=require('../workbench/teaching-motion-v5.js');
-const {filletTimeline}=require('../workbench/verified-plan-v5-bridge.cjs');
+const {verifiedLiveIntentTimeline}=require('../workbench/verified-live-intent-v1.cjs');
 const ReasonsV5=require('../workbench/verified-fillet-step-reasons.cjs');
 const ProgressiveV5=require('../workbench/verified-fillet-progressive-motion.cjs');
 const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
@@ -321,7 +321,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
    args=parse();
    const picked=isSegments?chooseFiniteTwoSegmentArc(args):
     isMixed?chooseDirectedSegmentCircleFillet(args):chooseDirectedFillet(args);
-   const plan=filletTimeline(isSegments?'segments':isMixed?'segment-circle':'circles',
+   const plan=verifiedLiveIntentTimeline(isSegments?'segments':isMixed?'segment-circle':'circles',
     args,{origin:O,scale},revision);
    if(picked.status==='selected'&&picked.g1Verified===true&&
      (plan.status!=='ready'||plan.revision!==revision||
