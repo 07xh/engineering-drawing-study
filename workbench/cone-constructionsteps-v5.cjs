@@ -36,12 +36,16 @@ function convertProvenSheetStep(a,id){
   sourceCoordinates:'verified-3d-to-sheet-px',sourceVisibility:'undetermined',
   sourceGuideOnly:true});
 }
-function coneConstructionStepsV5(cone,plane,options={}){
- const proof=coneProvenConstructionSteps(cone,plane,options);
- if(proof.status!=='verified-guide-steps')
-  return {status:'not-verified',revision:proof.source?.revision??options.revision??0,
-   reason:proof.reason,steps:[],timing:null,player:null,
-   mathematicallyVerified:false,visibilityVerified:false};
+/**
+ * Pure sheet-px presentation adapter for an ALREADY recomputed M3 guide DAG.
+ * Exported only for the trusted single-timeline composition consumer; this
+ * function alone never issues mathematical evidence or starts a player.
+ */
+function convertProvenConeGuideSteps(proof){
+ if(!proof||proof.status!=='verified-guide-steps'||
+    proof.mathematicallyVerified!==true||
+    !Array.isArray(proof.steps)||!proof.spatialIntent)
+  throw new TypeError('verified M3 cone guide DAG is required');
  const known=new Map(),steps=[];
  for(const [index,s] of proof.steps.entries()){
   if(!Array.isArray(s.actions)||!Array.isArray(s.dependsOn))
@@ -58,6 +62,15 @@ function coneConstructionStepsV5(cone,plane,options={}){
    actions:s.actions.map((a,j)=>convertProvenSheetStep(
     a,'v5_action_'+(index+1)+'_'+(j+1)))});
  }
+ return steps;
+}
+function coneConstructionStepsV5(cone,plane,options={}){
+ const proof=coneProvenConstructionSteps(cone,plane,options);
+ if(proof.status!=='verified-guide-steps')
+  return {status:'not-verified',revision:proof.source?.revision??options.revision??0,
+   reason:proof.reason,steps:[],timing:null,player:null,
+   mathematicallyVerified:false,visibilityVerified:false};
+ const steps=convertProvenConeGuideSteps(proof);
  const timing=Timeline.compileTimeline(steps);
  return {status:'verified-guides-preview',revision:proof.revision,
   spatialIntent:proof.spatialIntent,proof:proof.proof,
@@ -67,4 +80,4 @@ function coneConstructionStepsV5(cone,plane,options={}){
   firstAngleLayoutVerified:false,completeEngineeringDrawingVerified:false,
   publicWorkbenchConnected:false,presentationOnly:true};
 }
-module.exports={coneConstructionStepsV5};
+module.exports={coneConstructionStepsV5,convertProvenConeGuideSteps};
