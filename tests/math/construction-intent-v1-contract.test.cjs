@@ -1,0 +1,77 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {CONSTRUCTION_INTENT_VERSION:version,validateConstructionIntent:check,
+ validateConstructionIntentDAG:checkDAG}=require('../../core/contracts/construction-intent.js');
+const p=(x,y)=>({x,y});
+const source=(changes={})=>({solver:'engines/planar/directed-two-segment-fillet',
+ revision:12,unit:'mm',proofScope:'selected-directed-fillet',
+ proofLevel:'selected-directed-g1',resultId:null,branchId:'s++',
+ status:'selected',evidenceSource:'engines/planar/directed-two-segment-fillet',
+ ...changes});
+const sample=()=>({schema:version,id:'step_1',purpose:'selected G1 fillet',
+ role:'result',dependsOn:[],inputEntityIds:[],outputEntityIds:['arc_1'],
+ source:source(),operations:[{id:'arc_1',kind:'directed-arc',
+  coordinateSpace:'model-mm',geometry:{center:p(0,0),radius:3,
+   startAngle:20,endAngle:90,direction:'ccw'}}]});
+test('F2 canonical 1.0.0 model-degree directed arc and real selected candidate ID',()=>{
+ const intent=sample();
+ assert.equal(check(intent).ok,true,check(intent).errors.join(', '));
+ assert.equal(checkDAG([intent]).ok,true);
+});
+test('unknown or forged schema/proof-level/fields/units are rejected, never treated as proof',()=>{
+ const a=sample();
+ for(const patch of [
+  {schema:'draftai-r1-intent-projection/0.1'},
+  {mathVerified:true},{source:{...a.source,unit:'px'}},
+  {source:{...a.source,status:'unique',branchId:'s++'}},
+  {source:{...a.source,proofLevel:'made-up-proof'}},
+  {source:{...a.source,revision:-1}},
+  {source:{...a.source,branchId:null}},
+  {source:{...a.source,resultId:'../../scan'}},
+  {role:'untrusted'}
+ ])assert.equal(check({...a,...patch}).ok,false,JSON.stringify(patch));
+});
+test('SVG ambiguous angles, model/sheet mix, degenerate or nonfinite geometry fail',()=>{
+ const a=sample(),op=a.operations[0];
+ for(const geometry of [
+  {...op.geometry,direction:'cw'},
+  {...op.geometry,startAngle:90,endAngle:20},
+  {...op.geometry,endAngle:380},
+  {...op.geometry,endAngle:20},
+  {...op.geometry,radius:0},
+  {...op.geometry,radius:Infinity},
+  {...op.geometry,origin:'pixel-location'}
+ ]){
+  assert.equal(check({...a,operations:[{...op,geometry}]}).ok,false);
+ }
+ assert.equal(check({...a,operations:[{...op,coordinateSpace:'sheet-px'}]}).ok,false);
+ const line={id:'guide_1',kind:'line',coordinateSpace:'sheet-px',
+  geometry:{from:p(1,2),to:p(9,2)}};
+ assert.equal(check({...a,outputEntityIds:['guide_1'],operations:[line]}).ok,true);
+ assert.equal(check({...a,outputEntityIds:['arc_1'],operations:[line]}).ok,false);
+});
+test('mixed revision/branch, future dependencies, duplicate IDs, fake geometry input fail',()=>{
+ const a=sample(),b={...sample(),id:'step_2',dependsOn:['step_1'],
+  outputEntityIds:['arc_2'],
+  operations:[{...sample().operations[0],id:'arc_2'}]};
+ assert.equal(checkDAG([a,b]).ok,true);
+ assert.equal(checkDAG([a,{...b,source:source({revision:13})}]).ok,false);
+ assert.equal(checkDAG([a,{...b,source:source({branchId:'s--'})}]).ok,false);
+ assert.equal(checkDAG([b,a]).ok,false);
+ assert.equal(checkDAG([a,a]).ok,false);
+ assert.equal(checkDAG([a,{...b,outputEntityIds:['arc_1'],
+  operations:[{...b.operations[0],id:'arc_1'}]}]).ok,false);
+ assert.equal(check({...a,inputEntityIds:['step_2'],dependsOn:['step_2']}).ok,false);
+});
+test('03 projection guide may be explicitly sheet-px; mathematical unique needs no branch',()=>{
+ const a={...sample(),source:{solver:'engines/projection/point-projection',
+  revision:9,unit:'mm',proofScope:'single-point-first-angle',
+  proofLevel:'linear-algebra',resultId:'result_projection',branchId:null,
+  status:'unique',evidenceSource:'computed-first-angle-guides'},
+  role:'auxiliary',purpose:'45 degree depth transfer',
+  operations:[{id:'guide_1',kind:'line',coordinateSpace:'sheet-px',
+   geometry:{from:p(10,12),to:p(30,42)}}],outputEntityIds:['guide_1']};
+ assert.equal(check(a).ok,true,check(a).errors.join(', '));
+ assert.equal(checkDAG([a]).ok,true);
+});
