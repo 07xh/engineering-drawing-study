@@ -7,7 +7,6 @@ const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layou
 const {homeHTML}=require('./home.cjs');
 const NAV=[
  ['index.html','首页'],
- ['index.html#project-workbench','统一项目'],
  ['labs/auto-fillet-live.html','AI 解题'],
  ['index.html#plane','平面作图'],
  ['index.html#projection','三视图与投影'],
@@ -19,7 +18,6 @@ const NAV=[
 ];
 const NAV_ICONS={
  '首页':'<path d="M3 11.5L12 4l9 7.5v8.5h-6v-6H9v6H3z"/>',
- '统一项目':'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M7 9h10 M7 13h10 M7 17h6"/>',
  'AI 解题':'<path d="M4 5h16v14H4z M8 10l3 3 5-6 M8 3v2 M16 3v2"/>',
  '平面作图':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
  '三视图与投影':'<path d="M12 3l8 5v9l-8 5-8-5V8z M12 3v10 M4 8l8 5 8-5 M12 13v9"/>',
@@ -66,7 +64,8 @@ function enhancePage(html,{page,preview=true}){
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
   if(page==='index.html')document.head.append(fragment(document,
-   '<meta name="draftai-ui-release" content="v7-unified-project-20261024">'+
+   '<meta name="draftai-ui-release" content="v6.6-home-20261023">'+
+   '<meta name="draftai-project-workbench" content="v7-real-20261024">'+
    '<link rel="stylesheet" href="project/workbench-ui.css">'+
    '<script defer src="project/unified-workbench-bundle.js"></script>'));
  return document.toString();
