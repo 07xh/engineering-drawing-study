@@ -74,7 +74,6 @@ for(const n of [3,6])for(const direction of ['cw','ccw']){
   assert.equal(Motion.actionShapeAttrs(ring,1)['stroke-dasharray'],'none');
   assert.equal(Timeline.frame(out.timing,out.timing.totalMs).done,true);
  });
- });
 }
 test('polygon source input must be manually confirmed; no input proof claim injection',()=>{
  const data=input();
