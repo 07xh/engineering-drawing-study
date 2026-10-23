@@ -5,7 +5,7 @@ const {parseHTML}=require('linkedom');
 const esbuild=require('esbuild');
 const {enhancePage}=require('../../../ui-next/enhance-page.cjs');
 const root=path.resolve(__dirname,'../../..');
-function mount(page,{next=false}={}){
+function mount(page,{next=false,urls=URL}={}){
  const source=fs.readFileSync(path.join(root,page),'utf8');
  const {document,window}=parseHTML(next?enhancePage(source,{page}):source);
  // Fill browser form reflection that linkedom deliberately does not implement.
@@ -19,7 +19,7 @@ function mount(page,{next=false}={}){
  const media=()=>({matches:false,addEventListener(){},removeEventListener(){}});
  window.matchMedia=media;
  const context=vm.createContext({window,document,console,performance,requestAnimationFrame,cancelAnimationFrame,
-  URL,Blob,structuredClone,TextEncoder,TextDecoder,setTimeout,clearTimeout,AbortController});
+  URL:urls,Blob,structuredClone,TextEncoder,TextDecoder,setTimeout,clearTimeout,AbortController});
  const entry=path.join(root,page.replace('.html','-entry.cjs'));
  const code=esbuild.buildSync({entryPoints:[entry],write:false,bundle:true,platform:'browser',format:'iife',target:'es2020'}).outputFiles[0].text;
  vm.runInContext(code,context,{filename:path.basename(entry),timeout:10000});
