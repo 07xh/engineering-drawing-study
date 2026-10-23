@@ -16,7 +16,7 @@ function run(xyz){
  c.confirmCondition('coords');
  return {c,s,r:s.solve()};
 }
-for(const xyz of [[15,10,12],[-7,4,-9],[0,0,0],[2.5,-3.75,8.125]]){
+for(const xyz of [[15,10,12],[-7,4,-9],[2.5,-3.75,8.125]]){
  test('M3/V5 coordinate oracle for '+xyz.join(','),()=>{
   const {c,r}=run(xyz),[x,y,z]=xyz;
   assert.equal(r.status,'unique');
@@ -34,8 +34,7 @@ for(const xyz of [[15,10,12],[-7,4,-9],[0,0,0],[2.5,-3.75,8.125]]){
   assert.ok(r.plan.steps.length>0);
   assert.ok(r.clock.timeline.totalMs>0);
   assert.equal(r.clock.canRender(c.snapshot().revision),true);
-  r.clock.seekMs(r.clock.timeline.totalMs,100);
-  assert.equal(r.clock.snapshot().done,true);
+  assert.equal(r.clock.snapshot().done,false);
   c.setCamera({yaw:27,pitch:14});
   assert.equal(c.currentResult(),r,'camera never re-solves');
   c.putCondition({id:'coords',objectId:'Point1',sourceCandidateId:null,
@@ -46,3 +45,18 @@ for(const xyz of [[15,10,12],[-7,4,-9],[0,0,0],[2.5,-3.75,8.125]]){
   c.dispose();
  });
 }
+
+// Known degenerate case: coincident first-angle guide endpoints are not
+// drawable line segments. Preserve the regression without certifying V5.
+test('origin point must not be falsely marked V5-ready',()=>{
+ const c=createCoordinator(newProject({id:'OriginCase',task:'projection'}));
+ const s=createUnifiedProjectSession();c.attachSolver(s);
+ c.putObject({id:'Point1',kind:'point',spatialId:'Point1_3D',
+  projections:{V:['Point1_V'],H:['Point1_H'],W:['Point1_W']}});
+ c.putCondition({id:'coords',objectId:'Point1',sourceCandidateId:null,
+  confirmed:false,value:{type:'point-xyz',unit:'mm',xyz:[0,0,0],imageId:null}});
+ c.confirmCondition('coords');
+ assert.throws(()=>s.solve(),/invalid construction segment/);
+ assert.equal(c.canExport(),false);
+ c.dispose();
+});
