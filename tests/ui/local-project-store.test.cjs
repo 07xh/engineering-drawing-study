@@ -229,3 +229,26 @@ test('failed bundle transaction is atomic for project and private image', async 
   assert.equal(factory.db.data.projects.size,0);
   assert.equal(factory.db.data.images.size,0);
 });
+
+test('original image IDs are immutable: replacement pixels never inherit old confirmed conditions', async () => {
+  const factory=fakeIndexedDB();
+  const store=await openLocalProjects(factory);
+  const original=new Blob(['first photo pixels'],{type:'image/png'});
+  await store.putImage('originalId',original);
+  const project=newProject({id:'reviewedProject',task:'projection'});
+  project.source.imageId='originalId';
+  project.revision=3;
+  project.conditions.push({
+    id:'confirmed1',objectId:null,sourceCandidateId:null,confirmed:true,
+    value:{kind:'pixel-mark',imageId:'originalId',x:24,y:18}
+  });
+  await store.saveProject(project);
+  await assert.rejects(() => store.putImage('originalId',
+    new Blob(['different photo'],{type:'image/png'})),/原图 ID 已存在/);
+  assert.equal(await (await store.readImage('originalId')).text(),'first photo pixels');
+  const read=(await store.readProject('reviewedProject')).project;
+  assert.equal(read.revision,3);
+  assert.equal(read.conditions[0].confirmed,true);
+  await store.putImage('secondOriginal',new Blob(['different photo'],{type:'image/png'}));
+  assert.equal(await (await store.readImage('secondOriginal')).text(),'different photo');
+});
