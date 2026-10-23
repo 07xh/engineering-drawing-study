@@ -171,7 +171,7 @@ function interactiveFillet(){
   '../workbench/teaching-timeline-v5.js':require('../../workbench/teaching-timeline-v5.js'),
   '../workbench/teaching-motion-v5.js':require('../../workbench/teaching-motion-v5.js'),
   '../workbench/verified-plan-v5-bridge.cjs':require('../../workbench/verified-plan-v5-bridge.cjs'),
-  '../workbench/verified-live-intent-v1.cjs':require('../../workbench/verified-live-intent-v1.cjs'),
+  '../integration/unified-math-runtime.cjs':require('../../integration/unified-math-runtime.cjs'),
   '../workbench/verified-fillet-step-reasons.cjs':require('../../workbench/verified-fillet-step-reasons.cjs'),
   '../workbench/verified-fillet-progressive-motion.cjs':require('../../workbench/verified-fillet-progressive-motion.cjs'),
   '../workbench/verified-fillet-stroke-reasons.cjs':require('../../workbench/verified-fillet-stroke-reasons.cjs')
