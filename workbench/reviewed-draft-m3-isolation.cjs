@@ -8,6 +8,7 @@ const {validateDraft}=require('../recognition/problem-draft.cjs');
 const {isWitnessedReviewedDimension}=
  require('../recognition/reviewed-path-dimension-draft.cjs');
 const {isolateReviewedProblem}=require('./reviewed-problem-math-isolation.cjs');
+const {fingerprint}=require('./reviewed-source-fingerprint.cjs');
 const finite=Number.isFinite;
 function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
  try{
@@ -53,11 +54,10 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
   }
   const isolated=isolateReviewedProblem({sourceRevision:d.revision,entities});
   if(isolated.status!=='reviewed-conditions-isolated')return isolated;
-  const {createHash}=require('node:crypto');
-  const sourceBinding=createHash('sha256').update(JSON.stringify({
+  const sourceBinding=fingerprint(JSON.stringify({
    draft:d,calibration:attached.calibration,dimensionId:attached.dimensionId,
    selectedPathId:attached.selectedPathId,sourceTargetId:attached.sourceTargetId
-  })).digest('hex');
+  }));
   return {...isolated,sourceBinding,reviewedScaleMmPerPx:scale,
    dimensionId:attached.dimensionId};
  }catch(error){
