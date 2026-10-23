@@ -9,6 +9,10 @@ const {verifiedConeSpatialIntent}=require('./verified-cone-spatial-intent.cjs');
 const {toSheet,fromSheet}=require('../core/projection/conventions.js');
 const {coneV5OpenRayEvidence}=
  require('./cone-open-ray-v5-mapping.cjs');
+const {coneProvenConstructionSteps}=
+ require('./cone-proven-construction-steps.cjs');
+const {convertProvenConeGuideSteps}=
+ require('./cone-constructionsteps-v5.cjs');
 const Timeline=require('./teaching-timeline-v5.js');
 const Motion=require('./teaching-motion-v5.js');
 const VIEWS=['V','H','W'];
@@ -49,13 +53,16 @@ function coneSpatialV5Preview(cone,plane,options={}){
  if(!options||typeof options!=='object'||Array.isArray(options))
   throw new TypeError('finite reviewed cone options required');
  const allowed=['kind','sourceConfirmed','revision','sheetTransform',
-  'samples','presentationMode','retainedHalfspace','observerDirections'];
+  'samples','presentationMode','retainedHalfspace','observerDirections','provenGuideDag'];
  if(Object.keys(options).some(k=>!allowed.includes(k)))
   throw new TypeError('untrusted caller-supplied proof or drawing input');
  const {kind='full-ellipse',sourceConfirmed=false,revision=0,samples=64,
-  presentationMode='single-transform'}=options;
+  presentationMode='single-transform',provenGuideDag=false}=options;
  if(!['single-transform','split-sheet'].includes(presentationMode))
   throw new TypeError('unsupported cone V5 presentation mode');
+ if(typeof provenGuideDag!=='boolean'||
+    (provenGuideDag&&presentationMode!=='split-sheet'))
+  throw new TypeError('provenGuideDag requires explicitly selected split-sheet mode');
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('nonnegative source revision required');
  if(!Number.isSafeInteger(samples)||samples<32||samples>256)
@@ -113,9 +120,11 @@ function coneSpatialV5Preview(cone,plane,options={}){
  const signature=JSON.stringify({cone,plane,kind,sourceConfirmed,revision,samples,
   presentationMode,sheetTransform:options.sheetTransform,
   retainedHalfspace:options.retainedHalfspace,
-  observerDirections:options.observerDirections});
+  observerDirections:options.observerDirections,
+  provenGuideDag});
  if(signature.length>10000)throw new RangeError('unbounded cone input');
  const steps=[];
+ let canonicalGuideStepCount=0;
  const append=(id,title,role,actions)=>{
   steps.push({id,title,role,
    dependsOn:steps.length?[steps.at(-1).id]:[],
@@ -129,6 +138,28 @@ function coneSpatialV5Preview(cone,plane,options={}){
     y:corner.y+2*cone.radiusMm*layout.sheet.scale
    },{visibility:'undetermined'})
   ]);
+  if(provenGuideDag){
+   // Exactly the #429 proven 3D generators + #436 corrected sheet-px
+   // adapter; no second V5 player, no duplicated sampled station guides.
+   const proof=coneProvenConstructionSteps(cone,plane,{
+    ...proofOptions,viewTransforms:layout.transforms
+   });
+   if(proof.status!=='verified-guide-steps'||
+      proof.revision!==revision||
+      proof.spatialIntent?.id!==source.id||
+      JSON.stringify(proof.spatialIntent.operation.samplePoints)!==
+       JSON.stringify(source.operation.samplePoints))
+    throw new RangeError('canonical cone guide DAG is stale or not source-identical');
+   const guides=convertProvenConeGuideSteps(proof);
+   if(guides.length!==12)
+    throw new RangeError('incomplete reviewed cone generator DAG');
+   for(const [index,g] of guides.entries()){
+    steps.push({...g,role:'guide',
+     dependsOn:index===0?[steps.at(-1).id]:[...g.dependsOn],
+     sourceSpatialIntentId:source.id,sourceRevision:revision});
+   }
+   canonicalGuideStepCount=guides.length;
+  }else{
   const indices=[0,Math.floor(samples/4),Math.floor(samples/2),
    Math.floor(3*samples/4),...(kind==='clipped-ellipse'?[samples]:[])];
   for(const [j,index] of [...new Set(indices)].entries()){
@@ -148,6 +179,7 @@ function coneSpatialV5Preview(cone,plane,options={}){
     action(name+'_VH',V,H),action(name+'_VW',V,W),
     action(name+'_H45',H,t),action(name+'_45W',t,W)
    ]);
+  }
   }
  }
  // A V5 step can hold at most 100 actions. Chunk the actual source segments
@@ -207,12 +239,15 @@ function coneSpatialV5Preview(cone,plane,options={}){
   JSON.stringify({cone,plane,kind,sourceConfirmed,revision,samples,
    presentationMode,sheetTransform:options.sheetTransform,
    retainedHalfspace:options.retainedHalfspace,
-   observerDirections:options.observerDirections})===signature;
+   observerDirections:options.observerDirections,
+   provenGuideDag})===signature;
  return {status:'preview-only',revision,spatialIntent:source,
   mathematicallyVerified:true,firstAngleCoordinateMappingVerified:true,
   firstAngleLayoutVerified:false,visibilityVerified:false,
   constructionStepsReady:false,publicWorkbenchConnected:false,
   v5ProjectionPreviewReady:true,
+  canonicalGuideDagConnected:provenGuideDag,
+  canonicalGuideStepCount,
   rayEvidence,
   visualLineStylesApplied:false,
   visibilityEndpointsVerified:false,

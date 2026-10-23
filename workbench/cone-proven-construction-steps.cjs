@@ -13,6 +13,11 @@ function coneProvenConstructionSteps(cone,plane,options={}){
  const source=verifiedConeSpatialIntent(cone,plane,options);
  if(source.status!=='ready')return {status:'not-verified',reason:source.reason,steps:[],source};
  const g=source.spatialIntent.operation,sheet=options.sheetTransform;
+ const viewSheets=options.viewTransforms;
+ if(viewSheets!==undefined&&(
+   !viewSheets||typeof viewSheets!=='object'||Array.isArray(viewSheets)||
+   Object.keys(viewSheets).sort().join(',')!=='H,V,W'))
+  throw new TypeError('explicit V/H/W sheet transforms required for multi-panel guides');
  const apex={x:cone.baseCenter.x,y:cone.baseCenter.y,z:cone.baseCenter.z+cone.heightMm};
  const indices=[0,Math.floor((g.samplePoints.length-1)/4),
   Math.floor((g.samplePoints.length-1)/2),
@@ -30,8 +35,9 @@ function coneProvenConstructionSteps(cone,plane,options={}){
     residual>tolerance||planeResidual>tolerance)
    throw new RangeError('unproven cone generator intersection');
   for(const view of ['V','H','W']){
-   const a=toSheet(view,project(apex)[view],sheet);
-   const b=toSheet(view,project(q)[view],sheet);
+   const selectedSheet=viewSheets?viewSheets[view]:sheet;
+   const a=toSheet(view,project(apex)[view],selectedSheet);
+   const b=toSheet(view,project(q)[view],selectedSheet);
    if(![a.x,a.y,b.x,b.y].every(finite))throw new RangeError('nonfinite sheet transfer');
    const prior=steps.at(-1);
    const actions=[];
