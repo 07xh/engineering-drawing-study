@@ -23,35 +23,46 @@ function homeHTML(){return `
 <section class="next-home-hero next-home-workbench" aria-label="DraftAI 开始解题">
  <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
   <div class="next-home-drawing-top"><div><span class="next-home-release" data-draftai-release="v6.1-home">V6.1</span><h1 id="next-home-drawing-title">工程制图自动解题</h1><p>打开题型，确认条件，查看逐笔作图。</p></div><a class="next-home-edit" href="labs/auto-fillet-live.html">开始解题 →</a></div>
-  <div class="next-home-paper" data-next-illustration aria-label="第一角法三视图布局示意，不是求解器计算结果">
-   <div class="next-home-paper-top"><strong>工程图纸</strong><span>第一角法 V / H / W · 布局示意</span></div>
-   <svg viewBox="0 0 960 620" role="img" aria-label="同一张纸上的圆锥主视图、俯视图和左视图位置示意，非题目计算结果">
-    <rect x="9" y="9" width="942" height="602" fill="#fff" stroke="#c8d5e5" stroke-width="1.8" rx="5"/>
-    <g fill="none" stroke="#c0d1e5" stroke-width="1.4" stroke-dasharray="7 7">
-     <path d="M31 336H926 M470 28V591 M250 48V584 M690 48V324"/>
-     <path d="M470 350L705 585 M145 470H795"/>
+  <div class="next-home-paper" data-next-illustration data-projection-example="right-circular-cone" aria-label="正圆锥三视图，同纸第一角法；无斜截曲线">
+   <div class="next-home-paper-top"><strong>正圆锥三视图</strong><span>第一角法 · V / H / W</span></div>
+   <svg viewBox="0 0 960 620" role="img" aria-label="正圆锥三视图：V 主视图在左上、H 俯视图在左下、W 左视图在右上；投影对应并带45度宽度转移线">
+    <rect x="9" y="9" width="942" height="602" fill="#fff" stroke="#c8d5e5" stroke-width="1.8"/>
+    <!-- Construction lines have geometric correspondence. Horizontal length
+         x(V)=x(H); height y(V)=y(W); depth on H maps to x(W)
+         across the 45-degree miter at (550,335). -->
+    <g data-projection-guides="true" fill="none" stroke="#b2c5dd" stroke-width="1.15" stroke-linecap="round">
+     <!-- Height correspondence -->
+     <path d="M245 82H685 M345 300H785"/>
+     <!-- Long alignment, V to H -->
+     <path d="M145 300V470 M345 300V470"/>
+     <!-- Width/depth transfers, H to 45-degree miter to W -->
+     <path d="M245 370H585V300 M345 470H685V300 M245 570H785V300"/>
+     <path data-miter="45-degree" d="M550 335L785 570"/>
     </g>
-    <g fill="#526886" font-family="system-ui,sans-serif" font-size="19">
-     <text x="55" y="54">V 主视图</text><text x="55" y="372">H 俯视图</text><text x="524" y="54">W 左视图</text><text x="765" y="575" font-size="16">45°</text>
+    <!-- Standard thin chain centerlines, distinct from construction and object edges -->
+    <g data-projection-axes="true" fill="none" stroke="#9aabc2" stroke-width="1.1" stroke-dasharray="12 5 2 5">
+     <path d="M245 62V316 M685 62V316"/>
+     <path d="M245 348V585 M128 470H363"/>
     </g>
-    <g fill="none" stroke="#182b47" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-     <path d="M250 83L142 306H358Z M690 83L582 306H798Z"/>
-     <circle cx="250" cy="472" r="109"/>
+    <g fill="#516985" font-family="system-ui,sans-serif" font-size="19">
+     <text x="52" y="52">V 主视图</text>
+     <text x="52" y="356">H 俯视图</text>
+     <text x="558" y="52">W 左视图</text>
+     <text x="801" y="574" font-size="16">45°</text>
     </g>
-    <g fill="none" stroke="#e09a45" stroke-width="3" stroke-linecap="round">
-     <path d="M140 212L366 172 M580 212L806 172"/>
+    <!-- All three projections come from ONE upright cone of radius 100
+         and projected height 218. No unverified oblique-section curves. -->
+    <g data-projection-view="V" fill="none" stroke="#1c304b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+     <path d="M245 82L145 300H345Z"/>
     </g>
-    <g fill="none" stroke="#007fca" stroke-width="3.2" stroke-linecap="round">
-     <path d="M181 203Q250 245 319 184 M621 203Q690 245 759 184"/>
-     <ellipse cx="250" cy="472" rx="79" ry="35"/>
+    <g data-projection-view="H" fill="none" stroke="#1c304b" stroke-width="2.8">
+     <circle cx="245" cy="470" r="100"/>
     </g>
-    <g fill="none" stroke="#90add2" stroke-width="1.5" stroke-dasharray="8 6">
-     <path d="M181 203V472 M319 184V472 M621 203V321 M759 184V321"/>
-     <path d="M140 306H359 M580 306H800"/>
-     <path d="M141 472H361"/>
+    <g data-projection-view="W" fill="none" stroke="#1c304b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+     <path d="M685 82L585 300H785Z"/>
     </g>
    </svg>
-   <div class="next-home-paper-caption">示意图仅说明三视图排布。实际图形须由真实求解器计算。</div>
+   <div class="next-home-paper-caption">规范三视图示例 · 非题目计算结果。斜截线须进入求解工作台计算，不在首页编造。</div>
   </div>
   <div class="next-home-drawing-actions">
    <a class="next-primary-link" href="labs/cone-cut-live.html">打开圆锥斜截</a>

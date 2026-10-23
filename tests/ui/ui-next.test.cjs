@@ -112,6 +112,50 @@ test('V6.1 published homepage places first-angle paper before secondary tools',(
  assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
 });
 
+test('homepage cone projection has actual first-angle geometric correspondence',()=>{
+ const {after:document}=enhance('index.html');
+ const svg=document.querySelector('[data-projection-example="right-circular-cone"] svg');
+ assert.ok(svg,'source must explicitly describe the elementary cone example');
+ const readTriangle=(view)=>{
+  const shape=svg.querySelector('[data-projection-view="'+view+'"] path');
+  assert.ok(shape,'missing orthographic projection '+view);
+  const match=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)H(-?\d+)Z$/.exec(shape.getAttribute('d'));
+  assert.ok(match,'cone silhouette must consist of a symmetric triangle '+view);
+  return {apexX:+match[1],apexY:+match[2],leftX:+match[3],baseY:+match[4],rightX:+match[5]};
+ };
+ const v=readTriangle('V'),w=readTriangle('W');
+ const c=svg.querySelector('[data-projection-view="H"] circle');
+ assert.ok(c,'cone plan must be an undistorted circle');
+ const cx=+c.getAttribute('cx'),cy=+c.getAttribute('cy'),r=+c.getAttribute('r');
+ assert.ok(r>0);
+ // Long alignment (V-H), height alignment (V-W), width equality (H-W).
+ assert.equal(cx,v.apexX);
+ assert.equal(v.leftX,cx-r);
+ assert.equal(v.rightX,cx+r);
+ assert.equal(v.apexY,w.apexY);
+ assert.equal(v.baseY,w.baseY);
+ assert.equal(w.apexX-w.leftX,r);
+ assert.equal(w.rightX-w.apexX,r);
+ assert.equal(v.rightX-v.leftX,2*r);
+ assert.equal(w.rightX-w.leftX,2*r);
+ // The 45-degree miter transfers plan depths to W widths.
+ const miter=svg.querySelector('[data-miter="45-degree"]');
+ assert.ok(miter);
+ const m=/^M(-?\d+) (-?\d+)L(-?\d+) (-?\d+)$/.exec(miter.getAttribute('d'));
+ assert.ok(m,'miter must be a true line');
+ const [x0,y0,x1,y1]=m.slice(1).map(Number);
+ assert.equal(x1-x0,y1-y0,'miter must be exactly 45 degrees');
+ assert.equal(w.apexX,x0+(cy-y0),'plan center must project to W center');
+ assert.equal(w.leftX,x0+(cy-r-y0),'plan near edge must project to W left edge');
+ assert.equal(w.rightX,x0+(cy+r-y0),'plan far edge must project to W right edge');
+ assert.equal(x1,w.rightX);
+ assert.equal(y1,cy+r);
+ assert.equal(v.apexY<w.baseY,true,'upright cone apex belongs above base');
+ assert.equal(svg.querySelectorAll('ellipse').length,0,'uncalculated plan ellipse not permitted');
+ assert.equal(svg.querySelectorAll('[data-projection-view]').length,3);
+ assert.match(document.querySelector('.next-home-paper-caption').textContent,/斜截线须进入求解工作台计算/);
+});
+
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
