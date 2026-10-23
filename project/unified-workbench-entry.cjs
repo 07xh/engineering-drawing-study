@@ -362,6 +362,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function renderSpatial(){
   const svg=$('v7-3d');svg.replaceChildren();
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
+  // A planar Geometry Scene has NO 3D data. Never call the spatial renderer.
+  if(coordinator?.snapshot().task==='planar')return;
   const scoped=preview();
   if(scoped){
    const snap=coordinator.snapshot(),mesh=scoped.scene.objects[0];
