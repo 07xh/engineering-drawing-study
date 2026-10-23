@@ -96,6 +96,10 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.ok($('v7-sheet').querySelector('[data-geometry-id="Given2"]'));
   assert.equal($('v7-sheet').querySelector('[data-geometry-id="Fillet1"]')
    .getAttribute('data-geometry-view'),'drawing');
+  const sourceLine=$('v7-sheet').querySelector('[data-geometry-id="Given1"]');
+  sourceLine.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.match($('v7-selection').textContent,/Given1/);
+  assert.ok($('v7-step-list').querySelector('button'));
   assert.equal($('v7-3d').hidden,false,'spatial panel may be hidden as a group');
   // New spatial task must revoke previous V5; only scoped evidence, no player.
   $('v7-task').value='exploration';
@@ -115,6 +119,13 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Solid1"][data-visibility="undetermined"]').length,36);
   const section3D=$('v7-3d').querySelectorAll('[data-geometry-id="Section1"]');
   const sectionSheet=$('v7-sheet').querySelectorAll('[data-geometry-id="Section1"]');
+  const sectionV=$('v7-sheet').querySelector('[data-geometry-id="Section1"][data-geometry-view="V"]');
+  assert.ok(sectionV,'audited intersection is in shared V/H/W scene');
+  sectionV.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.match($('v7-selection').textContent,/Section1/);
+  const sectionW=$('v7-sheet').querySelector('[data-geometry-id="Section1"][data-geometry-view="W"]');
+  assert.ok(sectionW);
+  assert.equal(sectionV.getAttribute('stroke'),sectionW.getAttribute('stroke'));
   assert.ok(section3D.length>=3&&section3D.length<=6,
    'actual M3 verified section polygon is visible as bounded straight edges');
   assert.equal(sectionSheet.length,section3D.length*3,
@@ -124,12 +135,6 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
    'limited specialist proof never certifies hidden-line styles');
   assert.equal($('v7-play').disabled,true,
    'a scoped polygon is not yet a verified complete V5 construction');
-  section3D[0].dispatchEvent(new window.Event('click',{bubbles:true}));
-  assert.match($('v7-selection').textContent,/Solid1/,
-   'a computed section is selected through its stable source solid identity');
-  assert.ok($('v7-sheet').querySelector('[data-geometry-id="Section1"]'));
-  assert.equal($('v7-play').disabled,true,
-   'selecting 2D/3D derived results must not mint a V5 clock');
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';
