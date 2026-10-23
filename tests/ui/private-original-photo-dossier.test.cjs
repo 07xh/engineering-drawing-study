@@ -58,6 +58,8 @@ test('09 source photo swap mid-hash aborts private export and never saves stale 
  const s=setup(()=>new Promise(resolve=>{finish=resolve}));
  s.get('privatePhotoCaseAccept').checked=true;
  const promise=s.app.save();
+ await Promise.resolve(); // Allow file.arrayBuffer() to resolve and enter WebCrypto.
+ assert.equal(typeof finish,'function');
  s.input.dispatchEvent(new s.window.Event('change',{bubbles:true}));
  finish(new Uint8Array(32).fill(0xcd).buffer);
  await promise;
@@ -69,7 +71,8 @@ test('09 tampered candidate generation during hash rejects output even when file
  let finish;
  const s=setup(()=>new Promise(resolve=>{finish=resolve}));
  s.get('privatePhotoCaseAccept').checked=true;
- const promise=s.app.save();s.setGeneration(8);
+ const promise=s.app.save();await Promise.resolve();
+ assert.equal(typeof finish,'function');s.setGeneration(8);
  finish(new Uint8Array(32).fill(0xef).buffer);
  await promise;
  assert.equal(s.blobs.length,0);
