@@ -9,10 +9,8 @@ const Timeline=require('../../../workbench/teaching-timeline-v5.js');
 const Motion=require('../../../workbench/teaching-motion-v5.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const validId=s=>typeof s==='string'&&/^[a-zA-Z][\w-]{0,79}$/.test(s);
-function number(n){
- if(!finite(n)||Math.abs(n)>1e9)throw new RangeError('unsafe pyramid SVG value');
- return String(Number(n.toFixed(6)));
-}
+const {formatFrameNumber}=require('./shared-v5-frame-svg-safety.cjs');
+const number=n=>formatFrameNumber(n,'unsafe pyramid SVG value');
 function svgAction(action,progress,role){
  if(!['given','guide','result'].includes(role)||!validId(action.id))
   throw new TypeError('unreviewed SVG action id or role');
