@@ -20,6 +20,8 @@ test('C3 four analytic sign branches have 8 authentic endpoints at 4 real 3D jun
  assert.equal(r.junctions.length,4);
  assert.equal(r.verified3DJunctionCount,4);
  assert.equal(r.pairedSignedRadicalCount,4);
+ assert.equal(r.regularLocalC1JoinCount,4);
+ assert.equal(r.unresolvedAnalyticJunctionCount,0);
  assert.equal(r.allSourceEndpointEquationsRecomputed,true);
  assert.equal(r.fullBranchTopologyVerified,false);
  assert.equal(r.standardLineStylesVerified,false);
@@ -27,7 +29,15 @@ test('C3 four analytic sign branches have 8 authentic endpoints at 4 real 3D jun
  assert.ok(Object.isFrozen(r.junctions));
  for(const j of r.junctions){
   assert.equal(j.incidentBranchIds.length,2);
-  assert.equal(j.classification,'analytic-signed-radical-coalescence-candidate');
+  assert.equal(j.classification,'regular-implicit-C1-radical-join');
+  assert.equal(j.localC1ContinuationWithinLateralLateralScopeVerified,true);
+  assert.equal(j.implicitGradientRankTwoVerified,true);
+  assert.equal(j.regularLocalTangentVerified,true);
+  assert.ok(['y','z'].some(axis=>j.tangent3D[axis]===1));
+  assert.ok(j.projectedTangentWitnesses.V);
+  assert.ok(j.projectedTangentWitnesses.H);
+  assert.ok(j.projectedTangentWitnesses.W);
+  assert.equal(j.finiteCapAndOtherSheetContinuationVerified,false);
   assert.equal(j.completeSpatialCurveConnectivityVerified,false);
   assert.equal(j.standardLineStylesVerified,false);
   assert.ok(j.pairedRadicalCandidates.every(p=>
@@ -111,4 +121,40 @@ test('C3 M5 junction records attach to existing proven endpoint POINT V5 only',(
  assert.equal(r.entireCurveV5Ready,false);
  assert.ok(r.constructionSteps.every(s=>s.actions.every(a=>a.kind==='point')));
  assert.equal(r.singleOriginalV5Player,true);
+});
+
+test('C3 simultaneous radical collapse is NOT a regular two-branch tangent',()=>{
+ const input=model();
+ input.yCylinder.radius=10; // both support x endpoints coalesce simultaneously
+ const r=audit(input,12);
+ assert.equal(r.status,'scoped-analytic-3d-endpoint-incidence');
+ assert.equal(r.regularLocalC1JoinCount,0);
+ assert.ok(r.unresolvedAnalyticJunctionCount>0);
+ for(const j of r.junctions.filter(j=>j.incidentBranchIds.length>1)){
+  assert.equal(j.implicitGradientRankTwoVerified,false);
+  assert.equal(j.tangent3D,null);
+  assert.equal(j.completeSpatialCurveConnectivityVerified,false);
+ }
+});
+test('C3 source cap endings never assert a regular C1 continuation across missing cap-face geometry',()=>{
+ const input=model();input.yCylinder.yMin=9;input.yCylinder.yMax=11;
+ const r=audit(input,15);
+ assert.equal(r.regularLocalC1JoinCount,0);
+ assert.ok(r.junctions.every(j=>j.finiteCapAndOtherSheetContinuationVerified===false));
+ assert.equal(r.standardLineStylesVerified,false);
+});
+test('C3 implicit regularity produces view-specific collapsed tangent, not an invented drawing stroke',()=>{
+ const r=audit(model(),13);
+ for(const j of r.junctions.filter(j=>j.regularLocalTangentVerified)){
+  const projected=j.projectedTangentWitnesses;
+  const direction=j.tangent3D;
+  assert.equal(Math.hypot(direction.x,direction.y,direction.z),1);
+  const projectionCollapse=['V','H','W'].some(v=>
+   projected[v].tangentProjectionCollapsed);
+  assert.equal(projectionCollapse,true);
+  for(const v of ['V','H','W'])
+   assert.equal(projected[v].exactTangentSource,'independent-implicit-gradient-cross-product');
+  assert.equal(j.standardLineStylesVerified,false);
+  assert.equal(j.v5CurveActionSignedOff,false);
+ }
 });
