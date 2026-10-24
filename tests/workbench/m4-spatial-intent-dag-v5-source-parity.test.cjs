@@ -181,3 +181,52 @@ test('unreviewed/open Geometry never receives a signed or structural spatial DAG
  assert.equal(r.intents.length,0);
  assert.equal(r.singleV5Ready,false);
 });
+
+
+test('every M5 certified visible FULL source edge binds by exact source/revision to the one M4 Intent, Step and V5 action, without official line-style promotion',()=>{
+ const r=run();
+ assert.equal(r.allSourcesRecomputedFromReviewedGeometry,true);
+ const approved=r.v5ActionBindings.filter(x=>x.positiveClosedSourceRayVisibilityVerified);
+ assert.equal(approved.length,r.sourceClosedRayV5BindingCount);
+ assert.equal(r.sourceClosedRayV5BindingCount,
+  reviewed.closedSourceStrokeRays.certifiedClosedVisibleCount);
+ assert.equal(r.sourceOuterBoundaryV5BindingCount,
+  reviewed.closedSourceStrokeRays.certifiedOuterEdgeCount);
+ assert.ok(approved.length>0);
+ for(const bind of r.v5ActionBindings){
+  const source=reviewed.closedSourceStrokeRays.edges.find(x=>
+   x.sourceGeometryId===bind.sourceGeometryId&&
+   x.sourceEdgeId===bind.sourceEdgeId&&x.view===bind.view);
+  const full=bind.sourceParameterRange[0]===0&&bind.sourceParameterRange[1]===1;
+  const independentlyPositive=!!(source&&full&&source.positiveClosedRayVisibilityVerified);
+  assert.equal(bind.positiveClosedSourceRayVisibilityVerified,independentlyPositive);
+  assert.equal(bind.outerProjectedBoundaryVerified,independentlyPositive&&
+   source.projectedOuterOpenBoundaryVerified);
+  assert.equal(bind.positiveOriginalEndpointRaysVerified,independentlyPositive&&
+   source.originalSourceEndpointRaysVerified);
+  assert.equal(bind.positiveRayProofSourceId,independentlyPositive?source.sourceEdgeId:null);
+  const intent=r.intents.find(x=>x.id===bind.intentId);
+  const step=r.constructionSteps.find(x=>x.id===bind.constructionStepId);
+  const action=r.v5CandidateSteps.flatMap(x=>x.actions)
+   .find(x=>x.id===bind.v5ActionId);
+  assert.ok(intent&&step&&action);
+  assert.equal(intent.proof.wholeStrokeVisibility,'undetermined');
+  assert.equal(intent.proof.officialLineStyleVerified,false);
+  assert.equal(step.actions[0].style,'auxiliary');
+  assert.equal(bind.officialLineStyleVerified,false);
+  assert.equal(bind.approved,false);
+ }
+ assert.equal(r.singleV5Ready,false);
+ assert.equal(r.canonicalM3SolveResultVerified,false);
+ assert.equal(r.approvedConstructionOrderVerified,false);
+});
+test('forged M5 full-edge positive ray flag cannot be laundered into the original V5 action binding',()=>{
+ const first=reviewed.closedSourceStrokeRays.edges[0];
+ const fake={...reviewed,
+  closedSourceStrokeRays:{...reviewed.closedSourceStrokeRays,
+   edges:reviewed.closedSourceStrokeRays.edges.map((x,i)=>
+    i===0?{...x,positiveClosedRayVisibilityVerified:
+     !first.positiveClosedRayVisibilityVerified}:x)}};
+ assert.throws(()=>run({sceneDepthEvidence:fake}),
+  /forged|stale|changed|ray|proof/);
+});
