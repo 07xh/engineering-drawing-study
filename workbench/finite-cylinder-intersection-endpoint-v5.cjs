@@ -9,6 +9,8 @@
  * no caller-supplied point, SolveResult, step, intent or V5 action is accepted.
  */
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
+const {auditFiniteCylinderWRayIntervals}=
+ require('./m5-finite-cylinder-w-ray-intervals.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const {CONSTRUCTION_INTENT_VERSION:VERSION}=require('../core/contracts/construction-intent.js');
 const {verifiedTeachingActionToV5}=require('./construction-step-v5-adapter.cjs');
@@ -36,6 +38,13 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
     proof.officialLineStylesVerified!==false||
     proof.v5Ready!==false)
   throw new RangeError('finite cylinder analytic lateral-lateral endpoint proof unavailable');
+ const continuousCurveWRayEvidence=auditFiniteCylinderWRayIntervals({input,revision});
+ if(continuousCurveWRayEvidence.status!=='source-bounded-W-open-rays'||
+    !continuousCurveWRayEvidence.sourceBranchCoverageVerified||
+    continuousCurveWRayEvidence.sourceBranchCount!==proof.branchCount||
+    continuousCurveWRayEvidence.continuousCurveV5Ready!==false||
+    continuousCurveWRayEvidence.standardLineStylesVerified!==false)
+  throw new RangeError('independently recomputed M5 W-view curve spans incomplete');
  const branchEndpoints=proof.branches.flatMap((b,i)=>
   b.endpoints.map((e,j)=>({branchIndex:i,branchId:b.id,role:j===0?'from':'to',
    point:e.point,events:e.events})));
@@ -86,7 +95,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
   revision,status:'analytic-endpoint-point-actions-only',
-  sourceM3:proof,constructionIntents:intents,constructionSteps:steps,
+  sourceM3:proof,continuousCurveWRayEvidence,
+  constructionIntents:intents,constructionSteps:steps,
   timing,player,bindings,
   independentlyProvenEndpointCount:branchEndpoints.length,
   signedEndpointPointActionCount:bindings.length,
