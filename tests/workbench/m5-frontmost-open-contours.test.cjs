@@ -90,7 +90,7 @@ test('edited hull, original source edge, projected depth cut or stale revision c
   x=>{x.sceneDepthEvidence.projectedOutlines.objects[0]
    .evidence.H.boundarySides[0].sourceEdgeCandidates[0]
    .sourceEdgeId='V000|V111';},
-  x=>{x.projectedStrokePartitions.segments[0].openInteriorVisibility='visible';},
+  x=>{x.projectedStrokePartitions.segments[0].openInteriorVisibility='forged-visible';},
   x=>{x.sceneDepthEvidence.edgeOverlapAudit.pairCount++;}
  ]){
   const a=args();mutate(a);
