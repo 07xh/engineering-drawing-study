@@ -10,6 +10,7 @@ const {assertSpatialSectionV5Parity,buildScopedSpatialSectionV5Preview}=
  require('../../workbench/spatial-section-v5-parity.cjs');
 const {evaluateUnifiedMath}=require('../../workbench/unified-math-pipeline.cjs');
 const Timeline=require('../../workbench/teaching-timeline-v5.js');
+const {project,toSheet,VIEWS}=require('../../core/projection/conventions.js');
 const p=(x,y,z)=>({x,y,z});
 const inputs=[
  {kind:'rectangular-prism',
@@ -36,6 +37,24 @@ for(const input of inputs){
   assert.equal(Object.isFrozen(preview.steps),true);
   assert.equal(Object.isFrozen(preview.steps[0].actions),true);
   const original=old(input);
+  // Independent authority: the SAME common first-angle toSheet should give
+  // the exact specialized scene coordinates, not a reflected parallel rule.
+  const b=input.kind==='rectangular-prism'?input.solid:null;
+  const highX=b?b.max.x:input.solid.base.maxX;
+  const lowY=b?b.min.y:input.solid.base.minY;
+  const highZ=b?b.max.z:input.solid.apex.z;
+  const scale=preview.sheet.scale;
+  const transforms={
+   V:{origin:{x:85+highX*scale,y:40+highZ*scale},scale},
+   H:{origin:{x:85+highX*scale,y:382-lowY*scale},scale},
+   W:{origin:{x:542-lowY*scale,y:40+highZ*scale},scale}
+  };
+  for(const station of original.stations)for(const view of VIEWS){
+   const expected=toSheet(view,project(station.modelMm)[view],transforms[view]);
+   assert.ok(Math.hypot(expected.x-station[view].x,
+    expected.y-station[view].y)<1e-7,
+    input.kind+' '+view+' must use canonical first-angle paper orientation');
+  }
   assert.deepEqual(preview.steps,original.steps);
   assert.deepEqual(preview.timing,Timeline.compileTimeline(preview.steps));
   const player=Timeline.createPlayer(preview.timing,{revision:21});

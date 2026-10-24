@@ -32,9 +32,9 @@ function paper(box){
  function place(view,pr){
   if(!pr||!finite(pr.u)||!finite(pr.v))throw new TypeError('finite mm projection required');
   const xy=view==='V'?
-   coord(85+scale*(pr.u-min.x),40+scale*(max.z-pr.v)):
+   coord(85+scale*(max.x-pr.u),40+scale*(max.z-pr.v)):
    view==='H'?
-   coord(85+scale*(pr.u-min.x),382+scale*(pr.v-min.y)):
+   coord(85+scale*(max.x-pr.u),382+scale*(pr.v-min.y)):
    view==='W'?
    coord(542+scale*(pr.u-min.y),40+scale*(max.z-pr.v)):null;
   if(!xy||![xy.x,xy.y].every(finite)||
