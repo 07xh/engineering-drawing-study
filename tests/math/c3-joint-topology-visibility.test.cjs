@@ -21,6 +21,14 @@ test('C3 joint proof partitions all V/H/W branches but never signs V5',()=>{
   assert.equal(i.endpointVisibilityVerified,false);
   assert.equal(i.v5ActionAuthorized,false);
  }
+ assert.ok(result.topologyComponents.length>0);
+ assert.equal(result.topologyComponents.flatMap(c=>c.branchTraversal).length,
+  result.sourceBranchCount);
+ assert.ok(result.topologyComponents.every(c=>
+  c.branchTraversal.every(e=>e.formalDrawingOrderAuthorized===false)));
+ assert.ok(result.topologyComponents.every(c=>
+  c.fullSolidBoundaryTopologyVerified===false&&
+  c.standardStrokeAuthorization===false));
  assert.ok(result.junctionGuards.length>0);
  assert.ok(result.junctionGuards.every(j=>j.fullFeatureJoinAuthorized===false));
  assert.ok(result.junctionGuards.every(j=>j.blockers.includes(
