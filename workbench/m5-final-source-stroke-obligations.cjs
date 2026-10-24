@@ -24,6 +24,8 @@ const {auditReviewedConvexSourceCreases}=
  require('./m5-reviewed-convex-source-creases.cjs');
 const {auditOrthogonalUnionSourceEdges}=
  require('./m5-orthogonal-union-source-edges.cjs');
+const {proveGeneratedOrthogonalUnionCreases}=
+ require('./m5-generated-orthogonal-union-creases.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -99,6 +101,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   throw new TypeError('multiple reviewed solids share an untrusted edge ID');
  const sourceUnionFeatureEvidence=auditOrthogonalUnionSourceEdges({
   geometry,revision});
+ // Genuine new union intersections have NO original source-edge ID.
+ // They are intentionally separate from the M4 source-edge action list.
+ // Promote neither their geometric existence nor their projected line
+ // candidate to a final standard solid/dashed construction step.
+ const generatedUnionCreaseEvidence=geometry.length>=2?
+  proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
+ if(generatedUnionCreaseEvidence&&
+    (generatedUnionCreaseEvidence.generatedFeatureV5Ready!==false||
+     generatedUnionCreaseEvidence.officialLineStylesVerified!==false))
+  throw new TypeError('generated union feature cannot bypass original M5 V5 gate');
  const unionFeatureMap=new Map(sourceUnionFeatureEvidence.edges.map(e=>
   [e.sourceEdgeId,e]));
  // Only claim an entire M4 stroke piece if its source parameter interval is
@@ -258,6 +270,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   revision,status:'per-source-span-proof-obligations-audited',
   spanCount:spans.length,spans,
   sourceCreaseEvidence,sourceUnionFeatureEvidence,
+  generatedUnionCreaseEvidence,
+  generatedSource3DOpenCandidateCount:
+   generatedUnionCreaseEvidence?.certifiedNewConcaveOpenCount??0,
+  generatedSourceStrokeActionCount:0,
+  generatedSourceStrokeSignedCount:0,
+
   locallyUnionExternalFeatureSpanCount:spans.filter(x=>
    x.sourceUnionExteriorOpenIntervalVerified).length,
   locallyUnionBuriedOrFlatSpanCount:spans.filter(x=>
