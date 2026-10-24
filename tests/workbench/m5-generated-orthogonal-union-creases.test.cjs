@@ -101,7 +101,7 @@ test('C2 M5 current M0 source proof refuses non-cuboid and broken/forged mesh da
  assert.throws(()=>audit([A(),A()]),/duplicate/);
  assert.throws(()=>audit([A(),moved()],-1),/revision/);
  const forged=moved();forged.data.points.V000.x=4.2;
- assert.equal(audit([A(),forged()]).status,'not-covered-non-cuboid');
+ assert.equal(audit([A(),forged]).status,'not-covered-non-cuboid');
 });
 test('C2 M5 generated edges are separate from OLD source M4/V5 candidate actions and NEVER signed',()=>{
  const geometry=[A(),moved()],revision=13;
