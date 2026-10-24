@@ -88,7 +88,10 @@ footer{color:#788c7b;font-size:12px;line-height:1.7;margin-top:20px}
 <p id="nativeOcrStatus" role="status" aria-live="polite">OCR 依赖浏览器原生支持，识别内容仅为待确认线索。</p>
 <p id="curveStatus" role="status" aria-live="polite">圆与圆弧候选仅在本机检测，不代表几何尺寸。</p>
 <p id="lineStatus" role="status" aria-live="polite">直线候选检测仅在本机运行，不作为已验证图形。</p>
+
 <p id="photoStatus" role="status" aria-live="polite">可选择照片或截图查看原题，现阶段需要自己确认尺寸；AI 识图尚未上线。</p>
+<div class="controls" style="margin:8px 0"><button type="button" id="photoByteRetry" disabled>重新校验本机原图 SHA-256</button></div>
+<p id="photoByteStatus" class="source-status" role="status" aria-live="polite">尚未选择原图；未进行来源字节校验。</p>
 <div class="photo-stage" id="photoStage"><div class="photo-canvas">
 <img id="photoPreview" alt="仅在浏览器本地显示的原题参照图片" hidden>
 <svg id="detectedLineOverlay" class="candidate-lines" aria-label="本地检测的尚未核对直线候选" hidden></svg>

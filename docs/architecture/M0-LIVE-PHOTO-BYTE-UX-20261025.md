@@ -1,0 +1,7 @@
+# 2026-10-25 Native original-photo SHA-256 status and retry control
+
+The actual photo M3 entry was fail-closed after #692 but the user had no browser-visible way to tell whether an original file was still hashing, failed due to missing WebCrypto secure context, lacked decoded dimensions or was ready for reviewed dual rulers. That made a mathematically strict workflow look stuck and encouraged unnecessary reselection.
+
+This scoped patch retains the ONE ephemeral `local-photo-byte-session` and existing shared original file SHA-256; adds an accessible `photoByteStatus` and direct `photoByteRetry` button to the actual `auto-fillet-live.html` page, with explicit no-photo/hashing/waiting-image/ready/invalid/failed states. Original file selection hashes once, retry reuses only the CURRENT selected local file, photo removal invalidates synchronously, stale asynchronous hash cannot reinstate an old source, and image load/error updates readiness. SHA-256 status reports **byte integrity only**, never source authenticity, global mm scale or M3/V5 mathematical certification; no digest, bytes, filename, network payload or new solver is shown/stored.
+
+Real Node WebCrypto and synthetic UI event tests cover hashing→ready→dimensions-unavailable→ready→clear, lack of secure crypto and retry event, HTML status/actual wired controls. The old live `getPhotoIdentity` required for M3 remains in place; this is UX plus source-state fail-closed, no new math kernel or animation implementation.
