@@ -77,7 +77,7 @@ function intersectNormalized(r,faces,solidId){
    if(t>entry){entry=t;entryFace=face.id;}
   }else if(t<exit){exit=t;exitFace=face.id;}
  }
- if(entry>exit+r.toleranceMm||exit< -r.toleranceMm)
+ if(entry>exit+r.toleranceMm||exit<=0)
   return freeze({status:'miss',solidId,reason:'empty-positive-ray-intersection',
    entryMm:null,exitMm:null,entryFaceId:null,exitFaceId:null});
  // Finite nearest AND far boundaries are necessary to prove a bounded
