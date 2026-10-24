@@ -18,7 +18,8 @@ const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  Object.keys(p).sort().join(',')==='x,y,z'&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
 const id=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(x);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot}=
+ require('./object-vector3.cjs');
 const output=(solidId,status,reason)=>Object.freeze({
  schema:'draftai-convex-vertex-open-ray-clearance/1',
  solidId,status,reason,

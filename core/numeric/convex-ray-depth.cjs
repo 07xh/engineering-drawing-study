@@ -15,7 +15,8 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  Object.keys(p).sort().join(',')==='x,y,z'&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot,normObject3:vectorNorm}=
+ require('./object-vector3.cjs');
 const freeze=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -31,8 +32,7 @@ function settings(x){
  if(toleranceMm<=0||toleranceMm>1e-2||!finite(angleTolerance)||
     angleTolerance<=0||angleTolerance>1e-5)
   throw new RangeError('bounded absolute length and unit-ray tolerances required');
- const norm=Math.hypot(x.observerDirection.x,x.observerDirection.y,
-  x.observerDirection.z);
+ const norm=vectorNorm(x.observerDirection);
  if(!finite(norm)||norm<=1e-12)throw new RangeError('nonzero observer direction required');
  return {point:x.point,d:{
   x:x.observerDirection.x/norm,y:x.observerDirection.y/norm,
@@ -50,7 +50,7 @@ function verifyHalfspaces(faces){
      Math.abs(face.offsetMm)>1e9)
    throw new TypeError('distinct finite outward halfspaces with IDs required');
   seen.add(face.id);
-  const len=Math.hypot(face.normal.x,face.normal.y,face.normal.z);
+  const len=vectorNorm(face.normal);
   if(!finite(len)||len<=1e-12)
    throw new RangeError('nonzero outward supporting plane normal required');
   return {id:face.id,n:{x:face.normal.x/len,

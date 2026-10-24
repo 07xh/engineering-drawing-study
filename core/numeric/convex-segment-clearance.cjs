@@ -19,7 +19,8 @@ const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  Object.keys(p).sort().join(',')==='x,y,z'&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
 const id=s=>typeof s==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(s);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot}=
+ require('./object-vector3.cjs');
 const at=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 const result=(sourceId,solidId,status,reason)=>Object.freeze({

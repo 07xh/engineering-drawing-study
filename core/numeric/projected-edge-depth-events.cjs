@@ -15,7 +15,8 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  Object.keys(p).sort().join(',')==='x,y,z'&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot}=
+ require('./object-vector3.cjs');
 const at=(s,t)=>({x:s.from.x+(s.to.x-s.from.x)*t,
  y:s.from.y+(s.to.y-s.from.y)*t,
  z:s.from.z+(s.to.z-s.from.z)*t});
