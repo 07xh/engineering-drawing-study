@@ -198,6 +198,12 @@ function solve(){
    ' 条（不作为实体特征边）；多实体并集外露语义仍未证明。'+
    '\\n仅呈现真实折棱的来源绑定候选 '+certified.scopedEdgePreviews.filter(e=>e.renderedAsPhysicalSourceCandidate).length+
    ' 个视图分段；共面网格分割不作为物理棱线，全部保持非正式虚实线。'+
+   '\\nM5 单个闭合凸实体完整纸面几何边界：'+
+   (certified.convexContourSourceCoverage.completeProjectedConvexBoundaryGeometryVerified?
+    'V/H/W 凸包完整、来源折棱覆盖 '+certified.convexContourSourceCoverage.boundarySideCount+
+    ' 条侧边、'+certified.convexContourSourceCoverage.boundaryAtomicIntervalCount+
+    ' 个原始 3D 折棱来源子区间':'证据范围未覆盖')+
+   '。空间最终来源唯一性、全部端点连接、标准虚实线、实体棱线 V5 均未认证。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
