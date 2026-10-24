@@ -10,7 +10,13 @@
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const plain=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const point=p=>plain(p)&&['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
-const copy=p=>({x:p.x,y:p.y,z:p.z});
+// Preserve the consumer's original finite <=1e8 mm input contract while
+// reading each user-owned coordinate exactly once into owned values.
+function snapshotModelPoint(p){
+ if(!plain(p))return null;
+ const x=p.x,y=p.y,z=p.z,q={x,y,z};
+ return point(q)?q:null;
+}
 // The consumer keeps its bounded model-mm and degeneracy checks; arithmetic
 // delegates to the one M0 Euclidean kernel through a shape-only 3D adapter.
 const {subtractObject3:minus,dotObject3:dot,normObject3:length}=
@@ -18,22 +24,31 @@ const {subtractObject3:minus,dotObject3:dot,normObject3:length}=
 const at=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 const E=1e-8;
 function normalizePlane(plane){
-  if(!plain(plane)||!point(plane.point)||!point(plane.normal))
+  if(!plain(plane))
     throw new TypeError('plane requires finite mm point and normal');
-  const magnitude=length(plane.normal);
+  const pointInput=plane.point,normalInput=plane.normal;
+  const origin=snapshotModelPoint(pointInput),
+   normal=snapshotModelPoint(normalInput);
+  if(!origin||!normal)
+    throw new TypeError('plane requires finite mm point and normal');
+  const magnitude=length(normal);
   if(!finite(magnitude)||magnitude<=1e-12)
     throw new RangeError('degenerate plane normal');
-  return {point:copy(plane.point),normal:{
-    x:plane.normal.x/magnitude,y:plane.normal.y/magnitude,
-    z:plane.normal.z/magnitude
+  return {point:origin,normal:{
+    x:normal.x/magnitude,y:normal.y/magnitude,
+    z:normal.z/magnitude
   }};
 }
 function checkCylinder(c){
-  if(!plain(c)||!point(c.baseCenter)||!finite(c.radiusMm)||
-    !finite(c.heightMm)||c.radiusMm<=1e-7||c.heightMm<=1e-7||
-    c.radiusMm>1e7||c.heightMm>1e7)
+  if(!plain(c))
     throw new TypeError('finite Z-axis right circular cylinder with positive radius and height in mm required');
-  return {baseCenter:copy(c.baseCenter),radiusMm:c.radiusMm,heightMm:c.heightMm};
+  const baseInput=c.baseCenter,radiusMm=c.radiusMm,heightMm=c.heightMm;
+  const baseCenter=snapshotModelPoint(baseInput);
+  if(!baseCenter||!finite(radiusMm)||!finite(heightMm)||
+    radiusMm<=1e-7||heightMm<=1e-7||
+    radiusMm>1e7||heightMm>1e7)
+    throw new TypeError('finite Z-axis right circular cylinder with positive radius and height in mm required');
+  return {baseCenter,radiusMm,heightMm};
 }
 function planeResidual(p,plane){return dot(plane.normal,minus(p,plane.point));}
 function sideResidual(p,c){
@@ -44,9 +59,13 @@ function sideResidual(p,c){
 const {project:projections}=require('../../../core/projection/conventions.js');
 function intersectFiniteSegmentPlane(segment,plane){
   const pl=normalizePlane(plane);
-  if(!plain(segment)||!point(segment.a)||!point(segment.b))
+  if(!plain(segment))
     throw new TypeError('finite segment endpoints in model-mm required');
-  const a=copy(segment.a),b=copy(segment.b),len=length(minus(a,b));
+  const aInput=segment.a,bInput=segment.b;
+  const a=snapshotModelPoint(aInput),b=snapshotModelPoint(bInput);
+  if(!a||!b)
+    throw new TypeError('finite segment endpoints in model-mm required');
+  const len=length(minus(a,b));
   if(!finite(len)||len<=1e-9)throw new RangeError('degenerate segment');
   const da=planeResidual(a,pl),db=planeResidual(b,pl);
   const eps=E*Math.max(1,len);

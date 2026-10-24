@@ -20,15 +20,22 @@ const {project:projection}=require('../../../core/projection/conventions.js');
 const fail=(status,reason)=>({status,reason,vertices:[],perimeter:[],
  modelUnit:'mm',verified:false,perimeterVerified:false,
  visibilityVerified:false,v5StepsReady:false,globallyUnique:null});
-function checkBox(input){
- if(!input||!point(input.min)||!point(input.max)||
-  ['x','y','z'].some(k=>input.max[k]-input.min[k]<=1e-7||
-     input.max[k]-input.min[k]>1e7))
+function snapshotBox(input){
+ if(!input||typeof input!=='object'||Array.isArray(input))
   throw new TypeError('finite axis-aligned box with positive mm extents required');
- return {min:{...input.min},max:{...input.max}};
+ const lo=input.min,hi=input.max;
+ if(!lo||!hi||typeof lo!=='object'||typeof hi!=='object')
+  throw new TypeError('finite axis-aligned box with positive mm extents required');
+ const min={x:lo.x,y:lo.y,z:lo.z},
+  max={x:hi.x,y:hi.y,z:hi.z};
+ if(!point(min)||!point(max)||
+    ['x','y','z'].some(k=>max[k]-min[k]<=1e-7||
+       max[k]-min[k]>1e7))
+  throw new TypeError('finite axis-aligned box with positive mm extents required');
+ return {min,max};
 }
 function prismPlaneSection(box,plane){
- const b=checkBox(box),pl=normalizePlane(plane),n=pl.normal;
+ const b=snapshotBox(box),pl=normalizePlane(plane),n=pl.normal;
  const ranges=['x','y','z'].map(k=>b.max[k]-b.min[k]);
  const scale=Math.max(1,...ranges),eps=1e-8*scale;
  const corners=[];
@@ -134,4 +141,4 @@ function prismPlaneSection(box,plane){
   visibilityVerified:false,sectionInteriorVerified:false,
   firstAngleConventionVerified:false,v5StepsReady:false,globallyUnique:null};
 }
-module.exports={prismPlaneSection};
+module.exports={prismPlaneSection,snapshotBox};

@@ -6,7 +6,8 @@
  * Kept plane halfspace and 3D observer direction are EXPLICIT; no standard
  * view mapping is invented. Corner and tangent cases are not certified.
  */
-const {prismPlaneSection}=require('./rectangular-prism-plane.cjs');
+const {prismPlaneSection,snapshotBox}=
+ require('./rectangular-prism-plane.cjs');
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
 const {classifyConvexOpenRaySign}=
  require('../../../core/numeric/convex-open-ray.cjs');
@@ -15,10 +16,13 @@ const point=v=>v&&['x','y','z'].every(k=>finite(v[k])&&Math.abs(v[k])<1e8);
 const {dotObject3:dot,normObject3:norm}=
  require('../../../core/numeric/object-vector3.cjs');
 const normalize=v=>{
- if(!point(v))throw new TypeError('finite observer ray is required');
- const mag=norm(v);
+ if(!v||typeof v!=='object'||Array.isArray(v))
+  throw new TypeError('finite observer ray is required');
+ const snapshot={x:v.x,y:v.y,z:v.z};
+ if(!point(snapshot))throw new TypeError('finite observer ray is required');
+ const mag=norm(snapshot);
  if(!finite(mag)||mag<=1e-12)throw new RangeError('observer ray must be nonzero');
- return {x:v.x/mag,y:v.y/mag,z:v.z/mag};
+ return {x:snapshot.x/mag,y:snapshot.y/mag,z:snapshot.z/mag};
 };
 const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2});
 function blocked(source){
@@ -35,8 +39,12 @@ function classifyPrismSectionVisibility(box,plane,options={}){
  const {retainedHalfspace,observerDirection}=options;
  if(!['positive','negative'].includes(retainedHalfspace))
   throw new TypeError('retainedHalfspace must be positive or negative');
- const ray=normalize(observerDirection),pl=normalizePlane(plane);
- const section=prismPlaneSection(box,plane);
+ const ray=normalize(observerDirection),sourceBox=snapshotBox(box),
+  pl=normalizePlane(plane);
+ // Passing the same owned model-mm values to M3 section and open-ray
+ // consumers prevents caller getters from changing the geometric source
+ // between construction and visibility proof.
+ const section=prismPlaneSection(sourceBox,pl);
  if(section.status!=='ready'||section.perimeterVerified!==true)
   return blocked(section);
  const epsilon=Math.max(1e-8,
@@ -51,9 +59,9 @@ function classifyPrismSectionVisibility(box,plane,options={}){
   // each open polygon edge in the interior of ONE original box face.
   const faces=[];
   for(const axis of ['x','y','z']){
-   if(Math.abs(mid[axis]-box.min[axis])<=epsilon*4)
+   if(Math.abs(mid[axis]-sourceBox.min[axis])<=epsilon*4)
     faces.push({axis,bound:'min',outwardSign:-1});
-   if(Math.abs(mid[axis]-box.max[axis])<=epsilon*4)
+   if(Math.abs(mid[axis]-sourceBox.max[axis])<=epsilon*4)
     faces.push({axis,bound:'max',outwardSign:1});
   }
   if(faces.length!==1)return blocked({
@@ -78,7 +86,7 @@ function classifyPrismSectionVisibility(box,plane,options={}){
    z:mid.z-pl.point.z};
   const planeResidualMm=Math.abs(dot(pl.normal,delta));
   const faceResidualMm=Math.abs(mid[face.axis]-
-   (face.bound==='min'?box.min[face.axis]:box.max[face.axis]));
+   (face.bound==='min'?sourceBox.min[face.axis]:sourceBox.max[face.axis]));
   if(!finite(planeResidualMm)||!finite(faceResidualMm)||
     planeResidualMm>epsilon*4||faceResidualMm>epsilon*4)
    return blocked({status:'numeric-failure',
