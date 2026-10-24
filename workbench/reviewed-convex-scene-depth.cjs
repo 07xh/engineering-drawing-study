@@ -17,6 +17,8 @@ const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
 const {certifyConvexSegmentOcclusion}=
  require('../core/numeric/convex-segment-occlusion.cjs');
+const {evaluateFullSourceSegmentOcclusion}=
+ require('../core/verification/convex-occlusion-coverage.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -33,6 +35,8 @@ const unready=(revision,reason)=>freeze({
  edgeContinuousOcclusion:{status:'not-covered',pairCount:0,
   certifiedRanges:[],uncertainPairs:[],
   completeContourVerified:false,officialLineStylesVerified:false},
+ wholeSourceEdgeOcclusion:{status:'not-covered',checkedCount:0,
+  hiddenSourceEdges:[],fullLineStyleSignedOff:false},
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -177,12 +181,38 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
     certifiedRanges,uncertainPairs,completeContourVerified:false,
     officialLineStylesVerified:false};
   })();
+ // A separate, recomputed proof gate may certify that the ENTIRE 3D
+ // source segment (including its endpoints) lies behind one or more
+ // confirmed opaque geometric solids. A line segment's endpoint JOIN and
+ // drawing-standard hidden-line style still need their own formal proof.
+ const wholeEdgeOcclusion=allEdges.length>40||solids.length>12?
+  {status:'budget-exceeded',checkedCount:0,hiddenSourceEdges:[],
+   fullLineStyleSignedOff:false}:(()=>{
+   const hiddenSourceEdges=[];let checkedCount=0;
+   for(const item of allEdges)for(const view of VIEWS){
+    const e=evaluateFullSourceSegmentOcclusion({
+     source:item.edge,solids,view});
+    checkedCount++;
+    if(!e.entireSourceSegmentOccluded)continue;
+    hiddenSourceEdges.push({
+     view,sourceGeometryId:item.sourceGeometryId,
+     sourceEdgeId:item.sourceEdgeId,
+     occluderGeometryIds:[...e.occluderIds],
+     scope:e.proofScope,geometryOfEntireSourceSegmentOccluded:true,
+     endpointJoinVerified:false,officialLineStyleVerified:false,
+     v5LineStyleSignedOff:false
+    });
+   }
+   return {status:'scoped-source-segment-occlusion-only',checkedCount,
+    hiddenSourceEdges,fullLineStyleSignedOff:false};
+  })();
  return freeze({
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
   revision,status:'scoped-face-probes-only',reason:null,
   sourceGeometryIds:solids.map(x=>x.id),
   sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
   edgeContinuousOcclusion:continuousOcclusion,
+  wholeSourceEdgeOcclusion:wholeEdgeOcclusion,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
