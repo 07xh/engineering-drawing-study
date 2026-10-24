@@ -6,6 +6,7 @@
  "type": "commonjs",
  "devDependencies": {
   "esbuild": "0.28.2",
+  "fast-check": "4.10.2",
   "linkedom": "0.18.12",
   "three": "0.186.1"
  }
