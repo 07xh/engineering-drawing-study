@@ -150,6 +150,30 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 条。此处不构成未知量解答。':'需要确认后重新显示场景，才会计算残差。');
  }
 
+
+ function refreshUnknown(snap){
+  if(snap.task!=='composition')return;
+  const data=snap.affineProblem,select=$('v7-u-list'),chosen=select.value;
+  select.replaceChildren();
+  const blank=document.createElement('option');
+  blank.value='';blank.textContent='添加新约束';select.append(blank);
+  for(const constraint of data?.constraints||[]){
+   const item=document.createElement('option');item.value=constraint.id;
+   item.textContent=constraint.id+' · '+constraint.kind;select.append(item);
+  }
+  select.value=data?.constraints.some(c=>c.id===chosen)?chosen:'';
+  const result=preview();
+  const evidence=result?.kind==='affine-evidence'?result.evidence:null;
+  const count=data?.constraints.length||0;
+  $('v7-u-status').textContent=!data?
+   '无未知点系统：请添加点 IDs 与条件，再明确确认。':
+   '未知点 '+data.points.length+' 个，标量约束记录 '+count+' 条。'+
+   (data.confirmed?'条件已人工确认。':'条件未确认或已修改，旧求解失效。')+
+   (evidence?' M3 '+evidence.status+'，rank '+
+     String(evidence.rank)+' / '+evidence.variableCount+
+     '，残差 '+String(evidence.residualMm)+' mm。':'');
+ }
+
  function refreshComposition(){
   const snapshot=coordinator?.snapshot();if(!snapshot||snapshot.task!=='composition')return;
   const select=$('v7-c-objects'),chosen=select.value;
@@ -165,6 +189,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   select.value=snapshot.objects.some(o=>o.id===chosen)?chosen:'';
   const approved=snapshot.conditions.filter(c=>c.confirmed).length;
   refreshRelations(snapshot);
+  refreshUnknown(snapshot);
   $('v7-c-status').textContent='对象 '+snapshot.objects.length+
     ' 个，已确认 '+approved+' 个。未确认的对象不会出现在场景预览。';
  }
@@ -225,7 +250,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function preview(){
   const snap=coordinator?.snapshot(),out=session?.readSnapshot();
   return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
-    ['prism-evidence','composition-evidence'].includes(out.kind)&&out.verified===false?out:null;
+    ['prism-evidence','composition-evidence','affine-evidence'].includes(out.kind)&&out.verified===false?out:null;
  }
  function selectable(node,view,rep,id){
   const pick=()=>coordinator.selectRepresentation(view,rep);
@@ -417,6 +442,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-photo-segment').value='0';
   $('v7-photo-point-status').textContent=photoMarkMessage();
   $('v7-c-objects').value='';
+  $('v7-u-frame').value=project.affineProblem?.frame||'model-mm-2d';
+  $('v7-u-points').value=project.affineProblem?.points?.map(x=>x.id).join(',')||'A,B';
+  $('v7-u-list').value='';
   if(project.task==='composition')refreshComposition();
   $('v7-projects').value=project.id;
   msg('项目已打开；恢复后不继承数学验证。');
@@ -680,7 +708,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     fieldset.hidden=fieldset.dataset.v7Task!==snap.task;
   root.querySelector('.v7-nonpoint-actions').hidden=snap.task==='projection'||snap.task==='composition';
   refreshComposition();
-  $('v7-spatial-boundary').textContent=snap.task==='planar'?
+  $('v7-spatial-boundary').textContent=
+    snap.task==='composition'&&snap.affineProblem?
+     '仿射未知点：仅数学唯一解绘图，无空间可见性/V5 审核':
+    snap.task==='planar'?
    '纯二维数学不制造三维立体':snap.task==='exploration'?
    '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
    '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
@@ -700,6 +731,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
+     partial.kind==='affine-evidence'?
+      'M3 有界仿射未知点 · '+partial.evidence.status+
+      '；矩阵秩 '+String(partial.evidence.rank)+'/'+
+       partial.evidence.variableCount+'，残差 '+String(partial.evidence.residualMm)+
+       ' mm。仅点约束数学证据，原图/完整作图/V5 均未签收。':
      partial.kind==='composition-evidence'?
       '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
