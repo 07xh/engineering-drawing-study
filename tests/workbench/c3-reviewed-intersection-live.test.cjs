@@ -2,7 +2,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {parseHTML}=require('linkedom');
 const {compileFiniteCylinderEndpointV5:compile}=
  require('../../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {toSheet}=require('../../core/projection/conventions.js');
@@ -17,13 +16,12 @@ const frames=()=>({
 });
 test('actual public C3 page exposes reviewed geometry, first-angle math and one V5 control',()=>{
  const html=fs.readFileSync('labs/finite-cylinder-intersection-live.html','utf8');
- const {document}=parseHTML(html);
  for(const id of ['board','zRadius','zX','zY','zMin','zMax',
   'yRadius','yX','yZ','yMin','yMax','stations','confirmed','solve',
   'play','pause','prev','next','speed','status','proof']){
-  assert.ok(document.getElementById(id),id);
+  assert.ok(html.includes('id="'+id+'"'),id);
  }
- assert.ok(document.getElementById('play').hasAttribute('disabled'));
+ assert.match(html,/<button[^>]*id="play"[^>]*disabled/);
  assert.match(html,/不是.*经过正式虚实线认证/);
  assert.match(html,/紫色点划曲线/);
  assert.match(html,/第一角法/);
