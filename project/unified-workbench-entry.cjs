@@ -543,9 +543,50 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    svg.append(node);
   }
  }
+
+ function renderScopedSectionPaper(svg,data){
+  const scoped=preview(),plan=scoped?.evidence.sectionConstructionPreview;
+  if(!plan||plan.status!=='preview-only'||!Array.isArray(plan.givens)||
+    plan.completeEngineeringDrawingVerified!==false||
+    plan.visibilityVerified!==false)
+   throw Error('当前无法通过可信的 M3/M4 截交预览门禁');
+  const width=plan.sheet.width,height=plan.sheet.height;
+  svg.setAttribute('viewBox','0 0 '+width+' '+height);
+  svg.append(shape('rect',{x:0,y:0,width,height,fill:'#fff'}));
+  text(svg,22,25,'仅限定截面：M3→ConstructionStep→单一 V5 预览','#a45d24');
+  text(svg,30,59,'V · 正面');text(svg,30,405,'H · 水平');
+  text(svg,600,59,'W · 侧面');
+  const mono=$('v7-mono').checked;
+  function drawAction(action,fraction,guide=false){
+   if(fraction<=0||!['point','line','arc','circle'].includes(action.kind))return;
+   const tag={point:'circle',line:'line',arc:'path',circle:'circle'}[action.kind];
+   const node=shape(tag,{
+    fill:action.kind==='point'?(mono?'#555':'#2f729d'):'none',
+    stroke:mono?'#444':guide?'#b98c48':'#166b9e',
+    'stroke-width':guide?1.3:2.6,
+    'stroke-dasharray':guide||action.visibility==='undetermined'?'5 4':'none',
+    'vector-effect':'non-scaling-stroke'
+   });
+   Motion.updateSvg(node,action,fraction);
+   svg.append(node);
+  }
+  for(const given of plan.givens)drawAction(given,1,true);
+  const frame=data.clock.snapshot();
+  for(const step of data.plan.steps){
+   if(step.role==='guide'&&!$('v7-guides').checked)continue;
+   for(const action of step.actions)
+    drawAction(action,frame.actionFractions[action.id]||0,step.role==='guide');
+  }
+  text(svg,22,height-18,
+   '预览范围有限：端点遮挡、虚实线及最终工程图尚未证明','#a45d24');
+ }
+
  function renderPaper(){
   const svg=$('v7-sheet');svg.replaceChildren();
   const snap=coordinator?.snapshot();if(!snap)return;
+  const scoped=scopedPreviewOn?scopedPlayback():null;
+  if(scoped){renderScopedSectionPaper(svg,scoped);return;}
+  svg.setAttribute('viewBox','0 0 720 460');
   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
   const planar=snap.task==='planar';
   if(!planar){
