@@ -95,7 +95,8 @@
       "status": "consumer-review",
       "proofScope": "caller unit and derivative tags only",
       "regressionTests": [
-        "tests/math/m0-dimensionless-input-integrity.test.cjs"
+        "tests/math/m0-dimensionless-input-integrity.test.cjs",
+        "tests/math/m0-m2-real-consumer-independent-parity.test.cjs"
       ],
       "remainingGate": "independent calculus and independent source/revision, analytic derivative and downstream signoff"
     },
@@ -122,7 +123,8 @@
       "status": "consumer-review",
       "proofScope": "dimensionless local numerical rank only",
       "regressionTests": [
-        "tests/math/m0-jacobian-single-snapshot.test.cjs"
+        "tests/math/m0-jacobian-single-snapshot.test.cjs",
+        "tests/math/m0-m2-real-consumer-independent-parity.test.cjs"
       ],
       "remainingGate": "independent source/revision, analytic derivative and downstream signoff, no global uniqueness"
     },
@@ -167,7 +169,8 @@
       "status": "consumer-review",
       "proofScope": "local scale and tolerance diagnostic",
       "regressionTests": [
-        "tests/math/m0-residual-evidence.test.cjs"
+        "tests/math/m0-residual-evidence.test.cjs",
+        "tests/math/m0-m2-real-consumer-independent-parity.test.cjs"
       ],
       "remainingGate": "independent source/revision, analytic derivative and downstream signoff"
     },
