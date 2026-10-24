@@ -177,7 +177,12 @@ function solve(){
    ' 段、整段实体前方遮挡 '+certified.wholeSourceEdgeRayEvidence.provenWholeOccludedCount+
    ' 段、投影积聚 '+certified.wholeSourceEdgeRayEvidence.collapsedCount+
    ' 段、其余未判定 '+certified.wholeSourceEdgeRayEvidence.undeterminedCount+
-   ' 段。\n原始三维顶点与投影切分端点已逐一匹配 '+
+   ' 段。\nM5 原始相邻面折棱：真实单体几何折棱 '+
+   certified.wholeSourceEdgeRayEvidence.sourceCreaseEvidence.certifiedSingleSolidCreaseCount+
+   ' 条、仅为共面网格分割 '+
+   certified.wholeSourceEdgeRayEvidence.sourceCreaseEvidence.provenCoplanarSubdivisionCount+
+   ' 条（不作为实体特征边）；多实体并集外露语义仍未证明。'+
+   '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.positiveOriginalRayCount+
