@@ -11,6 +11,8 @@ const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
+const {evaluateReviewedConvexMeshDepth}=
+ require('../workbench/reviewed-convex-scene-depth.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -152,8 +154,13 @@ function createUnifiedProjectSession(){
       geometry,latest.relations||[],{revision:latest.revision});
     const scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
+    // Only human-confirmed closed convex 3D meshes enter the shared ray-depth
+    // kernel. Other Geometry shapes still work in the editor, but receive
+    // explicit NOT-COVERED occlusion evidence (never fabricated hidden lines).
+    const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
+      geometry,revision:latest.revision});
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
