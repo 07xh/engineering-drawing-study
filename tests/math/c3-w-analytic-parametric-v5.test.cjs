@@ -133,7 +133,7 @@ test('original web UI plays W M3 mathematical curve without claiming standard hi
  assert.match(ui,/includeWAnalyticCurveGuides:true/);
  assert.match(ui,/analytic-curve/);
  assert.match(ui,/Motion\.updateSvg\(shape,action,fraction\)/);
- assert.match(ui,/exact-M3-W-source-screen-approximation-not-official/);
+ assert.match(ui,/M3-source-M5-open-ray-evidence-not-official-line-style/);
  assert.match(html,/SVG 则采用自适应分段显示/);
  assert.match(html,/均非国标实虚线/);
  assert.doesNotMatch(ui,/data-official-line-style.*true/);
