@@ -1,0 +1,193 @@
+{
+  "schema": "draftai-m0-acceptance-inventory/1",
+  "authority": "Issue #372; PR gate #152",
+  "evidenceBoundary": "Scoped regression and static import detection do not establish mathematical global truth, executed consumer path, input photo provenance or production Active SHA",
+  "statusDefinitions": {
+    "scoped-math": "A bounded mathematical helper with regression evidence; NOT signed off as complete M0",
+    "consumer-review": "Real numeric source references or special consumer source preconditions exist, but downstream mathematical source and proof scope are not fully signed",
+    "consumer-pending": "Reserved for future truly unconsumed opt-in diagnostics; runtime import evidence must be independently rechecked",
+    "provisional": "Relies on human-supplied image calibration, not independent provenance"
+  },
+  "modules": [
+    {
+      "path": "core/numeric/affine-transform.cjs",
+      "status": "scoped-math",
+      "proofScope": "finite 2D/3D affine coordinate map only",
+      "regressionTests": [
+        "tests/math/m0-affine-single-snapshot-matrix.test.cjs"
+      ],
+      "remainingGate": "additional M1/M3 consumer parity"
+    },
+    {
+      "path": "core/numeric/binary64-dyadic.cjs",
+      "status": "scoped-math",
+      "proofScope": "exact dyadic for represented binary64",
+      "regressionTests": [
+        "tests/math/m0-adaptive-determinant3d.test.cjs"
+      ],
+      "remainingGate": "indirect predicate testing, not arbitrary real arithmetic"
+    },
+    {
+      "path": "core/numeric/convex-open-ray.cjs",
+      "status": "consumer-review",
+      "proofScope": "two signed ray slopes only",
+      "regressionTests": [
+        "tests/math/m0-convex-open-ray.test.cjs"
+      ],
+      "remainingGate": "M3 source halfspace polarity evidence"
+    },
+    {
+      "path": "core/numeric/convex-point-ray-clearance.cjs",
+      "status": "scoped-math",
+      "proofScope": "local positive open ray against supplied convex solid",
+      "regressionTests": [
+        "tests/math/m0-point-clearance-falsezero-slope.test.cjs"
+      ],
+      "remainingGate": "full-scene inventory and revision"
+    },
+    {
+      "path": "core/numeric/convex-polytope-boundary-ray.cjs",
+      "status": "consumer-review",
+      "proofScope": "one boundary point and explicit support planes",
+      "regressionTests": [
+        "tests/math/m0-convex-polytope-boundary-ray.test.cjs"
+      ],
+      "remainingGate": "independent source boundary incidence"
+    },
+    {
+      "path": "core/numeric/convex-ray-depth.cjs",
+      "status": "scoped-math",
+      "proofScope": "only supplied halfspaces and positive observer ray",
+      "regressionTests": [
+        "tests/math/m0-nearparallel-exact-ray-sign.test.cjs"
+      ],
+      "remainingGate": "all occluders and complete scene"
+    },
+    {
+      "path": "core/numeric/convex-segment-clearance.cjs",
+      "status": "scoped-math",
+      "proofScope": "one open source segment and one occluder",
+      "regressionTests": [
+        "tests/math/m0-clearance-falseparallel-sign.test.cjs"
+      ],
+      "remainingGate": "continuous junction/endpoint proof"
+    },
+    {
+      "path": "core/numeric/convex-segment-occlusion.cjs",
+      "status": "scoped-math",
+      "proofScope": "strict interior occlusion on one source segment",
+      "regressionTests": [
+        "tests/math/m0-occlusion-falseparallel-sign.test.cjs"
+      ],
+      "remainingGate": "continuous endpoints and global contour"
+    },
+    {
+      "path": "core/numeric/determinant3d-adaptive.cjs",
+      "status": "scoped-math",
+      "proofScope": "binary64 exact 3D determinant sign",
+      "regressionTests": [
+        "tests/math/m0-adaptive-determinant3d.test.cjs"
+      ],
+      "remainingGate": "input source rounding uncertainty"
+    },
+    {
+      "path": "core/numeric/dimensionless-jacobian.cjs",
+      "status": "consumer-review",
+      "proofScope": "caller unit and derivative tags only",
+      "regressionTests": [
+        "tests/math/m0-dimensionless-input-integrity.test.cjs"
+      ],
+      "remainingGate": "independent calculus and independent source/revision, analytic derivative and downstream signoff"
+    },
+    {
+      "path": "core/numeric/euclidean-kernel.cjs",
+      "status": "scoped-math",
+      "proofScope": "finite vector Float64 arithmetic and optional exact sign",
+      "regressionTests": [
+        "tests/math/m0-dot-cross-cancellation-guard.test.cjs"
+      ],
+      "remainingGate": "legacy magnitude remains approximate"
+    },
+    {
+      "path": "core/numeric/exact-convex-vertex-set.cjs",
+      "status": "scoped-math",
+      "proofScope": "offline exact vertex set within limited represented binary64 budget",
+      "regressionTests": [
+        "tests/math/m0-exact-convex-vertex-set.test.cjs"
+      ],
+      "remainingGate": "nonbinary64 rational vertices and source provenance"
+    },
+    {
+      "path": "core/numeric/jacobian-rank-evidence.cjs",
+      "status": "consumer-review",
+      "proofScope": "dimensionless local numerical rank only",
+      "regressionTests": [
+        "tests/math/m0-jacobian-single-snapshot.test.cjs"
+      ],
+      "remainingGate": "independent source/revision, analytic derivative and downstream signoff, no global uniqueness"
+    },
+    {
+      "path": "core/numeric/object-vector3.cjs",
+      "status": "scoped-math",
+      "proofScope": "object shape conversion to shared numeric kernel",
+      "regressionTests": [
+        "tests/math/m0-object-vector3-consumers.test.cjs"
+      ],
+      "remainingGate": "consumer mathematical semantics & source topology"
+    },
+    {
+      "path": "core/numeric/orientation2d-adaptive.cjs",
+      "status": "scoped-math",
+      "proofScope": "finite binary64 projected 2D orientation sign",
+      "regressionTests": [
+        "tests/math/m0-adaptive-orientation-m1-consumer.test.cjs"
+      ],
+      "remainingGate": "source measurement accuracy"
+    },
+    {
+      "path": "core/numeric/orientation2d-exact.cjs",
+      "status": "scoped-math",
+      "proofScope": "exact represented binary64 dyadic 2D orientation",
+      "regressionTests": [
+        "tests/math/m0-orientation2d-exact.test.cjs"
+      ],
+      "remainingGate": "nonlinear intersections outside scope"
+    },
+    {
+      "path": "core/numeric/projected-edge-depth-events.cjs",
+      "status": "scoped-math",
+      "proofScope": "two finite 3D source edges projected V/H/W",
+      "regressionTests": [
+        "tests/math/m0-projected-edge-falseparallel-sign.test.cjs"
+      ],
+      "remainingGate": "full scene contour/official line styles"
+    },
+    {
+      "path": "core/numeric/residual-evidence.cjs",
+      "status": "consumer-review",
+      "proofScope": "local scale and tolerance diagnostic",
+      "regressionTests": [
+        "tests/math/m0-residual-evidence.test.cjs"
+      ],
+      "remainingGate": "independent source/revision, analytic derivative and downstream signoff"
+    },
+    {
+      "path": "core/numeric/reviewed-pixel-frame.cjs",
+      "status": "provisional",
+      "proofScope": "user reviewed image pixels mapped to model mm",
+      "regressionTests": [
+        "tests/math/m0-reviewed-pixel-frame.test.cjs"
+      ],
+      "remainingGate": "dual scale and source revision independent verification"
+    },
+    {
+      "path": "core/numeric/trivial-recession-cone.cjs",
+      "status": "scoped-math",
+      "proofScope": "only trivial polyhedral recession cone",
+      "regressionTests": [
+        "tests/math/m0-trivial-recession-cone.test.cjs"
+      ],
+      "remainingGate": "nonempty solid, source vertex completeness"
+    }
+  ]
+}
