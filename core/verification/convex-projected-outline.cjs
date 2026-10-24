@@ -62,9 +62,11 @@ function verifyConvexProjectedOutline({mesh,revision}={}){
   const lo=partial(unique),hi=partial([...unique].reverse());
   const hull=lo.slice(0,-1).concat(hi.slice(0,-1));
   if(hull.length<3)fail('projected hull has zero area');
-  const signed2=hull.reduce((s,p,i)=>
-   s+p.u*hull[(i+1)%hull.length].v-
-    p.v*hull[(i+1)%hull.length].u,0);
+  // Shoelace terms in absolute model coordinates catastrophically cancel
+  // after a large translation, even for a small, valid convex drawing.
+  // Fan-triangulate around one hull point with local differences instead.
+  const signed2=hull.slice(1,-1).reduce((s,p,i)=>
+   s+cr(hull[0],p,hull[i+2]),0);
   if(!finite(signed2)||signed2<=crossTol)
    fail('hull orientation/area is not independently stable');
   const sides=[];

@@ -111,3 +111,56 @@ test('fast-check/C1: inconsistent manually paired source coordinates fail closed
    /unique 3D vertex/);
  }),{seed:20261025,numRuns:32});
 });
+
+
+const {prismMesh:makeValidatedCuboid}=
+ require('../../project/unified-workbench-session.cjs');
+const {verifyConvexProjectedOutline:verifyHull}=
+ require('../../core/verification/convex-projected-outline.cjs');
+
+// Independent exact-integer rectangle areas; do not use the production
+// shoelace sum or the original projector to derive the expected dimensions.
+// These accepted model-mm boxes are small but translated to large origins.
+// Previously the unanchored shoelace could return zero or a wrong sign.
+test('fast-check/C1/M5: large absolute coordinate translations retain correct V/H/W hull geometry',()=>{
+ const translations=fc.record({
+  x:fc.integer({min:9_000_000_000,max:11_000_000_000}),
+  y:fc.integer({min:9_000_000_000,max:11_000_000_000}),
+  z:fc.integer({min:9_000_000_000,max:11_000_000_000}),
+  w:fc.integer({min:5,max:93}),
+  d:fc.integer({min:5,max:93}),
+  h:fc.integer({min:5,max:93}),
+  sign:fc.constantFrom(-1,1)
+ });
+ const proof=({x,y,z,w,d,h,sign})=>{
+  const min={x:sign*x,y:sign*y,z:sign*z};
+  const max={x:min.x+w,y:min.y+d,z:min.z+h};
+  const mesh=makeValidatedCuboid({solid:{min,max}});
+  const result=verifyHull({mesh,revision:41});
+  assert.equal(result.sourceClosedConvexTopologyVerified,true);
+  assert.equal(result.v5Ready,false);
+  const expected={V:w*h,H:w*d,W:d*h};
+  for(const view of ['V','H','W']){
+   const side=result[view];
+   assert.equal(side.convexProjectedBoundaryVerified,true);
+   assert.equal(side.vertices.length,4);
+   assert.equal(side.boundarySides.length,4);
+   assert.equal(side.officialLineStylesVerified,false);
+   // Compute the polygon area in a translated local frame and compare with
+   // the independent analytical box dimensions; no signed-line inference.
+   const origin=side.vertices[0];
+   let twice=0;
+   for(let k=1;k<side.vertices.length-1;k++){
+    const a=side.vertices[k],b=side.vertices[k+1];
+    twice+=(a.u-origin.u)*(b.v-origin.v)-
+     (a.v-origin.v)*(b.u-origin.u);
+   }
+   assert.equal(twice/2,expected[view]);
+  }
+ };
+ // A fixed counterexample proves that the original absolute shoelace fails:
+ // 11x7 at 1e10 yielded signed doubled area 0 instead of 154.
+ proof({x:10_000_000_000,y:10_000_000_000,z:10_000_000_000,
+  w:11,d:7,h:13,sign:1});
+ fc.assert(fc.property(translations,proof),{seed:20261025,numRuns:64});
+});
