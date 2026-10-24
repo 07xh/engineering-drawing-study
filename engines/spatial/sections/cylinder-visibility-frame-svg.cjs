@@ -14,13 +14,10 @@ const Motion=require('../../../workbench/teaching-motion-v5.js');
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const safeId=s=>typeof s==='string'&&/^[A-Za-z][A-Za-z0-9_+-]{0,79}$/.test(s);
-const number=n=>{
- if(!finite(n)||Math.abs(n)>1e9)throw new RangeError('invalid SVG coordinate');
- return String(Number(n.toFixed(6)));
-};
-const escape=s=>String(s).replace(/[&<>"']/g,ch=>({
- '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'
-})[ch]);
+const {formatFrameNumber,escapeFrameAttribute}=
+ require('./shared-v5-frame-svg-safety.cjs');
+const number=n=>formatFrameNumber(n,'invalid SVG coordinate');
+const escape=escapeFrameAttribute;
 function plainShape(action,progress,layer){
  if(!action||!safeId(action.id)||!['given','guide'].includes(layer))
   throw new TypeError('only verified source and guide actions can be drawn');

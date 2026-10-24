@@ -11,13 +11,11 @@ const {classifyPrismSectionVisibility}=require('./rectangular-prism-cut-visibili
 const Timeline=require('../../../workbench/teaching-timeline-v5.js');
 const Motion=require('../../../workbench/teaching-motion-v5.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-function number(n){
- if(!finite(n)||Math.abs(n)>1e9)throw new RangeError('unsafe SVG coordinate');
- return String(Number(n.toFixed(6)));
-}
+const {formatFrameNumber,escapeFrameAttribute}=
+ require('./shared-v5-frame-svg-safety.cjs');
+const number=n=>formatFrameNumber(n,'unsafe SVG coordinate');
 const idCheck=s=>typeof s==='string'&&/^[a-z][a-z0-9_+-]{0,79}$/i.test(s);
-const escape=s=>String(s).replace(/[&<>"']/g,c=>
- ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+const escape=escapeFrameAttribute;
 function element(action,fraction,layer,certifiedVisibility=null){
  if(!idCheck(action.id)||!['given','guide','result'].includes(layer))
   throw new TypeError('invalid verified prism action ID');
