@@ -7,7 +7,8 @@ test('complete M0 API inventory has explicit scoped tests and real unresolved ga
  assert.equal(r.moduleCount,20);
  assert.equal(r.entries.length,20);
  assert.equal(r.statuses.provisional,1);
- assert.equal(r.statuses['consumer-pending'],3);
+ assert.equal(r.statuses['consumer-pending'],0);
+ assert.equal(r.statuses['consumer-review'],5);
  assert.ok(r.entries.every(x=>x.proofScope&&x.remainingGate&&x.regressionTests.length));
  assert.match(r.warning,/not executable paths/);
 });
@@ -23,12 +24,20 @@ test('three real spatial solver sources consume existing object-vector M0 bridge
  for(const spec of bridge.directRuntimeConsumers.filter(x=>x.startsWith('engines/')))
   assert.ok(kernel.transitiveRuntimeConsumers.includes(spec));
 });
-test('opt-in M2 numerical diagnostics are not falsely certified as solver-integrated',()=>{
+test('real analytic M2 consumers invoke three shared M0 tools, but do not confer global proof',()=>{
  const r=audit();
+ const local='core/constraints/linear-point-local-evidence.cjs';
  for(const id of ['dimensionless-jacobian','jacobian-rank-evidence','residual-evidence']){
-  assert.equal(by(r,id).status,'consumer-pending');
-  assert.ok(by(r,id).remainingGate);
+  const item=by(r,id);
+  assert.equal(item.status,'consumer-review');
+  assert.ok(item.directRuntimeConsumers.includes(local),id+' must have real M2 source consumer');
+  assert.ok(item.remainingGate);
  }
+ const rank=by(r,'jacobian-rank-evidence');
+ for(const downstream of [
+  'core/constraints/affine-point-unknown-solver.cjs',
+  'core/constraints/nonlinear-point-candidates.cjs'
+ ])assert.ok(rank.directRuntimeConsumers.includes(downstream),downstream);
  assert.equal(by(r,'reviewed-pixel-frame').status,'provisional');
 });
 test('ray and projected-edge primitives retain independent missing scene/endpoint proofs',()=>{

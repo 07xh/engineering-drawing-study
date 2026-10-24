@@ -4,8 +4,8 @@
   "evidenceBoundary": "Scoped regression and static import detection do not establish mathematical global truth, executed consumer path, input photo provenance or production Active SHA",
   "statusDefinitions": {
     "scoped-math": "A bounded mathematical helper with regression evidence; NOT signed off as complete M0",
-    "consumer-review": "Requires independent proof of source or consumer prerequisites",
-    "consumer-pending": "Optional diagnostic not independently proven in production solver consumers",
+    "consumer-review": "Real numeric source references or special consumer source preconditions exist, but downstream mathematical source and proof scope are not fully signed",
+    "consumer-pending": "Reserved for future truly unconsumed opt-in diagnostics; runtime import evidence must be independently rechecked",
     "provisional": "Relies on human-supplied image calibration, not independent provenance"
   },
   "modules": [
@@ -92,12 +92,12 @@
     },
     {
       "path": "core/numeric/dimensionless-jacobian.cjs",
-      "status": "consumer-pending",
+      "status": "consumer-review",
       "proofScope": "caller unit and derivative tags only",
       "regressionTests": [
         "tests/math/m0-dimensionless-input-integrity.test.cjs"
       ],
-      "remainingGate": "independent calculus and real M2 solver consumer"
+      "remainingGate": "independent calculus and independent source/revision, analytic derivative and downstream signoff"
     },
     {
       "path": "core/numeric/euclidean-kernel.cjs",
@@ -119,12 +119,12 @@
     },
     {
       "path": "core/numeric/jacobian-rank-evidence.cjs",
-      "status": "consumer-pending",
+      "status": "consumer-review",
       "proofScope": "dimensionless local numerical rank only",
       "regressionTests": [
         "tests/math/m0-jacobian-single-snapshot.test.cjs"
       ],
-      "remainingGate": "independent M2 solver integration, no global uniqueness"
+      "remainingGate": "independent source/revision, analytic derivative and downstream signoff, no global uniqueness"
     },
     {
       "path": "core/numeric/object-vector3.cjs",
@@ -164,12 +164,12 @@
     },
     {
       "path": "core/numeric/residual-evidence.cjs",
-      "status": "consumer-pending",
+      "status": "consumer-review",
       "proofScope": "local scale and tolerance diagnostic",
       "regressionTests": [
         "tests/math/m0-residual-evidence.test.cjs"
       ],
-      "remainingGate": "real source equations and M2 consumer"
+      "remainingGate": "independent source/revision, analytic derivative and downstream signoff"
     },
     {
       "path": "core/numeric/reviewed-pixel-frame.cjs",
