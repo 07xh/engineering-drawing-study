@@ -12,9 +12,15 @@
  * topology, silhouette, endpoint joins, official line styles or V5.
  */
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
- Object.keys(p).sort().join(',')==='x,y,z'&&
- ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
+// Snapshot source coordinates once: validation and mathematical consumption
+// must never read two different values from accessor-backed caller objects.
+function snapshotXYZ(p){
+ if(!p||typeof p!=='object'||Array.isArray(p)||
+    Object.keys(p).sort().join(',')!=='x,y,z')return null;
+ const x=p.x,y=p.y,z=p.z;
+ if(![x,y,z].every(v=>finite(v)&&Math.abs(v)<=1e8))return null;
+ return {x,y,z};
+}
 const {dotObject3:dot,normObject3:vectorNorm}=
  require('./object-vector3.cjs');
 const {certifyDotSign}=require('./euclidean-kernel.cjs');
@@ -26,36 +32,40 @@ const freeze=o=>{
  return o;
 };
 function settings(x){
- if(!x||!point(x.point)||!point(x.observerDirection)||
-    !Number.isFinite(x.toleranceMm??1e-7))
+ if(!x)throw new TypeError('finite observer ray and source point required');
+ const p=snapshotXYZ(x.point),observer=snapshotXYZ(x.observerDirection),
+  toleranceMm=x.toleranceMm??1e-7,angleTolerance=x.angleTolerance??1e-12;
+ if(!p||!observer||!Number.isFinite(toleranceMm))
   throw new TypeError('finite observer ray and source point required');
- const toleranceMm=x.toleranceMm??1e-7,angleTolerance=x.angleTolerance??1e-12;
  if(toleranceMm<=0||toleranceMm>1e-2||!finite(angleTolerance)||
     angleTolerance<=0||angleTolerance>1e-5)
   throw new RangeError('bounded absolute length and unit-ray tolerances required');
- const norm=vectorNorm(x.observerDirection);
+ const norm=vectorNorm(observer);
  if(!finite(norm)||norm<=1e-12)throw new RangeError('nonzero observer direction required');
- return {point:x.point,d:{
-  x:x.observerDirection.x/norm,y:x.observerDirection.y/norm,
-  z:x.observerDirection.z/norm},toleranceMm,angleTolerance};
+ return {point:p,d:{x:observer.x/norm,y:observer.y/norm,
+  z:observer.z/norm},toleranceMm,angleTolerance};
 }
 function verifyHalfspaces(faces){
  if(!Array.isArray(faces)||faces.length<4||faces.length>64)
   throw new TypeError('4..64 finite supporting halfspaces required');
  const seen=new Set();
- return faces.map(face=>{
-  if(!face||typeof face!=='object'||Array.isArray(face)||
-     Object.keys(face).sort().join(',')!=='id,normal,offsetMm'||
-     typeof face.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(face.id)||
-     seen.has(face.id)||!point(face.normal)||!finite(face.offsetMm)||
-     Math.abs(face.offsetMm)>1e9)
+ return Array.from({length:faces.length},(_,i)=>{
+  if(!Object.hasOwn(faces,i))
    throw new TypeError('distinct finite outward halfspaces with IDs required');
-  seen.add(face.id);
-  const len=vectorNorm(face.normal);
+  const face=faces[i];
+  if(!face||typeof face!=='object'||Array.isArray(face)||
+     Object.keys(face).sort().join(',')!=='id,normal,offsetMm')
+   throw new TypeError('distinct finite outward halfspaces with IDs required');
+  const faceId=face.id,normal=snapshotXYZ(face.normal),offsetMm=face.offsetMm;
+  if(typeof faceId!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(faceId)||
+     seen.has(faceId)||!normal||!finite(offsetMm)||Math.abs(offsetMm)>1e9)
+   throw new TypeError('distinct finite outward halfspaces with IDs required');
+  seen.add(faceId);
+  const len=vectorNorm(normal);
   if(!finite(len)||len<=1e-12)
    throw new RangeError('nonzero outward supporting plane normal required');
-  return {id:face.id,n:{x:face.normal.x/len,
-   y:face.normal.y/len,z:face.normal.z/len},offset:face.offsetMm/len};
+  return {id:faceId,n:{x:normal.x/len,
+   y:normal.y/len,z:normal.z/len},offset:offsetMm/len};
  });
 }
 function intersectNormalized(r,faces,solidId){
@@ -133,11 +143,13 @@ function traceConvexRayDepth({
  const seen=new Set(),results=[];
  for(const s of solids){
   if(!s||typeof s!=='object'||Array.isArray(s)||
-     Object.keys(s).sort().join(',')!=='halfspaces,id'||
-     typeof s.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(s.id)||
-     seen.has(s.id))throw new TypeError('distinct solid identities required');
-  seen.add(s.id);
-  results.push(intersectNormalized(r,verifyHalfspaces(s.halfspaces),s.id));
+     Object.keys(s).sort().join(',')!=='halfspaces,id')
+   throw new TypeError('distinct solid identities required');
+  const solidId=s.id,halfspaces=s.halfspaces;
+  if(typeof solidId!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(solidId)||
+     seen.has(solidId))throw new TypeError('distinct solid identities required');
+  seen.add(solidId);
+  results.push(intersectNormalized(r,verifyHalfspaces(halfspaces),solidId));
  }
  const hits=results.filter(x=>x.status==='hit').sort((a,b)=>
   a.entryMm-b.entryMm||a.solidId.localeCompare(b.solidId));
