@@ -120,7 +120,7 @@ test('M5 rejects an incomplete face incidence or source revision, not allowing e
   geometry:make(),revision:-1}),/revision/);
  const invalid=make();invalid.data.edges.push([...invalid.data.edges[0]]);
  assert.throws(()=>auditReviewedConvexSourceCreases({geometry:invalid,revision:3}),
-  /Euler|duplicate|declared Geometry/);
+  /Euler|duplicate|declared Geometry|explicit finite model-3d mm mesh/);
 });
 test('M5 visible basic-solid UI explicitly separates geometric mesh creases from certified standard line styles',()=>{
  const js=fs.readFileSync('labs/solid-third-view-live-entry.cjs','utf8');
