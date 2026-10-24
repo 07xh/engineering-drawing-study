@@ -54,11 +54,19 @@ test('two partially overlapping bodies distinguish transverse depth-separated pa
  const e=scene.projectedCutEndpointTopology;
  assert.equal(e.status,'source-projected-endpoint-scope-only');
  assert.ok(e.cutEndpoints.some(x=>x.sourceParameter>0&&x.sourceParameter<1));
- const separated=e.cutEndpoints.filter(x=>
-  x.status==='depth-separated-paper-crossing-no-spatial-join');
- assert.ok(separated.length>0,'projected true crossing has different 3D ray depth');
- assert.ok(separated.every(x=>x.screenDepthSeparated&&
+ const deepCrossings=scene.edgeOverlapAudit.events.filter(x=>
+  x.relation==='crossing').flatMap(x=>x.events||[])
+  .filter(x=>x.endpointOrJoin===false&&x.front!=='undetermined');
+ assert.ok(deepCrossings.length>0,'pairwise sources contain strict paper crossing with distinct depth');
+ const separated=e.cutEndpoints.filter(x=>x.screenDepthSeparated);
+ assert.ok(separated.length>0,'real original stroke cut keeps the pairwise depth witness');
+ assert.ok(separated.every(x=>
   x.projectedIntersectionIsPhysicalSourceJoinVerified===false));
+ // Other overlapping source edges at THE SAME paper junction may make
+ // even a depth-separated two-edge crossing unsafe as a complete join.
+ assert.ok(separated.every(x=>
+  ['depth-separated-paper-crossing-no-spatial-join',
+   'undetermined-paper-overlap-touch-or-tie'].includes(x.status)));
  assert.ok(e.cutEndpoints.some(x=>x.status.startsWith('undetermined')));
  assert.equal(e.fullProjectedJunctionsVerified,false);
  assert.equal(scene.v5Ready,false);
