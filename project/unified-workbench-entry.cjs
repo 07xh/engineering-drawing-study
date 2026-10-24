@@ -21,7 +21,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const filletOptions=['v7-f-branch','v7-f-direction','v7-f-first','v7-f-second'];
  const prismInputs=['v7-p-width','v7-p-depth','v7-p-height','v7-p-px',
   'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
- const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs];
+ const prismOptions=['v7-p-kept'];
+ const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions];
  const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
   'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end',
   'v7-c-direction','v7-c-points','v7-c-closed'];
@@ -177,7 +178,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}}
  };
  const fieldsForTask=task=>task==='projection'?xyzIds:
-  task==='planar'?[...filletInputs,...filletOptions]:prismInputs;
+  task==='planar'?[...filletInputs,...filletOptions]:[...prismInputs,...prismOptions];
  const numberFrom=id=>{
   const raw=$(id).value;
   if(raw.trim()===''||!Number.isFinite(Number(raw))||Math.abs(Number(raw))>100000)
@@ -196,8 +197,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     firstTravel:$('v7-f-first').value,secondTravel:$('v7-f-second').value,imageId};
   }
   const v=prismInputs.map(numberFrom);
+  const retainedHalfspace=$('v7-p-kept').value;
+  if(!['unreviewed','positive','negative'].includes(retainedHalfspace))
+   throw Error('必须明确选择或保留未确认的截切材料侧');
   return {type:'prism-section',unit:'mm',size:v.slice(0,3),
-   planePoint:v.slice(3,6),planeNormal:v.slice(6,9),imageId};
+   planePoint:v.slice(3,6),planeNormal:v.slice(6,9),retainedHalfspace,imageId};
  }
  function populateTaskFields(project){
   $('v7-task').value=project.task;
@@ -215,6 +219,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(project.task==='exploration'&&v.type==='prism-section'){
    const a=[...v.size,...v.planePoint,...v.planeNormal];
    prismInputs.forEach((id,i)=>$(id).value=String(a[i]));
+   $('v7-p-kept').value=v.retainedHalfspace??'unreviewed';
   }
  }
  function preview(){
@@ -686,7 +691,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      partial.kind==='composition-evidence'?
       '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
-     '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；空间遮挡、完整切后实体与正式工程图仍未签收，不能导出已验证答案。':
+     '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；'+
+      (partial.evidence?.sectionVisibilityEvidence?.status==='open-edge-ray-only'?
+       '保留材料侧已确认，局部截交边开区间射线判断 '+JSON.stringify(
+         partial.evidence.sectionVisibilityEvidence.counts)+'；端点和完整虚实线仍未证明。':
+       '保留材料侧未确认，所有截交边线型仍不确定。')+
+      '完整切后实体与正式工程图未签收，不能导出已验证答案。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
   $('v7-selection').textContent=activeGeometry?
