@@ -1,6 +1,36 @@
 'use strict';
 const {finite,vec,object}=require('../contracts/common.js');
 const VIEWS=['V','H','W'];
+// A view label is more than two projected coordinates: it also fixes the
+// ray FROM model geometry TOWARD the first-angle orthographic observer.
+// These signs are shared with the established cone V5 proof, not inferred
+// from a freely rotatable 3D camera.
+const FIRST_ANGLE_OBSERVER_RAYS=Object.freeze({
+ V:Object.freeze({x:0,y:-1,z:0}),
+ H:Object.freeze({x:0,y:0,z:1}),
+ W:Object.freeze({x:1,y:0,z:0})
+});
+function validateFirstAngleObserverRays(observers){
+ if(!object(observers)||Array.isArray(observers)||
+    Object.keys(observers).sort().join(',')!=='H,V,W')
+  throw new TypeError('three explicitly supplied first-angle V/H/W observer rays required');
+ const normalized={};
+ for(const view of VIEWS){
+  const r=observers[view],expected=FIRST_ANGLE_OBSERVER_RAYS[view];
+  if(!object(r)||Array.isArray(r)||
+     Object.keys(r).sort().join(',')!=='x,y,z'||
+     !vec(r,['x','y','z']))
+   throw new TypeError('finite 3D '+view+' observer ray required');
+  const magnitude=Math.hypot(r.x,r.y,r.z);
+  if(!finite(magnitude)||magnitude<=1e-12)
+   throw new RangeError('nonzero first-angle observer ray required');
+  const unit={x:r.x/magnitude,y:r.y/magnitude,z:r.z/magnitude};
+  if(Math.hypot(unit.x-expected.x,unit.y-expected.y,unit.z-expected.z)>1e-12)
+   throw new RangeError('observer direction conflicts with first-angle '+view+' view');
+  normalized[view]=Object.freeze(unit);
+ }
+ return Object.freeze(normalized);
+}
 // Coordinate mismatch is measured in absolute model units (typically mm),
 // never by a factor of the coordinate magnitude; this is a display check,
 // not proof that a trusted solver has accepted the full constraint system.
@@ -51,4 +81,5 @@ function aligned(views,tolerance=EPS){
  const near=(a,b)=>Math.abs(a-b)<=tolerance;
  return {sameX:near(views.V.u,views.H.u),sameHeight:near(views.V.v,views.W.v),sameDepth:near(views.H.v,views.W.u)};
 }
-module.exports={VIEWS,project,toSheet,fromSheet,sheetPoint,transferGuides,aligned};
+module.exports={VIEWS,FIRST_ANGLE_OBSERVER_RAYS,validateFirstAngleObserverRays,
+ project,toSheet,fromSheet,sheetPoint,transferGuides,aligned};
