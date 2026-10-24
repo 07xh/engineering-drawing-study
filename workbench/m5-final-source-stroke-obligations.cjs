@@ -48,6 +48,8 @@ const {auditUnifiedPaperLineReadiness}=
  require('./m5-unified-paper-line-readiness.cjs');
 const {auditExactPhysicalFeatureDedup}=
  require('./m5-exact-physical-feature-dedup.cjs');
+const {auditOrthogonalProjectedUnionSilhouette}=
+ require('./m5-orthogonal-projected-union-silhouette.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -290,6 +292,24 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      exactPhysicalDedupEvidence.signedV5LineActions!==0||
      exactPhysicalDedupEvidence.v5Ready!==false))
   throw new TypeError('unreviewed physical source dedup tried to release final V5 line');
+ const projectedUnionSilhouetteEvidence=
+  exactPhysicalDedupEvidence?.status===
+   'exact-current-original-generated-3d-physical-feature-classes'?
+  auditOrthogonalProjectedUnionSilhouette({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,
+   unifiedPaperSourceIdentityEvidence,
+   exactPhysicalDedupEvidence}):null;
+ if(projectedUnionSilhouetteEvidence&&
+    (projectedUnionSilhouetteEvidence.status!==
+      'complete-first-angle-orthogonal-projected-occupancy-boundary'||
+     projectedUnionSilhouetteEvidence.viewCount!==3||
+     projectedUnionSilhouetteEvidence.allProjectedOccupancyRegionBoundariesComplete!==true||
+     projectedUnionSilhouetteEvidence.fullEngineeringDrawingLineStylesVerified!==false||
+     projectedUnionSilhouetteEvidence.signedV5LineActions!==0||
+     projectedUnionSilhouetteEvidence.v5Ready!==false))
+  throw new TypeError('unreviewed projected union silhouette tried to release official V5 lines');
 
 
  if(physicalFeatureJunctionEvidence?.status===
@@ -506,6 +526,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   unifiedPaperJunctionEvidence,
   unifiedPaperLineReadinessEvidence,
   exactPhysicalDedupEvidence,
+  projectedUnionSilhouetteEvidence,
+  completedProjectedUnionBoundarySegmentCount:
+   projectedUnionSilhouetteEvidence?.projectedBoundarySegmentCount??0,
+  completedProjectedOuterBoundarySegmentCount:
+   projectedUnionSilhouetteEvidence?.projectedExternalBoundarySegmentCount??0,
+  completedProjectedHoleBoundarySegmentCount:
+   projectedUnionSilhouetteEvidence?.projectedHoleBoundarySegmentCount??0,
+  unmatchedProjectedBoundarySegmentCount:
+   projectedUnionSilhouetteEvidence?.sourceUncoveredProjectedBoundarySegmentCount??0,
+
   exactDuplicate3DSourceRecords:
    exactPhysicalDedupEvidence?.exact3DDuplicateSourceRecordCount??0,
   exactDedupedPhysicalFeatureClasses:

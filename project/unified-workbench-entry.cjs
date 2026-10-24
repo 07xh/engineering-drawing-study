@@ -358,7 +358,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.paperIntervalsWithMultiplePhysicalDepthSources||0)+
     ' 组、已列来源可确认唯一最前物理类 '+
     (evidence.paperIntervalsWithUniquelyFrontPhysicalClass||0)+
-    ' 组。严格去重不代表最终外轮廓和标准线型，以上都未签发标准虚实线和正式 V5。真实物理共点不等于完整轮廓接合，这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 组。已审核轴对齐组合体投影区域边界（V/H/W 合计） '+
+    (evidence.completedProjectedUnionBoundarySegmentCount||0)+
+    ' 个开格边界，其中外部轮廓 '+
+    (evidence.completedProjectedOuterBoundarySegmentCount||0)+
+    ' 段、投影孔边界 '+
+    (evidence.completedProjectedHoleBoundarySegmentCount||0)+
+    ' 段；尚无已审三维来源线可连续覆盖的边界 '+
+    (evidence.unmatchedProjectedBoundarySegmentCount||0)+
+    ' 段。以上是限定长方体范围的完整投影区域轮廓，不等于内部线型、唯一最终工程图或 V5。严格去重不代表最终外轮廓和标准线型，以上都未签发标准虚实线和正式 V5。真实物理共点不等于完整轮廓接合，这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
