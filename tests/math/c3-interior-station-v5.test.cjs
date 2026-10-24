@@ -95,7 +95,7 @@ test('C3 source revision and axis translations recompute rather than reuse old s
  const A=choose(a),B=choose(b);
  assert.equal(A.length,B.length);
  for(let i=0;i<A.length;i++){
-  assert.equal(B[i].point3D.x-A[i].point3D.x,40);
+  assert.ok(Math.abs(B[i].point3D.x-A[i].point3D.x-40)<1e-8);
   assert.ok(Math.abs(B[i].point3D.y-A[i].point3D.y-17)<1e-8);
   assert.ok(Math.abs(B[i].point3D.z-A[i].point3D.z+5)<1e-8);
  }
