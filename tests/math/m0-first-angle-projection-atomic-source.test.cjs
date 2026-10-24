@@ -79,3 +79,31 @@ test('bad FIRST reads, mismatched model views, invalid scale and overflowing pix
   {origin:{x:0,y:0},scale:1e308}),/溢出/);
  assert.equal(P.aligned({V:{u:1,v:2},H:{u:11,v:3},W:{u:3,v:2}}).sameX,false);
 });
+
+test('independent analytic oracle spans all first-angle views across translations and zoom scales',()=>{
+ const points=[xyz(0,0,0),xyz(-15,12,-3),xyz(7.25,-11.5,8.75),
+  xyz(1500,-320,920)];
+ for(const p of points){
+  for(const origin of [{x:0,y:0},{x:-200,y:300},{x:800,y:-40}]){
+   for(const scale of [.25,1,8]){
+    const cfg={origin,scale};
+    const views=P.project(p);
+    const sheet=P.sheetPoint(p,cfg);
+    const oracle={
+     V:{x:origin.x-p.x*scale,y:origin.y-p.z*scale},
+     H:{x:origin.x-p.x*scale,y:origin.y+p.y*scale},
+     W:{x:origin.x+p.y*scale,y:origin.y-p.z*scale},
+     M:{x:origin.x+p.y*scale,y:origin.y+p.y*scale}
+    };
+    assert.deepEqual(sheet,oracle);
+    assert.deepEqual(P.aligned(views),
+     {sameX:true,sameHeight:true,sameDepth:true});
+    for(const view of P.VIEWS){
+     const u=P.fromSheet(view,sheet[view],cfg),v=views[view];
+     assert.ok(Math.abs(u.u-v.u)<=1e-11);
+     assert.ok(Math.abs(u.v-v.v)<=1e-11);
+    }
+   }
+  }
+ }
+});
