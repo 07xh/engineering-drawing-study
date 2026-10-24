@@ -26,7 +26,7 @@ test('C3 ray quadratic candidates stay separate from official visibility',()=>{
    assert.ok(solid.interiorOpenIntervals.every(([lo,hi])=>
     Number.isFinite(lo)&&Number.isFinite(hi)&&lo>=0&&hi>lo));
    assert.equal(solid.positiveInteriorVerified,
-    !solid.generatorCoincidence&&solid.interiorOpenIntervals.length>0);
+    solid.interiorOpenIntervals.length>0);
   }
  }
 });
@@ -63,5 +63,22 @@ test('C3 forward union preserves both solids and cannot sign tangencies',()=>{
  assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='zCylinder'));
  assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='yCylinder'));
  assert.equal(r.positiveInteriorOcclusionVerified,true);
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+
+test('C3 strict quadratic and cap slab prove positive volume from a boundary point',()=>{
+ const p={x:-12,y:0,z:0};
+ const r=audit({input,point:p,view:'W'});
+ assert.equal(r.zCylinder.originOnBoundary,true);
+ assert.equal(r.zCylinder.positiveInteriorVerified,true);
+ assert.equal(r.positiveInteriorOcclusionVerified,true);
+ assert.equal(r.endpointVisibilityStatus,'certified-forward-interior-occlusion');
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+test('C3 grazing cylinder generator has no strict interior proof',()=>{
+ const p={x:12,y:0,z:0};
+ const r=audit({input,point:p,view:'H'});
+ assert.equal(r.zCylinder.positiveInteriorVerified,false);
+ assert.equal(r.zCylinder.interiorOpenIntervals.length,0);
  assert.equal(r.officialLineStyle,'undetermined');
 });
