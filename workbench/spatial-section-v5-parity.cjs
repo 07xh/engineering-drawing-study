@@ -65,7 +65,7 @@ function assertSpatialSectionV5Parity({input,evidence,plan,revision}={}){
    const next=plan.stations[(i+1)%n],pp=project(g.data.points[(i+1)%n])[view];
    const du=pp.u-uv.u,dv=pp.v-uv.v;
    const dx=next[view]?.x-q.x,dy=next[view]?.y-q.y;
-   const signX=view==='W'?1:1;
+   const signX=view==='W'?1:-1;
    const signY=view==='H'?1:-1;
    if(!close(dx,signX*scale*du)||!close(dy,signY*scale*dv))
     fail('first-angle V/H/W model-to-sheet edge direction mismatch');
