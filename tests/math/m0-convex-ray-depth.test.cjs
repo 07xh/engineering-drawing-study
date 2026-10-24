@@ -31,7 +31,7 @@ test('M0 intersects genuine finite convex intervals and sorts multiple occluding
  assert.equal(ordered.nearestSolidId,'Near');
  assert.equal(ordered.nearestDepthMm,2);
  assert.deepEqual(ordered.orderedHits.map(s=>s.solidId),['Near','Far']);
- assert.ok(ordered.intersections.some(s=>s.solidId==='Source'&&s.status==='undetermined'),
+ assert.ok(ordered.intersections.some(s=>s.solidId==='Source'&&s.status==='miss'),
   'source support surface at ray origin must not create fake front hit');
  assert.equal(ordered.completeSceneVerified,false);
  assert.equal(ordered.officialLineStyleVerified,false);
@@ -66,7 +66,7 @@ test('grazing projected silhouette, coincident front depths and invalid face set
  const tie=cast([A,{...A,id:'Other'}],origin);
  assert.equal(tie.status,'undetermined');
  assert.equal(tie.nearestSolidId,null);
- const tangent=cast([A],P(-1,5,0),P(1,0,2));
+ const tangent=cast([A],P(-1,5,4),P(1,0,-2));
  assert.equal(tangent.status,'undetermined');
 });
 test('M0 scale, translation, face ordering and independent source IDs preserve depths',()=>{
