@@ -210,6 +210,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (contacts.unsupportedCount?'；'+contacts.unsupportedCount+' 个网格未满足证明范围':'')+
     '。这是已确认模型的关系核验，不代表实体并集、完整轮廓、虚实线或正式 V5 已签收。'):
    '需要确认两个闭合长方体并重新显示场景，才能计算空间关系。';
+  const iface=preview()?.kind==='composition-evidence'?
+   preview().compositionInterfaceEvidence:null;
+  if(iface){
+   const projection=iface.projectedUnionEvidence;
+   $('v7-c-contacts').textContent+=
+     ' 已证明内接触面 '+iface.contactPatchCount+' 处'+
+     (iface.patches.length?'（'+iface.patches.map(p=>
+       p.objectIds.join('—')+'：面积 '+p.strictInteriorAreaMm2.toFixed(3)+' mm²').join('；')+'）':'')+
+     '；公共 M5 投影边界：可分辨 '+projection.openBoundaryCount+
+     ' 段、投影内部 '+projection.coveredBoundaryCount+' 段、不确定 '+
+     projection.undeterminedCount+' 段。接触面的边缘、投影重合和空间遮挡仍需端点与深度证明；不等于标准虚实线或 V5。';
+  }
  }
 
  const taskObjects={
@@ -1209,7 +1221,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系残差：'+
    result.relationEvidence.status+'（'+result.relationEvidence.checkedCount+
    ' 条）；闭合长方体关系 '+result.compositionContactEvidence.pairCount+
-   ' 对。未求未知量，虚实线未认证，V5 禁用。');
+   ' 对，已验证内部接触面 '+result.compositionInterfaceEvidence.contactPatchCount+
+   ' 处。未求未知量，虚实线未认证，V5 禁用。');
  }));
  for(const id of compositionFields)
   for(const event of ['input','change'])$(id).addEventListener(event,()=>{
