@@ -281,7 +281,7 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const groups=[...document.querySelectorAll('.next-home-tool-group')];
  assert.equal(groups.length,3,'core geometry, projections, auxiliary tools need explicit groups');
  const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
- assert.equal(links.length,18,'all existing published special-purpose tools remain reachable');
+ assert.equal(links.length,19,'all existing published special-purpose tools remain reachable');
  assert.equal(new Set(links).size,18,'tool entries should not repeat');
  const my=document.querySelector('#knowledge');
  assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
