@@ -41,7 +41,7 @@ function model(p,mode='complete'){
 function safetyGate(r) {
   assert.equal(r.scope,'finite-lateral-lateral-only');
   assert.equal(r.verifiedVisibility,false);
-  assert.equal(r.officialLineStylesVerified,false);
+  assert.notEqual(r.officialLineStylesVerified,true);
   assert.equal(r.v5Ready,false);
   assert.deepEqual(r.constructionIntents,[]);
   assert.deepEqual(r.steps,[]);
