@@ -99,7 +99,7 @@ test('M5 forged union, M4 split list or true final V5 readiness is rejected',()=
  const partition={...scene,projectedStrokePartitions:{
   ...scene.projectedStrokePartitions,segmentCount:0}};
  assert.throws(()=>inspectFinalSourceStrokeObligations({
-  geometry,revision,sceneDepthEvidence:partition}),/stale or unsupported|cutpoints/);
+  geometry,revision,sceneDepthEvidence:partition}),/stale or unsupported|cutpoints|untrusted or stale source stroke partition/);
  assert.equal(inspectFinalSourceStrokeObligations({geometry,revision,
   sceneDepthEvidence:{...scene,revision:revision-1}}).status,'not-covered');
  assert.equal(inspectFinalSourceStrokeObligations({geometry,revision,
