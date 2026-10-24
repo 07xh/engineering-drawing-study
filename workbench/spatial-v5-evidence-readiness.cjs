@@ -25,7 +25,23 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
   fail('forged global line style or ConstructionIntent certification forbidden');
  const partitions=proof.projectedStrokePartitions,
    union=proof.projectedUnionOutlines,
-   joins=proof.projectedVertexJoins;
+   joins=proof.projectedVertexJoins,
+   closed=proof.closedSourceStrokeRays;
+ if(closed?.status==='scoped-positive-closed-source-rays-only'){
+  if(closed.revision!==revision||closed.v5Ready!==false||
+     closed.officialLineStylesVerified!==false||
+     !Array.isArray(closed.edges)||closed.edges.length>120)
+   fail('source-closed ray report is stale or promotes an official style');
+  const visible=closed.edges.filter(x=>x.positiveClosedRayVisibilityVerified),
+    outer=closed.edges.filter(x=>x.projectedOuterOpenBoundaryVerified);
+  if(visible.length!==closed.certifiedClosedVisibleCount||
+     outer.length!==closed.certifiedOuterEdgeCount||
+     outer.some(x=>!x.positiveClosedRayVisibilityVerified)||
+     closed.edges.some(x=>x.v5Ready!==false||
+       x.officialLineStyleVerified!==false||
+       x.projectedJunctionTopologyVerified!==false))
+   fail('forged scoped closed ray visibility or source boundary counts');
+ }
  const all=partitions?.segments||[],u=union?.segments||[];
  if(!Array.isArray(all)||!Array.isArray(u))
   fail('unbounded or invalid spatial evidence partition');
@@ -56,6 +72,10 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
    if(segment.status==='strictly-inside-other-projection')covered++;
   }
   summary[view]={projectedStrokeCount:strokes.length,
+   certifiedClosedSourceRayCount:closed?.edges?.filter(x=>
+    x.view===view&&x.positiveClosedRayVisibilityVerified).length||0,
+   certifiedClosedOuterSourceEdgeCount:closed?.edges?.filter(x=>
+    x.view===view&&x.projectedOuterOpenBoundaryVerified).length||0,
    scopedOpenVisibleCount:by.visible,scopedOpenHiddenCount:by.hidden,
    unprovedStrokeCount:by.undetermined,
    projectedUnionOpenBoundaryCount:external,
@@ -76,6 +96,12 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
   missing('continuous-3d-visibility','all source edge visibility intervals were not partitioned');
  else if(Object.values(summary).some(v=>v.unprovedStrokeCount>0))
   missing('positive-visible-or-hidden-proof','some open stroke interiors still lack exact forward-ray proofs');
+ if(closed?.status!=='scoped-positive-closed-source-rays-only')
+  missing('closed-source-positive-rays',
+   'independent entire-edge and authentic vertex endpoint ray clearance unavailable');
+ else if(closed.edges.some(x=>!x.positiveClosedRayVisibilityVerified))
+  missing('remaining-closed-source-rays',
+   'some original source edges or source-ray endpoints lack positive full-interval proof');
  if(!joins||joins.endpointVisibilityVerified!==true||
     joins.officialLineStylesVerified!==true)
   missing('all-projected-endpoint-joins','3D source vertex and paper junction do not prove final visible line joins');
@@ -91,6 +117,10 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
   views:summary,missingEvidence:needs,missingCount:needs.length,
   scopedRayEvidencePresent:partitions?.status==='preview-partition-evidence-only',
   geometricUnionEvidencePresent:union?.status==='open-boundary-geometry-only',
+  scopedClosedSourceRayEvidencePresent:
+   closed?.status==='scoped-positive-closed-source-rays-only',
+  positiveClosedSourceRayCount:closed?.certifiedClosedVisibleCount||0,
+  positiveClosedOuterEdgeCount:closed?.certifiedOuterEdgeCount||0,
   fullSourceMathVerified:false,
   allProjectedEndpointJoinsVerified:false,allOfficialLineStylesVerified:false,
   canonicalIntentVerified:false,constructionStepDAGVerified:false,
