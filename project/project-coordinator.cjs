@@ -7,6 +7,8 @@
 const {validSavedCalibration}=require('./source-calibration.cjs');
 const CandidateBridge=require('./source-candidate-bridge.cjs');
 const {TYPES:RELATION_TYPES}=require('../core/constraints/multiobject-relation-evidence.cjs');
+const {solveAffinePointConstraints}=require('../core/constraints/affine-point-unknown-solver.cjs');
+const {sourceStamp}=require('./source-candidate-bridge.cjs');
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
 const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
@@ -41,7 +43,7 @@ function newProject({id, title = '未命名项目', task = 'planar'} = {}) {
   return {
     format: FORMAT, version: VERSION, id, title, task, revision: 0,
     source: {imageId: null, rotationDeg: 0, calibration: null},
-    objects: [], conditions: [], relations: [], view: defaults()
+    objects: [], conditions: [], relations: [], affineProblem:null, view: defaults()
   };
 }
 function validateProject(p) {
@@ -121,6 +123,26 @@ function validateProject(p) {
         errors.push('未经人工确认的几何不能证明对象间关系');
     }
   }
+  // A separately reviewed affine system can be stored in this SAME project,
+  // but never revived as a verified M3 result after local restore.
+  if(p.affineProblem!==undefined&&p.affineProblem!==null){
+    const a=p.affineProblem;
+    if(!plain(a)||p.task!=='composition'||
+       typeof a.confirmed!=='boolean'||
+       a.imageId!==p.source.imageId||
+       typeof a.sourceStamp!=='string'||
+       (a.confirmed&&a.sourceStamp!==sourceStamp(p.source))||
+       !jsonValue(a)||Object.keys(a).some(k=>
+        !['frame','unit','points','constraints','imageId','sourceStamp','confirmed'].includes(k)))
+      errors.push('未签收的未知点约束或原图版本不一致');
+    else{
+      try{solveAffinePointConstraints({frame:a.frame,unit:a.unit,
+        points:a.points,constraints:a.constraints,revision:p.revision});}
+      catch(e){errors.push('未知点约束无效：'+e.message);}
+      if(a.points?.some(p=>objectIds.has(p.id)))
+       errors.push('未知点与已有几何对象 ID 冲突');
+    }
+  }
   const v = p.view;
   if (!plain(v) || !['split', '2d', '3d'].includes(v.mode) ||
       (v.selectedObjectId !== null && !objectIds.has(v.selectedObjectId)) ||
@@ -165,7 +187,9 @@ function createCoordinator(initial, hooks = {}) {
       source: project.source, objects: project.objects,
       conditions: project.conditions.filter(c => c.confirmed),
       relations: (project.relations||[]).filter(r=>r.confirmed),
-      totalRelationCount:(project.relations||[]).length
+      totalRelationCount:(project.relations||[]).length,
+      affineProblem:project.affineProblem?.confirmed?project.affineProblem:null,
+      affinePending:!!project.affineProblem&&!project.affineProblem.confirmed
     }));
   }
   function commit(change) {
@@ -272,6 +296,32 @@ function createCoordinator(initial, hooks = {}) {
       if(c&&p.relations)p.relations=p.relations.map(r=>r.objectIds.includes(c.objectId)?
        {...r,confirmed:false}:r);
     }); },
+    putAffineProblem(candidate){
+      return commit(p=>{
+        if(p.task!=='composition')throw new Error('未知点约束属于当前多对象项目');
+        if(p.objects.length||p.conditions.length||(p.relations||[]).length)
+          throw new Error('当前已有独立手工几何；请在同一工作台另建项目，避免把两个求解范围误合并');
+        if(!jsonValue(candidate))throw new Error('未知点约束必须是纯本机数据');
+        p.affineProblem={
+          frame:candidate.frame,unit:candidate.unit,
+          points:copy(candidate.points),constraints:copy(candidate.constraints),
+          imageId:p.source.imageId,sourceStamp:sourceStamp(p.source),
+          confirmed:false
+        };
+      });
+    },
+    confirmAffineProblem(){
+      return commit(p=>{
+        if(!p.affineProblem||p.affineProblem.confirmed)
+          throw new Error('没有待人工确认的未知点系统');
+        if(p.affineProblem.sourceStamp!==sourceStamp(p.source))
+          throw new Error('原图或双比例尺度已修改，必须重新提交数学条件');
+        if(!p.affineProblem.constraints.length)
+          throw new Error('未知点尚无数学约束，不能直接确认');
+        p.affineProblem.confirmed=true;
+      });
+    },
+    removeAffineProblem(){return commit(p=>{p.affineProblem=null;});},
     putRelation(row){
       return commit(p=>{
         if(p.task!=='composition')throw new Error('对象关系仅适用于同一几何项目');
@@ -304,6 +354,7 @@ function createCoordinator(initial, hooks = {}) {
       // Never leave a dangling candidate link when the original photo changes.
       p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
       if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
+      if(p.affineProblem)p.affineProblem.confirmed=false;
     }); },
     setImageGeometry({rotationDeg, calibration}) { return commit(p => {
       if (p.source.rotationDeg === rotationDeg && same(p.source.calibration, calibration)) return;
@@ -312,6 +363,7 @@ function createCoordinator(initial, hooks = {}) {
       p.recognition=null;
       p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
       if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
+      if(p.affineProblem)p.affineProblem.confirmed=false;
     }); },
     setViewport(paper) {
       return updateView({paper: {...project.view.paper, ...paper}});
@@ -325,7 +377,7 @@ function createCoordinator(initial, hooks = {}) {
         if(p.task===task)return;
         // A different specialist must never inherit the previous confirmed
         // inputs, object identity, selection, or playback authorization.
-        p.task=task;p.objects=[];p.conditions=[];p.relations=[];
+        p.task=task;p.objects=[];p.conditions=[];p.relations=[];p.affineProblem=null;
         p.view.selectedObjectId=null;
       });
     },
