@@ -114,6 +114,58 @@ function shape(tag,attributes={}){
  for(const [k,v] of Object.entries(attributes))n.setAttribute(k,String(v));
  return n;
 }
+
+// The EXISTING M5 hull-side arrangement is the only source of this overlay.
+// Rendering an atomic 2D coverage interval is not granting it a line style,
+// final depth-sorted 3D identity, source join, or another V5 timeline.
+function drawScopedHullIntervals(svg,certified,result,view){
+ const proof=certified.convexContourSourceCoverage;
+ if(proof?.status==='not-covered')return;
+ if(!proof||
+    proof.status!=='scoped-convex-hull-physical-source-coverage'||
+    proof.sourceGeometryId!==result.geometry.id||
+    proof.revision!==result.revision||
+    proof.officialLineStylesVerified!==false||
+    proof.completeSolidV5Ready!==false)
+  throw new Error('当前 C1 凸体投影轮廓来源证据缺失或过期');
+ const viewProof=proof.views.find(x=>x.view===view);
+ if(!viewProof||viewProof.wholeConvex2DBoundaryVerified!==true||
+    viewProof.everyHullSideCoveredByPhysicalSourceEdges!==true||
+    viewProof.officialLineStylesVerified!==false)
+  throw new Error('当前投影面没有完整且未签收的来源区间证明');
+ for(const side of viewProof.sides)for(const interval of side.intervals){
+  if(interval.revision!==result.revision||
+     interval.sourceGeometryId!==result.geometry.id||
+     interval.view!==view||
+     !interval.geometricBoundarySourceCoverageVerified||
+     interval.uniqueFinalPhysicalStrokeSourceVerified!==false||
+     interval.completeProjectedEndpointJoinVerified!==false||
+     interval.certifiedObserverRayForEntireFinalStroke!==false||
+     interval.officialLineStyle!=='undetermined'||
+     interval.v5StrokeAuthorized!==false||
+     !Array.isArray(interval.sourceEdgeIds)||
+     interval.sourceEdgeIds.length===0)
+   throw new Error('来源轮廓区间不满足保守的 M5 预览门禁');
+  const a=toSheet(view,interval.fromModelMm,SHEET),
+   b=toSheet(view,interval.toModelMm,SHEET);
+  if(!(Math.hypot(b.x-a.x,b.y-a.y)>1e-8))
+   throw new Error('退化或错误的投影轮廓来源区间');
+  const e=shape('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+   stroke:'#147d99','stroke-width':2.5,
+   'stroke-dasharray':'1 7','stroke-linecap':'round',fill:'none'});
+  e.setAttribute('data-m5-hull-interval','source-coverage-only');
+  e.setAttribute('data-source-edges',interval.sourceEdgeIds.join(' '));
+  e.setAttribute('data-proof-revision',String(interval.revision));
+  e.setAttribute('data-visibility','undetermined');
+  e.setAttribute('data-official-v5','false');
+  const title=shape('title');
+  title.textContent=view+' 单体凸投影边界：原始折棱来源已覆盖；'+
+   '完整端点连接/最终可见性/工程虚实线和 V5 均未认证';
+  e.append(title);
+  svg.append(e);
+ }
+}
+
 function draw(result,certified){
  const svg=$('paper');svg.replaceChildren();
  svg.append(shape('rect',{x:0,y:0,width:800,height:530,fill:'#fff'}));
@@ -154,6 +206,7 @@ function draw(result,certified){
    e.append(title);
    svg.append(e);
   }
+  drawScopedHullIntervals(svg,certified,result,v);
  }
 }
 function solve(){
@@ -203,7 +256,7 @@ function solve(){
     'V/H/W 凸包完整、来源折棱覆盖 '+certified.convexContourSourceCoverage.boundarySideCount+
     ' 条侧边、'+certified.convexContourSourceCoverage.boundaryAtomicIntervalCount+
     ' 个原始 3D 折棱来源子区间':'证据范围未覆盖')+
-   '。空间最终来源唯一性、全部端点连接、标准虚实线、实体棱线 V5 均未认证。'+
+   '。蓝色点线仅表示已证明的单体二维轮廓来源覆盖；空间最终来源唯一性、全部端点连接、标准虚实线、实体棱线 V5 均未认证。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
