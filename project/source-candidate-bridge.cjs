@@ -30,6 +30,11 @@ function checkedRecognition(project){
 function linkedCandidate(project,condition){
  if(condition.sourceCandidateId===null)return null;
  const draft=checkedRecognition(project);
+ // Legacy v1 projects used an opaque candidate string before ProblemDraft
+ // existed. Preserve their historic plain conditions only if they do NOT
+ // claim any source-image binding. This never creates a reviewed candidate.
+ if(!draft&&project.recognition==null&&
+    condition.value?.imageId===undefined)return null;
  const candidate=draft?.candidates.find(c=>c.id===condition.sourceCandidateId);
  if(!candidate)throw new Error('条件引用的原图候选不存在');
  if(condition.value?.imageId!==project.source.imageId)
