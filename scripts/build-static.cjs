@@ -18,6 +18,7 @@ const files = [
   'labs/point-coach.html',
   'labs/point-projection-live.html',
   'labs/two-point-v5-live.html',
+  'labs/solid-third-view-live.html',
   'labs/circle-fillet-live.html',
   'labs/polygon-live.html',
   'labs/auto-fillet-live.html',
@@ -115,6 +116,15 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/two-point-v5-live-entry.cjs')],
  outfile:path.join(out,'labs/two-point-v5-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Reviewed convex solid third-view geometry, original shared 03 + M0 + Scene.
+ * Do not publish proof sources or private textbook images. No second player. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/solid-third-view-live-entry.cjs')],
+ outfile:path.join(out,'labs/solid-third-view-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
