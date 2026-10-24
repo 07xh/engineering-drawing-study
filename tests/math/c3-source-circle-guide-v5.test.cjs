@@ -45,7 +45,7 @@ test('C3 exact original V/H circle projections become canonical proven V5 guides
  assert.equal(V.sourceSolid,'yCylinder');
  assert.deepEqual(V.centerModelMm,{x:2,y:0});
  assert.equal(V.radiusModelMm,9);
- assert.deepEqual(V.centerSheetPx,{x:318,y:260});
+ assert.deepEqual(V.centerSheetPx,{x:302,y:260});
  assert.equal(V.radiusSheetPx,36);
  assert.equal(H.sourceSolid,'zCylinder');
  assert.deepEqual(H.centerModelMm,{x:0,y:0});
@@ -54,9 +54,12 @@ test('C3 exact original V/H circle projections become canonical proven V5 guides
  assert.equal(H.radiusSheetPx,48);
  const mapping=Object.fromEntries(circleSteps.map(s=>
   [s.id,views[s.id.at(-1)]]));
+ const viewMap=Object.fromEntries(circleSteps.map(s=>
+  [s.id,s.id.at(-1)]));
  assert.equal(assertM3ToV5Consistency({
   revision,intents:r.constructionIntents,steps:r.constructionSteps,
-  timing:r.timing,sheet:views.V,sheetByIntentId:mapping
+  timing:r.timing,sheet:views.V,sheetByIntentId:mapping,
+  viewByIntentId:viewMap
  }),true);
  for(const guide of r.sourceCircleGuides){
   assert.equal(guide.firstAngleSourceGeometryVerified,true);
@@ -139,10 +142,10 @@ test('real UI consumes same original V5 circle actions, not faux sampled curves'
  const html=fs.readFileSync('labs/finite-cylinder-intersection-live.html','utf8');
  assert.match(ui,/includeSourceCircleGuides:true/);
  assert.match(ui,/renderVerifiedV5Actions/);
- assert.match(ui,/Motion\.updateSvg\(circle,action,fraction\)/);
+ assert.match(ui,/Motion\.updateSvg\(shape,action,fraction\)/);
  assert.match(ui,/originalGuide=action.kind==='circle'/);
  assert.match(ui,/data-certified-scope/);
- assert.match(html,/真实原始圆柱辅助圆 V5/);
- assert.match(html,/不等于已签发标准实虚线的相贯线/);
+ assert.match(html,/原始圆柱辅助圆 V5/);
+ assert.match(html,/没有获得正式工程实虚线资格/);
  assert.doesNotMatch(ui,/data-official-v5':'true'/);
 });

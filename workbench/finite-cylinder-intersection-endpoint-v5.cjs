@@ -17,6 +17,8 @@ const {auditFiniteCylinderVHAxisRays}=
  require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditFiniteCylinderEndpointIncidence}=
  require('./m5-analytic-cylinder-endpoint-incidence.cjs');
+const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
+ require('./c3-vh-projection-dedup.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const {CONSTRUCTION_INTENT_VERSION:VERSION}=require('../core/contracts/construction-intent.js');
 const {verifiedTeachingActionToV5}=require('./construction-step-v5-adapter.cjs');
@@ -28,7 +30,7 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 }return x;};
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  stationCountPerBranch=0,viewTransforms=null,
- includeSourceCircleGuides=false}={}){
+ includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
@@ -37,6 +39,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new TypeError('current reviewed source and bounded shared V5 transform required');
  if(typeof includeSourceCircleGuides!=='boolean')
   throw new TypeError('reviewed source-circle guide toggle must be boolean');
+ if(typeof includeProjectedSeamArcGuides!=='boolean')
+  throw new TypeError('analytic projected seam-arc guide toggle must be boolean');
  if(!Number.isSafeInteger(stationCountPerBranch)||
     stationCountPerBranch<0||stationCountPerBranch>2)
   throw new RangeError('0..2 independently proven interior stations per branch required');
@@ -115,11 +119,13 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new RangeError('C3 stations exceed the canonical construction DAG budget');
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
- const intents=[],steps=[],bindings=[],sourceCircleGuides=[];
- const sheetByIntentId={};
+ const intents=[],steps=[],bindings=[],sourceCircleGuides=[],
+  projectedSeamArcGuides=[];
+ const sheetByIntentId={},viewByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:includeSourceCircleGuides?
-   'finite-cylinder-original-circles-and-analytic-points':
+  revision,unit:'mm',proofScope:includeProjectedSeamArcGuides?
+   'finite-cylinder-projected-arcs-and-analytic-points':
+   includeSourceCircleGuides?'finite-cylinder-original-circles-and-analytic-points':
    stationCountPerBranch>0?'finite-lateral-lateral-branch-points-only':
    'finite-lateral-lateral-branch-endpoint-only',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
@@ -142,7 +148,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    const transform=viewTransforms?.[guide.view]||sheetTransform;
    const action=verifiedTeachingActionToV5({
     id:op.id,kind:'circle',coordinateSpace:'model-mm',
-    center:guide.center,radius:guide.radius
+    center:guide.center,radius:guide.radius,view:guide.view
    },transform);
    const intent={schema:VERSION,id,
     purpose:'construct-original-finite-cylinder-circular-view-guide',
@@ -156,6 +162,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    // The one combined trust scope was selected before creating any steps.
    intents.push(intent);steps.push(step);
    sheetByIntentId[id]=transform;
+   viewByIntentId[id]=guide.view;
    sourceCircleGuides.push({view:guide.view,
     sourceSolid:guide.solid,centerModelMm:{...guide.center},
     radiusModelMm:guide.radius,
@@ -165,6 +172,90 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
     sourceProjectionGuideV5Authorized:true,
     officialContourLineStyleVerified:false,
     interpenetrationCurveLineStyleVerified:false});
+  }
+ }
+ // Projection in V=(x,z) or H=(x,y) eliminates one of the signed
+ // radicals. A verified finite M3 lateral/lateral branch therefore projects
+ // to a true SUBARC of its owning source cylinder's exact model-mm circle.
+ // Reuse the original directed-arc operation and V5 Motion, NOT sampled
+ // line chords. De-duplicate exact same projected arcs across 3D branches.
+ if(includeProjectedSeamArcGuides){
+  const audit=buildC3VHProjectionDedup({input,revision});
+  if(audit.status!=='scoped-projected-analytic-interval-deduplicated'||
+     audit.sourceBranchCount!==proof.branchCount||
+     audit.originalCylinderContourCoincidenceProven!==true||
+     audit.projectionOwnershipVerified!==true||
+     audit.officialLineStylesVerified!==false||
+     audit.v5CurveActionsAuthorized!==false)
+   throw new RangeError('analytic projected V/H seam source not independently proven');
+  for(const [index,row] of audit.spans.entries()){
+   const [lo,hi]=row.xOpenRange;
+   const start=evaluateC3VHProjectedSpan(row,lo),
+     end=evaluateC3VHProjectedSpan(row,hi),
+     circle=row.projectedSourceCircle;
+   // Preserve the signed radical branch at exact radius extrema:
+   // adding -0 to a center can erase -0 and change atan2(-0,-R)
+   // into atan2(+0,-R), turning -pi into +pi on the lower semicircle.
+   const angle=x=>{
+    const dx=x-circle.xCenter;
+    const radial=(circle.radius-Math.abs(dx))*
+     (circle.radius+Math.abs(dx));
+    if(radial< -1e-9*Math.max(1,circle.radius**2))
+     throw new RangeError('projected analytic arc radial domain invalid');
+    return Math.atan2(row.retainedSign*Math.sqrt(Math.max(0,radial)),
+     dx)*180/Math.PI;
+   };
+   const startAngle=angle(lo),endAngle=angle(hi);
+   // Projection endpoints are recomputed by the original 2D M3 consumer.
+   // Strict mathematical parity, not angle guesses or sampled chords.
+   const from={u:circle.xCenter+circle.radius*Math.cos(startAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(startAngle*Math.PI/180)};
+   const to={u:circle.xCenter+circle.radius*Math.cos(endAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(endAngle*Math.PI/180)};
+   if(Math.hypot(from.u-start.u,from.v-start.v)>1e-7||
+      Math.hypot(to.u-end.u,to.v-end.v)>1e-7)
+    throw new RangeError('directed arc endpoints differ from verified M3 projection');
+   const direction=row.retainedSign===1?'cw':'ccw';
+   const sweep=endAngle-startAngle;
+   if(!(Number.isFinite(sweep)&&Math.abs(sweep)>1e-9&&
+      Math.abs(sweep)<360-1e-9&&
+      (sweep>0)===(direction==='ccw')))
+    throw new RangeError('analytic projected circle arc has singular sweep');
+   const id='C3ProjectedArc'+index+row.view;
+   const geometry={center:{x:circle.xCenter,y:circle.coordinateCenter},
+    radius:circle.radius,startAngle,endAngle,direction};
+   const op={id:id+'Shape',kind:'directed-arc',
+    coordinateSpace:'model-mm',geometry};
+   const intent={schema:VERSION,id,
+    purpose:'construct-analytic-intersection-projection-as-source-circle-arc',
+    role:'auxiliary',dependsOn:[],inputEntityIds:[],
+    outputEntityIds:[op.id],operations:[op],source:{...source}};
+   const transform=viewTransforms?.[row.view]||sheetTransform;
+   const action=verifiedTeachingActionToV5({
+    id:op.id,kind:'arc',coordinateSpace:'model-mm',
+    view:row.view,...geometry
+   },transform);
+   const step={id,role:'auxiliary',dependsOn:[],
+    title:'相贯解析投影 · '+row.view+' 面 · 去重真实圆弧 '+(index+1),
+    explanation:'由 M3 解析曲线在原始圆柱上的精确圆形投影构成，不使用折线采样；该弧尚未获得实体交汇、国标虚实线及最终相贯曲线答案签收。',
+    actions:[action]};
+   intents.push(intent);steps.push(step);
+   sheetByIntentId[id]=transform;
+   viewByIntentId[id]=row.view;
+   projectedSeamArcGuides.push({
+    id,view:row.view,sourceCylinder:row.sourceCylinder,
+    sourceBranchIds:[...row.sourceBranchIds],
+    retainedSign:row.retainedSign,
+    xRange:[...row.xOpenRange],centerModelMm:{...geometry.center},
+    radiusModelMm:geometry.radius,
+    startAngleDegrees:startAngle,endAngleDegrees:endAngle,
+    modelDirection:direction,
+    exactProjectedCircleArcVerified:true,
+    duplicateSourceProjectionRemoved:true,
+    canonicalDirectedArcV5Authorized:true,
+    originalFeatureContourVisibilityVerified:false,
+    officialStandardLineStyleVerified:false
+   });
   }
  }
  for(const [index,ep] of allStations.entries()){
@@ -211,16 +302,22 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  if(intents.length>300)throw new RangeError('too many C3 endpoint V5 actions');
  const timing=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
-  sheetByIntentId:includeSourceCircleGuides?sheetByIntentId:null});
+  sheetByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
+   sheetByIntentId:null,
+  viewByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
+   viewByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
-  revision,status:includeSourceCircleGuides?
-   'analytic-point-actions-and-original-circle-guides':
+  revision,status:includeProjectedSeamArcGuides?
+   'analytic-vh-projection-arc-guides-and-points':
+   includeSourceCircleGuides?'analytic-point-actions-and-original-circle-guides':
    'analytic-endpoint-point-actions-only',
   sourceM3:proof,continuousCurveWRayEvidence,continuousCurveVHAxisRayEvidence,
   sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
-  timing,player,bindings,sourceCircleGuides,
+  timing,player,bindings,sourceCircleGuides,projectedSeamArcGuides,
+  provenAnalyticVHArcV5ActionCount:projectedSeamArcGuides.length,
+  exactAnalyticVHArcV5Ready:projectedSeamArcGuides.length>0,
   provenOriginalSourceCircleV5ActionCount:sourceCircleGuides.length,
   originalSourceCircleGuidesV5Ready:sourceCircleGuides.length===2,
   independentlyProvenEndpointCount:branchEndpoints.length,

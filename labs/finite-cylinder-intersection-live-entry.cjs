@@ -176,23 +176,27 @@ function renderVerifiedV5Actions(){
  for(const step of current.constructionSteps)
   for(const action of step.actions){
    const fraction=frame.actionFractions[action.id]||0;
-   if(fraction<=0||!['point','circle'].includes(action.kind))continue;
+   if(fraction<=0||!['point','circle','arc'].includes(action.kind))continue;
    const originalGuide=action.kind==='circle';
-   const circle=node('circle',{
-    fill:originalGuide?'none':'#12649b',
-    stroke:originalGuide?'#638bb0':'#12649b',
-    'stroke-width':originalGuide?1.8:2,
+   const analyticArc=action.kind==='arc';
+   const shape=node(analyticArc?'path':'circle',{
+    fill:action.kind==='point'?'#12649b':'none',
+    stroke:analyticArc?'#a064b5':originalGuide?'#638bb0':'#12649b',
+    'stroke-width':analyticArc?2.3:originalGuide?1.8:2,
+    ...(analyticArc?{'stroke-dasharray':'3 7'}:{}),
     'data-source-v5-action':action.id,
-    'data-certified-scope':originalGuide?
-     'reviewed-original-source-circle-only':'analytic-point-only',
+    'data-certified-scope':analyticArc?
+     'exact-analytic-VH-projection-arc-not-official':
+     originalGuide?'reviewed-original-source-circle-only':
+      'analytic-point-only',
     'data-official-line-style':'false'});
-   Motion.updateSvg(circle,action,fraction);
-   layer.append(circle);
+   Motion.updateSvg(shape,action,fraction);
+   layer.append(shape);
   }
  svg.append(layer);
  showMessage('已完成 '+frame.completedIds.length+
   '/'+current.timing.segments.length+
-  ' 个已证明原始圆及相贯辅助点动作；正式相贯线与国标实虚线尚未签收。');
+  ' 个已证明原始圆、精确相贯投影弧及辅助点动作；正式国标实虚线尚未签收。');
 }
 function tick(time){
  raf=null;
@@ -229,7 +233,7 @@ function solve(){
   const computed=compileFiniteCylinderEndpointV5({
    input,revision,stationCountPerBranch:count,
    sheetTransform:transforms.V,viewTransforms:transforms,
-   includeSourceCircleGuides:true});
+   includeSourceCircleGuides:true,includeProjectedSeamArcGuides:true});
   const wRayProof=buildC3WIntervalPreview({input,revision});
   const vhDedup=buildC3VHProjectionDedup({input,revision});
   drawScaffold();
@@ -243,6 +247,7 @@ function solve(){
    '。\n有限端盖裁剪：'+p.verifiedCapClipping+
    '；正式 V5 端点动作：'+computed.signedEndpointPointActionCount+
    '；原始圆形辅助 V5：'+computed.provenOriginalSourceCircleV5ActionCount+
+   '；真实解析 V/H 圆弧 V5：'+computed.provenAnalyticVHArcV5ActionCount+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
