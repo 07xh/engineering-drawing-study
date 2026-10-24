@@ -90,7 +90,7 @@ test('C1 changing source model changes computed third view and source revision',
  assert.equal(a.v5Ready,false);
  assert.equal(b.v5Ready,false);
 });
-test('C1 production page and bundle declare only reviewed local preview, not V5',()=>{
+test('C1 public solid page preserves unverified edges alongside independently proven vertex V5',()=>{
  const html=fs.readFileSync('labs/solid-third-view-live.html','utf8');
  const js=fs.readFileSync('labs/solid-third-view-live-entry.cjs','utf8');
  const build=fs.readFileSync('scripts/build-static.cjs','utf8');
@@ -99,7 +99,10 @@ test('C1 production page and bundle declare only reviewed local preview, not V5'
  assert.match(html,/id="pair"/);
  assert.match(html,/id="vertices"/);
  assert.match(html,/不是工程图实线\/虚线/);
- assert.match(js,/reviewedSolidThirdView/);
+ assert.match(js,/compileReviewedSolidVertexV5/);
+ assert.match(js,/data-v5-vertex-layer/);
+ assert.match(js,/data-certified-scope','point-auxiliary-only/);
+ assert.match(html,/id="pointV5Play"/);
  assert.match(js,/data-visibility','undetermined/);
  assert.match(js,/data-official-v5','false/);
  assert.match(js,/topologyConfirmed:true/);
