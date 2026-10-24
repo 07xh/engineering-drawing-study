@@ -107,5 +107,5 @@ test('C1 UI only renders undetermined AB preview after the SAME player completes
  assert.ok(html.includes('id="showSegment"'));
  assert.match(html,/非正式 V5 线条/);
  assert.ok(homepage.includes('href="labs/two-point-v5-live.html"'));
- assert.match(homepage,/非实体标准答案/);
+ assert.match(homepage,/非标准虚实线答案/);
 });
