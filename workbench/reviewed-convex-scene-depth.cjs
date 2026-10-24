@@ -21,6 +21,8 @@ const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const {partitionReviewedSourceEdges}=
  require('./scoped-projected-stroke-partition.cjs');
+const {deriveReviewedProjectedVertexJoins}=
+ require('./reviewed-projected-vertex-joins.cjs');
 const {verifyConvexProjectedOutline}=
  require('../core/verification/convex-projected-outline.cjs');
 const freeze=x=>{
@@ -43,6 +45,8 @@ const unready=(revision,reason)=>freeze({
   hiddenSourceEdges:[],fullLineStyleSignedOff:false},
  projectedStrokePartitions:{status:'not-covered',segmentCount:0,
   segments:[],officialLineStylesVerified:false,v5Ready:false},
+ projectedVertexJoins:{status:'not-covered',groupCount:0,groups:[],
+  endpointVisibilityVerified:false,officialLineStylesVerified:false,v5Ready:false},
  projectedOutlines:{status:'not-covered',objects:[],
   allIndividualConvexProjectedBoundariesVerified:false,
   combinedSilhouetteVerified:false,officialLineStylesVerified:false},
@@ -231,6 +235,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    return {status:'scoped-source-segment-occlusion-only',checkedCount,
     hiddenSourceEdges,fullLineStyleSignedOff:false};
   })();
+ const projectedVertexJoins=deriveReviewedProjectedVertexJoins({geometry,revision});
  const sceneEvidence={
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
   revision,status:'scoped-face-probes-only',reason:null,
@@ -238,6 +243,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
   sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
   edgeContinuousOcclusion:continuousOcclusion,
   wholeSourceEdgeOcclusion:wholeEdgeOcclusion,projectedOutlines,
+  projectedVertexJoins,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
