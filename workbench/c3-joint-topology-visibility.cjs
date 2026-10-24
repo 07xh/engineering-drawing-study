@@ -11,6 +11,42 @@ const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
+function buildTransitionGuards(intervals,junctionGuards){
+ const result=[];
+ for(const view of ['V','H','W']){
+  const byBranch=new Map();
+  for(const row of intervals.filter(i=>i.view===view)){
+   if(!byBranch.has(row.branchId))byBranch.set(row.branchId,[]);
+   byBranch.get(row.branchId).push(row);
+  }
+  for(const [branchId,parts] of byBranch){
+   parts.sort((a,b)=>a.xOpenRange[0]-b.xOpenRange[0]);
+   for(let i=1;i<parts.length;i++){
+    const left=parts[i-1],right=parts[i];
+    const same=left.openInteriorStatus===right.openInteriorStatus&&
+      left.openInteriorStatus!=='undetermined';
+    result.push({view,branchId,transitionX:left.xOpenRange[1],
+     leftOpenStatus:left.openInteriorStatus,rightOpenStatus:right.openInteriorStatus,
+     equalCertifiedOpenStatuses:same,
+     endpointRayContinuityVerified:false,
+     occlusionSwitchPointVerified:false,
+     standardLineStyle:'undetermined',v5ActionAuthorized:false,
+     blockers:['critical-ray-event-endpoint-not-proven',
+      'projected-feature-overlap-and-standard-line-style-not-proven']});
+   }
+  }
+  for(const j of junctionGuards){
+   result.push({view,junctionId:j.junctionId,
+    incidentBranchIds:[...j.incidentBranchIds],
+    localC1JoinVerified:j.localC1JoinVerified,
+    endpointRayContinuityVerified:false,
+    occlusionSwitchPointVerified:false,
+    standardLineStyle:'undetermined',v5ActionAuthorized:false,
+    blockers:[...j.blockers]});
+  }
+ }
+ return result;
+}
 function auditC3JointTopologyVisibility({input,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('C3 current source revision required');
@@ -104,6 +140,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
+  transitionGuards:buildTransitionGuards(intervals,junctionGuards),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
