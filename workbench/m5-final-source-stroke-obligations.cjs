@@ -28,6 +28,8 @@ const {proveGeneratedOrthogonalUnionCreases}=
  require('./m5-generated-orthogonal-union-creases.cjs');
 const {auditUnionPhysicalFeatureJunctions}=
  require('./m5-union-physical-feature-junctions.cjs');
+const {auditGeneratedViewEndpointIncidence}=
+ require('./m5-generated-view-endpoint-incidence.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -111,6 +113,19 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
  const physicalFeatureJunctionEvidence=geometry.length>=2?
   auditUnionPhysicalFeatureJunctions({geometry,revision}):null;
+ const generatedProjectedEndpointEvidence=geometry.length>=2&&
+  physicalFeatureJunctionEvidence?.status===
+   'source-recomputed-physical-3d-feature-incidence'?
+  auditGeneratedViewEndpointIncidence({geometry,revision,
+   projectedStrokePartitions:partitions,
+   physicalJunctionEvidence:physicalFeatureJunctionEvidence}):null;
+ if(generatedProjectedEndpointEvidence&&
+    (generatedProjectedEndpointEvidence.signedV5LineActions!==0||
+     generatedProjectedEndpointEvidence.officialLineStylesVerified!==false||
+     generatedProjectedEndpointEvidence.candidateCount!==
+      partitions.generatedProjectedCandidateCount))
+  throw new TypeError('generated projected endpoints attempted to bypass formal V5 gate');
+
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
   if(physicalFeatureJunctionEvidence.officialV5FeatureActionsSigned!==0||
@@ -297,6 +312,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   sourceCreaseEvidence,sourceUnionFeatureEvidence,
   generatedUnionCreaseEvidence,
   physicalFeatureJunctionEvidence,
+  generatedProjectedEndpointEvidence,
+  generated3DProjectedMatchedEndpointCount:
+   generatedProjectedEndpointEvidence?.physicallyMatched3DEndpointCount??0,
+  generated3DProjectedDepthAliasEndpointCount:
+   generatedProjectedEndpointEvidence?.distinctDepthAliasEndpointCount??0,
+
   physicalFeatureJunctionCount:physicalFeatureJunctionEvidence?.nodeCount??0,
   physicalCrossSourceJunctionCandidateCount:
    physicalFeatureJunctionEvidence?.positiveLocalJunctionCandidateCount??0,
