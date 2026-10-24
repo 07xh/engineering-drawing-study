@@ -503,6 +503,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     node.setAttribute('data-geometry-id',solved.plan.geometryId);
     if(view)node.setAttribute('data-geometry-view',view);
     node.setAttribute('data-source-section-edge',action.sourceSectionEdgeId);
+    const evidence=solved.evidence?.sectionEvidenceV5Bindings?.bindings
+     .find(link=>link.v5ActionId===action.id);
+    if(evidence){
+     // These are annotations for a mathematically scoped OPEN interval.
+     // The complete drawn stroke ALWAYS remains undetermined.
+     node.setAttribute('data-open-interior-visibility',
+      evidence.openInteriorVisibility);
+     node.setAttribute('data-ray-proof-scope',evidence.sourceProofScope);
+     node.append(shape('title',{},
+      '截交边开区间射线判断：'+evidence.openInteriorVisibility+
+      '；端点、其他实体遮挡及完整虚实线尚未证明'));
+    }
     node.setAttribute('role','button');node.setAttribute('tabindex','0');
     node.setAttribute('aria-label','选择 '+solved.plan.geometryId+' 的 '+view+' 表达');
     const pick=()=>coordinator.selectSceneGeometry(solved.plan.geometryId);
