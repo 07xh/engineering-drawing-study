@@ -9,6 +9,7 @@
  * drawing stroke when overlapping source curves have different depths.
  */
 const {auditC3JointTopologyVisibility}=require('./c3-joint-topology-visibility.cjs');
+const {auditC3WProjectedSourceEdges}=require('./c3-w-projected-source-outline.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -23,6 +24,15 @@ function buildC3WIntervalPreview({input,revision}={}){
  if(audit.status!=='scoped-open-interval-joint-evidence')return notCovered();
  const injective=audit.wLateralProjection
   ?.projectedLateralLateralPointInjectivityVerified===true;
+ // The original source silhouettes and finite-cap outlines must introduce
+ // no missing crossing INSIDE an already-classified source W interval.
+ const outline=auditC3WProjectedSourceEdges({input,revision});
+ const sourceContourPartitionComplete=outline.status===
+  'scoped-analytic-source-outline-event-partition'&&
+  outline.originalM3BranchCount===audit.sourceBranchCount&&
+  outline.sourceOutlineOpenOverlapExcluded===true&&
+  outline.everyProjectedEventAtExistingWPartitionBoundary===true;
+ const colorEligible=injective&&sourceContourPartitionComplete;
  const source=audit.intervals.filter(i=>i.view==='W');
  if(!source.length||source.length>256||
     new Set(source.map(i=>i.branchId)).size!==audit.sourceBranchCount||
@@ -41,8 +51,9 @@ function buildC3WIntervalPreview({input,revision}={}){
   originalM5EvidenceId:row.originalM5EvidenceId,
   // These labels are a continuously proven first-angle viewer-ray
   // classification of the OPEN interior, not a standard stroke definition.
-  openInteriorRayStatus:injective?row.openInteriorStatus:'undetermined',
+  openInteriorRayStatus:colorEligible?row.openInteriorStatus:'undetermined',
   wSourceProjectionInjectivityVerified:injective,
+  sourceOutlinePartitionVerified:sourceContourPartitionComplete,
   confidenceScope:'open-interval-finite-volume-ray-only',
   transitionAndEndpointVisibilityVerified:false,
   otherProjectedContoursVerified:false,
@@ -60,6 +71,8 @@ function buildC3WIntervalPreview({input,revision}={}){
   status:'source-bounded-W-open-ray-preview',
   sourceM3BranchCount:audit.sourceBranchCount,
   exactProjectedLateralSelfOverlapExcluded:injective,
+  sourceOutlineEventCount:outline.eventCount||0,
+  projectedSourceOutlineEventsSeparatedAtWBoundaries:sourceContourPartitionComplete,
   intervals,
   certifiedClearCount:intervals.filter(i=>i.openInteriorRayStatus==='clear').length,
   certifiedOccludedCount:intervals.filter(i=>i.openInteriorRayStatus==='occluded').length,
