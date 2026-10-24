@@ -107,6 +107,42 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
     eligibleRadicalCoalescenceCandidate:expectedCoalescence&&!cap,
     globalSmoothBranchContinuationVerified:false});
   }
+  // Implicit-function theorem for a REGULAR lateral/lateral radial
+  // turn, independent of branch-name coincidence:
+  // F=(x-Xz)^2+(y-Yz)^2-Rz², G=(x-Xy)^2+(z-Zy)^2-Ry².
+  // If F has a signed-radical turn (y=Yz) and G has nonzero z
+  // derivative, gradients are independent; local curve is C1 with
+  // tangent along +y/-y. The dual case has tangent along z.
+  // Both simultaneous radical turns, cap terminals, depth ties, and
+  // third-branch coincidence remain UNSIGNED.
+  const regularPair=incidents.length===2&&pairs.length===1?
+   pairs[0]:null;
+  const a=incidents[0],b=incidents[1];
+  const yTurn=a?.sourceRadicalCoalescence.y===true&&
+   b?.sourceRadicalCoalescence.y===true;
+  const zTurn=a?.sourceRadicalCoalescence.z===true&&
+   b?.sourceRadicalCoalescence.z===true;
+  const cap=incidents.some(e=>
+   e.finiteCapEndpoint.yCylinder||e.finiteCapEndpoint.zCylinder);
+  const ry=(Z.radius-Math.abs(row.point3D.x-Z.xCenter))*
+    (Z.radius+Math.abs(row.point3D.x-Z.xCenter));
+  const rz=(Y.radius-Math.abs(row.point3D.x-Y.xCenter))*
+    (Y.radius+Math.abs(row.point3D.x-Y.xCenter));
+  const regularY=!!(regularPair?.eligibleRadicalCoalescenceCandidate&&
+   !cap&&yTurn&&!zTurn&&a.signY!==b.signY&&a.signZ===b.signZ&&
+   rz>tol*tol&&Math.abs(row.point3D.z-Y.zCenter)>tol);
+  const regularZ=!!(regularPair?.eligibleRadicalCoalescenceCandidate&&
+   !cap&&zTurn&&!yTurn&&a.signZ!==b.signZ&&a.signY===b.signY&&
+   ry>tol*tol&&Math.abs(row.point3D.y-Z.yCenter)>tol);
+  const regular=regularY||regularZ;
+  const tangent=regularY?{x:0,y:1,z:0}:regularZ?{x:0,y:0,z:1}:null;
+  const tangentProjection=tangent?Object.fromEntries(VIEWS.map(view=>{
+   const o=project({x:0,y:0,z:0})[view],t=project(tangent)[view];
+   const direction={u:t.u-o.u,v:t.v-o.v};
+   return [view,{direction,
+    tangentProjectionCollapsed:Math.hypot(direction.u,direction.v)<=1e-12,
+    exactTangentSource:'independent-implicit-gradient-cross-product'}];
+  })):null;
   const standalone=incidents.length===1;
   return {id:row.id,point3D:{...row.point3D},
    endpointIds:incidents.map(x=>x.id),
@@ -116,13 +152,100 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
    finiteCapTermination:incidents.some(x=>
     x.finiteCapEndpoint.yCylinder||x.finiteCapEndpoint.zCylinder),
    classification:standalone?'single-branch-terminal':
+    regular?'regular-implicit-C1-radical-join':
     pairs.some(x=>x.eligibleRadicalCoalescenceCandidate)?
     'analytic-signed-radical-coalescence-candidate':
     'multi-branch-topology-undetermined',
+   regularLocalTangentVerified:regular,
+   tangent3D:tangent,projectedTangentWitnesses:tangentProjection,
+   implicitGradientRankTwoVerified:regular,
+   localC1ContinuationWithinLateralLateralScopeVerified:regular,
+   finiteCapAndOtherSheetContinuationVerified:false,
    completeSpatialCurveConnectivityVerified:false,
    projected3DVisibilityVerified:false,
    standardLineStylesVerified:false,v5CurveActionSignedOff:false};
  });
+ // Closed-scope incidence graph: a branch is one analytic edge between
+ // its own two independently checked 3D endpoint groups. Walk every edge
+ // exactly once. 2-valent nodes require regular IFT continuity; 1-valent
+ // nodes terminate at a verified finite cap. Multi-valent, simultaneous
+ // radical or ambiguous vertices are not promoted.
+ const lookup=new Map(junctions.flatMap(j=>j.endpointIds.map(id=>[id,j.id])));
+ const allBranches=new Set(proof.branches.map(b=>b.id));
+ const graphEdges=proof.branches.map(b=>{
+  const ends=endpoints.filter(e=>e.branchId===b.id);
+  if(ends.length!==2)throw new RangeError('analytic branch lacks two matching graph endpoints');
+  const from=lookup.get(ends.find(e=>e.branchEndpointRole==='from')?.id),
+    to=lookup.get(ends.find(e=>e.branchEndpointRole==='to')?.id);
+  if(from===undefined||to===undefined||from===to)
+   throw new RangeError('analytic source branch collapses to one junction');
+  return {branchId:b.id,fromJunctionId:from,toJunctionId:to};
+ });
+ if(graphEdges.length!==allBranches.size)
+  throw new RangeError('duplicate analytic source branch identity');
+ const adjacency=new Map(junctions.map(j=>[j.id,[]]));
+ for(const e of graphEdges){
+  adjacency.get(e.fromJunctionId).push(e);
+  adjacency.get(e.toJunctionId).push(e);
+ }
+ const unseen=new Set(allBranches),components=[];
+ while(unseen.size){
+  const seed=graphEdges.find(e=>unseen.has(e.branchId));
+  const queue=[seed.fromJunctionId],nodes=new Set(),sub=[];
+  while(queue.length){
+   const id=queue.shift();
+   if(nodes.has(id))continue;
+   nodes.add(id);
+   for(const edge of adjacency.get(id)){
+    if(unseen.delete(edge.branchId))sub.push(edge);
+    queue.push(edge.fromJunctionId===id?edge.toJunctionId:edge.fromJunctionId);
+   }
+  }
+  const degrees=[...nodes].map(id=>({id,count:adjacency.get(id).length}));
+  const endpoints1=degrees.filter(d=>d.count===1);
+  const allRegular=degrees.every(({id,count})=>{
+   const j=junctions.find(x=>x.id===id);
+   return count===2?j.localC1ContinuationWithinLateralLateralScopeVerified:
+    count===1&&j.classification==='single-branch-terminal'&&
+      j.finiteCapTermination;
+  });
+  const topologicalShape=degrees.every(d=>d.count===2)?'closed-cycle':
+   endpoints1.length===2&&degrees.every(d=>d.count===1||d.count===2)?
+    'finite-open-path':'ambiguous-branching';
+  const graphCert=allRegular&&topologicalShape!=='ambiguous-branching';
+  // The ordered walk is a purely source-graph index, NOT V5 drawing order.
+  const first=topologicalShape==='finite-open-path'?
+   endpoints1.map(d=>d.id).sort()[0]:[...nodes].sort()[0];
+  const walk=[],visited=new Set();let cursor=first;
+  for(let i=0;i<sub.length;i++){
+   const next=adjacency.get(cursor).find(e=>!visited.has(e.branchId));
+   if(!next)break;
+   visited.add(next.branchId);
+   const forward=next.fromJunctionId===cursor;
+   const arrival=forward?next.toJunctionId:next.fromJunctionId;
+   walk.push({branchId:next.branchId,
+    sourceFromJunctionId:cursor,sourceToJunctionId:arrival,
+    directionInX:forward?'increasing':'decreasing',
+    officialDrawingOrderApproved:false});
+   cursor=arrival;
+  }
+  if(walk.length!==sub.length)throw new RangeError('analytic branch graph walk incomplete');
+  components.push({
+   id:'component'+components.length,
+   sourceJunctionIds:[...nodes].sort(),
+   sourceBranchIds:sub.map(e=>e.branchId).sort(),
+   incidentDegreeWitnesses:degrees,
+   topologicalShape,
+   traversal:walk,
+   everySourceBranchVisitedExactlyOnce:true,
+   allInternalRegularC1JoinsVerified:allRegular,
+   graphPathOrCycleVerifiedWithinLateralLateralScope:graphCert,
+   lateralCapContinuationVerified:false,
+   noOtherEntitySurfaceIntersectionsVerified:false,
+   officialLineStyleOrAnimationSigned:false});
+ }
+ if(components.reduce((n,c)=>n+c.sourceBranchIds.length,0)!==proof.branchCount)
+  throw new RangeError('analytic graph failed complete M3 branch coverage');
  const projectedCoincidences=[];
  for(const view of VIEWS){
   for(let i=0;i<junctions.length;i++)for(let j=i+1;j<junctions.length;j++){
@@ -139,9 +262,17 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
  return frozen({schema:'draftai-m5-cylinder-endpoint-incidence/1',
   revision,status:'scoped-analytic-3d-endpoint-incidence',
   sourceM3BranchCount:proof.branchCount,
-  endpoints,junctions,projectedCoincidences,
+  endpoints,junctions,components,componentCount:components.length,
+  graphVerifiedComponentCount:components.filter(c=>
+   c.graphPathOrCycleVerifiedWithinLateralLateralScope).length,
+  allAnalyticSourceBranchesAccountedFor:true,
+  projectedCoincidences,
   verified3DJunctionCount:junctions.filter(j=>
    j.physicalPointIdentityVerified).length,
+  regularLocalC1JoinCount:junctions.filter(j=>
+   j.localC1ContinuationWithinLateralLateralScopeVerified).length,
+  unresolvedAnalyticJunctionCount:junctions.filter(j=>
+   j.incidentBranchIds.length>1&&!j.regularLocalTangentVerified).length,
   pairedSignedRadicalCount:junctions.reduce((n,j)=>n+
    j.pairedRadicalCandidates.filter(p=>p.eligibleRadicalCoalescenceCandidate).length,0),
   distinct3DProjectedCoincidenceCount:projectedCoincidences.filter(p=>
