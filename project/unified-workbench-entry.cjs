@@ -226,6 +226,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      ' 段、投影内部 '+projection.coveredBoundaryCount+' 段、不确定 '+
      projection.undeterminedCount+' 段。接触面的边缘、投影重合和空间遮挡仍需端点与深度证明；不等于标准虚实线或 V5。';
   }
+  const seamRays=preview()?.kind==='composition-evidence'?
+    preview().compositionSeamRayEvidence:null;
+  if(seamRays?.status==='scoped-source-bounded-whole-seam-ray-evidence'){
+   $('v7-c-contacts').textContent+=
+    '；M5 三视图接缝完整区间射线：可证明无遮挡 '+
+    seamRays.certifiedOpenVisibleCount+' 段、可证明实体前方遮挡 '+
+    seamRays.certifiedFullyOccludedCount+' 段，其余含积聚和未判定 '+
+    seamRays.undeterminedCount+' 段。这里不证明接缝是否为正式工程轮廓，端点和标准实虚线仍未签收。';
+  }
  }
 
  const taskObjects={

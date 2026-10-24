@@ -14,6 +14,8 @@ const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relat
 const {evaluateReviewedBoxContacts}=require('../core/geometry/reviewed-box-contact-evidence.cjs');
 const {evaluateReviewedCompositeInterfaces}=
  require('../workbench/reviewed-composite-interface-evidence.cjs');
+const {proveReviewedCompositeSeamRays}=
+ require('../workbench/m5-reviewed-composite-seam-rays.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {inspectSpatialV5Readiness}=
@@ -206,6 +208,9 @@ function createUnifiedProjectSession(){
     const compositionInterfaceEvidence=evaluateReviewedCompositeInterfaces({
       geometry,revision:latest.revision,contactEvidence:compositionContactEvidence,
       sceneDepthEvidence});
+    const compositionSeamRayEvidence=geometry.length>=2&&
+      compositionInterfaceEvidence.contactBoundarySegmentCount>0?
+      proveReviewedCompositeSeamRays({geometry,revision:latest.revision}):null;
     const spatialV5Readiness=inspectSpatialV5Readiness({
       sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
@@ -235,7 +240,7 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
-      sceneDepthEvidence,spatialV5Readiness,
+      compositionSeamRayEvidence,sceneDepthEvidence,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
