@@ -58,6 +58,14 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.ok($('v7-photo-box').hidden);
   click('v7-photo-clear');await tick();
   assert.match($('v7-photo-point-status').textContent,/0\/2 个端点/);
+  for(const id of ['v7-candidate-id','v7-candidate-stage',
+    'v7-source-link','v7-candidate-accept','v7-candidate-reject',
+    'v7-candidate-locate','v7-candidate-status'])
+    assert.ok($(id),'source-to-ProblemDraft UI missing '+id);
+  click('v7-candidate-stage');await tick();await tick();
+  assert.match($('v7-save').textContent,/已保存的本机原图/,
+   'without a stored image a photo candidate must fail closed');
+  assert.equal($('v7-source-link').querySelectorAll('option').length,1);
   assert.match($('v7-proof').textContent,/未计算/);
   click('v7-solve');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/,'unconfirmed click cannot forge a result');
