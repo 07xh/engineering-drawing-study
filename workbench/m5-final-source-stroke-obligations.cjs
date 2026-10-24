@@ -26,6 +26,8 @@ const {auditOrthogonalUnionSourceEdges}=
  require('./m5-orthogonal-union-source-edges.cjs');
 const {proveGeneratedOrthogonalUnionCreases}=
  require('./m5-generated-orthogonal-union-creases.cjs');
+const {auditUnionPhysicalFeatureJunctions}=
+ require('./m5-union-physical-feature-junctions.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -107,6 +109,18 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
  // candidate to a final standard solid/dashed construction step.
  const generatedUnionCreaseEvidence=geometry.length>=2?
   proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
+ const physicalFeatureJunctionEvidence=geometry.length>=2?
+  auditUnionPhysicalFeatureJunctions({geometry,revision}):null;
+ if(physicalFeatureJunctionEvidence?.status===
+    'source-recomputed-physical-3d-feature-incidence'){
+  if(physicalFeatureJunctionEvidence.officialV5FeatureActionsSigned!==0||
+     physicalFeatureJunctionEvidence.wholeCompositionV5Ready!==false||
+     physicalFeatureJunctionEvidence.allBoundaryJunctionsVerified!==false||
+     physicalFeatureJunctionEvidence.generatedSegmentCount!==
+      (generatedUnionCreaseEvidence?.certifiedNewConcaveOpenCount??0))
+   throw new TypeError('newly generated physical endpoints bypassed M5 independent gate');
+ }
+
  if(generatedUnionCreaseEvidence&&
     (generatedUnionCreaseEvidence.generatedFeatureV5Ready!==false||
      generatedUnionCreaseEvidence.officialLineStylesVerified!==false))
@@ -282,6 +296,15 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   spanCount:spans.length,spans,
   sourceCreaseEvidence,sourceUnionFeatureEvidence,
   generatedUnionCreaseEvidence,
+  physicalFeatureJunctionEvidence,
+  physicalFeatureJunctionCount:physicalFeatureJunctionEvidence?.nodeCount??0,
+  physicalCrossSourceJunctionCandidateCount:
+   physicalFeatureJunctionEvidence?.positiveLocalJunctionCandidateCount??0,
+  physicalOriginalGeneratedJunctionCount:
+   physicalFeatureJunctionEvidence?.nodes.filter(n=>
+    n.incidentOriginalSourceCount>0&&n.incidentGeneratedSourceCount>0).length??0,
+  fullyJoinedGeneratedStrokeCount:0,
+
   generatedSource3DOpenCandidateCount:
    generatedUnionCreaseEvidence?.certifiedNewConcaveOpenCount??0,
   generatedM4ProjectedCandidateCount:
