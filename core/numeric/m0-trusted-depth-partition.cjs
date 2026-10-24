@@ -8,7 +8,13 @@ const {certifyGlobalDepthOrder}=require('./m0-global-depth-separation.cjs');
 const {partitionM0Segment}=require('./m0-joint-visibility-partition.cjs');
 function auditM0TrustedDepthPartition({source,solids,observerDirection,
  marginMm=1e-7,angularTolerance=1e-12}={}){
- const partition=partitionM0Segment({source,solids,observerDirection,
+ // Continuous ray kernels accept the canonical {id,halfspaces} entity
+ // contract. Vertex lists are independently audited here and must never be
+ // forwarded as a forged/nonnumeric extra kernel field.
+ const scopedSolids=Array.isArray(solids)?solids.map(s=>({
+  id:s?.id,halfspaces:s?.halfspaces
+ })):solids;
+ const partition=partitionM0Segment({source,solids:scopedSolids,observerDirection,
   marginMm,angularTolerance});
  const vertices=solids.map(s=>certifyConvexVertices({solid:s,
   toleranceMm:marginMm,angularTolerance}));
