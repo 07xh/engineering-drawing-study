@@ -21,6 +21,8 @@ const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const {partitionReviewedSourceEdges}=
  require('./scoped-projected-stroke-partition.cjs');
+const {correlateReviewedOpenContours}=
+ require('./reviewed-frontmost-open-contours.cjs');
 const {deriveReviewedProjectedVertexJoins}=
  require('./reviewed-projected-vertex-joins.cjs');
 const {verifyConvexProjectedOutline}=
@@ -45,6 +47,9 @@ const unready=(revision,reason)=>freeze({
   hiddenSourceEdges:[],fullLineStyleSignedOff:false},
  projectedStrokePartitions:{status:'not-covered',segmentCount:0,
   segments:[],officialLineStylesVerified:false,v5Ready:false},
+ frontmostOpenContours:{status:'not-covered',entryCount:0,entries:[],
+  fullMultiBodySilhouetteVerified:false,officialLineStylesVerified:false,
+  v5Ready:false},
  projectedVertexJoins:{status:'not-covered',groupCount:0,groups:[],
   endpointVisibilityVerified:false,officialLineStylesVerified:false,v5Ready:false},
  projectedOutlines:{status:'not-covered',objects:[],
@@ -228,6 +233,10 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
  };
  const projectedStrokePartitions=partitionReviewedSourceEdges({
   geometry,sceneDepthEvidence:sceneEvidence,revision});
- return freeze({...sceneEvidence,projectedStrokePartitions});
+ const frontmostOpenContours=correlateReviewedOpenContours({
+  geometry,sceneDepthEvidence:sceneEvidence,
+  projectedStrokePartitions,revision});
+ return freeze({...sceneEvidence,projectedStrokePartitions,
+  frontmostOpenContours});
 }
 module.exports={evaluateReviewedConvexMeshDepth};
