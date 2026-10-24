@@ -15,11 +15,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 svg{width:100%;height:auto;border-radius:10px;border:1px solid #cdddeb;background:#fff;touch-action:pan-x pan-y}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f7fb;border-radius:8px;padding:10px;max-height:250px;overflow:auto;font-size:12px}
 #status{font-weight:700;color:#164d7f}#status[data-status="blocked"]{color:#a03630}
-@media(max-width:820px){.layout{grid-template-columns:1fr}}@media(max-width:450px){main{padding:8px}article{padding:12px}}
+.point-v5-toolbar{display:flex;flex-wrap:wrap;gap:6px}#point-v5-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}#point-v5-controls button{min-height:40px;padding:8px 10px}#point-v5-controls p{flex-basis:100%;margin:0}#point-v5-controls label{margin:0}#point-v5-controls button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:820px){.layout{grid-template-columns:1fr}}@media(max-width:450px){main{padding:8px}article{padding:12px}}
 </style></head><body><main>
 <a href="../index.html">← 返回 DraftAI 统一工作台</a>
 <h1>基本体 · 由两视图求第三视图</h1>
-<p>适用于<strong>人工确认是闭合凸长方体、并已核对八个角点编号对应关系</strong>的习题。并非任意两视图自动识体，也不提供已认证的虚实线或 V5 作图动作。</p>
+<p>适用于<strong>人工确认是闭合凸长方体、并已核对八个角点编号对应关系</strong>的习题。并非任意两视图自动识体，不提供已认证的虚实线或完整实体 V5 作图；已证明的角点可单独生成正式辅助作图 V5。</p>
 <div class="layout"><article>
 <h2>已知条件（模型 mm）</h2>
 <label for="pair">已知的两个视图
@@ -38,12 +38,23 @@ V110,30,0,30,15
 V111,30,20,30,15</textarea>
 <label class="check" for="confirmed"><input type="checkbox" id="confirmed">我已核对原题、单位、V/H/W 第一角法和八点身份；长方体拓扑已由我确认</label>
 <button id="solve" type="button">计算公共三视图</button>
+<div id="point-v5-controls" aria-label="已证明顶点的唯一 V5 播放控制">
+<button id="pointV5Play" type="button" disabled>播放顶点 V5</button>
+<button id="pointV5Pause" type="button" disabled>暂停</button>
+<button id="pointV5Prev" type="button" disabled>上一步</button>
+<button id="pointV5Next" type="button" disabled>下一步</button>
+<label for="pointV5Speed">播放速度 <select id="pointV5Speed">
+<option value="0.5">0.5×</option><option value="1" selected>1×</option>
+<option value="1.5">1.5×</option><option value="2">2×</option>
+</select></label>
+<p id="pointV5Status" role="status">顶点 V5 尚未生成。</p>
+</div>
 <p id="status" role="status" aria-live="polite" data-status="idle">请选择视图、录入并确认条件。</p>
 <p class="hint">更改任何条件立即清除旧结果。图片识别候选、仅有外轮廓但不明确实体或对应点的习题不允许直接按长方体签收。</p>
 </article><article>
 <h2>统一 Geometry Scene 投影预览</h2>
 <svg id="paper" viewBox="0 0 800 530" role="img" aria-label="第一角法 V/H/W 的长方体投影草图，所有边线线型未判定"></svg>
-<p>紫色点线 = 已确认拓扑下的几何投影，<strong>不是工程图实线/虚线</strong>；投影积聚线可能合并。暂无正式 V5 动画。</p>
+<p>紫色点线 = 已确认拓扑下的几何投影，<strong>不是工程图实线/虚线</strong>；投影积聚线可能合并。仅顶点的辅助作图有正式 V5；棱线仍为不可认证的几何预览。</p>
 <pre id="proof">数学证据将在计算后显示。</pre>
 </article></div>
 </main><script defer src="solid-third-view-live-bundle.js"></script></body></html>
