@@ -53,10 +53,37 @@ function evaluateReviewedCompositeInterfaces({geometry,revision,contactEvidence,
   }
   const projection=Object.fromEntries(VIEWS.map(v=>
    [v,corners.map(p=>project(p)[v])]));
+  // Exact 3D contact-rectangle side incidence relative to EACH verified
+  // original face boundary, rather than guessing a junction from 2D overlap.
+  // A cut within one face need not lie on any original mesh edge.
+  const boundarySegments=[];
+  for(let k=0;k<2;k++)for(let side=0;side<2;side++){
+   const fixedAxis=others[k],sweepAxis=others[1-k],fixed=limits[k][side];
+   const from={[axis]:plane,[fixedAxis]:fixed,[sweepAxis]:limits[1-k][0]};
+   const to={[axis]:plane,[fixedAxis]:fixed,[sweepAxis]:limits[1-k][1]};
+   const onA=fixed===a.min[fixedAxis]||fixed===a.max[fixedAxis];
+   const onB=fixed===b.min[fixedAxis]||fixed===b.max[fixedAxis];
+   const sourceFaceBoundaryClass=onA&&onB?
+     'shared-original-face-boundaries':onA||onB?
+     'single-original-face-boundary':'interior-face-cut';
+   const projected=Object.fromEntries(VIEWS.map(view=>{
+    const p=project(from)[view],q=project(to)[view];
+    return [view,{kind:p.u===q.u&&p.v===q.v?'point':'segment',
+      from:p,to:q,physicalSourceEdgeNotProvenVisible:true,
+      standardLineStyle:'undetermined'}];
+   }));
+   boundarySegments.push({id:pair.objectIds.join('_')+'_'+k+'_'+side,
+    fixedAxis,variableAxis:sweepAxis,from3D:from,to3D:to,
+    originalSourceFaceBoundaryContainment:{[a.id]:onA,[b.id]:onB},
+    sourceFaceBoundaryClass,projections:projected,
+    complete3DSourceJoinVerified:false,
+    fullSegmentVisibilityVerified:false,officialLineStyleVerified:false});
+  }
   patches.push({objectIds:[...pair.objectIds],axis,coordinateMm:plane,
    strictInteriorAreaMm2:areaMm2,otherAxisIntervalsMm:
      Object.fromEntries(others.map((a,i)=>[a,[...limits[i]]])),
    source3DCorners:corners,projectedCornerWitnesses:projection,
+   boundarySegments,sourceBoundaryIncidenceVerifiedWithinCuboidScope:true,
    interiorPatchNotExteriorToUnion:true,
    patchPerimeterLineStyle:'undetermined',
    junctionContinuityVerified:false,visibleHiddenLineStylesVerified:false});
@@ -80,6 +107,8 @@ function evaluateReviewedCompositeInterfaces({geometry,revision,contactEvidence,
  return freeze({schema:'draftai-reviewed-composite-interface/1',
   revision,status:patches.length?'partial-shared-face-proof':'no-proven-face-patches',
   sourceGeometryIds:[...boxMap.keys()],patches,contactPatchCount:patches.length,
+  contactBoundarySegmentCount:patches.reduce((n,p)=>n+p.boundarySegments.length,0),
+  sourceBoundaryIncidenceProofScope:'exact-closed-axis-aligned-cuboid-face-patches',
   projectedUnionEvidence,
   interiorContactFaceVerifiedWithinScope:patches.length>0,
   canEraseSourceBoundaryEdges:false,allJunctionsVerified:false,
