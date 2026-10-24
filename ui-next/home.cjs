@@ -207,6 +207,42 @@ function homeHTML(){return `
      </div>
      <p id="v7-r-status" role="status" class="v7-note">关系必须经人工确认后核对数值残差。</p>
     </fieldset>
+    <details class="v7-unknowns">
+     <summary>通用 M3 未知点求解（二维 / 三维）</summary>
+     <p class="v7-warning">独立仿射点约束：仅适用于固定坐标、单轴数值、点重合、相对位移和中点。与上方非线性 M2 关系不能自动合并，距离、切线、角度暂不支持。结果无原图自动识别或 V5 证明。</p>
+     <label>空间维度 <select id="v7-u-frame">
+      <option value="model-mm-2d">二维模型 mm</option>
+      <option value="model-mm-3d">三维模型 mm</option>
+     </select></label>
+     <label>未知点 IDs（以逗号分隔）<input id="v7-u-points" value="A,B" maxlength="250" autocomplete="off"></label>
+     <label>约束 ID <input id="v7-u-id" value="AnchorA" maxlength="80" autocomplete="off"></label>
+     <label>已有约束 <select id="v7-u-list"><option value="">添加新约束</option></select></label>
+     <label>约束类型 <select id="v7-u-kind">
+      <option value="fixed">固定点坐标</option>
+      <option value="axis">单轴坐标</option>
+      <option value="coincident">两个点重合</option>
+      <option value="offset">两点相对位移</option>
+      <option value="midpoint">三点中点关系</option>
+     </select></label>
+     <div class="v7-unknown-grid">
+      <label>A（固定点 / 起点）<input id="v7-u-a" value="A" maxlength="80"></label>
+      <label>B（对应点 / 终点）<input id="v7-u-b" value="B" maxlength="80"></label>
+      <label>M（中点）<input id="v7-u-m" value="M" maxlength="80"></label>
+      <label>单轴方向 <select id="v7-u-axis"><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>
+      <label>X 数值 / 单轴目标 mm <input id="v7-u-x" type="number" step="any" value="0"></label>
+      <label>Y / ΔY mm <input id="v7-u-y" type="number" step="any" value="0"></label>
+      <label>Z / ΔZ mm <input id="v7-u-z" type="number" step="any" value="0"></label>
+     </div>
+     <div class="v7-compose-actions">
+      <button type="button" id="v7-u-append">保存待确认约束</button>
+      <button type="button" id="v7-u-remove" class="v7-danger">删除选中约束</button>
+      <button type="button" id="v7-u-confirm">人工确认整组条件</button>
+      <button type="button" id="v7-u-solve" class="v7-primary">计算未知点</button>
+      <button type="button" id="v7-u-reset" class="v7-danger">清空未知点系统</button>
+     </div>
+     <p id="v7-u-status" class="v7-note" role="status">请先录入未知点和关系，确认后再运行现有 M3 求解入口。</p>
+    </details>
+
 
    </fieldset>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
