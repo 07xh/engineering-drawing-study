@@ -43,3 +43,16 @@ test('shared vectors reject dimensions other than two or three',()=>{
  assert.throws(()=>m.vector([1,2,3,4],4),TypeError);
  assert.deepEqual(m.vector([2,3],2),[2,3]);
 });
+
+test('shared finite Float64 addition/scaling rejects silent geometric loss',()=>{
+ assert.deepEqual(m.add([1,2,3],[4,5,-6]),[5,7,-3]);
+ assert.deepEqual(m.add([1,2],[3,4]),[4,6]);
+ assert.deepEqual(m.scale([2,-3,4],.5),[1,-1.5,2]);
+ assert.deepEqual(m.scale([3,4],0),[0,0]);
+ assert.throws(()=>m.add([1,2],[1,2,3]),TypeError);
+ assert.throws(()=>m.add([1e308,0],[1e308,0]),RangeError);
+ assert.throws(()=>m.scale([1e308,0],2),RangeError);
+ assert.throws(()=>m.scale([1e-200,0],1e-200),/underflow/);
+ assert.throws(()=>m.scale([1,2],Infinity),RangeError);
+ assert.throws(()=>m.add([1,,3],[1,2,3]),TypeError);
+});
