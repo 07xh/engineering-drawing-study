@@ -82,3 +82,12 @@ test('C3 grazing cylinder generator has no strict interior proof',()=>{
  assert.equal(r.zCylinder.interiorOpenIntervals.length,0);
  assert.equal(r.officialLineStyle,'undetermined');
 });
+
+test('C3 union of overlapping positive opaque intervals carries both sources',()=>{
+ const r=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.ok(r.unionInteriorOpenIntervals.some(i=>
+  i.supportingSolids.includes('zCylinder')&&
+  i.supportingSolids.includes('yCylinder')));
+ assert.equal(r.fullFiniteVolumeVisibilityVerified,false);
+ assert.equal(r.v5Authorized,false);
+});
