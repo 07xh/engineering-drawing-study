@@ -29,6 +29,25 @@ const dist3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const fail=msg=>{throw new TypeError('M5 source feature event graph: '+msg);};
 
 /**
+ * Conservative 2D broad phase on already validated first-angle endpoints.
+ * A STRICT separating gap rules out a paper intersection; touching bounds
+ * still enter the existing M0/M1 exact topology narrow phase.
+ * This neither proves 3D joins nor releases engineering lines/V5 actions.
+ */
+function sourcePaperBounds(c){
+ const a=c?.from2D,b=c?.to2D;
+ if(!a||!b||![a.u,a.v,b.u,b.v].every(Number.isFinite))
+  throw new TypeError('finite reviewed paper segment endpoints required');
+ return Object.freeze({minU:Math.min(a.u,b.u),maxU:Math.max(a.u,b.u),
+  minV:Math.min(a.v,b.v),maxV:Math.max(a.v,b.v)});
+}
+function definitelySeparatePaperBounds(a,b){
+ return a.maxU<b.minU||b.maxU<a.minU||
+  a.maxV<b.minV||b.maxV<a.minV;
+}
+
+
+/**
  * M1's EXISTING exact-for-binary64 topology is the independent sign oracle
  * only when the local Float64 denominator is too small to trust.
  * Never infer physical 3D coincidence or an approved engineering stroke.
@@ -154,10 +173,14 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
   dist2(s.to2D,project(s.to3D)[s.view])>1e-8)
   fail('first-angle 3D-to-2D source identity mismatch');
  const cutMap=new Map(candidates.map(s=>[s.id,[0,1]]));
+ // Local precomputed bounds preserve existing source IDs, output and revision.
+ const candidateBounds=candidates.map(sourcePaperBounds);
  const events=[];
  for(let i=0;i<candidates.length;i++)for(let j=i+1;j<candidates.length;j++){
   const A=candidates[i],B=candidates[j];
-  if(A.view!==B.view)continue;
+  if(A.view!==B.view||
+     definitelySeparatePaperBounds(candidateBounds[i],candidateBounds[j]))
+   continue;
   const r=diff(A.to2D,A.from2D),s=diff(B.to2D,B.from2D),
    qp=diff(B.from2D,A.from2D),
    n1=Math.hypot(r.u,r.v),n2=Math.hypot(s.u,s.v);
@@ -285,4 +308,5 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
   fullPaperJunctionAndDepthTopologyVerified:false,
   officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
 }
-module.exports={auditUnifiedProjectedFeatureEvents,auditNearParallelPaperSources};
+module.exports={auditUnifiedProjectedFeatureEvents,auditNearParallelPaperSources,
+ sourcePaperBounds,definitelySeparatePaperBounds};
