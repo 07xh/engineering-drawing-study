@@ -14,44 +14,53 @@
  * occlusion or V5 full stroke is NOT certified by a pointwise ray.
  */
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
- Object.keys(p).sort().join(',')==='x,y,z'&&
- ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
+// Source validation and boundary/ray calculations consume the same snapshot.
+function snapshotXYZ(p){
+ if(!p||typeof p!=='object'||Array.isArray(p)||
+    Object.keys(p).sort().join(',')!=='x,y,z')return null;
+ const x=p.x,y=p.y,z=p.z;
+ return [x,y,z].every(v=>finite(v)&&Math.abs(v)<=1e8)?{x,y,z}:null;
+}
 const {dotObject3:dot,normObject3:norm3}=
  require('./object-vector3.cjs');
+const {certifyDotSign}=require('./euclidean-kernel.cjs');
 const FACES_MAX=64;
 function classifyConvexPolytopeBoundaryRay({
  point,observerDirection,halfspaces,positionToleranceMm=1e-7,
  directionTolerance=1e-10
 }={}){
- if(!xyz(point)||!xyz(observerDirection)||!Array.isArray(halfspaces)||
+ const p=snapshotXYZ(point),observer=snapshotXYZ(observerDirection);
+ if(!p||!observer||!Array.isArray(halfspaces)||
     halfspaces.length<4||halfspaces.length>FACES_MAX)
   throw new TypeError('finite boundary point, observer ray and 4..64 halfspaces required');
  if(!finite(positionToleranceMm)||positionToleranceMm<=0||
     positionToleranceMm>1e-2||
     !finite(directionTolerance)||directionTolerance<=0||directionTolerance>1e-3)
   throw new RangeError('bounded positive geometric and ray tolerances required');
- const dNorm=norm3(observerDirection);
+ const dNorm=norm3(observer);
  if(!finite(dNorm)||dNorm<=1e-12)
   throw new RangeError('nonzero finite observer ray required');
- const d={x:observerDirection.x/dNorm,
-  y:observerDirection.y/dNorm,z:observerDirection.z/dNorm};
+ const d={x:observer.x/dNorm,y:observer.y/dNorm,z:observer.z/dNorm};
  const seen=new Set(),active=[];
  let worstOutsideMm=0;
- for(const plane of halfspaces){
-  if(!plane||typeof plane!=='object'||Array.isArray(plane)||
-     Object.keys(plane).sort().join(',')!=='id,normal,offsetMm'||
-     typeof plane.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(plane.id)||
-     seen.has(plane.id)||!xyz(plane.normal)||!finite(plane.offsetMm)||
-     Math.abs(plane.offsetMm)>1e9)
+ for(let i=0;i<halfspaces.length;i++){
+  if(!Object.hasOwn(halfspaces,i))
    throw new TypeError('bounded, uniquely named outward unit halfspaces required');
-  seen.add(plane.id);
-  const norm=norm3(plane.normal);
+  const plane=halfspaces[i];
+  if(!plane||typeof plane!=='object'||Array.isArray(plane)||
+     Object.keys(plane).sort().join(',')!=='id,normal,offsetMm')
+   throw new TypeError('bounded, uniquely named outward unit halfspaces required');
+  const faceId=plane.id,normal=snapshotXYZ(plane.normal),offsetMm=plane.offsetMm;
+  if(typeof faceId!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(faceId)||
+     seen.has(faceId)||!normal||!finite(offsetMm)||
+     Math.abs(offsetMm)>1e9)
+   throw new TypeError('bounded, uniquely named outward unit halfspaces required');
+  seen.add(faceId);
+  const norm=norm3(normal);
   if(!finite(norm)||norm<=1e-12)
    throw new RangeError('nonzero outward face normal required');
-  const unit={x:plane.normal.x/norm,y:plane.normal.y/norm,
-   z:plane.normal.z/norm};
-  const signedMm=dot(unit,point)-plane.offsetMm/norm;
+  const unit={x:normal.x/norm,y:normal.y/norm,z:normal.z/norm};
+  const signedMm=dot(unit,p)-offsetMm/norm;
   if(!finite(signedMm))throw new RangeError('nonfinite polytope residual');
   worstOutsideMm=Math.max(worstOutsideMm,signedMm);
   if(signedMm>positionToleranceMm)
@@ -60,8 +69,14 @@ function classifyConvexPolytopeBoundaryRay({
     activeFaceIds:Object.freeze([]),pointRayCertified:false,
     endpointJoinCertified:false,fullContourCertified:false,
     worstOutsideMm});
-  if(Math.abs(signedMm)<=positionToleranceMm)
-   active.push({id:plane.id,slope:dot(unit,d)});
+  if(Math.abs(signedMm)<=positionToleranceMm){
+   // A rounded signed slope cannot grant positive point-ray visibility
+   // when its exact represented-binary64 normal·direction has opposite sign.
+   const slope=dot(unit,d),sign=certifyDotSign(
+    [unit.x,unit.y,unit.z],[d.x,d.y,d.z]).sign;
+   if(!finite(slope))throw new RangeError('nonfinite point-ray slope');
+   active.push({id:faceId,slope,sign});
+  }
  }
  if(!active.length)
   return Object.freeze({status:'not-boundary',visibility:'undetermined',
@@ -69,8 +84,8 @@ function classifyConvexPolytopeBoundaryRay({
    activeFaceIds:Object.freeze([]),pointRayCertified:false,
    endpointJoinCertified:false,fullContourCertified:false,
    worstOutsideMm});
- const outward=active.some(x=>x.slope>directionTolerance);
- const inward=active.every(x=>x.slope< -directionTolerance);
+ const outward=active.some(x=>x.slope>directionTolerance&&x.sign>0);
+ const inward=active.every(x=>x.slope< -directionTolerance&&x.sign<0);
  const visibility=outward?'visible':inward?'hidden':'undetermined';
  return Object.freeze({status:'ready',visibility,
   reason:outward?'ray-immediately-exits-a-supporting-halfspace':
