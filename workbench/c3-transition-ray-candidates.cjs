@@ -79,10 +79,24 @@ function rayCylinder(point,dir,c,axis){
   interiorWitnesses.every(w=>w.strictAxialMargin>eps&&
    w.strictRadialMargin>eps);
  const positiveInteriorVerified=strictInteriorWitnessVerified;
+ // Certified interior implies an open neighborhood by continuity of
+ // the strict polynomial/slab inequalities; this does not certify an
+ // entire analytic intersection-curve parameter interval.
+ const witnessOpenNeighborhoods=interiorWitnesses.map(w=>{
+  const radialSpeed=Math.hypot(...radial.map(k=>dir[k]));
+  const radialDistance=Math.sqrt(Math.max(0,c.radius**2-w.strictRadialMargin));
+  const radialClearance=Math.max(0,c.radius-radialDistance);
+  const axialSpeed=Math.abs(dir[axial]);
+  const axialDelta=axialSpeed>0?w.strictAxialMargin/axialSpeed:Infinity;
+  const radialDelta=radialSpeed>0?radialClearance/radialSpeed:Infinity;
+  const halfWidth=Math.min(axialDelta,radialDelta,w.t/2);
+  return {centerT:w.t,halfWidth,
+   strictNeighborhoodVerified:halfWidth>0&&Number.isFinite(halfWidth)};
+ });
  const tangent=events.some(e=>e.type==='tangent');
  const ambiguous=generatorCoincidence||tangent||events.some(e=>e.t<=eps);
  return {events,positiveRayBoundaryIntersections:positive.length,
-  interiorOpenIntervals,interiorWitnesses,
+  interiorOpenIntervals,interiorWitnesses,witnessOpenNeighborhoods,
   strictInteriorWitnessVerified,positiveInteriorVerified,
   generatorCoincidence,tangent,originOnBoundary:events.some(e=>e.t<=eps),
   rayBoundaryStatus:ambiguous?'undetermined-tangent-generator-or-origin':
