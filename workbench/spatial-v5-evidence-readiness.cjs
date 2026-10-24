@@ -26,7 +26,25 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
  const partitions=proof.projectedStrokePartitions,
    union=proof.projectedUnionOutlines,
    joins=proof.projectedVertexJoins,
-   closed=proof.closedSourceStrokeRays;
+   closed=proof.closedSourceStrokeRays,
+   topology=proof.projectedCutEndpointTopology;
+ if(topology?.status==='source-projected-endpoint-scope-only'){
+  if(topology.revision!==revision||!Array.isArray(topology.cutEndpoints)||
+     topology.cutEndpoints.length>6000||
+     topology.v5Ready!==false||topology.officialLineStylesVerified!==false||
+     topology.fullProjectedJunctionsVerified!==false)
+   fail('forged source projected endpoint proof status');
+  if(topology.cutEndpoints.length!==topology.sourceCount*2||
+     topology.positiveOriginalPointCount!==topology.cutEndpoints.filter(
+       x=>x.status==='positive-original-vertex-ray-incidence').length||
+     topology.depthSeparatedPaperCrossingCount!==topology.cutEndpoints.filter(
+       x=>x.status==='depth-separated-paper-crossing-no-spatial-join').length||
+     topology.cutEndpoints.some(x=>x.v5Ready!==false||
+       x.officialEndpointLineStyleVerified!==false||
+       x.projectedIntersectionIsPhysicalSourceJoinVerified!==false||
+       x.allIncidentStrokeContinuityVerified!==false))
+   fail('forged projected cut endpoint counts or complete junction certification');
+ }
  if(closed?.status==='scoped-positive-closed-source-rays-only'){
   if(closed.revision!==revision||closed.v5Ready!==false||
      closed.officialLineStylesVerified!==false||
@@ -72,6 +90,11 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
    if(segment.status==='strictly-inside-other-projection')covered++;
   }
   summary[view]={projectedStrokeCount:strokes.length,
+   cutEndpointCount:topology?.cutEndpoints?.filter(x=>x.view===view).length||0,
+   positivelyRayedSourceEndpointCount:topology?.cutEndpoints?.filter(x=>
+    x.view===view&&x.status==='positive-original-vertex-ray-incidence').length||0,
+   depthSeparatedScreenCrossingCount:topology?.cutEndpoints?.filter(x=>
+    x.view===view&&x.status==='depth-separated-paper-crossing-no-spatial-join').length||0,
    certifiedClosedSourceRayCount:closed?.edges?.filter(x=>
     x.view===view&&x.positiveClosedRayVisibilityVerified).length||0,
    certifiedClosedOuterSourceEdgeCount:closed?.edges?.filter(x=>
@@ -102,6 +125,11 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
  else if(closed.edges.some(x=>!x.positiveClosedRayVisibilityVerified))
   missing('remaining-closed-source-rays',
    'some original source edges or source-ray endpoints lack positive full-interval proof');
+ if(topology?.status!=='source-projected-endpoint-scope-only')
+  missing('cut-endpoint-topology-source','original source vertex vs screen-intersection endpoints not independently classified');
+ else if(topology.cutEndpoints.some(x=>x.status.startsWith('undetermined')))
+  missing('cut-endpoint-topology-uncertainty',
+   'screen crossings, overlaps, tangent joins or occlusion transition cut endpoints lack complete 3D topology');
  if(!joins||joins.endpointVisibilityVerified!==true||
     joins.officialLineStylesVerified!==true)
   missing('all-projected-endpoint-joins','3D source vertex and paper junction do not prove final visible line joins');
@@ -121,6 +149,12 @@ function inspectSpatialV5Readiness({sceneDepthEvidence,revision}={}){
    closed?.status==='scoped-positive-closed-source-rays-only',
   positiveClosedSourceRayCount:closed?.certifiedClosedVisibleCount||0,
   positiveClosedOuterEdgeCount:closed?.certifiedOuterEdgeCount||0,
+  projectedCutPointScopePresent:
+   topology?.status==='source-projected-endpoint-scope-only',
+  positiveOriginalProjectedEndpointCount:topology?.positiveOriginalPointCount||0,
+  depthSeparatedProjectedCrossingCount:
+   topology?.depthSeparatedPaperCrossingCount||0,
+  unresolvedCutEndpointCount:topology?.undeterminedCount||0,
   fullSourceMathVerified:false,
   allProjectedEndpointJoinsVerified:false,allOfficialLineStylesVerified:false,
   canonicalIntentVerified:false,constructionStepDAGVerified:false,

@@ -25,6 +25,8 @@ const {correlateReviewedOpenContours}=
  require('./reviewed-frontmost-open-contours.cjs');
 const {inspectClosedSourceStrokeRays}=
  require('./reviewed-closed-source-stroke-rays.cjs');
+const {deriveProjectedCutEndpointTopology}=
+ require('./reviewed-projected-cut-endpoint-topology.cjs');
 const {deriveReviewedProjectedVertexJoins}=
  require('./reviewed-projected-vertex-joins.cjs');
 const {verifyConvexProjectedOutline}=
@@ -57,6 +59,10 @@ const unready=(revision,reason)=>freeze({
  closedSourceStrokeRays:{status:'not-covered',sourceEdgeViewCount:0,
   certifiedClosedVisibleCount:0,certifiedOuterEdgeCount:0,edges:[],
   officialLineStylesVerified:false,v5Ready:false},
+ projectedCutEndpointTopology:{status:'not-covered',sourceCount:0,
+  cutEndpoints:[],positiveOriginalPointCount:0,
+  depthSeparatedPaperCrossingCount:0,undeterminedCount:0,
+  fullProjectedJunctionsVerified:false,officialLineStylesVerified:false,v5Ready:false},
  projectedVertexJoins:{status:'not-covered',groupCount:0,groups:[],
   endpointVisibilityVerified:false,officialLineStylesVerified:false,v5Ready:false},
  projectedOutlines:{status:'not-covered',objects:[],
@@ -257,7 +263,10 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
  const closedSourceStrokeRays=inspectClosedSourceStrokeRays({
   geometry,sceneDepthEvidence:{...sceneEvidence,projectedStrokePartitions,
    frontmostOpenContours},revision});
+ const projectedCutEndpointTopology=deriveProjectedCutEndpointTopology({
+  geometry,sceneDepthEvidence:{...sceneEvidence,projectedStrokePartitions,
+   frontmostOpenContours,closedSourceStrokeRays},revision});
  return freeze({...sceneEvidence,projectedStrokePartitions,
-  frontmostOpenContours,closedSourceStrokeRays});
+  frontmostOpenContours,closedSourceStrokeRays,projectedCutEndpointTopology});
 }
 module.exports={evaluateReviewedConvexMeshDepth};
