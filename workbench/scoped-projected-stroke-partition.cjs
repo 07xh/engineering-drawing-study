@@ -17,6 +17,8 @@ const {certifyConvexSegmentOcclusion}=
  require('../core/numeric/convex-segment-occlusion.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
+const {deriveReviewedProjectedVertexJoins}=
+ require('./reviewed-projected-vertex-joins.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -71,12 +73,48 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
   for(const [a,b] of g.data.edges){
    const key=g.id+'::'+[a,b].sort().join('|');
    if(edges.has(key))fail('duplicate original mesh edge identity');
-   edges.set(key,{id:key,ownerId:g.id,from:g.data.points[a],to:g.data.points[b]});
+   edges.set(key,{id:key,ownerId:g.id,
+    from:g.data.points[a],to:g.data.points[b],
+    fromVertexKey:g.id+'::'+a,toVertexKey:g.id+'::'+b});
   }
  }
  if(edges.size>40)return empty(revision,'budget-exceeded');
  if(JSON.stringify(sceneDepthEvidence.sourceGeometryIds)!==
     JSON.stringify(geometry.map(x=>x.id)))fail('source Geometry ownership changed');
+ // A paper coincidence is not an actual 3D join. Recompute the endpoint
+ // incidence/point-ray scope from CURRENT Geometry, never trust renderer
+ // supplied vertex group IDs, nearest listed depth or certification flags.
+ const joins=deriveReviewedProjectedVertexJoins({geometry,revision});
+ if(joins.status!=='scoped-projected-coincidences-only'||
+    JSON.stringify(sceneDepthEvidence.projectedVertexJoins)!==
+      JSON.stringify(joins))
+  fail('source 3D vertex and projected junction evidence was changed');
+ const endpoint=(edge,view,which)=>{
+  const vertexKey=which==='from'?edge.fromVertexKey:edge.toVertexKey;
+  const hits=joins.groups.filter(g=>g.view===view&&
+   g.members.some(m=>m.sourceVertexKey===vertexKey));
+  if(hits.length!==1)fail('missing or duplicate projected source vertex');
+  const group=hits[0],sourcePoint=which==='from'?edge.from:edge.to;
+  const uv=project(sourcePoint)[view];
+  if(group.projectedModelMm.u!==uv.u||group.projectedModelMm.v!==uv.v)
+   fail('source vertex projection disagrees with first-angle geometry');
+  const member=group.members.find(m=>m.sourceVertexKey===vertexKey);
+  if(!member.sourceIncidenceVerified||
+     !member.incidentSourceEdgeIds.includes(edge.id)||
+     member.visibleJoinCertified!==false||
+     group.jointVisibilityCertified!==false)
+   fail('false source-edge/endpoint join certificate');
+  return {
+   sourceVertexKey:vertexKey,projectedGroupKey:group.projectionKey,
+   same3DPointWithinProjectedGroup:group.same3DPoint,
+   distinct3DPointsShareProjection:group.distinct3DPointsShareProjection,
+   nearestListedVertexKey:group.nearestListedSourceVertexKey,
+   pointRayOcclusion:member.pointRayOcclusion,
+   sourceIncidenceVerified:true,
+   projectedEndpointJoinVisibilityVerified:false,
+   officialEndpointLineStyleVerified:false
+  };
+ };
  const claimed=sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges;
  if(!Array.isArray(claimed))fail('missing M5 continuous certificates');
  const expected=[];
@@ -170,6 +208,11 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    segments.push({
     sourceGeometryId:edge.ownerId,sourceEdgeId:edge.id,view,
     sourceParameterRange:[t0,t1],
+    // Only original source-model endpoints carry shared incident-edge
+    // topology. A newly split interior parameter is a PROJECTION event,
+    // never a fabricated 3D object vertex.
+    sourceEndpointJoins:{from:t0===0?endpoint(edge,view,'from'):null,
+     to:t1===1?endpoint(edge,view,'to'):null},
     fromModelMm:from,toModelMm:to,
     projectedFromModelMm:project(from)[view],
     projectedToModelMm:project(to)[view],
