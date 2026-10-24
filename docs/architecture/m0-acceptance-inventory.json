@@ -23,7 +23,8 @@
       "status": "scoped-math",
       "proofScope": "exact dyadic for represented binary64",
       "regressionTests": [
-        "tests/math/m0-adaptive-determinant3d.test.cjs"
+        "tests/math/m0-adaptive-determinant3d.test.cjs",
+        "tests/math/m0-exact-dot-cross-extreme-fallback.test.cjs"
       ],
       "remainingGate": "indirect predicate testing, not arbitrary real arithmetic"
     },
@@ -116,7 +117,8 @@
       "proofScope": "finite vector Float64 arithmetic and optional exact sign",
       "regressionTests": [
         "tests/math/m0-dot-cross-cancellation-guard.test.cjs",
-        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs"
+        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs",
+        "tests/math/m0-exact-dot-cross-extreme-fallback.test.cjs"
       ],
       "remainingGate": "legacy magnitude remains approximate"
     },
