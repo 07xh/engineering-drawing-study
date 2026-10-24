@@ -127,3 +127,13 @@ test('M5 actual per-action V5 gate excludes union-flat and fully buried original
  assert.ok(gate.spans.some(x=>x.extraM4UnionAxialEventsRequired||
   x.sourceUnionBuriedOrFlatOpenIntervalVerified));
 });
+
+
+test('V7 source-facing evidence status distinguishes union-feature geometry from official signed line styles',()=>{
+ const fs=require('node:fs');
+ const s=fs.readFileSync('project/unified-workbench-entry.cjs','utf8');
+ assert.match(s,/verifiedConcaveOpenCreaseCount/);
+ assert.match(s,/flatNoCreaseCount/);
+ assert.match(s,/buriedSourceIntervalCount/);
+ assert.match(s,/不能发布实线\/虚线/);
+});
