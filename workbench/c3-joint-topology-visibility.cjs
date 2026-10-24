@@ -54,6 +54,20 @@ function auditC3JointTopologyVisibility({input,revision}={}){
    'full-solid-boundary-feature-topology-not-certified'
   ]
  }));
+ const topologyComponents=topology.components.map(component=>({
+  componentId:component.id,topologicalShape:component.topologicalShape,
+  branchTraversal:component.traversal.map(edge=>({
+   branchId:edge.branchId,
+   fromJunctionId:edge.sourceFromJunctionId,
+   toJunctionId:edge.sourceToJunctionId,
+   directionInX:edge.directionInX,
+   formalDrawingOrderAuthorized:false
+  })),
+  analyticGraphWithinScopeVerified:
+   component.graphPathOrCycleVerifiedWithinLateralLateralScope===true,
+  fullSolidBoundaryTopologyVerified:false,
+  standardStrokeAuthorization:false
+ }));
  const intervals=[];
  for(const b of m3.branches)for(const view of ['V','H','W']){
   const pieces=(view==='W'?w.intervals:vh.intervals)
@@ -89,7 +103,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   sourceBranchCount:m3.branchCount,componentCount:topology.componentCount,
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
-  allSourceBranchesAccountedFor:true,intervals,junctionGuards,
+  allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
