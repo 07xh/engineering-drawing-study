@@ -29,6 +29,11 @@ test('C3 ray quadratic candidates stay separate from official visibility',()=>{
     solid.strictInteriorWitnessVerified);
    assert.ok(solid.interiorWitnesses.every(w=>
     w.strictAxialMargin>0&&w.strictRadialMargin>0));
+   assert.equal(solid.witnessOpenNeighborhoods.length,
+    solid.interiorWitnesses.length);
+   assert.ok(solid.witnessOpenNeighborhoods.every(n=>
+    n.strictNeighborhoodVerified&&n.halfWidth>0&&
+    n.centerT-n.halfWidth>0));
   }
  }
 });
