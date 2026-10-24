@@ -51,8 +51,8 @@ function repaintPointV5(){
 }
 function tick(now){
  if(!playing||!current||!current.player.canRender(revision)){stop();return;}
- repaintPointV5();
  const frame=current.player.snapshot(now);
+ repaintPointV5();
  if(frame.done){stop();return;}
  raf=requestAnimationFrame(tick);
 }
@@ -67,7 +67,7 @@ function navigateV5(delta){
  stop();
  const snapshot=current.player.snapshot();
  const stepIndex=Math.max(0,Math.min(current.steps.length,
-  Math.max(0,snapshot.completedStepCount??snapshot.completedIds.length)+delta));
+  (snapshot.done?current.steps.length:snapshot.activeStepIndex)+delta));
  current.player.seekStep(stepIndex,performance.now());
  repaintPointV5();
 }
