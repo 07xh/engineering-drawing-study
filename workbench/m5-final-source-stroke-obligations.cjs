@@ -34,6 +34,8 @@ const {inspectUnionDirectionalJunctions}=
  require('./m5-union-directional-junctions.cjs');
 const {auditProjectedSourceOverlapDepth}=
  require('./m5-union-projected-overlap-depth.cjs');
+const {auditGeneratedStrokeOverlapPartitions}=
+ require('./m5-generated-stroke-overlap-partitions.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -157,6 +159,25 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      generatedProjectedEndpointEvidence.candidateCount!==
       partitions.generatedProjectedCandidateCount))
   throw new TypeError('generated projected endpoints attempted to bypass formal V5 gate');
+ const generatedOverlapPartitionEvidence=geometry.length>=2&&
+   projectedSourceOverlapDepthEvidence?.status===
+    'full-analytic-listed-source-pair-overlap-depth'&&
+   generatedProjectedEndpointEvidence?.status===
+    'source-bound-generated-3d-to-projected-endpoints'?
+  auditGeneratedStrokeOverlapPartitions({geometry,revision,
+   projectedStrokePartitions:partitions,
+   physicalJunctionEvidence:physicalFeatureJunctionEvidence,
+   projectedOverlapDepthEvidence:projectedSourceOverlapDepthEvidence,
+   generatedProjectedEndpointEvidence}):null;
+ if(generatedOverlapPartitionEvidence&&
+    (generatedOverlapPartitionEvidence.status!==
+      'source-generated-view-pair-overlap-open-partitions'||
+     generatedOverlapPartitionEvidence.generatedM4CandidateCount!==
+       partitions.generatedProjectedCandidateCount||
+     generatedOverlapPartitionEvidence.officialLineStylesVerified!==false||
+     generatedOverlapPartitionEvidence.signedV5LineActions!==0||
+     generatedOverlapPartitionEvidence.v5Ready!==false))
+  throw new TypeError('unapproved generated projected depth subspan V5 release');
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -365,6 +386,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   projectedSourceNodeDepthAliasGroupCount:
    directionalJunctionEvidence?.projectedCoDepthAliasGroupCount??0,
   generatedProjectedEndpointEvidence,
+  generatedOverlapPartitionEvidence,
+  generatedOverlapSubspanCount:
+   generatedOverlapPartitionEvidence?.openPieceCount??0,
+  generatedOverlapDepthCriticalCutCount:
+   generatedOverlapPartitionEvidence?.projectedCriticalEventCount??0,
+  generatedOverlapLocallyAheadCount:
+   generatedOverlapPartitionEvidence?.strictlyFrontRelativePieceCount??0,
+  generatedOverlapLocallyBehindCount:
+   generatedOverlapPartitionEvidence?.strictlyBehindRelativePieceCount??0,
+
   generated3DProjectedMatchedEndpointCount:
    generatedProjectedEndpointEvidence?.physicallyMatched3DEndpointCount??0,
   generated3DProjectedDepthAliasEndpointCount:
