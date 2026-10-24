@@ -65,7 +65,8 @@ function auditC3WLateralProjectionInjectivity({input,revision}={}){
      uv.u===entry.projections.W.u&&uv.v===entry.projections.W.v});
   }
  }
- const sourceProjectionParity=data.every(d=>d.sourceProjectionParityVerified);
+ const sourceProjectionParity=separated&&data.length>0&&
+  data.every(d=>d.sourceProjectionParityVerified);
  const stable=separated&&sourceProjectionParity&&worst<=1e-8&&
   data.length===m3.branches.length*3;
  return freeze({schema:'draftai-c3-w-lateral-injectivity/1',
