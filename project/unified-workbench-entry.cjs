@@ -288,7 +288,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.generated3DProjectedMatchedEndpointCount||0)+
     ' 项；纸面坐标相同但三维深度不同的端点 '+
     (evidence.generated3DProjectedDepthAliasEndpointCount||0)+
-    ' 项。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 项。局部几何笔画方向：同线反向连续候选 '+
+    (evidence.positiveLocalStraightSourceCandidateCount||0)+
+    ' 组、真实三维转角候选 '+
+    (evidence.true3DCornerSourceCandidateCount||0)+
+    ' 组、三维多分支交汇 '+
+    (evidence.branchingSourceJunctionCount||0)+
+    ' 组；纸面叠点的多深度节点组 '+
+    (evidence.projectedSourceNodeDepthAliasGroupCount||0)+
+    ' 组（只证明已列出三维源节点的前后顺序，不代表全场遮挡）。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';

@@ -30,6 +30,8 @@ const {auditUnionPhysicalFeatureJunctions}=
  require('./m5-union-physical-feature-junctions.cjs');
 const {auditGeneratedViewEndpointIncidence}=
  require('./m5-generated-view-endpoint-incidence.cjs');
+const {inspectUnionDirectionalJunctions}=
+ require('./m5-union-directional-junctions.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -113,6 +115,21 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
  const physicalFeatureJunctionEvidence=geometry.length>=2?
   auditUnionPhysicalFeatureJunctions({geometry,revision}):null;
+ const directionalJunctionEvidence=geometry.length>=2&&
+  physicalFeatureJunctionEvidence?.status===
+   'source-recomputed-physical-3d-feature-incidence'?
+  inspectUnionDirectionalJunctions({geometry,revision,
+   physicalJunctionEvidence:physicalFeatureJunctionEvidence}):null;
+ if(directionalJunctionEvidence&&
+    (directionalJunctionEvidence.status!==
+      'local-source-direction-and-listed-node-depth-witness'||
+     directionalJunctionEvidence.nodeCount!==
+      physicalFeatureJunctionEvidence.nodeCount||
+     directionalJunctionEvidence.officialLineStylesVerified!==false||
+     directionalJunctionEvidence.signedV5LineActions!==0||
+     directionalJunctionEvidence.v5Ready!==false))
+  throw new TypeError('untrusted or stale directional source junction gate');
+
  const generatedProjectedEndpointEvidence=geometry.length>=2&&
   physicalFeatureJunctionEvidence?.status===
    'source-recomputed-physical-3d-feature-incidence'?
@@ -312,6 +329,17 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   sourceCreaseEvidence,sourceUnionFeatureEvidence,
   generatedUnionCreaseEvidence,
   physicalFeatureJunctionEvidence,
+  directionalJunctionEvidence,
+  verifiedSourceOutgoingJunctionCount:
+   directionalJunctionEvidence?.nodeCount??0,
+  positiveLocalStraightSourceCandidateCount:
+   directionalJunctionEvidence?.positiveStraightLocalPairCount??0,
+  true3DCornerSourceCandidateCount:
+   directionalJunctionEvidence?.cornerNodeCount??0,
+  branchingSourceJunctionCount:
+   directionalJunctionEvidence?.branchingNodeCount??0,
+  projectedSourceNodeDepthAliasGroupCount:
+   directionalJunctionEvidence?.projectedCoDepthAliasGroupCount??0,
   generatedProjectedEndpointEvidence,
   generated3DProjectedMatchedEndpointCount:
    generatedProjectedEndpointEvidence?.physicallyMatched3DEndpointCount??0,
