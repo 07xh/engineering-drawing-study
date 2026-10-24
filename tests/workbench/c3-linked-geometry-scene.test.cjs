@@ -33,7 +33,8 @@ test('one C3 M3 solution and original V5 source drive canonical 3D + V/H/W Geome
  assert.equal(linked.scene.objects.length,linked.spatialObjectCount);
  assert.equal(linked.links.length,linked.spatialObjectCount);
  assert.ok(linked.groups.some(g=>g.role.startsWith('interior-')));
- assert.ok(linked.groups.some(g=>g.role==='finite-cap-pair-auxiliary'));
+ assert.equal(linked.groups.some(g=>g.role==='finite-cap-pair-auxiliary'),false,
+  'default distant endcaps have no physical contact and must not fabricate 3D cap edges');
  for(const g of linked.groups){
   const sceneObject=linked.scene.objects.find(o=>o.id===g.geometryId);
   assert.ok(sceneObject);
@@ -56,6 +57,26 @@ test('one C3 M3 solution and original V5 source drive canonical 3D + V/H/W Geome
  assert.equal(linked.analyticCurveInScene,false);
  assert.equal(linked.officialLineStylesVerified,false);
  assert.equal(linked.createsSecondPlayer,false);
+});
+test('true finite endcap clipping links complete 3D cap line to V/H/W real V5 line or collapsed point',()=>{
+ const source=input();
+ source.yCylinder.yMin=-6;source.yCylinder.yMax=6;
+ const {compiled,linked}=build(source,10,1);
+ const caps=linked.groups.filter(g=>g.role==='finite-cap-pair-auxiliary');
+ assert.equal(caps.length,2);
+ assert.equal(compiled.sourceCapFaceProjectionActionCount,6);
+ for(const group of caps){
+  const obj=linked.scene.objects.find(x=>x.id===group.geometryId);
+  assert.equal(obj.kind,'segment');
+  assert.equal(obj.representations.H.kind,'point',
+   'cap parallel to H observer must be an actual collapsed projection');
+  assert.equal(obj.representations.V.kind,'segment');
+  assert.equal(obj.representations.W.kind,'segment');
+  const acts=compiled.constructionSteps.flatMap(x=>x.actions);
+  assert.equal(acts.find(x=>x.id===group.v5ActionIds.H).kind,'point');
+  assert.equal(acts.find(x=>x.id===group.v5ActionIds.V).kind,'line');
+  assert.equal(acts.find(x=>x.id===group.v5ActionIds.W).kind,'line');
+ }
 });
 test('bounded first-angle scene projections are sourced from original 3D point, never invented curves',()=>{
  const {linked}=build(input(),6,1);
