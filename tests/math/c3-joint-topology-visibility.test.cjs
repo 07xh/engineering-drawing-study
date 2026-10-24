@@ -51,3 +51,15 @@ test('C3 empty geometry cannot be promoted into a curve',()=>{
  assert.equal(result.intervals.length,0);
  assert.equal(result.v5CurveReady,false);
 });
+
+test('C3 internal transitions have real shared M3 branch and exact x adjacency',()=>{
+ const result=audit({input:input(),revision:4});
+ const internal=result.transitionGuards.filter(t=>t.transitionX!==undefined);
+ assert.ok(internal.length>0);
+ for(const t of internal){
+  assert.equal(t.analyticBranchIdentityVerified,true);
+  assert.equal(t.contiguousSourceParameterBoundaryVerified,true);
+  assert.equal(t.endpointRayContinuityVerified,false);
+  assert.equal(t.standardLineStyle,'undetermined');
+ }
+});
