@@ -96,14 +96,17 @@ function auditOrthogonalProjectedUnionSilhouette({geometry,revision,
   if(nx*ny>300||nx<=0||ny<=0)
    fail('bounded finite source plane occupancy cell arrangement required');
   const occupied=Array.from({length:nx},()=>Array(ny).fill(false));
-  let occupiedCount=0;
+  let occupiedCount=0,projectedArea=0;
   for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){
    // Every projected rectangle boundary is a CUT: midpoint is an exact
    // representative of the entire open cell, not a sample approximation.
    const u=(us[i]+us[i+1])/2,v=(vs[j]+vs[j+1])/2;
    occupied[i][j]=rectangles.some(r=>
     u>r.u0&&u<r.u1&&v>r.v0&&v<r.v1);
-   if(occupied[i][j])occupiedCount++;
+   if(occupied[i][j]){
+    occupiedCount++;
+    projectedArea+=(us[i+1]-us[i])*(vs[j+1]-vs[j]);
+   }
   }
   const exteriorEmpty=new Set(),queue=[];
   const seed=(i,j)=>{
@@ -166,6 +169,7 @@ function auditOrthogonalProjectedUnionSilhouette({geometry,revision,
    projectedRectangles:rectangles,
    exactSourceUGrid:us,exactSourceVGrid:vs,
    openCellCount:nx*ny,filledOpenCellCount:occupiedCount,
+   completeProjectedUnionAreaMm2:projectedArea,
    exteriorReachableEmptyCellCount:exteriorEmpty.size,
    boundaries,
    completeProjectedOccupancyRegionBoundaryVerified:true,
