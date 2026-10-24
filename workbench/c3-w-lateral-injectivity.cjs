@@ -47,13 +47,9 @@ function auditC3WLateralProjectionInjectivity({input,revision}={}){
    throw new RangeError('unverified C3 analytic source branch');
   for(const entry of branch.witnesses){
    const p=entry.point,uv=project(p).W;
-   const N=Z.xCenter**2-Y.xCenter**2+
-    (uv.u-Z.yCenter)**2-(uv.v-Y.zCenter)**2-
-    Z.radius**2+Y.radius**2;
-   // Verify the actual V/H/W convention rather than assuming the sheet map.
-   // W's projected (u,v) may have an axis sign; invert using model y,z,
-   // after establishing that two 3D points with equal W coords have equal
-   // physical y,z through the current first-angle projection mapping.
+   // The canonical first-angle W map MUST be (u,v)=(y,z).
+   // An invertible viewer plane map is required by the uniqueness theorem.
+   const firstAngleInverseValid=uv.u===p.y&&uv.v===p.z;
    const numerator=Z.xCenter**2-Y.xCenter**2+
     (p.y-Z.yCenter)**2-(p.z-Y.zCenter)**2-
     Z.radius**2+Y.radius**2;
@@ -65,8 +61,8 @@ function auditC3WLateralProjectionInjectivity({input,revision}={}){
    data.push({branchId:branch.id,originalSourceX:p.x,
     recoveredSourceX:inverseX,scaledInverseResidual:residual,
     independentFirstAngleWProjection:uv,
-    sourceProjectionParityVerified:uv.u===entry.projections.W.u&&
-     uv.v===entry.projections.W.v});
+    sourceProjectionParityVerified:firstAngleInverseValid&&
+     uv.u===entry.projections.W.u&&uv.v===entry.projections.W.v});
   }
  }
  const sourceProjectionParity=data.every(d=>d.sourceProjectionParityVerified);
