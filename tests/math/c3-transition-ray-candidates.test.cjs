@@ -91,3 +91,13 @@ test('C3 union of overlapping positive opaque intervals carries both sources',()
  assert.equal(r.fullFiniteVolumeVisibilityVerified,false);
  assert.equal(r.v5Authorized,false);
 });
+
+test('C3 near-source strict opaque interval is distinguished from remote occlusion',()=>{
+ const atSurface=audit({input,point:{x:-12,y:0,z:0},view:'W'});
+ assert.equal(atSurface.nearestOpaqueInteriorStartsAtSource,true);
+ assert.equal(atSurface.nearestStrictOpaqueInterval.range[0],0);
+ const remote=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.equal(remote.nearestOpaqueInteriorStartsAtSource,false);
+ assert.ok(remote.nearestStrictOpaqueInterval.range[0]>0);
+ assert.equal(atSurface.officialLineStyle,'undetermined');
+});
