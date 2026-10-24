@@ -114,7 +114,7 @@ function shape(tag,attributes={}){
  for(const [k,v] of Object.entries(attributes))n.setAttribute(k,String(v));
  return n;
 }
-function draw(result){
+function draw(result,certified){
  const svg=$('paper');svg.replaceChildren();
  svg.append(shape('rect',{x:0,y:0,width:800,height:530,fill:'#fff'}));
  const missing=result.missingView;
@@ -126,18 +126,32 @@ function draw(result){
     'font-size':18});text.textContent=label;svg.append(text);
   const paperPoints=Object.fromEntries(Object.entries(data.points).map(([id,p])=>
    [id,toSheet(v,p,SHEET)]));
-  for(const edge of data.edges){
-   const from=paperPoints[edge.fromId],to=paperPoints[edge.toId];
-   if(!from||!to)throw new Error('缺少投影棱的顶点');
-   const e=edge.projection.kind==='point'?
+  const edges=certified.scopedEdgePreviews.filter(e=>
+   e.view===v&&e.renderedAsPhysicalSourceCandidate);
+  for(const edge of edges){
+   if(edge.revision!==result.revision||
+      edge.sourceGeometryId!==result.geometry.id||
+      edge.finalEngineeringLineStyle!=='undetermined'||
+      edge.officialV5Stroke!==false)
+    throw new Error('过期或伪造的实体棱线 M5 几何预览');
+   const from=paperPoints[edge.sourceVertexIds[0]];
+   const to=paperPoints[edge.sourceVertexIds[1]];
+   if(!from||!to)throw new Error('缺少来源棱线的投影顶点');
+   const e=edge.projectionCollapsedToPoint?
     shape('circle',{cx:from.x,cy:from.y,r:3.5,fill:'#7b479e',stroke:'none'}):
     shape('line',{x1:from.x,y1:from.y,x2:to.x,y2:to.y,
      fill:'none',stroke:missing===v?'#7b479e':'#9b7cab',
      'stroke-width':missing===v?2.5:1.5,
      'stroke-dasharray':'2 6','stroke-linecap':'round'});
    e.setAttribute('data-visibility','undetermined');
+   e.setAttribute('data-ray-evidence',edge.rayEvidenceStatus);
+   e.setAttribute('data-proof-scope','M5-original-convex-source-only');
    e.setAttribute('data-official-v5','false');
-   e.setAttribute('data-source-edge',edge.fromId+'-'+edge.toId);
+   e.setAttribute('data-source-edge',edge.sourceEdgeId);
+   const title=shape('title');
+   title.textContent=edge.sourceEdgeId+' '+v+'：'+edge.rayEvidenceStatus+
+    '（仅原始实体射线证据，标准虚实线未认证）';
+   e.append(title);
    svg.append(e);
   }
  }
@@ -161,7 +175,7 @@ function solve(){
   },sheetTransform:SHEET});
   current=certified;
   const result=certified.sceneResult;
-  draw(result);
+  draw(result,certified);
   for(const id of ['pointV5Play','pointV5Pause','pointV5Prev','pointV5Next'])
    $(id).disabled=false;
   repaintPointV5();
@@ -182,6 +196,8 @@ function solve(){
    ' 条、仅为共面网格分割 '+
    certified.wholeSourceEdgeRayEvidence.sourceCreaseEvidence.provenCoplanarSubdivisionCount+
    ' 条（不作为实体特征边）；多实体并集外露语义仍未证明。'+
+   '\\n仅呈现真实折棱的来源绑定候选 '+certified.scopedEdgePreviews.filter(e=>e.renderedAsPhysicalSourceCandidate).length+
+   ' 个视图分段；共面网格分割不作为物理棱线，全部保持非正式虚实线。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
