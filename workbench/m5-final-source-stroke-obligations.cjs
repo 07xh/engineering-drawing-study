@@ -50,6 +50,8 @@ const {auditExactPhysicalFeatureDedup}=
  require('./m5-exact-physical-feature-dedup.cjs');
 const {auditOrthogonalProjectedUnionSilhouette}=
  require('./m5-orthogonal-projected-union-silhouette.cjs');
+const {auditOrthogonalProjectedBoundaryTopology}=
+ require('./m5-orthogonal-projected-boundary-topology.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -310,6 +312,27 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      projectedUnionSilhouetteEvidence.signedV5LineActions!==0||
      projectedUnionSilhouetteEvidence.v5Ready!==false))
   throw new TypeError('unreviewed projected union silhouette tried to release official V5 lines');
+ const projectedUnionBoundaryTopologyEvidence=
+  projectedUnionSilhouetteEvidence?.status===
+   'complete-first-angle-orthogonal-projected-occupancy-boundary'?
+  auditOrthogonalProjectedBoundaryTopology({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,
+   unifiedPaperSourceIdentityEvidence,
+   exactPhysicalDedupEvidence,
+   projectedUnionSilhouetteEvidence}):null;
+ if(projectedUnionBoundaryTopologyEvidence&&
+    (projectedUnionBoundaryTopologyEvidence.status!==
+      'first-angle-projected-occupancy-boundary-loop-incidence-audited'||
+     projectedUnionBoundaryTopologyEvidence.viewCount!==3||
+     projectedUnionBoundaryTopologyEvidence.totalProjectedBoundarySegmentCount!==
+      projectedUnionSilhouetteEvidence.projectedBoundarySegmentCount||
+     projectedUnionBoundaryTopologyEvidence.allReviewedProjectedRegionBoundarySegmentsAccountedFor!==true||
+     projectedUnionBoundaryTopologyEvidence.officialLineStylesVerified!==false||
+     projectedUnionBoundaryTopologyEvidence.signedV5LineActions!==0||
+     projectedUnionBoundaryTopologyEvidence.v5Ready!==false))
+  throw new TypeError('unproven projected contour loops tried to release canonical V5 strokes');
 
 
  if(physicalFeatureJunctionEvidence?.status===
@@ -527,6 +550,18 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   unifiedPaperLineReadinessEvidence,
   exactPhysicalDedupEvidence,
   projectedUnionSilhouetteEvidence,
+  projectedUnionBoundaryTopologyEvidence,
+  projectedUnionCertifiedSimpleLoopCount:
+   projectedUnionBoundaryTopologyEvidence?.totalSimpleClosedBoundaryLoopCount??0,
+  projectedUnionCertifiedExteriorLoopCount:
+   projectedUnionBoundaryTopologyEvidence?.totalExteriorClosedLoopCount??0,
+  projectedUnionCertifiedHoleLoopCount:
+   projectedUnionBoundaryTopologyEvidence?.totalProjectedHoleClosedLoopCount??0,
+  projectedUnionNonManifoldOrOpenLoopComponentCount:
+   projectedUnionBoundaryTopologyEvidence?.unresolvedNonManifoldOrOpenBoundaryComponentCount??0,
+  projectedUnionFourWayPointContactCount:
+   projectedUnionBoundaryTopologyEvidence?.totalFourWayProjectedPointContactCount??0,
+
   completedProjectedUnionBoundarySegmentCount:
    projectedUnionSilhouetteEvidence?.projectedBoundarySegmentCount??0,
   completedProjectedOuterBoundarySegmentCount:
