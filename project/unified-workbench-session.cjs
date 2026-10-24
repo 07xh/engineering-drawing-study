@@ -13,6 +13,10 @@ const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
+const {auditReviewedM4V5Motion}=
+ require('../workbench/m4-existing-v5-motion-parity.cjs');
+const {compileGeometryScene}=
+ require('./geometry-scene-consumer.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -188,8 +192,21 @@ function createUnifiedProjectSession(){
     // witnesses and overlapping projected edge evidence. Scoped math only.
     const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
       geometry,revision:latest.revision});
+    // The existing Geometry Scene compiler already fixes first-angle
+    // paper scale for the CURRENT source geometry. Use that SAME scale,
+    // and the existing 07/V5 Motion geometry, never a new player or
+    // independent solver. All candidate stroke styles stay unknown.
+    const scopedMotionParity=sceneDepthEvidence.projectedStrokePartitions
+      ?.status==='preview-partition-evidence-only'?(()=>{
+       const paper=compileGeometryScene(scene,{sheet:SHEET});
+       const transform=paper.paperTransform;
+       return auditReviewedM4V5Motion({geometry,
+        sceneDepthEvidence,revision:latest.revision,
+        viewTransforms:{V:transform,H:transform,W:transform}});
+      })():null;
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,
+      scopedMotionParity,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
