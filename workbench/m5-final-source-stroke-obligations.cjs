@@ -46,6 +46,8 @@ const {auditUnifiedPaperJunctions}=
  require('./m5-unified-paper-junctions.cjs');
 const {auditUnifiedPaperLineReadiness}=
  require('./m5-unified-paper-line-readiness.cjs');
+const {auditExactPhysicalFeatureDedup}=
+ require('./m5-exact-physical-feature-dedup.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -270,6 +272,25 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      unifiedPaperLineReadinessEvidence.signedV5LineActions!==0||
      unifiedPaperLineReadinessEvidence.v5Ready!==false))
   throw new TypeError('unverified canonical paper line tried to release official V5 strokes');
+ const exactPhysicalDedupEvidence=
+  unifiedPaperLineReadinessEvidence?.status===
+   'per-paper-interval-final-stroke-proof-blockers'?
+  auditExactPhysicalFeatureDedup({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,
+   unifiedPaperSourceIdentityEvidence}):null;
+ if(exactPhysicalDedupEvidence&&
+    (exactPhysicalDedupEvidence.status!==
+      'exact-current-original-generated-3d-physical-feature-classes'||
+     exactPhysicalDedupEvidence.paperIntervalCount!==
+      unifiedPaperSourceIdentityEvidence.paperIntervalCount||
+     exactPhysicalDedupEvidence.allReviewedSourceRecordsRetainedAndExactlyGrouped!==true||
+     exactPhysicalDedupEvidence.officialLineStylesVerified!==false||
+     exactPhysicalDedupEvidence.signedV5LineActions!==0||
+     exactPhysicalDedupEvidence.v5Ready!==false))
+  throw new TypeError('unreviewed physical source dedup tried to release final V5 line');
+
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -484,6 +505,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   unifiedPaperSourceIdentityEvidence,
   unifiedPaperJunctionEvidence,
   unifiedPaperLineReadinessEvidence,
+  exactPhysicalDedupEvidence,
+  exactDuplicate3DSourceRecords:
+   exactPhysicalDedupEvidence?.exact3DDuplicateSourceRecordCount??0,
+  exactDedupedPhysicalFeatureClasses:
+   exactPhysicalDedupEvidence?.distinctPhysical3DFeatureClassCount??0,
+  paperIntervalsWithMultiplePhysicalDepthSources:
+   exactPhysicalDedupEvidence?.multi3DPhysicalClassPaperIntervalCount??0,
+  paperIntervalsWithUniquelyFrontPhysicalClass:
+   exactPhysicalDedupEvidence?.uniqueNearestListedPhysicalClassIntervalCount??0,
+
   paperStrokeScopedClearSourceCount:
    unifiedPaperLineReadinessEvidence?.scopedClearFrontRayCandidateCount??0,
   paperStrokeScopedOpaqueSourceCount:
