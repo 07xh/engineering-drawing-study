@@ -46,6 +46,16 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      sourceBranches.get(branchId),input,left.xOpenRange[1]);
     const transitionRayEvidence=analyticTransitionPoint?
      auditC3TransitionRays({input,point:analyticTransitionPoint,view}):null;
+    // Strict interior samples on each side are mathematical witnesses,
+    // not a certificate that the critical boundary point is continuous.
+    const sideRayWitnesses=[left,right].map(part=>{
+     const x=(part.xOpenRange[0]+part.xOpenRange[1])/2;
+     const point=analyticC3PointAt(sourceBranches.get(branchId),input,x);
+     const ray=point?auditC3TransitionRays({input,point,view}):null;
+     return {x,point,strictOpaqueVolumeAhead:ray?.positiveInteriorOcclusionVerified===true,
+      strictRayInteriorWitness:ray?.unionInteriorOpenIntervals?.length>0,
+      officialLineStyle:'undetermined'};
+    });
     const same=left.openInteriorStatus===right.openInteriorStatus&&
       left.openInteriorStatus!=='undetermined';
     result.push({view,branchId,transitionX:left.xOpenRange[1],
@@ -55,6 +65,7 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      contiguousSourceParameterBoundaryVerified,
      analyticTransitionPoint,
      transitionRayEvidence,
+     sideRayWitnesses,
      endpointRayContinuityVerified:false,
      occlusionSwitchPointVerified:false,
      standardLineStyle:'undetermined',v5ActionAuthorized:false,
