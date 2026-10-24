@@ -18,6 +18,8 @@ const {attachReviewedDimensionDraftUi}=
  require('./local-reviewed-dimension-draft-ui.cjs');
 const {attachPrivatePhotoCaseExport}=
  require('./private-photo-exercise-export.cjs');
+const {attachLocalPhotoByteSession}=
+ require('./local-photo-byte-session.cjs');
 const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs');
 
 (function(){
@@ -467,10 +469,17 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
   preflight:'dimensionDraftPreflight',apply:'dimensionDraftApply',
   m3Status:'dimensionDraftM3Status'
  };
+ // HASH THE ORIGINAL USER-SELECTED FILE (never raster analysis canvas).
+ // The current file digest is ephemeral; image swap/clear revokes it.
+ const photoBytes=attachLocalPhotoByteSession({
+  fileInput:$('problemPhoto'),photoClear:$('clearPhoto'),
+  image:$('photoPreview')
+ });
  dimensionDraftUi=attachReviewedDimensionDraftUi({
   controls:Object.fromEntries(gateNames.map(key=>[key,$(gateMapping[key])])),
   getDraft:()=>rasterReview?.draft??null,
   getGeneration:()=>rasterReview?.generation??-1,
+  getPhotoIdentity:()=>photoBytes.snapshot(),
   getReviewForDraft:rev=>nativeOcrUi?.getReviewForDraft(rev)??null,
   onPrepared:({fields})=>{
    // Deliberate transfer to existing math form: preserves its own strict

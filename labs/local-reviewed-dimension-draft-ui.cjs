@@ -49,7 +49,8 @@ function matchesReviewedMetricInput({isolation,problem,segmentId,circleId}={}){
  }catch{return false;}
 }
 function attachReviewedDimensionDraftUi({
- controls,getDraft,getGeneration,getReviewForDraft,onPrepared,dom=document
+ controls,getDraft,getGeneration,getReviewForDraft,getPhotoIdentity,
+ onPrepared,dom=document
 }={}){
  const needed=['refresh','geometry','candidates','rulerA','rulerAMm',
   'rulerB','rulerBMm','originX','originY','yAxis','scaleChecked',
@@ -66,6 +67,20 @@ function attachReviewedDimensionDraftUi({
  let source=null,accepted=null,prepared=null,solution=null;
  let lastPrepared=null,lastM3=null;
  let selections=new Map(),snapshot='',sourceGeneration=-1,reviewId='';
+ let photoIdentityKey='';
+ function photoIdentityFor(draft){
+  if(typeof getPhotoIdentity!=='function')return null;
+  const identity=getPhotoIdentity();
+  if(!identity||!(/^[0-9a-f]{64}$/).test(identity.sha256)||
+     !Number.isSafeInteger(identity.epoch)||identity.epoch<0||
+     identity.width!==draft?.image?.width||
+     identity.height!==draft?.image?.height||
+     identity.originalFileBytesRead!==true)return null;
+  return identity;
+ }
+ function photoIdentityKeyOf(photo){
+  return photo?photo.sha256+'|'+photo.epoch:null;
+ }
  function clearResults(reason){
   accepted=null;prepared=null;solution=null;lastPrepared=null;lastM3=null;
   C.preflight.disabled=true;C.apply.disabled=true;C.m3Accept.checked=false;
@@ -75,7 +90,7 @@ function attachReviewedDimensionDraftUi({
  }
  function reset(){
   source=null;selections.clear();snapshot='';reviewId='';
-  sourceGeneration=-1;
+  sourceGeneration=-1;photoIdentityKey='';
   C.candidates.replaceChildren();
   for(const s of [C.rulerA,C.rulerB,C.segment]){
    s.replaceChildren(choice('','读取当前原题后选择'));
@@ -93,7 +108,9 @@ function attachReviewedDimensionDraftUi({
   const proof=getReviewForDraft(source.revision);
   return fresh===source&&getGeneration()===sourceGeneration&&
    JSON.stringify(fresh)===snapshot&&proof?.selectedPathId===reviewId&&
-   JSON.stringify(proof)===JSON.stringify(sourceProof);
+   JSON.stringify(proof)===JSON.stringify(sourceProof)&&
+   (typeof getPhotoIdentity!=='function'||
+     photoIdentityKeyOf(photoIdentityFor(fresh))===photoIdentityKey);
  }
  let sourceProof=null;
  function invalidate(){
@@ -110,6 +127,14 @@ function attachReviewedDimensionDraftUi({
   if(!current)throw new RangeError('请先在此照片上检测线段和圆/圆弧');
   const input=getReviewForDraft(current.revision);
   if(!input)throw new RangeError('请先在上方确认本机 OCR 文字—引线—圆/圆弧的关联');
+  // The real page injects the short-lived local ORIGINAL-byte witness.
+  // A missing digest, changed file, or photo dimensions block M3 before
+  // the reviewer can attach mathematical conditions.
+  if(typeof getPhotoIdentity==='function'){
+   const proof=photoIdentityFor(current);
+   if(!proof)throw new RangeError('原图 SHA-256 尚不可用、已更换或与当前草稿尺寸不符；请重新选择原图并在完成后刷新');
+   photoIdentityKey=photoIdentityKeyOf(proof);
+  }
   // Do not promote detector output or prove matches in the UI.
   source=current;sourceProof=input;sourceGeneration=getGeneration();
   snapshot=JSON.stringify(current);
@@ -224,7 +249,14 @@ function attachReviewedDimensionDraftUi({
   if(!C.m3Accept.checked)throw new TypeError('必须另外确认 M3 模型输入及连接侧别');
   if(!['1','-1'].includes(C.side.value))
    throw new TypeError('明确选择连接线段圆的一侧 +1/-1');
-  const isolation=isolateReviewedDraft(accepted,{expectedRevision:accepted.draft.revision,currentDraft:accepted.draft});
+  const photo=photoIdentityFor(source);
+  if(typeof getPhotoIdentity==='function'&&
+     photoIdentityKeyOf(photo)!==photoIdentityKey)
+   throw new RangeError('原图字节指纹已失效，禁止当前 M3 求解');
+  const isolation=isolateReviewedDraft(accepted,{
+   expectedRevision:accepted.draft.revision,currentDraft:accepted.draft,
+   photoSha256:photo?.sha256??null
+  });
   if(isolation.status!=='reviewed-conditions-isolated')throw new RangeError('经审核来源与双比例尺 M3 隔离检查失败：'+isolation.reason);
   const doc=prepareSpecialistInput(accepted,{
    currentDraft:accepted.draft,expectedRevision:accepted.draft.revision,
@@ -250,10 +282,14 @@ function attachReviewedDimensionDraftUi({
    '。未自动选择任一分支，尚未通过 G1 与 V5 逐笔作图最终验收。';
  }
  function apply(){
+  const photo=photoIdentityFor(source);
   const currentIsolation=isolateReviewedDraft(accepted,{
-   expectedRevision:accepted?.draft?.revision,currentDraft:accepted?.draft
+   expectedRevision:accepted?.draft?.revision,currentDraft:accepted?.draft,
+   photoSha256:photo?.sha256??null
   });
   if(!freshness()||!prepared||!solution||
+     (typeof getPhotoIdentity==='function'&&
+      photoIdentityKeyOf(photo)!==photoIdentityKey)||
      currentIsolation.sourceBinding!==prepared.isolationSourceBinding||
      currentIsolation.solverInputHash!==prepared.isolationInputHash||
      !matchesReviewedMetricInput({isolation:currentIsolation,
@@ -304,6 +340,8 @@ function attachReviewedDimensionDraftUi({
    if(!freshness())return null;
    return {
     sourceRevision:source.revision,sourceGeneration,
+    // Local photo digest is NOT a signature or proof of source truth.
+    photoByteSha256:photoIdentityFor(source)?.sha256??null,
     reviewedAssociation:structuredClone(sourceProof),
     acceptedDraft:accepted?structuredClone(accepted.draft):null,
     calibration:accepted?structuredClone(accepted.calibration):null,

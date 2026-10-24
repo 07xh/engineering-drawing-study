@@ -13,7 +13,9 @@ const {IDENTITY}=require('../recognition/page-transforms.cjs');
 const {createReviewedPixelFrame,toModelMillimetres}=
  require('../core/numeric/reviewed-pixel-frame.cjs');
 const finite=Number.isFinite;
-function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
+function isolateReviewedDraft(attached,{
+ expectedRevision,currentDraft,photoSha256=null
+}={}){
  try{
   if(!isWitnessedReviewedDimension(attached)||
      attached?.status!=='dimension-attached-to-existing-draft'||
@@ -38,11 +40,17 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
      !origin||!finite(origin.x)||!finite(origin.y)||
      !['up','down'].includes(attached.calibration.yAxis))
    return {status:'not-verified',reason:'invalid reviewed coordinate frame'};
-  // Derived LOCAL context identity; this metadata is not an authenticated
-  // original image byte fingerprint and proves no global scale uniformity.
-  const imageId='draft-'+fingerprint(JSON.stringify({
-   image:d.image,revision:d.revision
-  }));
+  // This photo digest is checked against actual current local file bytes
+  // by the REAL UI's source watcher. Standalone programmatic callers are
+  // not an independent source of provenance: no caller proof flags.
+  if(photoSha256!==null&&
+     (typeof photoSha256!=='string'||!(/^[0-9a-f]{64}$/).test(photoSha256)))
+   return {status:'not-verified',reason:'invalid original photo digest'};
+  const imageId=photoSha256?
+   'sha256-'+photoSha256:
+   'draft-'+fingerprint(JSON.stringify({
+    image:d.image,revision:d.revision
+   }));
   const metric=createReviewedPixelFrame({
    image:{id:imageId,revision:d.revision,
     width:d.image.width,height:d.image.height},
@@ -87,11 +95,13 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
   if(isolated.status!=='reviewed-conditions-isolated')return isolated;
   const sourceBinding=fingerprint(JSON.stringify({
    draft:d,calibration:attached.calibration,dimensionId:attached.dimensionId,
-   selectedPathId:attached.selectedPathId,sourceTargetId:attached.sourceTargetId
+   selectedPathId:attached.selectedPathId,sourceTargetId:attached.sourceTargetId,
+   originalPhotoSha256:photoSha256
   }));
   return {...isolated,sourceBinding,reviewedScaleMmPerPx:scale,
    dimensionId:attached.dimensionId,
    m0MetricFrameStatus:metric.status,
+   sourcePhotoByteSha256:photoSha256,
    imageSourceIndependentlyAuthenticated:false,
    globallyUniformScaleProven:false};
  }catch(error){

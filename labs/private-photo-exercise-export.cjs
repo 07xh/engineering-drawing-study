@@ -54,6 +54,11 @@ function attachPrivatePhotoCaseExport({
       getGeneration()!==generation||
       JSON.stringify(getEvidence())!==beforeKey)
     throw new RangeError('图片、识图候选或审核版本已更改，请重新生成记录');
+   // A real M0/M3 photo review may carry the in-memory SHA-256 from
+   // the SAME current user-selected file. A mismatched hash cannot be
+   // silently packaged as provenance in the private record.
+   if(evidenceBefore?.photoByteSha256&&evidenceBefore.photoByteSha256!==sha256)
+    throw new RangeError('原图字节与当前审核数学条件的 SHA-256 来源不一致');
    const evidence=getEvidence();
    const candidates=getCandidates();
    const live=getCurrentLive();
