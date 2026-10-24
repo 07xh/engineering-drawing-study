@@ -312,7 +312,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.generatedOverlapLocallyAheadCount||0)+
     ' 条，至少在一条来源线后方的候选 '+
     (evidence.generatedOverlapLocallyBehindCount||0)+
-    ' 条。每组证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 条。分段后重新独立验证的 M0 全实体连续前向无遮挡区间 '+
+    (evidence.generatedSubspanWholeClearCount||0)+
+    ' 段、严格体积遮挡区间 '+
+    (evidence.generatedSubspanStrictlyHiddenCount||0)+
+    ' 段、仍未判定的射线区间 '+
+    (evidence.generatedSubspanRayUndeterminedCount||0)+
+    ' 段；射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
