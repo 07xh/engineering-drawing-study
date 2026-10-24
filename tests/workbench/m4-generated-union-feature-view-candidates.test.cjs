@@ -92,8 +92,14 @@ test('M4 geometry edits get a distinct source revision and no reused valid stand
  assert.equal(b.partition.revision,34);
  assert.equal(a.release.generatedSourceStrokeSignedCount,0);
  assert.equal(b.release.generatedSourceStrokeSignedCount,0);
- assert.notDeepEqual(a.partition.generatedSegments[0].source3DFrom,
-  b.partition.generatedSegments[0].source3DFrom);
+ assert.notDeepEqual(
+  a.partition.generatedUnionCreaseEvidence.segments.map(s=>({
+   sourceId:s.id,from:s.source3DFrom,to:s.source3DTo
+  })),
+  b.partition.generatedUnionCreaseEvidence.segments.map(s=>({
+   sourceId:s.id,from:s.source3DFrom,to:s.source3DTo
+  }))
+ );
 });
 test('M4 new candidate source proof cannot mint original source edge ID or actual line styles',()=>{
  const {partition:m,release:r}=audit([first(),other()],35);
