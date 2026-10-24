@@ -100,3 +100,55 @@ test('C2 actual V7 UI describes M5 projected union without official line-style c
  assert.match(ui,/已证明内接触面/);
  assert.match(ui,/接触面的边缘、投影重合和空间遮挡仍需端点与深度证明/);
 });
+
+test('C2 exact touching full faces share all four ORIGINAL face-border subsegments',()=>{
+ const r=run(p('Cap',q(12,0,0),q(20,10,8)));
+ const segments=r.patches[0].boundarySegments;
+ assert.equal(r.contactBoundarySegmentCount,4);
+ assert.equal(segments.length,4);
+ for(const e of segments){
+  assert.equal(e.sourceFaceBoundaryClass,'shared-original-face-boundaries');
+  assert.equal(e.originalSourceFaceBoundaryContainment.Base,true);
+  assert.equal(e.originalSourceFaceBoundaryContainment.Cap,true);
+  assert.equal(e.fullSegmentVisibilityVerified,false);
+  assert.equal(e.officialLineStyleVerified,false);
+  for(const v of ['V','H','W']){
+   assert.deepEqual(e.projections[v].from,project(e.from3D)[v]);
+   assert.deepEqual(e.projections[v].to,project(e.to3D)[v]);
+   assert.equal(e.projections[v].standardLineStyle,'undetermined');
+  }
+ }
+ assert.equal(r.canonicalConstructionReady,false);
+ assert.equal(r.v5Ready,false);
+});
+test('C2 partial face contact segments belong only to smaller source face border',()=>{
+ const r=run(p('Cap',q(12,3,2),q(20,8,6)));
+ const segments=r.patches[0].boundarySegments;
+ assert.equal(segments.length,4);
+ assert.ok(segments.every(x=>
+  x.sourceFaceBoundaryClass==='single-original-face-boundary'));
+ assert.ok(segments.every(x=>
+  x.originalSourceFaceBoundaryContainment.Base===false&&
+  x.originalSourceFaceBoundaryContainment.Cap===true));
+ assert.equal(r.patches[0].strictInteriorAreaMm2,20);
+});
+test('C2 partial aligned contact has proven dual and single source edge incidences',()=>{
+ const r=run(p('Cap',q(12,0,0),q(20,5,8)));
+ const labels=r.patches[0].boundarySegments.map(x=>x.sourceFaceBoundaryClass);
+ assert.equal(labels.filter(x=>x==='shared-original-face-boundaries').length,3);
+ assert.equal(labels.filter(x=>x==='single-original-face-boundary').length,1);
+ assert.equal(r.officialLineStylesVerified,false);
+});
+test('C2 a finite exact face-rectangle intersection border is always in at least one source face',()=>{
+ for(const bb of [
+  p('Cap',q(12,1,3),q(20,7,9)),
+  p('Cap',q(12,-5,-5),q(20,8,6)),
+  p('Cap',q(12,-5,2),q(20,15,6))
+ ]){
+  const out=run(bb);
+  for(const edge of out.patches.flatMap(p=>p.boundarySegments)){
+   assert.notEqual(edge.sourceFaceBoundaryClass,'interior-face-cut');
+   assert.equal(edge.complete3DSourceJoinVerified,false);
+  }
+ }
+});
