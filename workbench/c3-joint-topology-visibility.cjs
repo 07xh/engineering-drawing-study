@@ -38,6 +38,7 @@ function buildTransitionGuards(intervals,junctionGuards,input){
   }
   for(const j of junctionGuards){
    result.push({view,junctionId:j.junctionId,
+    finiteCylinderRayCandidates:auditC3TransitionRays({input,point:j.point3D,view}),
     incidentBranchIds:[...j.incidentBranchIds],
     localC1JoinVerified:j.localC1JoinVerified,
     endpointRayContinuityVerified:false,
