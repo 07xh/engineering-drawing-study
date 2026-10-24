@@ -10,6 +10,8 @@
 const M0=require('../numeric/euclidean-kernel.cjs');
 const {diagnoseJacobian}=require('../numeric/jacobian-rank-evidence.cjs');
 const {validateSolveResult}=require('../contracts/solve-result.js');
+const {deriveTwoDistanceSubgraphEvidence}=
+ require('./nonlinear-distance-branch-graph.cjs');
 const ID=/^[A-Za-z][A-Za-z0-9_-]{0,79}$/;
 const number=n=>typeof n==='number'&&Number.isFinite(n);
 const plain=x=>!!x&&typeof x==='object'&&!Array.isArray(x)&&
@@ -218,6 +220,10 @@ function solveNonlinearPointCandidates(input={}){
  // Critically, even a full-column local Jacobian is NOT global uniqueness
  // evidence. Several seeds finding only one branch proves nothing about
  // missing branches. Keep canonical SolveResult explicitly undetermined.
+ // Independent algebraic witness can prove completeness only for the
+ // projected pair of anchored distance factors, not the full input graph.
+ const analyticSubgraphEvidence=deriveTwoDistanceSubgraphEvidence({
+  frame,unit,points,constraints,revision});
  const solveResult={id:'NonlinearPointSystem',status:'undetermined',
   scope:frame+'-nonlinear-seeded-point-candidates',
   solutions:[],solutionCount:null,degrees:null,localDegrees:null,rank:null,
@@ -239,7 +245,7 @@ function solveNonlinearPointCandidates(input={}){
   // maxScaledResidual must not be mistaken for a pure physical mm residual.
   residualScale:'distance-mm-angle-1mm-per-radian',
   localCandidates:candidates.map(({flat,...c})=>c),
-  seedReports:reports,solveResult,
+  seedReports:reports,solveResult,analyticSubgraphEvidence,
   geometry:[],mathematicallyVerified:false,
   sourceProblemConfirmed:false,globalBranchEnumerationComplete:false,
   fullEngineeringDrawingVerified:false,constructionIntents:[],
