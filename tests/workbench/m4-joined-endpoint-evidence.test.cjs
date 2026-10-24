@@ -8,10 +8,10 @@ const {createUnifiedProjectSession}=
  require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const P=(x,y,z)=>({x,y,z});
-function box(id,z0,z1){
+function box(id,z0,z1,shiftX=0){
  const points={};
  for(let x=0;x<2;x++)for(let y=0;y<2;y++)for(let z=0;z<2;z++)
-  points['V'+x+y+z]=P(x?10:0,y?10:0,z?z1:z0);
+  points['V'+x+y+z]=P((x?10:0)+shiftX,y?10:0,z?z1:z0);
  const keys=Object.keys(points),edges=[];
  for(const [i,a] of keys.entries())for(const b of keys.slice(i+1))
   if([1,2,3].filter(q=>a[q]!==b[q]).length===1)edges.push([a,b]);
@@ -22,7 +22,8 @@ function box(id,z0,z1){
  ];
  return {id,kind:'mesh',space:'model-3d',unit:'mm',data:{points,edges,faces}};
 }
-const back=box('Back',0,2),front=box('Front',4,6),geometry=[back,front];
+const back=box('Back',0,2),front=box('Front',4,6),
+ splitter=box('Split',10,12,3),geometry=[back,front,splitter];
 test('M4 original model endpoints bind to audited 3D incidence and projected depth groups in V/H/W',()=>{
  const e=compute({geometry,revision:400}),
   spans=e.projectedStrokePartitions.segments;
