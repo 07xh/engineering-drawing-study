@@ -30,6 +30,28 @@ const FAST_POSITIVE=Object.freeze({sign:1,method:'float64-filtered',
 const EXACT=Object.freeze([-1,0,1].map(v=>Object.freeze({
  sign:v,method:'exact-dyadic-fallback',exactForBinary64Inputs:true
 })));
+function exactTriples(triples){
+ let exact={n:0n,e:0};
+ for(const [x,y,z,coefficient] of triples){
+  const v=product(product(dyadic(x),dyadic(y)),dyadic(z));
+  exact=coefficient>0?sum(exact,v):
+   sum(exact,{n:-v.n,e:v.e});
+ }
+ return exact;
+}
+/** Opt-in offline exact dyadic 3x3 determinant, no binary64 rounding of
+ * intersection coordinates; returned (n,e) means n*2^e.
+ * Not for animation frames or implicit live drag computations.
+ */
+function determinant3DExactDyadic(first,second,third){
+ const a=point3(first,'first'),b=point3(second,'second'),
+  c=point3(third,'third');
+ return exactTriples([
+  [a[0],b[1],c[2],1],[a[1],b[2],c[0],1],
+  [a[2],b[0],c[1],1],[a[0],b[2],c[1],-1],
+  [a[1],b[0],c[2],-1],[a[2],b[1],c[0],-1]
+ ]);
+}
 function determinant3DAdaptive(first,second,third){
  const a=point3(first,'first'),b=point3(second,'second'),
   c=point3(third,'third');
@@ -54,12 +76,6 @@ function determinant3DAdaptive(first,second,third){
    err>=MIN_NORMAL&&Math.abs(total)>err){
   return total<0?FAST_NEGATIVE:FAST_POSITIVE;
  }
- let exact={n:0n,e:0};
- for(const [x,y,z,coefficient] of triples){
-  const v=product(product(dyadic(x),dyadic(y)),dyadic(z));
-  exact=coefficient>0?sum(exact,v):
-   sum(exact,{n:-v.n,e:v.e});
- }
- return EXACT[sign(exact)+1];
+ return EXACT[sign(exactTriples(triples))+1];
 }
-module.exports={determinant3DAdaptive};
+module.exports={determinant3DAdaptive,determinant3DExactDyadic};
