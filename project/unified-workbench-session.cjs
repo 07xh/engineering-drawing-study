@@ -6,6 +6,7 @@
  */
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {evaluateUnifiedMath}=require('../workbench/unified-math-pipeline.cjs');
+const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
@@ -68,6 +69,9 @@ function verifiedPrismSection(data){
    !okTriple(v.planePoint)||v.planePoint.some(x=>Math.abs(x)>100000)||
    !okTriple(v.planeNormal)||Math.hypot(...v.planeNormal)<=1e-9)
   throw new Error('长方体尺寸和截平面必须是有限、非退化的毫米条件');
+ if(v.retainedHalfspace!==undefined&&
+    !['unreviewed','positive','negative'].includes(v.retainedHalfspace))
+  throw new Error('截切保留材料侧无效，不能获得射线证明');
  return {kind:'rectangular-prism',
   solid:{min:P(0,0,0),max:P(...v.size)},
   plane:{point:P(...v.planePoint),normal:P(...v.planeNormal)},
@@ -186,9 +190,16 @@ function createUnifiedProjectSession(){
    }
    if(latest?.task==='exploration'){
     const input=verifiedPrismSection(latest);
-    // Spatial M3 provides only scoped partial proof. Never invent V5.
+    // Kept material is an explicitly human-reviewed condition. Shared
+    // first-angle observer rays come from ONE existing projection authority.
+    // The specialist only certifies OPEN edge intervals, never whole strokes.
+    const side=latest.conditions[0].value.retainedHalfspace??'unreviewed';
+    const visibilityReview=side==='unreviewed'?undefined:{
+     retainedHalfspace:side,observerDirections:FIRST_ANGLE_OBSERVER_RAYS,
+     sourceRevision:latest.revision
+    };
     const evidence=evaluateUnifiedMath({kind:'spatial-section',input,
-      revision:latest.revision});
+      revision:latest.revision,visibilityReview});
     if(evidence.status!=='geometry-only'||
        evidence.geometryVerifiedWithinSpecialistScope!==true)
       throw new Error('当前截切几何证据不充分；已拒绝显示推测截交线');
