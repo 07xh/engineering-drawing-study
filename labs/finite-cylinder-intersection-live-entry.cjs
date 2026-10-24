@@ -6,6 +6,7 @@
 const {compileFiniteCylinderEndpointV5}=
  require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {project,toSheet}=require('../core/projection/conventions.js');
+const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const NS='http://www.w3.org/2000/svg',VIEWS=['V','H','W'];
 const $=id=>document.getElementById(id);
@@ -105,27 +106,45 @@ function pointAt(branch,input,x){
   throw new RangeError('预览点未通过独立曲面和有限端盖核验');
  return p;
 }
-function drawAnalyticPreview(compiled,input){
+function drawAnalyticPreview(compiled,input,wRayProof){
  const svg=$('board'),group=node('g',{
   'data-intersection-preview':'uncertified',
-  'aria-label':'解析曲线几何预览，工程实线虚线尚未证明'});
- const branches=compiled.sourceM3.branches;
- for(const branch of branches)for(const view of VIEWS){
-  const positions=[];
-  const count=36;
+  'aria-label':'解析曲线开区间几何预览；射线判断非正式工程线型'});
+ const branches=new Map(compiled.sourceM3.branches.map(b=>[b.id,b]));
+ if(!wRayProof||wRayProof.revision!==revision||
+    wRayProof.sourceM3BranchCount!==branches.size||
+    wRayProof.v5CurveReady!==false||
+    wRayProof.officialLineStylesVerified!==false)
+  throw new RangeError('当前 C3 W 区间证明与 M3/V5 来源不一致');
+ function span(branch,view,lo,hi,rayStatus,strictOpen){
+  if(!branch||!(hi>lo)||lo<branch.xRange[0]||hi>branch.xRange[1])
+   throw new RangeError('W 预览片段不能超出当前 M3 解析分支');
+  const positions=[],count=36;
+  // Certified ray statements concern strictly OPEN parameter intervals.
+  // The preview deliberately leaves the two endpoint neighborhoods unsworn.
+  const epsilon=strictOpen?1e-5:0;
   for(let i=0;i<=count;i++){
-   const x=branch.xRange[0]+(branch.xRange[1]-branch.xRange[0])*i/count;
+   const t=epsilon+(1-2*epsilon)*i/count;
+   const x=lo+(hi-lo)*t;
    positions.push(toSheet(view,project(pointAt(branch,input,x))[view],
     transforms[view]));
   }
   const d=positions.map((p,i)=>(i?'L ':'M ')+p.x+' '+p.y).join(' ');
-  const path=node('path',{d,fill:'none',stroke:'#8561b2',
-   'stroke-width':1.6,'stroke-dasharray':'2 7',
+  const stroke=rayStatus==='clear'?'#167f8b':
+   rayStatus==='occluded'?'#cb802f':'#8561b2';
+  group.append(node('path',{d,fill:'none',stroke,
+   'stroke-width':2,'stroke-dasharray':'2 7',
    'data-standard-line-style':'unverified',
-   'data-official-v5':'false','data-source-branch':branch.id,
-   'data-view':view});
-  group.append(path);
+   'data-official-v5':'false',
+   'data-open-ray-status':rayStatus,
+   'data-open-ray-only':strictOpen?'true':'false',
+   'data-source-branch':branch.id,'data-view':view}));
  }
+ for(const branch of branches.values())for(const view of ['V','H'])
+  span(branch,view,branch.xRange[0],branch.xRange[1],'undetermined',false);
+ for(const row of wRayProof.intervals)
+  span(branches.get(row.branchId),'W',
+   row.xOpenRange[0],row.xOpenRange[1],row.openInteriorRayStatus,true);
  svg.append(group);
 }
 function renderPointActions(){
@@ -187,8 +206,9 @@ function solve(){
   const computed=compileFiniteCylinderEndpointV5({
    input,revision,stationCountPerBranch:count,
    sheetTransform:transforms.V,viewTransforms:transforms});
+  const wRayProof=buildC3WIntervalPreview({input,revision});
   drawScaffold();
-  drawAnalyticPreview(computed,input);
+  drawAnalyticPreview(computed,input,wRayProof);
   current=computed;
   disable(false);
   renderPointActions();
@@ -199,6 +219,10 @@ function solve(){
    '；正式 V5 端点动作：'+computed.signedEndpointPointActionCount+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
+   '\\nW 视图开区间：前方无遮挡 '+wRayProof.certifiedClearCount+
+   ' 段、实体前方遮挡 '+wRayProof.certifiedOccludedCount+
+   ' 段、未判定 '+wRayProof.undeterminedCount+
+   ' 段。该结论基于整段解析不等式，临界端点不继承线型。'+
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
    '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
  }catch(e){
