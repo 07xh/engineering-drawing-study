@@ -38,6 +38,8 @@ const {auditGeneratedStrokeOverlapPartitions}=
  require('./m5-generated-stroke-overlap-partitions.cjs');
 const {auditGeneratedOpenSubspanOpaqueRays}=
  require('./m5-generated-open-subspan-opaque-rays.cjs');
+const {auditUnifiedProjectedFeatureEvents}=
+ require('./m5-unified-projected-feature-events.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -197,6 +199,22 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      generatedSubspanRayEvidence.signedV5LineActions!==0||
      generatedSubspanRayEvidence.v5Ready!==false))
   throw new TypeError('unapproved generated subspan opacity proof attempting V5 release');
+ // ONE shared candidate/event topology across authentic remaining original
+ // creases and genuinely generated union face lines. It is a prerequisite
+ // to, not a substitute for, global contour + standard line-style signoff.
+ const unifiedProjectedFeatureEventEvidence=
+  generatedSubspanRayEvidence?.status===
+   'all-current-generated-open-subspan-source-rays-recomputed'?
+  auditUnifiedProjectedFeatureEvents({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence}):null;
+ if(unifiedProjectedFeatureEventEvidence&&
+    (unifiedProjectedFeatureEventEvidence.status!==
+      'reviewed-original-and-generated-paper-event-candidates'||
+     unifiedProjectedFeatureEventEvidence.officialLineStylesVerified!==false||
+     unifiedProjectedFeatureEventEvidence.signedV5LineActions!==0||
+     unifiedProjectedFeatureEventEvidence.v5Ready!==false))
+  throw new TypeError('unified C2 feature candidates bypassed V5 line authority');
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -407,6 +425,18 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   generatedProjectedEndpointEvidence,
   generatedOverlapPartitionEvidence,
   generatedSubspanRayEvidence,
+  unifiedProjectedFeatureEventEvidence,
+  unifiedProjectedOriginalCandidateCount:
+   unifiedProjectedFeatureEventEvidence?.originalSourceCandidateCount??0,
+  unifiedProjectedGeneratedCandidateCount:
+   unifiedProjectedFeatureEventEvidence?.generatedSourceCandidateCount??0,
+  unifiedProjectedCrossingEventCount:
+   unifiedProjectedFeatureEventEvidence?.properPaperCrossingCount??0,
+  unifiedProjectedCollinearOverlapCount:
+   unifiedProjectedFeatureEventEvidence?.positiveCollinearOverlapCount??0,
+  unifiedProjectedEventSubspanCount:
+   unifiedProjectedFeatureEventEvidence?.partitionedOpenSubspanCount??0,
+
   generatedSubspanWholeClearCount:
    generatedSubspanRayEvidence?.certifiedClearPieceCount??0,
   generatedSubspanStrictlyHiddenCount:
