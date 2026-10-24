@@ -157,6 +157,32 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
    'limited specialist proof never certifies hidden-line styles');
   assert.equal($('v7-play').disabled,true,
    'a scoped polygon is not yet a verified complete V5 construction');
+  assert.equal($('v7-scoped-v5').hidden,false,
+   'independently M3/M4-aligned scoped prism should offer explicit opt-in preview');
+  assert.equal($('v7-scoped-warning').hidden,true);
+  click('v7-scoped-v5');await tick();await tick();
+  assert.equal($('v7-scoped-v5').getAttribute('aria-pressed'),'true');
+  assert.equal($('v7-scoped-warning').hidden,false);
+  assert.match($('v7-scoped-warning').textContent,/未/);
+  assert.match($('v7-proof').textContent,/限定证据/,
+   'opt-in preview must never promote the geometry-only SolveResult to verified');
+  assert.equal($('v7-play').disabled,false);
+  assert.equal($('v7-sheet').getAttribute('viewBox'),'0 0 960 680');
+  assert.ok($('v7-step-list').querySelector('button'));
+  assert.match($('v7-step-list').querySelector('button').textContent,/限定预览/);
+  $('v7-seek').value='1000';
+  $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));
+  await tick();
+  assert.ok($('v7-sheet').querySelectorAll('line').length>15,
+   'real M3 perimeter V/H/W actions must draw progressively on the same paper');
+  assert.equal($('v7-step-list').querySelectorAll('button').length>0,true);
+  click('v7-scoped-v5');await tick();await tick();
+  assert.equal($('v7-scoped-v5').getAttribute('aria-pressed'),'false');
+  assert.equal($('v7-scoped-warning').hidden,true);
+  assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  assert.notEqual($('v7-sheet').getAttribute('viewBox'),'0 0 960 680');
+
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';
