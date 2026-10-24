@@ -10,6 +10,7 @@ const {auditFiniteCylinderWRayIntervals}=require('./m5-finite-cylinder-w-ray-int
 const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
 const {auditC3WCriticalRays}=require('./c3-w-critical-ray-theorem.cjs');
+const {auditC3WLateralProjectionInjectivity}=require('./c3-w-lateral-injectivity.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -141,6 +142,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  const topology=auditFiniteCylinderEndpointIncidence({input,revision});
  const w=auditFiniteCylinderWRayIntervals({input,revision});
  const vh=auditFiniteCylinderVHAxisRays({input,revision});
+ const wLateralProjection=auditC3WLateralProjectionInjectivity({input,revision});
+ if(wLateralProjection.status==='not-covered')
+  throw new RangeError('C3 independent W lateral-source theorem not covered');
  if(topology.status!=='scoped-analytic-3d-endpoint-incidence'||
   w.status!=='source-bounded-W-open-rays'||
   vh.status!=='scoped-analytic-VH-strict-volume-occlusion'||
@@ -205,6 +209,8 @@ function auditC3JointTopologyVisibility({input,revision}={}){
      certifiedClear?'clear':'undetermined',
     originalM5EvidenceId:p.id,sourceM3AnalyticBranchVerified:true,
     physicalGraphBranchAccountedFor:true,
+    wLateralProjectionCollisionExcludedWithinSourceScope:view==='W'&&
+     wLateralProjection.projectedLateralLateralPointInjectivityVerified===true,
     endpointVisibilityVerified:false,
     blockers:[
      ...(!certifiedOccluded&&!certifiedClear?['open-interval-ray-sign-undetermined']:[]),
@@ -221,6 +227,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
+  wLateralProjection,
   transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
    topology.projectedCoincidences,m3.branches,revision),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
