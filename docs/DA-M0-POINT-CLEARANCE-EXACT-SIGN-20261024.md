@@ -1,0 +1,7 @@
+# M0 positive open point-ray: exact sign of near-parallel support slope
+
+One remaining shared M0 consumer, `convex-point-ray-clearance.cjs`, used the numeric `slope>=0` shortcut to certify a point observer open ray clear when the source lay outside a support plane, and used `slope===0` as a second 'parallel exterior' certificate. The rounded dot product of a normal and observer can become zero under catastrophic finite binary64 cancellation although its mathematical sign is strictly negative. A slightly inward ray can eventually re-enter at greater depth, so these are NOT valid exterior-support proofs.
+
+This change calls the already merged opt-in **exact-for-represented-binary64** `certifyDotSign` from the ONE Euclidean M0 kernel for the existing support tests. Only signed outward or exactly parallel rays may issue their previous `certified-clear` results. Near-zero but truly nonzero directions retain current `undetermined` and existing clipping/tolerance behavior. No second ray engine, geometry scope, unit conversion, full-scene, line-style or V5 changes.
+
+Independent regression uses normalized three-dimensional components with rounded dot=0 but exact sign=-1, true exact parallel support positive control and a genuine finite-box +Z upper-face open ray. Preserve existing negative scene/provenance/endpoint/V5 flags. Five exact PR HEAD CI successes required before merge; isolated rollback by squash revert.
