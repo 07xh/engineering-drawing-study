@@ -142,7 +142,7 @@ test('real UI consumes same original V5 circle actions, not faux sampled curves'
  assert.match(ui,/Motion\.updateSvg\(shape,action,fraction\)/);
  assert.match(ui,/originalGuide=action.kind==='circle'/);
  assert.match(ui,/data-certified-scope/);
- assert.match(html,/真实原始圆柱辅助圆 V5/);
- assert.match(html,/不等于已签发标准实虚线的相贯线/);
+ assert.match(html,/原始圆柱辅助圆 V5/);
+ assert.match(html,/没有获得正式工程实虚线资格/);
  assert.doesNotMatch(ui,/data-official-v5':'true'/);
 });
