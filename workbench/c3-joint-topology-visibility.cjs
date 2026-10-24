@@ -37,6 +37,23 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  if(walked.length!==sourceIds.size||new Set(walked).size!==sourceIds.size||
   walked.some(id=>!sourceIds.has(id)))
   throw new RangeError('C3 physical source graph is incomplete or duplicated');
+ const unresolvedJunctions=topology.junctions.filter(j=>
+  !j.localC1ContinuationWithinLateralLateralScopeVerified&&
+  !((j.incidentBranchIds.length===1)&&j.finiteCapTermination));
+ const junctionGuards=topology.junctions.map(j=>({
+  junctionId:j.id,incidentBranchIds:[...j.incidentBranchIds],
+  classification:j.classification,
+  finiteCapTermination:j.finiteCapTermination,
+  localC1JoinVerified:j.localC1ContinuationWithinLateralLateralScopeVerified,
+  fullFeatureJoinAuthorized:false,
+  blockers:[
+   ...(j.finiteCapTermination?['finite-cap-other-surface-continuation-unverified']:[]),
+   ...(!j.localC1ContinuationWithinLateralLateralScopeVerified&&
+     j.incidentBranchIds.length>1?['singular-or-multibranch-continuation-undetermined']:[]),
+   'three-view-endpoint-visibility-not-certified',
+   'full-solid-boundary-feature-topology-not-certified'
+  ]
+ }));
  const intervals=[];
  for(const b of m3.branches)for(const view of ['V','H','W']){
   const pieces=(view==='W'?w.intervals:vh.intervals)
@@ -57,7 +74,13 @@ function auditC3JointTopologyVisibility({input,revision}={}){
      certifiedClear?'clear':'undetermined',
     originalM5EvidenceId:p.id,sourceM3AnalyticBranchVerified:true,
     physicalGraphBranchAccountedFor:true,
-    endpointVisibilityVerified:false,standardLineStyle:'undetermined',
+    endpointVisibilityVerified:false,
+    blockers:[
+     ...(!certifiedOccluded&&!certifiedClear?['open-interval-ray-sign-undetermined']:[]),
+     'curve-endpoint-and-transition-visibility-unverified',
+     'complete-feature-and-standard-line-style-unverified'
+    ],
+    standardLineStyle:'undetermined',
     constructionIntentAuthorized:false,v5ActionAuthorized:false});
   }
  }
@@ -66,7 +89,8 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   sourceBranchCount:m3.branchCount,componentCount:topology.componentCount,
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
-  allSourceBranchesAccountedFor:true,intervals,
+  allSourceBranchesAccountedFor:true,intervals,junctionGuards,
+  unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
   constructionIntentAuthorized:false,v5CurveReady:false});
