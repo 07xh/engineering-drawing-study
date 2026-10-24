@@ -40,6 +40,8 @@ const {auditGeneratedOpenSubspanOpaqueRays}=
  require('./m5-generated-open-subspan-opaque-rays.cjs');
 const {auditUnifiedProjectedFeatureEvents}=
  require('./m5-unified-projected-feature-events.cjs');
+const {auditUnifiedPaperSourceIdentity}=
+ require('./m5-unified-paper-source-identity.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -215,6 +217,21 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      unifiedProjectedFeatureEventEvidence.signedV5LineActions!==0||
      unifiedProjectedFeatureEventEvidence.v5Ready!==false))
   throw new TypeError('unified C2 feature candidates bypassed V5 line authority');
+ const unifiedPaperSourceIdentityEvidence=
+  unifiedProjectedFeatureEventEvidence?.status===
+   'reviewed-original-and-generated-paper-event-candidates'?
+  auditUnifiedPaperSourceIdentity({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence}):null;
+ if(unifiedPaperSourceIdentityEvidence&&
+    (unifiedPaperSourceIdentityEvidence.status!==
+       'source-traced-canonical-projected-open-interval-registry'||
+     unifiedPaperSourceIdentityEvidence.allCandidatePiecesRetained!==true||
+     unifiedPaperSourceIdentityEvidence.officialLineStylesVerified!==false||
+     unifiedPaperSourceIdentityEvidence.signedV5LineActions!==0||
+     unifiedPaperSourceIdentityEvidence.v5Ready!==false))
+  throw new TypeError('paper source identity is not a signed official V5 line');
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -426,6 +443,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   generatedOverlapPartitionEvidence,
   generatedSubspanRayEvidence,
   unifiedProjectedFeatureEventEvidence,
+  unifiedPaperSourceIdentityEvidence,
+  unifiedPaperIntervalCount:
+   unifiedPaperSourceIdentityEvidence?.paperIntervalCount??0,
+  unifiedCoProjectedMultipleSourceIntervalCount:
+   unifiedPaperSourceIdentityEvidence?.coProjectedMultiSourceIntervalCount??0,
+  unifiedPhysicallyDuplicatedSourceIntervalCount:
+   unifiedPaperSourceIdentityEvidence?.physicallyDuplicatedSourceIntervalCount??0,
+  unifiedLocallyFrontListedSourceIntervalCount:
+   unifiedPaperSourceIdentityEvidence?.uniquelyFrontListedSourceIntervalCount??0,
+
   unifiedProjectedOriginalCandidateCount:
    unifiedProjectedFeatureEventEvidence?.originalSourceCandidateCount??0,
   unifiedProjectedGeneratedCandidateCount:
