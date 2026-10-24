@@ -737,7 +737,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }),{strokes:0,ambiguous:0,contours:0});
    v5Block.textContent='空间 V5 仍禁止签收：已审阅投影棱区间 '+
     totals.strokes+' 段，开区间未定 '+totals.ambiguous+
-    ' 段，几何外轮廓候选 '+totals.contours+' 段；尚有 '+
+    ' 段，几何外轮廓候选 '+totals.contours+' 段，'+
+    '两端点加整段正向射线均有证明 '+gate.positiveClosedSourceRayCount+
+    ' 条，其中投影外边界 '+gate.positiveClosedOuterEdgeCount+' 条；尚有 '+
     gate.missingCount+' 类数学/端点/线型/Intent/DAG 证明待完成。'+
     ' 不会将局部隐藏或可见证据直接画成标准实线或虚线。';
   }
