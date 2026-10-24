@@ -69,7 +69,8 @@ test('C2 third body buried middle creates separate OPEN generated source segment
  const C=box('C',p(9,4,6),p(11,6,8));
  const r=audit([A(),B(),C],33);
  const generatedAB=r.segments.filter(s=>s.kind==='generated-source-face-crease'&&
-  s.sourceGeometryIds.join(',')==='A,B'&&s.source3DFrom.x===10&&
+  s.sourceGeometryIds.join(',')==='A,B'&&s.sourceAxis==='z'&&
+  s.source3DFrom.x===10&&
   s.source3DFrom.y===5);
  assert.equal(generatedAB.length,2);
  assert.deepEqual(generatedAB.map(s=>[s.source3DFrom.z,s.source3DTo.z]),
