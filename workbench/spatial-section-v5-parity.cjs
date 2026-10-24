@@ -124,6 +124,9 @@ function buildScopedSpatialSectionV5Preview({input,evidence,revision}={}){
   fullSpatialConstructionIntentVerified:false,
   completeEngineeringDrawingVerified:false,
   canPromoteToVerifiedResult:false,
+  // Recomputed by the same specialist from trusted 3D bounding Geometry.
+  // Givens are presentation outlines only; NEVER hidden-line proof.
+  givens:safeCopy(plan.givens),
   steps:safeCopy(plan.steps),timing:safeCopy(plan.timing),
   sheet:safeCopy(plan.sheet)
  });
