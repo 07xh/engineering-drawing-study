@@ -14,26 +14,38 @@ const PAIR_COS_TOLERANCE=16*Number.EPSILON;
 function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELATIVE_THRESHOLD,maxSweeps=60}={}){
   if(normalized!==true)
     throw new TypeError('Jacobian rows must be explicitly normalized to dimensionless entries');
-  if(!Array.isArray(rows)||!rows.length||rows.length>64||!Array.isArray(rows[0])||
-      !rows[0].length||rows[0].length>64)
+  if(!Array.isArray(rows)||rows.length<1||rows.length>64||
+      !Object.hasOwn(rows,0))
     throw new RangeError('Jacobian must be a nonempty matrix of at most 64x64');
-  const m=rows.length,n=rows[0].length;
-  // Array#some and Array#flat skip holes. A missing coefficient is not zero:
-  // validate indexed ownership before taking the zero-matrix fast path.
-  for(let i=0;i<m;i++){
-    if(!Object.hasOwn(rows,i)||!Array.isArray(rows[i])||rows[i].length!==n)
+  // Only one read of the first row, including its shape. Subsequent reads
+  // must use these detached coefficients, not caller-controlled getters.
+  const first=rows[0];
+  if(!Array.isArray(first)||first.length<1||first.length>64)
+    throw new RangeError('Jacobian must be a nonempty matrix of at most 64x64');
+  const m=rows.length,n=first.length;
+  // Map/some/flat skip sparse indices. Snapshot EVERY row and coefficient
+  // once before computing scales, singular values, or rank estimates.
+  const values=Array.from({length:m},(_,i)=>{
+    if(!Object.hasOwn(rows,i))
       throw new TypeError('Jacobian rows must be rectangular and finite');
-    for(let j=0;j<n;j++){
-      if(!Object.hasOwn(rows[i],j)||!finite(rows[i][j]))
+    const row=i===0?first:rows[i];
+    if(!Array.isArray(row)||row.length!==n)
+      throw new TypeError('Jacobian rows must be rectangular and finite');
+    return Array.from({length:n},(_,j)=>{
+      if(!Object.hasOwn(row,j))
         throw new TypeError('Jacobian entries must be present and finite');
-    }
-  }
+      const entry=row[j];
+      if(!finite(entry))
+        throw new TypeError('Jacobian entries must be present and finite');
+      return entry;
+    });
+  });
   if(!finite(relativeThreshold)||relativeThreshold<MIN_THRESHOLD||relativeThreshold>=1)
     throw new RangeError('relativeThreshold must be finite and between 64*EPS and 1');
   if(!Number.isInteger(maxSweeps)||maxSweeps<1||maxSweeps>100)
     throw new RangeError('maxSweeps must be an integer in 1..100');
 
-  const scale=Math.max(...rows.flat().map(Math.abs));
+  const scale=Math.max(...values.flat().map(Math.abs));
   const base={kind:'normalized-jacobian-rank-evidence',rows:m,columns:n,
     relativeThreshold,normalized:true,proofOfExistence:false,
     proofOfGlobalUniqueness:false,globallyUnique:null,solutionCount:null};
@@ -47,7 +59,7 @@ function diagnoseJacobian({rows,normalized=false,relativeThreshold=DEFAULT_RELAT
   // the largest entry (e.g. 1e-308 / 1e308 -> 0). Once lost, a rank claim
   // based on this scaled matrix would be unsupported.
   let numericUnderflowDetected=false;
-  const a=rows.map(row=>row.map(v=>{
+  const a=values.map(row=>row.map(v=>{
     const normalized=v/scale;
     if(v!==0&&normalized===0)numericUnderflowDetected=true;
     return normalized;
