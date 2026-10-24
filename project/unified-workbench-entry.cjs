@@ -239,6 +239,28 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     seamRays.originalSourceVertexIncidenceEvidence.positiveOriginalRayCount+
     ' 组。这里只审计原始顶点，不冒充新增接触切点的实体接缝。端点整合和标准实虚线仍未签收。';
   }
+  const gate=preview()?.kind==='composition-evidence'?
+   preview().spatialV5ActionRelease:null;
+  const detail=$('v7-c-stroke-proof');
+  if(gate?.status==='all-actions-held-evidence-incomplete'&&
+    gate.finalStrokeObligations?.status==='per-source-span-proof-obligations-audited'){
+   const evidence=gate.finalStrokeObligations;
+   const sample=gate.actions.slice(0,3).map(a=>{
+    const local=a.missingProofs.filter(p=>p.startsWith('source:'))
+      .slice(0,2).map(x=>x.slice(7));
+    return a.view+'/'+a.sourceEdgeId+
+     '：缺 '+(local.length?local.join('、'):'全局 M3/标准线型/正式 V5 签收');
+   }).join('；');
+   detail.textContent='M5 逐笔正式作图证据：'+gate.actionCount+
+    ' 个真实来源候选，已签收 '+gate.signedCount+'，阻断 '+
+    gate.blockedCount+'。完整投影轮廓局部候选 '+
+    evidence.positiveOuterCandidateCount+'，严格遮挡的局部候选 '+
+    evidence.hiddenDepthCandidateCount+
+    '。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    (sample?' 前三项缺口：'+sample+'。':'');
+  }else{
+   detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
+  }
  }
 
  const taskObjects={
