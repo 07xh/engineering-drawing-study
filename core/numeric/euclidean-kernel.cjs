@@ -63,19 +63,34 @@ function subtract(a,b){
  * magnitude or pre-rounded source values; no official V5 proof is emitted.
  */
 function productSum(pairs){
- const terms=pairs.map(({a,b,coefficient})=>
-  checked(multiplyFinite(a,b)*coefficient));
- let total=0,magnitude=0;
- for(const term of terms){
-  total=checked(total+term);
-  magnitude=checked(magnitude+Math.abs(term));
+ // Only signed predicates may use exact dyadic fallback on finite operands
+ // whose intermediate Float64 products overflow, underflow or cancel.
+ // Ordinary dot/cross3 still reject unrepresentable numeric magnitudes.
+ let total=0,magnitude=0,roundedUsable=true,normalTerms=true;
+ for(const {a,b,coefficient} of pairs){
+  if(!finite(a)||!finite(b)||(coefficient!==1&&coefficient!==-1))
+   throw new TypeError('finite signed product terms required');
+  const raw=a*b,term=raw*coefficient;
+  if(!finite(raw)||!finite(term)){
+   roundedUsable=false;
+   break;
+  }
+  if(a!==0&&b!==0&&(raw===0||Math.abs(raw)<2**-1022))
+   normalTerms=false;
+  const next=total+term,nextMagnitude=magnitude+Math.abs(term);
+  if(!finite(next)||!finite(nextMagnitude)){
+   roundedUsable=false;
+   break;
+  }
+  total=next;
+  magnitude=nextMagnitude;
  }
  const bound=(8*pairs.length+4)*Number.EPSILON*magnitude;
- // Bound also relies on normal-range intermediate arithmetic; otherwise
- // always consult exact dyadic product-sum instead of treating 0 as proof.
+ // The forward-error filter only applies if every intermediate value is
+ // finite and non-underflowed; otherwise compute the exact binary64 sign.
  const normal=x=>x===0||Math.abs(x)>=2**-1022;
- if(Number.isFinite(bound)&&bound>=2**-1022&&
-    normal(total)&&Math.abs(total)>bound)
+ if(roundedUsable&&normalTerms&&Number.isFinite(bound)&&
+    bound>=2**-1022&&normal(total)&&Math.abs(total)>bound)
   return {rounded:total,sign:Math.sign(total),method:'float64-filtered'};
  let exact={n:0n,e:0};
  for(const {a,b,coefficient} of pairs){
@@ -83,7 +98,9 @@ function productSum(pairs){
   exact=exactSum(exact,coefficient===1?e:{n:-e.n,e:e.e});
  }
  const s=exactSign(exact);
- return {rounded:total,sign:s,method:'exact-dyadic-fallback'};
+ // No finite Float64 magnitude exists when any intermediate overflows,
+ // even if the exact sum later cancels. Never leak Infinity or NaN.
+ return {rounded:roundedUsable?total:null,sign:s,method:'exact-dyadic-fallback'};
 }
 function dot(a,b){
  const dimension=a?.length;
@@ -108,7 +125,8 @@ function certifyDotSign(a,b){
  const x=vector(a,dimension),y=vector(b,dimension);
  const result=productSum(x.map((v,i)=>({a:v,b:y[i],coefficient:1})));
  return Object.freeze({...result,exactForBinary64Inputs:true,
-  signMatchesRounded:Math.sign(result.rounded)===result.sign,
+  signMatchesRounded:typeof result.rounded==='number'&&
+   Math.sign(result.rounded)===result.sign,
   officialLineStyleVerified:false,v5Ready:false});
 }
 function certifyCross3Signs(a,b){
@@ -121,7 +139,8 @@ function certifyCross3Signs(a,b){
  return Object.freeze(parts.map(pairs=>{
   const result=productSum(pairs);
   return Object.freeze({...result,exactForBinary64Inputs:true,
-   signMatchesRounded:Math.sign(result.rounded)===result.sign,
+   signMatchesRounded:typeof result.rounded==='number'&&
+   Math.sign(result.rounded)===result.sign,
    officialLineStyleVerified:false,v5Ready:false});
  }));
 }
