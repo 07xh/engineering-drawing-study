@@ -53,14 +53,14 @@ function subtract(a,b){
 }
 
 /**
- * M0 filtered product-sum: preserve fast binary64 results except if their
- * SIGN (especially zero) cannot be trusted after cancellation. Uncertain
- * signs use the existing shared exact binary64 dyadic arithmetic only for
- * the uncommon cancellation path. Reject a rounded-zero nonzero result or
- * a reversed sign; an exact zero is returned as zero.
+ * M0 OPT-IN filtered product-sum sign evidence. Existing public dot/cross3
+ * results are deliberately unchanged because specialist solvers handle their
+ * rounded coordinates with their own tolerances. The certifier uses exact
+ * binary64 dyadic arithmetic only for rare sign-uncertain cancellation,
+ * reporting an exact sign separately from the rounded Float64 value.
  *
- * This does not certify all low-order result digits or representable real
- * input coordinates prior to their binary64 rounding.
+ * The evidence is exact for represented binary64 input sign, not the
+ * magnitude or pre-rounded source values; no official V5 proof is emitted.
  */
 function productSum(pairs){
  const terms=pairs.map(({a,b,coefficient})=>
@@ -76,34 +76,54 @@ function productSum(pairs){
  const normal=x=>x===0||Math.abs(x)>=2**-1022;
  if(Number.isFinite(bound)&&bound>=2**-1022&&
     normal(total)&&Math.abs(total)>bound)
-  return total;
+  return {rounded:total,sign:Math.sign(total),method:'float64-filtered'};
  let exact={n:0n,e:0};
  for(const {a,b,coefficient} of pairs){
   const e=exactProduct(dyadic(a),dyadic(b));
   exact=exactSum(exact,coefficient===1?e:{n:-e.n,e:e.e});
  }
  const s=exactSign(exact);
- if(s===0)return 0;
- if(!total||Math.sign(total)!==s)
-  throw new RangeError('geometric product-sum cancellation lost a nonzero sign');
- return total;
+ return {rounded:total,sign:s,method:'exact-dyadic-fallback'};
 }
 function dot(a,b){
  const dimension=a?.length;
  if(dimension!==2&&dimension!==3)throw new TypeError('only 2D/3D vectors supported');
  const x=vector(a,dimension),y=vector(b,dimension);
- return productSum(x.map((v,i)=>({a:v,b:y[i],coefficient:1})));
+ return checked(x.reduce((sum,v,i)=>checked(sum+multiplyFinite(v,y[i])),0));
 }
 function cross3(a,b){
  const x=vector(a,3),y=vector(b,3);
  return [
-  productSum([{a:x[1],b:y[2],coefficient:1},
-   {a:x[2],b:y[1],coefficient:-1}]),
-  productSum([{a:x[2],b:y[0],coefficient:1},
-   {a:x[0],b:y[2],coefficient:-1}]),
-  productSum([{a:x[0],b:y[1],coefficient:1},
-   {a:x[1],b:y[0],coefficient:-1}])
+  checked(multiplyFinite(x[1],y[2])-multiplyFinite(x[2],y[1])),
+  checked(multiplyFinite(x[2],y[0])-multiplyFinite(x[0],y[2])),
+  checked(multiplyFinite(x[0],y[1])-multiplyFinite(x[1],y[0]))
  ];
+}
+// Opt-in predicate evidence: unlike a raw Float64 coordinate, these
+// signed results are exact for the represented finite binary64 inputs.
+function certifyDotSign(a,b){
+ const dimension=a?.length;
+ if(dimension!==2&&dimension!==3)
+  throw new TypeError('only 2D/3D vectors supported');
+ const x=vector(a,dimension),y=vector(b,dimension);
+ const result=productSum(x.map((v,i)=>({a:v,b:y[i],coefficient:1})));
+ return Object.freeze({...result,exactForBinary64Inputs:true,
+  signMatchesRounded:Math.sign(result.rounded)===result.sign,
+  officialLineStyleVerified:false,v5Ready:false});
+}
+function certifyCross3Signs(a,b){
+ const x=vector(a,3),y=vector(b,3);
+ const parts=[
+  [{a:x[1],b:y[2],coefficient:1},{a:x[2],b:y[1],coefficient:-1}],
+  [{a:x[2],b:y[0],coefficient:1},{a:x[0],b:y[2],coefficient:-1}],
+  [{a:x[0],b:y[1],coefficient:1},{a:x[1],b:y[0],coefficient:-1}]
+ ];
+ return Object.freeze(parts.map(pairs=>{
+  const result=productSum(pairs);
+  return Object.freeze({...result,exactForBinary64Inputs:true,
+   signMatchesRounded:Math.sign(result.rounded)===result.sign,
+   officialLineStyleVerified:false,v5Ready:false});
+ }));
 }
 function norm(a){
  const x=vector(a,a?.length);
@@ -121,4 +141,4 @@ function pointPlaneSignedDistance(point,planePoint,normal){
  const p=vector(point,3),origin=vector(planePoint,3),n=normalize(normal);
  return dot(subtract(p,origin),n);
 }
-module.exports={vector,multiplyFinite,add,scale,subtract,dot,cross3,norm,normalize,pointPlaneSignedDistance};
+module.exports={vector,multiplyFinite,add,scale,subtract,dot,cross3,certifyDotSign,certifyCross3Signs,norm,normalize,pointPlaneSignedDistance};
