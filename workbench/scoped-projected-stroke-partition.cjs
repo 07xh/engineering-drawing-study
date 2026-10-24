@@ -19,6 +19,8 @@ const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
 const {deriveReviewedProjectedVertexJoins}=
  require('./reviewed-projected-vertex-joins.cjs');
+const {recomputeReviewedProjectedEdgeEvents}=
+ require('./recomputed-projected-pairwise-events.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -66,7 +68,7 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
   return empty(revision,'not-covered');
  if(!Array.isArray(geometry)||geometry.length<1||geometry.length>12)
   return empty(revision,'not-covered');
- const solids=[],edges=new Map();
+ const solids=[],edges=new Map(),edgeInput=[];
  for(const g of geometry){
   const solid=verifiedConvexMeshHalfspaces(g);
   solids.push({id:g.id,halfspaces:solid.halfspaces});
@@ -76,6 +78,9 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    edges.set(key,{id:key,ownerId:g.id,
     from:g.data.points[a],to:g.data.points[b],
     fromVertexKey:g.id+'::'+a,toVertexKey:g.id+'::'+b});
+   edgeInput.push({sourceGeometryId:g.id,sourceEdgeId:key,
+    edge:{id:'ReviewedEdge_'+(edgeInput.length+1),
+     from:g.data.points[a],to:g.data.points[b]}});
   }
  }
  if(edges.size>40)return empty(revision,'budget-exceeded');
@@ -146,7 +151,11 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
      q.completeOcclusionVerified!==false)
    fail('tampered source/occluder/interval proof');
  }
- const overlap=sceneDepthEvidence.edgeOverlapAudit.events;
+ const canonicalPairs=recomputeReviewedProjectedEdgeEvents(edgeInput);
+ if(JSON.stringify(sceneDepthEvidence.edgeOverlapAudit)!==
+     JSON.stringify(canonicalPairs))
+  fail('forged or stale projected crossing/overlap event proof');
+ const overlap=canonicalPairs.events;
  if(!Array.isArray(overlap)||overlap.length>6000)fail('bounded edge events required');
  const positions=new Map();
  for(const e of edges.values())for(const view of VIEWS)
