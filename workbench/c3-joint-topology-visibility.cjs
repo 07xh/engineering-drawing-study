@@ -37,14 +37,24 @@ function buildTransitionGuards(intervals,junctionGuards,input){
    }
   }
   for(const j of junctionGuards){
+   const incident=intervals.filter(i=>i.view===view&&
+    j.incidentBranchIds.includes(i.branchId));
+   const branchCoverage=j.incidentBranchIds.every(id=>
+    incident.some(i=>i.branchId===id));
+   const incidentOpenStatuses=[...new Set(incident.map(i=>i.openInteriorStatus))];
+   const projectionOverlapUndetermined=true;
    result.push({view,junctionId:j.junctionId,
+    incidentBranchesCoveredInView:branchCoverage,
+    incidentOpenStatuses,projectionOverlapUndetermined,
     finiteCylinderRayCandidates:auditC3TransitionRays({input,point:j.point3D,view}),
     incidentBranchIds:[...j.incidentBranchIds],
     localC1JoinVerified:j.localC1JoinVerified,
     endpointRayContinuityVerified:false,
     occlusionSwitchPointVerified:false,
     standardLineStyle:'undetermined',v5ActionAuthorized:false,
-    blockers:[...j.blockers]});
+    blockers:[...j.blockers,
+     'projected-coincidence-and-other-feature-overlap-not-proven',
+     ...(branchCoverage?[]:['incident-branch-view-coverage-missing'])]});
   }
  }
  return result;
