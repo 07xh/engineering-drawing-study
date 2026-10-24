@@ -11,9 +11,10 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const plain=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const point=p=>plain(p)&&['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
 const copy=p=>({x:p.x,y:p.y,z:p.z});
-const minus=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-const length=v=>Math.hypot(v.x,v.y,v.z);
+// The consumer keeps its bounded model-mm and degeneracy checks; arithmetic
+// delegates to the one M0 Euclidean kernel through a shape-only 3D adapter.
+const {subtractObject3:minus,dotObject3:dot,normObject3:length}=
+ require('../../../core/numeric/object-vector3.cjs');
 const at=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 const E=1e-8;
 function normalizePlane(plane){
