@@ -75,7 +75,8 @@ test('strict anti-forgery: stale revision, altered ray partitions or fake union/
  assert.throws(()=>prove({geometry,sceneDepthEvidence:scene,revision:65}),/not-covered|revision/);
  const e={...scene,projectedStrokePartitions:{...scene.projectedStrokePartitions,
   segments:scene.projectedStrokePartitions.segments.map((s,i)=>
-   i===0?{...s,openInteriorVisibility:'visible'}:s)}};
+   i===0?{...s,openInteriorVisibility:
+    s.openInteriorVisibility==='visible'?'hidden':'visible'}:s)}};
  assert.throws(()=>prove({geometry,sceneDepthEvidence:e,revision}),/source visibility|segment/);
  const fake={...scene,projectedUnionOutlines:{...scene.projectedUnionOutlines,
   segments:scene.projectedUnionOutlines.segments.map((s,i)=>
