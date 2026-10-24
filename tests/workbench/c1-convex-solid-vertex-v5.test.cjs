@@ -100,7 +100,7 @@ test('C1 incomplete mesh, falsified source pair, wrong unit and missing confirma
   /confirmed/);
  const bad=given(cuboid());bad.vertices[0].knownViews.W=[15,10];
  assert.throws(()=>compileReviewedSolidVertexV5({input:bad,sheetTransform}),
-  /same source views/);
+  /same source views|exactly one of VH, VW, HW/);
  const badSheet={origin:{x:0,y:0},scale:Infinity};
  assert.throws(()=>compileReviewedSolidVertexV5({
   input:given(cuboid()),sheetTransform:badSheet}),/finite shared V5/);
