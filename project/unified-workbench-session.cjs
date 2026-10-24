@@ -196,9 +196,16 @@ function createUnifiedProjectSession(){
     const scene=deriveGeometryScene({
       geometry:[prismMesh(input),perimeter],
       revision:latest.revision,resultId:'PrismEvidence'});
+    // This uses the SAME V5 timeline/player as verified planar work, but
+    // a scoped section preview is never a full SolveResult or export grant.
+    const plan=evidence.sectionConstructionPreview;
+    if(plan?.status!=='preview-only'||plan.revision!==latest.revision||
+       plan.canPromoteToVerifiedResult!==false||!plan.timing||!plan.givens?.length)
+      throw new Error('空间求交步骤尚未通过共用 M3→V5 投影一致性审核');
+    clock=Timeline.createPlayer(plan.timing,{revision:latest.revision});
     current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
       verified:false,status:'geometry-only',evidence,scene,
-      links:projectSelectionLinks(scene),plan:null,clock:null});
+      links:projectSelectionLinks(scene),plan,clock});
     emit();return current;
    }
    const point=verifiedPointFromInputs(latest);
