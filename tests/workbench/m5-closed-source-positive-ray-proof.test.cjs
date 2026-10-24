@@ -72,7 +72,10 @@ test('source touching/near coincident projected joints are not assumed unique po
 test('strict anti-forgery: stale revision, altered ray partitions or fake union/outlines block positive line certificates',()=>{
  const geometry=[rear],revision=64,
   scene=evaluateReviewedConvexMeshDepth({geometry,revision});
- assert.throws(()=>prove({geometry,sceneDepthEvidence:scene,revision:65}),/not-covered|revision/);
+ const stale=prove({geometry,sceneDepthEvidence:scene,revision:65});
+ assert.equal(stale.status,'not-covered');
+ assert.equal(stale.certifiedClosedVisibleCount,0);
+ assert.equal(stale.v5Ready,false);
  const e={...scene,projectedStrokePartitions:{...scene.projectedStrokePartitions,
   segments:scene.projectedStrokePartitions.segments.map((s,i)=>
    i===0?{...s,openInteriorVisibility:
