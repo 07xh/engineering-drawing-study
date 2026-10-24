@@ -21,6 +21,9 @@ const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
 const id=s=>typeof s==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(s);
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
+const {certifyDotSign}=require('./euclidean-kernel.cjs');
+const exactSign=(a,b)=>certifyDotSign(
+ [a.x,a.y,a.z],[b.x,b.y,b.z]).sign;
 const at=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 const result=(sourceId,solidId,status,reason)=>Object.freeze({
@@ -81,9 +84,14 @@ function certifyConvexSegmentClearance({
  for(const f of faces){
   const slope=dot(f.n,d);
   const x0=dot(f.n,p)-f.offset,x1=dot(f.n,q)-f.offset;
-  if(slope>angularTolerance&&x0>=0&&x1>=0)
+  // A rounded zero may conceal an EXACT negative represented-binary64
+  // normal·observer slope: the ray can approach this outward plane later.
+  // Neither a common-support clearance nor a beta=0 elimination constraint
+  // may be signed without checking the actual direction.
+  const sign=exactSign(f.n,d);
+  if(slope>angularTolerance&&sign>0&&x0>=0&&x1>=0)
    return result(source.id,solid.id,'certified-clear','full-interval-outward-support');
-  if(slope>=0&&x0>=clearanceMarginMm&&x1>=clearanceMarginMm)
+  if(slope>=0&&sign>=0&&x0>=clearanceMarginMm&&x1>=clearanceMarginMm)
    return result(source.id,solid.id,'certified-clear','full-interval-exterior-support');
  }
  const lower=[{a:0,b:0}],upper=[],conditions=[];
@@ -95,6 +103,11 @@ function certifyConvexSegmentClearance({
   if(![alpha,beta,gamma].every(finite))
    throw new RangeError('nonfinite clipping inequality');
   if(beta===0){
+   // Only EXACT mathematical parallelism permits eliminating the depth
+   // variable from this plane. A false-zero beta is not a proof.
+   if(exactSign(f.n,d)!==0)
+    return result(source.id,solid.id,'undetermined',
+     'rounded-zero-near-parallel-support');
    conditions.push({a:alpha,b:-gamma});
   }else if(Math.abs(beta)<=angularTolerance){
    return result(source.id,solid.id,'undetermined','nearly-parallel-support');
