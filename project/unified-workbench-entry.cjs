@@ -116,6 +116,39 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    $('v7-c-direction').value=d.direction;
   }
  }
+
+ function refreshRelations(snapshot){
+  if(snapshot.task!=='composition')return;
+  const current=$('v7-r-list'),chosen=current.value;
+  const a=$('v7-r-a'),b=$('v7-r-b'),oldA=a.value,oldB=b.value;
+  for(const selector of [a,b]){
+   selector.replaceChildren();
+   const placeholder=document.createElement('option');placeholder.value='';
+   placeholder.textContent='选择已录入对象';selector.append(placeholder);
+   for(const obj of snapshot.objects){
+    const option=document.createElement('option');option.value=obj.id;
+    option.textContent=obj.id+' · '+obj.kind;selector.append(option);
+   }
+  }
+  a.value=snapshot.objects.some(x=>x.id===oldA)?oldA:'';
+  b.value=snapshot.objects.some(x=>x.id===oldB)?oldB:'';
+  current.replaceChildren();
+  const blank=document.createElement('option');blank.value='';
+  blank.textContent='新关系';current.append(blank);
+  for(const rel of snapshot.relations||[]){
+   const option=document.createElement('option');option.value=rel.id;
+   option.textContent=(rel.confirmed?'✓ ':'○ ')+rel.id+' · '+rel.kind;
+   current.append(option);
+  }
+  current.value=(snapshot.relations||[]).some(x=>x.id===chosen)?chosen:'';
+  const approved=(snapshot.relations||[]).filter(r=>r.confirmed).length;
+  const evidence=preview()?.relationEvidence;
+  $('v7-r-status').textContent='关系 '+(snapshot.relations||[]).length+
+   ' 个，已确认 '+approved+' 个。'+(evidence?
+    ' 输入几何残差：'+evidence.status+'，已核查 '+evidence.checkedCount+
+    ' 条。此处不构成未知量解答。':'需要确认后重新显示场景，才会计算残差。');
+ }
+
  function refreshComposition(){
   const snapshot=coordinator?.snapshot();if(!snapshot||snapshot.task!=='composition')return;
   const select=$('v7-c-objects'),chosen=select.value;
@@ -130,6 +163,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   }
   select.value=snapshot.objects.some(o=>o.id===chosen)?chosen:'';
   const approved=snapshot.conditions.filter(c=>c.confirmed).length;
+  refreshRelations(snapshot);
   $('v7-c-status').textContent='对象 '+snapshot.objects.length+
     ' 个，已确认 '+approved+' 个。未确认的对象不会出现在场景预览。';
  }
@@ -599,7 +633,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
      partial.kind==='composition-evidence'?
-      '仅确认了手工输入的几何对象并验证其基本数学格式；不是 M3 独立求解，不具备 ConstructionIntent/V5 动画或可见性证明。':
+      '已确认几何的 M2 关系一致性：'+partial.relationEvidence.status+
+       '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
      '限定证据：M3 已独立核验截交多边形顶点与有序直边；下方是同源长方体及截交边的 V/H/W、三维线框。遮挡、完整切后实体与 V5 均未证明，不可播放。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
@@ -803,6 +838,54 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   msg('题型已切换；原图保留，旧数学条件、分支和动画全部失效。');
  }));
 
+
+ $('v7-r-list').addEventListener('change',()=>{
+  const id=$('v7-r-list').value;
+  const row=coordinator?.snapshot().relations?.find(r=>r.id===id);
+  if(!row)return;
+  $('v7-r-id').value=row.id;$('v7-r-kind').value=row.kind;
+  $('v7-r-a').value=row.objectIds[0];$('v7-r-b').value=row.objectIds[1];
+  if(row.kind==='distance')$('v7-r-distance').value=String(row.value);
+ });
+ $('v7-r-kind').addEventListener('change',()=>{
+  $('v7-r-distance').disabled=$('v7-r-kind').value!=='distance';
+ });
+ $('v7-r-stage').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')throw Error('当前不是多对象项目');
+  const id=$('v7-r-id').value.trim(),kind=$('v7-r-kind').value;
+  const a=$('v7-r-a').value,b=$('v7-r-b').value;
+  const chosen=$('v7-r-list').value;
+  if(chosen&&chosen!==id)throw Error('关系改名需删除旧关系后创建新 ID');
+  coordinator.putRelation({id,kind,objectIds:[a,b],
+    value:kind==='distance'?numberFrom('v7-r-distance'):null});
+  $('v7-r-list').value=id;refreshRelations(coordinator.snapshot());
+  msg('跨对象关系 '+id+' 已提交待确认；旧场景数学证据失效。');
+ }));
+ $('v7-r-confirm').addEventListener('click',()=>call(async()=>{
+  const id=$('v7-r-list').value||$('v7-r-id').value.trim();
+  coordinator.confirmRelation(id);
+  msg('关系 '+id+' 已人工确认，重新显示场景以检查残差；未取得 V5 证明。');
+ }));
+ $('v7-r-remove').addEventListener('click',()=>call(async()=>{
+  const id=$('v7-r-list').value;
+  if(!id)throw Error('请先选择要删除的关系');
+  coordinator.deleteRelation(id);
+  $('v7-r-list').value='';
+  msg('关系已删除，原有关系残差结论失效。');
+ }));
+ for(const id of ['v7-r-id','v7-r-a','v7-r-b','v7-r-distance']){
+  $(''+id).addEventListener('input',()=>{
+   const snap=coordinator?.snapshot();
+   if(snap?.task!=='composition')return;
+   const selected=$('v7-r-list').value;
+   if(selected&&(snap.relations||[]).some(r=>r.id===selected&&r.confirmed)){
+    coordinator.deleteRelation(selected);
+    $('v7-r-list').value='';
+    msg('修改了关系输入，原有已确认残差结论失效；请重新提交。');
+   }
+  });
+ }
+
  $('v7-c-new').addEventListener('click',()=>{
   $('v7-c-objects').value='';
   $('v7-c-id').value='Object'+String((coordinator?.snapshot().objects.length||0)+1);
@@ -849,7 +932,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(result.kind!=='composition-evidence'||result.verified!==false||
       result.clock!==null||coordinator.canExport())
    throw Error('手工几何被错误授予解题证明资格');
-  msg('已显示 '+result.scene.objects.length+' 个已确认几何对象；未运行专业 M3，V5 禁用。');
+  msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系残差：'+
+   result.relationEvidence.status+'（'+result.relationEvidence.checkedCount+
+   ' 条）。未求未知量，V5 禁用。');
  }));
  for(const id of compositionFields)
   for(const event of ['input','change'])$(id).addEventListener(event,()=>{
