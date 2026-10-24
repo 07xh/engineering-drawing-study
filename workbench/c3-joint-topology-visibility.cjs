@@ -31,6 +31,10 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      right.physicalGraphBranchAccountedFor===true;
     const contiguousSourceParameterBoundaryVerified=
      left.xOpenRange[1]===right.xOpenRange[0];
+    const analyticTransitionPoint=analyticC3PointAt(
+     sourceBranches.get(branchId),input,left.xOpenRange[1]);
+    const transitionRayEvidence=analyticTransitionPoint?
+     auditC3TransitionRays({input,point:analyticTransitionPoint,view}):null;
     const same=left.openInteriorStatus===right.openInteriorStatus&&
       left.openInteriorStatus!=='undetermined';
     result.push({view,branchId,transitionX:left.xOpenRange[1],
@@ -38,6 +42,8 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      equalCertifiedOpenStatuses:same,
      analyticBranchIdentityVerified,
      contiguousSourceParameterBoundaryVerified,
+     analyticTransitionPoint,
+     transitionRayEvidence,
      endpointRayContinuityVerified:false,
      occlusionSwitchPointVerified:false,
      standardLineStyle:'undetermined',v5ActionAuthorized:false,
@@ -168,7 +174,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
-   topology.projectedCoincidences),
+   topology.projectedCoincidences,m3.branches),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
