@@ -79,8 +79,23 @@ function auditC3TransitionRays({input,point,view}={}){
  const dir=FIRST_ANGLE_OBSERVER_RAYS[view];
  const z=rayCylinder(point,dir,input.zCylinder,'z');
  const y=rayCylinder(point,dir,input.yCylinder,'y');
+ const combined=[...z.interiorOpenIntervals.map(range=>({solid:'zCylinder',range})),
+  ...y.interiorOpenIntervals.map(range=>({solid:'yCylinder',range}))]
+  .sort((a,b)=>a.range[0]-b.range[0]||a.range[1]-b.range[1]);
+ const positiveInteriorOcclusionVerified=combined.length>0&&
+  !z.generatorCoincidence&&!y.generatorCoincidence;
+ const originAmbiguous=z.originOnBoundary||y.originOnBoundary;
+ const grazingOrTie=z.tangent||y.tangent||z.generatorCoincidence||
+  y.generatorCoincidence||originAmbiguous;
+ const endpointVisibilityStatus=grazingOrTie?
+  'undetermined-tangent-generator-or-depth-tie':
+  positiveInteriorOcclusionVerified?'certified-forward-interior-occlusion':
+  'no-positive-interior-found-not-full-feature-clearance';
  return freeze({schema:'draftai-c3-transition-ray-candidates/1',view,point:{...point},
-  zCylinder:z,yCylinder:y,
+  zCylinder:z,yCylinder:y,combinedForwardInteriorIntervals:combined,
+  positiveInteriorOcclusionVerified,
+  endpointVisibilityStatus,
+  ambiguousBoundaryOrDepthTie:grazingOrTie,
   fullFiniteVolumeVisibilityVerified:false,
   depthTieResolved:false,officialLineStyle:'undetermined',v5Authorized:false});
 }
