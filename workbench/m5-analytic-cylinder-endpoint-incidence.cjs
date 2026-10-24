@@ -107,6 +107,42 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
     eligibleRadicalCoalescenceCandidate:expectedCoalescence&&!cap,
     globalSmoothBranchContinuationVerified:false});
   }
+  // Implicit-function theorem for a REGULAR lateral/lateral radial
+  // turn, independent of branch-name coincidence:
+  // F=(x-Xz)^2+(y-Yz)^2-Rz², G=(x-Xy)^2+(z-Zy)^2-Ry².
+  // If F has a signed-radical turn (y=Yz) and G has nonzero z
+  // derivative, gradients are independent; local curve is C1 with
+  // tangent along +y/-y. The dual case has tangent along z.
+  // Both simultaneous radical turns, cap terminals, depth ties, and
+  // third-branch coincidence remain UNSIGNED.
+  const regularPair=incidents.length===2&&pairs.length===1?
+   pairs[0]:null;
+  const a=incidents[0],b=incidents[1];
+  const yTurn=a?.sourceRadicalCoalescence.y===true&&
+   b?.sourceRadicalCoalescence.y===true;
+  const zTurn=a?.sourceRadicalCoalescence.z===true&&
+   b?.sourceRadicalCoalescence.z===true;
+  const cap=incidents.some(e=>
+   e.finiteCapEndpoint.yCylinder||e.finiteCapEndpoint.zCylinder);
+  const ry=(Z.radius-Math.abs(row.point3D.x-Z.xCenter))*
+    (Z.radius+Math.abs(row.point3D.x-Z.xCenter));
+  const rz=(Y.radius-Math.abs(row.point3D.x-Y.xCenter))*
+    (Y.radius+Math.abs(row.point3D.x-Y.xCenter));
+  const regularY=!!(regularPair?.eligibleRadicalCoalescenceCandidate&&
+   !cap&&yTurn&&!zTurn&&a.signY!==b.signY&&a.signZ===b.signZ&&
+   rz>tol*tol&&Math.abs(row.point3D.z-Y.zCenter)>tol);
+  const regularZ=!!(regularPair?.eligibleRadicalCoalescenceCandidate&&
+   !cap&&zTurn&&!yTurn&&a.signZ!==b.signZ&&a.signY===b.signY&&
+   ry>tol*tol&&Math.abs(row.point3D.y-Z.yCenter)>tol);
+  const regular=regularY||regularZ;
+  const tangent=regularY?{x:0,y:1,z:0}:regularZ?{x:0,y:0,z:1}:null;
+  const tangentProjection=tangent?Object.fromEntries(VIEWS.map(view=>{
+   const o=project({x:0,y:0,z:0})[view],t=project(tangent)[view];
+   const direction={u:t.u-o.u,v:t.v-o.v};
+   return [view,{direction,
+    tangentProjectionCollapsed:Math.hypot(direction.u,direction.v)<=1e-12,
+    exactTangentSource:'independent-implicit-gradient-cross-product'}];
+  })):null;
   const standalone=incidents.length===1;
   return {id:row.id,point3D:{...row.point3D},
    endpointIds:incidents.map(x=>x.id),
@@ -116,9 +152,15 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
    finiteCapTermination:incidents.some(x=>
     x.finiteCapEndpoint.yCylinder||x.finiteCapEndpoint.zCylinder),
    classification:standalone?'single-branch-terminal':
+    regular?'regular-implicit-C1-radical-join':
     pairs.some(x=>x.eligibleRadicalCoalescenceCandidate)?
     'analytic-signed-radical-coalescence-candidate':
     'multi-branch-topology-undetermined',
+   regularLocalTangentVerified:regular,
+   tangent3D:tangent,projectedTangentWitnesses:tangentProjection,
+   implicitGradientRankTwoVerified:regular,
+   localC1ContinuationWithinLateralLateralScopeVerified:regular,
+   finiteCapAndOtherSheetContinuationVerified:false,
    completeSpatialCurveConnectivityVerified:false,
    projected3DVisibilityVerified:false,
    standardLineStylesVerified:false,v5CurveActionSignedOff:false};
@@ -142,6 +184,10 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
   endpoints,junctions,projectedCoincidences,
   verified3DJunctionCount:junctions.filter(j=>
    j.physicalPointIdentityVerified).length,
+  regularLocalC1JoinCount:junctions.filter(j=>
+   j.localC1ContinuationWithinLateralLateralScopeVerified).length,
+  unresolvedAnalyticJunctionCount:junctions.filter(j=>
+   j.incidentBranchIds.length>1&&!j.regularLocalTangentVerified).length,
   pairedSignedRadicalCount:junctions.reduce((n,j)=>n+
    j.pairedRadicalCandidates.filter(p=>p.eligibleRadicalCoalescenceCandidate).length,0),
   distinct3DProjectedCoincidenceCount:projectedCoincidences.filter(p=>
