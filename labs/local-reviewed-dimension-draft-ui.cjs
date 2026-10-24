@@ -14,6 +14,40 @@ const {solveFiniteFillet}=
  require('../engines/constraints-2d/finite-fillet-gate.cjs');
 const {formFields}=require('./local-vector-svg-import.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
+/**
+ * Equality of TWO separately executed model-mm consumer results.
+ * This is a fail-closed source-parity check, NOT photo authentication,
+ * independent scale proof, branch proof, or authorization for V5.
+ */
+function matchesReviewedMetricInput({isolation,problem,segmentId,circleId}={}){
+ try{
+  if(isolation?.status!=='reviewed-conditions-isolated'||
+     isolation.m0MetricFrameStatus!=='user-reviewed-provisional'||
+     !isolation.solverInput||!Array.isArray(isolation.solverInput.conditions)||
+     problem?.kind!=='segment-circle'||problem.unit!=='mm'||
+     problem.revision!==isolation.solverInput.sourceRevision||
+     typeof segmentId!=='string'||typeof circleId!=='string'||
+     !segmentId||!circleId||segmentId===circleId)
+   return false;
+  const conditions=isolation.solverInput.conditions;
+  const segments=conditions.filter(c=>c.id===segmentId&&c.unit==='mm'&&
+   c.geometry?.type==='line');
+  const circles=conditions.filter(c=>c.id===circleId&&c.unit==='mm'&&
+   c.geometry?.type==='circle');
+  if(segments.length!==1||circles.length!==1)return false;
+  const segment=segments[0].geometry,circle=circles[0].geometry,
+   source=problem.geometry;
+  const same=(point,pair)=>!!point&&Array.isArray(pair)&&pair.length===2&&
+   finite(point.x)&&finite(point.y)&&finite(pair[0])&&finite(pair[1])&&
+   point.x===pair[0]&&point.y===pair[1];
+  return !!source&&
+   same(source.segment?.a,segment.start)&&
+   same(source.segment?.b,segment.end)&&
+   same(source.circle?.center,circle.center)&&
+   finite(source.circle?.radius)&&finite(circle.radius)&&
+   source.circle.radius>0&&source.circle.radius===circle.radius;
+ }catch{return false;}
+}
 function attachReviewedDimensionDraftUi({
  controls,getDraft,getGeneration,getReviewForDraft,onPrepared,dom=document
 }={}){
@@ -198,21 +232,35 @@ function attachReviewedDimensionDraftUi({
    filletRadiusMm:positive(C.targetRadius,'连接 R'),
    options:{side:Number(C.side.value)}
   });
+  const sourceSegmentId=C.segment.value,sourceCircleId=accepted.sourceTargetId;
+  if(!matchesReviewedMetricInput({
+   isolation,problem:doc.problem,segmentId:sourceSegmentId,circleId:sourceCircleId
+  }))
+   throw new RangeError('M0 经审核像素毫米输入与现有 M3 模型数据不一致');
   const analytic=solveFiniteFillet(doc.problem);
   if(!['unique','multiple'].includes(analytic.status)||
      !analytic.candidates.length)
    throw new RangeError('现有 M3 没有离散已验证可用解：'+analytic.status);
-  prepared={...doc,isolationSourceBinding:isolation.sourceBinding,isolationInputHash:isolation.solverInputHash};solution=analytic;
+  prepared={...doc,isolationSourceBinding:isolation.sourceBinding,
+   isolationInputHash:isolation.solverInputHash,
+   sourceSegmentId,sourceCircleId};solution=analytic;
   lastPrepared=doc;lastM3=analytic;C.apply.disabled=false;
   C.m3Status.textContent='已用原有 M3 解析求解器得到 '+analytic.candidateCount+
    ' 个经过有限几何检查的候选解，状态 '+analytic.status+
    '。未自动选择任一分支，尚未通过 G1 与 V5 逐笔作图最终验收。';
  }
  function apply(){
+  const currentIsolation=isolateReviewedDraft(accepted,{
+   expectedRevision:accepted?.draft?.revision,currentDraft:accepted?.draft
+  });
   if(!freshness()||!prepared||!solution||
-    isolateReviewedDraft(accepted,{expectedRevision:accepted?.draft?.revision,currentDraft:accepted?.draft}).sourceBinding!==prepared.isolationSourceBinding||
-    !['unique','multiple'].includes(solution.status))
-   throw new RangeError('当前来源未通过现有 M3 求解或已变化');
+     currentIsolation.sourceBinding!==prepared.isolationSourceBinding||
+     currentIsolation.solverInputHash!==prepared.isolationInputHash||
+     !matchesReviewedMetricInput({isolation:currentIsolation,
+      problem:prepared.problem,segmentId:prepared.sourceSegmentId,
+      circleId:prepared.sourceCircleId})||
+     !['unique','multiple'].includes(solution.status))
+   throw new RangeError('当前来源未通过现有 M0→M3 数学一致性检查或已变化');
   const fields=formFields({problem:prepared.problem});
   onPrepared({fields,problem:prepared.problem,
    candidateCount:solution.candidateCount,status:solution.status,
@@ -267,4 +315,4 @@ function attachReviewedDimensionDraftUi({
   get m3Status(){return solution?.status??'not-executed'}
  });
 }
-module.exports={attachReviewedDimensionDraftUi};
+module.exports={attachReviewedDimensionDraftUi,matchesReviewedMetricInput};

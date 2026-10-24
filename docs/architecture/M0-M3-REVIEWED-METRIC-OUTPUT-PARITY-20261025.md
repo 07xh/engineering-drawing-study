@@ -1,0 +1,9 @@
+# Native 08→M0→M3 reviewed source parity preflight
+
+Already merged PR #685 integrates the actual two-reviewed-ruler photo-isolation UI consumer with M0 `reviewed-pixel-frame.cjs`; historical `prepareConfirmedFillet` still computes typed mm coordinates for SVG and other eligible user-reviewed sources. This change ensures the **public photo UI never uses two disagreeing copies of model-mm input**.
+
+A deliberately tiny, non-solver `matchesReviewedMetricInput` helper checks that the M0-isolated current sourceRevision/explicit mm conditions match the existing typed `segment-circle` M3 input exactly for the selected segment endpoints, circle center, radius, model-mm unit, source identities, and revision. This is an equality check of TWO independently executed consumer conversions, **not** an authority oracle or geometry proof; it never reads reference answers or invents new M3/V5 geometry. It runs BEFORE `solveFiniteFillet`, and is checked again with the current source binding and solver input digest BEFORE copying generated conditions to the final UI. Any drift blocks the action.
+
+Existing real photo UI acceptance `tests/ui/photo-dimension-m3-gate.test.cjs` remains the positive in-browser consumer. New math regression independently rejects tampered coordinates/offsets, shifted radius, stale revision, swapped IDs, wrong px unit, duplicate/missing conditions, nonfinite inputs and fake proof flags; also verifies this boundary is actually called before solver and final form apply.
+
+Even exact agreement can occur under a jointly mistaken scale: neither M0 nor this comparator proves actual photo bytes, perspective correction, global uniformity, blind original exercise accuracy, V5 stroke style or full scene visibility. Existing two-ruler confirmed/answer-isolation gates still apply. A single squash/revert can roll this back. All five latest-HEAD CI + four workbench shards / original aggregate and GitHub mergeable required.
