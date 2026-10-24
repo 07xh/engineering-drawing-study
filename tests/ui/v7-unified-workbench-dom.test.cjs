@@ -170,6 +170,26 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
    'turning off guides does not erase known result segments');
   $('v7-guides').checked=true;
   $('v7-guides').dispatchEvent(new window.Event('change',{bubbles:true}));
+  // A real retained-side choice is a new reviewed mathematical input, not
+  // permission to promote entire V5 result strokes to proven hidden lines.
+  $('v7-p-kept').value='negative';
+  $('v7-p-kept').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/,
+   'changing kept material revokes previous scoped section result');
+  assert.equal($('v7-play').disabled,true);
+  click('v7-stage-other');await tick();await tick();
+  click('v7-confirm-other');await tick();await tick();
+  click('v7-solve-other');await tick();await tick();
+  assert.match($('v7-proof').textContent,/局部截交边开区间射线判断/);
+  $('v7-seek').value='1000';
+  $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));
+  const lines=$('v7-sheet').querySelectorAll(
+   '[data-geometry-id="Section1"][data-open-interior-visibility]');
+  assert.ok(lines.length>=9,'all V/H/W result actions retain scoped ray evidence');
+  assert.ok([...lines].every(el=>el.getAttribute('data-visibility')==='undetermined'),
+   'open-edge ray proof NEVER promotes whole-stroke styles');
+  assert.equal($('v7-play').disabled,false);
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';

@@ -135,6 +135,14 @@ function homeHTML(){return `
      <label>法向 y <input id="v7-p-ny" type="number" step="any" value="1"></label>
      <label>法向 z <input id="v7-p-nz" type="number" step="any" value="1"></label>
     </div>
+    <label>截切后保留材料侧（必须人工确认）
+     <select id="v7-p-kept" aria-label="截平面保留材料侧">
+      <option value="unreviewed">未确认：虚实线全部不确定</option>
+      <option value="positive">保留平面法向正侧</option>
+      <option value="negative">保留平面法向负侧</option>
+     </select>
+    </label>
+    <p class="v7-warning">保留侧仅用于已有长方体截交边开区间射线证明，不证明端点、整条虚实线或完整切后实体。</p>
    </fieldset>
 
    <fieldset data-v7-task="composition" hidden>
