@@ -206,9 +206,10 @@
       "regressionTests": [
         "tests/math/m0-reviewed-pixel-frame.test.cjs",
         "tests/math/m0-batch-a-reviewed-pixel-m1-topology.test.cjs",
-        "tests/math/m0-native-reviewed-photo-metric-consumer.test.cjs"
+        "tests/math/m0-native-reviewed-photo-metric-consumer.test.cjs",
+        "tests/math/m0-native-source-route-audit.test.cjs"
       ],
-      "remainingGate": "external original-photo byte/source identity and revision authentication, perspective and global uniformity; native UI two-reviewed-ruler M3 boundary now consumes shared M0 pixel frame provisionally"
+      "remainingGate": "native local original-file SHA-256, attachment epoch, draft revision and pixel-mm gate are now present and route-audited; external original-textbook source provenance, perspective/dewarping and global scale uniformity are NOT proved"
     },
     {
       "path": "core/numeric/trivial-recession-cone.cjs",
@@ -220,6 +221,47 @@
         "tests/math/m0-recession-face-source-stability.test.cjs"
       ],
       "remainingGate": "nonempty solid, source vertex completeness"
+    }
+  ],
+  "nativeRuntimeRoutes": [
+    {
+      "name": "photo-original-bytes-to-live-m3",
+      "chain": [
+        "recognition/local-photo-fingerprint.cjs",
+        "labs/local-photo-byte-session.cjs",
+        "labs/auto-fillet-live-entry.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-live-photo-byte-source-m3-consumer.test.cjs",
+        "tests/ui/photo-dimension-m3-gate.test.cjs"
+      ]
+    },
+    {
+      "name": "native-reviewed-pixel-mm-to-real-m3-entry",
+      "chain": [
+        "core/numeric/reviewed-pixel-frame.cjs",
+        "workbench/reviewed-draft-m3-isolation.cjs",
+        "labs/local-reviewed-dimension-draft-ui.cjs",
+        "labs/auto-fillet-live-entry.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-native-reviewed-photo-metric-consumer.test.cjs",
+        "tests/math/m0-native-photo-m3-metric-parity.test.cjs",
+        "tests/ui/photo-dimension-m3-gate.test.cjs"
+      ]
+    },
+    {
+      "name": "photo-bytes-to-rehashable-private-evidence",
+      "chain": [
+        "recognition/local-photo-fingerprint.cjs",
+        "benchmark/private-photo-byte-review-binding.cjs",
+        "labs/private-photo-exercise-export.cjs",
+        "labs/auto-fillet-live-entry.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-private-photo-byte-review-binding.test.cjs",
+        "tests/ui/private-original-photo-dossier.test.cjs"
+      ]
     }
   ]
 }
