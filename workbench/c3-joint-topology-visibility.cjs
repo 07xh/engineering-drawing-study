@@ -9,6 +9,7 @@ const {auditFiniteCylinderEndpointIncidence}=require('./m5-analytic-cylinder-end
 const {auditFiniteCylinderWRayIntervals}=require('./m5-finite-cylinder-w-ray-intervals.cjs');
 const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
+const {auditC3WCriticalRays}=require('./c3-w-critical-ray-theorem.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -22,7 +23,7 @@ function analyticC3PointAt(branch,input,x){
   z:Y.zCenter+branch.signZ*Math.sqrt(zr)};
  return Object.values(point).every(Number.isFinite)?point:null;
 }
-function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences,branches){
+function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences,branches,revision){
  const sourceBranches=new Map(branches.map(b=>[b.id,b]));
  const result=[];
  for(const view of ['V','H','W']){
@@ -115,7 +116,17 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      ...(branchCoverage?[]:['incident-branch-view-coverage-missing'])]});
   }
  }
- return result;
+ // Resolve EXACT analytic W critical rays independently against CURRENT M3,
+ // rather than assuming that left/right sampled rays prove the switch point.
+ // These additional ray results still cannot sign any drawing line or V5.
+ const requests=result.filter(g=>g.view==='W'&&
+  Number.isFinite(g.transitionX)&&typeof g.branchId==='string')
+  .map(g=>({branchId:g.branchId,x:g.transitionX}));
+ const critical=auditC3WCriticalRays({input,revision,criticalPoints:requests});
+ const proofByKey=new Map(critical.points.map(p=>[p.branchId+'|'+p.x,p]));
+ return result.map(g=>g.view==='W'&&Number.isFinite(g.transitionX)?
+  {...g,criticalPointWRayProof:proofByKey.get(g.branchId+'|'+g.transitionX)||null}:
+  g);
 }
 function auditC3JointTopologyVisibility({input,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
@@ -211,7 +222,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
-   topology.projectedCoincidences,m3.branches),
+   topology.projectedCoincidences,m3.branches,revision),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
