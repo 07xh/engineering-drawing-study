@@ -284,7 +284,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.physicalOriginalGeneratedJunctionCount||0)+
     ' 组，通过局部多来源占据核对的接合候选 '+
     (evidence.physicalCrossSourceJunctionCandidateCount||0)+
-    ' 组。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 组。新生线的 M4 投影端点与真实三维节点对应 '+
+    (evidence.generated3DProjectedMatchedEndpointCount||0)+
+    ' 项；纸面坐标相同但三维深度不同的端点 '+
+    (evidence.generated3DProjectedDepthAliasEndpointCount||0)+
+    ' 项。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
