@@ -22,7 +22,7 @@ test('actual public C3 page exposes reviewed geometry, first-angle math and one 
   assert.ok(html.includes('id="'+id+'"'),id);
  }
  assert.match(html,/<button[^>]*id="play"[^>]*disabled/);
- assert.match(html,/不是.*经过正式虚实线认证/);
+ assert.match(html,/没有获得正式工程实虚线资格/);
  assert.match(html,/紫色点划曲线/);
  assert.match(html,/第一角法/);
  assert.match(html,/finite-cylinder-intersection-live-bundle\.js/);
