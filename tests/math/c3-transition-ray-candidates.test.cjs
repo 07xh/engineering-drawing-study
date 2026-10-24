@@ -39,6 +39,9 @@ test('C3 joint graph exposes physical-junction ray candidates without V5',()=>{
   assert.equal(g.finiteCylinderRayCandidates.view,g.view);
   assert.equal(g.incidentBranchesCoveredInView,true);
   assert.equal(g.projectionOverlapUndetermined,true);
+  assert.ok(Array.isArray(g.projectedCoincidentJunctionIds));
+  assert.ok(g.projectedCoincidentJunctionIds.every(id=>id!==g.junctionId));
+  assert.equal(typeof g.distinctPhysicalPointsSharingProjection,'boolean');
   assert.ok(g.blockers.includes(
    'projected-coincidence-and-other-feature-overlap-not-proven'));
   assert.equal(g.finiteCylinderRayCandidates.v5Authorized,false);
