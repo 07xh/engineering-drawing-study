@@ -94,29 +94,54 @@ function tick(now){
  if(frame.done){stop();return;}
  raf=requestAnimationFrame(tick);
 }
+const PAIRS=new Set(['VH','VW','HW']);
+function numeric(id){
+ const el=$(id);
+ if(!el||el.value.trim()===''||!Number.isFinite(el.valueAsNumber)||
+    Math.abs(el.valueAsNumber)>100000)throw new TypeError('数学投影/坐标 '+id+' 必须是有效 mm 数值');
+ return el.valueAsNumber;
+}
+function invalidateSource(){
+ revision++;clear();$('confirmed').checked=false;
+ $('status').textContent='条件或视图组合已改变，请重新人工确认并求解；旧 V5 已作废。';
+}
+function refreshInputMode(){
+ const mode=$('knownMode').value;
+ if(mode!=='XYZ'&&!PAIRS.has(mode))throw new TypeError('未知第一角投影视图组合');
+ const twoViews=mode!=='XYZ';
+ $('a-xyz').hidden=twoViews;
+ $('b-xyz').hidden=twoViews;
+ $('knownViewsInputs').hidden=!twoViews;
+ for(const view of ['V','H','W']){
+  for(const node of document.querySelectorAll('[data-v5-view="'+view+'"]')){
+   node.hidden=!twoViews||!mode.includes(view);
+  }
+ }
+ $('knownModeStatus').textContent=twoViews?
+  '请输入两张已知图上的 A/B 对应点数学投影坐标，第三视图由原有 M3 和唯一 V5 计算。':
+  '当前使用人工确认的两点完整空间坐标。';
+}
 function solve(){
  clear();revision++;
  try{
-  const points=['a','b'].map(id=>({
-   id:id.toUpperCase(),...Object.fromEntries(['x','y','z'].map(k=>{
-    const el=$(id+k);
-    if(el.value.trim()===''||!Number.isFinite(el.valueAsNumber))
-     throw new TypeError('坐标不能为空或无效');
-    return [k,el.valueAsNumber];
-   }))
-  }));
+  const mode=$('knownMode').value;
+  if(mode!=='XYZ'&&!PAIRS.has(mode))throw new TypeError('未知第一角投影视图组合');
+  const points=['a','b'].map(id=>mode==='XYZ'?
+   {id:id.toUpperCase(),...Object.fromEntries(['x','y','z'].map(k=>[k,numeric(id+k)]))}:
+   {id:id.toUpperCase(),knownViews:Object.fromEntries([...mode].map(v=>
+     [v,[numeric(id+v+'u'),numeric(id+v+'v')]]))});
   current=compileConfirmedTwoPoint({confirmedBy:$('confirmed').checked?'user':null,
    revision,unit:'mm',points,sheetTransform:{origin:{x:360,y:210},scale:3}});
   draw(true);
  }catch(e){clear();$('status').textContent='拒绝作图：'+e.message;}
 }
 $('solve').addEventListener('click',solve);
-for(const id of ['ax','ay','az','bx','by','bz']){
- $(id).addEventListener('input',()=>{
-  revision++;clear();$('confirmed').checked=false;
-  $('status').textContent='条件已修改，请重新确认并计算。';
- });
+for(const id of ['ax','ay','az','bx','by','bz',
+ ...['a','b'].flatMap(p=>['V','H','W'].flatMap(v=>[p+v+'u',p+v+'v']))]){
+ $(id).addEventListener('input',invalidateSource);
 }
+$('knownMode').addEventListener('change',()=>{refreshInputMode();invalidateSource();});
+refreshInputMode();
 $('confirmed').addEventListener('change',()=>{
  revision++;clear();
  $('status').textContent=$('confirmed').checked?
