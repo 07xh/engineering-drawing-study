@@ -13,6 +13,8 @@ const {classifyPrismSectionVisibility}=
  require('../engines/spatial/sections/rectangular-prism-cut-visibility.cjs');
 const {classifyConvexPolytopeBoundaryRay}=
  require('../core/numeric/convex-polytope-boundary-ray.cjs');
+const {traceConvexRayDepth}=
+ require('../core/numeric/convex-ray-depth.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const xyz=p=>p&&['x','y','z'].every(k=>finite(p[k]));
 const near=(a,b)=>finite(a)&&finite(b)&&Math.abs(a-b)<=1e-6;
@@ -79,11 +81,17 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
  // authoritative visibility input for SVG unless explicitly and separately
  // proven for the requested standard and every boundary.
  const values=Object.fromEntries(VIEWS.map(v=>[v,[]]));
+ const openEdgeDepthEvidence=Object.fromEntries(VIEWS.map(v=>[v,[]]));
  const vertexPointRayEvidence=Object.fromEntries(VIEWS.map(v=>[v,[]]));
  for(const view of VIEWS)for(let i=0;i<n;i++){
   values[view].push({view,index:i,sourceGeometryId:g.id,
    sourceEdgeId:'section-edge-'+(i+1),visibility:'undetermined',
    proofScope:'none',endpointsVerified:false,standardLineStyleVerified:false});
+  openEdgeDepthEvidence[view].push({view,index:i,sourceGeometryId:g.id,
+   sourceEdgeId:'section-edge-'+(i+1),status:'unreviewed',
+   occlusion:'undetermined',nearestSolidId:null,nearestDepthMm:null,
+   scope:'none',completeSceneVerified:false,
+   officialLineStyleVerified:false});
   vertexPointRayEvidence[view].push({view,index:i,sourceGeometryId:g.id,
    sourceVertexId:'section-vertex-'+(i+1),
    visibility:'undetermined',pointRayCertified:false,
@@ -92,6 +100,9 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
  }
  let classified=false;
  if(selected&&input.kind==='rectangular-prism'){
+  const retainedSolid={id:'retained-source-solid',
+   halfspaces:prismRetainedHalfspaces(input.solid,input.plane,
+    selected.retainedHalfspace)};
   for(const view of VIEWS){
    const ray=classifyPrismSectionVisibility(input.solid,input.plane,{
     retainedHalfspace:selected.retainedHalfspace,
@@ -118,6 +129,24 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
        !near(claimed.to[view]?.u,end.u)||
        !near(claimed.to[view]?.v,end.v))
       reject('specialist view coordinates disagree with common first-angle projection');
+    const midpoint={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};
+    const depth=traceConvexRayDepth({point:midpoint,
+     observerDirection:selected.observerDirections[view],solids:[retainedSolid]});
+    const independent=depth.status==='occluded'?'hidden':
+     depth.status==='clear'?'visible':'undetermined';
+    if(independent!=='undetermined'&&edge.visibility!=='undetermined'&&
+       independent!==edge.visibility)
+     reject('M0 depth sweep and M3 specialist disagree for identical source edge');
+    openEdgeDepthEvidence[view][i]={
+     ...openEdgeDepthEvidence[view][i],status:'scoped-depth-audit',
+     occlusion:depth.status,nearestSolidId:depth.nearestSolidId,
+     nearestDepthMm:depth.nearestDepthMm,
+     scope:depth.scope,depthOrderVerified:depth.depthOrderVerified,
+     orderedHitCount:depth.orderedHits.length,
+     ambiguousSolidIds:[...depth.ambiguousSolidIds],
+     pointRayVisibility:independent,
+     completeSceneVerified:false,officialLineStyleVerified:false
+    };
     values[view][i]={
      ...values[view][i],visibility:edge.visibility,
      proofScope:edge.openEdgeVerified?'single-convex-solid-open-edge-ray':'none',
@@ -166,6 +195,9 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
   // source polygon JOIN occlusion or the finished projected endpoint style.
   vertexPointRayEvidence,
   vertexPointRayEvidenceAvailable:classified,
+  // Each trusted edge midpoint now carries the generic positive-ray depth
+  // audit for the *single* retained solid. It does not cover other objects.
+  openEdgeDepthEvidence,openEdgeDepthAvailable:classified,
   endpointVisibilityVerified:false,
   completeOcclusionVerified:false,
   standardViewMappingVerified:false,

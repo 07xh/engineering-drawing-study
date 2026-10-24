@@ -63,6 +63,13 @@ function bindScopedSectionEvidenceToV5({preview,visibilityEvidence,revision}={})
  if(!Number.isInteger(n)||n<3||n>6||
     !VIEWS.every(v=>Array.isArray(data[v])&&data[v].length===n))
   fail('bounded matched polygon section edges required');
+ const depths=visibilityEvidence.openEdgeDepthEvidence;
+ if(!depths||typeof depths!=='object'||Array.isArray(depths)||
+    Object.keys(depths).sort().join(',')!=='H,V,W'||
+    visibilityEvidence.openEdgeDepthAvailable!==
+     (visibilityEvidence.status==='open-edge-ray-only')||
+    !VIEWS.every(v=>Array.isArray(depths[v])&&depths[v].length===n))
+  fail('scoped ray-depth evidence contract missing');
  const vertexEvidence=visibilityEvidence.vertexPointRayEvidence;
  if(!vertexEvidence||typeof vertexEvidence!=='object'||Array.isArray(vertexEvidence)||
     Object.keys(vertexEvidence).sort().join(',')!=='H,V,W'||
@@ -140,6 +147,32 @@ function bindScopedSectionEvidenceToV5({preview,visibilityEvidence,revision}={})
    if(action.kind==='line'&&
       (!action.geometry?.from||!action.geometry?.to))
     fail('result stroke lacks geometric endpoints');
+   const depth=depths[view][i];
+   if(!depth||depth.view!==view||depth.index!==i||
+      depth.sourceGeometryId!==preview.geometryId||
+      depth.sourceEdgeId!==edgeId||
+      depth.completeSceneVerified!==false||
+      depth.officialLineStyleVerified!==false||
+      (visibilityEvidence.openEdgeDepthAvailable?
+       (depth.status!=='scoped-depth-audit'||
+        depth.scope!=='only-supplied-convex-halfspaces'||
+        !['occluded','clear','undetermined'].includes(depth.occlusion)||
+        !Number.isInteger(depth.orderedHitCount)||
+        !Array.isArray(depth.ambiguousSolidIds)||
+        depth.pointRayVisibility!==
+         (depth.occlusion==='occluded'?'hidden':
+          depth.occlusion==='clear'?'visible':'undetermined')||
+        depth.depthOrderVerified!==(depth.occlusion!=='undetermined')||
+        (depth.occlusion==='occluded'&&
+         (depth.nearestSolidId!=='retained-source-solid'||
+          !Number.isFinite(depth.nearestDepthMm)||depth.nearestDepthMm<0))||
+        (depth.occlusion!=='occluded'&&
+         (depth.nearestSolidId!==null||depth.nearestDepthMm!==null))||
+        (depth.occlusion!=='undetermined'&&e.visibility!=='undetermined'&&
+         depth.pointRayVisibility!==e.visibility)):
+       (depth.status!=='unreviewed'||depth.occlusion!=='undetermined'||
+        depth.scope!=='none'||depth.nearestSolidId!==null)))
+    fail('ray depth audit does not match this V5 source edge');
    counts[e.visibility]++;
    links.push({
     sourceGeometryId:preview.geometryId,sourceEdgeId:edgeId,
@@ -149,6 +182,13 @@ function bindScopedSectionEvidenceToV5({preview,visibilityEvidence,revision}={})
     openInteriorVisibility:action.kind==='point'?'undetermined':e.visibility,
     sourceOpenInteriorVisibility:e.visibility,
     sourceProofScope:e.proofScope,
+    sourceOpenEdgeDepthAudit:{
+     scope:depth.scope,status:depth.occlusion,
+     nearestSolidId:depth.nearestSolidId,
+     nearestDepthMm:depth.nearestDepthMm,
+     pointRayVisibility:depth.pointRayVisibility??'undetermined',
+     completeSceneVerified:false
+    },
     // Pointwise support-plane ray witnesses for the TWO 3D source vertices
     // are not permission to color the projected endpoint or whole stroke.
     sourceEndpointPointRays:[i,(i+1)%n].map(j=>({
