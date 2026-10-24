@@ -102,10 +102,13 @@ test('C2 M5 every real old/new paper interval receives source, full-ray, 3D endp
 });
 test('C2 spatially disjoint solids sharing W projection remain separately sourced, never physically joined or drawn',()=>{
  const r=audit([A(),box('B',P(30,0,0),P(40,10,10))],118).proof;
- assert.ok(r.nonuniqueSourceGroupCount>0);
+ // Different physical X depths can have an unambiguous nearest W source
+ // while still containing distinct real 3D nodes at the SAME paper point.
+ // Depth aliases, not presumed source non-uniqueness, must block joins.
+ assert.ok(r.depthAliasEndpointLineCount>0);
  assert.ok(r.lines.some(x=>x.view==='W'&&
   x.missingProofObligations.includes(
-   'unique-frontmost-authentic-3d-source-not-proven')));
+   'projected-endpoint-has-different-depth-real-3d-nodes')));
  assert.ok(r.lines.every(x=>x.officialEngineeringSolidDashedStyle==='undetermined'));
  assert.equal(r.signedV5LineActions,0);
 });
