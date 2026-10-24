@@ -17,7 +17,8 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  Object.keys(p).sort().join(',')==='x,y,z'&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot,normObject3:norm3}=
+ require('./object-vector3.cjs');
 const FACES_MAX=64;
 function classifyConvexPolytopeBoundaryRay({
  point,observerDirection,halfspaces,positionToleranceMm=1e-7,
@@ -30,7 +31,7 @@ function classifyConvexPolytopeBoundaryRay({
     positionToleranceMm>1e-2||
     !finite(directionTolerance)||directionTolerance<=0||directionTolerance>1e-3)
   throw new RangeError('bounded positive geometric and ray tolerances required');
- const dNorm=Math.hypot(observerDirection.x,observerDirection.y,observerDirection.z);
+ const dNorm=norm3(observerDirection);
  if(!finite(dNorm)||dNorm<=1e-12)
   throw new RangeError('nonzero finite observer ray required');
  const d={x:observerDirection.x/dNorm,
@@ -45,7 +46,7 @@ function classifyConvexPolytopeBoundaryRay({
      Math.abs(plane.offsetMm)>1e9)
    throw new TypeError('bounded, uniquely named outward unit halfspaces required');
   seen.add(plane.id);
-  const norm=Math.hypot(plane.normal.x,plane.normal.y,plane.normal.z);
+  const norm=norm3(plane.normal);
   if(!finite(norm)||norm<=1e-12)
    throw new RangeError('nonzero outward face normal required');
   const unit={x:plane.normal.x/norm,y:plane.normal.y/norm,

@@ -10,11 +10,8 @@
 const {validateGeometry}=require('../contracts/geometry.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const xyz=p=>p&&['x','y','z'].every(k=>finite(p[k]));
-const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const cross=(a,b)=>({x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,
- z:a.x*b.y-a.y*b.x});
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-const len=a=>Math.hypot(a.x,a.y,a.z);
+const {subtractObject3:sub,crossObject3:cross,dotObject3:dot,
+ normObject3:len}=require('../numeric/object-vector3.cjs');
 const edgeKey=(a,b)=>[a,b].sort().join('|');
 const reject=why=>{throw new TypeError('closed convex mesh evidence: '+why);};
 function verifiedConvexMeshHalfspaces(g){
