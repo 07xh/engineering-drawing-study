@@ -20,9 +20,8 @@ const TAU=2*Math.PI;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=p=>p&&['x','y','z'].every(k=>finite(p[k]));
 const copy=p=>({x:p.x,y:p.y,z:p.z});
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-const vector=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const norm=p=>Math.hypot(p.x,p.y,p.z);
+const {dotObject3:dot,subtractObject3:vector,normObject3:norm}=
+ require('../../../core/numeric/object-vector3.cjs');
 function unit(p,description){
  if(!point(p)||Math.max(...Object.values(p).map(Math.abs))>1e8)
   throw new TypeError('bounded finite '+description+' required');

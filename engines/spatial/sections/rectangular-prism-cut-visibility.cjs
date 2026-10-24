@@ -12,10 +12,11 @@ const {classifyConvexOpenRaySign}=
  require('../../../core/numeric/convex-open-ray.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=v=>v&&['x','y','z'].every(k=>finite(v[k])&&Math.abs(v[k])<1e8);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:dot,normObject3:norm}=
+ require('../../../core/numeric/object-vector3.cjs');
 const normalize=v=>{
  if(!point(v))throw new TypeError('finite observer ray is required');
- const mag=Math.hypot(v.x,v.y,v.z);
+ const mag=norm(v);
  if(!finite(mag)||mag<=1e-12)throw new RangeError('observer ray must be nonzero');
  return {x:v.x/mag,y:v.y/mag,z:v.z/mag};
 };
