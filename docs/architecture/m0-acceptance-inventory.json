@@ -41,7 +41,8 @@
       "status": "scoped-math",
       "proofScope": "local positive open ray against supplied convex solid",
       "regressionTests": [
-        "tests/math/m0-point-clearance-falsezero-slope.test.cjs"
+        "tests/math/m0-point-clearance-falsezero-slope.test.cjs",
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
       ],
       "remainingGate": "full-scene inventory and revision"
     },
@@ -59,7 +60,8 @@
       "status": "scoped-math",
       "proofScope": "only supplied halfspaces and positive observer ray",
       "regressionTests": [
-        "tests/math/m0-nearparallel-exact-ray-sign.test.cjs"
+        "tests/math/m0-nearparallel-exact-ray-sign.test.cjs",
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
       ],
       "remainingGate": "all occluders and complete scene"
     },
@@ -116,7 +118,8 @@
       "status": "scoped-math",
       "proofScope": "offline exact vertex set within limited represented binary64 budget",
       "regressionTests": [
-        "tests/math/m0-exact-convex-vertex-set.test.cjs"
+        "tests/math/m0-exact-convex-vertex-set.test.cjs",
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
       ],
       "remainingGate": "nonbinary64 rational vertices and source provenance"
     },
@@ -165,7 +168,8 @@
       "status": "scoped-math",
       "proofScope": "two finite 3D source edges projected V/H/W",
       "regressionTests": [
-        "tests/math/m0-projected-edge-falseparallel-sign.test.cjs"
+        "tests/math/m0-projected-edge-falseparallel-sign.test.cjs",
+        "tests/math/m0-batch-e-actual-vhw-depth-scope.test.cjs"
       ],
       "remainingGate": "full scene contour/official line styles"
     },
@@ -194,7 +198,8 @@
       "status": "scoped-math",
       "proofScope": "only trivial polyhedral recession cone",
       "regressionTests": [
-        "tests/math/m0-trivial-recession-cone.test.cjs"
+        "tests/math/m0-trivial-recession-cone.test.cjs",
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
       ],
       "remainingGate": "nonempty solid, source vertex completeness"
     }
