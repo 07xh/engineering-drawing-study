@@ -45,18 +45,27 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
     ray.officialLineStylesVerified!==false||ray.signedV5LineActions!==0||
     ray.v5Ready!==false||!Array.isArray(ray.pieces))
   fail('unsigned M0-certified generated source subspans required');
- const meshEdgeSet=new Set(),points=new Map();
+ const originalEdges=new Map();
  for(const g of geometry){
-  for(const [a,b] of g.data.edges)meshEdgeSet.add(g.id+'::'+[a,b].sort().join('|'));
-  points.set(g.id,g.data.points);
+  for(const [a,b] of g.data.edges)originalEdges.set(
+   g.id+'::'+[a,b].sort().join('|'),
+   {sourceGeometryId:g.id,from:g.data.points[a],to:g.data.points[b]});
  }
  const candidates=[];
  for(const s of m.segments){
-  if(!VIEWS.includes(s.view)||!meshEdgeSet.has(s.sourceEdgeId)||
+  if(!VIEWS.includes(s.view)||!originalEdges.has(s.sourceEdgeId)||
      !ids.includes(s.sourceGeometryId)||s.officialLineStyleVerified!==false||
      s.v5ActionApproved!==false||s.canonicalIntentVerified!==false)
    fail('source original M4 stroke invalid or released');
   if(!s.unionOpenSourceFeatureVerified)continue;
+  const source=originalEdges.get(s.sourceEdgeId);
+  const [left,right]=s.sourceParameterRange??[];
+  if(source.sourceGeometryId!==s.sourceGeometryId||
+     !Number.isFinite(left)||!Number.isFinite(right)||
+     left<0||right>1||left>=right||
+     dist3(p3(source.from,source.to,left),s.fromModelMm)>1e-8||
+     dist3(p3(source.from,source.to,right),s.toModelMm)>1e-8)
+   fail('original M4 source endpoints not on their authentic Geometry edge');
   const a=s.fromModelMm,b=s.toModelMm;
   if(dist3(a,b)<=1e-8||dist2(project(a)[s.view],project(b)[s.view])<=1e-8)
    continue;
@@ -72,7 +81,8 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
    sourceRevision:revision,officialEngineeringLineStyle:'undetermined',
    formalV5ActionAuthorized:false});
  }
- const generatedM4Ids=new Set(m.generatedSegments.map(s=>s.id));
+ const generatedM4=new Map(m.generatedSegments.map(s=>[s.id,s]));
+ const generatedM4Ids=new Set(generatedM4.keys());
  if(generatedM4Ids.size!==m.generatedSegments.length||
     ray.pieceCount!==ray.pieces.length||
     ray.pieces.some(p=>!generatedM4Ids.has(p.m4GeneratedCandidateId)))
@@ -84,6 +94,15 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
      s.applicableEngineeringLineStyle!=='undetermined'||
      s.officialSingleV5LineActionAuthorized!==false)
    fail('untrusted generated M0 ray source or claimed V5 line');
+  const parent=generatedM4.get(s.m4GeneratedCandidateId);
+  const [left,right]=s.source3DOpenParameterRange??[];
+  if(!parent||parent.view!==s.view||
+     parent.sourceGeneratedFeatureId!==s.generated3DSourceFeatureId||
+     !Number.isFinite(left)||!Number.isFinite(right)||
+     left<0||right>1||left>=right||
+     dist3(p3(parent.source3DFrom,parent.source3DTo,left),s.source3DFrom)>1e-8||
+     dist3(p3(parent.source3DFrom,parent.source3DTo,right),s.source3DTo)>1e-8)
+   fail('new M0-proven source subspan does not match its authentic M4 parent');
   const a=s.source3DFrom,b=s.source3DTo;
   if(dist3(a,b)<=1e-8||dist2(project(a)[s.view],project(b)[s.view])<=1e-8)
    continue;
