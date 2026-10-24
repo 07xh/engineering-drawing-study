@@ -19,6 +19,8 @@ const {auditReviewedM4V5Motion}=
  require('../workbench/m4-existing-v5-motion-parity.cjs');
 const {auditSpatialStrokeConstructionDAG}=
  require('../workbench/spatial-stroke-construction-dag-parity.cjs');
+const {inspectSpatialV5ActionRelease}=
+ require('../workbench/spatial-v5-per-action-release-gate.cjs');
 const {compileGeometryScene}=
  require('./geometry-scene-consumer.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
@@ -202,7 +204,8 @@ function createUnifiedProjectSession(){
     // paper scale for the CURRENT source geometry. Use that SAME scale,
     // and the existing 07/V5 Motion geometry, never a new player or
     // independent solver. All candidate stroke styles stay unknown.
-    const {scopedMotionParity,spatialStrokeConstructionDAG}=
+    const {scopedMotionParity,spatialStrokeConstructionDAG,
+     spatialV5ActionRelease}=
       sceneDepthEvidence.projectedStrokePartitions
         ?.status==='preview-partition-evidence-only'?(()=>{
          const paper=compileGeometryScene(scene,{sheet:SHEET});
@@ -210,14 +213,20 @@ function createUnifiedProjectSession(){
          const viewTransforms={V:transform,H:transform,W:transform};
          const parity=auditReviewedM4V5Motion({geometry,
           sceneDepthEvidence,revision:latest.revision,viewTransforms});
+         const dag=auditSpatialStrokeConstructionDAG({
+          geometry,sceneDepthEvidence,revision:latest.revision,
+          viewTransforms,motionParity:parity});
+         const released=inspectSpatialV5ActionRelease({
+          geometry,sceneDepthEvidence,revision:latest.revision,
+          viewTransforms,motionParity:parity,
+          spatialConstructionDAG:dag});
          return {scopedMotionParity:parity,
-          spatialStrokeConstructionDAG:auditSpatialStrokeConstructionDAG({
-           geometry,sceneDepthEvidence,revision:latest.revision,
-           viewTransforms,motionParity:parity})};
-        })():{scopedMotionParity:null,spatialStrokeConstructionDAG:null};
+          spatialStrokeConstructionDAG:dag,spatialV5ActionRelease:released};
+        })():{scopedMotionParity:null,spatialStrokeConstructionDAG:null,
+         spatialV5ActionRelease:null};
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,spatialV5Readiness,
-      scopedMotionParity,spatialStrokeConstructionDAG,
+      scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
