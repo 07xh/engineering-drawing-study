@@ -7,6 +7,8 @@
  * solid/dashed styles, endpoint joins, ConstructionIntent or V5 actions.
  */
 const {project,VIEWS}=require('../core/projection/conventions.js');
+const {verifyConvexProjectedOutline}=
+ require('../core/verification/convex-projected-outline.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('./reviewed-convex-scene-depth.cjs');
 const {inspectSourceVertexIncidence}=
@@ -41,6 +43,14 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
  const sourceCreaseEvidence=auditReviewedConvexSourceCreases({
   geometry,revision});
  const creases=new Map(sourceCreaseEvidence.edges.map(e=>[e.sourceEdgeId,e]));
+ // Reuse the already independently certified COMPLETE convex projected
+ // occupancy boundary. It proves a 2D geometric hull, not the nearest
+ // 3D feature, standard stroke visibility, joined endpoints or V5.
+ const hull=verifyConvexProjectedOutline({mesh:geometry,revision});
+ if(hull.sourceGeometryId!==geometry.id||hull.revision!==revision||
+    hull.unit!=='mm'||hull.multiBodySilhouetteVerified!==false||
+    hull.constructionIntentReady!==false||hull.v5Ready!==false)
+  throw new TypeError('stale or over-promoted full projected convex hull');
  const closed=proof.closedSourceStrokeRays,occlusion=proof.wholeSourceEdgeOcclusion;
  if(closed.status!=='scoped-positive-closed-source-rays-only'||
     occlusion.status!=='scoped-source-segment-occlusion-only')
@@ -62,6 +72,20 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
    const aHidden=occlusion.hiddenSourceEdges.filter(e=>e.sourceEdgeId===id&&e.view===view);
    if(collapsed&&aVisible.length||aVisible.length>1||aHidden.length>1)
     throw new RangeError('duplicate or collapsed closed source proof');
+   // A positive source-edge hull match is geometric and bounded to this
+   // single ORIGINAL convex solid. A front/back coincident edge pair may
+   // BOTH lie on the same projected hull; only the independent M5 observer
+   // ray can distinguish them. Reject split/ambiguous matches rather than
+   // guessing a complete physical drawing stroke from an open interval.
+   const localId=[a,b].sort().join('|');
+   const sourceHullMatches=hull[view].boundarySides.flatMap((side,index)=>
+    side.sourceEdgeCandidates.filter(c=>c.sourceEdgeId===localId).
+     map(c=>({side,index,interval:c.projectedFractionRange})));
+   const match=sourceHullMatches.length===1?sourceHullMatches[0]:null;
+   const projectedFullHull=Boolean(!collapsed&&match&&
+    Math.abs((match.interval[1]-match.interval[0])*
+     match.side.projectedLengthMm-length)<=
+      Math.max(1e-9,length*1e-10));
    const ray=aVisible[0],hidden=aHidden[0];
    const front=ray?.positiveClosedRayVisibilityVerified===true&&
      ray.wholeSourceIntervalClearVerified===true&&
@@ -79,6 +103,15 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
       crease.sourceIsPhysicalCreaseWithinSingleSolid,
     originalCoplanarMeshSubdivisionVerified:
       crease.sourceIsCoplanarSubdivisionWithinSingleSolid,
+    projectedFullSingleSolidHullBoundaryVerified:projectedFullHull,
+    projectedHullBoundarySideIndex:projectedFullHull?match.index:null,
+    coincidentProjectedHullSourceCandidateCount:projectedFullHull?
+     match.side.sourceEdgeCandidates.length:0,
+    // This joins two INDEPENDENT existing positive witnesses, but does
+    // not prove the final all-source contour, endpoint joins or line type.
+    singleSolidHullAndWholeFrontRayCandidateVerified:
+     Boolean(projectedFullHull&&front&&
+      crease.sourceIsPhysicalCreaseWithinSingleSolid),
     completeMultiBodyFeatureSemanticsVerified:false,
     continuouslyFrontRayClearVerified:front,
     completeStrictInteriorOcclusionVerified:occluded,
@@ -98,6 +131,10 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
   edges,sourceProjectedEdgeCount:edges.length,
   positiveWholeVisibleRayCount:edges.filter(x=>
    x.continuouslyFrontRayClearVerified).length,
+  positiveFullSingleSolidHullGeometryEdgeCount:edges.filter(x=>
+   x.projectedFullSingleSolidHullBoundaryVerified).length,
+  positiveHullAndWholeFrontRayCandidateCount:edges.filter(x=>
+   x.singleSolidHullAndWholeFrontRayCandidateVerified).length,
   provenWholeOccludedCount:edges.filter(x=>
    x.completeStrictInteriorOcclusionVerified).length,
   collapsedCount:edges.filter(x=>x.status==='projected-point-not-an-edge').length,
