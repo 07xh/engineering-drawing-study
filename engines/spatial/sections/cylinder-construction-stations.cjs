@@ -11,11 +11,9 @@ const TAU=2*Math.PI,finite=n=>typeof n==='number'&&Number.isFinite(n);
 const normAngle=t=>((t%TAU)+TAU)%TAU;
 const angularDelta=(a,b)=>Math.min(Math.abs(a-b),TAU-Math.abs(a-b));
 const pt=p=>({x:p.x,y:p.y,z:p.z});
-function project(p){
- return {V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}};
-}
-const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {project}=require('../../../core/projection/conventions.js');
+const {subtractObject3:sub,dotObject3:dot}=
+ require('../../../core/numeric/object-vector3.cjs');
 function cylinderSectionStations(cylinder,plane,{ordinaryDivisions=8}={}){
  if(!Number.isSafeInteger(ordinaryDivisions)||ordinaryDivisions<4||
     ordinaryDivisions>32||ordinaryDivisions%4!==0)
