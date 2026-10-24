@@ -13,6 +13,20 @@
  */
 const {dyadic,difference,product}=require('./binary64-dyadic.cjs');
 
+// This boundary is deliberately kept in the original authoritative 2D
+// predicate: no second read of getter-backed/sparse source coordinates.
+function point2(value,label){
+ if(!Array.isArray(value)||value.length!==2||
+    !Object.hasOwn(value,0)||!Object.hasOwn(value,1))
+  throw new TypeError(label+' must be a dense finite 2D point');
+ const x=value[0],y=value[1];
+ if(typeof x!=='number'||!Number.isFinite(x)||
+    typeof y!=='number'||!Number.isFinite(y))
+  throw new TypeError(label+' must be a dense finite 2D point');
+ return [x,y];
+}
+
+
 const POSITIVE = Object.freeze({ sign: 1, orientation: 'counterclockwise',
   exactForBinary64Inputs: true });
 const NEGATIVE = Object.freeze({ sign: -1, orientation: 'clockwise',
