@@ -74,6 +74,21 @@ function rayCylinder(point,dir,c,axis){
    positive.length?'forward-boundary-intersection':'no-forward-boundary-intersection',
   lineStyleAuthorized:false};
 }
+function unionForwardIntervals(rows){
+ const sorted=rows.map(r=>({solid:r.solid,range:[...r.range]}))
+  .sort((a,b)=>a.range[0]-b.range[0]||a.range[1]-b.range[1]);
+ const merged=[];
+ for(const row of sorted){
+  const last=merged.at(-1);
+  // Open intervals meeting at a single boundary point cannot prove that
+  // point is in the opaque interior; keep the components separate.
+  if(last&&row.range[0]<last.range[1]){
+   last.range[1]=Math.max(last.range[1],row.range[1]);
+   if(!last.supportingSolids.includes(row.solid))last.supportingSolids.push(row.solid);
+  }else merged.push({range:[...row.range],supportingSolids:[row.solid]});
+ }
+ return merged;
+}
 function auditC3TransitionRays({input,point,view}={}){
  if(!input?.zCylinder||!input?.yCylinder||
   !point||!['x','y','z'].every(k=>Number.isFinite(point[k]))||
@@ -85,7 +100,8 @@ function auditC3TransitionRays({input,point,view}={}){
  const combined=[...z.interiorOpenIntervals.map(range=>({solid:'zCylinder',range})),
   ...y.interiorOpenIntervals.map(range=>({solid:'yCylinder',range}))]
   .sort((a,b)=>a.range[0]-b.range[0]||a.range[1]-b.range[1]);
- const positiveInteriorOcclusionVerified=combined.length>0&&
+ const unionInteriorOpenIntervals=unionForwardIntervals(combined);
+ const positiveInteriorOcclusionVerified=unionInteriorOpenIntervals.length>0&&
   (z.positiveInteriorVerified||y.positiveInteriorVerified);
  const originAmbiguous=z.originOnBoundary||y.originOnBoundary;
  const grazingOrTie=z.tangent||y.tangent||z.generatorCoincidence||
@@ -96,6 +112,7 @@ function auditC3TransitionRays({input,point,view}={}){
   'no-positive-interior-found-not-full-feature-clearance';
  return freeze({schema:'draftai-c3-transition-ray-candidates/1',view,point:{...point},
   zCylinder:z,yCylinder:y,combinedForwardInteriorIntervals:combined,
+  unionInteriorOpenIntervals,
   positiveInteriorOcclusionVerified,
   endpointVisibilityStatus,
   ambiguousBoundaryOrDepthTie:grazingOrTie,
