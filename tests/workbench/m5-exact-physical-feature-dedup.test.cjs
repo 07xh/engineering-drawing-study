@@ -61,7 +61,12 @@ test('C2 exactly identical bounded source bodies: true 3D duplicates reduce to o
  assert.equal(r.paperIntervalCount,paper.paperIntervalCount);
  assert.ok(r.exact3DDuplicateSourceRecordCount>0);
  assert.ok(r.groups.some(x=>x.exact3DDuplicateSourceRecordsEliminated>0));
- assert.ok(r.groups.every(x=>x.exact3DPhysicalFeatureClassCount===1));
+ // Front- and rear-depth original edges remain different REAL 3D
+ // geometric features even for two fully identical closed cuboids.
+ assert.ok(r.groups.every(x=>x.exact3DPhysicalFeatureClassCount>=1));
+ assert.ok(r.groups.some(x=>x.exact3DPhysicalFeatureClassCount>1));
+ assert.ok(r.groups.some(x=>x.physicalFeatureClasses.some(c=>
+  c.contributors.length>=2)));
  assert.ok(r.groups.every(x=>x.allReviewedPaperSourceRecordsAccountedFor));
  assert.ok(r.groups.every(x=>x.exact3DPhysicalFeatureClassCount<=
   x.originalReviewedSourceRecordCount));
