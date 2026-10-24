@@ -181,19 +181,28 @@ function renderVerifiedV5Actions(){
    const originalGuide=action.kind==='circle';
    const analyticArc=action.kind==='arc';
    const WGuide=action.kind==='analytic-curve';
+   const WProof=WGuide?current.wAnalyticCurveGuides.find(g=>
+    g.id+'Shape'===action.id):null;
+   if(WGuide&&(!WProof||!WProof.m5SourcePartitioned||
+      WProof.officialStandardLineStyleVerified!==false))
+    throw new RangeError('W V5 curve lacks current independently proven M5 partition');
    const shape=node(analyticArc||WGuide?'path':'circle',{
     fill:action.kind==='point'?'#12649b':'none',
-    stroke:WGuide?'#653d9c':analyticArc?'#a064b5':
+    stroke:WGuide?(WProof.m5OpenInteriorRayStatus==='clear'?'#167f8b':
+     WProof.m5OpenInteriorRayStatus==='occluded'?'#cb802f':'#8561b2'):
+     analyticArc?'#a064b5':
      originalGuide?'#638bb0':'#12649b',
     'stroke-width':WGuide?2.6:analyticArc?2.3:originalGuide?1.8:2,
     ...(analyticArc||WGuide?{'stroke-dasharray':'3 7'}:{}),
     'data-source-v5-action':action.id,
     'data-certified-scope':WGuide?
-     'exact-M3-W-source-screen-approximation-not-official':
+     'M3-source-M5-open-ray-evidence-not-official-line-style':
      analyticArc?'exact-analytic-VH-projection-arc-not-official':
      originalGuide?'reviewed-original-source-circle-only':
       'analytic-point-only',
-    'data-official-line-style':'false'});
+    'data-official-line-style':'false',
+    ...(WGuide?{'data-M5-open-ray-status':WProof.m5OpenInteriorRayStatus,
+      'data-open-interval-only':'true'}:{})});
    Motion.updateSvg(shape,action,fraction);
    layer.append(shape);
   }
@@ -238,7 +247,7 @@ function solve(){
    input,revision,stationCountPerBranch:count,
    sheetTransform:transforms.V,viewTransforms:transforms,
    includeSourceCircleGuides:true,includeProjectedSeamArcGuides:true,
-   includeWAnalyticCurveGuides:true});
+   includeWAnalyticCurveGuides:true,wRayPartitionedV5:true});
   const wRayProof=buildC3WIntervalPreview({input,revision});
   const vhDedup=buildC3VHProjectionDedup({input,revision});
   drawScaffold();
@@ -253,7 +262,9 @@ function solve(){
    '；正式 V5 端点动作：'+computed.signedEndpointPointActionCount+
    '；原始圆形辅助 V5：'+computed.provenOriginalSourceCircleV5ActionCount+
    '；真实解析 V/H 圆弧 V5：'+computed.provenAnalyticVHArcV5ActionCount+
-   '；W 视图解析曲线辅助 V5：'+computed.trueAnalyticWCurveV5GuideCount+
+   '；W 视图解析曲线逐段 V5：'+computed.trueAnalyticWCurveV5GuideCount+
+   '（无遮挡 '+computed.m5RayCertifiedClearGuideCount+
+   ' / 有遮挡 '+computed.m5RayCertifiedOccludedGuideCount+'）'+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
