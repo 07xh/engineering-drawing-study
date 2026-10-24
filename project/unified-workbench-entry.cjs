@@ -296,7 +296,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.branchingSourceJunctionCount||0)+
     ' 组；纸面叠点的多深度节点组 '+
     (evidence.projectedSourceNodeDepthAliasGroupCount||0)+
-    ' 组（只证明已列出三维源节点的前后顺序，不代表全场遮挡）。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 组（只证明已列出三维源节点的前后顺序，不代表全场遮挡）。同纸面共线来源段重合 '+
+    (evidence.comparedProjectedSourceOverlapCount||0)+
+    ' 对，完整重合区间严格分层 '+
+    (evidence.fullySortedProjectedSourceOverlapCount||0)+
+    ' 对、完全同深度待去重 '+
+    (evidence.coincidentDepthSourceFeaturePairCount||0)+
+    ' 对、深度过渡或端点平齐未定 '+
+    (evidence.unresolvedProjectedSourcePairDepthCount||0)+
+    ' 对。以上深度只针对两条已列出的来源线，不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';

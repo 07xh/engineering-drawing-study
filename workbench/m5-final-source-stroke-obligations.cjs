@@ -32,6 +32,8 @@ const {auditGeneratedViewEndpointIncidence}=
  require('./m5-generated-view-endpoint-incidence.cjs');
 const {inspectUnionDirectionalJunctions}=
  require('./m5-union-directional-junctions.cjs');
+const {auditProjectedSourceOverlapDepth}=
+ require('./m5-union-projected-overlap-depth.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -115,6 +117,19 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
  const physicalFeatureJunctionEvidence=geometry.length>=2?
   auditUnionPhysicalFeatureJunctions({geometry,revision}):null;
+ const projectedSourceOverlapDepthEvidence=geometry.length>=2&&
+  physicalFeatureJunctionEvidence?.status===
+   'source-recomputed-physical-3d-feature-incidence'?
+  auditProjectedSourceOverlapDepth({geometry,revision,
+   physicalJunctionEvidence:physicalFeatureJunctionEvidence}):null;
+ if(projectedSourceOverlapDepthEvidence&&
+    projectedSourceOverlapDepthEvidence.status===
+     'full-analytic-listed-source-pair-overlap-depth'&&
+    (projectedSourceOverlapDepthEvidence.signedV5LineActions!==0||
+     projectedSourceOverlapDepthEvidence.officialLineStylesVerified!==false||
+     projectedSourceOverlapDepthEvidence.v5Ready!==false))
+  throw new TypeError('source overlap depth is not an official line approval');
+
  const directionalJunctionEvidence=geometry.length>=2&&
   physicalFeatureJunctionEvidence?.status===
    'source-recomputed-physical-3d-feature-incidence'?
@@ -329,6 +344,15 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   sourceCreaseEvidence,sourceUnionFeatureEvidence,
   generatedUnionCreaseEvidence,
   physicalFeatureJunctionEvidence,
+  projectedSourceOverlapDepthEvidence,
+  comparedProjectedSourceOverlapCount:
+   projectedSourceOverlapDepthEvidence?.overlapCount??0,
+  fullySortedProjectedSourceOverlapCount:
+   projectedSourceOverlapDepthEvidence?.strictlyOrderedPairCount??0,
+  coincidentDepthSourceFeaturePairCount:
+   projectedSourceOverlapDepthEvidence?.identicalDepthPairCount??0,
+  unresolvedProjectedSourcePairDepthCount:
+   projectedSourceOverlapDepthEvidence?.ambiguousDepthCount??0,
   directionalJunctionEvidence,
   verifiedSourceOutgoingJunctionCount:
    directionalJunctionEvidence?.nodeCount??0,
