@@ -336,7 +336,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.unifiedPhysicallyDuplicatedSourceIntervalCount||0)+
     ' 组、在已枚举来源线之间可证明相对最前 '+
     (evidence.unifiedLocallyFrontListedSourceIntervalCount||0)+
-    ' 组；这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 组。统一纸面线段端点组 '+
+    (evidence.unifiedPaperJunctionNodeCount||0)+
+    ' 组，真实三维共点的局部节点 '+
+    (evidence.unifiedPhysicalSourceCoincidentPaperJunctionCount||0)+
+    ' 组，纸面相同却有不同三维位置的节点 '+
+    (evidence.unifiedPaperOnlyDifferent3DDepthJunctionCount||0)+
+    ' 组；真实物理共点不等于完整轮廓接合，这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
