@@ -192,9 +192,28 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    const start=evaluateC3VHProjectedSpan(row,lo),
      end=evaluateC3VHProjectedSpan(row,hi),
      circle=row.projectedSourceCircle;
-   const angle=uv=>Math.atan2(
-    uv.v-circle.coordinateCenter,uv.u-circle.xCenter)*180/Math.PI;
-   const startAngle=angle(start),endAngle=angle(end);
+   // Preserve the signed radical branch at exact radius extrema:
+   // adding -0 to a center can erase -0 and change atan2(-0,-R)
+   // into atan2(+0,-R), turning -pi into +pi on the lower semicircle.
+   const angle=x=>{
+    const dx=x-circle.xCenter;
+    const radial=(circle.radius-Math.abs(dx))*
+     (circle.radius+Math.abs(dx));
+    if(radial< -1e-9*Math.max(1,circle.radius**2))
+     throw new RangeError('projected analytic arc radial domain invalid');
+    return Math.atan2(row.retainedSign*Math.sqrt(Math.max(0,radial)),
+     dx)*180/Math.PI;
+   };
+   const startAngle=angle(lo),endAngle=angle(hi);
+   // Projection endpoints are recomputed by the original 2D M3 consumer.
+   // Strict mathematical parity, not angle guesses or sampled chords.
+   const from={u:circle.xCenter+circle.radius*Math.cos(startAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(startAngle*Math.PI/180)};
+   const to={u:circle.xCenter+circle.radius*Math.cos(endAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(endAngle*Math.PI/180)};
+   if(Math.hypot(from.u-start.u,from.v-start.v)>1e-7||
+      Math.hypot(to.u-end.u,to.v-end.v)>1e-7)
+    throw new RangeError('directed arc endpoints differ from verified M3 projection');
    const direction=row.retainedSign===1?'cw':'ccw';
    const sweep=endAngle-startAngle;
    if(!(Number.isFinite(sweep)&&Math.abs(sweep)>1e-9&&
