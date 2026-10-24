@@ -39,6 +39,58 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  if(wholeSourceEdgeRayEvidence.signedEdgeV5Ready!==false||
     wholeSourceEdgeRayEvidence.officialLineStylesVerified!==false)
   throw new RangeError('M5 source ray audit may not mint official solid edge actions');
+ // C1 reviewed convex source/scene/M5 reconciliation. This is a presentation
+ // consumer of the already-proven single-source evidence, not a line signer.
+ // In particular a triangulation diagonal may appear in the canonical mesh
+ // projection but must not be advertised as a physical engineering crease.
+ const scopedEdgePreviews=[];
+ const rows=wholeSourceEdgeRayEvidence.edges;
+ const indexed=new Map(rows.map(x=>[x.view+'::'+x.sourceEdgeId,x]));
+ if(indexed.size!==rows.length||
+    rows.length!==sceneResult.geometry.data.edges.length*VIEWS.length)
+  throw new RangeError('C1 source M5 ledger has duplicate or missing projected edges');
+ const dist=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
+ for(const view of VIEWS){
+  const projection=sceneResult.projections[view];
+  if(projection.kind!=='mesh-projection'||
+     projection.edges.length!==sceneResult.geometry.data.edges.length)
+   throw new RangeError('C1 canonical scene edge projection unavailable');
+  for(const e of projection.edges){
+   const edgeId=sceneResult.geometry.id+'::'+[e.fromId,e.toId].sort().join('|');
+   const row=indexed.get(view+'::'+edgeId);
+   const from=projection.points[e.fromId],to=projection.points[e.toId];
+   if(!row||row.sourceGeometryId!==sceneResult.geometry.id||
+      row.view!==view||row.sourceEdgeId!==edgeId||
+      row.sourceVertexIds[0]!==e.fromId||
+      row.sourceVertexIds[1]!==e.toId||
+      !from||!to||dist(from,row.projectedFrom)>1e-8||
+      dist(to,row.projectedTo)>1e-8)
+    throw new RangeError('C1 canonical projected edge and current M5 source differ');
+   const collapsed=e.projection.kind==='point';
+   if(collapsed!==(row.status==='projected-point-not-an-edge')||
+      row.V5LineActionSignedOff!==false||
+      row.standardEngineeringLineStyle!=='undetermined'||
+      (row.originalCoplanarMeshSubdivisionVerified&&
+       row.originalSingleSolidCreaseVerified))
+    throw new RangeError('C1 invalid source-edge feature or certification scope');
+   scopedEdgePreviews.push({
+    sourceGeometryId:sceneResult.geometry.id,sourceEdgeId:edgeId,
+    sourceVertexIds:[e.fromId,e.toId],view,revision:input.revision,
+    fromModelMm:{...from},toModelMm:{...to},
+    projectionCollapsedToPoint:collapsed,
+    sourcePhysicalCreaseVerified:row.originalSingleSolidCreaseVerified,
+    sourceCoplanarSubdivisionVerified:row.originalCoplanarMeshSubdivisionVerified,
+    rayEvidenceStatus:row.status,
+    continuousFrontRayClearVerified:row.continuouslyFrontRayClearVerified,
+    entireEdgeStrictlyOccludedVerified:row.completeStrictInteriorOcclusionVerified,
+    renderedAsPhysicalSourceCandidate:!row.originalCoplanarMeshSubdivisionVerified&&
+      row.originalSingleSolidCreaseVerified,
+    finalEngineeringLineStyle:'undetermined',officialV5Stroke:false
+   });
+  }
+ }
+ if(scopedEdgePreviews.length!==rows.length)
+  throw new RangeError('C1 incomplete first-angle edge proof binding');
  const vertexIds=Object.keys(sceneResult.geometry.data.points).sort();
  if(vertexIds.length>16)
   throw new RangeError('at most 16 reviewed vertices for one bounded V5 point timeline');
@@ -106,6 +158,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
   sceneResult,wholeSourceEdgeRayEvidence,
+  scopedEdgePreviews,
   vertexBindings:bindings,intents,steps,timeline,player,
   vertexConstructionCount:bindings.length,pointActionCount,
   singleOriginalV5Player:true,certifiedPointConstructionReady:true,
