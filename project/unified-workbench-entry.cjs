@@ -195,6 +195,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   refreshUnknown(snapshot);
   $('v7-c-status').textContent='对象 '+snapshot.objects.length+
     ' 个，已确认 '+approved+' 个。未确认的对象不会出现在场景预览。';
+  const contacts=preview()?.kind==='composition-evidence'?
+    preview().compositionContactEvidence:null;
+  const relationLabels={
+   separated:'相离','point-contact':'点接触','edge-contact':'棱接触',
+   'face-contact':'面接触','volumetric-overlap':'体积重叠',
+   'undetermined-near-contact':'近临界，无法判定'};
+  $('v7-c-contacts').textContent=contacts?
+   ('已核对 '+contacts.boxCount+' 个轴对齐闭合长方体、'+contacts.pairCount+
+    ' 对空间关系：'+(contacts.pairs.length?
+      contacts.pairs.map(p=>p.objectIds.join('—')+'：'+
+       (relationLabels[p.relation]||'未判定')).join('；'):
+      '暂无可比较的成对长方体')+
+    (contacts.unsupportedCount?'；'+contacts.unsupportedCount+' 个网格未满足证明范围':'')+
+    '。这是已确认模型的关系核验，不代表实体并集、完整轮廓、虚实线或正式 V5 已签收。'):
+   '需要确认两个闭合长方体并重新显示场景，才能计算空间关系。';
  }
 
  const taskObjects={
@@ -1193,7 +1208,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    throw Error('手工几何被错误授予解题证明资格');
   msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系残差：'+
    result.relationEvidence.status+'（'+result.relationEvidence.checkedCount+
-   ' 条）。未求未知量，V5 禁用。');
+   ' 条）；闭合长方体关系 '+result.compositionContactEvidence.pairCount+
+   ' 对。未求未知量，虚实线未认证，V5 禁用。');
  }));
  for(const id of compositionFields)
   for(const event of ['input','change'])$(id).addEventListener(event,()=>{
