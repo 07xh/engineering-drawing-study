@@ -8,7 +8,7 @@ const {validSavedCalibration}=require('./source-calibration.cjs');
 const CandidateBridge=require('./source-candidate-bridge.cjs');
 const {TYPES:RELATION_TYPES}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {solveAffinePointConstraints}=require('../core/constraints/affine-point-unknown-solver.cjs');
-const {sourceStamp}=require('./source-candidate-bridge.cjs');
+const affineSourceStamp=source=>JSON.stringify([source.imageId,source.rotationDeg,source.calibration]);
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
 const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
@@ -129,9 +129,9 @@ function validateProject(p) {
     const a=p.affineProblem;
     if(!plain(a)||p.task!=='composition'||
        typeof a.confirmed!=='boolean'||
-       a.imageId!==p.source.imageId||
        typeof a.sourceStamp!=='string'||
-       (a.confirmed&&a.sourceStamp!==sourceStamp(p.source))||
+       (a.confirmed&&(a.imageId!==p.source.imageId||
+         a.sourceStamp!==affineSourceStamp(p.source)))||
        !jsonValue(a)||Object.keys(a).some(k=>
         !['frame','unit','points','constraints','imageId','sourceStamp','confirmed'].includes(k)))
       errors.push('未签收的未知点约束或原图版本不一致');
@@ -305,7 +305,7 @@ function createCoordinator(initial, hooks = {}) {
         p.affineProblem={
           frame:candidate.frame,unit:candidate.unit,
           points:copy(candidate.points),constraints:copy(candidate.constraints),
-          imageId:p.source.imageId,sourceStamp:sourceStamp(p.source),
+          imageId:p.source.imageId,sourceStamp:affineSourceStamp(p.source),
           confirmed:false
         };
       });
@@ -314,7 +314,7 @@ function createCoordinator(initial, hooks = {}) {
       return commit(p=>{
         if(!p.affineProblem||p.affineProblem.confirmed)
           throw new Error('没有待人工确认的未知点系统');
-        if(p.affineProblem.sourceStamp!==sourceStamp(p.source))
+        if(p.affineProblem.sourceStamp!==affineSourceStamp(p.source))
           throw new Error('原图或双比例尺度已修改，必须重新提交数学条件');
         if(!p.affineProblem.constraints.length)
           throw new Error('未知点尚无数学约束，不能直接确认');
