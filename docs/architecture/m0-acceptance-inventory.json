@@ -212,7 +212,8 @@
       "proofScope": "only trivial polyhedral recession cone",
       "regressionTests": [
         "tests/math/m0-trivial-recession-cone.test.cjs",
-        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs",
+        "tests/math/m0-recession-face-source-stability.test.cjs"
       ],
       "remainingGate": "nonempty solid, source vertex completeness"
     }
