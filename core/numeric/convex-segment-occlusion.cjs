@@ -25,6 +25,7 @@ const id=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(x);
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
 const {subtractObject3:sub}=require('./object-vector3.cjs');
+const {certifyDotSign}=require('./euclidean-kernel.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -76,6 +77,14 @@ function certifyConvexSegmentOcclusion({
   if(![alpha,beta,gamma].every(finite))
    throw new RangeError('nonfinite normalized face residual');
   if(beta===0){
+   // Cancellation can round an exactly NONZERO normalized n·d to zero.
+   // Such a constraint still depends on observer-ray depth t; dropping
+   // beta would be an incorrect elimination and potentially invent
+   // positive interior occlusion or reject a real continuous interval.
+   const exact=certifyDotSign([n.x,n.y,n.z],[d.x,d.y,d.z]);
+   if(exact.sign!==0)
+    return output('undetermined',source.id,solid.id,null,
+     'rounded-zero-near-parallel-support');
    constraints.push({a:alpha,b:-gamma});
   }else if(Math.abs(beta)<=angularTolerance){
    // Cannot certify that a nearly parallel ray stays on one side for
