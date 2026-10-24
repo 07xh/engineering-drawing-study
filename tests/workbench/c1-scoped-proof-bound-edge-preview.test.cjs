@@ -82,8 +82,9 @@ test('C1 triangulated flat face does not render its nonphysical subdivision as a
 test('C1 mutated source revision cannot retain scoped geometry or V5 certification',()=>{
  const m=cuboid();
  const a=compile(m,'VH',18);
- const changed=cuboid();
- for(const p of Object.values(changed.data.points))p.x+=13;
+ const changed=prismMesh({solid:{
+  min:{x:5,y:3,z:-5},max:{x:34,y:18,z:24}
+ }});
  const b=compile(changed,'VH',19);
  assert.equal(a.scopedEdgePreviews.every(e=>e.revision===18),true);
  assert.equal(b.scopedEdgePreviews.every(e=>e.revision===19),true);
