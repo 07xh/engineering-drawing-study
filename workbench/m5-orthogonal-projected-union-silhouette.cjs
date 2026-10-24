@@ -71,13 +71,25 @@ function auditOrthogonalProjectedUnionSilhouette({geometry,revision,
    signedV5LineActions:0,v5Ready:false});
   boxes.push(box);
  }
- const source=auditExactPhysicalFeatureDedup({geometry,revision,
-  projectedStrokePartitions,generatedSubspanRayEvidence,
-  unifiedProjectedFeatureEventEvidence,unifiedPaperSourceIdentityEvidence});
- if(source.status!=='exact-current-original-generated-3d-physical-feature-classes'||
+ // Complete projected OCCUPANCY geometry is independently provable
+ // from only M0 reviewed cuboids. Attaching the actual M4/M5 source
+ // coverage is an OPTIONAL stronger mode; demand the ENTIRE existing
+ // source chain or NONE, never accept a partial/forged proof.
+ const inputs=[projectedStrokePartitions,generatedSubspanRayEvidence,
+  unifiedProjectedFeatureEventEvidence,unifiedPaperSourceIdentityEvidence,
+  exactPhysicalDedupEvidence];
+ const provided=inputs.filter(x=>x!==undefined).length;
+ if(provided!==0&&provided!==inputs.length)
+  fail('complete M4/M5 source chain required when source audit is requested');
+ const source=provided===inputs.length?
+  auditExactPhysicalFeatureDedup({geometry,revision,
+   projectedStrokePartitions,generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,unifiedPaperSourceIdentityEvidence}):null;
+ if(source&&(source.status!==
+    'exact-current-original-generated-3d-physical-feature-classes'||
     JSON.stringify(source)!==JSON.stringify(exactPhysicalDedupEvidence)||
     source.officialLineStylesVerified!==false||
-    source.signedV5LineActions!==0||source.v5Ready!==false)
+    source.signedV5LineActions!==0||source.v5Ready!==false))
   fail('stale or forged physical feature source dedup proof');
  const projectedViews=[];
  for(const view of VIEWS){
@@ -121,7 +133,7 @@ function auditOrthogonalProjectedUnionSilhouette({geometry,revision,
    const [i,j]=queue[z];
    seed(i-1,j);seed(i+1,j);seed(i,j-1);seed(i,j+1);
   }
-  const sourceLines=source.groups.filter(g=>g.view===view).
+  const sourceLines=(source?.groups??[]).filter(g=>g.view===view).
    flatMap(g=>g.physicalFeatureClasses.map(c=>({
     id:c.key,
     from:project(c.physical3DFrom)[view],
@@ -192,7 +204,10 @@ function auditOrthogonalProjectedUnionSilhouette({geometry,revision,
   sourceUncoveredProjectedBoundarySegmentCount:segments.filter(x=>
    !x.originalOrGeneratedProjectedPhysicalSourceCoverageVerified).length,
   allProjectedOccupancyRegionBoundariesComplete:true,
-  allBoundaryGeometryHasReviewedSourceCoverage:segments.every(x=>
+  physical3DSourceReviewMode:source?
+   'full-independent-m0-to-m5-source-cross-audit':
+   'm0-projected-region-geometry-only',
+  allBoundaryGeometryHasReviewedSourceCoverage:source!==null&&segments.every(x=>
    x.originalOrGeneratedProjectedPhysicalSourceCoverageVerified),
   allOriginalAndGenerated3DSourceFeatureLineStylesCertified:false,
   internalVisibleHiddenDrawingLinesCertified:false,
