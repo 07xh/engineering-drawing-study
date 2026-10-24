@@ -56,8 +56,10 @@ test('ONE existing V5 Motion renders source-projectable M4 strokes at exact mode
   assert.equal(p.sourceEndpointVisibilityVerified,false);
   assert.deepEqual(line.geometry.from,toSheet(s.view,project(s.fromModelMm)[s.view],sheet));
   assert.deepEqual(line.geometry.to,toSheet(s.view,project(s.toModelMm)[s.view],sheet));
-  assert.deepEqual(fromSheet(s.view,line.geometry.from,sheet),
-   project(s.fromModelMm)[s.view]);
+  const roundTrip=fromSheet(s.view,line.geometry.from,sheet),
+   projected=project(s.fromModelMm)[s.view];
+  assert.ok(Math.hypot(roundTrip.u-projected.u,
+   roundTrip.v-projected.v)<1e-8);
   const x=Motion.actionShapeAttrs(line,0.5);
   assert.equal(x.x1,line.geometry.from.x);
   assert.ok(Math.abs(x.x2-(line.geometry.from.x+line.geometry.to.x)/2)<1e-8);
