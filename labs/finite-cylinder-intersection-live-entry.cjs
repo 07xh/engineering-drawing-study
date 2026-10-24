@@ -222,7 +222,9 @@ function solve(){
    '\\nW 视图开区间：前方无遮挡 '+wRayProof.certifiedClearCount+
    ' 段、实体前方遮挡 '+wRayProof.certifiedOccludedCount+
    ' 段、未判定 '+wRayProof.undeterminedCount+
-   ' 段。该结论基于整段解析不等式，临界端点不继承线型。'+
+   ' 段。已枚举圆柱轮廓/端盖的投影交汇 '+wRayProof.sourceOutlineEventCount+
+   ' 个，开区间分段校验='+wRayProof.projectedSourceOutlineEventsSeparatedAtWBoundaries+
+   '；临界端点不继承正式线型。'+
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
    '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
  }catch(e){
