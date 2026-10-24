@@ -42,6 +42,8 @@ const {auditUnifiedProjectedFeatureEvents}=
  require('./m5-unified-projected-feature-events.cjs');
 const {auditUnifiedPaperSourceIdentity}=
  require('./m5-unified-paper-source-identity.cjs');
+const {auditUnifiedPaperJunctions}=
+ require('./m5-unified-paper-junctions.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -232,6 +234,22 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      unifiedPaperSourceIdentityEvidence.signedV5LineActions!==0||
      unifiedPaperSourceIdentityEvidence.v5Ready!==false))
   throw new TypeError('paper source identity is not a signed official V5 line');
+ const unifiedPaperJunctionEvidence=
+  unifiedPaperSourceIdentityEvidence?.status===
+   'source-traced-canonical-projected-open-interval-registry'?
+  auditUnifiedPaperJunctions({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,
+   unifiedPaperSourceIdentityEvidence}):null;
+ if(unifiedPaperJunctionEvidence&&
+    (unifiedPaperJunctionEvidence.status!==
+      'real-source-reviewed-first-angle-paper-endpoint-incidence'||
+     unifiedPaperJunctionEvidence.allSourceOpenLineEndpointIncidencesAccountedFor!==true||
+     unifiedPaperJunctionEvidence.officialLineStylesVerified!==false||
+     unifiedPaperJunctionEvidence.signedV5LineActions!==0||
+     unifiedPaperJunctionEvidence.v5Ready!==false))
+  throw new TypeError('unverified paper junction tried to release a V5 line');
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -444,6 +462,14 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   generatedSubspanRayEvidence,
   unifiedProjectedFeatureEventEvidence,
   unifiedPaperSourceIdentityEvidence,
+  unifiedPaperJunctionEvidence,
+  unifiedPaperJunctionNodeCount:
+   unifiedPaperJunctionEvidence?.nodeCount??0,
+  unifiedPhysicalSourceCoincidentPaperJunctionCount:
+   unifiedPaperJunctionEvidence?.physicallySharedEndpointNodeCount??0,
+  unifiedPaperOnlyDifferent3DDepthJunctionCount:
+   unifiedPaperJunctionEvidence?.paperOnlyDifferent3DDepthNodeCount??0,
+
   unifiedPaperIntervalCount:
    unifiedPaperSourceIdentityEvidence?.paperIntervalCount??0,
   unifiedCoProjectedMultipleSourceIntervalCount:
