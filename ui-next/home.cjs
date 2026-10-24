@@ -31,9 +31,10 @@ function homeHTML(){return `
    <p>这些入口使用已有工具，部分仅能演示或核对数学。新标签打开，不会切换本机项目题型、删除已确认条件或将演示提升为 V5 正式答案。</p></div>
   <div class="v7-course-grid" role="list">
    <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
-    <span class="v7-course-status">数学演示 · 非正式有限实体相贯</span>
-    <h3>相贯线</h3><p>查看两正交圆柱曲面交线的分支及 V/H/W 投影。有限端盖、完整遮挡与标准虚实线未认证。</p>
-    <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">打开现有相贯曲线实验 ↗</a>
+    <span class="v7-course-status">有限圆柱解析求解 · 已证明辅助点 V5</span>
+    <h3>相贯线</h3><p>对人工确认的两根有限正交圆柱，解析求交并在 V/H/W 中逐步绘制已验证的端点和内部辅助点；连续曲线仍为未签线型的预览。</p>
+    <div class="v7-course-links"><a href="labs/finite-cylinder-intersection-live.html" target="_blank" rel="noopener noreferrer">打开有限圆柱解析求点 V5 ↗</a>
+     <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">旧无限曲面数学实验 ↗</a></div>
    </article>
    <article class="v7-course-card" role="listitem" data-course="composition" data-capability="confirmed-scene-only">
     <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
