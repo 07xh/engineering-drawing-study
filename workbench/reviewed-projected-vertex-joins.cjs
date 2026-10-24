@@ -13,6 +13,8 @@ const {project,VIEWS,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {traceConvexRayDepth}=
  require('../core/numeric/convex-ray-depth.cjs');
+const {certifyConvexPointRayClearance}=
+ require('../core/numeric/convex-point-ray-clearance.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -65,12 +67,23 @@ function deriveReviewedProjectedVertexJoins({geometry,revision}={}){
     point:entry.pointModelMm,observerDirection:d,solids});
    const depth=entry.pointModelMm.x*d.x+
     entry.pointModelMm.y*d.y+entry.pointModelMm.z*d.z;
+   // A listed nearest vertex does not establish positive-ray freedom:
+   // check against EVERY reviewed closed convex mesh independently.
+   const clearances=solids.map(solid=>certifyConvexPointRayClearance({
+    point:entry.pointModelMm,observerDirection:d,solid
+   }));
+   const positivelyClear=clearances.every(x=>x.status==='certified-clear');
    viewGroups.get(key).members.push({
     ...entry,observerDepthMm:depth,
     pointRayOcclusion:ray.status,
     pointRayNearestSolidId:ray.nearestSolidId,
     pointRayScope:ray.scope,
     pointRayVerifiedWithinScene:ray.status!=='undetermined',
+    positiveOpenRayClearWithinReviewedSolids:positivelyClear,
+    positiveOpenRayClearSolidIds:clearances.filter(x=>
+     x.status==='certified-clear').map(x=>x.solidId),
+    positiveRayProofScope:'only-all-explicit-closed-convex-mesh-set',
+    projectedPointVisibilityCertified:false,
     sourceIncidenceVerified:true,visibleJoinCertified:false
    });
   }
