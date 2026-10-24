@@ -6,7 +6,9 @@
  * they do not add case-by-case drawing code to the homepage.
  */
 const {SCHEMA}=require('../core/projection/geometry-scene-views.cjs');
-const {toSheet,VIEWS}=require('../core/projection/conventions.js');
+const {toSheet,project,VIEWS}=require('../core/projection/conventions.js');
+const {atAnalyticCurve3D}=
+ require('../core/geometry/analytic-curve-3d.cjs');
 const TAU=Math.PI*2, RAD=Math.PI/180;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const EPS=1e-10, CAP=25000;
@@ -30,6 +32,22 @@ function segment(target,a,b,obj,view,extra={}){
 }
 function point(target,p,obj,view,extra={}){
  add(target,make('circle',{cx:p.x,cy:p.y,r:5},obj,view,extra));
+}
+// A bounded raster approximation of EXACT source math; never a new 3D
+// Geometry.polyline, engineering stroke, topological edge or V5 action.
+function drawAnalyticPath(data,toCanvas){
+ const n=128,pts=[];
+ for(let i=0;i<=n;i++){
+  const t=data.parameter.from+
+   (data.parameter.to-data.parameter.from)*i/n;
+  const p=toCanvas(atAnalyticCurve3D(data,t));
+  if(!finite(p.x)||!finite(p.y))fail('解析曲线渲染点无效');
+  pts.push(p);
+ }
+ const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+ return {d:pts.map((p,i)=>(i?'L ':'M ')+p.x+' '+p.y).join(' '),
+  bounds:{minX:Math.min(...xs),maxX:Math.max(...xs),
+   minY:Math.min(...ys),maxY:Math.max(...ys)}};
 }
 function planar(p,sheet){
  return {x:sheet.origin.x+p.x*sheet.scale,
@@ -130,6 +148,16 @@ function representationPaper(obj,paper,sheet,warnings,viewTransforms=null){
       {...extra,collapsedFrom:'segment'});
     else fail('未知折线投影边类型');
    }
+  }else if(rep.kind==='analytic-curve-projection'){
+   if(rep.visibility!=='undetermined'||rep.sourceAnalytic3D!==true||
+      rep.svgApproximationOnly!==true)
+    fail('解析曲线缺少来源身份或未经证明就签发工程线型');
+   const path=drawAnalyticPath(obj.model.data,
+    source=>p(project(source)[view]));
+   add(paper,make('path',{d:path.d},obj,view,{
+    bounds:path.bounds,fill:'none',visibility:'undetermined',
+    svgApproximationOnly:true,sourceAnalytic3D:true
+   }));
   }else if(rep.kind==='unbounded-plane'){
    warnings.push(obj.id+': 无限平面无可绘制有限边界');
   }else fail('不支持的正式投影类型 '+rep.kind);
@@ -145,6 +173,11 @@ function modelVertices(scene){
   else if(obj.kind==='mesh')for(const p of Object.values(d.points))take(p);
   else if(obj.kind==='polyline')for(const p of d.points)take(p);
   else if(obj.kind==='line')take(d.point);
+  else if(obj.kind==='analytic-curve'){
+   for(const ratio of [0,0.25,0.5,0.75,1])
+    take(atAnalyticCurve3D(d,d.parameter.from+
+     (d.parameter.to-d.parameter.from)*ratio));
+  }
  }
  return points;
 }
@@ -197,6 +230,12 @@ function spatialCamera(scene,camera,spatial,warnings){
     y:d.point.y-u.y*half,z:d.point.z-u.z*half}),
    project({x:d.point.x+u.x*half,y:d.point.y+u.y*half,
     z:d.point.z+u.z*half}),obj,'3D',{viewportOnly:true});
+  }else if(obj.kind==='analytic-curve'){
+   const path=drawAnalyticPath(d,project);
+   add(spatial,make('path',{d:path.d},obj,'3D',{
+    bounds:path.bounds,fill:'none',visibility:'undetermined',
+    svgApproximationOnly:true,sourceAnalytic3D:true
+   }));
   }else if(obj.kind==='plane'){
    warnings.push(obj.id+': 未验证的无界空间平面不绘制虚构面片');
   }else fail('不支持的空间 Geometry '+obj.kind);
