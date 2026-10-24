@@ -11,8 +11,6 @@ const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
-const {evaluateReviewedConvexMeshDepth}=
- require('../workbench/reviewed-convex-scene-depth.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -147,6 +145,30 @@ function createUnifiedProjectSession(){
   solve(){
    current=null;clock=null;
    if(latest?.task==='composition'){
+    if(latest.affinePending)
+      throw new Error('未知点方程尚未经人工确认，禁止自动求解');
+    if(latest.affineProblem){
+      if(latest.objects?.length||latest.conditions?.length||
+         latest.relations?.length||latest.totalRelationCount)
+        throw new Error('不能把独立手工几何或 M2 非线性条件伪装为仿射解');
+      const p=latest.affineProblem;
+      if(p.confirmed!==true||p.imageId!==latest.source?.imageId||
+         p.sourceStamp!==JSON.stringify([
+           latest.source.imageId,latest.source.rotationDeg,latest.source.calibration]))
+        throw new Error('未知量数学条件需要按当前原图和比例重新审核');
+      const evidence=evaluateUnifiedMath({
+        kind:'affine-point-system',revision:latest.revision,
+        input:{frame:p.frame,unit:p.unit,points:p.points,constraints:p.constraints}
+      });
+      const scene=evidence.status==='unique'&&
+        evidence.mathematicallyVerifiedWithinAffineScope===true?
+         deriveGeometryScene({geometry:evidence.geometry,
+          revision:latest.revision,resultId:'AffineScopedResult'}):null;
+      current=Object.freeze({...resultBase(latest),kind:'affine-evidence',
+        verified:false,status:evidence.status,evidence,scene,
+        links:scene?projectSelectionLinks(scene):null,plan:null,clock:null});
+      emit();return current;
+    }
     const geometry=confirmedCompositionGeometry(latest);
     if(latest.totalRelationCount!==(latest.relations?.length||0))
       throw new Error('存在待人工确认的对象关系，禁止出具一致性结论');
@@ -154,13 +176,8 @@ function createUnifiedProjectSession(){
       geometry,latest.relations||[],{revision:latest.revision});
     const scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
-    // Only human-confirmed closed convex 3D meshes enter the shared ray-depth
-    // kernel. Other Geometry shapes still work in the editor, but receive
-    // explicit NOT-COVERED occlusion evidence (never fabricated hidden lines).
-    const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
-      geometry,revision:latest.revision});
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
