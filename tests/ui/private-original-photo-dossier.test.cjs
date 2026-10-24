@@ -44,6 +44,9 @@ test('09 real HTML opt-in exports one local SHA-256 dossier, not a photo or blin
  const json=JSON.parse(await s.blobs[0].text());
  assert.equal(json.schema,'draftai-private-photo-case/1');
  assert.equal(json.source.sha256,'ab'.repeat(32));
+ assert.equal(json.byteReviewBinding.schema,'draftai-private-photo-byte-review-binding/1');
+ assert.equal(json.byteReviewBinding.originalPhotoSha256,'ab'.repeat(32));
+ assert.equal(json.byteReviewBinding.photoOriginIndependentlyAuthenticated,false);
  assert.equal(json.status,'candidates-captured');
  assert.equal(json.acceptedTextbookProblemCount,0);
  assert.equal(json.independentBlindTestPassed,false);

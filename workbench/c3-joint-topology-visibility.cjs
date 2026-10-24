@@ -17,6 +17,8 @@ const {auditC3SourceJunctionTangents}=require('./c3-source-junction-tangents.cjs
 const {auditC3LocalBooleanCreases}=require('./c3-local-boolean-crease.cjs');
 const {auditC3SelectedBooleanVHWOpenRays}=
  require('./c3-selected-boolean-vhw-open-rays.cjs');
+const {auditC3ProjectedCapLineArrangement}=
+ require('./c3-projected-cap-line-arrangement.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -152,6 +154,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
  const capBoundaryEvidence=auditC3CapBoundaryIncidence({input,revision});
  const merged3DSourceGraph=auditC3Merged3DSourceGraph({input,revision});
  const localSourceTangentEvidence=auditC3SourceJunctionTangents({input,revision});
+ const projectedCapLineEvidence=auditC3ProjectedCapLineArrangement({input,revision});
  const localBooleanCreaseEvidence=auditC3LocalBooleanCreases({input,revision,solidOperation});
  const selectedBooleanRayEvidence=auditC3SelectedBooleanVHWOpenRays({
   input,revision,solidOperation});
@@ -245,6 +248,9 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   wLateralProjection,capBoundaryEvidence,merged3DSourceGraph,
+  projectedCapLineEvidence,
+  capLineSourceProjectionPartitionVerified:
+   projectedCapLineEvidence.allProjectedCapLinesAccountedFor===true,
   localSourceTangentEvidence,localBooleanCreaseEvidence,
   selectedBooleanRayEvidence,
   selectedBooleanThreeViewSourceRayCoverageVerified:

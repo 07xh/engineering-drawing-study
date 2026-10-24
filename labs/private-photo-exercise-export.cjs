@@ -8,6 +8,8 @@ const {fingerprintLocalPhoto}=
  require('../recognition/local-photo-fingerprint.cjs');
 const {makePrivatePhotoCase}=
  require('../benchmark/private-photo-exercise-dossier.cjs');
+const {bindPrivatePhotoCase}=
+ require('../benchmark/private-photo-byte-review-binding.cjs');
 function attachPrivatePhotoCaseExport({
  fileInput,photoClear,image,role,accepted,button,status,
  getEvidence,getCandidates,getGeneration,getCurrentLive,
@@ -71,7 +73,15 @@ function attachPrivatePhotoCaseExport({
       getGeneration()!==generation||
       JSON.stringify(getEvidence())!==beforeKey)
     throw new RangeError('记录生成期间原题来源发生变化');
-   const json=JSON.stringify(output,null,2);
+   // Bind the current ORIGINAL photo-byte SHA-256 to every exported
+   // source/review/calibration/M3 field in one domain-separated SHA-256.
+   // This is re-verifiable LOCAL integrity, not a signature of source truth.
+   const bound=await bindPrivatePhotoCase(output,subtle);
+   if(epoch!==capturedEpoch||fileInput.files?.[0]!==file||
+      getGeneration()!==generation||
+      JSON.stringify(getEvidence())!==beforeKey)
+    throw new RangeError('原图或审核修订在来源绑定计算期间发生变化');
+   const json=JSON.stringify(bound,null,2);
    if(json.length>300000)throw new RangeError('逐题证据超出本地文件大小限制');
    const objectUrl=urls.createObjectURL(new Blob([json],{type:'application/json'}));
    try{
@@ -83,8 +93,8 @@ function attachPrivatePhotoCaseExport({
     // The browser has started the explicit download; release ephemeral URL.
     setTimeout(()=>urls.revokeObjectURL(objectUrl),0);
    }
-   status.textContent='仅本机导出逐题证据：'+output.status+
-    '。包含原图 SHA-256、人工候选与毫米条件，不含照片字节。'+
+   status.textContent='仅本机导出逐题证据：'+bound.status+
+    '。包含原图 SHA-256 与当前审核记录的可复算绑定，不含照片字节。'+
     ' 无答案独立盲测通过数仍为 0；请勿把本文件公开上传。';
   }catch(err){
    status.textContent='本地记录未生成：'+(err?.message||'来源核验失败');
