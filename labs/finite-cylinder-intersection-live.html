@@ -59,7 +59,7 @@ small{display:block;color:#4c637a}
 <option value="intersection">两有限圆柱实体交集（公共部分）</option>
 <option value="union">两有限圆柱实体并集（合并形体）</option>
 </select></label>
-<small>交集与并集的保留表面方向不同。选择后仅可核验正规交线开区间是否属于局部边界，不能据此认证国标线型、曲线端点或完整工程图。</small>
+<small>交集与并集的保留表面方向不同。选择后可核验正规交线开区间的局部保留面片和 V/H/W 前方实体内部遮挡，并切换 W 视图的相应证据色；投影重合、曲线端点、最终轮廓及国标线型仍未认证。</small>
 <label class="confirm" for="confirmed"><input id="confirmed" type="checkbox">我已人工确认题图中的两圆柱轴向、尺寸、有限端盖与模型 mm 单位</label>
 <button type="button" id="solve">验算解析相贯线并生成 V5 点动作</button>
 <div class="actions" aria-label="唯一 V5 控制">

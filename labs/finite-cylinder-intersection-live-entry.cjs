@@ -9,6 +9,8 @@ const {project,toSheet}=require('../core/projection/conventions.js');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const {auditC3LocalBooleanCreases}=
  require('../workbench/c3-local-boolean-crease.cjs');
+const {auditC3SelectedBooleanVHWOpenRays}=
+ require('../workbench/c3-selected-boolean-vhw-open-rays.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
  require('../workbench/c3-vh-projection-dedup.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -23,6 +25,7 @@ const fieldIds=['zRadius','zX','zY','zMin','zMax',
 const controls=['play','pause','prev','next'];
 let revision=1,current=null,raf=null,playing=false;
 let transforms=null,linkedScene=null,selectedGeometryIds=new Set();
+let selectedBooleanRayProof=null,selectedWRayTopologyClear=false;
 function now(){return performance.now();}
 function node(tag,attributes={}){
  const element=document.createElementNS(NS,tag);
@@ -46,6 +49,7 @@ function invalidate(reason,resetConfirmation=false){
  if(current){current.player.invalidate(revision+1,now());current=null;}
  revision++;
  transforms=null;linkedScene=null;selectedGeometryIds=new Set();
+ selectedBooleanRayProof=null;selectedWRayTopologyClear=false;
  $('spatialBoard').replaceChildren();
  if(resetConfirmation)$('confirmed').checked=false;
  $('board').replaceChildren();
@@ -115,6 +119,27 @@ function pointAt(branch,input,x){
   throw new RangeError('预览点未通过独立曲面和有限端盖核验');
  return p;
 }
+function scopedWRayStatus(branchId,from,to,oldStatus){
+ // Selected composite Boolean changes the exact opaque-volume predicate.
+ // However source projection overlap or unpartitioned silhouettes still
+ // block ANY displayed signed ray classification, regardless of operation.
+ if(!selectedBooleanRayProof)return oldStatus;
+ if(!selectedWRayTopologyClear||
+    selectedBooleanRayProof.revision!==revision||
+    selectedBooleanRayProof.fullSourceOpenEdgeRayCoverageVerified!==true)
+  return 'undetermined';
+ const eps=1e-9*Math.max(1,Math.abs(from),Math.abs(to));
+ const matches=selectedBooleanRayProof.intervals.filter(row=>
+  row.view==='W'&&row.sourceKind==='analytic-curve'&&
+  row.sourceId===branchId&&
+  row.openParameterRange[0]<=from+eps&&
+  row.openParameterRange[1]>=to-eps&&
+  row.sourceFirstAngleRayEntireIntervalProven===true);
+ if(matches.length!==1)return 'undetermined';
+ return matches[0].openInteriorVolumeRayStatus==='opaque-interior-ahead'?
+  'occluded':matches[0].openInteriorVolumeRayStatus===
+   'strict-interior-ray-clear'?'clear':'undetermined';
+}
 function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
  const svg=$('board'),group=node('g',{
   'data-intersection-preview':'uncertified',
@@ -169,7 +194,9 @@ function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
      row.xOpenRange[1]>branch.xRange[1])
    throw new RangeError('W 预览片段不能超出当前 M3 解析分支');
   drawSpan('W',branch.id,row.xOpenRange[0],row.xOpenRange[1],
-   row.openInteriorRayStatus,true,x=>project(pointAt(branch,input,x)).W);
+   scopedWRayStatus(branch.id,row.xOpenRange[0],row.xOpenRange[1],
+    row.openInteriorRayStatus),true,x=>project(pointAt(branch,input,x)).W,
+   {'data-selected-Boolean-ray':selectedBooleanRayProof?.solidOperation||'unselected'});
  }
  svg.append(group);
 }
@@ -237,13 +264,16 @@ function renderVerifiedV5Actions(){
    if(WGuide&&(!WProof||!WProof.m5SourcePartitioned||
       WProof.officialStandardLineStyleVerified!==false))
     throw new RangeError('W V5 curve lacks current independently proven M5 partition');
+   const WStatus=WGuide?scopedWRayStatus(WProof.branchId,
+    WProof.sourceXOpenRange[0],WProof.sourceXOpenRange[1],
+    WProof.m5OpenInteriorRayStatus):'undetermined';
    const shape=node(action.kind==='line'?'line':
     analyticArc||WGuide?'path':'circle',{
     fill:action.kind==='point'?
      (capGuide?'#608969':'#12649b'):'none',
     stroke:capGuide?'#608969':
-     WGuide?(WProof.m5OpenInteriorRayStatus==='clear'?'#167f8b':
-     WProof.m5OpenInteriorRayStatus==='occluded'?'#cb802f':'#8561b2'):
+     WGuide?(WStatus==='clear'?'#167f8b':
+     WStatus==='occluded'?'#cb802f':'#8561b2'):
      analyticArc?'#a064b5':
      originalGuide?'#638bb0':'#12649b',
     'stroke-width':capGuide?2:WGuide?2.6:analyticArc?2.3:originalGuide?1.8:2,
@@ -259,7 +289,8 @@ function renderVerifiedV5Actions(){
     'data-official-line-style':'false',
     ...(capGuide?{'data-cap-pair-id':capGuide.sourceFeatureId,
       'data-cap-projection-collapsed':capGuide.sourceProjectionCollapsedToPoint}:{}),
-    ...(WGuide?{'data-M5-open-ray-status':WProof.m5OpenInteriorRayStatus,
+    ...(WGuide?{'data-M5-open-ray-status':WStatus,
+      'data-selected-Boolean-ray':selectedBooleanRayProof?.solidOperation||'unselected',
       'data-open-interval-only':'true'}:{})});
    const matches=(linkedScene?.groups||[]).filter(g=>
     Object.values(g.v5ActionIds).some(v=>
@@ -345,6 +376,10 @@ function solve(){
    compiled:computed,viewTransforms:transforms});
   const solidOperation=$('solidOperation').value||null;
   const localCrease=auditC3LocalBooleanCreases({input,revision,solidOperation});
+  selectedBooleanRayProof=solidOperation?
+   auditC3SelectedBooleanVHWOpenRays({input,revision,solidOperation}):null;
+  selectedWRayTopologyClear=wRayProof.exactProjectedLateralSelfOverlapExcluded===true&&
+   wRayProof.projectedSourceOutlineEventsSeparatedAtWBoundaries===true;
   drawScaffold();
   drawAnalyticPreview(computed,input,wRayProof,vhDedup);
   current=computed;linkedScene=linked;
@@ -373,6 +408,12 @@ function solve(){
    '，正规开区间 '+localCrease.regularLocalCreaseCount+
    '/'+localCrease.sourceEdgeCount+
    '；仅代表局部保留面片，全部端点、完整实体轮廓和国标线型仍未认证。'+
+   (selectedBooleanRayProof?
+    '\\n选定实体的 V/H/W 整段体积遮挡证明：'+selectedBooleanRayProof.status+
+    '，前方严格无实体内部 '+selectedBooleanRayProof.certifiedClearCount+
+    ' 段、前方有实体内部 '+selectedBooleanRayProof.certifiedOpaqueCount+
+    ' 段、未判定 '+selectedBooleanRayProof.undeterminedCount+
+    ' 段（交汇端点、投影复线和国标线型未签收）。':'')+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
    ' 段、H='+vhDedup.visibleUniqueHSpanCount+
    ' 段；与原始圆柱轮廓重合，不代表独立认证的相贯线。'+
@@ -385,7 +426,8 @@ function solve(){
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
    '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
  }catch(e){
-  current=null;linkedScene=null;selectedGeometryId=null;
+  current=null;linkedScene=null;selectedGeometryIds=new Set();
+  selectedBooleanRayProof=null;selectedWRayTopologyClear=false;
   disable(true);$('board').replaceChildren();
   $('spatialBoard').replaceChildren();
   $('proof').textContent='没有发布任何未经证明的点或曲线。';

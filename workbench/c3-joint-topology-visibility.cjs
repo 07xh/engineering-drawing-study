@@ -15,6 +15,8 @@ const {auditC3CapBoundaryIncidence}=require('./c3-cap-boundary-incidence.cjs');
 const {auditC3Merged3DSourceGraph}=require('./c3-merged-3d-source-graph.cjs');
 const {auditC3SourceJunctionTangents}=require('./c3-source-junction-tangents.cjs');
 const {auditC3LocalBooleanCreases}=require('./c3-local-boolean-crease.cjs');
+const {auditC3SelectedBooleanVHWOpenRays}=
+ require('./c3-selected-boolean-vhw-open-rays.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -151,6 +153,8 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
  const merged3DSourceGraph=auditC3Merged3DSourceGraph({input,revision});
  const localSourceTangentEvidence=auditC3SourceJunctionTangents({input,revision});
  const localBooleanCreaseEvidence=auditC3LocalBooleanCreases({input,revision,solidOperation});
+ const selectedBooleanRayEvidence=auditC3SelectedBooleanVHWOpenRays({
+  input,revision,solidOperation});
  const capByLateralJunction=new Map(capBoundaryEvidence.capJunctions.flatMap(j=>
   j.sourceLateralJunctionIds.map(id=>[id,j])));
  if(wLateralProjection.status==='not-covered')
@@ -242,6 +246,9 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   wLateralProjection,capBoundaryEvidence,merged3DSourceGraph,
   localSourceTangentEvidence,localBooleanCreaseEvidence,
+  selectedBooleanRayEvidence,
+  selectedBooleanThreeViewSourceRayCoverageVerified:
+   selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true,
   localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,
   BooleanSurfaceOperationSelected:solidOperation!==null,
   regularSourceJunctionContinuationCount:
