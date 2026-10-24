@@ -52,7 +52,8 @@
       "status": "consumer-review",
       "proofScope": "one boundary point and explicit support planes",
       "regressionTests": [
-        "tests/math/m0-convex-polytope-boundary-ray.test.cjs"
+        "tests/math/m0-convex-polytope-boundary-ray.test.cjs",
+        "tests/math/m0-boundary-ray-source-sign-20261024.test.cjs"
       ],
       "remainingGate": "independent source boundary incidence"
     },
