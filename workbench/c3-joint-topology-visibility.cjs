@@ -22,7 +22,8 @@ function analyticC3PointAt(branch,input,x){
   z:Y.zCenter+branch.signZ*Math.sqrt(zr)};
  return Object.values(point).every(Number.isFinite)?point:null;
 }
-function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences){
+function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences,branches){
+ const sourceBranches=new Map(branches.map(b=>[b.id,b]));
  const result=[];
  for(const view of ['V','H','W']){
   const byBranch=new Map();
