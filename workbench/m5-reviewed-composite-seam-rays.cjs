@@ -22,6 +22,8 @@ const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('./reviewed-convex-scene-depth.cjs');
+const {inspectSourceVertexIncidence}=
+ require('./m5-source-vertex-incidence-audit.cjs');
 const {evaluateReviewedBoxContacts}=
  require('../core/geometry/reviewed-box-contact-evidence.cjs');
 const {evaluateReviewedCompositeInterfaces}=
@@ -43,6 +45,11 @@ function proveReviewedCompositeSeamRays({geometry,revision}={}){
    segments:[],checkedCount:0,certifiedOpenVisibleCount:0,
    certifiedFullyOccludedCount:0,undeterminedCount:0,
    completeSeamLineStyleVerified:false,v5Ready:false});
+ const originalSourceVertexIncidenceEvidence=inspectSourceVertexIncidence({
+  geometry,revision,sceneDepthEvidence:scene});
+ if(originalSourceVertexIncidenceEvidence.v5Ready!==false||
+    originalSourceVertexIncidenceEvidence.standardLineStylesVerified!==false)
+  throw new RangeError('M5 endpoint incidence does not certify a composite line');
  const contacts=evaluateReviewedBoxContacts({geometry,revision});
  const interfaceProof=evaluateReviewedCompositeInterfaces({
   geometry,revision,contactEvidence:contacts,sceneDepthEvidence:scene});
@@ -109,7 +116,9 @@ function proveReviewedCompositeSeamRays({geometry,revision}={}){
  }
  return freeze({schema:'draftai-m5-composite-seam-ray/1',revision,
   status:'scoped-source-bounded-whole-seam-ray-evidence',
-  sourceGeometryIds:geometry.map(g=>g.id),sourcePatchCount:interfaceProof.contactPatchCount,
+  sourceGeometryIds:geometry.map(g=>g.id),
+  originalSourceVertexIncidenceEvidence,
+  sourcePatchCount:interfaceProof.contactPatchCount,
   segments,checkedCount:segments.length,
   certifiedOpenVisibleCount:segments.filter(e=>
    e.status==='certified-open-ray-clear-whole-source-segment').length,
