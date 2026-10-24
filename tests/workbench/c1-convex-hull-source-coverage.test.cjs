@@ -1,5 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const {auditC1ConvexContourSourceCoverage:audit}=
@@ -134,4 +135,36 @@ test('C1 unsupported open or incorrect source meshes cannot obtain global convex
  assert.equal(r.completeSolidV5Ready,false);
  assert.equal(r.officialLineStylesVerified,false);
  assert.throws(()=>audit({geometry:make(),revision:-1}),/revision/);
+});
+
+
+test('C1 real UI consumes certified atomic hull-side intervals; never invents V5 lines',()=>{
+ const ui=fs.readFileSync('labs/solid-third-view-live-entry.cjs','utf8');
+ assert.match(ui,/certified\.convexContourSourceCoverage/);
+ assert.match(ui,/proof\.views\.find\(x=>x\.view===view\)/);
+ assert.match(ui,/for\(const side of viewProof\.sides\)for\(const interval of side\.intervals\)/);
+ assert.match(ui,/interval\.sourceGeometryId!==result\.geometry\.id/);
+ assert.match(ui,/interval\.revision!==result\.revision/);
+ assert.match(ui,/interval\.uniqueFinalPhysicalStrokeSourceVerified!==false/);
+ assert.match(ui,/interval\.completeProjectedEndpointJoinVerified!==false/);
+ assert.match(ui,/interval\.certifiedObserverRayForEntireFinalStroke!==false/);
+ assert.match(ui,/interval\.officialLineStyle!=='undetermined'/);
+ assert.match(ui,/interval\.v5StrokeAuthorized!==false/);
+ assert.match(ui,/drawScopedHullIntervals\(svg,certified,result,v\)/);
+ assert.match(ui,/data-m5-hull-interval/);
+ assert.match(ui,/data-visibility','undetermined/);
+ assert.match(ui,/data-official-v5','false/);
+ assert.match(ui,/stroke-dasharray':'1 7'/);
+ assert.doesNotMatch(ui,/data-official-v5','true/);
+ const g=make(),proof=audit({geometry:g,revision:13});
+ const intervals=proof.views.flatMap(v=>v.sides.flatMap(s=>s.intervals));
+ assert.ok(intervals.length>=12);
+ for(const i of intervals){
+  assert.ok(i.sourceEdgeIds.length);
+  assert.equal(i.geometricBoundarySourceCoverageVerified,true);
+  assert.equal(i.uniqueFinalPhysicalStrokeSourceVerified,false);
+  assert.equal(i.completeProjectedEndpointJoinVerified,false);
+  assert.equal(i.officialLineStyle,'undetermined');
+  assert.equal(i.v5StrokeAuthorized,false);
+ }
 });
