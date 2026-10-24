@@ -35,9 +35,9 @@ function pyramidSectionV5Preview(pyramid,plane){
   if(!point||!['x','y','z'].every(k=>finite(point[k])))
    throw new TypeError('finite 3D source point required');
   const q=view==='V'?
-   at(85+scale*(point.x-b.minX),40+scale*(apex.z-point.z)):
+   at(85+scale*(b.maxX-point.x),40+scale*(apex.z-point.z)):
    view==='H'?
-   at(85+scale*(point.x-b.minX),382+scale*(point.y-b.minY)):
+   at(85+scale*(b.maxX-point.x),382+scale*(point.y-b.minY)):
    view==='W'?
    at(542+scale*(point.y-b.minY),40+scale*(apex.z-point.z)):null;
   if(!q||q.x<0||q.y<0||q.x>sheet.width||q.y>sheet.height)
