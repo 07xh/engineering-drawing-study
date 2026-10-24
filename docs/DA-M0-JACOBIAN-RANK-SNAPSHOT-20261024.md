@@ -1,0 +1,7 @@
+# M0 Jacobian rank matrix single-read source verification
+
+The existing one-sided Jacobi-SVD rank diagnostic rejected sparse coefficients, but repeatedly read original getter-backed `rows[i][j]` on validation, maximum scaling, and subsequent numerical computation. A caller could therefore pass a finite Jacobian test and have entirely different, Infinity, or NaN values used in the actual rank estimation. This is the same general data-integrity weakness fixed earlier in the dimensionless Jacobian preprocessor, now corrected **in its independent real numeric-rank consumer**.
+
+The new implementation snapshots the first row once for dimensions, then every own row/index/finite coefficient once into a detached dense matrix. Scaling and Jacobi rotations consume ONLY that snapshot. Every existing result schema field, 64x64 budget, relative singular ratios, Jacobi sweep/underflow detection, threshold policy and `proofOfExistence:false`, `proofOfGlobalUniqueness:false` remain unchanged. This is no new solver; it does not assert exact SVD, existence, global uniqueness, scene line style or V5.
+
+Independent dynamic-getter tests include a first row that becomes Infinity upon second read, a coefficient becoming Infinity, first-read Infinity that later becomes finite, mutated later row, sparse / inherited index failures, near-tangent, rank deficient and extreme scale unresolved cases. Existing M0 and workbench tests and five final PR HEAD CI workflows must pass before merge. Rollback by isolated squash revert.
