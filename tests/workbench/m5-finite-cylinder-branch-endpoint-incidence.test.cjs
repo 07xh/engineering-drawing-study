@@ -21,6 +21,13 @@ test('C3 four analytic sign branches have 8 authentic endpoints at 4 real 3D jun
  assert.equal(r.verified3DJunctionCount,4);
  assert.equal(r.pairedSignedRadicalCount,4);
  assert.equal(r.regularLocalC1JoinCount,4);
+ assert.equal(r.componentCount,2);
+ assert.equal(r.graphVerifiedComponentCount,2);
+ assert.equal(r.allAnalyticSourceBranchesAccountedFor,true);
+ assert.ok(r.components.every(c=>c.topologicalShape==='closed-cycle'&&
+  c.graphPathOrCycleVerifiedWithinLateralLateralScope&&
+  c.sourceBranchIds.length===2&&c.traversal.length===2));
+ assert.ok(r.components.every(c=>c.traversal.every(w=>!w.officialDrawingOrderApproved)));
  assert.equal(r.unresolvedAnalyticJunctionCount,0);
  assert.equal(r.allSourceEndpointEquationsRecomputed,true);
  assert.equal(r.fullBranchTopologyVerified,false);
@@ -70,6 +77,10 @@ test('C3 cap-trimmed branches end at real finite cap points without a fake sign 
  assert.equal(r.endpoints.length,4);
  assert.equal(r.junctions.length,4);
  assert.equal(r.pairedSignedRadicalCount,0);
+ assert.equal(r.componentCount,2);
+ assert.equal(r.graphVerifiedComponentCount,2);
+ assert.ok(r.components.every(c=>c.topologicalShape==='finite-open-path'&&
+  c.traversal.length===1&&c.graphPathOrCycleVerifiedWithinLateralLateralScope));
  assert.ok(r.junctions.every(j=>j.classification==='single-branch-terminal'));
  assert.ok(r.junctions.every(j=>j.finiteCapTermination));
  assert.equal(r.v5CurveReady,false);
@@ -130,6 +141,9 @@ test('C3 simultaneous radical collapse is NOT a regular two-branch tangent',()=>
  assert.equal(r.status,'scoped-analytic-3d-endpoint-incidence');
  assert.equal(r.regularLocalC1JoinCount,0);
  assert.ok(r.unresolvedAnalyticJunctionCount>0);
+ assert.equal(r.graphVerifiedComponentCount,0);
+ assert.equal(r.allAnalyticSourceBranchesAccountedFor,true);
+ assert.ok(r.components.every(c=>!c.graphPathOrCycleVerifiedWithinLateralLateralScope));
  for(const j of r.junctions.filter(j=>j.incidentBranchIds.length>1)){
   assert.equal(j.implicitGradientRankTwoVerified,false);
   assert.equal(j.tangent3D,null);
@@ -157,4 +171,18 @@ test('C3 implicit regularity produces view-specific collapsed tangent, not an in
   assert.equal(j.standardLineStylesVerified,false);
   assert.equal(j.v5CurveActionSignedOff,false);
  }
+});
+
+test('C3 source branch graph never authorizes a solid/dashed line or a drawing timeline',()=>{
+ const r=audit(model(),17);
+ assert.equal(r.graphVerifiedComponentCount,2);
+ for(const component of r.components){
+  assert.equal(component.everySourceBranchVisitedExactlyOnce,true);
+  assert.equal(component.officialLineStyleOrAnimationSigned,false);
+  assert.equal(component.lateralCapContinuationVerified,false);
+  assert.equal(component.noOtherEntitySurfaceIntersectionsVerified,false);
+  assert.equal(component.traversal.some(s=>s.officialDrawingOrderApproved),false);
+ }
+ assert.equal(r.v5CurveReady,false);
+ assert.equal(r.standardLineStylesVerified,false);
 });
