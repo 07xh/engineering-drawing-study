@@ -44,6 +44,8 @@ const {auditUnifiedPaperSourceIdentity}=
  require('./m5-unified-paper-source-identity.cjs');
 const {auditUnifiedPaperJunctions}=
  require('./m5-unified-paper-junctions.cjs');
+const {auditUnifiedPaperLineReadiness}=
+ require('./m5-unified-paper-line-readiness.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -250,6 +252,24 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
      unifiedPaperJunctionEvidence.signedV5LineActions!==0||
      unifiedPaperJunctionEvidence.v5Ready!==false))
   throw new TypeError('unverified paper junction tried to release a V5 line');
+ const unifiedPaperLineReadinessEvidence=
+  unifiedPaperJunctionEvidence?.status===
+   'real-source-reviewed-first-angle-paper-endpoint-incidence'?
+  auditUnifiedPaperLineReadiness({geometry,revision,
+   projectedStrokePartitions:partitions,
+   generatedSubspanRayEvidence,
+   unifiedProjectedFeatureEventEvidence,
+   unifiedPaperSourceIdentityEvidence,
+   unifiedPaperJunctionEvidence}):null;
+ if(unifiedPaperLineReadinessEvidence&&
+    (unifiedPaperLineReadinessEvidence.status!==
+      'per-paper-interval-final-stroke-proof-blockers'||
+     unifiedPaperLineReadinessEvidence.paperIntervalCount!==
+      unifiedPaperSourceIdentityEvidence.paperIntervalCount||
+     unifiedPaperLineReadinessEvidence.officialLineStylesVerified!==false||
+     unifiedPaperLineReadinessEvidence.signedV5LineActions!==0||
+     unifiedPaperLineReadinessEvidence.v5Ready!==false))
+  throw new TypeError('unverified canonical paper line tried to release official V5 strokes');
 
  if(physicalFeatureJunctionEvidence?.status===
     'source-recomputed-physical-3d-feature-incidence'){
@@ -463,6 +483,16 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   unifiedProjectedFeatureEventEvidence,
   unifiedPaperSourceIdentityEvidence,
   unifiedPaperJunctionEvidence,
+  unifiedPaperLineReadinessEvidence,
+  paperStrokeScopedClearSourceCount:
+   unifiedPaperLineReadinessEvidence?.scopedClearFrontRayCandidateCount??0,
+  paperStrokeScopedOpaqueSourceCount:
+   unifiedPaperLineReadinessEvidence?.scopedOpaqueFrontRayCandidateCount??0,
+  paperStrokeNonuniqueSourceCount:
+   unifiedPaperLineReadinessEvidence?.nonuniqueSourceGroupCount??0,
+  paperStrokeDepthAliasEndpointCount:
+   unifiedPaperLineReadinessEvidence?.depthAliasEndpointLineCount??0,
+
   unifiedPaperJunctionNodeCount:
    unifiedPaperJunctionEvidence?.nodeCount??0,
   unifiedPhysicalSourceCoincidentPaperJunctionCount:
