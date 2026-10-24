@@ -8,7 +8,10 @@ const {compileReviewedSolidVertexV5}=
  require('../../workbench/reviewed-solid-vertex-v5.cjs');
 const P=(x,y,z)=>({x,y,z});
 function make(min=P(-3,4,-7),max=P(22,16,24)){
- return {...prismMesh({solid:{min,max}}),id:'Reviewed'};
+ const g=prismMesh({solid:{min,max}});
+ return {...g,id:'Reviewed',data:{points:Object.fromEntries(
+  Object.entries(g.data.points).map(([k,p])=>[k,{...p}])),
+  edges:g.data.edges.map(e=>[...e]),faces:g.data.faces.map(f=>[...f])}};
 }
 function reviewed(g,pair,revision){
  return {confirmedBy:'user',topologyConfirmed:true,geometryId:g.id,
