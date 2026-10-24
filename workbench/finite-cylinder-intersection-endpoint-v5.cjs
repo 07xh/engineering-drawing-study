@@ -11,6 +11,8 @@
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {auditFiniteCylinderWRayIntervals}=
  require('./m5-finite-cylinder-w-ray-intervals.cjs');
+const {auditFiniteCylinderVHAxisRays}=
+ require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditFiniteCylinderEndpointIncidence}=
  require('./m5-analytic-cylinder-endpoint-incidence.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
@@ -47,6 +49,14 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
     continuousCurveWRayEvidence.continuousCurveV5Ready!==false||
     continuousCurveWRayEvidence.standardLineStylesVerified!==false)
   throw new RangeError('independently recomputed M5 W-view curve spans incomplete');
+ const continuousCurveVHAxisRayEvidence=auditFiniteCylinderVHAxisRays({input,revision});
+ if(continuousCurveVHAxisRayEvidence.status!==
+      'scoped-analytic-VH-strict-volume-occlusion'||
+    continuousCurveVHAxisRayEvidence.sourceBranchCount!==proof.branchCount||
+    continuousCurveVHAxisRayEvidence.sourceBranchCoverageVerified!==true||
+    continuousCurveVHAxisRayEvidence.completeCurveV5Ready!==false||
+    continuousCurveVHAxisRayEvidence.officialLineStylesVerified!==false)
+  throw new RangeError('independently recomputed M5 V/H axis-ray proof unavailable');
  const sourceM5JunctionEvidence=auditFiniteCylinderEndpointIncidence({input,revision});
  if(sourceM5JunctionEvidence.status!=='scoped-analytic-3d-endpoint-incidence'||
     sourceM5JunctionEvidence.sourceM3BranchCount!==proof.branchCount||
@@ -103,7 +113,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
   revision,status:'analytic-endpoint-point-actions-only',
-  sourceM3:proof,continuousCurveWRayEvidence,sourceM5JunctionEvidence,
+  sourceM3:proof,continuousCurveWRayEvidence,continuousCurveVHAxisRayEvidence,
+  sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
   timing,player,bindings,
   independentlyProvenEndpointCount:branchEndpoints.length,
