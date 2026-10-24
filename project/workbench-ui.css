@@ -92,3 +92,11 @@ body.ui-next .v7-relation-editor select,body.ui-next .v7-relation-editor input{m
 body.ui-next .v7-relation-editor .v7-compose-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 body.ui-next .v7-relation-editor .v7-compose-actions button:last-child{grid-column:1/-1}
 @media(max-width:520px){body.ui-next .v7-relation-editor .v7-compose-actions{grid-template-columns:1fr}body.ui-next .v7-relation-editor .v7-compose-actions button:last-child{grid-column:auto}}
+
+body.ui-next .v7-unknowns{margin:13px 0;padding:10px;border:1px solid var(--line,#dde6f1);border-radius:12px}
+body.ui-next .v7-unknowns summary{cursor:pointer;font-weight:700}
+body.ui-next .v7-unknowns label{min-width:0}
+body.ui-next .v7-unknowns input,body.ui-next .v7-unknowns select{max-width:100%;min-width:0}
+body.ui-next .v7-unknown-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+body.ui-next .v7-unknowns .v7-compose-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:520px){body.ui-next .v7-unknown-grid,body.ui-next .v7-unknowns .v7-compose-actions{grid-template-columns:1fr}}
