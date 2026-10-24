@@ -120,16 +120,6 @@ function evaluateFiniteOrthogonalCylinderIntersection({input,revision}={}){
     previous.to=to; // a stationary radial X split is not a physical endcap
    else kept.push({from,to});
   }
-  // A cap plane can graze a lateral branch at a SINGLE x. Such isolated
-  // contact must never be silently reported as no intersection, nor counted
-  // as a nondegenerate analytic curve interval with invented continuity.
-  for(const x of splits){
-   const candidate=at(x,signY,signZ);
-   if(inside(candidate)&&!kept.some(seg=>
-      x>=seg.from.x-epsX&&x<=seg.to.x+epsX))
-    return blocked('degenerate-undetermined',
-      'isolated cap tangency or zero-length branch requires singular-event proof');
-  }
   for(const interval of kept){
    const witnesses=[interval.from,at((interval.from.x+interval.to.x)/2,signY,signZ),interval.to]
     .map(p=>({point:p,projections:project(p)}));
@@ -152,6 +142,21 @@ function evaluateFiniteOrthogonalCylinderIntersection({input,revision}={}){
     completeSegmentVisibilityVerified:false,officialLineStyle:'undetermined',
     vertexJunctionTopologyVerified:false});
   }
+ }
+ // A sign branch may exist only at an x extremum where another sign
+ // branch meets it (sqrt=0). That is NOT an isolated physical intersection.
+ // Detect uncovered isolated cap tangencies against the WHOLE curve set.
+ for(const sy of [-1,1])for(const sz of [-1,1])for(const x of splits){
+  const candidate=at(x,sy,sz);
+  if(!inside(candidate))continue;
+  const covered=branchData.some(b=>{
+   if(x<b.xRange[0]-epsX||x>b.xRange[1]+epsX)return false;
+   const same=at(x,b.signY,b.signZ);
+   return same&&Math.hypot(candidate.x-same.x,
+    candidate.y-same.y,candidate.z-same.z)<=coordTol;
+  });
+  if(!covered)return blocked('degenerate-undetermined',
+    'isolated finite cap tangency needs singular-point topology proof');
  }
  if(!branchData.length)return blocked('none','no lateral-lateral curve lies inside both finite axial extents');
  if(branchData.length>64)return blocked('degenerate-undetermined','branch complexity budget exceeded');
