@@ -9,6 +9,7 @@ const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
 const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
+const {manualSegment}=require('./source-candidate-bridge.cjs');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -231,11 +232,44 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(clock?.snapshot().playing)clock.pause(performance.now());
  }
 
+
+ function refreshCandidateLinks(){
+  const links=coordinator?.sourceCandidates()||[],list=$('v7-source-link'),
+   keep=list.value,selected=coordinator?.selectedGeometryId();
+  list.replaceChildren();
+  const none=document.createElement('option');none.value='';
+  none.textContent='不关联候选';list.append(none);
+  for(const candidate of links){
+   const option=document.createElement('option');option.value=candidate.candidateId;
+   option.textContent=candidate.candidateId+' · '+candidate.status+
+    ' · '+candidate.conditions.map(c=>c.conditionId).join(', ');
+   list.append(option);
+  }
+  const reverse=links.find(c=>c.conditions.some(link=>link.objectId===selected));
+  list.value=reverse?.candidateId||
+   (links.some(x=>x.candidateId===keep)?keep:'');
+  const current=links.find(x=>x.candidateId===list.value);
+  $('v7-candidate-status').textContent=current?
+   '来源 '+current.candidateId+' → 条件 '+
+    (current.conditions.length?current.conditions.map(c=>c.conditionId).join('、'):'尚未关联')+
+    '；审核 '+current.status+'。条件数值仍由人工另行核对。':
+   '当前 '+links.length+' 个原图候选；手工标注不等于数学证明。';
+ }
+
  function paintPhotoMarkers(){
   const img=$('v7-photo'),svg=$('v7-photo-marks');
   svg.replaceChildren();
   if(!img.naturalWidth||!img.naturalHeight)return;
   svg.setAttribute('viewBox','0 0 '+img.naturalWidth+' '+img.naturalHeight);
+  const links=coordinator?.sourceCandidates()||[];
+  const chosen=$('v7-source-link').value;
+  for(const candidate of links){
+   const b=candidate.bbox,active=candidate.candidateId===chosen;
+   svg.append(shape('rect',{x:b.x,y:b.y,width:b.width,height:b.height,
+    fill:'none',stroke:active?'#d14f32':'#8e78b0',
+    'stroke-width':Math.max(2,img.naturalWidth/450),
+    'stroke-dasharray':active?'none':'5 4'}));
+  }
   const colors=['#e25740','#1d85a5'];
   for(let i=0;i<2;i++){
    const pts=photoMarkers[i],color=colors[i];
@@ -340,6 +374,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
   hydrateCalibration(project);
+  $('v7-source-link').value='';
   $('v7-photo-segment').value='0';
   $('v7-photo-point-status').textContent=photoMarkMessage();
   $('v7-c-objects').value='';
@@ -533,6 +568,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  refreshCandidateLinks();
+  paintPhotoMarkers();
   $('v7-cal-status').textContent=calibrationStatus(snap.source);
   $('v7-cal-apply').disabled=!snap.source.imageId;
   $('v7-cal-clear').disabled=!snap.source.imageId||snap.source.calibration===null;
@@ -652,6 +689,55 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-photo-point-status').textContent=photoMarkMessage();
  }));
 
+
+ $('v7-source-link').addEventListener('change',()=>{
+  const id=$('v7-source-link').value;
+  const match=coordinator?.sourceCandidates().find(c=>c.candidateId===id);
+  if(match?.conditions.length){
+   const linked=match.conditions.find(c=>c.objectId);
+   if(linked?.objectId)coordinator.selectObject(linked.objectId);
+  }
+  paintPhotoMarkers();refreshCandidateLinks();
+ });
+ $('v7-candidate-locate').addEventListener('click',()=>{
+  const id=$('v7-source-link').value;
+  const candidate=coordinator?.sourceCandidates().find(c=>c.candidateId===id);
+  if(!candidate)throw Error('请先选择待定位候选');
+  if(candidate.conditions.length&&candidate.conditions[0].objectId)
+   coordinator.selectObject(candidate.conditions[0].objectId);
+  paintPhotoMarkers();$('v7-photo').scrollIntoView?.({block:'nearest'});
+ });
+ $('v7-candidate-stage').addEventListener('click',()=>call(async()=>{
+  const source=coordinator?.snapshot().source,blob=source?.imageId&&
+    await store?.readImage(source.imageId);
+  if(!blob)throw Error('候选必须来源于已保存的本机原图');
+  const img=$('v7-photo');
+  if(!img.naturalWidth||!img.naturalHeight)
+   throw Error('原图未完成解码，暂不能创建可靠像素候选');
+  const pts=photoMarkers[Number($('v7-photo-segment').value)];
+  if(pts?.length!==2)throw Error('请先在原图上选择本组两个端点');
+  const candidate=manualSegment({id:$('v7-candidate-id').value.trim(),
+   from:pts[0],to:pts[1],image:{width:img.naturalWidth,
+    height:img.naturalHeight,byteLength:blob.size,mediaType:blob.type}});
+  coordinator.putSourceCandidate(candidate,{width:img.naturalWidth,
+   height:img.naturalHeight,byteLength:blob.size,mediaType:blob.type});
+  $('v7-source-link').value=candidate.id;
+  refreshCandidateLinks();paintPhotoMarkers();
+  msg('原始像素线段 '+candidate.id+' 已保存为待人工审核 ProblemDraft 候选。');
+ }));
+ for(const [id,decision] of [['v7-candidate-accept','confirmed'],
+   ['v7-candidate-reject','rejected']]){
+  $(id).addEventListener('click',()=>call(async()=>{
+   const selected=$('v7-source-link').value;
+   if(!selected)throw Error('先选择需要审核的原图候选');
+   coordinator.reviewSourceCandidate(selected,decision);
+   $('v7-source-link').value=selected;
+   refreshCandidateLinks();paintPhotoMarkers();
+   msg('原图候选 '+selected+' 已'+(decision==='confirmed'?'人工确认':'拒绝')+
+    '；相关数学条件需要再次确认，不能继承原有 V5。');
+  }));
+ }
+
  $('v7-cal-apply').addEventListener('click',()=>call(async()=>{
   if(!coordinator?.snapshot().source.imageId)throw Error('请先保存原始图片');
   const measurements=scaleEntries.map(([px,mm],i)=>({
@@ -738,7 +824,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!p.objects.some(x=>x.id===model.id))coordinator.putObject(model);
   else coordinator.putObject(model);
   coordinator.putCondition({id:'geo_'+geometry.id,objectId:geometry.id,
-   sourceCandidateId:null,confirmed:false,
+   sourceCandidateId:$('v7-source-link').value||null,confirmed:false,
    value:{type:'manual-geometry',unit:'mm',imageId:p.source.imageId,geometry}});
   $('v7-c-objects').value=geometry.id;
   msg('几何 '+geometry.id+' 已暂存，必须点击确认才能显示场景。');
@@ -786,7 +872,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    coordinator.putObject(object);
   const imageId=coordinator.snapshot().source.imageId;
   coordinator.putCondition({id:'coords',objectId:object.id,
-   sourceCandidateId:null,confirmed:false,value:fieldsToValue(task,imageId)});
+   sourceCandidateId:$('v7-source-link').value||null,
+   confirmed:false,value:fieldsToValue(task,imageId)});
   msg('几何输入已存为候选；请亲自核对原题、尺寸及所选分支。');
  }));
  $('v7-confirm-other').addEventListener('click',()=>call(async()=>{
@@ -828,7 +915,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!coordinator.snapshot().objects.some(x=>x.id===POINT))
    coordinator.putObject(projectObject());
   const id=coordinator.snapshot().source.imageId;
-  coordinator.putCondition({id:'coords',objectId:POINT,sourceCandidateId:null,
+  coordinator.putCondition({id:'coords',objectId:POINT,
+   sourceCandidateId:$('v7-source-link').value||null,
    confirmed:false,value:{type:'point-xyz',unit:'mm',xyz,imageId:id}});
   msg('坐标已记录为待确认；请核对原图及单位再确认。');
  }));
