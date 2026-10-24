@@ -22,18 +22,17 @@ const {classifyConvexOpenRaySign}=
 const TAU=2*Math.PI;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point3=v=>v&&['x','y','z'].every(k=>finite(v[k])&&Math.abs(v[k])<=1e8);
-const vecDot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const {dotObject3:vecDot,subtractObject3:sub,normObject3:norm}=
+ require('../../../core/numeric/object-vector3.cjs');
 const normalize=v=>{
  if(!point3(v))throw new TypeError('finite observer direction required');
- const mag=Math.hypot(v.x,v.y,v.z);
+ const mag=norm(v);
  if(!finite(mag)||mag<=1e-12)throw new RangeError('zero or invalid observer direction');
  return {x:v.x/mag,y:v.y/mag,z:v.z/mag};
 };
 const positiveAngle=a=>((a%TAU)+TAU)%TAU;
-const project=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
-const dotPlane=(p,pl)=>vecDot(pl.normal,{
- x:p.x-pl.point.x,y:p.y-pl.point.y,z:p.z-pl.point.z
-});
+const {project}=require('../../../core/projection/conventions.js');
+const dotPlane=(p,pl)=>vecDot(pl.normal,sub(p,pl.point));
 const blocked=(source,reason)=>({
  status:'blocked',sourceStatus:source?.status||'missing',
  reason:reason||source?.reason||'unverified section geometry',
