@@ -11,7 +11,7 @@ function given(mesh,pair,revision=7){
    const projected=project(p);
    return {id,knownViews:Object.fromEntries([...pair].map(v=>
     [v,[projected[v].u,projected[v].v]]))};
-  }),edges:mesh.data.edges,faces:mesh.data.faces};
+  }),edges:mesh.data.edges.map(e=>[...e]),faces:mesh.data.faces.map(f=>[...f])};
 }
 const cuboid=box({x:0,y:0,z:0},{x:30,y:15,z:20});
 const skew=box({x:-9,y:3,z:5},{x:12,y:19,z:27});
