@@ -531,30 +531,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const snap=coordinator?.snapshot();if(!snap)return;
   const scoped=playback();
   if(scoped?.kind==='prism-evidence'){
-   // Existing specialist givens and audited M3→V5 actions share EXACTLY the
-   // same paper system. Do not overlay a second, differently scaled Scene.
+   // The original mesh and spatial view continue to use the ONE Geometry
+   // Scene. Only the certified sheet origin/scale comes from the M3→V5 gate.
+   // The result polyline is revealed by the existing V5 action clock instead
+   // of exposing the completed section before its construction steps.
    const width=scoped.plan.sheet.width,height=scoped.plan.sheet.height;
    svg.setAttribute('viewBox','0 0 '+width+' '+height);
    svg.append(shape('rect',{x:0,y:0,width,height,fill:'#fff'}));
-   for(const action of scoped.plan.givens){
-    const node=shape(action.kind==='point'?'circle':'line',{
-     fill:action.kind==='point'?'#526479':'none',
-     stroke:$('v7-mono').checked?'#555':'#526479',
-     'stroke-width':1.6});
-    Motion.updateSvg(node,action,1);
-    const view=action.id.match(/-([VHW])-/)?.[1];
-    node.setAttribute('data-geometry-id','Solid1');
-    if(view)node.setAttribute('data-geometry-view',view);
-    node.setAttribute('data-visibility','undetermined');
-    node.setAttribute('tabindex','0');node.setAttribute('role','button');
-    node.setAttribute('aria-label','选择 Solid1 的 '+view+' 表达');
-    const pick=()=>coordinator.selectSceneGeometry('Solid1');
-    node.addEventListener('click',pick);
-    node.addEventListener('keydown',e=>{
-     if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
-    });
-    svg.append(node);
-   }
+   const source=compileGeometryScene(scoped.scene,{
+    sheet:SHEET,viewTransforms:scoped.plan.viewTransforms,
+    camera:snap.view.camera,
+    selectedObjectId:coordinator.selectedGeometryId(),
+    hiddenObjectIds:[scoped.plan.geometryId]
+   });
+   drawPrimitives(svg,source.paper,'paper',snap,scoped.clock.snapshot(),
+    $('v7-mono').checked);
    const colors=$('v7-mono').checked?{derived:'#333',guide:'#777'}:
     {derived:'#1970a9',guide:'#c18d39'};
    drawV5(svg,scoped,colors);
