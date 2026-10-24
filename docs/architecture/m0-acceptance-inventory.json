@@ -72,7 +72,8 @@
       "status": "scoped-math",
       "proofScope": "one open source segment and one occluder",
       "regressionTests": [
-        "tests/math/m0-clearance-falseparallel-sign.test.cjs"
+        "tests/math/m0-clearance-falseparallel-sign.test.cjs",
+        "tests/math/m0-batch-segment-source-single-snapshot.test.cjs"
       ],
       "remainingGate": "continuous junction/endpoint proof"
     },
@@ -81,7 +82,8 @@
       "status": "scoped-math",
       "proofScope": "strict interior occlusion on one source segment",
       "regressionTests": [
-        "tests/math/m0-occlusion-falseparallel-sign.test.cjs"
+        "tests/math/m0-occlusion-falseparallel-sign.test.cjs",
+        "tests/math/m0-batch-segment-source-single-snapshot.test.cjs"
       ],
       "remainingGate": "continuous endpoints and global contour"
     },
