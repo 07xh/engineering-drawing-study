@@ -1,0 +1,20 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {homeHTML}=require('../../ui-next/home.cjs');
+test('V7 current composition rail renders source-bound per-action M5 proof status',()=>{
+ const html=homeHTML();
+ const js=fs.readFileSync('project/unified-workbench-entry.cjs','utf8');
+ assert.match(html,/id="v7-c-stroke-proof"/);
+ assert.match(html,/aria-live="polite"/);
+ assert.match(js,/gate\.finalStrokeObligations\?\.status==='per-source-span-proof-obligations-audited'/);
+ assert.match(js,/preview\(\)\.spatialV5ActionRelease/);
+ assert.match(js,/positiveOuterCandidateCount/);
+ assert.match(js,/hiddenDepthCandidateCount/);
+ assert.match(js,/gate\.actions\.slice\(0,3\)/);
+ assert.match(js,/已签收 /);
+ assert.match(js,/阻断 /);
+ assert.match(js,/不能发布实线\/虚线/);
+ assert.match(js,/所有未签收线条继续保持 undetermined/);
+ assert.doesNotMatch(js,/detail\.innerHTML=/);
+});
