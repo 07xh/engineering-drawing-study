@@ -92,7 +92,13 @@ test('C2 four cuboids forming a projected ring create a genuine interior H hole 
   box('C',P(0,2,0),P(2,8,5)),
   box('D',P(8,2,0),P(10,8,5))
  ];
- const r=gate(geometry,214).projectedUnionSilhouetteEvidence;
+ // Four-body nonmanifold feature joins remain OUTSIDE the existing
+ // full per-action M5 source audit. Prove only the complete projected
+ // region directly from M0-reviewed bounded cuboid geometry.
+ const r=auditOrthogonalProjectedUnionSilhouette({geometry,revision:214});
+ assert.equal(r.physical3DSourceReviewMode,
+  'm0-projected-region-geometry-only');
+ assert.equal(r.allBoundaryGeometryHasReviewedSourceCoverage,false);
  const H=r.projectedViews.find(v=>v.view==='H');
  assert.equal(H.completeProjectedUnionAreaMm2,64);
  assert.ok(H.boundedHoleBoundarySegmentCount>=4);
