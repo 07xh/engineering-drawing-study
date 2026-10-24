@@ -310,7 +310,40 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="PointB"]').length,0);
   assert.equal($('v7-play').disabled,true);
-
+  // Preserve the same V7 workbench; a fresh model task keeps nonlinear
+  // numeric candidates segregated from already displayed affine Geometry.
+  $('v7-task').value='projection';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  $('v7-task').value='composition';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  assert.ok($('v7-u-seeds'));
+  $('v7-u-points').value='A,B,P';$('v7-u-frame').value='model-mm-2d';
+  for(const [id,kind,a,b,x,y] of [
+   ['LockA','fixed','A','','0','0'],['LockB','fixed','B','','4','0'],
+   ['DistA','distance','A','P','3','0'],
+   ['DistB','distance','B','P','3','0']
+  ]){
+   $('v7-u-list').value='';$('v7-u-id').value=id;
+   $('v7-u-kind').value=kind;$('v7-u-a').value=a;$('v7-u-b').value=b;
+   $('v7-u-x').value=x;$('v7-u-y').value=y;
+   $('v7-u-seeds').value='0,0;4,0;2,2\n0,0;4,0;2,-2';
+   click('v7-u-append');await tick();await tick();
+  }
+  click('v7-u-confirm');await tick();await tick();
+  click('v7-u-solve');await tick();await tick();
+  assert.match($('v7-proof').textContent,/M3 非线性局部数值候选 2 个/,
+   $('v7-save').textContent);
+  assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="P"]').length,0,
+   'unproven nonlinear roots must not become actual solved Geometry');
+  $('v7-u-seeds').value='0,0;4,0;2,2';
+  $('v7-u-seeds').dispatchEvent(new window.Event('input',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v7-play').disabled,true);
 
  }finally{
   global.document=original.document;global.window=original.window;

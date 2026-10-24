@@ -8,6 +8,7 @@ const {validSavedCalibration}=require('./source-calibration.cjs');
 const CandidateBridge=require('./source-candidate-bridge.cjs');
 const {TYPES:RELATION_TYPES}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {solveAffinePointConstraints}=require('../core/constraints/affine-point-unknown-solver.cjs');
+const {solveNonlinearPointCandidates}=require('../core/constraints/nonlinear-point-candidates.cjs');
 const affineSourceStamp=source=>JSON.stringify([source.imageId,source.rotationDeg,source.calibration]);
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
@@ -133,12 +134,19 @@ function validateProject(p) {
        (a.confirmed&&(a.imageId!==p.source.imageId||
          a.sourceStamp!==affineSourceStamp(p.source)))||
        !jsonValue(a)||Object.keys(a).some(k=>
-        !['frame','unit','points','constraints','imageId','sourceStamp','confirmed'].includes(k)))
+        !['frame','unit','points','constraints','imageId','sourceStamp','confirmed','solverKind','seeds'].includes(k)))
       errors.push('未签收的未知点约束或原图版本不一致');
     else{
-      try{solveAffinePointConstraints({frame:a.frame,unit:a.unit,
-        points:a.points,constraints:a.constraints,revision:p.revision});}
-      catch(e){errors.push('未知点约束无效：'+e.message);}
+      try{
+        if(a.solverKind==='nonlinear')
+          solveNonlinearPointCandidates({frame:a.frame,unit:a.unit,points:a.points,
+           constraints:a.constraints,seeds:a.seeds,revision:p.revision});
+        else if(a.solverKind===undefined||a.solverKind==='affine'){
+          if(a.seeds!==undefined)throw Error('线性系统不允许冒充多分支初值');
+          solveAffinePointConstraints({frame:a.frame,unit:a.unit,
+           points:a.points,constraints:a.constraints,revision:p.revision});
+        }else throw Error('未知求解器类型');
+      }catch(e){errors.push('未知点约束无效：'+e.message);}
       if(a.points?.some(p=>objectIds.has(p.id)))
        errors.push('未知点与已有几何对象 ID 冲突');
     }
@@ -305,6 +313,9 @@ function createCoordinator(initial, hooks = {}) {
         p.affineProblem={
           frame:candidate.frame,unit:candidate.unit,
           points:copy(candidate.points),constraints:copy(candidate.constraints),
+          ...(candidate.solverKind==='nonlinear'?{
+           solverKind:'nonlinear',seeds:copy(candidate.seeds)
+          }:{solverKind:'affine'}),
           imageId:p.source.imageId,sourceStamp:affineSourceStamp(p.source),
           confirmed:false
         };
