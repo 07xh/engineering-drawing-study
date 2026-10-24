@@ -1,0 +1,9 @@
+# M0 checked dot / cross: stop false-zero cancellation without a second kernel
+
+The original shared Euclidean Float64 kernel already refuses direct nonzero multiply underflow but could falsely produce ZERO when several distinct large product terms cancel through IEEE rounding. Example `dot([1,1,1],[1,2^-53,-1])` returned zero even though exact represented-binary64 dot is positive `2^-53`. The 3D cross component `(2^52)(2^52-2)-(2^52-1)^2` returned zero despite exact signed value -1. False zero can be mistaken for a perpendicular/collinear geometric condition.
+
+This patch stays inside `core/numeric/euclidean-kernel.cjs`, used by `object-vector3.cjs` and real 04/M3 and M0/M5 consumers. It preserves normal fast Float64 math, existing strict multiply overflow/underflow checks and all original units/solver contracts. For cancellation-risk product sums only, check the sign with the **single existing** `binary64-dyadic.cjs` exact-for-represented-binary64 arithmetic. Return exact zero when proven; throw RangeError if computed Float64 zero/sign contradicts exact sign. Otherwise keep the rounded finite output and **do not claim the returned magnitude is mathematically exact**. It is a conservative geometry-sign hardening, not a generic exact arithmetic return type.
+
+Also close a validation/consumption time-of-check/time-of-use bug: `vector()` snapshots getter-backed finite coordinates once, including sparse index checks, instead of validating first and then re-reading spread values that may have mutated.
+
+Tests independently derive 2^52 cross determinant via BigInt, 2^-53 positive/negative false-zero dot, exact cancellation and standard perpendicular normals, getter single-read, 99 geometric scalings, nonfinite, sparse, dimension and underflow negatives. Existing numeric, M1/M3/M4/M5 and five latest PR HEAD CI suites required before merge. Rollback isolated squash. No construction line-style, full-scene, V5 or Production Active claim.
