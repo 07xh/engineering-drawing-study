@@ -451,7 +451,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
    const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
    const result=scoped&&step.role==='result';
-   const ink=result?($('v7-mono').checked?'#444':'#b26b19'):colors.guide;
+   const picked=result&&coordinator.selectedGeometryId()===solved.plan.geometryId;
+   const ink=picked?($('v7-mono').checked?'#111':'#ef6730'):
+    result?($('v7-mono').checked?'#444':'#b26b19'):colors.guide;
    const node=shape(tag,{fill:action.kind==='point'?ink:'none',
     stroke:ink,'stroke-width':result?2.4:2,
     'stroke-dasharray':result?'2 5':action.kind==='line'?'5 5':'none'});
@@ -539,7 +541,19 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      fill:action.kind==='point'?'#526479':'none',
      stroke:$('v7-mono').checked?'#555':'#526479',
      'stroke-width':1.6});
-    Motion.updateSvg(node,action,1);svg.append(node);
+    Motion.updateSvg(node,action,1);
+    const view=action.id.match(/-([VHW])-/)?.[1];
+    node.setAttribute('data-geometry-id','Solid1');
+    if(view)node.setAttribute('data-geometry-view',view);
+    node.setAttribute('data-visibility','undetermined');
+    node.setAttribute('tabindex','0');node.setAttribute('role','button');
+    node.setAttribute('aria-label','选择 Solid1 的 '+view+' 表达');
+    const pick=()=>coordinator.selectSceneGeometry('Solid1');
+    node.addEventListener('click',pick);
+    node.addEventListener('keydown',e=>{
+     if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
+    });
+    svg.append(node);
    }
    const colors=$('v7-mono').checked?{derived:'#333',guide:'#777'}:
     {derived:'#1970a9',guide:'#c18d39'};
