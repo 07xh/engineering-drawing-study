@@ -1,6 +1,6 @@
 'use strict';
 /** M1 finite model-mm segment topology. Reuses M0 exact binary64 orientation. */
-const {orientation2D}=require('../numeric/orientation2d-exact.cjs');
+const {orientation2DAdaptive}=require('../numeric/orientation2d-adaptive.cjs');
 function point(p,name){
  if(!p||typeof p!=='object'||Array.isArray(p))throw new TypeError(name+' must be a point');
  const {x,y}=p;
@@ -28,7 +28,7 @@ function result(relation,point=null,overlap=null){
 }
 function analyzeSegmentTopology({first,second}={}){
  const {a,b}=segment(first,'first'),{a:c,b:d}=segment(second,'second');
- const orient=(p,q,r)=>orientation2D([p.x,p.y],[q.x,q.y],[r.x,r.y]).sign;
+ const orient=(p,q,r)=>orientation2DAdaptive([p.x,p.y],[q.x,q.y],[r.x,r.y]).sign;
  const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
  if(o1===0&&o2===0&&o3===0&&o4===0){
   const [p,q]=cmp(a,b)<=0?[a,b]:[b,a];
