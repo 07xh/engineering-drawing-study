@@ -65,12 +65,17 @@ function verifiedConvexMeshHalfspaces(g){
    if(Math.abs(dot(normal,p)-offset)>tol)
     reject('nonplanar face ring');
   }
+  let winding=0;
   for(let k=0;k<vertex.length;k++){
    const aa=vertex[k],bb=vertex[(k+1)%vertex.length],
     cc=vertex[(k+2)%vertex.length];
    const turn=dot(normal,cross(sub(bb,aa),sub(cc,bb)));
-   if(turn< -tol*tol)
-    reject('nonconvex or self-intersecting face ring');
+   if(Math.abs(turn)>tol*tol){
+    const direction=Math.sign(turn);
+    if(winding&&winding!==direction)
+     reject('nonconvex or self-intersecting face ring');
+    winding=direction;
+   }
    if(len(sub(bb,aa))<=tol)reject('zero-length face edge');
    const key=edgeKey(face[k],face[(k+1)%face.length]);
    faceEdgeCounts.set(key,(faceEdgeCounts.get(key)||0)+1);
