@@ -145,11 +145,18 @@ function draw(result,certified){
      'stroke-dasharray':'2 6','stroke-linecap':'round'});
    e.setAttribute('data-visibility','undetermined');
    e.setAttribute('data-ray-evidence',edge.rayEvidenceStatus);
+   e.setAttribute('data-single-solid-hull',
+    String(edge.projectedFullSingleSolidHullBoundaryVerified));
+   e.setAttribute('data-hull-and-front-ray',
+    String(edge.singleSolidHullAndWholeFrontRayCandidateVerified));
    e.setAttribute('data-proof-scope','M5-original-convex-source-only');
    e.setAttribute('data-official-v5','false');
    e.setAttribute('data-source-edge',edge.sourceEdgeId);
    const title=shape('title');
    title.textContent=edge.sourceEdgeId+' '+v+'：'+edge.rayEvidenceStatus+
+    '；单体投影外轮廓='+edge.projectedFullSingleSolidHullBoundaryVerified+
+    '；完整前方无遮挡且为真实折棱='+
+    edge.singleSolidHullAndWholeFrontRayCandidateVerified+
     '（仅原始实体射线证据，标准虚实线未认证）';
    e.append(title);
    svg.append(e);
