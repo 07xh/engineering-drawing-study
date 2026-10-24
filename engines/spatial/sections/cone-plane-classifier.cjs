@@ -8,12 +8,14 @@
 const {conePlaneFullEllipse,conePlaneClippedEllipseBoundary}=
  require('./finite-cone-plane.cjs');
 const finite=Number.isFinite;
+const {dotObject3,subtractObject3}=
+ require('../../../core/numeric/object-vector3.cjs');
 function classifyConePlane(cone,plane,{samples=64}={}){
  // Specialist validates units, finite dimensions, points, normal and samples.
  const full=conePlaneFullEllipse(cone,plane,{samples});
  const b=cone.baseCenter,q=plane.point,n=plane.normal;
  const apex={x:b.x,y:b.y,z:b.z+cone.heightMm};
- const dot=p=>(p.x-q.x)*n.x+(p.y-q.y)*n.y+(p.z-q.z)*n.z;
+ const dot=p=>dotObject3(subtractObject3(p,q),n);
  const a=dot(apex),base=dot(b),radial=cone.radiusMm*Math.hypot(n.x,n.y);
  const lower=Math.min(a,base-radial),upper=Math.max(a,base+radial);
  const normalMagnitude=Math.hypot(n.x,n.y,n.z);

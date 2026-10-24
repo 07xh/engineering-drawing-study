@@ -8,9 +8,9 @@ const {intersectCylinderSidePlane,normalizePlane}=
  require('./axis-cylinder-plane.cjs');
 const TAU=2*Math.PI;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const project=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
+const {dotObject3:dot,subtractObject3:sub}=
+ require('../../../core/numeric/object-vector3.cjs');
+const {project}=require('../../../core/projection/conventions.js');
 const rad=n=>((n%TAU)+TAU)%TAU;
 function blocked(source){
  return {status:'blocked',sourceStatus:source.status,

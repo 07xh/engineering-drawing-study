@@ -12,11 +12,11 @@ const {finiteCylinderLateralArcs}=require('./finite-cylinder-lateral-arcs.cjs');
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
 
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
-const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
-const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+const {subtractObject3:sub,dotObject3:dot,normObject3:norm}=
+ require('../../../core/numeric/object-vector3.cjs');
+const dist=(a,b)=>norm(sub(a,b));
 const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2});
-const views=p=>({V:{u:p.x,v:p.z},H:{u:p.x,v:p.y},W:{u:p.y,v:p.z}});
+const {project:views}=require('../../../core/projection/conventions.js');
 const closedFailure=(reason,sourceStatus='unverified')=>({
  status:'blocked',reason,sourceStatus,boundaryEdges:[],capChords:[],
  contourLoops:[],boundaryVerified:false,solidSectionPerimeterVerified:false,
