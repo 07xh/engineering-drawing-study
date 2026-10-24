@@ -27,6 +27,8 @@ const {deriveReviewedProjectedVertexJoins}=
  require('./reviewed-projected-vertex-joins.cjs');
 const {verifyConvexProjectedOutline}=
  require('../core/verification/convex-projected-outline.cjs');
+const {classifyMultiBodyProjectedUnion}=
+ require('../core/verification/multibody-projected-union.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -55,6 +57,8 @@ const unready=(revision,reason)=>freeze({
  projectedOutlines:{status:'not-covered',objects:[],
   allIndividualConvexProjectedBoundariesVerified:false,
   combinedSilhouetteVerified:false,officialLineStylesVerified:false},
+ projectedUnionOutlines:{status:'not-covered',segmentCount:0,segments:[],
+  unionClosedContourVerified:false,officialLineStylesVerified:false,v5Ready:false},
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -217,6 +221,15 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    return {status:'scoped-source-segment-occlusion-only',checkedCount,
     hiddenSourceEdges,fullLineStyleSignedOff:false};
   })();
+ const projectedUnionOutlines=geometry.length>8?{
+  status:'budget-exceeded',segmentCount:0,segments:[],
+  unionClosedContourVerified:false,officialLineStylesVerified:false,v5Ready:false
+ }:(()=>{
+  try{return classifyMultiBodyProjectedUnion({geometry,revision});}
+  catch(e){return {status:'undetermined',reason:e.message,
+   segmentCount:0,segments:[],unionClosedContourVerified:false,
+   officialLineStylesVerified:false,v5Ready:false};}
+ })();
  const projectedVertexJoins=deriveReviewedProjectedVertexJoins({geometry,revision});
  const sceneEvidence={
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
@@ -225,7 +238,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
   sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
   edgeContinuousOcclusion:continuousOcclusion,
   wholeSourceEdgeOcclusion:wholeEdgeOcclusion,projectedOutlines,
-  projectedVertexJoins,
+  projectedUnionOutlines,projectedVertexJoins,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
