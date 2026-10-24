@@ -37,7 +37,7 @@ function matchesReviewedMetricInput({isolation,problem,segmentId,circleId}={}){
   if(segments.length!==1||circles.length!==1)return false;
   const segment=segments[0].geometry,circle=circles[0].geometry,
    source=problem.geometry;
-  const same=(point,pair)=>point&&Array.isArray(pair)&&pair.length===2&&
+  const same=(point,pair)=>!!point&&Array.isArray(pair)&&pair.length===2&&
    finite(point.x)&&finite(point.y)&&finite(pair[0])&&finite(pair[1])&&
    point.x===pair[0]&&point.y===pair[1];
   return !!source&&
