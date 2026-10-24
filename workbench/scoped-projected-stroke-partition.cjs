@@ -21,6 +21,8 @@ const {deriveReviewedProjectedVertexJoins}=
  require('./reviewed-projected-vertex-joins.cjs');
 const {recomputeReviewedProjectedEdgeEvents}=
  require('./recomputed-projected-pairwise-events.cjs');
+const {auditOrthogonalUnionSourceEdges}=
+ require('./m5-orthogonal-union-source-edges.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -183,6 +185,38 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    insert(ev.secondSourceEdgeId,ev.view,v.secondParameterRange[1]);
   }
  }
+ // A 3D source crease may change its physical UNION feature class even
+ // when no projected mesh edge intersects at that paper coordinate.
+ // Recompute exact original-crease axial events and INSERT their t values
+ // into EXISTING M4 cutting positions, instead of building a new M4/V5
+ // renderer. A new t cut is NOT a newly inferred source Geometry vertex.
+ const unionSourceFeatures=auditOrthogonalUnionSourceEdges({geometry,revision});
+ const scopedUnion=unionSourceFeatures.status===
+  'source-orthogonal-union-open-sector-coverage';
+ const unionByEdge=new Map(unionSourceFeatures.edges.map(x=>
+  [x.sourceEdgeId,x]));
+ let unionFeatureAddedCutCount=0;
+ if(scopedUnion){
+  for(const row of unionSourceFeatures.edges){
+   if(!edges.has(row.sourceEdgeId))fail('untrusted union 3D source crease identity');
+   for(const piece of row.subintervals){
+    if(piece.sourceEdgeId!==row.sourceEdgeId||
+       piece.canonicalV5LineActionAuthorized!==false)
+     fail('forged union source interval V5 release');
+    for(const view of VIEWS){
+     const edge=edges.get(row.sourceEdgeId);
+     const a=project(edge.from)[view],b=project(edge.to)[view];
+     if(Math.hypot(a.u-b.u,a.v-b.v)<=1e-7)continue;
+     for(const t of piece.sourceParameterOpenRange){
+      if(t<=0||t>=1)continue;
+      const key=row.sourceEdgeId+':'+view;
+      if(!positions.get(key).includes(t))unionFeatureAddedCutCount++;
+      insert(row.sourceEdgeId,view,t);
+     }
+    }
+   }
+  }
+ }
  const segments=[];let scopedHiddenCount=0,scopedVisibleCount=0;
  for(const edge of edges.values())for(const view of VIEWS){
   const a=project(edge.from)[view],b=project(edge.to)[view];
@@ -214,9 +248,23 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    if(hidden)scopedHiddenCount++;
    if(visible)scopedVisibleCount++;
    const from=P(edge.from,edge.to,t0),to=P(edge.from,edge.to,t1);
+   const unionEdge=unionByEdge.get(edge.id);
+   const match=unionEdge?.subintervals.filter(piece=>
+    piece.sourceParameterOpenRange[0]<=t0&&
+    piece.sourceParameterOpenRange[1]>=t1)??[];
+   if(scopedUnion&&unionEdge?.subintervals.length&&match.length!==1)
+    fail('M4 stroke crosses a verified union-feature critical source event');
+   const openUnionFeature=match[0]??null;
    segments.push({
     sourceGeometryId:edge.ownerId,sourceEdgeId:edge.id,view,
     sourceParameterRange:[t0,t1],
+    unionOpenSourceFeatureStatus:openUnionFeature?.status??'not-covered',
+    unionOpenSourceFeatureId:openUnionFeature?.id??null,
+    unionOpenSourceFeatureVerified:
+      openUnionFeature?.positiveUnionExternalCreaseVerified===true,
+    unionOpenSourceBuriedOrFlatVerified:
+      openUnionFeature?.positiveUnionBuriedOrFlatVerified===true,
+    unionOriginalSourceEndpointJoinVerified:false,
     // Only original source-model endpoints carry shared incident-edge
     // topology. A newly split interior parameter is a PROJECTION event,
     // never a fabricated 3D object vertex.
@@ -243,6 +291,9 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
   schema:'draftai-scoped-projected-stroke-partition/1',
   revision,status:'preview-partition-evidence-only',
   segmentCount:segments.length,segments,scopedHiddenCount,scopedVisibleCount,
+  unionSourceFeatureScope:unionSourceFeatures.status,
+  unionFeatureAddedCutCount,
+  unionSourceFeatureOpenIntervalCount:unionSourceFeatures.intervalCount,
   officialLineStylesVerified:false,completeOcclusionVerified:false,
   canonicalIntentVerified:false,constructionStepDAGVerified:false,
   v5Ready:false
