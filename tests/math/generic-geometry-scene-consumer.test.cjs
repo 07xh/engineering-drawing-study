@@ -120,3 +120,37 @@ test('infinite plane is not converted into a finite fake surface',()=>{
  assert.equal(a.paper.length,0);assert.equal(a.spatial.length,0);
  assert.ok(a.warnings.some(x=>x.includes('Infinite')));
 });
+
+test('audited per-view paper origins preserve shared model projection without duplicating geometry',()=>{
+ const original=scene([mesh('MeshA'),G('PointA','point','model-3d',P(3,4,5))]);
+ const paper={
+  V:{origin:{x:470,y:260},scale:6},
+  H:{origin:{x:470,y:370},scale:6},
+  W:{origin:{x:550,y:260},scale:6}
+ };
+ const a=compileGeometryScene(original,{...options,viewTransforms:paper});
+ const {toSheet,project}=require('../../core/projection/conventions.js');
+ for(const view of ['V','H','W']){
+  const uv=project(P(3,4,5))[view];
+  const xy=toSheet(view,uv,paper[view]);
+  const visible=a.paper.find(x=>x.objectId==='PointA'&&x.view===view);
+  assert.deepEqual({x:visible.attrs.cx,y:visible.attrs.cy},xy);
+ }
+ assert.equal(a.paper.filter(x=>x.objectId==='MeshA').length,36);
+ assert.equal(a.paper.every(x=>x.objectId!=='MeshA'||x.visibility==='undetermined'),true);
+ const change=compileGeometryScene(original,{...options,viewTransforms:paper,
+  camera:{yaw:80,pitch:12}});
+ assert.deepEqual(change.paper,a.paper);
+ assert.notDeepEqual(change.spatial,a.spatial);
+ assert.equal(original.objects.find(x=>x.id==='MeshA').representations.H.visibility,'undetermined');
+});
+test('incomplete or forged per-view transform cannot be treated as section projection',()=>{
+ const original=scene([mesh('MeshA')]);
+ for(const bad of [
+  {V:{origin:{x:0,y:0},scale:1}},
+  {V:{origin:{x:0,y:0},scale:1},H:{origin:{x:0,y:0},scale:1},
+   W:{origin:{x:0,y:0},scale:0}},
+  {V:{origin:{x:0,y:0},scale:1},H:{origin:{x:0,y:0},scale:1},
+   W:{origin:{x:Infinity,y:0},scale:1}}
+ ])assert.throws(()=>compileGeometryScene(original,{...options,viewTransforms:bad}),/坐标变换/);
+});
