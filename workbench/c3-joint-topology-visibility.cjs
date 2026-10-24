@@ -13,6 +13,7 @@ const {auditC3WCriticalRays}=require('./c3-w-critical-ray-theorem.cjs');
 const {auditC3WLateralProjectionInjectivity}=require('./c3-w-lateral-injectivity.cjs');
 const {auditC3CapBoundaryIncidence}=require('./c3-cap-boundary-incidence.cjs');
 const {auditC3Merged3DSourceGraph}=require('./c3-merged-3d-source-graph.cjs');
+const {auditC3SourceJunctionTangents}=require('./c3-source-junction-tangents.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -147,6 +148,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  const wLateralProjection=auditC3WLateralProjectionInjectivity({input,revision});
  const capBoundaryEvidence=auditC3CapBoundaryIncidence({input,revision});
  const merged3DSourceGraph=auditC3Merged3DSourceGraph({input,revision});
+ const localSourceTangentEvidence=auditC3SourceJunctionTangents({input,revision});
  const capByLateralJunction=new Map(capBoundaryEvidence.capJunctions.flatMap(j=>
   j.sourceLateralJunctionIds.map(id=>[id,j])));
  if(wLateralProjection.status==='not-covered')
@@ -237,6 +239,11 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   wLateralProjection,capBoundaryEvidence,merged3DSourceGraph,
+  localSourceTangentEvidence,
+  regularSourceJunctionContinuationCount:
+   localSourceTangentEvidence.regularLocalTangencyCount||0,
+  verifiedSourceJunctionCornerCount:
+   localSourceTangentEvidence.provenDistinctDirectionCount||0,
   sourceFeature3DIncidenceGraphCovered:
    merged3DSourceGraph.allLateralBranchesAndCapSegmentsCovered===true,
   sourceFeatureFiniteCapTerminalsJoined:
