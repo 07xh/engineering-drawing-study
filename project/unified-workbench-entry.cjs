@@ -256,7 +256,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     gate.blockedCount+'。完整投影轮廓局部候选 '+
     evidence.positiveOuterCandidateCount+'，严格遮挡的局部候选 '+
     evidence.hiddenDepthCandidateCount+
-    '。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    '。C2 原实体棱线并集外露局部区间：凸折棱 '+
+    (evidence.sourceUnionFeatureEvidence.verifiedConvexOpenCreaseCount||0)+
+    '、凹折棱 '+
+    (evidence.sourceUnionFeatureEvidence.verifiedConcaveOpenCreaseCount||0)+
+    '、已变为平面接续 '+
+    (evidence.sourceUnionFeatureEvidence.flatNoCreaseCount||0)+
+    '、内部埋没 '+
+    (evidence.sourceUnionFeatureEvidence.buriedSourceIntervalCount||0)+
+    '、未判定 '+
+    (evidence.sourceUnionFeatureEvidence.ambiguousCount||0)+
+    '。以上均不包含新生交线的完整证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
