@@ -13,6 +13,8 @@ const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
+const {inspectSpatialV5Readiness}=
+ require('../workbench/spatial-v5-evidence-readiness.cjs');
 const {auditReviewedM4V5Motion}=
  require('../workbench/m4-existing-v5-motion-parity.cjs');
 const {compileGeometryScene}=
@@ -192,6 +194,8 @@ function createUnifiedProjectSession(){
     // witnesses and overlapping projected edge evidence. Scoped math only.
     const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
       geometry,revision:latest.revision});
+    const spatialV5Readiness=inspectSpatialV5Readiness({
+      sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
     // paper scale for the CURRENT source geometry. Use that SAME scale,
     // and the existing 07/V5 Motion geometry, never a new player or
@@ -205,7 +209,7 @@ function createUnifiedProjectSession(){
         viewTransforms:{V:transform,H:transform,W:transform}});
       })():null;
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,spatialV5Readiness,
       scopedMotionParity,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
