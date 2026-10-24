@@ -101,6 +101,10 @@ function solveNonlinearPointCandidates(input={}){
   }else fail('unsupported nonlinear factor '+String(c.kind));
   factors.push(c);
  }
+ const scalarCount=factors.reduce((sum,c)=>
+   sum+(c.kind==='fixed'||c.kind==='offset'||c.kind==='coincident'||
+     c.kind==='midpoint'?d:1),0);
+ if(scalarCount>64)fail('too many independent scalar equation rows for M0 Jacobian');
  const guesses=[];
  for(const seed of seeds){
   exact(seed,['id','coordinates']);
@@ -139,7 +143,7 @@ function solveNonlinearPointCandidates(input={}){
      throw new RangeError('degenerate angle ray');
     const dot=M0.dot(u,v)/(lu*lv);
     const theta=Math.acos(Math.max(-1,Math.min(1,dot)));
-    // Convert radians into an explicitly labelled 1mm/rad numeric
+    // Convert radians using an explicit 1mm/rad numeric
     // residual scale; not an exact physical angle-length identity.
     push(theta-c.degrees*Math.PI/180);
    }
@@ -200,7 +204,7 @@ function solveNonlinearPointCandidates(input={}){
     if(!candidates.some(c=>Math.hypot(...c.flat.map((v,i)=>v-x[i]))<1e-4)){
      const points=Object.fromEntries([...ids].map(([id,i])=>
       [id,Object.fromEntries(axes.map((axis,j)=>[axis,x[i*d+j]]))]));
-     candidates.push({seedId:seed.id,maxResidualMm:residual,points,flat:x.slice(),
+     candidates.push({seedId:seed.id,maxScaledResidual:residual,points,flat:x.slice(),
       rank:jacobianRank,localDegreesEstimate:degreeEstimate,
       rankStatus:rankState});
     }
@@ -230,7 +234,10 @@ function solveNonlinearPointCandidates(input={}){
    candidates.length>1?'distinct-local-candidates':'local-candidate':'undetermined',
   variableCount:n,scalarConstraintCount:evaluation(guesses[0].flat).length,
   constraintIds:factors.map(c=>c.id),
-  toleranceMm:RESIDUAL_TOL,
+  toleranceScaled:RESIDUAL_TOL,
+  // Angle rows use an explicit 1 mm/radian residual normalization;
+  // maxScaledResidual must not be mistaken for a pure physical mm residual.
+  residualScale:'distance-mm-angle-1mm-per-radian',
   localCandidates:candidates.map(({flat,...c})=>c),
   seedReports:reports,solveResult,
   geometry:[],mathematicallyVerified:false,
