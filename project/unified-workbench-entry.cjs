@@ -218,6 +218,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      ' 已证明内接触面 '+iface.contactPatchCount+' 处'+
      (iface.patches.length?'（'+iface.patches.map(p=>
        p.objectIds.join('—')+'：面积 '+p.strictInteriorAreaMm2.toFixed(3)+' mm²').join('；')+'）':'')+
+     '；三维接触区域边界 '+iface.contactBoundarySegmentCount+' 段（其中'+
+     iface.patches.flatMap(p=>p.boundarySegments).filter(s=>
+       s.sourceFaceBoundaryClass==='shared-original-face-boundaries').length+
+     ' 段落在双方原始面边界上，其余按单方来源逐段标记）'+
      '；公共 M5 投影边界：可分辨 '+projection.openBoundaryCount+
      ' 段、投影内部 '+projection.coveredBoundaryCount+' 段、不确定 '+
      projection.undeterminedCount+' 段。接触面的边缘、投影重合和空间遮挡仍需端点与深度证明；不等于标准虚实线或 V5。';
