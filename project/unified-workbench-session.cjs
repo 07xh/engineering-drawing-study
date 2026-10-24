@@ -11,6 +11,7 @@ const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
+const {evaluateReviewedBoxContacts}=require('../core/geometry/reviewed-box-contact-evidence.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {inspectSpatialV5Readiness}=
@@ -192,6 +193,8 @@ function createUnifiedProjectSession(){
       throw new Error('存在待人工确认的对象关系，禁止出具一致性结论');
     const relationEvidence=analyzeConfirmedRelations(
       geometry,latest.relations||[],{revision:latest.revision});
+    const compositionContactEvidence=evaluateReviewedBoxContacts({
+      geometry,revision:latest.revision}); // scoped relation, never CSG or V5
     const scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
     // Preserve already-merged generic M5 multi-mesh first-angle depth
@@ -225,7 +228,8 @@ function createUnifiedProjectSession(){
         })():{scopedMotionParity:null,spatialStrokeConstructionDAG:null,
          spatialV5ActionRelease:null};
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,spatialV5Readiness,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,
+      compositionContactEvidence,sceneDepthEvidence,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
