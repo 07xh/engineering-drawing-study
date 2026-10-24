@@ -7,6 +7,8 @@ const {compileFiniteCylinderEndpointV5}=
  require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {project,toSheet}=require('../core/projection/conventions.js');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
+const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
+ require('../workbench/c3-vh-projection-dedup.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const NS='http://www.w3.org/2000/svg',VIEWS=['V','H','W'];
 const $=id=>document.getElementById(id);
@@ -106,28 +108,31 @@ function pointAt(branch,input,x){
   throw new RangeError('预览点未通过独立曲面和有限端盖核验');
  return p;
 }
-function drawAnalyticPreview(compiled,input,wRayProof){
+function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
  const svg=$('board'),group=node('g',{
   'data-intersection-preview':'uncertified',
-  'aria-label':'解析曲线开区间几何预览；射线判断非正式工程线型'});
+  'aria-label':'解析曲线开区间与原始圆柱投影轮廓预览；非正式工程线型'});
  const branches=new Map(compiled.sourceM3.branches.map(b=>[b.id,b]));
  if(!wRayProof||wRayProof.revision!==revision||
     wRayProof.sourceM3BranchCount!==branches.size||
     wRayProof.v5CurveReady!==false||
     wRayProof.officialLineStylesVerified!==false)
   throw new RangeError('当前 C3 W 区间证明与 M3/V5 来源不一致');
- function span(branch,view,lo,hi,rayStatus,strictOpen){
-  if(!branch||!(hi>lo)||lo<branch.xRange[0]||hi>branch.xRange[1])
-   throw new RangeError('W 预览片段不能超出当前 M3 解析分支');
+ if(!vhDedup||vhDedup.revision!==revision||
+    vhDedup.sourceBranchCount!==branches.size||
+    vhDedup.status!=='scoped-projected-analytic-interval-deduplicated'||
+    vhDedup.projectionOwnershipVerified!==true||
+    vhDedup.officialLineStylesVerified!==false||
+    vhDedup.v5CurveActionsAuthorized!==false)
+  throw new RangeError('C3 V/H 投影重合证明与当前 M3 来源不一致');
+ function drawSpan(view,sourceId,lo,hi,rayStatus,strictOpen,positionAt,extras={}){
+  if(!(hi>lo))throw new RangeError('C3 显示参数必须严格递增');
   const positions=[],count=36;
-  // Certified ray statements concern strictly OPEN parameter intervals.
-  // The preview deliberately leaves the two endpoint neighborhoods unsworn.
   const epsilon=strictOpen?1e-5:0;
   for(let i=0;i<=count;i++){
    const t=epsilon+(1-2*epsilon)*i/count;
    const x=lo+(hi-lo)*t;
-   positions.push(toSheet(view,project(pointAt(branch,input,x))[view],
-    transforms[view]));
+   positions.push(toSheet(view,positionAt(x),transforms[view]));
   }
   const d=positions.map((p,i)=>(i?'L ':'M ')+p.x+' '+p.y).join(' ');
   const stroke=rayStatus==='clear'?'#167f8b':
@@ -138,13 +143,27 @@ function drawAnalyticPreview(compiled,input,wRayProof){
    'data-official-v5':'false',
    'data-open-ray-status':rayStatus,
    'data-open-ray-only':strictOpen?'true':'false',
-   'data-source-branch':branch.id,'data-view':view}));
+   'data-source-branch':sourceId,'data-view':view,...extras}));
  }
- for(const branch of branches.values())for(const view of ['V','H'])
-  span(branch,view,branch.xRange[0],branch.xRange[1],'undetermined',false);
- for(const row of wRayProof.intervals)
-  span(branches.get(row.branchId),'W',
-   row.xOpenRange[0],row.xOpenRange[1],row.openInteriorRayStatus,true);
+ // Original V/H spatial seam sources lie exactly on one cylinder circle in
+ // projection. Consume mathematically merged intervals once per source arc
+ // rather than overpainting identical 2D curves from multiple 3D branches.
+ for(const row of vhDedup.spans){
+  drawSpan(row.view,row.id,row.xOpenRange[0],row.xOpenRange[1],
+   'undetermined',false,x=>evaluateC3VHProjectedSpan(row,x),{
+    'data-analytic-projection-deduplicated':'true',
+    'data-source-branch-ids':row.sourceBranchIds.join(','),
+    'data-original-contour-owner':row.sourceCylinder
+   });
+ }
+ for(const row of wRayProof.intervals){
+  const branch=branches.get(row.branchId);
+  if(!branch||row.xOpenRange[0]<branch.xRange[0]||
+     row.xOpenRange[1]>branch.xRange[1])
+   throw new RangeError('W 预览片段不能超出当前 M3 解析分支');
+  drawSpan('W',branch.id,row.xOpenRange[0],row.xOpenRange[1],
+   row.openInteriorRayStatus,true,x=>project(pointAt(branch,input,x)).W);
+ }
  svg.append(group);
 }
 function renderPointActions(){
@@ -207,8 +226,9 @@ function solve(){
    input,revision,stationCountPerBranch:count,
    sheetTransform:transforms.V,viewTransforms:transforms});
   const wRayProof=buildC3WIntervalPreview({input,revision});
+  const vhDedup=buildC3VHProjectionDedup({input,revision});
   drawScaffold();
-  drawAnalyticPreview(computed,input,wRayProof);
+  drawAnalyticPreview(computed,input,wRayProof,vhDedup);
   current=computed;
   disable(false);
   renderPointActions();
@@ -219,6 +239,9 @@ function solve(){
    '；正式 V5 端点动作：'+computed.signedEndpointPointActionCount+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
+   '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
+   ' 段、H='+vhDedup.visibleUniqueHSpanCount+
+   ' 段；与原始圆柱轮廓重合，不代表独立认证的相贯线。'+
    '\\nW 视图开区间：前方无遮挡 '+wRayProof.certifiedClearCount+
    ' 段、实体前方遮挡 '+wRayProof.certifiedOccludedCount+
    ' 段、未判定 '+wRayProof.undeterminedCount+
