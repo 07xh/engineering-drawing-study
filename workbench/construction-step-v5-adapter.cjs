@@ -10,6 +10,7 @@
 const {validateConstructionStep}=require('../core/contracts/construction-step.js');
 const Timeline=require('./teaching-timeline-v5.js');
 const Motion=require('./teaching-motion-v5.js');
+const {toSheet:firstAngleToSheet,VIEWS}=require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const record=o=>o!==null&&typeof o==='object'&&!Array.isArray(o);
 function requireSheet(sheet){
@@ -103,22 +104,38 @@ function constructionStepsToV5(input){
  */
 function verifiedTeachingActionToV5(a,sheet){
  requireSheet(sheet);
+ if(a?.view!==undefined&&!VIEWS.includes(a.view))
+  throw new TypeError('explicit first-angle V/H/W projection view invalid');
  if(!record(a)||typeof a.id!=='string'||!a.id||
     !['line','point','circle','arc'].includes(a.kind))
   throw new TypeError('unsupported normalized teaching action');
  const isSheet=a.coordinateSpace==='sheet-px';
  const isModel=a.coordinateSpace==='model-mm';
  if(!isSheet&&!isModel)throw new TypeError('unknown geometry coordinate space');
+ const sheetPoint=p=>a.view===undefined?
+  toSheet(p.x,p.y,sheet):
+  firstAngleToSheet(a.view,{u:p.x,v:p.y},sheet);
  let geometry;
  if(a.kind==='arc'){
   if(!isModel)throw new TypeError('a directed arc must be mathematical model geometry');
-  geometry=Motion.projectArcFromVerifiedModel(a,sheet);
+  // Existing Motion remains the sole arc animator; re-orient its source
+  // model angles under the canonical first-angle paper coordinates.
+  const legacy=Motion.projectArcFromVerifiedModel(a,sheet);
+  if(a.view===undefined)geometry=legacy;
+  else {
+   const rad=Math.PI/180,angle=a.startAngle*rad;
+   const rawSweep=(a.endAngle-a.startAngle)*rad;
+   geometry={center:sheetPoint(a.center),radius:legacy.radius,
+    startRadians:a.view==='V'?angle+Math.PI:
+     a.view==='H'?Math.PI-angle:-angle,
+    sweepRadians:a.view==='V'?rawSweep:-rawSweep};
+  }
  }else if(a.kind==='line'){
   if(!record(a.from)||!record(a.to)||
      ![a.from.x,a.from.y,a.to.x,a.to.y].every(finite))
    throw new TypeError('invalid construction endpoints');
-  const from=isSheet?{x:a.from.x,y:a.from.y}:toSheet(a.from.x,a.from.y,sheet);
-  const to=isSheet?{x:a.to.x,y:a.to.y}:toSheet(a.to.x,a.to.y,sheet);
+  const from=isSheet?{x:a.from.x,y:a.from.y}:sheetPoint(a.from);
+  const to=isSheet?{x:a.to.x,y:a.to.y}:sheetPoint(a.to);
   const len=Math.hypot(from.x-to.x,from.y-to.y);
   if(!finite(len)||len<=1e-9)
    throw new RangeError('zero-length or overflowing rendered guide');
@@ -129,7 +146,7 @@ function verifiedTeachingActionToV5(a,sheet){
   // 03 first-angle projection has independently proven sheet-px transfer
   // points; explicit sheet space is consumed unchanged, never scaled twice.
   // This presentation-only converter cannot itself issue a math proof.
-  geometry={center:isModel?toSheet(a.at.x,a.at.y,sheet):
+  geometry={center:isModel?sheetPoint(a.at):
    {x:a.at.x,y:a.at.y},radius:4};
  }else {
   if(!isModel||!record(a.center)||!finite(a.center.x)||
@@ -137,7 +154,7 @@ function verifiedTeachingActionToV5(a,sheet){
    throw new TypeError('circle must be in model math units');
   const radius=a.radius*sheet.scale;
   if(!finite(radius)||radius<=0)throw new RangeError('radius conversion overflow');
-  geometry={center:toSheet(a.center.x,a.center.y,sheet),radius};
+  geometry={center:sheetPoint(a.center),radius};
  }
  const out={id:a.id,kind:a.kind,geometry};
  Motion.actionShapeAttrs(out,1);
