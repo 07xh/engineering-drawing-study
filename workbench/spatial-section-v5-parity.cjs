@@ -116,6 +116,16 @@ function buildScopedSpatialSectionV5Preview({input,evidence,revision}={}){
     !evidence.sectionPerimeterGeometry)return null;
  const plan=providers[input.kind](input.solid,input.plane);
  assertSpatialSectionV5Parity({input,evidence,plan,revision});
+ // Recover only a PRESENTATION origin from a validated 3D station.
+ // The sole signed V/H/W mapping stays core/projection/toSheet.
+ const first=plan.stations[0],projected=project(first.modelMm);
+ const viewTransforms=Object.fromEntries(VIEWS.map(view=>{
+  const uv=projected[view],screen=first[view],scale=plan.sheet.scale;
+  const sx=view==='W'?1:-1,sy=view==='H'?1:-1;
+  return [view,{origin:{
+   x:screen.x-sx*scale*uv.u,y:screen.y-sy*scale*uv.v
+  },scale}];
+ }));
  return deepFreeze({
   status:'preview-only',revision,sourceKind:input.kind,
   geometryId:evidence.sectionPerimeterGeometry.id,
@@ -128,7 +138,7 @@ function buildScopedSpatialSectionV5Preview({input,evidence,revision}={}){
   // layout as the steps; do not draw a mismatched second SVG projection.
   givens:safeCopy(plan.givens),
   steps:safeCopy(plan.steps),timing:safeCopy(plan.timing),
-  sheet:safeCopy(plan.sheet)
+  sheet:safeCopy(plan.sheet),viewTransforms:safeCopy(viewTransforms)
  });
 }
 module.exports={assertSpatialSectionV5Parity,buildScopedSpatialSectionV5Preview};
