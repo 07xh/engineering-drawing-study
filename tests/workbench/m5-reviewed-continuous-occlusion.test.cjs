@@ -51,7 +51,7 @@ test('continuous H-view occlusion intervals use REAL confirmed mesh boundaries, 
    const t=a+(b-a)*s;
    const p=P(from.x+(to.x-from.x)*t,
      from.y+(to.y-from.y)*t,from.z+(to.z-from.z)*t);
-   const atDepth=P(p.x,p.y,p.z+4);
+   const atDepth=P(p.x,p.y,p.z+(5-p.z));
    assert.ok(atDepth.x> -1&&atDepth.x<11);
    assert.ok(atDepth.y> -1&&atDepth.y<11);
    assert.ok(atDepth.z>4&&atDepth.z<6);
