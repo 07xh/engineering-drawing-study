@@ -13,6 +13,8 @@ const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
+const {inspectSpatialV5Readiness}=
+ require('../workbench/spatial-v5-evidence-readiness.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -188,8 +190,11 @@ function createUnifiedProjectSession(){
     // witnesses and overlapping projected edge evidence. Scoped math only.
     const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
       geometry,revision:latest.revision});
+    const spatialV5Readiness=inspectSpatialV5Readiness({
+      sceneDepthEvidence,revision:latest.revision});
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,sceneDepthEvidence,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,
+      sceneDepthEvidence,spatialV5Readiness,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
