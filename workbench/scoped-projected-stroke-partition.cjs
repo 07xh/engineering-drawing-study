@@ -23,6 +23,10 @@ const {recomputeReviewedProjectedEdgeEvents}=
  require('./recomputed-projected-pairwise-events.cjs');
 const {auditOrthogonalUnionSourceEdges}=
  require('./m5-orthogonal-union-source-edges.cjs');
+const {proveGeneratedOrthogonalUnionCreases}=
+ require('./m5-generated-orthogonal-union-creases.cjs');
+const {evaluateFullSourceSegmentOcclusion}=
+ require('../core/verification/convex-occlusion-coverage.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -287,10 +291,73 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    });
   }
  }
+ // Genuine new source-face intersection features have NO historical
+ // original mesh edge or M3 final-answer ConstructionIntent. Keep them
+ // separate from `segments`, whose indices are already bound to the
+ // legacy original-source M4 → DAG → sole V5 release gate.
+ const generatedUnionCreaseEvidence=geometry.length>=2?
+  proveGeneratedOrthogonalUnionCreases({geometry,revision}):null;
+ const generatedSegments=[];let generatedCollapsedCount=0;
+ if(generatedUnionCreaseEvidence?.status===
+    'scoped-pairwise-new-perpendicular-face-open-features'){
+  for(const sourceFeature of generatedUnionCreaseEvidence.segments){
+   // Buried and unknown face intersections cannot become a candidate
+   // printable stroke. Likewise, screen collapse is a point, not a line.
+   if(!sourceFeature.positiveNewConcaveUnionOpenFeatureVerified)continue;
+   for(const view of VIEWS){
+    const proj=sourceFeature.projected[view];
+    if(proj.kind==='collapsed-point'){generatedCollapsedCount++;continue;}
+    if(generatedSegments.length>=600)
+     fail('bounded generated source projection candidate budget exceeded');
+    const from=sourceFeature.source3DFrom,
+     to=sourceFeature.source3DTo;
+    const source={id:'GeneratedSource'+generatedSegments.length,from,to};
+    const occlusion=evaluateFullSourceSegmentOcclusion({
+     source,solids,view});
+    const rays=solids.map(solid=>certifyConvexSegmentClearance({
+     source,solid,observerDirection:FIRST_ANGLE_OBSERVER_RAYS[view]}));
+    const clear=rays.every(r=>r.status==='certified-clear');
+    const hidden=occlusion.entireSourceSegmentOccluded===true;
+    if(clear&&hidden)
+     fail('M0 generated source interval both strictly hidden and forward clear');
+    generatedSegments.push({
+     id:'M4NewFeature'+generatedSegments.length,revision,
+     sourceGeneratedFeatureId:sourceFeature.id,
+     sourceGeometryIds:[...sourceFeature.sourceGeometryIds],
+     sourceFacePlanes:sourceFeature.sourceFacePlanes,
+     sourceAxis:sourceFeature.sourceAxis,view,
+     originalSourceMeshEdgeId:null,
+     source3DFrom:{...from},source3DTo:{...to},
+     projectedFromModelMm:{...proj.from},
+     projectedToModelMm:{...proj.to},
+     sourceParameterOpenRangeMm:[...sourceFeature.sourceParameterOpenRangeMm],
+     localGeneratedUnionConcaveGeometryVerified:true,
+     wholeOpenSourceForwardRayClearVerified:clear,
+     wholeSourceStrictlyOccludedVerified:hidden,
+     rayClassification:hidden?'strictly-occluded-by-reviewed-volume':
+      clear?'forward-ray-clear-over-reviewed-solids':'undetermined',
+     sourceOccluderGeometryIds:hidden?[...occlusion.occluderIds]:[],
+     independentSolidForwardRayStatuses:rays.map((r,i)=>({
+      sourceGeometryId:solids[i].id,status:r.status})),
+     completeProjectiveJunctionsVerified:false,
+     originalSourceMeshVertexInferred:false,
+     entireMultiBodyContourVerified:false,
+     officialEngineeringLineStyle:'undetermined',
+     formalM3SolveResultVerified:false,
+     canonicalIntentAndV5LineStepApproved:false
+    });
+   }
+  }
+ }
  return freeze({
   schema:'draftai-scoped-projected-stroke-partition/1',
   revision,status:'preview-partition-evidence-only',
   segmentCount:segments.length,segments,scopedHiddenCount,scopedVisibleCount,
+  generatedUnionCreaseEvidence,
+  generatedSegments,
+  generatedProjectedCandidateCount:generatedSegments.length,
+  generatedProjectedCollapsedCount:generatedCollapsedCount,
+  generatedStrokeSignedCount:0,
   unionSourceFeatureScope:unionSourceFeatures.status,
   unionFeatureAddedCutCount,
   unionSourceFeatureOpenIntervalCount:unionSourceFeatures.intervalCount,
