@@ -26,7 +26,7 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))deepFreeze(v);Object.freeze(x);
 }return x;};
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
- stationCountPerBranch=0}={}){
+ stationCountPerBranch=0,viewTransforms=null}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
@@ -36,6 +36,15 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  if(!Number.isSafeInteger(stationCountPerBranch)||
     stationCountPerBranch<0||stationCountPerBranch>2)
   throw new RangeError('0..2 independently proven interior stations per branch required');
+ if(viewTransforms!==null&&(
+    typeof viewTransforms!=='object'||Array.isArray(viewTransforms)||
+    Object.keys(viewTransforms).sort().join(',')!=='H,V,W'||
+    !VIEWS.every(v=>{
+     const t=viewTransforms[v];
+     return t&&t.origin&&finite(t.origin.x)&&finite(t.origin.y)&&
+      finite(t.scale)&&t.scale>0&&t.scale<=100;
+    })))
+  throw new TypeError('three bounded first-angle V/H/W paper transforms required');
  const proof=evaluateUnifiedMath({
   kind:'finite-orthogonal-cylinder-intersection',input,revision
  });
@@ -123,7 +132,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   for(const view of VIEWS){
    const interior=ep.role.startsWith('interior-');
    const id=(interior?'C3Station':'C3Endpoint')+index+view;
-   const point=toSheet(view,orthographic[view],sheetTransform);
+   const point=toSheet(view,orthographic[view],
+    viewTransforms?.[view]||sheetTransform);
    const op={id:id+'Point',kind:'point',coordinateSpace:'sheet-px',
     geometry:{at:{...point}}};
    const intent={schema:VERSION,id,purpose:interior?
