@@ -101,6 +101,9 @@ function auditC3TransitionRays({input,point,view}={}){
   ...y.interiorOpenIntervals.map(range=>({solid:'yCylinder',range}))]
   .sort((a,b)=>a.range[0]-b.range[0]||a.range[1]-b.range[1]);
  const unionInteriorOpenIntervals=unionForwardIntervals(combined);
+ // A source point lies on both lateral surfaces. A certified positive
+ // interior interval for either solid establishes strict occlusion ahead,
+ // but does not establish whole-curve continuity or standard stroke style.
  const positiveInteriorOcclusionVerified=unionInteriorOpenIntervals.length>0&&
   (z.positiveInteriorVerified||y.positiveInteriorVerified);
  const originAmbiguous=z.originOnBoundary||y.originOnBoundary;
@@ -113,6 +116,10 @@ function auditC3TransitionRays({input,point,view}={}){
  return freeze({schema:'draftai-c3-transition-ray-candidates/1',view,point:{...point},
   zCylinder:z,yCylinder:y,combinedForwardInteriorIntervals:combined,
   unionInteriorOpenIntervals,
+  nearestStrictOpaqueInterval:unionInteriorOpenIntervals.length?
+   {...unionInteriorOpenIntervals[0]}:null,
+  nearestOpaqueInteriorStartsAtSource:unionInteriorOpenIntervals.length?
+   unionInteriorOpenIntervals[0].range[0]===0:false,
   positiveInteriorOcclusionVerified,
   endpointVisibilityStatus,
   ambiguousBoundaryOrDepthTie:grazingOrTie,
