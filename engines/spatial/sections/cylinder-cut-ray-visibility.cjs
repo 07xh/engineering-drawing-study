@@ -17,6 +17,8 @@
 const {finiteCylinderSectionBoundary}=
  require('./finite-cylinder-section-boundary.cjs');
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
+const {classifyConvexOpenRaySign}=
+ require('../../../core/numeric/convex-open-ray.cjs');
 const TAU=2*Math.PI;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point3=v=>v&&['x','y','z'].every(k=>finite(v[k])&&Math.abs(v[k])<=1e8);
@@ -56,8 +58,6 @@ function classifyCylinderSectionVisibility(cylinder,plane,options={}){
  const minZ=b.z,maxZ=b.z+cylinder.heightMm;
  const scaleTol=1e-8*Math.max(1,r,cylinder.heightMm);
  const ANGLE_EPS=1e-9,DIR_EPS=1e-10;
- const nearPlane=Math.abs(k)<=DIR_EPS;
- const removedRay=k< -DIR_EPS;
  const keptRay=k>DIR_EPS;
  const azimuth=Math.atan2(d.y,d.x);
  const sideSlope=Math.hypot(d.x,d.y);
@@ -89,15 +89,14 @@ function classifyCylinderSectionVisibility(cylinder,plane,options={}){
     if(hi-lo<=ANGLE_EPS)continue;
     const theta=(lo+hi)/2;
     const slope=Math.cos(theta)*d.x+Math.sin(theta)*d.y;
+    const rayCase=classifyConvexOpenRaySign(k,slope,DIR_EPS);
     let visibility='undetermined',why='edge-on-cut-or-silhouette';
-    if(removedRay){
+    if(rayCase==='removed'){
      visibility='visible';why='ray-enters-removed-halfspace';
-    }else if(keptRay&&sideSlope>DIR_EPS){
-     if(slope>DIR_EPS){
-      visibility='visible';why='ray-leaves-convex-cylinder-outward';
-     }else if(slope< -DIR_EPS){
-      visibility='hidden';why='ray-enters-retained-cylinder-interior';
-     }
+    }else if(rayCase==='exiting'){
+     visibility='visible';why='ray-leaves-convex-cylinder-outward';
+    }else if(rayCase==='entering'){
+     visibility='hidden';why='ray-enters-retained-cylinder-interior';
     }
     const a=pointAt(lo),m=pointAt(theta),z=pointAt(hi);
     // Independently recompute plane, side, and finite-height residuals.
@@ -127,15 +126,14 @@ function classifyCylinderSectionVisibility(cylinder,plane,options={}){
    const q=edge.midpoint;
    const capSign=face==='bottom'?1:-1;
    const entering=capSign*d.z;
+   const rayCase=classifyConvexOpenRaySign(k,-entering,DIR_EPS);
    let visibility='undetermined',why='edge-on-cut-or-cap';
-   if(removedRay){
+   if(rayCase==='removed'){
     visibility='visible';why='ray-enters-removed-halfspace';
-   }else if(keptRay){
-    if(entering>DIR_EPS){
-     visibility='hidden';why='ray-enters-retained-cylinder-from-cap-interior';
-    }else if(entering< -DIR_EPS){
-     visibility='visible';why='ray-leaves-cylinder-away-from-cap';
-    }
+   }else if(rayCase==='entering'){
+    visibility='hidden';why='ray-enters-retained-cylinder-from-cap-interior';
+   }else if(rayCase==='exiting'){
+    visibility='visible';why='ray-leaves-cylinder-away-from-cap';
    }
    const residual=Math.max(
     Math.abs(dotPlane(q,pl)),Math.abs(q.z-(face==='bottom'?minZ:maxZ)),

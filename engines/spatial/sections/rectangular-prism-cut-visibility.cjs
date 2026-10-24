@@ -8,6 +8,8 @@
  */
 const {prismPlaneSection}=require('./rectangular-prism-plane.cjs');
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
+const {classifyConvexOpenRaySign}=
+ require('../../../core/numeric/convex-open-ray.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=v=>v&&['x','y','z'].every(k=>finite(v[k])&&Math.abs(v[k])<1e8);
 const dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
@@ -59,15 +61,14 @@ function classifyPrismSectionVisibility(box,plane,options={}){
   });
   const face=faces[0];
   const outward=face.outwardSign*ray[face.axis];
+  const rayCase=classifyConvexOpenRaySign(planeSlope,outward,DIR_EPS);
   let visibility='undetermined',reason='cut-plane-or-view-tangency';
-  if(planeSlope< -DIR_EPS){
+  if(rayCase==='removed'){
    visibility='visible';reason='ray-enters-removed-halfspace';
-  }else if(planeSlope>DIR_EPS){
-   if(outward>DIR_EPS){
-    visibility='visible';reason='ray-leaves-convex-prism-through-section-face';
-   }else if(outward< -DIR_EPS){
-    visibility='hidden';reason='ray-enters-retained-prism-through-section-face';
-   }
+  }else if(rayCase==='exiting'){
+   visibility='visible';reason='ray-leaves-convex-prism-through-section-face';
+  }else if(rayCase==='entering'){
+   visibility='hidden';reason='ray-enters-retained-prism-through-section-face';
   }
   if(!['visible','hidden','undetermined'].includes(visibility))
    return blocked({status:'numeric-failure'});

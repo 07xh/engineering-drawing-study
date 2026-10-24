@@ -14,6 +14,8 @@
 const {conePlaneFullEllipse,conePlaneClippedEllipseBoundary}=
  require('./finite-cone-plane.cjs');
 const {project}=require('../../../core/projection/conventions.js');
+const {classifyConvexOpenRaySign}=
+ require('../../../core/numeric/convex-open-ray.cjs');
 const TAU=2*Math.PI;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=p=>p&&['x','y','z'].every(k=>finite(p[k]));
@@ -99,7 +101,6 @@ function classifyConeSectionVisibility(cone,plane,options={}){
  const retainedSign=retainedHalfspace==='positive'?1:-1;
  const halfspaceSlope=retainedSign*dot(n,ray);
  const EPS_DIR=1e-10,EPS_ANGLE=1e-9;
- const removed=halfspaceSlope< -EPS_DIR;
  const kept=halfspaceSlope>EPS_DIR;
  // Outward lateral normal is proportional to
  // (cos(theta),sin(theta),r/h) at ANY positive-radius generator point.
@@ -137,15 +138,15 @@ function classifyConeSectionVisibility(cone,plane,options={}){
     return blocked(kind,'lateral visibility interval violates cone/plane residual');
    maxResidualMm=Math.max(maxResidualMm,e);
   }
+  const rayCase=classifyConvexOpenRaySign(
+   halfspaceSlope,tangentUnresolved?0:outwardSlope(theta),EPS_DIR);
   let visibility='undetermined',reason='cut-plane-tangent-or-silhouette';
-  if(removed){
+  if(rayCase==='removed'){
    visibility='visible';reason='ray-enters-explicitly-removed-halfspace';
-  }else if(kept&&!tangentUnresolved){
-   const g=outwardSlope(theta);
-   if(g>EPS_DIR){visibility='visible';reason='ray-leaves-convex-cone-outward';}
-   else if(g< -EPS_DIR){
-    visibility='hidden';reason='ray-enters-retained-cone-interior';
-   }
+  }else if(rayCase==='exiting'){
+   visibility='visible';reason='ray-leaves-convex-cone-outward';
+  }else if(rayCase==='entering'){
+   visibility='hidden';reason='ray-enters-retained-cone-interior';
   }
   counts[visibility]++;
   runs.push({id:'cone-lateral-run-'+(i+1),kind:'lateral-arc',
@@ -170,11 +171,14 @@ function classifyConeSectionVisibility(cone,plane,options={}){
   if(!finite(nrmDist)||nrmDist<=epsilon||diskMargin<=epsilon||
      !finite(chordErr)||chordErr>8*epsilon)
    return blocked(kind,'cap chord open interior failed independent plane/disk proof');
+  const rayCase=classifyConvexOpenRaySign(halfspaceSlope,-ray.z,EPS_DIR);
   let visibility='undetermined',reason='cap-observer-tangency';
-  if(removed){visibility='visible';reason='ray-enters-removed-halfspace';}
-  else if(kept){
-   if(ray.z< -EPS_DIR){visibility='visible';reason='ray-leaves-bottom-cap';}
-   else if(ray.z>EPS_DIR){visibility='hidden';reason='ray-enters-cone-through-bottom-cap';}
+  if(rayCase==='removed'){
+   visibility='visible';reason='ray-enters-removed-halfspace';
+  }else if(rayCase==='exiting'){
+   visibility='visible';reason='ray-leaves-bottom-cap';
+  }else if(rayCase==='entering'){
+   visibility='hidden';reason='ray-enters-cone-through-bottom-cap';
   }
   counts[visibility]++;
   runs.push({id:'cone-cap-chord-run',kind:'cap-chord',
