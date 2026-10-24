@@ -19,6 +19,7 @@ const files = [
   'labs/point-projection-live.html',
   'labs/two-point-v5-live.html',
   'labs/solid-third-view-live.html',
+  'labs/finite-cylinder-intersection-live.html',
   'labs/circle-fillet-live.html',
   'labs/polygon-live.html',
   'labs/auto-fillet-live.html',
@@ -125,6 +126,16 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/solid-third-view-live-entry.cjs')],
  outfile:path.join(out,'labs/solid-third-view-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Reviewed finite-cylinder C3 M3 solver to canonical auxiliary POINT V5 only.
+ * Sampled analytic previews are visually separate; no official curve strokes.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/finite-cylinder-intersection-live-entry.cjs')],
+ outfile:path.join(out,'labs/finite-cylinder-intersection-live-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });

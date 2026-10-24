@@ -7,7 +7,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const SPEEDS=Object.freeze([0.25,0.5,0.65,1,1.5,1.7,2,2.5,3,4]);
- const DURATIONS=Object.freeze({line:900,circle:1500,arc:1500,point:260,highlight:380,hold:600});
+ const DURATIONS=Object.freeze({line:900,circle:1500,arc:1500,'analytic-curve':1800,point:260,highlight:380,hold:600});
  const finite=n=>typeof n==='number'&&Number.isFinite(n);
  const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
  /* Signed offset branches from verified 02 math use IDs such as s++-offset1. */

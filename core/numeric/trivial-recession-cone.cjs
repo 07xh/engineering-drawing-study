@@ -26,10 +26,19 @@ const {determinant3DAdaptive}=require('./determinant3d-adaptive.cjs');
 function parse({halfspaces}={}){
  if(!Array.isArray(halfspaces)||halfspaces.length<4||halfspaces.length>64)
   throw new TypeError('four to 64 explicit finite outward halfspaces required');
- return Array.from({length:halfspaces.length},(_,i)=>{
-  if(!Object.hasOwn(halfspaces,i)||!isRecord(halfspaces[i]))
+ // Capture ALL indexed face identities before reading any coordinate or
+ // offset getter. Such a getter may mutate the original caller-owned array;
+ // the recession-cone proof must not silently switch its face sources halfway
+ // through validation. Each face's normal and offset are then read once.
+ const faceInputs=Array.from({length:halfspaces.length},(_,i)=>{
+  if(!Object.hasOwn(halfspaces,i))
    throw new TypeError('missing halfspace '+i);
-  const face=halfspaces[i],normal=face.normal,offset=face.offsetMm;
+  const face=halfspaces[i];
+  if(!isRecord(face))throw new TypeError('missing halfspace '+i);
+  return face;
+ });
+ return faceInputs.map((face,i)=>{
+  const normal=face.normal,offset=face.offsetMm;
   if(!isRecord(normal)||!axes.every(k=>Object.hasOwn(normal,k)))
    throw new TypeError('explicit finite normal required at '+i);
   const n={x:normal.x,y:normal.y,z:normal.z};

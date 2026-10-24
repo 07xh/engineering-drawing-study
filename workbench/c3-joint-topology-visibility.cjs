@@ -9,6 +9,8 @@ const {auditFiniteCylinderEndpointIncidence}=require('./m5-analytic-cylinder-end
 const {auditFiniteCylinderWRayIntervals}=require('./m5-finite-cylinder-w-ray-intervals.cjs');
 const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
+const {auditC3WCriticalRays}=require('./c3-w-critical-ray-theorem.cjs');
+const {auditC3WLateralProjectionInjectivity}=require('./c3-w-lateral-injectivity.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -22,7 +24,7 @@ function analyticC3PointAt(branch,input,x){
   z:Y.zCenter+branch.signZ*Math.sqrt(zr)};
  return Object.values(point).every(Number.isFinite)?point:null;
 }
-function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences,branches){
+function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences,branches,revision){
  const sourceBranches=new Map(branches.map(b=>[b.id,b]));
  const result=[];
  for(const view of ['V','H','W']){
@@ -46,6 +48,30 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      sourceBranches.get(branchId),input,left.xOpenRange[1]);
     const transitionRayEvidence=analyticTransitionPoint?
      auditC3TransitionRays({input,point:analyticTransitionPoint,view}):null;
+    // Strict interior samples on each side are mathematical witnesses,
+    // not a certificate that the critical boundary point is continuous.
+    const sideRayWitnesses=[left,right].map(part=>{
+     const x=(part.xOpenRange[0]+part.xOpenRange[1])/2;
+     const point=analyticC3PointAt(sourceBranches.get(branchId),input,x);
+     const ray=point?auditC3TransitionRays({input,point,view}):null;
+     return {x,point,strictOpaqueVolumeAhead:ray?.positiveInteriorOcclusionVerified===true,
+      strictRayInteriorWitness:ray?.unionInteriorOpenIntervals?.length>0,
+      officialLineStyle:'undetermined'};
+    });
+    const sidedPointResiduals=sideRayWitnesses.map(w=>{
+     if(!w.point)return null;
+     const Z=input.zCylinder,Y=input.yCylinder,p=w.point;
+     const zResidual=(p.x-Z.xCenter)**2+(p.y-Z.yCenter)**2-Z.radius**2;
+     const yResidual=(p.x-Y.xCenter)**2+(p.z-Y.zCenter)**2-Y.radius**2;
+     const scale=Math.max(1,Z.radius**2,Y.radius**2);
+     return {zCylinderScaledResidual:Math.abs(zResidual)/scale,
+      yCylinderScaledResidual:Math.abs(yResidual)/scale,
+      withinFiniteCaps:p.z>=Z.zMin&&p.z<=Z.zMax&&
+       p.y>=Y.yMin&&p.y<=Y.yMax};
+    });
+    const bothSidedIncidenceNumericallyVerified=sidedPointResiduals.every(r=>
+     r&&r.zCylinderScaledResidual<=1e-9&&
+     r.yCylinderScaledResidual<=1e-9&&r.withinFiniteCaps);
     const same=left.openInteriorStatus===right.openInteriorStatus&&
       left.openInteriorStatus!=='undetermined';
     result.push({view,branchId,transitionX:left.xOpenRange[1],
@@ -55,6 +81,8 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      contiguousSourceParameterBoundaryVerified,
      analyticTransitionPoint,
      transitionRayEvidence,
+     sideRayWitnesses,
+     sidedPointResiduals,bothSidedIncidenceNumericallyVerified,
      endpointRayContinuityVerified:false,
      occlusionSwitchPointVerified:false,
      standardLineStyle:'undetermined',v5ActionAuthorized:false,
@@ -89,7 +117,17 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      ...(branchCoverage?[]:['incident-branch-view-coverage-missing'])]});
   }
  }
- return result;
+ // Resolve EXACT analytic W critical rays independently against CURRENT M3,
+ // rather than assuming that left/right sampled rays prove the switch point.
+ // These additional ray results still cannot sign any drawing line or V5.
+ const requests=result.filter(g=>g.view==='W'&&
+  Number.isFinite(g.transitionX)&&typeof g.branchId==='string')
+  .map(g=>({branchId:g.branchId,x:g.transitionX}));
+ const critical=auditC3WCriticalRays({input,revision,criticalPoints:requests});
+ const proofByKey=new Map(critical.points.map(p=>[p.branchId+'|'+p.x,p]));
+ return result.map(g=>g.view==='W'&&Number.isFinite(g.transitionX)?
+  {...g,criticalPointWRayProof:proofByKey.get(g.branchId+'|'+g.transitionX)||null}:
+  g);
 }
 function auditC3JointTopologyVisibility({input,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
@@ -104,6 +142,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  const topology=auditFiniteCylinderEndpointIncidence({input,revision});
  const w=auditFiniteCylinderWRayIntervals({input,revision});
  const vh=auditFiniteCylinderVHAxisRays({input,revision});
+ const wLateralProjection=auditC3WLateralProjectionInjectivity({input,revision});
+ if(wLateralProjection.status==='not-covered')
+  throw new RangeError('C3 independent W lateral-source theorem not covered');
  if(topology.status!=='scoped-analytic-3d-endpoint-incidence'||
   w.status!=='source-bounded-W-open-rays'||
   vh.status!=='scoped-analytic-VH-strict-volume-occlusion'||
@@ -168,6 +209,8 @@ function auditC3JointTopologyVisibility({input,revision}={}){
      certifiedClear?'clear':'undetermined',
     originalM5EvidenceId:p.id,sourceM3AnalyticBranchVerified:true,
     physicalGraphBranchAccountedFor:true,
+    wLateralProjectionCollisionExcludedWithinSourceScope:view==='W'&&
+     wLateralProjection.projectedLateralLateralPointInjectivityVerified===true,
     endpointVisibilityVerified:false,
     blockers:[
      ...(!certifiedOccluded&&!certifiedClear?['open-interval-ray-sign-undetermined']:[]),
@@ -184,8 +227,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
+  wLateralProjection,
   transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
-   topology.projectedCoincidences,m3.branches),
+   topology.projectedCoincidences,m3.branches,revision),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,

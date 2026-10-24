@@ -8,10 +8,19 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: workbench-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
-  workbench:
+  workbench-shard:
+    name: workbench-shard-${{ matrix.shard }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,8 +28,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate synthetic workbench without credentials
+      - name: Execute all assigned workbench tests
         run: |
           node --check workbench/workbench-core.js
           node --check workbench/workbench-ui.js
-          node --test tests/workbench/*.test.cjs
+          node scripts/run-workbench-shard.cjs ${{ matrix.shard }} 4
+
+  # Preserve the original required check (job ID and name: workbench).
+  # If any shard fails/skips/cancels, aggregate must be a FAILURE, not skip.
+  workbench:
+    name: workbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [workbench-shard]
+    if: ${{ always() }}
+    steps:
+      - name: Fail closed unless all four workbench shards passed
+        run: |
+          if [ "${{ needs.workbench-shard.result }}" != "success" ]; then
+            echo "One or more workbench test shards failed, skipped or was cancelled."
+            exit 1
+          fi
+          echo "All four full-workbench shards passed."

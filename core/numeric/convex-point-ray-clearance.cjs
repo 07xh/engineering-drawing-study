@@ -14,9 +14,14 @@
  * multi-surface junction topology, ConstructionIntent or V5 authority.
  */
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
- Object.keys(p).sort().join(',')==='x,y,z'&&
- ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
+// One trusted validation/consumption snapshot of each source coordinate.
+function snapshotXYZ(p){
+ if(!p||typeof p!=='object'||Array.isArray(p)||
+    Object.keys(p).sort().join(',')!=='x,y,z')return null;
+ const x=p.x,y=p.y,z=p.z;
+ if(![x,y,z].every(v=>finite(v)&&Math.abs(v)<=1e8))return null;
+ return {x,y,z};
+}
 const id=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(x);
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
@@ -33,38 +38,44 @@ function certifyConvexPointRayClearance({
  point,observerDirection,solid,marginMm=1e-7,
  angleTolerance=1e-12
 }={}){
- if(!xyz(point)||!xyz(observerDirection)||
-    !solid||typeof solid!=='object'||Array.isArray(solid)||
-    Object.keys(solid).sort().join(',')!=='halfspaces,id'||
-    !id(solid.id)||!Array.isArray(solid.halfspaces)||
-    solid.halfspaces.length<4||solid.halfspaces.length>64)
+ const source=snapshotXYZ(point),observer=snapshotXYZ(observerDirection);
+ if(!solid||typeof solid!=='object'||Array.isArray(solid)||
+    Object.keys(solid).sort().join(',')!=='halfspaces,id')
+  throw new TypeError('finite 3D vertex, observer and convex halfspaces required');
+ const solidId=solid.id,halfspaces=solid.halfspaces;
+ if(!source||!observer||!id(solidId)||!Array.isArray(halfspaces)||
+    halfspaces.length<4||halfspaces.length>64)
   throw new TypeError('finite 3D vertex, observer and convex halfspaces required');
  if(!finite(marginMm)||marginMm<=0||marginMm>1e-2||
     !finite(angleTolerance)||angleTolerance<=0||angleTolerance>1e-6)
   throw new RangeError('positive bounded mm/angle tolerance required');
- const norm=Math.hypot(observerDirection.x,observerDirection.y,observerDirection.z);
+ const norm=Math.hypot(observer.x,observer.y,observer.z);
  if(!finite(norm)||norm<=1e-12)throw new RangeError('nonzero observer required');
- const d={x:observerDirection.x/norm,y:observerDirection.y/norm,
-  z:observerDirection.z/norm};
+ const d={x:observer.x/norm,y:observer.y/norm,z:observer.z/norm};
  const faces=[],ids=new Set();
- for(const f of solid.halfspaces){
-  if(!f||typeof f!=='object'||Array.isArray(f)||
-     Object.keys(f).sort().join(',')!=='id,normal,offsetMm'||
-     !id(f.id)||ids.has(f.id)||!xyz(f.normal)||
-     !finite(f.offsetMm)||Math.abs(f.offsetMm)>1e9)
+ for(let i=0;i<halfspaces.length;i++){
+  if(!Object.hasOwn(halfspaces,i))
    throw new TypeError('distinct finite convex support planes required');
-  ids.add(f.id);
-  const size=Math.hypot(f.normal.x,f.normal.y,f.normal.z);
+  const f=halfspaces[i];
+  if(!f||typeof f!=='object'||Array.isArray(f)||
+     Object.keys(f).sort().join(',')!=='id,normal,offsetMm')
+   throw new TypeError('distinct finite convex support planes required');
+  const faceId=f.id,normal=snapshotXYZ(f.normal),offsetMm=f.offsetMm;
+  if(!id(faceId)||ids.has(faceId)||!normal||
+     !finite(offsetMm)||Math.abs(offsetMm)>1e9)
+   throw new TypeError('distinct finite convex support planes required');
+  ids.add(faceId);
+  const size=Math.hypot(normal.x,normal.y,normal.z);
   if(!finite(size)||size<=1e-12)
    throw new RangeError('nonzero supporting normal required');
-  const n={x:f.normal.x/size,y:f.normal.y/size,z:f.normal.z/size},
-   offset=f.offsetMm/size;
+  const n={x:normal.x/size,y:normal.y/size,z:normal.z/size},
+   offset=offsetMm/size;
   if(!finite(offset))throw new RangeError('normalized support overflow');
   faces.push({n,offset});
  }
  let near=0,far=Infinity,uncertain=false;
  for(const f of faces){
-  const exterior=dot(f.n,point)-f.offset,
+  const exterior=dot(f.n,source)-f.offset,
    slope=dot(f.n,d);
   if(!finite(exterior)||!finite(slope))
    throw new RangeError('nonfinite point ray residual');
@@ -76,15 +87,15 @@ function certifyConvexPointRayClearance({
   // For every forward t>0, n.(point+t*d)>offset. A source lying
   // EXACTLY on an outward support is therefore a valid OPEN ray miss.
   if(slope>angleTolerance&&slopeSign>0&&exterior>=0)
-   return output(solid.id,'certified-clear','outward-support-positive-open-ray');
+   return output(solidId,'certified-clear','outward-support-positive-open-ray');
   if(slope>=0&&slopeSign>=0&&exterior>=marginMm)
-   return output(solid.id,'certified-clear','exterior-support-positive-open-ray');
+   return output(solidId,'certified-clear','exterior-support-positive-open-ray');
   // Expand all support halfspaces by +margin. If this larger solid cannot
   // meet t>=0, the true solid is also missed with conservative allowance.
-  const gamma=f.offset+marginMm-dot(f.n,point);
+  const gamma=f.offset+marginMm-dot(f.n,source);
   if(Math.abs(slope)<=angleTolerance){
    if(gamma< -marginMm&&slope===0&&slopeSign===0)
-    return output(solid.id,'certified-clear','parallel-exterior-inflated-support');
+    return output(solidId,'certified-clear','parallel-exterior-inflated-support');
    if(slopeSign!==0)uncertain=true;
    continue;
   }
@@ -94,8 +105,8 @@ function certifyConvexPointRayClearance({
   else far=Math.min(far,t);
  }
  if(!uncertain&&(far< -marginMm||near>far+marginMm))
-  return output(solid.id,'certified-clear','inflated-forward-ray-infeasible');
- return output(solid.id,'undetermined',uncertain?
+  return output(solidId,'certified-clear','inflated-forward-ray-infeasible');
+ return output(solidId,'undetermined',uncertain?
   'near-parallel-support':'positive-ray-could-intersect-or-graze');
 }
 module.exports={certifyConvexPointRayClearance};

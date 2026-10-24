@@ -154,6 +154,24 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal(selectedV.getAttribute('stroke'),'#ef6730','V must be selected');
   assert.equal(selectedW.getAttribute('stroke'),selectedV.getAttribute('stroke'),
     'the same Geometry ID must be highlighted in W without math recalculation');
+  const parentWhileChildSelected=$('v7-sheet').querySelector(
+   '[data-geometry-id="Solid1"][data-geometry-view="V"]');
+  assert.equal(parentWhileChildSelected.getAttribute('stroke'),
+   selectedV.getAttribute('stroke'),
+   'selecting an M3 section must also highlight its trusted 3D source owner');
+  parentWhileChildSelected.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.match($('v7-selection').textContent,/Solid1/);
+  const childFromOwnerV=$('v7-sheet').querySelector(
+   '[data-geometry-id="Section1"][data-geometry-view="V"]');
+  const childFromOwnerW=$('v7-sheet').querySelector(
+   '[data-geometry-id="Section1"][data-geometry-view="W"]');
+  const childFromOwner3D=$('v7-3d').querySelector(
+   '[data-geometry-id="Section1"][data-geometry-view="3D"]');
+  assert.ok(childFromOwner3D,'a parent and derived section share one source scene');
+  assert.equal(childFromOwnerV.getAttribute('stroke'),'#ef6730');
+  assert.equal(childFromOwnerW.getAttribute('stroke'),childFromOwnerV.getAttribute('stroke'));
+  assert.equal(childFromOwner3D.getAttribute('stroke'),childFromOwnerV.getAttribute('stroke'),
+   '3D + V/H/W owner selection must stay synchronized');
   assert.ok(section3D.length>=3&&section3D.length<=6,
    'actual M3 verified section polygon is visible as bounded straight edges');
   assert.equal(sectionSheet.length,section3D.length*3,

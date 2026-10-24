@@ -1,7 +1,9 @@
 'use strict';
 /**
  * C3: release ONLY analytically proven finite lateral-lateral intersection
- * ENDPOINT POINTS to the original 07 V5 (ConstructionIntent → Step DAG).
+ * ENDPOINT POINTS and optional independently proven INTERIOR AUXILIARY
+ * POINTS, plus optional source-cylinder circle guides, to the original
+ * 07 V5 (ConstructionIntent → Step DAG).
  *
  * No parametric curve interpolation or standard hidden/visible stroke action
  * is signed: neither branch junction topology nor M5 contour/occlusion proof
@@ -15,6 +17,10 @@ const {auditFiniteCylinderVHAxisRays}=
  require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditFiniteCylinderEndpointIncidence}=
  require('./m5-analytic-cylinder-endpoint-incidence.cjs');
+const {buildC3WIntervalPreview}=
+ require('./c3-w-ray-preview.cjs');
+const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
+ require('./c3-vh-projection-dedup.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const {CONSTRUCTION_INTENT_VERSION:VERSION}=require('../core/contracts/construction-intent.js');
 const {verifiedTeachingActionToV5}=require('./construction-step-v5-adapter.cjs');
@@ -24,13 +30,37 @@ const finite=Number.isFinite;
 const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))deepFreeze(v);Object.freeze(x);
 }return x;};
-function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
+function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
+ stationCountPerBranch=0,viewTransforms=null,
+ includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false,
+ includeWAnalyticCurveGuides=false,wRayPartitionedV5=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
     !finite(sheetTransform.scale)||sheetTransform.scale<=0||
     sheetTransform.scale>100)
   throw new TypeError('current reviewed source and bounded shared V5 transform required');
+ if(typeof includeSourceCircleGuides!=='boolean')
+  throw new TypeError('reviewed source-circle guide toggle must be boolean');
+ if(typeof includeProjectedSeamArcGuides!=='boolean')
+  throw new TypeError('analytic projected seam-arc guide toggle must be boolean');
+ if(typeof includeWAnalyticCurveGuides!=='boolean')
+  throw new TypeError('reviewed analytic W curve guide toggle must be boolean');
+ if(typeof wRayPartitionedV5!=='boolean'||
+   (wRayPartitionedV5&&!includeWAnalyticCurveGuides))
+  throw new TypeError('M5 W interval mode requires explicit analytic curve guide consent');
+ if(!Number.isSafeInteger(stationCountPerBranch)||
+    stationCountPerBranch<0||stationCountPerBranch>2)
+  throw new RangeError('0..2 independently proven interior stations per branch required');
+ if(viewTransforms!==null&&(
+    typeof viewTransforms!=='object'||Array.isArray(viewTransforms)||
+    Object.keys(viewTransforms).sort().join(',')!=='H,V,W'||
+    !VIEWS.every(v=>{
+     const t=viewTransforms[v];
+     return t&&t.origin&&finite(t.origin.x)&&finite(t.origin.y)&&
+      finite(t.scale)&&t.scale>0&&t.scale<=100;
+    })))
+  throw new TypeError('three bounded first-angle V/H/W paper transforms required');
  const proof=evaluateUnifiedMath({
   kind:'finite-orthogonal-cylinder-intersection',input,revision
  });
@@ -66,16 +96,262 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
  const branchEndpoints=proof.branches.flatMap((b,i)=>
   b.endpoints.map((e,j)=>({branchIndex:i,branchId:b.id,role:j===0?'from':'to',
    point:e.point,events:e.events})));
+ // No caller-provided point geometry. Derive interior stations from CURRENT
+ // signed-radical M3 source, then independently check both finite surfaces.
+ const branchStations=proof.branches.flatMap((b,i)=>{
+  const result=[],Z=proof.source.zCylinder,Y=proof.source.yCylinder;
+  for(let k=1;k<=stationCountPerBranch;k++){
+   const x=b.xRange[0]+(b.xRange[1]-b.xRange[0])*
+     k/(stationCountPerBranch+1);
+   const yy=(Z.radius-Math.abs(x-Z.xCenter))*
+     (Z.radius+Math.abs(x-Z.xCenter));
+   const zz=(Y.radius-Math.abs(x-Y.xCenter))*
+     (Y.radius+Math.abs(x-Y.xCenter));
+   if(!(yy>0&&zz>0)||!(x>b.xRange[0]&&x<b.xRange[1]))
+    throw new RangeError('analytic station too close to singular source');
+   const point={x,y:Z.yCenter+b.signY*Math.sqrt(yy),
+    z:Y.zCenter+b.signZ*Math.sqrt(zz)};
+   const capTol=1e-10*Math.max(1,Z.radius,Y.radius);
+   if(!(point.y>Y.yMin+capTol&&point.y<Y.yMax-capTol&&
+     point.z>Z.zMin+capTol&&point.z<Z.zMax-capTol))
+    throw new RangeError('interior station not strictly inside finite axial caps');
+   result.push({branchIndex:i,branchId:b.id,role:'interior-'+k,point,
+    events:{interiorOnly:true,sourceBranchId:b.id}});
+  }
+  return result;
+ });
  if(!branchEndpoints.length||branchEndpoints.length>48)
   throw new RangeError('finite cylinder endpoint budget exceeded');
+ const allStations=[...branchEndpoints,...branchStations];
+ if(allStations.length*3>300)
+  throw new RangeError('C3 stations exceed the canonical construction DAG budget');
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
- const intents=[],steps=[],bindings=[];
+ const intents=[],steps=[],bindings=[],sourceCircleGuides=[],
+  projectedSeamArcGuides=[],wAnalyticCurveGuides=[];
+ const sheetByIntentId={},viewByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:'finite-lateral-lateral-branch-endpoint-only',
+  revision,unit:'mm',proofScope:includeWAnalyticCurveGuides?
+   'finite-cylinder-W-analytic-curve-guide-not-official':
+   includeProjectedSeamArcGuides?
+   'finite-cylinder-projected-arcs-and-analytic-points':
+   includeSourceCircleGuides?'finite-cylinder-original-circles-and-analytic-points':
+   stationCountPerBranch>0?'finite-lateral-lateral-branch-points-only':
+   'finite-lateral-lateral-branch-endpoint-only',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
   evidenceSource:'independent-M3-implicit-surfaces-and-cap-clipping'};
- for(const [index,ep] of branchEndpoints.entries()){
+ // The Y-axis cylinder has a true circular V view in model (x,z).
+ // The Z-axis cylinder has a true circular H view in model (x,y).
+ // These are KNOWN original geometric construction guides, not intersection
+ // curves or source-visible/hidden line-style conclusions.
+ if(includeSourceCircleGuides){
+  const guides=[
+   {view:'V',solid:'yCylinder',
+    center:{x:Y.xCenter,y:Y.zCenter},radius:Y.radius},
+   {view:'H',solid:'zCylinder',
+    center:{x:Z.xCenter,y:Z.yCenter},radius:Z.radius}
+  ];
+  for(const guide of guides){
+   const id='C3SourceCircle'+guide.view;
+   const op={id:id+'Shape',kind:'circle',coordinateSpace:'model-mm',
+    geometry:{center:{...guide.center},radius:guide.radius}};
+   const transform=viewTransforms?.[guide.view]||sheetTransform;
+   const action=verifiedTeachingActionToV5({
+    id:op.id,kind:'circle',coordinateSpace:'model-mm',
+    center:guide.center,radius:guide.radius,view:guide.view
+   },transform);
+   const intent={schema:VERSION,id,
+    purpose:'construct-original-finite-cylinder-circular-view-guide',
+    role:'given',dependsOn:[],inputEntityIds:[],
+    outputEntityIds:[op.id],operations:[op],source:{...source}};
+   const step={id,role:'given',dependsOn:[],
+    title:'原始有限圆柱 '+guide.solid+' · '+guide.view+' 面真实圆形投影',
+    explanation:'由已确认的半径和轴心精确投影生成原始辅助圆；叠加实体的工程可见轮廓和正式实虚线仍未签收。',
+    actions:[action]};
+   // Every Intent within the canonical DAG has IDENTICAL source metadata.
+   // The one combined trust scope was selected before creating any steps.
+   intents.push(intent);steps.push(step);
+   sheetByIntentId[id]=transform;
+   viewByIntentId[id]=guide.view;
+   sourceCircleGuides.push({view:guide.view,
+    sourceSolid:guide.solid,centerModelMm:{...guide.center},
+    radiusModelMm:guide.radius,
+    centerSheetPx:{...action.geometry.center},
+    radiusSheetPx:action.geometry.radius,
+    firstAngleSourceGeometryVerified:true,
+    sourceProjectionGuideV5Authorized:true,
+    officialContourLineStyleVerified:false,
+    interpenetrationCurveLineStyleVerified:false});
+  }
+ }
+ // Projection in V=(x,z) or H=(x,y) eliminates one of the signed
+ // radicals. A verified finite M3 lateral/lateral branch therefore projects
+ // to a true SUBARC of its owning source cylinder's exact model-mm circle.
+ // Reuse the original directed-arc operation and V5 Motion, NOT sampled
+ // line chords. De-duplicate exact same projected arcs across 3D branches.
+ if(includeProjectedSeamArcGuides){
+  const audit=buildC3VHProjectionDedup({input,revision});
+  if(audit.status!=='scoped-projected-analytic-interval-deduplicated'||
+     audit.sourceBranchCount!==proof.branchCount||
+     audit.originalCylinderContourCoincidenceProven!==true||
+     audit.projectionOwnershipVerified!==true||
+     audit.officialLineStylesVerified!==false||
+     audit.v5CurveActionsAuthorized!==false)
+   throw new RangeError('analytic projected V/H seam source not independently proven');
+  for(const [index,row] of audit.spans.entries()){
+   const [lo,hi]=row.xOpenRange;
+   const start=evaluateC3VHProjectedSpan(row,lo),
+     end=evaluateC3VHProjectedSpan(row,hi),
+     circle=row.projectedSourceCircle;
+   // Preserve the signed radical branch at exact radius extrema:
+   // adding -0 to a center can erase -0 and change atan2(-0,-R)
+   // into atan2(+0,-R), turning -pi into +pi on the lower semicircle.
+   const angle=x=>{
+    const dx=x-circle.xCenter;
+    const radial=(circle.radius-Math.abs(dx))*
+     (circle.radius+Math.abs(dx));
+    if(radial< -1e-9*Math.max(1,circle.radius**2))
+     throw new RangeError('projected analytic arc radial domain invalid');
+    return Math.atan2(row.retainedSign*Math.sqrt(Math.max(0,radial)),
+     dx)*180/Math.PI;
+   };
+   const startAngle=angle(lo),endAngle=angle(hi);
+   // Projection endpoints are recomputed by the original 2D M3 consumer.
+   // Strict mathematical parity, not angle guesses or sampled chords.
+   const from={u:circle.xCenter+circle.radius*Math.cos(startAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(startAngle*Math.PI/180)};
+   const to={u:circle.xCenter+circle.radius*Math.cos(endAngle*Math.PI/180),
+    v:circle.coordinateCenter+circle.radius*Math.sin(endAngle*Math.PI/180)};
+   if(Math.hypot(from.u-start.u,from.v-start.v)>1e-7||
+      Math.hypot(to.u-end.u,to.v-end.v)>1e-7)
+    throw new RangeError('directed arc endpoints differ from verified M3 projection');
+   const direction=row.retainedSign===1?'cw':'ccw';
+   const sweep=endAngle-startAngle;
+   if(!(Number.isFinite(sweep)&&Math.abs(sweep)>1e-9&&
+      Math.abs(sweep)<360-1e-9&&
+      (sweep>0)===(direction==='ccw')))
+    throw new RangeError('analytic projected circle arc has singular sweep');
+   const id='C3ProjectedArc'+index+row.view;
+   const geometry={center:{x:circle.xCenter,y:circle.coordinateCenter},
+    radius:circle.radius,startAngle,endAngle,direction};
+   const op={id:id+'Shape',kind:'directed-arc',
+    coordinateSpace:'model-mm',geometry};
+   const intent={schema:VERSION,id,
+    purpose:'construct-analytic-intersection-projection-as-source-circle-arc',
+    role:'auxiliary',dependsOn:[],inputEntityIds:[],
+    outputEntityIds:[op.id],operations:[op],source:{...source}};
+   const transform=viewTransforms?.[row.view]||sheetTransform;
+   const action=verifiedTeachingActionToV5({
+    id:op.id,kind:'arc',coordinateSpace:'model-mm',
+    view:row.view,...geometry
+   },transform);
+   const step={id,role:'auxiliary',dependsOn:[],
+    title:'相贯解析投影 · '+row.view+' 面 · 去重真实圆弧 '+(index+1),
+    explanation:'由 M3 解析曲线在原始圆柱上的精确圆形投影构成，不使用折线采样；该弧尚未获得实体交汇、国标虚实线及最终相贯曲线答案签收。',
+    actions:[action]};
+   intents.push(intent);steps.push(step);
+   sheetByIntentId[id]=transform;
+   viewByIntentId[id]=row.view;
+   projectedSeamArcGuides.push({
+    id,view:row.view,sourceCylinder:row.sourceCylinder,
+    sourceBranchIds:[...row.sourceBranchIds],
+    retainedSign:row.retainedSign,
+    xRange:[...row.xOpenRange],centerModelMm:{...geometry.center},
+    radiusModelMm:geometry.radius,
+    startAngleDegrees:startAngle,endAngleDegrees:endAngle,
+    modelDirection:direction,
+    exactProjectedCircleArcVerified:true,
+    duplicateSourceProjectionRemoved:true,
+    canonicalDirectedArcV5Authorized:true,
+    originalFeatureContourVisibilityVerified:false,
+    officialStandardLineStyleVerified:false
+   });
+  }
+ }
+ // W=(y,z): retain both CURRENT M3 signed-circle radical laws.
+ // A source analytic curve is CONTINUOUS in the parametric M3 mathematics;
+ // adaptive screen tessellation is presentation ONLY, not a new M3 proof.
+ // No line may be marked as standard engineering solid/dashed.
+ if(includeWAnalyticCurveGuides){
+  const byId=new Map(proof.branches.map(b=>[b.id,b]));
+  const auditedPreview=wRayPartitionedV5?
+   buildC3WIntervalPreview({input,revision}):null;
+  if(wRayPartitionedV5&&(auditedPreview.status!==
+    'source-bounded-W-open-ray-preview'||
+    auditedPreview.sourceM3BranchCount!==proof.branchCount||
+    auditedPreview.v5CurveReady!==false||
+    auditedPreview.officialLineStylesVerified!==false))
+   throw new RangeError('trusted C3 W-view visibility proof unavailable');
+  const wIntervals=continuousCurveWRayEvidence.intervals.filter(i=>i.view==='W');
+  for(const [index,b] of proof.branches.entries()){
+   if(!b.finiteDomainVerified||b.officialLineStyle!=='undetermined'||
+      !(b.xRange[1]>b.xRange[0])||
+      ![-1,1].includes(b.signY)||![-1,1].includes(b.signZ)||
+      byId.get(b.id)!==b)
+    throw new RangeError('unverified finite C3 analytic W curve source');
+   const parts=wIntervals.filter(i=>i.branchId===b.id)
+    .sort((a,c)=>a.xOpenRange[0]-c.xOpenRange[0]);
+   if(!parts.length||parts[0].xOpenRange[0]!==b.xRange[0]||
+      parts.at(-1).xOpenRange[1]!==b.xRange[1]||
+      parts.some((p,i)=>i>0&&
+       p.xOpenRange[0]!==parts[i-1].xOpenRange[1]))
+    throw new RangeError('source W analytic curve lacks continuous M5 partition');
+   const intervals=wRayPartitionedV5?
+    auditedPreview.intervals.filter(row=>row.branchId===b.id)
+     .sort((a,c)=>a.xOpenRange[0]-c.xOpenRange[0]):
+    [{xOpenRange:[...b.xRange],openInteriorRayStatus:'undetermined',
+      originalM5EvidenceId:null}];
+   if(!intervals.length||
+     intervals[0].xOpenRange[0]!==b.xRange[0]||
+     intervals.at(-1).xOpenRange[1]!==b.xRange[1]||
+     intervals.some((p,i)=>i>0&&
+       p.xOpenRange[0]!==intervals[i-1].xOpenRange[1]))
+    throw new RangeError('C3 partitioned curve lost original M3 branch range');
+   for(const [partIndex,part] of intervals.entries()){
+    const [lo,hi]=part.xOpenRange;
+    const trim=wRayPartitionedV5?(hi-lo)*1e-6:0;
+    const from=lo+trim,to=hi-trim;
+    if(!(to>from)||!
+     ['clear','occluded','undetermined'].includes(part.openInteriorRayStatus))
+     throw new RangeError('C3 open interval cannot be rendered without false endpoint signoff');
+    const geometry={parameter:{from,to},
+     u:{kind:'signed-circle-radical',
+      center:Z.xCenter,offset:Z.yCenter,radius:Z.radius,sign:b.signY},
+     v:{kind:'signed-circle-radical',
+      center:Y.xCenter,offset:Y.zCenter,radius:Y.radius,sign:b.signZ}};
+    const id='C3WAnalyticCurve'+index+(wRayPartitionedV5?'P'+partIndex:'');
+    const op={id:id+'Shape',kind:'analytic-curve',
+      coordinateSpace:'model-mm',geometry};
+    const transform=viewTransforms?.W||sheetTransform;
+    const action=verifiedTeachingActionToV5({
+     id:op.id,kind:'analytic-curve',
+     coordinateSpace:'model-mm',view:'W',...geometry
+    },transform);
+    const intent={schema:VERSION,id,
+     purpose:'construct-true-signed-radical-W-analytic-projection-guide',
+     role:'auxiliary',dependsOn:[],inputEntityIds:[],
+     outputEntityIds:[op.id],operations:[op],source:{...source}};
+    const step={id,role:'auxiliary',dependsOn:[],
+     title:'W 解析相贯曲线 · '+b.id+' · 区间 '+(partIndex+1),
+     explanation:'M3 连续双根式曲线与当前 M5 开区间射线结论逐段对应。颜色仅为观察方向遮挡证据，临界端点与标准实虚线均未认证。',
+     actions:[action]};
+    intents.push(intent);steps.push(step);
+    sheetByIntentId[id]=transform;viewByIntentId[id]='W';
+    wAnalyticCurveGuides.push({id,branchId:b.id,view:'W',
+     xRange:[from,to],sourceXOpenRange:[lo,hi],
+     m5EvidenceId:part.originalM5EvidenceId,
+     m5OpenInteriorRayStatus:part.openInteriorRayStatus,
+     m5SourcePartitioned:wRayPartitionedV5,
+     sourceM3BranchVerified:true,sourceM5WholeBranchPartitionVerified:true,
+     exactAnalyticSourceVerified:true,visualSvgApproximationOnly:true,
+     continuousSourceParameterV5GuideAuthorized:true,
+     transitionAndEndpointStyleVerified:false,
+     projectedContourAndEndpointVisibilityVerified:false,
+     officialStandardLineStyleVerified:false});
+   }
+  }
+ }
+ for(const [index,ep] of allStations.entries()){
   const p=ep.point;
   if(!p||!['x','y','z'].every(k=>finite(p[k])))throw new RangeError('invalid specialist endpoint');
   const residualZ=((p.x-Z.xCenter)**2+(p.y-Z.yCenter)**2-Z.radius**2)/scale;
@@ -87,21 +363,30 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
    throw new RangeError('endpoint violates independently checked finite cylinder source');
   const orthographic=project(p);
   for(const view of VIEWS){
-   const id='C3Endpoint'+index+view,point=toSheet(view,orthographic[view],sheetTransform);
+   const interior=ep.role.startsWith('interior-');
+   const id=(interior?'C3Station':'C3Endpoint')+index+view;
+   const point=toSheet(view,orthographic[view],
+    viewTransforms?.[view]||sheetTransform);
    const op={id:id+'Point',kind:'point',coordinateSpace:'sheet-px',
     geometry:{at:{...point}}};
-   const intent={schema:VERSION,id,purpose:'project-analytic-branch-endpoint',
+   const intent={schema:VERSION,id,purpose:interior?
+    'construct-verified-analytic-branch-interior-point':
+    'project-analytic-branch-endpoint',
     role:'result',dependsOn:[],inputEntityIds:[],
     outputEntityIds:[op.id],operations:[op],source:{...source}};
    const step={id,role:'result',dependsOn:[],
-    title:'第 '+(index+1)+' 个解析分支端点 · '+view+' 面',
-    explanation:'已核实两有限圆柱侧面方程及端盖范围的端点投影；不是曲线虚实线证明。',
+    title:interior?'解析分支 '+ep.branchId+' · 辅助求点 · '+view+' 面':
+     '第 '+(index+1)+' 个解析分支端点 · '+view+' 面',
+    explanation:interior?
+     '当前解析分支的真实公共点，已复核两柱曲面及有限端盖；不是连续曲线或虚实线证明。':
+     '已核实两有限圆柱侧面方程及端盖范围的端点投影；不是曲线虚实线证明。',
     actions:[verifiedTeachingActionToV5({id:op.id,kind:'point',
       coordinateSpace:'sheet-px',at:point},sheetTransform)]};
    intents.push(intent);steps.push(step);
    bindings.push({id:op.id,branchId:ep.branchId,endpointRole:ep.role,
     view,point3D:{...p},projectedMm:{...orthographic[view]},
-    sheetPoint:{...point},analyticEndpointPointVerified:true,
+    sheetPoint:{...point},analyticEndpointPointVerified:!interior,
+    analyticInteriorStationVerified:interior,sourceBranchParameterX:p.x,
     physicalJunctionTopologyVerified:false,
     completeCurveVisibilityVerified:false,
     standardLineStyleVerified:false});
@@ -109,18 +394,44 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
  }
  if(intents.length>300)throw new RangeError('too many C3 endpoint V5 actions');
  const timing=Timeline.compileTimeline(steps);
- assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform});
+ assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
+  sheetByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
+   sheetByIntentId:null,
+  viewByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
+   viewByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
-  revision,status:'analytic-endpoint-point-actions-only',
+  revision,status:includeWAnalyticCurveGuides?
+   'analytic-three-view-curve-guides-and-points':
+   includeProjectedSeamArcGuides?
+   'analytic-vh-projection-arc-guides-and-points':
+   includeSourceCircleGuides?'analytic-point-actions-and-original-circle-guides':
+   'analytic-endpoint-point-actions-only',
   sourceM3:proof,continuousCurveWRayEvidence,continuousCurveVHAxisRayEvidence,
   sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
-  timing,player,bindings,
+  timing,player,bindings,sourceCircleGuides,projectedSeamArcGuides,
+  wAnalyticCurveGuides,
+  trueAnalyticWCurveV5GuideCount:wAnalyticCurveGuides.length,
+  analyticWCurveGuideV5Ready:wAnalyticCurveGuides.length>0,
+  m5OpenRayPartitionedWCurveV5Ready:wRayPartitionedV5&&
+   wAnalyticCurveGuides.length===
+    (continuousCurveWRayEvidence.intervalCount),
+  m5RayCertifiedClearGuideCount:wAnalyticCurveGuides.filter(g=>
+   g.m5OpenInteriorRayStatus==='clear').length,
+  m5RayCertifiedOccludedGuideCount:wAnalyticCurveGuides.filter(g=>
+   g.m5OpenInteriorRayStatus==='occluded').length,
+  provenAnalyticVHArcV5ActionCount:projectedSeamArcGuides.length,
+  exactAnalyticVHArcV5Ready:projectedSeamArcGuides.length>0,
+  provenOriginalSourceCircleV5ActionCount:sourceCircleGuides.length,
+  originalSourceCircleGuidesV5Ready:sourceCircleGuides.length===2,
   independentlyProvenEndpointCount:branchEndpoints.length,
-  signedEndpointPointActionCount:bindings.length,
+  signedEndpointPointActionCount:branchEndpoints.length*VIEWS.length,
+  signedInteriorAuxiliaryPointActionCount:branchStations.length*VIEWS.length,
+  verifiedInteriorStationCount:branchStations.length,stationCountPerBranch,
   mathematicalSourceVerified:true,singleOriginalV5Player:true,
-  endpointPointV5Ready:true,branchJunctionsVerified:false,
+  endpointPointV5Ready:true,interiorStationPointV5Ready:stationCountPerBranch>0,
+  branchJunctionsVerified:false,
   lateralCapAndCapCapIntersectionsVerified:false,
   entireCurveV5Ready:false,
   standardVisibleHiddenLineStylesVerified:false,
