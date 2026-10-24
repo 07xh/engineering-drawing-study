@@ -201,8 +201,17 @@ function createUnifiedProjectSession(){
     const scene=deriveGeometryScene({
       geometry:[prismMesh(input),perimeter],
       revision:latest.revision,resultId:'PrismEvidence'});
+    // Scoped M4 parity already independently matches the M3 perimeter and
+    // ConstructionStep DAG. This uses the SAME V5 timeline implementation,
+    // yet never grants verified result/playback/export eligibility.
+    const scoped=evidence.sectionConstructionPreview;
+    const scopedClock=scoped?.status==='preview-only'&&
+      scoped.mathScope==='independently-audited-finite-polygon-perimeter'&&
+      scoped.visibilityVerified===false&&scoped.completeEngineeringDrawingVerified===false&&
+      scoped.canPromoteToVerifiedResult===false&&scoped.revision===latest.revision?
+       Timeline.createPlayer(scoped.timing,{revision:latest.revision}):null;
     current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
-      verified:false,status:'geometry-only',evidence,scene,
+      verified:false,status:'geometry-only',evidence,scene,scopedClock,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
