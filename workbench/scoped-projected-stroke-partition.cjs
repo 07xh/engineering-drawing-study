@@ -15,6 +15,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexSegmentOcclusion}=
  require('../core/numeric/convex-segment-occlusion.cjs');
+const {certifyConvexSegmentClearance}=
+ require('../core/numeric/convex-segment-clearance.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -39,7 +41,7 @@ function covered(ranges,a,b){
 const empty=(revision,status)=>freeze({
  schema:'draftai-scoped-projected-stroke-partition/1',
  revision,status,segmentCount:0,segments:[],
- scopedHiddenCount:0,officialLineStylesVerified:false,
+ scopedHiddenCount:0,scopedVisibleCount:0,officialLineStylesVerified:false,
  completeOcclusionVerified:false,canonicalIntentVerified:false,
  constructionStepDAGVerified:false,v5Ready:false
 });
@@ -134,7 +136,7 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
    insert(ev.secondSourceEdgeId,ev.view,v.secondParameterRange[1]);
   }
  }
- const segments=[];let scopedHiddenCount=0;
+ const segments=[];let scopedHiddenCount=0,scopedVisibleCount=0;
  for(const edge of edges.values())for(const view of VIEWS){
   const a=project(edge.from)[view],b=project(edge.to)[view];
   if(Math.hypot(a.u-b.u,a.v-b.v)<=1e-7)continue;
@@ -149,8 +151,21 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
   for(let k=0;k<cuts.length-1;k++){
    const t0=cuts[k],t1=cuts[k+1];
    if(t1<=t0)continue;
+   if(segments.length>=3000)fail('partition complexity budget exceeded');
    const hidden=covered(ranges,t0,t1);
+   // A non-hidden interval is NOT automatically visible. Independently
+   // prove that EVERY positive observer ray along the whole source open
+   // interval misses EVERY explicitly reviewed convex mesh solid.
+   // A single possible touch/inward ray means UNCERTAIN, not visible.
+   const clearance=!hidden?solids.map(solid=>
+    certifyConvexSegmentClearance({
+     source:{id:'CheckedEdge',from:edge.from,to:edge.to},
+     solid,observerDirection:FIRST_ANGLE_OBSERVER_RAYS[view],
+     sourceParameterRange:[t0,t1]
+    })):null;
+   const visible=!hidden&&clearance.every(q=>q.status==='certified-clear');
    if(hidden)scopedHiddenCount++;
+   if(visible)scopedVisibleCount++;
    const from=P(edge.from,edge.to,t0),to=P(edge.from,edge.to,t1);
    segments.push({
     sourceGeometryId:edge.ownerId,sourceEdgeId:edge.id,view,
@@ -158,13 +173,15 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
     fromModelMm:from,toModelMm:to,
     projectedFromModelMm:project(from)[view],
     projectedToModelMm:project(to)[view],
-    openInteriorVisibility:hidden?'hidden':'undetermined',
+    openInteriorVisibility:hidden?'hidden':visible?'visible':'undetermined',
     occluderGeometryIds:hidden?
      [...new Set(items.filter(e=>
        e.openSourceParameterRange[0]<=t0&&
        e.openSourceParameterRange[1]>=t1)
        .map(e=>e.occluderGeometryId))]:[],
-    evidenceScope:hidden?'strict-forward-ray-convex-interior':'none',
+    positiveClearanceSolidIds:visible?solids.map(s=>s.id):[],
+    evidenceScope:hidden?'strict-forward-ray-convex-interior':
+     visible?'strict-forward-ray-clearance-in-reviewed-solids':'none',
     joinVisibilityVerified:false,officialLineStyleVerified:false,
     canonicalIntentVerified:false,v5ActionApproved:false
    });
@@ -173,7 +190,7 @@ function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={})
  return freeze({
   schema:'draftai-scoped-projected-stroke-partition/1',
   revision,status:'preview-partition-evidence-only',
-  segmentCount:segments.length,segments,scopedHiddenCount,
+  segmentCount:segments.length,segments,scopedHiddenCount,scopedVisibleCount,
   officialLineStylesVerified:false,completeOcclusionVerified:false,
   canonicalIntentVerified:false,constructionStepDAGVerified:false,
   v5Ready:false
