@@ -177,30 +177,42 @@ function renderVerifiedV5Actions(){
   for(const action of step.actions){
    const fraction=frame.actionFractions[action.id]||0;
    if(fraction<=0||
-      !['point','circle','arc','analytic-curve'].includes(action.kind))continue;
+      !['point','circle','arc','analytic-curve','line'].includes(action.kind))continue;
    const originalGuide=action.kind==='circle';
    const analyticArc=action.kind==='arc';
    const WGuide=action.kind==='analytic-curve';
+   const capGuide=current.capFacePairGuides.find(g=>g.actionId===action.id);
+   if(capGuide&&(!capGuide.sourceExactCapFacePairMathVerified||
+      capGuide.officialStandardLineStyleVerified!==false||
+      !['point','line'].includes(action.kind)))
+    throw new RangeError('unverified finite cap-face source line cannot render');
    const WProof=WGuide?current.wAnalyticCurveGuides.find(g=>
     g.id+'Shape'===action.id):null;
    if(WGuide&&(!WProof||!WProof.m5SourcePartitioned||
       WProof.officialStandardLineStyleVerified!==false))
     throw new RangeError('W V5 curve lacks current independently proven M5 partition');
-   const shape=node(analyticArc||WGuide?'path':'circle',{
-    fill:action.kind==='point'?'#12649b':'none',
-    stroke:WGuide?(WProof.m5OpenInteriorRayStatus==='clear'?'#167f8b':
+   const shape=node(action.kind==='line'?'line':
+    analyticArc||WGuide?'path':'circle',{
+    fill:action.kind==='point'?
+     (capGuide?'#608969':'#12649b'):'none',
+    stroke:capGuide?'#608969':
+     WGuide?(WProof.m5OpenInteriorRayStatus==='clear'?'#167f8b':
      WProof.m5OpenInteriorRayStatus==='occluded'?'#cb802f':'#8561b2'):
      analyticArc?'#a064b5':
      originalGuide?'#638bb0':'#12649b',
-    'stroke-width':WGuide?2.6:analyticArc?2.3:originalGuide?1.8:2,
-    ...(analyticArc||WGuide?{'stroke-dasharray':'3 7'}:{}),
+    'stroke-width':capGuide?2:WGuide?2.6:analyticArc?2.3:originalGuide?1.8:2,
+    ...(capGuide&&action.kind==='line'?{'stroke-dasharray':'5 6'}:
+      analyticArc||WGuide?{'stroke-dasharray':'3 7'}:{}),
     'data-source-v5-action':action.id,
-    'data-certified-scope':WGuide?
+    'data-certified-scope':capGuide?'cap-face-pair-geometry-only-not-official':
+     WGuide?
      'M3-source-M5-open-ray-evidence-not-official-line-style':
      analyticArc?'exact-analytic-VH-projection-arc-not-official':
      originalGuide?'reviewed-original-source-circle-only':
       'analytic-point-only',
     'data-official-line-style':'false',
+    ...(capGuide?{'data-cap-pair-id':capGuide.sourceFeatureId,
+      'data-cap-projection-collapsed':capGuide.sourceProjectionCollapsedToPoint}:{}),
     ...(WGuide?{'data-M5-open-ray-status':WProof.m5OpenInteriorRayStatus,
       'data-open-interval-only':'true'}:{})});
    Motion.updateSvg(shape,action,fraction);
@@ -247,7 +259,8 @@ function solve(){
    input,revision,stationCountPerBranch:count,
    sheetTransform:transforms.V,viewTransforms:transforms,
    includeSourceCircleGuides:true,includeProjectedSeamArcGuides:true,
-   includeWAnalyticCurveGuides:true,wRayPartitionedV5:true});
+   includeWAnalyticCurveGuides:true,wRayPartitionedV5:true,
+   includeCapFacePairGuides:true});
   const wRayProof=buildC3WIntervalPreview({input,revision});
   const vhDedup=buildC3VHProjectionDedup({input,revision});
   drawScaffold();
@@ -265,6 +278,8 @@ function solve(){
    '；W 视图解析曲线逐段 V5：'+computed.trueAnalyticWCurveV5GuideCount+
    '（无遮挡 '+computed.m5RayCertifiedClearGuideCount+
    ' / 有遮挡 '+computed.m5RayCertifiedOccludedGuideCount+'）'+
+   '；端盖交线辅助 V5：'+computed.sourceCapFaceProjectionActionCount+
+   '（退化为真实投影点 '+computed.sourceCapFaceCollapsedProjectionPointCount+'）'+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
