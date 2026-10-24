@@ -26,7 +26,7 @@ function validateFirstAngleObserverRays(observers){
    throw new RangeError('nonzero first-angle observer ray required');
   const unit={x:r.x/magnitude,y:r.y/magnitude,z:r.z/magnitude};
   if(Math.hypot(unit.x-expected.x,unit.y-expected.y,unit.z-expected.z)>1e-12)
-   throw new RangeError('observer direction conflicts with first-angle '+view+' view');
+   throw new RangeError('observer ray conflicts with first-angle '+view+' view');
   normalized[view]=Object.freeze(unit);
  }
  return Object.freeze(normalized);
