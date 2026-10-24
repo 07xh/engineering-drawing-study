@@ -34,27 +34,38 @@ function xyzSnapshot(p,label){
  return q;
 }
 function snapshot(solid){
- if(!rec(solid)||typeof solid.id!=='string'||!solid.id.trim()||
-   !Array.isArray(solid.halfspaces)||
-   solid.halfspaces.length<4||solid.halfspaces.length>16||
-   !Array.isArray(solid.vertices)||solid.vertices.length<4||
-   solid.vertices.length>128)
+ if(!rec(solid))
   throw new TypeError('finite 4..16 face and 4..128 vertex polyhedron required');
- const faces=Array.from({length:solid.halfspaces.length},(_,i)=>{
-  if(!Object.hasOwn(solid.halfspaces,i)||!rec(solid.halfspaces[i]))
+ // Read each caller-controlled top-level field ONCE. A getter that returns
+ // different arrays or a different source ID after the first read cannot
+ // change which halfspaces or vertices the exact algebra certifies.
+ const id=solid.id,halfspaces=solid.halfspaces,vertices=solid.vertices;
+ if(typeof id!=='string'||!id.trim()||
+   !Array.isArray(halfspaces)||halfspaces.length<4||halfspaces.length>16||
+   !Array.isArray(vertices)||vertices.length<4||vertices.length>128)
+  throw new TypeError('finite 4..16 face and 4..128 vertex polyhedron required');
+ // Snapshot the indexed references before invoking coordinate/offset getters,
+ // which can mutate caller-owned arrays during validation. Sparse input is
+ // rejected rather than silently dropping a limiting face or extreme corner.
+ const faceInputs=Array.from({length:halfspaces.length},(_,i)=>{
+  if(!Object.hasOwn(halfspaces,i)||!rec(halfspaces[i]))
    throw new TypeError('missing halfspace '+i);
-  const face=solid.halfspaces[i],normal=xyzSnapshot(face.normal,'face normal');
+  return halfspaces[i];
+ });
+ const vertexInputs=Array.from({length:vertices.length},(_,i)=>{
+  if(!Object.hasOwn(vertices,i))
+   throw new TypeError('missing source vertex '+i);
+  return vertices[i];
+ });
+ const faces=faceInputs.map((face,i)=>{
+  const normal=xyzSnapshot(face.normal,'face normal');
   const offsetMm=face.offsetMm;
   if(typeof offsetMm!=='number'||!finite(offsetMm)||Math.abs(offsetMm)>1e12)
-   throw new TypeError('bounded face offset required');
+   throw new TypeError('bounded face offset required at '+i);
   return {normal,offsetMm};
  });
- const vertices=Array.from({length:solid.vertices.length},(_,i)=>{
-  if(!Object.hasOwn(solid.vertices,i))
-   throw new TypeError('missing source vertex '+i);
-  return xyzSnapshot(solid.vertices[i],'source vertex');
- });
- return {id:solid.id,faces,vertices};
+ const points=vertexInputs.map(point=>xyzSnapshot(point,'source vertex'));
+ return {id,faces,vertices:points};
 }
 const triple=(a,b,c)=>det3(a,b,c);
 const add3=(a,b,c)=>sum(sum(a,b),c);
