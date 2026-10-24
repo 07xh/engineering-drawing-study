@@ -40,9 +40,32 @@ function rayCylinder(point,dir,c,axis){
   generatorCoincidence=true;
  events.sort((x,y)=>x.t-y.t);
  const positive=events.filter(e=>e.t>eps);
+ // Split the positive ray at all finite boundary candidates. Every open
+ // cell has constant inside/outside status for a closed convex cylinder.
+ const cuts=[0,...positive.map(e=>e.t)].sort((u,v)=>u-v);
+ const unique=cuts.filter((t,i)=>i===0||t>cuts[i-1]+eps);
+ const inside=t=>{
+  const axialValue=point[axial]+t*dir[axial];
+  const q=radial.reduce((n,k)=>n+
+   (point[k]+t*dir[k]-center[k])**2,0);
+  return axialValue>low+eps&&axialValue<high-eps&&
+   q<c.radius**2-eps;
+ };
+ const interiorOpenIntervals=[];
+ for(let i=1;i<unique.length;i++){
+  const lo=unique[i-1],hi=unique[i];
+  if(hi-lo>eps&&inside((lo+hi)/2))
+   interiorOpenIntervals.push([lo,hi]);
+ }
+ const tail=unique.at(-1);
+ // Bounded cylinder: beyond all positive boundary events there is no
+ // interior unless the ray is coincident with a lateral generator.
+ const positiveInteriorVerified=!generatorCoincidence&&
+  interiorOpenIntervals.length>0;
  const tangent=events.some(e=>e.type==='tangent');
  const ambiguous=generatorCoincidence||tangent||events.some(e=>e.t<=eps);
  return {events,positiveRayBoundaryIntersections:positive.length,
+  interiorOpenIntervals,positiveInteriorVerified,
   generatorCoincidence,tangent,originOnBoundary:events.some(e=>e.t<=eps),
   rayBoundaryStatus:ambiguous?'undetermined-tangent-generator-or-origin':
    positive.length?'forward-boundary-intersection':'no-forward-boundary-intersection',
