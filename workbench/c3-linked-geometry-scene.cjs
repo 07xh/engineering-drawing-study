@@ -2,9 +2,8 @@
 /**
  * One CURRENT C3 M3/V5 mathematical source -> existing canonical Geometry
  * Scene -> V/H/W + 3D. Only genuine analytic stations and exact finite cap
- * face-pair straight segments are representable by today's Geometry contract.
- * Curved intersection branches remain analytic M3/V5 actions, NOT fake
- * polyline Geometry. No second solver, player or engineering-line signature.
+ * face-pair straight segments and exact source-bounded analytic curves
+ * reuse the canonical Geometry contract. Curves are never fake polylines. No second solver, player or engineering-line signature.
  */
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {auditC3CapBoundaryIncidence}=require('./c3-cap-boundary-incidence.cjs');
@@ -93,6 +92,69 @@ function buildC3LinkedGeometryScene({input,revision,compiled,viewTransforms}={})
    v5ActionIds:v5Ids,sourceMathVerified:true,
    certifiedEngineeringStroke:false});
  }
+ // C3 analytic M3 branches are genuine 3D curves. Bind only where the
+ // ORIGINAL V5 already has source-matched W curve action(s); a missing
+ // guide never creates a substitute timeline. V/H analytic arcs may share
+ // multiple real 3D branches, which must remain separate source objects.
+ const wGuideRows=compiled.wAnalyticCurveGuides||[];
+ const vhRows=compiled.projectedSeamArcGuides||[];
+ let analyticCount=0;
+ if(wGuideRows.length){
+  for(const [i,branch] of m3.branches.entries()){
+   const sorted=wGuideRows.filter(row=>row.branchId===branch.id)
+    .sort((a,b)=>a.sourceXOpenRange[0]-b.sourceXOpenRange[0]);
+   if(!sorted.length||sorted[0].sourceXOpenRange[0]!==branch.xRange[0]||
+      sorted.at(-1).sourceXOpenRange[1]!==branch.xRange[1]||
+      sorted.some((row,j)=>j&&
+       row.sourceXOpenRange[0]!==sorted[j-1].sourceXOpenRange[1]))
+    fail('analytic 3D curve source-to-V5 interval partition incomplete');
+   const coords={
+    x:{kind:'affine',offset:0,slope:1},
+    y:{kind:'signed-circle-radical',center:Z.xCenter,
+     offset:Z.yCenter,radius:Z.radius,sign:branch.signY},
+    z:{kind:'signed-circle-radical',center:Y.xCenter,
+     offset:Y.zCenter,radius:Y.radius,sign:branch.signZ}
+   };
+   const W=[];
+   for(const row of sorted){
+    const a=actions.get(row.id+'Shape');
+    const target={parameter:{from:row.xRange[0],to:row.xRange[1]},
+     u:coords.y,v:coords.z};
+    if(row.sourceM3BranchVerified!==true||
+       row.exactAnalyticSourceVerified!==true||
+       row.officialStandardLineStyleVerified!==false||
+       row.continuousSourceParameterV5GuideAuthorized!==true||
+       a?.kind!=='analytic-curve'||
+       JSON.stringify(a.geometry?.parameter)!==
+        JSON.stringify(target.parameter)||
+       JSON.stringify(a.geometry?.u)!==JSON.stringify(target.u)||
+       JSON.stringify(a.geometry?.v)!==JSON.stringify(target.v))
+      fail('analytic source curve no longer matches original W V5 action');
+    W.push(row.id+'Shape');
+   }
+   const vh=view=>vhRows.filter(row=>
+    row.view===view&&row.sourceBranchIds.includes(branch.id))
+    .map(row=>{
+     const a=actions.get(row.id+'Shape');
+     if(row.officialStandardLineStyleVerified!==false||
+        row.exactProjectedCircleArcVerified!==true||a?.kind!=='arc')
+      fail('C3 shared projected analytic arc lacks trusted V5 source');
+     return row.id+'Shape';
+    });
+   const id='C3Branch3D'+i;
+   geometry.push({id,kind:'analytic-curve',space:'model-3d',unit:'mm',
+    data:{parameter:{from:branch.xRange[0],to:branch.xRange[1]},
+     coordinates:coords}});
+   groups.push({geometryId:id,role:'analytic-lateral-intersection',
+    branchId:branch.id,v5ActionIds:{V:vh('V'),H:vh('H'),W},
+    sourceMathVerified:true,certifiedEngineeringStroke:false});
+   analyticCount++;
+  }
+  if(wGuideRows.length!==groups.filter(g=>
+     g.role==='analytic-lateral-intersection')
+    .reduce((sum,g)=>sum+g.v5ActionIds.W.length,0))
+   fail('3D branches failed to consume every original W curve action');
+ }
  const cap=auditC3CapBoundaryIncidence({input,revision});
  if(!['scoped-analytic-cap-junction-incidence',
         'undetermined-unmatched-lateral-cap-junction'].includes(cap.status))
@@ -138,9 +200,12 @@ function buildC3LinkedGeometryScene({input,revision,compiled,viewTransforms}={})
   resultId:'C3SpatialAuxiliaryEvidence'});
  const selected=projectSelectionLinks(scene);
  return Object.freeze({schema:'draftai-c3-3d-vhw-linked-scene/1',revision,
-  status:'scoped-source-points-and-cap-segments-only',
+  status:analyticCount?
+   'scoped-source-points-caps-and-analytic-curves':
+   'scoped-source-points-and-cap-segments-only',
   scene,links:selected,groups:Object.freeze(groups.map(g=>Object.freeze(g))),
-  spatialObjectCount:geometry.length,analyticCurveInScene:false,
+  spatialObjectCount:geometry.length,analyticCurveInScene:analyticCount>0,
+  analyticCurveCount:analyticCount,
   entireCurveV5Ready:false,officialLineStylesVerified:false,
   createsSecondSolver:false,createsSecondPlayer:false});
 }

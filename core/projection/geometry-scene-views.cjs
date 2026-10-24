@@ -10,6 +10,7 @@
 const {validateGeometry} = require('../contracts/geometry.js');
 const {identifier, finite} = require('../contracts/common.js');
 const {project, VIEWS} = require('./conventions.js');
+const {atAnalyticCurve3D}=require('../geometry/analytic-curve-3d.cjs');
 
 const SCHEMA = 'draftai-geometry-scene-views/1.0.0';
 const COPY = value => JSON.parse(JSON.stringify(value));
@@ -73,6 +74,17 @@ function viewMesh(data,view) {
   return {kind:'mesh-projection',points,edges,
     faces:data.faces.map(face => [...face]),visibility:'undetermined'};
 }
+// The exact equation remains in model.data. Only endpoints and provenance
+// are projected here; SVG tessellation is a separate display-only consumer.
+function viewAnalyticCurve(data,view){
+ const from=atAnalyticCurve3D(data,data.parameter.from);
+ const to=atAnalyticCurve3D(data,data.parameter.to);
+ return {kind:'analytic-curve-projection',
+  parameter:{...data.parameter},
+  start:viewPoint(from,view),end:viewPoint(to,view),
+  visibility:'undetermined',sourceAnalytic3D:true,
+  svgApproximationOnly:true};
+}
 function deriveOne(g) {
   const c=validateGeometry(g);
   if(!c.ok)fail('不合法的几何对象 '+String(g?.id)+': '+c.errors.join('；'));
@@ -92,6 +104,8 @@ function deriveOne(g) {
     else if(g.kind==='line') representations[view]=viewLine(g.data,view);
     else if(g.kind==='mesh') representations[view]=viewMesh(g.data,view);
     else if(g.kind==='polyline') representations[view]=viewPolyline(g.data,view);
+    else if(g.kind==='analytic-curve')
+      representations[view]=viewAnalyticCurve(g.data,view);
     else if(g.kind==='plane') {
       // An infinite plane has no finite 2D boundary. Deriving a clipped sheet
       // polygon would invent a viewport-dependent geometric construction.

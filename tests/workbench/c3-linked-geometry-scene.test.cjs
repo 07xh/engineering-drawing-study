@@ -117,6 +117,65 @@ test('stale revisions, changed user geometry, forged sheets and V5 actions fail 
  compiled.player.invalidate(9,0);
  assert.throws(()=>run(),/current real M3/);
 });
+test('true C3 analytic branches use one symbolic 3D Geometry per M3 branch and real W/VH V5 actions',()=>{
+ const source=input(),f=transforms(),revision=21;
+ const compiled=compileFiniteCylinderEndpointV5({
+  input:source,revision,sheetTransform:f.V,viewTransforms:f,
+  stationCountPerBranch:1,includeSourceCircleGuides:true,
+  includeProjectedSeamArcGuides:true,includeWAnalyticCurveGuides:true,
+  wRayPartitionedV5:true,includeCapFacePairGuides:true
+ });
+ const linked=buildC3LinkedGeometryScene({input:source,revision,
+  compiled,viewTransforms:f});
+ assert.equal(linked.analyticCurveInScene,true);
+ assert.equal(linked.analyticCurveCount,compiled.sourceM3.branchCount);
+ const curves=linked.groups.filter(g=>g.role==='analytic-lateral-intersection');
+ assert.equal(curves.length,compiled.sourceM3.branchCount);
+ const display=compileGeometryScene(linked.scene,{viewTransforms:f});
+ for(const g of curves){
+  const b=compiled.sourceM3.branches.find(b=>b.id===g.branchId);
+  const o=linked.scene.objects.find(x=>x.id===g.geometryId);
+  assert.ok(b&&o);
+  assert.equal(o.kind,'analytic-curve');
+  assert.deepEqual(o.model.data.parameter,
+   {from:b.xRange[0],to:b.xRange[1]});
+  assert.equal(o.model.data.points,undefined);
+  assert.ok(g.v5ActionIds.W.length>0);
+  assert.ok(g.v5ActionIds.V.length>0);
+  assert.ok(g.v5ActionIds.H.length>0);
+  for(const view of ['V','H','W']){
+   assert.ok(display.paper.some(p=>p.objectId===g.geometryId&&
+    p.view===view&&p.visibility==='undetermined'));
+   for(const id of g.v5ActionIds[view])
+    assert.ok(compiled.constructionSteps.some(s=>s.actions.some(a=>
+     a.id===id&&a.kind===(view==='W'?'analytic-curve':'arc'))));
+  }
+  assert.ok(display.spatial.some(p=>
+   p.objectId===g.geometryId&&p.sourceAnalytic3D===true));
+  assert.equal(g.certifiedEngineeringStroke,false);
+ }
+ assert.equal(linked.entireCurveV5Ready,false);
+ assert.equal(linked.officialLineStylesVerified,false);
+ assert.equal(linked.createsSecondPlayer,false);
+});
+test('forged original W branch action is blocked before entering the shared analytic scene',()=>{
+ const source=input(),f=transforms(),revision=22;
+ const compiled=compileFiniteCylinderEndpointV5({
+  input:source,revision,sheetTransform:f.V,viewTransforms:f,
+  includeWAnalyticCurveGuides:true,wRayPartitionedV5:true,
+  includeProjectedSeamArcGuides:true,includeCapFacePairGuides:true
+ });
+ const forged={...compiled,constructionSteps:compiled.constructionSteps.map(s=>({
+  ...s,actions:s.actions.map(a=>({...a}))}))};
+ const action=forged.constructionSteps.flatMap(s=>s.actions)
+  .find(a=>a.kind==='analytic-curve');
+ assert.ok(action);
+ action.geometry={...action.geometry,
+  u:{...action.geometry.u,sign:-action.geometry.u.sign}};
+ assert.throws(()=>buildC3LinkedGeometryScene({
+  input:source,revision,compiled:forged,viewTransforms:f
+ }),/analytic source curve/);
+});
 test('unsupported or empty intersection never becomes a canonical spatial scene',()=>{
  const bad=input();bad.yCylinder.xCenter=50;
  const f=transforms();

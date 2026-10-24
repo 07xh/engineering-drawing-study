@@ -24,7 +24,7 @@ const fieldIds=['zRadius','zX','zY','zMin','zMax',
  'yRadius','yX','yZ','yMin','yMax'];
 const controls=['play','pause','prev','next'];
 let revision=1,current=null,raf=null,playing=false;
-let transforms=null,linkedScene=null,selectedGeometryId=null;
+let transforms=null,linkedScene=null,selectedGeometryIds=new Set();
 let selectedBooleanRayProof=null,selectedWRayTopologyClear=false;
 function now(){return performance.now();}
 function node(tag,attributes={}){
@@ -48,7 +48,7 @@ function invalidate(reason,resetConfirmation=false){
  stop();
  if(current){current.player.invalidate(revision+1,now());current=null;}
  revision++;
- transforms=null;linkedScene=null;selectedGeometryId=null;
+ transforms=null;linkedScene=null;selectedGeometryIds=new Set();
  selectedBooleanRayProof=null;selectedWRayTopologyClear=false;
  $('spatialBoard').replaceChildren();
  if(resetConfirmation)$('confirmed').checked=false;
@@ -200,9 +200,13 @@ function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
  }
  svg.append(group);
 }
-function selectLinkedGeometry(id){
- if(!linkedScene||!linkedScene.groups.some(g=>g.geometryId===id))return;
- selectedGeometryId=id;
+function selectLinkedGeometry(ids){
+ const items=Array.isArray(ids)?ids:[ids];
+ if(!linkedScene||items.length===0||items.some(id=>
+    !linkedScene.groups.some(g=>g.geometryId===id)))return;
+ // V/H arcs can overlap from several DISTINCT true 3D branches.
+ // Highlight all owners without falsely picking a unique 3D source.
+ selectedGeometryIds=new Set(items);
  renderVerifiedV5Actions();
  renderLinkedSpatial();
 }
@@ -214,14 +218,14 @@ function renderLinkedSpatial(){
   camera:{yaw:Number($('c3-yaw').value),
    pitch:Number($('c3-pitch').value)}});
  for(const item of scene.spatial){
-  const picked=item.objectId===selectedGeometryId;
+  const picked=selectedGeometryIds.has(item.objectId);
   const element=node(item.kind==='line'?'line':
    item.kind==='path'?'path':'circle',{
     ...item.attrs,
     fill:item.kind==='circle'?(picked?'#ef6730':'#286da0'):'none',
     stroke:picked?'#ef6730':item.kind==='circle'?'#286da0':'#43886a',
     'stroke-width':picked?3.5:2.2,
-    ...(item.kind==='line'?{'stroke-dasharray':'5 6'}:{}),
+    ...(item.kind==='line'||item.kind==='path'?{'stroke-dasharray':'4 6'}:{}),
     'data-geometry-id':item.objectId,
     'data-view':'3D','data-official-engineering-line':'false',
     role:'button',tabindex:0,
@@ -288,25 +292,34 @@ function renderVerifiedV5Actions(){
     ...(WGuide?{'data-M5-open-ray-status':WStatus,
       'data-selected-Boolean-ray':selectedBooleanRayProof?.solidOperation||'unselected',
       'data-open-interval-only':'true'}:{})});
-   const match=linkedScene?.groups.find(g=>
-    Object.values(g.v5ActionIds).includes(action.id));
-   if(match){
-    const id=match.geometryId,picked=id===selectedGeometryId;
-    shape.setAttribute('data-geometry-id',id);
-    shape.setAttribute('data-view',
-     Object.entries(match.v5ActionIds).find(([,v])=>v===action.id)[0]);
+   const matches=(linkedScene?.groups||[]).filter(g=>
+    Object.values(g.v5ActionIds).some(v=>
+     Array.isArray(v)?v.includes(action.id):v===action.id));
+   if(matches.length){
+    const ids=matches.map(g=>g.geometryId);
+    const picked=ids.some(id=>selectedGeometryIds.has(id));
+    const view=Object.entries(matches[0].v5ActionIds)
+     .find(([,value])=>Array.isArray(value)?
+      value.includes(action.id):value===action.id)?.[0];
+    if(matches.length===1)shape.setAttribute('data-geometry-id',ids[0]);
+    shape.setAttribute('data-geometry-ids',ids.join(','));
+    shape.setAttribute('data-view',view||'');
+    shape.setAttribute('data-projection-source-nonunique',
+     String(matches.length>1));
     shape.setAttribute('role','button');
     shape.setAttribute('tabindex','0');
-    shape.setAttribute('aria-label','选中 '+id+' 的三视图辅助作图');
+    shape.setAttribute('aria-label',matches.length>1?
+     '选择所有对应的真实空间解析曲线（纸面重合）':
+     '选中 '+ids[0]+' 的三视图辅助作图');
     if(picked){
      shape.setAttribute('stroke','#ef6730');
      shape.setAttribute('stroke-width','3.5');
      if(action.kind==='point')shape.setAttribute('fill','#ef6730');
     }
-    shape.addEventListener('click',()=>selectLinkedGeometry(id));
+    shape.addEventListener('click',()=>selectLinkedGeometry(ids));
     shape.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();
-      selectLinkedGeometry(id);}
+      selectLinkedGeometry(ids);}
     });
    }
    Motion.updateSvg(shape,action,fraction);
@@ -342,7 +355,7 @@ function navigate(delta){
  renderVerifiedV5Actions();
 }
 function solve(){
- stop();current=null;linkedScene=null;selectedGeometryId=null;
+ stop();current=null;linkedScene=null;selectedGeometryIds=new Set();
  disable(true);$('board').replaceChildren();
  $('spatialBoard').replaceChildren();
  try{
@@ -413,7 +426,7 @@ function solve(){
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
    '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
  }catch(e){
-  current=null;linkedScene=null;selectedGeometryId=null;
+  current=null;linkedScene=null;selectedGeometryIds=new Set();
   selectedBooleanRayProof=null;selectedWRayTopologyClear=false;
   disable(true);$('board').replaceChildren();
   $('spatialBoard').replaceChildren();
