@@ -50,7 +50,7 @@ test('M4 rejects altered projected intersection events, missing real events, sor
   d=>{d.edgeOverlapAudit.events.reverse();},
   d=>{d.edgeOverlapAudit.events[0].firstSourceEdgeId='Bogus::V000|V111';},
   d=>{d.edgeOverlapAudit.events[0].completeOcclusionVerified=true;},
-  d=>{d.edgeOverlapAudit.events[0].relation='crossing';},
+  d=>{d.edgeOverlapAudit.events[0].relation='forged-non-geometric-event';},
  ];
  for(const mutate of altered){
   const d=structuredClone(original);mutate(d);
