@@ -9,6 +9,8 @@
 const {project,VIEWS}=require('../core/projection/conventions.js');
 const {evaluateReviewedConvexMeshDepth}=
  require('./reviewed-convex-scene-depth.cjs');
+const {inspectSourceVertexIncidence}=
+ require('./m5-source-vertex-incidence-audit.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const c of Object.values(x))freeze(c);Object.freeze(x);
  }return x;};
@@ -29,6 +31,11 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
    provenWholeOccludedCount:0,undeterminedCount:0,collapsedCount:0,
    completeSolidVisibilityVerified:false,officialLineStylesVerified:false,
    signedEdgeV5Ready:false});
+ const sourceVertexIncidenceEvidence=inspectSourceVertexIncidence({
+  geometry:[geometry],revision,sceneDepthEvidence:proof});
+ if(sourceVertexIncidenceEvidence.v5Ready!==false||
+    sourceVertexIncidenceEvidence.standardLineStylesVerified!==false)
+  throw new RangeError('original 3D endpoint source proof cannot certify a V5 stroke');
  const closed=proof.closedSourceStrokeRays,occlusion=proof.wholeSourceEdgeOcclusion;
  if(closed.status!=='scoped-positive-closed-source-rays-only'||
     occlusion.status!=='scoped-source-segment-occlusion-only')
@@ -72,7 +79,8 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
  }
  return freeze({schema:'draftai-m5-reviewed-solid-whole-edge-ledger/1',
   revision,status:'scoped-full-original-source-edge-ray-evidence',
-  sourceGeometryId:geometry.id,edges,sourceProjectedEdgeCount:edges.length,
+  sourceGeometryId:geometry.id,sourceVertexIncidenceEvidence,
+  edges,sourceProjectedEdgeCount:edges.length,
   positiveWholeVisibleRayCount:edges.filter(x=>
    x.continuouslyFrontRayClearVerified).length,
   provenWholeOccludedCount:edges.filter(x=>
