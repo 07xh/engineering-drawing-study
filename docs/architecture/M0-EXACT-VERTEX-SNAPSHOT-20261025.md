@@ -1,0 +1,9 @@
+# M0 exact convex vertex audit: stable caller-source snapshot
+
+The existing M0 opt-in offline `certifyConvexVertexSetExact` is algebraically exact for finite represented-binary64 bounding halfspaces and supplied exactly representable extreme vertices. It must also avoid **source validation/use drift**: before this change, `solid.id`, `solid.halfspaces`, and `solid.vertices` were read repeatedly during schema checks and later enumerations, permitting accessor-backed arrays or identity to change after verification.
+
+The existing `snapshot` now reads each top-level field once, fixes face/vertex entry references before nested source getters are called, and then snapshots finite per-face normal, offset and per-vertex XYZ exactly once. Missing/sparse faces and vertices fail closed. The exact dyadic Cramer, recession cone, strictly feasible 3D interior proof and vertex matching remain untouched.
+
+Independent regression uses an analytic closed six-plane box, separately mutating whole arrays and ID on hypothetical subsequent getter reads, changing one face and corner reference from another face's coordinate getter, and replacing offset, normal and vertex coordinates upon second read. Initial invalid values, missing entries and inconsistent halfspaces remain refused. The proof continues to declare `sourceGeometryVerified:false`, `sourceRevisionVerified:false`, `completeSceneVerified:false`, and no official line style or V5 result. This test adds scoped evidence to the existing 20-module M0 acceptance registry; nonbinary64 rational corners and authenticated source provenance remain genuinely outstanding. No second numerical kernel is added.
+
+Under #152, merge only after all 5 latest PR HEAD CI workflows are successful, all four workbench shards plus fail-closed summary pass, and GitHub reports mergeable; then isolated squash/revert.

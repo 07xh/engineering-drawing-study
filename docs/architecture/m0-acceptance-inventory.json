@@ -128,7 +128,8 @@
       "proofScope": "offline exact vertex set within limited represented binary64 budget",
       "regressionTests": [
         "tests/math/m0-exact-convex-vertex-set.test.cjs",
-        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs",
+        "tests/math/m0-exact-vertex-atomic-source-snapshot.test.cjs"
       ],
       "remainingGate": "nonbinary64 rational vertices and source provenance"
     },
