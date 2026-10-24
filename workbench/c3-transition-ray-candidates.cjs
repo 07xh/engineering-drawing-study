@@ -40,28 +40,31 @@ function rayCylinder(point,dir,c,axis){
   generatorCoincidence=true;
  events.sort((x,y)=>x.t-y.t);
  const positive=events.filter(e=>e.t>eps);
- // Split the positive ray at all finite boundary candidates. Every open
- // cell has constant inside/outside status for a closed convex cylinder.
- const cuts=[0,...positive.map(e=>e.t)].sort((u,v)=>u-v);
- const unique=cuts.filter((t,i)=>i===0||t>cuts[i-1]+eps);
- const inside=t=>{
-  const axialValue=point[axial]+t*dir[axial];
-  const q=radial.reduce((n,k)=>n+
-   (point[k]+t*dir[k]-center[k])**2,0);
-  return axialValue>low+eps&&axialValue<high-eps&&
-   q<c.radius**2-eps;
- };
- const interiorOpenIntervals=[];
- for(let i=1;i<unique.length;i++){
-  const lo=unique[i-1],hi=unique[i];
-  if(hi-lo>eps&&inside((lo+hi)/2))
-   interiorOpenIntervals.push([lo,hi]);
- }
- const tail=unique.at(-1);
- // Bounded cylinder: beyond all positive boundary events there is no
- // interior unless the ray is coincident with a lateral generator.
- const positiveInteriorVerified=!generatorCoincidence&&
-  interiorOpenIntervals.length>0;
+ // Positive-volume certificate: intersect the strict radial quadratic
+ // inequality with the strict finite axial slab. Convexity gives one
+ // connected interior interval, independent of midpoint sampling.
+ let radialLow=-Infinity,radialHigh=Infinity;
+ let radialDegenerate=false;
+ if(a>0){
+  const disc=b*b-4*a*d;
+  if(disc>eps*eps){
+   const root=Math.sqrt(disc);
+   radialLow=(-b-root)/(2*a);
+   radialHigh=(-b+root)/(2*a);
+  }else radialDegenerate=true;
+ }else if(d>=-eps)radialDegenerate=true;
+ let axialLow=-Infinity,axialHigh=Infinity;
+ if(Math.abs(dir[axial])>eps){
+  const t0=(low-point[axial])/dir[axial];
+  const t1=(high-point[axial])/dir[axial];
+  axialLow=Math.min(t0,t1);axialHigh=Math.max(t0,t1);
+ }else if(point[axial]<=low+eps||point[axial]>=high-eps)
+  radialDegenerate=true;
+ const lo=Math.max(0,radialLow,axialLow);
+ const hi=Math.min(radialHigh,axialHigh);
+ const interiorOpenIntervals=!radialDegenerate&&hi>lo+eps?
+  [[lo,hi]]:[];
+ const positiveInteriorVerified=interiorOpenIntervals.length>0;
  const tangent=events.some(e=>e.type==='tangent');
  const ambiguous=generatorCoincidence||tangent||events.some(e=>e.t<=eps);
  return {events,positiveRayBoundaryIntersections:positive.length,
@@ -83,13 +86,13 @@ function auditC3TransitionRays({input,point,view}={}){
   ...y.interiorOpenIntervals.map(range=>({solid:'yCylinder',range}))]
   .sort((a,b)=>a.range[0]-b.range[0]||a.range[1]-b.range[1]);
  const positiveInteriorOcclusionVerified=combined.length>0&&
-  !z.generatorCoincidence&&!y.generatorCoincidence;
+  (z.positiveInteriorVerified||y.positiveInteriorVerified);
  const originAmbiguous=z.originOnBoundary||y.originOnBoundary;
  const grazingOrTie=z.tangent||y.tangent||z.generatorCoincidence||
   y.generatorCoincidence||originAmbiguous;
- const endpointVisibilityStatus=grazingOrTie?
-  'undetermined-tangent-generator-or-depth-tie':
-  positiveInteriorOcclusionVerified?'certified-forward-interior-occlusion':
+ const endpointVisibilityStatus=positiveInteriorOcclusionVerified?
+  'certified-forward-interior-occlusion':
+  grazingOrTie?'undetermined-tangent-generator-or-depth-tie':
   'no-positive-interior-found-not-full-feature-clearance';
  return freeze({schema:'draftai-c3-transition-ray-candidates/1',view,point:{...point},
   zCylinder:z,yCylinder:y,combinedForwardInteriorIntervals:combined,
