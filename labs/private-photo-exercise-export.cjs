@@ -35,36 +35,46 @@ function attachPrivatePhotoCaseExport({
  photoClear.addEventListener('click',invalidate);
  async function save(){
   if(busy)return;
-  const file=fileInput.files?.[0],currentImage={
-   width:image.naturalWidth,height:image.naturalHeight
-  };
+  const file=fileInput.files?.[0];
   if(!file||!accepted.checked){
    status.textContent='请先选择原题图片，并确认本地记录的隐私与验收范围。';
    return;
   }
+  // Take one coherent complete source/review/math snapshot BEFORE any
+  // asynchronous byte digest. Candidate, role, image dimensions and
+  // math/V5 session changes are just as invalidating as draft revisions.
   const capturedEpoch=epoch,generation=getGeneration();
-  const evidenceBefore=getEvidence();
-  const beforeKey=JSON.stringify(evidenceBefore);
+  const snapshotNow=()=>({
+   image:{width:image.naturalWidth,height:image.naturalHeight},
+   sourceRole:role.value,
+   evidence:getEvidence(),candidates:getCandidates(),
+   live:getCurrentLive()
+  });
+  const captured=snapshotNow();
+  const beforeKey=JSON.stringify(captured);
+  const unchanged=()=>epoch===capturedEpoch&&
+   fileInput.files?.[0]===file&&getGeneration()===generation&&
+   JSON.stringify(snapshotNow())===beforeKey;
   busy=true;button.disabled=true;
   try{
    // Hash the CURRENT original selected file, not raster analysis canvas or
    // a reference solution. Bytes are released after hashing.
    const sha256=await fingerprintLocalPhoto(file,subtle);
-   if(epoch!==capturedEpoch||fileInput.files?.[0]!==file||
-      getGeneration()!==generation||
-      JSON.stringify(getEvidence())!==beforeKey)
-    throw new RangeError('图片、识图候选或审核版本已更改，请重新生成记录');
+   if(!unchanged())
+    throw new RangeError('原图、识图候选、审核内容或当前数学会话已更改，请重新生成记录');
    // A real M0/M3 photo review may carry the in-memory SHA-256 from
    // the SAME current user-selected file. A mismatched hash cannot be
    // silently packaged as provenance in the private record.
-   if(evidenceBefore?.photoByteSha256&&evidenceBefore.photoByteSha256!==sha256)
+   if(captured.evidence?.photoByteSha256&&
+      captured.evidence.photoByteSha256!==sha256)
     throw new RangeError('原图字节与当前审核数学条件的 SHA-256 来源不一致');
-   const evidence=getEvidence();
-   const candidates=getCandidates();
-   const live=getCurrentLive();
+   // Deep-copy only JSON-safe bounded evidence into this local export.
+   // No later mutable getter may silently rewrite fields while hashing.
+   const values=JSON.parse(beforeKey);
+   const evidence=values.evidence,live=values.live;
    const output=makePrivatePhotoCase({
-    photoSha256:sha256,image:currentImage,
-    sourceRole:role.value,detectorCandidates:candidates,
+    photoSha256:sha256,image:values.image,
+    sourceRole:values.sourceRole,detectorCandidates:values.candidates,
     detectorGeneration:generation,
     reviewedAssociation:evidence?.reviewedAssociation??null,
     acceptedDraft:evidence?.acceptedDraft??null,
@@ -74,18 +84,14 @@ function attachPrivatePhotoCaseExport({
     liveInput:live?.input??null,
     liveV5Ready:live?.ready===true
    });
-   if(epoch!==capturedEpoch||fileInput.files?.[0]!==file||
-      getGeneration()!==generation||
-      JSON.stringify(getEvidence())!==beforeKey)
-    throw new RangeError('记录生成期间原题来源发生变化');
+   if(!unchanged())
+    throw new RangeError('记录生成期间原图、识图条件或数学会话发生变化');
    // Bind the current ORIGINAL photo-byte SHA-256 to every exported
    // source/review/calibration/M3 field in one domain-separated SHA-256.
    // This is re-verifiable LOCAL integrity, not a signature of source truth.
    const bound=await bindPrivatePhotoCase(output,subtle);
-   if(epoch!==capturedEpoch||fileInput.files?.[0]!==file||
-      getGeneration()!==generation||
-      JSON.stringify(getEvidence())!==beforeKey)
-    throw new RangeError('原图或审核修订在来源绑定计算期间发生变化');
+   if(!unchanged())
+    throw new RangeError('原图、识图候选、审核或数学状态在绑定计算期间变化');
    const json=JSON.stringify(bound,null,2);
    if(json.length>300000)throw new RangeError('逐题证据超出本地文件大小限制');
    const objectUrl=urls.createObjectURL(new Blob([json],{type:'application/json'}));
