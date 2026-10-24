@@ -10,7 +10,7 @@ const {assertM3ToV5Consistency}=
  require('../../workbench/m3-v5-consistency-gate.cjs');
 const {validateConstructionIntentDAG}=
  require('../../core/contracts/construction-intent.js');
-const {toSheet}=require('../../core/projection/conventions.js');
+const {toSheet,fromSheet}=require('../../core/projection/conventions.js');
 const Motion=require('../../workbench/teaching-motion-v5.js');
 const input=()=>({kind:'finite-orthogonal-cylinder-intersection',
  sourceConfirmed:true,unit:'mm',
@@ -84,8 +84,7 @@ test('all analytic V/H seam arcs compile to real canonical directed V5 arcs, not
   close(b.pen.x,end.x);close(b.pen.y,end.y);
   const half=Motion.arc(action.geometry.center,action.geometry.radius,
    action.geometry.startRadians,action.geometry.sweepRadians,.5).pen;
-  const uv={u:(half.x-v[row.view].origin.x)/v[row.view].scale,
-   v:(v[row.view].origin.y-half.y)/v[row.view].scale};
+  const uv=fromSheet(row.view,half,v[row.view]);
   close((uv.u-g.centerModelMm.x)**2+
    (uv.v-g.centerModelMm.y)**2,g.radiusModelMm**2);
   assert.ok(uv.u>=row.xOpenRange[0]-1e-7&&
