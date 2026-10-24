@@ -17,6 +17,10 @@ test('C3 ray quadratic candidates stay separate from official visibility',()=>{
    assert.ok(['no-forward-boundary-intersection','forward-boundary-intersection',
     'undetermined-tangent-generator-or-origin'].includes(solid.rayBoundaryStatus));
    assert.ok(solid.events.every(e=>e.t>=0&&Number.isFinite(e.t)));
+   assert.ok(solid.interiorOpenIntervals.every(([lo,hi])=>
+    Number.isFinite(lo)&&Number.isFinite(hi)&&lo>=0&&hi>lo));
+   assert.equal(solid.positiveInteriorVerified,
+    !solid.generatorCoincidence&&solid.interiorOpenIntervals.length>0);
   }
  }
 });
@@ -30,4 +34,13 @@ test('C3 joint graph exposes physical-junction ray candidates without V5',()=>{
   assert.equal(g.finiteCylinderRayCandidates.v5Authorized,false);
   assert.equal(g.standardLineStyle,'undetermined');
  }
+});
+
+test('C3 finite-cylinder forward interior is a bounded positive interval',()=>{
+ const p={x:-20,y:0,z:0};
+ const r=audit({input,point:p,view:'W'});
+ assert.ok(r.zCylinder.interiorOpenIntervals.length>0);
+ assert.ok(r.yCylinder.interiorOpenIntervals.length>0);
+ assert.ok(r.zCylinder.interiorOpenIntervals.every(([a,b])=>a>0&&b>a));
+ assert.equal(r.officialLineStyle,'undetermined');
 });
