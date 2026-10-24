@@ -11,9 +11,6 @@ const {diagnoseJacobian:rank}=
  require('../../core/numeric/jacobian-rank-evidence.cjs');
 const fixed=(id,point,x,y)=>({id,kind:'fixed',point,at:{x,y}});
 const dist=(id,a,b,r)=>({id,kind:'distance',a,b,value:r});
-const seed=(id,offset,y)=>({id,coordinates:{
- A:{x:offset,y:0},B:{x:offset+8*offset.scale,y:0},P:{x:offset+4*offset.scale,y}
-}});
 function input(scale,ys,extra=[]){
  const A={x:0,y:0},B={x:8*scale,y:0};
  const seeds=ys.map((y,i)=>({id:'Root'+(i+1),coordinates:{
