@@ -25,6 +25,29 @@ function homeHTML(){return `
  <div class="v7-head"><div><p class="next-home-kicker">V7 · 同一份本机项目</p><h1 id="v7-title">统一项目工作台</h1>
  <p>本机原图 → 人工确认毫米条件 → 真实数学 → 第一角 V/H/W、空间视图与单一 V5</p></div>
  <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
+ <section class="v7-course-entry" id="v7-course-entry" aria-labelledby="v7-course-title">
+  <div class="v7-course-head"><h2 id="v7-course-title">当前课程急用：相贯线 · 组合体 · 补第三视图</h2>
+   <p>这些入口使用已有工具，部分仅能演示或核对数学。新标签打开，不会切换本机项目题型、删除已确认条件或将演示提升为 V5 正式答案。</p></div>
+  <div class="v7-course-grid" role="list">
+   <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
+    <span class="v7-course-status">数学演示 · 非正式有限实体相贯</span>
+    <h3>相贯线</h3><p>查看两正交圆柱曲面交线的分支及 V/H/W 投影。有限端盖、完整遮挡与标准虚实线未认证。</p>
+    <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">打开现有相贯曲线实验 ↗</a>
+   </article>
+   <article class="v7-course-card" role="listitem" data-course="composition" data-capability="confirmed-scene-only">
+    <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
+    <h3>组合体</h3><p>在本项目用“多对象几何编辑”确认长方体并共享三视图；另一实验仅展示基座和凸台的简单组合。</p>
+    <div class="v7-course-links"><a href="#v7-task">定位本项目题型选择 ↓</a>
+     <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a></div>
+   </article>
+   <article class="v7-course-card" role="listitem" data-course="third-view" data-capability="identified-point-only">
+    <span class="v7-course-status">已知对应点可验算 · 非任意形体补视图</span>
+    <h3>补第三视图</h3><p>使用已知点坐标或人工确认对应的两个点投影，计算第三投影；未确定对应点和实体拓扑时不得猜测完整答案。</p>
+    <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">打开现有点投影求解 ↗</a>
+   </article>
+  </div>
+  <p class="v7-course-disclosure">课程急用计划只决定开发顺序，不代表相贯线、组合体或实体补第三视图已经完整自动解答；当前已有项目仍使用同一 Geometry Scene 与唯一 V5。</p>
+ </section>
  <div class="v7-bar" aria-label="项目操作">
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
   <button type="button" id="v7-open">打开项目</button><button type="button" id="v7-new">新建项目</button>
