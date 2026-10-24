@@ -726,6 +726,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-yaw').value=String(snap.view.camera.yaw);
   $('v7-pitch').value=String(snap.view.camera.pitch);
   const partial=preview();
+  const gate=partial?.spatialV5Readiness,
+    v5Block=$('v7-spatial-v5-readiness');
+  v5Block.hidden=!gate;
+  if(gate){
+   const totals=['V','H','W'].reduce((n,view)=>({
+    strokes:n.strokes+gate.views[view].projectedStrokeCount,
+    ambiguous:n.ambiguous+gate.views[view].unprovedStrokeCount,
+    contours:n.contours+gate.views[view].projectedUnionOpenBoundaryCount
+   }),{strokes:0,ambiguous:0,contours:0});
+   v5Block.textContent='空间 V5 仍禁止签收：已审阅投影棱区间 '+
+    totals.strokes+' 段，开区间未定 '+totals.ambiguous+
+    ' 段，几何外轮廓候选 '+totals.contours+' 段；尚有 '+
+    gate.missingCount+' 类数学/端点/线型/Intent/DAG 证明待完成。'+
+    ' 不会将局部隐藏或可见证据直接画成标准实线或虚线。';
+  }
   const condition=snap.conditions.find(c=>c.id==='coords');
   $('v7-review').textContent=!condition?'尚未提交空间坐标；当前没有可求解条件。':
    condition.confirmed?'当前条件已人工确认（修订 v'+snap.revision+'）。':'有待确认的条件；不能自动生成标准答案。';
