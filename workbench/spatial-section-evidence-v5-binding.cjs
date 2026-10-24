@@ -63,6 +63,30 @@ function bindScopedSectionEvidenceToV5({preview,visibilityEvidence,revision}={})
  if(!Number.isInteger(n)||n<3||n>6||
     !VIEWS.every(v=>Array.isArray(data[v])&&data[v].length===n))
   fail('bounded matched polygon section edges required');
+ const vertexEvidence=visibilityEvidence.vertexPointRayEvidence;
+ if(!vertexEvidence||typeof vertexEvidence!=='object'||Array.isArray(vertexEvidence)||
+    Object.keys(vertexEvidence).sort().join(',')!=='H,V,W'||
+    visibilityEvidence.vertexPointRayEvidenceAvailable!==
+     (visibilityEvidence.status==='open-edge-ray-only')||
+    !VIEWS.every(v=>Array.isArray(vertexEvidence[v])&&vertexEvidence[v].length===n))
+  fail('current-revision vertex point-ray evidence contract missing');
+ for(const view of VIEWS)for(let i=0;i<n;i++){
+  const q=vertexEvidence[view][i];
+  if(!q||q.view!==view||q.index!==i||
+     q.sourceGeometryId!==preview.geometryId||
+     q.sourceVertexId!=='section-vertex-'+(i+1)||
+     !states.has(q.visibility)||!Array.isArray(q.activeFaceIds)||
+     q.activeFaceIds.length>7||
+     q.projectedJoinCertified!==false||
+     q.officialEndpointStyleVerified!==false||
+     q.pointRayCertified!==(q.visibility!=='undetermined')||
+     (q.pointRayCertified?
+      (!visibilityEvidence.vertexPointRayEvidenceAvailable||
+       q.proofScope!=='single-retained-convex-polytope-point-ray'||
+       q.activeFaceIds.length===0):
+      q.proofScope!=='none'))
+   fail('untrusted vertex ray cannot enter an existing V5 source link');
+ }
  const stepIds=new Set(),actions=new Map(),byEdge=new Map();
  for(const step of preview.steps){
   if(!step||typeof step.id!=='string'||stepIds.has(step.id)||
@@ -125,6 +149,15 @@ function bindScopedSectionEvidenceToV5({preview,visibilityEvidence,revision}={})
     openInteriorVisibility:action.kind==='point'?'undetermined':e.visibility,
     sourceOpenInteriorVisibility:e.visibility,
     sourceProofScope:e.proofScope,
+    // Pointwise support-plane ray witnesses for the TWO 3D source vertices
+    // are not permission to color the projected endpoint or whole stroke.
+    sourceEndpointPointRays:[i,(i+1)%n].map(j=>({
+     sourceVertexId:vertexEvidence[view][j].sourceVertexId,
+     visibility:vertexEvidence[view][j].visibility,
+     pointRayCertified:vertexEvidence[view][j].pointRayCertified,
+     proofScope:vertexEvidence[view][j].proofScope,
+     projectedJoinCertified:false
+    })),
     projectedPrimitiveKind:action.kind,
     projectedFullStrokeVisibility:'undetermined',
     endpointsVisibilityVerified:false,

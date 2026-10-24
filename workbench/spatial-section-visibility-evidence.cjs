@@ -11,6 +11,8 @@ const {project,VIEWS,validateFirstAngleObserverRays}=
  require('../core/projection/conventions.js');
 const {classifyPrismSectionVisibility}=
  require('../engines/spatial/sections/rectangular-prism-cut-visibility.cjs');
+const {classifyConvexPolytopeBoundaryRay}=
+ require('../core/numeric/convex-polytope-boundary-ray.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const xyz=p=>p&&['x','y','z'].every(k=>finite(p[k]));
 const near=(a,b)=>finite(a)&&finite(b)&&Math.abs(a-b)<=1e-6;
@@ -22,6 +24,29 @@ const deepFreeze=x=>{
  return x;
 };
 function reject(reason){throw new TypeError('spatial visibility evidence: '+reason);}
+/**
+ * The six original prism faces and the SELECTED retained plane describe
+ * a single bounded convex intersection; outward halfspaces use <= offsets.
+ * Future convex polytope specialists can provide their own verified faces.
+ */
+function prismRetainedHalfspaces(box,plane,side){
+ const faces=[];
+ for(const axis of ['x','y','z']){
+  for(const [bound,sign] of [['min',-1],['max',1]]){
+   const normal={x:0,y:0,z:0};
+   normal[axis]=sign;
+   faces.push({id:'prism-'+axis+'-'+bound,normal,
+    offsetMm:sign*box[bound][axis]});
+  }
+ }
+ const sign=side==='positive'?-1:1;
+ const normal={x:sign*plane.normal.x,y:sign*plane.normal.y,
+  z:sign*plane.normal.z};
+ faces.push({id:'retained-cut-plane',normal,
+  offsetMm:normal.x*plane.point.x+normal.y*plane.point.y+
+   normal.z*plane.point.z});
+ return faces;
+}
 function reviewDirections(review,revision){
  if(review===null||review===undefined)return null;
  if(!review||typeof review!=='object'||Array.isArray(review)||
@@ -54,10 +79,17 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
  // authoritative visibility input for SVG unless explicitly and separately
  // proven for the requested standard and every boundary.
  const values=Object.fromEntries(VIEWS.map(v=>[v,[]]));
- for(const view of VIEWS)for(let i=0;i<n;i++)
+ const vertexPointRayEvidence=Object.fromEntries(VIEWS.map(v=>[v,[]]));
+ for(const view of VIEWS)for(let i=0;i<n;i++){
   values[view].push({view,index:i,sourceGeometryId:g.id,
    sourceEdgeId:'section-edge-'+(i+1),visibility:'undetermined',
    proofScope:'none',endpointsVerified:false,standardLineStyleVerified:false});
+  vertexPointRayEvidence[view].push({view,index:i,sourceGeometryId:g.id,
+   sourceVertexId:'section-vertex-'+(i+1),
+   visibility:'undetermined',pointRayCertified:false,
+   activeFaceIds:[],proofScope:'none',
+   projectedJoinCertified:false,officialEndpointStyleVerified:false});
+ }
  let classified=false;
  if(selected&&input.kind==='rectangular-prism'){
   for(const view of VIEWS){
@@ -95,6 +127,31 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
     };
    }
   }
+  // Independently check local rays at the actual ordered polygon vertices.
+  // An intersection vertex can touch TWO or MORE source faces; a single
+  // edge midpoint outward normal is insufficient to decide its visibility.
+  // The convex-polytope support-plane oracle refuses tangencies and avoids
+  // confusing a point ray with a COMPLETE projected line/end-junction proof.
+  const halfspaces=prismRetainedHalfspaces(input.solid,input.plane,
+   selected.retainedHalfspace);
+  for(const view of VIEWS)for(let i=0;i<n;i++){
+   const witness=classifyConvexPolytopeBoundaryRay({
+    point:pts[i],observerDirection:selected.observerDirections[view],
+    halfspaces
+   });
+   if(witness.status!=='ready')
+    reject('polygon vertex fails independently bounded convex polytope support planes');
+   vertexPointRayEvidence[view][i]={
+    ...vertexPointRayEvidence[view][i],
+    visibility:witness.visibility,
+    pointRayCertified:witness.pointRayCertified,
+    activeFaceIds:[...witness.activeFaceIds],
+    reason:witness.reason,
+    proofScope:witness.pointRayCertified?
+     'single-retained-convex-polytope-point-ray':'none',
+    projectedJoinCertified:false,officialEndpointStyleVerified:false
+   };
+  }
   classified=true;
  }
  const counts={visible:0,hidden:0,undetermined:0};
@@ -105,6 +162,10 @@ function deriveScopedSectionVisibility({input,evidence,revision,review=null}={})
   status:!selected?'unreviewed':classified?'open-edge-ray-only':'unsupported-proof',
   reviewBound:!!selected,perView:values,counts,
   openEdgeEvidenceAvailable:classified,
+  // These are additional local point-ray witnesses only; no claim about
+  // source polygon JOIN occlusion or the finished projected endpoint style.
+  vertexPointRayEvidence,
+  vertexPointRayEvidenceAvailable:classified,
   endpointVisibilityVerified:false,
   completeOcclusionVerified:false,
   standardViewMappingVerified:false,
