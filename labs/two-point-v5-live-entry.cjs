@@ -2,6 +2,7 @@
 // Public, user-confirmed input only. All strokes come from one proven Math ->
 // ConstructionIntent -> V5 pipeline; interaction never reconstructs geometry.
 const {compileConfirmedTwoPoint}=require('../workbench/confirmed-two-point-v5.cjs');
+const {compileReviewedSegmentPreview}=require('../workbench/reviewed-two-view-segment-preview.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const Camera=require('../workbench/v5-action-camera.cjs');
 const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
@@ -43,6 +44,38 @@ function pick(action,stepIndex){
  const controls=Array.from($('sheet').children);
  controls.find(n=>n.getAttribute('data-pick-action')===action.id)?.focus?.();
 }
+// This is a geometric PRESENTATION, not an official line-style/Intent/V5 stroke.
+function renderReviewedSegmentPreview(svg,frame,mono){
+ const preview=current?.segmentPreview;
+ if(!preview||!frame.done||!current.player.canRender(revision))return;
+ const group=document.createElementNS(NS,'g');
+ group.setAttribute('data-unverified-segment','true');
+ group.setAttribute('data-official-v5','false');
+ group.setAttribute('aria-label','AB 端点对应的投影几何预览；所有线型未判定');
+ const title=document.createElementNS(NS,'title');
+ title.textContent='AB 几何预览：虚实线未认证；不是 V5 作图步骤';
+ group.append(title);
+ for(const v of ['V','H','W']){
+  const g=preview.screen[v];
+  const stroke=mono?'#555':'#8a48a5';
+  const e=document.createElementNS(NS,g.collapsed?'circle':'line');
+  if(g.collapsed){
+   e.setAttribute('cx',g.from.x);e.setAttribute('cy',g.from.y);
+   e.setAttribute('r','4');e.setAttribute('fill','none');
+  }else{
+   e.setAttribute('x1',g.from.x);e.setAttribute('y1',g.from.y);
+   e.setAttribute('x2',g.to.x);e.setAttribute('y2',g.to.y);
+  }
+  e.setAttribute('stroke',stroke);
+  e.setAttribute('stroke-width','2.5');
+  e.setAttribute('stroke-dasharray','1.5 7');
+  e.setAttribute('stroke-linecap','round');
+  e.setAttribute('data-preview-view',v);
+  e.setAttribute('data-line-style','undetermined');
+  group.append(e);
+ }
+ svg.append(group);
+}
 function draw(snap=false){
  const svg=$('sheet');svg.replaceChildren();
  if(!current){updateCamera(null,true);return;}
@@ -83,10 +116,12 @@ function draw(snap=false){
    svg.append(hit);
   }
  }
+ renderReviewedSegmentPreview(svg,frame,mono);
  updateCamera(frame,snap);
  $('status').textContent='已确认第 '+revision+' 版；作图 '+
   frame.completedIds.length+'/'+current.timeline.segments.length+
-  (frame.done?'，全部绘制完成':'');
+  (frame.done?'，全部绘制完成':'')+
+  (current.segmentPreview?'；AB 线段仅几何预览（虚实未判定）':'');
 }
 function tick(now){
  if(!playing||!current)return;
@@ -130,12 +165,18 @@ function solve(){
    {id:id.toUpperCase(),...Object.fromEntries(['x','y','z'].map(k=>[k,numeric(id+k)]))}:
    {id:id.toUpperCase(),knownViews:Object.fromEntries([...mode].map(v=>
      [v,[numeric(id+v+'u'),numeric(id+v+'v')]]))});
-  current=compileConfirmedTwoPoint({confirmedBy:$('confirmed').checked?'user':null,
-   revision,unit:'mm',points,sheetTransform:{origin:{x:360,y:210},scale:3}});
+  const input={confirmedBy:$('confirmed').checked?'user':null,
+   revision,unit:'mm',points,sheetTransform:{origin:{x:360,y:210},scale:3}};
+  current=$('showSegment').checked?
+   compileReviewedSegmentPreview(input):compileConfirmedTwoPoint(input);
+  $('segmentPreviewNote').textContent=current.segmentPreview?
+   'A—B 三视图已从对应端点生成；只有完成点的正式 V5 后才显示紫色点线。线型始终未认证。':
+   '未启用 AB 连线预览；当前仅播放由数学求解证明的点投影 V5。';
   draw(true);
  }catch(e){clear();$('status').textContent='拒绝作图：'+e.message;}
 }
 $('solve').addEventListener('click',solve);
+$('showSegment').addEventListener('change',invalidateSource);
 for(const id of ['ax','ay','az','bx','by','bz',
  ...['a','b'].flatMap(p=>['V','H','W'].flatMap(v=>[p+v+'u',p+v+'v']))]){
  $(id).addEventListener('input',invalidateSource);

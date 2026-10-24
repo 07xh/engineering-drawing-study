@@ -41,9 +41,10 @@ function homeHTML(){return `
      <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a></div>
    </article>
    <article class="v7-course-card" role="listitem" data-course="third-view" data-capability="identified-point-only">
-    <span class="v7-course-status">已知对应点可验算 · 非任意形体补视图</span>
-    <h3>补第三视图</h3><p>使用已知点坐标或人工确认对应的两个点投影，计算第三投影；未确定对应点和实体拓扑时不得猜测完整答案。</p>
-    <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">打开现有点投影求解 ↗</a>
+    <span class="v7-course-status">已知点与棱线投影预览 · 非实体标准答案</span>
+    <h3>补第三视图</h3><p>人工确认两视图中的对应点 A/B，可计算第三投影与已知 AB 线段的投影预览；虚实线和未知实体仍不自动推测。</p>
+    <div class="v7-course-links"><a href="labs/two-point-v5-live.html" target="_blank" rel="noopener noreferrer">两视图 A/B 对应点与棱线预览 ↗</a>
+     <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">单点投影求解 ↗</a></div>
    </article>
   </div>
   <p class="v7-course-disclosure">课程急用计划只决定开发顺序，不代表相贯线、组合体或实体补第三视图已经完整自动解答；当前已有项目仍使用同一 Geometry Scene 与唯一 V5。</p>
