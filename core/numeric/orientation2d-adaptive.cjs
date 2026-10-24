@@ -62,7 +62,8 @@ function orientation2DAdaptive(a,b,c){
   if(Number.isFinite(left)&&Number.isFinite(right)&&
      Number.isFinite(det)&&Number.isFinite(magnitude)&&
      Number.isFinite(err)&&
-     [acx,bcy,acy,bcx,left,right,det,magnitude,err].every(normalOrZero)&&
+     [acx,bcy,acy,bcx,left,right,det,magnitude].every(normalOrZero)&&
+     err>=MIN_NORMAL&&
      // A zero rounded product from two NONZERO inputs must never be
      // interpreted as a mathematically proven zero determinant term.
      (left!==0||acx===0||bcy===0)&&

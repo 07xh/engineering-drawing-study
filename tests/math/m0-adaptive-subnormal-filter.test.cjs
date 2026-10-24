@@ -6,7 +6,7 @@ const {orientation2DAdaptive:adaptive}=
 const {orientation2D:exact}=
  require('../../core/numeric/orientation2d-exact.cjs');
 test('M0 refuses normal-range filter when nonzero product is subnormal',()=>{
- for(const s of [1e-160,1e-161,1e-170]){
+ for(const s of [1e-146,1e-150,1e-160,1e-161,1e-170]){
   const a=[0,0],b=[s,0],c=[0,s];
   const observed=adaptive(a,b,c);
   assert.equal(observed.sign,exact(a,b,c).sign);
