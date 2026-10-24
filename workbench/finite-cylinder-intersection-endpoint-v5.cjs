@@ -2,7 +2,8 @@
 /**
  * C3: release ONLY analytically proven finite lateral-lateral intersection
  * ENDPOINT POINTS and optional independently proven INTERIOR AUXILIARY
- * POINTS to the original 07 V5 (ConstructionIntent → Step DAG).
+ * POINTS, plus optional source-cylinder circle guides, to the original
+ * 07 V5 (ConstructionIntent → Step DAG).
  *
  * No parametric curve interpolation or standard hidden/visible stroke action
  * is signed: neither branch junction topology nor M5 contour/occlusion proof
@@ -26,13 +27,16 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))deepFreeze(v);Object.freeze(x);
 }return x;};
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
- stationCountPerBranch=0,viewTransforms=null}={}){
+ stationCountPerBranch=0,viewTransforms=null,
+ includeSourceCircleGuides=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
     !finite(sheetTransform.scale)||sheetTransform.scale<=0||
     sheetTransform.scale>100)
   throw new TypeError('current reviewed source and bounded shared V5 transform required');
+ if(typeof includeSourceCircleGuides!=='boolean')
+  throw new TypeError('reviewed source-circle guide toggle must be boolean');
  if(!Number.isSafeInteger(stationCountPerBranch)||
     stationCountPerBranch<0||stationCountPerBranch>2)
   throw new RangeError('0..2 independently proven interior stations per branch required');
@@ -111,13 +115,58 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new RangeError('C3 stations exceed the canonical construction DAG budget');
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
- const intents=[],steps=[],bindings=[];
+ const intents=[],steps=[],bindings=[],sourceCircleGuides=[];
+ const sheetByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:stationCountPerBranch>0?
-   'finite-lateral-lateral-branch-points-only':
+  revision,unit:'mm',proofScope:includeSourceCircleGuides?
+   'finite-cylinder-original-circles-and-analytic-points':
+   stationCountPerBranch>0?'finite-lateral-lateral-branch-points-only':
    'finite-lateral-lateral-branch-endpoint-only',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
   evidenceSource:'independent-M3-implicit-surfaces-and-cap-clipping'};
+ // The Y-axis cylinder has a true circular V view in model (x,z).
+ // The Z-axis cylinder has a true circular H view in model (x,y).
+ // These are KNOWN original geometric construction guides, not intersection
+ // curves or source-visible/hidden line-style conclusions.
+ if(includeSourceCircleGuides){
+  const guides=[
+   {view:'V',solid:'yCylinder',
+    center:{x:Y.xCenter,y:Y.zCenter},radius:Y.radius},
+   {view:'H',solid:'zCylinder',
+    center:{x:Z.xCenter,y:Z.yCenter},radius:Z.radius}
+  ];
+  for(const guide of guides){
+   const id='C3SourceCircle'+guide.view;
+   const op={id:id+'Shape',kind:'circle',coordinateSpace:'model-mm',
+    geometry:{center:{...guide.center},radius:guide.radius}};
+   const transform=viewTransforms?.[guide.view]||sheetTransform;
+   const action=verifiedTeachingActionToV5({
+    id:op.id,kind:'circle',coordinateSpace:'model-mm',
+    center:guide.center,radius:guide.radius
+   },transform);
+   const intent={schema:VERSION,id,
+    purpose:'construct-original-finite-cylinder-circular-view-guide',
+    role:'given',dependsOn:[],inputEntityIds:[],
+    outputEntityIds:[op.id],operations:[op],source:{...source}};
+   const step={id,role:'given',dependsOn:[],
+    title:'原始有限圆柱 '+guide.solid+' · '+guide.view+' 面真实圆形投影',
+    explanation:'由已确认的半径和轴心精确投影生成原始辅助圆；叠加实体的工程可见轮廓和正式实虚线仍未签收。',
+    actions:[action]};
+   // Every Intent within the canonical DAG has IDENTICAL source metadata.
+   // The one combined trust scope was selected before creating any steps.
+   intents.push(intent);steps.push(step);
+   sheetByIntentId[id]=transform;
+   sourceCircleGuides.push({view:guide.view,
+    sourceSolid:guide.solid,centerModelMm:{...guide.center},
+    radiusModelMm:guide.radius,
+    centerSheetPx:{...action.geometry.center},
+    radiusSheetPx:action.geometry.radius,
+    firstAngleSourceGeometryVerified:true,
+    sourceProjectionGuideV5Authorized:true,
+    officialContourLineStyleVerified:false,
+    interpenetrationCurveLineStyleVerified:false});
+  }
+ }
  for(const [index,ep] of allStations.entries()){
   const p=ep.point;
   if(!p||!['x','y','z'].every(k=>finite(p[k])))throw new RangeError('invalid specialist endpoint');
@@ -161,14 +210,19 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  }
  if(intents.length>300)throw new RangeError('too many C3 endpoint V5 actions');
  const timing=Timeline.compileTimeline(steps);
- assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform});
+ assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
+  sheetByIntentId:includeSourceCircleGuides?sheetByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
-  revision,status:'analytic-endpoint-point-actions-only',
+  revision,status:includeSourceCircleGuides?
+   'analytic-point-actions-and-original-circle-guides':
+   'analytic-endpoint-point-actions-only',
   sourceM3:proof,continuousCurveWRayEvidence,continuousCurveVHAxisRayEvidence,
   sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
-  timing,player,bindings,
+  timing,player,bindings,sourceCircleGuides,
+  provenOriginalSourceCircleV5ActionCount:sourceCircleGuides.length,
+  originalSourceCircleGuidesV5Ready:sourceCircleGuides.length===2,
   independentlyProvenEndpointCount:branchEndpoints.length,
   signedEndpointPointActionCount:branchEndpoints.length*VIEWS.length,
   signedInteriorAuxiliaryPointActionCount:branchStations.length*VIEWS.length,
