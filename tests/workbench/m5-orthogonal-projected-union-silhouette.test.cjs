@@ -119,9 +119,12 @@ test('C2 invalid or forged M0 source geometry and already-signed physical dedup 
  };
  assert.throws(()=>auditOrthogonalProjectedUnionSilhouette(args),/forged|stale|source/i);
  const broken=A();broken.data.faces.pop();
- const failed=gate([broken,B()],216);
+ const failed=auditOrthogonalProjectedUnionSilhouette({
+  geometry:[broken,B()],revision:216
+ });
+ assert.equal(failed.status,'not-covered-non-orthogonal-solid');
  assert.equal(failed.v5Ready,false);
- assert.equal(failed.signedCount,0);
+ assert.equal(failed.signedV5LineActions,0);
 });
 test('C2 shared workbench inspector shows exact outer/hole boundary counts without prematurely issuing construction steps',()=>{
  const r=gate([A(),B()],217);
