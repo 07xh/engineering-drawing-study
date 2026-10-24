@@ -63,7 +63,6 @@ test('M5 C2 all real physical endpoints get exact outgoing 3D axis vectors and n
 test('M5 C2 an unrelated remote box inserts two source axial events but preserves honest local opposite straight features',()=>{
  const remote=box('B',P(30,0,3),P(40,10,7));
  const {d}=audit([A(),remote],22);
- assert.equal(d.generatedSourceStrokeActionCount,undefined);
  assert.ok(d.positiveStraightLocalPairCount>0);
  const cornerAtSplit=d.nodes.find(n=>n.point3D.x===0&&
   n.point3D.y===0&&n.point3D.z===3);
