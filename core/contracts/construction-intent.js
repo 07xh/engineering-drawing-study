@@ -9,7 +9,7 @@
  */
 const {object,finite,identifier,report,noDuplicateIds}=require('./common.js');
 const CONSTRUCTION_INTENT_VERSION='draftai-construction-intent/1.0.0';
-const KINDS=Object.freeze(['line','point','circle','directed-arc']);
+const KINDS=Object.freeze(['line','point','circle','directed-arc','analytic-curve']);
 const SPACES=Object.freeze(['model-mm','sheet-px']);
 const PROOF_STATES=Object.freeze(['selected','unique']);
 const PROOF_LEVELS=Object.freeze(['analytic','linear-algebra','selected-directed-g1']);
@@ -37,6 +37,24 @@ function validAction(a){
  if(a.kind==='point')return exactKeys(g,['at'])&&point(g.at);
  if(a.kind==='circle')return a.coordinateSpace==='model-mm'&&
   exactKeys(g,['center','radius'])&&point(g.center)&&finite(g.radius)&&g.radius>0;
+ if(a.kind==='analytic-curve'){
+  if(a.coordinateSpace!=='model-mm'||!exactKeys(g,['parameter','u','v'])||
+     !object(g.parameter)||!exactKeys(g.parameter,['from','to'])||
+     !finite(g.parameter.from)||!finite(g.parameter.to)||
+     g.parameter.to<=g.parameter.from||g.parameter.to-g.parameter.from>2e5)
+   return false;
+  // General radial coordinate primitive: signed circle radicals are
+  // independent, and provenance/curve correctness is certified elsewhere.
+  const radical=c=>object(c)&&exactKeys(c,
+   ['kind','center','offset','radius','sign'])&&
+   c.kind==='signed-circle-radical'&&
+   finite(c.center)&&finite(c.offset)&&finite(c.radius)&&c.radius>0&&
+   [-1,1].includes(c.sign)&&
+   [g.parameter.from,g.parameter.to].every(x=>
+     Math.abs(x-c.center)<=c.radius+
+      1e-10*Math.max(1,c.radius,Math.abs(c.center)));
+  return radical(g.u)&&radical(g.v);
+ }
  if(a.kind==='directed-arc'){
   if(a.coordinateSpace!=='model-mm'||!exactKeys(g,
    ['center','radius','startAngle','endAngle','direction'])||

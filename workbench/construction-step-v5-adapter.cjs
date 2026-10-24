@@ -107,7 +107,7 @@ function verifiedTeachingActionToV5(a,sheet){
  if(a?.view!==undefined&&!VIEWS.includes(a.view))
   throw new TypeError('explicit first-angle V/H/W projection view invalid');
  if(!record(a)||typeof a.id!=='string'||!a.id||
-    !['line','point','circle','arc'].includes(a.kind))
+    !['line','point','circle','arc','analytic-curve'].includes(a.kind))
   throw new TypeError('unsupported normalized teaching action');
  const isSheet=a.coordinateSpace==='sheet-px';
  const isModel=a.coordinateSpace==='model-mm';
@@ -116,7 +116,11 @@ function verifiedTeachingActionToV5(a,sheet){
   toSheet(p.x,p.y,sheet):
   firstAngleToSheet(a.view,{u:p.x,v:p.y},sheet);
  let geometry;
- if(a.kind==='arc'){
+ if(a.kind==='analytic-curve'){
+  if(!isModel||a.view===undefined)
+   throw new TypeError('analytic curve must retain its first-angle model projection');
+  geometry=Motion.projectAnalyticCurveFromVerifiedModel(a,sheet,a.view);
+ }else if(a.kind==='arc'){
   if(!isModel)throw new TypeError('a directed arc must be mathematical model geometry');
   // Existing Motion remains the sole arc animator; re-orient its source
   // model angles under the canonical first-angle paper coordinates.

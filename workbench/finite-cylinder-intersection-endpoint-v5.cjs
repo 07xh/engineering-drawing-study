@@ -30,7 +30,8 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 }return x;};
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  stationCountPerBranch=0,viewTransforms=null,
- includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false}={}){
+ includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false,
+ includeWAnalyticCurveGuides=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
@@ -41,6 +42,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new TypeError('reviewed source-circle guide toggle must be boolean');
  if(typeof includeProjectedSeamArcGuides!=='boolean')
   throw new TypeError('analytic projected seam-arc guide toggle must be boolean');
+ if(typeof includeWAnalyticCurveGuides!=='boolean')
+  throw new TypeError('reviewed analytic W curve guide toggle must be boolean');
  if(!Number.isSafeInteger(stationCountPerBranch)||
     stationCountPerBranch<0||stationCountPerBranch>2)
   throw new RangeError('0..2 independently proven interior stations per branch required');
@@ -120,10 +123,12 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
  const intents=[],steps=[],bindings=[],sourceCircleGuides=[],
-  projectedSeamArcGuides=[];
+  projectedSeamArcGuides=[],wAnalyticCurveGuides=[];
  const sheetByIntentId={},viewByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:includeProjectedSeamArcGuides?
+  revision,unit:'mm',proofScope:includeWAnalyticCurveGuides?
+   'finite-cylinder-W-analytic-curve-guide-not-official':
+   includeProjectedSeamArcGuides?
    'finite-cylinder-projected-arcs-and-analytic-points':
    includeSourceCircleGuides?'finite-cylinder-original-circles-and-analytic-points':
    stationCountPerBranch>0?'finite-lateral-lateral-branch-points-only':
@@ -258,6 +263,60 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    });
   }
  }
+ // W=(y,z): retain both CURRENT M3 signed-circle radical laws.
+ // A source analytic curve is CONTINUOUS in the parametric M3 mathematics;
+ // adaptive screen tessellation is presentation ONLY, not a new M3 proof.
+ // No line may be marked as standard engineering solid/dashed.
+ if(includeWAnalyticCurveGuides){
+  const byId=new Map(proof.branches.map(b=>[b.id,b]));
+  const wIntervals=continuousCurveWRayEvidence.intervals.filter(i=>i.view==='W');
+  for(const [index,b] of proof.branches.entries()){
+   if(!b.finiteDomainVerified||b.officialLineStyle!=='undetermined'||
+      !(b.xRange[1]>b.xRange[0])||
+      ![-1,1].includes(b.signY)||![-1,1].includes(b.signZ)||
+      byId.get(b.id)!==b)
+    throw new RangeError('unverified finite C3 analytic W curve source');
+   const parts=wIntervals.filter(i=>i.branchId===b.id)
+    .sort((a,c)=>a.xOpenRange[0]-c.xOpenRange[0]);
+   if(!parts.length||parts[0].xOpenRange[0]!==b.xRange[0]||
+      parts.at(-1).xOpenRange[1]!==b.xRange[1]||
+      parts.some((p,i)=>i>0&&
+       p.xOpenRange[0]!==parts[i-1].xOpenRange[1]))
+    throw new RangeError('source W analytic curve lacks continuous M5 partition');
+   const geometry={parameter:{from:b.xRange[0],to:b.xRange[1]},
+    u:{kind:'signed-circle-radical',
+     center:Z.xCenter,offset:Z.yCenter,radius:Z.radius,sign:b.signY},
+    v:{kind:'signed-circle-radical',
+     center:Y.xCenter,offset:Y.zCenter,radius:Y.radius,sign:b.signZ}};
+   const id='C3WAnalyticCurve'+index,op={
+    id:id+'Shape',kind:'analytic-curve',coordinateSpace:'model-mm',
+    geometry
+   };
+   const transform=viewTransforms?.W||sheetTransform;
+   const action=verifiedTeachingActionToV5({
+    id:op.id,kind:'analytic-curve',
+    coordinateSpace:'model-mm',view:'W',...geometry
+   },transform);
+   const intent={schema:VERSION,id,
+    purpose:'construct-true-signed-radical-W-analytic-projection-guide',
+    role:'auxiliary',dependsOn:[],inputEntityIds:[],
+    outputEntityIds:[op.id],operations:[op],source:{...source}};
+   const step={id,role:'auxiliary',dependsOn:[],
+    title:'有限圆柱 W 视图 · 真实解析相贯曲线分支 '+(index+1),
+    explanation:'当前 M3 双根式连续参数曲线，经有限端盖与 M5 整段分区复核。V5 自适应屏幕绘制仅供几何辅助，不授权国标实虚线或最终工程答案。',
+    actions:[action]};
+   intents.push(intent);steps.push(step);
+   sheetByIntentId[id]=transform;viewByIntentId[id]='W';
+   wAnalyticCurveGuides.push({id,branchId:b.id,view:'W',
+    xRange:[...b.xRange],sourceM3BranchVerified:true,
+    sourceM5WholeBranchPartitionVerified:true,
+    exactAnalyticSourceVerified:true,
+    visualSvgApproximationOnly:true,
+    continuousSourceParameterV5GuideAuthorized:true,
+    projectedContourAndEndpointVisibilityVerified:false,
+    officialStandardLineStyleVerified:false});
+  }
+ }
  for(const [index,ep] of allStations.entries()){
   const p=ep.point;
   if(!p||!['x','y','z'].every(k=>finite(p[k])))throw new RangeError('invalid specialist endpoint');
@@ -302,13 +361,15 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  if(intents.length>300)throw new RangeError('too many C3 endpoint V5 actions');
  const timing=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
-  sheetByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
+  sheetByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
    sheetByIntentId:null,
-  viewByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
+  viewByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
    viewByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
-  revision,status:includeProjectedSeamArcGuides?
+  revision,status:includeWAnalyticCurveGuides?
+   'analytic-three-view-curve-guides-and-points':
+   includeProjectedSeamArcGuides?
    'analytic-vh-projection-arc-guides-and-points':
    includeSourceCircleGuides?'analytic-point-actions-and-original-circle-guides':
    'analytic-endpoint-point-actions-only',
@@ -316,6 +377,9 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
   timing,player,bindings,sourceCircleGuides,projectedSeamArcGuides,
+  wAnalyticCurveGuides,
+  trueAnalyticWCurveV5GuideCount:wAnalyticCurveGuides.length,
+  analyticWCurveGuideV5Ready:wAnalyticCurveGuides.length===proof.branchCount,
   provenAnalyticVHArcV5ActionCount:projectedSeamArcGuides.length,
   exactAnalyticVHArcV5Ready:projectedSeamArcGuides.length>0,
   provenOriginalSourceCircleV5ActionCount:sourceCircleGuides.length,
