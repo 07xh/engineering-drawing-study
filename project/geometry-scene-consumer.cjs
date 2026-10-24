@@ -89,19 +89,20 @@ function planarObject(obj,paper,sheet,warnings){
  }
  warnings.push(obj.id+': 不支持的二维表示，未虚构轮廓');
 }
-function representationPaper(obj,paper,sheet,warnings){
+function representationPaper(obj,paper,sheet,warnings,viewTransforms=null){
  for(const view of VIEWS){
   const rep=obj.representations[view];
   if(!rep)continue;
-  const p=uv=>toSheet(view,uv,sheet);
+  const frame=viewTransforms?.[view]??sheet;
+  const p=uv=>toSheet(view,uv,frame);
   if(rep.kind==='point')point(paper,p(rep.at),obj,view,
     rep.collapsedFrom?{collapsedFrom:rep.collapsedFrom}:{});
   else if(rep.kind==='segment')segment(paper,p(rep.start),p(rep.end),
     obj,view);
   else if(rep.kind==='line'){
    const at=p(rep.point),v=rep.direction;
-   const dx=v.u*sheet.scale*(view==='W'?1:-1);
-   const dy=v.v*sheet.scale*(view==='H'?1:-1);
+   const dx=v.u*frame.scale*(view==='W'?1:-1);
+   const dy=v.v*frame.scale*(view==='H'?1:-1);
    const dist=Math.hypot(dx,dy);
    if(dist<=EPS)fail('空间直线投影方向退化但未被几何场景标注');
    segment(paper,{x:at.x-180*dx/dist,y:at.y-180*dy/dist},
@@ -218,7 +219,8 @@ function paperBounds(primitives){
  return {x:cx-width/2,y:cy-height/2,width,height};
 }
 function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
- camera={yaw:0,pitch:25},hiddenObjectIds=[],selectedObjectId=null}={}){
+ camera={yaw:0,pitch:25},hiddenObjectIds=[],selectedObjectId=null,
+ viewTransforms=null}={}){
  if(!scene||scene.schema!==SCHEMA||!Array.isArray(scene.objects)||
    !scene.objects.every(o=>o&&o.model&&o.representations))
   fail('只能消费经过正式数学构建的 Geometry Scene');
@@ -226,6 +228,14 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
    !finite(sheet.scale)||sheet.scale<=0||!camera||
    !finite(camera.yaw)||!finite(camera.pitch))
   fail('投影纸面或相机参数无效');
+ if(viewTransforms!==null&&(
+    typeof viewTransforms!=='object'||Array.isArray(viewTransforms)||
+    Object.keys(viewTransforms).sort().join(',')!=='H,V,W'||
+    !VIEWS.every(v=>{
+     const t=viewTransforms[v];
+     return t&&t.origin&&finite(t.origin.x)&&finite(t.origin.y)&&
+       finite(t.scale)&&t.scale>0&&t.scale<=1e8;
+    })))fail('三视图必须由完整有效的 V/H/W 坐标变换共同驱动');
  const hidden=new Set(hiddenObjectIds);
  if(hiddenObjectIds.length>scene.objects.length||
   [...hidden].some(id=>typeof id!=='string'))fail('图元显示门禁无效');
@@ -237,7 +247,7 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
  const subset={objects};
  for(const obj of objects){
   if(obj.space==='drawing-2d')planarObject(obj,paper,sheet,warnings);
-  else representationPaper(obj,paper,paperTransform,warnings);
+  else representationPaper(obj,paper,paperTransform,warnings,viewTransforms);
  }
  spatialCamera(subset,camera,spatial,warnings);
  for(const primitive of [...paper,...spatial])
