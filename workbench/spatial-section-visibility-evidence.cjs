@@ -7,7 +7,8 @@
  * specialist may supply a ray classifier ONLY after trusted M3 evidence.
  * Endpoint, tangency and other-solid occlusion remain unproven.
  */
-const {project,VIEWS}=require('../core/projection/conventions.js');
+const {project,VIEWS,validateFirstAngleObserverRays}=
+ require('../core/projection/conventions.js');
 const {classifyPrismSectionVisibility}=
  require('../engines/spatial/sections/rectangular-prism-cut-visibility.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -29,12 +30,11 @@ function reviewDirections(review,revision){
     review.sourceRevision!==revision||
     !['positive','negative'].includes(review.retainedHalfspace))
   reject('explicit current-revision retained halfspace and view rays required');
- const directions=review.observerDirections;
- if(!directions||typeof directions!=='object'||Array.isArray(directions)||
-    Object.keys(directions).sort().join(',')!=='H,V,W'||
-    !VIEWS.every(view=>xyz(directions[view])&&
-      Math.hypot(...Object.values(directions[view]))>1e-12))
-  reject('complete explicit V/H/W observer directions required');
+ // A free-camera ray MUST NOT be relabelled as the canonical V/H/W
+ // orthographic observer. Projection-coordinate parity alone cannot detect
+ // opposite near/far ordering and would invert hidden-line evidence.
+ try{validateFirstAngleObserverRays(review.observerDirections);}
+ catch(error){reject('first-angle V/H/W observer directions required: '+error.message);}
  return review;
 }
 function deriveScopedSectionVisibility({input,evidence,revision,review=null}={}){
