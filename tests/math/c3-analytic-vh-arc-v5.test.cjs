@@ -38,12 +38,16 @@ test('all analytic V/H seam arcs compile to real canonical directed V5 arcs, not
  assert.equal(validateConstructionIntentDAG(r.constructionIntents).ok,true);
  assert.equal(r.singleOriginalV5Player,true);
  assert.equal(r.player.canRender(revision),true);
- const map=Object.fromEntries([...r.constructionIntents.filter(i=>
-  i.operations[0].kind==='circle'||i.operations[0].kind==='directed-arc')]
-  .map(i=>[i.id,v[i.id.at(-1)]]));
+ const viewIntents=r.constructionIntents.filter(i=>
+  i.operations[0].kind==='circle'||i.operations[0].kind==='directed-arc');
+ const map=Object.fromEntries(viewIntents.map(i=>
+  [i.id,v[i.id.at(-1)]]));
+ const viewsById=Object.fromEntries(viewIntents.map(i=>
+  [i.id,i.id.at(-1)]));
  assert.equal(assertM3ToV5Consistency({revision,
   intents:r.constructionIntents,steps:r.constructionSteps,
-  timing:r.timing,sheet:v.V,sheetByIntentId:map}),true);
+  timing:r.timing,sheet:v.V,sheetByIntentId:map,
+  viewByIntentId:viewsById}),true);
  const actions=r.constructionSteps.filter(s=>s.actions[0].kind==='arc');
  assert.equal(actions.length,dedup.spans.length);
  for(let index=0;index<dedup.spans.length;index++){
