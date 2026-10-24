@@ -139,7 +139,7 @@ test('real UI consumes same original V5 circle actions, not faux sampled curves'
  const html=fs.readFileSync('labs/finite-cylinder-intersection-live.html','utf8');
  assert.match(ui,/includeSourceCircleGuides:true/);
  assert.match(ui,/renderVerifiedV5Actions/);
- assert.match(ui,/Motion\.updateSvg\(circle,action,fraction\)/);
+ assert.match(ui,/Motion\.updateSvg\(shape,action,fraction\)/);
  assert.match(ui,/originalGuide=action.kind==='circle'/);
  assert.match(ui,/data-certified-scope/);
  assert.match(html,/真实原始圆柱辅助圆 V5/);
