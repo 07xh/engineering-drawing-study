@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>基本体补第三视图 · DraftAI</title><link rel="stylesheet" href="../site-ui.css">
+<style>body{font:15px/1.65 system-ui,sans-serif;background:#f5f8fc;color:#18334e;margin:0}
+main{max-width:1230px;margin:auto;padding:16px}h1{font-size:26px;margin:10px 0}p{line-height:1.7}
+.layout{display:grid;grid-template-columns:minmax(315px,440px) minmax(0,1fr);gap:14px}
+article{background:#fff;border:1px solid #d8e4f0;border-radius:14px;padding:17px;min-width:0}
+label{display:flex;flex-direction:column;gap:5px;margin:10px 0;font-weight:650}
+input,select,textarea,button{font:inherit;border-radius:8px;border:1px solid #afc5d9;padding:9px;min-height:44px;box-sizing:border-box}
+textarea{width:100%;min-height:220px;font-family:ui-monospace,monospace;font-size:12px}
+button{background:#1a5e9a;color:white;font-weight:700;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #ffae4b;outline-offset:2px}
+.hint{background:#fff5e5;color:#664d1c;border-radius:8px;padding:9px 11px}
+.check{flex-direction:row;align-items:start;font-weight:500;gap:8px}.check input{min-height:20px;margin:4px 0;width:20px;height:20px}
+svg{width:100%;height:auto;border-radius:10px;border:1px solid #cdddeb;background:#fff;touch-action:pan-x pan-y}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f7fb;border-radius:8px;padding:10px;max-height:250px;overflow:auto;font-size:12px}
+#status{font-weight:700;color:#164d7f}#status[data-status="blocked"]{color:#a03630}
+@media(max-width:820px){.layout{grid-template-columns:1fr}}@media(max-width:450px){main{padding:8px}article{padding:12px}}
+</style></head><body><main>
+<a href="../index.html">← 返回 DraftAI 统一工作台</a>
+<h1>基本体 · 由两视图求第三视图</h1>
+<p>适用于<strong>人工确认是闭合凸长方体、并已核对八个角点编号对应关系</strong>的习题。并非任意两视图自动识体，也不提供已认证的虚实线或 V5 作图动作。</p>
+<div class="layout"><article>
+<h2>已知条件（模型 mm）</h2>
+<label for="pair">已知的两个视图
+<select id="pair"><option value="VH">正视图 V + 俯视图 H</option>
+<option value="VW">正视图 V + 左视图 W</option>
+<option value="HW">俯视图 H + 左视图 W</option></select></label>
+<p id="format" class="hint">每行：角点 ID, V.u, V.v, H.u, H.v。八个角点身份必须经人工核对。</p>
+<label for="vertices">八个角点的对应投影数学坐标（逗号分隔）</label>
+<textarea id="vertices" spellcheck="false">V000,0,0,0,0
+V001,0,20,0,0
+V010,0,0,0,15
+V011,0,20,0,15
+V100,30,0,30,0
+V101,30,20,30,0
+V110,30,0,30,15
+V111,30,20,30,15</textarea>
+<label class="check" for="confirmed"><input type="checkbox" id="confirmed">我已核对原题、单位、V/H/W 第一角法和八点身份；长方体拓扑已由我确认</label>
+<button id="solve" type="button">计算公共三视图</button>
+<p id="status" role="status" aria-live="polite" data-status="idle">请选择视图、录入并确认条件。</p>
+<p class="hint">更改任何条件立即清除旧结果。图片识别候选、仅有外轮廓但不明确实体或对应点的习题不允许直接按长方体签收。</p>
+</article><article>
+<h2>统一 Geometry Scene 投影预览</h2>
+<svg id="paper" viewBox="0 0 800 530" role="img" aria-label="第一角法 V/H/W 的长方体投影草图，所有边线线型未判定"></svg>
+<p>紫色点线 = 已确认拓扑下的几何投影，<strong>不是工程图实线/虚线</strong>；投影积聚线可能合并。暂无正式 V5 动画。</p>
+<pre id="proof">数学证据将在计算后显示。</pre>
+</article></div>
+</main><script defer src="solid-third-view-live-bundle.js"></script></body></html>

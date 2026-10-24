@@ -30,6 +30,7 @@ test('C0 links reach existing public tools and never navigate the active project
   'labs/composite-geometry.html?mode=intersection',
   '#v7-task',
   'labs/composite-geometry.html?mode=composite',
+  'labs/solid-third-view-live.html',
   'labs/two-point-v5-live.html',
   'labs/point-projection-live.html'
  ]);
@@ -40,7 +41,7 @@ test('C0 links reach existing public tools and never navigate the active project
   assert.ok(build.includes("'"+file+"'"),file+' absent from public allowlist');
  }
  const externalTags=[...html.matchAll(/<a\b[^>]*href="labs\/[^"]+"[^>]*>/g)].map(m=>m[0]);
- assert.equal(externalTags.length,4);
+ assert.equal(externalTags.length,5);
  for(const tag of externalTags){
   assert.match(tag,/target="_blank"/);
   assert.match(tag,/rel="noopener noreferrer"/);
@@ -50,7 +51,7 @@ test('C0 differentiates original demonstrations from certified engineering answe
  const {html}=courseSection();
  assert.match(html,/有限端盖、完整遮挡与标准虚实线未认证/);
  assert.match(html,/非组合体标准答案/);
- assert.match(html,/非实体标准答案/);
+ assert.match(html,/非标准虚实线答案/);
  assert.match(html,/不会切换本机项目题型、删除已确认条件/);
  assert.doesNotMatch(html,/<button\b|<form\b/i);
 });
