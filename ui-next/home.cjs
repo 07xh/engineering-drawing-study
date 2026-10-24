@@ -212,6 +212,7 @@ function homeHTML(){return `
      <button id="v7-c-render" type="button" class="v7-primary">显示已确认几何场景</button>
     </div>
     <p id="v7-c-status" class="v7-note" role="status">没有已确认对象。</p>
+    <p id="v7-c-contacts" class="v7-note" role="status">空间组合关系尚未计算；必须确认至少两个闭合实体。相接或重叠也不代表已完成实体并集或虚实线证明。</p>
     <fieldset class="v7-relation-editor">
      <legend>对象间约束 · M2 残差核验</legend>
      <p class="v7-warning">仅检查已确认几何的距离、重合、等长、平行或垂直；不能自动求未知点、证明唯一解或生成 V5。</p>
