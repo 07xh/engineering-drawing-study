@@ -15,7 +15,7 @@ test('real reviewed finite-C3 page explicitly selects Boolean solid operation an
  assert.match(page,/<option value="" selected>/);
  assert.match(page,/<option value="intersection">/);
  assert.match(page,/<option value="union">/);
- assert.match(page,/完整工程图/);
+ assert.match(page,/最终轮廓及国标线型仍未认证/);
  assert.match(js,/auditC3LocalBooleanCreases\(\{input,revision,solidOperation\}\)/);
  assert.match(js,/\$\('solidOperation'\)\.value\|\|null/);
  assert.match(js,/\$\('solidOperation'\)\.addEventListener\('change'/);
