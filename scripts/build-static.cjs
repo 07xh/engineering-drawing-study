@@ -19,6 +19,7 @@ const files = [
   'labs/point-projection-live.html',
   'labs/two-point-v5-live.html',
   'labs/solid-third-view-live.html',
+  'labs/finite-cylinder-intersection-live.html',
   'labs/circle-fillet-live.html',
   'labs/polygon-live.html',
   'labs/auto-fillet-live.html',
