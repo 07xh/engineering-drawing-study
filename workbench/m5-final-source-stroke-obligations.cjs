@@ -111,6 +111,17 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
     (generatedUnionCreaseEvidence.generatedFeatureV5Ready!==false||
      generatedUnionCreaseEvidence.officialLineStylesVerified!==false))
   throw new TypeError('generated union feature cannot bypass original M5 V5 gate');
+ if(generatedUnionCreaseEvidence&&
+    (JSON.stringify(partitions.generatedUnionCreaseEvidence)!==
+       JSON.stringify(generatedUnionCreaseEvidence)||
+     partitions.generatedStrokeSignedCount!==0||
+     partitions.generatedSegments.length!==
+       partitions.generatedProjectedCandidateCount||
+     partitions.generatedSegments.some(s=>
+       s.canonicalIntentAndV5LineStepApproved!==false||
+       s.officialEngineeringLineStyle!=='undetermined')))
+  throw new TypeError('M4 generated source-face projected actions were substituted or signed');
+
  const unionFeatureMap=new Map(sourceUnionFeatureEvidence.edges.map(e=>
   [e.sourceEdgeId,e]));
  // Only claim an entire M4 stroke piece if its source parameter interval is
@@ -273,6 +284,17 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   generatedUnionCreaseEvidence,
   generatedSource3DOpenCandidateCount:
    generatedUnionCreaseEvidence?.certifiedNewConcaveOpenCount??0,
+  generatedM4ProjectedCandidateCount:
+   partitions.generatedProjectedCandidateCount,
+  generatedM4ProjectionCollapseCount:
+   partitions.generatedProjectedCollapsedCount,
+  generatedM4ForwardRayClearCount:
+   partitions.generatedSegments.filter(s=>
+    s.wholeOpenSourceForwardRayClearVerified).length,
+  generatedM4StrictlyOccludedCount:
+   partitions.generatedSegments.filter(s=>
+    s.wholeSourceStrictlyOccludedVerified).length,
+
   generatedSourceStrokeActionCount:0,
   generatedSourceStrokeSignedCount:0,
 

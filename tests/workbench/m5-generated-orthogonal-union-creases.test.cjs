@@ -123,6 +123,6 @@ test('C2 published V7 status displays truly generated features distinctly and wi
  const src=fs.readFileSync('project/unified-workbench-entry.cjs','utf8');
  assert.match(src,/generatedUnionCreaseEvidence\?\.certifiedNewConcaveOpenCount/);
  assert.match(src,/generatedUnionCreaseEvidence\?\.buriedNewFaceIntersectionCount/);
- assert.match(src,/新增曲线\/棱线正式 V5 动作为 0/);
+ assert.match(src,/新生线正式 V5 动作为 0/);
  assert.match(src,/不能发布实线\/虚线/);
 });

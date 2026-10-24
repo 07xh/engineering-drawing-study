@@ -270,7 +270,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.generatedUnionCreaseEvidence?.certifiedNewConcaveOpenCount||0)+
     ' 段、经证明被其他实体埋没 '+
     (evidence.generatedUnionCreaseEvidence?.buriedNewFaceIntersectionCount||0)+
-    ' 段，新增曲线/棱线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 段。M4 已生成非积聚三视图候选 '+
+    (evidence.generatedM4ProjectedCandidateCount||0)+
+    ' 段，积聚为点 '+
+    (evidence.generatedM4ProjectionCollapseCount||0)+
+    ' 项；连续无遮挡射线证据 '+
+    (evidence.generatedM4ForwardRayClearCount||0)+
+    ' 项、连续严格遮挡证据 '+
+    (evidence.generatedM4StrictlyOccludedCount||0)+
+    ' 项。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
