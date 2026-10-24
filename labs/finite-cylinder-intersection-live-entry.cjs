@@ -7,6 +7,8 @@ const {compileFiniteCylinderEndpointV5}=
  require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {project,toSheet}=require('../core/projection/conventions.js');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
+const {auditC3LocalBooleanCreases}=
+ require('../workbench/c3-local-boolean-crease.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
  require('../workbench/c3-vh-projection-dedup.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -328,6 +330,8 @@ function solve(){
   const vhDedup=buildC3VHProjectionDedup({input,revision});
   const linked=buildC3LinkedGeometryScene({input,revision,
    compiled:computed,viewTransforms:transforms});
+  const solidOperation=$('solidOperation').value||null;
+  const localCrease=auditC3LocalBooleanCreases({input,revision,solidOperation});
   drawScaffold();
   drawAnalyticPreview(computed,input,wRayProof,vhDedup);
   current=computed;linkedScene=linked;
@@ -350,6 +354,12 @@ function solve(){
    '；共享三维辅助对象 '+linked.spatialObjectCount+
    ' 个，V/H/W 与 3D 共享来源，未认证曲线没有伪造折线。'+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
+   '\\n目标实体布尔运算：'+(solidOperation==='intersection'?'交集':
+      solidOperation==='union'?'并集':'未指定')+
+   '；局部空间交线边界证明：'+localCrease.status+
+   '，正规开区间 '+localCrease.regularLocalCreaseCount+
+   '/'+localCrease.sourceEdgeCount+
+   '；仅代表局部保留面片，全部端点、完整实体轮廓和国标线型仍未认证。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
    ' 段、H='+vhDedup.visibleUniqueHSpanCount+
    ' 段；与原始圆柱轮廓重合，不代表独立认证的相贯线。'+
@@ -376,6 +386,8 @@ function init(){
   invalidate('确认状态变化：旧结果作废。'));
  $('stations').addEventListener('change',()=>
   invalidate('辅助求点数量变化：旧 V5 已失效。'));
+ $('solidOperation').addEventListener('change',()=>
+  invalidate('目标实体运算变化：旧数学保留关系和 V5 已作废，请重新人工确认。',true));
  $('solve').addEventListener('click',solve);
  $('play').addEventListener('click',start);
  $('pause').addEventListener('click',()=>{stop();renderVerifiedV5Actions();});
