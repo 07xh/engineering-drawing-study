@@ -19,6 +19,7 @@ const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
 const {buildScopedSpatialSectionV5Preview}=require('./spatial-section-v5-parity.cjs');
+const {deriveScopedSectionVisibility}=require('./spatial-section-visibility-evidence.cjs');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const FILLET_KINDS=new Set(['segments','circles','segment-circle']);
 const DEFAULT_POINT_SHEET={origin:{x:360,y:175},scale:4};
@@ -31,7 +32,7 @@ const SPATIAL_KINDS=new Set([
  * No geometry, visibility, ConstructionIntent, DAG or V5 are fabricated.
  * The true 3D->first-angle->V5 path must separately pass its own proofs.
  */
-function evaluateScopedSpatialSection({input,revision,sheet}){
+function evaluateScopedSpatialSection({input,revision,sheet,visibilityReview}){
  if(sheet!==undefined&&sheet!==null)
   throw new TypeError('spatial 3D proof cannot accept a 2D sheet conversion');
  if(!input||typeof input!=='object'||Array.isArray(input)||
@@ -43,6 +44,8 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
  const qualified=evidence.geometryVerifiedWithinSpecialistScope===true;
  const constructionPreview=qualified?
   buildScopedSpatialSectionV5Preview({input,evidence,revision}):null;
+ const visibilityEvidence=qualified?
+  deriveScopedSectionVisibility({input,evidence,revision,review:visibilityReview}):null;
  if(qualified&&(evidence.globallyUnique!==null||
     evidence.sourceProblemConfirmed!==false||
     evidence.visibilityVerified!==false||
@@ -56,6 +59,8 @@ function evaluateScopedSpatialSection({input,revision,sheet}){
   // visibility, retained solid, global SolveResult or V5 authorization.
   sectionPerimeterGeometry:qualified?(evidence.sectionPerimeterGeometry??null):null,
   sectionConstructionPreview:constructionPreview,
+  // Open interiors are not a full hidden-line drawing or endpoint proof.
+  sectionVisibilityEvidence:visibilityEvidence,
   geometryVerifiedWithinSpecialistScope:qualified,
   verifiedVisibility:false,sourceProblemConfirmed:false,
   constructionIntents:[],steps:[],timing:null,
@@ -122,13 +127,15 @@ function evaluateConePlaneSection({input,revision,sheet}){
   sourceProblemConfirmed:false,v5Ready:false,realExerciseAccepted:false
  });
 }
-function evaluateUnifiedMath({kind,input,sheet,revision=0}={}){
+function evaluateUnifiedMath({kind,input,sheet,revision=0,visibilityReview}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current input revision required');
  if(input?.revision!==undefined&&input.revision!==revision)
   throw new RangeError('stale specialist input revision');
+ if(visibilityReview!==undefined&&kind!=='spatial-section')
+  throw new TypeError('spatial view rays are only for scoped section evidence');
  if(kind==='spatial-section')
-  return evaluateScopedSpatialSection({input,revision,sheet});
+  return evaluateScopedSpatialSection({input,revision,sheet,visibilityReview});
  if(kind==='cone-plane-section')
   return evaluateConePlaneSection({input,revision,sheet});
  if(kind==='inscribed-polygon'){
