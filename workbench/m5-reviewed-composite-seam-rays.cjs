@@ -30,8 +30,9 @@ const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
  }return x;};
 function proveReviewedCompositeSeamRays({geometry,revision}={}){
- if(!Number.isSafeInteger(revision)||revision<0||
-    !Array.isArray(geometry)||geometry.length<2||geometry.length>8)
+ if(!Number.isSafeInteger(revision)||revision<0)
+  throw new TypeError('current source revision required');
+ if(!Array.isArray(geometry)||geometry.length<2||geometry.length>8)
   throw new TypeError('bounded current confirmed spatial geometry required');
  // Do not trust a caller-provided relation or M5 audit. Recompute the
  // independently approved Geometry -> M0/M5 -> interface provenance chain.
