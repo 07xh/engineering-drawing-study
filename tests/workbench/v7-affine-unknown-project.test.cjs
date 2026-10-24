@@ -98,6 +98,6 @@ test('reject accidental mixing with already confirmed multiobject Geometry and f
  c.putAffineProblem(make());
  assert.throws(()=>c.putAffineProblem({...make(),
   constraints:[{id:'Bad',kind:'axis',point:'A',axis:'x',value:Infinity}]}));
- assert.throws(()=>c.confirmAffineProblem.call(null,'bogus')===false,/./);
+ assert.equal(c.snapshot().affineProblem.confirmed,false);
  c.dispose();
 });
