@@ -192,3 +192,40 @@ test('scoped section perimeter is selectable in all projections without promotin
  assert.throws(()=>c.selectSceneGeometry('Section1'),/不属于/);
  c.dispose();
 });
+
+test('explicitly reviewed retained halfspace binds scoped first-angle open-edge ray proof to SAME V5 actions',()=>{
+ const {coordinator:c,session:s}=start('exploration',
+  {...prism,retainedHalfspace:'negative'});
+ c.confirmCondition('coords');
+ const result=s.solve(),rev=c.snapshot().revision;
+ const ray=result.evidence.sectionVisibilityEvidence;
+ const bindings=result.evidence.sectionEvidenceV5Bindings;
+ assert.equal(ray.status,'open-edge-ray-only');
+ assert.equal(ray.revision,rev);
+ assert.equal(ray.openEdgeEvidenceAvailable,true);
+ assert.equal(bindings.status,'preview-evidence-only');
+ assert.equal(bindings.bindingCount,
+  result.evidence.sectionPerimeterGeometry.data.points.length*3);
+ assert.equal(bindings.revision,rev);
+ assert.ok(bindings.bindings.every(b=>
+  b.projectedFullStrokeVisibility==='undetermined'&&
+  b.endpointsVisibilityVerified===false&&b.officialHiddenLineStyleVerified===false));
+ assert.equal(result.clock.canRender(rev),true);
+ assert.equal(result.verified,false);
+ assert.equal(c.canExport(),false,'ray interiors never certify full drawing');
+ const selected=c.snapshot().conditions.find(x=>x.id==='coords').value;
+ c.putCondition({id:'coords',objectId:'Solid1',sourceCandidateId:null,
+  confirmed:false,value:{...selected,retainedHalfspace:'positive'}});
+ assert.equal(c.currentResult(),null);
+ assert.equal(result.clock.canRender(c.snapshot().revision),false,
+  'changing retained side revokes old scoped ray results and V5 revision');
+ assert.throws(()=>s.solve(),/确认/);
+ c.dispose();
+});
+test('forged retained-material mode is rejected before specialist M3 ray proof',()=>{
+ const {coordinator:c,session:s}=start('exploration',
+  {...prism,retainedHalfspace:'visible'});
+ c.confirmCondition('coords');
+ assert.throws(()=>s.solve(),/保留材料侧/);
+ c.dispose();
+});
