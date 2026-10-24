@@ -120,7 +120,8 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.match($('v7-selection').textContent,/Given1/);
   assert.ok($('v7-step-list').querySelector('button'));
   assert.equal($('v7-3d').hidden,false,'spatial panel may be hidden as a group');
-  // New spatial task must revoke previous V5; only scoped evidence, no player.
+  // New spatial task revokes the verified planar timeline, but can use the
+  // parity-audited scoped ConstructionStep preview on the same V5 controls.
   $('v7-task').value='exploration';
   $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
   await tick();await tick();
@@ -129,8 +130,13 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   click('v7-confirm-other');await tick();await tick();
   click('v7-solve-other');await tick();await tick();
   assert.match($('v7-proof').textContent,/限定证据/,$('v7-save').textContent);
-  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
-  assert.equal($('v7-play').disabled,true,'M3 geometry-only cannot play V5');
+  assert.ok($('v7-step-list').querySelectorAll('button').length>0);
+  assert.equal($('v7-play').disabled,false,'scoped V5 preview can play');
+  assert.equal($('v7-sheet').getAttribute('viewBox'),'0 0 960 680');
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Section1"]').length,0,
+   'computed section awaits the actual V5 step clock');
+  $('v7-seek').value='1000';
+  $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));
   assert.ok($('v7-sheet').querySelector('[aria-label="选择 Solid1 的 V 表达"]'));
   assert.ok($('v7-3d').querySelector('[aria-label="选择 Solid1 的 3D 表达"]'));
   assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="Solid1"][data-geometry-view="V"]').length,12);
@@ -155,8 +161,15 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.ok([...section3D,...sectionSheet].every(el=>
    el.getAttribute('data-visibility')==='undetermined'),
    'limited specialist proof never certifies hidden-line styles');
-  assert.equal($('v7-play').disabled,true,
-   'a scoped polygon is not yet a verified complete V5 construction');
+  assert.equal($('v7-play').disabled,false,
+   'a scoped math geometry preview is not a fully verified engineering answer');
+  assert.match($('v7-proof').textContent,/不能导出已验证答案/);
+  $('v7-guides').checked=false;
+  $('v7-guides').dispatchEvent(new window.Event('change',{bubbles:true}));
+  assert.ok($('v7-sheet').querySelectorAll('[data-geometry-id="Section1"]').length>0,
+   'turning off guides does not erase known result segments');
+  $('v7-guides').checked=true;
+  $('v7-guides').dispatchEvent(new window.Event('change',{bubbles:true}));
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
   $('v7-task').value='composition';

@@ -77,10 +77,24 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(r.evidence.geometryVerifiedWithinSpecialistScope,true);
  assert.equal(r.evidence.mathematicallyVerified,false);
  assert.equal(r.evidence.v5Ready,false);
- assert.equal(r.clock,null);
- assert.equal(r.plan,null);
+ assert.ok(r.clock,'the SAME existing V5 player is now available for preview only');
+ assert.equal(r.plan.status,'preview-only');
+ assert.equal(r.plan.revision,rev);
+ assert.equal(r.plan.canPromoteToVerifiedResult,false);
+ assert.equal(r.plan.visibilityVerified,false);
+ assert.equal(r.clock.canRender(rev),true);
+ assert.equal(r.clock.canRender(rev+1),false);
+ assert.deepEqual(r.plan.timing.steps.map(s=>s.id),
+  r.plan.steps.map(s=>s.id));
+ assert.ok(r.plan.givens.length>0);
+ assert.equal(r.evidence.v5Ready,false,
+  'preview playback is not the coordinator approved engineering answer');
  assert.equal(c.currentResult(),null);
- assert.equal(c.canExport(),false);
+ assert.equal(c.canExport(),false,
+  'scoped 3D V5 must never authorize the verified/export path');
+ const playback=r.clock.seekProgress(1,performance.now());
+ assert.equal(playback.done,true);
+ assert.ok(r.plan.steps.filter(s=>s.role==='result').length>=3);
  assert.equal(r.scene.objects[0].kind,'mesh');
  assert.equal(r.scene.objects.length,2);
  const perimeter=r.scene.objects[1];
