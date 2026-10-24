@@ -1,6 +1,7 @@
 'use strict';
-// One opt-in view of the already-shared 03/M0/Geometry Scene. Not an animation
-// engine. Nothing is persisted, posted to a server, or marked V5 ready.
+// One opt-in view of the already-shared 03/M0/Geometry Scene and ONE existing
+// V5 for proven point constructions. The complete solid still lacks line-style
+// and V5 certification. No user data is uploaded or persisted.
 const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 const {prismMesh}=require('../project/unified-workbench-session.cjs');
