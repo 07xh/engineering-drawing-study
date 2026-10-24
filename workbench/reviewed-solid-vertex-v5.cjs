@@ -13,6 +13,8 @@ const {reviewedSolidThirdView}=
  require('./reviewed-multipoint-solid-third-view.cjs');
 const {auditC1ConvexContourSourceCoverage}=
  require('./m5-c1-convex-contour-source-coverage.cjs');
+const {auditC1ContourPhysicalJunctionIncidence}=
+ require('./m5-c1-contour-physical-junction-incidence.cjs');
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {assertM3ToV5Consistency}=
@@ -36,6 +38,12 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   throw new RangeError('closed convex first-angle source proof unavailable');
  const convexContourSourceCoverage=auditC1ConvexContourSourceCoverage({
   geometry:sceneResult.geometry,revision:input.revision});
+ const contourPhysicalJunctionIncidence=auditC1ContourPhysicalJunctionIncidence({
+  geometry:sceneResult.geometry,revision:input.revision,
+  contourCoverage:convexContourSourceCoverage});
+ if(contourPhysicalJunctionIncidence.completeSolidV5Ready!==false||
+    contourPhysicalJunctionIncidence.signedV5EdgeActions!==0)
+  throw new RangeError('scoped physical C1 junction cannot sign complete solid strokes');
  const wholeSourceEdgeRayEvidence=convexContourSourceCoverage.edgeLedger;
  if(wholeSourceEdgeRayEvidence.signedEdgeV5Ready!==false||
     wholeSourceEdgeRayEvidence.officialLineStylesVerified!==false)
@@ -159,6 +167,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
   sceneResult,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
+  contourPhysicalJunctionIncidence,
   scopedEdgePreviews,
   vertexBindings:bindings,intents,steps,timeline,player,
   vertexConstructionCount:bindings.length,pointActionCount,
