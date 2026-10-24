@@ -118,7 +118,8 @@
       "regressionTests": [
         "tests/math/m0-dot-cross-cancellation-guard.test.cjs",
         "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs",
-        "tests/math/m0-exact-dot-cross-extreme-fallback.test.cjs"
+        "tests/math/m0-exact-dot-cross-extreme-fallback.test.cjs",
+        "tests/math/m0-m3-single-snapshot-3d-consumers.test.cjs"
       ],
       "remainingGate": "legacy magnitude remains approximate"
     },
@@ -151,7 +152,8 @@
       "proofScope": "object shape conversion to shared numeric kernel",
       "regressionTests": [
         "tests/math/m0-object-vector3-consumers.test.cjs",
-        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs"
+        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs",
+        "tests/math/m0-m3-single-snapshot-3d-consumers.test.cjs"
       ],
       "remainingGate": "consumer mathematical semantics & source topology"
     },
