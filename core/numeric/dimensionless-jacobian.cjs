@@ -2,7 +2,7 @@
 
 /**
  * M0-D opt-in preparation of dimensionless residuals and Jacobian rows.
- * No existing solver imports this file. All raw derivatives are caller-provided:
+ * Real M2 linear local evidence imports this function. Raw derivatives are caller-provided:
  * explicit unit tags are checked for consistency but cannot certify calculus.
  */
 const MODEL_VARIABLE_UNITS=Object.freeze(['mm','rad','deg','unitless']);
