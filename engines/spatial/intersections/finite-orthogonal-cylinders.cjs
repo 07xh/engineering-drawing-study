@@ -120,6 +120,16 @@ function evaluateFiniteOrthogonalCylinderIntersection({input,revision}={}){
     previous.to=to; // a stationary radial X split is not a physical endcap
    else kept.push({from,to});
   }
+  // A cap plane can graze a lateral branch at a SINGLE x. Such isolated
+  // contact must never be silently reported as no intersection, nor counted
+  // as a nondegenerate analytic curve interval with invented continuity.
+  for(const x of splits){
+   const candidate=at(x,signY,signZ);
+   if(inside(candidate)&&!kept.some(seg=>
+      x>=seg.from.x-epsX&&x<=seg.to.x+epsX))
+    return blocked('degenerate-undetermined',
+      'isolated cap tangency or zero-length branch requires singular-event proof');
+  }
   for(const interval of kept){
    const witnesses=[interval.from,at((interval.from.x+interval.to.x)/2,signY,signZ),interval.to]
     .map(p=>({point:p,projections:project(p)}));
