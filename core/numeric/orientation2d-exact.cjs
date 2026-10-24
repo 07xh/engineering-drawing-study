@@ -11,48 +11,21 @@
  * All coordinates must already share a consistent model frame and unit.
  * Pixel-to-millimetre conversion is the caller's separate responsibility.
  */
-const words = new DataView(new ArrayBuffer(8));
+const {dyadic,difference,product}=require('./binary64-dyadic.cjs');
 
-function point2(value, label) {
-  if (!Array.isArray(value) || value.length !== 2 ||
-      !Object.hasOwn(value, 0) || !Object.hasOwn(value, 1)) {
-    throw new TypeError(label + ' must be a dense finite 2D point');
-  }
-  // Read each coordinate only once before exact arithmetic. User-supplied
-  // accessor-backed arrays must not change values after validation.
-  const x = value[0], y = value[1];
-  if (typeof x !== 'number' || !Number.isFinite(x) ||
-      typeof y !== 'number' || !Number.isFinite(y)) {
-    throw new TypeError(label + ' must be a dense finite 2D point');
-  }
-  return [x, y];
+// This boundary is deliberately kept in the original authoritative 2D
+// predicate: no second read of getter-backed/sparse source coordinates.
+function point2(value,label){
+ if(!Array.isArray(value)||value.length!==2||
+    !Object.hasOwn(value,0)||!Object.hasOwn(value,1))
+  throw new TypeError(label+' must be a dense finite 2D point');
+ const x=value[0],y=value[1];
+ if(typeof x!=='number'||!Number.isFinite(x)||
+    typeof y!=='number'||!Number.isFinite(y))
+  throw new TypeError(label+' must be a dense finite 2D point');
+ return [x,y];
 }
 
-// A finite binary64 value is represented exactly as significand * 2^exponent.
-function dyadic(number) {
-  words.setFloat64(0, number, false);
-  const high = words.getUint32(0, false);
-  const low = words.getUint32(4, false);
-  const exponentBits = (high >>> 20) & 0x7ff;
-  const fraction = (BigInt(high & 0xfffff) << 32n) | BigInt(low);
-  if (exponentBits === 0 && fraction === 0n) return { n: 0n, e: 0 };
-  const mantissa = exponentBits === 0 ? fraction : ((1n << 52n) | fraction);
-  return {
-    n: (high >>> 31) === 1 ? -mantissa : mantissa,
-    e: exponentBits === 0 ? -1074 : exponentBits - 1075
-  };
-}
-
-function difference(a, b) {
-  if (b.n === 0n) return a;
-  if (a.n === 0n) return { n: -b.n, e: b.e };
-  const e = Math.min(a.e, b.e);
-  return { n: (a.n << BigInt(a.e - e)) - (b.n << BigInt(b.e - e)), e };
-}
-
-function product(a, b) {
-  return { n: a.n * b.n, e: a.e + b.e };
-}
 
 const POSITIVE = Object.freeze({ sign: 1, orientation: 'counterclockwise',
   exactForBinary64Inputs: true });

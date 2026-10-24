@@ -9,8 +9,8 @@
  * the intersection of two linearly independent face-normal boundaries.
  * Thus C={0} if BOTH +/- (n_i cross n_j) are strictly excluded by at
  * least one face for every independent (i,j). Here each exclusion is
- * certified by a conservative Float64 determinant sign filter; uncertain
- * signs fail CLOSED. Parallelism reuses the existing exact-for-binary64
+ * certified by M0 Float64 fast signs with EXACT binary64 dyadic fallback.
+ * Unknown feasibility or source topology still fails CLOSED. Parallelism reuses the existing exact-for-binary64
  * adaptive 2D orientation predicate, not a guessed angular epsilon.
  *
  * This is NOT a proof that the input halfspaces are nonempty, derived from
@@ -20,11 +20,9 @@
  */
 const {orientation2DAdaptive}=require('./orientation2d-adaptive.cjs');
 const finite=Number.isFinite;
-const MIN_NORMAL=2**-1022;
-const U=Number.EPSILON;
 const axes=Object.freeze(['x','y','z']);
 const isRecord=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
-const normalOrZero=x=>x===0||Math.abs(x)>=MIN_NORMAL;
+const {determinant3DAdaptive}=require('./determinant3d-adaptive.cjs');
 function parse({halfspaces}={}){
  if(!Array.isArray(halfspaces)||halfspaces.length<4||halfspaces.length>64)
   throw new TypeError('four to 64 explicit finite outward halfspaces required');
@@ -47,32 +45,10 @@ function parallel(a,b){
    [b[i],b[j]]).sign;
  return o('x','y')===0&&o('x','z')===0&&o('y','z')===0;
 }
-/** Sufficient, conservative sign certificate of exact det(a,b,c) for
- * already-represented finite binary64 normals. Uncertain => 0, not a
- * claim of exact equality. Six triple products, >=64 eps magnitude guard.
- */
-function strictDetSign(a,b,c){
- const values=[
-  [a.x,b.y,c.z,1],[a.y,b.z,c.x,1],[a.z,b.x,c.y,1],
-  [a.x,b.z,c.y,-1],[a.y,b.x,c.z,-1],[a.z,b.y,c.x,-1]
- ];
- let sum=0,absolute=0;
- for(const [x,y,z,sign] of values){
-  const intermediate=x*y,product=intermediate*z;
-  if(!finite(intermediate)||!finite(product)||
-     !normalOrZero(intermediate)||!normalOrZero(product)||
-     (x!==0&&y!==0&&intermediate===0)||
-     (intermediate!==0&&z!==0&&product===0))
-   return 0;
-  sum+=sign*product;
-  absolute+=Math.abs(product);
- }
- const error=64*U*absolute;
- if(!finite(sum)||!finite(absolute)||!finite(error)||
-    !normalOrZero(sum)||error<MIN_NORMAL||Math.abs(sum)<=error)
-  return 0;
- return sum>0?1:-1;
-}
+// Both the fast-filtered and exact fallback result are trustworthy
+// for the finite represented binary64 normals, never for unknown pre-rounding.
+const strictDetSign=(a,b,c)=>determinant3DAdaptive(
+ [a.x,a.y,a.z],[b.x,b.y,b.z],[c.x,c.y,c.z]).sign;
 function certifyTrivialRecessionCone({halfspaces}={}){
  const normals=parse({halfspaces});
  const result=(status,reason,witnesses,unknownPairs,nonparallelPairs)=>Object.freeze({
