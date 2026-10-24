@@ -13,7 +13,7 @@ const halfspaces=[
 ];
 const solid={id:'SourceSolid',halfspaces};
 test('M0 point open-ray refuses rounded-zero but genuinely inward support slope',()=>{
- const n=[1,1,1],d=[-1,-2**-54,1];
+ const n=[1,1,1],d=[-1,-(2**-54),1];
  const ln=Math.hypot(...n),ld=Math.hypot(...d);
  const a=n.map(x=>x/ln),b=d.map(x=>x/ld);
  assert.equal(a.reduce((v,x,i)=>v+x*b[i],0),0);
