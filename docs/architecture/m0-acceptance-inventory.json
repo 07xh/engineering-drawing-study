@@ -32,9 +32,10 @@
       "status": "consumer-review",
       "proofScope": "two signed ray slopes only",
       "regressionTests": [
-        "tests/math/m0-convex-open-ray.test.cjs"
+        "tests/math/m0-convex-open-ray.test.cjs",
+        "tests/math/m0-open-ray-real-three-solids-membership-oracle.test.cjs"
       ],
-      "remainingGate": "M3 source halfspace polarity evidence"
+      "remainingGate": "independent source model/revision and retained-halfspace confirmation for arbitrary M3 inputs; global scene/endpoints/V5 outside scope"
     },
     {
       "path": "core/numeric/convex-point-ray-clearance.cjs",
