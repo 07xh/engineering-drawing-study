@@ -431,19 +431,45 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const verified=coordinator?.currentResult();
   return verified?.clock?.canRender(coordinator.snapshot().revision)?verified:null;
  }
-
+ // Non-certified spatial ConstructionStep previews use the SAME V5 clock
+ // without passing the project coordinator's verified/export authorization.
+ function playback(){
+  const verified=current();if(verified)return verified;
+  const partial=preview(),snap=coordinator?.snapshot();
+  return partial?.kind==='prism-evidence'&&
+    partial.plan?.status==='preview-only'&&
+    partial.plan.canPromoteToVerifiedResult===false&&
+    partial.clock?.canRender(snap.revision)?partial:null;
+ }
 
  function drawV5(svg,solved,colors){
-  if(!$('v7-guides').checked)return;
-  const frame=solved.clock.snapshot();
+  const frame=solved.clock.snapshot(),scoped=solved.verified===false;
+  if(!scoped&&!$('v7-guides').checked)return;
   for(const step of solved.plan.steps)for(const action of step.actions){
+   if(step.role==='guide'&&!$('v7-guides').checked)continue;
    const fraction=frame.actionFractions[action.id]||0;
    if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
    const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
-   const node=shape(tag,{fill:action.kind==='point'?colors.derived:'none',
-    stroke:colors.guide,'stroke-width':2,
-    'stroke-dasharray':action.kind==='line'?'5 5':'none'});
+   const result=scoped&&step.role==='result';
+   const ink=result?($('v7-mono').checked?'#444':'#b26b19'):colors.guide;
+   const node=shape(tag,{fill:action.kind==='point'?ink:'none',
+    stroke:ink,'stroke-width':result?2.4:2,
+    'stroke-dasharray':result?'2 5':action.kind==='line'?'5 5':'none'});
    Motion.updateSvg(node,action,fraction);
+   if(result){
+    const view=action.id.match(/-(V|H|W)$/)?.[1];
+    node.setAttribute('data-visibility','undetermined');
+    node.setAttribute('data-geometry-id',solved.plan.geometryId);
+    if(view)node.setAttribute('data-geometry-view',view);
+    node.setAttribute('data-source-section-edge',action.sourceSectionEdgeId);
+    node.setAttribute('role','button');node.setAttribute('tabindex','0');
+    node.setAttribute('aria-label','选择 '+solved.plan.geometryId+' 的 '+view+' 表达');
+    const pick=()=>coordinator.selectSceneGeometry(solved.plan.geometryId);
+    node.addEventListener('click',pick);
+    node.addEventListener('keydown',e=>{
+     if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
+    });
+   }
    svg.append(node);
   }
  }
@@ -501,6 +527,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function renderPaper(){
   const svg=$('v7-sheet');svg.replaceChildren();
   const snap=coordinator?.snapshot();if(!snap)return;
+  const scoped=playback();
+  if(scoped?.kind==='prism-evidence'){
+   // Existing specialist givens and audited M3→V5 actions share EXACTLY the
+   // same paper system. Do not overlay a second, differently scaled Scene.
+   const width=scoped.plan.sheet.width,height=scoped.plan.sheet.height;
+   svg.setAttribute('viewBox','0 0 '+width+' '+height);
+   svg.append(shape('rect',{x:0,y:0,width,height,fill:'#fff'}));
+   for(const action of scoped.plan.givens){
+    const node=shape(action.kind==='point'?'circle':'line',{
+     fill:action.kind==='point'?'#526479':'none',
+     stroke:$('v7-mono').checked?'#555':'#526479',
+     'stroke-width':1.6});
+    Motion.updateSvg(node,action,1);svg.append(node);
+   }
+   const colors=$('v7-mono').checked?{derived:'#333',guide:'#777'}:
+    {derived:'#1970a9',guide:'#c18d39'};
+   drawV5(svg,scoped,colors);
+   text(svg,24,height-20,'空间截交逐笔预览：端点、遮挡及完整工程图线型未证明',
+    '#986945');
+   return;
+  }
   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
   const planar=snap.task==='planar';
   if(!planar){
@@ -545,7 +592,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    text(svg,14,22,'空间网格线框 · 不推测隐藏边','#986945');
  }
  function renderSteps(){
-  const list=$('v7-step-list'),solved=current();
+  const list=$('v7-step-list'),solved=playback();
   if(!solved){list.replaceChildren();list.dataset.key='';return;}
   const key=solved.projectId+':'+solved.inputRevision;
   if(list.dataset.key!==key){
@@ -580,7 +627,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   refreshComposition();
   $('v7-spatial-boundary').textContent=snap.task==='planar'?
    '纯二维数学不制造三维立体':snap.task==='exploration'?
-   '长方体线框；截交线和可见性尚未签收':snap.task==='composition'?
+   '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
    '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
   $('v7-mode').value=snap.view.mode;
   $('v7-yaw').value=String(snap.view.camera.yaw);
@@ -600,7 +647,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     partial?
      partial.kind==='composition-evidence'?
       '仅确认了手工输入的几何对象并验证其基本数学格式；不是 M3 独立求解，不具备 ConstructionIntent/V5 动画或可见性证明。':
-     '限定证据：M3 已独立核验截交多边形顶点与有序直边；下方是同源长方体及截交边的 V/H/W、三维线框。遮挡、完整切后实体与 V5 均未证明，不可播放。':
+     '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；空间遮挡、完整切后实体与正式工程图仍未签收，不能导出已验证答案。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
   $('v7-selection').textContent=activeGeometry?
@@ -609,21 +656,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';
-  const ready=!!solved;
+  const timed=playback(),ready=!!timed;
   for(const id of ['v7-back','v7-play','v7-next','v7-seek','v7-speed'])
    $(id).disabled=!ready;
-  const frame=ready?solved.clock.snapshot():null;
+  const frame=ready?timed.clock.snapshot():null;
   $('v7-seek').value=frame?String(Math.round(frame.ratio*1000)):'0';
   $('v7-play').textContent=frame?.playing?'Ⅱ 暂停':'▶ 播放';
   renderPaper();renderSpatial();renderSteps();
  }
  function start(){
   if(raf!==null)return;
-  const solved=current();if(!solved)return;
+  const solved=playback();if(!solved)return;
   solved.clock.play(performance.now());
   const tick=()=>{
    raf=null;
-   const active=current();if(active!==solved)return;
+   const active=playback();if(active!==solved)return;
    const frame=solved.clock.snapshot(performance.now());
    render();
    if(frame.playing)raf=requestAnimationFrame(tick);
@@ -978,27 +1025,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  $('v7-mono').addEventListener('change',render);
  $('v7-guides').addEventListener('change',render);
  $('v7-speed').addEventListener('change',()=>{
-  const data=current();if(!data)return;
+  const data=playback();if(!data)return;
   data.clock.setSpeed(Number($('v7-speed').value),performance.now());render();
  });
  $('v7-seek').addEventListener('input',()=>{
-  const data=current();if(!data)return;
+  const data=playback();if(!data)return;
   stopAnimation();data.clock.seekProgress(Number($('v7-seek').value)/1000,performance.now());render();
  });
  $('v7-play').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=playback();if(!data)return;
   if(data.clock.snapshot().playing){stopAnimation();render();}
   else start();
  });
  $('v7-back').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=playback();if(!data)return;
   stopAnimation();
   const elapsed=data.clock.snapshot().elapsedMs;
   const starts=[0,...data.plan.timing.steps.map(s=>s.startMs)].filter(ms=>ms<elapsed-0.01);
   data.clock.seekMs(starts.length?starts[starts.length-1]:0,performance.now());render();
  });
  $('v7-next').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=playback();if(!data)return;
   stopAnimation();
   const elapsed=data.clock.snapshot().elapsedMs;
   const next=data.plan.timing.steps.map(s=>s.endMs).find(ms=>ms>elapsed+0.01);
