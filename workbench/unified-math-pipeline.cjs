@@ -19,6 +19,7 @@ const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
 const {solveAffinePointConstraints}=require('../core/constraints/affine-point-unknown-solver.cjs');
+const {solveNonlinearPointCandidates}=require('../core/constraints/nonlinear-point-candidates.cjs');
 const {buildScopedSpatialSectionV5Preview}=require('./spatial-section-v5-parity.cjs');
 const {deriveScopedSectionVisibility}=require('./spatial-section-visibility-evidence.cjs');
 const {bindScopedSectionEvidenceToV5}=
@@ -143,6 +144,16 @@ function evaluateUnifiedMath({kind,input,sheet,revision=0,visibilityReview}={}){
   throw new RangeError('stale specialist input revision');
  if(visibilityReview!==undefined&&kind!=='spatial-section')
   throw new TypeError('spatial view rays are only for scoped section evidence');
+ if(kind==='point-constraint-system'){
+  if(sheet!==undefined&&sheet!==null)
+   throw new TypeError('nonlinear model-mm constraints cannot consume sheet pixels');
+  if(!input||typeof input!=='object'||Array.isArray(input))
+   throw new TypeError('reviewed model-mm unknown point problem required');
+  const {revision:inputRevision,...source}=input;
+  const evidence=solveNonlinearPointCandidates({...source,revision});
+  return Object.freeze({...evidence,
+   unifiedMathPipeline:'m3-seeded-nonlinear-candidates-no-v5/1'});
+ }
  if(kind==='affine-point-system'){
   if(sheet!==undefined&&sheet!==null)
    throw new TypeError('affine point constraints use model-mm, never sheet pixels');
