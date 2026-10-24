@@ -22,6 +22,8 @@ const {inspectSourceVertexIncidence}=
  require('./m5-source-vertex-incidence-audit.cjs');
 const {auditReviewedConvexSourceCreases}=
  require('./m5-reviewed-convex-source-creases.cjs');
+const {auditOrthogonalUnionSourceEdges}=
+ require('./m5-orthogonal-union-source-edges.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -95,10 +97,47 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   e.edges.map(x=>[x.sourceEdgeId,x])));
  if(creases.size!==sourceCreaseEvidence.reduce((n,e)=>n+e.sourceEdgeCount,0))
   throw new TypeError('multiple reviewed solids share an untrusted edge ID');
+ const sourceUnionFeatureEvidence=auditOrthogonalUnionSourceEdges({
+  geometry,revision});
+ const unionFeatureMap=new Map(sourceUnionFeatureEvidence.edges.map(e=>
+  [e.sourceEdgeId,e]));
+ // Only claim an entire M4 stroke piece if its source parameter interval is
+ // COVERED continuously by a union-exterior source-crease classification.
+ // Never infer a whole piece from its midpoint, even where another body
+ // starts/ends partway along the real 3D source edge.
+ function coveredByUnionClass(interval,items){
+  const a=interval[0],b=interval[1];
+  if(!(b>a))return false;
+  const eps=Math.min(1e-10,(b-a)*1e-7);
+  let end=a;
+  for(const e of items.slice().sort((x,y)=>
+    x.sourceParameterOpenRange[0]-y.sourceParameterOpenRange[0])){
+   const [lo,hi]=e.sourceParameterOpenRange;
+   if(lo>end+eps)return false;
+   if(hi>end)end=hi;
+   if(end>=b-eps)return true;
+  }
+  return end>=b-eps;
+ }
  const spans=[];
  for(const [index,span] of partitions.segments.entries()){
   if(!VIEWS.includes(span.view))throw new TypeError('invalid first-angle source view');
   const sourceCrease=creases.get(span.sourceEdgeId);
+  const unionEdge=unionFeatureMap.get(span.sourceEdgeId);
+  const sourceUnionScoped=sourceUnionFeatureEvidence.status===
+    'source-orthogonal-union-open-sector-coverage';
+  if(sourceUnionScoped&&(!unionEdge||
+      unionEdge.sourceGeometryId!==span.sourceGeometryId))
+   throw new TypeError('source union-edge identity diverged from M0 mesh');
+  const unionExternalOpen=sourceUnionScoped&&unionEdge?.subintervals?
+   coveredByUnionClass(span.sourceParameterRange,
+    unionEdge.subintervals.filter(x=>x.positiveUnionExternalCreaseVerified)):false;
+  const unionBuriedOrFlat=sourceUnionScoped&&unionEdge?.subintervals?
+   coveredByUnionClass(span.sourceParameterRange,
+    unionEdge.subintervals.filter(x=>x.positiveUnionBuriedOrFlatVerified)):false;
+  if(unionExternalOpen&&unionBuriedOrFlat)
+   throw new RangeError('contradictory positive union feature and missing feature proof');
+
   if(!sourceCrease||sourceCrease.sourceGeometryId!==span.sourceGeometryId||
      sourceCrease.finalV5LineActionAuthorized!==false)
    throw new TypeError('source crease must be proven from the original M0 mesh');
@@ -150,10 +189,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   const strictlyHidden=span.openInteriorVisibility==='hidden'&&
    span.occluderGeometryIds.length>0;
   const positiveOuter=sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid&&
+   (!sourceUnionScoped||unionExternalOpen)&&
    positiveOpen&&entireOpenOuter&&
    uniqueFrontmostOpenContour&&bothPositive&&
    authenticatedCorners&&locallyUniqueCorners&&noUnresolvedPaperEvents;
   const hiddenCandidate=sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid&&
+   (!sourceUnionScoped||unionExternalOpen)&&
    strictlyHidden&&namedOriginalVertices&&
    authenticatedCorners&&noUnresolvedPaperEvents;
   const needs=[];
@@ -169,6 +210,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
    needs.push(sourceCrease.sourceIsCoplanarSubdivisionWithinSingleSolid?
     'source-edge-is-coplanar-mesh-subdivision-not-physical-crease':
     'unproven-single-solid-source-dihedral-feature-edge');
+  if(sourceUnionScoped&&!unionExternalOpen)
+   needs.push(unionBuriedOrFlat?
+    'source-crease-proven-flat-or-buried-in-composite-union':
+    'union-exterior-crease-needs-complete-3d-parameter-splitting');
+  if(!sourceUnionScoped&&geometry.length>1)
+   needs.push('non-orthogonal-multibody-union-feature-outside-proven-scope');
   // No complete 3D source feature-line claim and no official drawing convention
   // exists yet; these missing obligations MUST NOT be waived by source flags.
   needs.push('independent-m3-final-answer-geometry-and-feature-semantics');
@@ -185,6 +232,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
     sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid,
    sourceMeshSubdivisionNotDrawnAsFeature:
     sourceCrease.sourceIsCoplanarSubdivisionWithinSingleSolid,
+   sourceUnionExteriorOpenIntervalVerified:unionExternalOpen,
+   sourceUnionBuriedOrFlatOpenIntervalVerified:unionBuriedOrFlat,
+   sourceUnionEdge:sourceUnionScoped?unionEdge:null,
+   sourceUnionFeatureScope:sourceUnionFeatureEvidence.status,
+   extraM4UnionAxialEventsRequired:sourceUnionScoped&&
+     !unionExternalOpen&&!unionBuriedOrFlat,
    compositeUnionFeatureSemanticsVerified:false,
    visibleOpenRayCertified:positiveOpen,
    strictlyOccludedOpenRayCertified:strictlyHidden,
@@ -204,7 +257,11 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
  return freeze({schema:'draftai-m5-final-stroke-obligations/1',
   revision,status:'per-source-span-proof-obligations-audited',
   spanCount:spans.length,spans,
-  sourceCreaseEvidence,
+  sourceCreaseEvidence,sourceUnionFeatureEvidence,
+  locallyUnionExternalFeatureSpanCount:spans.filter(x=>
+   x.sourceUnionExteriorOpenIntervalVerified).length,
+  locallyUnionBuriedOrFlatSpanCount:spans.filter(x=>
+   x.sourceUnionBuriedOrFlatOpenIntervalVerified).length,
   sourceCreaseProofCount:sourceCreaseEvidence.reduce((n,e)=>
    n+e.certifiedSingleSolidCreaseCount,0),
   coplanarSubdivisionExcludedCount:sourceCreaseEvidence.reduce((n,e)=>
