@@ -165,6 +165,87 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
    projected3DVisibilityVerified:false,
    standardLineStylesVerified:false,v5CurveActionSignedOff:false};
  });
+ // Closed-scope incidence graph: a branch is one analytic edge between
+ // its own two independently checked 3D endpoint groups. Walk every edge
+ // exactly once. 2-valent nodes require regular IFT continuity; 1-valent
+ // nodes terminate at a verified finite cap. Multi-valent, simultaneous
+ // radical or ambiguous vertices are not promoted.
+ const lookup=new Map(junctions.flatMap(j=>j.endpointIds.map(id=>[id,j.id])));
+ const allBranches=new Set(proof.branches.map(b=>b.id));
+ const graphEdges=proof.branches.map(b=>{
+  const ends=endpoints.filter(e=>e.branchId===b.id);
+  if(ends.length!==2)throw new RangeError('analytic branch lacks two matching graph endpoints');
+  const from=lookup.get(ends.find(e=>e.branchEndpointRole==='from')?.id),
+    to=lookup.get(ends.find(e=>e.branchEndpointRole==='to')?.id);
+  if(from===undefined||to===undefined||from===to)
+   throw new RangeError('analytic source branch collapses to one junction');
+  return {branchId:b.id,fromJunctionId:from,toJunctionId:to};
+ });
+ if(graphEdges.length!==allBranches.size)
+  throw new RangeError('duplicate analytic source branch identity');
+ const adjacency=new Map(junctions.map(j=>[j.id,[]]));
+ for(const e of graphEdges){
+  adjacency.get(e.fromJunctionId).push(e);
+  adjacency.get(e.toJunctionId).push(e);
+ }
+ const unseen=new Set(allBranches),components=[];
+ while(unseen.size){
+  const seed=graphEdges.find(e=>unseen.has(e.branchId));
+  const queue=[seed.fromJunctionId],nodes=new Set(),sub=[];
+  while(queue.length){
+   const id=queue.shift();
+   if(nodes.has(id))continue;
+   nodes.add(id);
+   for(const edge of adjacency.get(id)){
+    if(unseen.delete(edge.branchId))sub.push(edge);
+    queue.push(edge.fromJunctionId===id?edge.toJunctionId:edge.fromJunctionId);
+   }
+  }
+  const degrees=[...nodes].map(id=>({id,count:adjacency.get(id).length}));
+  const endpoints1=degrees.filter(d=>d.count===1);
+  const allRegular=degrees.every(({id,count})=>{
+   const j=junctions.find(x=>x.id===id);
+   return count===2?j.localC1ContinuationWithinLateralLateralScopeVerified:
+    count===1&&j.classification==='single-branch-terminal'&&
+      j.finiteCapTermination;
+  });
+  const topologicalShape=degrees.every(d=>d.count===2)?'closed-cycle':
+   endpoints1.length===2&&degrees.every(d=>d.count===1||d.count===2)?
+    'finite-open-path':'ambiguous-branching';
+  const graphCert=allRegular&&topologicalShape!=='ambiguous-branching';
+  // The ordered walk is a purely source-graph index, NOT V5 drawing order.
+  const first=topologicalShape==='finite-open-path'?
+   endpoints1.map(d=>d.id).sort()[0]:[...nodes].sort()[0];
+  const walk=[],visited=new Set();let cursor=first;
+  for(let i=0;i<sub.length;i++){
+   const next=adjacency.get(cursor).find(e=>!visited.has(e.branchId));
+   if(!next)break;
+   visited.add(next.branchId);
+   const forward=next.fromJunctionId===cursor;
+   const arrival=forward?next.toJunctionId:next.fromJunctionId;
+   walk.push({branchId:next.branchId,
+    sourceFromJunctionId:cursor,sourceToJunctionId:arrival,
+    directionInX:forward?'increasing':'decreasing',
+    officialDrawingOrderApproved:false});
+   cursor=arrival;
+  }
+  if(walk.length!==sub.length)throw new RangeError('analytic branch graph walk incomplete');
+  components.push({
+   id:'component'+components.length,
+   sourceJunctionIds:[...nodes].sort(),
+   sourceBranchIds:sub.map(e=>e.branchId).sort(),
+   incidentDegreeWitnesses:degrees,
+   topologicalShape,
+   traversal:walk,
+   everySourceBranchVisitedExactlyOnce:true,
+   allInternalRegularC1JoinsVerified:allRegular,
+   graphPathOrCycleVerifiedWithinLateralLateralScope:graphCert,
+   lateralCapContinuationVerified:false,
+   noOtherEntitySurfaceIntersectionsVerified:false,
+   officialLineStyleOrAnimationSigned:false});
+ }
+ if(components.reduce((n,c)=>n+c.sourceBranchIds.length,0)!==proof.branchCount)
+  throw new RangeError('analytic graph failed complete M3 branch coverage');
  const projectedCoincidences=[];
  for(const view of VIEWS){
   for(let i=0;i<junctions.length;i++)for(let j=i+1;j<junctions.length;j++){
@@ -181,7 +262,11 @@ function auditFiniteCylinderEndpointIncidence({input,revision}={}){
  return frozen({schema:'draftai-m5-cylinder-endpoint-incidence/1',
   revision,status:'scoped-analytic-3d-endpoint-incidence',
   sourceM3BranchCount:proof.branchCount,
-  endpoints,junctions,projectedCoincidences,
+  endpoints,junctions,components,componentCount:components.length,
+  graphVerifiedComponentCount:components.filter(c=>
+   c.graphPathOrCycleVerifiedWithinLateralLateralScope).length,
+  allAnalyticSourceBranchesAccountedFor:true,
+  projectedCoincidences,
   verified3DJunctionCount:junctions.filter(j=>
    j.physicalPointIdentityVerified).length,
   regularLocalC1JoinCount:junctions.filter(j=>
