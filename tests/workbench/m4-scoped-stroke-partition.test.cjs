@@ -90,7 +90,7 @@ test('tampered view, source edge, interval, revision or forged line-status canno
  for(const mutate of [
   x=>{x.sceneDepthEvidence.revision=79;},
   x=>{x.sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges[0].view='W';},
-  x=>{x.sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges[0].openSourceParameterRange=[0,1];},
+  x=>{x.sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges[0].openSourceParameterRange[0]+=0.01;},
   x=>{x.sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges[0].sourceEdgeId='Forged::V000|V111';},
   x=>{x.sceneDepthEvidence.edgeContinuousOcclusion.certifiedRanges[0].fullLineStyleVerified=true;},
   x=>{x.sceneDepthEvidence.officialLineStylesVerified=true;}
