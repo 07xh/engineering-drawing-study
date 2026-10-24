@@ -64,11 +64,26 @@ function rayCylinder(point,dir,c,axis){
  const hi=Math.min(radialHigh,axialHigh);
  const interiorOpenIntervals=!radialDegenerate&&hi>lo+eps?
   [[lo,hi]]:[];
- const positiveInteriorVerified=interiorOpenIntervals.length>0;
+ // These are exact algebraic roots of the two strict inequalities in
+ // floating-point arithmetic, not an interval-arithmetic enclosure.
+ // A conservative interior witness is separated from all boundaries.
+ const interiorWitnesses=interiorOpenIntervals.map(([left,right])=>{
+  const t=(left+right)/2;
+  const axialValue=point[axial]+t*dir[axial];
+  const radialSquared=radial.reduce((sum,k)=>sum+
+   (point[k]+t*dir[k]-center[k])**2,0);
+  return {t,strictAxialMargin:Math.min(axialValue-low,high-axialValue),
+   strictRadialMargin:c.radius**2-radialSquared};
+ });
+ const strictInteriorWitnessVerified=interiorWitnesses.length>0&&
+  interiorWitnesses.every(w=>w.strictAxialMargin>eps&&
+   w.strictRadialMargin>eps);
+ const positiveInteriorVerified=strictInteriorWitnessVerified;
  const tangent=events.some(e=>e.type==='tangent');
  const ambiguous=generatorCoincidence||tangent||events.some(e=>e.t<=eps);
  return {events,positiveRayBoundaryIntersections:positive.length,
-  interiorOpenIntervals,positiveInteriorVerified,
+  interiorOpenIntervals,interiorWitnesses,
+  strictInteriorWitnessVerified,positiveInteriorVerified,
   generatorCoincidence,tangent,originOnBoundary:events.some(e=>e.t<=eps),
   rayBoundaryStatus:ambiguous?'undetermined-tangent-generator-or-origin':
    positive.length?'forward-boundary-intersection':'no-forward-boundary-intersection',
