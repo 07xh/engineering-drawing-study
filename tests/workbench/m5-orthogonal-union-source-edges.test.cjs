@@ -45,7 +45,7 @@ test('M5 partial face touch proves locally concave UNION creases newly exposed o
  assert.equal(item.status,'certified-concave-exterior-open-crease');
  assert.equal(item.occupiedQuadrantCount,3);
  assert.equal(item.positiveUnionExternalCreaseVerified,true);
- assert.equal(item.originalCurveEndpointJunctionsVerified,false);
+ assert.equal(item.originalSourceEndpointJunctionsVerified,false);
  assert.equal(item.projectedContourAndFullDepthVerified,false);
  assert.equal(item.canonicalV5LineActionAuthorized,false);
 });
