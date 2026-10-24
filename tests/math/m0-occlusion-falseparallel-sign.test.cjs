@@ -14,7 +14,7 @@ const solid={id:'bounded',halfspaces:[
  H('zmin',P(0,0,-1),100),H('zmax',P(0,0,1),100)
 ]};
 test('M0 rounded-zero but exact negative slope never becomes depth-independent evidence',()=>{
- const d=[-1,-2**-54,1],n=[1,1,1];
+ const d=[-1,-(2**-54),1],n=[1,1,1];
  const nl=Math.hypot(...n),dl=Math.hypot(...d);
  const a=n.map(v=>v/nl),b=d.map(v=>v/dl);
  assert.equal(a.reduce((s,x,i)=>s+x*b[i],0),0);
