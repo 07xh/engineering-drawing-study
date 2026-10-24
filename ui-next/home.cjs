@@ -47,6 +47,20 @@ function homeHTML(){return `
    </label>
    <button type="button" id="v7-photo-clear">重选当前段的两个端点</button>
    <p id="v7-photo-point-status" class="v7-note" role="status">选择原图后，依次点击两端点，像素长度会自动填写；毫米长度仍需人工确认。</p>
+   <fieldset class="v7-source-candidates">
+    <legend>原图标注 ↔ ProblemDraft 候选（仅人工审核）</legend>
+    <p class="v7-note">先点选原图一段的两个端点，再创建待审核候选。选中候选可定位原图框与关联的项目条件；它本身不证明模型 mm 坐标。</p>
+    <label>候选 ID <input id="v7-candidate-id" value="SourceLine1" maxlength="64" autocomplete="off"></label>
+    <button type="button" id="v7-candidate-stage">从当前像素端点创建待审线段</button>
+    <label>候选与关联条件 <select id="v7-source-link" aria-label="选择原图候选以定位对应条件">
+     <option value="">不关联候选</option></select></label>
+    <div class="v7-candidate-actions">
+     <button type="button" id="v7-candidate-accept">人工确认候选</button>
+     <button type="button" id="v7-candidate-reject">拒绝候选</button>
+     <button type="button" id="v7-candidate-locate">定位候选关联条件</button>
+    </div>
+    <p id="v7-candidate-status" class="v7-note" role="status">当前没有原图候选。上传或选择原图后进行人工标注。</p>
+   </fieldset>
    <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
    <fieldset class="v7-source-calibration">
     <legend>原图双比例尺核对（人工量测）</legend>
