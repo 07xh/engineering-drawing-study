@@ -17,6 +17,8 @@ const {auditFiniteCylinderVHAxisRays}=
  require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditFiniteCylinderEndpointIncidence}=
  require('./m5-analytic-cylinder-endpoint-incidence.cjs');
+const {buildC3WIntervalPreview}=
+ require('./c3-w-ray-preview.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
  require('./c3-vh-projection-dedup.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
@@ -31,7 +33,7 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  stationCountPerBranch=0,viewTransforms=null,
  includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false,
- includeWAnalyticCurveGuides=false}={}){
+ includeWAnalyticCurveGuides=false,wRayPartitionedV5=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
@@ -44,6 +46,9 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new TypeError('analytic projected seam-arc guide toggle must be boolean');
  if(typeof includeWAnalyticCurveGuides!=='boolean')
   throw new TypeError('reviewed analytic W curve guide toggle must be boolean');
+ if(typeof wRayPartitionedV5!=='boolean'||
+   (wRayPartitionedV5&&!includeWAnalyticCurveGuides))
+  throw new TypeError('M5 W interval mode requires explicit analytic curve guide consent');
  if(!Number.isSafeInteger(stationCountPerBranch)||
     stationCountPerBranch<0||stationCountPerBranch>2)
   throw new RangeError('0..2 independently proven interior stations per branch required');
@@ -269,6 +274,14 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  // No line may be marked as standard engineering solid/dashed.
  if(includeWAnalyticCurveGuides){
   const byId=new Map(proof.branches.map(b=>[b.id,b]));
+  const auditedPreview=wRayPartitionedV5?
+   buildC3WIntervalPreview({input,revision}):null;
+  if(wRayPartitionedV5&&(auditedPreview.status!==
+    'source-bounded-W-open-ray-preview'||
+    auditedPreview.sourceM3BranchCount!==proof.branchCount||
+    auditedPreview.v5CurveReady!==false||
+    auditedPreview.officialLineStylesVerified!==false))
+   throw new RangeError('trusted C3 W-view visibility proof unavailable');
   const wIntervals=continuousCurveWRayEvidence.intervals.filter(i=>i.view==='W');
   for(const [index,b] of proof.branches.entries()){
    if(!b.finiteDomainVerified||b.officialLineStyle!=='undetermined'||
@@ -283,38 +296,59 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
       parts.some((p,i)=>i>0&&
        p.xOpenRange[0]!==parts[i-1].xOpenRange[1]))
     throw new RangeError('source W analytic curve lacks continuous M5 partition');
-   const geometry={parameter:{from:b.xRange[0],to:b.xRange[1]},
-    u:{kind:'signed-circle-radical',
-     center:Z.xCenter,offset:Z.yCenter,radius:Z.radius,sign:b.signY},
-    v:{kind:'signed-circle-radical',
-     center:Y.xCenter,offset:Y.zCenter,radius:Y.radius,sign:b.signZ}};
-   const id='C3WAnalyticCurve'+index,op={
-    id:id+'Shape',kind:'analytic-curve',coordinateSpace:'model-mm',
-    geometry
-   };
-   const transform=viewTransforms?.W||sheetTransform;
-   const action=verifiedTeachingActionToV5({
-    id:op.id,kind:'analytic-curve',
-    coordinateSpace:'model-mm',view:'W',...geometry
-   },transform);
-   const intent={schema:VERSION,id,
-    purpose:'construct-true-signed-radical-W-analytic-projection-guide',
-    role:'auxiliary',dependsOn:[],inputEntityIds:[],
-    outputEntityIds:[op.id],operations:[op],source:{...source}};
-   const step={id,role:'auxiliary',dependsOn:[],
-    title:'有限圆柱 W 视图 · 真实解析相贯曲线分支 '+(index+1),
-    explanation:'当前 M3 双根式连续参数曲线，经有限端盖与 M5 整段分区复核。V5 自适应屏幕绘制仅供几何辅助，不授权国标实虚线或最终工程答案。',
-    actions:[action]};
-   intents.push(intent);steps.push(step);
-   sheetByIntentId[id]=transform;viewByIntentId[id]='W';
-   wAnalyticCurveGuides.push({id,branchId:b.id,view:'W',
-    xRange:[...b.xRange],sourceM3BranchVerified:true,
-    sourceM5WholeBranchPartitionVerified:true,
-    exactAnalyticSourceVerified:true,
-    visualSvgApproximationOnly:true,
-    continuousSourceParameterV5GuideAuthorized:true,
-    projectedContourAndEndpointVisibilityVerified:false,
-    officialStandardLineStyleVerified:false});
+   const intervals=wRayPartitionedV5?
+    auditedPreview.intervals.filter(row=>row.branchId===b.id)
+     .sort((a,c)=>a.xOpenRange[0]-c.xOpenRange[0]):
+    [{xOpenRange:[...b.xRange],openInteriorRayStatus:'undetermined',
+      originalM5EvidenceId:null}];
+   if(!intervals.length||
+     intervals[0].xOpenRange[0]!==b.xRange[0]||
+     intervals.at(-1).xOpenRange[1]!==b.xRange[1]||
+     intervals.some((p,i)=>i>0&&
+       p.xOpenRange[0]!==intervals[i-1].xOpenRange[1]))
+    throw new RangeError('C3 partitioned curve lost original M3 branch range');
+   for(const [partIndex,part] of intervals.entries()){
+    const [lo,hi]=part.xOpenRange;
+    const trim=wRayPartitionedV5?(hi-lo)*1e-6:0;
+    const from=lo+trim,to=hi-trim;
+    if(!(to>from)||!
+     ['clear','occluded','undetermined'].includes(part.openInteriorRayStatus))
+     throw new RangeError('C3 open interval cannot be rendered without false endpoint signoff');
+    const geometry={parameter:{from,to},
+     u:{kind:'signed-circle-radical',
+      center:Z.xCenter,offset:Z.yCenter,radius:Z.radius,sign:b.signY},
+     v:{kind:'signed-circle-radical',
+      center:Y.xCenter,offset:Y.zCenter,radius:Y.radius,sign:b.signZ}};
+    const id='C3WAnalyticCurve'+index+(wRayPartitionedV5?'P'+partIndex:'');
+    const op={id:id+'Shape',kind:'analytic-curve',
+      coordinateSpace:'model-mm',geometry};
+    const transform=viewTransforms?.W||sheetTransform;
+    const action=verifiedTeachingActionToV5({
+     id:op.id,kind:'analytic-curve',
+     coordinateSpace:'model-mm',view:'W',...geometry
+    },transform);
+    const intent={schema:VERSION,id,
+     purpose:'construct-true-signed-radical-W-analytic-projection-guide',
+     role:'auxiliary',dependsOn:[],inputEntityIds:[],
+     outputEntityIds:[op.id],operations:[op],source:{...source}};
+    const step={id,role:'auxiliary',dependsOn:[],
+     title:'W 解析相贯曲线 · '+b.id+' · 区间 '+(partIndex+1),
+     explanation:'M3 连续双根式曲线与当前 M5 开区间射线结论逐段对应。颜色仅为观察方向遮挡证据，临界端点与标准实虚线均未认证。',
+     actions:[action]};
+    intents.push(intent);steps.push(step);
+    sheetByIntentId[id]=transform;viewByIntentId[id]='W';
+    wAnalyticCurveGuides.push({id,branchId:b.id,view:'W',
+     xRange:[from,to],sourceXOpenRange:[lo,hi],
+     m5EvidenceId:part.originalM5EvidenceId,
+     m5OpenInteriorRayStatus:part.openInteriorRayStatus,
+     m5SourcePartitioned:wRayPartitionedV5,
+     sourceM3BranchVerified:true,sourceM5WholeBranchPartitionVerified:true,
+     exactAnalyticSourceVerified:true,visualSvgApproximationOnly:true,
+     continuousSourceParameterV5GuideAuthorized:true,
+     transitionAndEndpointStyleVerified:false,
+     projectedContourAndEndpointVisibilityVerified:false,
+     officialStandardLineStyleVerified:false});
+   }
   }
  }
  for(const [index,ep] of allStations.entries()){
@@ -379,7 +413,14 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   timing,player,bindings,sourceCircleGuides,projectedSeamArcGuides,
   wAnalyticCurveGuides,
   trueAnalyticWCurveV5GuideCount:wAnalyticCurveGuides.length,
-  analyticWCurveGuideV5Ready:wAnalyticCurveGuides.length===proof.branchCount,
+  analyticWCurveGuideV5Ready:wAnalyticCurveGuides.length>0,
+  m5OpenRayPartitionedWCurveV5Ready:wRayPartitionedV5&&
+   wAnalyticCurveGuides.length===
+    (continuousCurveWRayEvidence.intervalCount),
+  m5RayCertifiedClearGuideCount:wAnalyticCurveGuides.filter(g=>
+   g.m5OpenInteriorRayStatus==='clear').length,
+  m5RayCertifiedOccludedGuideCount:wAnalyticCurveGuides.filter(g=>
+   g.m5OpenInteriorRayStatus==='occluded').length,
   provenAnalyticVHArcV5ActionCount:projectedSeamArcGuides.length,
   exactAnalyticVHArcV5Ready:projectedSeamArcGuides.length>0,
   provenOriginalSourceCircleV5ActionCount:sourceCircleGuides.length,
