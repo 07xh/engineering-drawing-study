@@ -181,6 +181,9 @@ jobs:
           node scripts/build-static.cjs --ui-preview
           node scripts/check-static-site-dependencies.cjs --ui-preview
 
+      - name: Validate C3 geometry with seeded independent property oracles
+        run: node --test tests/property/*.test.cjs
+
       - name: Retain next UI preview for review
         uses: actions/upload-artifact@v4
         with:
