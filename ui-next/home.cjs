@@ -268,6 +268,7 @@ function homeHTML(){return `
   </section>
   <section class="v7-card v7-steps" aria-label="统一 V5 播放与数学证据"><h2>真实作图步骤 · V5</h2>
    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+   <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
    <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
    <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
