@@ -20,6 +20,13 @@ function deriveTwoDistanceSubgraphEvidence({frame,unit,points,constraints,revisi
  if(unit!=='mm'||!Number.isSafeInteger(revision)||revision<0||
     !Array.isArray(points)||!Array.isArray(constraints))
   throw new TypeError('reviewed nonlinear M3 model-mm graph required');
+ const ids=new Set();
+ for(const c of constraints){
+  if(!c||typeof c.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(c.id)||
+     ids.has(c.id))
+   throw new TypeError('ambiguous or duplicated original constraint ID');
+  ids.add(c.id);
+ }
  const fixed=new Map(),counts=new Map();
  for(const c of constraints)if(c.kind==='fixed'){
   counts.set(c.point,(counts.get(c.point)||0)+1);
