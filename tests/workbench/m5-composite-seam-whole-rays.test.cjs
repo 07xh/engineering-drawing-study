@@ -106,5 +106,6 @@ test('M5 existing V7 composition receives ray witnesses with export and V5 still
 test('M5 actual V7 status never equates ray certificates with certified standard lines',()=>{
  const ui=fs.readFileSync('project/unified-workbench-entry.cjs','utf8');
  assert.match(ui,/compositionSeamRayEvidence/);
- assert.match(ui,/端点和标准实虚线仍未签收/);
+ assert.match(ui,/只审计原始顶点，不冒充新增接触切点的实体接缝/);
+ assert.match(ui,/端点整合和标准实虚线仍未签收/);
 });
