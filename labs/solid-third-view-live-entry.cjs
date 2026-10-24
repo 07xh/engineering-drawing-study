@@ -204,6 +204,9 @@ function solve(){
     ' 条侧边、'+certified.convexContourSourceCoverage.boundaryAtomicIntervalCount+
     ' 个原始 3D 折棱来源子区间':'证据范围未覆盖')+
    '。空间最终来源唯一性、全部端点连接、标准虚实线、实体棱线 V5 均未认证。'+
+   '\\nM5 完整轮廓投影端点：三维真实来源关联 '+certified.contourPhysicalJunctionIncidence.inspectedContourIntervalEndpointCount+
+   ' 次；同一纸面端点含不同深度来源 '+certified.contourPhysicalJunctionIncidence.depthAliasedPaperJunctionCount+
+   ' 处。物理接点候选不是正式工程线型/逐线 V5 资格。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
