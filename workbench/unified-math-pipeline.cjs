@@ -18,6 +18,7 @@ const {coneSpatialV5Preview}=require('./cone-spatial-v5-preview.cjs');
 const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
+const {solveAffinePointConstraints}=require('../core/constraints/affine-point-unknown-solver.cjs');
 const {buildScopedSpatialSectionV5Preview}=require('./spatial-section-v5-parity.cjs');
 const {deriveScopedSectionVisibility}=require('./spatial-section-visibility-evidence.cjs');
 const {bindScopedSectionEvidenceToV5}=
@@ -142,6 +143,16 @@ function evaluateUnifiedMath({kind,input,sheet,revision=0,visibilityReview}={}){
   throw new RangeError('stale specialist input revision');
  if(visibilityReview!==undefined&&kind!=='spatial-section')
   throw new TypeError('spatial view rays are only for scoped section evidence');
+ if(kind==='affine-point-system'){
+  if(sheet!==undefined&&sheet!==null)
+   throw new TypeError('affine point constraints use model-mm, never sheet pixels');
+  if(!input||typeof input!=='object'||Array.isArray(input))
+   throw new TypeError('model-mm affine point problem required');
+  const {revision:inputRevision,...givens}=input;
+  const result=solveAffinePointConstraints({...givens,revision});
+  return Object.freeze({...result,kind:'affine-point-system',
+   unifiedMathPipeline:'m3-scoped-affine-unknowns-no-v5/1'});
+ }
  if(kind==='spatial-section')
   return evaluateScopedSpatialSection({input,revision,sheet,visibilityReview});
  if(kind==='cone-plane-section')
