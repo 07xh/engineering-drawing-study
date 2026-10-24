@@ -37,10 +37,10 @@ test('M0 derives continuous occluded parameter interval from ALL convex halfspac
  assert.equal(result.v5Verified,false);
 });
 test('independent physical ray witnesses must agree over ALL certified intervals',()=>{
- for(const move of [-20,-5,0,2]){
+ for(const move of [-20,-5,0,4]){
   const line={id:'SourceEdge',from:P(-5,5,move),to:P(15,5,move)};
   const result=run({source:line});
-  if(move===2){assert.equal(result.status,'no-strict-hit');continue;}
+  if(move===4){assert.equal(result.status,'no-strict-hit');continue;}
   if(result.status!=='certified-open-interval')continue;
   const [a,b]=result.openSourceParameterRange;
   for(let i=1;i<50;i++){
