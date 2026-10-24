@@ -13,6 +13,8 @@ const {SCHEMA,validateSpatialStrokeIntentDAG}=
 const {validateConstructionStep}=require('../core/contracts/construction-step.js');
 const {auditReviewedM4V5Motion}=
  require('./m4-existing-v5-motion-parity.cjs');
+const {inspectClosedSourceStrokeRays}=
+ require('./reviewed-closed-source-stroke-rays.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Timeline=require('./teaching-timeline-v5.js');
 const Motion=require('./teaching-motion-v5.js');
@@ -27,6 +29,8 @@ const empty=(revision,reason)=>freeze({
  v5CandidateSteps:[],v5ActionBindings:[],presentationTimingAudit:null,
  everyActionHasProofTrace:false,geometricParityVerified:false,
  structuralIntentDAGVerified:false,structuralConstructionStepDAGVerified:false,
+ sourceClosedRayV5BindingCount:0,sourceOuterBoundaryV5BindingCount:0,
+ allSourcesRecomputedFromReviewedGeometry:false,
  canonicalM3SolveResultVerified:false,approvedConstructionOrderVerified:false,
  closedEndpointJoinsVerified:false,fullContourVisibilityVerified:false,
  officialLineStylesVerified:false,singleV5Ready:false,
@@ -51,6 +55,21 @@ function auditSpatialStrokeConstructionDAG({
  if(!motionParity||
     JSON.stringify(motionParity)!==JSON.stringify(actual))
   fail('caller cannot replace or alter current V5 Motion source candidate proof');
+ // Recompute M5 positive full-source ray proofs for THIS source revision.
+ // A forged per-action certificate cannot be injected by a renderer or a
+ // recovered project; only original reviewed source Geometry is authoritative.
+ const closedEvidence=inspectClosedSourceStrokeRays({
+  geometry,sceneDepthEvidence,revision});
+ if(JSON.stringify(closedEvidence)!==
+    JSON.stringify(sceneDepthEvidence.closedSourceStrokeRays))
+  fail('forged or stale M5 closed source-ray evidence');
+ const byClosedId=new Map();
+ for(const record of closedEvidence.edges||[]){
+  const key=record.sourceGeometryId+'|'+record.sourceEdgeId+'|'+record.view;
+  if(byClosedId.has(key))
+   fail('ambiguous original 3D edge identity in positive-ray source proofs');
+  byClosedId.set(key,record);
+ }
  const count=actual.candidates.length;
  if(count<1||count>300)
   return empty(revision,'existing one-V5 timeline has a hard 300-step bound');
@@ -113,11 +132,28 @@ function auditSpatialStrokeConstructionDAG({
    title:'source '+p.sourceEdgeId+' '+p.view,
    role:'auxiliary',
    actions:[copy(action)]});
+  const fullSource=span.sourceParameterRange[0]===0&&
+   span.sourceParameterRange[1]===1;
+  const rayRecord=fullSource?byClosedId.get(
+   p.sourceGeometryId+'|'+p.sourceEdgeId+'|'+p.view):null;
+  const fullPositive=!!(rayRecord?.positiveClosedRayVisibilityVerified);
+  if(fullPositive&&(
+    span.openInteriorVisibility!=='visible'||
+    rayRecord.sourceParameterRange[0]!==0||
+    rayRecord.sourceParameterRange[1]!==1||
+    rayRecord.originalSourceEndpointRaysVerified!==true))
+   fail('positive full-edge ray does not match M4 source span and endpoints');
   bindings.push({intentId:id,constructionStepId:stepId,
    v5ActionId:action.id,sourceGeometryId:p.sourceGeometryId,
    sourceEdgeId:p.sourceEdgeId,view:p.view,
    sourceParameterRange:[...p.sourceParameterRange],
    openInteriorVisibility:p.scopedOpenInteriorVisibility,
+   positiveClosedSourceRayVisibilityVerified:fullPositive,
+   outerProjectedBoundaryVerified:fullPositive&&
+     rayRecord.projectedOuterOpenBoundaryVerified===true,
+   positiveOriginalEndpointRaysVerified:fullPositive&&
+     rayRecord.originalSourceEndpointRaysVerified===true,
+   positiveRayProofSourceId:fullPositive?rayRecord.sourceEdgeId:null,
    endpointProofsNeeded:true,officialLineStyleVerified:false,
    sourceActionGeometryVerified:true,approved:false});
  }
@@ -149,6 +185,11 @@ function auditSpatialStrokeConstructionDAG({
   everyActionHasProofTrace:true,geometricParityVerified:true,
   structuralIntentDAGVerified:true,
   structuralConstructionStepDAGVerified:true,
+  sourceClosedRayV5BindingCount:bindings.filter(x=>
+   x.positiveClosedSourceRayVisibilityVerified).length,
+  sourceOuterBoundaryV5BindingCount:bindings.filter(x=>
+   x.outerProjectedBoundaryVerified).length,
+  allSourcesRecomputedFromReviewedGeometry:true,
   canonicalM3SolveResultVerified:false,
   approvedConstructionOrderVerified:false,
   closedEndpointJoinsVerified:false,fullContourVisibilityVerified:false,
