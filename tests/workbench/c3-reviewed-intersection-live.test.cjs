@@ -23,7 +23,7 @@ test('actual public C3 page exposes reviewed geometry, first-angle math and one 
   'play','pause','prev','next','speed','status','proof']){
   assert.ok(document.getElementById(id),id);
  }
- assert.ok(document.getElementById('play').disabled);
+ assert.ok(document.getElementById('play').hasAttribute('disabled'));
  assert.match(html,/不是.*经过正式虚实线认证/);
  assert.match(html,/紫色点划曲线/);
  assert.match(html,/第一角法/);
