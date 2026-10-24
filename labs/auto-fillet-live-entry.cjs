@@ -473,7 +473,8 @@ const {attachVerifiedFilletDownloads}=require('./verified-fillet-export-ui.cjs')
  // The current file digest is ephemeral; image swap/clear revokes it.
  const photoBytes=attachLocalPhotoByteSession({
   fileInput:$('problemPhoto'),photoClear:$('clearPhoto'),
-  image:$('photoPreview')
+  image:$('photoPreview'),status:$('photoByteStatus'),
+  retry:$('photoByteRetry')
  });
  dimensionDraftUi=attachReviewedDimensionDraftUi({
   controls:Object.fromEntries(gateNames.map(key=>[key,$(gateMapping[key])])),
