@@ -205,9 +205,10 @@
       "proofScope": "user reviewed image pixels mapped to model mm",
       "regressionTests": [
         "tests/math/m0-reviewed-pixel-frame.test.cjs",
-        "tests/math/m0-batch-a-reviewed-pixel-m1-topology.test.cjs"
+        "tests/math/m0-batch-a-reviewed-pixel-m1-topology.test.cjs",
+        "tests/math/m0-native-reviewed-photo-metric-consumer.test.cjs"
       ],
-      "remainingGate": "dual scale and source revision independent verification"
+      "remainingGate": "external original-photo byte/source identity and revision authentication, perspective and global uniformity; native UI two-reviewed-ruler M3 boundary now consumes shared M0 pixel frame provisionally"
     },
     {
       "path": "core/numeric/trivial-recession-cone.cjs",

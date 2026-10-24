@@ -9,6 +9,9 @@ const {isWitnessedReviewedDimension}=
  require('../recognition/reviewed-path-dimension-draft.cjs');
 const {isolateReviewedProblem}=require('./reviewed-problem-math-isolation.cjs');
 const {fingerprint}=require('./reviewed-source-fingerprint.cjs');
+const {IDENTITY}=require('../recognition/page-transforms.cjs');
+const {createReviewedPixelFrame,toModelMillimetres}=
+ require('../core/numeric/reviewed-pixel-frame.cjs');
 const finite=Number.isFinite;
 function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
  try{
@@ -28,11 +31,34 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
      attached.calibration.revision!==expectedRevision)
    return {status:'not-verified',reason:'stale draft or scale'};
   const scale=attached.calibration.mmPerPx,origin=attached.calibration.originPx;
-  if(!origin||!finite(origin.x)||!finite(origin.y)||
+  // Drawing-px is the same as original-image-px ONLY for the witnessed
+  // identity homography. Never reinterpret rectified coordinates as source px.
+  if(attached.calibration.frame!=='drawing-px'||
+     d.sourceToDrawing.some((v,i)=>v!==IDENTITY[i])||
+     !origin||!finite(origin.x)||!finite(origin.y)||
      !['up','down'].includes(attached.calibration.yAxis))
    return {status:'not-verified',reason:'invalid reviewed coordinate frame'};
-  const map=p=>[(p.x-origin.x)*scale,
-   (p.y-origin.y)*scale*(attached.calibration.yAxis==='up'?-1:1)];
+  // Derived LOCAL context identity; this metadata is not an authenticated
+  // original image byte fingerprint and proves no global scale uniformity.
+  const imageId='draft-'+fingerprint(JSON.stringify({
+   image:d.image,revision:d.revision
+  }));
+  const metric=createReviewedPixelFrame({
+   image:{id:imageId,revision:d.revision,
+    width:d.image.width,height:d.image.height},
+   scale:{frame:'original-image-px',unit:'mm/original-image-px',
+    reviewed:true,sourceId:attached.dimensionId,
+    imageId,revision:d.revision,mmPerPx:scale},
+   origin:{reviewed:true,modelYDirection:attached.calibration.yAxis,
+    pixel:origin,modelMm:{x:0,y:0}},
+   approved:true
+  });
+  const map=p=>{
+   const converted=toModelMillimetres(metric,{
+    imageId,revision:d.revision,frame:'original-image-px',point:p
+   });
+   return [converted.x,converted.y];
+  };
   const entities=[];
   for(const c of d.candidates){
    if(c.reviewStatus==='rejected')continue;
@@ -42,9 +68,14 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
     entities.push({id:c.id,role:'known-condition',reviewed:true,
      unitVerified:'mm',geometry:{type:'line',start:map(c.geometry.from),end:map(c.geometry.to)}});
    else if(c.kind==='circle')
+   {
+    const radius=c.geometry.radiusPx*scale;
+    if(!finite(radius)||radius<=0)
+     return {status:'not-verified',reason:'unrepresentable circle radius in mm'};
     entities.push({id:c.id,role:'known-condition',reviewed:true,
      unitVerified:'mm',geometry:{type:'circle',center:map(c.geometry.center),
-      radius:c.geometry.radiusPx*scale}});
+      radius}});
+   }
    else if(c.kind==='dimension'){
     if(c.dimension?.unit!=='mm'||!['radius','diameter','length'].includes(c.dimension.kind))
      return {status:'not-verified',reason:'unsupported dimension'};
@@ -59,7 +90,10 @@ function isolateReviewedDraft(attached,{expectedRevision,currentDraft}={}){
    selectedPathId:attached.selectedPathId,sourceTargetId:attached.sourceTargetId
   }));
   return {...isolated,sourceBinding,reviewedScaleMmPerPx:scale,
-   dimensionId:attached.dimensionId};
+   dimensionId:attached.dimensionId,
+   m0MetricFrameStatus:metric.status,
+   imageSourceIndependentlyAuthenticated:false,
+   globallyUniformScaleProven:false};
  }catch(error){
   return {status:'not-verified',reason:'invalid reviewed draft or frame'};
  }
