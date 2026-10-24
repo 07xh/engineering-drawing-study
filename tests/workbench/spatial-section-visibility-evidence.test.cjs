@@ -17,7 +17,7 @@ const pyramid={
  plane:{point:p(0,0,15),normal:p(1,1,1)},
  frame:'model-mm-3d',unit:'mm'
 };
-const directions={V:p(0,1,0),H:p(0,0,1),W:p(1,0,0)};
+const directions={V:p(0,-1,0),H:p(0,0,1),W:p(1,0,0)};
 const review=revision=>({
  retainedHalfspace:'negative',observerDirections:directions,sourceRevision:revision
 });
@@ -73,6 +73,9 @@ test('review is versioned and cannot be forged, partial or treated as proof of a
   {...review(3),sourceRevision:2},
   {...review(3),observerDirections:{V:directions.V,H:directions.H}},
   {...review(3),observerDirections:{...directions,W:p(0,0,0)}},
+  {...review(3),observerDirections:{...directions,V:p(0,1,0)}},
+  {...review(3),observerDirections:{...directions,W:p(-1,0,0)}},
+  {...review(3),observerDirections:{...directions,H:p(0,1,1)}},
   {...review(3),retainedHalfspace:'unknown'},
   {...review(3),verifiedVisibility:true}
  ]){
