@@ -223,16 +223,23 @@ function homeHTML(){return `
       <option value="coincident">两个点重合</option>
       <option value="offset">两点相对位移</option>
       <option value="midpoint">三点中点关系</option>
+      <option value="distance">两点距离（非线性）</option>
+      <option value="angle">三点夹角（非线性）</option>
      </select></label>
      <div class="v7-unknown-grid">
       <label>A（固定点 / 起点）<input id="v7-u-a" value="A" maxlength="80"></label>
       <label>B（对应点 / 终点）<input id="v7-u-b" value="B" maxlength="80"></label>
       <label>M（中点）<input id="v7-u-m" value="M" maxlength="80"></label>
       <label>单轴方向 <select id="v7-u-axis"><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>
-      <label>X 数值 / 单轴目标 mm <input id="v7-u-x" type="number" step="any" value="0"></label>
+      <label>X / 距离 mm / 角度 ° <input id="v7-u-x" type="number" step="any" value="0"></label>
       <label>Y / ΔY mm <input id="v7-u-y" type="number" step="any" value="0"></label>
       <label>Z / ΔZ mm <input id="v7-u-z" type="number" step="any" value="0"></label>
      </div>
+     <label>非线性数值初值（仅含距离或夹角关系时需要，每行一个分支猜测）
+      <textarea id="v7-u-seeds" rows="3" spellcheck="false" placeholder="0,0;4,0;2,2
+0,0;4,0;2,-2"></textarea>
+     </label>
+     <p class="v7-warning">每行依照“未知点 IDs”顺序输入各点坐标，点之间用分号、轴之间用逗号。多行代表不同的人工初始猜测；最多 4 个点、6 行。候选根仅供数学核对，不显示成正式作图或答案。</p>
      <div class="v7-compose-actions">
       <button type="button" id="v7-u-append">保存待确认约束</button>
       <button type="button" id="v7-u-remove" class="v7-danger">删除选中约束</button>
@@ -240,7 +247,7 @@ function homeHTML(){return `
       <button type="button" id="v7-u-solve" class="v7-primary">计算未知点</button>
       <button type="button" id="v7-u-reset" class="v7-danger">清空未知点系统</button>
      </div>
-     <p id="v7-u-status" class="v7-note" role="status">请先录入未知点和关系，确认后再运行现有 M3 求解入口。</p>
+     <p id="v7-u-status" class="v7-note" role="status">手工确认后：仿射方程可给出唯一性证明；非线性仅报告局部候选与残差，不授予 V5。</p>
     </details>
 
 
