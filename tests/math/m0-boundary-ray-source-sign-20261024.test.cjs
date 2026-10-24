@@ -52,8 +52,8 @@ test('M0 exact binary64 sign guards near-parallel rounded zero: no artificial po
  const a=[n.x/nd,n.y/nd,n.z/nd],b=[d.x/dd,d.y/dd,d.z/dd];
  assert.equal(a.reduce((v,x,i)=>v+x*b[i],0),0);
  assert.equal(certifyDotSign(a,b).sign,-1);
- const f=box();f.push(H('diagonal',n,0));
- const r=ray(input(P(0,0,0),d,f));
+ const f=box();f.push(H('diagonal',n,15));
+ const r=ray(input(P(5,5,5),d,f));
  assert.equal(r.status,'ready');
  assert.equal(r.visibility,'undetermined');
  assert.equal(r.pointRayCertified,false);
