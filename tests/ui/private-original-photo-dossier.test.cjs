@@ -13,6 +13,8 @@ function setup(digest=async()=>new Uint8Array(32).fill(0xab).buffer){
  const urls={createObjectURL(blob){blobs.push(blob);return 'blob:only-local-'+blobs.length},
   revokeObjectURL(url){released.push(url)}};
  let generation=7,evidence=null;
+ let candidates={lines:[],curves:[],arrows:[],ocr:[]},
+  live={ready:false,input:null};
  Object.defineProperty(image,'naturalWidth',{configurable:true,value:600});
  Object.defineProperty(image,'naturalHeight',{configurable:true,value:400});
  const file={type:'image/png',size:4,
@@ -25,12 +27,17 @@ function setup(digest=async()=>new Uint8Array(32).fill(0xab).buffer){
   button:get('privatePhotoCaseSave'),
   status:get('privatePhotoCaseStatus'),
   getEvidence:()=>evidence,getGeneration:()=>generation,
-  getCandidates:()=>({lines:[],curves:[],arrows:[],ocr:[]}),
-  getCurrentLive:()=>({ready:false,input:null}),
+  getCandidates:()=>candidates,
+  getCurrentLive:()=>live,
   subtle:{digest},urls,dom:document
  });
  return {document,window,get,input,file,urls,blobs,released,app,
-  setGeneration:n=>{generation=n},setEvidence:v=>{evidence=v}};
+  setGeneration:n=>{generation=n},setEvidence:v=>{evidence=v},
+  setCandidates:v=>{candidates=v},setLive:v=>{live=v},
+  setImageDimensions:(width,height)=>{
+   Object.defineProperty(image,'naturalWidth',{configurable:true,value:width});
+   Object.defineProperty(image,'naturalHeight',{configurable:true,value:height});
+  }};
 }
 test('09 real HTML opt-in exports one local SHA-256 dossier, not a photo or blind certificate',async()=>{
  const s=setup();
@@ -93,4 +100,55 @@ test('09 existing workbench exports CURRENT review, actual OCR and true V5 math 
  assert.match(output,/getEvidence\(\)/);
  assert.match(output,/fileInput\.files\?\.\[0\]!==file/);
  assert.doesNotMatch(output,/fetch\(|XMLHttpRequest|localStorage|sendBeacon/);
+});
+
+test('09 candidate list mutation while original photo SHA runs invalidates export without changing generation',async()=>{
+ let finish;
+ const s=setup(()=>new Promise(resolve=>{finish=resolve}));
+ s.get('privatePhotoCaseAccept').checked=true;
+ const promise=s.app.save();await Promise.resolve();
+ assert.equal(typeof finish,'function');
+ s.setCandidates({lines:[{id:'line_NEW',geometry:{from:[1,2],to:[3,4]}}],
+  curves:[],arrows:[],ocr:[]});
+ finish(new Uint8Array(32).fill(0xac).buffer);
+ await promise;
+ assert.equal(s.blobs.length,0);
+ assert.match(s.get('privatePhotoCaseStatus').textContent,/未生成/);
+});
+test('09 source answer-mark role change during SHA hashing invalidates private proof',async()=>{
+ let finish;
+ const s=setup(()=>new Promise(resolve=>{finish=resolve}));
+ s.get('privatePhotoCaseAccept').checked=true;
+ const promise=s.app.save();await Promise.resolve();
+ assert.equal(typeof finish,'function');
+ s.get('privatePhotoCaseRole').value='answer-marked-reference';
+ finish(new Uint8Array(32).fill(0xad).buffer);
+ await promise;
+ assert.equal(s.blobs.length,0);
+});
+test('09 preview dimensions changing after source snapshot invalidate export, even for same file',async()=>{
+ let finish;
+ const s=setup(()=>new Promise(resolve=>{finish=resolve}));
+ s.get('privatePhotoCaseAccept').checked=true;
+ const promise=s.app.save();await Promise.resolve();
+ s.setImageDimensions(601,400);
+ finish(new Uint8Array(32).fill(0xae).buffer);
+ await promise;
+ assert.equal(s.blobs.length,0);
+});
+test('09 math session mutation during second SHA record binding cannot produce mixed-version evidence',async()=>{
+ const waiting=[];
+ const s=setup(()=>new Promise(resolve=>waiting.push(resolve)));
+ s.get('privatePhotoCaseAccept').checked=true;
+ const promise=s.app.save();
+ for(let i=0;i<10&&waiting.length<1;i++)await Promise.resolve();
+ assert.equal(waiting.length,1);
+ waiting[0](new Uint8Array(32).fill(0xaf).buffer);
+ for(let i=0;i<12&&waiting.length<2;i++)await Promise.resolve();
+ assert.equal(waiting.length,2,'second hash must be the complete record binding');
+ s.setLive({ready:true,input:{problem:{kind:'segment-circle',revision:99}}});
+ waiting[1](new Uint8Array(32).fill(0xbf).buffer);
+ await promise;
+ assert.equal(s.blobs.length,0);
+ assert.match(s.get('privatePhotoCaseStatus').textContent,/未生成/);
 });
