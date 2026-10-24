@@ -1,0 +1,74 @@
+'use strict';
+/**
+ * C3 conservative joint gate: connect independently recomputed M3 topology
+ * with M5 first-angle open-ray certificates, without inferring line styles.
+ * This is evidence aggregation, NOT an official drawing authorization.
+ */
+const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
+const {auditFiniteCylinderEndpointIncidence}=require('./m5-analytic-cylinder-endpoint-incidence.cjs');
+const {auditFiniteCylinderWRayIntervals}=require('./m5-finite-cylinder-w-ray-intervals.cjs');
+const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays.cjs');
+const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
+ for(const x of Object.values(o))freeze(x);Object.freeze(o);
+}return o;};
+function auditC3JointTopologyVisibility({input,revision}={}){
+ if(!Number.isSafeInteger(revision)||revision<0)
+  throw new TypeError('C3 current source revision required');
+ const m3=evaluateUnifiedMath({kind:'finite-orthogonal-cylinder-intersection',input,revision});
+ const notCovered=()=>freeze({schema:'draftai-c3-joint-topology-visibility/1',
+  revision,status:'not-covered',sourceStatus:m3.status,intervals:[],
+  allSourceBranchesAccountedFor:false,fullCurveTopologyVerified:false,
+  allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
+  constructionIntentAuthorized:false,v5CurveReady:false});
+ if(m3.status!=='scoped-analytic-ready')return notCovered();
+ const topology=auditFiniteCylinderEndpointIncidence({input,revision});
+ const w=auditFiniteCylinderWRayIntervals({input,revision});
+ const vh=auditFiniteCylinderVHAxisRays({input,revision});
+ if(topology.status!=='scoped-analytic-3d-endpoint-incidence'||
+  w.status!=='source-bounded-W-open-rays'||
+  vh.status!=='scoped-analytic-VH-strict-volume-occlusion'||
+  !topology.allAnalyticSourceBranchesAccountedFor||
+  !w.sourceBranchCoverageVerified||!vh.sourceBranchCoverageVerified||
+  [topology.sourceM3BranchCount,w.sourceBranchCount,vh.sourceBranchCount]
+   .some(n=>n!==m3.branchCount))
+  throw new RangeError('C3 joint evidence source branch coverage mismatch');
+ const sourceIds=new Set(m3.branches.map(b=>b.id));
+ const walked=topology.components.flatMap(c=>c.traversal.map(e=>e.branchId));
+ if(walked.length!==sourceIds.size||new Set(walked).size!==sourceIds.size||
+  walked.some(id=>!sourceIds.has(id)))
+  throw new RangeError('C3 physical source graph is incomplete or duplicated');
+ const intervals=[];
+ for(const b of m3.branches)for(const view of ['V','H','W']){
+  const pieces=(view==='W'?w.intervals:vh.intervals)
+   .filter(i=>i.branchId===b.id&&i.view===view)
+   .sort((a,c)=>a.xOpenRange[0]-c.xOpenRange[0]);
+  if(!pieces.length||pieces[0].xOpenRange[0]!==b.xRange[0]||
+   pieces.at(-1).xOpenRange[1]!==b.xRange[1]||
+   pieces.some((p,i)=>i>0&&p.xOpenRange[0]!==pieces[i-1].xOpenRange[1]))
+   throw new RangeError('C3 M5 view interval partition incomplete');
+  for(const p of pieces){
+   const certifiedOccluded=view==='W'?
+    p.status==='certified-continuously-occluded-open-interval':
+    p.positiveOpaqueVolumeAheadForEveryOpenCurvePoint===true;
+   const certifiedClear=view==='W'&&
+    p.status==='certified-continuously-visible-open-interval';
+   intervals.push({view,branchId:b.id,xOpenRange:[...p.xOpenRange],
+    openInteriorStatus:certifiedOccluded?'occluded':
+     certifiedClear?'clear':'undetermined',
+    originalM5EvidenceId:p.id,sourceM3AnalyticBranchVerified:true,
+    physicalGraphBranchAccountedFor:true,
+    endpointVisibilityVerified:false,standardLineStyle:'undetermined',
+    constructionIntentAuthorized:false,v5ActionAuthorized:false});
+  }
+ }
+ return freeze({schema:'draftai-c3-joint-topology-visibility/1',
+  revision,status:'scoped-open-interval-joint-evidence',
+  sourceBranchCount:m3.branchCount,componentCount:topology.componentCount,
+  graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
+  unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
+  allSourceBranchesAccountedFor:true,intervals,
+  fullCurveTopologyVerified:false,
+  allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
+  constructionIntentAuthorized:false,v5CurveReady:false});
+}
+module.exports={auditC3JointTopologyVisibility};
