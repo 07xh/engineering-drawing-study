@@ -201,9 +201,16 @@ function createUnifiedProjectSession(){
     const scene=deriveGeometryScene({
       geometry:[prismMesh(input),perimeter],
       revision:latest.revision,resultId:'PrismEvidence'});
+    // One existing V5 player for a mathematical PREVIEW only. This cannot
+    // pass the coordinator's verified/export gate or become a full SolveResult.
+    const plan=evidence.sectionConstructionPreview;
+    if(plan?.status!=='preview-only'||plan.revision!==latest.revision||
+       plan.canPromoteToVerifiedResult!==false||!plan.timing||!plan.viewTransforms)
+      throw new Error('空间求交步骤尚未通过共用 M3→V5 一致性审核');
+    clock=Timeline.createPlayer(plan.timing,{revision:latest.revision});
     current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
       verified:false,status:'geometry-only',evidence,scene,
-      links:projectSelectionLinks(scene),plan:null,clock:null});
+      links:projectSelectionLinks(scene),plan,clock});
     emit();return current;
    }
    const point=verifiedPointFromInputs(latest);
