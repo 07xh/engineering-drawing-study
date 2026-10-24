@@ -79,3 +79,10 @@ body.ui-next .v7-photo-box{position:relative;border:1px solid #dfe6ee;border-rad
 body.ui-next #v7-photo{display:block;width:100%;max-height:220px;height:auto;object-fit:contain;cursor:crosshair;border:none;margin:0}
 body.ui-next #v7-photo-marks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 body.ui-next #v7-photo-clear{font-size:12px;padding:7px 9px}
+
+body.ui-next .v7-source-candidates{min-width:0;margin:12px 0}
+body.ui-next .v7-candidate-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+body.ui-next .v7-candidate-actions button{font-size:12px;min-height:36px}
+body.ui-next .v7-candidate-actions button:last-child{grid-column:1/-1}
+body.ui-next #v7-source-link{max-width:100%;min-width:0}
+@media(max-width:520px){body.ui-next .v7-candidate-actions{grid-template-columns:1fr}body.ui-next .v7-candidate-actions button:last-child{grid-column:auto}}
