@@ -11,6 +11,7 @@ const {auditFiniteCylinderVHAxisRays}=require('./m5-finite-cylinder-vh-axis-rays
 const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
 const {auditC3WCriticalRays}=require('./c3-w-critical-ray-theorem.cjs');
 const {auditC3WLateralProjectionInjectivity}=require('./c3-w-lateral-injectivity.cjs');
+const {auditC3CapBoundaryIncidence}=require('./c3-cap-boundary-incidence.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -143,6 +144,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  const w=auditFiniteCylinderWRayIntervals({input,revision});
  const vh=auditFiniteCylinderVHAxisRays({input,revision});
  const wLateralProjection=auditC3WLateralProjectionInjectivity({input,revision});
+ const capBoundaryEvidence=auditC3CapBoundaryIncidence({input,revision});
+ const capByLateralJunction=new Map(capBoundaryEvidence.capJunctions.flatMap(j=>
+  j.sourceLateralJunctionIds.map(id=>[id,j])));
  if(wLateralProjection.status==='not-covered')
   throw new RangeError('C3 independent W lateral-source theorem not covered');
  if(topology.status!=='scoped-analytic-3d-endpoint-incidence'||
@@ -166,6 +170,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   classification:j.classification,
   finiteCapTermination:j.finiteCapTermination,
   localC1JoinVerified:j.localC1ContinuationWithinLateralLateralScopeVerified,
+  verifiedCapPairJunctionId:capByLateralJunction.get(j.id)?.id||null,
+  sourceCapBoundaryFacePairEndpointFound:capByLateralJunction.has(j.id),
+  capFacePairIncidenceOnlyNotContinuousCurveVerified:capByLateralJunction.has(j.id),
   fullFeatureJoinAuthorized:false,
   blockers:[
    ...(j.finiteCapTermination?['finite-cap-other-surface-continuation-unverified']:[]),
@@ -227,7 +234,10 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
-  wLateralProjection,
+  wLateralProjection,capBoundaryEvidence,
+  capRelatedFeatureSegmentsEnumerated:capBoundaryEvidence.capSegments.length,
+  capRelatedTopologyJoinedToLateralWithinSourceScope:
+   capBoundaryEvidence.allLateralCapTerminalsIdentifiedWithinSourceScope===true,
   transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
    topology.projectedCoincidences,m3.branches,revision),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
