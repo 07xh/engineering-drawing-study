@@ -14,6 +14,8 @@ const {auditSpatialStrokeConstructionDAG}=
  require('./spatial-stroke-construction-dag-parity.cjs');
 const {inspectSpatialV5Readiness}=
  require('./spatial-v5-evidence-readiness.cjs');
+const {deriveProjectedCutEndpointTopology}=
+ require('./reviewed-projected-cut-endpoint-topology.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
  }return x;};
@@ -46,6 +48,17 @@ function inspectSpatialV5ActionRelease({
     readiness.singleV5TimelineCanBeSigned!==false||
     fresh.singleV5Ready!==false)
   fail('source geometry proof cannot mint final spatial V5 readiness');
+ // Source-indexed endpoint topology is independently recomputed here,
+ // not trusted from the frontend, the DAG, the renderer, or local backup.
+ const endpoints=deriveProjectedCutEndpointTopology({
+  geometry,sceneDepthEvidence,revision});
+ if(JSON.stringify(endpoints)!==
+    JSON.stringify(sceneDepthEvidence.projectedCutEndpointTopology))
+  fail('projected cut endpoint proof substituted or stale');
+ if(endpoints.status!=='source-projected-endpoint-scope-only'||
+    endpoints.cutEndpoints.length!==
+      sceneDepthEvidence.projectedStrokePartitions.segments.length*2)
+  fail('incomplete original source cutpoint coverage');
  const obligations=readiness.missingEvidence.map(x=>x.id);
  const actions=[];
  for(const [i,b] of fresh.v5ActionBindings.entries()){
@@ -73,6 +86,28 @@ function inspectSpatialV5ActionRelease({
   ]);
   if(span.openInteriorVisibility==='undetermined')
    needed.add('continuous-positive-or-hidden-interior-proof');
+  const sourceEndpoints=endpoints.cutEndpoints.slice(i*2,i*2+2);
+  if(sourceEndpoints.length!==2)fail('source action lacks two traceable cut endpoints');
+  for(const [index,part] of sourceEndpoints.entries()){
+   const role=index===0?'from':'to';
+   const t=span.sourceParameterRange[index];
+   if(part.sourceGeometryId!==span.sourceGeometryId||
+      part.sourceEdgeId!==span.sourceEdgeId||part.view!==span.view||
+      part.sourceParameter!==t||part.segmentEndpoint!==role||
+      part.v5Ready!==false||part.officialEndpointLineStyleVerified!==false||
+      part.projectedIntersectionIsPhysicalSourceJoinVerified!==false)
+    fail('spatial V5 cut endpoint source identity or non-approval changed');
+  }
+  const bothPositiveSourceVertices=sourceEndpoints.every(x=>
+   x.status==='positive-original-vertex-ray-incidence'&&
+   x.sourceOriginalPointRayVerified&&x.source3DIncidenceVerified);
+  if(!bothPositiveSourceVertices)
+   needed.add('source-cut-endpoint-full-positive-ray-and-3d-incidence');
+  if(sourceEndpoints.some(x=>x.status.startsWith('undetermined')))
+   needed.add('cut-endpoint-tangent-overlap-transition-or-depth-topology');
+  if(sourceEndpoints.some(x=>
+    x.status==='depth-separated-paper-crossing-no-spatial-join'))
+   needed.add('screen-crossing-is-not-physical-3d-join');
   const joins=span.sourceEndpointJoins;
   if(!joins||[joins.from,joins.to].some(v=>
      v!==null&&(v.sourceIncidenceVerified!==true||
@@ -90,6 +125,12 @@ function inspectSpatialV5ActionRelease({
    sourceEdgeId:b.sourceEdgeId,
    view:b.view,sourceParameterRange:[...b.sourceParameterRange],
    mathematicallyScopedOpenInterior:span.openInteriorVisibility,
+   projectedCutPointFromStatus:sourceEndpoints[0].status,
+   projectedCutPointToStatus:sourceEndpoints[1].status,
+   sourceEndpointIds:sourceEndpoints.map(x=>x.sourceVertexKey),
+   sourceCutEndpointParameterIds:sourceEndpoints.map(x=>x.sourceParameter),
+   independentOriginalEndpointRayAndIncidenceVerified:bothPositiveSourceVertices,
+   allProjectedJunctionTopologyVerified:false,
    geometryAndMotionParityVerified:true,
    sourceIntentAndDAGStructureVerified:true,
    missingProofs:[...needed],
