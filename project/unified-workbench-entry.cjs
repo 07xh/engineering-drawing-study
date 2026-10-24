@@ -163,15 +163,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   }
   select.value=data?.constraints.some(c=>c.id===chosen)?chosen:'';
   const result=preview();
-  const evidence=result?.kind==='affine-evidence'?result.evidence:null;
+  const evidence=['affine-evidence','nonlinear-evidence'].includes(result?.kind)?
+   result.evidence:null;
   const count=data?.constraints.length||0;
   $('v7-u-status').textContent=!data?
    '无未知点系统：请添加点 IDs 与条件，再明确确认。':
    '未知点 '+data.points.length+' 个，标量约束记录 '+count+' 条。'+
    (data.confirmed?'条件已人工确认。':'条件未确认或已修改，旧求解失效。')+
-   (evidence?' M3 '+evidence.status+'，rank '+
-     String(evidence.rank)+' / '+evidence.variableCount+
-     '，残差 '+String(evidence.residualMm)+' mm。':'');
+   (evidence?(result.kind==='nonlinear-evidence'?
+    ' M3 局部数值候选 '+evidence.localCandidates.length+' 个（'+
+    evidence.status+'），未证明穷尽所有分支。':
+    ' M3 '+evidence.status+'，rank '+String(evidence.rank)+
+    ' / '+evidence.variableCount+'，残差 '+String(evidence.residualMm)+' mm。'):'');
  }
 
  function refreshComposition(){
@@ -250,7 +253,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function preview(){
   const snap=coordinator?.snapshot(),out=session?.readSnapshot();
   return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
-    ['prism-evidence','composition-evidence','affine-evidence'].includes(out.kind)&&out.verified===false?out:null;
+    ['prism-evidence','composition-evidence','affine-evidence','nonlinear-evidence'].includes(out.kind)&&out.verified===false?out:null;
  }
  function selectable(node,view,rep,id){
   const pick=()=>coordinator.selectRepresentation(view,rep);
@@ -444,6 +447,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-c-objects').value='';
   $('v7-u-frame').value=project.affineProblem?.frame||'model-mm-2d';
   $('v7-u-points').value=project.affineProblem?.points?.map(x=>x.id).join(',')||'A,B';
+  const restored=project.affineProblem;
+  $('v7-u-seeds').value=restored?.solverKind==='nonlinear'?
+    restored.seeds.map(seed=>restored.points.map(p=>
+     Object.values(seed.coordinates[p.id]).join(',')).join(';')).join('\n'):'';
   $('v7-u-list').value='';
   if(project.task==='composition')refreshComposition();
   $('v7-projects').value=project.id;
@@ -731,6 +738,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
+     partial.kind==='nonlinear-evidence'?
+      'M3 非线性局部数值候选 '+partial.evidence.localCandidates.length+
+      ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
+      ' 数值初值残差见左栏；无 ConstructionIntent/DAG/V5 验证资格。':
      partial.kind==='affine-evidence'?
       'M3 有界仿射未知点 · '+partial.evidence.status+
       '；矩阵秩 '+String(partial.evidence.rank)+'/'+
@@ -1042,13 +1053,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    throw Error('请先进入多对象工作台');
   stopAnimation();
   const result=session.solve();
-  if(result.kind!=='affine-evidence'||result.verified!==false||
-     result.clock!==null||result.plan!==null||coordinator.canExport())
+  if(!['affine-evidence','nonlinear-evidence'].includes(result.kind)||
+     result.verified!==false||result.clock!==null||
+     result.plan!==null||coordinator.canExport())
    throw Error('未知量数学子集不允许越权生成已验证工程答案/V5');
   const e=result.evidence;
-  msg('M3 '+e.status+'，秩 '+String(e.rank)+'/'+e.variableCount+
+  msg(result.kind==='nonlinear-evidence'?
+   'M3 找到 '+e.localCandidates.length+
+   ' 个局部数值候选；未证明解的总数、唯一性和工程答案，V5 禁用。':
+   'M3 '+e.status+'，秩 '+String(e.rank)+'/'+e.variableCount+
    '，残差 '+String(e.residualMm)+
-   ' mm。仅在唯一解时显示 Geometry；正式作图仍不可播放。');
+   ' mm。仅在仿射唯一解时显示 Geometry；正式作图仍不可播放。');
  }));
  $('v7-u-reset').addEventListener('click',()=>call(async()=>{
   coordinator.removeAffineProblem();
