@@ -948,6 +948,101 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }));
 
 
+
+ function affineForm(){
+  const snap=coordinator?.snapshot();
+  if(snap?.task!=='composition')throw Error('当前项目未选择多对象工作台');
+  const frame=$('v7-u-frame').value;
+  const axes=frame==='model-mm-3d'?['x','y','z']:['x','y'];
+  const ids=$('v7-u-points').value.trim().split(/[,，\s]+/).filter(Boolean);
+  if(!ids.length||ids.length>16||new Set(ids).size!==ids.length||
+      ids.some(id=>!geometryId(id)))throw Error('需要 1–16 个不重复的未知点 ID');
+  const id=$('v7-u-id').value.trim(),kind=$('v7-u-kind').value;
+  if(!geometryId(id))throw Error('关系 ID 不合法');
+  const a=$('v7-u-a').value.trim(),b=$('v7-u-b').value.trim(),
+   mid=$('v7-u-m').value.trim();
+  const numbers={x:numberFrom('v7-u-x'),y:numberFrom('v7-u-y'),
+   z:numberFrom('v7-u-z')};
+  const vector=Object.fromEntries(axes.map(k=>[k,numbers[k]]));
+  let constraint;
+  switch(kind){
+   case 'fixed':constraint={id,kind,point:a,at:vector};break;
+   case 'axis':constraint={id,kind,point:a,
+    axis:$('v7-u-axis').value,value:numbers.x};break;
+   case 'coincident':constraint={id,kind,a,b};break;
+   case 'offset':constraint={id,kind,from:a,to:b,delta:vector};break;
+   case 'midpoint':constraint={id,kind,mid,a,b};break;
+   default:throw Error('未支持的线性几何约束');
+  }
+  const existing=snap.affineProblem?.constraints||[];
+  const chosen=$('v7-u-list').value;
+  if(chosen&&chosen!==id)
+   throw Error('修改关系 ID 请先删除旧关系，不要复用审核资格');
+  const constraints=[...existing.filter(x=>x.id!==id),constraint];
+  return {frame,unit:'mm',points:ids.map(id=>({id})),constraints};
+ }
+ $('v7-u-list').addEventListener('change',()=>{
+  const c=coordinator?.snapshot().affineProblem?.constraints
+    .find(x=>x.id===$('v7-u-list').value);
+  if(!c)return;
+  $('v7-u-id').value=c.id;$('v7-u-kind').value=c.kind;
+  const a=c.point||c.from||c.a||'A',b=c.to||c.b||'B';
+  $('v7-u-a').value=a;$('v7-u-b').value=b;
+  $('v7-u-m').value=c.mid||'M';
+  $('v7-u-axis').value=c.axis||'x';
+  const coords=c.at||c.delta||{};
+  for(const axis of ['x','y','z'])
+   $('v7-u-'+axis).value=String(axis==='x'&&c.kind==='axis'?
+     c.value:coords[axis]??0);
+ });
+ $('v7-u-append').addEventListener('click',()=>call(async()=>{
+  const candidate=affineForm();
+  coordinator.putAffineProblem(candidate);
+  $('v7-u-list').value=$('v7-u-id').value.trim();
+  msg('未知点数学关系已保存在本机项目；人工确认前不能求解。');
+ }));
+ $('v7-u-remove').addEventListener('click',()=>call(async()=>{
+  const snap=coordinator?.snapshot(),data=snap?.affineProblem;
+  const id=$('v7-u-list').value;
+  if(!data||!id)throw Error('请先选择待删除的未知点关系');
+  coordinator.putAffineProblem({...data,
+    constraints:data.constraints.filter(x=>x.id!==id)});
+  $('v7-u-list').value='';
+  msg('已删除约束并撤销旧数学证据，请重新确认方程组。');
+ }));
+ $('v7-u-confirm').addEventListener('click',()=>call(async()=>{
+  coordinator.confirmAffineProblem();
+  msg('整组未知点数学条件已人工确认，可独立执行 M3 线性求解。');
+ }));
+ $('v7-u-solve').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task!=='composition')
+   throw Error('请先进入多对象工作台');
+  stopAnimation();
+  const result=session.solve();
+  if(result.kind!=='affine-evidence'||result.verified!==false||
+     result.clock!==null||result.plan!==null||coordinator.canExport())
+   throw Error('未知量数学子集不允许越权生成已验证工程答案/V5');
+  const e=result.evidence;
+  msg('M3 '+e.status+'，秩 '+String(e.rank)+'/'+e.variableCount+
+   '，残差 '+String(e.residualMm)+
+   ' mm。仅在唯一解时显示 Geometry；正式作图仍不可播放。');
+ }));
+ $('v7-u-reset').addEventListener('click',()=>call(async()=>{
+  coordinator.removeAffineProblem();
+  $('v7-u-list').value='';
+  msg('当前未知点系统已清空，旧求解和视图已失效。');
+ }));
+ for(const id of ['v7-u-frame','v7-u-points','v7-u-id','v7-u-kind',
+  'v7-u-a','v7-u-b','v7-u-m','v7-u-axis',
+  'v7-u-x','v7-u-y','v7-u-z']){
+  for(const evt of ['input','change'])$(id).addEventListener(evt,()=>{
+   const snap=coordinator?.snapshot();
+   if(snap?.task!=='composition'||!snap.affineProblem?.confirmed)return;
+   coordinator.putAffineProblem(snap.affineProblem);
+   msg('未知点输入已修改，旧确认和 M3 结果作废，请保存并重新确认。');
+  });
+ }
+
  $('v7-r-list').addEventListener('change',()=>{
   const id=$('v7-r-list').value;
   const row=coordinator?.snapshot().relations?.find(r=>r.id===id);
