@@ -86,7 +86,7 @@ function classifyPrismSectionVisibility(box,plane,options={}){
    z:mid.z-pl.point.z};
   const planeResidualMm=Math.abs(dot(pl.normal,delta));
   const faceResidualMm=Math.abs(mid[face.axis]-
-   (face.bound==='min'?box.min[face.axis]:box.max[face.axis]));
+   (face.bound==='min'?sourceBox.min[face.axis]:sourceBox.max[face.axis]));
   if(!finite(planeResidualMm)||!finite(faceResidualMm)||
     planeResidualMm>epsilon*4||faceResidualMm>epsilon*4)
    return blocked({status:'numeric-failure',
