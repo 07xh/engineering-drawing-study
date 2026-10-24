@@ -203,6 +203,39 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-3d').querySelectorAll('[data-geometry-id="Curve3"]').length,3);
   assert.equal($('v7-step-list').querySelectorAll('button').length,0);
   assert.equal($('v7-play').disabled,true);
+  // A new relation across two confirmed points reuses the same existing
+  // project, revision and scene; M2 reports only source consistency.
+  for(const [id,x,y] of [['PointR1','0','0'],['PointR2','3','4']]){
+   click('v7-c-new');$('v7-c-id').value=id;
+   $('v7-c-kind').value='point2d';
+   $('v7-c-ax').value=x;$('v7-c-ay').value=y;
+   click('v7-c-stage');await tick();await tick();
+   click('v7-c-confirm');await tick();await tick();
+  }
+  for(const id of ['v7-r-id','v7-r-list','v7-r-a','v7-r-b',
+   'v7-r-kind','v7-r-distance','v7-r-stage','v7-r-confirm',
+   'v7-r-remove','v7-r-status'])assert.ok($(id),id);
+  $('v7-r-id').value='DistancePQ';$('v7-r-kind').value='distance';
+  $('v7-r-a').value='PointR1';$('v7-r-b').value='PointR2';
+  $('v7-r-distance').value='5';
+  click('v7-r-stage');await tick();await tick();
+  click('v7-c-render');await tick();await tick();
+  assert.match($('v7-save').textContent,/待人工确认/,
+    'pending relation cannot become verified residual evidence');
+  click('v7-r-confirm');await tick();await tick();
+  click('v7-c-render');await tick();await tick();
+  assert.match($('v7-proof').textContent,/M2 关系一致性：consistent/);
+  assert.equal($('v7-play').disabled,true);
+  $('v7-r-distance').value='8';
+  $('v7-r-distance').dispatchEvent(new window.Event('input',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  click('v7-r-stage');await tick();await tick();
+  click('v7-r-confirm');await tick();await tick();
+  click('v7-c-render');await tick();await tick();
+  assert.match($('v7-proof').textContent,/M2 关系一致性：inconsistent/);
+  assert.equal($('v7-play').disabled,true);
 
 
  }finally{
