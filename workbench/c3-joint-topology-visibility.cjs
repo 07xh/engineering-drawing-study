@@ -46,6 +46,30 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      sourceBranches.get(branchId),input,left.xOpenRange[1]);
     const transitionRayEvidence=analyticTransitionPoint?
      auditC3TransitionRays({input,point:analyticTransitionPoint,view}):null;
+    // Strict interior samples on each side are mathematical witnesses,
+    // not a certificate that the critical boundary point is continuous.
+    const sideRayWitnesses=[left,right].map(part=>{
+     const x=(part.xOpenRange[0]+part.xOpenRange[1])/2;
+     const point=analyticC3PointAt(sourceBranches.get(branchId),input,x);
+     const ray=point?auditC3TransitionRays({input,point,view}):null;
+     return {x,point,strictOpaqueVolumeAhead:ray?.positiveInteriorOcclusionVerified===true,
+      strictRayInteriorWitness:ray?.unionInteriorOpenIntervals?.length>0,
+      officialLineStyle:'undetermined'};
+    });
+    const sidedPointResiduals=sideRayWitnesses.map(w=>{
+     if(!w.point)return null;
+     const Z=input.zCylinder,Y=input.yCylinder,p=w.point;
+     const zResidual=(p.x-Z.xCenter)**2+(p.y-Z.yCenter)**2-Z.radius**2;
+     const yResidual=(p.x-Y.xCenter)**2+(p.z-Y.zCenter)**2-Y.radius**2;
+     const scale=Math.max(1,Z.radius**2,Y.radius**2);
+     return {zCylinderScaledResidual:Math.abs(zResidual)/scale,
+      yCylinderScaledResidual:Math.abs(yResidual)/scale,
+      withinFiniteCaps:p.z>=Z.zMin&&p.z<=Z.zMax&&
+       p.y>=Y.yMin&&p.y<=Y.yMax};
+    });
+    const bothSidedIncidenceNumericallyVerified=sidedPointResiduals.every(r=>
+     r&&r.zCylinderScaledResidual<=1e-9&&
+     r.yCylinderScaledResidual<=1e-9&&r.withinFiniteCaps);
     const same=left.openInteriorStatus===right.openInteriorStatus&&
       left.openInteriorStatus!=='undetermined';
     result.push({view,branchId,transitionX:left.xOpenRange[1],
@@ -55,6 +79,8 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
      contiguousSourceParameterBoundaryVerified,
      analyticTransitionPoint,
      transitionRayEvidence,
+     sideRayWitnesses,
+     sidedPointResiduals,bothSidedIncidenceNumericallyVerified,
      endpointRayContinuityVerified:false,
      occlusionSwitchPointVerified:false,
      standardLineStyle:'undetermined',v5ActionAuthorized:false,
