@@ -124,6 +124,9 @@ function buildScopedSpatialSectionV5Preview({input,evidence,revision}={}){
   fullSpatialConstructionIntentVerified:false,
   completeEngineeringDrawingVerified:false,
   canPromoteToVerifiedResult:false,
+  // Existing specialist source strokes use the SAME parity-checked paper
+  // layout as the steps; do not draw a mismatched second SVG projection.
+  givens:safeCopy(plan.givens),
   steps:safeCopy(plan.steps),timing:safeCopy(plan.timing),
   sheet:safeCopy(plan.sheet)
  });
