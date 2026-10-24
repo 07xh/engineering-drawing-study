@@ -120,7 +120,7 @@ function auditC3TransitionRays({input,point,view}={}){
  // interior interval for either solid establishes strict occlusion ahead,
  // but does not establish whole-curve continuity or standard stroke style.
  const positiveInteriorOcclusionVerified=unionInteriorOpenIntervals.length>0&&
-  (z.positiveInteriorVerified||y.positiveInteriorVerified);
+  (z.strictInteriorWitnessVerified||y.strictInteriorWitnessVerified);
  const originAmbiguous=z.originOnBoundary||y.originOnBoundary;
  const grazingOrTie=z.tangent||y.tangent||z.generatorCoincidence||
   y.generatorCoincidence||originAmbiguous;
