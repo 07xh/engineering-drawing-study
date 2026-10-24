@@ -13,6 +13,8 @@
  * styles, or a final unique drawing stroke.
  */
 const {project,VIEWS}=require('../core/projection/conventions.js');
+const {analyzeSegmentTopology}=
+ require('../core/geometry/segment-topology2d.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -25,6 +27,31 @@ const p2=(a,b,t)=>({u:a.u+t*(b.u-a.u),v:a.v+t*(b.v-a.v)});
 const dist2=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
 const dist3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const fail=msg=>{throw new TypeError('M5 source feature event graph: '+msg);};
+
+/**
+ * M1's EXISTING exact-for-binary64 topology is the independent sign oracle
+ * only when the local Float64 denominator is too small to trust.
+ * Never infer physical 3D coincidence or an approved engineering stroke.
+ */
+function auditNearParallelPaperSources(A,B){
+ const segment=c=>({frame:'model-mm-2d',unit:'mm',
+  from:{x:c.from2D.u,y:c.from2D.v},
+  to:{x:c.to2D.u,y:c.to2D.v}});
+ return analyzeSegmentTopology({first:segment(A),second:segment(B)});
+}
+function sourceParameterAtPaperPoint(c,q){
+ const d=diff(c.to2D,c.from2D);
+ const u=Math.abs(d.u)>=Math.abs(d.v)?
+  (q.u-c.from2D.u)/d.u:(q.v-c.from2D.v)/d.v;
+ if(!Number.isFinite(u)||u< -1e-9||u>1+1e-9)
+  fail('M1-certified endpoint not in its M4 source parameter domain');
+ const t=Math.min(1,Math.max(0,u));
+ const actual=p2(c.from2D,c.to2D,t);
+ if(dist2(actual,q)>1e-8)
+  fail('M1-certified endpoint cannot be safely reconstructed in Float64');
+ return t;
+}
+
 function auditUnifiedProjectedFeatureEvents({geometry,revision,
  projectedStrokePartitions,generatedSubspanRayEvidence}={}){
  if(!Number.isSafeInteger(revision)||revision<0)fail('current revision required');
@@ -154,12 +181,38 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
     completeStrokeDepthOrderingVerified:false,
     standardLineStyleApproved:false,officialV5ActionAuthorized:false});
   }else{
+   // A tolerance-only parallel test can silently erase a real crossing,
+   // fabricate a false paper overlap, or discard an endpoint T-junction.
+   // Reuse verified M1 binary64 orientation here, not another predicate.
+   const relation=auditNearParallelPaperSources(A,B);
+   if(relation.relation==='disjoint')continue;
+   if(relation.relation==='proper-crossing')
+    fail('exact M1 crossing is near-parallel: floating intersection is undetermined');
+   if(relation.relation==='endpoint-touch'){
+    const q=relation.intersectionPoint;
+    const xy={u:q.x,v:q.y},ta=sourceParameterAtPaperPoint(A,xy),
+     ub=sourceParameterAtPaperPoint(B,xy);
+    cutMap.get(A.id).push(ta);cutMap.get(B.id).push(ub);
+    events.push({id:'M5Cross'+events.length,view:A.view,
+     candidateIds:[A.id,B.id],kind:'projected-endpoint-or-t-junction',
+     sourceParameters:[ta,ub],projectedPoint:xy,
+     samePhysical3DPointVerified:
+      dist3(p3(A.from3D,A.to3D,ta),p3(B.from3D,B.to3D,ub))<=1e-9,
+     paperCoincidenceCannotAuthorizePhysicalJoin:true,
+     completeStrokeDepthOrderingVerified:false,
+     standardLineStyleApproved:false,officialV5ActionAuthorized:false});
+    continue;
+   }
+   if(!['coincident','collinear-overlap'].includes(relation.relation))
+    fail('unexpected M1 projected segment topology status');
    if(Math.abs(cross(qp,r))>tol*n1||
-      Math.abs(cross(diff(B.to2D,A.from2D),r))>tol*n1)continue;
+      Math.abs(cross(diff(B.to2D,A.from2D),r))>tol*n1)
+    fail('exact M1 collinear source overlap lost to numeric tolerance');
    const length2=dot(r,r),b0=dot(qp,r)/length2,
     b1=dot(diff(B.to2D,A.from2D),r)/length2,
     lo=Math.max(0,Math.min(b0,b1)),hi=Math.min(1,Math.max(b0,b1));
-   if(hi-lo<=1e-9)continue;
+   if(hi-lo<=1e-9)
+    fail('exact M1 positive paper overlap falls below supported M5 parameter precision');
    const qa=p2(A.from2D,A.to2D,lo),
     qb=p2(A.from2D,A.to2D,hi),sb2=dot(s,s),
     ub0=dot(diff(qa,B.from2D),s)/sb2,
@@ -232,4 +285,4 @@ function auditUnifiedProjectedFeatureEvents({geometry,revision,
   fullPaperJunctionAndDepthTopologyVerified:false,
   officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
 }
-module.exports={auditUnifiedProjectedFeatureEvents};
+module.exports={auditUnifiedProjectedFeatureEvents,auditNearParallelPaperSources};
