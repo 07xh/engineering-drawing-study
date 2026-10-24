@@ -236,6 +236,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
  let photoMarkers=[[],[]];
+ let scopedPreviewOn=false;
  let sessionStatus='尚未创建项目',projectList=[];
  const gid=prefix=>{
    const b=new Uint8Array(12);crypto.getRandomValues(b);
@@ -262,8 +263,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  function stopAnimation(){
   if(raf!==null)cancelAnimationFrame(raf);raf=null;
-  const clock=session?.readSnapshot()?.clock;
-  if(clock?.snapshot().playing)clock.pause(performance.now());
+  const result=session?.readSnapshot();
+  for(const clock of [result?.clock,result?.scopedClock])
+   if(clock?.snapshot().playing)clock.pause(performance.now());
  }
 
 
@@ -394,14 +396,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  function mount(project){
-  stopAnimation();closePhoto();
+  stopAnimation();scopedPreviewOn=false;closePhoto();
   if(unsub)unsub();unsub=null;
   coordinator?.dispose();
   coordinator=createCoordinator(project);
   session=createUnifiedProjectSession();
   coordinator.attachSolver(session);
   unsub=coordinator.subscribe(event=>{
-   if(event.kind==='input'){stopAnimation();}
+   if(event.kind==='input'){stopAnimation();scopedPreviewOn=false;}
    if(event.kind==='input'||event.kind==='view')queueSave();
    render();
   });
@@ -465,6 +467,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const verified=coordinator?.currentResult();
   return verified?.clock?.canRender(coordinator.snapshot().revision)?verified:null;
  }
+ function scopedPlayback(){
+  const out=preview(),snap=coordinator?.snapshot(),playable=out?.scopedPlayback;
+  return snap&&playable?.clock?.canRender(snap.revision)&&
+   out.evidence.sectionConstructionPreview?.completeEngineeringDrawingVerified===false&&
+   out.evidence.sectionConstructionPreview?.visibilityVerified===false?
+    playable:null;
+ }
+ function activePlayback(){return current()||(scopedPreviewOn?scopedPlayback():null);}
+
 
 
  function drawV5(svg,solved,colors){
