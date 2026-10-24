@@ -13,6 +13,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {traceConvexRayDepth}=
  require('../core/numeric/convex-ray-depth.cjs');
+const {inspectProjectedEdgeDepth}=
+ require('../core/numeric/projected-edge-depth-events.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -24,6 +26,8 @@ const unready=(revision,reason)=>freeze({
  schema:'draftai-reviewed-mesh-scene-ray-audit/1',
  revision,status:'not-covered',reason,sourceGeometryIds:[],
  sampleCount:0,samples:[],coverage:'none',
+ edgeOverlapAudit:{status:'not-covered',pairCount:0,events:[],
+  completeContourVerified:false},
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -84,11 +88,48 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    });
   }
  }
+ // Reuse already confirmed source mesh Edges (not sampled render lines).
+ // Pairwise model-3d crossing/overlap tests are bounded separately; each
+ // event is ONLY a two-edge depth witness, not global scene visibility.
+ const allEdges=[];
+ for(const {g} of parts)for(const [i,pair] of g.data.edges.entries()){
+  allEdges.push({sourceGeometryId:g.id,
+   sourceEdgeId:g.id+'::'+[...pair].sort().join('|'),
+   edge:{id:'ReviewedEdge_'+(allEdges.length+1),
+    from:g.data.points[pair[0]],to:g.data.points[pair[1]]}});
+ }
+ const edgeAudit=allEdges.length>40?
+  {status:'budget-exceeded',pairCount:0,events:[],
+   completeContourVerified:false}:
+  (()=>{
+   const events=[];let pairCount=0;
+   for(let i=0;i<allEdges.length;i++)for(let j=i+1;j<allEdges.length;j++){
+    const first=allEdges[i],second=allEdges[j];
+    for(const view of VIEWS){
+     const intersection=inspectProjectedEdgeDepth({
+      first:first.edge,second:second.edge,view});
+     pairCount++;
+     if(!['crossing','collinear-overlap','endpoint-touch-undetermined'].includes(
+       intersection.status))continue;
+     events.push({
+      view,firstSourceGeometryId:first.sourceGeometryId,
+      firstSourceEdgeId:first.sourceEdgeId,
+      secondSourceGeometryId:second.sourceGeometryId,
+      secondSourceEdgeId:second.sourceEdgeId,
+      relation:intersection.status,events:intersection.events,
+      ranges:intersection.ranges,
+      completeOcclusionVerified:false,officialLineStyleVerified:false
+     });
+    }
+   }
+   return {status:'pairwise-depth-events-only',pairCount,events,
+    completeContourVerified:false};
+  })();
  return freeze({
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
   revision,status:'scoped-face-probes-only',reason:null,
   sourceGeometryIds:solids.map(x=>x.id),
-  sampleCount:samples.length,samples,
+  sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
