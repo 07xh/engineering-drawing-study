@@ -172,7 +172,12 @@ function solve(){
   $('proof').textContent='证明：03 线性约束逐点唯一求解 + M0 闭合凸网格检查 + 统一 Geometry Scene 第一角法投影。\n'+
    '证据修订：'+result.revision+'；凸网格证明：'+result.convexProof.status+
    '；最大残差（mm）：'+Math.max(...result.individual.map(v=>v.maxResidualMm))+
-   '。\n顶点证明：'+certified.vertexConstructionCount+' 个角点已逐点通过正式 ConstructionIntent → DAG → 唯一 V5；完整实体线型及实体 V5=false；不构成原书标准答案。';
+   '。\n顶点证明：'+certified.vertexConstructionCount+' 个角点已逐点通过正式 ConstructionIntent → DAG → 唯一 V5。'+
+   '\nM5 完整原始棱线射线：全棱无遮挡 '+certified.wholeSourceEdgeRayEvidence.positiveWholeVisibleRayCount+
+   ' 段、整段实体前方遮挡 '+certified.wholeSourceEdgeRayEvidence.provenWholeOccludedCount+
+   ' 段、投影积聚 '+certified.wholeSourceEdgeRayEvidence.collapsedCount+
+   ' 段、其余未判定 '+certified.wholeSourceEdgeRayEvidence.undeterminedCount+
+   ' 段。注意：接合/轮廓/标准实虚线均未认证，完整实体 V5=false；不是原书标准答案。';
  }catch(e){
   $('status').textContent='拒绝输出：'+e.message;
   $('status').dataset.status='blocked';

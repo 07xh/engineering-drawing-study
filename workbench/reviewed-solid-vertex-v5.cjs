@@ -11,6 +11,8 @@
  */
 const {reviewedSolidThirdView}=
  require('./reviewed-multipoint-solid-third-view.cjs');
+const {auditReviewedSolidWholeSourceEdges}=
+ require('./m5-reviewed-solid-source-edge-ledger.cjs');
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {assertM3ToV5Consistency}=
@@ -32,6 +34,11 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  const sceneResult=reviewedSolidThirdView(input); // current 03 / M0 / Scene
  if(sceneResult.status!=='geometry-proven-in-confirmed-convex-scope')
   throw new RangeError('closed convex first-angle source proof unavailable');
+ const wholeSourceEdgeRayEvidence=auditReviewedSolidWholeSourceEdges({
+  geometry:sceneResult.geometry,revision:input.revision});
+ if(wholeSourceEdgeRayEvidence.signedEdgeV5Ready!==false||
+    wholeSourceEdgeRayEvidence.officialLineStylesVerified!==false)
+  throw new RangeError('M5 source ray audit may not mint official solid edge actions');
  const vertexIds=Object.keys(sceneResult.geometry.data.points).sort();
  if(vertexIds.length>16)
   throw new RangeError('at most 16 reviewed vertices for one bounded V5 point timeline');
@@ -98,7 +105,8 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  return frozen({
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
-  sceneResult,vertexBindings:bindings,intents,steps,timeline,player,
+  sceneResult,wholeSourceEdgeRayEvidence,
+  vertexBindings:bindings,intents,steps,timeline,player,
   vertexConstructionCount:bindings.length,pointActionCount,
   singleOriginalV5Player:true,certifiedPointConstructionReady:true,
   geometryVerifiedWithinReviewedConvexScope:true,
