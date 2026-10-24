@@ -290,7 +290,7 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
  }
  spatialCamera(subset,camera,spatial,warnings);
  for(const primitive of [...paper,...spatial])
-  if(primitive.visibility==='undetermined'&&primitive.fill)
+  if(primitive.visibility==='undetermined'&&primitive.fill&&primitive.fill!=='none')
    fail('无可见性证明的棱不得填充');
  return Object.freeze({paper:Object.freeze(paper),spatial:Object.freeze(spatial),
   paperTransform:Object.freeze(paperTransform),
