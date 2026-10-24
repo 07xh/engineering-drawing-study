@@ -14,9 +14,10 @@
       "status": "scoped-math",
       "proofScope": "finite 2D/3D affine coordinate map only",
       "regressionTests": [
-        "tests/math/m0-affine-single-snapshot-matrix.test.cjs"
+        "tests/math/m0-affine-single-snapshot-matrix.test.cjs",
+        "tests/math/m0-affine-m1-m3-real-consumer-covariance.test.cjs"
       ],
-      "remainingGate": "additional M1/M3 consumer parity"
+      "remainingGate": "native M1/M3 production invocation with externally authenticated transform source/revision; finite model-mm covariance is independently regression-tested"
     },
     {
       "path": "core/numeric/binary64-dyadic.cjs",
