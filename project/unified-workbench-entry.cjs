@@ -633,7 +633,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
      partial.kind==='composition-evidence'?
-      '已确认几何的 M2 关系一致性：'+partial.relationEvidence.status+
+      '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
      '限定证据：M3 已独立核验截交多边形顶点与有序直边；下方是同源长方体及截交边的 V/H/W、三维线框。遮挡、完整切后实体与 V5 均未证明，不可播放。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
@@ -873,8 +873,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-r-list').value='';
   msg('关系已删除，原有关系残差结论失效。');
  }));
- for(const id of ['v7-r-id','v7-r-a','v7-r-b','v7-r-distance']){
-  $(''+id).addEventListener('input',()=>{
+ for(const id of ['v7-r-id','v7-r-a','v7-r-b','v7-r-distance','v7-r-kind']){
+  for(const evt of ['input','change'])$(''+id).addEventListener(evt,()=>{
    const snap=coordinator?.snapshot();
    if(snap?.task!=='composition')return;
    const selected=$('v7-r-list').value;
