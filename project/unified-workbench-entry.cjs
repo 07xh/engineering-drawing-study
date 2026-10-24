@@ -695,6 +695,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  function drawV5(svg,solved,colors){
   const frame=solved.clock.snapshot(),scoped=solved.verified===false;
+  // The original V5 overlay and scene geometry share one revision-bound
+  // ownership selection; this cannot authorize result strokes or timing.
+  const selectedIds=new Set(sceneSelectionGroup(solved.scene,
+   coordinator.selectedGeometryId(),solved.inputRevision));
   if(!scoped&&!$('v7-guides').checked)return;
   for(const step of solved.plan.steps)for(const action of step.actions){
    if(step.role==='guide'&&!$('v7-guides').checked)continue;
@@ -702,7 +706,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(fraction<=0||!['line','point','arc','circle'].includes(action.kind))continue;
    const tag={line:'line',point:'circle',arc:'path',circle:'circle'}[action.kind];
    const result=scoped&&step.role==='result';
-   const picked=result&&coordinator.selectedGeometryId()===solved.plan.geometryId;
+   const picked=result&&selectedIds.has(solved.plan.geometryId);
    const ink=picked?($('v7-mono').checked?'#111':'#ef6730'):
     result?($('v7-mono').checked?'#444':'#b26b19'):colors.guide;
    const node=shape(tag,{fill:action.kind==='point'?ink:'none',
