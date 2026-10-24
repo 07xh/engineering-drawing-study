@@ -15,6 +15,8 @@ const {traceConvexRayDepth}=
  require('../core/numeric/convex-ray-depth.cjs');
 const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
+const {certifyConvexSegmentOcclusion}=
+ require('../core/numeric/convex-segment-occlusion.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -28,6 +30,9 @@ const unready=(revision,reason)=>freeze({
  sampleCount:0,samples:[],coverage:'none',
  edgeOverlapAudit:{status:'not-covered',pairCount:0,events:[],
   completeContourVerified:false},
+ edgeContinuousOcclusion:{status:'not-covered',pairCount:0,
+  certifiedRanges:[],uncertainPairs:[],
+  completeContourVerified:false,officialLineStylesVerified:false},
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -125,11 +130,59 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    return {status:'pairwise-depth-events-only',pairCount,events,
     completeContourVerified:false};
   })();
+ // The M0 elimination proves continuous strict-interior occlusion for the
+ // OPEN parts of real source mesh edges. This is NOT a source-face contour,
+ // screen-space visibility segmentation or permission to replace V5 strokes.
+ // Source edges parallel to the observer project to points and cannot
+ // receive a claimed two-dimensional visible/hidden stroke.
+ const continuousOcclusion=allEdges.length>40||solids.length>12?
+  {status:'budget-exceeded',pairCount:0,certifiedRanges:[],uncertainPairs:[],
+   completeContourVerified:false,officialLineStylesVerified:false}:
+  (()=>{
+   const certifiedRanges=[],uncertainPairs=[];let pairCount=0;
+   for(const item of allEdges)for(const view of VIEWS){
+    const from=project(item.edge.from)[view],
+     to=project(item.edge.to)[view];
+    if(Math.hypot(to.u-from.u,to.v-from.v)<=1e-7){
+     uncertainPairs.push({view,sourceGeometryId:item.sourceGeometryId,
+      sourceEdgeId:item.sourceEdgeId,occluderGeometryId:null,
+      reason:'projected-source-edge-collapses-to-point'});
+     continue;
+    }
+    for(const solid of solids){
+     pairCount++;
+     const witness=certifyConvexSegmentOcclusion({
+      source:item.edge,solid,
+      observerDirection:FIRST_ANGLE_OBSERVER_RAYS[view]
+     });
+     if(witness.status==='certified-open-interval'){
+      certifiedRanges.push({
+       view,sourceGeometryId:item.sourceGeometryId,
+       sourceEdgeId:item.sourceEdgeId,occluderGeometryId:solid.id,
+       openSourceParameterRange:[...witness.openSourceParameterRange],
+       proofScope:'strict-convex-open-interval-with-positive-observer-ray',
+       sourceEndpointsVerified:false,fullLineStyleVerified:false,
+       completeOcclusionVerified:false
+      });
+     }else if(witness.status==='undetermined'){
+      uncertainPairs.push({
+       view,sourceGeometryId:item.sourceGeometryId,
+       sourceEdgeId:item.sourceEdgeId,
+       occluderGeometryId:solid.id,reason:witness.reason
+      });
+     }
+    }
+   }
+   return {status:'continuous-open-interval-evidence-only',pairCount,
+    certifiedRanges,uncertainPairs,completeContourVerified:false,
+    officialLineStylesVerified:false};
+  })();
  return freeze({
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
   revision,status:'scoped-face-probes-only',reason:null,
   sourceGeometryIds:solids.map(x=>x.id),
   sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
+  edgeContinuousOcclusion:continuousOcclusion,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
