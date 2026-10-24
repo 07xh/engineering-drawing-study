@@ -5,6 +5,7 @@
  * It intentionally does NOT own SolveResult, ConstructionIntent, DAG or V5 state.
  */
 const {validSavedCalibration}=require('./source-calibration.cjs');
+const CandidateBridge=require('./source-candidate-bridge.cjs');
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
 const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
@@ -82,6 +83,8 @@ function validateProject(p) {
       }
     }
   }
+  try{ CandidateBridge.checkedRecognition(p); }
+  catch(e){errors.push('原图候选无效：'+e.message);}
   const conditionIds = new Set();
   for (const c of p.conditions) {
     if (!plain(c) || !isId(c.id) || (c.objectId !== null && !objectIds.has(c.objectId)) ||
@@ -89,6 +92,8 @@ function validateProject(p) {
         typeof c.confirmed !== 'boolean' || !jsonValue(c.value)) {
       errors.push('条件或来源信息无效'); continue;
     }
+    try{CandidateBridge.linkedCandidate(p,c);}
+    catch(e){errors.push('条件来源关联无效：'+e.message);}
     if (conditionIds.has(c.id)) errors.push('条件 ID 重复');
     conditionIds.add(c.id);
   }
@@ -191,6 +196,21 @@ function createCoordinator(initial, hooks = {}) {
         if (p.view.selectedObjectId === id) p.view.selectedObjectId = null;
       });
     },
+    putSourceCandidate(candidate,imageMeta) {
+      return commit(p=>{
+        p.recognition=CandidateBridge.addManualCandidate(p,candidate,imageMeta);
+        p.conditions=p.conditions.map(c=>c.sourceCandidateId===candidate.id?
+         {...c,confirmed:false}:c);
+      });
+    },
+    reviewSourceCandidate(id,decision) {
+      return commit(p=>{
+        p.recognition=CandidateBridge.reviewLocalCandidate(p,id,decision);
+        p.conditions=p.conditions.map(c=>c.sourceCandidateId===id?
+         {...c,confirmed:false}:c);
+      });
+    },
+    sourceCandidates(){return CandidateBridge.candidateLinks(project);},
     putCondition(condition) {
       return commit(p => {
         const i = p.conditions.findIndex(c => c.id === condition?.id);
@@ -206,6 +226,10 @@ function createCoordinator(initial, hooks = {}) {
         if (!condition) throw new Error('条件不存在');
         if (condition.value?.imageId && condition.value.imageId !== p.source.imageId)
           throw new Error('标注来自旧图片，必须在当前原图重新标记');
+        const source=CandidateBridge.linkedCandidate(p,condition);
+        if(source&&source.reviewStatus!=='confirmed')
+          throw new Error('原图候选尚未经人工确认，禁止将条件晋升');
+
         condition.confirmed = true;
       });
     },
@@ -214,14 +238,16 @@ function createCoordinator(initial, hooks = {}) {
       if (imageId !== null && !isId(imageId)) throw new Error('无效原图 ID');
       if (p.source.imageId === imageId) return;
       p.source = {imageId, rotationDeg: 0, calibration: null};
-      // Previously reviewed conditions require new confirmation on image replacement.
-      p.conditions = p.conditions.map(c => ({...c, confirmed: false}));
+      p.recognition=null;
+      // Never leave a dangling candidate link when the original photo changes.
+      p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
     }); },
     setImageGeometry({rotationDeg, calibration}) { return commit(p => {
       if (p.source.rotationDeg === rotationDeg && same(p.source.calibration, calibration)) return;
       p.source.rotationDeg = rotationDeg;
       p.source.calibration = copy(calibration);
-      p.conditions = p.conditions.map(c => ({...c, confirmed: false}));
+      p.recognition=null;
+      p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
     }); },
     setViewport(paper) {
       return updateView({paper: {...project.view.paper, ...paper}});
