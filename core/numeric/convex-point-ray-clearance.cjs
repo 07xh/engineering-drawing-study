@@ -20,6 +20,7 @@ const xyz=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
 const id=x=>typeof x==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(x);
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
+const {certifyDotSign}=require('./euclidean-kernel.cjs');
 const output=(solidId,status,reason)=>Object.freeze({
  schema:'draftai-convex-vertex-open-ray-clearance/1',
  solidId,status,reason,
@@ -67,19 +68,24 @@ function certifyConvexPointRayClearance({
    slope=dot(f.n,d);
   if(!finite(exterior)||!finite(slope))
    throw new RangeError('nonfinite point ray residual');
+  // Floats may round a tiny inward observer slope to zero even though
+  // exact represented-binary64 n·d < 0. No outward-support or
+  // parallel-exterior proof can rely on the rounded sign alone.
+  const slopeSign=certifyDotSign(
+   [f.n.x,f.n.y,f.n.z],[d.x,d.y,d.z]).sign;
   // For every forward t>0, n.(point+t*d)>offset. A source lying
   // EXACTLY on an outward support is therefore a valid OPEN ray miss.
-  if(slope>angleTolerance&&exterior>=0)
+  if(slope>angleTolerance&&slopeSign>0&&exterior>=0)
    return output(solid.id,'certified-clear','outward-support-positive-open-ray');
-  if(slope>=0&&exterior>=marginMm)
+  if(slope>=0&&slopeSign>=0&&exterior>=marginMm)
    return output(solid.id,'certified-clear','exterior-support-positive-open-ray');
   // Expand all support halfspaces by +margin. If this larger solid cannot
   // meet t>=0, the true solid is also missed with conservative allowance.
   const gamma=f.offset+marginMm-dot(f.n,point);
   if(Math.abs(slope)<=angleTolerance){
-   if(gamma< -marginMm&&slope===0)
+   if(gamma< -marginMm&&slope===0&&slopeSign===0)
     return output(solid.id,'certified-clear','parallel-exterior-inflated-support');
-   if(slope!==0)uncertain=true;
+   if(slopeSign!==0)uncertain=true;
    continue;
   }
   const t=gamma/slope;
