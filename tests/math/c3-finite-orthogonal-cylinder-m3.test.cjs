@@ -138,5 +138,5 @@ test('C3 rejects fake source proof, unsupported units, stale or invalid analytic
   revision:3,sheet:{origin:{x:0,y:0},scale:3}}),/model-mm input/);
  assert.throws(()=>evaluateUnifiedMath({
   kind:'finite-orthogonal-cylinder-intersection',input:model(),
-  revision:3,visibilityReview:{verified:true}}),/model-mm input/);
+  revision:3,visibilityReview:{verified:true}}),/spatial view rays|model-mm input/);
 });
