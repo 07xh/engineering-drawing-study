@@ -86,7 +86,8 @@
       "status": "scoped-math",
       "proofScope": "binary64 exact 3D determinant sign",
       "regressionTests": [
-        "tests/math/m0-adaptive-determinant3d.test.cjs"
+        "tests/math/m0-adaptive-determinant3d.test.cjs",
+        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs"
       ],
       "remainingGate": "input source rounding uncertainty"
     },
@@ -105,7 +106,8 @@
       "status": "scoped-math",
       "proofScope": "finite vector Float64 arithmetic and optional exact sign",
       "regressionTests": [
-        "tests/math/m0-dot-cross-cancellation-guard.test.cjs"
+        "tests/math/m0-dot-cross-cancellation-guard.test.cjs",
+        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs"
       ],
       "remainingGate": "legacy magnitude remains approximate"
     },
@@ -133,7 +135,8 @@
       "status": "scoped-math",
       "proofScope": "object shape conversion to shared numeric kernel",
       "regressionTests": [
-        "tests/math/m0-object-vector3-consumers.test.cjs"
+        "tests/math/m0-object-vector3-consumers.test.cjs",
+        "tests/math/m0-batch-ab-spatial-prism-and-3d-det.test.cjs"
       ],
       "remainingGate": "consumer mathematical semantics & source topology"
     },
@@ -142,7 +145,8 @@
       "status": "scoped-math",
       "proofScope": "finite binary64 projected 2D orientation sign",
       "regressionTests": [
-        "tests/math/m0-adaptive-orientation-m1-consumer.test.cjs"
+        "tests/math/m0-adaptive-orientation-m1-consumer.test.cjs",
+        "tests/math/m0-batch-b-independent-integer-segment-oracle.test.cjs"
       ],
       "remainingGate": "source measurement accuracy"
     },
@@ -151,7 +155,8 @@
       "status": "scoped-math",
       "proofScope": "exact represented binary64 dyadic 2D orientation",
       "regressionTests": [
-        "tests/math/m0-orientation2d-exact.test.cjs"
+        "tests/math/m0-orientation2d-exact.test.cjs",
+        "tests/math/m0-batch-b-independent-integer-segment-oracle.test.cjs"
       ],
       "remainingGate": "nonlinear intersections outside scope"
     },
@@ -179,7 +184,8 @@
       "status": "provisional",
       "proofScope": "user reviewed image pixels mapped to model mm",
       "regressionTests": [
-        "tests/math/m0-reviewed-pixel-frame.test.cjs"
+        "tests/math/m0-reviewed-pixel-frame.test.cjs",
+        "tests/math/m0-batch-a-reviewed-pixel-m1-topology.test.cjs"
       ],
       "remainingGate": "dual scale and source revision independent verification"
     },
