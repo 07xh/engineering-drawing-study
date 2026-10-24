@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * M0 numeric evidence utilities (opt-in, not wired into existing solvers).
+ * M0 numeric evidence utilities, consumed by real M2 local linear constraints.
  *
  * A tolerance is relative to the explicitly supplied *geometric feature*
  * scale, NEVER inferred from the absolute location of a drawing in space.

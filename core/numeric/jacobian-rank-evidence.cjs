@@ -4,7 +4,7 @@
  * M0-C opt-in numerical rank evidence using a one-sided Jacobi SVD.
  * Only accepts caller-normalized, dimensionless Jacobian entries.
  * Never supplies a proof of existence, global uniqueness or true manifold dimension.
- * No existing solver imports this module.
+ * Consumed by real M2 linear and M3 affine/nonlinear point solvers.
  */
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const DEFAULT_RELATIVE_THRESHOLD=1e-10;
