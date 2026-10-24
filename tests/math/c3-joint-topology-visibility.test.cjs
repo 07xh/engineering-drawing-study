@@ -59,6 +59,10 @@ test('C3 internal transitions have real shared M3 branch and exact x adjacency',
  for(const t of internal){
   assert.equal(t.analyticBranchIdentityVerified,true);
   assert.equal(t.contiguousSourceParameterBoundaryVerified,true);
+  assert.ok(t.analyticTransitionPoint);
+  assert.equal(t.analyticTransitionPoint.x,t.transitionX);
+  assert.ok(t.transitionRayEvidence);
+  assert.equal(t.transitionRayEvidence.v5Authorized,false);
   assert.equal(t.endpointRayContinuityVerified,false);
   assert.equal(t.standardLineStyle,'undetermined');
  }
