@@ -13,6 +13,12 @@ test('C3 ray quadratic candidates stay separate from official visibility',()=>{
   assert.equal(r.officialLineStyle,'undetermined');
   assert.equal(r.v5Authorized,false);
   assert.equal(r.fullFiniteVolumeVisibilityVerified,false);
+  assert.ok(r.combinedForwardInteriorIntervals.every(i=>
+   ['zCylinder','yCylinder'].includes(i.solid)&&i.range[1]>i.range[0]));
+  assert.ok(['undetermined-tangent-generator-or-depth-tie',
+   'certified-forward-interior-occlusion',
+   'no-positive-interior-found-not-full-feature-clearance']
+   .includes(r.endpointVisibilityStatus));
   for(const solid of [r.zCylinder,r.yCylinder]){
    assert.ok(['no-forward-boundary-intersection','forward-boundary-intersection',
     'undetermined-tangent-generator-or-origin'].includes(solid.rayBoundaryStatus));
@@ -42,5 +48,13 @@ test('C3 finite-cylinder forward interior is a bounded positive interval',()=>{
  assert.ok(r.zCylinder.interiorOpenIntervals.length>0);
  assert.ok(r.yCylinder.interiorOpenIntervals.length>0);
  assert.ok(r.zCylinder.interiorOpenIntervals.every(([a,b])=>a>0&&b>a));
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+
+test('C3 forward union preserves both solids and cannot sign tangencies',()=>{
+ const r=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='zCylinder'));
+ assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='yCylinder'));
+ assert.equal(r.positiveInteriorOcclusionVerified,true);
  assert.equal(r.officialLineStyle,'undetermined');
 });
