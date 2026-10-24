@@ -177,7 +177,13 @@ function solve(){
    ' 段、整段实体前方遮挡 '+certified.wholeSourceEdgeRayEvidence.provenWholeOccludedCount+
    ' 段、投影积聚 '+certified.wholeSourceEdgeRayEvidence.collapsedCount+
    ' 段、其余未判定 '+certified.wholeSourceEdgeRayEvidence.undeterminedCount+
-   ' 段。注意：接合/轮廓/标准实虚线均未认证，完整实体 V5=false；不是原书标准答案。';
+   ' 段。\n原始三维顶点与投影切分端点已逐一匹配 '+
+   certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
+   ' 组，其中具备独立点射线证据 '+
+   certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.positiveOriginalRayCount+
+   ' 组，唯一投影局部候选 '+
+   certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.unambiguousProjectedCandidateCount+
+   ' 组。注意：接合/轮廓/标准实虚线均未认证，完整实体 V5=false；不是原书标准答案。';
  }catch(e){
   $('status').textContent='拒绝输出：'+e.message;
   $('status').dataset.status='blocked';
