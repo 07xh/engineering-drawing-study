@@ -212,7 +212,7 @@ function solveNonlinearPointCandidates(input={}){
    }
   }catch(e){status='degenerate-or-numeric-failure';}
   reports.push({seedId:seed.id,status,iterations:steps,
-   maxResidualMm:residual,rank:jacobianRank,
+   maxScaledResidual:residual,rank:jacobianRank,
    localDegreesEstimate:degreeEstimate,rankStatus:rankState});
  }
  // Critically, even a full-column local Jacobian is NOT global uniqueness
@@ -232,7 +232,7 @@ function solveNonlinearPointCandidates(input={}){
  return frozen({schema:'draftai-m3-nonlinear-point-candidates/1',revision,
   frame,unit,kind:'point-constraint-system',status:candidates.length?
    candidates.length>1?'distinct-local-candidates':'local-candidate':'undetermined',
-  variableCount:n,scalarConstraintCount:evaluation(guesses[0].flat).length,
+  variableCount:n,scalarConstraintCount:scalarCount,
   constraintIds:factors.map(c=>c.id),
   toleranceScaled:RESIDUAL_TOL,
   // Angle rows use an explicit 1 mm/radian residual normalization;
