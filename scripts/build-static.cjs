@@ -130,6 +130,16 @@ esbuild.buildSync({
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
 
+/* Reviewed finite-cylinder C3 M3 solver to canonical auxiliary POINT V5 only.
+ * Sampled analytic previews are visually separate; no official curve strokes.
+ */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/finite-cylinder-intersection-live-entry.cjs')],
+ outfile:path.join(out,'labs/finite-cylinder-intersection-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
 /* Verified P0 two-circle tangency is bundled into a public standalone tool.
  * Internal source/tests, private textbook records and synthetic fixtures stay out.
  */
