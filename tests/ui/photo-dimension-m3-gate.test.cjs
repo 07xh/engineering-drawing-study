@@ -55,7 +55,7 @@ const geometry=()=>newDraft({image,candidates:[
   geometry:{frame:'drawing-px',center:{x:205,y:150},radiusPx:40}
  }
 ]});
-function mount(){
+function mount(initialPhotoIdentity=null){
  const source=fs.readFileSync('labs/auto-fillet-live.html','utf8');
  const {document,window}=parseHTML(source);
  Object.defineProperty(window.HTMLInputElement.prototype,'valueAsNumber',{
@@ -76,6 +76,7 @@ function mount(){
  for(const [id,c] of Object.entries(controls))
   assert.ok(c,'missing real page control '+id);
  let current=geometry(),generation=3,valid=true,filled=[];
+ let photoIdentity=initialPhotoIdentity;
  const candidates=proposeDimensionPaths({dimension:ocr,lines:[leader],
   curves:[circle,alternative],arrows:[arrow],image:photo});
  const selected=candidates.proposals.find(x=>x.pathKind==='straight'&&
@@ -93,6 +94,7 @@ function mount(){
  assert.equal(reviewDimensionPath(proofInput).sourceLinkManuallyAccepted,true);
  const gate=mountGate({controls,dom:document,
   getDraft:()=>current,getGeneration:()=>generation,
+  ...(initialPhotoIdentity?{getPhotoIdentity:()=>photoIdentity}:{}),
   getReviewForDraft:rev=>valid?{...proofInput,
    revision:rev,expectedRevision:rev}:null,
   onPrepared:output=>filled.push(output)
@@ -121,6 +123,7 @@ function mount(){
  };
  return {controls,document,window,gate,click,set,check,decide,
   preparedSource,filled,
+  setPhotoIdentity:v=>{photoIdentity=v},
   invalidatePhoto(){current=null;generation++;valid=false;}
  };
 }
@@ -235,4 +238,44 @@ test('09 actual photo M3 preflight requires witnessed isolation and rechecks bin
  assert.equal(a.filled.length,1);
  assert.equal(a.filled[0].requiresFinalFieldReview,true);
  assert.equal(a.filled[0].requiresBranchSelection,true);
+});
+
+test('REAL file-byte proof callback must be current before native reviewed-photo M3 entry',()=>{
+ const digest={sha256:'ab'.repeat(32),epoch:1,width:600,height:400,
+  originalFileBytesRead:true};
+ const a=mount(digest);
+ a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.ok(['unique','multiple'].includes(a.gate.m3Status));
+ assert.equal(a.controls.apply.disabled,false);
+ const evidence=a.gate.getEvidenceSnapshot();
+ assert.equal(evidence.photoByteSha256,digest.sha256);
+ a.setPhotoIdentity({...digest,sha256:'cd'.repeat(32)});
+ a.click('apply');
+ assert.equal(a.filled.length,0,'same-sized but different original bytes must revoke old math transfer');
+ assert.equal(a.controls.apply.disabled,true);
+});
+test('REAL file byte session identity rejects same-photo SHA with changed attachment epoch',()=>{
+ const digest={sha256:'ab'.repeat(32),epoch:1,width:600,height:400,
+  originalFileBytesRead:true};
+ const a=mount(digest);
+ a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.equal(a.controls.apply.disabled,false);
+ a.setPhotoIdentity({...digest,epoch:2});
+ a.click('apply');
+ assert.equal(a.filled.length,0);
+ assert.equal(a.controls.apply.disabled,true);
+});
+test('REAL M3 review refuses absent SHA, stale dimensions and unverified file byte flags',()=>{
+ const base={sha256:'ab'.repeat(32),epoch:1,width:600,height:400,
+  originalFileBytesRead:true};
+ for(const bad of [null,{...base,width:599},{...base,sha256:'invalid'},
+  {...base,originalFileBytesRead:false}]){
+  const a=mount(base);a.setPhotoIdentity(bad);a.click('refresh');
+  assert.equal(a.gate.status,'unreviewed');
+  assert.equal(a.controls.attach.disabled,true);
+ }
 });
