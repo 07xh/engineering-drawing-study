@@ -1,6 +1,9 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),{parseHTML}=require('linkedom');
+const {webcrypto}=require('node:crypto');
+const {attachLocalPhotoByteSession}=
+ require('../../labs/local-photo-byte-session.cjs');
 const {attachReviewedDimensionDraftUi:mountGate}=
  require('../../labs/local-reviewed-dimension-draft-ui.cjs');
 const {newDraft}=require('../../recognition/problem-draft.cjs');
@@ -94,7 +97,7 @@ function mount(initialPhotoIdentity=null){
  assert.equal(reviewDimensionPath(proofInput).sourceLinkManuallyAccepted,true);
  const gate=mountGate({controls,dom:document,
   getDraft:()=>current,getGeneration:()=>generation,
-  ...(initialPhotoIdentity?{getPhotoIdentity:()=>photoIdentity}:{}),
+  ...(initialPhotoIdentity?{getPhotoIdentity:()=>typeof photoIdentity==='function'?photoIdentity():photoIdentity}:{}),
   getReviewForDraft:rev=>valid?{...proofInput,
    revision:rev,expectedRevision:rev}:null,
   onPrepared:output=>filled.push(output)
@@ -278,4 +281,96 @@ test('REAL M3 review refuses absent SHA, stale dimensions and unverified file by
   assert.equal(a.gate.status,'unreviewed');
   assert.equal(a.controls.attach.disabled,true);
  }
+});
+
+function localFile(bytes){
+ const copy=new Uint8Array(bytes);
+ return {type:'image/png',size:copy.byteLength,
+  async arrayBuffer(){return copy.slice().buffer;}};
+}
+function mountRealFileSession(){
+ let shaSession=null;
+ const a=mount(()=>shaSession?.snapshot()??null),
+  photoInput=a.document.getElementById('problemPhoto'),
+  preview=a.document.getElementById('photoPreview'),
+  clear=a.document.getElementById('clearPhoto');
+ Object.defineProperty(preview,'naturalWidth',{
+  configurable:true,value:600
+ });
+ Object.defineProperty(preview,'naturalHeight',{
+  configurable:true,value:400
+ });
+ const original=localFile([137,80,78,71,13,10,26,10,1,2,3,4,5,6]);
+ Object.defineProperty(photoInput,'files',{
+  configurable:true,value:[original]
+ });
+ shaSession=attachLocalPhotoByteSession({
+  fileInput:photoInput,photoClear:clear,image:preview,
+  subtle:webcrypto.subtle
+ });
+ const setFile=v=>Object.defineProperty(photoInput,'files',{
+  configurable:true,value:[v]
+ });
+ return {a,shaSession,photoInput,original,setFile};
+}
+test('09 actual WebCrypto source SHA256 → two user-reviewed rulers → M0 metric → real M3 preflight and transfer',async()=>{
+ const {a,shaSession}=mountRealFileSession();
+ assert.equal(a.gate.status,'unreviewed');
+ // File exists but its hash has not been verified yet.
+ a.click('refresh');
+ assert.equal(a.controls.attach.disabled,true);
+ const valid=await shaSession.hashCurrent();
+ assert.match(valid.sha256,/^[a-f0-9]{64}$/);
+ a.preparedSource();
+ a.check('alternativesChecked');a.check('commit');a.click('attach');
+ assert.equal(a.gate.status,'dimension-attached-to-existing-draft');
+ assert.equal(a.gate.getEvidenceSnapshot()?.photoByteSha256,valid.sha256);
+ a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.ok(['unique','multiple'].includes(a.gate.m3Status));
+ assert.equal(a.controls.apply.disabled,false);
+ a.click('apply');
+ assert.equal(a.filled.length,1);
+ assert.equal(a.filled[0].problem.unit,'mm');
+ assert.equal(a.filled[0].requiresFinalFieldReview,true);
+ assert.equal(a.filled[0].requiresBranchSelection,true);
+ assert.equal(a.controls.apply.disabled,true);
+});
+test('09 same size different ORIGINAL file bytes revoke a genuine M3 preflight before transfer',async()=>{
+ const {a,shaSession,setFile}=mountRealFileSession();
+ const first=await shaSession.hashCurrent();
+ a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.ok(['unique','multiple'].includes(a.gate.m3Status));
+ assert.equal(a.controls.apply.disabled,false);
+ const changed=localFile([137,80,78,71,13,10,26,10,1,2,3,4,5,7]);
+ setFile(changed);
+ // Even BEFORE new hashing finishes, original File identity mismatch
+ // revokes the old SHA source and the old user-reviewed math result.
+ assert.equal(shaSession.snapshot(),null);
+ a.click('apply');
+ assert.equal(a.filled.length,0);
+ assert.equal(a.controls.apply.disabled,true);
+ const second=await shaSession.hashCurrent();
+ assert.notEqual(first.sha256,second.sha256);
+ a.click('preflight');
+ assert.equal(a.gate.m3Status,'not-executed');
+ assert.equal(a.filled.length,0);
+});
+test('09 same content reattached as a NEW file invalidates old source attachment epoch',async()=>{
+ const {a,shaSession,setFile}=mountRealFileSession();
+ const initial=await shaSession.hashCurrent();
+ a.preparedSource();a.check('alternativesChecked');
+ a.check('commit');a.click('attach');a.set('targetRadius','10','input');
+ a.set('side','1');a.check('m3Accept');a.click('preflight');
+ assert.equal(a.controls.apply.disabled,false);
+ const sameBytes=localFile([137,80,78,71,13,10,26,10,1,2,3,4,5,6]);
+ setFile(sameBytes);
+ const after=await shaSession.hashCurrent();
+ assert.equal(initial.sha256,after.sha256);
+ assert.notEqual(initial.epoch,after.epoch);
+ a.click('apply');
+ assert.equal(a.filled.length,0);
+ assert.equal(a.controls.apply.disabled,true);
 });
