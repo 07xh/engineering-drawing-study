@@ -1,0 +1,7 @@
+# M0 affine matrix snapshot and source immutability (2026-10-24)
+
+Shared `affine(matrix,dimension)` historically validated each entry, but then re-read the last row and spread every caller-owned row a second time. Accessor-backed or dynamically mutable matrix inputs could pass finite/nonprojective validation while returning nonfinite/projective or changed numerical coefficients. That is a validation/consumption TOCTOU error in the one common affine kernel, not a missing professional solver.
+
+The fix snapshots **each own row and coefficient exactly once** into a fresh 3×3/4×4 finite Float64 matrix before checking the homogeneous final row for strictly affine values. `transformPoint`, `transformDirection` and `composeAffine` all reuse this one existing validator. No second transform class, geometry model, unit or player. Ordinary 2D/3D results remain exactly equivalent for legitimate stable inputs. The returned snapshot is detached from the caller; no claim of authenticated source picture, derivative proof, complete scene or V5.
+
+Independent tests cover getter changes after first read (top-level row, ordinary coefficient, projective coefficient), invalid first reads, inherited/sparse indices, nonfinite entries, copy detachment, arbitrary signed 3D translation/rotation composition and unchanged direction semantics. Existing affine, M0 numeric, M3 and full workbench regressions and FIVE latest PR HEAD CI checks required before squash merge; rollback isolated revert.

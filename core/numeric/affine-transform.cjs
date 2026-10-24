@@ -9,15 +9,30 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 function affine(matrix,dimension){
  if(dimension!==2&&dimension!==3)throw new TypeError('affine dimension must be 2 or 3');
  const n=dimension+1;
- if(!Array.isArray(matrix)||matrix.length!==n||
-   !Array.from({length:n},(_,i)=>Object.hasOwn(matrix,i)&&
-   Array.isArray(matrix[i])&&matrix[i].length===n&&
-   Array.from({length:n},(_,j)=>Object.hasOwn(matrix[i],j)&&finite(matrix[i][j])).every(Boolean)).every(Boolean))
+ if(!Array.isArray(matrix)||matrix.length!==n)
   throw new TypeError('expected finite '+n+'x'+n+' affine matrix');
- const last=matrix[n-1];
+ // Snapshot every input row and every finite coefficient exactly ONCE:
+ // checking an accessor-backed matrix and then spreading its rows again
+ // may change the linear map or smuggle a projective last row into math.
+ const snapshot=Array.from({length:n},(_,i)=>{
+  if(!Object.hasOwn(matrix,i))
+   throw new TypeError('expected finite '+n+'x'+n+' affine matrix');
+  const row=matrix[i];
+  if(!Array.isArray(row)||row.length!==n)
+   throw new TypeError('expected finite '+n+'x'+n+' affine matrix');
+  return Array.from({length:n},(_,j)=>{
+   if(!Object.hasOwn(row,j))
+    throw new TypeError('expected finite '+n+'x'+n+' affine matrix');
+   const coefficient=row[j];
+   if(!finite(coefficient))
+    throw new TypeError('expected finite '+n+'x'+n+' affine matrix');
+   return coefficient;
+  });
+ });
+ const last=snapshot[n-1];
  if(last.some((v,i)=>v!==(i===n-1?1:0)))
   throw new RangeError('projective matrices are not supported');
- return matrix.map(row=>[...row]);
+ return snapshot;
 }
 function transformPoint(matrix,point){
  const dimension=point?.length;
