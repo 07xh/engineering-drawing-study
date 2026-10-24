@@ -17,6 +17,7 @@ const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
 const {dotObject3:dot,normObject3:vectorNorm}=
  require('./object-vector3.cjs');
+const {certifyDotSign}=require('./euclidean-kernel.cjs');
 const freeze=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -65,8 +66,20 @@ function intersectNormalized(r,faces,solidId){
   if(!finite(clearance)||!finite(slope))
    throw new RangeError('ray/plane residual overflow');
   if(Math.abs(slope)<=r.angleTolerance){
+   // An approximately parallel ray is NOT an exactly parallel ray.
+   // A tiny nonzero n·d can eventually enter a supporting halfspace
+   // at arbitrarily large positive t. Calling that a proven 'miss'
+   // is unsound without independently known finite ray-depth bounds.
+   // Use the ONE M0 exact binary64 dot sign evidence to distinguish
+   // true parallelism from near-parallelism without guessing EPS.
+   const sign=certifyDotSign(
+    [face.n.x,face.n.y,face.n.z],[r.d.x,r.d.y,r.d.z]).sign;
+   if(sign!==0){
+    ambiguous=true;
+    continue;
+   }
    if(clearance< -r.toleranceMm)
-    return freeze({status:'miss',solidId,reason:'ray-outside-parallel-plane',
+    return freeze({status:'miss',solidId,reason:'ray-outside-exact-parallel-plane',
      entryMm:null,exitMm:null,entryFaceId:null,exitFaceId:null});
    if(Math.abs(clearance)<=r.toleranceMm)ambiguous=true;
    continue;
