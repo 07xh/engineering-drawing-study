@@ -1,0 +1,7 @@
+# M0 convex continuous occlusion — exact zero test for eliminated ray-depth coefficient
+
+The existing generic `certifyConvexSegmentOcclusion` M0 ray-versus-convex-solid Fourier–Motzkin elimination treated a computed Float64 `beta===0` as a true depth-independent halfspace constraint. A normalized support normal and observer ray can have rounded dot equal zero after product-sum cancellation even though exact represented-binary64 `n·d` has a nonzero sign. Dropping the t term could produce false no-hit or false positive interior-occlusion evidence on a source open interval.
+
+This increment adds only the existing opt-in exact binary64 dot sign from merged #629 inside that beta===0 case. If the exact sign is nonzero, it returns **undetermined** (conservative); if it is exactly zero, it keeps the original elimination. Existing nearparallel tolerance gates and all other clipping, model-mm, source identity and positive margin mathematics remain unchanged. It does not create a second ray engine, geometric solver, source topology proof, official line style or V5 player.
+
+Independent tests: normalized 3D false-zero dot whose exact sign is negative, true parallel outside-support control, ordinary box strict forward interior interval across a full source segment, nondegenerate and invalid source/observer checks. The public flags `occlusionComplete`, endpoint join, official line style and V5 remain false. All five latest PR-head CI, mergeability and isolated squash are mandatory before merging.
