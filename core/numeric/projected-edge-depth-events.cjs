@@ -12,9 +12,17 @@
 const {project,VIEWS,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
-const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
- Object.keys(p).sort().join(',')==='x,y,z'&&
- ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
+// Snapshotted explicit source coordinates only. Re-reading an accessor-backed
+// source after it passed validation would invalidate the projected proof.
+function snapshotPoint(p){
+ if(!p||typeof p!=='object'||Array.isArray(p)||
+    Object.keys(p).sort().join(',')!=='x,y,z')
+  throw new TypeError('source point requires finite explicit x/y/z');
+ const x=p.x,y=p.y,z=p.z;
+ if(![x,y,z].every(v=>finite(v)&&Math.abs(v)<=1e8))
+  throw new TypeError('source point requires finite explicit x/y/z');
+ return {x,y,z};
+}
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
 const {orientation2DAdaptive}=require('./orientation2d-adaptive.cjs');
@@ -35,19 +43,24 @@ const freeze=x=>{
   Object.freeze(x);
  }return x;
 };
-function inspectProjectedEdgeDepth({first,second,view,toleranceMm=1e-7}={}){
+function inspectProjectedEdgeDepth({
+ first:inputFirst,second:inputSecond,view,toleranceMm=1e-7
+}={}){
  if(!VIEWS.includes(view)||!finite(toleranceMm)||
     toleranceMm<=0||toleranceMm>1e-2)
   throw new TypeError('first-angle V/H/W and bounded mm tolerance required');
- const edges=[first,second];
- for(const edge of edges){
+ const [first,second]=[inputFirst,inputSecond].map(edge=>{
   if(!edge||typeof edge!=='object'||Array.isArray(edge)||
-     Object.keys(edge).sort().join(',')!=='from,id,to'||
-     !finiteId(edge.id)||!point(edge.from)||!point(edge.to)||
-     Math.hypot(edge.from.x-edge.to.x,edge.from.y-edge.to.y,
-      edge.from.z-edge.to.z)<=toleranceMm)
+     Object.keys(edge).sort().join(',')!=='from,id,to')
    throw new TypeError('two valid 3D source segments with stable IDs required');
- }
+  const id=edge.id,fromInput=edge.from,toInput=edge.to;
+  if(!finiteId(id))
+   throw new TypeError('two valid 3D source segments with stable IDs required');
+  const from=snapshotPoint(fromInput),to=snapshotPoint(toInput);
+  if(Math.hypot(from.x-to.x,from.y-to.y,from.z-to.z)<=toleranceMm)
+   throw new TypeError('two valid 3D source segments with stable IDs required');
+  return {id,from,to};
+ });
  if(first.id===second.id)throw new TypeError('distinct 3D source edge IDs required');
  const [a,b,c,d]=[first.from,first.to,second.from,second.to]
   .map(p=>project(p)[view]);
