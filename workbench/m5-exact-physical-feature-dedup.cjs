@@ -27,7 +27,7 @@ const same3=(a,b)=>AXES.every(k=>canonical(a[k])===canonical(b[k]));
 const close3=(a,b)=>Math.hypot(...AXES.map(k=>a[k]-b[k]))<=1e-8;
 const normalizeId=s=>[
  s.kind,s.originalSourceFeatureId,[...s.sourceGeometryIds].sort().join('+'),
- key3(s.from3D),key3(s.to3D),s.sourceSubspanId
+ key3(s.from3D),key3(s.to3D)
 ].join('|');
 const depth=(p,ray)=>AXES.reduce((x,k)=>x+p[k]*ray[k],0);
 function auditExactPhysicalFeatureDedup({geometry,revision,
