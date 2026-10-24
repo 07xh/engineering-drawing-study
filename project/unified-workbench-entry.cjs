@@ -233,7 +233,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     '；M5 三视图接缝完整区间射线：可证明无遮挡 '+
     seamRays.certifiedOpenVisibleCount+' 段、可证明实体前方遮挡 '+
     seamRays.certifiedFullyOccludedCount+' 段，其余含积聚和未判定 '+
-    seamRays.undeterminedCount+' 段。这里不证明接缝是否为正式工程轮廓，端点和标准实虚线仍未签收。';
+    seamRays.undeterminedCount+' 段。源三维顶点接合审计：投影端点与原始相邻棱身份匹配 '+
+    seamRays.originalSourceVertexIncidenceEvidence.exactSourceIncidenceCount+
+    ' 组，独立点射线证据 '+
+    seamRays.originalSourceVertexIncidenceEvidence.positiveOriginalRayCount+
+    ' 组。这里只审计原始顶点，不冒充新增接触切点的实体接缝。端点整合和标准实虚线仍未签收。';
   }
  }
 
