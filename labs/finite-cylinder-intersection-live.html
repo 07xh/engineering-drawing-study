@@ -53,6 +53,13 @@ small{display:block;color:#4c637a}
 </div>
 <label for="stations" style="margin-top:12px">每条解析分支内部辅助点数量
 <select id="stations"><option value="0">0 · 仅端点</option><option value="1">1 · 中间点</option><option value="2" selected>2 · 逐步辅助求点</option></select></label>
+<label for="solidOperation" style="margin-top:12px">实体布尔运算（明确题图目标，影响表面保留证明）
+<select id="solidOperation">
+<option value="" selected>未确定 · 只显示数学辅助几何</option>
+<option value="intersection">两有限圆柱实体交集（公共部分）</option>
+<option value="union">两有限圆柱实体并集（合并形体）</option>
+</select></label>
+<small>交集与并集的保留表面方向不同。选择后仅可核验正规交线开区间是否属于局部边界，不能据此认证国标线型、曲线端点或完整工程图。</small>
 <label class="confirm" for="confirmed"><input id="confirmed" type="checkbox">我已人工确认题图中的两圆柱轴向、尺寸、有限端盖与模型 mm 单位</label>
 <button type="button" id="solve">验算解析相贯线并生成 V5 点动作</button>
 <div class="actions" aria-label="唯一 V5 控制">

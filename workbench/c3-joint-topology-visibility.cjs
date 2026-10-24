@@ -14,6 +14,7 @@ const {auditC3WLateralProjectionInjectivity}=require('./c3-w-lateral-injectivity
 const {auditC3CapBoundaryIncidence}=require('./c3-cap-boundary-incidence.cjs');
 const {auditC3Merged3DSourceGraph}=require('./c3-merged-3d-source-graph.cjs');
 const {auditC3SourceJunctionTangents}=require('./c3-source-junction-tangents.cjs');
+const {auditC3LocalBooleanCreases}=require('./c3-local-boolean-crease.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
@@ -132,7 +133,7 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
   {...g,criticalPointWRayProof:proofByKey.get(g.branchId+'|'+g.transitionX)||null}:
   g);
 }
-function auditC3JointTopologyVisibility({input,revision}={}){
+function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('C3 current source revision required');
  const m3=evaluateUnifiedMath({kind:'finite-orthogonal-cylinder-intersection',input,revision});
@@ -149,6 +150,7 @@ function auditC3JointTopologyVisibility({input,revision}={}){
  const capBoundaryEvidence=auditC3CapBoundaryIncidence({input,revision});
  const merged3DSourceGraph=auditC3Merged3DSourceGraph({input,revision});
  const localSourceTangentEvidence=auditC3SourceJunctionTangents({input,revision});
+ const localBooleanCreaseEvidence=auditC3LocalBooleanCreases({input,revision,solidOperation});
  const capByLateralJunction=new Map(capBoundaryEvidence.capJunctions.flatMap(j=>
   j.sourceLateralJunctionIds.map(id=>[id,j])));
  if(wLateralProjection.status==='not-covered')
@@ -239,7 +241,9 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
   wLateralProjection,capBoundaryEvidence,merged3DSourceGraph,
-  localSourceTangentEvidence,
+  localSourceTangentEvidence,localBooleanCreaseEvidence,
+  localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,
+  BooleanSurfaceOperationSelected:solidOperation!==null,
   regularSourceJunctionContinuationCount:
    localSourceTangentEvidence.regularLocalTangencyCount||0,
   verifiedSourceJunctionCornerCount:
