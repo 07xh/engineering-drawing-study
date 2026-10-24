@@ -79,6 +79,24 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(r.evidence.v5Ready,false);
  assert.equal(r.clock,null);
  assert.equal(r.plan,null);
+ // Scoped construction is playable only as a separately labelled,
+ // unverified M4 preview using the existing single V5 timeline.
+ const scoped=r.evidence.sectionConstructionPreview;
+ assert.equal(scoped.status,'preview-only');
+ assert.equal(scoped.visibilityVerified,false);
+ assert.equal(scoped.completeEngineeringDrawingVerified,false);
+ assert.equal(scoped.canPromoteToVerifiedResult,false);
+ assert.ok(scoped.givens.length>=12);
+ assert.ok(scoped.steps.length>=4);
+ assert.ok(r.scopedPlayback);
+ assert.equal(r.scopedPlayback.kind,'prism-scoped-preview');
+ assert.equal(r.scopedPlayback.verified,false);
+ assert.equal(r.scopedPlayback.clock,r.scopedClock);
+ assert.equal(r.scopedPlayback.clock.canRender(rev),true);
+ assert.equal(r.scopedPlayback.plan.steps.length,scoped.steps.length);
+ r.scopedPlayback.clock.seekProgress(1,performance.now());
+ assert.equal(r.scopedPlayback.clock.snapshot().done,true);
+
  assert.equal(c.currentResult(),null);
  assert.equal(c.canExport(),false);
  assert.equal(r.scene.objects[0].kind,'mesh');
@@ -115,6 +133,7 @@ test('finite prism uses existing spatial M3 scoped evidence without falsely cert
  assert.equal(c.snapshot().view.selectedObjectId,'Solid1');
  c.setCamera({yaw:40,pitch:20});
  assert.equal(c.snapshot().revision,rev,'camera cannot re-run solver');
+ assert.equal(r.scopedPlayback.clock.canRender(c.snapshot().revision),true);
  assert.equal(s.readSnapshot(),r);
  const restored=createCoordinator(importProject(exportProject(c.snapshot())));
  assert.equal(restored.currentResult(),null);
@@ -176,5 +195,20 @@ test('scoped section perimeter is selectable in all projections without promotin
  c.setImage('FreshImage');
  assert.equal(c.selectedGeometryId(),null);
  assert.throws(()=>c.selectSceneGeometry('Section1'),/不属于/);
+ c.dispose();
+});
+
+test('changing source revokes the previously scoped prism V5 without promoting mathematical proof',()=>{
+ const {coordinator:c,session:s}=start('exploration',prism);
+ c.confirmCondition('coords');
+ const evidence=s.solve(),scoped=evidence.scopedPlayback,rev=c.snapshot().revision;
+ assert.ok(scoped.clock.canRender(rev));
+ assert.equal(c.canExport(),false);
+ c.setImage('ImageReviewChanged');
+ assert.equal(s.readSnapshot(),null);
+ assert.equal(c.currentResult(),null);
+ assert.equal(c.canExport(),false);
+ assert.equal(scoped.clock.canRender(c.snapshot().revision),false);
+ assert.equal(c.snapshot().conditions[0].confirmed,false);
  c.dispose();
 });
