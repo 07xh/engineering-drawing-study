@@ -24,11 +24,20 @@ function buildTransitionGuards(intervals,junctionGuards,input,projectedCoinciden
    parts.sort((a,b)=>a.xOpenRange[0]-b.xOpenRange[0]);
    for(let i=1;i<parts.length;i++){
     const left=parts[i-1],right=parts[i];
+    const analyticBranchIdentityVerified=left.branchId===right.branchId&&
+     left.sourceM3AnalyticBranchVerified===true&&
+     right.sourceM3AnalyticBranchVerified===true&&
+     left.physicalGraphBranchAccountedFor===true&&
+     right.physicalGraphBranchAccountedFor===true;
+    const contiguousSourceParameterBoundaryVerified=
+     left.xOpenRange[1]===right.xOpenRange[0];
     const same=left.openInteriorStatus===right.openInteriorStatus&&
       left.openInteriorStatus!=='undetermined';
     result.push({view,branchId,transitionX:left.xOpenRange[1],
      leftOpenStatus:left.openInteriorStatus,rightOpenStatus:right.openInteriorStatus,
      equalCertifiedOpenStatuses:same,
+     analyticBranchIdentityVerified,
+     contiguousSourceParameterBoundaryVerified,
      endpointRayContinuityVerified:false,
      occlusionSwitchPointVerified:false,
      standardLineStyle:'undetermined',v5ActionAuthorized:false,
