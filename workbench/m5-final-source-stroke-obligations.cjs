@@ -20,6 +20,8 @@ const {correlateReviewedOpenContours}=
  require('./reviewed-frontmost-open-contours.cjs');
 const {inspectSourceVertexIncidence}=
  require('./m5-source-vertex-incidence-audit.cjs');
+const {auditReviewedConvexSourceCreases}=
+ require('./m5-reviewed-convex-source-creases.cjs');
 const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {project,VIEWS}=require('../core/projection/conventions.js');
@@ -87,9 +89,19 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   throw new TypeError('stale or unsupported complete M5 stroke-source evidence');
  if(cuts.cutEndpoints.length!==partitions.segments.length*2)
   throw new RangeError('M5 projected cutpoints do not cover every stroke');
+ const sourceCreaseEvidence=geometry.map(g=>
+  auditReviewedConvexSourceCreases({geometry:g,revision}));
+ const creases=new Map(sourceCreaseEvidence.flatMap(e=>
+  e.edges.map(x=>[x.sourceEdgeId,x])));
+ if(creases.size!==sourceCreaseEvidence.reduce((n,e)=>n+e.sourceEdgeCount,0))
+  throw new TypeError('multiple reviewed solids share an untrusted edge ID');
  const spans=[];
  for(const [index,span] of partitions.segments.entries()){
   if(!VIEWS.includes(span.view))throw new TypeError('invalid first-angle source view');
+  const sourceCrease=creases.get(span.sourceEdgeId);
+  if(!sourceCrease||sourceCrease.sourceGeometryId!==span.sourceGeometryId||
+     sourceCrease.finalV5LineActionAuthorized!==false)
+   throw new TypeError('source crease must be proven from the original M0 mesh');
   const first=cuts.cutEndpoints[index*2],last=cuts.cutEndpoints[index*2+1],
    pair=[first,last];
   if(pair.some((p,j)=>!p||p.sourceGeometryId!==span.sourceGeometryId||
@@ -137,10 +149,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
    span.positiveClearanceSolidIds.length===geometry.length;
   const strictlyHidden=span.openInteriorVisibility==='hidden'&&
    span.occluderGeometryIds.length>0;
-  const positiveOuter=positiveOpen&&entireOpenOuter&&
+  const positiveOuter=sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid&&
+   positiveOpen&&entireOpenOuter&&
    uniqueFrontmostOpenContour&&bothPositive&&
    authenticatedCorners&&locallyUniqueCorners&&noUnresolvedPaperEvents;
-  const hiddenCandidate=strictlyHidden&&namedOriginalVertices&&
+  const hiddenCandidate=sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid&&
+   strictlyHidden&&namedOriginalVertices&&
    authenticatedCorners&&noUnresolvedPaperEvents;
   const needs=[];
   if(!positiveOpen&&!strictlyHidden)needs.push('continuous-positive-or-hidden-depth-proof');
@@ -151,6 +165,10 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
   if(!authenticatedCorners)needs.push('independent-original-source-corner-incidence');
   if(positiveOpen&&!locallyUniqueCorners)needs.push('unambiguous-source-corner-projection-and-all-incident-rays');
   if(!noUnresolvedPaperEvents)needs.push('paper-crossing-overlap-tangent-or-depth-transition');
+  if(!sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid)
+   needs.push(sourceCrease.sourceIsCoplanarSubdivisionWithinSingleSolid?
+    'source-edge-is-coplanar-mesh-subdivision-not-physical-crease':
+    'unproven-single-solid-source-dihedral-feature-edge');
   // No complete 3D source feature-line claim and no official drawing convention
   // exists yet; these missing obligations MUST NOT be waived by source flags.
   needs.push('independent-m3-final-answer-geometry-and-feature-semantics');
@@ -162,6 +180,12 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
    sourceEdgeId:span.sourceEdgeId,view:span.view,
    sourceParameterRange:[...span.sourceParameterRange],
    candidateStrokeId:'M5Candidate'+index,
+   independentlyRecomputedSourceCrease:sourceCrease,
+   singleSolidSourceDihedralFeatureVerified:
+    sourceCrease.sourceIsPhysicalCreaseWithinSingleSolid,
+   sourceMeshSubdivisionNotDrawnAsFeature:
+    sourceCrease.sourceIsCoplanarSubdivisionWithinSingleSolid,
+   compositeUnionFeatureSemanticsVerified:false,
    visibleOpenRayCertified:positiveOpen,
    strictlyOccludedOpenRayCertified:strictlyHidden,
    fullUnionOpenBoundaryCoverage:entireOpenOuter,
@@ -180,6 +204,11 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
  return freeze({schema:'draftai-m5-final-stroke-obligations/1',
   revision,status:'per-source-span-proof-obligations-audited',
   spanCount:spans.length,spans,
+  sourceCreaseEvidence,
+  sourceCreaseProofCount:sourceCreaseEvidence.reduce((n,e)=>
+   n+e.certifiedSingleSolidCreaseCount,0),
+  coplanarSubdivisionExcludedCount:sourceCreaseEvidence.reduce((n,e)=>
+   n+e.provenCoplanarSubdivisionCount,0),
   originalSourceCutpointCount:cuts.cutEndpoints.length,
   positiveOuterCandidateCount:spans.filter(s=>s.localPositiveOuterGeometryCandidate).length,
   hiddenDepthCandidateCount:spans.filter(s=>s.hiddenDepthEvidenceCandidate).length,

@@ -11,6 +11,8 @@ const {evaluateReviewedConvexMeshDepth}=
  require('./reviewed-convex-scene-depth.cjs');
 const {inspectSourceVertexIncidence}=
  require('./m5-source-vertex-incidence-audit.cjs');
+const {auditReviewedConvexSourceCreases}=
+ require('./m5-reviewed-convex-source-creases.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const c of Object.values(x))freeze(c);Object.freeze(x);
  }return x;};
@@ -36,6 +38,9 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
  if(sourceVertexIncidenceEvidence.v5Ready!==false||
     sourceVertexIncidenceEvidence.standardLineStylesVerified!==false)
   throw new RangeError('original 3D endpoint source proof cannot certify a V5 stroke');
+ const sourceCreaseEvidence=auditReviewedConvexSourceCreases({
+  geometry,revision});
+ const creases=new Map(sourceCreaseEvidence.edges.map(e=>[e.sourceEdgeId,e]));
  const closed=proof.closedSourceStrokeRays,occlusion=proof.wholeSourceEdgeOcclusion;
  if(closed.status!=='scoped-positive-closed-source-rays-only'||
     occlusion.status!=='scoped-source-segment-occlusion-only')
@@ -43,6 +48,10 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
  const edges=[];
  for(const [a,b] of geometry.data.edges){
   const id=geometry.id+'::'+[a,b].sort().join('|');
+  const crease=creases.get(id);
+  if(!crease||crease.sourceGeometryId!==geometry.id||
+     crease.finalV5LineActionAuthorized!==false)
+   throw new TypeError('C1 source edge lacks authentic M0 dihedral proof');
   const start=geometry.data.points[a],end=geometry.data.points[b];
   for(const view of VIEWS){
    const uvA=project(start)[view],uvB=project(end)[view];
@@ -66,6 +75,11 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
    edges.push({sourceGeometryId:geometry.id,sourceEdgeId:id,view,
     sourceVertexIds:[a,b],projectedFrom:uvA,projectedTo:uvB,
     status,fullOriginalSourceParameterRange:[0,1],
+    originalSingleSolidCreaseVerified:
+      crease.sourceIsPhysicalCreaseWithinSingleSolid,
+    originalCoplanarMeshSubdivisionVerified:
+      crease.sourceIsCoplanarSubdivisionWithinSingleSolid,
+    completeMultiBodyFeatureSemanticsVerified:false,
     continuouslyFrontRayClearVerified:front,
     completeStrictInteriorOcclusionVerified:occluded,
     trueOriginalEndpointRaysVerified:!!(front&&ray.originalSourceEndpointRaysVerified),
@@ -80,6 +94,7 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
  return freeze({schema:'draftai-m5-reviewed-solid-whole-edge-ledger/1',
   revision,status:'scoped-full-original-source-edge-ray-evidence',
   sourceGeometryId:geometry.id,sourceVertexIncidenceEvidence,
+  sourceCreaseEvidence,
   edges,sourceProjectedEdgeCount:edges.length,
   positiveWholeVisibleRayCount:edges.filter(x=>
    x.continuouslyFrontRayClearVerified).length,
