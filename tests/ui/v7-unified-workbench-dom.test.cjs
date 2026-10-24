@@ -270,6 +270,47 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.match($('v7-proof').textContent,/M2 关系一致性：inconsistent/);
   assert.equal($('v7-play').disabled,true);
 
+  // Enter the shared unknown-point M3 within the SAME existing project UI,
+  // but after switching to a new mathematical task so M2 objects are not
+  // silently misinterpreted as unknown affine coordinates.
+  $('v7-task').value='projection';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  $('v7-task').value='composition';
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+  for(const id of ['v7-u-frame','v7-u-points','v7-u-id','v7-u-list',
+   'v7-u-kind','v7-u-a','v7-u-b','v7-u-m','v7-u-x','v7-u-y',
+   'v7-u-z','v7-u-append','v7-u-confirm','v7-u-solve','v7-u-status'])
+   assert.ok($(id),'missing native affine unknown control '+id);
+  $('v7-u-frame').value='model-mm-2d';
+  $('v7-u-points').value='PointA,PointB';
+  $('v7-u-id').value='AnchorA';$('v7-u-kind').value='fixed';
+  $('v7-u-a').value='PointA';
+  $('v7-u-x').value='2';$('v7-u-y').value='3';
+  click('v7-u-append');await tick();await tick();
+  assert.match($('v7-u-status').textContent,/条件未确认/);
+  click('v7-u-solve');await tick();await tick();
+  assert.match($('v7-save').textContent,/尚未经人工确认/);
+  $('v7-u-list').value='';
+  $('v7-u-id').value='Shift';$('v7-u-kind').value='offset';
+  $('v7-u-a').value='PointA';$('v7-u-b').value='PointB';
+  $('v7-u-x').value='4';$('v7-u-y').value='5';
+  click('v7-u-append');await tick();await tick();
+  click('v7-u-confirm');await tick();await tick();
+  click('v7-u-solve');await tick();await tick();
+  assert.match($('v7-proof').textContent,/M3 有界仿射未知点 · unique/,
+   $('v7-save').textContent);
+  assert.ok($('v7-sheet').querySelector('[data-geometry-id="PointB"]'));
+  assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-step-list').querySelectorAll('button').length,0);
+  $('v7-u-x').value='8';
+  $('v7-u-x').dispatchEvent(new window.Event('input',{bubbles:true}));
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v7-sheet').querySelectorAll('[data-geometry-id="PointB"]').length,0);
+  assert.equal($('v7-play').disabled,true);
+
 
  }finally{
   global.document=original.document;global.window=original.window;
