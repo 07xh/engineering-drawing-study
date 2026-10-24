@@ -132,9 +132,11 @@ function auditOrthogonalUnionSourceEdges({geometry,revision}={}){
     const n=sectorMask.filter(Boolean).length;
     if(!n)throw new RangeError('original source boundary has no verified occupied sector');
     const occupiedIndices=sectorMask.flatMap((v,i)=>v?[i]:[]);
+    // Two quadrants share a side iff EXACTLY ONE of the two
+    // perpendicular sign bits flips. Index difference is NOT sufficient:
+    // indices 1 and 2 are diagonal despite their numeric difference 1.
     const adjacent=n===2&&
-     (Math.abs(occupiedIndices[0]-occupiedIndices[1])===1||
-       Math.abs(occupiedIndices[0]-occupiedIndices[1])===2);
+      [1,2].includes(occupiedIndices[0]^occupiedIndices[1]);
     const status=ambiguous?'undetermined-near-critical-cross-section':
      n===1?'certified-convex-exterior-open-crease':
      n===3?'certified-concave-exterior-open-crease':
