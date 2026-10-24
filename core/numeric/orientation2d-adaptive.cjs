@@ -14,6 +14,12 @@
 const {orientation2D}=require('./orientation2d-exact.cjs');
 const EPSILON=Number.EPSILON/2; // IEEE binary64 machine unit roundoff, 2^-53.
 const CCW_FILTER=(3+16*EPSILON)*EPSILON;
+// Shewchuk-style forward-error filter assumes the ordinary normal-range
+// floating-point error model. Subnormal products and differences can lose
+// relative bits to underflow, invalidating that model. Guard normality
+// before issuing ANY fast sign; exact dyadic covers these inputs instead.
+const MIN_NORMAL=2**-1022;
+const normalOrZero=x=>x===0||Math.abs(x)>=MIN_NORMAL;
 function point2(p,label){
  if(!Array.isArray(p)||p.length!==2||
     !Object.hasOwn(p,0)||!Object.hasOwn(p,1))
@@ -55,7 +61,14 @@ function orientation2DAdaptive(a,b,c){
   const err=CCW_FILTER*magnitude;
   if(Number.isFinite(left)&&Number.isFinite(right)&&
      Number.isFinite(det)&&Number.isFinite(magnitude)&&
-     Number.isFinite(err)&&Math.abs(det)>err){
+     Number.isFinite(err)&&
+     [acx,bcy,acy,bcx,left,right,det,magnitude].every(normalOrZero)&&
+     err>=MIN_NORMAL&&
+     // A zero rounded product from two NONZERO inputs must never be
+     // interpreted as a mathematically proven zero determinant term.
+     (left!==0||acx===0||bcy===0)&&
+     (right!==0||acy===0||bcx===0)&&
+     Math.abs(det)>err){
    return det<0?outcomes.fast[0]:outcomes.fast[1];
   }
  }
