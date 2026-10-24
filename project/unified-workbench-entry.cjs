@@ -350,7 +350,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.paperStrokeNonuniqueSourceCount||0)+
     ' 组、端点有不同深度纸面别名 '+
     (evidence.paperStrokeDepthAliasEndpointCount||0)+
-    ' 组；以上都未签发标准虚实线和正式 V5。真实物理共点不等于完整轮廓接合，这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
+    ' 组。完全相同三维线段来源记录已严格去重 '+
+    (evidence.exactDuplicate3DSourceRecords||0)+
+    ' 项、去重后三维物理特征候选 '+
+    (evidence.exactDedupedPhysicalFeatureClasses||0)+
+    ' 类；同纸面仍有多条不同三维深度特征 '+
+    (evidence.paperIntervalsWithMultiplePhysicalDepthSources||0)+
+    ' 组、已列来源可确认唯一最前物理类 '+
+    (evidence.paperIntervalsWithUniquelyFrontPhysicalClass||0)+
+    ' 组。严格去重不代表最终外轮廓和标准线型，以上都未签发标准虚实线和正式 V5。真实物理共点不等于完整轮廓接合，这些组不代表独立证明最终唯一可绘图来源。此处仅完成几何交汇来源，不证明最终唯一轮廓与标准线型。射线结果仍不证明全幅工程轮廓的标准线型。每组来源线深度证明只针对两条已列出的来源线，综合后也不证明其他实体表面无遮挡。接合候选不是正式工程图的端点连接。新生线正式 V5 动作为 0。以上均不代表新生交线的全部端点及标准图纸证明。未取得完整工程线型的标准与来源审核，不能发布实线/虚线。'+
     (sample?' 前三项缺口：'+sample+'。':'');
   }else{
    detail.textContent='正式 V5 线条证据尚不可用；源几何或 M5 条件变动后必须重新审核。所有未签收线条继续保持 undetermined。';
