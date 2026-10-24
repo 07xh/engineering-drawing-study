@@ -217,12 +217,14 @@ function homeHTML(){return `
   </section>
   <section class="v7-card v7-steps" aria-label="统一 V5 播放与数学证据"><h2>真实作图步骤 · V5</h2>
    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+   <button type="button" id="v7-scoped-v5" hidden disabled aria-pressed="false">在本图纸预览限定截面逐笔作图</button>
+   <p id="v7-scoped-warning" class="v7-warning" hidden>仅 M3 已审核截交周界与 M4 步骤坐标一致。所有隐藏边、交点端点、完整工程图和正式 V5 签收尚未通过；不作为已验证答案导出。</p>
    <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
    <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
    <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p class="v7-warning">点投影与两线段圆弧连接可复用正式 V5。长方体仅呈现已确认原立体和局部数学证据，不推测截交线、虚实线或动画。</p>
+   <p class="v7-warning">点投影与两线段圆弧使用已验证 V5。长方体仅提供经过 M3/M4 对齐审核的截面逐笔预览；未获得隐藏线证明、完整工程图及正式 V5 已验证资格。</p>
   </section>
  </div>
 </section>
