@@ -1,7 +1,9 @@
 'use strict';
-// One opt-in view of the already-shared 03/M0/Geometry Scene. Not an animation
-// engine. Nothing is persisted, posted to a server, or marked V5 ready.
-const {reviewedSolidThirdView}=require('../workbench/reviewed-multipoint-solid-third-view.cjs');
+// One opt-in view of the already-shared 03/M0/Geometry Scene and ONE existing
+// V5 for proven point constructions. The complete solid still lacks line-style
+// and V5 certification. No user data is uploaded or persisted.
+const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
+const Motion=require('../workbench/teaching-motion-v5.js');
 const {prismMesh}=require('../project/unified-workbench-session.cjs');
 const {toSheet,project}=require('../core/projection/conventions.js');
 const $=id=>document.getElementById(id);
@@ -9,7 +11,67 @@ const template=prismMesh({solid:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}});
 const SAMPLE={x:[0,30],y:[0,15],z:[0,20]};
 const NS='http://www.w3.org/2000/svg';
 const SHEET={origin:{x:350,y:195},scale:4};
-let revision=1;
+let revision=1,current=null,playing=false,raf=null;
+function stop(){
+ if(raf!==null){cancelAnimationFrame(raf);raf=null;}
+ playing=false;
+ if(current)current.player.pause(performance.now());
+}
+function resetV5(){
+ stop();current=null;
+ for(const id of ['pointV5Play','pointV5Pause','pointV5Prev','pointV5Next'])
+  $(id).disabled=true;
+ $('pointV5Status').textContent='已知条件变动，旧顶点 V5 资格失效。';
+}
+function repaintPointV5(){
+ const svg=$('paper');
+ svg.querySelectorAll('[data-v5-vertex-layer]').forEach(node=>node.remove());
+ if(!current||!current.player.canRender(revision))return;
+ const layer=document.createElementNS(NS,'g');
+ layer.setAttribute('data-v5-vertex-layer','true');
+ layer.setAttribute('aria-label','唯一 V5 播放器的已证明顶点及辅助线');
+ const frame=current.player.snapshot();
+ for(const step of current.steps)for(const action of step.actions){
+  const fraction=frame.actionFractions[action.id]||0;
+  if(fraction<=0||!['line','point'].includes(action.kind))continue;
+  const el=document.createElementNS(NS,action.kind==='line'?'line':'circle');
+  el.setAttribute('stroke',action.kind==='point'?'#20689d':'#bb7b31');
+  el.setAttribute('stroke-width',action.kind==='point'?'2.5':'1.5');
+  el.setAttribute('fill',action.kind==='point'?'#20689d':'none');
+  el.setAttribute('data-source-v5-action',action.id);
+  el.setAttribute('data-certified-scope','point-auxiliary-only');
+  el.setAttribute('data-official-solid-stroke','false');
+  Motion.updateSvg(el,action,fraction);
+  layer.append(el);
+ }
+ svg.append(layer);
+ $('pointV5Status').textContent='唯一 V5：已完成 '+frame.completedIds.length+
+  '/'+current.timeline.segments.length+' 个顶点或辅助动作；'+
+  (frame.done?'本轮播放结束':'仅顶点正式作图')+
+  '。实体棱线未认证。';
+}
+function tick(now){
+ if(!playing||!current||!current.player.canRender(revision)){stop();return;}
+ const frame=current.player.snapshot(now);
+ repaintPointV5();
+ if(frame.done){stop();return;}
+ raf=requestAnimationFrame(tick);
+}
+function startV5(){
+ if(!current||!current.player.canRender(revision))return;
+ if(playing)return;
+ current.player.play(performance.now());
+ playing=true;raf=requestAnimationFrame(tick);
+}
+function navigateV5(delta){
+ if(!current||!current.player.canRender(revision))return;
+ stop();
+ const snapshot=current.player.snapshot();
+ const stepIndex=Math.max(0,Math.min(current.steps.length,
+  (snapshot.done?current.steps.length:snapshot.activeStepIndex)+delta));
+ current.player.seekStep(stepIndex,performance.now());
+ repaintPointV5();
+}
 function parseRow(line,index){
  const items=line.trim().split(/[，,]/).map(v=>v.trim());
  if(items.length!==5||!Object.hasOwn(template.data.points,items[0]))
@@ -25,6 +87,7 @@ function parseRow(line,index){
  return {id:items[0],n};
 }
 function clear(){
+ resetV5();
  $('paper').replaceChildren();
  $('proof').textContent='条件改变，旧几何投影及证明已经作废。';
  $('status').textContent='请重新核对并确认条件后计算。';
@@ -92,11 +155,16 @@ function solve(){
   const vertices=rows.map(({id,n})=>({id,
    knownViews:Object.fromEntries(knownViews.map((v,i)=>
     [v,[n[i*2],n[i*2+1]]]))}));
-  const result=reviewedSolidThirdView({
+  const certified=compileReviewedSolidVertexV5({input:{
    geometryId:'ReviewedSolid',confirmedBy:'user',topologyConfirmed:true,
    revision,unit:'mm',vertices,edges:template.data.edges,faces:template.data.faces
-  });
+  },sheetTransform:SHEET});
+  current=certified;
+  const result=certified.sceneResult;
   draw(result);
+  for(const id of ['pointV5Play','pointV5Pause','pointV5Prev','pointV5Next'])
+   $(id).disabled=false;
+  repaintPointV5();
   $('status').textContent='已计算 '+result.provenVertexCount+' 个点、'+
    result.provenEdgeCount+' 条棱与 '+result.provenFaceCount+' 个面的三视图；第三视图为 '+
    result.missingView+'。虚实线仍未认证。';
@@ -104,7 +172,7 @@ function solve(){
   $('proof').textContent='证明：03 线性约束逐点唯一求解 + M0 闭合凸网格检查 + 统一 Geometry Scene 第一角法投影。\n'+
    '证据修订：'+result.revision+'；凸网格证明：'+result.convexProof.status+
    '；最大残差（mm）：'+Math.max(...result.individual.map(v=>v.maxResidualMm))+
-   '。\n正式可见性=false；ConstructionIntent/V5=false；不构成原书标准答案。';
+   '。\n顶点证明：'+certified.vertexConstructionCount+' 个角点已逐点通过正式 ConstructionIntent → DAG → 唯一 V5；完整实体线型及实体 V5=false；不构成原书标准答案。';
  }catch(e){
   $('status').textContent='拒绝输出：'+e.message;
   $('status').dataset.status='blocked';
@@ -117,9 +185,19 @@ $('pair').addEventListener('change',()=>{
 });
 $('vertices').addEventListener('input',clear);
 $('confirmed').addEventListener('change',()=>{
+ resetV5();
  revision++;$('paper').replaceChildren();
  $('status').textContent='人工确认状态改变；旧投影已失效，请重新计算。';
  $('status').dataset.status='idle';
+});
+$('pointV5Play').addEventListener('click',startV5);
+$('pointV5Pause').addEventListener('click',()=>{stop();repaintPointV5();});
+$('pointV5Prev').addEventListener('click',()=>navigateV5(-1));
+$('pointV5Next').addEventListener('click',()=>navigateV5(1));
+$('pointV5Speed').addEventListener('change',()=>{
+ if(!current||!current.player.canRender(revision))return;
+ current.player.setSpeed(Number($('pointV5Speed').value),performance.now());
+ repaintPointV5();
 });
 $('solve').addEventListener('click',solve);
 $('vertices').value=rowSample('VH');
