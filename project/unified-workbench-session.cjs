@@ -210,8 +210,11 @@ function createUnifiedProjectSession(){
       scoped.visibilityVerified===false&&scoped.completeEngineeringDrawingVerified===false&&
       scoped.canPromoteToVerifiedResult===false&&scoped.revision===latest.revision?
        Timeline.createPlayer(scoped.timing,{revision:latest.revision}):null;
+    const scopedPlayback=scopedClock?Object.freeze({...resultBase(latest),
+      kind:'prism-scoped-preview',verified:false,clock:scopedClock,
+      plan:Object.freeze({steps:scoped.steps,timing:scoped.timing})}):null;
     current=Object.freeze({...resultBase(latest),kind:'prism-evidence',
-      verified:false,status:'geometry-only',evidence,scene,scopedClock,
+      verified:false,status:'geometry-only',evidence,scene,scopedClock,scopedPlayback,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }
