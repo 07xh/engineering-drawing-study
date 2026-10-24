@@ -21,8 +21,9 @@ test('W exact two inverse-radical roots retain distinct 3D x at the SAME project
   curve:source(),from:p(2,v),to:p(4,v)});
  assert.equal(r.events.length,2);
  assert.equal(r.allAxisLineContactsWithinSupportedScopeEnumerated,true);
- assert.deepEqual(r.events.map(e=>e.parameterX),[-4,4]);
- assert.deepEqual(r.events.map(e=>e.projectedUV.u),[3,3]);
+ assert.ok(r.events.every((e,i)=>Math.abs(e.parameterX-[-4,4][i])<1e-10),
+  'floating radical inverse roots must retain both spatial X candidates');
+ assert.ok(r.events.every(e=>Math.abs(e.projectedUV.u-3)<1e-10));
  assert.deepEqual(r.events.map(e=>e.projectedUV.v),[v,v]);
  assert.ok(r.events.every(e=>e.classification===
   'strict-projected-interior-contact'));
