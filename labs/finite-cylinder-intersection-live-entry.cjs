@@ -10,13 +10,17 @@ const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
  require('../workbench/c3-vh-projection-dedup.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {buildC3LinkedGeometryScene}=
+ require('../workbench/c3-linked-geometry-scene.cjs');
+const {compileGeometryScene}=
+ require('../project/geometry-scene-consumer.cjs');
 const NS='http://www.w3.org/2000/svg',VIEWS=['V','H','W'];
 const $=id=>document.getElementById(id);
 const fieldIds=['zRadius','zX','zY','zMin','zMax',
  'yRadius','yX','yZ','yMin','yMax'];
 const controls=['play','pause','prev','next'];
 let revision=1,current=null,raf=null,playing=false;
-let transforms=null;
+let transforms=null,linkedScene=null,selectedGeometryId=null;
 function now(){return performance.now();}
 function node(tag,attributes={}){
  const element=document.createElementNS(NS,tag);
@@ -39,7 +43,8 @@ function invalidate(reason,resetConfirmation=false){
  stop();
  if(current){current.player.invalidate(revision+1,now());current=null;}
  revision++;
- transforms=null;
+ transforms=null;linkedScene=null;selectedGeometryId=null;
+ $('spatialBoard').replaceChildren();
  if(resetConfirmation)$('confirmed').checked=false;
  $('board').replaceChildren();
  $('proof').textContent='条件已变化，旧数学与 V5 绘制资格已撤销。';
@@ -166,6 +171,41 @@ function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
  }
  svg.append(group);
 }
+function selectLinkedGeometry(id){
+ if(!linkedScene||!linkedScene.groups.some(g=>g.geometryId===id))return;
+ selectedGeometryId=id;
+ renderVerifiedV5Actions();
+ renderLinkedSpatial();
+}
+function renderLinkedSpatial(){
+ const svg=$('spatialBoard');svg.replaceChildren();
+ svg.append(node('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
+ if(!linkedScene||!current||!current.player.canRender(revision))return;
+ const scene=compileGeometryScene(linkedScene.scene,{
+  camera:{yaw:Number($('c3-yaw').value),
+   pitch:Number($('c3-pitch').value)}});
+ for(const item of scene.spatial){
+  const picked=item.objectId===selectedGeometryId;
+  const element=node(item.kind==='line'?'line':
+   item.kind==='path'?'path':'circle',{
+    ...item.attrs,
+    fill:item.kind==='circle'?(picked?'#ef6730':'#286da0'):'none',
+    stroke:picked?'#ef6730':item.kind==='circle'?'#286da0':'#43886a',
+    'stroke-width':picked?3.5:2.2,
+    ...(item.kind==='line'?{'stroke-dasharray':'5 6'}:{}),
+    'data-geometry-id':item.objectId,
+    'data-view':'3D','data-official-engineering-line':'false',
+    role:'button',tabindex:0,
+    'aria-label':'选中 '+item.objectId+' 的三维辅助几何'
+   });
+  element.addEventListener('click',()=>selectLinkedGeometry(item.objectId));
+  element.addEventListener('keydown',e=>{
+   if(e.key==='Enter'||e.key===' '){e.preventDefault();
+    selectLinkedGeometry(item.objectId);}
+  });
+  svg.append(element);
+ }
+}
 function renderVerifiedV5Actions(){
  const svg=$('board');svg.querySelectorAll('[data-v5-point-layer]')
   .forEach(element=>element.remove());
@@ -215,6 +255,27 @@ function renderVerifiedV5Actions(){
       'data-cap-projection-collapsed':capGuide.sourceProjectionCollapsedToPoint}:{}),
     ...(WGuide?{'data-M5-open-ray-status':WProof.m5OpenInteriorRayStatus,
       'data-open-interval-only':'true'}:{})});
+   const match=linkedScene?.groups.find(g=>
+    Object.values(g.v5ActionIds).includes(action.id));
+   if(match){
+    const id=match.geometryId,picked=id===selectedGeometryId;
+    shape.setAttribute('data-geometry-id',id);
+    shape.setAttribute('data-view',
+     Object.entries(match.v5ActionIds).find(([,v])=>v===action.id)[0]);
+    shape.setAttribute('role','button');
+    shape.setAttribute('tabindex','0');
+    shape.setAttribute('aria-label','选中 '+id+' 的三视图辅助作图');
+    if(picked){
+     shape.setAttribute('stroke','#ef6730');
+     shape.setAttribute('stroke-width','3.5');
+     if(action.kind==='point')shape.setAttribute('fill','#ef6730');
+    }
+    shape.addEventListener('click',()=>selectLinkedGeometry(id));
+    shape.addEventListener('keydown',e=>{
+     if(e.key==='Enter'||e.key===' '){e.preventDefault();
+      selectLinkedGeometry(id);}
+    });
+   }
    Motion.updateSvg(shape,action,fraction);
    layer.append(shape);
   }
@@ -248,7 +309,9 @@ function navigate(delta){
  renderVerifiedV5Actions();
 }
 function solve(){
- stop();current=null;disable(true);$('board').replaceChildren();
+ stop();current=null;linkedScene=null;selectedGeometryId=null;
+ disable(true);$('board').replaceChildren();
+ $('spatialBoard').replaceChildren();
  try{
   const input=readInput();
   const count=Number($('stations').value);
@@ -263,9 +326,12 @@ function solve(){
    includeCapFacePairGuides:true});
   const wRayProof=buildC3WIntervalPreview({input,revision});
   const vhDedup=buildC3VHProjectionDedup({input,revision});
+  const linked=buildC3LinkedGeometryScene({input,revision,
+   compiled:computed,viewTransforms:transforms});
   drawScaffold();
   drawAnalyticPreview(computed,input,wRayProof,vhDedup);
-  current=computed;
+  current=computed;linkedScene=linked;
+  renderLinkedSpatial();
   disable(false);
   renderVerifiedV5Actions();
   const p=computed.sourceM3;
@@ -281,6 +347,8 @@ function solve(){
    '；端盖交线辅助 V5：'+computed.sourceCapFaceProjectionActionCount+
    '（退化为真实投影点 '+computed.sourceCapFaceCollapsedProjectionPointCount+'）'+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
+   '；共享三维辅助对象 '+linked.spatialObjectCount+
+   ' 个，V/H/W 与 3D 共享来源，未认证曲线没有伪造折线。'+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
    ' 段、H='+vhDedup.visibleUniqueHSpanCount+
@@ -294,7 +362,9 @@ function solve(){
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
    '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
  }catch(e){
-  current=null;disable(true);$('board').replaceChildren();
+  current=null;linkedScene=null;selectedGeometryId=null;
+  disable(true);$('board').replaceChildren();
+  $('spatialBoard').replaceChildren();
   $('proof').textContent='没有发布任何未经证明的点或曲线。';
   showMessage('数学审核阻断：'+(e?.message||'未知异常'),true);
  }
@@ -311,6 +381,8 @@ function init(){
  $('pause').addEventListener('click',()=>{stop();renderVerifiedV5Actions();});
  $('prev').addEventListener('click',()=>navigate(-1));
  $('next').addEventListener('click',()=>navigate(1));
+ for(const id of ['c3-yaw','c3-pitch'])
+  $(id).addEventListener('input',renderLinkedSpatial);
  $('speed').addEventListener('change',()=>{
   if(!current||!current.player.canRender(revision))return;
   current.player.setSpeed(Number($('speed').value),now());
