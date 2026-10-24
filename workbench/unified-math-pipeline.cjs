@@ -14,6 +14,8 @@ const {verifiedConstructionIntentV1}=require('./verified-construction-intent-v1.
 const {verifiedPolygonIntentTimeline}=require('./verified-polygon-intent-v1.cjs');
 const {assertM3ToV5Consistency,assertConeM3ToV5Consistency}=require('./m3-v5-consistency-gate.cjs');
 const {classifyConePlane}=require('../engines/spatial/sections/cone-plane-classifier.cjs');
+const {evaluateFiniteOrthogonalCylinderIntersection}=
+ require('../engines/spatial/intersections/finite-orthogonal-cylinders.cjs');
 const {coneSpatialV5Preview}=require('./cone-spatial-v5-preview.cjs');
 const {solveVerifiedSectionEvidence}=
  require('../engines/spatial/sections/verified-section-evidence.cjs');
@@ -163,6 +165,13 @@ function evaluateUnifiedMath({kind,input,sheet,revision=0,visibilityReview}={}){
   const result=solveAffinePointConstraints({...givens,revision});
   return Object.freeze({...result,kind:'affine-point-system',
    unifiedMathPipeline:'m3-scoped-affine-unknowns-no-v5/1'});
+ }
+ if(kind==='finite-orthogonal-cylinder-intersection'){
+  if(sheet!==undefined&&sheet!==null||visibilityReview!==undefined)
+   throw new TypeError('finite cylinder M3 takes only reviewed model-mm input; no paper or visibility injection');
+  const result=evaluateFiniteOrthogonalCylinderIntersection({input,revision});
+  return Object.freeze({...result,kind,
+   unifiedMathPipeline:'m3-analytic-finite-cylinder-lateral-only-no-v5/1'});
  }
  if(kind==='spatial-section')
   return evaluateScopedSpatialSection({input,revision,sheet,visibilityReview});
