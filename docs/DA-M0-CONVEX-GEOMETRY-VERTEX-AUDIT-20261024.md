@@ -1,0 +1,9 @@
+# M0 exact convex vertex evidence bound to an actual source Geometry snapshot
+
+A read-only, opt-in consumer for merged #592 (generic recession cone), #593 (one shared binary64 exact 3D determinant), and #595 (exact rational halfspace extreme-vertex completeness). This adds NO second solver, Geometry contract, V5 player or parallel engine.
+
+The audit snapshots the existing model-3d mm Geometry mesh ONCE using structuredClone to prevent changing getters between validation and use. It reuses the existing full closed convex manifold+Euler+support-plane validator to reconstruct halfspaces independently from faces; then compares its original source 3D vertices against the exact rational halfspace intersection, within the #595 conservative budget. Because normalized face normals may not have exactly representable intersections, an otherwise valid mesh can return `undetermined`, which is preferable to fabricated positive proof.
+
+**What is proven:** the snapshotted mesh passed existing closed convex topology checks and the vertex set matches the exact halfspaces, when status is certified. **What is NOT proven:** the user's input photo/scan/depth is authentic, the caller-supplied revision was verified by a trusted storage record, the supplied mesh is the sole object in the complete scene, every endpoint/occluded segment, official CAD line styles, or ConstructionIntent/DAG/V5. Those flags are ALWAYS false, and no checked result is wired to the official line-style gate in this PR.
+
+Tests include legitimate closed cube, multiple translations, missing faces/edges, duplicated vertices, wrong model units, snapshot getters changed between calls, caller revision changes, and explicit negative V5 proof. Five exact PR-head CI checks + mergeability required; revert isolated squash if needed.
