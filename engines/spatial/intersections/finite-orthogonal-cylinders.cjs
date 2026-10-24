@@ -22,9 +22,9 @@ const freeze=v=>{if(v&&typeof v==='object'&&!Object.isFrozen(v)){
 function fail(message){throw new TypeError('M3 finite orthogonal cylinder: '+message);}
 function validate(input){
  if(!input||typeof input!=='object'||Array.isArray(input)||
-    Object.keys(input).sort().join(',')!=='kind,sourceConfirmed,yCylinder,zCylinder'||
+    Object.keys(input).sort().join(',')!=='kind,sourceConfirmed,unit,yCylinder,zCylinder'||
     input.kind!=='finite-orthogonal-cylinder-intersection'||
-    input.sourceConfirmed!==true)
+    input.sourceConfirmed!==true||input.unit!=='mm')
   fail('human-confirmed finite y/z cylinders required');
  const Z=input.zCylinder,Y=input.yCylinder;
  for(const [obj,names] of [[Z,['radius','xCenter','yCenter','zMin','zMax']],
