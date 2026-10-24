@@ -20,6 +20,8 @@ const {solveVerifiedSectionEvidence}=
 const {validateSolveResult}=require('../core/contracts/solve-result.js');
 const {buildScopedSpatialSectionV5Preview}=require('./spatial-section-v5-parity.cjs');
 const {deriveScopedSectionVisibility}=require('./spatial-section-visibility-evidence.cjs');
+const {bindScopedSectionEvidenceToV5}=
+ require('./spatial-section-evidence-v5-binding.cjs');
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const FILLET_KINDS=new Set(['segments','circles','segment-circle']);
 const DEFAULT_POINT_SHEET={origin:{x:360,y:175},scale:4};
@@ -46,6 +48,9 @@ function evaluateScopedSpatialSection({input,revision,sheet,visibilityReview}){
   buildScopedSpatialSectionV5Preview({input,evidence,revision}):null;
  const visibilityEvidence=qualified?
   deriveScopedSectionVisibility({input,evidence,revision,review:visibilityReview}):null;
+ const sectionEvidenceV5Bindings=constructionPreview&&visibilityEvidence?
+  bindScopedSectionEvidenceToV5({preview:constructionPreview,
+   visibilityEvidence,revision}):null;
  if(qualified&&(evidence.globallyUnique!==null||
     evidence.sourceProblemConfirmed!==false||
     evidence.visibilityVerified!==false||
@@ -61,6 +66,9 @@ function evaluateScopedSpatialSection({input,revision,sheet,visibilityReview}){
   sectionConstructionPreview:constructionPreview,
   // Open interiors are not a full hidden-line drawing or endpoint proof.
   sectionVisibilityEvidence:visibilityEvidence,
+  // Links trusted M3 open-edge scope to existing ConstructionStep/V5 IDs.
+  // This is an annotation, NOT a canonical ConstructionIntent or line style.
+  sectionEvidenceV5Bindings,
   geometryVerifiedWithinSpecialistScope:qualified,
   verifiedVisibility:false,sourceProblemConfirmed:false,
   constructionIntents:[],steps:[],timing:null,
