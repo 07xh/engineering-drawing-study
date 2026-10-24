@@ -13,8 +13,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {traceConvexRayDepth}=
  require('../core/numeric/convex-ray-depth.cjs');
-const {inspectProjectedEdgeDepth}=
- require('../core/numeric/projected-edge-depth-events.cjs');
+const {recomputeReviewedProjectedEdgeEvents}=
+ require('./recomputed-projected-pairwise-events.cjs');
 const {certifyConvexSegmentOcclusion}=
  require('../core/numeric/convex-segment-occlusion.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
@@ -139,30 +139,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
  const edgeAudit=allEdges.length>40?
   {status:'budget-exceeded',pairCount:0,events:[],
    completeContourVerified:false}:
-  (()=>{
-   const events=[];let pairCount=0;
-   for(let i=0;i<allEdges.length;i++)for(let j=i+1;j<allEdges.length;j++){
-    const first=allEdges[i],second=allEdges[j];
-    for(const view of VIEWS){
-     const intersection=inspectProjectedEdgeDepth({
-      first:first.edge,second:second.edge,view});
-     pairCount++;
-     if(!['crossing','collinear-overlap','endpoint-touch-undetermined'].includes(
-       intersection.status))continue;
-     events.push({
-      view,firstSourceGeometryId:first.sourceGeometryId,
-      firstSourceEdgeId:first.sourceEdgeId,
-      secondSourceGeometryId:second.sourceGeometryId,
-      secondSourceEdgeId:second.sourceEdgeId,
-      relation:intersection.status,events:intersection.events,
-      ranges:intersection.ranges,
-      completeOcclusionVerified:false,officialLineStyleVerified:false
-     });
-    }
-   }
-   return {status:'pairwise-depth-events-only',pairCount,events,
-    completeContourVerified:false};
-  })();
+  recomputeReviewedProjectedEdgeEvents(allEdges);
  // The M0 elimination proves continuous strict-interior occlusion for the
  // OPEN parts of real source mesh edges. This is NOT a source-face contour,
  // screen-space visibility segmentation or permission to replace V5 strokes.
