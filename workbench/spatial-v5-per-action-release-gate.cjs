@@ -16,6 +16,8 @@ const {inspectSpatialV5Readiness}=
  require('./spatial-v5-evidence-readiness.cjs');
 const {deriveProjectedCutEndpointTopology}=
  require('./reviewed-projected-cut-endpoint-topology.cjs');
+const {inspectFinalSourceStrokeObligations}=
+ require('./m5-final-source-stroke-obligations.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
  }return x;};
@@ -59,6 +61,15 @@ function inspectSpatialV5ActionRelease({
     endpoints.cutEndpoints.length!==
       sceneDepthEvidence.projectedStrokePartitions.segments.length*2)
   fail('incomplete original source cutpoint coverage');
+ const finalStrokeObligations=inspectFinalSourceStrokeObligations({
+  geometry,revision,sceneDepthEvidence});
+ if(finalStrokeObligations.status!=='per-source-span-proof-obligations-audited'||
+    finalStrokeObligations.spanCount!==
+      sceneDepthEvidence.projectedStrokePartitions.segments.length||
+    finalStrokeObligations.signedCount!==0||
+    finalStrokeObligations.v5Ready!==false||
+    finalStrokeObligations.officialLineStylesVerified!==false)
+  fail('final stroke mathematical union/depth/junction audit incomplete');
  const obligations=readiness.missingEvidence.map(x=>x.id);
  const actions=[];
  for(const [i,b] of fresh.v5ActionBindings.entries()){
@@ -77,6 +88,14 @@ function inspectSpatialV5ActionRelease({
   // Each missing witness is attributable to the correct ORIGINAL source
   // action. A ray-certified OPEN segment does not prove a closed line, and
   // a paper coordinate match does not prove a physical 3D endpoint join.
+  const scoped=finalStrokeObligations.spans[i];
+  if(!scoped||scoped.index!==i||scoped.sourceEdgeId!==span.sourceEdgeId||
+     scoped.sourceGeometryId!==span.sourceGeometryId||
+     scoped.view!==span.view||
+     JSON.stringify(scoped.sourceParameterRange)!==JSON.stringify(span.sourceParameterRange)||
+     scoped.authorizedStyle!=='undetermined'||
+     scoped.officialV5ActionReleaseApproved!==false)
+   fail('final stroke candidate source proof not bound to actual V5 action');
   const needed=new Set([
    'm3-independent-solve-result',
    'canonical-spatial-construction-order',
@@ -116,6 +135,7 @@ function inspectSpatialV5ActionRelease({
    fail('invalid physical 3D source endpoint evidence');
   if(readiness.missingCount===0)
    fail('source readiness report cannot be silently trusted to lift line style');
+  for(const item of scoped.missingProofs)needed.add('source:'+item);
   for(const item of obligations)needed.add('scene:'+item);
   actions.push({
    v5ActionId:b.v5ActionId,
@@ -133,6 +153,10 @@ function inspectSpatialV5ActionRelease({
    allProjectedJunctionTopologyVerified:false,
    geometryAndMotionParityVerified:true,
    sourceIntentAndDAGStructureVerified:true,
+   independentFinalSourceContourDepthJunctionEvidence:scoped,
+   localPositiveOuterContourGeometryCandidate:
+    scoped.localPositiveOuterGeometryCandidate,
+   hiddenDepthEvidenceCandidate:scoped.hiddenDepthEvidenceCandidate,
    missingProofs:[...needed],
    authorizedLineStyle:'undetermined',
    officialStyleApproved:false,
@@ -147,7 +171,8 @@ function inspectSpatialV5ActionRelease({
  return freeze({
   schema:'draftai-spatial-v5-per-action-release-gate/1',
   revision,status:'all-actions-held-evidence-incomplete',reason:null,
-  actions,actionCount:actions.length,blockedCount:actions.length,
+  actions,finalStrokeObligations,
+  actionCount:actions.length,blockedCount:actions.length,
   signedCount:0,anyOfficialStyleApproved:false,singleV5Ready:false
  });
 }
