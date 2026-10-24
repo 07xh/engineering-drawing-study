@@ -17,7 +17,8 @@ test('M0 cone finite-body classification still distinguishes full, clipped, none
  const full=classifyConePlane(cone,conePlane(6));
  const clipped=classifyConePlane(cone,conePlane(1));
  const missed=classifyConePlane(cone,conePlane(12));
- const vertical=classifyConePlane(cone,conePlane(5,P(1,0,0)));
+ const vertical=classifyConePlane(cone,{point:P(1,0,5),
+  normal:P(1,0,0),modelUnit:'mm'});
  assert.deepEqual([full.status,full.kind],['ready','full-ellipse']);
  assert.deepEqual([clipped.status,clipped.kind],['ready','clipped-ellipse']);
  assert.equal(missed.status,'none');assert.equal(missed.separationVerified,true);
@@ -56,6 +57,9 @@ test('M0 prism first-angle point arithmetic still supports open-face ray evidenc
  },{retainedHalfspace:'negative',observerDirection:P(0,0,1)});
  assert.equal(r.status,'ready');
  assert.ok(r.edgeRuns.length>0);
- assert.equal(r.visibilityVerified,false);
+ assert.equal(r.visibilityVerified,r.counts.undetermined===0,
+  'specialist proof may certify only open cut-edge interiors');
+ assert.equal(r.boundaryEndpointsVerified,false);
+ assert.equal(r.standardViewMappingVerified,false);
  assert.equal(r.v5LineStylesReady,false);
 });
