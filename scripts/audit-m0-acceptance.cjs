@@ -2,7 +2,10 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'docs/architecture/m0-acceptance-inventory.json'),'utf8'));
-const roots=['core','engines','workbench','scripts','tests'];
+// A real native route continues through the photograph UI; stopping static
+// discovery at core/workbench would falsely report it as unconsumed.
+const roots=['core','engines','workbench','labs','recognition',
+ 'integration','project','benchmark','scripts','tests'];
 const extensions=new Set(['.cjs','.js','.mjs']);
 function scan(dir,out=[]){
  if(!fs.existsSync(dir))return out;
@@ -33,6 +36,35 @@ function staticImports(file){
   }
  }
  return [...new Set(found)];
+}
+function verifyNativeRoutes(routes,imports,exists){
+ if(!Array.isArray(routes)||routes.length===0)
+  throw new Error('missing M0 native consumer acceptance routes');
+ const names=new Set();
+ return routes.map(route=>{
+  if(!route||typeof route.name!=='string'||!route.name.trim()||
+     names.has(route.name)||!Array.isArray(route.chain)||route.chain.length<2||
+     !Array.isArray(route.regressionTests)||route.regressionTests.length<1)
+   throw new Error('invalid or duplicate M0 native route');
+  names.add(route.name);
+  for(const file of route.chain)
+   if(typeof file!=='string'||!exists(file))
+    throw new Error('missing native route source: '+route.name+' '+file);
+  for(let i=1;i<route.chain.length;i++){
+   const consumer=route.chain[i],dependency=route.chain[i-1];
+   if(!imports(consumer).includes(dependency))
+    throw new Error('native M0 route disconnected: '+consumer+' -> '+dependency);
+  }
+  for(const evidence of route.regressionTests)
+   if(typeof evidence!=='string'||!evidence.startsWith('tests/')||
+      !evidence.endsWith('.test.cjs')||!exists(evidence))
+    throw new Error('missing native source regression: '+route.name+' '+evidence);
+  return {name:route.name,consumerEntry:route.chain.at(-1),
+   chain:[...route.chain],regressionTests:[...route.regressionTests],
+   staticImportChainConnected:true,executableEvidenceFilesPresent:true,
+   currentSourceIndependentlyAuthenticated:false,
+   fullM0ProofCertified:false};
+ });
 }
 function audit(){
  const modules=manifest.modules;
@@ -72,6 +104,9 @@ function audit(){
   }
   return [...found].filter(runtime).sort();
  }
+ const routes=verifyNativeRoutes(manifest.nativeRuntimeRoutes,
+  file=>staticImports(path.join(root,file)),
+  file=>fs.existsSync(path.join(root,file)));
  const entries=modules.map(item=>{
   const consumers=[...(reverse.get(item.path)||[])].sort();
   return {...item,
@@ -85,7 +120,8 @@ function audit(){
   statuses:Object.fromEntries(Object.keys(manifest.statusDefinitions)
    .map(k=>[k,entries.filter(x=>x.status===k).length])),
   noDirectRuntimeImporter:entries.filter(x=>x.directRuntimeConsumers.length===0).map(x=>x.path),
+  nativeRuntimeRoutes:routes,
   entries};
 }
 if(require.main===module)process.stdout.write(JSON.stringify(audit(),null,2)+'\n');
-module.exports={audit};
+module.exports={audit,verifyNativeRoutes};
