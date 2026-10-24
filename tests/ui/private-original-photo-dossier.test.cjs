@@ -98,7 +98,7 @@ test('09 existing workbench exports CURRENT review, actual OCR and true V5 math 
  const output=fs.readFileSync('labs/private-photo-exercise-export.cjs','utf8');
  assert.match(output,/fingerprintLocalPhoto/);
  assert.match(output,/getEvidence\(\)/);
- assert.match(output,/fileInput\.files\?\.\[0\]!==file/);
+ assert.match(output,/fileInput\.files\?\.\[0\]===file/);
  assert.doesNotMatch(output,/fetch\(|XMLHttpRequest|localStorage|sendBeacon/);
 });
 
@@ -121,7 +121,10 @@ test('09 source answer-mark role change during SHA hashing invalidates private p
  s.get('privatePhotoCaseAccept').checked=true;
  const promise=s.app.save();await Promise.resolve();
  assert.equal(typeof finish,'function');
- s.get('privatePhotoCaseRole').value='answer-marked-reference';
+ // linkedom select.value has a getter only; simulate the selected option
+ // changing while the ORIGINAL File digest is in flight.
+ const role=s.get('privatePhotoCaseRole');
+ Object.defineProperty(role,'value',{configurable:true,value:'answer-marked-reference'});
  finish(new Uint8Array(32).fill(0xad).buffer);
  await promise;
  assert.equal(s.blobs.length,0);
