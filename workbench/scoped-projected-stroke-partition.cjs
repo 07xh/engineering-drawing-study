@@ -46,6 +46,11 @@ const empty=(revision,status)=>freeze({
 function partitionReviewedSourceEdges({geometry,sceneDepthEvidence,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   fail('revision required');
+ if(sceneDepthEvidence?.schema==='draftai-reviewed-mesh-scene-ray-audit/1'&&
+    sceneDepthEvidence.revision===revision&&
+    (sceneDepthEvidence.fullSceneVerified!==false||
+     sceneDepthEvidence.officialLineStylesVerified!==false))
+  fail('unreviewed whole-scene or official line style promotion');
  if(!sceneDepthEvidence||sceneDepthEvidence.revision!==revision||
     sceneDepthEvidence.schema!=='draftai-reviewed-mesh-scene-ray-audit/1'||
     sceneDepthEvidence.status!=='scoped-face-probes-only'||
