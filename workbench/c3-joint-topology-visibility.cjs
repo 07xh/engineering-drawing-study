@@ -12,6 +12,16 @@ const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
+function analyticC3PointAt(branch,input,x){
+ const Z=input.zCylinder,Y=input.yCylinder;
+ if(!branch||x<branch.xRange[0]||x>branch.xRange[1])return null;
+ const yr=Z.radius**2-(x-Z.xCenter)**2;
+ const zr=Y.radius**2-(x-Y.xCenter)**2;
+ if(yr<0||zr<0)return null;
+ const point={x,y:Z.yCenter+branch.signY*Math.sqrt(yr),
+  z:Y.zCenter+branch.signZ*Math.sqrt(zr)};
+ return Object.values(point).every(Number.isFinite)?point:null;
+}
 function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences){
  const result=[];
  for(const view of ['V','H','W']){
