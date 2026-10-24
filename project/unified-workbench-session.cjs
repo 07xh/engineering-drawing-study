@@ -158,15 +158,21 @@ function createUnifiedProjectSession(){
          p.sourceStamp!==JSON.stringify([
            latest.source.imageId,latest.source.rotationDeg,latest.source.calibration]))
         throw new Error('未知量数学条件需要按当前原图和比例重新审核');
+      const nonlinear=p.solverKind==='nonlinear';
       const evidence=evaluateUnifiedMath({
-        kind:'affine-point-system',revision:latest.revision,
-        input:{frame:p.frame,unit:p.unit,points:p.points,constraints:p.constraints}
+        kind:nonlinear?'point-constraint-system':'affine-point-system',
+        revision:latest.revision,
+        input:{frame:p.frame,unit:p.unit,points:p.points,constraints:p.constraints,
+          ...(nonlinear?{seeds:p.seeds}:{})}
       });
-      const scene=evidence.status==='unique'&&
+      // Local nonlinear roots are NOT verified Geometry. Only exact,
+      // stable affine scope can enter the canonical Geometry Scene.
+      const scene=!nonlinear&&evidence.status==='unique'&&
         evidence.mathematicallyVerifiedWithinAffineScope===true?
          deriveGeometryScene({geometry:evidence.geometry,
           revision:latest.revision,resultId:'AffineScopedResult'}):null;
-      current=Object.freeze({...resultBase(latest),kind:'affine-evidence',
+      current=Object.freeze({...resultBase(latest),
+        kind:nonlinear?'nonlinear-evidence':'affine-evidence',
         verified:false,status:evidence.status,evidence,scene,
         links:scene?projectSelectionLinks(scene):null,plan:null,clock:null});
       emit();return current;
