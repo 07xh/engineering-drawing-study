@@ -12,7 +12,7 @@ const {auditC3TransitionRays}=require('./c3-transition-ray-candidates.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
-function buildTransitionGuards(intervals,junctionGuards,input){
+function buildTransitionGuards(intervals,junctionGuards,input,projectedCoincidences){
  const result=[];
  for(const view of ['V','H','W']){
   const byBranch=new Map();
@@ -42,8 +42,14 @@ function buildTransitionGuards(intervals,junctionGuards,input){
    const branchCoverage=j.incidentBranchIds.every(id=>
     incident.some(i=>i.branchId===id));
    const incidentOpenStatuses=[...new Set(incident.map(i=>i.openInteriorStatus))];
+   const coincidentJunctions=projectedCoincidences
+    .filter(p=>p.view===view&&p.junctionIds.includes(j.junctionId));
    const projectionOverlapUndetermined=true;
    result.push({view,junctionId:j.junctionId,
+    projectedCoincidentJunctionIds:[...new Set(coincidentJunctions
+     .flatMap(p=>p.junctionIds.filter(id=>id!==j.junctionId)))].sort(),
+    distinctPhysicalPointsSharingProjection:coincidentJunctions.some(p=>
+     p.distinct3DPhysicalPoints),
     incidentBranchesCoveredInView:branchCoverage,
     incidentOpenStatuses,projectionOverlapUndetermined,
     finiteCylinderRayCandidates:auditC3TransitionRays({input,point:j.point3D,view}),
@@ -152,7 +158,8 @@ function auditC3JointTopologyVisibility({input,revision}={}){
   graphVerifiedComponentCount:topology.graphVerifiedComponentCount,
   unresolvedAnalyticJunctionCount:topology.unresolvedAnalyticJunctionCount,
   allSourceBranchesAccountedFor:true,intervals,junctionGuards,topologyComponents,
-  transitionGuards:buildTransitionGuards(intervals,junctionGuards,m3.source),
+  transitionGuards:buildTransitionGuards(intervals,junctionGuards,input,
+   topology.projectedCoincidences),
   unresolvedJunctionGuardCount:unresolvedJunctions.length,
   fullCurveTopologyVerified:false,
   allViewsContinuousVisibilityVerified:false,officialLineStylesVerified:false,
