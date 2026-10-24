@@ -13,35 +13,11 @@
  */
 const {classifyConeSectionVisibility}=
  require('../engines/spatial/sections/cone-cut-ray-visibility.cjs');
-const VIEWS=Object.freeze(['V','H','W']);
-const DIRS=Object.freeze({
- V:Object.freeze({x:0,y:-1,z:0}),
- H:Object.freeze({x:0,y:0,z:1}),
- W:Object.freeze({x:1,y:0,z:0})
-});
+const {VIEWS,FIRST_ANGLE_OBSERVER_RAYS:DIRS,
+ validateFirstAngleObserverRays:validatedDirections}=
+ require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const statuses=Object.freeze(['visible','hidden','undetermined']);
-function validatedDirections(observers){
- if(!observers||typeof observers!=='object'||Array.isArray(observers)||
-    Object.keys(observers).sort().join(',')!=='H,V,W')
-  throw new TypeError('three explicitly reviewed V/H/W observer directions required');
- const normalized={};
- for(const view of VIEWS){
-  const v=observers[view],expected=DIRS[view];
-  if(!v||typeof v!=='object'||Array.isArray(v)||
-     Object.keys(v).sort().join(',')!=='x,y,z'||
-     !['x','y','z'].every(k=>finite(v[k])))
-   throw new TypeError('finite explicit 3D '+view+' observer ray required');
-  const length=Math.hypot(v.x,v.y,v.z);
-  if(!finite(length)||length<=1e-12)
-   throw new RangeError('nonzero observer ray required');
-  const d={x:v.x/length,y:v.y/length,z:v.z/length};
-  if(Math.hypot(d.x-expected.x,d.y-expected.y,d.z-expected.z)>1e-12)
-   throw new RangeError('observer ray conflicts with named V/H/W model axes');
-  normalized[view]=d;
- }
- return normalized;
-}
 function coneV5OpenRayEvidence(cone,plane,{
  kind,samples,sourceConfirmed,retainedHalfspace,observerDirections,analytic
 }={}){
