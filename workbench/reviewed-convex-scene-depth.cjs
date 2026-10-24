@@ -19,6 +19,8 @@ const {certifyConvexSegmentOcclusion}=
  require('../core/numeric/convex-segment-occlusion.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
+const {verifyConvexProjectedOutline}=
+ require('../core/verification/convex-projected-outline.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -37,6 +39,9 @@ const unready=(revision,reason)=>freeze({
   completeContourVerified:false,officialLineStylesVerified:false},
  wholeSourceEdgeOcclusion:{status:'not-covered',checkedCount:0,
   hiddenSourceEdges:[],fullLineStyleSignedOff:false},
+ projectedOutlines:{status:'not-covered',objects:[],
+  allIndividualConvexProjectedBoundariesVerified:false,
+  combinedSilhouetteVerified:false,officialLineStylesVerified:false},
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -97,6 +102,23 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    });
   }
  }
+ // A convex object's projected OUTER boundary is a mathematical set
+ // regardless of which source edge sits in front. Never promote the
+ // aggregate of object-wise outlines to multi-body visible silhouette.
+ const projectedOutlines=(()=>{
+  const objects=[];
+  for(const {g} of parts){
+   try{objects.push({sourceGeometryId:g.id,status:'projected-boundary-only',
+    evidence:verifyConvexProjectedOutline({mesh:g,revision})});}
+   catch(e){objects.push({sourceGeometryId:g.id,status:'undetermined',
+    reason:e.message,evidence:null});}
+  }
+  return {status:objects.every(x=>x.status==='projected-boundary-only')?
+    'individual-convex-projected-boundaries':'partly-undetermined',
+   objects,allIndividualConvexProjectedBoundariesVerified:objects.every(
+    x=>x.evidence?.sourceClosedConvexTopologyVerified===true),
+   combinedSilhouetteVerified:false,officialLineStylesVerified:false};
+ })();
  // Reuse already confirmed source mesh Edges (not sampled render lines).
  // Pairwise model-3d crossing/overlap tests are bounded separately; each
  // event is ONLY a two-edge depth witness, not global scene visibility.
@@ -212,7 +234,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
   sourceGeometryIds:solids.map(x=>x.id),
   sampleCount:samples.length,samples,edgeOverlapAudit:edgeAudit,
   edgeContinuousOcclusion:continuousOcclusion,
-  wholeSourceEdgeOcclusion:wholeEdgeOcclusion,
+  wholeSourceEdgeOcclusion:wholeEdgeOcclusion,projectedOutlines,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
