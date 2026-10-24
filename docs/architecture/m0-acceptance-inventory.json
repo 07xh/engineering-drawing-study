@@ -42,7 +42,8 @@
       "proofScope": "local positive open ray against supplied convex solid",
       "regressionTests": [
         "tests/math/m0-point-clearance-falsezero-slope.test.cjs",
-        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs",
+        "tests/math/m0-batch-ray-source-single-snapshot.test.cjs"
       ],
       "remainingGate": "full-scene inventory and revision"
     },
@@ -61,7 +62,8 @@
       "proofScope": "only supplied halfspaces and positive observer ray",
       "regressionTests": [
         "tests/math/m0-nearparallel-exact-ray-sign.test.cjs",
-        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs"
+        "tests/math/m0-batch-d-real-mesh-exact-convex-ray.test.cjs",
+        "tests/math/m0-batch-ray-source-single-snapshot.test.cjs"
       ],
       "remainingGate": "all occluders and complete scene"
     },
