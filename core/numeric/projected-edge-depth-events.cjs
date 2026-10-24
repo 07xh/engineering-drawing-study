@@ -17,6 +17,9 @@ const point=p=>p&&typeof p==='object'&&!Array.isArray(p)&&
  ['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
 const {dotObject3:dot}=
  require('./object-vector3.cjs');
+const {orientation2DAdaptive}=require('./orientation2d-adaptive.cjs');
+const exactTurn=(a,b,c)=>orientation2DAdaptive(
+ [a.u,a.v],[b.u,b.v],[c.u,c.v]).sign;
 const at=(s,t)=>({x:s.from.x+(s.to.x-s.from.x)*t,
  y:s.from.y+(s.to.y-s.from.y)*t,
  z:s.from.z+(s.to.z-s.from.z)*t});
@@ -85,8 +88,21 @@ function inspectProjectedEdgeDepth({first,second,view,toleranceMm=1e-7}={}){
     Math.min(uu,1-uu)*ls<=toleranceMm,
    fullLineVisibilityVerified:false}]);
  }
- if(Math.abs(cr(qp,r))>threshold)
-  return report('disjoint-parallel');
+ // A rounded cross product at large-but-supported source coordinates
+ // can be zero even if the exact projected binary64 lines are NOT
+ // parallel/collinear. Never generate a continuous 'collinear-overlap'
+ // range merely because floating two-term products cancelled to zero.
+ const directionSign=exactTurn({u:0,v:0},r,s);
+ if(directionSign!==0)
+  return report('undetermined-near-parallel-projection');
+ const cSign=exactTurn(a,b,c),dSign=exactTurn(a,b,d);
+ if(cSign!==0||dSign!==0){
+  // Only a numerically well-separated pair that lies entirely on the
+  // same exact side can keep the old negative disjoint-parallel verdict.
+  if(cSign!==0&&cSign===dSign&&Math.abs(cr(qp,r))>threshold)
+   return report('disjoint-parallel');
+  return report('undetermined-near-collinear-projection');
+ }
  const t0=d2(vec(a,c),r)/(lr*lr),
   t1=d2(vec(a,d),r)/(lr*lr);
  const start=Math.max(0,Math.min(t0,t1)),end=Math.min(1,Math.max(t0,t1));
