@@ -6,6 +6,7 @@
  */
 const {validSavedCalibration}=require('./source-calibration.cjs');
 const CandidateBridge=require('./source-candidate-bridge.cjs');
+const {TYPES:RELATION_TYPES}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
 const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
@@ -40,7 +41,7 @@ function newProject({id, title = '未命名项目', task = 'planar'} = {}) {
   return {
     format: FORMAT, version: VERSION, id, title, task, revision: 0,
     source: {imageId: null, rotationDeg: 0, calibration: null},
-    objects: [], conditions: [], view: defaults()
+    objects: [], conditions: [], relations: [], view: defaults()
   };
 }
 function validateProject(p) {
@@ -97,6 +98,29 @@ function validateProject(p) {
     if (conditionIds.has(c.id)) errors.push('条件 ID 重复');
     conditionIds.add(c.id);
   }
+  // Optional for VERSION=1 legacy projects; never uplift a relation from JSON
+  // as an independently proved mathematical result.
+  const relations=p.relations??[];
+  if(!Array.isArray(relations)||relations.length>200)errors.push('数学关系集合无效');
+  else{
+    const seen=new Set();
+    for(const row of relations){
+      if(!plain(row)||!isId(row.id)||seen.has(row.id)||
+        !RELATION_TYPES.includes(row.kind)||!Array.isArray(row.objectIds)||
+        row.objectIds.length!==2||row.objectIds[0]===row.objectIds[1]||
+        row.objectIds.some(id=>!objectIds.has(id))||
+        typeof row.confirmed!=='boolean'||
+        (row.kind==='distance'
+          ?!finite(row.value)||row.value<=0||row.value>1e8
+          :row.value!==null)){
+        errors.push('数学关系来源、对象或数值无效');continue;
+      }
+      seen.add(row.id);
+      if(row.confirmed&&row.objectIds.some(id=>!p.conditions.some(c=>
+         c.objectId===id&&c.confirmed)))
+        errors.push('未经人工确认的几何不能证明对象间关系');
+    }
+  }
   const v = p.view;
   if (!plain(v) || !['split', '2d', '3d'].includes(v.mode) ||
       (v.selectedObjectId !== null && !objectIds.has(v.selectedObjectId)) ||
@@ -139,7 +163,9 @@ function createCoordinator(initial, hooks = {}) {
     adapter.loadInputs(copy({
       projectId: project.id, task: project.task, revision: project.revision,
       source: project.source, objects: project.objects,
-      conditions: project.conditions.filter(c => c.confirmed)
+      conditions: project.conditions.filter(c => c.confirmed),
+      relations: (project.relations||[]).filter(r=>r.confirmed),
+      totalRelationCount:(project.relations||[]).length
     }));
   }
   function commit(change) {
@@ -187,12 +213,15 @@ function createCoordinator(initial, hooks = {}) {
         if (!jsonValue(object)) throw new Error('对象包含不可序列化字段');
         const next = copy(object);
         if (i < 0) p.objects.push(next); else p.objects[i] = next;
+        if(p.relations)p.relations=p.relations.map(r=>r.objectIds.includes(next.id)?
+          {...r,confirmed:false}:r);
       });
     },
     deleteObject(id) {
       return commit(p => {
         p.objects = p.objects.filter(o => o.id !== id);
         p.conditions = p.conditions.filter(c => c.objectId !== id);
+        if(p.relations)p.relations=p.relations.filter(r=>!r.objectIds.includes(id));
         if (p.view.selectedObjectId === id) p.view.selectedObjectId = null;
       });
     },
@@ -201,6 +230,7 @@ function createCoordinator(initial, hooks = {}) {
         p.recognition=CandidateBridge.addManualCandidate(p,candidate,imageMeta);
         p.conditions=p.conditions.map(c=>c.sourceCandidateId===candidate.id?
          {...c,confirmed:false}:c);
+        if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
       });
     },
     reviewSourceCandidate(id,decision) {
@@ -208,6 +238,7 @@ function createCoordinator(initial, hooks = {}) {
         p.recognition=CandidateBridge.reviewLocalCandidate(p,id,decision);
         p.conditions=p.conditions.map(c=>c.sourceCandidateId===id?
          {...c,confirmed:false}:c);
+        if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
       });
     },
     sourceCandidates(){return CandidateBridge.candidateLinks(project);},
@@ -218,6 +249,8 @@ function createCoordinator(initial, hooks = {}) {
         const next = copy(condition);
         next.confirmed = false; // Only confirmCondition can promote candidates.
         if (i < 0) p.conditions.push(next); else p.conditions[i] = next;
+        if(p.relations)p.relations=p.relations.map(r=>r.objectIds.includes(next.objectId)?
+          {...r,confirmed:false}:r);
       });
     },
     confirmCondition(id) {
@@ -233,7 +266,36 @@ function createCoordinator(initial, hooks = {}) {
         condition.confirmed = true;
       });
     },
-    deleteCondition(id) { return commit(p => {p.conditions = p.conditions.filter(c => c.id !== id);}); },
+    deleteCondition(id) { return commit(p => {
+      const c=p.conditions.find(x=>x.id===id);
+      p.conditions=p.conditions.filter(x=>x.id!==id);
+      if(c&&p.relations)p.relations=p.relations.map(r=>r.objectIds.includes(c.objectId)?
+       {...r,confirmed:false}:r);
+    }); },
+    putRelation(row){
+      return commit(p=>{
+        if(p.task!=='composition')throw new Error('对象关系仅适用于同一几何项目');
+        if(!jsonValue(row))throw new Error('关系输入不可序列化');
+        const data={id:row.id,kind:row.kind,
+         objectIds:copy(row.objectIds),value:row.value,confirmed:false};
+        const items=p.relations||(p.relations=[]);
+        const i=items.findIndex(x=>x.id===data.id);
+        if(i<0)items.push(data);else items[i]=data;
+      });
+    },
+    confirmRelation(id){
+      return commit(p=>{
+        if(p.task!=='composition')throw new Error('当前不是通用几何项目');
+        const r=(p.relations||[]).find(r=>r.id===id);
+        if(!r)throw new Error('关系不存在');
+        if(r.objectIds.some(id=>!p.conditions.some(c=>
+         c.objectId===id&&c.confirmed)))
+         throw new Error('两个对象都必须有已确认的当前几何条件');
+        r.confirmed=true;
+      });
+    },
+    deleteRelation(id){return commit(p=>{p.relations=(p.relations||[]).filter(r=>r.id!==id);});},
+
     setImage(imageId) { return commit(p => {
       if (imageId !== null && !isId(imageId)) throw new Error('无效原图 ID');
       if (p.source.imageId === imageId) return;
@@ -241,6 +303,7 @@ function createCoordinator(initial, hooks = {}) {
       p.recognition=null;
       // Never leave a dangling candidate link when the original photo changes.
       p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
+      if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
     }); },
     setImageGeometry({rotationDeg, calibration}) { return commit(p => {
       if (p.source.rotationDeg === rotationDeg && same(p.source.calibration, calibration)) return;
@@ -248,6 +311,7 @@ function createCoordinator(initial, hooks = {}) {
       p.source.calibration = copy(calibration);
       p.recognition=null;
       p.conditions = p.conditions.map(c => ({...c, sourceCandidateId:null,confirmed:false}));
+      if(p.relations)p.relations=p.relations.map(r=>({...r,confirmed:false}));
     }); },
     setViewport(paper) {
       return updateView({paper: {...project.view.paper, ...paper}});
@@ -261,7 +325,7 @@ function createCoordinator(initial, hooks = {}) {
         if(p.task===task)return;
         // A different specialist must never inherit the previous confirmed
         // inputs, object identity, selection, or playback authorization.
-        p.task=task;p.objects=[];p.conditions=[];
+        p.task=task;p.objects=[];p.conditions=[];p.relations=[];
         p.view.selectedObjectId=null;
       });
     },

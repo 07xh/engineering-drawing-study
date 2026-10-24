@@ -9,6 +9,7 @@ const {evaluateUnifiedMath}=require('../workbench/unified-math-pipeline.cjs');
 const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const SHEET=Object.freeze({origin:{x:360,y:208},scale:5});
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -141,10 +142,14 @@ function createUnifiedProjectSession(){
    current=null;clock=null;
    if(latest?.task==='composition'){
     const geometry=confirmedCompositionGeometry(latest);
+    if(latest.totalRelationCount!==(latest.relations?.length||0))
+      throw new Error('存在待人工确认的对象关系，禁止出具一致性结论');
+    const relationEvidence=analyzeConfirmedRelations(
+      geometry,latest.relations||[],{revision:latest.revision});
     const scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,
+      verified:false,status:'confirmed-input-only',scene,relationEvidence,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
    }

@@ -86,3 +86,9 @@ body.ui-next .v7-candidate-actions button{font-size:12px;min-height:36px}
 body.ui-next .v7-candidate-actions button:last-child{grid-column:1/-1}
 body.ui-next #v7-source-link{max-width:100%;min-width:0}
 @media(max-width:520px){body.ui-next .v7-candidate-actions{grid-template-columns:1fr}body.ui-next .v7-candidate-actions button:last-child{grid-column:auto}}
+
+body.ui-next .v7-relation-editor{margin:14px 0;min-width:0}
+body.ui-next .v7-relation-editor select,body.ui-next .v7-relation-editor input{max-width:100%;min-width:0}
+body.ui-next .v7-relation-editor .v7-compose-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ui-next .v7-relation-editor .v7-compose-actions button:last-child{grid-column:1/-1}
+@media(max-width:520px){body.ui-next .v7-relation-editor .v7-compose-actions{grid-template-columns:1fr}body.ui-next .v7-relation-editor .v7-compose-actions button:last-child{grid-column:auto}}

@@ -180,6 +180,26 @@ function homeHTML(){return `
      <button id="v7-c-render" type="button" class="v7-primary">显示已确认几何场景</button>
     </div>
     <p id="v7-c-status" class="v7-note" role="status">没有已确认对象。</p>
+    <fieldset class="v7-relation-editor">
+     <legend>对象间约束 · M2 残差核验</legend>
+     <p class="v7-warning">仅检查已确认几何的距离、重合、等长、平行或垂直；不能自动求未知点、证明唯一解或生成 V5。</p>
+     <label>关系 ID <input id="v7-r-id" value="Relation1" maxlength="80" autocomplete="off"></label>
+     <label>已存关系列表 <select id="v7-r-list"><option value="">新关系</option></select></label>
+     <label>对象 A <select id="v7-r-a"><option value="">选择对象</option></select></label>
+     <label>对象 B <select id="v7-r-b"><option value="">选择另一对象</option></select></label>
+     <label>关系 <select id="v7-r-kind">
+      <option value="distance">点间距离</option><option value="coincident">点重合</option>
+      <option value="equal-length">线段等长</option><option value="parallel">平行</option>
+      <option value="perpendicular">垂直</option></select></label>
+     <label>目标长度（mm，仅点间距离） <input id="v7-r-distance" type="number" step="any" value="10"></label>
+     <div class="v7-compose-actions">
+      <button type="button" id="v7-r-stage">保存待确认关系</button>
+      <button type="button" id="v7-r-confirm">人工确认关系</button>
+      <button type="button" id="v7-r-remove" class="v7-danger">删除关系</button>
+     </div>
+     <p id="v7-r-status" role="status" class="v7-note">关系必须经人工确认后核对数值残差。</p>
+    </fieldset>
+
    </fieldset>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
    <div class="v7-advanced"><strong>更多已存在专业工具</strong>
