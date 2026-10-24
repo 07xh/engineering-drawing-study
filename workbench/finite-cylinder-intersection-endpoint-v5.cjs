@@ -1,7 +1,8 @@
 'use strict';
 /**
  * C3: release ONLY analytically proven finite lateral-lateral intersection
- * ENDPOINT POINTS to the original 07 V5 (ConstructionIntent → Step DAG).
+ * ENDPOINT POINTS and optional independently proven INTERIOR AUXILIARY
+ * POINTS to the original 07 V5 (ConstructionIntent → Step DAG).
  *
  * No parametric curve interpolation or standard hidden/visible stroke action
  * is signed: neither branch junction topology nor M5 contour/occlusion proof
@@ -24,13 +25,17 @@ const finite=Number.isFinite;
 const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))deepFreeze(v);Object.freeze(x);
 }return x;};
-function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
+function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
+ stationCountPerBranch=0}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
     !finite(sheetTransform.scale)||sheetTransform.scale<=0||
     sheetTransform.scale>100)
   throw new TypeError('current reviewed source and bounded shared V5 transform required');
+ if(!Number.isSafeInteger(stationCountPerBranch)||
+    stationCountPerBranch<0||stationCountPerBranch>2)
+  throw new RangeError('0..2 independently proven interior stations per branch required');
  const proof=evaluateUnifiedMath({
   kind:'finite-orthogonal-cylinder-intersection',input,revision
  });
@@ -66,16 +71,45 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
  const branchEndpoints=proof.branches.flatMap((b,i)=>
   b.endpoints.map((e,j)=>({branchIndex:i,branchId:b.id,role:j===0?'from':'to',
    point:e.point,events:e.events})));
+ // No caller-provided point geometry. Derive interior stations from CURRENT
+ // signed-radical M3 source, then independently check both finite surfaces.
+ const branchStations=proof.branches.flatMap((b,i)=>{
+  const result=[],Z=proof.source.zCylinder,Y=proof.source.yCylinder;
+  for(let k=1;k<=stationCountPerBranch;k++){
+   const x=b.xRange[0]+(b.xRange[1]-b.xRange[0])*
+     k/(stationCountPerBranch+1);
+   const yy=(Z.radius-Math.abs(x-Z.xCenter))*
+     (Z.radius+Math.abs(x-Z.xCenter));
+   const zz=(Y.radius-Math.abs(x-Y.xCenter))*
+     (Y.radius+Math.abs(x-Y.xCenter));
+   if(!(yy>0&&zz>0)||!(x>b.xRange[0]&&x<b.xRange[1]))
+    throw new RangeError('analytic station too close to singular source');
+   const point={x,y:Z.yCenter+b.signY*Math.sqrt(yy),
+    z:Y.zCenter+b.signZ*Math.sqrt(zz)};
+   const capTol=1e-10*Math.max(1,Z.radius,Y.radius);
+   if(!(point.y>Y.yMin+capTol&&point.y<Y.yMax-capTol&&
+     point.z>Z.zMin+capTol&&point.z<Z.zMax-capTol))
+    throw new RangeError('interior station not strictly inside finite axial caps');
+   result.push({branchIndex:i,branchId:b.id,role:'interior-'+k,point,
+    events:{interiorOnly:true,sourceBranchId:b.id}});
+  }
+  return result;
+ });
  if(!branchEndpoints.length||branchEndpoints.length>48)
   throw new RangeError('finite cylinder endpoint budget exceeded');
+ const allStations=[...branchEndpoints,...branchStations];
+ if(allStations.length*3>300)
+  throw new RangeError('C3 stations exceed the canonical construction DAG budget');
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
  const intents=[],steps=[],bindings=[];
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:'finite-lateral-lateral-branch-endpoint-only',
+  revision,unit:'mm',proofScope:stationCountPerBranch>0?
+   'finite-lateral-lateral-branch-points-only':
+   'finite-lateral-lateral-branch-endpoint-only',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
   evidenceSource:'independent-M3-implicit-surfaces-and-cap-clipping'};
- for(const [index,ep] of branchEndpoints.entries()){
+ for(const [index,ep] of allStations.entries()){
   const p=ep.point;
   if(!p||!['x','y','z'].every(k=>finite(p[k])))throw new RangeError('invalid specialist endpoint');
   const residualZ=((p.x-Z.xCenter)**2+(p.y-Z.yCenter)**2-Z.radius**2)/scale;
@@ -87,21 +121,29 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
    throw new RangeError('endpoint violates independently checked finite cylinder source');
   const orthographic=project(p);
   for(const view of VIEWS){
-   const id='C3Endpoint'+index+view,point=toSheet(view,orthographic[view],sheetTransform);
+   const interior=ep.role.startsWith('interior-');
+   const id=(interior?'C3Station':'C3Endpoint')+index+view;
+   const point=toSheet(view,orthographic[view],sheetTransform);
    const op={id:id+'Point',kind:'point',coordinateSpace:'sheet-px',
     geometry:{at:{...point}}};
-   const intent={schema:VERSION,id,purpose:'project-analytic-branch-endpoint',
+   const intent={schema:VERSION,id,purpose:interior?
+    'construct-verified-analytic-branch-interior-point':
+    'project-analytic-branch-endpoint',
     role:'result',dependsOn:[],inputEntityIds:[],
     outputEntityIds:[op.id],operations:[op],source:{...source}};
    const step={id,role:'result',dependsOn:[],
-    title:'第 '+(index+1)+' 个解析分支端点 · '+view+' 面',
-    explanation:'已核实两有限圆柱侧面方程及端盖范围的端点投影；不是曲线虚实线证明。',
+    title:interior?'解析分支 '+ep.branchId+' · 辅助求点 · '+view+' 面':
+     '第 '+(index+1)+' 个解析分支端点 · '+view+' 面',
+    explanation:interior?
+     '当前解析分支的真实公共点，已复核两柱曲面及有限端盖；不是连续曲线或虚实线证明。':
+     '已核实两有限圆柱侧面方程及端盖范围的端点投影；不是曲线虚实线证明。',
     actions:[verifiedTeachingActionToV5({id:op.id,kind:'point',
       coordinateSpace:'sheet-px',at:point},sheetTransform)]};
    intents.push(intent);steps.push(step);
    bindings.push({id:op.id,branchId:ep.branchId,endpointRole:ep.role,
     view,point3D:{...p},projectedMm:{...orthographic[view]},
-    sheetPoint:{...point},analyticEndpointPointVerified:true,
+    sheetPoint:{...point},analyticEndpointPointVerified:!interior,
+    analyticInteriorStationVerified:interior,sourceBranchParameterX:p.x,
     physicalJunctionTopologyVerified:false,
     completeCurveVisibilityVerified:false,
     standardLineStyleVerified:false});
@@ -118,9 +160,12 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform}={}){
   constructionIntents:intents,constructionSteps:steps,
   timing,player,bindings,
   independentlyProvenEndpointCount:branchEndpoints.length,
-  signedEndpointPointActionCount:bindings.length,
+  signedEndpointPointActionCount:branchEndpoints.length*VIEWS.length,
+  signedInteriorAuxiliaryPointActionCount:branchStations.length*VIEWS.length,
+  verifiedInteriorStationCount:branchStations.length,stationCountPerBranch,
   mathematicalSourceVerified:true,singleOriginalV5Player:true,
-  endpointPointV5Ready:true,branchJunctionsVerified:false,
+  endpointPointV5Ready:true,interiorStationPointV5Ready:stationCountPerBranch>0,
+  branchJunctionsVerified:false,
   lateralCapAndCapCapIntersectionsVerified:false,
   entireCurveV5Ready:false,
   standardVisibleHiddenLineStylesVerified:false,
