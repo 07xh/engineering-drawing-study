@@ -17,6 +17,8 @@ const {auditFiniteCylinderVHAxisRays}=
  require('./m5-finite-cylinder-vh-axis-rays.cjs');
 const {auditFiniteCylinderEndpointIncidence}=
  require('./m5-analytic-cylinder-endpoint-incidence.cjs');
+const {auditC3CapBoundaryIncidence}=
+ require('./c3-cap-boundary-incidence.cjs');
 const {buildC3WIntervalPreview}=
  require('./c3-w-ray-preview.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
@@ -33,7 +35,8 @@ const deepFreeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  stationCountPerBranch=0,viewTransforms=null,
  includeSourceCircleGuides=false,includeProjectedSeamArcGuides=false,
- includeWAnalyticCurveGuides=false,wRayPartitionedV5=false}={}){
+ includeWAnalyticCurveGuides=false,wRayPartitionedV5=false,
+ includeCapFacePairGuides=false}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     !sheetTransform||!sheetTransform.origin||
     !finite(sheetTransform.origin.x)||!finite(sheetTransform.origin.y)||
@@ -46,6 +49,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   throw new TypeError('analytic projected seam-arc guide toggle must be boolean');
  if(typeof includeWAnalyticCurveGuides!=='boolean')
   throw new TypeError('reviewed analytic W curve guide toggle must be boolean');
+ if(typeof includeCapFacePairGuides!=='boolean')
+  throw new TypeError('verified finite cap face-pair guide toggle must be boolean');
  if(typeof wRayPartitionedV5!=='boolean'||
    (wRayPartitionedV5&&!includeWAnalyticCurveGuides))
   throw new TypeError('M5 W interval mode requires explicit analytic curve guide consent');
@@ -128,10 +133,12 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  const Z=proof.source.zCylinder,Y=proof.source.yCylinder;
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
  const intents=[],steps=[],bindings=[],sourceCircleGuides=[],
-  projectedSeamArcGuides=[],wAnalyticCurveGuides=[];
+  projectedSeamArcGuides=[],wAnalyticCurveGuides=[],capFacePairGuides=[];
  const sheetByIntentId={},viewByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
-  revision,unit:'mm',proofScope:includeWAnalyticCurveGuides?
+  revision,unit:'mm',proofScope:includeCapFacePairGuides?
+   'finite-cylinder-analytic-cap-face-pair-guides-not-official':
+   includeWAnalyticCurveGuides?
    'finite-cylinder-W-analytic-curve-guide-not-official':
    includeProjectedSeamArcGuides?
    'finite-cylinder-projected-arcs-and-analytic-points':
@@ -351,6 +358,70 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    }
   }
  }
+ // Strict, source-recomputed cap-related face-pair segments are straight
+ // in 3D. Each may project as a TRUE line in two views and collapse to a
+ // TRUE point in the third; never produce zero-length artificial strokes.
+ // These are source geometry AUXILIARIES, not the officially visible
+ // outline of a union/intersection solid or a certified national line type.
+ if(includeCapFacePairGuides){
+  const capProof=auditC3CapBoundaryIncidence({input,revision});
+  if(!['scoped-analytic-cap-junction-incidence',
+       'undetermined-unmatched-lateral-cap-junction'].includes(capProof.status)||
+     capProof.capSourceStatus!=='scoped-analytic-cap-boundary-pairs'||
+     capProof.sourceM3LateralJunctionStatus!==
+       'scoped-analytic-3d-endpoint-incidence'||
+     capProof.standardLineStylesVerified!==false||
+     capProof.finalV5CurveAuthorized!==false)
+   throw new RangeError('independent finite cap-face pair analytic source unavailable');
+  for(const [featureIndex,segment] of capProof.capSegments.entries()){
+   if(!segment.finiteBoundaryContactVerified||
+      !segment.sourcePairImplicitAndAxialConstraintsVerified||
+      segment.officialLineStyle!=='undetermined'||
+      segment.v5OfficialCurveAuthorized!==false)
+    throw new RangeError('unverified finite cap-face intersection source');
+   const fromProjection=project(segment.from),
+     toProjection=project(segment.to);
+   for(const view of VIEWS){
+    const a=fromProjection[view],b=toProjection[view];
+    const collapsed=Math.hypot(a.u-b.u,a.v-b.v)<=1e-10;
+    const id='C3CapPair'+featureIndex+view;
+    const transform=viewTransforms?.[view]||sheetTransform;
+    const op=collapsed?{
+     id:id+'Shape',kind:'point',coordinateSpace:'model-mm',
+     geometry:{at:{x:a.u,y:a.v}}
+    }:{
+     id:id+'Shape',kind:'line',coordinateSpace:'model-mm',
+     geometry:{from:{x:a.u,y:a.v},to:{x:b.u,y:b.v}}
+    };
+    const action=verifiedTeachingActionToV5({
+     id:op.id,kind:op.kind,coordinateSpace:'model-mm',
+     view,...op.geometry
+    },transform);
+    const intent={schema:VERSION,id,
+     purpose:'construct-analytic-cap-boundary-pair-projection-as-auxiliary',
+     role:'auxiliary',dependsOn:[],inputEntityIds:[],
+     outputEntityIds:[op.id],operations:[op],source:{...source}};
+    const step={id,role:'auxiliary',dependsOn:[],
+     title:'有限圆柱端盖交线 · '+segment.pairKind+' · '+view,
+     explanation:collapsed?
+      '经有限圆盘方程严格证明的三维端盖交线，在本投影方向退化为一个真实点；不是零长度作图线或国标实虚线。':
+      '有限圆盘方程求得的真实三维端盖交线投影；此 V5 为辅助几何线，尚未签发最终实体轮廓虚实线。',
+     actions:[action]};
+    intents.push(intent);steps.push(step);
+    sheetByIntentId[id]=transform;viewByIntentId[id]=view;
+    capFacePairGuides.push({
+     id,actionId:action.id,view,sourceFeatureId:segment.id,
+     pairKind:segment.pairKind,sourceFaces:[...segment.sourceFaces],
+     originalSegment3D:{from:{...segment.from},to:{...segment.to}},
+     projectedModelMm:{from:{...a},to:{...b}},
+     sourceProjectionCollapsedToPoint:collapsed,
+     sourceExactCapFacePairMathVerified:true,
+     originalLateralJunctionContinuationVerified:false,
+     officialStandardLineStyleVerified:false
+    });
+   }
+  }
+ }
  for(const [index,ep] of allStations.entries()){
   const p=ep.point;
   if(!p||!['x','y','z'].every(k=>finite(p[k])))throw new RangeError('invalid specialist endpoint');
@@ -395,13 +466,15 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  if(intents.length>300)throw new RangeError('too many C3 endpoint V5 actions');
  const timing=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
-  sheetByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
+  sheetByIntentId:includeCapFacePairGuides||includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
    sheetByIntentId:null,
-  viewByIntentId:includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
+  viewByIntentId:includeCapFacePairGuides||includeWAnalyticCurveGuides||includeSourceCircleGuides||includeProjectedSeamArcGuides?
    viewByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
-  revision,status:includeWAnalyticCurveGuides?
+  revision,status:includeCapFacePairGuides?
+   'analytic-3view-curves-and-finite-cap-face-auxiliaries':
+   includeWAnalyticCurveGuides?
    'analytic-three-view-curve-guides-and-points':
    includeProjectedSeamArcGuides?
    'analytic-vh-projection-arc-guides-and-points':
@@ -411,7 +484,11 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
   sourceM5JunctionEvidence,
   constructionIntents:intents,constructionSteps:steps,
   timing,player,bindings,sourceCircleGuides,projectedSeamArcGuides,
-  wAnalyticCurveGuides,
+  wAnalyticCurveGuides,capFacePairGuides,
+  sourceCapFaceProjectionActionCount:capFacePairGuides.length,
+  sourceCapFaceGeometryV5Ready:capFacePairGuides.length>0,
+  sourceCapFaceCollapsedProjectionPointCount:capFacePairGuides.filter(g=>
+   g.sourceProjectionCollapsedToPoint).length,
   trueAnalyticWCurveV5GuideCount:wAnalyticCurveGuides.length,
   analyticWCurveGuideV5Ready:wAnalyticCurveGuides.length>0,
   m5OpenRayPartitionedWCurveV5Ready:wRayPartitionedV5&&
