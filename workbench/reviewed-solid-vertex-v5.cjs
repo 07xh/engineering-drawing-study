@@ -71,7 +71,11 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
       row.V5LineActionSignedOff!==false||
       row.standardEngineeringLineStyle!=='undetermined'||
       (row.originalCoplanarMeshSubdivisionVerified&&
-       row.originalSingleSolidCreaseVerified))
+       row.originalSingleSolidCreaseVerified)||
+      (row.singleSolidHullAndWholeFrontRayCandidateVerified&&
+       (!row.projectedFullSingleSolidHullBoundaryVerified||
+        !row.continuouslyFrontRayClearVerified||
+        !row.originalSingleSolidCreaseVerified)))
     throw new RangeError('C1 invalid source-edge feature or certification scope');
    scopedEdgePreviews.push({
     sourceGeometryId:sceneResult.geometry.id,sourceEdgeId:edgeId,
@@ -80,6 +84,13 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
     projectionCollapsedToPoint:collapsed,
     sourcePhysicalCreaseVerified:row.originalSingleSolidCreaseVerified,
     sourceCoplanarSubdivisionVerified:row.originalCoplanarMeshSubdivisionVerified,
+    projectedFullSingleSolidHullBoundaryVerified:
+     row.projectedFullSingleSolidHullBoundaryVerified,
+    projectedHullBoundarySideIndex:row.projectedHullBoundarySideIndex,
+    coincidentProjectedHullSourceCandidateCount:
+     row.coincidentProjectedHullSourceCandidateCount,
+    singleSolidHullAndWholeFrontRayCandidateVerified:
+     row.singleSolidHullAndWholeFrontRayCandidateVerified,
     rayEvidenceStatus:row.status,
     continuousFrontRayClearVerified:row.continuouslyFrontRayClearVerified,
     entireEdgeStrictlyOccludedVerified:row.completeStrictInteriorOcclusionVerified,
