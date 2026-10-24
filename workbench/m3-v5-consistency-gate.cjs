@@ -13,13 +13,20 @@ const {verifiedTeachingActionToV5}=require('./construction-step-v5-adapter.cjs')
 const Timeline=require('./teaching-timeline-v5.js');
 
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-function assertM3ToV5Consistency({revision,intents,steps,timing,sheet}={}){
+function assertM3ToV5Consistency({revision,intents,steps,timing,sheet,
+ sheetByIntentId=null}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current nonnegative source revision required');
  const verdict=validateConstructionIntentDAG(intents);
  if(!verdict.ok)throw new TypeError('invalid canonical Intent DAG: '+verdict.errors.join('; '));
  if(!Array.isArray(steps)||steps.length!==intents.length)
   throw new RangeError('ConstructionStep count differs from canonical Intent');
+ if(sheetByIntentId!==null&&(
+    !sheetByIntentId||typeof sheetByIntentId!=='object'||
+    Array.isArray(sheetByIntentId)||
+    Object.keys(sheetByIntentId).some(id=>
+     !intents.some(intent=>intent.id===id))))
+  throw new TypeError('unknown or untrusted Intent-specific paper transform');
  const source=intents[0].source;
  if(source.revision!==revision||source.unit!=='mm')
   throw new RangeError('mixed unit or stale M3 evidence revision');
@@ -33,7 +40,7 @@ function assertM3ToV5Consistency({revision,intents,steps,timing,sheet}={}){
    verifiedTeachingActionToV5({
     id:op.id,kind:op.kind==='directed-arc'?'arc':op.kind,
     coordinateSpace:op.coordinateSpace,...op.geometry
-   },sheet));
+   },sheetByIntentId?.[intent.id]||sheet));
   if(!same(step.actions,projected))
    throw new RangeError('V5 geometry differs from canonical Intent or mm/px transform');
  }

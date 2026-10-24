@@ -1,5 +1,5 @@
 'use strict';
-/* Reviewed finite perpendicular-cylinder M3 + canonical point-only V5 UI.
+/* Reviewed finite perpendicular-cylinder M3 + canonical source-guide/point V5 UI.
  * The purple analytic line is an explicitly UNCERTIFIED geometry preview.
  * Never repackage it as a standard solid/dashed V5 stroke or a textbook key.
  */
@@ -166,7 +166,7 @@ function drawAnalyticPreview(compiled,input,wRayProof,vhDedup){
  }
  svg.append(group);
 }
-function renderPointActions(){
+function renderVerifiedV5Actions(){
  const svg=$('board');svg.querySelectorAll('[data-v5-point-layer]')
   .forEach(element=>element.remove());
  if(!current||!current.player.canRender(revision))return;
@@ -176,11 +176,15 @@ function renderPointActions(){
  for(const step of current.constructionSteps)
   for(const action of step.actions){
    const fraction=frame.actionFractions[action.id]||0;
-   if(fraction<=0||action.kind!=='point')continue;
+   if(fraction<=0||!['point','circle'].includes(action.kind))continue;
+   const originalGuide=action.kind==='circle';
    const circle=node('circle',{
-    fill:'#12649b',stroke:'#12649b','stroke-width':2,
+    fill:originalGuide?'none':'#12649b',
+    stroke:originalGuide?'#638bb0':'#12649b',
+    'stroke-width':originalGuide?1.8:2,
     'data-source-v5-action':action.id,
-    'data-certified-scope':'analytic-point-only',
+    'data-certified-scope':originalGuide?
+     'reviewed-original-source-circle-only':'analytic-point-only',
     'data-official-line-style':'false'});
    Motion.updateSvg(circle,action,fraction);
    layer.append(circle);
@@ -188,13 +192,13 @@ function renderPointActions(){
  svg.append(layer);
  showMessage('已完成 '+frame.completedIds.length+
   '/'+current.timing.segments.length+
-  ' 个已验证点动作；连续线条和标准虚实线仍未签收。');
+  ' 个已证明原始圆及相贯辅助点动作；正式相贯线与国标实虚线尚未签收。');
 }
 function tick(time){
  raf=null;
  if(!playing||!current||!current.player.canRender(revision))return;
  const frame=current.player.snapshot(time);
- renderPointActions();
+ renderVerifiedV5Actions();
  if(frame.done){stop();return;}
  raf=requestAnimationFrame(tick);
 }
@@ -212,7 +216,7 @@ function navigate(delta){
  const currentIndex=snap.done?length:Math.max(0,snap.activeStepIndex);
  const index=Math.max(0,Math.min(length,currentIndex+delta));
  current.player.seekStep(index,now());
- renderPointActions();
+ renderVerifiedV5Actions();
 }
 function solve(){
  stop();current=null;disable(true);$('board').replaceChildren();
@@ -224,19 +228,21 @@ function solve(){
   transforms=paperTransforms(input);
   const computed=compileFiniteCylinderEndpointV5({
    input,revision,stationCountPerBranch:count,
-   sheetTransform:transforms.V,viewTransforms:transforms});
+   sheetTransform:transforms.V,viewTransforms:transforms,
+   includeSourceCircleGuides:true});
   const wRayProof=buildC3WIntervalPreview({input,revision});
   const vhDedup=buildC3VHProjectionDedup({input,revision});
   drawScaffold();
   drawAnalyticPreview(computed,input,wRayProof,vhDedup);
   current=computed;
   disable(false);
-  renderPointActions();
+  renderVerifiedV5Actions();
   const p=computed.sourceM3;
   $('proof').textContent='同一 M3 解析分支：'+p.branchCount+
    ' 条；数学残差上界：'+p.maxScaledResidual+
    '。\n有限端盖裁剪：'+p.verifiedCapClipping+
    '；正式 V5 端点动作：'+computed.signedEndpointPointActionCount+
+   '；原始圆形辅助 V5：'+computed.provenOriginalSourceCircleV5ActionCount+
    '；内部辅助点动作：'+computed.signedInteriorAuxiliaryPointActionCount+
    '；本次 V/H/W 第一角纸面坐标各自映射。'+
    '\\nV/H 解析投影：去重后 V='+vhDedup.visibleUniqueVSpanCount+
@@ -265,13 +271,13 @@ function init(){
   invalidate('辅助求点数量变化：旧 V5 已失效。'));
  $('solve').addEventListener('click',solve);
  $('play').addEventListener('click',start);
- $('pause').addEventListener('click',()=>{stop();renderPointActions();});
+ $('pause').addEventListener('click',()=>{stop();renderVerifiedV5Actions();});
  $('prev').addEventListener('click',()=>navigate(-1));
  $('next').addEventListener('click',()=>navigate(1));
  $('speed').addEventListener('change',()=>{
   if(!current||!current.player.canRender(revision))return;
   current.player.setSpeed(Number($('speed').value),now());
-  renderPointActions();
+  renderVerifiedV5Actions();
  });
  window.addEventListener('pagehide',stop);
  disable(true);
