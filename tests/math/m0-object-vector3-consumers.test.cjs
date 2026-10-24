@@ -85,3 +85,32 @@ test('consumer normal and section degeneracy gates are preserved (not one univer
  assert.throws(()=>intersectCylinderSidePlane(
   {baseCenter:P(0,0,0),radiusMm:0,heightMm:10},plane(5)));
 });
+
+test('M0 object add/scale exactly delegates to one shared array kernel',()=>{
+ const k=require('../../core/numeric/euclidean-kernel.cjs');
+ for(const [a,b,t] of [
+  [P(1,2,3),P(4,5,6),.5],
+  [P(-100,17,0),P(0,-21,1),3],
+  [P(1e-12,4,0),P(2,3,4),-2],
+  [P(1e7,3e7,-2e7),P(10,20,30),.125]
+ ]){
+  const aa=[a.x,a.y,a.z],bb=[b.x,b.y,b.z];
+  assert.deepEqual(math.addObject3(a,b),P(...k.add(aa,bb)));
+  assert.deepEqual(math.scaleObject3(a,t),P(...k.scale(aa,t)));
+ }
+ assert.throws(()=>math.scaleObject3(P(1e-200,0,0),1e-200),/underflow/);
+ assert.throws(()=>math.addObject3(P(1e308,0,0),P(1e308,0,0)),RangeError);
+});
+test('inclined prism and pyramid sections survive shared add/scale migration',()=>{
+ const prism=prismPlaneSection({min:P(0,0,0),max:P(10,10,10)},
+  {point:P(0,0,12),normal:P(1,1,1)});
+ assert.equal(prism.status,'ready');assert.equal(prism.vertices.length,6);
+ assert.ok(prism.areaMm2>0&&prism.perimeterMm>0);
+ assert.equal(prism.v5StepsReady,false);
+ const py=pyramidPlaneSection({
+  base:{minX:0,minY:0,maxX:10,maxY:10,z:0},apex:P(5,5,15)
+ },{point:P(0,0,15),normal:P(1,1,1)});
+ assert.equal(py.status,'ready');assert.equal(py.vertices.length,5);
+ assert.ok(py.areaMm2>0&&py.perimeterMm>0);
+ assert.equal(py.v5StepsReady,false);
+});

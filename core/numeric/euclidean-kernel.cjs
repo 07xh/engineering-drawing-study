@@ -23,6 +23,18 @@ function multiplyFinite(a,b){
   throw new RangeError('geometric multiplication underflowed to zero');
  return product;
 }
+function add(a,b){
+ const dimension=a?.length;
+ if(dimension!==2&&dimension!==3)throw new TypeError('only 2D/3D vectors supported');
+ const x=vector(a,dimension),y=vector(b,dimension);
+ return x.map((v,i)=>checked(v+y[i]));
+}
+function scale(a,factor){
+ const dimension=a?.length;
+ if(dimension!==2&&dimension!==3)throw new TypeError('only 2D/3D vectors supported');
+ const x=vector(a,dimension),s=checked(factor);
+ return x.map(v=>multiplyFinite(v,s));
+}
 function subtract(a,b){
  const dimension=a?.length;
  if(dimension!==2&&dimension!==3)throw new TypeError('only 2D/3D vectors supported');
@@ -59,4 +71,4 @@ function pointPlaneSignedDistance(point,planePoint,normal){
  const p=vector(point,3),origin=vector(planePoint,3),n=normalize(normal);
  return dot(subtract(p,origin),n);
 }
-module.exports={vector,multiplyFinite,subtract,dot,cross3,norm,normalize,pointPlaneSignedDistance};
+module.exports={vector,multiplyFinite,add,scale,subtract,dot,cross3,norm,normalize,pointPlaneSignedDistance};

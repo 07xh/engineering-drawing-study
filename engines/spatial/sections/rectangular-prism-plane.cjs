@@ -11,10 +11,9 @@
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const point=p=>p&&['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e8);
-const {subtractObject3:sub,dotObject3:dot,crossObject3:cross,normObject3:length}=
+const {subtractObject3:sub,addObject3:plus,scaleObject3:times,
+ dotObject3:dot,crossObject3:cross,normObject3:length}=
  require('../../../core/numeric/object-vector3.cjs');
-const plus=(a,b)=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
-const times=(v,n)=>({x:v.x*n,y:v.y*n,z:v.z*n});
 const distance=(a,b)=>length(sub(a,b));
 // Preserve exact V/H/W model coordinates through the single shared projection contract.
 const {project:projection}=require('../../../core/projection/conventions.js');

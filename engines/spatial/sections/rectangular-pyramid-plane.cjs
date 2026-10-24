@@ -4,10 +4,9 @@
 const {normalizePlane}=require('./axis-cylinder-plane.cjs');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const valid=p=>p&&['x','y','z'].every(k=>finite(p[k])&&Math.abs(p[k])<=1e7);
-const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y,z:a.z+b.z});
-const {subtractObject3:sub,dotObject3:dot,crossObject3:cross,normObject3:size}=
+const {subtractObject3:sub,addObject3:add,scaleObject3:mul,
+ dotObject3:dot,crossObject3:cross,normObject3:size}=
  require('../../../core/numeric/object-vector3.cjs');
-const mul=(a,t)=>({x:a.x*t,y:a.y*t,z:a.z*t});
 
 // Preserve exact V/H/W model coordinates through the single shared projection contract.
 const {project:projection}=require('../../../core/projection/conventions.js');

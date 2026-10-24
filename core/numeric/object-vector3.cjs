@@ -16,6 +16,12 @@ function modelVector3(p){
  return kernel.vector(axes.map(k=>p[k]),3);
 }
 function object3(v){return {x:v[0],y:v[1],z:v[2]};}
+function addObject3(a,b){
+ return object3(kernel.add(modelVector3(a),modelVector3(b)));
+}
+function scaleObject3(v,factor){
+ return object3(kernel.scale(modelVector3(v),factor));
+}
 function subtractObject3(a,b){
  return object3(kernel.subtract(modelVector3(a),modelVector3(b)));
 }
@@ -24,4 +30,4 @@ function crossObject3(a,b){
  return object3(kernel.cross3(modelVector3(a),modelVector3(b)));
 }
 function normObject3(a){return kernel.norm(modelVector3(a));}
-module.exports={modelVector3,subtractObject3,dotObject3,crossObject3,normObject3};
+module.exports={modelVector3,addObject3,scaleObject3,subtractObject3,dotObject3,crossObject3,normObject3};
