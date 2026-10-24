@@ -631,14 +631,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    text(svg,14,22,'空间网格线框 · 不推测隐藏边','#986945');
  }
  function renderSteps(){
-  const list=$('v7-step-list'),solved=current();
+  const list=$('v7-step-list'),solved=activePlayback();
   if(!solved){list.replaceChildren();list.dataset.key='';return;}
-  const key=solved.projectId+':'+solved.inputRevision;
+  const key=solved.projectId+':'+solved.inputRevision+':'+solved.kind;
   if(list.dataset.key!==key){
    list.replaceChildren();list.dataset.key=key;
    solved.plan.steps.forEach((step,i)=>{
     const btn=document.createElement('button');btn.type='button';btn.dataset.step=String(i);
-    btn.textContent=(i+1)+'. '+(step.title||step.explanation||step.id);
+    btn.textContent=(solved.verified===false?'[限定预览] ':'')+(i+1)+'. '+(step.title||step.explanation||step.id);
     btn.addEventListener('click',()=>{
      stopAnimation();solved.clock.seekStep(i,performance.now());render();
     });
@@ -654,6 +654,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  const scopedReady=scopedPlayback(),playback=activePlayback();
+  const btn=$('v7-scoped-v5');
+  btn.hidden=!scopedReady;btn.disabled=!scopedReady;
+  btn.setAttribute('aria-pressed',scopedPreviewOn&&!!scopedReady?'true':'false');
+  btn.textContent=scopedPreviewOn&&scopedReady?
+   '返回数学图纸（关闭限定预览）':'在本图纸预览限定截面逐笔作图';
+  $('v7-scoped-warning').hidden=!(scopedPreviewOn&&scopedReady);
+
   refreshCandidateLinks();
   paintPhotoMarkers();
   $('v7-cal-status').textContent=calibrationStatus(snap.source);
@@ -696,21 +704,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';
-  const ready=!!solved;
+  const ready=!!playback;
   for(const id of ['v7-back','v7-play','v7-next','v7-seek','v7-speed'])
    $(id).disabled=!ready;
-  const frame=ready?solved.clock.snapshot():null;
+  const frame=ready?playback.clock.snapshot():null;
   $('v7-seek').value=frame?String(Math.round(frame.ratio*1000)):'0';
   $('v7-play').textContent=frame?.playing?'Ⅱ 暂停':'▶ 播放';
   renderPaper();renderSpatial();renderSteps();
  }
  function start(){
   if(raf!==null)return;
-  const solved=current();if(!solved)return;
+  const solved=activePlayback();if(!solved)return;
   solved.clock.play(performance.now());
   const tick=()=>{
    raf=null;
-   const active=current();if(active!==solved)return;
+   const active=activePlayback();if(active!==solved)return;
    const frame=solved.clock.snapshot(performance.now());
    render();
    if(frame.playing)raf=requestAnimationFrame(tick);
@@ -1115,27 +1123,31 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  $('v7-mono').addEventListener('change',render);
  $('v7-guides').addEventListener('change',render);
  $('v7-speed').addEventListener('change',()=>{
-  const data=current();if(!data)return;
+  const data=activePlayback();if(!data)return;
   data.clock.setSpeed(Number($('v7-speed').value),performance.now());render();
  });
  $('v7-seek').addEventListener('input',()=>{
-  const data=current();if(!data)return;
+  const data=activePlayback();if(!data)return;
   stopAnimation();data.clock.seekProgress(Number($('v7-seek').value)/1000,performance.now());render();
  });
+ $('v7-scoped-v5').addEventListener('click',()=>{
+  if(!scopedPlayback())return;
+  stopAnimation();scopedPreviewOn=!scopedPreviewOn;render();
+ });
  $('v7-play').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=activePlayback();if(!data)return;
   if(data.clock.snapshot().playing){stopAnimation();render();}
   else start();
  });
  $('v7-back').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=activePlayback();if(!data)return;
   stopAnimation();
   const elapsed=data.clock.snapshot().elapsedMs;
   const starts=[0,...data.plan.timing.steps.map(s=>s.startMs)].filter(ms=>ms<elapsed-0.01);
   data.clock.seekMs(starts.length?starts[starts.length-1]:0,performance.now());render();
  });
  $('v7-next').addEventListener('click',()=>{
-  const data=current();if(!data)return;
+  const data=activePlayback();if(!data)return;
   stopAnimation();
   const elapsed=data.clock.snapshot().elapsedMs;
   const next=data.plan.timing.steps.map(s=>s.endMs).find(ms=>ms>elapsed+0.01);
