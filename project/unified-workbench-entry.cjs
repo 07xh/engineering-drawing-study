@@ -972,6 +972,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    case 'coincident':constraint={id,kind,a,b};break;
    case 'offset':constraint={id,kind,from:a,to:b,delta:vector};break;
    case 'midpoint':constraint={id,kind,mid,a,b};break;
+   case 'distance':constraint={id,kind,a,b,value:numbers.x};break;
+   case 'angle':constraint={id,kind,a,vertex:mid,b,degrees:numbers.x};break;
    default:throw Error('未支持的线性几何约束');
   }
   const existing=snap.affineProblem?.constraints||[];
@@ -979,7 +981,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(chosen&&chosen!==id)
    throw Error('修改关系 ID 请先删除旧关系，不要复用审核资格');
   const constraints=[...existing.filter(x=>x.id!==id),constraint];
-  return {frame,unit:'mm',points:ids.map(id=>({id})),constraints};
+  const nonlinear=constraints.some(c=>c.kind==='distance'||c.kind==='angle');
+  if(!nonlinear)
+   return {frame,unit:'mm',points:ids.map(id=>({id})),constraints};
+  if(ids.length>4)throw Error('非线性数值求解最多允许四个未知点');
+  const text=$('v7-u-seeds').value.trim();
+  const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(!lines.length||lines.length>6)throw Error('非线性求解需 1–6 行人工初值');
+  const seeds=lines.map((line,i)=>{
+   const pts=line.split(';').map(x=>x.trim());
+   if(pts.length!==ids.length)throw Error('每行必须依照未知点 ID 顺序给出所有点的初始坐标');
+   const coordinates={};
+   for(let k=0;k<ids.length;k++){
+    const values=pts[k].split(',').map(x=>x.trim());
+    if(values.length!==axes.length||values.some(x=>!x.trim()||!Number.isFinite(Number(x))))
+     throw Error('初值必须为逗号分隔的有效二维/三维毫米坐标');
+    coordinates[ids[k]]=Object.fromEntries(axes.map((a,j)=>[a,Number(values[j])]));
+   }
+   return {id:'Seed'+(i+1),coordinates};
+  });
+  return {frame,unit:'mm',points:ids.map(id=>({id})),constraints,
+   solverKind:'nonlinear',seeds};
  }
  $('v7-u-list').addEventListener('change',()=>{
   const c=coordinator?.snapshot().affineProblem?.constraints
@@ -988,12 +1010,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-u-id').value=c.id;$('v7-u-kind').value=c.kind;
   const a=c.point||c.from||c.a||'A',b=c.to||c.b||'B';
   $('v7-u-a').value=a;$('v7-u-b').value=b;
-  $('v7-u-m').value=c.mid||'M';
+  $('v7-u-m').value=c.mid||c.vertex||'M';
   $('v7-u-axis').value=c.axis||'x';
   const coords=c.at||c.delta||{};
   for(const axis of ['x','y','z'])
-   $('v7-u-'+axis).value=String(axis==='x'&&c.kind==='axis'?
-     c.value:coords[axis]??0);
+   $('v7-u-'+axis).value=String(axis==='x'&&
+     ['axis','distance','angle'].includes(c.kind)?
+     (c.value??c.degrees):coords[axis]??0);
  });
  $('v7-u-append').addEventListener('click',()=>call(async()=>{
   const candidate=affineForm();
@@ -1034,7 +1057,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }));
  for(const id of ['v7-u-frame','v7-u-points','v7-u-id','v7-u-kind',
   'v7-u-a','v7-u-b','v7-u-m','v7-u-axis',
-  'v7-u-x','v7-u-y','v7-u-z']){
+  'v7-u-x','v7-u-y','v7-u-z','v7-u-seeds']){
   for(const evt of ['input','change'])$(id).addEventListener(evt,()=>{
    const snap=coordinator?.snapshot();
    if(snap?.task!=='composition'||!snap.affineProblem?.confirmed)return;
