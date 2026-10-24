@@ -1,0 +1,216 @@
+'use strict';
+/**
+ * M5 C2: one projected EVENT ledger covering reviewed original source
+ * creases AND genuinely generated union-face intersections.
+ *
+ * This module is NOT an alternative M4, SolveResult, Intent, DAG or V5.
+ * It uses current M4 source intervals and independently certified generated
+ * open subspan ray evidence, then finds all positive planar crossings,
+ * collinear overlaps and endpoint meetings in first-angle V/H/W.
+ *
+ * Events are only projected geometry and source identity: equal paper
+ * coordinates do NOT certify 3D contact, occlusion, standardized line
+ * styles, or a final unique drawing stroke.
+ */
+const {project,VIEWS}=require('../core/projection/conventions.js');
+const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
+ for(const v of Object.values(x))freeze(v);Object.freeze(x);
+}return x;};
+const diff=(a,b)=>({u:a.u-b.u,v:a.v-b.v});
+const cross=(a,b)=>a.u*b.v-a.v*b.u;
+const dot=(a,b)=>a.u*b.u+a.v*b.v;
+const p3=(a,b,t)=>({x:a.x+t*(b.x-a.x),
+ y:a.y+t*(b.y-a.y),z:a.z+t*(b.z-a.z)});
+const p2=(a,b,t)=>({u:a.u+t*(b.u-a.u),v:a.v+t*(b.v-a.v)});
+const dist2=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
+const dist3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+const fail=msg=>{throw new TypeError('M5 source feature event graph: '+msg);};
+function auditUnifiedProjectedFeatureEvents({geometry,revision,
+ projectedStrokePartitions,generatedSubspanRayEvidence}={}){
+ if(!Number.isSafeInteger(revision)||revision<0)fail('current revision required');
+ if(!Array.isArray(geometry)||geometry.length<2||geometry.length>8)
+  fail('reviewed 2..8 source solids required');
+ const ids=geometry.map(g=>g.id);
+ if(new Set(ids).size!==ids.length)fail('distinct source Geometry IDs required');
+ const m=projectedStrokePartitions,ray=generatedSubspanRayEvidence;
+ if(m?.schema!=='draftai-scoped-projected-stroke-partition/1'||
+    m.revision!==revision||m.status!=='preview-partition-evidence-only'||
+    m.officialLineStylesVerified!==false||m.v5Ready!==false||
+    m.generatedStrokeSignedCount!==0||
+    !Array.isArray(m.segments)||!Array.isArray(m.generatedSegments))
+  fail('only unsigned original M4 source partitions allowed');
+ if(ray?.schema!=='draftai-m5-generated-open-subspan-opaque-rays/1'||
+    ray.revision!==revision||
+    ray.status!=='all-current-generated-open-subspan-source-rays-recomputed'||
+    ray.officialLineStylesVerified!==false||ray.signedV5LineActions!==0||
+    ray.v5Ready!==false||!Array.isArray(ray.pieces))
+  fail('unsigned M0-certified generated source subspans required');
+ const meshEdgeSet=new Set(),points=new Map();
+ for(const g of geometry){
+  for(const [a,b] of g.data.edges)meshEdgeSet.add(g.id+'::'+[a,b].sort().join('|'));
+  points.set(g.id,g.data.points);
+ }
+ const candidates=[];
+ for(const s of m.segments){
+  if(!VIEWS.includes(s.view)||!meshEdgeSet.has(s.sourceEdgeId)||
+     !ids.includes(s.sourceGeometryId)||s.officialLineStyleVerified!==false||
+     s.v5ActionApproved!==false||s.canonicalIntentVerified!==false)
+   fail('source original M4 stroke invalid or released');
+  if(!s.unionOpenSourceFeatureVerified)continue;
+  const a=s.fromModelMm,b=s.toModelMm;
+  if(dist3(a,b)<=1e-8||dist2(project(a)[s.view],project(b)[s.view])<=1e-8)
+   continue;
+  candidates.push({
+   id:'M5Unified'+candidates.length,kind:'original-physical-crease',
+   view:s.view,sourceEdgeId:s.sourceEdgeId,generatedSourceFeatureId:null,
+   sourceGeometryIds:[s.sourceGeometryId],
+   from3D:{...a},to3D:{...b},
+   from2D:{...s.projectedFromModelMm},
+   to2D:{...s.projectedToModelMm},
+   verifiedUnionExteriorOpenFeature:true,
+   observerRayEvidenceScope:s.openInteriorVisibility,
+   sourceRevision:revision,officialEngineeringLineStyle:'undetermined',
+   formalV5ActionAuthorized:false});
+ }
+ const generatedM4Ids=new Set(m.generatedSegments.map(s=>s.id));
+ if(generatedM4Ids.size!==m.generatedSegments.length||
+    ray.pieceCount!==ray.pieces.length||
+    ray.pieces.some(p=>!generatedM4Ids.has(p.m4GeneratedCandidateId)))
+  fail('new feature source M4 interval identity incomplete');
+ for(const s of ray.pieces){
+  if(!VIEWS.includes(s.view)||!ids.length||
+     !Array.isArray(s.independentConvexSourceGeometryIds)||
+     s.independentConvexSourceGeometryIds.join('|')!==ids.join('|')||
+     s.applicableEngineeringLineStyle!=='undetermined'||
+     s.officialSingleV5LineActionAuthorized!==false)
+   fail('untrusted generated M0 ray source or claimed V5 line');
+  const a=s.source3DFrom,b=s.source3DTo;
+  if(dist3(a,b)<=1e-8||dist2(project(a)[s.view],project(b)[s.view])<=1e-8)
+   continue;
+  candidates.push({
+   id:'M5Unified'+candidates.length,kind:'generated-two-face-crease',
+   view:s.view,sourceEdgeId:null,
+   generatedSourceFeatureId:s.generated3DSourceFeatureId,
+   sourceGeometryIds:[...ids],
+   from3D:{...a},to3D:{...b},
+   from2D:{...s.sourceProjectedFromModelMm},
+   to2D:{...s.sourceProjectedToModelMm},
+   verifiedUnionExteriorOpenFeature:true,
+   observerRayEvidenceScope:s.sourceRayStatus,
+   sourceRevision:revision,officialEngineeringLineStyle:'undetermined',
+   formalV5ActionAuthorized:false});
+ }
+ if(candidates.length>240)fail('bounded source candidate graph budget exceeded');
+ for(const s of candidates)if(
+  !['V','H','W'].includes(s.view)||
+  ![s.from2D.u,s.from2D.v,s.to2D.u,s.to2D.v].every(Number.isFinite)||
+  dist2(s.from2D,project(s.from3D)[s.view])>1e-8||
+  dist2(s.to2D,project(s.to3D)[s.view])>1e-8)
+  fail('first-angle 3D-to-2D source identity mismatch');
+ const cutMap=new Map(candidates.map(s=>[s.id,[0,1]]));
+ const events=[];
+ for(let i=0;i<candidates.length;i++)for(let j=i+1;j<candidates.length;j++){
+  const A=candidates[i],B=candidates[j];
+  if(A.view!==B.view)continue;
+  const r=diff(A.to2D,A.from2D),s=diff(B.to2D,B.from2D),
+   qp=diff(B.from2D,A.from2D),
+   n1=Math.hypot(r.u,r.v),n2=Math.hypot(s.u,s.v);
+  const scale=Math.max(1,n1,n2),tol=1e-10*scale;
+  const den=cross(r,s);
+  if(Math.abs(den)>tol*Math.max(n1,n2)){
+   const t=cross(qp,s)/den,u=cross(qp,r)/den;
+   if(t< -1e-10||t>1+1e-10||u< -1e-10||u>1+1e-10)continue;
+   const ta=Math.max(0,Math.min(1,t)),ub=Math.max(0,Math.min(1,u));
+   cutMap.get(A.id).push(ta);cutMap.get(B.id).push(ub);
+   const qA=p3(A.from3D,A.to3D,ta),qB=p3(B.from3D,B.to3D,ub);
+   const interior=ta>1e-9&&ta<1-1e-9&&ub>1e-9&&ub<1-1e-9;
+   events.push({
+    id:'M5Cross'+events.length,view:A.view,
+    candidateIds:[A.id,B.id],kind:interior?
+     'projected-interior-crossing':'projected-endpoint-or-t-junction',
+    sourceParameters:[ta,ub],
+    projectedPoint:p2(A.from2D,A.to2D,ta),
+    samePhysical3DPointVerified:dist3(qA,qB)<=1e-9,
+    paperCoincidenceCannotAuthorizePhysicalJoin:true,
+    completeStrokeDepthOrderingVerified:false,
+    standardLineStyleApproved:false,officialV5ActionAuthorized:false});
+  }else{
+   if(Math.abs(cross(qp,r))>tol*n1||
+      Math.abs(cross(diff(B.to2D,A.from2D),r))>tol*n1)continue;
+   const length2=dot(r,r),b0=dot(qp,r)/length2,
+    b1=dot(diff(B.to2D,A.from2D),r)/length2,
+    lo=Math.max(0,Math.min(b0,b1)),hi=Math.min(1,Math.max(b0,b1));
+   if(hi-lo<=1e-9)continue;
+   const qa=p2(A.from2D,A.to2D,lo),
+    qb=p2(A.from2D,A.to2D,hi),sb2=dot(s,s),
+    ub0=dot(diff(qa,B.from2D),s)/sb2,
+    ub1=dot(diff(qb,B.from2D),s)/sb2;
+   if(ub0< -1e-9||ub0>1+1e-9||ub1< -1e-9||ub1>1+1e-9)
+    fail('paper overlap parameters outside original source edges');
+   cutMap.get(A.id).push(lo,hi);
+   cutMap.get(B.id).push(ub0,ub1);
+   const pA0=p3(A.from3D,A.to3D,lo),
+    pA1=p3(A.from3D,A.to3D,hi),
+    pB0=p3(B.from3D,B.to3D,ub0),
+    pB1=p3(B.from3D,B.to3D,ub1);
+   events.push({id:'M5Overlap'+events.length,view:A.view,
+    candidateIds:[A.id,B.id],kind:'projected-collinear-positive-overlap',
+    firstSourceParameterRange:[lo,hi],
+    secondSourceParameterRange:[ub0,ub1],
+    projectedFromModelMm:qa,projectedToModelMm:qb,
+    physicallyCoincidentEntireOverlapVerified:
+     dist3(pA0,pB0)<=1e-9&&dist3(pA1,pB1)<=1e-9,
+    projectedDuplicatesResolvedAndUnique:false,
+    frontmostOpaqueFaceVerified:false,
+    standardLineStyleApproved:false,officialV5ActionAuthorized:false});
+  }
+  if(events.length>24000)fail('projected source pairwise event budget exceeded');
+ }
+ const subspans=[];
+ for(const c of candidates){
+  const unique=[];
+  for(const x of cutMap.get(c.id).sort((a,b)=>a-b)){
+   if(!Number.isFinite(x)||x< -1e-8||x>1+1e-8)
+    fail('projected critical event outside source interval');
+   const y=Math.max(0,Math.min(1,x));
+   if(!unique.length||y-unique.at(-1)>1e-9)unique.push(y);
+  }
+  if(unique[0]!==0||unique.at(-1)!==1)fail('original projected candidate not fully partitioned');
+  for(let i=0;i<unique.length-1;i++){
+   const a=unique[i],b=unique[i+1];
+   if(b-a<=1e-9)continue;
+   const from=p3(c.from3D,c.to3D,a),to=p3(c.from3D,c.to3D,b);
+   subspans.push({id:'M5UnifiedOpen'+subspans.length,
+    view:c.view,sourceCandidateId:c.id,
+    sourceFeatureKind:c.kind,
+    sourceParameterOpenRange:[a,b],
+    source3DFrom:from,source3DTo:to,
+    projectedFromModelMm:project(from)[c.view],
+    projectedToModelMm:project(to)[c.view],
+    sourceCrossingAndOverlapCriticalEventsIncluded:true,
+    fullSceneOpaqueVolumeAndJunctionsVerified:false,
+    uniqueFinalProjectedStrokeProven:false,
+    authorizedEngineeringLineStyle:'undetermined',
+    canonicalIntentStepAndV5Approved:false});
+  }
+ }
+ return freeze({schema:'draftai-m5-unified-projected-source-events/1',
+  revision,status:'reviewed-original-and-generated-paper-event-candidates',
+  sourceGeometryIds:ids,candidates,events,subspans,
+  candidateCount:candidates.length,eventCount:events.length,
+  originalSourceCandidateCount:candidates.filter(x=>
+   x.kind==='original-physical-crease').length,
+  generatedSourceCandidateCount:candidates.filter(x=>
+   x.kind==='generated-two-face-crease').length,
+  properPaperCrossingCount:events.filter(x=>
+   x.kind==='projected-interior-crossing').length,
+  positiveCollinearOverlapCount:events.filter(x=>
+   x.kind==='projected-collinear-positive-overlap').length,
+  partitionedOpenSubspanCount:subspans.length,
+  firstAngleProjectedGeometrySourceAccountedFor:true,
+  allRelevantFinalOutlineFeaturesProvenComplete:false,
+  projectedDuplicateResolutionAndFinalSourceUniquenessVerified:false,
+  fullPaperJunctionAndDepthTopologyVerified:false,
+  officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
+}
+module.exports={auditUnifiedProjectedFeatureEvents};
