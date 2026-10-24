@@ -1,0 +1,110 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {auditC3TransitionRays:audit}=require('../../workbench/c3-transition-ray-candidates.cjs');
+const {auditC3JointTopologyVisibility:joint}=require('../../workbench/c3-joint-topology-visibility.cjs');
+const input={kind:'finite-orthogonal-cylinder-intersection',sourceConfirmed:true,unit:'mm',
+ zCylinder:{radius:12,xCenter:0,yCenter:0,zMin:-18,zMax:18},
+ yCylinder:{radius:9,xCenter:2,zCenter:0,yMin:-17,yMax:17}};
+test('C3 ray quadratic candidates stay separate from official visibility',()=>{
+ const p={x:12,y:0,z:0};
+ for(const view of ['V','H','W']){
+  const r=audit({input,point:p,view});
+  assert.equal(r.officialLineStyle,'undetermined');
+  assert.equal(r.v5Authorized,false);
+  assert.equal(r.fullFiniteVolumeVisibilityVerified,false);
+  assert.ok(r.combinedForwardInteriorIntervals.every(i=>
+   ['zCylinder','yCylinder'].includes(i.solid)&&i.range[1]>i.range[0]));
+  assert.ok(['undetermined-tangent-generator-or-depth-tie',
+   'certified-forward-interior-occlusion',
+   'no-positive-interior-found-not-full-feature-clearance']
+   .includes(r.endpointVisibilityStatus));
+  for(const solid of [r.zCylinder,r.yCylinder]){
+   assert.ok(['no-forward-boundary-intersection','forward-boundary-intersection',
+    'undetermined-tangent-generator-or-origin'].includes(solid.rayBoundaryStatus));
+   assert.ok(solid.events.every(e=>e.t>=0&&Number.isFinite(e.t)));
+   assert.ok(solid.interiorOpenIntervals.every(([lo,hi])=>
+    Number.isFinite(lo)&&Number.isFinite(hi)&&lo>=0&&hi>lo));
+   assert.equal(solid.positiveInteriorVerified,
+    solid.strictInteriorWitnessVerified);
+   assert.ok(solid.interiorWitnesses.every(w=>
+    w.strictAxialMargin>0&&w.strictRadialMargin>0));
+   assert.equal(solid.witnessOpenNeighborhoods.length,
+    solid.interiorWitnesses.length);
+   assert.ok(solid.witnessOpenNeighborhoods.every(n=>
+    n.strictNeighborhoodVerified&&n.halfWidth>0&&
+    n.centerT-n.halfWidth>0));
+  }
+ }
+});
+test('C3 joint graph exposes physical-junction ray candidates without V5',()=>{
+ const r=joint({input,revision:7});
+ assert.equal(r.status,'scoped-open-interval-joint-evidence');
+ const guards=r.transitionGuards.filter(x=>x.junctionId!==undefined);
+ assert.equal(guards.length,r.junctionGuards.length*3);
+ for(const g of guards){
+  assert.equal(g.finiteCylinderRayCandidates.view,g.view);
+  assert.equal(g.incidentBranchesCoveredInView,true);
+  assert.equal(g.projectionOverlapUndetermined,true);
+  assert.ok(Array.isArray(g.projectedCoincidentJunctionIds));
+  assert.ok(g.projectedCoincidentJunctionIds.every(id=>id!==g.junctionId));
+  assert.equal(typeof g.distinctPhysicalPointsSharingProjection,'boolean');
+  assert.ok(g.blockers.includes(
+   'projected-coincidence-and-other-feature-overlap-not-proven'));
+  assert.equal(g.finiteCylinderRayCandidates.v5Authorized,false);
+  assert.equal(g.standardLineStyle,'undetermined');
+ }
+});
+
+test('C3 finite-cylinder forward interior is a bounded positive interval',()=>{
+ const p={x:-20,y:0,z:0};
+ const r=audit({input,point:p,view:'W'});
+ assert.ok(r.zCylinder.interiorOpenIntervals.length>0);
+ assert.ok(r.yCylinder.interiorOpenIntervals.length>0);
+ assert.ok(r.zCylinder.interiorOpenIntervals.every(([a,b])=>a>0&&b>a));
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+
+test('C3 forward union preserves both solids and cannot sign tangencies',()=>{
+ const r=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='zCylinder'));
+ assert.ok(r.combinedForwardInteriorIntervals.some(i=>i.solid==='yCylinder'));
+ assert.equal(r.positiveInteriorOcclusionVerified,true);
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+
+test('C3 strict quadratic and cap slab prove positive volume from a boundary point',()=>{
+ const p={x:-12,y:0,z:0};
+ const r=audit({input,point:p,view:'W'});
+ assert.equal(r.zCylinder.originOnBoundary,true);
+ assert.equal(r.zCylinder.positiveInteriorVerified,true);
+ assert.equal(r.positiveInteriorOcclusionVerified,true);
+ assert.equal(r.endpointVisibilityStatus,'certified-forward-interior-occlusion');
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+test('C3 grazing cylinder generator has no strict interior proof',()=>{
+ const p={x:12,y:0,z:0};
+ const r=audit({input,point:p,view:'H'});
+ assert.equal(r.zCylinder.positiveInteriorVerified,false);
+ assert.equal(r.zCylinder.interiorOpenIntervals.length,0);
+ assert.equal(r.officialLineStyle,'undetermined');
+});
+
+test('C3 union of overlapping positive opaque intervals carries both sources',()=>{
+ const r=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.ok(r.unionInteriorOpenIntervals.some(i=>
+  i.supportingSolids.includes('zCylinder')&&
+  i.supportingSolids.includes('yCylinder')));
+ assert.equal(r.fullFiniteVolumeVisibilityVerified,false);
+ assert.equal(r.v5Authorized,false);
+});
+
+test('C3 near-source strict opaque interval is distinguished from remote occlusion',()=>{
+ const atSurface=audit({input,point:{x:-12,y:0,z:0},view:'W'});
+ assert.equal(atSurface.nearestOpaqueInteriorStartsAtSource,true);
+ assert.equal(atSurface.nearestStrictOpaqueInterval.range[0],0);
+ const remote=audit({input,point:{x:-20,y:0,z:0},view:'W'});
+ assert.equal(remote.nearestOpaqueInteriorStartsAtSource,false);
+ assert.ok(remote.nearestStrictOpaqueInterval.range[0]>0);
+ assert.equal(atSurface.officialLineStyle,'undetermined');
+});
