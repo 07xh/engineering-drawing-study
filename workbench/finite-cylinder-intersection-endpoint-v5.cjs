@@ -121,7 +121,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  const scale=Math.max(1,Z.radius*Z.radius,Y.radius*Y.radius);
  const intents=[],steps=[],bindings=[],sourceCircleGuides=[],
   projectedSeamArcGuides=[];
- const sheetByIntentId={};
+ const sheetByIntentId={},viewByIntentId={};
  const source={solver:'05-finite-orthogonal-cylinder-analytic-M3',
   revision,unit:'mm',proofScope:includeProjectedSeamArcGuides?
    'finite-cylinder-projected-arcs-and-analytic-points':
@@ -148,7 +148,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    const transform=viewTransforms?.[guide.view]||sheetTransform;
    const action=verifiedTeachingActionToV5({
     id:op.id,kind:'circle',coordinateSpace:'model-mm',
-    center:guide.center,radius:guide.radius
+    center:guide.center,radius:guide.radius,view:guide.view
    },transform);
    const intent={schema:VERSION,id,
     purpose:'construct-original-finite-cylinder-circular-view-guide',
@@ -162,6 +162,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
    // The one combined trust scope was selected before creating any steps.
    intents.push(intent);steps.push(step);
    sheetByIntentId[id]=transform;
+   viewByIntentId[id]=guide.view;
    sourceCircleGuides.push({view:guide.view,
     sourceSolid:guide.solid,centerModelMm:{...guide.center},
     radiusModelMm:guide.radius,
@@ -231,7 +232,8 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
     outputEntityIds:[op.id],operations:[op],source:{...source}};
    const transform=viewTransforms?.[row.view]||sheetTransform;
    const action=verifiedTeachingActionToV5({
-    id:op.id,kind:'arc',coordinateSpace:'model-mm',...geometry
+    id:op.id,kind:'arc',coordinateSpace:'model-mm',
+    view:row.view,...geometry
    },transform);
    const step={id,role:'auxiliary',dependsOn:[],
     title:'相贯解析投影 · '+row.view+' 面 · 去重真实圆弧 '+(index+1),
@@ -239,6 +241,7 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
     actions:[action]};
    intents.push(intent);steps.push(step);
    sheetByIntentId[id]=transform;
+   viewByIntentId[id]=row.view;
    projectedSeamArcGuides.push({
     id,view:row.view,sourceCylinder:row.sourceCylinder,
     sourceBranchIds:[...row.sourceBranchIds],
@@ -300,7 +303,9 @@ function compileFiniteCylinderEndpointV5({input,revision,sheetTransform,
  const timing=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({revision,intents,steps,timing,sheet:sheetTransform,
   sheetByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
-   sheetByIntentId:null});
+   sheetByIntentId:null,
+  viewByIntentId:includeSourceCircleGuides||includeProjectedSeamArcGuides?
+   viewByIntentId:null});
  const player=Timeline.createPlayer(timing,{revision});
  return deepFreeze({schema:'draftai-c3-finite-cylinder-point-v5/1',
   revision,status:includeProjectedSeamArcGuides?
