@@ -9,13 +9,13 @@
  * Generated HLR TopoDS shape history to ORIGINAL TopoDS edge, whole
  * drawing topology, GB line style and ConstructionIntent/V5 stay unsigned.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
 const equal=(p,q)=>p&&q&&p.u===q.u&&p.v===q.v;
 function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
- geometry,revision,cad,originalNativeVertexProof
+ geometry,revision,cad,originalNativeVertexProof,originalClosedRayM5
 }={}){
  const graph=cad?.nativeGeneratedVertexGraph;
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
@@ -28,7 +28,14 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     originalNativeVertexProof?.sourceGeometryId!==geometry.id||
     originalNativeVertexProof.revision!==revision||
     originalNativeVertexProof.signedV5ActionCount!==0||
-    !Array.isArray(originalNativeVertexProof.rows))
+    !Array.isArray(originalNativeVertexProof.rows)||
+    (originalClosedRayM5!==undefined&&(
+     originalClosedRayM5?.schema!==
+      'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1'||
+     originalClosedRayM5.sourceGeometryId!==geometry.id||
+     originalClosedRayM5.revision!==revision||
+     originalClosedRayM5.signedV5ActionCount!==0||
+     !Array.isArray(originalClosedRayM5.rows))))
   throw new TypeError('real OCCT native graph and original 3D endpoint proof for same geometry/revision required');
  const base=new Map(),byGlobal=[];
  let global=0;
@@ -60,6 +67,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices:0,
   IsSameHLRNodesButOriginalSource3DVertexNotCertified:0,
   IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown:0,
+  nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay:0,
   distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs:0,
   paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction:0,
   actualOriginal3DPhysicalSourceJunctionPairsVerified:0,
@@ -70,6 +78,14 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   engineeringGBLineJunctionsSigned:0,signedV5Actions:0
  };
  const rows=[],aliases=[];
+ const sourceEdges=new Map((geometry.data.edges??[]).map(edge=>[
+  geometry.id+'::'+[...edge].sort().join('|'),edge
+ ]));
+ const outwardM5=new Map((originalClosedRayM5?.rows??[]).map(row=>[
+  row.originalPhysicalSourceEdgeId+'@'+row.view,row
+ ]));
+ const xyzEq=(a,b)=>a&&b&&['x','y','z'].every(k=>
+  Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
  function locate(ref,view){
   const v=base.get(view);
   if(!ref||!['visible-sharp','hidden-sharp'].includes(ref.hlrClass)||
@@ -83,7 +99,49 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      seg.actualOCCTHLRFlattenedBRepLineVerified!==true||
      !equal(point,ref.nativePaperPoint))
    throw new RangeError('native true OCCT TopoDS vertex reference not in current HLR stroke');
-  if(!isHidden)return {source:null,vertex:null,nativeHidden:false};
+  if(!isHidden){
+   // A true HLR VCompound native segment can be tied to a MODELED original
+   // M0 endpoint only if exactly ONE independently OCCT-measured original
+   // straight 3D source candidate survives, its TRUE source endpoint
+   // projects to the literal native generated paper vertex, and an
+   // independent SAME-REVISION M5 closed ray clears the whole front edge.
+   // This does not imply generated HLR edge -> original TopoDS history.
+   const lifts=seg.sourceCandidate3DLifts;
+   if(!Array.isArray(lifts)||lifts.length!==1||
+      !originalClosedRayM5)
+    return {source:null,vertex:null,nativeHidden:false};
+   const lift=lifts[0],edge=sourceEdges.get(lift.sourceEdgeId);
+   const row=outwardM5.get(lift.sourceEdgeId+'@'+view);
+   if(!edge||!row||
+      row.fullProjectedVisibleSourceLineProven!==true||
+      row.completeSourceOriginal3DRayClosedIntervalClear!==true||
+      row.originalPhysicalCreaseProven!==true||
+      row.signedV5Action!==false||
+      row.officialEngineeringLineStyle!=='undetermined'||
+      lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+      lift.originalOCCTSourceLineCurveVerified!==true||
+      lift.originalXYZReprojectsToHLR!==true||
+      lift.v5Authorized!==false||
+      !Array.isArray(lift.originalVertexIds)||
+      lift.originalVertexIds.join('|')!==edge.join('|'))
+    return {source:null,vertex:null,nativeHidden:false};
+   const isFrom=ref.side==='from',t=isFrom?
+    lift.sourceParameterAtProjectedFrom:lift.sourceParameterAtProjectedTo;
+   const id=t===0?edge[0]:t===1?edge[1]:null;
+   if(id===null)return {source:null,vertex:null,nativeHidden:false};
+   const xyz=geometry.data.points[id],measured=isFrom?
+    lift.fromCandidate3D:lift.toCandidate3D;
+   const original=[geometry.data.points[edge[0]],geometry.data.points[edge[1]]];
+   const actualA=lift.actualOriginalOCCTBRepFrom3D,
+    actualB=lift.actualOriginalOCCTBRepTo3D;
+   if(!xyzEq(xyz,measured)||
+      !equal(project(xyz)[view],point)||
+      !((xyzEq(original[0],actualA)&&xyzEq(original[1],actualB))||
+        (xyzEq(original[0],actualB)&&xyzEq(original[1],actualA))))
+    return {source:null,vertex:null,nativeHidden:false};
+   return {source:lift.sourceEdgeId,vertex:id,nativeHidden:false,
+    independentlyOriginalVisibleM0AndM5FullClearSourceVertex:true};
+  }
   const original=byGlobal[v.globalStart+ref.nativeHLREdgeOrdinal];
   if(original.nativeSource3DVertexEndpointRows.length!==1)return {
    source:null,vertex:null,nativeHidden:true};
@@ -100,7 +158,8 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    nativeHidden:true};
  }
  const verifiedPhysical3DPair=(a,b)=>
-  a.nativeHidden&&b.nativeHidden&&
+  (a.nativeHidden||a.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
+  (b.nativeHidden||b.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
   a.source!==null&&b.source!==null&&a.source!==b.source&&
   a.vertex!==null&&a.vertex===b.vertex;
  for(const view of VIEWS){
@@ -122,10 +181,16 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     if(verified)
      counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices++;
     else counts.IsSameHLRNodesButOriginalSource3DVertexNotCertified++;
-   }else counts.IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown++;
+   }else{
+    if(verified)
+     counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay++;
+    else counts.IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown++;
+   }
    rows.push({view,a:{...pair.a},b:{...pair.b},
     original3DVertexIdAgreedFromTwoIndependentHiddenSources:
-     verified?a.vertex:null,
+     verified&&both?a.vertex:null,
+    original3DVertexIdAgreedBetweenAuthenticVisibleAndHiddenM0Sources:
+     verified&&!both?a.vertex:null,
     actualOCCTHLRGeneratedTopoDSVertexIsSame:true,
     independentlyRealOriginal3DSourceJunctionAlsoProven:verified,
     originalGeneratedHLRTopoDSToSourceTopoDSEdgeHistoryCertified:false,
@@ -194,8 +259,8 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       throw new RangeError('native junction component missing actual OCCT IsSame pair witness');
     }
     const physical=members.map(member=>locate(member,view));
-    const allHidden=physical.every(x=>x.nativeHidden);
-    const allSourceMapped=allHidden&&physical.every(x=>
+    const allSourceMapped=physical.every(x=>
+     (x.nativeHidden||x.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
      typeof x.source==='string'&&x.vertex!==null&&x.vertex!==undefined);
     const vertices=new Set(physical.map(x=>x.vertex));
     const distinctSources=new Set(physical.map(x=>x.source));
@@ -211,6 +276,8 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:fullyCertified,
      independentlyVerifiedOriginalM03DVertexId:
       fullyCertified?physical[0].vertex:null,
+     includesActualVisibleHLRWithIndependentM5WholeOriginalClearRay:
+      fullyCertified&&physical.some(x=>!x.nativeHidden),
      independentlyTracedOriginal3DSourceEdges:
       fullyCertified?[...distinctSources].sort():[],
      originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,

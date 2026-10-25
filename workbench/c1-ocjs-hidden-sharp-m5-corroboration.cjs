@@ -240,7 +240,8 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
  const nativeHLRVertexConcordance=
   auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    geometry,revision,cad,
-   originalNativeVertexProof:nativeHiddenOriginalVertexEndpointProof
+   originalNativeVertexProof:nativeHiddenOriginalVertexEndpointProof,
+   originalClosedRayM5:m5
   });
  if(nativeHLRVertexConcordance.signedV5ActionCount!==0||
     nativeHLRVertexConcordance.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete!==false)

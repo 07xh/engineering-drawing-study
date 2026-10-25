@@ -207,3 +207,78 @@ test('cannot forge a complete native generated vertex star without actual IsSame
   generatedOCCTSharedNativeJunctionComponents[0].exactNativePaperCoordinatesForEntireComponent.u=11;
  assert.throws(()=>audit(x),/paper-misaligned native TopoDS junction/);
 });
+
+const visibleFrontSourceCase=()=>{
+ const x=fixture(),A={x:10,y:4,z:0},D={x:0,y:4,z:0};
+ x.geometry.data.points.A=A;
+ x.geometry.data.points.B={x:20,y:4,z:0};
+ x.geometry.data.points.D=D;
+ x.geometry.data.edges=[['A','B'],['D','A']];
+ x.cad.views.H[0].sourceCandidate3DLifts=[{
+  sourceEdgeId:'G::A|D',originalVertexIds:['D','A'],
+  sourceParameterAtProjectedFrom:0,sourceParameterAtProjectedTo:1,
+  actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+  originalOCCTSourceLineCurveVerified:true,originalXYZReprojectsToHLR:true,
+  v5Authorized:false,fromCandidate3D:{...D},toCandidate3D:{...A},
+  actualOriginalOCCTBRepFrom3D:{...D},
+  actualOriginalOCCTBRepTo3D:{...A}
+ }];
+ x.originalClosedRayM5={
+  schema:'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1',
+  sourceGeometryId:'G',revision,signedV5ActionCount:0,
+  rows:[{
+   originalPhysicalSourceEdgeId:'G::A|D',view:'H',
+   fullProjectedVisibleSourceLineProven:true,
+   completeSourceOriginal3DRayClosedIntervalClear:true,
+   originalPhysicalCreaseProven:true,signedV5Action:false,
+   officialEngineeringLineStyle:'undetermined'
+  }]
+ };
+ const v=x.cad.nativeGeneratedVertexGraph.views.H,
+  a=ref('visible-sharp',0,'to'),b=ref('hidden-sharp',0,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ markGraphComplete(x);
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ return x;
+};
+test('genuine visible+hidden IsSame star gains original 3D A junction only with verified unique original CAD straight source and M5 whole front clear ray',()=>{
+ const x=visibleFrontSourceCase(),result=audit(x);
+ assert.equal(result.counts.IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown,0);
+ assert.equal(result.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,1);
+ assert.equal(result.rows[0].
+  original3DVertexIdAgreedBetweenAuthenticVisibleAndHiddenM0Sources,'A');
+ assert.equal(result.rows[0].original3DVertexIdAgreedFromTwoIndependentHiddenSources,null);
+ const star=result.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ assert.equal(star.includesActualVisibleHLRWithIndependentM5WholeOriginalClearRay,true);
+ assert.deepEqual(star.independentlyTracedOriginal3DSourceEdges,['G::A|B','G::A|D']);
+ assert.equal(star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered,false);
+ assert.equal(star.signedV5Action,false);
+});
+test('missing M5 full-front-ray, ambiguous visible CAD source or one-ULP original vertex model drift cannot forge visible-hidden physical 3D native star',()=>{
+ const x=visibleFrontSourceCase();
+ x.originalClosedRayM5.rows[0].fullProjectedVisibleSourceLineProven=false;
+ let proof=audit(x);
+ assert.equal(proof.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+ assert.equal(proof.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ x.originalClosedRayM5.rows[0].fullProjectedVisibleSourceLineProven=true;
+ const lift=x.cad.views.H[0].sourceCandidate3DLifts[0];
+ x.cad.views.H[0].sourceCandidate3DLifts.push({...lift});
+ proof=audit(x);
+ assert.equal(proof.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+ x.cad.views.H[0].sourceCandidate3DLifts.pop();
+ lift.toCandidate3D={...lift.toCandidate3D,x:lift.toCandidate3D.x+Number.EPSILON*10};
+ proof=audit(x);
+ assert.equal(proof.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+ assert.equal(proof.signedV5ActionCount,0);
+});
+test('older visible paper-only source lift without genuine OCCT original BRep 3D evidence cannot acquire a formal visible-hidden junction',()=>{
+ const x=visibleFrontSourceCase();
+ x.cad.views.H[0].sourceCandidate3DLifts[0].
+  actualOriginalOCCTBRepEdge3DEndpointsVerified=false;
+ const p=audit(x);
+ assert.equal(p.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+});

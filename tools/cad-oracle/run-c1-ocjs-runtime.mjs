@@ -201,6 +201,17 @@ for(const [index,geometry] of general.entries()){
   node.signedV5Action===false));
  assert.equal(nativeIsSame3D.counts.actualNativeIsSamePairs,
   nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs);
+ assert.equal(
+  nativeIsSame3D.counts.IsSameHiddenToHiddenNativeEndpointPairs+
+  nativeIsSame3D.counts.IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown+
+  nativeIsSame3D.counts.
+   nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,
+  nativeIsSame3D.counts.actualNativeIsSamePairs);
+ assert.ok(nativeIsSame3D.completeGenuineNativeHLRJunctionStars.every(node=>
+  node.includesActualVisibleHLRWithIndependentM5WholeOriginalClearRay!==true||
+  (node.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===true&&
+   node.independentlyVerifiedOriginalM03DVertexId!==null&&
+   node.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered===false)));
  assert.equal(nativeIsSame3D.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,
   nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs);
  assert.equal(nativeIsSame3D.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
@@ -918,6 +929,8 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
    trueOriginal3DSharedVertexAndNativeIsSameEntireJunctionNodes:
     nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,
+   genuineNativeVisibleHidden3DSharedVertexWithFullOriginalM5FrontClearRay:
+    nativeIsSame3D.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,
    nativeIsSameJunctionNodesStillLackingFullOriginal3DSourceFan:
     nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,
    trueOriginal3DSharedVertexButNativeHLRPaperMismatchStillHeld:
