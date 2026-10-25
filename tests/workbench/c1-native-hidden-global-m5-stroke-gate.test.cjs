@@ -99,6 +99,10 @@ test('entire native hidden HLR paper-open interval may be positive while genuine
  assert.equal(r.counts.genuineHiddenHLRStrokesReviewed,1);
  assert.equal(r.counts.wholeRealNativeHiddenPaperOpenIntervalsLocallyProven,1);
  assert.equal(r.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,1);
+ assert.equal(r.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,0);
+ assert.equal(r.counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition,1);
+ assert.equal(r.rows[0].currentOriginalM4SourceSpatialEventClassifications[0].
+  original3DSpatialEventClass,'undetermined');
  assert.equal(r.counts.nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved,1);
  assert.equal(r.counts.original3DEndpointFanProofIncompleteStrokes,1);
  assert.equal(r.counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered,1);
@@ -194,6 +198,10 @@ test('strict whole M0 3D front depth, M5 closed clear ray and REAL VCompound pap
  assert.equal(proof.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,0);
  assert.equal(proof.rows[0].
   collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof.length,1);
+ assert.equal(proof.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,1);
+ assert.equal(proof.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,true);
+ assert.equal(proof.rows[0].currentOriginalM4SourceSpatialEventClassifications[0].
+  original3DSpatialEventClass,'collinear-visible-front-original-3d-depth-mask');
  assert.equal(proof.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
  assert.equal(proof.signedV5ActionCount,0);
 });
@@ -258,6 +266,10 @@ test('global M5 consumes exact original 3D common vertex and true source BRep wh
  const r=review(x);
  assert.equal(r.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,1);
  assert.equal(r.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,1);
+ assert.equal(r.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,1);
+ assert.equal(r.rows[0].currentOriginalM4SourceSpatialEventClassifications[0].
+  original3DSpatialEventClass,'shared-authenticated-original-3d-vertex');
+ assert.equal(r.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,true);
  assert.equal(r.rows[0].exactModelSpace3DSharedSourceVerticesWithVerifiedOriginalBRep[0].
   M0ExactDyadicOriginalObserverDepthTie,true);
  assert.equal(r.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
@@ -288,6 +300,11 @@ test('global M5 independently rechecks exact true 3D crossing depth at a literal
  assert.equal(r.counts.nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor,1);
  assert.equal(proof.length,1);
  assert.equal(proof[0].localExactObserverFrontSourceEdgeId,'G::C|D');
+ assert.equal(r.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,1);
+ assert.equal(r.counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification,1);
+ assert.equal(r.rows[0].currentOriginalM4SourceSpatialEventClassifications[0].
+  original3DSpatialEventClass,'transverse-paper-only-distinct-original-3d-depth');
+ assert.equal(r.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,true);
  assert.equal(proof[0].globalOcclusionTopologyCertified,false);
  assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
  assert.equal(r.signedV5ActionCount,0);
@@ -313,4 +330,30 @@ test('true transverse crossing M0 depth with no exact current native M4 event bi
  assert.equal(r.counts.nativeM4TransverseDepthAtTruePaperCrossingButM4CutNotAnchored,1);
  assert.equal(r.counts.nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor,0);
  assert.deepEqual(r.rows[0].nativeM4TransverseExactLocalDepthAndNativeHLRAnchors,[]);
+ assert.equal(r.counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition,1);
+ assert.equal(r.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,false);
+});
+
+test('partially classified native projected encounters retain exact unresolved count and cannot mint a globally signed C1 stroke',()=>{
+ const x=caseData();
+ const event=x.projectedEncounters.rows[0].originalM4ProjectedEncountersOnNativeSource[0];
+ event.positivelySameOriginal3DPhysicalSourceVertex='A';
+ event.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven=true;
+ event.exactOriginalM4VertexOtherSourceDepthEvidence={
+  exactOriginalVertexDepthRelativeOtherSourceSign:0
+ };
+ x.projectedEncounters.rows[0].originalM4ProjectedEncountersOnNativeSource.push({
+  ...event,originalSourceParameter:.75,
+  positivelySameOriginal3DPhysicalSourceVertex:null,
+  original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven:false,
+  exactOriginalM4VertexOtherSourceDepthEvidence:null,
+  canonicalM4ProjectedEncounterKind:'paper-only-uncertain'
+ });
+ const r=review(x);
+ assert.equal(r.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,2);
+ assert.equal(r.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,1);
+ assert.equal(r.counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition,1);
+ assert.equal(r.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,false);
+ assert.equal(r.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
+ assert.equal(r.signedV5ActionCount,0);
 });

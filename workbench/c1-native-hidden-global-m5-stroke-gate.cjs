@@ -108,6 +108,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   nativeHLRUnprovenExactPaperEventAlignment:0,
   nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof:0,
   nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor:0,
+  originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition:0,
+  originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition:0,
+  nativeHLRSourceStrokesWithCompleteLocal3DEventClassification:0,
   nativeM4TransverseDepthAtTruePaperCrossingButM4CutNotAnchored:0,
   nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof:0,
   nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex:0,
@@ -300,6 +303,54 @@ function reviewC1NativeHiddenFinalM5Strokes({
    positiveFrontNoSwitch.length;
   counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof+=
    interiorCollinear.length-positiveFrontNoSwitch.length;
+  // Materially useful positive M5 *original 3D* event graph. This only
+  // settles the physical spatial meaning of known canonical M4 encounters;
+  // OCCT-generated TopoDS adjacency, whole-scene opaque-face topology,
+  // standard GB line styles and ConstructionIntent/V5 remain separate.
+  // Mutually exclusive local mathematical outcomes:
+  // (a) authenticated same-original-3D-vertex from both OCCT BRep curves;
+  // (b) exact projected transverse crossing at DIFFERENT original depths;
+  // (c) genuine front original source masking a collinear paper encounter.
+  const anchoredByEvent=new Set(anchoredTransverse.map(x=>
+   x.originalHiddenSourceEdgeId+'@'+x.crossingOtherOriginalSourceEdgeId));
+  const noSwitch=new Set(positiveFrontNoSwitch);
+  const locallyClassified=projected.map(event=>{
+   const realVertex=event.positivelySameOriginal3DPhysicalSourceVertex!==null&&
+    event.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven===true&&
+    event.exactOriginalM4VertexOtherSourceDepthEvidence?.
+     exactOriginalVertexDepthRelativeOtherSourceSign===0;
+   const crossing=event.canonicalM4ProjectedEncounterKind==='crossing'&&
+    event.nativeHLRActualM4EventLocallyAnchoredStrictDepth===true&&
+    anchoredByEvent.has(
+     event.originalPhysical3DSourceEdgeId+'@'+event.otherOriginal3DSourceEdgeId);
+   const masked=event.canonicalM4ProjectedEncounterKind==='collinear-overlap'&&
+    noSwitch.has(event);
+   const matches=Number(realVertex)+Number(crossing)+Number(masked);
+   if(matches>1)
+    throw new RangeError('contradictory original 3D physical event classifications');
+   const classification=realVertex?
+    'shared-authenticated-original-3d-vertex':
+    crossing?'transverse-paper-only-distinct-original-3d-depth':
+    masked?'collinear-visible-front-original-3d-depth-mask':
+    'undetermined';
+   return {
+    view:gap.view,originalSourceEdgeId:event.originalPhysical3DSourceEdgeId,
+    otherOriginalSourceEdgeId:event.otherOriginal3DSourceEdgeId??null,
+    originalM4SourceParameter:event.originalSourceParameter,
+    original3DSpatialEventClass:classification,
+    original3DSpatialMeaningProven:matches===1,
+    actualNativeHLRGeneratedEdgeTopoDSJunctionCertified:false,
+    wholeSceneOcclusionCertified:false,
+    officialEngineeringLineStyle:'undetermined',
+    signedV5Action:false
+   };
+  });
+  const localResolved=locallyClassified.filter(x=>x.original3DSpatialMeaningProven).length;
+  counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition+=localResolved;
+  counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition+=
+   locallyClassified.length-localResolved;
+  if(localResolved===locallyClassified.length&&localResolved>0)
+   counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification++;
   const physicalVertexPaperDrift=projected.filter(e=>
    e.positivelySameOriginal3DPhysicalSourceVertex!==null&&
    e.actualNativeGeneratedBRepPaperRelation?.
@@ -344,6 +395,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
     localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    canonicalOriginalM4ProjectedEncountersAudited:projected.length,
+   currentOriginalM4SourceSpatialEventClassifications:locallyClassified,
+   allCurrentOriginalM4SourceEncountersLocally3DClassified:
+    locallyClassified.length>0&&localResolved===locallyClassified.length,
+   nativeGeneratedHLRAndAllOpaqueFacesStillNeedGlobalProof:true,
    nativeM4TransverseExactLocalDepthAndNativeHLRAnchors:anchoredTransverse,
    collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof:
     positiveFrontNoSwitch.map(e=>({
@@ -393,6 +448,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
    signedV5Action:false
   });
  }
+ if(counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition+
+    counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition!==
+    counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR||
+    counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification>
+    counts.genuineHiddenHLRStrokesReviewed)
+  throw new RangeError('incomplete mathematical classification of C1 native source paper encounters');
  if(counts.genuineHiddenHLRStrokesReviewed!==gapProof.rows.length||
     counts.realGeneratedHLRToOriginalTopoDSProven!==0||
     counts.officialStandardSolidOrDashedLineSigned!==0||

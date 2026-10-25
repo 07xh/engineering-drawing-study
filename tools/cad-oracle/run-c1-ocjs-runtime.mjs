@@ -512,6 +512,22 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
+ assert.equal(
+  hiddenFormalGate.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition+
+  hiddenFormalGate.counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition,
+  nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
+ assert.equal(
+  hiddenFormalGate.counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification,
+  hiddenFormalGate.rows.filter(row=>
+   row.allCurrentOriginalM4SourceEncountersLocally3DClassified).length);
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.currentOriginalM4SourceSpatialEventClassifications.length===
+   row.canonicalOriginalM4ProjectedEncountersAudited&&
+  row.currentOriginalM4SourceSpatialEventClassifications.every(e=>
+   e.actualNativeHLRGeneratedEdgeTopoDSJunctionCertified===false&&
+   e.wholeSceneOcclusionCertified===false&&
+   e.officialEngineeringLineStyle==='undetermined'&&
+   e.signedV5Action===false)));
  assert.equal(hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
   nativeEncounters.counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR);
  assert.equal(hiddenFormalGate.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,
@@ -864,6 +880,12 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
    exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
     nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   nativeM4SourceProjectedEventsWithExactLocal3DTopology:
+    hiddenFormalGate.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,
+   nativeM4SourceProjectedEventsStillSpatiallyUndetermined:
+    hiddenFormalGate.counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition,
+   nativeHLRSourceStrokesWithEntireKnownM4GraphLocally3DClassified:
+    hiddenFormalGate.counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification,
    nativeM4CollinearInteriorEventsWithVerifiedWholeOriginalFrontNoDepthSwitch:
     hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,
    nativeM4CollinearInteriorEventsWithoutIndependentFullFrontMask:
