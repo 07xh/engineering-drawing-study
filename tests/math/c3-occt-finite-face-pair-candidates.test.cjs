@@ -138,7 +138,7 @@ test('forged cap source, moved B-Rep endpoint, altered branch and nonfinite CAD 
  const wrongFace=copy();wrongFace.sourceFaces.z='cap-max';
  assert.throws(()=>verifyCandidate(c,wrongFace,caps),/forged or ambiguous/);
  const forgedPoint=copy();forgedPoint.endpoints[1][1]+=.25;
- assert.throws(()=>verifyCandidate(c,forgedPoint,caps),/no unique independently proven analytic/);
+ assert.throws(()=>verifyCandidate(c,forgedPoint,caps),/outside finite original solid|no unique independently proven analytic/);
  const forgedWitness=copy();forgedWitness.interiorWitness[0]+=.5;
  assert.throws(()=>verifyCandidate(c,forgedWitness,caps),/outside finite original solid|no original source face|inconsistent/);
  const nan=copy();nan.endpoints[0][2]=NaN;
