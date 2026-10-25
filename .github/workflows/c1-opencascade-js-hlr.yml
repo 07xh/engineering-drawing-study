@@ -9,6 +9,8 @@ on:
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
       - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
       - 'workbench/c1-native-hidden-3d-endpoint-fan-junctions.cjs'
+      - 'workbench/c1-native-hidden-whole-source-interval-closure.cjs'
+      - 'tests/workbench/c1-native-hidden-whole-source-interval-closure.test.cjs'
       - 'tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
@@ -58,6 +60,8 @@ on:
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
       - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
       - 'workbench/c1-native-hidden-3d-endpoint-fan-junctions.cjs'
+      - 'workbench/c1-native-hidden-whole-source-interval-closure.cjs'
+      - 'tests/workbench/c1-native-hidden-whole-source-interval-closure.test.cjs'
       - 'tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
@@ -134,6 +138,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs
           node --test tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs
           node --test tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs
+          node --test tests/workbench/c1-native-hidden-whole-source-interval-closure.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
