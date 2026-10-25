@@ -250,7 +250,10 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
     wholeOpenSubspanAnalyticRayClear:
      opaqueRay.analyticConservativeWholeOpenRayClear,
     wholeOpenSubspanStrictlyOpaqueOccluded:
-     opaqueRay.fullAnalyticStrictInteriorRayOcclusion,
+     opaqueRay.fullAnalyticStrictInteriorRayOcclusion||
+     opaqueRay.exactOriginalSourceStrictInwardOpenRayHidden,
+    wholeOpenSubspanExactStrictInwardRayHidden:
+     opaqueRay.exactOriginalSourceStrictInwardOpenRayHidden,
     sourceSubspanOpaqueRayFullyRecomputed:true,
     allOpaqueFaceDepthsVerified:false,
     completeOriginalSourceCADCoverage:cadVisible,
@@ -270,6 +273,8 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
  });
  summary.singleOpaqueSourceSubspanClearCount=opaque.counts.clear;
  summary.singleOpaqueSourceSubspanStrictHiddenCount=opaque.counts.strictHidden;
+ summary.exactOriginalStrictInwardOpaqueSubspanCount=
+  opaque.counts.exactOriginalEdgeStrictInwardHidden;
  summary.singleOpaqueSourceSubspanUndeterminedCount=opaque.counts.unresolved;
  summary.singleOpaqueSourceSubspanExteriorHeldCount=
   opaque.counts.excludedAlreadySignedContour;
