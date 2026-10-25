@@ -512,6 +512,21 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
+ assert.equal(
+  hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof+
+  hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
+  nativeEncounters.rows.reduce((n,r)=>n+
+   r.originalM4ProjectedEncountersOnNativeSource.filter(e=>
+    e.canonicalM4ProjectedEncounterKind==='collinear-overlap'&&
+    e.originalSourceParameter>
+      (r.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+    e.originalSourceParameter<
+      (r.genuineNativeHLROriginalSourceParameterRange?.[1]??1)).length,0));
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof.every(e=>
+   e.completeSource3DDepthAndRealOCCTHLRPaperProof===true&&
+   e.generatedHLREdgeTopoDSIdentityAndGBLineCertified===false&&
+   e.signedV5Action===false)));
  assert.equal(hiddenFormalGate.signedV5ActionCount,0);
  assert.equal(hiddenFormalGate.officialEngineeringGBLineRulesCertified,false);
  assert.ok(hiddenFormalGate.rows.every(r=>
@@ -838,6 +853,12 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
    exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
     nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   nativeM4CollinearInteriorEventsWithVerifiedWholeOriginalFrontNoDepthSwitch:
+    hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,
+   nativeM4CollinearInteriorEventsWithoutIndependentFullFrontMask:
+    hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
+   nativePaperMismatchAtAuthenticatedOriginal3DPhysicalVertex:
+    hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    exactNativeCrossingTrue3DDepthTieHeld:
     nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld,
    nativeCrossingOutsideActualOriginalOpenSpanHeld:
