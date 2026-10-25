@@ -31,6 +31,8 @@ const {auditC1NativeHiddenDualOpenIntervalProof}=
  require('./c1-native-hidden-dual-proof-open-interval-union.cjs');
 const {auditC1NativeHiddenExactModelFrontMasks}=
  require('./c1-native-hidden-exact-model-front-mask.cjs');
+const {auditC1NativeHiddenUncoveredOriginalFrontRay}=
+ require('./c1-native-hidden-exact-original-front-gap.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -286,6 +288,16 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
       counts.realNativeHiddenSharpSegments||
     nativeHiddenExactModelFrontMask.signedV5ActionCount!==0)
   throw new RangeError('exact original 3D front-depth witness failed native HLR source count');
+ const nativeHiddenExactOriginalFrontGap=auditC1NativeHiddenUncoveredOriginalFrontRay({
+  geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
+  dual:nativeHiddenDualOpenIntervalProof,m5,
+  exactIntervalCoverage:exactCandidateIntervalCoverage
+ });
+ if(nativeHiddenExactOriginalFrontGap.counts.actualNativeHiddenEdgesReviewed!==
+     counts.realNativeHiddenSharpSegments||
+    nativeHiddenExactOriginalFrontGap.signedV5ActionCount!==0||
+    nativeHiddenExactOriginalFrontGap.allOriginal3DAndNativeTopoDSLinksAndJunctionsCertified!==false)
+  throw new RangeError('native HLR residual gap mathematical vs generated output proof gate');
  return frozen({
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
@@ -300,6 +312,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   nativeHiddenFrontVisibleMask,
   nativeHiddenDualOpenIntervalProof,
   nativeHiddenExactModelFrontMask,
+  nativeHiddenExactOriginalFrontGap,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,
