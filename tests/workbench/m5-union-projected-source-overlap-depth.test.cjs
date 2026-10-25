@@ -139,3 +139,30 @@ test('M5 C2 generated features remain unsigned in actual final V5 per-action gat
  assert.match(ui,/只针对两条已列出的来源线/);
  assert.match(ui,/不能发布实线\/虚线/);
 });
+
+
+test('C2 near-paper parallel but genuinely distinct source cuboids never manufacture shared W overlap and depth ordering',()=>{
+ const eps=2**-35;
+ const geometry=[A(),box('B',p(30,eps,eps),p(40,10+eps,10+eps))];
+ const {r,physical}=compare(geometry,76);
+ assert.equal(r.status,'full-analytic-listed-source-pair-overlap-depth');
+ const ids=new Map(physical.segments.map(x=>[x.id,x]));
+ const {exactPositivePaperSourceOverlap:realOverlap}=
+  require('../../workbench/m5-union-projected-overlap-depth.cjs');
+ for(const pair of r.overlaps){
+  const a=ids.get(pair.sourceA.id),b=ids.get(pair.sourceB.id);
+  assert.ok(a&&b);
+  const pa=project(a.source3DFrom)[pair.view],
+   qa=project(a.source3DTo)[pair.view],
+   pb=project(b.source3DFrom)[pair.view],
+   qb=project(b.source3DTo)[pair.view];
+  assert.equal(realOverlap(pa,qa,pb,qb),true,
+   'depth ordering may apply only to EXACT same paper source lines');
+  assert.equal(pair.officialSolidDashedEngineeringStyle,'undetermined');
+  assert.equal(pair.canonicalV5ActionSigned,false);
+ }
+ const falselyCoProjectedW=r.overlaps.filter(v=>v.view==='W'&&
+  v.sourceA.sourceGeometryIds[0]!==v.sourceB.sourceGeometryIds[0]);
+ assert.equal(falselyCoProjectedW.length,0,
+  'near-offset (not collinear) W edges cannot inherit a depth winner');
+});
