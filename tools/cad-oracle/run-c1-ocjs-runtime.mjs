@@ -449,6 +449,7 @@ for(const [index,geometry] of general.entries()){
   gapProof:nativeHiddenM5.nativeHiddenExactOriginalFrontGap,
   dualProof:nativeHiddenM5.nativeHiddenDualOpenIntervalProof,
   endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
+  nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
@@ -737,6 +738,10 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR,
    unsignedNativeHLRActual3DEndpointFanGapStrokes:
     hiddenFormalGate.counts.original3DEndpointFanProofIncompleteStrokes,
+   originalM4EndCutsIndependentM0NativePhysicalVertexRecoveredInGlobalGate:
+    hiddenFormalGate.counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered,
+   original3DNativePhysicalVertexNotYetAuthenticatedInGlobalGate:
+    hiddenFormalGate.counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven,
    originalM4NativeSourceVertexEndpointCutsStillMissing:
     nativePhysicalEnd.counts.originalM4EndCutsStillUnproven,
    missingM4EndpointsWithIndependentExactOriginal3DOcctVertexProof:
