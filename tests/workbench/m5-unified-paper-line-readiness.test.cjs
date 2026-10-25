@@ -168,6 +168,12 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
   proof.fullyPairedLocalEndAndOpenRayLineCount);
  assert.equal(r.paperStrokeBooleanExteriorOriginalOrNewSourceCount,
   proof.selectedWhole3DBooleanExteriorOpenSourceCount);
+ assert.equal(r.paperStrokeLocalClosedBooleanOctantEndpointCount,
+  proof.locallyValidatedClosed3DBooleanEndpointCount);
+ assert.equal(r.paperStrokeClosedBooleanEndpointAndRayJoinCandidateCount,
+  proof.fullyJointLocalBooleanAndOpaqueRayCandidateCount);
+ assert.equal(r.paperStrokeBothEndpointBooleanRayJoinLineCount,
+  proof.locallyPairedBooleanRayAndPhysicalJoinLineCount);
  assert.equal(proof.booleanSourceOpenFeatureEvidence.paperIntervalCount,
   proof.paperIntervalCount);
  assert.equal(proof.signedV5LineActions,0);
@@ -184,6 +190,10 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
  assert.match(ui,/paperStrokeReal3DJoinAndEndpointOpenRayClearCount/);
  assert.match(ui,/paperStrokeBothEndpointLocalOpenRayProofLineCount/);
  assert.match(ui,/paperStrokeBooleanExteriorOriginalOrNewSourceCount/);
+ assert.match(ui,/paperStrokeLocalClosedBooleanOctantEndpointCount/);
+ assert.match(ui,/paperStrokeClosedBooleanEndpointAndRayJoinCandidateCount/);
+ assert.match(ui,/paperStrokeBothEndpointBooleanRayJoinLineCount/);
+ assert.match(ui,/不是整图端点／线帽、连续遮挡或标准线型签收/);
  assert.match(ui,/闭合端点拓扑及标准线型仍未签收/);
  assert.match(ui,/以上都未签发标准虚实线和正式 V5/);
 });
