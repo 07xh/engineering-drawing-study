@@ -5,6 +5,10 @@ on:
     paths:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
+      - 'core/numeric/convex-incident-source-open-ray.cjs'
+      - 'core/numeric/binary64-dyadic.cjs'
+      - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
+      - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - 'tests/workbench/c1-ocjs-m5-source-coverage.test.cjs'
@@ -14,6 +18,10 @@ on:
     paths:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
+      - 'core/numeric/convex-incident-source-open-ray.cjs'
+      - 'core/numeric/binary64-dyadic.cjs'
+      - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
+      - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - 'tests/workbench/c1-ocjs-m5-source-coverage.test.cjs'
@@ -39,6 +47,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Assert exact original convex face-ray proof and adversarial cases without external CAD
+        run: |
+          set -euo pipefail
+          node --test tests/math/m0-exact-convex-incident-source-open-ray.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
@@ -56,7 +68,7 @@ jobs:
           node --max-old-space-size=4096 \
             tools/cad-oracle/probe-opencascade-js-hlr.mjs "$PROBE_ROOT" | tee "$REPORT"
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-opencascade-js-real-wasm-hlr-probe/1"||!["V","H","W"].every(v=>r.views[v]?.visibleBRepEdgeCount>=4))process.exit(1)' "$REPORT"
-      - name: Compute THREE actual reviewed cuboid C1 problems with OCJS and certify only through existing M5/V5
+      - name: Compute THREE cuboid and TWO generic convex actual C1 CAD problems under authoritative M5 and one V5
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
           REPORT: ${{ runner.temp }}/draftai-c1-real-ocjs-consumer.json
@@ -64,7 +76,7 @@ jobs:
           set -euo pipefail
           node --max-old-space-size=4096 \
             tools/cad-oracle/run-c1-ocjs-runtime.mjs "$PROBE_ROOT" | tee "$REPORT"
-          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||r.genericConvexWasmConsumers!==2||!r.polyhedra.every(x=>x.localM5Positive>0&&x.cadM5Corroborated>0&&x.cadM5Conflicts===0&&x.m5Signed===x.uniqueV5)||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||r.genericConvexWasmConsumers!==2||!r.polyhedra.every(x=>x.m5Signed===true&&x.uniqueV5===true&&x.m5GlobalSignedGate===true&&x.m5Unresolved===0&&x.cadM5Conflicts===0&&x.cadM5Corroborated===x.scopedOfficialVisibleContourLines&&x.scopedOfficialVisibleContourLines>=9)||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
       - name: Preserve M5-gated actual computed C1 consumer evidence
         uses: actions/upload-artifact@v4
         with:
