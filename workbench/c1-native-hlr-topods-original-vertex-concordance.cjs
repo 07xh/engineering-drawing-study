@@ -10,6 +10,7 @@
  * drawing topology, GB line style and ConstructionIntent/V5 stay unsigned.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -169,12 +170,16 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     return {source:null,vertex:null,nativeHidden:false};
    const isFrom=ref.side==='from',t=isFrom?tFrom:tTo;
    const id=t===0?edge[0]:t===1?edge[1]:null;
-   if(id===null)return {source:null,vertex:null,nativeHidden:false};
+   const acceptedSourceInterval={sourceEdgeId:lift.sourceEdgeId,
+    originalSourceParameterRange:[...range]};
+   if(id===null)return {source:null,vertex:null,nativeHidden:false,
+    acceptedSourceInterval};
    const xyz=geometry.data.points[id],measured=isFrom?
     lift.fromCandidate3D:lift.toCandidate3D;
    if(!xyzEq(xyz,measured)||!equal(project(xyz)[view],point))
     return {source:null,vertex:null,nativeHidden:false};
    return {source:lift.sourceEdgeId,vertex:id,nativeHidden:false,
+    acceptedSourceInterval,
     independentlyOriginalVisibleM0AndM5FullClearSourceVertex:true};
   }
   const original=byGlobal[v.globalStart+ref.nativeHLREdgeOrdinal];
@@ -361,9 +366,43 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld!==
     graph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs)
   throw new RangeError('native OCCT generated vertex graph pair count mismatch');
+ // Exact union of independently accepted native visible HLR lifts per
+ // original source/view. This is a necessary coverage diagnostic, NOT proof
+ // of complete generated TopoDS history or that every source must be visible.
+ const acceptedNativeVisibleSourceCoverage=[];
+ for(const view of VIEWS){
+  const intervalsBySource=new Map(),visible=base.get(view).visible;
+  for(let i=0;i<visible.length;i++){
+   const seg=visible[i],at=side=>locate({
+    hlrClass:'visible-sharp',nativeHLREdgeOrdinal:i,side,
+    nativePaperPoint:seg[side]
+   },view).acceptedSourceInterval;
+   const from=at('from'),to=at('to');
+   if(!from||!to||from.sourceEdgeId!==to.sourceEdgeId||
+      from.originalSourceParameterRange[0]!==to.originalSourceParameterRange[0]||
+      from.originalSourceParameterRange[1]!==to.originalSourceParameterRange[1])
+    continue;
+   if(!intervalsBySource.has(from.sourceEdgeId))
+    intervalsBySource.set(from.sourceEdgeId,[]);
+   intervalsBySource.get(from.sourceEdgeId).push(from.originalSourceParameterRange);
+  }
+  for(const sourceEdgeId of [...sourceEdges.keys()].sort()){
+   const accepted=intervalsBySource.get(sourceEdgeId)??[];
+   acceptedNativeVisibleSourceCoverage.push({
+    view,sourceEdgeId,
+    ...exactCandidateIntervalCoverage([0,1],accepted),
+    independentlyAcceptedNativeVisibleHLRLiftsOnly:true,
+    originalEdgeMustBeVisibleInThisView:false,
+    completeGeneratedToOriginalTopoDSEdgeHistoryCertified:false,
+    wholeSceneOcclusionAndEngineeringLineStyleCertified:false,
+    signedV5Action:false
+   });
+  }
+ }
  return frozen({schema:'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,paperOnlyProjectedVertexAliases:aliases,
+  acceptedNativeVisibleSourceCoverage,
   completeGenuineNativeHLRJunctionStars:completeNativeJunctionStars,
   allPerViewActualNativeGeneratedJunctionComponentsConsumed:
    graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true,
