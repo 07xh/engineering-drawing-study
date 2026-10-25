@@ -51,8 +51,10 @@ class C1CADOracleTests(unittest.TestCase):
                 self.assertLessEqual(v["maxSourceSideUncoveredFraction"], 1e-6)
                 self.assertTrue(v["occtVisibleHLRCoversAllSignedScopedV5Actions"])
                 self.assertLessEqual(v["maxSignedV5ActionUncoveredFraction"], 1e-6)
-        self.assertFalse(any("lineStyle" in str(r) or "V5Action" in str(r)
-                             for r in results))
+        # Counts and coverage evidence are allowed; never return action
+        # payloads or claim CAD has signed an engineering line style.
+        self.assertFalse(any("signedVisibleContourActions" in str(r) or
+                             "officialLineStyle" in str(r) for r in results))
 
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
