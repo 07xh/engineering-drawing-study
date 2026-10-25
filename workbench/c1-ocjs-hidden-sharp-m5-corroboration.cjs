@@ -15,6 +15,8 @@ const {computeC1OcjsVisibleSegments}=
  require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
+const {pruneHiddenSharpPaperAliasesUsingExactM5}=
+ require('./c1-native-hidden-exact-source-pruning.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -77,10 +79,18 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   throw new RangeError('native hidden OCCT/M0-M5 unsigned proof chain mismatch');
  const realIds=new Set(geometry.data.edges.map(([a,b])=>
   geometry.id+'::'+[a,b].sort().join('|')));
- const nativeMap=new Map();
+ const closedByKey=new Map(m5.rows.map(row=>
+  [row.originalPhysicalSourceEdgeId+'@'+row.view,row]));
+ if(closedByKey.size!==m5.rows.length)
+  throw new RangeError('duplicate canonical M5 original 3D source ray');
+ const nativeMap=new Map(),nativeHiddenSourceRefinements=[];
  const counts={realNativeHiddenSharpSegments:0,
   hiddenHLRWithMultiple3DSourceCandidates:0,
   nativeHiddenWithoutM0SourceCandidates:0,
+  exactClosedOutwardRayExcludedHiddenCandidates:0,
+  nativeHiddenSharpWithOneSurvivingM5Source:0,
+  nativeHiddenSharpWithNoSurvivingM5Source:0,
+  nativeHiddenSharpStillWithMultipleM5Sources:0,
   sourceViewIntervalsChecked:0,canonicalOriginalM4SubspansChecked:0,
   exactM5HiddenOpenSubspans:0,
   hiddenNativePaperCoverageConfirmedSubspans:0,
@@ -105,6 +115,22 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     counts.nativeHiddenWithoutM0SourceCandidates++;
    if(seg.sourceCandidate3DLifts.length>1)
     counts.hiddenHLRWithMultiple3DSourceCandidates++;
+   const refined=pruneHiddenSharpPaperAliasesUsingExactM5({
+    view,candidates:seg.sourceCandidate3DLifts,
+    closedOriginalSourceByKey:closedByKey
+   });
+   counts.exactClosedOutwardRayExcludedHiddenCandidates+=
+    refined.exactClosedRayExclusionCount;
+   if(refined.remainingPossibleOriginal3DSourceCount===1)
+    counts.nativeHiddenSharpWithOneSurvivingM5Source++;
+   if(refined.remainingPossibleOriginal3DSourceCount===0)
+    counts.nativeHiddenSharpWithNoSurvivingM5Source++;
+   if(refined.remainingPossibleOriginal3DSourceCount>1)
+    counts.nativeHiddenSharpStillWithMultipleM5Sources++;
+   nativeHiddenSourceRefinements.push({
+    view,projectedFrom:{...seg.from},projectedTo:{...seg.to},
+    ...refined
+   });
    for(const candidate of seg.sourceCandidate3DLifts){
     const id=candidate.sourceEdgeId,range=candidate.originalSourceParameterRange;
     if(!realIds.has(id)||
@@ -203,6 +229,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   nativeNullHiddenSharpViews:[...cad.hiddenSharpNullCompoundViews],
   sourceM0M5ClosureSchema:m5.schema,
   allOriginal3DEdgesAndViewsRecomputed:true,
+  nativeHiddenSourceRefinements,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,
