@@ -198,6 +198,17 @@ for(const [index,geometry] of general.entries()){
   'real CAD M0 positive non-hull edge conflict');
  assert.equal(features.sourceProjectedEventGraphSchema,
   'draftai-c1-original-source-m4-projected-event-graph/1');
+ assert.equal(features.sourcePairDepthProofSchema,
+  'draftai-c1-m5-projected-original-source-affine-depth/1');
+ assert.equal(features.counts.originalSourcePairDepthOverlapCount,
+  features.counts.originalSourcePairStrictDepthProofCount+
+  features.counts.originalSourcePairUnresolvedDepthCount);
+ assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
+  span.allOpaqueFaceDepthsVerified===false&&
+  span.sourcePairDepthComparisons.every(pair=>
+   pair.signedV5Action===false&&
+   pair.engineeringLineStyle==='undetermined'&&
+   pair.thirdPartyFacesVerified===false))));
  assert.equal(features.counts.sourceBoundSubintervalCount,
   features.rows.reduce((n,row)=>n+row.sourceBoundSubintervals.length,0));
  assert.ok(features.counts.projectedSourceEventCount>0,
@@ -233,7 +244,15 @@ for(const [index,geometry] of general.entries()){
    authenticOriginalVertexEventWitnesses:
     features.counts.exactOriginalVertexEventWitnesses,
    paperOnlyUnresolvedEventWitnesses:
-    features.counts.paperOnlyUnresolvedEventWitnesses
+    features.counts.paperOnlyUnresolvedEventWitnesses,
+   originalSourcePairDepthOverlapCount:
+    features.counts.originalSourcePairDepthOverlapCount,
+   originalSourceStrictAffineFrontCount:
+    features.counts.originalSourcePairStrictDepthProofCount,
+   originalSourceUnresolvedPairDepthCount:
+    features.counts.originalSourcePairUnresolvedDepthCount,
+   sharedVertexDepthProofCount:
+    features.counts.authenticSharedVertexPairDepthProofCount
   },
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),

@@ -26,6 +26,8 @@ const {intervalCoverage,positiveCollinearOverlap}=
  require('./c1-ocjs-reviewed-solid-v5.cjs');
 const {auditC1ReviewedProjectedSourceEventGraph}=
  require('./c1-reviewed-projected-source-event-graph.cjs');
+const {auditC1ProjectedSourcePairDepth}=
+ require('./c1-projected-source-pair-affine-depth.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -56,6 +58,26 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   throw new RangeError('M4 source event graph cannot forge C1 signoff');
  const eventByKey=new Map(eventGraph.rows.map(x=>
   [x.sourceEdgeId+'@'+x.view,x]));
+ const pairDepth=auditC1ProjectedSourcePairDepth({geometry,revision});
+ if(pairDepth.sourceGeometryId!==geometry.id||
+    pairDepth.revision!==revision||
+    pairDepth.officialV5ActionCount!==0||
+    pairDepth.engineeringLineStylesSigned!==false||
+    pairDepth.wholeSceneVisibilityVerified!==false)
+  throw new RangeError('current M5 affine source depths are unsigned');
+ const overlapBySource=new Map();
+ for(const witness of pairDepth.witnesses){
+  for(const [id,parameters,other] of [
+   [witness.firstSourceEdgeId,witness.firstParameterRange,
+    witness.secondSourceEdgeId],
+   [witness.secondSourceEdgeId,witness.secondParameterRange,
+    witness.firstSourceEdgeId]]){
+   const k=id+'@'+witness.view;
+   if(!overlapBySource.has(k))overlapBySource.set(k,[]);
+   overlapBySource.get(k).push({witness,other,
+    bounds:[Math.min(...parameters),Math.max(...parameters)]});
+  }
+ }
  const rows=[],summary={
   reviewedPhysicalCreaseViews:0,skippedContourOverlaps:0,
   skippedCoplanarSubdivisions:0,collapsed:0,locallyCADAndM5Visible:0,
@@ -168,7 +190,20 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    convexProof:convex}):null;
   const strokes=cad.views[row.view].filter(c=>
    c.projectedOriginalEdgeCandidates.includes(row.sourceEdgeId));
+  const relevantOverlaps=
+   overlapBySource.get(row.sourceEdgeId+'@'+row.view)??[];
   const spans=match.spans.map(span=>{
+   const sourcePairDepthComparisons=relevantOverlaps.filter(x=>
+    x.bounds[0]<=span.originalParameterRange[0]+1e-9&&
+    x.bounds[1]>=span.originalParameterRange[1]-1e-9)
+    .map(x=>({otherOriginalSourceEdgeId:x.other,
+     relation:x.witness.relation,
+     strictAffinePairwiseOrderVerified:
+      x.witness.continuousAffineOpenDepthOrderProven,
+     frontSourceEdgeId:x.witness.frontSourceEdgeId,
+     thirdPartyFacesVerified:false,
+     independentOriginal3DJunctionsVerified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false}));
    const projectedHits=strokes.filter(c=>positiveCollinearOverlap(
     span.fromModelMm,span.toModelMm,c.from,c.to));
    const cadVisible=intervalCoverage(span.fromModelMm,
@@ -188,6 +223,8 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
     hullExcludedSubintervals++;
    else if(status==='undetermined')unresolvedNonHullSubintervals++;
    return {...span,status,
+    sourcePairDepthComparisons,
+    allOpaqueFaceDepthsVerified:false,
     completeOriginalSourceCADCoverage:cadVisible,
     uniqueOriginal3DSourceCandidate:unique,
     exactSourceFaceOpenRayVerified:proof?.status==='certified-clear',
@@ -203,6 +240,14 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    sourceBoundSubintervals:spans,
    wholeLineJunctionAndPaperDepthOrderVerified:false};
  });
+ summary.originalSourcePairDepthOverlapCount=
+  pairDepth.sameProjectedSourceOverlapIntervals;
+ summary.originalSourcePairStrictDepthProofCount=
+  pairDepth.provenPairwiseStrictFrontCount;
+ summary.originalSourcePairUnresolvedDepthCount=
+  pairDepth.undeterminedPairwiseDepthCount;
+ summary.authenticSharedVertexPairDepthProofCount=
+  pairDepth.authenticSharedOriginalVertexOpenDepthWitnessCount;
  summary.projectedSourceEventCount=eventGraph.actualM4OriginalSourcePairwiseEventCount;
  summary.sourceBoundSubintervalCount=eventGraph.partitionedSourceSubintervalCount;
  summary.nonHullPositiveSubintervals=provenNonHullSubintervals;
@@ -228,6 +273,7 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   originalSourceEdgeViews:rows.length,views:VIEWS,
   rows:segmented,counts:summary,
   sourceProjectedEventGraphSchema:eventGraph.schema,
+  sourcePairDepthProofSchema:pairDepth.schema,
   CADComputedGenuineOpenCascadeWasm:true,
   fullSceneAndAllJunctionsLineStyleSigned:false,
   standardEngineeringStylesCertified:false,
