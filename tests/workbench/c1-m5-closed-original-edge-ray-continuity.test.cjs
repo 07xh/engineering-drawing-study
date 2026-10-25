@@ -68,12 +68,19 @@ test('box V FRONT physical edge ray closed clear through both exact vertices whi
  assert.ok(back.sourceOriginalVertexRayStatus.every(s=>s==='undetermined'));
  assert.equal(back.completeSourceOriginal3DRayClosedIntervalClear,false);
 });
-test('oblique hexa certifies closed original source rays without INVENTING nonexistent paper cuts',()=>{
+test('oblique hexa keeps four actual nonoriginal paper cuts, refusing false complete partition joins',()=>{
  const r=check(makeOblique());
+ // Genuine M4 projected tiny cuts exist but some zero-length projected
+ // fragments were omitted by existing M4. No contiguous 3D split
+ // chain may be inferred across this diagnostic gap.
  assert.equal(r.counts.same3DOriginalSourceCutJoinsPreserved,0);
- assert.equal(r.counts.nonoriginalPaperCutEndpointsHeld,0);
+ assert.ok(r.counts.nonoriginalPaperCutEndpointsHeld>0);
+ assert.ok(r.counts.nonCollapsedProjectionPartitionIncomplete>0);
  assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
  assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
+ assert.ok(r.rows.some(x=>!x.originalM4PaperParameterPartitionComplete&&
+  x.completeSourceOriginal3DRayClosedIntervalClear===true&&
+  x.fullProjectedVisibleSourceLineProven===false));
  assert.ok(r.rows.every(x=>x.originalCutSubspans.every(y=>
   y.physicalCrossSourceJunctionAtPaperCutsAuthorized===false)));
 });
