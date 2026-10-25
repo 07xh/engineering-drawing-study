@@ -388,7 +388,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
-  const rows={},hiddenViews={};
+  const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
   for(const view of VIEWS){
    const f=FRAME[view];
    const axis=newObj('gp_Ax2_2',newObj('gp_Pnt_3',0,0,0),
@@ -451,9 +451,13 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    // HCompound contains ACTUAL hidden C0/sharp HLR edges. This is
    // computed occlusion evidence, not permission to draw GB dashed lines.
    const hidden=hold(method(extractor,'HCompound_1').call(extractor));
-   if(hidden.IsNull())
-    throw new RangeError('null native OCJS hidden HLR sharp-edge compound');
-   const hiddenSegments=traverse(hidden,'hidden-sharp');
+   // Native HCompound legitimately yields a null TopoDS shape when NO
+   // sharp hidden edges exist for a particular view. Null is not a line.
+   // Track this empty case explicitly rather than forging hidden segments.
+   const emptyHiddenSharp=hidden.IsNull();
+   if(emptyHiddenSharp)hiddenSharpNullCompoundViews.push(view);
+   const hiddenSegments=emptyHiddenSharp?[]:
+    traverse(hidden,'hidden-sharp');
    if(segments.length<(b?4:3))
     throw new RangeError('real OCJS C1 silhouette incomplete for '+view+' count='+segments.length+' source='+geometry.id+' scope='+(b?'cuboid':'sewn-convex-shell'));
    rows[view]=segments;
@@ -467,6 +471,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
    hiddenHLROutputFromActualOCCT:true,
+   hiddenSharpNullCompoundViews,
    hiddenSharpEdgesAreOnlyUnsignedCandidates:true,
    hiddenHLROriginalEdgeAttributionRecovered:false,
    hiddenLineStylesCertified:false,
