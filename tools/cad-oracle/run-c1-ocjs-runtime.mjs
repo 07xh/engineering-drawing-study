@@ -143,6 +143,19 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.signedV5ActionCount,0);
  const nativeGeneratedVertexGraph=cad.nativeGeneratedVertexGraph;
  const nativeIsSame3D=nativeHiddenM5.nativeHLRVertexConcordance;
+ const nativeEncounters=nativeHiddenM5.nativeHLRAllM4ProjectedEncounters;
+ assert.equal(nativeEncounters.counts.genuineNativeHiddenSharpEdgesInspected,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(nativeEncounters.entireReviewedNativeHiddenSourceM4EventLedgerAudited,true);
+ assert.equal(nativeEncounters.wholeSceneProjectedJunctionAndOcclusionCertified,false);
+ assert.equal(nativeEncounters.signedV5ActionCount,0);
+ assert.ok(nativeEncounters.rows.every(r=>
+  r.generatedHLREdgeAndOriginalTopoDSIdentityCertified===false&&
+  r.officialEngineeringLineStyle==='undetermined'&&
+  r.signedV5Action===false&&
+  r.originalM4ProjectedEncountersOnNativeSource.every(e=>
+   e.fullGlobalProjectedJunctionAndDepthSwitchCertified===false&&
+   e.signedV5Action===false)));
  assert.equal(nativeGeneratedVertexGraph.schema,
   'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1');
  assert.equal(nativeGeneratedVertexGraph.signedV5ActionCount,0);
@@ -794,6 +807,18 @@ for(const [index,geometry] of general.entries()){
     nativeIsSame3D.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs,
    nativePaperAliasesStillWithoutOriginal3DSourceJoin:
     nativeIsSame3D.counts.paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction,
+   canonicalM4NativeHiddenOriginalSourceEncounterEventsChecked:
+    nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered,
+   authenticOriginal3DPhysicalM4JunctionEncountersVerified:
+    nativeEncounters.counts.exactOriginal3DPhysicalVertexEncountersCorroborated,
+   M4PaperOnlyNativeSourceEncountersHeld:
+    nativeEncounters.counts.paperOnlyOriginalSourceCrossingsAndOverlapsHeld,
+   originalM4RoundedEventNativeEncountersHeld:
+    nativeEncounters.counts.roundedSourceParameterEncountersHeld,
+   nativeHiddenHLRInteriorPaperJunctionEventsAwaitingGlobalResolution:
+    nativeEncounters.counts.nativeHLRInteriorPaperEventsRequiringSceneJunctionReview,
+   M4NativeHLRExactPaperEventAlignmentUnprovenCount:
+    nativeEncounters.counts.M4OriginalEventsWithNativeHLRPaperLineNotExactlyMatched,
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
