@@ -298,6 +298,23 @@ for(const [index,geometry] of general.entries()){
   physicalFeatureEvidence:{
    localExactOutwardCADVisible:
     features.counts.locallyCADAndM5Visible,
+   finalSourceObligations:{
+    total:finalGate.counts.totalOriginalSourceEdgeViewSubspans,
+    existingOuterContourHeld:finalGate.counts.externalContourHeld,
+    physicalFeatureUnproven:finalGate.counts.unprovenPhysicalFeatureHeld,
+    visibleCadRayCorroboratedAwaitingFinalM5:
+     finalGate.counts.visibleWholeRayAndCadButOtherGatesRemain,
+    wholeOpenStrictlyHiddenAwaitingFinalM5:
+     finalGate.counts.strictlyHiddenWholeOpenRayButOtherGatesRemain,
+    behindAnotherSource:
+     finalGate.counts.behindAnotherPhysicalSource,
+    duplicate3D:finalGate.counts.physical3DDuplicateHeld,
+    unresolved:
+     finalGate.counts.unresolvedPhysicalVisibilityOrSourcePriority,
+    realCadPositiveWithoutWholeRay:
+     finalGate.counts.realCadPositiveWithoutWholeRayProof,
+    signedNewV5:finalGate.signedV5ActionCount
+   },
    localStrictHidden:
     features.counts.locallyFullStrictlyOccluded,
    blockedOrUnresolved:features.counts.undetermined,
