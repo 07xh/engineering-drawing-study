@@ -133,6 +133,21 @@ for(const [index,geometry] of general.entries()){
   r.formalEngineeringLineStyle==='undetermined'&&
   r.constructionIntentAuthorized===false&&
   r.signedV5Action===false));
+ assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.genuineNativeHiddenSharpStrokeCount,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven,false);
+ assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.signedV5ActionCount,0);
+ assert.equal(
+  nativeHiddenM5.nativeHidden3DEndpointFans.counts.survivingOriginal3DSourceEndpointsReviewed,
+  nativeHiddenM5.nativeHidden3DEndpointFans.rows.reduce((n,r)=>
+   n+2*r.survivingOriginal3DEdgesWithEndpointFans.length,0));
+ assert.ok(nativeHiddenM5.nativeHidden3DEndpointFans.rows.every(r=>
+  r.nativeHLREdgeJunctionsCertified===false&&
+  r.survivingOriginal3DEdgesWithEndpointFans.every(src=>
+   src.endpointWitnesses.every(w=>
+    w.signedV5Action===false&&
+    w.nativeHLRGeneratedTopoDSEndpointToOriginalTopoDSIdentityCertified===false&&
+    w.nativeHLRNativeEdgeToAnotherHLREdgeJoinCertified===false))));
  assert.equal(nativeHiddenM5.counts.signedNewV5Actions,0);
  assert.equal(nativeHiddenM5.counts.signedNewEngineeringStrokes,0);
  assert.equal(nativeHiddenM5.rows.length,geometry.data.edges.length*3);
@@ -536,6 +551,17 @@ for(const [index,geometry] of general.entries()){
    genuineHiddenCADParameterGaps:
     nativeHiddenM5.counts.positiveLengthHiddenNativePaperGaps,
    nullNativeHCompoundViews:nativeHiddenM5.nativeNullHiddenSharpViews,
+   original3DNativeHLREndpointsReviewed:
+    nativeHiddenM5.nativeHidden3DEndpointFans.counts.survivingOriginal3DSourceEndpointsReviewed,
+   genuineOriginal3DEndpointCandidates:
+    nativeHiddenM5.nativeHidden3DEndpointFans.counts.sourceEndpointsAtAuthenticOriginal3DVertices,
+   verifiedM4AndClosedFanEndpoints:
+    nativeHiddenM5.nativeHidden3DEndpointFans.counts.sourceEndpointsWithOriginalM4AndClosed3DFanWitness,
+   nativeInteriorCutsHeldAsNonvertices:
+    nativeHiddenM5.nativeHidden3DEndpointFans.counts.originalSourceInterior3DPointsNotMadeVertices,
+   genuineOriginal3DSourceVertexJunctionPairs:
+    nativeHiddenM5.nativeHidden3DEndpointFans.counts.genuineOriginal3DSourceVertexJunctionPairs,
+   formalNativeHLRJunctionsSigned:0,
    fullOriginalTopoDSSourceLinkSigned:false,
    formalGBHiddenLineSigned:false,v5ActionsSigned:0
   },

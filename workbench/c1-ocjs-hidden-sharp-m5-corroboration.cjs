@@ -17,6 +17,10 @@ const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
 const {pruneHiddenSharpPaperAliasesUsingExactM5}=
  require('./c1-native-hidden-exact-source-pruning.cjs');
+const {auditC1OriginalClosedVertexStars}=
+ require('./c1-m5-original-closed-vertex-stars.cjs');
+const {auditC1NativeHidden3DEndpointFans}=
+ require('./c1-native-hidden-3d-endpoint-fan-junctions.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -222,6 +226,20 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     counts.sourceViewIntervalsChecked!==geometry.data.edges.length*3||
     counts.signedNewV5Actions!==0)
   throw new RangeError('missing original 3D edge/view hidden HLR proof rows');
+ // Preserve #759 M0 original closed 3D fan/physical M4 endpoint proofs
+ // alongside #760 CAD hidden native-edge source-elimination ledger.
+ // This is a distinct proof of ORIGINAL vertex incidence, not a claim
+ // that generated OCCT HLR edges share TopoDS vertices.
+ const originalVertexStars=auditC1OriginalClosedVertexStars({geometry,revision});
+ const nativeHidden3DEndpointFans=auditC1NativeHidden3DEndpointFans({
+  geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
+  vertexStars:originalVertexStars
+ });
+ if(nativeHidden3DEndpointFans.genuineNativeHiddenSharpStrokeCount!==
+     counts.realNativeHiddenSharpSegments||
+    nativeHidden3DEndpointFans.signedV5ActionCount!==0||
+    nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven!==false)
+  throw new RangeError('real native sharp HLR generated-source junction proof gate');
  return frozen({
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
@@ -230,6 +248,8 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   sourceM0M5ClosureSchema:m5.schema,
   allOriginal3DEdgesAndViewsRecomputed:true,
   nativeHiddenSourceRefinements,
+  independentlyVerifiedOriginal3DVertexFans:originalVertexStars.schema,
+  nativeHidden3DEndpointFans,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,

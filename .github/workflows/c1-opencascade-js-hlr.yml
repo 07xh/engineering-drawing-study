@@ -8,6 +8,8 @@ on:
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
       - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
+      - 'workbench/c1-native-hidden-3d-endpoint-fan-junctions.cjs'
+      - 'tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
@@ -55,6 +57,8 @@ on:
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
       - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
+      - 'workbench/c1-native-hidden-3d-endpoint-fan-junctions.cjs'
+      - 'tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
@@ -129,6 +133,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs
           node --test tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs
           node --test tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs
+          node --test tests/workbench/c1-native-hidden-3d-endpoint-fan-junctions.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
