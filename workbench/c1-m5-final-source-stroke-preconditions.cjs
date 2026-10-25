@@ -17,6 +17,8 @@ const {auditC1OcjsPhysicalCreaseCandidates}=
  require('./c1-ocjs-physical-crease-ray-evidence.cjs');
 const {auditC1ExactOriginalVertexObserverRays}=
  require('./c1-m5-exact-original-vertex-rays.cjs');
+const {auditC1OriginalClosedEdgeRayContinuity}=
+ require('./c1-m5-closed-original-edge-ray-continuity.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -57,6 +59,16 @@ function auditC1OriginalStrokeFinalPreconditions({
   [x.view+'@'+x.originalVertexId,x]));
  if(vertexRays.size!==rayLedger.rows.length)
   throw new RangeError('duplicate source 3D vertex observer-ray identity');
+ const edgeClosure=auditC1OriginalClosedEdgeRayContinuity({
+  geometry,revision});
+ if(edgeClosure.sourceGeometryId!==geometry.id||
+    edgeClosure.revision!==revision||
+    edgeClosure.signedV5ActionCount!==0)
+  throw new RangeError('unsigned original full-edge rays were not independently proved');
+ const closedByKey=new Map(edgeClosure.rows.map(row=>[
+  row.originalPhysicalSourceEdgeId+'@'+row.view,row]));
+ if(closedByKey.size!==edgeClosure.rows.length)
+  throw new RangeError('duplicate original source closed edge proof');
  const ledger=[],counts={
   totalOriginalSourceEdgeViewSubspans:0,
   externalContourHeld:0,
@@ -67,6 +79,9 @@ function auditC1OriginalStrokeFinalPreconditions({
   physical3DDuplicateHeld:0,
   unresolvedPhysicalVisibilityOrSourcePriority:0,
   withoutAnyOriginalVertexEndpoint:0,
+  originalSourceSubspanInheritedExactClosedEdgeRayClear:0,
+  originalSourcePaperCut3DContinuityPreserved:0,
+  originalSourceClosedRayNotYetProven:0,
   originalVertexEndpointExactRayClearWitnesses:0,
   originalVertexEndpointExactNearInteriorWitnesses:0,
   originalVertexEndpointRayTangenciesHeld:0,
@@ -83,6 +98,16 @@ function auditC1OriginalStrokeFinalPreconditions({
  };
  for(const row of recomputed.rows){
   for(const span of row.sourceBoundSubintervals){
+   const currentEdge=closedByKey.get(row.sourceEdgeId+'@'+row.view);
+   const currentCut=currentEdge?.originalCutSubspans.find(x=>
+    x.originalParameterRange[0]===span.originalParameterRange[0]&&
+    x.originalParameterRange[1]===span.originalParameterRange[1]);
+   if(!currentEdge||!currentCut||
+      currentEdge.sourceGeometryId!==geometry.id||
+      currentEdge.revision!==revision||
+      currentEdge.signedV5Action!==false||
+      currentCut.signedV5Action!==false)
+    throw new RangeError('original edge-ray closure lost current M4 source parameter');
    const j=span.independentOriginal3DJunctionProof;
    const priority=span.originalPaperSourcePriority;
    const physical=row.originalPhysicalDihedralVerified===true;
@@ -119,6 +144,18 @@ function auditC1OriginalStrokeFinalPreconditions({
        !originalPruning.multipleCandidatesNarrowedByExactM0)))
     throw new RangeError('unreviewed original-source candidate pruning');
    const completeRealCADPositive=cadCovered&&(cadUnique||m0Unique);
+   const inheritedClear=currentEdge.
+    completeSourceOriginal3DRayClosedIntervalClear===true&&
+    currentEdge.originalM4PaperParameterPartitionComplete===true&&
+    currentEdge.originalPhysicalCreaseProven===true;
+   if(inheritedClear&&!clear&&!outer)
+    throw new RangeError('closed original ray clearance conflicts with M0 subspan');
+   if(inheritedClear)
+    counts.originalSourceSubspanInheritedExactClosedEdgeRayClear++;
+   else if(physical&&!outer&&!hidden)
+    counts.originalSourceClosedRayNotYetProven++;
+   if(currentCut.sameOriginalSourceCut3DJoinFromPrevious)
+    counts.originalSourcePaperCut3DContinuityPreserved++;
    if(clear&&hidden)
     throw new RangeError('continuous source ray is both clear and hidden');
    const endpoints=[j.fromEndpoint,j.toEndpoint];
@@ -206,6 +243,9 @@ function auditC1OriginalStrokeFinalPreconditions({
     alreadyBehindAnotherOriginalPhysicalSource:sourceBehind,
     exactOriginal3DDuplicateNeedsCanonicalReduction:duplicate,
     sourceListFrontmostNotEstablished:!sourceLead,
+    originalClosed3DEdgeObserverRayNotFullyCertified:!inheritedClear,
+    originalEdgeM4CutPartitionHasGaps:
+     !currentEdge.originalM4PaperParameterPartitionComplete,
     sourceCrossEdgeJunctionsNotGloballyCertified:true,
     originalVertexEndpointRayIncompleteOrTangent:
      verifiedEndpointRays.some(x=>
@@ -238,6 +278,13 @@ function auditC1OriginalStrokeFinalPreconditions({
     paperOnlyCrossSourceEndpointWitnessCount:projectedOnlyEndpointCount,
     sameSourceCutContinuityFromPriorPiece:
      j.sameOriginalSource3DContinuityFromPriorPiece,
+    exactClosedOriginal3DSourceObserverRayClear:inheritedClear,
+    exactOriginal3DEdgeRayFromFullSourceAndBothVertices:
+     currentEdge.completeSourceOriginal3DRayClosedIntervalClear,
+    M4Original3DEdgeCutContinuityVerified:
+     currentCut.sameOriginalSourceCut3DJoinFromPrevious,
+    paperEventCutsNeverCertifiedAsNew3DVertices:
+     currentEdge.allPaperInteriorCutPointsRetainNonvertexIdentity,
     singleOpaqueSolidContinuousOpenRayClear:clear,
     singleOpaqueSolidContinuousStrictlyHidden:hidden,
     genuineRealCADCompleteSourceCoverage:cadCovered,
@@ -275,6 +322,8 @@ function auditC1OriginalStrokeFinalPreconditions({
   realCADAndM5RecomputedFromCurrentOriginalReviewedSource:true,
   originalPhysicalEvidenceSchema:recomputed.schema,
   independentOriginalVertexRayProofSchema:rayLedger.schema,
+  independentlyRecomputedClosedOriginalEdgeRaySchema:edgeClosure.schema,
+  originalFull3DEdgeRayContinuityTotals:edgeClosure.counts,
   sourceOriginalVertexObserverRayTotals:rayLedger.counts,
   counts,subspans:ledger,
   onlyOneReviewedConvexSolidScope:true,
