@@ -18,6 +18,8 @@ const {cuboidBounds,computeC1OcjsVisibleSegments}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {verifiedConvexMeshHalfspaces}=
  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {auditC1OcjsPhysicalCreaseCandidates}=
+ require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -181,7 +183,31 @@ for(const [index,geometry] of general.entries()){
  assert.equal(canonical.player.canRender(40+index),false);
  const formallySigned=true,
   scopedOfficialVisibleContourLines=formalActions.size;
+ const features=auditC1OcjsPhysicalCreaseCandidates({
+  oc,geometry,revision:40+index});
+ assert.equal(features.sourceGeometryId,geometry.id);
+ assert.equal(features.revision,40+index);
+ assert.equal(features.officialV5ActionCount,0);
+ assert.equal(features.standardEngineeringStylesCertified,false);
+ assert.equal(features.wholeSolidV5Ready,false);
+ assert.equal(features.originalSourceEdgeViews,geometry.data.edges.length*3);
+ assert.equal(features.counts.claimedOfficialV5Strokes,0);
+ assert.ok(features.rows.every(x=>x.signedV5===false&&
+  x.officialEngineeringLineStyle==='undetermined'));
+ assert.equal(features.counts.cadM0PositiveConflicts,0,
+  'real CAD M0 positive non-hull edge conflict');
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  physicalFeatureEvidence:{
+   localExactOutwardCADVisible:
+    features.counts.locallyCADAndM5Visible,
+   localStrictHidden:
+    features.counts.locallyFullStrictlyOccluded,
+   blockedOrUnresolved:features.counts.undetermined,
+   exteriorExcluded:features.counts.skippedContourOverlaps,
+   coplanarSubdivisionsExcluded:features.counts.skippedCoplanarSubdivisions,
+   CADSourceConflicts:features.counts.cadM0PositiveConflicts,
+   formalSignedCount:features.officialV5ActionCount
+  },
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),
   m5Signed:formallySigned,
