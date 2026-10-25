@@ -84,8 +84,12 @@ test('true shared generated OCCT IsSame vertex AND exact independently shared or
 });
 test('distinct physical 3D original vertices with native IsSame do not certify source 3D junction',()=>{
  const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ // Two actual native endpoints coincide on paper, but M0 sources map
+ // to different ORIGINAL physical 3D vertex IDs.
+ x.originalNativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].
+  endpointWitnesses[1].originalModel3DSourceVertexId='B';
  v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(
-  ref('hidden-sharp',0,'from'),ref('hidden-sharp',1,'to'),true));
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),true));
  x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
  const r=audit(x);
  assert.equal(r.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,0);
