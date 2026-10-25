@@ -13,6 +13,7 @@
  const shape=box.Shape();
  const algo=new oc.HLRBRep_Algo_1();
  console.log('OCCT algo methods',JSON.stringify(Object.getOwnPropertyNames(Object.getPrototypeOf(algo))));
+ console.log('OCCT Add overload signatures',JSON.stringify(Object.keys(algo).filter(k=>k.startsWith('Add')).map(k=>({name:k,arity:algo[k].length,source:String(algo[k]).slice(0,1200)}))));
  algo.Add_1(shape,0,false);
  const projector=new oc.HLRAlgo_Projector_1();
  algo.Projector(projector);algo.Update();algo.Hide();
