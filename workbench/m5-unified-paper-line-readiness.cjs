@@ -15,6 +15,8 @@ const {auditUnifiedPaperSourceIdentity}=
  require('./m5-unified-paper-source-identity.cjs');
 const {auditUnifiedPaperJunctions}=
  require('./m5-unified-paper-junctions.cjs');
+const {auditC2SourceBoundBooleanOpenFeatures}=
+ require('./m5-c2-source-bound-boolean-open-features.cjs');
 const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexPointRayClearance}=
@@ -88,6 +90,16 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
   pointRayCache.set(k,result);
   return result;
  };
+ // Reuse the real original AND generated M0 3D union cross-section
+ // auditors. Do not promote a paper stroke without WHOLE source-axial
+ // Boolean exterior coverage, even if its midpoint looks exposed.
+ const booleanSource=auditC2SourceBoundBooleanOpenFeatures({
+  geometry,revision,unifiedPaperSourceIdentityEvidence:paper});
+ if(!booleanSource.allPaperSourcesAccountedFor||
+    booleanSource.paperIntervalCount!==paper.paperIntervalCount||
+    booleanSource.signedV5LineActions!==0||booleanSource.v5Ready!==false)
+  throw new TypeError('incomplete or signed 3D Boolean source lineage');
+ const booleanByPaper=new Map(booleanSource.lines.map(x=>[x.paperGroupId,x]));
  const groupedNodes=new Map(junction.paperNodes.map(n=>[
   n.view+':'+n.paperCoordinateMm.u+':'+n.paperCoordinateMm.v,n]));
  // Each reviewed M4 event subspan has its OWN actual 3D coordinates and
@@ -109,6 +121,16 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    throw new TypeError('unsigned original/new paper source group required');
   const selected=group.sourceSubspans.find(s=>
    s.sourceSubspanId===group.nearestListed3DSourceSubspanId);
+  const originalAndNewBoolean=booleanByPaper.get(group.id);
+  if(!originalAndNewBoolean||
+     originalAndNewBoolean.sourceMultiplicity!==group.sourceMultiplicity||
+     originalAndNewBoolean.selectedSourceSubspanId!==
+      group.nearestListed3DSourceSubspanId||
+     originalAndNewBoolean.officialEngineeringLineStyle!=='undetermined'||
+     originalAndNewBoolean.canonicalV5ActionSigned!==false)
+   throw new TypeError('true original/new 3D Boolean proof source not bound to paper');
+  const wholeBooleanExterior=
+   originalAndNewBoolean.selectedWhole3DBooleanExteriorOpenSourceVerified;
   if(group.relativeNearestListed3DSourceLineVerified!==Boolean(selected))
    throw new TypeError('paper winning source has no reviewed 3D identity');
   const ray=FIRST_ANGLE_OBSERVER_RAYS[group.view];
@@ -202,6 +224,8 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    missing.push('duplicate-real-3d-feature-still-needs-deduplicated-source-identity');
   if(selected&&!clear&&!hidden)
    missing.push('positive-continuous-observer-ray-visibility-undetermined');
+  if(!wholeBooleanExterior)
+   missing.push('complete-original-or-generated-3d-boolean-exterior-open-feature-unproven');
   if(ends.some(e=>e.paperDepthAliasPresent))
    missing.push('projected-endpoint-has-different-depth-real-3d-nodes');
   missing.push('global-complete-boolean-exterior-and-final-paper-contour');
@@ -216,6 +240,11 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    sourceMultiplicity:group.sourceMultiplicity,
    selectedListed3DSourceSubspanId:selected?.sourceSubspanId??null,
    nearestListed3DSourceOnlyVerified:Boolean(selected),
+   booleanOriginalOrGeneratedFeatureWitness:
+    originalAndNewBoolean.contributions.map(x=>({...x})),
+   selectedWholeSource3DBooleanExteriorOpenFeatureVerified:
+    wholeBooleanExterior,
+   originalAndNew3DBooleanOpenSourceTraceComplete:true,
    selectedSourceWholeOpenRayClearVerified:Boolean(selected)&&clear,
    selectedSourceWholeOpenRayStrictlyOccludedVerified:
     Boolean(selected)&&hidden,
@@ -249,7 +278,10 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
  return freeze({schema:'draftai-m5-unified-paper-line-readiness/1',
   revision,status:'per-paper-interval-final-stroke-proof-blockers',
   sourceGeometryIds:geometry.map(x=>x.id),
+  booleanSourceOpenFeatureEvidence:booleanSource,
   paperIntervalCount:result.length,lines:result,
+  selectedWhole3DBooleanExteriorOpenSourceCount:result.filter(x=>
+   x.selectedWholeSource3DBooleanExteriorOpenFeatureVerified).length,
   uniquelyListedSourceCount:result.filter(x=>
    x.nearestListed3DSourceOnlyVerified).length,
   scopedClearFrontRayCandidateCount:result.filter(x=>
