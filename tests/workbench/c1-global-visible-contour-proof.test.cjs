@@ -109,6 +109,38 @@ test('C1 authentic source V/H/W known-view pair enters current canonical point V
   assert.equal(result.globalVisibleContourProof.schema,
    'draftai-m5-c1-single-convex-visible-contour/1');
   assert.equal(result.globalVisibleContourProof.revision,22);
+  assert.equal(result.certifiedVisibleContourLineActionCount,12);
+  assert.equal(result.scopedClosedConvexVisibleContourV5Ready,true);
+  assert.equal(result.verifiedLineIntentAndOriginalSingleV5Parity,true);
+  assert.equal(result.intents.length,result.steps.length);
+  assert.equal(result.timeline.segments.length,
+   result.steps.flatMap(s=>s.actions).length);
+  assert.equal(result.player.timeline,result.timeline);
+  assert.equal(result.wholeSolidV5Ready,false);
+  assert.equal(result.completeDrawingExportAllowed,false);
+  const lineIds=new Set(result.certifiedVisibleContourLineActionIds);
+  assert.equal(lineIds.size,12);
+  assert.equal(result.certifiedVisibleContourLineBindings.length,12);
+  assert.equal(result.certifiedVisibleContourLineBindings.every(b=>
+   b.signedFormalLineV5===true&&
+   b.standardLineStyle==='gb-t-4457.4-continuous-wide-visible-outline'&&
+   b.hiddenOrInternalFeatureLineAuthorized===false),true);
+  for(const step of result.steps){
+   for(const action of step.actions){
+    if(lineIds.has(action.id)){
+     assert.equal(action.kind,'line');
+     const binding=result.certifiedVisibleContourLineBindings.find(
+      b=>b.actionId===action.id);
+     assert.deepEqual(action.geometry,
+      {from:binding.fromSheetPx,to:binding.toSheetPx});
+    }
+   }
+  }
+  const {assertM3ToV5Consistency}=
+   require('../../workbench/m3-v5-consistency-gate.cjs');
+  assert.equal(assertM3ToV5Consistency({
+   revision:22,intents:result.intents,steps:result.steps,
+   timing:result.timeline,sheet:{origin:{x:350,y:195},scale:4}}),true);
   assert.equal(result.player.canRender(22),true);
   result.player.invalidate(23,0);
   assert.equal(result.player.canRender(22),false);
@@ -120,4 +152,45 @@ test('C1 degenerate/inconsistent or nonreviewed source refuses any positive silh
  assert.throws(()=>audit({geometry:{...g,unit:'px'},revision:22}),/reviewed/);
  const broken=box();broken.data.faces.pop();
  assert.throws(()=>audit({geometry:broken,revision:22}),/convex|proof|current/);
+});
+
+
+test('C1 visible-hull line forgery changes canonical Intent/V5 parity and cannot pass',()=>{
+ const g=box(),proof=compileReviewedSolidVertexV5({
+  input:input(g),sheetTransform:{origin:{x:350,y:195},scale:4}});
+ const {assertM3ToV5Consistency}=
+  require('../../workbench/m3-v5-consistency-gate.cjs');
+ const actionId=proof.certifiedVisibleContourLineActionIds[0];
+ const altered=proof.steps.map(step=>({...step,actions:step.actions.map(a=>
+  a.id===actionId?{...a,geometry:{...a.geometry,
+   to:{x:a.geometry.to.x+2,y:a.geometry.to.y}}}:a)}));
+ assert.throws(()=>assertM3ToV5Consistency({revision:22,
+  intents:proof.intents,steps:altered,timing:proof.timeline,
+  sheet:{origin:{x:350,y:195},scale:4}}),/geometry differs/);
+ assert.equal(proof.certifiedVisibleContourLineActionCount,12);
+ assert.equal(proof.wholeSolidV5Ready,false);
+});
+
+test('C1 official V5 semantic action IDs are sourced only from authentic global convex hull intervals',()=>{
+ const g=box(),proof=compileReviewedSolidVertexV5({input:input(g),
+  sheetTransform:{origin:{x:350,y:195},scale:4}});
+ const lineSet=new Set(proof.certifiedVisibleContourLineActionIds);
+ const official=proof.intents.flatMap(i=>i.operations.filter(a=>
+  lineSet.has(a.id)));
+ assert.equal(official.length,12);
+ assert.ok(proof.intents.every(i=>
+  i.source.proofScope===
+   'confirmed-convex-M0-M5-03-points-and-complete-visible-VHW-hull'));
+ const sourceIDs=new Set(g.data.edges.map(e=>
+  g.id+'::'+[...e].sort().join('|')));
+ // Consumer's reviewed geometry id comes from the typed original scene.
+ const actualIDs=new Set(proof.sceneResult.geometry.data.edges.map(e=>
+  proof.sceneResult.geometry.id+'::'+[...e].sort().join('|')));
+ assert.ok(actualIDs.size>0);
+ for(const b of proof.certifiedVisibleContourLineBindings){
+  assert.ok(actualIDs.has(b.sourceEdgeId));
+  assert.ok(['V','H','W'].includes(b.view));
+  assert.equal(b.revision,22);
+ }
+ assert.equal(sourceIDs.size,12);
 });
