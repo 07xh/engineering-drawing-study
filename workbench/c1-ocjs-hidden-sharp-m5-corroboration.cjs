@@ -25,6 +25,10 @@ const {auditC1NativeHiddenOriginalVertexEndpointProof}=
  require('./c1-native-hidden-original-3d-vertex-endpoints.cjs');
 const {auditC1NativeHLRGeneratedToOriginalVertexConcordance}=
  require('./c1-native-hlr-topods-original-vertex-concordance.cjs');
+const {auditC1ReviewedProjectedSourceEventGraph}=
+ require('./c1-reviewed-projected-source-event-graph.cjs');
+const {auditC1NativeHLRAllM4ProjectedEncounters}=
+ require('./c1-native-hlr-complete-m4-projected-encounters.cjs');
 const {auditNativeHiddenWholeOriginalSourceIntervals}=
  require('./c1-native-hidden-whole-source-interval-closure.cjs');
 const {auditC1ProjectedSourcePairDepth}=
@@ -241,6 +245,17 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
  if(nativeHLRVertexConcordance.signedV5ActionCount!==0||
     nativeHLRVertexConcordance.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete!==false)
   throw new RangeError('generated real HLR vertex/source independent proof gate');
+ const nativeHLRAllM4ProjectedEncounters=
+  auditC1NativeHLRAllM4ProjectedEncounters({
+   geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
+   nativeVertexProof:nativeHiddenOriginalVertexEndpointProof,
+   m4:auditC1ReviewedProjectedSourceEventGraph({geometry,revision})
+  });
+ if(nativeHLRAllM4ProjectedEncounters.counts.genuineNativeHiddenSharpEdgesInspected!==
+     counts.realNativeHiddenSharpSegments||
+    nativeHLRAllM4ProjectedEncounters.signedV5ActionCount!==0||
+    nativeHLRAllM4ProjectedEncounters.wholeSceneProjectedJunctionAndOcclusionCertified!==false)
+  throw new RangeError('genuine native HLR source complete M4 event graph gate');
  const nativeHiddenOriginalOpenRayClosure=
   auditNativeHiddenWholeOriginalSourceIntervals({
    geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
@@ -299,6 +314,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   nativeHidden3DEndpointFans,
   nativeHiddenOriginalVertexEndpointProof,
   nativeHLRVertexConcordance,
+  nativeHLRAllM4ProjectedEncounters,
   nativeHiddenOriginalOpenRayClosure,
   nativeHiddenFrontVisibleMask,
   nativeHiddenDualOpenIntervalProof,
