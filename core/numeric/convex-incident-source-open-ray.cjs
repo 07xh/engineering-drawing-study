@@ -102,4 +102,98 @@ function outwardProof({geometry,sourceVertexIds,view,convexProof}={}){
   v5Ready:false
  });
 }
-module.exports={outwardProof};
+/**
+ * Exact open-interior C1 source-edge theorem for a SINGLE opaque convex
+ * original solid. Let E be a true original edge, p(s)=(1-s)A+sB,
+ * s in (0,1). For every closed convex supporting face whose plane
+ * contains BOTH A and B, require that observer ray points STRICTLY to
+ * the solid's inside halfspace. Every other exact supporting face is
+ * strictly interior at p(s). Thus for each s there exists an epsilon_s>0
+ * whose forward open ray is strictly inside EVERY solid halfspace.
+ *
+ * This proof needs NO uniform positive depth margin as s approaches
+ * vertex endpoints. It proves strictly hidden OPEN SOURCE INTERIOR only,
+ * not endpoints, physical paper joins, other solids or final dashed style.
+ *
+ * Exact binary64 dyadic signs and exact complete polygon planarity are
+ * obligatory. A near-planar quad, tangent observer or any non-supporting
+ * face remains undetermined rather than widened with a tolerance.
+ */
+function inwardProof({geometry,sourceVertexIds,view,convexProof}={}){
+ if(!geometry||!geometry.data||!Array.isArray(geometry.data.faces)||
+    !geometry.data.points||!Array.isArray(geometry.data.edges)||
+    !Array.isArray(sourceVertexIds)||sourceVertexIds.length!==2||
+    sourceVertexIds[0]===sourceVertexIds[1]||
+    !Object.hasOwn(FIRST_ANGLE_OBSERVER_RAYS,view)||
+    !convexProof||!Object.isFrozen(convexProof)||
+    convexProof.status!=='validated-closed-convex-mesh'||
+    convexProof.sourceGeometryId!==geometry.id||
+    convexProof.unit!=='mm'||convexProof.v5Ready!==false)
+  throw new TypeError('current independently reviewed closed convex original source required');
+ const [idA,idB]=sourceVertexIds;
+ const points=geometry.data.points,ids=Object.keys(points);
+ if(!ids.includes(idA)||!ids.includes(idB)||
+    !geometry.data.edges.some(e=>Array.isArray(e)&&
+     ((e[0]===idA&&e[1]===idB)||(e[0]===idB&&e[1]===idA))))
+  throw new RangeError('original source edge missing from validated topology');
+ const observer=ray(vec(FIRST_ANGLE_OBSERVER_RAYS[view]));
+ let constrained=0,checked=0;
+ const unknown=reason=>Object.freeze({
+  schema:'draftai-m0-exact-convex-incident-source-edge-inward-ray/1',
+  sourceGeometryId:geometry.id,view,
+  sourceVertexIds:[idA,idB],status:'undetermined',reason,
+  fullOriginalSourceOpenIntervalStrictlyHidden:false,
+  endpointOcclusionCertified:false,officialLineStyleVerified:false,
+  v5Ready:false
+ });
+ for(const face of geometry.data.faces){
+  const base=vec(points[face[0]]);
+  const delta=id=>vec(points[id]).map((x,i)=>sub(x,base[i]));
+  let n=null;
+  for(let i=1;i<face.length-1;i++){
+   const candidate=cross(delta(face[i]),delta(face[i+1]));
+   if(candidate.some(x=>sign(x)!==0)){n=candidate;break;}
+  }
+  if(!n)return unknown('no-exact-support-face-normal');
+  // All listed points of EVERY face must be on its EXACT original plane.
+  // The existing M0 toleranced validation alone is NOT sufficient.
+  if(face.some(id=>dot(n,delta(id))!==0))
+   return unknown('original-face-only-approximately-coplanar');
+  let side=0;
+  for(const id of ids){
+   const val=dot(n,delta(id));
+   if(val!==0){
+    if(side!==0&&side!==val)
+     return unknown('original-face-not-an-exact-convex-support');
+    side=val;
+   }
+  }
+  if(side===0)return unknown('support-face-lacks-strict-solid-side');
+  const av=dot(n,delta(idA)),bv=dot(n,delta(idB));
+  if((av!==0&&av!==side)||(bv!==0&&bv!==side))
+   return unknown('original-source-outside-support-plane');
+  checked++;
+  if(av===0&&bv===0){
+   constrained++;
+   const slope=dot(n,observer);
+   if(slope!==side)
+    return unknown(slope===0?'observer-tangent-on-incident-support':
+     'observer-exits-original-incident-support');
+  }
+ }
+ if(checked!==geometry.data.faces.length||constrained<2)
+  return unknown('missing-two-exact-original-incident-supports');
+ return Object.freeze({
+  schema:'draftai-m0-exact-convex-incident-source-edge-inward-ray/1',
+  sourceGeometryId:geometry.id,view,sourceVertexIds:[idA,idB],
+  status:'certified-strictly-hidden-open-original-edge',
+  reason:'exact-original-all-support-planes-strict-inward-observer',
+  allOriginalConvexFacePlanesExact:true,
+  exactSupportingFaceCount:constrained,
+  fullOriginalSourceOpenIntervalStrictlyHidden:true,
+  endpointOcclusionCertified:false,
+  entireSceneVisibilityVerified:false,
+  officialLineStyleVerified:false,v5Ready:false
+ });
+}
+module.exports={outwardProof,inwardProof};

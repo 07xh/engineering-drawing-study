@@ -28,6 +28,8 @@ const {auditC1ReviewedProjectedSourceEventGraph}=
  require('./c1-reviewed-projected-source-event-graph.cjs');
 const {auditC1ProjectedSourcePairDepth}=
  require('./c1-projected-source-pair-affine-depth.cjs');
+const {auditC1SingleConvexSourceSubspanRays}=
+ require('./m5-c1-source-subspan-opaque-rays.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -58,6 +60,18 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   throw new RangeError('M4 source event graph cannot forge C1 signoff');
  const eventByKey=new Map(eventGraph.rows.map(x=>
   [x.sourceEdgeId+'@'+x.view,x]));
+ const opaque=auditC1SingleConvexSourceSubspanRays({geometry,revision});
+ if(opaque.sourceGeometryId!==geometry.id||opaque.revision!==revision||
+    opaque.signedV5ActionCount!==0||opaque.wholeSolidV5Ready!==false||
+    opaque.sourceSubspanCount!==eventGraph.partitionedSourceSubintervalCount)
+  throw new RangeError('source bound opaque ray proof cannot mint V5');
+ const opaqueByKey=new Map();
+ const spanKey=(id,view,r)=>id+'@'+view+'@'+r.join(':');
+ for(const proof of opaque.subspans){
+  const k=spanKey(proof.sourceEdgeId,proof.view,proof.originalParameterRange);
+  if(opaqueByKey.has(k))throw new RangeError('duplicate original source-ray subspan');
+  opaqueByKey.set(k,proof);
+ }
  const pairDepth=auditC1ProjectedSourcePairDepth({geometry,revision});
  if(pairDepth.sourceGeometryId!==geometry.id||
     pairDepth.revision!==revision||
@@ -204,6 +218,12 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
      thirdPartyFacesVerified:false,
      independentOriginal3DJunctionsVerified:false,
      engineeringLineStyle:'undetermined',signedV5Action:false}));
+   const opaqueRay=opaqueByKey.get(spanKey(
+    row.sourceEdgeId,row.view,span.originalParameterRange));
+   if(!opaqueRay||
+      opaqueRay.sourceGeometryId!==geometry.id||
+      opaqueRay.signedV5Action!==false)
+    throw new RangeError('missing original M5 full source-subspan opaque ray');
    const projectedHits=strokes.filter(c=>positiveCollinearOverlap(
     span.fromModelMm,span.toModelMm,c.from,c.to));
    const cadVisible=intervalCoverage(span.fromModelMm,
@@ -224,6 +244,17 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    else if(status==='undetermined')unresolvedNonHullSubintervals++;
    return {...span,status,
     sourcePairDepthComparisons,
+    originalConvexOpaqueRayStatus:opaqueRay.status,
+    wholeOpenSubspanExactSourceRayClear:
+     opaqueRay.exactOriginalFaceWholeOpenRayClear,
+    wholeOpenSubspanAnalyticRayClear:
+     opaqueRay.analyticConservativeWholeOpenRayClear,
+    wholeOpenSubspanStrictlyOpaqueOccluded:
+     opaqueRay.fullAnalyticStrictInteriorRayOcclusion||
+     opaqueRay.exactOriginalSourceStrictInwardOpenRayHidden,
+    wholeOpenSubspanExactStrictInwardRayHidden:
+     opaqueRay.exactOriginalSourceStrictInwardOpenRayHidden,
+    sourceSubspanOpaqueRayFullyRecomputed:true,
     allOpaqueFaceDepthsVerified:false,
     completeOriginalSourceCADCoverage:cadVisible,
     uniqueOriginal3DSourceCandidate:unique,
@@ -240,6 +271,13 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    sourceBoundSubintervals:spans,
    wholeLineJunctionAndPaperDepthOrderVerified:false};
  });
+ summary.singleOpaqueSourceSubspanClearCount=opaque.counts.clear;
+ summary.singleOpaqueSourceSubspanStrictHiddenCount=opaque.counts.strictHidden;
+ summary.exactOriginalStrictInwardOpaqueSubspanCount=
+  opaque.counts.exactOriginalEdgeStrictInwardHidden;
+ summary.singleOpaqueSourceSubspanUndeterminedCount=opaque.counts.unresolved;
+ summary.singleOpaqueSourceSubspanExteriorHeldCount=
+  opaque.counts.excludedAlreadySignedContour;
  summary.originalSourcePairDepthOverlapCount=
   pairDepth.sameProjectedSourceOverlapIntervals;
  summary.originalSourcePairStrictDepthProofCount=
@@ -274,6 +312,7 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   rows:segmented,counts:summary,
   sourceProjectedEventGraphSchema:eventGraph.schema,
   sourcePairDepthProofSchema:pairDepth.schema,
+  originalSourceOpaqueSubspanProofSchema:opaque.schema,
   CADComputedGenuineOpenCascadeWasm:true,
   fullSceneAndAllJunctionsLineStyleSigned:false,
   standardEngineeringStylesCertified:false,

@@ -32,12 +32,12 @@
     {
       "path": "core/numeric/convex-incident-source-open-ray.cjs",
       "status": "consumer-review",
-      "proofScope": "exact represented-binary64 original face-edge incidence, globally supporting convex polygon face and strict outward first-angle observer slope; positive open source ray for one authenticated original edge only",
+      "proofScope": "exact represented-binary64 original face-edge incidence and all supporting polygon planes; strict outward source-open observer ray or strict inward observer ray on every incident supporting face for each point of the original edge OPEN interior (no uniform margin or certified endpoints); source-bound one reviewed convex solid only",
       "regressionTests": [
         "tests/math/m0-exact-convex-incident-source-open-ray.test.cjs",
         "tests/math/m0-convex-open-ray.test.cjs"
       ],
-      "remainingGate": "M0 independently authenticated closed convex source, revision and complete reviewed scene; adjacent 3D endpoint junctions, full M5 depth comparison and CAD source identity still required; cannot independently mint hidden or visible GB engineering line styles or original V5 actions"
+      "remainingGate": "M0 independently authenticated closed convex current original geometry; exact support faces, first-angle view and original source IDs mandatory; open source edge interval does NOT certify endpoints, M4 paper crossings, 3D physical junctions, co-projected source precedence, all other scene solids, applicable GB solid/dashed line style or original V5 actions"
     },
     {
       "path": "core/numeric/convex-open-ray.cjs",
