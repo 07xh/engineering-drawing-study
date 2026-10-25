@@ -46,8 +46,10 @@ test('two proven native visible front segments with binary64 parameter gap do no
   r1.hiddenOriginalSourceParameterRange,
   r2.hiddenOriginalSourceParameterRange]);
  assert.equal(cov.entireOriginalParameterIntervalCovered,false);
+ assert.ok(r2.hiddenOriginalSourceParameterRange[0]>.5,
+  'native projected 3D-to-2D-to-original parameter gap must stay positive');
  assert.deepEqual(cov.positiveLengthUncoveredIntervals,
-  [[.5,.5+Number.EPSILON]]);
+  [[.5,r2.hiddenOriginalSourceParameterRange[0]]]);
 });
 test('paper-offset native front visible stroke is NOT a front mask despite parallel projected source',()=>{
  const off={...pt(0),v:pt(0).v+1};
