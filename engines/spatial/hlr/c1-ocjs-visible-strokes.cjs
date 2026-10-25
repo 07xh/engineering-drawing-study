@@ -15,6 +15,8 @@ const {VIEWS,project}=require('../../../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const finite=Number.isFinite;
+const {verifyOcjsHLRProjectedLineCurveWitness}=
+ require('./c1-ocjs-output-curve-witness.cjs');
 function cuboidBounds(g){
  if(!g||g.kind!=='mesh'||g.space!=='model-3d'||g.unit!=='mm'||
    !g.data||!g.id||!Array.isArray(g.data.edges)||!Array.isArray(g.data.faces))
@@ -417,6 +419,25 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     }
     if(coords.length!==2)throw new RangeError('HLR edge missing true endpoints');
     if(Math.hypot(coords[0].u-coords[1].u,coords[0].v-coords[1].v)>1e-7){
+     // Separate real OCCT HLR curve verification from M0 source inference.
+     const edgeType=hold(method(oc.TopoDS,'Edge_1')(edge));
+     const adaptor=newObj('BRepAdaptor_Curve_2',edgeType);
+     const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+     if(lineKind===undefined||adaptor.GetType()!==lineKind||
+        adaptor.Is3DCurve()!==true)
+      throw new RangeError('real OCJS HLR output is not a 3D BRep line');
+     const first=adaptor.FirstParameter(),last=adaptor.LastParameter();
+     if(![first,last].every(finite)||!(last>first))
+      throw new RangeError('real OCJS HLR line has invalid finite parameters');
+     const curveAt=t=>{
+      const p=hold(adaptor.Value(t));
+      return {x:p.X(),y:p.Y(),z:p.Z()};
+     };
+     const hlrCurveWitness=verifyOcjsHLRProjectedLineCurveWitness({
+      view,projectedEndpoints:coords,parameterRange:[first,last],
+      curveSamples:[0,0.25,0.5,0.75,1].map(fraction=>
+       curveAt(first+(last-first)*fraction)),curveKind:'line'
+     });
      const lifted=liftOriginalProjectedSourceCandidates(
       geometry,view,coords[0],coords[1]);
      if(lifted.unmappedReason)
@@ -436,7 +457,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false};
      });
      segments.push({view,from:coords[0],to:coords[1],...lifted,
-      sourceCandidate3DLifts:verifiedLifts,
+      ...hlrCurveWitness,sourceCandidate3DLifts:verifiedLifts,
       originalOCCTSourceTopology3DVerified:true,
       actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false});
     }
@@ -455,6 +476,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,engineComputedVisibleGeometry:true,
+   allEmittedVisibleHLRCurvesVerifiedStraightAndPlanar:true,
+   actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:false,
    originalBRepSourceEdges:sourceBRep.originalBRepSourceEdges,
    occtOriginalEdgeOccurrenceCount:sourceBRep.occtOriginalEdgeOccurrenceCount,
    completeSourceTopology3DEndpointCorrespondence:
