@@ -118,7 +118,11 @@ for(const [index,geometry] of general.entries()){
  assert.ok(cad.originalBRepSourceEdges.every(s=>
   s.originalOCCTBRepVertexXYZMatched===true&&
   s.generatedHLREdgeTopoDSIdentityMatched===false&&
-  s.occtCurveTypeIndependentlyVerified===false));
+  s.occtCurveTypeIndependentlyVerified===true&&
+  s.occtSourceCurveType==='line'&&
+  s.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
+  s.occtSourceCurveParameterRange[1]>s.occtSourceCurveParameterRange[0]));
+ assert.equal(cad.actualOCCTCurveTypeIndependentlyVerified,true);
  assert.equal(cad.sourceCandidateOnly,true);
  assert.equal(cad.v5Authorized,false);
  assert.equal(cad.proofScope,'reviewed-closed-convex-polyhedral-shell');
@@ -141,6 +145,10 @@ for(const [index,geometry] of general.entries()){
     assert.ok(valid.has(source.sourceEdgeId));
     assert.ok(sourceIds.has(source.sourceEdgeId));
     assert.equal(source.actualOriginalOCCTBRepEdge3DEndpointsVerified,true);
+    assert.equal(source.originalOCCTSourceCurveType,'line');
+    assert.equal(source.originalOCCTSourceLineCurveVerified,true);
+    assert.ok(source.originalOCCTCurveParameterRange[1]>
+     source.originalOCCTCurveParameterRange[0]);
     assert.ok(['x','y','z'].every(k=>
      Number.isFinite(source.actualOriginalOCCTBRepFrom3D[k])&&
      Number.isFinite(source.actualOriginalOCCTBRepTo3D[k])));
