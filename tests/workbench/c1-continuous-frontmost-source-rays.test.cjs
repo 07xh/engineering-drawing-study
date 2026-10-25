@@ -194,3 +194,39 @@ test('C1 stale/tampered real source or projected endpoint claims fail closed',()
  const uncovered=coverage({geometry:open,revision:11});
  assert.equal(uncovered.status,'not-covered');
 });
+
+
+test('C1 positive front-ray junction refuses forged near-but-not-same 3D provenance',()=>{
+ const geometry=box(),revision=11,{c,j,r}=collect(geometry,revision);
+ const vi=r.views.findIndex(v=>v.frontSourceJunctions.some(q=>
+  q.localFrontRayPhysicalJunctionCandidateVerified));
+ assert.ok(vi>=0,'real closed convex input must have one supported local front join');
+ const row=r.views[vi],ji=row.frontSourceJunctions.findIndex(q=>
+  q.localFrontRayPhysicalJunctionCandidateVerified);
+ const selected=row.frontSourceJunctions[ji],node=j.views[vi].junctions[ji];
+ const targetIndex=node.authenticatedCommon3DJoinCandidates.findIndex(q=>
+  q.arrivingSourceEdgeId===selected.arrivingFrontSourceEdgeId&&
+  q.departingSourceEdgeId===selected.departingFrontSourceEdgeId);
+ assert.ok(targetIndex>=0);
+ const old=node.authenticatedCommon3DJoinCandidates[targetIndex];
+ const forged={...old,real3DPoint:{...old.real3DPoint,
+  x:old.real3DPoint.x+2**-30}};
+ assert.notEqual(forged.real3DPoint.x,old.real3DPoint.x);
+ assert.ok(Math.abs(forged.real3DPoint.x-old.real3DPoint.x)<1e-7);
+ const alteredJunction={...node,
+  authenticatedCommon3DJoinCandidates:
+   node.authenticatedCommon3DJoinCandidates.map((q,i)=>
+    i===targetIndex?forged:q)};
+ const alteredView={...j.views[vi],junctions:j.views[vi].junctions.map((q,i)=>
+  i===ji?alteredJunction:q)};
+ const tampered=Object.freeze({...j,views:j.views.map((v,i)=>
+  i===vi?alteredView:v)});
+ const inspected=audit({geometry,revision,contourCoverage:c,
+  physicalJunctionIncidence:tampered});
+ const result=inspected.views[vi].frontSourceJunctions[ji];
+ assert.equal(result.authenticatedExactCommon3DFrontSourcePoint,false);
+ assert.equal(result.localFrontRayPhysicalJunctionCandidateVerified,false);
+ assert.equal(result.officialEngineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+ assert.equal(inspected.v5Ready,false);
+});
