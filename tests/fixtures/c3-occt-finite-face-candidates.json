@@ -1,0 +1,233 @@
+{
+  "schema": "draftai-c3-occt-finite-face-candidates/1",
+  "cadKernel": "Open CASCADE via cadquery-ocp 7.9.3.1.1",
+  "unit": "mm",
+  "proof": "candidate-only",
+  "cases": [
+    {
+      "id": "unequal-offset-full",
+      "input": {
+        "kind": "finite-orthogonal-cylinder-intersection",
+        "sourceConfirmed": true,
+        "unit": "mm",
+        "zCylinder": {
+          "radius": 12,
+          "xCenter": 0,
+          "yCenter": 0,
+          "zMin": -18,
+          "zMax": 18
+        },
+        "yCylinder": {
+          "radius": 9,
+          "xCenter": 2,
+          "zCenter": 0,
+          "yMin": -17,
+          "yMax": 17
+        }
+      },
+      "sectionEdgeCount": 2,
+      "candidates": [
+        {
+          "edgeIndex": 0,
+          "curveType": "GeomAbs_BSplineCurve",
+          "sourceFaces": {
+            "z": "lateral",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              2,
+              -11.832159566,
+              9
+            ],
+            [
+              2,
+              -11.832159566,
+              9
+            ]
+          ],
+          "interiorWitness": [
+            1.556986152,
+            -11.898349654,
+            -8.988812065
+          ]
+        },
+        {
+          "edgeIndex": 1,
+          "curveType": "GeomAbs_BSplineCurve",
+          "sourceFaces": {
+            "z": "lateral",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              2,
+              11.832159566,
+              9
+            ],
+            [
+              2,
+              11.832159566,
+              9
+            ]
+          ],
+          "interiorWitness": [
+            1.556986152,
+            11.898349654,
+            -8.988812065
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unequal-offset-positive-caps",
+      "input": {
+        "kind": "finite-orthogonal-cylinder-intersection",
+        "sourceConfirmed": true,
+        "unit": "mm",
+        "zCylinder": {
+          "radius": 12,
+          "xCenter": 0,
+          "yCenter": 0,
+          "zMin": 0,
+          "zMax": 18
+        },
+        "yCylinder": {
+          "radius": 9,
+          "xCenter": 2,
+          "zCenter": 0,
+          "yMin": 0,
+          "yMax": 17
+        }
+      },
+      "sectionEdgeCount": 5,
+      "candidates": [
+        {
+          "edgeIndex": 0,
+          "curveType": "GeomAbs_BSplineCurve",
+          "sourceFaces": {
+            "z": "lateral",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              -7,
+              9.746794345,
+              -4.5e-7
+            ],
+            [
+              2,
+              11.832159566,
+              9
+            ]
+          ],
+          "interiorWitness": [
+            -5.118248649,
+            10.853716513,
+            5.507243486
+          ]
+        },
+        {
+          "edgeIndex": 1,
+          "curveType": "GeomAbs_Line",
+          "sourceFaces": {
+            "z": "cap-min",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              -7,
+              0,
+              0
+            ],
+            [
+              -7,
+              9.746794345,
+              0
+            ]
+          ],
+          "interiorWitness": [
+            -7,
+            4.873397172,
+            0
+          ]
+        },
+        {
+          "edgeIndex": 2,
+          "curveType": "GeomAbs_BSplineCurve",
+          "sourceFaces": {
+            "z": "lateral",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              2,
+              11.832159566,
+              9
+            ],
+            [
+              11,
+              4.795831523,
+              0
+            ]
+          ],
+          "interiorWitness": [
+            9.066616408,
+            7.861025976,
+            5.573338966
+          ]
+        },
+        {
+          "edgeIndex": 3,
+          "curveType": "GeomAbs_Line",
+          "sourceFaces": {
+            "z": "cap-min",
+            "y": "lateral"
+          },
+          "endpoints": [
+            [
+              11,
+              0,
+              0
+            ],
+            [
+              11,
+              4.795831523,
+              0
+            ]
+          ],
+          "interiorWitness": [
+            11,
+            2.397915762,
+            0
+          ]
+        },
+        {
+          "edgeIndex": 4,
+          "curveType": "GeomAbs_Line",
+          "sourceFaces": {
+            "z": "cap-min",
+            "y": "cap-min"
+          },
+          "endpoints": [
+            [
+              11,
+              0,
+              0
+            ],
+            [
+              -7,
+              0,
+              0
+            ]
+          ],
+          "interiorWitness": [
+            2,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}
