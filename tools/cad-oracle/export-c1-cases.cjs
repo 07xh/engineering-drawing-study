@@ -50,7 +50,10 @@ function makeCases(){
  }
  return [a,t,r,f,scaled,tetra].map(geometry=>{
   const revision=23;
-  const proof=auditC1ConvexContourSourceCoverage({geometry,revision});
+  let proof;
+  try{proof=auditC1ConvexContourSourceCoverage({geometry,revision});}
+  catch(error){throw new TypeError('C1 CAD source '+geometry.id+
+   ' was rejected by existing M5: '+error.message);}
   if(proof.status!=='scoped-convex-hull-physical-source-coverage'||
      !proof.fullPhysicalSourceContourCoverageVerified||
      proof.officialLineStylesVerified!==false||proof.completeSolidV5Ready!==false)
