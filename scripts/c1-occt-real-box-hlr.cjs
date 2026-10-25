@@ -27,8 +27,9 @@
  const Handle=oc[handles.find(k=>k.endsWith('_2'))||handles[0]];
  const handle=new Handle(algo);
  const result=new oc.HLRBRep_HLRToShape(handle);
- const visible=result.VCompound();
- const hidden=result.HCompound();
+ console.log('HLR result methods',JSON.stringify(['VCompound','VCompound_1','VCompound_2','HCompound','HCompound_1','HCompound_2','OutLineVCompound','OutLineHCompound'].map(k=>({name:k,type:typeof result[k],arity:typeof result[k]==='function'?result[k].length:null}))));
+ const visible=result.VCompound_1();
+ const hidden=result.HCompound_1();
  if(!visible||!hidden)throw Error('OCCT HLR output compounds absent');
  console.log('REAL OCCT BOX HLR COMPUTED',JSON.stringify({box:[40,30,20],visibleShapeType:visible.ShapeType(),hiddenShapeType:hidden.ShapeType(),observer:'default projector only',sourceMappingVerified:false,v5Ready:false}));
 })().catch(e=>{console.error('REAL OCCT HLR FAILED:',e);process.exitCode=1;});
