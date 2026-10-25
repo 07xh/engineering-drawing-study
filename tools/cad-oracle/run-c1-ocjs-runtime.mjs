@@ -12,7 +12,7 @@ import {performance} from 'node:perf_hooks';
 const require=createRequire(import.meta.url);
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
-const {compileC1WithOcjsHLR}=
+const {compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {cuboidBounds,computeC1OcjsVisibleSegments}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
@@ -134,32 +134,53 @@ for(const [index,geometry] of general.entries()){
   }),edges:geometry.data.edges.map(e=>[...e]),
   faces:geometry.data.faces.map(e=>[...e])
  };
- const m5=compileC1WithOcjsHLR({oc,input:reviewedInput,
+ const audited=auditC1OcjsM5ProofGaps({oc,input:reviewedInput,
   sheetTransform:{origin:{x:350,y:195},scale:3}});
- assert.equal(m5.c1CadRuntime.revision,40+index);
- assert.equal(m5.c1CadRuntime.supportedScope,'reviewed-closed-convex-polyhedral-shell');
- assert.equal(m5.c1CadRuntime.nonContourCADDrawingActionsSigned,0);
- assert.equal(m5.c1CadRuntime.secondV5,false);
- assert.equal(m5.wholeSolidV5Ready,false);
- assert.equal(m5.officialSolidLineStylesVerified,false);
- assert.equal(m5.verifiedLineIntentAndOriginalSingleV5Parity,true);
- assert.ok(m5.certifiedVisibleContourLineActionCount>=9);
- assert.ok(m5.c1CadRuntime.perView.V.sourceAndCoverageAgreement);
- assert.ok(m5.c1CadRuntime.perView.H.sourceAndCoverageAgreement);
- assert.ok(m5.c1CadRuntime.perView.W.sourceAndCoverageAgreement);
- const extra=Object.values(m5.c1CadRuntime.perView)
-  .reduce((n,v)=>n+v.unsignedInteriorCadLines,0);
- const signedIds=new Set(m5.certifiedVisibleContourLineActionIds);
- assert.equal(signedIds.size,m5.certifiedVisibleContourLineActionCount);
- assert.ok(m5.steps.flatMap(s=>s.actions)
-  .filter(a=>signedIds.has(a.id)).every(a=>a.kind==='line'));
- m5.player.invalidate(41+index,0);
- assert.equal(m5.player.canRender(40+index),false);
+ assert.equal(audited.sourceGeometryId,geometry.id);
+ assert.equal(audited.revision,40+index);
+ assert.equal(audited.proofScope,'reviewed-closed-convex-polyhedral-shell');
+ assert.equal(audited.globalOfficialV5GateUnchanged,true);
+ assert.equal(audited.officialLineStylesVerified,false);
+ assert.equal(audited.signedV5ActionCount,0);
+ assert.equal(audited.hiddenOrInternalEdgesSigned,false);
+ assert.equal(audited.wholeSolidV5Ready,false);
+ assert.ok(audited.counts.m5AtomicIntervals>=9);
+ assert.equal(Object.values(audited.views).length,3);
+ assert.equal(Object.values(audited.views).flatMap(v=>v.intervals).length,
+  audited.counts.m5AtomicIntervals);
+ assert.ok(Object.values(audited.views).flatMap(v=>v.intervals).every(x=>
+  x.engineeringLineStyle==='undetermined'&&x.signedV5===false));
+ // If generic M5 cannot positively prove its WHOLE visible ring, real CAD
+ // agreement may still be useful forensic evidence but may NOT sign an
+ // Intent/DAG/V5 stroke. Keep the original formal C1 gate fail-closed.
+ let formallySigned=false,scopedOfficialVisibleContourLines=0;
+ if(!audited.allThreeViewsGlobalM5Certified){
+  assert.throws(()=>compileC1WithOcjsHLR({oc,input:reviewedInput,
+   sheetTransform:{origin:{x:350,y:195},scale:3}}),
+   /M5\/V5 not available/);
+ }else if(audited.counts.positiveM5CadConflicts===0){
+  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
+   sheetTransform:{origin:{x:350,y:195},scale:3}});
+  assert.equal(canonical.wholeSolidV5Ready,false);
+  assert.equal(canonical.c1CadRuntime.secondV5,false);
+  assert.equal(canonical.verifiedLineIntentAndOriginalSingleV5Parity,true);
+  formallySigned=true;
+  scopedOfficialVisibleContourLines=
+   canonical.certifiedVisibleContourLineActionCount;
+ }
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),
-  m5Signed:true,scopedOfficialVisibleContourLines:signedIds.size,
-  unsignedInteriorCadLines:extra,uniqueV5:true});
+  m5Signed:formallySigned,
+  scopedOfficialVisibleContourLines,
+  m5GlobalSignedGate:audited.allThreeViewsGlobalM5Certified,
+  localM5Positive:audited.counts.locallyPositive,
+  cadM5Corroborated:audited.counts.cadAndM5Corroborated,
+  cadM5Conflicts:audited.counts.positiveM5CadConflicts,
+  m5Unresolved:audited.counts.unresolved,
+  unsignedInteriorCadLines:count-scopedOfficialVisibleContourLines,
+  uniqueV5:formallySigned});
+
 }
 // Preserve strict unsupported/degenerate source refusal.
 assert.throws(()=>computeC1OcjsVisibleSegments({oc,
