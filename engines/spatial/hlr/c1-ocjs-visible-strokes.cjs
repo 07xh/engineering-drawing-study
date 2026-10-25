@@ -423,9 +423,14 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      const edgeType=hold(method(oc.TopoDS,'Edge_1')(edge));
      const adaptor=newObj('BRepAdaptor_Curve_2',edgeType);
      const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
-     if(lineKind===undefined||adaptor.GetType()!==lineKind||
-        adaptor.Is3DCurve()!==true)
-      throw new RangeError('real OCJS HLR output is not a 3D BRep line');
+     const observedType=adaptor.GetType();
+     const is3D=adaptor.Is3DCurve();
+     if(lineKind===undefined||observedType!==lineKind||is3D!==true)
+      throw new RangeError('real OCJS HLR output curve classification: type='+
+       String(observedType)+' lineType='+String(lineKind)+
+       ' is3D='+String(is3D)+
+       ' adaptorKeys='+Object.keys(adaptor).filter(x=>
+        /D0|Value|Curve|Parameter|Type/.test(x)).slice(0,25).join(','));
      const first=adaptor.FirstParameter(),last=adaptor.LastParameter();
      if(![first,last].every(finite)||!(last>first))
       throw new RangeError('real OCJS HLR line has invalid finite parameters');
