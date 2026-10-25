@@ -143,3 +143,67 @@ test('forged HLR vertex index or projected paper coordinates fail closed',()=>{
  y.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
  assert.throws(()=>audit(y),/native OCCT shared vertex lacks real IsSame/);
 });
+
+const markGraphComplete=x=>{
+ x.cad.nativeGeneratedVertexGraph.
+  allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing=true;
+ x.cad.nativeGeneratedVertexGraph.counts.genuinelySharedNativeJunctionComponents=1;
+ for(const v of ['V','H','W']){
+  const view=x.cad.nativeGeneratedVertexGraph.views[v];
+  view.allNativeGeneratedEndpointPairsIndependentlyCompared=true;
+  view.generatedOCCTSharedNativeJunctionComponents=[];
+ }
+};
+const completeStar=(a,b)=>({
+ view:'H',actualGeneratedOCCTTopoDSVertexPairwiseIsSame:true,
+ originalGeneratedTopoDSHistoryRecovered:false,
+ exactNativePaperCoordinatesForEntireComponent:{...point},
+ generatedSharpEdgeEndpoints:[a,b],
+ independentlyCertifiedOriginal3DSourceVertexId:null,
+ engineeringLineJoinCertified:false,signedV5Action:false
+});
+test('entire genuine HLR generated TopoDS shared node is an original 3D source junction only when every original M0 vertex and BRep source fan agrees',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ const out=audit(x),star=out.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(out.allPerViewActualNativeGeneratedJunctionComponentsConsumed,true);
+ assert.equal(out.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,1);
+ assert.equal(out.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,1);
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ assert.equal(star.independentlyVerifiedOriginalM03DVertexId,'A');
+ assert.deepEqual(star.independentlyTracedOriginal3DSourceEdges,['G::A|B','G::A|C']);
+ assert.equal(star.wholeSceneAndEngineeringGBJunctionCertified,false);
+ assert.equal(star.signedV5Action,false);
+});
+test('same genuine generated native vertex across visible+hidden strokes is held when original 3D visible source provenance is unavailable',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('visible-sharp',0,'to'),b=ref('hidden-sharp',0,'to');
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ const out=audit(x),star=out.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ assert.equal(star.independentlyVerifiedOriginalM03DVertexId,null);
+ assert.equal(out.counts.completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,1);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('cannot forge a complete native generated vertex star without actual IsSame pair, consistent native paper and unique edge endpoints',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ assert.throws(()=>audit(x),/missing actual OCCT IsSame pair/);
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ x.cad.nativeGeneratedVertexGraph.views.H.
+  generatedOCCTSharedNativeJunctionComponents[0].exactNativePaperCoordinatesForEntireComponent.u=11;
+ assert.throws(()=>audit(x),/paper-misaligned native TopoDS junction/);
+});
