@@ -24,6 +24,8 @@ const {auditC1OriginalStrokeFinalPreconditions}=
  require('../../workbench/c1-m5-final-source-stroke-preconditions.cjs');
 const {reviewC1M5FinalStrokeObligations}=
  require('../../workbench/c1-m5-final-source-obligation-review.cjs');
+const {reviewC1NativeHiddenFinalM5Strokes}=
+ require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 async function main(){
@@ -170,11 +172,11 @@ for(const [index,geometry] of general.entries()){
  assert.equal(gapModel.actualNativeGeneratedHLRPaperCoverageAndOriginalModelProofNotConflated,true);
  assert.ok(gapModel.rows.every(r=>r.signedV5Action===false&&
   r.constructionIntentAuthorized===false&&
-  r.allGeneratedHLRPaperEndpointTailExtensionsProven===false&&
+  r.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven===false&&
   r.originalM4OrNativePaperPositiveGapWitnesses.every(w=>
    w.signedV5Action===false&&
    w.officialEngineeringLineStyle==='undetermined'&&
-   w.fullNativeHLRGeneratedVisiblePaperTailCertified===false)));
+   w.generatedHLRSourceTopoDSHistoryAndAllJunctionsCertified===false)));
  assert.ok(exactFront.rows.every(row=>
   row.actualOCCTGeneratedHLRToOriginalTopoDSIdentityCertified===false&&
   row.finalGBHiddenLineStyleCertified===false&&
@@ -429,6 +431,24 @@ for(const [index,geometry] of general.entries()){
   unsignedReview.total);
  assert.equal(unsignedReview.unresolvedByProofClass.completeIntervalVisibility,
   unsignedReview.total);
+ const hiddenFormalGate=reviewC1NativeHiddenFinalM5Strokes({
+  geometry,revision:40+index,
+  gapProof:nativeHiddenM5.nativeHiddenExactOriginalFrontGap,
+  dualProof:nativeHiddenM5.nativeHiddenDualOpenIntervalProof,
+  endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
+  globalM5Review:unsignedReview
+ });
+ assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(hiddenFormalGate.signedV5ActionCount,0);
+ assert.equal(hiddenFormalGate.officialEngineeringGBLineRulesCertified,false);
+ assert.ok(hiddenFormalGate.rows.every(r=>
+  r.actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified===false&&
+  r.nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified===false&&
+  r.engineeringGBSolidOrDashedLineStandardFullyCertified===false&&
+  r.officialEngineeringLineStyle==='undetermined'&&
+  r.signedConstructionStepDAGOrSoleV5Action===false));
+
  assert.ok(unsignedReview.rows.every(row=>
   row.independentGlobalProofGaps.original3DSourceIdentity===true&&
   row.independentGlobalProofGaps.endpointAndProjectionTopology===true));
@@ -697,6 +717,14 @@ for(const [index,geometry] of general.entries()){
     gapModel.counts.exactM0FullFrontPhysicalSourceGapIntervalsCorroborated,
    exactModelFullFrontNewLocallyExplainedNativeStrokes:
     gapModel.counts.newlyFullOriginalModelOpenIntervalLocallyCorroborated,
+   actualNativeHiddenHLRPaperOpenIntervalsNowFullyLocallyVerified:
+    hiddenFormalGate.counts.wholeRealNativeHiddenPaperOpenIntervalsLocallyProven,
+   remainingNativeHLRGeneratedPaperIntervalUnproven:
+    hiddenFormalGate.counts.missingLocalNativeOrModelOpenProofHeld+
+    hiddenFormalGate.counts.originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR,
+   unsignedNativeHLRActual3DEndpointFanGapStrokes:
+    hiddenFormalGate.counts.original3DEndpointFanProofIncompleteStrokes,
+   generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
    genuineOCCTVCompoundMissingGeneratedEndpointTailHeld:
