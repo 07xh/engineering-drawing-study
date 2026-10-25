@@ -22,6 +22,8 @@ const {auditC1OcjsPhysicalCreaseCandidates}=
  require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
 const {auditC1OriginalStrokeFinalPreconditions}=
  require('../../workbench/c1-m5-final-source-stroke-preconditions.cjs');
+const {auditC1NativeHiddenSharpVsM5}=
+ require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -108,6 +110,26 @@ for(const [index,geometry] of general.entries()){
  assert.equal(proof.status,'validated-closed-convex-mesh');
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ // Independently recompute true hidden HLR output and all ORIGINAL M4/M5
+ // closed-ray source subspans; do not attribute HLR's generated TopoDS
+ // identity merely because paper projections coincide.
+ const nativeHiddenM5=auditC1NativeHiddenSharpVsM5({
+  oc,geometry,revision:40+index
+ });
+ assert.equal(nativeHiddenM5.allOriginal3DEdgesAndViewsRecomputed,true);
+ assert.equal(nativeHiddenM5.sourceAndGeneratedHiddenLineAttributionNotCertified,true);
+ assert.equal(nativeHiddenM5.officialEngineeringLineStylesCertified,false);
+ assert.equal(nativeHiddenM5.signedV5ActionCount,0);
+ assert.equal(nativeHiddenM5.counts.signedNewV5Actions,0);
+ assert.equal(nativeHiddenM5.counts.signedNewEngineeringStrokes,0);
+ assert.equal(nativeHiddenM5.rows.length,geometry.data.edges.length*3);
+ assert.ok(nativeHiddenM5.rows.every(row=>
+  row.officialEngineeringStyle==='undetermined'&&
+  row.signedV5Action===false&&
+  row.subspans.every(span=>
+   span.finalEngineeringStyle==='undetermined'&&
+   span.constructionIntentAuthorized===false&&
+   span.signedV5Action===false)));
  // Source shape is the REAL original OCCT B-Rep, not flattened HLR edges.
  assert.equal(cad.completeSourceTopology3DEndpointCorrespondence,true);
  assert.equal(cad.originalBRepSourceEdges.length,geometry.data.edges.length);
@@ -458,6 +480,23 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  actualHiddenNativeSourceAndM5:{
+   realSharpSegments:nativeHiddenM5.counts.realNativeHiddenSharpSegments,
+   withoutM0Candidates:nativeHiddenM5.counts.nativeHiddenWithoutM0SourceCandidates,
+   multi3DSourceAliasSegments:
+    nativeHiddenM5.counts.hiddenHLRWithMultiple3DSourceCandidates,
+   originalM4Subspans:nativeHiddenM5.counts.canonicalOriginalM4SubspansChecked,
+   exactM5HiddenOpenSubspans:nativeHiddenM5.counts.exactM5HiddenOpenSubspans,
+   wholeNativeHiddenCandidateCovered:
+    nativeHiddenM5.counts.hiddenNativePaperCoverageConfirmedSubspans,
+   locallyExactHiddenAndSinglePaperSourceCandidate:
+    nativeHiddenM5.counts.uniqueNativePaperCandidatePlusExactM5HiddenSubspans,
+   genuineHiddenCADParameterGaps:
+    nativeHiddenM5.counts.positiveLengthHiddenNativePaperGaps,
+   nullNativeHCompoundViews:nativeHiddenM5.nativeNullHiddenSharpViews,
+   fullOriginalTopoDSSourceLinkSigned:false,
+   formalGBHiddenLineSigned:false,v5ActionsSigned:0
+  },
   physicalFeatureEvidence:{
    localExactOutwardCADVisible:
     features.counts.locallyCADAndM5Visible,
