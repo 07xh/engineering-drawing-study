@@ -23,7 +23,7 @@ const requiredGlobal=[
 ];
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
- nativeVertexProof,globalM5Review
+ nativeVertexProof,projectedEncounters,globalM5Review
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     gapProof?.sourceGeometryId!==geometry.id||gapProof.revision!==revision||
@@ -40,6 +40,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
     nativeVertexProof.M4SourceCutGapsStillReportedIndependently!==true||
     nativeVertexProof.allGlobalOCCTHLREdgeJoinsVerified!==false||
     nativeVertexProof.signedV5ActionCount!==0||
+    projectedEncounters?.sourceGeometryId!==geometry.id||
+    projectedEncounters.revision!==revision||
+    projectedEncounters.entireReviewedNativeHiddenSourceM4EventLedgerAudited!==true||
+    projectedEncounters.signedV5ActionCount!==0||
+    projectedEncounters.wholeSceneProjectedJunctionAndOcclusionCertified!==false||
+    !Array.isArray(projectedEncounters.rows)||
     globalM5Review?.sourceGeometryId!==geometry.id||
     globalM5Review.revision!==revision||
     globalM5Review.schema!=='draftai-c1-m5-final-source-obligation-review/1'||
@@ -50,7 +56,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
     gapProof.rows.length!==dualProof.rows.length||
     gapProof.rows.length!==endpointFans.rows.length||
     !Array.isArray(nativeVertexProof.rows)||
-    gapProof.rows.length!==nativeVertexProof.rows.length)
+    gapProof.rows.length!==nativeVertexProof.rows.length||
+    gapProof.rows.length!==projectedEncounters.rows.length)
   throw new TypeError('current original M5 global unsigned review and real native HLR M0/endpoint proof required');
  const byKey=new Map();
  for(const row of globalM5Review.rows){
@@ -73,6 +80,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   original3DEndpointFanProofIncompleteStrokes:0,
   missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered:0,
   genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven:0,
+  originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR:0,
+  nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved:0,
+  nativeHLRUnprovenExactPaperEventAlignment:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
@@ -80,7 +90,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
  const rows=[];
  for(let i=0;i<gapProof.rows.length;i++){
   const gap=gapProof.rows[i],dual=dualProof.rows[i],
-   fans=endpointFans.rows[i],nativeVertex=nativeVertexProof.rows[i];
+   fans=endpointFans.rows[i],nativeVertex=nativeVertexProof.rows[i],
+   m4Native=projectedEncounters.rows[i];
   if(!VIEWS.includes(gap.view)||dual.view!==gap.view||
      fans.view!==gap.view||gap.nativeHiddenSharpEdgeOrdinal!==i||
      dual.nativeHiddenSharpEdgeOrdinal!==i||
@@ -90,6 +101,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
      nativeVertex.nativeHiddenSharpEdgeOrdinal!==i||
      nativeVertex.view!==gap.view||nativeVertex.revision!==revision||
      nativeVertex.signedV5Action!==false||
+     m4Native.sourceGeometryId!==geometry.id||
+     m4Native.revision!==revision||m4Native.view!==gap.view||
+     m4Native.nativeHiddenSharpEdgeOrdinal!==i||
+     m4Native.allEncountersReviewedAgainstCurrentSourceInterval!==true||
+     m4Native.completeGlobalProjectedJunctionAndOcclusionCertified!==false||
+     m4Native.signedV5Action!==false||
      nativeVertex.OCCTGeneratedTopoDSNativeEdgeAdjacencyCertified!==false||
      gap.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven!==false||
      dual.fullGBDashedLineOrVisibleLineAssignmentSigned!==false||
@@ -98,6 +115,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   const edge=dual.originalHiddenSourceEdgeId;
   const unique=dual.remainingOriginal3DPhysicalSourceUnique===true&&
    gap.survivingOriginal3DSourceUnique===true;
+  if(m4Native.uniqueOriginalPhysical3DSourceEdgeId!==
+      (unique?edge:null))
+   throw new RangeError('genuine HLR canonical M4 projected source changed after exact source pruning');
   const originalGlobal=unique?(byKey.get(gap.view+'@'+edge)??[]):[];
   if(unique&&(!edge||originalGlobal.length===0))
    throw new RangeError('genuine native hidden 3D source has no canonical original M5 global stroke review');
@@ -142,6 +162,22 @@ function reviewC1NativeHiddenFinalM5Strokes({
    counts.originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR++;
   else counts.missingLocalNativeOrModelOpenProofHeld++;
   if(endGaps>0)counts.original3DEndpointFanProofIncompleteStrokes++;
+  const projected=m4Native.originalM4ProjectedEncountersOnNativeSource;
+  if(!Array.isArray(projected)||projected.some(e=>
+    e.originalPhysical3DSourceEdgeId!==edge||
+    e.view!==gap.view||
+    e.fullGlobalProjectedJunctionAndDepthSwitchCertified!==false||
+    e.signedV5Action!==false))
+   throw new RangeError('incomplete genuine native original-source M4 projected graph');
+  counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR+=projected.length;
+  counts.nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved+=
+   projected.filter(e=>e.originalSourceParameter>
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+    e.originalSourceParameter<
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[1]??1)).length;
+  counts.nativeHLRUnprovenExactPaperEventAlignment+=projected.filter(e=>
+   e.actualNativeGeneratedBRepPaperRelation?.
+    originalEventOnSameNativePaperLineExactly!==true).length;
   counts.genuineHiddenHLRStrokesReviewed++;
   rows.push({
    view:gap.view,revision,sourceGeometryId:geometry.id,
@@ -157,6 +193,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
+   canonicalOriginalM4ProjectedEncountersAudited:projected.length,
+   canonicalNativeHLRInteriorProjectedEventsStillNeedGlobalReview:
+    projected.filter(e=>e.originalSourceParameter>
+     (m4Native.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+     e.originalSourceParameter<
+     (m4Native.genuineNativeHLROriginalSourceParameterRange?.[1]??1)).length,
+   allProjectedEncountersAndDepthSwitchesResolved:false,
    actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified:false,
    engineeringGBSolidOrDashedLineStandardFullyCertified:false,
    officialEngineeringLineStyle:'undetermined',
