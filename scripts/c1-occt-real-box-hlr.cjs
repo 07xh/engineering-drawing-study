@@ -19,7 +19,12 @@
  const projector=new oc.HLRAlgo_Projector_1();
  console.log('OCCT projection and hide methods',JSON.stringify(['Projector','Projector_1','SetProjector','SetProjector_1','Update','Hide','Hide_1','Hide_2'].map(k=>({name:k,type:typeof algo[k],arity:typeof algo[k]==='function'?algo[k].length:null}))));
  algo.Projector_1(projector);algo.Update();algo.Hide_1();
- const result=new oc.HLRBRep_HLRToShape(algo);
+ const handles=Object.keys(oc).filter(k=>k.startsWith('Handle_HLRBRep_Algo'));
+ console.log('HLR algo handles',JSON.stringify(handles));
+ if(!handles.length)throw Error('Missing typed Handle_HLRBRep_Algo constructor');
+ const Handle=oc[handles.find(k=>k.endsWith('_1'))||handles[0]];
+ const handle=new Handle(algo);
+ const result=new oc.HLRBRep_HLRToShape(handle);
  const visible=result.VCompound();
  const hidden=result.HCompound();
  if(!visible||!hidden)throw Error('OCCT HLR output compounds absent');
