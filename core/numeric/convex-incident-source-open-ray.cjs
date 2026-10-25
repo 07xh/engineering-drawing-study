@@ -196,4 +196,110 @@ function inwardProof({geometry,sourceVertexIds,view,convexProof}={}){
   officialLineStyleVerified:false,v5Ready:false
  });
 }
-module.exports={outwardProof,inwardProof};
+/**
+ * M0 exact ORIGINAL VERTEX observer-ray theorem.
+ *
+ * Check EVERY supporting original face with dyadic operations over the
+ * represented binary64 coordinates. A strictly outward ray on ANY face
+ * containing the source vertex misses the whole convex body for all t>0.
+ * A ray strictly directed INTO EVERY original incident support plane
+ * enters the strict solid interior for some (0,eps_vertex); nonincident
+ * planes are strict interior at the vertex. Tangency or approximate
+ * coplanarity is UNDETERMINED. The endpoint itself lies on the boundary;
+ * this never signs a V5 join, a line or whole-scene visibility.
+ */
+function originalVertexRayProof({
+ geometry,sourceVertexId,view,convexProof
+}={}){
+ if(!geometry||!geometry.data||!Array.isArray(geometry.data.faces)||
+    !geometry.data.points||!Array.isArray(geometry.data.edges)||
+    typeof sourceVertexId!=='string'||
+    !Object.hasOwn(geometry.data.points,sourceVertexId)||
+    !Object.hasOwn(FIRST_ANGLE_OBSERVER_RAYS,view)||
+    !convexProof||!Object.isFrozen(convexProof)||
+    convexProof.status!=='validated-closed-convex-mesh'||
+    convexProof.sourceGeometryId!==geometry.id||
+    convexProof.unit!=='mm'||convexProof.v5Ready!==false)
+  throw new TypeError('current reviewed exact original convex source vertex required');
+ const pts=geometry.data.points,ids=Object.keys(pts),
+  observer=ray(vec(FIRST_ANGLE_OBSERVER_RAYS[view]));
+ let outward=0,inward=0,tangent=0,incident=0,checked=0;
+ const support=[];
+ const unknown=reason=>Object.freeze({
+  schema:'draftai-m0-exact-original-vertex-observer-ray/1',
+  sourceGeometryId:geometry.id,sourceVertexId,view,
+  status:'undetermined',reason,originalFaceSupportCount:checked,
+  outwardIncidentFaceCount:outward,inwardIncidentFaceCount:inward,
+  tangentIncidentFaceCount:tangent,
+  exactFullOriginalConvexSupportChecked:false,
+  positiveForwardRayClear:false,
+  strictInteriorNearOriginalVertex:false,
+  endpointAndCrossSourceJoinCertified:false,
+  officialLineStyleVerified:false,v5Ready:false
+ });
+ for(let index=0;index<geometry.data.faces.length;index++){
+  const face=geometry.data.faces[index];
+  if(!Array.isArray(face)||face.length<3)
+   return unknown('invalid-original-support-face');
+  const base=vec(pts[face[0]]);
+  const delta=id=>vec(pts[id]).map((x,k)=>sub(x,base[k]));
+  let normal=null;
+  for(let j=1;j<face.length-1;j++){
+   const n=cross(delta(face[j]),delta(face[j+1]));
+   if(n.some(q=>sign(q)!==0)){normal=n;break;}
+  }
+  if(!normal)return unknown('degenerate-exact-original-face');
+  if(face.some(id=>dot(normal,delta(id))!==0))
+   return unknown('non-exact-planar-original-face');
+  let inside=0;
+  for(const id of ids){
+   const side=dot(normal,delta(id));
+   if(!side)continue;
+   if(inside&&inside!==side)
+    return unknown('non-exact-convex-support-face');
+   inside=side;
+  }
+  if(inside===0)return unknown('original-support-lacks-interior');
+  const vertexSide=dot(normal,delta(sourceVertexId));
+  if(vertexSide!==0&&vertexSide!==inside)
+   return unknown('source-vertex-outside-reviewed-convex-support');
+  checked++;
+  if(vertexSide!==0)continue;
+  incident++;
+  const slope=dot(normal,observer);
+  const relation=slope===0?'tangent':
+   slope===inside?'inward':'outward';
+  if(relation==='outward')outward++;
+  else if(relation==='inward')inward++;
+  else tangent++;
+  support.push({originalFaceIndex:index,observerRelation:relation});
+ }
+ if(checked!==geometry.data.faces.length||incident<3)
+  return unknown('incomplete-original-vertex-support-incidence');
+ const status=outward>0?'certified-clear':
+  tangent===0&&inward===incident?
+   'certified-strictly-inside-near-original-vertex':'undetermined';
+ return Object.freeze({
+  schema:'draftai-m0-exact-original-vertex-observer-ray/1',
+  sourceGeometryId:geometry.id,sourceVertexId,view,
+  status,reason:outward>0?'exact-incident-support-outward-ray':
+   status==='certified-strictly-inside-near-original-vertex'?
+    'all-exact-original-incident-supports-point-inward':
+    'incident-support-tangent-or-mixed',
+  originalFaceSupportCount:checked,
+  originalIncidentFaceCount:incident,
+  outwardIncidentFaceCount:outward,inwardIncidentFaceCount:inward,
+  tangentIncidentFaceCount:tangent,
+  originalIncidentFaceEvidence:support,
+  exactFullOriginalConvexSupportChecked:true,
+  positiveForwardRayClear:status==='certified-clear',
+  strictInteriorNearOriginalVertex:
+   status==='certified-strictly-inside-near-original-vertex',
+  strictInsideDepthUniformAlongAdjacentEdgesCertified:false,
+  endpointAndCrossSourceJoinCertified:false,
+  completeMultiSolidSceneCertified:false,
+  officialLineStyleVerified:false,v5Ready:false
+ });
+}
+
+module.exports={outwardProof,inwardProof,originalVertexRayProof};

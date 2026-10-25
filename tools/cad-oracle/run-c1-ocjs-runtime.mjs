@@ -207,6 +207,24 @@ for(const [index,geometry] of general.entries()){
  assert.equal(finalGate.signedV5ActionCount,0);
  assert.equal(finalGate.counts.totalOriginalSourceEdgeViewSubspans,
   features.counts.sourceBoundSubintervalCount);
+ assert.equal(finalGate.independentOriginalVertexRayProofSchema,
+  'draftai-c1-m5-exact-original-vertex-observer-ray/1');
+ assert.equal(finalGate.sourceOriginalVertexObserverRayTotals.
+  originalVertexViewRayCount,
+  Object.keys(geometry.data.points).length*3);
+ assert.ok(finalGate.subspans.every(x=>
+  Array.isArray(x.exactOriginalVertexObserverRayEndpoints)&&
+  x.exactOriginalVertexObserverRayEndpoints.length===2&&
+  x.exactOriginalVertexObserverRayEndpoints.every(e=>
+   e.signedV5Action===false&&
+   (!e.actualReal3DSourceEndpointVerified||
+    e.originalVertexId!==null))));
+ assert.equal(finalGate.counts.originalVertexEndpointExactRayClearWitnesses+
+  finalGate.counts.originalVertexEndpointExactNearInteriorWitnesses+
+  finalGate.counts.originalVertexEndpointRayTangenciesHeld+
+  finalGate.counts.paperCutEndpointsWithNoOriginalVertexRayProof,
+  features.counts.sourceBoundSubintervalCount*2);
+
  assert.equal(finalGate.counts.attemptedNewEngineeringLineSignatures,0);
  assert.equal(finalGate.counts.attemptedNewV5Actions,0);
  assert.ok(finalGate.subspans.every(row=>
@@ -360,6 +378,14 @@ for(const [index,geometry] of general.entries()){
      finalGate.counts.nonHullRayClearButSourcePriorityUnproven,
     strictHiddenNotYetSignedAsDash:
      finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
+    genuineOriginalVertexWholeRayClearEndpoints:
+     finalGate.counts.originalVertexEndpointExactRayClearWitnesses,
+    genuineOriginalVertexNearSolidInteriorEndpoints:
+     finalGate.counts.originalVertexEndpointExactNearInteriorWitnesses,
+    tangentOriginalVertexRayEndpointsHeld:
+     finalGate.counts.originalVertexEndpointRayTangenciesHeld,
+    paperOnlyCutEndpointsNeverUpgraded:
+     finalGate.counts.paperCutEndpointsWithNoOriginalVertexRayProof,
     signedNewV5:finalGate.signedV5ActionCount
    },
    localStrictHidden:
