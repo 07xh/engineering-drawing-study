@@ -49,15 +49,35 @@ test('true cuboid paper aliases at DISTINCT 3D observer depths are not falsely d
  const g=box(),r=check(g,18);
  assert.ok(r.counts.positivePairDepthComparisons>0,
   'actual reviewed cuboid original source aliases need depth comparison');
- assert.ok(r.counts.behindAnother>0||
-  r.counts.strictFrontAmongListed>0,
-  'whole-paper-source winner/loser proof requires actual positive source depth');
+ // On an axis-aligned box, the front/back source pairs may BOTH
+ // belong to existing formal M5 exterior-overlapping paper strokes.
+ // The ledger preserves those comparisons without reminting them as
+ // non-hull internal feature line winners.
+ assert.ok(r.counts.existingM5ExteriorHeld>0);
  const distinct=r.subspans.flatMap(s=>s.sourceCompetingPhysicalEdges).
   filter(x=>x.originalAffinePairwiseWholeOpenDepthVerified);
  assert.ok(distinct.length>0);
  assert.ok(distinct.some(x=>x.exactSame3DPhysicalLineLocus===false));
  assert.ok(r.subspans.some(s=>s.originalM5ExteriorContourOverlap===true&&
   s.status==='existing-m5-exterior-contour-held'));
+});
+test('oblique convex six-face source has strict non-hull front and behind priority',()=>{
+ const q=prismMesh({solid:{min:p(0,0,0),max:p(2,4,9)}});
+ const g={...q,id:'C1PaperPriorityOblique',data:{
+  ...q.data,points:Object.fromEntries(Object.entries(q.data.points).map(
+   ([id,x])=>[id,{x:x.x+x.y/2,y:x.y,z:x.z}]))}};
+ const r=check(g,32);
+ assert.ok(r.counts.strictFrontAmongListed>0);
+ assert.ok(r.counts.behindAnother>0);
+ assert.equal(r.counts.exactPhysicalDuplicates,0);
+ assert.equal(r.counts.unresolvedAlias,0);
+ const best=r.subspans.filter(x=>
+  x.status==='strict-front-among-listed-original-physical-sources');
+ assert.ok(best.every(x=>x.sourceCompetingPhysicalEdges.length>0&&
+  x.sourceCompetingPhysicalEdges.every(c=>
+   c.strictlyFrontOriginalSourceId===x.originalPhysicalSourceEdgeId)));
+ assert.ok(r.subspans.some(x=>
+  x.status==='behind-another-original-source-open-interval'));
 });
 test('skew tetra geometry uses same original source-key and reports only actual positive-length aliases',()=>{
  const g=tetra(),r=check(g,9);
