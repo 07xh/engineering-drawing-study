@@ -137,6 +137,21 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven,false);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.signedV5ActionCount,0);
+ const wholeHidden=nativeHiddenM5.nativeHiddenOriginalOpenRayClosure;
+ assert.equal(wholeHidden.counts.actualNativeHiddenEdgesAudited,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(wholeHidden.signedV5ActionCount,0);
+ assert.equal(wholeHidden.wholeEngineeringHiddenLineCertification,false);
+ assert.equal(wholeHidden.allOriginal3DRayParameterGapsPreserved,true);
+ assert.ok(wholeHidden.rows.every(r=>
+  r.nativeHLRGeneratedTopologyComplete===false&&
+  r.wholeNativeHLRLineOfficialGBStyleCertified===false&&
+  r.signedV5Action===false&&
+  r.sourceCandidate3DProofs.every(candidate=>
+   candidate.nativeGeneratedTopoDSOriginalSourceIdentityRecovered===false&&
+   candidate.officialEngineeringLineStyle==='undetermined'&&
+   candidate.constructionIntentAuthorized===false&&
+   candidate.signedV5Action===false)));
  assert.equal(
   nativeHiddenM5.nativeHidden3DEndpointFans.counts.survivingOriginal3DSourceEndpointsReviewed,
   nativeHiddenM5.nativeHidden3DEndpointFans.rows.reduce((n,r)=>
@@ -562,6 +577,18 @@ for(const [index,geometry] of general.entries()){
    genuineOriginal3DSourceVertexJunctionPairs:
     nativeHiddenM5.nativeHidden3DEndpointFans.counts.genuineOriginal3DSourceVertexJunctionPairs,
    formalNativeHLRJunctionsSigned:0,
+   wholeNativeHLR3DOriginalOpenSourceRayVerified:
+    wholeHidden.counts.wholeHiddenNativeOpen3DSourceIntervalsCertified,
+   wholeSourceM5HiddenAndOriginalEndpointFanPositivelyCorroborated:
+    wholeHidden.counts.original3DPhysicalCreaseWholeHiddenAndValidEndpoints,
+   uniqueOriginalSourceButM5ContinuousRayStillIncomplete:
+    wholeHidden.counts.nativeHiddenUnique3DSourceButIncompleteStrictM5,
+   withheldOriginalSourceM4NativeParameterGaps:
+    wholeHidden.counts.nativeHiddenOriginal3DSourceM4PositiveGapCount,
+   withheldStrictM5RayParameterGaps:
+    wholeHidden.counts.nativeHiddenOriginalStrictM5ProofPositiveGapCount,
+   hiddenPaperCandidateClearRayConflicts:
+    wholeHidden.counts.nativeHiddenSourceClearRayConflicts,
    fullOriginalTopoDSSourceLinkSigned:false,
    formalGBHiddenLineSigned:false,v5ActionsSigned:0
   },
