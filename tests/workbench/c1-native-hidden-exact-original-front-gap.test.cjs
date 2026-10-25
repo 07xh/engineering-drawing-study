@@ -13,6 +13,8 @@ const g=()=>({id:'G',data:{points:structuredClone(points),
 const nativeSource=(id,full)=>({
  sourceEdgeId:id,
  originalSourceParameterRange:full?[0,1]:[0,.9999999999999998],
+ fromCandidate3D:{...(id==='G::H0|H1'?points.H0:points.F0)},
+ toCandidate3D:{...(id==='G::H0|H1'?points.H1:points.F1)},
  actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
  originalOCCTSourceLineCurveVerified:true,
  originalXYZReprojectsToHLR:true,v5Authorized:false
@@ -91,7 +93,8 @@ test('a true original 3D front entire source ray strictly masks final original o
  assert.equal(row.wholeOriginalModelOpenIntervalLocallyAccountedByRayMaskOrM0Source,true);
  assert.equal(w.gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry,true);
  assert.deepEqual(w.originalHiddenSourceParameterRange,gap);
- assert.equal(w.fullNativeHLRGeneratedVisiblePaperTailCertified,false);
+ assert.equal(w.nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven,false);
+ assert.equal(w.generatedHLRSourceTopoDSHistoryAndAllJunctionsCertified,false);
  assert.equal(w.officialEngineeringLineStyle,'undetermined');
  assert.equal(w.signedV5Action,false);
  const proof=w.exactFullOriginal3DPhysicalFrontSourceWitnesses[0];
@@ -127,10 +130,40 @@ test('a malicious or stale original source parameter gap outside actual native h
   originalSourceParameterRange=[0,.99];
  assert.throws(()=>audit(x),/residual source parameter/);
 });
+test('complete TRUE OCCT VCompound native endpoints and HCompound native source reproject exactly: entire hidden open paper line now has independent positive proof',()=>{
+ const x=fixture(),v=x.cad.views.H[0];
+ v.to=project(points.F1).H;
+ v.sourceCandidate3DLifts[0].originalSourceParameterRange=[0,1];
+ const proof=audit(x);
+ assert.equal(proof.counts.verifiedCompleteRealNativeVCompoundPaperCoveringSourceGaps,1);
+ assert.equal(proof.counts.completeNativeHiddenOpenPaperLinesExplainedByDualOrExactM0WithRealVisibleBRep,1);
+ assert.equal(proof.counts.nativeHiddenOpenPaperLinesWithUnverifiedGeneratedHLRTail,0);
+ const row=proof.rows[0],gap=row.originalM4OrNativePaperPositiveGapWitnesses[0];
+ assert.equal(row.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront,true);
+ assert.equal(gap.nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven,true);
+ assert.equal(gap.generatedHLRSourceTopoDSHistoryAndAllJunctionsCertified,false);
+ assert.equal(row.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven,false);
+ assert.equal(proof.signedV5ActionCount,0);
+});
+test('forged HCompound paper endpoint breaks real generated front-mask proof even if original M0 full-ray truth remains',()=>{
+ const x=fixture(),v=x.cad.views.H[0];
+ v.to=project(points.F1).H;
+ v.sourceCandidate3DLifts[0].originalSourceParameterRange=[0,1];
+ // Hidden original source lifted XYZ projects to u=10, but untrusted native
+ // projected BRep reports an altered u. Matching pruning ledger is updated,
+ // so this reaches the independent HCompound 3D-to-paper check.
+ x.cad.hiddenSharpViews.H[0].to={u:10-Number.EPSILON*10,v:0};
+ x.refinements[0].projectedTo={u:10-Number.EPSILON*10,v:0};
+ const result=audit(x);
+ assert.equal(result.counts.exactM0FullFrontPhysicalSourceGapIntervalsCorroborated,1);
+ assert.equal(result.counts.verifiedCompleteRealNativeVCompoundPaperCoveringSourceGaps,0);
+ assert.equal(result.rows[0].realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront,false);
+});
+
 test('no proof writes an official GB style or authorizes V5, even after local open-ray source resolution',()=>{
  const x=fixture();
  const row=audit(x).rows[0];
- assert.equal(row.allGeneratedHLRPaperEndpointTailExtensionsProven,false);
+ assert.equal(row.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven,false);
  assert.equal(row.allOriginalPhysical3DJunctionsAndGBLineStyleCertified,false);
  assert.equal(row.constructionIntentAuthorized,false);
  assert.equal(row.signedV5Action,false);
