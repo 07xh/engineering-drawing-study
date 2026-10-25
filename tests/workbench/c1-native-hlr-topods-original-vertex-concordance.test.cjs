@@ -103,6 +103,23 @@ test('same original physical vertex with paper coincidence but distinct native T
  const r=audit(x);
  assert.equal(r.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,0);
  assert.equal(r.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,1);
+ assert.equal(r.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs,1);
+ assert.equal(r.paperOnlyProjectedVertexAliases[0].verifiedOriginal3DVertexId,'A');
+ assert.equal(r.paperOnlyProjectedVertexAliases[0].actualNativeGeneratedHLRSharedTopoDSVertexCertified,false);
+ assert.equal(r.paperOnlyProjectedVertexAliases[0].globalGBLineJoinStillNotCertified,true);
+});
+test('co-projected native HLR distinct TopoDS vertices do NOT imply a physical 3D junction when their independently verified model vertices differ',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ x.originalNativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].
+  endpointWitnesses[1].originalModel3DSourceVertexId='B';
+ v.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),false));
+ x.cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=1;
+ const r=audit(x);
+ assert.equal(r.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs,0);
+ assert.equal(r.counts.paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction,1);
+ assert.equal(r.rows.length,0);
+ assert.equal(r.signedV5ActionCount,0);
 });
 test('visible native HLR source identity does not materialize merely by sharing generated native vertex',()=>{
  const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
