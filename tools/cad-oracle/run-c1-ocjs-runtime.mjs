@@ -200,6 +200,19 @@ for(const [index,geometry] of general.entries()){
   'draftai-c1-original-source-m4-projected-event-graph/1');
  assert.equal(features.sourcePairDepthProofSchema,
   'draftai-c1-m5-projected-original-source-affine-depth/1');
+ assert.equal(features.originalSourceOpaqueSubspanProofSchema,
+  'draftai-c1-m5-original-source-subspan-opaque-ray/1');
+ assert.equal(features.counts.sourceBoundSubintervalCount,
+  features.counts.singleOpaqueSourceSubspanClearCount+
+  features.counts.singleOpaqueSourceSubspanStrictHiddenCount+
+  features.counts.singleOpaqueSourceSubspanUndeterminedCount+
+  features.counts.singleOpaqueSourceSubspanExteriorHeldCount);
+ assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
+  span.sourceSubspanOpaqueRayFullyRecomputed===true&&
+  !(span.wholeOpenSubspanStrictlyOpaqueOccluded&&
+   (span.wholeOpenSubspanExactSourceRayClear||
+    span.wholeOpenSubspanAnalyticRayClear))&&
+  span.signedV5Action===false)));
  assert.equal(features.counts.originalSourcePairDepthOverlapCount,
   features.counts.originalSourcePairStrictDepthProofCount+
   features.counts.originalSourcePairUnresolvedDepthCount);
@@ -252,7 +265,15 @@ for(const [index,geometry] of general.entries()){
    originalSourceUnresolvedPairDepthCount:
     features.counts.originalSourcePairUnresolvedDepthCount,
    sharedVertexDepthProofCount:
-    features.counts.authenticSharedVertexPairDepthProofCount
+    features.counts.authenticSharedVertexPairDepthProofCount,
+   actualSingleOpaqueSourceClearSubspans:
+    features.counts.singleOpaqueSourceSubspanClearCount,
+   actualSingleOpaqueSourceStrictHiddenSubspans:
+    features.counts.singleOpaqueSourceSubspanStrictHiddenCount,
+   actualSingleOpaqueSourceUnknownSubspans:
+    features.counts.singleOpaqueSourceSubspanUndeterminedCount,
+   originalM5ExteriorHeldSubspans:
+    features.counts.singleOpaqueSourceSubspanExteriorHeldCount
   },
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),
