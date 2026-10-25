@@ -6,6 +6,8 @@ on:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
+      - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
+      - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
       - 'workbench/c1-m5-exact-original-vertex-rays.cjs'
       - 'workbench/c1-m5-closed-original-edge-ray-continuity.cjs'
@@ -47,6 +49,8 @@ on:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
+      - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
+      - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
       - 'workbench/c1-m5-exact-original-vertex-rays.cjs'
       - 'workbench/c1-m5-closed-original-edge-ray-continuity.cjs'
@@ -114,6 +118,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
           node --test tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs
+          node --test tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
