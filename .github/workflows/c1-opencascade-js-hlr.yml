@@ -30,6 +30,7 @@ on:
       - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
       - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs'
       - 'tests/workbench/c1-ocjs-3d-candidate-lift.test.cjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
@@ -65,6 +66,7 @@ on:
       - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
       - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs'
       - 'tests/workbench/c1-ocjs-3d-candidate-lift.test.cjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
@@ -98,6 +100,7 @@ jobs:
           node --test tests/workbench/c1-m5-exact-original-vertex-rays.test.cjs
           node --test tests/workbench/c1-m5-closed-original-edge-ray-continuity.test.cjs
           node --test tests/workbench/c1-ocjs-3d-candidate-lift.test.cjs
+          node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
