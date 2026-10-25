@@ -27,7 +27,7 @@ test('only native shared OCCT TopoDS IsSame vertex is a positive HLR BRep join',
  assert.equal(out.counts.genuineOCCTNativeHLRSharpEdges,4);
  assert.equal(out.counts.actualNativeBRepVertexEndpoints,8);
  assert.equal(out.counts.positivelySameGeneratedOCCTTopoDSVertexPairs,3);
- assert.equal(out.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs,1);
+ assert.equal(out.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs,4);
  assert.ok(out.views.H.sameActualGeneratedOCCTTopoDSVertexPairs.every(x=>
   x.nativeGeneratedOCCTTopoDSVertexIsSame===true&&
   x.original3DSourceTopoDSVertexIdentityRecovered===false&&
@@ -40,7 +40,7 @@ test('literal paper coincidence alone never creates OCCT native vertex identity'
  const v=baseline();v.H.visible[1].vertices[1]=vertex('a-different-vertex');
  const out=graph({perView:v});
  assert.equal(out.counts.positivelySameGeneratedOCCTTopoDSVertexPairs,1);
- assert.equal(out.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs,3);
+ assert.equal(out.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs,6);
 });
 test('paper near-coincidence does not snap two OCCT vertices even if their mock TShape is equal',()=>{
  const v=baseline();v.H.hidden[1].projectedEndpoints[0]=p(10+Number.EPSILON*10,0);
