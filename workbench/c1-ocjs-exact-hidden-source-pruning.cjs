@@ -14,7 +14,7 @@
  * The calling M5 consumer MUST supply actual locally recomputed OCJS HLR;
  * passing a caller-supplied stroke list is not independent proof.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {inwardProof}=require('../core/numeric/convex-incident-source-open-ray.cjs');
@@ -27,6 +27,15 @@ const freeze=o=>{
  }return o;
 };
 const edgeId=(g,a,b)=>g.id+'::'+[a,b].sort().join('|');
+function projectedPointOnOriginalSource(p,a,b){
+ const x=b.u-a.u,y=b.v-a.v,len2=x*x+y*y;
+ if(len2<=1e-15)return false;
+ const dx=p.u-a.u,dy=p.v-a.v,t=(dx*x+dy*y)/len2;
+ const perpendicular=Math.abs(x*dy-y*dx)/Math.sqrt(len2);
+ return Number.isFinite(t)&&perpendicular<=1e-6&&
+  t>=-1e-6&&t<=1+1e-6;
+}
+
 function auditC1ExactHiddenProjectedCandidatePruning({
  geometry,revision,view,targetSourceEdgeId,
  fromModelMm,toModelMm,cadVisibleSegments,convexProof
@@ -58,10 +67,19 @@ function auditC1ExactHiddenProjectedCandidatePruning({
  const overlapping=cadVisibleSegments.filter(s=>{
   if(s?.view!==view||
      !s.from||!s.to||
+     ![s.from.u,s.from.v,s.to.u,s.to.v].every(Number.isFinite)||
      !Array.isArray(s.projectedOriginalEdgeCandidates)||
      s.projectedOriginalEdgeCandidates.length===0||
      s.projectedOriginalEdgeCandidates.some(id=>!original.has(id)))
    throw new RangeError('CAD projected segment with unreviewed source ID');
+  for(const id of s.projectedOriginalEdgeCandidates){
+   const [a,b]=original.get(id);
+   const pa=project(geometry.data.points[a])[view],
+    pb=project(geometry.data.points[b])[view];
+   if(!projectedPointOnOriginalSource(s.from,pa,pb)||
+      !projectedPointOnOriginalSource(s.to,pa,pb))
+    throw new RangeError('paper candidate cannot belong to original 3D edge');
+  }
   return positiveCollinearOverlap(
    fromModelMm,toModelMm,s.from,s.to);
  });
