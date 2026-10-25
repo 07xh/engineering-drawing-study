@@ -16,6 +16,14 @@ const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 const d2=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
 const d3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const near3=(a,b)=>d3(a,b)<=1e-7;
+// M5 positive physical identity is exact on reviewed binary64 model points.
+// 1e-7 mm only indicates numerical closeness; it cannot merge different
+// 3D source points or certify their common construction endpoint.
+function exactSameReviewedModelPoint(a,b){
+ if(!a||!b||![a.x,a.y,a.z,b.x,b.y,b.z].every(Number.isFinite))
+  throw new TypeError('finite reviewed 3D model-mm source points required');
+ return a.x===b.x&&a.y===b.y&&a.z===b.z;
+}
 const dot3=(p,r)=>p.x*r.x+p.y*r.y+p.z*r.z;
 const key=(g,a,b)=>g+'::'+[a,b].sort().join('|');
 
@@ -74,7 +82,7 @@ function auditC1ContourPhysicalJunctionIncidence({
    if(!Number.isFinite(t)||t< -1e-8||t>1+1e-8)
     throw new RangeError('claimed source-edge 3D endpoint is outside its real segment');
    const u=Math.max(0,Math.min(1,t));
-   const actual={x:edge.from.x+(edge.to.x-edge.from.x)*u,
+   let actual={x:edge.from.x+(edge.to.x-edge.from.x)*u,
     y:edge.from.y+(edge.to.y-edge.from.y)*u,
     z:edge.from.z+(edge.to.z-edge.from.z)*u};
    if(d2(project(actual)[view],p)>1e-7)
@@ -90,6 +98,9 @@ function auditC1ContourPhysicalJunctionIncidence({
        d3(exact,actual)>1e-7||d3(row.source3DPoint,exact)>1e-7||
        d2(row.projectedModelMm,p)>1e-7)
      throw new RangeError('original 3D corner and independent M5 vertex incidence differ');
+    // Authenticated original vertex identity beats a rounded interpolation.
+    // Its stored model coordinate is the sole reviewed source of this point.
+    actual={...exact};
    }
    endpointSource.push({
     sourceEdgeId:sourceId,sourceVertexId:vId,
@@ -127,7 +138,13 @@ function auditC1ContourPhysicalJunctionIncidence({
    const lhs=makeEndpoint(view,previous.interval,'to',p),
     rhs=makeEndpoint(view,next.interval,'from',q);
    const pairs=[];
-   for(const a of lhs)for(const b of rhs)if(near3(a.real3DPoint,b.real3DPoint))
+   let nearButDistinct3DSourcePairCount=0;
+   for(const a of lhs)for(const b of rhs){
+    const exactlySame=exactSameReviewedModelPoint(
+     a.real3DPoint,b.real3DPoint);
+    if(!exactlySame&&near3(a.real3DPoint,b.real3DPoint))
+     nearButDistinct3DSourcePairCount++;
+    if(!exactlySame)continue;
     pairs.push({
      arrivingSourceEdgeId:a.sourceEdgeId,
      departingSourceEdgeId:b.sourceEdgeId,
@@ -138,9 +155,10 @@ function auditC1ContourPhysicalJunctionIncidence({
      sharedPhysical3DPointVerified:true,
      entireDrawingContourJoinAndVisibilityVerified:false
     });
+   }
    const distinct=[];
    for(const candidate of [...lhs,...rhs]){
-    if(!distinct.some(p=>near3(p,candidate.real3DPoint)))
+    if(!distinct.some(p=>exactSameReviewedModelPoint(p,candidate.real3DPoint)))
      distinct.push({...candidate.real3DPoint});
    }
    const observer=FIRST_ANGLE_OBSERVER_RAYS[view];
@@ -155,6 +173,8 @@ function auditC1ContourPhysicalJunctionIncidence({
     paperProjectionHasPhysicallyDifferentDepthSources:distinct.length>1,
     authenticatedCommon3DJoinCandidates:pairs,
     physicalJoinCandidateCount:pairs.length,
+    nearButDifferent3DSourcePointPairsRemainUndetermined:
+     nearButDistinct3DSourcePairCount,
     localPhysical3DJoinExists:pairs.length>0,
     // A local match is a necessary endpoint witness. Visibility/nearest
     // source of the FULL final drawing stroke is a separate theorem.
@@ -180,10 +200,14 @@ function auditC1ContourPhysicalJunctionIncidence({
     v.junctions.reduce((a,j)=>a+j.physicalJoinCandidateCount,0),0),
   depthAliasedPaperJunctionCount:views.reduce((n,v)=>n+
     v.distinct3DProjectionAliasCount,0),
+  nearButDifferent3DSourcePairsNotCertified:views.reduce((n,v)=>n+
+    v.junctions.reduce((sum,j)=>sum+
+     j.nearButDifferent3DSourcePointPairsRemainUndetermined,0),0),
   currentConvexSourceGeometryAndProjectionVerified:true,
   fullFinalContourJunctionTopologyCertified:false,
   continuousFinalStrokeVisibilityCertified:false,
   standardEngineeringLineStylesCertified:false,
   signedV5EdgeActions:0,completeSolidV5Ready:false});
 }
-module.exports={auditC1ContourPhysicalJunctionIncidence};
+module.exports={auditC1ContourPhysicalJunctionIncidence,
+ exactSameReviewedModelPoint};
