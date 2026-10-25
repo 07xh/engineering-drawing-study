@@ -22,12 +22,12 @@ function makeCases(){
  for(const p of Object.values(t.data.points)){
   p.x+=53;p.y-=23;p.z+=11;
  }
- const r=make('C1RotatedBox'),theta=Math.PI/7;
+ const r=make('C1RotatedBox',P(-4,7,-12),P(23,18,31)),theta=Math.PI/6;
  for(const p of Object.values(r.data.points)){
-  const x=p.x+12,y=p.y-19;
+  const x=p.x+35,y=p.y-11;
   p.x=x*Math.cos(theta)-y*Math.sin(theta);
   p.y=x*Math.sin(theta)+y*Math.cos(theta);
-  p.z+=3;
+  p.z+=7;
  }
  const f=make('C1TriangulatedCoplanar');
  const ix=f.data.faces.findIndex(face=>face.every(id=>
