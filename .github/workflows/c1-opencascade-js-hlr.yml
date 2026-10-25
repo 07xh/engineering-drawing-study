@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
+      - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
+      - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - '.github/workflows/c1-opencascade-js-hlr.yml'
   push:
     branches: [main]
     paths:
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
+      - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
+      - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - '.github/workflows/c1-opencascade-js-hlr.yml'
   workflow_dispatch:
 
@@ -48,6 +54,22 @@ jobs:
           node --max-old-space-size=4096 \
             tools/cad-oracle/probe-opencascade-js-hlr.mjs "$PROBE_ROOT" | tee "$REPORT"
           node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-opencascade-js-real-wasm-hlr-probe/1"||!["V","H","W"].every(v=>r.views[v]?.visibleBRepEdgeCount>=4))process.exit(1)' "$REPORT"
+      - name: Compute THREE actual reviewed cuboid C1 problems with OCJS and certify only through existing M5/V5
+        env:
+          PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
+          REPORT: ${{ runner.temp }}/draftai-c1-real-ocjs-consumer.json
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=4096 \
+            tools/cad-oracle/run-c1-ocjs-runtime.mjs "$PROBE_ROOT" | tee "$REPORT"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
+      - name: Preserve M5-gated actual computed C1 consumer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-ocjs-computed-scoped-M5-V5-evidence
+          path: ${{ runner.temp }}/draftai-c1-real-ocjs-consumer.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve non-authoritative WASM API proof and timings
         uses: actions/upload-artifact@v4
         with:
