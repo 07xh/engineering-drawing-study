@@ -425,12 +425,14 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
      const observedType=adaptor.GetType();
      const is3D=adaptor.Is3DCurve();
-     if(lineKind===undefined||observedType!==lineKind||is3D!==true)
-      throw new RangeError('real OCJS HLR output curve classification: type='+
-       String(observedType)+' lineType='+String(lineKind)+
-       ' is3D='+String(is3D)+
-       ' adaptorKeys='+Object.keys(adaptor).filter(x=>
-        /D0|Value|Curve|Parameter|Type/.test(x)).slice(0,25).join(','));
+     // HLR output edges can be native 2D-on-surface P-curves.
+     // BRepAdaptor_Curve evaluates those via their support surface in XYZ.
+     // Distinguish that representation from an original source 3D curve.
+     if(lineKind===undefined||observedType!==lineKind||
+        typeof is3D!=='boolean')
+      throw new RangeError('real OCJS HLR output must have GeomAbs_Line type'+
+       ' (sameType='+String(observedType===lineKind)+
+       ' is3D='+String(is3D)+')');
      const first=adaptor.FirstParameter(),last=adaptor.LastParameter();
      if(![first,last].every(finite)||!(last>first))
       throw new RangeError('real OCJS HLR line has invalid finite parameters');
@@ -441,7 +443,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      const hlrCurveWitness=verifyOcjsHLRProjectedLineCurveWitness({
       view,projectedEndpoints:coords,parameterRange:[first,last],
       curveSamples:[0,0.25,0.5,0.75,1].map(fraction=>
-       curveAt(first+(last-first)*fraction)),curveKind:'line'
+       curveAt(first+(last-first)*fraction)),curveKind:'line',
+       curveIs3D:is3D
      });
      const lifted=liftOriginalProjectedSourceCandidates(
       geometry,view,coords[0],coords[1]);
