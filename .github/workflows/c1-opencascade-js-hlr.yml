@@ -30,6 +30,8 @@ on:
       - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
       - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-raw-hlr-edges.cjs'
+      - 'tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-output-curve-witness.cjs'
       - 'tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs'
       - 'tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs'
@@ -69,6 +71,8 @@ on:
       - 'workbench/m5-c1-continuous-frontmost-source-rays.cjs'
       - 'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-visible-strokes.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-raw-hlr-edges.cjs'
+      - 'tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-output-curve-witness.cjs'
       - 'tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs'
       - 'tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs'
@@ -109,6 +113,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
+          node --test tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
