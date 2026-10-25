@@ -18,6 +18,8 @@
  */
 const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {dyadic,difference,product,sum,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
@@ -115,6 +117,91 @@ function certifyActualOCCTFullFrontOriginalPaperEndpoints({
  });
 }
 /**
+ * Genuine OCCT may split ONE original visible front edge into multiple sharp
+ * BRep strokes. Preserve the true source ID and exact original M0 parameter
+ * coordinates for EVERY partial interval, then union them without tolerance.
+ * No one-segment shortcut, paper-only alias or one-ULP gap is a proof.
+ *
+ * This is strictly local original-source/OCCT corroboration, not engineering
+ * line-style authorization or generated-TopoDS source history.
+ */
+function certifyActualOCCTVisibleFrontOriginalIntervalUnion({
+ geometry,view,frontEdge,nativeVisibleSegments
+}={}){
+ if(!VIEWS.includes(view)||!geometry?.data?.points||
+    !Array.isArray(frontEdge)||frontEdge.length!==2||
+    !Array.isArray(nativeVisibleSegments)||nativeVisibleSegments.length>512)
+  throw new TypeError('current source front edge and bounded genuine visible OCCT segments required');
+ const edge=frontEdge.map(id=>geometry.data.points[id]);
+ if(!edge.every(point3))
+  throw new TypeError('authentic finite original M0 front vertices required');
+ const from=project(edge[0])[view],to=project(edge[1])[view];
+ const id=edgeId(geometry,frontEdge);
+ const interp=(t)=>({
+  u:t===0?from.u:t===1?to.u:from.u+(to.u-from.u)*t,
+  v:t===0?from.v:t===1?to.v:from.v+(to.v-from.v)*t
+ });
+ const intervals=[];
+ let hasNativeOriginalSource=false,heldDrift=0;
+ for(const segment of nativeVisibleSegments){
+  if(segment?.view!==view||
+     segment.occtHLRVisibilityClass!=='visible-sharp'||
+     segment.actualOCCTHLRFlattenedBRepLineVerified!==true||
+     segment.actualOCCTHLRCurveEntireFiniteIntervalIsLine!==true||
+     segment.v5Authorized!==false||
+     !Array.isArray(segment.sourceCandidate3DLifts))
+   throw new TypeError('unverified genuine OCCT sharp visible segment');
+  const candidates=segment.sourceCandidate3DLifts.filter(l=>
+   l.sourceEdgeId===id&&
+   l.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
+   l.originalOCCTSourceLineCurveVerified===true&&
+   l.originalXYZReprojectsToHLR===true&&l.v5Authorized===false);
+  if(!candidates.length)continue;
+  hasNativeOriginalSource=true;
+  for(const lift of candidates){
+   const range=lift.originalSourceParameterRange;
+   if(!Array.isArray(range)||range.length!==2||
+      !range.every(Number.isFinite)||range[0]<0||
+      range[1]>1||!(range[1]>range[0])){
+    heldDrift++;continue;
+   }
+   const a=interp(range[0]),b=interp(range[1]);
+   // Exact represented-binary64 matching of both genuine CAD endpoints to
+   // the ORIGINAL full source, not a near-equality fit or a pixel overlap.
+   const forward=pEq(segment.from,a)&&pEq(segment.to,b);
+   const reverse=pEq(segment.from,b)&&pEq(segment.to,a);
+   const actual3D=point3(lift.fromCandidate3D)&&point3(lift.toCandidate3D)&&
+    pEq(project(lift.fromCandidate3D)[view],segment.from)&&
+    pEq(project(lift.toCandidate3D)[view],segment.to);
+   if((forward||reverse)&&actual3D)intervals.push([...range]);
+   else heldDrift++;
+  }
+ }
+ const coverage=exactCandidateIntervalCoverage([0,1],intervals);
+ return freeze({
+  nativeVisibleOriginalFrontSourceVerified:hasNativeOriginalSource,
+  nativeVisibleVerifiedOriginalSourceIntervals:coverage.positiveLengthCoveredIntervals,
+  nativeVisibleUnprovenOriginalSourceIntervals:coverage.positiveLengthUncoveredIntervals,
+  nativeVisibleOriginalFrontWholePaperUnionCertified:
+   coverage.entireOriginalParameterIntervalCovered&&
+   intervals.length>0,
+  // Backward compatible with the older SINGLE native BRep certificate:
+  nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints:
+   intervals.some(x=>x[0]===0&&x[1]===1),
+  actualOCCTNativeEndpointsMatchOriginalPaperWithoutTolerance:
+   coverage.entireOriginalParameterIntervalCovered&&intervals.length>0,
+  nativeOriginalSourceParameterFullRangeVerified:
+   coverage.entireOriginalParameterIntervalCovered&&intervals.length>0,
+  genuineNativeSegmentsExamined:nativeVisibleSegments.length,
+  exactNativeSubintervalsAccepted:intervals.length,
+  mismatchedNativeOriginalEndpointsOrLiftHeld:heldDrift,
+  noClaimOfOcctTopoDSGeneratedEdgeIdentity:true,
+  engineeringLineStyleCertified:false,
+  constructionIntentAuthorized:false,signedV5Action:false
+ });
+}
+
+/**
  * Positive full original 3D front source proof is a reusable M0 theorem.
  * It can close a numerical M4 paper-parameter gap ONLY when the ACTUAL
  * OCCT native visible segment has exact model-original endpoint agreement.
@@ -198,19 +285,10 @@ function auditC1NativeHiddenExactModelFrontMasks({
      });
      if(!exact.strictObserverFrontDepthAcrossOriginalOpenInterval)continue;
      counts.exact3DFullOriginalProjectionAndDepthPairs++;
-     let nativeExact=null;
-     for(const v of nativeVisible){
-      const got=certifyActualOCCTFullFrontOriginalPaperEndpoints({
-       geometry,view,frontEdge,nativeVisible:v
-      });
-      if(got.nativeVisibleOriginalFrontSourceVerified&&
-         got.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints){
-       nativeExact=got;break;
-      }
-      if(got.nativeVisibleOriginalFrontSourceVerified)
-       nativeExact=got;
-     }
-     if(nativeExact?.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints)
+     const nativeExact=certifyActualOCCTVisibleFrontOriginalIntervalUnion({
+      geometry,view,frontEdge,nativeVisibleSegments:nativeVisible
+     });
+     if(nativeExact.nativeVisibleOriginalFrontWholePaperUnionCertified)
       counts.actualNativeVisibleM0OriginalEndpointFullPaperMatches++;
      else counts.exactM0FrontButNativeEndpointDriftHeld++;
      candidateProofs.push({
@@ -221,7 +299,7 @@ function auditC1NativeHiddenExactModelFrontMasks({
        hiddenNativeEndpointExact,
       original3DAndNativeFullFrontPaperCoveragePositivelyVerified:
        hiddenNativeEndpointExact&&
-       nativeExact?.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints===true,
+       nativeExact.nativeVisibleOriginalFrontWholePaperUnionCertified===true,
       originalNativeHLRSourceTopoDSIdentitiesCertified:false,
       engineeringLineStyleCertified:false,signedV5Action:false
      });
@@ -265,4 +343,5 @@ function auditC1NativeHiddenExactModelFrontMasks({
 }
 module.exports={certifyExactFullOriginalFront3DMask,
  certifyActualOCCTFullFrontOriginalPaperEndpoints,
+ certifyActualOCCTVisibleFrontOriginalIntervalUnion,
  auditC1NativeHiddenExactModelFrontMasks};
