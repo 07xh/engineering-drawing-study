@@ -158,6 +158,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
+   jointPositiveM5Prerequisites:{
+    completeSourceParameterCoverage:sourceCoverage?.complete===true,
+    original3DEndpointAndM4FanTopology:endGaps===0,
+    continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel
+   },
+   jointPositiveM5PrerequisitesSatisfied:
+    sourceCoverage?.complete===true&&endGaps===0&&localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified:false,
    engineeringGBSolidOrDashedLineStandardFullyCertified:false,
