@@ -46,7 +46,8 @@ function check(g,revision){
    assert.ok(s.exactOriginalFaceWholeOpenRayClear||
     s.analyticConservativeWholeOpenRayClear);
   if(s.status==='single-opaque-solid-whole-open-ray-strictly-hidden')
-   assert.equal(s.fullAnalyticStrictInteriorRayOcclusion,true);
+   assert.ok(s.fullAnalyticStrictInteriorRayOcclusion||
+    s.exactOriginalSourceStrictInwardOpenRayHidden);
   if(s.status==='exterior-contour-held-by-original-m5')
    assert.equal(s.originalM5ExteriorContourOverlap,true);
  }
@@ -61,6 +62,9 @@ test('the same source-subspan method handles nonregular tetrahedron with exact i
  const g=tetra(),r=check(g,19);
  assert.ok(r.counts.exactOriginalFaceOutwardClear>0);
  assert.ok(r.counts.excludedAlreadySignedContour>0);
+ assert.ok(r.counts.strictHidden>0,
+  'real skew tetrahedron backside source edge should obtain exact strict interior open ray');
+ assert.ok(r.counts.exactOriginalEdgeStrictInwardHidden>0);
 });
 test('fake original source cannot inherit any ray or official line certificate',()=>{
  const g=box();
