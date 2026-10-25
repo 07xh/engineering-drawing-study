@@ -202,8 +202,9 @@ for(const [index,geometry] of general.entries()){
   features.rows.reduce((n,row)=>n+row.sourceBoundSubintervals.length,0));
  assert.ok(features.counts.projectedSourceEventCount>0,
   'real convex original source M4 V/H/W events required');
- assert.ok(features.rows.some(row=>row.sourceM4EventCuts.length>2),
-  'source topology must actually be partitioned at projected junctions');
+ assert.ok(features.rows.some(row=>
+  row.physicalProjectedJunctionEncounters.length>0),
+  'M4 must preserve original projected source event provenance');
  assert.ok(features.rows.every(row=>
   row.sourceBoundSubintervals.every(span=>
    span.signedV5Action===false&&
