@@ -41,7 +41,7 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
    ...perView[view].hidden.map(x=>({...x,hlrClass:'hidden-sharp'}))
   ];
   if(records.length>256)throw new RangeError('too many genuine native HLR sharp edges');
-  const nodeBuckets=new Map(),nodeRecords=[];
+  const nodeRecords=[];
   for(const rec of records){
    if(!Number.isSafeInteger(rec.nativeHLREdgeOrdinal)||
       rec.nativeHLREdgeOrdinal<0||
@@ -62,9 +62,6 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
      sourceTopoDSIdentityCertified:false,
      nativeVertex:shape};
     nodeRecords.push(node);
-    const k=pt.u+'|'+pt.v;
-    if(!nodeBuckets.has(k))nodeBuckets.set(k,[]);
-    nodeBuckets.get(k).push(node);
     counts.actualNativeBRepVertexEndpoints++;
    }
    counts.genuineOCCTNativeHLRSharpEdges++;
@@ -141,8 +138,7 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
    counts.genuinelySharedNativeJunctionComponents++;
    counts.genuinelySharedNativeJunctionEndpoints+=component.length;
   }
-  // Keep the original pairwise OCCT evidence for existing native M5 consumers.
-  /* original bucket-only pair loop removed; exhaustive topology above */ 
+  // Keep original pairwise proof for existing native M5 consumers.
   views[view]={
    view,realNativeSharpEdgeCount:records.length,
    sameActualGeneratedOCCTTopoDSVertexPairs:same,
