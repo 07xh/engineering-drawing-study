@@ -29,15 +29,24 @@ const freeze=o=>{
 const key=(id,a,b)=>id+'::'+[a,b].sort().join('|');
 const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
-function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
- if(!Number.isSafeInteger(revision)||revision<1)
-  throw new TypeError('reviewed C1 source event revision required');
+function auditC1ReviewedProjectedSourceEventGraph({
+ geometry,revision,proofMode='m5-hull-required'
+}={}){
+ if(!Number.isSafeInteger(revision)||revision<1||
+    !['m5-hull-required','m4-projected-events-only'].includes(proofMode))
+  throw new TypeError('reviewed C1 source event revision and proof mode required');
  const m0=verifiedConvexMeshHalfspaces(geometry);
- const hull=auditC1GlobalVisibleContourProof({geometry,revision});
- if(hull.sourceGeometryId!==geometry.id||hull.revision!==revision||
-    hull.nonExteriorInternalEdgesSigned!==false||
-    m0.sourceGeometryId!==geometry.id)
-  throw new RangeError('matching original unsigned M5 exterior contour required');
+ // M4 original-source event validation is mathematically useful even if
+ // existing M5 full-ring/scene validation is blocked. That opt-in forensic
+ // mode deliberately has NO hull exclusion or non-hull positive candidates.
+ // The production-facing C1 caller uses the full M5-required default.
+ const hull=proofMode==='m5-hull-required'?
+  auditC1GlobalVisibleContourProof({geometry,revision}):null;
+ if(m0.sourceGeometryId!==geometry.id||
+    (hull&&(hull.sourceGeometryId!==geometry.id||
+     hull.revision!==revision||
+     hull.nonExteriorInternalEdgesSigned!==false)))
+  throw new RangeError('matching original unsigned M0/M5 source required');
  if(geometry.data.edges.length>40)
   throw new RangeError('existing shared M4 pairwise event budget 40 exceeded');
  const original=new Map();
@@ -103,6 +112,7 @@ function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
  }
  let hullBoundCutCount=0;
  for(const view of VIEWS){
+  if(!hull)break;
   const pv=hull.views.find(x=>x.view===view);
   if(!pv)throw new TypeError('complete C1 M5 three-view exterior evidence required');
   for(const stroke of pv.candidateIntervals){
@@ -136,7 +146,8 @@ function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
   const source=row.edge.id,unique=[...new Set(row.cuts)].sort((x,y)=>x-y);
   if(unique.length>130)
    throw new RangeError('C1 M4 projected source event cut budget exceeded');
-  const contour=hull.views.find(x=>x.view===view).candidateIntervals;
+  const contour=hull?
+   hull.views.find(x=>x.view===view).candidateIntervals:[];
   const spans=[];
   if(length>1e-8)for(let i=0;i<unique.length-1;i++){
    const lo=unique[i],hi=unique[i+1];
@@ -147,9 +158,9 @@ function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
    if(Math.hypot(from.u-to.u,from.v-to.v)<=1e-10)continue;
    const overlaps=contour.filter(h=>positiveCollinearOverlap(
     from,to,h.projectedFromModelMm,h.projectedToModelMm));
-   const coveredByExterior=overlaps.length>0;
-   if(coveredByExterior)hullMaskedSubintervalCount++;
-   else nonHullSourceSubintervalCount++;
+   const coveredByExterior=hull?overlaps.length>0:null;
+   if(coveredByExterior===true)hullMaskedSubintervalCount++;
+   else if(coveredByExterior===false)nonHullSourceSubintervalCount++;
    spans.push({view,sourceGeometryId:geometry.id,sourceEdgeId:source,
     originalVertexIds:[edge.a,edge.b],
     originalParameterRange:[lo,hi],
@@ -158,7 +169,7 @@ function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
     projectedExteriorHullOverlap:coveredByExterior,
     matchingExteriorContourSourceIds:[...new Set(overlaps.map(x=>
      x.sourceEdgeId).filter(Boolean))].sort(),
-    eligibleForNonHullCandidate:!coveredByExterior,
+    eligibleForNonHullCandidate:coveredByExterior===false,
     fullProjectedJunctionAndDepthOrderVerified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false});
   }
@@ -174,6 +185,8 @@ function auditC1ReviewedProjectedSourceEventGraph({geometry,revision}={}){
  return freeze({schema:'draftai-c1-original-source-m4-projected-event-graph/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   currentM0ClosedConvexVerified:true,
+  proofMode,originalM5ExteriorHullRecomputedAndAvailable:!!hull,
+  m4EventOnlyModeDoesNotAssertNonHullVisibility:!hull,
   actualM4OriginalSourcePairwiseEventCount:events.events.length,
   exactSharedOriginalVertexEncounters,
   paperOnlySourceEncounters,internalPaperEventCutCount,
