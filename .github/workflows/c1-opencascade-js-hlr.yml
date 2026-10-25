@@ -1,0 +1,57 @@
+name: DraftAI isolated OpenCascade.js C1 HLR ABI
+
+on:
+  pull_request:
+    paths:
+      - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
+      - '.github/workflows/c1-opencascade-js-hlr.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
+      - '.github/workflows/c1-opencascade-js-hlr.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c1-opencascade-js-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  real-wasm-hlr:
+    name: real-wasm-hlr
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
+        env:
+          PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
+        run: |
+          mkdir -p "$PROBE_ROOT"
+          npm install --prefix "$PROBE_ROOT" --ignore-scripts --no-save --no-package-lock \
+            --omit=optional --no-audit --no-fund \
+            opencascade.js@2.0.0-beta.b5ff984 ws@8.18.3
+      - name: Run actual HLR B-Rep / first-angle JS WebAssembly with bounded memory
+        env:
+          PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
+          REPORT: ${{ runner.temp }}/draftai-c1-real-ocjs-hlr.json
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=4096 \
+            tools/cad-oracle/probe-opencascade-js-hlr.mjs "$PROBE_ROOT" | tee "$REPORT"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-opencascade-js-real-wasm-hlr-probe/1"||!["V","H","W"].every(v=>r.views[v]?.visibleBRepEdgeCount>=4))process.exit(1)' "$REPORT"
+      - name: Preserve non-authoritative WASM API proof and timings
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-c1-ocjs-real-wasm-api-proof
+          path: ${{ runner.temp }}/draftai-c1-real-ocjs-hlr.json
+          if-no-files-found: error
+          retention-days: 14
