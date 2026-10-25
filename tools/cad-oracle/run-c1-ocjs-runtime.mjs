@@ -147,6 +147,18 @@ for(const [index,geometry] of general.entries()){
  assert.equal(frontMask.counts.realHiddenNativeEdgesAudited,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(frontMask.signedV5ActionCount,0);
+ const combinedHidden=nativeHiddenM5.nativeHiddenDualOpenIntervalProof;
+ assert.equal(combinedHidden.counts.realNativeHiddenOpenLineIntervalsReviewed,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(combinedHidden.counts.realNativeHiddenOpenLineIntervalsReviewed,
+  combinedHidden.counts.entireNativeHiddenOpenIntervalLocallyAccountedByEitherProof+
+   combinedHidden.counts.stillUnprovenAfterConservativeIntervalUnion);
+ assert.equal(combinedHidden.signedV5ActionCount,0);
+ assert.equal(combinedHidden.allGeneratedTopoDSOriginalSourceHistoryProven,false);
+ assert.ok(combinedHidden.rows.every(row=>
+  row.fullGBDashedLineOrVisibleLineAssignmentSigned===false&&
+  row.entireOriginal3DAndGeneratedHLRPhysicalJunctionProofCertified===false&&
+  row.constructionIntentAuthorized===false&&row.signedV5Action===false));
  assert.equal(frontMask.allNativeHLRGeneratedTopoDSLinksProven,false);
  assert.equal(
   frontMask.counts.unique3DHiddenCandidateEdgesAudited+
@@ -616,6 +628,25 @@ for(const [index,geometry] of general.entries()){
     frontMask.counts.realVisibleFrontM5ClosedRayAndM4DepthWitnessCount,
    frontPaperMaskOriginalParameterGaps:
     frontMask.counts.numberOfUncoveredPositiveHiddenPaperIntervals,
+   realHiddenNativeLocallyCoveredByInwardOrFrontVisibleSource:
+    combinedHidden.counts.entireNativeHiddenOpenIntervalLocallyAccountedByEitherProof,
+   remainingRealNativeHiddenWithPositiveUnprovenPaperSourceIntervals:
+    combinedHidden.counts.stillUnprovenAfterConservativeIntervalUnion,
+   actualNativeHiddenRequiringBothIndependentProofTypes:
+    combinedHidden.counts.needingBothPositiveProofTypesForFullCoverage,
+   exactUnprovedCombinedOriginalParameterGapCount:
+    combinedHidden.counts.uncoveredPositiveOriginalSourceParameterRangesHeld,
+   actualRemainingOriginalSourceNativeIntervals:
+    combinedHidden.rows.filter(row=>!row.locallyExplainedNativeHiddenOpenPaperInterval)
+     .map(row=>({
+      view:row.view,
+      nativeHiddenSharpEdgeOrdinal:row.nativeHiddenSharpEdgeOrdinal,
+      originalHiddenSourceEdgeId:row.originalHiddenSourceEdgeId,
+      outstandingOriginalParameterRanges:
+       row.independentOpenIntervalRayAndFrontVisibleUnion?
+       row.independentOpenIntervalRayAndFrontVisibleUnion
+        .outstandingUnprovedOriginalParameterIntervals:null
+     })),
    fullOriginalTopoDSSourceLinkSigned:false,
    formalGBHiddenLineSigned:false,v5ActionsSigned:0
   },
