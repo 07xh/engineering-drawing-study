@@ -11,7 +11,7 @@
  console.log('OCCT package layout:',JSON.stringify({version:pkg.version,main:pkg.main,entries}));
  const js=entries.filter(x=>x.endsWith('.js')||x.endsWith('.mjs'));
  if(!js.length)throw Error('Upstream package has no executable JavaScript glue; raw WASM cannot be imported as an ES module');
- const entry=js.find(x=>/full/.test(x))||js[0];
+ const entry=js.includes('node.js')?'node.js':js[0];
  console.log('OCCT JS glue entry:',entry);
  const {pathToFileURL}=require('node:url');
  const module=await import(pathToFileURL(path.join(root,'dist',entry)).href);
