@@ -493,10 +493,13 @@ for(const [index,geometry] of general.entries()){
   dualProof:nativeHiddenM5.nativeHiddenDualOpenIntervalProof,
   endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
   nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
+  projectedEncounters:nativeHiddenM5.nativeHLRAllM4ProjectedEncounters,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
+  nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
  assert.equal(hiddenFormalGate.signedV5ActionCount,0);
  assert.equal(hiddenFormalGate.officialEngineeringGBLineRulesCertified,false);
  assert.ok(hiddenFormalGate.rows.every(r=>
