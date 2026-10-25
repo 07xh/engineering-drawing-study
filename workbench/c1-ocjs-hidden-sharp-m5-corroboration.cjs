@@ -21,6 +21,8 @@ const {auditC1OriginalClosedVertexStars}=
  require('./c1-m5-original-closed-vertex-stars.cjs');
 const {auditC1NativeHidden3DEndpointFans}=
  require('./c1-native-hidden-3d-endpoint-fan-junctions.cjs');
+const {auditNativeHiddenWholeOriginalSourceIntervals}=
+ require('./c1-native-hidden-whole-source-interval-closure.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -240,6 +242,17 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     nativeHidden3DEndpointFans.signedV5ActionCount!==0||
     nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven!==false)
   throw new RangeError('real native sharp HLR generated-source junction proof gate');
+ const nativeHiddenOriginalOpenRayClosure=
+  auditNativeHiddenWholeOriginalSourceIntervals({
+   geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
+   m5,endpointFans:nativeHidden3DEndpointFans,
+   exactIntervalCoverage:exactCandidateIntervalCoverage
+  });
+ if(nativeHiddenOriginalOpenRayClosure.counts.actualNativeHiddenEdgesAudited!==
+     counts.realNativeHiddenSharpSegments||
+    nativeHiddenOriginalOpenRayClosure.signedV5ActionCount!==0||
+    nativeHiddenOriginalOpenRayClosure.wholeEngineeringHiddenLineCertification!==false)
+  throw new RangeError('real native sharp HLR original source continuous ray gate');
  return frozen({
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
@@ -250,6 +263,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   nativeHiddenSourceRefinements,
   independentlyVerifiedOriginal3DVertexFans:originalVertexStars.schema,
   nativeHidden3DEndpointFans,
+  nativeHiddenOriginalOpenRayClosure,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,
