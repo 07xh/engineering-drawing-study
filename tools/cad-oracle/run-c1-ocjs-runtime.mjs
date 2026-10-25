@@ -15,6 +15,7 @@ const {project}=require('../../core/projection/conventions.js');
 const {compileC1WithOcjsHLR}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {cuboidBounds}=require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
 if(!process.argv[2])throw new TypeError('isolated OCJS package root required');
@@ -93,3 +94,10 @@ const report={
  productionBrowserBundled:false,androidAccepted:false
 };
 process.stdout.write(JSON.stringify(report,null,2)+'\n');
+
+}
+main().catch(error=>{
+ process.stderr.write('C1 OCJS CONSUMER FAILED: '+String(error?.message??error)+'\\n');
+ process.stderr.write(String(error?.stack??'').split('\\n').slice(0,5).join('\\n')+'\\n');
+ process.exitCode=1;
+});
