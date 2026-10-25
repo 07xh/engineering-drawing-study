@@ -11,6 +11,7 @@ import {pathToFileURL} from 'node:url';
 import {readFileSync, statSync} from 'node:fs';
 import {performance} from 'node:perf_hooks';
 
+async function main(){
 const packageRoot = process.argv[2];
 assert.ok(packageRoot, 'explicit isolated OpenCascade.js installation required');
 const packageDir=resolve(packageRoot,'node_modules/opencascade.js');
@@ -106,3 +107,11 @@ const report={
 };
 assert.deepEqual(Object.keys(report.views).sort(),['H','V','W']);
 process.stdout.write(JSON.stringify(report,null,2)+'\n');
+
+}
+main().catch(error=>{
+  process.stderr.write('OCJS WASM PROBE FAILED: '+String(error?.message??error)+'\\n');
+  const location=String(error?.stack??'').split('\\n').slice(0,3).join('\\n');
+  process.stderr.write(location+'\\n');
+  process.exitCode=1;
+});
