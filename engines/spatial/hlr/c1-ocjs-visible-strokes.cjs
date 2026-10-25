@@ -215,7 +215,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     edges.Next();
    }
    if(segments.length<4)
-    throw new RangeError('real OCJS C1 silhouette incomplete for '+view);
+    throw new RangeError('real OCJS C1 silhouette incomplete for '+view+' count='+segments.length+' source='+geometry.id+' scope='+(b?'cuboid':'sewn-convex-shell'));
    rows[view]=segments;
   }
   return Object.freeze({
