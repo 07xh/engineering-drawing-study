@@ -16,6 +16,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
+const {computeC1NativeHLRIsSameVertexGraph}=
+ require('./c1-ocjs-native-vertex-issame-graph.cjs');
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
@@ -389,6 +391,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
+  const nativeGraphInput={};
   for(const view of VIEWS){
    const f=FRAME[view];
    const axis=newObj('gp_Ax2_2',newObj('gp_Pnt_3',0,0,0),
@@ -434,20 +437,34 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    // Neither represents original TopoDS identity or a GB line style.
    const traverse=(compound,hlrClass)=>{
     const edges=newObj('TopExp_Explorer_2',compound,kind,avoid);
-    const result=[];
+    const result=[],vertexRecords=[];
     while(edges.More()){
      const edge=hold(edges.Current());
+     let nativeEndpoints=null;
      const measured=readRealOcjsSharpHLREdge({
-      oc,edge,view,vertexType,avoid,newObj,hold
+      oc,edge,view,vertexType,avoid,newObj,hold,
+      onGenuineTopoDSVertices:rec=>{nativeEndpoints=rec;}
      });
-     if(measured)result.push(withSourceCandidates(measured,hlrClass));
+     if(measured){
+      const checked=withSourceCandidates(measured,hlrClass);
+      if(!nativeEndpoints||
+         nativeEndpoints.nativeVertices.length!==2||
+         nativeEndpoints.projectedEndpoints.length!==2)
+       throw new RangeError('verified OCCT edge lost its native vertex topology');
+      const ordinal=result.length;
+      result.push(checked);
+      vertexRecords.push({nativeHLREdgeOrdinal:ordinal,
+       vertices:nativeEndpoints.nativeVertices,
+       projectedEndpoints:nativeEndpoints.projectedEndpoints});
+     }
      if(result.length>128)
       throw new RangeError('unbounded real BRep HLR sharp-edge output');
      edges.Next();
     }
-    return result;
+    return {segments:result,vertexRecords};
    };
-   const segments=traverse(visible,'visible-sharp');
+   const visibleNative=traverse(visible,'visible-sharp');
+   const segments=visibleNative.segments;
    // HCompound contains ACTUAL hidden C0/sharp HLR edges. This is
    // computed occlusion evidence, not permission to draw GB dashed lines.
    const hidden=hold(method(extractor,'HCompound_1').call(extractor));
@@ -456,13 +473,26 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    // Track this empty case explicitly rather than forging hidden segments.
    const emptyHiddenSharp=hidden.IsNull();
    if(emptyHiddenSharp)hiddenSharpNullCompoundViews.push(view);
-   const hiddenSegments=emptyHiddenSharp?[]:
-    traverse(hidden,'hidden-sharp');
+   const hiddenNative=emptyHiddenSharp?
+    {segments:[],vertexRecords:[]}:traverse(hidden,'hidden-sharp');
+   const hiddenSegments=hiddenNative.segments;
+   nativeGraphInput[view]={
+    visible:visibleNative.vertexRecords,
+    hidden:hiddenNative.vertexRecords
+   };
    if(segments.length<(b?4:3))
     throw new RangeError('real OCJS C1 silhouette incomplete for '+view+' count='+segments.length+' source='+geometry.id+' scope='+(b?'cuboid':'sewn-convex-shell'));
    rows[view]=segments;
    hiddenViews[view]=hiddenSegments;
   }
+  // IsSame inspects genuine OCCT TShape/Location while all emscripten
+  // TopoDS vertex objects are still alive. Persist no native handles.
+  const nativeGeneratedVertexGraph=
+   computeC1NativeHLRIsSameVertexGraph({perView:nativeGraphInput});
+  if(nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges!==
+     VIEWS.reduce((n,v)=>n+rows[v].length+hiddenViews[v].length,0)||
+     nativeGeneratedVertexGraph.signedV5ActionCount!==0)
+   throw new RangeError('actual OCCT HLR native generated vertex graph is incomplete');
   return Object.freeze({
    schema:'draftai-c1-ocjs-real-visible-brep/1',
    engine:'opencascade.js',revision,
@@ -470,6 +500,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
+   nativeGeneratedVertexGraph,
    hiddenHLROutputFromActualOCCT:true,
    hiddenSharpNullCompoundViews,
    hiddenSharpEdgesAreOnlyUnsignedCandidates:true,
