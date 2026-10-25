@@ -278,6 +278,7 @@ const visibleFrontSourceCase=()=>{
  x.cad.views.H[0].sourceCandidate3DLifts=[{
   sourceEdgeId:'G::A|D',originalVertexIds:['D','A'],
   sourceParameterAtProjectedFrom:0,sourceParameterAtProjectedTo:1,
+  originalSourceParameterRange:[0,1],
   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
   originalOCCTSourceLineCurveVerified:true,originalXYZReprojectsToHLR:true,
   v5Authorized:false,fromCandidate3D:{...D},toCandidate3D:{...A},
@@ -382,6 +383,37 @@ test('a visible HLR endpoint cannot be certified if its opposite original 3D lif
   assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
    allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
   assert.equal(result.signedV5ActionCount,0);
+ }
+});
+test('valid partial original source interval retains the authenticated native junction but never signs GB/V5',()=>{
+ const x=visibleFrontSourceCase(),lift=x.cad.views.H[0].sourceCandidate3DLifts[0];
+ x.cad.views.H[0].from={u:5,v:4};
+ lift.sourceParameterAtProjectedFrom=0.5;
+ lift.originalSourceParameterRange=[0.5,1];
+ lift.fromCandidate3D={x:5,y:4,z:0};
+ const out=audit(x);
+ assert.equal(out.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,1);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('forged partial source parameter, hidden depth or interval ledger cannot authenticate opposite endpoint',()=>{
+ for(const mutate of [
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=0.25;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].fromCandidate3D.z=2;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].originalSourceParameterRange=[0,1];},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].originalSourceParameterRange=[0.5,0.9];},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].originalSourceParameterRange=null;}
+ ]){
+  const x=visibleFrontSourceCase(),lift=x.cad.views.H[0].sourceCandidate3DLifts[0];
+  x.cad.views.H[0].from={u:5,v:4};
+  lift.sourceParameterAtProjectedFrom=0.5;
+  lift.originalSourceParameterRange=[0.5,1];
+  lift.fromCandidate3D={x:5,y:4,z:0};
+  mutate(x);
+  const out=audit(x);
+  assert.equal(out.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+  assert.equal(out.completeGenuineNativeHLRJunctionStars[0].
+   allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+  assert.equal(out.signedV5ActionCount,0);
  }
 });
 test('an authentic two-endpoint visible OCCT lift still certifies only the local 3D junction, not GB/V5',()=>{
