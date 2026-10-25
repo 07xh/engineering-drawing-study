@@ -155,6 +155,21 @@ for(const [index,geometry] of general.entries()){
    combinedHidden.counts.stillUnprovenAfterConservativeIntervalUnion);
  assert.equal(combinedHidden.signedV5ActionCount,0);
  assert.equal(combinedHidden.allGeneratedTopoDSOriginalSourceHistoryProven,false);
+ const exactFront=nativeHiddenM5.nativeHiddenExactModelFrontMask;
+ assert.equal(exactFront.counts.genuineNativeHiddenSharpStrokes,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(exactFront.signedV5ActionCount,0);
+ assert.equal(exactFront.exactM0ProjectedVertexEqualityNotToleranceSnapped,true);
+ assert.equal(exactFront.HLRToOriginalTopoDSIdentityProven,false);
+ assert.ok(exactFront.rows.every(row=>
+  row.actualOCCTGeneratedHLRToOriginalTopoDSIdentityCertified===false&&
+  row.finalGBHiddenLineStyleCertified===false&&
+  row.signedV5Action===false&&
+  row.independentModelExactFullFrontOriginalCandidates.every(candidate=>
+   candidate.original3DProjectionAndExactAffineDepthProof.
+    strictObserverFrontDepthAcrossOriginalOpenInterval===true&&
+   candidate.originalNativeHLRSourceTopoDSIdentitiesCertified===false&&
+   candidate.signedV5Action===false)));
  assert.ok(combinedHidden.rows.every(row=>
   row.fullGBDashedLineOrVisibleLineAssignmentSigned===false&&
   row.entireOriginal3DAndGeneratedHLRPhysicalJunctionProofCertified===false&&
@@ -628,6 +643,14 @@ for(const [index,geometry] of general.entries()){
     frontMask.counts.realVisibleFrontM5ClosedRayAndM4DepthWitnessCount,
    frontPaperMaskOriginalParameterGaps:
     frontMask.counts.numberOfUncoveredPositiveHiddenPaperIntervals,
+   exactOriginalFullFrontDepthCandidatePairs:
+    exactFront.counts.exact3DFullOriginalProjectionAndDepthPairs,
+   nativeVisibleFullOriginalFrontEndpointsVerified:
+    exactFront.counts.actualNativeVisibleM0OriginalEndpointFullPaperMatches,
+   entireModelAndNativeFrontEndpointMasks:
+    exactFront.counts.exactModelAndNativeFrontWholePaperMaskCertified,
+   exactModelButNativeOCCTEndpointDriftHeld:
+    exactFront.counts.exactM0FrontButNativeEndpointDriftHeld,
    realHiddenNativeLocallyCoveredByInwardOrFrontVisibleSource:
     combinedHidden.counts.entireNativeHiddenOpenIntervalLocallyAccountedByEitherProof,
    remainingRealNativeHiddenWithPositiveUnprovenPaperSourceIntervals:
