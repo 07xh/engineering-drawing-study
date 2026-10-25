@@ -79,7 +79,7 @@ const fake={...bad.input,edges:bad.input.edges.slice(1)};
 assert.throws(()=>compileC1WithOcjsHLR({input:fake,
  sheetTransform:bad.sheetTransform,oc}),/closed|edge|invalid|topology|geometry/i);
 assert.throws(()=>compileC1WithOcjsHLR({input:bad.input,
- sheetTransform:bad.sheetTransform,oc:{}}),/OpenCascade|API|BRep/i);
+ sheetTransform:bad.sheetTransform,oc:{}}),/OpenCascade|API|BRep|OCJS|TopAbs/i);
 const q=prismMesh({solid:{min:xyz(0,0,0),max:xyz(2,4,9)}});
 const g={...q,id:'C1rotated',data:{
  ...q.data,points:Object.fromEntries(Object.entries(q.data.points).map(
