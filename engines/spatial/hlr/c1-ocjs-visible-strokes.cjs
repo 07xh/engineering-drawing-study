@@ -140,7 +140,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      const shape=hold(vs.Current());
      // OCJS is generated Embind: a static downcast + OCCT vertex location.
      const vertex=hold(method(oc.TopoDS,'Vertex_1')(shape));
-     const p=hold(method(oc.BRep_Tool,'Pnt_1')(vertex));
+     const p=hold(method(oc.BRep_Tool,'Pnt')(vertex));
      if(![p.X(),p.Y(),p.Z()].every(finite)||Math.abs(p.Z())>1e-6)
       throw new RangeError('nonfinite/nonplanar real HLR edge');
      coords.push({u:p.X(),v:-p.Y()});
