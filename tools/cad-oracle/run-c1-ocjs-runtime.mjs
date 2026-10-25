@@ -209,6 +209,22 @@ for(const [index,geometry] of general.entries()){
   features.counts.sourceBoundSubintervalCount);
  assert.equal(finalGate.independentOriginalVertexRayProofSchema,
   'draftai-c1-m5-exact-original-vertex-observer-ray/1');
+ assert.equal(finalGate.independentlyRecomputedClosedOriginalEdgeRaySchema,
+  'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1');
+ assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.originalSourceEdgeViews,
+  geometry.data.edges.length*3);
+ assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.signedV5Actions,0);
+ assert.ok(finalGate.subspans.every(x=>
+  x.paperEventCutsNeverCertifiedAsNew3DVertices===true&&
+  x.M4Original3DEdgeCutContinuityVerified!==null&&
+  x.blockers.originalConstructionIntentDAGAndSingleV5NotAuthorized===true&&
+  (!x.exactClosedOriginal3DSourceObserverRayClear||
+   x.singleOpaqueSolidContinuousOpenRayClear||
+   x.originalM5ExteriorContourOverlap===true)));
+ assert.equal(finalGate.counts.originalSourcePaperCut3DContinuityPreserved,
+  finalGate.originalFull3DEdgeRayContinuityTotals.
+   same3DOriginalSourceCutJoinsPreserved);
+
  assert.equal(finalGate.sourceOriginalVertexObserverRayTotals.
   originalVertexViewRayCount,
   Object.keys(geometry.data.points).length*3);
@@ -380,6 +396,15 @@ for(const [index,geometry] of general.entries()){
      finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
     genuineOriginalVertexWholeRayClearEndpoints:
      finalGate.counts.originalVertexEndpointExactRayClearWitnesses,
+    exactWholeClosedOriginalPhysicalEdgeViews:
+     finalGate.originalFull3DEdgeRayContinuityTotals.
+      exactWholeClosedOriginalPhysicalEdgeRayClear,
+    originalSourceCut3DJoinedWithoutPaperVertexPromotion:
+     finalGate.counts.originalSourcePaperCut3DContinuityPreserved,
+    subspansInheritingWholeClosedOriginal3DRayClear:
+     finalGate.counts.originalSourceSubspanInheritedExactClosedEdgeRayClear,
+    nonHullClosedOriginalRayNotProven:
+     finalGate.counts.originalSourceClosedRayNotYetProven,
     genuineOriginalVertexNearSolidInteriorEndpoints:
      finalGate.counts.originalVertexEndpointExactNearInteriorWitnesses,
     tangentOriginalVertexRayEndpointsHeld:
