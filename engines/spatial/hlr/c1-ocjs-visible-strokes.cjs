@@ -188,6 +188,42 @@ function matchOriginalBRepEdgeByXYZ(geometry,occtFrom,occtTo){
    ' (missing or ambiguous M0 physical source)');
  return matches[0];
 }
+
+/**
+ * Independent geometric check of an actual OCCT BRepAdaptor 3D LINE.
+ * Reject finite but wrong curve samples and parametric midpoint drift.
+ * A straight 3D source curve does not prove HLR source topology or line style.
+ */
+function verifyOriginalOcctLinearCurveWitness({
+ sourceEndpoints,parameterRange,curveSamples,curveKind
+}={}){
+ const finite3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+ if(curveKind!=='line'||!Array.isArray(sourceEndpoints)||
+    sourceEndpoints.length!==2||!sourceEndpoints.every(finite3)||
+    !Array.isArray(parameterRange)||parameterRange.length!==2||
+    !parameterRange.every(Number.isFinite)||
+    !(parameterRange[1]>parameterRange[0])||
+    !Array.isArray(curveSamples)||curveSamples.length!==3||
+    !curveSamples.every(finite3))
+  throw new TypeError('finite OCCT 3D line curve and parameter witness required');
+ const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ const [a,b]=sourceEndpoints,[first,middle,last]=curveSamples;
+ const direct=d(a,first)<=1e-6&&d(b,last)<=1e-6;
+ const reverse=d(a,last)<=1e-6&&d(b,first)<=1e-6;
+ if(!direct&&!reverse||d(a,b)<=1e-8)
+  throw new RangeError('OCCT BRep curve endpoints disagree with original 3D topology');
+ const affineMid={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};
+ if(d(middle,affineMid)>1e-6)
+  throw new RangeError('OCCT BRep reported line with nonaffine middle geometry');
+ return {
+  occtSourceCurveType:'line',
+  occtSourceCurveParameterRange:[...parameterRange],
+  occtSourceCurve3DEndpointsAndMidpointVerified:true,
+  occtCurveTypeIndependentlyVerified:true,
+  generatedHLREdgeTopoDSIdentityMatched:false,
+  engineeringLineStyle:'undetermined',v5Authorized:false
+ };
+}
 /**
  * Traverse actual OCJS ORIGINAL shape TopoDS edges, not HLR's flattened
  * visible output. Return an auditable complete source edge ledger. It is
@@ -214,7 +250,27 @@ function extractRealOcjsOriginalSourceBRepEdges({
    vertices.Next();
   }
   if(coords.length!==2)throw new RangeError('missing real original OCCT 3D vertices');
-  const record=matchOriginalBRepEdgeByXYZ(geometry,coords[0],coords[1]);
+  const edgeType=hold(method(oc.TopoDS,'Edge_1')(edge));
+  const adaptor=newObj('BRepAdaptor_Curve_2',edgeType);
+  const kindLine=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+  if(kindLine===undefined||adaptor.GetType()!==kindLine||
+     adaptor.Is3DCurve()!==true)
+   throw new RangeError('original OCCT polyhedral source is not verified 3D line');
+  const first=adaptor.FirstParameter(),last=adaptor.LastParameter();
+  if(![first,last].every(finite)||!(last>first))
+   throw new RangeError('nonfinite/nonincreasing OCCT source curve parameters');
+  const readCurvePoint=t=>{
+   const pt=hold(adaptor.Value(t));
+   return {x:pt.X(),y:pt.Y(),z:pt.Z()};
+  };
+  const curveProof=verifyOriginalOcctLinearCurveWitness({
+   sourceEndpoints:coords,parameterRange:[first,last],
+   curveSamples:[readCurvePoint(first),
+    readCurvePoint((first+last)/2),readCurvePoint(last)],
+   curveKind:'line'
+  });
+  const record={...matchOriginalBRepEdgeByXYZ(geometry,coords[0],coords[1]),
+   ...curveProof};
   const prior=matches.get(record.sourceEdgeId);
   if(prior){
    const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
@@ -222,7 +278,10 @@ function extractRealOcjsOriginalSourceBRepEdges({
     d(prior.toOCCT3D,record.toOCCT3D)<=1e-6;
    const swapped=d(prior.fromOCCT3D,record.toOCCT3D)<=1e-6&&
     d(prior.toOCCT3D,record.fromOCCT3D)<=1e-6;
-   if(!same&&!swapped)throw new RangeError('duplicate conflicting original OCCT edge');
+   if(!same&&!swapped||
+      prior.occtSourceCurveType!==record.occtSourceCurveType||
+      prior.occtSourceCurve3DEndpointsAndMidpointVerified!==true)
+    throw new RangeError('duplicate conflicting original OCCT edge');
   }else matches.set(record.sourceEdgeId,record);
   explorer.Next();
  }
@@ -235,7 +294,7 @@ function extractRealOcjsOriginalSourceBRepEdges({
   occtOriginalEdgeOccurrenceCount:occurrences,
   completeSourceTopology3DEndpointCorrespondence:true,
   generatedHLREdgeTopoDSIdentityMatched:false,
-  actualOCCTCurveTypeIndependentlyVerified:false,
+  actualOCCTCurveTypeIndependentlyVerified:true,
   engineeringLineStylesCertified:false,v5Authorized:false
  };
 }
@@ -368,6 +427,10 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       if(!actual||actual.originalOCCTBRepVertexXYZMatched!==true)
        throw new RangeError('real 3D OCCT source B-Rep edge missing for HLR candidate');
       return {...lift,actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+       originalOCCTSourceCurveType:actual.occtSourceCurveType,
+       originalOCCTCurveParameterRange:[...actual.occtSourceCurveParameterRange],
+       originalOCCTSourceLineCurveVerified:
+        actual.occtSourceCurve3DEndpointsAndMidpointVerified,
        actualOriginalOCCTBRepFrom3D:{...actual.fromOCCT3D},
        actualOriginalOCCTBRepTo3D:{...actual.toOCCT3D},
        actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false};
@@ -397,7 +460,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    completeSourceTopology3DEndpointCorrespondence:
     sourceBRep.completeSourceTopology3DEndpointCorrespondence,
    actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
-   actualOCCTCurveTypeIndependentlyVerified:false,
+   actualOCCTCurveTypeIndependentlyVerified:
+    sourceBRep.actualOCCTCurveTypeIndependentlyVerified,
    sourceCandidateOnly:true,
    lineStyleCertified:false,v5Authorized:false
   });
@@ -407,4 +471,5 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
 }
 module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
  liftOriginalProjectedSourceCandidates,matchOriginalBRepEdgeByXYZ,
- extractRealOcjsOriginalSourceBRepEdges};
+ extractRealOcjsOriginalSourceBRepEdges,
+ verifyOriginalOcctLinearCurveWitness};
