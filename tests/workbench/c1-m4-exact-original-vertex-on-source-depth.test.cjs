@@ -46,7 +46,10 @@ test('1-ULP projected deviation is not an original paper incidence',()=>{
  g.data.points.C.y=Number.EPSILON;
  const out=cert({geometry:g,view:'H',vertexSourceEdge:['A','B'],
   originalSourceParameter:0,otherSourceEdge:['C','D']});
- assert.equal(out.exactOriginalVertexOnOtherProjectedLine,false);
+ // Still on the same INFINITE projected line x=0, but no longer
+ // inside the actual original source segment y=[epsilon,8].
+ assert.equal(out.exactOriginalVertexOnOtherProjectedLine,true);
+ assert.equal(out.exactOriginalVertexOnOtherProjectedClosedSource,false);
  assert.equal(out.exactOriginalVertexDepthRelativeOtherSourceSign,null);
 });
 test('projected parallel and collapsed other edge cannot forge finite second source parameter',()=>{
