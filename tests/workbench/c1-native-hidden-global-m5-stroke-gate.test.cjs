@@ -12,6 +12,13 @@ const caseData=()=>{
   nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven:false,
   signedV5Action:false}];
  return {geometry,revision,
+  nativeHLRJunctionConcordance:{
+   schema:'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1',
+   sourceGeometryId:'G',revision,signedV5ActionCount:0,
+   actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete:false,
+   allPerViewActualNativeGeneratedJunctionComponentsConsumed:true,
+   completeGenuineNativeHLRJunctionStars:[]
+  },
   gapProof:{sourceGeometryId:'G',revision,signedV5ActionCount:0,
    actualNativeGeneratedHLRPaperCoverageAndOriginalModelProofNotConflated:true,rows},
   dualProof:{sourceGeometryId:'G',revision,signedV5ActionCount:0,rows:[{
@@ -356,4 +363,67 @@ test('partially classified native projected encounters retain exact unresolved c
  assert.equal(r.rows[0].allCurrentOriginalM4SourceEncountersLocally3DClassified,false);
  assert.equal(r.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
  assert.equal(r.signedV5ActionCount,0);
+});
+
+test('global M5 trusts authentic generated HLR IsSame ORIGINAL M0 shared-vertex star at one native hidden endpoint but still holds GB/V5',()=>{
+ const x=caseData(),junction=x.nativeHLRJunctionConcordance;
+ junction.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B','G::A|C'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,
+  signedV5Action:false
+ });
+ const r=review(x),p=r.rows[0].independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars;
+ assert.equal(r.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar,1);
+ assert.equal(r.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,0);
+ assert.equal(p[0].independentOriginal3DVertexAndFullHLRJunctionProven,true);
+ assert.equal(p[0].independentlyVerifiedOriginalM03DVertexId,'A');
+ assert.equal(p[1].actualGeneratedOCCTVertexIsSameJunctionPresent,false);
+ assert.equal(r.rows[0].bothRealNativeHLREndpointGeneratedJunctionStarsHaveOriginal3DSourceProof,false);
+ assert.equal(r.rows[0].nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('genuine OCCT shared junction cannot forge original 3D source endpoint vertex ID or edge identity',()=>{
+ const x=caseData(),stars=x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars;
+ const p={
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'B',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B','G::A|C'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ };
+ stars.push(p);
+ assert.throws(()=>review(x),/conflicts with original hidden 3D endpoint/);
+ p.independentlyVerifiedOriginalM03DVertexId='A';
+ p.independentlyTracedOriginal3DSourceEdges=['G::A|C'];
+ assert.throws(()=>review(x),/conflicts with original hidden 3D endpoint/);
+});
+test('paper-coincident generated IsSame component without positive full-original 3D source fan is kept unsigned and unclaimed',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars=[{
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:false,
+  independentlyVerifiedOriginalM03DVertexId:null,
+  independentlyTracedOriginal3DSourceEdges:[],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ }];
+ const r=review(x);
+ assert.equal(r.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,1);
+ assert.equal(r.rows[0].independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars[0].
+  independentOriginal3DVertexAndFullHLRJunctionProven,false);
+ assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
 });
