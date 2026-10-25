@@ -101,7 +101,10 @@ function provenanceCandidates(g,view,from,to){
 function liftOriginalProjectedSourceCandidates(g,view,from,to){
  if(!VIEWS.includes(view)||![from?.u,from?.v,to?.u,to?.v].every(finite))
   throw new TypeError('finite actual HLR V/H/W projected endpoints required');
- const ids=provenanceCandidates(g,view,from,to);
+ // A projected point is not a B-Rep line, even when it lies on several
+ // original edges. Never assign it a 3D source identity.
+ const degenerate=Math.hypot(to.u-from.u,to.v-from.v)<=1e-8;
+ const ids=degenerate?[]:provenanceCandidates(g,view,from,to);
  const sourceCandidate3DLifts=ids.map(sourceEdgeId=>{
   const edge=g.data.edges.find(e=>
    g.id+'::'+[...e].sort().join('|')===sourceEdgeId);
@@ -140,7 +143,8 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
  });
  return {
   projectedOriginalEdgeCandidates:ids,sourceCandidate3DLifts,
-  unmappedReason:ids.length?null:
+  unmappedReason:ids.length?null:degenerate?
+   'degenerate-projected-hlr-not-a-physical-segment':
    'no-original-m0-edge-reprojects-to-both-hlr-endpoints',
   candidate3DGeometryOnly:true,actualOCCTTopoDSIdentityRecovered:false,
   officialEngineeringLineStyle:'undetermined',v5Authorized:false
