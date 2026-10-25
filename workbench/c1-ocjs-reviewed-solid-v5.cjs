@@ -142,9 +142,13 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     !Array.isArray(proof.views)||proof.views.length!==3)
   throw new RangeError('unaligned original C1 M5 and genuine real HLR');
  const views={},totals={m5AtomicIntervals:0,locallyPositive:0,
-  cadAndM5Corroborated:0,positiveM5CadConflicts:0,unresolved:0};
+  cadAndM5Corroborated:0,positiveM5CadConflicts:0,unresolved:0,
+  sharedPhysicalEndpointDepthCertificates:0,
+  missing3DSourceCoverage:0,missingPhysicalJunctionProof:0,
+  missingContinuousFrontRayProof:0};
  for(const view of VIEWS){
   const pv=proof.views.find(x=>x.view===view);
+  const rayView=proof.continuousFrontmostSourceRays.views.find(x=>x.view===view);
   const strokes=cad.views[view];
   if(!pv||!Array.isArray(strokes)||!strokes.length)
    throw new RangeError('C1 original M5 and real HLR V/H/W missing');
@@ -154,7 +158,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
       stroke.projectedOriginalEdgeCandidates.some(id=>!ledgerIds.has(id)))
     throw new RangeError('unmatched original 3D HLR source candidate');
   }
-  const intervals=pv.candidateIntervals.map(x=>{
+  if(!rayView||rayView.intervals.length!==pv.candidateIntervals.length)
+   throw new RangeError('M5 ray-source intervals do not match projected hull');
+  const intervals=pv.candidateIntervals.map((x,index)=>{
    if(x.revision!==revision||x.sourceGeometryId!==g.id||x.view!==view)
     throw new RangeError('stale cross-revision M5 interval');
    const validSource=typeof x.sourceEdgeId==='string'&&
@@ -171,10 +177,25 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
    if(local&&covered)totals.cadAndM5Corroborated++;
    if(local&&!covered)totals.positiveM5CadConflicts++;
    if(!local)totals.unresolved++;
+   const ray=rayView.intervals[index];
+   const physicalBoundaryComparisons=ray.relativeSourceDepthComparisons.filter(
+    v=>v.strictOpenIntervalSharedPhysicalEndpointProven);
+   totals.sharedPhysicalEndpointDepthCertificates+=physicalBoundaryComparisons.length;
+   if(!x.sourceContourCoverageVerified)totals.missing3DSourceCoverage++;
+   if(!x.genuineFrontSourceEndpointJoinsVerified)totals.missingPhysicalJunctionProof++;
+   if(!x.continuouslyFrontRayClearVerified)totals.missingContinuousFrontRayProof++;
    return {view,sourceEdgeId:validSource?x.sourceEdgeId:null,
     fromModelMm:{...x.projectedFromModelMm},
     toModelMm:{...x.projectedToModelMm},
     status,m5LocalPositive:local,realCadCovered:covered,
+    blockers:{
+     sourceContourCoverageMissing:!x.sourceContourCoverageVerified,
+     genuine3DJunctionMissing:!x.genuineFrontSourceEndpointJoinsVerified,
+     continuousFrontRayMissing:!x.continuouslyFrontRayClearVerified,
+     unresolvedSourceDepthSwitchOrTie:ray.unresolvedDepthSwitchOrTie
+    },
+    exactPhysicalSharedEndpointOpenDepthCertificates:
+     physicalBoundaryComparisons.length,
     engineeringLineStyle:'undetermined',signedV5:false};
   });
   views[view]={cadVisibleSegmentCount:strokes.length,

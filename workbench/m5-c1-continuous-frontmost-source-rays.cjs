@@ -29,6 +29,45 @@ const err=s=>{throw new TypeError('C1 continuous source-depth proof: '+s);};
 const d2=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
 const d3=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 const observerDepth=(p,v)=>p.x*v.x+p.y*v.y+p.z*v.z;
+/**
+ * For two linear 3D sources over the SAME projected atomic interval,
+ * observer-depth difference d(t)=(1-t)d0+t*d1 is affine. The result is
+ * strictly positive/negative for every t IN (0,1) if both endpoint signs
+ * are strict, OR one endpoint is the EXACT SAME original reviewed 3D
+ * physical point and the opposite endpoint is strictly ordered.
+ *
+ * A mere 2D projection alias, approximate 3D proximity, tiny signed
+ * floating-point value, or two shared endpoints cannot confer ordering.
+ * This classifies source depth only; it cannot sign official V5 strokes.
+ */
+function classifyAffineOpenSourceDepth(x,y,margin=1e-8){
+ const d0=x.observerDepthAtFromMm-y.observerDepthAtFromMm;
+ const d1=x.observerDepthAtToMm-y.observerDepthAtToMm;
+ if(!Number.isFinite(d0)||!Number.isFinite(d1)||
+    !Number.isFinite(margin)||margin<=0)
+  throw new TypeError('finite positive C1 source depth tolerance required');
+ const sharedStart=d0===0&&
+  exactSameReviewedModelPoint(x.from3D,y.from3D);
+ const sharedEnd=d1===0&&
+  exactSameReviewedModelPoint(x.to3D,y.to3D);
+ const first=(d0>margin&&(d1>margin||sharedEnd))||
+  (sharedStart&&d1>margin);
+ const second=(d0< -margin&&(d1< -margin||sharedEnd))||
+  (sharedStart&&d1< -margin);
+ const strict=first!==second;
+ const equal=Math.abs(d0)<=margin&&Math.abs(d1)<=margin;
+ const crossing=(d0*d1<0)&&Math.abs(d0)>margin&&Math.abs(d1)>margin;
+ return {
+  depthDifferenceFromMm:d0,depthDifferenceToMm:d1,
+  relativeDepthProvenForWholeInterval:strict,
+  strictOpenIntervalSharedPhysicalEndpointProven:strict&&(sharedStart||sharedEnd),
+  exactSharedPhysicalStart:sharedStart,exactSharedPhysicalEnd:sharedEnd,
+  relation:first?'first-in-front':second?'second-in-front':
+   equal?'depth-tied-undetermined':
+   crossing?'interior-depth-switch-undetermined':'boundary-depth-tie-undetermined',
+  analyticSwitchFraction:crossing?d0/(d0-d1):null
+ };
+}
 function auditC1ContinuousFrontmostSourceRays({
  geometry,revision,contourCoverage,physicalJunctionIncidence
 }={}){
@@ -130,23 +169,10 @@ function auditC1ContinuousFrontmostSourceRays({
    }
    const comparisons=[];
    for(let a=0;a<candidates.length;a++)for(let b=a+1;b<candidates.length;b++){
-    const x=candidates[a],y=candidates[b],
-     d0=x.observerDepthAtFromMm-y.observerDepthAtFromMm,
-     d1=x.observerDepthAtToMm-y.observerDepthAtToMm;
-    // A paper-coordinate 3D-source depth difference is affine on this
-    // interval. Strict SAME SIGN at both ends proves global ordering.
-    const margin=1e-8;
-    const strict=Math.abs(d0)>margin&&Math.abs(d1)>margin&&d0*d1>0;
-    const equal=Math.abs(d0)<=margin&&Math.abs(d1)<=margin;
-    const crossing=(d0*d1<0)&&Math.abs(d0)>margin&&Math.abs(d1)>margin;
+    const x=candidates[a],y=candidates[b];
+    const certificate=classifyAffineOpenSourceDepth(x,y);
     comparisons.push({sourceEdgeIds:[x.sourceEdgeId,y.sourceEdgeId],
-     depthDifferenceFromMm:d0,depthDifferenceToMm:d1,
-     relativeDepthProvenForWholeInterval:strict,
-     relation:strict?(d0>0?'first-in-front':'second-in-front'):
-      equal?'depth-tied-undetermined':
-      crossing?'interior-depth-switch-undetermined':'boundary-depth-tie-undetermined',
-     analyticSwitchFraction:crossing?d0/(d0-d1):null,
-     officialLineStyleVerified:false});
+     ...certificate,officialLineStyleVerified:false});
    }
    const sorted=candidates.filter(x=>candidates.every(y=>{
     if(x===y)return true;
@@ -245,4 +271,4 @@ function auditC1ContinuousFrontmostSourceRays({
   entireGlobalFinalStrokeTopologyVerified:false,
   officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
 }
-module.exports={auditC1ContinuousFrontmostSourceRays};
+module.exports={auditC1ContinuousFrontmostSourceRays,classifyAffineOpenSourceDepth};

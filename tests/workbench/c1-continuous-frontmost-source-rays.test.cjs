@@ -79,8 +79,13 @@ function independentCheck(r,g,revision=11){
     assert.ok(s.sources.some(x=>x.sourceEdgeId===s.uniqueStrictFrontSourceId));
     const lead=s.sources.find(x=>x.sourceEdgeId===s.uniqueStrictFrontSourceId);
     for(const another of s.sources.filter(x=>x!==lead)){
-     assert.ok(lead.observerDepthAtFromMm-another.observerDepthAtFromMm>1e-8);
-     assert.ok(lead.observerDepthAtToMm-another.observerDepthAtToMm>1e-8);
+     const df=depth(lead.from3D,v.view)-depth(another.from3D,v.view);
+     const dt=depth(lead.to3D,v.view)-depth(another.to3D,v.view);
+     const equal=(p,q)=>p.x===q.x&&p.y===q.y&&p.z===q.z;
+     const valid=(df>1e-8&&dt>1e-8)||
+      (df===0&&equal(lead.from3D,another.from3D)&&dt>1e-8)||
+      (dt===0&&equal(lead.to3D,another.to3D)&&df>1e-8);
+     assert.ok(valid,'affine source must remain strictly ahead on entire OPEN interval');
     }
    }else assert.equal(s.uniqueStrictFrontSourceId,null);
    // Independent M5 oracle: correlate the two source's REAL coordinates
@@ -106,9 +111,22 @@ function independentCheck(r,g,revision=11){
    for(const c of s.relativeSourceDepthComparisons){
     assert.ok(c.sourceEdgeIds.every(id=>ids.has(id)));
     assert.equal(c.officialLineStyleVerified,false);
-    if(c.relativeDepthProvenForWholeInterval)
-     assert.ok(c.depthDifferenceFromMm*c.depthDifferenceToMm>0);
-    else assert.ok(c.relation.endsWith('undetermined'));
+    if(c.relativeDepthProvenForWholeInterval){
+     const [a,b]=c.sourceEdgeIds.map(id=>
+      s.sources.find(q=>q.sourceEdgeId===id));
+     assert.ok(a&&b);
+     const df=depth(a.from3D,v.view)-depth(b.from3D,v.view);
+     const dt=depth(a.to3D,v.view)-depth(b.to3D,v.view);
+     const same=(p,q)=>p.x===q.x&&p.y===q.y&&p.z===q.z;
+     const positive=(df>1e-8&&dt>1e-8)||
+      (df===0&&same(a.from3D,b.from3D)&&dt>1e-8)||
+      (dt===0&&same(a.to3D,b.to3D)&&df>1e-8);
+     const negative=(df< -1e-8&&dt< -1e-8)||
+      (df===0&&same(a.from3D,b.from3D)&&dt< -1e-8)||
+      (dt===0&&same(a.to3D,b.to3D)&&df< -1e-8);
+     assert.ok(positive!==negative);
+     assert.equal(c.relation,positive?'first-in-front':'second-in-front');
+    }else assert.ok(c.relation.endsWith('undetermined'));
    }
   }
  }
