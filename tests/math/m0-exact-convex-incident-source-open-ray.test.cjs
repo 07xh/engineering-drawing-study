@@ -60,3 +60,15 @@ test('non-finite and open source topology never obtains an exact-outward physica
   D:{...tetra.data.points.D,z:NaN}}}};
  assert.throws(()=>verify(bad),/finite|geometry|convex/);
 });
+
+test('approximately planar but NOT exactly supporting quad cannot mint an exact H ray',()=>{
+ const box=prismMesh({solid:{min:p(0,0,0),max:p(10,10,10)}});
+ // Below the historical M0 approximate planarity tolerance. This is
+ // intentionally not an exact support plane in represented binary64.
+ box.data.points.V111={...box.data.points.V111,z:10+2e-9};
+ const proof=verify(box);
+ const upper=certify({geometry:box,
+  sourceVertexIds:['V011','V111'],view:'H',convexProof:proof});
+ assert.equal(upper.status,'undetermined');
+ assert.equal(upper.continuousOpenSourceIntervalRayClear,false);
+});
