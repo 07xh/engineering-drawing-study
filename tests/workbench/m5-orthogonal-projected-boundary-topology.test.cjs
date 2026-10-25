@@ -180,3 +180,57 @@ test('C2 real M5 release gate reports proved region loop topology but leaves sou
  assert.match(ui,/projectedUnionFourWayPointContactCount/);
  assert.match(ui,/不证明所有原始\/新生三维线的最终接合与标准虚实线/);
 });
+
+
+test('C2 translated 3D cuboid union has translation-invariant 175 mm² global V/H/W loop and signed winding',()=>{
+ const t=99_000_000;
+ const original=regionOnly([A(),B()],251),
+  translated=regionOnly([
+   box('A',P(t,t,t),P(t+10,t+10,t+10)),
+   box('B',P(t+5,t+5,t+5),P(t+15,t+15,t+15))
+  ],252);
+ assert.equal(translated.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
+ assert.equal(translated.totalSimpleClosedBoundaryLoopCount,3);
+ assert.equal(translated.unresolvedNonManifoldOrOpenBoundaryComponentCount,0);
+ for(const view of ['V','H','W']){
+  const first=original.projectedViews.find(x=>x.view===view),
+   moved=translated.projectedViews.find(x=>x.view===view);
+  assert.equal(first.sourceProjectedUnionAreaMm2,175);
+  assert.equal(moved.sourceProjectedUnionAreaMm2,175);
+  assert.equal(moved.signedLoopAreasTotalMm2,175,
+   'absolute-coordinate shoelace loses mm-scale area at 99 million mm');
+  assert.equal(moved.projectedLoopAreaAndUnionOccupancyNumericallyConsistent,true);
+  assert.equal(moved.certifiedSimpleClosedBoundaryCycles.length,1);
+  const ring=moved.certifiedSimpleClosedBoundaryCycles[0];
+  assert.equal(ring.absoluteProjectedAreaMm2,175);
+  assert.equal(ring.signedOrientedProjectedAreaMm2,175);
+  assert.equal(ring.formalConstructionIntentDAGV5Signed,false);
+  assert.equal(ring.completeReal3DSourceJunctionsAndOcclusionVerified,false);
+ }
+ assert.equal(translated.signedV5LineActions,0);
+ assert.equal(translated.v5Ready,false);
+});
+
+test('C2 translated four-body rectangular projected hole retains signed outer 100, inner -36, region 64',()=>{
+ const t=99_000_000;
+ const geometry=[
+  box('A',P(t,t,t),P(t+10,t+2,t+5)),
+  box('B',P(t,t+8,t),P(t+10,t+10,t+5)),
+  box('C',P(t,t+2,t),P(t+2,t+8,t+5)),
+  box('D',P(t+8,t+2,t),P(t+10,t+8,t+5))
+ ];
+ const result=regionOnly(geometry,253),
+  top=result.projectedViews.find(v=>v.view==='H');
+ assert.equal(top.sourceProjectedUnionAreaMm2,64);
+ assert.equal(top.signedLoopAreasTotalMm2,64);
+ assert.equal(top.exteriorClosedLoopCount,1);
+ assert.equal(top.boundedHoleClosedLoopCount,1);
+ const byKind=Object.fromEntries(top.certifiedSimpleClosedBoundaryCycles.map(
+  c=>[c.kind,c.signedOrientedProjectedAreaMm2]));
+ assert.equal(byKind['exterior-projected-region-boundary'],100);
+ assert.equal(byKind['bounded-hole-projected-region-boundary'],-36);
+ assert.equal(top.projectedLoopAreaAndUnionOccupancyNumericallyConsistent,true);
+ assert.equal(top.unresolvedPointContactOrIncompleteCycleCount,0);
+ assert.equal(result.officialLineStylesVerified,false);
+ assert.equal(result.signedV5LineActions,0);
+});
