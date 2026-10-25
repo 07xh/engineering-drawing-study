@@ -96,4 +96,10 @@ test('paper crossing in convex tetrahedron is NOT an invented real 3D junction',
  assert.ok(diagonal.spans.length>=2);
  assert.equal(r.signedV5ActionCount,0);
  assert.ok(r.paperOnlySourceEncounters>0);
+ const rounded=r.rows.flatMap(x=>x.encounters).filter(x=>
+  x.sourceParameterBoundaryRoundedForDiagnostic);
+ assert.ok(rounded.length>0,'this geometry exercises M4 rounded parameter boundary');
+ assert.ok(rounded.every(x=>x.original3DPhysicalJunctionProven===false&&
+  x.projectedOnlyUnresolved===true),
+  'rounding/clipping a paper parameter must never forge a real 3D join');
 });
