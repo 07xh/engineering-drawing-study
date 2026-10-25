@@ -54,9 +54,26 @@ function reviewC1NativeHiddenFinalM5Strokes({
      row.independentGlobalProofGaps.engineeringLineStandard!==true||
      row.independentGlobalProofGaps.soleConstructionIntentDAGV5!==true)
    throw new RangeError('prematurely signed or untrusted canonical M5 stroke review');
+  const interval=row.originalSourceParameterRange;
+  if(!Array.isArray(interval)||interval.length!==2||
+     !interval.every(Number.isFinite)||interval[0]<0||
+     interval[1]>1||interval[0]>=interval[1])
+   throw new RangeError('canonical original M5 source interval is not a finite positive partition');
   const key=row.view+'@'+row.sourceEdgeId;
   if(!byKey.has(key))byKey.set(key,[]);
   byKey.get(key).push(row);
+ }
+ // A global stroke cannot be certified against overlapping or repeated
+ // original source intervals. Validate the entire canonical partition,
+ // including source/view groups not referenced by the current HLR stroke.
+ for(const sourceRows of byKey.values()){
+  const ordered=[...sourceRows].sort((a,b)=>
+   a.originalSourceParameterRange[0]-b.originalSourceParameterRange[0]);
+  for(let i=1;i<ordered.length;i++){
+   if(ordered[i-1].originalSourceParameterRange[1]>
+      ordered[i].originalSourceParameterRange[0])
+    throw new RangeError('overlapping canonical original M5 source intervals');
+  }
  }
  const counts={genuineHiddenHLRStrokesReviewed:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
