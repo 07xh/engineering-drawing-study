@@ -30,6 +30,10 @@ const strictUnitFraction=(num,den)=>{
  const s=sign(den);
  return s!==0&&sign(num)*s>0&&sign(sub(den,num))*s>0;
 };
+const closedUnitFraction=(num,den)=>{
+ const s=sign(den);
+ return s!==0&&sign(num)*s>=0&&sign(sub(den,num))*s>=0;
+};
 function exactOriginalM4TransverseCrossingDepth({
  geometry,view,firstEdge,secondEdge,nativeFirstOriginalParameterRange=[0,1]
 }={}){
@@ -66,12 +70,16 @@ function exactOriginalM4TransverseCrossingDepth({
  });
  const qp=vec2(pa,pc),tNumer=cross(qp,S),uNumer=cross(qp,R);
  const interiorFirst=strictUnitFraction(tNumer,denom),
-  interiorSecond=strictUnitFraction(uNumer,denom);
+  interiorSecond=strictUnitFraction(uNumer,denom),
+  closedSecond=closedUnitFraction(uNumer,denom);
  const [lo,hi]=nativeFirstOriginalParameterRange;
  const sourceIsInNativeOpenRange=interiorFirst&&
   sign(sub(tNumer,mul(d(lo),denom)))*detSign>0&&
   sign(sub(mul(d(hi),denom),tNumer))*detSign>0;
- const samePaperAndInterior=sourceIsInNativeOpenRange&&interiorSecond;
+ // The other ORIGINAL edge can meet this native HLR stroke at its true
+ // source ENDPOINT. That is a valid LOCAL depth comparison but NOT a
+ // 3D or generated HLR junction without separate topology evidence.
+ const samePaperAndInterior=sourceIsInNativeOpenRange&&closedSecond;
  const ray=FIRST_ANGLE_OBSERVER_RAYS[view],
   base=dot(diff3(a,c),ray),
   firstSlope=dot(diff3(b,a),ray),
@@ -87,6 +95,9 @@ function exactOriginalM4TransverseCrossingDepth({
    'original-2d-infinite-lines-cross-outside-source-open-segment',
   firstOriginalOpenSourceContainsExactCrossing:interiorFirst,
   secondOriginalOpenSourceContainsExactCrossing:interiorSecond,
+  secondOriginalClosedSourceContainsExactCrossing:closedSecond,
+  otherOriginal3DEdgeEndpointAtPaperCrossing:
+   samePaperAndInterior&&!interiorSecond,
   originalNativeHLRSourceIntervalContainsExactRationalCrossing:
    sourceIsInNativeOpenRange,
   bothOriginalSourceOpenParameterRangesContainCrossing:samePaperAndInterior,
