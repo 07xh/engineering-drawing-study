@@ -1,0 +1,60 @@
+name: DraftAI offline OCCT C1 geometry oracle
+
+on:
+  pull_request:
+    paths:
+      - 'tools/cad-oracle/**'
+      - 'tests/cad/test_c1_occt_hlr_oracle.py'
+      - 'tests/workbench/c1-occt-offline-export.test.cjs'
+      - '.github/workflows/c1-occt-oracle.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/cad-oracle/**'
+      - 'tests/cad/test_c1_occt_hlr_oracle.py'
+      - 'tests/workbench/c1-occt-offline-export.test.cjs'
+      - '.github/workflows/c1-occt-oracle.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c1-occt-oracle-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  offline-cad-oracle:
+    name: offline-cad-oracle
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install version-pinned independent offline OCCT B-Rep adapter
+        run: |
+          python -m pip install --only-binary=:all: --disable-pip-version-check --no-cache-dir \
+            cadquery==2.8.0 cadquery-ocp==7.9.3.1.1
+      - name: Current public source geometry and unsigned M5 C1 comparison baseline
+        run: |
+          node --test tests/workbench/c1-occt-offline-export.test.cjs
+          node tools/cad-oracle/export-c1-cases.cjs > "${{ runner.temp }}/draftai-c1-occt-input.json"
+      - name: Real OCCT B-Rep plus hidden line removal with fail-closed anti-forgery tests
+        run: |
+          python -m unittest -v tests/cad/test_c1_occt_hlr_oracle.py
+          python tools/cad-oracle/occt_c1_hlr.py \
+            --input "${{ runner.temp }}/draftai-c1-occt-input.json" \
+            --out "${{ runner.temp }}/draftai-c1-occt-verification.json"
+      - name: Preserve independent evidence report (never a solver output)
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-occt-offline-oracle-report
+          path: ${{ runner.temp }}/draftai-c1-occt-verification.json
+          retention-days: 14
