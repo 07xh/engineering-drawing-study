@@ -1,0 +1,27 @@
+name: C1 OpenCascade.js HLR runtime probe
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/c1-occt-wasm-hlr-probe.cjs'
+      - '.github/workflows/c1-occt-hlr-runtime.yml'
+jobs:
+  hlr-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated upstream WASM runtime
+        run: |
+          mkdir -p /tmp/draftai-occt-probe
+          cd /tmp/draftai-occt-probe
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund --save-exact opencascade.js@2.0.0-beta.b5ff984
+          ln -s /tmp/draftai-occt-probe/node_modules "$GITHUB_WORKSPACE/scripts/node_modules"
+      - name: Inspect real WASM HLR exports
+        run: node scripts/c1-occt-wasm-hlr-probe.cjs
