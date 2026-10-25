@@ -1,0 +1,91 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {prismMesh}=require('../../project/unified-workbench-session.cjs');
+const {auditC1OriginalClosedEdgeRayContinuity:audit}=
+ require('../../workbench/c1-m5-closed-original-edge-ray-continuity.cjs');
+const P=(x,y,z)=>({x,y,z});
+const makeBox=()=>{
+ const g=prismMesh({solid:{min:P(0,0,0),max:P(10,10,10)}});
+ return {...g,id:'C1ClosedEdgeRayBox'};
+};
+const makeOblique=()=>{
+ const g=prismMesh({solid:{min:P(0,0,0),max:P(2,4,9)}});
+ return {...g,id:'C1ClosedEdgeRaySkewHex',data:{...g.data,
+  points:Object.fromEntries(Object.entries(g.data.points).map(
+   ([id,p])=>[id,{x:p.x+p.y/2,y:p.y,z:p.z}]))}};
+};
+const makeTetra=()=>({id:'C1ClosedEdgeRayTetra',kind:'mesh',
+ space:'model-3d',unit:'mm',data:{
+ points:{A:P(0,0,0),B:P(17,1,3),C:P(3,16,2),D:P(5,6,23)},
+ edges:[['A','B'],['A','C'],['A','D'],
+  ['B','C'],['B','D'],['C','D']],
+ faces:[['A','B','C'],['A','B','D'],
+  ['A','C','D'],['B','C','D']]}
+});
+const edge=(g,a,b)=>g.id+'::'+[a,b].sort().join('|');
+function check(g){
+ const result=audit({geometry:g,revision:19});
+ assert.equal(result.schema,
+  'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1');
+ assert.equal(result.sourceGeometryId,g.id);
+ assert.equal(result.counts.originalSourceEdgeViews,g.data.edges.length*3);
+ assert.equal(result.counts.original3DVertexRayEndpointWitnesses,
+  g.data.edges.length*6);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.equal(result.wholeSolidV5Ready,false);
+ assert.equal(result.doesNotInfer3DVerticesAtPaperOnlyCuts,true);
+ assert.ok(Object.isFrozen(result));
+ for(const row of result.rows){
+  assert.equal(row.officialEngineeringLineStyle,'undetermined');
+  assert.equal(row.signedV5Action,false);
+  assert.equal(row.completePaperSceneAndFeatureTopologyProven,false);
+  assert.ok(row.originalCutSubspans.every(c=>
+   c.signedV5Action===false&&
+   c.applicableLineType==='undetermined'&&
+   c.physicalCrossSourceJunctionAtPaperCutsAuthorized===false));
+  if(row.fullProjectedVisibleSourceLineProven){
+   assert.equal(row.originalM4PaperParameterPartitionComplete,true);
+   assert.equal(row.completeSourceOriginal3DRayClosedIntervalClear,true);
+   assert.deepEqual(row.sourceOriginalVertexRayStatus,
+    ['certified-clear','certified-clear']);
+  }
+ }
+ return result;
+}
+test('box V FRONT physical edge ray closed clear through both exact vertices while back tangent never promoted',()=>{
+ const g=makeBox(),result=check(g);
+ const front=result.rows.find(x=>x.view==='V'&&
+  x.originalPhysicalSourceEdgeId===edge(g,'V000','V001'));
+ assert.ok(front,'actual first-angle front source edge');
+ assert.equal(front.fullProjectedVisibleSourceLineProven,true);
+ assert.equal(front.exactlyBothOriginalVertexForwardRaysClear,true);
+ assert.ok(front.originalCutSubspans.length>=1);
+ const back=result.rows.find(x=>x.view==='V'&&
+  x.originalPhysicalSourceEdgeId===edge(g,'V010','V011'));
+ assert.equal(back.fullProjectedVisibleSourceLineProven,false);
+ assert.ok(back.sourceOriginalVertexRayStatus.every(s=>s==='undetermined'));
+ assert.equal(back.completeSourceOriginal3DRayClosedIntervalClear,false);
+});
+test('oblique hexa paper intersection cut preserves true 3D same-source continuity, never creates a new vertex',()=>{
+ const r=check(makeOblique());
+ assert.ok(r.counts.same3DOriginalSourceCutJoinsPreserved>0);
+ assert.ok(r.counts.nonoriginalPaperCutEndpointsHeld>0);
+ assert.ok(r.counts.paperOnlyCrossSourceEncountersNeverUpgraded>0);
+ assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
+ assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
+});
+test('skew tetra full original face-support ray and endpoints agree without authorizing GB dashed or V5',()=>{
+ const r=check(makeTetra());
+ assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
+ assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
+ const hidden=r.rows.filter(x=>x.originalOpenEdgeStrictInteriorOcclusionProven);
+ assert.ok(hidden.every(x=>x.signedV5Action===false&&
+  x.officialEngineeringLineStyle==='undetermined'));
+ assert.equal(r.counts.signedV5Actions,0);
+});
+test('nonpositive revision and fake closed convex topology never receive complete original 3D edge rays',()=>{
+ const g=makeBox();
+ assert.throws(()=>audit({geometry:g,revision:0}),/revision/);
+ assert.throws(()=>audit({geometry:{...g,data:{...g.data,
+  faces:g.data.faces.slice(1)}},revision:9}),/closed|Euler|face/);
+});
