@@ -144,6 +144,8 @@ for(const [index,geometry] of general.entries()){
    assert.ok(seg.actualOCCTHLRCurveParameterRange[1]>
     seg.actualOCCTHLRCurveParameterRange[0]);
    assert.equal(seg.actualOCCTHLRCurveSamplesProjectedMm.length,5);
+   assert.ok(['surface-pcurve','native-3d'].includes(
+    seg.actualOCCTHLRCurveBacking));
    assert.equal(seg.originalTopoDSSourceForHLREdgeRecovered,false);
    assert.equal(seg.formalStandardLineStyle,'undetermined');
    // Genuine WASM HLR candidate XYZ must reproduce its real V/H/W image.
