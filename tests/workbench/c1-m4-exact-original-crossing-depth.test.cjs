@@ -52,3 +52,18 @@ test('forged, missing, nonfinite original source geometry and unsupported view a
  assert.throws(()=>depth({geometry:bad,view:'H',firstEdge:['A','B'],
   secondEdge:['C','D']}),/missing finite/);
 });
+
+test('exact projected crossing at t=1/2 cannot certify native HLR stroke ending at t=.4, regardless of rounded M4 event coordinates',()=>{
+ const r=depth({geometry,view:'H',firstEdge:['A','B'],
+  secondEdge:['C','D'],nativeFirstOriginalParameterRange:[0,.4]});
+ assert.equal(r.firstOriginalOpenSourceContainsExactCrossing,true);
+ assert.equal(r.currentNativeOriginalOpenIntervalContainsExactCrossing,false);
+ assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,false);
+ assert.equal(r.exactOriginalSourceAtCrossingFront,null);
+});
+test('crossing exactly on native interval endpoint remains a junction boundary, not a strictly certified interior',()=>{
+ const r=depth({geometry,view:'H',firstEdge:['A','B'],
+  secondEdge:['C','D'],nativeFirstOriginalParameterRange:[.5,1]});
+ assert.equal(r.currentNativeOriginalOpenIntervalContainsExactCrossing,false);
+ assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,false);
+});
