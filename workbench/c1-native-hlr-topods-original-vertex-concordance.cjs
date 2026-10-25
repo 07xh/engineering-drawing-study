@@ -60,6 +60,9 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices:0,
   IsSameHLRNodesButOriginalSource3DVertexNotCertified:0,
   IsSameNativeVisibleAndHiddenSourceHistoryStillUnknown:0,
+  distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs:0,
+  paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction:0,
+  actualOriginal3DPhysicalSourceJunctionPairsVerified:0,
   generatedTopoDSEdgeOriginalSourceHistoryCertified:0,
   engineeringGBLineJunctionsSigned:0,signedV5Actions:0
  };
@@ -87,11 +90,16 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    throw new RangeError('original M0 3D endpoint ledger missing');
   return {source:src.originalPhysicalSourceEdgeId,
    vertex:w.originalModel3DSourceVertexId!==null&&
+    geometry.data.points[w.originalModel3DSourceVertexId]&&
     (w.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
      w.existingM4OriginalSourceEndpointVerified===true)?
      w.originalModel3DSourceVertexId:null,
    nativeHidden:true};
  }
+ const verifiedPhysical3DPair=(a,b)=>
+  a.nativeHidden&&b.nativeHidden&&
+  a.source!==null&&b.source!==null&&a.source!==b.source&&
+  a.vertex!==null&&a.vertex===b.vertex;
  for(const view of VIEWS){
   const data=graph.views[view];
   for(const pair of data.sameActualGeneratedOCCTTopoDSVertexPairs){
@@ -103,8 +111,8 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     throw new RangeError('native OCCT shared vertex lacks real IsSame proof or is prematurely signed');
    const a=locate(pair.a,view),b=locate(pair.b,view);
    const both=a.nativeHidden&&b.nativeHidden;
-   const verified=both&&a.source!==null&&b.source!==null&&
-    a.source!==b.source&&a.vertex!==null&&a.vertex===b.vertex;
+   const verified=verifiedPhysical3DPair(a,b);
+   if(verified)counts.actualOriginal3DPhysicalSourceJunctionPairsVerified++;
    counts.actualNativeIsSamePairs++;
    if(both){
     counts.IsSameHiddenToHiddenNativeEndpointPairs++;
@@ -128,11 +136,19 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       pair.signedV5Action!==false||
       !equal(pair.a?.nativePaperPoint,pair.b?.nativePaperPoint))
     throw new RangeError('paper-only alias cannot be considered a native vertex');
-   locate(pair.a,view);locate(pair.b,view);
+   const a=locate(pair.a,view),b=locate(pair.b,view);
+   const originalPhysical=verifiedPhysical3DPair(a,b);
    counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld++;
+   if(originalPhysical){
+    counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs++;
+    counts.actualOriginal3DPhysicalSourceJunctionPairsVerified++;
+   }else counts.paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction++;
    aliases.push({view,a:{...pair.a},b:{...pair.b},
     nativeTopoDSVertexShared:false,
-    trueOriginal3DSourceTopologyCertified:false,signedV5Action:false});
+    independentlyRealOriginal3DSourceJunctionPositivelyProven:originalPhysical,
+    verifiedOriginal3DVertexId:originalPhysical?a.vertex:null,
+    actualNativeGeneratedHLRSharedTopoDSVertexCertified:false,
+    globalGBLineJoinStillNotCertified:true,signedV5Action:false});
   }
  }
  if(counts.actualNativeIsSamePairs!==
