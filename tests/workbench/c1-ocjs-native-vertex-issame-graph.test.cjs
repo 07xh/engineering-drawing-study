@@ -98,8 +98,9 @@ test('non-transitive mocked OCCT IsSame graph is rejected instead of treating a 
  for(const node of [a,b,c]){
   node.IsSame=function(other){
    const lhs=name.get(this),rhs=name.get(other);
-   return lhs===rhs||lhs==='A'&&rhs==='B'||
-    lhs==='B'&&rhs==='A'||lhs==='B'&&rhs==='C'||lhs==='C'&&rhs==='B';
+   return this===other||lhs!==undefined&&rhs!==undefined&&
+    (lhs===rhs||lhs==='A'&&rhs==='B'||
+    lhs==='B'&&rhs==='A'||lhs==='B'&&rhs==='C'||lhs==='C'&&rhs==='B');
   };
  }
  assert.throws(()=>graph({perView:v}),/not transitive/);
