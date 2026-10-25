@@ -13,6 +13,8 @@
  * This is a read-only M5 gate and NEVER introduces a second signer.
  */
 const {VIEWS}=require('../core/projection/conventions.js');
+const {exactOriginalM4TransverseCrossingDepth}=
+ require('./c1-m4-exact-original-crossing-depth.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -105,6 +107,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved:0,
   nativeHLRUnprovenExactPaperEventAlignment:0,
   nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof:0,
+  nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor:0,
+  nativeM4TransverseDepthAtTruePaperCrossingButM4CutNotAnchored:0,
   nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof:0,
   nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex:0,
   exactOriginal3DSharedVertexWithTwoAuthenticBRepSources:0,
@@ -206,6 +210,58 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts.nativeHLRUnprovenExactPaperEventAlignment+=projected.filter(e=>
    e.actualNativeGeneratedBRepPaperRelation?.
     originalEventOnSameNativePaperLineExactly!==true).length;
+  // Only claim a native stroke's local transverse crossing depth when
+  // canonical M4's stored cut equals the EXACT rational source crossing.
+  // Independent recomputation prevents a forged downstream ledger from
+  // upgrading a rounded diagnostic event to an M5 proof.
+  const anchoredTransverse=[];
+  for(const event of projected){
+   if(event.canonicalM4ProjectedEncounterKind!=='crossing')continue;
+   const claimed=event.nativeHLRActualM4EventLocallyAnchoredStrictDepth===true;
+   const status=event.exactOriginalM4CrossingObserverDepthEvidence;
+   if(!claimed){
+    if(status?.strictOriginal3DObserverDepthOrderAtPaperCrossingProven===true&&
+       event.canonicalM4EventExactRationalSourceParameterMatch!==true)
+     counts.nativeM4TransverseDepthAtTruePaperCrossingButM4CutNotAnchored++;
+    continue;
+   }
+   const edgeMap=new Map((geometry.data.edges??[]).map(ids=>
+    [geometry.id+'::'+[...ids].sort().join('|'),ids]));
+   const original=edgeMap.get(event.originalPhysical3DSourceEdgeId),
+    other=edgeMap.get(event.otherOriginal3DSourceEdgeId),
+    nativeRange=m4Native.genuineNativeHLROriginalSourceParameterRange;
+   if(!original||!other||!Array.isArray(nativeRange)||
+      event.originalM4RoundedForDiagnostic!==false||
+      event.canonicalM4EventExactRationalSourceParameterMatch!==true||
+      event.actualNativeGeneratedBRepPaperRelation?.
+       originalEventOnSameNativePaperLineExactly!==true||
+      event.actualNativeGeneratedBRepPaperRelation?.
+       originalEventWithinNativePaperEndpointsNumerically!==true||
+      event.originalSourceParameter<=nativeRange[0]||
+      event.originalSourceParameter>=nativeRange[1])
+    throw new RangeError('native transverse crossing claims unauthenticated original M4/OCCT identity');
+   const independent=exactOriginalM4TransverseCrossingDepth({
+    geometry,view:gap.view,firstEdge:original,secondEdge:other,
+    nativeFirstOriginalParameterRange:nativeRange,
+    originalM4SourceParameter:event.originalSourceParameter
+   });
+   const front=independent.exactOriginalSourceAtCrossingFront==='first'?
+    event.originalPhysical3DSourceEdgeId:event.otherOriginal3DSourceEdgeId;
+   if(!independent.strictOriginal3DObserverDepthOrderAtPaperCrossingProven||
+      !independent.originalM4SourceParameterExactlyMatchesRationalCrossing||
+      event.exactOriginal3DFrontSourceAtTransversePaperCrossing!==front)
+    throw new RangeError('forged canonical M4 rational crossing or incorrect exact M0 observer depth');
+   anchoredTransverse.push({
+    originalHiddenSourceEdgeId:event.originalPhysical3DSourceEdgeId,
+    crossingOtherOriginalSourceEdgeId:event.otherOriginal3DSourceEdgeId,
+    localExactObserverFrontSourceEdgeId:front,
+    exactOriginalM4ParameterAndRealNativePaperBothAligned:true,
+    globalOcclusionTopologyCertified:false,
+    engineeringLineStyleCertified:false,signedV5Action:false
+   });
+  }
+  counts.nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor+=
+   anchoredTransverse.length;
   // M4's near-endpoint collinear overlap is NOT necessarily an actual
   // visibility switch. Positively reject such a switch only when the
   // already independent full-original M0 exact front depth, current M5
@@ -288,6 +344,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
     localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    canonicalOriginalM4ProjectedEncountersAudited:projected.length,
+   nativeM4TransverseExactLocalDepthAndNativeHLRAnchors:anchoredTransverse,
    collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof:
     positiveFrontNoSwitch.map(e=>({
      originalSourceParameter:e.originalSourceParameter,
