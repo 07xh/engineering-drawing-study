@@ -172,11 +172,11 @@ for(const [index,geometry] of general.entries()){
  assert.equal(gapModel.actualNativeGeneratedHLRPaperCoverageAndOriginalModelProofNotConflated,true);
  assert.ok(gapModel.rows.every(r=>r.signedV5Action===false&&
   r.constructionIntentAuthorized===false&&
-  r.allGeneratedHLRPaperEndpointTailExtensionsProven===false&&
+  r.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven===false&&
   r.originalM4OrNativePaperPositiveGapWitnesses.every(w=>
    w.signedV5Action===false&&
    w.officialEngineeringLineStyle==='undetermined'&&
-   w.fullNativeHLRGeneratedVisiblePaperTailCertified===false)));
+   w.generatedHLRSourceTopoDSHistoryAndAllJunctionsCertified===false)));
  assert.ok(exactFront.rows.every(row=>
   row.actualOCCTGeneratedHLRToOriginalTopoDSIdentityCertified===false&&
   row.finalGBHiddenLineStyleCertified===false&&
