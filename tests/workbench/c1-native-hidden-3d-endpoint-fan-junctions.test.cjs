@@ -5,7 +5,7 @@ const {witnessHiddenHLRCandidateOriginal3DEndpoint:witness}=
  require('../../workbench/c1-native-hidden-3d-endpoint-fan-junctions.cjs');
 const geometry={id:'G',data:{points:{
  A:{x:0,y:0,z:0},B:{x:10,y:0,z:0},
- C:{x:0,y:0,z:9},D:{x:12,y:0,z:9}
+ C:{x:0,y:0,z:9},D:{x:10,y:0,z:9}
 }}};
 const eId='G::A|B',rev=77,view='H',edge=['A','B'];
 const point=t=>({x:10*t,y:0,z:0});
