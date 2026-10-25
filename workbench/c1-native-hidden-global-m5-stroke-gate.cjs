@@ -97,6 +97,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
   missingLocalNativeOrModelOpenProofHeld:0,
   original3DEndpointFanProofIncompleteStrokes:0,
+  incompleteCanonicalOriginalSourcePartitions:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
