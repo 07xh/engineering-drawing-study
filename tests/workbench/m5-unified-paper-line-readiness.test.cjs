@@ -160,6 +160,12 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
   proof.nonuniqueSourceGroupCount);
  assert.equal(r.paperStrokeDepthAliasEndpointCount,
   proof.depthAliasEndpointLineCount);
+ assert.equal(r.paperStrokeIndependentAllOpaqueEndpointOpenRayClearCount,
+  proof.independentlyClearPhysicalEndpointOpenRayCount);
+ assert.equal(r.paperStrokeReal3DJoinAndEndpointOpenRayClearCount,
+  proof.locallyJoinedAndEndpointOpenRayClearCount);
+ assert.equal(r.paperStrokeBothEndpointLocalOpenRayProofLineCount,
+  proof.fullyPairedLocalEndAndOpenRayLineCount);
  assert.equal(proof.signedV5LineActions,0);
  assert.equal(r.generatedSourceStrokeSignedCount,0);
  assert.equal(r.signedCount,0);
@@ -170,6 +176,10 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
  assert.match(ui,/paperStrokeScopedOpaqueSourceCount/);
  assert.match(ui,/paperStrokeNonuniqueSourceCount/);
  assert.match(ui,/paperStrokeDepthAliasEndpointCount/);
+ assert.match(ui,/paperStrokeIndependentAllOpaqueEndpointOpenRayClearCount/);
+ assert.match(ui,/paperStrokeReal3DJoinAndEndpointOpenRayClearCount/);
+ assert.match(ui,/paperStrokeBothEndpointLocalOpenRayProofLineCount/);
+ assert.match(ui,/闭合端点拓扑及标准线型仍未签收/);
  assert.match(ui,/以上都未签发标准虚实线和正式 V5/);
 });
 
