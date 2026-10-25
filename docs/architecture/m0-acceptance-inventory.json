@@ -30,6 +30,16 @@
       "remainingGate": "indirect predicate testing, not arbitrary real arithmetic"
     },
     {
+      "path": "core/numeric/convex-incident-source-open-ray.cjs",
+      "status": "consumer-review",
+      "proofScope": "exact represented-binary64 original face-edge incidence, globally supporting convex polygon face and strict outward first-angle observer slope; positive open source ray for one authenticated original edge only",
+      "regressionTests": [
+        "tests/math/m0-exact-convex-incident-source-open-ray.test.cjs",
+        "tests/math/m0-convex-open-ray.test.cjs"
+      ],
+      "remainingGate": "M0 independently authenticated closed convex source, revision and complete reviewed scene; adjacent 3D endpoint junctions, full M5 depth comparison and CAD source identity still required; cannot independently mint hidden or visible GB engineering line styles or original V5 actions"
+    },
+    {
       "path": "core/numeric/convex-open-ray.cjs",
       "status": "consumer-review",
       "proofScope": "two signed ray slopes only",

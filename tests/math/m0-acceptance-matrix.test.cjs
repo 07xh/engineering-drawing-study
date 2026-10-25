@@ -4,12 +4,19 @@ const {audit}=require('../../scripts/audit-m0-acceptance.cjs');
 const by=(r,id)=>r.entries.find(x=>x.path==='core/numeric/'+id+'.cjs');
 test('complete M0 API inventory has explicit scoped tests and real unresolved gates',()=>{
  const r=audit();
- assert.equal(r.moduleCount,20);
- assert.equal(r.entries.length,20);
+ assert.equal(r.moduleCount,21);
+ assert.equal(r.entries.length,21);
  assert.equal(r.statuses.provisional,1);
  assert.equal(r.statuses['consumer-pending'],0);
- assert.equal(r.statuses['consumer-review'],5);
+ assert.equal(r.statuses['consumer-review'],6);
  assert.ok(r.entries.every(x=>x.proofScope&&x.remainingGate&&x.regressionTests.length));
+ const physical=by(r,'convex-incident-source-open-ray');
+ assert.equal(physical.status,'consumer-review');
+ assert.ok(physical.directRuntimeConsumers.includes(
+  'workbench/m5-c1-continuous-frontmost-source-rays.cjs'));
+ assert.ok(physical.regressionTests.includes(
+  'tests/math/m0-exact-convex-incident-source-open-ray.test.cjs'));
+ assert.match(physical.remainingGate,/M5|V5/);
  assert.match(r.warning,/not executable paths/);
 });
 test('three real spatial solver sources consume existing object-vector M0 bridge',()=>{
