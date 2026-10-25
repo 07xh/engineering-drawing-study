@@ -98,10 +98,14 @@ test('C1 public solid page preserves unverified edges alongside independently pr
  assert.match(html,/id="confirmed"/);
  assert.match(html,/id="pair"/);
  assert.match(html,/id="vertices"/);
- assert.match(html,/不是工程图实线\/虚线/);
+ assert.match(html,/不能冒充正式可见或隐藏图线/);
  assert.match(js,/compileReviewedSolidVertexV5/);
  assert.match(js,/data-v5-vertex-layer/);
- assert.match(js,/data-certified-scope','point-auxiliary-only/);
+ assert.match(js,/data-certified-scope',exterior\?/);
+ assert.match(js,/single-closed-convex-visible-outer-contour/);
+ assert.match(js,/point-auxiliary-only/);
+ assert.match(js,/data-official-solid-stroke',String\(exterior\)/);
+ assert.match(js,/certifiedVisibleContourLineBindings/);
  assert.match(html,/id="pointV5Play"/);
  assert.match(js,/data-visibility','undetermined/);
  assert.match(js,/data-official-v5','false/);

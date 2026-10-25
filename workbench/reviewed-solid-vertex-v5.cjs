@@ -11,16 +11,16 @@
  */
 const {reviewedSolidThirdView}=
  require('./reviewed-multipoint-solid-third-view.cjs');
-const {auditC1ConvexContourSourceCoverage}=
- require('./m5-c1-convex-contour-source-coverage.cjs');
-const {auditC1ContourPhysicalJunctionIncidence}=
- require('./m5-c1-contour-physical-junction-incidence.cjs');
-const {auditC1ContinuousFrontmostSourceRays}=
- require('./m5-c1-continuous-frontmost-source-rays.cjs');
+const {auditC1GlobalVisibleContourProof}=
+ require('./m5-c1-global-visible-contour-proof.cjs');
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {assertM3ToV5Consistency}=
  require('./m3-v5-consistency-gate.cjs');
+const {verifiedTeachingActionToV5}=
+ require('./construction-step-v5-adapter.cjs');
+const {CONSTRUCTION_INTENT_VERSION}=
+ require('../core/contracts/construction-intent.js');
 const Timeline=require('./teaching-timeline-v5.js');
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
@@ -38,15 +38,11 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  const sceneResult=reviewedSolidThirdView(input); // current 03 / M0 / Scene
  if(sceneResult.status!=='geometry-proven-in-confirmed-convex-scope')
   throw new RangeError('closed convex first-angle source proof unavailable');
- const convexContourSourceCoverage=auditC1ConvexContourSourceCoverage({
+ const globalVisibleContourProof=auditC1GlobalVisibleContourProof({
   geometry:sceneResult.geometry,revision:input.revision});
- const contourPhysicalJunctionIncidence=auditC1ContourPhysicalJunctionIncidence({
-  geometry:sceneResult.geometry,revision:input.revision,
-  contourCoverage:convexContourSourceCoverage});
- const continuousFrontmostSourceRays=auditC1ContinuousFrontmostSourceRays({
-  geometry:sceneResult.geometry,revision:input.revision,
-  contourCoverage:convexContourSourceCoverage,
-  physicalJunctionIncidence:contourPhysicalJunctionIncidence});
+ const {contourCoverage:convexContourSourceCoverage,
+  contourPhysicalJunctionIncidence,
+  continuousFrontmostSourceRays}=globalVisibleContourProof;
  if(continuousFrontmostSourceRays.v5Ready!==false||
     continuousFrontmostSourceRays.signedV5LineActions!==0||
     continuousFrontmostSourceRays.officialLineStylesVerified!==false)
@@ -166,8 +162,70 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    vertexConstructionVerified:true,
    correspondingEdgeVisibilityVerified:false});
  }
+ // Keep the ORIGINAL ONE point Intent DAG and proofs. Only after an entire
+ // closed convex silhouette is independently proven in ALL three first-angle
+ // views can its visible outer contour join the SAME Intent/Step/V5 stream.
+ // Re-identify the trusted recomputed C1 composite specialist as the uniform
+ // DAG proof source. Do not forge a point-only proof as a spatial stroke.
+ const certifiedVisibleContourLineActionIds=[];
+ const certifiedVisibleContourLineBindings=[];
+ if(globalVisibleContourProof.allThreeViewsGlobalContourCertified){
+  const src={solver:'workbench/reviewed-solid-vertex-v5.cjs',
+   revision:input.revision,unit:'mm',
+   proofScope:'confirmed-convex-M0-M5-03-points-and-complete-visible-VHW-hull',
+   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
+   evidenceSource:'C1-reviewed-03-points-global-visible-convex-hull-proof'};
+  // These same original point operations were each recomputed by 03 and
+  // checked above; the composite source now binds BOTH independent proofs.
+  for(const i of intents)i.source={...src};
+  let parent=intents.at(-1)?.id;
+  if(!parent)throw new RangeError('missing certified original point DAG');
+  for(const v of globalVisibleContourProof.views){
+   if(!v.allContourLinesVerified)
+    throw new RangeError('mixed signed and unsigned global silhouette ring');
+   for(const [idx,line] of v.candidateIntervals.entries()){
+    if(line.revision!==input.revision||
+       line.sourceGeometryId!==sceneResult.geometry.id||
+       line.view!==v.view||
+       line.signedOfficialLineStyle!==
+        'gb-t-4457.4-continuous-wide-visible-outline'||
+       line.v5ActionAuthorized!==true||
+       !line.genuineFrontSourceEndpointJoinsVerified||
+       !line.continuouslyFrontRayClearVerified||
+       !line.locallyCompleteVisibleHullSegmentProven)
+     throw new RangeError('missing genuine full-ring C1 visible contour proof');
+    const id='c1_hull_'+v.view+'_'+idx,
+     actionId='c1_hull_action_'+v.view+'_'+idx,
+     from=toSheet(v.view,line.projectedFromModelMm,sheetTransform),
+     to=toSheet(v.view,line.projectedToModelMm,sheetTransform);
+    const op={id:actionId,kind:'line',coordinateSpace:'sheet-px',
+     geometry:{from,to}};
+    intents.push({schema:CONSTRUCTION_INTENT_VERSION,id,
+     purpose:'draw-certified-single-convex-visible-exterior-contour',
+     role:'result',dependsOn:[parent],inputEntityIds:[],
+     outputEntityIds:[actionId],operations:[op],source:{...src}});
+    steps.push({id,dependsOn:[parent],
+     title:'正式可见外轮廓 '+v.view+' 第 '+(idx+1)+' 段',
+     explanation:'独立闭合凸体全部纸面轮廓、三维接点和连续无遮挡证据已通过。',
+     role:'result',actions:[verifiedTeachingActionToV5({
+      id:actionId,kind:'line',coordinateSpace:'sheet-px',from,to
+     },sheetTransform)]});
+    certifiedVisibleContourLineActionIds.push(actionId);
+    certifiedVisibleContourLineBindings.push({
+     actionId,revision:input.revision,sourceGeometryId:line.sourceGeometryId,
+     sourceEdgeId:line.sourceEdgeId,view:v.view,
+     fromModelMm:{...line.projectedFromModelMm},
+     toModelMm:{...line.projectedToModelMm},
+     fromSheetPx:{...from},toSheetPx:{...to},
+     standardLineStyle:'gb-t-4457.4-continuous-wide-visible-outline',
+     completeClosedConvexOuterSilhouetteVerified:true,
+     signedFormalLineV5:true,hiddenOrInternalFeatureLineAuthorized:false});
+    parent=id;
+   }
+  }
+ }
  if(intents.length>300||steps.length>300)
-  throw new RangeError('excessive point DAG for original V5');
+  throw new RangeError('excessive unified C1 Intent DAG for original V5');
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
   revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
@@ -178,7 +236,15 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   revision:input.revision,status:'canonical-vertex-construction-ready',
   sceneResult,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
-  scopedEdgePreviews,
+  globalVisibleContourProof,scopedEdgePreviews,
+  certifiedVisibleContourLineActionIds,
+  certifiedVisibleContourLineBindings,
+  certifiedVisibleContourLineActionCount:
+   certifiedVisibleContourLineActionIds.length,
+  scopedClosedConvexVisibleContourV5Ready:
+   certifiedVisibleContourLineActionIds.length>0,
+  verifiedLineIntentAndOriginalSingleV5Parity:
+   certifiedVisibleContourLineActionIds.length>0,
   vertexBindings:bindings,intents,steps,timeline,player,
   vertexConstructionCount:bindings.length,pointActionCount,
   singleOriginalV5Player:true,certifiedPointConstructionReady:true,
