@@ -260,6 +260,10 @@ function solve(){
    '\\nM5 完整轮廓投影端点：三维真实来源关联 '+certified.contourPhysicalJunctionIncidence.inspectedContourIntervalEndpointCount+
    ' 次；同一纸面端点含不同深度来源 '+certified.contourPhysicalJunctionIncidence.depthAliasedPaperJunctionCount+
    ' 处。物理接点候选不是正式工程线型/逐线 V5 资格。'+
+   '\\nM5 连续观察方向深度：核验全轮廓子区间 '+certified.continuousFrontmostSourceRays.auditedIntervalCount+
+   ' 个，其中已列来源严格最前且整段射线无阻挡 '+certified.continuousFrontmostSourceRays.independentlyClearLeadingSourceIntervalCount+
+   ' 个，深度平齐/换序未定 '+certified.continuousFrontmostSourceRays.ambiguousDepthIntervalCount+
+   ' 个。任何局部无遮挡都不自动生成工程标准实线或 V5 实体绘图。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
