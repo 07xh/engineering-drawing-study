@@ -81,9 +81,19 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
  const sourceEdges=new Map((geometry.data.edges??[]).map(edge=>[
   geometry.id+'::'+[...edge].sort().join('|'),edge
  ]));
- const outwardM5=new Map((originalClosedRayM5?.rows??[]).map(row=>[
-  row.originalPhysicalSourceEdgeId+'@'+row.view,row
- ]));
+ // A same-revision CLOSED front-ray witness must be unique per original
+ // physical source edge and view. Map(last-write-wins) could otherwise let
+ // contradictory/duplicated M5 rows silently certify a visible HLR endpoint.
+ const outwardM5=new Map();
+ for(const row of originalClosedRayM5?.rows??[]){
+  if(!row||typeof row.originalPhysicalSourceEdgeId!=='string'||
+     !VIEWS.includes(row.view))
+   throw new RangeError('invalid original M5 closed-ray source/view witness');
+  const key=row.originalPhysicalSourceEdgeId+'@'+row.view;
+  if(outwardM5.has(key))
+   throw new RangeError('duplicate original M5 closed-ray source/view witness');
+  outwardM5.set(key,row);
+ }
  const xyzEq=(a,b)=>a&&b&&['x','y','z'].every(k=>
   Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
  function locate(ref,view){
