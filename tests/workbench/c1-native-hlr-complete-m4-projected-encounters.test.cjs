@@ -39,6 +39,14 @@ const fixture=()=>{
    hiddenHLROutputFromActualOCCT:true,
    actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
    v5Authorized:false,
+   originalBRepSourceEdges:edges.map(edge=>({
+    sourceEdgeId:source(edge),
+    originalOCCTBRepVertexXYZMatched:true,
+    occtCurveTypeIndependentlyVerified:true,
+    occtSourceCurveType:'line',
+    occtSourceCurve3DEndpointsAndMidpointVerified:true,
+    generatedHLREdgeTopoDSIdentityMatched:false
+   })),
    hiddenSharpViews:{V:[],H:[{
     view:'H',occtHLRVisibilityClass:'hidden-sharp',
     actualOCCTHLRFlattenedBRepLineVerified:true,
@@ -76,6 +84,13 @@ test('ALL known M4 encounters of one genuine HLR hidden original source are audi
  assert.equal(p.counts.uniqueOriginal3DSourceNativeHLRLinesAudited,1);
  assert.equal(p.counts.originalM4PaperEncounterOccurrencesCovered,2);
  assert.equal(p.counts.exactOriginal3DPhysicalVertexEncountersCorroborated,1);
+ assert.equal(p.counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR,1);
+ const sourceVertex=p.rows[0].originalM4ProjectedEncountersOnNativeSource[0];
+ assert.equal(sourceVertex.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven,true);
+ assert.equal(sourceVertex.exactOriginalM4VertexOtherSourceDepthEvidence.
+  exactOriginalVertexDepthRelativeOtherSourceSign,0);
+ assert.equal(sourceVertex.exactOriginalM4VertexOtherSourceDepthEvidence.
+  exactOriginal3DPhysicalVertexSharedBySourceEdges,true);
  assert.equal(p.counts.paperOnlyOriginalSourceCrossingsAndOverlapsHeld,1);
  assert.equal(p.counts.nativeHLRInteriorPaperEventsRequiringSceneJunctionReview,1);
  const [a,b]=p.rows[0].originalM4ProjectedEncountersOnNativeSource;
@@ -153,4 +168,27 @@ test('source parameter 1 preserves original 3D model vertex projection bit-for-b
  assert.equal(endpoint.originalEventPaperPoint.u,b);
  assert.equal(endpoint.actualNativeGeneratedBRepPaperRelation.
   originalEventOnSameNativePaperLineExactly,true);
+});
+
+test('shared M0 original 3D vertex and real original OCCT BRep remain proven when numeric native HLR segment misses model event by one ULP',()=>{
+ const x=fixture(),row=x.m4.rows.find(r=>r.view==='H'&&
+  r.sourceEdgeId===source(edges[0]));
+ const event=row.encounters[0];
+ x.cad.hiddenSharpViews.H[0].to.v=Number.EPSILON;
+ x.refinements[0].projectedTo.v=Number.EPSILON;
+ const proof=audit(x),w=proof.rows[0].originalM4ProjectedEncountersOnNativeSource[0];
+ assert.equal(w.positivelySameOriginal3DPhysicalSourceVertex,'B');
+ assert.equal(w.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven,true);
+ assert.equal(w.originalHLRGeneratedPaperMismatchRemains,true);
+ assert.equal(proof.counts.exactOriginal3DPhysicalSharedVertexDespiteNativePaperMismatch,1);
+ assert.equal(w.fullGlobalProjectedJunctionAndDepthSwitchCertified,false);
+ assert.equal(w.signedV5Action,false);
+});
+test('independent original BRep source missing or counterfeit cannot authorize source junction through native paper alias',()=>{
+ const x=fixture();
+ x.cad.originalBRepSourceEdges[1].occtCurveTypeIndependentlyVerified=false;
+ const proof=audit(x);
+ assert.equal(proof.counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR,0);
+ assert.equal(proof.rows[0].originalM4ProjectedEncountersOnNativeSource[0].
+  original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven,false);
 });
