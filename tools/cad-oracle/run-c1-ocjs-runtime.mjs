@@ -396,6 +396,16 @@ for(const [index,geometry] of general.entries()){
   finalGate.subspans.filter(x=>x.positiveLineLikeGeometryReadyForFurtherM5Proof).length);
  assert.equal(unsignedReview.fullyCertifiedCount,0);
  assert.equal(unsignedReview.signedV5ActionCount,0);
+ assert.equal(unsignedReview.unresolvedByProofClass.engineeringLineStandard,
+  unsignedReview.total);
+ assert.equal(unsignedReview.unresolvedByProofClass.soleConstructionIntentDAGV5,
+  unsignedReview.total);
+ assert.equal(unsignedReview.unresolvedByProofClass.completeIntervalVisibility,
+  unsignedReview.total);
+ assert.ok(unsignedReview.rows.every(row=>
+  row.independentGlobalProofGaps.original3DSourceIdentity===true&&
+  row.independentGlobalProofGaps.endpointAndProjectionTopology===true));
+
  assert.ok(unsignedReview.rows.every((row,i)=>
   row.sourceEdgeId===finalGate.subspans[i].sourceEdgeId&&
   row.formalLineStyle==='undetermined'&&
