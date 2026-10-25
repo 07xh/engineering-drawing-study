@@ -3,6 +3,8 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {auditC1OriginalClosedEdgeRayContinuity:audit}=
  require('../../workbench/c1-m5-closed-original-edge-ray-continuity.cjs');
+const {auditC1OriginalSourceSubspanJunctions}=
+ require('../../workbench/c1-original-source-subspan-junction-provenance.cjs');
 const P=(x,y,z)=>({x,y,z});
 const makeBox=()=>{
  const g=prismMesh({solid:{min:P(0,0,0),max:P(10,10,10)}});
@@ -66,13 +68,41 @@ test('box V FRONT physical edge ray closed clear through both exact vertices whi
  assert.ok(back.sourceOriginalVertexRayStatus.every(s=>s==='undetermined'));
  assert.equal(back.completeSourceOriginal3DRayClosedIntervalClear,false);
 });
-test('oblique hexa paper intersection cut preserves true 3D same-source continuity, never creates a new vertex',()=>{
+test('oblique hexa certifies closed original source rays without INVENTING nonexistent paper cuts',()=>{
  const r=check(makeOblique());
- assert.ok(r.counts.same3DOriginalSourceCutJoinsPreserved>0);
- assert.ok(r.counts.nonoriginalPaperCutEndpointsHeld>0);
- assert.ok(r.counts.paperOnlyCrossSourceEncountersNeverUpgraded>0);
+ assert.equal(r.counts.same3DOriginalSourceCutJoinsPreserved,0);
+ assert.equal(r.counts.nonoriginalPaperCutEndpointsHeld,0);
  assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
  assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
+ assert.ok(r.rows.every(x=>x.originalCutSubspans.every(y=>
+  y.physicalCrossSourceJunctionAtPaperCutsAuthorized===false)));
+});
+test('actual crossing diagonals in V paper view preserve ONE true 3D source edge through nonvertex M4 cut',()=>{
+ // These genuine opposite tetra edges AC and BD cross in V(x,z)
+ // while having different Y coordinates at the crossing.
+ // Forensic M4-only M0 mode is mandatory here: no unproved hull,
+ // engineering line style or V5 is signed as a result.
+ const g={id:'C1PaperCrossOnlyForensic',kind:'mesh',
+  space:'model-3d',unit:'mm',data:{
+   points:{A:P(0,0,0),B:P(20,0,0),
+    C:P(20,15,20),D:P(0,12,20)},
+   edges:[['A','B'],['A','C'],['A','D'],
+    ['B','C'],['B','D'],['C','D']],
+   faces:[['A','B','C'],['A','B','D'],
+    ['A','C','D'],['B','C','D']]}};
+ const r=auditC1OriginalSourceSubspanJunctions({
+  geometry:g,revision:7,proofMode:'m4-projected-events-only'});
+ const ac=r.rows.find(x=>x.view==='V'&&
+  x.sourceEdgeId===edge(g,'A','C'));
+ assert.ok(ac&&ac.spans.length>=2);
+ assert.ok(r.counts.sharedOriginalSourceNeighborJoins>0);
+ assert.equal(ac.spans[1].sameOriginalSource3DContinuityFromPriorPiece,true);
+ assert.deepEqual(ac.spans[0].to3D,ac.spans[1].from3D);
+ assert.equal(ac.spans[1].fromEndpoint.originalVertexId,null);
+ assert.equal(ac.spans[1].fromEndpoint.authorizedAsV5Junction,false);
+ assert.equal(ac.spans[1].officialEngineeringLineStyle,'undetermined');
+ assert.equal(r.m5OriginalContourAvailable,false);
+ assert.equal(r.signedV5ActionCount,0);
 });
 test('skew tetra full original face-support ray and endpoints agree without authorizing GB dashed or V5',()=>{
  const r=check(makeTetra());
