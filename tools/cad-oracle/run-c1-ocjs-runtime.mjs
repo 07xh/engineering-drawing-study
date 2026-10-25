@@ -842,6 +842,42 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld,
    nativeCrossingOutsideActualOriginalOpenSpanHeld:
     nativeEncounters.counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld,
+   unresolvedActualNativeInteriorM4Events:
+    nativeEncounters.rows.flatMap(r=>r.originalM4ProjectedEncountersOnNativeSource
+     .filter(ev=>ev.originalSourceParameter>
+      (r.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+      ev.originalSourceParameter<
+      (r.genuineNativeHLROriginalSourceParameterRange?.[1]??1))
+     .map(ev=>({
+      view:r.view,sourceEdgeId:r.uniqueOriginalPhysical3DSourceEdgeId,
+      otherSourceEdgeId:ev.otherOriginal3DSourceEdgeId,
+      kind:ev.canonicalM4ProjectedEncounterKind,
+      nativeOrdinal:r.nativeHiddenSharpEdgeOrdinal,
+      originalSourceParameter:ev.originalSourceParameter,
+      trueOriginal3DPhysicalVertex:ev.positivelySameOriginal3DPhysicalSourceVertex,
+      exactLocal3DDepthProven:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       strictOriginal3DObserverDepthOrderAtPaperCrossingProven??false,
+      otherEdgeEndpointOnPaper:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       otherOriginal3DEdgeEndpointAtPaperCrossing??false,
+      realNativePaperAligned:ev.actualNativeGeneratedBRepPaperRelation.
+       originalEventOnSameNativePaperLineExactly
+     }))).slice(0,8),
+   unalignedRealNativeM4PaperEvents:
+    nativeEncounters.rows.flatMap(r=>r.originalM4ProjectedEncountersOnNativeSource
+     .filter(ev=>!ev.actualNativeGeneratedBRepPaperRelation.
+      originalEventOnSameNativePaperLineExactly)
+     .map(ev=>({
+      view:r.view,sourceEdgeId:r.uniqueOriginalPhysical3DSourceEdgeId,
+      otherSourceEdgeId:ev.otherOriginal3DSourceEdgeId,
+      kind:ev.canonicalM4ProjectedEncounterKind,
+      nativeOrdinal:r.nativeHiddenSharpEdgeOrdinal,
+      sourceParameter:ev.originalSourceParameter,
+      modelEventPaper:ev.originalEventPaperPoint,
+      trueNativeOriginalPaperParameter:ev.actualNativeGeneratedBRepPaperRelation.
+       nativePaperSegmentParameter,
+      exactLocal3DDepthProven:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       strictOriginal3DObserverDepthOrderAtPaperCrossingProven??false
+     }))).slice(0,8),
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
