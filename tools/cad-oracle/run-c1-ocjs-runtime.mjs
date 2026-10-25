@@ -129,6 +129,35 @@ for(const [index,geometry] of general.entries()){
  assert.equal(cad.v5Authorized,false);
  assert.equal(cad.proofScope,'reviewed-closed-convex-polyhedral-shell');
  assert.deepEqual(Object.keys(cad.views).sort(),['H','V','W']);
+ assert.deepEqual(Object.keys(cad.hiddenSharpViews).sort(),['H','V','W']);
+ assert.equal(cad.hiddenHLROutputFromActualOCCT,true);
+ assert.equal(cad.hiddenSharpEdgesAreOnlyUnsignedCandidates,true);
+ assert.equal(cad.hiddenHLROriginalEdgeAttributionRecovered,false);
+ assert.equal(cad.hiddenLineStylesCertified,false);
+ for(const [observer,hiddenEdges] of Object.entries(cad.hiddenSharpViews)){
+  assert.ok(hiddenEdges.length<=128);
+  for(const seg of hiddenEdges){
+   assert.equal(seg.view,observer);
+   assert.equal(seg.occtHLRVisibilityClass,'hidden-sharp');
+   assert.equal(seg.actualOCCTHLRFlattenedBRepLineVerified,true);
+   assert.equal(seg.actualOCCTHLRCurveType,'line');
+   assert.equal(seg.actualOCCTHLRCurveEntireFiniteIntervalIsLine,true);
+   assert.equal(seg.actualOCCTHLRCurveSamplesProjectedMm.length,5);
+   assert.equal(seg.originalTopoDSSourceForHLREdgeRecovered,false);
+   assert.equal(seg.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched,false);
+   assert.equal(seg.officialEngineeringLineStyle,'undetermined');
+   assert.equal(seg.formalStandardLineStyle,'undetermined');
+   assert.equal(seg.v5Authorized,false);
+   assert.equal(seg.hiddenStrokeEngineeringStyleNotCertified,true);
+   assert.equal(seg.sourceCandidate3DLifts.length,
+    seg.projectedOriginalEdgeCandidates.length);
+   for(const source of seg.sourceCandidate3DLifts){
+    assert.equal(source.originalOCCTSourceLineCurveVerified,true);
+    assert.equal(source.actualOriginalOCCTBRepEdge3DEndpointsVerified,true);
+    assert.equal(source.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched,false);
+   }
+  }
+ }
  let count=0;
  const valid=new Set(geometry.data.edges.map(edge=>
   geometry.id+'::'+[...edge].sort().join('|')));
