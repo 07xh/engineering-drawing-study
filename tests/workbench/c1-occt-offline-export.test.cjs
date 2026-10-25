@@ -9,7 +9,7 @@ const {auditC1ConvexContourSourceCoverage}=
 test('C1 OCCT oracle exports only authentic reviewed convex mm geometry and previously proven unsigned V/H/W M5 hulls',()=>{
  const packet=exportCases();
  assert.equal(packet.schema,'draftai-c1-occt-offline-cases/1');
- assert.equal(packet.cases.length,5);
+ assert.equal(packet.cases.length,6);
  const ids=new Set(),views=['V','H','W'];
  for(const {id,geometry,reference} of packet.cases){
   assert.ok(!ids.has(id));ids.add(id);
@@ -42,7 +42,7 @@ test('C1 OCCT oracle exports only authentic reviewed convex mm geometry and prev
    }
   }
  }
- assert.equal(ids.size,5);
+ assert.equal(ids.size,6);
  const same=makeCases();
  assert.deepEqual(same,packet.cases);
 });
@@ -61,4 +61,6 @@ test('C1 OCCT corpus covers rigid rotation/translation/scale and a coplanar tria
   Math.abs(q.x-first.x)>0&&Math.abs(q.y-first.y)>0));
  assert.equal(byId.get('C1TranslatedBox').geometry.data.edges.length,12);
  assert.equal(byId.get('C1ScaledBox').geometry.data.edges.length,12);
+ assert.equal(byId.get('C1Tetrahedron').geometry.data.faces.length,4);
+ assert.equal(byId.get('C1Tetrahedron').geometry.data.edges.length,6);
 });
