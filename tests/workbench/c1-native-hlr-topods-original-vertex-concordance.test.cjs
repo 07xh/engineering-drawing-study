@@ -144,6 +144,29 @@ test('forged HLR vertex index or projected paper coordinates fail closed',()=>{
  assert.throws(()=>audit(y),/native OCCT shared vertex lacks real IsSame/);
 });
 
+test('native IsSame and paper-distinct witnesses for the same endpoints cannot coexist',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ v.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(b,a,false));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ x.cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=1;
+ assert.throws(()=>audit(x),/conflicting native OCCT IsSame and paper-distinct pair/);
+});
+test('reversed duplicate paper-distinct native pairs cannot inflate physical junction count',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ v.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(a,b,false),pair(b,a,false));
+ x.cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=2;
+ assert.throws(()=>audit(x),/duplicate paper-distinct native OCCT pair/);
+});
+test('a self-paired native HLR endpoint cannot be treated as an OCCT shared junction',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,a,true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ assert.throws(()=>audit(x),/self-paired native OCCT IsSame endpoint/);
+});
 const markGraphComplete=x=>{
  x.cad.nativeGeneratedVertexGraph.
   allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing=true;
