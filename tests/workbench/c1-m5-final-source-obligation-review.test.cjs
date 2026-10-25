@@ -18,7 +18,10 @@ const required=[
 ];
 function fixture(){
  const blockers=Object.fromEntries(required.map(x=>[x,false]));
- for(const key of required.slice(-4))blockers[key]=true;
+ for(const key of ['sourceCrossEdgeJunctionsNotGloballyCertified',
+ 'completeOpaqueSceneFeatureTopologyAndAllFacesNotCertified',
+ 'applicableStandardEngineeringLineStyleNotCertified',
+ 'originalConstructionIntentDAGAndSingleV5NotAuthorized'])blockers[key]=true;
  return {schema:'draftai-c1-m5-recomputed-real-wasm-final-source-obligations/1',
   sourceGeometryId:'G',revision:1,
   realCADAndM5RecomputedFromCurrentOriginalReviewedSource:true,
