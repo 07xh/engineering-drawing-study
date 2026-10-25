@@ -22,7 +22,9 @@
  const handles=Object.keys(oc).filter(k=>k.startsWith('Handle_HLRBRep_Algo'));
  console.log('HLR algo handles',JSON.stringify(handles));
  if(!handles.length)throw Error('Missing typed Handle_HLRBRep_Algo constructor');
- const Handle=oc[handles.find(k=>k.endsWith('_1'))||handles[0]];
+ const handleVariants=handles.map(k=>({name:k,arity:oc[k].length}));
+ console.log('HLR handle constructor variants',JSON.stringify(handleVariants));
+ const Handle=oc[handles.find(k=>k.endsWith('_2'))||handles[0]];
  const handle=new Handle(algo);
  const result=new oc.HLRBRep_HLRToShape(handle);
  const visible=result.VCompound();
