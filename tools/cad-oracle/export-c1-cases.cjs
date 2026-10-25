@@ -8,6 +8,9 @@
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {auditC1ConvexContourSourceCoverage}=
  require('../../workbench/m5-c1-convex-contour-source-coverage.cjs');
+const {compileReviewedSolidVertexV5}=
+ require('../../workbench/reviewed-solid-vertex-v5.cjs');
+const {project}=require('../../core/projection/conventions.js');
 const P=(x,y,z)=>({x,y,z});
 function make(id,min=P(-4,5,-9),max=P(24,18,31)){
  const g=prismMesh({solid:{min,max}});
@@ -64,6 +67,44 @@ function makeCases(){
     boundarySides:row.sides.map(s=>({from:s.fromModelMm,to:s.toModelMm}))
    }
   ]));
+  // The FIRST actual signed, scoped C1 -> canonical Intent/DAG/one-V5
+  // consumer is independently checked against real OCCT HLR. Other cases
+  // stay unsigned geometric controls, not inferred certification.
+  if(geometry.id==='C1StandardBox'){
+   const input={geometryId:geometry.id,confirmedBy:'user',
+    topologyConfirmed:true,revision,unit:'mm',
+    vertices:Object.entries(geometry.data.points).map(([id,p])=>{
+     const views=project(p);
+     return {id,knownViews:{V:[views.V.u,views.V.v],
+      H:[views.H.u,views.H.v]}};
+    }),edges:geometry.data.edges.map(e=>[...e]),
+    faces:geometry.data.faces.map(f=>[...f])};
+   const result=compileReviewedSolidVertexV5({input,
+    sheetTransform:{origin:{x:350,y:195},scale:4}});
+   if(result.certifiedVisibleContourLineActionCount!==12||
+      result.verifiedLineIntentAndOriginalSingleV5Parity!==true||
+      result.wholeSolidV5Ready!==false||
+      result.sceneResult.geometry.id!==geometry.id)
+    throw new RangeError('independently verified current C1 V5 contour unavailable');
+   const actions=new Map(result.steps.flatMap(step=>step.actions)
+    .map(action=>[action.id,action]));
+   const signedVisibleContourActions=
+    result.certifiedVisibleContourLineBindings.map(binding=>{
+     const action=actions.get(binding.actionId);
+     if(!action||action.kind!=='line'||
+        JSON.stringify(action.geometry)!==
+         JSON.stringify({from:binding.fromSheetPx,to:binding.toSheetPx})||
+        !binding.signedFormalLineV5||
+        binding.hiddenOrInternalFeatureLineAuthorized!==false||
+        binding.revision!==revision||
+        binding.sourceGeometryId!==geometry.id)
+      throw new RangeError('C1 official V5 line does not match authenticated source');
+     return {actionId:binding.actionId,view:binding.view,
+      sourceEdgeId:binding.sourceEdgeId,
+      from:{...binding.fromModelMm},to:{...binding.toModelMm}};
+    });
+   return {id:geometry.id,geometry,reference,signedVisibleContourActions};
+  }
   return {id:geometry.id,geometry,reference};
  });
 }
