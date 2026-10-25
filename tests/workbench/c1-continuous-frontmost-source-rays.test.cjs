@@ -83,6 +83,26 @@ function independentCheck(r,g,revision=11){
      assert.ok(lead.observerDepthAtToMm-another.observerDepthAtToMm>1e-8);
     }
    }else assert.equal(s.uniqueStrictFrontSourceId,null);
+   // Independent M5 oracle: correlate the two source's REAL coordinates
+   // and the existing authenticated physical edge-pair ledger, never the
+   // consumer's boolean directly and never a paper-only endpoint match.
+   const next=v.intervals[(v.intervals.indexOf(s)+1)%v.intervals.length];
+   const a=s.sources.find(q=>q.sourceEdgeId===s.uniqueStrictFrontSourceId);
+   const b=next.sources.find(q=>q.sourceEdgeId===next.uniqueStrictFrontSourceId);
+   const jn=v.frontSourceJunctions[v.intervals.indexOf(s)];
+   assert.equal(jn.junctionIndex,v.intervals.indexOf(s));
+   assert.deepEqual(jn.paperPointModelMm,s.paperToModelMm);
+   const equal=(p,q)=>p&&q&&p.x===q.x&&p.y===q.y&&p.z===q.z;
+   const actualPhysicalSame=Boolean(a&&b&&equal(a.to3D,b.from3D));
+   assert.equal(jn.authenticatedExactCommon3DFrontSourcePoint,
+    actualPhysicalSame);
+   const expectedLocal=actualPhysicalSame&&
+    Boolean(a.fullOpenSubintervalClear&&b.fullOpenSubintervalClear)&&
+    !s.unresolvedDepthSwitchOrTie&&!next.unresolvedDepthSwitchOrTie;
+   assert.equal(jn.localFrontRayPhysicalJunctionCandidateVerified,expectedLocal);
+   assert.equal(jn.officialEngineeringLineStyle,'undetermined');
+   assert.equal(jn.signedV5Action,false);
+   assert.equal(jn.wholeGlobalContourAndOcclusionTopologyVerified,false);
    for(const c of s.relativeSourceDepthComparisons){
     assert.ok(c.sourceEdgeIds.every(id=>ids.has(id)));
     assert.equal(c.officialLineStyleVerified,false);
@@ -93,6 +113,14 @@ function independentCheck(r,g,revision=11){
   }
  }
  assert.equal(r.auditedIntervalCount,total);
+ const all=r.views.flatMap(v=>v.frontSourceJunctions);
+ assert.equal(all.length,total);
+ assert.equal(r.localFrontRayPhysicalJunctionCandidateCount,
+  all.filter(x=>x.localFrontRayPhysicalJunctionCandidateVerified).length);
+ assert.equal(r.frontSourceJunctionsAwaitingFullProofCount,
+  all.filter(x=>!x.localFrontRayPhysicalJunctionCandidateVerified).length);
+ assert.equal(r.localFrontRayPhysicalJunctionCandidateCount+
+  r.frontSourceJunctionsAwaitingFullProofCount,total);
 }
 test('C1 full V/H/W convex contour source order and continuous positive observer-ray independent checks',()=>{
  const g=box(),{r}=collect(g);
@@ -101,6 +129,9 @@ test('C1 full V/H/W convex contour source order and continuous positive observer
  assert.ok(r.independentlyClearLeadingSourceIntervalCount>0);
  assert.equal(r.ambiguousDepthIntervalCount,0);
  assert.ok(r.views.every(x=>x.strictUniqueListedFrontCount>0));
+ // Positive local evidence never signs the contour or any V5 stroke.
+ assert.ok(r.localFrontRayPhysicalJunctionCandidateCount>0);
+ assert.ok(r.frontSourceJunctionsAwaitingFullProofCount>=0);
 });
 test('C1 generic oblique convex mesh transformation keeps affine signed depth, no fake V5 line',()=>{
  const g=box(),angle=Math.PI/6;
@@ -162,4 +193,40 @@ test('C1 stale/tampered real source or projected endpoint claims fail closed',()
  const open=box();open.data.faces.pop();
  const uncovered=coverage({geometry:open,revision:11});
  assert.equal(uncovered.status,'not-covered');
+});
+
+
+test('C1 positive front-ray junction refuses forged near-but-not-same 3D provenance',()=>{
+ const geometry=box(),revision=11,{c,j,r}=collect(geometry,revision);
+ const vi=r.views.findIndex(v=>v.frontSourceJunctions.some(q=>
+  q.localFrontRayPhysicalJunctionCandidateVerified));
+ assert.ok(vi>=0,'real closed convex input must have one supported local front join');
+ const row=r.views[vi],ji=row.frontSourceJunctions.findIndex(q=>
+  q.localFrontRayPhysicalJunctionCandidateVerified);
+ const selected=row.frontSourceJunctions[ji],node=j.views[vi].junctions[ji];
+ const targetIndex=node.authenticatedCommon3DJoinCandidates.findIndex(q=>
+  q.arrivingSourceEdgeId===selected.arrivingFrontSourceEdgeId&&
+  q.departingSourceEdgeId===selected.departingFrontSourceEdgeId);
+ assert.ok(targetIndex>=0);
+ const old=node.authenticatedCommon3DJoinCandidates[targetIndex];
+ const forged={...old,real3DPoint:{...old.real3DPoint,
+  x:old.real3DPoint.x+2**-30}};
+ assert.notEqual(forged.real3DPoint.x,old.real3DPoint.x);
+ assert.ok(Math.abs(forged.real3DPoint.x-old.real3DPoint.x)<1e-7);
+ const alteredJunction={...node,
+  authenticatedCommon3DJoinCandidates:
+   node.authenticatedCommon3DJoinCandidates.map((q,i)=>
+    i===targetIndex?forged:q)};
+ const alteredView={...j.views[vi],junctions:j.views[vi].junctions.map((q,i)=>
+  i===ji?alteredJunction:q)};
+ const tampered=Object.freeze({...j,views:j.views.map((v,i)=>
+  i===vi?alteredView:v)});
+ const inspected=audit({geometry,revision,contourCoverage:c,
+  physicalJunctionIncidence:tampered});
+ const result=inspected.views[vi].frontSourceJunctions[ji];
+ assert.equal(result.authenticatedExactCommon3DFrontSourcePoint,false);
+ assert.equal(result.localFrontRayPhysicalJunctionCandidateVerified,false);
+ assert.equal(result.officialEngineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+ assert.equal(inspected.v5Ready,false);
 });
