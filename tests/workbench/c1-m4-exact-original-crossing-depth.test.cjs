@@ -8,7 +8,8 @@ const geometry={id:'X',data:{points:{
  E:{x:5,y:-5,z:-10},F:{x:5,y:5,z:-10},
  G:{x:5,y:-5,z:0},H:{x:5,y:5,z:0},
  I:{x:20,y:-5,z:5},J:{x:20,y:5,z:5},
- K:{x:0,y:1,z:3},L:{x:10,y:1,z:3}
+ K:{x:0,y:1,z:3},L:{x:10,y:1,z:3},
+ M:{x:5,y:-5,z:10},N:{x:5,y:0,z:10}
 }}};
 const audit=(second=['C','D'],first=['A','B'])=>
  depth({geometry,view:'H',firstEdge:first,secondEdge:second});
@@ -66,4 +67,16 @@ test('crossing exactly on native interval endpoint remains a junction boundary, 
   secondEdge:['C','D'],nativeFirstOriginalParameterRange:[.5,1]});
  assert.equal(r.currentNativeOriginalOpenIntervalContainsExactCrossing,false);
  assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,false);
+});
+
+test('native hidden interior meeting another ORIGINAL edge at its exact 2D endpoint has precise 3D depth ordering, but no invented 3D vertex join',()=>{
+ const r=audit(['M','N']);
+ assert.equal(r.firstOriginalOpenSourceContainsExactCrossing,true);
+ assert.equal(r.secondOriginalOpenSourceContainsExactCrossing,false);
+ assert.equal(r.secondOriginalClosedSourceContainsExactCrossing,true);
+ assert.equal(r.otherOriginal3DEdgeEndpointAtPaperCrossing,true);
+ assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,true);
+ assert.equal(r.exactOriginalSourceAtCrossingFront,'second');
+ assert.equal(r.original3DPhysicalVertexJunctionCertified,false);
+ assert.equal(r.signedV5Action,false);
 });
