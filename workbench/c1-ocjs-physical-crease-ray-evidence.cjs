@@ -32,6 +32,8 @@ const {auditC1SingleConvexSourceSubspanRays}=
  require('./m5-c1-source-subspan-opaque-rays.cjs');
 const {auditC1OriginalSourceSubspanJunctions}=
  require('./c1-original-source-subspan-junction-provenance.cjs');
+const {auditC1OriginalPaperSourcePrecedence}=
+ require('./c1-m5-original-paper-source-precedence.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -62,6 +64,21 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   throw new RangeError('M4 source event graph cannot forge C1 signoff');
  const eventByKey=new Map(eventGraph.rows.map(x=>
   [x.sourceEdgeId+'@'+x.view,x]));
+ const priority=auditC1OriginalPaperSourcePrecedence({geometry,revision});
+ if(priority.sourceGeometryId!==geometry.id||
+    priority.revision!==revision||
+    priority.signedV5ActionCount!==0||
+    priority.counts.allOriginalSourceProjectedSubspans!==
+     eventGraph.partitionedSourceSubintervalCount)
+  throw new RangeError('untrusted or signed original source paper precedence');
+ const priorityMap=new Map();
+ const sourceSpanKey=(s,v,r)=>s+'@'+v+'@'+r.join(':');
+ for(const s of priority.subspans){
+  if(priorityMap.has(s.sourceIntervalId))
+   throw new RangeError('duplicated original paper priority source span');
+  priorityMap.set(s.sourceIntervalId,s);
+ }
+
  const junction=auditC1OriginalSourceSubspanJunctions({
   geometry,revision});
  if(junction.sourceGeometryId!==geometry.id||
@@ -237,6 +254,13 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
      thirdPartyFacesVerified:false,
      independentOriginal3DJunctionsVerified:false,
      engineeringLineStyle:'undetermined',signedV5Action:false}));
+   const paperPriority=priorityMap.get(sourceSpanKey(
+    row.sourceEdgeId,row.view,span.originalParameterRange));
+   if(!paperPriority||paperPriority.revision!==revision||
+      paperPriority.signedV5Action!==false||
+      paperPriority.originalM5ExteriorContourOverlap!==
+       span.projectedExteriorHullOverlap)
+    throw new RangeError('C1 M5 source interval paper priority mismatch');
    const physicalEndpoint=sourceJunction.spans[index];
    if(physicalEndpoint.sourceEdgeId!==row.sourceEdgeId||
       physicalEndpoint.view!==row.view||
@@ -272,6 +296,16 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    else if(status==='undetermined')unresolvedNonHullSubintervals++;
    return {...span,status,
     sourcePairDepthComparisons,
+    originalPaperSourcePriority:{
+     status:paperPriority.status,
+     competingPhysicalOriginalSources:
+      paperPriority.sourceCompetingPhysicalEdges,
+     listedSourcePriorityProven:
+      paperPriority.listedOriginalSourcePriorityProven,
+     allOpaqueFacesAndOriginalJunctionsCertified:false,
+     standardEngineeringLineStyle:'undetermined',
+     signedV5Action:false
+    },
     independentOriginal3DJunctionProof:{
      fromEndpoint:physicalEndpoint.fromEndpoint,
      toEndpoint:physicalEndpoint.toEndpoint,
@@ -330,6 +364,20 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   junction.counts.paperOnlyForeignSourceEncounters;
  summary.roundedParameterPhysicalJoinRefusals=
   junction.counts.roundedDiagnosticEncountersHeld;
+ summary.originalSourcePaperSoleListedCount=
+  priority.counts.soleListedSource;
+ summary.originalSourcePaperStrictFrontCount=
+  priority.counts.strictFrontAmongListed;
+ summary.originalSourcePaperBehindSourceCount=
+  priority.counts.behindAnother;
+ summary.originalSourcePaperUnresolvedCount=
+  priority.counts.unresolvedAlias;
+ summary.originalSourcePaperExact3DDuplicateCount=
+  priority.counts.exactPhysicalDuplicates;
+ summary.originalSourcePaperPartialOverlapCount=
+  priority.counts.partialPaperAlias;
+ summary.originalSourcePaperOverlapPairDepthCount=
+  priority.counts.positivePairDepthComparisons;
  summary.projectedSourceEventCount=eventGraph.actualM4OriginalSourcePairwiseEventCount;
  summary.sourceBoundSubintervalCount=eventGraph.partitionedSourceSubintervalCount;
  summary.nonHullPositiveSubintervals=provenNonHullSubintervals;
@@ -356,6 +404,7 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   rows:segmented,counts:summary,
   sourceProjectedEventGraphSchema:eventGraph.schema,
   independentOriginal3DJunctionProofSchema:junction.schema,
+  originalSourcePaperPrioritySchema:priority.schema,
   sourcePairDepthProofSchema:pairDepth.schema,
   originalSourceOpaqueSubspanProofSchema:opaque.schema,
   CADComputedGenuineOpenCascadeWasm:true,

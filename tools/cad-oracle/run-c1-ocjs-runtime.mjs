@@ -200,6 +200,14 @@ for(const [index,geometry] of general.entries()){
   'draftai-c1-original-source-m4-projected-event-graph/1');
  assert.equal(features.independentOriginal3DJunctionProofSchema,
   'draftai-c1-original-source-m4-3d-cut-junction-provenance/1');
+ assert.equal(features.originalSourcePaperPrioritySchema,
+  'draftai-c1-m5-original-source-paper-priority/1');
+ assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
+  span.originalPaperSourcePriority.signedV5Action===false&&
+  span.originalPaperSourcePriority.standardEngineeringLineStyle==='undetermined'&&
+  span.originalPaperSourcePriority.
+   allOpaqueFacesAndOriginalJunctionsCertified===false)));
+
  assert.ok(features.counts.authenticatedOriginalVertexSubspanEndpoints>0,
   'genuine reviewed 3D vertex endpoint witnesses required');
  assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
@@ -287,6 +295,20 @@ for(const [index,geometry] of general.entries()){
     features.counts.authenticSharedVertexPairDepthProofCount,
    original3DVertexEndpointEvidenceCount:
     features.counts.authenticatedOriginalVertexSubspanEndpoints,
+   originalPaperSoleListedCount:
+    features.counts.originalSourcePaperSoleListedCount,
+   originalPaperStrictFrontCount:
+    features.counts.originalSourcePaperStrictFrontCount,
+   originalPaperBehindSourceCount:
+    features.counts.originalSourcePaperBehindSourceCount,
+   originalPaperUnresolvedAliasCount:
+    features.counts.originalSourcePaperUnresolvedCount,
+   originalPaperExact3DDuplicateCount:
+    features.counts.originalSourcePaperExact3DDuplicateCount,
+   originalPaperPartialOverlapCount:
+    features.counts.originalSourcePaperPartialOverlapCount,
+   originalPaperPairDepthProofCount:
+    features.counts.originalSourcePaperOverlapPairDepthCount,
    certifiedSameOriginal3DEdgeCutJoins:
     features.counts.sameOriginalSource3DAdjacentCutContinuities,
    unresolvedPaperOnly3DSourceEventCount:
