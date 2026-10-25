@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {outwardProof:certify}=
+const {outwardProof:certify,inwardProof:certifyHidden}=
  require('../../core/numeric/convex-incident-source-open-ray.cjs');
 const {verifiedConvexMeshHalfspaces:verify}=
  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
@@ -71,4 +71,44 @@ test('approximately planar but NOT exactly supporting quad cannot mint an exact 
   sourceVertexIds:['V011','V111'],view:'H',convexProof:proof});
  assert.equal(upper.status,'undetermined');
  assert.equal(upper.continuousOpenSourceIntervalRayClear,false);
+});
+
+test('exact original skew tetra backside physical edges AC and BC are strictly interior on V open ray',()=>{
+ const proof=verify(tetra);
+ for(const ids of [['A','C'],['B','C']]){
+  const h=certifyHidden({geometry:tetra,sourceVertexIds:ids,
+   view:'V',convexProof:proof});
+  assert.equal(h.status,'certified-strictly-hidden-open-original-edge');
+  assert.equal(h.fullOriginalSourceOpenIntervalStrictlyHidden,true);
+  assert.equal(h.exactSupportingFaceCount,2);
+  assert.equal(h.endpointOcclusionCertified,false);
+  assert.equal(h.officialLineStyleVerified,false);
+  assert.equal(h.v5Ready,false);
+ }
+});
+test('one front-facing or tangent original support blocks exact inward claim',()=>{
+ const proof=verify(tetra);
+ for(const edge of [['A','B'],['A','D'],['B','D']]){
+  const h=certifyHidden({geometry:tetra,sourceVertexIds:edge,
+   view:'V',convexProof:proof});
+  assert.equal(h.status,'undetermined');
+  assert.equal(h.fullOriginalSourceOpenIntervalStrictlyHidden,false);
+ }
+});
+test('an axis-aligned box side-tangent observer must not be certified strictly hidden',()=>{
+ const geometry=prismMesh({solid:{min:p(0,0,0),max:p(10,10,10)}});
+ const proof=verify(geometry);
+ const h=certifyHidden({geometry,sourceVertexIds:['V010','V110'],
+  view:'V',convexProof:proof});
+ assert.equal(h.status,'undetermined');
+ assert.equal(h.endpointOcclusionCertified,false);
+});
+test('approximate original quadrilateral plane cannot sign strict hidden source ray',()=>{
+ const geometry=prismMesh({solid:{min:p(0,0,0),max:p(10,10,10)}});
+ geometry.data.points.V111={...geometry.data.points.V111,z:10+2e-9};
+ const proof=verify(geometry);
+ const h=certifyHidden({geometry,sourceVertexIds:['V011','V111'],
+  view:'V',convexProof:proof});
+ assert.equal(h.status,'undetermined');
+ assert.equal(h.fullOriginalSourceOpenIntervalStrictlyHidden,false);
 });
