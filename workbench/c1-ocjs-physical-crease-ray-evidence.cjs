@@ -24,6 +24,8 @@ const {computeC1OcjsVisibleSegments}=
  require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {intervalCoverage,positiveCollinearOverlap}=
  require('./c1-ocjs-reviewed-solid-v5.cjs');
+const {auditC1ReviewedProjectedSourceEventGraph}=
+ require('./c1-reviewed-projected-source-event-graph.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -46,6 +48,14 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   throw new RangeError('nonmatching or signed C1 M0/M5/real OCJS sources');
  const original=new Map(geometry.data.edges.map(([a,b])=>[
   geometry.id+'::'+[a,b].sort().join('|'),[a,b]]));
+ const eventGraph=auditC1ReviewedProjectedSourceEventGraph({
+  geometry,revision});
+ if(eventGraph.sourceGeometryId!==geometry.id||eventGraph.revision!==revision||
+    eventGraph.signedV5ActionCount!==0||
+    eventGraph.originalSourceEdgeViewCount!==geometry.data.edges.length*3)
+  throw new RangeError('M4 source event graph cannot forge C1 signoff');
+ const eventByKey=new Map(eventGraph.rows.map(x=>
+  [x.sourceEdgeId+'@'+x.view,x]));
  const rows=[],summary={
   reviewedPhysicalCreaseViews:0,skippedContourOverlaps:0,
   skippedCoplanarSubdivisions:0,collapsed:0,locallyCADAndM5Visible:0,
@@ -141,8 +151,74 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    }
   }
  }
+ // Every local non-hull ray candidate now carries the shared M4 source
+ // event partition. A single physical original edge may have many PAPER
+ // crossing/silhouette spans: do not infer a true 3D junction or V5 action.
+ // Reuse ONLY true original source IDs; re-check CAD per exact subspan.
+ let provenNonHullSubintervals=0,unresolvedNonHullSubintervals=0,
+  hullExcludedSubintervals=0,exactPhysicalEndpointEventCount=0,
+  paperOnlyUnresolvedEncounterCount=0;
+ const segmented=rows.map(row=>{
+  const match=eventByKey.get(row.sourceEdgeId+'@'+row.view);
+  if(!match)throw new RangeError('source edge missing M4 projected event partition');
+  const physical=row.originalPhysicalDihedralVerified;
+  const trulyNonHull=physical&&match.spans.some(s=>!s.projectedExteriorHullOverlap);
+  const proof=trulyNonHull?outwardProof({
+   geometry,sourceVertexIds:row.sourceVertexIds,view:row.view,
+   convexProof:convex}):null;
+  const strokes=cad.views[row.view].filter(c=>
+   c.projectedOriginalEdgeCandidates.includes(row.sourceEdgeId));
+  const spans=match.spans.map(span=>{
+   const projectedHits=strokes.filter(c=>positiveCollinearOverlap(
+    span.fromModelMm,span.toModelMm,c.from,c.to));
+   const cadVisible=intervalCoverage(span.fromModelMm,
+    span.toModelMm,projectedHits);
+   const unique=projectedHits.length>0&&
+    projectedHits.every(c=>c.projectedOriginalEdgeCandidates.length===1);
+   const status=!physical?
+    'not-proven-original-physical-crease':
+    span.projectedExteriorHullOverlap?
+     'outer-contour-paper-overlap-held':
+     proof?.status==='certified-clear'&&cadVisible&&unique?
+      'local-nonhull-source-interval-cad-m0-positive':
+      'undetermined';
+   if(status==='local-nonhull-source-interval-cad-m0-positive')
+    provenNonHullSubintervals++;
+   else if(status==='outer-contour-paper-overlap-held')
+    hullExcludedSubintervals++;
+   else if(status==='undetermined')unresolvedNonHullSubintervals++;
+   return {...span,status,
+    completeOriginalSourceCADCoverage:cadVisible,
+    uniqueOriginal3DSourceCandidate:unique,
+    exactSourceFaceOpenRayVerified:proof?.status==='certified-clear',
+    allSplitJunctions3DVerified:false,
+    officialEngineeringLineStyle:'undetermined',signedV5Action:false};
+  });
+  exactPhysicalEndpointEventCount+=match.encounters.filter(x=>
+   x.original3DPhysicalJunctionProven).length;
+  paperOnlyUnresolvedEncounterCount+=match.encounters.filter(x=>
+   x.projectedOnlyUnresolved).length;
+  return {...row,sourceM4EventCuts:[...match.cutParameters],
+   physicalProjectedJunctionEncounters:match.encounters.map(x=>({...x})),
+   sourceBoundSubintervals:spans,
+   wholeLineJunctionAndPaperDepthOrderVerified:false};
+ });
+ summary.projectedSourceEventCount=eventGraph.actualM4OriginalSourcePairwiseEventCount;
+ summary.sourceBoundSubintervalCount=eventGraph.partitionedSourceSubintervalCount;
+ summary.nonHullPositiveSubintervals=provenNonHullSubintervals;
+ summary.nonHullUndeterminedSubintervals=unresolvedNonHullSubintervals;
+ summary.hullHeldSubintervals=hullExcludedSubintervals;
+ summary.exactOriginalVertexEventWitnesses=exactPhysicalEndpointEventCount;
+ summary.paperOnlyUnresolvedEventWitnesses=paperOnlyUnresolvedEncounterCount;
+ if(segmented.reduce((n,x)=>n+x.sourceBoundSubintervals.length,0)!==
+    eventGraph.partitionedSourceSubintervalCount||
+    segmented.some(x=>x.sourceBoundSubintervals.some(s=>
+     s.signedV5Action!==false||
+     s.officialEngineeringLineStyle!=='undetermined')))
+  throw new RangeError('M4 source subdivision cannot mint a new C1 official style');
+
  if(rows.length!==creases.sourceEdgeCount*3||
-    rows.some(x=>x.signedV5!==false||
+    segmented.some(x=>x.signedV5!==false||
      x.officialEngineeringLineStyle!=='undetermined')||
     summary.claimedOfficialV5Strokes!==0)
   throw new RangeError('all C1 original source edges must remain unsigned');
@@ -150,7 +226,8 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   sourceGeometryId:geometry.id,revision,unit:'mm',
   scope:'single-reviewed-closed-convex-original-physical-feature-only',
   originalSourceEdgeViews:rows.length,views:VIEWS,
-  rows,counts:summary,
+  rows:segmented,counts:summary,
+  sourceProjectedEventGraphSchema:eventGraph.schema,
   CADComputedGenuineOpenCascadeWasm:true,
   fullSceneAndAllJunctionsLineStyleSigned:false,
   standardEngineeringStylesCertified:false,
