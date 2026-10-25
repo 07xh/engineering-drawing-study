@@ -172,3 +172,101 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
  assert.match(ui,/paperStrokeDepthAliasEndpointCount/);
  assert.match(ui,/以上都未签发标准虚实线和正式 V5/);
 });
+
+
+test('C2 positive local 3D source-join certificate is independently reconstructed from real source XYZ and two continuous open rays',()=>{
+ const {proof,paper,nodes}=audit([A(),B()],130);
+ const bySource=new Map(paper.groups.flatMap(g=>g.sourceSubspans.map(s=>
+  [s.sourceSubspanId,{...s,view:g.view}])));
+ const clear=s=>s?.sourceObserverRayScope==='visible'||
+  s?.sourceObserverRayScope==='certified-whole-open-subspan-forward-rays-clear';
+ const same3=(a,b)=>a&&b&&
+  ['x','y','z'].every(axis=>a[axis]===b[axis]);
+ let proven=0,complete=0;
+ for(const line of proof.lines){
+  assert.equal(line.localExact3DJunctionWithTwoWholeOpenRaysCount,
+   line.physical3DEndpointIncidence.filter(e=>
+    e.localExact3DSourcePairAndBothOpenRaysClearVerified).length);
+  assert.equal(line.localBothEndpointSourceOpenRayJoinsVerified,
+   line.localExact3DJunctionWithTwoWholeOpenRaysCount===2);
+  const selected=bySource.get(line.selectedListed3DSourceSubspanId);
+  for(const end of line.physical3DEndpointIncidence){
+   const node=nodes.paperNodes.find(n=>n.id===end.physicalPaperNodeId);
+   const expected=[];
+   if(selected&&clear(selected)){
+    for(const peer of bySource.values()){
+     if(peer.sourceSubspanId===selected.sourceSubspanId||
+        peer.view!==line.view||!clear(peer))continue;
+     if(!same3(peer.from3D,end.physicalSource3DPoint)&&
+        !same3(peer.to3D,end.physicalSource3DPoint))continue;
+     if(!node.localPairwise3DJunctionRelations.some(j=>
+      j.exactlySharedPhysical3DEndpoint&&
+      !j.paperOnlyDepthAlias&&
+      j.sourceSubspanIds.includes(selected.sourceSubspanId)&&
+      j.sourceSubspanIds.includes(peer.sourceSubspanId)))continue;
+     expected.push(peer.sourceSubspanId);
+    }
+   }
+   assert.deepEqual(end.exactlyJoinedOtherWholeOpenRayClearSourceSubspanIds,
+    expected.sort());
+   assert.equal(end.localExact3DSourcePairAndBothOpenRaysClearVerified,
+    expected.length>0);
+   assert.equal(end.actualGlobalFeatureAndEndpointVisibilityCertified,false);
+   assert.equal(end.physical3DEndpointJoinAndDrawingLinecapCertified,false);
+   proven+=Number(expected.length>0);
+  }
+  complete+=Number(line.localBothEndpointSourceOpenRayJoinsVerified);
+  assert.equal(line.officialEngineeringSolidDashedStyle,'undetermined');
+  assert.equal(line.formalV5StrokeSigned,false);
+  assert.equal(line.fullClosedEndpointAndAllOpaqueFacesVerified,false);
+ }
+ assert.equal(proof.locallyJoinedContinuousRayEndpointCount,proven);
+ assert.equal(proof.bothEndpointLocallyJoinedContinuousRayLineCount,complete);
+ assert.ok(proven>0,
+  'reviewed two-cuboid composition must have at least one exact locally joined clear ray pair');
+ assert.equal(proof.signedV5LineActions,0);
+});
+test('C2 projected W depth aliases may never masquerade as positive real-3D joins',()=>{
+ const {proof,paper,nodes}=audit([
+  A(),box('B',P(30,0,0),P(40,10,10))],131);
+ assert.ok(proof.depthAliasEndpointLineCount>0);
+ const bySource=new Map(paper.groups.flatMap(g=>g.sourceSubspans.map(s=>
+  [s.sourceSubspanId,s])));
+ for(const line of proof.lines.filter(x=>x.view==='W')){
+  const selected=bySource.get(line.selectedListed3DSourceSubspanId);
+  for(const end of line.physical3DEndpointIncidence){
+   const node=nodes.paperNodes.find(n=>n.id===end.physicalPaperNodeId);
+   assert.ok(node);
+   for(const peerId of end.exactlyJoinedOtherWholeOpenRayClearSourceSubspanIds){
+    const peer=bySource.get(peerId);
+    assert.ok(selected&&peer);
+    const p=end.physicalSource3DPoint;
+    const same=q=>q&&p&&p.x===q.x&&p.y===q.y&&p.z===q.z;
+    assert.ok(same(peer.from3D)||same(peer.to3D));
+    assert.ok(node.localPairwise3DJunctionRelations.some(j=>
+     j.exactlySharedPhysical3DEndpoint&&
+     j.sourceSubspanIds.includes(peerId)&&
+     j.sourceSubspanIds.includes(selected.sourceSubspanId)));
+   }
+   if(end.paperDepthAliasPresent){
+    assert.ok(end.otherDistinct3DPointsOnSamePaperEndpointCount>0);
+    assert.equal(end.physical3DEndpointJoinAndDrawingLinecapCertified,false);
+   }
+  }
+  assert.equal(line.formalV5StrokeSigned,false);
+ }
+});
+test('C2 spoofed exact endpoint join source graph cannot pass recomputed M5 lineage',()=>{
+ const {args,nodes}=audit([A(),B()],132);
+ const forged={...nodes,paperNodes:nodes.paperNodes.map((n,i)=>i===0?{
+  ...n,localPairwise3DJunctionRelations:[
+   {...(n.localPairwise3DJunctionRelations[0]??{
+    sourceSubspanIds:['forgedA','forgedB']}),
+    exactlySharedPhysical3DEndpoint:true,
+    paperOnlyDepthAlias:false},
+   ...n.localPairwise3DJunctionRelations
+  ]
+ }:n)};
+ assert.throws(()=>auditUnifiedPaperLineReadiness({
+  ...args,unifiedPaperJunctionEvidence:forged}),/stale or spoofed/);
+});

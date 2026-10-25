@@ -21,6 +21,8 @@ const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 const same3=(a,b)=>a&&b&&a.x===b.x&&a.y===b.y&&a.z===b.z;
 const same2=(a,b)=>a&&b&&a.u===b.u&&a.v===b.v;
 const scalar=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const certifiedOpenRayClear=scope=>scope==='visible'||
+ scope==='certified-whole-open-subspan-forward-rays-clear';
 function auditUnifiedPaperLineReadiness({geometry,revision,
  projectedStrokePartitions,generatedSubspanRayEvidence,
  unifiedProjectedFeatureEventEvidence,unifiedPaperSourceIdentityEvidence,
@@ -46,6 +48,15 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
   throw new TypeError('stale or spoofed current 3D paper junction identities');
  const groupedNodes=new Map(junction.paperNodes.map(n=>[
   n.view+':'+n.paperCoordinateMm.u+':'+n.paperCoordinateMm.v,n]));
+ // Each reviewed M4 event subspan has its OWN actual 3D coordinates and
+ // preexisting M0 whole-open-ray proof. This is a source JOIN ledger,
+ // not a new projected intersection solver or a drawing-line signer.
+ const subspans=new Map();
+ for(const group of paper.groups)for(const source of group.sourceSubspans){
+  if(subspans.has(source.sourceSubspanId))
+   throw new TypeError('duplicate real source subspan in paper registry');
+  subspans.set(source.sourceSubspanId,{...source,view:group.view});
+ }
  const result=[];
  for(const group of paper.groups){
   if(group.revision!==revision||group.sourceMultiplicity!==
@@ -77,6 +88,31 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    const definiteAhead=p?otherNodes.every(other=>
     depth>other.observerDotDepthMm+1e-8):false;
    const paperDepthAlias=otherNodes.length>0;
+   // Certified LOCAL open-ray continuity at this actual 3D point:
+   // both adjacent source FEATURES must own this very point, rather
+   // than merely sharing paper coordinates or being 1e-8 mm near.
+   // The original junction ledger independently lists every physical
+   // pair; require a corresponding exact pair with no depth alias.
+   const partnerIds=new Set();
+   if(selected&&certifiedOpenRayClear(selected.sourceObserverRayScope)){
+    for(const other of node.incidentSourceEndpoints){
+     if(other.unifiedSubspanId===selected.sourceSubspanId||
+        !same3(other.real3DEndpoint,p))continue;
+     const peer=subspans.get(other.unifiedSubspanId);
+     if(!peer||peer.view!==group.view||
+        !certifiedOpenRayClear(peer.sourceObserverRayScope))continue;
+     const from=same3(peer.from3D,p),to=same3(peer.to3D,p);
+     if(from===to)continue;
+     const witnessed=node.localPairwise3DJunctionRelations.some(join=>
+      join.exactlySharedPhysical3DEndpoint===true&&
+      join.paperOnlyDepthAlias===false&&
+      join.sourceSubspanIds.includes(selected.sourceSubspanId)&&
+      join.sourceSubspanIds.includes(other.unifiedSubspanId));
+     if(!witnessed)continue;
+     partnerIds.add(peer.sourceSubspanId);
+    }
+   }
+   const locallyJoined=[...partnerIds].sort();
    return {role,projectedModelMm:{...xy},
     physicalSource3DPoint:p?{...p}:null,
     physicalPaperNodeId:node.id,
@@ -85,6 +121,12 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     paperDepthAliasPresent:paperDepthAlias,
     selectedSourceDefinitelyFrontOfOtherListedEndpointNodes:
      Boolean(selected)&&(!paperDepthAlias||definiteAhead),
+    exactlyJoinedOtherWholeOpenRayClearSourceSubspanIds:locallyJoined,
+    localExact3DSourcePairAndBothOpenRaysClearVerified:
+     locallyJoined.length>0,
+    // A different source feature may pass through the same 3D node
+    // while its physical tangent/Boolean exterior is NOT continuous.
+    actualGlobalFeatureAndEndpointVisibilityCertified:false,
     physical3DEndpointJoinAndDrawingLinecapCertified:false};
   };
   const ends=[endpoint('from'),endpoint('to')];
@@ -93,8 +135,7 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
      group.projectedToModelMm)))
    throw new TypeError('paper source winner does not correspond to model projections');
   const scope=selected?.sourceObserverRayScope??'no-unique-3d-source';
-  const clear=scope==='visible'||
-    scope==='certified-whole-open-subspan-forward-rays-clear';
+  const clear=certifiedOpenRayClear(scope);
   const hidden=scope==='hidden'||
     scope==='certified-whole-open-subspan-strictly-occluded';
   if(clear&&hidden)throw new RangeError('contradictory source visibility');
@@ -126,6 +167,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     clear?'scoped-continuous-front-ray-clear':
     hidden?'scoped-continuous-front-ray-opaque':'undetermined',
    physical3DEndpointIncidence:ends,
+   localExact3DJunctionWithTwoWholeOpenRaysCount:ends.filter(e=>
+    e.localExact3DSourcePairAndBothOpenRaysClearVerified).length,
+   localBothEndpointSourceOpenRayJoinsVerified:ends.every(e=>
+    e.localExact3DSourcePairAndBothOpenRaysClearVerified),
+   // Still do not promote local OPEN ray witnesses to an ENDPOINT
+   // clearance guarantee, Boolean exterior or standard drawing stroke.
+   fullClosedEndpointAndAllOpaqueFacesVerified:false,
    allListedOriginalAndNewSourceContributionsRetained:true,
    positiveGlobalFinalContourCompletenessVerified:false,
    allProjectedCrossingsAndDepthTransitionsFullyResolved:false,
@@ -152,6 +200,10 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    !x.nearestListed3DSourceOnlyVerified).length,
   depthAliasEndpointLineCount:result.filter(x=>
    x.physical3DEndpointIncidence.some(e=>e.paperDepthAliasPresent)).length,
+  locallyJoinedContinuousRayEndpointCount:result.reduce((n,x)=>n+
+   x.localExact3DJunctionWithTwoWholeOpenRaysCount,0),
+  bothEndpointLocallyJoinedContinuousRayLineCount:result.filter(x=>
+   x.localBothEndpointSourceOpenRayJoinsVerified).length,
   allReviewedSourcePaperOpenIntervalsHaveExplicitBlockers:true,
   entireFinalDrawingFeatureGraphVerified:false,
   officialLineStylesVerified:false,
