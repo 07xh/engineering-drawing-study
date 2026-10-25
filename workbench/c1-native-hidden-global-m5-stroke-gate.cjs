@@ -107,6 +107,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof:0,
   nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof:0,
   nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex:0,
+  exactOriginal3DSharedVertexWithTwoAuthenticBRepSources:0,
+  exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
@@ -253,6 +255,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
      w.existingM4OriginalSourceEndpointVerified===true)));
   counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex+=
    physicalVertexPaperDrift.length;
+  counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources+=
+   projected.filter(e=>
+    e.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven===true).length;
+  counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned+=
+   projected.filter(e=>
+    e.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven===true&&
+    e.originalHLRGeneratedPaperMismatchRemains===true).length;
   counts.genuineHiddenHLRStrokesReviewed++;
   rows.push({
    view:gap.view,revision,sourceGeometryId:geometry.id,
@@ -287,6 +296,22 @@ function reviewC1NativeHiddenFinalM5Strokes({
      completeSource3DDepthAndRealOCCTHLRPaperProof:true,
      generatedHLREdgeTopoDSIdentityAndGBLineCertified:false,
      signedV5Action:false
+    })),
+   exactModelSpace3DSharedSourceVerticesWithVerifiedOriginalBRep:
+    projected.filter(e=>
+     e.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven===true)
+    .map(e=>({
+     originalVertexId:e.positivelySameOriginal3DPhysicalSourceVertex,
+     twoGenuineOriginalOCCT3DSourceCurvesVerified:true,
+     M0ExactDyadicOriginalObserverDepthTie:
+      e.exactOriginalM4VertexOtherSourceDepthEvidence?.
+       exactOriginalVertexDepthRelativeOtherSourceSign===0,
+     nativeHLRGeneratedPaperAlignmentProven:
+      e.originalHLRGeneratedPaperMismatchRemains===false&&
+      e.actualNativeGeneratedBRepPaperRelation?.
+       originalEventOnSameNativePaperLineExactly===true,
+     generatedHLRToOriginalTopoDSHistoryStillUnverified:true,
+     globalEngineeringLineStyleSigned:false,signedV5Action:false
     })),
    nativePaperDriftAtIndependentlyProvenOriginal3DVertices:
     physicalVertexPaperDrift.map(e=>({
