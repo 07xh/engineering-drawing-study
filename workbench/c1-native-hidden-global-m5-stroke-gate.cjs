@@ -25,7 +25,7 @@ const requiredGlobal=[
 ];
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
- nativeVertexProof,projectedEncounters,globalM5Review
+ nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     gapProof?.sourceGeometryId!==geometry.id||gapProof.revision!==revision||
@@ -48,6 +48,14 @@ function reviewC1NativeHiddenFinalM5Strokes({
     projectedEncounters.signedV5ActionCount!==0||
     projectedEncounters.wholeSceneProjectedJunctionAndOcclusionCertified!==false||
     !Array.isArray(projectedEncounters.rows)||
+    nativeHLRJunctionConcordance?.schema!==
+     'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1'||
+    nativeHLRJunctionConcordance.sourceGeometryId!==geometry.id||
+    nativeHLRJunctionConcordance.revision!==revision||
+    nativeHLRJunctionConcordance.signedV5ActionCount!==0||
+    nativeHLRJunctionConcordance.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete!==false||
+    nativeHLRJunctionConcordance.allPerViewActualNativeGeneratedJunctionComponentsConsumed!==true||
+    !Array.isArray(nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars)||
     globalM5Review?.sourceGeometryId!==geometry.id||
     globalM5Review.revision!==revision||
     globalM5Review.schema!=='draftai-c1-m5-final-source-obligation-review/1'||
@@ -108,6 +116,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   nativeHLRUnprovenExactPaperEventAlignment:0,
   nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof:0,
   nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor:0,
+  originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar:0,
+  originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld:0,
+  nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified:0,
   originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition:0,
   originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition:0,
   nativeHLRSourceStrokesWithCompleteLocal3DEventClassification:0,
@@ -120,6 +131,28 @@ function reviewC1NativeHiddenFinalM5Strokes({
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
   formalConstructionIntentDAGV5ActionsSigned:0};
+ // Reuse the already-verified global OCCT genuine native vertex stars;
+ // no inference from paper coincidence. A connected native generated
+ // junction is locally physical only when all its HLR edges pass the
+ // independent same-revision original M0/M5 complete source fan proof.
+ const nativeStarByEndpoint=new Map();
+ for(const star of nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars){
+  if(!VIEWS.includes(star.view)||!Array.isArray(star.generatedHLREndpoints)||
+     star.generatedHLREndpoints.length<2||
+     star.genuineNativeGeneratedOCCTVertexPairwiseIsSame!==true||
+     star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered!==false||
+     star.wholeSceneAndEngineeringGBJunctionCertified!==false||
+     star.signedV5Action!==false)
+   throw new RangeError('untrusted complete generated HLR TopoDS original source star');
+  for(const member of star.generatedHLREndpoints){
+   if(member.hlrClass!=='hidden-sharp')continue;
+   const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
+   if(!['from','to'].includes(member.side)||nativeStarByEndpoint.has(key))
+    throw new RangeError('duplicate generated native HLR junction endpoint');
+   nativeStarByEndpoint.set(key,star);
+  }
+ }
+ const perViewNativeOrdinal=new Map(VIEWS.map(view=>[view,0]));
  const rows=[];
  for(let i=0;i<gapProof.rows.length;i++){
   const gap=gapProof.rows[i],dual=dualProof.rows[i],
@@ -184,6 +217,45 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
    remainingTrueOriginal3DVertexGaps;
   const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
+  const thisNativeOrdinal=perViewNativeOrdinal.get(gap.view);
+  perViewNativeOrdinal.set(gap.view,thisNativeOrdinal+1);
+  // Both sides are independently checked against the real current native
+  // source endpoint M0 vertex ID. The true generated OCCT IsSame star and
+  // its original physical vertex ID must coincide, without name/position
+  // guessing or tolerance.
+  const nativeEndpointStars=['from','to'].map((side,n)=>{
+   const star=nativeStarByEndpoint.get(
+    gap.view+'@'+thisNativeOrdinal+'@'+side);
+   const actualOriginalVertex=unique?
+    realNativeSource.endpointWitnesses[n]?.originalModel3DSourceVertexId:null;
+   const verified=!!star&&
+    star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===true&&
+    star.independentlyVerifiedOriginalM03DVertexId!==null&&
+    star.independentlyVerifiedOriginalM03DVertexId===actualOriginalVertex&&
+    star.independentlyTracedOriginal3DSourceEdges?.includes(edge)===true&&
+    (realNativeSource.endpointWitnesses[n]?.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
+     realNativeSource.endpointWitnesses[n]?.existingM4OriginalSourceEndpointVerified===true);
+   if(star&&star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===true&&
+      !verified)
+    throw new RangeError('genuine native IsSame star conflicts with original hidden 3D endpoint source fan');
+   if(verified)
+    counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar++;
+   else if(star)
+    counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld++;
+   return {
+    nativeHLREndpointSide:side,
+    actualGeneratedOCCTVertexIsSameJunctionPresent:!!star,
+    independentOriginal3DVertexAndFullHLRJunctionProven:verified,
+    independentlyVerifiedOriginalM03DVertexId:
+     verified?actualOriginalVertex:null,
+    nativeGeneratedToOriginalTopoDSEdgeHistoryStillNotProven:true,
+    globalOpaqueSceneAndEngineeringLineStyleCertified:false,
+    signedV5Action:false
+   };
+  });
+  if(nativeEndpointStars.every(x=>
+   x.independentOriginal3DVertexAndFullHLRJunctionProven))
+   counts.nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified++;
   if(sourceCoverage?.complete!==true)counts.incompleteCanonicalOriginalSourcePartitions++;
   const allGlobalBlockers=requiredGlobal.filter(k=>
    originalGlobal.some(row=>row.independentGlobalProofGaps[k]===true));
@@ -382,6 +454,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalNativePhysical3DVertexIdentityStillUnproven:
     remainingTrueOriginal3DVertexGaps,
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
+   independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars:nativeEndpointStars,
+   bothRealNativeHLREndpointGeneratedJunctionStarsHaveOriginal3DSourceProof:
+    nativeEndpointStars.every(x=>
+     x.independentOriginal3DVertexAndFullHLRJunctionProven),
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
@@ -448,6 +524,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
    signedV5Action:false
   });
  }
+ if(counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
+    counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld>
+    counts.genuineHiddenHLRStrokesReviewed*2||
+    counts.nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified>
+    counts.genuineHiddenHLRStrokesReviewed)
+  throw new RangeError('native whole junction M5 endpoint certification coverage mismatch');
  if(counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition+
     counts.originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition!==
     counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR||

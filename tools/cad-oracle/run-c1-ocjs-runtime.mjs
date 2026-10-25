@@ -539,10 +539,23 @@ for(const [index,geometry] of general.entries()){
   endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
   nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
   projectedEncounters:nativeHiddenM5.nativeHLRAllM4ProjectedEncounters,
+  nativeHLRJunctionConcordance:nativeHiddenM5.nativeHLRVertexConcordance,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(
+  hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
+  hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,
+  hiddenFormalGate.rows.reduce((count,row)=>count+
+   row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.filter(x=>
+    x.actualGeneratedOCCTVertexIsSameJunctionPresent).length,0));
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.length===2&&
+  row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.every(x=>
+   x.nativeGeneratedToOriginalTopoDSEdgeHistoryStillNotProven===true&&
+   x.globalOpaqueSceneAndEngineeringLineStyleCertified===false&&
+   x.signedV5Action===false)));
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
  assert.equal(
@@ -913,6 +926,10 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
    exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
     nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   nativeHLRSourceOriginal3DJunctionEndpointStarsPositivelyProven:
+    hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar,
+   nativeHLRSharedJunctionEndpointStarsOriginal3DUnverified:
+    hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,
    nativeM4SourceProjectedEventsWithExactLocal3DTopology:
     hiddenFormalGate.counts.originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition,
    nativeM4SourceProjectedEventsStillSpatiallyUndetermined:
