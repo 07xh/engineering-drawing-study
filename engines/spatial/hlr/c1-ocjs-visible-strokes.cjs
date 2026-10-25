@@ -214,7 +214,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      throw new RangeError('unbounded real B-Rep HLR output');
     edges.Next();
    }
-   if(segments.length<4)
+   if(segments.length<(b?4:3))
     throw new RangeError('real OCJS C1 silhouette incomplete for '+view+' count='+segments.length+' source='+geometry.id+' scope='+(b?'cuboid':'sewn-convex-shell'));
    rows[view]=segments;
   }
