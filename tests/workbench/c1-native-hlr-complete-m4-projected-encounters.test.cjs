@@ -143,11 +143,15 @@ test('canonical M4 transverse interior crossing gains exact original 3D forward-
  const r=audit(x);
  assert.equal(r.counts.nativeOriginalM4TransverseCrossingEventsFound,1);
  assert.equal(r.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,1);
+ assert.equal(r.counts.exactM4CrossingsBoundToCanonicalUnroundedSourceParameters,1);
+ assert.equal(r.counts.locallyAnchoredM4NativeTransverseStrictDepthComparisons,1);
  const event=r.rows[0].originalM4ProjectedEncountersOnNativeSource[1];
  assert.equal(event.exactOriginalM4CrossingObserverDepthEvidence.
   strictOriginal3DObserverDepthOrderAtPaperCrossingProven,true);
  assert.equal(event.exactOriginal3DFrontSourceAtTransversePaperCrossing,
   source(edges[2]));
+ assert.equal(event.canonicalM4EventExactRationalSourceParameterMatch,true);
+ assert.equal(event.nativeHLRActualM4EventLocallyAnchoredStrictDepth,true);
  assert.equal(event.positivelySameOriginal3DPhysicalSourceVertex,null);
  assert.equal(event.fullGlobalProjectedJunctionAndDepthSwitchCertified,false);
  assert.equal(event.officialGBLineStyle,'undetermined');
@@ -191,4 +195,30 @@ test('independent original BRep source missing or counterfeit cannot authorize s
  assert.equal(proof.counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR,0);
  assert.equal(proof.rows[0].originalM4ProjectedEncountersOnNativeSource[0].
   original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven,false);
+});
+
+test('a rounded canonical M4 encounter one ULP away from TRUE crossing cannot inherit its local OCCT/native depth proof',()=>{
+ const x=fixture();
+ x.geometry.data.points.D.z=10;x.geometry.data.points.E.z=10;
+ const ev=x.m4.rows.find(r=>r.view==='H'&&
+  r.sourceEdgeId===source(edges[0])).encounters[1];
+ ev.kind='crossing';ev.sourceParameter=.5+Number.EPSILON;
+ const r=audit(x),event=r.rows[0].originalM4ProjectedEncountersOnNativeSource[1];
+ assert.equal(r.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,1);
+ assert.equal(r.counts.exactM4CrossingsBoundToCanonicalUnroundedSourceParameters,0);
+ assert.equal(r.counts.trueCrossingDepthKnownButRoundedM4ParameterHeld,1);
+ assert.equal(r.counts.locallyAnchoredM4NativeTransverseStrictDepthComparisons,0);
+ assert.equal(event.nativeHLRActualM4EventLocallyAnchoredStrictDepth,false);
+ assert.equal(event.exactOriginal3DFrontSourceAtTransversePaperCrossing,null);
+ assert.equal(event.officialGBLineStyle,'undetermined');
+});
+test('diagnostically rounded M4 cut stays unanchored even when its numeric t is exactly the genuine crossing',()=>{
+ const x=fixture();x.geometry.data.points.D.z=10;x.geometry.data.points.E.z=10;
+ const ev=x.m4.rows.find(r=>r.view==='H'&&
+  r.sourceEdgeId===source(edges[0])).encounters[1];
+ ev.kind='crossing';ev.sourceParameterBoundaryRoundedForDiagnostic=true;
+ const result=audit(x).rows[0].originalM4ProjectedEncountersOnNativeSource[1];
+ assert.equal(result.canonicalM4EventExactRationalSourceParameterMatch,true);
+ assert.equal(result.nativeHLRActualM4EventLocallyAnchoredStrictDepth,false);
+ assert.equal(result.exactOriginal3DFrontSourceAtTransversePaperCrossing,null);
 });
