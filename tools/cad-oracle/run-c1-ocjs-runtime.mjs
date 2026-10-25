@@ -196,6 +196,23 @@ for(const [index,geometry] of general.entries()){
   x.officialEngineeringLineStyle==='undetermined'));
  assert.equal(features.counts.cadM0PositiveConflicts,0,
   'real CAD M0 positive non-hull edge conflict');
+ assert.equal(features.sourceProjectedEventGraphSchema,
+  'draftai-c1-original-source-m4-projected-event-graph/1');
+ assert.equal(features.counts.sourceBoundSubintervalCount,
+  features.rows.reduce((n,row)=>n+row.sourceBoundSubintervals.length,0));
+ assert.ok(features.counts.projectedSourceEventCount>0,
+  'real convex original source M4 V/H/W events required');
+ assert.ok(features.rows.some(row=>row.sourceM4EventCuts.length>2),
+  'source topology must actually be partitioned at projected junctions');
+ assert.ok(features.rows.every(row=>
+  row.sourceBoundSubintervals.every(span=>
+   span.signedV5Action===false&&
+   span.officialEngineeringLineStyle==='undetermined'&&
+   span.sourceEdgeId===row.sourceEdgeId&&
+   span.originalParameterRange[0]<span.originalParameterRange[1])));
+ assert.ok(features.rows.every(row=>
+  row.physicalProjectedJunctionEncounters.every(event=>
+   event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   physicalFeatureEvidence:{
    localExactOutwardCADVisible:
@@ -206,7 +223,16 @@ for(const [index,geometry] of general.entries()){
    exteriorExcluded:features.counts.skippedContourOverlaps,
    coplanarSubdivisionsExcluded:features.counts.skippedCoplanarSubdivisions,
    CADSourceConflicts:features.counts.cadM0PositiveConflicts,
-   formalSignedCount:features.officialV5ActionCount
+   formalSignedCount:features.officialV5ActionCount,
+   originalSourceM4Events:features.counts.projectedSourceEventCount,
+   sourceBoundProjectedSubintervals:features.counts.sourceBoundSubintervalCount,
+   nonHullPositiveSubintervals:features.counts.nonHullPositiveSubintervals,
+   nonHullUnresolvedSubintervals:features.counts.nonHullUndeterminedSubintervals,
+   hullExcludedSubintervals:features.counts.hullHeldSubintervals,
+   authenticOriginalVertexEventWitnesses:
+    features.counts.exactOriginalVertexEventWitnesses,
+   paperOnlyUnresolvedEventWitnesses:
+    features.counts.paperOnlyUnresolvedEventWitnesses
   },
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),
