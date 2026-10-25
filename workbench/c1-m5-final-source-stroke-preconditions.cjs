@@ -19,6 +19,8 @@ const {auditC1ExactOriginalVertexObserverRays}=
  require('./c1-m5-exact-original-vertex-rays.cjs');
 const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
+const {auditC1OriginalClosedVertexStars}=
+ require('./c1-m5-original-closed-vertex-stars.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -69,6 +71,16 @@ function auditC1OriginalStrokeFinalPreconditions({
   row.originalPhysicalSourceEdgeId+'@'+row.view,row]));
  if(closedByKey.size!==edgeClosure.rows.length)
   throw new RangeError('duplicate original source closed edge proof');
+ const sourceStar=auditC1OriginalClosedVertexStars({geometry,revision});
+ if(sourceStar.sourceGeometryId!==geometry.id||
+    sourceStar.revision!==revision||
+    sourceStar.signedV5ActionCount!==0||
+    sourceStar.entireOriginalClosed3DVertexFanTopologyCertified!==true)
+  throw new RangeError('unsigned reviewed physical 3D vertex star evidence required');
+ const starByKey=new Map(sourceStar.rows.map(row=>[
+  row.view+'@'+row.original3DVertexId,row]));
+ if(starByKey.size!==sourceStar.rows.length)
+  throw new RangeError('source 3D vertex star identity repeated');
  const ledger=[],counts={
   totalOriginalSourceEdgeViewSubspans:0,
   externalContourHeld:0,
@@ -86,6 +98,10 @@ function auditC1OriginalStrokeFinalPreconditions({
   originalVertexEndpointExactNearInteriorWitnesses:0,
   originalVertexEndpointRayTangenciesHeld:0,
   paperCutEndpointsWithNoOriginalVertexRayProof:0,
+  certifiedOriginal3DVertexFanEndpointWitnesses:0,
+  actualOriginal3DVertexProjectedAliasWitnessesHeld:0,
+  trueCommon3DVertexSourcePairsCounted:0,
+  syntheticPaperPointCannotAcquireClosed3DVertexStarCount:0,
   innerCutEndpointsWithNoCrossSourceJoin:0,
   exactInwardPrunedOriginalSourceCandidates:0,
   localPositiveAfterStrictHiddenAliasElimination:0,
@@ -163,6 +179,45 @@ function auditC1OriginalStrokeFinalPreconditions({
        x.authorizedAsV5Junction!==false||
        x.anotherOriginalSource3DPointInferred!==false))
     throw new RangeError('fake or unverified physical original source endpoint');
+   const verifiedEndpointStars=endpoints.map(endpoint=>{
+    const id=endpoint.originalVertexId;
+    if(id===null){
+     counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount++;
+     return {original3DVertexId:null,
+      genuineClosed3DOriginalVertexFaceFanVerified:false,
+      true3DOriginalSourceJunctionPairSourceEdgeIds:[],
+      other3DVertexIdsWithSamePaperProjection:[],
+      candidateProjectedPaperCutNever3DVertex:true,
+      signedV5Action:false};
+    }
+    const proof=starByKey.get(row.view+'@'+id);
+    if(!proof||proof.sourceGeometryId!==geometry.id||
+       proof.revision!==revision||
+       proof.oneConnectedOriginal3DVertexFaceFanProven!==true||
+       proof.signedV5Action!==false||
+       !['x','y','z'].every(k=>
+        proof.original3DModelPoint[k]===endpoint.model3DPoint[k])||
+       !proof.incidentOriginalSourceEdges.some(edge=>
+        edge.originalSourceEdgeId===row.sourceEdgeId&&
+        (edge.original3DEndpointConfirmedByM4||
+         edge.firstAngleProjectionCollapsed)))
+      throw new RangeError('current original source stroke endpoint not supported by authentic closed vertex fan');
+    counts.certifiedOriginal3DVertexFanEndpointWitnesses++;
+    counts.actualOriginal3DVertexProjectedAliasWitnessesHeld+=
+     proof.distinct3DVerticesProjectingToSamePaperPoint.length;
+    const pairs=proof.true3DOriginalSourceJunctionPairs.filter(pair=>
+     pair.originalSourceEdgeIds.includes(row.sourceEdgeId));
+    counts.trueCommon3DVertexSourcePairsCounted+=pairs.length;
+    return {original3DVertexId:id,
+     genuineClosed3DOriginalVertexFaceFanVerified:true,
+     true3DOriginalSourceJunctionPairSourceEdgeIds:pairs.map(pair=>
+      [...pair.originalSourceEdgeIds]),
+     other3DVertexIdsWithSamePaperProjection:
+      [...proof.distinct3DVerticesProjectingToSamePaperPoint],
+     candidateProjectedPaperCutNever3DVertex:false,
+     completeVisibleEngineeringLineJunctionCertified:false,
+     signedV5Action:false};
+   });
    const verifiedEndpointRays=endpoints.map(endpoint=>{
     const id=endpoint.originalVertexId;
     if(id===null){
@@ -247,6 +302,12 @@ function auditC1OriginalStrokeFinalPreconditions({
     originalEdgeM4CutPartitionHasGaps:
      !currentEdge.originalM4PaperParameterPartitionComplete,
     sourceCrossEdgeJunctionsNotGloballyCertified:true,
+    originalClosedVertex3DFanNotCertifiedForEveryEndpoint:
+     verifiedEndpointStars.some(x=>
+      !x.genuineClosed3DOriginalVertexFaceFanVerified),
+    real3DVertexAliasesSharingPaperPointNeedSceneResolution:
+     verifiedEndpointStars.some(x=>
+      x.other3DVertexIdsWithSamePaperProjection.length>0),
     originalVertexEndpointRayIncompleteOrTangent:
      verifiedEndpointRays.some(x=>
       x.status==='paper-cut-without-original-3d-vertex-ray-proof'||
@@ -270,6 +331,10 @@ function auditC1OriginalStrokeFinalPreconditions({
     originalM5ExteriorContourOverlap:outer,
     exactOriginal3DVertexEndpointCount:originalVertexEndpoints,
     exactOriginalVertexObserverRayEndpoints:verifiedEndpointRays,
+    reviewedOriginalClosed3DVertexFanEndpoints:verifiedEndpointStars,
+    genuineOriginal3DSourceFanEndpointCount:
+     verifiedEndpointStars.filter(x=>
+      x.genuineClosed3DOriginalVertexFaceFanVerified).length,
     bothSourceEndpointsAreOriginalVertices:
      originalVertexEndpoints===2,
     allOriginalEndpointForwardRaysPositivelyClear:
@@ -309,6 +374,10 @@ function auditC1OriginalStrokeFinalPreconditions({
   counts.strictlyHiddenWholeOpenRayButOtherGatesRemain+
   counts.behindAnotherPhysicalSource+counts.physical3DDuplicateHeld+
   counts.unresolvedPhysicalVisibilityOrSourcePriority;
+ if(counts.certifiedOriginal3DVertexFanEndpointWitnesses+
+    counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount!==
+    counts.totalOriginalSourceEdgeViewSubspans*2)
+  throw new RangeError('original 3D vertex fan evidence fails exact M4 endpoint accounting');
  if(total!==counts.totalOriginalSourceEdgeViewSubspans||
     total!==recomputed.counts.sourceBoundSubintervalCount||
     ledger.some(s=>s.formalStandardLineStyle!=='undetermined'||
@@ -323,6 +392,8 @@ function auditC1OriginalStrokeFinalPreconditions({
   originalPhysicalEvidenceSchema:recomputed.schema,
   independentOriginalVertexRayProofSchema:rayLedger.schema,
   independentlyRecomputedClosedOriginalEdgeRaySchema:edgeClosure.schema,
+  independentlyRecomputedOriginal3DVertexFanSchema:sourceStar.schema,
+  original3DVertexClosedFaceFanTotals:sourceStar.counts,
   originalFull3DEdgeRayContinuityTotals:edgeClosure.counts,
   sourceOriginalVertexObserverRayTotals:rayLedger.counts,
   counts,subspans:ledger,
