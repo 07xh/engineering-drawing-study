@@ -143,6 +143,25 @@ for(const [index,geometry] of general.entries()){
  assert.equal(wholeHidden.signedV5ActionCount,0);
  assert.equal(wholeHidden.wholeEngineeringHiddenLineCertification,false);
  assert.equal(wholeHidden.allOriginal3DRayParameterGapsPreserved,true);
+ const frontMask=nativeHiddenM5.nativeHiddenFrontVisibleMask;
+ assert.equal(frontMask.counts.realHiddenNativeEdgesAudited,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(frontMask.signedV5ActionCount,0);
+ assert.equal(frontMask.allNativeHLRGeneratedTopoDSLinksProven,false);
+ assert.equal(
+  frontMask.counts.unique3DHiddenCandidateEdgesAudited+
+   frontMask.counts.nativeHiddenWithoutUnique3DSourceHeld,
+  frontMask.counts.realHiddenNativeEdgesAudited);
+ assert.ok(frontMask.rows.every(row=>
+  row.officialEngineeringLineStyle==='undetermined'&&
+  row.originalHLRSourceTopoDSIdentityRecovered===false&&
+  row.constructionIntentAuthorized===false&&row.signedV5Action===false&&
+  row.realNativeVisibleFrontOriginalSourceWitnesses.every(w=>
+   w.realOCCTVisibleFrontSharpStroke===true&&
+   w.exactM5FullClosedOriginalFrontRayClear===true&&
+   w.independentlyRecomputedOriginalM4WholeAffineFrontDepthOrder===true&&
+   w.nativeHLRGeneratedTopoDSIdentityCertified===false&&
+   w.GBStyleCertified===false&&w.signedV5Action===false)));
  assert.ok(wholeHidden.rows.every(r=>
   r.nativeHLRGeneratedTopologyComplete===false&&
   r.wholeNativeHLRLineOfficialGBStyleCertified===false&&
@@ -589,6 +608,14 @@ for(const [index,geometry] of general.entries()){
     wholeHidden.counts.nativeHiddenOriginalStrictM5ProofPositiveGapCount,
    hiddenPaperCandidateClearRayConflicts:
     wholeHidden.counts.nativeHiddenSourceClearRayConflicts,
+   genuineOcctVisibleFrontMaskFullHiddenPaperStrokes:
+    frontMask.counts.hiddenNativeFullPaperMaskByRealVisibleFrontSource,
+   partlyFrontMaskedButPaperDepthUnproven:
+    frontMask.counts.hiddenNativePartialPaperMaskOrDepthGapHeld,
+   independentVisibleFrontOCCTM4DepthAndM5RayWitnesses:
+    frontMask.counts.realVisibleFrontM5ClosedRayAndM4DepthWitnessCount,
+   frontPaperMaskOriginalParameterGaps:
+    frontMask.counts.numberOfUncoveredPositiveHiddenPaperIntervals,
    fullOriginalTopoDSSourceLinkSigned:false,
    formalGBHiddenLineSigned:false,v5ActionsSigned:0
   },
