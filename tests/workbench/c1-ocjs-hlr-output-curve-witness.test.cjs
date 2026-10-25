@@ -20,6 +20,15 @@ test('real GeomAbs_Line projected HLR samples bind the whole finite curve to V p
  assert.equal(r.formalStandardLineStyle,'undetermined');
  assert.equal(r.v5Authorized,false);
 });
+test('native OCCT HLR pcurve is supported only by real planar line samples and has no original 3D authority',()=>{
+ const w={...good(),curveIs3D:false};
+ const v=verify(w);
+ assert.equal(v.actualOCCTHLRCurveBacking,'surface-pcurve');
+ assert.equal(v.originalTopoDSSourceForHLREdgeRecovered,false);
+ const native=verify({...good(),curveIs3D:true});
+ assert.equal(native.actualOCCTHLRCurveBacking,'native-3d');
+ assert.throws(()=>verify({...good(),curveIs3D:'false'}),/line curve witness/);
+});
 test('reversed original HLR vertices agree with measured analytic OCCT curve independently of orientation',()=>{
  const q=good();q.projectedEndpoints.reverse();
  assert.equal(verify(q).actualOCCTHLRCurveOrientation,'reverse-of-vertices');
