@@ -110,3 +110,31 @@ test('adjacent disjoint source intervals remain reviewable without signing',()=>
  assert.equal(r.rows[0].originalGlobalSourceM5StrokeRowsReviewed,2);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('positive full source partition coverage has no unexplained parameter gap',()=>{
+ const r=review(caseData());
+ assert.equal(r.rows[0].canonicalOriginalSourceParameterPartitionComplete,true);
+ assert.deepEqual(r.rows[0].canonicalOriginalSourceParameterGaps,[]);
+ assert.equal(r.counts.incompleteCanonicalOriginalSourcePartitions,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('missing middle source parameter interval is explicitly held as a gap',()=>{
+ const x=caseData(),first=x.globalM5Review.rows[0];
+ first.originalSourceParameterRange=[0,0.3];
+ x.globalM5Review.rows.push({
+  ...first,originalSourceParameterRange:[0.6,1],
+  independentGlobalProofGaps:{...first.independentGlobalProofGaps}
+ });
+ const r=review(x);
+ assert.equal(r.rows[0].canonicalOriginalSourceParameterPartitionComplete,false);
+ assert.deepEqual(r.rows[0].canonicalOriginalSourceParameterGaps,[[0.3,0.6]]);
+ assert.equal(r.counts.incompleteCanonicalOriginalSourcePartitions,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('missing start and end of original source are both reported',()=>{
+ const x=caseData();
+ x.globalM5Review.rows[0].originalSourceParameterRange=[0.2,0.8];
+ const r=review(x);
+ assert.deepEqual(r.rows[0].canonicalOriginalSourceParameterGaps,[[0,0.2],[0.8,1]]);
+ assert.equal(r.signedV5ActionCount,0);
+});
