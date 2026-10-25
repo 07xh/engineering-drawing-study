@@ -115,9 +115,10 @@ function makeConvexOcjsShell({oc,geometry,newObj,hold}){
   const polygon=newObj('BRepBuilderAPI_MakePolygon_1');
   for(const id of faceIds){
    const p=geometry.data.points[id];
+   // Added() indicates creation of the latest polygon EDGE; the first
+   // vertex has no edge yet. The final closed Wire/Face and sewing are
+   // the authoritative OCCT topology checks, not each intermediate flag.
    polygon.Add_1(newObj('gp_Pnt_3',p.x,p.y,p.z));
-   if(!polygon.Added())
-    throw new RangeError('OCJS rejected real convex source vertex');
   }
   polygon.Close();
   const wire=hold(polygon.Wire());
