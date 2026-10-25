@@ -263,7 +263,12 @@ function solve(){
    '\\nM5 连续观察方向深度：核验全轮廓子区间 '+certified.continuousFrontmostSourceRays.auditedIntervalCount+
    ' 个，其中已列来源严格最前且整段射线无阻挡 '+certified.continuousFrontmostSourceRays.independentlyClearLeadingSourceIntervalCount+
    ' 个，深度平齐/换序未定 '+certified.continuousFrontmostSourceRays.ambiguousDepthIntervalCount+
-   ' 个。任何局部无遮挡都不自动生成工程标准实线或 V5 实体绘图。'+
+   ' 个。'+
+   '\\nM5 相邻轮廓段真实连接：前景三维来源接点与两侧整段无遮挡同时成立 '+
+   certified.continuousFrontmostSourceRays.localFrontRayPhysicalJunctionCandidateCount+
+   ' 处；其余需要补齐连接/可见性证据 '+
+   certified.continuousFrontmostSourceRays.frontSourceJunctionsAwaitingFullProofCount+
+   ' 处。仅为局部证据，不能直接生成标准实线/虚线或正式 V5。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
