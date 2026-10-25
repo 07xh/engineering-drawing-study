@@ -14,6 +14,8 @@
 const {VIEWS,project}=require('../../../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {readRealOcjsSharpHLREdge}=
+ require('./c1-ocjs-raw-hlr-edges.cjs');
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
@@ -386,7 +388,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
-  const rows={};
+  const rows={},hiddenViews={};
   for(const view of VIEWS){
    const f=FRAME[view];
    const axis=newObj('gp_Ax2_2',newObj('gp_Pnt_3',0,0,0),
@@ -402,80 +404,60 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const extractor=newObj('HLRBRep_HLRToShape',handle),
     visible=hold(extractor.VCompound_1());
    if(visible.IsNull())throw new RangeError('no real OCJS visible HLR geometry');
-   const edges=newObj('TopExp_Explorer_2',visible,kind,avoid);
-   const segments=[];
-   while(edges.More()){
-    const edge=hold(edges.Current());
-    const vs=newObj('TopExp_Explorer_2',edge,vertexType,avoid),coords=[];
-    while(vs.More()){
-     const shape=hold(vs.Current());
-     // OCJS is generated Embind: a static downcast + OCCT vertex location.
-     const vertex=hold(method(oc.TopoDS,'Vertex_1')(shape));
-     const p=hold(method(oc.BRep_Tool,'Pnt')(vertex));
-     if(![p.X(),p.Y(),p.Z()].every(finite)||Math.abs(p.Z())>1e-6)
-      throw new RangeError('nonfinite/nonplanar real HLR edge');
-     coords.push({u:p.X(),v:-p.Y()});
-     vs.Next();
-    }
-    if(coords.length!==2)throw new RangeError('HLR edge missing true endpoints');
-    if(Math.hypot(coords[0].u-coords[1].u,coords[0].v-coords[1].v)>1e-7){
-     // Separate real OCCT HLR curve verification from M0 source inference.
-     const edgeType=hold(method(oc.TopoDS,'Edge_1')(edge));
-     const adaptor=newObj('BRepAdaptor_Curve_2',edgeType);
-     const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
-     const observedType=adaptor.GetType();
-     const is3D=adaptor.Is3DCurve();
-     // HLR output edges can be native 2D-on-surface P-curves.
-     // BRepAdaptor_Curve evaluates those via their support surface in XYZ.
-     // Distinguish that representation from an original source 3D curve.
-     if(lineKind===undefined||observedType!==lineKind||
-        typeof is3D!=='boolean')
-      throw new RangeError('real OCJS HLR output must have GeomAbs_Line type'+
-       ' (sameType='+String(observedType===lineKind)+
-       ' is3D='+String(is3D)+')');
-     const first=adaptor.FirstParameter(),last=adaptor.LastParameter();
-     if(![first,last].every(finite)||!(last>first))
-      throw new RangeError('real OCJS HLR line has invalid finite parameters');
-     const curveAt=t=>{
-      const p=hold(adaptor.Value(t));
-      return {x:p.X(),y:p.Y(),z:p.Z()};
-     };
-     const hlrCurveWitness=verifyOcjsHLRProjectedLineCurveWitness({
-      view,projectedEndpoints:coords,parameterRange:[first,last],
-      curveSamples:[0,0.25,0.5,0.75,1].map(fraction=>
-       curveAt(first+(last-first)*fraction)),curveKind:'line',
-       curveIs3D:is3D
+   const withSourceCandidates=(measured,hlrClass)=>{
+    const lifted=liftOriginalProjectedSourceCandidates(
+     geometry,view,measured.from,measured.to);
+    if(hlrClass==='visible-sharp'&&lifted.unmappedReason)
+     throw new RangeError('real OCJS visible HLR source unmapped in '+
+      view+': '+lifted.unmappedReason);
+    const verifiedLifts=lifted.sourceCandidate3DLifts.map(lift=>{
+     const actual=sourceById.get(lift.sourceEdgeId);
+     if(!actual||actual.originalOCCTBRepVertexXYZMatched!==true||
+        actual.occtSourceCurve3DEndpointsAndMidpointVerified!==true)
+      throw new RangeError('real source 3D OCCT BRep curve missing for HLR candidate');
+     return {...lift,actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+      originalOCCTSourceCurveType:actual.occtSourceCurveType,
+      originalOCCTCurveParameterRange:[...actual.occtSourceCurveParameterRange],
+      originalOCCTSourceLineCurveVerified:
+       actual.occtSourceCurve3DEndpointsAndMidpointVerified,
+      actualOriginalOCCTBRepFrom3D:{...actual.fromOCCT3D},
+      actualOriginalOCCTBRepTo3D:{...actual.toOCCT3D},
+      actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false};
+    });
+    return {...measured,...lifted,occtHLRVisibilityClass:hlrClass,
+     sourceCandidate3DLifts:verifiedLifts,
+     originalOCCTSourceTopology3DVerified:true,
+     actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+     hiddenStrokeEngineeringStyleNotCertified:true};
+   };
+   // Same native edge reader is used on both HLR sharp-edge compounds.
+   // Neither represents original TopoDS identity or a GB line style.
+   const traverse=(compound,hlrClass)=>{
+    const edges=newObj('TopExp_Explorer_2',compound,kind,avoid);
+    const result=[];
+    while(edges.More()){
+     const edge=hold(edges.Current());
+     const measured=readRealOcjsSharpHLREdge({
+      oc,edge,view,vertexType,avoid,newObj,hold
      });
-     const lifted=liftOriginalProjectedSourceCandidates(
-      geometry,view,coords[0],coords[1]);
-     if(lifted.unmappedReason)
-      throw new RangeError('real OCJS HLR source unmapped in '+view+
-       ': '+lifted.unmappedReason);
-     const verifiedLifts=lifted.sourceCandidate3DLifts.map(lift=>{
-      const actual=sourceById.get(lift.sourceEdgeId);
-      if(!actual||actual.originalOCCTBRepVertexXYZMatched!==true)
-       throw new RangeError('real 3D OCCT source B-Rep edge missing for HLR candidate');
-      return {...lift,actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
-       originalOCCTSourceCurveType:actual.occtSourceCurveType,
-       originalOCCTCurveParameterRange:[...actual.occtSourceCurveParameterRange],
-       originalOCCTSourceLineCurveVerified:
-        actual.occtSourceCurve3DEndpointsAndMidpointVerified,
-       actualOriginalOCCTBRepFrom3D:{...actual.fromOCCT3D},
-       actualOriginalOCCTBRepTo3D:{...actual.toOCCT3D},
-       actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false};
-     });
-     segments.push({view,from:coords[0],to:coords[1],...lifted,
-      ...hlrCurveWitness,sourceCandidate3DLifts:verifiedLifts,
-      originalOCCTSourceTopology3DVerified:true,
-      actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false});
+     if(measured)result.push(withSourceCandidates(measured,hlrClass));
+     if(result.length>128)
+      throw new RangeError('unbounded real BRep HLR sharp-edge output');
+     edges.Next();
     }
-    if(segments.length>128)
-     throw new RangeError('unbounded real B-Rep HLR output');
-    edges.Next();
-   }
+    return result;
+   };
+   const segments=traverse(visible,'visible-sharp');
+   // HCompound contains ACTUAL hidden C0/sharp HLR edges. This is
+   // computed occlusion evidence, not permission to draw GB dashed lines.
+   const hidden=hold(method(extractor,'HCompound_1').call(extractor));
+   if(hidden.IsNull())
+    throw new RangeError('null native OCJS hidden HLR sharp-edge compound');
+   const hiddenSegments=traverse(hidden,'hidden-sharp');
    if(segments.length<(b?4:3))
     throw new RangeError('real OCJS C1 silhouette incomplete for '+view+' count='+segments.length+' source='+geometry.id+' scope='+(b?'cuboid':'sewn-convex-shell'));
    rows[view]=segments;
+   hiddenViews[view]=hiddenSegments;
   }
   return Object.freeze({
    schema:'draftai-c1-ocjs-real-visible-brep/1',
@@ -483,7 +465,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    sourceGeometryId:geometry.id,unit:'mm',
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
-   views:rows,engineComputedVisibleGeometry:true,
+   views:rows,hiddenSharpViews:hiddenViews,
+   hiddenHLROutputFromActualOCCT:true,
+   hiddenSharpEdgesAreOnlyUnsignedCandidates:true,
+   hiddenHLROriginalEdgeAttributionRecovered:false,
+   hiddenLineStylesCertified:false,
+   engineComputedVisibleGeometry:true,
    allEmittedVisibleHLRCurvesVerifiedStraightAndPlanar:true,
    actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:false,
    originalBRepSourceEdges:sourceBRep.originalBRepSourceEdges,
