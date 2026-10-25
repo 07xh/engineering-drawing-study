@@ -72,10 +72,23 @@ function auditC1ReviewedProjectedSourceEventGraph({
  let paperOnlySourceEncounters=0,exactSharedOriginalVertexEncounters=0;
  const add=(edgeId,view,t,incident)=>{
   const row=per.get(idKey(edgeId,view));
-  if(!row||!finite(t)||t<0||t>1)
-   throw new RangeError('unproven projected source parameter');
-  row.cuts.push(t);
-  row.encounters.push({...incident,sourceParameter:t});
+  // Existing M4 collinear-overlap parameter mappings are computed using
+  // Float64 dot products and may round a mathematically exact endpoint to
+  // -epsilon or 1+epsilon. Only an explicitly UNSIGNED forensic cut may
+  // conservatively clip that tiny overshoot. Its 3D endpoint identity is
+  // NOT certified by the clipped number. Larger escape is a hard failure.
+  const slack=1e-9;
+  if(!row||!finite(t)||t< -slack||t>1+slack)
+   throw new RangeError('unproven projected source parameter: '+t);
+  const bounded=Math.max(0,Math.min(1,t));
+  const rounded=bounded!==t;
+  row.cuts.push(bounded);
+  row.encounters.push({...incident,sourceParameter:bounded,
+   sourceParameterBoundaryRoundedForDiagnostic:rounded,
+   original3DPhysicalJunctionProven:!rounded&&
+    incident.original3DPhysicalJunctionProven,
+   projectedOnlyUnresolved:rounded||
+    incident.projectedOnlyUnresolved});
  };
  const atVertex=(edge,t)=>t===0?edge.a:t===1?edge.b:null;
  const addPair=(e,ta,tb,kind)=>{
