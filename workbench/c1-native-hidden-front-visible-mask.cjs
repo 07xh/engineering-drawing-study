@@ -150,11 +150,18 @@ function auditC1NativeHiddenFrontVisibleMasks({
       counts.missingValidFrontM5RayOrNativeVisibleHLR++;
       continue;
      }
-     const hiddenM4Range=hiddenFirst?witness.firstParameterRange:
+     const rawHiddenM4Range=hiddenFirst?witness.firstParameterRange:
       witness.secondParameterRange;
-     if(!Array.isArray(hiddenM4Range)||hiddenM4Range.length!==2||
-        !hiddenM4Range.every(finite)||hiddenM4Range[0]<0||
-        hiddenM4Range[1]>1||hiddenM4Range[1]<=hiddenM4Range[0])
+     if(!Array.isArray(rawHiddenM4Range)||rawHiddenM4Range.length!==2||
+        !rawHiddenM4Range.every(finite))
+      throw new RangeError('invalid original M4 source affine depth overlap');
+     // M4's SECOND original source can run in the opposite original
+     // vertex orientation; depth is still ordered over the same PAPER
+     // interval. Preserve the proven range, normalize only the bounds.
+     const hiddenM4Range=[
+      Math.min(...rawHiddenM4Range),Math.max(...rawHiddenM4Range)];
+     if(hiddenM4Range[0]<0||hiddenM4Range[1]>1||
+        hiddenM4Range[1]<=hiddenM4Range[0])
       throw new RangeError('invalid original M4 source affine depth overlap');
      for(const frontNative of visible){
       if(frontNative.view!==view||
