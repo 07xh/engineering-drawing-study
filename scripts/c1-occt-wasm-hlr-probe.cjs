@@ -1,11 +1,22 @@
 'use strict';
-/** Executable OCCT WASM HLR availability gate, not a substitute HLR algorithm.
- * Runs in a disposable CI workspace; never affects app dependencies or V5.
+/** Probe actual OCCT WASM package layout and exports without granting V5 proof.
+ * Avoid importing the package root: upstream main may point at raw .wasm.
  */
 (async()=>{
- const pkg=await import('opencascade.js');
- const factory=pkg.default;
- if(typeof factory!=='function')throw Error('opencascade.js default WASM factory missing');
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const root=path.dirname(require.resolve('opencascade.js/package.json'));
+ const pkg=require(path.join(root,'package.json'));
+ const entries=fs.readdirSync(path.join(root,'dist')).filter(x=>/\\.(js|mjs|wasm)$/.test(x));
+ console.log('OCCT package layout:',JSON.stringify({version:pkg.version,main:pkg.main,entries}));
+ const js=entries.filter(x=>/\\.(m?js)$/.test(x));
+ if(!js.length)throw Error('Upstream package has no executable JavaScript glue; raw WASM cannot be imported as an ES module');
+ const entry=js.find(x=>/full/.test(x))||js[0];
+ console.log('OCCT JS glue entry:',entry);
+ const {pathToFileURL}=require('node:url');
+ const module=await import(pathToFileURL(path.join(root,'dist',entry)).href);
+ const factory=module.default;
+ if(typeof factory!=='function')throw Error('OCCT JavaScript glue does not export a default WASM factory');
  const oc=await factory();
  const required=['BRepPrimAPI_MakeBox','HLRBRep_Algo','HLRBRep_HLRToShape','HLRAlgo_Projector'];
  const found={};for(const key of required)found[key]=Object.keys(oc).filter(k=>k===key||k.startsWith(key+'_'));
