@@ -366,3 +366,30 @@ test('malformed or unknown-view original M5 ray rows are rejected before visible
   assert.throws(()=>audit(x),/invalid original M5 closed-ray source\/view witness/);
  }
 });
+
+test('a visible HLR endpoint cannot be certified if its opposite original 3D lift endpoint is forged',()=>{
+ for(const mutate of [
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].fromCandidate3D.x=1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=-0.1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=NaN;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedTo=0;},
+  x=>{x.cad.views.H[0].from={u:1,v:4};}
+ ]){
+  const x=visibleFrontSourceCase();mutate(x);
+  const result=audit(x);
+  assert.equal(result.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+  assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+   allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
+test('an authentic two-endpoint visible OCCT lift still certifies only the local 3D junction, not GB/V5',()=>{
+ const x=visibleFrontSourceCase(),result=audit(x);
+ assert.equal(result.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,1);
+ assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ assert.equal(result.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
+ assert.equal(result.GBEngineeringLineRulesSatisfied,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
