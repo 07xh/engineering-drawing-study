@@ -62,15 +62,36 @@ function reviewC1NativeHiddenFinalM5Strokes({
      row.independentGlobalProofGaps.engineeringLineStandard!==true||
      row.independentGlobalProofGaps.soleConstructionIntentDAGV5!==true)
    throw new RangeError('prematurely signed or untrusted canonical M5 stroke review');
+  const interval=row.originalSourceParameterRange;
+  if(!Array.isArray(interval)||interval.length!==2||
+     !interval.every(Number.isFinite)||interval[0]<0||
+     interval[1]>1||interval[0]>=interval[1])
+   throw new RangeError('canonical original M5 source interval is not a finite positive partition');
   const key=row.view+'@'+row.sourceEdgeId;
   if(!byKey.has(key))byKey.set(key,[]);
   byKey.get(key).push(row);
+ }
+ const sourcePartitionCoverage=new Map();
+ for(const [key,sourceRows] of byKey){
+  const ordered=[...sourceRows].sort((a,b)=>
+   a.originalSourceParameterRange[0]-b.originalSourceParameterRange[0]);
+  const gaps=[];
+  let cursor=0;
+  for(const row of ordered){
+   const [begin,end]=row.originalSourceParameterRange;
+   if(begin<cursor)throw new RangeError('overlapping canonical original M5 source intervals');
+   if(begin>cursor)gaps.push([cursor,begin]);
+   cursor=end;
+  }
+  if(cursor<1)gaps.push([cursor,1]);
+  sourcePartitionCoverage.set(key,frozen({complete:gaps.length===0,gaps}));
  }
  const counts={genuineHiddenHLRStrokesReviewed:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
   missingLocalNativeOrModelOpenProofHeld:0,
   original3DEndpointFanProofIncompleteStrokes:0,
+  incompleteCanonicalOriginalSourcePartitions:0,
   missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered:0,
   genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
@@ -130,6 +151,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
    alternativeNative3D;
   counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
    remainingTrueOriginal3DVertexGaps;
+  const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
+  if(sourceCoverage?.complete!==true)counts.incompleteCanonicalOriginalSourcePartitions++;
   const allGlobalBlockers=requiredGlobal.filter(k=>
    originalGlobal.some(row=>row.independentGlobalProofGaps[k]===true));
   const localNative=gap.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront===true;
@@ -156,6 +179,16 @@ function reviewC1NativeHiddenFinalM5Strokes({
     remainingTrueOriginal3DVertexGaps,
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
+   canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
+   canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
+   jointPositiveM5Prerequisites:{
+    completeSourceParameterCoverage:sourceCoverage?.complete===true,
+    original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0,
+    continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel
+   },
+   jointPositiveM5PrerequisitesSatisfied:
+    sourceCoverage?.complete===true&&remainingTrueOriginal3DVertexGaps===0&&
+    localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified:false,
    engineeringGBSolidOrDashedLineStandardFullyCertified:false,
