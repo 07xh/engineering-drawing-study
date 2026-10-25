@@ -185,7 +185,8 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
      const exactCrossing=e.kind==='crossing'?
       exactOriginalM4TransverseCrossingDepth({
        geometry,view,firstEdge:edge,
-       secondEdge:sourceById.get(e.otherSourceEdgeId)
+       secondEdge:sourceById.get(e.otherSourceEdgeId),
+       nativeFirstOriginalParameterRange:range
       }):null;
      if(exactCrossing){
       counts.nativeOriginalM4TransverseCrossingEventsFound++;
