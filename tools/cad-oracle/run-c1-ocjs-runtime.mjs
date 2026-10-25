@@ -120,6 +120,24 @@ for(const [index,geometry] of general.entries()){
   for(const seg of view){
    assert.ok(seg.projectedOriginalEdgeCandidates.length>0);
    assert.ok(seg.projectedOriginalEdgeCandidates.every(id=>valid.has(id)));
+   // Genuine WASM HLR candidate XYZ must reproduce its real V/H/W image.
+   // This is NOT recovered OCCT TopoDS 3D source identity or M5 signing.
+   assert.equal(seg.sourceCandidate3DLifts.length,
+    seg.projectedOriginalEdgeCandidates.length);
+   assert.equal(seg.actualOCCTTopoDSIdentityRecovered,false);
+   assert.equal(seg.v5Authorized,false);
+   for(const source of seg.sourceCandidate3DLifts){
+    assert.ok(valid.has(source.sourceEdgeId));
+    assert.equal(source.actualOCCTTopoDSEdgeIdentityRecovered,false);
+    assert.equal(source.actualOCCT3DCurveExtracted,false);
+    assert.equal(source.officialEngineeringLineStyle,'undetermined');
+    const projectedA=project(source.fromCandidate3D)[seg.view];
+    const projectedB=project(source.toCandidate3D)[seg.view];
+    assert.ok(Math.hypot(projectedA.u-seg.from.u,
+     projectedA.v-seg.from.v)<=1e-6);
+    assert.ok(Math.hypot(projectedB.u-seg.to.u,
+     projectedB.v-seg.to.v)<=1e-6);
+   }
    assert.ok([seg.from.u,seg.from.v,seg.to.u,seg.to.v].every(Number.isFinite));
    count++;
   }
