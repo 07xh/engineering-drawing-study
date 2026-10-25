@@ -13,6 +13,8 @@ on:
       - 'workbench/c1-native-hidden-front-visible-mask.cjs'
       - 'workbench/c1-native-hidden-dual-proof-open-interval-union.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
+      - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
+      - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs'
       - 'tests/workbench/c1-native-hidden-dual-proof-open-interval-union.test.cjs'
       - 'tests/workbench/c1-native-hidden-front-visible-mask.test.cjs'
@@ -70,6 +72,8 @@ on:
       - 'workbench/c1-native-hidden-front-visible-mask.cjs'
       - 'workbench/c1-native-hidden-dual-proof-open-interval-union.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
+      - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
+      - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs'
       - 'tests/workbench/c1-native-hidden-dual-proof-open-interval-union.test.cjs'
       - 'tests/workbench/c1-native-hidden-front-visible-mask.test.cjs'
@@ -154,6 +158,7 @@ jobs:
           node --test tests/workbench/c1-native-hidden-front-visible-mask.test.cjs
           node --test tests/workbench/c1-native-hidden-dual-proof-open-interval-union.test.cjs
           node --test tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs
+          node --test tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
