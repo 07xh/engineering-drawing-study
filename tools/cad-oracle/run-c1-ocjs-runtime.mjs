@@ -120,6 +120,19 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeHiddenM5.sourceAndGeneratedHiddenLineAttributionNotCertified,true);
  assert.equal(nativeHiddenM5.officialEngineeringLineStylesCertified,false);
  assert.equal(nativeHiddenM5.signedV5ActionCount,0);
+ assert.equal(nativeHiddenM5.nativeHiddenSourceRefinements.length,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(
+  nativeHiddenM5.counts.nativeHiddenSharpWithNoSurvivingM5Source+
+   nativeHiddenM5.counts.nativeHiddenSharpWithOneSurvivingM5Source+
+   nativeHiddenM5.counts.nativeHiddenSharpStillWithMultipleM5Sources,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments
+ );
+ assert.ok(nativeHiddenM5.nativeHiddenSourceRefinements.every(r=>
+  r.nativeHLRToSourceTopoDSIdentityRecovered===false&&
+  r.formalEngineeringLineStyle==='undetermined'&&
+  r.constructionIntentAuthorized===false&&
+  r.signedV5Action===false));
  assert.equal(nativeHiddenM5.counts.signedNewV5Actions,0);
  assert.equal(nativeHiddenM5.counts.signedNewEngineeringStrokes,0);
  assert.equal(nativeHiddenM5.rows.length,geometry.data.edges.length*3);
@@ -485,6 +498,14 @@ for(const [index,geometry] of general.entries()){
    withoutM0Candidates:nativeHiddenM5.counts.nativeHiddenWithoutM0SourceCandidates,
    multi3DSourceAliasSegments:
     nativeHiddenM5.counts.hiddenHLRWithMultiple3DSourceCandidates,
+   exact3DClosedRayHiddenPaperCandidatesPruned:
+    nativeHiddenM5.counts.exactClosedOutwardRayExcludedHiddenCandidates,
+   nativeHiddenWithOneRemaining3DSource:
+    nativeHiddenM5.counts.nativeHiddenSharpWithOneSurvivingM5Source,
+   nativeHiddenWithMultipleRemaining3DSources:
+    nativeHiddenM5.counts.nativeHiddenSharpStillWithMultipleM5Sources,
+   nativeHiddenAllCandidatesExcludedHeld:
+    nativeHiddenM5.counts.nativeHiddenSharpWithNoSurvivingM5Source,
    originalM4Subspans:nativeHiddenM5.counts.canonicalOriginalM4SubspansChecked,
    exactM5HiddenOpenSubspans:nativeHiddenM5.counts.exactM5HiddenOpenSubspans,
    wholeNativeHiddenCandidateCovered:
