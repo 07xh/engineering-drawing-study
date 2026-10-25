@@ -7,6 +7,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
+      - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
+      - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
       - 'workbench/c1-m5-exact-original-vertex-rays.cjs'
@@ -50,6 +52,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs'
+      - 'workbench/c1-native-hidden-exact-source-pruning.cjs'
+      - 'tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs'
       - 'tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs'
       - 'workbench/c1-m5-final-source-stroke-preconditions.cjs'
       - 'workbench/c1-m5-exact-original-vertex-rays.cjs'
@@ -119,6 +123,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
           node --test tests/workbench/c1-ocjs-hidden-sharp-hlr.test.cjs
           node --test tests/workbench/c1-ocjs-hidden-sharp-m5-corroboration.test.cjs
+          node --test tests/workbench/c1-native-hidden-exact-source-pruning.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test
