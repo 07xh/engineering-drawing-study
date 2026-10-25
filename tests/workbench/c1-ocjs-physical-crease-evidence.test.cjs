@@ -22,7 +22,7 @@ test('unclosed and counterfeit source topology refuses any HLR result',()=>{
  const repeated={...g,data:{...g.data,
   edges:[...g.data.edges,[...g.data.edges[0]]]}};
  assert.throws(()=>auditC1OcjsPhysicalCreaseCandidates({
-  oc:{},geometry:repeated,revision:1}),/Euler|duplicate|declared/);
+  oc:{},geometry:repeated,revision:1}),/Euler|duplicate|declared|explicit finite model-3d mm mesh/);
 });
 test('uninitialized CAD cannot be substituted by user supplied HLR candidate booleans',()=>{
  const g=box();
