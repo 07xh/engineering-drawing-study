@@ -90,6 +90,66 @@ function provenanceCandidates(g,view,from,to){
  }
  return src.sort();
 }
+
+/**
+ * Lift ACTUAL projected HLR endpoints back onto every compatible ORIGINAL
+ * M0 edge. These are per-source 3D CANDIDATES, not OCCT TopoDS identities:
+ * two edges at different depths can have precisely the same V/H/W image.
+ * Reprojection is checked independently of the initial collinearity test.
+ * This intentionally does not certify a 3D B-Rep curve, M5 style or V5.
+ */
+function liftOriginalProjectedSourceCandidates(g,view,from,to){
+ if(!VIEWS.includes(view)||![from?.u,from?.v,to?.u,to?.v].every(finite))
+  throw new TypeError('finite actual HLR V/H/W projected endpoints required');
+ // A projected point is not a B-Rep line, even when it lies on several
+ // original edges. Never assign it a 3D source identity.
+ const degenerate=Math.hypot(to.u-from.u,to.v-from.v)<=1e-8;
+ const ids=degenerate?[]:provenanceCandidates(g,view,from,to);
+ const sourceCandidate3DLifts=ids.map(sourceEdgeId=>{
+  const edge=g.data.edges.find(e=>
+   g.id+'::'+[...e].sort().join('|')===sourceEdgeId);
+  if(!edge)throw new RangeError('original 3D source edge missing');
+  const a=g.data.points[edge[0]],b=g.data.points[edge[1]];
+  const pa=project(a)[view],pb=project(b)[view];
+  const du=pb.u-pa.u,dv=pb.v-pa.v,den=du*du+dv*dv;
+  if(!(den>1e-15)||!finite(den))
+   throw new RangeError('projected original source edge collapsed');
+  const fraction=q=>((q.u-pa.u)*du+(q.v-pa.v)*dv)/den;
+  const ta=fraction(from),tb=fraction(to);
+  if(![ta,tb].every(finite)||ta < -1e-6||ta>1+1e-6||
+     tb < -1e-6||tb>1+1e-6)
+   throw new RangeError('HLR endpoint lies outside original source edge');
+  const clamp=t=>Math.max(0,Math.min(1,t));
+  const t0=clamp(ta),t1=clamp(tb);
+  const point=t=>({x:a.x+(b.x-a.x)*t,
+   y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+  const fromCandidate3D=point(t0),toCandidate3D=point(t1);
+  const pf=project(fromCandidate3D)[view],
+   pt=project(toCandidate3D)[view];
+  if(Math.hypot(pf.u-from.u,pf.v-from.v)>1e-6||
+     Math.hypot(pt.u-to.u,pt.v-to.v)>1e-6)
+   throw new RangeError('original 3D source candidate fails HLR reprojection');
+  return {
+   sourceEdgeId,originalVertexIds:[...edge],
+   sourceParameterAtProjectedFrom:t0,sourceParameterAtProjectedTo:t1,
+   originalSourceParameterRange:[Math.min(t0,t1),Math.max(t0,t1)],
+   fromCandidate3D,toCandidate3D,
+   originalSourceCurveType:'straight-m0-polyhedral-edge',
+   originalXYZReprojectsToHLR:true,
+   actualOCCTTopoDSEdgeIdentityRecovered:false,
+   actualOCCT3DCurveExtracted:false,
+   officialEngineeringLineStyle:'undetermined',v5Authorized:false
+  };
+ });
+ return {
+  projectedOriginalEdgeCandidates:ids,sourceCandidate3DLifts,
+  unmappedReason:ids.length?null:degenerate?
+   'degenerate-projected-hlr-not-a-physical-segment':
+   'no-original-m0-edge-reprojects-to-both-hlr-endpoints',
+  candidate3DGeometryOnly:true,actualOCCTTopoDSIdentityRecovered:false,
+  officialEngineeringLineStyle:'undetermined',v5Authorized:false
+ };
+}
 const FRAME=Object.freeze({
  V:{normal:[0,1,0],xdir:[1,0,0]},
  H:{normal:[0,0,-1],xdir:[1,0,0]},
@@ -204,11 +264,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     }
     if(coords.length!==2)throw new RangeError('HLR edge missing true endpoints');
     if(Math.hypot(coords[0].u-coords[1].u,coords[0].v-coords[1].v)>1e-7){
-     const candidates=provenanceCandidates(geometry,view,coords[0],coords[1]);
-     if(!candidates.length)
-      throw new RangeError('real OCJS line cannot be related to original C1 source');
-     segments.push({view,from:coords[0],to:coords[1],
-      projectedOriginalEdgeCandidates:candidates});
+     const lifted=liftOriginalProjectedSourceCandidates(
+      geometry,view,coords[0],coords[1]);
+     if(lifted.unmappedReason)
+      throw new RangeError('real OCJS HLR source unmapped in '+view+
+       ': '+lifted.unmappedReason);
+     segments.push({view,from:coords[0],to:coords[1],...lifted});
     }
     if(segments.length>128)
      throw new RangeError('unbounded real B-Rep HLR output');
@@ -232,4 +293,5 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   for(const o of owned.reverse())o.delete();
  }
 }
-module.exports={computeC1OcjsVisibleSegments,cuboidBounds};
+module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
+ liftOriginalProjectedSourceCandidates};
