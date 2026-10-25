@@ -34,21 +34,32 @@ function repaintPointV5(){
  for(const step of current.steps)for(const action of step.actions){
   const fraction=frame.actionFractions[action.id]||0;
   if(fraction<=0||!['line','point'].includes(action.kind))continue;
+  const exterior=current.certifiedVisibleContourLineActionIds.includes(action.id);
+  if(exterior&&(action.kind!=='line'||
+      !current.scopedClosedConvexVisibleContourV5Ready||
+      !current.certifiedVisibleContourLineBindings.some(b=>
+       b.actionId===action.id&&b.signedFormalLineV5&&
+       b.revision===current.revision)))
+   throw new Error('未经数学签收的实体线型不得进入唯一 V5');
   const el=document.createElementNS(NS,action.kind==='line'?'line':'circle');
-  el.setAttribute('stroke',action.kind==='point'?'#20689d':'#bb7b31');
-  el.setAttribute('stroke-width',action.kind==='point'?'2.5':'1.5');
+  el.setAttribute('stroke',exterior?'#163954':
+   action.kind==='point'?'#20689d':'#bb7b31');
+  el.setAttribute('stroke-width',exterior?'3.2':
+   action.kind==='point'?'2.5':'1.5');
   el.setAttribute('fill',action.kind==='point'?'#20689d':'none');
   el.setAttribute('data-source-v5-action',action.id);
-  el.setAttribute('data-certified-scope','point-auxiliary-only');
-  el.setAttribute('data-official-solid-stroke','false');
+  el.setAttribute('data-certified-scope',exterior?
+   'single-closed-convex-visible-outer-contour':'point-auxiliary-only');
+  el.setAttribute('data-official-solid-stroke',String(exterior));
   Motion.updateSvg(el,action,fraction);
   layer.append(el);
  }
  svg.append(layer);
  $('pointV5Status').textContent='唯一 V5：已完成 '+frame.completedIds.length+
-  '/'+current.timeline.segments.length+' 个顶点或辅助动作；'+
-  (frame.done?'本轮播放结束':'仅顶点正式作图')+
-  '。实体棱线未认证。';
+  '/'+current.timeline.segments.length+' 个当前版本动作；'+
+  '当前正式可见外轮廓 '+current.certifiedVisibleContourLineActionCount+
+  ' 段。'+(frame.done?'本轮播放结束':'正按真实来源逐笔作图')+
+  '。只认证单个闭合凸实体外轮廓；内部棱线、隐藏线和整题仍未签收。';
 }
 function tick(now){
  if(!playing||!current||!current.player.canRender(revision)){stop();return;}
@@ -234,7 +245,9 @@ function solve(){
   repaintPointV5();
   $('status').textContent='已计算 '+result.provenVertexCount+' 个点、'+
    result.provenEdgeCount+' 条棱与 '+result.provenFaceCount+' 个面的三视图；第三视图为 '+
-   result.missingView+'。虚实线仍未认证。';
+   result.missingView+'。单凸体完整可见外轮廓 V5 已签收 '+
+   certified.certifiedVisibleContourLineActionCount+
+   ' 段；隐藏线与完整实体答案仍未认证。';
   $('status').dataset.status='ready';
   $('proof').textContent='证明：03 线性约束逐点唯一求解 + M0 闭合凸网格检查 + 统一 Geometry Scene 第一角法投影。\n'+
    '证据修订：'+result.revision+'；凸网格证明：'+result.convexProof.status+
@@ -269,6 +282,11 @@ function solve(){
    ' 处；其余需要补齐连接/可见性证据 '+
    certified.continuousFrontmostSourceRays.frontSourceJunctionsAwaitingFullProofCount+
    ' 处。仅为局部证据，不能直接生成标准实线/虚线或正式 V5。'+
+   '\\nC1 全闭合凸体外轮廓最终正向签收：'+
+   certified.globalVisibleContourProof.acceptedFirstAngleViews.join('/')+
+   ' 视图；经过 ConstructionIntent → DAG → 原有唯一 V5 的正式可见粗实线 '+
+   certified.certifiedVisibleContourLineActionCount+
+   ' 段。GB/T 4457.4-2002 可见轮廓范围内适用；非外轮廓实体棱线、隐藏线、组合体接缝、相贯线和原题盲测未签收。'+
    '\n原始三维顶点与投影切分端点已逐一匹配 '+
    certified.wholeSourceEdgeRayEvidence.sourceVertexIncidenceEvidence.exactSourceIncidenceCount+
    ' 组，其中具备独立点射线证据 '+
