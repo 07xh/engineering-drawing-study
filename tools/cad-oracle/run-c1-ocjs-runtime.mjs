@@ -12,7 +12,7 @@ import {performance} from 'node:perf_hooks';
 const require=createRequire(import.meta.url);
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
-const {compileC1WithOcjsHLR}=
+const {compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {cuboidBounds,computeC1OcjsVisibleSegments}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
@@ -120,9 +120,67 @@ for(const [index,geometry] of general.entries()){
    count++;
   }
  }
+ // The existing M3 point reconstruction -> M0/M5 positive theorem ->
+ // canonical original V5 is the ONLY signing authority. Real OCJS source
+ // edges must cover each positively signed contour, and unrelated visible
+ // CAD creases must stay outside the issued ConstructionStep DAG.
+ const reviewedInput={
+  geometryId:geometry.id,confirmedBy:'user',topologyConfirmed:true,
+  revision:40+index,unit:'mm',
+  vertices:Object.entries(geometry.data.points).map(([id,p])=>{
+   const paper=project(p);
+   return {id,knownViews:{V:[paper.V.u,paper.V.v],
+     H:[paper.H.u,paper.H.v]}};
+  }),edges:geometry.data.edges.map(e=>[...e]),
+  faces:geometry.data.faces.map(e=>[...e])
+ };
+ const audited=auditC1OcjsM5ProofGaps({oc,input:reviewedInput,
+  sheetTransform:{origin:{x:350,y:195},scale:3}});
+ assert.equal(audited.sourceGeometryId,geometry.id);
+ assert.equal(audited.revision,40+index);
+ assert.equal(audited.proofScope,'reviewed-closed-convex-polyhedral-shell');
+ assert.equal(audited.globalOfficialV5GateUnchanged,true);
+ assert.equal(audited.officialLineStylesVerified,false);
+ assert.equal(audited.signedV5ActionCount,0);
+ assert.equal(audited.hiddenOrInternalEdgesSigned,false);
+ assert.equal(audited.wholeSolidV5Ready,false);
+ assert.ok(audited.counts.m5AtomicIntervals>=9);
+ assert.equal(Object.values(audited.views).length,3);
+ assert.equal(Object.values(audited.views).flatMap(v=>v.intervals).length,
+  audited.counts.m5AtomicIntervals);
+ assert.ok(Object.values(audited.views).flatMap(v=>v.intervals).every(x=>
+  x.engineeringLineStyle==='undetermined'&&x.signedV5===false));
+ // If generic M5 cannot positively prove its WHOLE visible ring, real CAD
+ // agreement may still be useful forensic evidence but may NOT sign an
+ // Intent/DAG/V5 stroke. Keep the original formal C1 gate fail-closed.
+ let formallySigned=false,scopedOfficialVisibleContourLines=0;
+ if(!audited.allThreeViewsGlobalM5Certified){
+  assert.throws(()=>compileC1WithOcjsHLR({oc,input:reviewedInput,
+   sheetTransform:{origin:{x:350,y:195},scale:3}}),
+   /M5\/V5 not available/);
+ }else if(audited.counts.positiveM5CadConflicts===0){
+  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
+   sheetTransform:{origin:{x:350,y:195},scale:3}});
+  assert.equal(canonical.wholeSolidV5Ready,false);
+  assert.equal(canonical.c1CadRuntime.secondV5,false);
+  assert.equal(canonical.verifiedLineIntentAndOriginalSingleV5Parity,true);
+  formallySigned=true;
+  scopedOfficialVisibleContourLines=
+   canonical.certifiedVisibleContourLineActionCount;
+ }
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   authenticCadVisibleSegments:count,
-  elapsedMs:Math.round(performance.now()-at),m5Signed:false});
+  elapsedMs:Math.round(performance.now()-at),
+  m5Signed:formallySigned,
+  scopedOfficialVisibleContourLines,
+  m5GlobalSignedGate:audited.allThreeViewsGlobalM5Certified,
+  localM5Positive:audited.counts.locallyPositive,
+  cadM5Corroborated:audited.counts.cadAndM5Corroborated,
+  cadM5Conflicts:audited.counts.positiveM5CadConflicts,
+  m5Unresolved:audited.counts.unresolved,
+  unsignedInteriorCadLines:count-scopedOfficialVisibleContourLines,
+  uniqueV5:formallySigned});
+
 }
 // Preserve strict unsupported/degenerate source refusal.
 assert.throws(()=>computeC1OcjsVisibleSegments({oc,

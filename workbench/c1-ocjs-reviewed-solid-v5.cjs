@@ -37,6 +37,19 @@ function intervalCoverage(a,b,segments,tol=1e-6){
  }
  return cursor>=1-tol;
 }
+// Conservative positive-length intersection test: CAD-visible interior creases
+// must not be treated as false exterior hull omissions. A visible CAD segment
+// that actually intersects a signed hull stroke needs authentic source IDs;
+// unrelated visible interior lines remain unsigned M5 candidates.
+function positiveCollinearOverlap(a,b,c,d,tol=1e-6){
+ const dx=b.u-a.u,dy=b.v-a.v,L=Math.hypot(dx,dy);
+ if(!(L>1e-9))return false;
+ const lineError=p=>Math.abs(dx*(p.v-a.v)-dy*(p.u-a.u))/L;
+ if(lineError(c)>tol||lineError(d)>tol)return false;
+ const fraction=p=>((p.u-a.u)*dx+(p.v-a.v)*dy)/(L*L);
+ const [lo,hi]=[fraction(c),fraction(d)].sort((x,y)=>x-y);
+ return Math.min(1,hi)-Math.max(0,lo)>tol/Math.max(1,L);
+}
 function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  if(!oc||typeof oc!=='object')
   throw new TypeError('initialized real OpenCascade.js kernel required');
@@ -50,12 +63,16 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
     !canonical.verifiedLineIntentAndOriginalSingleV5Parity||
     canonical.wholeSolidV5Ready!==false||
     cad.lineStyleCertified!==false||cad.v5Authorized!==false)
-  throw new RangeError('current authoritative C1 scoped M5/V5 not available');
+  throw new RangeError('current authoritative C1 scoped M5/V5 not available: '+
+   canonical.globalVisibleContourProof.views.map(v=>v.view+':'+
+    v.allContourLinesVerified+'/'+v.blockedAtomicIntervalCount).join(',')+
+   '; canonicalV5='+canonical.verifiedLineIntentAndOriginalSingleV5Parity);
  const resolved=canonical.certifiedVisibleContourLineBindings;
  const out={};
  for(const view of VIEWS){
   const signed=resolved.filter(x=>x.view===view),
    generated=cad.views[view];
+  let unsignedInteriorCadLines=0;
   if(signed.length<3||!Array.isArray(generated)||generated.length<3)
    throw new RangeError('complete original signed V/H/W contour absent');
   for(const bind of signed){
@@ -68,26 +85,114 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    if(!intervalCoverage(bind.fromModelMm,bind.toModelMm,genuine))
     throw new RangeError('actual OCJS HLR does not cover certified C1 source '+bind.actionId);
   }
-  // The CAD engine must also not supply an extra or uncovered visible
-  // geometry line while the certified V5 omits it in this narrow box scope.
+  // Source-aware *reverse* coverage on the SIGNED contour only. The CAD
+  // engine can rightly see other physical creases on an oblique convex
+  // surface: those remain undetermined, NEVER minted as V5 strokes.
   for(const seg of generated){
-   if(!intervalCoverage(seg.from,seg.to,signed.map(b=>({
-    from:b.fromModelMm,to:b.toModelMm
-   }))))throw new RangeError('unreconciled actual C1 OCJS visible edge');
+   const overlapping=signed.filter(bind=>positiveCollinearOverlap(
+    bind.fromModelMm,bind.toModelMm,seg.from,seg.to));
+   if(!overlapping.length){
+    unsignedInteriorCadLines++;
+    continue;
+   }
+   // Projected overlap alone can alias front and rear 3D sources. Only
+   // canonical M5 may prove which ORIGINAL source generated an action.
+   const matching=overlapping.filter(bind=>
+    seg.projectedOriginalEdgeCandidates.includes(bind.sourceEdgeId));
+   if(!matching.length||!intervalCoverage(seg.from,seg.to,
+     matching.map(b=>({from:b.fromModelMm,to:b.toModelMm}))))
+    throw new RangeError('real C1 HLR projected alias disagrees with signed M5 source');
   }
   out[view]={cadVisibleSegments:generated.length,
-   m5SignedVisibleIntervals:signed.length,sourceAndCoverageAgreement:true};
+   m5SignedVisibleIntervals:signed.length,
+   unsignedInteriorCadLines,sourceAndCoverageAgreement:true};
  }
  return Object.freeze({...canonical,
   c1CadRuntime:{
    schema:'draftai-c1-ocjs-m5-gated-runtime/1',
    compute:'real OpenCascade.js HLR visible B-Rep geometry',
    engine:'opencascade.js',revision:rev,geometryId:g.id,
-   supportedScope:'confirmed-axis-aligned-cuboid',
+   supportedScope:cad.proofScope,
    perView:out,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
+   nonContourCADDrawingActionsSigned:0,
    // The old proof remains the ONLY formal certification authority.
    newOfficialLineStyleSigner:false,secondV5:false
   }});
 }
-module.exports={compileC1WithOcjsHLR,intervalCoverage};
+/**
+ * Strict general-convex C1 proof-gap ledger. Unlike the full-signoff entry,
+ * this audits EVERY original M5 hull interval against the computed REAL HLR
+ * source candidates even when an oblique convex ring lacks a global M5 proof.
+ *
+ * No caller-supplied proof booleans, no CAD-to-V5 promotion, no duplicate
+ * solver/scene/player. Local M5 corroboration is UNSIGNED by design.
+ */
+function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
+ if(!oc||typeof oc!=='object')
+  throw new TypeError('initialized real OpenCascade.js kernel required');
+ const original=compileReviewedSolidVertexV5({input,sheetTransform});
+ const g=original.sceneResult.geometry,revision=original.revision;
+ const cad=computeC1OcjsVisibleSegments({oc,geometry:g,revision});
+ const proof=original.globalVisibleContourProof;
+ const ledger=original.wholeSourceEdgeRayEvidence;
+ const ledgerIds=new Set(ledger.edges.map(x=>x.sourceEdgeId));
+ if(cad.revision!==revision||cad.sourceGeometryId!==g.id||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
+    !Array.isArray(proof.views)||proof.views.length!==3)
+  throw new RangeError('unaligned original C1 M5 and genuine real HLR');
+ const views={},totals={m5AtomicIntervals:0,locallyPositive:0,
+  cadAndM5Corroborated:0,positiveM5CadConflicts:0,unresolved:0};
+ for(const view of VIEWS){
+  const pv=proof.views.find(x=>x.view===view);
+  const strokes=cad.views[view];
+  if(!pv||!Array.isArray(strokes)||!strokes.length)
+   throw new RangeError('C1 original M5 and real HLR V/H/W missing');
+  for(const stroke of strokes){
+   if(!Array.isArray(stroke.projectedOriginalEdgeCandidates)||
+      !stroke.projectedOriginalEdgeCandidates.length||
+      stroke.projectedOriginalEdgeCandidates.some(id=>!ledgerIds.has(id)))
+    throw new RangeError('unmatched original 3D HLR source candidate');
+  }
+  const intervals=pv.candidateIntervals.map(x=>{
+   if(x.revision!==revision||x.sourceGeometryId!==g.id||x.view!==view)
+    throw new RangeError('stale cross-revision M5 interval');
+   const validSource=typeof x.sourceEdgeId==='string'&&
+    ledgerIds.has(x.sourceEdgeId);
+   const projected=strokes.filter(st=>
+    validSource&&st.projectedOriginalEdgeCandidates.includes(x.sourceEdgeId));
+   const covered=validSource&&intervalCoverage(
+    x.projectedFromModelMm,x.projectedToModelMm,projected);
+   const local=x.locallyCompleteVisibleHullSegmentProven===true;
+   const status=local?(covered?'local-m5-cad-corrob-unsigned':
+    'positive-m5-vs-cad-conflict'):'undetermined';
+   totals.m5AtomicIntervals++;
+   if(local)totals.locallyPositive++;
+   if(local&&covered)totals.cadAndM5Corroborated++;
+   if(local&&!covered)totals.positiveM5CadConflicts++;
+   if(!local)totals.unresolved++;
+   return {view,sourceEdgeId:validSource?x.sourceEdgeId:null,
+    fromModelMm:{...x.projectedFromModelMm},
+    toModelMm:{...x.projectedToModelMm},
+    status,m5LocalPositive:local,realCadCovered:covered,
+    engineeringLineStyle:'undetermined',signedV5:false};
+  });
+  views[view]={cadVisibleSegmentCount:strokes.length,
+   m5GlobalViewProof:pv.allContourLinesVerified,
+   m5BlockedAtomicIntervalCount:pv.blockedAtomicIntervalCount,
+   intervals};
+ }
+ return Object.freeze({
+  schema:'draftai-c1-ocjs-m5-convex-proof-gap-ledger/1',
+  revision,sourceGeometryId:g.id,unit:'mm',
+  engine:'opencascade.js',proofScope:cad.proofScope,
+  allThreeViewsGlobalM5Certified:proof.allThreeViewsGlobalContourCertified,
+  counts:totals,views,
+  globalOfficialV5GateUnchanged:true,
+  officialLineStylesVerified:false,signedV5ActionCount:0,
+  hiddenOrInternalEdgesSigned:false,wholeSolidV5Ready:false,
+  realCadSourceCandidateOnly:true
+ });
+}
+module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
+ intervalCoverage,positiveCollinearOverlap};
