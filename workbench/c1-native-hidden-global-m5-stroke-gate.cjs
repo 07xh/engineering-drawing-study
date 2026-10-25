@@ -122,6 +122,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
    x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true).length:0;
   const remainingTrueOriginal3DVertexGaps=unique?realNativeSource.endpointWitnesses
    .filter(x=>x.originalModel3DSourceVertexId!==null&&
+    x.originalM4SourceParameterGapRemainsUnrepaired===true&&
     x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified!==true).length:2;
   if(alternativeNative3D>endGaps)
    throw new RangeError('original M4 endpoint proof identity budget mismatch');
