@@ -425,3 +425,70 @@ test('an authentic two-endpoint visible OCCT lift still certifies only the local
  assert.equal(result.GBEngineeringLineRulesSatisfied,false);
  assert.equal(result.signedV5ActionCount,0);
 });
+
+const splitAcceptedNativeVisibleSource=(secondStart=0.5)=>{
+ const x=visibleFrontSourceCase(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ // Additional segment is not part of the existing native IsSame proof.
+ x.cad.nativeGeneratedVertexGraph.
+  allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing=false;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs=[];
+ v.generatedOCCTSharedNativeJunctionComponents=[];
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=0;
+ x.cad.nativeGeneratedVertexGraph.counts.genuinelySharedNativeJunctionComponents=0;
+ const firstSeg=x.cad.views.H[0],first=firstSeg.sourceCandidate3DLifts[0];
+ firstSeg.to={u:5,v:4};
+ first.sourceParameterAtProjectedTo=0.5;
+ first.originalSourceParameterRange=[0,0.5];
+ first.toCandidate3D={x:5,y:4,z:0};
+ x.cad.views.H.push({
+  ...firstSeg,from:{u:10*secondStart,v:4},to:{u:10,v:4},
+  sourceCandidate3DLifts:[{
+   ...first,sourceParameterAtProjectedFrom:secondStart,
+   sourceParameterAtProjectedTo:1,
+   originalSourceParameterRange:[secondStart,1],
+   fromCandidate3D:{x:10*secondStart,y:4,z:0},
+   toCandidate3D:{x:10,y:4,z:0}
+  }]
+ });
+ v.realNativeSharpEdgeCount++;
+ return x;
+};
+const hVisibleSourceCoverage=x=>audit(x).acceptedNativeVisibleSourceCoverage.
+ find(r=>r.view==='H'&&r.sourceEdgeId==='G::A|D');
+test('two accepted native HLR subspans cover exact modeled source interval without signing',()=>{
+ const x=splitAcceptedNativeVisibleSource(),out=audit(x),
+  h=hVisibleSourceCoverage(x);
+ assert.equal(h.entireOriginalParameterIntervalCovered,true);
+ assert.deepEqual(h.positiveLengthCoveredIntervals,[[0,1]]);
+ assert.deepEqual(h.positiveLengthUncoveredIntervals,[]);
+ assert.equal(h.candidateIntervalsExamined,2);
+ assert.equal(h.completeGeneratedToOriginalTopoDSEdgeHistoryCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('one-ULP gap between native HLR source candidates remains uncovered and unsigned',()=>{
+ const x=splitAcceptedNativeVisibleSource(0.5000000000000001),
+  h=hVisibleSourceCoverage(x);
+ assert.equal(h.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(h.positiveLengthUncoveredIntervals,
+  [[0.5,0.5000000000000001]]);
+ assert.equal(h.signedV5Action,false);
+});
+test('unverified lifted endpoint cannot fill a native HLR source coverage gap',()=>{
+ const x=splitAcceptedNativeVisibleSource();
+ x.cad.views.H[1].sourceCandidate3DLifts[0].fromCandidate3D.z=1;
+ const h=hVisibleSourceCoverage(x);
+ assert.equal(h.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(h.positiveLengthUncoveredIntervals,[[0.5,1]]);
+ assert.equal(h.candidateIntervalsExamined,1);
+});
+test('complete local visible-source union never claims TopoDS history, GB or V5',()=>{
+ const x=visibleFrontSourceCase(),out=audit(x);
+ const h=out.acceptedNativeVisibleSourceCoverage.find(r=>
+  r.view==='H'&&r.sourceEdgeId==='G::A|D');
+ assert.equal(h.entireOriginalParameterIntervalCovered,true);
+ assert.equal(h.completeGeneratedToOriginalTopoDSEdgeHistoryCertified,false);
+ assert.equal(h.wholeSceneOcclusionAndEngineeringLineStyleCertified,false);
+ assert.equal(out.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
+ assert.equal(out.constructionIntentAuthorized,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
