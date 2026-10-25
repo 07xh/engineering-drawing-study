@@ -83,6 +83,7 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
   collapsedPaperProjectionHeld:0,
   nonPhysicalSubdivisionHeld:0,
   nonCollapsedProjectionPartitionIncomplete:0,
+  missingPaperSourceParameterGapCount:0,
   physicalCreasesWithUnresolvedEdgeRays:0,
   original3DVertexRayEndpointWitnesses:0,
   nonoriginalPaperCutEndpointsHeld:0,
@@ -125,10 +126,16 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
   // This closed-edge certificate is about SOURCE 3D rays; it does not
   // silently sign paper projection, nor synthetic M4 cut point vertices.
   const closedSourceRayClear=outwardClear&&bothOriginalVertexRaysClear;
-  const intervalRows=[],spans=row.spans;
+  const intervalRows=[],spans=row.spans,uncoveredParameters=[];
   let partitionComplete=!row.collapsedProjection&&spans.length>0;
+  let coveredThrough=0;
   for(let i=0;i<spans.length;i++){
    const cut=spans[i],range=cut.sourceParameterRange;
+   if(range[0]<coveredThrough||range[1]>1||range[1]<=range[0])
+    throw new RangeError('nonmonotone original M4 physical edge source cuts');
+   if(!row.collapsedProjection&&range[0]>coveredThrough)
+    uncoveredParameters.push([coveredThrough,range[0]]);
+   coveredThrough=range[1];
    const ray=raysBySpan.get(spanKey(row.sourceEdgeId,row.view,range));
    if(!ray||ray.sourceGeometryId!==geometry.id||
       ray.revision!==revision||
@@ -184,6 +191,10 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
     applicableLineType:'undetermined',signedV5Action:false
    });
   }
+  if(!row.collapsedProjection&&coveredThrough<1)
+   uncoveredParameters.push([coveredThrough,1]);
+  if(uncoveredParameters.length>0)partitionComplete=false;
+  counts.missingPaperSourceParameterGapCount+=uncoveredParameters.length;
   if(row.collapsedProjection)counts.collapsedPaperProjectionHeld++;
   if(!row.collapsedProjection&&!partitionComplete)
    counts.nonCollapsedProjectionPartitionIncomplete++;
@@ -213,6 +224,10 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
     endpointProofs.every(x=>x.proof.strictInteriorNearOriginalVertex),
    projectionCollapsed:row.collapsedProjection,
    originalM4PaperParameterPartitionComplete:partitionComplete,
+   missingProjectedPaperSourceParameterRanges:
+    uncoveredParameters.map(range=>[...range]),
+   allUndrawnPaperMicroIntervalsPositivelyVerified:
+    uncoveredParameters.length===0&&partitionComplete,
    allPaperInteriorCutPointsRetainNonvertexIdentity:true,
    originalCutSubspans:intervalRows,
    fullProjectedVisibleSourceLineProven:realCrease&&
