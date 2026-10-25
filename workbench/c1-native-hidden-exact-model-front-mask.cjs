@@ -180,6 +180,13 @@ function auditC1NativeHiddenExactModelFrontMasks({
        hiddenLift.originalXYZReprojectsToHLR!==true||
        hiddenLift.v5Authorized!==false)
      throw new RangeError('real hidden OCCT original 3D source lift missing');
+    // An original model edge may be exactly covered even though OCCT's
+    // measured generated HLR endpoint deviates from its reprojected
+    // original source by one ULP. Hold such native-vs-model paper drift
+    // explicitly; no gap may be repaired by a distance epsilon.
+    const hiddenNativeEndpointExact=
+     pEq(project(hiddenLift.fromCandidate3D)[view],hidden.from)&&
+     pEq(project(hiddenLift.toCandidate3D)[view],hidden.to);
     for(const [frontId,frontEdge] of edges){
      if(frontId===hiddenId)continue;
      const frontRay=rays.get(frontId+'@'+view);
@@ -210,7 +217,10 @@ function auditC1NativeHiddenExactModelFrontMasks({
       originalHidden3DEdgeId:hiddenId,originalFront3DEdgeId:frontId,
       original3DProjectionAndExactAffineDepthProof:exact,
       nativeVisibleOriginalM0FullEndpointWitness:nativeExact,
+      originalNativeHiddenEndpointReprojectionExact:
+       hiddenNativeEndpointExact,
       original3DAndNativeFullFrontPaperCoveragePositivelyVerified:
+       hiddenNativeEndpointExact&&
        nativeExact?.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints===true,
       originalNativeHLRSourceTopoDSIdentitiesCertified:false,
       engineeringLineStyleCertified:false,signedV5Action:false
