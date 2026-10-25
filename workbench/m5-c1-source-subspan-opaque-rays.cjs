@@ -18,7 +18,7 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {auditC1ReviewedProjectedSourceEventGraph}=
  require('./c1-reviewed-projected-source-event-graph.cjs');
-const {outwardProof}=require('../core/numeric/convex-incident-source-open-ray.cjs');
+const {outwardProof,inwardProof}=require('../core/numeric/convex-incident-source-open-ray.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
@@ -51,6 +51,7 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
  const results=[],counts={subspanCount:0,clear:0,strictHidden:0,
   unresolved:0,excludedAlreadySignedContour:0,
   exactOriginalFaceOutwardClear:0,analyticClear:0,
+  exactOriginalEdgeStrictInwardHidden:0,analyticStrictHidden:0,
   attemptedFormalV5Actions:0};
  for(const row of eventGraph.rows){
   if(!VIEWS.includes(row.view)||!original.has(row.sourceEdgeId))
@@ -59,6 +60,8 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
   if(JSON.stringify(vertices)!==JSON.stringify(row.sourceOriginalVertexIds))
    throw new RangeError('original C1 3D endpoints have changed');
   const exact=outwardProof({geometry,sourceVertexIds:vertices,
+   view:row.view,convexProof:convex});
+  const inward=inwardProof({geometry,sourceVertexIds:vertices,
    view:row.view,convexProof:convex});
   for(const span of row.spans){
    if(span.sourceEdgeId!==row.sourceEdgeId||span.view!==row.view||
@@ -77,7 +80,9 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
    const byExact=exact.status==='certified-clear';
    const byAnalytic=clearance.status==='certified-clear';
    const visible=byExact||byAnalytic;
-   const hidden=occluded.entireSourceSegmentOccluded===true;
+   const exactHidden=inward.fullOriginalSourceOpenIntervalStrictlyHidden===true;
+   const analyticHidden=occluded.entireSourceSegmentOccluded===true;
+   const hidden=exactHidden||analyticHidden;
    if(visible&&hidden)
     throw new RangeError('C1 M0 original source has contradictory continuous open ray evidence');
    const status=span.projectedExteriorHullOverlap===true?
@@ -93,6 +98,8 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
    else counts.unresolved++;
    if(byExact)counts.exactOriginalFaceOutwardClear++;
    if(byAnalytic)counts.analyticClear++;
+   if(exactHidden)counts.exactOriginalEdgeStrictInwardHidden++;
+   if(analyticHidden)counts.analyticStrictHidden++;
    results.push({
     view:row.view,revision,sourceGeometryId:geometry.id,
     sourceEdgeId:row.sourceEdgeId,
@@ -105,7 +112,10 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
     status,
     exactOriginalFaceWholeOpenRayClear:byExact,
     analyticConservativeWholeOpenRayClear:byAnalytic,
-    fullAnalyticStrictInteriorRayOcclusion: hidden,
+    fullAnalyticStrictInteriorRayOcclusion:analyticHidden,
+    exactOriginalSourceStrictInwardOpenRayHidden:exactHidden,
+    allOriginalSupportPlanesVerifiedForStrictInward:
+     inward.status==='certified-strictly-hidden-open-original-edge',
     signedLineStyle:'undetermined',
     real3DEndpointJunctionsFullyCertified:false,
     entireSceneAndOtherSolidsChecked:false,
