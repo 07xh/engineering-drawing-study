@@ -25,6 +25,9 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
   genuineOCCTNativeHLRSharpEdges:0,
   actualNativeBRepVertexEndpoints:0,
   literalSamePaperPointEndpointPairsChecked:0,
+  allPerViewGeneratedOCCTTopoDSVertexPairsChecked:0,
+  genuinelySharedNativeJunctionComponents:0,
+  genuinelySharedNativeJunctionEndpoints:0,
   positivelySameGeneratedOCCTTopoDSVertexPairs:0,
   coincidentPaperButDistinctGeneratedTopoDSVertexPairs:0,
   sameTopoDSVertexWithNonmatchingPaperCoordinatesRejected:0,
@@ -66,21 +69,40 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
    }
    counts.genuineOCCTNativeHLRSharpEdges++;
   }
-  const same=[],paperOnly=[];
-  for(const nodes of nodeBuckets.values()){
-   for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
-    const a=nodes[i],b=nodes[j];
-    if(a.hlrClass===b.hlrClass&&
-       a.nativeHLREdgeOrdinal===b.nativeHLREdgeOrdinal)continue;
-    counts.literalSamePaperPointEndpointPairsChecked++;
+  const same=[],paperOnly=[],parent=nodeRecords.map((_,i)=>i),actualSame=new Set();
+  const root=i=>{while(parent[i]!==i)i=parent[i];return i;};
+  const makeRef=n=>({hlrClass:n.hlrClass,
+   nativeHLREdgeOrdinal:n.nativeHLREdgeOrdinal,side:n.side,
+   nativePaperPoint:{...n.nativePaperPoint}});
+  // Examine ALL distinct native vertex endpoint pairs, not only those that
+  // look equal on paper. An actual IsSame TopoDS vertex that projects to
+  // two different first-angle paper coordinates is inconsistent. Never
+  // silently omit this connection from the generated junction graph.
+  for(let i=0;i<nodeRecords.length;i++)
+   for(let j=i+1;j<nodeRecords.length;j++){
+    const a=nodeRecords[i],b=nodeRecords[j];
     const ab=a.nativeVertex.IsSame(b.nativeVertex),
      ba=b.nativeVertex.IsSame(a.nativeVertex);
+    counts.allPerViewGeneratedOCCTTopoDSVertexPairsChecked++;
     if(typeof ab!=='boolean'||typeof ba!=='boolean'||ab!==ba)
-     throw new RangeError('native OCCT IsSame is not symmetric between paper-coincident vertices');
-    const lite=n=>({hlrClass:n.hlrClass,
-     nativeHLREdgeOrdinal:n.nativeHLREdgeOrdinal,side:n.side,
-     nativePaperPoint:{...n.nativePaperPoint}});
-    const link={view,a:lite(a),b:lite(b),
+     throw new RangeError('native OCCT IsSame is not symmetric between generated vertices');
+    const samePaper=a.nativePaperPoint.u===b.nativePaperPoint.u&&
+     a.nativePaperPoint.v===b.nativePaperPoint.v;
+    if(ab&&!samePaper)
+     throw new RangeError('same generated TopoDS vertex has inconsistent first-angle paper coordinates');
+    if(ab){
+     actualSame.add(i+'|'+j);
+     parent[root(j)]=root(i);
+    }
+    if(a.hlrClass===b.hlrClass&&
+       a.nativeHLREdgeOrdinal===b.nativeHLREdgeOrdinal){
+     if(ab)
+      throw new RangeError('one finite native HLR edge has identical generated TopoDS start and end vertex');
+     continue;
+    }
+    if(!samePaper)continue;
+    counts.literalSamePaperPointEndpointPairsChecked++;
+    const link={view,a:makeRef(a),b:makeRef(b),
      nativeGeneratedOCCTTopoDSVertexIsSame:ab,
      original3DSourceTopoDSVertexIdentityRecovered:false,
      actualNativeHLRStrokeJoinMeetsGlobalEngineeringRules:false,
@@ -88,11 +110,44 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
     if(ab){same.push(link);counts.positivelySameGeneratedOCCTTopoDSVertexPairs++;}
     else{paperOnly.push(link);
      counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs++;}
-   }
   }
+  // Pairwise, transitive genuine TopoDS identity, not paper connectivity.
+  // No reconstructed TopoDS ID leaves this synchronous OCCT proof.
+  const nativeComponents=new Map();
+  nodeRecords.forEach((node,i)=>{
+   const owner=root(i);
+   if(!nativeComponents.has(owner))nativeComponents.set(owner,[]);
+   nativeComponents.get(owner).push({index:i,node});
+  });
+  const sharedNativeJunctions=[];
+  for(const component of nativeComponents.values()){
+   if(component.length<2)continue;
+   for(let i=0;i<component.length;i++)
+    for(let j=i+1;j<component.length;j++){
+     const a=component[i].index,b=component[j].index;
+     if(!actualSame.has(Math.min(a,b)+'|'+Math.max(a,b)))
+      throw new RangeError('OCCT generated TopoDS IsSame relation is not transitive');
+    }
+   const point=component[0].node.nativePaperPoint;
+   sharedNativeJunctions.push({
+    view,originalGeneratedTopoDSHistoryRecovered:false,
+    actualGeneratedOCCTTopoDSVertexPairwiseIsSame:true,
+    exactNativePaperCoordinatesForEntireComponent:{...point},
+    generatedSharpEdgeEndpoints:component.map(x=>makeRef(x.node)),
+    independentlyCertifiedOriginal3DSourceVertexId:null,
+    engineeringLineJoinCertified:false,
+    signedV5Action:false
+   });
+   counts.genuinelySharedNativeJunctionComponents++;
+   counts.genuinelySharedNativeJunctionEndpoints+=component.length;
+  }
+  // Keep the original pairwise OCCT evidence for existing native M5 consumers.
+  /* original bucket-only pair loop removed; exhaustive topology above */ 
   views[view]={
    view,realNativeSharpEdgeCount:records.length,
    sameActualGeneratedOCCTTopoDSVertexPairs:same,
+   generatedOCCTSharedNativeJunctionComponents:sharedNativeJunctions,
+   allNativeGeneratedEndpointPairsIndependentlyCompared:true,
    paperCoincidentButDifferentTopoDSVertexPairs:paperOnly,
    generatedTopoDSOriginalSourceHistoryRecovered:false,
    engineeringLineJoinCertified:false,signedV5Action:false
@@ -101,6 +156,8 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
  return frozen({schema:'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1',
   views,counts,realOCCTIsSameComparedBeforeNativeObjectDeletion:true,
   literalPaperCoordinateAloneNeverTopology:true,
+  allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing:true,
+  generatedJunctionComponentsBasedOnlyOnPairwiseOCCTIsSame:true,
   generatedNativeTopoDSDoesNotProveOriginal3DSourceIdentity:true,
   actualGeneratedToOriginalTopoDSHistoryRecovered:false,
   globalFinalStandardEngineeringLineStyleCertified:false,
