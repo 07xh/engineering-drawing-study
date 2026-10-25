@@ -37,6 +37,19 @@ function intervalCoverage(a,b,segments,tol=1e-6){
  }
  return cursor>=1-tol;
 }
+// Conservative positive-length intersection test: CAD-visible interior creases
+// must not be treated as false exterior hull omissions. A visible CAD segment
+// that actually intersects a signed hull stroke needs authentic source IDs;
+// unrelated visible interior lines remain unsigned M5 candidates.
+function positiveCollinearOverlap(a,b,c,d,tol=1e-6){
+ const dx=b.u-a.u,dy=b.v-a.v,L=Math.hypot(dx,dy);
+ if(!(L>1e-9))return false;
+ const lineError=p=>Math.abs(dx*(p.v-a.v)-dy*(p.u-a.u))/L;
+ if(lineError(c)>tol||lineError(d)>tol)return false;
+ const fraction=p=>((p.u-a.u)*dx+(p.v-a.v)*dy)/(L*L);
+ const [lo,hi]=[fraction(c),fraction(d)].sort((x,y)=>x-y);
+ return Math.min(1,hi)-Math.max(0,lo)>tol/Math.max(1,L);
+}
 function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  if(!oc||typeof oc!=='object')
   throw new TypeError('initialized real OpenCascade.js kernel required');
@@ -56,6 +69,7 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  for(const view of VIEWS){
   const signed=resolved.filter(x=>x.view===view),
    generated=cad.views[view];
+  let unsignedInteriorCadLines=0;
   if(signed.length<3||!Array.isArray(generated)||generated.length<3)
    throw new RangeError('complete original signed V/H/W contour absent');
   for(const bind of signed){
@@ -68,26 +82,39 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    if(!intervalCoverage(bind.fromModelMm,bind.toModelMm,genuine))
     throw new RangeError('actual OCJS HLR does not cover certified C1 source '+bind.actionId);
   }
-  // The CAD engine must also not supply an extra or uncovered visible
-  // geometry line while the certified V5 omits it in this narrow box scope.
+  // Source-aware *reverse* coverage on the SIGNED contour only. The CAD
+  // engine can rightly see other physical creases on an oblique convex
+  // surface: those remain undetermined, NEVER minted as V5 strokes.
   for(const seg of generated){
-   if(!intervalCoverage(seg.from,seg.to,signed.map(b=>({
-    from:b.fromModelMm,to:b.toModelMm
-   }))))throw new RangeError('unreconciled actual C1 OCJS visible edge');
+   const overlapping=signed.filter(bind=>positiveCollinearOverlap(
+    bind.fromModelMm,bind.toModelMm,seg.from,seg.to));
+   if(!overlapping.length){
+    unsignedInteriorCadLines++;
+    continue;
+   }
+   // Projected overlap alone can alias front and rear 3D sources. Only
+   // canonical M5 may prove which ORIGINAL source generated an action.
+   const matching=overlapping.filter(bind=>
+    seg.projectedOriginalEdgeCandidates.includes(bind.sourceEdgeId));
+   if(!matching.length||!intervalCoverage(seg.from,seg.to,
+     matching.map(b=>({from:b.fromModelMm,to:b.toModelMm}))))
+    throw new RangeError('real C1 HLR projected alias disagrees with signed M5 source');
   }
   out[view]={cadVisibleSegments:generated.length,
-   m5SignedVisibleIntervals:signed.length,sourceAndCoverageAgreement:true};
+   m5SignedVisibleIntervals:signed.length,
+   unsignedInteriorCadLines,sourceAndCoverageAgreement:true};
  }
  return Object.freeze({...canonical,
   c1CadRuntime:{
    schema:'draftai-c1-ocjs-m5-gated-runtime/1',
    compute:'real OpenCascade.js HLR visible B-Rep geometry',
    engine:'opencascade.js',revision:rev,geometryId:g.id,
-   supportedScope:'confirmed-axis-aligned-cuboid',
+   supportedScope:cad.proofScope,
    perView:out,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
+   nonContourCADDrawingActionsSigned:0,
    // The old proof remains the ONLY formal certification authority.
    newOfficialLineStyleSigner:false,secondV5:false
   }});
 }
-module.exports={compileC1WithOcjsHLR,intervalCoverage};
+module.exports={compileC1WithOcjsHLR,intervalCoverage,positiveCollinearOverlap};
