@@ -198,6 +198,19 @@ for(const [index,geometry] of general.entries()){
   'real CAD M0 positive non-hull edge conflict');
  assert.equal(features.sourceProjectedEventGraphSchema,
   'draftai-c1-original-source-m4-projected-event-graph/1');
+ assert.equal(features.independentOriginal3DJunctionProofSchema,
+  'draftai-c1-original-source-m4-3d-cut-junction-provenance/1');
+ assert.ok(features.counts.authenticatedOriginalVertexSubspanEndpoints>0,
+  'genuine reviewed 3D vertex endpoint witnesses required');
+ assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
+  span.independentOriginal3DJunctionProof.signedV5Action===false&&
+  span.independentOriginal3DJunctionProof.
+   allPhysicalCrossSourceJunctionsAuthorized===false&&
+  span.independentOriginal3DJunctionProof.fromEndpoint.
+   authorizedAsV5Junction===false&&
+  span.independentOriginal3DJunctionProof.toEndpoint.
+   authorizedAsV5Junction===false)));
+
  assert.equal(features.sourcePairDepthProofSchema,
   'draftai-c1-m5-projected-original-source-affine-depth/1');
  assert.equal(features.originalSourceOpaqueSubspanProofSchema,
@@ -272,6 +285,14 @@ for(const [index,geometry] of general.entries()){
     features.counts.originalSourcePairUnresolvedDepthCount,
    sharedVertexDepthProofCount:
     features.counts.authenticSharedVertexPairDepthProofCount,
+   original3DVertexEndpointEvidenceCount:
+    features.counts.authenticatedOriginalVertexSubspanEndpoints,
+   certifiedSameOriginal3DEdgeCutJoins:
+    features.counts.sameOriginalSource3DAdjacentCutContinuities,
+   unresolvedPaperOnly3DSourceEventCount:
+    features.counts.paperOnlyForeignSourceEventWitnesses,
+   roundedProjectedParameterJoinsHeld:
+    features.counts.roundedParameterPhysicalJoinRefusals,
    actualSingleOpaqueSourceClearSubspans:
     features.counts.singleOpaqueSourceSubspanClearCount,
    actualSingleOpaqueSourceStrictHiddenSubspans:

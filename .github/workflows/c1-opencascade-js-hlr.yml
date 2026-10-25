@@ -7,6 +7,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-reviewed-projected-source-event-graph.cjs'
+      - 'workbench/c1-original-source-subspan-junction-provenance.cjs'
+      - 'tests/workbench/c1-original-source-subspan-junction-provenance.test.cjs'
       - 'workbench/c1-projected-source-pair-affine-depth.cjs'
       - 'workbench/m5-c1-source-subspan-opaque-rays.cjs'
       - 'tests/workbench/c1-m5-original-source-subspan-opaque-rays.test.cjs'
@@ -28,6 +30,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
       - 'workbench/c1-reviewed-projected-source-event-graph.cjs'
+      - 'workbench/c1-original-source-subspan-junction-provenance.cjs'
+      - 'tests/workbench/c1-original-source-subspan-junction-provenance.test.cjs'
       - 'workbench/c1-projected-source-pair-affine-depth.cjs'
       - 'workbench/m5-c1-source-subspan-opaque-rays.cjs'
       - 'tests/workbench/c1-m5-original-source-subspan-opaque-rays.test.cjs'
@@ -92,7 +96,7 @@ jobs:
           set -euo pipefail
           node --max-old-space-size=4096 \
             tools/cad-oracle/run-c1-ocjs-runtime.mjs "$PROBE_ROOT" | tee "$REPORT"
-          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||r.genericConvexWasmConsumers!==2||!r.polyhedra.some(x=>x.physicalFeatureEvidence?.localExactOutwardCADVisible>=1)||!r.polyhedra.every(x=>x.physicalFeatureEvidence?.formalSignedCount===0&&x.physicalFeatureEvidence?.CADSourceConflicts===0&&x.physicalFeatureEvidence?.originalSourceM4Events>0&&x.physicalFeatureEvidence?.sourceBoundProjectedSubintervals>0&&x.physicalFeatureEvidence?.originalSourcePairDepthOverlapCount===x.physicalFeatureEvidence?.originalSourceStrictAffineFrontCount+x.physicalFeatureEvidence?.originalSourceUnresolvedPairDepthCount&&x.physicalFeatureEvidence?.sourceBoundProjectedSubintervals===x.physicalFeatureEvidence?.actualSingleOpaqueSourceClearSubspans+x.physicalFeatureEvidence?.actualSingleOpaqueSourceStrictHiddenSubspans+x.physicalFeatureEvidence?.actualSingleOpaqueSourceUnknownSubspans+x.physicalFeatureEvidence?.originalM5ExteriorHeldSubspans)||!r.polyhedra.every(x=>x.m5Signed===true&&x.uniqueV5===true&&x.m5GlobalSignedGate===true&&x.m5Unresolved===0&&x.cadM5Conflicts===0&&x.cadM5Corroborated===x.scopedOfficialVisibleContourLines&&x.scopedOfficialVisibleContourLines>=9)||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||r.genericConvexWasmConsumers!==2||!r.polyhedra.some(x=>x.physicalFeatureEvidence?.localExactOutwardCADVisible>=1)||!r.polyhedra.every(x=>x.physicalFeatureEvidence?.formalSignedCount===0&&x.physicalFeatureEvidence?.CADSourceConflicts===0&&x.physicalFeatureEvidence?.originalSourceM4Events>0&&x.physicalFeatureEvidence?.sourceBoundProjectedSubintervals>0&&x.physicalFeatureEvidence?.original3DVertexEndpointEvidenceCount>0&&x.physicalFeatureEvidence?.certifiedSameOriginal3DEdgeCutJoins>=0&&x.physicalFeatureEvidence?.originalSourcePairDepthOverlapCount===x.physicalFeatureEvidence?.originalSourceStrictAffineFrontCount+x.physicalFeatureEvidence?.originalSourceUnresolvedPairDepthCount&&x.physicalFeatureEvidence?.sourceBoundProjectedSubintervals===x.physicalFeatureEvidence?.actualSingleOpaqueSourceClearSubspans+x.physicalFeatureEvidence?.actualSingleOpaqueSourceStrictHiddenSubspans+x.physicalFeatureEvidence?.actualSingleOpaqueSourceUnknownSubspans+x.physicalFeatureEvidence?.originalM5ExteriorHeldSubspans)||!r.polyhedra.every(x=>x.m5Signed===true&&x.uniqueV5===true&&x.m5GlobalSignedGate===true&&x.m5Unresolved===0&&x.cadM5Conflicts===0&&x.cadM5Corroborated===x.scopedOfficialVisibleContourLines&&x.scopedOfficialVisibleContourLines>=9)||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
       - name: Preserve M5-gated actual computed C1 consumer evidence
         uses: actions/upload-artifact@v4
         with:
