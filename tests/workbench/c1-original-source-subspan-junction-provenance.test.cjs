@@ -90,6 +90,6 @@ test('invalid current geometry and revision fail before certifying physical conn
   data:{...g.data,faces:g.data.faces.slice(1)}},revision:8}),
  /closed|face|Euler/);
  assert.throws(()=>audit({geometry:{...g,
-  data:{...g.data,edges:[...g.data.edges,[...g.data.edges[0]]]},revision:8}),
+  data:{...g.data,edges:[...g.data.edges,[...g.data.edges[0]]]}},revision:8}),
  /duplicate|declared|explicit finite|Euler/);
 });
