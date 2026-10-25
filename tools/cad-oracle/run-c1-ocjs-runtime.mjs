@@ -178,6 +178,12 @@ for(const [index,geometry] of general.entries()){
   cadM5Corroborated:audited.counts.cadAndM5Corroborated,
   cadM5Conflicts:audited.counts.positiveM5CadConflicts,
   m5Unresolved:audited.counts.unresolved,
+  unsignedProofGaps:Object.entries(audited.views).flatMap(([v,row])=>
+   row.intervals.map((it,i)=>({...it,view:v,index:i}))
+    .filter(it=>it.status==='undetermined')
+    .map(it=>({view:v,index:it.index,sourceEdgeId:it.sourceEdgeId,
+      from:it.fromModelMm,to:it.toModelMm,realCadCovered:it.realCadCovered,
+      blockers:it.blockers}))),
   sharedPhysicalEndpointOpenDepthCertificates:
    audited.counts.sharedPhysicalEndpointDepthCertificates,
   missing3DSourceCoverage:audited.counts.missing3DSourceCoverage,
