@@ -23,6 +23,8 @@ const {auditC1NativeHidden3DEndpointFans}=
  require('./c1-native-hidden-3d-endpoint-fan-junctions.cjs');
 const {auditC1NativeHiddenOriginalVertexEndpointProof}=
  require('./c1-native-hidden-original-3d-vertex-endpoints.cjs');
+const {auditC1NativeHLRGeneratedToOriginalVertexConcordance}=
+ require('./c1-native-hlr-topods-original-vertex-concordance.cjs');
 const {auditNativeHiddenWholeOriginalSourceIntervals}=
  require('./c1-native-hidden-whole-source-interval-closure.cjs');
 const {auditC1ProjectedSourcePairDepth}=
@@ -231,6 +233,14 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
      counts.realNativeHiddenSharpSegments||
     nativeHiddenOriginalVertexEndpointProof.signedV5ActionCount!==0)
   throw new RangeError('authentic original 3D vertex native HLR edge source audit missing');
+ const nativeHLRVertexConcordance=
+  auditC1NativeHLRGeneratedToOriginalVertexConcordance({
+   geometry,revision,cad,
+   originalNativeVertexProof:nativeHiddenOriginalVertexEndpointProof
+  });
+ if(nativeHLRVertexConcordance.signedV5ActionCount!==0||
+    nativeHLRVertexConcordance.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete!==false)
+  throw new RangeError('generated real HLR vertex/source independent proof gate');
  const nativeHiddenOriginalOpenRayClosure=
   auditNativeHiddenWholeOriginalSourceIntervals({
    geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
@@ -288,6 +298,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   independentlyVerifiedOriginal3DVertexFans:originalVertexStars.schema,
   nativeHidden3DEndpointFans,
   nativeHiddenOriginalVertexEndpointProof,
+  nativeHLRVertexConcordance,
   nativeHiddenOriginalOpenRayClosure,
   nativeHiddenFrontVisibleMask,
   nativeHiddenDualOpenIntervalProof,
