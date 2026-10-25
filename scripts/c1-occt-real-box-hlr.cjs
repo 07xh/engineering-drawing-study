@@ -17,7 +17,8 @@
  console.log('OCCT overloads',JSON.stringify(['Add_1','Add_2','Projector','Update','Hide'].map(k=>({name:k,exists:typeof algo[k],arity:typeof algo[k]==='function'?algo[k].length:null}))));
  algo.Add_2(shape,0);
  const projector=new oc.HLRAlgo_Projector_1();
- algo.Projector(projector);algo.Update();algo.Hide();
+ console.log('OCCT projection and hide methods',JSON.stringify(['Projector','Projector_1','SetProjector','SetProjector_1','Update','Hide','Hide_1','Hide_2'].map(k=>({name:k,type:typeof algo[k],arity:typeof algo[k]==='function'?algo[k].length:null}))));
+ algo.SetProjector(projector);algo.Update();algo.Hide();
  const result=new oc.HLRBRep_HLRToShape(algo);
  const visible=result.VCompound();
  const hidden=result.HCompound();
