@@ -20,6 +20,8 @@ const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
+const {exactSameReviewedModelPoint}=
+ require('./m5-c1-contour-physical-junction-incidence.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -173,7 +175,53 @@ function auditC1ContinuousFrontmostSourceRays({
     certifiedFinalVisibleOrHiddenStroke:false,
     standardEngineeringLineStyle:'undetermined',signedV5LineAction:false});
   }
+  // Join the existing #708 hull/source ring, #712/#714 exact physical
+  // junctions and #713 continuous open rays. Every approved local candidate
+  // must keep exactly the SAME reviewed 3D point across its two incident
+  // frontmost source spans. Equal paper coordinates / near-equal 3D points
+  // are never sufficient. This is not a full contour, style or V5 proof.
+  const frontSourceJunctions=[];
+  for(let i=0;i<intervals.length;i++){
+   const jn=jv.junctions[i],incoming=intervals[i],
+    outgoing=intervals[(i+1)%intervals.length];
+   const a=incoming.sources.find(q=>
+    q.sourceEdgeId===incoming.uniqueStrictFrontSourceId);
+   const b=outgoing.sources.find(q=>
+    q.sourceEdgeId===outgoing.uniqueStrictFrontSourceId);
+   if(d2(jn.projectedModelMm,incoming.paperToModelMm)>1e-7||
+      d2(jn.projectedModelMm,outgoing.paperFromModelMm)>1e-7)
+    err('source ray endpoints not aligned to real paper junction');
+   const matched=Boolean(a&&b&&jn.authenticatedCommon3DJoinCandidates.some(q=>
+     q.arrivingSourceEdgeId===a.sourceEdgeId&&
+     q.departingSourceEdgeId===b.sourceEdgeId&&
+     q.sharedPhysical3DPointVerified===true&&
+     exactSameReviewedModelPoint(q.real3DPoint,a.to3D)&&
+     exactSameReviewedModelPoint(q.real3DPoint,b.from3D)));
+   const bothClear=Boolean(a?.fullOpenSubintervalClear&&
+    b?.fullOpenSubintervalClear);
+   const local=matched&&bothClear&&
+    !incoming.unresolvedDepthSwitchOrTie&&
+    !outgoing.unresolvedDepthSwitchOrTie;
+   frontSourceJunctions.push({
+    view,revision,sourceGeometryId:geometry.id,junctionIndex:i,
+    paperPointModelMm:{...jn.projectedModelMm},
+    arrivingFrontSourceEdgeId:a?.sourceEdgeId??null,
+    departingFrontSourceEdgeId:b?.sourceEdgeId??null,
+    authenticatedExactCommon3DFrontSourcePoint:matched,
+    bothAdjacentOpenSourceIntervalsRayClear:bothClear,
+    localFrontRayPhysicalJunctionCandidateVerified:local,
+    nearButDistinctPhysicalSourcesNotPromoted:
+     jn.nearButDifferent3DSourcePointPairsRemainUndetermined>0,
+    wholeGlobalContourAndOcclusionTopologyVerified:false,
+    officialEngineeringLineStyle:'undetermined',signedV5Action:false
+   });
+  }
   viewRows.push({view,intervals,intervalCount:intervals.length,
+   frontSourceJunctions,
+   localFrontRayPhysicalJunctionCandidateCount:frontSourceJunctions.filter(
+    x=>x.localFrontRayPhysicalJunctionCandidateVerified).length,
+   frontSourceJunctionsAwaitingFullProofCount:frontSourceJunctions.filter(
+    x=>!x.localFrontRayPhysicalJunctionCandidateVerified).length,
    strictUniqueListedFrontCount:intervals.filter(x=>
     x.uniqueStrictFrontPhysical3DSourceAmongListedCandidates).length,
    continuousFrontOpenRayClearCount:intervals.filter(x=>
@@ -189,6 +237,10 @@ function auditC1ContinuousFrontmostSourceRays({
   independentlyClearLeadingSourceIntervalCount:viewRows.reduce((n,v)=>
    n+v.continuousFrontOpenRayClearCount,0),
   ambiguousDepthIntervalCount:viewRows.reduce((n,v)=>n+v.crossingOrTieCount,0),
+  localFrontRayPhysicalJunctionCandidateCount:viewRows.reduce((n,v)=>n+
+   v.localFrontRayPhysicalJunctionCandidateCount,0),
+  frontSourceJunctionsAwaitingFullProofCount:viewRows.reduce((n,v)=>n+
+   v.frontSourceJunctionsAwaitingFullProofCount,0),
   authenticSourceAndPaperProjectionVerified:true,
   entireGlobalFinalStrokeTopologyVerified:false,
   officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
