@@ -153,21 +153,34 @@ for(const [index,geometry] of general.entries()){
  // If generic M5 cannot positively prove its WHOLE visible ring, real CAD
  // agreement may still be useful forensic evidence but may NOT sign an
  // Intent/DAG/V5 stroke. Keep the original formal C1 gate fail-closed.
- let formallySigned=false,scopedOfficialVisibleContourLines=0;
- if(!audited.allThreeViewsGlobalM5Certified){
-  assert.throws(()=>compileC1WithOcjsHLR({oc,input:reviewedInput,
-   sheetTransform:{origin:{x:350,y:195},scale:3}}),
-   /M5\/V5 not available/);
- }else if(audited.counts.positiveM5CadConflicts===0){
-  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
-   sheetTransform:{origin:{x:350,y:195},scale:3}});
-  assert.equal(canonical.wholeSolidV5Ready,false);
-  assert.equal(canonical.c1CadRuntime.secondV5,false);
-  assert.equal(canonical.verifiedLineIntentAndOriginalSingleV5Parity,true);
-  formallySigned=true;
-  scopedOfficialVisibleContourLines=
-   canonical.certifiedVisibleContourLineActionCount;
- }
+ // Both noncuboid meshes must now pass the SAME global M5 formal
+ // contour proof as canonical cuboids. This is not a special solver path:
+ // exact support-face clearance supplies the previously missing rays.
+ assert.equal(audited.allThreeViewsGlobalM5Certified,true,
+  'true generic convex closed source must obtain global first-angle exterior contour');
+ assert.equal(audited.counts.unresolved,0,
+  'no unresolved M5 atomic exterior contour intervals may reach formal V5');
+ assert.equal(audited.counts.positiveM5CadConflicts,0,
+  'a real CAD source disagreement must block the formal V5');
+ assert.equal(audited.counts.cadAndM5Corroborated,
+  audited.counts.m5AtomicIntervals);
+ const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
+  sheetTransform:{origin:{x:350,y:195},scale:3}});
+ assert.equal(canonical.wholeSolidV5Ready,false);
+ assert.equal(canonical.c1CadRuntime.secondV5,false);
+ assert.equal(canonical.c1CadRuntime.nonContourCADDrawingActionsSigned,0);
+ assert.equal(canonical.verifiedLineIntentAndOriginalSingleV5Parity,true);
+ assert.equal(canonical.certifiedVisibleContourLineActionCount,
+  audited.counts.m5AtomicIntervals);
+ const formalActions=new Set(canonical.certifiedVisibleContourLineActionIds);
+ assert.equal(formalActions.size,audited.counts.m5AtomicIntervals);
+ assert.ok(canonical.steps.flatMap(step=>step.actions)
+  .filter(action=>formalActions.has(action.id))
+  .every(action=>action.kind==='line'));
+ canonical.player.invalidate(42+index,0);
+ assert.equal(canonical.player.canRender(40+index),false);
+ const formallySigned=true,
+  scopedOfficialVisibleContourLines=formalActions.size;
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   authenticCadVisibleSegments:count,
   elapsedMs:Math.round(performance.now()-at),
