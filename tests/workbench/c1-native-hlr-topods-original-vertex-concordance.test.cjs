@@ -343,3 +343,26 @@ test('older visible paper-only source lift without genuine OCCT original BRep 3D
  assert.equal(p.completeGenuineNativeHLRJunctionStars[0].
   allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
 });
+
+test('duplicate contradictory same-revision M5 closed-ray rows cannot certify visible native HLR junction',()=>{
+ const x=visibleFrontSourceCase();
+ const valid=x.originalClosedRayM5.rows[0];
+ // A last-write-wins Map previously discarded the first contradictory row.
+ x.originalClosedRayM5.rows.unshift({
+  ...valid,completeSourceOriginal3DRayClosedIntervalClear:false
+ });
+ assert.throws(()=>audit(x),/duplicate original M5 closed-ray source\/view witness/);
+});
+test('duplicate identical M5 closed-ray rows cannot inflate original source provenance',()=>{
+ const x=visibleFrontSourceCase();
+ x.originalClosedRayM5.rows.push({...x.originalClosedRayM5.rows[0]});
+ assert.throws(()=>audit(x),/duplicate original M5 closed-ray source\/view witness/);
+});
+test('malformed or unknown-view original M5 ray rows are rejected before visible source matching',()=>{
+ for(const bad of [null,{originalPhysicalSourceEdgeId:'G::A|D',view:'Q'},
+  {originalPhysicalSourceEdgeId:null,view:'H'}]){
+  const x=visibleFrontSourceCase();
+  x.originalClosedRayM5.rows.push(bad);
+  assert.throws(()=>audit(x),/invalid original M5 closed-ray source\/view witness/);
+ }
+});
