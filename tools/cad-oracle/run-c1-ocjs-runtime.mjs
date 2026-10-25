@@ -282,6 +282,8 @@ for(const [index,geometry] of general.entries()){
    end.signedV5Action===false&&
    (end.genuineClosed3DOriginalVertexFaceFanVerified===
      (end.original3DVertexId!==null))&&
+   (!end.originalPaperM4EndpointLinkPositivelyVerified||
+    end.genuineClosed3DOriginalVertexFaceFanVerified)&&
    !end.completeVisibleEngineeringLineJunctionCertified)));
 
  assert.equal(finalGate.independentlyRecomputedClosedOriginalEdgeRaySchema,
@@ -480,6 +482,8 @@ for(const [index,geometry] of general.entries()){
      finalGate.counts.originalVertexEndpointExactRayClearWitnesses,
     realOriginal3DVertexFaceFanEndpointProofs:
      finalGate.counts.certifiedOriginal3DVertexFanEndpointWitnesses,
+    original3DVertexM4PaperEndpointLinksHeld:
+     finalGate.counts.originalVertexFanM4EndpointLinkMissingHeld,
     nonoriginalPaperCutsWithout3DVertexFan:
      finalGate.counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount,
     distinctDepthPaperVertexAliasesHeld:
