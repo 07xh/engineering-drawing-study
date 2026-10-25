@@ -34,6 +34,8 @@ const {auditC1OriginalSourceSubspanJunctions}=
  require('./c1-original-source-subspan-junction-provenance.cjs');
 const {auditC1OriginalPaperSourcePrecedence}=
  require('./c1-m5-original-paper-source-precedence.cjs');
+const {auditC1ExactHiddenProjectedCandidatePruning}=
+ require('./c1-ocjs-exact-hidden-source-pruning.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -282,11 +284,29 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
     span.toModelMm,projectedHits);
    const unique=projectedHits.length>0&&
     projectedHits.every(c=>c.projectedOriginalEdgeCandidates.length===1);
+   const exactPruning=auditC1ExactHiddenProjectedCandidatePruning({
+    geometry,revision,view:row.view,
+    targetSourceEdgeId:row.sourceEdgeId,
+    fromModelMm:span.fromModelMm,toModelMm:span.toModelMm,
+    cadVisibleSegments:cad.views[row.view],convexProof:convex});
+   if(exactPruning.targetSourceEdgeId!==row.sourceEdgeId||
+      exactPruning.revision!==revision||
+      exactPruning.signedV5Action!==false||
+      exactPruning.actualOCCTTopoDSEdgeIdentityRecovered!==false||
+      exactPruning.sourceTargetCoveredByRealCADProjectedSegments!==cadVisible)
+    throw new RangeError('M0 physical CAD narrowing conflicts with actual source coverage');
+   // Original OCCT raw source candidates remain untouched. A second,
+   // strictly independent M0 proof may show that all OTHER paper aliases
+   // are physically behind the convex solid, but that is NOT a recovered
+   // TopoDS B-Rep edge ID or a GB official stroke.
+   const physicalUnique=exactPruning.
+    targetUniqueWithinOriginalPaperCandidatesByExactM0===true;
    const status=!physical?
     'not-proven-original-physical-crease':
     span.projectedExteriorHullOverlap?
      'outer-contour-paper-overlap-held':
-     proof?.status==='certified-clear'&&cadVisible&&unique?
+     proof?.status==='certified-clear'&&cadVisible&&
+      (unique||physicalUnique)?
       'local-nonhull-source-interval-cad-m0-positive':
       'undetermined';
    if(status==='local-nonhull-source-interval-cad-m0-positive')
@@ -328,6 +348,9 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
     allOpaqueFaceDepthsVerified:false,
     completeOriginalSourceCADCoverage:cadVisible,
     uniqueOriginal3DSourceCandidate:unique,
+    originalPaperCandidatesPrunedByExactStrictInward:exactPruning,
+    originalSourceUniquenessOnlyAfterExactM0Pruning:
+     physicalUnique&&!unique,
     exactSourceFaceOpenRayVerified:proof?.status==='certified-clear',
     allSplitJunctions3DVerified:false,
     officialEngineeringLineStyle:'undetermined',signedV5Action:false};
@@ -378,6 +401,13 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   priority.counts.partialPaperAlias;
  summary.originalSourcePaperOverlapPairDepthCount=
   priority.counts.positivePairDepthComparisons;
+ summary.realCADSourceAliasResolvedByExactInwardCount=
+  segmented.reduce((n,row)=>n+row.sourceBoundSubintervals.filter(
+   x=>x.originalSourceUniquenessOnlyAfterExactM0Pruning).length,0);
+ summary.realCADCollinearMultipleOriginalCandidateCount=
+  segmented.reduce((n,row)=>n+row.sourceBoundSubintervals.filter(
+   x=>x.originalPaperCandidatesPrunedByExactStrictInward.
+    rawPaperCandidateMultiplicity>1).length,0);
  summary.projectedSourceEventCount=eventGraph.actualM4OriginalSourcePairwiseEventCount;
  summary.sourceBoundSubintervalCount=eventGraph.partitionedSourceSubintervalCount;
  summary.nonHullPositiveSubintervals=provenNonHullSubintervals;
@@ -405,6 +435,8 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   sourceProjectedEventGraphSchema:eventGraph.schema,
   independentOriginal3DJunctionProofSchema:junction.schema,
   originalSourcePaperPrioritySchema:priority.schema,
+  exactStrictInwardPaperCandidatePruningSchema:
+   'draftai-c1-m5-exact-hidden-paper-source-pruning/1',
   sourcePairDepthProofSchema:pairDepth.schema,
   originalSourceOpaqueSubspanProofSchema:opaque.schema,
   CADComputedGenuineOpenCascadeWasm:true,
