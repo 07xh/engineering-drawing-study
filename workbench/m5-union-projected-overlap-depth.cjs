@@ -16,14 +16,29 @@ const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {auditUnionPhysicalFeatureJunctions}=
  require('./m5-union-physical-feature-junctions.cjs');
+const {analyzeSegmentTopology}=
+ require('../core/geometry/segment-topology2d.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
 const AXES=['x','y','z'];
 const diff=(a,b)=>({u:a.u-b.u,v:a.v-b.v});
 const dot=(a,b)=>a.u*b.u+a.v*b.v;
-const cross=(a,b)=>a.u*b.v-a.v*b.u;
 const dist=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
+/**
+ * This is a TOPOLOGICAL, not metric-tolerance, predicate. Two different
+ * real source edges separated by 2^-35 mm are NOT the same projected paper
+ * line. The existing M0 filtered/exact dyadic orientation + M1 full segment
+ * topology are the only authority for an overlap of positive length.
+ * Point contact/crossings must be handled by the separate M5 event graph.
+ */
+function exactPositivePaperSourceOverlap(a,b,c,d){
+ const asLine=(from,to)=>({frame:'model-mm-2d',unit:'mm',
+  from:{x:from.u,y:from.v},to:{x:to.u,y:to.v}});
+ const relation=analyzeSegmentTopology({
+  first:asLine(a,b),second:asLine(c,d)}).relation;
+ return relation==='collinear-overlap'||relation==='coincident';
+}
 const at=(a,b,t)=>Object.fromEntries(AXES.map(k=>
  [k,a[k]+t*(b[k]-a[k])]));
 const rayDepth=(p,view)=>{
@@ -64,10 +79,16 @@ function auditProjectedSourceOverlapDepth({geometry,revision,physicalJunctionEvi
     throw new TypeError('duplicate source feature in one 2D view');
    const length2=A.length*A.length,blen2=B.length*B.length;
    const tol=Math.max(1e-9,1e-10*Math.max(A.length,B.length));
-   if(Math.abs(cross(A.delta,diff(B.a,A.a)))>tol*A.length||
-      Math.abs(cross(A.delta,diff(B.b,A.a)))>tol*A.length)
+   // Fast conservative rectangle reject and exact binary64 M1 topology.
+   // Never reinterpret a nonzero orientation determinant as collinear
+   // merely because its numerical distance is less than a tolerance.
+   if(Math.max(Math.min(A.a.u,A.b.u),Math.min(B.a.u,B.b.u))>
+       Math.min(Math.max(A.a.u,A.b.u),Math.max(B.a.u,B.b.u))||
+      Math.max(Math.min(A.a.v,A.b.v),Math.min(B.a.v,B.b.v))>
+       Math.min(Math.max(A.a.v,A.b.v),Math.max(B.a.v,B.b.v))||
+      !exactPositivePaperSourceOverlap(A.a,A.b,B.a,B.b))
     continue;
-   // Both source segments project onto the SAME supporting 2D line.
+   // Both source segments are EXACTLY on the same supporting 2D line.
    // Clip the B projected interval onto original A parameter t in [0,1].
    const ba=dot(A.delta,diff(B.a,A.a))/length2,
     bb=dot(A.delta,diff(B.b,A.a))/length2;
@@ -143,4 +164,4 @@ function auditProjectedSourceOverlapDepth({geometry,revision,physicalJunctionEvi
   allProjectedFeatureDuplicatesMerged:false,
   officialLineStylesVerified:false,signedV5LineActions:0,v5Ready:false});
 }
-module.exports={auditProjectedSourceOverlapDepth};
+module.exports={auditProjectedSourceOverlapDepth,exactPositivePaperSourceOverlap};
