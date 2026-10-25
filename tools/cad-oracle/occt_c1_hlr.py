@@ -39,7 +39,10 @@ def xyz(p):
 
 
 def validate(case):
-    if not isinstance(case, dict) or set(case) != {"id", "geometry", "reference"}:
+    required = {"id", "geometry", "reference"}
+    if not isinstance(case, dict) or set(case) not in (
+        required, required | {"signedVisibleContourActions"}
+    ):
         reject("explicit CAD comparison case fields required")
     g = case["geometry"]
     if not isinstance(g, dict) or g.get("id") != case["id"] or (
@@ -97,6 +100,55 @@ def validate(case):
             a, b = side["to"], nxt["from"]
             if math.dist((a["u"], a["v"]), (b["u"], b["v"])) > 1e-8:
                 reject("C1 hull paper endpoints are not joined")
+    # Read-only checks of real already-signed C1 original V5 actions.
+    # They are not input to either the CAD algorithm or DraftAI's M3/M5.
+    actions = case.get("signedVisibleContourActions", [])
+    if not isinstance(actions, list) or len(actions) > 128 or (
+        "signedVisibleContourActions" in case and not actions
+    ):
+        reject("bounded nonempty signed V5 contour comparison required")
+    real_edges = {
+        g["id"] + "::" + "|".join(sorted(edge)): edge for edge in edges
+    }
+    seen = set()
+    def paper(p, view):
+        if view == "V":
+            return (p["x"], p["z"])
+        if view == "H":
+            return (p["x"], p["y"])
+        return (p["y"], p["z"])
+    for row in actions:
+        if not isinstance(row, dict) or set(row) != {
+            "actionId", "view", "sourceEdgeId", "from", "to"
+        } or not isinstance(row["actionId"], str) or (
+            not row["actionId"].startswith("c1_hull_action_")
+        ) or row["actionId"] in seen or row["view"] not in FRAMES or (
+            row["sourceEdgeId"] not in real_edges
+        ):
+            reject("authentic unique C1 source-bound V5 line action required")
+        seen.add(row["actionId"])
+        points2 = []
+        for key in ("from", "to"):
+            pt = row[key]
+            if not isinstance(pt, dict) or set(pt) != {"u", "v"} or any(
+                type(pt[k]) not in (float, int) or not math.isfinite(pt[k])
+                for k in ("u", "v")
+            ):
+                reject("finite first-angle V5 model-mm endpoint required")
+            points2.append((pt["u"], pt["v"]))
+        if math.dist(*points2) <= 1e-9:
+            reject("collapsed V5 model-mm source is not an outline segment")
+        src = real_edges[row["sourceEdgeId"]]
+        a, b = (paper(points[i], row["view"]) for i in src)
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        squared = dx * dx + dy * dy
+        if squared <= 1e-18:
+            reject("projected true source edge collapsed")
+        for q in points2:
+            cross = dx * (q[1] - a[1]) - dy * (q[0] - a[0])
+            t = ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / squared
+            if abs(cross) > 1e-8 * math.sqrt(squared) or not -1e-9 <= t <= 1 + 1e-9:
+                reject("V5 action does not lie on its authentic original 3D source edge")
     return data
 
 
@@ -206,7 +258,8 @@ def cross_check(case, tolerance=1e-6):
     data = validate(case)
     solid = build_occt_solid(data)
     answer = {"id":case["id"], "occtBRepValid":True,
-              "occtVolumeMm3":solid.Volume(), "views":{}}
+              "occtVolumeMm3":solid.Volume(), "views":{},
+              "independentlyCoveredSignedV5ActionCount":0}
     for view in FRAMES:
         strokes = extract_occt_visible_hlr(solid, view)
         observed = hull([p for edge in strokes for p in edge])
@@ -224,6 +277,14 @@ def cross_check(case, tolerance=1e-6):
             (s["to"]["u"], s["to"]["v"]), strokes, tolerance
         ) for s in ref)
         coverage_agree = gap <= tolerance
+        signed = [row for row in case.get("signedVisibleContourActions", [])
+                  if row["view"] == view]
+        signed_gaps = [largest_uncovered_fraction(
+            (row["from"]["u"], row["from"]["v"]),
+            (row["to"]["u"], row["to"]["v"]), strokes, tolerance
+        ) for row in signed]
+        signed_agree = all(x <= tolerance for x in signed_gaps)
+        answer["independentlyCoveredSignedV5ActionCount"] += len(signed)
         answer["views"][view] = {
             "occtVisibleHLREdgeCount":len(strokes),
             "occtProjectedHullAreaMm2":measured_area,
@@ -232,8 +293,11 @@ def cross_check(case, tolerance=1e-6):
             "hullVerticesAgreement":vertex_agree,
             "hullAreasAgreement":area_agree,
             "occtVisibleHLRCoversWholeM5Hull":coverage_agree,
+            "signedScopedV5ActionCount":len(signed),
+            "maxSignedV5ActionUncoveredFraction":max(signed_gaps, default=0),
+            "occtVisibleHLRCoversAllSignedScopedV5Actions":signed_agree,
         }
-        if not all((vertex_agree, area_agree, coverage_agree)):
+        if not all((vertex_agree, area_agree, coverage_agree, signed_agree)):
             reject(f"{case['id']} {view}: OCCT HLR disagrees with DraftAI C1 contour")
     return answer
 

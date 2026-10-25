@@ -36,6 +36,11 @@ class C1CADOracleTests(unittest.TestCase):
         self.assertTrue(any(row["id"] == "C1Tetrahedron" for row in results))
         self.assertTrue(all(row["occtBRepValid"] and row["occtVolumeMm3"] > 0
                             for row in results))
+        self.assertEqual(results[0]["independentlyCoveredSignedV5ActionCount"], 12)
+        self.assertTrue(all(
+            row["independentlyCoveredSignedV5ActionCount"] == 0
+            for row in results[1:]
+        ))
         for row in results:
             self.assertEqual(set(row["views"]), {"V", "H", "W"})
             for v in row["views"].values():
@@ -44,8 +49,12 @@ class C1CADOracleTests(unittest.TestCase):
                 self.assertTrue(v["hullAreasAgreement"])
                 self.assertTrue(v["occtVisibleHLRCoversWholeM5Hull"])
                 self.assertLessEqual(v["maxSourceSideUncoveredFraction"], 1e-6)
-        self.assertFalse(any("lineStyle" in str(r) or "V5Action" in str(r)
-                             for r in results))
+                self.assertTrue(v["occtVisibleHLRCoversAllSignedScopedV5Actions"])
+                self.assertLessEqual(v["maxSignedV5ActionUncoveredFraction"], 1e-6)
+        # Counts and coverage evidence are allowed; never return action
+        # payloads or claim CAD has signed an engineering line style.
+        self.assertFalse(any("signedVisibleContourActions" in str(r) or
+                             "officialLineStyle" in str(r) for r in results))
 
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
@@ -65,6 +74,27 @@ class C1CADOracleTests(unittest.TestCase):
             side["from"]["u"] += 3
             side["to"]["u"] += 3
         with self.assertRaisesRegex(ValueError, "disagrees"):
+            oracle.cross_check(x)
+
+    def test_signed_original_v5_source_edge_forgery_is_refused(self):
+        x = copy.deepcopy(self.corpus["cases"][0])
+        assert len(x["signedVisibleContourActions"]) == 12
+        x["signedVisibleContourActions"][0]["sourceEdgeId"] = x["id"] + "::fake|edge"
+        with self.assertRaisesRegex(ValueError, "authentic unique"):
+            oracle.cross_check(x)
+
+    def test_signed_v5_contour_coordinate_forgery_is_refused(self):
+        x = copy.deepcopy(self.corpus["cases"][0])
+        x["signedVisibleContourActions"][0]["to"]["v"] += 0.01
+        with self.assertRaisesRegex(ValueError, "does not lie"):
+            oracle.cross_check(x)
+
+    def test_duplicate_signed_action_identity_is_refused(self):
+        x = copy.deepcopy(self.corpus["cases"][0])
+        x["signedVisibleContourActions"][1]["actionId"] = (
+            x["signedVisibleContourActions"][0]["actionId"]
+        )
+        with self.assertRaisesRegex(ValueError, "authentic unique"):
             oracle.cross_check(x)
 
     def test_nonfinite_source_and_wrong_units_are_refused(self):

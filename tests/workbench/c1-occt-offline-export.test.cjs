@@ -43,6 +43,20 @@ test('C1 OCCT oracle exports only authentic reviewed convex mm geometry and prev
   }
  }
  assert.equal(ids.size,6);
+ const signed=packet.cases.find(c=>c.id==='C1StandardBox');
+ assert.equal(signed.signedVisibleContourActions.length,12);
+ assert.deepEqual(
+  signed.signedVisibleContourActions.reduce((acc,a)=>{
+   acc[a.view]=(acc[a.view]||0)+1;return acc;
+  },{}),{V:4,H:4,W:4});
+ assert.equal(new Set(signed.signedVisibleContourActions.map(a=>a.actionId)).size,12);
+ assert.ok(signed.signedVisibleContourActions.every(a=>
+  a.actionId.startsWith('c1_hull_action_'+a.view+'_')&&
+  a.sourceEdgeId.startsWith(signed.id+'::')&&
+  Number.isFinite(a.from.u)&&Number.isFinite(a.from.v)&&
+  Number.isFinite(a.to.u)&&Number.isFinite(a.to.v)));
+ assert.equal(packet.cases.slice(1).every(c=>!Object.hasOwn(c,
+  'signedVisibleContourActions')),true);
  const same=makeCases();
  assert.deepEqual(same,packet.cases);
 });
