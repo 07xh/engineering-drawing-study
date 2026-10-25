@@ -14,7 +14,10 @@ const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const {compileC1WithOcjsHLR}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
-const {cuboidBounds}=require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+const {cuboidBounds,computeC1OcjsVisibleSegments}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+const {verifiedConvexMeshHalfspaces}=
+ require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -85,11 +88,52 @@ const g={...q,id:'C1rotated',data:{
  ...q.data,points:Object.fromEntries(Object.entries(q.data.points).map(
  ([id,p])=>[id,{x:p.x+p.y/2,y:p.y,z:p.z}]))}};
 assert.throws(()=>cuboidBounds(g),/axis-aligned|corner|cuboid|axis-adjacent/);
+// Reuse the SAME WASM HLR computation for geometrically different
+// M0-proven closed convex non-cuboids; not snapshots or hardcoded projections.
+const t={
+ id:'C1SkewTetra',kind:'mesh',space:'model-3d',unit:'mm',
+ data:{points:{
+  A:xyz(0,0,0),B:xyz(17,1,3),C:xyz(3,16,2),D:xyz(5,6,23)},
+  edges:[['A','B'],['A','C'],['A','D'],['B','C'],['B','D'],['C','D']],
+  faces:[['A','B','C'],['A','B','D'],['A','C','D'],['B','C','D']]
+ }
+};
+const general=[g,t],polyhedra=[];
+for(const [index,geometry] of general.entries()){
+ const proof=verifiedConvexMeshHalfspaces(geometry);
+ assert.equal(proof.status,'validated-closed-convex-mesh');
+ const at=performance.now();
+ const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ assert.equal(cad.sourceCandidateOnly,true);
+ assert.equal(cad.v5Authorized,false);
+ assert.equal(cad.proofScope,'reviewed-closed-convex-polyhedral-shell');
+ assert.deepEqual(Object.keys(cad.views).sort(),['H','V','W']);
+ let count=0;
+ const valid=new Set(geometry.data.edges.map(edge=>
+  geometry.id+'::'+[...edge].sort().join('|')));
+ for(const view of Object.values(cad.views)){
+  assert.ok(view.length>=3);
+  for(const seg of view){
+   assert.ok(seg.projectedOriginalEdgeCandidates.length>0);
+   assert.ok(seg.projectedOriginalEdgeCandidates.every(id=>valid.has(id)));
+   assert.ok([seg.from.u,seg.from.v,seg.to.u,seg.to.v].every(Number.isFinite));
+   count++;
+  }
+ }
+ polyhedra.push({geometryId:geometry.id,revision:40+index,
+  authenticCadVisibleSegments:count,
+  elapsedMs:Math.round(performance.now()-at),m5Signed:false});
+}
+// Preserve strict unsupported/degenerate source refusal.
+assert.throws(()=>computeC1OcjsVisibleSegments({oc,
+ geometry:{...t,data:{...t.data,faces:t.data.faces.slice(1)}},revision:55}),
+ /convex|closed|face|Euler/i);
 const report={
  schema:'draftai-c1-ocjs-runtime-compute-m5-consumer/1',
  wasmPackage:manifest.name,version:key,wasmBytes:bytes,
  initializedActualWasm:true,initializationMs:Math.round(initMs),
  computationalConsumers:records.length,records,
+ genericConvexWasmConsumers:polyhedra.length,polyhedra,
  originalM5AuthorityPreserved:true,extraV5Players:0,
  productionBrowserBundled:false,androidAccepted:false
 };
