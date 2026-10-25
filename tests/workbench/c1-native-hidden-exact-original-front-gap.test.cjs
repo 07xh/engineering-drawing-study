@@ -13,6 +13,8 @@ const g=()=>({id:'G',data:{points:structuredClone(points),
 const nativeSource=(id,full)=>({
  sourceEdgeId:id,
  originalSourceParameterRange:full?[0,1]:[0,.9999999999999998],
+ fromCandidate3D:{...(id==='G::H0|H1'?points.H0:points.F0)},
+ toCandidate3D:{...(id==='G::H0|H1'?points.H1:points.F1)},
  actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
  originalOCCTSourceLineCurveVerified:true,
  originalXYZReprojectsToHLR:true,v5Authorized:false
