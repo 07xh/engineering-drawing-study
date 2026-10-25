@@ -105,6 +105,9 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
   nativeHLRInteriorPaperEventsRequiringSceneJunctionReview:0,
   nativeOriginalM4TransverseCrossingEventsFound:0,
   exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven:0,
+  exactM4CrossingsBoundToCanonicalUnroundedSourceParameters:0,
+  locallyAnchoredM4NativeTransverseStrictDepthComparisons:0,
+  trueCrossingDepthKnownButRoundedM4ParameterHeld:0,
   exactM4TransverseCrossingsWithDepthTieHeld:0,
   exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld:0,
   authenticM4OriginalVertexOtherSourceIncidencesExactlyReviewed:0,
@@ -227,12 +230,29 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
       exactOriginalM4TransverseCrossingDepth({
        geometry,view,firstEdge:edge,
        secondEdge:sourceById.get(e.otherSourceEdgeId),
-       nativeFirstOriginalParameterRange:range
+       nativeFirstOriginalParameterRange:range,
+       originalM4SourceParameter:t
       }):null;
+     const exactM4Parameter=exactCrossing?.
+      originalM4SourceParameterExactlyMatchesRationalCrossing===true;
+     const anchoredCrossing=exactCrossing?.
+      strictOriginal3DObserverDepthOrderAtPaperCrossingProven===true&&
+      exactM4Parameter&&
+      e.sourceParameterBoundaryRoundedForDiagnostic===false&&
+      relation.originalEventOnSameNativePaperLineExactly&&
+      relation.originalEventWithinNativePaperEndpointsNumerically&&
+      t>range[0]&&t<range[1];
      if(exactCrossing){
       counts.nativeOriginalM4TransverseCrossingEventsFound++;
       if(exactCrossing.strictOriginal3DObserverDepthOrderAtPaperCrossingProven)
        counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven++;
+      if(exactM4Parameter)
+       counts.exactM4CrossingsBoundToCanonicalUnroundedSourceParameters++;
+      if(anchoredCrossing)
+       counts.locallyAnchoredM4NativeTransverseStrictDepthComparisons++;
+      if(exactCrossing.strictOriginal3DObserverDepthOrderAtPaperCrossingProven&&
+         !exactM4Parameter)
+       counts.trueCrossingDepthKnownButRoundedM4ParameterHeld++;
       else if(exactCrossing.exactDepthTieAtCrossing)
        counts.exactM4TransverseCrossingsWithDepthTieHeld++;
       else counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld++;
@@ -268,8 +288,10 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
        !!originalEndpointProof&&
        !relation.originalEventOnSameNativePaperLineExactly,
       exactOriginalM4CrossingObserverDepthEvidence:exactCrossing,
+      canonicalM4EventExactRationalSourceParameterMatch:exactM4Parameter,
+      nativeHLRActualM4EventLocallyAnchoredStrictDepth:anchoredCrossing,
       exactOriginal3DFrontSourceAtTransversePaperCrossing:
-       exactCrossing?.strictOriginal3DObserverDepthOrderAtPaperCrossingProven?
+       anchoredCrossing?
         (exactCrossing.exactOriginalSourceAtCrossingFront==='first'?
          source:e.otherSourceEdgeId):null,
       // An exact local strict front crossing is NOT continuous occlusion

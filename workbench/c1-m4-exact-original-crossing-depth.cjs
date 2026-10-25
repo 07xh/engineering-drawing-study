@@ -35,7 +35,8 @@ const closedUnitFraction=(num,den)=>{
  return s!==0&&sign(num)*s>=0&&sign(sub(den,num))*s>=0;
 };
 function exactOriginalM4TransverseCrossingDepth({
- geometry,view,firstEdge,secondEdge,nativeFirstOriginalParameterRange=[0,1]
+ geometry,view,firstEdge,secondEdge,nativeFirstOriginalParameterRange=[0,1],
+ originalM4SourceParameter
 }={}){
  if(!VIEWS.includes(view)||!geometry?.data?.points||
     !Array.isArray(firstEdge)||firstEdge.length!==2||
@@ -47,7 +48,10 @@ function exactOriginalM4TransverseCrossingDepth({
     !nativeFirstOriginalParameterRange.every(Number.isFinite)||
     nativeFirstOriginalParameterRange[0]<0||
     nativeFirstOriginalParameterRange[1]>1||
-    nativeFirstOriginalParameterRange[0]>=nativeFirstOriginalParameterRange[1])
+    nativeFirstOriginalParameterRange[0]>=nativeFirstOriginalParameterRange[1]||
+    (originalM4SourceParameter!==undefined&&
+     (!Number.isFinite(originalM4SourceParameter)||
+      originalM4SourceParameter<0||originalM4SourceParameter>1)))
   throw new TypeError('current M0 original 3D physical edge pair and first-angle view required');
  const points=geometry.data.points;
  const [a,b,c,e]=[...firstEdge,...secondEdge].map(x=>points[x]);
@@ -59,6 +63,7 @@ function exactOriginalM4TransverseCrossingDepth({
  const denom=cross(R,S),detSign=sign(denom);
  if(detSign===0)return freeze({
   exactM4TransverseProjectedLineIntersectionProven:false,
+  originalM4SourceParameterExactlyMatchesRationalCrossing:false,
   reason:'exact-projected-lines-parallel-or-collinear',
   bothOriginalSourceOpenParameterRangesContainCrossing:false,
   strictOriginal3DObserverDepthOrderAtPaperCrossingProven:false,
@@ -69,6 +74,12 @@ function exactOriginalM4TransverseCrossingDepth({
   officialEngineeringStyle:'undetermined',signedV5Action:false
  });
  const qp=vec2(pa,pc),tNumer=cross(qp,S),uNumer=cross(qp,R);
+ // Canonical M4's stored JS cut parameter may be rounded. An exact
+ // depth comparison at the genuine rational paper crossing is NOT proof
+ // that a rounded M4 cut lies there. Cross-multiply represented dyadics
+ // before binding a local witness to the actual current M4 event.
+ const m4Exact=originalM4SourceParameter!==undefined&&
+  sign(sub(mul(d(originalM4SourceParameter),denom),tNumer))===0;
  const interiorFirst=strictUnitFraction(tNumer,denom),
   interiorSecond=strictUnitFraction(uNumer,denom),
   closedSecond=closedUnitFraction(uNumer,denom);
@@ -89,6 +100,11 @@ function exactOriginalM4TransverseCrossingDepth({
  const signed=sign(depthNum)*detSign;
  return freeze({
   exactM4TransverseProjectedLineIntersectionProven:true,
+  originalM4SourceParameterExactlyMatchesRationalCrossing:m4Exact,
+  // An exact mathematical 3D observer-depth sign concerns the TRUE
+  // crossing; it may NOT be attributed to a rounded M4 paper event.
+  originalM4ParameterDriftHeld:
+   originalM4SourceParameter!==undefined&&!m4Exact,
   reason:samePaperAndInterior?
    signed===0?'original-sources-tie-in-observer-depth-at-exact-crossing':
     'exact-original-3d-crossing-observer-depth-order':

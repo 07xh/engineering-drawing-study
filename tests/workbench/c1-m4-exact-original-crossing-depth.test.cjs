@@ -80,3 +80,33 @@ test('native hidden interior meeting another ORIGINAL edge at its exact 2D endpo
  assert.equal(r.original3DPhysicalVertexJunctionCertified,false);
  assert.equal(r.signedV5Action,false);
 });
+
+test('exact canonical M4 t=1/2 anchors original crossing depth without native line-style promotion',()=>{
+ const r=depth({geometry,view:'H',firstEdge:['A','B'],
+  secondEdge:['C','D'],originalM4SourceParameter:.5});
+ assert.equal(r.originalM4SourceParameterExactlyMatchesRationalCrossing,true);
+ assert.equal(r.originalM4ParameterDriftHeld,false);
+ assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,true);
+ assert.equal(r.officialEngineeringStyle,'undetermined');
+});
+test('one-ULP-off canonical M4 event parameter cannot borrow true rational crossing M0 depth',()=>{
+ const r=depth({geometry,view:'H',firstEdge:['A','B'],
+  secondEdge:['C','D'],originalM4SourceParameter:.5+Number.EPSILON});
+ assert.equal(r.strictOriginal3DObserverDepthOrderAtPaperCrossingProven,true);
+ assert.equal(r.originalM4SourceParameterExactlyMatchesRationalCrossing,false);
+ assert.equal(r.originalM4ParameterDriftHeld,true);
+});
+test('non-dyadic exact crossing does not pretend approximate canonical M4 t to be an exact source cut',()=>{
+ const g=structuredClone(geometry);
+ g.data.points.B.x=15;
+ const result=depth({geometry:g,view:'H',firstEdge:['A','B'],
+  secondEdge:['C','D'],originalM4SourceParameter:1/3});
+ assert.equal(result.exactM4TransverseProjectedLineIntersectionProven,true);
+ assert.equal(result.originalM4SourceParameterExactlyMatchesRationalCrossing,false);
+});
+test('invalid/nonfinite claimed canonical M4 parameter is rejected, never used as proof',()=>{
+ for(const t of [NaN,Infinity,-.1,1.1]){
+  assert.throws(()=>depth({geometry,view:'H',firstEdge:['A','B'],
+   secondEdge:['C','D'],originalM4SourceParameter:t}),/first-angle/);
+ }
+});

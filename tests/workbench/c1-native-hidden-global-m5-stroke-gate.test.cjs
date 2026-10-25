@@ -264,3 +264,53 @@ test('global M5 consumes exact original 3D common vertex and true source BRep wh
  assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('global M5 independently rechecks exact true 3D crossing depth at a literal native/rounded-free M4 paper event while retaining full GB/V5 blockers',()=>{
+ const x=caseData();
+ x.geometry.data.points={
+  A:{x:0,y:0,z:0},B:{x:10,y:0,z:0},
+  C:{x:5,y:-5,z:10},D:{x:5,y:5,z:10}
+ };
+ x.geometry.data.edges=[['A','B'],['C','D']];
+ const event=x.projectedEncounters.rows[0].originalM4ProjectedEncountersOnNativeSource[0];
+ event.canonicalM4ProjectedEncounterKind='crossing';
+ event.otherOriginal3DSourceEdgeId='G::C|D';
+ event.originalM4RoundedForDiagnostic=false;
+ event.canonicalM4EventExactRationalSourceParameterMatch=true;
+ event.nativeHLRActualM4EventLocallyAnchoredStrictDepth=true;
+ event.exactOriginal3DFrontSourceAtTransversePaperCrossing='G::C|D';
+ event.exactOriginalM4CrossingObserverDepthEvidence={
+  strictOriginal3DObserverDepthOrderAtPaperCrossingProven:true
+ };
+ event.actualNativeGeneratedBRepPaperRelation.
+  originalEventWithinNativePaperEndpointsNumerically=true;
+ const r=review(x),proof=r.rows[0].nativeM4TransverseExactLocalDepthAndNativeHLRAnchors;
+ assert.equal(r.counts.nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor,1);
+ assert.equal(proof.length,1);
+ assert.equal(proof[0].localExactObserverFrontSourceEdgeId,'G::C|D');
+ assert.equal(proof[0].globalOcclusionTopologyCertified,false);
+ assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+ // A forged native original front is rejected by fresh exact M0 arithmetic.
+ event.exactOriginal3DFrontSourceAtTransversePaperCrossing='G::A|B';
+ assert.throws(()=>review(x),/forged canonical M4 rational crossing/);
+ // Round the M4 cut one ULP while falsely retaining an exact certificate.
+ event.exactOriginal3DFrontSourceAtTransversePaperCrossing='G::C|D';
+ event.originalSourceParameter=.5+Number.EPSILON;
+ assert.throws(()=>review(x),/forged canonical M4 rational crossing/);
+});
+test('true transverse crossing M0 depth with no exact current native M4 event binding does not gain a local M5 proof',()=>{
+ const x=caseData(),e=x.projectedEncounters.rows[0].
+  originalM4ProjectedEncountersOnNativeSource[0];
+ e.canonicalM4ProjectedEncounterKind='crossing';
+ e.originalM4RoundedForDiagnostic=true;
+ e.canonicalM4EventExactRationalSourceParameterMatch=false;
+ e.nativeHLRActualM4EventLocallyAnchoredStrictDepth=false;
+ e.exactOriginalM4CrossingObserverDepthEvidence={
+  strictOriginal3DObserverDepthOrderAtPaperCrossingProven:true
+ };
+ const r=review(x);
+ assert.equal(r.counts.nativeM4TransverseDepthAtTruePaperCrossingButM4CutNotAnchored,1);
+ assert.equal(r.counts.nativeM4TransverseCrossingsWithIndependentExactM0AndNativeAnchor,0);
+ assert.deepEqual(r.rows[0].nativeM4TransverseExactLocalDepthAndNativeHLRAnchors,[]);
+});
