@@ -76,6 +76,15 @@ test('oblique hexa keeps four actual nonoriginal paper cuts, refusing false comp
  assert.equal(r.counts.same3DOriginalSourceCutJoinsPreserved,0);
  assert.ok(r.counts.nonoriginalPaperCutEndpointsHeld>0);
  assert.ok(r.counts.nonCollapsedProjectionPartitionIncomplete>0);
+ assert.ok(r.counts.missingPaperSourceParameterGapCount>0);
+ assert.equal(r.counts.missingPaperSourceParameterGapCount,
+  r.rows.reduce((n,x)=>
+   n+x.missingProjectedPaperSourceParameterRanges.length,0));
+ assert.ok(r.rows.flatMap(x=>x.missingProjectedPaperSourceParameterRanges).
+  every(range=>range[0]>=0&&range[1]<=1&&range[0]<range[1]));
+ assert.ok(r.rows.some(x=>x.missingProjectedPaperSourceParameterRanges.length>0&&
+  x.allUndrawnPaperMicroIntervalsPositivelyVerified===false));
+
  assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
  assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
  assert.ok(r.rows.some(x=>!x.originalM4PaperParameterPartitionComplete&&
