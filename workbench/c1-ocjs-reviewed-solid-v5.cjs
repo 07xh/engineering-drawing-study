@@ -63,7 +63,10 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
     !canonical.verifiedLineIntentAndOriginalSingleV5Parity||
     canonical.wholeSolidV5Ready!==false||
     cad.lineStyleCertified!==false||cad.v5Authorized!==false)
-  throw new RangeError('current authoritative C1 scoped M5/V5 not available');
+  throw new RangeError('current authoritative C1 scoped M5/V5 not available: '+
+   canonical.globalVisibleContourProof.views.map(v=>v.view+':'+
+    v.allContourLinesVerified+'/'+v.blockedAtomicIntervalCount).join(',')+
+   '; canonicalV5='+canonical.verifiedLineIntentAndOriginalSingleV5Parity);
  const resolved=canonical.certifiedVisibleContourLineBindings;
  const out={};
  for(const view of VIEWS){
