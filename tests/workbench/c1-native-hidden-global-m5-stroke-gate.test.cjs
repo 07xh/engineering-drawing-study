@@ -36,6 +36,28 @@ const caseData=()=>{
     }]
    }]
   },
+  nativeVertexProof:{
+   sourceGeometryId:'G',revision,
+   M4SourceCutGapsStillReportedIndependently:true,
+   allGlobalOCCTHLREdgeJoinsVerified:false,
+   signedV5ActionCount:0,rows:[{
+    view:'H',revision,nativeHiddenSharpEdgeOrdinal:0,
+    signedV5Action:false,
+    OCCTGeneratedTopoDSNativeEdgeAdjacencyCertified:false,
+    nativeSource3DVertexEndpointRows:[{
+     originalPhysicalSourceEdgeId:'G::A|B',
+     endpointWitnesses:[{
+      originalModel3DSourceVertexId:'A',
+      originalM4SourceParameterGapRemainsUnrepaired:false,
+      exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified:true
+     },{
+      originalModel3DSourceVertexId:'B',
+      originalM4SourceParameterGapRemainsUnrepaired:true,
+      exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified:true
+     }]
+    }]
+   }]
+  },
   globalM5Review:{schema:'draftai-c1-m5-final-source-obligation-review/1',
    sourceGeometryId:'G',revision,signedV5ActionCount:0,
    fullyCertifiedCount:0,rows:[{
@@ -55,6 +77,8 @@ test('entire native hidden HLR paper-open interval may be positive while genuine
  assert.equal(r.counts.genuineHiddenHLRStrokesReviewed,1);
  assert.equal(r.counts.wholeRealNativeHiddenPaperOpenIntervalsLocallyProven,1);
  assert.equal(r.counts.original3DEndpointFanProofIncompleteStrokes,1);
+ assert.equal(r.counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered,1);
+ assert.equal(r.counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven,0);
  assert.equal(row.originalSourceM4AndClosed3DVertexFanIncompleteEndpointCount,1);
  assert.equal(row.entireRealOCCTHiddenPaperOpenIntervalLocallyVerified,true);
  assert.equal(row.additionalCanonicalM5GlobalBlockers.length,5);

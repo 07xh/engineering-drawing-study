@@ -22,7 +22,8 @@ const requiredGlobal=[
  'soleConstructionIntentDAGV5'
 ];
 function reviewC1NativeHiddenFinalM5Strokes({
- geometry,revision,gapProof,dualProof,endpointFans,globalM5Review
+ geometry,revision,gapProof,dualProof,endpointFans,
+ nativeVertexProof,globalM5Review
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     gapProof?.sourceGeometryId!==geometry.id||gapProof.revision!==revision||
@@ -34,6 +35,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
     endpointFans.revision!==revision||
     endpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven!==false||
     endpointFans.signedV5ActionCount!==0||
+    nativeVertexProof?.sourceGeometryId!==geometry.id||
+    nativeVertexProof.revision!==revision||
+    nativeVertexProof.M4SourceCutGapsStillReportedIndependently!==true||
+    nativeVertexProof.allGlobalOCCTHLREdgeJoinsVerified!==false||
+    nativeVertexProof.signedV5ActionCount!==0||
     globalM5Review?.sourceGeometryId!==geometry.id||
     globalM5Review.revision!==revision||
     globalM5Review.schema!=='draftai-c1-m5-final-source-obligation-review/1'||
@@ -42,7 +48,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
     !Array.isArray(globalM5Review.rows)||!Array.isArray(gapProof.rows)||
     !Array.isArray(dualProof.rows)||!Array.isArray(endpointFans.rows)||
     gapProof.rows.length!==dualProof.rows.length||
-    gapProof.rows.length!==endpointFans.rows.length)
+    gapProof.rows.length!==endpointFans.rows.length||
+    !Array.isArray(nativeVertexProof.rows)||
+    gapProof.rows.length!==nativeVertexProof.rows.length)
   throw new TypeError('current original M5 global unsigned review and real native HLR M0/endpoint proof required');
  const byKey=new Map();
  for(const row of globalM5Review.rows){
@@ -63,6 +71,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
   missingLocalNativeOrModelOpenProofHeld:0,
   original3DEndpointFanProofIncompleteStrokes:0,
+  missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered:0,
+  genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
@@ -70,13 +80,17 @@ function reviewC1NativeHiddenFinalM5Strokes({
  const rows=[];
  for(let i=0;i<gapProof.rows.length;i++){
   const gap=gapProof.rows[i],dual=dualProof.rows[i],
-   fans=endpointFans.rows[i];
+   fans=endpointFans.rows[i],nativeVertex=nativeVertexProof.rows[i];
   if(!VIEWS.includes(gap.view)||dual.view!==gap.view||
      fans.view!==gap.view||gap.nativeHiddenSharpEdgeOrdinal!==i||
      dual.nativeHiddenSharpEdgeOrdinal!==i||
      fans.nativeHiddenSharpEdgeOrdinal!==i||
      gap.signedV5Action!==false||dual.signedV5Action!==false||
      fans.signedV5Action!==false||
+     nativeVertex.nativeHiddenSharpEdgeOrdinal!==i||
+     nativeVertex.view!==gap.view||nativeVertex.revision!==revision||
+     nativeVertex.signedV5Action!==false||
+     nativeVertex.OCCTGeneratedTopoDSNativeEdgeAdjacencyCertified!==false||
      gap.nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven!==false||
      dual.fullGBDashedLineOrVisibleLineAssignmentSigned!==false||
      fans.nativeHLREdgeJunctionsCertified!==false)
@@ -97,6 +111,25 @@ function reviewC1NativeHiddenFinalM5Strokes({
   const endGaps=unique?sourceFan.endpointWitnesses.filter(x=>
    x.originalSource3DVertexId!==null&&
    x.original3DSourceVertexPlusM4AndFanVerified!==true).length:2;
+  const realNativeSource=unique?nativeVertex.nativeSource3DVertexEndpointRows
+   .find(x=>x.originalPhysicalSourceEdgeId===edge):null;
+  if(unique&&(!realNativeSource||
+     !Array.isArray(realNativeSource.endpointWitnesses)||
+     realNativeSource.endpointWitnesses.length!==2))
+   throw new RangeError('native original 3D endpoint positive proof missing');
+  const alternativeNative3D=unique?realNativeSource.endpointWitnesses.filter(x=>
+   x.originalM4SourceParameterGapRemainsUnrepaired===true&&
+   x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true).length:0;
+  const remainingTrueOriginal3DVertexGaps=unique?realNativeSource.endpointWitnesses
+   .filter(x=>x.originalModel3DSourceVertexId!==null&&
+    x.originalM4SourceParameterGapRemainsUnrepaired===true&&
+    x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified!==true).length:2;
+  if(alternativeNative3D>endGaps)
+   throw new RangeError('original M4 endpoint proof identity budget mismatch');
+  counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered+=
+   alternativeNative3D;
+  counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
+   remainingTrueOriginal3DVertexGaps;
   const allGlobalBlockers=requiredGlobal.filter(k=>
    originalGlobal.some(row=>row.independentGlobalProofGaps[k]===true));
   const localNative=gap.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront===true;
@@ -117,6 +150,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    entireRealOCCTHiddenPaperOpenIntervalLocallyVerified:localNative,
    fullOriginalPhysicalOpen3DSourceRayLocallyVerified:localModel,
    originalSourceM4AndClosed3DVertexFanIncompleteEndpointCount:endGaps,
+   originalNative3DVertexEndpointsIndependentlyCorroboratedWithoutM4Cut:
+    alternativeNative3D,
+   originalNativePhysical3DVertexIdentityStillUnproven:
+    remainingTrueOriginal3DVertexGaps,
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,

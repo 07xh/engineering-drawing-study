@@ -16,6 +16,8 @@ on:
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
+      - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
+      - 'tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs'
       - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs'
@@ -78,6 +80,8 @@ on:
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
+      - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
+      - 'tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs'
       - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs'
@@ -166,6 +170,7 @@ jobs:
           node --test tests/workbench/c1-native-hidden-exact-model-front-mask.test.cjs
           node --test tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs
           node --test tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs
+          node --test tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test

@@ -141,6 +141,19 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven,false);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.signedV5ActionCount,0);
+ const nativePhysicalEnd=nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof;
+ assert.equal(nativePhysicalEnd.counts.nativeHLRHiddenEdgesExamined,
+  nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(nativePhysicalEnd.M4SourceCutGapsStillReportedIndependently,true);
+ assert.equal(nativePhysicalEnd.allGlobalOCCTHLREdgeJoinsVerified,false);
+ assert.equal(nativePhysicalEnd.signedV5ActionCount,0);
+ assert.equal(nativePhysicalEnd.counts.originalM4EndCutsStillUnproven,
+  nativePhysicalEnd.counts.missingM4EndpointsIndependentlyPositiveNativeM0VertexProven+
+  nativePhysicalEnd.counts.missingM4EndpointsStillLackingIndependentNativeProof);
+ assert.ok(nativePhysicalEnd.rows.every(row=>
+  row.OCCTGeneratedTopoDSNativeEdgeAdjacencyCertified===false&&
+  row.applicableGBEngineeringLineStyleCertified===false&&
+  row.signedV5Action===false));
  const wholeHidden=nativeHiddenM5.nativeHiddenOriginalOpenRayClosure;
  assert.equal(wholeHidden.counts.actualNativeHiddenEdgesAudited,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
@@ -436,6 +449,7 @@ for(const [index,geometry] of general.entries()){
   gapProof:nativeHiddenM5.nativeHiddenExactOriginalFrontGap,
   dualProof:nativeHiddenM5.nativeHiddenDualOpenIntervalProof,
   endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
+  nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
@@ -724,6 +738,18 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR,
    unsignedNativeHLRActual3DEndpointFanGapStrokes:
     hiddenFormalGate.counts.original3DEndpointFanProofIncompleteStrokes,
+   originalM4EndCutsIndependentM0NativePhysicalVertexRecoveredInGlobalGate:
+    hiddenFormalGate.counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered,
+   original3DNativePhysicalVertexNotYetAuthenticatedInGlobalGate:
+    hiddenFormalGate.counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven,
+   originalM4NativeSourceVertexEndpointCutsStillMissing:
+    nativePhysicalEnd.counts.originalM4EndCutsStillUnproven,
+   missingM4EndpointsWithIndependentExactOriginal3DOcctVertexProof:
+    nativePhysicalEnd.counts.missingM4EndpointsIndependentlyPositiveNativeM0VertexProven,
+   nativeSourceOriginal3DVertexEndpointProofStillMissing:
+    nativePhysicalEnd.counts.missingM4EndpointsStillLackingIndependentNativeProof,
+   actualNativeHiddenEdgesWithOriginalPhysicalVertexEndpointsPositive:
+    nativePhysicalEnd.counts.nativeHiddenEdgesWithAllOriginal3DVertexEndpointsVerified,
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
