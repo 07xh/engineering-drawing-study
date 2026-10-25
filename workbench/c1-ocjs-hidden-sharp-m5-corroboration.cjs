@@ -23,6 +23,10 @@ const {auditC1NativeHidden3DEndpointFans}=
  require('./c1-native-hidden-3d-endpoint-fan-junctions.cjs');
 const {auditNativeHiddenWholeOriginalSourceIntervals}=
  require('./c1-native-hidden-whole-source-interval-closure.cjs');
+const {auditC1ProjectedSourcePairDepth}=
+ require('./c1-projected-source-pair-affine-depth.cjs');
+const {auditC1NativeHiddenFrontVisibleMasks}=
+ require('./c1-native-hidden-front-visible-mask.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -253,6 +257,15 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     nativeHiddenOriginalOpenRayClosure.signedV5ActionCount!==0||
     nativeHiddenOriginalOpenRayClosure.wholeEngineeringHiddenLineCertification!==false)
   throw new RangeError('real native sharp HLR original source continuous ray gate');
+ const nativeHiddenFrontVisibleMask=auditC1NativeHiddenFrontVisibleMasks({
+  geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
+  m5,sourceDepth:auditC1ProjectedSourcePairDepth({geometry,revision}),
+  exactIntervalCoverage:exactCandidateIntervalCoverage
+ });
+ if(nativeHiddenFrontVisibleMask.counts.realHiddenNativeEdgesAudited!==
+     counts.realNativeHiddenSharpSegments||
+    nativeHiddenFrontVisibleMask.signedV5ActionCount!==0)
+  throw new RangeError('actual front visible source depth mask audit incomplete');
  return frozen({
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
@@ -264,6 +277,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   independentlyVerifiedOriginal3DVertexFans:originalVertexStars.schema,
   nativeHidden3DEndpointFans,
   nativeHiddenOriginalOpenRayClosure,
+  nativeHiddenFrontVisibleMask,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,
