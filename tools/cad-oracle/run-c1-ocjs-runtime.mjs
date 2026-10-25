@@ -242,6 +242,18 @@ for(const [index,geometry] of general.entries()){
   'draftai-c1-m5-original-source-paper-priority/1');
  assert.equal(features.exactStrictInwardPaperCandidatePruningSchema,
   'draftai-c1-m5-exact-hidden-paper-source-pruning/1');
+ // Regression of REAL ambiguous HLR collinear original sources:
+ // independent M0 exact inward excludes the far-back physical edge,
+ // exposing ONE mathematically possible front edge without OCCT
+ // TopoDS provenance or automatic GB/V5 authorization.
+ if(index===0){
+  assert.ok(features.counts.realCADSourceAliasResolvedByExactInwardCount>=1,
+   'real oblique closed convex original projected aliases must narrow by exact inward support');
+  assert.ok(finalGate.counts.localPositiveAfterStrictHiddenAliasElimination>=1,
+   'exact physical alias pruning must improve genuine unsigned final M5 prerequisites');
+  assert.equal(finalGate.counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete,0);
+ }
+
  assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>{
   const narrowed=span.originalPaperCandidatesPrunedByExactStrictInward;
   return narrowed?.sourceGeometryId===geometry.id&&
