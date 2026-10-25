@@ -31,13 +31,19 @@ const strictUnitFraction=(num,den)=>{
  return s!==0&&sign(num)*s>0&&sign(sub(den,num))*s>0;
 };
 function exactOriginalM4TransverseCrossingDepth({
- geometry,view,firstEdge,secondEdge
+ geometry,view,firstEdge,secondEdge,nativeFirstOriginalParameterRange=[0,1]
 }={}){
  if(!VIEWS.includes(view)||!geometry?.data?.points||
     !Array.isArray(firstEdge)||firstEdge.length!==2||
     !Array.isArray(secondEdge)||secondEdge.length!==2||
     firstEdge.some(x=>typeof x!=='string')||
-    secondEdge.some(x=>typeof x!=='string'))
+    secondEdge.some(x=>typeof x!=='string')||
+    !Array.isArray(nativeFirstOriginalParameterRange)||
+    nativeFirstOriginalParameterRange.length!==2||
+    !nativeFirstOriginalParameterRange.every(Number.isFinite)||
+    nativeFirstOriginalParameterRange[0]<0||
+    nativeFirstOriginalParameterRange[1]>1||
+    nativeFirstOriginalParameterRange[0]>=nativeFirstOriginalParameterRange[1])
   throw new TypeError('current M0 original 3D physical edge pair and first-angle view required');
  const points=geometry.data.points;
  const [a,b,c,e]=[...firstEdge,...secondEdge].map(x=>points[x]);
@@ -61,7 +67,11 @@ function exactOriginalM4TransverseCrossingDepth({
  const qp=vec2(pa,pc),tNumer=cross(qp,S),uNumer=cross(qp,R);
  const interiorFirst=strictUnitFraction(tNumer,denom),
   interiorSecond=strictUnitFraction(uNumer,denom);
- const samePaperAndInterior=interiorFirst&&interiorSecond;
+ const [lo,hi]=nativeFirstOriginalParameterRange;
+ const sourceIsInNativeOpenRange=interiorFirst&&
+  sign(sub(tNumer,mul(d(lo),denom)))*detSign>0&&
+  sign(sub(mul(d(hi),denom),tNumer))*detSign>0;
+ const samePaperAndInterior=sourceIsInNativeOpenRange&&interiorSecond;
  const ray=FIRST_ANGLE_OBSERVER_RAYS[view],
   base=dot(diff3(a,c),ray),
   firstSlope=dot(diff3(b,a),ray),
@@ -77,6 +87,8 @@ function exactOriginalM4TransverseCrossingDepth({
    'original-2d-infinite-lines-cross-outside-source-open-segment',
   firstOriginalOpenSourceContainsExactCrossing:interiorFirst,
   secondOriginalOpenSourceContainsExactCrossing:interiorSecond,
+  originalNativeHLRSourceIntervalContainsExactRationalCrossing:
+   sourceIsInNativeOpenRange,
   bothOriginalSourceOpenParameterRangesContainCrossing:samePaperAndInterior,
   strictOriginal3DObserverDepthOrderAtPaperCrossingProven:
    samePaperAndInterior&&signed!==0,
@@ -86,6 +98,8 @@ function exactOriginalM4TransverseCrossingDepth({
   // Crossing parameters are exact dyadic RATIONALS, intentionally not
   // coerced to inaccurate JS floats or used as a new M4 event cut.
   exactFirstCrossingParameterInFullOriginalOpenSource:interiorFirst,
+  currentNativeOriginalOpenIntervalContainsExactCrossing:
+   sourceIsInNativeOpenRange,
   exactSecondCrossingParameterInFullOriginalOpenSource:interiorSecond,
   original3DPhysicalVertexJunctionCertified:false,
   crossingCreatesOriginal3DPhysicalVertex:false,
