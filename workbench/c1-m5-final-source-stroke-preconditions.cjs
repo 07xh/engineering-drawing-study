@@ -56,6 +56,8 @@ function auditC1OriginalStrokeFinalPreconditions({
   unresolvedPhysicalVisibilityOrSourcePriority:0,
   withoutAnyOriginalVertexEndpoint:0,
   innerCutEndpointsWithNoCrossSourceJoin:0,
+  exactInwardPrunedOriginalSourceCandidates:0,
+  localPositiveAfterStrictHiddenAliasElimination:0,
   realCadPositiveWithoutWholeRayProof:0,
   nonHullRayClearButCADSourceNotUniqueOrIncomplete:0,
   nonHullRayClearButSourcePriorityUnproven:0,
@@ -89,7 +91,18 @@ function auditC1OriginalStrokeFinalPreconditions({
    const duplicate=priority.status==='exact-original-3d-feature-duplicate-held';
    const cadCovered=span.completeOriginalSourceCADCoverage===true;
    const cadUnique=span.uniqueOriginal3DSourceCandidate===true;
-   const completeRealCADPositive=cadCovered&&cadUnique;
+   const originalPruning=
+    span.originalPaperCandidatesPrunedByExactStrictInward;
+   const m0Unique=span.originalSourceUniquenessOnlyAfterExactM0Pruning===true;
+   if(!originalPruning||originalPruning.revision!==revision||
+      originalPruning.sourceGeometryId!==geometry.id||
+      originalPruning.signedV5Action!==false||
+      originalPruning.actualOCCTTopoDSEdgeIdentityRecovered!==false||
+      (m0Unique&&(!originalPruning.
+       targetUniqueWithinOriginalPaperCandidatesByExactM0||
+       !originalPruning.multipleCandidatesNarrowedByExactM0)))
+    throw new RangeError('unreviewed original-source candidate pruning');
+   const completeRealCADPositive=cadCovered&&(cadUnique||m0Unique);
    if(clear&&hidden)
     throw new RangeError('continuous source ray is both clear and hidden');
    const endpoints=[j.fromEndpoint,j.toEndpoint];
@@ -123,6 +136,9 @@ function auditC1OriginalStrokeFinalPreconditions({
    else if(hidden)counts.strictlyHiddenWholeOpenRayButOtherGatesRemain++;
    else if(positive)counts.visibleWholeRayAndCadButOtherGatesRemain++;
    else counts.unresolvedPhysicalVisibilityOrSourcePriority++;
+   if(m0Unique)counts.exactInwardPrunedOriginalSourceCandidates++;
+   if(m0Unique&&positive)
+    counts.localPositiveAfterStrictHiddenAliasElimination++;
    if(completeRealCADPositive&&!clear&&!outer&&physical)
     counts.realCadPositiveWithoutWholeRayProof++;
    if(physical&&!outer&&clear&&!completeRealCADPositive)
@@ -136,7 +152,9 @@ function auditC1OriginalStrokeFinalPreconditions({
     existingOuterContourHasOriginalV5Authority:outer,
     wholeSingleConvexOpenRayNotPositivelyClear:!clear,
     strictWholeSingleConvexOpenRayHidden:hidden,
-    uniqueRealCADOriginalSourceNotCorroborated:!completeRealCADPositive,
+    uniqueRealCADOriginalSourceNotCorroborated:!cadUnique,
+    originalSourceUniquenessNotProvenEvenAfterExactM0Pruning:
+     !(cadUnique||m0Unique),
     alreadyBehindAnotherOriginalPhysicalSource:sourceBehind,
     exactOriginal3DDuplicateNeedsCanonicalReduction:duplicate,
     sourceListFrontmostNotEstablished:!sourceLead,
@@ -163,6 +181,8 @@ function auditC1OriginalStrokeFinalPreconditions({
     singleOpaqueSolidContinuousStrictlyHidden:hidden,
     genuineRealCADCompleteSourceCoverage:cadCovered,
     genuineRealCADUniqueSourceCorroborated:cadUnique,
+    originalSourceUniqueOnlyByIndependentExactInwardExclusions:m0Unique,
+    originalCADTopoDSEdgeIdentityRecovered:false,
     listedOriginalPhysicalSourceFrontOrderProven:sourceLead,
     originalPaperSourcePriorityStatus:priority.status,
     diagnosticStatus,blockers,
