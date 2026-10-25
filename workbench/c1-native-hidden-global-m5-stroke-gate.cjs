@@ -104,6 +104,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR:0,
   nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved:0,
   nativeHLRUnprovenExactPaperEventAlignment:0,
+  nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof:0,
+  nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof:0,
+  nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex:0,
   realGeneratedHLRToOriginalTopoDSProven:0,
   entireGlobalJunctionAndSceneTopologyCertified:0,
   officialStandardSolidOrDashedLineSigned:0,
@@ -201,6 +204,55 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts.nativeHLRUnprovenExactPaperEventAlignment+=projected.filter(e=>
    e.actualNativeGeneratedBRepPaperRelation?.
     originalEventOnSameNativePaperLineExactly!==true).length;
+  // M4's near-endpoint collinear overlap is NOT necessarily an actual
+  // visibility switch. Positively reject such a switch only when the
+  // already independent full-original M0 exact front depth, current M5
+  // CLOSED ray clear, and ACTUAL native VCompound/HCompound full paper
+  // witness certifies the SAME two source edges at that parameter.
+  const positiveFrontNoSwitch=projected.filter(event=>
+   event.canonicalM4ProjectedEncounterKind==='collinear-overlap'&&
+   event.originalM4RoundedForDiagnostic===false&&
+   event.positivelySameOriginal3DPhysicalSourceVertex===null&&
+   event.actualNativeGeneratedBRepPaperRelation?.
+    originalEventOnSameNativePaperLineExactly===true&&
+   event.originalSourceParameter>
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+   event.originalSourceParameter<
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[1]??1)&&
+   (gap.originalM4OrNativePaperPositiveGapWitnesses??[]).some(w=>
+    w.originalHiddenSourceParameterRange?.[0]<=event.originalSourceParameter&&
+    w.originalHiddenSourceParameterRange?.[1]>=event.originalSourceParameter&&
+    w.gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry===true&&
+    w.nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven===true&&
+    w.exactFullOriginal3DPhysicalFrontSourceWitnesses?.some(p=>
+     p.originalFront3DSourceEdgeId===event.otherOriginal3DSourceEdgeId&&
+     p.exactlyCoincidentFullOriginalM0PaperEndpoints===true&&
+     p.exactDyadicStrictOriginal3DWholeOpenFrontDepth===true&&
+     p.independentlyM5ClosedFrontOriginal3DRayClear===true&&
+     p.realOCCTOriginalSourceBRep3DCurveVerified===true&&
+     p.realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven===true)
+   ));
+  const interiorCollinear=projected.filter(e=>
+   e.canonicalM4ProjectedEncounterKind==='collinear-overlap'&&
+   e.originalSourceParameter>
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+   e.originalSourceParameter<
+    (m4Native.genuineNativeHLROriginalSourceParameterRange?.[1]??1));
+  counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof+=
+   positiveFrontNoSwitch.length;
+  counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof+=
+   interiorCollinear.length-positiveFrontNoSwitch.length;
+  const physicalVertexPaperDrift=projected.filter(e=>
+   e.positivelySameOriginal3DPhysicalSourceVertex!==null&&
+   e.actualNativeGeneratedBRepPaperRelation?.
+    originalEventOnSameNativePaperLineExactly===false&&
+   realNativeSource?.endpointWitnesses.some(w=>
+    w.originalModel3DSourceVertexId===
+      e.positivelySameOriginal3DPhysicalSourceVertex&&
+    (w.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
+     w.existingM4OriginalSourceEndpointVerified===true)));
+  counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex+=
+   physicalVertexPaperDrift.length;
   counts.genuineHiddenHLRStrokesReviewed++;
   rows.push({
    view:gap.view,revision,sourceGeometryId:geometry.id,
@@ -227,6 +279,24 @@ function reviewC1NativeHiddenFinalM5Strokes({
     localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    canonicalOriginalM4ProjectedEncountersAudited:projected.length,
+   collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof:
+    positiveFrontNoSwitch.map(e=>({
+     originalSourceParameter:e.originalSourceParameter,
+     originalHidden3DEdgeId:e.originalPhysical3DSourceEdgeId,
+     originalFront3DEdgeId:e.otherOriginal3DSourceEdgeId,
+     completeSource3DDepthAndRealOCCTHLRPaperProof:true,
+     generatedHLREdgeTopoDSIdentityAndGBLineCertified:false,
+     signedV5Action:false
+    })),
+   nativePaperDriftAtIndependentlyProvenOriginal3DVertices:
+    physicalVertexPaperDrift.map(e=>({
+     originalVertexId:e.positivelySameOriginal3DPhysicalSourceVertex,
+     originalSourceParameter:e.originalSourceParameter,
+     original3DPhysicalJunctionAlreadyPositivelyProven:true,
+     exactNativeHLRGeneratedPaperPointEqual:false,
+     globalEngineeringJunctionLineStyleCertified:false,
+     signedV5Action:false
+    })),
    canonicalNativeHLRInteriorProjectedEventsStillNeedGlobalReview:
     projected.filter(e=>e.originalSourceParameter>
      (m4Native.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
