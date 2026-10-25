@@ -60,3 +60,31 @@ test('a missing original face and repeated source identity fail before graph can
  /closed|Euler|duplicate|explicit finite/);
  assert.throws(()=>audit({geometry:g,revision:0}),/revision/);
 });
+
+test('paper crossing in convex tetrahedron is NOT an invented real 3D junction',()=>{
+ // V=(x,z) projects the four original vertices onto a rectangle.
+ // AC and BD intersect at the paper center, but are disjoint spatial
+ // physical edges, so the crossing cannot become a new 3D model vertex.
+ const g={id:'C1PaperCrossTetra',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:pt(0,0,0),B:pt(20,0,0),
+    C:pt(20,15,20),D:pt(0,12,20)},
+   edges:[['A','B'],['A','C'],['A','D'],
+    ['B','C'],['B','D'],['C','D']],
+   faces:[['A','B','C'],['A','B','D'],
+    ['A','C','D'],['B','C','D']]}};
+ const r=audit({geometry:g,revision:19});
+ verify(g,r);
+ const id=g.id+'::A|C',other=g.id+'::B|D';
+ const diagonal=r.rows.find(x=>x.view==='V'&&x.sourceEdgeId===id);
+ assert.ok(diagonal);
+ const evidence=diagonal.encounters.find(x=>
+  x.otherSourceEdgeId===other&&x.sourceParameter>0&&
+  x.sourceParameter<1&&x.kind==='crossing');
+ assert.ok(evidence,'real M4 projection must detect interior AC/BD crossing');
+ assert.equal(evidence.projectedOnlyUnresolved,true);
+ assert.equal(evidence.original3DPhysicalJunctionProven,false);
+ assert.equal(evidence.exactSharedOriginalVertexId,null);
+ assert.ok(diagonal.spans.length>=2);
+ assert.equal(r.signedV5ActionCount,0);
+ assert.ok(r.paperOnlySourceEncounters>0);
+});
