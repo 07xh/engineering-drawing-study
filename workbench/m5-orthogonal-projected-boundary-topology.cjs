@@ -150,9 +150,27 @@ function auditOrthogonalProjectedBoundaryTopology({geometry,revision,
        used.size!==edgesIn.length)
      fail('inconsistent 2-regular projected grid connected component');
     const list=orderedPoints.map(k=>nodes.get(k).point);
-    let area2=0;
-    for(let i=0;i<list.length-1;i++)
-     area2+=list[i].u*list[i+1].v-list[i+1].u*list[i].v;
+    // Absolute-coordinate shoelace terms can lose ALL significant bits
+    // when a small mm-scale part has a large translated model origin.
+    // Reuse the C1 convex-outline local fan decomposition: translating
+    // all points changes no triangle differences, signed winding or area.
+    // This also works for concave loops and clockwise bounded holes.
+    // Neumaier compensation retains small triangle terms in long rings.
+    const origin=list[0];
+    let area2=0,compensation=0;
+    for(let i=1;i<list.length-2;i++){
+     const a=list[i],b=list[i+1];
+     const ax=a.u-origin.u,ay=a.v-origin.v,
+      bx=b.u-origin.u,by=b.v-origin.v;
+     const term=ax*by-ay*bx;
+     if(!Number.isFinite(term))
+      fail('nonfinite local projected triangle area');
+     const next=area2+term;
+     compensation+=Math.abs(area2)>=Math.abs(term)?
+      (area2-next)+term:(term-next)+area2;
+     area2=next;
+    }
+    area2+=compensation;
     const absArea=Math.abs(area2)/2;
     if(!(absArea>0)&&Number.isFinite(absArea))
      fail('degenerate zero-area closed orthogonal projected boundary cycle');
