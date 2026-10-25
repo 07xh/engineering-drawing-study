@@ -62,7 +62,7 @@ jobs:
           set -euo pipefail
           node --max-old-space-size=4096 \
             tools/cad-oracle/run-c1-ocjs-runtime.mjs "$PROBE_ROOT" | tee "$REPORT"
-          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
+          node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(r.schema!=="draftai-c1-ocjs-runtime-compute-m5-consumer/1"||r.computationalConsumers!==3||r.genericConvexWasmConsumers!==2||!r.originalM5AuthorityPreserved||r.extraV5Players!==0)process.exit(1)' "$REPORT"
       - name: Preserve M5-gated actual computed C1 consumer evidence
         uses: actions/upload-artifact@v4
         with:
