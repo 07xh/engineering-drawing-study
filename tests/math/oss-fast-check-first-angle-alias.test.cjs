@@ -1,11 +1,9 @@
 'use strict';
-// OSS fast-check is development-only: independent cross-view alias counterexamples.
+// Dependency-free deterministic property counterexamples for first-angle aliases.
 // This test does not certify topology, visibility, M2 uniqueness or official V5 lines.
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-// The core-math workflow intentionally runs without npm install. Use the existing
-// pinned fast-check only in workflows that install dev dependencies; this
-// independent core contract uses deterministic bounded property enumeration.
+// Core-math CI intentionally runs without npm install; keep this oracle self-contained.
 function checkCases(fn,count){let s=20261025;const next=()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s;};for(let i=0;i<count;i++)fn(next()%20001-10000,next()%20001-10000,next()%20001-10000,next()%100+1);}
 const {project}=require('../../core/projection/conventions.js');
 const {deriveGeometryScene}=require('../../core/projection/geometry-scene-views.cjs');
