@@ -72,8 +72,17 @@ test('paper crossing in convex tetrahedron is NOT an invented real 3D junction',
     ['B','C'],['B','D'],['C','D']],
    faces:[['A','B','C'],['A','B','D'],
     ['A','C','D'],['B','C','D']]}};
- const r=audit({geometry:g,revision:19});
- verify(g,r);
+ const r=audit({geometry:g,revision:19,
+  proofMode:'m4-projected-events-only'});
+ assert.equal(r.proofMode,'m4-projected-events-only');
+ assert.equal(r.originalM5ExteriorHullRecomputedAndAvailable,false);
+ assert.equal(r.m4EventOnlyModeDoesNotAssertNonHullVisibility,true);
+ assert.equal(r.nonHullSourceSubintervalCount,0);
+ assert.equal(r.hullMaskedSubintervalCount,0);
+ assert.ok(r.rows.every(x=>x.spans.every(s=>
+  s.projectedExteriorHullOverlap===null&&
+  s.eligibleForNonHullCandidate===false&&
+  s.signedV5Action===false)));
  const id=g.id+'::A|C',other=g.id+'::B|D';
  const diagonal=r.rows.find(x=>x.view==='V'&&x.sourceEdgeId===id);
  assert.ok(diagonal);
