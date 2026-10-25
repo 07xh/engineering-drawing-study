@@ -83,6 +83,26 @@ function independentCheck(r,g,revision=11){
      assert.ok(lead.observerDepthAtToMm-another.observerDepthAtToMm>1e-8);
     }
    }else assert.equal(s.uniqueStrictFrontSourceId,null);
+   // Independent M5 oracle: correlate the two source's REAL coordinates
+   // and the existing authenticated physical edge-pair ledger, never the
+   // consumer's boolean directly and never a paper-only endpoint match.
+   const next=v.intervals[(v.intervals.indexOf(s)+1)%v.intervals.length];
+   const a=s.sources.find(q=>q.sourceEdgeId===s.uniqueStrictFrontSourceId);
+   const b=next.sources.find(q=>q.sourceEdgeId===next.uniqueStrictFrontSourceId);
+   const jn=v.frontSourceJunctions[v.intervals.indexOf(s)];
+   assert.equal(jn.junctionIndex,v.intervals.indexOf(s));
+   assert.deepEqual(jn.paperPointModelMm,s.paperToModelMm);
+   const equal=(p,q)=>p&&q&&p.x===q.x&&p.y===q.y&&p.z===q.z;
+   const actualPhysicalSame=Boolean(a&&b&&equal(a.to3D,b.from3D));
+   assert.equal(jn.authenticatedExactCommon3DFrontSourcePoint,
+    actualPhysicalSame);
+   const expectedLocal=actualPhysicalSame&&
+    Boolean(a.fullOpenSubintervalClear&&b.fullOpenSubintervalClear)&&
+    !s.unresolvedDepthSwitchOrTie&&!next.unresolvedDepthSwitchOrTie;
+   assert.equal(jn.localFrontRayPhysicalJunctionCandidateVerified,expectedLocal);
+   assert.equal(jn.officialEngineeringLineStyle,'undetermined');
+   assert.equal(jn.signedV5Action,false);
+   assert.equal(jn.wholeGlobalContourAndOcclusionTopologyVerified,false);
    for(const c of s.relativeSourceDepthComparisons){
     assert.ok(c.sourceEdgeIds.every(id=>ids.has(id)));
     assert.equal(c.officialLineStyleVerified,false);
@@ -93,6 +113,14 @@ function independentCheck(r,g,revision=11){
   }
  }
  assert.equal(r.auditedIntervalCount,total);
+ const all=r.views.flatMap(v=>v.frontSourceJunctions);
+ assert.equal(all.length,total);
+ assert.equal(r.localFrontRayPhysicalJunctionCandidateCount,
+  all.filter(x=>x.localFrontRayPhysicalJunctionCandidateVerified).length);
+ assert.equal(r.frontSourceJunctionsAwaitingFullProofCount,
+  all.filter(x=>!x.localFrontRayPhysicalJunctionCandidateVerified).length);
+ assert.equal(r.localFrontRayPhysicalJunctionCandidateCount+
+  r.frontSourceJunctionsAwaitingFullProofCount,total);
 }
 test('C1 full V/H/W convex contour source order and continuous positive observer-ray independent checks',()=>{
  const g=box(),{r}=collect(g);
@@ -101,6 +129,9 @@ test('C1 full V/H/W convex contour source order and continuous positive observer
  assert.ok(r.independentlyClearLeadingSourceIntervalCount>0);
  assert.equal(r.ambiguousDepthIntervalCount,0);
  assert.ok(r.views.every(x=>x.strictUniqueListedFrontCount>0));
+ // Positive local evidence never signs the contour or any V5 stroke.
+ assert.ok(r.localFrontRayPhysicalJunctionCandidateCount>0);
+ assert.ok(r.frontSourceJunctionsAwaitingFullProofCount>=0);
 });
 test('C1 generic oblique convex mesh transformation keeps affine signed depth, no fake V5 line',()=>{
  const g=box(),angle=Math.PI/6;
