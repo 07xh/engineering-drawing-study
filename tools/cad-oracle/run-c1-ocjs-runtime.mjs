@@ -178,6 +178,11 @@ for(const [index,geometry] of general.entries()){
   cadM5Corroborated:audited.counts.cadAndM5Corroborated,
   cadM5Conflicts:audited.counts.positiveM5CadConflicts,
   m5Unresolved:audited.counts.unresolved,
+  sharedPhysicalEndpointOpenDepthCertificates:
+   audited.counts.sharedPhysicalEndpointDepthCertificates,
+  missing3DSourceCoverage:audited.counts.missing3DSourceCoverage,
+  missingPhysicalJunctionProof:audited.counts.missingPhysicalJunctionProof,
+  missingContinuousFrontRayProof:audited.counts.missingContinuousFrontRayProof,
   unsignedInteriorCadLines:count-scopedOfficialVisibleContourLines,
   uniqueV5:formallySigned});
 
