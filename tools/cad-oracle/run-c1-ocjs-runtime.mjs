@@ -216,9 +216,18 @@ for(const [index,geometry] of general.entries()){
   row.signedV5Action===false&&
   row.blockers.applicableStandardEngineeringLineStyleNotCertified===true&&
   row.blockers.originalConstructionIntentDAGAndSingleV5NotAuthorized===true));
- assert.ok(finalGate.counts.visibleWholeRayAndCadButOtherGatesRemain+
-  finalGate.counts.strictlyHiddenWholeOpenRayButOtherGatesRemain>0,
-  'current real WASM original convex source must provide actual positive ray evidence');
+ // A local M0 ray-clear source is not necessarily a unique, provenance-
+ // resolved CAD source: never demand false positive FINAL stroke readiness.
+ // Instead require every independently positive ray to be accounted for
+ // even when CAD source multiplicity or other same-paper depth blocks it.
+ assert.ok(features.counts.singleOpaqueSourceSubspanClearCount+
+  features.counts.singleOpaqueSourceSubspanStrictHiddenCount>0,
+  'genuine WASM regression must include independently computed M0 source rays');
+ assert.ok(finalGate.counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete>=0);
+ assert.ok(finalGate.counts.nonHullRayClearButSourcePriorityUnproven>=0);
+ assert.equal(finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
+  features.counts.singleOpaqueSourceSubspanStrictHiddenCount);
+
  // Caller-supplied display/QA flags are never accepted as real proof.
  assert.throws(()=>auditC1OriginalStrokeFinalPreconditions({
   oc,geometry,revision:40+index,physicalEvidence:{
@@ -313,6 +322,12 @@ for(const [index,geometry] of general.entries()){
      finalGate.counts.unresolvedPhysicalVisibilityOrSourcePriority,
     realCadPositiveWithoutWholeRay:
      finalGate.counts.realCadPositiveWithoutWholeRayProof,
+    rayClearButRealCadSourceNotUnique:
+     finalGate.counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete,
+    rayClearButOriginalSourcePriorityUnproven:
+     finalGate.counts.nonHullRayClearButSourcePriorityUnproven,
+    strictHiddenNotYetSignedAsDash:
+     finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
     signedNewV5:finalGate.signedV5ActionCount
    },
    localStrictHidden:
