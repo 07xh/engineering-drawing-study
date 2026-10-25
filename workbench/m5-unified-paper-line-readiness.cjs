@@ -17,6 +17,8 @@ const {auditUnifiedPaperJunctions}=
  require('./m5-unified-paper-junctions.cjs');
 const {auditC2SourceBoundBooleanOpenFeatures}=
  require('./m5-c2-source-bound-boolean-open-features.cjs');
+const {createReviewedC2BooleanEndpointNeighborhood}=
+ require('./m5-c2-boolean-endpoint-octant-neighborhood.cjs');
 const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexPointRayClearance}=
@@ -100,6 +102,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     booleanSource.signedV5LineActions!==0||booleanSource.v5Ready!==false)
   throw new TypeError('incomplete or signed 3D Boolean source lineage');
  const booleanByPaper=new Map(booleanSource.lines.map(x=>[x.paperGroupId,x]));
+ const booleanBySubspan=new Map(booleanSource.lines.flatMap(x=>
+  x.contributions.map(c=>[c.sourceSubspanId,c])));
+ const octantNeighborhood=createReviewedC2BooleanEndpointNeighborhood({
+  geometry,revision});
+ if(octantNeighborhood.signedV5LineActions!==0||
+    octantNeighborhood.v5Ready!==false)
+  throw new TypeError('3D Boolean endpoint occupancy cannot sign C2 lines');
  const groupedNodes=new Map(junction.paperNodes.map(n=>[
   n.view+':'+n.paperCoordinateMm.u+':'+n.paperCoordinateMm.v,n]));
  // Each reviewed M4 event subspan has its OWN actual 3D coordinates and
@@ -177,6 +186,25 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     }
    }
    const locallyJoined=[...partnerIds].sort();
+   const currentSourceBoolean=selected?
+    booleanBySubspan.get(selected.sourceSubspanId):null;
+   const toward=selected?
+    (role==='from'?selected.to3D:selected.from3D):null;
+   const closedNeighborhood=p&&toward?
+    octantNeighborhood.inspect(p,toward):null;
+   const sourceEndpointBoolean=Boolean(wholeBooleanExterior&&
+    currentSourceBoolean?.entireReal3DSourceOpenIntervalBooleanExteriorVerified&&
+    closedNeighborhood?.localClosedUnionBoundaryWithOutgoingSourceVerified);
+   const locallyJoinedExteriorPartnerIds=sourceEndpointBoolean?
+    locallyJoined.filter(sourceId=>{
+     const peer=subspans.get(sourceId),
+      corresponding=booleanBySubspan.get(sourceId);
+     if(!peer||!corresponding?.
+        entireReal3DSourceOpenIntervalBooleanExteriorVerified)return false;
+     const other=same3(peer.from3D,p)?peer.to3D:peer.from3D;
+     const proof=octantNeighborhood.inspect(p,other);
+     return proof?.localClosedUnionBoundaryWithOutgoingSourceVerified===true;
+    }):[];
    const pointRay=auditEndpointRay(group.view,p);
    // Point at t=0 can be a shared Boolean boundary/tangency. The M0
    // result proves only the OPEN observer ray t>0, never the full
@@ -202,6 +230,15 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
      pointRay.allSolidsRayClear,
     locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified:
      openRayWithTrueJoinedSources,
+    real3DBooleanClosedEndpointNeighborhoodWitness:
+     closedNeighborhood,
+    localClosedUnionEndpointBoundaryAndSourceDirectionVerified:
+     sourceEndpointBoolean,
+    trulyExteriorBothSourceFeatureJoinIdsAtClosedNeighborhood:
+     locallyJoinedExteriorPartnerIds,
+    jointSourceBooleanAndClosedNeighborhoodAndAllSolidOpenRayVerified:
+     sourceEndpointBoolean&&pointRay.allSolidsRayClear&&
+     locallyJoinedExteriorPartnerIds.length>0,
     // A different source feature may pass through the same 3D node
     // while its physical tangent/Boolean exterior is NOT continuous.
     actualGlobalFeatureAndEndpointVisibilityCertified:false,
@@ -260,6 +297,14 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     e.currentPhysical3DPointPositiveObserverOpenRayClearVerified).length,
    bothEndpointPositiveOpenRaysAndLocalJoinsVerified:ends.every(e=>
     e.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified),
+   localClosed3DBooleanEndpointCount:ends.filter(e=>
+    e.localClosedUnionEndpointBoundaryAndSourceDirectionVerified).length,
+   bothEndpointLocalBooleanAndOpaqueRayAndRealSourceJoinVerified:
+    ends.every(e=>
+     e.jointSourceBooleanAndClosedNeighborhoodAndAllSolidOpenRayVerified),
+   // The 8-octant theorem establishes local t=0 union boundary
+   // membership. Full paper junction, all caps, and final linecap remain
+   // separate globally unproved obligations.
    // Still do not promote local OPEN ray witnesses to a CLOSED ENDPOINT
    // clearance guarantee, Boolean exterior or standard drawing stroke.
    fullClosedEndpointAndAllOpaqueFacesVerified:false,
@@ -303,6 +348,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     e.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified).length,0),
   fullyPairedLocalEndAndOpenRayLineCount:result.filter(x=>
    x.bothEndpointPositiveOpenRaysAndLocalJoinsVerified).length,
+  locallyValidatedClosed3DBooleanEndpointCount:result.reduce((n,x)=>n+
+   x.localClosed3DBooleanEndpointCount,0),
+  fullyJointLocalBooleanAndOpaqueRayCandidateCount:result.reduce((n,x)=>n+
+   x.physical3DEndpointIncidence.filter(e=>
+    e.jointSourceBooleanAndClosedNeighborhoodAndAllSolidOpenRayVerified).length,0),
+  locallyPairedBooleanRayAndPhysicalJoinLineCount:result.filter(x=>
+   x.bothEndpointLocalBooleanAndOpaqueRayAndRealSourceJoinVerified).length,
   allReviewedSourcePaperOpenIntervalsHaveExplicitBlockers:true,
   entireFinalDrawingFeatureGraphVerified:false,
   officialLineStylesVerified:false,
