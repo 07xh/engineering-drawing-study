@@ -351,7 +351,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     (evidence.paperStrokeNonuniqueSourceCount||0)+
     ' 组、端点有不同深度纸面别名 '+
     (evidence.paperStrokeDepthAliasEndpointCount||0)+
-    ' 组。完全相同三维线段来源记录已严格去重 '+
+    ' 组。全部已审核实体逐点向观察者开射线复算清晰端点 '+
+    (evidence.paperStrokeIndependentAllOpaqueEndpointOpenRayClearCount||0)+
+    ' 项，其中真实三维共点且两侧开区间均清晰 '+
+    (evidence.paperStrokeReal3DJoinAndEndpointOpenRayClearCount||0)+
+    ' 项，两端都有局部联合证明的纸面线 '+
+    (evidence.paperStrokeBothEndpointLocalOpenRayProofLineCount||0)+
+    ' 条（仅正向开射线，闭合端点拓扑及标准线型仍未签收）。完全相同三维线段来源记录已严格去重 '+
     (evidence.exactDuplicate3DSourceRecords||0)+
     ' 项、去重后三维物理特征候选 '+
     (evidence.exactDedupedPhysicalFeatureClasses||0)+

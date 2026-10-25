@@ -15,6 +15,10 @@ const {auditUnifiedPaperSourceIdentity}=
  require('./m5-unified-paper-source-identity.cjs');
 const {auditUnifiedPaperJunctions}=
  require('./m5-unified-paper-junctions.cjs');
+const {verifiedConvexMeshHalfspaces}=
+ require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {certifyConvexPointRayClearance}=
+ require('../core/numeric/convex-point-ray-clearance.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -46,6 +50,44 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     junction.officialLineStylesVerified!==false||
     junction.allSourceOpenLineEndpointIncidencesAccountedFor!==true)
   throw new TypeError('stale or spoofed current 3D paper junction identities');
+ // Independent M0 halfspaces from the same CURRENT, source-reviewed
+ // Geometry; never trust a page's endpoint ray labels or a listed
+ // competing edge as proof of opaque-FACE visibility. One proof per
+ // physical view/point and complete solid scene, memoized for junctions
+ // shared by many original/generated source candidates.
+ if(!Array.isArray(geometry)||geometry.length<2||geometry.length>8||
+    new Set(geometry.map(g=>g.id)).size!==geometry.length)
+  throw new TypeError('distinct bounded reviewed 3D opaque source scene required');
+ const solids=geometry.map(g=>{
+  const verified=verifiedConvexMeshHalfspaces(g);
+  if(verified.status!=='validated-closed-convex-mesh')
+   throw new TypeError('current closed 3D opaque source halfspaces required');
+  return {id:g.id,halfspaces:verified.halfspaces};
+ });
+ const pointRayCache=new Map();
+ const auditEndpointRay=(view,point)=>{
+  if(!point)return {allSolidsRayClear:false,witnesses:[]};
+  const k=view+':'+point.x+':'+point.y+':'+point.z;
+  if(pointRayCache.has(k))return pointRayCache.get(k);
+  const ray=FIRST_ANGLE_OBSERVER_RAYS[view];
+  if(!ray)throw new TypeError('first-angle observer ray required');
+  const witnesses=solids.map(solid=>{
+   const proof=certifyConvexPointRayClearance({
+    point,observerDirection:ray,solid});
+   if(proof.solidId!==solid.id||
+      proof.positiveOpenRayClearVerified!==(proof.status==='certified-clear')||
+      proof.officialLineStyleVerified!==false||proof.v5Ready!==false)
+    throw new TypeError('invalid M0 source point ray contract');
+   return {sourceGeometryId:solid.id,rayStatus:proof.status,
+    positiveOpenRayClearVerified:proof.positiveOpenRayClearVerified,
+    witnessReason:proof.reason};
+  });
+  const result={allSolidsRayClear:witnesses.length===solids.length&&
+   witnesses.every(x=>x.positiveOpenRayClearVerified),
+   witnesses};
+  pointRayCache.set(k,result);
+  return result;
+ };
  const groupedNodes=new Map(junction.paperNodes.map(n=>[
   n.view+':'+n.paperCoordinateMm.u+':'+n.paperCoordinateMm.v,n]));
  // Each reviewed M4 event subspan has its OWN actual 3D coordinates and
@@ -113,6 +155,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     }
    }
    const locallyJoined=[...partnerIds].sort();
+   const pointRay=auditEndpointRay(group.view,p);
+   // Point at t=0 can be a shared Boolean boundary/tangency. The M0
+   // result proves only the OPEN observer ray t>0, never the full
+   // closed endpoint, tangent topology, linecap or engineering style.
+   const openRayWithTrueJoinedSources=locallyJoined.length>0&&
+    pointRay.allSolidsRayClear&&
+    Boolean(selected)&&certifiedOpenRayClear(selected.sourceObserverRayScope);
    return {role,projectedModelMm:{...xy},
     physicalSource3DPoint:p?{...p}:null,
     physicalPaperNodeId:node.id,
@@ -124,6 +173,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     exactlyJoinedOtherWholeOpenRayClearSourceSubspanIds:locallyJoined,
     localExact3DSourcePairAndBothOpenRaysClearVerified:
      locallyJoined.length>0,
+    allCurrentOpaqueSolidEndpointObserverRayWitnesses:
+     pointRay.witnesses.map(x=>({...x})),
+    currentSceneOpaqueSolidCount:solids.length,
+    currentPhysical3DPointPositiveObserverOpenRayClearVerified:
+     pointRay.allSolidsRayClear,
+    locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified:
+     openRayWithTrueJoinedSources,
     // A different source feature may pass through the same 3D node
     // while its physical tangent/Boolean exterior is NOT continuous.
     actualGlobalFeatureAndEndpointVisibilityCertified:false,
@@ -171,7 +227,11 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
     e.localExact3DSourcePairAndBothOpenRaysClearVerified).length,
    localBothEndpointSourceOpenRayJoinsVerified:ends.every(e=>
     e.localExact3DSourcePairAndBothOpenRaysClearVerified),
-   // Still do not promote local OPEN ray witnesses to an ENDPOINT
+   independentlyClearEndpointPositiveOpenRayCount:ends.filter(e=>
+    e.currentPhysical3DPointPositiveObserverOpenRayClearVerified).length,
+   bothEndpointPositiveOpenRaysAndLocalJoinsVerified:ends.every(e=>
+    e.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified),
+   // Still do not promote local OPEN ray witnesses to a CLOSED ENDPOINT
    // clearance guarantee, Boolean exterior or standard drawing stroke.
    fullClosedEndpointAndAllOpaqueFacesVerified:false,
    allListedOriginalAndNewSourceContributionsRetained:true,
@@ -204,6 +264,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    x.localExact3DJunctionWithTwoWholeOpenRaysCount,0),
   bothEndpointLocallyJoinedContinuousRayLineCount:result.filter(x=>
    x.localBothEndpointSourceOpenRayJoinsVerified).length,
+  independentlyClearPhysicalEndpointOpenRayCount:result.reduce((n,x)=>n+
+   x.independentlyClearEndpointPositiveOpenRayCount,0),
+  locallyJoinedAndEndpointOpenRayClearCount:result.reduce((n,x)=>n+
+   x.physical3DEndpointIncidence.filter(e=>
+    e.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified).length,0),
+  fullyPairedLocalEndAndOpenRayLineCount:result.filter(x=>
+   x.bothEndpointPositiveOpenRaysAndLocalJoinsVerified).length,
   allReviewedSourcePaperOpenIntervalsHaveExplicitBlockers:true,
   entireFinalDrawingFeatureGraphVerified:false,
   officialLineStylesVerified:false,

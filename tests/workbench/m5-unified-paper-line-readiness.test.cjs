@@ -160,6 +160,12 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
   proof.nonuniqueSourceGroupCount);
  assert.equal(r.paperStrokeDepthAliasEndpointCount,
   proof.depthAliasEndpointLineCount);
+ assert.equal(r.paperStrokeIndependentAllOpaqueEndpointOpenRayClearCount,
+  proof.independentlyClearPhysicalEndpointOpenRayCount);
+ assert.equal(r.paperStrokeReal3DJoinAndEndpointOpenRayClearCount,
+  proof.locallyJoinedAndEndpointOpenRayClearCount);
+ assert.equal(r.paperStrokeBothEndpointLocalOpenRayProofLineCount,
+  proof.fullyPairedLocalEndAndOpenRayLineCount);
  assert.equal(proof.signedV5LineActions,0);
  assert.equal(r.generatedSourceStrokeSignedCount,0);
  assert.equal(r.signedCount,0);
@@ -170,6 +176,10 @@ test('C2 real source M5 → current sole V5 release gate reports per-line blocke
  assert.match(ui,/paperStrokeScopedOpaqueSourceCount/);
  assert.match(ui,/paperStrokeNonuniqueSourceCount/);
  assert.match(ui,/paperStrokeDepthAliasEndpointCount/);
+ assert.match(ui,/paperStrokeIndependentAllOpaqueEndpointOpenRayClearCount/);
+ assert.match(ui,/paperStrokeReal3DJoinAndEndpointOpenRayClearCount/);
+ assert.match(ui,/paperStrokeBothEndpointLocalOpenRayProofLineCount/);
+ assert.match(ui,/闭合端点拓扑及标准线型仍未签收/);
  assert.match(ui,/以上都未签发标准虚实线和正式 V5/);
 });
 
@@ -269,4 +279,108 @@ test('C2 spoofed exact endpoint join source graph cannot pass recomputed M5 line
  }:n)};
  assert.throws(()=>auditUnifiedPaperLineReadiness({
   ...args,unifiedPaperJunctionEvidence:forged}),/stale or spoofed/);
+});
+
+
+test('C2 every chosen true 3D endpoint recomputes positive open observer rays against ALL reviewed opaque source solids',()=>{
+ const {verifiedConvexMeshHalfspaces}=
+  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+ const {certifyConvexPointRayClearance}=
+  require('../../core/numeric/convex-point-ray-clearance.cjs');
+ const {FIRST_ANGLE_OBSERVER_RAYS}=
+  require('../../core/projection/conventions.js');
+ const geometry=[A(),B()],{proof:r}=audit(geometry,141);
+ const solids=geometry.map(g=>({id:g.id,
+  halfspaces:verifiedConvexMeshHalfspaces(g).halfspaces}));
+ let visible=0,joinedAndClear=0;
+ for(const line of r.lines){
+  const ends=line.physical3DEndpointIncidence;
+  assert.equal(ends.length,2);
+  assert.equal(line.independentlyClearEndpointPositiveOpenRayCount,
+   ends.filter(e=>e.currentPhysical3DPointPositiveObserverOpenRayClearVerified).length);
+  assert.equal(line.bothEndpointPositiveOpenRaysAndLocalJoinsVerified,
+   ends.every(e=>e.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified));
+  for(const end of ends){
+   const P=end.physicalSource3DPoint,ray=FIRST_ANGLE_OBSERVER_RAYS[line.view];
+   assert.equal(end.currentSceneOpaqueSolidCount,2);
+   assert.equal(end.allCurrentOpaqueSolidEndpointObserverRayWitnesses.length,
+    P?2:0);
+   if(!P){
+    assert.equal(end.currentPhysical3DPointPositiveObserverOpenRayClearVerified,false);
+    continue;
+   }
+   const expected=solids.map(solid=>
+    certifyConvexPointRayClearance({point:P,observerDirection:ray,solid}));
+   assert.deepEqual(end.allCurrentOpaqueSolidEndpointObserverRayWitnesses,
+    expected.map((x,i)=>({
+     sourceGeometryId:solids[i].id,
+     rayStatus:x.status,
+     positiveOpenRayClearVerified:x.positiveOpenRayClearVerified,
+     witnessReason:x.reason
+    })));
+   const clear=expected.every(x=>x.status==='certified-clear');
+   assert.equal(end.currentPhysical3DPointPositiveObserverOpenRayClearVerified,clear);
+   assert.equal(end.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified,
+    clear&&end.localExact3DSourcePairAndBothOpenRaysClearVerified);
+   assert.equal(end.actualGlobalFeatureAndEndpointVisibilityCertified,false);
+   assert.equal(end.physical3DEndpointJoinAndDrawingLinecapCertified,false);
+   visible+=Number(clear);
+   joinedAndClear+=Number(clear&&end.localExact3DSourcePairAndBothOpenRaysClearVerified);
+  }
+  assert.equal(line.officialEngineeringSolidDashedStyle,'undetermined');
+  assert.equal(line.formalV5StrokeSigned,false);
+  assert.equal(line.fullClosedEndpointAndAllOpaqueFacesVerified,false);
+ }
+ assert.equal(r.independentlyClearPhysicalEndpointOpenRayCount,visible);
+ assert.equal(r.locallyJoinedAndEndpointOpenRayClearCount,joinedAndClear);
+ assert.ok(visible>0,'some outward endpoint rays should be provably clear');
+ assert.ok(joinedAndClear>0,'some authentic physically joined rays should remain clear at their common endpoint');
+ assert.equal(r.signedV5LineActions,0);
+ assert.equal(r.v5Ready,false);
+});
+test('C2 third-party opacity blocks exposed-looking shared endpoint despite positive local source ray evidence',()=>{
+ const {verifiedConvexMeshHalfspaces}=
+  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+ const {certifyConvexPointRayClearance}=
+  require('../../core/numeric/convex-point-ray-clearance.cjs');
+ const {FIRST_ANGLE_OBSERVER_RAYS}=
+  require('../../core/projection/conventions.js');
+ const geometry=[A(),B(),
+  box('C',P(9,4,6),P(11,6,8))],result=audit(geometry,142).proof;
+ const solids=geometry.map(g=>({id:g.id,
+  halfspaces:verifiedConvexMeshHalfspaces(g).halfspaces}));
+ let checked=0,blocked=0;
+ for(const line of result.lines){
+  for(const end of line.physical3DEndpointIncidence){
+   assert.equal(end.currentSceneOpaqueSolidCount,3);
+   const p=end.physicalSource3DPoint;
+   if(!p)continue;
+   checked++;
+   const statuses=solids.map(s=>certifyConvexPointRayClearance({
+    point:p,observerDirection:FIRST_ANGLE_OBSERVER_RAYS[line.view],solid:s
+   }).status);
+   if(statuses.some(s=>s!=='certified-clear')){
+    blocked++;
+    assert.equal(end.currentPhysical3DPointPositiveObserverOpenRayClearVerified,false);
+    assert.equal(end.locallyJoinedSourcesAndEndpointObserverOpenRayClearVerified,false);
+   }
+  }
+ }
+ assert.ok(checked>0&&blocked>0,
+  'entire reviewed source scene must participate in endpoint visibility');
+ assert.equal(result.signedV5LineActions,0);
+});
+test('C2 W paper-depth aliases never gain certified physical join or linecap from a positive endpoint observer ray',()=>{
+ const result=audit([A(),box('B',P(30,0,0),P(40,10,10))],143).proof;
+ assert.ok(result.depthAliasEndpointLineCount>0);
+ for(const line of result.lines.filter(x=>x.view==='W')){
+  for(const end of line.physical3DEndpointIncidence){
+   if(end.currentPhysical3DPointPositiveObserverOpenRayClearVerified)
+    assert.equal(end.allCurrentOpaqueSolidEndpointObserverRayWitnesses.every(x=>
+     x.positiveOpenRayClearVerified),true);
+   assert.equal(end.physical3DEndpointJoinAndDrawingLinecapCertified,false);
+  }
+  assert.equal(line.fullClosedEndpointAndAllOpaqueFacesVerified,false);
+ }
+ assert.equal(result.signedV5LineActions,0);
 });
