@@ -150,6 +150,95 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   officialEngineeringLineStyle:'undetermined',v5Authorized:false
  };
 }
+
+/**
+ * Correlate one real ORIGINAL OCCT source B-Rep edge with an M0 source edge
+ * using its measured 3D OCCT vertex coordinates, NEVER a paper projection.
+ * Source identity is unique only within the original input shape. This does
+ * NOT establish which original TopoDS edge generated a particular HLR edge.
+ */
+function matchOriginalBRepEdgeByXYZ(geometry,occtFrom,occtTo){
+ const valid=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+ if(!valid(occtFrom)||!valid(occtTo))
+  throw new TypeError('finite measured OCCT 3D edge endpoints required');
+ const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ if(distance(occtFrom,occtTo)<=1e-8)
+  throw new RangeError('OCCT original 3D source edge has collapsed endpoints');
+ const matches=[];
+ for(const vertices of geometry.data.edges){
+  const [a,b]=vertices,from=geometry.data.points[a],
+   to=geometry.data.points[b];
+  if(!valid(from)||!valid(to))throw new RangeError('invalid M0 source XYZ');
+  const direct=distance(occtFrom,from)<=1e-6&&
+   distance(occtTo,to)<=1e-6;
+  const reverse=distance(occtFrom,to)<=1e-6&&
+   distance(occtTo,from)<=1e-6;
+  if(direct||reverse)matches.push({
+   sourceEdgeId:geometry.id+'::'+[...vertices].sort().join('|'),
+   originalVertexIds:[...vertices],occtEdgeOrientation:direct?'forward':'reverse',
+   fromOCCT3D:{...occtFrom},toOCCT3D:{...occtTo},
+   originalOCCTBRepVertexXYZMatched:true,
+   occtCurveTypeIndependentlyVerified:false,
+   generatedHLREdgeTopoDSIdentityMatched:false,
+   engineeringLineStyle:'undetermined',v5Authorized:false
+  });
+ }
+ if(matches.length!==1)
+  throw new RangeError('original OCCT source B-Rep 3D endpoint match '+matches.length+
+   ' (missing or ambiguous M0 physical source)');
+ return matches[0];
+}
+/**
+ * Traverse actual OCJS ORIGINAL shape TopoDS edges, not HLR's flattened
+ * visible output. Return an auditable complete source edge ledger. It is
+ * only a corroboration for independently M0-reviewed source identity.
+ */
+function extractRealOcjsOriginalSourceBRepEdges({
+ oc,shape,geometry,kind,vertexType,avoid,newObj,hold
+}){
+ const explorer=newObj('TopExp_Explorer_2',shape,kind,avoid);
+ const matches=new Map();
+ let occurrences=0;
+ while(explorer.More()){
+  if(++occurrences>512)throw new RangeError('excess OCCT source topology edges');
+  const edge=hold(explorer.Current());
+  const vertices=newObj('TopExp_Explorer_2',edge,vertexType,avoid);
+  const coords=[];
+  while(vertices.More()){
+   const node=hold(vertices.Current());
+   const vertex=hold(method(oc.TopoDS,'Vertex_1')(node));
+   const point=hold(method(oc.BRep_Tool,'Pnt')(vertex));
+   coords.push({x:point.X(),y:point.Y(),z:point.Z()});
+   if(coords.length>2)
+    throw new RangeError('original OCCT edge with non-segment source vertices');
+   vertices.Next();
+  }
+  if(coords.length!==2)throw new RangeError('missing real original OCCT 3D vertices');
+  const record=matchOriginalBRepEdgeByXYZ(geometry,coords[0],coords[1]);
+  const prior=matches.get(record.sourceEdgeId);
+  if(prior){
+   const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+   const same=d(prior.fromOCCT3D,record.fromOCCT3D)<=1e-6&&
+    d(prior.toOCCT3D,record.toOCCT3D)<=1e-6;
+   const swapped=d(prior.fromOCCT3D,record.toOCCT3D)<=1e-6&&
+    d(prior.toOCCT3D,record.fromOCCT3D)<=1e-6;
+   if(!same&&!swapped)throw new RangeError('duplicate conflicting original OCCT edge');
+  }else matches.set(record.sourceEdgeId,record);
+  explorer.Next();
+ }
+ if(matches.size!==geometry.data.edges.length)
+  throw new RangeError('real original OCCT source topology incomplete: '+
+   matches.size+'/'+geometry.data.edges.length);
+ return {
+  originalBRepSourceEdges:[...matches.values()].sort((a,b)=>
+   a.sourceEdgeId.localeCompare(b.sourceEdgeId)),
+  occtOriginalEdgeOccurrenceCount:occurrences,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  generatedHLREdgeTopoDSIdentityMatched:false,
+  actualOCCTCurveTypeIndependentlyVerified:false,
+  engineeringLineStylesCertified:false,v5Authorized:false
+ };
+}
 const FRAME=Object.freeze({
  V:{normal:[0,1,0],xdir:[1,0,0]},
  H:{normal:[0,0,-1],xdir:[1,0,0]},
@@ -231,6 +320,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   }else{
    solid=makeConvexOcjsShell({oc,geometry,newObj,hold});
   }
+  const sourceBRep=extractRealOcjsOriginalSourceBRepEdges({
+   oc,shape:solid,geometry,kind,vertexType,avoid,newObj,hold
+  });
+  const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
+   [x.sourceEdgeId,x]));
   const rows={};
   for(const view of VIEWS){
    const f=FRAME[view];
@@ -269,7 +363,19 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      if(lifted.unmappedReason)
       throw new RangeError('real OCJS HLR source unmapped in '+view+
        ': '+lifted.unmappedReason);
-     segments.push({view,from:coords[0],to:coords[1],...lifted});
+     const verifiedLifts=lifted.sourceCandidate3DLifts.map(lift=>{
+      const actual=sourceById.get(lift.sourceEdgeId);
+      if(!actual||actual.originalOCCTBRepVertexXYZMatched!==true)
+       throw new RangeError('real 3D OCCT source B-Rep edge missing for HLR candidate');
+      return {...lift,actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+       actualOriginalOCCTBRepFrom3D:{...actual.fromOCCT3D},
+       actualOriginalOCCTBRepTo3D:{...actual.toOCCT3D},
+       actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false};
+     });
+     segments.push({view,from:coords[0],to:coords[1],...lifted,
+      sourceCandidate3DLifts:verifiedLifts,
+      originalOCCTSourceTopology3DVerified:true,
+      actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false});
     }
     if(segments.length>128)
      throw new RangeError('unbounded real B-Rep HLR output');
@@ -286,6 +392,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,engineComputedVisibleGeometry:true,
+   originalBRepSourceEdges:sourceBRep.originalBRepSourceEdges,
+   occtOriginalEdgeOccurrenceCount:sourceBRep.occtOriginalEdgeOccurrenceCount,
+   completeSourceTopology3DEndpointCorrespondence:
+    sourceBRep.completeSourceTopology3DEndpointCorrespondence,
+   actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+   actualOCCTCurveTypeIndependentlyVerified:false,
    sourceCandidateOnly:true,
    lineStyleCertified:false,v5Authorized:false
   });
@@ -294,4 +406,5 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
  }
 }
 module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
- liftOriginalProjectedSourceCandidates};
+ liftOriginalProjectedSourceCandidates,matchOriginalBRepEdgeByXYZ,
+ extractRealOcjsOriginalSourceBRepEdges};

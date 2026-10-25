@@ -108,6 +108,17 @@ for(const [index,geometry] of general.entries()){
  assert.equal(proof.status,'validated-closed-convex-mesh');
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ // Source shape is the REAL original OCCT B-Rep, not flattened HLR edges.
+ assert.equal(cad.completeSourceTopology3DEndpointCorrespondence,true);
+ assert.equal(cad.originalBRepSourceEdges.length,geometry.data.edges.length);
+ assert.ok(cad.occtOriginalEdgeOccurrenceCount>=geometry.data.edges.length);
+ assert.equal(cad.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched,false);
+ const sourceIds=new Set(cad.originalBRepSourceEdges.map(s=>s.sourceEdgeId));
+ assert.equal(sourceIds.size,geometry.data.edges.length);
+ assert.ok(cad.originalBRepSourceEdges.every(s=>
+  s.originalOCCTBRepVertexXYZMatched===true&&
+  s.generatedHLREdgeTopoDSIdentityMatched===false&&
+  s.occtCurveTypeIndependentlyVerified===false));
  assert.equal(cad.sourceCandidateOnly,true);
  assert.equal(cad.v5Authorized,false);
  assert.equal(cad.proofScope,'reviewed-closed-convex-polyhedral-shell');
@@ -128,6 +139,12 @@ for(const [index,geometry] of general.entries()){
    assert.equal(seg.v5Authorized,false);
    for(const source of seg.sourceCandidate3DLifts){
     assert.ok(valid.has(source.sourceEdgeId));
+    assert.ok(sourceIds.has(source.sourceEdgeId));
+    assert.equal(source.actualOriginalOCCTBRepEdge3DEndpointsVerified,true);
+    assert.ok(['x','y','z'].every(k=>
+     Number.isFinite(source.actualOriginalOCCTBRepFrom3D[k])&&
+     Number.isFinite(source.actualOriginalOCCTBRepTo3D[k])));
+    assert.equal(source.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched,false);
     assert.equal(source.actualOCCTTopoDSEdgeIdentityRecovered,false);
     assert.equal(source.actualOCCT3DCurveExtracted,false);
     assert.equal(source.officialEngineeringLineStyle,'undetermined');
