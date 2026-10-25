@@ -69,6 +69,6 @@ test('fake original source cannot inherit any ray or official line certificate',
   data:{...g.data,faces:g.data.faces.slice(1)}},revision:9}),
  /closed|Euler|face/);
  assert.throws(()=>audit({geometry:{...g,data:{...g.data,
-  edges:[...g.data.edges,[...g.data.edges[0]]}},revision:9}),
+  edges:[...g.data.edges,[...g.data.edges[0]]]}},revision:9}),
  /duplicate|explicit finite|declared/);
 });
