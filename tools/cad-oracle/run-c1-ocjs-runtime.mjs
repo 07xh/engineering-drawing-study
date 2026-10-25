@@ -120,9 +120,46 @@ for(const [index,geometry] of general.entries()){
    count++;
   }
  }
+ // The existing M3 point reconstruction -> M0/M5 positive theorem ->
+ // canonical original V5 is the ONLY signing authority. Real OCJS source
+ // edges must cover each positively signed contour, and unrelated visible
+ // CAD creases must stay outside the issued ConstructionStep DAG.
+ const reviewedInput={
+  geometryId:geometry.id,confirmedBy:'user',topologyConfirmed:true,
+  revision:40+index,unit:'mm',
+  vertices:Object.entries(geometry.data.points).map(([id,p])=>{
+   const paper=project(p);
+   return {id,knownViews:{V:[paper.V.u,paper.V.v],
+     H:[paper.H.u,paper.H.v]}};
+  }),edges:geometry.data.edges.map(e=>[...e]),
+  faces:geometry.data.faces.map(e=>[...e])
+ };
+ const m5=compileC1WithOcjsHLR({oc,input:reviewedInput,
+  sheetTransform:{origin:{x:350,y:195},scale:3}});
+ assert.equal(m5.c1CadRuntime.revision,40+index);
+ assert.equal(m5.c1CadRuntime.supportedScope,'reviewed-closed-convex-polyhedral-shell');
+ assert.equal(m5.c1CadRuntime.nonContourCADDrawingActionsSigned,0);
+ assert.equal(m5.c1CadRuntime.secondV5,false);
+ assert.equal(m5.wholeSolidV5Ready,false);
+ assert.equal(m5.officialSolidLineStylesVerified,false);
+ assert.equal(m5.verifiedLineIntentAndOriginalSingleV5Parity,true);
+ assert.ok(m5.certifiedVisibleContourLineActionCount>=9);
+ assert.ok(m5.c1CadRuntime.perView.V.sourceAndCoverageAgreement);
+ assert.ok(m5.c1CadRuntime.perView.H.sourceAndCoverageAgreement);
+ assert.ok(m5.c1CadRuntime.perView.W.sourceAndCoverageAgreement);
+ const extra=Object.values(m5.c1CadRuntime.perView)
+  .reduce((n,v)=>n+v.unsignedInteriorCadLines,0);
+ const signedIds=new Set(m5.certifiedVisibleContourLineActionIds);
+ assert.equal(signedIds.size,m5.certifiedVisibleContourLineActionCount);
+ assert.ok(m5.steps.flatMap(s=>s.actions)
+  .filter(a=>signedIds.has(a.id)).every(a=>a.kind==='line'));
+ m5.player.invalidate(41+index,0);
+ assert.equal(m5.player.canRender(40+index),false);
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   authenticCadVisibleSegments:count,
-  elapsedMs:Math.round(performance.now()-at),m5Signed:false});
+  elapsedMs:Math.round(performance.now()-at),
+  m5Signed:true,scopedOfficialVisibleContourLines:signedIds.size,
+  unsignedInteriorCadLines:extra,uniqueV5:true});
 }
 // Preserve strict unsupported/degenerate source refusal.
 assert.throws(()=>computeC1OcjsVisibleSegments({oc,
