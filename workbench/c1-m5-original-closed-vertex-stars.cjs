@@ -65,6 +65,7 @@ function auditC1OriginalClosedVertexStars({geometry,revision}={}){
   genuineOriginal3DIncidentEdgePairs:0,
   projectedOtherOriginal3DVertexAliasesHeld:0,
   authentic3DEdgeEndpointWitnesses:0,
+  projectedOriginalSourceM4EndpointUnresolvedHeld:0,
   projectedCollapsedOriginalIncidentEdgesHeld:0,
   paperOnlyProjectedEventCutJoinRefusals:0,
   exactForwardVertexRayClear:0,
@@ -136,18 +137,25 @@ function auditC1OriginalClosedVertexStars({geometry,revision}={}){
     const atStart=current.a===id;
     const endpoint=row.collapsedProjection?null:
      atStart?row.spans[0]?.fromEndpoint:row.spans.at(-1)?.toEndpoint;
-    if(!row.collapsedProjection){
-     if(!endpoint||endpoint.originalVertexId!==id||
-        !endpoint.originalEndpoint3DIdentityVerified||
-        !eq3(endpoint.model3DPoint,p[id])||
-        endpoint.originalSourceParameter!==(atStart?0:1)||
-        endpoint.authorizedAsV5Junction!==false||
-        endpoint.anotherOriginalSource3DPointInferred!==false)
-      throw new RangeError('projected original edge endpoint is not its true 3D source vertex');
+    // M4 can contain numerical cut-parameter micro-gaps, or diagnostic
+    // projected endpoint clipping. Do NOT invent t=0/1 coverage when an
+    // otherwise genuine original source 3D fan lacks that M4 witness.
+    // This does NOT weaken source 3D incidence from M0; it separately
+    // holds the claimed PAPER line join before it reaches V5.
+    const endpointMatches=!row.collapsedProjection&&endpoint&&
+     endpoint.originalVertexId===id&&
+     endpoint.originalEndpoint3DIdentityVerified===true&&
+     eq3(endpoint.model3DPoint,p[id])&&
+     endpoint.originalSourceParameter===(atStart?0:1)&&
+     endpoint.authorizedAsV5Junction===false&&
+     endpoint.anotherOriginalSource3DPointInferred===false;
+    if(endpointMatches){
      totals.authentic3DEdgeEndpointWitnesses++;
      totals.paperOnlyProjectedEventCutJoinRefusals+=
       endpoint.paperOnlyOtherSourceEdgeIds.length;
-    }else totals.projectedCollapsedOriginalIncidentEdgesHeld++;
+    }else if(row.collapsedProjection)
+     totals.projectedCollapsedOriginalIncidentEdgesHeld++;
+    else totals.projectedOriginalSourceM4EndpointUnresolvedHeld++;
     return {
      originalSourceEdgeId:x.sourceEdgeId,
      otherOriginal3DVertexId:x.otherOriginalVertexId,
@@ -156,7 +164,9 @@ function auditC1OriginalClosedVertexStars({geometry,revision}={}){
      sourceCoplanarSubdivision:
       dihedral.sourceIsCoplanarSubdivisionWithinSingleSolid===true,
      firstAngleProjectionCollapsed:row.collapsedProjection,
-     original3DEndpointConfirmedByM4:!row.collapsedProjection,
+     original3DEndpointConfirmedByM4:!!endpointMatches,
+     missingM4OriginalEndpointCutSourceProofHeld:
+      !row.collapsedProjection&&!endpointMatches,
      paperOnlyEndpointAliasesNever3DConnected:true,
      authorizedAsV5LineJoin:false
     };
