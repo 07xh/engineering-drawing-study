@@ -19,6 +19,8 @@ const {orientation2DAdaptive}=
  require('../core/numeric/orientation2d-adaptive.cjs');
 const {exactOriginalM4TransverseCrossingDepth}=
  require('./c1-m4-exact-original-crossing-depth.cjs');
+const {certifyExactM4OriginalVertexVsOtherSourceDepth}=
+ require('./c1-m4-exact-original-vertex-on-source-depth.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -105,6 +107,11 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
   exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven:0,
   exactM4TransverseCrossingsWithDepthTieHeld:0,
   exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld:0,
+  authenticM4OriginalVertexOtherSourceIncidencesExactlyReviewed:0,
+  exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR:0,
+  exactOriginal3DPhysicalSharedVertexDespiteNativePaperMismatch:0,
+  projectedEndpointEventsProvedStrictlyDifferentOriginal3DDepth:0,
+  actualOriginalEndpointPaperMismatchStillHeld:0,
   M4OriginalEventsWithNativeHLRPaperLineNotExactlyMatched:0,
   source3DPhysicalEncounterNotAtNativeHLREndpoint:0,
   actualGeneratedEdgeTopoDSOriginalSourceHistoryCertified:0,
@@ -179,6 +186,40 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
        x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true));
      const nativeEndpointPositive=physical&&!!endpoint&&
       relation.sameNativeGeneratedEdgeEndpointLiterally===true;
+     const originalEndpointProof=(t===0||t===1)&&
+      !e.sourceParameterBoundaryRoundedForDiagnostic?
+      certifyExactM4OriginalVertexVsOtherSourceDepth({
+       geometry,view,vertexSourceEdge:edge,
+       originalSourceParameter:t,
+       otherSourceEdge:sourceById.get(e.otherSourceEdgeId)
+      }):null;
+     const authenticOriginalBRepSource=(sourceId)=>
+      cad.originalBRepSourceEdges?.some(x=>
+       x.sourceEdgeId===sourceId&&
+       x.originalOCCTBRepVertexXYZMatched===true&&
+       x.occtCurveTypeIndependentlyVerified===true&&
+       x.occtSourceCurveType==='line'&&
+       x.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
+       x.generatedHLREdgeTopoDSIdentityMatched===false);
+     const fullyVerifiedSourceVertex=originalEndpointProof?.
+      exactOriginal3DPhysicalVertexSharedBySourceEdges===true&&
+      physical===true&&!!endpoint&&
+      authenticOriginalBRepSource(source)&&
+      authenticOriginalBRepSource(e.otherSourceEdgeId);
+     if(originalEndpointProof){
+      counts.authenticM4OriginalVertexOtherSourceIncidencesExactlyReviewed++;
+      if(originalEndpointProof.exactOriginalVertexOnOtherProjectedClosedSource&&
+         originalEndpointProof.exactOriginalVertexDepthRelativeOtherSourceSign!==0&&
+         originalEndpointProof.exactOriginalVertexDepthRelativeOtherSourceSign!==null)
+       counts.projectedEndpointEventsProvedStrictlyDifferentOriginal3DDepth++;
+      if(fullyVerifiedSourceVertex){
+       counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR++;
+       if(!relation.originalEventOnSameNativePaperLineExactly)
+        counts.exactOriginal3DPhysicalSharedVertexDespiteNativePaperMismatch++;
+      }
+      if(!relation.originalEventOnSameNativePaperLineExactly)
+       counts.actualOriginalEndpointPaperMismatchStillHeld++;
+     }
      // The canonical M4 already found this crossing. Recompute ONLY
      // the exact source-depth sign using original M0 dyadic geometry,
      // never infer another cut, OCCT history, or final hidden style.
@@ -220,6 +261,12 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
       independentlyNativeHLROriginal3DEndpointCorroborated:
        !!nativeEndpointPositive,
       actualNativeGeneratedBRepPaperRelation:relation,
+      exactOriginalM4VertexOtherSourceDepthEvidence:originalEndpointProof,
+      original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven:
+       !!fullyVerifiedSourceVertex,
+      originalHLRGeneratedPaperMismatchRemains:
+       !!originalEndpointProof&&
+       !relation.originalEventOnSameNativePaperLineExactly,
       exactOriginalM4CrossingObserverDepthEvidence:exactCrossing,
       exactOriginal3DFrontSourceAtTransversePaperCrossing:
        exactCrossing?.strictOriginal3DObserverDepthOrderAtPaperCrossingProven?

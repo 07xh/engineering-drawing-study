@@ -20,6 +20,8 @@ on:
       - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
       - 'workbench/c1-native-hlr-complete-m4-projected-encounters.cjs'
       - 'workbench/c1-m4-exact-original-crossing-depth.cjs'
+      - 'workbench/c1-m4-exact-original-vertex-on-source-depth.cjs'
+      - 'tests/workbench/c1-m4-exact-original-vertex-on-source-depth.test.cjs'
       - 'tests/workbench/c1-m4-exact-original-crossing-depth.test.cjs'
       - 'tests/workbench/c1-native-hlr-complete-m4-projected-encounters.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-native-vertex-issame-graph.cjs'
@@ -93,6 +95,8 @@ on:
       - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
       - 'workbench/c1-native-hlr-complete-m4-projected-encounters.cjs'
       - 'workbench/c1-m4-exact-original-crossing-depth.cjs'
+      - 'workbench/c1-m4-exact-original-vertex-on-source-depth.cjs'
+      - 'tests/workbench/c1-m4-exact-original-vertex-on-source-depth.test.cjs'
       - 'tests/workbench/c1-m4-exact-original-crossing-depth.test.cjs'
       - 'tests/workbench/c1-native-hlr-complete-m4-projected-encounters.test.cjs'
       - 'engines/spatial/hlr/c1-ocjs-native-vertex-issame-graph.cjs'
@@ -193,6 +197,7 @@ jobs:
           node --test tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs
           node --test tests/workbench/c1-native-hlr-complete-m4-projected-encounters.test.cjs
           node --test tests/workbench/c1-m4-exact-original-crossing-depth.test.cjs
+          node --test tests/workbench/c1-m4-exact-original-vertex-on-source-depth.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test

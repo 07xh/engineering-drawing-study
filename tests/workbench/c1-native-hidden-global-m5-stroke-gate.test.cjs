@@ -243,3 +243,24 @@ test('original M0 shared vertex remains proven even if native generated HLR pape
   exactNativeHLRGeneratedPaperPointEqual,false);
  assert.equal(p.rows[0].officialEngineeringLineStyle,'undetermined');
 });
+
+test('global M5 consumes exact original 3D common vertex and true source BRep while holding generated native paper disagreement',()=>{
+ const x=caseData(),event=x.projectedEncounters.rows[0].
+  originalM4ProjectedEncountersOnNativeSource[0];
+ event.positivelySameOriginal3DPhysicalSourceVertex='A';
+ event.original3DVertexIncidenceWithBothRealOCCTOriginalBRepSourcesProven=true;
+ event.originalHLRGeneratedPaperMismatchRemains=true;
+ event.exactOriginalM4VertexOtherSourceDepthEvidence={
+  exactOriginalVertexDepthRelativeOtherSourceSign:0
+ };
+ event.actualNativeGeneratedBRepPaperRelation.
+  originalEventOnSameNativePaperLineExactly=false;
+ const r=review(x);
+ assert.equal(r.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,1);
+ assert.equal(r.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,1);
+ assert.equal(r.rows[0].exactModelSpace3DSharedSourceVerticesWithVerifiedOriginalBRep[0].
+  M0ExactDyadicOriginalObserverDepthTie,true);
+ assert.equal(r.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
+ assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
