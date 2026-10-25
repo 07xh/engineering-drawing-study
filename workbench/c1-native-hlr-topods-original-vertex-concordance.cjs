@@ -144,15 +144,26 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    const actualA=lift.actualOriginalOCCTBRepFrom3D,
     actualB=lift.actualOriginalOCCTBRepTo3D;
    const inSourceRange=t=>Number.isFinite(t)&&t>=0&&t<=1;
-   const endpointMatches=(t,xyz)=>t===0?xyzEq(xyz,original[0]):
-    t===1?xyzEq(xyz,original[1]):true;
+   // HLR is a projected candidate, not proof of 3D depth. Reconstruct
+   // BOTH lifted endpoints from the ORIGINAL normalized source parameter;
+   // an interior paper-coincident point at the wrong depth must not certify
+   // even the opposite, otherwise authentic, native vertex.
+   const sourcePoint=t=>({
+    x:original[0].x+(original[1].x-original[0].x)*t,
+    y:original[0].y+(original[1].y-original[0].y)*t,
+    z:original[0].z+(original[1].z-original[0].z)*t
+   });
+   const range=lift.originalSourceParameterRange;
+   const completeSourceRange=Array.isArray(range)&&range.length===2&&
+    range[0]===Math.min(tFrom,tTo)&&range[1]===Math.max(tFrom,tTo);
    if(!inSourceRange(tFrom)||!inSourceRange(tTo)||tFrom===tTo||
+      !completeSourceRange||
       !((xyzEq(original[0],actualA)&&xyzEq(original[1],actualB))||
         (xyzEq(original[0],actualB)&&xyzEq(original[1],actualA)))||
       !xyzEq(lift.fromCandidate3D,lift.fromCandidate3D)||
       !xyzEq(lift.toCandidate3D,lift.toCandidate3D)||
-      !endpointMatches(tFrom,lift.fromCandidate3D)||
-      !endpointMatches(tTo,lift.toCandidate3D)||
+      !xyzEq(lift.fromCandidate3D,sourcePoint(tFrom))||
+      !xyzEq(lift.toCandidate3D,sourcePoint(tTo))||
       !equal(project(lift.fromCandidate3D)[view],seg.from)||
       !equal(project(lift.toCandidate3D)[view],seg.to))
     return {source:null,vertex:null,nativeHidden:false};
