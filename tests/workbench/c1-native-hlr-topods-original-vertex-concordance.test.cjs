@@ -208,6 +208,44 @@ test('cannot forge a complete native generated vertex star without actual IsSame
  assert.throws(()=>audit(x),/paper-misaligned native TopoDS junction/);
 });
 
+test('complete generated native HLR junction cannot omit a genuine third IsSame endpoint pair',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  c=ref('visible-sharp',0,'to'),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(a,c,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=2;
+ // Old local-only check would have falsely accepted the two-edge subset
+ // as a complete certified original 3D physical junction.
+ assert.throws(()=>audit(x),/omit genuine OCCT IsSame endpoint pairs/);
+});
+test('duplicate actual IsSame pairs cannot be substituted for missing native junction evidence',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(b,a,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=2;
+ assert.throws(()=>audit(x),/duplicate actual OCCT IsSame pair/);
+});
+test('exhaustive three-endpoint IsSame clique remains valid but unsigned when visible source history is unknown',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  c=ref('visible-sharp',0,'to'),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(a,c,true),pair(b,c,true));
+ const star=completeStar(a,b);star.generatedSharpEdgeEndpoints.push(c);
+ v.generatedOCCTSharedNativeJunctionComponents.push(star);
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=3;
+ const result=audit(x);
+ assert.equal(result.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,1);
+ assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
+
 const visibleFrontSourceCase=()=>{
  const x=fixture(),A={x:10,y:4,z:0},D={x:0,y:4,z:0};
  x.geometry.data.points.A=A;
