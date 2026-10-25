@@ -99,6 +99,7 @@ function auditC1OriginalStrokeFinalPreconditions({
   originalVertexEndpointRayTangenciesHeld:0,
   paperCutEndpointsWithNoOriginalVertexRayProof:0,
   certifiedOriginal3DVertexFanEndpointWitnesses:0,
+  originalVertexFanM4EndpointLinkMissingHeld:0,
   actualOriginal3DVertexProjectedAliasWitnessesHeld:0,
   trueCommon3DVertexSourcePairsCounted:0,
   syntheticPaperPointCannotAcquireClosed3DVertexStarCount:0,
@@ -185,6 +186,8 @@ function auditC1OriginalStrokeFinalPreconditions({
      counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount++;
      return {original3DVertexId:null,
       genuineClosed3DOriginalVertexFaceFanVerified:false,
+      originalPaperM4EndpointLinkPositivelyVerified:false,
+      projectedOriginalM4EndpointLinkMissingHeld:true,
       true3DOriginalSourceJunctionPairSourceEdgeIds:[],
       other3DVertexIdsWithSamePaperProjection:[],
       candidateProjectedPaperCutNever3DVertex:true,
@@ -198,10 +201,12 @@ function auditC1OriginalStrokeFinalPreconditions({
        !['x','y','z'].every(k=>
         proof.original3DModelPoint[k]===endpoint.model3DPoint[k])||
        !proof.incidentOriginalSourceEdges.some(edge=>
-        edge.originalSourceEdgeId===row.sourceEdgeId&&
-        (edge.original3DEndpointConfirmedByM4||
-         edge.firstAngleProjectionCollapsed)))
+        edge.originalSourceEdgeId===row.sourceEdgeId))
       throw new RangeError('current original source stroke endpoint not supported by authentic closed vertex fan');
+    const sourceLink=proof.incidentOriginalSourceEdges.find(edge=>
+     edge.originalSourceEdgeId===row.sourceEdgeId);
+    if(!sourceLink.original3DEndpointConfirmedByM4)
+     counts.originalVertexFanM4EndpointLinkMissingHeld++;
     counts.certifiedOriginal3DVertexFanEndpointWitnesses++;
     counts.actualOriginal3DVertexProjectedAliasWitnessesHeld+=
      proof.distinct3DVerticesProjectingToSamePaperPoint.length;
@@ -210,6 +215,10 @@ function auditC1OriginalStrokeFinalPreconditions({
     counts.trueCommon3DVertexSourcePairsCounted+=pairs.length;
     return {original3DVertexId:id,
      genuineClosed3DOriginalVertexFaceFanVerified:true,
+     originalPaperM4EndpointLinkPositivelyVerified:
+      sourceLink.original3DEndpointConfirmedByM4,
+     projectedOriginalM4EndpointLinkMissingHeld:
+      !sourceLink.original3DEndpointConfirmedByM4,
      true3DOriginalSourceJunctionPairSourceEdgeIds:pairs.map(pair=>
       [...pair.originalSourceEdgeIds]),
      other3DVertexIdsWithSamePaperProjection:
@@ -305,6 +314,9 @@ function auditC1OriginalStrokeFinalPreconditions({
     originalClosedVertex3DFanNotCertifiedForEveryEndpoint:
      verifiedEndpointStars.some(x=>
       !x.genuineClosed3DOriginalVertexFaceFanVerified),
+    original3DVertexM4PaperEndpointLinkNotVerified:
+     verifiedEndpointStars.some(x=>
+      !x.originalPaperM4EndpointLinkPositivelyVerified),
     real3DVertexAliasesSharingPaperPointNeedSceneResolution:
      verifiedEndpointStars.some(x=>
       x.other3DVertexIdsWithSamePaperProjection.length>0),
