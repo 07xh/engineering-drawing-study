@@ -18,6 +18,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
+const {outwardProof:certifyExactSourceOutwardRay}=
+ require('../core/numeric/convex-incident-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const {exactSameReviewedModelPoint}=
@@ -95,7 +97,8 @@ function auditC1ContinuousFrontmostSourceRays({
  for(const [a,b] of geometry.data.edges){
   const id=geometry.id+'::'+[a,b].sort().join('|');
   if(edges.has(id))err('duplicate physical source edge');
-  edges.set(id,{from:geometry.data.points[a],to:geometry.data.points[b]});
+  edges.set(id,{fromId:a,toId:b,
+   from:geometry.data.points[a],to:geometry.data.points[b]});
  }
  const viewRows=[];
  for(const view of VIEWS){
@@ -151,7 +154,15 @@ function auditC1ContinuousFrontmostSourceRays({
     const clear=certifyConvexSegmentClearance({source,solid:solids[0],
      observerDirection:observer});
     const hidden=evaluateFullSourceSegmentOcclusion({source,solids,view});
-    const wholeClear=clear.status==='certified-clear',
+    // A normalized supporting-plane residual can round slightly inward
+    // even when an ORIGINAL triangular face contains BOTH edge vertices.
+    // The independent exact-dyadic incident-face theorem proves continuous
+    // outward clearance without changing any tolerance or trusting HLR.
+    const exact=clear.status==='certified-clear'?null:
+      certifyExactSourceOutwardRay({geometry,
+       sourceVertexIds:[e.fromId,e.toId],view,convexProof:validated});
+    const wholeClear=clear.status==='certified-clear'||
+      exact?.status==='certified-clear',
      entireHidden=hidden.entireSourceSegmentOccluded===true;
     if(wholeClear&&entireHidden)
      err('positive and strict-interior whole-ray proofs contradict');
@@ -164,6 +175,11 @@ function auditC1ContinuousFrontmostSourceRays({
      fullOpenSubintervalStrictlyOccluded:entireHidden,
      rayProofStatus:wholeClear?'certified-clear':
       entireHidden?'certified-whole-strict-interior-occluded':'undetermined',
+     rayProofReason:clear.status==='certified-clear'?clear.reason:
+      exact?.status==='certified-clear'?exact.reason:
+      entireHidden?'strict-occlusion':clear.reason,
+     exactIncidenceSupportFaceIndex:exact?.status==='certified-clear'?
+      exact.supportingOriginalFaceIndex:null,
      fullEndpointJoinAndContourVisibilityCertified:false,
      officialEngineeringLineStyle:'undetermined',v5StrokeApproved:false});
    }
