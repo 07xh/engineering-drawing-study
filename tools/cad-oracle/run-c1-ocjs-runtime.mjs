@@ -123,6 +123,8 @@ for(const [index,geometry] of general.entries()){
   s.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
   s.occtSourceCurveParameterRange[1]>s.occtSourceCurveParameterRange[0]));
  assert.equal(cad.actualOCCTCurveTypeIndependentlyVerified,true);
+ assert.equal(cad.allEmittedVisibleHLRCurvesVerifiedStraightAndPlanar,true);
+ assert.equal(cad.actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified,false);
  assert.equal(cad.sourceCandidateOnly,true);
  assert.equal(cad.v5Authorized,false);
  assert.equal(cad.proofScope,'reviewed-closed-convex-polyhedral-shell');
@@ -135,6 +137,17 @@ for(const [index,geometry] of general.entries()){
   for(const seg of view){
    assert.ok(seg.projectedOriginalEdgeCandidates.length>0);
    assert.ok(seg.projectedOriginalEdgeCandidates.every(id=>valid.has(id)));
+   // Real HLR output curve BRep proof, separate from source candidate XYZ.
+   assert.equal(seg.actualOCCTHLRCurveType,'line');
+   assert.equal(seg.actualOCCTHLRFlattenedBRepLineVerified,true);
+   assert.equal(seg.actualOCCTHLRCurveEntireFiniteIntervalIsLine,true);
+   assert.ok(seg.actualOCCTHLRCurveParameterRange[1]>
+    seg.actualOCCTHLRCurveParameterRange[0]);
+   assert.equal(seg.actualOCCTHLRCurveSamplesProjectedMm.length,5);
+   assert.ok(['surface-pcurve','native-3d'].includes(
+    seg.actualOCCTHLRCurveBacking));
+   assert.equal(seg.originalTopoDSSourceForHLREdgeRecovered,false);
+   assert.equal(seg.formalStandardLineStyle,'undetermined');
    // Genuine WASM HLR candidate XYZ must reproduce its real V/H/W image.
    // This is NOT recovered OCCT TopoDS 3D source identity or M5 signing.
    assert.equal(seg.sourceCandidate3DLifts.length,
