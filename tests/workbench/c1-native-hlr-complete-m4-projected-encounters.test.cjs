@@ -118,3 +118,39 @@ test('stale geometry revision, fabricated native source, and duplicate canonical
  assert.equal(proof.counts.exactOriginal3DPhysicalVertexEncountersCorroborated,0);
  assert.equal(proof.counts.nativeHLRInteriorPaperEventsRequiringSceneJunctionReview,1);
 });
+
+test('canonical M4 transverse interior crossing gains exact original 3D forward-depth sign but never global line style',()=>{
+ const x=fixture();
+ x.geometry.data.points.D.z=10;x.geometry.data.points.E.z=10;
+ const ev=x.m4.rows.find(r=>r.view==='H'&&
+  r.sourceEdgeId===source(edges[0])).encounters[1];
+ ev.kind='crossing';
+ const r=audit(x);
+ assert.equal(r.counts.nativeOriginalM4TransverseCrossingEventsFound,1);
+ assert.equal(r.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,1);
+ const event=r.rows[0].originalM4ProjectedEncountersOnNativeSource[1];
+ assert.equal(event.exactOriginalM4CrossingObserverDepthEvidence.
+  strictOriginal3DObserverDepthOrderAtPaperCrossingProven,true);
+ assert.equal(event.exactOriginal3DFrontSourceAtTransversePaperCrossing,
+  source(edges[2]));
+ assert.equal(event.positivelySameOriginal3DPhysicalSourceVertex,null);
+ assert.equal(event.fullGlobalProjectedJunctionAndDepthSwitchCertified,false);
+ assert.equal(event.officialGBLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('source parameter 1 preserves original 3D model vertex projection bit-for-bit, never reconstructs endpoint via affine rounding',()=>{
+ const a=12345678.1,b=1.1;
+ assert.notEqual(a+(b-a),b);
+ const x=fixture();
+ x.geometry.data.points.A.x=a;
+ x.geometry.data.points.B.x=b;
+ x.cad.hiddenSharpViews.H[0].from=project(x.geometry.data.points.A).H;
+ x.cad.hiddenSharpViews.H[0].to=project(x.geometry.data.points.B).H;
+ x.refinements[0].projectedFrom=project(x.geometry.data.points.A).H;
+ x.refinements[0].projectedTo=project(x.geometry.data.points.B).H;
+ const result=audit(x);
+ const endpoint=result.rows[0].originalM4ProjectedEncountersOnNativeSource[0];
+ assert.equal(endpoint.originalEventPaperPoint.u,b);
+ assert.equal(endpoint.actualNativeGeneratedBRepPaperRelation.
+  originalEventOnSameNativePaperLineExactly,true);
+});

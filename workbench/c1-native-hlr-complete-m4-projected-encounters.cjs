@@ -17,12 +17,17 @@
 const {project,VIEWS}=require('../core/projection/conventions.js');
 const {orientation2DAdaptive}=
  require('../core/numeric/orientation2d-adaptive.cjs');
+const {exactOriginalM4TransverseCrossingDepth}=
+ require('./c1-m4-exact-original-crossing-depth.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
 const id=(g,edge)=>g.id+'::'+[...edge].sort().join('|');
 const eq2=(a,b)=>a&&b&&a.u===b.u&&a.v===b.v;
-const interpolate=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
+// Preserve the ACTUAL original M0 endpoint bit patterns at exact 0/1;
+ // reconstructing b as a+(b-a)*1 can lose one ULP.
+const interpolate=(a,b,t)=>t===0?a:t===1?b:
+ ({x:a.x+(b.x-a.x)*t,
  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 function paperLineEventRelation({nativeFrom,nativeTo,modelPoint}={}){
  if(![nativeFrom,nativeTo,modelPoint].every(x=>
@@ -96,6 +101,10 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
   paperOnlyOriginalSourceCrossingsAndOverlapsHeld:0,
   roundedSourceParameterEncountersHeld:0,
   nativeHLRInteriorPaperEventsRequiringSceneJunctionReview:0,
+  nativeOriginalM4TransverseCrossingEventsFound:0,
+  exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven:0,
+  exactM4TransverseCrossingsWithDepthTieHeld:0,
+  exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld:0,
   M4OriginalEventsWithNativeHLRPaperLineNotExactlyMatched:0,
   source3DPhysicalEncounterNotAtNativeHLREndpoint:0,
   actualGeneratedEdgeTopoDSOriginalSourceHistoryCertified:0,
@@ -170,6 +179,23 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
        x.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true));
      const nativeEndpointPositive=physical&&!!endpoint&&
       relation.sameNativeGeneratedEdgeEndpointLiterally===true;
+     // The canonical M4 already found this crossing. Recompute ONLY
+     // the exact source-depth sign using original M0 dyadic geometry,
+     // never infer another cut, OCCT history, or final hidden style.
+     const exactCrossing=e.kind==='crossing'?
+      exactOriginalM4TransverseCrossingDepth({
+       geometry,view,firstEdge:edge,
+       secondEdge:sourceById.get(e.otherSourceEdgeId),
+       nativeFirstOriginalParameterRange:range
+      }):null;
+     if(exactCrossing){
+      counts.nativeOriginalM4TransverseCrossingEventsFound++;
+      if(exactCrossing.strictOriginal3DObserverDepthOrderAtPaperCrossingProven)
+       counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven++;
+      else if(exactCrossing.exactDepthTieAtCrossing)
+       counts.exactM4TransverseCrossingsWithDepthTieHeld++;
+      else counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld++;
+     }
      if(physical)counts.exactOriginal3DPhysicalVertexEncountersCorroborated++;
      else if(e.sourceParameterBoundaryRoundedForDiagnostic)
       counts.roundedSourceParameterEncountersHeld++;
@@ -194,6 +220,13 @@ function auditC1NativeHLRAllM4ProjectedEncounters({
       independentlyNativeHLROriginal3DEndpointCorroborated:
        !!nativeEndpointPositive,
       actualNativeGeneratedBRepPaperRelation:relation,
+      exactOriginalM4CrossingObserverDepthEvidence:exactCrossing,
+      exactOriginal3DFrontSourceAtTransversePaperCrossing:
+       exactCrossing?.strictOriginal3DObserverDepthOrderAtPaperCrossingProven?
+        (exactCrossing.exactOriginalSourceAtCrossingFront==='first'?
+         source:e.otherSourceEdgeId):null,
+      // An exact local strict front crossing is NOT continuous occlusion
+      // on neighboring source intervals or a whole-scene final line type.
       fullGlobalProjectedJunctionAndDepthSwitchCertified:false,
       officialGBLineStyle:'undetermined',
       constructionIntentAuthorized:false,signedV5Action:false

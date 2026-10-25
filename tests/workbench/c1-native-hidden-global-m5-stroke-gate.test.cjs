@@ -168,3 +168,78 @@ test('original M4 crossing report cannot forge positive global scene occlusion o
   fullGlobalProjectedJunctionAndDepthSwitchCertified=true;
  assert.throws(()=>review(x),/incomplete genuine native original-source M4 projected graph/);
 });
+
+test('strict whole M0 3D front depth, M5 closed clear ray and REAL VCompound paper mask prove M4 collinear interior event cannot switch frontmost depth',()=>{
+ const x=caseData(),e=x.projectedEncounters.rows[0].
+  originalM4ProjectedEncountersOnNativeSource[0];
+ e.canonicalM4ProjectedEncounterKind='collinear-overlap';
+ e.originalM4RoundedForDiagnostic=false;
+ e.positivelySameOriginal3DPhysicalSourceVertex=null;
+ e.otherOriginal3DSourceEdgeId='G::B|C';
+ x.gapProof.rows[0].originalM4OrNativePaperPositiveGapWitnesses=[{
+  originalHiddenSourceParameterRange:[.5,1],
+  gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry:true,
+  nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven:true,
+  exactFullOriginal3DPhysicalFrontSourceWitnesses:[{
+   originalFront3DSourceEdgeId:'G::B|C',
+   exactlyCoincidentFullOriginalM0PaperEndpoints:true,
+   exactDyadicStrictOriginal3DWholeOpenFrontDepth:true,
+   independentlyM5ClosedFrontOriginal3DRayClear:true,
+   realOCCTOriginalSourceBRep3DCurveVerified:true,
+   realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven:true
+  }]
+ }];
+ const proof=review(x);
+ assert.equal(proof.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,1);
+ assert.equal(proof.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,0);
+ assert.equal(proof.rows[0].
+  collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof.length,1);
+ assert.equal(proof.rows[0].allProjectedEncountersAndDepthSwitchesResolved,false);
+ assert.equal(proof.signedV5ActionCount,0);
+});
+test('positive M4 collinear no-switch proof is withheld if true OCCT front source mismatches, or M5 closed ray clearance unverified',()=>{
+ const x=caseData(),e=x.projectedEncounters.rows[0].
+  originalM4ProjectedEncountersOnNativeSource[0];
+ e.canonicalM4ProjectedEncounterKind='collinear-overlap';
+ e.originalM4RoundedForDiagnostic=false;
+ e.positivelySameOriginal3DPhysicalSourceVertex=null;
+ e.otherOriginal3DSourceEdgeId='G::B|C';
+ x.gapProof.rows[0].originalM4OrNativePaperPositiveGapWitnesses=[{
+  originalHiddenSourceParameterRange:[.5,1],
+  gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry:true,
+  nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven:true,
+  exactFullOriginal3DPhysicalFrontSourceWitnesses:[{
+   originalFront3DSourceEdgeId:'G::D|E',
+   exactlyCoincidentFullOriginalM0PaperEndpoints:true,
+   exactDyadicStrictOriginal3DWholeOpenFrontDepth:true,
+   independentlyM5ClosedFrontOriginal3DRayClear:true,
+   realOCCTOriginalSourceBRep3DCurveVerified:true,
+   realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven:true
+  }]
+ }];
+ let proof=review(x);
+ assert.equal(proof.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,0);
+ assert.equal(proof.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,1);
+ x.gapProof.rows[0].originalM4OrNativePaperPositiveGapWitnesses[0].
+  exactFullOriginal3DPhysicalFrontSourceWitnesses[0].originalFront3DSourceEdgeId='G::B|C';
+ x.gapProof.rows[0].originalM4OrNativePaperPositiveGapWitnesses[0].
+  exactFullOriginal3DPhysicalFrontSourceWitnesses[0].independentlyM5ClosedFrontOriginal3DRayClear=false;
+ proof=review(x);
+ assert.equal(proof.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,0);
+});
+test('original M0 shared vertex remains proven even if native generated HLR paper endpoint differs: do not snap or grant engineering line',()=>{
+ const x=caseData(),e=x.projectedEncounters.rows[0].
+  originalM4ProjectedEncountersOnNativeSource[0];
+ e.positivelySameOriginal3DPhysicalSourceVertex='A';
+ e.actualNativeGeneratedBRepPaperRelation.
+  originalEventOnSameNativePaperLineExactly=false;
+ e.originalSourceParameter=0;
+ const p=review(x);
+ assert.equal(p.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,1);
+ assert.equal(p.counts.nativeHLRUnprovenExactPaperEventAlignment,1);
+ assert.equal(p.rows[0].nativePaperDriftAtIndependentlyProvenOriginal3DVertices[0].
+  original3DPhysicalJunctionAlreadyPositivelyProven,true);
+ assert.equal(p.rows[0].nativePaperDriftAtIndependentlyProvenOriginal3DVertices[0].
+  exactNativeHLRGeneratedPaperPointEqual,false);
+ assert.equal(p.rows[0].officialEngineeringLineStyle,'undetermined');
+});

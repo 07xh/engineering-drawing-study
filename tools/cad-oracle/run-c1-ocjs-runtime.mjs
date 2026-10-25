@@ -149,6 +149,18 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeEncounters.entireReviewedNativeHiddenSourceM4EventLedgerAudited,true);
  assert.equal(nativeEncounters.wholeSceneProjectedJunctionAndOcclusionCertified,false);
  assert.equal(nativeEncounters.signedV5ActionCount,0);
+ assert.equal(
+  nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
+  nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven+
+  nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld+
+  nativeEncounters.counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld);
+ assert.ok(nativeEncounters.rows.every(row=>
+  row.originalM4ProjectedEncountersOnNativeSource.every(ev=>
+   ev.exactOriginalM4CrossingObserverDepthEvidence===null||
+   (ev.exactOriginalM4CrossingObserverDepthEvidence.signedV5Action===false&&
+    ev.exactOriginalM4CrossingObserverDepthEvidence.
+     sceneCompleteOcclusionAndGlobalJoinCertified===false&&
+    ev.fullGlobalProjectedJunctionAndDepthSwitchCertified===false))));
  assert.ok(nativeEncounters.rows.every(r=>
   r.generatedHLREdgeAndOriginalTopoDSIdentityCertified===false&&
   r.officialEngineeringLineStyle==='undetermined'&&
@@ -500,6 +512,21 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
+ assert.equal(
+  hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof+
+  hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
+  nativeEncounters.rows.reduce((n,r)=>n+
+   r.originalM4ProjectedEncountersOnNativeSource.filter(e=>
+    e.canonicalM4ProjectedEncounterKind==='collinear-overlap'&&
+    e.originalSourceParameter>
+      (r.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+    e.originalSourceParameter<
+      (r.genuineNativeHLROriginalSourceParameterRange?.[1]??1)).length,0));
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.collinearNativeInteriorEventsWithIndependentFullFrontNoDepthSwitchProof.every(e=>
+   e.completeSource3DDepthAndRealOCCTHLRPaperProof===true&&
+   e.generatedHLREdgeTopoDSIdentityAndGBLineCertified===false&&
+   e.signedV5Action===false)));
  assert.equal(hiddenFormalGate.signedV5ActionCount,0);
  assert.equal(hiddenFormalGate.officialEngineeringGBLineRulesCertified,false);
  assert.ok(hiddenFormalGate.rows.every(r=>
@@ -822,6 +849,56 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeHLRInteriorPaperEventsRequiringSceneJunctionReview,
    M4NativeHLRExactPaperEventAlignmentUnprovenCount:
     nativeEncounters.counts.M4OriginalEventsWithNativeHLRPaperLineNotExactlyMatched,
+   originalM4ExactTransverseCrossingEvents:
+    nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
+   exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
+    nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   nativeM4CollinearInteriorEventsWithVerifiedWholeOriginalFrontNoDepthSwitch:
+    hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof,
+   nativeM4CollinearInteriorEventsWithoutIndependentFullFrontMask:
+    hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
+   nativePaperMismatchAtAuthenticatedOriginal3DPhysicalVertex:
+    hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
+   exactNativeCrossingTrue3DDepthTieHeld:
+    nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld,
+   nativeCrossingOutsideActualOriginalOpenSpanHeld:
+    nativeEncounters.counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld,
+   unresolvedActualNativeInteriorM4Events:
+    nativeEncounters.rows.flatMap(r=>r.originalM4ProjectedEncountersOnNativeSource
+     .filter(ev=>ev.originalSourceParameter>
+      (r.genuineNativeHLROriginalSourceParameterRange?.[0]??0)&&
+      ev.originalSourceParameter<
+      (r.genuineNativeHLROriginalSourceParameterRange?.[1]??1))
+     .map(ev=>({
+      view:r.view,sourceEdgeId:r.uniqueOriginalPhysical3DSourceEdgeId,
+      otherSourceEdgeId:ev.otherOriginal3DSourceEdgeId,
+      kind:ev.canonicalM4ProjectedEncounterKind,
+      nativeOrdinal:r.nativeHiddenSharpEdgeOrdinal,
+      originalSourceParameter:ev.originalSourceParameter,
+      trueOriginal3DPhysicalVertex:ev.positivelySameOriginal3DPhysicalSourceVertex,
+      exactLocal3DDepthProven:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       strictOriginal3DObserverDepthOrderAtPaperCrossingProven??false,
+      otherEdgeEndpointOnPaper:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       otherOriginal3DEdgeEndpointAtPaperCrossing??false,
+      realNativePaperAligned:ev.actualNativeGeneratedBRepPaperRelation.
+       originalEventOnSameNativePaperLineExactly
+     }))).slice(0,8),
+   unalignedRealNativeM4PaperEvents:
+    nativeEncounters.rows.flatMap(r=>r.originalM4ProjectedEncountersOnNativeSource
+     .filter(ev=>!ev.actualNativeGeneratedBRepPaperRelation.
+      originalEventOnSameNativePaperLineExactly)
+     .map(ev=>({
+      view:r.view,sourceEdgeId:r.uniqueOriginalPhysical3DSourceEdgeId,
+      otherSourceEdgeId:ev.otherOriginal3DSourceEdgeId,
+      kind:ev.canonicalM4ProjectedEncounterKind,
+      nativeOrdinal:r.nativeHiddenSharpEdgeOrdinal,
+      sourceParameter:ev.originalSourceParameter,
+      modelEventPaper:ev.originalEventPaperPoint,
+      trueNativeOriginalPaperParameter:ev.actualNativeGeneratedBRepPaperRelation.
+       nativePaperSegmentParameter,
+      exactLocal3DDepthProven:ev.exactOriginalM4CrossingObserverDepthEvidence?.
+       strictOriginal3DObserverDepthOrderAtPaperCrossingProven??false
+     }))).slice(0,8),
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
