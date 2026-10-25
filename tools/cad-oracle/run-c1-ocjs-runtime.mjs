@@ -213,6 +213,12 @@ for(const [index,geometry] of general.entries()){
    (span.wholeOpenSubspanExactSourceRayClear||
     span.wholeOpenSubspanAnalyticRayClear))&&
   span.signedV5Action===false)));
+ if(index===1){
+  assert.ok(features.counts.exactOriginalStrictInwardOpaqueSubspanCount>0,
+   'genuine nonregular tetra source backside must independently prove strict interior open ray');
+  assert.ok(features.counts.singleOpaqueSourceSubspanStrictHiddenCount>0,
+   'genuine C1 source spans must have strictly hidden mathematics, NOT guessed CAD dash style');
+ }
  assert.equal(features.counts.originalSourcePairDepthOverlapCount,
   features.counts.originalSourcePairStrictDepthProofCount+
   features.counts.originalSourcePairUnresolvedDepthCount);
@@ -270,6 +276,8 @@ for(const [index,geometry] of general.entries()){
     features.counts.singleOpaqueSourceSubspanClearCount,
    actualSingleOpaqueSourceStrictHiddenSubspans:
     features.counts.singleOpaqueSourceSubspanStrictHiddenCount,
+   exactStrictInwardOpaqueSourceSubspans:
+    features.counts.exactOriginalStrictInwardOpaqueSubspanCount,
    actualSingleOpaqueSourceUnknownSubspans:
     features.counts.singleOpaqueSourceSubspanUndeterminedCount,
    originalM5ExteriorHeldSubspans:
