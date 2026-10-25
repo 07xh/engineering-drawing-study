@@ -86,6 +86,9 @@ test('fabricated shape objects, missing views and unbounded HLR sharp edge count
 
 test('one finite HLR edge with same native TopoDS endpoint on both sides cannot create a fake closed junction',()=>{
  const v=baseline();v.H.visible[0].vertices[1]=vertex('native-a');
+ // Make the two paper endpoints equal as well, so the same-edge
+ // degeneracy gate (rather than the independent paper-drift gate) fires.
+ v.H.visible[0].projectedEndpoints[1]=p(0,0);
  assert.throws(()=>graph({perView:v}),/identical generated TopoDS start and end/);
 });
 test('non-transitive mocked OCCT IsSame graph is rejected instead of treating a paper group as an authenticated native junction',()=>{
