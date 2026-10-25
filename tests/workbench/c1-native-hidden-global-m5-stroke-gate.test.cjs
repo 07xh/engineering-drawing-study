@@ -138,3 +138,30 @@ test('missing start and end of original source are both reported',()=>{
  assert.deepEqual(r.rows[0].canonicalOriginalSourceParameterGaps,[[0,0.2],[0.8,1]]);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('three positive local prerequisites do not authorize engineering line style or V5',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].original3DSourceVertexPlusM4AndFanVerified=true;
+ const r=review(x),row=r.rows[0];
+ assert.deepEqual(row.jointPositiveM5Prerequisites,{
+  completeSourceParameterCoverage:true,
+  original3DEndpointAndM4FanTopology:true,
+  continuousOriginalModelAndRealNativeHLROcclusion:true
+ });
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,true);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+});
+test('endpoint fan defect blocks conjunctive positive M5 prerequisite',()=>{
+ const r=review(caseData());
+ assert.equal(r.rows[0].jointPositiveM5Prerequisites.original3DEndpointAndM4FanTopology,false);
+ assert.equal(r.rows[0].jointPositiveM5PrerequisitesSatisfied,false);
+});
+test('missing native HLR occlusion blocks joint positive evidence even with endpoints',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].original3DSourceVertexPlusM4AndFanVerified=true;
+ x.gapProof.rows[0].realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront=false;
+ const r=review(x);
+ assert.equal(r.rows[0].jointPositiveM5Prerequisites.continuousOriginalModelAndRealNativeHLROcclusion,false);
+ assert.equal(r.rows[0].jointPositiveM5PrerequisitesSatisfied,false);
+});
