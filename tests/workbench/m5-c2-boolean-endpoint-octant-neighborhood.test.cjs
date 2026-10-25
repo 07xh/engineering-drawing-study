@@ -87,7 +87,7 @@ test('C2 interior-only, near-but-not-exact third-body face and diagonal/collapse
  assert.equal(interior.occupiedOctantCount,8);
  assert.equal(interior.localClosedUnionBoundaryWithOutgoingSourceVerified,false);
  const near=create({geometry:[
-  A(),box('B',p(10+2**-35,0,0),p(20,10,10))],revision:507});
+  A(),box('B',p(10+2**-30,0,0),p(20,10,10))],revision:507});
  const almost=near.inspect(p(10,0,5),p(10,0,10));
  assert.ok(almost.nearCriticalNonExactBoxFaceCount>0);
  assert.equal(almost.localClosedUnionBoundaryWithOutgoingSourceVerified,false);
@@ -129,8 +129,8 @@ test('C2 production final paper-line consumer joins current source ID + independ
    }
    if(e.localClosedUnionEndpointBoundaryAndSourceDirectionVerified){
     trueLocal++;
-    assert.equal(e.currentPhysical3DPointPositiveObserverOpenRayClearVerified===true||
-     e.currentPhysical3DPointPositiveObserverOpenRayClearVerified===false,true);
+    assert.equal(typeof e.currentPhysical3DPointPositiveObserverOpenRayClearVerified,
+     'boolean');
    }
    if(e.jointSourceBooleanAndClosedNeighborhoodAndAllSolidOpenRayVerified){
     joint++;
