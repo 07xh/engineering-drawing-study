@@ -13,7 +13,7 @@
  const shape=box.Shape();
  const algo=new oc.HLRBRep_Algo_1();
  console.log('OCCT algo methods',JSON.stringify(Object.getOwnPropertyNames(Object.getPrototypeOf(algo))));
- algo.Add_1(shape,0);
+ algo.Add_1(shape,0,false);
  const projector=new oc.HLRAlgo_Projector_1();
  algo.Projector(projector);algo.Update();algo.Hide();
  const result=new oc.HLRBRep_HLRToShape(algo);
