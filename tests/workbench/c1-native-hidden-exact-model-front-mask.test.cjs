@@ -2,7 +2,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {project}=require('../../core/projection/conventions.js');
 const {certifyExactFullOriginalFront3DMask:exact,
- certifyActualOCCTFullFrontOriginalPaperEndpoints:native}=
+ certifyActualOCCTFullFrontOriginalPaperEndpoints:native,
+ certifyActualOCCTVisibleFrontOriginalIntervalUnion:union}=
  require('../../workbench/c1-native-hidden-exact-model-front-mask.cjs');
 
 const geometry={id:'G',data:{points:{
@@ -84,4 +85,66 @@ test('untrusted HLR class and wrong view cannot be used to invent an original fr
  assert.throws(()=>actual(x),/genuine OCCT visible/);
  assert.throws(()=>native({geometry,view:'X',
   frontEdge:['F0','F1'],nativeVisible:visible()}),/genuine OCCT visible/);
+});
+
+function piece(fromT,toT){
+ const seg=visible();
+ const a=geometry.data.points.F0,b=geometry.data.points.F1;
+ const p=(t)=>({x:a.x+(b.x-a.x)*t,y:0,z:9});
+ seg.from=project(p(fromT)).H;seg.to=project(p(toT)).H;
+ seg.sourceCandidate3DLifts[0].originalSourceParameterRange=[fromT,toT];
+ seg.sourceCandidate3DLifts[0].fromCandidate3D=p(fromT);
+ seg.sourceCandidate3DLifts[0].toCandidate3D=p(toT);
+ return seg;
+}
+const aggregate=pieces=>union({geometry,view:'H',frontEdge:['F0','F1'],
+ nativeVisibleSegments:pieces});
+test('two genuinely split native visible BRep intervals exactly cover one original front edge',()=>{
+ const p=aggregate([piece(0,.4),piece(.4,1)]);
+ assert.equal(p.nativeVisibleOriginalFrontSourceVerified,true);
+ assert.equal(p.nativeVisibleOriginalFrontWholePaperUnionCertified,true);
+ assert.equal(p.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints,false);
+ assert.deepEqual(p.nativeVisibleUnprovenOriginalSourceIntervals,[]);
+ assert.deepEqual(p.nativeVisibleVerifiedOriginalSourceIntervals,[[0,1]]);
+ assert.equal(p.exactNativeSubintervalsAccepted,2);
+ assert.equal(p.engineeringLineStyleCertified,false);
+ assert.equal(p.signedV5Action,false);
+});
+test('reverse and overlapping actual native partial strokes retain exact full coverage',()=>{
+ const p1=piece(0,.6),p2=piece(.4,1);
+ const old=p2.from;p2.from=p2.to;p2.to=old;
+ const l=p2.sourceCandidate3DLifts[0],start=l.fromCandidate3D;
+ l.fromCandidate3D=l.toCandidate3D;l.toCandidate3D=start;
+ assert.equal(aggregate([p2,p1]).nativeVisibleOriginalFrontWholePaperUnionCertified,true);
+ assert.equal(aggregate([piece(0,1)]).nativeVisibleOriginalFrontWholePaperUnionCertified,true);
+});
+test('even a positive one-ULP-like native source gap must remain unproven',()=>{
+ const p=aggregate([piece(0,.4),piece(.4+Number.EPSILON,1)]);
+ assert.equal(p.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ assert.equal(p.nativeVisibleUnprovenOriginalSourceIntervals.length,1);
+ assert.ok(p.nativeVisibleUnprovenOriginalSourceIntervals[0][0]<
+  p.nativeVisibleUnprovenOriginalSourceIntervals[0][1]);
+});
+test('reject mismatched native paper endpoints despite claimed original 3D source lift',()=>{
+ const drift=piece(.4,1);drift.from={...drift.from,u:drift.from.u+1e-12};
+ const p=aggregate([piece(0,.4),drift]);
+ assert.equal(p.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ assert.equal(p.exactNativeSubintervalsAccepted,1);
+ assert.equal(p.mismatchedNativeOriginalEndpointsOrLiftHeld,1);
+});
+test('wrong CAD original source, forged BRep, stale view and missing 3D lift do not promote',()=>{
+ const wrong=piece(.4,1);wrong.sourceCandidate3DLifts[0].sourceEdgeId='G::FAKE';
+ assert.equal(aggregate([piece(0,.4),wrong]).nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ const fake=piece(.4,1);fake.sourceCandidate3DLifts[0].originalOCCTSourceLineCurveVerified=false;
+ assert.equal(aggregate([piece(0,.4),fake]).nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ const unl=piece(.4,1);delete unl.sourceCandidate3DLifts[0].fromCandidate3D;
+ assert.equal(aggregate([piece(0,.4),unl]).nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ const stale=piece(0,1);stale.view='W';
+ assert.throws(()=>aggregate([stale]),/unverified genuine OCCT/);
+});
+test('full coverage cannot be invented by out-of-range or zero-length source parameters',()=>{
+ const invalid=piece(.4,1);invalid.sourceCandidate3DLifts[0].originalSourceParameterRange=[.4,1.1];
+ const p=aggregate([piece(0,.4),invalid]);
+ assert.equal(p.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ assert.ok(p.nativeVisibleUnprovenOriginalSourceIntervals.length>0);
 });
