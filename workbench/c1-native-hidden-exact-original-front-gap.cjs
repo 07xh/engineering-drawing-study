@@ -73,6 +73,9 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
   newlyFullOriginalModelOpenIntervalLocallyCorroborated:0,
   remainingOriginalModelOpenIntervalUnresolvedNativeEdges:0,
   actualNativeVisibleHLRDoesNotFullyCoverM0PaperStillHeld:0,
+  verifiedCompleteRealNativeVCompoundPaperCoveringSourceGaps:0,
+  completeNativeHiddenOpenPaperLinesExplainedByDualOrExactM0WithRealVisibleBRep:0,
+  nativeHiddenOpenPaperLinesWithUnverifiedGeneratedHLRTail:0,
   confirmedGeneratedTopoDSSourceIdentities:0,
   officiallySignedGBLineStyles:0,signedV5Actions:0
  };
@@ -118,6 +121,10 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
     hiddenLift.originalXYZReprojectsToHLR===true&&
     hiddenLift.v5Authorized===false&&
     source3DMatchesRealOcct(cad,hiddenId));
+   const nativeHiddenEndpointReprojectionExactlyVerified=
+    trueHiddenGeometry&&
+    pEq(project(hiddenLift.fromCandidate3D)[view],native.from)&&
+    pEq(project(hiddenLift.toCandidate3D)[view],native.to);
    const gapRows=[];
    for(const gap of ranges){
     const range=gap;
@@ -174,6 +181,10 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
         nativeCandidates.length,
        genuineOCCTVisibleHLRGeneratedEdgeCoversAllOriginalEndpoints:
         nativeEntire,
+       genuineHCompoundSource3DEndpointsExactlyReprojectToNativePaper:
+        nativeHiddenEndpointReprojectionExactlyVerified,
+       realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven:
+        nativeEntire&&nativeHiddenEndpointReprojectionExactlyVerified,
        missingOCCTGeneratedHLREdgePaperTailStillRequiresSeparateProof:
         !nativeEntire,
        fullOriginalModelOpenParameterGapLocallyFrontMasked:true,
@@ -188,6 +199,9 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
      counts.exactM0FullFrontPhysicalSourceGapIntervalsCorroborated++;
     else counts.unprovenOriginalOpenParameterGapIntervalsHeld++;
     if(physicalFrontSourceProofs.some(x=>
+      x.realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven))
+     counts.verifiedCompleteRealNativeVCompoundPaperCoveringSourceGaps++;
+    if(physicalFrontSourceProofs.some(x=>
       x.missingOCCTGeneratedHLREdgePaperTailStillRequiresSeparateProof))
      counts.actualNativeVisibleHLRDoesNotFullyCoverM0PaperStillHeld++;
     gapRows.push({
@@ -195,7 +209,12 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
      exactFullOriginal3DPhysicalFrontSourceWitnesses:
       physicalFrontSourceProofs,
      gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry:accounted,
-     fullNativeHLRGeneratedVisiblePaperTailCertified:false,
+     nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven:
+      physicalFrontSourceProofs.some(x=>
+       x.realVisibleVCompoundAndHiddenHCompoundFullOpenPaperMaskProven),
+     // Exact native paper equality is not OCCT's generated TopoDS
+     // edge-to-source history or physical adjacent edge topological join.
+     generatedHLRSourceTopoDSHistoryAndAllJunctionsCertified:false,
      endpointAndGlobalProjectedTopologicalJoinCertified:false,
      officialEngineeringLineStyle:'undetermined',
      constructionIntentAuthorized:false,signedV5Action:false
@@ -208,6 +227,12 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
     counts.newlyFullOriginalModelOpenIntervalLocallyCorroborated++;
    if(!entry.locallyExplainedNativeHiddenOpenPaperInterval&&!localWithM0)
     counts.remainingOriginalModelOpenIntervalUnresolvedNativeEdges++;
+   const nativeFull=entry.locallyExplainedNativeHiddenOpenPaperInterval||
+    (gapRows.length>0&&gapRows.every(x=>
+     x.nativeTrueVisibleAndHiddenHLROpenPaperLineCoverageProven));
+   if(nativeFull)
+    counts.completeNativeHiddenOpenPaperLinesExplainedByDualOrExactM0WithRealVisibleBRep++;
+   else counts.nativeHiddenOpenPaperLinesWithUnverifiedGeneratedHLRTail++;
    rows.push({
     view,revision,sourceGeometryId:geometry.id,
     nativeHiddenSharpEdgeOrdinal:ordinal,
@@ -218,7 +243,11 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
     originalM4OrNativePaperPositiveGapWitnesses:gapRows,
     wholeOriginalModelOpenIntervalLocallyAccountedByRayMaskOrM0Source:
      entry.locallyExplainedNativeHiddenOpenPaperInterval||localWithM0,
-    allGeneratedHLRPaperEndpointTailExtensionsProven:false,
+    realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront:
+     nativeFull,
+    // Real paper coverage does NOT mean generated TopoDS history or
+    // neighboring source-to-source junction topological certification.
+    nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven:false,
     allOriginalPhysical3DJunctionsAndGBLineStyleCertified:false,
     constructionIntentAuthorized:false,signedV5Action:false
    });
