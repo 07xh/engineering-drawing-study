@@ -1,0 +1,27 @@
+name: C1 real OCCT box HLR
+on:
+  pull_request:
+    paths:
+      - 'scripts/c1-occt-real-box-hlr.cjs'
+      - '.github/workflows/c1-occt-real-box-hlr.yml'
+  workflow_dispatch:
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned OCCT WASM in isolated workspace
+        run: |
+          mkdir -p /tmp/draftai-occt-probe
+          cd /tmp/draftai-occt-probe
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund --save-exact opencascade.js@2.0.0-beta.b5ff984
+          ln -s /tmp/draftai-occt-probe/node_modules "$GITHUB_WORKSPACE/scripts/node_modules"
+      - name: Compute actual box BRep hidden line removal
+        run: node scripts/c1-occt-real-box-hlr.cjs
