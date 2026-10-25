@@ -7,14 +7,14 @@
  */
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
-function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold}={}){
+function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold,onGenuineTopoDSVertices}={}){
  const method=(owner,key)=>{
   if(typeof owner?.[key]!=='function')
    throw new TypeError('pinned OCJS HLR missing '+key);
   return owner[key];
  };
  const vs=newObj('TopExp_Explorer_2',edge,vertexType,avoid);
- const coords=[];
+ const coords=[],nativeVertices=[];
  while(vs.More()){
   const shape=hold(vs.Current());
   const vertex=hold(method(oc.TopoDS,'Vertex_1')(shape));
@@ -22,6 +22,7 @@ function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold}={}
   if(![p.X(),p.Y(),p.Z()].every(Number.isFinite)||Math.abs(p.Z())>1e-6)
    throw new RangeError('nonfinite or nonplanar real HLR BRep vertex');
   coords.push({u:p.X(),v:-p.Y()});
+  nativeVertices.push(vertex);
   if(coords.length>2)
    throw new RangeError('nonsegment HLR BRep source edge');
   vs.Next();
@@ -47,6 +48,11 @@ function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold}={}
   curveSamples:[0,0.25,0.5,0.75,1].map(f=>
    point(first+(last-first)*f)),curveKind:'line',curveIs3D:is3D
  });
+ if(onGenuineTopoDSVertices!==undefined){
+  if(typeof onGenuineTopoDSVertices!=='function')
+   throw new TypeError('genuine OCCT HLR vertex observer must be synchronous callback');
+  onGenuineTopoDSVertices({nativeVertices,projectedEndpoints:coords});
+ }
  return {view,from:coords[0],to:coords[1],...witness};
 }
 module.exports={readRealOcjsSharpHLREdge};

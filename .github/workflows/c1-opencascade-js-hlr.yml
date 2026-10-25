@@ -17,6 +17,11 @@ on:
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
       - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
+      - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-native-vertex-issame-graph.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-raw-hlr-edges.cjs'
+      - 'tests/workbench/c1-ocjs-native-vertex-issame-graph.test.cjs'
+      - 'tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs'
       - 'tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs'
       - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
@@ -81,6 +86,11 @@ on:
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
       - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
+      - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-native-vertex-issame-graph.cjs'
+      - 'engines/spatial/hlr/c1-ocjs-raw-hlr-edges.cjs'
+      - 'tests/workbench/c1-ocjs-native-vertex-issame-graph.test.cjs'
+      - 'tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs'
       - 'tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs'
       - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - 'tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs'
@@ -171,6 +181,8 @@ jobs:
           node --test tests/workbench/c1-native-hidden-exact-original-front-gap.test.cjs
           node --test tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs
           node --test tests/workbench/c1-native-hidden-original-3d-vertex-endpoints.test.cjs
+          node --test tests/workbench/c1-ocjs-native-vertex-issame-graph.test.cjs
+          node --test tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs
       - name: Install isolated pinned JavaScript/WASM CAD, never into production bundle
         env:
           PROBE_ROOT: ${{ runner.temp }}/draftai-ocjs-test

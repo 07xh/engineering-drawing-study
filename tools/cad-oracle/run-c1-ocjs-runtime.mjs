@@ -141,6 +141,36 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven,false);
  assert.equal(nativeHiddenM5.nativeHidden3DEndpointFans.signedV5ActionCount,0);
+ const nativeGeneratedVertexGraph=cad.nativeGeneratedVertexGraph;
+ const nativeIsSame3D=nativeHiddenM5.nativeHLRVertexConcordance;
+ assert.equal(nativeGeneratedVertexGraph.schema,
+  'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1');
+ assert.equal(nativeGeneratedVertexGraph.signedV5ActionCount,0);
+ assert.equal(nativeGeneratedVertexGraph.literalPaperCoordinateAloneNeverTopology,true);
+ assert.equal(nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges,
+  ['V','H','W'].reduce((n,v)=>
+   n+cad.views[v].length+cad.hiddenSharpViews[v].length,0));
+ assert.equal(nativeGeneratedVertexGraph.counts.actualNativeBRepVertexEndpoints,
+  2*nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges);
+ assert.equal(nativeIsSame3D.counts.actualNativeIsSamePairs,
+  nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs);
+ assert.equal(nativeIsSame3D.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,
+  nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs);
+ assert.equal(nativeIsSame3D.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
+ assert.equal(
+  nativeIsSame3D.counts.actualOriginal3DPhysicalSourceJunctionPairsVerified,
+  nativeIsSame3D.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices+
+  nativeIsSame3D.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs);
+ assert.equal(
+  nativeIsSame3D.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,
+  nativeIsSame3D.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs+
+  nativeIsSame3D.counts.paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction);
+ assert.equal(nativeIsSame3D.signedV5ActionCount,0);
+ assert.ok(nativeIsSame3D.rows.every(p=>
+  p.actualOCCTHLRGeneratedTopoDSVertexIsSame===true&&
+  p.originalGeneratedHLRTopoDSToSourceTopoDSEdgeHistoryCertified===false&&
+  p.globalJunctionAndGBEngineeringLineStyleCertified===false&&
+  p.signedV5Action===false));
  const nativePhysicalEnd=nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof;
  assert.equal(nativePhysicalEnd.counts.nativeHLRHiddenEdgesExamined,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
@@ -750,6 +780,20 @@ for(const [index,geometry] of general.entries()){
     nativePhysicalEnd.counts.missingM4EndpointsStillLackingIndependentNativeProof,
    actualNativeHiddenEdgesWithOriginalPhysicalVertexEndpointsPositive:
     nativePhysicalEnd.counts.nativeHiddenEdgesWithAllOriginal3DVertexEndpointsVerified,
+   actualGeneratedOCCTHLRSharpEdgesTopologicallyAudited:
+    nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges,
+   nativeGeneratedActualIsSameSharedTopoDSVertexPairs:
+    nativeIsSame3D.counts.actualNativeIsSamePairs,
+   nativePaperCoincidentButDifferentTopoDSVertexPairs:
+    nativeIsSame3D.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,
+   nativeIsSameAndSameOriginal3DPhysicalVertexPairs:
+    nativeIsSame3D.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,
+   nativeIsSameButOriginal3DPhysicalVertexNotConfirmed:
+    nativeIsSame3D.counts.IsSameHLRNodesButOriginalSource3DVertexNotCertified,
+   original3DPhysicalSourceHLRJunctionsProvenDespiteNativeTopoDSDisconnected:
+    nativeIsSame3D.counts.distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs,
+   nativePaperAliasesStillWithoutOriginal3DSourceJoin:
+    nativeIsSame3D.counts.paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction,
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
