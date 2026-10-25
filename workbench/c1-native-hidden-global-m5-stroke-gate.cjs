@@ -138,6 +138,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
  const nativeStarByEndpoint=new Map();
  for(const star of nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars){
   if(!VIEWS.includes(star.view)||!Array.isArray(star.generatedHLREndpoints)||
+     star.generatedHLREndpoints.length<2||
      star.genuineNativeGeneratedOCCTVertexPairwiseIsSame!==true||
      star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered!==false||
      star.wholeSceneAndEngineeringGBJunctionCertified!==false||
@@ -232,7 +233,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
     star.independentlyVerifiedOriginalM03DVertexId!==null&&
     star.independentlyVerifiedOriginalM03DVertexId===actualOriginalVertex&&
     star.independentlyTracedOriginal3DSourceEdges?.includes(edge)===true&&
-    realNativeSource.endpointWitnesses[n]?.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true;
+    (realNativeSource.endpointWitnesses[n]?.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
+     realNativeSource.endpointWitnesses[n]?.existingM4OriginalSourceEndpointVerified===true);
    if(star&&star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===true&&
       !verified)
     throw new RangeError('genuine native IsSame star conflicts with original hidden 3D endpoint source fan');
