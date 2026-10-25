@@ -149,6 +149,18 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeEncounters.entireReviewedNativeHiddenSourceM4EventLedgerAudited,true);
  assert.equal(nativeEncounters.wholeSceneProjectedJunctionAndOcclusionCertified,false);
  assert.equal(nativeEncounters.signedV5ActionCount,0);
+ assert.equal(
+  nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
+  nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven+
+  nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld+
+  nativeEncounters.counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld);
+ assert.ok(nativeEncounters.rows.every(row=>
+  row.originalM4ProjectedEncountersOnNativeSource.every(ev=>
+   ev.exactOriginalM4CrossingObserverDepthEvidence===null||
+   (ev.exactOriginalM4CrossingObserverDepthEvidence.signedV5Action===false&&
+    ev.exactOriginalM4CrossingObserverDepthEvidence.
+     sceneCompleteOcclusionAndGlobalJoinCertified===false&&
+    ev.fullGlobalProjectedJunctionAndDepthSwitchCertified===false))));
  assert.ok(nativeEncounters.rows.every(r=>
   r.generatedHLREdgeAndOriginalTopoDSIdentityCertified===false&&
   r.officialEngineeringLineStyle==='undetermined'&&
@@ -822,6 +834,14 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeHLRInteriorPaperEventsRequiringSceneJunctionReview,
    M4NativeHLRExactPaperEventAlignmentUnprovenCount:
     nativeEncounters.counts.M4OriginalEventsWithNativeHLRPaperLineNotExactlyMatched,
+   originalM4ExactTransverseCrossingEvents:
+    nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
+   exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
+    nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   exactNativeCrossingTrue3DDepthTieHeld:
+    nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld,
+   nativeCrossingOutsideActualOriginalOpenSpanHeld:
+    nativeEncounters.counts.exactM4TransverseCrossingsOutsideOriginalOpenSourceHeld,
    generatedTopoDSAndGBAndV5RemainUnsigned:true,
    stillUnresolvedOriginalModelFrontGapIntervals:
     gapModel.counts.unprovenOriginalOpenParameterGapIntervalsHeld,
