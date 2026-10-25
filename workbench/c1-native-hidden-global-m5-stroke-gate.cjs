@@ -75,6 +75,23 @@ function reviewC1NativeHiddenFinalM5Strokes({
     throw new RangeError('overlapping canonical original M5 source intervals');
   }
  }
+ const sourcePartitionCoverage=new Map();
+ for(const [key,sourceRows] of byKey){
+  const ordered=[...sourceRows].sort((a,b)=>
+   a.originalSourceParameterRange[0]-b.originalSourceParameterRange[0]);
+  const gaps=[];
+  let cursor=0;
+  for(const row of ordered){
+   const [begin,end]=row.originalSourceParameterRange;
+   if(begin>cursor)gaps.push([cursor,begin]);
+   cursor=end;
+  }
+  if(cursor<1)gaps.push([cursor,1]);
+  sourcePartitionCoverage.set(key,frozen({
+   complete:gaps.length===0,gaps,
+   intervals:ordered.map(row=>[...row.originalSourceParameterRange])
+  }));
+ }
  const counts={genuineHiddenHLRStrokesReviewed:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
@@ -114,6 +131,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   const endGaps=unique?sourceFan.endpointWitnesses.filter(x=>
    x.originalSource3DVertexId!==null&&
    x.original3DSourceVertexPlusM4AndFanVerified!==true).length:2;
+  const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
   const allGlobalBlockers=requiredGlobal.filter(k=>
    originalGlobal.some(row=>row.independentGlobalProofGaps[k]===true));
   const localNative=gap.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront===true;
@@ -126,6 +144,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
    counts.originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR++;
   else counts.missingLocalNativeOrModelOpenProofHeld++;
   if(endGaps>0)counts.original3DEndpointFanProofIncompleteStrokes++;
+  if(sourceCoverage?.complete!==true)counts.incompleteCanonicalOriginalSourcePartitions++;
   counts.genuineHiddenHLRStrokesReviewed++;
   rows.push({
    view:gap.view,revision,sourceGeometryId:geometry.id,
@@ -136,6 +155,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalSourceM4AndClosed3DVertexFanIncompleteEndpointCount:endGaps,
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
+   canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
+   canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified:false,
    engineeringGBSolidOrDashedLineStandardFullyCertified:false,
