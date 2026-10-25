@@ -58,6 +58,27 @@ const caseData=()=>{
     }]
    }]
   },
+  projectedEncounters:{
+   sourceGeometryId:'G',revision,signedV5ActionCount:0,
+   entireReviewedNativeHiddenSourceM4EventLedgerAudited:true,
+   wholeSceneProjectedJunctionAndOcclusionCertified:false,
+   rows:[{
+    sourceGeometryId:'G',revision,view:'H',nativeHiddenSharpEdgeOrdinal:0,
+    uniqueOriginalPhysical3DSourceEdgeId:'G::A|B',
+    genuineNativeHLROriginalSourceParameterRange:[0,1],
+    allEncountersReviewedAgainstCurrentSourceInterval:true,
+    completeGlobalProjectedJunctionAndOcclusionCertified:false,
+    signedV5Action:false,
+    originalM4ProjectedEncountersOnNativeSource:[{
+     originalPhysical3DSourceEdgeId:'G::A|B',view:'H',
+     originalSourceParameter:0.5,
+     actualNativeGeneratedBRepPaperRelation:{
+      originalEventOnSameNativePaperLineExactly:true
+     },fullGlobalProjectedJunctionAndDepthSwitchCertified:false,
+     signedV5Action:false
+    }]
+   }]
+  },
   globalM5Review:{schema:'draftai-c1-m5-final-source-obligation-review/1',
    sourceGeometryId:'G',revision,signedV5ActionCount:0,
    fullyCertifiedCount:0,rows:[{
@@ -77,6 +98,8 @@ test('entire native hidden HLR paper-open interval may be positive while genuine
  const r=review(caseData()),row=r.rows[0];
  assert.equal(r.counts.genuineHiddenHLRStrokesReviewed,1);
  assert.equal(r.counts.wholeRealNativeHiddenPaperOpenIntervalsLocallyProven,1);
+ assert.equal(r.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,1);
+ assert.equal(r.counts.nativeHLRInteriorProjectedEncounterEventsNotGloballyResolved,1);
  assert.equal(r.counts.original3DEndpointFanProofIncompleteStrokes,1);
  assert.equal(r.counts.missingM4OriginalVertexEndpointsIndependentNativeM0ProofRecovered,1);
  assert.equal(r.counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven,0);
@@ -137,4 +160,11 @@ test('full source coverage alone cannot sign V5 without complete topology and oc
  assert.equal(row.jointPositiveM5Prerequisites.completeSourceParameterCoverage,true);
  assert.equal(row.officialEngineeringLineStyle,'undetermined');
  assert.equal(row.signedV5Action,false);
+});
+
+test('original M4 crossing report cannot forge positive global scene occlusion or V5 certification',()=>{
+ const x=caseData();
+ x.projectedEncounters.rows[0].originalM4ProjectedEncountersOnNativeSource[0].
+  fullGlobalProjectedJunctionAndDepthSwitchCertified=true;
+ assert.throws(()=>review(x),/incomplete genuine native original-source M4 projected graph/);
 });
