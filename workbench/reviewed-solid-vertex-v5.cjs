@@ -11,12 +11,8 @@
  */
 const {reviewedSolidThirdView}=
  require('./reviewed-multipoint-solid-third-view.cjs');
-const {auditC1ConvexContourSourceCoverage}=
- require('./m5-c1-convex-contour-source-coverage.cjs');
-const {auditC1ContourPhysicalJunctionIncidence}=
- require('./m5-c1-contour-physical-junction-incidence.cjs');
-const {auditC1ContinuousFrontmostSourceRays}=
- require('./m5-c1-continuous-frontmost-source-rays.cjs');
+const {auditC1GlobalVisibleContourProof}=
+ require('./m5-c1-global-visible-contour-proof.cjs');
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {assertM3ToV5Consistency}=
@@ -38,15 +34,11 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  const sceneResult=reviewedSolidThirdView(input); // current 03 / M0 / Scene
  if(sceneResult.status!=='geometry-proven-in-confirmed-convex-scope')
   throw new RangeError('closed convex first-angle source proof unavailable');
- const convexContourSourceCoverage=auditC1ConvexContourSourceCoverage({
+ const globalVisibleContourProof=auditC1GlobalVisibleContourProof({
   geometry:sceneResult.geometry,revision:input.revision});
- const contourPhysicalJunctionIncidence=auditC1ContourPhysicalJunctionIncidence({
-  geometry:sceneResult.geometry,revision:input.revision,
-  contourCoverage:convexContourSourceCoverage});
- const continuousFrontmostSourceRays=auditC1ContinuousFrontmostSourceRays({
-  geometry:sceneResult.geometry,revision:input.revision,
-  contourCoverage:convexContourSourceCoverage,
-  physicalJunctionIncidence:contourPhysicalJunctionIncidence});
+ const {contourCoverage:convexContourSourceCoverage,
+  contourPhysicalJunctionIncidence,
+  continuousFrontmostSourceRays}=globalVisibleContourProof;
  if(continuousFrontmostSourceRays.v5Ready!==false||
     continuousFrontmostSourceRays.signedV5LineActions!==0||
     continuousFrontmostSourceRays.officialLineStylesVerified!==false)
@@ -178,7 +170,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   revision:input.revision,status:'canonical-vertex-construction-ready',
   sceneResult,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
-  scopedEdgePreviews,
+  globalVisibleContourProof,scopedEdgePreviews,
   vertexBindings:bindings,intents,steps,timeline,player,
   vertexConstructionCount:bindings.length,pointActionCount,
   singleOriginalV5Player:true,certifiedPointConstructionReady:true,
