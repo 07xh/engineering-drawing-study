@@ -235,7 +235,13 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     throw new RangeError('exhaustive generated native HLR junction components missing');
    const actualPairIds=new Set(data.sameActualGeneratedOCCTTopoDSVertexPairs
     .map(p=>[keyed(p.a),keyed(p.b)].sort().join('|')));
-   const globallySeen=new Set();
+   // A claimed exhaustive native star graph must consume EACH genuine IsSame
+   // pair exactly once. Merely checking that every star pair exists is not
+   // sufficient: an omitted third endpoint could silently certify a partial
+   // original 3D fan as the complete physical junction.
+   if(actualPairIds.size!==data.sameActualGeneratedOCCTTopoDSVertexPairs.length)
+    throw new RangeError('duplicate actual OCCT IsSame pair in exhaustive graph');
+   const consumedActualPairIds=new Set(),globallySeen=new Set();
    for(const group of stars){
     if(group.view!==view||
        group.actualGeneratedOCCTTopoDSVertexPairwiseIsSame!==true||
@@ -255,8 +261,12 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      names.add(id);globallySeen.add(id);
     }
     for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
-     if(!actualPairIds.has([keyed(members[i]),keyed(members[j])].sort().join('|')))
+     const pairId=[keyed(members[i]),keyed(members[j])].sort().join('|');
+     if(!actualPairIds.has(pairId))
       throw new RangeError('native junction component missing actual OCCT IsSame pair witness');
+     if(consumedActualPairIds.has(pairId))
+      throw new RangeError('duplicate native junction component OCCT IsSame pair');
+     consumedActualPairIds.add(pairId);
     }
     const physical=members.map(member=>locate(member,view));
     const allSourceMapped=physical.every(x=>
@@ -285,6 +295,8 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      signedV5Action:false
     });
    }
+   if(consumedActualPairIds.size!==actualPairIds.size)
+    throw new RangeError('exhaustive native junction stars omit genuine OCCT IsSame endpoint pairs');
   }
   if(counts.genuineCompleteGeneratedHLRJunctionComponentsAudited!==
       graph.counts.genuinelySharedNativeJunctionComponents)
