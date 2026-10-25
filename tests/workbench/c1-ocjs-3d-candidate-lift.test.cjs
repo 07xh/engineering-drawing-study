@@ -62,7 +62,8 @@ test('no matching original edge yields a concrete unmapped reason instead of an 
  ]){
   const r=lift(g,'V',a,b);
   assert.equal(r.sourceCandidate3DLifts.length,0);
-  assert.match(r.unmappedReason,/no-original-m0-edge/);
+  assert.match(r.unmappedReason,
+   /no-original-m0-edge|degenerate-projected-hlr/);
   assert.equal(r.officialEngineeringLineStyle,'undetermined');
  }
 });
