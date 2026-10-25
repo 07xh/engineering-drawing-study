@@ -512,6 +512,17 @@ for(const [index,geometry] of general.entries()){
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
+ assert.equal(hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+  nativeEncounters.counts.exactOriginal3DPhysicalSharedVertexAndOCCTSourceAtNativeHLR);
+ assert.equal(hiddenFormalGate.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,
+  nativeEncounters.counts.exactOriginal3DPhysicalSharedVertexDespiteNativePaperMismatch);
+ assert.ok(nativeEncounters.rows.every(row=>
+  row.originalM4ProjectedEncountersOnNativeSource.every(event=>
+   event.exactOriginalM4VertexOtherSourceDepthEvidence===null||
+   (event.exactOriginalM4VertexOtherSourceDepthEvidence.signedV5Action===false&&
+    event.exactOriginalM4VertexOtherSourceDepthEvidence.
+     actualNativeHLRGeneratedPaperAlignmentCertified===false&&
+    event.signedV5Action===false))));
  assert.equal(
   hiddenFormalGate.counts.nativeM4CollinearInteriorEventsWithExactFullFrontDepthNoSwitchProof+
   hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
@@ -859,6 +870,14 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativeM4InteriorCollinearEventsWithoutPositiveFullFrontNoSwitchProof,
    nativePaperMismatchAtAuthenticatedOriginal3DPhysicalVertex:
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
+   genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
+    hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   trueOriginal3DSharedVertexButNativeHLRPaperMismatchStillHeld:
+    hiddenFormalGate.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,
+   originalSourceVertexExactDyadicOtherEdgeChecks:
+    nativeEncounters.counts.authenticM4OriginalVertexOtherSourceIncidencesExactlyReviewed,
+   projectedSourceEndpointsWithExactStrictDifferent3DObserverDepth:
+    nativeEncounters.counts.projectedEndpointEventsProvedStrictlyDifferentOriginal3DDepth,
    exactNativeCrossingTrue3DDepthTieHeld:
     nativeEncounters.counts.exactM4TransverseCrossingsWithDepthTieHeld,
    nativeCrossingOutsideActualOriginalOpenSpanHeld:
