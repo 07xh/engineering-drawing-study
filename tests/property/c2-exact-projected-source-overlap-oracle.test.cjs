@@ -21,7 +21,7 @@ const settings={seed:20261025,numRuns:380};
 test('OSS C2: all exact horizontal/vertical source overlaps obey an independent integer interval oracle',()=>{
  let both=0,none=0;
  fc.assert(fc.property(ends,ends,n,
-  fc.constantFrom(0,2**-35,-2**-35,2**-42),
+  fc.constantFrom(0,2**-35,-(2**-35),2**-42),
   fc.constantFrom('horizontal','vertical'),([a,b],[c,d],shift,offset,axis)=>{
    const A=axis==='horizontal'?[xy(a,shift),xy(b,shift)]:
     [xy(shift,a),xy(shift,b)];
