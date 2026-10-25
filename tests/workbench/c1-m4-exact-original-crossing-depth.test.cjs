@@ -98,9 +98,9 @@ test('one-ULP-off canonical M4 event parameter cannot borrow true rational cross
 });
 test('non-dyadic exact crossing does not pretend approximate canonical M4 t to be an exact source cut',()=>{
  const g=structuredClone(geometry);
- g.data.points.B.x=3;
+ g.data.points.B.x=15;
  const result=depth({geometry:g,view:'H',firstEdge:['A','B'],
-  secondEdge:['C','D'],originalM4SourceParameter:5/3});
+  secondEdge:['C','D'],originalM4SourceParameter:1/3});
  assert.equal(result.exactM4TransverseProjectedLineIntersectionProven,true);
  assert.equal(result.originalM4SourceParameterExactlyMatchesRationalCrossing,false);
 });
