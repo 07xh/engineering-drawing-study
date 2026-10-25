@@ -240,6 +240,22 @@ for(const [index,geometry] of general.entries()){
   'draftai-c1-original-source-m4-3d-cut-junction-provenance/1');
  assert.equal(features.originalSourcePaperPrioritySchema,
   'draftai-c1-m5-original-source-paper-priority/1');
+ assert.equal(features.exactStrictInwardPaperCandidatePruningSchema,
+  'draftai-c1-m5-exact-hidden-paper-source-pruning/1');
+ assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>{
+  const narrowed=span.originalPaperCandidatesPrunedByExactStrictInward;
+  return narrowed?.sourceGeometryId===geometry.id&&
+   narrowed?.revision===40+index&&
+   narrowed?.view===row.view&&
+   narrowed?.targetSourceEdgeId===row.sourceEdgeId&&
+   narrowed?.signedV5Action===false&&
+   narrowed?.actualOCCTTopoDSEdgeIdentityRecovered===false&&
+   span.signedV5Action===false&&
+   (!span.originalSourceUniquenessOnlyAfterExactM0Pruning||
+    narrowed.targetUniqueWithinOriginalPaperCandidatesByExactM0&&
+    narrowed.multipleCandidatesNarrowedByExactM0);
+ })));
+
  assert.ok(features.rows.every(row=>row.sourceBoundSubintervals.every(span=>
   span.originalPaperSourcePriority.signedV5Action===false&&
   span.originalPaperSourcePriority.standardEngineeringLineStyle==='undetermined'&&
@@ -313,6 +329,10 @@ for(const [index,geometry] of general.entries()){
     physicalFeatureUnproven:finalGate.counts.unprovenPhysicalFeatureHeld,
     visibleCadRayCorroboratedAwaitingFinalM5:
      finalGate.counts.visibleWholeRayAndCadButOtherGatesRemain,
+    localPositiveAfterExactSourceAliasElimination:
+     finalGate.counts.localPositiveAfterStrictHiddenAliasElimination,
+    sourceCandidateIdentitiesPrunedByExactInward:
+     finalGate.counts.exactInwardPrunedOriginalSourceCandidates,
     wholeOpenStrictlyHiddenAwaitingFinalM5:
      finalGate.counts.strictlyHiddenWholeOpenRayButOtherGatesRemain,
     behindAnotherSource:
@@ -370,6 +390,10 @@ for(const [index,geometry] of general.entries()){
     features.counts.originalSourcePaperPartialOverlapCount,
    originalPaperPairDepthProofCount:
     features.counts.originalSourcePaperOverlapPairDepthCount,
+   actualRealCADMultipleRawSourceAliasSubspans:
+    features.counts.realCADCollinearMultipleOriginalCandidateCount,
+   provenExactHiddenEliminationsYieldUniqueOriginalSource:
+    features.counts.realCADSourceAliasResolvedByExactInwardCount,
    certifiedSameOriginal3DEdgeCutJoins:
     features.counts.sameOriginalSource3DAdjacentCutContinuities,
    unresolvedPaperOnly3DSourceEventCount:
