@@ -162,8 +162,13 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   (b.nativeHidden||b.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
   a.source!==null&&b.source!==null&&a.source!==b.source&&
   a.vertex!==null&&a.vertex===b.vertex;
+ // Every compared endpoint pair has exactly one native IsSame truth value.
+ // Reject contradictory or duplicated rows even before a complete-star claim:
+ // otherwise pairwise M0 junction counts can be inflated or contradictory.
+ const endpointKey=ref=>ref.hlrClass+'@'+ref.nativeHLREdgeOrdinal+'@'+ref.side;
+ const nativePairKey=pair=>[endpointKey(pair.a),endpointKey(pair.b)].sort().join('|');
  for(const view of VIEWS){
-  const data=graph.views[view];
+  const data=graph.views[view],seenNativePairTruth=new Map();
   for(const pair of data.sameActualGeneratedOCCTTopoDSVertexPairs){
    if(pair.view!==view||pair.nativeGeneratedOCCTTopoDSVertexIsSame!==true||
       pair.original3DSourceTopoDSVertexIdentityRecovered!==false||
@@ -171,6 +176,12 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       pair.signedV5Action!==false||
       !equal(pair.a?.nativePaperPoint,pair.b?.nativePaperPoint))
     throw new RangeError('native OCCT shared vertex lacks real IsSame proof or is prematurely signed');
+   const key=nativePairKey(pair);
+   if(endpointKey(pair.a)===endpointKey(pair.b))
+    throw new RangeError('self-paired native OCCT IsSame endpoint');
+   if(seenNativePairTruth.has(key))
+    throw new RangeError('duplicate actual OCCT IsSame pair');
+   seenNativePairTruth.set(key,true);
    const a=locate(pair.a,view),b=locate(pair.b,view);
    const both=a.nativeHidden&&b.nativeHidden;
    const verified=verifiedPhysical3DPair(a,b);
@@ -204,6 +215,14 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       pair.signedV5Action!==false||
       !equal(pair.a?.nativePaperPoint,pair.b?.nativePaperPoint))
     throw new RangeError('paper-only alias cannot be considered a native vertex');
+   const key=nativePairKey(pair);
+   if(endpointKey(pair.a)===endpointKey(pair.b))
+    throw new RangeError('self-paired paper-distinct native OCCT endpoint');
+   if(seenNativePairTruth.has(key))
+    throw new RangeError(seenNativePairTruth.get(key)?
+     'conflicting native OCCT IsSame and paper-distinct pair':
+     'duplicate paper-distinct native OCCT pair');
+   seenNativePairTruth.set(key,false);
    const a=locate(pair.a,view),b=locate(pair.b,view);
    const originalPhysical=verifiedPhysical3DPair(a,b);
    counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld++;
