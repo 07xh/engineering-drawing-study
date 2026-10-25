@@ -30,6 +30,8 @@ const {auditC1ProjectedSourcePairDepth}=
  require('./c1-projected-source-pair-affine-depth.cjs');
 const {auditC1SingleConvexSourceSubspanRays}=
  require('./m5-c1-source-subspan-opaque-rays.cjs');
+const {auditC1OriginalSourceSubspanJunctions}=
+ require('./c1-original-source-subspan-junction-provenance.cjs');
 function freeze(o){
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -60,6 +62,18 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   throw new RangeError('M4 source event graph cannot forge C1 signoff');
  const eventByKey=new Map(eventGraph.rows.map(x=>
   [x.sourceEdgeId+'@'+x.view,x]));
+ const junction=auditC1OriginalSourceSubspanJunctions({
+  geometry,revision});
+ if(junction.sourceGeometryId!==geometry.id||
+    junction.revision!==revision||
+    junction.signedV5ActionCount!==0||
+    junction.counts.originalSourceSubspanCount!==
+     eventGraph.partitionedSourceSubintervalCount||
+    junction.m5OriginalContourAvailable!==true)
+  throw new RangeError('original-source endpoint proof cannot mint physical 3D V5 junction');
+ const junctionByKey=new Map(junction.rows.map(x=>[
+  x.sourceEdgeId+'@'+x.view,x]));
+
  const opaque=auditC1SingleConvexSourceSubspanRays({geometry,revision});
  if(opaque.sourceGeometryId!==geometry.id||opaque.revision!==revision||
     opaque.signedV5ActionCount!==0||opaque.wholeSolidV5Ready!==false||
@@ -206,7 +220,12 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    c.projectedOriginalEdgeCandidates.includes(row.sourceEdgeId));
   const relevantOverlaps=
    overlapBySource.get(row.sourceEdgeId+'@'+row.view)??[];
-  const spans=match.spans.map(span=>{
+  const sourceJunction=junctionByKey.get(
+   row.sourceEdgeId+'@'+row.view);
+  if(!sourceJunction||
+     sourceJunction.spans.length!==match.spans.length)
+   throw new RangeError('M4 and M5 original source-cut junction counts differ');
+  const spans=match.spans.map((span,index)=>{
    const sourcePairDepthComparisons=relevantOverlaps.filter(x=>
     x.bounds[0]<=span.originalParameterRange[0]+1e-9&&
     x.bounds[1]>=span.originalParameterRange[1]-1e-9)
@@ -218,6 +237,15 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
      thirdPartyFacesVerified:false,
      independentOriginal3DJunctionsVerified:false,
      engineeringLineStyle:'undetermined',signedV5Action:false}));
+   const physicalEndpoint=sourceJunction.spans[index];
+   if(physicalEndpoint.sourceEdgeId!==row.sourceEdgeId||
+      physicalEndpoint.view!==row.view||
+      physicalEndpoint.sourceParameterRange[0]!==
+       span.originalParameterRange[0]||
+      physicalEndpoint.sourceParameterRange[1]!==
+       span.originalParameterRange[1]||
+      physicalEndpoint.signedV5Action!==false)
+    throw new RangeError('M4 original 3D source endpoints cannot be relabeled by CAD');
    const opaqueRay=opaqueByKey.get(spanKey(
     row.sourceEdgeId,row.view,span.originalParameterRange));
    if(!opaqueRay||
@@ -244,6 +272,14 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
    else if(status==='undetermined')unresolvedNonHullSubintervals++;
    return {...span,status,
     sourcePairDepthComparisons,
+    independentOriginal3DJunctionProof:{
+     fromEndpoint:physicalEndpoint.fromEndpoint,
+     toEndpoint:physicalEndpoint.toEndpoint,
+     sameOriginalSource3DContinuityFromPriorPiece:
+      physicalEndpoint.sameOriginalSource3DContinuityFromPriorPiece,
+     allPhysicalCrossSourceJunctionsAuthorized:false,
+     signedV5Action:false
+    },
     originalConvexOpaqueRayStatus:opaqueRay.status,
     wholeOpenSubspanExactSourceRayClear:
      opaqueRay.exactOriginalFaceWholeOpenRayClear,
@@ -286,6 +322,14 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   pairDepth.undeterminedPairwiseDepthCount;
  summary.authenticSharedVertexPairDepthProofCount=
   pairDepth.authenticSharedOriginalVertexOpenDepthWitnessCount;
+ summary.authenticatedOriginalVertexSubspanEndpoints=
+  junction.counts.originalVertexEndpointWitnesses;
+ summary.sameOriginalSource3DAdjacentCutContinuities=
+  junction.counts.sharedOriginalSourceNeighborJoins;
+ summary.paperOnlyForeignSourceEventWitnesses=
+  junction.counts.paperOnlyForeignSourceEncounters;
+ summary.roundedParameterPhysicalJoinRefusals=
+  junction.counts.roundedDiagnosticEncountersHeld;
  summary.projectedSourceEventCount=eventGraph.actualM4OriginalSourcePairwiseEventCount;
  summary.sourceBoundSubintervalCount=eventGraph.partitionedSourceSubintervalCount;
  summary.nonHullPositiveSubintervals=provenNonHullSubintervals;
@@ -311,6 +355,7 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
   originalSourceEdgeViews:rows.length,views:VIEWS,
   rows:segmented,counts:summary,
   sourceProjectedEventGraphSchema:eventGraph.schema,
+  independentOriginal3DJunctionProofSchema:junction.schema,
   sourcePairDepthProofSchema:pairDepth.schema,
   originalSourceOpaqueSubspanProofSchema:opaque.schema,
   CADComputedGenuineOpenCascadeWasm:true,
