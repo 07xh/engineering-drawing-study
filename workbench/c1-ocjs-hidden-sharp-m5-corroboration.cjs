@@ -29,6 +29,8 @@ const {auditC1NativeHiddenFrontVisibleMasks}=
  require('./c1-native-hidden-front-visible-mask.cjs');
 const {auditC1NativeHiddenDualOpenIntervalProof}=
  require('./c1-native-hidden-dual-proof-open-interval-union.cjs');
+const {auditC1NativeHiddenExactModelFrontMasks}=
+ require('./c1-native-hidden-exact-model-front-mask.cjs');
 const frozen=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -277,6 +279,13 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
      counts.realNativeHiddenSharpSegments||
     nativeHiddenDualOpenIntervalProof.signedV5ActionCount!==0)
   throw new RangeError('real native OCCT hidden joint physical line proof incomplete');
+ const nativeHiddenExactModelFrontMask=auditC1NativeHiddenExactModelFrontMasks({
+  geometry,revision,cad,refinements:nativeHiddenSourceRefinements,m5
+ });
+ if(nativeHiddenExactModelFrontMask.counts.genuineNativeHiddenSharpStrokes!==
+      counts.realNativeHiddenSharpSegments||
+    nativeHiddenExactModelFrontMask.signedV5ActionCount!==0)
+  throw new RangeError('exact original 3D front-depth witness failed native HLR source count');
  return frozen({
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
@@ -290,6 +299,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   nativeHiddenOriginalOpenRayClosure,
   nativeHiddenFrontVisibleMask,
   nativeHiddenDualOpenIntervalProof,
+  nativeHiddenExactModelFrontMask,
   counts,rows,
   localProofNotGlobalTopoDSIdentity:true,
   sourceAndGeneratedHiddenLineAttributionNotCertified:true,
