@@ -177,6 +177,28 @@ for(const [index,geometry] of general.entries()){
    n+cad.views[v].length+cad.hiddenSharpViews[v].length,0));
  assert.equal(nativeGeneratedVertexGraph.counts.actualNativeBRepVertexEndpoints,
   2*nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges);
+ assert.equal(nativeGeneratedVertexGraph.
+  allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing,true);
+ assert.equal(nativeGeneratedVertexGraph.
+  generatedJunctionComponentsBasedOnlyOnPairwiseOCCTIsSame,true);
+ assert.equal(nativeGeneratedVertexGraph.counts.allPerViewGeneratedOCCTTopoDSVertexPairsChecked,
+  ['V','H','W'].reduce((n,v)=>{
+   const k=2*(cad.views[v].length+cad.hiddenSharpViews[v].length);
+   return n+k*(k-1)/2;
+  },0));
+ assert.equal(nativeIsSame3D.allPerViewActualNativeGeneratedJunctionComponentsConsumed,true);
+ assert.equal(nativeIsSame3D.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,
+  nativeGeneratedVertexGraph.counts.genuinelySharedNativeJunctionComponents);
+ assert.equal(nativeIsSame3D.counts.
+  completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex+
+  nativeIsSame3D.counts.
+   completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,
+  nativeGeneratedVertexGraph.counts.genuinelySharedNativeJunctionComponents);
+ assert.ok(nativeIsSame3D.completeGenuineNativeHLRJunctionStars.every(node=>
+  node.genuineNativeGeneratedOCCTVertexPairwiseIsSame===true&&
+  node.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered===false&&
+  node.wholeSceneAndEngineeringGBJunctionCertified===false&&
+  node.signedV5Action===false));
  assert.equal(nativeIsSame3D.counts.actualNativeIsSamePairs,
   nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs);
  assert.equal(nativeIsSame3D.counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld,
@@ -894,6 +916,10 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   trueOriginal3DSharedVertexAndNativeIsSameEntireJunctionNodes:
+    nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,
+   nativeIsSameJunctionNodesStillLackingFullOriginal3DSourceFan:
+    nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,
    trueOriginal3DSharedVertexButNativeHLRPaperMismatchStillHeld:
     hiddenFormalGate.counts.exactSource3DSharedVertexButNativeGeneratedPaperStillMisaligned,
    originalSourceVertexExactDyadicOtherEdgeChecks:

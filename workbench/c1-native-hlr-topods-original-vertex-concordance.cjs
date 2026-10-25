@@ -63,6 +63,9 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   distinctNativeTopoDSButSameIndependentlyProvenOriginal3DVertexPairs:0,
   paperCoincidentNativePairsWithoutIndependent3DPhysicalJunction:0,
   actualOriginal3DPhysicalSourceJunctionPairsVerified:0,
+  genuineCompleteGeneratedHLRJunctionComponentsAudited:0,
+  completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex:0,
+  completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource:0,
   generatedTopoDSEdgeOriginalSourceHistoryCertified:0,
   engineeringGBLineJunctionsSigned:0,signedV5Actions:0
  };
@@ -151,6 +154,75 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     globalGBLineJoinStillNotCertified:true,signedV5Action:false});
   }
  }
+ // Consume the *whole* actual OCCT IsSame equivalence-class star, not
+ // one paper-coincident native edge pair at a time. A complete native star
+ // is a proven original 3D physical shared vertex only if EVERY endpoint
+ // independently traces to the SAME M0 source vertex and distinct genuine
+ // M5-original 3D edges. A visible edge with unknown original provenance
+ // holds the entire component; no invented native->original TopoDS history.
+ const completeNativeJunctionStars=[];
+ if(graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true){
+  const keyed=n=>n.hlrClass+'@'+n.nativeHLREdgeOrdinal+'@'+n.side;
+  for(const view of VIEWS){
+   const data=graph.views[view],stars=data.generatedOCCTSharedNativeJunctionComponents;
+   if(data.allNativeGeneratedEndpointPairsIndependentlyCompared!==true||
+      !Array.isArray(stars))
+    throw new RangeError('exhaustive generated native HLR junction components missing');
+   const actualPairIds=new Set(data.sameActualGeneratedOCCTTopoDSVertexPairs
+    .map(p=>[keyed(p.a),keyed(p.b)].sort().join('|')));
+   const globallySeen=new Set();
+   for(const group of stars){
+    if(group.view!==view||
+       group.actualGeneratedOCCTTopoDSVertexPairwiseIsSame!==true||
+       group.originalGeneratedTopoDSHistoryRecovered!==false||
+       group.engineeringLineJoinCertified!==false||
+       group.signedV5Action!==false||
+       !Array.isArray(group.generatedSharpEdgeEndpoints)||
+       group.generatedSharpEdgeEndpoints.length<2)
+     throw new RangeError('invalid genuine OCCT full generated vertex junction star');
+    const members=group.generatedSharpEdgeEndpoints;
+    const paper=group.exactNativePaperCoordinatesForEntireComponent;
+    const names=new Set();
+    for(const item of members){
+     const id=keyed(item);
+     if(names.has(id)||globallySeen.has(id)||!equal(item.nativePaperPoint,paper))
+      throw new RangeError('overlapping or paper-misaligned native TopoDS junction stars');
+     names.add(id);globallySeen.add(id);
+    }
+    for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++){
+     if(!actualPairIds.has([keyed(members[i]),keyed(members[j])].sort().join('|')))
+      throw new RangeError('native junction component missing actual OCCT IsSame pair witness');
+    }
+    const physical=members.map(member=>locate(member,view));
+    const allHidden=physical.every(x=>x.nativeHidden);
+    const allSourceMapped=allHidden&&physical.every(x=>
+     typeof x.source==='string'&&x.vertex!==null&&x.vertex!==undefined);
+    const vertices=new Set(physical.map(x=>x.vertex));
+    const distinctSources=new Set(physical.map(x=>x.source));
+    const fullyCertified=allSourceMapped&&vertices.size===1&&distinctSources.size>=2;
+    counts.genuineCompleteGeneratedHLRJunctionComponentsAudited++;
+    if(fullyCertified)
+     counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex++;
+    else counts.completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource++;
+    completeNativeJunctionStars.push({
+     view,genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+     exactNativePaperPoint:{...paper},
+     generatedHLREndpoints:members.map(x=>({...x,nativePaperPoint:{...x.nativePaperPoint}})),
+     allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:fullyCertified,
+     independentlyVerifiedOriginalM03DVertexId:
+      fullyCertified?physical[0].vertex:null,
+     independentlyTracedOriginal3DSourceEdges:
+      fullyCertified?[...distinctSources].sort():[],
+     originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+     wholeSceneAndEngineeringGBJunctionCertified:false,
+     signedV5Action:false
+    });
+   }
+  }
+  if(counts.genuineCompleteGeneratedHLRJunctionComponentsAudited!==
+      graph.counts.genuinelySharedNativeJunctionComponents)
+   throw new RangeError('generated native junction component count disagrees with OCCT graph');
+ }
  if(counts.actualNativeIsSamePairs!==
     graph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs||
     counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld!==
@@ -159,6 +231,9 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
  return frozen({schema:'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,paperOnlyProjectedVertexAliases:aliases,
+  completeGenuineNativeHLRJunctionStars:completeNativeJunctionStars,
+  allPerViewActualNativeGeneratedJunctionComponentsConsumed:
+   graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true,
   nativeGeneratedTopoDSVertexAndOriginal3DPhysicalJunctionIndependentEvidence:true,
   actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete:false,
   entireHLRGraphAndAllProjectedJunctionsCertified:false,
