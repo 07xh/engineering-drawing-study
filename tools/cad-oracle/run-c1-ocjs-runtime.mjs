@@ -20,6 +20,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {auditC1OcjsPhysicalCreaseCandidates}=
  require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
+const {auditC1OriginalStrokeFinalPreconditions}=
+ require('../../workbench/c1-m5-final-source-stroke-preconditions.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -196,6 +198,42 @@ for(const [index,geometry] of general.entries()){
   x.officialEngineeringLineStyle==='undetermined'));
  assert.equal(features.counts.cadM0PositiveConflicts,0,
   'real CAD M0 positive non-hull edge conflict');
+ const finalGate=auditC1OriginalStrokeFinalPreconditions({
+  oc,geometry,revision:40+index,physicalEvidence:features});
+ assert.equal(finalGate.schema,
+  'draftai-c1-m5-recomputed-real-wasm-final-source-obligations/1');
+ assert.equal(finalGate.sourceGeometryId,geometry.id);
+ assert.equal(finalGate.revision,40+index);
+ assert.equal(finalGate.signedV5ActionCount,0);
+ assert.equal(finalGate.counts.totalOriginalSourceEdgeViewSubspans,
+  features.counts.sourceBoundSubintervalCount);
+ assert.equal(finalGate.counts.attemptedNewEngineeringLineSignatures,0);
+ assert.equal(finalGate.counts.attemptedNewV5Actions,0);
+ assert.ok(finalGate.subspans.every(row=>
+  row.formalStandardLineStyle==='undetermined'&&
+  row.certifiedEngineeringSolidLine===false&&
+  row.certifiedEngineeringDashedLine===false&&
+  row.signedV5Action===false&&
+  row.blockers.applicableStandardEngineeringLineStyleNotCertified===true&&
+  row.blockers.originalConstructionIntentDAGAndSingleV5NotAuthorized===true));
+ // A local M0 ray-clear source is not necessarily a unique, provenance-
+ // resolved CAD source: never demand false positive FINAL stroke readiness.
+ // Instead require every independently positive ray to be accounted for
+ // even when CAD source multiplicity or other same-paper depth blocks it.
+ assert.ok(features.counts.singleOpaqueSourceSubspanClearCount+
+  features.counts.singleOpaqueSourceSubspanStrictHiddenCount>0,
+  'genuine WASM regression must include independently computed M0 source rays');
+ assert.ok(finalGate.counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete>=0);
+ assert.ok(finalGate.counts.nonHullRayClearButSourcePriorityUnproven>=0);
+ assert.equal(finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
+  features.counts.singleOpaqueSourceSubspanStrictHiddenCount);
+
+ // Caller-supplied display/QA flags are never accepted as real proof.
+ assert.throws(()=>auditC1OriginalStrokeFinalPreconditions({
+  oc,geometry,revision:40+index,physicalEvidence:{
+   ...features,officialV5ActionCount:1}
+ }),/stale\/forged/);
+
  assert.equal(features.sourceProjectedEventGraphSchema,
   'draftai-c1-original-source-m4-projected-event-graph/1');
  assert.equal(features.independentOriginal3DJunctionProofSchema,
@@ -269,6 +307,29 @@ for(const [index,geometry] of general.entries()){
   physicalFeatureEvidence:{
    localExactOutwardCADVisible:
     features.counts.locallyCADAndM5Visible,
+   finalSourceObligations:{
+    total:finalGate.counts.totalOriginalSourceEdgeViewSubspans,
+    existingOuterContourHeld:finalGate.counts.externalContourHeld,
+    physicalFeatureUnproven:finalGate.counts.unprovenPhysicalFeatureHeld,
+    visibleCadRayCorroboratedAwaitingFinalM5:
+     finalGate.counts.visibleWholeRayAndCadButOtherGatesRemain,
+    wholeOpenStrictlyHiddenAwaitingFinalM5:
+     finalGate.counts.strictlyHiddenWholeOpenRayButOtherGatesRemain,
+    behindAnotherSource:
+     finalGate.counts.behindAnotherPhysicalSource,
+    duplicate3D:finalGate.counts.physical3DDuplicateHeld,
+    unresolved:
+     finalGate.counts.unresolvedPhysicalVisibilityOrSourcePriority,
+    realCadPositiveWithoutWholeRay:
+     finalGate.counts.realCadPositiveWithoutWholeRayProof,
+    rayClearButRealCadSourceNotUnique:
+     finalGate.counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete,
+    rayClearButOriginalSourcePriorityUnproven:
+     finalGate.counts.nonHullRayClearButSourcePriorityUnproven,
+    strictHiddenNotYetSignedAsDash:
+     finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
+    signedNewV5:finalGate.signedV5ActionCount
+   },
    localStrictHidden:
     features.counts.locallyFullStrictlyOccluded,
    blockedOrUnresolved:features.counts.undetermined,
