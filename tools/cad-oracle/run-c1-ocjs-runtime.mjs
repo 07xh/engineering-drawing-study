@@ -316,6 +316,27 @@ for(const [index,geometry] of general.entries()){
   features.counts.sourceBoundSubintervalCount);
  assert.equal(finalGate.independentOriginalVertexRayProofSchema,
   'draftai-c1-m5-exact-original-vertex-observer-ray/1');
+ assert.equal(finalGate.independentlyRecomputedOriginal3DVertexFanSchema,
+  'draftai-c1-m5-reviewed-closed-original-vertex-fan/1');
+ assert.equal(finalGate.original3DVertexClosedFaceFanTotals.
+  reviewedOriginal3DVertexViewStars,
+  Object.keys(geometry.data.points).length*3);
+ assert.equal(finalGate.original3DVertexClosedFaceFanTotals.
+  realClosedOriginalVertexFaceFans,
+  Object.keys(geometry.data.points).length*3);
+ assert.equal(finalGate.counts.certifiedOriginal3DVertexFanEndpointWitnesses+
+  finalGate.counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount,
+  finalGate.counts.totalOriginalSourceEdgeViewSubspans*2);
+ assert.ok(finalGate.subspans.every(span=>
+  span.reviewedOriginalClosed3DVertexFanEndpoints?.length===2&&
+  span.reviewedOriginalClosed3DVertexFanEndpoints.every(end=>
+   end.signedV5Action===false&&
+   (end.genuineClosed3DOriginalVertexFaceFanVerified===
+     (end.original3DVertexId!==null))&&
+   (!end.originalPaperM4EndpointLinkPositivelyVerified||
+    end.genuineClosed3DOriginalVertexFaceFanVerified)&&
+   !end.completeVisibleEngineeringLineJunctionCertified)));
+
  assert.equal(finalGate.independentlyRecomputedClosedOriginalEdgeRaySchema,
   'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1');
  assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.originalSourceEdgeViews,
@@ -527,6 +548,17 @@ for(const [index,geometry] of general.entries()){
      finalGate.counts.strictlyHiddenEvidenceNotYetSignedAsDash,
     genuineOriginalVertexWholeRayClearEndpoints:
      finalGate.counts.originalVertexEndpointExactRayClearWitnesses,
+    realOriginal3DVertexFaceFanEndpointProofs:
+     finalGate.counts.certifiedOriginal3DVertexFanEndpointWitnesses,
+    original3DVertexM4PaperEndpointLinksHeld:
+     finalGate.counts.originalVertexFanM4EndpointLinkMissingHeld,
+    nonoriginalPaperCutsWithout3DVertexFan:
+     finalGate.counts.syntheticPaperPointCannotAcquireClosed3DVertexStarCount,
+    distinctDepthPaperVertexAliasesHeld:
+     finalGate.counts.actualOriginal3DVertexProjectedAliasWitnessesHeld,
+    genuineOriginal3DVertexFaceFanViewStars:
+     finalGate.original3DVertexClosedFaceFanTotals.
+      realClosedOriginalVertexFaceFans,
     exactWholeClosedOriginalPhysicalEdgeViews:
      finalGate.originalFull3DEdgeRayContinuityTotals.
       exactWholeClosedOriginalPhysicalEdgeRayClear,
