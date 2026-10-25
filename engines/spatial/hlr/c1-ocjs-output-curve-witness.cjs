@@ -8,7 +8,8 @@
  */
 const {VIEWS}=require('../../../core/projection/conventions.js');
 function verifyOcjsHLRProjectedLineCurveWitness({
- view,projectedEndpoints,parameterRange,curveSamples,curveKind
+ view,projectedEndpoints,parameterRange,curveSamples,curveKind,
+ curveIs3D
 }={}){
  const valid2=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
  const valid3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
@@ -18,7 +19,8 @@ function verifyOcjsHLRProjectedLineCurveWitness({
     !Array.isArray(parameterRange)||parameterRange.length!==2||
     !parameterRange.every(Number.isFinite)||!(parameterRange[1]>parameterRange[0])||
     !Array.isArray(curveSamples)||curveSamples.length!==5||
-    !curveSamples.every(valid3))
+    !curveSamples.every(valid3)||
+    (curveIs3D!==undefined&&typeof curveIs3D!=='boolean'))
   throw new TypeError('finite real OCCT projected HLR line curve witness required');
  const [from,to]=projectedEndpoints;
  const difference=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
@@ -51,6 +53,8 @@ function verifyOcjsHLRProjectedLineCurveWitness({
   actualOCCTHLRFlattenedBRepLineVerified:true,
   actualOCCTHLRCurveOrientation:direct?'same-as-vertices':'reverse-of-vertices',
   actualOCCTHLRCurveEntireFiniteIntervalIsLine:true,
+  actualOCCTHLRCurveBacking:curveIs3D===false?'surface-pcurve':
+   curveIs3D===true?'native-3d':'not-specified-in-unit-test',
   originalTopoDSSourceForHLREdgeRecovered:false,
   formalStandardLineStyle:'undetermined',v5Authorized:false
  };
