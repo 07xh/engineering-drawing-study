@@ -135,19 +135,33 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       !Array.isArray(lift.originalVertexIds)||
       lift.originalVertexIds.join('|')!==edge.join('|'))
     return {source:null,vertex:null,nativeHidden:false};
-   const isFrom=ref.side==='from',t=isFrom?
-    lift.sourceParameterAtProjectedFrom:lift.sourceParameterAtProjectedTo;
+   // One native endpoint cannot be certified from a lift whose OTHER
+   // endpoint contradicts the same original 3D source edge or HLR stroke.
+   // Check the complete source interval before granting either endpoint.
+   const tFrom=lift.sourceParameterAtProjectedFrom,
+    tTo=lift.sourceParameterAtProjectedTo;
+   const original=[geometry.data.points[edge[0]],geometry.data.points[edge[1]]];
+   const actualA=lift.actualOriginalOCCTBRepFrom3D,
+    actualB=lift.actualOriginalOCCTBRepTo3D;
+   const inSourceRange=t=>Number.isFinite(t)&&t>=0&&t<=1;
+   const endpointMatches=(t,xyz)=>t===0?xyzEq(xyz,original[0]):
+    t===1?xyzEq(xyz,original[1]):true;
+   if(!inSourceRange(tFrom)||!inSourceRange(tTo)||tFrom===tTo||
+      !((xyzEq(original[0],actualA)&&xyzEq(original[1],actualB))||
+        (xyzEq(original[0],actualB)&&xyzEq(original[1],actualA)))||
+      !xyzEq(lift.fromCandidate3D,lift.fromCandidate3D)||
+      !xyzEq(lift.toCandidate3D,lift.toCandidate3D)||
+      !endpointMatches(tFrom,lift.fromCandidate3D)||
+      !endpointMatches(tTo,lift.toCandidate3D)||
+      !equal(project(lift.fromCandidate3D)[view],seg.from)||
+      !equal(project(lift.toCandidate3D)[view],seg.to))
+    return {source:null,vertex:null,nativeHidden:false};
+   const isFrom=ref.side==='from',t=isFrom?tFrom:tTo;
    const id=t===0?edge[0]:t===1?edge[1]:null;
    if(id===null)return {source:null,vertex:null,nativeHidden:false};
    const xyz=geometry.data.points[id],measured=isFrom?
     lift.fromCandidate3D:lift.toCandidate3D;
-   const original=[geometry.data.points[edge[0]],geometry.data.points[edge[1]]];
-   const actualA=lift.actualOriginalOCCTBRepFrom3D,
-    actualB=lift.actualOriginalOCCTBRepTo3D;
-   if(!xyzEq(xyz,measured)||
-      !equal(project(xyz)[view],point)||
-      !((xyzEq(original[0],actualA)&&xyzEq(original[1],actualB))||
-        (xyzEq(original[0],actualB)&&xyzEq(original[1],actualA))))
+   if(!xyzEq(xyz,measured)||!equal(project(xyz)[view],point))
     return {source:null,vertex:null,nativeHidden:false};
    return {source:lift.sourceEdgeId,vertex:id,nativeHidden:false,
     independentlyOriginalVisibleM0AndM5FullClearSourceVertex:true};
