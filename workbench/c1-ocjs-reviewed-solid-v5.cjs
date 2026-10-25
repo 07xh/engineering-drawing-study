@@ -120,4 +120,79 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    newOfficialLineStyleSigner:false,secondV5:false
   }});
 }
-module.exports={compileC1WithOcjsHLR,intervalCoverage,positiveCollinearOverlap};
+/**
+ * Strict general-convex C1 proof-gap ledger. Unlike the full-signoff entry,
+ * this audits EVERY original M5 hull interval against the computed REAL HLR
+ * source candidates even when an oblique convex ring lacks a global M5 proof.
+ *
+ * No caller-supplied proof booleans, no CAD-to-V5 promotion, no duplicate
+ * solver/scene/player. Local M5 corroboration is UNSIGNED by design.
+ */
+function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
+ if(!oc||typeof oc!=='object')
+  throw new TypeError('initialized real OpenCascade.js kernel required');
+ const original=compileReviewedSolidVertexV5({input,sheetTransform});
+ const g=original.sceneResult.geometry,revision=original.revision;
+ const cad=computeC1OcjsVisibleSegments({oc,geometry:g,revision});
+ const proof=original.globalVisibleContourProof;
+ const ledger=original.wholeSourceEdgeRayEvidence;
+ const ledgerIds=new Set(ledger.edges.map(x=>x.sourceEdgeId));
+ if(cad.revision!==revision||cad.sourceGeometryId!==g.id||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
+    !Array.isArray(proof.views)||proof.views.length!==3)
+  throw new RangeError('unaligned original C1 M5 and genuine real HLR');
+ const views={},totals={m5AtomicIntervals:0,locallyPositive:0,
+  cadAndM5Corroborated:0,positiveM5CadConflicts:0,unresolved:0};
+ for(const view of VIEWS){
+  const pv=proof.views.find(x=>x.view===view);
+  const strokes=cad.views[view];
+  if(!pv||!Array.isArray(strokes)||!strokes.length)
+   throw new RangeError('C1 original M5 and real HLR V/H/W missing');
+  for(const stroke of strokes){
+   if(!Array.isArray(stroke.projectedOriginalEdgeCandidates)||
+      !stroke.projectedOriginalEdgeCandidates.length||
+      stroke.projectedOriginalEdgeCandidates.some(id=>!ledgerIds.has(id)))
+    throw new RangeError('unmatched original 3D HLR source candidate');
+  }
+  const intervals=pv.candidateIntervals.map(x=>{
+   if(x.revision!==revision||x.sourceGeometryId!==g.id||x.view!==view)
+    throw new RangeError('stale cross-revision M5 interval');
+   const validSource=typeof x.sourceEdgeId==='string'&&
+    ledgerIds.has(x.sourceEdgeId);
+   const projected=strokes.filter(st=>
+    validSource&&st.projectedOriginalEdgeCandidates.includes(x.sourceEdgeId));
+   const covered=validSource&&intervalCoverage(
+    x.projectedFromModelMm,x.projectedToModelMm,projected);
+   const local=x.locallyCompleteVisibleHullSegmentProven===true;
+   const status=local?(covered?'local-m5-cad-corrob-unsigned':
+    'positive-m5-vs-cad-conflict'):'undetermined';
+   totals.m5AtomicIntervals++;
+   if(local)totals.locallyPositive++;
+   if(local&&covered)totals.cadAndM5Corroborated++;
+   if(local&&!covered)totals.positiveM5CadConflicts++;
+   if(!local)totals.unresolved++;
+   return {view,sourceEdgeId:validSource?x.sourceEdgeId:null,
+    fromModelMm:{...x.projectedFromModelMm},
+    toModelMm:{...x.projectedToModelMm},
+    status,m5LocalPositive:local,realCadCovered:covered,
+    engineeringLineStyle:'undetermined',signedV5:false};
+  });
+  views[view]={cadVisibleSegmentCount:strokes.length,
+   m5GlobalViewProof:pv.allContourLinesVerified,
+   m5BlockedAtomicIntervalCount:pv.blockedAtomicIntervalCount,
+   intervals};
+ }
+ return Object.freeze({
+  schema:'draftai-c1-ocjs-m5-convex-proof-gap-ledger/1',
+  revision,sourceGeometryId:g.id,unit:'mm',
+  engine:'opencascade.js',proofScope:cad.proofScope,
+  allThreeViewsGlobalM5Certified:proof.allThreeViewsGlobalContourCertified,
+  counts:totals,views,
+  globalOfficialV5GateUnchanged:true,
+  officialLineStylesVerified:false,signedV5ActionCount:0,
+  hiddenOrInternalEdgesSigned:false,wholeSolidV5Ready:false,
+  realCadSourceCandidateOnly:true
+ });
+}
+module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
+ intervalCoverage,positiveCollinearOverlap};
