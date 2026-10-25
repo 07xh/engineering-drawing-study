@@ -594,6 +594,8 @@ function inspectFinalSourceStrokeObligations({geometry,revision,sceneDepthEviden
    unifiedPaperLineReadinessEvidence?.locallyJoinedAndEndpointOpenRayClearCount??0,
   paperStrokeBothEndpointLocalOpenRayProofLineCount:
    unifiedPaperLineReadinessEvidence?.fullyPairedLocalEndAndOpenRayLineCount??0,
+  paperStrokeBooleanExteriorOriginalOrNewSourceCount:
+   unifiedPaperLineReadinessEvidence?.selectedWhole3DBooleanExteriorOpenSourceCount??0,
 
   unifiedPaperJunctionNodeCount:
    unifiedPaperJunctionEvidence?.nodeCount??0,
