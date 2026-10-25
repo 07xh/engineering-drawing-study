@@ -15,6 +15,8 @@
  */
 const {auditC1OcjsPhysicalCreaseCandidates}=
  require('./c1-ocjs-physical-crease-ray-evidence.cjs');
+const {auditC1ExactOriginalVertexObserverRays}=
+ require('./c1-m5-exact-original-vertex-rays.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -45,6 +47,16 @@ function auditC1OriginalStrokeFinalPreconditions({
     recomputed.standardEngineeringStylesCertified!==false||
     recomputed.wholeSolidV5Ready!==false)
   throw new RangeError('canonical C1 source evidence is stale or already signed');
+ const rayLedger=auditC1ExactOriginalVertexObserverRays({
+  geometry,revision});
+ if(rayLedger.sourceGeometryId!==geometry.id||
+    rayLedger.revision!==revision||
+    rayLedger.signedV5ActionCount!==0)
+  throw new RangeError('unreviewed source-vertex endpoint observer rays');
+ const vertexRays=new Map(rayLedger.rows.map(x=>
+  [x.view+'@'+x.originalVertexId,x]));
+ if(vertexRays.size!==rayLedger.rows.length)
+  throw new RangeError('duplicate source 3D vertex observer-ray identity');
  const ledger=[],counts={
   totalOriginalSourceEdgeViewSubspans:0,
   externalContourHeld:0,
@@ -55,6 +67,10 @@ function auditC1OriginalStrokeFinalPreconditions({
   physical3DDuplicateHeld:0,
   unresolvedPhysicalVisibilityOrSourcePriority:0,
   withoutAnyOriginalVertexEndpoint:0,
+  originalVertexEndpointExactRayClearWitnesses:0,
+  originalVertexEndpointExactNearInteriorWitnesses:0,
+  originalVertexEndpointRayTangenciesHeld:0,
+  paperCutEndpointsWithNoOriginalVertexRayProof:0,
   innerCutEndpointsWithNoCrossSourceJoin:0,
   exactInwardPrunedOriginalSourceCandidates:0,
   localPositiveAfterStrictHiddenAliasElimination:0,
@@ -110,6 +126,38 @@ function auditC1OriginalStrokeFinalPreconditions({
        x.authorizedAsV5Junction!==false||
        x.anotherOriginalSource3DPointInferred!==false))
     throw new RangeError('fake or unverified physical original source endpoint');
+   const verifiedEndpointRays=endpoints.map(endpoint=>{
+    const id=endpoint.originalVertexId;
+    if(id===null){
+     if(endpoint.originalEndpoint3DIdentityVerified!==false)
+      throw new RangeError('nonoriginal paper point forged source vertex');
+     counts.paperCutEndpointsWithNoOriginalVertexRayProof++;
+     return {originalVertexId:null,
+      status:'paper-cut-without-original-3d-vertex-ray-proof',
+      exactForwardRayClear:false,
+      exactStrictInteriorNearOriginalVertex:false,
+      actualReal3DSourceEndpointVerified:false,
+      signedV5Action:false};
+    }
+    const v=vertexRays.get(row.view+'@'+id);
+    if(!v||v.sourceGeometryId!==geometry.id||
+       v.originalVertexId!==id||
+       !endpoint.originalEndpoint3DIdentityVerified||
+       !['x','y','z'].every(k=>
+        v.originalModel3DPoint[k]===endpoint.model3DPoint[k]))
+     throw new RangeError('original physical vertex endpoint ray is not 3D-source matched');
+    if(v.proof.positiveForwardRayClear)
+     counts.originalVertexEndpointExactRayClearWitnesses++;
+    else if(v.proof.strictInteriorNearOriginalVertex)
+     counts.originalVertexEndpointExactNearInteriorWitnesses++;
+    else counts.originalVertexEndpointRayTangenciesHeld++;
+    return {originalVertexId:id,status:v.exactOriginalVertex3DRayStatus,
+     exactForwardRayClear:v.proof.positiveForwardRayClear,
+     exactStrictInteriorNearOriginalVertex:
+      v.proof.strictInteriorNearOriginalVertex,
+     actualReal3DSourceEndpointVerified:true,
+     signedV5Action:false};
+   });
    const originalVertexEndpoints=endpoints.filter(x=>
     x.originalEndpoint3DIdentityVerified===true).length;
    if(originalVertexEndpoints===0)
@@ -159,6 +207,13 @@ function auditC1OriginalStrokeFinalPreconditions({
     exactOriginal3DDuplicateNeedsCanonicalReduction:duplicate,
     sourceListFrontmostNotEstablished:!sourceLead,
     sourceCrossEdgeJunctionsNotGloballyCertified:true,
+    originalVertexEndpointRayIncompleteOrTangent:
+     verifiedEndpointRays.some(x=>
+      x.status==='paper-cut-without-original-3d-vertex-ray-proof'||
+      x.status==='undetermined'),
+    originalVertexForwardRayMayEnterSolid:
+     verifiedEndpointRays.some(x=>
+      x.exactStrictInteriorNearOriginalVertex),
     projectedPaperOnlyEncountersNeedGlobalResolution:
      projectedOnlyEndpointCount>0,
     completeOpaqueSceneFeatureTopologyAndAllFacesNotCertified:true,
@@ -174,6 +229,12 @@ function auditC1OriginalStrokeFinalPreconditions({
     originalPhysicalSourceCreaseProven:physical,
     originalM5ExteriorContourOverlap:outer,
     exactOriginal3DVertexEndpointCount:originalVertexEndpoints,
+    exactOriginalVertexObserverRayEndpoints:verifiedEndpointRays,
+    bothSourceEndpointsAreOriginalVertices:
+     originalVertexEndpoints===2,
+    allOriginalEndpointForwardRaysPositivelyClear:
+     originalVertexEndpoints===2&&
+      verifiedEndpointRays.every(x=>x.exactForwardRayClear),
     paperOnlyCrossSourceEndpointWitnessCount:projectedOnlyEndpointCount,
     sameSourceCutContinuityFromPriorPiece:
      j.sameOriginalSource3DContinuityFromPriorPiece,
@@ -213,6 +274,8 @@ function auditC1OriginalStrokeFinalPreconditions({
   sourceGeometryId:geometry.id,revision,unit:'mm',
   realCADAndM5RecomputedFromCurrentOriginalReviewedSource:true,
   originalPhysicalEvidenceSchema:recomputed.schema,
+  independentOriginalVertexRayProofSchema:rayLedger.schema,
+  sourceOriginalVertexObserverRayTotals:rayLedger.counts,
   counts,subspans:ledger,
   onlyOneReviewedConvexSolidScope:true,
   allSourceEdgeProjectionAndCADCandidateTruthVerified:true,
