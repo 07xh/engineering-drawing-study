@@ -46,9 +46,9 @@ const box=hold(new (api('BRepPrimAPI_MakeBox_4'))(
   hold(new (api('gp_Pnt_3'))(-4,5,-9)),
   hold(new (api('gp_Pnt_3'))(24,18,31))
 ));
-assert.equal(box.IsDone(),true,'real finite B-Rep construction failed');
-const solid=hold(box.Shape());
-assert.equal(solid.IsNull(),false);
+const solid=hold(box.Shape()); // Force lazy BRepPrimAPI build before readiness check.
+assert.equal(box.IsDone(),true,'real finite B-Rep construction failed after Shape()');
+assert.equal(solid.IsNull(),false,'real finite box B-Rep shape is null');
 const kind=oc.TopAbs_ShapeEnum?.TopAbs_EDGE??oc.TopAbs_EDGE;
 const avoid=oc.TopAbs_ShapeEnum?.TopAbs_SHAPE??oc.TopAbs_SHAPE;
 assert.ok(kind!==undefined&&avoid!==undefined,'actual TopAbs EDGE / SHAPE enum bindings required');
