@@ -40,6 +40,7 @@ const caseData=()=>{
    sourceGeometryId:'G',revision,signedV5ActionCount:0,
    fullyCertifiedCount:0,rows:[{
     view:'H',sourceEdgeId:'G::A|B',
+    originalSourceParameterRange:[0,1],
     independentGlobalProofGaps:{
      original3DSourceIdentity:true,completeIntervalVisibility:true,
      endpointAndProjectionTopology:true,engineeringLineStandard:true,
@@ -82,4 +83,30 @@ test('no global engineering line style or ConstructionIntent/V5 signer may be fo
  assert.throws(()=>review(x),/prematurely signed/);
  const y=caseData();y.globalM5Review.rows[0].independentGlobalProofGaps.engineeringLineStandard=false;
  assert.throws(()=>review(y),/prematurely signed/);
+});
+
+test('invalid canonical source interval is rejected before native HLR review',()=>{
+ const x=caseData();
+ x.globalM5Review.rows[0].originalSourceParameterRange=[0,Number.NaN];
+ assert.throws(()=>review(x),/finite positive partition/);
+});
+test('overlapping source/view intervals cannot be treated as one global source proof',()=>{
+ const x=caseData(),first=x.globalM5Review.rows[0];
+ first.originalSourceParameterRange=[0,0.7];
+ x.globalM5Review.rows.push({
+  ...first,originalSourceParameterRange:[0.5,1],
+  independentGlobalProofGaps:{...first.independentGlobalProofGaps}
+ });
+ assert.throws(()=>review(x),/overlapping canonical original M5 source intervals/);
+});
+test('adjacent disjoint source intervals remain reviewable without signing',()=>{
+ const x=caseData(),first=x.globalM5Review.rows[0];
+ first.originalSourceParameterRange=[0,0.5];
+ x.globalM5Review.rows.push({
+  ...first,originalSourceParameterRange:[0.5,1],
+  independentGlobalProofGaps:{...first.independentGlobalProofGaps}
+ });
+ const r=review(x);
+ assert.equal(r.rows[0].originalGlobalSourceM5StrokeRowsReviewed,2);
+ assert.equal(r.signedV5ActionCount,0);
 });
