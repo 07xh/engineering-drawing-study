@@ -57,6 +57,9 @@ function auditC1OriginalStrokeFinalPreconditions({
   withoutAnyOriginalVertexEndpoint:0,
   innerCutEndpointsWithNoCrossSourceJoin:0,
   realCadPositiveWithoutWholeRayProof:0,
+  nonHullRayClearButCADSourceNotUniqueOrIncomplete:0,
+  nonHullRayClearButSourcePriorityUnproven:0,
+  strictlyHiddenEvidenceNotYetSignedAsDash:0,
   attemptedNewEngineeringLineSignatures:0,
   attemptedNewV5Actions:0
  };
@@ -122,6 +125,12 @@ function auditC1OriginalStrokeFinalPreconditions({
    else counts.unresolvedPhysicalVisibilityOrSourcePriority++;
    if(completeRealCADPositive&&!clear&&!outer&&physical)
     counts.realCadPositiveWithoutWholeRayProof++;
+   if(physical&&!outer&&clear&&!completeRealCADPositive)
+    counts.nonHullRayClearButCADSourceNotUniqueOrIncomplete++;
+   if(physical&&!outer&&clear&&!sourceLead)
+    counts.nonHullRayClearButSourcePriorityUnproven++;
+   if(physical&&!outer&&hidden)
+    counts.strictlyHiddenEvidenceNotYetSignedAsDash++;
    const blockers={
     realPhysicalCreaseNotProven:!physical,
     existingOuterContourHasOriginalV5Authority:outer,
