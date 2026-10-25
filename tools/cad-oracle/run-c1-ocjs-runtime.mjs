@@ -22,6 +22,8 @@ const {auditC1OcjsPhysicalCreaseCandidates}=
  require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
 const {auditC1OriginalStrokeFinalPreconditions}=
  require('../../workbench/c1-m5-final-source-stroke-preconditions.cjs');
+const {reviewC1M5FinalStrokeObligations}=
+ require('../../workbench/c1-m5-final-source-obligation-review.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 async function main(){
@@ -386,6 +388,22 @@ for(const [index,geometry] of general.entries()){
  assert.equal(finalGate.sourceGeometryId,geometry.id);
  assert.equal(finalGate.revision,40+index);
  assert.equal(finalGate.signedV5ActionCount,0);
+ const unsignedReview=reviewC1M5FinalStrokeObligations(finalGate);
+ assert.equal(unsignedReview.sourceGeometryId,geometry.id);
+ assert.equal(unsignedReview.revision,40+index);
+ assert.equal(unsignedReview.total,finalGate.subspans.length);
+ assert.equal(unsignedReview.localPositiveCount,
+  finalGate.subspans.filter(x=>x.positiveLineLikeGeometryReadyForFurtherM5Proof).length);
+ assert.equal(unsignedReview.fullyCertifiedCount,0);
+ assert.equal(unsignedReview.signedV5ActionCount,0);
+ assert.ok(unsignedReview.rows.every((row,i)=>
+  row.sourceEdgeId===finalGate.subspans[i].sourceEdgeId&&
+  row.formalLineStyle==='undetermined'&&
+  row.constructionIntentAuthorized===false&&
+  row.signedV5Action===false&&
+  row.blockingReasons.includes('completeOpaqueSceneFeatureTopologyAndAllFacesNotCertified')&&
+  row.blockingReasons.includes('applicableStandardEngineeringLineStyleNotCertified')));
+
  assert.equal(finalGate.counts.totalOriginalSourceEdgeViewSubspans,
   features.counts.sourceBoundSubintervalCount);
  assert.equal(finalGate.independentOriginalVertexRayProofSchema,
