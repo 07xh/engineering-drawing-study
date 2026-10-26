@@ -72,20 +72,28 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
       span.originalParameterRange.length!==2)
     throw new RangeError('unsigned current M4 source interval required');
    const source={id:'C1Subspan',from:span.from3D,to:span.to3D};
-   const clearance=certifyConvexSegmentClearance({
+   // M4 must retain real positive binary64 source tails, even when
+   // their 3D endpoint distance is below the analytic clearance kernel's
+   // positive margin. That kernel explicitly rejects such microsegments.
+   // Do not weaken its margin or fabricate a clearance certificate:
+   // consume the whole-original-edge exact support ray independently and
+   // keep the projected microspan UNDRAWABLE and unsigned.
+   const microPaper=span.projectedSubpixelPaperSegmentHeldAsUndrawable===true;
+   const clearance=microPaper?null:certifyConvexSegmentClearance({
     source,solid:solids[0],
     observerDirection:FIRST_ANGLE_OBSERVER_RAYS[row.view]});
    const occluded=evaluateFullSourceSegmentOcclusion({
     source,solids,view:row.view});
    const byExact=exact.status==='certified-clear';
-   const byAnalytic=clearance.status==='certified-clear';
+   const byAnalytic=clearance?.status==='certified-clear';
    const visible=byExact||byAnalytic;
    const exactHidden=inward.fullOriginalSourceOpenIntervalStrictlyHidden===true;
    const analyticHidden=occluded.entireSourceSegmentOccluded===true;
    const hidden=exactHidden||analyticHidden;
    if(visible&&hidden)
     throw new RangeError('C1 M0 original source has contradictory continuous open ray evidence');
-   const status=span.projectedExteriorHullOverlap===true?
+   const status=microPaper?'undetermined':
+    span.projectedExteriorHullOverlap===true?
     'exterior-contour-held-by-original-m5':
     visible?'single-opaque-solid-whole-open-ray-clear':
     hidden?'single-opaque-solid-whole-open-ray-strictly-hidden':
@@ -105,6 +113,9 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
     sourceEdgeId:row.sourceEdgeId,
     originalVertexIds:[...vertices],
     originalParameterRange:[...span.originalParameterRange],
+    projectedSubpixelPaperSegmentHeldAsUndrawable:microPaper,
+    source3DIntervalPreservedForFullM5RayContinuity:
+     span.source3DIntervalPreservedForFullM5RayContinuity===true,
     source3DFrom:{...span.from3D},source3DTo:{...span.to3D},
     fromModelMm:{...span.fromModelMm},
     toModelMm:{...span.toModelMm},
