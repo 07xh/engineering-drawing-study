@@ -103,6 +103,61 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(cursor<1)gaps.push([cursor,1]);
   sourcePartitionCoverage.set(key,frozen({complete:gaps.length===0,gaps}));
  }
+ // Reconcile the ENTIRE canonical M5 parameter ledger against the original
+ // M0 3D edge inventory in V/H/W. Per-source [0,1] coverage alone is not
+ // whole-scene coverage: a missing edge/view would otherwise disappear.
+ // This is an unsigned interval-inventory witness, NOT an OCCT TopoDS
+ // history, all-face occlusion, GB line style, or V5 certificate.
+ const originalEdges=geometry.data.edges;
+ let canonicalOriginalM5SourceInventory;
+ if(!Array.isArray(originalEdges)){
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:false,
+   expectedOriginalSourceViewCount:null,
+   completeOriginalSourceViewCount:0,
+   missingOriginalSourceViews:[],
+   incompleteOriginalSourceViewPartitions:[],
+   allOriginalSourceViewsHaveCompleteParameterPartitions:false,
+   globalOpaqueOcclusionAndHLRSourceHistoryCertified:false,
+   signedV5Action:false
+  });
+ }else{
+  const expected=new Set();
+  for(const edge of originalEdges){
+   if(!Array.isArray(edge)||edge.length!==2||
+      !edge.every(x=>typeof x==='string'&&
+       Object.prototype.hasOwnProperty.call(geometry.data.points,x))||
+      edge[0]===edge[1])
+    throw new RangeError('invalid original M0 physical edge inventory');
+   const id=geometry.id+'::'+[...edge].sort().join('|');
+   for(const view of VIEWS){
+    const key=view+'@'+id;
+    if(expected.has(key))
+     throw new RangeError('duplicate original M0 physical edge in source inventory');
+    expected.add(key);
+   }
+  }
+  const unexpected=[...byKey.keys()].filter(k=>!expected.has(k));
+  if(unexpected.length)
+   throw new RangeError('canonical M5 source ledger references an unknown original M0 edge/view');
+  const missing=[...expected].filter(k=>!byKey.has(k));
+  const incomplete=[...expected].filter(k=>
+   byKey.has(k)&&sourcePartitionCoverage.get(k)?.complete!==true);
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:true,
+   expectedOriginalSourceViewCount:expected.size,
+   completeOriginalSourceViewCount:expected.size-missing.length-incomplete.length,
+   missingOriginalSourceViews:missing,
+   incompleteOriginalSourceViewPartitions:incomplete.map(k=>({
+    sourceViewKey:k,
+    positiveLengthParameterGaps:sourcePartitionCoverage.get(k).gaps
+   })),
+   allOriginalSourceViewsHaveCompleteParameterPartitions:
+    expected.size>0&&missing.length===0&&incomplete.length===0,
+   globalOpaqueOcclusionAndHLRSourceHistoryCertified:false,
+   signedV5Action:false
+  });
+ }
  const counts={genuineHiddenHLRStrokesReviewed:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
@@ -561,7 +616,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
  return frozen({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
-  counts,rows,
+  counts,rows,canonicalOriginalM5SourceInventory,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
   actualHLRGeneratedBRepEdgeTopoDSHistoryComplete:false,
