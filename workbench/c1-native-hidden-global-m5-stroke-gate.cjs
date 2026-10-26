@@ -577,6 +577,66 @@ function reviewC1NativeHiddenFinalM5Strokes({
    throw new RangeError('forged M5 authentic visible OCCT physical source/ordinal ledger');
   frontM5SelectedVisibleSourceByNative.set(key,v);
  }
+ // A verified original convex EXTERIOR contour may have an actual
+ // native HLR edge with two projected M0 BRep candidates. Its exact
+ // original support-face outward ray and strict 3D depth order can give
+ // a POSITIVE physical FRONT source, without changing the ordinary M5
+ // 'full projected visible source interval' gate or inventing a GB line.
+ const contourFrontRows=
+  nativeHLRJunctionConcordance.nativeVisibleExteriorContourFrontSources??[];
+ const genuineNativeContourPhysicalFront=[];
+ const unresolvedNativeContourPhysicalFront=[];
+ const seenNativeContourOrdinal=new Set();
+ for(const proof of contourFrontRows){
+  const key=proof?.view+'@'+proof?.nativeHLREdgeOrdinal,
+   seg=cad?.views?.[proof?.view]?.[proof?.nativeHLREdgeOrdinal];
+  if(!VIEWS.includes(proof?.view)||
+     !Number.isSafeInteger(proof.nativeHLREdgeOrdinal)||
+     proof.nativeHLREdgeOrdinal<0||!seg||
+     seg.occtHLRVisibilityClass!=='visible-sharp'||
+     seenNativeContourOrdinal.has(key)||
+     proof.actualGeneratedTopoDSEdgeOriginalHistoryCertified!==false||
+     proof.entireHullAndProjectedJunctionsCertified!==false||
+     proof.gbEngineeringLineCertified!==false||
+     proof.signedV5Action!==false)
+   throw new RangeError('native visible exterior contour source identity or signer forged');
+  seenNativeContourOrdinal.add(key);
+  if(proof.exactWholeOpenRayAndBothEndpointDepthDominance===true){
+   if(proof.status!=='locally-proven-original-3d-front-contour-source'||
+      proof.independentM4OriginalHullOverlapWitness!==true||
+      !Array.isArray(proof.originalSourceParameterRange)||
+      proof.originalSourceParameterRange.length!==2||
+      seg.sourceCandidate3DLifts.filter(x=>
+       x.sourceEdgeId===proof.certifiedOriginalFrontPhysicalSourceEdgeId&&
+       x.originalSourceParameterRange?.[0]===proof.originalSourceParameterRange[0]&&
+       x.originalSourceParameterRange?.[1]===proof.originalSourceParameterRange[1]
+      ).length!==1)
+    throw new RangeError('locally frontmost original source is not the real OCCT native HLR edge');
+   genuineNativeContourPhysicalFront.push(proof);
+  }else{
+   if(proof.status!=='undetermined'||proof.certifiedOriginalFrontPhysicalSourceEdgeId!==null)
+    throw new RangeError('unverified projected exterior contour physical source falsely signed');
+   unresolvedNativeContourPhysicalFront.push(proof);
+  }
+ }
+ if(genuineNativeContourPhysicalFront.length!==
+    nativeHLRJunctionConcordance.
+     independentlyFrontDominantNativeHLRContourSourceCount)
+  throw new RangeError('missing exact native contour original 3D front source');
+ const nativeOriginalContourPhysicalFrontSourceLedger=frozen({
+  available:Array.isArray(nativeHLRJunctionConcordance.
+   nativeVisibleExteriorContourFrontSources),
+  actualNativeHLRExteriorContourCandidateEdgesAudited:contourFrontRows.length,
+  locallyProvenExactOriginal3DFrontmostContours:genuineNativeContourPhysicalFront.length,
+  unresolvedCoProjectedNativeContourSourceEdges:unresolvedNativeContourPhysicalFront.length,
+  physicalFrontContours:genuineNativeContourPhysicalFront,
+  heldContourSourceEdges:unresolvedNativeContourPhysicalFront,
+  // Explicitly separate local physical original 3D frontmost ancestry
+  // from a final unique GB external ring / all-scene / V5 sign-off.
+  allGeneratedTopoDSEdgesToOriginalTopoDSHistoryCertified:false,
+  fullExteriorContourAnd3DJunctionGraphCertified:false,
+  engineeringGBVisibleLineCertified:false,signedV5ActionCount:0
+ });
  const nativeVisibleFragments=new Map();
  const independentlyHeldNativeVisibleGeneratedEdges=[];
  const heldNativeVisibleReasonCounts={};
@@ -1663,6 +1723,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
   nativeVisibleHLRSourceTiling,
+  nativeOriginalContourPhysicalFrontSourceLedger,
   actualNativeHLRHiddenGeneratedSourceTiling,
   nativeVisibleHiddenGeneratedSourceTopology,
   nativeVHWFaceRayAndHLRReconciliation,
