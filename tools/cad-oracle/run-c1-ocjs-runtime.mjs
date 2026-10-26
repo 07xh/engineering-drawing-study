@@ -629,6 +629,27 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeVHWPhysicalSourceUnion.
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
  assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
+ const nativeContourFront3D=hiddenFormalGate.nativeOriginalContourPhysicalFrontSourceLedger;
+ assert.equal(nativeContourFront3D.available,true);
+ assert.equal(nativeContourFront3D.actualNativeHLRExteriorContourCandidateEdgesAudited,
+  nativeContourFront3D.locallyProvenExactOriginal3DFrontmostContours+
+  nativeContourFront3D.unresolvedCoProjectedNativeContourSourceEdges);
+ assert.equal(nativeContourFront3D.locallyProvenExactOriginal3DFrontmostContours,
+  nativeHiddenM5.nativeHLRVertexConcordance.
+   independentlyFrontDominantNativeHLRContourSourceCount);
+ assert.ok(nativeContourFront3D.physicalFrontContours.every(row=>
+  row.exactWholeOpenRayAndBothEndpointDepthDominance===true&&
+  row.independentM4OriginalHullOverlapWitness===true&&
+  row.actualGeneratedTopoDSEdgeOriginalHistoryCertified===false&&
+  row.gbEngineeringLineCertified===false&&row.signedV5Action===false));
+ assert.equal(nativeContourFront3D.fullExteriorContourAnd3DJunctionGraphCertified,false);
+ assert.equal(nativeContourFront3D.engineeringGBVisibleLineCertified,false);
+ assert.equal(nativeContourFront3D.signedV5ActionCount,0);
+ if(index===0){
+  assert.deepEqual(nativeContourFront3D.physicalFrontContours.map(row=>
+   [row.view,row.nativeHLREdgeOrdinal]),[['H',1],['H',3]]);
+  assert.equal(nativeContourFront3D.locallyProvenExactOriginal3DFrontmostContours,2);
+ }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
  assert.equal(
@@ -1352,6 +1373,17 @@ for(const [index,geometry] of general.entries()){
      unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,
    nativeVisibleHLRUnverifiedSegmentsAudit:
     generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses,
+   currentRealOCCTExteriorContourEdgesWithIndependentlyExactOriginal3DFrontmostSource:
+    nativeContourFront3D.locallyProvenExactOriginal3DFrontmostContours,
+   actualNativeFrontContour3DSourceWitnesses:
+    nativeContourFront3D.physicalFrontContours.map(x=>({
+     view:x.view,ordinal:x.nativeHLREdgeOrdinal,
+     physicalOriginalSourceEdgeId:x.certifiedOriginalFrontPhysicalSourceEdgeId,
+     otherCoProjectedPhysicalOriginalSources:x.otherOriginal3DCoProjectedSourceEdgeIds,
+     sourceConvexSupportingFaceIndex:x.originalFaceIndexProvingOutwardRay,
+     nativeGBLineCertified:false,signedV5Action:false
+    })),
+
    heldNativeVisibleHLROriginal3DContourFaceRaySourceFanCount:
     heldContourFaceRays.heldGeneratedNativeVisibleSegmentsReviewed,
    originalContourHLRSourceFansWithOneProvablyFront3DEdgeAndStrictlyHiddenAlternatives:
