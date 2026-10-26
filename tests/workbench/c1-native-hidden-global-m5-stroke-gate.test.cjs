@@ -711,3 +711,33 @@ test('forged native generated IsSame-only field cannot skip true OCCT original B
    fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered=true;
  assert.throws(()=>review(y),/native generated edge direct OCCT source IsSame witness missing/);
 });
+
+test('one authentic native hidden HLR interval cannot conceal omitted original M0 views',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const out=review(x),inventory=out.canonicalOriginalM5SourceInventory;
+ assert.equal(inventory.originalM0EdgeInventoryAvailable,true);
+ assert.equal(inventory.expectedOriginalSourceViewCount,3);
+ assert.equal(inventory.completeOriginalSourceViewCount,1);
+ assert.deepEqual(inventory.missingOriginalSourceViews,['V@G::A|B','W@G::A|B']);
+ assert.equal(inventory.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(inventory.signedV5Action,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('global original source inventory rejects unknown and duplicated physical M0 edges',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},
+  C:{x:0,y:1,z:0}},edges:[['A','C']]}};
+ assert.throws(()=>review(x),/unknown original M0 edge\/view/);
+ const y=caseData();
+ y.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B'],['B','A']]}};
+ assert.throws(()=>review(y),/duplicate original M0 physical edge/);
+});
+test('unavailable original M0 edge inventory is never treated as complete scene proof',()=>{
+ const out=review(caseData()).canonicalOriginalM5SourceInventory;
+ assert.equal(out.originalM0EdgeInventoryAvailable,false);
+ assert.equal(out.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(out.signedV5Action,false);
+});
