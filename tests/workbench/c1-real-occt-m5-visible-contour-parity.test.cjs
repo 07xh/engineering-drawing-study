@@ -5,7 +5,8 @@ const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project,VIEWS}=require('../../core/projection/conventions.js');
 const {auditC1GlobalVisibleContourProof}=
  require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
-const {auditC1RealOcctVisibleContourSourceParity:audit}=
+const {auditC1RealOcctVisibleContourSourceParity:audit,
+ exactOriginalModelVertexProjectedEdge:recover}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const g=()=>{
  const x=prismMesh({solid:{min:{x:0,y:0,z:0},
@@ -136,4 +137,32 @@ test('a source ID that disagrees with genuine current native VCompound BRep cand
   .find(z=>z.view==='H'&&z.nativeVisibleHLREdgeOrdinal===0);
  w.sourceEdgeId='ActualContour::V000|V111';
  assert.throws(()=>audit(x),/forged or stale current genuine visible HLR source witness/);
+});
+
+test('original M0 whole contour literal paper endpoints recover exact physical 3D vertices without tolerance snapping',()=>{
+ const a={x:2,y:0,z:9},b={x:4,y:4,z:9},
+  view='H',pa=project(a).H,pb=project(b).H;
+ const forward=recover({a,b,view,from:pa,to:pb});
+ assert.deepEqual(forward.range,[0,1]);
+ assert.deepEqual(forward.from3D,a);
+ assert.deepEqual(forward.to3D,b);
+ assert.equal(forward.orientation,'forward');
+ assert.equal(forward.exactOriginalPhysical3DVertexPairAndPaperBinding,true);
+ const reversed=recover({a,b,view,from:pb,to:pa});
+ assert.deepEqual(reversed.range,[0,1]);
+ assert.deepEqual(reversed.from3D,b);
+ assert.deepEqual(reversed.to3D,a);
+ assert.equal(reversed.orientation,'reversed');
+});
+test('same paper edge one representable ULP off does not bind original 3D vertex or manufacture a source interval',()=>{
+ const a={x:2,y:0,z:9},b={x:4,y:4,z:9},
+  view='H',from={...project(a).H},to=project(b).H;
+ from.u+=Number.EPSILON*4;
+ assert.equal(recover({a,b,view,from,to}),null);
+ assert.equal(recover({a,b,view,from:to,to:from}),null);
+});
+test('orthographically collapsed M0 source cannot be recovered as a drawable paper edge',()=>{
+ const a={x:2,y:4,z:0},b={x:2,y:4,z:9},
+  from=project(a).H,to=project(b).H;
+ assert.equal(recover({a,b,view:'H',from,to}),null);
 });
