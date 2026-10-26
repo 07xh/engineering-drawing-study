@@ -122,8 +122,15 @@ const caseData=()=>{
    canonicalM4M5NativeHLRJointSourceIntervalEvidence:{
     sourceEdgeId:'G::A|B',view:'H',
     canonicalM4Original3DAndM5RayCutUnionRecomputed:true,
+    canonicalM4ParameterCoverage:{
+     originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:true,
+     positiveLengthCoveredIntervals:[[0,1]],positiveLengthUncoveredIntervals:[]
+    },
+    genuineNativeHiddenHLRCandidateParameterCoverage:{
+     originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:true,
+     positiveLengthCoveredIntervals:[[0,1]],positiveLengthUncoveredIntervals:[]
+    },
     originalM4Full3DSourceIntervalProven:true,
-    actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:true,
     originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete:true,
     actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:true,
     actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage:true,
@@ -570,4 +577,33 @@ test('two authenticated true OCCT IsSame endpoint stars jointly prove local phys
  assert.equal(row.officialEngineeringLineStyle,'undetermined');
  assert.equal(result.wholeSolidV5Ready,false);
  assert.equal(result.signedV5ActionCount,0);
+});
+
+test('global M5 independently rejects one-ULP original physical HLR interval gaps disguised by completed boolean flags',()=>{
+ const x=caseData(),j=x.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ const half=.5,next=half+Number.EPSILON/2;
+ j.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthCoveredIntervals=[[0,half],[next,1]];
+ assert.throws(()=>review(x),/contradictory exact native M4\/M5 source parameter intervals/);
+});
+test('global M5 independently rejects fabricated canonical M4 source gaps and false native paper status',()=>{
+ const x=caseData(),j=x.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ j.canonicalM4ParameterCoverage.positiveLengthUncoveredIntervals=[[.2,.4]];
+ assert.throws(()=>review(x),/contradictory exact native M4\/M5 source parameter intervals/);
+ const y=caseData(),k=y.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ k.genuineNativeHiddenHLRCandidateParameterCoverage.entireOriginalParameterIntervalCovered=false;
+ assert.throws(()=>review(y),/contradictory exact native M4\/M5 source parameter intervals/);
+});
+test('global M5 never accepts a physical source interval not contained in real native HLR candidate paper intervals',()=>{
+ const x=caseData(),j=x.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ j.genuineNativeHiddenHLRCandidateParameterCoverage={
+  originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:false,
+  positiveLengthCoveredIntervals:[[0,.5]],positiveLengthUncoveredIntervals:[[.5,1]]
+ };
+ j.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage=false;
+ assert.throws(()=>review(x),/unique original 3D source proof exceeds actual native HLR paper coverage/);
 });
