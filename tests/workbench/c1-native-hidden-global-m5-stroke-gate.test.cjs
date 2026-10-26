@@ -1187,3 +1187,31 @@ test('actual OCCT generated native edge with wrong 3D original source is rejecte
  y.cad.views.V[0].directlySameUniqueOriginalOCCTBRepSourceEdgeId='G::other';
  assert.throws(()=>review(y),/native IsSame contradicts/);
 });
+
+test('final C1 M5 generated HCompound source topology independently accounts for real physical hidden intervals',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage(),r=review(x),
+  h=r.actualNativeHLRHiddenGeneratedSourceTiling,
+  all=r.nativeVisibleHiddenGeneratedSourceTopology;
+ assert.equal(h.available,true);
+ assert.equal(h.actualGeneratedHLRHiddenStrokesAudited,1);
+ assert.equal(h.nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource,1);
+ assert.equal(h.generatedHiddenStrokesStillLackingUniqueOriginal3DSource,0);
+ assert.equal(h.originalPhysicalSourceViewsAudited,3);
+ assert.equal(h.hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments,0);
+ assert.equal(h.hiddenOriginalSourceViewsWithCompleteDisjointNativeHLRSourceTiling,1);
+ assert.equal(all.available,false); // Current mock has no native VCompound edge-level ledger.
+ assert.equal(h.fullGeneratedHLRToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('ambiguous native HCompound source cannot become complete generated topology from source-view union alone',()=>{
+ const x=caseData(),r=review(x);
+ assert.equal(r.actualNativeHLRHiddenGeneratedSourceTiling.available,false);
+ assert.equal(r.nativeVisibleHiddenGeneratedSourceTopology.available,false);
+ assert.equal(r.actualNativeHLRHiddenGeneratedSourceTiling.
+  fullGeneratedHLRToOriginalTopoDSHistoryCertified,false);
+});
+test('native generated HCompound source interval outside [0,1] cannot silently enter a complete first-angle topology ledger',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ x.projectedEncounters.rows[0].genuineNativeHLROriginalSourceParameterRange=[0,1+Number.EPSILON];
+ assert.throws(()=>review(x),/native|interval|range|source/i);
+});
