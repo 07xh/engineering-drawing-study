@@ -776,7 +776,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
     spans.every(x=>
      x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible===true)&&
     native.originalM4M5SourceParameterPartitionComplete===true&&
-    native.originalRealOCCTBRep3DSourceInventoryVerified===true;
+    native.originalRealOCCTBRep3DSourceInventoryVerified===true&&
+    (!nativeVisibleHLRSourceTiling.available||
+     !nativeVisibleTilingRows.some(x=>
+      x.sourceViewKey===native.sourceViewKey&&
+      x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0));
    sourceViewRayParametricClosure.push({
     ...partition,
     realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation:
