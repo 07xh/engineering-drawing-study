@@ -284,7 +284,33 @@ function auditC1OcjsPhysicalCreaseCandidates({oc,geometry,revision}={}){
     span.toModelMm,projectedHits);
    const unique=projectedHits.length>0&&
     projectedHits.every(c=>c.projectedOriginalEdgeCandidates.length===1);
-   const exactPruning=auditC1ExactHiddenProjectedCandidatePruning({
+   // The paper candidate-pruning kernel explicitly requires a positive
+   // drawable interval (>1e-8 mm). A genuine M4 3D micro-tail is retained
+   // for parameter continuity but MUST NOT be sent to that paper solver.
+   // This is a HELD diagnostic, not a fabricated candidate-pruning proof.
+   const heldMicroPaper=span.projectedSubpixelPaperSegmentHeldAsUndrawable===true;
+   if(heldMicroPaper&&cadVisible)
+    throw new RangeError('undrawable source microspan cannot gain CAD paper coverage');
+   const exactPruning=heldMicroPaper?{
+    schema:'draftai-c1-m5-exact-hidden-paper-source-pruning/1',
+    sourceGeometryId:geometry.id,revision,view:row.view,
+    targetSourceEdgeId:row.sourceEdgeId,
+    fromModelMm:{...span.fromModelMm},toModelMm:{...span.toModelMm},
+    sourceTargetCoveredByRealCADProjectedSegments:false,
+    originalPaperCandidateEdgeIds:[],
+    strictlyInwardOccludedCandidateExclusions:[],
+    unexcludedOriginalPaperCandidateEdgeIds:[],
+    rawPaperCandidateMultiplicity:0,
+    survivingPhysicalSourceCandidateMultiplicity:0,
+    multipleCandidatesNarrowedByExactM0:false,
+    targetUniqueWithinOriginalPaperCandidatesByExactM0:false,
+    actualOCCTTopoDSEdgeIdentityRecovered:false,
+    thirdPartySceneSolidsChecked:false,
+    allEndpointsAndEngineeringStandardsCertified:false,
+    officialEngineeringLineStyle:'undetermined',
+    constructionIntentAuthorized:false,signedV5Action:false,
+    projectedMicroPaperPruningHeld:true
+   }:auditC1ExactHiddenProjectedCandidatePruning({
     geometry,revision,view:row.view,
     targetSourceEdgeId:row.sourceEdgeId,
     fromModelMm:span.fromModelMm,toModelMm:span.toModelMm,
