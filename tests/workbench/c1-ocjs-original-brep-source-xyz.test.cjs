@@ -125,7 +125,8 @@ test('genuine trimmed OCCT 3D line parameter span matches physical M0 length, no
  const a=xyz(0,0,0),b=xyz(6,8,0),m=xyz(3,4,0);
  const actual=verifyLine({
   sourceEndpoints:[a,b],parameterRange:[5,15],
-  curveSamples:[a,m,b],curveKind:'line'
+  curveSamples:[a,m,b],curveKind:'line',
+  requireUnitSpeedOCCTLineParameterization:true
  });
  assert.deepEqual(actual.occtSourceCurveParameterRange,[5,15]);
  assert.equal(actual.occtSourceCurve3DEndpointsAndMidpointVerified,true);
@@ -134,7 +135,8 @@ test('genuine trimmed OCCT 3D line parameter span matches physical M0 length, no
  for(const forged of [[5,6],[5,16],[5,Infinity],[-1e308,1e308]]){
   assert.throws(()=>verifyLine({
    sourceEndpoints:[a,b],parameterRange:forged,
-   curveSamples:[a,m,b],curveKind:'line'
+   curveSamples:[a,m,b],curveKind:'line',
+  requireUnitSpeedOCCTLineParameterization:true
   }),/parameter|finite/);
  }
 });
@@ -142,7 +144,8 @@ test('reversed original OCCT 3D endpoints keep physical parameter span and never
  const a=xyz(0,0,0),b=xyz(6,8,0),m=xyz(3,4,0);
  const result=verifyLine({
   sourceEndpoints:[b,a],parameterRange:[0,10],
-  curveSamples:[a,m,b],curveKind:'line'
+  curveSamples:[a,m,b],curveKind:'line',
+  requireUnitSpeedOCCTLineParameterization:true
  });
  assert.equal(result.occtSourceCurve3DEndpointsAndMidpointVerified,true);
  assert.equal(result.engineeringLineStyle,'undetermined');
