@@ -278,8 +278,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   throw new RangeError('actual front visible source depth mask audit incomplete');
  const nativeHiddenDualOpenIntervalProof=auditC1NativeHiddenDualOpenIntervalProof({
   geometry,revision,strictM5:nativeHiddenOriginalOpenRayClosure,
-  frontMask:nativeHiddenFrontVisibleMask,
-  exactIntervalCoverage:exactCandidateIntervalCoverage
+  frontMask:nativeHiddenFrontVisibleMask
  });
  if(nativeHiddenDualOpenIntervalProof.counts.realNativeHiddenOpenLineIntervalsReviewed!==
      counts.realNativeHiddenSharpSegments||
