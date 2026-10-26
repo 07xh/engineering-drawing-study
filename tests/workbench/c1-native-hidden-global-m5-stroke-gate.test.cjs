@@ -490,3 +490,23 @@ test('malformed native generated HLR endpoint ordinal cannot masquerade as real 
   generatedHLREndpoints[0].nativeHLREdgeOrdinal=0.5;
  assert.throws(()=>review(x),/invalid genuine native HLR endpoint ordinal/);
 });
+
+test('visible HLR star member cannot carry invalid ordinal or duplicate its IsSame witness',()=>{
+ const x=caseData();
+ const star={
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:-1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ };
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push(star);
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
+ star.generatedHLREndpoints[1].nativeHLREdgeOrdinal=0;
+ star.generatedHLREndpoints.push({...star.generatedHLREndpoints[1]});
+ assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
+});
