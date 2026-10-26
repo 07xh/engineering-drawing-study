@@ -669,6 +669,11 @@ for(const [index,geometry] of general.entries()){
   trueGeneratedHiddenM5Tiling.actualGeneratedHLRHiddenStrokesAudited);
  assert.equal(trueGeneratedHiddenM5Tiling.originalPhysicalSourceViewsAudited,
   3*geometry.data.edges.length);
+ assert.equal(trueGeneratedHiddenM5Tiling.
+  allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified,
+  trueGeneratedHiddenM5Tiling.generatedHiddenStrokesStillLackingUniqueOriginal3DSource===0&&
+  trueGeneratedHiddenM5Tiling.
+   trueNativeHiddenOriginalEdgeIntervalsOnlyPartlyM5SourceProven===0);
  assert.equal(trueGeneratedHiddenM5Tiling.hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments,
   trueGeneratedHiddenM5Tiling.rows.filter(row=>
    row.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length);
@@ -1275,6 +1280,8 @@ for(const [index,geometry] of general.entries()){
     trueGeneratedHiddenM5Tiling.nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource,
    measuredOCCTHiddenGeneratedHLREdgesStillUnresolved:
     trueGeneratedHiddenM5Tiling.generatedHiddenStrokesStillLackingUniqueOriginal3DSource,
+   measuredNativeHLRHiddenGeneratedSourceIntervalsPartiallyUnprovedByM5:
+    trueGeneratedHiddenM5Tiling.trueNativeHiddenOriginalEdgeIntervalsOnlyPartlyM5SourceProven,
    originalVHWSourceViewsWithNativeGeneratedEdgePhysicalMultiplicity:
     nativeWholeSource.original3DSourceViewsWithAnyGeneratedFragmentMultiplicity,
    measuredOCCTVisibleGeneratedHLREdgePhysicalOriginal3DSourceTiling:
