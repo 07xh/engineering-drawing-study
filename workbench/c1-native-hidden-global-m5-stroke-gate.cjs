@@ -358,6 +358,122 @@ function reviewC1NativeHiddenFinalM5Strokes({
    signedV5Action:false
   });
  }
+ // All REAL OCCT visible VCompound and hidden HCompound physical-source
+ // parameter intervals now meet in ONE V/H/W original M0 3D source graph.
+ // Accepted visible intervals already require a measured original OCCT
+ // 3D source lift AND an independently CLOSED M5 outward front ray.
+ // Hidden intervals already require unique M5 physical-source pruning.
+ // Neither branch can invent a gap-free line from a paper-only alias.
+ const realNativeVisibleHiddenOriginalSourceViewCoverage=[];
+ let realNativeVisibleHiddenSourceViewGraphAvailable=false;
+ const claimedVisible=nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage;
+ if(cad!==undefined&&Array.isArray(originalEdges)&&
+    Array.isArray(claimedVisible)){
+  const expectedIds=new Map(originalEdges.map(edge=>[
+   geometry.id+'::'+[...edge].sort().join('|'),edge
+  ]));
+  const seen=new Map();
+  for(const row of claimedVisible){
+   if(!VIEWS.includes(row.view)||!expectedIds.has(row.sourceEdgeId)||
+      row.independentlyAcceptedNativeVisibleHLRLiftsOnly!==true||
+      row.completeGeneratedToOriginalTopoDSEdgeHistoryCertified!==false||
+      row.wholeSceneOcclusionAndEngineeringLineStyleCertified!==false||
+      row.signedV5Action!==false)
+    throw new RangeError('untrusted actual native visible original 3D M5 source-view coverage');
+   const key=row.view+'@'+row.sourceEdgeId;
+   if(seen.has(key))throw new RangeError('duplicate native visible source-view proof');
+   // Never trust all-true full-coverage or missing-gap flags from a
+   // source-graph fragment: independently union its actual binary64 spans.
+   seen.set(key,recheck(row));
+  }
+  if(seen.size!==expectedIds.size*VIEWS.length||
+     [...expectedIds.keys()].some(id=>VIEWS.some(view=>
+      !seen.has(view+'@'+id))))
+   throw new RangeError('native visible HLR source inventory omits original M0 edge/view');
+  for(const [sourceEdgeId,edge] of [...expectedIds].sort((a,b)=>a[0].localeCompare(b[0]))){
+   for(const view of VIEWS){
+    const key=view+'@'+sourceEdgeId,
+     visible=seen.get(key),
+     hiddenSource=jointSourceByKey.get(key),
+     hidden=hiddenSource?
+      recheck(hiddenSource.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage):
+      exactCandidateIntervalCoverage([0,1],[]);
+    const union=exactCandidateIntervalCoverage([0,1],[
+     ...visible.positiveLengthCoveredIntervals,
+     ...hidden.positiveLengthCoveredIntervals
+    ]);
+    const overlap=[];
+    for(const [a,b] of visible.positiveLengthCoveredIntervals)
+     for(const [c,d] of hidden.positiveLengthCoveredIntervals){
+      const lo=Math.max(a,c),hi=Math.min(b,d);
+      if(hi>lo)overlap.push([lo,hi]);
+     }
+    const first=project(geometry.data.points[edge[0]])[view],
+     last=project(geometry.data.points[edge[1]])[view],
+     collapsed=first.u===last.u&&first.v===last.v;
+    const originalPartitionComplete=
+     sourcePartitionCoverage.get(key)?.complete===true;
+    const positiveLineSourceCoverage=
+     originalOCCTBRepSourceInventory.completeOriginal3DSourceCorrespondence===true&&
+     originalPartitionComplete&&!collapsed&&
+     union.entireOriginalParameterIntervalCovered===true&&
+     overlap.length===0;
+    realNativeVisibleHiddenOriginalSourceViewCoverage.push({
+     sourceViewKey:key,view,originalPhysical3DSourceEdgeId:sourceEdgeId,
+     projectionCollapsedExactly:collapsed,
+     originalRealOCCTBRep3DSourceInventoryVerified:
+      originalOCCTBRepSourceInventory.completeOriginal3DSourceCorrespondence===true,
+     originalM4M5SourceParameterPartitionComplete:originalPartitionComplete,
+     visibleNativeOCCTMeasuredM5FullFrontSourceIntervals:
+      visible.positiveLengthCoveredIntervals,
+     hiddenNativeOCCTUniqueM5PhysicalSourceIntervals:
+      hidden.positiveLengthCoveredIntervals,
+     positiveLengthVisibleHiddenOriginalSourceOverlap:overlap,
+     physicallyAccountedOriginalSourceParameterCoverage:
+      union.positiveLengthCoveredIntervals,
+     outstandingOriginalSourceParameterGaps:
+      union.positiveLengthUncoveredIntervals,
+     originalSourceParameterLineCoverageNecessarilyComplete:
+      positiveLineSourceCoverage,
+     everyActualOpaqueFaceAndGeneratedTopoDSHistoryProven:false,
+     wholeSceneGBLineStyleCertified:false,
+     constructionIntentAuthorized:false,signedV5Action:false
+    });
+   }
+  }
+  realNativeVisibleHiddenSourceViewGraphAvailable=true;
+ }
+ const realNativeVisibleHiddenSourceGraph=frozen({
+  available:realNativeVisibleHiddenSourceViewGraphAvailable,
+  originalM0SourceViewCountExpected:
+   Array.isArray(originalEdges)?originalEdges.length*VIEWS.length:null,
+  auditedOriginalSourceViews:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.length,
+  genuineNoncollapsedSourceViewsWithNecessaryM5VisibleOrHiddenCoverage:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    x.originalSourceParameterLineCoverageNecessarilyComplete).length,
+  collapsedOriginalSourceViewsHeldAsPaperPoints:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    x.projectionCollapsedExactly).length,
+  sourceViewsWithNonzeroPositiveVisibilityGaps:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    !x.projectionCollapsedExactly&&
+    x.outstandingOriginalSourceParameterGaps.length>0).length,
+  sourceViewsWithVisibleAndHiddenPhysicalAttributionCollision:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    x.positiveLengthVisibleHiddenOriginalSourceOverlap.length>0).length,
+  completeNecessaryRealVHWSourceAttribution:
+   realNativeVisibleHiddenSourceViewGraphAvailable&&
+   realNativeVisibleHiddenOriginalSourceViewCoverage.length>0&&
+   realNativeVisibleHiddenOriginalSourceViewCoverage.every(x=>
+    x.projectionCollapsedExactly||
+    x.originalSourceParameterLineCoverageNecessarilyComplete),
+  rows:realNativeVisibleHiddenOriginalSourceViewCoverage,
+  allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified:false,
+  fullHLRGeneratedTopoDSHistoryCertified:false,
+  officialEngineeringLineStylesCertified:false,
+  constructionIntentAuthorized:false,signedV5ActionCount:0
+ });
  const counts={genuineHiddenHLRStrokesReviewed:0,
   jointM4M5NativeHLROriginal3DSourceViewsConsumed:jointSourceByKey.size,
   nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage:0,
@@ -981,6 +1097,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,canonicalOriginalM5SourceInventory,
   originalOCCTBRepSourceInventory,
+  realNativeVisibleHiddenSourceGraph,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
