@@ -638,6 +638,23 @@ for(const [index,geometry] of general.entries()){
   drawableKeys.length-missingDrawable.length-incompleteDrawable.length);
  assert.deepEqual(sceneInventory.noncollapsedMissingOriginalSourceViews,missingDrawable);
  assert.deepEqual(sceneInventory.noncollapsedIncompleteOriginalSourceViews,incompleteDrawable);
+ const expectedUncovered=drawableKeys.filter(key=>
+  missingDrawable.includes(key)||incompleteDrawable.includes(key)).map(key=>{
+   const absent=missingDrawable.includes(key);
+   const gap=sceneInventory.incompleteOriginalSourceViewPartitions.find(x=>
+    x.sourceViewKey===key);
+   const projection=sceneInventory.missingOriginalSourceViewProjectionEvidence.find(x=>
+    x.sourceViewKey===key)||
+    sceneInventory.incompleteOriginalSourceViewProjectionEvidence.find(x=>
+     x.sourceViewKey===key);
+   assert.ok(projection&&!projection.projectionCollapsedExactly);
+   return {sourceViewKey:key,missingEntireSourceView:absent,
+    uncoveredOriginalParameterIntervals:absent?[[0,1]]:gap.positiveLengthParameterGaps,
+    projectedFrom:projection.projectedFrom,projectedTo:projection.projectedTo,
+    signedV5Action:false};
+  });
+ assert.deepEqual(sceneInventory.noncollapsedUncoveredOriginalSourceParameterIntervals,
+  expectedUncovered);
  assert.equal(sceneInventory.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,
   drawableKeys.length>0&&missingDrawable.length===0&&incompleteDrawable.length===0);
  assert.equal(sceneInventory.signedV5Action,false);
@@ -1009,6 +1026,7 @@ for(const [index,geometry] of general.entries()){
     complete:sceneInventory.noncollapsedCompleteOriginalSourceViewCount,
     missing:sceneInventory.noncollapsedMissingOriginalSourceViews,
     incomplete:sceneInventory.noncollapsedIncompleteOriginalSourceViews,
+    uncoveredParameterObligations:sceneInventory.noncollapsedUncoveredOriginalSourceParameterIntervals,
     allM5ParameterPartitionsComplete:
      sceneInventory.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,
     globallyCertified:false,signedV5Action:false
