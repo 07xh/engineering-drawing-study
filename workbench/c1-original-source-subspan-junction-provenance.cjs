@@ -37,13 +37,36 @@ const point=(a,b,t)=>({
  * could otherwise be concealed by a duplicate or a non-adjacent subspan.
  * All comparisons are exact binary64, including one-ULP holes.
  */
-function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans){
+function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
+ collapsedProjection=false
+}={}){
  if(!Array.isArray(cutParameters)||cutParameters.length<2||
-    !Array.isArray(spans)||spans.length!==cutParameters.length-1||
+    !Array.isArray(spans)||(!collapsedProjection&&
+     spans.length!==cutParameters.length-1)||
     cutParameters[0]!==0||cutParameters.at(-1)!==1||
     cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
      (i>0&&t<=cutParameters[i-1])))
   throw new RangeError('incomplete canonical original M4 source cut partition');
+ // A 3D edge parallel to this view's observer direction projects to ONE
+ // paper point. M4 correctly emits zero projected LINE spans: no full-line
+ // partition may be certified or signed, but the source/view must still be
+ // accounted for. Treating it as a missing cut would break valid solids.
+ if(collapsedProjection){
+  if(spans.length!==0)
+   throw new RangeError('collapsed original source cannot have paper line subspans');
+  return freeze({
+   sourceParameterRange:[0,1],
+   exactOriginalSourceParameterCoverage:
+    exactCandidateIntervalCoverage([0,1],[]),
+   collapsedOriginalSourceProjection:true,
+   sourceOpenParameterCoverageNotRepresentableAsPaperLine:true,
+   everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:false,
+   entireOriginalM4SourceParameterPartitionPositivelyProven:false,
+   generatedHLRSourceIdentityProven:false,
+   continuousM5VisibilityProven:false,
+   engineeringLineStyleSigned:false,signedV5Action:false
+  });
+ }
  const ranges=[];
  for(let i=0;i<spans.length;i++){
   const r=spans[i]?.originalParameterRange;
@@ -63,6 +86,8 @@ function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans){
  return freeze({
   sourceParameterRange:[0,1],
   exactOriginalSourceParameterCoverage:coverage,
+  collapsedOriginalSourceProjection:false,
+  sourceOpenParameterCoverageNotRepresentableAsPaperLine:false,
   everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:true,
   entireOriginalM4SourceParameterPartitionPositivelyProven:true,
   generatedHLRSourceIdentityProven:false,
@@ -97,7 +122,9 @@ function auditC1OriginalSourceSubspanJunctions({
   authenticatedForeignOriginalVertexEncounters:0,
   paperOnlyForeignSourceEncounters:0,roundedDiagnosticEncountersHeld:0,
   uncertifiedOriginalSubspanJoins:0,
-  exactFullOriginalSourceViewPartitionsProven:0,signedV5Actions:0
+  exactFullOriginalSourceViewPartitionsProven:0,
+  collapsedSourceViewPartitionsConservativelyHeld:0,
+  signedV5Actions:0
  };
  for(const row of graph.rows){
   const origin=originals.get(row.sourceEdgeId);
@@ -118,7 +145,7 @@ function auditC1OriginalSourceSubspanJunctions({
   seenSourceViews.add(key);
   const spans=row.spans;
   const partition=certifyCanonicalOriginalM4SourcePartition(
-   row.cutParameters,spans);
+   row.cutParameters,spans,{collapsedProjection:row.collapsedProjection});
   const details=[];
   for(let i=0;i<spans.length;i++){
    const s=spans[i],ts=s.originalParameterRange;
@@ -211,18 +238,22 @@ function auditC1OriginalSourceSubspanJunctions({
    sourceEdgeId:row.sourceEdgeId,sourceVertexIds:[origin.a,origin.b],
    collapsedProjection:row.collapsedProjection,spans:details,
    canonicalOriginalM4SourcePartition:partition,
-   allCanonicalOriginalSourceParameterSubspansCovered:true,
+   allCanonicalOriginalSourceParameterSubspansCovered:
+    !row.collapsedProjection,
    allReal3DAndPaperSceneJunctionsCertified:false,
    signedV5ActionCount:0});
   counts.sourceEdgeViewCount++;
-  counts.exactFullOriginalSourceViewPartitionsProven++;
+  if(row.collapsedProjection)
+   counts.collapsedSourceViewPartitionsConservativelyHeld++;
+  else counts.exactFullOriginalSourceViewPartitionsProven++;
  }
  // Cardinality alone cannot prove that every actual original edge appears
  // once in EACH first-angle view (V/H/W).
  for(const id of originals.keys())for(const view of VIEWS)
   if(!seenSourceViews.has(view+'@'+id))
    throw new RangeError('missing M4 original 3D source/view partition');
- if(counts.exactFullOriginalSourceViewPartitionsProven!==
+ if(counts.exactFullOriginalSourceViewPartitionsProven+
+     counts.collapsedSourceViewPartitionsConservativelyHeld!==
      originals.size*VIEWS.length||
     counts.originalSourceSubspanCount!==graph.partitionedSourceSubintervalCount||
     counts.sourceEdgeViewCount!==geometry.data.edges.length*3||
@@ -235,7 +266,10 @@ function auditC1OriginalSourceSubspanJunctions({
   m5OriginalContourAvailable:graph.originalM5ExteriorHullRecomputedAndAvailable,
   sourceEventGraphSchema:graph.schema,
   rows,counts,
-  allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered:true,
+  allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered:true,
+  allOriginalSourceViewsAccountedIncludingCollapsed:true,
+  allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered:
+   counts.collapsedSourceViewPartitionsConservativelyHeld===0,
   nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven:true,
   fullCrossSourceSceneJunctionsCertified:false,
   finalEngineeringLineStylesAuthorized:false,
