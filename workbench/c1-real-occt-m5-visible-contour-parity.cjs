@@ -205,13 +205,21 @@ function auditC1RealOcctVisibleContourSourceParity({
      line.genuineFrontSourceEndpointJoinsVerified===true&&
      line.continuouslyFrontRayClearVerified===true&&
      line.locallyCompleteVisibleHullSegmentProven===true;
-    if(literalSignedXYZAndPaper){
-     claimRange=[Math.min(t0,t1),Math.max(t0,t1)];
-     originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
-    }else if(sourcePhysicalM5Proof&&literalModelSourceProjectedEndpoints){
+    // Prefer the literal original M0 vertex-pair identity whenever the
+    // already-signed complete M5 contour has independently proved its
+    // physical source, endpoint joins and continuous front rays. Even if
+    // the interpolated display XYZ reprojects to the SAME paper point,
+    // a binary64 division can return 1-ULP rather than 1 and manufacture
+    // a false original-source interval gap. This is not paper snapping:
+    // both projected endpoints must be EXACT original M0 vertex images.
+    // Genuine positive native HLR source gaps remain independently held.
+    if(sourcePhysicalM5Proof&&literalModelSourceProjectedEndpoints){
      claimRange=[...literalModelSourceProjectedEndpoints.range];
      exactOriginalPhysical3DVertexPaperBinding=true;
      originalContour3DParameterRecoveryKind='exact-original-m0-3d-vertex-projection';
+    }else if(literalSignedXYZAndPaper){
+     claimRange=[Math.min(t0,t1),Math.max(t0,t1)];
+     originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
     }else reason='cannot-exactly-normalize-original-signed-contour-3d-source';
     if(claimRange){
      const raw=nativeByKey.get(v.view+'@'+line.sourceEdgeId)??[];
