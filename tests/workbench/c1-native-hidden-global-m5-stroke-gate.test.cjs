@@ -510,3 +510,19 @@ test('visible HLR star member cannot carry invalid ordinal or duplicate its IsSa
  star.generatedHLREndpoints.push({...star.generatedHLREndpoints[1]});
  assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
 });
+
+test('orphan visible-only native IsSame star cannot enter the reviewed hidden-edge proof ledger',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/no reviewed hidden HLR endpoint/);
+});
