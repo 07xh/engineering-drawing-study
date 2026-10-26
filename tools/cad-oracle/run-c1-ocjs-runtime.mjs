@@ -682,7 +682,8 @@ for(const [index,geometry] of general.entries()){
  ));
  assert.equal(
   hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
-  hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,
+  hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld+
+  hiddenFormalGate.counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit,
   hiddenFormalGate.rows.reduce((count,row)=>count+
    row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.filter(x=>
     x.actualGeneratedOCCTVertexIsSameJunctionPresent).length,0));
@@ -692,6 +693,24 @@ for(const [index,geometry] of general.entries()){
    x.nativeGeneratedToOriginalTopoDSEdgeHistoryStillNotProven===true&&
    x.globalOpaqueSceneAndEngineeringLineStyleCertified===false&&
    x.signedV5Action===false)));
+ assert.equal(hiddenFormalGate.counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit,
+  hiddenFormalGate.rows.reduce((n,row)=>n+
+   row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.filter(x=>
+    x.actualNativeOCCTIsSameOriginal3DEdgeInteriorSplitProven===true).length,0));
+ assert.equal(hiddenFormalGate.counts.actualHiddenNativeStrokesWithBothSourceJunctionsPhysicallyVerified,
+  hiddenFormalGate.rows.filter(row=>
+   row.actualGeneratedHiddenNativeStrokeBoth3DEndpointsLocallyPhysical).length);
+ assert.equal(hiddenFormalGate.counts.actualHiddenNativeStrokesWithLocallyFullM5VisibilityAndPhysicalJunctions,
+  hiddenFormalGate.rows.filter(row=>
+   row.localOriginal3DSourceExactM5OcclusionAndTruePhysicalHLRJunctions).length);
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars.every(e=>
+   e.actualNativeOCCTIsSameOriginal3DEdgeInteriorSplitProven!==true||
+   (e.independentOriginal3DVertexAndFullHLRJunctionProven===false&&
+    e.exactOriginal3DSourceInteriorParameter>0&&
+    e.exactOriginal3DSourceInteriorParameter<1&&
+    e.nativeGeneratedToOriginalTopoDSEdgeHistoryStillNotProven===true&&
+    e.signedV5Action===false))));
  assert.equal(hiddenFormalGate.counts.originalM4PaperEncounterEventsCrosscheckedAgainstActualHLR,
   nativeEncounters.counts.originalM4PaperEncounterOccurrencesCovered);
  assert.equal(
@@ -1084,6 +1103,10 @@ for(const [index,geometry] of general.entries()){
     nativeEncounters.counts.nativeOriginalM4TransverseCrossingEventsFound,
    exactDyadicNativeCrossingLocalStrictOriginal3DDepthProof:
     nativeEncounters.counts.exactOriginal3DStrictFrontDepthAtM4TransverseCrossingsProven,
+   nativeHLRSourceInteriorSplitPhysicalJunctionEndpointsProven:
+    hiddenFormalGate.counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit,
+   genuineNativeHLRStrokesWithBothLocallyPhysicalEndpointsAndContinuousM5Coverage:
+    hiddenFormalGate.counts.actualHiddenNativeStrokesWithLocallyFullM5VisibilityAndPhysicalJunctions,
    nativeHLRSourceOriginal3DJunctionEndpointStarsPositivelyProven:
     hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar,
    nativeHLRSharedJunctionEndpointStarsOriginal3DUnverified:
