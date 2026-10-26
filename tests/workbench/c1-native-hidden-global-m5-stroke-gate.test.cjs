@@ -704,10 +704,10 @@ test('forged native generated IsSame-only field cannot skip true OCCT original B
  x.nativeSourceAudit.nativeHiddenSourceRefinements[0].
   actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
    nativeGeneratedEdgeDirectOriginalIsSameCompared=false;
- assert.throws(()=>review(x),/real OCCT source IsSame witness missing/);
+ assert.throws(()=>review(x),/native generated edge direct OCCT source IsSame witness missing/);
  const y=caseData();
  y.nativeSourceAudit.nativeHiddenSourceRefinements[0].
   actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
    fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered=true;
- assert.throws(()=>review(y),/real OCCT source IsSame witness missing/);
+ assert.throws(()=>review(y),/native generated edge direct OCCT source IsSame witness missing/);
 });
