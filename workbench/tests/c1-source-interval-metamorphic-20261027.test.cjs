@@ -39,3 +39,25 @@ test('duplicates and arbitrary input order cannot change exact union',()=>{
   assert.equal(actual.candidateIntervalsExamined,8);
  }
 });
+
+test('subrange partitions preserve exact clipping without outside certification',()=>{
+ for(let left=1;left<=5;left++){
+  const right=left+2;
+  const range=[points[left],points[right]];
+  const spans=[[0,points[left]],[points[left],points[left+1]],[points[left+1],points[right]],[points[right],1]];
+  const result=cover(range,spans);
+  assert.equal(result.entireOriginalParameterIntervalCovered,true);
+  assert.deepEqual(result.positiveLengthCoveredIntervals,[range]);
+  assert.deepEqual(result.originalParameterRange,range);
+ }
+});
+test('missing every dyadic boundary fragment never passes as full coverage',()=>{
+ const spans=points.slice(1).map((to,i)=>[points[i],to]);
+ for(let i=0;i<spans.length;i++){
+  const without=spans.filter((_,j)=>i!==j);
+  const withDuplicate=[...without,without[0]];
+  const result=cover([0,1],withDuplicate);
+  assert.equal(result.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(result.positiveLengthUncoveredIntervals,[spans[i]]);
+ }
+});
