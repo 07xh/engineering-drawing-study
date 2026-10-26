@@ -17,6 +17,8 @@
  * no OCCT HLR TopoDS history, global feature proof, GB line, Intent or V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {liftOriginalProjectedSourceCandidates}=
+ require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 // Bind physical front-mask coverage to the same trusted exact interval union
 // used by M5 hidden rays; callers cannot inject a fabricated full coverage.
 const {exactCandidateIntervalCoverage}=
@@ -27,6 +29,54 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 const finite=Number.isFinite;
 const distance=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
 const sourceKey=(g,edge)=>g.id+'::'+[...edge].sort().join('|');
+/**
+ * Check actual OCCT VCompound source-lift DATA, not only its true/false flags.
+ * Recompute the original modeled 3D edge and each real native paper endpoint
+ * using the existing HLR->M0 inverse projection. This is a local physical
+ * front mask witness, NEVER recovered generated->original TopoDS history.
+ */
+function independentlyVerifyVisibleFront3DSourceLift({
+ geometry,view,frontId,nativeVisible
+}={}){
+ const matches=nativeVisible?.sourceCandidate3DLifts?.filter(x=>
+  x.sourceEdgeId===frontId);
+ if(!Array.isArray(matches)||matches.length!==1)return false;
+ const lift=matches[0];
+ if(lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+    lift.originalOCCTSourceLineCurveVerified!==true||
+    lift.originalXYZReprojectsToHLR!==true||
+    lift.v5Authorized!==false)return false;
+ const expected=liftOriginalProjectedSourceCandidates(geometry,view,
+  nativeVisible.from,nativeVisible.to).sourceCandidate3DLifts.filter(x=>
+   x.sourceEdgeId===frontId);
+ if(expected.length!==1)return false;
+ const modeled=expected[0],ids=modeled.originalVertexIds;
+ const same3=(a,b)=>a&&b&&['x','y','z'].every(k=>
+  finite(a[k])&&finite(b[k])&&a[k]===b[k]);
+ const nearby3=(a,b)=>a&&b&&['x','y','z'].every(k=>
+  finite(a[k])&&finite(b[k]))&&
+  Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z)<=1e-6;
+ const original=ids.map(id=>geometry.data.points[id]);
+ if(!Array.isArray(lift.originalVertexIds)||
+    lift.originalVertexIds.length!==2||
+    lift.originalVertexIds[0]!==ids[0]||
+    lift.originalVertexIds[1]!==ids[1]||
+    lift.sourceParameterAtProjectedFrom!==
+     modeled.sourceParameterAtProjectedFrom||
+    lift.sourceParameterAtProjectedTo!==
+     modeled.sourceParameterAtProjectedTo||
+    !Array.isArray(lift.originalSourceParameterRange)||
+    lift.originalSourceParameterRange.length!==2||
+    lift.originalSourceParameterRange[0]!==modeled.originalSourceParameterRange[0]||
+    lift.originalSourceParameterRange[1]!==modeled.originalSourceParameterRange[1]||
+    !same3(lift.fromCandidate3D,modeled.fromCandidate3D)||
+    !same3(lift.toCandidate3D,modeled.toCandidate3D))return false;
+ const a=lift.actualOriginalOCCTBRepFrom3D,
+  b=lift.actualOriginalOCCTBRepTo3D;
+ return (nearby3(a,original[0])&&nearby3(b,original[1]))||
+  (nearby3(a,original[1])&&nearby3(b,original[0]));
+}
+
 function mappedActualVisibleHLRToHiddenOriginalParameter({
  geometry,view,hiddenOriginalVertexIds,nativeVisible
 }={}){
@@ -172,12 +222,9 @@ function auditC1NativeHiddenFrontVisibleMasks({
          frontNative.actualOCCTHLRCurveEntireFiniteIntervalIsLine!==true||
          frontNative.v5Authorized!==false)
        throw new RangeError('forged native visible OCCT source');
-      const source=frontNative.sourceCandidate3DLifts?.find(s=>
-       s.sourceEdgeId===frontId&&
-       s.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
-       s.originalOCCTSourceLineCurveVerified===true&&
-       s.originalXYZReprojectsToHLR===true&&s.v5Authorized===false);
-      if(!source)continue;
+      if(!independentlyVerifyVisibleFront3DSourceLift({
+       geometry,view,frontId,nativeVisible:frontNative
+      }))continue;
       const projected=mappedActualVisibleHLRToHiddenOriginalParameter({
        geometry,view,hiddenOriginalVertexIds:original,nativeVisible:frontNative
       });
@@ -195,6 +242,7 @@ function auditC1NativeHiddenFrontVisibleMasks({
        strictDepthOrderOriginalHiddenSourceParameterRange:
         [...hiddenM4Range],
        visibleFrontNativeActualOriginalSourceCandidate:true,
+       visibleNativeRealOCCTFront3DSourceLiftIndependentlyRecomputed:true,
        hiddenSourceCoveredOriginalParameterRange:[start,end],
        nativeHLRGeneratedTopoDSIdentityCertified:false,
        GBStyleCertified:false,signedV5Action:false
