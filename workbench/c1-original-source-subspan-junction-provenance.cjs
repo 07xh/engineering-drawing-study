@@ -46,6 +46,27 @@ function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
     cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
      (i>0&&t<=cutParameters[i-1])))
   throw new RangeError('incomplete canonical original M4 source cut partition');
+ // Independently reproject the M0 original 3D endpoints instead of
+ // trusting the upstream M4 collapsedProjection flag. Its 1e-8 mm
+ // threshold is a CONSERVATIVE degeneracy budget: a genuinely nonzero
+ // 1e-9 mm paper edge is held, not mistaken for an exact point or V5 line.
+ // This optional input is mandatory at the real M0->M4 audit call-site;
+ // standalone source-cut fixtures may omit all three values.
+ const hasGeometryEvidence=original3DFrom!==undefined||
+  original3DTo!==undefined||view!==undefined;
+ if(hasGeometryEvidence){
+  const validXYZ=p=>p&&['x','y','z'].every(k=>finite(p[k]));
+  if(!VIEWS.includes(view)||!validXYZ(original3DFrom)||
+     !validXYZ(original3DTo)||typeof collapsedProjection!=='boolean')
+   throw new RangeError('independent original M4 source projection evidence required');
+  const projectedA=project(original3DFrom)[view],
+   projectedB=project(original3DTo)[view],
+   originalPaperLength=Math.hypot(
+    projectedA.u-projectedB.u,projectedA.v-projectedB.v);
+  if(!finite(originalPaperLength)||
+     (originalPaperLength<=1e-8)!==collapsedProjection)
+   throw new RangeError('M4 collapsed source flag contradicts independently recomputed original V/H/W projection');
+ }
  // A 3D edge parallel to this view's observer direction projects to a
  // point. No paper LINE interval can be certified from this source.
  if(collapsedProjection){
