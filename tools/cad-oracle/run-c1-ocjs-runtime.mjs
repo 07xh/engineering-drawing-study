@@ -629,6 +629,28 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeVHWPhysicalSourceUnion.
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
  assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
+ // Independently recompute each actual reviewed convex 3D source M4 cut's
+ // observer ray against ALL original opaque support faces, then cross-join
+ // positive ray status with physically attributed real OCCT HLR spans.
+ const faceRayAndActualNativeHLR=hiddenFormalGate.nativeVHWFaceRayAndHLRReconciliation;
+ assert.equal(faceRayAndActualNativeHLR.available,true);
+ assert.ok(faceRayAndActualNativeHLR.sourceRaySubspansAudited>0);
+ assert.equal(faceRayAndActualNativeHLR.sourceRaySubspansAudited,
+  faceRayAndActualNativeHLR.rows.length);
+ assert.equal(
+  faceRayAndActualNativeHLR.singleSolidFaceRaysAndActualHLRPhysicalSourceIntervalsPositivelyCompatible,
+  faceRayAndActualNativeHLR.rows.filter(x=>
+   x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible).length);
+ assert.equal(
+  faceRayAndActualNativeHLR.original3DSourceSubspansWithNativeVisibilityContradiction,
+  faceRayAndActualNativeHLR.rows.filter(x=>
+   x.positiveOriginalFaceRayVsRealNativeHLROcclusionContradiction).length);
+ assert.ok(faceRayAndActualNativeHLR.rows.every(x=>
+  x.allSeparateOpaqueSceneBodiesAndGeneratedEdgeHistoryCertified===false&&
+  x.completeProjectedJunctionAndGBLineStyleCertified===false&&
+  x.constructionIntentAuthorized===false&&x.signedV5Action===false));
+ assert.equal(faceRayAndActualNativeHLR.allSceneGlobalEngineeringLineStyleCertified,false);
+ assert.equal(faceRayAndActualNativeHLR.signedV5ActionCount,0);
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
@@ -1164,6 +1186,14 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   realSingleConvexAllFaceRayAndActualOCCTHLRSourceSubspansReconciled:
+    faceRayAndActualNativeHLR.sourceRaySubspansAudited,
+   nativeSourceSubspansWithIndependentFaceRayAndTrueOCCTHLRPositiveAgreement:
+    faceRayAndActualNativeHLR.
+     singleSolidFaceRaysAndActualHLRPhysicalSourceIntervalsPositivelyCompatible,
+   nativeSourceSubspansWithSingleSolidFaceRayNativeOcclusionContradictions:
+    faceRayAndActualNativeHLR.
+     original3DSourceSubspansWithNativeVisibilityContradiction,
    realNativeVHWSourceViewsWithTrueVisibleOrHiddenPhysicalCoverage:
     nativeVHWPhysicalSourceUnion.
      genuineNoncollapsedSourceViewsWithNecessaryM5VisibleOrHiddenCoverage,
