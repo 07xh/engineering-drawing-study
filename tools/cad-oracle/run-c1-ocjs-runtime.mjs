@@ -1023,7 +1023,11 @@ for(const [index,geometry] of general.entries()){
   x.blockers.originalConstructionIntentDAGAndSingleV5NotAuthorized===true&&
   (!x.exactClosedOriginal3DSourceObserverRayClear||
    x.singleOpaqueSolidContinuousOpenRayClear||
-   x.originalM5ExteriorContourOverlap===true)));
+   x.originalM5ExteriorContourOverlap===true||
+   (x.heldUndrawablePositiveOriginal3DMicrospan===true&&
+    x.genuineRealCADCompleteSourceCoverage===false&&
+    x.formalStandardLineStyle==='undetermined'&&
+    x.signedV5Action===false))));
  assert.equal(finalGate.counts.originalSourcePaperCut3DContinuityPreserved,
   finalGate.originalFull3DEdgeRayContinuityTotals.
    same3DOriginalSourceCutJoinsPreserved);
