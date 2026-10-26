@@ -144,6 +144,29 @@ test('forged HLR vertex index or projected paper coordinates fail closed',()=>{
  assert.throws(()=>audit(y),/native OCCT shared vertex lacks real IsSame/);
 });
 
+test('native IsSame and paper-distinct witnesses for the same endpoints cannot coexist',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ v.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(b,a,false));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ x.cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=1;
+ assert.throws(()=>audit(x),/conflicting native OCCT IsSame and paper-distinct pair/);
+});
+test('reversed duplicate paper-distinct native pairs cannot inflate physical junction count',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to');
+ v.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(a,b,false),pair(b,a,false));
+ x.cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=2;
+ assert.throws(()=>audit(x),/duplicate paper-distinct native OCCT pair/);
+});
+test('a self-paired native HLR endpoint cannot be treated as an OCCT shared junction',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('hidden-sharp',0,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,a,true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ assert.throws(()=>audit(x),/self-paired native OCCT IsSame endpoint/);
+});
 const markGraphComplete=x=>{
  x.cad.nativeGeneratedVertexGraph.
   allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing=true;
@@ -206,6 +229,44 @@ test('cannot forge a complete native generated vertex star without actual IsSame
  x.cad.nativeGeneratedVertexGraph.views.H.
   generatedOCCTSharedNativeJunctionComponents[0].exactNativePaperCoordinatesForEntireComponent.u=11;
  assert.throws(()=>audit(x),/paper-misaligned native TopoDS junction/);
+});
+
+test('complete generated native HLR junction cannot omit a genuine third IsSame endpoint pair',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  c=ref('visible-sharp',0,'to'),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(a,c,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=2;
+ // Old local-only check would have falsely accepted the two-edge subset
+ // as a complete certified original 3D physical junction.
+ assert.throws(()=>audit(x),/omit genuine OCCT IsSame endpoint pairs/);
+});
+test('duplicate actual IsSame pairs cannot be substituted for missing native junction evidence',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(b,a,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=2;
+ assert.throws(()=>audit(x),/duplicate actual OCCT IsSame pair/);
+});
+test('exhaustive three-endpoint IsSame clique remains valid but unsigned when visible source history is unknown',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  c=ref('visible-sharp',0,'to'),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(
+  pair(a,b,true),pair(a,c,true),pair(b,c,true));
+ const star=completeStar(a,b);star.generatedSharpEdgeEndpoints.push(c);
+ v.generatedOCCTSharedNativeJunctionComponents.push(star);
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=3;
+ const result=audit(x);
+ assert.equal(result.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,1);
+ assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ assert.equal(result.signedV5ActionCount,0);
 });
 
 const visibleFrontSourceCase=()=>{
@@ -281,4 +342,54 @@ test('older visible paper-only source lift without genuine OCCT original BRep 3D
  const p=audit(x);
  assert.equal(p.completeGenuineNativeHLRJunctionStars[0].
   allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+});
+
+test('duplicate contradictory same-revision M5 closed-ray rows cannot certify visible native HLR junction',()=>{
+ const x=visibleFrontSourceCase();
+ const valid=x.originalClosedRayM5.rows[0];
+ // A last-write-wins Map previously discarded the first contradictory row.
+ x.originalClosedRayM5.rows.unshift({
+  ...valid,completeSourceOriginal3DRayClosedIntervalClear:false
+ });
+ assert.throws(()=>audit(x),/duplicate original M5 closed-ray source\/view witness/);
+});
+test('duplicate identical M5 closed-ray rows cannot inflate original source provenance',()=>{
+ const x=visibleFrontSourceCase();
+ x.originalClosedRayM5.rows.push({...x.originalClosedRayM5.rows[0]});
+ assert.throws(()=>audit(x),/duplicate original M5 closed-ray source\/view witness/);
+});
+test('malformed or unknown-view original M5 ray rows are rejected before visible source matching',()=>{
+ for(const bad of [null,{originalPhysicalSourceEdgeId:'G::A|D',view:'Q'},
+  {originalPhysicalSourceEdgeId:null,view:'H'}]){
+  const x=visibleFrontSourceCase();
+  x.originalClosedRayM5.rows.push(bad);
+  assert.throws(()=>audit(x),/invalid original M5 closed-ray source\/view witness/);
+ }
+});
+
+test('a visible HLR endpoint cannot be certified if its opposite original 3D lift endpoint is forged',()=>{
+ for(const mutate of [
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].fromCandidate3D.x=1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=-0.1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=1;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=NaN;},
+  x=>{x.cad.views.H[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedTo=0;},
+  x=>{x.cad.views.H[0].from={u:1,v:4};}
+ ]){
+  const x=visibleFrontSourceCase();mutate(x);
+  const result=audit(x);
+  assert.equal(result.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+  assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+   allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
+test('an authentic two-endpoint visible OCCT lift still certifies only the local 3D junction, not GB/V5',()=>{
+ const x=visibleFrontSourceCase(),result=audit(x);
+ assert.equal(result.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,1);
+ assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ assert.equal(result.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
+ assert.equal(result.GBEngineeringLineRulesSatisfied,false);
+ assert.equal(result.signedV5ActionCount,0);
 });
