@@ -11,6 +11,8 @@
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage}=require('./c1-original-source-interval-coverage.cjs');
+const {auditC1NativeVisibleContourOriginalFrontSource}=
+ require('./c1-native-visible-contour-front-source.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -545,11 +547,36 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    });
   }
  }
+ // A projected single-convex EXTERIOR contour can have front/back
+ // original 3D physical source edges with the same H/V/W paper span.
+ // Original M5 deliberately reserves such hull spans for its OWN
+ // authoritative contour signer, so the ordinary 'full visible line'
+ // predicate is false for both. Prove only the independent frontmost
+ // original 3D source, not a new full M5 visible source interval or GB/V5.
+ const nativeVisibleExteriorContourFrontSources=[];
+ for(const view of VIEWS){
+  for(const [ordinal,segment] of base.get(view).visible.entries()){
+   if(segment.sourceCandidate3DLifts?.length<2)continue;
+   if(independentlyM5AuthenticatedVisibleNativeGeneratedEdges.some(x=>
+    x.view===view&&x.nativeVisibleHLREdgeOrdinal===ordinal))continue;
+   nativeVisibleExteriorContourFrontSources.push(
+    auditC1NativeVisibleContourOriginalFrontSource({
+     geometry,revision,view,seg:segment,nativeHLREdgeOrdinal:ordinal
+    }));
+  }
+ }
+ const independentlyFrontDominantNativeHLRContourSourceCount=
+  nativeVisibleExteriorContourFrontSources.filter(x=>
+   x.exactWholeOpenRayAndBothEndpointDepthDominance===true).length;
  return frozen({schema:'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,paperOnlyProjectedVertexAliases:aliases,
   acceptedNativeVisibleSourceCoverage,
   independentlyM5AuthenticatedVisibleNativeGeneratedEdges,
+  nativeVisibleExteriorContourFrontSources,
+  independentlyFrontDominantNativeHLRContourSourceCount,
+  // Contour source identity is NOT appended to fully projected source
+  // interval coverage, which requires a distinct full M5 source proof.
   completeGenuineNativeHLRJunctionStars:completeNativeJunctionStars,
   allPerViewActualNativeGeneratedJunctionComponentsConsumed:
    graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true,
