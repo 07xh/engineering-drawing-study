@@ -90,6 +90,12 @@ function auditC1RealOcctVisibleContourSourceParity({
  // This is only a fail-closed provenance invariant, not recovered TopoDS
  // history or permission to sign an engineering line / V5 action.
  const nativeGeneratedOrdinalOwners=new Map();
+ // Separate generated native ordinals can still trace the EXACT same
+ // oriented/reversed paper segment. Two different original M0 edges
+ // cannot BOTH be the unique M5 frontmost 3D owner of that entire
+ // projected interval. This is a necessary fail-closed consistency
+ // check, not a tolerance-based TopoDS history reconstruction.
+ const nativeGeneratedPaperFrontOwners=new Map();
  let matchedNative=0;
  for(const witness of nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
   const {view,sourceEdgeId,originalSourceParameterRange:span,
@@ -115,6 +121,16 @@ function auditC1RealOcctVisibleContourSourceParity({
   if(previousOwner!==undefined&&previousOwner!==sourceEdgeId)
    throw new RangeError('one generated OCCT visible HLR ordinal has conflicting original 3D sources');
   nativeGeneratedOrdinalOwners.set(generatedOrdinalKey,sourceEdgeId);
+  const paperPoints=[seg.from,seg.to];
+  if(!paperPoints.every(p=>p&&Number.isFinite(p.u)&&
+       Number.isFinite(p.v))||eq2(seg.from,seg.to))
+   throw new RangeError('nonfinite or collapsed native visible HLR front source');
+  const paperEnds=paperPoints.map(p=>JSON.stringify([p.u,p.v])).sort();
+  const paperKey=view+'@'+JSON.stringify(paperEnds);
+  const priorPaperOwner=nativeGeneratedPaperFrontOwners.get(paperKey);
+  if(priorPaperOwner!==undefined&&priorPaperOwner!==sourceEdgeId)
+   throw new RangeError('coincident native visible HLR paper segment has conflicting original 3D front owners');
+  nativeGeneratedPaperFrontOwners.set(paperKey,sourceEdgeId);
   const candidates=seg.sourceCandidate3DLifts.filter(c=>
    c.sourceEdgeId===sourceEdgeId&&
    c.originalSourceParameterRange?.[0]===span[0]&&
