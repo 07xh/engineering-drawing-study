@@ -107,6 +107,28 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    throw new RangeError('duplicate original M5 closed-ray source/view witness');
   outwardM5.set(key,row);
  }
+ // One physical source must win by independently proven M5 whole-front rays,
+ // even when several real 3D edges co-project on the same HLR stroke.
+ // Shared by original M0 endpoint and generated interior split checks.
+ function uniqueM5FrontLift(lifts,view){
+  if(!Array.isArray(lifts)||!originalClosedRayM5)return null;
+  const accepted=lifts.filter(candidate=>{
+    const physical=sourceEdges.get(candidate.sourceEdgeId),
+     m5=outwardM5.get(candidate.sourceEdgeId+'@'+view);
+    return physical&&m5?.fullProjectedVisibleSourceLineProven===true&&
+     m5.completeSourceOriginal3DRayClosedIntervalClear===true&&
+     m5.originalPhysicalCreaseProven===true&&
+     m5.signedV5Action===false&&
+     m5.officialEngineeringLineStyle==='undetermined'&&
+     candidate.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
+     candidate.originalOCCTSourceLineCurveVerified===true&&
+     candidate.originalXYZReprojectsToHLR===true&&
+     candidate.v5Authorized===false&&
+     Array.isArray(candidate.originalVertexIds)&&
+     candidate.originalVertexIds.join('|')===physical.join('|');
+   });
+  return accepted.length===1?accepted[0]:null;
+ }
  const xyzEq=(a,b)=>a&&b&&['x','y','z'].every(k=>
   Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
  function locate(ref,view){
@@ -129,34 +151,9 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    // projects to the literal native generated paper vertex, and an
    // independent SAME-REVISION M5 closed ray clears the whole front edge.
    // This does not imply generated HLR edge -> original TopoDS history.
-   const lifts=seg.sourceCandidate3DLifts;
-   if(!Array.isArray(lifts)||lifts.length===0||
-      !originalClosedRayM5)
-    return {source:null,vertex:null,nativeHidden:false};
-   // OCCT HLR is PAPER geometry: front/back physical original M0
-   // edges can make identical native V/H/W segments. Independently
-   // admit a candidate only if the CURRENT original closed convex M5
-   // source ray proves its ENTIRE true physical 3D edge is in front,
-   // its original source is a real crease, and it has real OCCT BRep
-   // source geometry. Never select by array order or paper depth guess.
-   const frontCandidates=lifts.filter(candidate=>{
-    const physical=sourceEdges.get(candidate.sourceEdgeId),
-     m5=outwardM5.get(candidate.sourceEdgeId+'@'+view);
-    return physical&&m5?.fullProjectedVisibleSourceLineProven===true&&
-     m5.completeSourceOriginal3DRayClosedIntervalClear===true&&
-     m5.originalPhysicalCreaseProven===true&&
-     m5.signedV5Action===false&&
-     m5.officialEngineeringLineStyle==='undetermined'&&
-     candidate.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
-     candidate.originalOCCTSourceLineCurveVerified===true&&
-     candidate.originalXYZReprojectsToHLR===true&&
-     candidate.v5Authorized===false&&
-     Array.isArray(candidate.originalVertexIds)&&
-     candidate.originalVertexIds.join('|')===physical.join('|');
-   });
-   if(frontCandidates.length!==1)
-    return {source:null,vertex:null,nativeHidden:false};
-   const lift=frontCandidates[0],edge=sourceEdges.get(lift.sourceEdgeId);
+   const lift=uniqueM5FrontLift(seg.sourceCandidate3DLifts,view);
+   if(!lift)return {source:null,vertex:null,nativeHidden:false};
+   const edge=sourceEdges.get(lift.sourceEdgeId);
    const row=outwardM5.get(lift.sourceEdgeId+'@'+view);
    if(!edge||!row||
       row.fullProjectedVisibleSourceLineProven!==true||
@@ -264,14 +261,11 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    if(row?.nativeSource3DVertexEndpointRows?.length!==1)return null;
    source=row.nativeSource3DVertexEndpointRows[0]?.originalPhysicalSourceEdgeId;
   }else{
-   if(seg.sourceCandidate3DLifts.length!==1||!originalClosedRayM5)return null;
-   source=seg.sourceCandidate3DLifts[0].sourceEdgeId;
-   const ray=outwardM5.get(source+'@'+view);
-   if(ray?.fullProjectedVisibleSourceLineProven!==true||
-      ray.completeSourceOriginal3DRayClosedIntervalClear!==true||
-      ray.originalPhysicalCreaseProven!==true||
-      ray.signedV5Action!==false||
-      ray.officialEngineeringLineStyle!=='undetermined')return null;
+   // A back co-projected candidate must not hide a uniquely proven M5 front
+   // source. Two eligible front sources still fail closed.
+   const selected=uniqueM5FrontLift(seg.sourceCandidate3DLifts,view);
+   if(!selected)return null;
+   source=selected.sourceEdgeId;
   }
   const lifts=seg.sourceCandidate3DLifts.filter(x=>x.sourceEdgeId===source);
   if(lifts.length!==1)return null;
