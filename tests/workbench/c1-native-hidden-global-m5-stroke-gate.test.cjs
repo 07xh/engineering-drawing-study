@@ -11,7 +11,7 @@ const caseData=()=>{
   realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront:true,
   nativeHLRGeneratedSourceTopoDSLinksAndAllJunctionsProven:false,
   signedV5Action:false}];
- return {geometry,revision,
+ const input={geometry,revision,
   nativeHLRJunctionConcordance:{
    schema:'draftai-c1-ocjs-native-generated-topods-original-3d-vertex-concordance/1',
    sourceGeometryId:'G',revision,signedV5ActionCount:0,
@@ -100,6 +100,39 @@ const caseData=()=>{
    }]
   }
  };
+ // The mock fixture preserves the same references as the genuine OCCT
+ // producer. Only the real WASM runtime can originate trusted provenance.
+ input.nativeSourceAudit={
+  schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
+  sourceGeometryId:'G',revision,signedV5ActionCount:0,
+  counts:{sourceViewIntervalsChecked:1},
+  nativeHLRVertexConcordance:input.nativeHLRJunctionConcordance,
+  nativeHidden3DEndpointFans:input.endpointFans,
+  nativeHiddenOriginalVertexEndpointProof:input.nativeVertexProof,
+  nativeHLRAllM4ProjectedEncounters:input.projectedEncounters,
+  nativeHiddenDualOpenIntervalProof:input.dualProof,
+  nativeHiddenExactOriginalFrontGap:input.gapProof,
+  nativeHiddenFrontVisibleMask:{sourceGeometryId:'G',revision,
+   signedV5ActionCount:0},
+  nativeHiddenExactModelFrontMask:{sourceGeometryId:'G',revision,
+   signedV5ActionCount:0},
+  rows:[{
+   sourceGeometryId:'G',revision,view:'H',sourceEdgeId:'G::A|B',
+   signedV5Action:false,officialEngineeringStyle:'undetermined',
+   canonicalM4M5NativeHLRJointSourceIntervalEvidence:{
+    sourceEdgeId:'G::A|B',view:'H',
+    canonicalM4Original3DAndM5RayCutUnionRecomputed:true,
+    originalM4Full3DSourceIntervalProven:true,
+    actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:true,
+    originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete:true,
+    allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven:false,
+    full3DEndpointAndEngineeringLineStyleProven:false,
+    engineeringLineStyle:'undetermined',
+    constructionIntentAuthorized:false,signedV5Action:false
+   }
+  }]
+ };
+ return input;
 };
 test('entire native hidden HLR paper-open interval may be positive while genuine original vertex fan, TopoDS, GB and unique V5 still block',()=>{
  const r=review(caseData()),row=r.rows[0];
@@ -426,4 +459,37 @@ test('paper-coincident generated IsSame component without positive full-original
  assert.equal(r.rows[0].independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars[0].
   independentOriginal3DVertexAndFullHLRJunctionProven,false);
  assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
+});
+
+test('global M5 rejects mixed revision native source audits or forged OCCT source-view identity',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.revision++;
+ assert.throws(()=>review(x),/current original M5 global unsigned review/);
+ const y=caseData();
+ y.nativeSourceAudit.rows[0].sourceEdgeId='G::different';
+ assert.throws(()=>review(y),/stale, duplicate or forged|global M5 source lacks/);
+});
+test('complete M4 ranges alone never promote an incomplete genuine native HLR source interval or V5',()=>{
+ const x=caseData();
+ const joint=x.nativeSourceAudit.rows[0].canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage=false;
+ joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
+ const result=review(x),row=result.rows[0];
+ assert.equal(row.canonicalOriginalSourceParameterPartitionComplete,true);
+ assert.equal(row.sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage,false);
+ assert.equal(row.jointPositiveM5Prerequisites.completeSourceParameterCoverage,false);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('globally positive native source coverage must never come from an inconsistent joint proof boolean',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.rows[0].canonicalM4M5NativeHLRJointSourceIntervalEvidence.
+  originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
+ assert.throws(()=>review(x),/stale, duplicate or forged/);
+});
+test('M5 rejects proof references stitched across different authentic native OCCT runs',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.nativeHiddenDualOpenIntervalProof={...x.dualProof};
+ assert.throws(()=>review(x),/current original M5 global unsigned review/);
 });
