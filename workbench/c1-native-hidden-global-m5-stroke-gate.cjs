@@ -144,13 +144,19 @@ function reviewC1NativeHiddenFinalM5Strokes({
      star.wholeSceneAndEngineeringGBJunctionCertified!==false||
      star.signedV5Action!==false)
    throw new RangeError('untrusted complete generated HLR TopoDS original source star');
+  const membersSeen=new Set();
   for(const member of star.generatedHLREndpoints){
+   if(!['hidden-sharp','visible-sharp'].includes(member.hlrClass)||
+      !Number.isSafeInteger(member.nativeHLREdgeOrdinal)||
+      member.nativeHLREdgeOrdinal<0||!['from','to'].includes(member.side))
+    throw new RangeError('invalid genuine native HLR endpoint identity');
+   const memberKey=member.hlrClass+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
+   if(membersSeen.has(memberKey))
+    throw new RangeError('duplicate endpoint inside genuine native IsSame star');
+   membersSeen.add(memberKey);
    if(member.hlrClass!=='hidden-sharp')continue;
-   if(!Number.isSafeInteger(member.nativeHLREdgeOrdinal)||
-      member.nativeHLREdgeOrdinal<0)
-    throw new RangeError('invalid genuine native HLR endpoint ordinal');
    const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
-   if(!['from','to'].includes(member.side)||nativeStarByEndpoint.has(key))
+   if(nativeStarByEndpoint.has(key))
     throw new RangeError('duplicate generated native HLR junction endpoint');
    nativeStarByEndpoint.set(key,star);
   }
