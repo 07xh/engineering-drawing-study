@@ -213,3 +213,50 @@ test('orthographically collapsed M0 source cannot be recovered as a drawable pap
   from=project(a).H,to=project(b).H;
  assert.equal(recover({a,b,view:'H',from,to}),null);
 });
+
+test('certified full original M0 vertex pairs outrank rounded 3D interpolation for every real cuboid contour',()=>{
+ const r=audit(initial());
+ assert.equal(r.originalGloballySignedM5ContourStrokeCount,12);
+ assert.equal(r.globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery,12);
+ assert.ok(r.rows.every(row=>
+  row.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'&&
+  row.exactOriginalPhysical3DVertexPaperBinding===true&&
+  row.originalSourceParameterRange?.[0]===0&&
+  row.originalSourceParameterRange?.[1]===1&&
+  row.realOCCTOriginal3DSourceCompleteContourParity===true&&
+  row.signedV5Action===false));
+ assert.equal(r.constructionIntentDAGUniqueV5ParityProven,false);
+});
+
+test('one positive binary64 native HLR endpoint gap remains held despite exact M0 vertex proof',()=>{
+ const x=initial(),seg=x.cad.views.H[0],lift=seg.sourceCandidate3DLifts[0];
+ const [aId,bId]=lift.originalVertexIds,
+  a=x.geometry.data.points[aId],b=x.geometry.data.points[bId];
+ const before=[lift.sourceParameterAtProjectedFrom,
+  lift.sourceParameterAtProjectedTo];
+ assert.deepEqual([...before].sort((a,b)=>a-b),[0,1]);
+ const side=before[0]===1?'from':'to',t=1-Number.EPSILON;
+ const p={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,
+  z:a.z+(b.z-a.z)*t};
+ assert.notDeepEqual(project(p).H,project(b).H,
+  'a real positive ULP parameter gap must remain observable on paper');
+ seg[side]=project(p).H;
+ lift[side==='from'?'sourceParameterAtProjectedFrom':'sourceParameterAtProjectedTo']=t;
+ lift[side==='from'?'fromCandidate3D':'toCandidate3D']=p;
+ lift.originalSourceParameterRange=[0,t];
+ const witness=x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges
+  .find(w=>w.view==='H'&&w.nativeVisibleHLREdgeOrdinal===0);
+ witness.originalSourceParameterRange=[0,t];
+ const r=audit(x),row=r.rows.find(y=>
+  y.view==='H'&&y.originalPhysical3DSourceEdgeId===lift.sourceEdgeId);
+ assert.ok(row);
+ assert.deepEqual(row.originalSourceParameterRange,[0,1]);
+ assert.equal(row.originalContour3DParameterRecoveryKind,
+  'exact-original-m0-3d-vertex-projection');
+ assert.deepEqual(row.positiveLengthNativeSourceGaps,[[t,1]]);
+ assert.equal(row.heldReason,'true-occt-generated-contour-source-parameter-gap');
+ assert.equal(row.realOCCTOriginal3DSourceCompleteContourParity,false);
+ assert.equal(row.signedV5Action,false);
+ assert.equal(r.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour,false);
+ assert.equal(r.constructionIntentDAGUniqueV5ParityProven,false);
+});
