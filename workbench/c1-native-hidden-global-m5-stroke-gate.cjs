@@ -27,6 +27,45 @@ const requiredGlobal=[
  'endpointAndProjectionTopology','engineeringLineStandard',
  'soleConstructionIntentDAGV5'
 ];
+// Mathematical partition checker ONLY. The final native HLR gate gives it
+// freshly recomputed actual all-original-opaque-face ray subspans, never
+// user-supplied rays. Source cover without gaps AND without any overlap is
+// a necessary V/H/W topology condition; it is not an engineering line.
+function certifyExactOriginalRaySourceParameterPartition({
+ sourceViewKey,spans,projectionCollapsedExactly
+}={}){
+ if(typeof sourceViewKey!=='string'||!sourceViewKey.includes('@')||
+    !Array.isArray(spans)||typeof projectionCollapsedExactly!=='boolean')
+  throw new TypeError('current original M4 ray source partition required');
+ const ranges=spans.map(item=>{
+  const r=item?.originalSourceParameterRange;
+  if(!Array.isArray(r)||r.length!==2||
+     !r.every(Number.isFinite)||r[0]<0||r[1]>1||!(r[0]<r[1]))
+   throw new RangeError('nonfinite or empty canonical original ray source parameter cut');
+  return [...r];
+ }).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ let overlapped=false,cursor=0;
+ for(const [a,b] of ranges){
+  if(a<cursor)overlapped=true;
+  cursor=Math.max(cursor,b);
+ }
+ const coverage=exactCandidateIntervalCoverage([0,1],ranges);
+ return frozen({
+  sourceViewKey,projectionCollapsedExactly,
+  canonicalOriginalRayM4SpanCount:spans.length,
+  disjointCanonicalM4OriginalRayIntervals:!overlapped,
+  fullOriginalParameterRayPartitionCoverage:
+   !overlapped&&coverage.entireOriginalParameterIntervalCovered&&
+   spans.length>0,
+  originalParameterUncoveredIntervals:
+   coverage.positiveLengthUncoveredIntervals,
+  physicalLineDrawableInThisFirstAngleView:
+   !projectionCollapsedExactly,
+  originalFaceRayAndGeneratedHLRTopologyComplete:false,
+  nationalEngineeringLineStyleSigned:false,
+  signedV5Action:false
+ });
+}
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
  nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
@@ -587,6 +626,74 @@ function reviewC1NativeHiddenFinalM5Strokes({
   otherOccludingSolidsAndGeneratedOCCTTopoDSEdgeHistoryCertified:false,
   allSceneGlobalEngineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5ActionCount:0
+ });
+ const sourceViewRayParametricClosure=[];
+ if(nativeSourceWholeOpaqueFaceRayReconciliationAvailable){
+  const bySourceView=new Map();
+  for(const ray of nativeSourceFaceRaySubspans){
+   if(!bySourceView.has(ray.sourceViewKey))
+    bySourceView.set(ray.sourceViewKey,[]);
+   bySourceView.get(ray.sourceViewKey).push(ray);
+  }
+  for(const native of realNativeVisibleHiddenOriginalSourceViewCoverage){
+   const spans=bySourceView.get(native.sourceViewKey)??[];
+   const partition=certifyExactOriginalRaySourceParameterPartition({
+    sourceViewKey:native.sourceViewKey,spans,
+    projectionCollapsedExactly:native.projectionCollapsedExactly
+   });
+   // A genuinely 3D source can collapse to a PAPER POINT in an
+   // orthographic view; it may have NO drawable M4 ray subspans.
+   // Also hold any missing noncollapsed source instead of manufacturing
+   // [0,1] coverage. The exact empty-set union reports the full gap.
+   const originalSourcePhysicalRayClassificationFullyReconciled=
+    partition.fullOriginalParameterRayPartitionCoverage&&
+    partition.physicalLineDrawableInThisFirstAngleView&&
+    spans.every(x=>
+     x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible===true)&&
+    native.originalM4M5SourceParameterPartitionComplete===true&&
+    native.originalRealOCCTBRep3DSourceInventoryVerified===true;
+   sourceViewRayParametricClosure.push({
+    ...partition,
+    realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation:
+     originalSourcePhysicalRayClassificationFullyReconciled,
+    originalAllOpaqueFacesAndNativeSourceClassContradictions:
+     spans.filter(x=>
+      x.positiveOriginalFaceRayVsRealNativeHLROcclusionContradiction).length,
+    canonicalRaySubspanStillHeldByUnsignedExteriorContour:
+     spans.filter(x=>x.originalM4ExteriorContourStillOwnsLineStyle).length,
+    canonicalRaySubspanMathematicallyUndetermined:
+     spans.filter(x=>x.originalRayStillMathematicallyUndetermined).length,
+    entireFinalGeneratedOCCTEdgeTopologyAndGBLineRulesCertified:false,
+    signedV5Action:false
+   });
+  }
+  if(sourceViewRayParametricClosure.length!==
+     realNativeVisibleHiddenOriginalSourceViewCoverage.length)
+   throw new RangeError('incomplete all-original-faces native C1 source/view ray ledger');
+ }
+ const fullSourceVHWFaceRayAndActualHLRClosure=frozen({
+  available:nativeSourceWholeOpaqueFaceRayReconciliationAvailable,
+  auditedOriginalPhysicalSourceViews:sourceViewRayParametricClosure.length,
+  M4RayPartitionsWithExactPositiveNoOverlapFullSourceCoverage:
+   sourceViewRayParametricClosure.filter(x=>
+    x.fullOriginalParameterRayPartitionCoverage).length,
+  noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays:
+   sourceViewRayParametricClosure.filter(x=>
+    x.realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation).length,
+  originalSourceViewsWithPositiveRayParameterGapsOrOverlaps:
+   sourceViewRayParametricClosure.filter(x=>
+    !x.fullOriginalParameterRayPartitionCoverage).length,
+  originalSourceViewsWithNoOriginalM4RaySubspanEvidence:
+   sourceViewRayParametricClosure.filter(x=>
+    x.canonicalOriginalRayM4SpanCount===0).length,
+  originalSourceViewsStillHoldingContourOrUnprovedFaceRays:
+   sourceViewRayParametricClosure.filter(x=>
+    x.canonicalRaySubspanStillHeldByUnsignedExteriorContour>0||
+    x.canonicalRaySubspanMathematicallyUndetermined>0).length,
+  rows:sourceViewRayParametricClosure,
+  wholeGlobalOpaqueSceneAndGeneratedTopoDSHistoryCertified:false,
+  engineeringGBLineStyleCertified:false,
+  signedConstructionIntentDAGOrV5ActionCount:0
  });
  const counts={genuineHiddenHLRStrokesReviewed:0,
   jointM4M5NativeHLROriginal3DSourceViewsConsumed:jointSourceByKey.size,
@@ -1213,6 +1320,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
   nativeVHWFaceRayAndHLRReconciliation,
+  fullSourceVHWFaceRayAndActualHLRClosure,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
@@ -1224,4 +1332,5 @@ function reviewC1NativeHiddenFinalM5Strokes({
   wholeSolidV5Ready:false
  });
 }
-module.exports={reviewC1NativeHiddenFinalM5Strokes};
+module.exports={reviewC1NativeHiddenFinalM5Strokes,
+ certifyExactOriginalRaySourceParameterPartition};
