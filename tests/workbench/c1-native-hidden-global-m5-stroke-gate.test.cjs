@@ -1,6 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {reviewC1NativeHiddenFinalM5Strokes:review}=
+const {reviewC1NativeHiddenFinalM5Strokes:review,
+ certifyExactOriginalRaySourceParameterPartition:rayPartition}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
 const revision=73,geometry={id:'G',data:{points:{A:{x:0,y:0,z:0}}}};
 const caseData=()=>{
@@ -1039,4 +1040,63 @@ test('claiming model mesh status on a geometrically incomplete source cannot fab
  const x=withActualVisibleAndHidden3DSourceCoverage();
  x.geometry.kind='mesh';x.geometry.space='model-3d';x.geometry.unit='mm';
  assert.throws(()=>review(x),/convex|mesh|Geometry|topology|finite|incomplete original source-view universe/i);
+});
+
+test('original all-face source ray M4 partition is exactly continuous on [0,1] with no duplicate native cut',()=>{
+ const proof=rayPartition({sourceViewKey:'V@G::A|B',
+  spans:[{originalSourceParameterRange:[0,.25]},
+   {originalSourceParameterRange:[.25,.5]},
+   {originalSourceParameterRange:[.5,1]}],
+  projectionCollapsedExactly:false});
+ assert.equal(proof.fullOriginalParameterRayPartitionCoverage,true);
+ assert.equal(proof.disjointCanonicalM4OriginalRayIntervals,true);
+ assert.deepEqual(proof.originalParameterUncoveredIntervals,[]);
+ assert.equal(proof.physicalLineDrawableInThisFirstAngleView,true);
+ assert.equal(proof.nationalEngineeringLineStyleSigned,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('one-ULP source cut gap must remain open; no visual tolerance can complete the M4 ray partition',()=>{
+ const proof=rayPartition({sourceViewKey:'H@G::A|B',
+  spans:[{originalSourceParameterRange:[0,.5]},
+   {originalSourceParameterRange:[.5+Number.EPSILON,1]}],
+  projectionCollapsedExactly:false});
+ assert.equal(proof.fullOriginalParameterRayPartitionCoverage,false);
+ assert.deepEqual(proof.originalParameterUncoveredIntervals,
+  [[.5,.5+Number.EPSILON]]);
+});
+test('overlapping distinct original M4 ray partitions are invalid even when the union covers [0,1]',()=>{
+ const proof=rayPartition({sourceViewKey:'W@G::A|B',
+  spans:[{originalSourceParameterRange:[0,.6]},
+   {originalSourceParameterRange:[.5,1]}],
+  projectionCollapsedExactly:false});
+ assert.equal(proof.disjointCanonicalM4OriginalRayIntervals,false);
+ assert.equal(proof.fullOriginalParameterRayPartitionCoverage,false);
+ assert.deepEqual(proof.originalParameterUncoveredIntervals,[]);
+});
+test('original nonzero physical edge with exactly collapsed first-angle projection is never a drawable engineering line',()=>{
+ const proof=rayPartition({sourceViewKey:'W@G::A|B',
+  spans:[{originalSourceParameterRange:[0,1]}],
+  projectionCollapsedExactly:true});
+ assert.equal(proof.fullOriginalParameterRayPartitionCoverage,true);
+ assert.equal(proof.physicalLineDrawableInThisFirstAngleView,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('missing original face-ray source spans and nonfinite parameter claims cannot forge full M4 ray partition',()=>{
+ const missing=rayPartition({sourceViewKey:'V@G::A|B',
+  spans:[],projectionCollapsedExactly:false});
+ assert.equal(missing.fullOriginalParameterRayPartitionCoverage,false);
+ assert.deepEqual(missing.originalParameterUncoveredIntervals,[[0,1]]);
+ for(const cut of [[-1,1],[0,Infinity],[.5,.5],[.7,.4]]){
+  assert.throws(()=>rayPartition({sourceViewKey:'H@G::A|B',
+   spans:[{originalSourceParameterRange:cut}],
+   projectionCollapsedExactly:false}),/parameter cut/);
+ }
+});
+test('partial CAD case never acquires whole-face-ray source partition even if M4/M5 paper source fully covers',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage(),r=review(x);
+ assert.equal(r.fullSourceVHWFaceRayAndActualHLRClosure.available,false);
+ assert.equal(r.fullSourceVHWFaceRayAndActualHLRClosure.auditedOriginalPhysicalSourceViews,0);
+ assert.equal(r.fullSourceVHWFaceRayAndActualHLRClosure.
+  noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays,0);
+ assert.equal(r.signedV5ActionCount,0);
 });
