@@ -639,6 +639,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
     !nativeReviewedSourceViews.has(key)),
    completeCanonicalParameterSources:canonical.filter(key=>
     sourcePartitionCoverage.get(key)?.complete===true).length,
+   canonicalSourceParameterGaps:canonical.filter(key=>
+    sourcePartitionCoverage.get(key)?.complete!==true).map(key=>({
+     sourceViewKey:key,positiveLengthParameterGaps:
+      sourcePartitionCoverage.get(key)?.gaps??[[0,1]]
+    })),
    fullNativeVisibleAndHiddenHLRSourceHistoryCertified:false,
    continuousAllOpaqueFaceOcclusionCertified:false
   });
