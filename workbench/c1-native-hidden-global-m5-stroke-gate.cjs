@@ -17,6 +17,8 @@ const {exactOriginalM4TransverseCrossingDepth}=
  require('./c1-m4-exact-original-crossing-depth.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditC1SingleConvexSourceSubspanRays}=
+ require('./m5-c1-source-subspan-opaque-rays.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -472,6 +474,118 @@ function reviewC1NativeHiddenFinalM5Strokes({
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified:false,
   fullHLRGeneratedTopoDSHistoryCertified:false,
   officialEngineeringLineStylesCertified:false,
+  constructionIntentAuthorized:false,signedV5ActionCount:0
+ });
+ // Recompute every reviewed C1 M4 physical source subspan against
+ // ALL faces of the one independently verified CLOSED CONVEX original
+ // solid; compare the true continuous single-solid ray status with the
+ // actual native OCCT VCompound+HCompound source-attributed coverage.
+ // A source crossing a projection-only event does not manufacture an M0
+ // vertex, and an unsigned contour M5 status is NEVER a solid/dashed line.
+ // No request-provided face-ray certificate enters this final consumer.
+ const nativeSourceFaceRaySubspans=[];
+ let nativeSourceWholeOpaqueFaceRayReconciliationAvailable=false;
+ if(realNativeVisibleHiddenSourceViewGraphAvailable&&
+    geometry.kind==='mesh'&&geometry.space==='model-3d'&&
+    geometry.unit==='mm'){
+  const actualSingleSolidRay=auditC1SingleConvexSourceSubspanRays({
+   geometry,revision
+  });
+  if(actualSingleSolidRay.sourceGeometryId!==geometry.id||
+     actualSingleSolidRay.revision!==revision||
+     actualSingleSolidRay.signedV5ActionCount!==0||
+     actualSingleSolidRay.onlyOneReviewedConvexOpaqueSolidChecked!==true||
+     actualSingleSolidRay.sourceSubspanCount!==actualSingleSolidRay.subspans.length||
+     actualSingleSolidRay.sourceEventCount<0)
+   throw new RangeError('current unsigned all-original-face C1 ray review missing');
+  const nativeBySourceView=new Map(
+   realNativeVisibleHiddenOriginalSourceViewCoverage.map(row=>
+    [row.sourceViewKey,row]));
+  for(const subspan of actualSingleSolidRay.subspans){
+   const key=subspan.view+'@'+subspan.sourceEdgeId,
+    native=nativeBySourceView.get(key),range=subspan.originalParameterRange;
+   if(!native||subspan.sourceGeometryId!==geometry.id||
+      subspan.revision!==revision||
+      subspan.engineeringLineStyleAuthorized!==false||
+      subspan.signedLineStyle!=='undetermined'||
+      subspan.signedV5Action!==false||
+      !Array.isArray(range)||range.length!==2||
+      !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+      !(range[0]<range[1]))
+    throw new RangeError('all-face original source M4 segment cannot join real native HLR');
+   const clip=(intervals)=>intervals.map(([a,b])=>[
+    Math.max(a,range[0]),Math.min(b,range[1])
+   ]).filter(([a,b])=>b>a);
+   const visible=exactCandidateIntervalCoverage(range,
+    clip(native.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals)),
+    hidden=exactCandidateIntervalCoverage(range,
+     clip(native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals)),
+    combined=exactCandidateIntervalCoverage(range,[
+     ...visible.positiveLengthCoveredIntervals,
+     ...hidden.positiveLengthCoveredIntervals
+    ]);
+   const rayClear=subspan.status==='single-opaque-solid-whole-open-ray-clear',
+    rayInside=subspan.status==='single-opaque-solid-whole-open-ray-strictly-hidden',
+    rayContour=subspan.status==='exterior-contour-held-by-original-m5',
+    rayUndetermined=subspan.status==='undetermined';
+   if(Number(rayClear)+Number(rayInside)+Number(rayContour)+
+      Number(rayUndetermined)!==1)
+    throw new RangeError('unsupported original all-opaque-face ray status');
+   const positiveOverlap=(left,right)=>left.some(([a,b])=>
+    right.some(([c,d])=>Math.min(b,d)>Math.max(a,c)));
+   const clearVsNativeContradiction=rayClear&&positiveOverlap(
+    hidden.positiveLengthCoveredIntervals,[[...range]]);
+   const hiddenVsNativeContradiction=rayInside&&positiveOverlap(
+    visible.positiveLengthCoveredIntervals,[[...range]]);
+   const fullyAligned=(rayClear&&visible.entireOriginalParameterIntervalCovered&&
+    !clearVsNativeContradiction)||
+    (rayInside&&hidden.entireOriginalParameterIntervalCovered&&
+     !hiddenVsNativeContradiction);
+   nativeSourceFaceRaySubspans.push({
+    sourceViewKey:key,sourceEdgeId:subspan.sourceEdgeId,view:subspan.view,
+    originalSourceParameterRange:[...range],
+    currentWholeReviewedConvexSolidFaceRayStatus:subspan.status,
+    originalM4ExteriorContourStillOwnsLineStyle:rayContour,
+    originalRayStillMathematicallyUndetermined:rayUndetermined,
+    nativeVisibleSourceCoveredIntervals:
+     visible.positiveLengthCoveredIntervals,
+    nativeHiddenSourceCoveredIntervals:
+     hidden.positiveLengthCoveredIntervals,
+    nativeCombinedSourceUncoveredIntervals:
+     combined.positiveLengthUncoveredIntervals,
+    singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible:
+     fullyAligned,
+    positiveOriginalFaceRayVsRealNativeHLROcclusionContradiction:
+     clearVsNativeContradiction||hiddenVsNativeContradiction,
+    allSeparateOpaqueSceneBodiesAndGeneratedEdgeHistoryCertified:false,
+    completeProjectedJunctionAndGBLineStyleCertified:false,
+    constructionIntentAuthorized:false,signedV5Action:false
+   });
+  }
+  if(nativeSourceFaceRaySubspans.length!==
+     actualSingleSolidRay.sourceSubspanCount)
+   throw new RangeError('some original M4 all-opaque-face source subspans omitted');
+  nativeSourceWholeOpaqueFaceRayReconciliationAvailable=true;
+ }
+ const nativeVHWFaceRayAndHLRReconciliation=frozen({
+  available:nativeSourceWholeOpaqueFaceRayReconciliationAvailable,
+  scope:'single-independent-current-closed-convex-solid-all-original-faces',
+  sourceRaySubspansAudited:nativeSourceFaceRaySubspans.length,
+  singleSolidFaceRaysAndActualHLRPhysicalSourceIntervalsPositivelyCompatible:
+   nativeSourceFaceRaySubspans.filter(x=>
+    x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible).length,
+  original3DSourceSubspansWithNativeVisibilityContradiction:
+   nativeSourceFaceRaySubspans.filter(x=>
+    x.positiveOriginalFaceRayVsRealNativeHLROcclusionContradiction).length,
+  original3DSourceSubspansStillOwnedByOriginalM5ExteriorContour:
+   nativeSourceFaceRaySubspans.filter(x=>
+    x.originalM4ExteriorContourStillOwnsLineStyle).length,
+  original3DSourceSubspansWithUnresolvedSingleSolidFaceRay:
+   nativeSourceFaceRaySubspans.filter(x=>
+    x.originalRayStillMathematicallyUndetermined).length,
+  rows:nativeSourceFaceRaySubspans,
+  otherOccludingSolidsAndGeneratedOCCTTopoDSEdgeHistoryCertified:false,
+  allSceneGlobalEngineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5ActionCount:0
  });
  const counts={genuineHiddenHLRStrokesReviewed:0,
@@ -1098,6 +1212,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts,rows,canonicalOriginalM5SourceInventory,
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
+  nativeVHWFaceRayAndHLRReconciliation,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
