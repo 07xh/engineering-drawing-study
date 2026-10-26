@@ -12,26 +12,28 @@
  * It NEVER grants a GB engineering dashed line, source line join,
  * ConstructionIntent, DAG or sole V5 stroke.
  */
+// Only the existing shared exact binary64 union may certify C1 source gaps.
+// An injected callback could forge a complete 3D source proof.
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const finite=Number.isFinite;
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
 function certifyHiddenNativeOriginalOpenIntervalDualCoverage({
- originalSourceParameterRange,strictInteriorRanges,frontVisibleMaskRanges,
- exactIntervalCoverage
+ originalSourceParameterRange,strictInteriorRanges,frontVisibleMaskRanges
 }={}){
  const range=originalSourceParameterRange;
  if(!Array.isArray(range)||range.length!==2||!range.every(finite)||
     range[0]<0||range[1]>1||range[0]>=range[1]||
     !Array.isArray(strictInteriorRanges)||
-    !Array.isArray(frontVisibleMaskRanges)||
-    typeof exactIntervalCoverage!=='function')
+    !Array.isArray(frontVisibleMaskRanges))
   throw new TypeError('native HLR bounded original parameter and independent two positive witnesses required');
  // Treat these as already authenticated by the current exact M5 and
  // actual native HLR/M4/visible M5 consumers; never invent more ranges.
- const inside=exactIntervalCoverage(range,strictInteriorRanges),
-  masked=exactIntervalCoverage(range,frontVisibleMaskRanges),
-  both=exactIntervalCoverage(range,[
+ const inside=exactCandidateIntervalCoverage(range,strictInteriorRanges),
+  masked=exactCandidateIntervalCoverage(range,frontVisibleMaskRanges),
+  both=exactCandidateIntervalCoverage(range,[
    ...inside.positiveLengthCoveredIntervals,
    ...masked.positiveLengthCoveredIntervals
   ]);
@@ -58,7 +60,7 @@ function certifyHiddenNativeOriginalOpenIntervalDualCoverage({
  });
 }
 function auditC1NativeHiddenDualOpenIntervalProof({
- geometry,revision,strictM5,frontMask,exactIntervalCoverage
+ geometry,revision,strictM5,frontMask
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     strictM5?.sourceGeometryId!==geometry.id||
@@ -70,8 +72,7 @@ function auditC1NativeHiddenDualOpenIntervalProof({
     frontMask.firstAngleTrueOCCTHLRVisibleAndHiddenConsumed!==true||
     frontMask.signedV5ActionCount!==0||
     !Array.isArray(strictM5.rows)||!Array.isArray(frontMask.rows)||
-    strictM5.rows.length!==frontMask.rows.length||
-    typeof exactIntervalCoverage!=='function')
+    strictM5.rows.length!==frontMask.rows.length)
   throw new TypeError('current true OCCT hidden line M5 strict and front native proofs required');
  const counts={
   realNativeHiddenOpenLineIntervalsReviewed:0,
@@ -124,8 +125,7 @@ function auditC1NativeHiddenDualOpenIntervalProof({
    union=certifyHiddenNativeOriginalOpenIntervalDualCoverage({
     originalSourceParameterRange:strict.nativeOriginalSourceParameterRange,
     strictInteriorRanges:inside,
-    frontVisibleMaskRanges:visible,
-    exactIntervalCoverage
+    frontVisibleMaskRanges:visible
    });
    const originalM4All=inward.nativeOriginalParameterFullyCoveredByM4Cuts;
    const mask=b.wholeHiddenPaperIntervalMaskCoverage;
