@@ -136,7 +136,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
  if(geometry.data.edges&&
     (jointSourceByKey.size!==geometry.data.edges.length*VIEWS.length||
      geometry.data.edges.some(ids=>VIEWS.some(view=>
-      !jointSourceByKey.has(view+'@'+geometry.id+'::'+[...ids].sort().join('|')))))
+      !jointSourceByKey.has(view+'@'+geometry.id+'::'+[...ids].sort().join('|'))))))
   throw new RangeError('C1 native HLR/M4/M5 incomplete original source-view universe');
  for(const key of byKey.keys())
   if(!jointSourceByKey.has(key))
