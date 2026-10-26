@@ -18,6 +18,8 @@ const {cuboidBounds,computeC1OcjsVisibleSegments}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {verifiedConvexMeshHalfspaces}=
  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {verifyConvexProjectedOutline}=
+ require('../../core/verification/convex-projected-outline.cjs');
 const {auditC1OcjsPhysicalCreaseCandidates}=
  require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
 const {auditC1OriginalStrokeFinalPreconditions}=
@@ -120,6 +122,29 @@ const general=[g,t],polyhedra=[];
 for(const [index,geometry] of general.entries()){
  const proof=verifiedConvexMeshHalfspaces(geometry);
  assert.equal(proof.status,'validated-closed-convex-mesh');
+ const exactHullOutline=verifyConvexProjectedOutline({
+  mesh:geometry,revision:40+index});
+ let exactM0EndpointBoundFullSides=0;
+ for(const view of ['V','H','W']){
+  const hull=exactHullOutline[view];
+  for(const [sideIndex,side] of hull.boundarySides.entries()){
+   const fromIds=hull.vertices[sideIndex].sourcePointIds,
+    toIds=hull.vertices[(sideIndex+1)%hull.vertices.length].sourcePointIds;
+   for(const candidate of side.sourceEdgeCandidates){
+    const [a,b]=candidate.sourceEdgeId.split('|');
+    const fullByVertexIds=(fromIds.includes(a)&&toIds.includes(b))||
+     (fromIds.includes(b)&&toIds.includes(a));
+    if(fullByVertexIds){
+     assert.deepEqual(candidate.projectedFractionRange,[0,1],
+      'literal M0 hull endpoint IDs must preserve exact [0,1] source span');
+     exactM0EndpointBoundFullSides++;
+    }
+   }
+  }
+ }
+ assert.ok(exactM0EndpointBoundFullSides>=3,
+  'real convex geometry must exercise exact M0 hull vertex ID parameters');
+
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
  // Real native edge IsSame is checked BEFORE OCJS handles are disposed,
