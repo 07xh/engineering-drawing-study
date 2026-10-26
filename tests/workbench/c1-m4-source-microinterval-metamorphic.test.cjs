@@ -155,3 +155,13 @@ test('exact coverage refuses nonfinite, reversed, out-of-bounds and zero-length 
  assert.throws(()=>exactCandidateIntervalCoverage([0,1],
   Array.from({length:513},()=>[0,1])),TypeError);
 });
+
+test('empty native witness list leaves the entire original source interval unproven',()=>{
+ const full=exactCandidateIntervalCoverage([0,1],[]);
+ assert.equal(full.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(full.positiveLengthCoveredIntervals,[]);
+ assert.deepEqual(full.positiveLengthUncoveredIntervals,[[0,1]]);
+ assert.equal(full.candidateIntervalsExamined,0);
+ const sub=exactCandidateIntervalCoverage([0.25,0.75],[]);
+ assert.deepEqual(sub.positiveLengthUncoveredIntervals,[[0.25,0.75]]);
+});
