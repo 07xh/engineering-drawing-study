@@ -232,6 +232,35 @@ for(const [index,geometry] of general.entries()){
    n+cad.views[v].length+cad.hiddenSharpViews[v].length,0));
  assert.equal(nativeGeneratedVertexGraph.counts.actualNativeBRepVertexEndpoints,
   2*nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges);
+ // End-to-end genuine WASM check: a native IsSame junction endpoint must
+ // refer to an actual emitted HLR segment of the SAME view and visibility
+ // class. Its ordinal is not a free-standing identity or a paper-only join.
+ // The graph constructor independently enforces every input record's
+ // exact array-index binding, including endpoints outside shared stars.
+ for(const view of ['V','H','W']){
+  const graphView=nativeGeneratedVertexGraph.views[view];
+  const refs=[
+   ...graphView.sameActualGeneratedOCCTTopoDSVertexPairs.flatMap(x=>[x.a,x.b]),
+   ...graphView.paperCoincidentButDifferentTopoDSVertexPairs.flatMap(x=>[x.a,x.b]),
+   ...graphView.generatedOCCTSharedNativeJunctionComponents.flatMap(x=>
+    x.generatedSharpEdgeEndpoints)
+  ];
+  for(const ref of refs){
+   assert.ok(ref.side==='from'||ref.side==='to');
+   const segments=ref.hlrClass==='visible-sharp'?cad.views[view]:
+    ref.hlrClass==='hidden-sharp'?cad.hiddenSharpViews[view]:null;
+   assert.ok(segments,'genuine HLR class must have an emitted CAD array');
+   assert.ok(Number.isSafeInteger(ref.nativeHLREdgeOrdinal)&&
+    ref.nativeHLREdgeOrdinal>=0&&
+    ref.nativeHLREdgeOrdinal<segments.length,
+    'native junction endpoint must index an actual same-class CAD segment');
+   const segment=segments[ref.nativeHLREdgeOrdinal];
+   assert.equal(segment.occtHLRVisibilityClass,ref.hlrClass);
+   assert.equal(segment.actualOCCTHLRFlattenedBRepLineVerified,true);
+   assert.equal(segment.v5Authorized,false);
+  }
+ }
+
  assert.equal(nativeGeneratedVertexGraph.
   allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing,true);
  assert.equal(nativeGeneratedVertexGraph.
