@@ -120,6 +120,15 @@ const caseData=()=>{
   schema:'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1',
   sourceGeometryId:'G',revision,signedV5ActionCount:0,
   counts:{sourceViewIntervalsChecked:1},
+  nativeHiddenSourceRefinements:[{
+   actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence:{
+    nativeGeneratedEdgeDirectOriginalIsSameCompared:true,
+    directlySameUniqueOriginalOCCTBRepSourceEdgeId:null,
+    allM0OriginalPhysicalOCCTSourceEdgesCompared:true,
+    fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered:false,
+    signedV5Action:false
+   }
+  }],
   nativeHLRVertexConcordance:input.nativeHLRJunctionConcordance,
   nativeHidden3DEndpointFans:input.endpointFans,
   nativeHiddenOriginalVertexEndpointProof:input.nativeVertexProof,
@@ -668,4 +677,37 @@ test('global M5 never accepts a physical source interval not contained in real n
  };
  j.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage=false;
  assert.throws(()=>review(x),/unique original 3D source proof exceeds actual native HLR paper coverage/);
+});
+
+test('global M5 positively consumes actual OCCT directly-shared original TopoDS edge source only with matching physical 3D M5 identity',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.nativeHiddenSourceRefinements[0].
+  actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
+   directlySameUniqueOriginalOCCTBRepSourceEdgeId='G::A|B';
+ const result=review(x),row=result.rows[0];
+ assert.equal(row.generatedTopoDSEdgePhysicallySameAsM5OriginalBRepSource,true);
+ assert.equal(row.genuineGeneratedTopoDSEdgeDirectOriginalSourceIsSameWitness.
+  nativeGeneratedEdgeDirectOriginalIsSameCompared,true);
+ assert.equal(row.actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+});
+test('native HLR generated TopoDS edge IsSame to a DIFFERENT original 3D source cannot be joined to M5 candidate',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.nativeHiddenSourceRefinements[0].
+  actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
+   directlySameUniqueOriginalOCCTBRepSourceEdgeId='G::C|D';
+ assert.throws(()=>review(x),/native generated TopoDS IsSame original source contradicts M5/);
+});
+test('forged native generated IsSame-only field cannot skip true OCCT original BRep comparison',()=>{
+ const x=caseData();
+ x.nativeSourceAudit.nativeHiddenSourceRefinements[0].
+  actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
+   nativeGeneratedEdgeDirectOriginalIsSameCompared=false;
+ assert.throws(()=>review(x),/real OCCT source IsSame witness missing/);
+ const y=caseData();
+ y.nativeSourceAudit.nativeHiddenSourceRefinements[0].
+  actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence.
+   fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered=true;
+ assert.throws(()=>review(y),/real OCCT source IsSame witness missing/);
 });
