@@ -122,6 +122,12 @@ for(const [index,geometry] of general.entries()){
    assert.equal(edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared,true);
    assert.equal(edge.originalPhysicalOCCTSourceIdsCompared.length,
     geometry.data.edges.length);
+   assert.equal(edge.actualDistinctOriginalOCCTBRepSourceCount,
+    geometry.data.edges.length);
+   assert.ok(edge.actualOriginalOCCTBRepEdgeOccurrencesCompared>=
+    geometry.data.edges.length);
+   assert.equal(new Set(edge.originalPhysicalOCCTSourceIdsCompared).size,
+    geometry.data.edges.length);
    assert.equal(
     edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,
     edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId!==null);
