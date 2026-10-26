@@ -5,7 +5,7 @@ const {auditC1NativeHLRGeneratedToOriginalVertexConcordance:audit}=
 const revision=27,point={u:10,v:4};
 const nativeEdge=(cl,n)=>({view:'H',occtHLRVisibilityClass:cl,
  actualOCCTHLRFlattenedBRepLineVerified:true,
- from:{u:n===0?0:10,v:4},to:{...point}});
+ from:{u:n===0?0:10,v:n===0?4:0},to:{...point}});
 const ref=(kind,n,side)=>({
  hlrClass:kind,nativeHLREdgeOrdinal:n,side,
  nativePaperPoint:{...point}
@@ -18,7 +18,7 @@ const pair=(a,b,same)=>({view:'H',a,b,
 const fixture=()=>{
  const r={
   geometry:{id:'G',data:{
-   points:{A:{x:0,y:0,z:0},B:{x:0,y:4,z:0},C:{x:10,y:0,z:0}},
+   points:{A:{x:10,y:4,z:0},B:{x:0,y:4,z:0},C:{x:10,y:0,z:0}},
    edges:[['A','B'],['A','C']]
   }},
   revision,
@@ -86,6 +86,27 @@ test('true shared generated OCCT IsSame vertex AND exact independently shared or
  assert.equal(r.signedV5ActionCount,0);
 });
 
+test('hidden original 3D vertex cannot disagree with native HLR paper endpoint',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ x.geometry.data.points.A.x=11;
+ const r=audit(x);
+ assert.equal(r.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,0);
+ assert.equal(r.counts.IsSameHLRNodesButOriginalSource3DVertexNotCertified,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('nonfinite original hidden XYZ cannot certify an OCCT native shared junction',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ x.geometry.data.points.A.z=Infinity;
+ const r=audit(x);
+ assert.equal(r.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
 test('forged hidden original source edge identity cannot certify a native physical junction',()=>{
  const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
  x.originalNativeVertexProof.rows[1].nativeSource3DVertexEndpointRows[0].
@@ -315,6 +336,7 @@ const visibleFrontSourceCase=()=>{
  const x=fixture(),A={x:10,y:4,z:0},D={x:0,y:4,z:0};
  x.geometry.data.points.A=A;
  x.geometry.data.points.B={x:20,y:4,z:0};
+ x.cad.hiddenSharpViews.H[0].from={u:20,v:4};
  x.geometry.data.points.D=D;
  x.geometry.data.edges=[['A','B'],['D','A']];
  x.cad.views.H[0].sourceCandidate3DLifts=[{
