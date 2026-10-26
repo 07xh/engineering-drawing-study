@@ -737,6 +737,65 @@ test('one authentic native hidden HLR interval cannot conceal omitted original M
  assert.equal(inventory.signedV5Action,false);
  assert.equal(out.signedV5ActionCount,0);
 });
+test('drawable source coverage is complete when the original X edge collapses only in W',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const h=x.globalM5Review.rows[0];
+ x.globalM5Review.rows.push({...h,view:'V'});
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.equal(inv.expectedOriginalSourceViewCount,3);
+ assert.equal(inv.completeOriginalSourceViewCount,2);
+ assert.deepEqual(inv.missingOriginalSourceViews,['W@G::A|B']);
+ assert.equal(inv.noncollapsedOriginalSourceViewCount,2);
+ assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,2);
+ assert.deepEqual(inv.noncollapsedMissingOriginalSourceViews,[]);
+ assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,[]);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[]);
+ assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,true);
+ assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+});
+test('one binary64 ULP positive gap is never forgiven for a drawable V source',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const h=x.globalM5Review.rows[0],end=1-Number.EPSILON/2;
+ x.globalM5Review.rows.push({...h,view:'V',
+  originalSourceParameterRange:[0,end]});
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.equal(inv.noncollapsedOriginalSourceViewCount,2);
+ assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,1);
+ assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,['V@G::A|B']);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[{
+  sourceViewKey:'V@G::A|B',missingEntireSourceView:false,
+  uncoveredOriginalParameterIntervals:[[end,1]],
+  projectedFrom:{u:0,v:0},projectedTo:{u:1,v:0},signedV5Action:false
+ }]);
+ assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+});
+test('missing drawable V source requires full [0,1] while collapsed W does not',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.deepEqual(inv.noncollapsedMissingOriginalSourceViews,['V@G::A|B']);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[{
+  sourceViewKey:'V@G::A|B',missingEntireSourceView:true,
+  uncoveredOriginalParameterIntervals:[[0,1]],
+  projectedFrom:{u:0,v:0},projectedTo:{u:1,v:0},signedV5Action:false
+ }]);
+ assert.deepEqual(inv.missingOriginalSourceViews,['V@G::A|B','W@G::A|B']);
+ assert.equal(inv.signedV5Action,false);
+});
+test('zero-length original 3D edge cannot be hidden as three collapsed views',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:0,z:0}},
+  edges:[['A','B']]}};
+ assert.throws(()=>review(x),/zero-length original M0 physical 3D source edge/);
+});
+
 test('global original source inventory rejects unknown and duplicated physical M0 edges',()=>{
  const x=caseData();
  x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},

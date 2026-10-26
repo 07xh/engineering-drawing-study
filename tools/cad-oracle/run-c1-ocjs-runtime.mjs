@@ -1112,6 +1112,53 @@ for(const [index,geometry] of general.entries()){
   sceneInventory.expectedOriginalSourceViewCount>0&&
   sceneInventory.missingOriginalSourceViews.length===0&&
   sceneInventory.incompleteOriginalSourceViewPartitions.length===0);
+ // Genuine pinned OCCT WASM geometry: independently recompute every
+ // original physical 3D edge's first-angle drawable projections. A point
+ // projection is NOT a missing paper stroke; the original 3D edge remains
+ // in the full inventory, and no positive result here signs GB or V5.
+ const originalSourceViewProjections=geometry.data.edges.flatMap(edge=>{
+  const p=project(geometry.data.points[edge[0]]);
+  const q=project(geometry.data.points[edge[1]]);
+  const id=geometry.id+'::'+[...edge].sort().join('|');
+  return ['V','H','W'].map(view=>({key:view+'@'+id,
+   collapsed:p[view].u===q[view].u&&p[view].v===q[view].v}));
+ });
+ const drawableKeys=originalSourceViewProjections.filter(x=>!x.collapsed)
+  .map(x=>x.key);
+ const missingDrawable=sceneInventory.missingOriginalSourceViews.filter(
+  key=>drawableKeys.includes(key));
+ const incompleteDrawable=sceneInventory.incompleteOriginalSourceViewPartitions
+  .filter(x=>drawableKeys.includes(x.sourceViewKey))
+  .map(x=>x.sourceViewKey);
+ assert.equal(sceneInventory.noncollapsedOriginalSourceViewCount,
+  drawableKeys.length);
+ assert.equal(sceneInventory.noncollapsedCompleteOriginalSourceViewCount,
+  drawableKeys.length-missingDrawable.length-incompleteDrawable.length);
+ assert.deepEqual(sceneInventory.noncollapsedMissingOriginalSourceViews,
+  missingDrawable);
+ assert.deepEqual(sceneInventory.noncollapsedIncompleteOriginalSourceViews,
+  incompleteDrawable);
+ const expectedUncovered=drawableKeys.filter(key=>
+  missingDrawable.includes(key)||incompleteDrawable.includes(key)).map(key=>{
+   const absent=missingDrawable.includes(key);
+   const gap=sceneInventory.incompleteOriginalSourceViewPartitions.find(x=>
+    x.sourceViewKey===key);
+   const projection=sceneInventory.missingOriginalSourceViewProjectionEvidence.find(x=>
+    x.sourceViewKey===key)||
+    sceneInventory.incompleteOriginalSourceViewProjectionEvidence.find(x=>
+     x.sourceViewKey===key);
+   assert.ok(projection&&!projection.projectionCollapsedExactly);
+   return {sourceViewKey:key,missingEntireSourceView:absent,
+    uncoveredOriginalParameterIntervals:absent?[[0,1]]:gap.positiveLengthParameterGaps,
+    projectedFrom:projection.projectedFrom,projectedTo:projection.projectedTo,
+    signedV5Action:false};
+  });
+ assert.deepEqual(sceneInventory.noncollapsedUncoveredOriginalSourceParameterIntervals,
+  expectedUncovered);
+ assert.equal(
+  sceneInventory.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,
+  drawableKeys.length>0&&missingDrawable.length===0&&incompleteDrawable.length===0);
+ assert.equal(sceneInventory.signedV5Action,false);
  // Keep genuine binary64 residuals and missing source/view identities visible.
  // A near-1 endpoint is not proof of a collapsed projection or coverage.
  const missingKeys=new Set(sceneInventory.missingOriginalSourceViews);
@@ -1482,6 +1529,17 @@ for(const [index,geometry] of general.entries()){
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
    complete:sceneInventory.completeOriginalSourceViewCount,
+   drawableNoncollapsed:{
+    expected:sceneInventory.noncollapsedOriginalSourceViewCount,
+    complete:sceneInventory.noncollapsedCompleteOriginalSourceViewCount,
+    missing:sceneInventory.noncollapsedMissingOriginalSourceViews,
+    incomplete:sceneInventory.noncollapsedIncompleteOriginalSourceViews,
+    uncoveredParameterObligations:
+     sceneInventory.noncollapsedUncoveredOriginalSourceParameterIntervals,
+    allM5ParameterPartitionsComplete:
+     sceneInventory.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,
+    globallyCertified:false,signedV5Action:false
+   },
    missing:sceneInventory.missingOriginalSourceViewProjectionEvidence,
    incomplete:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.map(e=>({
     ...e,positiveLengthParameterGaps:

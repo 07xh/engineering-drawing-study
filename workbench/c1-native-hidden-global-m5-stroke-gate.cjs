@@ -395,6 +395,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalM0EdgeInventoryAvailable:false,
    expectedOriginalSourceViewCount:null,
    completeOriginalSourceViewCount:0,
+   noncollapsedOriginalSourceViewCount:0,
+   noncollapsedCompleteOriginalSourceViewCount:0,
+   noncollapsedMissingOriginalSourceViews:[],
+   noncollapsedIncompleteOriginalSourceViews:[],
+   noncollapsedUncoveredOriginalSourceParameterIntervals:[],
+   allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions:false,
    missingOriginalSourceViews:[],
    incompleteOriginalSourceViewPartitions:[],
    missingOriginalSourceViewProjectionEvidence:[],
@@ -414,8 +420,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    // Reuse the single authoritative first-angle projection kernel.
    // Classify actual M0 endpoints; do not infer degeneracy from a missing
    // HLR line or forgive even one binary64 ULP of missing M5 coverage.
-   const from=project(geometry.data.points[edge[0]]);
-   const to=project(geometry.data.points[edge[1]]);
+   const a=geometry.data.points[edge[0]],b=geometry.data.points[edge[1]];
+   if(a.x===b.x&&a.y===b.y&&a.z===b.z)
+    throw new RangeError('zero-length original M0 physical 3D source edge');
+   const from=project(a),to=project(b);
    for(const view of VIEWS){
     const key=view+'@'+sourceId;
     if(expected.has(key))
@@ -436,8 +444,41 @@ function reviewC1NativeHiddenFinalM5Strokes({
   const missing=[...expected].filter(key=>!byKey.has(key));
   const incomplete=[...expected].filter(key=>
    byKey.has(key)&&sourcePartitionCoverage.get(key)?.complete!==true);
+  // The original physical 3D inventory must retain collapsed projections,
+  // but only positive-length first-angle paper projections are DRAWABLE.
+  // A complete drawable partition is a necessary source-coverage fact,
+  // never a proof of native HLR history, continuous occlusion or GB/V5.
+  const noncollapsed=[...expected].filter(key=>
+   !projectedBySourceView.get(key).projectionCollapsedExactly);
+  const noncollapsedMissing=missing.filter(key=>
+   !projectedBySourceView.get(key).projectionCollapsedExactly);
+  const noncollapsedIncomplete=incomplete.filter(key=>
+   !projectedBySourceView.get(key).projectionCollapsedExactly);
+  const noncollapsedUncovered=noncollapsed.filter(key=>
+   noncollapsedMissing.includes(key)||noncollapsedIncomplete.includes(key))
+   .map(key=>{
+    const absent=noncollapsedMissing.includes(key),
+     projection=projectedBySourceView.get(key);
+    return {
+     sourceViewKey:key,missingEntireSourceView:absent,
+     uncoveredOriginalParameterIntervals:absent?[[0,1]]:
+      sourcePartitionCoverage.get(key).gaps,
+     projectedFrom:projection.projectedFrom,
+     projectedTo:projection.projectedTo,
+     signedV5Action:false
+    };
+   });
   canonicalOriginalM5SourceInventory=frozen({
    originalM0EdgeInventoryAvailable:true,
+   noncollapsedOriginalSourceViewCount:noncollapsed.length,
+   noncollapsedCompleteOriginalSourceViewCount:
+    noncollapsed.length-noncollapsedMissing.length-noncollapsedIncomplete.length,
+   noncollapsedMissingOriginalSourceViews:noncollapsedMissing,
+   noncollapsedIncompleteOriginalSourceViews:noncollapsedIncomplete,
+   noncollapsedUncoveredOriginalSourceParameterIntervals:noncollapsedUncovered,
+   allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions:
+    noncollapsed.length>0&&noncollapsedMissing.length===0&&
+    noncollapsedIncomplete.length===0,
    expectedOriginalSourceViewCount:expected.size,
    completeOriginalSourceViewCount:expected.size-missing.length-incomplete.length,
    missingOriginalSourceViews:missing,
