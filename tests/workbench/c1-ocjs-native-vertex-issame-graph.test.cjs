@@ -108,3 +108,35 @@ test('non-transitive mocked OCCT IsSame graph is rejected instead of treating a 
  }
  assert.throws(()=>graph({perView:v}),/not transitive/);
 });
+
+test('genuine generated vertex records are bound to exact per-class CAD segment ordinals',()=>{
+ const out=graph({perView:baseline()});
+ // Visible ordinal 0 and hidden ordinal 0 are different native HLR
+ // arrays, not a cross-class collision or a reconstructed source edge.
+ assert.equal(out.counts.genuineOCCTNativeHLRSharpEdges,4);
+ assert.equal(out.actualGeneratedToOriginalTopoDSHistoryRecovered,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('duplicate, skipped or permuted native HLR ordinal cannot rebind genuine vertices to a different CAD edge',()=>{
+ const corruptions=[
+  v=>{v.H.visible[1].nativeHLREdgeOrdinal=0;},
+  v=>{v.H.visible[1].nativeHLREdgeOrdinal=2;},
+  v=>{v.H.visible.reverse();},
+  v=>{v.H.hidden[1].nativeHLREdgeOrdinal=0;},
+  v=>{v.H.hidden[1].nativeHLREdgeOrdinal=2;},
+  v=>{v.H.hidden.reverse();}
+ ];
+ for(const corrupt of corruptions){
+  const v=baseline();corrupt(v);
+  assert.throws(()=>graph({perView:v}),
+   /native OCCT (visible|hidden)-sharp HLR ordinal does not match actual emitted segment index/);
+ }
+});
+test('ordinal provenance rejection precedes even a fabricated IsSame vertex graph',()=>{
+ const v=baseline();
+ v.H.visible[0].nativeHLREdgeOrdinal=1;
+ v.H.visible[0].vertices=[{},{}];
+ assert.throws(()=>graph({perView:v}),/HLR ordinal does not match/);
+ assert.equal(v.H.visible[0].nativeHLREdgeOrdinal,1,
+  'read-only native proof must never repair an invalid ordinal in-place');
+});
