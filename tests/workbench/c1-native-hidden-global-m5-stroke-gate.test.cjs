@@ -125,6 +125,12 @@ const caseData=()=>{
     originalM4Full3DSourceIntervalProven:true,
     actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:true,
     originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete:true,
+    actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:true,
+    actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage:true,
+    uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage:{
+     originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:true,
+     positiveLengthCoveredIntervals:[[0,1]],positiveLengthUncoveredIntervals:[]
+    },
     allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven:false,
     full3DEndpointAndEngineeringLineStyleProven:false,
     engineeringLineStyle:'undetermined',
@@ -486,6 +492,27 @@ test('globally positive native source coverage must never come from an inconsist
  const x=caseData();
  x.nativeSourceAudit.rows[0].canonicalM4M5NativeHLRJointSourceIntervalEvidence.
   originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
+ assert.throws(()=>review(x),/stale, duplicate or forged/);
+});
+test('global M5 refuses candidate-complete but physically ambiguous native original edge source',()=>{
+ const x=caseData(),joint=x.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
+ joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage={
+  originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:false,
+  positiveLengthCoveredIntervals:[],positiveLengthUncoveredIntervals:[[0,1]]
+ };
+ joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
+ const result=review(x),row=result.rows[0];
+ assert.equal(row.sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage,false);
+ assert.equal(row.jointPositiveM5Prerequisites.completeSourceParameterCoverage,false);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+});
+test('global M5 rejects fabricated source-uniqueness certificate with contradictory union flag',()=>{
+ const x=caseData(),joint=x.nativeSourceAudit.rows[0].
+  canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
  assert.throws(()=>review(x),/stale, duplicate or forged/);
 });
 test('M5 rejects proof references stitched across different authentic native OCCT runs',()=>{
