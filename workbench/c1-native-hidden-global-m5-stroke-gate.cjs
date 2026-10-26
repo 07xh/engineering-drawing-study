@@ -15,6 +15,8 @@
 const {VIEWS}=require('../core/projection/conventions.js');
 const {exactOriginalM4TransverseCrossingDepth}=
  require('./c1-m4-exact-original-crossing-depth.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -111,10 +113,51 @@ function reviewC1NativeHiddenFinalM5Strokes({
  }
  // A single real OCCT run must deliver all six proof branches on the SAME
  // 3D source/view identity. Never infer this from independent success flags.
+ // The per-source proof is issued upstream by native OCCT. Before this
+ // FINAL M5 consumer accepts even its local source-ready state, rebuild
+ // exact binary64 coverage from its actual positive intervals. A stale
+ // full/empty-gap flag or a forged unique source subset is not a proof.
+ const intervalsMatch=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const recheck=proof=>{
+  if(!proof||!Array.isArray(proof.originalParameterRange)||
+     proof.originalParameterRange.length!==2||
+     proof.originalParameterRange[0]!==0||
+     proof.originalParameterRange[1]!==1||
+     !Array.isArray(proof.positiveLengthCoveredIntervals)||
+     !Array.isArray(proof.positiveLengthUncoveredIntervals))
+   throw new RangeError('missing exact same-run M4/M5/native HLR source interval ledger');
+  const checked=exactCandidateIntervalCoverage([0,1],
+   proof.positiveLengthCoveredIntervals);
+  if(!intervalsMatch(checked.positiveLengthCoveredIntervals,
+      proof.positiveLengthCoveredIntervals)||
+     !intervalsMatch(checked.positiveLengthUncoveredIntervals,
+      proof.positiveLengthUncoveredIntervals)||
+     checked.entireOriginalParameterIntervalCovered!==
+      proof.entireOriginalParameterIntervalCovered)
+   throw new RangeError('contradictory exact native M4/M5 source parameter intervals');
+  return checked;
+ };
  const jointSourceByKey=new Map();
  for(const row of nativeSourceAudit.rows){
   const joint=row.canonicalM4M5NativeHLRJointSourceIntervalEvidence;
   const key=row.view+'@'+row.sourceEdgeId;
+  const checkedM4=recheck(joint?.canonicalM4ParameterCoverage),
+   checkedPaper=recheck(joint?.genuineNativeHiddenHLRCandidateParameterCoverage),
+   checkedUnique=recheck(joint?.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage);
+  // Each physical identity interval MUST be included in genuine real-HLR
+  // projected source candidate evidence; unique M5 pruning can only
+  // remove alternatives, never invent paper coverage.
+  for(const interval of checkedUnique.positiveLengthCoveredIntervals)
+   if(!exactCandidateIntervalCoverage(interval,
+     checkedPaper.positiveLengthCoveredIntervals).entireOriginalParameterIntervalCovered)
+    throw new RangeError('unique original 3D source proof exceeds actual native HLR paper coverage');
+  if(joint.originalM4Full3DSourceIntervalProven===true&&
+      !checkedM4.entireOriginalParameterIntervalCovered||
+     joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage!==
+      checkedPaper.entireOriginalParameterIntervalCovered||
+     joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage!==
+      checkedUnique.entireOriginalParameterIntervalCovered)
+   throw new RangeError('native OCCT physical-source full-coverage flags contradict independent exact intervals');
   if(!VIEWS.includes(row.view)||typeof row.sourceEdgeId!=='string'||
      row.sourceGeometryId!==geometry.id||row.revision!==revision||
      row.signedV5Action!==false||row.officialEngineeringStyle!=='undetermined'||
