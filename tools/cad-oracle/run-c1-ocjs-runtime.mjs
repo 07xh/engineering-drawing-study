@@ -559,6 +559,17 @@ for(const [index,geometry] of general.entries()){
   nativeHLRJunctionConcordance:nativeHiddenM5.nativeHLRVertexConcordance,
   globalM5Review:unsignedReview
  });
+ // Actual OCCT/WASM C1 consumer: source-view completeness is reconciled
+ // against original M0 geometry, not inferred from one native hidden stroke.
+ const inventory=hiddenFormalGate.canonicalOriginalM5SourceInventory;
+ assert.equal(inventory.originalM0EdgeInventoryAvailable,true);
+ assert.equal(inventory.expectedOriginalSourceViewCount,geometry.data.edges.length*3);
+ assert.equal(inventory.completeOriginalSourceViewCount+
+  inventory.missingOriginalSourceViews.length+
+  inventory.incompleteOriginalSourceViewPartitions.length,
+  inventory.expectedOriginalSourceViewCount);
+ assert.equal(inventory.globalOpaqueOcclusionAndHLRSourceHistoryCertified,false);
+ assert.equal(inventory.signedV5Action,false);
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(
