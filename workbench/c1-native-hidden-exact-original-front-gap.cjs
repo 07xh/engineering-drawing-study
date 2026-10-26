@@ -142,6 +142,18 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
    const hiddenEdge=edges.get(hiddenId);
    const hiddenLift=native.sourceCandidate3DLifts
     ?.find(x=>x.sourceEdgeId===hiddenId);
+   // A perfectly covered but TRUNCATED upstream interval is not proof of
+   // the actual native hidden source. Bind the independently recomputed
+   // dual M5 range to the OCCT original 3D lift's exact parameter endpoints.
+   if(unique){
+    const actual=hiddenLift?.originalSourceParameterRange,
+     claimed=entry.independentOpenIntervalRayAndFrontVisibleUnion
+      ?.originalSourceParameterRange;
+    if(!Array.isArray(actual)||actual.length!==2||
+       !Array.isArray(claimed)||claimed.length!==2||
+       actual[0]!==claimed[0]||actual[1]!==claimed[1])
+     throw new RangeError('dual M5 original source range does not match genuine native HLR 3D lift');
+   }
    const trueHiddenGeometry=!!(hiddenEdge&&hiddenLift&&
     hiddenLift.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
     hiddenLift.originalOCCTSourceLineCurveVerified===true&&
