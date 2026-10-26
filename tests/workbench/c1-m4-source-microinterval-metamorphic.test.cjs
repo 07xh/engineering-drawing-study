@@ -80,3 +80,21 @@ test('M4 source graph rejects invalid revision and proof mode rather than silent
  assert.throws(()=>auditC1ReviewedProjectedSourceEventGraph({
   geometry,revision:112,proofMode:'v5-authorized'}),TypeError);
 });
+
+test('M4-only event partitions are complete in every noncollapsed first-angle source view',()=>{
+ const geometry=oblique('C1ForensicCoverage',6,2,-3);
+ const graph=auditC1ReviewedProjectedSourceEventGraph({
+  geometry,revision:113,proofMode:'m4-projected-events-only'});
+ for(const row of graph.rows){
+  if(row.collapsedProjection)continue;
+  const intervals=row.spans.map(s=>s.originalParameterRange);
+  const coverage=exactCandidateIntervalCoverage([0,1],intervals);
+  assert.equal(coverage.entireOriginalParameterIntervalCovered,true,
+   row.view+' '+row.sourceEdgeId);
+  assert.equal(coverage.positiveLengthUncoveredIntervals.length,0);
+  for(const span of row.spans){
+   assert.equal(span.source3DIntervalPreservedForFullM5RayContinuity,true);
+   assert.equal(span.signedV5Action,false);
+  }
+ }
+});
