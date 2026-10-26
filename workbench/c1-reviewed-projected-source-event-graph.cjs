@@ -153,7 +153,8 @@ function auditC1ReviewedProjectedSourceEventGraph({
   }
  }
  let partitionedSourceSubintervalCount=0,hullMaskedSubintervalCount=0,
-  nonHullSourceSubintervalCount=0,internalPaperEventCutCount=0;
+  nonHullSourceSubintervalCount=0,internalPaperEventCutCount=0,
+  positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection=0;
  for(const row of per.values()){
   const {edge,view,a,b,length}=row;
   const source=row.edge.id,unique=[...new Set(row.cuts)].sort((x,y)=>x-y);
@@ -168,7 +169,15 @@ function auditC1ReviewedProjectedSourceEventGraph({
    const from3=lerp(edge.from,edge.to,lo),
     to3=lerp(edge.from,edge.to,hi),
     from=project(from3)[view],to=project(to3)[view];
-   if(Math.hypot(from.u-to.u,from.v-to.v)<=1e-10)continue;
+   // A positive original 3D source parameter interval remains a
+   // mathematical interval even if its projected paper LENGTH rounds
+   // to zero. Never erase [nextDown(1),1] with a 1e-10 mm threshold:
+   // that creates a real binary64 M4/M5 coverage hole. Preserve source
+   // continuity but explicitly HOLD the tiny 2D drawing stroke.
+   const projectedPaperLength=Math.hypot(from.u-to.u,from.v-to.v);
+   const unresolvedMicroPaper=projectedPaperLength<=1e-10;
+   if(unresolvedMicroPaper)
+    positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection++;
    const overlaps=contour.filter(h=>positiveCollinearOverlap(
     from,to,h.projectedFromModelMm,h.projectedToModelMm));
    const coveredByExterior=hull?overlaps.length>0:null;
@@ -182,7 +191,11 @@ function auditC1ReviewedProjectedSourceEventGraph({
     projectedExteriorHullOverlap:coveredByExterior,
     matchingExteriorContourSourceIds:[...new Set(overlaps.map(x=>
      x.sourceEdgeId).filter(Boolean))].sort(),
-    eligibleForNonHullCandidate:coveredByExterior===false,
+    eligibleForNonHullCandidate:coveredByExterior===false&&
+     !unresolvedMicroPaper,
+    original3DSourceParameterIntervalHasPositiveLength:true,
+    projectedSubpixelPaperSegmentHeldAsUndrawable:unresolvedMicroPaper,
+    source3DIntervalPreservedForFullM5RayContinuity:true,
     fullProjectedJunctionAndDepthOrderVerified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false});
   }
@@ -206,6 +219,7 @@ function auditC1ReviewedProjectedSourceEventGraph({
   hullBoundCutCount,originalSourceEdgeViewCount:all.length,
   partitionedSourceSubintervalCount,hullMaskedSubintervalCount,
   nonHullSourceSubintervalCount,
+  positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection,
   rows:all,
   allPhysicalJunctionsCertified:false,
   exactSourceDepthForAllProjectedAliasesCertified:false,
