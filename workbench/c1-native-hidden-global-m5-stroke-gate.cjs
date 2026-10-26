@@ -621,9 +621,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
  // reviewed native hidden HLR rows. This is an explicit whole-scene
  // *coverage deficit* report, never a positive GB/V5 certificate.
  const nativeReviewedSourceViews=new Set(rows.filter(row=>
-  row.original3DPhysicalSourceUnique===true||
-  row.original3DSourceUnique===true).map(row=>
-  row.view+'@'+(row.originalHiddenSourceEdgeId??row.originalSourceEdgeId)));
+  typeof row.originalPhysical3DSourceEdgeId==='string').map(row=>
+  row.view+'@'+row.originalPhysical3DSourceEdgeId));
  const globallyUnreviewedSourceViews=[...byKey.keys()].filter(key=>
   !nativeReviewedSourceViews.has(key));
  const wholeSceneSourceHLRAndM5Closure=frozen({
