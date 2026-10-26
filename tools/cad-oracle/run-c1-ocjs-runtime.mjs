@@ -776,6 +776,21 @@ for(const [index,geometry] of general.entries()){
   globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery,
   nativeM5ExteriorContourParity.rows.filter(x=>
    x.exactOriginalPhysical3DVertexPaperBinding).length);
+ // Genuine pinned OCCT HLR must never erase the literal M0 endpoint
+ // theorem: each independently bound original full edge has EXACT [0,1]
+ // regardless of floating 3D display interpolation. This cannot repair
+ // a separate positive native generated-edge source gap or sign V5.
+ for(const row of nativeM5ExteriorContourParity.rows.filter(x=>
+  x.exactOriginalPhysical3DVertexPaperBinding)){
+  assert.equal(row.originalM5WholeExteriorContourCertified,true);
+  assert.equal(row.originalContour3DParameterRecoveryKind,
+   'exact-original-m0-3d-vertex-projection');
+  assert.deepEqual(row.originalSourceParameterRange,[0,1]);
+  assert.equal(row.signedV5Action,false);
+ }
+ if(geometry.id==='C1rotated')
+  assert.ok(nativeM5ExteriorContourParity.
+   globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery>0);
  assert.ok(nativeM5ExteriorContourParity.rows.every(x=>
   x.originalContour3DParameterRecoveryKind==='held'||
   x.originalContour3DParameterRecoveryKind==='exact-original-3d-source-interpolation'||
