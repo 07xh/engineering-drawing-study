@@ -65,7 +65,10 @@ function exactOriginalHullVertexIdentitySourceRange({
 }={}){
  if(!Array.isArray(sourceVertexIds)||sourceVertexIds.length!==2||
     sourceVertexIds[0]===sourceVertexIds[1]||
+    !sourceVertexIds.every(id=>typeof id==='string'&&id.length>0)||
     typeof sourceEdgeId!=='string'||
+    sourceEdgeId.split('::').at(-1)!==
+     [...sourceVertexIds].sort().join('|')||
     !Array.isArray(hullVertices)||hullVertices.length<3||
     !Number.isSafeInteger(sideIndex)||sideIndex<0||
     sideIndex>=hullVertices.length||
