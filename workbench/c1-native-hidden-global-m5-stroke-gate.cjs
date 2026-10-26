@@ -641,8 +641,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
     sourceViewKey:native.sourceViewKey,spans,
     projectionCollapsedExactly:native.projectionCollapsedExactly
    });
-   if(partition.canonicalOriginalRayM4SpanCount===0)
-    throw new RangeError('all-face ray graph omits a canonical original V/H/W source');
+   // A genuinely 3D source can collapse to a PAPER POINT in an
+   // orthographic view; it may have NO drawable M4 ray subspans.
+   // Also hold any missing noncollapsed source instead of manufacturing
+   // [0,1] coverage. The exact empty-set union reports the full gap.
    const originalSourcePhysicalRayClassificationFullyReconciled=
     partition.fullOriginalParameterRayPartitionCoverage&&
     partition.physicalLineDrawableInThisFirstAngleView&&
@@ -681,6 +683,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalSourceViewsWithPositiveRayParameterGapsOrOverlaps:
    sourceViewRayParametricClosure.filter(x=>
     !x.fullOriginalParameterRayPartitionCoverage).length,
+  originalSourceViewsWithNoOriginalM4RaySubspanEvidence:
+   sourceViewRayParametricClosure.filter(x=>
+    x.canonicalOriginalRayM4SpanCount===0).length,
   originalSourceViewsStillHoldingContourOrUnprovedFaceRays:
    sourceViewRayParametricClosure.filter(x=>
     x.canonicalRaySubspanStillHeldByUnsignedExteriorContour>0||
