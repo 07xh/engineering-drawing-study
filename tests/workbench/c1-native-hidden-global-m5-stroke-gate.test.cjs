@@ -657,3 +657,14 @@ test('whole-scene source coverage is partitioned per V/H/W without mistaking hid
   x.fullNativeVisibleAndHiddenHLRSourceHistoryCertified===false&&
   x.continuousAllOpaqueFaceOcclusionCertified===false),true);
 });
+
+test('per-view ledger identifies a genuine missing source parameter interval without V5 signoff',()=>{
+ const x=caseData();
+ x.globalM5Review.rows[0].originalSourceParameterRange=[0,0.5];
+ const r=review(x),h=r.wholeSceneSourceHLRAndM5Closure.nativeSourceCoverageByView
+  .find(row=>row.view==='H');
+ assert.deepEqual(h.canonicalSourceParameterGaps,[{
+  sourceViewKey:'H@G::A|B',positiveLengthParameterGaps:[[0.5,1]]
+ }]);
+ assert.equal(r.wholeSceneSourceHLRAndM5Closure.wholeSceneMathematicallySigned,false);
+});
