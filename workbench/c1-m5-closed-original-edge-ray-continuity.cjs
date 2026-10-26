@@ -84,6 +84,8 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
   nonPhysicalSubdivisionHeld:0,
   nonCollapsedProjectionPartitionIncomplete:0,
   missingPaperSourceParameterGapCount:0,
+  canonicalM4Original3DParameterPartitionsConsumed:0,
+  canonicalM4PositiveLengthGapsHeld:0,
   physicalCreasesWithUnresolvedEdgeRays:0,
   original3DVertexRayEndpointWitnesses:0,
   nonoriginalPaperCutEndpointsHeld:0,
@@ -126,6 +128,21 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
   // This closed-edge certificate is about SOURCE 3D rays; it does not
   // silently sign paper projection, nor synthetic M4 cut point vertices.
   const closedSourceRayClear=outwardClear&&bothOriginalVertexRaysClear;
+  // The same independently recomputed M4 original-3D cut certificate now
+  // travels to the existing M5 edge-ray consumer, not another interval
+  // classifier. It cannot authorize GB styles or V5 strokes.
+  const canonical=row.canonicalOriginalM4SourcePartition;
+  if(!canonical||
+     canonical.collapsedOriginalSourceProjection!==row.collapsedProjection||
+     canonical.generatedHLRSourceIdentityProven!==false||
+     canonical.continuousM5VisibilityProven!==false||
+     canonical.engineeringLineStyleSigned!==false||
+     canonical.signedV5Action!==false||
+     canonical.sourceParameterRange?.[0]!==0||
+     canonical.sourceParameterRange?.[1]!==1||
+     canonical.exactOriginalSourceParameterCoverage?.originalParameterRange?.[0]!==0||
+     canonical.exactOriginalSourceParameterCoverage?.originalParameterRange?.[1]!==1)
+   throw new RangeError('missing independently proven M4 canonical original source interval partition');
   const intervalRows=[],spans=row.spans,uncoveredParameters=[];
   let partitionComplete=!row.collapsedProjection&&spans.length>0;
   let coveredThrough=0;
@@ -194,6 +211,27 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
   if(!row.collapsedProjection&&coveredThrough<1)
    uncoveredParameters.push([coveredThrough,1]);
   if(uncoveredParameters.length>0)partitionComplete=false;
+  // M5 must consume M4's complete original binary64 source partition, not
+  // silently accept a separately guessed contiguous paper cut ledger.
+  // A point-collapsed source legitimately carries no drawable line intervals.
+  const originalGapIntervals=canonical.exactOriginalSourceParameterCoverage
+   .positiveLengthUncoveredIntervals;
+  if(!Array.isArray(originalGapIntervals)||
+     canonical.entireOriginalM4SourceParameterPartitionPositivelyProven!==
+      canonical.exactOriginalSourceParameterCoverage.entireOriginalParameterIntervalCovered||
+     (!row.collapsedProjection&&(
+      partitionComplete!==
+       canonical.entireOriginalM4SourceParameterPartitionPositivelyProven||
+      JSON.stringify(uncoveredParameters)!==JSON.stringify(originalGapIntervals)))||
+     (row.collapsedProjection&&(
+      partitionComplete||spans.length!==0||
+      JSON.stringify(originalGapIntervals)!=='[[0,1]]')))
+   throw new RangeError('M5 original ray topology contradicts independent M4 3D parameter coverage');
+  partitionComplete=!row.collapsedProjection&&
+   canonical.entireOriginalM4SourceParameterPartitionPositivelyProven&&
+   partitionComplete;
+  counts.canonicalM4Original3DParameterPartitionsConsumed++;
+  counts.canonicalM4PositiveLengthGapsHeld+=originalGapIntervals.length;
   counts.missingPaperSourceParameterGapCount+=uncoveredParameters.length;
   if(row.collapsedProjection)counts.collapsedPaperProjectionHeld++;
   if(!row.collapsedProjection&&!partitionComplete)
@@ -224,6 +262,12 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
     endpointProofs.every(x=>x.proof.strictInteriorNearOriginalVertex),
    projectionCollapsed:row.collapsedProjection,
    originalM4PaperParameterPartitionComplete:partitionComplete,
+   originalM4Canonical3DSourcePartitionPositivelyProven:
+    canonical.entireOriginalM4SourceParameterPartitionPositivelyProven,
+   originalM4Canonical3DSourceParameterCoverage:
+    canonical.exactOriginalSourceParameterCoverage,
+   originalM4Canonical3DSourceCollapsedToPoint:
+    canonical.collapsedOriginalSourceProjection,
    missingProjectedPaperSourceParameterRanges:
     uncoveredParameters.map(range=>[...range]),
    allUndrawnPaperMicroIntervalsPositivelyVerified:
@@ -246,6 +290,7 @@ function auditC1OriginalClosedEdgeRayContinuity({geometry,revision}={}){
     counts.same3DOriginalSourceCutJoinsPreserved!==
      junction.counts.sharedOriginalSourceNeighborJoins||
     counts.original3DVertexRayEndpointWitnesses!==rows.length*2||
+    counts.canonicalM4Original3DParameterPartitionsConsumed!==rows.length||
     counts.signedV5Actions!==0)
   throw new RangeError('original edge-vertex ray closure budget mismatch');
  return freeze({

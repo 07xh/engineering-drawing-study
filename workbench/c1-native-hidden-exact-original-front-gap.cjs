@@ -23,6 +23,8 @@
  * global line join, engineering style and sole V5 remains unsigned.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {certifyExactFullOriginalFront3DMask,
  certifyActualOCCTFullFrontOriginalPaperEndpoints}=
  require('./c1-native-hidden-exact-model-front-mask.cjs');
@@ -111,10 +113,47 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
     ref.remainingPhysicalSourcePossibilities?.length===1&&
     entry.originalHiddenSourceEdgeId===
      ref.remainingPhysicalSourcePossibilities[0].sourceEdgeId;
+   // Recompute the exact binary64 complement of the TWO independently
+   // verified M5/real-native-front interval sets. The downstream front-gap
+   // reviewer must never trust a stale/forged list of residual intervals,
+   // nor treat an empty unproved-gap list as vacuous positive proof.
+   if(unique){
+    const union=entry.independentOpenIntervalRayAndFrontVisibleUnion;
+    if(!union||!Array.isArray(union.originalSourceParameterRange)||
+       !Array.isArray(union.strictInteriorIndependentlyVerifiedIntervals)||
+       !Array.isArray(union.realVisibleFrontSourceDepthMaskVerifiedIntervals))
+     throw new RangeError('missing independent native M5 residual source coverage witnesses');
+    const expected=exactCandidateIntervalCoverage(
+     union.originalSourceParameterRange,[
+      ...union.strictInteriorIndependentlyVerifiedIntervals,
+      ...union.realVisibleFrontSourceDepthMaskVerifiedIntervals
+     ]);
+    if(JSON.stringify(expected.positiveLengthUncoveredIntervals)!==
+        JSON.stringify(ranges)||
+       expected.entireOriginalParameterIntervalCovered!==
+        union.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor||
+       expected.entireOriginalParameterIntervalCovered!==
+        entry.locallyExplainedNativeHiddenOpenPaperInterval)
+     throw new RangeError('native M5 residual original 3D source intervals contradict independently recomputed coverage');
+   }else if(entry.locallyExplainedNativeHiddenOpenPaperInterval===true){
+    throw new RangeError('nonunique native source cannot certify complete M5 residual coverage');
+   }
    const hiddenId=unique?entry.originalHiddenSourceEdgeId:null;
    const hiddenEdge=edges.get(hiddenId);
    const hiddenLift=native.sourceCandidate3DLifts
     ?.find(x=>x.sourceEdgeId===hiddenId);
+   // A perfectly covered but TRUNCATED upstream interval is not proof of
+   // the actual native hidden source. Bind the independently recomputed
+   // dual M5 range to the OCCT original 3D lift's exact parameter endpoints.
+   if(unique){
+    const actual=hiddenLift?.originalSourceParameterRange,
+     claimed=entry.independentOpenIntervalRayAndFrontVisibleUnion
+      ?.originalSourceParameterRange;
+    if(!Array.isArray(actual)||actual.length!==2||
+       !Array.isArray(claimed)||claimed.length!==2||
+       actual[0]!==claimed[0]||actual[1]!==claimed[1])
+     throw new RangeError('dual M5 original source range does not match genuine native HLR 3D lift');
+   }
    const trueHiddenGeometry=!!(hiddenEdge&&hiddenLift&&
     hiddenLift.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
     hiddenLift.originalOCCTSourceLineCurveVerified===true&&
@@ -220,7 +259,7 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
      constructionIntentAuthorized:false,signedV5Action:false
     });
    }
-   const localWithM0=unique&&trueHiddenGeometry&&
+   const localWithM0=unique&&trueHiddenGeometry&&ranges.length>0&&
     ranges.length===gapRows.length&&
     gapRows.every(x=>x.gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry);
    if(!entry.locallyExplainedNativeHiddenOpenPaperInterval&&localWithM0)

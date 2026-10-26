@@ -28,7 +28,9 @@ const visible=(from='F0',to='F1',range=[0,1])=>({
   originalSourceParameterRange:range,
   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
   originalOCCTSourceLineCurveVerified:true,
-  originalXYZReprojectsToHLR:true,v5Authorized:false
+  originalXYZReprojectsToHLR:true,v5Authorized:false,
+  fromCandidate3D:{...geometry.data.points[from]},
+  toCandidate3D:{...geometry.data.points[to]}
  }]
 });
 const actual=(obj)=>native({geometry,view:'H',
@@ -147,4 +149,66 @@ test('full coverage cannot be invented by out-of-range or zero-length source par
  const p=aggregate([piece(0,.4),invalid]);
  assert.equal(p.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
  assert.ok(p.nativeVisibleUnprovenOriginalSourceIntervals.length>0);
+});
+
+test('native visible BRep with identical H paper endpoints but false original XYZ depth cannot certify full source',()=>{
+ const impostor=visible();
+ impostor.sourceCandidate3DLifts[0].fromCandidate3D.z+=1;
+ const proof=actual(impostor);
+ assert.equal(proof.actualOCCTNativeEndpointsMatchOriginalPaperWithoutTolerance,true);
+ assert.equal(proof.nativeOriginalSourceParameterFullRangeVerified,true);
+ assert.equal(proof.native3DSourceEndpointsIndependentlyMatchOriginalVertices,false);
+ assert.equal(proof.nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('two native intervals covering all H paper but second lying on a different 3D depth leave positive original-source gap',()=>{
+ const genuine=piece(0,.4),impostor=piece(.4,1);
+ impostor.sourceCandidate3DLifts[0].fromCandidate3D.z+=5;
+ impostor.sourceCandidate3DLifts[0].toCandidate3D.z+=5;
+ const proof=aggregate([genuine,impostor]);
+ assert.equal(proof.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ assert.deepEqual(proof.nativeVisibleVerifiedOriginalSourceIntervals,[[0,.4]]);
+ assert.deepEqual(proof.nativeVisibleUnprovenOriginalSourceIntervals,[[.4,1]]);
+ assert.equal(proof.mismatchedNativeOriginalEndpointsOrLiftHeld,1);
+ assert.equal(proof.native3DOriginalSourceParameterDepthIndependentlyRecomputed,true);
+ assert.equal(proof.signedV5Action,false);
+});
+test('reversed actual native HLR segment retains positive source proof only for exactly reversed original XYZ',()=>{
+ const reverse=piece(.4,1);
+ const old=reverse.from;reverse.from=reverse.to;reverse.to=old;
+ const lift=reverse.sourceCandidate3DLifts[0];
+ const a=lift.fromCandidate3D;lift.fromCandidate3D=lift.toCandidate3D;
+ lift.toCandidate3D=a;
+ assert.equal(aggregate([piece(0,.4),reverse]).
+  nativeVisibleOriginalFrontWholePaperUnionCertified,true);
+ reverse.sourceCandidate3DLifts[0].fromCandidate3D.z+=1;
+ assert.equal(aggregate([piece(0,.4),reverse]).
+  nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+});
+test('3D original edge parallel to H observer ray projects to a point and cannot be a certified visible line',()=>{
+ const geometryPoint={id:'G',data:{points:{
+  P0:{x:0,y:0,z:0},P1:{x:0,y:0,z:9}
+ }}};
+ const candidate={
+  view:'H',occtHLRVisibilityClass:'visible-sharp',
+  actualOCCTHLRFlattenedBRepLineVerified:true,
+  actualOCCTHLRCurveEntireFiniteIntervalIsLine:true,
+  v5Authorized:false,
+  from:project(geometryPoint.data.points.P0).H,
+  to:project(geometryPoint.data.points.P1).H,
+  sourceCandidate3DLifts:[{
+   sourceEdgeId:'G::P0|P1',originalSourceParameterRange:[0,1],
+   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+   originalOCCTSourceLineCurveVerified:true,
+   originalXYZReprojectsToHLR:true,v5Authorized:false,
+   fromCandidate3D:geometryPoint.data.points.P0,
+   toCandidate3D:geometryPoint.data.points.P1
+  }]
+ };
+ const result=union({geometry:geometryPoint,view:'H',
+  frontEdge:['P0','P1'],nativeVisibleSegments:[candidate]});
+ assert.equal(result.originalSourceProjectsToNoncollapsedPaperLine,false);
+ assert.equal(result.nativeVisibleOriginalFrontWholePaperUnionCertified,false);
+ assert.deepEqual(result.nativeVisibleUnprovenOriginalSourceIntervals,[[0,1]]);
+ assert.equal(result.signedV5Action,false);
 });

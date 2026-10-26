@@ -161,9 +161,32 @@ function auditC1OriginalStrokeFinalPreconditions({
        !originalPruning.multipleCandidatesNarrowedByExactM0)))
     throw new RangeError('unreviewed original-source candidate pruning');
    const completeRealCADPositive=cadCovered&&(cadUnique||m0Unique);
+   // The final REAL OCCT/M5 stroke consumer now binds its original source
+   // ray and paper-cut topology to the independently proven M4 physical
+   // [0,1] parameter certificate produced by the existing M4->M5 path.
+   // Do not lift a whole-edge ray into stroke readiness from a stale
+   // display partition boolean or an accidentally omitted one-ULP gap.
+   const originalCoverage=currentEdge.
+    originalM4Canonical3DSourceParameterCoverage;
+   const canonicalComplete=currentEdge.
+    originalM4Canonical3DSourcePartitionPositivelyProven===true;
+   const collapsed=currentEdge.originalM4Canonical3DSourceCollapsedToPoint===true;
+   if(!originalCoverage||
+      originalCoverage.originalParameterRange?.[0]!==0||
+      originalCoverage.originalParameterRange?.[1]!==1||
+      !Array.isArray(originalCoverage.positiveLengthUncoveredIntervals)||
+      canonicalComplete!==
+       originalCoverage.entireOriginalParameterIntervalCovered||
+      currentEdge.originalM4PaperParameterPartitionComplete!==(
+       canonicalComplete&&!collapsed)||
+      (!collapsed&&JSON.stringify(originalCoverage.
+       positiveLengthUncoveredIntervals)!==
+       JSON.stringify(currentEdge.missingProjectedPaperSourceParameterRanges))||
+      collapsed&&currentEdge.originalM4PaperParameterPartitionComplete===true)
+    throw new RangeError('final source stroke M4/M5 original 3D parameter partition witness mismatch');
    const inheritedClear=currentEdge.
     completeSourceOriginal3DRayClosedIntervalClear===true&&
-    currentEdge.originalM4PaperParameterPartitionComplete===true&&
+    canonicalComplete&&!collapsed&&
     currentEdge.originalPhysicalCreaseProven===true;
    if(inheritedClear&&!clear&&!outer)
     throw new RangeError('closed original ray clearance conflicts with M0 subspan');
@@ -309,7 +332,7 @@ function auditC1OriginalStrokeFinalPreconditions({
     sourceListFrontmostNotEstablished:!sourceLead,
     originalClosed3DEdgeObserverRayNotFullyCertified:!inheritedClear,
     originalEdgeM4CutPartitionHasGaps:
-     !currentEdge.originalM4PaperParameterPartitionComplete,
+     !canonicalComplete||collapsed,
     sourceCrossEdgeJunctionsNotGloballyCertified:true,
     originalClosedVertex3DFanNotCertifiedForEveryEndpoint:
      verifiedEndpointStars.some(x=>
@@ -356,6 +379,10 @@ function auditC1OriginalStrokeFinalPreconditions({
     sameSourceCutContinuityFromPriorPiece:
      j.sameOriginalSource3DContinuityFromPriorPiece,
     exactClosedOriginal3DSourceObserverRayClear:inheritedClear,
+    canonicalOriginal3DSourceCutCoverageFromM4M5Bound:true,
+    canonicalOriginal3DSourceCutPositiveCoverage:canonicalComplete&&!collapsed,
+    remainingCanonicalM4Original3DParameterGaps:
+     originalCoverage.positiveLengthUncoveredIntervals.map(x=>[...x]),
     exactOriginal3DEdgeRayFromFullSourceAndBothVertices:
      currentEdge.completeSourceOriginal3DRayClosedIntervalClear,
     M4Original3DEdgeCutContinuityVerified:

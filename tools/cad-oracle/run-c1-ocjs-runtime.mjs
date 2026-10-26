@@ -114,6 +114,29 @@ for(const [index,geometry] of general.entries()){
  assert.equal(proof.status,'validated-closed-convex-mesh');
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ // Real native edge IsSame is checked BEFORE OCJS handles are disposed,
+ // against EVERY original BRep 3D edge occurrence. Two equal paper lines
+ // must never count as generated->source TopoDS identity.
+ for(const view of ['V','H','W'])
+  for(const edge of [...cad.views[view],...cad.hiddenSharpViews[view]]){
+   assert.equal(edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared,true);
+   assert.equal(edge.originalPhysicalOCCTSourceIdsCompared.length,
+    geometry.data.edges.length);
+   assert.equal(edge.actualDistinctOriginalOCCTBRepSourceCount,
+    geometry.data.edges.length);
+   assert.ok(edge.actualOriginalOCCTBRepEdgeOccurrencesCompared>=
+    geometry.data.edges.length);
+   assert.equal(new Set(edge.originalPhysicalOCCTSourceIdsCompared).size,
+    geometry.data.edges.length);
+   assert.equal(
+    edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,
+    edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId!==null);
+   if(edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven)
+    assert.ok(edge.projectedOriginalEdgeCandidates.includes(
+     edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId));
+   assert.equal(edge.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+   assert.equal(edge.signedV5Action,false);
+  }
  // Independently recompute true hidden HLR output and all ORIGINAL M4/M5
  // closed-ray source subspans; do not attribute HLR's generated TopoDS
  // identity merely because paper projections coincide.
@@ -350,6 +373,18 @@ for(const [index,geometry] of general.entries()){
   s.occtSourceCurveType==='line'&&
   s.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
   s.occtSourceCurveParameterRange[1]>s.occtSourceCurveParameterRange[0]));
+ // Independently recalculate physical length from REAL OCCT source vertices:
+ // a forged [first,last] BRepAdaptor parameter range must not silently
+ // become a normalized M0/M5 source interval. This remains unsigned.
+ for(const source of cad.originalBRepSourceEdges){
+  const a=source.fromOCCT3D,b=source.toOCCT3D;
+  const lengthMm=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+  const [first,last]=source.occtSourceCurveParameterRange;
+  assert.ok(Number.isFinite(lengthMm)&&lengthMm>1e-8);
+  assert.ok(Math.abs((last-first)-lengthMm)<=
+   1e-6*Math.max(1,lengthMm));
+  assert.equal(source.generatedHLREdgeTopoDSIdentityMatched,false);
+ }
  assert.equal(cad.actualOCCTCurveTypeIndependentlyVerified,true);
  assert.equal(cad.allEmittedVisibleHLRCurvesVerifiedStraightAndPlanar,true);
  assert.equal(cad.actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified,false);
@@ -540,10 +575,99 @@ for(const [index,geometry] of general.entries()){
   nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
   projectedEncounters:nativeHiddenM5.nativeHLRAllM4ProjectedEncounters,
   nativeHLRJunctionConcordance:nativeHiddenM5.nativeHLRVertexConcordance,
+  nativeSourceAudit:nativeHiddenM5,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  originalM0EdgeInventoryAvailable,true);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  expectedOriginalSourceViewCount,geometry.data.edges.length*3);
+ const sceneInventory=hiddenFormalGate.canonicalOriginalM5SourceInventory;
+ assert.equal(sceneInventory.completeOriginalSourceViewCount+
+  sceneInventory.missingOriginalSourceViews.length+
+  sceneInventory.incompleteOriginalSourceViewPartitions.length,
+  sceneInventory.expectedOriginalSourceViewCount);
+ assert.equal(sceneInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
+  sceneInventory.expectedOriginalSourceViewCount>0&&
+  sceneInventory.missingOriginalSourceViews.length===0&&
+  sceneInventory.incompleteOriginalSourceViewPartitions.length===0);
+ // Keep genuine binary64 residuals and missing source/view identities visible.
+ // A near-1 endpoint is not proof of a collapsed projection or coverage.
+ const missingKeys=new Set(sceneInventory.missingOriginalSourceViews);
+ const incompleteKeys=new Set();
+ for(const entry of sceneInventory.incompleteOriginalSourceViewPartitions){
+  assert.equal(typeof entry.sourceViewKey,'string');
+  assert.equal(missingKeys.has(entry.sourceViewKey),false);
+  assert.equal(incompleteKeys.has(entry.sourceViewKey),false);
+  incompleteKeys.add(entry.sourceViewKey);
+  assert.ok(Array.isArray(entry.positiveLengthParameterGaps));
+  assert.ok(entry.positiveLengthParameterGaps.length>0);
+  for(const gap of entry.positiveLengthParameterGaps){
+   assert.ok(Array.isArray(gap)&&gap.length===2);
+   assert.ok(Number.isFinite(gap[0])&&Number.isFinite(gap[1]));
+   assert.ok(gap[0]>=0&&gap[0]<gap[1]&&gap[1]<=1,
+    'even a one-ULP uncovered interval must remain unsigned');
+  }
+ }
+ assert.equal(missingKeys.size,sceneInventory.missingOriginalSourceViews.length);
+ assert.equal(sceneInventory.signedV5Action,false);
+ // Distinguish a mathematically collapsed V/H/W projection from a
+ // missing NON-collapsed source ledger. Never silently excuse either.
+ const projected=require('../../core/projection/conventions.js').project;
+ const originalById=new Map(geometry.data.edges.map(edge=>[
+  geometry.id+'::'+[...edge].sort().join('|'),edge]));
+ const classify=key=>{
+  const separator=key.indexOf('@');
+  assert.ok(separator>0,'missing source/view identity');
+  const view=key.slice(0,separator),id=key.slice(separator+1);
+  assert.ok(['V','H','W'].includes(view));
+  const edge=originalById.get(id);
+  assert.ok(edge,'missing source must belong to actual M0 geometry');
+  const a=projected(geometry.data.points[edge[0]])[view];
+  const b=projected(geometry.data.points[edge[1]])[view];
+  return {sourceViewKey:key,projectionCollapsedExactly:
+   a.u===b.u&&a.v===b.v};
+ };
+ const missingProjectionClasses=[...missingKeys].map(classify);
+ const incompleteProjectionClasses=[...incompleteKeys].map(classify);
+ assert.equal(missingProjectionClasses.length,
+  sceneInventory.missingOriginalSourceViews.length);
+ assert.equal(incompleteProjectionClasses.length,
+  sceneInventory.incompleteOriginalSourceViewPartitions.length);
+ assert.deepEqual(sceneInventory.missingOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),
+  missingProjectionClasses.map(x=>[x.sourceViewKey,x.projectionCollapsedExactly]));
+ assert.deepEqual(sceneInventory.incompleteOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),
+  incompleteProjectionClasses.map(x=>[x.sourceViewKey,x.projectionCollapsedExactly]));
+ assert.ok([...sceneInventory.missingOriginalSourceViewProjectionEvidence,
+  ...sceneInventory.incompleteOriginalSourceViewProjectionEvidence].every(x=>
+  x.completeM5ParameterCoverageCertified===false&&x.signedV5Action===false));
+ // Classification is a diagnostic only: every missing/incomplete row
+ // remains in the unsigned original source/view inventory.
+ assert.equal(sceneInventory.signedV5Action,false);
+ // Real rotated geometry has omitted/collapsed source-view rows and
+ // binary64 endpoint gaps. Preserve them as unsigned diagnostics; stdout
+ // must remain a single JSON report for the existing CI consumer.
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.signedV5Action,false);
+
+ assert.equal(hiddenFormalGate.allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined,true);
+ assert.equal(hiddenFormalGate.counts.jointM4M5NativeHLROriginal3DSourceViewsConsumed,
+  geometry.data.edges.length*3);
+ assert.equal(
+  hiddenFormalGate.counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage+
+  hiddenFormalGate.counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage,
+  hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed);
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.officialEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false&&
+  row.independentlyRecomputedCanonicalM4M5NativeSourceEvidence===null||
+  row.officialEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false&&
+  row.independentlyRecomputedCanonicalM4M5NativeSourceEvidence?.signedV5Action===false
+ ));
  assert.equal(
   hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
   hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,
@@ -810,6 +934,28 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  originalM5SourceViewCoverage:{
+   expected:sceneInventory.expectedOriginalSourceViewCount,
+   complete:sceneInventory.completeOriginalSourceViewCount,
+   missing:sceneInventory.missingOriginalSourceViewProjectionEvidence,
+   incomplete:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.map(e=>({
+    ...e,positiveLengthParameterGaps:
+     sceneInventory.incompleteOriginalSourceViewPartitions.find(x=>
+      x.sourceViewKey===e.sourceViewKey).positiveLengthParameterGaps
+   })),
+   // Diagnostic partition only: do not equate exact projection collapse
+   // with OCCT history, source coverage or a formal V5 line certificate.
+   missingExactlyCollapsed:sceneInventory.missingOriginalSourceViewProjectionEvidence.filter(
+    e=>e.projectionCollapsedExactly).length,
+   missingNoncollapsed:sceneInventory.missingOriginalSourceViewProjectionEvidence.filter(
+    e=>!e.projectionCollapsedExactly).length,
+   incompleteExactlyCollapsed:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.filter(
+    e=>e.projectionCollapsedExactly).length,
+   incompleteNoncollapsed:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.filter(
+    e=>!e.projectionCollapsedExactly).length,
+   allComplete:sceneInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
+   signedV5Action:false
+  },
   actualHiddenNativeSourceAndM5:{
    realSharpSegments:nativeHiddenM5.counts.realNativeHiddenSharpSegments,
    withoutM0Candidates:nativeHiddenM5.counts.nativeHiddenWithoutM0SourceCandidates,

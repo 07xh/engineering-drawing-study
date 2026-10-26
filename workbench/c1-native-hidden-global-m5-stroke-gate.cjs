@@ -12,9 +12,11 @@
  *
  * This is a read-only M5 gate and NEVER introduces a second signer.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactOriginalM4TransverseCrossingDepth}=
  require('./c1-m4-exact-original-crossing-depth.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -25,9 +27,30 @@ const requiredGlobal=[
 ];
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
- nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance
+ nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
+ nativeSourceAudit
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
+    nativeSourceAudit?.schema!==
+     'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1'||
+    nativeSourceAudit.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.revision!==revision||
+    !Array.isArray(nativeSourceAudit.rows)||
+    nativeSourceAudit.counts?.sourceViewIntervalsChecked!==
+     nativeSourceAudit.rows.length||
+    nativeSourceAudit.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHLRVertexConcordance!==nativeHLRJunctionConcordance||
+    nativeSourceAudit.nativeHidden3DEndpointFans!==endpointFans||
+    nativeSourceAudit.nativeHiddenOriginalVertexEndpointProof!==nativeVertexProof||
+    nativeSourceAudit.nativeHLRAllM4ProjectedEncounters!==projectedEncounters||
+    nativeSourceAudit.nativeHiddenDualOpenIntervalProof!==dualProof||
+    nativeSourceAudit.nativeHiddenExactOriginalFrontGap!==gapProof||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.revision!==revision||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.revision!==revision||
     gapProof?.sourceGeometryId!==geometry.id||gapProof.revision!==revision||
     gapProof.signedV5ActionCount!==0||
     gapProof.actualNativeGeneratedHLRPaperCoverageAndOriginalModelProofNotConflated!==true||
@@ -88,6 +111,86 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(!byKey.has(key))byKey.set(key,[]);
   byKey.get(key).push(row);
  }
+ // A single real OCCT run must deliver all six proof branches on the SAME
+ // 3D source/view identity. Never infer this from independent success flags.
+ // The per-source proof is issued upstream by native OCCT. Before this
+ // FINAL M5 consumer accepts even its local source-ready state, rebuild
+ // exact binary64 coverage from its actual positive intervals. A stale
+ // full/empty-gap flag or a forged unique source subset is not a proof.
+ const intervalsMatch=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const recheck=proof=>{
+  if(!proof||!Array.isArray(proof.originalParameterRange)||
+     proof.originalParameterRange.length!==2||
+     proof.originalParameterRange[0]!==0||
+     proof.originalParameterRange[1]!==1||
+     !Array.isArray(proof.positiveLengthCoveredIntervals)||
+     !Array.isArray(proof.positiveLengthUncoveredIntervals))
+   throw new RangeError('missing exact same-run M4/M5/native HLR source interval ledger');
+  const checked=exactCandidateIntervalCoverage([0,1],
+   proof.positiveLengthCoveredIntervals);
+  if(!intervalsMatch(checked.positiveLengthCoveredIntervals,
+      proof.positiveLengthCoveredIntervals)||
+     !intervalsMatch(checked.positiveLengthUncoveredIntervals,
+      proof.positiveLengthUncoveredIntervals)||
+     checked.entireOriginalParameterIntervalCovered!==
+      proof.entireOriginalParameterIntervalCovered)
+   throw new RangeError('contradictory exact native M4/M5 source parameter intervals');
+  return checked;
+ };
+ const jointSourceByKey=new Map();
+ for(const row of nativeSourceAudit.rows){
+  const joint=row.canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+  const key=row.view+'@'+row.sourceEdgeId;
+  const checkedM4=recheck(joint?.canonicalM4ParameterCoverage),
+   checkedPaper=recheck(joint?.genuineNativeHiddenHLRCandidateParameterCoverage),
+   checkedUnique=recheck(joint?.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage);
+  // Each physical identity interval MUST be included in genuine real-HLR
+  // projected source candidate evidence; unique M5 pruning can only
+  // remove alternatives, never invent paper coverage.
+  for(const interval of checkedUnique.positiveLengthCoveredIntervals)
+   if(!exactCandidateIntervalCoverage(interval,
+     checkedPaper.positiveLengthCoveredIntervals).entireOriginalParameterIntervalCovered)
+    throw new RangeError('unique original 3D source proof exceeds actual native HLR paper coverage');
+  if(joint.originalM4Full3DSourceIntervalProven===true&&
+      !checkedM4.entireOriginalParameterIntervalCovered||
+     joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage!==
+      checkedPaper.entireOriginalParameterIntervalCovered||
+     joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage!==
+      checkedUnique.entireOriginalParameterIntervalCovered)
+   throw new RangeError('native OCCT physical-source full-coverage flags contradict independent exact intervals');
+  if(!VIEWS.includes(row.view)||typeof row.sourceEdgeId!=='string'||
+     row.sourceGeometryId!==geometry.id||row.revision!==revision||
+     row.signedV5Action!==false||row.officialEngineeringStyle!=='undetermined'||
+     !joint||joint.view!==row.view||
+     joint.sourceEdgeId!==row.sourceEdgeId||
+     joint.canonicalM4Original3DAndM5RayCutUnionRecomputed!==true||
+     joint.engineeringLineStyle!=='undetermined'||
+     joint.constructionIntentAuthorized!==false||
+     joint.signedV5Action!==false||
+     joint.allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven!==false||
+     joint.full3DEndpointAndEngineeringLineStyleProven!==false||
+     !joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage||
+     joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage!==
+      joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+       entireOriginalParameterIntervalCovered||
+     (joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage===true&&
+      joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage!==true)||
+     joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete!==(
+      joint.originalM4Full3DSourceIntervalProven===true&&
+      joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage===true)||
+     jointSourceByKey.has(key))
+   throw new RangeError('stale, duplicate or forged M4/M5/native OCCT 3D source-view join');
+  jointSourceByKey.set(key,joint);
+ }
+ // Only an actual reviewed M0 mesh carries the complete V/H/W edge
+ // universe. Focused unit fixtures deliberately supply partial source
+ // graphs to test independently held crossings and junctions.
+ if(geometry.kind==='mesh'&&geometry.space==='model-3d'&&
+    geometry.unit==='mm'&&Array.isArray(geometry.data.edges)&&
+    (jointSourceByKey.size!==geometry.data.edges.length*VIEWS.length||
+     geometry.data.edges.some(ids=>VIEWS.some(view=>
+      !jointSourceByKey.has(view+'@'+geometry.id+'::'+[...ids].sort().join('|'))))))
+  throw new RangeError('C1 native HLR/M4/M5 incomplete original source-view universe');
  const sourcePartitionCoverage=new Map();
  for(const [key,sourceRows] of byKey){
   const ordered=[...sourceRows].sort((a,b)=>
@@ -103,7 +206,82 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(cursor<1)gaps.push([cursor,1]);
   sourcePartitionCoverage.set(key,frozen({complete:gaps.length===0,gaps}));
  }
+ // Reconcile every original M0 physical edge across all first-angle views.
+ // A perfect local native hidden interval cannot certify a scene with an
+ // omitted physical edge/view. This is source COVERAGE only, not visibility.
+ const originalEdges=geometry.data.edges;
+ let canonicalOriginalM5SourceInventory;
+ if(!Array.isArray(originalEdges)){
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:false,
+   expectedOriginalSourceViewCount:null,
+   completeOriginalSourceViewCount:0,
+   missingOriginalSourceViews:[],
+   incompleteOriginalSourceViewPartitions:[],
+   missingOriginalSourceViewProjectionEvidence:[],
+   incompleteOriginalSourceViewProjectionEvidence:[],
+   allOriginalSourceViewsHaveCompleteParameterPartitions:false,
+   signedV5Action:false
+  });
+ }else{
+  const expected=new Set(),projectedBySourceView=new Map();
+  for(const edge of originalEdges){
+   if(!Array.isArray(edge)||edge.length!==2||
+      !edge.every(v=>typeof v==='string'&&
+       Object.prototype.hasOwnProperty.call(geometry.data.points,v))||
+      edge[0]===edge[1])
+    throw new RangeError('invalid original M0 physical edge inventory');
+   const sourceId=geometry.id+'::'+[...edge].sort().join('|');
+   // Reuse the single authoritative first-angle projection kernel.
+   // Classify actual M0 endpoints; do not infer degeneracy from a missing
+   // HLR line or forgive even one binary64 ULP of missing M5 coverage.
+   const from=project(geometry.data.points[edge[0]]);
+   const to=project(geometry.data.points[edge[1]]);
+   for(const view of VIEWS){
+    const key=view+'@'+sourceId;
+    if(expected.has(key))
+     throw new RangeError('duplicate original M0 physical edge in source inventory');
+    expected.add(key);
+    projectedBySourceView.set(key,frozen({
+     sourceViewKey:key,original3DEndpointIds:[...edge],
+     projectedFrom:from[view],projectedTo:to[view],
+     projectionCollapsedExactly:from[view].u===to[view].u&&
+      from[view].v===to[view].v,
+     completeM5ParameterCoverageCertified:false,
+     signedV5Action:false
+    }));
+   }
+  }
+  if([...byKey.keys()].some(key=>!expected.has(key)))
+   throw new RangeError('canonical M5 source ledger references unknown original M0 edge/view');
+  const missing=[...expected].filter(key=>!byKey.has(key));
+  const incomplete=[...expected].filter(key=>
+   byKey.has(key)&&sourcePartitionCoverage.get(key)?.complete!==true);
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:true,
+   expectedOriginalSourceViewCount:expected.size,
+   completeOriginalSourceViewCount:expected.size-missing.length-incomplete.length,
+   missingOriginalSourceViews:missing,
+   missingOriginalSourceViewProjectionEvidence:missing.map(key=>
+    projectedBySourceView.get(key)),
+   incompleteOriginalSourceViewProjectionEvidence:incomplete.map(key=>
+    projectedBySourceView.get(key)),
+   incompleteOriginalSourceViewPartitions:incomplete.map(key=>({
+    sourceViewKey:key,
+    positiveLengthParameterGaps:sourcePartitionCoverage.get(key).gaps
+   })),
+   allOriginalSourceViewsHaveCompleteParameterPartitions:
+    expected.size>0&&missing.length===0&&incomplete.length===0,
+   signedV5Action:false
+  });
+ }
  const counts={genuineHiddenHLRStrokesReviewed:0,
+  jointM4M5NativeHLROriginal3DSourceViewsConsumed:jointSourceByKey.size,
+  nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage:0,
+  nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage:0,
+  realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion:0,
+  realNativeHiddenOpenIntervalsWithUnprovenM5Occlusion:0,
+  nativeHLRLocallyCompleteSourceOcclusionAndActual3DVertexStars:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
   missingLocalNativeOrModelOpenProofHeld:0,
@@ -216,7 +394,77 @@ function reviewC1NativeHiddenFinalM5Strokes({
    alternativeNative3D;
   counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
    remainingTrueOriginal3DVertexGaps;
+  const directNativeEdge= nativeSourceAudit.nativeHiddenSourceRefinements?.[i]?.
+   actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence;
+  if(directNativeEdge?.nativeGeneratedEdgeDirectOriginalIsSameCompared!==true||
+     directNativeEdge.allM0OriginalPhysicalOCCTSourceEdgesCompared!==true||
+     directNativeEdge.fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered!==false||
+     directNativeEdge.signedV5Action!==false)
+   throw new RangeError('global C1 M5 native generated edge direct OCCT source IsSame witness missing');
+  const directlySameOriginal=directNativeEdge.
+   directlySameUniqueOriginalOCCTBRepSourceEdgeId;
+  if(directlySameOriginal!==null&&
+     (!unique||directlySameOriginal!==edge))
+   throw new RangeError('native generated TopoDS IsSame original source contradicts M5 hidden physical source identity');
   const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
+  const nativeJoined=unique?jointSourceByKey.get(gap.view+'@'+edge):null;
+  if(unique&&(!nativeJoined||sourceCoverage?.complete===true&&
+       nativeJoined.originalM4Full3DSourceIntervalProven!==true))
+   throw new RangeError('canonical M5 complete source contradicts actual M4 original 3D source proof');
+  const sourceAndNativeComplete=sourceCoverage?.complete===true&&
+   nativeJoined?.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete===true;
+  if(sourceAndNativeComplete)
+   counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage++;
+  else counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage++;
+  // Recalculate continuous ORIGINAL 3D ray occlusion from the two real
+  // same-run positive proof interval types. A source edge may project to
+  // more than one genuine HLR segment: use this exact segment's parameter
+  // range rather than confusing source-[0,1] with one generated TopoDS edge.
+  let exactNativeIntervalM5Occlusion=null;
+  if(unique){
+   const claimed=dual.independentOpenIntervalRayAndFrontVisibleUnion,
+    range=m4Native.genuineNativeHLROriginalSourceParameterRange;
+   if(!claimed||!Array.isArray(range)||range.length!==2||
+      !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+      range[0]>=range[1]||
+      claimed.originalSourceParameterRange?.[0]!==range[0]||
+      claimed.originalSourceParameterRange?.[1]!==range[1]||
+      dual.originalHiddenSourceEdgeId!==edge||
+      dual.locallyExplainedNativeHiddenOpenPaperInterval!==
+       claimed.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor||
+      claimed.globallyFinalStandardLineStyleCertified!==false||
+      claimed.completeOCCTGeneratedBRepEdgeOriginalTopoDSHistory!==false||
+      claimed.signedV5Action!==false)
+    throw new RangeError('real native generated HLR interval lacks same-source M5 continuous observer-ray evidence');
+   const inside=exactCandidateIntervalCoverage(range,
+     claimed.strictInteriorIndependentlyVerifiedIntervals),
+    visible=exactCandidateIntervalCoverage(range,
+     claimed.realVisibleFrontSourceDepthMaskVerifiedIntervals),
+    union=exactCandidateIntervalCoverage(range,[
+     ...inside.positiveLengthCoveredIntervals,
+     ...visible.positiveLengthCoveredIntervals]);
+   if(!intervalsMatch(inside.positiveLengthCoveredIntervals,
+        claimed.strictInteriorIndependentlyVerifiedIntervals)||
+      !intervalsMatch(visible.positiveLengthCoveredIntervals,
+        claimed.realVisibleFrontSourceDepthMaskVerifiedIntervals)||
+      !intervalsMatch(union.positiveLengthCoveredIntervals,
+        claimed.onlyLocallyVerifiedHiddenOrFrontMaskIntervals)||
+      !intervalsMatch(union.positiveLengthUncoveredIntervals,
+        claimed.outstandingUnprovedOriginalParameterIntervals)||
+      union.entireOriginalParameterIntervalCovered!==
+       claimed.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor||
+      inside.entireOriginalParameterIntervalCovered!==
+       claimed.strictInwardSourceEntireOpenIntervalProven||
+      visible.entireOriginalParameterIntervalCovered!==
+       claimed.independentFrontVisibleSourceMaskEntireOpenIntervalProven)
+    throw new RangeError('native generated TopoDS original-source M5 ray coverage contradicts independently exact interval union');
+   exactNativeIntervalM5Occlusion=union;
+  }else if(dual.independentOpenIntervalRayAndFrontVisibleUnion!==null&&
+            dual.independentOpenIntervalRayAndFrontVisibleUnion!==undefined)
+   throw new RangeError('nonunique generated HLR edge cannot own original M5 source interval proof');
+  if(exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered)
+   counts.realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion++;
+  else counts.realNativeHiddenOpenIntervalsWithUnprovenM5Occlusion++;
   const thisNativeOrdinal=perViewNativeOrdinal.get(gap.view);
   perViewNativeOrdinal.set(gap.view,thisNativeOrdinal+1);
   // Both sides are independently checked against the real current native
@@ -256,6 +504,12 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(nativeEndpointStars.every(x=>
    x.independentOriginal3DVertexAndFullHLRJunctionProven))
    counts.nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified++;
+  const localSourceOcclusionAndTopoDSVertices=sourceAndNativeComplete&&
+   exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered===true&&
+   nativeEndpointStars.every(x=>
+    x.independentOriginal3DVertexAndFullHLRJunctionProven);
+  if(localSourceOcclusionAndTopoDSVertices)
+   counts.nativeHLRLocallyCompleteSourceOcclusionAndActual3DVertexStars++;
   if(sourceCoverage?.complete!==true)counts.incompleteCanonicalOriginalSourcePartitions++;
   const allGlobalBlockers=requiredGlobal.filter(k=>
    originalGlobal.some(row=>row.independentGlobalProofGaps[k]===true));
@@ -461,14 +715,31 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
+   sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage:
+    sourceAndNativeComplete,
+   genuineGeneratedTopoDSEdgeDirectOriginalSourceIsSameWitness:
+    directNativeEdge,
+   generatedTopoDSEdgePhysicallySameAsM5OriginalBRepSource:
+    directlySameOriginal!==null&&directlySameOriginal===edge,
+   independentlyRecomputedCanonicalM4M5NativeSourceEvidence:
+    nativeJoined??null,
+   actualNativeTopodsOpenIntervalContinuousM5CoverageIndependentlyRecomputed:
+    exactNativeIntervalM5Occlusion??null,
+   localOriginal3DSourceExactM5OcclusionAndNativeIsSameEndpointConjunction:
+    localSourceOcclusionAndTopoDSVertices,
+   generatedTopoDSEdgeOriginalTopoDSEdgeHistoryStillMissing:true,
    jointPositiveM5Prerequisites:{
-    completeSourceParameterCoverage:sourceCoverage?.complete===true,
-    original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0,
-    continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel
+    completeSourceParameterCoverage:sourceAndNativeComplete,
+    original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0&&
+     nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven),
+    continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel&&
+     exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered===true
    },
    jointPositiveM5PrerequisitesSatisfied:
-    sourceCoverage?.complete===true&&remainingTrueOriginal3DVertexGaps===0&&
-    localNative&&localModel,
+    sourceAndNativeComplete&&remainingTrueOriginal3DVertexGaps===0&&
+    nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven)&&
+    localNative&&localModel&&
+    exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered===true,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    canonicalOriginalM4ProjectedEncountersAudited:projected.length,
    currentOriginalM4SourceSpatialEventClassifications:locallyClassified,
@@ -536,7 +807,15 @@ function reviewC1NativeHiddenFinalM5Strokes({
     counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification>
     counts.genuineHiddenHLRStrokesReviewed)
   throw new RangeError('incomplete mathematical classification of C1 native source paper encounters');
- if(counts.genuineHiddenHLRStrokesReviewed!==gapProof.rows.length||
+ if(counts.realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion+
+     counts.realNativeHiddenOpenIntervalsWithUnprovenM5Occlusion!==
+      counts.genuineHiddenHLRStrokesReviewed||
+    counts.nativeHLRLocallyCompleteSourceOcclusionAndActual3DVertexStars>
+     counts.realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion||
+    counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage+
+     counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage!==
+      counts.genuineHiddenHLRStrokesReviewed||
+    counts.genuineHiddenHLRStrokesReviewed!==gapProof.rows.length||
     counts.realGeneratedHLRToOriginalTopoDSProven!==0||
     counts.officialStandardSolidOrDashedLineSigned!==0||
     counts.formalConstructionIntentDAGV5ActionsSigned!==0)
@@ -544,7 +823,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
  return frozen({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
-  counts,rows,
+  counts,rows,canonicalOriginalM5SourceInventory,
+  allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
   actualHLRGeneratedBRepEdgeTopoDSHistoryComplete:false,

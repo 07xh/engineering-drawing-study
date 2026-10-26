@@ -14,6 +14,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {auditC1ReviewedProjectedSourceEventGraph}=
  require('./c1-reviewed-projected-source-event-graph.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const freeze=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -29,6 +31,105 @@ const point=(a,b,t)=>({
  y:a.y+(b.y-a.y)*t,
  z:a.z+(b.z-a.z)*t
 });
+/**
+ * Positive M4 source-partition witness, not an HLR/M5 visibility or line-style
+ * certificate. A count of subspans is insufficient: missing one cut interval
+ * could otherwise be concealed by a duplicate or a non-adjacent subspan.
+ * All comparisons are exact binary64, including one-ULP holes.
+ */
+function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
+ collapsedProjection=false,original3DFrom,original3DTo,view
+}={}){
+ if(!Array.isArray(cutParameters)||cutParameters.length<2||
+    !Array.isArray(spans)||spans.length>cutParameters.length-1||
+    cutParameters[0]!==0||cutParameters.at(-1)!==1||
+    cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
+     (i>0&&t<=cutParameters[i-1])))
+  throw new RangeError('incomplete canonical original M4 source cut partition');
+ // Independently reproject the M0 original 3D endpoints instead of
+ // trusting the upstream M4 collapsedProjection flag. Its 1e-8 mm
+ // threshold is a CONSERVATIVE degeneracy budget: a genuinely nonzero
+ // 1e-9 mm paper edge is held, not mistaken for an exact point or V5 line.
+ // This optional input is mandatory at the real M0->M4 audit call-site;
+ // standalone source-cut fixtures may omit all three values.
+ const hasGeometryEvidence=original3DFrom!==undefined||
+  original3DTo!==undefined||view!==undefined;
+ if(hasGeometryEvidence){
+  const validXYZ=p=>p&&['x','y','z'].every(k=>finite(p[k]));
+  if(!VIEWS.includes(view)||!validXYZ(original3DFrom)||
+     !validXYZ(original3DTo)||typeof collapsedProjection!=='boolean')
+   throw new RangeError('independent original M4 source projection evidence required');
+  const projectedA=project(original3DFrom)[view],
+   projectedB=project(original3DTo)[view],
+   originalPaperLength=Math.hypot(
+    projectedA.u-projectedB.u,projectedA.v-projectedB.v);
+  if(!finite(originalPaperLength)||
+     (originalPaperLength<=1e-8)!==collapsedProjection)
+   throw new RangeError('M4 collapsed source flag contradicts independently recomputed original V/H/W projection');
+ }
+ // A 3D edge parallel to this view's observer direction projects to a
+ // point. No paper LINE interval can be certified from this source.
+ if(collapsedProjection){
+  if(spans.length!==0)
+   throw new RangeError('collapsed original source cannot have paper line subspans');
+  return freeze({
+   sourceParameterRange:[0,1],
+   exactOriginalSourceParameterCoverage:
+    exactCandidateIntervalCoverage([0,1],[]),
+   collapsedOriginalSourceProjection:true,
+   sourceOpenParameterCoverageNotRepresentableAsPaperLine:true,
+   projectedTinyButPositiveOriginalSourceIntervalsHeld:[],
+   everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:false,
+   entireOriginalM4SourceParameterPartitionPositivelyProven:false,
+   generatedHLRSourceIdentityProven:false,
+   continuousM5VisibilityProven:false,
+   engineeringLineStyleSigned:false,signedV5Action:false
+  });
+ }
+ const ranges=[],tinyHeld=[];let j=0;
+ for(let i=0;i<cutParameters.length-1;i++){
+  const a=cutParameters[i],b=cutParameters[i+1];
+  const r=spans[j]?.originalParameterRange;
+  if(Array.isArray(r)&&r.length===2&&r[0]===a&&r[1]===b){
+   ranges.push([a,b]);j++;continue;
+  }
+  // M4 deliberately omits subspans whose *recomputed projected paper
+  // length* is <= 1e-10 mm. This does NOT erase their positive ORIGINAL
+  // 3D source parameter interval. Recompute the condition independently,
+  // then explicitly hold that gap rather than tolerance-stitching it.
+  if(!VIEWS.includes(view)||!original3DFrom||!original3DTo)
+   throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
+  const p=project(point(original3DFrom,original3DTo,a))[view],
+   q=project(point(original3DFrom,original3DTo,b))[view];
+  const length=Math.hypot(p.u-q.u,p.v-q.v);
+  if(!finite(length)||length>1e-10)
+   throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
+  tinyHeld.push([a,b]);
+ }
+ if(j!==spans.length)
+  throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
+ const coverage=exactCandidateIntervalCoverage([0,1],ranges);
+ // Even a 1-ULP positive gap remains unproven, including if its projected
+ // length rounded to zero. This certificate never authorizes M5/GB/V5.
+ const complete=coverage.entireOriginalParameterIntervalCovered&&
+  coverage.positiveLengthCoveredIntervals.length===1&&
+  coverage.positiveLengthCoveredIntervals[0][0]===0&&
+  coverage.positiveLengthCoveredIntervals[0][1]===1;
+ if(complete!== (tinyHeld.length===0))
+  throw new RangeError('M4 source gap accounting contradicts exact interval union');
+ return freeze({
+  sourceParameterRange:[0,1],
+  exactOriginalSourceParameterCoverage:coverage,
+  collapsedOriginalSourceProjection:false,
+  sourceOpenParameterCoverageNotRepresentableAsPaperLine:false,
+  projectedTinyButPositiveOriginalSourceIntervalsHeld:tinyHeld,
+  everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:complete,
+  entireOriginalM4SourceParameterPartitionPositivelyProven:complete,
+  generatedHLRSourceIdentityProven:false,
+  continuousM5VisibilityProven:false,
+  engineeringLineStyleSigned:false,signedV5Action:false
+ });
+}
 function auditC1OriginalSourceSubspanJunctions({
  geometry,revision,proofMode='m5-hull-required'
 }={}){
@@ -50,12 +151,16 @@ function auditC1OriginalSourceSubspanJunctions({
    throw new TypeError('two reviewed original edges share one source ID');
   originals.set(id,{a,b,from:geometry.data.points[a],to:geometry.data.points[b]});
  }
- const rows=[],counts={
+ const rows=[],seenSourceViews=new Set(),counts={
   sourceEdgeViewCount:0,originalSourceSubspanCount:0,
   sharedOriginalSourceNeighborJoins:0,originalVertexEndpointWitnesses:0,
   authenticatedForeignOriginalVertexEncounters:0,
   paperOnlyForeignSourceEncounters:0,roundedDiagnosticEncountersHeld:0,
-  uncertifiedOriginalSubspanJoins:0,signedV5Actions:0
+  uncertifiedOriginalSubspanJoins:0,
+  exactFullOriginalSourceViewPartitionsProven:0,
+  noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld:0,
+  collapsedSourceViewPartitionsConservativelyHeld:0,
+  signedV5Actions:0
  };
  for(const row of graph.rows){
   const origin=originals.get(row.sourceEdgeId);
@@ -70,7 +175,16 @@ function auditC1OriginalSourceSubspanJunctions({
      row.cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
       (i>0&&t<=row.cutParameters[i-1])))
    throw new RangeError('M4 original edge cut parameters are not ordered');
+  const key=row.view+'@'+row.sourceEdgeId;
+  if(seenSourceViews.has(key))
+   throw new RangeError('duplicated M4 original source/view partition');
+  seenSourceViews.add(key);
   const spans=row.spans;
+  const partition=certifyCanonicalOriginalM4SourcePartition(
+   row.cutParameters,spans,{
+    collapsedProjection:row.collapsedProjection,
+    original3DFrom:origin.from,original3DTo:origin.to,view:row.view
+   });
   const details=[];
   for(let i=0;i<spans.length;i++){
    const s=spans[i],ts=s.originalParameterRange;
@@ -162,11 +276,28 @@ function auditC1OriginalSourceSubspanJunctions({
   rows.push({view:row.view,sourceGeometryId:geometry.id,
    sourceEdgeId:row.sourceEdgeId,sourceVertexIds:[origin.a,origin.b],
    collapsedProjection:row.collapsedProjection,spans:details,
+   canonicalOriginalM4SourcePartition:partition,
+   allCanonicalOriginalSourceParameterSubspansCovered:
+    partition.entireOriginalM4SourceParameterPartitionPositivelyProven,
    allReal3DAndPaperSceneJunctionsCertified:false,
    signedV5ActionCount:0});
   counts.sourceEdgeViewCount++;
+  if(row.collapsedProjection)
+   counts.collapsedSourceViewPartitionsConservativelyHeld++;
+  else if(partition.entireOriginalM4SourceParameterPartitionPositivelyProven)
+   counts.exactFullOriginalSourceViewPartitionsProven++;
+  else counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld++;
  }
- if(counts.originalSourceSubspanCount!==graph.partitionedSourceSubintervalCount||
+ // Cardinality alone cannot prove that every actual original edge appears
+ // once in EACH first-angle view (V/H/W).
+ for(const id of originals.keys())for(const view of VIEWS)
+  if(!seenSourceViews.has(view+'@'+id))
+   throw new RangeError('missing M4 original 3D source/view partition');
+ if(counts.exactFullOriginalSourceViewPartitionsProven+
+     counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld+
+     counts.collapsedSourceViewPartitionsConservativelyHeld!==
+     originals.size*VIEWS.length||
+    counts.originalSourceSubspanCount!==graph.partitionedSourceSubintervalCount||
     counts.sourceEdgeViewCount!==geometry.data.edges.length*3||
     counts.signedV5Actions!==0)
   throw new RangeError('missing or duplicated true original subspan');
@@ -177,10 +308,18 @@ function auditC1OriginalSourceSubspanJunctions({
   m5OriginalContourAvailable:graph.originalM5ExteriorHullRecomputedAndAvailable,
   sourceEventGraphSchema:graph.schema,
   rows,counts,
+  allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered:
+   counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0,
+  allOriginalSourceViewsAccountedIncludingCollapsed:true,
+  allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered:
+   counts.collapsedSourceViewPartitionsConservativelyHeld===0&&
+   counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0,
+  nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven:true,
   fullCrossSourceSceneJunctionsCertified:false,
   finalEngineeringLineStylesAuthorized:false,
   constructionIntentAuthorized:false,
   signedV5ActionCount:0,wholeSolidV5Ready:false
  });
 }
-module.exports={auditC1OriginalSourceSubspanJunctions};
+module.exports={auditC1OriginalSourceSubspanJunctions,
+ certifyCanonicalOriginalM4SourcePartition};
