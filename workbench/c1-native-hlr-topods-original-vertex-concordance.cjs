@@ -79,9 +79,20 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   engineeringGBLineJunctionsSigned:0,signedV5Actions:0
  };
  const rows=[],aliases=[];
- const sourceEdges=new Map((geometry.data.edges??[]).map(edge=>[
-  geometry.id+'::'+[...edge].sort().join('|'),edge
- ]));
+ // The original physical edge ledger is an identity contract, not an
+ // arbitrary string label. Duplicated/reversed or invalid modeled edges
+ // cannot support an independent native 3D junction witness.
+ const sourceEdges=new Map();
+ for(const edge of geometry.data.edges??[]){
+  if(!Array.isArray(edge)||edge.length!==2||
+     edge.some(id=>typeof id!=='string'||
+      !Object.hasOwn(geometry.data.points,id))||edge[0]===edge[1])
+   throw new RangeError('invalid original modeled 3D source edge');
+  const key=geometry.id+'::'+[...edge].sort().join('|');
+  if(sourceEdges.has(key))
+   throw new RangeError('duplicate original modeled 3D source edge');
+  sourceEdges.set(key,edge);
+ }
  // A same-revision CLOSED front-ray witness must be unique per original
  // physical source edge and view. Map(last-write-wins) could otherwise let
  // contradictory/duplicated M5 rows silently certify a visible HLR endpoint.
@@ -189,12 +200,20 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    w=src.endpointWitnesses[ref.side==='from'?0:1];
   if(!w||w.originalModel3DSourceVertexId===undefined)
    throw new RangeError('original M0 3D endpoint ledger missing');
-  return {source:src.originalPhysicalSourceEdgeId,
-   vertex:w.originalModel3DSourceVertexId!==null&&
-    geometry.data.points[w.originalModel3DSourceVertexId]&&
+  // A closed-face-fan flag alone does not bind a hidden HLR endpoint to
+  // the claimed modeled 3D edge. Require the exact same-revision source
+  // edge to exist, and the independently proven vertex to be its endpoint.
+  // No generated-to-original TopoDS edge history is inferred here.
+  const modeledEdge=sourceEdges.get(src.originalPhysicalSourceEdgeId);
+  const vertexId=w.originalModel3DSourceVertexId;
+  const genuineModeledEndpoint=modeledEdge&&typeof vertexId==='string'&&
+   modeledEdge.includes(vertexId)&&
+   Object.hasOwn(geometry.data.points,vertexId);
+  return {source:modeledEdge?src.originalPhysicalSourceEdgeId:null,
+   vertex:genuineModeledEndpoint&&
     (w.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
      w.existingM4OriginalSourceEndpointVerified===true)?
-     w.originalModel3DSourceVertexId:null,
+     vertexId:null,
    nativeHidden:true};
  }
  const verifiedPhysical3DPair=(a,b)=>
