@@ -593,10 +593,9 @@ for(const [index,geometry] of general.entries()){
   sceneInventory.expectedOriginalSourceViewCount>0&&
   sceneInventory.missingOriginalSourceViews.length===0&&
   sceneInventory.incompleteOriginalSourceViewPartitions.length===0);
- // Genuine HLR may reveal missing/partial M5 source coverage; never turn
- // this diagnostic into a fabricated positive scene-wide certificate.
- console.log('C1 original M0 x V/H/W M5 source inventory:',
-  JSON.stringify(sceneInventory));
+ // Real rotated geometry has omitted/collapsed source-view rows and
+ // binary64 endpoint gaps. Preserve them as unsigned diagnostics; stdout
+ // must remain a single JSON report for the existing CI consumer.
  assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.signedV5Action,false);
 
  assert.equal(hiddenFormalGate.allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined,true);
