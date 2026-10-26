@@ -934,6 +934,18 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  originalM5SourceViewCoverage:{
+   expected:sceneInventory.expectedOriginalSourceViewCount,
+   complete:sceneInventory.completeOriginalSourceViewCount,
+   missing:sceneInventory.missingOriginalSourceViewProjectionEvidence,
+   incomplete:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.map(e=>({
+    ...e,positiveLengthParameterGaps:
+     sceneInventory.incompleteOriginalSourceViewPartitions.find(x=>
+      x.sourceViewKey===e.sourceViewKey).positiveLengthParameterGaps
+   })),
+   allComplete:sceneInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
+   signedV5Action:false
+  },
   actualHiddenNativeSourceAndM5:{
    realSharpSegments:nativeHiddenM5.counts.realNativeHiddenSharpSegments,
    withoutM0Candidates:nativeHiddenM5.counts.nativeHiddenWithoutM0SourceCandidates,
