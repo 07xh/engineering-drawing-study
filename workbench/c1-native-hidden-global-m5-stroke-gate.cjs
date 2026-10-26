@@ -325,6 +325,18 @@ function reviewC1NativeHiddenFinalM5Strokes({
    alternativeNative3D;
   counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
    remainingTrueOriginal3DVertexGaps;
+  const directNativeEdge= nativeSourceAudit.nativeHiddenSourceRefinements?.[i]?.
+   actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence;
+  if(directNativeEdge?.nativeGeneratedEdgeDirectOriginalIsSameCompared!==true||
+     directNativeEdge.allM0OriginalPhysicalOCCTSourceEdgesCompared!==true||
+     directNativeEdge.fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered!==false||
+     directNativeEdge.signedV5Action!==false)
+   throw new RangeError('global C1 M5 native generated edge direct OCCT source IsSame witness missing');
+  const directlySameOriginal=directNativeEdge.
+   directlySameUniqueOriginalOCCTBRepSourceEdgeId;
+  if(directlySameOriginal!==null&&
+     (!unique||directlySameOriginal!==edge))
+   throw new RangeError('native generated TopoDS IsSame original source contradicts M5 hidden physical source identity');
   const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
   const nativeJoined=unique?jointSourceByKey.get(gap.view+'@'+edge):null;
   if(unique&&(!nativeJoined||sourceCoverage?.complete===true&&
@@ -636,6 +648,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
    sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage:
     sourceAndNativeComplete,
+   genuineGeneratedTopoDSEdgeDirectOriginalSourceIsSameWitness:
+    directNativeEdge,
+   generatedTopoDSEdgePhysicallySameAsM5OriginalBRepSource:
+    directlySameOriginal!==null&&directlySameOriginal===edge,
    independentlyRecomputedCanonicalM4M5NativeSourceEvidence:
     nativeJoined??null,
    actualNativeTopodsOpenIntervalContinuousM5CoverageIndependentlyRecomputed:
