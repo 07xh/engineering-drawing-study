@@ -297,6 +297,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar:0,
   originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld:0,
   nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified:0,
+  actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit:0,
+  actualHiddenNativeStrokesWithBothSourceJunctionsPhysicallyVerified:0,
+  actualHiddenNativeStrokesWithLocallyFullM5VisibilityAndPhysicalJunctions:0,
   originalM4ProjectedEventsWithVerifiedLocal3DSpatialDisposition:0,
   originalM4ProjectedEventsStillMissingExactLocal3DSpatialDisposition:0,
   nativeHLRSourceStrokesWithCompleteLocal3DEventClassification:0,
@@ -476,6 +479,51 @@ function reviewC1NativeHiddenFinalM5Strokes({
     gap.view+'@'+thisNativeOrdinal+'@'+side);
    const actualOriginalVertex=unique?
     realNativeSource.endpointWitnesses[n]?.originalModel3DSourceVertexId:null;
+
+   // A genuine IsSame shared node in the INTERIOR of the same original 3D
+   // edge is not an M0 vertex. #798 proves both generated native HLR
+   // endpoint lifts on an unambiguous measured OCCT source BRep line.
+   // At the FINAL M5 consumer check its source ID, exact 3D source t,
+   // native-source interval endpoint and literal first-angle paper point
+   // independently; this cannot mint a TopoDS edge history or GB line.
+   const interiorClaim=star?.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven===true;
+   let interiorProof=false;
+   if(interiorClaim){
+    const t=star.source3DEdgeInteriorParameter,
+     range=m4Native.genuineNativeHLROriginalSourceParameterRange,
+     points=geometry.data.points,
+     src=geometry.data.edges?.find(e=>Array.isArray(e)&&e.length===2&&
+      geometry.id+'::'+[...e].sort().join('|')===edge);
+    const a=src&&points[src[0]],b=src&&points[src[1]];
+    const xyz=a&&b&&Number.isFinite(t)?{
+     x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,
+     z:a.z+(b.z-a.z)*t
+    }:null;
+    const matchesXYZ=xyz&&star.source3DEdgeInterior3DPoint&&
+     ['x','y','z'].every(k=>Number.isFinite(xyz[k])&&
+      xyz[k]===star.source3DEdgeInterior3DPoint[k]);
+    const paper=xyz&&project(xyz)[gap.view],nativePaper=star.exactNativePaperPoint;
+    interiorProof=unique&&
+     star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===false&&
+     star.independentlyVerifiedOriginalM03DVertexId===null&&
+     star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered===false&&
+     star.source3DEdgeInteriorOriginalEdgeId===edge&&
+     Array.isArray(star.independentlyTracedOriginal3DSourceEdges)&&
+     star.independentlyTracedOriginal3DSourceEdges.length===0&&
+     Number.isFinite(t)&&t>0&&t<1&&
+     Array.isArray(range)&&range.length===2&&
+     (t===range[0]||t===range[1])&&
+     matchesXYZ===true&&nativePaper&&paper&&
+     paper.u===nativePaper.u&&paper.v===nativePaper.v&&
+     star.generatedHLREndpoints.some(x=>x.hlrClass==='hidden-sharp'&&
+      x.nativeHLREdgeOrdinal===thisNativeOrdinal&&x.side===side&&
+      x.nativePaperPoint?.u===nativePaper.u&&
+      x.nativePaperPoint?.v===nativePaper.v);
+    if(!interiorProof)
+     throw new RangeError('forged native HLR split interior 3D source or endpoint parameter');
+   }
+   if(interiorProof)
+    counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit++;
    const verified=!!star&&
     star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===true&&
     star.independentlyVerifiedOriginalM03DVertexId!==null&&
@@ -488,12 +536,19 @@ function reviewC1NativeHiddenFinalM5Strokes({
     throw new RangeError('genuine native IsSame star conflicts with original hidden 3D endpoint source fan');
    if(verified)
     counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar++;
-   else if(star)
+   else if(star&&!interiorProof)
     counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld++;
    return {
     nativeHLREndpointSide:side,
     actualGeneratedOCCTVertexIsSameJunctionPresent:!!star,
     independentOriginal3DVertexAndFullHLRJunctionProven:verified,
+    actualNativeOCCTIsSameOriginal3DEdgeInteriorSplitProven:interiorProof,
+    actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity:
+     verified||interiorProof,
+    exactOriginal3DSourceInteriorParameter:
+     interiorProof?star.source3DEdgeInteriorParameter:null,
+    exactOriginal3DSourceInteriorPoint:
+     interiorProof?{...star.source3DEdgeInterior3DPoint}:null,
     independentlyVerifiedOriginalM03DVertexId:
      verified?actualOriginalVertex:null,
     nativeGeneratedToOriginalTopoDSEdgeHistoryStillNotProven:true,
@@ -504,6 +559,15 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(nativeEndpointStars.every(x=>
    x.independentOriginal3DVertexAndFullHLRJunctionProven))
    counts.nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified++;
+  const bothLocallyPhysical=nativeEndpointStars.every(x=>
+   x.actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity);
+  if(bothLocallyPhysical)
+   counts.actualHiddenNativeStrokesWithBothSourceJunctionsPhysicallyVerified++;
+  const localSourceOcclusionAndPhysicalJunctions=sourceAndNativeComplete&&
+   exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered===true&&
+   bothLocallyPhysical;
+  if(localSourceOcclusionAndPhysicalJunctions)
+   counts.actualHiddenNativeStrokesWithLocallyFullM5VisibilityAndPhysicalJunctions++;
   const localSourceOcclusionAndTopoDSVertices=sourceAndNativeComplete&&
    exactNativeIntervalM5Occlusion?.entireOriginalParameterIntervalCovered===true&&
    nativeEndpointStars.every(x=>
@@ -709,6 +773,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
     remainingTrueOriginal3DVertexGaps,
    nativeGeneratedHLREdgesHaveAllPhysical3DJunctionsCertified:false,
    independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars:nativeEndpointStars,
+   actualGeneratedHiddenNativeStrokeBoth3DEndpointsLocallyPhysical:
+    bothLocallyPhysical,
+   localOriginal3DSourceExactM5OcclusionAndTruePhysicalHLRJunctions:
+    localSourceOcclusionAndPhysicalJunctions,
    bothRealNativeHLREndpointGeneratedJunctionStarsHaveOriginal3DSourceProof:
     nativeEndpointStars.every(x=>
      x.independentOriginal3DVertexAndFullHLRJunctionProven),
@@ -796,8 +864,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
   });
  }
  if(counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
-    counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld>
+    counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld+
+    counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit>
     counts.genuineHiddenHLRStrokesReviewed*2||
+    counts.actualHiddenNativeStrokesWithBothSourceJunctionsPhysicallyVerified>
+     counts.genuineHiddenHLRStrokesReviewed||
+    counts.actualHiddenNativeStrokesWithLocallyFullM5VisibilityAndPhysicalJunctions>
+     counts.realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion||
     counts.nativeHLRHiddenEdgesWithBothNativeIsSameEndpointStarsOriginal3DVerified>
     counts.genuineHiddenHLRStrokesReviewed)
   throw new RangeError('native whole junction M5 endpoint certification coverage mismatch');
