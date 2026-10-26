@@ -556,7 +556,17 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
  const nativeVisibleExteriorContourFrontSources=[];
  for(const view of VIEWS){
   for(const [ordinal,segment] of base.get(view).visible.entries()){
-   if(segment.sourceCandidate3DLifts?.length<2)continue;
+   // The separate convex original contour theorem only applies to
+   // a CURRENT reviewed closed M0 mesh with actual native OCCT BRep
+   // edge-vs-original comparisons. Older local junction test fixtures
+   // intentionally do not claim these independent whole-solid inputs.
+   if(geometry.kind!=='mesh'||geometry.space!=='model-3d'||
+      geometry.unit!=='mm'||
+      segment.sourceCandidate3DLifts?.length<2||
+      segment.actualOCCTHLRFlattenedBRepLineVerified!==true||
+      segment.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
+      segment.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false)
+    continue;
    if(independentlyM5AuthenticatedVisibleNativeGeneratedEdges.some(x=>
     x.view===view&&x.nativeVisibleHLREdgeOrdinal===ordinal))continue;
    nativeVisibleExteriorContourFrontSources.push(
