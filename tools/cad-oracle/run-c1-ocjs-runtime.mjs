@@ -647,7 +647,17 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeContourFront3D.signedV5ActionCount,0);
  if(index===0){
   assert.deepEqual(nativeContourFront3D.physicalFrontContours.map(row=>
-   [row.view,row.nativeHLREdgeOrdinal]),[['H',1],['H',3]]);
+   [row.view,row.nativeHLREdgeOrdinal]),[['H',1],['H',3]],
+   JSON.stringify({
+    kind:geometry.kind,space:geometry.space,unit:geometry.unit,
+    cadHLRCandidates:cad.views.H.map((s,i)=>({ordinal:i,candidateCount:s.sourceCandidate3DLifts?.length,
+     real:s.actualOCCTHLRFlattenedBRepLineVerified,
+     direct:s.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared,
+     history:s.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched})),
+    previouslyPositiveM5:nativeHiddenM5.nativeHLRVertexConcordance.
+     independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(x=>x.view==='H').map(x=>x.nativeVisibleHLREdgeOrdinal),
+    contourSourceRows:nativeHiddenM5.nativeHLRVertexConcordance.nativeVisibleExteriorContourFrontSources
+   }));
   assert.equal(nativeContourFront3D.locallyProvenExactOriginal3DFrontmostContours,2);
  }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
