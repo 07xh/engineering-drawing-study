@@ -104,17 +104,24 @@ function reviewCanonicalM4M5NativeHLRSourceIntervals({m5Row,nativeCandidates}={}
  if(nativeCandidates.some(c=>!c||!Array.isArray(c.range)||
     !Number.isSafeInteger(c.distinctOriginal3DCandidateCount)||
     c.distinctOriginal3DCandidateCount<1||
+    !Number.isSafeInteger(c.remainingPossibleOriginal3DCandidateCount)||
+    c.remainingPossibleOriginal3DCandidateCount<0||
+    c.remainingPossibleOriginal3DCandidateCount>
+     c.distinctOriginal3DCandidateCount||
+    typeof c.sourceSurvivesExactM5Pruning!=='boolean'||
     c.realOCCTHLREdgeToSourceIdentityRecovered!==false||
     c.nativeHLRActualClass!=='hidden-sharp'))
   throw new RangeError('unsigned genuine native HLR source ranges required');
  const native=exactCandidateIntervalCoverage([0,1],
   nativeCandidates.map(c=>c.range));
- // A paper-complete union of ambiguous HLR candidate edges does NOT
- // positively establish one original physical 3D edge. Keep paper
- // candidate coverage diagnostic, and separately require the unambiguous
- // genuine OCCT->M0 source lift union for physical source readiness.
+ // Full raw paper coverage is not physical source identity. Exact M5
+ // negative closed-ray pruning can remove a competing original 3D source.
+ // Require THIS original to survive, and precisely one possible original
+ // source to remain after that independent negative proof. Do not infer
+ // generated TopoDS history from any positive candidate paper interval.
  const uniqueNative=exactCandidateIntervalCoverage([0,1],
-  nativeCandidates.filter(c=>c.distinctOriginal3DCandidateCount===1)
+  nativeCandidates.filter(c=>c.sourceSurvivesExactM5Pruning===true&&
+   c.remainingPossibleOriginal3DCandidateCount===1)
    .map(c=>c.range));
  const jointlyFull=full&&
   uniqueNative.entireOriginalParameterIntervalCovered;
@@ -226,6 +233,11 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     if(!nativeMap.has(key))nativeMap.set(key,[]);
     nativeMap.get(key).push({range:[...range],
      distinctOriginal3DCandidateCount:seg.sourceCandidate3DLifts.length,
+     remainingPossibleOriginal3DCandidateCount:
+      refined.remainingPossibleOriginal3DSourceCount,
+     sourceSurvivesExactM5Pruning:
+      refined.remainingPhysicalSourcePossibilities.some(source=>
+       source.sourceEdgeId===id),
      realOCCTHLREdgeToSourceIdentityRecovered:false,
      nativeHLRActualClass:'hidden-sharp'});
    }
