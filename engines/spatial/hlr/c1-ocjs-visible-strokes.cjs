@@ -201,7 +201,8 @@ function matchOriginalBRepEdgeByXYZ(geometry,occtFrom,occtTo){
  * A straight 3D source curve does not prove HLR source topology or line style.
  */
 function verifyOriginalOcctLinearCurveWitness({
- sourceEndpoints,parameterRange,curveSamples,curveKind
+ sourceEndpoints,parameterRange,curveSamples,curveKind,
+ requireUnitSpeedOCCTLineParameterization=false
 }={}){
  const finite3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
  if(curveKind!=='line'||!Array.isArray(sourceEndpoints)||
@@ -222,10 +223,11 @@ function verifyOriginalOcctLinearCurveWitness({
  // difference is physical distance in mm, even for a trimmed edge.
  // A 3D endpoint/midpoint match alone cannot authenticate a forged
  // parameter interval used later to map native HLR to M0/M5 [0,1].
- if(!Number.isFinite(physicalLengthMm)||!Number.isFinite(parameterSpan)||
+ if(requireUnitSpeedOCCTLineParameterization&&
+    (!Number.isFinite(physicalLengthMm)||!Number.isFinite(parameterSpan)||
     !(parameterSpan>0)||
     Math.abs(parameterSpan-physicalLengthMm)>
-     1e-6*Math.max(1,physicalLengthMm))
+     1e-6*Math.max(1,physicalLengthMm)))
   throw new RangeError('OCCT BRep line parameter span disagrees with original physical 3D length');
  if(!direct&&!reverse||physicalLengthMm<=1e-8)
   throw new RangeError('OCCT BRep curve endpoints disagree with original 3D topology');
@@ -328,7 +330,7 @@ function extractRealOcjsOriginalSourceBRepEdges({
    sourceEndpoints:coords,parameterRange:[first,last],
    curveSamples:[readCurvePoint(first),
     readCurvePoint((first+last)/2),readCurvePoint(last)],
-   curveKind:'line'
+   curveKind:'line',requireUnitSpeedOCCTLineParameterization:true
   });
   const record={...matchOriginalBRepEdgeByXYZ(geometry,coords[0],coords[1]),
    ...curveProof};
