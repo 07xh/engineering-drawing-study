@@ -625,6 +625,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
   row.view+'@'+row.originalPhysical3DSourceEdgeId));
  const globallyUnreviewedSourceViews=[...byKey.keys()].filter(key=>
   !nativeReviewedSourceViews.has(key));
+ const nativeReviewedWithoutCanonicalSource=[...nativeReviewedSourceViews].filter(key=>
+  !byKey.has(key));
+ if(nativeReviewedWithoutCanonicalSource.length)
+  throw new RangeError('native hidden HLR review has no matching canonical M5 original source ledger');
  const wholeSceneSourceHLRAndM5Closure=frozen({
   originalM0AllViewSourceParameterCoverageComplete:
    canonicalOriginalM5SourceInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
