@@ -27,7 +27,15 @@ const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 }return o;};
 const pEq=(a,b)=>a.u===b.u&&a.v===b.v;
 const point3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
-const xyzEqual=(a,b)=>a.x===b.x&&a.y===b.y&&a.z===b.z;
+const xyzEqual=(a,b)=>point3(a)&&point3(b)&&
+ a.x===b.x&&a.y===b.y&&a.z===b.z;
+// A native HLR point that projects onto an original edge can still lie at a
+// different 3D observer depth. Verify the *source parameter* in XYZ as well.
+const originalSourcePointAt=(a,b,t)=>({
+ x:t===0?a.x:t===1?b.x:a.x+(b.x-a.x)*t,
+ y:t===0?a.y:t===1?b.y:a.y+(b.y-a.y)*t,
+ z:t===0?a.z:t===1?b.z:a.z+(b.z-a.z)*t
+});
 const edgeId=(g,e)=>g.id+'::'+[...e].sort().join('|');
 function certifyExactFullOriginalFront3DMask({geometry,view,hiddenEdge,frontEdge}={}){
  if(!VIEWS.includes(view)||!geometry?.data?.points||
@@ -102,16 +110,25 @@ function certifyActualOCCTFullFrontOriginalPaperEndpoints({
   noClaimOfOcctTopoDSGeneratedEdgeIdentity:true,signedV5Action:false});
  const a=project(geometry.data.points[frontEdge[0]])[view],
   b=project(geometry.data.points[frontEdge[1]])[view];
- const nativeExact=(pEq(a,nativeVisible.from)&&pEq(b,nativeVisible.to))||
-  (pEq(a,nativeVisible.to)&&pEq(b,nativeVisible.from));
+ const forward=pEq(a,nativeVisible.from)&&pEq(b,nativeVisible.to),
+  reverse=pEq(a,nativeVisible.to)&&pEq(b,nativeVisible.from),
+  nativeExact=!pEq(a,b)&&(forward||reverse);
  const whole=frontLift.originalSourceParameterRange?.[0]===0&&
   frontLift.originalSourceParameterRange?.[1]===1;
+ const first=geometry.data.points[frontEdge[0]],
+  last=geometry.data.points[frontEdge[1]];
+ const exact3D=whole&&nativeExact&&(
+  (forward&&xyzEqual(frontLift.fromCandidate3D,first)&&
+   xyzEqual(frontLift.toCandidate3D,last))||
+  (reverse&&xyzEqual(frontLift.fromCandidate3D,last)&&
+   xyzEqual(frontLift.toCandidate3D,first)));
  return freeze({
   nativeVisibleOriginalFrontSourceVerified:true,
   nativeVisibleSegmentExactlyMatchesBothM0OriginalPaperEndpoints:
-   nativeExact&&whole,
+   nativeExact&&whole&&exact3D,
   actualOCCTNativeEndpointsMatchOriginalPaperWithoutTolerance:nativeExact,
   nativeOriginalSourceParameterFullRangeVerified:whole,
+  native3DSourceEndpointsIndependentlyMatchOriginalVertices:exact3D,
   noClaimOfOcctTopoDSGeneratedEdgeIdentity:true,
   signedV5Action:false
  });
@@ -136,6 +153,7 @@ function certifyActualOCCTVisibleFrontOriginalIntervalUnion({
  if(!edge.every(point3))
   throw new TypeError('authentic finite original M0 front vertices required');
  const from=project(edge[0])[view],to=project(edge[1])[view];
+ const sourceProjectsToLine=!pEq(from,to);
  const id=edgeId(geometry,frontEdge);
  const interp=(t)=>({
   u:t===0?from.u:t===1?to.u:from.u+(to.u-from.u)*t,
@@ -166,6 +184,8 @@ function certifyActualOCCTVisibleFrontOriginalIntervalUnion({
     heldDrift++;continue;
    }
    const a=interp(range[0]),b=interp(range[1]);
+   const xyzA=originalSourcePointAt(edge[0],edge[1],range[0]),
+    xyzB=originalSourcePointAt(edge[0],edge[1],range[1]);
    // Exact represented-binary64 matching of both genuine CAD endpoints to
    // the ORIGINAL full source, not a near-equality fit or a pixel overlap.
    const forward=pEq(segment.from,a)&&pEq(segment.to,b);
@@ -173,7 +193,13 @@ function certifyActualOCCTVisibleFrontOriginalIntervalUnion({
    const actual3D=point3(lift.fromCandidate3D)&&point3(lift.toCandidate3D)&&
     pEq(project(lift.fromCandidate3D)[view],segment.from)&&
     pEq(project(lift.toCandidate3D)[view],segment.to);
-   if((forward||reverse)&&actual3D)intervals.push([...range]);
+   const actualOriginal3DParameter=(forward&&
+     xyzEqual(lift.fromCandidate3D,xyzA)&&
+     xyzEqual(lift.toCandidate3D,xyzB))||
+    (reverse&&xyzEqual(lift.fromCandidate3D,xyzB)&&
+     xyzEqual(lift.toCandidate3D,xyzA));
+   if(sourceProjectsToLine&&actual3D&&actualOriginal3DParameter)
+    intervals.push([...range]);
    else heldDrift++;
   }
  }
@@ -195,6 +221,8 @@ function certifyActualOCCTVisibleFrontOriginalIntervalUnion({
   genuineNativeSegmentsExamined:nativeVisibleSegments.length,
   exactNativeSubintervalsAccepted:intervals.length,
   mismatchedNativeOriginalEndpointsOrLiftHeld:heldDrift,
+  native3DOriginalSourceParameterDepthIndependentlyRecomputed:true,
+  originalSourceProjectsToNoncollapsedPaperLine:sourceProjectsToLine,
   noClaimOfOcctTopoDSGeneratedEdgeIdentity:true,
   engineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5Action:false
