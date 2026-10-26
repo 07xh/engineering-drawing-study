@@ -298,6 +298,32 @@ for(const [index,geometry] of general.entries()){
    star.source3DEdgeInteriorParameter<1&&
    star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered===false&&
    star.signedV5Action===false)));
+ // Independently consume EVERY actual WASM native interior split witness:
+ // the same generated TopoDS junction must resolve to the exact same
+ // original M0 3D source point and source parameter on EACH HLR stroke.
+ // A co-projected alternative never supplies the source by array order.
+ for(const star of nativeIsSame3D.completeGenuineNativeHLRJunctionStars.filter(s=>
+  s.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven===true)){
+  assert.ok(star.generatedHLREndpoints.length>=2);
+  for(const ref of star.generatedHLREndpoints){
+   const segments=ref.hlrClass==='visible-sharp'?cad.views[star.view]:
+    ref.hlrClass==='hidden-sharp'?cad.hiddenSharpViews[star.view]:null;
+   assert.ok(segments,'true native HLR class required');
+   const seg=segments[ref.nativeHLREdgeOrdinal];
+   assert.ok(seg,'native generated interior split must index emitted CAD');
+   const matches=seg.sourceCandidate3DLifts.filter(lift=>
+    lift.sourceEdgeId===star.source3DEdgeInteriorOriginalEdgeId&&
+    (ref.side==='from'?lift.sourceParameterAtProjectedFrom:
+     lift.sourceParameterAtProjectedTo)===star.source3DEdgeInteriorParameter);
+   assert.equal(matches.length,1,'one exact original 3D source for each native split endpoint');
+   assert.deepEqual(ref.nativePaperPoint,ref.side==='from'?seg.from:seg.to);
+   assert.deepEqual(star.source3DEdgeInterior3DPoint,
+    ref.side==='from'?matches[0].fromCandidate3D:matches[0].toCandidate3D);
+   assert.equal(seg.v5Authorized,false);
+  }
+  assert.equal(star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered,false);
+  assert.equal(star.signedV5Action,false);
+ }
  assert.equal(nativeIsSame3D.counts.
   completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex+
   nativeIsSame3D.counts.
