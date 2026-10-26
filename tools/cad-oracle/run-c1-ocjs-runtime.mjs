@@ -26,7 +26,8 @@ const {reviewC1M5FinalStrokeObligations}=
  require('../../workbench/c1-m5-final-source-obligation-review.cjs');
 const {reviewC1NativeHiddenFinalM5Strokes}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
-const {auditC1RealOcctVisibleContourSourceParity}=
+const {auditC1RealOcctVisibleContourSourceParity,
+ exactOriginalHullVertexIdentitySourceRange}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
@@ -679,6 +680,35 @@ for(const [index,geometry] of general.entries()){
  // automatically mean the ACTUAL native HLR generated BRep covers every
  // claimed 3D original source interval. Cross-check both independently
  // recomputed sources on THIS same real OCCT WASM 3D geometry/revision.
+ // Adversarial exact M0 hull topology: a full physical source is proven
+ // by BOTH original vertex IDs and exact whole-side source intervals.
+ // Same 2D paper, different 3D vertex ID, partial range, wrong source or
+ // forged paper endpoints must never be upgraded to a full 3D source.
+ const hullVertexIds=[
+  {u:0,v:0,sourcePointIds:['A','A_far']},
+  {u:5,v:0,sourcePointIds:['B','B_far']},
+  {u:2,v:4,sourcePointIds:['C']}
+ ];
+ const wholeSide={sideIndex:0,fromModelMm:{u:0,v:0},
+  toModelMm:{u:5,v:0},intervals:[{
+   projectedParameterRange:[0,1],sourceEdgeIds:['g::A|B']}]};
+ const topologyArgs={sourceVertexIds:['A','B'],
+  sourceEdgeId:'g::A|B',hullVertices:hullVertexIds,
+  sideIndex:0,contourSide:wholeSide};
+ assert.deepEqual(exactOriginalHullVertexIdentitySourceRange(topologyArgs),[0,1]);
+ assert.deepEqual(exactOriginalHullVertexIdentitySourceRange({
+  ...topologyArgs,sourceVertexIds:['B','A']}),[0,1]);
+ for(const invalid of [
+  {...topologyArgs,sourceVertexIds:['A','C']},
+  {...topologyArgs,sourceVertexIds:['A','A']},
+  {...topologyArgs,sourceVertexIds:['A_far','B'] ,sourceEdgeId:'g::A|B_other'},
+  {...topologyArgs,sourceEdgeId:'g::A|C'},
+  {...topologyArgs,sideIndex:1},
+  {...topologyArgs,contourSide:{...wholeSide,
+   intervals:[{...wholeSide.intervals[0],projectedParameterRange:[0,.5]}]}},
+  {...topologyArgs,contourSide:{...wholeSide,fromModelMm:{u:Number.EPSILON,v:0}}},
+  {...topologyArgs,contourSide:{...wholeSide,intervals:[]}}
+ ])assert.equal(exactOriginalHullVertexIdentitySourceRange(invalid),null);
  const nativeM5ExteriorContourParity=exactNativeContourForRelease;
  assert.equal(nativeM5ExteriorContourParity.entireOriginalM5ContourProofRecomputed,true);
  assert.equal(nativeM5ExteriorContourParity.realNativeOCCTVisible3DSourceFragmentsAudited,
@@ -709,7 +739,8 @@ for(const [index,geometry] of general.entries()){
  assert.ok(nativeM5ExteriorContourParity.rows.every(x=>
   x.originalContour3DParameterRecoveryKind==='held'||
   x.originalContour3DParameterRecoveryKind==='exact-original-3d-source-interpolation'||
-  x.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'));
+  x.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'||
+  x.originalContour3DParameterRecoveryKind==='exact-original-m0-hull-vertex-id-topology'));
  assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
  assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
  // Live genuine OCCT evidence for unresolved H-source endpoints: report the
