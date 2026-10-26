@@ -643,5 +643,5 @@ test('whole-scene source-to-native HLR ledger never treats a locally reviewed hi
 test('native HLR reviewed source must exist in the canonical original M5 source ledger',()=>{
  const x=caseData();
  x.globalM5Review.rows[0].sourceEdgeId='G::C|D';
- assert.throws(()=>review(x),/native hidden HLR review has no matching canonical M5 original source ledger/);
+ assert.throws(()=>review(x),/genuine native hidden 3D source has no canonical original M5 global stroke review/);
 });
