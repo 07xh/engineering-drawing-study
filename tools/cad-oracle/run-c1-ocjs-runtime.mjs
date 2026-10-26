@@ -593,6 +593,26 @@ for(const [index,geometry] of general.entries()){
   sceneInventory.expectedOriginalSourceViewCount>0&&
   sceneInventory.missingOriginalSourceViews.length===0&&
   sceneInventory.incompleteOriginalSourceViewPartitions.length===0);
+ // Keep genuine binary64 residuals and missing source/view identities visible.
+ // A near-1 endpoint is not proof of a collapsed projection or coverage.
+ const missingKeys=new Set(sceneInventory.missingOriginalSourceViews);
+ const incompleteKeys=new Set();
+ for(const entry of sceneInventory.incompleteOriginalSourceViewPartitions){
+  assert.equal(typeof entry.sourceViewKey,'string');
+  assert.equal(missingKeys.has(entry.sourceViewKey),false);
+  assert.equal(incompleteKeys.has(entry.sourceViewKey),false);
+  incompleteKeys.add(entry.sourceViewKey);
+  assert.ok(Array.isArray(entry.positiveLengthParameterGaps));
+  assert.ok(entry.positiveLengthParameterGaps.length>0);
+  for(const gap of entry.positiveLengthParameterGaps){
+   assert.ok(Array.isArray(gap)&&gap.length===2);
+   assert.ok(Number.isFinite(gap[0])&&Number.isFinite(gap[1]));
+   assert.ok(gap[0]>=0&&gap[0]<gap[1]&&gap[1]<=1,
+    'even a one-ULP uncovered interval must remain unsigned');
+  }
+ }
+ assert.equal(missingKeys.size,sceneInventory.missingOriginalSourceViews.length);
+ assert.equal(sceneInventory.signedV5Action,false);
  // Real rotated geometry has omitted/collapsed source-view rows and
  // binary64 endpoint gaps. Preserve them as unsigned diagnostics; stdout
  // must remain a single JSON report for the existing CI consumer.
