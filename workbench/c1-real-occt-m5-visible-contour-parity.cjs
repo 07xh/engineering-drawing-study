@@ -10,6 +10,8 @@
  * signer, generated TopoDS->original TopoDS history nor V5 action.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {verifyConvexProjectedOutline}=
+ require('../core/verification/convex-projected-outline.cjs');
 const {auditC1GlobalVisibleContourProof}=
  require('./m5-c1-global-visible-contour-proof.cjs');
 const {exactCandidateIntervalCoverage}=
@@ -83,6 +85,12 @@ function auditC1RealOcctVisibleContourSourceParity({
     contour.nonExteriorInternalEdgesSigned!==false||
     contour.canonicalV5ActionParityVerified!==false)
   throw new RangeError('genuine recomputed original M5 3D contour missing');
+ // Recover true M0 source endpoint IDs from the independent projected
+ // convex hull topology. The hull records exact sourcePointIds, unlike a
+ // reconstructed M5 paper endpoint that may incur binary64 interpolation
+ // rounding. This is a *topological* full-edge witness, never an epsilon
+ // snap of an unknown HLR endpoint to a nearby original vertex.
+ const exactHull=verifyConvexProjectedOutline({mesh:geometry,revision});
  const nativeByKey=new Map();
  // One generated VCompound HLR edge ordinal identifies one actual native
  // paper edge in one view. Different original 3D sources cannot both be
@@ -189,6 +197,23 @@ function auditC1RealOcctVisibleContourSourceParity({
      line.genuineFrontSourceEndpointJoinsVerified===true&&
      line.continuouslyFrontRayClearVerified===true&&
      line.locallyCompleteVisibleHullSegmentProven===true;
+    const sideIndex=line.canonicalHullSideIndex,
+     hullVertices=exactHull[v.view]?.vertices,
+     contourSide=contour.contourCoverage.views.find(x=>x.view===v.view)
+      ?.sides?.[sideIndex],
+     originalIds=e,
+     fromHull=Number.isSafeInteger(sideIndex)&&sideIndex>=0&&
+      sideIndex<hullVertices?.length?hullVertices[sideIndex]:null,
+     toHull=fromHull?hullVertices[(sideIndex+1)%hullVertices.length]:null,
+     directHullIds=fromHull?.sourcePointIds?.includes(originalIds[0])&&
+      toHull?.sourcePointIds?.includes(originalIds[1]),
+     reverseHullIds=fromHull?.sourcePointIds?.includes(originalIds[1])&&
+      toHull?.sourcePointIds?.includes(originalIds[0]),
+     wholePhysicalHullSide=contourSide?.intervals?.length===1&&
+      contourSide.intervals[0].sourceEdgeIds.includes(line.sourceEdgeId)&&
+      contourSide.intervals[0].projectedParameterRange[0]===0&&
+      contourSide.intervals[0].projectedParameterRange[1]===1&&
+      (directHullIds||reverseHullIds);
     if(literalSignedXYZAndPaper){
      claimRange=[Math.min(t0,t1),Math.max(t0,t1)];
      originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
@@ -196,6 +221,13 @@ function auditC1RealOcctVisibleContourSourceParity({
      claimRange=[...literalModelSourceProjectedEndpoints.range];
      exactOriginalPhysical3DVertexPaperBinding=true;
      originalContour3DParameterRecoveryKind='exact-original-m0-3d-vertex-projection';
+    }else if(sourcePhysicalM5Proof&&wholePhysicalHullSide){
+     // A certified complete hull-side atomic interval whose two literal
+     // projected hull vertices carry THIS original M0 edge's endpoint IDs
+     // is the entire original 3D physical edge [0,1]. Unlike 2D proximity,
+     // the endpoint IDs and exact [0,1] interval are independently audited.
+     claimRange=[0,1];
+     originalContour3DParameterRecoveryKind='exact-original-m0-hull-vertex-id-topology';
     }else reason='cannot-exactly-normalize-original-signed-contour-3d-source';
     if(claimRange){
      const raw=nativeByKey.get(v.view+'@'+line.sourceEdgeId)??[];
@@ -255,6 +287,9 @@ function auditC1RealOcctVisibleContourSourceParity({
    signed.length>0&&signed.length===positive.length,
   globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery:
    rows.filter(x=>x.exactOriginalPhysical3DVertexPaperBinding===true).length,
+  globallySignedContoursWithExactOriginalM0HullVertexIdentityRecovery:
+   rows.filter(x=>x.originalContour3DParameterRecoveryKind===
+    'exact-original-m0-hull-vertex-id-topology').length,
   originalGloballySignedM5ContoursStillHeldForNativeProof:
    signed.length-positive.length,
   viewsWithOriginalM5GlobalContourSignature:contour.acceptedFirstAngleViews,
