@@ -1105,7 +1105,7 @@ test('partial CAD case never acquires whole-face-ray source partition even if M4
 test('actual native generated OCCT fragments tile the modeled original M0 edge without tolerance or fake GB certification',()=>{
  const r=nativeTiling({sourceViewKey:'H@G::A|B',
   intervals:[[0,.25],[.25,.5],[.5,1]]});
- assert.equal(r.completeDisjointNativeGeneratedOriginalSourceTiling,true);
+ assert.equal(r.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,true);
  assert.deepEqual(r.positiveSameOriginal3DSourceGeneratedEdgeOverlaps,[]);
  assert.deepEqual(r.originalSourceParameterGaps,[]);
  assert.equal(r.fullGeneratedOCCTToOriginalTopoDSHistoryCertified,false);
