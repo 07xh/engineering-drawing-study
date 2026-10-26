@@ -648,3 +648,39 @@ test('without a legitimate same-revision M5 front-clearance proof the original s
  assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
   actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven,false);
 });
+
+test('co-projected real OCCT visible HLR candidates select the uniquely independent whole-front-M5 original 3D source, not array order',()=>{
+ const x=visibleFrontSourceCase(),seg=x.cad.views.H[0];
+ const actual=seg.sourceCandidate3DLifts[0];
+ const distractor={...actual,
+  sourceEdgeId:'G::A|B',originalVertexIds:['A','B']};
+ seg.sourceCandidate3DLifts=[distractor,actual];
+ const r=audit(x);
+ assert.equal(r.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,1);
+ const selected=r.independentlyM5AuthenticatedVisibleNativeGeneratedEdges;
+ assert.equal(selected.length,1);
+ assert.equal(selected[0].sourceEdgeId,'G::A|D');
+ assert.equal(selected[0].originalNativeGeneratedCandidateCount,2);
+ assert.deepEqual(selected[0].originalSourceParameterRange,[0,1]);
+ assert.equal(selected[0].generatedEdgeOriginalTopoDSHistoryRecovered,false);
+ assert.equal(selected[0].signedV5Action,false);
+ assert.deepEqual(r.acceptedNativeVisibleSourceCoverage.find(y=>
+  y.view==='H'&&y.sourceEdgeId==='G::A|D').
+  positiveLengthCoveredIntervals,[[0,1]]);
+});
+test('co-projected native source is held if two ORIGINAL M5 front source rays both claim full 3D visibility',()=>{
+ const x=visibleFrontSourceCase(),seg=x.cad.views.H[0],
+  actual=seg.sourceCandidate3DLifts[0];
+ seg.sourceCandidate3DLifts=[
+  actual,{...actual,sourceEdgeId:'G::A|B',originalVertexIds:['A','B']}
+ ];
+ x.originalClosedRayM5.rows.push({
+  ...x.originalClosedRayM5.rows[0],
+  originalPhysicalSourceEdgeId:'G::A|B'
+ });
+ const r=audit(x);
+ assert.equal(r.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,0);
+ assert.equal(r.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.length,0);
+ assert.equal(r.GBEngineeringLineRulesSatisfied,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
