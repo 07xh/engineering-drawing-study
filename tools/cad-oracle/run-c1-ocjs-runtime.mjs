@@ -580,6 +580,18 @@ for(const [index,geometry] of general.entries()){
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  originalM0EdgeInventoryAvailable,true);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  expectedOriginalSourceViewCount,geometry.data.edges.length*3);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  allOriginalSourceViewsHaveCompleteParameterPartitions,true);
+ assert.deepEqual(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  missingOriginalSourceViews,[]);
+ assert.deepEqual(hiddenFormalGate.canonicalOriginalM5SourceInventory.
+  incompleteOriginalSourceViewPartitions,[]);
+ assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.signedV5Action,false);
+
  assert.equal(hiddenFormalGate.allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined,true);
  assert.equal(hiddenFormalGate.counts.jointM4M5NativeHLROriginal3DSourceViewsConsumed,
   geometry.data.edges.length*3);
