@@ -23,6 +23,8 @@
  * global line join, engineering style and sole V5 remains unsigned.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {certifyExactFullOriginalFront3DMask,
  certifyActualOCCTFullFrontOriginalPaperEndpoints}=
  require('./c1-native-hidden-exact-model-front-mask.cjs');
@@ -111,6 +113,31 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
     ref.remainingPhysicalSourcePossibilities?.length===1&&
     entry.originalHiddenSourceEdgeId===
      ref.remainingPhysicalSourcePossibilities[0].sourceEdgeId;
+   // Recompute the exact binary64 complement of the TWO independently
+   // verified M5/real-native-front interval sets. The downstream front-gap
+   // reviewer must never trust a stale/forged list of residual intervals,
+   // nor treat an empty unproved-gap list as vacuous positive proof.
+   if(unique){
+    const union=entry.independentOpenIntervalRayAndFrontVisibleUnion;
+    if(!union||!Array.isArray(union.originalSourceParameterRange)||
+       !Array.isArray(union.strictInteriorIndependentlyVerifiedIntervals)||
+       !Array.isArray(union.realVisibleFrontSourceDepthMaskVerifiedIntervals))
+     throw new RangeError('missing independent native M5 residual source coverage witnesses');
+    const expected=exactCandidateIntervalCoverage(
+     union.originalSourceParameterRange,[
+      ...union.strictInteriorIndependentlyVerifiedIntervals,
+      ...union.realVisibleFrontSourceDepthMaskVerifiedIntervals
+     ]);
+    if(JSON.stringify(expected.positiveLengthUncoveredIntervals)!==
+        JSON.stringify(ranges)||
+       expected.entireOriginalParameterIntervalCovered!==
+        union.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor||
+       expected.entireOriginalParameterIntervalCovered!==
+        entry.locallyExplainedNativeHiddenOpenPaperInterval)
+     throw new RangeError('native M5 residual original 3D source intervals contradict independently recomputed coverage');
+   }else if(entry.locallyExplainedNativeHiddenOpenPaperInterval===true){
+    throw new RangeError('nonunique native source cannot certify complete M5 residual coverage');
+   }
    const hiddenId=unique?entry.originalHiddenSourceEdgeId:null;
    const hiddenEdge=edges.get(hiddenId);
    const hiddenLift=native.sourceCandidate3DLifts
@@ -220,7 +247,7 @@ function auditC1NativeHiddenUncoveredOriginalFrontRay({
      constructionIntentAuthorized:false,signedV5Action:false
     });
    }
-   const localWithM0=unique&&trueHiddenGeometry&&
+   const localWithM0=unique&&trueHiddenGeometry&&ranges.length>0&&
     ranges.length===gapRows.length&&
     gapRows.every(x=>x.gapOpenIntervalLocallyCoveredByIndependentM0FrontGeometry);
    if(!entry.locallyExplainedNativeHiddenOpenPaperInterval&&localWithM0)
