@@ -630,7 +630,11 @@ for(const [index,geometry] of general.entries()){
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
  assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
- assert.equal(generatedVisibleM5PhysicalTiling.available,true);
+ assert.equal(generatedVisibleM5PhysicalTiling.available,true,
+  JSON.stringify({sourceViewRows:generatedVisibleM5PhysicalTiling.sourceViewsAudited,
+   nativeSegments:generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
+   unverified:generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,
+   cadViewCounts:['V','H','W'].map(view=>cad.views[view].length)}));
  assert.equal(generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
   ['V','H','W'].reduce((n,v)=>n+cad.views[v].length,0));
  assert.equal(generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,0);
