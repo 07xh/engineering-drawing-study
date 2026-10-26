@@ -203,6 +203,16 @@ test('independently complete M5 union has no residual gap, requires no invented 
  assert.equal(item.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront,true);
  assert.equal(item.signedV5Action,false);
 });
+test('a forged fully-covered but truncated dual M5 domain cannot certify the longer actual OCCT hidden source',()=>{
+ const x=fixture(),row=x.dual.rows[0],union=
+  row.independentOpenIntervalRayAndFrontVisibleUnion;
+ union.originalSourceParameterRange=[0,.9];
+ union.strictInteriorIndependentlyVerifiedIntervals=[[0,.9]];
+ union.outstandingUnprovedOriginalParameterIntervals=[];
+ union.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor=true;
+ row.locallyExplainedNativeHiddenOpenPaperInterval=true;
+ assert.throws(()=>audit(x),/does not match genuine native HLR 3D lift/);
+});
 test('no unique original 3D hidden source with empty residual ledger cannot be certified by empty.every',()=>{
  const x=fixture(),row=x.dual.rows[0];
  row.remainingOriginal3DPhysicalSourceUnique=false;
