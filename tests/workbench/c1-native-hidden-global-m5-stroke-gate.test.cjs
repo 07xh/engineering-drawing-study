@@ -896,7 +896,8 @@ test('original BRep does not fabricate a vacuously complete inventory when CAD i
  const x=caseData(),r=review(x);
  assert.equal(r.originalOCCTBRepSourceInventory.available,false);
  assert.equal(r.originalOCCTBRepSourceInventory.completeOriginal3DSourceCorrespondence,false);
- assert.equal(r.originalOCCTBRepSourceInventory.expectedOriginalPhysicalSourceEdges,null);
+ assert.equal(r.originalOCCTBRepSourceInventory.expectedOriginalPhysicalSourceEdges,
+  x.geometry.data.edges.length);
 });
 test('wrong original CAD XYZ, duplicate or missing modeled BRep source, stale revision reject before M5 source signoff',()=>{
  const a=genuineOriginalOcctBRepInventoryFixture();
