@@ -651,6 +651,30 @@ for(const [index,geometry] of general.entries()){
   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
  assert.equal(faceRayAndActualNativeHLR.allSceneGlobalEngineeringLineStyleCertified,false);
  assert.equal(faceRayAndActualNativeHLR.signedV5ActionCount,0);
+ const fullOriginalFaceRaySource=hiddenFormalGate.fullSourceVHWFaceRayAndActualHLRClosure;
+ assert.equal(fullOriginalFaceRaySource.available,true);
+ assert.equal(fullOriginalFaceRaySource.auditedOriginalPhysicalSourceViews,
+  3*geometry.data.edges.length);
+ assert.equal(fullOriginalFaceRaySource.rows.length,
+  fullOriginalFaceRaySource.auditedOriginalPhysicalSourceViews);
+ assert.equal(
+  fullOriginalFaceRaySource.M4RayPartitionsWithExactPositiveNoOverlapFullSourceCoverage,
+  fullOriginalFaceRaySource.rows.filter(row=>
+   row.fullOriginalParameterRayPartitionCoverage===true).length);
+ assert.equal(
+  fullOriginalFaceRaySource.noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays,
+  fullOriginalFaceRaySource.rows.filter(row=>
+   row.realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation===true).length);
+ assert.ok(fullOriginalFaceRaySource.rows.every(row=>
+  row.canonicalOriginalRayM4SpanCount>0&&
+  row.originalFaceRayAndGeneratedHLRTopologyComplete===false&&
+  row.entireFinalGeneratedOCCTEdgeTopologyAndGBLineRulesCertified===false&&
+  row.nationalEngineeringLineStyleSigned===false&&
+  row.signedV5Action===false));
+ assert.equal(fullOriginalFaceRaySource.
+  wholeGlobalOpaqueSceneAndGeneratedTopoDSHistoryCertified,false);
+ assert.equal(fullOriginalFaceRaySource.engineeringGBLineStyleCertified,false);
+ assert.equal(fullOriginalFaceRaySource.signedConstructionIntentDAGOrV5ActionCount,0);
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
@@ -1186,6 +1210,12 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   originalVHWSourceViewsWithFullNoOverlapM4AllFaceRayParameterPartitions:
+    fullOriginalFaceRaySource.
+     M4RayPartitionsWithExactPositiveNoOverlapFullSourceCoverage,
+   originalVHWPhysicalSourceViewsWithExactContinuousRayAndActualOCCTNativeMatch:
+    fullOriginalFaceRaySource.
+     noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays,
    realSingleConvexAllFaceRayAndActualOCCTHLRSourceSubspansReconciled:
     faceRayAndActualNativeHLR.sourceRaySubspansAudited,
    nativeSourceSubspansWithIndependentFaceRayAndTrueOCCTHLRPositiveAgreement:
