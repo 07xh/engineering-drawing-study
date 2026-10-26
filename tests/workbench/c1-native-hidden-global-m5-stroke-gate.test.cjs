@@ -734,6 +734,47 @@ test('one authentic native hidden HLR interval cannot conceal omitted original M
  assert.equal(inventory.signedV5Action,false);
  assert.equal(out.signedV5ActionCount,0);
 });
+test('noncollapsed drawable source partition can be complete while a genuine 3D source collapses in W',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ // H and V are both drawable for an X-directed physical edge; W is a
+ // point projection and cannot require a positive-length paper stroke.
+ const h=x.globalM5Review.rows[0];
+ x.globalM5Review.rows.push({...h,view:'V'});
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.equal(inv.expectedOriginalSourceViewCount,3);
+ assert.equal(inv.completeOriginalSourceViewCount,2);
+ assert.deepEqual(inv.missingOriginalSourceViews,['W@G::A|B']);
+ assert.equal(inv.noncollapsedOriginalSourceViewCount,2);
+ assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,2);
+ assert.deepEqual(inv.noncollapsedMissingOriginalSourceViews,[]);
+ assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,[]);
+ assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,true);
+ assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+});
+test('a single noncollapsed one-ULP interval hole invalidates drawable coverage',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const h=x.globalM5Review.rows[0];
+ x.globalM5Review.rows.push({...h,view:'V',
+  originalSourceParameterRange:[0,1-Number.EPSILON/2]});
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.equal(inv.noncollapsedOriginalSourceViewCount,2);
+ assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,1);
+ assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,['V@G::A|B']);
+ assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+});
+test('a zero-length 3D source cannot masquerade as three collapsed drawable views',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:0,z:0}},
+  edges:[['A','B']]}};
+ assert.throws(()=>review(x),/zero-length original M0 physical 3D source edge/);
+});
+
 test('global original source inventory rejects unknown and duplicated physical M0 edges',()=>{
  const x=caseData();
  x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},
