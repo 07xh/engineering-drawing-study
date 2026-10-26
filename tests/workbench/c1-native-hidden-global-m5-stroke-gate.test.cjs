@@ -1024,3 +1024,19 @@ test('no current real CAD / M5 visible branch means source union is unavailable,
  assert.equal(r.completeNecessaryRealVHWSourceAttribution,false);
  assert.equal(r.auditedOriginalSourceViews,0);
 });
+
+test('partial source audit cannot forge all-face M5 observer-ray classification from matching paper or visible/hidden coverage alone',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ const out=review(x),face=out.nativeVHWFaceRayAndHLRReconciliation;
+ assert.equal(out.realNativeVisibleHiddenSourceGraph.available,true);
+ assert.equal(face.available,false);
+ assert.equal(face.sourceRaySubspansAudited,0);
+ assert.equal(face.singleSolidFaceRaysAndActualHLRPhysicalSourceIntervalsPositivelyCompatible,0);
+ assert.equal(face.allSceneGlobalEngineeringLineStyleCertified,false);
+ assert.equal(face.signedV5ActionCount,0);
+});
+test('claiming model mesh status on a geometrically incomplete source cannot fabricate the reviewed all-opaque-face ray scene',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ x.geometry.kind='mesh';x.geometry.space='model-3d';x.geometry.unit='mm';
+ assert.throws(()=>review(x),/convex|mesh|Geometry|topology|finite|incomplete original source-view universe/i);
+});
