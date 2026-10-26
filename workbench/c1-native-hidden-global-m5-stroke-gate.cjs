@@ -635,6 +635,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
   canonicalSourceViewRows:byKey.size,
   nativeReviewedSourceViewRows:nativeReviewedSourceViews.size,
   canonicalSourceViewsWithoutNativeHiddenReview:globallyUnreviewedSourceViews,
+  nativeHiddenReviewCoverageIsNotWholeHLRVisibilityCoverage:true,
+  missingOriginalM0SourceViews:
+   canonicalOriginalM5SourceInventory.missingOriginalSourceViews,
+  incompleteOriginalM0SourceViewParameterPartitions:
+   canonicalOriginalM5SourceInventory.incompleteOriginalSourceViewPartitions,
   fullOriginalTopoDSGeneratedHLRHistoryCertified:false,
   allOpaqueFacesContinuousM5OcclusionCertified:false,
   allProjectedJunctionsCertified:false,
