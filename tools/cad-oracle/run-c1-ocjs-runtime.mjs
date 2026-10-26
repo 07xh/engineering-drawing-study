@@ -943,6 +943,16 @@ for(const [index,geometry] of general.entries()){
      sceneInventory.incompleteOriginalSourceViewPartitions.find(x=>
       x.sourceViewKey===e.sourceViewKey).positiveLengthParameterGaps
    })),
+   // Diagnostic partition only: do not equate exact projection collapse
+   // with OCCT history, source coverage or a formal V5 line certificate.
+   missingExactlyCollapsed:sceneInventory.missingOriginalSourceViewProjectionEvidence.filter(
+    e=>e.projectionCollapsedExactly).length,
+   missingNoncollapsed:sceneInventory.missingOriginalSourceViewProjectionEvidence.filter(
+    e=>!e.projectionCollapsedExactly).length,
+   incompleteExactlyCollapsed:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.filter(
+    e=>e.projectionCollapsedExactly).length,
+   incompleteNoncollapsed:sceneInventory.incompleteOriginalSourceViewProjectionEvidence.filter(
+    e=>!e.projectionCollapsedExactly).length,
    allComplete:sceneInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
    signedV5Action:false
   },
