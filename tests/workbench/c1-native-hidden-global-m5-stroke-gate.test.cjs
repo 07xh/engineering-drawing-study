@@ -932,3 +932,95 @@ test('reversed actual OCCT BRep source topology and non-zero native parameter or
  forged.cad.originalBRepSourceEdges[0].occtEdgeOrientation='reverse';
  assert.throws(()=>review(forged),/BRep endpoints disagree with M0 XYZ/);
 });
+
+const withActualVisibleAndHidden3DSourceCoverage=()=>{
+ const x=genuineOriginalOcctBRepInventoryFixture();
+ x.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage=[
+  ...['V','H','W'].map(view=>({
+   view,sourceEdgeId:'G::A|B',originalParameterRange:[0,1],
+   positiveLengthCoveredIntervals:view==='H'?[]:[[0,1]],
+   positiveLengthUncoveredIntervals:view==='H'?[[0,1]]:[],
+   entireOriginalParameterIntervalCovered:view!=='H',
+   independentlyAcceptedNativeVisibleHLRLiftsOnly:true,
+   completeGeneratedToOriginalTopoDSEdgeHistoryCertified:false,
+   wholeSceneOcclusionAndEngineeringLineStyleCertified:false,
+   signedV5Action:false
+  }))
+ ];
+ return x;
+};
+test('real native original 3D source attribution joins all first-angle V/H/W visible and hidden intervals without GB/V5 promotion',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage(),out=review(x);
+ const joined=out.realNativeVisibleHiddenSourceGraph,h=
+  joined.rows.find(y=>y.view==='H');
+ assert.equal(joined.available,true);
+ assert.equal(joined.originalM0SourceViewCountExpected,3);
+ assert.equal(joined.auditedOriginalSourceViews,3);
+ assert.deepEqual(h.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals,[]);
+ assert.deepEqual(h.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals,[[0,1]]);
+ assert.deepEqual(h.outstandingOriginalSourceParameterGaps,[]);
+ assert.equal(h.originalSourceParameterLineCoverageNecessarilyComplete,true);
+ assert.equal(joined.genuineNoncollapsedSourceViewsWithNecessaryM5VisibleOrHiddenCoverage,1);
+ assert.equal(joined.completeNecessaryRealVHWSourceAttribution,false);
+ assert.equal(joined.fullHLRGeneratedTopoDSHistoryCertified,false);
+ assert.equal(joined.officialEngineeringLineStylesCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('real visible/hidden paper overlays never silently merge two contradictory physical source attribution classes',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage(),
+  H=x.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage[1];
+ H.positiveLengthCoveredIntervals=[[0,.5]];
+ H.positiveLengthUncoveredIntervals=[[.5,1]];
+ H.entireOriginalParameterIntervalCovered=false;
+ const out=review(x).realNativeVisibleHiddenSourceGraph,
+  h=out.rows.find(row=>row.view==='H');
+ assert.deepEqual(h.positiveLengthVisibleHiddenOriginalSourceOverlap,[[0,.5]]);
+ assert.equal(out.sourceViewsWithVisibleAndHiddenPhysicalAttributionCollision,1);
+ assert.equal(h.originalSourceParameterLineCoverageNecessarilyComplete,false);
+});
+test('positive-length one-ULP physical source gap remains uncovered in actual native HLR visible-hidden union',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage(),
+  H=x.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage[1];
+ H.positiveLengthCoveredIntervals=[[.5+Number.EPSILON,1]];
+ H.positiveLengthUncoveredIntervals=[[0,.5+Number.EPSILON]];
+ H.entireOriginalParameterIntervalCovered=false;
+ const joint=x.nativeSourceAudit.rows[0].canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+ joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage={
+  originalParameterRange:[0,1],positiveLengthCoveredIntervals:[[0,.5]],
+  positiveLengthUncoveredIntervals:[[.5,1]],
+  entireOriginalParameterIntervalCovered:false
+ };
+ joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
+ joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
+ const result=review(x).realNativeVisibleHiddenSourceGraph,
+  h=result.rows.find(row=>row.view==='H');
+ assert.deepEqual(h.outstandingOriginalSourceParameterGaps,
+  [[.5,.5+Number.EPSILON]]);
+ assert.equal(result.sourceViewsWithNonzeroPositiveVisibilityGaps,1);
+ assert.equal(h.originalSourceParameterLineCoverageNecessarilyComplete,false);
+});
+test('missing/duplicated original source-view visible HLR evidence cannot be falsely declared complete',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ x.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage.pop();
+ assert.throws(()=>review(x),/visible HLR source inventory omits original M0 edge\/view/);
+ const y=withActualVisibleAndHidden3DSourceCoverage();
+ y.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage.push(
+  {...y.nativeHLRJunctionConcordance.acceptedNativeVisibleSourceCoverage[0]});
+ assert.throws(()=>review(y),/duplicate native visible source-view proof/);
+});
+test('actual original 3D line projected to a point is not promoted to a drawable source even with positive exact 3D source coverage',()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ x.geometry.data.points.B={x:0,y:0,z:5};
+ x.cad.originalBRepSourceEdges[0].toOCCT3D={x:0,y:0,z:5};
+ const r=review(x).realNativeVisibleHiddenSourceGraph,h=
+  r.rows.find(row=>row.view==='H');
+ assert.equal(h.projectionCollapsedExactly,true);
+ assert.equal(h.originalSourceParameterLineCoverageNecessarilyComplete,false);
+ assert.equal(r.collapsedOriginalSourceViewsHeldAsPaperPoints,1);
+});
+test('no current real CAD / M5 visible branch means source union is unavailable, never vacuously complete',()=>{
+ const x=caseData(),r=review(x).realNativeVisibleHiddenSourceGraph;
+ assert.equal(r.available,false);
+ assert.equal(r.completeNecessaryRealVHWSourceAttribution,false);
+ assert.equal(r.auditedOriginalSourceViews,0);
+});
