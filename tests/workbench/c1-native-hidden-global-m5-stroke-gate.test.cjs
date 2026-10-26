@@ -486,6 +486,10 @@ test('complete M4 ranges alone never promote an incomplete genuine native HLR so
  const x=caseData();
  const joint=x.nativeSourceAudit.rows[0].canonicalM4M5NativeHLRJointSourceIntervalEvidence;
  joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage=false;
+ joint.genuineNativeHiddenHLRCandidateParameterCoverage={
+  originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:false,
+  positiveLengthCoveredIntervals:[[0,.5]],positiveLengthUncoveredIntervals:[[.5,1]]
+ };
  joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
  joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage={
   originalParameterRange:[0,1],entireOriginalParameterIntervalCovered:false,
@@ -525,7 +529,7 @@ test('global M5 rejects fabricated source-uniqueness certificate with contradict
  const x=caseData(),joint=x.nativeSourceAudit.rows[0].
   canonicalM4M5NativeHLRJointSourceIntervalEvidence;
  joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
- assert.throws(()=>review(x),/stale, duplicate or forged/);
+ assert.throws(()=>review(x),/physical-source full-coverage flags contradict independent exact intervals/);
 });
 test('M5 rejects proof references stitched across different authentic native OCCT runs',()=>{
  const x=caseData();
