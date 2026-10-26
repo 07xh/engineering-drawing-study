@@ -1,0 +1,185 @@
+# C1 pilot: scheduled runs stay OFF until DRAFTAI_AUTODEV_ENABLED=true is set.
+# Manual runs default to dry run. Target: open existing PR #787; never main.
+name: DraftAI C1 Hourly AI Development
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Push passing proposal to PR #787 (default is dry-run)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: draftai-c1-hourly-pilot
+  cancel-in-progress: false
+
+jobs:
+  develop:
+    if: github.event_name == 'workflow_dispatch' || vars.DRAFTAI_AUTODEV_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      changed: ${{ steps.pack.outputs.changed }}
+    steps:
+      - name: Confirm current PR #787 target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/${{ github.repository }}/pulls/787 \
+            --jq 'select(.state == "open" and .head.repo.full_name == "07xh/engineering-drawing-study" and .head.ref == "fix/c1-native-junction-pair-bijection-20261026" and .base.ref == "main") | .number' \
+            | grep -qx 787
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/c1-native-junction-pair-bijection-20261026
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Record exact starting revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/draftai-proposal"
+          git rev-parse HEAD > "$RUNNER_TEMP/draftai-proposal/base.sha"
+      - name: Codex develops one C1 mathematical evidence unit
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          prompt: |
+            You are developing DraftAI in the existing PR #787 only.
+            Inspect the existing code, git history and project architecture first.
+            Reuse M0-M5, actual OCCT, first-angle V/H/W, ConstructionIntent,
+            ConstructionStep DAG and sole V5. Never introduce parallel systems.
+            Fix ONE genuinely new and reusable C1 gap related to genuine
+            generated/original TopoDS source, parameter interval completeness,
+            3D endpoint topology or global continuous occlusion positive proof.
+            Avoid repeating local-only guards or inventing evidence.
+            Change ONLY these existing files:
+              workbench/c1-native-hlr-topods-original-vertex-concordance.cjs
+              tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs
+            No new files, workflow changes, commits, pushes, merges or deployment.
+            Keep unresolved engineering line styles undetermined and V5 unsigned.
+            If no defensible mathematical improvement is possible in these
+            files, leave the checkout unchanged.
+      - name: Enforce file scope and package patch
+        id: pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(cat "$RUNNER_TEMP/draftai-proposal/base.sha")"
+          test "$(git rev-parse HEAD)" = "$base"
+          test -z "$(git ls-files --others --exclude-standard)"
+          mapfile -t paths < <(git diff --name-only)
+          if (( ${#paths[@]} == 0 )); then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          for path in "${paths[@]}"; do
+            case "$path" in
+              workbench/c1-native-hlr-topods-original-vertex-concordance.cjs|tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs) ;;
+              *) echo "Out-of-scope modification: $path" >&2; exit 1 ;;
+            esac
+          done
+          git diff --check
+          git diff --binary > "$RUNNER_TEMP/draftai-proposal/proposal.patch"
+          test -s "$RUNNER_TEMP/draftai-proposal/proposal.patch"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: steps.pack.outputs.changed == 'true'
+        with:
+          name: draftai-c1-proposal-${{ github.run_id }}
+          path: ${{ runner.temp }}/draftai-proposal/
+          retention-days: 7
+
+  verify:
+    needs: develop
+    if: needs.develop.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      changed: ${{ steps.verify.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/c1-native-junction-pair-bijection-20261026
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: draftai-c1-proposal-${{ github.run_id }}
+          path: ${{ runner.temp }}/draftai-proposal/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reapply and test without secrets
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(cat "$RUNNER_TEMP/draftai-proposal/base.sha")"
+          test "$(git rev-parse HEAD)" = "$expected"
+          patch="$RUNNER_TEMP/draftai-proposal/proposal.patch"
+          git apply --check "$patch"
+          git apply "$patch"
+          test -z "$(git ls-files --others --exclude-standard)"
+          mapfile -t paths < <(git diff --name-only)
+          for path in "${paths[@]}"; do
+            case "$path" in
+              workbench/c1-native-hlr-topods-original-vertex-concordance.cjs|tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs) ;;
+              *) echo "Out-of-scope modification: $path" >&2; exit 1 ;;
+            esac
+          done
+          git diff --check
+          node --check workbench/c1-native-hlr-topods-original-vertex-concordance.cjs
+          node --test tests/workbench/c1-native-hlr-topods-original-vertex-concordance.test.cjs
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: verify
+    if: >-
+      needs.verify.outputs.changed == 'true' &&
+      ((github.event_name == 'workflow_dispatch' && inputs.publish == true) ||
+       (github.event_name == 'schedule' && vars.DRAFTAI_AUTODEV_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/c1-native-junction-pair-bijection-20261026
+          fetch-depth: 0
+          token: ${{ secrets.DRAFTAI_BOT_TOKEN }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: draftai-c1-proposal-${{ github.run_id }}
+          path: ${{ runner.temp }}/draftai-proposal/
+      - name: Check PR revision, apply verified patch, commit to PR branch only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/${{ github.repository }}/pulls/787 \
+            --jq 'select(.state == "open" and .head.repo.full_name == "07xh/engineering-drawing-study" and .head.ref == "fix/c1-native-junction-pair-bijection-20261026" and .base.ref == "main") | .number' \
+            | grep -qx 787
+          expected="$(cat "$RUNNER_TEMP/draftai-proposal/base.sha")"
+          test "$(git rev-parse HEAD)" = "$expected"
+          patch="$RUNNER_TEMP/draftai-proposal/proposal.patch"
+          git apply --check "$patch"
+          git apply --index "$patch"
+          git diff --cached --check
+          git config user.name 'draftai-ai-bot'
+          git config user.email 'draftai-ai-bot@users.noreply.github.com'
+          git commit -m 'test(C1/M5): add verified automated evidence improvement'
+          git push origin HEAD:refs/heads/fix/c1-native-junction-pair-bijection-20261026
