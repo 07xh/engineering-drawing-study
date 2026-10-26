@@ -48,3 +48,32 @@ test('invalid zero-length and nonfinite native intervals fail closed',()=>{
  for(const intervals of [[[0,0]],[[0,NaN]],[[0,Infinity]],[[-.1,1]],[[0,1.1]]])
   assert.throws(()=>tiling({sourceViewKey:key,intervals}),RangeError);
 });
+
+test('native source intervals are sorted without mutating caller input',()=>{
+ const intervals=[[.5,1],[0,.5]];
+ const result=tiling({sourceViewKey:key,intervals});
+ assert.deepEqual(intervals,[[.5,1],[0,.5]]);
+ assert.deepEqual(result.originalNativeSourceIntervals,[[0,.5],[.5,1]]);
+ assert.equal(Object.isFrozen(result),true);
+ assert.equal(Object.isFrozen(result.originalNativeSourceIntervals),true);
+});
+test('one ULP of source overlap cannot be hidden by complete union',()=>{
+ const boundary=.5;
+ const justBefore=boundary-Number.EPSILON/2;
+ const result=tiling({sourceViewKey:key,intervals:[[0,boundary],[justBefore,1]]});
+ assert.equal(result.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ assert.ok(result.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0);
+ assert.equal(result.fullGeneratedOCCTToOriginalTopoDSHistoryCertified,false);
+});
+test('ray partitions reject forged or empty source parameter ranges',()=>{
+ for(const ranges of [[[0,0]],[[0,Infinity]],[[-.1,1]],[[0,1.1]],[[.75,.25]]]){
+  assert.throws(()=>ray({sourceViewKey:key,spans:ranges.map(([a,b])=>span(a,b)),projectionCollapsedExactly:false}),RangeError);
+ }
+});
+test('full native tiling cannot imply global engineering or V5 authorization',()=>{
+ const result=tiling({sourceViewKey:'H@physical-source',intervals:[[0,1]]});
+ assert.equal(result.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,true);
+ assert.equal(result.fullGeneratedOCCTToOriginalTopoDSHistoryCertified,false);
+ assert.equal(result.officialGBLineStyleSigned,false);
+ assert.equal(result.signedV5Action,false);
+});
