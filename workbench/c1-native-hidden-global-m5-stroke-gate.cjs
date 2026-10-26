@@ -98,6 +98,112 @@ function certifyExactNativeGeneratedSourceTiling({sourceViewKey,intervals}={}){
   officialGBLineStyleSigned:false,signedV5Action:false
  });
 }
+// A physical native HLR source candidate may lie along the projected
+// exterior hull, where the original whole-EDGE front-ray gate is held.
+// Independently classify its ACTUAL GENERATED SUBINTERVAL using every
+// M4 source cut and all-original-face open rays of the reviewed convex
+// mesh. Zero source XYZ, paper, parameter or source-lift proof => HELD.
+// Even a locally clear candidate is NOT by itself a unique 3D origin.
+function certifyC1NativeCandidateOriginalFaceRay({
+ geometry,view,segment,candidate,originalFaceRayRows
+}={}){
+ const held=reason=>({
+  candidateSourceEdgeId:candidate?.sourceEdgeId??null,view,
+  exactOriginal3DSourceAndGeneratedPaperCertified:false,
+  completeExactOriginalRaySubspanPartition:false,
+  allOriginalOpaqueFaceRaysClear:false,
+  allOriginalOpaqueFaceRaysStrictlyHidden:false,
+  entireNativeSegmentLiesOnOriginalExteriorContour:false,
+  heldReason:reason,
+  generatedOCCTToOriginalBRepHistoryCertified:false,
+  engineeringLineStyleSigned:false,signedV5Action:false
+ });
+ if(!geometry?.data?.points||!Array.isArray(geometry.data.edges)||
+    !VIEWS.includes(view)||!segment||!candidate||
+    !Array.isArray(originalFaceRayRows))
+  return held('missing-authentic-original-source-face-ray-data');
+ const source=candidate.sourceEdgeId,
+  original=geometry.data.edges.find(e=>Array.isArray(e)&&
+   e.length===2&&geometry.id+'::'+[...e].sort().join('|')===source),
+  range=candidate.originalSourceParameterRange,
+  t0=candidate.sourceParameterAtProjectedFrom,
+  t1=candidate.sourceParameterAtProjectedTo;
+ if(!original||!Array.isArray(range)||range.length!==2||
+    ![t0,t1].every(t=>Number.isFinite(t)&&t>=0&&t<=1)||
+    range[0]!==Math.min(t0,t1)||range[1]!==Math.max(t0,t1)||
+    !(range[1]>range[0])||
+    candidate.originalVertexIds?.join('|')!==original.join('|')||
+    candidate.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+    candidate.originalOCCTSourceLineCurveVerified!==true||
+    candidate.originalXYZReprojectsToHLR!==true||
+    candidate.v5Authorized!==false)
+  return held('missing-exact-occt-original-source-geometry');
+ const [a,b]=original.map(id=>geometry.data.points[id]);
+ const xyzEq=(p,q)=>!!p&&!!q&&['x','y','z'].every(k=>
+  Number.isFinite(p[k])&&Number.isFinite(q[k])&&p[k]===q[k]);
+ if(!xyzEq(a,candidate.actualOriginalOCCTBRepFrom3D)||
+     !xyzEq(b,candidate.actualOriginalOCCTBRepTo3D)){
+  if(!xyzEq(a,candidate.actualOriginalOCCTBRepTo3D)||
+     !xyzEq(b,candidate.actualOriginalOCCTBRepFrom3D))
+   return held('actual-original-occt-brep-vertex-xyz-mismatch');
+ }
+ const point=t=>({x:a.x+(b.x-a.x)*t,
+  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+ const paperEq=(p,q)=>p&&q&&p.u===q.u&&p.v===q.v;
+ if(!xyzEq(point(t0),candidate.fromCandidate3D)||
+    !xyzEq(point(t1),candidate.toCandidate3D)||
+    !paperEq(project(point(t0))[view],segment.from)||
+    !paperEq(project(point(t1))[view],segment.to))
+  return held('original-source-3d-or-generated-paper-endpoint-not-exact');
+ const pieces=[];
+ for(const ray of originalFaceRayRows){
+  if(ray.view!==view||ray.sourceEdgeId!==source)continue;
+  const r=ray.originalSourceParameterRange;
+  if(!Array.isArray(r)||r.length!==2||
+     !r.every(Number.isFinite)||r[0]<0||r[1]>1||
+     !(r[1]>r[0])||ray.signedV5Action!==false)
+   return held('untrusted-original-face-ray-subspan');
+  const lo=Math.max(range[0],r[0]),hi=Math.min(range[1],r[1]);
+  if(hi>lo)pieces.push({from:lo,to:hi,ray});
+ }
+ const cover=exactCandidateIntervalCoverage(range,
+  pieces.map(p=>[p.from,p.to]));
+ const sorted=[...pieces].sort((x,y)=>x.from-y.from||x.to-y.to);
+ let overlap=false,last=range[0];
+ for(const p of sorted){
+  if(p.from<last)overlap=true;
+  last=Math.max(last,p.to);
+ }
+ const complete=!overlap&&pieces.length>0&&
+  cover.entireOriginalParameterIntervalCovered===true;
+ const clear=complete&&pieces.every(p=>
+  (p.ray.exactOriginalFaceWholeOpenRayClear===true||
+   p.ray.analyticConservativeWholeOpenRayClear===true)&&
+  p.ray.exactOriginalSourceStrictInwardOpenRayHidden!==true&&
+  p.ray.fullAnalyticStrictInteriorRayOcclusion!==true);
+ const hidden=complete&&pieces.every(p=>
+  (p.ray.exactOriginalSourceStrictInwardOpenRayHidden===true||
+   p.ray.fullAnalyticStrictInteriorRayOcclusion===true)&&
+  p.ray.exactOriginalFaceWholeOpenRayClear!==true&&
+  p.ray.analyticConservativeWholeOpenRayClear!==true);
+ const hull=complete&&pieces.every(p=>
+  p.ray.originalM5ExteriorContourOverlap===true);
+ return {
+  candidateSourceEdgeId:source,view,
+  nativeGeneratedSourceParameterRange:[...range],
+  exactOriginal3DSourceAndGeneratedPaperCertified:true,
+  completeExactOriginalRaySubspanPartition:complete,
+  uncoveredOriginalSourceParameterIntervals:
+   cover.positiveLengthUncoveredIntervals,
+  allOriginalOpaqueFaceRaysClear:clear,
+  allOriginalOpaqueFaceRaysStrictlyHidden:hidden,
+  entireNativeSegmentLiesOnOriginalExteriorContour:hull,
+  originalM4RaySubspansCompared:pieces.length,
+  heldReason:complete?null:'missing-or-overlapping-original-m4-face-ray-subspans',
+  generatedOCCTToOriginalBRepHistoryCertified:false,
+  engineeringLineStyleSigned:false,signedV5Action:false
+ };
+}
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
  nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
@@ -855,6 +961,60 @@ function reviewC1NativeHiddenFinalM5Strokes({
   otherOccludingSolidsAndGeneratedOCCTTopoDSEdgeHistoryCertified:false,
   allSceneGlobalEngineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5ActionCount:0
+ });
+ // Actual HLR native edges still HELD by original M5 exact whole-edge
+ // selection are reviewed at their precise 3D source SUBINTERVALS.
+ // The original M4 event/hull and all actual convex supporting-face rays
+ // were recomputed above: do not accept caller-issued paper/ray labels.
+ const nativeVisibleUnresolvedContourSourceFans=[];
+ if(nativeSourceWholeOpaqueFaceRayReconciliationAvailable){
+  for(const held of nativeVisibleHLRSourceTiling.
+       independentlyHeldGeneratedNativeVisibleEdgeCauses){
+   const seg=cad.views[held.view]?.[held.nativeHLREdgeOrdinal];
+   if(!seg||!Array.isArray(seg.sourceCandidate3DLifts))
+    throw new RangeError('held visible HLR source is missing in true native graph');
+   const candidates=seg.sourceCandidate3DLifts.map(candidate=>
+    certifyC1NativeCandidateOriginalFaceRay({
+     geometry,view:held.view,segment:seg,candidate,
+     originalFaceRayRows:nativeSourceFaceRaySubspans.map(x=>({
+      ...x,originalSourceParameterRange:x.originalSourceParameterRange
+     }))
+    }));
+   const fronts=candidates.filter(x=>
+    x.allOriginalOpaqueFaceRaysClear===true);
+   const backs=candidates.filter(x=>
+    x.allOriginalOpaqueFaceRaysStrictlyHidden===true);
+   const oneFrontOthersProvenBehind=fronts.length===1&&
+    candidates.length>1&&backs.length===candidates.length-1;
+   nativeVisibleUnresolvedContourSourceFans.push({
+    view:held.view,nativeHLREdgeOrdinal:held.nativeHLREdgeOrdinal,
+    nativeHLROriginal3DSourceCandidates:candidates,
+    oneRealOriginal3DSourceClearAllOtherCandidatesStrictlyHidden:
+     oneFrontOthersProvenBehind,
+    independentlyDisambiguatedFrontOriginal3DSourceId:
+     oneFrontOthersProvenBehind?fronts[0].candidateSourceEdgeId:null,
+    allCurrentCandidatesLieOnOriginalExteriorContour:
+     candidates.length>0&&candidates.every(c=>
+      c.entireNativeSegmentLiesOnOriginalExteriorContour===true),
+    sourceStillUndeterminedForEngineeringLine:true,
+    originalM5GlobalContourAndFeatureJunctionNotSigned:true,
+    signedV5Action:false
+   });
+  }
+ }
+ const actualNativeVisibleContourSourceFanRayAudit=frozen({
+  available:nativeSourceWholeOpaqueFaceRayReconciliationAvailable,
+  heldGeneratedNativeVisibleSegmentsReviewed:
+   nativeVisibleUnresolvedContourSourceFans.length,
+  heldGeneratedSegmentsWithFullFaceRayFrontAndAllAlternativesStrictHidden:
+   nativeVisibleUnresolvedContourSourceFans.filter(x=>
+    x.oneRealOriginal3DSourceClearAllOtherCandidatesStrictlyHidden).length,
+  unresolvedHLRGeneratedSegmentsWhoseAllOriginal3DSourcesProjectToExterior:
+   nativeVisibleUnresolvedContourSourceFans.filter(x=>
+    x.allCurrentCandidatesLieOnOriginalExteriorContour).length,
+  rows:nativeVisibleUnresolvedContourSourceFans,
+  actualGeneratedTopoDSOriginalEdgeFullHistoryCertified:false,
+  allOpaqueSceneAndGBLineStyleCertified:false,signedV5ActionCount:0
  });
  const sourceViewRayParametricClosure=[];
  if(nativeSourceWholeOpaqueFaceRayReconciliationAvailable){
@@ -1666,6 +1826,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   actualNativeHLRHiddenGeneratedSourceTiling,
   nativeVisibleHiddenGeneratedSourceTopology,
   nativeVHWFaceRayAndHLRReconciliation,
+  actualNativeVisibleContourSourceFanRayAudit,
   fullSourceVHWFaceRayAndActualHLRClosure,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
@@ -1680,4 +1841,5 @@ function reviewC1NativeHiddenFinalM5Strokes({
 }
 module.exports={reviewC1NativeHiddenFinalM5Strokes,
  certifyExactOriginalRaySourceParameterPartition,
- certifyExactNativeGeneratedSourceTiling};
+ certifyExactNativeGeneratedSourceTiling,
+ certifyC1NativeCandidateOriginalFaceRay};
