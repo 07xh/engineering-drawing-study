@@ -610,3 +610,19 @@ test('canonical M5 inventory cannot invent original M0 edges or duplicate physic
  x.geometry.data.edges.push(['B','A']);
  assert.throws(()=>review(x),/duplicate original M0 physical edge/);
 });
+
+test('both ends of the same generated HLR edge cannot fake a two-edge native IsSame junction',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/only one generated HLR edge/);
+});
