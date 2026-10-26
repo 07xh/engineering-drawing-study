@@ -123,6 +123,53 @@ test('duplicated actual HLR generated VCompound 3D source strokes cannot masquer
  assert.ok(r.rows.some(y=>y.view==='V'&&
   y.nativeGeneratedOriginalSourceOverlap===true));
 });
+test('different generated native ordinals cannot both claim one exact paper segment as unique original 3D front source',()=>{
+ for(const reversed of [false,true]){
+  const x=initial(),samePaper=(p,q)=>p.u===q.u&&p.v===q.v;
+  let originalWitness,alternateEdge;
+  for(const witness of x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
+   const seg=x.cad.views[witness.view][witness.nativeVisibleHLREdgeOrdinal];
+   const candidate=x.geometry.data.edges.find(e=>{
+    const id=x.geometry.id+'::'+[...e].sort().join('|');
+    if(id===witness.sourceEdgeId)return false;
+    const a=project(x.geometry.data.points[e[0]])[witness.view],
+     b=project(x.geometry.data.points[e[1]])[witness.view];
+    return (samePaper(a,seg.from)&&samePaper(b,seg.to))||
+     (samePaper(b,seg.from)&&samePaper(a,seg.to));
+   });
+   if(candidate){originalWitness=witness;alternateEdge=candidate;break;}
+  }
+  assert.ok(originalWitness&&alternateEdge,
+   'reviewed box must contain genuinely distinct 3D edges sharing exact first-angle paper projection');
+  const view=originalWitness.view,
+   genuine=x.cad.views[view][originalWitness.nativeVisibleHLREdgeOrdinal],
+   a=x.geometry.data.points[alternateEdge[0]],
+   b=x.geometry.data.points[alternateEdge[1]],
+   from=reversed?genuine.to:genuine.from,
+   to=reversed?genuine.from:genuine.to,
+   pa=project(a)[view],pb=project(b)[view],
+   t0=samePaper(pa,from)?0:1,t1=1-t0,
+   point=t=>t===0?a:b,
+   sourceEdgeId=x.geometry.id+'::'+[...alternateEdge].sort().join('|');
+  assert.ok(samePaper(project(point(t0))[view],from));
+  assert.ok(samePaper(project(point(t1))[view],to));
+  const lift={...structuredClone(genuine.sourceCandidate3DLifts[0]),
+   sourceEdgeId,originalVertexIds:[...alternateEdge],
+   originalSourceParameterRange:[0,1],
+   sourceParameterAtProjectedFrom:t0,sourceParameterAtProjectedTo:t1,
+   fromCandidate3D:{...point(t0)},toCandidate3D:{...point(t1)},
+   actualOriginalOCCTBRepFrom3D:{...a},actualOriginalOCCTBRepTo3D:{...b}};
+  const ordinal=x.cad.views[view].push({
+   ...structuredClone(genuine),from:{...from},to:{...to},
+   sourceCandidate3DLifts:[lift]})-1;
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.push({
+   ...structuredClone(originalWitness),sourceEdgeId,
+   nativeVisibleHLREdgeOrdinal:ordinal,originalSourceParameterRange:[0,1]});
+  assert.throws(()=>audit(x),
+   /coincident native visible HLR paper segment has conflicting original 3D front owners/,
+   'a second generated ordinal must not bypass exact frontmost 3D provenance (reversed='+reversed+')');
+ }
+});
 test('forged paper point, unverified source curve and stale revision cannot pass native-to-original contour binding',()=>{
  const x=initial();x.cad.views.H[0].to.u+=Number.EPSILON*4;
  assert.throws(()=>audit(x),/source lift contradicts original 3D model or paper/);
