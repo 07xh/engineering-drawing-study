@@ -471,3 +471,22 @@ test('two independently verified native OCCT endpoint stars satisfy only local j
  assert.equal(r.wholeSolidV5Ready,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('malformed native generated HLR endpoint ordinal cannot masquerade as real TopoDS proof',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:-1,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint ordinal/);
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars[0].
+  generatedHLREndpoints[0].nativeHLREdgeOrdinal=0.5;
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint ordinal/);
+});
