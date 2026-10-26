@@ -994,8 +994,16 @@ test('positive-length one-ULP physical source gap remains uncovered in actual na
  };
  joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
  joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete=false;
- const result=review(x).realNativeVisibleHiddenSourceGraph,
+ const reviewResult=review(x),
+  result=reviewResult.realNativeVisibleHiddenSourceGraph,
   h=result.rows.find(row=>row.view==='H');
+ assert.equal(reviewResult.actualNativeHLRHiddenGeneratedSourceTiling.
+  trueNativeHiddenOriginalEdgeIntervalsOnlyPartlyM5SourceProven,1);
+ assert.equal(reviewResult.actualNativeHLRHiddenGeneratedSourceTiling.
+  allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified,false);
+ assert.deepEqual(reviewResult.actualNativeHLRHiddenGeneratedSourceTiling.rows
+  .find(row=>row.sourceViewKey==='H@G::A|B').actualNativeOriginalSourceUnion,
+  [[0,.5]]);
  assert.deepEqual(h.outstandingOriginalSourceParameterGaps,
   [[.5,.5+Number.EPSILON]]);
  assert.equal(result.sourceViewsWithNonzeroPositiveVisibilityGaps,1);
