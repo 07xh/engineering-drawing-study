@@ -617,10 +617,32 @@ function reviewC1NativeHiddenFinalM5Strokes({
     counts.officialStandardSolidOrDashedLineSigned!==0||
     counts.formalConstructionIntentDAGV5ActionsSigned!==0)
   throw new RangeError('incomplete genuine OCCT HLR to canonical M5 global style gate');
+ // Join the complete original M0 V/H/W source inventory to the actual
+ // reviewed native hidden HLR rows. This is an explicit whole-scene
+ // *coverage deficit* report, never a positive GB/V5 certificate.
+ const nativeReviewedSourceViews=new Set(rows.filter(row=>
+  row.original3DPhysicalSourceUnique===true||
+  row.original3DSourceUnique===true).map(row=>
+  row.view+'@'+(row.originalHiddenSourceEdgeId??row.originalSourceEdgeId)));
+ const globallyUnreviewedSourceViews=[...byKey.keys()].filter(key=>
+  !nativeReviewedSourceViews.has(key));
+ const wholeSceneSourceHLRAndM5Closure=frozen({
+  originalM0AllViewSourceParameterCoverageComplete:
+   canonicalOriginalM5SourceInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
+  canonicalSourceViewRows:byKey.size,
+  nativeReviewedSourceViewRows:nativeReviewedSourceViews.size,
+  canonicalSourceViewsWithoutNativeHiddenReview:globallyUnreviewedSourceViews,
+  fullOriginalTopoDSGeneratedHLRHistoryCertified:false,
+  allOpaqueFacesContinuousM5OcclusionCertified:false,
+  allProjectedJunctionsCertified:false,
+  engineeringGBLineStyleCertified:false,
+  authorizedSoleV5ActionCount:0,
+  wholeSceneMathematicallySigned:false
+ });
  return frozen({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
-  counts,rows,canonicalOriginalM5SourceInventory,
+  counts,rows,canonicalOriginalM5SourceInventory,wholeSceneSourceHLRAndM5Closure,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
   actualHLRGeneratedBRepEdgeTopoDSHistoryComplete:false,
