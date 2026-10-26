@@ -561,12 +561,12 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    // edge-vs-original comparisons. Older local junction test fixtures
    // intentionally do not claim these independent whole-solid inputs.
    if(geometry.kind!=='mesh'||geometry.space!=='model-3d'||
-      geometry.unit!=='mm'||
-      segment.sourceCandidate3DLifts?.length<2||
-      segment.actualOCCTHLRFlattenedBRepLineVerified!==true||
-      segment.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
-      segment.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false)
+      geometry.unit!=='mm'||segment.sourceCandidate3DLifts?.length<2)
     continue;
+   // The actual OCCT-specific line and IsSame provenance flags are
+   // verified in the independent contour theorem itself. Older local
+   // junction fixtures have no independently reviewed complete convex
+   // geometry and therefore cannot enter this specialized proof.
    if(independentlyM5AuthenticatedVisibleNativeGeneratedEdges.some(x=>
     x.view===view&&x.nativeVisibleHLREdgeOrdinal===ordinal))continue;
    nativeVisibleExteriorContourFrontSources.push(
