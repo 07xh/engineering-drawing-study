@@ -75,6 +75,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   genuineCompleteGeneratedHLRJunctionComponentsAudited:0,
   completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex:0,
   completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource:0,
+  generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit:0,
   generatedTopoDSEdgeOriginalSourceHistoryCertified:0,
   engineeringGBLineJunctionsSigned:0,signedV5Actions:0
  };
@@ -222,6 +223,68 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      vertexId:null,
    nativeHidden:true};
  }
+ // A genuine generated OCCT IsSame junction may split a SINGLE original
+ // straight 3D edge in the interior: it is a real spatial continuity
+ // point, NOT an original M0 vertex or a new generated->original history.
+ // Verify full source 3D BRep, entire candidate line and both exact native
+ // paper endpoints. Hidden candidates must also survive the existing M5
+ // unique physical source gate; visible must pass M5 whole-front clearance.
+ function originalSourceInteriorPoint(ref,view){
+  const v=base.get(view),hidden=ref.hlrClass==='hidden-sharp',
+   seg=(hidden?v.hidden:v.visible)[ref.nativeHLREdgeOrdinal],
+   side=ref.side;
+  if(!seg||!['from','to'].includes(side)||
+     !Array.isArray(seg.sourceCandidate3DLifts))return null;
+  let source;
+  if(hidden){
+   const row=byGlobal[v.globalStart+ref.nativeHLREdgeOrdinal];
+   if(row?.nativeSource3DVertexEndpointRows?.length!==1)return null;
+   source=row.nativeSource3DVertexEndpointRows[0]?.originalPhysicalSourceEdgeId;
+  }else{
+   if(seg.sourceCandidate3DLifts.length!==1||!originalClosedRayM5)return null;
+   source=seg.sourceCandidate3DLifts[0].sourceEdgeId;
+   const ray=outwardM5.get(source+'@'+view);
+   if(ray?.fullProjectedVisibleSourceLineProven!==true||
+      ray.completeSourceOriginal3DRayClosedIntervalClear!==true||
+      ray.originalPhysicalCreaseProven!==true||
+      ray.signedV5Action!==false||
+      ray.officialEngineeringLineStyle!=='undetermined')return null;
+  }
+  const lifts=seg.sourceCandidate3DLifts.filter(x=>x.sourceEdgeId===source);
+  if(lifts.length!==1)return null;
+  const lift=lifts[0],edge=sourceEdges.get(source);
+  if(!edge||lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+     lift.originalOCCTSourceLineCurveVerified!==true||
+     lift.originalXYZReprojectsToHLR!==true||lift.v5Authorized!==false||
+     !Array.isArray(lift.originalVertexIds)||
+     lift.originalVertexIds.join('|')!==edge.join('|'))return null;
+  const a=geometry.data.points[edge[0]],b=geometry.data.points[edge[1]];
+  const actualA=lift.actualOriginalOCCTBRepFrom3D,
+   actualB=lift.actualOriginalOCCTBRepTo3D;
+  if(!((xyzEq(a,actualA)&&xyzEq(b,actualB))||
+       (xyzEq(a,actualB)&&xyzEq(b,actualA))))return null;
+  const ts=[lift.sourceParameterAtProjectedFrom,lift.sourceParameterAtProjectedTo],
+   range=lift.originalSourceParameterRange;
+  if(!ts.every(t=>Number.isFinite(t)&&t>=0&&t<=1)||
+     ts[0]===ts[1]||!Array.isArray(range)||range.length!==2||
+     range[0]!==Math.min(...ts)||range[1]!==Math.max(...ts))return null;
+  const lerp=t=>({
+   x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t
+  });
+  // Checking the OTHER end too forbids a correct-looking junction
+  // attached to a forged generated HLR segment with false 3D ancestry.
+  if(![0,1].every(i=>{
+   const q=lerp(ts[i]),candidate=i===0?
+    lift.fromCandidate3D:lift.toCandidate3D;
+   const paper=i===0?seg.from:seg.to;
+   return xyzEq(q,candidate)&&equal(project(q)[view],paper);
+  }))return null;
+  const i=side==='from'?0:1,t=ts[i];
+  if(!(t>0&&t<1))return null;
+  const xyz=lerp(t);
+  if(!equal(project(xyz)[view],ref.nativePaperPoint))return null;
+  return {sourceEdgeId:source,originalSourceParameter:t,original3DPoint:xyz};
+ }
  const verifiedPhysical3DPair=(a,b)=>
   (a.nativeHidden||a.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
   (b.nativeHidden||b.independentlyOriginalVisibleM0AndM5FullClearSourceVertex===true)&&
@@ -364,6 +427,16 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     // every member has its own independently attributed physical edge.
     const fullyCertified=allSourceMapped&&vertices.size===1&&
      distinctSources.size===members.length;
+    const interior=members.map(x=>originalSourceInteriorPoint(x,view)),
+     sourceFirst=interior[0];
+    const sourceInteriorSplit=interior.every(x=>
+     x!==null&&sourceFirst!==null&&
+     x.sourceEdgeId===sourceFirst.sourceEdgeId&&
+     x.originalSourceParameter===sourceFirst.originalSourceParameter&&
+     xyzEq(x.original3DPoint,sourceFirst.original3DPoint))&&
+     !fullyCertified;
+    if(sourceInteriorSplit)
+     counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit++;
     counts.genuineCompleteGeneratedHLRJunctionComponentsAudited++;
     if(fullyCertified)
      counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex++;
@@ -373,6 +446,13 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      exactNativePaperPoint:{...paper},
      generatedHLREndpoints:members.map(x=>({...x,nativePaperPoint:{...x.nativePaperPoint}})),
      allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:fullyCertified,
+     actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven:sourceInteriorSplit,
+     source3DEdgeInteriorOriginalEdgeId:
+      sourceInteriorSplit?sourceFirst.sourceEdgeId:null,
+     source3DEdgeInteriorParameter:
+      sourceInteriorSplit?sourceFirst.originalSourceParameter:null,
+     source3DEdgeInterior3DPoint:
+      sourceInteriorSplit?{...sourceFirst.original3DPoint}:null,
      independentlyVerifiedOriginalM03DVertexId:
       fullyCertified?physical[0].vertex:null,
      includesActualVisibleHLRWithIndependentM5WholeOriginalClearRay:
