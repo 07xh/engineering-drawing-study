@@ -1427,6 +1427,114 @@ function reviewC1NativeHiddenFinalM5Strokes({
    signedV5Action:false
   });
  }
+ // The true native HCompound generates individual hidden sharp edges.
+ // Preserve each genuinely M5-unique original 3D source fragment BEFORE
+ // interval union; two distinct generated strokes covering the SAME M0
+ // source subspan cannot be silently accepted as a single topology.
+ const rawHiddenGeneratedBySourceView=new Map();
+ let unverifiedNativeGeneratedHiddenSources=0;
+ for(let i=0;i<rows.length;i++){
+  const row=rows[i],id=row.originalPhysical3DSourceEdgeId,
+   e=projectedEncounters.rows[i],range=e?.genuineNativeHLROriginalSourceParameterRange;
+  if(!id){unverifiedNativeGeneratedHiddenSources++;continue;}
+  if(row.view!==e?.view||
+     row.nativeHiddenSharpEdgeOrdinal!==e.nativeHiddenSharpEdgeOrdinal||
+     !Array.isArray(range)||range.length!==2||
+     !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+     !(range[0]<range[1])||
+     e.uniqueOriginalPhysical3DSourceEdgeId!==id)
+   throw new RangeError('authentic native hidden generated edge lacks current exact 3D source interval');
+  const key=row.view+'@'+id;
+  if(!rawHiddenGeneratedBySourceView.has(key))
+   rawHiddenGeneratedBySourceView.set(key,[]);
+  rawHiddenGeneratedBySourceView.get(key).push([...range]);
+ }
+ const trueNativeHiddenSourceTilingRows=[];
+ let nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5=0;
+ if(realNativeVisibleHiddenSourceViewGraphAvailable){
+  for(const native of realNativeVisibleHiddenOriginalSourceViewCoverage){
+   // An OCCT HCompound generated edge can span a portion still lacking
+   // independently unique M5 physical identity. Count that withheld
+   // portion, and preserve exact intersections as MULTISET fragments.
+   // Neither the original HLR edge nor M5 candidate alone can upgrade
+   // the uncovered part to a genuine original 3D physical source.
+   const trueFragments=[];
+   const raw=rawHiddenGeneratedBySourceView.get(native.sourceViewKey)??[];
+   for(const segment of raw){
+    const accepted=[];
+    for(const [a,b] of native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals){
+     const lo=Math.max(a,segment[0]),hi=Math.min(b,segment[1]);
+     if(hi>lo){accepted.push([lo,hi]);trueFragments.push([lo,hi]);}
+    }
+    if(!exactCandidateIntervalCoverage(segment,accepted).
+        entireOriginalParameterIntervalCovered)
+     nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5++;
+   }
+   const result=certifyExactNativeGeneratedSourceTiling({
+    sourceViewKey:native.sourceViewKey,intervals:trueFragments
+   });
+   if(unverifiedNativeGeneratedHiddenSources===0&&
+      !intervalsMatch(result.actualNativeOriginalSourceUnion,
+       native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals))
+    throw new RangeError('real HLR generated hidden edges do not account for M5-unique source union');
+   trueNativeHiddenSourceTilingRows.push(result);
+  }
+ }
+ const actualNativeHLRHiddenGeneratedSourceTiling=frozen({
+  available:realNativeVisibleHiddenSourceViewGraphAvailable,
+  actualGeneratedHLRHiddenStrokesAudited:rows.length,
+  nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource:
+   rows.length-unverifiedNativeGeneratedHiddenSources,
+  generatedHiddenStrokesStillLackingUniqueOriginal3DSource:
+   unverifiedNativeGeneratedHiddenSources,
+  allHiddenGeneratedStrokesHaveUniqueSource:
+   unverifiedNativeGeneratedHiddenSources===0,
+  trueNativeHiddenOriginalEdgeIntervalsOnlyPartlyM5SourceProven:
+   nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5,
+  allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified:
+   unverifiedNativeGeneratedHiddenSources===0&&
+   nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5===0,
+  originalPhysicalSourceViewsAudited:trueNativeHiddenSourceTilingRows.length,
+  hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments:
+   trueNativeHiddenSourceTilingRows.filter(x=>
+    x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length,
+  hiddenOriginalSourceViewsWithCompleteDisjointNativeHLRSourceTiling:
+   trueNativeHiddenSourceTilingRows.filter(x=>
+    x.disjointExactCompleteOriginalSourceGeneratedEdgeTiling).length,
+  rows:trueNativeHiddenSourceTilingRows,
+  fullGeneratedHLRToOriginalTopoDSHistoryCertified:false,
+  allOpaqueSceneAndOfficialGBLinesCertified:false,
+  signedV5ActionCount:0
+ });
+ const nativeVisibleHiddenGeneratedSourceTopology=frozen({
+  available:nativeVisibleHLRSourceTiling.available&&
+   actualNativeHLRHiddenGeneratedSourceTiling.available,
+  allVHWGeneratedHLRSourceFragmentsUniqueAndExact:
+   nativeVisibleHLRSourceTiling.allTrueGeneratedNativeVisibleSourceLiftsCertified===true&&
+   actualNativeHLRHiddenGeneratedSourceTiling.
+    allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified===true,
+  original3DSourceViewsWithAnyGeneratedFragmentMultiplicity:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    nativeVisibleHLRSourceTiling.rows.some(v=>v.sourceViewKey===x.sourceViewKey&&
+     v.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)||
+    trueNativeHiddenSourceTilingRows.some(h=>h.sourceViewKey===x.sourceViewKey&&
+     h.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)).length,
+  entireOriginalSourceViewsWithDisjointTrueGeneratedVisibleAndHiddenAttribution:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>{
+    const visible=nativeVisibleHLRSourceTiling.rows.find(v=>
+     v.sourceViewKey===x.sourceViewKey);
+    const hidden=trueNativeHiddenSourceTilingRows.find(h=>
+     h.sourceViewKey===x.sourceViewKey);
+    return visible&&hidden&&
+     visible.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length===0&&
+     hidden.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length===0&&
+     x.positiveLengthVisibleHiddenOriginalSourceOverlap.length===0&&
+     x.outstandingOriginalSourceParameterGaps.length===0&&
+     x.projectionCollapsedExactly===false;
+   }).length,
+  completeGeneratedTopoDSSourceHistoryOrGlobalSceneHLRNotProven:true,
+  engineeringLineStyleCertified:false,signedV5ActionCount:0
+ });
  if(counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
     counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld+
     counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit>
@@ -1464,6 +1572,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
   nativeVisibleHLRSourceTiling,
+  actualNativeHLRHiddenGeneratedSourceTiling,
+  nativeVisibleHiddenGeneratedSourceTopology,
   nativeVHWFaceRayAndHLRReconciliation,
   fullSourceVHWFaceRayAndActualHLRClosure,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
