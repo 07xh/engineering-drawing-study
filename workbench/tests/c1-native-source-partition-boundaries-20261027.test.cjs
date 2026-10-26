@@ -1,0 +1,50 @@
+'use strict';
+// Independent fail-closed regression for the existing C1 source interval gate.
+// Run: node --test workbench/tests/c1-native-source-partition-boundaries-20261027.test.cjs
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {certifyExactOriginalRaySourceParameterPartition:ray,
+ certifyExactNativeGeneratedSourceTiling:tiling}=require('../c1-native-hidden-global-m5-stroke-gate.cjs');
+const nextDownOne=1-Number.EPSILON/2;
+const key='V@physical-source';
+const span=(a,b)=>({originalSourceParameterRange:[a,b]});
+test('positive exact partition remains unsigned',()=>{
+ const result=ray({sourceViewKey:key,spans:[span(0,.5),span(.5,1)],projectionCollapsedExactly:false});
+ assert.equal(result.fullOriginalParameterRayPartitionCoverage,true);
+ assert.equal(result.nationalEngineeringLineStyleSigned,false);
+ assert.equal(result.signedV5Action,false);
+ assert.equal(result.originalFaceRayAndGeneratedHLRTopologyComplete,false);
+});
+test('one representable binary64 gap must not pass',()=>{
+ const result=ray({sourceViewKey:key,spans:[span(0,.5),span(.5+Number.EPSILON,1)],projectionCollapsedExactly:false});
+ assert.equal(result.fullOriginalParameterRayPartitionCoverage,false);
+ assert.ok(result.originalParameterUncoveredIntervals.length>0);
+});
+test('overlapping physical intervals must not pass even with full union',()=>{
+ const result=ray({sourceViewKey:key,spans:[span(0,.75),span(.5,1)],projectionCollapsedExactly:false});
+ assert.equal(result.fullOriginalParameterRayPartitionCoverage,false);
+ assert.equal(result.disjointCanonicalM4OriginalRayIntervals,false);
+});
+test('collapsed paper view does not erase physical source partition',()=>{
+ const result=ray({sourceViewKey:'W@physical-source',spans:[span(0,1)],projectionCollapsedExactly:true});
+ assert.equal(result.fullOriginalParameterRayPartitionCoverage,true);
+ assert.equal(result.physicalLineDrawableInThisFirstAngleView,false);
+ assert.equal(result.signedV5Action,false);
+});
+test('empty evidence is never a vacuous success',()=>{
+ assert.equal(ray({sourceViewKey:key,spans:[],projectionCollapsedExactly:false}).fullOriginalParameterRayPartitionCoverage,false);
+ assert.equal(tiling({sourceViewKey:key,intervals:[]}).disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+});
+test('native HLR exact tiling refuses overlap and endpoint gap',()=>{
+ const good=tiling({sourceViewKey:key,intervals:[[0,.5],[.5,1]]});
+ assert.equal(good.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,true);
+ assert.equal(good.signedV5Action,false);
+ assert.equal(tiling({sourceViewKey:key,intervals:[[0,.75],[.5,1]]}).disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ const gap=tiling({sourceViewKey:key,intervals:[[0,nextDownOne]]});
+ assert.equal(gap.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ assert.ok(gap.originalSourceParameterGaps.length>0);
+});
+test('invalid zero-length and nonfinite native intervals fail closed',()=>{
+ for(const intervals of [[[0,0]],[[0,NaN]],[[0,Infinity]],[[-.1,1]],[[0,1.1]]])
+  assert.throws(()=>tiling({sourceViewKey:key,intervals}),RangeError);
+});
