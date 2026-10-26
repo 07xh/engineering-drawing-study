@@ -267,6 +267,8 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  return {
   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared:true,
   originalPhysicalOCCTSourceIdsCompared:[...visited].sort(),
+  actualOriginalOCCTBRepEdgeOccurrencesCompared:originalSourceEdges.length,
+  actualDistinctOriginalOCCTBRepSourceCount:visited.size,
   directlySameOriginalOCCTBRepSourceEdgeIds:[...ids].sort(),
   directlySameUniqueOriginalOCCTBRepSourceEdgeId:
    ids.size===1?[...ids][0]:null,
