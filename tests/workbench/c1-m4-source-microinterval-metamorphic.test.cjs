@@ -45,3 +45,28 @@ test('C1 M4 positive 3D parameter tails survive translated oblique solids withou
   assert.equal(result.exactSourceDepthForAllProjectedAliasesCertified,false);
  }
 });
+
+test('M4-only forensic mode never promotes projected coincidences into physical junctions or V5',()=>{
+ const geometry=oblique('C1M4ForensicOnly',3,-5,7);
+ const graph=auditC1ReviewedProjectedSourceEventGraph({
+  geometry,revision:111,proofMode:'m4-projected-events-only'});
+ assert.equal(graph.originalM5ExteriorHullRecomputedAndAvailable,false);
+ assert.equal(graph.m4EventOnlyModeDoesNotAssertNonHullVisibility,true);
+ assert.equal(graph.rows.length,geometry.data.edges.length*3);
+ assert.equal(graph.allPhysicalJunctionsCertified,false);
+ assert.equal(graph.exactSourceDepthForAllProjectedAliasesCertified,false);
+ assert.equal(graph.sourceIntervalEngineeringLineStylesCertified,false);
+ assert.equal(graph.signedV5ActionCount,0);
+ assert.equal(graph.wholeSolidV5Ready,false);
+ for(const row of graph.rows){
+  assert.equal(row.officialLineStylesVerified,false);
+  assert.equal(row.signedV5ActionCount,0);
+  for(const span of row.spans){
+   assert.equal(span.projectedExteriorHullOverlap,null);
+   assert.equal(span.eligibleForNonHullCandidate,false);
+   assert.equal(span.fullProjectedJunctionAndDepthOrderVerified,false);
+   assert.equal(span.engineeringLineStyle,'undetermined');
+   assert.equal(span.signedV5Action,false);
+  }
+ }
+});
