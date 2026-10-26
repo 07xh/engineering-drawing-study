@@ -102,21 +102,34 @@ function reviewCanonicalM4M5NativeHLRSourceIntervals({m5Row,nativeCandidates}={}
       row.missingProjectedPaperSourceParameterRanges?.length!==0)))
   throw new RangeError('native HLR/M5 source range contradicts independent canonical M4 coverage');
  if(nativeCandidates.some(c=>!c||!Array.isArray(c.range)||
+    !Number.isSafeInteger(c.distinctOriginal3DCandidateCount)||
+    c.distinctOriginal3DCandidateCount<1||
     c.realOCCTHLREdgeToSourceIdentityRecovered!==false||
     c.nativeHLRActualClass!=='hidden-sharp'))
   throw new RangeError('unsigned genuine native HLR source ranges required');
  const native=exactCandidateIntervalCoverage([0,1],
   nativeCandidates.map(c=>c.range));
- const jointlyFull=full&&native.entireOriginalParameterIntervalCovered;
+ // A paper-complete union of ambiguous HLR candidate edges does NOT
+ // positively establish one original physical 3D edge. Keep paper
+ // candidate coverage diagnostic, and separately require the unambiguous
+ // genuine OCCT->M0 source lift union for physical source readiness.
+ const uniqueNative=exactCandidateIntervalCoverage([0,1],
+  nativeCandidates.filter(c=>c.distinctOriginal3DCandidateCount===1)
+   .map(c=>c.range));
+ const jointlyFull=full&&
+  uniqueNative.entireOriginalParameterIntervalCovered;
  return frozen({
   sourceEdgeId:row.originalPhysicalSourceEdgeId,view:row.view,
   originalSourceParameterRange:[0,1],
   canonicalM4Original3DAndM5RayCutUnionRecomputed:true,
   canonicalM4ParameterCoverage:fromM5,
   genuineNativeHiddenHLRCandidateParameterCoverage:native,
+  uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage:uniqueNative,
   originalM4Full3DSourceIntervalProven:full,
   actualNativeHiddenHLRCandidateFullOriginalParameterCoverage:
    native.entireOriginalParameterIntervalCovered,
+  actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage:
+   uniqueNative.entireOriginalParameterIntervalCovered,
   originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete:jointlyFull,
   originalM5StrictlyHiddenWholeOriginalSourceRay:
    parts.length>0&&parts.every(p=>
