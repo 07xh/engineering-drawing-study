@@ -19,6 +19,8 @@ const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditC1SingleConvexSourceSubspanRays}=
  require('./m5-c1-source-subspan-opaque-rays.cjs');
+const {auditC1NativeVisibleContourOriginalFrontSource}=
+ require('./c1-native-visible-contour-front-source.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -602,6 +604,24 @@ function reviewC1NativeHiddenFinalM5Strokes({
    throw new RangeError('native visible exterior contour source identity or signer forged');
   seenNativeContourOrdinal.add(key);
   if(proof.exactWholeOpenRayAndBothEndpointDepthDominance===true){
+   // Independently RECOMPUTE the original 3D supporting-face proof and
+   // exact front-depth ordering inside the only final M5 consumer.
+   // A forged source ID or a paper-only claimant cannot submit a
+   // fabricated positive native contour proof.
+   const repeated=auditC1NativeVisibleContourOriginalFrontSource({
+    geometry,revision,view:proof.view,seg,
+    nativeHLREdgeOrdinal:proof.nativeHLREdgeOrdinal
+   });
+   if(repeated.status!==proof.status||
+      repeated.certifiedOriginalFrontPhysicalSourceEdgeId!==
+       proof.certifiedOriginalFrontPhysicalSourceEdgeId||
+      repeated.originalFaceIndexProvingOutwardRay!==
+       proof.originalFaceIndexProvingOutwardRay||
+      JSON.stringify(repeated.originalSourceParameterRange)!==
+       JSON.stringify(proof.originalSourceParameterRange)||
+      JSON.stringify(repeated.otherOriginal3DCoProjectedSourceEdgeIds)!==
+       JSON.stringify(proof.otherOriginal3DCoProjectedSourceEdgeIds))
+    throw new RangeError('unreproducible positive original OCCT contour source and 3D face-ray proof');
    if(proof.status!=='locally-proven-original-3d-front-contour-source'||
       proof.independentM4OriginalHullOverlapWitness!==true||
       !Array.isArray(proof.originalSourceParameterRange)||
