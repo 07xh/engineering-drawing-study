@@ -557,6 +557,26 @@ function reviewC1NativeHiddenFinalM5Strokes({
  // Reconsume EVERY actual OCCT VCompound edge as a separate generated
  // fragment; interval UNION erases duplicate native edges and cannot by
  // itself establish a unique source/view stroke topology.
+ // This independent native HLR vertex/source consumer intersects all
+ // co-projected OCCT BRep candidates with an ORIGINAL M0/M5 true closed
+ // front ray. Validate each generated-edge selection against the current
+ // actual VCompound edge below; this cannot be a user-authored shortcut.
+ const frontM5SelectedVisibleSourceByNative=new Map();
+ for(const v of nativeHLRJunctionConcordance.
+      independentlyM5AuthenticatedVisibleNativeGeneratedEdges??[]){
+  const key=v.view+'@'+v.nativeVisibleHLREdgeOrdinal;
+  if(!VIEWS.includes(v.view)||!Number.isSafeInteger(v.nativeVisibleHLREdgeOrdinal)||
+     v.nativeVisibleHLREdgeOrdinal<0||typeof v.sourceEdgeId!=='string'||
+     v.uniquePhysicalM5FrontOriginalSourceFromActualBRep!==true||
+     v.fullOriginalPhysicalSourceM5ClosedRayClear!==true||
+     v.generatedEdgeOriginalTopoDSHistoryRecovered!==false||
+     v.engineeringLineCertified!==false||v.signedV5Action!==false||
+     !Array.isArray(v.originalSourceParameterRange)||
+     v.originalSourceParameterRange.length!==2||
+     frontM5SelectedVisibleSourceByNative.has(key))
+   throw new RangeError('forged M5 authentic visible OCCT physical source/ordinal ledger');
+  frontM5SelectedVisibleSourceByNative.set(key,v);
+ }
  const nativeVisibleFragments=new Map();
  const independentlyHeldNativeVisibleGeneratedEdges=[];
  const heldNativeVisibleReasonCounts={};
@@ -586,14 +606,27 @@ function reviewC1NativeHiddenFinalM5Strokes({
       edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
       edge.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false)
     throw new RangeError('not genuine OCCT VCompound native source evidence');
-   const lifts=edge.sourceCandidate3DLifts;
-   if(!Array.isArray(lifts)||lifts.length!==1){
+   const lifts=edge.sourceCandidate3DLifts,
+    proof=frontM5SelectedVisibleSourceByNative.get(
+     view+'@'+nativeHLREdgeOrdinal);
+   const selected=Array.isArray(lifts)?
+    (lifts.length===1?lifts:
+     (proof?lifts.filter(c=>
+      c.sourceEdgeId===proof.sourceEdgeId&&
+      c.originalSourceParameterRange?.length===2&&
+      c.originalSourceParameterRange[0]===proof.originalSourceParameterRange[0]&&
+      c.originalSourceParameterRange[1]===proof.originalSourceParameterRange[1]):[])):[];
+   if(selected.length!==1||
+      (proof&&!(selected.length===1&&
+       selected[0].sourceEdgeId===proof.sourceEdgeId))){
     recordHeldNativeVisible(view,nativeHLREdgeOrdinal,
      'nonunique-or-unmapped-native-original-3d-source',
-     {sourceCandidate3DLiftCount:Array.isArray(lifts)?lifts.length:null});
+     {sourceCandidate3DLiftCount:Array.isArray(lifts)?lifts.length:null,
+      independentM5FrontRayPhysicalSourceSelected:!!proof,
+      matchingOriginal3DPhysicalSourceLifts:selected.length});
     continue;
    }
-   const lift=lifts[0],ends=originals.get(lift.sourceEdgeId),
+   const lift=selected[0],ends=originals.get(lift.sourceEdgeId),
     range=lift.originalSourceParameterRange,
     a=ends&&geometry.data.points[ends[0]],
     b=ends&&geometry.data.points[ends[1]],
@@ -692,6 +725,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    actualNativeVisibleFragments-unmatchedNativeVisibleFragments,
   trueGeneratedOCCTVisibleSegmentsInspected:actualNativeVisibleFragments,
   unverifiedGeneratedOCCTVisibleSegments:unmatchedNativeVisibleFragments,
+  exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay:
+   frontM5SelectedVisibleSourceByNative.size,
+  selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep:
+   [...frontM5SelectedVisibleSourceByNative.values()].filter(p=>
+    nativeVisibleFragments.get(p.view+'@'+p.sourceEdgeId)?.
+     some(([a,b])=>a===p.originalSourceParameterRange[0]&&
+      b===p.originalSourceParameterRange[1])).length,
   independentlyHeldGeneratedNativeVisibleEdgeCauses:
    independentlyHeldNativeVisibleGeneratedEdges,
   independentHeldNativeVisibleReasonCounts:heldNativeVisibleReasonCounts,
