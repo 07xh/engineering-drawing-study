@@ -82,13 +82,13 @@ function auditC1SingleConvexSourceSubspanRays({geometry,revision}={}){
    const clearance=microPaper?null:certifyConvexSegmentClearance({
     source,solid:solids[0],
     observerDirection:FIRST_ANGLE_OBSERVER_RAYS[row.view]});
-   const occluded=evaluateFullSourceSegmentOcclusion({
+   const occluded=microPaper?null:evaluateFullSourceSegmentOcclusion({
     source,solids,view:row.view});
    const byExact=exact.status==='certified-clear';
    const byAnalytic=clearance?.status==='certified-clear';
    const visible=byExact||byAnalytic;
    const exactHidden=inward.fullOriginalSourceOpenIntervalStrictlyHidden===true;
-   const analyticHidden=occluded.entireSourceSegmentOccluded===true;
+   const analyticHidden=occluded?.entireSourceSegmentOccluded===true;
    const hidden=exactHidden||analyticHidden;
    if(visible&&hidden)
     throw new RangeError('C1 M0 original source has contradictory continuous open ray evidence');
