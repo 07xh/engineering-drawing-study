@@ -93,3 +93,22 @@ test('one ULP right boundary cannot be replaced by near-equal evidence',()=>{
  assert.equal(result.entireOriginalParameterIntervalCovered,false);
  assert.deepEqual(result.positiveLengthUncoveredIntervals,[[0,Number.MIN_VALUE]]);
 });
+
+test('candidate fragments touching only at the target endpoint have no positive overlap',()=>{
+ const result=cover([.25,.75],[[0,.25],[.75,1]]);
+ assert.equal(result.candidateIntervalsExamined,2);
+ assert.deepEqual(result.positiveLengthCoveredIntervals,[]);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,[[.25,.75]]);
+});
+test('exact middle subrange can be certified without claiming the entire source',()=>{
+ const result=cover([.25,.75],[[.25,.5],[.5,.75]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,true);
+ assert.deepEqual(result.positiveLengthCoveredIntervals,[[.25,.75]]);
+ assert.deepEqual(result.originalParameterRange,[.25,.75]);
+});
+test('frozen output rejects accidental downstream mutation',()=>{
+ const result=cover([0,1],[[0,.5]]);
+ assert.equal(Object.isFrozen(result),true);
+ assert.equal(Object.isFrozen(result.positiveLengthUncoveredIntervals[0]),true);
+ assert.throws(()=>{result.positiveLengthUncoveredIntervals[0][0]=0;},TypeError);
+});
