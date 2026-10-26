@@ -639,3 +639,9 @@ test('whole-scene source-to-native HLR ledger never treats a locally reviewed hi
  assert.equal(ledger.wholeSceneMathematicallySigned,false);
  assert.equal(ledger.authorizedSoleV5ActionCount,0);
 });
+
+test('native HLR reviewed source must exist in the canonical original M5 source ledger',()=>{
+ const x=caseData();
+ x.globalM5Review.rows[0].sourceEdgeId='G::C|D';
+ assert.throws(()=>review(x),/native hidden HLR review has no matching canonical M5 original source ledger/);
+});
