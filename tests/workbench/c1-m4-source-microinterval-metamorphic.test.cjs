@@ -143,3 +143,15 @@ test('exact coverage clips native intervals to requested original physical subsp
   [[0.5,0.625]]);
  assert.equal(result.entireOriginalParameterIntervalCovered,false);
 });
+
+test('exact coverage refuses nonfinite, reversed, out-of-bounds and zero-length witnesses',()=>{
+ for(const bad of [[0,0],[0.7,0.3],[-0.1,0.5],[0.5,1.1],
+  [0,NaN],[0,Infinity]]){
+  assert.throws(()=>exactCandidateIntervalCoverage([0,1],[bad]),TypeError);
+ }
+ for(const badRange of [[0,0],[1,0],[-0.1,1],[0,1.1]]){
+  assert.throws(()=>exactCandidateIntervalCoverage(badRange,[[0,1]]),TypeError);
+ }
+ assert.throws(()=>exactCandidateIntervalCoverage([0,1],
+  Array.from({length:513},()=>[0,1])),TypeError);
+});
