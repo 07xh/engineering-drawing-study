@@ -154,7 +154,7 @@ test('missing a positive one-ULP original 3D parameter cut interval cannot be co
  assert.throws(()=>certifyPartition([0,half,next,1],[
   {originalParameterRange:[0,half]},
   {originalParameterRange:[next,1]}
- ]),/incomplete canonical/);
+ ]),/missing, duplicated, overlapping or reordered/);
  // Same number of pieces but duplicate first interval and omit the ULP
  // interval: count-only ledgers would have accepted this.
  assert.throws(()=>certifyPartition([0,half,next,1],[
