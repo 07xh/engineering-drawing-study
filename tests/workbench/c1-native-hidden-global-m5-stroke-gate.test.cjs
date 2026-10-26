@@ -750,6 +750,7 @@ test('noncollapsed drawable source partition can be complete while a genuine 3D 
  assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,2);
  assert.deepEqual(inv.noncollapsedMissingOriginalSourceViews,[]);
  assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,[]);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[]);
  assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,true);
  assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
  assert.equal(inv.signedV5Action,false);
@@ -765,7 +766,27 @@ test('a single noncollapsed one-ULP interval hole invalidates drawable coverage'
  assert.equal(inv.noncollapsedOriginalSourceViewCount,2);
  assert.equal(inv.noncollapsedCompleteOriginalSourceViewCount,1);
  assert.deepEqual(inv.noncollapsedIncompleteOriginalSourceViews,['V@G::A|B']);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[{
+  sourceViewKey:'V@G::A|B',missingEntireSourceView:false,
+  uncoveredOriginalParameterIntervals:[[1-Number.EPSILON/2,1]],
+  projectedFrom:{u:0,v:0},projectedTo:{u:1,v:0},signedV5Action:false
+ }]);
  assert.equal(inv.allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+});
+test('missing noncollapsed physical source is an exact full [0,1] obligation, not a collapsed paper point',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ // H is present, V is a genuine drawable absent source, W collapses.
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.deepEqual(inv.noncollapsedMissingOriginalSourceViews,['V@G::A|B']);
+ assert.deepEqual(inv.noncollapsedUncoveredOriginalSourceParameterIntervals,[{
+  sourceViewKey:'V@G::A|B',missingEntireSourceView:true,
+  uncoveredOriginalParameterIntervals:[[0,1]],
+  projectedFrom:{u:0,v:0},projectedTo:{u:1,v:0},signedV5Action:false
+ }]);
+ assert.deepEqual(inv.missingOriginalSourceViews,['V@G::A|B','W@G::A|B']);
  assert.equal(inv.signedV5Action,false);
 });
 test('a zero-length 3D source cannot masquerade as three collapsed drawable views',()=>{
