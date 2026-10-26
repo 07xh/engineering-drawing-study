@@ -613,6 +613,32 @@ for(const [index,geometry] of general.entries()){
  }
  assert.equal(missingKeys.size,sceneInventory.missingOriginalSourceViews.length);
  assert.equal(sceneInventory.signedV5Action,false);
+ // Distinguish a mathematically collapsed V/H/W projection from a
+ // missing NON-collapsed source ledger. Never silently excuse either.
+ const projected=require('../../core/projection/conventions.js').project;
+ const originalById=new Map(geometry.data.edges.map(edge=>[
+  geometry.id+'::'+[...edge].sort().join('|'),edge]));
+ const classify=key=>{
+  const separator=key.indexOf('@');
+  assert.ok(separator>0,'missing source/view identity');
+  const view=key.slice(0,separator),id=key.slice(separator+1);
+  assert.ok(['V','H','W'].includes(view));
+  const edge=originalById.get(id);
+  assert.ok(edge,'missing source must belong to actual M0 geometry');
+  const a=projected(geometry.data.points[edge[0]])[view];
+  const b=projected(geometry.data.points[edge[1]])[view];
+  return {sourceViewKey:key,projectionCollapsedExactly:
+   a.u===b.u&&a.v===b.v};
+ };
+ const missingProjectionClasses=[...missingKeys].map(classify);
+ const incompleteProjectionClasses=[...incompleteKeys].map(classify);
+ assert.equal(missingProjectionClasses.length,
+  sceneInventory.missingOriginalSourceViews.length);
+ assert.equal(incompleteProjectionClasses.length,
+  sceneInventory.incompleteOriginalSourceViewPartitions.length);
+ // Classification is a diagnostic only: every missing/incomplete row
+ // remains in the unsigned original source/view inventory.
+ assert.equal(sceneInventory.signedV5Action,false);
  // Real rotated geometry has omitted/collapsed source-view rows and
  // binary64 endpoint gaps. Preserve them as unsigned diagnostics; stdout
  // must remain a single JSON report for the existing CI consumer.
