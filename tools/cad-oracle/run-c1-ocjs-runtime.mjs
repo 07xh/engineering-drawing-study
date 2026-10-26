@@ -659,6 +659,33 @@ for(const [index,geometry] of general.entries()){
   row.officialGBLineStyleSigned===false&&row.signedV5Action===false));
  assert.equal(generatedVisibleM5PhysicalTiling.allGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
  assert.equal(generatedVisibleM5PhysicalTiling.signedV5ActionCount,0);
+ const trueGeneratedHiddenM5Tiling=hiddenFormalGate.actualNativeHLRHiddenGeneratedSourceTiling;
+ assert.equal(trueGeneratedHiddenM5Tiling.available,true);
+ assert.equal(trueGeneratedHiddenM5Tiling.actualGeneratedHLRHiddenStrokesAudited,
+  ['V','H','W'].reduce((n,v)=>n+cad.hiddenSharpViews[v].length,0));
+ assert.equal(trueGeneratedHiddenM5Tiling.
+  nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource+
+  trueGeneratedHiddenM5Tiling.generatedHiddenStrokesStillLackingUniqueOriginal3DSource,
+  trueGeneratedHiddenM5Tiling.actualGeneratedHLRHiddenStrokesAudited);
+ assert.equal(trueGeneratedHiddenM5Tiling.originalPhysicalSourceViewsAudited,
+  3*geometry.data.edges.length);
+ assert.equal(trueGeneratedHiddenM5Tiling.hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments,
+  trueGeneratedHiddenM5Tiling.rows.filter(row=>
+   row.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length);
+ assert.equal(trueGeneratedHiddenM5Tiling.hiddenOriginalSourceViewsWithCompleteDisjointNativeHLRSourceTiling,
+  trueGeneratedHiddenM5Tiling.rows.filter(row=>
+   row.disjointExactCompleteOriginalSourceGeneratedEdgeTiling).length);
+ const nativeWholeSource=hiddenFormalGate.nativeVisibleHiddenGeneratedSourceTopology;
+ assert.equal(nativeWholeSource.available,true);
+ assert.equal(nativeWholeSource.original3DSourceViewsWithAnyGeneratedFragmentMultiplicity,
+  nativeVHWPhysicalSourceUnion.rows.filter(row=>
+   generatedVisibleM5PhysicalTiling.rows.some(v=>v.sourceViewKey===row.sourceViewKey&&
+    v.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)||
+   trueGeneratedHiddenM5Tiling.rows.some(h=>h.sourceViewKey===row.sourceViewKey&&
+    h.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)).length);
+ assert.equal(nativeWholeSource.engineeringLineStyleCertified,false);
+ assert.equal(nativeWholeSource.signedV5ActionCount,0);
+ assert.equal(trueGeneratedHiddenM5Tiling.fullGeneratedHLRToOriginalTopoDSHistoryCertified,false);
  // Independently recompute each actual reviewed convex 3D source M4 cut's
  // observer ray against ALL original opaque support faces, then cross-join
  // positive ray status with physically attributed real OCCT HLR spans.
@@ -1244,6 +1271,12 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   measuredOCCTHiddenGeneratedHLREdgePhysicalOriginal3DSourceTiling:
+    trueGeneratedHiddenM5Tiling.nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource,
+   measuredOCCTHiddenGeneratedHLREdgesStillUnresolved:
+    trueGeneratedHiddenM5Tiling.generatedHiddenStrokesStillLackingUniqueOriginal3DSource,
+   originalVHWSourceViewsWithNativeGeneratedEdgePhysicalMultiplicity:
+    nativeWholeSource.original3DSourceViewsWithAnyGeneratedFragmentMultiplicity,
    measuredOCCTVisibleGeneratedHLREdgePhysicalOriginal3DSourceTiling:
     generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
    measuredOCCTVisibleNativeGeneratedEdgesWithExactOriginal3DEndpoints:
