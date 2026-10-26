@@ -493,3 +493,49 @@ test('M5 rejects proof references stitched across different authentic native OCC
  x.nativeSourceAudit.nativeHiddenDualOpenIntervalProof={...x.dualProof};
  assert.throws(()=>review(x),/current original M5 global unsigned review/);
 });
+
+test('full canonical M4 and M5 intervals never replace missing genuine OCCT IsSame original 3D endpoint stars',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].
+  original3DSourceVertexPlusM4AndFanVerified=true;
+ x.nativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].endpointWitnesses[1].
+  originalM4SourceParameterGapRemainsUnrepaired=false;
+ const result=review(x),row=result.rows[0];
+ assert.equal(row.originalNativePhysical3DVertexIdentityStillUnproven,0);
+ assert.equal(row.sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage,true);
+ assert.equal(row.jointPositiveM5Prerequisites.original3DEndpointAndM4FanTopology,false);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('two authenticated true OCCT IsSame endpoint stars jointly prove local physical source topology, but do not sign engineering style or V5',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].
+  original3DSourceVertexPlusM4AndFanVerified=true;
+ x.nativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].endpointWitnesses[1].
+  originalM4SourceParameterGapRemainsUnrepaired=false;
+ const star=(side,id)=>({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side}
+  ],allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:id,
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,
+  signedV5Action:false
+ });
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars=[
+  star('from','A'),star('to','B')
+ ];
+ const result=review(x),row=result.rows[0];
+ assert.equal(row.bothRealNativeHLREndpointGeneratedJunctionStarsHaveOriginal3DSourceProof,true);
+ assert.equal(row.jointPositiveM5Prerequisites.completeSourceParameterCoverage,true);
+ assert.equal(row.jointPositiveM5Prerequisites.original3DEndpointAndM4FanTopology,true);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,true);
+ assert.equal(row.actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(result.wholeSolidV5Ready,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
