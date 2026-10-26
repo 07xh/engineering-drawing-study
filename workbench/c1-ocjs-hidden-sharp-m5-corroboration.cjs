@@ -221,6 +221,11 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
    if(seg.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
       !Array.isArray(seg.originalPhysicalOCCTSourceIdsCompared)||
       seg.originalPhysicalOCCTSourceIdsCompared.length!==realIds.size||
+      seg.actualDistinctOriginalOCCTBRepSourceCount!==realIds.size||
+      !Number.isSafeInteger(seg.actualOriginalOCCTBRepEdgeOccurrencesCompared)||
+      seg.actualOriginalOCCTBRepEdgeOccurrencesCompared<realIds.size||
+      new Set(seg.originalPhysicalOCCTSourceIdsCompared).size!==realIds.size||
+      seg.originalPhysicalOCCTSourceIdsCompared.some(id=>!realIds.has(id))||
       !Array.isArray(seg.directlySameOriginalOCCTBRepSourceEdgeIds)||
       seg.directlySameOriginalOCCTBRepSourceEdgeIds.length>1||
       seg.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified!==false||
