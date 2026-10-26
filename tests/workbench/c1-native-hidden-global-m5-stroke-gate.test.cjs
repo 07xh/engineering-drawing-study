@@ -783,3 +783,73 @@ test('missing source-view projection is computed from 3D M0 endpoints, not a 2D 
   ['V@G::A|B',true],['W@G::A|B',false]]);
  assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
 });
+
+const withGenuineNativeSourceInteriorJunction=()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:10,y:0,z:0}},
+  edges:[['A','B']]
+ }};
+ x.projectedEncounters.rows[0].genuineNativeHLROriginalSourceParameterRange=[.5,1];
+ const union=x.dualProof.rows[0].independentOpenIntervalRayAndFrontVisibleUnion;
+ union.originalSourceParameterRange=[.5,1];
+ union.strictInteriorIndependentlyVerifiedIntervals=[[.5,.7]];
+ union.realVisibleFrontSourceDepthMaskVerifiedIntervals=[[.7,1]];
+ union.onlyLocallyVerifiedHiddenOrFrontMaskIntervals=[[.5,1]];
+ const star={
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from',
+    nativePaperPoint:{u:5,v:0}},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'to',
+    nativePaperPoint:{u:5,v:0}}
+  ],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:false,
+  independentlyVerifiedOriginalM03DVertexId:null,
+  independentlyTracedOriginal3DSourceEdges:[],
+  actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven:true,
+  source3DEdgeInteriorOriginalEdgeId:'G::A|B',
+  source3DEdgeInteriorParameter:.5,
+  source3DEdgeInterior3DPoint:{x:5,y:0,z:0},
+  exactNativePaperPoint:{u:5,v:0},
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ };
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars=[star];
+ return {x,star};
+};
+test('genuine OCCT hidden/visible split at interior M0 source t=.5 becomes locally physical in final M5 without inventing an M0 endpoint or signing V5',()=>{
+ const {x}=withGenuineNativeSourceInteriorJunction(),r=review(x),
+  end=r.rows[0].independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars;
+ assert.equal(r.counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit,1);
+ assert.equal(end[0].actualNativeOCCTIsSameOriginal3DEdgeInteriorSplitProven,true);
+ assert.equal(end[0].independentOriginal3DVertexAndFullHLRJunctionProven,false);
+ assert.equal(end[0].actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity,true);
+ assert.deepEqual(end[0].exactOriginal3DSourceInteriorPoint,{x:5,y:0,z:0});
+ assert.equal(end[1].actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity,false);
+ assert.equal(r.rows[0].actualGeneratedHiddenNativeStrokeBoth3DEndpointsLocallyPhysical,false);
+ assert.equal(r.rows[0].jointPositiveM5PrerequisitesSatisfied,false);
+ assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('real IsSame but forged original hidden source ID, binary64 interior cut or inconsistent 3D XYZ cannot produce the final M5 junction proof',()=>{
+ const {x,star}=withGenuineNativeSourceInteriorJunction();
+ star.source3DEdgeInteriorOriginalEdgeId='G::A|C';
+ assert.throws(()=>review(x),/forged native HLR split interior 3D source/);
+ star.source3DEdgeInteriorOriginalEdgeId='G::A|B';
+ star.source3DEdgeInteriorParameter=.5+Number.EPSILON;
+ assert.throws(()=>review(x),/forged native HLR split interior 3D source/);
+ star.source3DEdgeInteriorParameter=.5;
+ star.source3DEdgeInterior3DPoint.z=1;
+ assert.throws(()=>review(x),/forged native HLR split interior 3D source/);
+});
+test('a missing actual OCCT native source-junction split claim is held even if the original paper endpoints coincide',()=>{
+ const {x,star}=withGenuineNativeSourceInteriorJunction();
+ star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven=false;
+ const r=review(x);
+ assert.equal(r.counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit,0);
+ assert.equal(r.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,1);
+ assert.equal(r.rows[0].independentlyVerifiedOCCTNativeIsSameOriginal3DEndpointStars[0].
+  actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
