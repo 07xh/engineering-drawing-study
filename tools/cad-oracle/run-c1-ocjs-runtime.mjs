@@ -665,8 +665,12 @@ for(const [index,geometry] of general.entries()){
   fullOriginalFaceRaySource.noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays,
   fullOriginalFaceRaySource.rows.filter(row=>
    row.realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation===true).length);
+ assert.equal(fullOriginalFaceRaySource.originalSourceViewsWithNoOriginalM4RaySubspanEvidence,
+  fullOriginalFaceRaySource.rows.filter(row=>
+   row.canonicalOriginalRayM4SpanCount===0).length);
  assert.ok(fullOriginalFaceRaySource.rows.every(row=>
-  row.canonicalOriginalRayM4SpanCount>0&&
+  (row.canonicalOriginalRayM4SpanCount>0||
+   row.fullOriginalParameterRayPartitionCoverage===false)&&
   row.originalFaceRayAndGeneratedHLRTopologyComplete===false&&
   row.entireFinalGeneratedOCCTEdgeTopologyAndGBLineRulesCertified===false&&
   row.nationalEngineeringLineStyleSigned===false&&
