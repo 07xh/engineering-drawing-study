@@ -66,6 +66,38 @@ function certifyExactOriginalRaySourceParameterPartition({
   signedV5Action:false
  });
 }
+// An exact union alone cannot certify a 1:1 native-generated edge topology:
+// overlapping original M0 parameter fragments must stay independently held.
+function certifyExactNativeGeneratedSourceTiling({sourceViewKey,intervals}={}){
+ if(typeof sourceViewKey!=='string'||!sourceViewKey.includes('@')||
+    !Array.isArray(intervals))
+  throw new TypeError('actual native source-view intervals required');
+ const ordered=intervals.map(r=>{
+  if(!Array.isArray(r)||r.length!==2||!r.every(Number.isFinite)||
+     r[0]<0||r[1]>1||r[0]>=r[1])
+   throw new RangeError('invalid generated OCCT original source interval');
+  return [...r];
+ }).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ let cursor=0;
+ const overlaps=[];
+ for(const [a,b] of ordered){
+  if(a<cursor)overlaps.push([a,Math.min(b,cursor)]);
+  cursor=Math.max(cursor,b);
+ }
+ const union=exactCandidateIntervalCoverage([0,1],ordered);
+ return frozen({
+  sourceViewKey,actualNativeGeneratedSourceFragments:ordered.length,
+  originalNativeSourceIntervals:ordered,
+  positiveSameOriginal3DSourceGeneratedEdgeOverlaps:overlaps,
+  actualNativeOriginalSourceUnion:union.positiveLengthCoveredIntervals,
+  originalSourceParameterGaps:union.positiveLengthUncoveredIntervals,
+  disjointExactCompleteOriginalSourceGeneratedEdgeTiling:
+   ordered.length>0&&overlaps.length===0&&
+   union.entireOriginalParameterIntervalCovered===true,
+  fullGeneratedOCCTToOriginalTopoDSHistoryCertified:false,
+  officialGBLineStyleSigned:false,signedV5Action:false
+ });
+}
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
  nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
@@ -522,6 +554,112 @@ function reviewC1NativeHiddenFinalM5Strokes({
  // A source crossing a projection-only event does not manufacture an M0
  // vertex, and an unsigned contour M5 status is NEVER a solid/dashed line.
  // No request-provided face-ray certificate enters this final consumer.
+ // Reconsume EVERY actual OCCT VCompound edge as a separate generated
+ // fragment; interval UNION erases duplicate native edges and cannot by
+ // itself establish a unique source/view stroke topology.
+ const nativeVisibleFragments=new Map();
+ let unmatchedNativeVisibleFragments=0,actualNativeVisibleFragments=0;
+ const nativeVisibleRawAvailable=realNativeVisibleHiddenSourceViewGraphAvailable&&
+  VIEWS.every(v=>Array.isArray(cad?.views?.[v]));
+ if(nativeVisibleRawAvailable){
+  const originals=new Map(originalEdges.map(edge=>[
+   geometry.id+'::'+[...edge].sort().join('|'),edge]));
+  const eq3=(a,b)=>!!a&&!!b&&['x','y','z'].every(k=>
+   Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
+  const eq2=(a,b)=>!!a&&!!b&&a.u===b.u&&a.v===b.v;
+  for(const view of VIEWS)for(const edge of cad.views[view]){
+   actualNativeVisibleFragments++;
+   if(edge?.occtHLRVisibilityClass!=='visible-sharp'||
+      edge.actualOCCTHLRFlattenedBRepLineVerified!==true||
+      edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
+      edge.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false)
+    throw new RangeError('not genuine OCCT VCompound native source evidence');
+   const lifts=edge.sourceCandidate3DLifts;
+   if(!Array.isArray(lifts)||lifts.length!==1){
+    unmatchedNativeVisibleFragments++;continue;
+   }
+   const lift=lifts[0],ends=originals.get(lift.sourceEdgeId),
+    range=lift.originalSourceParameterRange,
+    a=ends&&geometry.data.points[ends[0]],
+    b=ends&&geometry.data.points[ends[1]],
+    t0=lift.sourceParameterAtProjectedFrom,
+    t1=lift.sourceParameterAtProjectedTo;
+   if(!ends||!Array.isArray(range)||range.length!==2||
+      ![t0,t1].every(t=>Number.isFinite(t)&&t>=0&&t<=1)||
+      range[0]!==Math.min(t0,t1)||
+      range[1]!==Math.max(t0,t1)||range[0]>=range[1]||
+      lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+      lift.originalOCCTSourceLineCurveVerified!==true||
+      lift.originalXYZReprojectsToHLR!==true||
+      lift.v5Authorized!==false||
+      lift.originalVertexIds?.join('|')!==ends.join('|'))
+    throw new RangeError('actual native visible edge has untrusted original 3D source');
+   const p=t=>({x:a.x+(b.x-a.x)*t,
+    y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+   const actual=(eq3(lift.actualOriginalOCCTBRepFrom3D,a)&&
+     eq3(lift.actualOriginalOCCTBRepTo3D,b))||
+     (eq3(lift.actualOriginalOCCTBRepFrom3D,b)&&
+      eq3(lift.actualOriginalOCCTBRepTo3D,a));
+   if(!actual||!eq3(lift.fromCandidate3D,p(t0))||
+      !eq3(lift.toCandidate3D,p(t1))||
+      !eq2(project(p(t0))[view],edge.from)||
+      !eq2(project(p(t1))[view],edge.to)){
+    unmatchedNativeVisibleFragments++;continue;
+   }
+   const direct=edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
+   if(direct!==null&&direct!==lift.sourceEdgeId)
+    throw new RangeError('actual native IsSame contradicts OCCT original edge');
+   const key=view+'@'+lift.sourceEdgeId;
+   if(!nativeVisibleFragments.has(key))nativeVisibleFragments.set(key,[]);
+   nativeVisibleFragments.get(key).push([...range]);
+  }
+ }
+ const nativeVisibleTilingRows=[];
+ if(nativeVisibleRawAvailable){
+  for(const viewRow of realNativeVisibleHiddenOriginalSourceViewCoverage){
+   const tiling=certifyExactNativeGeneratedSourceTiling({
+    sourceViewKey:viewRow.sourceViewKey,
+    intervals:nativeVisibleFragments.get(viewRow.sourceViewKey)??[]
+   });
+   // If some generated edges are unresolved, keep a diagnostic only.
+   // All accepted true-source intervals must come from this genuine
+   // raw HLR population, never a source-view summary in isolation.
+   // Exact current-native source witnesses must be a SUBSET of the
+   // M5-accepted source-view union. OCCT paper endpoints may be rounded,
+   // so other segments remain UNDETERMINED rather than being tolerance
+   // snapped into a complete original 3D source edge.
+   for(const span of tiling.actualNativeOriginalSourceUnion)
+    if(!exactCandidateIntervalCoverage(span,
+       viewRow.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals).
+       entireOriginalParameterIntervalCovered)
+     throw new RangeError('actual exact native generated source fragment exceeds accepted M5 source');
+   if(unmatchedNativeVisibleFragments===0&&
+      !intervalsMatch(tiling.actualNativeOriginalSourceUnion,
+       viewRow.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals))
+    throw new RangeError('native generated VCompound source fragments contradict M5 accepted union');
+   nativeVisibleTilingRows.push(tiling);
+  }
+ }
+ const nativeVisibleHLRSourceTiling=frozen({
+  available:nativeVisibleRawAvailable,
+  allTrueGeneratedNativeVisibleSourceLiftsCertified:
+   nativeVisibleRawAvailable&&unmatchedNativeVisibleFragments===0,
+  genuinelyExactMeasuredNativeVisibleSegments:
+   actualNativeVisibleFragments-unmatchedNativeVisibleFragments,
+  trueGeneratedOCCTVisibleSegmentsInspected:actualNativeVisibleFragments,
+  unverifiedGeneratedOCCTVisibleSegments:unmatchedNativeVisibleFragments,
+  sourceViewsAudited:nativeVisibleTilingRows.length,
+  originalSourceViewsWithDuplicateGeneratedHLRIntervals:
+   nativeVisibleTilingRows.filter(x=>
+    x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length,
+  originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication:
+   nativeVisibleTilingRows.filter(x=>
+    x.disjointExactCompleteOriginalSourceGeneratedEdgeTiling).length,
+  rows:nativeVisibleTilingRows,
+  allGeneratedEdgeToOriginalTopoDSHistoryCertified:false,
+  allOpaqueSceneAndOfficialGBLineStylesCertified:false,
+  signedV5ActionCount:0
+ });
  const nativeSourceFaceRaySubspans=[];
  let nativeSourceWholeOpaqueFaceRayReconciliationAvailable=false;
  if(realNativeVisibleHiddenSourceViewGraphAvailable&&
@@ -651,7 +789,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
     spans.every(x=>
      x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible===true)&&
     native.originalM4M5SourceParameterPartitionComplete===true&&
-    native.originalRealOCCTBRep3DSourceInventoryVerified===true;
+    native.originalRealOCCTBRep3DSourceInventoryVerified===true&&
+    (!nativeVisibleHLRSourceTiling.available||
+     (nativeVisibleHLRSourceTiling.
+       allTrueGeneratedNativeVisibleSourceLiftsCertified===true&&
+      !nativeVisibleTilingRows.some(x=>
+       x.sourceViewKey===native.sourceViewKey&&
+       x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)));
    sourceViewRayParametricClosure.push({
     ...partition,
     realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation:
@@ -1319,6 +1463,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts,rows,canonicalOriginalM5SourceInventory,
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
+  nativeVisibleHLRSourceTiling,
   nativeVHWFaceRayAndHLRReconciliation,
   fullSourceVHWFaceRayAndActualHLRClosure,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
@@ -1333,4 +1478,5 @@ function reviewC1NativeHiddenFinalM5Strokes({
  });
 }
 module.exports={reviewC1NativeHiddenFinalM5Strokes,
- certifyExactOriginalRaySourceParameterPartition};
+ certifyExactOriginalRaySourceParameterPartition,
+ certifyExactNativeGeneratedSourceTiling};
