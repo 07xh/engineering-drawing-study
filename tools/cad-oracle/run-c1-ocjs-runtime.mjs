@@ -776,7 +776,7 @@ for(const [index,geometry] of general.entries()){
      endpointJoins:line.genuineFrontSourceEndpointJoinsVerified,
      continuousFrontRay:line.continuouslyFrontRayClearVerified},native};
   });
-  console.log('C1_HELD_ORIGINAL_3D_ENDPOINTS '+JSON.stringify(heldEndpointEvidence));
+  console.error('C1_HELD_ORIGINAL_3D_ENDPOINTS '+JSON.stringify(heldEndpointEvidence));
  }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
