@@ -1,13 +1,10 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {exactCandidateIntervalCoverage:cover}=
- require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {certifyHiddenNativeOriginalOpenIntervalDualCoverage:combine}=
  require('../../workbench/c1-native-hidden-dual-proof-open-interval-union.cjs');
 const prove=(strict,mask,range=[0,1])=>combine({
  originalSourceParameterRange:range,
- strictInteriorRanges:strict,frontVisibleMaskRanges:mask,
- exactIntervalCoverage:cover
+ strictInteriorRanges:strict,frontVisibleMaskRanges:mask
 });
 test('native hidden HLR complete only when complementary strict 3D inward and actually visible front native OCCT paper ranges cover entire source',()=>{
  const r=prove([[0,.4]],[[.4,1]]);
@@ -54,4 +51,40 @@ test('invalid original parameter intervals or untrusted proof range fail closed'
  assert.throws(()=>prove([],[],[-.1,1]),/native HLR bounded/);
  assert.throws(()=>prove([[0,1.1]],[]),/verified finite native CAD source interval/);
  assert.throws(()=>prove([],[[.4,.4]]),/verified finite native CAD source interval/);
+});
+
+test('forged external interval union cannot erase a real one-ULP native source gap',()=>{
+ const half=.5,next=half+Number.EPSILON/2;
+ let forgedCalls=0;
+ const forged=()=>{forgedCalls++;return {
+  entireOriginalParameterIntervalCovered:true,
+  positiveLengthCoveredIntervals:[[0,1]],
+  positiveLengthUncoveredIntervals:[],
+  originalSourceSubspanHasGenuinePositiveLengthGap:false
+ };};
+ const result=combine({
+  originalSourceParameterRange:[0,1],
+  strictInteriorRanges:[[0,half]],
+  frontVisibleMaskRanges:[[next,1]],
+  exactIntervalCoverage:forged
+ });
+ assert.equal(forgedCalls,0);
+ assert.equal(result.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor,false);
+ assert.deepEqual(result.outstandingUnprovedOriginalParameterIntervals,
+  [[half,next]]);
+ assert.deepEqual(result.onlyLocallyVerifiedHiddenOrFrontMaskIntervals,
+  [[0,half],[next,1]]);
+ assert.equal(result.globallyFinalStandardLineStyleCertified,false);
+ assert.equal(result.signedV5Action,false);
+});
+test('trusted strict-M5 and front-visible union positively completes touching original-source intervals without signing V5',()=>{
+ const result=prove([[0,.3]],[[.3,.7],[.7,1]]);
+ assert.equal(result.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor,true);
+ assert.equal(result.needingBothPositiveProofTypesForFullCoverage,undefined);
+ assert.deepEqual(result.outstandingUnprovedOriginalParameterIntervals,[]);
+ assert.deepEqual(result.onlyLocallyVerifiedHiddenOrFrontMaskIntervals,[[0,1]]);
+ assert.equal(result.strictInwardSourceEntireOpenIntervalProven,false);
+ assert.equal(result.independentFrontVisibleSourceMaskEntireOpenIntervalProven,false);
+ assert.equal(result.completeOCCTGeneratedBRepEdgeOriginalTopoDSHistory,false);
+ assert.equal(result.signedV5Action,false);
 });
