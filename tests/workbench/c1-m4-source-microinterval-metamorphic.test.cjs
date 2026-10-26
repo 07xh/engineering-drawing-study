@@ -123,3 +123,23 @@ test('source coverage rejects overlapping candidate multiplicity even when union
   .some(b=>Math.max(a[0],b[0])<Math.min(a[1],b[1])));
  assert.equal(duplicateNativeIntervals,true);
 });
+
+test('exact interval union is invariant under source candidate order',()=>{
+ const a=[[0.75,1],[0,0.25],[0.25,0.75]];
+ const b=[...a].reverse();
+ const first=exactCandidateIntervalCoverage([0,1],a);
+ const second=exactCandidateIntervalCoverage([0,1],b);
+ assert.deepEqual(first,second);
+ assert.equal(first.entireOriginalParameterIntervalCovered,true);
+ assert.deepEqual(first.positiveLengthCoveredIntervals,[[0,1]]);
+ assert.deepEqual(a,[[0.75,1],[0,0.25],[0.25,0.75]]);
+});
+test('exact coverage clips native intervals to requested original physical subspan',()=>{
+ const result=exactCandidateIntervalCoverage([0.25,0.75],[
+  [0,0.5],[0.625,1]]);
+ assert.deepEqual(result.positiveLengthCoveredIntervals,
+  [[0.25,0.5],[0.625,0.75]]);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,
+  [[0.5,0.625]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,false);
+});
