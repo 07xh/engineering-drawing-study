@@ -632,6 +632,28 @@ for(const [index,geometry] of general.entries()){
   assert.throws(()=>auditC1RealOcctVisibleContourSourceParity({
    geometry,revision:40+index,cad:forgedCad,nativeProof:forgedProof
   }),/coincident native visible HLR paper segment has conflicting original 3D front owners/);
+  // A SECOND native ordinal covering only HALF the exact same paper
+  // interval must also fail, even though the old whole-segment equality
+  // check cannot detect it. The two 3D sources are actual different M0
+  // edges of this genuine pinned OCCT convex solid.
+  const mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2},
+   partialRange=[Math.min(t0,.5),Math.max(t0,.5)],
+   partialLift={...aliasLift,
+    sourceParameterAtProjectedTo:.5,
+    originalSourceParameterRange:partialRange,
+    toCandidate3D:{...mid}},
+   partialCad={...cad,views:{...cad.views,
+    [w.view]:[...cad.views[w.view],{
+     ...real,from:{...real.from},to:project(mid)[w.view],
+     sourceCandidate3DLifts:[partialLift]}]}},
+   partialProof={...realNativeProof,
+    independentlyM5AuthenticatedVisibleNativeGeneratedEdges:[
+     ...authenticNativeWitnesses,{...w,sourceEdgeId,
+      nativeVisibleHLREdgeOrdinal:newOrdinal,
+      originalSourceParameterRange:partialRange}]};
+  assert.throws(()=>auditC1RealOcctVisibleContourSourceParity({
+   geometry,revision:40+index,cad:partialCad,nativeProof:partialProof
+  }),/overlapping native visible HLR paper segments have conflicting original 3D front owners/);
  }
  let formallySigned=false,scopedOfficialVisibleContourLines=0;
  if(exactNativeContourForRelease.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour){
