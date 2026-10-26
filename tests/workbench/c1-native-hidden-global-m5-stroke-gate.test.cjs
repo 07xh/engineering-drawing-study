@@ -1223,3 +1223,47 @@ test('native generated HCompound source interval outside [0,1] cannot silently e
  x.projectedEncounters.rows[0].genuineNativeHLROriginalSourceParameterRange=[0,1+Number.EPSILON];
  assert.throws(()=>review(x),/native|interval|range|source/i);
 });
+
+test('genuine OCCT projection roundoff is separately diagnosed without certifying a source edge or national line type',()=>{
+ const x=withMeasuredRealVCompoundFragments(),
+  native=x.cad.views.V[0];
+ native.to.u+=2e-15;
+ const r=review(x),d=r.nativeVisibleHLRSourceTiling,
+  held=d.independentlyHeldGeneratedNativeVisibleEdgeCauses;
+ assert.equal(d.available,true);
+ assert.equal(d.trueGeneratedOCCTVisibleSegmentsInspected,2);
+ assert.equal(d.unverifiedGeneratedOCCTVisibleSegments,1);
+ assert.equal(d.genuinelyExactMeasuredNativeVisibleSegments,1);
+ assert.equal(d.unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,1);
+ assert.equal(d.independentHeldNativeVisibleReasonCounts['native-hlr-projected-paper-not-bit-exact'],1);
+ assert.equal(held[0].view,'V');
+ assert.equal(held[0].nativeHLREdgeOrdinal,0);
+ assert.equal(held[0].exactMeasuredOriginalSourceXYZMatchesM0,true);
+ assert.equal(held[0].exactNativePaperEndpointsMatchM0,false);
+ assert.equal(held[0].paperWithinNonCertifyingNumericEnvelope,true);
+ assert.ok(held[0].maxAbsoluteNativePaperResidual>0);
+ assert.equal(held[0].actualOCCTNativeSourceEdgeFullyCertified,false);
+ assert.equal(held[0].officialGBLineStyleCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('native HLR original source ambiguity reports its cause and stays unverified even if paper visually coincides',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ x.cad.views.V[0].sourceCandidate3DLifts=[];
+ const r=review(x).nativeVisibleHLRSourceTiling;
+ assert.equal(r.unverifiedGeneratedOCCTVisibleSegments,1);
+ assert.equal(r.independentHeldNativeVisibleReasonCounts[
+  'nonunique-or-unmapped-native-original-3d-source'],1);
+ assert.equal(r.independentlyHeldGeneratedNativeVisibleEdgeCauses[0].
+  sourceCandidate3DLiftCount,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('true native paper residual over diagnostic floating envelope is never snapped into proof',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ x.cad.views.V[0].to.u+=.000001;
+ const r=review(x).nativeVisibleHLRSourceTiling,h=
+  r.independentlyHeldGeneratedNativeVisibleEdgeCauses[0];
+ assert.equal(h.reason,'native-hlr-projected-paper-not-bit-exact');
+ assert.equal(h.paperWithinNonCertifyingNumericEnvelope,false);
+ assert.equal(r.genuinelyExactMeasuredNativeVisibleSegments,1);
+ assert.equal(r.allTrueGeneratedNativeVisibleSourceLiftsCertified,false);
+});
