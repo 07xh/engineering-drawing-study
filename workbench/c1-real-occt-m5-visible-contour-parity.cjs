@@ -84,6 +84,12 @@ function auditC1RealOcctVisibleContourSourceParity({
     contour.canonicalV5ActionParityVerified!==false)
   throw new RangeError('genuine recomputed original M5 3D contour missing');
  const nativeByKey=new Map();
+ // One generated VCompound HLR edge ordinal identifies one actual native
+ // paper edge in one view. Different original 3D sources cannot both be
+ // independently unique frontmost physical owners of that SAME edge.
+ // This is only a fail-closed provenance invariant, not recovered TopoDS
+ // history or permission to sign an engineering line / V5 action.
+ const nativeGeneratedOrdinalOwners=new Map();
  let matchedNative=0;
  for(const witness of nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
   const {view,sourceEdgeId,originalSourceParameterRange:span,
@@ -104,6 +110,11 @@ function auditC1RealOcctVisibleContourSourceParity({
      seg.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
      seg.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false)
    throw new RangeError('forged or stale current genuine visible HLR source witness');
+  const generatedOrdinalKey=view+'@'+ordinal;
+  const previousOwner=nativeGeneratedOrdinalOwners.get(generatedOrdinalKey);
+  if(previousOwner!==undefined&&previousOwner!==sourceEdgeId)
+   throw new RangeError('one generated OCCT visible HLR ordinal has conflicting original 3D sources');
+  nativeGeneratedOrdinalOwners.set(generatedOrdinalKey,sourceEdgeId);
   const candidates=seg.sourceCandidate3DLifts.filter(c=>
    c.sourceEdgeId===sourceEdgeId&&
    c.originalSourceParameterRange?.[0]===span[0]&&

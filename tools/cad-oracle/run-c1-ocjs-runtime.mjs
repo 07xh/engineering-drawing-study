@@ -542,6 +542,27 @@ for(const [index,geometry] of general.entries()){
   geometry,revision:40+index,cad,
   nativeProof:nativeHiddenM5.nativeHLRVertexConcordance
  });
+ // Adversarial real-WASM provenance: a single generated HLR edge ordinal
+ // cannot be independently claimed as the unique original physical 3D
+ // source by TWO different M0 edges, even if the 2D paper line overlaps.
+ // Preserve the authentic positive proof; forge only an additional witness.
+ const realNativeProof=nativeHiddenM5.nativeHLRVertexConcordance;
+ const authenticNativeWitnesses=
+  realNativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges;
+ if(authenticNativeWitnesses.length>0){
+  const first=authenticNativeWitnesses[0];
+  const alternate=geometry.data.edges.map(edge=>
+   geometry.id+'::'+[...edge].sort().join('|')).find(id=>
+   id!==first.sourceEdgeId);
+  assert.ok(alternate,'real geometry must offer a distinct source for the alias counterexample');
+  const forgedNativeProof={...realNativeProof,
+   independentlyM5AuthenticatedVisibleNativeGeneratedEdges:[
+    ...authenticNativeWitnesses,{...first,sourceEdgeId:alternate}
+   ]};
+  assert.throws(()=>auditC1RealOcctVisibleContourSourceParity({
+   geometry,revision:40+index,cad,nativeProof:forgedNativeProof
+  }),/one generated OCCT visible HLR ordinal has conflicting original 3D sources/);
+ }
  let formallySigned=false,scopedOfficialVisibleContourLines=0;
  if(exactNativeContourForRelease.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour){
  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
