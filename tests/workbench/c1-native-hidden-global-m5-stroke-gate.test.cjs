@@ -25,6 +25,20 @@ const caseData=()=>{
    view:'H',nativeHiddenSharpEdgeOrdinal:0,
    remainingOriginal3DPhysicalSourceUnique:true,
    originalHiddenSourceEdgeId:'G::A|B',
+   locallyExplainedNativeHiddenOpenPaperInterval:true,
+   independentOpenIntervalRayAndFrontVisibleUnion:{
+    originalSourceParameterRange:[0,1],
+    strictInteriorIndependentlyVerifiedIntervals:[[0,.4]],
+    realVisibleFrontSourceDepthMaskVerifiedIntervals:[[.4,1]],
+    onlyLocallyVerifiedHiddenOrFrontMaskIntervals:[[0,1]],
+    outstandingUnprovedOriginalParameterIntervals:[],
+    entireActualNativeHLROpenPaperIntervalLocallyAccountedFor:true,
+    strictInwardSourceEntireOpenIntervalProven:false,
+    independentFrontVisibleSourceMaskEntireOpenIntervalProven:false,
+    globallyFinalStandardLineStyleCertified:false,
+    completeOCCTGeneratedBRepEdgeOriginalTopoDSHistory:false,
+    signedV5Action:false
+   },
    fullGBDashedLineOrVisibleLineAssignmentSigned:false,signedV5Action:false
   }]},
   endpointFans:{sourceGeometryId:'G',revision,
@@ -530,6 +544,50 @@ test('global M5 rejects fabricated source-uniqueness certificate with contradict
   canonicalM4M5NativeHLRJointSourceIntervalEvidence;
  joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage=false;
  assert.throws(()=>review(x),/physical-source full-coverage flags contradict independent exact intervals/);
+});
+test('same real HLR source M5 strictly-inward and visible-front subintervals join continuously, without certifying generated TopoDS edge history',()=>{
+ const out=review(caseData()),row=out.rows[0];
+ assert.equal(out.counts.realNativeHiddenOpenIntervalsWithIndependentlyRecomputedM5Occlusion,1);
+ assert.deepEqual(row.actualNativeTopodsOpenIntervalContinuousM5CoverageIndependentlyRecomputed.
+  positiveLengthCoveredIntervals,[[0,1]]);
+ assert.equal(row.jointPositiveM5Prerequisites.continuousOriginalModelAndRealNativeHLROcclusion,true);
+ assert.equal(row.localOriginal3DSourceExactM5OcclusionAndNativeIsSameEndpointConjunction,false);
+ assert.equal(row.generatedTopoDSEdgeOriginalTopoDSEdgeHistoryStillMissing,true);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+});
+test('one ULP gap between strict original M5 occlusion and genuine visible-front source witness blocks native continuous proof',()=>{
+ const x=caseData(),u=x.dualProof.rows[0].
+  independentOpenIntervalRayAndFrontVisibleUnion;
+ const half=.5,next=half+Number.EPSILON/2;
+ u.strictInteriorIndependentlyVerifiedIntervals=[[0,half]];
+ u.realVisibleFrontSourceDepthMaskVerifiedIntervals=[[next,1]];
+ u.onlyLocallyVerifiedHiddenOrFrontMaskIntervals=[[0,half],[next,1]];
+ u.outstandingUnprovedOriginalParameterIntervals=[[half,next]];
+ u.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor=false;
+ x.dualProof.rows[0].locallyExplainedNativeHiddenOpenPaperInterval=false;
+ const out=review(x),row=out.rows[0];
+ assert.equal(out.counts.realNativeHiddenOpenIntervalsWithUnprovenM5Occlusion,1);
+ assert.deepEqual(row.actualNativeTopodsOpenIntervalContinuousM5CoverageIndependentlyRecomputed.
+  positiveLengthUncoveredIntervals,[[half,next]]);
+ assert.equal(row.jointPositiveM5Prerequisites.continuousOriginalModelAndRealNativeHLROcclusion,false);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('forged continuous OCCT HLR occlusion label without genuine source interval witnesses is rejected',()=>{
+ const x=caseData(),u=x.dualProof.rows[0].
+  independentOpenIntervalRayAndFrontVisibleUnion;
+ u.onlyLocallyVerifiedHiddenOrFrontMaskIntervals=[[0,1]];
+ u.strictInteriorIndependentlyVerifiedIntervals=[[0,.4]];
+ u.realVisibleFrontSourceDepthMaskVerifiedIntervals=[[.6,1]];
+ assert.throws(()=>review(x),/native generated TopoDS original-source M5 ray coverage contradicts independently exact interval union/);
+});
+test('wrong original 3D source parameter interval cannot be combined with a native generated edge',()=>{
+ const x=caseData();
+ x.dualProof.rows[0].independentOpenIntervalRayAndFrontVisibleUnion.
+  originalSourceParameterRange=[.2,1];
+ assert.throws(()=>review(x),/real native generated HLR interval lacks same-source M5 continuous observer-ray evidence/);
 });
 test('M5 rejects proof references stitched across different authentic native OCCT runs',()=>{
  const x=caseData();
