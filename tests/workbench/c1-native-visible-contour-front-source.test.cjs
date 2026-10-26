@@ -86,7 +86,7 @@ test('false depth inside a projected native HLR endpoint cannot create a physica
 });
 test('HLR native paper with misplaced even one binary64 unit is never projected/3D certified by an epsilon',()=>{
  const x=caseData();
- x.seg.from.u+=Number.EPSILON;
+ x.seg.from.u+=Number.EPSILON*4; // one representable ULP above the magnitude-2 coordinate
  const r=audit(x);
  assert.equal(r.status,'undetermined');
  assert.equal(r.signedV5Action,false);
