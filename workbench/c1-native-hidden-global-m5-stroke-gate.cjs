@@ -220,6 +220,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
    noncollapsedCompleteOriginalSourceViewCount:0,
    noncollapsedMissingOriginalSourceViews:[],
    noncollapsedIncompleteOriginalSourceViews:[],
+   noncollapsedUncoveredOriginalSourceParameterIntervals:[],
    allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions:false,
    missingOriginalSourceViews:[],
    incompleteOriginalSourceViewPartitions:[],
@@ -277,12 +278,29 @@ function reviewC1NativeHiddenFinalM5Strokes({
    !projectedBySourceView.get(key).projectionCollapsedExactly);
   const noncollapsedComplete=noncollapsed.length-
    noncollapsedMissing.length-noncollapsedIncomplete.length;
+  // A single actionable exact original [0,1] obligation ledger for every
+  // DRAWABLE source/view: absent M5 source means [0,1] is unaccounted;
+  // incomplete M5 source retains its genuine binary64 gaps (even 1 ULP).
+  // Never include a point projection, or treat a missing source as proven.
+  const noncollapsedUncovered=noncollapsed.filter(key=>
+   missing.includes(key)||incomplete.includes(key)).map(key=>{
+    const absent=missing.includes(key),projection=projectedBySourceView.get(key);
+    return {
+     sourceViewKey:key,missingEntireSourceView:absent,
+     uncoveredOriginalParameterIntervals:absent?[[0,1]]:
+      sourcePartitionCoverage.get(key).gaps,
+     projectedFrom:projection.projectedFrom,
+     projectedTo:projection.projectedTo,
+     signedV5Action:false
+    };
+   });
   canonicalOriginalM5SourceInventory=frozen({
    originalM0EdgeInventoryAvailable:true,
    noncollapsedOriginalSourceViewCount:noncollapsed.length,
    noncollapsedCompleteOriginalSourceViewCount:noncollapsedComplete,
    noncollapsedMissingOriginalSourceViews:noncollapsedMissing,
    noncollapsedIncompleteOriginalSourceViews:noncollapsedIncomplete,
+   noncollapsedUncoveredOriginalSourceParameterIntervals:noncollapsedUncovered,
    allNoncollapsedOriginalSourceViewsHaveCompleteM5ParameterPartitions:
     noncollapsed.length>0&&noncollapsedMissing.length===0&&
     noncollapsedIncomplete.length===0,
