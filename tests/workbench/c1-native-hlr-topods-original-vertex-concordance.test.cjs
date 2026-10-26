@@ -597,3 +597,54 @@ test('a genuine three-source original 3D native fan remains locally certified bu
  assert.equal(out.constructionIntentAuthorized,false);
  assert.equal(out.signedV5ActionCount,0);
 });
+
+const genuineNativeInteriorSplit=()=>{
+ const x=splitAcceptedNativeVisibleSource(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const at5={u:5,v:4},a={
+  hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'to',nativePaperPoint:{...at5}
+ },b={
+  hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'from',nativePaperPoint:{...at5}
+ };
+ markGraphComplete(x);
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push({
+  ...completeStar(a,b),exactNativePaperCoordinatesForEntireComponent:{...at5}
+ });
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ return x;
+};
+test('real native IsSame junction between two visible split HLR strokes has SAME positive original 3D source interior t=1/2, without inventing an M0 vertex',()=>{
+ const x=genuineNativeInteriorSplit(),r=audit(x);
+ const star=r.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(r.counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,1);
+ assert.equal(star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven,true);
+ assert.equal(star.source3DEdgeInteriorOriginalEdgeId,'G::A|D');
+ assert.equal(star.source3DEdgeInteriorParameter,.5);
+ assert.deepEqual(star.source3DEdgeInterior3DPoint,{x:5,y:4,z:0});
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ assert.equal(star.independentlyVerifiedOriginalM03DVertexId,null);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('ULP gap or independently invalid other native source endpoint fails closed for genuine split physical continuity',()=>{
+ const x=genuineNativeInteriorSplit();
+ const lift=x.cad.views.H[1].sourceCandidate3DLifts[0];
+ lift.sourceParameterAtProjectedFrom=.5+Number.EPSILON;
+ lift.originalSourceParameterRange=[.5+Number.EPSILON,1];
+ lift.fromCandidate3D.x=5+Number.EPSILON*10;
+ let star=audit(x).completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven,false);
+ lift.sourceParameterAtProjectedFrom=.5;
+ lift.originalSourceParameterRange=[.5,1];
+ lift.fromCandidate3D.x=5;
+ lift.toCandidate3D.z=1;
+ star=audit(x).completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven,false);
+});
+test('without a legitimate same-revision M5 front-clearance proof the original split HLR joint is not certified',()=>{
+ const x=genuineNativeInteriorSplit();
+ x.originalClosedRayM5.rows[0].completeSourceOriginal3DRayClosedIntervalClear=false;
+ const result=audit(x);
+ assert.equal(result.counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
+ assert.equal(result.completeGenuineNativeHLRJunctionStars[0].
+  actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven,false);
+});
