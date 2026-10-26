@@ -132,7 +132,7 @@ test('a malicious or stale original source parameter gap outside actual native h
  const x=fixture();
  x.cad.hiddenSharpViews.H[0].sourceCandidate3DLifts[0].
   originalSourceParameterRange=[0,.99];
- assert.throws(()=>audit(x),/residual source parameter/);
+ assert.throws(()=>audit(x),/does not match genuine native HLR 3D lift/);
 });
 test('complete TRUE OCCT VCompound native endpoints and HCompound native source reproject exactly: entire hidden open paper line now has independent positive proof',()=>{
  const x=fixture(),v=x.cad.views.H[0];
