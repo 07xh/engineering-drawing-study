@@ -629,6 +629,26 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeVHWPhysicalSourceUnion.
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
  assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
+ const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
+ assert.equal(generatedVisibleM5PhysicalTiling.available,true);
+ assert.equal(generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
+  ['V','H','W'].reduce((n,v)=>n+cad.views[v].length,0));
+ assert.equal(generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,0);
+ assert.equal(generatedVisibleM5PhysicalTiling.sourceViewsAudited,
+  geometry.data.edges.length*3);
+ assert.equal(
+  generatedVisibleM5PhysicalTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,
+  generatedVisibleM5PhysicalTiling.rows.filter(x=>
+   x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length);
+ assert.equal(
+  generatedVisibleM5PhysicalTiling.originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication,
+  generatedVisibleM5PhysicalTiling.rows.filter(x=>
+   x.disjointExactCompleteOriginalSourceGeneratedEdgeTiling).length);
+ assert.ok(generatedVisibleM5PhysicalTiling.rows.every(row=>
+  row.fullGeneratedOCCTToOriginalTopoDSHistoryCertified===false&&
+  row.officialGBLineStyleSigned===false&&row.signedV5Action===false));
+ assert.equal(generatedVisibleM5PhysicalTiling.allGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(generatedVisibleM5PhysicalTiling.signedV5ActionCount,0);
  // Independently recompute each actual reviewed convex 3D source M4 cut's
  // observer ray against ALL original opaque support faces, then cross-join
  // positive ray status with physically attributed real OCCT HLR spans.
@@ -1214,6 +1234,10 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   measuredOCCTVisibleGeneratedHLREdgePhysicalOriginal3DSourceTiling:
+    generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
+   trueNativeHLRVisibleSourceViewsWithOverlappingGeneratedPhysicalFragments:
+    generatedVisibleM5PhysicalTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,
    originalVHWSourceViewsWithFullNoOverlapM4AllFaceRayParameterPartitions:
     fullOriginalFaceRaySource.
      M4RayPartitionsWithExactPositiveNoOverlapFullSourceCoverage,
