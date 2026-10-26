@@ -485,10 +485,10 @@ test('malformed native generated HLR endpoint ordinal cannot masquerade as real 
   originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
   wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
  });
- assert.throws(()=>review(x),/invalid genuine native HLR endpoint ordinal/);
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
  x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars[0].
   generatedHLREndpoints[0].nativeHLREdgeOrdinal=0.5;
- assert.throws(()=>review(x),/invalid genuine native HLR endpoint ordinal/);
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
 });
 
 test('visible HLR star member cannot carry invalid ordinal or duplicate its IsSame witness',()=>{
