@@ -632,6 +632,21 @@ for(const [index,geometry] of general.entries()){
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
  assert.equal(
+  generatedVisibleM5PhysicalTiling.
+   exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay,
+  nativeHiddenM5.nativeHLRVertexConcordance.
+   independentlyM5AuthenticatedVisibleNativeGeneratedEdges.length);
+ assert.ok(generatedVisibleM5PhysicalTiling.
+  selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep<=
+  generatedVisibleM5PhysicalTiling.
+   exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay);
+ assert.ok(nativeHiddenM5.nativeHLRVertexConcordance.
+  independentlyM5AuthenticatedVisibleNativeGeneratedEdges.every(v=>
+   v.uniquePhysicalM5FrontOriginalSourceFromActualBRep===true&&
+   v.fullOriginalPhysicalSourceM5ClosedRayClear===true&&
+   v.generatedEdgeOriginalTopoDSHistoryRecovered===false&&
+   v.engineeringLineCertified===false&&v.signedV5Action===false));
+ assert.equal(
   generatedVisibleM5PhysicalTiling.genuinelyExactMeasuredNativeVisibleSegments+
   generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,
   generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected);
@@ -1298,6 +1313,12 @@ for(const [index,geometry] of general.entries()){
     generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
    measuredOCCTVisibleNativeGeneratedEdgesWithExactOriginal3DEndpoints:
     generatedVisibleM5PhysicalTiling.genuinelyExactMeasuredNativeVisibleSegments,
+   genuineRealOCCTGeneratedVisibleEdgesWithIndependentlyUniqueM5Front3DSource:
+    generatedVisibleM5PhysicalTiling.
+     exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay,
+   genuineRealOCCTGeneratedVisibleSourceSelectionsReconfirmedByM5FinalNativeLedger:
+    generatedVisibleM5PhysicalTiling.
+     selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep,
    realOCCTNativeGeneratedSourceEdgesHeldForRoundedOrAmbiguousEndpoints:
     generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,
    nativeVisibleHLRUnverifiedReasonCounts:
