@@ -1038,5 +1038,5 @@ test('partial source audit cannot forge all-face M5 observer-ray classification 
 test('claiming model mesh status on a geometrically incomplete source cannot fabricate the reviewed all-opaque-face ray scene',()=>{
  const x=withActualVisibleAndHidden3DSourceCoverage();
  x.geometry.kind='mesh';x.geometry.space='model-3d';x.geometry.unit='mm';
- assert.throws(()=>review(x),/convex|mesh|Geometry|topology|finite/i);
+ assert.throws(()=>review(x),/convex|mesh|Geometry|topology|finite|incomplete original source-view universe/i);
 });
