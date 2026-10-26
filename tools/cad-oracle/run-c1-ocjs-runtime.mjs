@@ -588,6 +588,51 @@ for(const [index,geometry] of general.entries()){
    geometry,revision:40+index,cad,nativeProof:forgedNativeProof
   }),/one generated OCCT visible HLR ordinal has conflicting original 3D sources/);
  }
+ // Genuine OCCT positive witnesses + a deliberately forged SECOND generated
+ // ordinal on the exact same paper stroke. The alternative source is a
+ // different actual M0 edge at another 3D depth, not a duplicate ordinal.
+ // No numerical paper snapping and no permission to sign GB/V5.
+ if(geometry.id==='C1rotated'){
+  const eqPaper=(a,b)=>a?.u===b?.u&&a?.v===b?.v;
+  let coProjected=null;
+  for(const w of authenticNativeWitnesses){
+   const real=cad.views[w.view][w.nativeVisibleHLREdgeOrdinal];
+   const other=geometry.data.edges.find(e=>{
+    const id=geometry.id+'::'+[...e].sort().join('|');
+    if(id===w.sourceEdgeId)return false;
+    const a=project(geometry.data.points[e[0]])[w.view],
+     b=project(geometry.data.points[e[1]])[w.view];
+    return (eqPaper(a,real.from)&&eqPaper(b,real.to))||
+     (eqPaper(b,real.from)&&eqPaper(a,real.to));
+   });
+   if(other){coProjected={w,real,other};break;}
+  }
+  assert.ok(coProjected,
+   'real rotated convex OCCT W/V/H must exhibit a distinct physical 3D edge with identical paper endpoints');
+  const {w,real,other}=coProjected,
+   a=geometry.data.points[other[0]],b=geometry.data.points[other[1]],
+   t0=eqPaper(project(a)[w.view],real.from)?0:1,
+   t1=1-t0,sourceEdgeId=geometry.id+'::'+[...other].sort().join('|');
+  const newOrdinal=cad.views[w.view].length;
+  const aliasLift={...real.sourceCandidate3DLifts[0],
+   sourceEdgeId,originalVertexIds:[...other],
+   sourceParameterAtProjectedFrom:t0,sourceParameterAtProjectedTo:t1,
+   originalSourceParameterRange:[0,1],
+   fromCandidate3D:{...(t0===0?a:b)},toCandidate3D:{...(t1===0?a:b)},
+   actualOriginalOCCTBRepFrom3D:{...a},actualOriginalOCCTBRepTo3D:{...b}};
+  const forgedCad={...cad,views:{...cad.views,
+   [w.view]:[...cad.views[w.view],{
+    ...real,from:{...real.from},to:{...real.to},
+    sourceCandidate3DLifts:[aliasLift]}]}};
+  const forgedProof={...realNativeProof,
+   independentlyM5AuthenticatedVisibleNativeGeneratedEdges:[
+    ...authenticNativeWitnesses,{...w,sourceEdgeId,
+     nativeVisibleHLREdgeOrdinal:newOrdinal,
+     originalSourceParameterRange:[0,1]}]};
+  assert.throws(()=>auditC1RealOcctVisibleContourSourceParity({
+   geometry,revision:40+index,cad:forgedCad,nativeProof:forgedProof
+  }),/coincident native visible HLR paper segment has conflicting original 3D front owners/);
+ }
  let formallySigned=false,scopedOfficialVisibleContourLines=0;
  if(exactNativeContourForRelease.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour){
  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
