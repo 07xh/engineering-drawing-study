@@ -526,3 +526,19 @@ test('orphan visible-only native IsSame star cannot enter the reviewed hidden-ed
  });
  assert.throws(()=>review(x),/no reviewed hidden HLR endpoint/);
 });
+
+test('a native IsSame star with only one distinct endpoint cannot count a duplicated member as a junction',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
+});
