@@ -95,3 +95,16 @@ test('native complete union cannot override a duplicated fragment',()=>{
  assert.deepEqual(result.positiveSameOriginal3DSourceGeneratedEdgeOverlaps,[[0,1]]);
  assert.equal(result.signedV5Action,false);
 });
+
+test('a single native fragment with a one-ULP left gap cannot certify full tiling',()=>{
+ const result=tiling({sourceViewKey:key,intervals:[[Number.MIN_VALUE,1]]});
+ assert.equal(result.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ assert.deepEqual(result.originalSourceParameterGaps,[[0,Number.MIN_VALUE]]);
+ assert.equal(result.signedV5Action,false);
+});
+test('positive ray coverage does not depend on the order of source spans',()=>{
+ const a=ray({sourceViewKey:key,spans:[span(0,.5),span(.5,1)],projectionCollapsedExactly:false});
+ const b=ray({sourceViewKey:key,spans:[span(.5,1),span(0,.5)],projectionCollapsedExactly:false});
+ assert.equal(a.fullOriginalParameterRayPartitionCoverage,b.fullOriginalParameterRayPartitionCoverage);
+ assert.equal(a.disjointCanonicalM4OriginalRayIntervals,b.disjointCanonicalM4OriginalRayIntervals);
+});
