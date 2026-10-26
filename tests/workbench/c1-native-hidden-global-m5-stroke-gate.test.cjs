@@ -736,7 +736,11 @@ test('global original source inventory rejects unknown and duplicated physical M
  assert.throws(()=>review(y),/duplicate original M0 physical edge/);
 });
 test('unavailable original M0 edge inventory is never treated as complete scene proof',()=>{
- const out=review(caseData()).canonicalOriginalM5SourceInventory;
+ const x=caseData();
+ // Existing tests may mutate their shared geometry fixture. Force a truly
+ // absent edge inventory instead of depending on test execution order.
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0}}}};
+ const out=review(x).canonicalOriginalM5SourceInventory;
  assert.equal(out.originalM0EdgeInventoryAvailable,false);
  assert.equal(out.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
  assert.equal(out.signedV5Action,false);
