@@ -629,10 +629,25 @@ function reviewC1NativeHiddenFinalM5Strokes({
   !byKey.has(key));
  if(nativeReviewedWithoutCanonicalSource.length)
   throw new RangeError('native hidden HLR review has no matching canonical M5 original source ledger');
+ const nativeSourceCoverageByView=VIEWS.map(view=>{
+  const canonical=[...byKey.keys()].filter(key=>key.startsWith(view+'@'));
+  const native=[...nativeReviewedSourceViews].filter(key=>key.startsWith(view+'@'));
+  return frozen({
+   view,canonicalSourceCount:canonical.length,
+   nativeHiddenReviewedSourceCount:native.length,
+   canonicalSourcesWithoutNativeHiddenReview:canonical.filter(key=>
+    !nativeReviewedSourceViews.has(key)),
+   completeCanonicalParameterSources:canonical.filter(key=>
+    sourcePartitionCoverage.get(key)?.complete===true).length,
+   fullNativeVisibleAndHiddenHLRSourceHistoryCertified:false,
+   continuousAllOpaqueFaceOcclusionCertified:false
+  });
+ });
  const wholeSceneSourceHLRAndM5Closure=frozen({
   originalM0AllViewSourceParameterCoverageComplete:
    canonicalOriginalM5SourceInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
   canonicalSourceViewRows:byKey.size,
+  nativeSourceCoverageByView,
   nativeReviewedSourceViewRows:nativeReviewedSourceViews.size,
   canonicalSourceViewsWithoutNativeHiddenReview:globallyUnreviewedSourceViews,
   nativeHiddenReviewCoverageIsNotWholeHLRVisibilityCoverage:true,
