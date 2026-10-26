@@ -358,7 +358,12 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      typeof x.source==='string'&&x.vertex!==null&&x.vertex!==undefined);
     const vertices=new Set(physical.map(x=>x.vertex));
     const distinctSources=new Set(physical.map(x=>x.source));
-    const fullyCertified=allSourceMapped&&vertices.size===1&&distinctSources.size>=2;
+    // A complete original physical fan cannot count the same modeled 3D
+    // edge twice as two independent HLR endpoints. Split/generated native
+    // strokes are not additional original source edges; hold the star until
+    // every member has its own independently attributed physical edge.
+    const fullyCertified=allSourceMapped&&vertices.size===1&&
+     distinctSources.size===members.length;
     counts.genuineCompleteGeneratedHLRJunctionComponentsAudited++;
     if(fullyCertified)
      counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex++;
