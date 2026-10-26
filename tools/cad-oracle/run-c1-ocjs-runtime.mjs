@@ -712,6 +712,40 @@ for(const [index,geometry] of general.entries()){
   x.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'));
  assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
  assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
+ // Live genuine OCCT evidence for unresolved H-source endpoints: report the
+ // exact original M0 XYZ, canonical signed M5 3D/paper endpoints and real
+ // native BRep lifts separately. Never use these diagnostics as a signer.
+ const heldPhysicalContours=nativeM5ExteriorContourParity.rows.filter(row=>
+  row.originalM5WholeExteriorContourCertified===true&&
+  row.realOCCTOriginal3DSourceCompleteContourParity===false);
+ if(heldPhysicalContours.length){
+  const {auditC1GlobalVisibleContourProof}=require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
+  const canonicalContour=auditC1GlobalVisibleContourProof({geometry,revision:40+index});
+  const heldEndpointEvidence=heldPhysicalContours.map(row=>{
+   const ids=row.originalPhysical3DSourceEdgeId.split('::').at(-1).split('|');
+   const sourceVertices=ids.map(id=>({id,xyz:geometry.data.points[id],
+    paper:project(geometry.data.points[id])[row.view]}));
+   const line=canonicalContour.views.find(v=>v.view===row.view)
+    ?.candidateIntervals[row.canonicalHullIntervalOrdinal];
+   assert.equal(line?.sourceEdgeId,row.originalPhysical3DSourceEdgeId);
+   assert.equal(row.signedV5Action,false);
+   const native=cad.views[row.view].flatMap((seg,ordinal)=>
+    (seg.sourceCandidate3DLifts??[]).filter(lift=>
+     lift.sourceEdgeId===row.originalPhysical3DSourceEdgeId)
+    .map(lift=>({ordinal,from:seg.from,to:seg.to,
+     originalSourceParameterRange:lift.originalSourceParameterRange,
+     fromCandidate3D:lift.fromCandidate3D,toCandidate3D:lift.toCandidate3D})));
+   return {view:row.view,ordinal:row.canonicalHullIntervalOrdinal,
+    sourceEdgeId:row.originalPhysical3DSourceEdgeId,
+    heldReason:row.heldReason,sourceVertices,
+    canonicalM5:{from3D:line.real3DFrom,to3D:line.real3DTo,
+     paperFrom:line.projectedFromModelMm,paperTo:line.projectedToModelMm,
+     physicalCoverage:line.sourceContourCoverageVerified,
+     endpointJoins:line.genuineFrontSourceEndpointJoinsVerified,
+     continuousFrontRay:line.continuouslyFrontRayClearVerified},native};
+  });
+  console.log('C1_HELD_ORIGINAL_3D_ENDPOINTS '+JSON.stringify(heldEndpointEvidence));
+ }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
  assert.equal(
