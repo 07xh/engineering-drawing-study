@@ -70,3 +70,13 @@ test('M4-only forensic mode never promotes projected coincidences into physical 
   }
  }
 });
+
+test('M4 source graph rejects invalid revision and proof mode rather than silently certifying V5',()=>{
+ const geometry=oblique('C1InvalidProofMode',0,0,0);
+ for(const revision of [0,-1,1.5,NaN]){
+  assert.throws(()=>auditC1ReviewedProjectedSourceEventGraph({
+   geometry,revision,proofMode:'m4-projected-events-only'}),TypeError);
+ }
+ assert.throws(()=>auditC1ReviewedProjectedSourceEventGraph({
+  geometry,revision:112,proofMode:'v5-authorized'}),TypeError);
+});
