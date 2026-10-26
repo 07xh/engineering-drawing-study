@@ -12,7 +12,7 @@
  *
  * This is a read-only M5 gate and NEVER introduces a second signer.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactOriginalM4TransverseCrossingDepth}=
  require('./c1-m4-exact-original-crossing-depth.cjs');
 const {exactCandidateIntervalCoverage}=
@@ -218,11 +218,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    completeOriginalSourceViewCount:0,
    missingOriginalSourceViews:[],
    incompleteOriginalSourceViewPartitions:[],
+   missingOriginalSourceViewProjectionEvidence:[],
+   incompleteOriginalSourceViewProjectionEvidence:[],
    allOriginalSourceViewsHaveCompleteParameterPartitions:false,
    signedV5Action:false
   });
  }else{
-  const expected=new Set();
+  const expected=new Set(),projectedBySourceView=new Map();
   for(const edge of originalEdges){
    if(!Array.isArray(edge)||edge.length!==2||
       !edge.every(v=>typeof v==='string'&&
@@ -230,11 +232,24 @@ function reviewC1NativeHiddenFinalM5Strokes({
       edge[0]===edge[1])
     throw new RangeError('invalid original M0 physical edge inventory');
    const sourceId=geometry.id+'::'+[...edge].sort().join('|');
+   // Reuse the single authoritative first-angle projection kernel.
+   // Classify actual M0 endpoints; do not infer degeneracy from a missing
+   // HLR line or forgive even one binary64 ULP of missing M5 coverage.
+   const from=project(geometry.data.points[edge[0]]);
+   const to=project(geometry.data.points[edge[1]]);
    for(const view of VIEWS){
     const key=view+'@'+sourceId;
     if(expected.has(key))
      throw new RangeError('duplicate original M0 physical edge in source inventory');
     expected.add(key);
+    projectedBySourceView.set(key,frozen({
+     sourceViewKey:key,original3DEndpointIds:[...edge],
+     projectedFrom:from[view],projectedTo:to[view],
+     projectionCollapsedExactly:from[view].u===to[view].u&&
+      from[view].v===to[view].v,
+     completeM5ParameterCoverageCertified:false,
+     signedV5Action:false
+    }));
    }
   }
   if([...byKey.keys()].some(key=>!expected.has(key)))
@@ -247,6 +262,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    expectedOriginalSourceViewCount:expected.size,
    completeOriginalSourceViewCount:expected.size-missing.length-incomplete.length,
    missingOriginalSourceViews:missing,
+   missingOriginalSourceViewProjectionEvidence:missing.map(key=>
+    projectedBySourceView.get(key)),
+   incompleteOriginalSourceViewProjectionEvidence:incomplete.map(key=>
+    projectedBySourceView.get(key)),
    incompleteOriginalSourceViewPartitions:incomplete.map(key=>({
     sourceViewKey:key,
     positiveLengthParameterGaps:sourcePartitionCoverage.get(key).gaps
