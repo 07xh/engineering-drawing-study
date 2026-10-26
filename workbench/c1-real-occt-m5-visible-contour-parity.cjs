@@ -57,6 +57,38 @@ function exactOriginalModelVertexProjectedEdge({a,b,view,from,to}={}){
    orientation:'reversed'};
  return null;
 }
+// Necessary (not sufficient) exact original 3D full-edge witness. A hull
+// vertex is identified by the genuine original M0 source vertex ID, not by
+// comparing rounded paper or interpolated XYZ coordinates with a tolerance.
+function exactOriginalHullVertexIdentitySourceRange({
+ sourceVertexIds,sourceEdgeId,hullVertices,sideIndex,contourSide
+}={}){
+ if(!Array.isArray(sourceVertexIds)||sourceVertexIds.length!==2||
+    sourceVertexIds[0]===sourceVertexIds[1]||
+    typeof sourceEdgeId!=='string'||
+    !Array.isArray(hullVertices)||hullVertices.length<3||
+    !Number.isSafeInteger(sideIndex)||sideIndex<0||
+    sideIndex>=hullVertices.length||
+    contourSide?.sideIndex!==sideIndex||
+    contourSide?.intervals?.length!==1)return null;
+ const first=hullVertices[sideIndex],
+  last=hullVertices[(sideIndex+1)%hullVertices.length],
+  span=contourSide.intervals[0];
+ if(!Array.isArray(first?.sourcePointIds)||
+    !Array.isArray(last?.sourcePointIds)||
+    !Array.isArray(span?.projectedParameterRange)||
+    span.projectedParameterRange.length!==2||
+    span.projectedParameterRange[0]!==0||
+    span.projectedParameterRange[1]!==1||
+    !span.sourceEdgeIds?.includes(sourceEdgeId)||
+    !eq2(contourSide.fromModelMm,first)||
+    !eq2(contourSide.toModelMm,last))return null;
+ const forward=first.sourcePointIds.includes(sourceVertexIds[0])&&
+  last.sourcePointIds.includes(sourceVertexIds[1]),
+  reverse=first.sourcePointIds.includes(sourceVertexIds[1])&&
+  last.sourcePointIds.includes(sourceVertexIds[0]);
+ return forward||reverse?[0,1]:null;
+}
 function auditC1RealOcctVisibleContourSourceParity({
  geometry,revision,cad,nativeProof
 }={}){
@@ -198,22 +230,12 @@ function auditC1RealOcctVisibleContourSourceParity({
      line.continuouslyFrontRayClearVerified===true&&
      line.locallyCompleteVisibleHullSegmentProven===true;
     const sideIndex=line.canonicalHullSideIndex,
-     hullVertices=exactHull[v.view]?.vertices,
      contourSide=contour.contourCoverage.views.find(x=>x.view===v.view)
       ?.sides?.[sideIndex],
-     originalIds=e,
-     fromHull=Number.isSafeInteger(sideIndex)&&sideIndex>=0&&
-      sideIndex<hullVertices?.length?hullVertices[sideIndex]:null,
-     toHull=fromHull?hullVertices[(sideIndex+1)%hullVertices.length]:null,
-     directHullIds=fromHull?.sourcePointIds?.includes(originalIds[0])&&
-      toHull?.sourcePointIds?.includes(originalIds[1]),
-     reverseHullIds=fromHull?.sourcePointIds?.includes(originalIds[1])&&
-      toHull?.sourcePointIds?.includes(originalIds[0]),
-     wholePhysicalHullSide=contourSide?.intervals?.length===1&&
-      contourSide.intervals[0].sourceEdgeIds.includes(line.sourceEdgeId)&&
-      contourSide.intervals[0].projectedParameterRange[0]===0&&
-      contourSide.intervals[0].projectedParameterRange[1]===1&&
-      (directHullIds||reverseHullIds);
+     exactHullPhysicalSourceRange=exactOriginalHullVertexIdentitySourceRange({
+      sourceVertexIds:e,sourceEdgeId:line.sourceEdgeId,
+      hullVertices:exactHull[v.view]?.vertices,sideIndex,contourSide
+     });
     if(literalSignedXYZAndPaper){
      claimRange=[Math.min(t0,t1),Math.max(t0,t1)];
      originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
@@ -221,12 +243,12 @@ function auditC1RealOcctVisibleContourSourceParity({
      claimRange=[...literalModelSourceProjectedEndpoints.range];
      exactOriginalPhysical3DVertexPaperBinding=true;
      originalContour3DParameterRecoveryKind='exact-original-m0-3d-vertex-projection';
-    }else if(sourcePhysicalM5Proof&&wholePhysicalHullSide){
+    }else if(sourcePhysicalM5Proof&&exactHullPhysicalSourceRange){
      // A certified complete hull-side atomic interval whose two literal
      // projected hull vertices carry THIS original M0 edge's endpoint IDs
      // is the entire original 3D physical edge [0,1]. Unlike 2D proximity,
      // the endpoint IDs and exact [0,1] interval are independently audited.
-     claimRange=[0,1];
+     claimRange=exactHullPhysicalSourceRange;
      originalContour3DParameterRecoveryKind='exact-original-m0-hull-vertex-id-topology';
     }else reason='cannot-exactly-normalize-original-signed-contour-3d-source';
     if(claimRange){
@@ -301,4 +323,5 @@ function auditC1RealOcctVisibleContourSourceParity({
  });
 }
 module.exports={auditC1RealOcctVisibleContourSourceParity,
- exactOriginalModelVertexProjectedEdge};
+ exactOriginalModelVertexProjectedEdge,
+ exactOriginalHullVertexIdentitySourceRange};
