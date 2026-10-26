@@ -542,3 +542,71 @@ test('a native IsSame star with only one distinct endpoint cannot count a duplic
  });
  assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
 });
+
+test('whole original M0 edge inventory exposes omitted source views even when one hidden source has [0,1] coverage',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:2,y:0,z:0},
+   C:{x:0,y:1,z:0},D:{x:2,y:1,z:0}},
+  edges:[['A','B'],['C','D']]
+ }};
+ const partial=review(x),inventory=partial.canonicalOriginalM5SourceInventory;
+ assert.equal(inventory.originalM0EdgeInventoryAvailable,true);
+ assert.equal(inventory.expectedOriginalSourceViewCount,6);
+ assert.equal(inventory.completeOriginalSourceViewCount,1);
+ assert.equal(inventory.missingOriginalSourceViews.length,5);
+ assert.equal(inventory.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(partial.rows[0].canonicalOriginalSourceParameterPartitionComplete,true);
+ assert.equal(partial.signedV5ActionCount,0);
+ for(const edge of ['G::A|B','G::C|D']){
+  for(const view of ['V','H','W']){
+   if(edge==='G::A|B'&&view==='H')continue;
+   x.globalM5Review.rows.push({
+    ...x.globalM5Review.rows[0],view,sourceEdgeId:edge,
+    originalSourceParameterRange:[0,1]
+   });
+  }
+ }
+ const complete=review(x),all=complete.canonicalOriginalM5SourceInventory;
+ assert.equal(all.completeOriginalSourceViewCount,6);
+ assert.deepEqual(all.missingOriginalSourceViews,[]);
+ assert.deepEqual(all.incompleteOriginalSourceViewPartitions,[]);
+ assert.equal(all.allOriginalSourceViewsHaveCompleteParameterPartitions,true);
+ assert.equal(all.globalOpaqueOcclusionAndHLRSourceHistoryCertified,false);
+ assert.equal(complete.officialEngineeringGBLineRulesCertified,false);
+ assert.equal(complete.signedV5ActionCount,0);
+});
+test('whole-scene M5 inventory distinguishes a missing edge from a positive-length interval hole',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:2,y:0,z:0}},
+  edges:[['A','B']]
+ }};
+ x.globalM5Review.rows[0].originalSourceParameterRange=[0,0.4];
+ x.globalM5Review.rows.push({
+  ...x.globalM5Review.rows[0],originalSourceParameterRange:[0.6,1]
+ });
+ const r=review(x),inv=r.canonicalOriginalM5SourceInventory;
+ assert.equal(inv.expectedOriginalSourceViewCount,3);
+ assert.equal(inv.completeOriginalSourceViewCount,0);
+ assert.equal(inv.missingOriginalSourceViews.length,2);
+ assert.deepEqual(inv.incompleteOriginalSourceViewPartitions,[{
+  sourceViewKey:'H@G::A|B',positiveLengthParameterGaps:[[0.4,0.6]]
+ }]);
+ assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('canonical M5 inventory cannot invent original M0 edges or duplicate physical edge identities',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:2,y:0,z:0}},
+  edges:[['A','B']]
+ }};
+ x.globalM5Review.rows.push({
+  ...x.globalM5Review.rows[0],sourceEdgeId:'G::C|D',view:'V'
+ });
+ assert.throws(()=>review(x),/unknown original M0 edge\/view/);
+ x.globalM5Review.rows.pop();
+ x.geometry.data.edges.push(['B','A']);
+ assert.throws(()=>review(x),/duplicate original M0 physical edge/);
+});
