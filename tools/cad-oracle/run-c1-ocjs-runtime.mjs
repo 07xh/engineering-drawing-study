@@ -71,6 +71,11 @@ for(const [id,min,max,revision] of cases){
  assert.equal(result.c1CadRuntime.geometryId,args.input.geometryId);
  assert.equal(result.c1CadRuntime.secondV5,false);
  assert.equal(result.c1CadRuntime.newOfficialLineStyleSigner,false);
+ assert.equal(result.c1CadRuntime.everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource,true);
+ assert.equal(result.c1CadRuntime.fullyNative3DSourceVerifiedExteriorM5ContourStrokes,12);
+ assert.equal(result.c1CadRuntime.originalM5SignedExteriorContourStrokes,12);
+ assert.equal(result.c1CadRuntime.sourceProofFromIndependentClosedRayAndActualNativeHLR,true);
+ assert.equal(result.c1CadRuntime.originalGeneratedTopoDSEdgeHistoryNotClaimed,true);
  assert.equal(result.globalVisibleContourProof.allThreeViewsGlobalContourCertified,true);
  assert.equal(result.verifiedLineIntentAndOriginalSingleV5Parity,true);
  assert.equal(result.certifiedVisibleContourLineActionCount,12);
@@ -530,6 +535,15 @@ for(const [index,geometry] of general.entries()){
   'a real CAD source disagreement must block the formal V5');
  assert.equal(audited.counts.cadAndM5Corroborated,
   audited.counts.m5AtomicIntervals);
+ // An independently valid M5 paper hull source may still lack exact
+ // true OCCT generated original physical 3D source coverage. Do not
+ // upgrade paper overlap into a production V5 signoff.
+ const exactNativeContourForRelease=auditC1RealOcctVisibleContourSourceParity({
+  geometry,revision:40+index,cad,
+  nativeProof:nativeHiddenM5.nativeHLRVertexConcordance
+ });
+ let formallySigned=false,scopedOfficialVisibleContourLines=0;
+ if(exactNativeContourForRelease.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour){
  const canonical=compileC1WithOcjsHLR({oc,input:reviewedInput,
   sheetTransform:{origin:{x:350,y:195},scale:3}});
  assert.equal(canonical.wholeSolidV5Ready,false);
@@ -545,8 +559,17 @@ for(const [index,geometry] of general.entries()){
   .every(action=>action.kind==='line'));
  canonical.player.invalidate(42+index,0);
  assert.equal(canonical.player.canRender(40+index),false);
- const formallySigned=true,
-  scopedOfficialVisibleContourLines=formalActions.size;
+ formallySigned=true;
+ scopedOfficialVisibleContourLines=formalActions.size; 
+ }else{
+  assert.ok(exactNativeContourForRelease.
+   originalGloballySignedM5ContoursStillHeldForNativeProof>0);
+  assert.throws(()=>compileC1WithOcjsHLR({
+   oc,input:reviewedInput,sheetTransform:{origin:{x:350,y:195},scale:3}
+  }),/true OCCT original 3D source interval fails entire signed M5 contour CAD parity/);
+  assert.equal(formallySigned,false);
+  assert.equal(scopedOfficialVisibleContourLines,0);
+ }
  const features=auditC1OcjsPhysicalCreaseCandidates({
   oc,geometry,revision:40+index});
  assert.equal(features.sourceGeometryId,geometry.id);
@@ -635,10 +658,7 @@ for(const [index,geometry] of general.entries()){
  // automatically mean the ACTUAL native HLR generated BRep covers every
  // claimed 3D original source interval. Cross-check both independently
  // recomputed sources on THIS same real OCCT WASM 3D geometry/revision.
- const nativeM5ExteriorContourParity=auditC1RealOcctVisibleContourSourceParity({
-  geometry,revision:40+index,cad,
-  nativeProof:nativeHiddenM5.nativeHLRVertexConcordance
- });
+ const nativeM5ExteriorContourParity=exactNativeContourForRelease;
  assert.equal(nativeM5ExteriorContourParity.entireOriginalM5ContourProofRecomputed,true);
  assert.equal(nativeM5ExteriorContourParity.realNativeOCCTVisible3DSourceFragmentsAudited,
   nativeHiddenM5.nativeHLRVertexConcordance.
