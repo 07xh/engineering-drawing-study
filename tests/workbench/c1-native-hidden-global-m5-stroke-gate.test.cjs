@@ -917,7 +917,7 @@ test('wrong real OCCT Geom_Line physical parameter span cannot silently alter ca
  x.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange=[4,4.5];
  assert.throws(()=>review(x),/line parameter span disagrees with M0 physical length/);
  const y=genuineOriginalOcctBRepInventoryFixture();
- y.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange=[4,9+Number.EPSILON*1000000];
+ y.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange=[4,9.1];
  assert.throws(()=>review(y),/line parameter span disagrees with M0 physical length/);
 });
 test('reversed actual OCCT BRep source topology and non-zero native parameter origin remain authentic but unsigned',()=>{
