@@ -400,6 +400,9 @@ function auditC1OriginalStrokeFinalPreconditions({
     paperEventCutsNeverCertifiedAsNew3DVertices:
      currentEdge.allPaperInteriorCutPointsRetainNonvertexIdentity,
     singleOpaqueSolidContinuousOpenRayClear:clear,
+    // This is ONLY the original 3D closed-edge support theorem; the
+    // positive M4 microspan has no independently drawable paper interval.
+    heldUndrawablePositiveOriginal3DMicrospan:held3DMicroRay,
     singleOpaqueSolidContinuousStrictlyHidden:hidden,
     genuineRealCADCompleteSourceCoverage:cadCovered,
     genuineRealCADUniqueSourceCorroborated:cadUnique,
