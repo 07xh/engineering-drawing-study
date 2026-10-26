@@ -721,6 +721,15 @@ test('one authentic native hidden HLR interval cannot conceal omitted original M
  assert.equal(inventory.expectedOriginalSourceViewCount,3);
  assert.equal(inventory.completeOriginalSourceViewCount,1);
  assert.deepEqual(inventory.missingOriginalSourceViews,['V@G::A|B','W@G::A|B']);
+ assert.deepEqual(inventory.missingOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),[
+  ['V@G::A|B',false],['W@G::A|B',true]]);
+ assert.deepEqual(inventory.missingOriginalSourceViewProjectionEvidence[1].projectedFrom,
+  {u:0,v:0});
+ assert.deepEqual(inventory.missingOriginalSourceViewProjectionEvidence[1].projectedTo,
+  {u:0,v:0});
+ assert.ok(inventory.missingOriginalSourceViewProjectionEvidence.every(x=>
+  x.completeM5ParameterCoverageCertified===false&&x.signedV5Action===false));
  assert.equal(inventory.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
  assert.equal(inventory.signedV5Action,false);
  assert.equal(out.signedV5ActionCount,0);
@@ -744,4 +753,33 @@ test('unavailable original M0 edge inventory is never treated as complete scene 
  assert.equal(out.originalM0EdgeInventoryAvailable,false);
  assert.equal(out.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
  assert.equal(out.signedV5Action,false);
+});
+
+test('one-ULP M5 source residual is independently classified from actual M0 first-angle endpoints without forgiveness',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}},
+  edges:[['A','B']]}};
+ const end=1-Number.EPSILON/2;
+ x.globalM5Review.rows[0].originalSourceParameterRange=[0,end];
+ const out=review(x),inv=out.canonicalOriginalM5SourceInventory;
+ assert.equal(inv.completeOriginalSourceViewCount,0);
+ assert.deepEqual(inv.missingOriginalSourceViews,['V@G::A|B','W@G::A|B']);
+ assert.deepEqual(inv.incompleteOriginalSourceViewPartitions,[{
+  sourceViewKey:'H@G::A|B',positiveLengthParameterGaps:[[end,1]]
+ }]);
+ assert.deepEqual(inv.incompleteOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),[['H@G::A|B',false]]);
+ assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(inv.signedV5Action,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('missing source-view projection is computed from 3D M0 endpoints, not a 2D alias or arbitrary HLR flags',()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:3,z:0}},
+  edges:[['A','B']]}};
+ const inv=review(x).canonicalOriginalM5SourceInventory;
+ assert.deepEqual(inv.missingOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),[
+  ['V@G::A|B',true],['W@G::A|B',false]]);
+ assert.equal(inv.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
 });
