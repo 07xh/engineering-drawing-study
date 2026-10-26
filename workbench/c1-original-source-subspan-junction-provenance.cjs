@@ -46,7 +46,10 @@ function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
     cutParameters[0]!==0||cutParameters.at(-1)!==1||
     cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
      (i>0&&t<=cutParameters[i-1])))
-  throw new RangeError('incomplete canonical original M4 source cut partition');
+  throw new RangeError('incomplete canonical original M4 source cut partition: '+
+   JSON.stringify({cutCount:cutParameters?.length,spanCount:spans?.length,
+    first:cutParameters?.[0],last:cutParameters?.at(-1),
+    collapsedProjection,cutParameters}));
  // A 3D edge parallel to this view's observer direction projects to ONE
  // paper point. M4 correctly emits zero projected LINE spans: no full-line
  // partition may be certified or signed, but the source/view must still be
