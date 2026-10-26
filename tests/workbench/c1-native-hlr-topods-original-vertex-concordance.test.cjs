@@ -556,3 +556,44 @@ test('complete local visible-source union never claims TopoDS history, GB or V5'
  assert.equal(out.constructionIntentAuthorized,false);
  assert.equal(out.signedV5ActionCount,0);
 });
+
+test('a three-endpoint native star cannot count one original physical 3D source edge twice',()=>{
+ const x=visibleFrontSourceCase(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ const a=ref('visible-sharp',0,'to'),b=ref('hidden-sharp',0,'to'),
+  c=ref('hidden-sharp',1,'to');
+ // Both generated native strokes independently trace to the SAME original
+ // A-D edge; three native members do not constitute three original sources.
+ x.cad.hiddenSharpViews.H[1].from={u:0,v:4};
+ const second=x.originalNativeVertexProof.rows[1].nativeSource3DVertexEndpointRows[0];
+ second.originalPhysicalSourceEdgeId='G::A|D';
+ second.endpointWitnesses[0].originalModel3DSourceVertexId='D';
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,c,true),pair(b,c,true));
+ v.generatedOCCTSharedNativeJunctionComponents[0].generatedSharpEdgeEndpoints.push(c);
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=3;
+ const out=audit(x),star=out.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(out.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,1);
+ assert.equal(out.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,0);
+ assert.equal(out.counts.completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,1);
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,false);
+ assert.equal(star.independentlyVerifiedOriginalM03DVertexId,null);
+ assert.equal(out.signedV5ActionCount,0);
+});
+
+test('a genuine three-source original 3D native fan remains locally certified but unsigned',()=>{
+ const x=visibleFrontSourceCase(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ x.geometry.data.edges.push(['A','C']);
+ const a=ref('visible-sharp',0,'to'),b=ref('hidden-sharp',0,'to'),
+  c=ref('hidden-sharp',1,'to');
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,c,true),pair(b,c,true));
+ v.generatedOCCTSharedNativeJunctionComponents[0].generatedSharpEdgeEndpoints.push(c);
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=3;
+ const out=audit(x),star=out.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(out.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,1);
+ assert.equal(star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ assert.equal(star.independentlyVerifiedOriginalM03DVertexId,'A');
+ assert.deepEqual(star.independentlyTracedOriginal3DSourceEdges,
+  ['G::A|B','G::A|C','G::A|D']);
+ assert.equal(out.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
+ assert.equal(out.constructionIntentAuthorized,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
