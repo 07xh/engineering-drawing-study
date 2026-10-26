@@ -221,6 +221,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
    throw new RangeError('genuine native IsSame star has no reviewed hidden HLR endpoint');
   if(membersSeen.size<2)
    throw new RangeError('genuine native IsSame star has fewer than two distinct HLR endpoints');
+  const distinctGeneratedEdges=new Set(star.generatedHLREndpoints.map(member=>
+   member.hlrClass+'@'+member.nativeHLREdgeOrdinal));
+  if(distinctGeneratedEdges.size<2)
+   throw new RangeError('genuine native IsSame star has only one generated HLR edge');
  }
  const perViewNativeOrdinal=new Map(VIEWS.map(view=>[view,0]));
  const rows=[];
