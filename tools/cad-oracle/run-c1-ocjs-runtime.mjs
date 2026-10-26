@@ -540,10 +540,26 @@ for(const [index,geometry] of general.entries()){
   nativeVertexProof:nativeHiddenM5.nativeHiddenOriginalVertexEndpointProof,
   projectedEncounters:nativeHiddenM5.nativeHLRAllM4ProjectedEncounters,
   nativeHLRJunctionConcordance:nativeHiddenM5.nativeHLRVertexConcordance,
+  nativeSourceAudit:nativeHiddenM5,
   globalM5Review:unsignedReview
  });
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
+ assert.equal(hiddenFormalGate.allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined,true);
+ assert.equal(hiddenFormalGate.counts.jointM4M5NativeHLROriginal3DSourceViewsConsumed,
+  geometry.data.edges.length*3);
+ assert.equal(
+  hiddenFormalGate.counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage+
+  hiddenFormalGate.counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage,
+  hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed);
+ assert.ok(hiddenFormalGate.rows.every(row=>
+  row.officialEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false&&
+  row.independentlyRecomputedCanonicalM4M5NativeSourceEvidence===null||
+  row.officialEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false&&
+  row.independentlyRecomputedCanonicalM4M5NativeSourceEvidence?.signedV5Action===false
+ ));
  assert.equal(
   hiddenFormalGate.counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
   hiddenFormalGate.counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld,
