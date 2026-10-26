@@ -38,6 +38,13 @@ jobs:
           gh api repos/${{ github.repository }}/pulls/787 \
             --jq 'select(.state == "open" and .head.repo.full_name == "07xh/engineering-drawing-study" and .head.ref == "fix/c1-native-junction-pair-bijection-20261026" and .base.ref == "main") | .number' \
             | grep -qx 787
+      - name: Create isolated unprivileged Codex account
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo adduser --system --home /home/guest --shell /bin/bash --group guest
+          # Permit checkout traversal without sudo access for the Codex user.
+          sudo usermod -a -G runner guest
       - uses: actions/checkout@v4
         with:
           ref: fix/c1-native-junction-pair-bijection-20261026
@@ -49,12 +56,25 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/draftai-proposal"
           git rev-parse HEAD > "$RUNNER_TEMP/draftai-proposal/base.sha"
+      - name: Give guest scoped checkout access
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Based on OpenAI's supported unprivileged-user example.
+          sudo chown -R runner:guest "$GITHUB_WORKSPACE"
+          sudo chmod -R g+rwX "$GITHUB_WORKSPACE"
+          sudo find "$GITHUB_WORKSPACE" -type d -exec chmod g+s {} +
+          # Git rejects repos owned by another user unless explicitly trusted.
+          sudo -H -u guest git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          sudo -H -u guest test -w "$GITHUB_WORKSPACE/workbench/c1-native-hlr-topods-original-vertex-concordance.cjs"
+          sudo -H -u guest git -C "$GITHUB_WORKSPACE" status --short
       - name: Codex develops one C1 mathematical evidence unit
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           permission-profile: ':workspace'
-          safety-strategy: drop-sudo
+          safety-strategy: unprivileged-user
+          codex-user: guest
           prompt: |
             You are developing DraftAI in the existing PR #787 only.
             Inspect the existing code, git history and project architecture first.
