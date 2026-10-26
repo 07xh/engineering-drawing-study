@@ -853,3 +853,81 @@ test('a missing actual OCCT native source-junction split claim is held even if t
   actualNativeJunctionHasPositiveOriginal3DPhysicalContinuity,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+const genuineOriginalOcctBRepInventoryFixture=()=>{
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{
+  A:{x:0,y:0,z:0},B:{x:3,y:4,z:0}
+ },edges:[['A','B']]}};
+ x.cad={sourceGeometryId:'G',revision,
+  hiddenHLROutputFromActualOCCT:true,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+  v5Authorized:false,originalBRepSourceEdges:[{
+   sourceEdgeId:'G::A|B',originalVertexIds:['A','B'],
+   fromOCCT3D:{x:0,y:0,z:0},toOCCT3D:{x:3,y:4,z:0},
+   occtEdgeOrientation:'forward',
+   originalOCCTBRepVertexXYZMatched:true,
+   occtCurveTypeIndependentlyVerified:true,
+   occtSourceCurveType:'line',
+   occtSourceCurveParameterRange:[4,9],
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,
+   generatedHLREdgeTopoDSIdentityMatched:false,
+   v5Authorized:false
+  }]
+ };
+ return x;
+};
+test('real original OCCT BRep entire M0 source inventory positively verified without generated-edge history or GB/V5',()=>{
+ const x=genuineOriginalOcctBRepInventoryFixture();
+ const r=review(x),inventory=r.originalOCCTBRepSourceInventory;
+ assert.deepEqual(inventory,{
+  available:true,completeOriginal3DSourceCorrespondence:true,
+  matchedOriginalPhysicalSourceEdges:1,expectedOriginalPhysicalSourceEdges:1,
+  generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  original3DSourceFanAndGlobalOcclusionCertified:false,
+  signedV5Action:false
+ });
+ assert.equal(r.actualHLRGeneratedBRepEdgeTopoDSHistoryComplete,false);
+ assert.equal(r.officialEngineeringGBLineRulesCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('original BRep does not fabricate a vacuously complete inventory when CAD is unavailable',()=>{
+ const x=caseData(),r=review(x);
+ assert.equal(r.originalOCCTBRepSourceInventory.available,false);
+ assert.equal(r.originalOCCTBRepSourceInventory.completeOriginal3DSourceCorrespondence,false);
+ assert.equal(r.originalOCCTBRepSourceInventory.expectedOriginalPhysicalSourceEdges,null);
+});
+test('wrong original CAD XYZ, duplicate or missing modeled BRep source, stale revision reject before M5 source signoff',()=>{
+ const a=genuineOriginalOcctBRepInventoryFixture();
+ a.cad.originalBRepSourceEdges[0].toOCCT3D.x=3.00001;
+ assert.throws(()=>review(a),/BRep endpoints disagree with M0 XYZ/);
+ const b=genuineOriginalOcctBRepInventoryFixture();
+ b.cad.originalBRepSourceEdges.push({...b.cad.originalBRepSourceEdges[0]});
+ assert.throws(()=>review(b),/untrusted real OCCT original BRep source geometry/);
+ const c=genuineOriginalOcctBRepInventoryFixture();
+ c.cad.originalBRepSourceEdges=[];
+ assert.throws(()=>review(c),/missing modeled M0 source edges/);
+ const d=genuineOriginalOcctBRepInventoryFixture();
+ d.cad.revision=revision+1;
+ assert.throws(()=>review(d),/current real OCCT original BRep source inventory required/);
+});
+test('wrong real OCCT Geom_Line physical parameter span cannot silently alter canonical original M0/M5 source coordinates',()=>{
+ const x=genuineOriginalOcctBRepInventoryFixture();
+ x.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange=[4,4.5];
+ assert.throws(()=>review(x),/line parameter span disagrees with M0 physical length/);
+ const y=genuineOriginalOcctBRepInventoryFixture();
+ y.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange=[4,9+Number.EPSILON*1000000];
+ assert.throws(()=>review(y),/line parameter span disagrees with M0 physical length/);
+});
+test('reversed actual OCCT BRep source topology and non-zero native parameter origin remain authentic but unsigned',()=>{
+ const x=genuineOriginalOcctBRepInventoryFixture(),e=x.cad.originalBRepSourceEdges[0];
+ [e.fromOCCT3D,e.toOCCT3D]=[e.toOCCT3D,e.fromOCCT3D];
+ e.occtEdgeOrientation='reverse';
+ const inv=review(x).originalOCCTBRepSourceInventory;
+ assert.equal(inv.completeOriginal3DSourceCorrespondence,true);
+ assert.equal(inv.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ const forged=genuineOriginalOcctBRepInventoryFixture();
+ forged.cad.originalBRepSourceEdges[0].occtEdgeOrientation='reverse';
+ assert.throws(()=>review(forged),/BRep endpoints disagree with M0 XYZ/);
+});
