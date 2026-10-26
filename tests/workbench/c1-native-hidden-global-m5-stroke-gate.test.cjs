@@ -645,3 +645,15 @@ test('native HLR reviewed source must exist in the canonical original M5 source 
  x.globalM5Review.rows[0].sourceEdgeId='G::C|D';
  assert.throws(()=>review(x),/genuine native hidden 3D source has no canonical original M5 global stroke review/);
 });
+
+test('whole-scene source coverage is partitioned per V/H/W without mistaking hidden-only review for complete HLR',()=>{
+ const ledger=review(caseData()).wholeSceneSourceHLRAndM5Closure;
+ assert.deepEqual(ledger.nativeSourceCoverageByView.map(x=>x.view),['V','H','W']);
+ assert.equal(ledger.nativeSourceCoverageByView.reduce((n,x)=>
+  n+x.canonicalSourceCount,0),ledger.canonicalSourceViewRows);
+ assert.equal(ledger.nativeSourceCoverageByView.reduce((n,x)=>
+  n+x.nativeHiddenReviewedSourceCount,0),ledger.nativeReviewedSourceViewRows);
+ assert.equal(ledger.nativeSourceCoverageByView.every(x=>
+  x.fullNativeVisibleAndHiddenHLRSourceHistoryCertified===false&&
+  x.continuousAllOpaqueFaceOcclusionCertified===false),true);
+});
