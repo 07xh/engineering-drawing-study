@@ -2,7 +2,8 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {matchOriginalBRepEdgeByXYZ:match,
- probeRealOcctHLREdgeDirectOriginalSourceIdentity:probe}=
+ probeRealOcctHLREdgeDirectOriginalSourceIdentity:probe,
+ verifyOriginalOcctLinearCurveWitness:verifyLine}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const xyz=(x,y,z)=>({x,y,z});
 const shape=()=>({id:'RealSourceBRep3D',data:{
@@ -118,4 +119,32 @@ test('native OCCT occurrence ledger counts repeated BRep edge occurrences withou
  assert.equal(result.actualDistinctOriginalOCCTBRepSourceCount,3);
  assert.equal(result.originalPhysicalOCCTSourceIdsCompared.length,3);
  assert.equal(result.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+});
+
+test('genuine trimmed OCCT 3D line parameter span matches physical M0 length, not arbitrary HLR paper units',()=>{
+ const a=xyz(0,0,0),b=xyz(6,8,0),m=xyz(3,4,0);
+ const actual=verifyLine({
+  sourceEndpoints:[a,b],parameterRange:[5,15],
+  curveSamples:[a,m,b],curveKind:'line'
+ });
+ assert.deepEqual(actual.occtSourceCurveParameterRange,[5,15]);
+ assert.equal(actual.occtSourceCurve3DEndpointsAndMidpointVerified,true);
+ assert.equal(actual.generatedHLREdgeTopoDSIdentityMatched,false);
+ assert.equal(actual.v5Authorized,false);
+ for(const forged of [[5,6],[5,16],[5,Infinity],[-1e308,1e308]]){
+  assert.throws(()=>verifyLine({
+   sourceEndpoints:[a,b],parameterRange:forged,
+   curveSamples:[a,m,b],curveKind:'line'
+  }),/parameter|finite/);
+ }
+});
+test('reversed original OCCT 3D endpoints keep physical parameter span and never authorize line style',()=>{
+ const a=xyz(0,0,0),b=xyz(6,8,0),m=xyz(3,4,0);
+ const result=verifyLine({
+  sourceEndpoints:[b,a],parameterRange:[0,10],
+  curveSamples:[a,m,b],curveKind:'line'
+ });
+ assert.equal(result.occtSourceCurve3DEndpointsAndMidpointVerified,true);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.v5Authorized,false);
 });
