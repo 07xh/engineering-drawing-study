@@ -117,6 +117,9 @@ jobs:
         with:
           name: draftai-c1-proposal-${{ github.run_id }}
           path: ${{ runner.temp }}/draftai-proposal/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Reapply and test without secrets
         id: verify
         shell: bash
