@@ -638,6 +638,16 @@ for(const [index,geometry] of general.entries()){
  assert.equal(generatedVisibleM5PhysicalTiling.
   allTrueGeneratedNativeVisibleSourceLiftsCertified,
   generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments===0);
+ assert.equal(generatedVisibleM5PhysicalTiling.
+  independentlyHeldGeneratedNativeVisibleEdgeCauses.length,
+  generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments);
+ assert.equal(Object.values(generatedVisibleM5PhysicalTiling.
+  independentHeldNativeVisibleReasonCounts).reduce((a,b)=>a+b,0),
+  generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments);
+ assert.ok(generatedVisibleM5PhysicalTiling.
+  independentlyHeldGeneratedNativeVisibleEdgeCauses.every(x=>
+   x.actualOCCTNativeSourceEdgeFullyCertified===false&&
+   x.officialGBLineStyleCertified===false&&x.signedV5Action===false));
  assert.equal(generatedVisibleM5PhysicalTiling.trueGeneratedOCCTVisibleSegmentsInspected,
   ['V','H','W'].reduce((n,v)=>n+cad.views[v].length,0));
  // Never promote tolerance-reprojected or ambiguous real OCCT native source
@@ -1290,6 +1300,13 @@ for(const [index,geometry] of general.entries()){
     generatedVisibleM5PhysicalTiling.genuinelyExactMeasuredNativeVisibleSegments,
    realOCCTNativeGeneratedSourceEdgesHeldForRoundedOrAmbiguousEndpoints:
     generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments,
+   nativeVisibleHLRUnverifiedReasonCounts:
+    generatedVisibleM5PhysicalTiling.independentHeldNativeVisibleReasonCounts,
+   nativeVisibleHLRPaperDriftWithExactOriginal3DSourceCandidates:
+    generatedVisibleM5PhysicalTiling.
+     unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,
+   nativeVisibleHLRUnverifiedSegmentsAudit:
+    generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses,
    trueNativeHLRVisibleSourceViewsWithOverlappingGeneratedPhysicalFragments:
     generatedVisibleM5PhysicalTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,
    originalVHWSourceViewsWithFullNoOverlapM4AllFaceRayParameterPartitions:

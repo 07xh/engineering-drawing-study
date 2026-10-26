@@ -558,6 +558,17 @@ function reviewC1NativeHiddenFinalM5Strokes({
  // fragment; interval UNION erases duplicate native edges and cannot by
  // itself establish a unique source/view stroke topology.
  const nativeVisibleFragments=new Map();
+ const independentlyHeldNativeVisibleGeneratedEdges=[];
+ const heldNativeVisibleReasonCounts={};
+ const recordHeldNativeVisible=(view,ordinal,reason,detail={})=>{
+  unmatchedNativeVisibleFragments++;
+  heldNativeVisibleReasonCounts[reason]=(heldNativeVisibleReasonCounts[reason]??0)+1;
+  independentlyHeldNativeVisibleGeneratedEdges.push({
+   view,nativeHLREdgeOrdinal:ordinal,reason,
+   ...detail,actualOCCTNativeSourceEdgeFullyCertified:false,
+   officialGBLineStyleCertified:false,signedV5Action:false
+  });
+ };
  let unmatchedNativeVisibleFragments=0,actualNativeVisibleFragments=0;
  const nativeVisibleRawAvailable=realNativeVisibleHiddenSourceViewGraphAvailable&&
   VIEWS.every(v=>Array.isArray(cad?.views?.[v]));
@@ -567,7 +578,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   const eq3=(a,b)=>!!a&&!!b&&['x','y','z'].every(k=>
    Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
   const eq2=(a,b)=>!!a&&!!b&&a.u===b.u&&a.v===b.v;
-  for(const view of VIEWS)for(const edge of cad.views[view]){
+  for(const view of VIEWS)
+   for(const [nativeHLREdgeOrdinal,edge] of cad.views[view].entries()){
    actualNativeVisibleFragments++;
    if(edge?.occtHLRVisibilityClass!=='visible-sharp'||
       edge.actualOCCTHLRFlattenedBRepLineVerified!==true||
@@ -576,7 +588,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
     throw new RangeError('not genuine OCCT VCompound native source evidence');
    const lifts=edge.sourceCandidate3DLifts;
    if(!Array.isArray(lifts)||lifts.length!==1){
-    unmatchedNativeVisibleFragments++;continue;
+    recordHeldNativeVisible(view,nativeHLREdgeOrdinal,
+     'nonunique-or-unmapped-native-original-3d-source',
+     {sourceCandidate3DLiftCount:Array.isArray(lifts)?lifts.length:null});
+    continue;
    }
    const lift=lifts[0],ends=originals.get(lift.sourceEdgeId),
     range=lift.originalSourceParameterRange,
@@ -600,11 +615,40 @@ function reviewC1NativeHiddenFinalM5Strokes({
      eq3(lift.actualOriginalOCCTBRepTo3D,b))||
      (eq3(lift.actualOriginalOCCTBRepFrom3D,b)&&
       eq3(lift.actualOriginalOCCTBRepTo3D,a));
-   if(!actual||!eq3(lift.fromCandidate3D,p(t0))||
-      !eq3(lift.toCandidate3D,p(t1))||
-      !eq2(project(p(t0))[view],edge.from)||
-      !eq2(project(p(t1))[view],edge.to)){
-    unmatchedNativeVisibleFragments++;continue;
+   const originalSourceXYZExact=
+    actual&&eq3(lift.fromCandidate3D,p(t0))&&
+    eq3(lift.toCandidate3D,p(t1));
+   const realOriginalPaperFrom=project(p(t0))[view],
+    realOriginalPaperTo=project(p(t1))[view],
+    paperExact=eq2(realOriginalPaperFrom,edge.from)&&
+     eq2(realOriginalPaperTo,edge.to);
+   if(!originalSourceXYZExact||!paperExact){
+    const diffs=[['from',realOriginalPaperFrom,edge.from],
+     ['to',realOriginalPaperTo,edge.to]].map(([side,q,r])=>({
+      side,du:q.u-r.u,dv:q.v-r.v,
+      absoluteMaximumPaperResidual:Math.max(
+       Math.abs(q.u-r.u),Math.abs(q.v-r.v)),
+      sourceUnitScale:Math.max(1,Math.abs(q.u),Math.abs(q.v),
+       Math.abs(r.u),Math.abs(r.v))
+     }));
+    // This envelope is ONLY a diagnostic upper-bound heuristic for
+    // numerical OCCT projection drift; never uses epsilon to certify
+    // original TopoDS identity, signed engineering lines or V5.
+    const maxResidual=Math.max(...diffs.map(x=>x.absoluteMaximumPaperResidual));
+    const paperScale=Math.max(...diffs.map(x=>x.sourceUnitScale));
+    const diagnosticEnvelope=32*Number.EPSILON*paperScale;
+    recordHeldNativeVisible(view,nativeHLREdgeOrdinal,
+     !actual?'native-original-brep-xyz-disagrees-with-m0':
+     !originalSourceXYZExact?'lifted-original-3d-endpoint-disagrees-with-m0':
+     'native-hlr-projected-paper-not-bit-exact',
+     {sourceEdgeId:lift.sourceEdgeId,
+      exactMeasuredOriginalSourceXYZMatchesM0:!!originalSourceXYZExact,
+      exactNativePaperEndpointsMatchM0:paperExact,
+      maxAbsoluteNativePaperResidual:maxResidual,
+      diagnosticBinary64RoundingEnvelope:diagnosticEnvelope,
+      paperWithinNonCertifyingNumericEnvelope:
+       Number.isFinite(maxResidual)&&maxResidual<=diagnosticEnvelope});
+    continue;
    }
    const direct=edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
    if(direct!==null&&direct!==lift.sourceEdgeId)
@@ -648,6 +692,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    actualNativeVisibleFragments-unmatchedNativeVisibleFragments,
   trueGeneratedOCCTVisibleSegmentsInspected:actualNativeVisibleFragments,
   unverifiedGeneratedOCCTVisibleSegments:unmatchedNativeVisibleFragments,
+  independentlyHeldGeneratedNativeVisibleEdgeCauses:
+   independentlyHeldNativeVisibleGeneratedEdges,
+  independentHeldNativeVisibleReasonCounts:heldNativeVisibleReasonCounts,
+  unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift:
+   independentlyHeldNativeVisibleGeneratedEdges.filter(x=>
+    x.reason==='native-hlr-projected-paper-not-bit-exact'&&
+    x.paperWithinNonCertifyingNumericEnvelope===true).length,
   sourceViewsAudited:nativeVisibleTilingRows.length,
   originalSourceViewsWithDuplicateGeneratedHLRIntervals:
    nativeVisibleTilingRows.filter(x=>
