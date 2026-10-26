@@ -130,7 +130,7 @@ test('exact M4 cut-to-source-subspan bijection certifies a complete original edg
  assert.equal(Object.isFrozen(r.exactOriginalSourceParameterCoverage),true);
 });
 test('missing a positive one-ULP original 3D parameter cut interval cannot be concealed by subspan count',()=>{
- const half=.5,next=half+Number.EPSILON;
+ const half=.5,next=half+Number.EPSILON/2; // exact next binary64 above 0.5
  assert.throws(()=>certifyPartition([0,half,next,1],[
   {originalParameterRange:[0,half]},
   {originalParameterRange:[next,1]}
