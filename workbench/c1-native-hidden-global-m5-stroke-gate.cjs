@@ -624,6 +624,15 @@ function reviewC1NativeHiddenFinalM5Strokes({
    // If some generated edges are unresolved, keep a diagnostic only.
    // All accepted true-source intervals must come from this genuine
    // raw HLR population, never a source-view summary in isolation.
+   // Exact current-native source witnesses must be a SUBSET of the
+   // M5-accepted source-view union. OCCT paper endpoints may be rounded,
+   // so other segments remain UNDETERMINED rather than being tolerance
+   // snapped into a complete original 3D source edge.
+   for(const span of tiling.actualNativeOriginalSourceUnion)
+    if(!exactCandidateIntervalCoverage(span,
+       viewRow.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals).
+       entireOriginalParameterIntervalCovered)
+     throw new RangeError('actual exact native generated source fragment exceeds accepted M5 source');
    if(unmatchedNativeVisibleFragments===0&&
       !intervalsMatch(tiling.actualNativeOriginalSourceUnion,
        viewRow.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals))
@@ -632,7 +641,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
   }
  }
  const nativeVisibleHLRSourceTiling=frozen({
-  available:nativeVisibleRawAvailable&&unmatchedNativeVisibleFragments===0,
+  available:nativeVisibleRawAvailable,
+  allTrueGeneratedNativeVisibleSourceLiftsCertified:
+   nativeVisibleRawAvailable&&unmatchedNativeVisibleFragments===0,
+  genuinelyExactMeasuredNativeVisibleSegments:
+   actualNativeVisibleFragments-unmatchedNativeVisibleFragments,
   trueGeneratedOCCTVisibleSegmentsInspected:actualNativeVisibleFragments,
   unverifiedGeneratedOCCTVisibleSegments:unmatchedNativeVisibleFragments,
   sourceViewsAudited:nativeVisibleTilingRows.length,
@@ -778,9 +791,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
     native.originalM4M5SourceParameterPartitionComplete===true&&
     native.originalRealOCCTBRep3DSourceInventoryVerified===true&&
     (!nativeVisibleHLRSourceTiling.available||
-     !nativeVisibleTilingRows.some(x=>
-      x.sourceViewKey===native.sourceViewKey&&
-      x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0));
+     (nativeVisibleHLRSourceTiling.
+       allTrueGeneratedNativeVisibleSourceLiftsCertified===true&&
+      !nativeVisibleTilingRows.some(x=>
+       x.sourceViewKey===native.sourceViewKey&&
+       x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)));
    sourceViewRayParametricClosure.push({
     ...partition,
     realOCCTNativeOriginalPhysicalSourceCompleteRayReconciliation:
