@@ -40,6 +40,19 @@ function computeC1NativeHLRIsSameVertexGraph({perView}={}){
    ...perView[view].visible.map(x=>({...x,hlrClass:'visible-sharp'})),
    ...perView[view].hidden.map(x=>({...x,hlrClass:'hidden-sharp'}))
   ];
+  // Real HLR traversal ordinals index the emitted CAD segment array.
+  // A duplicated, skipped or permuted ordinal can otherwise associate a
+  // genuine TopoDS vertex with a DIFFERENT paper edge downstream in M5.
+  // Visible and hidden have separate ordinal namespaces in each view.
+  for(const [hlrClass,items] of [
+   ['visible-sharp',perView[view].visible],
+   ['hidden-sharp',perView[view].hidden]
+  ])for(let ordinal=0;ordinal<items.length;ordinal++){
+   if(items[ordinal]?.nativeHLREdgeOrdinal!==ordinal)
+    throw new RangeError('native OCCT '+hlrClass+
+     ' HLR ordinal does not match actual emitted segment index');
+  }
+
   if(records.length>256)throw new RangeError('too many genuine native HLR sharp edges');
   const nodeRecords=[];
   for(const rec of records){
