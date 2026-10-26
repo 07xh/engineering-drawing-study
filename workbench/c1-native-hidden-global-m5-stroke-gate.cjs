@@ -206,6 +206,56 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(cursor<1)gaps.push([cursor,1]);
   sourcePartitionCoverage.set(key,frozen({complete:gaps.length===0,gaps}));
  }
+ // Reconcile every original M0 physical edge across all first-angle views.
+ // A perfect local native hidden interval cannot certify a scene with an
+ // omitted physical edge/view. This is source COVERAGE only, not visibility.
+ const originalEdges=geometry.data.edges;
+ let canonicalOriginalM5SourceInventory;
+ if(!Array.isArray(originalEdges)){
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:false,
+   expectedOriginalSourceViewCount:null,
+   completeOriginalSourceViewCount:0,
+   missingOriginalSourceViews:[],
+   incompleteOriginalSourceViewPartitions:[],
+   allOriginalSourceViewsHaveCompleteParameterPartitions:false,
+   signedV5Action:false
+  });
+ }else{
+  const expected=new Set();
+  for(const edge of originalEdges){
+   if(!Array.isArray(edge)||edge.length!==2||
+      !edge.every(v=>typeof v==='string'&&
+       Object.prototype.hasOwnProperty.call(geometry.data.points,v))||
+      edge[0]===edge[1])
+    throw new RangeError('invalid original M0 physical edge inventory');
+   const sourceId=geometry.id+'::'+[...edge].sort().join('|');
+   for(const view of VIEWS){
+    const key=view+'@'+sourceId;
+    if(expected.has(key))
+     throw new RangeError('duplicate original M0 physical edge in source inventory');
+    expected.add(key);
+   }
+  }
+  if([...byKey.keys()].some(key=>!expected.has(key)))
+   throw new RangeError('canonical M5 source ledger references unknown original M0 edge/view');
+  const missing=[...expected].filter(key=>!byKey.has(key));
+  const incomplete=[...expected].filter(key=>
+   byKey.has(key)&&sourcePartitionCoverage.get(key)?.complete!==true);
+  canonicalOriginalM5SourceInventory=frozen({
+   originalM0EdgeInventoryAvailable:true,
+   expectedOriginalSourceViewCount:expected.size,
+   completeOriginalSourceViewCount:expected.size-missing.length-incomplete.length,
+   missingOriginalSourceViews:missing,
+   incompleteOriginalSourceViewPartitions:incomplete.map(key=>({
+    sourceViewKey:key,
+    positiveLengthParameterGaps:sourcePartitionCoverage.get(key).gaps
+   })),
+   allOriginalSourceViewsHaveCompleteParameterPartitions:
+    expected.size>0&&missing.length===0&&incomplete.length===0,
+   signedV5Action:false
+  });
+ }
  const counts={genuineHiddenHLRStrokesReviewed:0,
   jointM4M5NativeHLROriginal3DSourceViewsConsumed:jointSourceByKey.size,
   nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage:0,
@@ -754,7 +804,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
  return frozen({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
-  counts,rows,
+  counts,rows,canonicalOriginalM5SourceInventory,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
