@@ -269,8 +269,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   throw new RangeError('real native sharp HLR original source continuous ray gate');
  const nativeHiddenFrontVisibleMask=auditC1NativeHiddenFrontVisibleMasks({
   geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
-  m5,sourceDepth:auditC1ProjectedSourcePairDepth({geometry,revision}),
-  exactIntervalCoverage:exactCandidateIntervalCoverage
+  m5,sourceDepth:auditC1ProjectedSourcePairDepth({geometry,revision})
  });
  if(nativeHiddenFrontVisibleMask.counts.realHiddenNativeEdgesAudited!==
      counts.realNativeHiddenSharpSegments||
