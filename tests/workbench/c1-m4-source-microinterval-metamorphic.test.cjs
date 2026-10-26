@@ -98,3 +98,16 @@ test('M4-only event partitions are complete in every noncollapsed first-angle so
   }
  }
 });
+
+test('exact original source coverage rejects representable positive microgaps',()=>{
+ const nextUpOneHalf=0.5000000000000001;
+ const gap=exactCandidateIntervalCoverage([0,1],[
+  [0,0.5],[nextUpOneHalf,1]]);
+ assert.equal(gap.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(gap.positiveLengthUncoveredIntervals,
+  [[0.5,nextUpOneHalf]]);
+ const joined=exactCandidateIntervalCoverage([0,1],[
+  [0,0.5],[0.5,1]]);
+ assert.equal(joined.entireOriginalParameterIntervalCovered,true);
+ assert.deepEqual(joined.positiveLengthUncoveredIntervals,[]);
+});
