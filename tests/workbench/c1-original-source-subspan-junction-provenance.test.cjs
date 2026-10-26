@@ -29,23 +29,29 @@ function assertLedger(g,revision){
  assert.equal(r.counts.originalSourceSubspanCount,
   r.rows.reduce((n,e)=>n+e.spans.length,0));
  assert.equal(r.counts.sourceEdgeViewCount,g.data.edges.length*3);
- assert.equal(r.counts.exactFullOriginalSourceViewPartitionsProven,
+ assert.equal(r.counts.exactFullOriginalSourceViewPartitionsProven+
+  r.counts.collapsedSourceViewPartitionsConservativelyHeld,
   g.data.edges.length*3);
- assert.equal(r.allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered,true);
+ assert.equal(r.allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered,true);
+ assert.equal(r.allOriginalSourceViewsAccountedIncludingCollapsed,true);
+ assert.equal(r.allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered,
+  r.counts.collapsedSourceViewPartitionsConservativelyHeld===0);
  assert.equal(r.nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven,true);
  assert.equal(new Set(r.rows.map(x=>x.view+'@'+x.sourceEdgeId)).size,
   g.data.edges.length*3);
  for(const row of r.rows){
-  assert.equal(row.allCanonicalOriginalSourceParameterSubspansCovered,true);
-  assert.equal(row.canonicalOriginalM4SourcePartition.
-   entireOriginalM4SourceParameterPartitionPositivelyProven,true);
-  assert.deepEqual(row.canonicalOriginalM4SourcePartition.
-   exactOriginalSourceParameterCoverage.positiveLengthUncoveredIntervals,[]);
-  assert.deepEqual(row.canonicalOriginalM4SourcePartition.
-   exactOriginalSourceParameterCoverage.positiveLengthCoveredIntervals,[[0,1]]);
-  assert.equal(row.canonicalOriginalM4SourcePartition.
-   continuousM5VisibilityProven,false);
-  assert.equal(row.canonicalOriginalM4SourcePartition.signedV5Action,false);
+  const partition=row.canonicalOriginalM4SourcePartition;
+  assert.equal(row.allCanonicalOriginalSourceParameterSubspansCovered,
+   !row.collapsedProjection);
+  assert.equal(partition.entireOriginalM4SourceParameterPartitionPositivelyProven,
+   !row.collapsedProjection);
+  assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+   positiveLengthUncoveredIntervals,row.collapsedProjection?[[0,1]]:[]);
+  assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+   positiveLengthCoveredIntervals,row.collapsedProjection?[]:[[0,1]]);
+  assert.equal(partition.collapsedOriginalSourceProjection,row.collapsedProjection);
+  assert.equal(partition.continuousM5VisibilityProven,false);
+  assert.equal(partition.signedV5Action,false);
  }
  assert.ok(r.counts.originalVertexEndpointWitnesses>0);
  for(const row of r.rows)for(const s of row.spans){
@@ -159,4 +165,18 @@ test('canonical M4 coverage rejects reordered, overlapping, forged, truncated an
  assert.throws(()=>certifyPartition([0,.4,.4,1],[
   span(0,.4),span(.4,.4),span(.4,1)
  ]),/incomplete canonical/);
+});
+
+test('legitimate observer-axis collapsed 3D source edge remains a point, not a falsely certified projected line',()=>{
+ const r=certifyPartition([0,1],[],{collapsedProjection:true});
+ assert.equal(r.collapsedOriginalSourceProjection,true);
+ assert.equal(r.sourceOpenParameterCoverageNotRepresentableAsPaperLine,true);
+ assert.equal(r.entireOriginalM4SourceParameterPartitionPositivelyProven,false);
+ assert.deepEqual(r.exactOriginalSourceParameterCoverage.
+  positiveLengthUncoveredIntervals,[[0,1]]);
+ assert.equal(r.engineeringLineStyleSigned,false);
+ assert.equal(r.signedV5Action,false);
+ assert.throws(()=>certifyPartition([0,1],[
+  {originalParameterRange:[0,1]}
+ ],{collapsedProjection:true}),/collapsed original source/);
 });
