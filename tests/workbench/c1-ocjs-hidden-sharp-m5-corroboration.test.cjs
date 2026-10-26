@@ -165,8 +165,10 @@ test('invalid original source candidate multiplicity cannot forge a unique nativ
  const row=boxM5().rows.find(r=>
   !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
  for(const invalid of [0,-1,1.5,NaN,Infinity,undefined]){
+  const candidate=genuineUnsignedCandidate(0,1);
+  candidate.distinctOriginal3DCandidateCount=invalid;
   assert.throws(()=>joint({m5Row:row,nativeCandidates:[
-   genuineUnsignedCandidate(0,1,invalid)
+   candidate
   ]}),/unsigned genuine native HLR source ranges required/);
  }
 });
