@@ -32,6 +32,29 @@ const param=(a,b,p)=>{
   z:a.z+(b.z-a.z)*t};
  return eq3(value,p)?t:null;
 };
+// An independently signed FULL original M5 contour hull edge can have a
+// rounded 3D interpolated DISPLAY endpoint, while both literal paper
+// endpoints are exactly projections of the two TRUE M0 SOURCE VERTICES.
+// Recover [0,1] only from those exact original M0 vertices, never by
+// rounding a floating source parameter or a paper coordinate. The
+// genuine HLR BRep endpoint and actual source-view mask are checked
+// separately and must match this physical original source ID.
+function exactOriginalModelVertexProjectedEdge({a,b,view,from,to}={}){
+ if(!VIEWS.includes(view)||!['x','y','z'].every(k=>
+  Number.isFinite(a?.[k])&&Number.isFinite(b?.[k])))
+  throw new TypeError('original 3D M0 endpoint pair and V/H/W view required');
+ const p=project(a)[view],q=project(b)[view];
+ if(eq2(p,q))return null;
+ if(eq2(p,from)&&eq2(q,to))
+  return {range:[0,1],from3D:{...a},to3D:{...b},
+   exactOriginalPhysical3DVertexPairAndPaperBinding:true,
+   orientation:'forward'};
+ if(eq2(q,from)&&eq2(p,to))
+  return {range:[0,1],from3D:{...b},to3D:{...a},
+   exactOriginalPhysical3DVertexPairAndPaperBinding:true,
+   orientation:'reversed'};
+ return null;
+}
 function auditC1RealOcctVisibleContourSourceParity({
  geometry,revision,cad,nativeProof
 }={}){
@@ -129,19 +152,41 @@ function auditC1RealOcctVisibleContourSourceParity({
        line.signedOfficialLineStyle!=='undetermined'))
     throw new RangeError('unproven original contour was signed');
    let reason=null,complete=false,overlap=false,
-    claimRange=null,uncovered=[],covering=[];
+    claimRange=null,uncovered=[],covering=[],
+    exactOriginalPhysical3DVertexPaperBinding=false,
+    originalContour3DParameterRecoveryKind='held';
    if(signed){
     const e=original.get(line.sourceEdgeId),
      a=e&&geometry.data.points[e[0]],
      b=e&&geometry.data.points[e[1]];
     if(!a||!b)throw new RangeError('original full-hull certified source edge absent');
-    const t0=param(a,b,line.real3DFrom),t1=param(a,b,line.real3DTo);
-    if(t0===null||t1===null||t0===t1||
-       !eq2(project(line.real3DFrom)[v.view],line.projectedFromModelMm)||
-       !eq2(project(line.real3DTo)[v.view],line.projectedToModelMm))
-     reason='cannot-exactly-normalize-original-signed-contour-3d-source';
-    else{
+    const t0=param(a,b,line.real3DFrom),
+     t1=param(a,b,line.real3DTo),
+     literalModelSourceProjectedEndpoints=exactOriginalModelVertexProjectedEdge({
+      a,b,view:v.view,from:line.projectedFromModelMm,
+      to:line.projectedToModelMm
+     }),
+     literalSignedXYZAndPaper=t0!==null&&t1!==null&&t0!==t1&&
+      eq2(project(line.real3DFrom)[v.view],line.projectedFromModelMm)&&
+      eq2(project(line.real3DTo)[v.view],line.projectedToModelMm);
+    // Extra exact physical vertex binding is only eligible when the
+    // existing signed global convex M5 ring has positive M0 source
+    // coverage, true front-ray clearance and independently real 3D
+    // endpoint joins. It cannot independently release any contour.
+    const sourcePhysicalM5Proof=
+     line.sourceContourCoverageVerified===true&&
+     line.genuineFrontSourceEndpointJoinsVerified===true&&
+     line.continuouslyFrontRayClearVerified===true&&
+     line.locallyCompleteVisibleHullSegmentProven===true;
+    if(literalSignedXYZAndPaper){
      claimRange=[Math.min(t0,t1),Math.max(t0,t1)];
+     originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
+    }else if(sourcePhysicalM5Proof&&literalModelSourceProjectedEndpoints){
+     claimRange=[...literalModelSourceProjectedEndpoints.range];
+     exactOriginalPhysical3DVertexPaperBinding=true;
+     originalContour3DParameterRecoveryKind='exact-original-m0-3d-vertex-projection';
+    }else reason='cannot-exactly-normalize-original-signed-contour-3d-source';
+    if(claimRange){
      const raw=nativeByKey.get(v.view+'@'+line.sourceEdgeId)??[];
      covering=raw.map(n=>({
       ordinal:n.ordinal,
@@ -172,6 +217,8 @@ function auditC1RealOcctVisibleContourSourceParity({
     signedOriginalContourEngineeringStyle:signed?
      'gb-t-4457.4-continuous-wide-visible-outline':'undetermined',
     originalSourceParameterRange:claimRange,
+    exactOriginalPhysical3DVertexPaperBinding,
+    originalContour3DParameterRecoveryKind,
     trueNativeOCCTGeneratedLineOrdinals:covering.map(x=>x.ordinal),
     positiveLengthNativeSourceGaps:uncovered,
     nativeGeneratedOriginalSourceOverlap:overlap,
@@ -195,6 +242,8 @@ function auditC1RealOcctVisibleContourSourceParity({
    positive.length,
   nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour:
    signed.length>0&&signed.length===positive.length,
+  globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery:
+   rows.filter(x=>x.exactOriginalPhysical3DVertexPaperBinding===true).length,
   originalGloballySignedM5ContoursStillHeldForNativeProof:
    signed.length-positive.length,
   viewsWithOriginalM5GlobalContourSignature:contour.acceptedFirstAngleViews,
@@ -205,4 +254,5 @@ function auditC1RealOcctVisibleContourSourceParity({
   signedV5ActionCount:0
  });
 }
-module.exports={auditC1RealOcctVisibleContourSourceParity};
+module.exports={auditC1RealOcctVisibleContourSourceParity,
+ exactOriginalModelVertexProjectedEdge};
