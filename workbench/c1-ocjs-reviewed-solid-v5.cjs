@@ -12,7 +12,13 @@ const {compileReviewedSolidVertexV5}=
  require('./reviewed-solid-vertex-v5.cjs');
 const {computeC1OcjsVisibleSegments}=
  require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+const {auditC1NativeHiddenSharpVsM5}=
+ require('./c1-ocjs-hidden-sharp-m5-corroboration.cjs');
+const {auditC1RealOcctVisibleContourSourceParity}=
+ require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const {VIEWS}=require('../core/projection/conventions.js');
+const {positiveCollinearOverlap}=
+ require('./c1-ocjs-paper-collinear-overlap.cjs');
 function intervalCoverage(a,b,segments,tol=1e-6){
  const dx=b.u-a.u,dy=b.v-a.v,den=dx*dx+dy*dy,len=Math.sqrt(den);
  if(!(len>1e-9))return false;
@@ -41,15 +47,6 @@ function intervalCoverage(a,b,segments,tol=1e-6){
 // must not be treated as false exterior hull omissions. A visible CAD segment
 // that actually intersects a signed hull stroke needs authentic source IDs;
 // unrelated visible interior lines remain unsigned M5 candidates.
-function positiveCollinearOverlap(a,b,c,d,tol=1e-6){
- const dx=b.u-a.u,dy=b.v-a.v,L=Math.hypot(dx,dy);
- if(!(L>1e-9))return false;
- const lineError=p=>Math.abs(dx*(p.v-a.v)-dy*(p.u-a.u))/L;
- if(lineError(c)>tol||lineError(d)>tol)return false;
- const fraction=p=>((p.u-a.u)*dx+(p.v-a.v)*dy)/(L*L);
- const [lo,hi]=[fraction(c),fraction(d)].sort((x,y)=>x-y);
- return Math.min(1,hi)-Math.max(0,lo)>tol/Math.max(1,L);
-}
 function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  if(!oc||typeof oc!=='object')
   throw new TypeError('initialized real OpenCascade.js kernel required');
@@ -67,6 +64,34 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    canonical.globalVisibleContourProof.views.map(v=>v.view+':'+
     v.allContourLinesVerified+'/'+v.blockedAtomicIntervalCount).join(',')+
    '; canonicalV5='+canonical.verifiedLineIntentAndOriginalSingleV5Parity);
+ // The original C1 sole V5 consumer already signed this narrow M5
+ // visible-hull scope. Paper-only source names and tolerant projected
+ // overlap are NOT enough to bind those commands to the TRUE generated
+ // OCCT HLR 3D physical source edges; recompute the full existing
+ // original M0/M5 closed-ray source and native IsSame concordance, then
+ // check EVERY signed 3D contour interval against independently measured
+ // native visible BRep original source parameter fragments.
+ const nativeSource=auditC1NativeHiddenSharpVsM5({
+  oc,geometry:g,revision:rev
+ });
+ const strictNativeContour=auditC1RealOcctVisibleContourSourceParity({
+  geometry:g,revision:rev,cad,
+  nativeProof:nativeSource.nativeHLRVertexConcordance
+ });
+ if(strictNativeContour.sourceGeometryId!==g.id||
+    strictNativeContour.revision!==rev||
+    strictNativeContour.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour!==true||
+    strictNativeContour.
+      originalGloballySignedM5ContourStrokeCount!==
+     canonical.certifiedVisibleContourLineBindings.length||
+    strictNativeContour.
+      originalGloballySignedM5ContoursStillHeldForNativeProof!==0||
+    strictNativeContour.fullGeneratedTopoDSEdgeToOriginalTopoDSHistoryProven!==false||
+    strictNativeContour.constructionIntentDAGUniqueV5ParityProven!==false||
+    strictNativeContour.signedV5ActionCount!==0)
+  throw new RangeError('true OCCT original 3D source interval fails entire signed M5 contour CAD parity: '+
+   strictNativeContour.originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage+
+   '/'+strictNativeContour.originalGloballySignedM5ContourStrokeCount);
  const resolved=canonical.certifiedVisibleContourLineBindings;
  const out={};
  for(const view of VIEWS){
@@ -115,6 +140,14 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    supportedScope:cad.proofScope,
    perView:out,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
+   everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource:true,
+   fullyNative3DSourceVerifiedExteriorM5ContourStrokes:
+    strictNativeContour.
+      originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage,
+   originalM5SignedExteriorContourStrokes:
+    strictNativeContour.originalGloballySignedM5ContourStrokeCount,
+   sourceProofFromIndependentClosedRayAndActualNativeHLR:true,
+   originalGeneratedTopoDSEdgeHistoryNotClaimed:true,
    nonContourCADDrawingActionsSigned:0,
    // The old proof remains the ONLY formal certification authority.
    newOfficialLineStyleSigner:false,secondV5:false

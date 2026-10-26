@@ -18,7 +18,7 @@ const {recomputeReviewedProjectedEdgeEvents}=
 const {auditC1GlobalVisibleContourProof}=
  require('./m5-c1-global-visible-contour-proof.cjs');
 const {positiveCollinearOverlap}=
- require('./c1-ocjs-reviewed-solid-v5.cjs');
+ require('./c1-ocjs-paper-collinear-overlap.cjs');
 const finite=Number.isFinite;
 const freeze=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
