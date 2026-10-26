@@ -146,6 +146,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
    throw new RangeError('untrusted complete generated HLR TopoDS original source star');
   for(const member of star.generatedHLREndpoints){
    if(member.hlrClass!=='hidden-sharp')continue;
+   if(!Number.isSafeInteger(member.nativeHLREdgeOrdinal)||
+      member.nativeHLREdgeOrdinal<0)
+    throw new RangeError('invalid genuine native HLR endpoint ordinal');
    const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
    if(!['from','to'].includes(member.side)||nativeStarByEndpoint.has(key))
     throw new RangeError('duplicate generated native HLR junction endpoint');
