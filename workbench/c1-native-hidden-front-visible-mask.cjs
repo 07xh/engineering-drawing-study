@@ -17,6 +17,10 @@
  * no OCCT HLR TopoDS history, global feature proof, GB line, Intent or V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+// Bind physical front-mask coverage to the same trusted exact interval union
+// used by M5 hidden rays; callers cannot inject a fabricated full coverage.
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))frozen(x);Object.freeze(o);
 }return o;};
@@ -59,8 +63,7 @@ function mappedActualVisibleHLRToHiddenOriginalParameter({
  });
 }
 function auditC1NativeHiddenFrontVisibleMasks({
- geometry,revision,cad,refinements,m5,sourceDepth,
- exactIntervalCoverage
+ geometry,revision,cad,refinements,m5,sourceDepth
 }={}){
  if(!Number.isSafeInteger(revision)||revision<1||
     !geometry?.data?.points||!Array.isArray(geometry.data.edges)||
@@ -75,8 +78,7 @@ function auditC1NativeHiddenFrontVisibleMasks({
     sourceDepth.engineeringLineStylesSigned!==false||
     sourceDepth.officialV5ActionCount!==0||
     !Array.isArray(sourceDepth.witnesses)||
-    !Array.isArray(refinements)||
-    typeof exactIntervalCoverage!=='function')
+    !Array.isArray(refinements))
   throw new TypeError('current original source, native OCCT, M4 affine depth and M5 ray required');
  const originals=new Map(geometry.data.edges.map(e=>[sourceKey(geometry,e),e]));
  const m5ByKey=new Map(m5.rows.map(r=>[r.originalPhysicalSourceEdgeId+'@'+r.view,r]));
@@ -199,7 +201,7 @@ function auditC1NativeHiddenFrontVisibleMasks({
       });
      }
     }
-    proof=exactIntervalCoverage(actualLift.originalSourceParameterRange,
+    proof=exactCandidateIntervalCoverage(actualLift.originalSourceParameterRange,
      validMaskIntervals);
     if(proof.entireOriginalParameterIntervalCovered)
      counts.hiddenNativeFullPaperMaskByRealVisibleFrontSource++;
