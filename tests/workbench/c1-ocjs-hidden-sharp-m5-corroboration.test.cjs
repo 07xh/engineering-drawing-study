@@ -1,7 +1,11 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {exactCandidateIntervalCoverage:cover}=
+const {exactCandidateIntervalCoverage:cover,
+ reviewCanonicalM4M5NativeHLRSourceIntervals:joint}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
+const {prismMesh}=require('../../project/unified-workbench-session.cjs');
+const {auditC1OriginalClosedEdgeRayContinuity:auditClosedM5}=
+ require('../../workbench/c1-m5-closed-original-edge-ray-continuity.cjs');
 
 test('actual M0 original source parameter completely covered by adjacent native hidden intervals',()=>{
  const v=cover([0,1],[[0,0.35],[0.35,0.7],[0.7,1]]);
@@ -41,4 +45,75 @@ test('untrusted source parameter ranges are rejected rather than clamped to a fa
  }
  assert.throws(()=>cover([0,1.01],[]),/bounded exact/);
  assert.throws(()=>cover([0,0],[]),/bounded exact/);
+});
+
+const boxM5=()=>{
+ const xyz=(x,y,z)=>({x,y,z});
+ const g=prismMesh({solid:{min:xyz(0,0,0),max:xyz(10,12,14)}});
+ const geometry={...g,id:'C1M4M5NativeHLRJointProofBox'};
+ return auditClosedM5({geometry,revision:37});
+};
+const genuineUnsignedCandidate=(a,b)=>({
+ range:[a,b],realOCCTHLREdgeToSourceIdentityRecovered:false,
+ nativeHLRActualClass:'hidden-sharp'
+});
+test('full M0/M4/M5 original 3D partition jointly matches actual native HLR candidate parameters but stays unsigned',()=>{
+ const m5=boxM5(),row=m5.rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete&&
+  r.originalCutSubspans.length>0);
+ assert.ok(row,'real geometric M4 full source must exist');
+ const proof=joint({m5Row:row,nativeCandidates:[
+  genuineUnsignedCandidate(0,.4),genuineUnsignedCandidate(.4,1)
+ ]});
+ assert.equal(proof.canonicalM4Original3DAndM5RayCutUnionRecomputed,true);
+ assert.equal(proof.originalM4Full3DSourceIntervalProven,true);
+ assert.equal(proof.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage,true);
+ assert.equal(proof.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,true);
+ assert.deepEqual(proof.genuineNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[]);
+ assert.equal(proof.allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven,false);
+ assert.equal(proof.full3DEndpointAndEngineeringLineStyleProven,false);
+ assert.equal(proof.constructionIntentAuthorized,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('native HLR candidate one-ULP hole prevents joint original 3D source coverage even with full M4 and valid M5',()=>{
+ const row=boxM5().rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
+ const half=.5,next=half+Number.EPSILON/2;
+ const proof=joint({m5Row:row,nativeCandidates:[
+  genuineUnsignedCandidate(0,half),
+  genuineUnsignedCandidate(next,1)
+ ]});
+ assert.equal(proof.originalM4Full3DSourceIntervalProven,true);
+ assert.equal(proof.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage,false);
+ assert.equal(proof.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,false);
+ assert.deepEqual(proof.genuineNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[[half,next]]);
+ assert.equal(proof.engineeringLineStyle,'undetermined');
+ assert.equal(proof.signedV5Action,false);
+});
+test('M5 cannot forge a different M4 original-source cut ledger by retaining a full-coverage label',()=>{
+ const row=boxM5().rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
+ const nativeCandidates=[genuineUnsignedCandidate(0,1)];
+ const drift={...row,originalCutSubspans:[{
+  ...row.originalCutSubspans[0],originalParameterRange:[0,.5]}]};
+ assert.throws(()=>joint({m5Row:drift,nativeCandidates}),
+  /contradicts independent canonical M4 coverage/);
+ const forged={...row,originalM4Canonical3DSourceParameterCoverage:{
+  ...row.originalM4Canonical3DSourceParameterCoverage,
+  positiveLengthUncoveredIntervals:[[.5,.5+Number.EPSILON/2]]
+ }};
+ assert.throws(()=>joint({m5Row:forged,nativeCandidates}),
+  /contradicts independent canonical M4 coverage/);
+});
+test('collapsed original 3D source projects to a point in first-angle view and never satisfies the whole paper HLR gate',()=>{
+ const row=boxM5().rows.find(r=>r.projectionCollapsed);
+ assert.ok(row);
+ const held=joint({m5Row:row,nativeCandidates:[]});
+ assert.equal(held.originalM4Full3DSourceIntervalProven,false);
+ assert.equal(held.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,false);
+ assert.deepEqual(held.canonicalM4ParameterCoverage.
+  positiveLengthUncoveredIntervals,[[0,1]]);
+ assert.equal(held.signedV5Action,false);
 });
