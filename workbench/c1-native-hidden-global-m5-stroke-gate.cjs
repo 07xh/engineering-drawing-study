@@ -1450,25 +1450,33 @@ function reviewC1NativeHiddenFinalM5Strokes({
   rawHiddenGeneratedBySourceView.get(key).push([...range]);
  }
  const trueNativeHiddenSourceTilingRows=[];
+ let nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5=0;
  if(realNativeVisibleHiddenSourceViewGraphAvailable){
   for(const native of realNativeVisibleHiddenOriginalSourceViewCoverage){
+   // An OCCT HCompound generated edge can span a portion still lacking
+   // independently unique M5 physical identity. Count that withheld
+   // portion, and preserve exact intersections as MULTISET fragments.
+   // Neither the original HLR edge nor M5 candidate alone can upgrade
+   // the uncovered part to a genuine original 3D physical source.
+   const trueFragments=[];
+   const raw=rawHiddenGeneratedBySourceView.get(native.sourceViewKey)??[];
+   for(const segment of raw){
+    const accepted=[];
+    for(const [a,b] of native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals){
+     const lo=Math.max(a,segment[0]),hi=Math.min(b,segment[1]);
+     if(hi>lo){accepted.push([lo,hi]);trueFragments.push([lo,hi]);}
+    }
+    if(!exactCandidateIntervalCoverage(segment,accepted).
+        entireOriginalParameterIntervalCovered)
+     nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5++;
+   }
    const result=certifyExactNativeGeneratedSourceTiling({
-    sourceViewKey:native.sourceViewKey,
-    intervals:rawHiddenGeneratedBySourceView.get(native.sourceViewKey)??[]
+    sourceViewKey:native.sourceViewKey,intervals:trueFragments
    });
-   // A source-lift witness at a REAL native hidden edge is allowed only
-   // inside the unique physical original M5 source-view coverage already
-   // independently recomputed. Never let a new source-fragment claim
-   // expand or invent the known actual HLR source union.
-   for(const span of result.actualNativeOriginalSourceUnion)
-    if(!exactCandidateIntervalCoverage(span,
-       native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals).
-       entireOriginalParameterIntervalCovered)
-     throw new RangeError('genuine native hidden source fragments exceed M5-unique 3D HLR evidence');
    if(unverifiedNativeGeneratedHiddenSources===0&&
       !intervalsMatch(result.actualNativeOriginalSourceUnion,
        native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals))
-    throw new RangeError('all genuine hidden original source edge fragments disagree with unique M5 union');
+    throw new RangeError('real HLR generated hidden edges do not account for M5-unique source union');
    trueNativeHiddenSourceTilingRows.push(result);
   }
  }
@@ -1481,6 +1489,11 @@ function reviewC1NativeHiddenFinalM5Strokes({
    unverifiedNativeGeneratedHiddenSources,
   allHiddenGeneratedStrokesHaveUniqueSource:
    unverifiedNativeGeneratedHiddenSources===0,
+  trueNativeHiddenOriginalEdgeIntervalsOnlyPartlyM5SourceProven:
+   nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5,
+  allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified:
+   unverifiedNativeGeneratedHiddenSources===0&&
+   nativeHiddenOriginalEdgeIntervalsOnlyPartlyProvenByM5===0,
   originalPhysicalSourceViewsAudited:trueNativeHiddenSourceTilingRows.length,
   hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments:
    trueNativeHiddenSourceTilingRows.filter(x=>
@@ -1498,7 +1511,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
    actualNativeHLRHiddenGeneratedSourceTiling.available,
   allVHWGeneratedHLRSourceFragmentsUniqueAndExact:
    nativeVisibleHLRSourceTiling.allTrueGeneratedNativeVisibleSourceLiftsCertified===true&&
-   actualNativeHLRHiddenGeneratedSourceTiling.allHiddenGeneratedStrokesHaveUniqueSource===true,
+   actualNativeHLRHiddenGeneratedSourceTiling.
+    allGeneratedHiddenEdgeFullIntervalsPhysicallyCertified===true,
   original3DSourceViewsWithAnyGeneratedFragmentMultiplicity:
    realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
     nativeVisibleHLRSourceTiling.rows.some(v=>v.sourceViewKey===x.sourceViewKey&&
