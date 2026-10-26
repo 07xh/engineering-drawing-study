@@ -30,25 +30,39 @@ function assertLedger(g,revision){
   r.rows.reduce((n,e)=>n+e.spans.length,0));
  assert.equal(r.counts.sourceEdgeViewCount,g.data.edges.length*3);
  assert.equal(r.counts.exactFullOriginalSourceViewPartitionsProven+
+  r.counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld+
   r.counts.collapsedSourceViewPartitionsConservativelyHeld,
   g.data.edges.length*3);
- assert.equal(r.allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered,true);
+ assert.equal(r.allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered,
+  r.counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0);
  assert.equal(r.allOriginalSourceViewsAccountedIncludingCollapsed,true);
  assert.equal(r.allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered,
-  r.counts.collapsedSourceViewPartitionsConservativelyHeld===0);
+  r.counts.collapsedSourceViewPartitionsConservativelyHeld===0&&
+  r.counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0);
  assert.equal(r.nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven,true);
  assert.equal(new Set(r.rows.map(x=>x.view+'@'+x.sourceEdgeId)).size,
   g.data.edges.length*3);
  for(const row of r.rows){
   const partition=row.canonicalOriginalM4SourcePartition;
   assert.equal(row.allCanonicalOriginalSourceParameterSubspansCovered,
-   !row.collapsedProjection);
+   partition.entireOriginalM4SourceParameterPartitionPositivelyProven);
   assert.equal(partition.entireOriginalM4SourceParameterPartitionPositivelyProven,
-   !row.collapsedProjection);
-  assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
-   positiveLengthUncoveredIntervals,row.collapsedProjection?[[0,1]]:[]);
-  assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
-   positiveLengthCoveredIntervals,row.collapsedProjection?[]:[[0,1]]);
+   partition.exactOriginalSourceParameterCoverage.entireOriginalParameterIntervalCovered);
+  if(row.collapsedProjection){
+   assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+    positiveLengthUncoveredIntervals,[[0,1]]);
+   assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+    positiveLengthCoveredIntervals,[]);
+  }else if(partition.entireOriginalM4SourceParameterPartitionPositivelyProven){
+   assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+    positiveLengthUncoveredIntervals,[]);
+   assert.deepEqual(partition.exactOriginalSourceParameterCoverage.
+    positiveLengthCoveredIntervals,[[0,1]]);
+  }else{
+   assert.ok(partition.exactOriginalSourceParameterCoverage.
+    positiveLengthUncoveredIntervals.length>0);
+   assert.ok(partition.projectedTinyButPositiveOriginalSourceIntervalsHeld.length>0);
+  }
   assert.equal(partition.collapsedOriginalSourceProjection,row.collapsedProjection);
   assert.equal(partition.continuousM5VisibilityProven,false);
   assert.equal(partition.signedV5Action,false);
@@ -179,4 +193,27 @@ test('legitimate observer-axis collapsed 3D source edge remains a point, not a f
  assert.throws(()=>certifyPartition([0,1],[
   {originalParameterRange:[0,1]}
  ],{collapsedProjection:true}),/collapsed original source/);
+});
+
+test('tiny projected M4 cut may be omitted for display but positive original 3D one-ULP parameter gap remains held',()=>{
+ const half=.5,next=half+Number.EPSILON/2;
+ const r=certifyPartition([0,half,next,1],[
+  {originalParameterRange:[0,half]},
+  {originalParameterRange:[next,1]}
+ ],{
+  original3DFrom:xyz(0,0,0),original3DTo:xyz(1,0,0),view:'V'
+ });
+ assert.equal(r.entireOriginalM4SourceParameterPartitionPositivelyProven,false);
+ assert.deepEqual(r.projectedTinyButPositiveOriginalSourceIntervalsHeld,[[half,next]]);
+ assert.deepEqual(r.exactOriginalSourceParameterCoverage.
+  positiveLengthUncoveredIntervals,[[half,next]]);
+ assert.equal(r.continuousM5VisibilityProven,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('a missing macroscopic source interval cannot be disguised as a tiny projected M4 omission',()=>{
+ const r=[{originalParameterRange:[0,.4]},
+  {originalParameterRange:[.6,1]}];
+ assert.throws(()=>certifyPartition([0,.4,.6,1],r,{
+  original3DFrom:xyz(0,0,0),original3DTo:xyz(10,0,0),view:'V'
+ }),/missing, duplicated, overlapping or reordered/);
 });
