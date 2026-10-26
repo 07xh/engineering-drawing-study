@@ -91,10 +91,18 @@ function verifyConvexProjectedOutline({mesh,revision}={}){
     if((signedA!==0&&Math.abs(signedA)<crossTol)||
        (signedB!==0&&Math.abs(signedB)<crossTol))
       fail('uncertain source-edge alignment to projected contour');
-    const t=u=>((u.u-from.u)*(to.u-from.u)+
+    // Exact original M0 vertex IDs at a genuine hull endpoint certify
+    // its side parameter as literally 0 or 1. A floating dot product
+    // can otherwise return 0.9999999999999998 for the SAME endpoint,
+    // silently shrinking a true full physical source and inventing a
+    // positive parameter microgap downstream. No epsilon-snap is used:
+    // interior vertices keep their independently computed parameter.
+    const t=(u,id)=>from.sourcePointIds.includes(id)?0:
+     to.sourcePointIds.includes(id)?1:
+     ((u.u-from.u)*(to.u-from.u)+
       (u.v-from.v)*(to.v-from.v))/(length*length);
-    const first=Math.max(0,Math.min(t(p),t(q))),
-      last=Math.min(1,Math.max(t(p),t(q)));
+    const first=Math.max(0,Math.min(t(p,a),t(q,b))),
+      last=Math.min(1,Math.max(t(p,a),t(q,b)));
     if(last-first>lengthTol)
      spans.push({sourceEdgeId:[a,b].sort().join('|'),
       projectedFractionRange:[first,last]});

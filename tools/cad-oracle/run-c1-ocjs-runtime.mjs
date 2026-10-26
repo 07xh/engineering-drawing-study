@@ -18,6 +18,8 @@ const {cuboidBounds,computeC1OcjsVisibleSegments}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {verifiedConvexMeshHalfspaces}=
  require('../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {verifyConvexProjectedOutline}=
+ require('../../core/verification/convex-projected-outline.cjs');
 const {auditC1OcjsPhysicalCreaseCandidates}=
  require('../../workbench/c1-ocjs-physical-crease-ray-evidence.cjs');
 const {auditC1OriginalStrokeFinalPreconditions}=
@@ -119,6 +121,29 @@ const general=[g,t],polyhedra=[];
 for(const [index,geometry] of general.entries()){
  const proof=verifiedConvexMeshHalfspaces(geometry);
  assert.equal(proof.status,'validated-closed-convex-mesh');
+ const exactHullOutline=verifyConvexProjectedOutline({
+  mesh:geometry,revision:40+index});
+ let exactM0EndpointBoundFullSides=0;
+ for(const view of ['V','H','W']){
+  const hull=exactHullOutline[view];
+  for(const [sideIndex,side] of hull.boundarySides.entries()){
+   const fromIds=hull.vertices[sideIndex].sourcePointIds,
+    toIds=hull.vertices[(sideIndex+1)%hull.vertices.length].sourcePointIds;
+   for(const candidate of side.sourceEdgeCandidates){
+    const [a,b]=candidate.sourceEdgeId.split('|');
+    const fullByVertexIds=(fromIds.includes(a)&&toIds.includes(b))||
+     (fromIds.includes(b)&&toIds.includes(a));
+    if(fullByVertexIds){
+     assert.deepEqual(candidate.projectedFractionRange,[0,1],
+      'literal M0 hull endpoint IDs must preserve exact [0,1] source span');
+     exactM0EndpointBoundFullSides++;
+    }
+   }
+  }
+ }
+ assert.ok(exactM0EndpointBoundFullSides>=3,
+  'real convex geometry must exercise exact M0 hull vertex ID parameters');
+
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
  // Real native edge IsSame is checked BEFORE OCJS handles are disposed,
@@ -710,8 +735,57 @@ for(const [index,geometry] of general.entries()){
   x.originalContour3DParameterRecoveryKind==='held'||
   x.originalContour3DParameterRecoveryKind==='exact-original-3d-source-interpolation'||
   x.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'));
+ // Independent genuine OCCT WASM end-to-end regression: the rotated
+ // convex solid's formerly held H edges now have literal [0,1] M0 source
+ // parameters, whereas true positive native HLR gaps on a skew tetrahedron
+ // remain unproved and MUST NOT be silently snapped or V5-signed.
+ if(geometry.id==='C1rotated'){
+  assert.equal(nativeM5ExteriorContourParity.originalGloballySignedM5ContourStrokeCount,14);
+  assert.equal(nativeM5ExteriorContourParity.originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage,14);
+  assert.equal(nativeM5ExteriorContourParity.originalGloballySignedM5ContoursStillHeldForNativeProof,0);
+ }
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(nativeM5ExteriorContourParity.originalGloballySignedM5ContourStrokeCount,9);
+  assert.ok(nativeM5ExteriorContourParity.originalGloballySignedM5ContoursStillHeldForNativeProof>0);
+  assert.ok(nativeM5ExteriorContourParity.rows.some(row=>
+   row.heldReason==='true-occt-generated-contour-source-parameter-gap'));
+ }
  assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
  assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
+ // Live genuine OCCT evidence for unresolved H-source endpoints: report the
+ // exact original M0 XYZ, canonical signed M5 3D/paper endpoints and real
+ // native BRep lifts separately. Never use these diagnostics as a signer.
+ const heldPhysicalContours=nativeM5ExteriorContourParity.rows.filter(row=>
+  row.originalM5WholeExteriorContourCertified===true&&
+  row.realOCCTOriginal3DSourceCompleteContourParity===false);
+ if(heldPhysicalContours.length){
+  const {auditC1GlobalVisibleContourProof}=require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
+  const canonicalContour=auditC1GlobalVisibleContourProof({geometry,revision:40+index});
+  const heldEndpointEvidence=heldPhysicalContours.map(row=>{
+   const ids=row.originalPhysical3DSourceEdgeId.split('::').at(-1).split('|');
+   const sourceVertices=ids.map(id=>({id,xyz:geometry.data.points[id],
+    paper:project(geometry.data.points[id])[row.view]}));
+   const line=canonicalContour.views.find(v=>v.view===row.view)
+    ?.candidateIntervals[row.canonicalHullIntervalOrdinal];
+   assert.equal(line?.sourceEdgeId,row.originalPhysical3DSourceEdgeId);
+   assert.equal(row.signedV5Action,false);
+   const native=cad.views[row.view].flatMap((seg,ordinal)=>
+    (seg.sourceCandidate3DLifts??[]).filter(lift=>
+     lift.sourceEdgeId===row.originalPhysical3DSourceEdgeId)
+    .map(lift=>({ordinal,from:seg.from,to:seg.to,
+     originalSourceParameterRange:lift.originalSourceParameterRange,
+     fromCandidate3D:lift.fromCandidate3D,toCandidate3D:lift.toCandidate3D})));
+   return {view:row.view,ordinal:row.canonicalHullIntervalOrdinal,
+    sourceEdgeId:row.originalPhysical3DSourceEdgeId,
+    heldReason:row.heldReason,sourceVertices,
+    canonicalM5:{from3D:line.real3DFrom,to3D:line.real3DTo,
+     paperFrom:line.projectedFromModelMm,paperTo:line.projectedToModelMm,
+     physicalCoverage:line.sourceContourCoverageVerified,
+     endpointJoins:line.genuineFrontSourceEndpointJoinsVerified,
+     continuousFrontRay:line.continuouslyFrontRayClearVerified},native};
+  });
+  console.error('C1_HELD_ORIGINAL_3D_ENDPOINTS '+JSON.stringify(heldEndpointEvidence));
+ }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
  assert.equal(
