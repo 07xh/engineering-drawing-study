@@ -213,6 +213,18 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeIsSame3D.counts.genuineCompleteGeneratedHLRJunctionComponentsAudited,
   nativeGeneratedVertexGraph.counts.genuinelySharedNativeJunctionComponents);
  assert.equal(nativeIsSame3D.counts.
+  generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,
+  nativeIsSame3D.completeGenuineNativeHLRJunctionStars.filter(star=>
+   star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven===true).length);
+ assert.ok(nativeIsSame3D.completeGenuineNativeHLRJunctionStars.every(star=>
+  star.actualOCCTGeneratedHLRSourceEdgeInteriorSplit3DProven!==true||
+  (star.allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex===false&&
+   star.source3DEdgeInteriorOriginalEdgeId!==null&&
+   star.source3DEdgeInteriorParameter>0&&
+   star.source3DEdgeInteriorParameter<1&&
+   star.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered===false&&
+   star.signedV5Action===false)));
+ assert.equal(nativeIsSame3D.counts.
   completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex+
   nativeIsSame3D.counts.
    completeGeneratedHLRJunctionComponentsHeldOnUnmappedPhysicalSource,
@@ -1092,6 +1104,8 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
    trueOriginal3DSharedVertexAndNativeIsSameEntireJunctionNodes:
     nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,
+   genuineNativeHLRInteriorSplitPointsOnOneVerifiedOriginal3DEdge:
+    nativeIsSame3D.counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,
    genuineNativeVisibleHidden3DSharedVertexWithFullOriginalM5FrontClearRay:
     nativeIsSame3D.counts.nativeMixedVisibleHiddenWithAuthenticatedOriginalM0VertexAndM5ClearRay,
    nativeIsSameJunctionNodesStillLackingFullOriginal3DSourceFan:
