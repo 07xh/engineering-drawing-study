@@ -66,6 +66,38 @@ function certifyExactOriginalRaySourceParameterPartition({
   signedV5Action:false
  });
 }
+// An exact union alone cannot certify a 1:1 native-generated edge topology:
+// overlapping original M0 parameter fragments must stay independently held.
+function certifyExactNativeGeneratedSourceTiling({sourceViewKey,intervals}={}){
+ if(typeof sourceViewKey!=='string'||!sourceViewKey.includes('@')||
+    !Array.isArray(intervals))
+  throw new TypeError('actual native source-view intervals required');
+ const ordered=intervals.map(r=>{
+  if(!Array.isArray(r)||r.length!==2||!r.every(Number.isFinite)||
+     r[0]<0||r[1]>1||r[0]>=r[1])
+   throw new RangeError('invalid generated OCCT original source interval');
+  return [...r];
+ }).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ let cursor=0;
+ const overlaps=[];
+ for(const [a,b] of ordered){
+  if(a<cursor)overlaps.push([a,Math.min(b,cursor)]);
+  cursor=Math.max(cursor,b);
+ }
+ const union=exactCandidateIntervalCoverage([0,1],ordered);
+ return frozen({
+  sourceViewKey,actualNativeGeneratedSourceFragments:ordered.length,
+  originalNativeSourceIntervals:ordered,
+  positiveSameOriginal3DSourceGeneratedEdgeOverlaps:overlaps,
+  actualNativeOriginalSourceUnion:union.positiveLengthCoveredIntervals,
+  originalSourceParameterGaps:union.positiveLengthUncoveredIntervals,
+  disjointExactCompleteOriginalSourceGeneratedEdgeTiling:
+   ordered.length>0&&overlaps.length===0&&
+   union.entireOriginalParameterIntervalCovered===true,
+  fullGeneratedOCCTToOriginalTopoDSHistoryCertified:false,
+  officialGBLineStyleSigned:false,signedV5Action:false
+ });
+}
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
  nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
@@ -1333,4 +1365,5 @@ function reviewC1NativeHiddenFinalM5Strokes({
  });
 }
 module.exports={reviewC1NativeHiddenFinalM5Strokes,
- certifyExactOriginalRaySourceParameterPartition};
+ certifyExactOriginalRaySourceParameterPartition,
+ certifyExactNativeGeneratedSourceTiling};
