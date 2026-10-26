@@ -626,3 +626,16 @@ test('both ends of the same generated HLR edge cannot fake a two-edge native IsS
  });
  assert.throws(()=>review(x),/only one generated HLR edge/);
 });
+
+test('whole-scene source-to-native HLR ledger never treats a locally reviewed hidden edge as full scene signoff',()=>{
+ const x=caseData(),r=review(x),ledger=r.wholeSceneSourceHLRAndM5Closure;
+ assert.equal(ledger.originalM0AllViewSourceParameterCoverageComplete,false);
+ assert.equal(ledger.canonicalSourceViewRows>0,true);
+ assert.equal(ledger.nativeReviewedSourceViewRows,1);
+ assert.equal(ledger.canonicalSourceViewsWithoutNativeHiddenReview.length,
+  ledger.canonicalSourceViewRows-1);
+ assert.equal(ledger.fullOriginalTopoDSGeneratedHLRHistoryCertified,false);
+ assert.equal(ledger.allOpaqueFacesContinuousM5OcclusionCertified,false);
+ assert.equal(ledger.wholeSceneMathematicallySigned,false);
+ assert.equal(ledger.authorizedSoleV5ActionCount,0);
+});
