@@ -209,8 +209,14 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   const genuineModeledEndpoint=modeledEdge&&typeof vertexId==='string'&&
    modeledEdge.includes(vertexId)&&
    Object.hasOwn(geometry.data.points,vertexId);
+  // A native HLR endpoint can only be attributed to a modeled 3D vertex
+  // if the actual original XYZ reprojects to that exact paper endpoint.
+  // This is local concordance, NOT generated-to-original TopoDS history.
+  const originalXYZ=genuineModeledEndpoint?geometry.data.points[vertexId]:null;
+  const projectedOriginalEndpointMatchesNativePaper=
+   xyzEq(originalXYZ,originalXYZ)&&equal(project(originalXYZ)[view],point);
   return {source:modeledEdge?src.originalPhysicalSourceEdgeId:null,
-   vertex:genuineModeledEndpoint&&
+   vertex:genuineModeledEndpoint&&projectedOriginalEndpointMatchesNativePaper&&
     (w.exactOriginal3DVertexAndClosedFaceFanNativeOCCTVerified===true||
      w.existingM4OriginalSourceEndpointVerified===true)?
      vertexId:null,
