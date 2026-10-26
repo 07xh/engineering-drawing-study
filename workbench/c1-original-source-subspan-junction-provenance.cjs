@@ -38,22 +38,16 @@ const point=(a,b,t)=>({
  * All comparisons are exact binary64, including one-ULP holes.
  */
 function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
- collapsedProjection=false
+ collapsedProjection=false,original3DFrom,original3DTo,view
 }={}){
  if(!Array.isArray(cutParameters)||cutParameters.length<2||
-    !Array.isArray(spans)||(!collapsedProjection&&
-     spans.length!==cutParameters.length-1)||
+    !Array.isArray(spans)||spans.length>cutParameters.length-1||
     cutParameters[0]!==0||cutParameters.at(-1)!==1||
     cutParameters.some((t,i)=>!finite(t)||t<0||t>1||
      (i>0&&t<=cutParameters[i-1])))
-  throw new RangeError('incomplete canonical original M4 source cut partition: '+
-   JSON.stringify({cutCount:cutParameters?.length,spanCount:spans?.length,
-    first:cutParameters?.[0],last:cutParameters?.at(-1),
-    collapsedProjection,cutParameters}));
- // A 3D edge parallel to this view's observer direction projects to ONE
- // paper point. M4 correctly emits zero projected LINE spans: no full-line
- // partition may be certified or signed, but the source/view must still be
- // accounted for. Treating it as a missing cut would break valid solids.
+  throw new RangeError('incomplete canonical original M4 source cut partition');
+ // A 3D edge parallel to this view's observer direction projects to a
+ // point. No paper LINE interval can be certified from this source.
  if(collapsedProjection){
   if(spans.length!==0)
    throw new RangeError('collapsed original source cannot have paper line subspans');
@@ -63,6 +57,7 @@ function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
     exactCandidateIntervalCoverage([0,1],[]),
    collapsedOriginalSourceProjection:true,
    sourceOpenParameterCoverageNotRepresentableAsPaperLine:true,
+   projectedTinyButPositiveOriginalSourceIntervalsHeld:[],
    everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:false,
    entireOriginalM4SourceParameterPartitionPositivelyProven:false,
    generatedHLRSourceIdentityProven:false,
@@ -70,29 +65,45 @@ function certifyCanonicalOriginalM4SourcePartition(cutParameters,spans,{
    engineeringLineStyleSigned:false,signedV5Action:false
   });
  }
- const ranges=[];
- for(let i=0;i<spans.length;i++){
-  const r=spans[i]?.originalParameterRange;
-  if(!Array.isArray(r)||r.length!==2||
-     r[0]!==cutParameters[i]||r[1]!==cutParameters[i+1])
+ const ranges=[],tinyHeld=[];let j=0;
+ for(let i=0;i<cutParameters.length-1;i++){
+  const a=cutParameters[i],b=cutParameters[i+1];
+  const r=spans[j]?.originalParameterRange;
+  if(Array.isArray(r)&&r.length===2&&r[0]===a&&r[1]===b){
+   ranges.push([a,b]);j++;continue;
+  }
+  // M4 deliberately omits subspans whose *recomputed projected paper
+  // length* is <= 1e-10 mm. This does NOT erase their positive ORIGINAL
+  // 3D source parameter interval. Recompute the condition independently,
+  // then explicitly hold that gap rather than tolerance-stitching it.
+  if(!VIEWS.includes(view)||!original3DFrom||!original3DTo)
    throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
-  ranges.push([r[0],r[1]]);
+  const p=project(point(original3DFrom,original3DTo,a))[view],
+   q=project(point(original3DFrom,original3DTo,b))[view];
+  const length=Math.hypot(p.u-q.u,p.v-q.v);
+  if(!finite(length)||length>1e-10)
+   throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
+  tinyHeld.push([a,b]);
  }
- // Reuse the existing shared exact interval union (also consumed by native
- // HLR and front masks); do not introduce another source coverage algorithm.
+ if(j!==spans.length)
+  throw new RangeError('M4 source subspan missing, duplicated, overlapping or reordered');
  const coverage=exactCandidateIntervalCoverage([0,1],ranges);
- if(!coverage.entireOriginalParameterIntervalCovered||
-    coverage.positiveLengthCoveredIntervals.length!==1||
-    coverage.positiveLengthCoveredIntervals[0][0]!==0||
-    coverage.positiveLengthCoveredIntervals[0][1]!==1)
-  throw new RangeError('canonical original 3D source parameter coverage incomplete');
+ // Even a 1-ULP positive gap remains unproven, including if its projected
+ // length rounded to zero. This certificate never authorizes M5/GB/V5.
+ const complete=coverage.entireOriginalParameterIntervalCovered&&
+  coverage.positiveLengthCoveredIntervals.length===1&&
+  coverage.positiveLengthCoveredIntervals[0][0]===0&&
+  coverage.positiveLengthCoveredIntervals[0][1]===1;
+ if(complete!== (tinyHeld.length===0))
+  throw new RangeError('M4 source gap accounting contradicts exact interval union');
  return freeze({
   sourceParameterRange:[0,1],
   exactOriginalSourceParameterCoverage:coverage,
   collapsedOriginalSourceProjection:false,
   sourceOpenParameterCoverageNotRepresentableAsPaperLine:false,
-  everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:true,
-  entireOriginalM4SourceParameterPartitionPositivelyProven:true,
+  projectedTinyButPositiveOriginalSourceIntervalsHeld:tinyHeld,
+  everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan:complete,
+  entireOriginalM4SourceParameterPartitionPositivelyProven:complete,
   generatedHLRSourceIdentityProven:false,
   continuousM5VisibilityProven:false,
   engineeringLineStyleSigned:false,signedV5Action:false
@@ -126,6 +137,7 @@ function auditC1OriginalSourceSubspanJunctions({
   paperOnlyForeignSourceEncounters:0,roundedDiagnosticEncountersHeld:0,
   uncertifiedOriginalSubspanJoins:0,
   exactFullOriginalSourceViewPartitionsProven:0,
+  noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld:0,
   collapsedSourceViewPartitionsConservativelyHeld:0,
   signedV5Actions:0
  };
@@ -148,7 +160,10 @@ function auditC1OriginalSourceSubspanJunctions({
   seenSourceViews.add(key);
   const spans=row.spans;
   const partition=certifyCanonicalOriginalM4SourcePartition(
-   row.cutParameters,spans,{collapsedProjection:row.collapsedProjection});
+   row.cutParameters,spans,{
+    collapsedProjection:row.collapsedProjection,
+    original3DFrom:origin.from,original3DTo:origin.to,view:row.view
+   });
   const details=[];
   for(let i=0;i<spans.length;i++){
    const s=spans[i],ts=s.originalParameterRange;
@@ -242,13 +257,15 @@ function auditC1OriginalSourceSubspanJunctions({
    collapsedProjection:row.collapsedProjection,spans:details,
    canonicalOriginalM4SourcePartition:partition,
    allCanonicalOriginalSourceParameterSubspansCovered:
-    !row.collapsedProjection,
+    partition.entireOriginalM4SourceParameterPartitionPositivelyProven,
    allReal3DAndPaperSceneJunctionsCertified:false,
    signedV5ActionCount:0});
   counts.sourceEdgeViewCount++;
   if(row.collapsedProjection)
    counts.collapsedSourceViewPartitionsConservativelyHeld++;
-  else counts.exactFullOriginalSourceViewPartitionsProven++;
+  else if(partition.entireOriginalM4SourceParameterPartitionPositivelyProven)
+   counts.exactFullOriginalSourceViewPartitionsProven++;
+  else counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld++;
  }
  // Cardinality alone cannot prove that every actual original edge appears
  // once in EACH first-angle view (V/H/W).
@@ -256,6 +273,7 @@ function auditC1OriginalSourceSubspanJunctions({
   if(!seenSourceViews.has(view+'@'+id))
    throw new RangeError('missing M4 original 3D source/view partition');
  if(counts.exactFullOriginalSourceViewPartitionsProven+
+     counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld+
      counts.collapsedSourceViewPartitionsConservativelyHeld!==
      originals.size*VIEWS.length||
     counts.originalSourceSubspanCount!==graph.partitionedSourceSubintervalCount||
@@ -269,10 +287,12 @@ function auditC1OriginalSourceSubspanJunctions({
   m5OriginalContourAvailable:graph.originalM5ExteriorHullRecomputedAndAvailable,
   sourceEventGraphSchema:graph.schema,
   rows,counts,
-  allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered:true,
+  allNoncollapsedCanonicalM4SourcePartitionsPositivelyCovered:
+   counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0,
   allOriginalSourceViewsAccountedIncludingCollapsed:true,
   allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered:
-   counts.collapsedSourceViewPartitionsConservativelyHeld===0,
+   counts.collapsedSourceViewPartitionsConservativelyHeld===0&&
+   counts.noncollapsedSourceViewPartitionsWithPositiveParameterGapsHeld===0,
   nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven:true,
   fullCrossSourceSceneJunctionsCertified:false,
   finalEngineeringLineStylesAuthorized:false,
