@@ -17,6 +17,10 @@ test('C1 M4 positive 3D parameter tails survive translated oblique solids withou
   const geometry=oblique('C1MicroMetamorphic'+index,...offset);
   const result=auditC1ReviewedProjectedSourceEventGraph({
    geometry,revision:90+index,proofMode:'m5-hull-required'});
+  assert.equal(result.originalSourceEdgeViewCount,geometry.data.edges.length*3);
+  assert.equal(result.rows.length,geometry.data.edges.length*3);
+  assert.equal(new Set(result.rows.map(row=>row.view+'@'+row.sourceEdgeId)).size,
+   geometry.data.edges.length*3);
   let micro=0;
   for(const row of result.rows){
    if(row.collapsedProjection)continue;
@@ -37,5 +41,7 @@ test('C1 M4 positive 3D parameter tails survive translated oblique solids withou
   }
   assert.equal(micro,result.positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection);
   assert.equal(result.signedV5ActionCount,0);
+  assert.equal(result.allPhysicalJunctionsCertified,false);
+  assert.equal(result.exactSourceDepthForAllProjectedAliasesCertified,false);
  }
 });
