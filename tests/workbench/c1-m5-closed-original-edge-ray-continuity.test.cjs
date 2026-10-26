@@ -36,8 +36,30 @@ function check(g){
  assert.equal(result.signedV5ActionCount,0);
  assert.equal(result.wholeSolidV5Ready,false);
  assert.equal(result.doesNotInfer3DVerticesAtPaperOnlyCuts,true);
+ // The production M5 edge ray and real-OCCT final stroke consumers must
+ // now use the SAME M4 original-source [0,1] positive coverage witness.
+ assert.equal(result.counts.canonicalM4Original3DParameterPartitionsConsumed,
+  g.data.edges.length*3);
+ assert.equal(result.counts.canonicalM4PositiveLengthGapsHeld,
+  result.rows.reduce((n,row)=>n+
+   row.originalM4Canonical3DSourceParameterCoverage.
+    positiveLengthUncoveredIntervals.length,0));
  assert.ok(Object.isFrozen(result));
  for(const row of result.rows){
+  const proof=row.originalM4Canonical3DSourceParameterCoverage;
+  assert.deepEqual(proof.originalParameterRange,[0,1]);
+  assert.equal(row.originalM4PaperParameterPartitionComplete,
+   row.originalM4Canonical3DSourcePartitionPositivelyProven&&
+   !row.originalM4Canonical3DSourceCollapsedToPoint);
+  if(!row.originalM4Canonical3DSourceCollapsedToPoint){
+   assert.deepEqual(proof.positiveLengthUncoveredIntervals,
+    row.missingProjectedPaperSourceParameterRanges);
+   assert.equal(proof.entireOriginalParameterIntervalCovered,
+    row.originalM4PaperParameterPartitionComplete);
+  }else{
+   assert.deepEqual(proof.positiveLengthUncoveredIntervals,[[0,1]]);
+   assert.equal(row.fullProjectedVisibleSourceLineProven,false);
+  }
   assert.equal(row.officialEngineeringLineStyle,'undetermined');
   assert.equal(row.signedV5Action,false);
   assert.equal(row.completePaperSceneAndFeatureTopologyProven,false);
@@ -90,6 +112,15 @@ test('oblique hexa keeps four actual nonoriginal paper cuts, refusing false comp
  assert.ok(r.rows.some(x=>!x.originalM4PaperParameterPartitionComplete&&
   x.completeSourceOriginal3DRayClosedIntervalClear===true&&
   x.fullProjectedVisibleSourceLineProven===false));
+ // A closed 3D observer ray remains true even if a tiny *paper* M4 cut is
+ // missing; it must never become a complete line or an authorized V5 step.
+ assert.ok(r.rows.some(x=>
+  !x.originalM4Canonical3DSourcePartitionPositivelyProven&&
+  !x.originalM4Canonical3DSourceCollapsedToPoint&&
+  x.originalM4Canonical3DSourceParameterCoverage.
+   positiveLengthUncoveredIntervals.length>0&&
+  x.fullProjectedVisibleSourceLineProven===false));
+
  assert.ok(r.rows.every(x=>x.originalCutSubspans.every(y=>
   y.physicalCrossSourceJunctionAtPaperCutsAuthorized===false)));
 });
