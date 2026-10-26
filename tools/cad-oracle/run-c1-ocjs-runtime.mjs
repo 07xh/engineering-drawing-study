@@ -373,6 +373,18 @@ for(const [index,geometry] of general.entries()){
   s.occtSourceCurveType==='line'&&
   s.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
   s.occtSourceCurveParameterRange[1]>s.occtSourceCurveParameterRange[0]));
+ // Independently recalculate physical length from REAL OCCT source vertices:
+ // a forged [first,last] BRepAdaptor parameter range must not silently
+ // become a normalized M0/M5 source interval. This remains unsigned.
+ for(const source of cad.originalBRepSourceEdges){
+  const a=source.fromOCCT3D,b=source.toOCCT3D;
+  const lengthMm=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+  const [first,last]=source.occtSourceCurveParameterRange;
+  assert.ok(Number.isFinite(lengthMm)&&lengthMm>1e-8);
+  assert.ok(Math.abs((last-first)-lengthMm)<=
+   1e-6*Math.max(1,lengthMm));
+  assert.equal(source.generatedHLREdgeTopoDSIdentityMatched,false);
+ }
  assert.equal(cad.actualOCCTCurveTypeIndependentlyVerified,true);
  assert.equal(cad.allEmittedVisibleHLRCurvesVerifiedStraightAndPlanar,true);
  assert.equal(cad.actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified,false);
