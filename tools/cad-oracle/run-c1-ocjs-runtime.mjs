@@ -26,6 +26,8 @@ const {reviewC1M5FinalStrokeObligations}=
  require('../../workbench/c1-m5-final-source-obligation-review.cjs');
 const {reviewC1NativeHiddenFinalM5Strokes}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
+const {auditC1RealOcctVisibleContourSourceParity}=
+ require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 async function main(){
@@ -629,6 +631,38 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativeVHWPhysicalSourceUnion.
   allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
  assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
+ // A globally released original M5 convex external contour does NOT
+ // automatically mean the ACTUAL native HLR generated BRep covers every
+ // claimed 3D original source interval. Cross-check both independently
+ // recomputed sources on THIS same real OCCT WASM 3D geometry/revision.
+ const nativeM5ExteriorContourParity=auditC1RealOcctVisibleContourSourceParity({
+  geometry,revision:40+index,cad,
+  nativeProof:nativeHiddenM5.nativeHLRVertexConcordance
+ });
+ assert.equal(nativeM5ExteriorContourParity.entireOriginalM5ContourProofRecomputed,true);
+ assert.equal(nativeM5ExteriorContourParity.realNativeOCCTVisible3DSourceFragmentsAudited,
+  nativeHiddenM5.nativeHLRVertexConcordance.
+   independentlyM5AuthenticatedVisibleNativeGeneratedEdges.length);
+ assert.equal(nativeM5ExteriorContourParity.
+  originalGloballySignedM5ContourStrokeCount,
+  nativeM5ExteriorContourParity.rows.filter(x=>
+   x.originalM5WholeExteriorContourCertified).length);
+ assert.equal(nativeM5ExteriorContourParity.
+  originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage,
+  nativeM5ExteriorContourParity.rows.filter(x=>
+   x.realOCCTOriginal3DSourceCompleteContourParity).length);
+ assert.equal(nativeM5ExteriorContourParity.
+  originalGloballySignedM5ContoursStillHeldForNativeProof,
+  nativeM5ExteriorContourParity.
+   originalGloballySignedM5ContourStrokeCount-
+  nativeM5ExteriorContourParity.
+   originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage);
+ assert.ok(nativeM5ExteriorContourParity.rows.every(x=>
+  x.generatedToOriginalTopoDSHistoricalIdentityRecovered===false&&
+  x.constructionIntentDAGV5NativeParityAuthorized===false&&
+  x.signedV5Action===false));
+ assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
+ assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
  assert.equal(generatedVisibleM5PhysicalTiling.available,true);
  assert.equal(
@@ -1359,6 +1393,25 @@ for(const [index,geometry] of general.entries()){
      unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,
    nativeVisibleHLRUnverifiedSegmentsAudit:
     generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses,
+   mathematicallySignedGlobalM5VisibleContourClaims:
+    nativeM5ExteriorContourParity.originalGloballySignedM5ContourStrokeCount,
+   globalM5VisibleContourClaimsIndependentlyReconfirmedByRealOCCTNative3DSourceAndFullParameter:
+    nativeM5ExteriorContourParity.
+     originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage,
+   globalM5VisibleContourClaimsStillHeldByRealOCCTNativeSource:
+    nativeM5ExteriorContourParity.originalGloballySignedM5ContoursStillHeldForNativeProof,
+   realOCCTNativeOriginalPhysicalContourVerification:
+    nativeM5ExteriorContourParity.rows.filter(x=>
+     x.originalM5WholeExteriorContourCertified).map(x=>({
+      view:x.view,ordinal:x.canonicalHullIntervalOrdinal,
+      sourceEdge:x.originalPhysical3DSourceEdgeId,
+      sourceRange:x.originalSourceParameterRange,
+      passed:x.realOCCTOriginal3DSourceCompleteContourParity,
+      missingSourceRanges:x.positiveLengthNativeSourceGaps,
+      duplicatePhysicalSource:x.nativeGeneratedOriginalSourceOverlap,
+      heldReason:x.heldReason,
+      signedV5Action:false
+     })),
    heldNativeVisibleHLROriginal3DContourFaceRaySourceFanCount:
     heldContourFaceRays.heldGeneratedNativeVisibleSegmentsReviewed,
    originalContourHLRSourceFansWithOneProvablyFront3DEdgeAndStrictlyHiddenAlternatives:
