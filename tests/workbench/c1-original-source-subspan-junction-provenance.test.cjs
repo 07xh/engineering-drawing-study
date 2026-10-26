@@ -253,3 +253,41 @@ test('a missing macroscopic source interval cannot be disguised as a tiny projec
   original3DFrom:xyz(0,0,0),original3DTo:xyz(10,0,0),view:'V'
  }),/missing, duplicated, overlapping or reordered/);
 });
+
+test('rotated real convex M0 source M4 carries every positive binary64 3D endpoint parameter interval even when projected ink rounds to zero',()=>{
+ const g=prismMesh({solid:{min:xyz(0,0,0),max:xyz(2,4,9)}});
+ const original={...g,id:'C1Full3DSourceMicroPaper',data:{
+  ...g.data,points:Object.fromEntries(Object.entries(g.data.points).map(
+   ([id,p])=>[id,{x:p.x+p.y/2,y:p.y,z:p.z}]))}};
+ const {auditC1ReviewedProjectedSourceEventGraph}=
+  require('../../workbench/c1-reviewed-projected-source-event-graph.cjs');
+ const {exactCandidateIntervalCoverage}=
+  require('../../workbench/c1-original-source-interval-coverage.cjs');
+ const r=auditC1ReviewedProjectedSourceEventGraph({
+  geometry:original,revision:77,proofMode:'m5-hull-required'});
+ assert.ok(r.positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection>0);
+ let micro=0;
+ for(const row of r.rows){
+  if(row.collapsedProjection)continue;
+  const coverage=exactCandidateIntervalCoverage([0,1],
+   row.spans.map(x=>x.originalParameterRange));
+  assert.equal(coverage.entireOriginalParameterIntervalCovered,true,
+   row.view+'@'+row.sourceEdgeId+' '+JSON.stringify(
+    coverage.positiveLengthUncoveredIntervals));
+  for(const span of row.spans){
+   assert.equal(span.original3DSourceParameterIntervalHasPositiveLength,true);
+   assert.equal(span.source3DIntervalPreservedForFullM5RayContinuity,true);
+   assert.ok(span.originalParameterRange[1]>span.originalParameterRange[0]);
+   if(span.projectedSubpixelPaperSegmentHeldAsUndrawable){
+    micro++;
+    assert.equal(span.eligibleForNonHullCandidate,false);
+    assert.equal(span.engineeringLineStyle,'undetermined');
+    assert.equal(span.signedV5Action,false);
+   }
+  }
+ }
+ assert.equal(micro,
+  r.positiveOriginal3DSourceIntervalsRetainedDespiteSubpixelPaperProjection);
+ assert.ok(micro>0);
+ assert.equal(r.signedV5ActionCount,0);
+});

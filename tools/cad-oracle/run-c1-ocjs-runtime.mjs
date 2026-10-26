@@ -1007,11 +1007,14 @@ for(const [index,geometry] of general.entries()){
   geometry.data.edges.length*3);
  assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.signedV5Actions,0);
  if(index===0){
-  assert.ok(finalGate.originalFull3DEdgeRayContinuityTotals.
-   missingPaperSourceParameterGapCount>0,
-   'skew six-face current M4 tiny cuts must remain explicitly held until source-contiguous paper drawing is proved');
-  assert.ok(finalGate.originalFull3DEdgeRayContinuityTotals.
-   nonCollapsedProjectionPartitionIncomplete>0);
+  // The M4 fix preserves even binary64-positive micro tails as real 3D
+  // parameter spans; paper-UNDRAWABLE does not mean source-MISSING.
+  assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.
+   missingPaperSourceParameterGapCount,0);
+  assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.
+   nonCollapsedProjectionPartitionIncomplete,0);
+  assert.equal(finalGate.originalFull3DEdgeRayContinuityTotals.
+   signedV5Actions,0);
  }
 
  assert.ok(finalGate.subspans.every(x=>
@@ -1020,7 +1023,11 @@ for(const [index,geometry] of general.entries()){
   x.blockers.originalConstructionIntentDAGAndSingleV5NotAuthorized===true&&
   (!x.exactClosedOriginal3DSourceObserverRayClear||
    x.singleOpaqueSolidContinuousOpenRayClear||
-   x.originalM5ExteriorContourOverlap===true)));
+   x.originalM5ExteriorContourOverlap===true||
+   (x.heldUndrawablePositiveOriginal3DMicrospan===true&&
+    x.genuineRealCADCompleteSourceCoverage===false&&
+    x.formalStandardLineStyle==='undetermined'&&
+    x.signedV5Action===false))));
  assert.equal(finalGate.counts.originalSourcePaperCut3DContinuityPreserved,
   finalGate.originalFull3DEdgeRayContinuityTotals.
    same3DOriginalSourceCutJoinsPreserved);

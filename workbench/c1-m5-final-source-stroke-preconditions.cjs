@@ -188,7 +188,17 @@ function auditC1OriginalStrokeFinalPreconditions({
     completeSourceOriginal3DRayClosedIntervalClear===true&&
     canonicalComplete&&!collapsed&&
     currentEdge.originalPhysicalCreaseProven===true;
-   if(inheritedClear&&!clear&&!outer)
+   // A positive 3D M4 micro-tail may have a rigorous WHOLE ORIGINAL EDGE
+   // outward-ray theorem while its projected paper stroke is intentionally
+   // undrawable and the subspan's analytic ray solver is inapplicable.
+   // This preserves source-ray consistency WITHOUT granting paper clearance,
+   // CAD coverage, engineering line style or V5 authority.
+   const held3DMicroRay=span.projectedSubpixelPaperSegmentHeldAsUndrawable===true&&
+    span.source3DIntervalPreservedForFullM5RayContinuity===true&&
+    span.wholeOpenSubspanExactSourceRayClear===true&&
+    !cadCovered&&!cadUnique&&!m0Unique&&
+    originalPruning.projectedMicroPaperPruningHeld===true;
+   if(inheritedClear&&!clear&&!outer&&!held3DMicroRay)
     throw new RangeError('closed original ray clearance conflicts with M0 subspan');
    if(inheritedClear)
     counts.originalSourceSubspanInheritedExactClosedEdgeRayClear++;
@@ -390,6 +400,9 @@ function auditC1OriginalStrokeFinalPreconditions({
     paperEventCutsNeverCertifiedAsNew3DVertices:
      currentEdge.allPaperInteriorCutPointsRetainNonvertexIdentity,
     singleOpaqueSolidContinuousOpenRayClear:clear,
+    // This is ONLY the original 3D closed-edge support theorem; the
+    // positive M4 microspan has no independently drawable paper interval.
+    heldUndrawablePositiveOriginal3DMicrospan:held3DMicroRay,
     singleOpaqueSolidContinuousStrictlyHidden:hidden,
     genuineRealCADCompleteSourceCoverage:cadCovered,
     genuineRealCADUniqueSourceCorroborated:cadUnique,
