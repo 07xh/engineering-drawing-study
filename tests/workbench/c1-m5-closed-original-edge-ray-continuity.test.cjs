@@ -90,39 +90,25 @@ test('box V FRONT physical edge ray closed clear through both exact vertices whi
  assert.ok(back.sourceOriginalVertexRayStatus.every(s=>s==='undetermined'));
  assert.equal(back.completeSourceOriginal3DRayClosedIntervalClear,false);
 });
-test('oblique hexa keeps four actual nonoriginal paper cuts, refusing false complete partition joins',()=>{
+test('oblique hexa preserves exact M4/M5 source continuity across subpixel endpoint tails without signing V5',()=>{
  const r=check(makeOblique());
- // Genuine M4 projected tiny cuts exist but some zero-length projected
- // fragments were omitted by existing M4. No contiguous 3D split
- // chain may be inferred across this diagnostic gap.
- assert.equal(r.counts.same3DOriginalSourceCutJoinsPreserved,0);
+ // The shared M4 source graph now RETAINS positive binary64 source tails.
+ // M5 must not silently drop them or round [nextDown(1),1] away.
  assert.ok(r.counts.nonoriginalPaperCutEndpointsHeld>0);
- assert.ok(r.counts.nonCollapsedProjectionPartitionIncomplete>0);
- assert.ok(r.counts.missingPaperSourceParameterGapCount>0);
- assert.equal(r.counts.missingPaperSourceParameterGapCount,
-  r.rows.reduce((n,x)=>
-   n+x.missingProjectedPaperSourceParameterRanges.length,0));
- assert.ok(r.rows.flatMap(x=>x.missingProjectedPaperSourceParameterRanges).
-  every(range=>range[0]>=0&&range[1]<=1&&range[0]<range[1]));
- assert.ok(r.rows.some(x=>x.missingProjectedPaperSourceParameterRanges.length>0&&
-  x.allUndrawnPaperMicroIntervalsPositivelyVerified===false));
-
+ assert.ok(r.counts.same3DOriginalSourceCutJoinsPreserved>0);
+ assert.equal(r.counts.nonCollapsedProjectionPartitionIncomplete,0);
+ assert.equal(r.counts.missingPaperSourceParameterGapCount,0);
+ assert.ok(r.rows.every(x=>x.projectionCollapsed||
+  (x.originalM4Canonical3DSourcePartitionPositivelyProven===true&&
+   x.originalM4PaperParameterPartitionComplete===true&&
+   x.missingProjectedPaperSourceParameterRanges.length===0)));
  assert.ok(r.rows.some(x=>x.fullProjectedVisibleSourceLineProven));
  assert.ok(r.rows.some(x=>x.originalOpenEdgeStrictInteriorOcclusionProven));
- assert.ok(r.rows.some(x=>!x.originalM4PaperParameterPartitionComplete&&
-  x.completeSourceOriginal3DRayClosedIntervalClear===true&&
-  x.fullProjectedVisibleSourceLineProven===false));
- // A closed 3D observer ray remains true even if a tiny *paper* M4 cut is
- // missing; it must never become a complete line or an authorized V5 step.
- assert.ok(r.rows.some(x=>
-  !x.originalM4Canonical3DSourcePartitionPositivelyProven&&
-  !x.originalM4Canonical3DSourceCollapsedToPoint&&
-  x.originalM4Canonical3DSourceParameterCoverage.
-   positiveLengthUncoveredIntervals.length>0&&
-  x.fullProjectedVisibleSourceLineProven===false));
-
  assert.ok(r.rows.every(x=>x.originalCutSubspans.every(y=>
-  y.physicalCrossSourceJunctionAtPaperCutsAuthorized===false)));
+  y.physicalCrossSourceJunctionAtPaperCutsAuthorized===false&&
+  y.applicableLineType==='undetermined'&&y.signedV5Action===false)));
+ assert.equal(r.signedV5ActionCount,0);
+ assert.equal(r.wholeSolidV5Ready,false);
 });
 test('actual crossing diagonals in V paper view preserve ONE true 3D source edge through nonvertex M4 cut',()=>{
  // These genuine opposite tetra edges AC and BD cross in V(x,z)
