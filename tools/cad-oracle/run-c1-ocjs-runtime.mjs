@@ -603,6 +603,32 @@ for(const [index,geometry] of general.entries()){
  assert.equal(actualOriginal3DBRepInventory.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
  assert.equal(actualOriginal3DBRepInventory.original3DSourceFanAndGlobalOcclusionCertified,false);
  assert.equal(actualOriginal3DBRepInventory.signedV5Action,false);
+ const nativeVHWPhysicalSourceUnion=hiddenFormalGate.realNativeVisibleHiddenSourceGraph;
+ assert.equal(nativeVHWPhysicalSourceUnion.available,true);
+ assert.equal(nativeVHWPhysicalSourceUnion.originalM0SourceViewCountExpected,
+  3*geometry.data.edges.length);
+ assert.equal(nativeVHWPhysicalSourceUnion.auditedOriginalSourceViews,
+  3*geometry.data.edges.length);
+ assert.equal(nativeVHWPhysicalSourceUnion.rows.length,
+  nativeVHWPhysicalSourceUnion.auditedOriginalSourceViews);
+ assert.equal(nativeVHWPhysicalSourceUnion.
+  genuineNoncollapsedSourceViewsWithNecessaryM5VisibleOrHiddenCoverage,
+  nativeVHWPhysicalSourceUnion.rows.filter(row=>
+   row.originalSourceParameterLineCoverageNecessarilyComplete===true).length);
+ assert.equal(nativeVHWPhysicalSourceUnion.
+  sourceViewsWithVisibleAndHiddenPhysicalAttributionCollision,
+  nativeVHWPhysicalSourceUnion.rows.filter(row=>
+   row.positiveLengthVisibleHiddenOriginalSourceOverlap.length>0).length);
+ assert.ok(nativeVHWPhysicalSourceUnion.rows.every(row=>
+  row.originalRealOCCTBRep3DSourceInventoryVerified===true&&
+  row.everyActualOpaqueFaceAndGeneratedTopoDSHistoryProven===false&&
+  row.wholeSceneGBLineStyleCertified===false&&
+  row.constructionIntentAuthorized===false&&
+  row.signedV5Action===false));
+ assert.equal(nativeVHWPhysicalSourceUnion.fullHLRGeneratedTopoDSHistoryCertified,false);
+ assert.equal(nativeVHWPhysicalSourceUnion.
+  allOpaqueFaceContinuousVisibilityAndGlobalJunctionsCertified,false);
+ assert.equal(nativeVHWPhysicalSourceUnion.signedV5ActionCount,0);
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
@@ -1138,6 +1164,11 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   realNativeVHWSourceViewsWithTrueVisibleOrHiddenPhysicalCoverage:
+    nativeVHWPhysicalSourceUnion.
+     genuineNoncollapsedSourceViewsWithNecessaryM5VisibleOrHiddenCoverage,
+   realNativeVHWSourceViewsWithUnprovedOriginalPhysicalSourceIntervals:
+    nativeVHWPhysicalSourceUnion.sourceViewsWithNonzeroPositiveVisibilityGaps,
    verifiedRealOriginalOCCT3DBRepModelSourceEdgeInventory:
     actualOriginal3DBRepInventory.matchedOriginalPhysicalSourceEdges,
    trueOriginal3DSharedVertexAndNativeIsSameEntireJunctionNodes:
