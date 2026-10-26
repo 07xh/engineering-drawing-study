@@ -645,7 +645,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
       sourcePartitionCoverage.get(key)?.gaps??[[0,1]]
     })),
    fullNativeVisibleAndHiddenHLRSourceHistoryCertified:false,
-   continuousAllOpaqueFaceOcclusionCertified:false
+   continuousAllOpaqueFaceOcclusionCertified:false,
+   signedV5ActionCount:0
   });
  });
  const canonicalViewTotal=nativeSourceCoverageByView.reduce((n,x)=>
