@@ -126,9 +126,15 @@ function reviewC1NativeHiddenFinalM5Strokes({
      joint.signedV5Action!==false||
      joint.allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven!==false||
      joint.full3DEndpointAndEngineeringLineStyleProven!==false||
+     !joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage||
+     joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage!==
+      joint.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+       entireOriginalParameterIntervalCovered||
+     (joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage===true&&
+      joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage!==true)||
      joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete!==(
       joint.originalM4Full3DSourceIntervalProven===true&&
-      joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage===true)||
+      joint.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage===true)||
      jointSourceByKey.has(key))
    throw new RangeError('stale, duplicate or forged M4/M5/native OCCT 3D source-view join');
   jointSourceByKey.set(key,joint);
