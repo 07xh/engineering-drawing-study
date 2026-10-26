@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {matchOriginalBRepEdgeByXYZ:match}=
+const {matchOriginalBRepEdgeByXYZ:match,
+ probeRealOcctHLREdgeDirectOriginalSourceIdentity:probe}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const xyz=(x,y,z)=>({x,y,z});
 const shape=()=>({id:'RealSourceBRep3D',data:{
@@ -50,4 +51,61 @@ test('nonfinite or ambiguous original source cannot gain unique TopoDS identity'
  const cloned={...g,data:{...g.data,
   edges:[...g.data.edges,['B','A']]}};
  assert.throws(()=>match(cloned,xyz(0,0,0),xyz(10,0,0)),/missing or ambiguous/);
+});
+
+const native=(tshape,loc=0)=>({
+ tshape,loc,
+ IsSame(other){return this.tshape===other.tshape&&this.loc===other.loc;}
+});
+const originals=()=>[
+ {sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('a')},
+ {sourceEdgeId:'RealSourceBRep3D::C|D',edge:native('b')},
+ {sourceEdgeId:'RealSourceBRep3D::A|E',edge:native('c')}
+];
+test('native OCCT IsSame identifies a directly shared original source TShape irrespective of edge orientation and duplicate occurrences, but cannot certify HLR history',()=>{
+ const sources=originals();sources.push({
+  sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('a')
+ });
+ const result=probe({generatedEdge:native('a'),originalSourceEdges:sources});
+ assert.equal(result.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared,true);
+ assert.deepEqual(result.directlySameOriginalOCCTBRepSourceEdgeIds,
+  ['RealSourceBRep3D::A|B']);
+ assert.equal(result.directlySameUniqueOriginalOCCTBRepSourceEdgeId,
+  'RealSourceBRep3D::A|B');
+ assert.equal(result.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,true);
+ assert.equal(result.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(result.signedV5Action,false);
+});
+test('projected HLR output edge with matching paper line but distinct native TShape never gains original TopoDS identity',()=>{
+ const proof=probe({generatedEdge:native('hlr-generated'),
+  originalSourceEdges:originals()});
+ assert.deepEqual(proof.directlySameOriginalOCCTBRepSourceEdgeIds,[]);
+ assert.equal(proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId,null);
+ assert.equal(proof.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,false);
+ assert.equal(proof.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+});
+test('native OCCT IsSame checks location; matching TShape at another location is not the same original 3D edge',()=>{
+ const proof=probe({generatedEdge:native('a',5),
+  originalSourceEdges:originals()});
+ assert.equal(proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId,null);
+});
+test('native generated OCCT edge matching two DISTINCT original M0 source identities is rejected as contradictory',()=>{
+ const sources=[{sourceEdgeId:'G::A|B',edge:native('same')},
+  {sourceEdgeId:'G::C|D',edge:native('same')}];
+ assert.throws(()=>probe({generatedEdge:native('same'),
+  originalSourceEdges:sources}),/multiple different original physical edges/);
+});
+test('fabricated OCCT IsSame asymmetry or invalid source native TopoDS handle fails closed',()=>{
+ const yes={IsSame:()=>true},no={IsSame:()=>false};
+ assert.throws(()=>probe({generatedEdge:yes,originalSourceEdges:[
+  {sourceEdgeId:'G::A|B',edge:no}
+ ]}),/asymmetric/);
+ assert.throws(()=>probe({generatedEdge:{},originalSourceEdges:[]}),
+  /actual OCCT generated and original native/);
+ assert.throws(()=>probe({generatedEdge:native('a'),originalSourceEdges:[
+  {sourceEdgeId:'G::A|B',edge:{}}
+ ]}),/untrusted original/);
+ assert.throws(()=>probe({generatedEdge:{IsSame:()=>1},originalSourceEdges:[
+  {sourceEdgeId:'G::A|B',edge:native('a')}
+ ]}),/asymmetric or nonboolean/);
 });
