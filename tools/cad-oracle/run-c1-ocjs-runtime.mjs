@@ -661,6 +661,14 @@ for(const [index,geometry] of general.entries()){
   x.generatedToOriginalTopoDSHistoricalIdentityRecovered===false&&
   x.constructionIntentDAGV5NativeParityAuthorized===false&&
   x.signedV5Action===false));
+ assert.equal(nativeM5ExteriorContourParity.
+  globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery,
+  nativeM5ExteriorContourParity.rows.filter(x=>
+   x.exactOriginalPhysical3DVertexPaperBinding).length);
+ assert.ok(nativeM5ExteriorContourParity.rows.every(x=>
+  x.originalContour3DParameterRecoveryKind==='held'||
+  x.originalContour3DParameterRecoveryKind==='exact-original-3d-source-interpolation'||
+  x.originalContour3DParameterRecoveryKind==='exact-original-m0-3d-vertex-projection'));
  assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
  assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
@@ -1400,6 +1408,9 @@ for(const [index,geometry] of general.entries()){
      originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage,
    globalM5VisibleContourClaimsStillHeldByRealOCCTNativeSource:
     nativeM5ExteriorContourParity.originalGloballySignedM5ContoursStillHeldForNativeProof,
+   exactOriginalM0VertexBasedNativeContourPhysical3DEndpointsRecovered:
+    nativeM5ExteriorContourParity.
+     globallySignedContoursWithExactOriginalM0VertexPaperEndpointRecovery,
    realOCCTNativeOriginalPhysicalContourVerification:
     nativeM5ExteriorContourParity.rows.filter(x=>
      x.originalM5WholeExteriorContourCertified).map(x=>({
@@ -1407,6 +1418,8 @@ for(const [index,geometry] of general.entries()){
       sourceEdge:x.originalPhysical3DSourceEdgeId,
       sourceRange:x.originalSourceParameterRange,
       passed:x.realOCCTOriginal3DSourceCompleteContourParity,
+      physical3DParameterRecoveryKind:x.originalContour3DParameterRecoveryKind,
+      physicalM0OriginalVertexPaperBinding:x.exactOriginalPhysical3DVertexPaperBinding,
       missingSourceRanges:x.positiveLengthNativeSourceGaps,
       duplicatePhysicalSource:x.nativeGeneratedOriginalSourceOverlap,
       heldReason:x.heldReason,
