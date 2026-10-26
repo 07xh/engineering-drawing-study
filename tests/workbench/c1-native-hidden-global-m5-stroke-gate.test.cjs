@@ -668,3 +668,55 @@ test('per-view ledger identifies a genuine missing source parameter interval wit
  }]);
  assert.equal(r.wholeSceneSourceHLRAndM5Closure.wholeSceneMathematicallySigned,false);
 });
+
+function withOriginalBRepInventory(){
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{
+  A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}
+ },edges:[['A','B']]}};
+ x.cad={sourceGeometryId:'G',revision,
+  hiddenHLROutputFromActualOCCT:true,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+  v5Authorized:false,originalBRepSourceEdges:[{
+   sourceEdgeId:'G::A|B',originalVertexIds:['A','B'],
+   fromOCCT3D:{x:0,y:0,z:0},toOCCT3D:{x:1,y:0,z:0},
+   occtEdgeOrientation:'forward',
+   originalOCCTBRepVertexXYZMatched:true,
+   occtCurveTypeIndependentlyVerified:true,
+   occtSourceCurveType:'line',
+   occtSourceCurveParameterRange:[0,1],
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,
+   generatedHLREdgeTopoDSIdentityMatched:false
+  }]
+ };
+ return x;
+}
+test('independent original OCCT BRep edge and M0 XYZ inventory match does not grant HLR history or V5',()=>{
+ const r=review(withOriginalBRepInventory());
+ assert.deepEqual(r.originalOCCTBRepSourceInventory,{
+  available:true,completeOriginal3DSourceCorrespondence:true,
+  matchedOriginalPhysicalSourceEdges:1,expectedOriginalPhysicalSourceEdges:1,
+  generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  signedV5Action:false
+ });
+ assert.equal(r.actualHLRGeneratedBRepEdgeTopoDSHistoryComplete,false);
+ assert.equal(r.wholeSolidV5Ready,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('forged, missing or duplicated OCCT original source topology fails closed',()=>{
+ const tamper=withOriginalBRepInventory();
+ tamper.cad.originalBRepSourceEdges[0].toOCCT3D.x=2;
+ assert.throws(()=>review(tamper),/BRep endpoints disagree with M0 XYZ/);
+ const duplicate=withOriginalBRepInventory();
+ duplicate.cad.originalBRepSourceEdges.push({
+  ...duplicate.cad.originalBRepSourceEdges[0]
+ });
+ assert.throws(()=>review(duplicate),/untrusted real OCCT original BRep physical source correspondence/);
+ const missing=withOriginalBRepInventory();
+ missing.cad.originalBRepSourceEdges=[];
+ assert.throws(()=>review(missing),/original BRep source inventory missing M0 physical edges/);
+ const stale=withOriginalBRepInventory();
+ stale.cad.revision=revision+1;
+ assert.throws(()=>review(stale),/current real OCCT original BRep source inventory required/);
+});
