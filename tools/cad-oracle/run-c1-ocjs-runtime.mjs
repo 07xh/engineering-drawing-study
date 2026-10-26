@@ -28,7 +28,8 @@ const {reviewC1M5FinalStrokeObligations}=
  require('../../workbench/c1-m5-final-source-obligation-review.cjs');
 const {reviewC1NativeHiddenFinalM5Strokes}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
-const {auditC1RealOcctVisibleContourSourceParity}=
+const {auditC1RealOcctVisibleContourSourceParity,
+ exactPositiveCollinearPaperOverlap}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
@@ -146,6 +147,18 @@ for(const [index,geometry] of general.entries()){
 
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ // Exercise the EXACT production paper overlap predicate on genuine native
+ // OpenCascade.js visible AND hidden sharp segments, not only synthetic
+ // adversarial fixtures. Reversal must not alter a positive native span.
+ for(const view of ['V','H','W'])for(const seg of [
+  ...cad.views[view],...cad.hiddenSharpViews[view]]){
+  const collapsed=seg.from.u===seg.to.u&&seg.from.v===seg.to.v;
+  assert.equal(exactPositiveCollinearPaperOverlap(
+   seg.from,seg.to,seg.from,seg.to),!collapsed);
+  assert.equal(exactPositiveCollinearPaperOverlap(
+   seg.to,seg.from,seg.from,seg.to),!collapsed);
+ }
+
  // Real native edge IsSame is checked BEFORE OCJS handles are disposed,
  // against EVERY original BRep 3D edge occurrence. Two equal paper lines
  // must never count as generated->source TopoDS identity.

@@ -21,19 +21,49 @@ const eq3=(a,b)=>!!a&&!!b&&['x','y','z'].every(k=>
  Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
 const eq2=(a,b)=>!!a&&!!b&&a.u===b.u&&a.v===b.v;
 const edgeKey=(g,e)=>g.id+'::'+[...e].sort().join('|');
- // Strictly positive EXACT collinear paper overlap is incompatible with
- // two different independently unique frontmost physical M0 sources.
- // Endpoint-only contact, transverse crossings and one-ULP separated
- // spans are not positive overlap. This is a necessary contradiction
- // check, not a tolerance-based HLR->TopoDS history reconstruction.
- const exactPositiveCollinearPaperOverlap=(a,b,c,d)=>{
-  const cross=(p,q,r)=>(q.u-p.u)*(r.v-p.v)-
-   (q.v-p.v)*(r.u-p.u);
-  if(cross(a,b,c)!==0||cross(a,b,d)!==0)return false;
-  const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v';
-  return Math.max(Math.min(a[axis],b[axis]),Math.min(c[axis],d[axis]))<
-   Math.min(Math.max(a[axis],b[axis]),Math.max(c[axis],d[axis]));
- };
+// Every finite binary64 paper coordinate is an EXACT dyadic rational.
+// Floating cross products can overflow to Infinity-Infinity (missing a
+// true overlap), or underflow to 0 (inventing a false collinear overlap).
+// Compare exact integer determinants instead: no tolerance, no snapping,
+// no new HLR -> original TopoDS identity or V5 authority.
+const paperBits=new DataView(new ArrayBuffer(8));
+const dyadic=x=>{
+ if(!Number.isFinite(x))throw new TypeError('finite paper coordinates required');
+ paperBits.setFloat64(0,x,false);
+ const hi=paperBits.getUint32(0,false),lo=paperBits.getUint32(4,false),
+  exponent=(hi>>>20)&0x7ff,
+  mantissa=(BigInt(hi&0xfffff)<<32n)|BigInt(lo),
+  n=(hi>>>31?-1n:1n)*(exponent?((1n<<52n)|mantissa):mantissa),
+  e=exponent?exponent-1075:-1074;
+ return {n,e};
+};
+const subtractDyadic=(a,b)=>{
+ const e=Math.min(a.e,b.e);
+ return {n:(a.n<<BigInt(a.e-e))-(b.n<<BigInt(b.e-e)),e};
+};
+const multiplyDyadic=(a,b)=>({n:a.n*b.n,e:a.e+b.e});
+const exactPaperOrientation=(a,b,c)=>{
+ const au=dyadic(a.u),av=dyadic(a.v),
+  bu=dyadic(b.u),bv=dyadic(b.v),
+  cu=dyadic(c.u),cv=dyadic(c.v),
+  lhs=multiplyDyadic(subtractDyadic(bu,au),subtractDyadic(cv,av)),
+  rhs=multiplyDyadic(subtractDyadic(bv,av),subtractDyadic(cu,au));
+ return subtractDyadic(lhs,rhs).n;
+};
+// Strictly positive EXACT collinear paper overlap is incompatible with
+// two different independently unique frontmost physical M0 sources.
+// Endpoint-only contact, transverse crossings and one-ULP gaps are not
+// positive overlap. This is a necessary contradiction check only.
+const exactPositiveCollinearPaperOverlap=(a,b,c,d)=>{
+ if([a,b,c,d].some(p=>!p||!Number.isFinite(p.u)||!Number.isFinite(p.v)))
+  throw new TypeError('finite paper endpoints required');
+ if(a.u===b.u&&a.v===b.v||c.u===d.u&&c.v===d.v)return false;
+ if(exactPaperOrientation(a,b,c)!==0n||
+    exactPaperOrientation(a,b,d)!==0n)return false;
+ const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v';
+ return Math.max(Math.min(a[axis],b[axis]),Math.min(c[axis],d[axis]))<
+  Math.min(Math.max(a[axis],b[axis]),Math.max(c[axis],d[axis]));
+};
 const param=(a,b,p)=>{
  const axis=['x','y','z'].sort((x,y)=>
   Math.abs(b[y]-a[y])-Math.abs(b[x]-a[x]))[0];

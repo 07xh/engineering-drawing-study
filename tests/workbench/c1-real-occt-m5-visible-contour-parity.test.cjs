@@ -186,6 +186,41 @@ test('exact positive paper overlap excludes only nonzero collinear intersections
   {u:7,v:0}),false,'a positive representable paper gap stays a gap');
 });
 
+test('exact binary64 orientation detects true collinear HLR overlaps even when floating cross products overflow',()=>{
+ const a={u:0,v:0},b={u:1e200,v:1e200},
+  c={u:5e199,v:5e199},d={u:1.5e200,v:1.5e200};
+ // A Number cross product computes Infinity - Infinity = NaN here.
+ assert.ok(Number.isNaN((b.u-a.u)*(c.v-a.v)-(b.v-a.v)*(c.u-a.u)));
+ assert.equal(overlap(a,b,c,d),true,
+  'real positive paper overlap must still reject conflicting 3D front owners');
+ assert.equal(overlap(d,c,b,a),true,'reversing both HLR segments preserves overlap');
+ assert.equal(overlap(a,b,{u:1e200,v:1e200},d),false,
+  'an endpoint-only meeting must not become a positive overlap');
+});
+test('exact binary64 orientation rejects near-collinear false positives caused by cross-product underflow',()=>{
+ const a={u:0,v:0},b={u:1e-200,v:1e-200},
+  c={u:5e-201,v:5e-201+1e-215},
+  d={u:1.5e-200,v:1.5e-200+1e-215};
+ assert.notEqual(c.u,c.v,'the off-line displacement must survive binary64 rounding');
+ assert.equal((b.u-a.u)*(c.v-a.v)-(b.v-a.v)*(c.u-a.u),0,
+  'the naive cross product underflows and incorrectly claims collinearity');
+ assert.equal(overlap(a,b,c,d),false,
+  'an exact non-collinear source must never be treated as the same paper line');
+ assert.equal(overlap(a,b,{u:5e-201,v:5e-201},
+  {u:1.5e-200,v:1.5e-200}),true,
+  'tiny but exactly collinear positive spans remain valid');
+});
+test('dyadic HLR paper predicate handles subnormals, collapsed edges and nonfinite coordinates without tolerance',()=>{
+ const m=Number.MIN_VALUE,p=(u,v)=>({u,v});
+ assert.equal(overlap(p(0,0),p(3*m,3*m),p(m,m),p(2*m,2*m)),true);
+ assert.equal(overlap(p(0,0),p(3*m,3*m),p(m,m),p(2*m,3*m)),false);
+ assert.equal(overlap(p(0,0),p(0,0),p(0,0),p(1,0)),false);
+ assert.throws(()=>overlap(p(0,0),p(1,0),p(NaN,0),p(2,0)),
+  /finite paper endpoints required/);
+ assert.throws(()=>overlap(p(0,0),p(Infinity,0),p(0,0),p(2,0)),
+  /finite paper endpoints required/);
+});
+
 test('two different native HLR ordinals with partial collinear paper overlap cannot both be unique M5 front owners',()=>{
  const x=initial(),same=(p,q)=>p.u===q.u&&p.v===q.v;
  let w,other,seg;
