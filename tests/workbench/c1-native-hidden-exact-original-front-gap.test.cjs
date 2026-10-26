@@ -66,6 +66,10 @@ function fixture(){
    remainingOriginal3DPhysicalSourceUnique:true,
    originalHiddenSourceEdgeId:'G::H0|H1',
    independentOpenIntervalRayAndFrontVisibleUnion:{
+    originalSourceParameterRange:[0,1],
+    strictInteriorIndependentlyVerifiedIntervals:[[0,gap[0]]],
+    realVisibleFrontSourceDepthMaskVerifiedIntervals:[],
+    entireActualNativeHLROpenPaperIntervalLocallyAccountedFor:false,
     outstandingUnprovedOriginalParameterIntervals:[gap]
    }
   }]
@@ -160,6 +164,57 @@ test('forged HCompound paper endpoint breaks real generated front-mask proof eve
  assert.equal(result.rows[0].realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront,false);
 });
 
+test('a forged empty residual M5 gap cannot vacuously certify an unproved original source',()=>{
+ const x=fixture();
+ x.dual.rows[0].independentOpenIntervalRayAndFrontVisibleUnion.
+  outstandingUnprovedOriginalParameterIntervals=[];
+ assert.throws(()=>audit(x),/contradict independently recomputed coverage/);
+});
+test('duplicated, truncated or one-ULP-closed native residual intervals fail independent M5 union recomputation',()=>{
+ for(const forged of [
+  [gap,gap],
+  [[gap[0],.9999999999999999]],
+  [[gap[0]+Number.EPSILON/2,1]]
+ ]){
+  const x=fixture();
+  x.dual.rows[0].independentOpenIntervalRayAndFrontVisibleUnion.
+   outstandingUnprovedOriginalParameterIntervals=forged;
+  assert.throws(()=>audit(x),/contradict independently recomputed coverage/);
+ }
+});
+test('stale upstream whole-covered flag cannot override an independently positive one-ULP source gap',()=>{
+ const x=fixture(),row=x.dual.rows[0];
+ row.locallyExplainedNativeHiddenOpenPaperInterval=true;
+ row.independentOpenIntervalRayAndFrontVisibleUnion.
+  entireActualNativeHLROpenPaperIntervalLocallyAccountedFor=true;
+ assert.throws(()=>audit(x),/contradict independently recomputed coverage/);
+});
+test('independently complete M5 union has no residual gap, requires no invented front witness and never signs V5',()=>{
+ const x=fixture(),row=x.dual.rows[0],union=
+  row.independentOpenIntervalRayAndFrontVisibleUnion;
+ union.strictInteriorIndependentlyVerifiedIntervals=[[0,1]];
+ union.outstandingUnprovedOriginalParameterIntervals=[];
+ union.entireActualNativeHLROpenPaperIntervalLocallyAccountedFor=true;
+ row.locallyExplainedNativeHiddenOpenPaperInterval=true;
+ const proof=audit(x),item=proof.rows[0];
+ assert.equal(proof.counts.originalOpenParameterGapIntervalsReviewed,0);
+ assert.equal(proof.counts.newlyFullOriginalModelOpenIntervalLocallyCorroborated,0);
+ assert.equal(item.wholeOriginalModelOpenIntervalLocallyAccountedByRayMaskOrM0Source,true);
+ assert.equal(item.realNativeHLRHiddenPaperLineLocallyExplainedByTrueHLRAndM0FullFront,true);
+ assert.equal(item.signedV5Action,false);
+});
+test('no unique original 3D hidden source with empty residual ledger cannot be certified by empty.every',()=>{
+ const x=fixture(),row=x.dual.rows[0];
+ row.remainingOriginal3DPhysicalSourceUnique=false;
+ row.originalHiddenSourceEdgeId=null;
+ row.independentOpenIntervalRayAndFrontVisibleUnion=null;
+ x.refinements[0].remainingPhysicalSourcePossibilities=[];
+ const result=audit(x);
+ assert.equal(result.rows[0].wholeOriginalModelOpenIntervalLocallyAccountedByRayMaskOrM0Source,false);
+ assert.equal(result.counts.newlyFullOriginalModelOpenIntervalLocallyCorroborated,0);
+ assert.equal(result.counts.remainingOriginalModelOpenIntervalUnresolvedNativeEdges,1);
+ assert.equal(result.signedV5ActionCount,0);
+});
 test('no proof writes an official GB style or authorizes V5, even after local open-ray source resolution',()=>{
  const x=fixture();
  const row=audit(x).rows[0];
