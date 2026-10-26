@@ -518,6 +518,23 @@ for(const [index,geometry] of general.entries()){
  assert.equal(finalGate.sourceGeometryId,geometry.id);
  assert.equal(finalGate.revision,40+index);
  assert.equal(finalGate.signedV5ActionCount,0);
+ // GENUINE pinned OCCT: prove the final M5 per-source consumer actually
+ // received the canonical M4 original 3D [0,1] parameter witness through
+ // the existing continuous ray chain, before unsigned global review.
+ assert.ok(finalGate.subspans.length>0);
+ assert.ok(finalGate.subspans.every(span=>
+  span.canonicalOriginal3DSourceCutCoverageFromM4M5Bound===true&&
+  span.canonicalOriginal3DSourceCutPositiveCoverage===
+   !span.blockers.originalEdgeM4CutPartitionHasGaps&&
+  Array.isArray(span.remainingCanonicalM4Original3DParameterGaps)&&
+  span.remainingCanonicalM4Original3DParameterGaps.every(interval=>
+   interval.length===2&&interval[0]>=0&&interval[1]<=1&&
+   interval[0]<interval[1])&&
+  span.formalStandardLineStyle==='undetermined'&&
+  span.signedV5Action===false));
+ assert.ok(finalGate.subspans.some(span=>
+  span.canonicalOriginal3DSourceCutPositiveCoverage===true),
+  'real OCCT must consume at least one positively covered original M4 source');
  const unsignedReview=reviewC1M5FinalStrokeObligations(finalGate);
  assert.equal(unsignedReview.sourceGeometryId,geometry.id);
  assert.equal(unsignedReview.revision,40+index);
