@@ -75,3 +75,21 @@ test('exact 512-candidate input bound is accepted, not automatically certified',
  assert.equal(result.entireOriginalParameterIntervalCovered,false);
  assert.deepEqual(result.positiveLengthUncoveredIntervals,[[.25,1]]);
 });
+
+test('non-array and missing candidates fail closed',()=>{
+ for(const value of [null,undefined,{},'0-1'])
+  assert.throws(()=>cover([0,1],value),TypeError);
+});
+test('source coverage input never changes across repeated calls',()=>{
+ const intervals=[[.5,1],[0,.5],[.25,.75]];
+ const before=JSON.stringify(intervals);
+ const first=cover([0,1],intervals);
+ const second=cover([0,1],intervals);
+ assert.equal(JSON.stringify(intervals),before);
+ assert.deepEqual(first,second);
+});
+test('one ULP right boundary cannot be replaced by near-equal evidence',()=>{
+ const result=cover([0,1],[[Number.MIN_VALUE,1]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,[[0,Number.MIN_VALUE]]);
+});
