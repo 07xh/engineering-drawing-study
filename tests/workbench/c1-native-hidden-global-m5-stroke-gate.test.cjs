@@ -427,3 +427,47 @@ test('paper-coincident generated IsSame component without positive full-original
   independentOriginal3DVertexAndFullHLRJunctionProven,false);
  assert.equal(r.rows[0].officialEngineeringLineStyle,'undetermined');
 });
+
+test('zero M4 endpoint gaps cannot substitute for missing genuine OCCT IsSame endpoint stars',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].
+  original3DSourceVertexPlusM4AndFanVerified=true;
+ x.nativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].endpointWitnesses[1].
+  originalM4SourceParameterGapRemainsUnrepaired=false;
+ const r=review(x),row=r.rows[0];
+ assert.equal(row.originalNativePhysical3DVertexIdentityStillUnproven,0);
+ assert.equal(row.canonicalOriginalSourceParameterPartitionComplete,true);
+ assert.equal(row.jointPositiveM5Prerequisites.original3DEndpointAndM4FanTopology,false);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,false);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('two independently verified native OCCT endpoint stars satisfy only local joint prerequisites, never GB or V5',()=>{
+ const x=caseData();
+ x.endpointFans.rows[0].survivingOriginal3DEdgesWithEndpointFans[0].endpointWitnesses[1].
+  original3DSourceVertexPlusM4AndFanVerified=true;
+ x.nativeVertexProof.rows[0].nativeSource3DVertexEndpointRows[0].endpointWitnesses[1].
+  originalM4SourceParameterGapRemainsUnrepaired=false;
+ const star=(side,id)=>({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:id,
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars=[
+  star('from','A'),star('to','B')];
+ const r=review(x),row=r.rows[0];
+ assert.equal(row.bothRealNativeHLREndpointGeneratedJunctionStarsHaveOriginal3DSourceProof,true);
+ assert.equal(row.jointPositiveM5Prerequisites.original3DEndpointAndM4FanTopology,true);
+ assert.equal(row.jointPositiveM5PrerequisitesSatisfied,true);
+ assert.equal(row.officialEngineeringLineStyle,'undetermined');
+ assert.equal(row.actualOCCTGeneratedEdgeToOriginalTopoDSIdentityCertified,false);
+ assert.equal(r.wholeSolidV5Ready,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
