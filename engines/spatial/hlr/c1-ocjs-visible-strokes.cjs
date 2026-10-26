@@ -216,7 +216,18 @@ function verifyOriginalOcctLinearCurveWitness({
  const [a,b]=sourceEndpoints,[first,middle,last]=curveSamples;
  const direct=d(a,first)<=1e-6&&d(b,last)<=1e-6;
  const reverse=d(a,last)<=1e-6&&d(b,first)<=1e-6;
- if(!direct&&!reverse||d(a,b)<=1e-8)
+ const physicalLengthMm=d(a,b);
+ const parameterSpan=parameterRange[1]-parameterRange[0];
+ // Geom_Line uses a unit direction: BRepAdaptor_Curve's parameter
+ // difference is physical distance in mm, even for a trimmed edge.
+ // A 3D endpoint/midpoint match alone cannot authenticate a forged
+ // parameter interval used later to map native HLR to M0/M5 [0,1].
+ if(!Number.isFinite(physicalLengthMm)||!Number.isFinite(parameterSpan)||
+    !(parameterSpan>0)||
+    Math.abs(parameterSpan-physicalLengthMm)>
+     1e-6*Math.max(1,physicalLengthMm))
+  throw new RangeError('OCCT BRep line parameter span disagrees with original physical 3D length');
+ if(!direct&&!reverse||physicalLengthMm<=1e-8)
   throw new RangeError('OCCT BRep curve endpoints disagree with original 3D topology');
  const affineMid={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2};
  if(d(middle,affineMid)>1e-6)
