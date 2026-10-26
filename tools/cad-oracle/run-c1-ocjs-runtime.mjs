@@ -550,7 +550,7 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unsignedReview.unresolvedByProofClass.completeIntervalVisibility,
   unsignedReview.total);
  const hiddenFormalGate=reviewC1NativeHiddenFinalM5Strokes({
-  geometry,revision:40+index,
+  geometry,revision:40+index,cad,
   gapProof:nativeHiddenM5.nativeHiddenExactOriginalFrontGap,
   dualProof:nativeHiddenM5.nativeHiddenDualOpenIntervalProof,
   endpointFans:nativeHiddenM5.nativeHidden3DEndpointFans,
@@ -562,6 +562,15 @@ for(const [index,geometry] of general.entries()){
  // Actual OCCT/WASM C1 consumer: source-view completeness is reconciled
  // against original M0 geometry, not inferred from one native hidden stroke.
  const inventory=hiddenFormalGate.canonicalOriginalM5SourceInventory;
+ const realBRepInventory=hiddenFormalGate.originalOCCTBRepSourceInventory;
+ assert.equal(realBRepInventory.available,true);
+ assert.equal(realBRepInventory.completeOriginal3DSourceCorrespondence,true);
+ assert.equal(realBRepInventory.matchedOriginalPhysicalSourceEdges,
+  geometry.data.edges.length);
+ assert.equal(realBRepInventory.expectedOriginalPhysicalSourceEdges,
+  geometry.data.edges.length);
+ assert.equal(realBRepInventory.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(realBRepInventory.signedV5Action,false);
  assert.equal(inventory.originalM0EdgeInventoryAvailable,true);
  assert.equal(inventory.expectedOriginalSourceViewCount,geometry.data.edges.length*3);
  assert.equal(inventory.completeOriginalSourceViewCount+
