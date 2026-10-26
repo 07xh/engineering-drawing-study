@@ -1427,6 +1427,100 @@ function reviewC1NativeHiddenFinalM5Strokes({
    signedV5Action:false
   });
  }
+ // The true native HCompound generates individual hidden sharp edges.
+ // Preserve each genuinely M5-unique original 3D source fragment BEFORE
+ // interval union; two distinct generated strokes covering the SAME M0
+ // source subspan cannot be silently accepted as a single topology.
+ const rawHiddenGeneratedBySourceView=new Map();
+ let unverifiedNativeGeneratedHiddenSources=0;
+ for(let i=0;i<rows.length;i++){
+  const row=rows[i],id=row.originalPhysical3DSourceEdgeId,
+   e=projectedEncounters.rows[i],range=e?.genuineNativeHLROriginalSourceParameterRange;
+  if(!id){unverifiedNativeGeneratedHiddenSources++;continue;}
+  if(row.view!==e?.view||
+     row.nativeHiddenSharpEdgeOrdinal!==e.nativeHiddenSharpEdgeOrdinal||
+     !Array.isArray(range)||range.length!==2||
+     !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+     !(range[0]<range[1])||
+     e.uniqueOriginalPhysical3DSourceEdgeId!==id)
+   throw new RangeError('authentic native hidden generated edge lacks current exact 3D source interval');
+  const key=row.view+'@'+id;
+  if(!rawHiddenGeneratedBySourceView.has(key))
+   rawHiddenGeneratedBySourceView.set(key,[]);
+  rawHiddenGeneratedBySourceView.get(key).push([...range]);
+ }
+ const trueNativeHiddenSourceTilingRows=[];
+ if(realNativeVisibleHiddenSourceViewGraphAvailable){
+  for(const native of realNativeVisibleHiddenOriginalSourceViewCoverage){
+   const result=certifyExactNativeGeneratedSourceTiling({
+    sourceViewKey:native.sourceViewKey,
+    intervals:rawHiddenGeneratedBySourceView.get(native.sourceViewKey)??[]
+   });
+   // A source-lift witness at a REAL native hidden edge is allowed only
+   // inside the unique physical original M5 source-view coverage already
+   // independently recomputed. Never let a new source-fragment claim
+   // expand or invent the known actual HLR source union.
+   for(const span of result.actualNativeOriginalSourceUnion)
+    if(!exactCandidateIntervalCoverage(span,
+       native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals).
+       entireOriginalParameterIntervalCovered)
+     throw new RangeError('genuine native hidden source fragments exceed M5-unique 3D HLR evidence');
+   if(unverifiedNativeGeneratedHiddenSources===0&&
+      !intervalsMatch(result.actualNativeOriginalSourceUnion,
+       native.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals))
+    throw new RangeError('all genuine hidden original source edge fragments disagree with unique M5 union');
+   trueNativeHiddenSourceTilingRows.push(result);
+  }
+ }
+ const actualNativeHLRHiddenGeneratedSourceTiling=frozen({
+  available:realNativeVisibleHiddenSourceViewGraphAvailable,
+  actualGeneratedHLRHiddenStrokesAudited:rows.length,
+  nativeHiddenGeneratedStrokesWithUniqueM0PhysicalSource:
+   rows.length-unverifiedNativeGeneratedHiddenSources,
+  generatedHiddenStrokesStillLackingUniqueOriginal3DSource:
+   unverifiedNativeGeneratedHiddenSources,
+  allHiddenGeneratedStrokesHaveUniqueSource:
+   unverifiedNativeGeneratedHiddenSources===0,
+  originalPhysicalSourceViewsAudited:trueNativeHiddenSourceTilingRows.length,
+  hiddenOriginalSourceViewsWithDuplicateNativeGeneratedFragments:
+   trueNativeHiddenSourceTilingRows.filter(x=>
+    x.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0).length,
+  hiddenOriginalSourceViewsWithCompleteDisjointNativeHLRSourceTiling:
+   trueNativeHiddenSourceTilingRows.filter(x=>
+    x.disjointExactCompleteOriginalSourceGeneratedEdgeTiling).length,
+  rows:trueNativeHiddenSourceTilingRows,
+  fullGeneratedHLRToOriginalTopoDSHistoryCertified:false,
+  allOpaqueSceneAndOfficialGBLinesCertified:false,
+  signedV5ActionCount:0
+ });
+ const nativeVisibleHiddenGeneratedSourceTopology=frozen({
+  available:nativeVisibleHLRSourceTiling.available&&
+   actualNativeHLRHiddenGeneratedSourceTiling.available,
+  allVHWGeneratedHLRSourceFragmentsUniqueAndExact:
+   nativeVisibleHLRSourceTiling.allTrueGeneratedNativeVisibleSourceLiftsCertified===true&&
+   actualNativeHLRHiddenGeneratedSourceTiling.allHiddenGeneratedStrokesHaveUniqueSource===true,
+  original3DSourceViewsWithAnyGeneratedFragmentMultiplicity:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>
+    nativeVisibleHLRSourceTiling.rows.some(v=>v.sourceViewKey===x.sourceViewKey&&
+     v.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)||
+    trueNativeHiddenSourceTilingRows.some(h=>h.sourceViewKey===x.sourceViewKey&&
+     h.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length>0)).length,
+  entireOriginalSourceViewsWithDisjointTrueGeneratedVisibleAndHiddenAttribution:
+   realNativeVisibleHiddenOriginalSourceViewCoverage.filter(x=>{
+    const visible=nativeVisibleHLRSourceTiling.rows.find(v=>
+     v.sourceViewKey===x.sourceViewKey);
+    const hidden=trueNativeHiddenSourceTilingRows.find(h=>
+     h.sourceViewKey===x.sourceViewKey);
+    return visible&&hidden&&
+     visible.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length===0&&
+     hidden.positiveSameOriginal3DSourceGeneratedEdgeOverlaps.length===0&&
+     x.positiveLengthVisibleHiddenOriginalSourceOverlap.length===0&&
+     x.outstandingOriginalSourceParameterGaps.length===0&&
+     x.projectionCollapsedExactly===false;
+   }).length,
+  completeGeneratedTopoDSSourceHistoryOrGlobalSceneHLRNotProven:true,
+  engineeringLineStyleCertified:false,signedV5ActionCount:0
+ });
  if(counts.originalHLRHiddenEndpointsWithGenuineNativeIsSameAndFullyVerifiedOriginal3DStar+
     counts.originalHLRHiddenEndpointsAtSharedIsSameButOriginalSourceFanHeld+
     counts.actualHiddenNativeEndpointsWithExactOriginal3DInteriorSplit>
@@ -1464,6 +1558,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   originalOCCTBRepSourceInventory,
   realNativeVisibleHiddenSourceGraph,
   nativeVisibleHLRSourceTiling,
+  actualNativeHLRHiddenGeneratedSourceTiling,
+  nativeVisibleHiddenGeneratedSourceTopology,
   nativeVHWFaceRayAndHLRReconciliation,
   fullSourceVHWFaceRayAndActualHLRClosure,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
