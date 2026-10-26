@@ -28,7 +28,7 @@ const requiredGlobal=[
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
  nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
- nativeSourceAudit
+ nativeSourceAudit,cad
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     nativeSourceAudit?.schema!==
@@ -272,6 +272,89 @@ function reviewC1NativeHiddenFinalM5Strokes({
    })),
    allOriginalSourceViewsHaveCompleteParameterPartitions:
     expected.size>0&&missing.length===0&&incomplete.length===0,
+   signedV5Action:false
+  });
+ }
+ // Reconcile the real original, pre-HLR OCCT TopoDS BRep 3D inventory
+ // against EVERY independently modeled M0 physical edge before claiming any
+ // global original-source provenance. HLR-created TopoDS edges are different
+ // entities: even a complete original BRep inventory does not establish
+ // generated-to-original shape history, whole-scene visibility or GB/V5.
+ // No CAD input is UNAVAILABLE (not an empty vacuously successful proof).
+ let originalOCCTBRepSourceInventory=frozen({
+  available:false,completeOriginal3DSourceCorrespondence:false,
+  matchedOriginalPhysicalSourceEdges:0,
+  expectedOriginalPhysicalSourceEdges:Array.isArray(originalEdges)?
+   originalEdges.length:null,
+  generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  original3DSourceFanAndGlobalOcclusionCertified:false,
+  signedV5Action:false
+ });
+ if(cad!==undefined){
+  if(!Array.isArray(originalEdges)||originalEdges.length===0||
+     cad?.sourceGeometryId!==geometry.id||cad.revision!==revision||
+     cad.hiddenHLROutputFromActualOCCT!==true||
+     cad.completeSourceTopology3DEndpointCorrespondence!==true||
+     cad.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false||
+     cad.v5Authorized!==false||
+     !Array.isArray(cad.originalBRepSourceEdges))
+   throw new TypeError('current real OCCT original BRep source inventory required');
+  const originalById=new Map(originalEdges.map(edge=>[
+   geometry.id+'::'+[...edge].sort().join('|'),edge
+  ]));
+  if(originalById.size!==originalEdges.length)
+   throw new RangeError('duplicate original M0 source in real OCCT BRep inventory');
+  const seen=new Set();
+  const finite3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+  const near=(p,q)=>['x','y','z'].every(k=>
+   Math.abs(p[k]-q[k])<=1e-6);
+  for(const original of cad.originalBRepSourceEdges){
+   const edge=originalById.get(original?.sourceEdgeId);
+   if(!edge||seen.has(original.sourceEdgeId)||
+      !Array.isArray(original.originalVertexIds)||
+      original.originalVertexIds.length!==2||
+      [...original.originalVertexIds].sort().join('|')!==
+       [...edge].sort().join('|')||
+      !finite3(original.fromOCCT3D)||!finite3(original.toOCCT3D)||
+      original.originalOCCTBRepVertexXYZMatched!==true||
+      original.occtCurveTypeIndependentlyVerified!==true||
+      original.occtSourceCurveType!=='line'||
+      original.occtSourceCurve3DEndpointsAndMidpointVerified!==true||
+      original.generatedHLREdgeTopoDSIdentityMatched!==false||
+      original.v5Authorized!==false||
+      !Array.isArray(original.occtSourceCurveParameterRange)||
+      original.occtSourceCurveParameterRange.length!==2||
+      !original.occtSourceCurveParameterRange.every(Number.isFinite)||
+      !(original.occtSourceCurveParameterRange[1]>
+        original.occtSourceCurveParameterRange[0]))
+    throw new RangeError('untrusted real OCCT original BRep source geometry and identity');
+   const a=geometry.data.points[edge[0]],b=geometry.data.points[edge[1]];
+   if(!finite3(a)||!finite3(b))
+    throw new RangeError('nonfinite original M0 source XYZ cannot match real OCCT');
+   const forward=near(original.fromOCCT3D,a)&&near(original.toOCCT3D,b),
+    reverse=near(original.fromOCCT3D,b)&&near(original.toOCCT3D,a);
+   if(!forward&&!reverse||
+      original.occtEdgeOrientation!==(forward?'forward':'reverse'))
+    throw new RangeError('real OCCT original BRep endpoints disagree with M0 XYZ');
+   const length=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z),
+    span=original.occtSourceCurveParameterRange[1]-
+     original.occtSourceCurveParameterRange[0];
+   // The native adaptor is a Geom_Line with unit-speed 3D parameter.
+   // A wrong parametric span would corrupt later [0,1] native source cuts
+   // even if the two sampled end-points happen to match.
+   if(!(length>1e-8)||Math.abs(span-length)>
+       1e-6*Math.max(1,length))
+    throw new RangeError('real original OCCT 3D line parameter span disagrees with M0 physical length');
+   seen.add(original.sourceEdgeId);
+  }
+  if(seen.size!==originalById.size)
+   throw new RangeError('real OCCT original BRep inventory is missing modeled M0 source edges');
+  originalOCCTBRepSourceInventory=frozen({
+   available:true,completeOriginal3DSourceCorrespondence:true,
+   matchedOriginalPhysicalSourceEdges:seen.size,
+   expectedOriginalPhysicalSourceEdges:originalById.size,
+   generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+   original3DSourceFanAndGlobalOcclusionCertified:false,
    signedV5Action:false
   });
  }
@@ -897,6 +980,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,canonicalOriginalM5SourceInventory,
+  originalOCCTBRepSourceInventory,
   allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
