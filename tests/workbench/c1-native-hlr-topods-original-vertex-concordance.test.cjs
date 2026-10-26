@@ -684,3 +684,33 @@ test('co-projected native source is held if two ORIGINAL M5 front source rays bo
  assert.equal(r.GBEngineeringLineRulesSatisfied,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+const coProjectedSplit=()=>{
+ const x=genuineNativeInteriorSplit();
+ for(const seg of x.cad.views.H){const real=seg.sourceCandidate3DLifts[0];
+  seg.sourceCandidate3DLifts.unshift({...real,sourceEdgeId:'G::A|B',originalVertexIds:['A','B']});}
+ return x;
+};
+test('co-projected HLR native interior split selects unique M5-front 3D source, independent of candidate order',()=>{
+ const x=coProjectedSplit();
+ let r=audit(x),s=r.completeGenuineNativeHLRJunctionStars[0];
+ assert.equal(r.counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,1);
+ assert.equal(s.source3DEdgeInteriorOriginalEdgeId,'G::A|D');
+ assert.equal(s.source3DEdgeInteriorParameter,.5);
+ assert.equal(s.originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered,false);
+ for(const seg of x.cad.views.H)seg.sourceCandidate3DLifts.reverse();
+ r=audit(x);
+ assert.equal(r.counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('two co-projected M5-front sources refuse interior source identity',()=>{
+ const x=coProjectedSplit();
+ x.originalClosedRayM5.rows.push({...x.originalClosedRayM5.rows[0],originalPhysicalSourceEdgeId:'G::A|B'});
+ assert.equal(audit(x).counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
+});
+test('forged 3D source endpoint or duplicate eligible co-projected lift still holds native interior split',()=>{
+ const x=coProjectedSplit();x.cad.views.H[1].sourceCandidate3DLifts[1].toCandidate3D.z=1;
+ assert.equal(audit(x).counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
+ const y=coProjectedSplit();y.cad.views.H[0].sourceCandidate3DLifts.push({...y.cad.views.H[0].sourceCandidate3DLifts[1]});
+ assert.equal(audit(y).counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
+});
