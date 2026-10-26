@@ -25,9 +25,30 @@ const requiredGlobal=[
 ];
 function reviewC1NativeHiddenFinalM5Strokes({
  geometry,revision,gapProof,dualProof,endpointFans,
- nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance
+ nativeVertexProof,projectedEncounters,globalM5Review,nativeHLRJunctionConcordance,
+ nativeSourceAudit
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
+    nativeSourceAudit?.schema!==
+     'draftai-c1-ocjs-real-hidden-sharp-m5-original-source-audit/1'||
+    nativeSourceAudit.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.revision!==revision||
+    !Array.isArray(nativeSourceAudit.rows)||
+    nativeSourceAudit.counts?.sourceViewIntervalsChecked!==
+     nativeSourceAudit.rows.length||
+    nativeSourceAudit.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHLRVertexConcordance!==nativeHLRJunctionConcordance||
+    nativeSourceAudit.nativeHidden3DEndpointFans!==endpointFans||
+    nativeSourceAudit.nativeHiddenOriginalVertexEndpointProof!==nativeVertexProof||
+    nativeSourceAudit.nativeHLRAllM4ProjectedEncounters!==projectedEncounters||
+    nativeSourceAudit.nativeHiddenDualOpenIntervalProof!==dualProof||
+    nativeSourceAudit.nativeHiddenExactOriginalFrontGap!==gapProof||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.signedV5ActionCount!==0||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.sourceGeometryId!==geometry.id||
+    nativeSourceAudit.nativeHiddenFrontVisibleMask?.revision!==revision||
+    nativeSourceAudit.nativeHiddenExactModelFrontMask?.revision!==revision||
     gapProof?.sourceGeometryId!==geometry.id||gapProof.revision!==revision||
     gapProof.signedV5ActionCount!==0||
     gapProof.actualNativeGeneratedHLRPaperCoverageAndOriginalModelProofNotConflated!==true||
@@ -88,6 +109,38 @@ function reviewC1NativeHiddenFinalM5Strokes({
   if(!byKey.has(key))byKey.set(key,[]);
   byKey.get(key).push(row);
  }
+ // A single real OCCT run must deliver all six proof branches on the SAME
+ // 3D source/view identity. Never infer this from independent success flags.
+ const jointSourceByKey=new Map();
+ for(const row of nativeSourceAudit.rows){
+  const joint=row.canonicalM4M5NativeHLRJointSourceIntervalEvidence;
+  const key=row.view+'@'+row.sourceEdgeId;
+  if(!VIEWS.includes(row.view)||typeof row.sourceEdgeId!=='string'||
+     row.sourceGeometryId!==geometry.id||row.revision!==revision||
+     row.signedV5Action!==false||row.officialEngineeringStyle!=='undetermined'||
+     !joint||joint.view!==row.view||
+     joint.sourceEdgeId!==row.sourceEdgeId||
+     joint.canonicalM4Original3DAndM5RayCutUnionRecomputed!==true||
+     joint.engineeringLineStyle!=='undetermined'||
+     joint.constructionIntentAuthorized!==false||
+     joint.signedV5Action!==false||
+     joint.allActualGeneratedTopoDSSourceHistoryAndSceneOcclusionProven!==false||
+     joint.full3DEndpointAndEngineeringLineStyleProven!==false||
+     joint.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete!==(
+      joint.originalM4Full3DSourceIntervalProven===true&&
+      joint.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage===true)||
+     jointSourceByKey.has(key))
+   throw new RangeError('stale, duplicate or forged M4/M5/native OCCT 3D source-view join');
+  jointSourceByKey.set(key,joint);
+ }
+ if(geometry.data.edges&&
+    (jointSourceByKey.size!==geometry.data.edges.length*VIEWS.length||
+     geometry.data.edges.some(ids=>VIEWS.some(view=>
+      !jointSourceByKey.has(view+'@'+geometry.id+'::'+[...ids].sort().join('|')))))
+  throw new RangeError('C1 native HLR/M4/M5 incomplete original source-view universe');
+ for(const key of byKey.keys())
+  if(!jointSourceByKey.has(key))
+   throw new RangeError('C1 global M5 source lacks same-run native M4/M5 source interval proof');
  const sourcePartitionCoverage=new Map();
  for(const [key,sourceRows] of byKey){
   const ordered=[...sourceRows].sort((a,b)=>
@@ -104,6 +157,9 @@ function reviewC1NativeHiddenFinalM5Strokes({
   sourcePartitionCoverage.set(key,frozen({complete:gaps.length===0,gaps}));
  }
  const counts={genuineHiddenHLRStrokesReviewed:0,
+  jointM4M5NativeHLROriginal3DSourceViewsConsumed:jointSourceByKey.size,
+  nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage:0,
+  nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage:0,
   wholeRealNativeHiddenPaperOpenIntervalsLocallyProven:0,
   originalM0ModelPhysicalOpenRayEvidenceWithoutCompleteRealNativeHLR:0,
   missingLocalNativeOrModelOpenProofHeld:0,
@@ -217,6 +273,15 @@ function reviewC1NativeHiddenFinalM5Strokes({
   counts.genuineOriginalPhysical3DVertexEndpointIdentityStillUnproven+=
    remainingTrueOriginal3DVertexGaps;
   const sourceCoverage=unique?sourcePartitionCoverage.get(gap.view+'@'+edge):null;
+  const nativeJoined=unique?jointSourceByKey.get(gap.view+'@'+edge):null;
+  if(unique&&(!nativeJoined||sourceCoverage?.complete===true&&
+       nativeJoined.originalM4Full3DSourceIntervalProven!==true))
+   throw new RangeError('canonical M5 complete source contradicts actual M4 original 3D source proof');
+  const sourceAndNativeComplete=sourceCoverage?.complete===true&&
+   nativeJoined?.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete===true;
+  if(sourceAndNativeComplete)
+   counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage++;
+  else counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage++;
   const thisNativeOrdinal=perViewNativeOrdinal.get(gap.view);
   perViewNativeOrdinal.set(gap.view,thisNativeOrdinal+1);
   // Both sides are independently checked against the real current native
@@ -461,14 +526,18 @@ function reviewC1NativeHiddenFinalM5Strokes({
    originalGlobalSourceM5StrokeRowsReviewed:originalGlobal.length,
    canonicalOriginalSourceParameterPartitionComplete:sourceCoverage?.complete===true,
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
+   sameRunCanonicalM4M5NativeHLRJointPhysicalSourceCoverage:
+    sourceAndNativeComplete,
+   independentlyRecomputedCanonicalM4M5NativeSourceEvidence:
+    nativeJoined??null,
    jointPositiveM5Prerequisites:{
-    completeSourceParameterCoverage:sourceCoverage?.complete===true,
+    completeSourceParameterCoverage:sourceAndNativeComplete,
     original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0&&
      nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven),
     continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel
    },
    jointPositiveM5PrerequisitesSatisfied:
-    sourceCoverage?.complete===true&&remainingTrueOriginal3DVertexGaps===0&&
+    sourceAndNativeComplete&&remainingTrueOriginal3DVertexGaps===0&&
     nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven)&&
     localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
@@ -538,7 +607,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
     counts.nativeHLRSourceStrokesWithCompleteLocal3DEventClassification>
     counts.genuineHiddenHLRStrokesReviewed)
   throw new RangeError('incomplete mathematical classification of C1 native source paper encounters');
- if(counts.genuineHiddenHLRStrokesReviewed!==gapProof.rows.length||
+ if(counts.nativeHiddenStrokesWithFullM4M5AndHLRSourceCoverage+
+     counts.nativeHiddenStrokesWithUnprovenJointPhysicalSourceCoverage!==
+      counts.genuineHiddenHLRStrokesReviewed||
+    counts.genuineHiddenHLRStrokesReviewed!==gapProof.rows.length||
     counts.realGeneratedHLRToOriginalTopoDSProven!==0||
     counts.officialStandardSolidOrDashedLineSigned!==0||
     counts.formalConstructionIntentDAGV5ActionsSigned!==0)
@@ -547,6 +619,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
   schema:'draftai-c1-real-native-hlr-complete-open-interval-final-m5-signoff-gate/1',
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,
+  allSameRunCanonicalM4M5AndNativeHLRSourceViewsJoined:true,
   independentOriginalM0ModelAndNativeOCCTPositiveEvidenceUsed:true,
   originalClosedVertexStarAndGlobalM5ScopeConsumed:true,
   actualHLRGeneratedBRepEdgeTopoDSHistoryComplete:false,
