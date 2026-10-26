@@ -53,8 +53,9 @@ const boxM5=()=>{
  const geometry={...g,id:'C1M4M5NativeHLRJointProofBox'};
  return auditClosedM5({geometry,revision:37});
 };
-const genuineUnsignedCandidate=(a,b)=>({
- range:[a,b],realOCCTHLREdgeToSourceIdentityRecovered:false,
+const genuineUnsignedCandidate=(a,b,sourceCount=1)=>({
+ range:[a,b],distinctOriginal3DCandidateCount:sourceCount,
+ realOCCTHLREdgeToSourceIdentityRecovered:false,
  nativeHLRActualClass:'hidden-sharp'
 });
 test('full M0/M4/M5 original 3D partition jointly matches actual native HLR candidate parameters but stays unsigned',()=>{
@@ -116,4 +117,56 @@ test('collapsed original 3D source projects to a point in first-angle view and n
  assert.deepEqual(held.canonicalM4ParameterCoverage.
   positiveLengthUncoveredIntervals,[[0,1]]);
  assert.equal(held.signedV5Action,false);
+});
+
+test('complete HLR paper candidate union with two possible physical 3D originals cannot certify source identity',()=>{
+ const row=boxM5().rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
+ assert.ok(row);
+ const ambiguous=joint({m5Row:row,nativeCandidates:[
+  genuineUnsignedCandidate(0,.5,2),
+  genuineUnsignedCandidate(.5,1,2)
+ ]});
+ assert.equal(ambiguous.originalM4Full3DSourceIntervalProven,true);
+ assert.equal(ambiguous.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage,true);
+ assert.deepEqual(ambiguous.genuineNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[]);
+ assert.equal(ambiguous.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage,false);
+ assert.deepEqual(ambiguous.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[[0,1]]);
+ assert.equal(ambiguous.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,false);
+ assert.equal(ambiguous.engineeringLineStyle,'undetermined');
+ assert.equal(ambiguous.signedV5Action,false);
+});
+test('the unique physical OCCT source must continuously cover original 3D, even if ambiguous native HLR spans fill the paper',()=>{
+ const row=boxM5().rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
+ const half=.5,next=half+Number.EPSILON/2;
+ const partial=joint({m5Row:row,nativeCandidates:[
+  genuineUnsignedCandidate(0,half,1),
+  genuineUnsignedCandidate(half,1,2)
+ ]});
+ assert.equal(partial.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage,true);
+ assert.equal(partial.actualNativeHiddenHLRUnique3DSourceFullOriginalParameterCoverage,false);
+ assert.deepEqual(partial.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[[half,1]]);
+ assert.equal(partial.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,false);
+ const exact=joint({m5Row:row,nativeCandidates:[
+  genuineUnsignedCandidate(0,half,1),
+  genuineUnsignedCandidate(next,1,1),
+  genuineUnsignedCandidate(half,next,2)
+ ]});
+ assert.equal(exact.actualNativeHiddenHLRCandidateFullOriginalParameterCoverage,true);
+ assert.deepEqual(exact.uniqueOriginal3DNativeHiddenHLRCandidateParameterCoverage.
+  positiveLengthUncoveredIntervals,[[half,next]]);
+ assert.equal(exact.originalM4AndNativeHiddenHLRPhysicalSourceIntervalBothComplete,false);
+});
+test('invalid original source candidate multiplicity cannot forge a unique native HLR edge',()=>{
+ const row=boxM5().rows.find(r=>
+  !r.projectionCollapsed&&r.originalM4PaperParameterPartitionComplete);
+ for(const invalid of [0,-1,1.5,NaN,Infinity,undefined]){
+  assert.throws(()=>joint({m5Row:row,nativeCandidates:[
+   genuineUnsignedCandidate(0,1,invalid)
+  ]}),/unsigned genuine native HLR source ranges required/);
+ }
 });
