@@ -636,6 +636,15 @@ for(const [index,geometry] of general.entries()){
   sceneInventory.missingOriginalSourceViews.length);
  assert.equal(incompleteProjectionClasses.length,
   sceneInventory.incompleteOriginalSourceViewPartitions.length);
+ assert.deepEqual(sceneInventory.missingOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),
+  missingProjectionClasses.map(x=>[x.sourceViewKey,x.projectionCollapsedExactly]));
+ assert.deepEqual(sceneInventory.incompleteOriginalSourceViewProjectionEvidence.map(x=>
+  [x.sourceViewKey,x.projectionCollapsedExactly]),
+  incompleteProjectionClasses.map(x=>[x.sourceViewKey,x.projectionCollapsedExactly]));
+ assert.ok([...sceneInventory.missingOriginalSourceViewProjectionEvidence,
+  ...sceneInventory.incompleteOriginalSourceViewProjectionEvidence].every(x=>
+  x.completeM5ParameterCoverageCertified===false&&x.signedV5Action===false));
  // Classification is a diagnostic only: every missing/incomplete row
  // remains in the unsigned original source/view inventory.
  assert.equal(sceneInventory.signedV5Action,false);
