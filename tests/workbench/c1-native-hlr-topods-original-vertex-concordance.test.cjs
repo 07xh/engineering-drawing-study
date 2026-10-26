@@ -17,7 +17,10 @@ const pair=(a,b,same)=>({view:'H',a,b,
  signedV5Action:false});
 const fixture=()=>{
  const r={
-  geometry:{id:'G',data:{points:{A:{x:0,y:0,z:0}}}},
+  geometry:{id:'G',data:{
+   points:{A:{x:0,y:0,z:0},B:{x:0,y:4,z:0},C:{x:10,y:0,z:0}},
+   edges:[['A','B'],['A','C']]
+  }},
   revision,
   cad:{
    sourceGeometryId:'G',revision,hiddenHLROutputFromActualOCCT:true,v5Authorized:false,
@@ -81,6 +84,45 @@ test('true shared generated OCCT IsSame vertex AND exact independently shared or
  assert.equal(r.rows[0].original3DVertexIdAgreedFromTwoIndependentHiddenSources,'A');
  assert.equal(r.actualGeneratedHLREdgeToOriginalTopoDSEdgeHistoryComplete,false);
  assert.equal(r.signedV5ActionCount,0);
+});
+
+test('forged hidden original source edge identity cannot certify a native physical junction',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ x.originalNativeVertexProof.rows[1].nativeSource3DVertexEndpointRows[0].
+  originalPhysicalSourceEdgeId='G::A|UNKNOWN';
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ const result=audit(x);
+ assert.equal(result.counts.IsSameHiddenToHiddenMatchingOriginal3DPhysicalVertices,0);
+ assert.equal(result.rows[0].independentlyRealOriginal3DSourceJunctionAlsoProven,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('a claimed hidden M0 source vertex outside its actual original edge cannot certify native topology',()=>{
+ const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
+ // A exists in the model but the second hidden source is deliberately
+ // changed to B-C: its claimed shared A is not an endpoint of that edge.
+ x.geometry.data.edges[1]=['B','C'];
+ x.originalNativeVertexProof.rows[1].nativeSource3DVertexEndpointRows[0].
+  originalPhysicalSourceEdgeId='G::B|C';
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(
+  ref('hidden-sharp',0,'to'),ref('hidden-sharp',1,'to'),true));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ const result=audit(x);
+ assert.equal(result.counts.actualOriginal3DPhysicalSourceJunctionPairsVerified,0);
+ assert.equal(result.counts.IsSameHLRNodesButOriginalSource3DVertexNotCertified,1);
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('reversed duplicate modeled 3D source edges fail closed before source attribution',()=>{
+ const x=fixture();
+ x.geometry.data.edges.push(['B','A']);
+ assert.throws(()=>audit(x),/duplicate original modeled 3D source edge/);
+});
+test('invalid or degenerate original modeled 3D edge identity fails closed',()=>{
+ for(const bad of [['A','A'],['A','MISSING'],['A']]){
+  const x=fixture();x.geometry.data.edges.push(bad);
+  assert.throws(()=>audit(x),/invalid original modeled 3D source edge/);
+ }
 });
 test('distinct physical 3D original vertices with native IsSame do not certify source 3D junction',()=>{
  const x=fixture(),v=x.cad.nativeGeneratedVertexGraph.views.H;
