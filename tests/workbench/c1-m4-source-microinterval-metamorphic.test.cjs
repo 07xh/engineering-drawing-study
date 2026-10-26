@@ -111,3 +111,15 @@ test('exact original source coverage rejects representable positive microgaps',(
  assert.equal(joined.entireOriginalParameterIntervalCovered,true);
  assert.deepEqual(joined.positiveLengthUncoveredIntervals,[]);
 });
+
+test('source coverage rejects overlapping candidate multiplicity even when union covers all',()=>{
+ const overlap=[[0,0.75],[0.5,1]];
+ const coverage=exactCandidateIntervalCoverage([0,1],overlap);
+ assert.equal(coverage.entireOriginalParameterIntervalCovered,true);
+ assert.equal(coverage.candidateIntervalsExamined,2);
+ // A complete union is not proof of unique physical provenance.
+ // Native M5 contour parity must independently reject overlapping witnesses.
+ const duplicateNativeIntervals=overlap.some((a,i)=>overlap.slice(i+1)
+  .some(b=>Math.max(a[0],b[0])<Math.min(a[1],b[1])));
+ assert.equal(duplicateNativeIntervals,true);
+});
