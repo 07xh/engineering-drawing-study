@@ -49,3 +49,29 @@ test('invalid source and candidate intervals are rejected',()=>{
 test('bounded interval input rejects more than 512 candidates',()=>{
  assert.throws(()=>cover([0,1],Array.from({length:513},()=>[0,1])),TypeError);
 });
+
+test('duplicate exact fragments cannot be mistaken for unique generated topology',()=>{
+ const result=cover([0,1],[[0,1],[0,1]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,true);
+ assert.equal(result.candidateIntervalsExamined,2);
+ assert.deepEqual(result.positiveLengthCoveredIntervals,[[0,1]]);
+});
+test('a one-ULP internal gap survives two independently valid spans',()=>{
+ const left=.5-Number.EPSILON/2;
+ const result=cover([0,1],[[0,left],[.5,1]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,[[left,.5]]);
+});
+test('source subspan without any intersecting witness remains uncovered',()=>{
+ const result=cover([.25,.75],[[0,.1],[.9,1]]);
+ assert.equal(result.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(result.positiveLengthCoveredIntervals,[]);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,[[.25,.75]]);
+});
+test('exact 512-candidate input bound is accepted, not automatically certified',()=>{
+ const fragments=Array.from({length:512},()=>[0,.25]);
+ const result=cover([0,1],fragments);
+ assert.equal(result.candidateIntervalsExamined,512);
+ assert.equal(result.entireOriginalParameterIntervalCovered,false);
+ assert.deepEqual(result.positiveLengthUncoveredIntervals,[[.25,1]]);
+});
