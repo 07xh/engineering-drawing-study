@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
-const {auditC1OriginalSourceSubspanJunctions:audit}=
+const {auditC1OriginalSourceSubspanJunctions:audit,
+ certifyCanonicalOriginalM4SourcePartition:certifyPartition}=
  require('../../workbench/c1-original-source-subspan-junction-provenance.cjs');
 const xyz=(x,y,z)=>({x,y,z});
 const box=()=>{
@@ -28,6 +29,24 @@ function assertLedger(g,revision){
  assert.equal(r.counts.originalSourceSubspanCount,
   r.rows.reduce((n,e)=>n+e.spans.length,0));
  assert.equal(r.counts.sourceEdgeViewCount,g.data.edges.length*3);
+ assert.equal(r.counts.exactFullOriginalSourceViewPartitionsProven,
+  g.data.edges.length*3);
+ assert.equal(r.allCanonicalOriginalM4SourceParameterPartitionsPositivelyCovered,true);
+ assert.equal(r.nativeHLRGeneratedSourceIdentityAndM5VisibilityStillUnproven,true);
+ assert.equal(new Set(r.rows.map(x=>x.view+'@'+x.sourceEdgeId)).size,
+  g.data.edges.length*3);
+ for(const row of r.rows){
+  assert.equal(row.allCanonicalOriginalSourceParameterSubspansCovered,true);
+  assert.equal(row.canonicalOriginalM4SourcePartition.
+   entireOriginalM4SourceParameterPartitionPositivelyProven,true);
+  assert.deepEqual(row.canonicalOriginalM4SourcePartition.
+   exactOriginalSourceParameterCoverage.positiveLengthUncoveredIntervals,[]);
+  assert.deepEqual(row.canonicalOriginalM4SourcePartition.
+   exactOriginalSourceParameterCoverage.positiveLengthCoveredIntervals,[[0,1]]);
+  assert.equal(row.canonicalOriginalM4SourcePartition.
+   continuousM5VisibilityProven,false);
+  assert.equal(row.canonicalOriginalM4SourcePartition.signedV5Action,false);
+ }
  assert.ok(r.counts.originalVertexEndpointWitnesses>0);
  for(const row of r.rows)for(const s of row.spans){
   assert.equal(s.officialEngineeringLineStyle,'undetermined');
@@ -92,4 +111,52 @@ test('invalid current geometry and revision fail before certifying physical conn
  assert.throws(()=>audit({geometry:{...g,
   data:{...g.data,edges:[...g.data.edges,[...g.data.edges[0]]]}},revision:8}),
  /duplicate|declared|explicit finite|Euler/);
+});
+
+test('exact M4 cut-to-source-subspan bijection certifies a complete original edge without signing visibility or V5',()=>{
+ const r=certifyPartition([0,.25,.5,1],[
+  {originalParameterRange:[0,.25]},
+  {originalParameterRange:[.25,.5]},
+  {originalParameterRange:[.5,1]}
+ ]);
+ assert.equal(r.entireOriginalM4SourceParameterPartitionPositivelyProven,true);
+ assert.equal(r.everyCanonicalM4CutHasExactlyOneAdjacentSourceSubspan,true);
+ assert.deepEqual(r.exactOriginalSourceParameterCoverage.
+  positiveLengthCoveredIntervals,[[0,1]]);
+ assert.equal(r.generatedHLRSourceIdentityProven,false);
+ assert.equal(r.continuousM5VisibilityProven,false);
+ assert.equal(r.engineeringLineStyleSigned,false);
+ assert.equal(r.signedV5Action,false);
+ assert.equal(Object.isFrozen(r.exactOriginalSourceParameterCoverage),true);
+});
+test('missing a positive one-ULP original 3D parameter cut interval cannot be concealed by subspan count',()=>{
+ const half=.5,next=half+Number.EPSILON;
+ assert.throws(()=>certifyPartition([0,half,next,1],[
+  {originalParameterRange:[0,half]},
+  {originalParameterRange:[next,1]}
+ ]),/incomplete canonical/);
+ // Same number of pieces but duplicate first interval and omit the ULP
+ // interval: count-only ledgers would have accepted this.
+ assert.throws(()=>certifyPartition([0,half,next,1],[
+  {originalParameterRange:[0,half]},
+  {originalParameterRange:[0,half]},
+  {originalParameterRange:[next,1]}
+ ]),/missing, duplicated, overlapping or reordered/);
+});
+test('canonical M4 coverage rejects reordered, overlapping, forged, truncated and nonfinite original 3D source partitions',()=>{
+ const span=(a,b)=>({originalParameterRange:[a,b]});
+ const cuts=[0,.4,1];
+ assert.throws(()=>certifyPartition(cuts,[span(.4,1),span(0,.4)]),
+  /reordered/);
+ assert.throws(()=>certifyPartition(cuts,[span(0,.5),span(.4,1)]),
+  /overlapping/);
+ assert.throws(()=>certifyPartition(cuts,[span(0,.4),span(.4,.9)]),
+  /missing/);
+ assert.throws(()=>certifyPartition(cuts,[span(0,.4),span(.4,1),span(.4,1)]),
+  /incomplete canonical/);
+ assert.throws(()=>certifyPartition([0,NaN,1],[span(0,.4),span(.4,1)]),
+  /incomplete canonical/);
+ assert.throws(()=>certifyPartition([0,.4,.4,1],[
+  span(0,.4),span(.4,.4),span(.4,1)
+ ]),/incomplete canonical/);
 });
