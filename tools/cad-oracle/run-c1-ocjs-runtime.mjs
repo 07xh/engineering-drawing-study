@@ -588,8 +588,21 @@ for(const [index,geometry] of general.entries()){
   projectedEncounters:nativeHiddenM5.nativeHLRAllM4ProjectedEncounters,
   nativeHLRJunctionConcordance:nativeHiddenM5.nativeHLRVertexConcordance,
   nativeSourceAudit:nativeHiddenM5,
+  // Verify the current pinned OCCT ORIGINAL 3D TopoDS BRep inventory,
+  // not HLR-generated edge history or remembered model coordinates.
+  cad,
   globalM5Review:unsignedReview
  });
+ const actualOriginal3DBRepInventory=hiddenFormalGate.originalOCCTBRepSourceInventory;
+ assert.equal(actualOriginal3DBRepInventory.available,true);
+ assert.equal(actualOriginal3DBRepInventory.completeOriginal3DSourceCorrespondence,true);
+ assert.equal(actualOriginal3DBRepInventory.matchedOriginalPhysicalSourceEdges,
+  geometry.data.edges.length);
+ assert.equal(actualOriginal3DBRepInventory.expectedOriginalPhysicalSourceEdges,
+  geometry.data.edges.length);
+ assert.equal(actualOriginal3DBRepInventory.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(actualOriginal3DBRepInventory.original3DSourceFanAndGlobalOcclusionCertified,false);
+ assert.equal(actualOriginal3DBRepInventory.signedV5Action,false);
  assert.equal(hiddenFormalGate.counts.genuineHiddenHLRStrokesReviewed,
   nativeHiddenM5.counts.realNativeHiddenSharpSegments);
  assert.equal(hiddenFormalGate.canonicalOriginalM5SourceInventory.
@@ -1125,6 +1138,8 @@ for(const [index,geometry] of general.entries()){
     hiddenFormalGate.counts.nativePaperMisalignmentWithIndependentAuthenticOriginal3DVertex,
    genuineOriginalSourceBRepAndExact3DSharedVertexEvents:
     hiddenFormalGate.counts.exactOriginal3DSharedVertexWithTwoAuthenticBRepSources,
+   verifiedRealOriginalOCCT3DBRepModelSourceEdgeInventory:
+    actualOriginal3DBRepInventory.matchedOriginalPhysicalSourceEdges,
    trueOriginal3DSharedVertexAndNativeIsSameEntireJunctionNodes:
     nativeIsSame3D.counts.completeGeneratedHLRJunctionComponentsWithIndependentOriginal3DVertex,
    genuineNativeHLRInteriorSplitPointsOnOneVerifiedOriginal3DEdge:
