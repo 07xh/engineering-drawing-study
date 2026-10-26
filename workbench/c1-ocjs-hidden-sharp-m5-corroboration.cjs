@@ -215,9 +215,36 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
     counts.nativeHiddenSharpWithNoSurvivingM5Source++;
    if(refined.remainingPossibleOriginal3DSourceCount>1)
     counts.nativeHiddenSharpStillWithMultipleM5Sources++;
+   // Native TopoDS IsSame was called while both actual generated HLR
+   // and actual original BRep edge handles were alive. Preserve its result
+   // across WASM disposal, separately from M0 paper candidate narrowing.
+   if(seg.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
+      !Array.isArray(seg.originalPhysicalOCCTSourceIdsCompared)||
+      seg.originalPhysicalOCCTSourceIdsCompared.length!==realIds.size||
+      !Array.isArray(seg.directlySameOriginalOCCTBRepSourceEdgeIds)||
+      seg.directlySameOriginalOCCTBRepSourceEdgeIds.length>1||
+      seg.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified!==false||
+      seg.signedV5Action!==false)
+    throw new RangeError('real native generated OCCT TopoDS original BRep IsSame comparison absent');
+   const directSource=seg.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
+   if((directSource===null)!==
+       (seg.directlySameOriginalOCCTBRepSourceEdgeIds.length===0)||
+      directSource!==null&&(
+       !realIds.has(directSource)||
+       !seg.projectedOriginalEdgeCandidates.includes(directSource)||
+       !refined.remainingPhysicalSourcePossibilities.some(x=>
+        x.sourceEdgeId===directSource)))
+    throw new RangeError('native OCCT IsSame original 3D source contradicts exact M5 candidate pruning');
    nativeHiddenSourceRefinements.push({
     view,projectedFrom:{...seg.from},projectedTo:{...seg.to},
-    ...refined
+    ...refined,
+    actualGeneratedOCCTTopoDSDirectOriginalBRepIsSameEvidence:{
+     nativeGeneratedEdgeDirectOriginalIsSameCompared:true,
+     directlySameUniqueOriginalOCCTBRepSourceEdgeId:directSource,
+     allM0OriginalPhysicalOCCTSourceEdgesCompared:true,
+     fullGeneratedTopoDSOriginalBRepEdgeHistoryRecovered:false,
+     signedV5Action:false
+    }
    });
    for(const candidate of seg.sourceCandidate3DLifts){
     const id=candidate.sourceEdgeId,range=candidate.originalSourceParameterRange;
