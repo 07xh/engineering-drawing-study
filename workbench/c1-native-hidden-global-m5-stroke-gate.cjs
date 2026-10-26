@@ -643,6 +643,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    continuousAllOpaqueFaceOcclusionCertified:false
   });
  });
+ const canonicalViewTotal=nativeSourceCoverageByView.reduce((n,x)=>
+  n+x.canonicalSourceCount,0);
+ const nativeViewTotal=nativeSourceCoverageByView.reduce((n,x)=>
+  n+x.nativeHiddenReviewedSourceCount,0);
+ if(canonicalViewTotal!==byKey.size||
+    nativeViewTotal!==nativeReviewedSourceViews.size)
+  throw new RangeError('V/H/W source ledger and native HLR coverage totals disagree');
  const wholeSceneSourceHLRAndM5Closure=frozen({
   originalM0AllViewSourceParameterCoverageComplete:
    canonicalOriginalM5SourceInventory.allOriginalSourceViewsHaveCompleteParameterPartitions,
