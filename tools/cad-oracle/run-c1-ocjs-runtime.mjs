@@ -1328,6 +1328,36 @@ for(const [index,geometry] of general.entries()){
      unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,
    nativeVisibleHLRUnverifiedSegmentsAudit:
     generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses,
+   // Forensic material from REAL current HLR and independently
+   // recomputed M0/M4 all original convex face rays, not a line signer.
+   visibleNativeUnresolvedActualM4FaceRayCandidates:
+    generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses.map(unverified=>{
+     const generated=cad.views[unverified.view][unverified.nativeHLREdgeOrdinal];
+     return {
+      view:unverified.view,ordinal:unverified.nativeHLREdgeOrdinal,
+      projectedFrom:{...generated.from},projectedTo:{...generated.to},
+      candidates:generated.sourceCandidate3DLifts.map(c=>{
+       const coverage=hiddenFormalGate.realNativeVisibleHiddenSourceGraph.rows.find(row=>
+        row.view===unverified.view&&
+        row.originalPhysical3DSourceEdgeId===c.sourceEdgeId);
+       const rays=faceRayAndActualNativeHLR.rows.filter(row=>
+        row.view===unverified.view&&row.sourceEdgeId===c.sourceEdgeId&&
+        Math.max(row.originalSourceParameterRange[0],
+         c.originalSourceParameterRange[0])<
+        Math.min(row.originalSourceParameterRange[1],
+         c.originalSourceParameterRange[1]));
+       return {sourceEdgeId:c.sourceEdgeId,
+        t:[...c.originalSourceParameterRange],
+        from3D:{...c.fromCandidate3D},to3D:{...c.toCandidate3D},
+        visiblePhysicalIntervals:coverage?.visibleNativeOCCTMeasuredM5FullFrontSourceIntervals??[],
+        hiddenPhysicalIntervals:coverage?.hiddenNativeOCCTUniqueM5PhysicalSourceIntervals??[],
+        actualOriginalFaceRayIntervals:rays.map(x=>({
+         t:x.originalSourceParameterRange,status:x.currentWholeReviewedConvexSolidFaceRayStatus,
+         nativeSourceFrontRayCompatible:x.singleSolidRayAndTrueOCCTNativeOriginalSourceProvenCompatible
+        })),signedV5Action:false};
+      }),signedV5Action:false
+     };
+    }),
    trueNativeHLRVisibleSourceViewsWithOverlappingGeneratedPhysicalFragments:
     generatedVisibleM5PhysicalTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,
    originalVHWSourceViewsWithFullNoOverlapM4AllFaceRayParameterPartitions:
