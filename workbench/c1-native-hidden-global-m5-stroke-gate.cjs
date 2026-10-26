@@ -164,6 +164,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   }
   if(hiddenMemberCount===0)
    throw new RangeError('genuine native IsSame star has no reviewed hidden HLR endpoint');
+  if(membersSeen.size<2)
+   throw new RangeError('genuine native IsSame star has fewer than two distinct HLR endpoints');
  }
  const perViewNativeOrdinal=new Map(VIEWS.map(view=>[view,0]));
  const rows=[];
