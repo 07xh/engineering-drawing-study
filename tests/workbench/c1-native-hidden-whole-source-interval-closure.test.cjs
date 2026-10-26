@@ -1,7 +1,5 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {exactCandidateIntervalCoverage:cover}=
- require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {certifyNativeHiddenOriginalOpenInterval:certify}=
  require('../../workbench/c1-native-hidden-whole-source-interval-closure.cjs');
 const cut=(a,b,hidden=false,clear=false)=>({
@@ -11,8 +9,7 @@ const cut=(a,b,hidden=false,clear=false)=>({
 });
 const check=(range,cuts)=>certify({
  nativeOriginalParameterRange:range,
- canonicalM5OriginalSourceCuts:cuts,
- exactIntervalCoverage:cover
+ canonicalM5OriginalSourceCuts:cuts
 });
 test('entire native OCCT hidden source open interval has positive exact original M5 ray proof',()=>{
  const proof=check([0.2,0.8],[
@@ -58,4 +55,29 @@ test('no M5 cut cannot accidentally certify an actual native CAD hidden stroke',
  const p=check([0,1],[]);
  assert.deepEqual(p.uncoveredNativeOriginal3DSourceIntervals,[[0,1]]);
  assert.equal(p.wholeNativeOriginalOpenIntervalStrictlyHiddenByM5,false);
+});
+
+// A user-supplied callback used to be trusted as the mathematical coverage
+// oracle. It could return fabricated full-coverage booleans even for a
+// missing one-ULP interval. The production certifier now always consumes
+// the existing canonical source-interval union directly.
+test('forged external interval oracle cannot certify a missing physical M5 cut',()=>{
+ const half=.5,next=half+Number.EPSILON/2;
+ let forgedCalls=0;
+ const fake=()=>{
+  forgedCalls++;
+  return {entireOriginalParameterIntervalCovered:true,
+   positiveLengthCoveredIntervals:[[0,1]],
+   positiveLengthUncoveredIntervals:[],
+   originalSourceSubspanHasGenuinePositiveLengthGap:false};
+ };
+ const proof=certify({nativeOriginalParameterRange:[0,1],
+  canonicalM5OriginalSourceCuts:[cut(0,half,true),cut(next,1,true)],
+  exactIntervalCoverage:fake});
+ assert.equal(forgedCalls,0);
+ assert.equal(proof.wholeNativeOriginalOpenIntervalStrictlyHiddenByM5,false);
+ assert.deepEqual(proof.uncoveredNativeOriginal3DSourceIntervals,[[half,next]]);
+ assert.deepEqual(proof.strictM5HiddenProofGapsAlongNativeHLRInterval,[[half,next]]);
+ assert.equal(proof.engineeringHiddenLineStyleSigned,false);
+ assert.equal(proof.signedV5Action,false);
 });

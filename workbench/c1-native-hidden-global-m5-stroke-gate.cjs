@@ -463,11 +463,13 @@ function reviewC1NativeHiddenFinalM5Strokes({
    canonicalOriginalSourceParameterGaps:sourceCoverage?.gaps??null,
    jointPositiveM5Prerequisites:{
     completeSourceParameterCoverage:sourceCoverage?.complete===true,
-    original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0,
+    original3DEndpointAndM4FanTopology:remainingTrueOriginal3DVertexGaps===0&&
+     nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven),
     continuousOriginalModelAndRealNativeHLROcclusion:localNative&&localModel
    },
    jointPositiveM5PrerequisitesSatisfied:
     sourceCoverage?.complete===true&&remainingTrueOriginal3DVertexGaps===0&&
+    nativeEndpointStars.every(x=>x.independentOriginal3DVertexAndFullHLRJunctionProven)&&
     localNative&&localModel,
    additionalCanonicalM5GlobalBlockers:allGlobalBlockers,
    canonicalOriginalM4ProjectedEncountersAudited:projected.length,

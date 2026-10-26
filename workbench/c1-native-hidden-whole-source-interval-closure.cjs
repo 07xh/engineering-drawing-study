@@ -10,19 +10,21 @@
  * stitching, no inference of HLR generated TopoDS/source identity.
  */
 const {VIEWS}=require('../core/projection/conventions.js');
+// Fixed trusted M4/M5 interval union: callers cannot substitute an
+// unverified coverage callback and forge a whole-native hidden ray proof.
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
 const finite=Number.isFinite;
 function certifyNativeHiddenOriginalOpenInterval({
- nativeOriginalParameterRange,canonicalM5OriginalSourceCuts,
- exactIntervalCoverage
+ nativeOriginalParameterRange,canonicalM5OriginalSourceCuts
 }={}){
  const range=nativeOriginalParameterRange,cuts=canonicalM5OriginalSourceCuts;
  if(!Array.isArray(range)||range.length!==2||
     !range.every(finite)||range[0]<0||range[1]>1||range[1]<=range[0]||
-    !Array.isArray(cuts)||cuts.length>256||
-    typeof exactIntervalCoverage!=='function')
+    !Array.isArray(cuts)||cuts.length>256)
   throw new TypeError('bounded native original source and verified M5 cuts required');
  let previous=0;
  for(const cut of cuts){
@@ -36,11 +38,11 @@ function certifyNativeHiddenOriginalOpenInterval({
    throw new RangeError('untrusted, overlapping or contradictory original M5 source cut');
   previous=r[1];
  }
- const all=exactIntervalCoverage(range,cuts.map(x=>x.originalParameterRange));
- const inside=exactIntervalCoverage(range,cuts.filter(x=>
+ const all=exactCandidateIntervalCoverage(range,cuts.map(x=>x.originalParameterRange));
+ const inside=exactCandidateIntervalCoverage(range,cuts.filter(x=>
   x.exactWholeOpenStrictInwardHidden===true)
   .map(x=>x.originalParameterRange));
- const clear=exactIntervalCoverage(range,cuts.filter(x=>
+ const clear=exactCandidateIntervalCoverage(range,cuts.filter(x=>
   x.exactWholeOpenRayClear===true)
   .map(x=>x.originalParameterRange));
  const trueCovered=all.positiveLengthCoveredIntervals;
@@ -81,7 +83,7 @@ function certifyNativeHiddenOriginalOpenInterval({
  * physically connect or whether GB dashed line style is authorized.
  */
 function auditNativeHiddenWholeOriginalSourceIntervals({
- geometry,revision,cad,refinements,m5,endpointFans,exactIntervalCoverage
+ geometry,revision,cad,refinements,m5,endpointFans
 }={}){
  if(!geometry?.data?.points||!Number.isSafeInteger(revision)||revision<1||
     cad?.sourceGeometryId!==geometry.id||cad.revision!==revision||
@@ -95,7 +97,7 @@ function auditNativeHiddenWholeOriginalSourceIntervals({
     endpointFans.nativeGeneratedTopoDSEdgeEndpointIdentityProven!==false||
     endpointFans.signedV5ActionCount!==0||
     !Array.isArray(m5.rows)||!Array.isArray(endpointFans.rows)||
-    !Array.isArray(refinements)||typeof exactIntervalCoverage!=='function')
+    !Array.isArray(refinements))
   throw new TypeError('current native HLR, M5 cut, M4 vertex fan and revision required');
  const sourceMap=new Map(m5.rows.map(row=>[
   row.originalPhysicalSourceEdgeId+'@'+row.view,row]));
@@ -177,8 +179,7 @@ function auditNativeHiddenWholeOriginalSourceIntervals({
      throw new RangeError('native HLR 3D endpoints are not exact original-source intervals');
     const closure=certifyNativeHiddenOriginalOpenInterval({
      nativeOriginalParameterRange:nativeRange,
-     canonicalM5OriginalSourceCuts:original.originalCutSubspans,
-     exactIntervalCoverage
+     canonicalM5OriginalSourceCuts:original.originalCutSubspans
     });
     // Genuine original vertices require both M4 endpoint linkage
     // and positively verified 3D original face fan. A native HLR
