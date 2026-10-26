@@ -348,8 +348,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
  const nativeHiddenOriginalOpenRayClosure=
   auditNativeHiddenWholeOriginalSourceIntervals({
    geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
-   m5,endpointFans:nativeHidden3DEndpointFans,
-   exactIntervalCoverage:exactCandidateIntervalCoverage
+   m5,endpointFans:nativeHidden3DEndpointFans
   });
  if(nativeHiddenOriginalOpenRayClosure.counts.actualNativeHiddenEdgesAudited!==
      counts.realNativeHiddenSharpSegments||
@@ -358,8 +357,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   throw new RangeError('real native sharp HLR original source continuous ray gate');
  const nativeHiddenFrontVisibleMask=auditC1NativeHiddenFrontVisibleMasks({
   geometry,revision,cad,refinements:nativeHiddenSourceRefinements,
-  m5,sourceDepth:auditC1ProjectedSourcePairDepth({geometry,revision}),
-  exactIntervalCoverage:exactCandidateIntervalCoverage
+  m5,sourceDepth:auditC1ProjectedSourcePairDepth({geometry,revision})
  });
  if(nativeHiddenFrontVisibleMask.counts.realHiddenNativeEdgesAudited!==
      counts.realNativeHiddenSharpSegments||
@@ -367,8 +365,7 @@ function auditC1NativeHiddenSharpVsM5({oc,geometry,revision}={}){
   throw new RangeError('actual front visible source depth mask audit incomplete');
  const nativeHiddenDualOpenIntervalProof=auditC1NativeHiddenDualOpenIntervalProof({
   geometry,revision,strictM5:nativeHiddenOriginalOpenRayClosure,
-  frontMask:nativeHiddenFrontVisibleMask,
-  exactIntervalCoverage:exactCandidateIntervalCoverage
+  frontMask:nativeHiddenFrontVisibleMask
  });
  if(nativeHiddenDualOpenIntervalProof.counts.realNativeHiddenOpenLineIntervalsReviewed!==
      counts.realNativeHiddenSharpSegments||
