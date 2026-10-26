@@ -109,3 +109,13 @@ test('fabricated OCCT IsSame asymmetry or invalid source native TopoDS handle fa
   {sourceEdgeId:'G::A|B',edge:native('a')}
  ]}),/asymmetric or nonboolean/);
 });
+
+test('native OCCT occurrence ledger counts repeated BRep edge occurrences without confusing them with distinct original physical sources',()=>{
+ const source=originals();
+ source.push({sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('a')});
+ const result=probe({generatedEdge:native('a'),originalSourceEdges:source});
+ assert.equal(result.actualOriginalOCCTBRepEdgeOccurrencesCompared,4);
+ assert.equal(result.actualDistinctOriginalOCCTBRepSourceCount,3);
+ assert.equal(result.originalPhysicalOCCTSourceIdsCompared.length,3);
+ assert.equal(result.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+});
