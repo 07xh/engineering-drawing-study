@@ -21,6 +21,19 @@ const eq3=(a,b)=>!!a&&!!b&&['x','y','z'].every(k=>
  Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
 const eq2=(a,b)=>!!a&&!!b&&a.u===b.u&&a.v===b.v;
 const edgeKey=(g,e)=>g.id+'::'+[...e].sort().join('|');
+ // Strictly positive EXACT collinear paper overlap is incompatible with
+ // two different independently unique frontmost physical M0 sources.
+ // Endpoint-only contact, transverse crossings and one-ULP separated
+ // spans are not positive overlap. This is a necessary contradiction
+ // check, not a tolerance-based HLR->TopoDS history reconstruction.
+ const exactPositiveCollinearPaperOverlap=(a,b,c,d)=>{
+  const cross=(p,q,r)=>(q.u-p.u)*(r.v-p.v)-
+   (q.v-p.v)*(r.u-p.u);
+  if(cross(a,b,c)!==0||cross(a,b,d)!==0)return false;
+  const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v';
+  return Math.max(Math.min(a[axis],b[axis]),Math.min(c[axis],d[axis]))<
+   Math.min(Math.max(a[axis],b[axis]),Math.max(c[axis],d[axis]));
+ };
 const param=(a,b,p)=>{
  const axis=['x','y','z'].sort((x,y)=>
   Math.abs(b[y]-a[y])-Math.abs(b[x]-a[x]))[0];
@@ -96,6 +109,7 @@ function auditC1RealOcctVisibleContourSourceParity({
  // projected interval. This is a necessary fail-closed consistency
  // check, not a tolerance-based TopoDS history reconstruction.
  const nativeGeneratedPaperFrontOwners=new Map();
+ const nativeGeneratedPaperFrontSegments=[];
  let matchedNative=0;
  for(const witness of nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
   const {view,sourceEdgeId,originalSourceParameterRange:span,
@@ -131,6 +145,14 @@ function auditC1RealOcctVisibleContourSourceParity({
   if(priorPaperOwner!==undefined&&priorPaperOwner!==sourceEdgeId)
    throw new RangeError('coincident native visible HLR paper segment has conflicting original 3D front owners');
   nativeGeneratedPaperFrontOwners.set(paperKey,sourceEdgeId);
+  for(const prior of nativeGeneratedPaperFrontSegments){
+   if(prior.view!==view||prior.sourceEdgeId===sourceEdgeId)continue;
+   if(exactPositiveCollinearPaperOverlap(
+    seg.from,seg.to,prior.from,prior.to))
+    throw new RangeError('overlapping native visible HLR paper segments have conflicting original 3D front owners');
+  }
+  nativeGeneratedPaperFrontSegments.push({
+   view,sourceEdgeId,from:seg.from,to:seg.to});
   const candidates=seg.sourceCandidate3DLifts.filter(c=>
    c.sourceEdgeId===sourceEdgeId&&
    c.originalSourceParameterRange?.[0]===span[0]&&
@@ -290,4 +312,4 @@ function auditC1RealOcctVisibleContourSourceParity({
  });
 }
 module.exports={auditC1RealOcctVisibleContourSourceParity,
- exactOriginalModelVertexProjectedEdge};
+ exactOriginalModelVertexProjectedEdge,exactPositiveCollinearPaperOverlap};

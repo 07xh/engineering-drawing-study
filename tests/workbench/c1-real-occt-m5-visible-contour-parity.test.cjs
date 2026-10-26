@@ -6,7 +6,8 @@ const {project,VIEWS}=require('../../core/projection/conventions.js');
 const {auditC1GlobalVisibleContourProof}=
  require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
 const {auditC1RealOcctVisibleContourSourceParity:audit,
- exactOriginalModelVertexProjectedEdge:recover}=
+ exactOriginalModelVertexProjectedEdge:recover,
+ exactPositiveCollinearPaperOverlap:overlap}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const g=()=>{
  const x=prismMesh({solid:{min:{x:0,y:0,z:0},
@@ -170,6 +171,59 @@ test('different generated native ordinals cannot both claim one exact paper segm
    'a second generated ordinal must not bypass exact frontmost 3D provenance (reversed='+reversed+')');
  }
 });
+test('exact positive paper overlap excludes only nonzero collinear intersections',()=>{
+ const a={u:0,v:0},b={u:4,v:0},
+  c={u:2,v:0},d={u:6,v:0};
+ assert.equal(overlap(a,b,c,d),true);
+ assert.equal(overlap(b,a,d,c),true);
+ assert.equal(overlap(a,b,{u:4,v:0},{u:7,v:0}),false,
+  'endpoint-only contact must not be misclassified as an open interval');
+ assert.equal(overlap(a,b,{u:5,v:0},{u:7,v:0}),false);
+ assert.equal(overlap(a,b,{u:2,v:-1},{u:2,v:1}),false,
+  'transverse crossing is not collinear source ownership');
+ assert.equal(overlap(a,b,{u:0,v:1},{u:4,v:1}),false);
+ assert.equal(overlap(a,b,{u:4+Number.EPSILON*4,v:0},
+  {u:7,v:0}),false,'a positive representable paper gap stays a gap');
+});
+
+test('two different native HLR ordinals with partial collinear paper overlap cannot both be unique M5 front owners',()=>{
+ const x=initial(),same=(p,q)=>p.u===q.u&&p.v===q.v;
+ let w,other,seg;
+ for(const witness of x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
+  const native=x.cad.views[witness.view][witness.nativeVisibleHLREdgeOrdinal];
+  const candidate=x.geometry.data.edges.find(e=>{
+   const id=x.geometry.id+'::'+[...e].sort().join('|');
+   if(id===witness.sourceEdgeId)return false;
+   const p=project(x.geometry.data.points[e[0]])[witness.view],
+    q=project(x.geometry.data.points[e[1]])[witness.view];
+   return (same(p,native.from)&&same(q,native.to))||
+    (same(q,native.from)&&same(p,native.to));
+  });
+  if(candidate){w=witness;other=candidate;seg=native;break;}
+ }
+ assert.ok(w&&other&&seg,'genuine co-projected different 3D M0 sources required');
+ const a=x.geometry.data.points[other[0]],b=x.geometry.data.points[other[1]],
+  t0=same(project(a)[w.view],seg.from)?0:1,
+  mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2},
+  range=[Math.min(t0,.5),Math.max(t0,.5)],
+  sourceEdgeId=x.geometry.id+'::'+[...other].sort().join('|'),
+  lift={...structuredClone(seg.sourceCandidate3DLifts[0]),
+   sourceEdgeId,originalVertexIds:[...other],
+   originalSourceParameterRange:range,
+   sourceParameterAtProjectedFrom:t0,sourceParameterAtProjectedTo:.5,
+   fromCandidate3D:{...(t0===0?a:b)},toCandidate3D:mid,
+   actualOriginalOCCTBRepFrom3D:{...a},actualOriginalOCCTBRepTo3D:{...b}};
+ const ordinal=x.cad.views[w.view].push({
+  ...structuredClone(seg),from:{...seg.from},to:project(mid)[w.view],
+  sourceCandidate3DLifts:[lift]})-1;
+ assert.ok(overlap(seg.from,seg.to,seg.from,project(mid)[w.view]));
+ x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.push({
+  ...structuredClone(w),nativeVisibleHLREdgeOrdinal:ordinal,
+  sourceEdgeId,originalSourceParameterRange:range});
+ assert.throws(()=>audit(x),
+  /overlapping native visible HLR paper segments have conflicting original 3D front owners/);
+});
+
 test('forged paper point, unverified source curve and stale revision cannot pass native-to-original contour binding',()=>{
  const x=initial();x.cad.views.H[0].to.u+=Number.EPSILON*4;
  assert.throws(()=>audit(x),/source lift contradicts original 3D model or paper/);
