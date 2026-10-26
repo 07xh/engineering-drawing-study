@@ -77,3 +77,21 @@ test('full native tiling cannot imply global engineering or V5 authorization',()
  assert.equal(result.officialGBLineStyleSigned,false);
  assert.equal(result.signedV5Action,false);
 });
+
+test('native tiling does not mutate original source fragment order',()=>{
+ const original=[[.5,1],[0,.5]];
+ const result=tiling({sourceViewKey:key,intervals:original});
+ assert.deepEqual(original,[[.5,1],[0,.5]]);
+ assert.deepEqual(result.originalNativeSourceIntervals,[[0,.5],[.5,1]]);
+});
+test('source view identifier and collapse evidence are mandatory',()=>{
+ assert.throws(()=>ray({sourceViewKey:'H',spans:[span(0,1)],projectionCollapsedExactly:false}),TypeError);
+ assert.throws(()=>ray({sourceViewKey:key,spans:[span(0,1)]}),TypeError);
+ assert.throws(()=>tiling({sourceViewKey:'H',intervals:[[0,1]]}),TypeError);
+});
+test('native complete union cannot override a duplicated fragment',()=>{
+ const result=tiling({sourceViewKey:key,intervals:[[0,1],[0,1]]});
+ assert.equal(result.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ assert.deepEqual(result.positiveSameOriginal3DSourceGeneratedEdgeOverlaps,[[0,1]]);
+ assert.equal(result.signedV5Action,false);
+});
