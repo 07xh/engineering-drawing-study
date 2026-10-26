@@ -700,6 +700,7 @@ for(const [index,geometry] of general.entries()){
   ...topologyArgs,sourceVertexIds:['B','A']}),[0,1]);
  for(const invalid of [
   {...topologyArgs,sourceVertexIds:['A','C']},
+  {...topologyArgs,sourceVertexIds:['A_far','B_far']},
   {...topologyArgs,sourceVertexIds:['A','A']},
   {...topologyArgs,sourceVertexIds:['A_far','B'] ,sourceEdgeId:'g::A|B_other'},
   {...topologyArgs,sourceEdgeId:'g::A|C'},
