@@ -114,6 +114,23 @@ for(const [index,geometry] of general.entries()){
  assert.equal(proof.status,'validated-closed-convex-mesh');
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ // Real native edge IsSame is checked BEFORE OCJS handles are disposed,
+ // against EVERY original BRep 3D edge occurrence. Two equal paper lines
+ // must never count as generated->source TopoDS identity.
+ for(const view of ['V','H','W'])
+  for(const edge of [...cad.views[view],...cad.hiddenSharpViews[view]]){
+   assert.equal(edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared,true);
+   assert.equal(edge.originalPhysicalOCCTSourceIdsCompared.length,
+    geometry.data.edges.length);
+   assert.equal(
+    edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,
+    edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId!==null);
+   if(edge.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven)
+    assert.ok(edge.projectedOriginalEdgeCandidates.includes(
+     edge.directlySameUniqueOriginalOCCTBRepSourceEdgeId));
+   assert.equal(edge.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+   assert.equal(edge.signedV5Action,false);
+  }
  // Independently recompute true hidden HLR output and all ORIGINAL M4/M5
  // closed-ray source subspans; do not attribute HLR's generated TopoDS
  // identity merely because paper projections coincide.
