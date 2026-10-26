@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {reviewC1NativeHiddenFinalM5Strokes:review,
- certifyExactOriginalRaySourceParameterPartition:rayPartition}=
+ certifyExactOriginalRaySourceParameterPartition:rayPartition,
+ certifyExactNativeGeneratedSourceTiling:nativeTiling}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
 const revision=73,geometry={id:'G',data:{points:{A:{x:0,y:0,z:0}}}};
 const caseData=()=>{
@@ -1099,4 +1100,90 @@ test('partial CAD case never acquires whole-face-ray source partition even if M4
  assert.equal(r.fullSourceVHWFaceRayAndActualHLRClosure.
   noncollapsedOriginalSourceViewsFullyMatchedToActualOCCTAndAllOriginalOpaqueFaceRays,0);
  assert.equal(r.signedV5ActionCount,0);
+});
+
+test('actual native generated OCCT fragments tile the modeled original M0 edge without tolerance or fake GB certification',()=>{
+ const r=nativeTiling({sourceViewKey:'H@G::A|B',
+  intervals:[[0,.25],[.25,.5],[.5,1]]});
+ assert.equal(r.completeDisjointNativeGeneratedOriginalSourceTiling,true);
+ assert.deepEqual(r.positiveSameOriginal3DSourceGeneratedEdgeOverlaps,[]);
+ assert.deepEqual(r.originalSourceParameterGaps,[]);
+ assert.equal(r.fullGeneratedOCCTToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.officialGBLineStyleSigned,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('full-looking OCCT generated source union conceals duplicate true native HLR strokes; hold complete topology',()=>{
+ const r=nativeTiling({sourceViewKey:'V@G::A|B',
+  intervals:[[0,.6],[.4,1]]});
+ assert.deepEqual(r.actualNativeOriginalSourceUnion,[[0,1]]);
+ assert.deepEqual(r.positiveSameOriginal3DSourceGeneratedEdgeOverlaps,[[.4,.6]]);
+ assert.equal(r.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+});
+test('one-ULP uncovered original 3D source remains missing after exact real-native generated-edge tiling',()=>{
+ const r=nativeTiling({sourceViewKey:'W@G::A|B',
+  intervals:[[0,.5],[.5+Number.EPSILON,1]]});
+ assert.deepEqual(r.originalSourceParameterGaps,[[.5,.5+Number.EPSILON]]);
+ assert.equal(r.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+});
+test('empty CAD native source fragment list cannot certify a real visible drawing stroke',()=>{
+ const r=nativeTiling({sourceViewKey:'V@G::A|B',intervals:[]});
+ assert.equal(r.disjointExactCompleteOriginalSourceGeneratedEdgeTiling,false);
+ assert.deepEqual(r.originalSourceParameterGaps,[[0,1]]);
+ for(const intervals of [[[0,Infinity]],[[-.1,1]],[[.5,.5]],[[1,.5]]])
+  assert.throws(()=>nativeTiling({sourceViewKey:'H@G::A|B',intervals}),
+   /invalid generated OCCT original source interval/);
+});
+const withMeasuredRealVCompoundFragments=()=>{
+ const x=withActualVisibleAndHidden3DSourceCoverage();
+ const geom=x.geometry.data.points,AB=['A','B'],
+  from=geom.A,to=geom.B;
+ const edge=(view)=>({
+  from:{...require('../../core/projection/conventions.js').project(from)[view]},
+  to:{...require('../../core/projection/conventions.js').project(to)[view]},
+  occtHLRVisibilityClass:'visible-sharp',
+  actualOCCTHLRFlattenedBRepLineVerified:true,
+  actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared:true,
+  actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+  directlySameUniqueOriginalOCCTBRepSourceEdgeId:null,
+  sourceCandidate3DLifts:[{
+   sourceEdgeId:'G::A|B',originalVertexIds:AB,
+   originalSourceParameterRange:[0,1],
+   sourceParameterAtProjectedFrom:0,sourceParameterAtProjectedTo:1,
+   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+   originalOCCTSourceLineCurveVerified:true,
+   originalXYZReprojectsToHLR:true,v5Authorized:false,
+   actualOriginalOCCTBRepFrom3D:{...from},
+   actualOriginalOCCTBRepTo3D:{...to},
+   fromCandidate3D:{...from},toCandidate3D:{...to}
+  }]
+ });
+ x.cad.views={V:[edge('V')],H:[],W:[edge('W')]};
+ return x;
+};
+test('final M5 gate independently consumes real V/H/W native VCompound source geometry against accepted visible intervals',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ const p=review(x).nativeVisibleHLRSourceTiling;
+ assert.equal(p.available,true);
+ assert.equal(p.trueGeneratedOCCTVisibleSegmentsInspected,2);
+ assert.equal(p.originalSourceViewsWithDuplicateGeneratedHLRIntervals,0);
+ assert.equal(p.sourceViewsAudited,3);
+ assert.equal(p.originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication,2);
+ assert.equal(p.signedV5ActionCount,0);
+});
+test('final M5 gate preserves OCCT native generated-source overlapping fragments even when accepted visible union looks correct',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ x.cad.views.V.push(structuredClone(x.cad.views.V[0]));
+ const r=review(x);
+ assert.equal(r.nativeVisibleHLRSourceTiling.available,true);
+ assert.equal(r.nativeVisibleHLRSourceTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,1);
+ assert.equal(r.nativeVisibleHLRSourceTiling.originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('actual OCCT generated native edge with wrong 3D original source is rejected despite plausible native paper union',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ x.cad.views.V[0].sourceCandidate3DLifts[0].originalVertexIds=['X','Y'];
+ assert.throws(()=>review(x),/untrusted original 3D source/);
+ const y=withMeasuredRealVCompoundFragments();
+ y.cad.views.V[0].directlySameUniqueOriginalOCCTBRepSourceEdgeId='G::other';
+ assert.throws(()=>review(y),/native IsSame contradicts/);
 });
