@@ -145,6 +145,7 @@ function reviewC1NativeHiddenFinalM5Strokes({
      star.signedV5Action!==false)
    throw new RangeError('untrusted complete generated HLR TopoDS original source star');
   const membersSeen=new Set();
+  let hiddenMemberCount=0;
   for(const member of star.generatedHLREndpoints){
    if(!['hidden-sharp','visible-sharp'].includes(member.hlrClass)||
       !Number.isSafeInteger(member.nativeHLREdgeOrdinal)||
@@ -155,11 +156,14 @@ function reviewC1NativeHiddenFinalM5Strokes({
     throw new RangeError('duplicate endpoint inside genuine native IsSame star');
    membersSeen.add(memberKey);
    if(member.hlrClass!=='hidden-sharp')continue;
+   hiddenMemberCount++;
    const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
    if(nativeStarByEndpoint.has(key))
     throw new RangeError('duplicate generated native HLR junction endpoint');
    nativeStarByEndpoint.set(key,star);
   }
+  if(hiddenMemberCount===0)
+   throw new RangeError('genuine native IsSame star has no reviewed hidden HLR endpoint');
  }
  const perViewNativeOrdinal=new Map(VIEWS.map(view=>[view,0]));
  const rows=[];
