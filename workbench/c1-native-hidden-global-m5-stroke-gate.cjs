@@ -620,8 +620,8 @@ function reviewC1NativeHiddenFinalM5Strokes({
   }
  }
  if(genuineNativeContourPhysicalFront.length!==
-    nativeHLRJunctionConcordance.
-     independentlyFrontDominantNativeHLRContourSourceCount)
+    (nativeHLRJunctionConcordance.
+     independentlyFrontDominantNativeHLRContourSourceCount??0))
   throw new RangeError('missing exact native contour original 3D front source');
  const nativeOriginalContourPhysicalFrontSourceLedger=frozen({
   available:Array.isArray(nativeHLRJunctionConcordance.
