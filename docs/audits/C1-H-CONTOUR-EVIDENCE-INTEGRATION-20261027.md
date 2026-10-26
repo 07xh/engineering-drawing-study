@@ -22,3 +22,9 @@ Base: 48fc408fc0ece1b90b3797a5bcd34f9c081c0178. This is a review-only audit and 
 - Run exact HEAD workbench, pinned OCCT WASM HLR, offline OCCT oracle, core/planar/point math and site validation; record actual statuses, not expected results.
 - Fail closed: undetermined, signedV5Action:false, wholeSolidV5Ready:false whenever any mandatory proof is absent.
 - No automatic merge or production deployment from this audit branch.
+
+## 2026-10-27 live integration checkpoint
+- Main advanced to `7f47b2efc67a1552762eba32cc91e789fcd0697e` via merged #817. The strict literal M0 vertex-to-native paper fallback did **not** recover the two remaining H-view contour endpoints (12/14 remains), so do not count it as a solved contour proof.
+- This review branch is ahead 3 / behind 1 versus that main, with only this audit and its independent regression test as changed paths. Before merging, rebase/recreate atop current main; do not force-update refs or overwrite #817.
+- Exact PR branch commit `0b5d9dfe066197d3ea6eb13e37da24e0679d2129` has 5/5 observed completed-success workflows: point projection, core mathematics, planar mathematics, site validation, and workbench. This is not a claim that the real pinned WASM/offline OCCT workflows ran for this PR.
+- Next proof must inspect the two held H-view contour endpoint values as literal original M0 3D coordinates versus generated native OCCT HLR paper coordinates, and separate exact source identity from floating projection error. Never epsilon-snap, infer a vertex from paper coincidence, or sign GB/V5 without the full global gate.
