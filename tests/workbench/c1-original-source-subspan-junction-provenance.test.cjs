@@ -195,6 +195,42 @@ test('legitimate observer-axis collapsed 3D source edge remains a point, not a f
  ],{collapsedProjection:true}),/collapsed original source/);
 });
 
+test('independent 3D V/H/W reprojection rejects forged collapsed flags while preserving real near-axis conservative holds',()=>{
+ const from=xyz(0,0,0),axis=xyz(0,7,0),
+  nearAxis=xyz(5e-9,7,0),full=xyz(1,7,0);
+ const evidence=(to,collapsed,view='V')=>({
+  collapsedProjection:collapsed,original3DFrom:from,
+  original3DTo:to,view
+ });
+ const trulyPoint=certifyPartition([0,1],[],evidence(axis,true));
+ assert.equal(trulyPoint.entireOriginalM4SourceParameterPartitionPositivelyProven,false);
+ assert.deepEqual(trulyPoint.exactOriginalSourceParameterCoverage.
+  positiveLengthUncoveredIntervals,[[0,1]]);
+ // A real nonzero 5e-9 mm first-angle paper edge is still conservatively
+ // held by the upstream 1e-8 mm budget, not certified as a drawable line.
+ const near=certifyPartition([0,1],[],evidence(nearAxis,true));
+ assert.equal(near.entireOriginalM4SourceParameterPartitionPositivelyProven,false);
+ assert.equal(near.signedV5Action,false);
+ // Same exact physical source projects to an ordinary noncollapsed line
+ // in H, where the y coordinate remains on the paper.
+ assert.throws(()=>certifyPartition([0,1],[],evidence(axis,true,'H')),
+  /contradicts independently recomputed/);
+ assert.throws(()=>certifyPartition([0,1],[],evidence(full,true)),
+  /contradicts independently recomputed/);
+ assert.throws(()=>certifyPartition([0,1],[
+  {originalParameterRange:[0,1]}
+ ],evidence(axis,false)),/contradicts independently recomputed/);
+ assert.throws(()=>certifyPartition([0,1],[],evidence(nearAxis,false)),
+  /contradicts independently recomputed/);
+ assert.throws(()=>certifyPartition([0,1],[],{
+  collapsedProjection:true,original3DFrom:from,
+  original3DTo:xyz(NaN,7,0),view:'V'
+ }),/independent original M4 source projection evidence/);
+ assert.throws(()=>certifyPartition([0,1],[],{
+  collapsedProjection:true,original3DFrom:from,
+  original3DTo:axis,view:'X'
+ }),/independent original M4 source projection evidence/);
+});
 test('tiny projected M4 cut may be omitted for display but positive original 3D one-ULP parameter gap remains held',()=>{
  const half=.5,next=half+Number.EPSILON/2;
  const r=certifyPartition([0,half,next,1],[
