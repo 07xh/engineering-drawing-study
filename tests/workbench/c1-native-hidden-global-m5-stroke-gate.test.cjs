@@ -2,7 +2,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {reviewC1NativeHiddenFinalM5Strokes:review,
  certifyExactOriginalRaySourceParameterPartition:rayPartition,
- certifyExactNativeGeneratedSourceTiling:nativeTiling}=
+ certifyExactNativeGeneratedSourceTiling:nativeTiling,
+ certifyC1NativeCandidateOriginalFaceRay:candidateRay}=
  require('../../workbench/c1-native-hidden-global-m5-stroke-gate.cjs');
 const revision=73,geometry={id:'G',data:{points:{A:{x:0,y:0,z:0}}}};
 const caseData=()=>{
@@ -1266,4 +1267,81 @@ test('true native paper residual over diagnostic floating envelope is never snap
  assert.equal(h.paperWithinNonCertifyingNumericEnvelope,false);
  assert.equal(r.genuinelyExactMeasuredNativeVisibleSegments,1);
  assert.equal(r.allTrueGeneratedNativeVisibleSourceLiftsCertified,false);
+});
+
+test('actual one-convex-solid original M4 exterior contour can have a fully clear physical 3D source ray but cannot mint official GB line style',()=>{
+ const x=withMeasuredRealVCompoundFragments(),seg=x.cad.views.V[0],
+  candidate=seg.sourceCandidate3DLifts[0];
+ const spans=[[0,.5],[.5,1]].map(originalSourceParameterRange=>({
+  sourceEdgeId:'G::A|B',view:'V',originalSourceParameterRange,
+  originalM5ExteriorContourOverlap:true,
+  exactOriginalFaceWholeOpenRayClear:true,
+  analyticConservativeWholeOpenRayClear:false,
+  exactOriginalSourceStrictInwardOpenRayHidden:false,
+  fullAnalyticStrictInteriorRayOcclusion:false,
+  signedV5Action:false
+ }));
+ const r=candidateRay({geometry:x.geometry,view:'V',segment:seg,candidate,
+  originalFaceRayRows:spans});
+ assert.equal(r.exactOriginal3DSourceAndGeneratedPaperCertified,true);
+ assert.equal(r.completeExactOriginalRaySubspanPartition,true);
+ assert.equal(r.allOriginalOpaqueFaceRaysClear,true);
+ assert.equal(r.entireNativeSegmentLiesOnOriginalExteriorContour,true);
+ assert.equal(r.allOriginalOpaqueFaceRaysStrictlyHidden,false);
+ assert.equal(r.generatedOCCTToOriginalBRepHistoryCertified,false);
+ assert.equal(r.engineeringLineStyleSigned,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('front physical original source and strictly hidden co-projected source stay independently distinguishable by FULL exact M4 cuts, not paper lookup',()=>{
+ const x=withMeasuredRealVCompoundFragments(),seg=x.cad.views.V[0],
+  candidate=seg.sourceCandidate3DLifts[0];
+ const hidden=candidateRay({geometry:x.geometry,view:'V',segment:seg,candidate,
+  originalFaceRayRows:[{
+   sourceEdgeId:'G::A|B',view:'V',originalSourceParameterRange:[0,1],
+   originalM5ExteriorContourOverlap:false,
+   exactOriginalFaceWholeOpenRayClear:false,
+   analyticConservativeWholeOpenRayClear:false,
+   exactOriginalSourceStrictInwardOpenRayHidden:true,
+   fullAnalyticStrictInteriorRayOcclusion:true,signedV5Action:false
+  }]});
+ assert.equal(hidden.exactOriginal3DSourceAndGeneratedPaperCertified,true);
+ assert.equal(hidden.allOriginalOpaqueFaceRaysStrictlyHidden,true);
+ assert.equal(hidden.allOriginalOpaqueFaceRaysClear,false);
+ assert.equal(hidden.engineeringLineStyleSigned,false);
+});
+test('positive binary64 single-ULP ray-source interval gap and overlap cannot be certified as a complete physical 3D HLR contour',()=>{
+ const x=withMeasuredRealVCompoundFragments(),seg=x.cad.views.V[0],
+  candidate=seg.sourceCandidate3DLifts[0];
+ const mk=r=>({sourceEdgeId:'G::A|B',view:'V',
+  originalSourceParameterRange:r,originalM5ExteriorContourOverlap:true,
+  exactOriginalFaceWholeOpenRayClear:true,
+  analyticConservativeWholeOpenRayClear:false,
+  exactOriginalSourceStrictInwardOpenRayHidden:false,
+  fullAnalyticStrictInteriorRayOcclusion:false,signedV5Action:false});
+ const gap=candidateRay({geometry:x.geometry,view:'V',segment:seg,candidate,
+  originalFaceRayRows:[mk([0,.5]),mk([.5+Number.EPSILON,1])]});
+ assert.equal(gap.completeExactOriginalRaySubspanPartition,false);
+ assert.deepEqual(gap.uncoveredOriginalSourceParameterIntervals,
+  [[.5,.5+Number.EPSILON]]);
+ assert.equal(gap.allOriginalOpaqueFaceRaysClear,false);
+ const overlap=candidateRay({geometry:x.geometry,view:'V',segment:seg,candidate,
+  originalFaceRayRows:[mk([0,.6]),mk([.5,1])]});
+ assert.equal(overlap.completeExactOriginalRaySubspanPartition,false);
+ assert.equal(overlap.allOriginalOpaqueFaceRaysClear,false);
+});
+test('paper point with forged 3D original source depth cannot receive a hull or positive ray-source identity',()=>{
+ const x=withMeasuredRealVCompoundFragments(),seg=x.cad.views.V[0],
+  candidate={...seg.sourceCandidate3DLifts[0],
+   toCandidate3D:{...seg.sourceCandidate3DLifts[0].toCandidate3D,z:5}};
+ const r=candidateRay({geometry:x.geometry,view:'V',segment:seg,candidate,
+  originalFaceRayRows:[{
+   sourceEdgeId:'G::A|B',view:'V',originalSourceParameterRange:[0,1],
+   originalM5ExteriorContourOverlap:true,
+   exactOriginalFaceWholeOpenRayClear:true,
+   signedV5Action:false
+  }]});
+ assert.equal(r.exactOriginal3DSourceAndGeneratedPaperCertified,false);
+ assert.equal(r.allOriginalOpaqueFaceRaysClear,false);
+ assert.equal(r.entireNativeSegmentLiesOnOriginalExteriorContour,false);
+ assert.equal(r.heldReason,'original-source-3d-or-generated-paper-endpoint-not-exact');
 });

@@ -684,6 +684,30 @@ for(const [index,geometry] of general.entries()){
   row.officialGBLineStyleSigned===false&&row.signedV5Action===false));
  assert.equal(generatedVisibleM5PhysicalTiling.allGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
  assert.equal(generatedVisibleM5PhysicalTiling.signedV5ActionCount,0);
+ const heldContourFaceRays=hiddenFormalGate.actualNativeVisibleContourSourceFanRayAudit;
+ assert.equal(heldContourFaceRays.available,true);
+ assert.equal(heldContourFaceRays.heldGeneratedNativeVisibleSegmentsReviewed,
+  generatedVisibleM5PhysicalTiling.unverifiedGeneratedOCCTVisibleSegments);
+ assert.equal(heldContourFaceRays.rows.length,
+  heldContourFaceRays.heldGeneratedNativeVisibleSegmentsReviewed);
+ assert.equal(heldContourFaceRays.
+  heldGeneratedSegmentsWithFullFaceRayFrontAndAllAlternativesStrictHidden,
+  heldContourFaceRays.rows.filter(x=>
+   x.oneRealOriginal3DSourceClearAllOtherCandidatesStrictlyHidden).length);
+ assert.equal(heldContourFaceRays.
+  unresolvedHLRGeneratedSegmentsWhoseAllOriginal3DSourcesProjectToExterior,
+  heldContourFaceRays.rows.filter(x=>
+   x.allCurrentCandidatesLieOnOriginalExteriorContour).length);
+ assert.ok(heldContourFaceRays.rows.every(x=>
+  x.sourceStillUndeterminedForEngineeringLine===true&&
+  x.originalM5GlobalContourAndFeatureJunctionNotSigned===true&&
+  x.signedV5Action===false&&
+  x.nativeHLROriginal3DSourceCandidates.every(c=>
+   c.generatedOCCTToOriginalBRepHistoryCertified===false&&
+   c.engineeringLineStyleSigned===false&&c.signedV5Action===false)));
+ assert.equal(heldContourFaceRays.actualGeneratedTopoDSOriginalEdgeFullHistoryCertified,false);
+ assert.equal(heldContourFaceRays.allOpaqueSceneAndGBLineStyleCertified,false);
+ assert.equal(heldContourFaceRays.signedV5ActionCount,0);
  const trueGeneratedHiddenM5Tiling=hiddenFormalGate.actualNativeHLRHiddenGeneratedSourceTiling;
  assert.equal(trueGeneratedHiddenM5Tiling.available,true);
  assert.equal(trueGeneratedHiddenM5Tiling.actualGeneratedHLRHiddenStrokesAudited,
@@ -1328,6 +1352,16 @@ for(const [index,geometry] of general.entries()){
      unverifiedNativeHLREdgesWithBitExactOriginal3DSourceButNumericPaperDrift,
    nativeVisibleHLRUnverifiedSegmentsAudit:
     generatedVisibleM5PhysicalTiling.independentlyHeldGeneratedNativeVisibleEdgeCauses,
+   heldNativeVisibleHLROriginal3DContourFaceRaySourceFanCount:
+    heldContourFaceRays.heldGeneratedNativeVisibleSegmentsReviewed,
+   originalContourHLRSourceFansWithOneProvablyFront3DEdgeAndStrictlyHiddenAlternatives:
+    heldContourFaceRays.
+     heldGeneratedSegmentsWithFullFaceRayFrontAndAllAlternativesStrictHidden,
+   originalContourHLRSourceFansWithEverySourceOnExteriorHull:
+    heldContourFaceRays.
+     unresolvedHLRGeneratedSegmentsWhoseAllOriginal3DSourcesProjectToExterior,
+   heldNativeHLRSourceFanOriginalFullFaceRayAudit:
+    heldContourFaceRays.rows,
    trueNativeHLRVisibleSourceViewsWithOverlappingGeneratedPhysicalFragments:
     generatedVisibleM5PhysicalTiling.originalSourceViewsWithDuplicateGeneratedHLRIntervals,
    originalVHWSourceViewsWithFullNoOverlapM4AllFaceRayParameterPartitions:
