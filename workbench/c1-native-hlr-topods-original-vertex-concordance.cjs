@@ -130,10 +130,33 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
    // independent SAME-REVISION M5 closed ray clears the whole front edge.
    // This does not imply generated HLR edge -> original TopoDS history.
    const lifts=seg.sourceCandidate3DLifts;
-   if(!Array.isArray(lifts)||lifts.length!==1||
+   if(!Array.isArray(lifts)||lifts.length===0||
       !originalClosedRayM5)
     return {source:null,vertex:null,nativeHidden:false};
-   const lift=lifts[0],edge=sourceEdges.get(lift.sourceEdgeId);
+   // OCCT HLR is PAPER geometry: front/back physical original M0
+   // edges can make identical native V/H/W segments. Independently
+   // admit a candidate only if the CURRENT original closed convex M5
+   // source ray proves its ENTIRE true physical 3D edge is in front,
+   // its original source is a real crease, and it has real OCCT BRep
+   // source geometry. Never select by array order or paper depth guess.
+   const frontCandidates=lifts.filter(candidate=>{
+    const physical=sourceEdges.get(candidate.sourceEdgeId),
+     m5=outwardM5.get(candidate.sourceEdgeId+'@'+view);
+    return physical&&m5?.fullProjectedVisibleSourceLineProven===true&&
+     m5.completeSourceOriginal3DRayClosedIntervalClear===true&&
+     m5.originalPhysicalCreaseProven===true&&
+     m5.signedV5Action===false&&
+     m5.officialEngineeringLineStyle==='undetermined'&&
+     candidate.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
+     candidate.originalOCCTSourceLineCurveVerified===true&&
+     candidate.originalXYZReprojectsToHLR===true&&
+     candidate.v5Authorized===false&&
+     Array.isArray(candidate.originalVertexIds)&&
+     candidate.originalVertexIds.join('|')===physical.join('|');
+   });
+   if(frontCandidates.length!==1)
+    return {source:null,vertex:null,nativeHidden:false};
+   const lift=frontCandidates[0],edge=sourceEdges.get(lift.sourceEdgeId);
    const row=outwardM5.get(lift.sourceEdgeId+'@'+view);
    if(!edge||!row||
       row.fullProjectedVisibleSourceLineProven!==true||
@@ -480,6 +503,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
  // original source/view. This is a necessary coverage diagnostic, NOT proof
  // of complete generated TopoDS history or that every source must be visible.
  const acceptedNativeVisibleSourceCoverage=[];
+ const independentlyM5AuthenticatedVisibleNativeGeneratedEdges=[];
  for(const view of VIEWS){
   const intervalsBySource=new Map(),visible=base.get(view).visible;
   for(let i=0;i<visible.length;i++){
@@ -492,6 +516,18 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       from.originalSourceParameterRange[0]!==to.originalSourceParameterRange[0]||
       from.originalSourceParameterRange[1]!==to.originalSourceParameterRange[1])
     continue;
+   independentlyM5AuthenticatedVisibleNativeGeneratedEdges.push({
+    view,nativeVisibleHLREdgeOrdinal:i,
+    sourceEdgeId:from.sourceEdgeId,
+    originalSourceParameterRange:[...from.originalSourceParameterRange],
+    originalNativeGeneratedCandidateCount:
+     Array.isArray(seg.sourceCandidate3DLifts)?
+      seg.sourceCandidate3DLifts.length:null,
+    uniquePhysicalM5FrontOriginalSourceFromActualBRep:true,
+    fullOriginalPhysicalSourceM5ClosedRayClear:true,
+    generatedEdgeOriginalTopoDSHistoryRecovered:false,
+    engineeringLineCertified:false,signedV5Action:false
+   });
    if(!intervalsBySource.has(from.sourceEdgeId))
     intervalsBySource.set(from.sourceEdgeId,[]);
    intervalsBySource.get(from.sourceEdgeId).push(from.originalSourceParameterRange);
@@ -513,6 +549,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
   sourceGeometryId:geometry.id,revision,unit:'mm',
   counts,rows,paperOnlyProjectedVertexAliases:aliases,
   acceptedNativeVisibleSourceCoverage,
+  independentlyM5AuthenticatedVisibleNativeGeneratedEdges,
   completeGenuineNativeHLRJunctionStars:completeNativeJunctionStars,
   allPerViewActualNativeGeneratedJunctionComponentsConsumed:
    graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true,
