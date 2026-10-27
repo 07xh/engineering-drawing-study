@@ -19,7 +19,20 @@
 - 构建入口：`node scripts/build-static.cjs`
 - JS 依赖按项目 `package.json` 安装；构建时本地打包 Three.js，生产页面无需外部 Three.js CDN。
 
-GitHub Actions `.github/workflows/check.yml` 校验源码与打包资源，但其成功**不等于正式 Worker 已上线**。
+GitHub Actions `.github/workflows/check.yml` 校验源码与打包资源，但其成功**不等于正式 Worker 已上线**。新增的 `.github/workflows/deploy-worker-github-actions.yml` 在 GitHub Runner 执行相同公开白名单构建，再用 Wrangler 直接部署现有 Worker，不消耗 Cloudflare Workers Builds 构建分钟。
+
+## Workers Builds 额度耗尽：GitHub Actions → Wrangler 切换（2026-10-27）
+
+**默认不抢占旧发布源**：新 GitHub Workflow 已入库，但 `push main` 自动部署受 GitHub Actions 仓库变量 `ENABLE_DRAFTAI_GHA_DEPLOY == 'true'` 控制，初始关闭。仅 `workflow_dispatch` 可在设置完密钥后先做受控首次发布。
+
+1. **先确认当前 Active Worker**：Cloudflare Workers & Pages 中核对现有 Worker 名称为 `engineering-drawing-study`，并记录原来的 Custom Domain、Route 和任何自建环境绑定。不要新建 Worker 或改动域名/DNS。
+2. **Cloudflare → Worker → Settings → Builds → Disconnect**：断开 *Workers Builds Git 仓库构建集成*，不是删除 Worker、域名或者 GitHub 仓库。这样 push 不会再次触发 Cloudflare 云端构建。
+3. **GitHub → Settings → Secrets and variables → Actions → Secrets**：在此仓库设置 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID`。不提交值到源码。令牌需要当前 Worker 部署权限；若已绑定自定义域名，仅更新代码一般不需要改变路由。
+4. **GitHub → Actions → Publish DraftAI Worker (GitHub Actions + Wrangler) → Run workflow**：从 `main` 手动运行；构建过程从 `scripts/build-static.cjs` 生成 **仅公开** 的 `dist`，执行私有文件排除检查，然后 `wrangler deploy --config wrangler.jsonc --keep-vars`。该参数保留 Cloudflare 面板中的普通运行时变量；现有 Worker secrets 也由 Wrangler 保留。
+5. **逐项验收**：对照 GitHub 最新 `main` SHA、Actions 部署日志及 Cloudflare Worker 的 **Active Deployment**；打开原有域名与 workers.dev 地址核对 UI / API，不把 GitHub CI 绿色当作 Active 已上线。若域名绑定或依赖资源有异常，停止后续自动发布并回滚到旧 Active 版本。
+6. **验收通过才打开自动化**：将 Actions 仓库变量 `ENABLE_DRAFTAI_GHA_DEPLOY` 设为 `true`；后续 `main` push 使用 GitHub Actions 而不占 Workers Builds 分钟。保持自动 Cloudflare Git Builds 断开以免双重发布。
+
+注意：`wrangler.jsonc` 此前没有声明自定义 Route / Custom Domain，新的 GitHub 工作流保持原 Worker 名称，不会主动配置、移除或变更路由。但**首次切换仍需验证真实 Cloudflare Active 域名配置**。如果 Workers 运行时已在 Cloudflare 配置额外 KV、R2 或 D1 等绑定，先同步核对 `wrangler.jsonc` 和面板绑定后再执行部署，避免将隐含绑定错误覆盖。禁止为了使 CI 变绿而跳过 M0–M5 数学门禁。
 
 ## 预览与发布流程
 
@@ -34,7 +47,7 @@ GitHub Actions `.github/workflows/check.yml` 校验源码与打包资源，但�
 
 ### 配置注意
 
-在 Cloudflare Worker → Settings → Builds 中，确认 GitHub 集成连到 `07xh/engineering-drawing-study`，Production Branch 是 `main`，并配置正确构建命令，使 `dist/` 在部署前生成。生产命令与 Preview 命令按当前 Cloudflare Workers Builds 配置执行，不要采用旧 Pages “输出目录为仓库根目录”教程。
+以前使用 Cloudflare Workers Builds 时，需要在 Cloudflare 中连接 GitHub 并由 Cloudflare 构建。在本文件 2026-10-27 的 GitHub Actions + Wrangler 切换步骤完成后，应保持该 **Builds Git 集成断开**；生产构建与静态资源白名单由 GitHub Runner 执行，严禁设置输出目录为仓库根目录。
 
 ## AI 功能
 
