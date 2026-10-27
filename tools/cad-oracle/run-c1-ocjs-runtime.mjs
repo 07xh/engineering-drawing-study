@@ -628,10 +628,36 @@ for(const [index,geometry] of general.entries()){
   'true generic convex closed source must obtain global first-angle exterior contour');
  assert.equal(audited.counts.unresolved,0,
   'no unresolved M5 atomic exterior contour intervals may reach formal V5');
+ const sourceConflicts=Object.values(audited.views).flatMap(v=>v.intervals)
+  .filter(x=>x.status==='positive-m5-vs-cad-conflict')
+  .map(x=>({view:x.view,sourceEdgeId:x.sourceEdgeId,
+   sourceRange:x.exactNativeOriginal3DSourceCoverage?.
+    originalSourceParameterRange,
+   sourceStatus:x.exactNativeOriginal3DSourceCoverage?.status,
+   gaps:x.exactNativeOriginal3DSourceCoverage?.
+    positiveLengthUncoveredIntervals}));
  assert.equal(audited.counts.positiveM5CadConflicts,0,
-  'a real CAD source disagreement must block the formal V5');
+  'a real CAD source disagreement must block the formal V5: '+
+   JSON.stringify(sourceConflicts));
  assert.equal(audited.counts.cadAndM5Corroborated,
   audited.counts.m5AtomicIntervals);
+ // Historical CAD/paper proximity is NOT exact original TopoDS source
+ // coverage. Genuine HLR micro-gaps remain separately recorded as
+ // unsigned M0 source obligations, including a positive one-ULP gap.
+ const exactSourceRows=Object.values(audited.views).flatMap(v=>v.intervals);
+ const exactGapRows=exactSourceRows.filter(x=>
+  x.realNativeOriginal3DSourceParameterCovered!==true);
+ assert.equal(audited.counts.exactNative3DSourceParameterGapOrUnbound,
+  exactGapRows.length);
+ assert.equal(audited.counts.exactNative3DSourceParameterCovered+
+  exactGapRows.length,audited.counts.m5AtomicIntervals);
+ assert.ok(exactGapRows.every(x=>
+  x.signedV5===false&&x.engineeringLineStyle==='undetermined'&&
+  (x.exactNativeOriginal3DSourceCoverage?.status===
+   'exact-original-3d-native-source-positive-gap'||
+   x.exactNativeOriginal3DSourceCoverage?.status===
+   'unreconstructable-original-3d-source-parameter')));
+
  // An independently valid M5 paper hull source may still lack exact
  // true OCCT generated original physical 3D source coverage. Do not
  // upgrade paper overlap into a production V5 signoff.
@@ -1999,6 +2025,17 @@ for(const [index,geometry] of general.entries()){
   localM5Positive:audited.counts.locallyPositive,
   cadM5Corroborated:audited.counts.cadAndM5Corroborated,
   cadM5Conflicts:audited.counts.positiveM5CadConflicts,
+  exactNative3DSourceParameterGapOrUnbound:
+   audited.counts.exactNative3DSourceParameterGapOrUnbound,
+  exactNative3DSourceParameterCovered:
+   audited.counts.exactNative3DSourceParameterCovered,
+  exactNativeSourceGaps:exactGapRows.map(x=>({
+   view:x.view,sourceEdgeId:x.sourceEdgeId,
+   status:x.exactNativeOriginal3DSourceCoverage?.status,
+   positiveLengthUncoveredIntervals:
+    x.exactNativeOriginal3DSourceCoverage?.
+     positiveLengthUncoveredIntervals
+  })),
   m5Unresolved:audited.counts.unresolved,
   unsignedProofGaps:Object.entries(audited.views).flatMap(([v,row])=>
    row.intervals.map((it,i)=>({...it,view:v,index:i}))
