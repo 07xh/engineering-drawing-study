@@ -4,12 +4,13 @@ const {intervalCoverage,positiveCollinearOverlap}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {validateC1RealHLRSourceCandidates:validateNative}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
+const {project}=require('../../core/projection/conventions.js');
 const p=(u,v)=>({u,v});
 const physicalLedger=()=>{
  const geometry={id:'M0-Reviewed',data:{
-  points:{A:{x:0,y:0,z:0},B:{x:3,y:0,z:0},
-   C:{x:0,y:4,z:0}},
-  edges:[['A','B'],['A','C']]
+  points:{A:{x:0,y:0,z:0},B:{x:3,y:4,z:5},
+   C:{x:0,y:8,z:0},D:{x:3,y:12,z:5}},
+  edges:[['A','B'],['A','C'],['C','D']]
  }};
  const edgeId='M0-Reviewed::A|B';
  const source=()=>({
@@ -17,7 +18,7 @@ const physicalLedger=()=>{
   sourceParameterAtProjectedFrom:0,sourceParameterAtProjectedTo:1,
   originalSourceParameterRange:[0,1],
   fromCandidate3D:{x:0,y:0,z:0},
-  toCandidate3D:{x:3,y:0,z:0},
+  toCandidate3D:{x:3,y:4,z:5},
   originalXYZReprojectsToHLR:true,
   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
   originalOCCTSourceLineCurveVerified:true,
@@ -30,7 +31,12 @@ const physicalLedger=()=>{
   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared:true,
   directlySameUniqueOriginalOCCTBRepSourceEdgeId:null
  });
- const cad={views:{V:[segment()],H:[segment()],W:[segment()]}};
+ const cad={views:Object.fromEntries(['V','H','W'].map(view=>{
+  const stroke=segment();
+  stroke.from=project(geometry.data.points.A)[view];
+  stroke.to=project(geometry.data.points.B)[view];
+  return [view,[stroke]];
+ }))};
  return {geometry,cad,edgeId};
 };
 test('C1 generic source-bound segment coverage joins real CAD split fragments without inventing a gap',()=>{
@@ -106,8 +112,34 @@ test('C1 exact original XYZ parameter reversal remains valid in all first-angle 
   const lift=q.cad.views[view][0].sourceCandidate3DLifts[0];
   lift.sourceParameterAtProjectedFrom=1;
   lift.sourceParameterAtProjectedTo=0;
-  lift.fromCandidate3D={x:3,y:0,z:0};
+  lift.fromCandidate3D={x:3,y:4,z:5};
   lift.toCandidate3D={x:0,y:0,z:0};
  }
  assert.equal(validateNative(q),true);
+});
+
+test('C1 identical V paper strokes at different Y depths stay distinct unsigned 3D candidates',()=>{
+ const q=physicalLedger(),stroke=q.cad.views.V[0];
+ const rear='M0-Reviewed::C|D';
+ stroke.projectedOriginalEdgeCandidates.push(rear);
+ stroke.sourceCandidate3DLifts.push({
+  ...structuredClone(stroke.sourceCandidate3DLifts[0]),
+  sourceEdgeId:rear,originalVertexIds:['C','D'],
+  fromCandidate3D:{x:0,y:8,z:0},
+  toCandidate3D:{x:3,y:12,z:5}
+ });
+ assert.deepEqual(project(stroke.sourceCandidate3DLifts[0].fromCandidate3D).V,
+  project(stroke.sourceCandidate3DLifts[1].fromCandidate3D).V);
+ assert.equal(validateNative(q),true);
+ stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId=rear;
+ assert.equal(validateNative(q),true);
+ stroke.sourceCandidate3DLifts[1].fromCandidate3D.y=0;
+ assert.throws(()=>validateNative(q),/physical source lift/);
+});
+test('C1 rejects incorrect paper endpoint even with valid original 3D source name and flags',()=>{
+ for(const view of ['V','H','W']){
+  const q=physicalLedger();
+  q.cad.views[view][0].to.u+=0.01;
+  assert.throws(()=>validateNative(q),/physical source lift/);
+ }
 });
