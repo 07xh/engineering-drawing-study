@@ -1,0 +1,49 @@
+name: C1 genuine DXF source to original M3/M5/V5
+
+on:
+  pull_request:
+    paths:
+      - 'tools/c1_textbook_dxf_blind_packets.py'
+      - 'tools/c1_textbook_dwg_evidence.py'
+      - 'workbench/c1-unique-two-view-convex-candidate.cjs'
+      - 'workbench/c1-authenticated-dxf-to-reviewed-v5.cjs'
+      - 'workbench/c1-isolated-dxf-reference-after-solve.cjs'
+      - 'tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs'
+      - '.github/workflows/c1-real-dxf-geometry-e2e.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/c1_textbook_dxf_blind_packets.py'
+      - 'tools/c1_textbook_dwg_evidence.py'
+      - 'workbench/c1-unique-two-view-convex-candidate.cjs'
+      - 'workbench/c1-authenticated-dxf-to-reviewed-v5.cjs'
+      - 'workbench/c1-isolated-dxf-reference-after-solve.cjs'
+      - 'tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs'
+      - '.github/workflows/c1-real-dxf-geometry-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  actual-cad-original-handle-to-one-v5:
+    name: actual-cad-original-handle-to-one-v5
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned mature CAD entity reader and existing solver dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'ezdxf==1.4.4'
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund
+      - name: Parse actual DXF CAD entities then solve independently, prove source-answer isolation
+        run: |
+          node --test tests/workbench/c1-reviewed-collapsed-paper-vertex-correspondences.test.cjs tests/workbench/c1-dxf-reviewed-many-to-one-python-bridge.test.cjs
+          node --test tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs

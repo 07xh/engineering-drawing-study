@@ -40,7 +40,9 @@ function validateGivenPacket(packet){
   'sourceImageRecognitionVerified','referenceWasNotExportedAsSolverInput',
   'sourceIsNotYetConfirmedForProduction','textbookBlindSolveAccepted'
  ];
- if(Object.keys(packet).sort().join('|')!==expected.sort().join('|')||
+ if(Object.keys(packet).sort().join('|')!==
+      [...expected,...(packet.reviewedCorrespondences===undefined?[]:
+       ['reviewedCorrespondences'])].sort().join('|')||
     packet.humanSelectedFullExtremeVertexSet!==true)
   throw new RangeError('unverified or possibly answer-bearing DXF source packet fields');
  const views=packet.views,handles=packet.givenOriginalHandleEndpoints;
@@ -73,6 +75,29 @@ function validateGivenPacket(packet){
    known.add(unique);
   }
  }
+ if(packet.reviewedCorrespondences!==undefined){
+  const links=packet.reviewedCorrespondences,
+   [first,second]=pair.split(''),countA=views[first].length,
+   countB=views[second].length;
+  if(!Array.isArray(links)||links.length<4||links.length>32)
+   throw new RangeError('bounded explicitly reviewed 3D-to-2D source index pairs required');
+  const visitedA=new Set(),visitedB=new Set(),keys=new Set();
+  for(const row of links){
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+      Object.keys(row).sort().join(',')!=='firstIndex,secondIndex'||
+      !Number.isSafeInteger(row.firstIndex)||
+      !Number.isSafeInteger(row.secondIndex)||
+      row.firstIndex<0||row.firstIndex>=countA||
+      row.secondIndex<0||row.secondIndex>=countB)
+    throw new RangeError('reviewed source correspondence must refer to actual two-view point indices');
+   const id=row.firstIndex+'|'+row.secondIndex;
+   if(keys.has(id))
+    throw new RangeError('duplicate reviewed source 3D corner pair');
+   keys.add(id);visitedA.add(row.firstIndex);visitedB.add(row.secondIndex);
+  }
+  if(visitedA.size!==countA||visitedB.size!==countB)
+   throw new RangeError('all actual original 2D CAD source vertices require reviewed correspondence');
+ }
  return true;
 }
 async function reconstructC1FromDxfGiven({givenPacket,revision=1,
@@ -80,11 +105,17 @@ async function reconstructC1FromDxfGiven({givenPacket,revision=1,
  validateGivenPacket(givenPacket);
  const inferred=await inferC1UniqueConvexGeometryCandidate({
   views:givenPacket.views,revision,geometryId,
-  assumedScope:givenPacket.assumedScope
+  assumedScope:givenPacket.assumedScope,
+  reviewedCorrespondences:givenPacket.reviewedCorrespondences??null
  });
- if(inferred.inferredOriginal3DPointCount!==
-     givenPacket.views[Object.keys(givenPacket.views)[0]].length||
-    inferred.source2DVerticesMatchedWithoutManualIds!==true||
+ const reviewedPairs=givenPacket.reviewedCorrespondences;
+ const expected3DCount=reviewedPairs?.length??
+  givenPacket.views[Object.keys(givenPacket.views)[0]].length;
+ if(inferred.inferredOriginal3DPointCount!==expected3DCount||
+    inferred.source2DVerticesMatchedWithoutManualIds!==
+      (reviewedPairs===undefined)||
+    inferred.explicitlyReviewedManyToOnePaperProjectionPairs!==
+      (reviewedPairs!==undefined)||
     inferred.independentlyValidatedByCurrentM0!==true||
     inferred.signedV5ActionCount!==0)
   throw new RangeError('current unlabeled M3/QuickHull M0 reconstruction incomplete');

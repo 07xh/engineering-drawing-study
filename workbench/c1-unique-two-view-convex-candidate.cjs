@@ -135,7 +135,10 @@ function normalize(points,label){
 }
 async function inferC1UniqueConvexGeometryCandidate({
  views,geometryId='C1AutoConvexCandidate',revision=1,
- assumedScope='all-extreme-vertices-of-one-closed-convex-opaque-solid'
+ assumedScope='all-extreme-vertices-of-one-closed-convex-opaque-solid',
+ // Explicit original two-view 2D source INDEX pairs when multiple physical
+ // 3D vertices collapse onto the SAME 2D point. Never guess these pairs.
+ reviewedCorrespondences=null
 }={}){
  if(!views||typeof views!=='object'||Array.isArray(views)||
     !Number.isSafeInteger(revision)||revision<1||
@@ -147,16 +150,45 @@ async function inferC1UniqueConvexGeometryCandidate({
   throw new TypeError('exactly two first-angle views required');
  const first=pair[0],second=pair[1],
   a=normalize(views[first],first),b=normalize(views[second],second);
- if(a.length!==b.length)
+ const manual=reviewedCorrespondences!==null;
+ if(!manual&&a.length!==b.length)
   throw new RangeError('different source vertex counts imply incomplete/ambiguous projected detection');
  const axis=mappings[pair];
- const matched=[],seen=new Set();
- for(let i=0;i<a.length;i++){
-  const candidates=b.map((p,j)=>Math.abs(a[i][axis[first]]-
-   p[axis[second]])<=1e-8?j:-1).filter(j=>j>=0);
-  if(candidates.length!==1||seen.has(candidates[0]))
-   throw new RangeError('shared first-angle axis gives ambiguous original 3D correspondence');
-  const j=candidates[0];seen.add(j);
+ const matched=[],seenA=new Set(),seenB=new Set(),seenPairs=new Set();
+ let pairs;
+ if(manual){
+  if(!Array.isArray(reviewedCorrespondences)||
+     reviewedCorrespondences.length<4||
+     reviewedCorrespondences.length>32)
+   throw new TypeError('4..32 explicitly reviewed original source vertex pairs required');
+  pairs=reviewedCorrespondences.map((row,n)=>{
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+      Object.keys(row).sort().join(',')!=='firstIndex,secondIndex'||
+      !Number.isSafeInteger(row.firstIndex)||!Number.isSafeInteger(row.secondIndex)||
+      row.firstIndex<0||row.firstIndex>=a.length||
+      row.secondIndex<0||row.secondIndex>=b.length)
+    throw new RangeError('reviewed pair must refer to actual original 2D source indices');
+   const key=row.firstIndex+'|'+row.secondIndex;
+   if(seenPairs.has(key))
+    throw new RangeError('repeated reviewed 3D source pair cannot invent another corner');
+   seenPairs.add(key);
+   return [row.firstIndex,row.secondIndex];
+  });
+ }else{
+  pairs=a.map((v,i)=>{
+   const matches=b.map((p,j)=>Math.abs(v[axis[first]]-
+    p[axis[second]])<=1e-8?j:-1).filter(j=>j>=0);
+   if(matches.length!==1||seenB.has(matches[0]))
+    throw new RangeError('shared first-angle axis gives ambiguous original 3D correspondence');
+   seenB.add(matches[0]);
+   return [i,matches[0]];
+  });
+  seenB.clear();
+ }
+ for(const [i,j] of pairs){
+  if(Math.abs(a[i][axis[first]]-b[j][axis[second]])>1e-8)
+   throw new RangeError('reviewed correspondence contradicts existing shared first-angle axis');
+  seenA.add(i);seenB.add(j);
   const knownViews={
    [first]:[a[i].u,a[i].v],
    [second]:[b[j].u,b[j].v]
@@ -165,11 +197,15 @@ async function inferC1UniqueConvexGeometryCandidate({
   if(solution.status!=='unique'||solution.globallyUnique!==true||
      solution.maxResidual>1e-8||!solution.point)
    throw new RangeError('existing M3 point solver cannot uniquely reconstruct this 3D source');
-  matched.push({id:'P'+String(i+1).padStart(3,'0'),
+  if(matched.some(r=>Math.hypot(
+    r.xyz.x-solution.point.x,r.xyz.y-solution.point.y,
+    r.xyz.z-solution.point.z)<=1e-8))
+   throw new RangeError('repeated 3D extreme corner in independently reviewed projection pairs');
+  matched.push({id:'P'+String(matched.length+1).padStart(3,'0'),
    knownViews,xyz:{...solution.point},sourceIndices:{[first]:i,[second]:j}});
  }
- if(seen.size!==b.length)
-  throw new RangeError('orphan second-view vertex requires further identification');
+ if(seenA.size!==a.length||seenB.size!==b.length)
+  throw new RangeError('unassigned original paper vertex requires review, not a guessed 3D corner');
  // Reuse pinned mature open-source QuickHull; do not add a second geometry
  // solver and never mistake a render triangle diagonal for physical crease.
  const faces=[],used=new Set(),edges=[],seenEdges=new Set();
@@ -233,10 +269,15 @@ async function inferC1UniqueConvexGeometryCandidate({
  return frozen({
   schema:'draftai-c1-unlabelled-two-view-unique-convex-candidate/1',
   revision,missingView,
-  status:'automatic-unique-convex-candidate-requires-source-assumption-review',
+  status:manual?
+   'manually-paired-convex-candidate-requires-source-topology-review':
+   'automatic-unique-convex-candidate-requires-source-assumption-review',
   knownViewPair:[first,second],
-  sourceCorrespondenceUniqueWithinAssumption:true,
-  source2DVerticesMatchedWithoutManualIds:true,
+  sourceCorrespondenceUniqueWithinAssumption:!manual,
+  source2DVerticesMatchedWithoutManualIds:!manual,
+  explicitlyReviewedManyToOnePaperProjectionPairs:manual,
+  originalDistinctViewVertexCounts:{[first]:a.length,[second]:b.length},
+  reviewedOriginal3DPairCount:manual?pairs.length:0,
   candidateClosedConvexTopologyInferredByPinnedThreeQuickHull:matched.length>4,
   candidateTetrahedronTopologyDeductedFromFourExtremes:matched.length===4,
   independentlyValidatedByCurrentM0:true,
@@ -245,7 +286,8 @@ async function inferC1UniqueConvexGeometryCandidate({
   candidateGeometry:geometry,
   // Existing production C1 MUST still require user confirmation.
   reviewedSolidInputCandidate:{geometryId,revision,unit:'mm',
-   confirmedBy:'unconfirmed-automatic-reconstruction',
+   confirmedBy:manual?'unconfirmed-reviewed-correspondences':
+    'unconfirmed-automatic-reconstruction',
    topologyConfirmed:false,
    vertices:matched.map(({id,knownViews})=>({id,knownViews})),
    edges:edges.map(e=>[...e]),faces:faces.map(f=>[...f])},
