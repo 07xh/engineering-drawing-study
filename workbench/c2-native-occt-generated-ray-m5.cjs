@@ -10,6 +10,7 @@
  * producer on the same original source. Accordingly this API never
  * grants official drawing styles or V5 authorization.
  */
+const crypto=require('node:crypto');
 const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
@@ -55,7 +56,20 @@ function originalBoxGeometry(part){
   data:{points,edges,faces}};
 }
 function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
- const parts=manifest?.components,revision=manifest?.revision;
+ const parts=manifest?.components,revision=manifest?.revision,
+  operation=manifest?.operation??'union';
+ if(!['union','cut'].includes(operation))
+  throw new TypeError('original native C2 boolean mode must be union or Cut');
+ if(operation==='cut'){
+  const [stock,cutter]=parts||[];
+  if(!stock||!cutter)throw new TypeError('current stock and cutter required');
+  const axes=[0,1,2].filter(i=>cutter.min[i]<stock.min[i]-1e-7&&
+   cutter.max[i]>stock.max[i]+1e-7);
+  if(axes.length!==1||[0,1,2].some(i=>
+    i!==axes[0]&&!(stock.min[i]+1e-7<cutter.min[i]&&
+      cutter.max[i]<stock.max[i]-1e-7)))
+   throw new RangeError('Cut needs one through-axis and inset original rectangular stock wall');
+ }
  if(!Number.isSafeInteger(revision)||revision<1||
     !Array.isArray(parts)||parts.length!==2||
     parts[0]?.id===parts[1]?.id)
@@ -76,6 +90,26 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
      ['min','max'].some(key=>v[key].some((num,j)=>
        !Number.isFinite(num)||!Object.is(num,parts[i][key][j])))))
   throw new RangeError('OCCT source box bounds differ from current independent M0 geometry');
+ if(operation==='cut'){
+  if(nativeReport.actualNativeBooleanOperation!=='cut'||
+     nativeReport.originalSolidDifferenceReviewedAsThroughRectangularBore!==true)
+   throw new RangeError('native same-run OCCT subtraction evidence missing');
+  const digest=crypto.createHash('sha256');
+  digest.update('DraftAI-C2-actual-TopoDS-source-v1\\0');
+  digest.update(String(revision)+'\\0');
+  digest.update('cut\\0');
+  for(const part of parts){
+   digest.update(part.id+'\\0');
+   for(const value of [...part.min,...part.max]){
+    const bytes=Buffer.allocUnsafe(8);bytes.writeDoubleBE(value,0);
+    digest.update(bytes);
+   }
+  }
+  if(digest.digest('hex')!==nativeReport.canonicalOriginalComponentGeometrySHA256)
+   throw new RangeError('original through-hole operation or all source 3D coordinates changed');
+ }else if(nativeReport.actualNativeBooleanOperation!==undefined&&
+          nativeReport.actualNativeBooleanOperation!=='union')
+  throw new RangeError('native report Cut cannot be consumed as opaque union');
  const geometries=parts.map(originalBoxGeometry);
  const solids=geometries.map(g=>{
   const proof=verifiedConvexMeshHalfspaces(g);
@@ -229,6 +263,16 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
       'uncertain-generated-edge-dihedral'});
     continue;
    }
+   if(operation==='cut'){
+    counts.unresolvedDepth++;
+    rows.push({...base,
+     status:'unresolved-subtracted-void-continuous-ray-depth',
+     fullNativeTopoDSResultEdgeContinuousRayProof:false,
+     allComponentClearIds:[],continuousUnionStrictOcclusionVerified:false,
+     allOriginalConvexComponentIds:solids.map(s=>s.id)
+    });
+    continue;
+   }
    const ray=FIRST_ANGLE_OBSERVER_RAYS[view];
    const clearIds=[],boxOpenRays=[];
    for(const [i,solid] of solids.entries()){
@@ -283,7 +327,7 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     rows.length!==seen.size*VIEWS.length)
   throw new RangeError('incomplete native generated edge V/H/W audit accounting');
  const globalPaperEvents=auditC2GeneratedResultProjectedM4M5({
-  nativeReport,solids,revision,boxes:parts
+  nativeReport,solids,revision,boxes:parts,operation
  });
  if(globalPaperEvents.sourceResultEdgeCount!==seen.size||
     globalPaperEvents.VHWSourceRows!==rows.length)
@@ -291,15 +335,17 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
  return freeze({
   schema:'draftai-c2-occt-generated-edge-m5-continuous-rays/1',
   sourceRevision:revision,componentIds:solids.map(s=>s.id),
+  actualNativeBooleanOperation:operation,
   generatedNativeResultEdgeCount:seen.size,
   counts,rows,globalPaperEvents,
   originalNativeSourceM4FullPaperGraphRecomputed:true,
-  generatedEdgeContinuousM5SubspansRecomputed:true,
+  generatedEdgeContinuousM5SubspansRecomputed:operation==='union',
+  strictSubtractiveBooleanContinuousM5VisibilityProven:false,
   realOCCTGeneratedEdgeHistoryWasRecomputedByThisFunction:false,
   currentNativeReported3DAndM0SourceCrossChecked:true,
   allNativeResultEdgeEndpointIsSameJunctionsReconciled:true,
   authenticatedNativeResultVertexCount:vertexByOrdinal.size,
-  allFirstAngleWholeOriginalGeneratedEdgeRaysAudited:true,
+  allFirstAngleWholeOriginalGeneratedEdgeRaysAudited:operation==='union',
   completeBooleanBoundaryAndPaperJunctionsCertified:false,
   officialEngineeringLineStylesCertified:false,
   ConstructionIntentAuthorized:false,signedV5ActionCount:0
