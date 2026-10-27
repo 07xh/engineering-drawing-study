@@ -11,7 +11,7 @@ on:
       - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
       - '.github/workflows/c2-actual-through-hole-source-e2e.yml'
   push:
-    branches: [main]
+    branches: [main, 'feat/c2-*']
     paths:
       - 'tools/c2_occt_boolean_history_reference.py'
       - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
