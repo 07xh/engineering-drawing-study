@@ -387,8 +387,19 @@ test('C1 V/H/W native source parameter coverage joins actual 3D intervals withou
   const {geometry,cad,edgeId}=physicalLedger();
   const first=structuredClone(cad.views[view][0]);
   const second=structuredClone(first);
-  first.sourceCandidate3DLifts[0].originalSourceParameterRange=[0,0.5];
-  second.sourceCandidate3DLifts[0].originalSourceParameterRange=[0.5,1];
+  const setNativeSpan=(stroke,from,to)=>{
+   const lift=stroke.sourceCandidate3DLifts[0];
+   const point=t=>({x:3*t,y:4*t,z:5*t});
+   lift.sourceParameterAtProjectedFrom=from;
+   lift.sourceParameterAtProjectedTo=to;
+   lift.originalSourceParameterRange=[Math.min(from,to),Math.max(from,to)];
+   lift.fromCandidate3D=point(from);
+   lift.toCandidate3D=point(to);
+   stroke.from=project(lift.fromCandidate3D)[view];
+   stroke.to=project(lift.toCandidate3D)[view];
+  };
+  setNativeSpan(first,0,0.5);
+  setNativeSpan(second,0.5,1);
   const input={geometry,view,sourceEdgeId:edgeId,
    real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
    strokes:[first,second]};
@@ -400,8 +411,15 @@ test('C1 V/H/W native source parameter coverage joins actual 3D intervals withou
   const reversed=exactSourceCoverage({...input,
    real3DFrom:geometry.data.points.B,real3DTo:geometry.data.points.A});
   assert.equal(reversed.entireOriginalParameterIntervalCovered,true);
-  second.sourceCandidate3DLifts[0].originalSourceParameterRange=
-   [nextAfterHalf(),1];
+  const forged=structuredClone(first);
+  forged.sourceCandidate3DLifts[0].originalSourceParameterRange=[0,1];
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+   /unverified original native BRep source lift/,
+   'a forged full source range cannot conceal an actual half-edge lift');
+  setNativeSpan(first,0.5,0);
+  assert.equal(exactSourceCoverage(input).entireOriginalParameterIntervalCovered,true,
+   'reversed original source lift preserves the exact half interval');
+  setNativeSpan(second,nextAfterHalf(),1);
   const gap=exactSourceCoverage(input);
   assert.equal(gap.entireOriginalParameterIntervalCovered,false);
   assert.deepEqual(gap.positiveLengthUncoveredIntervals,
