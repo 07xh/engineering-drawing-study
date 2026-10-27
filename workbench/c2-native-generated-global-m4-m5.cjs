@@ -22,6 +22,8 @@ const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
+const {certifyAxisBoxSourceOpenRay}=
+ require('../core/numeric/axis-box-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const finite=Number.isFinite;
@@ -35,7 +37,7 @@ const near=(p,q)=>p&&q&&['x','y','z'].every(
 const key=(view,ordinal)=>view+'@'+ordinal;
 const spanOverlap=(a,b)=>a[0]<b[1]&&b[0]<a[1];
 function auditC2GeneratedResultProjectedM4M5({
- nativeReport,solids,revision
+ nativeReport,solids,revision,boxes=[]
 }={}){
  const edges=nativeReport?.outputEdges;
  if(!Number.isSafeInteger(revision)||revision<1||
@@ -43,7 +45,10 @@ function auditC2GeneratedResultProjectedM4M5({
     !Array.isArray(edges)||edges.length<2||edges.length>40||
     !Array.isArray(solids)||solids.length<2||solids.length>8||
     !solids.every(x=>typeof x.id==='string'&&
-      Array.isArray(x.halfspaces)&&x.halfspaces.length>=4))
+      Array.isArray(x.halfspaces)&&x.halfspaces.length>=4)||
+    !Array.isArray(boxes)||
+    (boxes.length!==0&&boxes.length!==solids.length)||
+    boxes.some((x,i)=>x?.id!==solids[i].id||x.type!=='box')
   throw new TypeError('bounded native generated BRep edges and actual M0 scene required');
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
@@ -183,13 +188,27 @@ function auditC2GeneratedResultProjectedM4M5({
    else{
     const candidate={id:'NativeEdge'+raw.id+'Part'+k,from,to},
      ray=FIRST_ANGLE_OBSERVER_RAYS[raw.view];
-    clear=solids.every(solid=>
+    // The existing closed-convex segment-clearance kernel is still the
+    // primary general solver. For current independently M0-verified
+    // original axis-aligned box components, ALSO apply the exact affine
+    // open-source support theorem. The original native TopoDS endpoints
+    // can be on exterior box corners, so demanding a uniform positive
+    // depth margin including both endpoints is mathematically impossible
+    // even where every open source point is strictly hidden.
+    const originalBoxRays=boxes.map(box=>
+     certifyAxisBoxSourceOpenRay({
+      source:candidate,box,view:raw.view
+     }));
+    clear=solids.every((solid,i)=>
      certifyConvexSegmentClearance({
       source:candidate,solid,observerDirection:ray
-     }).status==='certified-clear');
+     }).status==='certified-clear'||
+     originalBoxRays[i]?.status==='certified-clear');
     hidden=evaluateFullSourceSegmentOcclusion({
      source:candidate,solids,view:raw.view
-    }).entireSourceSegmentOccluded===true;
+    }).entireSourceSegmentOccluded===true||
+     originalBoxRays.some(e=>
+      e.status==='certified-strictly-hidden');
     if(clear&&hidden)
      throw new RangeError('contradictory analytic clear/occluded union interval');
     if(clear)status='analytic-whole-open-subspan-front-ray-clear';
@@ -204,6 +223,7 @@ function auditC2GeneratedResultProjectedM4M5({
    subspans.push({...base,status,
     continuousAllOpaqueComponentRayClearVerified:clear,
     continuousUnionStrictInteriorOcclusionVerified:hidden,
+    exactBoxOpenSourceRayProofApplied:boxes.length===solids.length,
     projectedAliasOrUncertainEventBlocked:
      raw.unresolvedWholeEdge||alias,
     nativeActualTopologySourceNotIndependentlyAttestedHere:true});
