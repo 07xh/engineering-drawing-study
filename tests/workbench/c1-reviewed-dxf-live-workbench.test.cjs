@@ -1,20 +1,21 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const {parseHTML}=require('linkedom');
 const html=fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8');
 const js=fs.readFileSync('labs/c1-reviewed-dxf-live-entry.cjs','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 test('actual local-only DXF given review page is wired to official site with one existing V5 consumer',()=>{
  new vm.Script(js,{filename:'c1-reviewed-dxf-live-entry.cjs'});
- const {document}=parseHTML(html);
+ // The math/workbench shard intentionally runs without node_modules:
+ // never introduce a jsdom/linkedom requirement for a proof-gate test.
+ const ids=[...html.matchAll(/\\bid="([^"]+)"/g)].map(x=>x[1]);
  for(const id of ['givenFile','reviewCheck','compile','sheetPreview',
   'animation','status','candidate','proof','v5Status','play','pause','prev','next'])
-  assert.equal(document.querySelectorAll('#'+id).length,1,id);
- assert.equal(document.querySelectorAll('input[type=file]').length,1,
+  assert.equal(ids.filter(x=>x===id).length,1,id);
+ assert.equal((html.match(/type="file"/g)||[]).length,1,
   'browser accepts ONLY a local GIVEN JSON, never a reference answer');
- assert.equal(document.getElementById('compile').hasAttribute('disabled'),true);
- assert.equal(document.getElementById('reviewCheck').hasAttribute('disabled'),true);
+ assert.match(html,/<input id="reviewCheck"[^>]*disabled/);
+ assert.match(html,/<button id="compile"[^>]*disabled/);
  assert.match(html,/c1-reviewed-dxf-live-bundle\.js/);
  assert.match(build,/labs\/c1-reviewed-dxf-live\.html/);
  assert.match(build,/labs\/c1-reviewed-dxf-live-entry\.cjs/);
