@@ -24,8 +24,7 @@
       "status": "scoped-math",
       "proofScope": "exact affine real 3D original straight-edge OPEN interval vs current source-bound axis-aligned convex component; full outward observer ray or pointwise strict-interior inward ray without a uniform positive endpoint margin",
       "regressionTests": [
-        "tests/math/m0-axis-box-source-open-ray.test.cjs",
-        "tests/workbench/c2-native-axis-box-open-ray.test.cjs"
+        "tests/math/m0-axis-box-source-open-ray.test.cjs"
       ],
       "remainingGate": "caller must independently authenticate original box geometry and native TopoDS source edge history, all M4 paper event subdivisions, other scene occluders, every 3D junction, M5 frontmost source depth, full GB line style and unique V5; source endpoints and arbitrary non-box solids remain outside scope"
     },
@@ -275,8 +274,7 @@
       "status": "scoped-math",
       "proofScope": "two original finite straight 3D source subsegments exactly collinear under one first-angle V/H/W projection; strict affine signed depth ordering verified at BOTH corresponding projected endpoints",
       "regressionTests": [
-        "tests/math/m0-original-coproject-affine-depth.test.cjs",
-        "tests/workbench/c2-native-coproject-affine-depth.test.cjs"
+        "tests/math/m0-original-coproject-affine-depth.test.cjs"
       ],
       "remainingGate": "complete M4 original source parameter tiling, native TopoDS 3D endpoint source authenticity, all competing projected edges, M5 continuous opaque occluder proof, GB visible/hidden styles and single V5 remain independent obligations"
     },
