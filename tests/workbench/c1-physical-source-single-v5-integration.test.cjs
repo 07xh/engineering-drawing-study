@@ -49,6 +49,13 @@ test('real skewed prism C1 builds one V5 stream from M3 and source rays',()=>{
  }
  assert.equal(result.wholeSolidV5Ready,false);
  assert.equal(result.realTextbookOriginalAccepted,false);
+ assert.equal(result.m0M3M5PhysicalSourceAcceptance.status,
+  'bounded-original-source-math-acceptance');
+ assert.equal(result.m0M3M5PhysicalSourceAcceptance.m3BoundSourceEdgeViews,36);
+ assert.equal(result.m0M3M5PhysicalSourceAcceptance.physicalM5CandidateCount,
+  result.physicalEdgeProof.signedCandidates.length);
+ assert.equal(result.m0M3M5PhysicalSourceAcceptance.mutuallyContradictoryIntervals,0);
+ assert.equal(result.m0M3M5PhysicalSourceAcceptance.v5VerifiedExportReady,false);
 });
 
 test('real C1 V/H/W source partitions show only unsigned parameter remainders',()=>{
@@ -101,3 +108,28 @@ test('canonical missing-view official V5 inventory includes both hull and M5 phy
  assert(result.thirdViewDrawing.unresolvedPhysicalEdges.every(x=>
   x.standardLineStyle==='undetermined'&&x.v5ActionId===null));
 });
+
+for(const pair of [['V','W'],['H','W']]){
+ test('C1 real skewed M0/M3/M4/M5 and ONE V5 for '+pair.join('')+' known views',()=>{
+  const known=input();
+  for(const row of known.vertices){
+   const x=row.knownViews.V[0],y=row.knownViews.H[1],z=row.knownViews.V[1];
+   const all=project({x,y,z});
+   row.knownViews=Object.fromEntries(pair.map(view=>
+    [view,[all[view].u,all[view].v]]));
+  }
+  known.revision=4;
+  const result=compileReviewedSolidVertexV5({
+   input:known,sheetTransform:{origin:{x:300,y:250},scale:5}});
+  assert.equal(result.sceneResult.missingView,
+   ['V','H','W'].find(view=>!pair.includes(view)));
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.status,
+   'bounded-original-source-math-acceptance');
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.originalEdgeViewCount,36);
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.mutuallyContradictoryIntervals,0);
+  assert.equal(result.timeline.segments.length,
+   result.steps.reduce((count,step)=>count+step.actions.length,0));
+  assert.equal(result.singleOriginalV5Player,true);
+  assert.equal(result.wholeSolidV5Ready,false);
+ });
+}
