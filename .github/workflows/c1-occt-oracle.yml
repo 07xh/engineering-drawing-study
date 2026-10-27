@@ -8,6 +8,8 @@ on:
       - 'tests/workbench/c1-occt-offline-export.test.cjs'
       - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
       - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
+      - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
+      - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - '.github/workflows/c1-occt-oracle.yml'
   push:
     branches: [main]
@@ -17,6 +19,8 @@ on:
       - 'tests/workbench/c1-occt-offline-export.test.cjs'
       - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
       - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
+      - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
+      - 'tests/workbench/c1-native-hidden-global-m5-stroke-gate.test.cjs'
       - '.github/workflows/c1-occt-oracle.yml'
   workflow_dispatch:
 
