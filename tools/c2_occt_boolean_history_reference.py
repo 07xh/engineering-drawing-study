@@ -251,6 +251,10 @@ def occt_reference(data: dict) -> dict:
         "sourceRevision": data.get("revision"),
         "canonicalOriginalComponentGeometrySHA256": fingerprint,
         "sourceFingerprintScope": "ordered-ID-box-bounds-IEEE754-binary64-mm-v1",
+        "actualNativeSourceBoxBoundsMm": [
+            {"id": p["id"], "min": list(p["min"]), "max": list(p["max"])}
+            for p in components
+        ],
         "originalSourceIds": [p["id"] for p in components],
         "unit": "mm", "status": "valid-occt-boolean-history-reference-only",
         "resultFaceCount": len(unique(result_shape, TopAbs_FACE)),
