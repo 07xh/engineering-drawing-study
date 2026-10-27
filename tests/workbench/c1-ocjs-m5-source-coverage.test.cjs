@@ -16,6 +16,8 @@ const physicalLedger=()=>{
   sourceEdgeId:edgeId,originalVertexIds:['A','B'],
   sourceParameterAtProjectedFrom:0,sourceParameterAtProjectedTo:1,
   originalSourceParameterRange:[0,1],
+  fromCandidate3D:{x:0,y:0,z:0},
+  toCandidate3D:{x:3,y:0,z:0},
   originalXYZReprojectsToHLR:true,
   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
   originalOCCTSourceLineCurveVerified:true,
@@ -83,6 +85,8 @@ test('C1 refuses forged HLR source parameters and false BRep IsSame identities',
   q=>q.cad.views.V[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedFrom=NaN,
   q=>q.cad.views.H[0].sourceCandidate3DLifts[0].originalSourceParameterRange=[0,0.9999999999999999],
   q=>q.cad.views.W[0].sourceCandidate3DLifts[0].sourceParameterAtProjectedTo=0,
+  q=>q.cad.views.V[0].sourceCandidate3DLifts[0].fromCandidate3D.y=Number.MIN_VALUE,
+  q=>q.cad.views.H[0].sourceCandidate3DLifts[0].toCandidate3D.x=3-Number.EPSILON,
   q=>q.cad.views.V[0].sourceCandidate3DLifts[0].v5Authorized=true,
   q=>q.cad.views.H[0].sourceCandidate3DLifts[0].actualOriginalOCCTBRepEdge3DEndpointsVerified=false,
   q=>q.cad.views.W[0].directlySameUniqueOriginalOCCTBRepSourceEdgeId='M0-Reviewed::A|C',
@@ -95,4 +99,15 @@ test('C1 refuses forged HLR source parameters and false BRep IsSame identities',
 test('C1 refuses duplicate original physical edges before HLR source matching',()=>{
  const q=physicalLedger();q.geometry.data.edges.push(['B','A']);
  assert.throws(()=>validateNative(q),/duplicate original M0 source/);
+});
+test('C1 exact original XYZ parameter reversal remains valid in all first-angle views',()=>{
+ const q=physicalLedger();
+ for(const view of ['V','H','W']){
+  const lift=q.cad.views[view][0].sourceCandidate3DLifts[0];
+  lift.sourceParameterAtProjectedFrom=1;
+  lift.sourceParameterAtProjectedTo=0;
+  lift.fromCandidate3D={x:3,y:0,z:0};
+  lift.toCandidate3D={x:0,y:0,z:0};
+ }
+ assert.equal(validateNative(q),true);
 });
