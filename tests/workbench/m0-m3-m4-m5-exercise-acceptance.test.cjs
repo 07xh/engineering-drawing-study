@@ -130,7 +130,7 @@ test('falsified M0 source evidence and 2D projection are rejected, never silentl
   geometry,scene:falseScene,sceneDepthEvidence,revision
  }),/M3 view/);
  const falseDepth=structuredClone(sceneDepthEvidence);
- falseDepth.m0SceneContinuousPartitions.views.V.edges[0].status='collapsed-projection';
+ falseDepth.m0SceneContinuousPartitions.views.V.edges[0].status='forged-positive-clearance';
  assert.throws(()=>auditM0M3M4M5OriginalSources({
   geometry,scene,sceneDepthEvidence:falseDepth,revision
  }),/stale, forged or altered/);
