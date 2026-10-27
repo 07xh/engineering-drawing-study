@@ -226,6 +226,37 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  }
  if(intents.length>300||steps.length>300)
   throw new RangeError('excessive unified C1 Intent DAG for original V5');
+ // One consumer-facing third-view drawing payload, sourced from the SAME
+ // M3 scene and existing M5/V5 certification. Uncertified physical edges
+ // remain explicit candidates, never official drawable V5 commands.
+ const missingView=sceneResult.missingView;
+ const signedThirdView=certifiedVisibleContourLineBindings.filter(
+  line=>line.view===missingView);
+ const thirdViewDrawing=frozen({
+  view:missingView,revision:input.revision,
+  geometryId:sceneResult.geometry.id,unit:'mm',
+  points:Object.fromEntries(Object.entries(
+   sceneResult.thirdView.representation.points).map(([id,p])=>
+    [id,{u:p.u,v:p.v}])),
+  certifiedVisibleContour:signedThirdView.map(line=>({
+   sourceEdgeId:line.sourceEdgeId,
+   from:{...line.fromModelMm},to:{...line.toModelMm},
+   standardLineStyle:line.standardLineStyle,v5ActionId:line.actionId
+  })),
+  unresolvedPhysicalEdges:scopedEdgePreviews.filter(line=>
+   line.view===missingView&&line.renderedAsPhysicalSourceCandidate&&
+   !signedThirdView.some(s=>s.sourceEdgeId===line.sourceEdgeId&&
+    Math.hypot(s.fromModelMm.u-line.fromModelMm.u,
+     s.fromModelMm.v-line.fromModelMm.v)<1e-8&&
+    Math.hypot(s.toModelMm.u-line.toModelMm.u,
+     s.toModelMm.v-line.toModelMm.v)<1e-8)).map(line=>({
+    sourceEdgeId:line.sourceEdgeId,
+    from:{...line.fromModelMm},to:{...line.toModelMm},
+    standardLineStyle:'undetermined',v5ActionId:null
+   })),
+  completeDrawingCertified:false,
+  uncertifiedEdgesAreNotV5Actions:true
+ });
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
   revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
@@ -234,7 +265,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  return frozen({
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
-  sceneResult,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
+  sceneResult,thirdViewDrawing,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
   globalVisibleContourProof,scopedEdgePreviews,
   certifiedVisibleContourLineActionIds,
