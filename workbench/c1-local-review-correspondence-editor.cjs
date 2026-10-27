@@ -9,7 +9,7 @@
  */
 const {validateGivenPacket}=
  require('./c1-authenticated-dxf-to-reviewed-v5.cjs');
-const indexLine=/^\s*(\d{1,2})\s*[,，\s]\s*(\d{1,2})\s*$/;
+const indexLine=/^\s*(\d{1,2})(?:\s*[,，]\s*|\s+)(\d{1,2})\s*$/;
 function listGivenSourceProjectionIndices(packet){
  validateGivenPacket(packet);
  const views=Object.keys(packet.views).sort();
