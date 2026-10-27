@@ -30,8 +30,13 @@ test('untrusted or stale OCCT-generated edge inventories never self-certify C2 l
   nativeReport:{}
  }),/distinct current original/);
 });
+const nativeRequired=process.env.DRAFTAI_REQUIRE_NATIVE_OCCT==='1';
 const hasOcp=spawnSync('python3',['-c','import OCP'],
  {timeout:15000}).status===0;
+test('native OCP CI mode refuses silent skipped truth tests',()=>{
+ if(nativeRequired)assert.equal(hasOcp,true,
+  'DRAFTAI_REQUIRE_NATIVE_OCCT requires actual installed OCC bindings');
+});
 test('actual native OCCT 30 output edges get M0/M5 V/H/W continuous depth',{
  skip:!hasOcp&&'Native OCP/OpenCascade not installed in this CI runtime'
 },()=>{
@@ -47,6 +52,12 @@ test('actual native OCCT 30 output edges get M0/M5 V/H/W continuous depth',{
  assert.equal(audit.rows.length,90);
  assert.equal(audit.counts.physicalGeneratedEdges,22);
  assert.equal(audit.counts.coplanarNativeSubdivisions,8);
+ assert.equal(audit.counts.undeterminedNativeFeatures,0);
+ assert.equal(audit.counts.physicalGeneratedEdges+
+  audit.counts.coplanarNativeSubdivisions,
+  audit.generatedNativeResultEdgeCount);
+ assert(audit.rows.some(x=>x.status==='coplanar-mesh-only-not-an-engineering-line'));
+
  assert(audit.counts.clear>0,
   'real visible full-open-ray generated physical edge evidence required');
  assert(audit.counts.hidden>0,
