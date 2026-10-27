@@ -6,6 +6,8 @@ on:
       - 'tools/cad-oracle/**'
       - 'tests/cad/test_c1_occt_hlr_oracle.py'
       - 'tests/workbench/c1-occt-offline-export.test.cjs'
+      - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
+      - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
       - '.github/workflows/c1-occt-oracle.yml'
   push:
     branches: [main]
@@ -13,6 +15,8 @@ on:
       - 'tools/cad-oracle/**'
       - 'tests/cad/test_c1_occt_hlr_oracle.py'
       - 'tests/workbench/c1-occt-offline-export.test.cjs'
+      - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
+      - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
       - '.github/workflows/c1-occt-oracle.yml'
   workflow_dispatch:
 
