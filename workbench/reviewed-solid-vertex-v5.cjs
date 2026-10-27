@@ -23,7 +23,8 @@ const {CONSTRUCTION_INTENT_VERSION}=
  require('../core/contracts/construction-intent.js');
 const Timeline=require('./teaching-timeline-v5.js');
 const {renderC1ThirdViewSvg}=require('./c1-third-view-svg-preview.cjs');
-const {renderC1ThreeViewSvg}=require('./c1-three-view-svg-sheet.cjs');
+const {renderC1ThreeViewSvg,unresolvedC1PhysicalSourceRemainders}=
+ require('./c1-three-view-svg-sheet.cjs');
 const {auditC1ReviewedConvexPhysicalEdgeStrokes}=
  require('./m5-c1-reviewed-convex-physical-edge-strokes.cjs');
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
@@ -300,9 +301,11 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   line=>line.view===missingView);
  const signedThirdViewFeatures=certifiedPhysicalLineBindings.filter(
   line=>line.view===missingView);
- const sourceLines=scopedEdgePreviews.filter(line=>
-  line.view===missingView&&!line.projectionCollapsedToPoint&&
-  line.renderedAsPhysicalSourceCandidate);
+ const sourceLines=unresolvedC1PhysicalSourceRemainders(
+  scopedEdgePreviews.filter(line=>
+   line.view===missingView&&!line.projectionCollapsedToPoint&&
+   line.renderedAsPhysicalSourceCandidate),
+  certifiedPhysicalLineBindings,missingView);
  const thirdViewDrawing=frozen({
   schema:'draftai-c1-m3-m5-third-view-drawing/1',
   view:missingView,revision:input.revision,
@@ -330,6 +333,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   })),
   unresolvedPhysicalEdges:sourceLines.map(line=>({
    sourceEdgeId:line.sourceEdgeId,
+   originalParameterRange:[...line.originalParameterRange],
    from:{...line.fromModelMm},to:{...line.toModelMm},
    fromSheetPx:toSheet(missingView,line.fromModelMm,sheetTransform),
    toSheetPx:toSheet(missingView,line.toModelMm,sheetTransform),
@@ -338,6 +342,8 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    // unresolved remainder on approximate or endpoint-only overlap.
    sourceMayContainCertifiedVisibleSubspans:signedThirdView.some(s=>
     s.sourceEdgeId===line.sourceEdgeId),
+   sourceMayContainCertifiedPhysicalSubspans:
+    line.certifiedPhysicalSubspanElsewhere,
    // Preserve the actual whole-source continuous ray verdict for the
    // next M5 interval/junction signer. Neither verdict alone grants a
    // standard visible/hidden line or authorizes a V5 action.
@@ -356,6 +362,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   // from an endpoint-only or whole-source ray verdict.
   pendingPhysicalEdgeProofs:sourceLines.map(line=>({
    sourceEdgeId:line.sourceEdgeId,view:missingView,
+   originalParameterRange:[...line.originalParameterRange],
    sourceVertexIds:[...line.sourceVertexIds],
    sourcePhysicalCreaseVerified:line.sourcePhysicalCreaseVerified,
    continuousFrontRayClearVerified:line.continuousFrontRayClearVerified,
@@ -370,9 +377,9 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    ],
    officialV5StrokeAuthorized:false
   })),
-  // Workbench may draw the certified contour as official strokes, while
-  // unresolved physical edges remain an explicitly separate review overlay.
-  // A partially certified source edge is never hidden by its certified span.
+  // The review overlay contains ONLY exact original-parameter remainders
+  // after already-signed physical intervals. A one-ULP source gap remains
+  // unsigned; no second V5 stroke or tolerance-based erasure is introduced.
   drawingLayers:{
    officialV5StrokeActionIds:signedThirdView.map(line=>line.actionId),
    reviewOverlaySourceEdgeIds:sourceLines.map(line=>line.sourceEdgeId),
