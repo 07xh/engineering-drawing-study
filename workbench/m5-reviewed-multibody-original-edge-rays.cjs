@@ -51,7 +51,8 @@ function auditReviewedMultiBodyWholePhysicalEdgeRays({geometry,revision}={}){
  }
  if(totalEdges>80)throw new RangeError('C2 original physical-ray budget 80 exceeded');
  const rows=[],counts={physicalProjected:0,collapsed:0,
-  clear:0,strictHidden:0,uncertain:0,coplanarMeshSubdivision:0};
+  clear:0,strictHidden:0,undetermined:0,
+  ambiguousSourceDihedral:0,coplanarMeshSubdivision:0};
  for(const part of parts){
   const g=part.geometry;
   const creaseById=new Map(part.creases.edges.map(e=>[e.sourceEdgeId,e]));
@@ -79,7 +80,7 @@ function auditReviewedMultiBodyWholePhysicalEdgeRays({geometry,revision}={}){
      continue;
     }
     if(crease.sourceIsPhysicalCreaseWithinSingleSolid!==true){
-     counts.uncertain++;
+     counts.ambiguousSourceDihedral++;
      rows.push({...base,status:'undetermined-physical-crease'});
      continue;
     }
@@ -110,7 +111,7 @@ function auditReviewedMultiBodyWholePhysicalEdgeRays({geometry,revision}={}){
     counts.physicalProjected++;
     if(wholeClear)counts.clear++;
     else if(wholeHidden)counts.strictHidden++;
-    else counts.uncertain++;
+    else counts.undetermined++;
     rows.push({...base,status,
      strictlyContinuousAllComponentFrontRayClearVerified:wholeClear,
      fullyContinuousUnionOpaqueRayOcclusionVerified:wholeHidden,
@@ -130,17 +131,10 @@ function auditReviewedMultiBodyWholePhysicalEdgeRays({geometry,revision}={}){
  }
  if(rows.length!==totalEdges*VIEWS.length||
     counts.physicalProjected!==counts.clear+counts.strictHidden+
-     counts.uncertain-counts.coplanarMeshSubdivision+
-     counts.coplanarMeshSubdivision*0)
-  {
-  // The relation is recomputed over actual physical-source line rows,
-  // excluding degenerate source projection and mesh triangulation.
-  const drawable=rows.filter(x=>x.sourceIsOriginal3DPhysicalCrease===true);
-  if(drawable.length!==counts.physicalProjected||
-     drawable.length!==counts.clear+counts.strictHidden+
-      drawable.filter(x=>x.status==='undetermined-global-component-depth').length)
-   throw new RangeError('multi-body original source-ray accounting mismatch');
- }
+     counts.undetermined||
+    rows.length!==counts.physicalProjected+counts.collapsed+
+      counts.ambiguousSourceDihedral+counts.coplanarMeshSubdivision)
+  throw new RangeError('multi-body original source-ray accounting mismatch');
  return freeze({
   schema:'draftai-m5-multiconvex-original-whole-edge-union-rays/1',
   revision,sourceGeometryIds:geometry.map(g=>g.id),
