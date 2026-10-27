@@ -7,8 +7,8 @@
  * M3 point-projection solver. For an explicitly hypothesized CLOSED CONVEX
  * solid with ALL of its extreme vertices supplied, reuse the pinned Three.js
  * QuickHull port (mature open source) for a triangulated candidate mesh;
- * M0 independently verifies closed topology / support planes / coplanar
- * subdivisions before anything can be shown.
+ * M0 independently verifies closed topology / support planes after exact
+ * coplanar QuickHull triangles are restored to physical polygon faces.
  *
  * NO fake user confirmation. No inference when projections collapse onto
  * duplicate paper points, match graph is ambiguous, hull vertices are
@@ -27,6 +27,95 @@ const mappings=Object.freeze({
  VW:Object.freeze({V:'v',W:'v'}), // common Z
  HW:Object.freeze({H:'v',W:'u'})  // common Y
 });
+// QuickHull triangulates planar polygon faces. A triangle diagonal is NOT
+// an original physical crease: merge adjacent EXACTLY coplanar triangles
+// before constructing Geometry.edges. No distance tolerance may erase a
+// genuine near-coplanar source crease. M0 still independently validates the
+// resulting closed convex manifold and all supporting planes.
+const c1Bits=new DataView(new ArrayBuffer(8));
+function exactCoplanarOriginalVertices(a,b,c,d){
+ const dyadic=x=>{
+  if(!Number.isFinite(x))throw new TypeError('finite M3 source coordinate required');
+  c1Bits.setFloat64(0,x,false);
+  const bits=c1Bits.getBigUint64(0,false),exp=Number((bits>>52n)&2047n),
+   mantissa=bits&((1n<<52n)-1n),sign=bits>>63n?-1n:1n;
+  return {n:sign*(exp?(1n<<52n)|mantissa:mantissa),
+   e:exp?exp-1075:-1074};
+ };
+ const rows=[a,b,c,d].map(p=>['x','y','z'].map(k=>dyadic(p[k]))),
+  minExp=Math.min(...rows.flat().map(q=>q.e)),
+  xyz=rows.map(row=>row.map(q=>q.n<<BigInt(q.e-minExp))),
+  v=[1,2,3].map(i=>xyz[i].map((n,k)=>n-xyz[0][k]));
+ return v[0][0]*(v[1][1]*v[2][2]-v[1][2]*v[2][1])-
+  v[0][1]*(v[1][0]*v[2][2]-v[1][2]*v[2][0])+
+  v[0][2]*(v[1][0]*v[2][1]-v[1][1]*v[2][0])===0n;
+}
+function mergeCoplanarQuickHullTriangles(triangles,points){
+ if(!Array.isArray(triangles)||triangles.length<4||triangles.length>64||
+    !points||typeof points!=='object')
+  throw new TypeError('bounded original QuickHull triangle topology required');
+ const edgeKey=(a,b)=>[a,b].sort().join('|'),byEdge=new Map();
+ for(let i=0;i<triangles.length;i++){
+  const tri=triangles[i];
+  if(!Array.isArray(tri)||tri.length!==3||new Set(tri).size!==3||
+     tri.some(id=>typeof id!=='string'||!points[id]))
+   throw new RangeError('original QuickHull triangle identity invalid');
+  for(let j=0;j<3;j++){
+   const from=tri[j],to=tri[(j+1)%3],key=edgeKey(from,to),
+    entries=byEdge.get(key)||[];
+   entries.push({index:i,from,to});
+   if(entries.length>2)throw new RangeError('nonmanifold QuickHull triangle edge');
+   byEdge.set(key,entries);
+  }
+ }
+ const parent=triangles.map((_,i)=>i);
+ const root=i=>{while(parent[i]!==i)i=parent[i];return i;};
+ for(const entries of byEdge.values()){
+  if(entries.length!==2)throw new RangeError('open QuickHull triangle source');
+  const [left,right]=entries,
+   tri=triangles[left.index],
+   fourth=triangles[right.index].find(id=>!tri.includes(id));
+  if(!fourth)throw new RangeError('duplicate QuickHull triangles');
+  if(exactCoplanarOriginalVertices(...tri.map(id=>points[id]),points[fourth]))
+   parent[root(right.index)]=root(left.index);
+ }
+ const groups=new Map();
+ for(let i=0;i<triangles.length;i++){
+  const k=root(i),group=groups.get(k)||[];
+  group.push(triangles[i]);groups.set(k,group);
+ }
+ const merged=[];
+ for(const group of groups.values()){
+  if(group.length===1){merged.push([...group[0]]);continue;}
+  const edges=new Map();
+  for(const tri of group)for(let j=0;j<3;j++){
+   const from=tri[j],to=tri[(j+1)%3],key=edgeKey(from,to),
+    row=edges.get(key)||[];
+   row.push({from,to});edges.set(key,row);
+  }
+  const boundary=[...edges.values()].filter(rows=>rows.length===1).map(rows=>rows[0]);
+  if(boundary.length<3||boundary.length>64||
+     [...edges.values()].some(rows=>rows.length>2))
+   throw new RangeError('invalid coplanar QuickHull boundary');
+  const next=new Map(),incoming=new Set();
+  for(const {from,to} of boundary){
+   if(next.has(from)||incoming.has(to))
+    throw new RangeError('branched coplanar QuickHull polygon');
+   next.set(from,to);incoming.add(to);
+  }
+  const start=boundary[0].from,ring=[];
+  let at=start;
+  for(let i=0;i<boundary.length;i++){
+   if(!next.has(at)||ring.includes(at))
+    throw new RangeError('open coplanar QuickHull polygon');
+   ring.push(at);at=next.get(at);
+  }
+  if(at!==start||ring.length!==boundary.length)
+   throw new RangeError('disconnected coplanar QuickHull polygon');
+  merged.push(ring);
+ }
+ return merged;
+}
 function normalize(points,label){
  if(!Array.isArray(points)||points.length<4||points.length>16)
   throw new TypeError('4..16 independently detected view vertices required');
@@ -121,6 +210,10 @@ async function inferC1UniqueConvexGeometryCandidate({
    faces.push(ids);
   }
  }
+ if(matched.length>4){
+  const originalXYZ=Object.fromEntries(matched.map(r=>[r.id,r.xyz]));
+  faces.splice(0,faces.length,...mergeCoplanarQuickHullTriangles(faces,originalXYZ));
+ }
  for(const face of faces)for(let i=0;i<face.length;i++){
   const start=face[i],end=face[(i+1)%face.length],
    key=[start,end].sort().join('|');
@@ -162,4 +255,5 @@ async function inferC1UniqueConvexGeometryCandidate({
   signedV5ActionCount:0,realTextbookBlindTestPassed:false
  });
 }
-module.exports={inferC1UniqueConvexGeometryCandidate};
+module.exports={inferC1UniqueConvexGeometryCandidate,
+ mergeCoplanarQuickHullTriangles,exactCoplanarOriginalVertices};
