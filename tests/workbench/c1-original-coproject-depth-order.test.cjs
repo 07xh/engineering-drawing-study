@@ -65,3 +65,33 @@ test('forged stale original parameter ranges fail closed',()=>{
  assert.throws(()=>check(geometry(),'CubeOverlap::nope',[]),
   /unrecognized original source/);
 });
+
+test('exact paper identity never invents a co-projected 3D alias from a near-parallel edge',()=>{
+ const g=geometry();
+ g.data.points.D.x=1e-10;g.data.points.H.x=1e-10;
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.aliasesExamined,0);
+ assert.equal(out.status,'no-positive-projected-source-alias');
+ assert.equal(out.engineeringLineStyleSigned,false);
+});
+test('sub-tolerance positive paper overlap remains an M4 split obligation',()=>{
+ const g=geometry();
+ g.data.points.D.z=5-1e-10;g.data.points.H.z=8;
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.aliasesExamined,1);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.comparisons[0].status,'partial-or-ambiguous-coproject-overlap');
+});
+test('one-ULP positive overlap at a source endpoint cannot be discarded by floating fractions',()=>{
+ const bits=new DataView(new ArrayBuffer(8));
+ bits.setFloat64(0,5,false);
+ bits.setBigUint64(0,bits.getBigUint64(0,false)-1n,false);
+ const g=geometry();
+ g.data.points.D.z=bits.getFloat64(0,false);
+ g.data.points.H.z=7;
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.aliasesExamined,1);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+});
