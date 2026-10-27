@@ -23,6 +23,8 @@ const {certifyConvexVertices}=
  require('../core/numeric/m0-convex-vertex-completeness.cjs');
 const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 // Positive original-M0 boundedness and extreme-vertex proof for the CURRENT
 // reviewed source. Never accept a caller-supplied status or CAD projection
 // as a substitute for an independent 3D halfspace/recession certificate.
@@ -63,6 +65,77 @@ function intervalCoverage(a,b,segments,tol=1e-6){
   cursor=Math.max(cursor,hi);
  }
  return cursor>=1-tol;
+}
+// Read-only C1 proof-gap coverage: compare the SAME original 3D edge
+// parameter interval, not paper distances. The old paper intervalCoverage
+// remains a geometric display helper, never an exact source certificate.
+// One ULP of missing native parameter range must remain visible as a gap.
+function exactC1NativeSourceIntervalCoverage({
+ geometry,view,sourceEdgeId,real3DFrom,real3DTo,strokes
+}={}){
+ if(!VIEWS.includes(view)||typeof sourceEdgeId!=='string'||
+    !Array.isArray(geometry?.data?.edges)||!geometry?.data?.points||
+    !Array.isArray(strokes))
+  throw new TypeError('current V/H/W original 3D source and native HLR required');
+ const edges=geometry.data.edges.filter(e=>Array.isArray(e)&&
+  geometry.id+'::'+[...e].sort().join('|')===sourceEdgeId);
+ if(edges.length!==1)throw new RangeError('missing or duplicated original C1 source');
+ const [id0,id1]=edges[0],a=geometry.data.points[id0],
+  b=geometry.data.points[id1];
+ const exact3=(p,q)=>p&&q&&['x','y','z'].every(k=>
+  Number.isFinite(p[k])&&p[k]===q[k]);
+ if(!a||!b||!['x','y','z'].every(k=>
+    Number.isFinite(a[k])&&Number.isFinite(b[k])))
+  throw new RangeError('nonfinite original 3D source endpoints');
+ const axes=['x','y','z'].sort((u,v)=>
+  Math.abs(b[v]-a[v])-Math.abs(b[u]-a[u]));
+ const axis=axes[0],delta=b[axis]-a[axis];
+ if(!Number.isFinite(delta)||delta===0)
+  throw new RangeError('collapsed original 3D source');
+ const sourceParameter=p=>{
+  if(exact3(p,a))return 0;
+  if(exact3(p,b))return 1;
+  if(!p||!['x','y','z'].every(k=>Number.isFinite(p[k])))
+   return null;
+  const t=(p[axis]-a[axis])/delta;
+  if(!Number.isFinite(t)||!(t>0&&t<1))return null;
+  const reconstructed={x:a.x+(b.x-a.x)*t,
+   y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t};
+  // If binary64 cannot reconstruct the original M5 3D point, hold it
+  // instead of rounding an unknown source fraction onto a native range.
+  return exact3(reconstructed,p)?t:null;
+ };
+ const t0=sourceParameter(real3DFrom),t1=sourceParameter(real3DTo);
+ if(t0===null||t1===null||t0===t1)
+  return {sourceEdgeId,view,originalSourceParameterRange:null,
+   entireOriginalParameterIntervalCovered:false,
+   positiveLengthUncoveredIntervals:[],
+   status:'unreconstructable-original-3d-source-parameter',
+   engineeringLineStyle:'undetermined',signedV5Action:false};
+ const range=[Math.min(t0,t1),Math.max(t0,t1)],candidates=[];
+ for(const stroke of strokes){
+  if(!Array.isArray(stroke?.sourceCandidate3DLifts))
+   throw new RangeError('unverified actual native HLR candidate lift list');
+  for(const lift of stroke.sourceCandidate3DLifts){
+   if(lift?.sourceEdgeId===sourceEdgeId){
+    if(lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+       lift.originalOCCTSourceLineCurveVerified!==true||
+       lift.v5Authorized!==false)
+     throw new RangeError('unverified original native BRep source lift');
+    candidates.push(lift.originalSourceParameterRange);
+   }
+  }
+ }
+ const proof=exactCandidateIntervalCoverage(range,candidates);
+ return {sourceEdgeId,view,originalSourceParameterRange:range,
+  entireOriginalParameterIntervalCovered:
+   proof.entireOriginalParameterIntervalCovered,
+  positiveLengthUncoveredIntervals:
+   proof.positiveLengthUncoveredIntervals,
+  status:proof.entireOriginalParameterIntervalCovered?
+   'exact-original-3d-native-source-covered':
+   'exact-original-3d-native-source-positive-gap',
+  engineeringLineStyle:'undetermined',signedV5Action:false};
 }
 // A projected HLR candidate is not a TopoDS history match. Even unsigned
 // interior creases must carry a one-to-one, current-M0 physical source ledger
@@ -426,10 +499,14 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     throw new RangeError('stale cross-revision M5 interval');
    const validSource=typeof x.sourceEdgeId==='string'&&
     ledgerIds.has(x.sourceEdgeId);
-   const projected=strokes.filter(st=>
-    validSource&&st.projectedOriginalEdgeCandidates.includes(x.sourceEdgeId));
-   const covered=validSource&&intervalCoverage(
-    x.projectedFromModelMm,x.projectedToModelMm,projected);
+   const nativeCoverage=validSource?
+    exactC1NativeSourceIntervalCoverage({
+     geometry:g,view,sourceEdgeId:x.sourceEdgeId,
+     real3DFrom:x.real3DFrom,real3DTo:x.real3DTo,
+     strokes
+    }):null;
+   const covered=nativeCoverage?.
+    entireOriginalParameterIntervalCovered===true;
    const local=x.locallyCompleteVisibleHullSegmentProven===true;
    const status=local?(covered?'local-m5-cad-corrob-unsigned':
     'positive-m5-vs-cad-conflict'):'undetermined';
@@ -449,6 +526,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     fromModelMm:{...x.projectedFromModelMm},
     toModelMm:{...x.projectedToModelMm},
     status,m5LocalPositive:local,realCadCovered:covered,
+    exactNativeOriginal3DSourceCoverage:nativeCoverage,
     blockers:{
      sourceContourCoverageMissing:!x.sourceContourCoverageVerified,
      genuine3DJunctionMissing:!x.genuineFrontSourceEndpointJoinsVerified,
@@ -480,5 +558,6 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  });
 }
 module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
- intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates,
+ intervalCoverage,positiveCollinearOverlap,exactC1NativeSourceIntervalCoverage,
+ validateC1RealHLRSourceCandidates,
  bindC1NativeThirdViewEvidence,auditC1M0ExtremeVertexCompleteness};
