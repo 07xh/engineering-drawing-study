@@ -83,34 +83,48 @@ async function inferC1UniqueConvexGeometryCandidate({
   throw new RangeError('orphan second-view vertex requires further identification');
  // Reuse pinned mature open-source QuickHull; do not add a second geometry
  // solver and never mistake a render triangle diagonal for physical crease.
- const [{ConvexHull},{Vector3}]=await Promise.all([
-  import('three/addons/math/ConvexHull.js'),import('three')
- ]);
- const positions=matched.map(r=>new Vector3(r.xyz.x,r.xyz.y,r.xyz.z)),
-  byRef=new Map(positions.map((v,i)=>[v,matched[i].id]));
- let hull;
- try{hull=new ConvexHull().setFromPoints(positions);}
- catch(e){throw new RangeError('not an independently supported full 3D convex hull: '+e.message);}
  const faces=[],used=new Set(),edges=[],seenEdges=new Set();
- for(const face of hull.faces){
-  const ids=[],firstEdge=face.edge;
-  let edge=firstEdge,n=0;
-  if(!edge)throw new RangeError('malformed open-source convex hull face');
-  do{
-   const id=byRef.get(edge.head()?.point);
-   if(!id)throw new RangeError('convex hull vertex has no current M3 original source');
-   ids.push(id);used.add(id);
-   edge=edge.next;
-   if(++n>32)throw new RangeError('convex hull generated unbounded face ring');
-  }while(edge!==firstEdge);
-  if(ids.length!==3||new Set(ids).size!==3)
-   throw new RangeError('nontriangular/degenerate QuickHull face');
-  faces.push(ids);
-  for(let i=0;i<ids.length;i++){
-   const start=ids[i],end=ids[(i+1)%ids.length],
-    key=[start,end].sort().join('|');
-   if(!seenEdges.has(key)){seenEdges.add(key);edges.push([start,end]);}
+ if(matched.length===4){
+  // Every non-coplanar four-extreme-vertex convex 3D hull is a tetrahedron.
+  // This finite combinatorial topology has NO dependency or guessed face
+  // adjacency; existing M0 independently verifies every support plane,
+  // volume, manifold edge and Euler condition below.
+  const [a,b,c,d]=matched.map(r=>r.id);
+  faces.push([a,b,c],[a,d,b],[a,c,d],[b,d,c]);
+  for(const id of [a,b,c,d])used.add(id);
+ }else{
+  let ConvexHull,Vector3;
+  try{
+   ({ConvexHull}=await import('three/addons/math/ConvexHull.js'));
+   ({Vector3}=await import('three'));
+  }catch(e){
+   throw new RangeError('pinned Three QuickHull is unavailable; larger convex topology stays unconfirmed');
   }
+  const positions=matched.map(r=>new Vector3(r.xyz.x,r.xyz.y,r.xyz.z)),
+   byRef=new Map(positions.map((v,i)=>[v,matched[i].id]));
+  let hull;
+  try{hull=new ConvexHull().setFromPoints(positions);}
+  catch(e){throw new RangeError('not an independently supported full 3D convex hull: '+e.message);}
+  for(const face of hull.faces){
+   const ids=[],firstEdge=face.edge;
+   let edge=firstEdge,n=0;
+   if(!edge)throw new RangeError('malformed open-source convex hull face');
+   do{
+    const id=byRef.get(edge.head()?.point);
+    if(!id)throw new RangeError('convex hull vertex has no current M3 original source');
+    ids.push(id);used.add(id);
+    edge=edge.next;
+    if(++n>32)throw new RangeError('convex hull generated unbounded face ring');
+   }while(edge!==firstEdge);
+   if(ids.length!==3||new Set(ids).size!==3)
+    throw new RangeError('nontriangular/degenerate QuickHull face');
+   faces.push(ids);
+  }
+ }
+ for(const face of faces)for(let i=0;i<face.length;i++){
+  const start=face[i],end=face[(i+1)%face.length],
+   key=[start,end].sort().join('|');
+  if(!seenEdges.has(key)){seenEdges.add(key);edges.push([start,end]);}
  }
  if(used.size!==matched.length)
   throw new RangeError('a detected vertex is not an extreme solid corner');
@@ -130,7 +144,8 @@ async function inferC1UniqueConvexGeometryCandidate({
   knownViewPair:[first,second],
   sourceCorrespondenceUniqueWithinAssumption:true,
   source2DVerticesMatchedWithoutManualIds:true,
-  candidateClosedConvexTopologyInferredByPinnedThreeQuickHull:true,
+  candidateClosedConvexTopologyInferredByPinnedThreeQuickHull:matched.length>4,
+  candidateTetrahedronTopologyDeductedFromFourExtremes:matched.length===4,
   independentlyValidatedByCurrentM0:true,
   correspondence:matched.map(r=>({...r})),
   inferredOriginal3DPointCount:matched.length,
