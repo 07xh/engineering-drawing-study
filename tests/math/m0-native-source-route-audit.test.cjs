@@ -6,7 +6,7 @@ const manifest=JSON.parse(fs.readFileSync(
  'docs/architecture/m0-acceptance-inventory.json','utf8'));
 test('machine-gated real M0 source routes reach the native photo and private-evidence UI',()=>{
  const r=audit();
- assert.equal(r.moduleCount,31);
+ assert.equal(r.moduleCount,33);
  assert.equal(r.nativeRuntimeRoutes.length,8);
  const names=r.nativeRuntimeRoutes.map(x=>x.name);
  assert.deepEqual(names,[
