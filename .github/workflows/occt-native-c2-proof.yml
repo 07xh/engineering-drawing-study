@@ -54,6 +54,7 @@ jobs:
           node tools/c2_native_m0_m4_m5_proof_pack.cjs \
             tests/fixtures/c2-l-shape-two-boxes-occt.json \
             occt-l-union-full-m0-m4-m5-proof.json
+            occt-l-union-full-m0-m4-m5-proof.signed-only.svg
       - name: Execute actual same-run native proof-pack positive test
         run: node --test tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs
       - name: Publish source-scoped output for mathematical review
