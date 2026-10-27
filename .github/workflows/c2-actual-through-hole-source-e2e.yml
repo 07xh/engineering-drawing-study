@@ -41,7 +41,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install pinned mature OpenCascade, never mock the CAD kernel
-        run: python -m pip install --only-binary=:all: 'cadquery-ocp==7.9.3.1.1'
+        run: |
+          python -m pip install --only-binary=:all: 'cadquery-ocp==7.9.3.1.1'
       - name: Prove actual BRepAlgoAPI_Cut 24-edge solid through-hole and original M4
         run: node --test tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs
       - name: Produce inspectable true native cut and 3D/2D source output
