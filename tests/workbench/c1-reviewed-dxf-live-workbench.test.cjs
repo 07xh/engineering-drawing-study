@@ -8,7 +8,7 @@ test('actual local-only DXF given review page is wired to official site with one
  new vm.Script(js,{filename:'c1-reviewed-dxf-live-entry.cjs'});
  // The math/workbench shard intentionally runs without node_modules:
  // never introduce a jsdom/linkedom requirement for a proof-gate test.
- const ids=[...html.matchAll(/\\bid="([^"]+)"/g)].map(x=>x[1]);
+ const ids=[...html.matchAll(/id="([^"]+)"/g)].map(x=>x[1]);
  for(const id of ['givenFile','reviewCheck','compile','sheetPreview',
   'animation','status','candidate','proof','v5Status','play','pause','prev','next'])
   assert.equal(ids.filter(x=>x===id).length,1,id);
