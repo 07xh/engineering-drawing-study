@@ -16,7 +16,7 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('./c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1RealOcctVisibleContourSourceParity}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
 function intervalCoverage(a,b,segments,tol=1e-6){
@@ -44,6 +44,85 @@ function intervalCoverage(a,b,segments,tol=1e-6){
   cursor=Math.max(cursor,hi);
  }
  return cursor>=1-tol;
+}
+// A projected HLR candidate is not a TopoDS history match. Even unsigned
+// interior creases must carry a one-to-one, current-M0 physical source ledger
+// before they can participate in reverse coverage or an M5 gap report.
+// Validate against the ACTUAL reviewed edge inventory, not a geometry-ID
+// prefix (which also accepts fabricated same-geometry source names).
+function validateC1RealHLRSourceCandidates({geometry,cad}={}){
+ if(typeof geometry?.id!=='string'||!geometry.id||
+    !Array.isArray(geometry.data?.edges)||!geometry.data?.points)
+  throw new TypeError('current reviewed M0 source edge inventory required');
+ const originals=new Map();
+ for(const edge of geometry.data.edges){
+  if(!Array.isArray(edge)||edge.length!==2||
+     edge.some(id=>!Object.hasOwn(geometry.data.points,id)))
+   throw new RangeError('invalid original M0 physical source edge');
+  const id=geometry.id+'::'+[...edge].sort().join('|');
+  if(originals.has(id))throw new RangeError('duplicate original M0 source');
+  originals.set(id,edge);
+ }
+ for(const view of VIEWS){
+  const strokes=cad?.views?.[view];
+  if(!Array.isArray(strokes)||strokes.length===0)
+   throw new RangeError('real HLR V/H/W source candidates missing');
+  for(const stroke of strokes){
+   const ids=stroke?.projectedOriginalEdgeCandidates,
+    lifts=stroke?.sourceCandidate3DLifts;
+   if(!Array.isArray(ids)||ids.length===0||
+      !Array.isArray(lifts)||lifts.length!==ids.length||
+      new Set(ids).size!==ids.length||
+      ids.some(id=>typeof id!=='string'||!originals.has(id)))
+    throw new RangeError('real C1 HLR generated stroke has invalid original physical source candidates');
+   const seen=new Set();
+   for(const lift of lifts){
+    const id=lift?.sourceEdgeId,edge=originals.get(id),
+     t0=lift?.sourceParameterAtProjectedFrom,
+     t1=lift?.sourceParameterAtProjectedTo,
+     range=lift?.originalSourceParameterRange;
+    // The candidate XYZ must be the actual affine point on the reviewed
+    // ORIGINAL M0 edge, not merely a caller-supplied source label or flag.
+    // This is exact source-topology consistency, not a TopoDS history claim.
+    const a=edge&&geometry.data.points[edge[0]],
+     b=edge&&geometry.data.points[edge[1]];
+    const modelXYZ=t=>({x:a.x+(b.x-a.x)*t,
+     y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+    const exactXYZ=(p,q)=>p&&q&&['x','y','z'].every(k=>
+     Number.isFinite(p[k])&&p[k]===q[k]);
+    const fromPaper=edge&&Number.isFinite(t0)&&project(modelXYZ(t0))[view],
+     toPaper=edge&&Number.isFinite(t1)&&project(modelXYZ(t1))[view],
+     nearPaper=(p,q)=>p&&q&&
+      Number.isFinite(p.u)&&Number.isFinite(p.v)&&
+      Math.hypot(p.u-q.u,p.v-q.v)<=1e-6;
+    if(!edge||seen.has(id)||
+       !nearPaper(fromPaper,stroke.from)||
+       !nearPaper(toPaper,stroke.to)||
+       !Array.isArray(lift.originalVertexIds)||
+       lift.originalVertexIds.join('|')!==edge.join('|')||
+       !Number.isFinite(t0)||!Number.isFinite(t1)||
+       !(t0>=0&&t0<=1&&t1>=0&&t1<=1&&t0!==t1)||
+       !Array.isArray(range)||range.length!==2||
+       range[0]!==Math.min(t0,t1)||range[1]!==Math.max(t0,t1)||
+       !exactXYZ(lift.fromCandidate3D,modelXYZ(t0))||
+       !exactXYZ(lift.toCandidate3D,modelXYZ(t1))||
+       lift.originalXYZReprojectsToHLR!==true||
+       lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
+       lift.originalOCCTSourceLineCurveVerified!==true||
+       lift.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false||
+       lift.v5Authorized!==false)
+     throw new RangeError('real C1 HLR physical source lift missing, duplicated or stale');
+    seen.add(id);
+   }
+   if(seen.size!==ids.length||
+      ids.some(id=>!seen.has(id))||
+      stroke.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
+      (stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId!=null&&
+       !seen.has(stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId)))
+    throw new RangeError('real HLR original BRep IsSame and physical source candidates disagree');
+  }
+ }
+ return true;
 }
 // Conservative positive-length intersection test: CAD-visible interior creases
 // must not be treated as false exterior hull omissions. A visible CAD segment
@@ -94,6 +173,7 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
   throw new RangeError('true OCCT original 3D source interval fails entire signed M5 contour CAD parity: '+
    strictNativeContour.originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage+
    '/'+strictNativeContour.originalGloballySignedM5ContourStrokeCount);
+ validateC1RealHLRSourceCandidates({geometry:g,cad});
  const resolved=canonical.certifiedVisibleContourLineBindings;
  const out={};
  for(const view of VIEWS){
@@ -172,6 +252,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  const proof=original.globalVisibleContourProof;
  const ledger=original.wholeSourceEdgeRayEvidence;
  const ledgerIds=new Set(ledger.edges.map(x=>x.sourceEdgeId));
+ validateC1RealHLRSourceCandidates({geometry:g,cad});
  if(cad.revision!==revision||cad.sourceGeometryId!==g.id||
     cad.lineStyleCertified!==false||cad.v5Authorized!==false||
     !Array.isArray(proof.views)||proof.views.length!==3)
@@ -187,12 +268,6 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   const strokes=cad.views[view];
   if(!pv||!Array.isArray(strokes)||!strokes.length)
    throw new RangeError('C1 original M5 and real HLR V/H/W missing');
-  for(const stroke of strokes){
-   if(!Array.isArray(stroke.projectedOriginalEdgeCandidates)||
-      !stroke.projectedOriginalEdgeCandidates.length||
-      stroke.projectedOriginalEdgeCandidates.some(id=>!ledgerIds.has(id)))
-    throw new RangeError('unmatched original 3D HLR source candidate');
-  }
   if(!rayView||rayView.intervals.length!==pv.candidateIntervals.length)
    throw new RangeError('M5 ray-source intervals do not match projected hull');
   const intervals=pv.candidateIntervals.map((x,index)=>{
@@ -251,4 +326,4 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  });
 }
 module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
- intervalCoverage,positiveCollinearOverlap};
+ intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates};
