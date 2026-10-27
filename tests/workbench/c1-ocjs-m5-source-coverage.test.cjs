@@ -149,6 +149,98 @@ test('C1 rejects incorrect paper endpoint even with valid original 3D source nam
  }
 });
 
+const {bindC1NativeThirdViewEvidence:bindMissingView}=
+ require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
+const missingViewFixture=view=>{
+ const geometryId='confirmed-c1',revision=27;
+ const actionId='canonical-'+view+'-visible-0',sourceEdgeId='confirmed-c1::A|B';
+ const canonical={
+  wholeSolidV5Ready:false,
+  certifiedVisibleContourLineBindings:[{
+   view,actionId,sourceEdgeId,
+   signedFormalLineV5:true
+  }],
+  thirdViewDrawing:{
+   view,revision,geometryId,completeDrawingCertified:false,
+   certifiedVisibleContour:[{
+    sourceEdgeId,v5ActionId:actionId,
+    standardLineStyle:'gb-t-4457.4-continuous-wide-visible-outline'
+   }],
+   unresolvedPhysicalEdges:[{
+    sourceEdgeId:'confirmed-c1::C|D',
+    standardLineStyle:'undetermined',v5ActionId:null
+   }],
+   drawingLayers:{officialV5StrokeActionIds:[actionId]}
+  }
+ };
+ const cad={revision,sourceGeometryId:geometryId,
+  lineStyleCertified:false,v5Authorized:false,views:{V:[],H:[],W:[]}};
+ cad.views[view]=[{from:{u:0,v:0},to:{u:3,v:5},
+  projectedOriginalEdgeCandidates:[sourceEdgeId]}];
+ return {canonical,cad,revision,geometryId};
+};
+test('native missing-view evidence binds all three first-angle views to existing M3/V5 without signing extra strokes',()=>{
+ for(const view of ['V','H','W']){
+  const fixture=missingViewFixture(view);
+  const result=bindMissingView(fixture);
+  assert.equal(result.view,view);
+  assert.equal(result.revision,fixture.revision);
+  assert.equal(result.geometryId,fixture.geometryId);
+  assert.deepEqual(result.canonicalCertifiedVisibleV5ActionIds,
+   ['canonical-'+view+'-visible-0']);
+  assert.equal(result.unresolvedPhysicalSourceCount,1);
+  assert.equal(result.generatedTopoDSHistoryComplete,false);
+  assert.equal(result.completeDrawingCertified,false);
+  assert.equal(result.newV5ActionsFromNativeHLR,0);
+  assert.deepEqual(result.realHLRVisibleSegments[0].original3DSourceCandidates,
+   ['confirmed-c1::A|B']);
+  assert.equal(result.realHLRVisibleSegments[0].engineeringLineStyle,'undetermined');
+  assert.equal(result.realHLRVisibleSegments[0].v5ActionId,null);
+  assert.ok(Object.isFrozen(result.realHLRVisibleSegments));
+  assert.ok(Object.isFrozen(result.realHLRVisibleSegments[0].from));
+  assert.ok(Object.isFrozen(result.canonicalCertifiedVisibleV5ActionIds));
+  assert.throws(()=>{result.realHLRVisibleSegments[0].from.u=100;},TypeError);
+ }
+});
+test('native C1 missing-view consumer rejects stale M3 identity, invented or duplicated canonical V5 actions',()=>{
+ for(const change of [
+  x=>x.canonical.thirdViewDrawing.revision++,
+  x=>x.canonical.thirdViewDrawing.geometryId='other-solid',
+  x=>x.cad.revision++,
+  x=>x.cad.sourceGeometryId='stale-cad',
+  x=>x.cad.lineStyleCertified=true,
+  x=>x.cad.v5Authorized=true,
+  x=>x.canonical.thirdViewDrawing.view='Q',
+  x=>x.canonical.thirdViewDrawing.certifiedVisibleContour[0].v5ActionId='invented',
+  x=>x.canonical.thirdViewDrawing.certifiedVisibleContour[0].sourceEdgeId='other-source',
+  x=>x.canonical.thirdViewDrawing.certifiedVisibleContour[0].standardLineStyle='undetermined',
+  x=>x.canonical.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds[0]='invented',
+  x=>x.canonical.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds.push('invented'),
+  x=>x.canonical.certifiedVisibleContourLineBindings.push(
+   {...x.canonical.certifiedVisibleContourLineBindings[0]}),
+  x=>x.canonical.thirdViewDrawing.completeDrawingCertified=true,
+  x=>x.canonical.wholeSolidV5Ready=true,
+  x=>x.canonical.thirdViewDrawing.unresolvedPhysicalEdges[0].v5ActionId='forged',
+  x=>x.canonical.thirdViewDrawing.unresolvedPhysicalEdges[0].standardLineStyle='visible'
+ ]){
+  const x=missingViewFixture('W');change(x);
+  assert.throws(()=>bindMissingView(x),/native OCCT|noncanonical V5/);
+ }
+});
+test('native C1 missing-view evidence fails closed on absent or malformed HLR geometry/source candidates',()=>{
+ for(const change of [
+  x=>x.cad.views.V=[],
+  x=>x.cad.views.V[0].from.u=Infinity,
+  x=>x.cad.views.V[0].to.v=NaN,
+  x=>x.cad.views.V[0].projectedOriginalEdgeCandidates=[],
+  x=>x.cad.views.V[0].projectedOriginalEdgeCandidates.push(''),
+  x=>x.cad.views.V[0].projectedOriginalEdgeCandidates.push('confirmed-c1::A|B')
+ ]){
+  const x=missingViewFixture('V');change(x);
+  assert.throws(()=>bindMissingView(x),/native OCCT|invalid native C1/);
+ }
+});
+
 test('real C1 OCCT source gate independently proves bounded M0 box extreme vertices',()=>{
  for(const [min,max] of [
   [{x:0,y:0,z:0},{x:6,y:8,z:10}],
