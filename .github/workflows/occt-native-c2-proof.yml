@@ -12,6 +12,8 @@ on:
       - 'tests/workbench/c2-native-occt-generated-ray-m5.test.cjs'
       - 'tests/fixtures/c2-l-shape-two-boxes-occt.json'
       - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
+      - 'tests/fixtures/c2-disjoint-two-boxes-positive-native-v5.json'
+      - 'tests/workbench/c2-native-positive-separated-union-v5.test.cjs'
       - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
       - '.github/workflows/occt-native-c2-proof.yml'
   workflow_dispatch:
@@ -59,6 +61,8 @@ jobs:
             occt-l-union-full-m0-m4-m5-proof.json
       - name: Execute actual same-run native proof-pack positive test
         run: node --test tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs
+      - name: Require ACTUAL positive M3/M4/M5 original source intervals entering ONE V5
+        run: node --test tests/workbench/c2-native-positive-separated-union-v5.test.cjs
       - name: Generate REAL OpenCascade through-rectangular-hole TopoDS reference
         run: |
           python tools/c2_occt_boolean_history_reference.py \
