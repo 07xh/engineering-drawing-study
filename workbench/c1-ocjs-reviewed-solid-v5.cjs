@@ -16,7 +16,7 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('./c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1RealOcctVisibleContourSourceParity}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
 function intervalCoverage(a,b,segments,tol=1e-6){
@@ -90,7 +90,14 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
      y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
     const exactXYZ=(p,q)=>p&&q&&['x','y','z'].every(k=>
      Number.isFinite(p[k])&&p[k]===q[k]);
+    const fromPaper=edge&&project(modelXYZ(t0))[view],
+     toPaper=edge&&project(modelXYZ(t1))[view],
+     nearPaper=(p,q)=>p&&q&&
+      Number.isFinite(p.u)&&Number.isFinite(p.v)&&
+      Math.hypot(p.u-q.u,p.v-q.v)<=1e-6;
     if(!edge||seen.has(id)||
+       !nearPaper(fromPaper,stroke.from)||
+       !nearPaper(toPaper,stroke.to)||
        !Array.isArray(lift.originalVertexIds)||
        lift.originalVertexIds.join('|')!==edge.join('|')||
        !Number.isFinite(t0)||!Number.isFinite(t1)||
