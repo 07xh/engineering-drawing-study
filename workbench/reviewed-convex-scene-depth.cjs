@@ -37,6 +37,8 @@ const {auditReviewedM0ScenePartitions}=
  require('./m0-reviewed-scene-continuous-partitions.cjs');
 const {auditReviewedM0FaceRingJoins}=
  require('./m0-reviewed-face-ring-join-consumer.cjs');
+const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
+ require('./m5-reviewed-multibody-original-edge-rays.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -278,7 +280,12 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
  const projectedCutEndpointTopology=deriveProjectedCutEndpointTopology({
   geometry,sceneDepthEvidence:{...sceneEvidence,projectedStrokePartitions,
    frontmostOpenContours,closedSourceStrokeRays},revision});
- return freeze({...sceneEvidence,projectedStrokePartitions,
+ const multiBodyOriginalPhysicalEdgeRayEvidence=
+  geometry.length>=2&&geometry.length<=8&&
+  geometry.reduce((n,g)=>n+g.data.edges.length,0)<=80?
+   auditReviewedMultiBodyWholePhysicalEdgeRays({geometry,revision}):null;
+ return freeze({...sceneEvidence,multiBodyOriginalPhysicalEdgeRayEvidence,
+  projectedStrokePartitions,
   frontmostOpenContours,closedSourceStrokeRays,projectedCutEndpointTopology});
 }
 module.exports={evaluateReviewedConvexMeshDepth};
