@@ -315,6 +315,77 @@ test('two different native HLR ordinals with partial collinear paper overlap can
   /overlapping native visible HLR paper segments have conflicting original 3D front owners/);
 });
 
+test('distinct 3D front depths at a single exact native closed-ray endpoint are rejected across V/H/W and either direction',()=>{
+ for(const view of VIEWS)for(const reversed of [false,true]){
+  const x=initial(),same=(p,q)=>p.u===q.u&&p.v===q.v,
+   same3=(p,q)=>['x','y','z'].every(k=>p[k]===q[k]);
+  let chosen;
+  for(const witness of x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
+   if(witness.view!==view)continue;
+   const seg=x.cad.views[witness.view][witness.nativeVisibleHLREdgeOrdinal],
+    lift=seg.sourceCandidate3DLifts[0];
+   for(const e of x.geometry.data.edges){
+    const sourceEdgeId=x.geometry.id+'::'+[...e].sort().join('|');
+    if(sourceEdgeId===witness.sourceEdgeId)continue;
+    const a=x.geometry.data.points[e[0]],b=x.geometry.data.points[e[1]],
+     pa=project(a)[witness.view],pb=project(b)[witness.view];
+    if(same(pa,pb)||overlap(seg.from,seg.to,pa,pb))continue;
+    const oldEnds=[[seg.from,lift.fromCandidate3D],
+     [seg.to,lift.toCandidate3D]];
+    const newEnds=[[pa,a],[pb,b]];
+    if(newEnds.some(([paper,xyz])=>oldEnds.some(([other,oldXYZ])=>
+       same(paper,other)&&!same3(xyz,oldXYZ)))){
+     chosen={witness,seg,e,a,b,pa,pb,sourceEdgeId};break;
+    }
+   }
+   if(chosen)break;
+  }
+  assert.ok(chosen,'genuine M0 cuboid must provide a depth-separated paper endpoint alias');
+  const {witness,seg,e,a,b,pa,pb,sourceEdgeId}=chosen;
+  // Keep one legitimate front claim and add one competing original M0
+  // edge. Their native paper segments touch only at an endpoint; there
+  // is no positive collinear overlap or strict interior crossing.
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=[
+   structuredClone(witness)];
+  const from=reversed?pb:pa,to=reversed?pa:pb,
+   from3D=reversed?b:a,to3D=reversed?a:b;
+  assert.equal(overlap(seg.from,seg.to,from,to),false);
+  const fakeLift={...structuredClone(seg.sourceCandidate3DLifts[0]),
+   sourceEdgeId,originalVertexIds:[...e],
+   originalSourceParameterRange:[0,1],
+   sourceParameterAtProjectedFrom:reversed?1:0,
+   sourceParameterAtProjectedTo:reversed?0:1,
+   actualOriginalOCCTBRepFrom3D:{...a},
+   actualOriginalOCCTBRepTo3D:{...b},
+   fromCandidate3D:{...from3D},toCandidate3D:{...to3D}};
+  const ordinal=x.cad.views[witness.view].push({
+   ...structuredClone(seg),from:{...from},to:{...to},
+   sourceCandidate3DLifts:[fakeLift]})-1;
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.push({
+   ...structuredClone(witness),sourceEdgeId,
+   originalSourceParameterRange:[0,1],
+   nativeVisibleHLREdgeOrdinal:ordinal});
+  assert.throws(()=>audit(x),
+   /coincident native HLR closed-ray endpoint has conflicting original 3D front depths/);
+ }
+});
+test('genuine adjacent native front strokes with a common original XYZ vertex remain valid',()=>{
+ const x=initial(),w=x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges;
+ const same=(p,q)=>p.u===q.u&&p.v===q.v,
+  same3=(p,q)=>['x','y','z'].every(k=>p[k]===q[k]);
+ let joined=0;
+ for(let i=0;i<w.length;i++)for(let j=i+1;j<w.length;j++){
+  if(w[i].view!==w[j].view||w[i].sourceEdgeId===w[j].sourceEdgeId)continue;
+  const a=x.cad.views[w[i].view][w[i].nativeVisibleHLREdgeOrdinal],
+   b=x.cad.views[w[j].view][w[j].nativeVisibleHLREdgeOrdinal],
+   la=a.sourceCandidate3DLifts[0],lb=b.sourceCandidate3DLifts[0];
+  for(const [p,xyz] of [[a.from,la.fromCandidate3D],[a.to,la.toCandidate3D]])
+   for(const [q,other] of [[b.from,lb.fromCandidate3D],[b.to,lb.toCandidate3D]])
+    if(same(p,q)&&same3(xyz,other))joined++;
+ }
+ assert.ok(joined>0,'reviewed cuboid has real 3D-connected native front endpoints');
+ assert.equal(audit(x).nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour,true);
+});
 test('forged paper point, unverified source curve and stale revision cannot pass native-to-original contour binding',()=>{
  const x=initial();x.cad.views.H[0].to.u+=Number.EPSILON*4;
  assert.throws(()=>audit(x),/source lift contradicts original 3D model or paper/);

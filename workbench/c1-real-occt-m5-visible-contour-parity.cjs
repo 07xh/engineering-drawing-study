@@ -64,6 +64,17 @@ const exactPositiveCollinearPaperOverlap=(a,b,c,d)=>{
  return Math.max(Math.min(a[axis],b[axis]),Math.min(c[axis],d[axis]))<
   Math.min(Math.max(a[axis],b[axis]),Math.max(c[axis],d[axis]));
 };
+// Two different original sources with independently proved CLOSED front rays
+// cannot occupy the SAME exact native paper endpoint at different original
+// XYZ depths. This includes endpoint-only contacts that positive-length
+// overlap and strict interior crossing checks intentionally exclude.
+// Compare actual source-lift endpoints only AFTER the 3D BRep/parameter/
+// first-angle projection binding has been verified. No tolerance or snapping.
+const exactNativeClosedRayEndpointDepthConflict=(left,right)=>{
+ const ends=seg=>[[seg.from,seg.from3D],[seg.to,seg.to3D]];
+ return ends(left).some(([paper,xyz])=>ends(right).some(([other,otherXYZ])=>
+  eq2(paper,other)&&!eq3(xyz,otherXYZ)));
+};
 // Two different original 3D edges cannot both be independently frontmost
 // on their entire CLOSED ray intervals when their native paper strokes
 // cross strictly inside BOTH strokes, their original first-angle projections
@@ -253,9 +264,18 @@ function auditC1RealOcctVisibleContourSourceParity({
      !eq2(project(xyz(t0))[view],seg.from)||
      !eq2(project(xyz(t1))[view],seg.to))
    throw new RangeError('genuine native HLR source lift contradicts original 3D model or paper');
-  nativeGeneratedPaperFrontSegments.push({
-   view,sourceEdgeId,from:seg.from,to:seg.to,
-   originalA:physicalA,originalB:physicalB});
+  // A closed-ray claim includes both ends, not merely the open segment.
+  // Equal 2D endpoints with different physical XYZ are competing depth
+  // owners even when their paper strokes only touch at that one point.
+  const current={view,sourceEdgeId,from:seg.from,to:seg.to,
+   from3D:lift.fromCandidate3D,to3D:lift.toCandidate3D,
+   originalA:physicalA,originalB:physicalB};
+  for(const prior of nativeGeneratedPaperFrontSegments){
+   if(prior.view===view&&prior.sourceEdgeId!==sourceEdgeId&&
+      exactNativeClosedRayEndpointDepthConflict(current,prior))
+    throw new RangeError('coincident native HLR closed-ray endpoint has conflicting original 3D front depths');
+  }
+  nativeGeneratedPaperFrontSegments.push(current);
   const key=view+'@'+sourceEdgeId;
   if(!nativeByKey.has(key))nativeByKey.set(key,[]);
   const all=nativeByKey.get(key);
