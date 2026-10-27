@@ -244,14 +244,23 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   points:Object.fromEntries(Object.entries(
    sceneResult.thirdView.representation.points).map(([id,p])=>
     [id,{u:p.u,v:p.v}])),
+  // Sheet-space coordinates use the exact same first-angle transform as
+  // canonical ConstructionIntent/V5; no second paper-coordinate engine.
+  sheetPoints:Object.fromEntries(Object.entries(
+   sceneResult.thirdView.representation.points).map(([id,p])=>
+    [id,toSheet(missingView,p,sheetTransform)])),
   certifiedVisibleContour:signedThirdView.map(line=>({
    sourceEdgeId:line.sourceEdgeId,
    from:{...line.fromModelMm},to:{...line.toModelMm},
+   fromSheetPx:toSheet(missingView,line.fromModelMm,sheetTransform),
+   toSheetPx:toSheet(missingView,line.toModelMm,sheetTransform),
    standardLineStyle:line.standardLineStyle,v5ActionId:line.actionId
   })),
   unresolvedPhysicalEdges:sourceLines.map(line=>({
    sourceEdgeId:line.sourceEdgeId,
    from:{...line.fromModelMm},to:{...line.toModelMm},
+   fromSheetPx:toSheet(missingView,line.fromModelMm,sheetTransform),
+   toSheetPx:toSheet(missingView,line.toModelMm,sheetTransform),
    standardLineStyle:'undetermined',v5ActionId:null,
    // A source edge may be only partly certified. Never silently drop its
    // unresolved remainder on approximate or endpoint-only overlap.
