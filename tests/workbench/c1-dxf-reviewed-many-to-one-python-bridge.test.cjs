@@ -4,6 +4,10 @@ const path=require('node:path'),fs=require('node:fs'),os=require('node:os');
 const {spawnSync}=require('node:child_process');
 const {reconstructC1FromDxfGiven}=
  require('../../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
+const requiresThreeQuickHull=(()=>{try{return !!require.resolve('three');}
+ catch{return false;}})();
+const fullHullOptions={skip:requiresThreeQuickHull?false:
+ 'full 3D convex hull runs in the pinned real DXF/Three dedicated CI'};
 const SHA='12ff96f3bbcb3fc71ca759dabec0c025b6bae594754f7913d2e1fc3d03509a5c';
 const DXF='b'.repeat(64);
 const CUBE=[];
@@ -71,7 +75,7 @@ function run(x=payload(),paths=[]){
  return {status:result.status,response:JSON.parse(result.stdout),
   stderr:result.stderr};
 }
-test('Python genuine CAD entity selections preserve all 8 reviewed 3D corners from just four paper vertices and isolate answer',async()=>{
+test('Python genuine CAD entity selections preserve all 8 reviewed 3D corners from just four paper vertices and isolate answer',fullHullOptions,async()=>{
  const {status,response}=run();
  assert.equal(status,0,response.reason);
  assert.equal(response.given.reviewedCorrespondences.length,8);
