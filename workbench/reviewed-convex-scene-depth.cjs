@@ -246,14 +246,13 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    segmentCount:0,segments:[],unionClosedContourVerified:false,
    officialLineStylesVerified:false,v5Ready:false};}
  })();
+ // Recompute real M0 intervals before any consumer binds their source.
+ const m0SceneContinuousPartitions=auditReviewedM0ScenePartitions({
+  geometry,revision});
  const projectedVertexJoins=deriveReviewedProjectedVertexJoins({geometry,revision});
  const m0ProjectedFaceRingJoins=auditReviewedM0FaceRingJoins({
   geometry,revision,sourcePartitions:m0SceneContinuousPartitions,
   projectedVertexJoins});
- // The reusable M0 partition is recomputed from actual verified source
- // meshes; its locally positive open-ray intervals are never M5 line styles.
- const m0SceneContinuousPartitions=auditReviewedM0ScenePartitions({
-  geometry,revision});
  const sceneEvidence={
   schema:'draftai-reviewed-mesh-scene-ray-audit/1',
   revision,status:'scoped-face-probes-only',reason:null,
