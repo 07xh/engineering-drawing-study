@@ -7,15 +7,19 @@ const manifest=JSON.parse(fs.readFileSync(
 test('machine-gated real M0 source routes reach the native photo and private-evidence UI',()=>{
  const r=audit();
  assert.equal(r.moduleCount,31);
- assert.equal(r.nativeRuntimeRoutes.length,3);
+ assert.equal(r.nativeRuntimeRoutes.length,6);
  const names=r.nativeRuntimeRoutes.map(x=>x.name);
  assert.deepEqual(names,[
   'photo-original-bytes-to-live-m3',
   'native-reviewed-pixel-mm-to-real-m3-entry',
-  'photo-bytes-to-rehashable-private-evidence'
+  'photo-bytes-to-rehashable-private-evidence',
+  'reviewed-3d-extreme-vertices-to-real-composition-scene',
+  'reviewed-3d-original-rays-to-first-angle-scene',
+  'reviewed-3d-face-joins-to-real-composition-scene'
  ]);
- for(const route of r.nativeRuntimeRoutes){
-  assert.equal(route.consumerEntry,'labs/auto-fillet-live-entry.cjs');
+ for(const [i,route] of r.nativeRuntimeRoutes.entries()){
+  assert.equal(route.consumerEntry,i<3?
+   'labs/auto-fillet-live-entry.cjs':'project/unified-workbench-session.cjs');
   assert.equal(route.staticImportChainConnected,true);
   assert.equal(route.executableEvidenceFilesPresent,true);
   assert.equal(route.currentSourceIndependentlyAuthenticated,false);
@@ -25,6 +29,23 @@ test('machine-gated real M0 source routes reach the native photo and private-evi
  assert.equal(reviewed.status,'provisional');
  assert.ok(reviewed.transitiveRuntimeConsumers.includes(
   'labs/auto-fillet-live-entry.cjs'));
+ const routes=[
+  'm0-joint-visibility-partition.cjs',
+  'projected-contour-topology.cjs',
+  'm0-convex-vertex-completeness.cjs'
+ ].map(name=>r.entries.find(x=>x.path==='core/numeric/'+name));
+ for(const row of routes){
+  assert.ok(row,'M0 numeric route absent');
+  assert.ok(row.transitiveRuntimeConsumers.includes(
+   'project/unified-workbench-session.cjs'));
+ }
+ assert.ok(routes[0].directRuntimeConsumers.includes(
+  'workbench/m0-reviewed-scene-continuous-partitions.cjs'));
+ assert.ok(routes[1].directRuntimeConsumers.includes(
+  'workbench/m0-reviewed-face-ring-join-consumer.cjs'));
+ assert.ok(r.nativeRuntimeRoutes.slice(3).every(x=>
+  x.staticImportChainConnected&&x.executableEvidenceFilesPresent&&
+  x.fullM0ProofCertified===false));
 });
 test('source route verification refuses a missing M0 import, including when evidence tests still exist',()=>{
  const list=manifest.nativeRuntimeRoutes;
