@@ -10,8 +10,14 @@
  * certificate. It is NOT the outer silhouette, scene-wide occlusion, GB
  * engineering line style, ConstructionIntent, or a V5 command.
  */
-const {VIEWS,project}=
+const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
+const {verifiedConvexMeshHalfspaces}=
+ require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {certifyConvexSegmentClearance}=
+ require('../core/numeric/convex-segment-clearance.cjs');
+const {certifyConvexPointRayClearance}=
+ require('../core/numeric/convex-point-ray-clearance.cjs');
 const {auditProjectedContour}=
  require('../core/numeric/projected-contour-topology.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
@@ -50,6 +56,39 @@ function auditReviewedM0FaceRingJoins({geometry,revision,
  const originalEdgeViewCount=geometry.reduce((n,g)=>n+g.data.edges.length,0)*3;
  if(sourcePartitions.originalSourceEdgeViewCount!==originalEdgeViewCount)
   return held(revision,'incomplete original source edge view coverage');
+ // The producer's unsigned booleans are NOT independent proof. Recheck
+ // every candidate positive edge/vertex directly against the CURRENT
+ // verified closed 3D solids; no client-invented clearance can certify a join.
+ let realSolids;
+ try{
+  realSolids=geometry.map((g,i)=>({id:'M0JoinSolid'+(i+1),
+   halfspaces:verifiedConvexMeshHalfspaces(g).halfspaces}));
+ }catch(e){return held(revision,'independent original convex source failed: '+e.message);}
+ const fullEdgeClearCache=new Map(),pointRayClearCache=new Map();
+ const independentlyClearEdge=(key,from,to,view)=>{
+  if(fullEdgeClearCache.has(key))return fullEdgeClearCache.get(key);
+  let ok=false;
+  try{
+   const source={id:'M0JoinEdge',from:{x:from.x,y:from.y,z:from.z},
+    to:{x:to.x,y:to.y,z:to.z}};
+   ok=realSolids.every(solid=>certifyConvexSegmentClearance({
+    source,solid,observerDirection:FIRST_ANGLE_OBSERVER_RAYS[view],
+    sourceParameterRange:[0,1]
+   }).status==='certified-clear');
+  }catch{ok=false;}
+  fullEdgeClearCache.set(key,ok);return ok;
+ };
+ const independentlyClearPoint=(key,point,view)=>{
+  if(pointRayClearCache.has(key))return pointRayClearCache.get(key);
+  let ok=false;
+  try{
+   const original={x:point.x,y:point.y,z:point.z};
+   ok=realSolids.every(solid=>certifyConvexPointRayClearance({
+    point:original,solid,observerDirection:FIRST_ANGLE_OBSERVER_RAYS[view]
+   }).status==='certified-clear');
+  }catch{ok=false;}
+  pointRayClearCache.set(key,ok);return ok;
+ };
  const intervals=new Map(),pointRays=new Map();
  for(const view of VIEWS){
   const rows=sourcePartitions.views?.[view]?.edges;
@@ -107,12 +146,17 @@ function auditReviewedM0FaceRingJoins({geometry,revision,
      blocked='original full edge continuous ray not certified or collapsed';
      break;
     }
+    if(!independentlyClearEdge(view+'|'+sourceId,pa,pb,view)){
+     blocked='independent actual M0 full-edge ray recheck failed';
+     break;
+    }
+    const pointClear=point.member.positiveOpenRayClearWithinReviewedSolids===true&&
+     independentlyClearPoint(view+'|'+g.id+'::'+a,pa,view);
     const vid='Vertex'+(k+1),nextId='Vertex'+((k+1)%face.length+1),
      eid='FaceEdge'+(k+1);
     verts.push({id:vid,view,projectedPoint:uv,
-     visibility:point.member.positiveOpenRayClearWithinReviewedSolids===true?
-      'visible':'undetermined',
-     pointRayCertified:point.member.positiveOpenRayClearWithinReviewedSolids===true});
+     visibility:pointClear?'visible':'undetermined',
+     pointRayCertified:pointClear});
     edges.push({edgeId:eid,
      start:{vertexId:vid,view,projectedEndpoint:uv,
       openVisibility:'visible',openIntervalCertified:true},
