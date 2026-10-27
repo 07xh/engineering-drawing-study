@@ -221,6 +221,16 @@ def main(argv: list[str] | None = None) -> int:
                     args.given_packet, args.reference_packet, given, reference,
                     [args.dwg, args.output, args.partition, args.review],
                 )
+                # CLI stdout is only an attestation. Keep actual reference
+                # handle inventory and answer coordinates in the separate
+                # private reference packet, never in the solver's stdout.
+                result["partition"] = {
+                    "status": "isolated-given-and-reference-packets",
+                    "givenHandleCount": len(reviewed_partition["givenHandles"]),
+                    "isolatedAnswerHandleCount": len(reviewed_partition["referenceHandles"]),
+                    "unassignedHandleCount": len(reviewed_partition["unassignedHandles"]),
+                    "blindIndependentTextbookTestPassed": False,
+                }
                 result["state"] = "separately-reviewed-C1-given-and-answer-unsolved"
                 result["blindPacketExport"] = {
                     "givenPath": str(args.given_packet),
