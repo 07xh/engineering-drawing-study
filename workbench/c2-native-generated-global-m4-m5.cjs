@@ -35,8 +35,14 @@ const near=(p,q)=>p&&q&&['x','y','z'].every(
 const key=(view,ordinal)=>view+'@'+ordinal;
 const spanOverlap=(a,b)=>a[0]<b[1]&&b[0]<a[1];
 function auditC2GeneratedResultProjectedM4M5({
- nativeReport,solids,revision
+ nativeReport,solids,revision,operation='union'
 }={}){
+ // Subtraction is NOT a union of opaque convex halfspaces. Compute the
+ // same real TopoDS projected M4 event graph, but hold M5 visibility until
+ // a rigorous difference-solid ray theorem has been implemented.
+ if(!['union','cut'].includes(operation)||
+    (nativeReport?.actualNativeBooleanOperation??'union')!==operation)
+  throw new RangeError('actual native Boolean operation mismatches original source');
  const edges=nativeReport?.outputEdges;
  if(!Number.isSafeInteger(revision)||revision<1||
     nativeReport?.sourceRevision!==revision||
@@ -180,6 +186,8 @@ function auditC2GeneratedResultProjectedM4M5({
    else if(micro)status='unrenderable-positive-3d-subspan';
    else if(raw.unresolvedWholeEdge||alias)
     status='unresolved-projected-depth-or-collinear-source-alias';
+   else if(operation==='cut')
+    status='unresolved-subtracted-void-continuous-ray-depth';
    else{
     const candidate={id:'NativeEdge'+raw.id+'Part'+k,from,to},
      ray=FIRST_ANGLE_OBSERVER_RAYS[raw.view];
@@ -220,7 +228,9 @@ function auditC2GeneratedResultProjectedM4M5({
   throw new RangeError('incomplete M4/M5 native source event accounting');
  return freeze({
   schema:'draftai-c2-native-generated-m4-m5-global-paper-events/1',
-  revision,sourceResultEdgeCount:all.length,
+  revision,actualNativeBooleanOperation:operation,
+  subtractiveCutM5WholeSceneOcclusionSigned:false,
+  sourceResultEdgeCount:all.length,
   VHWSourceRows:rows.length,
   actualM4PairwiseSegmentViewChecks:pairwiseEventChecks,
   exactM4TransverseProjectedCrossings:transverseProjectedCrossings,
