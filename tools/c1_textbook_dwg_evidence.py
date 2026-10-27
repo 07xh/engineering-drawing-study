@@ -18,6 +18,12 @@ import subprocess
 import sys
 import tempfile
 
+# Also allow the existing isolated Python spec-loader regression, which
+# imports this file without inserting the tools directory into sys.path.
+_tools_directory = str(pathlib.Path(__file__).resolve().parent)
+if _tools_directory not in sys.path:
+    sys.path.insert(0, _tools_directory)
+
 # Source packet processing is intentionally separate from the independent
 # reference: neither an answer handle nor an answer coordinate may be sent
 # to the source C1 M3 input consumer.
