@@ -43,3 +43,21 @@ test('rejects absent transform and forged final solid signoff',()=>{
  const forged=fixture();forged.wholeSolidV5Ready=true;
  assert.throws(()=>renderC1ThreeViewSvg(forged,{sheetTransform:transform}),/canonical unsigned/);
 });
+
+test('single paper SVG contains exactly V/H/W canonical layers',()=>{
+ const out=renderC1ThreeViewSvg(fixture(),{sheetTransform:transform});
+ assert.match(out.sheetSvg,/<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+ for(const view of VIEWS){
+  assert.match(out.sheetSvg,new RegExp('data-view="'+view+'"'));
+  assert.match(out.sheetSvg,new RegExp('data-v5-action="original-'+view+'"'));
+ }
+ assert.equal((out.sheetSvg.match(/data-view="/g)||[]).length,3);
+ assert.equal((out.sheetSvg.match(/data-status="undetermined-review"/g)||[]).length,3);
+});
+test('single paper SVG hides unsigned overlays without altering signed actions',()=>{
+ const out=renderC1ThreeViewSvg(fixture(),{
+  sheetTransform:transform,includeReviewOverlay:false
+ });
+ assert.doesNotMatch(out.sheetSvg,/undetermined-review/);
+ assert.equal((out.sheetSvg.match(/data-v5-action="/g)||[]).length,3);
+});
