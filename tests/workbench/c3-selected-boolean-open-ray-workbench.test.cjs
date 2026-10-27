@@ -30,7 +30,12 @@ test('W selected-Boolean ray status lookup resolves only a unique current analyt
 test('actual C3 viewer consumes selected ray, preserves projection-overlap demotion and never certifies V5 line style',()=>{
  const js=fs.readFileSync('labs/finite-cylinder-intersection-live-entry.cjs','utf8');
  const html=fs.readFileSync('labs/finite-cylinder-intersection-live.html','utf8');
- assert.match(js,/auditC3SelectedBooleanVHWOpenRays\(\{input,revision,solidOperation\}\)/);
+ const gate=fs.readFileSync('workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs','utf8');
+ assert.match(js,/auditC3M0M3M5AnalyticSources\(\{/);
+ assert.match(js,/selectedBooleanRayProof=originalSourceAcceptance\.booleanM5RayProof/);
+ assert.match(gate,/auditC3SelectedBooleanVHWOpenRays\(\{/);
+ assert.match(gate,/input,revision,solidOperation/);
+ assert.match(gate,/dotObject3\(zGrad,observer\)/);
  assert.match(js,/selectedWRayTopologyClear=wRayProof\.exactProjectedLateralSelfOverlapExcluded/);
  assert.match(js,/projectedSourceOutlineEventsSeparatedAtWBoundaries===true/);
  assert.match(js,/matches\.length!==1\)return 'undetermined'/);
