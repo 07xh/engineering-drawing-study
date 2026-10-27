@@ -756,13 +756,17 @@ function reviewC1NativeHiddenFinalM5Strokes({
    const lifts=edge.sourceCandidate3DLifts,
     proof=frontM5SelectedVisibleSourceByNative.get(
      view+'@'+nativeHLREdgeOrdinal);
+   // A unique geometric lift is NOT automatically the same M5-accepted
+   // physical interval. When an independently selected front-ray witness
+   // exists, bind its exact source AND [t0,t1] even for a single lift.
+   // Preserve unclaimed single-lift geometry as unsigned CAD diagnostics.
    const selected=Array.isArray(lifts)?
-    (lifts.length===1?lifts:
-     (proof?lifts.filter(c=>
+    (proof?lifts.filter(c=>
       c.sourceEdgeId===proof.sourceEdgeId&&
       c.originalSourceParameterRange?.length===2&&
       c.originalSourceParameterRange[0]===proof.originalSourceParameterRange[0]&&
-      c.originalSourceParameterRange[1]===proof.originalSourceParameterRange[1]):[])):[];
+      c.originalSourceParameterRange[1]===proof.originalSourceParameterRange[1]):
+     (lifts.length===1?lifts:[])):[];
    if(selected.length!==1||
       (proof&&!(selected.length===1&&
        selected[0].sourceEdgeId===proof.sourceEdgeId))){
