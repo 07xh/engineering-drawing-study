@@ -12,9 +12,13 @@ const {validateGivenPacket,reconstructC1FromDxfGiven,
  require('../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {listGivenSourceProjectionIndices,stringifyReviewedSourcePairs,
+ withEditedReviewedSourcePairs}=
+ require('../workbench/c1-local-review-correspondence-editor.cjs');
 const NS='http://www.w3.org/2000/svg', $=id=>document.getElementById(id);
 const geometryId='ReviewedPrivateDXF';
-let revision=0,given=null,candidate=null,current=null,playing=false,raf=null;
+let revision=0,rawGiven=null,given=null,candidate=null,current=null,
+ playing=false,raf=null,previewObjectUrl=null;
 function node(kind,attributes={}){
  const el=document.createElementNS(NS,kind);
  for(const [k,v] of Object.entries(attributes))el.setAttribute(k,String(v));
@@ -31,16 +35,33 @@ function halt(){
  playing=false;
  if(current?.solution?.player)current.solution.player.pause(performance.now());
 }
-function invalidate(){
+function invalidateDerived(){
  halt();revision++;
  given=null;candidate=null;current=null;
  controls(false);
  $('reviewCheck').checked=false;$('reviewCheck').disabled=true;
  $('compile').disabled=true;
- $('candidate').textContent='尚未加载和核验两张原题视图。';
+ $('candidate').textContent='原始投影点对应关系尚未独立确认。';
  $('sheetPreview').replaceChildren();
  $('animation').replaceChildren();
- $('proof').textContent='没有签发任何原题实虚线或动画结果。';
+ $('v5Status').textContent='数学条件发生变化，旧唯一 V5 已全部失效。';
+ $('proof').textContent='没有签发当前版本的任何原题实虚线或动画结果。';
+}
+function clearPreview(){
+ if(previewObjectUrl!==null){
+  URL.revokeObjectURL(previewObjectUrl);previewObjectUrl=null;
+ }
+ $('sourcePreview').removeAttribute('src');
+ $('sourcePreview').hidden=true;
+}
+function invalidate(){
+ invalidateDerived();
+ rawGiven=null;
+ $('sourcePoints').textContent='请先选择本机原题 GIVEN JSON。';
+ $('sourcePairs').value='';
+ $('applyPairs').disabled=true;
+ $('previewFile').value='';
+ clearPreview();
 }
 function projectCandidate(src){
  const geometry=src.inferred.candidateGeometry,
@@ -132,41 +153,85 @@ function seek(dir){
  drawV5();
 }
 function safeString(hash){return hash.slice(0,12)+'…'+hash.slice(-8);}
+async function applyReviewedPairs(){
+ if(!rawGiven){
+  setStatus('未提供本机可信转换后的原题已知量。',true);return;
+ }
+ invalidateDerived();
+ const currentRevision=revision;
+ try{
+  // This editor cannot import answers, CAD layers or arbitrary geometry:
+  // it only maps 0-based indices already in the ORIGINAL GIVEN JSON.
+  const source=withEditedReviewedSourcePairs(
+   rawGiven,$('sourcePairs').value);
+  const inferred=await reconstructC1FromDxfGiven({
+   givenPacket:source,revision:currentRevision,geometryId});
+  if(revision!==currentRevision)return;
+  given=source;candidate=inferred;
+  renderCandidate(inferred,projectCandidate(inferred));
+  const p=inferred.inferred;
+  $('candidate').textContent=
+   '原始 DWG SHA-256：'+safeString(source.sourceSha256)+
+   '\\n可信转换 DXF SHA-256：'+safeString(source.convertedDxfSha256)+
+   '\\n原题已知视图：'+p.knownViewPair.join('/')+
+   '；待补视图：'+p.missingView+
+   '\\n当前有 '+p.inferredOriginal3DPointCount+' 个独立三维角点；'+
+   (p.explicitlyReviewedManyToOnePaperProjectionPairs?
+    '由人工明确配对的二维索引：'+p.reviewedOriginal3DPairCount:
+    '由现有 M3 自动唯一对应')+
+   '\\nM0 验证闭合凸体候选：'+p.independentlyValidatedByCurrentM0+
+   '\\n候选三维面：'+p.candidateGeometry.data.faces.length+
+   ' 面；候选实体棱线：'+p.candidateGeometry.data.edges.length+
+   ' 条。\\n这是审核候选，并不能证明原题中所有隐藏角点、孔槽或非凸部分已识别。';
+  $('reviewCheck').disabled=false;
+  setStatus('真实原题二维对应关系已提交 M3 和 M0；请独立检查每一面、每条棱后再确认 V5。');
+ }catch(e){
+  if(revision!==currentRevision)return;
+  const message=e?.message||String(e);
+  setStatus(/ambiguous|duplicate\/collapsed|different source vertex counts/.test(message)?
+   '二维投影存在真实多对一歧义。请按上方各视图索引逐行填写三维角点对应，不得自动猜测。'+message:
+   '原题二维配对审核被 M3/M0 阻断：'+message,true);
+ }
+}
 async function loadGiven(){
  invalidate();
- const file=$('givenFile').files?.[0];
+ const file=$('givenFile').files?.[0],loadRevision=revision;
  if(!file)return;
  try{
   if(!file.name.endsWith('.json')||file.size<=0||file.size>300000)
    throw new RangeError('仅支持本机可信转换工具生成的小于 300 KB 的原题已知量 JSON');
   const parsed=JSON.parse(await file.text());
+  if(revision!==loadRevision)return;
   validateGivenPacket(parsed);
-  // The only async inference is existing M3+QuickHull+M0; never import
-  // the textbook answer into this process or make a fresh math solver.
-  const currentRevision=revision;
-  const inferred=await reconstructC1FromDxfGiven({
-   givenPacket:parsed,revision:currentRevision,geometryId});
-  if(revision!==currentRevision)return;
-  given=parsed;candidate=inferred;
-  renderCandidate(inferred,projectCandidate(inferred));
-  const p=inferred.inferred;
-  $('candidate').textContent=
-   '原始 DWG SHA-256：'+safeString(parsed.sourceSha256)+
-   '\n可信转换 DXF SHA-256：'+safeString(parsed.convertedDxfSha256)+
-   '\n原题已知视图：'+p.knownViewPair.join('/')+
-   '；待补视图：'+p.missingView+
-   '\nM3 唯一点对应：'+p.inferredOriginal3DPointCount+
-   ' 点；M0 验证闭合凸体候选：'+p.independentlyValidatedByCurrentM0+
-   '\n候选真实三维面：'+p.candidateGeometry.data.faces.length+
-   ' 面；候选棱线：'+p.candidateGeometry.data.edges.length+
-   ' 条。\n这只是数学候选，不能证明原图所有隐含角点均已识别。'+
-   '请用纸质题目审查每条面与棱，确认后才可进入正式 V5。';
-  $('reviewCheck').disabled=false;
-  setStatus('原题已知量候选已生成；请审阅拓扑，不能把自动凸包当成原题答案。');
+  rawGiven=parsed;
+  $('sourcePoints').textContent=listGivenSourceProjectionIndices(parsed);
+  $('sourcePairs').value=stringifyReviewedSourcePairs(parsed);
+  $('applyPairs').disabled=false;
+  await applyReviewedPairs();
  }catch(e){
-  given=null;candidate=null;
-  setStatus('原题已知量未通过审核：'+(e?.message||String(e)),true);
+  if(revision!==loadRevision&&!rawGiven)return;
+  setStatus('本机已知量 JSON 不符合原题来源契约：'+(e?.message||String(e)),true);
  }
+}
+function loadSourcePreview(){
+ clearPreview();
+ // Changing the source image also invalidates the previous human review;
+ // it never becomes an M3/M5 mathematical source or answer verifier.
+ invalidateDerived();
+ $('applyPairs').disabled=!rawGiven;
+ const file=$('previewFile').files?.[0];
+ if(!file){
+  setStatus('原题图片已撤销，必须重新核对当前二维数学条件。');return;
+ }
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)||
+    file.size<=0||file.size>6*1024*1024){
+  setStatus('只允许本机 6 MB 以内的 PNG/JPEG/WebP 原题参考图片；未作为数学证据。',true);
+  return;
+ }
+ previewObjectUrl=URL.createObjectURL(file);
+ $('sourcePreview').src=previewObjectUrl;
+ $('sourcePreview').hidden=false;
+ setStatus('已载入本机原题参考图；原有数学和 V5 审核失效。请重新配对确认。');
 }
 async function compile(){
  halt();current=null;controls(false);
@@ -212,6 +277,13 @@ async function compile(){
  }catch(e){setStatus('M3/M5/V5 正向门禁阻断：'+(e?.message||String(e)),true);}
 }
 $('givenFile').addEventListener('change',loadGiven);
+$('sourcePairs').addEventListener('input',()=>{
+ invalidateDerived();
+ $('applyPairs').disabled=!rawGiven;
+ setStatus('人工对应关系已编辑：旧 M3/M5/V5 结果已全部作废，请重新核验。');
+});
+$('applyPairs').addEventListener('click',applyReviewedPairs);
+$('previewFile').addEventListener('change',loadSourcePreview);
 $('reviewCheck').addEventListener('change',()=>{
  halt();current=null;controls(false);
  $('animation').replaceChildren();
@@ -223,6 +295,6 @@ $('play').addEventListener('click',play);
 $('pause').addEventListener('click',()=>{halt();drawV5();});
 $('prev').addEventListener('click',()=>seek(-1));
 $('next').addEventListener('click',()=>seek(1));
-window.addEventListener('pagehide',halt);
+window.addEventListener('pagehide',()=>{halt();clearPreview();});
 invalidate();
 setStatus('请选择本机生成的原题 GIVEN JSON，绝不能选私有答案 JSON。');
