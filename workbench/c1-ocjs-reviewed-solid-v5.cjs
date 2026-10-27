@@ -114,7 +114,28 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
      nearPaper=(p,q)=>p&&q&&
       Number.isFinite(p.u)&&Number.isFinite(p.v)&&
       Math.hypot(p.u-q.u,p.v-q.v)<=1e-6;
-    if(!edge||seen.has(id)||
+    // Independently rebind the measured ORIGINAL native BRep edge, not
+    // merely the projected candidate's own affine XYZ or a boolean flag.
+    // The OCCT source curve is a unit-speed 3D line in model millimetres.
+    const measuredFrom=lift?.actualOriginalOCCTBRepFrom3D,
+     measuredTo=lift?.actualOriginalOCCTBRepTo3D,
+     measuredRange=lift?.originalOCCTCurveParameterRange,
+     originalLength=a&&b&&Math.hypot(
+      b.x-a.x,b.y-a.y,b.z-a.z),
+     nativeEnds=edge&&(
+      exactXYZ(measuredFrom,a)&&exactXYZ(measuredTo,b)||
+      exactXYZ(measuredFrom,b)&&exactXYZ(measuredTo,a)),
+     nativeSpan=Array.isArray(measuredRange)&&measuredRange.length===2&&
+      measuredRange.every(Number.isFinite)&&
+      measuredRange[1]>measuredRange[0]?
+      measuredRange[1]-measuredRange[0]:NaN,
+     nativeCurveBound=nativeEnds&&
+      lift.originalOCCTSourceCurveType==='line'&&
+      Number.isFinite(originalLength)&&originalLength>1e-8&&
+      Number.isFinite(nativeSpan)&&
+      Math.abs(nativeSpan-originalLength)<=
+       1e-6*Math.max(1,originalLength);
+    if(!edge||seen.has(id)||!nativeCurveBound||
        !nearPaper(fromPaper,stroke.from)||
        !nearPaper(toPaper,stroke.to)||
        !Array.isArray(lift.originalVertexIds)||
@@ -133,11 +154,26 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
      throw new RangeError('real C1 HLR physical source lift missing, duplicated or stale');
     seen.add(id);
    }
+   // IsSame must have compared the complete current ORIGINAL TopoDS
+   // inventory, including sources which do not project onto this stroke.
+   // A partial probe can otherwise masquerade as a unique native source.
+   const compared=stroke.originalPhysicalOCCTSourceIdsCompared,
+    expected=[...originals.keys()].sort(),
+    direct=stroke.directlySameOriginalOCCTBRepSourceEdgeIds,
+    unique=stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
    if(seen.size!==ids.length||
       ids.some(id=>!seen.has(id))||
       stroke.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared!==true||
-      (stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId!=null&&
-       !seen.has(stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId)))
+      !Array.isArray(compared)||compared.length!==expected.length||
+      compared.some((id,i)=>id!==expected[i])||
+      stroke.actualDistinctOriginalOCCTBRepSourceCount!==expected.length||
+      !Number.isSafeInteger(stroke.actualOriginalOCCTBRepEdgeOccurrencesCompared)||
+      stroke.actualOriginalOCCTBRepEdgeOccurrencesCompared<expected.length||
+      !Array.isArray(direct)||direct.length>1||
+      direct.some(id=>!seen.has(id))||
+      (direct.length===1?unique!==direct[0]:unique!==null)||
+      stroke.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven!==
+       (direct.length===1))
     throw new RangeError('real HLR original BRep IsSame and physical source candidates disagree');
   }
  }

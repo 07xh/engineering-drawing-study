@@ -23,6 +23,10 @@ const physicalLedger=()=>{
   fromCandidate3D:{x:0,y:0,z:0},
   toCandidate3D:{x:3,y:4,z:5},
   originalXYZReprojectsToHLR:true,
+  actualOriginalOCCTBRepFrom3D:{x:0,y:0,z:0},
+  actualOriginalOCCTBRepTo3D:{x:3,y:4,z:5},
+  originalOCCTSourceCurveType:'line',
+  originalOCCTCurveParameterRange:[0,Math.hypot(3,4,5)],
   actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
   originalOCCTSourceLineCurveVerified:true,
   actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
@@ -32,6 +36,12 @@ const physicalLedger=()=>{
   projectedOriginalEdgeCandidates:[edgeId],
   sourceCandidate3DLifts:[source()],
   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared:true,
+  originalPhysicalOCCTSourceIdsCompared:[
+   'M0-Reviewed::A|B','M0-Reviewed::A|C','M0-Reviewed::C|D'],
+  actualDistinctOriginalOCCTBRepSourceCount:3,
+  actualOriginalOCCTBRepEdgeOccurrencesCompared:3,
+  directlySameOriginalOCCTBRepSourceEdgeIds:[],
+  actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false,
   directlySameUniqueOriginalOCCTBRepSourceEdgeId:null
  });
  const cad={views:Object.fromEntries(['V','H','W'].map(view=>{
@@ -131,12 +141,16 @@ test('C1 identical V paper strokes at different Y depths stay distinct unsigned 
   ...structuredClone(stroke.sourceCandidate3DLifts[0]),
   sourceEdgeId:rear,originalVertexIds:['C','D'],
   fromCandidate3D:{x:0,y:8,z:0},
-  toCandidate3D:{x:3,y:12,z:5}
+  toCandidate3D:{x:3,y:12,z:5},
+  actualOriginalOCCTBRepFrom3D:{x:0,y:8,z:0},
+  actualOriginalOCCTBRepTo3D:{x:3,y:12,z:5}
  });
  assert.deepEqual(project(stroke.sourceCandidate3DLifts[0].fromCandidate3D).V,
   project(stroke.sourceCandidate3DLifts[1].fromCandidate3D).V);
  assert.equal(validateNative(q),true);
  stroke.directlySameUniqueOriginalOCCTBRepSourceEdgeId=rear;
+ stroke.directlySameOriginalOCCTBRepSourceEdgeIds=[rear];
+ stroke.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven=true;
  assert.equal(validateNative(q),true);
  stroke.sourceCandidate3DLifts[1].fromCandidate3D.y=0;
  assert.throws(()=>validateNative(q),/physical source lift/);
@@ -312,5 +326,50 @@ test('native OCCT rejects forged or omitted canonical physical M5 action/paramet
  ]){
   const x=withSignedPhysical(view);change(x);
   assert.throws(()=>bindMissingView(x),/noncanonical V5/);
+ }
+});
+
+test('C1 native BRep curve witnesses are actual original XYZ and unit-speed lines in V/H/W',()=>{
+ for(const view of ['V','H','W']){
+  const good=physicalLedger();
+  const lift=good.cad.views[view][0].sourceCandidate3DLifts[0];
+  [lift.actualOriginalOCCTBRepFrom3D,lift.actualOriginalOCCTBRepTo3D]=
+   [lift.actualOriginalOCCTBRepTo3D,lift.actualOriginalOCCTBRepFrom3D];
+  lift.originalOCCTCurveParameterRange=[11,11+Math.hypot(3,4,5)];
+  assert.equal(validateNative(good),true,
+   'native original BRep orientation and parameter origin are independent');
+  for(const mutate of [
+   x=>x.actualOriginalOCCTBRepFrom3D.y=Number.MIN_VALUE,
+   x=>x.actualOriginalOCCTBRepTo3D.x=3.000000000001,
+   x=>x.originalOCCTSourceCurveType='circle',
+   x=>x.originalOCCTCurveParameterRange=[0,Math.hypot(3,4,5)-0.001],
+   x=>x.originalOCCTCurveParameterRange=[1,1],
+   x=>x.originalOCCTCurveParameterRange=[0,Infinity],
+   x=>delete x.actualOriginalOCCTBRepTo3D
+  ]){
+   const bad=physicalLedger();
+   mutate(bad.cad.views[view][0].sourceCandidate3DLifts[0]);
+   assert.throws(()=>validateNative(bad),/physical source lift/,
+    'forged original native 3D curve cannot be accepted as an M0 source');
+  }
+ }
+});
+test('C1 IsSame audit must enumerate ALL original TopoDS edges, not a selected subset',()=>{
+ for(const view of ['V','H','W'])for(const mutate of [
+  x=>x.originalPhysicalOCCTSourceIdsCompared.pop(),
+  x=>x.originalPhysicalOCCTSourceIdsCompared.reverse(),
+  x=>x.originalPhysicalOCCTSourceIdsCompared[1]=
+   x.originalPhysicalOCCTSourceIdsCompared[0],
+  x=>x.actualDistinctOriginalOCCTBRepSourceCount=2,
+  x=>x.actualOriginalOCCTBRepEdgeOccurrencesCompared=2,
+  x=>x.actualOriginalOCCTBRepEdgeOccurrencesCompared=2.5,
+  x=>x.directlySameOriginalOCCTBRepSourceEdgeIds=['M0-Reviewed::A|C'],
+  x=>x.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven=true,
+  x=>x.directlySameUniqueOriginalOCCTBRepSourceEdgeId='M0-Reviewed::A|B'
+ ]){
+  const bad=physicalLedger();
+  mutate(bad.cad.views[view][0]);
+  assert.throws(()=>validateNative(bad),/BRep IsSame/,
+   'partial or forged native TopoDS inventory must fail closed');
  }
 });
