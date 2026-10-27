@@ -441,3 +441,31 @@ test('C1 exact source gap consumer rejects fake 3D endpoints, stale BRep and pap
    sourceEdgeId:'M0-Reviewed::invented'}),/missing or duplicated/);
  }
 });
+
+test('C1 exact original M0 vertex paper identity recovers a rounded display endpoint only after real M5 proof',()=>{
+ const bits=new DataView(new ArrayBuffer(8));
+ bits.setFloat64(0,1,false);
+ bits.setBigUint64(0,bits.getBigUint64(0,false)-1n,false);
+ const almostOne=bits.getFloat64(0,false);
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const a=geometry.data.points.A,b=geometry.data.points.B;
+  const rounded={x:3*almostOne,y:4*almostOne,z:5*almostOne};
+  const paperA=project(a)[view],paperB=project(b)[view];
+  const args={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:a,real3DTo:rounded,
+   projectedFromModelMm:paperA,projectedToModelMm:paperB,
+   strokes:cad.views[view]};
+  const unsigned=exactSourceCoverage(args);
+  assert.equal(unsigned.originalSourceParameterRange[1],almostOne);
+  const authenticated=exactSourceCoverage({...args,
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.deepEqual(authenticated.originalSourceParameterRange,[0,1]);
+  assert.equal(authenticated.entireOriginalParameterIntervalCovered,true);
+  assert.equal(authenticated.signedV5Action,false);
+  const shifted=exactSourceCoverage({...args,
+   projectedToModelMm:{u:paperB.u+1e-10,v:paperB.v},
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(shifted.originalSourceParameterRange[1],almostOne);
+ }
+});
