@@ -64,6 +64,45 @@ const exactPositiveCollinearPaperOverlap=(a,b,c,d)=>{
  return Math.max(Math.min(a[axis],b[axis]),Math.min(c[axis],d[axis]))<
   Math.min(Math.max(a[axis],b[axis]),Math.max(c[axis],d[axis]));
 };
+// Two different original 3D edges cannot both be independently frontmost
+// on their entire CLOSED ray intervals when their native paper strokes
+// cross strictly inside BOTH strokes, their original first-angle projections
+// also cross strictly, and the original 3D lines are provably skew.
+// A genuine shared 3D crossing (coplanar originals), paper endpoint joins,
+// or a merely rounded native paper crossing remains held by other M5 gates;
+// this check never signs a line, guesses depth, or snaps coordinates.
+const exactStrictPaperCrossing=(a,b,c,d)=>{
+ if([a,b,c,d].some(p=>!p||!Number.isFinite(p.u)||!Number.isFinite(p.v)))
+  throw new TypeError('finite native paper crossing endpoints required');
+ const x=exactPaperOrientation(a,b,c),y=exactPaperOrientation(a,b,d),
+  z=exactPaperOrientation(c,d,a),w=exactPaperOrientation(c,d,b);
+ return x!==0n&&y!==0n&&z!==0n&&w!==0n&&
+  (x>0n)!==(y>0n)&&(z>0n)!==(w>0n);
+};
+const exactOriginal3DNoncoplanarity=(a,b,c,d)=>{
+ const delta=(p,q)=>Object.fromEntries(['x','y','z'].map(k=>
+  [k,subtractDyadic(dyadic(q[k]),dyadic(p[k]))]));
+ const p=delta(a,b),q=delta(a,c),r=delta(a,d);
+ const minor=(i,j)=>subtractDyadic(
+  multiplyDyadic(q[i],r[j]),multiplyDyadic(q[j],r[i]));
+ const x=multiplyDyadic(p.x,minor('y','z')),
+  y=multiplyDyadic(p.y,minor('x','z')),
+  z=multiplyDyadic(p.z,minor('x','y'));
+ return subtractDyadic(subtractDyadic(x,y),{n:-z.n,e:z.e}).n!==0n;
+};
+function exactTransverseFrontSourceDepthConflict({
+ view,from,to,otherFrom,otherTo,a,b,c,d
+}={}){
+ if(!VIEWS.includes(view))throw new TypeError('V/H/W view required');
+ // Require BOTH independent paper witnesses. Native projected line
+ // arithmetic may round slightly; a paper-only crossing cannot establish
+ // an original 3D ray contradiction without a second exact M0 crossing.
+ if(!exactStrictPaperCrossing(from,to,otherFrom,otherTo))return false;
+ const pa=project(a)[view],pb=project(b)[view],
+  pc=project(c)[view],pd=project(d)[view];
+ return exactStrictPaperCrossing(pa,pb,pc,pd)&&
+  exactOriginal3DNoncoplanarity(a,b,c,d);
+}
 const param=(a,b,p)=>{
  const axis=['x','y','z'].sort((x,y)=>
   Math.abs(b[y]-a[y])-Math.abs(b[x]-a[x]))[0];
@@ -175,21 +214,27 @@ function auditC1RealOcctVisibleContourSourceParity({
   if(priorPaperOwner!==undefined&&priorPaperOwner!==sourceEdgeId)
    throw new RangeError('coincident native visible HLR paper segment has conflicting original 3D front owners');
   nativeGeneratedPaperFrontOwners.set(paperKey,sourceEdgeId);
+  const physicalA=geometry.data.points[e[0]],
+   physicalB=geometry.data.points[e[1]];
   for(const prior of nativeGeneratedPaperFrontSegments){
    if(prior.view!==view||prior.sourceEdgeId===sourceEdgeId)continue;
    if(exactPositiveCollinearPaperOverlap(
     seg.from,seg.to,prior.from,prior.to))
     throw new RangeError('overlapping native visible HLR paper segments have conflicting original 3D front owners');
+   if(exactTransverseFrontSourceDepthConflict({
+    view,from:seg.from,to:seg.to,otherFrom:prior.from,
+    otherTo:prior.to,a:physicalA,b:physicalB,
+    c:prior.originalA,d:prior.originalB
+   }))
+    throw new RangeError('transverse native HLR front owners have incompatible original 3D ray depths');
   }
-  nativeGeneratedPaperFrontSegments.push({
-   view,sourceEdgeId,from:seg.from,to:seg.to});
   const candidates=seg.sourceCandidate3DLifts.filter(c=>
    c.sourceEdgeId===sourceEdgeId&&
    c.originalSourceParameterRange?.[0]===span[0]&&
    c.originalSourceParameterRange?.[1]===span[1]);
   if(candidates.length!==1)throw new RangeError('ambiguous or absent real OCCT physical source lift');
-  const lift=candidates[0],a=geometry.data.points[e[0]],
-   b=geometry.data.points[e[1]],t0=lift.sourceParameterAtProjectedFrom,
+  const lift=candidates[0],a=physicalA,
+   b=physicalB,t0=lift.sourceParameterAtProjectedFrom,
    t1=lift.sourceParameterAtProjectedTo;
   const xyz=t=>({x:a.x+(b.x-a.x)*t,
    y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
@@ -208,6 +253,9 @@ function auditC1RealOcctVisibleContourSourceParity({
      !eq2(project(xyz(t0))[view],seg.from)||
      !eq2(project(xyz(t1))[view],seg.to))
    throw new RangeError('genuine native HLR source lift contradicts original 3D model or paper');
+  nativeGeneratedPaperFrontSegments.push({
+   view,sourceEdgeId,from:seg.from,to:seg.to,
+   originalA:physicalA,originalB:physicalB});
   const key=view+'@'+sourceEdgeId;
   if(!nativeByKey.has(key))nativeByKey.set(key,[]);
   const all=nativeByKey.get(key);
@@ -342,4 +390,5 @@ function auditC1RealOcctVisibleContourSourceParity({
  });
 }
 module.exports={auditC1RealOcctVisibleContourSourceParity,
- exactOriginalModelVertexProjectedEdge,exactPositiveCollinearPaperOverlap};
+ exactOriginalModelVertexProjectedEdge,exactPositiveCollinearPaperOverlap,
+ exactTransverseFrontSourceDepthConflict};
