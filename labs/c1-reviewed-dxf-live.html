@@ -11,8 +11,11 @@ h2{font-size:17px;margin:0 0 12px}
 p{line-height:1.7}
 .grid{display:grid;grid-template-columns:minmax(290px,375px) minmax(0,1fr);gap:14px}
 .panel{background:white;padding:16px;border:1px solid #d5e1ed;border-radius:12px;min-width:0}
-input,button{font:inherit;min-height:42px}
+input,button,textarea{font:inherit;min-height:42px}
+textarea{width:100%;box-sizing:border-box;min-height:130px;resize:vertical;border:1px solid #b6cadb;border-radius:8px;padding:9px;font-family:ui-monospace,monospace;font-size:12px}
 input[type=file]{max-width:100%}
+#sourcePreview{display:block;width:100%;max-height:260px;object-fit:contain;background:#131d29;border-radius:8px;margin:7px 0}
+#sourcePreview[hidden]{display:none}
 button{background:#1c5c9b;color:white;border:0;border-radius:8px;padding:9px 15px;cursor:pointer}
 button:disabled{opacity:.4;cursor:default}
 button:focus-visible,input:focus-visible{outline:3px solid #ffb65c;outline-offset:2px}
@@ -41,14 +44,23 @@ small{color:#61768c}
 <h2>一、原题输入与数学重建</h2>
 <label for="givenFile">本机原题两视图已知量 JSON（不含答案）
 <input id="givenFile" type="file" accept=".json,application/json"></label>
+<label for="previewFile">可选：本机原题截图 / 已验证原始 DWG 缩略图（仅供自己核对）
+<input id="previewFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<img id="sourcePreview" hidden alt="本机原始题目参考图，仅人工审阅，不是几何证明">
+<h2>二、校对二维点与三维角点</h2>
+<p class="hint">长方体在三维中可以有 8 个角点，但每张二维视图只有 4 个不同投影点。原题数据不许自动猜测这些重合点的对应关系；请按以下 0 开始编号，明确一行对应一个三维角点。</p>
+<pre id="sourcePoints" aria-live="polite">请先选择本机原题 GIVEN JSON。</pre>
+<label for="sourcePairs">原题人工确认的三维角点配对（每行：第一个已知视图编号, 第二个已知视图编号；例如 0,0）
+<textarea id="sourcePairs" rows="7" spellcheck="false" placeholder="0,0&#10;0,1&#10;1,2&#10;…"></textarea></label>
+<button id="applyPairs" type="button" disabled>用当前原题二维配对重建 M3/M0 候选</button>
 <pre id="candidate" aria-live="polite">尚未加载本机已知量。</pre>
 <label class="checkbox" for="reviewCheck">
 <input id="reviewCheck" type="checkbox" disabled>
-<span>我已核对纸质原题：两视图的全部真实角点、第一角法坐标、闭合凸体前提、三维面与棱线拓扑，并确认没有借用教材答案来指定形体。</span>
+<span>我已核对纸质原题、每行二维角点对应、第一角法、全部原始三维角点、闭合凸体前提和实体面/棱拓扑；没有借用教材答案决定形体。</span>
 </label>
 <button id="compile" type="button" disabled>按人工确认条件生成三视图与唯一 V5</button>
 <p id="status" data-status="review" role="status" aria-live="polite"></p>
-<p class="hint">此工具不适用于未证明的非凸组合体、遗漏角点、投影重合无法唯一配对的原题。遇到歧义会阻断，而不是猜测隐藏边。</p>
+<p class="hint">本机配对可解决“二维点多对一”且你已确认全部真实三维角点的闭合凸体。对于带孔、开槽、非凸组合体、缺失角点或不确定来源的原题，仍必须拒绝整题签收；仅靠缩略图或猜测线型不会获得 V5 资格。</p>
 </section>
 <section class="panel" aria-label="三视图真实结果与唯一 V5 播放">
 <h2>二、V/H/W 同纸显示</h2>
