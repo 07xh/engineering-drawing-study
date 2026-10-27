@@ -9,9 +9,11 @@ This is never an alternative DraftAI M3/M5 solver or a V5 line signer.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import pathlib
+import struct
 import sys
 
 
@@ -38,8 +40,33 @@ def box_input(data: dict) -> list[dict]:
     return components
 
 
+def source_manifest_fingerprint(data: dict) -> str:
+    """Bound EVERY original source coordinate, not just source IDs/revision.
+
+    Hash IEEE754 binary64 model-mm bits, not rounded JSON decimal strings.
+    The same construction is repeated by the actual JS M0/M5 consumer.
+    It catches stale/mismatched geometries, not malicious input or a fake
+    native execution; only the same-run OCC process can establish that.
+    """
+    components = box_input(data)
+    revision = data.get("revision")
+    if type(revision) is not int or revision < 1 or revision > 2**53 - 1:
+        raise ValueError("safe positive source revision required")
+    if data.get("unit") != "mm":
+        raise ValueError("explicit millimetre source unit required")
+    h = hashlib.sha256()
+    h.update(b"DraftAI-C2-actual-TopoDS-source-v1\\0")
+    h.update(str(revision).encode("ascii") + b"\\0")
+    for p in components:
+        h.update(p["id"].encode("utf-8") + b"\\0")
+        for value in p["min"] + p["max"]:
+            h.update(struct.pack(">d", float(value)))
+    return h.hexdigest()
+
+
 def occt_reference(data: dict) -> dict:
     components = box_input(data)
+    fingerprint = source_manifest_fingerprint(data)
     if not isinstance(data.get("revision"), int) or data["revision"] < 1:
         raise ValueError("current positive source geometry revision required")
     try:
@@ -222,6 +249,8 @@ def occt_reference(data: dict) -> dict:
     return {
         "schema": "draftai-independent-occt-boolean-topods-history-reference/1",
         "sourceRevision": data.get("revision"),
+        "canonicalOriginalComponentGeometrySHA256": fingerprint,
+        "sourceFingerprintScope": "ordered-ID-box-bounds-IEEE754-binary64-mm-v1",
         "originalSourceIds": [p["id"] for p in components],
         "unit": "mm", "status": "valid-occt-boolean-history-reference-only",
         "resultFaceCount": len(unique(result_shape, TopAbs_FACE)),
