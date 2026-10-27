@@ -58,6 +58,8 @@ test('real BRepAlgoAPI_Cut: through-hole final source 24 edges, 16 native vertic
   assert.equal(g.allOfficialEngineeringLinesCertified,false);
   assert.equal(g.subtractiveCutM5WholeSceneOcclusionSigned,false);
   assert.equal(pack.completeSubtractiveBooleanM5RayVisibilityCertified,false);
+  assert.equal(pack.sourceCertifiedNativeCanonicalV5,null,
+   'not even an empty officially reusable original V5 may exist for unsigned subtractive rays');
   assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,false);
   assert.equal(pack.realTextbookBlindTestPassed,false);
   assert.throws(()=>generateNativeC2FullMathProofPack({
