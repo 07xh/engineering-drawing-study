@@ -6,6 +6,10 @@ const {inferC1UniqueConvexGeometryCandidate}=
 const {reconstructC1FromDxfGiven,validateGivenPacket,
  compileReviewedC1DxfGivenToSoleV5}=
  require('../../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
+const requiresThreeQuickHull=(()=>{try{return !!require.resolve('three');}
+ catch{return false;}})();
+const fullHullOptions={skip:requiresThreeQuickHull?false:
+ 'full 3D convex hull runs in the pinned real DXF/Three dedicated CI'};
 const SHA='12ff96f3bbcb3fc71ca759dabec0c025b6bae594754f7913d2e1fc3d03509a5c';
 const DXF='f'.repeat(64);
 const cube=[];
@@ -54,7 +58,7 @@ function review(revision,id){return{
  explicitReviewedInputKind:'human-reviewed-original-candidate'
 };}
 for(const pair of [['V','H'],['V','W'],['H','W']]){
- test('real 8-corner solid (only 4 distinct points/view) -> reviewed original pair graph -> M3/QuickHull/M0 -> canonical C1 V5 '+pair.join(''),async()=>{
+ test('real 8-corner solid (only 4 distinct points/view) -> reviewed original pair graph -> M3/QuickHull/M0 -> canonical C1 V5 '+pair.join(''),fullHullOptions,async()=>{
   const {views,pairs,packet}=sourceData(pair);
   assert.equal(Object.keys(views).length,2);
   for(const points of Object.values(views))assert.equal(points.length,4);
