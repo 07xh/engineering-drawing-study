@@ -7,8 +7,10 @@ const {validateGivenPacket,reconstructC1FromDxfGiven,
 const SHA='12ff96f3bbcb3fc71ca759dabec0c025b6bae594754f7913d2e1fc3d03509a5c';
 const DXF='a'.repeat(64);
 const physical=[
- {x:0,y:0,z:0},{x:2,y:1,z:0},
- {x:4,y:0,z:2},{x:6,y:3,z:1}
+ // All three common axes are unique: a source-identical tetra must be
+ // independently recoverable for VH, VW and HW first-angle known pairs.
+ {x:0,y:0,z:0},{x:2,y:1,z:2},
+ {x:4,y:3,z:7},{x:6,y:6,z:5}
 ];
 function packet(pair=['V','H']){
  return {
