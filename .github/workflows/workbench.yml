@@ -94,6 +94,7 @@ jobs:
             tests/workbench/c2-occt-boolean-history-reference.test.cjs \
             tests/workbench/c2-native-occt-generated-ray-m5.test.cjs \
             tests/workbench/c2-native-axis-box-open-ray.test.cjs \
+            tests/workbench/c2-native-coproject-affine-depth.test.cjs \
             tests/workbench/c2-native-generated-global-m4-m5.test.cjs \
             tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs
           node tools/c2_native_m0_m4_m5_proof_pack.cjs \
