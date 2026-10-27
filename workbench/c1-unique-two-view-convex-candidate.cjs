@@ -286,7 +286,8 @@ async function inferC1UniqueConvexGeometryCandidate({
   candidateGeometry:geometry,
   // Existing production C1 MUST still require user confirmation.
   reviewedSolidInputCandidate:{geometryId,revision,unit:'mm',
-   confirmedBy:'unconfirmed-automatic-reconstruction',
+   confirmedBy:manual?'unconfirmed-reviewed-correspondences':
+    'unconfirmed-automatic-reconstruction',
    topologyConfirmed:false,
    vertices:matched.map(({id,knownViews})=>({id,knownViews})),
    edges:edges.map(e=>[...e]),faces:faces.map(f=>[...f])},
