@@ -47,12 +47,12 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(summary.actualNativeOpenCascadeRan,true);
   assert.equal(summary.fullySignedV5,false);
   assert.equal(summary.signedOnlySvgPath,
-   output.replace(/\\.json$/,'.signed-only.svg'));
+   output.replace(/\.json$/,'.signed-only.svg'));
   const svg=fs.readFileSync(summary.signedOnlySvgPath,'utf8');
   assert.match(svg,/data-math-scope="same-run-two-box-native-partial"/);
   assert.match(svg,/data-complete-c2="false"/);
   assert.match(svg,/data-textbook-blind="false"/);
-  assert.match(svg,/data-unsigned-native-intervals-excluded="\\d+"/);
+  assert.match(svg,/data-unsigned-native-intervals-excluded="\d+"/);
   assert.match(svg,/data-first-angle-view="V"/);
   assert.match(svg,/data-first-angle-view="H"/);
   assert.match(svg,/data-first-angle-view="W"/);
