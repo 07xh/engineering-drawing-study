@@ -31,6 +31,10 @@ test('actual M0 original 3D physical edge partition is used for V/H/W',()=>{
  assert.equal(proof.signedV5ActionCount,0);
  assert(proof.visiblePhysicalIntervalCount+proof.hiddenPhysicalIntervalCount>0,
   'genuine non-hull physical convex edge rays must produce positive signable evidence');
+ assert(proof.visiblePhysicalIntervalCount>0,
+  'at least one physically visible non-hull source edge must be certified');
+ assert(proof.hiddenPhysicalIntervalCount>0,
+  'at least one physically hidden original source edge must be certified');
  assert.equal(proof.realTextbookBlindTestPassed,false);
  assert.equal(proof.nonConvexOrMultiBodyScopeCovered,false);
  assert.equal(proof.sourceSubspanCount,
