@@ -49,6 +49,13 @@ test('real skewed prism C1 builds one V5 stream from M3 and source rays',()=>{
  }
  assert.equal(result.wholeSolidV5Ready,false);
  assert.equal(result.realTextbookOriginalAccepted,false);
+ const proof=result.m0M3M5PhysicalSourceAcceptance;
+ assert.equal(proof.status,'bounded-original-source-math-acceptance');
+ assert.equal(proof.m3BoundSourceEdgeViews,result.sceneResult.geometry.data.edges.length*3);
+ assert.equal(proof.physicalM5CandidateCount,result.physicalEdgeProof.signedCandidates.length);
+ assert.equal(proof.mutuallyContradictoryIntervals,0);
+ assert.equal(proof.completeEngineeringLineStylesVerified,false);
+ assert.equal(proof.v5VerifiedExportReady,false);
 });
 
 test('real C1 V/H/W source partitions show only unsigned parameter remainders',()=>{
@@ -86,3 +93,28 @@ test('real C1 V/H/W source partitions show only unsigned parameter remainders',(
  }
  assert(positiveSigned>0,'exercise actual independently signed M5 physical strokes');
 });
+
+for(const pair of [['V','W'],['H','W']]){
+ test('C1 same original skew-prism M0/M3/M4/M5 gate and ONE V5 on '+pair.join('')+' verified views',()=>{
+  const known=input();
+  for(const row of known.vertices){
+   const x=row.knownViews.V[0],y=row.knownViews.H[1],z=row.knownViews.V[1];
+   const p={x,y,z},all=project(p);
+   row.knownViews=Object.fromEntries(pair.map(view=>
+    [view,[all[view].u,all[view].v]]));
+  }
+  known.revision=4;
+  const result=compileReviewedSolidVertexV5({
+   input:known,sheetTransform:{origin:{x:300,y:250},scale:5}});
+  assert.equal(result.sceneResult.missingView,
+   ['V','H','W'].find(view=>!pair.includes(view)));
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.status,
+   'bounded-original-source-math-acceptance');
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.originalEdgeViewCount,36);
+  assert.equal(result.m0M3M5PhysicalSourceAcceptance.mutuallyContradictoryIntervals,0);
+  assert.equal(result.timeline.segments.length,
+   result.steps.reduce((count,step)=>count+step.actions.length,0));
+  assert.equal(result.singleOriginalV5Player,true);
+  assert.equal(result.wholeSolidV5Ready,false);
+ });
+}
