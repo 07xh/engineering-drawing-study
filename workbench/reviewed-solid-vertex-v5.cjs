@@ -13,6 +13,10 @@ const {reviewedSolidThirdView}=
  require('./reviewed-multipoint-solid-third-view.cjs');
 const {auditC1GlobalVisibleContourProof}=
  require('./m5-c1-global-visible-contour-proof.cjs');
+const {evaluateReviewedConvexMeshDepth}=
+ require('./reviewed-convex-scene-depth.cjs');
+const {auditM0M3M4M5OriginalSources}=
+ require('./m0-m3-m4-m5-original-source-acceptance.cjs');
 const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {assertM3ToV5Consistency}=
@@ -237,6 +241,26 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   auditC1ReviewedConvexPhysicalEdgeStrokes({
    geometry:sceneResult.geometry,revision:input.revision
   }):null;
+ // A formal M5 physical line cannot enter the original Intent/DAG/V5
+ // before its source has independently survived the same M3 scene, M0
+ // open-ray and M4 partition identity/contradiction checks as live C2.
+ // Read-only M0 evidence NEVER manufactures a line action or GB style.
+ const m0M3M5PhysicalSourceAcceptance=physicalEdgeProof?
+  auditM0M3M4M5OriginalSources({
+   geometry:[sceneResult.geometry],scene:sceneResult.scene,
+   sceneDepthEvidence:evaluateReviewedConvexMeshDepth({
+    geometry:[sceneResult.geometry],revision:input.revision
+   }),revision:input.revision,physicalM5Proof:physicalEdgeProof
+  }):null;
+ if(physicalEdgeProof&&
+    (m0M3M5PhysicalSourceAcceptance?.status!==
+      'bounded-original-source-math-acceptance'||
+     m0M3M5PhysicalSourceAcceptance.m3BoundSourceEdgeViews!==
+      sceneResult.geometry.data.edges.length*VIEWS.length||
+     m0M3M5PhysicalSourceAcceptance.physicalM5CandidateCount!==
+      physicalEdgeProof.signedCandidates.length||
+     m0M3M5PhysicalSourceAcceptance.mutuallyContradictoryIntervals!==0))
+  throw new RangeError('C1 physical line M0/M3/M4/M5 current original source gate refused');
  const certifiedPhysicalLineBindings=[];
  const lineStyleByIntentId=Object.create(null);
  if(physicalEdgeProof&&globalVisibleContourProof.allThreeViewsGlobalContourCertified){
@@ -437,7 +461,8 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   thirdViewSvgPreview:renderC1ThirdViewSvg(thirdViewDrawing),
   wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
-  globalVisibleContourProof,physicalEdgeProof,scopedEdgePreviews,
+  globalVisibleContourProof,physicalEdgeProof,
+  m0M3M5PhysicalSourceAcceptance,scopedEdgePreviews,
   certifiedPhysicalLineBindings,
   certifiedPhysicalLineActionCount:certifiedPhysicalLineBindings.length,
   scopedPhysicalEdgeV5Ready:certifiedPhysicalLineBindings.length>0,
