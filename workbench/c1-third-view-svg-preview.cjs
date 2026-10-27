@@ -14,6 +14,8 @@ function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20,show
     !Number.isSafeInteger(drawing.revision)||
     !Array.isArray(drawing.certifiedVisibleContour)||
     !Array.isArray(drawing.unresolvedPhysicalEdges)||
+    (drawing.certifiedPhysicalFeatures!==undefined&&
+     !Array.isArray(drawing.certifiedPhysicalFeatures))||
     !drawing.sheetPoints||typeof drawing.sheetPoints!=='object'||
     drawing.completeDrawingCertified!==false||
     drawing.uncertifiedEdgesAreNotV5Actions!==true||
@@ -36,6 +38,16 @@ function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20,show
   seen.add(line.v5ActionId);
   segments.push({line,official:true});
  }
+ for(const line of drawing.certifiedPhysicalFeatures||[]){
+  if(typeof line.v5ActionId!=='string'||!line.v5ActionId||
+     seen.has(line.v5ActionId)||![
+      'gb-t-4457.4-continuous-wide-visible-outline',
+      'gb-t-4457.4-thin-dashed-hidden-edge'
+     ].includes(line.standardLineStyle))
+   throw new RangeError('official physical stroke requires unique signed V5 action');
+  seen.add(line.v5ActionId);
+  segments.push({line,official:true});
+ }
  for(const line of drawing.unresolvedPhysicalEdges){
   if(line.standardLineStyle!=='undetermined'||line.v5ActionId!==null)
    throw new RangeError('unsigned C1 physical edge must remain a review overlay');
@@ -55,13 +67,17 @@ function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20,show
  const height=Math.max(1,Math.max(...ys)-Math.min(...ys)+2*padding);
  const lines=segments.map(({line,official})=>{
   const a=line.fromSheetPx,b=line.toSheetPx;
-  const attr=official?
-   'stroke="#111827" stroke-width="2"':
+  const hidden=official&&line.standardLineStyle===
+   'gb-t-4457.4-thin-dashed-hidden-edge';
+  const attr=official?(hidden?
+    'stroke="#111827" stroke-width="1" stroke-dasharray="6 3"':
+    'stroke="#111827" stroke-width="2"'):
    'stroke="#9ca3af" stroke-width="1" stroke-dasharray="4 4"';
   return '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+
    '" y2="'+b.y+'" '+attr+' data-source-edge="'+
    esc(line.sourceEdgeId)+'" data-status="'+
-   (official?'certified-visible':'undetermined-review')+'"'+
+   (official?(hidden?'certified-hidden':'certified-visible'):
+     'undetermined-review')+'"'+
    (official?' data-v5-action="'+esc(line.v5ActionId)+'"':'')+'/>';
  });
  const markers=points.map(([id,p])=>
