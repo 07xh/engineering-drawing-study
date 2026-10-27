@@ -300,9 +300,9 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  * Exact current M0 XYZ and first-angle paper projection are also required.
  */
 function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
- generatedVertex,originalSourceVertices,view,nativePaperPoint
+ generatedVertex,originalSourceVertices,view,nativePaperPoint,geometry
 }={}){
- if(!VIEWS.includes(view)||!Number.isFinite(nativePaperPoint?.u)||
+ if(!geometry?.data?.points||!VIEWS.includes(view)||!Number.isFinite(nativePaperPoint?.u)||
     !Number.isFinite(nativePaperPoint?.v)||
     typeof generatedVertex?.IsSame!=='function'||
     generatedVertex.IsNull?.()===true||
@@ -325,9 +325,11 @@ function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
   if(!forward)continue;
   direct++;
   if(item.sourceVertexId===null){sameUnbound++;continue;}
-  const xyz=item.originalModelXYZ;
+  const xyz=item.originalModelXYZ,
+   model=geometry.data.points[item.sourceVertexId];
   if(typeof item.sourceVertexId!=='string'||!item.sourceVertexId||
-     !xyz||!['x','y','z'].every(k=>Number.isFinite(xyz[k])))
+     !xyz||!model||!['x','y','z'].every(k=>
+      Number.isFinite(xyz[k])&&xyz[k]===model[k]))
    throw new RangeError('unbound original M0 vertex identity in native ledger');
   sameIds.add(item.sourceVertexId);
   const paper=project(xyz)[view];
@@ -597,7 +599,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       const directNativeVertexOriginalSource=nativeEndpoints.nativeVertices.map(
        (vertex,side)=>probeRealOcctHLRVertexDirectOriginalSourceIdentity({
         generatedVertex:vertex,originalSourceVertices:originalNativeVertexHandles,
-        view,nativePaperPoint:nativeEndpoints.projectedEndpoints[side]
+        view,nativePaperPoint:nativeEndpoints.projectedEndpoints[side],geometry
        }));
       const ordinal=result.length;
       result.push({...checked,directNativeVertexOriginalSource});
