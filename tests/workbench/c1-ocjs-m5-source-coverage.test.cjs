@@ -114,6 +114,8 @@ test('C1 exact original XYZ parameter reversal remains valid in all first-angle 
   lift.sourceParameterAtProjectedTo=0;
   lift.fromCandidate3D={x:3,y:4,z:5};
   lift.toCandidate3D={x:0,y:0,z:0};
+  const stroke=q.cad.views[view][0];
+  [stroke.from,stroke.to]=[stroke.to,stroke.from];
  }
  assert.equal(validateNative(q),true);
 });
