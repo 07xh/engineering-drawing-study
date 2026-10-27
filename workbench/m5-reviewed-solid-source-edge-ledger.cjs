@@ -62,6 +62,13 @@ function auditReviewedSolidWholeSourceEdges({geometry,revision}={}){
    const aHidden=occlusion.hiddenSourceEdges.filter(e=>e.sourceEdgeId===id&&e.view===view);
    if(collapsed&&aVisible.length||aVisible.length>1||aHidden.length>1)
     throw new RangeError('duplicate or collapsed closed source proof');
+   // The closed-ray and occlusion engines must refer to the same physical
+   // source edge and current V/H/W view, not merely share a list position.
+   // A mismatched 3D source cannot become a formal visible/hidden line.
+   for(const witness of [...aVisible,...aHidden]){
+    if(witness.sourceEdgeId!==id||witness.view!==view)
+     throw new RangeError('C1 M5 original physical edge ray identity drift');
+   }
    const ray=aVisible[0],hidden=aHidden[0];
    const front=ray?.positiveClosedRayVisibilityVerified===true&&
      ray.wholeSourceIntervalClearVerified===true&&
