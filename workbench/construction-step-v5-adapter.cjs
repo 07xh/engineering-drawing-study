@@ -161,6 +161,14 @@ function verifiedTeachingActionToV5(a,sheet){
   geometry={center:sheetPoint(a.center),radius};
  }
  const out={id:a.id,kind:a.kind,geometry};
+ if(a.engineeringLineStyle!==undefined){
+  if(a.kind!=='line'||![
+    'gb-t-4457.4-continuous-wide-visible-outline',
+    'gb-t-4457.4-thin-dashed-hidden-edge'
+   ].includes(a.engineeringLineStyle))
+   throw new TypeError('unproved or unsupported line-style renderer action');
+  out.engineeringLineStyle=a.engineeringLineStyle;
+ }
  Motion.actionShapeAttrs(out,1);
  return out;
 }
