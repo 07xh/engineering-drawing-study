@@ -164,7 +164,14 @@ function exactC1NativeSourceIntervalCoverage({
        !Number.isFinite(tFrom)||!Number.isFinite(tTo)||
        !(tFrom>=0&&tFrom<=1&&tTo>=0&&tTo<=1&&tFrom!==tTo)||
        !exact3(lift.fromCandidate3D,originalPoint(tFrom))||
-       !exact3(lift.toCandidate3D,originalPoint(tTo)))
+       !exact3(lift.toCandidate3D,originalPoint(tTo))||
+       // Never let a caller's arbitrary [0,1] range conceal the actual
+       // projected 3D lift's [tFrom,tTo] subspan. No epsilon snapping:
+       // even one binary64 ULP of missing original source remains a gap.
+       !Array.isArray(lift.originalSourceParameterRange)||
+       lift.originalSourceParameterRange.length!==2||
+       lift.originalSourceParameterRange[0]!==Math.min(tFrom,tTo)||
+       lift.originalSourceParameterRange[1]!==Math.max(tFrom,tTo))
      throw new RangeError('unverified original native BRep source lift');
     candidates.push(lift.originalSourceParameterRange);
    }
