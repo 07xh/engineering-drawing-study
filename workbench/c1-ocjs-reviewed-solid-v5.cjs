@@ -116,6 +116,15 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
   // engine can rightly see other physical creases on an oblique convex
   // surface: those remain undetermined, NEVER minted as V5 strokes.
   for(const seg of generated){
+   // A real HLR paper stroke is evidence, not a source identity: reject
+   // malformed or duplicate source candidates before any reverse binding.
+   if(!Array.isArray(seg.projectedOriginalEdgeCandidates)||
+      seg.projectedOriginalEdgeCandidates.length===0||
+      seg.projectedOriginalEdgeCandidates.some(id=>
+       typeof id!=='string'||!id.startsWith(g.id+'::'))||
+      new Set(seg.projectedOriginalEdgeCandidates).size!==
+       seg.projectedOriginalEdgeCandidates.length)
+    throw new RangeError('real C1 HLR generated stroke has invalid original physical source candidates');
    const overlapping=signed.filter(bind=>positiveCollinearOverlap(
     bind.fromModelMm,bind.toModelMm,seg.from,seg.to));
    if(!overlapping.length){
