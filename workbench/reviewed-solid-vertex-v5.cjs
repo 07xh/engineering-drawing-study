@@ -265,7 +265,18 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    // A source edge may be only partly certified. Never silently drop its
    // unresolved remainder on approximate or endpoint-only overlap.
    sourceMayContainCertifiedVisibleSubspans:signedThirdView.some(s=>
-    s.sourceEdgeId===line.sourceEdgeId)
+    s.sourceEdgeId===line.sourceEdgeId),
+   // Preserve the actual whole-source continuous ray verdict for the
+   // next M5 interval/junction signer. Neither verdict alone grants a
+   // standard visible/hidden line or authorizes a V5 action.
+   m5SourceRayEvidence:{
+    status:line.rayEvidenceStatus,
+    wholeSourceFrontRayClear:line.continuousFrontRayClearVerified,
+    wholeSourceStrictlyOccluded:line.entireEdgeStrictlyOccludedVerified,
+    physicalCrease:line.sourcePhysicalCreaseVerified,
+    coplanarMeshSubdivision:line.sourceCoplanarSubdivisionVerified,
+    endpointIds:[...line.sourceVertexIds]
+   }
   })),
   // Workbench may draw the certified contour as official strokes, while
   // unresolved physical edges remain an explicitly separate review overlay.
