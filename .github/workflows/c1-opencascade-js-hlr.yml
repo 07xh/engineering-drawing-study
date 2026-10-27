@@ -18,6 +18,10 @@ on:
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
       - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
       - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
+      - 'workbench/c1-original-coproject-depth-order.cjs'
+      - 'workbench/m5-c1-reviewed-convex-physical-edge-strokes.cjs'
+      - 'tests/workbench/c1-original-coproject-depth-order.test.cjs'
+      - 'tests/workbench/c1-whole-original-signed-hull-mask.test.cjs'
       - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
       - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
       - 'workbench/c1-native-hlr-complete-m4-projected-encounters.cjs'
@@ -95,6 +99,10 @@ on:
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
       - 'workbench/c1-native-hidden-original-3d-vertex-endpoints.cjs'
       - 'workbench/c1-native-hlr-topods-original-vertex-concordance.cjs'
+      - 'workbench/c1-original-coproject-depth-order.cjs'
+      - 'workbench/m5-c1-reviewed-convex-physical-edge-strokes.cjs'
+      - 'tests/workbench/c1-original-coproject-depth-order.test.cjs'
+      - 'tests/workbench/c1-whole-original-signed-hull-mask.test.cjs'
       - 'workbench/c1-real-occt-m5-visible-contour-parity.cjs'
       - 'tests/workbench/c1-real-occt-m5-visible-contour-parity.test.cjs'
       - 'workbench/c1-native-hlr-complete-m4-projected-encounters.cjs'
@@ -183,6 +191,8 @@ jobs:
           node --test tests/workbench/c1-m5-closed-original-edge-ray-continuity.test.cjs
           node --test tests/workbench/c1-m5-original-closed-vertex-stars.test.cjs
           node --test tests/workbench/c1-ocjs-3d-candidate-lift.test.cjs
+          node --test tests/workbench/c1-original-coproject-depth-order.test.cjs
+          node --test tests/workbench/c1-whole-original-signed-hull-mask.test.cjs
           node --test tests/workbench/c1-ocjs-m5-source-coverage.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
