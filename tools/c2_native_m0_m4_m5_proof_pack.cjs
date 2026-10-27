@@ -30,6 +30,87 @@ const {assertM3ToV5Consistency}=
 const {verifiedTeachingActionToV5}=
  require('../workbench/construction-step-v5-adapter.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const Motion=require('../workbench/teaching-motion-v5.js');
+
+/**
+ * Same-run AUDIT VISUALIZATION of the already-signed original canonical V5
+ * actions. This function is private, never accepts a caller-supplied proof
+ * pack and does not certify new math or invent a second drawing engine.
+ * Unsigned/paper-alias native ranges have NO stroke in this sheet.
+ */
+function renderSameRunSignedC2Svg(certified){
+ const rows=certified?.certifiedVisibleHiddenSourceIntervals;
+ const steps=certified?.steps,blocked=certified?.unsignedNativePhysicalSourceIntervals;
+ if(!Array.isArray(rows)||!Array.isArray(steps)||!Array.isArray(blocked)||
+    certified.realNativeBRepWasExecutedInOriginalRunner!==true||
+    certified.canonicalConstructionIntentDagChecked!==true||
+    certified.oneExistingV5TimelineRecreated!==true||
+    !Number.isSafeInteger(certified.revision))
+  throw new RangeError('fresh canonical signed C2 V5 source required for audit SVG');
+ const actions=new Map();
+ for(const step of steps)for(const action of step.actions){
+  if(actions.has(action.id)||action.kind!=='line')
+   throw new RangeError('duplicate or unsupported existing V5 action');
+  actions.set(action.id,action);
+ }
+ if(rows.length!==actions.size||!rows.length)
+  throw new RangeError('signed original source / same V5 action mismatch');
+ const unsignedIDs=new Set(blocked.map(x=>x.actionId).filter(Boolean));
+ const seen=new Set(),views={V:[],H:[],W:[]},coordinates=[];
+ for(const row of rows){
+  const action=actions.get(row.actionId);
+  if(!action||seen.has(row.actionId)||unsignedIDs.has(row.actionId)||
+     !Object.hasOwn(views,row.view)||
+     row.fullOriginalC2NativeM0M4M5ProofVerifiedInFreshRun!==true||
+     row.signedByExistingConstructionIntentDagAndSingleV5!==true||
+     action.engineeringLineStyle!==row.standardEngineeringLineStyle)
+   throw new RangeError('unverified native interval entered signed visual evidence');
+  const attrs=Motion.actionShapeAttrs(action,1);
+  if(![attrs.x1,attrs.y1,attrs.x2,attrs.y2].every(Number.isFinite)||
+     !Number.isSafeInteger(row.sourceNativeResultEdgeOrdinal)||
+     !['gb-t-4457.4-continuous-wide-visible-outline',
+       'gb-t-4457.4-thin-dashed-hidden-edge'].includes(action.engineeringLineStyle))
+   throw new RangeError('nonfinite/unsigned canonical V5 shape rejected');
+  const hidden=action.engineeringLineStyle==='gb-t-4457.4-thin-dashed-hidden-edge';
+  views[row.view].push('<line x1="'+attrs.x1+'" y1="'+attrs.y1+
+   '" x2="'+attrs.x2+'" y2="'+attrs.y2+'" stroke="#143a63"'+
+   ' stroke-width="'+attrs['stroke-width']+'" stroke-dasharray="'+
+   attrs['stroke-dasharray']+'" fill="none" data-proof="native-m0-m4-m5"'+
+   ' data-view="'+row.view+'" data-source-ordinal="'+
+   row.sourceNativeResultEdgeOrdinal+'" data-v5-action="'+row.actionId+
+   '" data-engineering-line="'+(hidden?'hidden':'visible')+'"/>');
+  coordinates.push([attrs.x1,attrs.y1],[attrs.x2,attrs.y2]);
+  seen.add(row.actionId);
+ }
+ if(coordinates.length!==rows.length*2)
+  throw new RangeError('missing signed C2 source geometry');
+ const xs=coordinates.map(p=>p[0]),ys=coordinates.map(p=>p[1]);
+ const left=Math.min(...xs)-25,top=Math.min(...ys)-72,
+  width=Math.max(400,Math.max(...xs)-left+30),
+  height=Math.max(220,Math.max(...ys)-top+30);
+ const lines=Object.entries(views).map(([view,items])=>
+  '<g aria-label="'+view+' original M5 certified strokes"'+
+  ' data-first-angle-view="'+view+'">'+items.join('')+'</g>').join('');
+ const summary='Signed original M5: '+rows.length+
+  '; unsigned original intervals not drawn: '+blocked.length+
+  '; original textbook blind answer: NOT VERIFIED';
+ return '<?xml version="1.0" encoding="UTF-8"?>\n'+
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+
+  [left,top,width,height].join(' ')+'" role="img"'+
+  ' aria-label="C2 native signed-only V H W mathematical audit sheet"'+
+  ' data-math-scope="same-run-two-box-native-partial"'+
+  ' data-complete-c2="false" data-textbook-blind="false"'+
+  ' data-unsigned-native-intervals-excluded="'+blocked.length+'">'+
+  '<title>C2 OpenCascade / original V5 signed-only V H W review</title>'+
+  '<desc>'+summary+'</desc>'+
+  '<rect x="'+left+'" y="'+top+'" width="'+width+'" height="'+height+
+  '" fill="white"/><text x="'+(left+16)+'" y="'+(top+30)+
+  '" font-size="17" fill="#164c81">C2 | native original signed source only</text>'+
+  '<text x="'+(left+16)+'" y="'+(top+50)+
+  '" font-size="12" fill="#44566b">'+summary+'</text>'+
+  lines+'</svg>\n';
+}
+
 
 /**
  * This signer is intentionally PRIVATE to the same-process native-run CLI.
@@ -207,8 +288,11 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
     typeof outputPath!=='string'||!outputPath)
   throw new TypeError('explicit input manifest and fresh output proof pack paths required');
  const input=path.resolve(inputPath),output=path.resolve(outputPath);
- if(input===output||fs.existsSync(output))
-  throw new RangeError('never overwrite an existing source or a prior native math witness');
+ if(!output.endsWith('.json'))
+  throw new TypeError('native proof output must end in .json');
+ const signedSheetPath=output.slice(0,-5)+'.signed-only.svg';
+ if(input===output||fs.existsSync(output)||fs.existsSync(signedSheetPath))
+  throw new RangeError('never overwrite source, existing proof or signed-only audit sheet');
  const bytes=fs.readFileSync(input);
  if(bytes.length<25||bytes.length>64*1024)
   throw new RangeError('bounded original two-component CAD source required');
@@ -281,9 +365,17 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
  const out=JSON.stringify(packed,null,2)+'\n';
  if(Buffer.byteLength(out,'utf8')>12*1024*1024)
   throw new RangeError('bounded native CAD mathematical witness output exceeded');
- fs.writeFileSync(output,out,{flag:'wx',encoding:'utf8'});
+ // Emitted ONLY after the original same-run native executable and canonical
+ // mathematical consumer; no arbitrary external JSON can mint this SVG.
+ const svg=renderSameRunSignedC2Svg(certifiedV5);
+ if(Buffer.byteLength(svg,'utf8')>1024*1024)
+  throw new RangeError('signed-only native C2 audit SVG exceeds output bound');
+ fs.writeFileSync(signedSheetPath,svg,{flag:'wx',encoding:'utf8'});
+ try{fs.writeFileSync(output,out,{flag:'wx',encoding:'utf8'});}
+ catch(e){fs.unlinkSync(signedSheetPath);throw e;}
  return Object.freeze({
-  schema:packed.schema,outputPath:output,status:packed.status,
+  schema:packed.schema,outputPath:output,signedOnlySvgPath:signedSheetPath,
+  status:packed.status,
   actualGeneratedEdges:packed.verifiedNativeGeneratedEdges,
   pairViewChecks:packed.actualM4PairwiseSegmentViewChecks,
   subspanCount:packed.continuousM5SubspanCount,
