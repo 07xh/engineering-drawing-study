@@ -267,6 +267,18 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    sourceMayContainCertifiedVisibleSubspans:signedThirdView.some(s=>
     s.sourceEdgeId===line.sourceEdgeId)
   })),
+  // Workbench may draw the certified contour as official strokes, while
+  // unresolved physical edges remain an explicitly separate review overlay.
+  // A partially certified source edge is never hidden by its certified span.
+  drawingLayers:{
+   officialV5StrokeActionIds:signedThirdView.map(line=>line.actionId),
+   reviewOverlaySourceEdgeIds:sourceLines.map(line=>line.sourceEdgeId),
+   reviewOverlayStyle:'undetermined',
+   reviewOverlayIsOfficialDrawing:false
+  },
+  certifiedVisibleContourCount:signedThirdView.length,
+  unresolvedPhysicalEdgeCount:sourceLines.length,
+  hasUnresolvedPhysicalEdges:sourceLines.length>0,
   completeDrawingCertified:false,
   uncertifiedEdgesAreNotV5Actions:true
  });
