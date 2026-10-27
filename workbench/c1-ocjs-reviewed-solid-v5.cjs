@@ -17,8 +17,27 @@ const {auditC1NativeHiddenSharpVsM5}=
 const {auditC1RealOcctVisibleContourSourceParity}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {verifiedConvexMeshHalfspaces}=
+ require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {certifyConvexVertices}=
+ require('../core/numeric/m0-convex-vertex-completeness.cjs');
 const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
+// Positive original-M0 boundedness and extreme-vertex proof for the CURRENT
+// reviewed source. Never accept a caller-supplied status or CAD projection
+// as a substitute for an independent 3D halfspace/recession certificate.
+function auditC1M0ExtremeVertexCompleteness(geometry){
+ const hull=verifiedConvexMeshHalfspaces(geometry);
+ const proof=certifyConvexVertices({solid:{
+  id:geometry.id,halfspaces:hull.halfspaces,
+  vertices:Object.values(geometry.data.points)
+ },toleranceMm:Math.max(1e-7,hull.toleranceMm)});
+ if(proof.solidId!==geometry.id||
+    proof.completeSceneVerified!==false||
+    proof.officialLineStyleVerified!==false)
+  throw new RangeError('independent M0 extreme vertex proof drift');
+ return proof;
+}
 function intervalCoverage(a,b,segments,tol=1e-6){
  const dx=b.u-a.u,dy=b.v-a.v,den=dx*dx+dy*dy,len=Math.sqrt(den);
  if(!(len>1e-9))return false;
@@ -135,6 +154,10 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  // B-Rep HLR in the same revision. Caller cannot supply verification booleans.
  const canonical=compileReviewedSolidVertexV5({input,sheetTransform});
  const g=canonical.sceneResult.geometry,rev=canonical.revision;
+ const m0ExtremeVertices=auditC1M0ExtremeVertexCompleteness(g);
+ if(m0ExtremeVertices.vertexHullVerified!==true)
+  throw new RangeError('C1 original M0 bounded extreme vertices unproven: '+
+   m0ExtremeVertices.reason);
  const cad=computeC1OcjsVisibleSegments({oc,geometry:g,revision:rev});
  if(cad.revision!==rev||cad.sourceGeometryId!==g.id||
     !canonical.globalVisibleContourProof.allThreeViewsGlobalContourCertified||
@@ -220,6 +243,8 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    compute:'real OpenCascade.js HLR visible B-Rep geometry',
    engine:'opencascade.js',revision:rev,geometryId:g.id,
    supportedScope:cad.proofScope,
+   independentlyM0BoundedExtremeVertexSetVerified:true,
+   independentlyM0ExtremeVertexProof:m0ExtremeVertices,
    perView:out,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
    everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource:true,
@@ -248,6 +273,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   throw new TypeError('initialized real OpenCascade.js kernel required');
  const original=compileReviewedSolidVertexV5({input,sheetTransform});
  const g=original.sceneResult.geometry,revision=original.revision;
+ const m0ExtremeVertices=auditC1M0ExtremeVertexCompleteness(g);
  const cad=computeC1OcjsVisibleSegments({oc,geometry:g,revision});
  const proof=original.globalVisibleContourProof;
  const ledger=original.wholeSourceEdgeRayEvidence;
@@ -317,6 +343,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   schema:'draftai-c1-ocjs-m5-convex-proof-gap-ledger/1',
   revision,sourceGeometryId:g.id,unit:'mm',
   engine:'opencascade.js',proofScope:cad.proofScope,
+  independentlyM0ExtremeVertexProof:m0ExtremeVertices,
+  independentlyM0BoundedExtremeVertexSetVerified:
+   m0ExtremeVertices.vertexHullVerified===true,
   allThreeViewsGlobalM5Certified:proof.allThreeViewsGlobalContourCertified,
   counts:totals,views,
   globalOfficialV5GateUnchanged:true,
@@ -326,4 +355,5 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  });
 }
 module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
- intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates};
+ intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates,
+ auditC1M0ExtremeVertexCompleteness};
