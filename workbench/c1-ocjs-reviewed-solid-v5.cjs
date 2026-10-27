@@ -25,8 +25,10 @@ function intervalCoverage(a,b,segments,tol=1e-6){
  const spans=[];
  const coordinate=p=>{
   const cross=dx*(p.v-a.v)-dy*(p.u-a.u);
-  if(Math.abs(cross)>tol*len)return null;
-  return ((p.u-a.u)*dx+(p.v-a.v)*dy)/den;
+  if(!Number.isFinite(p.u)||!Number.isFinite(p.v)||
+     !Number.isFinite(cross)||Math.abs(cross)>tol*len)return null;
+  const parameter=((p.u-a.u)*dx+(p.v-a.v)*dy)/den;
+  return Number.isFinite(parameter)?parameter:null;
  };
  for(const s of segments){
   const x=coordinate(s.from),y=coordinate(s.to);
