@@ -262,17 +262,31 @@ async function compile(){
   // The local paper and V5 panels never request any textbook answer data.
   $('sheetPreview').innerHTML=result.solution.threeViewSvgSheet.sheetSvg;
   controls(true);
-  $('proof').textContent='当前题图识别：仍须人工确认。'+
+  const scope=result.scopedConvexAcceptance;
+  if(!scope||scope.realTextbookBlindTestPassed!==false)
+   throw new RangeError('missing isolated bounded-convex acceptance evidence');
+  const fullyProven=scope.scopedSingleConvexFullyCertified===true;
+  $('proof').textContent='真实教材题图自动识别/全部角点完整性：尚未独立认证。'+
    '\nM3/M0/M5 原始来源门禁：'+
    result.solution.m0M3M5PhysicalSourceAcceptance.status+
+   '\n限定单闭合凸体全部原始实体棱线：'+
+   (fullyProven?'完整数学认证通过':'尚存数学证明阻断')+
+   '\n已审三视图原始棱线：'+scope.checkedOriginalPhysicalEdgeViews+
+   '；正长度未覆盖区间：'+scope.positiveGapCount+
+   '；重复签发区间：'+scope.overlappingCertifiedSourceCount+
    '\nM5 已签发轮廓 V5：'+
    result.solution.certifiedVisibleContourLineActionCount+
-   '；独立证明的实体棱线 V5：'+
+   '；已证明的实体棱线 V5：'+
    result.solution.certifiedPhysicalLineActionCount+
    '\n唯一 V5 动作数：'+result.solution.timeline.segments.length+
-   '；完整教材原题/标准答案盲测：未通过。'+
-   '\n原题识别完整性没有独立证明；未认证边只作灰色审阅预览。';
-  setStatus('已按本次人工确认条件进入既有 M3/M0/M5/V5；整题未签收。');
+   '；真实教材原题/标准答案无答案盲测：未通过。'+
+   (fullyProven?
+    '\n数学证明仅适用于本次人工审核的单一闭合凸体，绝不代表真实教材答案已通过。':
+    '\n尚未签发的数学条件：'+scope.missingObligations.join('；')+
+    '。未认证棱线只供灰色审阅。');
+  setStatus(fullyProven?
+   '本次受限凸体全三视图原始棱线数学签收通过；原教材盲测仍未通过。':
+   '本次仅显示已证明的 V5 动作；全体实体棱线或教材盲测仍未签收。');
   drawV5();
  }catch(e){setStatus('M3/M5/V5 正向门禁阻断：'+(e?.message||String(e)),true);}
 }

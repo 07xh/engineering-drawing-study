@@ -14,8 +14,8 @@
  */
 const {inferC1UniqueConvexGeometryCandidate}=
  require('./c1-unique-two-view-convex-candidate.cjs');
-const {compileReviewedSolidVertexV5}=
- require('./reviewed-solid-vertex-v5.cjs');
+const {compileScopedFullyProvenConvexC1}=
+ require('./c1-fully-proven-convex-third-view-delivery.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -150,9 +150,21 @@ async function compileReviewedC1DxfGivenToSoleV5({
   givenPacket,revision,geometryId});
  const input={...inferred.reviewedSolidInputCandidate,
   confirmedBy:'user',topologyConfirmed:true};
- // This is the ONLY already-existing C1 M3/M5/ConstructionIntent/DAG/V5.
- // No answer packet or caller-supplied V5 actions enter this call.
- const solved=compileReviewedSolidVertexV5({input,sheetTransform});
+ // A single execution of the existing canonical M0/M3/M4/M5/DAG/V5
+ // produces BOTH its formal source-range audit and the same live V5 player.
+ // No answer packet, caller V5 actions or second solver enters this path.
+ const scoped=compileScopedFullyProvenConvexC1({
+  input,sheetTransform,includeCanonicalSolution:true
+ });
+ const solved=scoped.canonicalSolution;
+ if(!solved||scoped.sourceGeometryId!==geometryId||
+    scoped.revision!==revision||
+    scoped.originalV5ReusablePlayer!==solved.player||
+    scoped.missingView!==givenPacket.missingView||
+    scoped.signedV5ActionCount<0||
+    scoped.allOriginalPositivePhysicalSourceRangesAccounted!==
+       scoped.sourceCoverage.every(x=>x.completeAndNonOverlapping))
+  throw new RangeError('C1 complete-source proof and original sole V5 lineage disagree');
  if(solved.sceneResult?.geometry?.id!==geometryId||
     solved.revision!==revision||
     solved.singleOriginalV5Player!==true||
@@ -167,6 +179,24 @@ async function compileReviewedC1DxfGivenToSoleV5({
   originalGivenPointSetMatchingVerified:true,
   referenceAnswerWasNeverAConsumerInput:true,
   solution:solved,
+  scopedConvexAcceptance:{
+   schema:scoped.schema,
+   status:scoped.status,
+   scopedSingleConvexFullyCertified:scoped.scopedSingleConvexFullyCertified,
+   allOriginalPositivePhysicalSourceRangesAccounted:
+    scoped.allOriginalPositivePhysicalSourceRangesAccounted,
+   allThreeViewsGlobalContourCertified:
+    scoped.allThreeViewsGlobalContourCertified,
+   checkedOriginalPhysicalEdgeViews:scoped.sourceCoverage.length,
+   positiveGapCount:scoped.sourceCoverage.reduce((n,x)=>
+    n+x.positiveGapCount,0),
+   overlappingCertifiedSourceCount:scoped.sourceCoverage.reduce((n,x)=>
+    n+x.overlappingCertifiedSourceCount,0),
+   signedV5ActionCount:scoped.signedV5ActionCount,
+   missingObligations:[...scoped.missingObligations],
+   originalMathematicalScopeOnly:true,
+   realTextbookBlindTestPassed:false
+  },
   wholeOriginalTextbookAnswerBlindVerified:false,
   sourceDrawingCompletenessIndependentlyAuthenticated:false,
   originalTextbookC1DeliveryComplete:false

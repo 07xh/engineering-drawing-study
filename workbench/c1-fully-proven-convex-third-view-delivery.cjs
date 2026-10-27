@@ -27,7 +27,12 @@ const {certifyWholeProjectedExteriorCoverage}=
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
-function compileScopedFullyProvenConvexC1({input,sheetTransform}={}){
+function compileScopedFullyProvenConvexC1({input,sheetTransform,
+ includeCanonicalSolution=false}={}){
+ // The optional consumer handoff uses the *same* canonical solution that
+ // generated the source coverage proof; never run an unrelated second V5.
+ if(typeof includeCanonicalSolution!=='boolean')
+  throw new TypeError('canonical solution inclusion must be boolean');
  const solved=compileReviewedSolidVertexV5({input,sheetTransform});
  const proof=solved.physicalEdgeProof;
  if(!proof||proof.sourceGeometryId!==solved.sceneResult.geometry.id||
@@ -173,6 +178,9 @@ function compileScopedFullyProvenConvexC1({input,sheetTransform}={}){
   fullGenericC1ImagesOrNonconvexVerified:false,
   realTextbookBlindTestPassed:false
  };
+ // Only trusted callers requesting the authentic one-player handoff receive
+ // the identical existing canonical result. This does not add another signer.
+ if(includeCanonicalSolution)output.canonicalSolution=solved;
  // The original underlying C1 result has conservative false blanket flags;
  // this NEW positive mathematical gate never mutates or re-labels them.
  return freeze(output);
