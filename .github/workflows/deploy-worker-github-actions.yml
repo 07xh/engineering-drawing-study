@@ -1,0 +1,87 @@
+name: Publish DraftAI Worker (GitHub Actions + Wrangler)
+
+# Workers Builds minutes are NOT used by this workflow.
+# First disable the Worker Git-connected Builds in Cloudflare, then enable
+# ENABLE_DRAFTAI_GHA_DEPLOY in GitHub Actions repository variables.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: draftai-worker-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Default OFF until Cloudflare's old Git-triggered Builds are disconnected.
+    # workflow_dispatch allows a supervised first cutover.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.ENABLE_DRAFTAI_GHA_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout exact published revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate credentials and existing Worker identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID repository Actions secrets."
+            exit 1
+          fi
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
+          if (config.name !== 'engineering-drawing-study' ||
+              config.assets?.directory !== './dist' ||
+              config.main || config.routes || config.route || config.custom_domain) {
+            throw new Error('Production Worker identity/assets changed: manual Cloudflare route review required');
+          }
+          console.log('Existing Worker identity and allowlisted ./dist assets confirmed.');
+          NODE
+
+      - name: Install pinned app build dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      - name: Build existing public-only distribution
+        run: |
+          node scripts/build-static.cjs
+          node scripts/check-static-site-dependencies.cjs
+
+      - name: Fail closed on private source leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/public-use.html
+          test -f dist/labs/solid-third-view-live.html
+          test ! -e dist/knowledge/index.html
+          test ! -e dist/labs/verified-exercises.js
+          test ! -e dist/labs/source-fidelity.html
+          test ! -e dist/.github
+          test ! -e dist/AGENTS.md
+
+      - name: Publish prebuilt assets directly to EXISTING Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          # --keep-vars preserves plain variables already configured in the
+          # Cloudflare dashboard. Wrangler also preserves existing secrets.
+          # No new route/domain, Worker name, KV, R2, or D1 is provisioned.
+          npx --yes wrangler@4.147.0 deploy --config wrangler.jsonc --keep-vars
+          echo "GitHub source SHA: ${GITHUB_SHA}"
