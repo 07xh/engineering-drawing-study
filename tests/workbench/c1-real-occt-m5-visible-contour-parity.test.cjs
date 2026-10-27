@@ -7,7 +7,8 @@ const {auditC1GlobalVisibleContourProof}=
  require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
 const {auditC1RealOcctVisibleContourSourceParity:audit,
  exactOriginalModelVertexProjectedEdge:recover,
- exactPositiveCollinearPaperOverlap:overlap}=
+ exactPositiveCollinearPaperOverlap:overlap,
+ exactTransverseFrontSourceDepthConflict:skewFrontCrossing}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const g=()=>{
  const x=prismMesh({solid:{min:{x:0,y:0,z:0},
@@ -186,6 +187,61 @@ test('exact positive paper overlap excludes only nonzero collinear intersections
   {u:7,v:0}),false,'a positive representable paper gap stays a gap');
 });
 
+test('different independently M5-front source edges with a strict native paper crossing and exact skew original 3D depths cannot both be frontmost',()=>{
+ const cases=[
+  {view:'V',a:{x:0,y:0,z:0},b:{x:4,y:0,z:4},
+   c:{x:0,y:2,z:4},d:{x:4,y:2,z:0}},
+  {view:'H',a:{x:0,y:0,z:0},b:{x:4,y:4,z:0},
+   c:{x:0,y:4,z:2},d:{x:4,y:0,z:2}},
+  {view:'W',a:{x:0,y:0,z:0},b:{x:0,y:4,z:4},
+   c:{x:2,y:0,z:4},d:{x:2,y:4,z:0}}
+ ];
+ for(const row of cases){
+  const {view,a,b,c,d}=row,
+   native={...row,from:project(a)[view],to:project(b)[view],
+    otherFrom:project(c)[view],otherTo:project(d)[view]};
+  assert.equal(skewFrontCrossing(native),true,
+   'the actual first-angle '+view+' 3D source depths disagree at a strict projected interior crossing');
+  assert.equal(skewFrontCrossing({...native,from:native.to,to:native.from,
+   otherFrom:native.otherTo,otherTo:native.otherFrom}),true,
+  'reversing both genuine generated HLR strokes cannot hide the depth contradiction');
+  assert.equal(skewFrontCrossing({...native,c:{...c,[view==='V'?'y':view==='H'?'z':'x']:0},
+   d:{...d,[view==='V'?'y':view==='H'?'z':'x']:0}}),false,
+   'genuinely coplanar 3D source edges can meet physically and must not be rejected');
+  assert.equal(skewFrontCrossing({...native,to:native.from}),false,
+   'a collapsed native generated paper segment does not establish a strict crossing');
+  assert.equal(skewFrontCrossing({...native,to:{...native.from,
+   u:(native.from.u+native.to.u)/4,
+   v:(native.from.v+native.to.v)/4}}),false,
+   'a truncated native stroke ending before the crossing is not a conflicting whole-front claim');
+ }
+});
+test('exact skew source depth crossing remains detectable without floating overflow or tolerance snapping',()=>{
+ for(const scale of [1e200,Number.MIN_VALUE*4]){
+  const a={x:0,y:0,z:0},b={x:scale,y:0,z:scale},
+   c={x:0,y:2,z:scale},d={x:scale,y:2,z:0},view='V';
+  const native={view,a,b,c,d,from:project(a).V,to:project(b).V,
+   otherFrom:project(c).V,otherTo:project(d).V};
+  assert.equal(skewFrontCrossing(native),true,
+   'exact binary64 dyadic predicates preserve the interior crossing at scale '+scale);
+  assert.equal(skewFrontCrossing({...native,otherTo:{...native.otherFrom}}),false);
+ }
+});
+test('paper-only aliases and original source endpoint joins never invent a skew 3D depth contradiction',()=>{
+ const a={x:0,y:0,z:0},b={x:4,y:0,z:4},
+  c={x:0,y:2,z:4},d={x:4,y:2,z:0},view='V';
+ const native={view,a,b,c,d,from:project(a).V,to:project(b).V,
+  otherFrom:project(c).V,otherTo:project(d).V};
+ assert.equal(skewFrontCrossing({...native,otherFrom:{u:4,v:4},
+  otherTo:{u:5,v:3}}),false,
+  'a mere endpoint-only paper contact cannot establish strict crossing');
+ assert.equal(skewFrontCrossing({...native,c:{x:5,y:2,z:4},
+  d:{x:6,y:2,z:0}}),false,
+  'the ORIGINAL projected 3D source edges must independently cross too');
+ assert.throws(()=>skewFrontCrossing({...native,view:'side'}),/V\/H\/W view required/);
+ assert.throws(()=>skewFrontCrossing({...native,from:{u:Infinity,v:0}}),
+  /finite native paper crossing endpoints required/);
+});
 test('exact binary64 orientation detects true collinear HLR overlaps even when floating cross products overflow',()=>{
  const a={u:0,v:0},b={u:1e200,v:1e200},
   c={u:5e199,v:5e199},d={u:1.5e200,v:1.5e200};
