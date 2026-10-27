@@ -3,6 +3,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {matchOriginalBRepEdgeByXYZ:match,
  probeRealOcctHLREdgeDirectOriginalSourceIdentity:probe,
+ probeRealOcctHLRVertexDirectOriginalSourceIdentity:probeVertex,
  verifyOriginalOcctLinearCurveWitness:verifyLine}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const xyz=(x,y,z)=>({x,y,z});
@@ -150,4 +151,86 @@ test('reversed original OCCT 3D endpoints keep physical parameter span and never
  assert.equal(result.occtSourceCurve3DEndpointsAndMidpointVerified,true);
  assert.equal(result.engineeringLineStyle,'undetermined');
  assert.equal(result.v5Authorized,false);
+});
+
+const {project}=require('../../core/projection/conventions.js');
+const vertexLedger=(g,items)=>items.map(([id,tshape,loc=0])=>({
+ sourceVertexId:id,originalModelXYZ:id===null?null:{...g.data.points[id]},
+ vertex:native(tshape,loc)
+}));
+const probeVertexIn=(g,view,shape,items,paper)=>probeVertex({
+ geometry:g,view,generatedVertex:shape,
+ originalSourceVertices:items,
+ nativePaperPoint:paper
+});
+test('real original TopoDS vertex IsSame is a scoped direct 3D identity in V/H/W, never generated edge history',()=>{
+ const g=shape();
+ for(const view of ['V','H','W']){
+  const original=vertexLedger(g,[['A','original-a'],['B','original-b'],
+   ['A','original-a']]);
+  const proof=probeVertexIn(g,view,native('original-a'),original,
+   project(g.data.points.A)[view]);
+  assert.equal(proof.directlySameOriginalM0VertexId,'A');
+  assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,true);
+  assert.equal(proof.directOriginalTopoDSVertexIsSameOccurrenceCount,2);
+  assert.equal(proof.originalNativeTopoDSVertexOccurrencesCompared,3);
+  assert.equal(proof.fullGeneratedHLREdgeToOriginalTopoDSHistoryProven,false);
+  assert.equal(proof.officialEngineeringLineStyle,'undetermined');
+  assert.equal(proof.signedV5Action,false);
+ }
+});
+test('paper coincidence and nearby but different native TopoDS TShape or Location cannot become original 3D identity',()=>{
+ const g=shape(),original=vertexLedger(g,[['A','source-a']]);
+ for(const view of ['V','H','W']){
+  const paper=project(g.data.points.A)[view];
+  for(const generated of [native('new-hlr-shape'),native('source-a',1)]){
+   const proof=probeVertexIn(g,view,generated,original,paper);
+   assert.equal(proof.directlySameOriginalM0VertexId,null);
+   assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+   assert.equal(proof.directOriginalTopoDSVertexIsSameOccurrenceCount,0);
+  }
+ }
+});
+test('one ULP of projected paper drift holds direct native vertex certification instead of snapping source interval',()=>{
+ const g=shape(),original=vertexLedger(g,[['A','source-a']]);
+ for(const view of ['V','H','W']){
+  const paper={...project(g.data.points.A)[view]};
+  paper.u=Number.MIN_VALUE;
+  const proof=probeVertexIn(g,view,native('source-a'),original,paper);
+  assert.equal(proof.directOriginalTopoDSVertexIsSameOccurrenceCount,1);
+  assert.equal(proof.directOriginalTopoDSVertexPaperMismatchCount,1);
+  assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+  assert.equal(proof.directlySameOriginalM0VertexId,null);
+ }
+});
+test('direct native IsSame cannot bind two conflicting original M0 vertex IDs or a forged model coordinate',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ assert.throws(()=>probeVertexIn(g,'V',native('same'),
+  vertexLedger(g,[['A','same'],['B','same']]),paper),
+  /conflicting original M0 vertices/);
+ const forged=vertexLedger(g,[['A','same']]);
+ forged[0].originalModelXYZ.x=Number.MIN_VALUE;
+ assert.throws(()=>probeVertexIn(g,'V',native('same'),forged,paper),
+  /unbound original M0 vertex identity/);
+});
+test('native original BRep source without exact M0 XYZ binding stays unproved even when IsSame',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ const proof=probeVertexIn(g,'V',native('a'),
+  vertexLedger(g,[[null,'a']]),paper);
+ assert.equal(proof.directOriginalTopoDSVertexWithoutExactM0Binding,1);
+ assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+ assert.equal(proof.directlySameOriginalM0VertexId,null);
+});
+test('asymmetric, invalid, or nonreflexive generated/original TopoDS vertex witnesses fail closed',()=>{
+ const g=shape(),paper=project(g.data.points.A).V,
+  originals=vertexLedger(g,[['A','a']]);
+ assert.throws(()=>probeVertexIn(g,'V',{IsSame:()=>true},
+  originals,paper),/asymmetric/);
+ assert.throws(()=>probeVertexIn(g,'V',{IsSame:()=>false},
+  originals,paper),/actual OCCT HLR vertex/);
+ assert.throws(()=>probeVertexIn(g,'V',native('a'),[
+  {...originals[0],vertex:{IsSame:()=>false}}
+ ],paper),/invalid original native/);
+ assert.throws(()=>probeVertexIn(g,'V',native('a'),[],
+  paper),/bounded original TopoDS vertex ledger/);
 });
