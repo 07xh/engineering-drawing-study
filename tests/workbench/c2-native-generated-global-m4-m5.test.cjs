@@ -54,7 +54,7 @@ test('same genuine vertex label but disconnected 3D endpoints must hard-fail',()
   revision:1,solids,
   nativeReport:report([
    edge(1,[1,2],A,B),
-   edge(2,[2,3],B,{x:7,y:4,z:5})
+   edge(2,[2,3],{x:4,y:4,z:5},{x:7,y:4,z:5})
   ])
  }),/same TopoDS vertex|source/);
 });
