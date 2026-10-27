@@ -280,6 +280,7 @@ function auditC2GeneratedResultProjectedM4M5({
   rows.push({view:raw.view,sourceNativeResultEdgeOrdinal:raw.id,
    source3DVertexOrdinals:[...edge.ids],
    collapsed:false,cuts:unique,
+   unresolvedNearDegenerateOriginalSourceEvents:raw.unresolvedWholeEdge,
    encounters:raw.encounters,subspans,
    formalEngineeringLineStylesCertified:false});
  }
