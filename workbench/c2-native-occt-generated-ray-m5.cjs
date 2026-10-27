@@ -58,6 +58,22 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     !Array.isArray(parts)||parts.length!==2||
     parts[0]?.id===parts[1]?.id)
   throw new TypeError('two distinct current original C2 component source identities required');
+ // Native result source IDs/revision alone are NOT sufficient. Reject an
+ // unverified or stale OCP union that used different box bounds under the
+ // same names. Exact binary64 mm coordinate equality is mandatory.
+ if(nativeReport?.sourceFingerprintScope!==
+    'ordered-ID-box-bounds-IEEE754-binary64-mm-v1'||
+    typeof nativeReport.canonicalOriginalComponentGeometrySHA256!=='string'||
+    !/^[0-9a-f]{64}$/.test(nativeReport.canonicalOriginalComponentGeometrySHA256)||
+    !Array.isArray(nativeReport.actualNativeSourceBoxBoundsMm)||
+    nativeReport.actualNativeSourceBoxBoundsMm.length!==parts.length||
+    nativeReport.actualNativeSourceBoxBoundsMm.some((v,i)=>
+     v?.id!==parts[i].id||
+     !Array.isArray(v.min)||!Array.isArray(v.max)||
+     v.min.length!==3||v.max.length!==3||
+     ['min','max'].some(key=>v[key].some((num,j)=>
+       !Number.isFinite(num)||!Object.is(num,parts[i][key][j])))))
+  throw new RangeError('OCCT source box bounds differ from current independent M0 geometry');
  const geometries=parts.map(originalBoxGeometry);
  const solids=geometries.map(g=>{
   const proof=verifiedConvexMeshHalfspaces(g);
