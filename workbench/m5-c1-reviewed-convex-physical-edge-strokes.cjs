@@ -22,8 +22,8 @@ const {auditC1SingleConvexSourceSubspanRays}=
  require('./m5-c1-source-subspan-opaque-rays.cjs');
 const {auditC1GlobalVisibleContourProof}=
  require('./m5-c1-global-visible-contour-proof.cjs');
-const {positiveCollinearOverlap}=
- require('./c1-ocjs-paper-collinear-overlap.cjs');
+const {exactPositiveCollinearPaperOverlap}=
+ require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditC1OriginalCoProjectedDepthOrder}=
@@ -52,24 +52,33 @@ function certifyWholeProjectedExteriorCoverage({fromModelMm:a,toModelMm:b,
  const du=b.u-a.u,dv=b.v-a.v,len2=du*du+dv*dv;
  if(![du,dv,len2].every(Number.isFinite)||len2<=1e-20)
   return false;
- const len=Math.sqrt(len2),pieces=[];
- const pos=p=>((p.u-a.u)*du+(p.v-a.v)*dv)/len2;
- const deviation=p=>Math.abs((p.u-a.u)*dv-(p.v-a.v)*du)/len;
+ // The larger literal paper axis is monotone on a straight segment.
+ // Using raw binary64 endpoints avoids rounded [0,1] fractions that
+ // erase a genuine one-ULP gap at large drawing offsets.
+ const axis=Math.abs(du)>=Math.abs(dv)?'u':'v',
+  from=Math.min(a[axis],b[axis]),to=Math.max(a[axis],b[axis]),
+  pieces=[];
  for(const line of certifiedContours){
   const x=line?.projectedFromModelMm,y=line?.projectedToModelMm;
   if(!x||!y||line.signedOfficialLineStyle!==VISIBLE||
      line.v5ActionAuthorized!==true||
      ![x.u,x.v,y.u,y.v].every(Number.isFinite))
    continue;
-  // Geometric collinearity is checked, not inferred from an unsigned
-  // paper-crossing event. Tiny parameter gaps remain exact and BLOCK.
-  if(deviation(x)>1e-9||deviation(y)>1e-9)continue;
-  const left=Math.max(0,Math.min(pos(x),pos(y)));
-  const right=Math.min(1,Math.max(pos(x),pos(y)));
+  // Exact dyadic collinearity: a distinct parallel 3D source must not
+  // mask the real original edge even at sub-tolerance paper distances.
+  if(!exactPositiveCollinearPaperOverlap(a,b,x,y))continue;
+  const left=Math.max(from,Math.min(x[axis],y[axis])),
+   right=Math.min(to,Math.max(x[axis],y[axis]));
   if(right>left)pieces.push([left,right]);
  }
- return pieces.length>0&&exactCandidateIntervalCoverage([0,1],pieces)
-  .entireOriginalParameterIntervalCovered===true;
+ pieces.sort((x,y)=>x[0]-y[0]||x[1]-y[1]);
+ let reach=from;
+ for(const [lo,hi] of pieces){
+  if(lo>reach)return false;
+  if(hi>reach)reach=hi;
+  if(reach>=to)return true;
+ }
+ return false;
 }
 function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
  if(geometry?.kind!=='mesh'||geometry.space!=='model-3d'||
