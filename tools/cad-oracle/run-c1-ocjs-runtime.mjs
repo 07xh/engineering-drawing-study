@@ -79,6 +79,10 @@ for(const [id,min,max,revision] of cases){
  assert.equal(result.c1CadRuntime.originalM5SignedExteriorContourStrokes,12);
  assert.equal(result.c1CadRuntime.sourceProofFromIndependentClosedRayAndActualNativeHLR,true);
  assert.equal(result.c1CadRuntime.originalGeneratedTopoDSEdgeHistoryNotClaimed,true);
+ assert.equal(result.c1CadRuntime.independentlyM0BoundedExtremeVertexSetVerified,true);
+ assert.equal(result.c1CadRuntime.independentlyM0ExtremeVertexProof.vertexHullVerified,true);
+ assert.equal(result.c1CadRuntime.independentlyM0ExtremeVertexProof.derivedVertexCount,8);
+ assert.equal(result.c1CadRuntime.independentlyM0ExtremeVertexProof.officialLineStyleVerified,false);
  assert.equal(result.globalVisibleContourProof.allThreeViewsGlobalContourCertified,true);
  assert.equal(result.verifiedLineIntentAndOriginalSingleV5Parity,true);
  assert.equal(result.certifiedVisibleContourLineActionCount,12);

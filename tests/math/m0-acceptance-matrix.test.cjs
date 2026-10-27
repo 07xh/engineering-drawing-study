@@ -4,8 +4,8 @@ const {audit}=require('../../scripts/audit-m0-acceptance.cjs');
 const by=(r,id)=>r.entries.find(x=>x.path==='core/numeric/'+id+'.cjs');
 test('complete M0 API inventory has explicit scoped tests and real unresolved gates',()=>{
  const r=audit();
- assert.equal(r.moduleCount,21);
- assert.equal(r.entries.length,21);
+ assert.equal(r.moduleCount,31);
+ assert.equal(r.entries.length,31);
  assert.equal(r.statuses.provisional,1);
  assert.equal(r.statuses['consumer-pending'],0);
  assert.equal(r.statuses['consumer-review'],6);
@@ -52,5 +52,24 @@ test('ray and projected-edge primitives retain independent missing scene/endpoin
  for(const id of ['convex-ray-depth','convex-point-ray-clearance',
   'convex-segment-clearance','convex-segment-occlusion','projected-edge-depth-events']){
   assert.match(by(r,id).remainingGate,/scene|occluder|revision|endpoint|contour/);
+ }
+});
+
+test('ten added M0 contour/depth helpers are explicitly scoped and independently regression-listed, not full M5/V5',()=>{
+ const r=audit();
+ for(const id of [
+  'm0-analytic-boundary-ray-audit','m0-boundary-continuity',
+  'm0-contour-kernel-binding','m0-convex-vertex-completeness',
+  'm0-global-depth-separation','m0-joint-visibility-partition',
+  'm0-trusted-depth-partition','multi-solid-contour-audit',
+  'projected-contour-topology','projected-join-proof'
+ ]){
+  const entry=by(r,id);
+  assert.ok(entry,'missing audited numeric module '+id);
+  assert.equal(entry.status,'scoped-math');
+  assert.ok(entry.proofScope&&entry.remainingGate);
+  assert.equal(entry.regressionTests.length,1);
+  assert.ok(entry.regressionTests[0].startsWith('tests/math/')&&
+   entry.regressionTests[0].endsWith('.test.cjs'));
  }
 });

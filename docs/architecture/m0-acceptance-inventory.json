@@ -158,6 +158,78 @@
       "remainingGate": "independent source/revision, analytic derivative and downstream signoff, no global uniqueness"
     },
     {
+      "path": "core/numeric/m0-analytic-boundary-ray-audit.cjs",
+      "status": "scoped-math",
+      "proofScope": "point-ray boundary classification of already supplied analytic segment partitions",
+      "regressionTests": [
+        "tests/math/m0-analytic-boundary-ray-audit.test.cjs"
+      ],
+      "remainingGate": "missing authenticated source/partition boundary topology and full-scene depth ordering"
+    },
+    {
+      "path": "core/numeric/m0-boundary-continuity.cjs",
+      "status": "scoped-math",
+      "proofScope": "local agreement of analytic boundary point-ray classifications with adjacent open intervals",
+      "regressionTests": [
+        "tests/math/m0-boundary-continuity.test.cjs"
+      ],
+      "remainingGate": "does not establish all original 3D junctions or global scene continuity"
+    },
+    {
+      "path": "core/numeric/m0-contour-kernel-binding.cjs",
+      "status": "scoped-math",
+      "proofScope": "binding supplied projected contour evidence to existing convex M0 occlusion witnesses",
+      "regressionTests": [
+        "tests/math/m0-contour-kernel-binding.test.cjs"
+      ],
+      "remainingGate": "source provenance, complete source intervals and final M5/GB/V5 authorization remain separate"
+    },
+    {
+      "path": "core/numeric/m0-convex-vertex-completeness.cjs",
+      "status": "scoped-math",
+      "proofScope": "bounded convex polyhedron vertex inventory against finite triple-plane intersections",
+      "regressionTests": [
+        "tests/math/m0-convex-vertex-completeness.test.cjs"
+      ],
+      "remainingGate": "independently authenticated closed BRep and nonconvex or multi-solid scene outside scope"
+    },
+    {
+      "path": "core/numeric/m0-global-depth-separation.cjs",
+      "status": "scoped-math",
+      "proofScope": "strict global depth order for two finite convex solids under a fixed orthographic observer",
+      "regressionTests": [
+        "tests/math/m0-global-depth-separation.test.cjs"
+      ],
+      "remainingGate": "does not prove overlapping/tied depth intervals or arbitrary scene occlusion"
+    },
+    {
+      "path": "core/numeric/m0-joint-visibility-partition.cjs",
+      "status": "scoped-math",
+      "proofScope": "local source-segment partition of supplied positive occlusion and clearance evidence",
+      "regressionTests": [
+        "tests/math/m0-joint-visibility-partition.test.cjs"
+      ],
+      "remainingGate": "all faces, physical endpoint topology and entire parameter coverage remain unproved"
+    },
+    {
+      "path": "core/numeric/m0-trusted-depth-partition.cjs",
+      "status": "scoped-math",
+      "proofScope": "depth-order evidence only after independent convex vertex-completeness checks",
+      "regressionTests": [
+        "tests/math/m0-trusted-depth-partition.test.cjs"
+      ],
+      "remainingGate": "missing arbitrary nonconvex/multi-solid provenance and downstream line-style proof"
+    },
+    {
+      "path": "core/numeric/multi-solid-contour-audit.cjs",
+      "status": "scoped-math",
+      "proofScope": "conservative joins of independently supplied multi-solid contour and depth intervals",
+      "regressionTests": [
+        "tests/math/m0-multi-solid-contour-audit.test.cjs"
+      ],
+      "remainingGate": "missing real source-bound generated HLR history, complete occlusion and GB line-style proof"
+    },
+    {
       "path": "core/numeric/object-vector3.cjs",
       "status": "scoped-math",
       "proofScope": "object shape conversion to shared numeric kernel",
@@ -189,6 +261,15 @@
       "remainingGate": "nonlinear intersections outside scope"
     },
     {
+      "path": "core/numeric/projected-contour-topology.cjs",
+      "status": "scoped-math",
+      "proofScope": "conservative projected closed-contour joins from locally certified edges",
+      "regressionTests": [
+        "tests/math/m0-projected-contour-topology.test.cjs"
+      ],
+      "remainingGate": "local joins do not certify 3D physical source identity or global frontmost contour"
+    },
+    {
       "path": "core/numeric/projected-edge-depth-events.cjs",
       "status": "scoped-math",
       "proofScope": "two finite 3D source edges projected V/H/W",
@@ -197,6 +278,15 @@
         "tests/math/m0-batch-e-actual-vhw-depth-scope.test.cjs"
       ],
       "remainingGate": "full scene contour/official line styles"
+    },
+    {
+      "path": "core/numeric/projected-join-proof.cjs",
+      "status": "scoped-math",
+      "proofScope": "local projected endpoint-join evidence for reviewed open-edge intervals",
+      "regressionTests": [
+        "tests/math/m0-projected-join-proof.test.cjs"
+      ],
+      "remainingGate": "missing complete 3D endpoint stars and full-scene M5 continuous visibility"
     },
     {
       "path": "core/numeric/residual-evidence.cjs",

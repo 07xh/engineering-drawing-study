@@ -5,6 +5,9 @@ const {intervalCoverage,positiveCollinearOverlap}=
 const {validateC1RealHLRSourceCandidates:validateNative}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {project}=require('../../core/projection/conventions.js');
+const {prismMesh}=require('../../project/unified-workbench-session.cjs');
+const {auditC1M0ExtremeVertexCompleteness:auditM0Vertices}=
+ require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const p=(u,v)=>({u,v});
 const physicalLedger=()=>{
  const geometry={id:'M0-Reviewed',data:{
@@ -236,4 +239,34 @@ test('native C1 missing-view evidence fails closed on absent or malformed HLR ge
   const x=missingViewFixture('V');change(x);
   assert.throws(()=>bindMissingView(x),/native OCCT|invalid native C1/);
  }
+});
+
+test('real C1 OCCT source gate independently proves bounded M0 box extreme vertices',()=>{
+ for(const [min,max] of [
+  [{x:0,y:0,z:0},{x:6,y:8,z:10}],
+  [{x:-73,y:-44,z:-21},{x:-13,y:-7,z:19}],
+  [{x:151,y:22,z:-32},{x:154,y:73,z:-29}]
+ ]){
+  const g=prismMesh({solid:{min,max}});
+  const p=auditM0Vertices(g);
+  assert.equal(p.vertexHullVerified,true);
+  assert.equal(p.derivedVertexCount,8);
+  assert.equal(p.officialLineStyleVerified,false);
+  assert.equal(p.completeSceneVerified,false);
+ }
+});
+test('real C1 OCCT source gate independently proves skew tetra extreme vertices',()=>{
+ const g={id:'skew-tetra-m0',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:{x:0,y:0,z:0},B:{x:17,y:1,z:3},
+   C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}},
+   edges:[['A','B'],['A','C'],['A','D'],['B','C'],['B','D'],['C','D']],
+   faces:[['A','B','C'],['A','B','D'],['A','C','D'],['B','C','D']]}};
+ const p=auditM0Vertices(g);
+ assert.equal(p.vertexHullVerified,true);
+ assert.equal(p.derivedVertexCount,4);
+});
+test('real C1 source gate rejects missing physical face before any CAD signing',()=>{
+ const g=prismMesh({solid:{min:{x:0,y:0,z:0},max:{x:6,y:8,z:10}}});
+ const bad={...g,data:{...g.data,faces:g.data.faces.slice(1)}};
+ assert.throws(()=>auditM0Vertices(bad),/closed|face|topology|mesh/i);
 });
