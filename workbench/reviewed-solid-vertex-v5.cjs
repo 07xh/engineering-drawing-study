@@ -282,6 +282,29 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   completeDrawingCertified:false,
   uncertifiedEdgesAreNotV5Actions:true
  });
+ // Fail closed if the new third-view drawing payload drifts from the
+ // canonical first-angle Scene or the SAME signed Intent/V5 action inventory.
+ const drawing=thirdViewDrawing;
+ if(Object.keys(drawing.points).length!==vertexIds.length||
+    Object.keys(drawing.sheetPoints).length!==vertexIds.length||
+    drawing.certifiedVisibleContourCount!==signedThirdView.length||
+    drawing.unresolvedPhysicalEdgeCount!==sourceLines.length||
+    drawing.drawingLayers.officialV5StrokeActionIds.length!==
+     new Set(drawing.drawingLayers.officialV5StrokeActionIds).size||
+    drawing.drawingLayers.officialV5StrokeActionIds.some(id=>
+     !steps.some(step=>step.actions.some(action=>action.id===id)))||
+    drawing.unresolvedPhysicalEdges.some(edge=>
+     edge.standardLineStyle!=='undetermined'||edge.v5ActionId!==null))
+  throw new RangeError('C1 third-view result diverged from canonical M3/M5/V5');
+ for(const id of vertexIds){
+  const expected=sceneResult.projections[missingView].points[id];
+  const paper=toSheet(missingView,expected,sheetTransform);
+  if(!expected||Math.hypot(drawing.points[id].u-expected.u,
+     drawing.points[id].v-expected.v)>1e-8||
+     Math.hypot(drawing.sheetPoints[id].x-paper.x,
+      drawing.sheetPoints[id].y-paper.y)>1e-8)
+   throw new RangeError('C1 third-view paper point differs from M3');
+ }
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
   revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
