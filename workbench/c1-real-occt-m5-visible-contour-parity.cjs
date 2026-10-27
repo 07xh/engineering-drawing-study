@@ -75,6 +75,34 @@ const exactNativeClosedRayEndpointDepthConflict=(left,right)=>{
  return ends(left).some(([paper,xyz])=>ends(right).some(([other,otherXYZ])=>
   eq2(paper,other)&&!eq3(xyz,otherXYZ)));
 };
+// A native T-junction is a CLOSED-ray depth event even though it is neither
+// a strict interior/interior crossing nor an endpoint/endpoint coincidence.
+// At a generated endpoint lying STRICTLY inside a different native line,
+// compare original XYZ observer depth using exact binary64 rational algebra:
+// (depthP-depthA)*(paperB-paperA) vs
+// (depthB-depthA)*(paperP-paperA). No division, rounding, or tolerance.
+// Both source lifts must already have passed genuine BRep/parameter/paper
+// binding before this necessary contradiction check is called.
+const exactNativeClosedRayTJunctionDepthConflict=(left,right,view)=>{
+ if(!VIEWS.includes(view))throw new TypeError('V/H/W view required');
+ const depth={V:'y',H:'z',W:'x'}[view];
+ const ends=seg=>[[seg.from,seg.from3D],[seg.to,seg.to3D]];
+ const interior=(p,xyz,seg)=>{
+  if(exactPaperOrientation(seg.from,seg.to,p)!==0n)return false;
+  const axis=seg.from.u!==seg.to.u?'u':'v';
+  if(!(Math.min(seg.from[axis],seg.to[axis])<p[axis]&&
+       p[axis]<Math.max(seg.from[axis],seg.to[axis])))return false;
+  const lhs=multiplyDyadic(
+   subtractDyadic(dyadic(xyz[depth]),dyadic(seg.from3D[depth])),
+   subtractDyadic(dyadic(seg.to[axis]),dyadic(seg.from[axis])));
+  const rhs=multiplyDyadic(
+   subtractDyadic(dyadic(seg.to3D[depth]),dyadic(seg.from3D[depth])),
+   subtractDyadic(dyadic(p[axis]),dyadic(seg.from[axis])));
+  return subtractDyadic(lhs,rhs).n!==0n;
+ };
+ return ends(left).some(([p,xyz])=>interior(p,xyz,right))||
+  ends(right).some(([p,xyz])=>interior(p,xyz,left));
+};
 // Two different original 3D edges cannot both be independently frontmost
 // on their entire CLOSED ray intervals when their native paper strokes
 // cross strictly inside BOTH strokes, their original first-angle projections
@@ -271,9 +299,12 @@ function auditC1RealOcctVisibleContourSourceParity({
    from3D:lift.fromCandidate3D,to3D:lift.toCandidate3D,
    originalA:physicalA,originalB:physicalB};
   for(const prior of nativeGeneratedPaperFrontSegments){
-   if(prior.view===view&&prior.sourceEdgeId!==sourceEdgeId&&
-      exactNativeClosedRayEndpointDepthConflict(current,prior))
-    throw new RangeError('coincident native HLR closed-ray endpoint has conflicting original 3D front depths');
+   if(prior.view===view&&prior.sourceEdgeId!==sourceEdgeId){
+    if(exactNativeClosedRayEndpointDepthConflict(current,prior))
+     throw new RangeError('coincident native HLR closed-ray endpoint has conflicting original 3D front depths');
+    if(exactNativeClosedRayTJunctionDepthConflict(current,prior,view))
+     throw new RangeError('native HLR closed-ray T-junction has conflicting original 3D front depths');
+   }
   }
   nativeGeneratedPaperFrontSegments.push(current);
   const key=view+'@'+sourceEdgeId;
@@ -411,4 +442,5 @@ function auditC1RealOcctVisibleContourSourceParity({
 }
 module.exports={auditC1RealOcctVisibleContourSourceParity,
  exactOriginalModelVertexProjectedEdge,exactPositiveCollinearPaperOverlap,
- exactTransverseFrontSourceDepthConflict};
+ exactTransverseFrontSourceDepthConflict,
+ exactNativeClosedRayTJunctionDepthConflict};
