@@ -9,8 +9,8 @@ const {project,toSheet}=require('../core/projection/conventions.js');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const {auditC3LocalBooleanCreases}=
  require('../workbench/c3-local-boolean-crease.cjs');
-const {auditC3SelectedBooleanVHWOpenRays}=
- require('../workbench/c3-selected-boolean-vhw-open-rays.cjs');
+const {auditC3M0M3M5AnalyticSources}=
+ require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
 const {buildC3VHProjectionDedup,evaluateC3VHProjectedSpan}=
  require('../workbench/c3-vh-projection-dedup.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -376,8 +376,12 @@ function solve(){
    compiled:computed,viewTransforms:transforms});
   const solidOperation=$('solidOperation').value||null;
   const localCrease=auditC3LocalBooleanCreases({input,revision,solidOperation});
-  selectedBooleanRayProof=solidOperation?
-   auditC3SelectedBooleanVHWOpenRays({input,revision,solidOperation}):null;
+  // M0/M3 geometry and M5 open-ray math must describe the SAME symbolic
+  // 3D cylinder intersection before displaying or playing existing V5 guides.
+  const originalSourceAcceptance=auditC3M0M3M5AnalyticSources({
+   input,revision,compiled:computed,linked,
+   viewTransforms:transforms,solidOperation});
+  selectedBooleanRayProof=originalSourceAcceptance.booleanM5RayProof;
   selectedWRayTopologyClear=wRayProof.exactProjectedLateralSelfOverlapExcluded===true&&
    wRayProof.projectedSourceOutlineEventsSeparatedAtWBoundaries===true;
   drawScaffold();
@@ -424,7 +428,12 @@ function solve(){
    ' 个，开区间分段校验='+wRayProof.projectedSourceOutlineEventsSeparatedAtWBoundaries+
    '；临界端点不继承正式线型。'+
    '\n正向限制：完整曲线接合及全实体端盖拓扑未签收；'+
-   '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。';
+   '所有曲线预览均不代表标准工程实/虚线，正式连续曲线 V5='+computed.entireCurveV5Ready+'。'+
+   '\\n原始 M0/M3/M5 解析源核验：'+originalSourceAcceptance.status+
+   '，真实三视图投影 '+originalSourceAcceptance.independentFirstAngleProjectionCount+
+   ' 组、解析开区间独立向量方向复核 '+
+   originalSourceAcceptance.analyticallyAgreeingM0M5ObserverRayIntervals+
+   ' 段；仅校核当前几何和数学，不签发整条曲线工程线型。';
  }catch(e){
   current=null;linkedScene=null;selectedGeometryIds=new Set();
   selectedBooleanRayProof=null;selectedWRayTopologyClear=false;
