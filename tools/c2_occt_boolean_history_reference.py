@@ -40,6 +40,8 @@ def box_input(data: dict) -> list[dict]:
 
 def occt_reference(data: dict) -> dict:
     components = box_input(data)
+    if not isinstance(data.get("revision"), int) or data["revision"] < 1:
+        raise ValueError("current positive source geometry revision required")
     try:
         from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox
         from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
@@ -145,7 +147,9 @@ def occt_reference(data: dict) -> dict:
         "resultEdgesSupportedByOriginalFaceHistory": sum(
             x["atLeastOneOriginalFaceHistorySupport"] for x in evidence),
         "outputEdges": evidence,
-        "sourceBooleanIntersectionFeatureTopologicallyAccountedFor": True,
+        "sourceBooleanIntersectionFeatureTopologicallyAccountedFor": any(
+            c["sourceKind"] == "face" and c["relation"] == "generated-original-face"
+            for edge in evidence for c in edge["originalTopoDSHistory"]),
         "completeProjectedOcclusionAndGBLineStylesCertified": False,
         "ConstructionIntentAuthorized": False, "signedV5ActionCount": 0,
         "realTextbookBlindTestPassed": False,
