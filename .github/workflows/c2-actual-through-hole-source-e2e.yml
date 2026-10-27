@@ -1,0 +1,63 @@
+name: C2 real through-hole OpenCascade source-to-M4
+
+on:
+  pull_request:
+    paths:
+      - 'tools/c2_occt_boolean_history_reference.py'
+      - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
+      - 'workbench/c2-native-occt-generated-ray-m5.cjs'
+      - 'workbench/c2-native-generated-global-m4-m5.cjs'
+      - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
+      - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
+      - '.github/workflows/c2-actual-through-hole-source-e2e.yml'
+  push:
+    branches: [main, 'feat/c2-*']
+    paths:
+      - 'tools/c2_occt_boolean_history_reference.py'
+      - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
+      - 'workbench/c2-native-occt-generated-ray-m5.cjs'
+      - 'workbench/c2-native-generated-global-m4-m5.cjs'
+      - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
+      - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
+      - '.github/workflows/c2-actual-through-hole-source-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  genuine-subtractive-c2-native-m4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DRAFTAI_REQUIRE_NATIVE_OCCT: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned mature OpenCascade, never mock the CAD kernel
+        run: |
+          python -m pip install --only-binary=:all: 'cadquery-ocp==7.9.3.1.1'
+      - name: Prove actual BRepAlgoAPI_Cut 24-edge solid through-hole and original M4
+        run: node --test tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs
+      - name: Produce inspectable true native cut and 3D/2D source output
+        run: |
+          python tools/c2_occt_boolean_history_reference.py \
+            tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json \
+            --output original-c2-through-hole-topods.json
+          node tools/c2_native_m0_m4_m5_proof_pack.cjs \
+            tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json \
+            original-c2-through-hole-m0-m4.json
+      - name: Keep generated CAD provenance for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: genuine-c2-rectangular-through-hole-topods
+          path: |
+            original-c2-through-hole-topods.json
+            original-c2-through-hole-m0-m4.json
+          retention-days: 10
