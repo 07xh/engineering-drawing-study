@@ -13,7 +13,9 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
     result.singleOriginalV5Player!==true||
     !VIEWS.includes(result.sceneResult?.missingView)||
     !Array.isArray(result.certifiedVisibleContourLineBindings)||
-    !Array.isArray(result.scopedEdgePreviews))
+    !Array.isArray(result.scopedEdgePreviews)||
+    (result.certifiedPhysicalLineBindings!==undefined&&
+      !Array.isArray(result.certifiedPhysicalLineBindings)))
   throw new TypeError('current canonical unsigned C1 three-view source required');
  const {sceneResult}=result;
  const missing=sceneResult.missingView;
@@ -26,6 +28,8 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
   const projected=sceneResult.projections?.[view];
   if(!projected?.points)throw new RangeError('missing canonical first-angle projection');
   const signed=result.certifiedVisibleContourLineBindings.filter(x=>x.view===view);
+  const certifiedPhysical=(result.certifiedPhysicalLineBindings||[])
+   .filter(x=>x.view===view);
   const unresolved=result.scopedEdgePreviews.filter(x=>
    x.view===view&&!x.projectionCollapsedToPoint&&
    x.renderedAsPhysicalSourceCandidate);
@@ -36,6 +40,11 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
    sheetPoints:Object.fromEntries(Object.entries(projected.points).map(
     ([id,p])=>[id,toSheet(view,p,transform)])),
    certifiedVisibleContour:signed.map(line=>({
+    sourceEdgeId:line.sourceEdgeId,v5ActionId:line.actionId,
+    standardLineStyle:line.standardLineStyle,
+    fromSheetPx:line.fromSheetPx,toSheetPx:line.toSheetPx
+   })),
+   certifiedPhysicalFeatures:certifiedPhysical.map(line=>({
     sourceEdgeId:line.sourceEdgeId,v5ActionId:line.actionId,
     standardLineStyle:line.standardLineStyle,
     fromSheetPx:line.fromSheetPx,toSheetPx:line.toSheetPx
@@ -55,6 +64,8 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
  // The SVG children are produced exclusively by our escaped renderer.
  const all=VIEWS.flatMap(view=>[
   ...Object.values(drawings[view].sheetPoints),
+  ...drawings[view].certifiedPhysicalFeatures.flatMap(line=>
+   [line.fromSheetPx,line.toSheetPx]),
   ...drawings[view].certifiedVisibleContour.flatMap(line=>
    [line.fromSheetPx,line.toSheetPx]),
   ...(includeReviewOverlay?drawings[view].unresolvedPhysicalEdges.flatMap(line=>

@@ -24,6 +24,8 @@ const {CONSTRUCTION_INTENT_VERSION}=
 const Timeline=require('./teaching-timeline-v5.js');
 const {renderC1ThirdViewSvg}=require('./c1-third-view-svg-preview.cjs');
 const {renderC1ThreeViewSvg}=require('./c1-three-view-svg-sheet.cjs');
+const {auditC1ReviewedConvexPhysicalEdgeStrokes}=
+ require('./m5-c1-reviewed-convex-physical-edge-strokes.cjs');
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
@@ -226,6 +228,66 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    }
   }
  }
+ // Formal signed physical crease subspans MUST come from the ORIGINAL
+ // M0/M4/M5 ray theorem; only the already existing V5 accepts those lines.
+ // Larger meshes retain their existing contour/point output until they have
+ // bounded all-original M4 event coverage (current canonical limit: 40).
+ const physicalEdgeProof=sceneResult.geometry.data.edges.length<=40?
+  auditC1ReviewedConvexPhysicalEdgeStrokes({
+   geometry:sceneResult.geometry,revision:input.revision
+  }):null;
+ const certifiedPhysicalLineBindings=[];
+ const lineStyleByIntentId=Object.create(null);
+ if(physicalEdgeProof&&globalVisibleContourProof.allThreeViewsGlobalContourCertified){
+  const src=intents[0].source;
+  let parent=intents.at(-1)?.id;
+  if(!parent)throw new RangeError('missing original C1 proof DAG parent');
+  if(physicalEdgeProof.signedCandidates.length+intents.length>300)
+   throw new RangeError('source-certified physical line count exceeds sole V5 limit');
+  for(const [i,line] of physicalEdgeProof.signedCandidates.entries()){
+   if(line.revision!==input.revision||
+      line.sourceGeometryId!==sceneResult.geometry.id||
+      !VIEWS.includes(line.view)||
+      line.sourcePhysicalCreaseVerified!==true||
+      line.completeOriginalParameterPartitionVerified!==true||
+      line.source3DEndpointInterpolationVerified!==true||
+      line.wholeSubspanOpaqueFaceRayOrderVerified!==true||
+      line.noPositiveCoProjectedSourceAliasVerified!==true||
+      line.V5ActionAlreadyCreated!==false)
+    throw new RangeError('unverified original physical source line cannot enter V5');
+   const id='c1_edge_'+line.view+'_'+i,
+    actionId='c1_edge_action_'+line.view+'_'+i,
+    from=toSheet(line.view,line.fromModelMm,sheetTransform),
+    to=toSheet(line.view,line.toModelMm,sheetTransform);
+   const op={id:actionId,kind:'line',coordinateSpace:'sheet-px',
+    geometry:{from,to}};
+   intents.push({schema:CONSTRUCTION_INTENT_VERSION,id,
+    purpose:'draw-certified-single-convex-physical-crease-'+
+      (line.status==='certified-hidden-open-source'?'hidden':'visible'),
+    role:'result',dependsOn:[parent],inputEntityIds:[],
+    outputEntityIds:[actionId],operations:[op],source:{...src}});
+   lineStyleByIntentId[id]=line.officialEngineeringLineStyle;
+   steps.push({id,dependsOn:[parent],
+    title:'三维实体棱线 '+line.view+' 第 '+(i+1)+' 段',
+    explanation:'原始三维棱线、精确参数区间和连续遮挡正向证明成立。',
+    role:'result',actions:[verifiedTeachingActionToV5({
+     id:actionId,kind:'line',coordinateSpace:'sheet-px',from,to,
+     engineeringLineStyle:line.officialEngineeringLineStyle
+    },sheetTransform)]});
+   certifiedPhysicalLineBindings.push({
+    actionId,revision:input.revision,sourceGeometryId:line.sourceGeometryId,
+    sourceEdgeId:line.sourceEdgeId,view:line.view,
+    originalParameterRange:[...line.originalParameterRange],
+    real3DFrom:{...line.real3DFrom},real3DTo:{...line.real3DTo},
+    fromModelMm:{...line.fromModelMm},toModelMm:{...line.toModelMm},
+    fromSheetPx:{...from},toSheetPx:{...to},
+    standardLineStyle:line.officialEngineeringLineStyle,
+    exactOriginalSourceFullRayAndPhysicalCreaseVerified:true,
+    signedFormalLineV5:true
+   });
+   parent=id;
+  }
+ }
  if(intents.length>300||steps.length>300)
   throw new RangeError('excessive unified C1 Intent DAG for original V5');
  // Expose the solved M3 missing view without promoting unsigned M5 creases.
@@ -235,6 +297,8 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
     sceneResult.thirdView?.representation?.points==null)
   throw new RangeError('canonical M3 third-view geometry missing');
  const signedThirdView=certifiedVisibleContourLineBindings.filter(
+  line=>line.view===missingView);
+ const signedThirdViewFeatures=certifiedPhysicalLineBindings.filter(
   line=>line.view===missingView);
  const sourceLines=scopedEdgePreviews.filter(line=>
   line.view===missingView&&!line.projectionCollapsedToPoint&&
@@ -256,6 +320,12 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
    from:{...line.fromModelMm},to:{...line.toModelMm},
    fromSheetPx:toSheet(missingView,line.fromModelMm,sheetTransform),
    toSheetPx:toSheet(missingView,line.toModelMm,sheetTransform),
+   standardLineStyle:line.standardLineStyle,v5ActionId:line.actionId
+  })),
+  certifiedPhysicalFeatures:signedThirdViewFeatures.map(line=>({
+   sourceEdgeId:line.sourceEdgeId,
+   originalParameterRange:[...line.originalParameterRange],
+   fromSheetPx:{...line.fromSheetPx},toSheetPx:{...line.toSheetPx},
    standardLineStyle:line.standardLineStyle,v5ActionId:line.actionId
   })),
   unresolvedPhysicalEdges:sourceLines.map(line=>({
@@ -321,6 +391,9 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  if(Object.keys(drawing.points).length!==vertexIds.length||
     Object.keys(drawing.sheetPoints).length!==vertexIds.length||
     drawing.certifiedVisibleContourCount!==signedThirdView.length||
+    drawing.certifiedPhysicalFeatures.length!==signedThirdViewFeatures.length||
+    drawing.certifiedPhysicalFeatures.some(edge=>
+      !steps.some(step=>step.actions.some(a=>a.id===edge.v5ActionId)))||
     drawing.unresolvedPhysicalEdgeCount!==sourceLines.length||
     drawing.drawingLayers.officialV5StrokeActionIds.length!==
      new Set(drawing.drawingLayers.officialV5StrokeActionIds).size||
@@ -342,11 +415,12 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',revision:input.revision,
   wholeSolidV5Ready:false,singleOriginalV5Player:true,
   sceneResult,thirdViewDrawing,certifiedVisibleContourLineBindings,
-  scopedEdgePreviews
+  certifiedPhysicalLineBindings,scopedEdgePreviews
  },{sheetTransform});
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
-  revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
+  revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform,
+  styleByIntentId:lineStyleByIntentId
  });
  const player=Timeline.createPlayer(timeline,{revision:input.revision});
  return frozen({
@@ -356,7 +430,12 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   thirdViewSvgPreview:renderC1ThirdViewSvg(thirdViewDrawing),
   wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
-  globalVisibleContourProof,scopedEdgePreviews,
+  globalVisibleContourProof,physicalEdgeProof,scopedEdgePreviews,
+  certifiedPhysicalLineBindings,
+  certifiedPhysicalLineActionCount:certifiedPhysicalLineBindings.length,
+  scopedPhysicalEdgeV5Ready:certifiedPhysicalLineBindings.length>0,
+  scopedAllReviewedConvexPhysicalEdgesCertified:
+   physicalEdgeProof?.allDrawablePhysicalEdgeStylesCertified===true,
   certifiedVisibleContourLineActionIds,
   certifiedVisibleContourLineBindings,
   certifiedVisibleContourLineActionCount:

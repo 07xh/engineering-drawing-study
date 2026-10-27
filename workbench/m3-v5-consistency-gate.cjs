@@ -14,7 +14,7 @@ const Timeline=require('./teaching-timeline-v5.js');
 
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 function assertM3ToV5Consistency({revision,intents,steps,timing,sheet,
- sheetByIntentId=null,viewByIntentId=null}={}){
+ sheetByIntentId=null,viewByIntentId=null,styleByIntentId=null}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current nonnegative source revision required');
  const verdict=validateConstructionIntentDAG(intents);
@@ -33,6 +33,15 @@ function assertM3ToV5Consistency({revision,intents,steps,timing,sheet,
     Object.entries(viewByIntentId).some(([id,view])=>
      !intents.some(intent=>intent.id===id)||!['V','H','W'].includes(view))))
   throw new TypeError('unknown first-angle Intent-specific V/H/W view');
+ if(styleByIntentId!==null&&(
+    !styleByIntentId||typeof styleByIntentId!=='object'||
+    Array.isArray(styleByIntentId)||
+    Object.entries(styleByIntentId).some(([id,style])=>
+     !intents.some(intent=>intent.id===id&&
+       intent.operations.every(op=>op.kind==='line'))||
+     !['gb-t-4457.4-continuous-wide-visible-outline',
+       'gb-t-4457.4-thin-dashed-hidden-edge'].includes(style))))
+  throw new TypeError('unverified original-Intent engineering line style');
  const source=intents[0].source;
  if(source.revision!==revision||source.unit!=='mm')
   throw new RangeError('mixed unit or stale M3 evidence revision');
@@ -47,7 +56,9 @@ function assertM3ToV5Consistency({revision,intents,steps,timing,sheet,
     id:op.id,kind:op.kind==='directed-arc'?'arc':op.kind,
     coordinateSpace:op.coordinateSpace,...op.geometry,
     ...(viewByIntentId?.[intent.id]!==undefined?
-     {view:viewByIntentId[intent.id]}:{})
+     {view:viewByIntentId[intent.id]}:{}),
+    ...(styleByIntentId?.[intent.id]!==undefined?
+     {engineeringLineStyle:styleByIntentId[intent.id]}:{})
    },sheetByIntentId?.[intent.id]||sheet));
   if(!same(step.actions,projected))
    throw new RangeError('V5 geometry differs from canonical Intent or mm/px transform');
