@@ -50,6 +50,22 @@ test('actual native OCCT 30 output edges get M0/M5 V/H/W continuous depth',{
  });
  assert.equal(audit.generatedNativeResultEdgeCount,30);
  assert.equal(audit.rows.length,90);
+ assert.equal(audit.authenticatedNativeResultVertexCount,18);
+ assert.equal(audit.allNativeResultEdgeEndpointIsSameJunctionsReconciled,true);
+ assert(audit.rows.every(row=>
+  row.bothEndpointOriginal3DIsSameJunctionsVerified===true&&
+  row.genuineResultTopoDSVertexOrdinals.length===2));
+ const forgery=structuredClone(nativeReport);
+ forgery.outputEdges[0].actualNativeTopoDSVertexOrdinals[0]=
+  forgery.outputEdges[0].actualNativeTopoDSVertexOrdinals[1];
+ assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
+  manifest,nativeReport:forgery
+ }),/unverified actual TopoDS vertex IDs/);
+ const cut=structuredClone(nativeReport);
+ cut.resultVertexIncidence[0].incidentFinalTopoDSEdgeOrdinals.pop();
+ assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
+  manifest,nativeReport:cut
+ }),/incomplete or forged|incomplete native result/);
  assert.equal(audit.counts.physicalGeneratedEdges,22);
  assert.equal(audit.counts.coplanarNativeSubdivisions,8);
  assert.equal(audit.counts.undeterminedNativeFeatures,0);
