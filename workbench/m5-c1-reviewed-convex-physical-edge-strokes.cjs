@@ -26,6 +26,8 @@ const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditC1OriginalCoProjectedDepthOrder}=
+ require('./c1-original-coproject-depth-order.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -104,7 +106,8 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
  const allByView=new Map(VIEWS.map(view=>[view,
   rays.subspans.filter(s=>s.view===view)]));
  const signedCandidates=[],held=[],ledger=[];
- let collapsed=0,coplanar=0,hullMasked=0,visible=0,hidden=0;
+ let collapsed=0,coplanar=0,hullMasked=0,visible=0,hidden=0,
+  depthSuppressedOriginalAliases=0,fullyDepthOrderedAliases=0;
  for(const [edgeId,[a,b]] of oriented){
   const crease=physical.get(edgeId);
   if(!crease||crease.originalVertexIds[0]!==a||
@@ -184,14 +187,28 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
      held.push({...base,reason:'unproven-or-contradictory-all-face-ray-depth'});
      continue;
     }
-    const alias=allByView.get(view).some(other=>
-     other.sourceEdgeId!==edgeId&&
-     positiveCollinearOverlap(s.fromModelMm,s.toModelMm,
-      other.fromModelMm,other.toModelMm));
-    if(alias){
-     held.push({...base,reason:'co-projected-physical-source-order-unresolved'});
+    // Recompute ORIGINAL 3D forward observer depth over all co-projected
+    // physical source intervals. An exact whole-span front ordering can
+    // release a line. An exact whole-span behind-front ordering suppresses
+    // its redundant hidden duplicate. Any partial overlap or depth swap
+    // remains unsigned until M4 subdivides that overlap completely.
+    const overlap=auditC1OriginalCoProjectedDepthOrder({
+     geometry,view,sourceEdgeId:edgeId,
+     originalParameterRange:[from,to],
+     peers:allByView.get(view)
+    });
+    if(overlap.status==='suppressed-by-front-original-visible-source'){
+     depthSuppressedOriginalAliases++;
+     ledger.push({...base,status:'source-hidden-behind-proven-front-original',
+      original3DDepthOrder:overlap.status});
      continue;
     }
+    if(!overlap.wholeIntervalFrontmostCertified){
+     held.push({...base,reason:overlap.status,
+      aliasDepthEvidence:overlap});
+     continue;
+    }
+    if(overlap.aliasesExamined>0)fullyDepthOrderedAliases++;
     // A paper-only transverse crossing splits source intervals in M4 but
     // never becomes a fictitious joined 3D vertex in this proof.
     const style=clear?VISIBLE:HIDDEN;
@@ -202,7 +219,10 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
      completeOriginalParameterPartitionVerified:true,
      source3DEndpointInterpolationVerified:true,
      wholeSubspanOpaqueFaceRayOrderVerified:true,
-     noPositiveCoProjectedSourceAliasVerified:true,
+     noPositiveCoProjectedSourceAliasVerified:
+       overlap.aliasesExamined===0,
+     allCoProjectedOriginalSourceDepthSortedVerified:true,
+     originalCoProjectedDepthEvidence:overlap.status,
      paperOnlyCrossingsAreNot3DJunctions:true,
      scopedSingleConvexProof:true,
      V5ActionAlreadyCreated:false}));
@@ -217,7 +237,7 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
   held.length===0&&
   creases.ambiguousDihedralCount===0;
  if(signedCandidates.length+held.length+hullMasked+coplanar+
-    collapsed!==rays.sourceSubspanCount+collapsed)
+    depthSuppressedOriginalAliases+collapsed!==rays.sourceSubspanCount+collapsed)
   throw new RangeError('incomplete C1 physical source subspan accounting');
  return freeze({
   schema:'draftai-c1-single-reviewed-convex-physical-edge-stroke-proof/1',
@@ -228,6 +248,8 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
   visiblePhysicalIntervalCount:visible,hiddenPhysicalIntervalCount:hidden,
   unsignedPhysicalIntervalCount:held.length,
   alreadyCertifiedExteriorIntervalCount:hullMasked,
+  depthSuppressedOriginalAliasIntervalCount:depthSuppressedOriginalAliases,
+  fully3DDepthOrderedCoProjectedIntervalCount:fullyDepthOrderedAliases,
   suppressedCoplanarSubdivisionIntervalCount:coplanar,
   collapsedProjectedSourceEdgeCount:collapsed,
   M0M4M5SingleSourceContinuityVerified:true,

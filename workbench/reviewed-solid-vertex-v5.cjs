@@ -253,7 +253,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
       line.completeOriginalParameterPartitionVerified!==true||
       line.source3DEndpointInterpolationVerified!==true||
       line.wholeSubspanOpaqueFaceRayOrderVerified!==true||
-      line.noPositiveCoProjectedSourceAliasVerified!==true||
+      line.allCoProjectedOriginalSourceDepthSortedVerified!==true||
       line.V5ActionAlreadyCreated!==false)
     throw new RangeError('unverified original physical source line cannot enter V5');
    const id='c1_edge_'+line.view+'_'+i,
