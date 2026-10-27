@@ -18,6 +18,8 @@ const {proveReviewedCompositeSeamRays}=
  require('../workbench/m5-reviewed-composite-seam-rays.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
+const {auditM0M3M4M5OriginalSources}=
+ require('../workbench/m0-m3-m4-m5-original-source-acceptance.cjs');
 const {inspectSpatialV5Readiness}=
  require('../workbench/spatial-v5-evidence-readiness.cjs');
 const {auditReviewedM4V5Motion}=
@@ -205,6 +207,11 @@ function createUnifiedProjectSession(){
     // witnesses and overlapping projected edge evidence. Scoped math only.
     const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({
       geometry,revision:latest.revision});
+    // The SAME reviewed Geometry is now checked against M3 paper views,
+    // independent M0 ray sources and original M4/M5 physical partitions.
+    // This is an acceptance evidence consumer, never a new solver/player.
+    const m0M3M5OriginalSourceAcceptance=auditM0M3M4M5OriginalSources({
+      geometry,scene,sceneDepthEvidence,revision:latest.revision});
     const compositionInterfaceEvidence=evaluateReviewedCompositeInterfaces({
       geometry,revision:latest.revision,contactEvidence:compositionContactEvidence,
       sceneDepthEvidence});
@@ -240,7 +247,8 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
-      compositionSeamRayEvidence,sceneDepthEvidence,spatialV5Readiness,
+      compositionSeamRayEvidence,sceneDepthEvidence,
+      m0M3M5OriginalSourceAcceptance,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
     emit();return current;
