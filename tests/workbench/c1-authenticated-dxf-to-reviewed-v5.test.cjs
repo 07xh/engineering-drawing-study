@@ -102,3 +102,44 @@ test('without completed DXF source extraction, no false original textbook theore
   /unsigned current original DXF/);
  assert.equal(review().referenceAnswerWasNotUsedToConfirmTopology,true);
 });
+
+test('actual original DXF GIVEN → reviewed non-axis convex source → full scoped M5 → SAME playable V5, without using reference',async()=>{
+ const source=packet(['V','H']);
+ const shape=[
+  {x:0,y:0,z:0},{x:5,y:1,z:0.5},
+  {x:1,y:4,z:1.5},{x:2,y:2,z:6}
+ ];
+ for(const view of ['V','H'])source.views[view]=shape.map(p=>project(p)[view]);
+ const result=await compileReviewedC1DxfGivenToSoleV5({
+  givenPacket:source,geometryId:'C1DXFReview',revision:3,
+  confirmedReview:review(),sheetTransform:{origin:{x:330,y:200},scale:4}
+ });
+ const scope=result.scopedConvexAcceptance;
+ assert.equal(scope.originalMathematicalScopeOnly,true);
+ assert.equal(scope.scopedSingleConvexFullyCertified,true,
+  JSON.stringify(scope.missingObligations));
+ assert.equal(scope.allOriginalPositivePhysicalSourceRangesAccounted,true);
+ assert.equal(scope.allThreeViewsGlobalContourCertified,true);
+ assert(scope.checkedOriginalPhysicalEdgeViews>0);
+ assert.equal(scope.positiveGapCount,0);
+ assert.equal(scope.overlappingCertifiedSourceCount,0);
+ assert(scope.signedV5ActionCount>0);
+ assert.equal(result.solution.player.canRender(3),true);
+ // This is the canonical existing player, not a copied/frozen mock timeline.
+ const clock=100,player=result.solution.player;
+ assert.equal(player.play(clock).playing,true);
+ const frame=player.snapshot(clock+10);
+ assert.equal(frame.revision,3);
+ assert(frame.elapsedMs>0);
+ assert.equal(player.pause(clock+11).playing,false);
+ assert.equal(player.seekStep(1,clock+12).activeStepIndex,1);
+ assert.equal(result.wholeOriginalTextbookAnswerBlindVerified,false);
+ assert.equal(scope.realTextbookBlindTestPassed,false);
+ assert.equal(result.originalTextbookC1DeliveryComplete,false);
+ assert.equal(JSON.stringify(scope).includes('referenceStrokes'),false);
+});
+test('an answer-bearing or forged scoped approval may not enter current original DXF GIVEN',()=>{
+ const source=packet(['V','H']);
+ source.scopedConvexAcceptance={scopedSingleConvexFullyCertified:true};
+ assert.throws(()=>validateGivenPacket(source),/answer-bearing/);
+});
