@@ -34,6 +34,8 @@ test('real skewed prism C1 builds one V5 stream from M3 and source rays',()=>{
  assert.equal(result.physicalEdgeProof.M0M4M5SingleSourceContinuityVerified,true);
  assert.equal(result.certifiedPhysicalLineActionCount,
   result.certifiedPhysicalLineBindings.length);
+ assert(result.certifiedPhysicalLineActionCount>0,
+  'at least one actual original source physical edge must become a formal V5 action');
  assert.equal(result.timeline.segments.length,
   result.steps.reduce((n,step)=>n+step.actions.length,0));
  assert.equal(result.player.canRender(1),true);

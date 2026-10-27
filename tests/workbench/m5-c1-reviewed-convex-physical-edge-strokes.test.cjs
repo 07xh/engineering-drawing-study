@@ -29,6 +29,8 @@ test('actual M0 original 3D physical edge partition is used for V/H/W',()=>{
   'draftai-c1-single-reviewed-convex-physical-edge-stroke-proof/1');
  assert.equal(proof.M0M4M5SingleSourceContinuityVerified,true);
  assert.equal(proof.signedV5ActionCount,0);
+ assert(proof.visiblePhysicalIntervalCount+proof.hiddenPhysicalIntervalCount>0,
+  'genuine non-hull physical convex edge rays must produce positive signable evidence');
  assert.equal(proof.realTextbookBlindTestPassed,false);
  assert.equal(proof.nonConvexOrMultiBodyScopeCovered,false);
  assert.equal(proof.sourceSubspanCount,
