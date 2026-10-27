@@ -43,3 +43,11 @@ test('escapes source and vertex identifiers in SVG attributes',()=>{
  assert.match(svg,/&lt;bad&gt;/);
  assert.match(svg,/&quot; onload=&quot;/);
 });
+
+test('optional vertex labels and signed V5 identifiers remain inspectable',()=>{
+ const svg=renderC1ThirdViewSvg(drawing(),{showVertexLabels:true});
+ assert.match(svg,/data-v5-action="original-v5-1"/);
+ assert.match(svg,/<text x="4" y="-4"/);
+ assert.match(svg,/<title>C1 W third-view geometry preview<\/title>/);
+ assert.match(svg,/<desc>Black strokes are certified V5 contour actions/);
+});
