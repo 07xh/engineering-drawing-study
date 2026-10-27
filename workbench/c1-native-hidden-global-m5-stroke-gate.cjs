@@ -35,7 +35,8 @@ function certifyExactOriginalRaySourceParameterPartition({
  sourceViewKey,spans,projectionCollapsedExactly
 }={}){
  if(typeof sourceViewKey!=='string'||!sourceViewKey.includes('@')||
-    !Array.isArray(spans)||typeof projectionCollapsedExactly!=='boolean')
+    !Array.isArray(spans)||spans.length>512||
+    typeof projectionCollapsedExactly!=='boolean')
   throw new TypeError('current original M4 ray source partition required');
  const ranges=spans.map(item=>{
   const r=item?.originalSourceParameterRange;
@@ -70,8 +71,8 @@ function certifyExactOriginalRaySourceParameterPartition({
 // overlapping original M0 parameter fragments must stay independently held.
 function certifyExactNativeGeneratedSourceTiling({sourceViewKey,intervals}={}){
  if(typeof sourceViewKey!=='string'||!sourceViewKey.includes('@')||
-    !Array.isArray(intervals))
-  throw new TypeError('actual native source-view intervals required');
+    !Array.isArray(intervals)||intervals.length>512)
+  throw new TypeError('bounded actual native source-view intervals required');
  const ordered=intervals.map(r=>{
   if(!Array.isArray(r)||r.length!==2||!r.every(Number.isFinite)||
      r[0]<0||r[1]>1||r[0]>=r[1])
