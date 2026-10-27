@@ -186,6 +186,28 @@ for(const [index,geometry] of general.entries()){
    assert.equal(edge.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
    assert.equal(edge.signedV5Action,false);
   }
+ // This MUST execute inside the genuine pinned OCJS HLR process: no
+ // mocked vertex handles, paper-only identity or fabricated history.
+ assert.equal(cad.everyNativeGeneratedEndpointComparedToOriginalTopoDSVertices,true);
+ assert.equal(cad.directNativeOriginalVertexIdentityDoesNotProveEdgeHistory,true);
+ for(const view of ['V','H','W']){
+  const actual=[...cad.views[view],...cad.hiddenSharpViews[view]];
+  const direct=actual.flatMap(edge=>{
+   assert.equal(edge.directNativeVertexOriginalSource.length,2);
+   return edge.directNativeVertexOriginalSource;
+  });
+  assert.equal(cad.directNativeOriginalVertexMatches[view],
+   direct.filter(p=>p.directOriginal3DVertexTopoDSIdentityProven).length);
+  assert.ok(direct.every(p=>
+   p.originalNativeTopoDSVertexOccurrencesCompared===
+    2*cad.occtOriginalEdgeOccurrenceCount&&
+   p.fullGeneratedHLREdgeToOriginalTopoDSHistoryProven===false&&
+   p.officialEngineeringLineStyle==='undetermined'&&
+   p.signedV5Action===false&&
+   (p.directOriginal3DVertexTopoDSIdentityProven?
+    typeof p.directlySameOriginalM0VertexId==='string':
+    p.directlySameOriginalM0VertexId===null)));
+ }
  // Independently recompute true hidden HLR output and all ORIGINAL M4/M5
  // closed-ray source subspans; do not attribute HLR's generated TopoDS
  // identity merely because paper projections coincide.
