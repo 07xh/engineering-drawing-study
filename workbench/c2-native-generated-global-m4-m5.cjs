@@ -20,6 +20,8 @@ const {project,VIEWS,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
+const {originalCoProjectedAffineDepth}=
+ require('../core/numeric/original-coproject-affine-depth.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
 const {certifyAxisBoxSourceOpenRay}=
@@ -132,8 +134,14 @@ function auditC2GeneratedResultProjectedM4M5({
       [ba,bb]=range.secondParameterRange;
      pairEvent(e,f,view,aa,ba,'projected-collinear-overlap-start');
      pairEvent(e,f,view,ab,bb,'projected-collinear-overlap-end');
-     ra.collinearOverlapRanges.push([Math.min(aa,ab),Math.max(aa,ab)]);
-     rb.collinearOverlapRanges.push([Math.min(ba,bb),Math.max(ba,bb)]);
+     ra.collinearOverlapRanges.push({
+      range:[Math.min(aa,ab),Math.max(aa,ab)],
+      peerSourceOrdinal:f.id
+     });
+     rb.collinearOverlapRanges.push({
+      range:[Math.min(ba,bb),Math.max(ba,bb)],
+      peerSourceOrdinal:e.id
+     });
     }
    }else if(witness.status.startsWith('undetermined-')){
     // A near-collinear line IS NOT proven disjoint even when the
@@ -144,7 +152,8 @@ function auditC2GeneratedResultProjectedM4M5({
   }
  }
  let totalSubspans=0,positiveClear=0,positiveHidden=0,uncertain=0,
-  collinearAliased=0,collapsed=0;
+  collinearAliased=0,collapsed=0,strictForegroundAliasesResolved=0,
+  nonphysicalAliasesIgnored=0;
  const rows=[];
  for(const raw of per.values()){
   const edge=source.get(raw.id),
@@ -166,8 +175,34 @@ function auditC2GeneratedResultProjectedM4M5({
    const from=lerp(edge.from,edge.to,lo),to=lerp(edge.from,edge.to,hi),
     from2=project(from)[raw.view],to2=project(to)[raw.view];
    const micro=Math.hypot(from2.u-to2.u,from2.v-to2.v)<=1e-10;
-   const alias=raw.collinearOverlapRanges.some(r=>
-     spanOverlap([lo,hi],r));
+   const overlaps=raw.collinearOverlapRanges.filter(w=>
+    spanOverlap([lo,hi],w.range));
+   const physicalOverlaps=overlaps.filter(w=>
+    source.get(w.peerSourceOrdinal)?.feature==='physical-crease');
+   nonphysicalAliasesIgnored+=overlaps.length-physicalOverlaps.length;
+   // Only genuine OTHER native physical creases can compete for an
+   // official engineering line. Coplanar OCCT mesh subdivisions are
+   // not engineering edges and must not block their real source.
+   // The existing adaptive M4 collinear-overlap discovery provides
+   // the complete original parameter cuts; independently prove the
+   // strict signed 3D affine depth along EACH matching paper segment.
+   const candidate3D={id:'NativeC2Edge'+raw.id+'Span'+k,from,to};
+   const aliasOrders=physicalOverlaps.map(w=>{
+    const competitor=source.get(w.peerSourceOrdinal);
+    return originalCoProjectedAffineDepth({
+     candidate:candidate3D,
+     peer:{id:'NativeC2Peer'+competitor.id,
+      from:competitor.from,to:competitor.to},
+     view:raw.view
+    });
+   });
+   const allOriginalPhysicalAliasesBehind=
+    aliasOrders.length>0&&aliasOrders.every(x=>
+     x.status==='candidate-strictly-front');
+   const aliasBlocked=physicalOverlaps.length>0&&
+     !allOriginalPhysicalAliasesBehind;
+   if(allOriginalPhysicalAliasesBehind)
+    strictForegroundAliasesResolved++;
    const base={
     originalGeneratedEdgeParameterRange:[lo,hi],
     realOriginalNative3DFrom:from,realOriginalNative3DTo:to,
@@ -183,7 +218,7 @@ function auditC2GeneratedResultProjectedM4M5({
    else if(edge.feature!=='physical-crease')
     status='unverified-native-dihedral';
    else if(micro)status='unrenderable-positive-3d-subspan';
-   else if(raw.unresolvedWholeEdge||alias)
+   else if(raw.unresolvedWholeEdge||aliasBlocked)
     status='unresolved-projected-depth-or-collinear-source-alias';
    else{
     const candidate={id:'NativeEdge'+raw.id+'Part'+k,from,to},
@@ -225,7 +260,12 @@ function auditC2GeneratedResultProjectedM4M5({
     continuousUnionStrictInteriorOcclusionVerified:hidden,
     exactBoxOpenSourceRayProofApplied:boxes.length===solids.length,
     projectedAliasOrUncertainEventBlocked:
-     raw.unresolvedWholeEdge||alias,
+     raw.unresolvedWholeEdge||aliasBlocked,
+    allProjectedPhysicalNativeAliasesStrictlyBehindCertified:
+     aliasOrders.length===0||allOriginalPhysicalAliasesBehind,
+    coProjectedOriginalNative3DDepthWitnesses:aliasOrders,
+    nonphysicalCoplanarAliasesExcludedFromLineCompetition:
+     overlaps.length-physicalOverlaps.length,
     nativeActualTopologySourceNotIndependentlyAttestedHere:true});
   }
   rows.push({view:raw.view,sourceNativeResultEdgeOrdinal:raw.id,
@@ -252,6 +292,9 @@ function auditC2GeneratedResultProjectedM4M5({
   positiveWholeOpenRayClearSubspans:positiveClear,
   positiveWholeStrictlyHiddenSubspans:positiveHidden,
   unsignedProjectedAliasSubspans:collinearAliased,
+  strictlyForegroundOriginalCoProjectedSubspansCertified:
+   strictForegroundAliasesResolved,
+  ignoredCoplanarSubdivisionProjectedAliasCount:nonphysicalAliasesIgnored,
   unresolvedSubspans:uncertain,
   collapsedProjectedSourceRows:collapsed,rows,
   nativeSourceGenuinenessSignedHere:false,
