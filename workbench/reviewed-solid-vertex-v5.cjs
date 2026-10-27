@@ -278,6 +278,26 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
     endpointIds:[...line.sourceVertexIds]
    }
   })),
+  // The original full-source M5 verdict is only a necessary precondition.
+  // Explicitly enumerate which formal C1 proof obligations remain absent
+  // per projected edge; the workbench must not infer a hidden/visible style
+  // from an endpoint-only or whole-source ray verdict.
+  pendingPhysicalEdgeProofs:sourceLines.map(line=>({
+   sourceEdgeId:line.sourceEdgeId,view:missingView,
+   sourceVertexIds:[...line.sourceVertexIds],
+   sourcePhysicalCreaseVerified:line.sourcePhysicalCreaseVerified,
+   continuousFrontRayClearVerified:line.continuousFrontRayClearVerified,
+   wholeSourceStrictlyOccludedVerified:line.entireEdgeStrictlyOccludedVerified,
+   missingObligations:[
+    'exact-native-generated-TopoDS-to-original-source-history',
+    'complete-original-source-parameter-interval-partition',
+    'all-junctions-authenticated-original-3d-topology',
+    'all-opaque-face-continuous-ray-depth-order',
+    'official-engineering-visible-hidden-line-style',
+    'original-ConstructionIntent-DAG-single-V5-stroke'
+   ],
+   officialV5StrokeAuthorized:false
+  })),
   // Workbench may draw the certified contour as official strokes, while
   // unresolved physical edges remain an explicitly separate review overlay.
   // A partially certified source edge is never hidden by its certified span.
