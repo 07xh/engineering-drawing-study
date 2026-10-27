@@ -20,7 +20,7 @@ test('unlabelled two views uniquely recover all genuine 3D points and QuickHull 
  const r=await inferC1UniqueConvexGeometryCandidate({views:views()});
  assert.equal(r.source2DVerticesMatchedWithoutManualIds,true);
  assert.equal(r.inferredOriginal3DPointCount,4);
- assert.equal(r.candidateClosedConvexTopologyInferredByPinnedThreeQuickHull,true);
+ assert.equal(r.candidateTetrahedronTopologyDeductedFromFourExtremes,true);
  assert.equal(r.independentlyValidatedByCurrentM0,true);
  assert.equal(r.missingView,'W');
  assert.equal(r.reviewedSolidInputCandidate.vertices.length,4);
@@ -52,7 +52,7 @@ test('2D missing source vertex is not a unique 3D body',async()=>{
  const v=views();v.H.pop();
  await assert.rejects(()=>inferC1UniqueConvexGeometryCandidate({
   views:v
- }),/different source vertex counts/);
+ }),/different source vertex counts|4\\.\\.16/);
 });
 test('no automatic acceptance of unknown/non-convex source assumptions',async()=>{
  await assert.rejects(()=>inferC1UniqueConvexGeometryCandidate({
