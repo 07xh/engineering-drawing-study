@@ -217,6 +217,9 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
     manifest.revision<1||!Array.isArray(manifest.components)||
     manifest.components.length!==2)
   throw new TypeError('explicit current 2-component model-mm source required');
+ const operation=manifest.operation??'union';
+ if(!['union','cut'].includes(operation))
+  throw new TypeError('current native Boolean source operation unsupported');
  const ids=new Set();
  for(const component of manifest.components){
   if(ids.has(component.id))
@@ -237,6 +240,7 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    String(res.error?.message||res.stderr||res.status).slice(0,400));
  const nativeReport=JSON.parse(res.stdout);
  if(nativeReport.sourceRevision!==manifest.revision||
+    (nativeReport.actualNativeBooleanOperation??'union')!==operation||
     nativeReport.allResultNativeVertexIncidenceAccountedFor!==true)
   throw new RangeError('newly executed native BRep did not return a complete original-shape witness');
  const math=auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport});
@@ -252,13 +256,25 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
     math.ConstructionIntentAuthorized!==false||
     math.signedV5ActionCount!==0)
   throw new RangeError('single-run original OCCT/M0/M4/M5 provenance or account mismatch');
+ if(operation==='cut'&&
+    (nativeReport.originalSolidDifferenceReviewedAsThroughRectangularBore!==true||
+     nativeReport.resultFaceCount<8||
+     nativeReport.resultEdgeCount<20||
+     nativeReport.resultVertexCount<12||
+     math.counts.clear!==0||math.counts.hidden!==0||
+     graph.positiveWholeOpenRayClearSubspans!==0||
+     graph.positiveWholeStrictlyHiddenSubspans!==0||
+     math.strictSubtractiveBooleanContinuousM5VisibilityProven!==false))
+  throw new RangeError('real through-hole result incorrectly promoted subtraction to union-style M5 visibility');
  const provenance={
   inputManifestSha256:crypto.createHash('sha256').update(bytes).digest('hex'),
   originalModelBoundsSha256:nativeReport.canonicalOriginalComponentGeometrySHA256,
   actualNativeOpenCascadeRanInThisProcessTree:true,
   sourceManifestHadNoReferenceAnswer:true,
   signedV5ActionCount:0,
-  scope:'two-reviewed-axis-aligned-box-boolean-union-reference'
+  scope:operation==='cut'?
+   'one-reviewed-box-minus-through-rectangular-bore-unsigned-m4-reference':
+   'two-reviewed-axis-aligned-box-boolean-union-reference'
  };
  const certifiedV5=signCertifiedNativeC2OpenRaySubspans({
   math,nativeReport,revision:manifest.revision
@@ -266,13 +282,14 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
  const packed={
   schema:'draftai-c2-actual-native-occt-m0-m4-m5-full-proof-pack/1',
   revision:manifest.revision,status:'same-run-native-brep-math-proof-only',
-  sourceIds:[...ids],provenance,
+  booleanOperation:operation,sourceIds:[...ids],provenance,
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
   verifiedNativeGeneratedEdges:nativeReport.resultEdgeCount,
   actualM4PairwiseSegmentViewChecks:graph.actualM4PairwiseSegmentViewChecks,
   continuousM5SubspanCount:graph.continuousM5SubspanCount,
   source3DAndProjectedEventsRecomputedInSameRun:true,
+  completeSubtractiveBooleanM5RayVisibilityCertified:false,
   completeEngineeringLineStylesCertified:false,
   ConstructionIntentDAGSingleV5FullySigned:false,
   textbookAnswerWasNotAvailableOrUsed:true,
