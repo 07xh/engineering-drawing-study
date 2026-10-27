@@ -48,7 +48,7 @@ function auditC2GeneratedResultProjectedM4M5({
       Array.isArray(x.halfspaces)&&x.halfspaces.length>=4)||
     !Array.isArray(boxes)||
     (boxes.length!==0&&boxes.length!==solids.length)||
-    boxes.some((x,i)=>x?.id!==solids[i].id||x.type!=='box')
+    boxes.some((x,i)=>x?.id!==solids[i].id||x.type!=='box'))
   throw new TypeError('bounded native generated BRep edges and actual M0 scene required');
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
