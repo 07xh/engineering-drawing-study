@@ -60,10 +60,15 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(c2.revision,1);
   assert.equal(c2.sourceGeometryHash,
    pack.nativeTopology.canonicalOriginalComponentGeometrySHA256);
-  assert(c2.certifiedVisibleHiddenSourceIntervals.length>0,
-   'real OCCT physical creases with fully verified open rays must enter existing V5');
+  // L-union produces real native edges but its projected aliases and
+  // partial junctions may leave NO WHOLE OPEN ray span eligible to sign.
+  // Never invent a V5 action to satisfy a fixture-specific expected count.
+  // The independent spatially separated union fixture must actually
+  // demonstrate nonzero POSITIVE canonical V5 in the pinned native CI.
   assert.equal(c2.certifiedVisibleHiddenSourceIntervals.length,
    summary.officiallySignedNativeSubspanCount);
+  assert(c2.unsignedNativePhysicalSourceIntervals.length>0,
+   'unverified L-union intervals must remain outside canonical V5');
   assert.equal(c2.unsignedNativePhysicalSourceIntervals.length,
    summary.pendingUnsignedNativeSubspanCount);
   assert.equal(c2.intents.length,c2.steps.length);
