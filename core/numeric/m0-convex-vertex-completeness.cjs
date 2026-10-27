@@ -62,65 +62,43 @@ function certifyConvexVertices({solid,toleranceMm=1e-7,angularTolerance=1e-12}={
      !faces.some(f=>f.n[axis]<-angularTolerance))
    return result('undetermined','unbounded-axis-recession-risk',derived.length);
  }
- // A nonzero recession direction r must satisfy n.r<=0 for EVERY face.
- // On the compact unit sphere, such a direction has a nonzero component
- // along some coordinate axis. Intersect the recession cone with each
- // coordinate plane r_axis=+/-1. Every feasible slice has a vertex
- // determined by two independent remaining face boundaries, OR can
- // contain the origin in the remaining coordinates. Check both.
- const axes=['x','y','z'];
- const recessionSlice=(axis,sign)=>{
-  const others=axes.filter(k=>k!==axis);
-  const inequalities=faces.map(f=>({
-   a:f.n[others[0]],b:f.n[others[1]],c:-sign*f.n[axis]}));
-  const feasible=(u,v)=>inequalities.every(q=>
-   q.a*u+q.b*v<=q.c+Math.max(1e-12,angularTolerance*10));
-  if(feasible(0,0))return true;
-  for(let i=0;i<inequalities.length;i++)
-   for(let j=i+1;j<inequalities.length;j++){
-    const a=inequalities[i],b=inequalities[j];
-    const det=a.a*b.b-b.a*a.b;
-    if(Math.abs(det)<=angularTolerance)continue;
-    const u=(a.c*b.b-b.c*a.b)/det;
-    const v=(a.a*b.c-b.a*a.c)/det;
-    if(finite(u)&&finite(v)&&feasible(u,v))return true;
-   }
-  // A feasible unbounded polygon with no vertices could evade this
-  // test; avoid a false boundedness claim unless the full recession
-  // cone is already known to be pointed. A full-dimensional bounded
-  // candidate with all axis normals signed does not by itself suffice.
-  return false;
- };
- for(const axis of axes)for(const sign of [-1,1]){
-  if(recessionSlice(axis,sign))
-   return result('undetermined','nonzero-recession-direction',derived.length);
- }
- // Conservative positive spanning certificate: origin strictly inside
- // convex hull of the unit outward normals. Search positive 4-face
- // tetrahedral combinations using Cramer's rule. This is sufficient
- // for a trivial recession cone, independent of caller vertex claims.
+ // A full-rank polyhedral recession cone is pointed. If it contains a
+ // nonzero direction, it has an extreme ray on the intersection of TWO
+ // independent supporting-normal planes. Enumerate BOTH orientations of
+ // every pairwise cross product. This is a complete finite 3D recession
+ // test, unlike searching for a positive 4-normal tetrahedron: an ordinary
+ // cuboid needs all six axis normals to positively span the origin.
+ const normals=faces.map(f=>f.n);
  const det3=(a,b,c)=>dot(a,cross(b,c));
- let positiveSpan=false;
- outer:for(let i=0;i<faces.length;i++)
- for(let j=i+1;j<faces.length;j++)
- for(let k=j+1;k<faces.length;k++)
- for(let l=k+1;l<faces.length;l++){
-  const ns=[faces[i].n,faces[j].n,faces[k].n,faces[l].n];
-  const v0=sub(ns[0],ns[3]),v1=sub(ns[1],ns[3]),
-   v2=sub(ns[2],ns[3]);
-  const det=det3(v0,v1,v2);
-  if(Math.abs(det)<=angularTolerance)continue;
-  const rhs={x:-ns[3].x,y:-ns[3].y,z:-ns[3].z};
-  const w0=det3(rhs,v1,v2)/det;
-  const w1=det3(v0,rhs,v2)/det;
-  const w2=det3(v0,v1,rhs)/det;
-  const w3=1-w0-w1-w2;
-  if([w0,w1,w2,w3].every(w=>finite(w)&&w>angularTolerance*10)){
-   positiveSpan=true;break outer;
+ let fullRank=false;
+ for(let i=0;i<normals.length&&!fullRank;i++)
+  for(let j=i+1;j<normals.length&&!fullRank;j++)
+   for(let k=j+1;k<normals.length;k++)
+    if(Math.abs(det3(normals[i],normals[j],normals[k]))>
+       angularTolerance*10){fullRank=true;break;}
+ if(!fullRank)
+  return result('undetermined','normal-rank-not-proven',derived.length);
+ let testedRays=0;
+ for(let i=0;i<normals.length;i++)
+  for(let j=i+1;j<normals.length;j++){
+   const v=cross(normals[i],normals[j]),m=norm(v);
+   if(m===0)continue; // Exactly parallel normals do not define a ray.
+   // Never silently skip a numerically near-parallel pair that might
+   // define the only feasible extreme ray.
+   if(m<=angularTolerance*10)
+    return result('undetermined','near-parallel-normal-pair',derived.length);
+   for(const sign of [-1,1]){
+    const ray={x:sign*v.x/m,y:sign*v.y/m,z:sign*v.z/m};
+    const violation=Math.max(...normals.map(n=>dot(n,ray)));
+    testedRays++;
+    // Equality or a near tie is not a positive boundedness proof.
+    if(violation<=angularTolerance*10)
+     return result('undetermined','nonzero-recession-direction-or-tie',
+      derived.length);
+   }
   }
- }
- if(!positiveSpan)
-  return result('undetermined','positive-normal-spanning-not-proven',derived.length);
+ if(!testedRays)
+  return result('undetermined','no-independent-normal-pairs',derived.length);
  return result('certified','complete-extreme-vertices-and-bounded-recession-cone',derived.length);
 }
 module.exports={certifyConvexVertices};
