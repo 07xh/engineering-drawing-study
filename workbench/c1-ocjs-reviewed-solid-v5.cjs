@@ -81,6 +81,15 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
      t0=lift?.sourceParameterAtProjectedFrom,
      t1=lift?.sourceParameterAtProjectedTo,
      range=lift?.originalSourceParameterRange;
+    // The candidate XYZ must be the actual affine point on the reviewed
+    // ORIGINAL M0 edge, not merely a caller-supplied source label or flag.
+    // This is exact source-topology consistency, not a TopoDS history claim.
+    const a=edge&&geometry.data.points[edge[0]],
+     b=edge&&geometry.data.points[edge[1]];
+    const modelXYZ=t=>({x:a.x+(b.x-a.x)*t,
+     y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+    const exactXYZ=(p,q)=>p&&q&&['x','y','z'].every(k=>
+     Number.isFinite(p[k])&&p[k]===q[k]);
     if(!edge||seen.has(id)||
        !Array.isArray(lift.originalVertexIds)||
        lift.originalVertexIds.join('|')!==edge.join('|')||
@@ -88,6 +97,8 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
        !(t0>=0&&t0<=1&&t1>=0&&t1<=1&&t0!==t1)||
        !Array.isArray(range)||range.length!==2||
        range[0]!==Math.min(t0,t1)||range[1]!==Math.max(t0,t1)||
+       !exactXYZ(lift.fromCandidate3D,modelXYZ(t0))||
+       !exactXYZ(lift.toCandidate3D,modelXYZ(t1))||
        lift.originalXYZReprojectsToHLR!==true||
        lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
        lift.originalOCCTSourceLineCurveVerified!==true||
