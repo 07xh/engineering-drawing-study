@@ -37,6 +37,38 @@ const lerp3=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
 const VISIBLE='gb-t-4457.4-continuous-wide-visible-outline';
 const HIDDEN='gb-t-4457.4-thin-dashed-hidden-edge';
+/**
+ * Mask an unsigned source by a signed silhouette only when the WHOLE
+ * positive 2D subspan is actually covered by verified lines. A mere
+ * positive overlap of even one tiny interior piece is not a full mask.
+ * No tolerance merges a positive original-source parameter gap.
+ */
+function certifyWholeProjectedExteriorCoverage({fromModelMm:a,toModelMm:b,
+ certifiedContours}={}){
+ if(!a||!b||!Array.isArray(certifiedContours)||certifiedContours.length>512)
+  throw new TypeError('bounded projected source and certified contour required');
+ const du=b.u-a.u,dv=b.v-a.v,len2=du*du+dv*dv;
+ if(![du,dv,len2].every(Number.isFinite)||len2<=1e-20)
+  return false;
+ const len=Math.sqrt(len2),pieces=[];
+ const pos=p=>((p.u-a.u)*du+(p.v-a.v)*dv)/len2;
+ const deviation=p=>Math.abs((p.u-a.u)*dv-(p.v-a.v)*du)/len;
+ for(const line of certifiedContours){
+  const x=line?.projectedFromModelMm,y=line?.projectedToModelMm;
+  if(!x||!y||line.signedOfficialLineStyle!==VISIBLE||
+     line.v5ActionAuthorized!==true||
+     ![x.u,x.v,y.u,y.v].every(Number.isFinite))
+   continue;
+  // Geometric collinearity is checked, not inferred from an unsigned
+  // paper-crossing event. Tiny parameter gaps remain exact and BLOCK.
+  if(deviation(x)>1e-9||deviation(y)>1e-9)continue;
+  const left=Math.max(0,Math.min(pos(x),pos(y)));
+  const right=Math.min(1,Math.max(pos(x),pos(y)));
+  if(right>left)pieces.push([left,right]);
+ }
+ return pieces.length>0&&exactCandidateIntervalCoverage([0,1],pieces)
+  .entireOriginalParameterIntervalCovered===true;
+}
 function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
  if(geometry?.kind!=='mesh'||geometry.space!=='model-3d'||
     geometry.unit!=='mm'||!Number.isSafeInteger(revision)||revision<1)
@@ -125,10 +157,16 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
      continue;
     }
     if(s.status==='exterior-contour-held-by-original-m5'){
-     // The current global contour must have independently passed ALL three
-     // complete hull rings; never turn a partial overlap into a signoff.
-     if(contour.allThreeViewsGlobalContourCertified!==true)
-      held.push({...base,reason:'whole-original-silhouette-not-certified'});
+     // M4's positive collinear overlap flag is ONLY a discovery hint.
+     // A fully masked source interval needs actual no-gap paper coverage.
+     const v=contour.views.find(x=>x.view===view);
+     const fullyMasked=contour.allThreeViewsGlobalContourCertified===true&&
+      certifyWholeProjectedExteriorCoverage({
+       fromModelMm:s.fromModelMm,toModelMm:s.toModelMm,
+       certifiedContours:v?.candidateIntervals||[]
+      });
+     if(!fullyMasked)
+      held.push({...base,reason:'signed-hull-only-partly-covers-source-span'});
      else {hullMasked++;ledger.push({...base,status:'already-certified-exterior'});}
      continue;
     }
@@ -202,4 +240,5 @@ function auditC1ReviewedConvexPhysicalEdgeStrokes({geometry,revision}={}){
   nonConvexOrMultiBodyScopeCovered:false
  });
 }
-module.exports={auditC1ReviewedConvexPhysicalEdgeStrokes};
+module.exports={auditC1ReviewedConvexPhysicalEdgeStrokes,
+ certifyWholeProjectedExteriorCoverage};
