@@ -35,6 +35,8 @@ const {classifyMultiBodyProjectedUnion}=
  require('../core/verification/multibody-projected-union.cjs');
 const {auditReviewedM0ScenePartitions}=
  require('./m0-reviewed-scene-continuous-partitions.cjs');
+const {auditReviewedM0FaceRingJoins}=
+ require('./m0-reviewed-face-ring-join-consumer.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -72,7 +74,7 @@ const unready=(revision,reason)=>freeze({
   combinedSilhouetteVerified:false,officialLineStylesVerified:false},
  projectedUnionOutlines:{status:'not-covered',segmentCount:0,segments:[],
   unionClosedContourVerified:false,officialLineStylesVerified:false,v5Ready:false},
- m0SceneContinuousPartitions:null,
+ m0SceneContinuousPartitions:null,m0ProjectedFaceRingJoins:null,
  fullSceneVerified:false,completeContourVerified:false,
  projectionOverlapResolved:false,constructionIntentReady:false,
  v5Ready:false,officialLineStylesVerified:false
@@ -245,6 +247,9 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
    officialLineStylesVerified:false,v5Ready:false};}
  })();
  const projectedVertexJoins=deriveReviewedProjectedVertexJoins({geometry,revision});
+ const m0ProjectedFaceRingJoins=auditReviewedM0FaceRingJoins({
+  geometry,revision,sourcePartitions:m0SceneContinuousPartitions,
+  projectedVertexJoins});
  // The reusable M0 partition is recomputed from actual verified source
  // meshes; its locally positive open-ray intervals are never M5 line styles.
  const m0SceneContinuousPartitions=auditReviewedM0ScenePartitions({
@@ -257,6 +262,7 @@ function evaluateReviewedConvexMeshDepth({geometry,revision}={}){
   edgeContinuousOcclusion:continuousOcclusion,
   wholeSourceEdgeOcclusion:wholeEdgeOcclusion,projectedOutlines,
   projectedUnionOutlines,projectedVertexJoins,m0SceneContinuousPartitions,
+  m0ProjectedFaceRingJoins,
   coverage:'only-confirmed-closed-convex-mesh-set',
   fullSceneVerified:false,completeContourVerified:false,
   projectionOverlapResolved:false,constructionIntentReady:false,
