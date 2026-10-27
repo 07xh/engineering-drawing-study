@@ -98,6 +98,9 @@ for(const [id,min,max,revision] of cases){
  assert.equal(result.player.canRender(revision),false);
  records.push({case:id,revision,
   elapsedMs:Math.round(performance.now()-begin),
+  directNativeOriginalVertexMatches:
+   result.c1CadRuntime.independentCadComputedSegments.directNativeOriginalVertexMatches,
+  fullGeneratedEdgeHistoryProven:false,
   views:result.c1CadRuntime.perView});
 }
 // Stop unsupported geometry rather than approving untracked occluded edges.
@@ -1578,6 +1581,8 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
+  fullGeneratedEdgeHistoryProven:false,
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
    complete:sceneInventory.completeOriginalSourceViewCount,
