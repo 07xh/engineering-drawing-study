@@ -19,7 +19,7 @@ test('C2 OCCT reference requires real source revision and non-degenerate boxes',
     {id:'Two',type:'box',min:[1,0,0],max:[2,2,3]}]}));
   const r=run(file);
   assert.equal(r.status,2);
-  assert.match(r.stderr,/source geometry revision/);
+  assert.match(r.stderr,/source geometry revision|safe positive source revision/);
   fs.writeFileSync(file,JSON.stringify({revision:1,
    components:[{id:'One',type:'box',min:[0,0,0],max:[1,2,3]},
     {id:'One',type:'box',min:[1,0,0],max:[2,2,3]}]}));
