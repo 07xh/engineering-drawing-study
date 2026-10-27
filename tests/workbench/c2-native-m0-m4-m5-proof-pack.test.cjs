@@ -54,6 +54,32 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(pack.mathM0M4M5.globalPaperEvents.VHWSourceRows,90);
   assert.equal(pack.mathM0M4M5.globalPaperEvents.allOfficialEngineeringLinesCertified,false);
   assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,false);
+  const c2=pack.sourceCertifiedNativeCanonicalV5;
+  assert.equal(c2.schema,
+   'draftai-c2-trusted-native-partial-construction-intent-v5/1');
+  assert.equal(c2.revision,1);
+  assert.equal(c2.sourceGeometryHash,
+   pack.nativeTopology.canonicalOriginalComponentGeometrySHA256);
+  assert(c2.certifiedVisibleHiddenSourceIntervals.length>0,
+   'real OCCT physical creases with fully verified open rays must enter existing V5');
+  assert.equal(c2.certifiedVisibleHiddenSourceIntervals.length,
+   summary.officiallySignedNativeSubspanCount);
+  assert.equal(c2.unsignedNativePhysicalSourceIntervals.length,
+   summary.pendingUnsignedNativeSubspanCount);
+  assert.equal(c2.intents.length,c2.steps.length);
+  assert.equal(c2.intents.length,c2.timeline.segments.length);
+  assert.equal(c2.canonicalConstructionIntentDagChecked,true);
+  assert.equal(c2.oneExistingV5TimelineRecreated,true);
+  assert.equal(c2.originalV5PlayerFactory,
+   'workbench/teaching-timeline-v5.js');
+  assert.equal(c2.otherNonConvexGeneralMeshesCertified,false);
+  assert(c2.certifiedVisibleHiddenSourceIntervals.every(row=>
+   c2.steps.some(s=>s.actions.some(a=>a.id===row.actionId&&
+    a.engineeringLineStyle===row.standardEngineeringLineStyle))));
+  assert(c2.unsignedNativePhysicalSourceIntervals.every(row=>
+   !('actionId' in row) && row.originalMathEvidenceUnsigned===true ||
+   row.reason==='native-physical-dihedral-not-certified'));
+  assert.equal(c2.realTextbookBlindTestPassed,false);
   assert.equal(pack.realTextbookBlindTestPassed,false);
   assert.throws(()=>generateNativeC2FullMathProofPack({
    inputPath:manifest,outputPath:output
