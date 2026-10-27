@@ -163,7 +163,17 @@
   const g=action.geometry,u=fraction(t);
   if(action.kind==='line'){
    const v=line(g.from,g.to,u);
-   return {x1:v.from.x,y1:v.from.y,x2:v.to.x,y2:v.to.y,opacity:1};
+   const attrs={x1:v.from.x,y1:v.from.y,x2:v.to.x,y2:v.to.y,opacity:1};
+   if(action.engineeringLineStyle!==undefined){
+    if(action.engineeringLineStyle===
+       'gb-t-4457.4-continuous-wide-visible-outline'){
+     attrs['stroke-width']=2;attrs['stroke-dasharray']='none';
+    }else if(action.engineeringLineStyle===
+       'gb-t-4457.4-thin-dashed-hidden-edge'){
+     attrs['stroke-width']=1;attrs['stroke-dasharray']='6 3';
+    }else throw new TypeError('unverified engineering line style');
+   }
+   return attrs;
   }
   if(action.kind==='circle'){
    const v=circle(g.center,g.radius,u);
