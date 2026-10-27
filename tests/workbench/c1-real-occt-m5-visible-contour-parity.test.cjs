@@ -494,6 +494,13 @@ test('genuine native closed-ray T-junction depth aliases fail closed in V/H/W wi
    assert.equal(tJunctionConflict(other,original,view),true);
    assert.equal(tJunctionConflict(reverse(original),reverse(other),view),true);
   }
+  const sloped=seg(xyz(0,0,0),xyz(4,0,4));
+  const slopedJoin=seg(xyz(2,0,2),xyz(2,3,2));
+  assert.equal(tJunctionConflict(sloped,slopedJoin,view),false,
+   'exact interpolation must accept a genuine 3D junction inside a sloped depth source');
+  assert.equal(tJunctionConflict(sloped,
+   seg(xyz(2,0,2+Number.EPSILON*2),xyz(2,3,2+Number.EPSILON*2)),view),true,
+   'a single binary64 ULP observer-depth discrepancy is a real front-ray contradiction');
   assert.equal(tJunctionConflict(original,branch(0),view),false,
    'a real shared 3D T-junction is not a depth conflict');
   assert.equal(tJunctionConflict(original,
