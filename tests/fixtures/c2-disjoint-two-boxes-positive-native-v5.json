@@ -1,0 +1,34 @@
+{
+  "revision": 3,
+  "unit": "mm",
+  "components": [
+    {
+      "id": "WestBlock",
+      "type": "box",
+      "min": [
+        0,
+        0,
+        0
+      ],
+      "max": [
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "id": "EastBlock",
+      "type": "box",
+      "min": [
+        5,
+        4,
+        4
+      ],
+      "max": [
+        7,
+        6,
+        6
+      ]
+    }
+  ]
+}
