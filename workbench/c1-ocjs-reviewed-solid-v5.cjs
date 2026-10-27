@@ -90,8 +90,8 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
      y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
     const exactXYZ=(p,q)=>p&&q&&['x','y','z'].every(k=>
      Number.isFinite(p[k])&&p[k]===q[k]);
-    const fromPaper=edge&&project(modelXYZ(t0))[view],
-     toPaper=edge&&project(modelXYZ(t1))[view],
+    const fromPaper=edge&&Number.isFinite(t0)&&project(modelXYZ(t0))[view],
+     toPaper=edge&&Number.isFinite(t1)&&project(modelXYZ(t1))[view],
      nearPaper=(p,q)=>p&&q&&
       Number.isFinite(p.u)&&Number.isFinite(p.v)&&
       Math.hypot(p.u-q.u,p.v-q.v)<=1e-6;
