@@ -172,8 +172,37 @@ def build_blind_packets(*, source_sha256: str, dxf_sha256: str, partition: dict,
             raise ValueError("duplicate or collapsed CAD source view vertex")
         view_points[view] = values
         given_provenance[view] = sources
-    if len(set(map(len, view_points.values()))) != 1:
-        raise ValueError("different original extreme vertex counts in two views")
+    # Two projections of a real box have only FOUR DISTINCT paper corners
+    # each, yet can correspond to EIGHT different 3D original corners.
+    # A human can review the 2D vertex INDEX pairs (alphabetical view order)
+    # without inventing duplicate CAD entities or accepting answer geometry.
+    reviewed_pairs = review.get("reviewedCorrespondences")
+    if reviewed_pairs is None:
+        if len(set(map(len, view_points.values()))) != 1:
+            raise ValueError("different original extreme vertex counts in two views")
+    else:
+        first, second = sorted(view_points)
+        if not isinstance(reviewed_pairs, list) or not 4 <= len(reviewed_pairs) <= 32:
+            raise ValueError("4..32 explicit original 3D correspondence pairs required")
+        seen_pairs, seen_first, seen_second = set(), set(), set()
+        for pair in reviewed_pairs:
+            if not isinstance(pair, dict) or set(pair) != {"firstIndex", "secondIndex"}:
+                raise ValueError("reviewed first-angle pair index record required")
+            i, j = pair["firstIndex"], pair["secondIndex"]
+            if type(i) is not int or type(j) is not int or (
+                i < 0 or i >= len(view_points[first]) or
+                j < 0 or j >= len(view_points[second])
+            ):
+                raise ValueError("reviewed original CAD pair indices out of bounds")
+            if (i, j) in seen_pairs:
+                raise ValueError("repeated original three-dimensional corner index pair")
+            seen_pairs.add((i, j))
+            seen_first.add(i)
+            seen_second.add(j)
+        if len(seen_first) != len(view_points[first]) or (
+            len(seen_second) != len(view_points[second])
+        ):
+            raise ValueError("reviewed mapping leaves original two-dimensional CAD vertex unassigned")
     if set(given) != used_given:
         raise ValueError("unaccounted given CAD handles require review, not silent omission")
     missing_view = next(v for v in ("V", "H", "W") if v not in selected)
@@ -211,6 +240,8 @@ def build_blind_packets(*, source_sha256: str, dxf_sha256: str, partition: dict,
         "convertedDxfSha256": dxf_sha256,
         "views": view_points,
         "givenOriginalHandleEndpoints": given_provenance,
+        **({"reviewedCorrespondences": reviewed_pairs}
+           if reviewed_pairs is not None else {}),
         "missingView": missing_view,
         "assumedScope": "all-extreme-vertices-of-one-closed-convex-opaque-solid",
         "humanSelectedFullExtremeVertexSet": True,
