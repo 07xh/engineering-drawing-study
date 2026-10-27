@@ -52,6 +52,10 @@ def occt_reference(data: dict) -> dict:
         from OCP.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX
         from OCP.TopTools import TopTools_IndexedMapOfShape
         from OCP.TopoDS import TopoDS
+        from OCP.TopAbs import TopAbs_REVERSED
+        from OCP.TopTools import TopTools_IndexedDataMapOfShapeListOfShape
+        from OCP.BRepAdaptor import BRepAdaptor_Curve, BRepAdaptor_Surface
+        from OCP.GeomAbs import GeomAbs_Line, GeomAbs_Plane
     except ImportError as exc:
         raise RuntimeError("independent verified OCP/OpenCascade installation required") from exc
 
@@ -107,7 +111,25 @@ def occt_reference(data: dict) -> dict:
         unique_claims = {json.dumps(x, sort_keys=True): x for x in claims}
         return list(unique_claims.values())
 
+    # Actual result-shape topology, not inferred from projection coincidence:
+    # the two incident native BRep faces decide whether the edge is a true
+    # physical crease or only a planar meshing/Boolean subdivision.
+    incidence = TopTools_IndexedDataMapOfShapeListOfShape()
+    TopExp.MapShapesAndAncestors_s(
+        result_shape, TopAbs_EDGE, TopAbs_FACE, incidence
+    )
     final_edges = unique(result_shape, TopAbs_EDGE)
+    if incidence.Extent() != len(final_edges):
+        raise RuntimeError("Boolean edge/incident-face inventory is incomplete")
+
+    def native_face_normal(face):
+        surface = BRepAdaptor_Surface(TopoDS.Face_s(face))
+        if surface.GetType() != GeomAbs_Plane:
+            raise RuntimeError("native Boolean result has unsupported curved face")
+        normal = surface.Plane().Axis().Direction()
+        sign = -1 if face.Orientation() == TopAbs_REVERSED else 1
+        return [sign * normal.X(), sign * normal.Y(), sign * normal.Z()]
+
     evidence = []
     for index, edge in enumerate(final_edges, 1):
         verts = unique(edge, TopAbs_VERTEX)
@@ -117,12 +139,37 @@ def occt_reference(data: dict) -> dict:
         for vertex in verts:
             point = BRep_Tool.Pnt_s(TopoDS.Vertex_s(vertex))
             xyz.append({"x": point.X(), "y": point.Y(), "z": point.Z()})
+        native_curve = BRepAdaptor_Curve(TopoDS.Edge_s(edge))
+        if native_curve.GetType() != GeomAbs_Line:
+            raise RuntimeError("native Boolean edge is not a verified straight segment")
+        position = incidence.FindIndex(edge)
+        if position < 1:
+            raise RuntimeError("result edge has no native face incidence")
+        adjacent = list(incidence.FindFromIndex(position))
+        if len(adjacent) != 2 or adjacent[0].IsSame(adjacent[1]):
+            raise RuntimeError("result edge is not a two-face solid manifold")
+        normals = [native_face_normal(face) for face in adjacent]
+        cosine = max(-1, min(1, sum(x * y for x, y in zip(*normals))))
+        angle = math.acos(cosine)
+        if not math.isfinite(angle):
+            raise RuntimeError("invalid native BRep dihedral")
+        physical_crease = angle > 1e-6 and abs(math.pi - angle) > 1e-6
+        planar_seam = angle <= 1e-6
         claims = classify(edge)
         if not claims:
             raise RuntimeError("real native result edge lacks original BRep history support")
         evidence.append({
             "finalTopoDSEdgeOrdinal": index,
             "real3DModelMmEndpoints": xyz,
+            "currentNativeResultEdgeHasExactlyTwoIncidentFaces": True,
+            "currentNativeResultFaceOutwardNormals": normals,
+            "currentNativeResultDihedralAngleRad": angle,
+            "currentNativeResultPhysicalCreaseVerified": physical_crease,
+            "currentNativeResultCoplanarSubdivisionVerified": planar_seam,
+            "currentNativeResultFeatureStatus":
+                "physical-crease" if physical_crease else (
+                    "coplanar-subdivision" if planar_seam else
+                    "undetermined-dihedral"),
             "originalTopoDSHistory": claims,
             "exactOriginalTopoDSEdgeAncestry": any(c["sourceKind"] == "edge" and
                 c["relation"] in ("same-original-topods-edge",
@@ -141,6 +188,14 @@ def occt_reference(data: dict) -> dict:
         "resultFaceCount": len(unique(result_shape, TopAbs_FACE)),
         "resultEdgeCount": len(evidence),
         "resultVertexCount": len(unique(result_shape, TopAbs_VERTEX)),
+        "allResultEdgesHaveExactlyTwoRealNativeIncidentFaces": True,
+        "certifiedNativePhysicalCreaseEdgeCount": sum(
+            x["currentNativeResultPhysicalCreaseVerified"] for x in evidence),
+        "certifiedNativeCoplanarSubdivisionEdgeCount": sum(
+            x["currentNativeResultCoplanarSubdivisionVerified"] for x in evidence),
+        "ambiguousNativeDihedralEdgeCount": sum(
+            x["currentNativeResultFeatureStatus"] == "undetermined-dihedral"
+            for x in evidence),
         "allResultEdgesHaveSameRunActualTopoDSHistorySupport": True,
         "resultEdgesWithDirectOriginalEdgeHistory": sum(
             x["exactOriginalTopoDSEdgeAncestry"] for x in evidence),
