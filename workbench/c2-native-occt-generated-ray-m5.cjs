@@ -18,6 +18,8 @@ const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
+const {auditC2GeneratedResultProjectedM4M5}=
+ require('./c2-native-generated-global-m4-m5.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const y of Object.values(x))freeze(y);Object.freeze(x);
 }return x;};
@@ -251,11 +253,19 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
       counts.undeterminedNativeFeatures!==seen.size||
     rows.length!==seen.size*VIEWS.length)
   throw new RangeError('incomplete native generated edge V/H/W audit accounting');
+ const globalPaperEvents=auditC2GeneratedResultProjectedM4M5({
+  nativeReport,solids,revision
+ });
+ if(globalPaperEvents.sourceResultEdgeCount!==seen.size||
+    globalPaperEvents.VHWSourceRows!==rows.length)
+  throw new RangeError('new native source M4/M5 graph drifted from original topology');
  return freeze({
   schema:'draftai-c2-occt-generated-edge-m5-continuous-rays/1',
   sourceRevision:revision,componentIds:solids.map(s=>s.id),
   generatedNativeResultEdgeCount:seen.size,
-  counts,rows,
+  counts,rows,globalPaperEvents,
+  originalNativeSourceM4FullPaperGraphRecomputed:true,
+  generatedEdgeContinuousM5SubspansRecomputed:true,
   realOCCTGeneratedEdgeHistoryWasRecomputedByThisFunction:false,
   currentNativeReported3DAndM0SourceCrossChecked:true,
   allNativeResultEdgeEndpointIsSameJunctionsReconciled:true,

@@ -50,6 +50,17 @@ test('actual native OCCT 30 output edges get M0/M5 V/H/W continuous depth',{
  });
  assert.equal(audit.generatedNativeResultEdgeCount,30);
  assert.equal(audit.rows.length,90);
+ assert.equal(audit.originalNativeSourceM4FullPaperGraphRecomputed,true);
+ assert.equal(audit.generatedEdgeContinuousM5SubspansRecomputed,true);
+ assert.equal(audit.globalPaperEvents.sourceResultEdgeCount,30);
+ assert.equal(audit.globalPaperEvents.VHWSourceRows,90);
+ assert.equal(audit.globalPaperEvents.actualM4PairwiseSegmentViewChecks,1305);
+ assert(audit.globalPaperEvents.continuousM5SubspanCount>0);
+ assert(audit.globalPaperEvents.exactM4TransverseProjectedCrossings>0);
+ assert.equal(audit.globalPaperEvents.allOfficialEngineeringLinesCertified,false);
+ assert(audit.globalPaperEvents.rows.every(row=>
+  row.subspans.every(span=>!span.V5ActionSignedOff)));
+
  assert.equal(audit.authenticatedNativeResultVertexCount,18);
  assert.equal(audit.allNativeResultEdgeEndpointIsSameJunctionsReconciled,true);
  assert(audit.rows.every(row=>
