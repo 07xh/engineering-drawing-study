@@ -14,7 +14,8 @@ const {computeC1OcjsVisibleSegments}=
  require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('./c1-ocjs-hidden-sharp-m5-corroboration.cjs');
-const {auditC1RealOcctVisibleContourSourceParity}=
+const {auditC1RealOcctVisibleContourSourceParity,
+ exactOriginalModelVertexProjectedEdge}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
@@ -71,7 +72,9 @@ function intervalCoverage(a,b,segments,tol=1e-6){
 // remains a geometric display helper, never an exact source certificate.
 // One ULP of missing native parameter range must remain visible as a gap.
 function exactC1NativeSourceIntervalCoverage({
- geometry,view,sourceEdgeId,real3DFrom,real3DTo,strokes
+ geometry,view,sourceEdgeId,real3DFrom,real3DTo,strokes,
+ projectedFromModelMm,projectedToModelMm,
+ independentlyM5SourceAndJunctionsProven=false
 }={}){
  if(!VIEWS.includes(view)||typeof sourceEdgeId!=='string'||
     !Array.isArray(geometry?.data?.edges)||!geometry?.data?.points||
@@ -106,13 +109,24 @@ function exactC1NativeSourceIntervalCoverage({
   return exact3(reconstructed,p)?t:null;
  };
  const t0=sourceParameter(real3DFrom),t1=sourceParameter(real3DTo);
- if(t0===null||t1===null||t0===t1)
+ // Match the existing strict native contour theorem: when independent
+ // M5 has proved this physical source AND its 3D endpoint junctions,
+ // exact paper projections of both ORIGINAL M0 vertices recover [0,1]
+ // even if an interpolated display XYZ rounded by one binary64 ULP.
+ // Never snap an arbitrary paper point or infer a TopoDS history link.
+ const literal=independentlyM5SourceAndJunctionsProven===true&&
+  projectedFromModelMm&&projectedToModelMm?
+  exactOriginalModelVertexProjectedEdge({
+   a,b,view,from:projectedFromModelMm,to:projectedToModelMm
+  }):null;
+ if(!literal&&(t0===null||t1===null||t0===t1))
   return {sourceEdgeId,view,originalSourceParameterRange:null,
    entireOriginalParameterIntervalCovered:false,
    positiveLengthUncoveredIntervals:[],
    status:'unreconstructable-original-3d-source-parameter',
    engineeringLineStyle:'undetermined',signedV5Action:false};
- const range=[Math.min(t0,t1),Math.max(t0,t1)],candidates=[];
+ const range=literal?[...literal.range]:
+  [Math.min(t0,t1),Math.max(t0,t1)],candidates=[];
  for(const stroke of strokes){
   if(!Array.isArray(stroke?.sourceCandidate3DLifts))
    throw new RangeError('unverified actual native HLR candidate lift list');
@@ -503,6 +517,13 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     exactC1NativeSourceIntervalCoverage({
      geometry:g,view,sourceEdgeId:x.sourceEdgeId,
      real3DFrom:x.real3DFrom,real3DTo:x.real3DTo,
+     projectedFromModelMm:x.projectedFromModelMm,
+     projectedToModelMm:x.projectedToModelMm,
+     independentlyM5SourceAndJunctionsProven:
+      x.locallyCompleteVisibleHullSegmentProven===true&&
+      x.sourceContourCoverageVerified===true&&
+      x.genuineFrontSourceEndpointJoinsVerified===true&&
+      x.continuouslyFrontRayClearVerified===true,
      strokes
     }):null;
    const covered=nativeCoverage?.
