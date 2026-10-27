@@ -23,6 +23,7 @@ const {CONSTRUCTION_INTENT_VERSION}=
  require('../core/contracts/construction-intent.js');
 const Timeline=require('./teaching-timeline-v5.js');
 const {renderC1ThirdViewSvg}=require('./c1-third-view-svg-preview.cjs');
+const {renderC1ThreeViewSvg}=require('./c1-three-view-svg-sheet.cjs');
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
@@ -337,6 +338,12 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
       drawing.sheetPoints[id].y-paper.y)>1e-8)
    throw new RangeError('C1 third-view paper point differs from M3');
  }
+ const threeViewSvgSheet=renderC1ThreeViewSvg({
+  schema:'draftai-c1-reviewed-solid-vertex-v5/1',revision:input.revision,
+  wholeSolidV5Ready:false,singleOriginalV5Player:true,
+  sceneResult,thirdViewDrawing,certifiedVisibleContourLineBindings,
+  scopedEdgePreviews
+ },{sheetTransform});
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
   revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
@@ -345,7 +352,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  return frozen({
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
-  sceneResult,thirdViewDrawing,
+  sceneResult,thirdViewDrawing,threeViewSvgSheet,
   thirdViewSvgPreview:renderC1ThirdViewSvg(thirdViewDrawing),
   wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
