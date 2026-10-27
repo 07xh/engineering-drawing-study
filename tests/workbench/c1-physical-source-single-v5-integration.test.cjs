@@ -86,3 +86,18 @@ test('real C1 V/H/W source partitions show only unsigned parameter remainders',(
  }
  assert(positiveSigned>0,'exercise actual independently signed M5 physical strokes');
 });
+
+test('canonical missing-view official V5 inventory includes both hull and M5 physical actions',()=>{
+ const result=compileReviewedSolidVertexV5({input:input(),
+  sheetTransform:{origin:{x:300,y:250},scale:5}});
+ const view=result.thirdViewDrawing.view,
+  hull=result.certifiedVisibleContourLineBindings.filter(x=>x.view===view),
+  physical=result.certifiedPhysicalLineBindings.filter(x=>x.view===view),
+  official=result.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds;
+ assert(physical.length>0,'real skewed source must have physical V5 actions');
+ assert.deepEqual(official,[...hull.map(x=>x.actionId),
+  ...physical.map(x=>x.actionId)]);
+ assert.equal(new Set(official).size,official.length);
+ assert(result.thirdViewDrawing.unresolvedPhysicalEdges.every(x=>
+  x.standardLineStyle==='undetermined'&&x.v5ActionId===null));
+});
