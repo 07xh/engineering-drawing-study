@@ -281,8 +281,12 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const groups=[...document.querySelectorAll('.next-home-tool-group')];
  assert.equal(groups.length,3,'core geometry, projections, auxiliary tools need explicit groups');
  const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
- assert.equal(links.length,19,'all existing published special-purpose tools remain reachable');
- assert.equal(new Set(links).size,19,'tool entries should not repeat');
+ // The newest source-private C1 review tool is an additional REAL tool,
+ // not a duplicate of the old fixed 8-vertex long-box demonstration.
+ assert.equal(links.length,20,'all published special-purpose tools remain reachable');
+ assert.equal(new Set(links).size,20,'tool entries should not repeat');
+ assert(links.includes('labs/c1-reviewed-dxf-live.html'),
+  'new original DXF reviewed C1 source lab must be accessible from home');
  const my=document.querySelector('#knowledge');
  assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
  assert.match(my.textContent,/题库尚未接入/,'no fictional persistent history');

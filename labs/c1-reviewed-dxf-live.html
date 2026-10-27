@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教材 C1 两视图 → 三视图 · 私有本地审核 · DraftAI</title>
+<link rel="stylesheet" href="../site-ui.css">
+<style>
+body{margin:0;background:#f4f7fc;color:#1b344f;font:14px/1.65 system-ui,-apple-system,sans-serif}
+main{max-width:1300px;margin:auto;padding:16px}
+h1{font-size:24px;line-height:1.3;margin:14px 0}
+h2{font-size:17px;margin:0 0 12px}
+p{line-height:1.7}
+.grid{display:grid;grid-template-columns:minmax(290px,375px) minmax(0,1fr);gap:14px}
+.panel{background:white;padding:16px;border:1px solid #d5e1ed;border-radius:12px;min-width:0}
+input,button{font:inherit;min-height:42px}
+input[type=file]{max-width:100%}
+button{background:#1c5c9b;color:white;border:0;border-radius:8px;padding:9px 15px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible{outline:3px solid #ffb65c;outline-offset:2px}
+label{display:block;margin:12px 0;font-weight:600}
+.checkbox{display:flex;align-items:flex-start;gap:9px;font-weight:500}
+.checkbox input{width:19px;height:19px;min-height:19px;flex-shrink:0;margin-top:3px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7fb;border-radius:8px;padding:11px;max-height:310px;overflow:auto;font-size:12px}
+.hint{padding:10px 13px;border-left:3px solid #4e81b6;background:#f1f6fc;border-radius:5px}
+svg{width:100%;height:auto;background:white;border:1px solid #dbe4ef;border-radius:8px}
+#sheetPreview svg{max-height:550px}
+#animation{height:auto;max-height:540px;min-height:260px}
+#status{font-weight:650;color:#1f6293;padding:9px}
+#status[data-status=blocked]{color:#a02b33}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+.controls button{flex:0 0 auto}
+small{color:#61768c}
+@media(max-width:860px){.grid{grid-template-columns:1fr}main{padding:9px}h1{font-size:21px}}
+</style>
+</head>
+<body><main>
+<a href="solid-third-view-live.html">← 返回基本体补第三视图工作台</a>
+<h1>教材 C1：可信 DXF 已知量 → 自动对应 → 人工审核 → 唯一 V5</h1>
+<p class="hint">仅使用本机可信转换器导出的 <strong>GIVEN 已知量 JSON</strong>。不要上传或在此页面选择参考答案 JSON、原始教材 DWG。文件只在浏览器内读取，不发送、不保存。CAD 顶点、体积拓扑都需要独立人工审核；算法示例通过不代表图 3-50 / 图 3-52 原题验收。</p>
+<div class="grid">
+<section class="panel" aria-label="原始 CAD 输入及人工确认">
+<h2>一、原题输入与数学重建</h2>
+<label for="givenFile">本机原题两视图已知量 JSON（不含答案）
+<input id="givenFile" type="file" accept=".json,application/json"></label>
+<pre id="candidate" aria-live="polite">尚未加载本机已知量。</pre>
+<label class="checkbox" for="reviewCheck">
+<input id="reviewCheck" type="checkbox" disabled>
+<span>我已核对纸质原题：两视图的全部真实角点、第一角法坐标、闭合凸体前提、三维面与棱线拓扑，并确认没有借用教材答案来指定形体。</span>
+</label>
+<button id="compile" type="button" disabled>按人工确认条件生成三视图与唯一 V5</button>
+<p id="status" data-status="review" role="status" aria-live="polite"></p>
+<p class="hint">此工具不适用于未证明的非凸组合体、遗漏角点、投影重合无法唯一配对的原题。遇到歧义会阻断，而不是猜测隐藏边。</p>
+</section>
+<section class="panel" aria-label="三视图真实结果与唯一 V5 播放">
+<h2>二、V/H/W 同纸显示</h2>
+<div id="sheetPreview" aria-label="原题数学候选与 M5 审核后的完整三视图预览"></div>
+<h2>三、唯一 V5 逐笔动画</h2>
+<div class="controls" aria-label="现有唯一 V5 播放器">
+<button id="play" type="button" disabled>播放</button>
+<button id="pause" type="button" disabled>暂停</button>
+<button id="prev" type="button" disabled>上一步</button>
+<button id="next" type="button" disabled>下一步</button>
+</div>
+<svg id="animation" viewBox="0 0 960 720" role="img" aria-label="当前数学版本的唯一 V5 绘制动作"></svg>
+<p id="v5Status" aria-live="polite">原始条件未审核，无已签收动画动作。</p>
+<h2>四、可复核证明及适用范围</h2>
+<pre id="proof">原题完整盲测与国标全部线型未签收。</pre>
+<small>私密教材 DWG/DXF、参考答案及人工审核记录不进入站点构建产物；只发布通用本机阅读和计算代码。</small>
+</section>
+</div>
+</main>
+<script src="c1-reviewed-dxf-live-bundle.js" defer></script>
+</body></html>
