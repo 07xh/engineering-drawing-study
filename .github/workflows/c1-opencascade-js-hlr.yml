@@ -183,6 +183,7 @@ jobs:
           node --test tests/workbench/c1-m5-closed-original-edge-ray-continuity.test.cjs
           node --test tests/workbench/c1-m5-original-closed-vertex-stars.test.cjs
           node --test tests/workbench/c1-ocjs-3d-candidate-lift.test.cjs
+          node --test tests/workbench/c1-ocjs-m5-source-coverage.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
