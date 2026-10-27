@@ -4,6 +4,8 @@ on:
     paths:
       - 'tools/c2_occt_boolean_history_reference.py'
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
+      - 'workbench/c2-native-generated-global-m4-m5.cjs'
+      - 'tests/workbench/c2-native-generated-global-m4-m5.test.cjs'
       - 'tests/workbench/c2-occt-boolean-history-reference.test.cjs'
       - 'tests/workbench/c2-native-occt-generated-ray-m5.test.cjs'
       - 'tests/fixtures/c2-l-shape-two-boxes-occt.json'
