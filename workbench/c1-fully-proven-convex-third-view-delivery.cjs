@@ -22,6 +22,8 @@ const {compileReviewedSolidVertexV5}=
 const {VIEWS}=require('../core/projection/conventions.js');
 const {renderC1ThirdViewSvg}=
  require('./c1-third-view-svg-preview.cjs');
+const {certifyWholeProjectedExteriorCoverage}=
+ require('./m5-c1-reviewed-convex-physical-edge-strokes.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -65,21 +67,34 @@ function compileScopedFullyProvenConvexC1({input,sheetTransform}={}){
   add(binding.view,binding.sourceEdgeId,binding.originalParameterRange,
    'original-certified-formal-visible-hidden-V5');
  }
- const exteriorBound=new Map();
+ const signedContourByView=new Map(VIEWS.map(view=>[view,[]]));
  for(const line of solved.certifiedVisibleContourLineBindings){
   if(line.signedFormalLineV5!==true||
      !actualIDs.has(line.actionId)||signatures.has(line.actionId)||
      line.revision!==input.revision)
    throw new RangeError('unsigned or duplicate visible exterior V5 action');
   signatures.add(line.actionId);
-  const key=line.view+'@'+line.sourceEdgeId;
-  exteriorBound.set(key,(exteriorBound.get(key)||0)+1);
+  if(!signedContourByView.has(line.view))
+   throw new RangeError('unknown original first-angle signed contour view');
+  signedContourByView.get(line.view).push({
+   projectedFromModelMm:{...line.fromModelMm},
+   projectedToModelMm:{...line.toModelMm},
+   signedOfficialLineStyle:line.standardLineStyle,
+   v5ActionAuthorized:true
+  });
  }
  let masked=0,suppressed=0;
  for(const row of proof.ledger){
   if(row.status==='already-certified-exterior'){
-   if(!exteriorBound.has(row.view+'@'+row.sourceEdgeId))
-    throw new RangeError('masked hull source has no original certified V5 contour');
+   // The frontmost signed contour can originate in ANOTHER physical
+   // original 3D edge with exactly the SAME paper support. Same source
+   // identity is not necessary; independently recompute complete projected
+   // [0,1] coverage from the ACTUAL existing signed V5 contour actions.
+   if(!certifyWholeProjectedExteriorCoverage({
+    fromModelMm:row.fromModelMm,toModelMm:row.toModelMm,
+    certifiedContours:signedContourByView.get(row.view)||[]
+   }))
+    throw new RangeError('masked source interval lacks complete signed V5 exterior paper support');
    add(row.view,row.sourceEdgeId,row.originalParameterRange,
     'already-visible-global-hull');
    masked++;
