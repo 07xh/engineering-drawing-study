@@ -36,6 +36,51 @@ test('hidden vs visible style and merely nearby parallel lines cannot alias',()=
   line(0,10,0.00001)
  ]).fullyCovered,false);
 });
+const nextUpPositive=n=>{
+ const bits=new DataView(new ArrayBuffer(8));
+ bits.setFloat64(0,n,false);
+ bits.setBigUint64(0,bits.getBigUint64(0,false)+1n,false);
+ return bits.getFloat64(0,false);
+};
+test('exact dyadic support rejects a tiny but real offset and a skew crossing',()=>{
+ // The previous 1e-8 distance allowance silently certified this false match.
+ const almost=line(0,10,1e-10);
+ const r=exactSameStylePaperCoverage(line(0,10),[almost]);
+ assert.equal(r.fullyCovered,false);
+ assert.deepEqual(r.uncoveredIntervals,[[0,10]]);
+ const diagonal={from:{u:0,v:0},to:{u:10,v:10},
+  standardLineStyle:VISIBLE};
+ const shifted={from:{u:0,v:1e-12},to:{u:10,v:10+1e-12},
+  standardLineStyle:VISIBLE};
+ assert.equal(exactSameStylePaperCoverage(diagonal,[shifted]).fullyCovered,false);
+ const crossing={from:{u:5,v:-5},to:{u:5,v:5},
+  standardLineStyle:VISIBLE};
+ assert.equal(exactSameStylePaperCoverage(line(0,10),[crossing]).fullyCovered,false);
+});
+test('1-ULP source gap at a large paper offset survives exact axis union',()=>{
+ const cut=65538,after=nextUpPositive(cut);
+ const r=exactSameStylePaperCoverage(line(65536,65540),[
+  line(65536,cut),line(after,65540)
+ ]);
+ assert.equal(r.fullyCovered,false);
+ assert.equal(r.uncoveredIntervalPaperAxis,'u');
+ assert.deepEqual(r.uncoveredIntervals,[[cut,after]]);
+ assert.equal(exactSameStylePaperCoverage(line(65540,65536),[
+  line(65536,cut),line(after,65540)
+ ]).fullyCovered,false);
+});
+test('exact vertical and diagonal segmented lines still match in both directions',()=>{
+ const v=(a,b)=>({from:{u:2,v:a},to:{u:2,v:b},
+  standardLineStyle:VISIBLE});
+ assert.equal(exactSameStylePaperCoverage(v(10,0),[
+  v(0,5),v(5,10)
+ ]).fullyCovered,true);
+ const d=(a,b)=>({from:{u:a,v:a},to:{u:b,v:b},
+  standardLineStyle:VISIBLE});
+ assert.equal(exactSameStylePaperCoverage(d(10,0),[
+  d(0,5),d(5,10)
+ ]).fullyCovered,true);
+});
 function output(){
  return {
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',revision:1,

@@ -11,14 +11,16 @@
  * result lines of the SAME engineering style, and each signed result line
  * must be covered by the reference. Partial overlap, 1-ULP positive gaps,
  * noncollinearity, incorrect hidden/visible style, or an extra line fail.
+ * Exact dyadic collinearity and raw paper-axis binary64 endpoint ordering
+ * preserve positive gaps even when floating projection fractions round them away.
  *
  * This is geometric reference parity ONLY; original DWG authentication,
  * actual source/answer isolation and Android visual validation are
  * independent obligations and CANNOT be declared passed by this function.
  */
 const {VIEWS}=require('../core/projection/conventions.js');
-const {exactCandidateIntervalCoverage}=
- require('./c1-original-source-interval-coverage.cjs');
+const {exactPositiveCollinearPaperOverlap}=
+ require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const y of Object.values(x))frozen(y);Object.freeze(x);
 }return x;};
@@ -45,23 +47,35 @@ function normalizeStrokes(rows,label){
 }
 function exactSameStylePaperCoverage(source,lines){
  const a=source.from,b=source.to,
-  dx=b.u-a.u,dy=b.v-a.v,len2=dx*dx+dy*dy;
- if(!(len2>1e-18)||!finite(len2))
+  // A straight collinear segment is monotone on its larger paper axis.
+  // Compare ORIGINAL binary64 endpoint coordinates, not rounded dot-product
+  // fractions: the latter can erase a real 1-ULP positive gap at large offsets.
+  axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
+  from=Math.min(a[axis],b[axis]),to=Math.max(a[axis],b[axis]);
+ if(!finite(from)||!finite(to)||!(to>from))
   throw new RangeError('positive finite C1 source paper line required');
- const len=Math.sqrt(len2),intervals=[];
- const fraction=p=>((p.u-a.u)*dx+(p.v-a.v)*dy)/len2;
- const deviation=p=>Math.abs(dx*(p.v-a.v)-dy*(p.u-a.u))/len;
+ const intervals=[];
  for(const other of lines){
   if(other.standardLineStyle!==source.standardLineStyle)continue;
-  if(deviation(other.from)>1e-8||deviation(other.to)>1e-8)continue;
-  const lo=Math.max(0,Math.min(fraction(other.from),fraction(other.to))),
-   hi=Math.min(1,Math.max(fraction(other.from),fraction(other.to)));
+  // Reuse the existing exact dyadic orientation/positive-overlap predicate.
+  // A nearby parallel or almost-collinear reference is NOT an exact match.
+  if(!exactPositiveCollinearPaperOverlap(a,b,other.from,other.to))continue;
+  const lo=Math.max(from,Math.min(other.from[axis],other.to[axis])),
+   hi=Math.min(to,Math.max(other.from[axis],other.to[axis]));
   if(hi>lo)intervals.push([lo,hi]);
  }
- const proof=exactCandidateIntervalCoverage([0,1],intervals);
+ intervals.sort((x,y)=>x[0]-y[0]||x[1]-y[1]);
+ const gaps=[];let reach=from;
+ for(const [lo,hi] of intervals){
+  if(lo>reach)gaps.push([reach,lo]);
+  if(hi>reach)reach=hi;
+ }
+ if(reach<to)gaps.push([reach,to]);
  return {
-  source,fullyCovered:proof.entireOriginalParameterIntervalCovered,
-  uncoveredIntervals:proof.positiveLengthUncoveredIntervals,
+  source,fullyCovered:gaps.length===0,
+  // Endpoints are exact original PAPER-AXIS mm coordinates (not [0,1]
+  // fractions, which would round away some strictly positive gaps).
+  uncoveredIntervals:gaps,uncoveredIntervalPaperAxis:axis,
   signedMatchingIntervalCount:intervals.length
  };
 }
