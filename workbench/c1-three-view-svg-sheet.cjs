@@ -51,9 +51,38 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
  const individual=VIEWS.map(view=>({
   view,svg:renderC1ThirdViewSvg(drawings[view],{includeReviewOverlay})
  }));
+ // Compose the actual canonical V/H/W sheet without reprojecting points.
+ // The SVG children are produced exclusively by our escaped renderer.
+ const all=VIEWS.flatMap(view=>[
+  ...Object.values(drawings[view].sheetPoints),
+  ...drawings[view].certifiedVisibleContour.flatMap(line=>
+   [line.fromSheetPx,line.toSheetPx]),
+  ...(includeReviewOverlay?drawings[view].unresolvedPhysicalEdges.flatMap(line=>
+   [line.fromSheetPx,line.toSheetPx]):[])
+ ]);
+ if(!all.length||all.some(p=>!p||!finite(p.x)||!finite(p.y)))
+  throw new RangeError('incomplete shared first-angle sheet coordinates');
+ const xs=all.map(p=>p.x),ys=all.map(p=>p.y);
+ const left=Math.min(...xs)-20,top=Math.min(...ys)-20;
+ const width=Math.max(1,Math.max(...xs)-Math.min(...xs)+40);
+ const height=Math.max(1,Math.max(...ys)-Math.min(...ys)+40);
+ const groups=individual.map(({view,svg})=>{
+  const start=svg.indexOf('<g fill="none" stroke-linecap="round">');
+  const end=svg.lastIndexOf('</svg>');
+  if(start<0||end<start||!svg.slice(start,end).endsWith('</g>'))
+   throw new RangeError('canonical C1 SVG group structure changed');
+  return '<g data-view="'+view+'">'+svg.slice(start,end)+'</g>';
+ });
+ const sheetSvg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+
+  [left,top,width,height].join(' ')+
+  '" role="img" aria-label="C1 first-angle V H W sheet">'+
+  '<title>C1 first-angle three-view preview</title>'+
+  '<desc>Certified contours and unsigned review edges; not a completed drawing.</desc>'+
+  groups.join('')+'</svg>';
  return Object.freeze({schema:'draftai-c1-three-view-svg-sheet/1',
   revision:result.revision,missingView:missing,
   views:Object.freeze(individual.map(x=>Object.freeze(x))),
+  sheetSvg,
   completeDrawingCertified:false,wholeSolidV5Ready:false});
 }
 module.exports={renderC1ThreeViewSvg};
