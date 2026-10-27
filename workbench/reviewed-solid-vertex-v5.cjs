@@ -381,7 +381,13 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
   // after already-signed physical intervals. A one-ULP source gap remains
   // unsigned; no second V5 stroke or tolerance-based erasure is introduced.
   drawingLayers:{
-   officialV5StrokeActionIds:signedThirdView.map(line=>line.actionId),
+   // The official inventory must include BOTH independently M5-signed
+   // exterior contours and physical visible/hidden subspans. Unsigned
+   // residual overlays never receive an official V5 action ID.
+   officialV5StrokeActionIds:[
+    ...signedThirdView.map(line=>line.actionId),
+    ...signedThirdViewFeatures.map(line=>line.actionId)
+   ],
    reviewOverlaySourceEdgeIds:sourceLines.map(line=>line.sourceEdgeId),
    reviewOverlayStyle:'undetermined',
    reviewOverlayIsOfficialDrawing:false

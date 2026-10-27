@@ -167,19 +167,40 @@ function bindC1NativeThirdViewEvidence({canonical,cad,revision,geometryId}={}){
   throw new RangeError('native OCCT and canonical M3 missing-view mismatch');
  const expected=signed.filter(x=>x.view===view);
  const visible=drawing.certifiedVisibleContour;
+ const allPhysical=canonical.certifiedPhysicalLineBindings??[];
+ const physical=drawing.certifiedPhysicalFeatures??[];
+ if(!Array.isArray(allPhysical)||!Array.isArray(physical))
+  throw new RangeError('native C1 missing canonical signed physical source inventory');
+ const expectedPhysical=allPhysical.filter(x=>x.view===view);
  const actionIds=drawing.drawingLayers?.officialV5StrokeActionIds;
  const bindings=new Map(expected.map(x=>[x.actionId,x]));
+ const physicalBindings=new Map(expectedPhysical.map(x=>[x.actionId,x]));
+ const expectedIds=new Set([...bindings.keys(),...physicalBindings.keys()]);
+ const sameRange=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
+  a.length===2&&b.length===2&&a[0]===b[0]&&a[1]===b[1];
  if(!Array.isArray(actionIds)||expected.length!==visible.length||
-    bindings.size!==expected.length||actionIds.length!==visible.length||
+    bindings.size!==expected.length||
+    physicalBindings.size!==expectedPhysical.length||
+    expectedIds.size!==expected.length+expectedPhysical.length||
+    physical.length!==expectedPhysical.length||
+    actionIds.length!==expectedIds.size||
     new Set(actionIds).size!==actionIds.length||
     new Set(visible.map(x=>x.v5ActionId)).size!==visible.length||
+    new Set(physical.map(x=>x.v5ActionId)).size!==physical.length||
     visible.some(x=>!bindings.has(x.v5ActionId)||
      bindings.get(x.v5ActionId).sourceEdgeId!==x.sourceEdgeId||
      x.standardLineStyle!=='gb-t-4457.4-continuous-wide-visible-outline')||
-    actionIds.some(id=>!bindings.has(id))||
+    physical.some(x=>!physicalBindings.has(x.v5ActionId)||
+     physicalBindings.get(x.v5ActionId).sourceEdgeId!==x.sourceEdgeId||
+     physicalBindings.get(x.v5ActionId).standardLineStyle!==x.standardLineStyle||
+     !sameRange(physicalBindings.get(x.v5ActionId).originalParameterRange,
+      x.originalParameterRange)||
+     !['gb-t-4457.4-continuous-wide-visible-outline',
+       'gb-t-4457.4-thin-dashed-hidden-edge'].includes(x.standardLineStyle))||
+    actionIds.some(id=>!expectedIds.has(id))||
     drawing.unresolvedPhysicalEdges.some(x=>
      x.standardLineStyle!=='undetermined'||x.v5ActionId!==null))
-  throw new RangeError('native C1 cannot rebind noncanonical V5 contour');
+  throw new RangeError('native C1 cannot rebind noncanonical V5 contour or physical strokes');
  const segments=native.map(segment=>{
   const ids=segment?.projectedOriginalEdgeCandidates;
   const validPoint=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
@@ -199,7 +220,11 @@ function bindC1NativeThirdViewEvidence({canonical,cad,revision,geometryId}={}){
   schema:'draftai-c1-native-missing-view-evidence/1',
   view,revision,geometryId,
   realHLRVisibleSegments:Object.freeze(segments),
-  canonicalCertifiedVisibleV5ActionIds:Object.freeze([...actionIds]),
+  // Native HLR remains unsigned: these IDs are EXISTING canonical M5/V5.
+  canonicalCertifiedVisibleV5ActionIds:Object.freeze(expected.map(x=>x.actionId)),
+  canonicalCertifiedPhysicalV5ActionIds:Object.freeze(
+   expectedPhysical.map(x=>x.actionId)),
+  canonicalOfficialV5StrokeActionIds:Object.freeze([...actionIds]),
   unresolvedPhysicalSourceCount:drawing.unresolvedPhysicalEdges.length,
   generatedTopoDSHistoryComplete:false,
   allPhysicalEdgesEngineeringStylesSigned:false,
