@@ -362,6 +362,45 @@
         "tests/math/m0-private-photo-byte-review-binding.test.cjs",
         "tests/ui/private-original-photo-dossier.test.cjs"
       ]
+    },
+    {
+      "name": "reviewed-3d-extreme-vertices-to-real-composition-scene",
+      "chain": [
+        "core/numeric/m0-convex-vertex-completeness.cjs",
+        "workbench/m0-reviewed-scene-continuous-partitions.cjs",
+        "workbench/reviewed-convex-scene-depth.cjs",
+        "project/unified-workbench-session.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-convex-vertex-completeness.test.cjs",
+        "tests/workbench/m0-reviewed-scene-continuous-partitions.test.cjs"
+      ]
+    },
+    {
+      "name": "reviewed-3d-original-rays-to-first-angle-scene",
+      "chain": [
+        "core/numeric/m0-joint-visibility-partition.cjs",
+        "workbench/m0-reviewed-scene-continuous-partitions.cjs",
+        "workbench/reviewed-convex-scene-depth.cjs",
+        "project/unified-workbench-session.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-joint-visibility-partition.test.cjs",
+        "tests/workbench/m0-reviewed-scene-continuous-partitions.test.cjs"
+      ]
+    },
+    {
+      "name": "reviewed-3d-face-joins-to-real-composition-scene",
+      "chain": [
+        "core/numeric/projected-contour-topology.cjs",
+        "workbench/m0-reviewed-face-ring-join-consumer.cjs",
+        "workbench/reviewed-convex-scene-depth.cjs",
+        "project/unified-workbench-session.cjs"
+      ],
+      "regressionTests": [
+        "tests/math/m0-projected-contour-topology.test.cjs",
+        "tests/workbench/m0-reviewed-face-ring-join-consumer.test.cjs"
+      ]
     }
   ]
 }
