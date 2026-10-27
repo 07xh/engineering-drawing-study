@@ -292,8 +292,67 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
   signedV5Action:false
  };
 }
+
+/**
+ * Compare genuine generated HLR TopoDS VERTICES with ORIGINAL BRep vertex
+ * handles before their OCCT lifetime ends. IsSame proves a direct TShape
+ * identity, not HLR-generated EDGE history or engineering line style.
+ * Exact current M0 XYZ and first-angle paper projection are also required.
+ */
+function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
+ generatedVertex,originalSourceVertices,view,nativePaperPoint
+}={}){
+ if(!VIEWS.includes(view)||!Number.isFinite(nativePaperPoint?.u)||
+    !Number.isFinite(nativePaperPoint?.v)||
+    typeof generatedVertex?.IsSame!=='function'||
+    generatedVertex.IsNull?.()===true||
+    generatedVertex.IsSame(generatedVertex)!==true||
+    !Array.isArray(originalSourceVertices)||
+    !originalSourceVertices.length||originalSourceVertices.length>1024)
+  throw new TypeError('actual OCCT HLR vertex and bounded original TopoDS vertex ledger required');
+ const sameIds=new Set();let sameUnbound=0,paperMismatch=0,direct=0;
+ for(const item of originalSourceVertices){
+  const original=item?.vertex;
+  if(typeof original?.IsSame!=='function'||
+     original.IsNull?.()===true||
+     original.IsSame(original)!==true)
+   throw new TypeError('invalid original native TopoDS vertex');
+  const forward=generatedVertex.IsSame(original),
+   reverse=original.IsSame(generatedVertex);
+  if(typeof forward!=='boolean'||typeof reverse!=='boolean'||
+     forward!==reverse)
+   throw new RangeError('asymmetric original/generated TopoDS vertex IsSame');
+  if(!forward)continue;
+  direct++;
+  if(item.sourceVertexId===null){sameUnbound++;continue;}
+  const xyz=item.originalModelXYZ;
+  if(typeof item.sourceVertexId!=='string'||!item.sourceVertexId||
+     !xyz||!['x','y','z'].every(k=>Number.isFinite(xyz[k])))
+   throw new RangeError('unbound original M0 vertex identity in native ledger');
+  sameIds.add(item.sourceVertexId);
+  const paper=project(xyz)[view];
+  if(paper.u!==nativePaperPoint.u||paper.v!==nativePaperPoint.v)
+   paperMismatch++;
+ }
+ if(sameIds.size>1)
+  throw new RangeError('one generated TopoDS vertex matches conflicting original M0 vertices');
+ const id=sameIds.size===1&&sameUnbound===0&&paperMismatch===0?
+  [...sameIds][0]:null;
+ return {
+  originalNativeTopoDSVertexOccurrencesCompared:originalSourceVertices.length,
+  directOriginalTopoDSVertexIsSameOccurrenceCount:direct,
+  directOriginalTopoDSVertexWithoutExactM0Binding:sameUnbound,
+  directOriginalTopoDSVertexPaperMismatchCount:paperMismatch,
+  directlySameOriginalM0VertexId:id,
+  directOriginal3DVertexTopoDSIdentityProven:id!==null,
+  fullGeneratedHLREdgeToOriginalTopoDSHistoryProven:false,
+  officialEngineeringLineStyle:'undetermined',signedV5Action:false
+ };
+}
+
 function extractRealOcjsOriginalSourceBRepEdges({
- oc,shape,geometry,kind,vertexType,avoid,newObj,hold,originalNativeEdgeHandles
+ oc,shape,geometry,kind,vertexType,avoid,newObj,hold,
+ originalNativeEdgeHandles,originalNativeVertexHandles
 }){
  const explorer=newObj('TopExp_Explorer_2',shape,kind,avoid);
  const matches=new Map();
@@ -302,10 +361,11 @@ function extractRealOcjsOriginalSourceBRepEdges({
   if(++occurrences>512)throw new RangeError('excess OCCT source topology edges');
   const edge=hold(explorer.Current());
   const vertices=newObj('TopExp_Explorer_2',edge,vertexType,avoid);
-  const coords=[];
+  const coords=[],nativeVertices=[];
   while(vertices.More()){
    const node=hold(vertices.Current());
    const vertex=hold(method(oc.TopoDS,'Vertex_1')(node));
+   nativeVertices.push(vertex);
    const point=hold(method(oc.BRep_Tool,'Pnt')(vertex));
    coords.push({x:point.X(),y:point.Y(),z:point.Z()});
    if(coords.length>2)
@@ -336,6 +396,17 @@ function extractRealOcjsOriginalSourceBRepEdges({
    ...curveProof};
   if(originalNativeEdgeHandles instanceof Array)
    originalNativeEdgeHandles.push({sourceEdgeId:record.sourceEdgeId,edge:edgeType});
+  if(originalNativeVertexHandles instanceof Array){
+   const [aId,bId]=record.originalVertexIds,
+    a=geometry.data.points[aId],b=geometry.data.points[bId];
+   const eq=(p,q)=>['x','y','z'].every(k=>p[k]===q[k]);
+   for(let i=0;i<2;i++){
+    const id=eq(coords[i],a)?aId:eq(coords[i],b)?bId:null;
+    originalNativeVertexHandles.push({vertex:nativeVertices[i],
+     sourceVertexId:id,
+     originalModelXYZ:id===null?null:{...geometry.data.points[id]}});
+   }
+  }
   const prior=matches.get(record.sourceEdgeId);
   if(prior){
    const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
@@ -444,11 +515,13 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   }else{
    solid=makeConvexOcjsShell({oc,geometry,newObj,hold});
   }
-  const originalNativeEdgeHandles=[];
+  const originalNativeEdgeHandles=[],originalNativeVertexHandles=[];
   const sourceBRep=extractRealOcjsOriginalSourceBRepEdges({
    oc,shape:solid,geometry,kind,vertexType,avoid,newObj,hold,
-   originalNativeEdgeHandles
+   originalNativeEdgeHandles,originalNativeVertexHandles
   });
+  if(originalNativeVertexHandles.length!==2*sourceBRep.occtOriginalEdgeOccurrenceCount)
+   throw new RangeError('actual original TopoDS vertex occurrence inventory incomplete');
   if(originalNativeEdgeHandles.length!==sourceBRep.occtOriginalEdgeOccurrenceCount)
    throw new RangeError('native source OCCT TopoDS edge occurrence ledger incomplete');
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
@@ -521,8 +594,13 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
          nativeEndpoints.nativeVertices.length!==2||
          nativeEndpoints.projectedEndpoints.length!==2)
        throw new RangeError('verified OCCT edge lost its native vertex topology');
+      const directNativeVertexOriginalSource=nativeEndpoints.nativeVertices.map(
+       (vertex,side)=>probeRealOcctHLRVertexDirectOriginalSourceIdentity({
+        generatedVertex:vertex,originalSourceVertices:originalNativeVertexHandles,
+        view,nativePaperPoint:nativeEndpoints.projectedEndpoints[side]
+       }));
       const ordinal=result.length;
-      result.push(checked);
+      result.push({...checked,directNativeVertexOriginalSource});
       vertexRecords.push({nativeHLREdgeOrdinal:ordinal,
        vertices:nativeEndpoints.nativeVertices,
        projectedEndpoints:nativeEndpoints.projectedEndpoints});
@@ -559,6 +637,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   // TopoDS vertex objects are still alive. Persist no native handles.
   const nativeGeneratedVertexGraph=
    computeC1NativeHLRIsSameVertexGraph({perView:nativeGraphInput});
+  const directNativeOriginalVertexMatches=Object.fromEntries(VIEWS.map(view=>[
+   view,[...rows[view],...hiddenViews[view]].reduce((n,edge)=>
+    n+edge.directNativeVertexOriginalSource.filter(x=>
+     x.directOriginal3DVertexTopoDSIdentityProven).length,0)
+  ]));
   if(nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges!==
      VIEWS.reduce((n,v)=>n+rows[v].length+hiddenViews[v].length,0)||
      nativeGeneratedVertexGraph.signedV5ActionCount!==0)
@@ -570,7 +653,9 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
-   nativeGeneratedVertexGraph,
+   nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   everyNativeGeneratedEndpointComparedToOriginalTopoDSVertices:true,
+   directNativeOriginalVertexIdentityDoesNotProveEdgeHistory:true,
    hiddenHLROutputFromActualOCCT:true,
    hiddenSharpNullCompoundViews,
    hiddenSharpEdgesAreOnlyUnsignedCandidates:true,
@@ -597,4 +682,5 @@ module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
  liftOriginalProjectedSourceCandidates,matchOriginalBRepEdgeByXYZ,
  extractRealOcjsOriginalSourceBRepEdges,
  verifyOriginalOcctLinearCurveWitness,
- probeRealOcctHLREdgeDirectOriginalSourceIdentity};
+ probeRealOcctHLREdgeDirectOriginalSourceIdentity,
+ probeRealOcctHLRVertexDirectOriginalSourceIdentity};
