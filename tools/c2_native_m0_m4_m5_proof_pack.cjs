@@ -276,9 +276,13 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    'one-reviewed-box-minus-through-rectangular-bore-unsigned-m4-reference':
    'two-reviewed-axis-aligned-box-boolean-union-reference'
  };
- const certifiedV5=signCertifiedNativeC2OpenRaySubspans({
-  math,nativeReport,revision:manifest.revision
- });
+ // The canonical V5 signer is rigorously valid for UNION only.
+ // A subtractive void lacks a proven full-scene continuous M5 order. It
+ // MUST NOT even create an empty-but-apparently-valid V5 timeline.
+ const certifiedV5=operation==='union'?
+  signCertifiedNativeC2OpenRaySubspans({
+   math,nativeReport,revision:manifest.revision
+  }):null;
  const packed={
   schema:'draftai-c2-actual-native-occt-m0-m4-m5-full-proof-pack/1',
   revision:manifest.revision,status:'same-run-native-brep-math-proof-only',
