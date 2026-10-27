@@ -52,7 +52,7 @@ test('2D missing source vertex is not a unique 3D body',async()=>{
  const v=views();v.H.pop();
  await assert.rejects(()=>inferC1UniqueConvexGeometryCandidate({
   views:v
- }),/different source vertex counts|4\\.\\.16/);
+ }),/different source vertex counts|independently detected view vertices/);
 });
 test('no automatic acceptance of unknown/non-convex source assumptions',async()=>{
  await assert.rejects(()=>inferC1UniqueConvexGeometryCandidate({
