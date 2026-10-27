@@ -472,3 +472,37 @@ test('C1 exact original M0 vertex paper identity recovers a rounded display endp
   assert.equal(shifted.entireOriginalParameterIntervalCovered,false);
  }
 });
+
+test('C1 native V/H/W gap evidence refuses forged original BRep XYZ, curve and 3D source parameters',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:cad.views[view]};
+  assert.equal(exactSourceCoverage(input).entireOriginalParameterIntervalCovered,true);
+  for(const mutate of [
+   x=>x.actualOriginalOCCTBRepFrom3D.y=Number.MIN_VALUE,
+   x=>x.actualOriginalOCCTBRepTo3D.x+=0.001,
+   x=>x.originalOCCTSourceCurveType='circle',
+   x=>x.originalOCCTCurveParameterRange=[0,1],
+   x=>x.originalVertexIds=['B','A'],
+   x=>x.sourceParameterAtProjectedTo=1.0000000000000002,
+   x=>x.fromCandidate3D.x=Number.MIN_VALUE,
+   x=>x.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched=true
+  ]){
+   const forged=structuredClone(cad.views[view][0]);
+   mutate(forged.sourceCandidate3DLifts[0]);
+   assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+    /unverified original native BRep source lift/,
+    'a forged native source must not close the original 3D interval');
+  }
+  const reversed=structuredClone(cad.views[view][0]);
+  const lift=reversed.sourceCandidate3DLifts[0];
+  [lift.actualOriginalOCCTBRepFrom3D,lift.actualOriginalOCCTBRepTo3D]=
+   [lift.actualOriginalOCCTBRepTo3D,lift.actualOriginalOCCTBRepFrom3D];
+  lift.originalOCCTCurveParameterRange=[11,11+Math.hypot(3,4,5)];
+  assert.equal(exactSourceCoverage({...input,strokes:[reversed]})
+   .entireOriginalParameterIntervalCovered,true,
+   'native BRep reversal and independent parameter origin remain valid');
+ }
+});

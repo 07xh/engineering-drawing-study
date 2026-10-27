@@ -132,9 +132,39 @@ function exactC1NativeSourceIntervalCoverage({
    throw new RangeError('unverified actual native HLR candidate lift list');
   for(const lift of stroke.sourceCandidate3DLifts){
    if(lift?.sourceEdgeId===sourceEdgeId){
+    // Do not treat an earlier boolean-only CAD audit as a source certificate:
+    // rebind every candidate to this CURRENT original BRep edge in 3D.
+    // This diagnostic is also exported and can receive an isolated HLR
+    // stroke list; a stale measured edge must never close a real 1-ULP gap.
+    const measuredFrom=lift.actualOriginalOCCTBRepFrom3D,
+     measuredTo=lift.actualOriginalOCCTBRepTo3D,
+     measuredRange=lift.originalOCCTCurveParameterRange,
+     originalLength=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z),
+     nativeEnds=(exact3(measuredFrom,a)&&exact3(measuredTo,b))||
+      (exact3(measuredFrom,b)&&exact3(measuredTo,a)),
+     nativeSpan=Array.isArray(measuredRange)&&measuredRange.length===2&&
+      measuredRange.every(Number.isFinite)&&
+      measuredRange[1]>measuredRange[0]?
+      measuredRange[1]-measuredRange[0]:NaN,
+     tFrom=lift.sourceParameterAtProjectedFrom,
+     tTo=lift.sourceParameterAtProjectedTo,
+     originalPoint=t=>({x:a.x+(b.x-a.x)*t,
+      y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
     if(lift.actualOriginalOCCTBRepEdge3DEndpointsVerified!==true||
        lift.originalOCCTSourceLineCurveVerified!==true||
-       lift.v5Authorized!==false)
+       lift.originalOCCTSourceCurveType!=='line'||
+       lift.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched!==false||
+       lift.v5Authorized!==false||!nativeEnds||
+       !Number.isFinite(originalLength)||!(originalLength>1e-8)||
+       !Number.isFinite(nativeSpan)||
+       Math.abs(nativeSpan-originalLength)>
+        1e-6*Math.max(1,originalLength)||
+       !Array.isArray(lift.originalVertexIds)||
+       lift.originalVertexIds.join('|')!==edges[0].join('|')||
+       !Number.isFinite(tFrom)||!Number.isFinite(tTo)||
+       !(tFrom>=0&&tFrom<=1&&tTo>=0&&tTo<=1&&tFrom!==tTo)||
+       !exact3(lift.fromCandidate3D,originalPoint(tFrom))||
+       !exact3(lift.toCandidate3D,originalPoint(tTo)))
      throw new RangeError('unverified original native BRep source lift');
     candidates.push(lift.originalSourceParameterRange);
    }
