@@ -7,6 +7,62 @@
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
 const {renderC1ThirdViewSvg}=require('./c1-third-view-svg-preview.cjs');
 const finite=Number.isFinite;
+// Subtract ONLY independently signed original M0/M4/M5 physical intervals
+// from the read-only review layer. A positive binary64 parameter gap,
+// including a one-ULP gap, must remain visible as unsigned evidence.
+// This is presentation partitioning, never a second line-style/V5 signer.
+function unresolvedC1PhysicalSourceRemainders(sourceLines,bindings,view){
+ if(!VIEWS.includes(view)||!Array.isArray(sourceLines)||!Array.isArray(bindings))
+  throw new TypeError('current C1 V/H/W physical source and V5 bindings required');
+ const source=new Map();
+ for(const line of sourceLines){
+  if(line.view!==view||typeof line.sourceEdgeId!=='string'||
+     source.has(line.sourceEdgeId)||
+     ![line.fromModelMm?.u,line.fromModelMm?.v,
+       line.toModelMm?.u,line.toModelMm?.v].every(finite))
+   throw new RangeError('invalid or duplicate original C1 review source');
+  source.set(line.sourceEdgeId,line);
+ }
+ const bySource=new Map();
+ const interpolate=(a,b,t)=>({u:a.u+(b.u-a.u)*t,v:a.v+(b.v-a.v)*t});
+ for(const binding of bindings.filter(b=>b.view===view)){
+  const line=source.get(binding.sourceEdgeId),span=binding.originalParameterRange;
+  if(!line||binding.signedFormalLineV5!==true||
+     !Array.isArray(span)||span.length!==2||
+     !span.every(finite)||!(span[0]>=0&&span[1]<=1&&span[0]<span[1])||
+     !['gb-t-4457.4-continuous-wide-visible-outline',
+       'gb-t-4457.4-thin-dashed-hidden-edge'].includes(binding.standardLineStyle))
+   throw new RangeError('unbound or unsigned C1 physical interval cannot suppress review');
+  const a=interpolate(line.fromModelMm,line.toModelMm,span[0]),
+   b=interpolate(line.fromModelMm,line.toModelMm,span[1]);
+  if(!binding.fromModelMm||!binding.toModelMm||
+     Math.hypot(a.u-binding.fromModelMm.u,a.v-binding.fromModelMm.v)>1e-7||
+     Math.hypot(b.u-binding.toModelMm.u,b.v-binding.toModelMm.v)>1e-7)
+   throw new RangeError('signed C1 source parameter does not match M0 projection');
+  if(!bySource.has(binding.sourceEdgeId))bySource.set(binding.sourceEdgeId,[]);
+  bySource.get(binding.sourceEdgeId).push(span);
+ }
+ const result=[];
+ for(const line of sourceLines){
+  const spans=(bySource.get(line.sourceEdgeId)||[]).slice()
+   .sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  let cursor=0;
+  const add=(from,to)=>{
+   if(to>from)result.push({...line,
+    originalParameterRange:[from,to],
+    fromModelMm:interpolate(line.fromModelMm,line.toModelMm,from),
+    toModelMm:interpolate(line.fromModelMm,line.toModelMm,to),
+    certifiedPhysicalSubspanElsewhere:spans.length>0});
+  };
+  for(const [from,to] of spans){
+   if(from<cursor)throw new RangeError('overlapping signed physical source intervals');
+   add(cursor,from);
+   cursor=to;
+  }
+  add(cursor,1);
+ }
+ return result;
+}
 function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}={}){
  if(result?.schema!=='draftai-c1-reviewed-solid-vertex-v5/1'||
     result.wholeSolidV5Ready!==false||
@@ -30,9 +86,11 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
   const signed=result.certifiedVisibleContourLineBindings.filter(x=>x.view===view);
   const certifiedPhysical=(result.certifiedPhysicalLineBindings||[])
    .filter(x=>x.view===view);
-  const unresolved=result.scopedEdgePreviews.filter(x=>
-   x.view===view&&!x.projectionCollapsedToPoint&&
-   x.renderedAsPhysicalSourceCandidate);
+  const unresolved=unresolvedC1PhysicalSourceRemainders(
+   result.scopedEdgePreviews.filter(x=>
+    x.view===view&&!x.projectionCollapsedToPoint&&
+    x.renderedAsPhysicalSourceCandidate),
+   result.certifiedPhysicalLineBindings||[],view);
   drawings[view]={
    schema:'draftai-c1-m3-m5-third-view-drawing/1',
    view,revision:result.revision,
@@ -50,7 +108,9 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
     fromSheetPx:line.fromSheetPx,toSheetPx:line.toSheetPx
    })),
    unresolvedPhysicalEdges:unresolved.map(line=>({
-    sourceEdgeId:line.sourceEdgeId,standardLineStyle:'undetermined',
+    sourceEdgeId:line.sourceEdgeId,
+    originalParameterRange:[...line.originalParameterRange],
+    standardLineStyle:'undetermined',
     v5ActionId:null,
     fromSheetPx:toSheet(view,line.fromModelMm,transform),
     toSheetPx:toSheet(view,line.toModelMm,transform)
@@ -96,4 +156,4 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}=
   sheetSvg,
   completeDrawingCertified:false,wholeSolidV5Ready:false});
 }
-module.exports={renderC1ThreeViewSvg};
+module.exports={renderC1ThreeViewSvg,unresolvedC1PhysicalSourceRemainders};
