@@ -7,7 +7,7 @@ const manifest=JSON.parse(fs.readFileSync(
 test('machine-gated real M0 source routes reach the native photo and private-evidence UI',()=>{
  const r=audit();
  assert.equal(r.moduleCount,31);
- assert.equal(r.nativeRuntimeRoutes.length,6);
+ assert.equal(r.nativeRuntimeRoutes.length,8);
  const names=r.nativeRuntimeRoutes.map(x=>x.name);
  assert.deepEqual(names,[
   'photo-original-bytes-to-live-m3',
@@ -15,11 +15,16 @@ test('machine-gated real M0 source routes reach the native photo and private-evi
   'photo-bytes-to-rehashable-private-evidence',
   'reviewed-3d-extreme-vertices-to-real-composition-scene',
   'reviewed-3d-original-rays-to-first-angle-scene',
-  'reviewed-3d-face-joins-to-real-composition-scene'
+  'reviewed-3d-face-joins-to-real-composition-scene',
+  'reviewed-C1-original-source-to-sole-V5-gate',
+  'finite-C3-M0-gradients-to-real-analytic-workbench'
  ]);
  for(const [i,route] of r.nativeRuntimeRoutes.entries()){
   assert.equal(route.consumerEntry,i<3?
-   'labs/auto-fillet-live-entry.cjs':'project/unified-workbench-session.cjs');
+   'labs/auto-fillet-live-entry.cjs':
+   i<6?'project/unified-workbench-session.cjs':
+   i===6?'workbench/reviewed-solid-vertex-v5.cjs':
+   'labs/finite-cylinder-intersection-live-entry.cjs');
   assert.equal(route.staticImportChainConnected,true);
   assert.equal(route.executableEvidenceFilesPresent,true);
   assert.equal(route.currentSourceIndependentlyAuthenticated,false);
@@ -43,6 +48,11 @@ test('machine-gated real M0 source routes reach the native photo and private-evi
   'workbench/m0-reviewed-scene-continuous-partitions.cjs'));
  assert.ok(routes[1].directRuntimeConsumers.includes(
   'workbench/m0-reviewed-face-ring-join-consumer.cjs'));
+ const vectors=r.entries.find(x=>x.path==='core/numeric/object-vector3.cjs');
+ assert.ok(vectors.transitiveRuntimeConsumers.includes(
+  'labs/finite-cylinder-intersection-live-entry.cjs'));
+ assert.ok(routes[0].transitiveRuntimeConsumers.includes(
+  'workbench/reviewed-solid-vertex-v5.cjs'));
  assert.ok(r.nativeRuntimeRoutes.slice(3).every(x=>
   x.staticImportChainConnected&&x.executableEvidenceFilesPresent&&
   x.fullM0ProofCertified===false));
