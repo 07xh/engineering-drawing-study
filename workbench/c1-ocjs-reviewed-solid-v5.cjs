@@ -128,6 +128,67 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
 // must not be treated as false exterior hull omissions. A visible CAD segment
 // that actually intersects a signed hull stroke needs authentic source IDs;
 // unrelated visible interior lines remain unsigned M5 candidates.
+// Rebind only an independently checked native HLR candidate inventory to the
+// SAME canonical M3 drawing and existing V5 action IDs. This pure boundary
+// rejects stale/mismatched revisions, duplicated actions and unsigned edges
+// that were accidentally promoted; it never signs a new native stroke.
+function bindC1NativeThirdViewEvidence({canonical,cad,revision,geometryId}={}){
+ const drawing=canonical?.thirdViewDrawing,view=drawing?.view;
+ const native=VIEWS.includes(view)&&cad?.views?.[view];
+ const signed=canonical?.certifiedVisibleContourLineBindings;
+ if(!VIEWS.includes(view)||drawing.revision!==revision||
+    drawing.geometryId!==geometryId||
+    cad?.revision!==revision||cad.sourceGeometryId!==geometryId||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
+    !Array.isArray(native)||native.length===0||
+    !Array.isArray(signed)||!Array.isArray(drawing.certifiedVisibleContour)||
+    !Array.isArray(drawing.unresolvedPhysicalEdges)||
+    drawing.completeDrawingCertified!==false||
+    canonical.wholeSolidV5Ready!==false)
+  throw new RangeError('native OCCT and canonical M3 missing-view mismatch');
+ const expected=signed.filter(x=>x.view===view);
+ const visible=drawing.certifiedVisibleContour;
+ const actionIds=drawing.drawingLayers?.officialV5StrokeActionIds;
+ const bindings=new Map(expected.map(x=>[x.actionId,x]));
+ if(!Array.isArray(actionIds)||expected.length!==visible.length||
+    bindings.size!==expected.length||actionIds.length!==visible.length||
+    new Set(actionIds).size!==actionIds.length||
+    new Set(visible.map(x=>x.v5ActionId)).size!==visible.length||
+    visible.some(x=>!bindings.has(x.v5ActionId)||
+     bindings.get(x.v5ActionId).sourceEdgeId!==x.sourceEdgeId||
+     x.standardLineStyle!=='gb-t-4457.4-continuous-wide-visible-outline')||
+    actionIds.some(id=>!bindings.has(id))||
+    drawing.unresolvedPhysicalEdges.some(x=>
+     x.standardLineStyle!=='undetermined'||x.v5ActionId!==null))
+  throw new RangeError('native C1 cannot rebind noncanonical V5 contour');
+ const segments=native.map(segment=>{
+  const ids=segment?.projectedOriginalEdgeCandidates;
+  const validPoint=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
+  if(!validPoint(segment?.from)||!validPoint(segment?.to)||
+     !Array.isArray(ids)||ids.length===0||
+     ids.some(id=>typeof id!=='string'||!id)||
+     new Set(ids).size!==ids.length)
+   throw new RangeError('invalid native C1 missing-view physical candidate');
+  return Object.freeze({
+   from:Object.freeze({...segment.from}),
+   to:Object.freeze({...segment.to}),
+   original3DSourceCandidates:Object.freeze([...ids]),
+   engineeringLineStyle:'undetermined',v5ActionId:null
+  });
+ });
+ return Object.freeze({
+  schema:'draftai-c1-native-missing-view-evidence/1',
+  view,revision,geometryId,
+  realHLRVisibleSegments:Object.freeze(segments),
+  canonicalCertifiedVisibleV5ActionIds:Object.freeze([...actionIds]),
+  unresolvedPhysicalSourceCount:drawing.unresolvedPhysicalEdges.length,
+  generatedTopoDSHistoryComplete:false,
+  allPhysicalEdgesEngineeringStylesSigned:false,
+  completeDrawingCertified:false,
+  newV5ActionsFromNativeHLR:0
+ });
+}
+
 function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  if(!oc||typeof oc!=='object')
   throw new TypeError('initialized real OpenCascade.js kernel required');
@@ -214,13 +275,16 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    m5SignedVisibleIntervals:signed.length,
    unsignedInteriorCadLines,sourceAndCoverageAgreement:true};
  }
+ const nativeThirdViewEvidence=bindC1NativeThirdViewEvidence({
+  canonical,cad,revision:rev,geometryId:g.id
+ });
  return Object.freeze({...canonical,
   c1CadRuntime:{
    schema:'draftai-c1-ocjs-m5-gated-runtime/1',
    compute:'real OpenCascade.js HLR visible B-Rep geometry',
    engine:'opencascade.js',revision:rev,geometryId:g.id,
    supportedScope:cad.proofScope,
-   perView:out,sourceIdsMappedByExistingM5:true,
+   perView:out,nativeThirdViewEvidence,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
    everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource:true,
    fullyNative3DSourceVerifiedExteriorM5ContourStrokes:
@@ -326,4 +390,5 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  });
 }
 module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
- intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates};
+ intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates,
+ bindC1NativeThirdViewEvidence};
