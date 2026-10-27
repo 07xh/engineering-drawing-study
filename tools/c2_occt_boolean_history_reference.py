@@ -37,6 +37,25 @@ def box_input(data: dict) -> list[dict]:
             raise ValueError("finite bounded model-mm box coordinates required")
         if any(hi[i] - lo[i] <= 1e-7 for i in range(3)):
             raise ValueError("nondegenerate box dimensions required")
+    operation = data.get("operation", "union")
+    if operation not in ("union", "cut"):
+        raise ValueError("only actual union or through-rectangular-bore Cut supported")
+    if operation == "cut":
+        stock, cutter = components
+        # A simple full-through rectangular bore may point in X, Y or Z.
+        # Positive clearance in the other two axes is essential to avoid
+        # a coincident skin, a blind pocket, or a fake complete through-hole.
+        axes = [
+            i for i in range(3)
+            if cutter["min"][i] < stock["min"][i] - 1e-7 and
+               cutter["max"][i] > stock["max"][i] + 1e-7
+        ]
+        if len(axes) != 1 or any(
+            not (stock["min"][j] + 1e-7 < cutter["min"][j] <
+                 cutter["max"][j] < stock["max"][j] - 1e-7)
+            for j in range(3) if j not in axes
+        ):
+            raise ValueError("Cut requires exactly one traversing axis and two strictly inset planar hole dimensions")
     return components
 
 
@@ -57,6 +76,10 @@ def source_manifest_fingerprint(data: dict) -> str:
     h = hashlib.sha256()
     h.update(b"DraftAI-C2-actual-TopoDS-source-v1\\0")
     h.update(str(revision).encode("ascii") + b"\\0")
+    if data.get("operation", "union") == "cut":
+        # Never allow a same-ID-and-bounds union report to be replayed as
+        # subtraction: the Boolean choice is signed into the source digest.
+        h.update(b"cut\\0")
     for p in components:
         h.update(p["id"].encode("utf-8") + b"\\0")
         for value in p["min"] + p["max"]:
@@ -71,7 +94,7 @@ def occt_reference(data: dict) -> dict:
         raise ValueError("current positive source geometry revision required")
     try:
         from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox
-        from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
+        from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut
         from OCP.BRepCheck import BRepCheck_Analyzer
         from OCP.BRep import BRep_Tool
         from OCP.gp import gp_Pnt
@@ -96,12 +119,14 @@ def occt_reference(data: dict) -> dict:
         p, q = part["min"], part["max"]
         built[part["id"]] = BRepPrimAPI_MakeBox(gp_Pnt(*p), gp_Pnt(*q)).Shape()
     first, second = (built[p["id"]] for p in components)
-    fuse = BRepAlgoAPI_Fuse(first, second)
-    fuse.SetToFillHistory(True)
-    fuse.Build()
-    result_shape = fuse.Shape()
-    if not fuse.IsDone() or result_shape.IsNull() or not BRepCheck_Analyzer(result_shape).IsValid():
-        raise RuntimeError("OCCT union shape/topology not independently valid")
+    operation = data.get("operation", "union")
+    algorithm = (BRepAlgoAPI_Cut if operation == "cut" else BRepAlgoAPI_Fuse)
+    boolean = algorithm(first, second)
+    boolean.SetToFillHistory(True)
+    boolean.Build()
+    result_shape = boolean.Shape()
+    if not boolean.IsDone() or result_shape.IsNull() or not BRepCheck_Analyzer(result_shape).IsValid():
+        raise RuntimeError("OCCT original-source Boolean solid topology not independently valid")
 
     source_history = []
     for part in components:
@@ -111,9 +136,9 @@ def occt_reference(data: dict) -> dict:
                 source_history.append({
                     "sourceComponentId": part["id"], "sourceKind": kind,
                     "sourceOrdinal": ordinal, "original": src,
-                    "generated": list(fuse.Generated(src)),
-                    "modified": list(fuse.Modified(src)),
-                    "deleted": bool(fuse.IsDeleted(src)),
+                    "generated": list(boolean.Generated(src)),
+                    "modified": list(boolean.Modified(src)),
+                    "deleted": bool(boolean.IsDeleted(src)),
                 })
 
     def classify(final_edge):
@@ -249,6 +274,8 @@ def occt_reference(data: dict) -> dict:
     return {
         "schema": "draftai-independent-occt-boolean-topods-history-reference/1",
         "sourceRevision": data.get("revision"),
+        "actualNativeBooleanOperation": operation,
+        "originalSolidDifferenceReviewedAsThroughRectangularBore": operation == "cut",
         "canonicalOriginalComponentGeometrySHA256": fingerprint,
         "sourceFingerprintScope": "ordered-ID-box-bounds-IEEE754-binary64-mm-v1",
         "actualNativeSourceBoxBoundsMm": [
