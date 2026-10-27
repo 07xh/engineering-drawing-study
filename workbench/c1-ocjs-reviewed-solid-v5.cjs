@@ -138,6 +138,8 @@ function bindC1NativeThirdViewEvidence({canonical,cad,revision,geometryId}={}){
  const signed=canonical?.certifiedVisibleContourLineBindings;
  if(!VIEWS.includes(view)||drawing.revision!==revision||
     drawing.geometryId!==geometryId||
+    cad?.revision!==revision||cad.sourceGeometryId!==geometryId||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
     !Array.isArray(native)||native.length===0||
     !Array.isArray(signed)||!Array.isArray(drawing.certifiedVisibleContour)||
     !Array.isArray(drawing.unresolvedPhysicalEdges)||
