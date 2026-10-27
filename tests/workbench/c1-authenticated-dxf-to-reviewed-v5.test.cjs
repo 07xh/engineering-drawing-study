@@ -143,3 +143,39 @@ test('an answer-bearing or forged scoped approval may not enter current original
  source.scopedConvexAcceptance={scopedSingleConvexFullyCertified:true};
  assert.throws(()=>validateGivenPacket(source),/answer-bearing/);
 });
+
+for(const pair of [['V','H'],['V','W'],['H','W']]){
+ test('per-view exact scoped source coverage, original M5 and SAME V5 across '+pair.join('/'),async()=>{
+  const source=packet(pair);
+  const shape=[
+   {x:0,y:0,z:0},{x:5,y:1,z:0.5},
+   {x:1,y:4,z:1.5},{x:2,y:2,z:6}
+  ];
+  for(const view of pair)source.views[view]=shape.map(p=>project(p)[view]);
+  const result=await compileReviewedC1DxfGivenToSoleV5({
+   givenPacket:source,geometryId:'C1DXFReview',revision:3,
+   confirmedReview:review(),sheetTransform:{origin:{x:330,y:200},scale:4}
+  });
+  const scope=result.scopedConvexAcceptance;
+  assert.equal(scope.scopedSingleConvexFullyCertified,true,
+   scope.missingObligations.join('; '));
+  assert.equal(scope.allOriginalPositivePhysicalSourceRangesAccounted,true);
+  assert.deepEqual(Object.keys(scope.perViewSourceCoverage).sort(),['H','V','W']);
+  for(const view of ['V','H','W']){
+   const row=scope.perViewSourceCoverage[view];
+   assert.equal(row.checkedOriginalPhysicalEdgeViews,6,view);
+   assert.equal(row.positiveGapCount,0,view);
+   assert.equal(row.overlappingCertifiedSourceCount,0,view);
+   assert.equal(row.allOriginalPhysicalSourceRangesAccounted,true,view);
+  }
+  assert.equal(scope.checkedOriginalPhysicalEdgeViews,18);
+  assert.equal(scope.signedV5ActionCount,
+   result.solution.certifiedPhysicalLineActionCount+
+   result.solution.certifiedVisibleContourLineActionCount);
+  assert.equal(result.solution.player.canRender(3),true);
+  assert.equal(result.solution.player.canRender(2),false);
+  assert.equal(result.wholeOriginalTextbookAnswerBlindVerified,false);
+  assert.equal(scope.realTextbookBlindTestPassed,false);
+  assert.equal(result.originalTextbookC1DeliveryComplete,false);
+ });
+}
