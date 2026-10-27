@@ -170,7 +170,8 @@ const missingViewFixture=view=>{
    drawingLayers:{officialV5StrokeActionIds:[actionId]}
   }
  };
- const cad={views:{V:[],H:[],W:[]}};
+ const cad={revision,sourceGeometryId:geometryId,
+  lineStyleCertified:false,v5Authorized:false,views:{V:[],H:[],W:[]}};
  cad.views[view]=[{from:{u:0,v:0},to:{u:3,v:5},
   projectedOriginalEdgeCandidates:[sourceEdgeId]}];
  return {canonical,cad,revision,geometryId};
@@ -202,6 +203,10 @@ test('native C1 missing-view consumer rejects stale M3 identity, invented or dup
  for(const change of [
   x=>x.canonical.thirdViewDrawing.revision++,
   x=>x.canonical.thirdViewDrawing.geometryId='other-solid',
+  x=>x.cad.revision++,
+  x=>x.cad.sourceGeometryId='stale-cad',
+  x=>x.cad.lineStyleCertified=true,
+  x=>x.cad.v5Authorized=true,
   x=>x.canonical.thirdViewDrawing.view='Q',
   x=>x.canonical.thirdViewDrawing.certifiedVisibleContour[0].v5ActionId='invented',
   x=>x.canonical.thirdViewDrawing.certifiedVisibleContour[0].sourceEdgeId='other-source',
