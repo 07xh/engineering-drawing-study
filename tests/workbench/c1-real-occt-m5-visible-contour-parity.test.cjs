@@ -315,12 +315,13 @@ test('two different native HLR ordinals with partial collinear paper overlap can
   /overlapping native visible HLR paper segments have conflicting original 3D front owners/);
 });
 
-test('distinct 3D front depths at a single exact native closed-ray endpoint are rejected in either direction',()=>{
- for(const reversed of [false,true]){
+test('distinct 3D front depths at a single exact native closed-ray endpoint are rejected across V/H/W and either direction',()=>{
+ for(const view of VIEWS)for(const reversed of [false,true]){
   const x=initial(),same=(p,q)=>p.u===q.u&&p.v===q.v,
    same3=(p,q)=>['x','y','z'].every(k=>p[k]===q[k]);
   let chosen;
   for(const witness of x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges){
+   if(witness.view!==view)continue;
    const seg=x.cad.views[witness.view][witness.nativeVisibleHLREdgeOrdinal],
     lift=seg.sourceCandidate3DLifts[0];
    for(const e of x.geometry.data.edges){
