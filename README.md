@@ -15,6 +15,12 @@
 
 **目标覆盖任意来源的二维题图输入，不代表现阶段已经支持求解任意二维工程图。** 对未识别、条件冲突、数学欠约束或不支持的题型，必须明确提示，不生成伪装为标准答案的动画。
 
+## 当前唯一开发优先规则（2026-10-27）
+
+**现行执行方法：[整题交付优先开发规则](docs/architecture/DA-OPEN-SOURCE-ACCELERATION-REUSE-20261025.md)；当前验收总单：[Issue #377](https://github.com/07xh/engineering-drawing-study/issues/377)。** 旧 F0–F5、强制按日历 C0→C4 串行、为凑 PR 拆分局部证明、永久禁止成熟 CAD 直接参与计算的开发计划不再有效；历史 Git 提交和 Issue 编辑记录只作追溯。仍保持 #372 数学/标准线型 fail-closed、#152 实际 CI 与合并权限、#497 唯一 Geometry Scene 和 V5。
+
+每轮先看最新 main 和真实缺口，将**真实条件 → 已有 M0–M3 → M4/M5 全局签收 → 唯一 V5 → 陌生无答案原题/浏览器/Android**做成一个可复核的受限题型闭环；C1 整题优先、C2 直接消费真实 OCCT #896 证明包、C3 并行复用已有有限圆柱数学，图像 OCR 与工作台可并行。**2026-11-20 为第一版争取目标，不是保证完成日。** GitHub 合并与 Cloudflare Production Active 分开核验，不将 CI 绿灯冒充上线或真实数学证明。
+
 ## 现行架构及代码门禁（以 #372、#152、#497 为准）
 
 - **唯一计算主线**：人工确认的 ProblemDraft → M0 数值与单位 → M1 几何拓扑/约束结构 → M2 通用残差、分支、局部自由度与证据 → M3 专业解析/构造求解 → 版本化 SolveResult/Geometry Scene → 第一角法 V/H/W 及三维共享呈现 → ConstructionIntent → ConstructionStep DAG → **唯一 V5 时间轴** → M5 独立题图/数学/动画/线上验收。
