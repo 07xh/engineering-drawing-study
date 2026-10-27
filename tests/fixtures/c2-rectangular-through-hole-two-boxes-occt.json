@@ -1,0 +1,35 @@
+{
+  "revision": 24,
+  "unit": "mm",
+  "operation": "cut",
+  "components": [
+    {
+      "id": "Stock",
+      "type": "box",
+      "min": [
+        -5,
+        -5,
+        0
+      ],
+      "max": [
+        5,
+        5,
+        10
+      ]
+    },
+    {
+      "id": "ThroughBore",
+      "type": "box",
+      "min": [
+        -2,
+        -2,
+        -1
+      ],
+      "max": [
+        2,
+        2,
+        11
+      ]
+    }
+  ]
+}
