@@ -11,6 +11,8 @@ on:
       - 'tests/workbench/c2-occt-boolean-history-reference.test.cjs'
       - 'tests/workbench/c2-native-occt-generated-ray-m5.test.cjs'
       - 'tests/fixtures/c2-l-shape-two-boxes-occt.json'
+      - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
+      - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
       - '.github/workflows/occt-native-c2-proof.yml'
   workflow_dispatch:
 
@@ -56,6 +58,18 @@ jobs:
             occt-l-union-full-m0-m4-m5-proof.json
       - name: Execute actual same-run native proof-pack positive test
         run: node --test tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs
+      - name: Generate REAL OpenCascade through-rectangular-hole TopoDS reference
+        run: |
+          python tools/c2_occt_boolean_history_reference.py \
+            tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json \
+            --output occt-rectangular-through-hole-topods.json
+      - name: Generate same-run M0/M4 strict hole provenance, M5 held unsigned
+        run: |
+          node tools/c2_native_m0_m4_m5_proof_pack.cjs \
+            tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json \
+            occt-rectangular-through-hole-m0-m4-unsigned-m5.json
+      - name: Require real 24-edge through-hole topology, projected M4, subtraction held from V5
+        run: node --test tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs
       - name: Publish source-scoped output for mathematical review
         uses: actions/upload-artifact@v4
         with:
@@ -63,4 +77,6 @@ jobs:
           path: |
             occt-l-union-native-proof.json
             occt-l-union-full-m0-m4-m5-proof.json
+            occt-rectangular-through-hole-topods.json
+            occt-rectangular-through-hole-m0-m4-unsigned-m5.json
           retention-days: 14
