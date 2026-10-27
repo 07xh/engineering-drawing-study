@@ -43,7 +43,10 @@ test('stable required workbench aggregate fails on ANY shard failure',()=>{
  assert.match(yml,/shard: \[0, 1, 2, 3\]/);
  assert.match(yml,/node scripts\/run-workbench-shard\.cjs/);
  assert.match(yml,/^  workbench:/m);
- assert.match(yml,/needs: \[workbench-shard\]/);
+ assert.match(yml,/needs: \[workbench-shard, native-occt-c2\]/);
+ assert.match(yml,/needs\.native-occt-c2\.result.*!=.*success/);
+ assert.match(yml,/DRAFTAI_REQUIRE_NATIVE_OCCT: '1'/);
+ assert.match(yml,/cadquery-ocp==7\.9\.3\.1\.1/);
  assert.match(yml,/if: \$\{\{ always\(\) \}\}/);
  assert.match(yml,/needs\.workbench-shard\.result.*!=.*success/);
  assert.match(yml,/exit 1/);

@@ -4,8 +4,8 @@ const {audit}=require('../../scripts/audit-m0-acceptance.cjs');
 const by=(r,id)=>r.entries.find(x=>x.path==='core/numeric/'+id+'.cjs');
 test('complete M0 API inventory has explicit scoped tests and real unresolved gates',()=>{
  const r=audit();
- assert.equal(r.moduleCount,31);
- assert.equal(r.entries.length,31);
+ assert.equal(r.moduleCount,33);
+ assert.equal(r.entries.length,33);
  assert.equal(r.statuses.provisional,1);
  assert.equal(r.statuses['consumer-pending'],0);
  assert.equal(r.statuses['consumer-review'],6);

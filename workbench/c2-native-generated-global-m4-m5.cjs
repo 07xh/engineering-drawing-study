@@ -20,8 +20,12 @@ const {project,VIEWS,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
+const {originalCoProjectedAffineDepth}=
+ require('../core/numeric/original-coproject-affine-depth.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
+const {certifyAxisBoxSourceOpenRay}=
+ require('../core/numeric/axis-box-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const finite=Number.isFinite;
@@ -35,7 +39,7 @@ const near=(p,q)=>p&&q&&['x','y','z'].every(
 const key=(view,ordinal)=>view+'@'+ordinal;
 const spanOverlap=(a,b)=>a[0]<b[1]&&b[0]<a[1];
 function auditC2GeneratedResultProjectedM4M5({
- nativeReport,solids,revision
+ nativeReport,solids,revision,boxes=[]
 }={}){
  const edges=nativeReport?.outputEdges;
  if(!Number.isSafeInteger(revision)||revision<1||
@@ -43,7 +47,10 @@ function auditC2GeneratedResultProjectedM4M5({
     !Array.isArray(edges)||edges.length<2||edges.length>40||
     !Array.isArray(solids)||solids.length<2||solids.length>8||
     !solids.every(x=>typeof x.id==='string'&&
-      Array.isArray(x.halfspaces)&&x.halfspaces.length>=4))
+      Array.isArray(x.halfspaces)&&x.halfspaces.length>=4)||
+    !Array.isArray(boxes)||
+    (boxes.length!==0&&boxes.length!==solids.length)||
+    boxes.some((x,i)=>x?.id!==solids[i].id||x.type!=='box'))
   throw new TypeError('bounded native generated BRep edges and actual M0 scene required');
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
@@ -127,8 +134,14 @@ function auditC2GeneratedResultProjectedM4M5({
       [ba,bb]=range.secondParameterRange;
      pairEvent(e,f,view,aa,ba,'projected-collinear-overlap-start');
      pairEvent(e,f,view,ab,bb,'projected-collinear-overlap-end');
-     ra.collinearOverlapRanges.push([Math.min(aa,ab),Math.max(aa,ab)]);
-     rb.collinearOverlapRanges.push([Math.min(ba,bb),Math.max(ba,bb)]);
+     ra.collinearOverlapRanges.push({
+      range:[Math.min(aa,ab),Math.max(aa,ab)],
+      peerSourceOrdinal:f.id
+     });
+     rb.collinearOverlapRanges.push({
+      range:[Math.min(ba,bb),Math.max(ba,bb)],
+      peerSourceOrdinal:e.id
+     });
     }
    }else if(witness.status.startsWith('undetermined-')){
     // A near-collinear line IS NOT proven disjoint even when the
@@ -139,7 +152,8 @@ function auditC2GeneratedResultProjectedM4M5({
   }
  }
  let totalSubspans=0,positiveClear=0,positiveHidden=0,uncertain=0,
-  collinearAliased=0,collapsed=0;
+  collinearAliased=0,collapsed=0,strictForegroundAliasesResolved=0,
+  nonphysicalAliasesIgnored=0;
  const rows=[];
  for(const raw of per.values()){
   const edge=source.get(raw.id),
@@ -161,8 +175,34 @@ function auditC2GeneratedResultProjectedM4M5({
    const from=lerp(edge.from,edge.to,lo),to=lerp(edge.from,edge.to,hi),
     from2=project(from)[raw.view],to2=project(to)[raw.view];
    const micro=Math.hypot(from2.u-to2.u,from2.v-to2.v)<=1e-10;
-   const alias=raw.collinearOverlapRanges.some(r=>
-     spanOverlap([lo,hi],r));
+   const overlaps=raw.collinearOverlapRanges.filter(w=>
+    spanOverlap([lo,hi],w.range));
+   const physicalOverlaps=overlaps.filter(w=>
+    source.get(w.peerSourceOrdinal)?.feature==='physical-crease');
+   nonphysicalAliasesIgnored+=overlaps.length-physicalOverlaps.length;
+   // Only genuine OTHER native physical creases can compete for an
+   // official engineering line. Coplanar OCCT mesh subdivisions are
+   // not engineering edges and must not block their real source.
+   // The existing adaptive M4 collinear-overlap discovery provides
+   // the complete original parameter cuts; independently prove the
+   // strict signed 3D affine depth along EACH matching paper segment.
+   const candidate3D={id:'NativeC2Edge'+raw.id+'Span'+k,from,to};
+   const aliasOrders=physicalOverlaps.map(w=>{
+    const competitor=source.get(w.peerSourceOrdinal);
+    return originalCoProjectedAffineDepth({
+     candidate:candidate3D,
+     peer:{id:'NativeC2Peer'+competitor.id,
+      from:competitor.from,to:competitor.to},
+     view:raw.view
+    });
+   });
+   const allOriginalPhysicalAliasesBehind=
+    aliasOrders.length>0&&aliasOrders.every(x=>
+     x.status==='candidate-strictly-front');
+   const aliasBlocked=physicalOverlaps.length>0&&
+     !allOriginalPhysicalAliasesBehind;
+   if(allOriginalPhysicalAliasesBehind)
+    strictForegroundAliasesResolved++;
    const base={
     originalGeneratedEdgeParameterRange:[lo,hi],
     realOriginalNative3DFrom:from,realOriginalNative3DTo:to,
@@ -178,18 +218,32 @@ function auditC2GeneratedResultProjectedM4M5({
    else if(edge.feature!=='physical-crease')
     status='unverified-native-dihedral';
    else if(micro)status='unrenderable-positive-3d-subspan';
-   else if(raw.unresolvedWholeEdge||alias)
+   else if(raw.unresolvedWholeEdge||aliasBlocked)
     status='unresolved-projected-depth-or-collinear-source-alias';
    else{
     const candidate={id:'NativeEdge'+raw.id+'Part'+k,from,to},
      ray=FIRST_ANGLE_OBSERVER_RAYS[raw.view];
-    clear=solids.every(solid=>
+    // The existing closed-convex segment-clearance kernel is still the
+    // primary general solver. For current independently M0-verified
+    // original axis-aligned box components, ALSO apply the exact affine
+    // open-source support theorem. The original native TopoDS endpoints
+    // can be on exterior box corners, so demanding a uniform positive
+    // depth margin including both endpoints is mathematically impossible
+    // even where every open source point is strictly hidden.
+    const originalBoxRays=boxes.map(box=>
+     certifyAxisBoxSourceOpenRay({
+      source:candidate,box,view:raw.view
+     }));
+    clear=solids.every((solid,i)=>
      certifyConvexSegmentClearance({
       source:candidate,solid,observerDirection:ray
-     }).status==='certified-clear');
+     }).status==='certified-clear'||
+     originalBoxRays[i]?.status==='certified-clear');
     hidden=evaluateFullSourceSegmentOcclusion({
      source:candidate,solids,view:raw.view
-    }).entireSourceSegmentOccluded===true;
+    }).entireSourceSegmentOccluded===true||
+     originalBoxRays.some(e=>
+      e.status==='certified-strictly-hidden');
     if(clear&&hidden)
      throw new RangeError('contradictory analytic clear/occluded union interval');
     if(clear)status='analytic-whole-open-subspan-front-ray-clear';
@@ -204,8 +258,14 @@ function auditC2GeneratedResultProjectedM4M5({
    subspans.push({...base,status,
     continuousAllOpaqueComponentRayClearVerified:clear,
     continuousUnionStrictInteriorOcclusionVerified:hidden,
+    exactBoxOpenSourceRayProofApplied:boxes.length===solids.length,
     projectedAliasOrUncertainEventBlocked:
-     raw.unresolvedWholeEdge||alias,
+     raw.unresolvedWholeEdge||aliasBlocked,
+    allProjectedPhysicalNativeAliasesStrictlyBehindCertified:
+     aliasOrders.length===0||allOriginalPhysicalAliasesBehind,
+    coProjectedOriginalNative3DDepthWitnesses:aliasOrders,
+    nonphysicalCoplanarAliasesExcludedFromLineCompetition:
+     overlaps.length-physicalOverlaps.length,
     nativeActualTopologySourceNotIndependentlyAttestedHere:true});
   }
   rows.push({view:raw.view,sourceNativeResultEdgeOrdinal:raw.id,
@@ -232,6 +292,9 @@ function auditC2GeneratedResultProjectedM4M5({
   positiveWholeOpenRayClearSubspans:positiveClear,
   positiveWholeStrictlyHiddenSubspans:positiveHidden,
   unsignedProjectedAliasSubspans:collinearAliased,
+  strictlyForegroundOriginalCoProjectedSubspansCertified:
+   strictForegroundAliasesResolved,
+  ignoredCoplanarSubdivisionProjectedAliasCount:nonphysicalAliasesIgnored,
   unresolvedSubspans:uncertain,
   collapsedProjectedSourceRows:collapsed,rows,
   nativeSourceGenuinenessSignedHere:false,

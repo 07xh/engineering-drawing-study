@@ -16,6 +16,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
+const {certifyAxisBoxSourceOpenRay}=
+ require('../core/numeric/axis-box-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
 const {auditC2GeneratedResultProjectedM4M5}=
@@ -228,19 +230,26 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     continue;
    }
    const ray=FIRST_ANGLE_OBSERVER_RAYS[view];
-   const clearIds=[];
-   for(const solid of solids){
+   const clearIds=[],boxOpenRays=[];
+   for(const [i,solid] of solids.entries()){
     const analytic=certifyConvexSegmentClearance({
      source,solid,observerDirection:ray
     });
-    if(analytic.status==='certified-clear'||outward(source,solid,ray))
+    const exact=certifyAxisBoxSourceOpenRay({
+     source,box:parts[i],view
+    });
+    boxOpenRays.push(exact);
+    if(analytic.status==='certified-clear'||
+       outward(source,solid,ray)||
+       exact.status==='certified-clear')
      clearIds.push(solid.id);
    }
    const blocked=evaluateFullSourceSegmentOcclusion({
     source,solids,view
    });
    const clear=clearIds.length===solids.length;
-   const hidden=blocked.entireSourceSegmentOccluded===true;
+   const hidden=blocked.entireSourceSegmentOccluded===true||
+    boxOpenRays.some(x=>x.status==='certified-strictly-hidden');
    if(clear&&hidden)
     throw new RangeError('contradictory existing M5 all-face clear and hidden rays');
    if(clear)counts.clear++;
@@ -253,6 +262,10 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     fullNativeTopoDSResultEdgeContinuousRayProof:true,
     allComponentClearIds:clearIds,
     continuousUnionStrictOcclusionVerified:hidden,
+    fullOpenSourceAxisBoxTheoremApplied:true,
+    originalBoxStrictInteriorOpenRayWitnessIds:boxOpenRays
+     .filter(x=>x.status==='certified-strictly-hidden')
+     .map(x=>x.solidId),
     allOriginalConvexComponentIds:solids.map(s=>s.id)
    });
   }
@@ -270,7 +283,7 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     rows.length!==seen.size*VIEWS.length)
   throw new RangeError('incomplete native generated edge V/H/W audit accounting');
  const globalPaperEvents=auditC2GeneratedResultProjectedM4M5({
-  nativeReport,solids,revision
+  nativeReport,solids,revision,boxes:parts
  });
  if(globalPaperEvents.sourceResultEdgeCount!==seen.size||
     globalPaperEvents.VHWSourceRows!==rows.length)

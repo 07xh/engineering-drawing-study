@@ -34,19 +34,94 @@ jobs:
           node --check workbench/workbench-ui.js
           node scripts/run-workbench-shard.cjs ${{ matrix.shard }} 4
 
+  # Source-scoped mandatory mathematical proof job. Run real native
+  # OpenCascade on any PR/main commit that changes the C2 BRep/M4/M5/V5
+  # producer or its acceptance tests. Other PRs avoid expensive CAD install.
+  # The original required aggregate "workbench" now REQUIRES this result.
+  native-occt-c2:
+    name: native-occt-c2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Detect whether original native OCCT math or tests changed
+        id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        shell: bash
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git fetch --no-tags origin "$BASE_REF" --depth=1
+            base_ref="origin/$BASE_REF"
+            diff_range="$base_ref...HEAD"
+          else
+            diff_range="HEAD^ HEAD"
+          fi
+          if git diff --name-only $diff_range | grep -Eq '^(tools/c2_occt_boolean_history_reference\.py|tools/c2_native_m0_m4_m5_proof_pack\.cjs|workbench/c2-native-|tests/workbench/c2-native-|tests/workbench/c2-occt-|tests/fixtures/c2-l-shape-two-boxes-occt\.json|\.github/workflows/(workbench|occt-native-c2-proof)\.yml)'; then
+            echo "run_native=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_native=false" >> "$GITHUB_OUTPUT"
+            echo "Native CAD math unchanged: no unnecessary OCP installation."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.changed.outputs.run_native == 'true'
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        if: steps.changed.outputs.run_native == 'true'
+        with:
+          node-version: '22'
+      - name: Install and REQUIRE actual pinned native OpenCascade
+        if: steps.changed.outputs.run_native == 'true'
+        run: |
+          python -m pip install --only-binary=:all: 'cadquery-ocp==7.9.3.1.1'
+          python - <<'PY'
+          from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
+          from OCP.TopExp import TopExp
+          from OCP.BRepAdaptor import BRepAdaptor_Surface
+          assert BRepAlgoAPI_Fuse and TopExp and BRepAdaptor_Surface
+          PY
+      - name: Run true BRep/TopoDS plus complete M0/M4/M5/V5 tests, no skips
+        if: steps.changed.outputs.run_native == 'true'
+        env:
+          DRAFTAI_REQUIRE_NATIVE_OCCT: '1'
+        run: |
+          node --test \
+            tests/workbench/c2-occt-boolean-history-reference.test.cjs \
+            tests/workbench/c2-native-occt-generated-ray-m5.test.cjs \
+            tests/workbench/c2-native-axis-box-open-ray.test.cjs \
+            tests/workbench/c2-native-coproject-affine-depth.test.cjs \
+            tests/workbench/c2-native-generated-global-m4-m5.test.cjs \
+            tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs
+          node tools/c2_native_m0_m4_m5_proof_pack.cjs \
+            tests/fixtures/c2-l-shape-two-boxes-occt.json \
+            native-c2-complete-math-and-v5-proof.json
+      - name: Upload actual OCP mathematical witness
+        if: steps.changed.outputs.run_native == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-c2-occt-original-topods-m0-m4-m5-v5
+          path: native-c2-complete-math-and-v5-proof.json
+          retention-days: 14
+
   # Preserve the original required check (job ID and name: workbench).
   # If any shard fails/skips/cancels, aggregate must be a FAILURE, not skip.
   workbench:
     name: workbench
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [workbench-shard]
+    needs: [workbench-shard, native-occt-c2]
     if: ${{ always() }}
     steps:
       - name: Fail closed unless all four workbench shards passed
         run: |
-          if [ "${{ needs.workbench-shard.result }}" != "success" ]; then
-            echo "One or more workbench test shards failed, skipped or was cancelled."
+          if [ "${{ needs.workbench-shard.result }}" != "success" ] || \
+             [ "${{ needs.native-occt-c2.result }}" != "success" ]; then
+            echo "One or more workbench shards or the required C2 native OCP proof job failed, skipped or cancelled."
             exit 1
           fi
           echo "All four full-workbench shards passed."
