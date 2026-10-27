@@ -457,7 +457,9 @@ test('C1 exact original M0 vertex paper identity recovers a rounded display endp
    projectedFromModelMm:paperA,projectedToModelMm:paperB,
    strokes:cad.views[view]};
   const unsigned=exactSourceCoverage(args);
-  assert.equal(unsigned.originalSourceParameterRange[1],almostOne);
+  assert.equal(unsigned.originalSourceParameterRange,null);
+  assert.equal(unsigned.status,
+   'unreconstructable-original-3d-source-parameter');
   const authenticated=exactSourceCoverage({...args,
    independentlyM5SourceAndJunctionsProven:true});
   assert.deepEqual(authenticated.originalSourceParameterRange,[0,1]);
@@ -466,6 +468,7 @@ test('C1 exact original M0 vertex paper identity recovers a rounded display endp
   const shifted=exactSourceCoverage({...args,
    projectedToModelMm:{u:paperB.u+1e-10,v:paperB.v},
    independentlyM5SourceAndJunctionsProven:true});
-  assert.equal(shifted.originalSourceParameterRange[1],almostOne);
+  assert.equal(shifted.originalSourceParameterRange,null);
+  assert.equal(shifted.entireOriginalParameterIntervalCovered,false);
  }
 });
