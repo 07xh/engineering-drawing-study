@@ -3,9 +3,9 @@
 // front depth, not paper coincidence, decides a contradictory closed ray.
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {project}=require('../core/projection/conventions.js');
+const {project}=require('../../core/projection/conventions.js');
 const {exactNativeClosedRayTJunctionDepthConflict:conflict}=
- require('../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
+ require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const axes={V:['x','z','y'],H:['x','y','z'],W:['y','z','x']};
 const xyz=(u,v,depth,axes)=>({x:0,y:0,z:0,
  [axes[0]]:u,[axes[1]]:v,[axes[2]]:depth});
