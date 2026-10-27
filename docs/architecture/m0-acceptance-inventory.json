@@ -401,6 +401,31 @@
         "tests/math/m0-projected-contour-topology.test.cjs",
         "tests/workbench/m0-reviewed-face-ring-join-consumer.test.cjs"
       ]
+    },
+    {
+      "name": "reviewed-C1-original-source-to-sole-V5-gate",
+      "chain": [
+        "core/numeric/m0-joint-visibility-partition.cjs",
+        "workbench/m0-reviewed-scene-continuous-partitions.cjs",
+        "workbench/m0-m3-m4-m5-original-source-acceptance.cjs",
+        "workbench/reviewed-solid-vertex-v5.cjs"
+      ],
+      "regressionTests": [
+        "tests/workbench/m0-m3-m4-m5-exercise-acceptance.test.cjs",
+        "tests/workbench/c1-physical-source-single-v5-integration.test.cjs"
+      ]
+    },
+    {
+      "name": "finite-C3-M0-gradients-to-real-analytic-workbench",
+      "chain": [
+        "core/numeric/object-vector3.cjs",
+        "workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs",
+        "labs/finite-cylinder-intersection-live-entry.cjs"
+      ],
+      "regressionTests": [
+        "tests/workbench/c3-m0-m3-m5-analytic-source-acceptance.test.cjs",
+        "tests/workbench/c3-selected-boolean-open-ray-workbench.test.cjs"
+      ]
     }
   ]
 }
