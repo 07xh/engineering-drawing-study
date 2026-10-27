@@ -93,3 +93,33 @@ test('fake source coordinate and missing genuine original ray evidence never pro
  assert.equal(result.officialLineStylesVerified,false);
  assert.equal(result.v5VerifiedExportReady,false);
 });
+
+test('fabricated full-clear bottom-face M0 intervals and vertex flags cannot sign an obscured H ring',()=>{
+ const geometry=[cube('Box',0,2)],revision=11;
+ const sourcePartitions=structuredClone(
+  auditReviewedM0ScenePartitions({geometry,revision}));
+ const projectedVertexJoins=structuredClone(
+  deriveReviewedProjectedVertexJoins({geometry,revision}));
+ const ring=geometry[0].data.faces[0]; // real H-projected back face
+ for(let i=0;i<ring.length;i++){
+  const a=ring[i],b=ring[(i+1)%ring.length];
+  const id='Box::'+[a,b].sort().join('|');
+  const row=sourcePartitions.views.H.edges.find(e=>e.sourceEdgeId===id);
+  assert.ok(row);
+  row.status='audited-open-intervals';
+  row.runs=[{visibilityEvidence:'clear-within-supplied-solids',
+   originalSourceParameterRange:[0,1],
+   independentlyContinuousM0OpenInterval:true}];
+ }
+ for(const group of projectedVertexJoins.groups)if(group.view==='H')
+  for(const member of group.members)if(ring.includes(member.sourceVertexId))
+   member.positiveOpenRayClearWithinReviewedSolids=true;
+ const r=auditReviewedM0FaceRingJoins({
+  geometry,revision,sourcePartitions,projectedVertexJoins});
+ const bottom=r.rings.find(x=>x.sourceFaceId==='face-1'&&x.view==='H');
+ assert.ok(bottom);
+ assert.equal(bottom.localProjectedTopologyVerified,false);
+ assert.match(bottom.reason,/independent actual M0 full-edge ray recheck failed/);
+ assert.equal(bottom.v5ActionAuthorized,false);
+ assert.equal(r.officialLineStylesVerified,false);
+});
