@@ -214,13 +214,45 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    m5SignedVisibleIntervals:signed.length,
    unsignedInteriorCadLines,sourceAndCoverageAgreement:true};
  }
+ // Bind the real HLR result to the SAME solved missing view that the
+ // canonical M3/M5 consumer exposes. A native segment is evidence only:
+ // no new engineering line style or V5 action is created from a candidate.
+ const missingView=canonical.thirdViewDrawing?.view;
+ const nativeMissingView=missingView&&cad.views?.[missingView];
+ if(!VIEWS.includes(missingView)||
+    canonical.thirdViewDrawing.revision!==rev||
+    canonical.thirdViewDrawing.geometryId!==g.id||
+    !Array.isArray(nativeMissingView)||!nativeMissingView.length)
+  throw new RangeError('native OCCT and canonical M3 missing-view mismatch');
+ const canonicalVisible=canonical.thirdViewDrawing.certifiedVisibleContour;
+ if(canonicalVisible.length!==resolved.filter(x=>x.view===missingView).length||
+    canonicalVisible.some(line=>!resolved.some(bind=>
+     bind.view===missingView&&bind.actionId===line.v5ActionId&&
+     bind.sourceEdgeId===line.sourceEdgeId)))
+  throw new RangeError('native C1 cannot rebind noncanonical V5 contour');
+ const nativeThirdViewEvidence=Object.freeze({
+  schema:'draftai-c1-native-missing-view-evidence/1',
+  view:missingView,revision:rev,geometryId:g.id,
+  realHLRVisibleSegments:nativeMissingView.map(segment=>Object.freeze({
+   from:{...segment.from},to:{...segment.to},
+   original3DSourceCandidates:[...segment.projectedOriginalEdgeCandidates],
+   engineeringLineStyle:'undetermined',v5ActionId:null
+  })),
+  canonicalCertifiedVisibleV5ActionIds:canonicalVisible.map(x=>x.v5ActionId),
+  unresolvedPhysicalSourceCount:
+   canonical.thirdViewDrawing.unresolvedPhysicalEdges.length,
+  generatedTopoDSHistoryComplete:false,
+  allPhysicalEdgesEngineeringStylesSigned:false,
+  completeDrawingCertified:false,
+  newV5ActionsFromNativeHLR:0
+ });
  return Object.freeze({...canonical,
   c1CadRuntime:{
    schema:'draftai-c1-ocjs-m5-gated-runtime/1',
    compute:'real OpenCascade.js HLR visible B-Rep geometry',
    engine:'opencascade.js',revision:rev,geometryId:g.id,
    supportedScope:cad.proofScope,
-   perView:out,sourceIdsMappedByExistingM5:true,
+   perView:out,nativeThirdViewEvidence,sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
    everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource:true,
    fullyNative3DSourceVerifiedExteriorM5ContourStrokes:
