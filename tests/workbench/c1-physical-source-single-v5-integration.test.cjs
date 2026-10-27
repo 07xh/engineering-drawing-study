@@ -1,7 +1,9 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {project}=require('../../core/projection/conventions.js');
+const {project,VIEWS}=require('../../core/projection/conventions.js');
+const {unresolvedC1PhysicalSourceRemainders:remainders}=
+ require('../../workbench/c1-three-view-svg-sheet.cjs');
 const {compileReviewedSolidVertexV5}=
  require('../../workbench/reviewed-solid-vertex-v5.cjs');
 function input(){
@@ -47,4 +49,40 @@ test('real skewed prism C1 builds one V5 stream from M3 and source rays',()=>{
  }
  assert.equal(result.wholeSolidV5Ready,false);
  assert.equal(result.realTextbookOriginalAccepted,false);
+});
+
+test('real C1 V/H/W source partitions show only unsigned parameter remainders',()=>{
+ const result=compileReviewedSolidVertexV5({input:input(),
+  sheetTransform:{origin:{x:300,y:250},scale:5}});
+ let positiveSigned=0;
+ for(const view of VIEWS){
+  const sources=result.scopedEdgePreviews.filter(line=>
+   line.view===view&&!line.projectionCollapsedToPoint&&
+   line.renderedAsPhysicalSourceCandidate);
+  const signed=result.certifiedPhysicalLineBindings.filter(x=>x.view===view);
+  const pending=remainders(sources,result.certifiedPhysicalLineBindings,view);
+  positiveSigned+=signed.length;
+  for(const source of sources){
+   const spans=[
+    ...signed.filter(x=>x.sourceEdgeId===source.sourceEdgeId)
+     .map(x=>x.originalParameterRange),
+    ...pending.filter(x=>x.sourceEdgeId===source.sourceEdgeId)
+     .map(x=>x.originalParameterRange)
+   ].sort((a,b)=>a[0]-b[0]);
+   let cursor=0;
+   for(const [a,b] of spans){
+    assert.equal(a,cursor,'signed and unsigned original 3D spans must meet exactly');
+    assert(b>a,'all original source spans must have positive parameter length');
+    cursor=b;
+   }
+   assert.equal(cursor,1,'all original physical source [0,1] must be accounted for');
+  }
+  if(view===result.thirdViewDrawing.view){
+   assert.deepEqual(result.thirdViewDrawing.unresolvedPhysicalEdges.map(x=>
+    [x.sourceEdgeId,x.originalParameterRange]),pending.map(x=>
+    [x.sourceEdgeId,x.originalParameterRange]));
+   assert.equal(result.thirdViewDrawing.pendingPhysicalEdgeProofs.length,pending.length);
+  }
+ }
+ assert(positiveSigned>0,'exercise actual independently signed M5 physical strokes');
 });
