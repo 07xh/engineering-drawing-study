@@ -460,6 +460,55 @@ test('C1 exact source gap consumer rejects fake 3D endpoints, stale BRep and pap
  }
 });
 
+test('C1 exact native source-gap audit rejects forged V/H/W paper strokes without relaxing 3D interval precision',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0];
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  assert.equal(exactSourceCoverage(input).entireOriginalParameterIntervalCovered,true);
+  // The native HLR paper comparison may tolerate display-scale CAD
+  // rounding; it must never be used to fill a positive 3D source gap.
+  const rounded=structuredClone(stroke);
+  rounded.from.u+=5e-7;
+  assert.equal(exactSourceCoverage({...input,strokes:[rounded]})
+   .entireOriginalParameterIntervalCovered,true);
+  for(const change of [
+   s=>{s.from.u+=0.01;},
+   s=>{s.to.v+=0.01;},
+   s=>{s.from.u=NaN;},
+   s=>{s.projectedOriginalEdgeCandidates=[];},
+   s=>{s.projectedOriginalEdgeCandidates.push(edgeId);}
+  ]){
+   const forged=structuredClone(stroke);
+   change(forged);
+   assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+    /unverified original native BRep source lift/,
+    'a forged HLR stroke cannot close an otherwise authentic original 3D source');
+  }
+ }
+});
+
+test('C1 V paper-coincident but distinct 3D source remains a valid unsigned candidate, not a fake history match',()=>{
+ const {geometry,cad,edgeId}=physicalLedger(),stroke=cad.views.V[0];
+ const rear='M0-Reviewed::C|D';
+ const lift=structuredClone(stroke.sourceCandidate3DLifts[0]);
+ Object.assign(lift,{sourceEdgeId:rear,originalVertexIds:['C','D'],
+  fromCandidate3D:{x:0,y:8,z:0},toCandidate3D:{x:3,y:12,z:5},
+  actualOriginalOCCTBRepFrom3D:{x:0,y:8,z:0},
+  actualOriginalOCCTBRepTo3D:{x:3,y:12,z:5}});
+ stroke.projectedOriginalEdgeCandidates.push(rear);
+ stroke.sourceCandidate3DLifts.push(lift);
+ assert.deepEqual(project(lift.fromCandidate3D).V,stroke.from);
+ const proof=exactSourceCoverage({geometry,view:'V',sourceEdgeId:edgeId,
+  real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+  strokes:[stroke]});
+ assert.equal(proof.entireOriginalParameterIntervalCovered,true);
+ assert.equal(proof.signedV5Action,false);
+ assert.equal(proof.engineeringLineStyle,'undetermined');
+});
+
 test('C1 exact original M0 vertex paper identity recovers a rounded display endpoint only after real M5 proof',()=>{
  const bits=new DataView(new ArrayBuffer(8));
  bits.setFloat64(0,1,false);
