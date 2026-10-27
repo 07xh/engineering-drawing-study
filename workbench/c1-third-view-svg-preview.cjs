@@ -8,7 +8,7 @@ const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({
  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 })[c]);
-function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20}={}){
+function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20,showVertexLabels=false}={}){
  if(drawing?.schema!=='draftai-c1-m3-m5-third-view-drawing/1'||
     !['V','H','W'].includes(drawing.view)||
     !Number.isSafeInteger(drawing.revision)||
@@ -61,15 +61,19 @@ function renderC1ThirdViewSvg(drawing,{includeReviewOverlay=true,padding=20}={})
   return '<line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+
    '" y2="'+b.y+'" '+attr+' data-source-edge="'+
    esc(line.sourceEdgeId)+'" data-status="'+
-   (official?'certified-visible':'undetermined-review')+'"/>';
+   (official?'certified-visible':'undetermined-review')+'"'+
+   (official?' data-v5-action="'+esc(line.v5ActionId)+'"':'')+'/>';
  });
  const markers=points.map(([id,p])=>
   '<circle cx="'+p.x+'" cy="'+p.y+
-  '" r="2" fill="#2563eb" data-vertex="'+esc(id)+'"/>');
+  '" r="2" fill="#2563eb" data-vertex="'+esc(id)+'"/>'+
+  (showVertexLabels?'<text x="'+(p.x+4)+'" y="'+(p.y-4)+
+  '" font-size="9" fill="#1d4ed8">'+esc(id)+'</text>':''));
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="'+
   [x0,y0,width,height].join(' ')+'" role="img" aria-label="'+
   esc('C1 '+drawing.view+' third view; unresolved edges are review only')+
-  '"><g fill="none" stroke-linecap="round">'+lines.join('')+
+  '"><title>'+esc('C1 '+drawing.view+' third-view geometry preview')+
+  '</title><desc>Black strokes are certified V5 contour actions; gray dashed edges are unsigned M5 review overlays, not engineering hidden lines.</desc><g fill="none" stroke-linecap="round">'+lines.join('')+
   '</g><g>'+markers.join('')+'</g></svg>';
 }
 module.exports={renderC1ThirdViewSvg};
