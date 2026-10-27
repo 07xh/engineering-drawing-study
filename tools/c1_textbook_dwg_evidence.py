@@ -18,6 +18,14 @@ import subprocess
 import sys
 import tempfile
 
+# Source packet processing is intentionally separate from the independent
+# reference: neither an answer handle nor an answer coordinate may be sent
+# to the source C1 M3 input consumer.
+from c1_textbook_dxf_blind_packets import (
+    hash_file, inspect_geometry_entities, build_blind_packets,
+    write_isolated_packets,
+)
+
 FIXTURES = {
     "图3-50 补画支架的左视图.dwg":
         "12ff96f3bbcb3fc71ca759dabec0c025b6bae594754f7913d2e1fc3d03509a5c",
@@ -168,6 +176,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("probe", "convert"), default="probe")
     parser.add_argument("--output", type=pathlib.Path)
     parser.add_argument("--partition", type=pathlib.Path)
+    parser.add_argument("--review", type=pathlib.Path)
+    parser.add_argument("--given-packet", type=pathlib.Path)
+    parser.add_argument("--reference-packet", type=pathlib.Path)
     args = parser.parse_args(argv)
     try:
         result = source_preflight(args.dwg)
@@ -175,6 +186,12 @@ def main(argv: list[str] | None = None) -> int:
         result["converterAvailable"] = bool(converter)
         result["converterKind"] = converter[1] if converter else None
         result["state"] = "authenticated-source-only"
+        packet_args = [args.review, args.given_packet, args.reference_packet]
+        if any(x is not None for x in packet_args) and (
+            args.mode != "convert" or any(x is None for x in packet_args)
+            or args.partition is None
+        ):
+            raise ValueError("both isolated packets, current review and handle partition require trusted convert mode")
         if args.mode == "convert":
             if args.output is None:
                 raise ValueError("--output is required for conversion")
@@ -182,12 +199,36 @@ def main(argv: list[str] | None = None) -> int:
                 raise RuntimeError("no LibreDWG dwg2dxf or ODAFileConverter executable available")
             conversion = trustworthy_convert(args.dwg, args.output, converter)
             inventory, records = inspect_dxf(args.output)
+            reviewed_partition = partition_reference(inventory, records,
+                result["sha256"], args.partition)
             result.update({
                 "state": "converted-reference-inventory-only", "converted": True,
                 "conversion": conversion, "inventory": inventory,
-                "partition": partition_reference(inventory, records,
-                    result["sha256"], args.partition),
+                "partition": reviewed_partition,
             })
+            if args.review:
+                review = json.loads(args.review.read_text(encoding="utf-8"))
+                entities = inspect_geometry_entities(args.output)
+                if set(entities) != {row["handle"] for row in records}:
+                    raise ValueError("actual converted DXF entity inventory changed between reads")
+                given, reference = build_blind_packets(
+                    source_sha256=result["sha256"],
+                    dxf_sha256=hash_file(args.output),
+                    partition=reviewed_partition, review=review,
+                    entities=entities,
+                )
+                write_isolated_packets(
+                    args.given_packet, args.reference_packet, given, reference,
+                    [args.dwg, args.output, args.partition, args.review],
+                )
+                result["state"] = "separately-reviewed-C1-given-and-answer-unsolved"
+                result["blindPacketExport"] = {
+                    "givenPath": str(args.given_packet),
+                    "isolatedReferencePath": str(args.reference_packet),
+                    "knownViews": sorted(given["views"]),
+                    "givenVertexCountPerView": len(next(iter(given["views"].values()))),
+                    "independentBlindC1SolutionAccepted": False,
+                }
         print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
     except (ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as exc:
