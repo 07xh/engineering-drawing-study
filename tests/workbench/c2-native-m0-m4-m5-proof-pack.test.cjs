@@ -60,8 +60,20 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(c2.revision,1);
   assert.equal(c2.sourceGeometryHash,
    pack.nativeTopology.canonicalOriginalComponentGeometrySHA256);
+  const report=pack.mathM0M4M5.globalPaperEvents;
+  const statusCounts=Object.create(null);
+  for(const row of report.rows)for(const segment of row.subspans)
+   statusCounts[segment.status]=(statusCounts[segment.status]||0)+1;
   assert(c2.certifiedVisibleHiddenSourceIntervals.length>0,
-   'real OCCT physical creases with fully verified open rays must enter existing V5');
+   'real C2 still lacks formal source-certified V5 positive proof: '+
+   JSON.stringify({mathM5:pack.mathM0M4M5.counts,
+    projectedEvents:{positive:report.positiveWholeOpenRayClearSubspans,
+     hidden:report.positiveWholeStrictlyHiddenSubspans,
+     aliases:report.unsignedProjectedAliasSubspans,
+     uncertain:report.unresolvedSubspans,
+     collinearPairs:report.projectedCollinearIntervalOverlaps,
+     nearDegenerate:report.unresolvedNearDegeneratePairEvents},
+    statusCounts}));
   assert.equal(c2.certifiedVisibleHiddenSourceIntervals.length,
    summary.officiallySignedNativeSubspanCount);
   assert.equal(c2.unsignedNativePhysicalSourceIntervals.length,
