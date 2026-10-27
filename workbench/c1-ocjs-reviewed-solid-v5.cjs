@@ -165,6 +165,22 @@ function exactC1NativeSourceIntervalCoverage({
        !(tFrom>=0&&tFrom<=1&&tTo>=0&&tTo<=1&&tFrom!==tTo)||
        !exact3(lift.fromCandidate3D,originalPoint(tFrom))||
        !exact3(lift.toCandidate3D,originalPoint(tTo))||
+       // A valid original 3D source alone cannot certify a fabricated
+       // HLR paper stroke. Reproject BOTH actual lift endpoints in the
+       // current first-angle view, using only the existing CAD paper
+       // comparison tolerance (never for the exact source interval).
+       !Array.isArray(stroke.projectedOriginalEdgeCandidates)||
+       stroke.projectedOriginalEdgeCandidates.filter(id=>
+        id===sourceEdgeId).length!==1||
+       !stroke.from||!stroke.to||
+       ![stroke.from,stroke.to].every(p=>
+        Number.isFinite(p.u)&&Number.isFinite(p.v))||
+       Math.hypot(
+        stroke.from.u-project(lift.fromCandidate3D)[view].u,
+        stroke.from.v-project(lift.fromCandidate3D)[view].v)>1e-6||
+       Math.hypot(
+        stroke.to.u-project(lift.toCandidate3D)[view].u,
+        stroke.to.v-project(lift.toCandidate3D)[view].v)>1e-6||
        // Never let a caller's arbitrary [0,1] range conceal the actual
        // projected 3D lift's [tFrom,tTo] subspan. No epsilon snapping:
        // even one binary64 ULP of missing original source remains a gap.
