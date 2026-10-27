@@ -1,0 +1,50 @@
+name: DraftAI OCCT native C2 positive proof
+on:
+  pull_request:
+    paths:
+      - 'tools/c2_occt_boolean_history_reference.py'
+      - 'workbench/c2-native-occt-generated-ray-m5.cjs'
+      - 'tests/workbench/c2-occt-boolean-history-reference.test.cjs'
+      - 'tests/workbench/c2-native-occt-generated-ray-m5.test.cjs'
+      - 'tests/fixtures/c2-l-shape-two-boxes-occt.json'
+      - '.github/workflows/occt-native-c2-proof.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-occt-c2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned mature OpenCascade kernel
+        run: python -m pip install --only-binary=:all: 'cadquery-ocp==7.9.3.1.1'
+      - name: Require actually installed native OCP and BRep algorithm
+        run: |
+          python - <<'PY'
+          from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse
+          from OCP.TopExp import TopExp
+          from OCP.BRepAdaptor import BRepAdaptor_Surface
+          assert BRepAlgoAPI_Fuse and TopExp and BRepAdaptor_Surface
+          PY
+      - name: Produce actual L-union TopoDS witness
+        run: |
+          python tools/c2_occt_boolean_history_reference.py \
+            tests/fixtures/c2-l-shape-two-boxes-occt.json \
+            --output occt-l-union-native-proof.json
+      - name: Exercise actual native 30-edge OCP positive test (NO skip)
+        run: |
+          node --test \
+            tests/workbench/c2-occt-boolean-history-reference.test.cjs \
+            tests/workbench/c2-native-occt-generated-ray-m5.test.cjs
+      - name: Publish source-scoped output for mathematical review
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2-occt-l-union-real-topods-proof
+          path: occt-l-union-native-proof.json
+          retention-days: 14
