@@ -45,7 +45,8 @@ jobs:
         run: |
           node --test \
             tests/workbench/c2-occt-boolean-history-reference.test.cjs \
-            tests/workbench/c2-native-occt-generated-ray-m5.test.cjs
+            tests/workbench/c2-native-occt-generated-ray-m5.test.cjs \
+            tests/workbench/c2-native-generated-global-m4-m5.test.cjs
       - name: Publish source-scoped output for mathematical review
         uses: actions/upload-artifact@v4
         with:
