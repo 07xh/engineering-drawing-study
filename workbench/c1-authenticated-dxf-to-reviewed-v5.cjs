@@ -157,6 +157,24 @@ async function compileReviewedC1DxfGivenToSoleV5({
   input,sheetTransform,includeCanonicalSolution:true
  });
  const solved=scoped.canonicalSolution;
+ // A positive scoped proof must account for original source intervals in
+ // EVERY first-angle view. Keep separate V/H/W audit evidence for the
+ // reviewed local DXF consumer; a summary count cannot conceal a view gap.
+ const perViewSourceCoverage=Object.fromEntries(['V','H','W'].map(view=>{
+  const rows=scoped.sourceCoverage.filter(row=>row.view===view);
+  return [view,{
+   checkedOriginalPhysicalEdgeViews:rows.length,
+   positiveGapCount:rows.reduce((n,row)=>n+row.positiveGapCount,0),
+   overlappingCertifiedSourceCount:rows.reduce((n,row)=>
+    n+row.overlappingCertifiedSourceCount,0),
+   allOriginalPhysicalSourceRangesAccounted:rows.length>0&&
+    rows.every(row=>row.completeAndNonOverlapping)
+  }];
+ }));
+ if(scoped.scopedSingleConvexFullyCertified===true&&
+    Object.values(perViewSourceCoverage).some(row=>
+     !row.allOriginalPhysicalSourceRangesAccounted))
+  throw new RangeError('C1 scoped proof lacks full V/H/W original source coverage');
  if(!solved||scoped.sourceGeometryId!==geometryId||
     scoped.revision!==revision||
     scoped.originalV5ReusablePlayer!==solved.player||
@@ -188,6 +206,7 @@ async function compileReviewedC1DxfGivenToSoleV5({
    allThreeViewsGlobalContourCertified:
     scoped.allThreeViewsGlobalContourCertified,
    checkedOriginalPhysicalEdgeViews:scoped.sourceCoverage.length,
+   perViewSourceCoverage,
    positiveGapCount:scoped.sourceCoverage.reduce((n,x)=>
     n+x.positiveGapCount,0),
    overlappingCertifiedSourceCount:scoped.sourceCoverage.reduce((n,x)=>
