@@ -45,7 +45,7 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(summary.pairViewChecks,1305);
   assert(summary.subspanCount>0);
   assert.equal(summary.actualNativeOpenCascadeRan,true);
-  assert.equal(summary.fullySignedV5,false);
+  assert.equal(summary.fullySignedV5,true);
   const pack=JSON.parse(fs.readFileSync(output,'utf8'));
   assert.equal(pack.provenance.actualNativeOpenCascadeRanInThisProcessTree,true);
   assert.equal(pack.nativeTopology.resultVertexCount,18);
@@ -53,7 +53,7 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(pack.nativeTopology.certifiedNativeCoplanarSubdivisionEdgeCount,8);
   assert.equal(pack.mathM0M4M5.globalPaperEvents.VHWSourceRows,90);
   assert.equal(pack.mathM0M4M5.globalPaperEvents.allOfficialEngineeringLinesCertified,false);
-  assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,false);
+  assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,true);
   const c2=pack.sourceCertifiedNativeCanonicalV5;
   assert.equal(c2.schema,
    'draftai-c2-trusted-native-partial-construction-intent-v5/1');
@@ -91,6 +91,20 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert(c2.unsignedNativePhysicalSourceIntervals.every(row=>
    !('actionId' in row) && row.originalMathEvidenceUnsigned===true ||
    row.reason==='native-physical-dihedral-not-certified'));
+  assert.equal(summary.officiallySignedNativeSubspanCount,24);
+  assert.equal(summary.provenHiddenDuplicateSuppressionCount,24);
+  assert.equal(summary.pendingUnsignedNativeSubspanCount,0);
+  assert.equal(c2.certifiedVisibleHiddenSourceIntervals.length,24);
+  assert.equal(c2.suppressedNativeBackSourceIntervals.length,24);
+  assert.equal(c2.unsignedNativePhysicalSourceIntervals.length,0);
+  assert.equal(c2.allNativePhysicalSourcesSignedOrProvenSuppressed,true);
+  assert.equal(c2.boundedTwoBoxUnionFullFormalV5Certified,true);
+  assert.equal(c2.suppressionMath.supplementaryV5ActionCount,0);
+  assert(c2.suppressedNativeBackSourceIntervals.every(e=>
+   e.actual3DBackToFrontSourceDepthOrdersVerified===true&&
+   e.exactCompleteForegroundPaperIntervalCoverageVerified===true&&
+   e.additionalNewV5ActionCount===0));
+  assert.equal(pack.completeEngineeringLineStylesCertified,true);
   assert.equal(c2.realTextbookBlindTestPassed,false);
   assert.equal(pack.realTextbookBlindTestPassed,false);
   assert.throws(()=>generateNativeC2FullMathProofPack({

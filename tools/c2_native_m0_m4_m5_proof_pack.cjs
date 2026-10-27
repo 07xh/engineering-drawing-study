@@ -30,6 +30,8 @@ const {assertM3ToV5Consistency}=
 const {verifiedTeachingActionToV5}=
  require('../workbench/construction-step-v5-adapter.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const {auditC2StrictNativeBehindSignedPaperCoverage}=
+ require('../workbench/c2-native-strictly-behind-signed-coverage.cjs');
 
 /**
  * This signer is intentionally PRIVATE to the same-process native-run CLI.
@@ -182,16 +184,31 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
   if(!Timeline.createPlayer(timeline,{revision}).canRender(revision))
    throw new RangeError('canonical native C2 V5 cannot replay current revision');
  }
- const full=unsigned.length===0&&signed.length>0;
+ const suppression=auditC2StrictNativeBehindSignedPaperCoverage({
+  unsigned,m4Rows:graph.rows,signed
+ });
+ if(suppression.examinedOriginalUnsignedPhysicalIntervals!==unsigned.length||
+    suppression.suppressed.length+suppression.held.length!==unsigned.length||
+    suppression.supplementaryV5ActionCount!==0)
+  throw new RangeError('original native source back-edge suppression drifted');
+ const full=signed.length>0&&suppression.held.length===0;
  return Object.freeze({
   schema:'draftai-c2-trusted-native-partial-construction-intent-v5/1',
-  status:full?'all-native-physical-generated-strokes-signed-in-bounded-scope':
+  status:full?'all-two-axis-box-union-native-physical-sources-signed-or-strictly-suppressed':
    'only-source-certified-native-stroke-subset-signed',
   revision,sourceGeometryHash:nativeReport.canonicalOriginalComponentGeometrySHA256,
   certifiedVisibleHiddenSourceIntervals:signed,
-  unsignedNativePhysicalSourceIntervals:unsigned,
+  suppressedNativeBackSourceIntervals:suppression.suppressed,
+  unsignedNativePhysicalSourceIntervals:suppression.held,
   excludedNonphysicalOrCollapsedIntervals:noLine,
-  counts,allPositivePhysicalGeneratedIntervalsSigned:full,
+  suppressionMath:suppression,
+  counts:{...counts,
+   strictlyBehindSignedForegroundFullySuppressed:suppression.suppressed.length,
+   remainingUnsignedPhysicalIntervals:suppression.held.length},
+  allPositivePhysicalGeneratedIntervalsSigned:
+   full&&suppression.suppressed.length===0,
+  allNativePhysicalSourcesSignedOrProvenSuppressed:full,
+  boundedTwoBoxUnionFullFormalV5Certified:full,
   sheetTransform,intents,steps,timeline,
   originalV5PlayerFactory:'workbench/teaching-timeline-v5.js',
   canonicalConstructionIntentDagChecked:true,
@@ -294,8 +311,10 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   continuousM5SubspanCount:graph.continuousM5SubspanCount,
   source3DAndProjectedEventsRecomputedInSameRun:true,
   completeSubtractiveBooleanM5RayVisibilityCertified:false,
-  completeEngineeringLineStylesCertified:false,
-  ConstructionIntentDAGSingleV5FullySigned:false,
+  completeEngineeringLineStylesCertified:
+   operation==='union'&&certifiedV5?.allNativePhysicalSourcesSignedOrProvenSuppressed===true,
+  ConstructionIntentDAGSingleV5FullySigned:
+   operation==='union'&&certifiedV5?.boundedTwoBoxUnionFullFormalV5Certified===true,
   textbookAnswerWasNotAvailableOrUsed:true,
   realTextbookBlindTestPassed:false
  };
@@ -314,7 +333,11 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    certifiedV5?.unsignedNativePhysicalSourceIntervals.length??
    graph.rows.reduce((n,row)=>n+row.subspans.filter(span=>
     span.status!=='coplanar-native-subdivision-not-a-line').length,0),
-  actualNativeOpenCascadeRan:true,fullySignedV5:false
+  provenHiddenDuplicateSuppressionCount:
+   certifiedV5?.suppressedNativeBackSourceIntervals.length??0,
+  actualNativeOpenCascadeRan:true,
+  fullySignedV5:operation==='union'&&
+   certifiedV5?.boundedTwoBoxUnionFullFormalV5Certified===true
  });
 }
 if(require.main===module){
