@@ -128,6 +128,65 @@ function validateC1RealHLRSourceCandidates({geometry,cad}={}){
 // must not be treated as false exterior hull omissions. A visible CAD segment
 // that actually intersects a signed hull stroke needs authentic source IDs;
 // unrelated visible interior lines remain unsigned M5 candidates.
+// Rebind only an independently checked native HLR candidate inventory to the
+// SAME canonical M3 drawing and existing V5 action IDs. This pure boundary
+// rejects stale/mismatched revisions, duplicated actions and unsigned edges
+// that were accidentally promoted; it never signs a new native stroke.
+function bindC1NativeThirdViewEvidence({canonical,cad,revision,geometryId}={}){
+ const drawing=canonical?.thirdViewDrawing,view=drawing?.view;
+ const native=VIEWS.includes(view)&&cad?.views?.[view];
+ const signed=canonical?.certifiedVisibleContourLineBindings;
+ if(!VIEWS.includes(view)||drawing.revision!==revision||
+    drawing.geometryId!==geometryId||
+    !Array.isArray(native)||native.length===0||
+    !Array.isArray(signed)||!Array.isArray(drawing.certifiedVisibleContour)||
+    !Array.isArray(drawing.unresolvedPhysicalEdges)||
+    drawing.completeDrawingCertified!==false||
+    canonical.wholeSolidV5Ready!==false)
+  throw new RangeError('native OCCT and canonical M3 missing-view mismatch');
+ const expected=signed.filter(x=>x.view===view);
+ const visible=drawing.certifiedVisibleContour;
+ const actionIds=drawing.drawingLayers?.officialV5StrokeActionIds;
+ const bindings=new Map(expected.map(x=>[x.actionId,x]));
+ if(!Array.isArray(actionIds)||expected.length!==visible.length||
+    bindings.size!==expected.length||actionIds.length!==visible.length||
+    new Set(actionIds).size!==actionIds.length||
+    new Set(visible.map(x=>x.v5ActionId)).size!==visible.length||
+    visible.some(x=>!bindings.has(x.v5ActionId)||
+     bindings.get(x.v5ActionId).sourceEdgeId!==x.sourceEdgeId||
+     x.standardLineStyle!=='gb-t-4457.4-continuous-wide-visible-outline')||
+    actionIds.some(id=>!bindings.has(id))||
+    drawing.unresolvedPhysicalEdges.some(x=>
+     x.standardLineStyle!=='undetermined'||x.v5ActionId!==null))
+  throw new RangeError('native C1 cannot rebind noncanonical V5 contour');
+ const segments=native.map(segment=>{
+  const ids=segment?.projectedOriginalEdgeCandidates;
+  const validPoint=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
+  if(!validPoint(segment?.from)||!validPoint(segment?.to)||
+     !Array.isArray(ids)||ids.length===0||
+     ids.some(id=>typeof id!=='string'||!id)||
+     new Set(ids).size!==ids.length)
+   throw new RangeError('invalid native C1 missing-view physical candidate');
+  return Object.freeze({
+   from:Object.freeze({...segment.from}),
+   to:Object.freeze({...segment.to}),
+   original3DSourceCandidates:Object.freeze([...ids]),
+   engineeringLineStyle:'undetermined',v5ActionId:null
+  });
+ });
+ return Object.freeze({
+  schema:'draftai-c1-native-missing-view-evidence/1',
+  view,revision,geometryId,
+  realHLRVisibleSegments:Object.freeze(segments),
+  canonicalCertifiedVisibleV5ActionIds:Object.freeze([...actionIds]),
+  unresolvedPhysicalSourceCount:drawing.unresolvedPhysicalEdges.length,
+  generatedTopoDSHistoryComplete:false,
+  allPhysicalEdgesEngineeringStylesSigned:false,
+  completeDrawingCertified:false,
+  newV5ActionsFromNativeHLR:0
+ });
+}
+
 function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
  if(!oc||typeof oc!=='object')
   throw new TypeError('initialized real OpenCascade.js kernel required');
@@ -214,37 +273,8 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    m5SignedVisibleIntervals:signed.length,
    unsignedInteriorCadLines,sourceAndCoverageAgreement:true};
  }
- // Bind the real HLR result to the SAME solved missing view that the
- // canonical M3/M5 consumer exposes. A native segment is evidence only:
- // no new engineering line style or V5 action is created from a candidate.
- const missingView=canonical.thirdViewDrawing?.view;
- const nativeMissingView=missingView&&cad.views?.[missingView];
- if(!VIEWS.includes(missingView)||
-    canonical.thirdViewDrawing.revision!==rev||
-    canonical.thirdViewDrawing.geometryId!==g.id||
-    !Array.isArray(nativeMissingView)||!nativeMissingView.length)
-  throw new RangeError('native OCCT and canonical M3 missing-view mismatch');
- const canonicalVisible=canonical.thirdViewDrawing.certifiedVisibleContour;
- if(canonicalVisible.length!==resolved.filter(x=>x.view===missingView).length||
-    canonicalVisible.some(line=>!resolved.some(bind=>
-     bind.view===missingView&&bind.actionId===line.v5ActionId&&
-     bind.sourceEdgeId===line.sourceEdgeId)))
-  throw new RangeError('native C1 cannot rebind noncanonical V5 contour');
- const nativeThirdViewEvidence=Object.freeze({
-  schema:'draftai-c1-native-missing-view-evidence/1',
-  view:missingView,revision:rev,geometryId:g.id,
-  realHLRVisibleSegments:nativeMissingView.map(segment=>Object.freeze({
-   from:{...segment.from},to:{...segment.to},
-   original3DSourceCandidates:[...segment.projectedOriginalEdgeCandidates],
-   engineeringLineStyle:'undetermined',v5ActionId:null
-  })),
-  canonicalCertifiedVisibleV5ActionIds:canonicalVisible.map(x=>x.v5ActionId),
-  unresolvedPhysicalSourceCount:
-   canonical.thirdViewDrawing.unresolvedPhysicalEdges.length,
-  generatedTopoDSHistoryComplete:false,
-  allPhysicalEdgesEngineeringStylesSigned:false,
-  completeDrawingCertified:false,
-  newV5ActionsFromNativeHLR:0
+ const nativeThirdViewEvidence=bindC1NativeThirdViewEvidence({
+  canonical,cad,revision:rev,geometryId:g.id
  });
  return Object.freeze({...canonical,
   c1CadRuntime:{
@@ -358,4 +388,5 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  });
 }
 module.exports={compileC1WithOcjsHLR,auditC1OcjsM5ProofGaps,
- intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates};
+ intervalCoverage,positiveCollinearOverlap,validateC1RealHLRSourceCandidates,
+ bindC1NativeThirdViewEvidence};
