@@ -308,8 +308,12 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   actualGeneratedEdges:packed.verifiedNativeGeneratedEdges,
   pairViewChecks:packed.actualM4PairwiseSegmentViewChecks,
   subspanCount:packed.continuousM5SubspanCount,
-  officiallySignedNativeSubspanCount:certifiedV5.certifiedVisibleHiddenSourceIntervals.length,
-  pendingUnsignedNativeSubspanCount:certifiedV5.unsignedNativePhysicalSourceIntervals.length,
+  officiallySignedNativeSubspanCount:
+   certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
+  pendingUnsignedNativeSubspanCount:
+   certifiedV5?.unsignedNativePhysicalSourceIntervals.length??
+   graph.rows.reduce((n,row)=>n+row.subspans.filter(span=>
+    span.status!=='coplanar-native-subdivision-not-a-line').length,0),
   actualNativeOpenCascadeRan:true,fullySignedV5:false
  });
 }
