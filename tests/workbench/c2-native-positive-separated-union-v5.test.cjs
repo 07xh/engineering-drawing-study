@@ -31,6 +31,19 @@ test('disjoint original BRep union signs genuinely positive source-verified M4/M
   const proof=pack.sourceCertifiedNativeCanonicalV5;
   assert.equal(proof.schema,
    'draftai-c2-trusted-native-partial-construction-intent-v5/1');
+  console.log('native-union-positive-source-diagnostics',JSON.stringify({
+   math:pack.mathM0M4M5.globalPaperEvents,
+   signer:proof.counts,official:summary.officiallySignedNativeSubspanCount
+  },(key,val)=>key==='rows'?undefined:val));
+  console.log('native-union-row-status-sample',
+   pack.mathM0M4M5.globalPaperEvents.rows.slice(0,4).map(row=>({
+    view:row.view,collapsed:row.collapsed,
+    subspans:row.subspans?.slice(0,3).map(span=>({
+     status:span.status,
+     alias:span.projectedAliasOrUncertainEventBlocked,
+     clear:span.continuousAllOpaqueComponentRayClearVerified
+    }))
+   })));
   assert(proof.certifiedVisibleHiddenSourceIntervals.length>0,
    'a separated genuine native union should prove at least one frontmost original M5 source interval');
   assert.equal(proof.certifiedVisibleHiddenSourceIntervals.length,
