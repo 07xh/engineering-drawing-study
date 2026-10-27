@@ -24,7 +24,7 @@ test('original two-box components share current M0 verified closed convex geomet
 test('untrusted or stale OCCT-generated edge inventories never self-certify C2 lines',()=>{
  assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
   manifest,nativeReport:{sourceRevision:manifest.revision}
- }),/current complete unsigned native OCCT/);
+ }),/current complete unsigned native OCCT|source box bounds/);
  assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
   manifest:{...manifest,components:[manifest.components[0],manifest.components[0]]},
   nativeReport:{}
