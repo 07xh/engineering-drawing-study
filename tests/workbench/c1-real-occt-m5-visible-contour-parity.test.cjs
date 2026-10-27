@@ -8,7 +8,8 @@ const {auditC1GlobalVisibleContourProof}=
 const {auditC1RealOcctVisibleContourSourceParity:audit,
  exactOriginalModelVertexProjectedEdge:recover,
  exactPositiveCollinearPaperOverlap:overlap,
- exactTransverseFrontSourceDepthConflict:skewFrontCrossing}=
+ exactTransverseFrontSourceDepthConflict:skewFrontCrossing,
+ exactNativeClosedRayTJunctionDepthConflict:tJunctionConflict}=
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const g=()=>{
  const x=prismMesh({solid:{min:{x:0,y:0,z:0},
@@ -475,4 +476,32 @@ test('one positive binary64 native HLR endpoint gap remains held despite exact M
  assert.equal(row.signedV5Action,false);
  assert.equal(r.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour,false);
  assert.equal(r.constructionIntentDAGUniqueV5ParityProven,false);
+});
+
+test('genuine native closed-ray T-junction depth aliases fail closed in V/H/W with exact binary64 arithmetic',()=>{
+ const axes={V:['x','z','y'],H:['x','y','z'],W:['y','z','x']};
+ for(const [view,[u,v,depth]] of Object.entries(axes)){
+  const xyz=(a,b,c)=>({x:0,y:0,z:0,[u]:a,[v]:b,[depth]:c});
+  const seg=(a,b)=>({from:project(a)[view],to:project(b)[view],
+   from3D:a,to3D:b});
+  const original=seg(xyz(0,0,0),xyz(4,0,0));
+  const branch=d=>seg(xyz(2,0,d),xyz(2,3,d));
+  const reverse=s=>({from:s.to,to:s.from,
+   from3D:s.to3D,to3D:s.from3D});
+  for(const d of [1,Number.MIN_VALUE,1e200]){
+   const other=branch(d);
+   assert.equal(tJunctionConflict(original,other,view),true);
+   assert.equal(tJunctionConflict(other,original,view),true);
+   assert.equal(tJunctionConflict(reverse(original),reverse(other),view),true);
+  }
+  assert.equal(tJunctionConflict(original,branch(0),view),false,
+   'a real shared 3D T-junction is not a depth conflict');
+  assert.equal(tJunctionConflict(original,
+   seg(xyz(4,0,1),xyz(4,3,1)),view),false,
+   'endpoint-only contact is not a strict T-junction');
+  assert.equal(tJunctionConflict(original,
+   seg(xyz(2,Number.MIN_VALUE,1),xyz(2,3,1)),view),false,
+   'a genuine binary64 paper gap must not be snapped into a junction');
+ }
+ assert.throws(()=>tJunctionConflict({}, {}, 'bad'),/V\/H\/W view required/);
 });
