@@ -270,3 +270,47 @@ test('real C1 source gate rejects missing physical face before any CAD signing',
  const bad={...g,data:{...g.data,faces:g.data.faces.slice(1)}};
  assert.throws(()=>auditM0Vertices(bad),/closed|face|topology|mesh/i);
 });
+
+const withSignedPhysical=view=>{
+ const x=missingViewFixture(view),actionId='physical-'+view,
+  sourceEdgeId='confirmed-c1::C|D',
+  standardLineStyle='gb-t-4457.4-thin-dashed-hidden-edge',
+  originalParameterRange=[0,0.5];
+ x.canonical.certifiedPhysicalLineBindings=[{view,actionId,sourceEdgeId,
+  standardLineStyle,originalParameterRange:[...originalParameterRange]}];
+ x.canonical.thirdViewDrawing.certifiedPhysicalFeatures=[{
+  sourceEdgeId,v5ActionId:actionId,standardLineStyle,
+  originalParameterRange:[...originalParameterRange]
+ }];
+ x.canonical.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds.push(actionId);
+ return x;
+};
+test('native OCCT missing-view binds existing M5 physical solid/dashed actions without creating new V5',()=>{
+ for(const view of ['V','H','W']){
+  const x=withSignedPhysical(view),result=bindMissingView(x);
+  assert.deepEqual(result.canonicalCertifiedVisibleV5ActionIds,
+   ['canonical-'+view+'-visible-0']);
+  assert.deepEqual(result.canonicalCertifiedPhysicalV5ActionIds,
+   ['physical-'+view]);
+  assert.deepEqual(result.canonicalOfficialV5StrokeActionIds,
+   ['canonical-'+view+'-visible-0','physical-'+view]);
+  assert.equal(result.newV5ActionsFromNativeHLR,0);
+  assert.equal(result.generatedTopoDSHistoryComplete,false);
+ }
+});
+test('native OCCT rejects forged or omitted canonical physical M5 action/parameter identities',()=>{
+ for(const view of ['V','H','W'])for(const change of [
+  x=>x.canonical.thirdViewDrawing.certifiedPhysicalFeatures[0].v5ActionId='forged',
+  x=>x.canonical.thirdViewDrawing.certifiedPhysicalFeatures[0].sourceEdgeId='forged',
+  x=>x.canonical.thirdViewDrawing.certifiedPhysicalFeatures[0].standardLineStyle='undetermined',
+  x=>x.canonical.thirdViewDrawing.certifiedPhysicalFeatures[0].originalParameterRange=[0,0.5000000000000001],
+  x=>x.canonical.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds.pop(),
+  x=>x.canonical.thirdViewDrawing.drawingLayers.officialV5StrokeActionIds.push('forged'),
+  x=>x.canonical.certifiedPhysicalLineBindings[0].actionId='forged',
+  x=>x.canonical.certifiedPhysicalLineBindings.push(
+   {...x.canonical.certifiedPhysicalLineBindings[0]})
+ ]){
+  const x=withSignedPhysical(view);change(x);
+  assert.throws(()=>bindMissingView(x),/noncanonical V5/);
+ }
+});
