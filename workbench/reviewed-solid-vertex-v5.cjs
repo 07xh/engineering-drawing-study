@@ -226,6 +226,41 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  }
  if(intents.length>300||steps.length>300)
   throw new RangeError('excessive unified C1 Intent DAG for original V5');
+ // Expose the solved M3 missing view without promoting unsigned M5 creases.
+ // The existing ConstructionIntent/DAG/sole V5 remains the only stroke signer.
+ const missingView=sceneResult.missingView;
+ if(!VIEWS.includes(missingView)||
+    sceneResult.thirdView?.representation?.points==null)
+  throw new RangeError('canonical M3 third-view geometry missing');
+ const signedThirdView=certifiedVisibleContourLineBindings.filter(
+  line=>line.view===missingView);
+ const sourceLines=scopedEdgePreviews.filter(line=>
+  line.view===missingView&&!line.projectionCollapsedToPoint&&
+  line.renderedAsPhysicalSourceCandidate);
+ const thirdViewDrawing=frozen({
+  schema:'draftai-c1-m3-m5-third-view-drawing/1',
+  view:missingView,revision:input.revision,
+  geometryId:sceneResult.geometry.id,unit:'mm',
+  points:Object.fromEntries(Object.entries(
+   sceneResult.thirdView.representation.points).map(([id,p])=>
+    [id,{u:p.u,v:p.v}])),
+  certifiedVisibleContour:signedThirdView.map(line=>({
+   sourceEdgeId:line.sourceEdgeId,
+   from:{...line.fromModelMm},to:{...line.toModelMm},
+   standardLineStyle:line.standardLineStyle,v5ActionId:line.actionId
+  })),
+  unresolvedPhysicalEdges:sourceLines.map(line=>({
+   sourceEdgeId:line.sourceEdgeId,
+   from:{...line.fromModelMm},to:{...line.toModelMm},
+   standardLineStyle:'undetermined',v5ActionId:null,
+   // A source edge may be only partly certified. Never silently drop its
+   // unresolved remainder on approximate or endpoint-only overlap.
+   sourceMayContainCertifiedVisibleSubspans:signedThirdView.some(s=>
+    s.sourceEdgeId===line.sourceEdgeId)
+  })),
+  completeDrawingCertified:false,
+  uncertifiedEdgesAreNotV5Actions:true
+ });
  const timeline=Timeline.compileTimeline(steps);
  assertM3ToV5Consistency({
   revision:input.revision,intents,steps,timing:timeline,sheet:sheetTransform
@@ -234,7 +269,7 @@ function compileReviewedSolidVertexV5({input,sheetTransform}={}){
  return frozen({
   schema:'draftai-c1-reviewed-solid-vertex-v5/1',
   revision:input.revision,status:'canonical-vertex-construction-ready',
-  sceneResult,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
+  sceneResult,thirdViewDrawing,wholeSourceEdgeRayEvidence,convexContourSourceCoverage,
   contourPhysicalJunctionIncidence,continuousFrontmostSourceRays,
   globalVisibleContourProof,scopedEdgePreviews,
   certifiedVisibleContourLineActionIds,
