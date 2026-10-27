@@ -42,7 +42,7 @@ test('true 3D coincident overlap is not signed as strictly front',()=>{
 });
 test('near-collinear but actually different first-angle coordinates stay unsigned',()=>{
  const a=E('SourceA',0);
- const b=E('SourceB',3,0,5,2+Number.EPSILON);
+ const b=E('SourceB',3,0,5,2+2*Number.EPSILON);
  assert.notEqual(a.from.x,b.from.x);
  const r=audit(a,b);
  assert.notEqual(r.status,'candidate-strictly-front');
