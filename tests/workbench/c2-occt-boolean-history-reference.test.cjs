@@ -19,7 +19,7 @@ test('C2 OCCT reference requires real source revision and non-degenerate boxes',
     {id:'Two',type:'box',min:[1,0,0],max:[2,2,3]}]}));
   const r=run(file);
   assert.equal(r.status,2);
-  assert.match(r.stderr,/source geometry revision/);
+  assert.match(r.stderr,/source geometry revision|safe positive source revision/);
   fs.writeFileSync(file,JSON.stringify({revision:1,
    components:[{id:'One',type:'box',min:[0,0,0],max:[1,2,3]},
     {id:'One',type:'box',min:[1,0,0],max:[2,2,3]}]}));
@@ -69,4 +69,24 @@ test('actual OCCT TopoDS history accounts for every fused nonconvex L-edge',{
  assert.equal(x.completeProjectedOcclusionAndGBLineStylesCertified,false);
  assert.equal(x.signedV5ActionCount,0);
  assert.equal(x.realTextbookBlindTestPassed,false);
+});
+
+
+test('native input fingerprint changes when only original box dimensions change',()=>{
+ const code=[
+  'import sys,json',
+  'sys.path.insert(0,sys.argv[1])',
+  'from c2_occt_boolean_history_reference import source_manifest_fingerprint',
+  'data=json.loads(open(sys.argv[2],encoding="utf-8").read())',
+  'first=source_manifest_fingerprint(data)',
+  'data["components"][1]["max"][1]+=0.25',
+  'second=source_manifest_fingerprint(data)',
+  'assert first!=second',
+  'assert len(first)==64 and len(second)==64',
+  'print(first)'
+ ].join('\n');
+ const r=spawnSync('python3',['-c',code,path.dirname(script),fixture],
+  {encoding:'utf8',timeout:15000});
+ assert.equal(r.status,0,r.stderr);
+ assert.match(r.stdout.trim(),/^[0-9a-f]{64}$/);
 });

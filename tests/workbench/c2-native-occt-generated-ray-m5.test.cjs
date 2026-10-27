@@ -24,7 +24,7 @@ test('original two-box components share current M0 verified closed convex geomet
 test('untrusted or stale OCCT-generated edge inventories never self-certify C2 lines',()=>{
  assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
   manifest,nativeReport:{sourceRevision:manifest.revision}
- }),/current complete unsigned native OCCT/);
+ }),/current complete unsigned native OCCT|source box bounds/);
  assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
   manifest:{...manifest,components:[manifest.components[0],manifest.components[0]]},
   nativeReport:{}
@@ -45,6 +45,20 @@ test('actual native OCCT 30 output edges get M0/M5 V/H/W continuous depth',{
  });
  assert.equal(result.status,0,result.stderr);
  const nativeReport=JSON.parse(result.stdout);
+ const clone=structuredClone(nativeReport);
+ const staleBounds=structuredClone(manifest);
+ staleBounds.components[0].max[0]+=0.5;
+ assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
+  manifest:staleBounds,nativeReport:clone
+ }),/source box bounds/);
+ const forgedNativeBox=structuredClone(nativeReport);
+ forgedNativeBox.actualNativeSourceBoxBoundsMm[1].min[0]+=0.25;
+ assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
+  manifest,nativeReport:forgedNativeBox
+ }),/source box bounds/);
+ assert.match(nativeReport.canonicalOriginalComponentGeometrySHA256,
+  /^[0-9a-f]{64}$/);
+ assert.equal(nativeReport.actualNativeSourceBoxBoundsMm.length,2);
  const audit=auditC2OcctGeneratedEdgeUnionRays({
   manifest,nativeReport
  });
