@@ -92,3 +92,45 @@ test('unsupported source and invalid revision never become a M0 positive result'
  assert.equal(r.status,'not-covered');
  assert.equal(r.v5VerifiedExportReady,false);
 });
+
+function wide(box){
+ for(const p of Object.values(box.data.points)){p.x*=3;p.y*=3;}
+ return box;
+}
+test('three real closed solids certify the actual frontmost of TWO positive H-ray occluders',()=>{
+ const geometry=[cube('Base',0,2),
+  wide(cube('Near',4,6)),wide(cube('Far',9,11))];
+ const r=auditReviewedM0ScenePartitions({geometry,revision:21});
+ assert.equal(r.status,'actual-reviewed-source-open-interval-evidence');
+ assert.equal(r.verifiedExtremeVertexSetCount,3);
+ const jointlyCovered=r.views.H.edges.filter(e=>e.sourceGeometryId==='Base')
+  .flatMap(e=>e.runs||[]).filter(run=>
+   run.originalOccluderGeometryIds.includes('Near')&&
+   run.originalOccluderGeometryIds.includes('Far'));
+ assert.ok(jointlyCovered.length>0,'actual lower source H rays traverse both wide bodies');
+ for(const run of jointlyCovered){
+  assert.equal(run.visibilityEvidence,'hidden-within-supplied-solids');
+  assert.equal(run.frontmostAmongPositivelyCertifiedOccluders,'Far');
+  assert.equal(run.independentRelativeDepthOrderVerified,true);
+  assert.equal(run.allPotentialSceneOccludersCertified,false);
+  assert.equal(run.depthOrderVerified,false);
+ }
+ assert.ok(r.certifiedMultiSolidRelativeFrontOccluderRuns>0);
+ assert.equal(r.officialLineStylesVerified,false);
+ assert.equal(r.v5VerifiedExportReady,false);
+});
+test('overlapping global depth slabs cannot forge a frontmost OCCT/M5 source even if both occlude the same edge',()=>{
+ const geometry=[cube('Base',0,2),
+  wide(cube('Near',4,6)),wide(cube('Overlap',5,7))];
+ const r=auditReviewedM0ScenePartitions({geometry,revision:22});
+ const both=r.views.H.edges.filter(e=>e.sourceGeometryId==='Base')
+  .flatMap(e=>e.runs||[]).filter(run=>
+   run.originalOccluderGeometryIds.includes('Near')&&
+   run.originalOccluderGeometryIds.includes('Overlap'));
+ assert.ok(both.length>0);
+ assert.ok(both.every(run=>
+  run.frontmostAmongPositivelyCertifiedOccluders===null&&
+  run.independentRelativeDepthOrderVerified===false));
+ assert.equal(r.certifiedMultiSolidRelativeFrontOccluderRuns,0);
+ assert.equal(r.completeSceneVerified,false);
+});

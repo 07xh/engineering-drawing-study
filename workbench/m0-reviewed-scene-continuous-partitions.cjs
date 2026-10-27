@@ -26,6 +26,8 @@ const held=(revision,reason)=>freeze({
  originalSourceEdgeViewCount:0,collapsedSourceProjections:0,
  certifiedHiddenOpenRuns:0,certifiedClearOpenRuns:0,
  unresolvedOpenRuns:0,globallyDepthSeparatedSolidPairs:0,
+ certifiedRelativeFrontOccluderRuns:0,
+ certifiedMultiSolidRelativeFrontOccluderRuns:0,
  views:{V:{edges:[],solidPairOrders:[]},H:{edges:[],solidPairOrders:[]},
   W:{edges:[],solidPairOrders:[]}},
  completeSceneVerified:false,sourceEndpointTopologyVerified:false,
@@ -75,7 +77,8 @@ function auditReviewedM0ScenePartitions({geometry,revision}={}){
   return held(revision,'source convex topology or numeric hull failed: '+e.message);
  }
  const solids=bodies.map(x=>({id:x.id,halfspaces:x.halfspaces}));
- const views={},counts={collapsed:0,hidden:0,clear:0,unknown:0,ordered:0};
+ const views={},counts={collapsed:0,hidden:0,clear:0,unknown:0,ordered:0,
+  relativeFront:0,multiFront:0};
  for(const view of VIEWS){
   const observerDirection=FIRST_ANGLE_OBSERVER_RAYS[view];
   const solidPairOrders=[];
@@ -95,6 +98,19 @@ function auditReviewedM0ScenePartitions({geometry,revision}={}){
     strictGlobalDepthSeparationVerified:!!winner,
     projectedRayIntersectionVerified:false});
   }
+  // Complete extreme vertex sets plus strict disjoint global depth
+  // slabs order TWO positive occluders without point sampling. This still
+  // does NOT verify every scene object meets a ray or sign M5 line styles.
+  const relativeFrontOf=ids=>{
+   if(!ids.length)return null;
+   const leaders=ids.filter(id=>ids.every(other=>id===other||
+    solidPairOrders.some(p=>
+     p.originalGeometryIds.includes(id)&&
+     p.originalGeometryIds.includes(other)&&
+     p.strictGlobalDepthSeparationVerified&&
+     p.frontGeometryIdIfGloballySeparated===id)));
+   return leaders.length===1?leaders[0]:null;
+  };
   const edges=[];
   for(const row of segments){
    const a=project(row.source.from)[view],b=project(row.source.to)[view];
@@ -110,18 +126,30 @@ function auditReviewedM0ScenePartitions({geometry,revision}={}){
     const witness=partitionM0Segment({
      source:row.source,solids,observerDirection
     });
-    const runs=witness.runs.map(run=>({
-     originalSourceParameterRange:[run.from,run.to],
-     visibilityEvidence:run.status,
-     originalOccluderGeometryIds:run.occluderIds.map(id=>
-      bodies.find(body=>body.id===id).originalGeometryId),
-     independentlyContinuousM0OpenInterval:run.status!=='undetermined',
-     depthOrderVerified:false
-    }));
+    const runs=witness.runs.map(run=>{
+     const originalOccluderGeometryIds=run.occluderIds.map(id=>
+      bodies.find(body=>body.id===id).originalGeometryId);
+     const front=run.status==='hidden-within-supplied-solids'?
+      relativeFrontOf(originalOccluderGeometryIds):null;
+     return {
+      originalSourceParameterRange:[run.from,run.to],
+      visibilityEvidence:run.status,originalOccluderGeometryIds,
+      frontmostAmongPositivelyCertifiedOccluders:front,
+      independentRelativeDepthOrderVerified:front!==null,
+      // Unknown/absent scene solids may still be nearer; no V5 promotion.
+      allPotentialSceneOccludersCertified:false,
+      independentlyContinuousM0OpenInterval:run.status!=='undetermined',
+      depthOrderVerified:false
+     };
+    });
     for(const run of runs){
      if(run.visibilityEvidence==='hidden-within-supplied-solids')counts.hidden++;
      else if(run.visibilityEvidence==='clear-within-supplied-solids')counts.clear++;
      else counts.unknown++;
+     if(run.independentRelativeDepthOrderVerified){
+      counts.relativeFront++;
+      if(run.originalOccluderGeometryIds.length>1)counts.multiFront++;
+     }
     }
     edges.push({sourceGeometryId:row.sourceGeometryId,
      sourceEdgeId:row.sourceEdgeId,sourceVertexIds:row.sourceVertexIds,
@@ -151,7 +179,9 @@ function auditReviewedM0ScenePartitions({geometry,revision}={}){
   collapsedSourceProjections:counts.collapsed,
   certifiedHiddenOpenRuns:counts.hidden,certifiedClearOpenRuns:counts.clear,
   unresolvedOpenRuns:counts.unknown,
-  globallyDepthSeparatedSolidPairs:counts.ordered,views,
+  globallyDepthSeparatedSolidPairs:counts.ordered,
+  certifiedRelativeFrontOccluderRuns:counts.relativeFront,
+  certifiedMultiSolidRelativeFrontOccluderRuns:counts.multiFront,views,
   completeSceneVerified:false,sourceEndpointTopologyVerified:false,
   officialLineStylesVerified:false,constructionIntentAuthorized:false,
   v5VerifiedExportReady:false
