@@ -628,8 +628,17 @@ for(const [index,geometry] of general.entries()){
   'true generic convex closed source must obtain global first-angle exterior contour');
  assert.equal(audited.counts.unresolved,0,
   'no unresolved M5 atomic exterior contour intervals may reach formal V5');
+ const sourceConflicts=Object.values(audited.views).flatMap(v=>v.intervals)
+  .filter(x=>x.status==='positive-m5-vs-cad-conflict')
+  .map(x=>({view:x.view,sourceEdgeId:x.sourceEdgeId,
+   sourceRange:x.exactNativeOriginal3DSourceCoverage?.
+    originalSourceParameterRange,
+   sourceStatus:x.exactNativeOriginal3DSourceCoverage?.status,
+   gaps:x.exactNativeOriginal3DSourceCoverage?.
+    positiveLengthUncoveredIntervals}));
  assert.equal(audited.counts.positiveM5CadConflicts,0,
-  'a real CAD source disagreement must block the formal V5');
+  'a real CAD source disagreement must block the formal V5: '+
+   JSON.stringify(sourceConflicts));
  assert.equal(audited.counts.cadAndM5Corroborated,
   audited.counts.m5AtomicIntervals);
  // An independently valid M5 paper hull source may still lack exact
