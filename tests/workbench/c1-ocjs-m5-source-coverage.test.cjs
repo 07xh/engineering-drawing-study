@@ -373,3 +373,71 @@ test('C1 IsSame audit must enumerate ALL original TopoDS edges, not a selected s
    'partial or forged native TopoDS inventory must fail closed');
  }
 });
+
+const {exactC1NativeSourceIntervalCoverage:exactSourceCoverage}=
+ require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
+const nextAfterHalf=()=>{
+ const bits=new DataView(new ArrayBuffer(8));
+ bits.setFloat64(0,0.5,false);
+ bits.setBigUint64(0,bits.getBigUint64(0,false)+1n,false);
+ return bits.getFloat64(0,false);
+};
+test('C1 V/H/W native source parameter coverage joins actual 3D intervals without paper tolerance',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const first=structuredClone(cad.views[view][0]);
+  const second=structuredClone(first);
+  first.sourceCandidate3DLifts[0].originalSourceParameterRange=[0,0.5];
+  second.sourceCandidate3DLifts[0].originalSourceParameterRange=[0.5,1];
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[first,second]};
+  const full=exactSourceCoverage(input);
+  assert.equal(full.entireOriginalParameterIntervalCovered,true);
+  assert.deepEqual(full.positiveLengthUncoveredIntervals,[]);
+  assert.equal(full.signedV5Action,false);
+  assert.equal(full.engineeringLineStyle,'undetermined');
+  const reversed=exactSourceCoverage({...input,
+   real3DFrom:geometry.data.points.B,real3DTo:geometry.data.points.A});
+  assert.equal(reversed.entireOriginalParameterIntervalCovered,true);
+  second.sourceCandidate3DLifts[0].originalSourceParameterRange=
+   [nextAfterHalf(),1];
+  const gap=exactSourceCoverage(input);
+  assert.equal(gap.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(gap.positiveLengthUncoveredIntervals,
+   [[0.5,nextAfterHalf()]]);
+  assert.equal(gap.status,'exact-original-3d-native-source-positive-gap');
+ }
+});
+test('C1 exact source gap consumer rejects fake 3D endpoints, stale BRep and paper-only source aliases',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0];
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  const shifted=exactSourceCoverage({...input,
+   real3DFrom:{x:0,y:Number.MIN_VALUE,z:0}});
+  assert.equal(shifted.entireOriginalParameterIntervalCovered,false);
+  assert.equal(shifted.status,
+   'unreconstructable-original-3d-source-parameter');
+  const other=structuredClone(stroke);
+  other.sourceCandidate3DLifts[0].sourceEdgeId='M0-Reviewed::C|D';
+  const alias=exactSourceCoverage({...input,strokes:[other]});
+  assert.equal(alias.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(alias.positiveLengthUncoveredIntervals,[[0,1]]);
+  for(const change of [
+   x=>x.actualOriginalOCCTBRepEdge3DEndpointsVerified=false,
+   x=>x.originalOCCTSourceLineCurveVerified=false,
+   x=>x.v5Authorized=true,
+   x=>x.originalSourceParameterRange=[0,0]
+  ]){
+   const bad=structuredClone(stroke);
+   change(bad.sourceCandidate3DLifts[0]);
+   assert.throws(()=>exactSourceCoverage({...input,strokes:[bad]}),
+    /unverified original native BRep|verified finite native CAD/);
+  }
+  assert.throws(()=>exactSourceCoverage({...input,
+   sourceEdgeId:'M0-Reviewed::invented'}),/missing or duplicated/);
+ }
+});
