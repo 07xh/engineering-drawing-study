@@ -499,7 +499,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   cadAndM5Corroborated:0,positiveM5CadConflicts:0,unresolved:0,
   sharedPhysicalEndpointDepthCertificates:0,
   missing3DSourceCoverage:0,missingPhysicalJunctionProof:0,
-  missingContinuousFrontRayProof:0};
+  missingContinuousFrontRayProof:0,
+  exactNative3DSourceParameterCovered:0,
+  exactNative3DSourceParameterGapOrUnbound:0};
  for(const view of VIEWS){
   const pv=proof.views.find(x=>x.view===view);
   const rayView=proof.continuousFrontmostSourceRays.views.find(x=>x.view===view);
@@ -513,6 +515,13 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     throw new RangeError('stale cross-revision M5 interval');
    const validSource=typeof x.sourceEdgeId==='string'&&
     ledgerIds.has(x.sourceEdgeId);
+   // Keep the historical PAPER agreement counter for existing display
+   // diagnostics. Never mistake it for exact 3D provenance: the genuine
+   // strict native contour/V5 gate separately requires exact source spans.
+   const projected=strokes.filter(st=>
+    validSource&&st.projectedOriginalEdgeCandidates.includes(x.sourceEdgeId));
+   const covered=validSource&&intervalCoverage(
+    x.projectedFromModelMm,x.projectedToModelMm,projected);
    const nativeCoverage=validSource?
     exactC1NativeSourceIntervalCoverage({
      geometry:g,view,sourceEdgeId:x.sourceEdgeId,
@@ -526,8 +535,10 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
       x.continuouslyFrontRayClearVerified===true,
      strokes
     }):null;
-   const covered=nativeCoverage?.
+   const nativeExactCovered=nativeCoverage?.
     entireOriginalParameterIntervalCovered===true;
+   if(nativeExactCovered)totals.exactNative3DSourceParameterCovered++;
+   else totals.exactNative3DSourceParameterGapOrUnbound++;
    const local=x.locallyCompleteVisibleHullSegmentProven===true;
    const status=local?(covered?'local-m5-cad-corrob-unsigned':
     'positive-m5-vs-cad-conflict'):'undetermined';
@@ -547,6 +558,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     fromModelMm:{...x.projectedFromModelMm},
     toModelMm:{...x.projectedToModelMm},
     status,m5LocalPositive:local,realCadCovered:covered,
+    realNativeOriginal3DSourceParameterCovered:nativeExactCovered,
     exactNativeOriginal3DSourceCoverage:nativeCoverage,
     blockers:{
      sourceContourCoverageMissing:!x.sourceContourCoverageVerified,
