@@ -7,7 +7,7 @@
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
 const {renderC1ThirdViewSvg}=require('./c1-third-view-svg-preview.cjs');
 const finite=Number.isFinite;
-function renderC1ThreeViewSvg(result,{includeReviewOverlay=true}={}){
+function renderC1ThreeViewSvg(result,{includeReviewOverlay=true,sheetTransform}={}){
  if(result?.schema!=='draftai-c1-reviewed-solid-vertex-v5/1'||
     result.wholeSolidV5Ready!==false||
     result.singleOriginalV5Player!==true||
@@ -17,9 +17,9 @@ function renderC1ThreeViewSvg(result,{includeReviewOverlay=true}={}){
   throw new TypeError('current canonical unsigned C1 three-view source required');
  const {sceneResult}=result;
  const missing=sceneResult.missingView;
- const transform=result.thirdViewDrawing?.sheetTransform;
- // Derive sheet coordinates from the already certified third-view M3->V5
- // transform: only use the canonical first-angle transform provided by caller.
+ const transform=sheetTransform;
+ // The caller supplies the same canonical first-angle sheet transform used
+ // by the original ConstructionIntent/DAG/V5 pipeline.
  if(!transform)throw new TypeError('canonical first-angle sheet transform required');
  const drawings={};
  for(const view of VIEWS){
