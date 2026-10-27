@@ -69,6 +69,7 @@ test('ten added M0 contour/depth helpers are explicitly scoped and independently
   assert.equal(entry.status,'scoped-math');
   assert.ok(entry.proofScope&&entry.remainingGate);
   assert.equal(entry.regressionTests.length,1);
-  assert.match(entry.regressionTests[0],/^tests\\/math\\/.*\\.test\\.cjs$/);
+  assert.ok(entry.regressionTests[0].startsWith('tests/math/')&&
+   entry.regressionTests[0].endsWith('.test.cjs'));
  }
 });
