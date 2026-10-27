@@ -1238,6 +1238,46 @@ test('final M5 gate independently consumes real V/H/W native VCompound source ge
  assert.equal(p.originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication,2);
  assert.equal(p.signedV5ActionCount,0);
 });
+test('a sole genuine native visible lift cannot bypass an exact M5-selected source interval mismatch',()=>{
+ const make=range=>{
+  const x=withMeasuredRealVCompoundFragments();
+  x.nativeHLRJunctionConcordance.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=[{
+   view:'V',nativeVisibleHLREdgeOrdinal:0,sourceEdgeId:'G::A|B',
+   originalSourceParameterRange:range,
+   uniquePhysicalM5FrontOriginalSourceFromActualBRep:true,
+   fullOriginalPhysicalSourceM5ClosedRayClear:true,
+   generatedEdgeOriginalTopoDSHistoryRecovered:false,
+   engineeringLineCertified:false,signedV5Action:false
+  }];
+  return x;
+ };
+ const full=review(make([0,1])).nativeVisibleHLRSourceTiling;
+ assert.equal(full.exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay,1);
+ assert.equal(full.selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep,1);
+ assert.equal(full.unverifiedGeneratedOCCTVisibleSegments,0);
+ assert.equal(full.signedV5ActionCount,0);
+ const t=1-Number.EPSILON;
+ const held=review(make([0,t])).nativeVisibleHLRSourceTiling;
+ assert.equal(held.exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay,1);
+ assert.equal(held.selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep,0);
+ assert.equal(held.unverifiedGeneratedOCCTVisibleSegments,1);
+ assert.equal(held.independentHeldNativeVisibleReasonCounts[
+  'nonunique-or-unmapped-native-original-3d-source'],1);
+ assert.equal(held.independentlyHeldGeneratedNativeVisibleEdgeCauses[0].
+  matchingOriginal3DPhysicalSourceLifts,0);
+ assert.equal(held.allTrueGeneratedNativeVisibleSourceLiftsCertified,false);
+ assert.equal(held.originalSourceViewsCompletelyCoveredWithoutGeneratedDuplication,1,
+  'unclaimed W geometry remains a separate unsigned diagnostic, not V proof');
+ assert.equal(held.signedV5ActionCount,0);
+});
+test('a sole native lift without a per-generated-edge M5 witness remains geometric corroboration only',()=>{
+ const x=withMeasuredRealVCompoundFragments();
+ const p=review(x).nativeVisibleHLRSourceTiling;
+ assert.equal(p.exactVisibleHLRGeneratedEdgeOriginal3DSourceUniquelySelectedByM5FrontRay,0);
+ assert.equal(p.selectedNativeVisibleGeneratedSourcesCrosscheckedAgainstCurrentBRep,0);
+ assert.equal(p.signedV5ActionCount,0);
+ assert.equal(p.allGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+});
 test('final M5 gate preserves OCCT native generated-source overlapping fragments even when accepted visible union looks correct',()=>{
  const x=withMeasuredRealVCompoundFragments();
  x.cad.views.V.push(structuredClone(x.cad.views.V[0]));
