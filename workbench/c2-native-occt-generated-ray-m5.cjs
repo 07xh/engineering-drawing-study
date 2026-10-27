@@ -72,11 +72,35 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     !Array.isArray(nativeReport.outputEdges)||
     nativeReport.resultEdgeCount!==nativeReport.outputEdges.length||
     nativeReport.outputEdges.length<6||nativeReport.outputEdges.length>256||
+    nativeReport.allFinalGeneratedEdgeEndpointsMappedToSameRunNativeTopoDSVertices!==true||
+    nativeReport.allResultNativeVertexIncidenceAccountedFor!==true||
+    !Array.isArray(nativeReport.resultVertexIncidence)||
+    nativeReport.resultVertexCount!==nativeReport.resultVertexIncidence.length||
     nativeReport.ConstructionIntentAuthorized!==false||
     nativeReport.signedV5ActionCount!==0||
     nativeReport.completeProjectedOcclusionAndGBLineStylesCertified!==false)
   throw new RangeError('current complete unsigned native OCCT Boolean history inventory required');
  const seen=new Set(),rows=[];
+ // Independently reconcile the reported output's one globally shared
+ // TopoDS vertex identity per junction. It is NOT enough for two paper
+ // projections to have equal (u,v); they need matching native vertex IDs.
+ const vertexByOrdinal=new Map();
+ for(const vertex of nativeReport.resultVertexIncidence){
+  const id=vertex?.actualNativeTopoDSVertexOrdinal,
+   p=vertex?.real3DModelMm;
+  if(!Number.isSafeInteger(id)||id<1||
+     id>nativeReport.resultVertexCount||vertexByOrdinal.has(id)||
+     !p||Object.keys(p).sort().join(',')!=='x,y,z'||
+     [p.x,p.y,p.z].some(x=>!finite(x)||Math.abs(x)>1e6)||
+     vertex.genuineTopoDSIsSameJunctionProven!==true||
+     !Array.isArray(vertex.incidentFinalTopoDSEdgeOrdinals)||
+     vertex.incidentFinalTopoDSEdgeOrdinals.length<2)
+   throw new RangeError('incomplete native result 3D vertex incidence inventory');
+  vertexByOrdinal.set(id,vertex);
+ }
+ if(vertexByOrdinal.size!==nativeReport.resultVertexCount)
+  throw new RangeError('missing shared native result vertex ordinal');
+ const recomputedIncidence=new Map([...vertexByOrdinal.keys()].map(id=>[id,[]]));
  const counts={physicalGeneratedEdges:0,coplanarNativeSubdivisions:0,
   undeterminedNativeFeatures:0,collapsed:0,clear:0,hidden:0,
   unresolvedDepth:0};
@@ -104,6 +128,22 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
      !Array.isArray(edge.currentNativeResultFaceOutwardNormals)||
      edge.currentNativeResultFaceOutwardNormals.length!==2)
    throw new RangeError('missing exact native generated edge 3D geometry/manifold faces');
+  const nativeVertexOrdinals=edge.actualNativeTopoDSVertexOrdinals;
+  if(!Array.isArray(nativeVertexOrdinals)||
+     nativeVertexOrdinals.length!==2||
+     nativeVertexOrdinals[0]===nativeVertexOrdinals[1]||
+     nativeVertexOrdinals.some(id=>!vertexByOrdinal.has(id))||
+     edge.nativeTopologicalEndpointJoinSource!==
+      'same-run-result-TopoDS-vertex-IsSame')
+   throw new RangeError('native result edge has unverified actual TopoDS vertex IDs');
+  for(const [index,id] of nativeVertexOrdinals.entries()){
+   const nativePoint=vertexByOrdinal.get(id).real3DModelMm,
+    p=xyz[index];
+   if(Math.hypot(p.x-nativePoint.x,p.y-nativePoint.y,
+     p.z-nativePoint.z)>1e-9)
+    throw new RangeError('native edge endpoint not same 3D TopoDS vertex');
+   recomputedIncidence.get(id).push(ordinal);
+  }
   const [from,to]=xyz,spaceLength=Math.hypot(
    from.x-to.x,from.y-to.y,from.z-to.z);
   if(!(spaceLength>1e-7))
@@ -149,6 +189,8 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
    const from2D=project(from)[view],to2D=project(to)[view];
    const base={view,sourceNativeResultEdgeOrdinal:ordinal,
     source3DFrom:{...from},source3DTo:{...to},
+    genuineResultTopoDSVertexOrdinals:[...nativeVertexOrdinals],
+    bothEndpointOriginal3DIsSameJunctionsVerified:true,
     projectedFromModelMm:from2D,projectedToModelMm:to2D,
     currentNativeResultFeatureStatus:feature,
     sourceOriginalTopoDSHistory:edge.originalTopoDSHistory.map(h=>({...h})),
@@ -197,6 +239,13 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
    });
   }
  }
+ for(const [vertexId,vertex] of vertexByOrdinal){
+  const expected=recomputedIncidence.get(vertexId).sort((a,b)=>a-b),
+   provided=vertex.incidentFinalTopoDSEdgeOrdinals;
+  if(new Set(provided).size!==provided.length||
+     JSON.stringify(expected)!==JSON.stringify(provided))
+   throw new RangeError('incomplete or forged same-run TopoDS edge-vertex incidence');
+ }
  if(seen.size!==nativeReport.resultEdgeCount||
     counts.physicalGeneratedEdges+counts.coplanarNativeSubdivisions+
       counts.undeterminedNativeFeatures!==seen.size||
@@ -209,6 +258,8 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
   counts,rows,
   realOCCTGeneratedEdgeHistoryWasRecomputedByThisFunction:false,
   currentNativeReported3DAndM0SourceCrossChecked:true,
+  allNativeResultEdgeEndpointIsSameJunctionsReconciled:true,
+  authenticatedNativeResultVertexCount:vertexByOrdinal.size,
   allFirstAngleWholeOriginalGeneratedEdgeRaysAudited:true,
   completeBooleanBoundaryAndPaperJunctionsCertified:false,
   officialEngineeringLineStylesCertified:false,

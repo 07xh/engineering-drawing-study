@@ -40,6 +40,16 @@ test('actual OCCT TopoDS history accounts for every fused nonconvex L-edge',{
  assert.equal(x.resultVertexCount,18);
  assert.equal(x.allResultEdgesHaveSameRunActualTopoDSHistorySupport,true);
  assert.equal(x.outputEdges.length,30);
+ assert.equal(x.allFinalGeneratedEdgeEndpointsMappedToSameRunNativeTopoDSVertices,true);
+ assert.equal(x.allResultNativeVertexIncidenceAccountedFor,true);
+ assert.equal(x.resultVertexIncidence.length,18);
+ assert(x.resultVertexIncidence.every(v=>
+  v.genuineTopoDSIsSameJunctionProven===true&&
+  v.incidentFinalTopoDSEdgeOrdinals.length>=2));
+ assert(x.outputEdges.every(e=>
+  e.actualNativeTopoDSVertexOrdinals.length===2&&
+  e.actualNativeTopoDSVertexOrdinals[0]!==e.actualNativeTopoDSVertexOrdinals[1]&&
+  e.nativeTopologicalEndpointJoinSource==='same-run-result-TopoDS-vertex-IsSame'));
  assert.equal(x.allResultEdgesHaveExactlyTwoRealNativeIncidentFaces,true);
  assert.equal(x.certifiedNativePhysicalCreaseEdgeCount,22);
  assert.equal(x.certifiedNativeCoplanarSubdivisionEdgeCount,8);

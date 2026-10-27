@@ -119,6 +119,20 @@ def occt_reference(data: dict) -> dict:
         result_shape, TopAbs_EDGE, TopAbs_FACE, incidence
     )
     final_edges = unique(result_shape, TopAbs_EDGE)
+    # All vertex identities are TopoDS_IsSame references from THIS specific
+    # successful Boolean result. Two edges meeting at the same PAPER point
+    # are never treated as joined unless they have the exact same native
+    # TopoDS vertex in this final result.
+    final_vertices = unique(result_shape, TopAbs_VERTEX)
+    vertex_incident_edges = {i: [] for i in range(1, len(final_vertices) + 1)}
+
+    def native_vertex_ordinal(vertex):
+        matched = [i for i, original in enumerate(final_vertices, 1)
+                   if vertex.IsSame(original)]
+        if len(matched) != 1:
+            raise RuntimeError("unmatched or non-unique native TopoDS vertex identity")
+        return matched[0]
+
     if incidence.Extent() != len(final_edges):
         raise RuntimeError("Boolean edge/incident-face inventory is incomplete")
 
@@ -136,9 +150,15 @@ def occt_reference(data: dict) -> dict:
         if len(verts) != 2:
             raise RuntimeError("nonlinear/closed native result edge outside box scope")
         xyz = []
+        vertex_ordinals = []
         for vertex in verts:
+            vertex_ordinal = native_vertex_ordinal(vertex)
+            vertex_ordinals.append(vertex_ordinal)
+            vertex_incident_edges[vertex_ordinal].append(index)
             point = BRep_Tool.Pnt_s(TopoDS.Vertex_s(vertex))
             xyz.append({"x": point.X(), "y": point.Y(), "z": point.Z()})
+        if vertex_ordinals[0] == vertex_ordinals[1]:
+            raise RuntimeError("native result edge endpoints are the same TopoDS vertex")
         native_curve = BRepAdaptor_Curve(TopoDS.Edge_s(edge))
         if native_curve.GetType() != GeomAbs_Line:
             raise RuntimeError("native Boolean edge is not a verified straight segment")
@@ -160,6 +180,9 @@ def occt_reference(data: dict) -> dict:
             raise RuntimeError("real native result edge lacks original BRep history support")
         evidence.append({
             "finalTopoDSEdgeOrdinal": index,
+            "actualNativeTopoDSVertexOrdinals": vertex_ordinals,
+            "nativeTopologicalEndpointJoinSource":
+                "same-run-result-TopoDS-vertex-IsSame",
             "real3DModelMmEndpoints": xyz,
             "currentNativeResultEdgeHasExactlyTwoIncidentFaces": True,
             "currentNativeResultFaceOutwardNormals": normals,
@@ -180,6 +203,22 @@ def occt_reference(data: dict) -> dict:
             "standardEngineeringLineStyle": "undetermined",
             "formalV5LineActionSigned": False,
         })
+    if not vertex_incident_edges or any(
+        len(incident) < 2 for incident in vertex_incident_edges.values()
+    ):
+        raise RuntimeError("open or unaccounted native result BRep vertex incidence")
+    final_vertex_evidence = []
+    for vertex_ordinal, vertex in enumerate(final_vertices, 1):
+        point = BRep_Tool.Pnt_s(TopoDS.Vertex_s(vertex))
+        final_vertex_evidence.append({
+            "actualNativeTopoDSVertexOrdinal": vertex_ordinal,
+            "real3DModelMm": {
+                "x": point.X(), "y": point.Y(), "z": point.Z()
+            },
+            "incidentFinalTopoDSEdgeOrdinals":
+                sorted(vertex_incident_edges[vertex_ordinal]),
+            "genuineTopoDSIsSameJunctionProven": True,
+        })
     return {
         "schema": "draftai-independent-occt-boolean-topods-history-reference/1",
         "sourceRevision": data.get("revision"),
@@ -187,7 +226,10 @@ def occt_reference(data: dict) -> dict:
         "unit": "mm", "status": "valid-occt-boolean-history-reference-only",
         "resultFaceCount": len(unique(result_shape, TopAbs_FACE)),
         "resultEdgeCount": len(evidence),
-        "resultVertexCount": len(unique(result_shape, TopAbs_VERTEX)),
+        "resultVertexCount": len(final_vertices),
+        "allFinalGeneratedEdgeEndpointsMappedToSameRunNativeTopoDSVertices": True,
+        "allResultNativeVertexIncidenceAccountedFor": True,
+        "resultVertexIncidence": final_vertex_evidence,
         "allResultEdgesHaveExactlyTwoRealNativeIncidentFaces": True,
         "certifiedNativePhysicalCreaseEdgeCount": sum(
             x["currentNativeResultPhysicalCreaseVerified"] for x in evidence),
