@@ -15,8 +15,10 @@
  */
 const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
-const {positiveCollinearOverlap}=
- require('./c1-ocjs-paper-collinear-overlap.cjs');
+// Reuse the existing exact binary64 paper predicate: a tiny genuine
+// overlap is a real M4 split obligation, not a toleranced non-event.
+const {exactPositiveCollinearPaperOverlap}=
+ require('./c1-real-occt-m5-visible-contour-parity.cjs');
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))frozen(v);Object.freeze(x);
 }return x;};
@@ -82,21 +84,37 @@ function auditC1OriginalCoProjectedDepthOrder({
   if(peer.sourceEdgeId===sourceEdgeId)continue;
   const [u,v]=coords(peer.sourceEdgeId,peer.originalParameterRange),
    s=project(u)[view],t=project(v)[view];
-  if(dist2(s,t)<=1e-8||!positiveCollinearOverlap(p,q,s,t))
-   continue;
+  if(!exactPositiveCollinearPaperOverlap(p,q,s,t))continue;
   const across=dist2(s,t);
   const near=lineError(s)<=1e-9&&lineError(t)<=1e-9;
   const scalar0=fraction(s),scalar1=fraction(t);
   const start=Math.max(0,Math.min(scalar0,scalar1)),
    end=Math.min(1,Math.max(scalar0,scalar1));
-  if(!(end>start))continue;
+  // Exact paper overlap can be positive even when a floating projection
+  // fraction rounds both ends to the same binary64 value. Never discard
+  // that competing original 3D source or sign the whole candidate.
+  if(!(end>start)){
+   hasPartialOrTie=true;
+   comparisons.push({peerSourceEdgeId:peer.sourceEdgeId,
+    peerOriginalParameterRange:[...peer.originalParameterRange],
+    overlapCandidateParameterRange:null,peerRayStatus:peer.status,
+    status:'exact-positive-overlap-unresolved-parameter-fraction',
+    depthDifferenceAtEndsMm:null});
+   continue;
+  }
   const base={peerSourceEdgeId:peer.sourceEdgeId,
    peerOriginalParameterRange:[...peer.originalParameterRange],
    overlapCandidateParameterRange:[start,end],
    peerRayStatus:peer.status,
    exactPaperCollinearityVerified:near};
   // Positive partial overlap is not a complete source stroke.
-  if(!near||start>0||end<1||across<=1e-8){
+  // Fraction endpoints can round 1 ULP of real paper coverage away.
+  // Use literal source-axis endpoints to prove WHOLE paper coverage.
+  const axis=Math.abs(du)>=Math.abs(dv)?'u':'v';
+  const wholePaperCovered=
+   Math.min(s[axis],t[axis])<=Math.min(p[axis],q[axis])&&
+   Math.max(s[axis],t[axis])>=Math.max(p[axis],q[axis]);
+  if(!near||!wholePaperCovered||start>0||end<1||across<=1e-8){
    hasPartialOrTie=true;
    comparisons.push({...base,status:'partial-or-ambiguous-coproject-overlap',
     depthDifferenceAtEndsMm:null});
