@@ -22,14 +22,11 @@ const {verifiedConvexMeshHalfspaces}=
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
-const mappings={
- 'HV':{H:'v',V:'u'}, // H.v is y, V.u is x? actually shared X: H.u / V.u
- 'VW':{V:'v',W:'v'},
- 'HW':{H:'v',W:'u'}
-};
-// H/V shared x must use u for both; annotate and freeze the single
-// shared-physical-axis lookup rather than inferring positions by drawing.
-mappings.HV={H:'u',V:'u'};
+const mappings=Object.freeze({
+ HV:Object.freeze({H:'u',V:'u'}), // common X
+ VW:Object.freeze({V:'v',W:'v'}), // common Z
+ HW:Object.freeze({H:'v',W:'u'})  // common Y
+});
 function normalize(points,label){
  if(!Array.isArray(points)||points.length<4||points.length>16)
   throw new TypeError('4..16 independently detected view vertices required');
