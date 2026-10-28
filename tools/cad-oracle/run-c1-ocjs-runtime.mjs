@@ -35,6 +35,8 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1Original3DSourceGapDyadicWitness}=
+ require('../../workbench/c1-original-3d-source-gap-dyadic-forensics.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -775,6 +777,25 @@ for(const [index,geometry] of general.entries()){
    'exact-original-3d-native-source-positive-gap'||
    x.exactNativeOriginal3DSourceCoverage?.status===
    'unreconstructable-original-3d-source-parameter')));
+
+ // Rebind the ACTUAL missing native source-parameter tails to the original
+ // M0 3D physical edge. Exact dyadic V/H/W span signs distinguish a genuine
+ // positive source-space gap from a gap hidden by rounded paper interpolation.
+ // This is an unsigned forensic report, not generated TopoDS history or V5.
+ const originalGapForensics=exactGapRows.map(x=>{
+  const gaps=x.exactNativeOriginal3DSourceCoverage?.
+   positiveLengthUncoveredIntervals;
+  if(!Array.isArray(gaps))return null;
+  const proof=auditC1Original3DSourceGapDyadicWitness({
+   geometry,view:x.view,sourceEdgeId:x.sourceEdgeId,
+   uncoveredIntervals:gaps
+  });
+  assert.equal(proof.exact3DPositiveLengthGaps,gaps.length);
+  assert.equal(proof.originalGeneratedTopoDSHistoryCertified,false);
+  assert.equal(proof.globalContinuousVisibilityCertified,false);
+  assert.equal(proof.signedV5ActionCount,0);
+  return proof;
+ });
 
  // An independently valid M5 paper hull source may still lack exact
  // true OCCT generated original physical 3D source coverage. Do not
@@ -2226,7 +2247,8 @@ for(const [index,geometry] of general.entries()){
    audited.counts.exactNative3DSourceParameterCovered,
   scopedPaperFullButNative3DPositiveGap:
    audited.counts.scopedPaperFullButNative3DPositiveGap,
-  exactNativeSourceGaps:exactGapRows.map(x=>({
+  exactNativeSourceGaps:exactGapRows.map((x,i)=>({
+   originalM0DyadicGapWitness:originalGapForensics[i],
    view:x.view,sourceEdgeId:x.sourceEdgeId,
    status:x.exactNativeOriginal3DSourceCoverage?.status,
    scopedPaperCandidateFullButNative3DGap:
