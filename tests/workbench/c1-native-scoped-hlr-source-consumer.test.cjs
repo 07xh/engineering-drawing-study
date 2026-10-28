@@ -3,7 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {auditC1NativeScopedHLRSourceConsumer:audit}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
-const {exactCandidateIntervalCoverage}=
+const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
 function fixture(){
  const geometry={id:'g',data:{points:{
@@ -336,5 +336,48 @@ test('rounded paper endpoints cannot impersonate exact 3D vertex topology',()=>{
  const r=audit(x),candidate=r.views.V.visible[0].paperDerivedOriginalSourceParameterCandidates[0];
  assert.deepEqual(candidate.paperDerivedOriginal3DEndpointVertexCandidates,[null,null]);
  assert.equal(candidate.actualNativeTopoDSParameterHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('exact binary64 HLR class partition detects positive overlap, not an exactly shared endpoint',()=>{
+ const touch=exactCandidateVisibilityClassOverlap(
+  [[0,0.5]],[[0.5,1]]);
+ assert.equal(touch.hasPositiveLengthVisibleHiddenClassConflict,false);
+ assert.deepEqual(touch.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,[]);
+ const next=0.5000000000000001;
+ const separated=exactCandidateVisibilityClassOverlap(
+  [[0,0.5]],[[next,1]]);
+ assert.equal(separated.hasPositiveLengthVisibleHiddenClassConflict,false);
+ const real=exactCandidateVisibilityClassOverlap(
+  [[0,0.8],[0.8,1]],[[0.2,0.6],[0.6,0.9]]);
+ assert.deepEqual(real.paperDerivedVisibleOriginalSourceParameterUnion,[[0,1]]);
+ assert.deepEqual(real.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,[[0.2,0.9]]);
+ assert.equal(real.hasPositiveLengthVisibleHiddenClassConflict,true);
+ assert.equal(real.actualNativeOcctFullVisibilityCertification,false);
+ assert.equal(real.officialEngineeringLineStyle,'undetermined');
+ assert.throws(()=>exactCandidateVisibilityClassOverlap([[0,NaN]],[]),/interval/);
+});
+test('native source-scoped HLR never treats simultaneously visible and hidden original 3D t intervals as certified',()=>{
+ const x=fixture(),view='V',scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+ const w=x.witness(view,x.id0);
+ scoped.rows[0].hidden=[{...w,hlrClass:'hidden-sharp'}];
+ x.cad.hiddenSharpViews[view]=[{
+  ...x.paper(view,x.id0),projectedOriginalEdgeCandidates:[x.id0]
+ }];
+ scoped.nativeSourceScopedOutputEdgeCount=2;
+ scoped.paperOnlyScopedOutputEdgeCount=2;
+ const r=audit(x),row=r.views.V.sourceParameterCandidates[0];
+ assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
+ assert.equal(row.paperDerivedPositiveLengthVisibleHiddenConflictDetected,true);
+ assert.deepEqual(row.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,[[0,1]]);
+ assert.deepEqual(row.paperDerivedVisibleCandidateParameterUnion,[[0,1]]);
+ assert.deepEqual(row.paperDerivedHiddenCandidateParameterUnion,[[0,1]]);
+ assert.equal(row.fullOriginalPaperCandidateCoverageWithoutClassConflict,false);
+ assert.equal(r.paperDerivedVisibleHiddenSourceConflictsDetected,true);
+ assert.equal(r.counts.projectedSourcesWithVisibleHiddenCandidateConflicts,1);
+ assert.equal(r.counts.positiveLengthVisibleHiddenCandidateConflictIntervalCount,1);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.globalContinuousVisibilityCertified,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
  assert.equal(r.signedV5ActionCount,0);
 });
