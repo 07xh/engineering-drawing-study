@@ -45,6 +45,7 @@ assert.ok(bytes>=50_000_000,'true pinned HLR WASM binary absent');
 const entry=pathToFileURL(resolve(pkg,'dist/node.js')).href;
 const {default:init}=await import(entry);
 const t0=performance.now();
+process.env.DRAFTAI_OCJS_DS_TRACE='1';
 const oc=await init();
 const initMs=performance.now()-t0;
 const xyz=(x,y,z)=>({x,y,z});
