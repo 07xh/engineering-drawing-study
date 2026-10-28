@@ -155,9 +155,11 @@ function mount(container,{onPick}={}){
    const g=new THREE.BufferGeometry();
    g.setAttribute('position',new THREE.Float32BufferAttribute(arr,3));
    g.computeVertexNormals();
-   root.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({
+   const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({
     color:0x8ab9e9,transparent:true,opacity:.13,
-    depthWrite:false,side:THREE.DoubleSide})));
+    depthWrite:false,side:THREE.DoubleSide}));
+   mesh.userData.objectId=obj.id;
+   root.add(mesh);
   }
  }
  function build(scene){
@@ -211,11 +213,14 @@ function mount(container,{onPick}={}){
    certifiedEngineeringStroke:false};
   root.add(line);features.push(line);pickable.push(line);
  }
- function update(scene,{selectedIds=[],selectedSourceFeature=null,camera:inputCamera}={}){
+ function update(scene,{selectedIds=[],selectedSourceFeature=null,
+  hiddenObjectIds=[],camera:inputCamera}={}){
   if(disposed)return;
   if(!scene){clear();currentScene=null;schedule();return;}
   if(scene!==currentScene)build(scene);
-  const owners=new Set(selectedIds);
+  const owners=new Set(selectedIds),hidden=new Set(hiddenObjectIds);
+  // Render and pick only user-enabled C2 auxiliary sources.
+  for(const node of root.children)node.visible=!hidden.has(node.userData.objectId);
   for(const feature of features){
    const {objectId,sourceFeatureKey:key}=feature.userData;
    const precise=!!selectedSourceFeature&&key===selectedSourceFeature;
@@ -237,7 +242,8 @@ function mount(container,{onPick}={}){
   if(!b.width||!b.height)return;
   pointer.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);
   raycaster.setFromCamera(pointer,camera);
-  const hit=raycaster.intersectObjects(pickable,false)[0]?.object?.userData;
+  const hit=raycaster.intersectObjects(pickable.filter(x=>x.visible),false)[0]
+   ?.object?.userData;
   if(hit?.objectId&&hit.sourceFeatureKey)onPick({
    objectId:hit.objectId,sourceFeatureKey:hit.sourceFeatureKey});
  });

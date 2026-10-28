@@ -36,6 +36,8 @@ const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
  require('../workbench/m5-reviewed-multibody-original-edge-rays.cjs');
 const {reviewC2OrthogonalBooleanFeatures,reviewC2FullPaperStrokeReadiness}=
  require('./c2-orthogonal-boolean-feature-review.cjs');
+const {buildC2GeneratedLinkedScene}=
+ require('./c2-generated-linked-scene.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {auditM0M3M4M5OriginalSources}=
@@ -362,7 +364,7 @@ function createUnifiedProjectSession(){
       geometry,latest.relations||[],{revision:latest.revision});
     const compositionContactEvidence=evaluateReviewedBoxContacts({
       geometry,revision:latest.revision}); // scoped relation, never CSG or V5
-    const scene=deriveGeometryScene({geometry,
+    let scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
     // Preserve already-merged generic M5 multi-mesh first-angle depth
     // witnesses and overlapping projected edge evidence. Scoped math only.
@@ -462,8 +464,15 @@ function createUnifiedProjectSession(){
           spatialStrokeConstructionDAG:dag,spatialV5ActionRelease:released};
         })():{scopedMotionParity:null,spatialStrokeConstructionDAG:null,
          spatialV5ActionRelease:null};
+    // Only the M0/M5-positive *OPEN* union creases become presentation
+    // segments. No derived geometry enters the reviewed input inventory,
+    // ray proof, M4 action graph or official V5 player.
+    const linkedC2=orthogonalBooleanFeatureAudit?
+      buildC2GeneratedLinkedScene({geometry,revision:latest.revision,
+       orthogonalBooleanFeatureAudit}):null;
+    if(linkedC2)scene=linkedC2.scene;
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
-      verified:false,status:'confirmed-input-only',scene,relationEvidence,
+      verified:false,status:'confirmed-input-only',scene,linkedC2,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
       compositionSeamRayEvidence,originalMultiBodyEdgeRays,
       orthogonalBooleanFeatureAudit,c2PaperRayProof,sceneDepthEvidence,
