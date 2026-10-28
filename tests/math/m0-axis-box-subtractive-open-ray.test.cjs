@@ -55,7 +55,7 @@ test('invalid original boxes, observer, and same stock/cutter identity are rejec
 test('V side view: through-bore vertical inner wall has a common strict front-stock slab, not a guessed hidden line',()=>{
  const ray=prove({source:line('BoreV',p(4,4,0),p(4,4,10)),
   stock,cutter,view:'V'});
- assert.equal(ray.originalStockRayStatus,'undetermined');
+ assert.equal(ray.originalStockRayStatus,'certified-strictly-hidden');
  assert.equal(ray.status,'certified-strictly-hidden');
  assert.equal(ray.reason,'common-front-stock-material-slab-outside-subtractive-cutter');
  assert.deepEqual(ray.commonFrontSubtractiveMaterialSlab,{
