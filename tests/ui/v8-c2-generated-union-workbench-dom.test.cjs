@@ -53,6 +53,8 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.match($('v7-proof').textContent,/V\/H\/W 投影区域精确边界/);
   assert.match($('v7-proof').textContent,/简单闭合回路 3 个/);
   assert.match($('v7-proof').textContent,/独立 M0–M5 全局纸面来源线段/);
+  assert.match($('v7-proof').textContent,/闭合投影边界中已有完整三维物理来源覆盖/);
+  assert.match($('v7-proof').textContent,/来源缺口/);
   assert.match($('v7-proof').textContent,/蓝\/橙\/灰点线仅为局部射线证据/);
   assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
@@ -72,6 +74,17 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
    x.getAttribute('data-c2-geometry-status')==='exact-2d-occupancy-only'&&
    x.getAttribute('data-visibility')==='undetermined'&&
    x.getAttribute('stroke-dasharray')==='8 3 2 3'));
+  assert.ok(region.every(x=>[
+   'full-original-or-generated-3d-physical-source','3d-source-interval-gap'
+  ].includes(x.getAttribute('data-c2-region-source-coverage'))));
+  assert.ok(region.filter(x=>
+   x.getAttribute('data-c2-region-source-coverage')===
+    'full-original-or-generated-3d-physical-source').every(x=>
+     x.getAttribute('data-c2-region-source-classes')!==''));
+  const sourceBoundKeys=new Set(region.map(x=>
+   x.getAttribute('data-c2-region-view')+':'+
+   x.getAttribute('data-c2-region-boundary-id')));
+  assert.equal(sourceBoundKeys.size,region.length);
   assert.equal(strokes.length,12,
    'six real 3D generated lines have two non-collapsed views each');
   assert.equal(new Set(strokes.map(x=>x.getAttribute('data-c2-generated-source-id'))).size,6);
