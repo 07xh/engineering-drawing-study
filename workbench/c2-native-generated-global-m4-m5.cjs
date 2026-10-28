@@ -24,7 +24,7 @@ const {originalCoProjectedAffineDepth}=
  require('../core/numeric/original-coproject-affine-depth.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
-const {certifyAxisBoxSourceOpenRay}=
+const {certifyAxisBoxSourceOpenRay,certifyAxisBoxSubtractiveOpenRay}=
  require('../core/numeric/axis-box-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
@@ -226,9 +226,21 @@ function auditC2GeneratedResultProjectedM4M5({
    else if(micro)status='unrenderable-positive-3d-subspan';
    else if(raw.unresolvedWholeEdge||aliasBlocked)
     status='unresolved-projected-depth-or-collinear-source-alias';
-   else if(operation==='cut')
-    status='unresolved-subtracted-void-continuous-ray-depth';
-   else{
+   else if(operation==='cut'){
+    // Reuse the SAME original M0 convex-box source ray theorem for each
+    // true M4 subspan. The open source parameter is affine and its exact
+    // cutter separation holds for ALL interior points, not a few samples.
+    // This is a useful partial proof but never a global GB/V5 signing path.
+    const evidence=certifyAxisBoxSubtractiveOpenRay({
+     source:{id:'NativeEdge'+raw.id+'Part'+k,from,to},
+     stock:boxes[0],cutter:boxes[1],view:raw.view
+    });
+    clear=evidence.status==='certified-clear';
+    hidden=evidence.status==='certified-strictly-hidden';
+    status=clear?'analytic-cut-whole-open-subspan-front-ray-clear':
+     hidden?'analytic-cut-whole-open-subspan-strictly-hidden':
+     'unresolved-subtracted-void-continuous-ray-depth';
+   }else{
     const candidate={id:'NativeEdge'+raw.id+'Part'+k,from,to},
      ray=FIRST_ANGLE_OBSERVER_RAYS[raw.view];
     // The existing closed-convex segment-clearance kernel is still the
@@ -264,9 +276,15 @@ function auditC2GeneratedResultProjectedM4M5({
    else uncertain++;
    totalSubspans++;
    subspans.push({...base,status,
-    continuousAllOpaqueComponentRayClearVerified:clear,
-    continuousUnionStrictInteriorOcclusionVerified:hidden,
-    exactBoxOpenSourceRayProofApplied:operation==='union'&&
+    continuousAllOpaqueComponentRayClearVerified:
+     operation==='union'&&clear,
+    continuousUnionStrictInteriorOcclusionVerified:
+     operation==='union'&&hidden,
+    continuousSubtractiveCutOpenRayClearVerified:
+     operation==='cut'&&clear,
+    continuousSubtractiveCutStrictHiddenVerified:
+     operation==='cut'&&hidden,
+    exactBoxOpenSourceRayProofApplied:
      boxes.length===solids.length,
     projectedAliasOrUncertainEventBlocked:
      raw.unresolvedWholeEdge||aliasBlocked,
@@ -303,6 +321,9 @@ function auditC2GeneratedResultProjectedM4M5({
   continuousM5SubspanCount:totalSubspans,
   positiveWholeOpenRayClearSubspans:positiveClear,
   positiveWholeStrictlyHiddenSubspans:positiveHidden,
+  partialSubtractiveCutRaySubspansProven:
+   operation==='cut'?positiveClear+positiveHidden:0,
+  wholeSubtractiveSceneAndGBLineStylesCertified:false,
   unsignedProjectedAliasSubspans:collinearAliased,
   strictlyForegroundOriginalCoProjectedSubspansCertified:
    strictForegroundAliasesResolved,
