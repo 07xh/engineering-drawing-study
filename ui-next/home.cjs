@@ -3,6 +3,7 @@ const TOOLS=[
  ['cylinder-cut-live','圆柱截切实验','圆柱截切及对应三视图逐笔绘制。','打开实验'],
  ['prism-cut-live','棱柱截切实验','棱柱截切与投影作图。','打开实验'],
  ['cone-cut-live','圆锥斜截 · 统一 V5 动态作图','圆锥斜截与同纸三视图。','打开实验'],
+ ['c2-native-cut-review','C2 通孔 · 真实 OCCT 局部 V5','从 GitHub Actions 下载真实 CAD 证明，手机本机导入已签发线条，其他线不绘制。','打开局部审核'],
  ['recognition-qa','本地识图质量检查','本地图像质量和图元候选检查。','打开检查'],
  ['auto-fillet-live','二维自动解题','修改尺寸，查看连接弧作图。','开始解题'],
  ['polygon-live','正多边形 · V5 动态作图','正三角形、正六边形逐笔作图。','打开动态作图'],
@@ -21,7 +22,7 @@ const TOOLS=[
  ['constraints','几何约束','查看几何条件的关系。','打开工具'],
  ['analysis','约束分析','核对几何条件。','打开工具']
 ];
-const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
+const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
  <div class="v7-head"><div><p class="next-home-kicker">V7 · 同一份本机项目</p><h1 id="v7-title">统一项目工作台</h1>

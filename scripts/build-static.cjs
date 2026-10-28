@@ -53,6 +53,7 @@ const files = [
   'labs/paper-geometry-core.js',
   'labs/paper-geometry-ui.js',
   'labs/composite-geometry.html',
+  'labs/c2-native-cut-review.html',
   'labs/composite-geometry-core.js',
   'labs/composite-geometry-ui.js',
   'labs/constraints.html',
@@ -110,6 +111,16 @@ esbuild.buildSync({
 esbuild.buildSync({
  entryPoints:[path.join(root,'labs/point-projection-live-entry.cjs')],
  outfile:path.join(out,'labs/point-projection-live-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
+/* Public C2 audit viewer bundles the ALREADY-EXISTING V5 player and
+ * motion renderer into one public file; internal workbench/ source files
+ * remain excluded from dist. No second math engine or animation player. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'labs/c2-native-cut-review-entry.cjs')],
+ outfile:path.join(out,'labs/c2-native-cut-review-bundle.js'),
  platform:'browser',format:'iife',bundle:true,minify:true,
  target:['es2020'],legalComments:'inline',sourcemap:false
 });

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="DraftAI 真实 OpenCascade C2 通孔局部认证结果：在本机导入 CI 证明，使用现有唯一 V5 回放。">
+<title>C2 通孔局部认证 · V5 回放 | DraftAI</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../site-ui.css">
+<link rel="stylesheet" href="../workbench-blue.css">
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}
+body{margin:0;background:#f2f6fc;color:#203a5b;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+main{width:min(1190px,calc(100% - 24px));margin:22px auto 52px}
+h1{font-size:clamp(25px,4vw,35px);margin:10px 0}h2{font-size:18px;margin:0 0 12px}
+p{line-height:1.75}.hint{font-size:13px;color:#596e89}
+.panel{border:1px solid #dce7f5;border-radius:16px;background:white;padding:clamp(14px,3vw,23px);margin-top:15px}
+.top{display:grid;grid-template-columns:minmax(230px,340px) minmax(0,1fr);gap:16px;align-items:start}
+label{font-size:13px;display:grid;gap:7px;font-weight:600}
+input[type=file]{max-width:100%;font:inherit;padding:10px;border:1px solid #b6c9e4;border-radius:10px}
+button,select{font:inherit;border-radius:9px;border:1px solid #b6cae5;color:#194e9e;background:white;min-height:42px;padding:8px 12px}
+button:disabled,input:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #2774d0;outline-offset:3px}
+.controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.controls input[type=range]{flex:1 1 150px;min-width:90px;accent-color:#2371c3}
+#cutBoard{background:#fff;display:block;width:100%;max-height:70vh;min-height:240px;border:1px solid #e1e9f4;border-radius:12px}
+.metric{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:15px 0}
+.metric div{text-align:center;background:#f0f6ff;border-radius:11px;padding:12px 6px;font-size:12px}
+.metric strong{display:block;font-size:22px;color:#165fae;font-variant-numeric:tabular-nums}
+#cutStatus{font-size:13px;color:#2b5a8c;line-height:1.75;min-height:45px}
+#cutStatus[data-error=true]{color:#9d3a26}
+.warning{border-left:4px solid #d08a35;background:#fff8ec;color:#79501b;border-radius:9px;padding:10px 13px;font-size:13px}
+#cutLineList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:180px;overflow:auto;padding:0;list-style:none}
+#cutLineList li{background:#f5f8fd;padding:8px;border-radius:8px;font-size:12px}
+small{color:#60738f}
+@media(max-width:760px){.top{grid-template-columns:1fr}#cutLineList{grid-template-columns:1fr}.metric strong{font-size:19px}}
+</style>
+</head>
+<body class="workbench-blue">
+<header class="site-topbar"><div class="site-topbar-inner">
+<a class="site-brand" href="../index.html">DraftAI <small>工程制图 · C2 局部认证</small></a>
+<nav class="site-nav"><a href="../index.html">首页</a><a href="composite-geometry.html">组合体实验</a><a href="../public-use.html">使用范围</a></nav>
+</div></header>
+<main>
+<h1>C2 矩形通孔 · 已认证图线回放</h1>
+<p class="hint">当前仅支持从仓库原生 OpenCascade CI 下载的 C2 通孔证明文件。局部工程线型使用现有唯一 V5 逐笔回放，未证明部分不会绘制。</p>
+<div class="top">
+<section class="panel">
+<h2>导入真实计算证据</h2>
+<p class="hint">打开 <a href="https://github.com/07xh/engineering-drawing-study/actions/workflows/c2-actual-through-hole-source-e2e.yml" rel="noopener noreferrer" target="_blank">C2 原生 OCCT 验收记录</a>，选择最新成功的 <code>main</code> 运行，在 Artifacts 下载 <code>genuine-c2-rectangular-through-hole-topods</code> 并解压，导入其中的 <code>original-c2-through-hole-m0-m4.json</code>。</p>
+<label for="cutProofFile">本机证明 JSON（不上载服务器）
+<input id="cutProofFile" type="file" accept=".json,application/json"></label>
+<p id="cutStatus" role="status" aria-live="polite">请导入最新成功的真实 OCCT C2 通孔证明。</p>
+<div class="metric" aria-label="证明范围">
+<div><strong id="cutSigned">—</strong>可回放认证区间</div>
+<div><strong id="cutSuppressed">—</strong>已证明被前景覆盖</div>
+<div><strong id="cutHeld">—</strong>未认证、不绘制</div>
+</div>
+<p class="warning">此页是<strong>不完整的计算证明回放</strong>，不是 C2 整题标准答案，也不支持上传题图自动求解。浏览器不重新运行 OCCT；只能回放所导入的证据，无法独立验证文件是否经过可信 CI。请从上方官方仓库工作流取得文件。</p>
+</section>
+<section class="panel">
+<h2>第一角法 V / H / W 同纸局部图线</h2>
+<svg id="cutBoard" viewBox="0 0 760 550" role="img" aria-label="本机导入的经认证通孔局部线条 V5 动画"><g id="cutDraw"></g></svg>
+<div class="controls" style="margin-top:12px">
+<button id="cutPlay" type="button" disabled>播放</button><button id="cutPrev" type="button" disabled>上一步</button><button id="cutNext" type="button" disabled>下一步</button>
+<label for="cutSpeed">速度 <select id="cutSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<input id="cutSeek" type="range" min="0" max="1000" value="0" aria-label="V5 动画进度" disabled>
+<output id="cutPosition">0 / 0</output>
+</div>
+<p id="cutStep" class="hint" aria-live="polite">完成导入后可逐笔检查。</p>
+<ul id="cutLineList" aria-label="实际认证的正式工程图线清单"></ul>
+</section>
+</div>
+</main>
+<script defer src="c2-native-cut-review-bundle.js"></script>
+</body>
+</html>
