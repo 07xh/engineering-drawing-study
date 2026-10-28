@@ -622,7 +622,19 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      ' px；还需核对对应的实际毫米长度。':'点击原图的两个已知尺寸端点。');
  }
 
+ function setPhotoZoom(expanded){
+  const box=$('v7-photo-box'),button=$('v8-photo-zoom');
+  // Resizing only the rendered reference never alters original pixel
+  // coordinates, saved calibration, proof revisions, or the source image.
+  const open=expanded&&!box.hidden&&!$('v7-photo').hidden;
+  box.classList.toggle('v8-photo-expanded',open);
+  button.setAttribute('aria-pressed',String(open));
+  button.textContent=open?'恢复原图大小':'放大原题';
+  button.setAttribute('aria-label',open?
+   '恢复原题图片大小':'放大原题图片以核对端点');
+ }
  function closePhoto(){
+  setPhotoZoom(false);
   imageEpoch++;if(imageURL)URL.revokeObjectURL(imageURL);
   imageURL=null;$('v7-photo').hidden=true;
   $('v7-photo-box').hidden=true;
@@ -1914,6 +1926,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  ];
 
  $('v7-photo').addEventListener('load',paintPhotoMarkers);
+ $('v8-photo-zoom').addEventListener('click',()=>{
+  const box=$('v7-photo-box');
+  if(box.hidden||$('v7-photo').hidden)return;
+  setPhotoZoom(!box.classList.contains('v8-photo-expanded'));
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape'||!$('v7-photo-box').classList.contains('v8-photo-expanded'))return;
+  e.preventDefault();
+  setPhotoZoom(false);
+  $('v8-photo-zoom').focus?.();
+ });
  $('v7-photo-segment').addEventListener('change',()=>{
   $('v7-photo-point-status').textContent=photoMarkMessage();
  });

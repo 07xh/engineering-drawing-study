@@ -73,6 +73,9 @@ function homeHTML(){return `
     <img id="v7-photo" alt="当前项目在设备内保存的原题参考图片，点击确定量测端点" hidden>
     <svg id="v7-photo-marks" viewBox="0 0 1 1" preserveAspectRatio="xMidYMid meet"
      aria-label="原图两组量测线段及端点" aria-hidden="true"></svg>
+    <button type="button" id="v8-photo-zoom" class="v8-photo-zoom"
+     aria-controls="v7-photo" aria-pressed="false"
+     aria-label="放大原题图片以核对端点">放大原题</button>
    </div>
    <p id="v7-image-status" class="v7-note" role="status">尚未上传原图，可手动输入条件。</p>
    <details class="v8-source-advanced"><summary>原图标注与尺寸校准（按需展开）</summary>

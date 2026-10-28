@@ -66,6 +66,31 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   for(const id of ['v7-photo-box','v7-photo-marks','v7-photo-segment',
     'v7-photo-clear','v7-photo-point-status'])assert.ok($(id));
   assert.ok($('v7-photo-box').hidden);
+  assert.ok($('v8-photo-zoom'),'reference photo has an accessible zoom control');
+  click('v8-photo-zoom');
+  assert.equal($('v8-photo-zoom').getAttribute('aria-pressed'),'false',
+   'a missing photo cannot enter zoom mode');
+  // Exercise the real control with a visible reference without uploading to a server.
+  $('v7-photo-box').hidden=false;$('v7-photo').hidden=false;
+  click('v8-photo-zoom');
+  assert.equal($('v7-photo-box').classList.contains('v8-photo-expanded'),true);
+  assert.equal($('v8-photo-zoom').getAttribute('aria-pressed'),'true');
+  assert.match($('v8-photo-zoom').textContent,/恢复原图/);
+  const {clientToPhoto}=require('../../project/photo-measurements.cjs');
+  const small=clientToPhoto({clientX:100,clientY:50,
+   rect:{left:0,top:0,width:200,height:100},
+   naturalWidth:400,naturalHeight:200});
+  const enlarged=clientToPhoto({clientX:400,clientY:200,
+   rect:{left:0,top:0,width:800,height:400},
+   naturalWidth:400,naturalHeight:200});
+  assert.deepEqual(enlarged,small,
+   'zoom changes only CSS size, never original image coordinates');
+  const escape=new window.Event('keydown',{bubbles:true});
+  Object.defineProperty(escape,'key',{value:'Escape'});
+  document.dispatchEvent(escape);
+  assert.equal($('v7-photo-box').classList.contains('v8-photo-expanded'),false);
+  assert.equal($('v8-photo-zoom').getAttribute('aria-pressed'),'false');
+  $('v7-photo-box').hidden=true;$('v7-photo').hidden=true;
   click('v7-photo-clear');await tick();
   assert.match($('v7-photo-point-status').textContent,/0\/2 个端点/);
   for(const id of ['v7-candidate-id','v7-candidate-stage',
