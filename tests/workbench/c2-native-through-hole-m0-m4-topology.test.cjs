@@ -17,7 +17,7 @@ test('through-hole OCCT execution is REQUIRED in dedicated native-C2 CI, never s
  assert.equal(manifest.operation,'cut');
  assert.equal(manifest.components.length,2);
 });
-test('real BRepAlgoAPI_Cut: through-hole final source 24 edges, 16 native vertices, full M0/M4 and NO union M5/V5', {
+test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial positive Cut M5 rays and NO union V5', {
  skip:!native&&'actual OCP available in pinned dedicated native CI'
 },()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'draftai-c2-through-bore-'));
@@ -44,17 +44,33 @@ test('real BRepAlgoAPI_Cut: through-hole final source 24 edges, 16 native vertic
   assert.equal(m.currentNativeReported3DAndM0SourceCrossChecked,true);
   assert.equal(m.allNativeResultEdgeEndpointIsSameJunctionsReconciled,true);
   assert.equal(m.actualNativeBooleanOperation,'cut');
-  assert.equal(m.generatedEdgeContinuousM5SubspansRecomputed,false);
-  assert.equal(m.allFirstAngleWholeOriginalGeneratedEdgeRaysAudited,false);
-  assert.equal(m.counts.clear,0);
-  assert.equal(m.counts.hidden,0);
+  assert.equal(m.generatedEdgeContinuousM5SubspansRecomputed,true);
+  assert.equal(m.allFirstAngleWholeOriginalGeneratedEdgeRaysAudited,true);
+  assert.ok(m.counts.clear>0,'stock outward source rays must remain clear after subtraction');
+  assert.ok(m.subtractiveCutOriginalEdgeOpenRayProofs>0);
+  assert.equal(m.subtractiveCutOriginalEdgeOpenRayProofs,
+   m.counts.clear+m.counts.hidden);
+  assert.ok(m.rows.some(row=>row.verifiedSubtractiveFrontRayClear===true));
+  assert.ok(m.rows.filter(row=>row.verifiedSubtractiveFrontRayClear||
+    row.verifiedSubtractiveStrictlyHidden).every(row=>
+   row.officialEngineeringLineStyle==='undetermined'&&
+   row.V5ActionSignedOff===false));
   assert.equal(g.actualNativeBooleanOperation,'cut');
   assert.equal(g.sourceResultEdgeCount,24);
   assert.equal(g.VHWSourceRows,72);
   assert.equal(g.actualM4PairwiseSegmentViewChecks,828);
   assert(g.continuousM5SubspanCount>0,'real cut source MUST have partitioned projected geometry');
-  assert.equal(g.positiveWholeOpenRayClearSubspans,0);
-  assert.equal(g.positiveWholeStrictlyHiddenSubspans,0);
+  assert.ok(g.positiveWholeOpenRayClearSubspans>0);
+  assert.equal(g.partialSubtractiveCutRaySubspansProven,
+   g.positiveWholeOpenRayClearSubspans+
+    g.positiveWholeStrictlyHiddenSubspans);
+  assert.ok(g.rows.some(row=>row.subspans.some(span=>
+   span.continuousSubtractiveCutOpenRayClearVerified===true)));
+  assert.ok(g.rows.every(row=>row.subspans.every(span=>
+   span.continuousUnionStrictInteriorOcclusionVerified===false&&
+   span.continuousAllOpaqueComponentRayClearVerified===false&&
+   span.V5ActionSignedOff===false&&
+   span.officialEngineeringLineStyle==='undetermined')));
   assert.equal(g.allOfficialEngineeringLinesCertified,false);
   assert.equal(g.subtractiveCutM5WholeSceneOcclusionSigned,false);
   assert.equal(pack.completeSubtractiveBooleanM5RayVisibilityCertified,false);
