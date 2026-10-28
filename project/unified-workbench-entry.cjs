@@ -8,6 +8,7 @@ const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
+const {reviewC2BoxFields}=require('./c2-reviewed-preflight.cjs');
 const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
@@ -1347,6 +1348,25 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
  }
+ function updateC2Preflight(){
+  const snap=coordinator?.snapshot();
+  if(snap?.task!=='composition')return;
+  const locate=$('v8-c2-locate'),ack=$('v8-c2-ack');
+  if(locate.dataset.target)$(locate.dataset.target)?.removeAttribute('aria-invalid');
+  const occupied=!!(snap.objects.length||snap.conditions.length||
+   (snap.relations||[]).length||snap.affineProblem);
+  const values=Object.fromEntries(c2Fields.map(id=>[id,$(id).value]));
+  const review=reviewC2BoxFields(values,{occupied});
+  const status=$('v8-c2-preflight');
+  status.dataset.state=review.ready?'ready':'blocked';
+  status.textContent=review.message;
+  locate.dataset.target=review.fieldId||'';
+  locate.hidden=!review.fieldId;
+  if(review.fieldId)$(review.fieldId)?.setAttribute('aria-invalid','true');
+  ack.disabled=!review.ready;
+  if(!review.ready)ack.checked=false;
+  $('v8-c2-build').disabled=!review.ready||!ack.checked;
+ }
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
@@ -1360,6 +1380,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     fieldset.hidden=fieldset.dataset.v7Task!==snap.task;
   root.querySelector('.v7-nonpoint-actions').hidden=snap.task==='projection'||snap.task==='composition';
   refreshComposition();
+  updateC2Preflight();
   $('v7-spatial-boundary').textContent=
     snap.task==='composition'&&snap.affineProblem?
      '未知点：仅显示唯一解，虚实线尚未确定':
@@ -1911,8 +1932,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
  }
 
- $('v8-c2-ack').addEventListener('change',()=>{
-  $('v8-c2-build').disabled=!$('v8-c2-ack').checked;
+ $('v8-c2-ack').addEventListener('change',updateC2Preflight);
+ $('v8-c2-locate').addEventListener('click',()=>{
+  const id=$('v8-c2-locate').dataset.target,field=id?$(id):null;
+  if(!field)return;
+  field.focus?.();
+  field.scrollIntoView?.({block:'center',behavior:'auto'});
  });
  for(const id of c2Fields)for(const type of ['input','change'])
   $(id).addEventListener(type,()=>{
@@ -1925,12 +1950,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     // Saved user geometry stays intact but stale mathematics must vanish.
     if(session?.readSnapshot())session.invalidate();
     else render();
+    updateC2Preflight();
    }
   });
  $('v8-c2-build').addEventListener('click',()=>call(async()=>{
+  updateC2Preflight();
   const p=coordinator?.snapshot();
   if(p?.task!=='composition')throw Error('请先选择 C2 组合体任务');
-  if(!$('v8-c2-ack').checked)throw Error('请先人工确认两组尺寸');
+  if($('v8-c2-build').disabled)throw Error('请先补全两组尺寸并人工核对确认');
   if(p.objects.length||p.conditions.length||(p.relations||[]).length||
      p.affineProblem)
    throw Error('当前项目已有条件，请新建空组合体项目，避免覆盖原有对象');
@@ -1960,6 +1987,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v8-c2-status').textContent='两形体已保存到当前本机项目。已核对空间关系 '+
    result.compositionContactEvidence.pairCount+
    ' 对；完整工程线型与唯一 V5 未签收。';
+  updateC2Preflight();
   msg('C2 已确认两长方体几何，使用原有 M0/M2/M5 计算接触关系与三视图。不是完整组合体答案。');
  }));
  $('v7-c-new').addEventListener('click',()=>{
