@@ -612,30 +612,19 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     signedV5Action:false
    };
    if(typeof algorithm.DataStructure==='function'){
-    const trace=stage=>{
-     if(typeof process!=='undefined'&&
-        process.env?.DRAFTAI_OCJS_DS_TRACE==='1')
-      console.error('C1 real OCCT HLR DataStructure trace '+view+': '+stage);
-    };
-    trace('before-handle');
+    // Only the returned handle is an owned value. get(), EdgeMap() and
+    // FindKey() expose borrowed OCCT objects: deleting them corrupts
+    // the owning HLR algorithm's memory (verified in real WASM CI).
     const dsHandle=hold(algorithm.DataStructure());
-    trace('after-handle');
     if(dsHandle.IsNull()===false&&typeof dsHandle.get==='function'){
-     trace('before-get');
-     // get() returns a borrowed pointer: the native HLR algorithm owns it.
      const ds=dsHandle.get();
-     trace('after-get');
      if(typeof ds.EdgeMap==='function'){
-      trace('before-EdgeMap');
-      // EdgeMap() also returns a borrowed reference. NEVER delete it.
       const map=ds.EdgeMap();
-      trace('after-EdgeMap');
       originalDataStructureIndex={
        ...probeRealOcctHLRDataStructureSourceEdgeMap({
         edgeMap:map,originalSourceEdges:originalNativeEdgeHandles
        }),availability:'real-native-edge-map-inspected'
       };
-      trace('after-index-probe');
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
    }
