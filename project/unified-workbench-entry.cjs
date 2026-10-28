@@ -1199,7 +1199,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        partial.evidence.variableCount+'，残差 '+String(partial.evidence.residualMm)+
        ' mm。仅点约束数学证据，原图/完整作图/V5 均未签收。':
      partial.kind==='composition-evidence'?
-      '已确认组合体几何与 M2 关系：'+partial.relationEvidence.status+
+      '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。'+
        (partial.originalMultiBodyEdgeRays?
         'M5 原始三维棱线 '+partial.originalMultiBodyEdgeRays.originalSourceEdgeCount+
