@@ -131,7 +131,9 @@ function renderSameRunSignedC2Svg(certified){
  * all remaining physical generated BRep edges stay in a separate unsigned
  * inventory, and it is NEVER exported as a complete C2 result.
  */
-function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
+function signCertifiedNativeC2OpenRaySubspans({
+ math,nativeReport,revision,cutJointGate=null
+}){
  const graph=math?.globalPaperEvents,raw=nativeReport?.outputEdges;
  if(graph?.schema!=='draftai-c2-native-generated-m4-m5-global-paper-events/1'||
     graph.revision!==revision||!Array.isArray(graph.rows)||
@@ -139,6 +141,33 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
     math.allNativeResultEdgeEndpointIsSameJunctionsReconciled!==true||
     !Number.isSafeInteger(revision)||revision<1)
   throw new RangeError('fresh actual OCCT original M0/M4/M5 scene proof required');
+ const operation=math.actualNativeBooleanOperation;
+ if(!['union','cut'].includes(operation)||
+    operation!==nativeReport.actualNativeBooleanOperation)
+  throw new RangeError('native C2 V5 signer cannot change the original Boolean');
+ const cut=operation==='cut';
+ if(cut&&(
+   cutJointGate?.schema!=='draftai-c2-cut-native-m4-m5-joint-original-junction-gate/1'||
+   cutJointGate.sourceRevision!==revision||
+   cutJointGate.counts.positiveOpenRaySubspans!==
+    graph.partialSubtractiveCutRaySubspansProven||
+   cutJointGate.originalNativeConstructionIntentAuthorized!==false||
+   cutJointGate.globalGBEngineeringLineStylesCertified!==false||
+   cutJointGate.newUniqueV5Actions!==0))
+  throw new RangeError('original Cut V5 must follow complete same-run readonly native joint M0-M5 gate');
+ if(!cut&&cutJointGate!==null)
+  throw new RangeError('union signer cannot replay a Cut source proof');
+ const cutSource=new Map();
+ if(cut){
+  for(const item of cutJointGate.positiveSourceIntervals){
+   const key=item.view+'@'+item.nativeResultSourceEdgeOrdinal+'@'+
+    JSON.stringify(item.originalGeneratedEdgeParameterRange);
+   if(cutSource.has(key))throw new RangeError('duplicate original Cut M4 source interval');
+   cutSource.set(key,item);
+  }
+  if(cutSource.size!==cutJointGate.counts.positiveOpenRaySubspans)
+   throw new RangeError('incomplete original Cut joint source inventory');
+ }
  const byId=new Map(raw.map(e=>[e.finalTopoDSEdgeOrdinal,e]));
  if(byId.size!==raw.length||graph.VHWSourceRows!==3*raw.length)
   throw new RangeError('incomplete native C2 generated BRep source inventory');
@@ -147,12 +176,18 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
    'analytic-whole-open-subspan-front-ray-clear':
     'gb-t-4457.4-continuous-wide-visible-outline',
    'analytic-whole-open-subspan-strictly-hidden':
+    'gb-t-4457.4-thin-dashed-hidden-edge',
+   'analytic-cut-whole-open-subspan-front-ray-clear':
+    'gb-t-4457.4-continuous-wide-visible-outline',
+   'analytic-cut-whole-open-subspan-strictly-hidden':
     'gb-t-4457.4-thin-dashed-hidden-edge'
   },signed=[],unsigned=[],noLine=[],intents=[],steps=[],
   styleByIntentId=Object.create(null);
  const source={solver:'tools/c2_native_m0_m4_m5_proof_pack.cjs',
   revision,unit:'mm',
-  proofScope:'same-run-native-BRep-M0-M4-M5-two-convex-box-union',
+  proofScope:cut?
+   'same-run-native-BRep-cut-verified-closed-original-M0-M4-M5-partial':
+   'same-run-native-BRep-M0-M4-M5-two-convex-box-union',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
   evidenceSource:'fresh-real-OCCT-IsSame-continuous-M5-generated-edge'};
  const counts={positiveSignedVisible:0,positiveSignedHidden:0,
@@ -206,14 +241,46 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
      reason:'native-physical-dihedral-not-certified'});
     continue;
    }
-   const style=styles[span.status],clear=
+   const style=styles[span.status],clear=cut?
+    span.status==='analytic-cut-whole-open-subspan-front-ray-clear'&&
+     span.continuousSubtractiveCutOpenRayClearVerified===true&&
+     span.continuousSubtractiveCutStrictHiddenVerified===false:
     span.status==='analytic-whole-open-subspan-front-ray-clear'&&
-    span.continuousAllOpaqueComponentRayClearVerified===true&&
-    span.continuousUnionStrictInteriorOcclusionVerified===false,
-    hidden=span.status==='analytic-whole-open-subspan-strictly-hidden'&&
-    span.continuousUnionStrictInteriorOcclusionVerified===true&&
-    span.continuousAllOpaqueComponentRayClearVerified===false;
-   if(!style||!(clear||hidden)||span.projectedAliasOrUncertainEventBlocked!==false||
+     span.continuousAllOpaqueComponentRayClearVerified===true&&
+     span.continuousUnionStrictInteriorOcclusionVerified===false,
+    hidden=cut?
+     span.status==='analytic-cut-whole-open-subspan-strictly-hidden'&&
+      span.continuousSubtractiveCutStrictHiddenVerified===true&&
+      span.continuousSubtractiveCutOpenRayClearVerified===false:
+     span.status==='analytic-whole-open-subspan-strictly-hidden'&&
+      span.continuousUnionStrictInteriorOcclusionVerified===true&&
+      span.continuousAllOpaqueComponentRayClearVerified===false;
+   const cutEvidence=cut?cutSource.get(row.view+'@'+
+    row.sourceNativeResultEdgeOrdinal+'@'+JSON.stringify(range)):null;
+   const certifiedCutOriginalClosedPhysicalAndPaper=cut&&
+    cutEvidence?.independentlyNativeSourceOpenRayProof===true&&
+    cutEvidence.independentlyTopoDSOriginal3DSourceEndpointPairCertified===true&&
+    cutEvidence.bothOriginal3DClosedEndpointRaysAgreeWithOpenM5===true&&
+    cutEvidence.allOriginalNativeEndpointPaperAliasDepthsResolved===true&&
+    cutEvidence.allCurrentPhysicalCoProjectedSourcesStrictlyBehindOrAbsent===true&&
+    cutEvidence.officialGBEngineeringLineStyle==='undetermined'&&
+    cutEvidence.constructionIntentAuthorized===false&&
+    cutEvidence.signedV5Action===false&&
+    cutEvidence.positiveOpenM5RayStatus===(clear?'strictly-clear':'strictly-hidden')&&
+    cutEvidence.actualOriginal3DEndpointAndPaperAliasDepthEvidence.every(v=>
+     v.nativeOriginalEndpointVerified===true&&
+     v.allProjectedEndpointDepthEventsResolved===true&&
+     v.physical3DAndPaperOnlyDepthComparisons.every(d=>
+      !clear||d.depthStatus!=='candidate-strictly-behind-paper-alias'));
+   // For Cut, a paper-only crossing need not be a physical junction.
+   // We DO require actual native TopoDS source endpoints, exact 3D paper
+   // depth ordering, a continuous open ray AND independently proven
+   // closed rays of the SAME M5 style. All other Cut lines stay unsigned.
+   if(!style||!(clear||hidden)||
+      (cut&&!certifiedCutOriginalClosedPhysicalAndPaper)||
+      (!cut&&['analytic-cut-whole-open-subspan-front-ray-clear',
+       'analytic-cut-whole-open-subspan-strictly-hidden'].includes(span.status))||
+      span.projectedAliasOrUncertainEventBlocked!==false||
       span.continuousSourceGeometryIsOriginalNativeTopoDSEdge!==true||
       span.nativeActualTopologySourceNotIndependentlyAttestedHere!==true){
     counts.unsignedPhysicalIntervals++;unsigned.push({...base,
@@ -247,6 +314,11 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
      sheetTransform)]});
    styleByIntentId[id]=style;
    signed.push({...base,actionId,standardEngineeringLineStyle:style,
+    ...(cut?{
+     cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays:true,
+     cutOriginalM4PaperAliasStrictDepthReverified:true,
+     completeC2CutResultCertified:false
+    }:{}),
     fullOriginalC2NativeM0M4M5ProofVerifiedInFreshRun:true,
     signedByExistingConstructionIntentDagAndSingleV5:true});
    if(clear)counts.positiveSignedVisible++;
@@ -275,7 +347,7 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
     suppression.suppressed.length+suppression.held.length!==unsigned.length||
     suppression.supplementaryV5ActionCount!==0)
   throw new RangeError('original native source back-edge suppression drifted');
- const full=signed.length>0&&suppression.held.length===0;
+ const full=!cut&&signed.length>0&&suppression.held.length===0;
  return Object.freeze({
   schema:'draftai-c2-trusted-native-partial-construction-intent-v5/1',
   status:full?'all-two-axis-box-union-native-physical-sources-signed-or-strictly-suppressed':
@@ -293,6 +365,10 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
    full&&suppression.suppressed.length===0,
   allNativePhysicalSourcesSignedOrProvenSuppressed:full,
   boundedTwoBoxUnionFullFormalV5Certified:full,
+  actualOriginalBooleanOperation:operation,
+  onlyCertifiedCutNativeOriginalClosedEndpointAndPaperDepthStrokes:
+   cut&&signed.every(x=>x.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays===true),
+  entireCutOriginalDrawingSigned:false,
   sheetTransform,intents,steps,timeline,
   originalV5PlayerFactory:'workbench/teaching-timeline-v5.js',
   canonicalConstructionIntentDagChecked:true,
