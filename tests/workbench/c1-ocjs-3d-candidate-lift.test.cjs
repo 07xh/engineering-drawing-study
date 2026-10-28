@@ -142,3 +142,32 @@ test('2D aliases at different 3D depths remain separate rounded candidates, not 
  assert.ok(good.sourceCandidate3DLifts.every(x=>
   x.sourceParameterWasClampedForPaperOnly===false&&x.v5Authorized===false));
 });
+
+test('real C1 V/H/W source lift holds positive interior subnormal A tails rounded to t=0',()=>{
+ const g={id:'C1NativeInverse',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:10,y:10,z:10}},
+  edges:[['A','B']]}};
+ for(const view of ['V','H','W']){
+  const tiny={u:Number.MIN_VALUE,v:Number.MIN_VALUE};
+  const end={u:10,v:10};
+  const r=lift(g,view,tiny,end);
+  assert.deepEqual(r.paperCollinearSourcesRoundedOutsideOriginalBounds,[]);
+  assert.equal(r.sourceCandidate3DLifts.length,1);
+  const c=r.sourceCandidate3DLifts[0];
+  assert.deepEqual(c.originalSourceParameterRange,[0,1],
+   'rounded numeric interval is deliberately retained only as display candidate');
+  assert.equal(c.sourceParameterWasClampedForPaperOnly,true);
+  assert.equal(c.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly,true);
+  assert.equal(c.exactBinary64RoundedInverseBoundaryWitness.
+   anyRoundedInverseBoundaryAlias,true);
+  assert.equal(c.originalSourceExactParameterCoverageFromRoundingProven,false);
+  assert.equal(c.v5Authorized,false);
+  const reverse=lift(g,view,end,tiny).sourceCandidate3DLifts[0];
+  assert.equal(reverse.sourceParameterWasClampedForPaperOnly,true);
+  assert.equal(reverse.exactBinary64RoundedInverseBoundaryWitness.rows[1].
+   roundedInverseAliasesDifferentReceivedPaperPoint,true);
+  const literal=lift(g,view,{u:0,v:0},end).sourceCandidate3DLifts[0];
+  assert.equal(literal.sourceParameterWasClampedForPaperOnly,false);
+  assert.equal(literal.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly,false);
+ }
+});

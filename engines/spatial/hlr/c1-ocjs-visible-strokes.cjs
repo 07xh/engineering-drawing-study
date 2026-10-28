@@ -16,6 +16,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
+const {auditC1RoundedInversePaperBoundaryAlias}=
+ require('../../../workbench/c1-rounded-inverse-paper-boundary-alias.cjs');
 const {auditC1ScopedHLRGeneratedEdgeMatch}=
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
@@ -136,14 +138,20 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   if(![ta,tb].every(finite)||ta<-1e-6||ta>1+1e-6||
      tb<-1e-6||tb>1+1e-6)
    throw new RangeError('HLR endpoint lies outside original source edge');
-  const paperRounded=!(within(from)&&within(to))||
+  const outsideOriginal=!(within(from)&&within(to))||
    ta<0||ta>1||tb<0||tb>1;
-  if(paperRounded)rejectedOutsideOriginalSource.push(sourceEdgeId);
-  // Preserve real OCCT display candidates with a *separate* untrusted
-  // rounding witness. No consumer may treat a rounded [0,1] as native
-  // exact original-source coverage without independent M5 source proof.
+  if(outsideOriginal)rejectedOutsideOriginalSource.push(sourceEdgeId);
+  // The inverse can ALSO round an interior received paper coordinate to
+  // exactly t=0/1 without any out-of-domain point or explicit clamp.
+  // Keep its 3D display lift, but hold it as paper-rounded evidence.
   const clamp=t=>Math.max(0,Math.min(1,t));
   const t0=clamp(ta),t1=clamp(tb);
+  const roundedBoundary=auditC1RoundedInversePaperBoundaryAlias({
+   sourceFrom:pa,sourceTo:pb,measuredFrom:from,measuredTo:to,
+   roundedInverseParameters:[t0,t1]
+  });
+  const paperRounded=outsideOriginal||
+   roundedBoundary.anyRoundedInverseBoundaryAlias;
   const point=t=>({x:a.x+(b.x-a.x)*t,
    y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
   const fromCandidate3D=point(t0),toCandidate3D=point(t1);
@@ -158,6 +166,9 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
    originalSourceParameterRange:[Math.min(t0,t1),Math.max(t0,t1)],
    paperOnlyUnclampedOriginalSourceParameters:[ta,tb],
    sourceParameterWasClampedForPaperOnly:paperRounded,
+   sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly:
+    roundedBoundary.anyRoundedInverseBoundaryAlias,
+   exactBinary64RoundedInverseBoundaryWitness:roundedBoundary,
    originalSourceExactParameterCoverageFromRoundingProven:false,
    fromCandidate3D,toCandidate3D,
    originalSourceCurveType:'straight-m0-polyhedral-edge',

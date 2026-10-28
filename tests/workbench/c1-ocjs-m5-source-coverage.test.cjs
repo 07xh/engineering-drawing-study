@@ -476,8 +476,15 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
   // rounding; it must never be used to fill a positive 3D source gap.
   const rounded=structuredClone(stroke);
   rounded.from.u+=5e-7;
-  assert.equal(exactSourceCoverage({...input,strokes:[rounded]})
-   .entireOriginalParameterIntervalCovered,true);
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[rounded]}),
+   /rounded inverse boundary/,
+   'an interior received paper point cannot impersonate original M0 t=0');
+  rounded.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=true;
+  rounded.sourceCandidate3DLifts[0].
+   originalSourceExactParameterCoverageFromRoundingProven=false;
+  const held=exactSourceCoverage({...input,strokes:[rounded]});
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
   for(const change of [
    s=>{s.from.u+=0.01;},
    s=>{s.to.v+=0.01;},
@@ -488,7 +495,7 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
    const forged=structuredClone(stroke);
    change(forged);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift|out-of-domain native paper endpoint/,
+    /unverified original native BRep source lift|out-of-domain native paper endpoint|finite native paper endpoints/,
     'a forged HLR stroke cannot close an otherwise authentic original 3D source');
   }
  }
@@ -564,7 +571,7 @@ test('C1 native V/H/W gap evidence refuses forged original BRep XYZ, curve and 3
    const forged=structuredClone(cad.views[view][0]);
    mutate(forged.sourceCandidate3DLifts[0]);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift/,
+    /unverified original native BRep source lift|bounded rounded inverse parameters/,
     'a forged native source must not close the original 3D interval');
   }
   const reversed=structuredClone(cad.views[view][0]);
@@ -756,4 +763,41 @@ test('C1 original source identity stays distinct for paper-coincident edges at d
  assert.equal(proof.continuousM5VisibilityProven,false);
  assert.equal(proof.officialEngineeringLineStyleCertified,false);
  assert.equal(proof.signedV5Action,false);
+});
+
+test('C1 M5 independently holds native interior paper t=0 aliases even when rounded lift claims full [0,1]',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0],lift=stroke.sourceCandidate3DLifts[0];
+  const first=project(geometry.data.points.A)[view];
+  const axis=project(geometry.data.points.B)[view].u!==first.u?'u':'v';
+  stroke.from[axis]=Number.MIN_VALUE;
+  lift.sourceParameterWasClampedForPaperOnly=true;
+  lift.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly=true;
+  lift.originalSourceExactParameterCoverageFromRoundingProven=false;
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  const held=exactSourceCoverage(input);
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(held.positiveLengthUncoveredIntervals,[[0,1]]);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
+  assert.equal(held.signedV5Action,false);
+  const forged=structuredClone(stroke);
+  forged.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+   /rounded inverse boundary/);
+  const forgedWitness=structuredClone(stroke);
+  forgedWitness.sourceCandidate3DLifts[0].
+   sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forgedWitness]}),
+   /forged native inverse boundary/);
+  const proven=exactSourceCoverage({...input,
+   projectedFromModelMm:project(geometry.data.points.A)[view],
+   projectedToModelMm:project(geometry.data.points.B)[view],
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(proven.entireOriginalParameterIntervalCovered,true,
+   'only independent literal M0/M5 endpoint proof may retain the candidate');
+  assert.equal(proven.signedV5Action,false);
+ }
 });
