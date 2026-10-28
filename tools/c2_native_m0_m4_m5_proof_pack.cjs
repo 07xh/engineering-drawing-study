@@ -402,6 +402,20 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   booleanOperation:operation,sourceIds:[...ids],provenance,
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
+  subtractiveCutPartialRayEvidence:operation==='cut'?{
+   scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
+   nativeSourceViewClearRayProofs:math.counts.clear,
+   nativeSourceViewStrictHiddenRayProofs:math.counts.hidden,
+   nativeSourceViewUnresolvedRayCount:math.counts.unresolvedDepth,
+   m4SubspanClearRayProofs:graph.positiveWholeOpenRayClearSubspans,
+   m4SubspanStrictHiddenRayProofs:graph.positiveWholeStrictlyHiddenSubspans,
+   m4SubspanUnresolvedRayCount:graph.unresolvedSubspans+
+    graph.unsignedProjectedAliasSubspans,
+   onlyOpenSourceInteriorVerified:true,
+   allNativeEdgeEndpointAndGlobalDepthJunctionsCertified:false,
+   fullEngineeringLineStyleAndV5Certified:false,
+   signedV5ActionCount:0
+  }:null,
   verifiedNativeGeneratedEdges:nativeReport.resultEdgeCount,
   actualM4PairwiseSegmentViewChecks:graph.actualM4PairwiseSegmentViewChecks,
   continuousM5SubspanCount:graph.continuousM5SubspanCount,
@@ -431,6 +445,14 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   actualGeneratedEdges:packed.verifiedNativeGeneratedEdges,
   pairViewChecks:packed.actualM4PairwiseSegmentViewChecks,
   subspanCount:packed.continuousM5SubspanCount,
+  cutProvenWholeSourceViewRayCount:
+   packed.subtractiveCutPartialRayEvidence===null?0:
+   packed.subtractiveCutPartialRayEvidence.nativeSourceViewClearRayProofs+
+   packed.subtractiveCutPartialRayEvidence.nativeSourceViewStrictHiddenRayProofs,
+  cutProvenOpenM4SubspanRayCount:
+   packed.subtractiveCutPartialRayEvidence===null?0:
+   packed.subtractiveCutPartialRayEvidence.m4SubspanClearRayProofs+
+   packed.subtractiveCutPartialRayEvidence.m4SubspanStrictHiddenRayProofs,
   officiallySignedNativeSubspanCount:
    certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
