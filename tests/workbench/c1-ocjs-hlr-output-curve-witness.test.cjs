@@ -67,3 +67,28 @@ test('nonline, nonfinite, degenerate parameters or invalid first-angle view neve
  assert.throws(()=>verify({...good(),projectedEndpoints:[
   {u:2,v:3},{u:2,v:3}]}),/collapsed/);
 });
+
+
+test('strict positive subnormal projected HLR segment is not mistaken for a collapsed edge',()=>{
+ const q={view:'W',projectedEndpoints:[{u:0,v:0},
+  {u:Number.MIN_VALUE,v:0}],parameterRange:[0,1],
+  curveKind:'line',curveSamples:[0,0.25,0.5,0.75,1].map(f=>
+   pt(Number.MIN_VALUE*f,0))};
+ const r=verify(q);
+ assert.equal(r.actualOCCTHLRFlattenedBRepLineVerified,true);
+ assert.equal(r.actualOCCTHLRCurveOrientation,'same-as-vertices');
+ assert.equal(r.formalStandardLineStyle,'undetermined');
+ assert.equal(r.v5Authorized,false);
+});
+test('sub-micrometre fake HLR curve samples cannot pass the old absolute tolerance',()=>{
+ const q={view:'H',projectedEndpoints:[{u:0,v:0},{u:1e-10,v:0}],
+  parameterRange:[0,1],curveKind:'line',
+  curveSamples:[0,0.25,0.5,0.75,1].map(f=>pt(f*1e-10,0))};
+ assert.equal(verify(q).actualOCCTHLRFlattenedBRepLineVerified,true);
+ const wrongEndpoint={...q,curveSamples:q.curveSamples.map(p=>({...p}))};
+ wrongEndpoint.curveSamples[0].x=2e-10;
+ assert.throws(()=>verify(wrongEndpoint),/endpoints disagree/);
+ const nonaffine={...q,curveSamples:q.curveSamples.map(p=>({...p}))};
+ nonaffine.curveSamples[2].y=2e-10;
+ assert.throws(()=>verify(nonaffine),/nonaffine/);
+});

@@ -72,3 +72,30 @@ test('zero-length OCCT HLR output is skipped without a false line or V5 action',
  const q=fakeNativeHLREdge({from:paper3(4,4),to:paper3(4,4)});
  assert.equal(read(q),null);
 });
+
+
+test('real positive HLR source tails below old 1e-7 cutoff survive as unsigned edges',()=>{
+ for(const view of ['V','H','W']){
+  const q=fakeNativeHLREdge({from:paper3(0,0),to:paper3(1e-10,0)});
+  const r=read({...q,view});
+  assert.ok(r,'positive source tail must not silently vanish');
+  assert.deepEqual(r.to,{u:1e-10,v:0});
+  assert.equal(r.actualOCCTHLRFlattenedBRepLineVerified,true);
+  assert.equal(r.originalTopoDSSourceForHLREdgeRecovered,false);
+  assert.equal(r.v5Authorized,false);
+ }
+ const subnormal=read(fakeNativeHLREdge({
+  from:paper3(0,0),to:paper3(Number.MIN_VALUE,0)
+ }));
+ assert.ok(subnormal);
+ assert.equal(subnormal.to.u,Number.MIN_VALUE);
+ assert.equal(subnormal.formalStandardLineStyle,'undetermined');
+});
+test('tiny HLR output cannot hide wrong endpoints or nonaffine interiors under absolute mm tolerance',()=>{
+ assert.throws(()=>read(fakeNativeHLREdge({
+  from:paper3(0,0),to:paper3(1e-10,0),wrongCurveStart:2e-10
+ })),/endpoints disagree/);
+ assert.throws(()=>read(fakeNativeHLREdge({
+  from:paper3(0,0),to:paper3(1e-10,0),interiorBump:2e-10
+ })),/nonaffine/);
+});
