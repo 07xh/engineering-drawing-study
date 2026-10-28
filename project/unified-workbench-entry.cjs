@@ -944,12 +944,19 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      (signed?'#163954':'#b98639');
     const node=shape(action.kind==='line'?'line':'circle',{
      stroke:color,fill:action.kind==='point'?color:'none',
-     'stroke-width':signed&&!hidden?3:signed?1.7:1.4,
-     'stroke-dasharray':hidden?'7 4':signed?'none':'4 4',
+     // Certified physical strokes inherit the ORIGINAL V5 GB style,
+     // including the 6/3 hidden dash and one-pixel thin weight.
+     'stroke-width':signed&&!hidden?3:signed?1:1.4,
+     'stroke-dasharray':hidden?'6 3':signed?'none':'4 4',
      'data-engineering-line-style':hidden?'certified-hidden':
       signed?'certified-visible':'undetermined',
      'data-v5-scope':signed?'signed-convex-source':'reviewed-point-guide'});
-    Motion.updateSvg(node,action,fraction);svg.append(node);
+    const attrs=Motion.updateSvg(node,action,fraction);
+    if(binding&&(action.engineeringLineStyle!==binding.standardLineStyle||
+      attrs['stroke-dasharray']!==(hidden?'6 3':'none')||
+      attrs['stroke-width']!==(hidden?1:2)))
+     throw Error('C1 唯一 V5 正式笔画与原始 M5 认证实虚线不一致');
+    svg.append(node);
    }
    text(svg,20,445,scoped.scopedProof?.scopedSingleConvexFullyCertified?
      'C1：单个已确认闭合凸体全部原始棱线已签收；教材原题盲测尚未通过':

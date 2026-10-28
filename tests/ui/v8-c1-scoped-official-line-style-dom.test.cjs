@@ -62,7 +62,7 @@ test('C1 signed oblique solid: real DOM V5 draws authenticated hidden sources da
   const visible=signed.filter(x=>x.getAttribute('data-engineering-line-style')==='certified-visible');
   assert.ok(hidden.length>0,'positive M5 hidden physical creases must render');
   assert.ok(visible.length>0,'visible original hull strokes must render');
-  assert.ok(hidden.every(x=>x.getAttribute('stroke-dasharray')==='7 4'));
+  assert.ok(hidden.every(x=>x.getAttribute('stroke-dasharray')==='6 3'));
   assert.ok(visible.every(x=>x.getAttribute('stroke-dasharray')==='none'));
   assert.ok(hidden.every(x=>Number(x.getAttribute('stroke-width'))<3));
   // A new form edit invalidates all signed line actions and old source proof.
