@@ -1298,7 +1298,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }
    if(!reviewIssue&&snap.task==='c1-third-view'){
     try{parseReviewedC1Rows($('v8-c1-vertices').value,$('v8-c1-pair').value);}
-    catch(error){allowed=false;reviewIssue='八角点：'+error.message;reviewTarget='v8-c1-vertices';}
+    catch(error){allowed=false;reviewIssue=error.message;reviewTarget='v8-c1-vertices';}
     if(!reviewIssue&&!$('v8-c1-topology').checked){
      allowed=false;reviewIssue='请核对八个角点和闭合实体拓扑后勾选确认。';
      reviewTarget='v8-c1-topology';
