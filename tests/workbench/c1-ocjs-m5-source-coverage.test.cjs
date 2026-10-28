@@ -607,5 +607,11 @@ test('C1 M5 holds paper-rounded native source coverage unless independent origin
   forged.sourceCandidate3DLifts[0].originalSourceExactParameterCoverageFromRoundingProven=true;
   assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
    /rounded native paper source falsely claims/);
+  const falselyUnrounded=structuredClone(stroke);
+  falselyUnrounded.from.u=-Number.MIN_VALUE;
+  falselyUnrounded.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[falselyUnrounded]}),
+   /out-of-domain native paper endpoint/,
+   'negative subnormal beyond the literal original source cannot bypass M5 by forging a false flag');
  }
 });
