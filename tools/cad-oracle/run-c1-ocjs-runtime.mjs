@@ -161,6 +161,18 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.actualPinnedWasmObjectInspected,true);
   assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
    'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
+  const ds=api.originalDataStructureIndex;
+  assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+  assert.equal(ds.signedV5Action,false);
+  if(ds.availability==='real-native-edge-map-inspected'){
+   assert.ok(ds.internalEdgeMapExtent>=1);
+   assert.equal(ds.indexedOriginalSources.length,ds.internalEdgeMapExtent);
+   assert.ok(ds.indexedOriginalSources.every(x=>
+    x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
+    x.signedV5Action===false));
+   assert.ok(ds.internalEdgeMapOriginalSourceIdsMatched<=
+    ds.originalSourceIdsInInputBRep);
+  }
   assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
