@@ -843,6 +843,17 @@ for(const [index,geometry] of general.entries()){
   assert.ok(proof.rows.every(row=>
    row.sourceGapClosedByNativeEndpointEvidence===false&&
    row.engineeringLineStyle==='undetermined'));
+  // Genuine pinned WASM A-end gaps: partition inverse t=0 paper
+  // candidates into literal original vertex points versus rounded aliases.
+  // Neither class is generated-to-original TopoDS edge history.
+  for(const row of proof.rows)for(const end of [row.from,row.to]){
+   if(end.originalM0VertexId===null)continue;
+   assert.equal(end.nativeGeneratedPaperCandidateParameterEqualCount,
+    end.nativeGeneratedLiteralOriginalPaperBoundaryCount+
+    end.nativeGeneratedRoundedInverseOriginalBoundaryAliasCount);
+   assert.ok(end.directNativeOriginalVertexIsSameAtPaperParameterCount<=
+    end.nativeGeneratedLiteralOriginalPaperBoundaryCount);
+  }
   assert.equal(proof.generatedToOriginalTopoDSFullHistoryCertified,false);
   assert.equal(proof.signedV5ActionCount,0);
   return proof;
