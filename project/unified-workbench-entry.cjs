@@ -1141,7 +1141,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
    if(!planar&&preview())
-    text(svg,22,432,'实体与已算截交边的投影：虚实线及 V5 尚未证明','#986945');
+    text(svg,22,432,'立体与截交边的投影：虚实线尚未确定','#986945');
    if(planar){
     const b=result.paperBounds;
     if(b)svg.setAttribute('viewBox',[b.x,b.y,b.width,b.height].join(' '));
@@ -1279,17 +1279,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   refreshComposition();
   $('v7-spatial-boundary').textContent=
     snap.task==='composition'&&snap.affineProblem?
-     '仿射未知点：仅数学唯一解绘图，无空间可见性/V5 审核':
+     '未知点：仅显示唯一解，虚实线尚未确定':
     snap.task==='planar'?
-   '纯二维数学不制造三维立体':
+   '当前题型仅显示二维图纸':
     snap.task==='c3-intersection'?
    'C3 两正交有限圆柱，共享解析几何与 V/H/W；整条曲线和线型仍为预览':
     snap.task==='c1-third-view'?
    (preview()?.scopedProof?.scopedSingleConvexFullyCertified?
     'C1 已确认单闭合凸体原始棱线、实虚线与唯一 V5 作用域全部数学签收；原书盲测仍未通过':
     'C1 已确认凸体及对应顶点；原始来源的未证明棱段保持未定'):snap.task==='exploration'?
-   '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
-   '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
+   '长方体和截交边仅供预览，虚实线尚未确定':snap.task==='composition'?
+   '已确认对象预览':'点投影';
   $('v7-mode').value=snap.view.mode;
   $('v7-yaw').value=String(snap.view.camera.yaw);
   $('v7-pitch').value=String(snap.view.camera.pitch);
@@ -1329,8 +1329,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v8-result-status').dataset.state=concise.state;
   $('v7-proof').textContent=solved?
     (solved.kind==='planar-fillet'?
-     '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
-     '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
+     '已验证圆弧连接。所选分支：'+solved.plan.selectedBranchId+'；原图仍需人工审核。':
+     '已验证的点投影。最大残差：'+String(solved.residualMm)+' mm。'):
     partial?
      partial.kind==='c3-reviewed-preview'?
       'C3 真实有限圆柱解析分支 '+partial.evidence.sourceM3.branchCount+
@@ -1366,10 +1366,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
       ' 数值初值残差见左栏；无 ConstructionIntent/DAG/V5 验证资格。':
      partial.kind==='affine-evidence'?
-      'M3 有界仿射未知点 · '+partial.evidence.status+
-      '；矩阵秩 '+String(partial.evidence.rank)+'/'+
-       partial.evidence.variableCount+'，残差 '+String(partial.evidence.residualMm)+
-       ' mm。仅点约束数学证据，原图/完整作图/V5 均未签收。':
+      '未知点：'+({unique:'唯一解',underdetermined:'条件不足',inconsistent:'条件矛盾'}[partial.evidence.status]||partial.evidence.status)+
+      '；残差 '+String(partial.evidence.residualMm)+
+       ' mm。当前只显示已确认的点，完整作图尚未验证。':
      partial.kind==='composition-evidence'?
       '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。'+
@@ -1431,8 +1430,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
   $('v7-selection').textContent=activeGeometry?
-    '已选 Geometry 对象 '+activeGeometry+'；同一场景的全部可用表达同步高亮，未更改数学输入。':
-    '点选正式数学场景的任意已知或派生图元，按稳定对象 ID 高亮。';
+    '已选 '+activeGeometry+'，对应视图已高亮。':
+    '点选图元，查看各视图中的对应位置。';
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';
@@ -1739,7 +1738,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }));
  $('v7-u-confirm').addEventListener('click',()=>call(async()=>{
   coordinator.confirmAffineProblem();
-  msg('整组未知点数学条件已人工确认，可独立执行 M3 线性求解。');
+  msg('整组未知点条件已确认，可以求解未知点。');
  }));
  $('v7-u-solve').addEventListener('click',()=>call(async()=>{
   if(coordinator?.snapshot().task!=='composition')
@@ -1752,11 +1751,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    throw Error('未知量数学子集不允许越权生成已验证工程答案/V5');
   const e=result.evidence;
   msg(result.kind==='nonlinear-evidence'?
-   'M3 找到 '+e.localCandidates.length+
-   ' 个局部数值候选；未证明解的总数、唯一性和工程答案，V5 禁用。':
-   'M3 '+e.status+'，秩 '+String(e.rank)+'/'+e.variableCount+
-   '，残差 '+String(e.residualMm)+
-   ' mm。仅在仿射唯一解时显示 Geometry；正式作图仍不可播放。');
+   '找到 '+e.localCandidates.length+
+   ' 个候选解；解的总数和唯一性尚未确定，暂不能播放。':
+   '求解状态：'+({unique:'唯一解',underdetermined:'条件不足',inconsistent:'条件矛盾'}[e.status]||e.status)+
+   '；残差 '+String(e.residualMm)+
+   ' mm。仅唯一解可显示，暂不能播放完整作图。');
  }));
  $('v7-u-reset').addEventListener('click',()=>call(async()=>{
   coordinator.removeAffineProblem();

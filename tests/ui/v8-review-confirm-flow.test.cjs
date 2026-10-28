@@ -46,7 +46,7 @@ test('V8 review requires explicit approval, calls canonical V5 and revokes appro
   assert.equal($('v8-review-run').disabled,false);
   fire('v8-review-run','click');
   for(let i=0;i<8;i++)await tick();
-  assert.match($('v7-proof').textContent,/M3.*ConstructionIntent.*V5/);
+  assert.match($('v7-proof').textContent,/已验证的点投影/);
   assert.match($('v8-result-status').textContent,/已完成/);
   assert.equal($('v8-result-status').dataset.state,'verified');
   assert.equal($('v8-review-ack').checked,false,'ack is not permanent');

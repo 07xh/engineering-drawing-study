@@ -86,7 +86,7 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
   const {after}=enhance(page);
   assert.ok(after.getElementById(svg).closest('.next-canvas'),page);
   assert.ok(after.getElementById('fullControls').closest('.next-playback'),page);
-  for(const id of controls)assert.ok(after.getElementById(id).closest('.next-context'),page+' '+id);
+  for(const id of controls)assert.ok(after.getElementById(id).closest(['drawControls','studentMathFeedback'].includes(id)?'.next-canvas':'.next-context'),page+' '+id);
   assert.ok(after.getElementById('learningMode').closest('[data-next-panel="steps"]'),page);
  }
 });
@@ -415,4 +415,44 @@ test('explicit playback actions reveal explanations while retaining dedicated ca
   document.getElementById('next').click();
   assert.equal(document.body.classList.contains('next-focus-canvas'),true,page+' does not exit requested canvas focus');
  }
+});
+
+test('drawing controls are beside the drawing without cloning app-owned controls',()=>{
+ for(const page of ['labs/point-projection-live.html','labs/circle-fillet-live.html']){
+  const {after}=enhance(page);
+  const controls=after.getElementById('drawControls');
+  assert.ok(controls.closest('.next-canvas'),page+' drawing controls stay near canvas');
+  for(const id of ['undoDraw','redoDraw','clearDraw','checkDraw'])
+   assert.equal(after.querySelectorAll('#'+id).length,1,page+' '+id+' remains unique');
+  assert.ok(controls.hasAttribute('hidden'));
+ }
+});
+
+test('fillet drawing shortcuts select the original tool with one click',()=>{
+ const {after:document}=enhance('labs/circle-fillet-live.html');
+ require('../../ui-next/ui-next.js').initUI(document);
+ const tool=document.getElementById('drawTool');let changes=0;
+ let value='line';Object.defineProperty(tool,'value',{configurable:true,get:()=>value,set:v=>{value=v}});
+ tool.addEventListener('change',()=>changes++);
+ const button=document.querySelector('[data-next-draw-tool="arc"]');
+ assert.ok(button,'arc shortcut is available by the drawing');
+ button.click();
+ assert.equal(tool.value,'arc');
+ assert.equal(changes,1);
+ assert.equal(button.getAttribute('aria-pressed'),'true');
+ assert.equal(document.querySelectorAll('#drawTool').length,1);
+});
+
+test('drawing shortcuts follow app mode changes and disabled state',async()=>{
+ const {after:document}=enhance('labs/circle-fillet-live.html');
+ const tool=document.getElementById('drawTool');let value='line';
+ Object.defineProperty(tool,'value',{configurable:true,get:()=>value,set:v=>{value=v}});
+ require('../../ui-next/ui-next.js').initUI(document);
+ const learning=document.getElementById('learningMode');
+ learning.addEventListener('change',()=>{tool.disabled=false;tool.value='tangent'});
+ tool.disabled=true;
+ learning.dispatchEvent(new document.defaultView.Event('change',{bubbles:true}));
+ await Promise.resolve();
+ assert.equal(document.querySelector('[data-next-draw-tool=tangent]').getAttribute('aria-pressed'),'true');
+ assert.equal(document.querySelector('[data-next-draw-tool=tangent]').disabled,false);
 });
