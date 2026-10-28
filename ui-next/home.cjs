@@ -258,6 +258,7 @@ function homeHTML(){return `
      </div>
      <p id="v8-c2-preflight" class="v8-c2-preflight" data-state="blocked" role="status" aria-live="polite">请填写形体 A 和 B 的已知尺寸。</p>
      <button type="button" id="v8-c2-locate" class="v8-c2-locate" hidden>定位需要修改的尺寸</button>
+     <button type="button" id="v8-c2-existing" class="v8-c2-locate" aria-controls="v8-c2-advanced" hidden>查看和编辑已有形体</button>
      <label class="v8-review-agree"><input id="v8-c2-ack" type="checkbox" aria-describedby="v8-c2-preflight" disabled>
       已按题图核对两个长方体的全部尺寸、位置和接触方式，确认这是当前项目的新输入。</label>
      <button type="button" id="v8-c2-build" class="v7-primary" aria-describedby="v8-c2-preflight" disabled>确认形体并计算组合关系</button>
