@@ -14,7 +14,7 @@ const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
 const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {manualSegment}=require('./source-candidate-bridge.cjs');
-const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
+const {compileGeometryScene,sourceFeatureKey}=require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -781,6 +781,37 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     partial.clock?.canRender(snap.revision)?partial:null;
  }
 
+ // Bind an original V5 result action to its independently derived M3
+ // source span ONLY after validating all projected mm/paper endpoints.
+ // The original V5 stays the sole authority for when the stroke appears.
+ function v5ResultSourceFeature(solved,action,view){
+  if(solved.kind!=='prism-evidence'||!view)return null;
+  const match=action.id.match(/^prism-section-(\\d+)-(V|H|W)$/);
+  if(!match||match[2]!==view)return null;
+  const n=Number(match[1])-1;
+  const obj=solved.scene.objects.find(o=>o.id===solved.plan.geometryId);
+  const projection=obj?.representations?.[view];
+  const span=projection?.kind==='polyline-projection'?
+   projection.spans[n]:null;
+  const transform=solved.plan.viewTransforms?.[view];
+  const metric=span?.projection;
+  if(!obj||obj.space!=='model-3d'||obj.kind!=='polyline'||
+     !span||span.fromIndex!==n||!action.sourceSectionEdgeId||
+     !transform||!metric||!['point','segment'].includes(metric.kind))
+   throw Error('V5 截交线未能对应当前 M3 原始三维来源');
+  const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&
+   Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(a),Math.abs(b));
+  const same=(a,b)=>a&&b&&close(a.x,b.x)&&close(a.y,b.y);
+  const a=toSheet(view,metric.kind==='point'?metric.at:metric.start,transform);
+  const b=metric.kind==='point'?a:toSheet(view,metric.end,transform);
+  const matchShape=metric.kind==='point'?
+   action.kind==='point'&&same(action.geometry?.center,a):
+   action.kind==='line'&&(
+    (same(action.geometry?.from,a)&&same(action.geometry?.to,b))||
+    (same(action.geometry?.from,b)&&same(action.geometry?.to,a)));
+  if(!matchShape)throw Error('V5 纸面笔画未通过原始三维来源投影复核');
+  return sourceFeatureKey(obj,{segmentIndex:n});
+ }
  function drawV5(svg,solved,colors){
   const frame=solved.clock.snapshot(),scoped=solved.verified===false;
   // The original V5 overlay and scene geometry share one revision-bound
@@ -807,6 +838,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     node.setAttribute('data-geometry-id',solved.plan.geometryId);
     if(view)node.setAttribute('data-geometry-view',view);
     node.setAttribute('data-source-section-edge',action.sourceSectionEdgeId);
+    const sourceKey=v5ResultSourceFeature(solved,action,view);
+    const featureSelected=!!sourceKey&&selectedSourceFeature?.revision===
+     solved.inputRevision&&selectedSourceFeature.key===sourceKey;
+    if(sourceKey){
+     node.setAttribute('data-source-feature-key',sourceKey);
+     node.setAttribute('data-source-feature-selected',String(featureSelected));
+    }
     const evidence=solved.evidence?.sectionEvidenceV5Bindings?.bindings
      .find(link=>link.v5ActionId===action.id);
     if(evidence){
@@ -821,7 +859,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     }
     node.setAttribute('role','button');node.setAttribute('tabindex','0');
     node.setAttribute('aria-label','选择 '+solved.plan.geometryId+' 的 '+view+' 表达');
-    const pick=()=>coordinator.selectSceneGeometry(solved.plan.geometryId);
+    const pick=()=>{
+     if(sourceKey){
+      selectedSourceFeature=selectedSourceFeature?.key===sourceKey&&
+       coordinator.selectedGeometryId()===solved.plan.geometryId?null:
+       {key:sourceKey,objectId:solved.plan.geometryId,
+        revision:solved.inputRevision};
+     }else selectedSourceFeature=null;
+     coordinator.selectSceneGeometry(solved.plan.geometryId);
+    };
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}

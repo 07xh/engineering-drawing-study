@@ -310,4 +310,4 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
   objectCount:objects.length,selectedObjectId,revision:scene.revision,
   projection:'first-angle-orthographic',proof:'display-only'});
 }
-module.exports={compileGeometryScene,arcPath};
+module.exports={compileGeometryScene,arcPath,sourceFeatureKey};
