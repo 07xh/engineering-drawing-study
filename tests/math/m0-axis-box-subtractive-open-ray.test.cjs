@@ -154,7 +154,7 @@ test('real through-hole bore side point is hidden through front stock slab, but 
 });
 test('negative first-angle V observer and positive W observer have different front intervals',()=>{
  const v=proveClosed({
-  source:line('MinusY',p(5,4,1),p(5,4,9)),stock,cutter,view:'V'
+  source:line('MinusY',p(3,4,1),p(3,4,9)),stock,cutter,view:'V'
  });
  assert.equal(v.bothClosedEndpointsStrictlyMatchOpenSource,true);
  const w=proveClosed({
