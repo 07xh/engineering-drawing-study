@@ -476,8 +476,13 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
   // rounding; it must never be used to fill a positive 3D source gap.
   const rounded=structuredClone(stroke);
   rounded.from.u+=5e-7;
-  assert.equal(exactSourceCoverage({...input,strokes:[rounded]})
-   .entireOriginalParameterIntervalCovered,true);
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[rounded]}),
+   /rounded inverse boundary/,
+   'an interior received paper point cannot impersonate original M0 t=0');
+  rounded.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=true;
+  const held=exactSourceCoverage({...input,strokes:[rounded]});
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
   for(const change of [
    s=>{s.from.u+=0.01;},
    s=>{s.to.v+=0.01;},
@@ -488,7 +493,7 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
    const forged=structuredClone(stroke);
    change(forged);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift|out-of-domain native paper endpoint/,
+    /unverified original native BRep source lift|out-of-domain native paper endpoint|finite native paper endpoints/,
     'a forged HLR stroke cannot close an otherwise authentic original 3D source');
   }
  }
@@ -564,7 +569,7 @@ test('C1 native V/H/W gap evidence refuses forged original BRep XYZ, curve and 3
    const forged=structuredClone(cad.views[view][0]);
    mutate(forged.sourceCandidate3DLifts[0]);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift/,
+    /unverified original native BRep source lift|bounded rounded inverse parameters/,
     'a forged native source must not close the original 3D interval');
   }
   const reversed=structuredClone(cad.views[view][0]);
