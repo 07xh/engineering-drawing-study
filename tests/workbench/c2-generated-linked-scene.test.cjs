@@ -24,6 +24,8 @@ test('six M5-proven new C2 3D edges have 3 orthographic source-stable aliases ea
  assert.equal(linked.groups.length,6);
  assert.ok(Object.isFrozen(scene));
  assert.ok(linked.groups.every(g=>g.sourceGeometryIds.join(',')==='A,B'&&
+  [g.source3DFrom?.x,g.source3DFrom?.y,g.source3DFrom?.z,
+   g.source3DTo?.x,g.source3DTo?.y,g.source3DTo?.z].every(Number.isFinite)&&
   g.certifiedEngineeringStroke===false&&g.v5ActionAuthorized===false));
  const actual=review(geometry).generated.segments.filter(x=>
   x.positiveNewConcaveUnionOpenFeatureVerified);
@@ -34,6 +36,8 @@ test('six M5-proven new C2 3D edges have 3 orthographic source-stable aliases ea
   assert.ok(physical&&obj);
   assert.deepEqual(obj.model.data.start,physical.source3DFrom);
   assert.deepEqual(obj.model.data.end,physical.source3DTo);
+  assert.deepEqual(g.source3DFrom,physical.source3DFrom);
+  assert.deepEqual(g.source3DTo,physical.source3DTo);
   assert.equal(obj.model.parentObjectId,undefined);
   const source=[...presentation.paper,...presentation.spatial].filter(x=>
    x.objectId===g.geometryId);

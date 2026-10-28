@@ -1300,10 +1300,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        candidate.rayStatus==='scoped-continuous-front-ray-opaque'?
        ($('v7-mono').checked?'#777':'#d58b28'):
        '#9c9ca8';
+      const sameSourceBodies=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
+       a.length===b.length&&new Set(a).size===a.length&&
+       new Set(b).size===b.length&&
+       [...a].sort().every((id,i)=>id===[...b].sort()[i]);
       const generatedGroups=(active?.linkedC2?.groups||[]).filter(g=>
        g.revision===snap.revision&&
-       JSON.stringify(g.sourceGeometryIds)===
-        JSON.stringify(candidate.sourceGeometryIds));
+       sameSourceBodies(g.sourceGeometryIds,candidate.sourceGeometryIds));
       const pointOnGeneratedSegment=(point,g)=>{
        const a=g.source3DFrom,b=g.source3DTo;
        if(!point||!a||!b||
