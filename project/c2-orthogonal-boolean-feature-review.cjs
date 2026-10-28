@@ -23,6 +23,8 @@ const {auditOrthogonalProjectedUnionSilhouette}=
  require('../workbench/m5-orthogonal-projected-union-silhouette.cjs');
 const {auditOrthogonalProjectedBoundaryTopology}=
  require('../workbench/m5-orthogonal-projected-boundary-topology.cjs');
+const {inspectFinalSourceStrokeObligations}=
+ require('../workbench/m5-final-source-stroke-obligations.cjs');
 function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
    !Array.isArray(geometry)||geometry.length<2||geometry.length>8)
@@ -146,4 +148,118 @@ function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
   completeV5DrawingAuthorized:false
  });
 }
-module.exports={reviewC2OrthogonalBooleanFeatures};
+
+/**
+ * A FULL M0..M5 paper-source ledger consumer (not another ray solver).
+ * Bounded to TWO confirmed axis-aligned convex solids. The existing final
+ * stroke auditor reauthenticates all source transforms, 3D generated edges,
+ * projected crossings/overlaps, independent opaque rays and endpoint joins.
+ * Everything stays unsigned until its original final V5 gate becomes true.
+ */
+function reviewC2FullPaperStrokeReadiness({
+ geometry,revision,sceneDepthEvidence,orthogonalBooleanFeatureAudit
+}={}){
+ if(orthogonalBooleanFeatureAudit===null||geometry?.length!==2)return null;
+ const baseline=orthogonalBooleanFeatureAudit;
+ if(!baseline||baseline.revision!==revision||
+    baseline.schema!=='draftai-c2-workbench-original-plus-generated-union-evidence/1')
+  throw new Error('C2 当前三维原始及生成棱证据尚未核对');
+ const full=inspectFinalSourceStrokeObligations({
+  geometry,revision,sceneDepthEvidence
+ });
+ const paper=full.unifiedPaperLineReadinessEvidence;
+ const region=full.projectedUnionSilhouetteEvidence;
+ const loops=full.projectedUnionBoundaryTopologyEvidence;
+ const ids=geometry.map(g=>g.id);
+ const idsEqual=a=>JSON.stringify(a)===JSON.stringify(ids);
+ if(full.status!=='per-source-span-proof-obligations-audited'||
+    full.revision!==revision||
+    !paper||paper.status!=='per-paper-interval-final-stroke-proof-blockers'||
+    !idsEqual(paper.sourceGeometryIds)||
+    paper.paperIntervalCount!==paper.lines.length||
+    !region||region.status!=='complete-first-angle-orthogonal-projected-occupancy-boundary'||
+    !loops||loops.status!=='first-angle-projected-occupancy-boundary-loop-incidence-audited'||
+    region.revision!==revision||loops.revision!==revision||
+    !idsEqual(region.sourceGeometryIds)||!idsEqual(loops.sourceGeometryIds)||
+    region.physical3DSourceReviewMode!=='full-independent-m0-to-m5-source-cross-audit'||
+    loops.sourceReviewMode!=='full-independent-m0-to-m5-source-cross-audit'||
+    region.projectedBoundarySegmentCount!==baseline.projectedRegion.projectedBoundarySegmentCount||
+    loops.totalSimpleClosedBoundaryLoopCount!==baseline.projectedLoops.totalSimpleClosedBoundaryLoopCount||
+    loops.totalProjectedHoleClosedLoopCount!==baseline.projectedLoops.totalProjectedHoleClosedLoopCount||
+    paper.officialLineStylesVerified!==false||
+    paper.v5Ready!==false||paper.signedV5LineActions!==0||
+    full.signedCount!==0||full.officialLineStylesVerified!==false||
+    full.v5Ready!==false)
+  throw new Error('C2 全局纸面来源 M0-M5 与现有局部证明不一致');
+ // Independent complete region area/geometry must agree, not only COUNT.
+ for(const view of ['V','H','W']){
+  const a=baseline.projectedRegion.projectedViews.find(v=>v.view===view);
+  const b=region.projectedViews.find(v=>v.view===view);
+  const x=baseline.projectedLoops.projectedViews.find(v=>v.view===view);
+  const y=loops.projectedViews.find(v=>v.view===view);
+  const shape=v=>v.boundaries.map(z=>JSON.stringify([
+   z.type,z.projectedFromModelMm,z.projectedToModelMm
+  ])).sort();
+  if(!a||!b||!x||!y||
+     JSON.stringify(shape(a))!==JSON.stringify(shape(b))||
+     a.completeProjectedUnionAreaMm2!==b.completeProjectedUnionAreaMm2||
+     x.signedLoopAreasTotalMm2!==y.signedLoopAreasTotalMm2||
+     x.sourceBoundarySegmentCount!==y.sourceBoundarySegmentCount)
+   throw new Error('C2 原生三视图区域与全局纸面线条来源不一致：'+view);
+ }
+ const entries=paper.lines.map(line=>{
+  if(line.revision!==revision||!['V','H','W'].includes(line.view)||
+     ![line.projectedFromModelMm?.u,line.projectedFromModelMm?.v,
+       line.projectedToModelMm?.u,line.projectedToModelMm?.v].every(Number.isFinite)||
+     !['scoped-continuous-front-ray-clear',
+       'scoped-continuous-front-ray-opaque',
+       'no-unique-3d-source','undetermined'].includes(line.rayStatus)||
+     line.officialEngineeringSolidDashedStyle!=='undetermined'||
+     line.formalV5StrokeSigned!==false||
+     line.positiveGlobalFinalContourCompletenessVerified!==false||
+     line.fullClosedEndpointAndAllOpaqueFacesVerified!==false||
+     !Array.isArray(line.missingProofObligations)||
+     line.missingProofObligations.length<5)
+   throw new Error('C2 一条纸面候选线绕过了端点或官方 V5 门禁');
+  return Object.freeze({
+   id:line.id,view:line.view,revision,
+   from:Object.freeze({...line.projectedFromModelMm}),
+   to:Object.freeze({...line.projectedToModelMm}),
+   sourceSubspanId:line.selectedListed3DSourceSubspanId,
+   sourceMultiplicity:line.sourceMultiplicity,
+   rayStatus:line.rayStatus,
+   threeDBooleanExteriorOpenSourceVerified:
+    line.selectedWholeSource3DBooleanExteriorOpenFeatureVerified,
+   localPhysicalEndpointBooleanAndRayJoinVerified:
+    line.bothEndpointLocalBooleanAndOpaqueRayAndRealSourceJoinVerified,
+   unresolvedObligations:Object.freeze([...line.missingProofObligations]),
+   engineeringLineStyle:'undetermined',officialV5Approved:false
+  });
+ });
+ const counts={
+  locallyClear:entries.filter(e=>
+   e.rayStatus==='scoped-continuous-front-ray-clear').length,
+  locallyOpaque:entries.filter(e=>
+   e.rayStatus==='scoped-continuous-front-ray-opaque').length,
+  unresolved:entries.filter(e=>!['scoped-continuous-front-ray-clear',
+   'scoped-continuous-front-ray-opaque'].includes(e.rayStatus)).length,
+  sourceExteriorOpen:entries.filter(e=>e.threeDBooleanExteriorOpenSourceVerified).length,
+  locallyJointEndpoint:entries.filter(e=>e.localPhysicalEndpointBooleanAndRayJoinVerified).length
+ };
+ if(entries.length!==counts.locallyClear+counts.locallyOpaque+counts.unresolved||
+    counts.locallyClear!==paper.scopedClearFrontRayCandidateCount||
+    counts.locallyOpaque!==paper.scopedOpaqueFrontRayCandidateCount||
+    counts.unresolved<0)
+  throw new Error('C2 实体射线分类数量丢失或未闭合');
+ return Object.freeze({
+  schema:'draftai-c2-current-first-angle-source-open-ray-review/1',
+  revision,sourceGeometryIds:Object.freeze([...ids]),
+  paperIntervalCount:entries.length,
+  entries:Object.freeze(entries),
+  counts:Object.freeze(counts),
+  fullSourceCrossAudit:true,
+  officialDrawingLineStylesVerified:false,completeV5DrawingAuthorized:false
+ });
+}
+
+module.exports={reviewC2OrthogonalBooleanFeatures,reviewC2FullPaperStrokeReadiness};

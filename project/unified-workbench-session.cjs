@@ -32,7 +32,7 @@ const {proveReviewedCompositeSeamRays}=
  require('../workbench/m5-reviewed-composite-seam-rays.cjs');
 const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
  require('../workbench/m5-reviewed-multibody-original-edge-rays.cjs');
-const {reviewC2OrthogonalBooleanFeatures}=
+const {reviewC2OrthogonalBooleanFeatures,reviewC2FullPaperStrokeReadiness}=
  require('./c2-orthogonal-boolean-feature-review.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
@@ -410,6 +410,18 @@ function createUnifiedProjectSession(){
         orthogonalBooleanFeatureAudit.officialDrawingLineStylesVerified!==false||
         orthogonalBooleanFeatureAudit.completeV5DrawingAuthorized!==false))
      throw new Error('C2 新交汇棱和当前 M5 作用域不一致');
+    const c2PaperRayProof=orthogonalBooleanFeatureAudit&&geometry.length===2?
+      reviewC2FullPaperStrokeReadiness({
+       geometry,revision:latest.revision,sceneDepthEvidence,
+       orthogonalBooleanFeatureAudit
+      }):null;
+    if(c2PaperRayProof&&(c2PaperRayProof.revision!==latest.revision||
+       c2PaperRayProof.sourceGeometryIds.length!==geometry.length||
+       c2PaperRayProof.paperIntervalCount!==c2PaperRayProof.entries.length||
+       c2PaperRayProof.fullSourceCrossAudit!==true||
+       c2PaperRayProof.officialDrawingLineStylesVerified!==false||
+       c2PaperRayProof.completeV5DrawingAuthorized!==false))
+     throw new Error('C2 原始/生成线 M5 全局遮挡与端点清单不可信');
     const spatialV5Readiness=inspectSpatialV5Readiness({
       sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
@@ -440,7 +452,7 @@ function createUnifiedProjectSession(){
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
       compositionSeamRayEvidence,originalMultiBodyEdgeRays,
-      orthogonalBooleanFeatureAudit,sceneDepthEvidence,
+      orthogonalBooleanFeatureAudit,c2PaperRayProof,sceneDepthEvidence,
       m0M3M5OriginalSourceAcceptance,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});

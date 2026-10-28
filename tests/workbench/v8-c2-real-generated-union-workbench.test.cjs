@@ -38,6 +38,29 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
  assert.equal(m.generated.certifiedNewConcaveOpenCount,6);
  assert.equal(m.generated.buriedNewFaceIntersectionCount,0);
  assert.equal(m.physical.generatedSegmentCount,6);
+ const proof=out.c2PaperRayProof;
+ assert.equal(proof.schema,
+  'draftai-c2-current-first-angle-source-open-ray-review/1');
+ assert.equal(proof.revision,coordinator.snapshot().revision);
+ assert.deepEqual(proof.sourceGeometryIds,['C2BoxA','C2BoxB']);
+ assert.ok(proof.paperIntervalCount>0);
+ assert.equal(proof.paperIntervalCount,proof.entries.length);
+ assert.equal(proof.counts.locallyClear+proof.counts.locallyOpaque+
+  proof.counts.unresolved,proof.paperIntervalCount);
+ assert.equal(proof.fullSourceCrossAudit,true);
+ assert.equal(proof.officialDrawingLineStylesVerified,false);
+ assert.equal(proof.completeV5DrawingAuthorized,false);
+ assert.ok(proof.entries.every(x=>
+  x.engineeringLineStyle==='undetermined'&&
+  x.officialV5Approved===false&&
+  x.unresolvedObligations.length>=5&&
+  ['V','H','W'].includes(x.view)&&x.revision===proof.revision));
+ assert.ok(proof.entries.some(x=>x.rayStatus===
+  'scoped-continuous-front-ray-clear'));
+ assert.ok(proof.entries.every(x=>Number.isFinite(x.from.u)&&
+  Number.isFinite(x.from.v)&&Number.isFinite(x.to.u)&&
+  Number.isFinite(x.to.v)));
+ assert.equal(new Set(proof.entries.map(x=>x.view)).size,3);
  assert.ok(m.physical.sourceSegmentCount>0);
  assert.ok(m.physical.nodeCount>0);
  assert.ok(m.physical.sharedPhysicalNodeCount>0);
@@ -114,6 +137,9 @@ test('C2 planar face contact has NO invented generated pairwise feature and rema
  assert.equal(m.physical.generatedSegmentCount,0);
  assert.ok(m.source.flatNoCreaseCount>0);
  assert.equal(m.projectedLoops.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
+ assert.ok(out.c2PaperRayProof.paperIntervalCount>0);
+ assert.equal(out.c2PaperRayProof.officialDrawingLineStylesVerified,false);
+ assert.equal(out.c2PaperRayProof.completeV5DrawingAuthorized,false);
  assert.equal(m.projectedRegion.viewCount,3);
  assert.equal(m.projectedLoops.totalProjectedHoleClosedLoopCount,0);
  assert.equal(m.completeV5DrawingAuthorized,false);
