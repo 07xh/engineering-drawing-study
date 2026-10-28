@@ -7,6 +7,7 @@
 (function(){
  const $=id=>document.getElementById(id),
   timelineV5=globalThis.DA07TimelineV5,motionV5=globalThis.DA07MotionV5,
+  projection=globalThis.DAFirstAngleProjection,
   ns='http://www.w3.org/2000/svg';
  let player=null,segments=[],frameId=null,actualSteps=[],loadedRevision=null;
  const controls=['cutPlay','cutPrev','cutNext','cutSeek'];
@@ -16,6 +17,8 @@
  };
  const safeNumber=n=>Number.isFinite(n)&&Math.abs(n)<1000000;
  function assertPack(pack){
+  if(!projection||typeof projection.toSheet!=='function')
+   throw new Error('缺少与真实 M4 相同的第一角法投影变换');
   const p=pack?.sourceCertifiedNativeCanonicalPartialCutV5;
   if(pack?.schema!=='draftai-c2-actual-native-occt-m0-m4-m5-full-proof-pack/1'||
      pack.booleanOperation!=='cut'||
@@ -46,11 +49,24 @@
    'gb-t-4457.4-continuous-wide-visible-outline',
    'gb-t-4457.4-thin-dashed-hidden-edge'
   ]);
+  const originalSheet=p.sheetTransform;
+  if(!originalSheet||!Number.isFinite(originalSheet.scale)||
+     originalSheet.scale<=0||
+     !Number.isFinite(originalSheet.origin?.x)||
+     !Number.isFinite(originalSheet.origin?.y))
+   throw new Error('未提供真实首角法 V H W 同纸变换');
   const indices=new Map(),ordered=[];
   for(const row of signed){
    if(typeof row?.actionId!=='string'||!/^c2_native_action_[VHW]_\d+_\d+$/.test(row.actionId)||
       indices.has(row.actionId)||!['V','H','W'].includes(row.view)||
       !permitted.has(row.standardEngineeringLineStyle)||
+      !Array.isArray(row.originalGeneratedEdgeParameterRange)||
+      row.originalGeneratedEdgeParameterRange.length!==2||
+      !(row.originalGeneratedEdgeParameterRange[0]>=0&&
+       row.originalGeneratedEdgeParameterRange[0]<
+       row.originalGeneratedEdgeParameterRange[1]&&
+       row.originalGeneratedEdgeParameterRange[1]<=1)||
+      !row.projectedFromModelMm||!row.projectedToModelMm||
       row.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays!==true||
       row.cutOriginalM4PaperAliasStrictDepthReverified!==true||
       row.completeC2CutResultCertified!==false||
@@ -59,7 +75,7 @@
    indices.set(row.actionId,row);
   }
   const seen=new Set();
-  for(const step of p.steps){
+  for(const [i,step] of p.steps.entries()){
    if(!Array.isArray(step.actions)||step.actions.length!==1||
       typeof step.id!=='string'||!/^c2_native_[VHW]_\d+_\d+$/.test(step.id))
     throw new Error('已有 V5 步骤格式有误');
@@ -70,6 +86,25 @@
       ![a.geometry.from?.x,a.geometry.from?.y,a.geometry.to?.x,
         a.geometry.to?.y].every(safeNumber))
     throw new Error('动画包含未经来源和线型匹配的动作');
+   const intent=p.intents[i];
+   const op=intent?.operations?.[0];
+   if(intent?.id!==step.id||intent?.operations?.length!==1||
+      intent?.outputEntityIds?.length!==1||
+      intent.outputEntityIds[0]!==a.id||
+      op?.id!==a.id||op?.kind!=='line'||
+      op.coordinateSpace!=='sheet-px')
+    throw new Error('现有 ConstructionIntent 与 V5 DAG 对应关系不一致');
+   const rowProjectedFrom=projection.toSheet(row.view,row.projectedFromModelMm,originalSheet);
+   const rowProjectedTo=projection.toSheet(row.view,row.projectedToModelMm,originalSheet);
+   for(const [actual,expected,contract] of [
+    [a.geometry.from,rowProjectedFrom,'V5 起点与 M4 纸面投影'],
+    [a.geometry.to,rowProjectedTo,'V5 终点与 M4 纸面投影'],
+    [op.geometry?.from,a.geometry.from,'ConstructionIntent 起点与 V5'],
+    [op.geometry?.to,a.geometry.to,'ConstructionIntent 终点与 V5']]){
+    if(!actual||!expected||!Object.is(actual.x,expected.x)||
+       !Object.is(actual.y,expected.y))
+     throw new Error(contract+'不一致，不允许绘制伪造线段');
+   }
    seen.add(a.id);
    ordered.push(a);
   }
