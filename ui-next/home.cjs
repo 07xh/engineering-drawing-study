@@ -262,7 +262,9 @@ function homeHTML(){return `
      <p id="v8-c2-status" class="v7-note" role="status">仅支持空组合体项目；已有对象请使用下方编辑器，避免覆盖原有条件。</p>
      <p class="v7-warning">当前显示已知形体的接触和投影；完整轮廓和虚实线尚未确定。</p>
     </section>
-    <p class="v7-warning">请逐个确认已知图形；当前不生成完整虚实线。</p>
+    <details class="v8-c2-advanced">
+     <summary>更多：编辑单个对象、约束与未知点</summary>
+    <p class="v7-warning">已有对象或更复杂的题目可在此逐个编辑和确认；当前不生成完整虚实线。</p>
     <label>已录入对象 <select id="v7-c-objects" aria-label="选择或编辑项目中的对象">
      <option value="">新增对象</option></select></label>
     <label>对象 ID（英文字母开头）<input id="v7-c-id" maxlength="80" value="ObjectA" autocomplete="off"></label>
@@ -366,7 +368,7 @@ function homeHTML(){return `
      </div>
      <p id="v7-u-status" class="v7-note" role="status">确认条件后可检查解的情况。</p>
     </details>
-
+    </details>
 
    </fieldset>
    <section class="v8-review-check" aria-labelledby="v8-review-title">
