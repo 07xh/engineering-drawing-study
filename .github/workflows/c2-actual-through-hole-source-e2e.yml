@@ -57,11 +57,31 @@ jobs:
           node tools/c2_native_m0_m4_m5_proof_pack.cjs \
             tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json \
             original-c2-through-hole-m0-m4.json
-      - name: Keep generated CAD provenance for review
+      - name: Require partial-only, 12 truly signed and 40 held original Cut intervals
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const p=JSON.parse(fs.readFileSync('original-c2-through-hole-m0-m4.json','utf8'));
+          const c=p.sourceCertifiedNativeCanonicalPartialCutV5;
+          assert.equal(p.booleanOperation,'cut');
+          assert.equal(p.provenance.actualNativeOpenCascadeRanInThisProcessTree,true);
+          assert.equal(p.completeCutProjectOfficialGBLineStylesAndV5Certified,false);
+          assert.equal(p.ConstructionIntentDAGSingleV5FullySigned,false);
+          assert.equal(p.sourceCertifiedNativeCanonicalV5,null);
+          assert.equal(c.entireCutOriginalDrawingSigned,false);
+          assert.equal(c.oneExistingV5TimelineRecreated,true);
+          assert.equal(c.certifiedVisibleHiddenSourceIntervals.length,12);
+          assert.equal(c.suppressedNativeBackSourceIntervals.length,12);
+          assert.equal(c.unsignedNativePhysicalSourceIntervals.length,40);
+          assert.equal(fs.existsSync('original-c2-through-hole-m0-m4.signed-only.svg'),true);
+          JS
+      - name: Keep generated original Cut proof, certified-only SVG and native TopoDS for local mobile review
         uses: actions/upload-artifact@v4
         with:
           name: genuine-c2-rectangular-through-hole-topods
           path: |
             original-c2-through-hole-topods.json
             original-c2-through-hole-m0-m4.json
-          retention-days: 10
+            original-c2-through-hole-m0-m4.signed-only.svg
+          if-no-files-found: error
+          retention-days: 14
