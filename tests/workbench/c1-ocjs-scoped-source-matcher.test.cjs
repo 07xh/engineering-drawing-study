@@ -43,6 +43,7 @@ test('paper-coincident but different native edge cannot be promoted by source la
 });
 test('a source-scoped output absent from whole-solid output is rejected, not silently omitted',()=>{
  const x=setup('V');x.scopedSegment=edge(40,50);
+ x.scopedNativeEdge=native('generated-unrelated');
  assert.throws(()=>match(x),/absent from whole-solid/);
 });
 test('real IsSame to a different paper stroke is a native contradiction',()=>{
