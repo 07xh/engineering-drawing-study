@@ -2,14 +2,20 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {auditC1NativeScopedHLRSourceConsumer:audit}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {project}=require('../../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
 function fixture(){
  const geometry={id:'g',data:{points:{
-  A:{x:0,y:0,z:0},B:{x:10,y:0,z:0},
-  C:{x:0,y:1,z:0},D:{x:10,y:1,z:0}},
+  A:{x:0,y:0,z:0},B:{x:10,y:2,z:3},
+  C:{x:0,y:1,z:0},D:{x:10,y:3,z:3}},
   edges:[['A','B'],['C','D']]}};
  const id0='g::A|B',id1='g::C|D';
+ const paper=(view,source)=>{
+  const edge=source===id0?geometry.data.edges[0]:geometry.data.edges[1];
+  const [a,b]=edge.map(id=>project(geometry.data.points[id])[view]);
+  return {from:{...a},to:{...b}};
+ };
  const witness=(view,source)=>({
   view,hlrClass:'visible-sharp',originalPhysicalSourceEdgeId:source,
   globalPaperCandidateOrdinals:[0],
@@ -18,13 +24,13 @@ function fixture(){
   fullOriginalSourceParameterCoverageProven:false,
   globalContinuousOcclusionProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false,
-  from:{u:0,v:0},to:{u:10,v:0}
+  ...paper(view,source)
  });
  const cad={sourceGeometryId:'g',revision:3,views:{},hiddenSharpViews:{},
   nativeHLRSourceHistoryAPISurfaceByView:{},
   nativeSourceScopedSharpOutputByView:{}};
  for(const view of ['V','H','W']){
-  cad.views[view]=[{from:{u:0,v:0},to:{u:10,v:0},
+  cad.views[view]=[{...paper(view,id0),
    projectedOriginalEdgeCandidates:[id0]}];
   cad.hiddenSharpViews[view]=[];
   cad.nativeHLRSourceHistoryAPISurfaceByView[view]={
@@ -54,7 +60,7 @@ function fixture(){
    ]
   };
  }
- return {geometry,cad,id0,id1,witness};
+ return {geometry,cad,id0,id1,witness,paper};
 }
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
  const x=fixture(),r=audit(x);
@@ -150,6 +156,10 @@ test('V/H/W native EdgeMap source indices are injective, not merely source-ID un
 test('one generated native HLR ordinal cannot certify two distinct original TopoDS edges',()=>{
  for(const view of ['V','H','W']){
   const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  // Deliberately distinct TopoDS source IDs with coincident 3D geometry:
+  // both genuinely project to the same paper stroke in this view.
+  x.geometry.data.points.C={...x.geometry.data.points.A};
+  x.geometry.data.points.D={...x.geometry.data.points.B};
   x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
   c.rows[1].visible.push(x.witness(view,x.id1));
   c.nativeSourceScopedOutputEdgeCount=2;
@@ -176,4 +186,68 @@ test('repeated native identity for one original source also fails; paper-only al
  const y=fixture(),r=audit(y);
  assert.equal(r.signedV5ActionCount,0);
  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+});
+
+
+test('scoped source labels cannot forge a different M0 projected line in any first-angle view',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  // Change the global stroke AND filtered native witness together:
+  // simple scoped-to-global paper comparison would accept this forgery.
+  c.rows[0].visible[0].from.v+=2;
+  c.rows[0].visible[0].to.v+=2;
+  x.cad.views[view][0].from.v+=2;
+  x.cad.views[view][0].to.v+=2;
+  assert.throws(()=>audit(x),/original M0 3D projection/);
+ }
+});
+test('native source-scoped candidate cannot extend past either actual M0 edge endpoint',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  const a=x.paper(view,x.id0).from,b=x.paper(view,x.id0).to;
+  w.to={u:b.u+(b.u-a.u)*0.2,v:b.v+(b.v-a.v)*0.2};
+  x.cad.views[view][0].to={...w.to};
+  assert.throws(()=>audit(x),/original M0 3D projection/);
+ }
+});
+test('genuine partial source-filtered HLR strokes stay candidates without GB or V5',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  const a=x.paper(view,x.id0).from,b=x.paper(view,x.id0).to;
+  w.from={u:a.u+(b.u-a.u)*0.25,v:a.v+(b.v-a.v)*0.25};
+  w.to={u:a.u+(b.u-a.u)*0.75,v:a.v+(b.v-a.v)*0.75};
+  x.cad.views[view][0].from={...w.from};
+  x.cad.views[view][0].to={...w.to};
+  const result=audit(x);
+  assert.deepEqual(result.views[view].visible[0].original3DSourceCandidatesFromNativeFilter,[x.id0]);
+  assert.equal(result.generatedToOriginalTopoDSFullHistoryCertified,false);
+  assert.equal(result.globalContinuousVisibilityCertified,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
+test('a source whose projection collapses to a point cannot own a positive native HLR line',()=>{
+ const x=fixture();
+ x.geometry.data.points.B.y=0;
+ x.geometry.data.points.B.z=0;
+ // W projects only Y,Z; the existing filtered stroke is nondegenerate
+ // but the original M0 source has zero W-view projected length.
+ assert.throws(()=>audit(x),/original M0 3D projection/);
+});
+test('zero-length native source-scoped HLR stroke is not a positive edge witness',()=>{
+ const x=fixture(),view='V';
+ const w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ w.to={...w.from};x.cad.views[view][0].to={...w.from};
+ assert.throws(()=>audit(x),/original M0 3D projection/);
+});
+test('submicron CAD paper rounding is candidate-only and never repairs source coverage',()=>{
+ const x=fixture(),view='V',w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ w.from.v+=5e-7;w.to.v+=5e-7;
+ x.cad.views[view][0].from.v+=5e-7;
+ x.cad.views[view][0].to.v+=5e-7;
+ const r=audit(x);
+ assert.equal(r.views.V.visible[0].originalTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+ const next=0.5000000000000001;
+ const gap=exactCandidateIntervalCoverage([0,1],[[0,0.5],[next,1]]);
+ assert.deepEqual(gap.positiveLengthUncoveredIntervals,[[0.5,next]]);
 });
