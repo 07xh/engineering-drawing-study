@@ -11,6 +11,13 @@ const js=read('labs/c2-native-cut-review-ui.js');
 
 function setup(){
  const {window,document}=parseHTML(html);
+ // LinkeDOM intentionally leaves select/range input values getter-only.
+ // Real browsers provide native writable value properties; emulate that
+ // browser contract without changing production UI behavior.
+ for(const [id,value] of [['cutSeek','0'],['cutSpeed','1']])
+  Object.defineProperty(document.getElementById(id),'value',{
+   value,writable:true,configurable:true
+  });
  window.DA07TimelineV5=Timeline;
  window.DA07MotionV5=Motion;
  const callback={raf:null};
