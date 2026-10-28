@@ -1300,15 +1300,43 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        candidate.rayStatus==='scoped-continuous-front-ray-opaque'?
        ($('v7-mono').checked?'#777':'#d58b28'):
        '#9c9ca8';
-      const linkedGenerated=candidate.sourceFeatureKind==='generated-two-face-crease'?
-       (active?.linkedC2?.groups||[]).find(g=>
-        g.sourceFeatureId===candidate.sourceFeatureId&&
-        g.revision===snap.revision&&
-        JSON.stringify(g.sourceGeometryIds)===
-         JSON.stringify(candidate.sourceGeometryIds)):null;
-      if(candidate.sourceFeatureKind==='generated-two-face-crease'&&
-         candidate.sourceFeatureId!==null&&!linkedGenerated)
-       throw Error('C2 M5 生成棱诊断未绑定到同一修订的真实三维场景来源');
+      const generatedGroups=(active?.linkedC2?.groups||[]).filter(g=>
+       g.revision===snap.revision&&
+       JSON.stringify(g.sourceGeometryIds)===
+        JSON.stringify(candidate.sourceGeometryIds));
+      const pointOnGeneratedSegment=(point,g)=>{
+       const a=g.source3DFrom,b=g.source3DTo;
+       if(!point||!a||!b||
+          ![point.x,point.y,point.z,a.x,a.y,a.z,b.x,b.y,b.z].every(Number.isFinite))
+        return false;
+       const v=[b.x-a.x,b.y-a.y,b.z-a.z],
+        w=[point.x-a.x,point.y-a.y,point.z-a.z],
+        len2=v.reduce((n,x)=>n+x*x,0);
+       if(!(len2>1e-16))return false;
+       const t=w.reduce((n,x,i)=>n+x*v[i],0)/len2,
+        cross=[w[1]*v[2]-w[2]*v[1],
+         w[2]*v[0]-w[0]*v[2],w[0]*v[1]-w[1]*v[0]],
+        distance=Math.hypot(...cross)/Math.sqrt(len2);
+       return t>=-1e-8&&t<=1+1e-8&&
+        distance<=1e-8*Math.max(1,Math.sqrt(len2));
+      };
+      const sourceSegmentMatches=g=>
+       pointOnGeneratedSegment(candidate.source3DFrom,g)&&
+       pointOnGeneratedSegment(candidate.source3DTo,g)&&
+       Math.hypot(candidate.source3DTo.x-candidate.source3DFrom.x,
+        candidate.source3DTo.y-candidate.source3DFrom.y,
+        candidate.source3DTo.z-candidate.source3DFrom.z)>1e-8;
+      const idMatches=generatedGroups.filter(g=>
+       g.sourceFeatureId===candidate.sourceFeatureId&&sourceSegmentMatches(g));
+      const physicalMatches=generatedGroups.filter(sourceSegmentMatches);
+      // M4/M5 IDs are different namespaces. Prefer an ID match only after
+      // exact 3D subspan containment; otherwise allow a UNIQUE physical
+      // segment match within the same reviewed source bodies and revision.
+      const linkedGenerated=idMatches.length===1?idMatches[0]:
+       idMatches.length===0&&physicalMatches.length===1?physicalMatches[0]:null;
+      const sourceLinkStatus=candidate.sourceFeatureKind!=='generated-two-face-crease'?
+       'not-a-generated-crease':linkedGenerated?'unique-3d-source-match':
+       physicalMatches.length>1?'ambiguous-3d-source-match':'unmatched-3d-source';
       const linkedKey=linkedGenerated?
        JSON.stringify([linkedGenerated.geometryId,'segment']):null;
       const linkedSelected=!!linkedGenerated&&
@@ -1322,6 +1350,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-c2-m5-ray-status':candidate.rayStatus,
        'data-c2-m5-paper-view':candidate.view,
        'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
+       'data-c2-m5-source-feature-id':candidate.sourceFeatureId??'unresolved',
+       'data-c2-m5-source-link-status':sourceLinkStatus,
        'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
        'data-visibility':'undetermined',
        'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
