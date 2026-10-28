@@ -83,13 +83,13 @@ async function importProof(host,pack){
  await new Promise(resolve=>setImmediate(resolve));
 }
 test('C2 mobile review packages the actual single V5 modules, excludes raw textbook and remote AI',()=>{
- assert.match(html,/c2-native-cut-review-bundle\\.js/);
- assert.doesNotMatch(html,/src="\\.\\.\\/workbench\\//,
+ assert.ok(html.includes('c2-native-cut-review-bundle.js'));
+ assert.ok(!html.includes('src="../workbench/'),
   'never publish private original V5 source paths as public assets');
  const entry=read('labs/c2-native-cut-review-entry.cjs');
- assert.match(entry,/require\\('\\.\\.\\/workbench\\/teaching-timeline-v5\\.js'\\)/);
- assert.match(entry,/require\\('\\.\\.\\/workbench\\/teaching-motion-v5\\.js'\\)/);
- assert.match(read('scripts/build-static.cjs'),/c2-native-cut-review-bundle\\.js/);
+ assert.ok(entry.includes("require('../workbench/teaching-timeline-v5.js')"));
+ assert.ok(entry.includes("require('../workbench/teaching-motion-v5.js')"));
+ assert.ok(read('scripts/build-static.cjs').includes('c2-native-cut-review-bundle.js'));
  assert.match(js,/timelineV5\.compileTimeline\(p\.steps\)/);
  assert.match(js,/timelineV5\.createPlayer\(computed/);
  assert.match(js,/motionV5\.actionShapeAttrs/);
