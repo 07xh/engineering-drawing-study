@@ -39,7 +39,7 @@ test('V8 review requires explicit approval, calls canonical V5 and revokes appro
   require('../../project/unified-workbench-entry.cjs');
   for(let i=0;i<12&&!$('v7-review').textContent.includes('尚未提交');i++)await tick();
   assert.ok($('v8-review-summary').textContent.includes('x=15'));
-  assert.equal($('v8-review-run').disabled,true,'cannot skip human review');
+  assert.equal($('v8-review-run').disabled,false,'one explicit click confirms and solves');
   assert.match($('v8-result-status').textContent,/尚未解题/);
   assert.equal($('v8-review-preflight').dataset.state,'ready');
   // An empty coordinate is identified before approval, not after attempting solve.
@@ -60,21 +60,19 @@ test('V8 review requires explicit approval, calls canonical V5 and revokes appro
   assert.equal($('v7-x').hasAttribute('aria-invalid'),false);
   assert.equal($('v8-review-ack').disabled,false);
   // A real user checks displayed coordinates and explicitly grants approval.
-  $('v8-review-ack').checked=true;fire('v8-review-ack','change');
-  assert.equal($('v8-review-run').disabled,false);
   fire('v8-review-run','click');
   for(let i=0;i<8;i++)await tick();
   assert.match($('v7-proof').textContent,/已验证的点投影/);
   assert.match($('v8-result-status').textContent,/已完成/);
   assert.equal($('v8-result-status').dataset.state,'verified');
   assert.equal($('v8-review-ack').checked,false,'ack is not permanent');
-  assert.equal($('v8-review-run').disabled,true);
+  assert.equal($('v8-review-run').disabled,false);
   // Changing one entry revokes old proof and cannot silently authorize V5.
   $('v7-x').value='23';fire('v7-x','input');
   await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v8-review-ack').checked,false);
-  assert.equal($('v8-review-run').disabled,true);
+  assert.equal($('v8-review-run').disabled,false);
   assert.match($('v8-review-summary').textContent,/x=23/);
   assert.match($('v8-review-summary').textContent,/尚未保存/);
   // Switching with unsaved typed input is forbidden even when the storage
@@ -84,7 +82,7 @@ test('V8 review requires explicit approval, calls canonical V5 and revokes appro
   assert.equal($('v7-task').value,'projection');
   assert.match($('v7-save').textContent,/尚未保存的条件修改/);
   assert.equal($('v7-x').value,'23');
-  assert.equal($('v8-review-run').disabled,true);
+  assert.equal($('v8-review-run').disabled,false);
  }finally{
   global.document=prev.document;global.window=prev.window;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;

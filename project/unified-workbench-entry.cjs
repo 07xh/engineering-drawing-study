@@ -1497,7 +1497,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   // Completeness is distinct from mathematical correctness.
   readiness.dataset.state=allowed?'ready':'blocked';
   readiness.textContent=allowed?
-   '必要条件已填写。请对照题目核对尺寸、单位和分支，再勾选确认；数学结果仍需正式求解。':
+   '必要条件已填写。请对照题目核对尺寸、单位和分支，再点击确认求解。':
    reviewIssue;
   edit.hidden=!reviewTarget;
   edit.dataset.target=reviewTarget;
@@ -1507,7 +1507,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    (c1ParseIssue?' C1 条件检查：'+c1ParseIssue:'');
   ack.disabled=!allowed;
   if(!allowed)ack.checked=false;
-  button.disabled=!allowed||!ack.checked;
+  button.disabled=!allowed;
  }
  function c2HasSavedWork(snap){
   return !!(snap&&(snap.objects.length||snap.conditions.length||
@@ -2296,8 +2296,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 完整相贯线和实虚线未认证。');
   else throw Error('专业数学结果未通过门禁');
  }
- // Human-led single action: the checkbox cannot be inferred from OCR or
- // restored from a project. The verified flags still originate in M3/M5 only.
+ // The button itself is the explicit confirmation for the current displayed input.
  $('v8-review-ack').addEventListener('change',()=>updateReviewPanel(coordinator?.snapshot()));
  $('v8-review-edit').addEventListener('click',()=>{
   const id=$('v8-review-edit').dataset.target,field=id?$(id):null;
@@ -2308,16 +2307,19 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  });
  $('v8-review-run').addEventListener('click',()=>call(async()=>{
   updateReviewPanel(coordinator?.snapshot());
-  if($('v8-review-run').disabled)
+  if(!coordinator||coordinator.snapshot().task==='composition'||$('v8-review-run').disabled)
    throw Error('请先补全并核对题目条件');
-  if(!$('v8-review-ack').checked)throw Error('请先核对题目条件并勾选确认');
-  if(!coordinator||coordinator.snapshot().task==='composition')
-   throw Error('该题型不能使用快捷求解');
-  stageCurrentTask();
-  coordinator.confirmCondition('coords');
-  solveCurrentTask();
-  $('v8-review-ack').checked=false;
-  updateReviewPanel(coordinator.snapshot());
+  $('v8-review-ack').checked=true;
+  try{
+   stageCurrentTask();
+   coordinator.confirmCondition('coords');
+   solveCurrentTask();
+   if(window.matchMedia?.('(max-width: 860px)').matches)
+    ($('v7-sheet').hidden?($('v9-three-space').hidden?$('v7-3d'):$('v9-three-space')):$('v7-sheet')).scrollIntoView?.({block:'start',behavior:'auto'});
+  }finally{
+   $('v8-review-ack').checked=false;
+   updateReviewPanel(coordinator.snapshot());
+  }
  }));
  $('v7-stage-other').addEventListener('click',()=>call(async()=>{
   if(coordinator?.snapshot().task==='projection')throw Error('点投影请使用坐标入口');

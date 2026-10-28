@@ -106,7 +106,7 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
   assert.equal($('v7-play').disabled,true);
-  assert.equal($('v8-review-run').disabled,true);
+  assert.equal($('v8-review-run').disabled,false,'button can explicitly confirm the changed input');
   $('v7-task').value='projection';fire('v7-task','change');
   await tick();await tick();
   assert.equal($('v7-task').value,'c3-intersection','unsaved C3 edit blocks task switching');
