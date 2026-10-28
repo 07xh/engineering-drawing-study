@@ -173,20 +173,21 @@ function homeHTML(){return `
     <p class="v7-warning">仅复用已证明的解析求交点、V/H/W 辅助求点和现有唯一 V5。数学曲线预览不等于整条相贯线已取得工程实虚线资格。</p>
    </fieldset>
    <fieldset data-v7-task="c1-third-view" hidden>
-    <legend>C1 · 已确认单个闭合长方体补第三视图</legend>
-    <p class="v7-note">填写两张已知视图中全部八个对应角点的模型毫米坐标。
-    请依据真实题目人工确认棱与面的固定拓扑，不识别任意照片中的未知实体。</p>
+    <legend>C1 · 补第三视图（八角点闭合凸体）</legend>
+    <p class="v7-note">先按原题核对八个对应点，输入模型毫米坐标。第一角法：V=(x,z)，H=(x,y)，W=(y,z)；
+    同一角点在两张视图中共同的 x、y 或 z 必须一致。此处不从题图猜测顶点身份或拓扑。</p>
     <label>已知视图 <select id="v8-c1-pair">
      <option value="VH">正面 V + 水平 H</option>
      <option value="VW">正面 V + 侧面 W</option>
      <option value="HW">水平 H + 侧面 W</option>
     </select></label>
-    <label>角点表（每行：ID, 第一视图 u,v, 第二视图 u,v）
+    <label>八个角点（每行：编号, 第一视图 u,v, 第二视图 u,v；单位 mm）
      <textarea id="v8-c1-vertices" rows="9" spellcheck="false"
       placeholder="V000,0,0,0,0"></textarea></label>
+    <p class="v7-note">修改坐标即撤销旧确认与动画；坐标冲突或重合角点会在确认区提示具体编号。</p>
     <label class="v8-review-agree"><input id="v8-c1-topology" type="checkbox">
-     我已经对照原题确认八个顶点 ID 的对应关系、长方体全部 12 条棱与 6 个面的闭合凸拓扑。</label>
-    <p class="v7-warning">仅支持已知拓扑的单个凸长方体。已证明的顶点与部分来源轮廓可进入唯一 V5；隐藏线和完整实体解答仍待认证。</p>
+     我已经对照原题确认八个顶点 ID 的对应关系、单个八角点实体全部 12 条棱与 6 个面的闭合凸拓扑。</label>
+    <p class="v7-warning">仅支持人工确认的八点固定闭合凸拓扑，包含满足条件的斜棱柱。全部 M0–M5 证明通过时，唯一 V5 可以绘制正式实线和隐藏虚线；不等于任意题图自动解答或教材盲测通过。</p>
    </fieldset>
    <fieldset data-v7-task="planar" hidden>
     <legend>二维圆弧连接 · 两条有限线段（模型 mm）</legend>

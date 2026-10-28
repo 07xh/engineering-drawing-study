@@ -1168,17 +1168,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const suffix=snap.source.imageId?
    ' 原图仅本机保存；请逐项核对后再确认。':
    ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
-  summary.textContent=label+suffix+
-   (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'');
-  // This checkbox cannot authorize an empty or contradictory specialist
-  // form. It is reviewed by a person, then STILL checked by M3/M5.
-  let allowed=snap.task!=='composition';
+  // Live UI preflight does not sign geometry: original 03/M0-M5
+  // recompute all reviewed input on confirmed submission.
+  let allowed=snap.task!=='composition',reviewIssue='';
   if(snap.task==='c1-third-view'){
+   if(!$('v8-c1-topology').checked)allowed=false;
    try{
-    if(!$('v8-c1-topology').checked)allowed=false;
-    else parseReviewedC1Rows($('v8-c1-vertices').value,
-      $('v8-c1-pair').value);
-   }catch(_){allowed=false;}
+    parseReviewedC1Rows($('v8-c1-vertices').value,
+     $('v8-c1-pair').value);
+   }catch(error){
+    allowed=false;
+    reviewIssue=error.message;
+   }
   }
   if(snap.task==='c3-intersection'){
    try{
@@ -1191,6 +1192,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     })));
    }catch(_){allowed=false;}
   }
+  summary.textContent=label+suffix+
+   (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'')+
+   (reviewIssue?' C1 条件检查：'+reviewIssue:'');
   ack.disabled=!allowed;
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
