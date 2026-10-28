@@ -283,8 +283,10 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
  // The newest source-private C1 review tool is an additional REAL tool,
  // not a duplicate of the old fixed 8-vertex long-box demonstration.
- assert.equal(links.length,20,'all published special-purpose tools remain reachable');
- assert.equal(new Set(links).size,20,'tool entries should not repeat');
+ assert.equal(links.length,21,'all published special-purpose tools, including signed-only C2 Cut, remain reachable');
+ assert.equal(new Set(links).size,21,'tool entries should not repeat');
+ assert(links.includes('labs/c2-native-cut-review.html'),
+  'real native Cut partial certified V5 preview is visible from the enhanced homepage');
  assert(links.includes('labs/c1-reviewed-dxf-live.html'),
   'new original DXF reviewed C1 source lab must be accessible from home');
  const my=document.querySelector('#knowledge');
