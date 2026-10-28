@@ -17,7 +17,7 @@ const {verifiedConvexMeshHalfspaces}=
  require('../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {certifyConvexSegmentClearance}=
  require('../core/numeric/convex-segment-clearance.cjs');
-const {certifyAxisBoxSourceOpenRay}=
+const {certifyAxisBoxSourceOpenRay,certifyAxisBoxSubtractiveOpenRay}=
  require('../core/numeric/axis-box-source-open-ray.cjs');
 const {evaluateFullSourceSegmentOcclusion}=
  require('../core/verification/convex-occlusion-coverage.cjs');
@@ -264,12 +264,29 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     continue;
    }
    if(operation==='cut'){
-    counts.unresolvedDepth++;
+    // S minus C is a SUBTRACTION, never an opaque union. The shared M0
+    // analytic ray theorem proves only stock-outward clearance or strict
+    // stock-front interior rays separated from the cutter in an observer-
+    // perpendicular coordinate. All other void-wall rays remain held.
+    const cutRay=certifyAxisBoxSubtractiveOpenRay({
+     source,stock:parts[0],cutter:parts[1],view
+    });
+    const clear=cutRay.status==='certified-clear',
+     hidden=cutRay.status==='certified-strictly-hidden';
+    if(clear)counts.clear++;
+    else if(hidden)counts.hidden++;
+    else counts.unresolvedDepth++;
     rows.push({...base,
-     status:'unresolved-subtracted-void-continuous-ray-depth',
-     fullNativeTopoDSResultEdgeContinuousRayProof:false,
+     status:clear?'entire-native-cut-edge-stock-monotonic-front-ray-clear':
+      hidden?'entire-native-cut-edge-strict-stock-front-outside-cutter':
+      'unresolved-subtracted-void-continuous-ray-depth',
+     fullNativeTopoDSResultEdgeContinuousRayProof:clear||hidden,
+     originalSubtractiveBooleanM0OpenRayEvidence:cutRay,
+     verifiedSubtractiveFrontRayClear:clear,
+     verifiedSubtractiveStrictlyHidden: hidden,
      allComponentClearIds:[],continuousUnionStrictOcclusionVerified:false,
-     allOriginalConvexComponentIds:solids.map(s=>s.id)
+     allOriginalConvexComponentIds:solids.map(s=>s.id),
+     officialEngineeringLineStyle:'undetermined',V5ActionSignedOff:false
     });
     continue;
    }
@@ -339,13 +356,15 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
   generatedNativeResultEdgeCount:seen.size,
   counts,rows,globalPaperEvents,
   originalNativeSourceM4FullPaperGraphRecomputed:true,
-  generatedEdgeContinuousM5SubspansRecomputed:operation==='union',
+  generatedEdgeContinuousM5SubspansRecomputed:true,
+  subtractiveCutOriginalEdgeOpenRayProofs:
+   operation==='cut'?counts.clear+counts.hidden:0,
   strictSubtractiveBooleanContinuousM5VisibilityProven:false,
   realOCCTGeneratedEdgeHistoryWasRecomputedByThisFunction:false,
   currentNativeReported3DAndM0SourceCrossChecked:true,
   allNativeResultEdgeEndpointIsSameJunctionsReconciled:true,
   authenticatedNativeResultVertexCount:vertexByOrdinal.size,
-  allFirstAngleWholeOriginalGeneratedEdgeRaysAudited:operation==='union',
+  allFirstAngleWholeOriginalGeneratedEdgeRaysAudited:true,
   completeBooleanBoundaryAndPaperJunctionsCertified:false,
   officialEngineeringLineStylesCertified:false,
   ConstructionIntentAuthorized:false,signedV5ActionCount:0
