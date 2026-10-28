@@ -72,15 +72,15 @@ test('actual native V/H/W scoped-source ledger is consumed but does not sign V5'
 test('two different original 3D edges with identical paper output remain ambiguous',()=>{
  const x=fixture();
  // The original model edges differ in 3D depth; no 2D point can resolve it.
- for(const view of ['V','H','W']){
-  const c=x.cad.nativeSourceScopedSharpOutputByView[view];
-  c.rows[1].visible.push(x.witness(view,x.id1));
-  c.nativeSourceScopedOutputEdgeCount=2;c.paperOnlyScopedOutputEdgeCount=2;
-  x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
- }
+ // In the FRONT (V) view the two edges project onto the same line;
+ // in H/W their different y positions must not be treated as identical.
+ const view='V',c=x.cad.nativeSourceScopedSharpOutputByView[view];
+ c.rows[1].visible.push(x.witness(view,x.id1));
+ c.nativeSourceScopedOutputEdgeCount=2;c.paperOnlyScopedOutputEdgeCount=2;
+ x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
  const r=audit(x);
- assert.equal(r.counts.paperAliasedWholeSolidEdgesWithMultipleOriginalSources,3);
- assert.deepEqual(r.views.H.visible[0].original3DSourceCandidatesFromNativeFilter,
+ assert.equal(r.counts.paperAliasedWholeSolidEdgesWithMultipleOriginalSources,1);
+ assert.deepEqual(r.views.V.visible[0].original3DSourceCandidatesFromNativeFilter,
   [x.id0,x.id1]);
  assert.equal(r.formalEngineeringLineStyleCertified,false);
 });
