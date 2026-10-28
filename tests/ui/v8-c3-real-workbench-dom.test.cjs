@@ -85,6 +85,9 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
    .filter(x=>x.getAttribute('data-geometry-id')===originalId);
   assert.ok(samePhysical.some(x=>x.getAttribute('data-source-feature-key')===key));
   first.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.match($('v7-selection').textContent,/空间相贯曲线来源/);
+  assert.match($('v7-selection').textContent,/不代表虚实线已认证/);
+  assert.equal($('v7-selection').getAttribute('aria-live'),'polite');
   assert.equal($('v7-play').disabled,false);
   assert.ok([...$('v7-3d').querySelectorAll('[data-source-feature-selected="true"]')]
    .some(x=>x.getAttribute('data-geometry-id')===originalId&&
