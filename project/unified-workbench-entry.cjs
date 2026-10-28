@@ -1199,8 +1199,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        partial.evidence.variableCount+'，残差 '+String(partial.evidence.residualMm)+
        ' mm。仅点约束数学证据，原图/完整作图/V5 均未签收。':
      partial.kind==='composition-evidence'?
-      '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
-       '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
+      '已确认组合体几何与 M2 关系：'+partial.relationEvidence.status+
+       '（'+partial.relationEvidence.checkedCount+' 条）。'+
+       (partial.originalMultiBodyEdgeRays?
+        'M5 原始三维棱线 '+partial.originalMultiBodyEdgeRays.originalSourceEdgeCount+
+        ' 条，V/H/W 原始投影记录 '+partial.originalMultiBodyEdgeRays.projectedEdgeRowCount+
+        ' 条，整段无遮挡 '+partial.originalMultiBodyEdgeRays.counts.clear+
+        ' 条、严格遮挡 '+partial.originalMultiBodyEdgeRays.counts.strictHidden+
+        ' 条、深度未定 '+partial.originalMultiBodyEdgeRays.counts.undetermined+
+        ' 条；退化点和非物理细分另行记录。所有原始棱均按 '+partial.originalMultiBodyEdgeRays.componentCount+
+        ' 个原始凸体逐一核对，未将二维投影重合当作三维同一点。':
+        '当前包含超出多凸体全棱证明范围的几何，只提供已有局部空间关系核验。')+
+       ' 原始棱遮挡不证明交汇生成边、完整实体外轮廓或国标工程线型；没有完整 V5 答案资格。':
      '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；'+
       (partial.evidence?.sectionVisibilityEvidence?.status==='open-edge-ray-only'?
        '保留材料侧已确认，局部截交边开区间射线判断 '+JSON.stringify(

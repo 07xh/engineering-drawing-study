@@ -43,6 +43,36 @@ test('C2 existing M0/M2/M5 geometry scene distinguishes local contact from full 
  assert.equal(result.scene.objects.length,2);
  assert.equal(result.compositionContactEvidence.boxCount,2);
  assert.equal(result.compositionContactEvidence.pairCount,1);
+ const rays=result.originalMultiBodyEdgeRays;
+ assert.equal(rays.schema,'draftai-m5-multiconvex-original-whole-edge-union-rays/1');
+ assert.equal(rays.componentCount,2);
+ assert.equal(rays.originalSourceEdgeCount,24);
+ assert.equal(rays.projectedEdgeRowCount,72);
+ assert.equal(rays.rows.length,72);
+ assert.equal(rays.sourceGeometryIds.length,2);
+ assert.equal(rays.allBodiesM0ClosedConvexVerified,true);
+ assert.equal(rays.allContinuousOriginalSourceRaysCheckedAgainstEveryComponent,true);
+ assert.equal(rays.counts.clear+rays.counts.strictHidden+rays.counts.undetermined,
+  rays.counts.physicalProjected);
+ assert.equal(rays.projectedEdgeRowCount,rays.counts.physicalProjected+
+  rays.counts.collapsed+rays.counts.ambiguousSourceDihedral+
+  rays.counts.coplanarMeshSubdivision);
+ assert.equal(rays.completedDrawingV5Authorized,false);
+ assert.equal(rays.combinedC2EngineeringLineStylesCertified,false);
+ assert.equal(rays.generatedIntersectionCurveEdgesCertified,false);
+ assert.equal(rays.signedV5ActionCount,0);
+ for(const row of rays.rows){
+  assert.ok(['V','H','W'].includes(row.view));
+  assert.ok(rays.sourceGeometryIds.includes(row.sourceGeometryId));
+  assert.equal(row.revision,coord.snapshot().revision);
+  assert.deepEqual(row.originalParameterRange,[0,1]);
+  if(row.sourceIsOriginal3DPhysicalCrease){
+   assert.equal(row.originalEntireSourceParameterRangeAudited,true);
+   assert.equal(row.allOriginalComponentIdsAudited.length,2);
+   assert.equal(row.finalProjectedJunctionAndLineStylesCertified,false);
+   assert.equal(row.signedV5Action,false);
+  }
+ }
  assert.equal(coord.canExport(),false);
  assert.equal(coord.currentResult(),null);
  const copy=importProject(exportProject(coord.snapshot()));
