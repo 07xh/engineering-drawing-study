@@ -33,6 +33,8 @@ const {auditC1RealOcctVisibleContourSourceParity,
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
+const {auditC1NativeScopedHLRSourceConsumer}=
+ require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -211,6 +213,25 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
  }
+ const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ assert.equal(scopedConsumer.schema,'draftai-c1-real-source-scoped-hlr-m5-consumer/1');
+ assert.equal(scopedConsumer.actualOriginalTopoDSSourceFilteredHLRConsumed,true);
+ assert.ok(scopedConsumer.counts.nativeSourceScopedOutputEdges>0);
+ assert.equal(scopedConsumer.counts.nativeSourceScopedOutputEdges,
+  scopedConsumer.counts.nativeGeneratedIsSameMatches+
+  scopedConsumer.counts.paperOnlySourceScopedEdges);
+ assert.equal(scopedConsumer.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(scopedConsumer.globalContinuousVisibilityCertified,false);
+ assert.equal(scopedConsumer.formalEngineeringLineStyleCertified,false);
+ assert.equal(scopedConsumer.signedV5ActionCount,0);
+ for(const view of ['V','H','W'])
+  for(const klass of ['visible','hidden'])
+   for(const stroke of scopedConsumer.views[view][klass]){
+    assert.equal(stroke.originalTopoDSHistoryProven,false);
+    assert.equal(stroke.originalSourceParameterCoverageProven,false);
+    assert.equal(stroke.continuousFrontRayProven,false);
+    assert.equal(stroke.signedV5Action,false);
+   }
  // Exercise the EXACT production paper overlap predicate on genuine native
  // OpenCascade.js visible AND hidden sharp segments, not only synthetic
  // adversarial fixtures. Reversal must not alter a positive native span.
