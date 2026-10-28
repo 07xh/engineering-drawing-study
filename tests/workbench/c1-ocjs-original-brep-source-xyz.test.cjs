@@ -117,6 +117,20 @@ test('native IsPartner must be reflexive before suggesting TShape-only source ca
   originalSourceEdges:sources}),/nonreflexive original native TopoDS IsPartner/);
 });
 
+test('direct HLR edge probe rejects distinct original M0 IDs sharing one native edge even without generated match',()=>{
+ const sources=[{sourceEdgeId:'G::A|B',edge:native('same')},
+  {sourceEdgeId:'G::C|D',edge:native('same')}];
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:sources}),/multiple different original physical edges/);
+});
+test('direct HLR edge probe rejects asymmetric original-to-original native IsSame',()=>{
+ const first={IsSame(other){return other===this||other?.tag==='second';}};
+ const second={tag:'second',IsSame(other){return other===this;}};
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:[{sourceEdgeId:'G::A|B',edge:first},
+   {sourceEdgeId:'G::C|D',edge:second}]}),
+  /asymmetric original native TopoDS source ledger IsSame/);
+});
 test('projected HLR output edge with matching paper line but distinct native TShape never gains original TopoDS identity',()=>{
  const proof=probe({generatedEdge:native('hlr-generated'),
   originalSourceEdges:originals()});
@@ -246,6 +260,49 @@ test('real original TopoDS vertex IsSame is a scoped direct 3D identity in V/H/W
   assert.equal(proof.officialEngineeringLineStyle,'undetermined');
   assert.equal(proof.signedV5Action,false);
  }
+});
+test('unmatched native HLR vertex cannot conceal a repeated original M0 ID with different TShape or Location',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ for(const other of [native('different'),native('a',1)]){
+  const source=vertexLedger(g,[['A','a']]);
+  source.push({sourceVertexId:'A',originalModelXYZ:{...g.data.points.A},vertex:other});
+  assert.throws(()=>probeVertexIn(g,'V',native('unrelated-generated'),
+   source,paper),/duplicate original M0 vertex ID aliases distinct native TopoDS vertices/);
+ }
+});
+test('unmatched native HLR vertex rejects two different original M0 IDs sharing one native TopoDS vertex',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ assert.throws(()=>probeVertexIn(g,'V',native('unrelated-generated'),
+  vertexLedger(g,[['A','shared'],['B','shared']]),paper),
+  /conflicting original M0 vertices/);
+});
+test('native original vertex ledger rejects forged model XYZ even if generated HLR vertex is unrelated',()=>{
+ const g=shape(),paper=project(g.data.points.A).V,
+  original=vertexLedger(g,[['A','original']]);
+ original[0].originalModelXYZ.x=Number.MIN_VALUE;
+ assert.throws(()=>probeVertexIn(g,'V',native('unrelated-generated'),
+  original,paper),/unbound original M0 vertex identity/);
+});
+test('native vertex IsPartner self-relation must be reflexive before exposing candidate IDs',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ const generated=native('unrelated-generated');
+ generated.IsPartner=()=>false;
+ assert.throws(()=>probeVertexIn(g,'V',generated,
+  vertexLedger(g,[['A','original']]),paper),
+  /nonreflexive generated native TopoDS vertex IsPartner/);
+ const original=vertexLedger(g,[['A','original']]);
+ original[0].vertex.IsPartner=()=>false;
+ assert.throws(()=>probeVertexIn(g,'V',native('unrelated-generated'),
+  original,paper),/nonreflexive original native TopoDS vertex IsPartner/);
+});
+test('unmatched native HLR vertex preserves legal repeated original vertex identity without signing V5',()=>{
+ const g=shape(),paper=project(g.data.points.A).V;
+ const proof=probeVertexIn(g,'V',native('unrelated-generated'),
+  vertexLedger(g,[['A','original'],['A','original'],['B','other']]),paper);
+ assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+ assert.equal(proof.partnerUniqueOriginalM0VertexCandidateId,null);
+ assert.equal(proof.officialEngineeringLineStyle,'undetermined');
+ assert.equal(proof.signedV5Action,false);
 });
 test('paper coincidence and nearby but different native TopoDS TShape or Location cannot become original 3D identity',()=>{
  const g=shape(),original=vertexLedger(g,[['A','source-a']]);
