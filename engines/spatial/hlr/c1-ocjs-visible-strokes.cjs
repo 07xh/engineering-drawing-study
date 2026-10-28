@@ -342,21 +342,32 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
     !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
     originalSourceEdges.length>512)
   throw new TypeError('real indexed OCCT HLR DataStructure EdgeMap required');
- const sourceIds=originalSourceEdges.map(x=>x?.sourceEdgeId);
- if(sourceIds.some(id=>typeof id!=='string'||!id)||
-    new Set(sourceIds).size!==sourceIds.length||
-    originalSourceEdges.some(x=>typeof x?.edge?.IsSame!=='function'))
-  throw new RangeError('duplicate or unbound original TopoDS source ledger');
+ const sourceById=new Map();
+ for(const item of originalSourceEdges){
+  if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
+     typeof item.edge?.IsSame!=='function')
+   throw new RangeError('duplicate or unbound original TopoDS source ledger');
+  const prior=sourceById.get(item.sourceEdgeId);
+  if(prior){
+   // TopExp explorers can expose repeated occurrences of the SAME physical
+   // source edge. Collapse only when native IsSame is symmetric and true.
+   const forward=item.edge.IsSame(prior.edge),backward=prior.edge.IsSame(item.edge);
+   if(typeof forward!=='boolean'||typeof backward!=='boolean'||
+      forward!==backward||forward!==true)
+    throw new RangeError('duplicate or unbound original TopoDS source ledger');
+  }else sourceById.set(item.sourceEdgeId,item);
+ }
+ const uniqueSourceEdges=[...sourceById.values()];
  const extent=edgeMap.Extent();
  if(!Number.isSafeInteger(extent)||extent<1||extent>512)
   throw new RangeError('bounded native HLR original edge map extent required');
- const indexed=[],seen=new Set(),originalIds=new Set(sourceIds);
+ const indexed=[],seen=new Set(),originalIds=new Set(sourceById.keys());
  for(let i=1;i<=extent;i++){
   // FindKey returns a borrowed reference into OCCT's indexed map.
   // Deleting it would corrupt the owning HLR DataStructure.
   const edge=edgeMap.FindKey(i);
   const proof=probeRealOcctHLREdgeDirectOriginalSourceIdentity({
-   generatedEdge:edge,originalSourceEdges
+   generatedEdge:edge,originalSourceEdges:uniqueSourceEdges
   });
   const id=proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
   if(id!==null){
@@ -374,6 +385,8 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   scope:'native-hlr-internal-original-source-index-only',
   internalEdgeMapExtent:extent,
   originalSourceIdsInInputBRep:originalIds.size,
+  originalSourceEdgeOccurrenceCount:originalSourceEdges.length,
+  uniqueOriginalSourceEdgeCount:uniqueSourceEdges.length,
   internalEdgeMapOriginalSourceIdsMatched:seen.size,
   everyOriginalBRepSourcePresentInHLRDataStructure:
    seen.size===originalIds.size,
