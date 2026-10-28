@@ -525,6 +525,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
+ // Local per-stroke visual selection; never persisted into input or M3/V5.
+ let selectedSourceFeature=null;
  let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
  let uncommittedFormEdit=false;
@@ -685,14 +687,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  function mount(project){
-  stopAnimation();closePhoto();
+  stopAnimation();closePhoto();selectedSourceFeature=null;
   if(unsub)unsub();unsub=null;
   coordinator?.dispose();
   coordinator=createCoordinator(project);
   session=createUnifiedProjectSession();
   coordinator.attachSolver(session);
   unsub=coordinator.subscribe(event=>{
-   if(event.kind==='input'){stopAnimation();}
+   if(event.kind==='input'){stopAnimation();selectedSourceFeature=null;}
    if(event.kind==='input'||event.kind==='view')queueSave();
    render();
   });
@@ -851,7 +853,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    // A named 3D point's third projection is released by the verified V5
    // timeline, not by the generic Geometry Scene visualizer.
    if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;
-   const selected=selectedIds.has(item.objectId);
+   const featureSelected=!!selectedSourceFeature&&
+    selectedSourceFeature.revision===snap.revision&&
+    selectedSourceFeature.objectId===item.objectId&&
+    selectedSourceFeature.key===item.sourceFeatureKey;
+   const selected=selectedSourceFeature?featureSelected:selectedIds.has(item.objectId);
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
@@ -865,6 +871,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(item.objectId){
     node.setAttribute('data-geometry-id',item.objectId);
     node.setAttribute('data-geometry-view',item.view);
+    if(item.sourceFeatureKey){
+     node.setAttribute('data-source-feature-key',item.sourceFeatureKey);
+     node.setAttribute('data-source-feature-selected',String(featureSelected));
+    }
     if(item.visibility==='undetermined')
      node.setAttribute('data-visibility','undetermined');
    }
@@ -876,7 +886,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       '选择 '+item.objectId+' 的 '+item.view+' 表达';
     node.setAttribute('tabindex','0');node.setAttribute('role','button');
     node.setAttribute('aria-label',label);
-    const pick=()=>coordinator.selectSceneGeometry(item.objectId);
+    const pick=()=>{
+     // Same original edge in 2D and 3D gets one feature key. A second tap
+     // switches back to the existing whole-object selection.
+     selectedSourceFeature=selectedSourceFeature?.key===item.sourceFeatureKey&&
+      selectedSourceFeature?.objectId===item.objectId?null:
+      item.sourceFeatureKey?{key:item.sourceFeatureKey,
+       objectId:item.objectId,revision:snap.revision}:null;
+     coordinator.selectSceneGeometry(item.objectId);
+    };
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
@@ -1310,6 +1328,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  if(selectedSourceFeature&&(selectedSourceFeature.revision!==snap.revision||
+     coordinator.selectedGeometryId()!==selectedSourceFeature.objectId))
+   selectedSourceFeature=null;
   refreshCandidateLinks();
   paintPhotoMarkers();
   $('v7-cal-status').textContent=calibrationStatus(snap.source);
