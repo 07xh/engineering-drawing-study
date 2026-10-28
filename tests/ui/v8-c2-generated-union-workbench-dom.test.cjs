@@ -90,22 +90,16 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal(new Set(rayShapes.map(x=>
    x.getAttribute('data-c2-m5-paper-view'))).size,3);
   const linkedRayShapes=rayShapes.filter(x=>
-   x.getAttribute('data-c2-generated-source-id'));
+   x.getAttribute('data-c2-m5-linked-generated-source-id'));
   assert.ok(linkedRayShapes.length>0,
-   'generated-source M5 ray diagnostics must point to the authentic 3D source; '+JSON.stringify(
-    rayShapes.map(x=>({view:x.getAttribute('data-c2-m5-paper-view'),
-     kind:x.getAttribute('data-c2-m5-source-kind'),
-     status:x.getAttribute('data-c2-m5-source-link-status'),
-     source:x.getAttribute('data-c2-m5-source-feature-id'),
-     subspan:x.getAttribute('data-c2-m5-source-subspan'),
-     debug:x.getAttribute('data-c2-m5-link-debug')}))));
+   'generated-source M5 ray diagnostics must point to the authentic 3D source');
   assert.ok(linkedRayShapes.every(x=>
    x.getAttribute('data-geometry-id')&&
    x.getAttribute('data-source-feature-key')&&
    x.getAttribute('tabindex')==='0'&&
    x.getAttribute('data-source-feature-selected')==='false'));
   for(const ray of linkedRayShapes){
-   const id=ray.getAttribute('data-c2-generated-source-id');
+   const id=ray.getAttribute('data-c2-m5-linked-generated-source-id');
    const key=ray.getAttribute('data-source-feature-key');
    assert.ok(source3D().some(x=>
     x.getAttribute('data-c2-generated-source-id')===id&&
@@ -158,11 +152,11 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
    .filter(x=>x.getAttribute('data-source-feature-key')===pickedKey).length,3);
   assert.equal($('v7-play').disabled,true,'selection never approves generated V5');
   const rayPick=rays().find(x=>
-   x.getAttribute('data-c2-generated-source-id')&&
-   x.getAttribute('data-c2-generated-source-id')!==
+   x.getAttribute('data-c2-m5-linked-generated-source-id')&&
+   x.getAttribute('data-c2-m5-linked-generated-source-id')!==
     first3D.getAttribute('data-c2-generated-source-id'));
   assert.ok(rayPick,'choose an M5 diagnostic for a different real generated source');
-  const raySourceId=rayPick.getAttribute('data-c2-generated-source-id'),
+  const raySourceId=rayPick.getAttribute('data-c2-m5-linked-generated-source-id'),
    raySourceKey=rayPick.getAttribute('data-source-feature-key');
   rayPick.dispatchEvent(new window.Event('click',{bubbles:true}));await settle();
   assert.equal(source3D().filter(x=>
@@ -172,7 +166,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
    x.getAttribute('data-c2-generated-source-id')===raySourceId&&
    x.getAttribute('data-source-feature-selected')==='true').length,3);
   assert.ok(rays().filter(x=>
-   x.getAttribute('data-c2-generated-source-id')===raySourceId).every(x=>
+   x.getAttribute('data-c2-m5-linked-generated-source-id')===raySourceId).every(x=>
     x.getAttribute('data-source-feature-key')===raySourceKey&&
     x.getAttribute('data-source-feature-selected')==='true'));
   assert.equal($('v7-play').disabled,true,'M5 selection never approves generated V5');

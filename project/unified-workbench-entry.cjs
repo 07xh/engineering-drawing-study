@@ -1370,14 +1370,6 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-c2-m5-source-feature-id':candidate.sourceFeatureId??'unresolved',
        'data-c2-m5-source-kind':candidate.sourceFeatureKind??'unresolved',
        'data-c2-m5-source-link-status':sourceLinkStatus,
-       'data-c2-m5-link-debug':JSON.stringify({
-        source:{id:candidate.sourceFeatureId,from:candidate.source3DFrom,to:candidate.source3DTo,
-         geometryIds:candidate.sourceGeometryIds},
-        groups:generatedGroups.map(g=>({id:g.sourceFeatureId,from:g.source3DFrom,
-         to:g.source3DTo,geometryIds:g.sourceGeometryIds,
-         overlap:sourceSegmentOverlap(g)})),
-        idMatchCount:idMatches.length,physicalMatchCount:physicalMatches.length
-       }),
        'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
        'data-visibility':'undetermined',
        'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
@@ -1406,7 +1398,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
          'data-visibility':'undetermined',
          'aria-label':'选择真实 C2 三维新生棱的对应重叠区间；仅为开区间射线诊断'
         });
-        linkNode.setAttribute('data-c2-generated-source-id',linkedGenerated.sourceFeatureId);
+        // M5 diagnostic overlays use a separate namespace from the actual
+        // rendered Geometry Scene strokes, so DOM consumers cannot count
+        // a proof guide as an extra physical 3D projection.
+        linkNode.setAttribute('data-c2-m5-linked-generated-source-id',
+         linkedGenerated.sourceFeatureId);
         linkNode.setAttribute('data-geometry-id',linkedGenerated.geometryId);
         linkNode.setAttribute('data-source-feature-key',linkedKey);
         linkNode.setAttribute('data-source-feature-selected',String(linkedSelected));
