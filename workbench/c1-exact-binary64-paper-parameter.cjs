@@ -129,4 +129,71 @@ function auditExactBinary64PaperCandidateCoverage({
  return Object.freeze(result);
 }
 
-module.exports={auditExactBinary64PaperParameterPair,auditExactBinary64PaperCandidateCoverage};
+
+/**
+ * Intersect the exact dyadic-rational PAPER intervals of two native HLR
+ * visibility classes on the SAME original projected source. Number-valued
+ * inverse t can round two positive spans to [0,0] (or [1,1]), losing
+ * a real visible/hidden source-class collision.
+ *
+ * Reuse the existing exact rational source union; do NOT accept a
+ * rounded overlap as a substitute for generated TopoDS history, physical
+ * endpoint topology, all-face rays or an engineering stroke.
+ */
+function auditExactBinary64PaperVisibilityConflict({
+ sourceFrom,sourceTo,visibleSegments,hiddenSegments
+}={}){
+ const visible=auditExactBinary64PaperCandidateCoverage({
+  sourceFrom,sourceTo,segments:visibleSegments
+ });
+ const hidden=auditExactBinary64PaperCandidateCoverage({
+  sourceFrom,sourceTo,segments:hiddenSegments
+ });
+ const parse=text=>{
+  const [n,d='1']=text.split('/');
+  const numerator=BigInt(n),denominator=BigInt(d);
+  if(denominator<=0n)throw new RangeError('invalid exact M0 paper interval denominator');
+  return {n:numerator,d:denominator};
+ };
+ const compare=(a,b)=>{
+  const diff=a.n*b.d-b.n*a.d;
+  return diff<0n?-1:diff>0n?1:0;
+ };
+ const v=visible.exactBinary64PaperPositiveLengthCoveredIntervals.map(
+  pair=>pair.map(parse));
+ const h=hidden.exactBinary64PaperPositiveLengthCoveredIntervals.map(
+  pair=>pair.map(parse));
+ const overlap=[];let i=0,j=0;
+ const print=p=>p.d===1n?String(p.n):String(p.n)+'/'+String(p.d);
+ while(i<v.length&&j<h.length){
+  const from=compare(v[i][0],h[j][0])>=0?v[i][0]:h[j][0];
+  const to=compare(v[i][1],h[j][1])<=0?v[i][1]:h[j][1];
+  if(compare(from,to)<0){
+   // The two class unions are separately normalized and disjoint.
+   // Merge only actually touching exact intervals.
+   if(overlap.length&&compare(from,overlap.at(-1)[1])<=0){
+    if(compare(to,overlap.at(-1)[1])>0)overlap.at(-1)[1]=to;
+   }else overlap.push([from,to]);
+  }
+  const order=compare(v[i][1],h[j][1]);
+  if(order<=0)i++;
+  if(order>=0)j++;
+ }
+ const conflicts=overlap.map(([from,to])=>Object.freeze([print(from),print(to)]));
+ return Object.freeze({
+  schema:'draftai-c1-exact-binary64-paper-visible-hidden-conflict/1',
+  dominantOriginalProjectionAxis:visible.dominantOriginalProjectionAxis,
+  exactBinary64PaperVisibleClassCoverage:visible,
+  exactBinary64PaperHiddenClassCoverage:hidden,
+  exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals:Object.freeze(conflicts),
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict:conflicts.length>0,
+  exactForReceivedBinary64PaperCoordinates:true,
+  actualNativeGeneratedToOriginalTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  officialEngineeringLineStyle:'undetermined',
+  signedV5Action:false
+ });
+}
+
+module.exports={auditExactBinary64PaperParameterPair,auditExactBinary64PaperCandidateCoverage,
+ auditExactBinary64PaperVisibilityConflict};
