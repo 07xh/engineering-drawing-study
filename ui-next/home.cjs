@@ -289,6 +289,15 @@ function homeHTML(){return `
 
 
    </fieldset>
+   <section class="v8-review-check" aria-labelledby="v8-review-title">
+    <h3 id="v8-review-title">核对条件并解题</h3>
+    <p class="v8-review-lead">以下内容取自当前填写的条件，并非自动识图结果。</p>
+    <p id="v8-review-summary" class="v8-review-summary" role="status">请选择解题类型并检查输入。</p>
+    <label class="v8-review-agree"><input id="v8-review-ack" type="checkbox">
+     我已逐项核对题目、尺寸、单位及必要的解题分支。</label>
+    <button type="button" id="v8-review-run" class="v7-primary" disabled>确认并开始计算</button>
+    <p class="v8-review-help">确认后使用现有数学求解器；条件冲突或证据不足仍会阻止正式答案。</p>
+   </section>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
    <div class="v7-advanced"><strong>更多已存在专业工具</strong>
    <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
@@ -304,8 +313,12 @@ function homeHTML(){return `
    <p class="v7-note" id="v7-selection">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
   </section>
   <section class="v7-card v7-steps" aria-label="统一 V5 播放与数学证据"><h2>真实作图步骤 · V5</h2>
-   <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
-   <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
+   <p id="v8-result-status" class="v8-result-status" role="status">尚未求解。请先确认条件。</p>
+   <details class="v8-proof-details">
+    <summary>查看数学验证与线型依据</summary>
+    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
+   </details>
    <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
    <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
