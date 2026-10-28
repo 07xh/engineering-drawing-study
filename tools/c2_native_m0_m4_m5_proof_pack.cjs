@@ -490,6 +490,9 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   originalModelBoundsSha256:nativeReport.canonicalOriginalComponentGeometrySHA256,
   actualNativeOpenCascadeRanInThisProcessTree:true,
   sourceManifestHadNoReferenceAnswer:true,
+  // The bare OCP topology reference never signs V5; the sole existing
+  // ConstructionIntent signer below may sign a strictly verified subset.
+  nativeReferenceSignedV5ActionCount:0,
   signedV5ActionCount:0,
   scope:operation==='cut'?
    'one-reviewed-box-minus-through-rectangular-bore-unsigned-m4-reference':
@@ -507,6 +510,8 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   signCertifiedNativeC2OpenRaySubspans({
    math,nativeReport,revision:manifest.revision,cutJointGate
   }):null;
+ provenance.signedV5ActionCount=
+  (certifiedV5??certifiedCutPartialV5)?.certifiedVisibleHiddenSourceIntervals.length??0;
  if(operation==='cut'&&(
   certifiedCutPartialV5?.actualOriginalBooleanOperation!=='cut'||
   certifiedCutPartialV5.entireCutOriginalDrawingSigned!==false||
