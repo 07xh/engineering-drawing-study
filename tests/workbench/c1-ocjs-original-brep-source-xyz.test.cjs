@@ -58,7 +58,8 @@ test('nonfinite or ambiguous original source cannot gain unique TopoDS identity'
 
 const native=(tshape,loc=0)=>({
  tshape,loc,
- IsSame(other){return this.tshape===other.tshape&&this.loc===other.loc;}
+ IsSame(other){return this.tshape===other.tshape&&this.loc===other.loc;},
+ IsPartner(other){return this.tshape===other.tshape;}
 });
 const originals=()=>[
  {sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('a')},
@@ -92,6 +93,34 @@ test('native OCCT IsSame checks location; matching TShape at another location is
   originalSourceEdges:originals()});
  assert.equal(proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId,null);
 });
+
+test('native OCCT IsPartner discovers shared source TShape across Location but remains only a candidate',()=>{
+ const proof=probe({generatedEdge:native('a',5),originalSourceEdges:originals()});
+ assert.equal(proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId,null);
+ assert.equal(proof.actualOCCTGeneratedEdgePartnerOriginalBRepIsPartnerCompared,true);
+ assert.deepEqual(proof.originalPhysicalOCCTPartnerSourceEdgeIds,['RealSourceBRep3D::A|B']);
+ assert.equal(proof.partnerUniqueOriginalOCCTBRepSourceEdgeId,'RealSourceBRep3D::A|B');
+ assert.equal(proof.actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateOnly,true);
+ assert.equal(proof.partnerOriginalBRepTShapeRelationDoesNotProveLocationParameterOrHistory,true);
+ assert.equal(proof.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('shared TShape instantiated at multiple original locations remains ambiguous under IsPartner',()=>{
+ const proof=probe({generatedEdge:native('shared',5),originalSourceEdges:[
+  {sourceEdgeId:'G::A|B',edge:native('shared',0)},
+  {sourceEdgeId:'G::C|D',edge:native('shared',1)}
+ ]});
+ assert.equal(proof.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven,false);
+ assert.deepEqual(proof.originalPhysicalOCCTPartnerSourceEdgeIds,['G::A|B','G::C|D']);
+ assert.equal(proof.partnerUniqueOriginalOCCTBRepSourceEdgeId,null);
+ assert.equal(proof.actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateAmbiguous,true);
+ assert.equal(proof.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+});
+test('asymmetric native OCCT IsPartner is rejected rather than accepted as source history',()=>{
+ const generated={IsSame:()=>false,IsPartner:()=>true},original={IsSame:()=>false,IsPartner:()=>false};
+ assert.throws(()=>probe({generatedEdge:generated,originalSourceEdges:[{sourceEdgeId:'G::A|B',edge:original}]}),/IsPartner/);
+});
+
 test('native generated OCCT edge matching two DISTINCT original M0 source identities is rejected as contradictory',()=>{
  const sources=[{sourceEdgeId:'G::A|B',edge:native('same')},
   {sourceEdgeId:'G::C|D',edge:native('same')}];
@@ -191,6 +220,35 @@ test('paper coincidence and nearby but different native TopoDS TShape or Locatio
    assert.equal(proof.directOriginalTopoDSVertexIsSameOccurrenceCount,0);
   }
  }
+});
+test('native OCCT vertex IsPartner finds same TShape across Location but never upgrades to direct 3D identity',()=>{
+ const g=shape(),original=vertexLedger(g,[['A','source-a']]),
+  proof=probeVertexIn(g,'V',native('source-a',5),original,project(g.data.points.A).V);
+ assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+ assert.equal(proof.directlySameOriginalM0VertexId,null);
+ assert.equal(proof.actualOCCTGeneratedVertexPartnerOriginalBRepIsPartnerCompared,true);
+ assert.deepEqual(proof.partnerOriginalM0VertexCandidateIds,['A']);
+ assert.equal(proof.partnerUniqueOriginalM0VertexCandidateId,'A');
+ assert.equal(proof.partnerSourceCandidateDoesNotProveOriginal3DLocationOrTopoDSHistory,true);
+ assert.equal(proof.signedV5Action,false);
+});
+test('partner vertex candidate requires exact projected coordinates and refuses paper drift',()=>{
+ const g=shape(),original=vertexLedger(g,[['A','source-a']]),
+  paper={...project(g.data.points.A).V,u:Number.MIN_VALUE};
+ const proof=probeVertexIn(g,'V',native('source-a',5),original,paper);
+ assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+ assert.deepEqual(proof.partnerOriginalM0VertexCandidateIds,[]);
+ assert.equal(proof.partnerOriginalTopoDSVertexPaperMismatchCount,1);
+ assert.equal(proof.partnerUniqueOriginalM0VertexCandidateId,null);
+});
+test('same partner TShape at two co-projected original vertices remains ambiguous',()=>{
+ const g=shape(),original=vertexLedger(g,[['A','shared',0],['C','shared',1]]);
+ assert.deepEqual(project(g.data.points.A).V,project(g.data.points.C).V);
+ const proof=probeVertexIn(g,'V',native('shared',5),original,project(g.data.points.A).V);
+ assert.equal(proof.directOriginal3DVertexTopoDSIdentityProven,false);
+ assert.deepEqual(proof.partnerOriginalM0VertexCandidateIds,['A','C']);
+ assert.equal(proof.partnerUniqueOriginalM0VertexCandidateId,null);
+ assert.equal(proof.partnerOriginalM0VertexCandidateAmbiguous,true);
 });
 test('one ULP of projected paper drift holds direct native vertex certification instead of snapping source interval',()=>{
  const g=shape(),original=vertexLedger(g,[['A','source-a']]);
