@@ -10,7 +10,8 @@ const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditExactBinary64PaperParameterPair,
- auditExactBinary64PaperCandidateCoverage}=
+ auditExactBinary64PaperCandidateCoverage,
+ auditExactBinary64PaperVisibilityConflict}=
  require('./c1-exact-binary64-paper-parameter.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -86,6 +87,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   projectedSourcesWithRoundedFalseFullPaperCandidateCoverage:0,
   projectedSourcesWithVisibleHiddenCandidateConflicts:0,
   positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
+  projectedSourcesWithExactVisibleHiddenCandidateConflicts:0,
+  exactPositiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
+  projectedSourcesWithRoundedMissedVisibleHiddenCandidateConflicts:0,
   sourceScopedPaperStrokesWithUnboundParameters:0,
   sourceScopedPaperEndpointsOutsideExactBinary64Domain:0,
   sourceScopedPaperPositiveIntervalsLostByRoundedInverse:0,
@@ -139,6 +143,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   const sourceRanges=new Map(ids.map(id=>[id,[]]));
   const exactPaperDiagnostics=new Map(ids.map(id=>[id,[]]));
   const exactPaperSegments=new Map(ids.map(id=>[id,[]]));
+  const exactClassSegments=Object.fromEntries(['visible','hidden'].map(k=>
+   [k,new Map(ids.map(id=>[id,[]]))]));
   const classRanges=Object.fromEntries(['visible','hidden'].map(k=>
    [k,new Map(ids.map(id=>[id,[]]))]));
   for(const item of Object.values(classes))
@@ -187,8 +193,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      // Retain the RECEIVED binary64 paper endpoints independently of
      // Number-division candidate t. An interior t can round to 0 or 1,
      // falsely closing a positive original-source interval tail.
-     if(exactBounds&&exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan)
-      exactPaperSegments.get(source).push({from:{...w.from},to:{...w.to}});
+     if(exactBounds&&exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan){
+      const originalPaperSegment={from:{...w.from},to:{...w.to}};
+      exactPaperSegments.get(source).push(originalPaperSegment);
+      exactClassSegments[klass].get(source).push(originalPaperSegment);
+     }
      const tFrom=paperParameter(w.from,source,view),
       tTo=paperParameter(w.to,source,view);
      if(exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan&&
@@ -301,6 +310,19 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    const classOverlap=collapsed?null:exactCandidateVisibilityClassOverlap(
     classRanges.visible.get(source),classRanges.hidden.get(source)
    );
+   const exactClassOverlap=collapsed?null:
+    auditExactBinary64PaperVisibilityConflict({
+     sourceFrom:a,sourceTo:b,
+     visibleSegments:exactClassSegments.visible.get(source),
+     hiddenSegments:exactClassSegments.hidden.get(source)
+    });
+   if(exactClassOverlap?.hasExactPositiveLengthVisibleHiddenPaperClassConflict){
+    counts.projectedSourcesWithExactVisibleHiddenCandidateConflicts++;
+    counts.exactPositiveLengthVisibleHiddenCandidateConflictIntervalCount+=
+     exactClassOverlap.exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals.length;
+    if(!classOverlap.hasPositiveLengthVisibleHiddenClassConflict)
+     counts.projectedSourcesWithRoundedMissedVisibleHiddenCandidateConflicts++;
+   }
    if(classOverlap?.hasPositiveLengthVisibleHiddenClassConflict){
     counts.projectedSourcesWithVisibleHiddenCandidateConflicts++;
     counts.positiveLengthVisibleHiddenCandidateConflictIntervalCount+=
@@ -320,6 +342,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     // These exact rational gaps are PAPER candidate diagnostics only.
     // Never promote their absence to TopoDS history or V5 authority.
     exactBinary64PaperCandidateCoverage:exactPaperCoverage,
+    exactBinary64PaperVisibleHiddenClassOverlap:exactClassOverlap,
     paperDerivedVisibleCandidateParameterUnion:
      classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
     paperDerivedHiddenCandidateParameterUnion:
@@ -336,7 +359,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     fullOriginalPaperCandidateCoverageWithoutClassConflict:
      coverage?.entireOriginalParameterIntervalCovered===true&&
      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
-     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false,
+     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false&&
+     exactClassOverlap?.hasExactPositiveLengthVisibleHiddenPaperClassConflict===false,
     actualOriginalTopoDSParameterCoverageCertified:false,
     nativeOriginal3DEndpointTopologyProven:false,
     continuousOcclusionCertified:false,
@@ -350,7 +374,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   actualOriginalTopoDSSourceFilteredHLRConsumed:true,
   generatedToOriginalTopoDSFullHistoryCertified:false,
   paperDerivedVisibleHiddenSourceConflictsDetected:
-   counts.projectedSourcesWithVisibleHiddenCandidateConflicts>0,
+   counts.projectedSourcesWithVisibleHiddenCandidateConflicts>0||
+   counts.projectedSourcesWithExactVisibleHiddenCandidateConflicts>0,
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,signedV5ActionCount:0});
 }
