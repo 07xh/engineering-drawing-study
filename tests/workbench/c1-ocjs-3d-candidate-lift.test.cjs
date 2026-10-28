@@ -171,3 +171,26 @@ test('real C1 V/H/W source lift holds positive interior subnormal A tails rounde
   assert.equal(literal.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly,false);
  }
 });
+
+
+test('tiny positive generated HLR A-end tails reach M0 candidates in V/H/W without fake source certification',()=>{
+ const g={id:'C1TinyNative',data:{
+  points:{A:{x:0,y:0,z:0},B:{x:10,y:10,z:10}},
+  edges:[['A','B']]}};
+ for(const view of ['V','H','W']){
+  for(const tiny of [1e-10,Number.MIN_VALUE]){
+   const r=lift(g,view,{u:0,v:0},{u:tiny,v:tiny});
+   assert.equal(r.unmappedReason,null);
+   assert.deepEqual(r.projectedOriginalEdgeCandidates,['C1TinyNative::A|B']);
+   assert.equal(r.sourceCandidate3DLifts.length,1);
+   const witness=r.sourceCandidate3DLifts[0];
+   assert.equal(witness.originalSourceExactParameterCoverageFromRoundingProven,false);
+   assert.equal(witness.actualOCCTTopoDSEdgeIdentityRecovered,false);
+   assert.equal(witness.officialEngineeringLineStyle,'undetermined');
+   assert.equal(witness.v5Authorized,false);
+  }
+ }
+ const collapsed=lift(g,'V',{u:0,v:0},{u:0,v:0});
+ assert.equal(collapsed.sourceCandidate3DLifts.length,0);
+ assert.match(collapsed.unmappedReason,/degenerate-projected-hlr/);
+});
