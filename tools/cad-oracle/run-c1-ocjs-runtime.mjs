@@ -39,6 +39,8 @@ const {auditC1Original3DSourceGapDyadicWitness}=
  require('../../workbench/c1-original-3d-source-gap-dyadic-forensics.cjs');
 const {auditC1OriginalOcctCurveParameterGapWitness}=
  require('../../workbench/c1-original-occt-curve-parameter-gap-witness.cjs');
+const {auditC1NativeGapGeneratedVertexAdjacency}=
+ require('../../workbench/c1-native-gap-generated-vertex-adjacency.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -821,6 +823,27 @@ for(const [index,geometry] of general.entries()){
    row.generatedHLREdgeToOriginalTopoDSHistoryCertified===false&&
    row.engineeringLineStyle==='undetermined'));
   assert.equal(proof.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+  assert.equal(proof.signedV5ActionCount,0);
+  return proof;
+ });
+ // Independently inspect the ACTUAL generated HLR native vertex IsSame
+ // witnesses at each unresolved original M0 source gap boundary. A paper
+ // inverse t=0 is never promoted to a genuine original TopoDS A vertex.
+ const nativeGeneratedVertexGapForensics=exactGapRows.map(x=>{
+  const gaps=x.exactNativeOriginal3DSourceCoverage?.
+   positiveLengthUncoveredIntervals;
+  if(!Array.isArray(gaps))return null;
+  const proof=auditC1NativeGapGeneratedVertexAdjacency({
+   geometry,view:x.view,sourceEdgeId:x.sourceEdgeId,
+   uncoveredIntervals:gaps,
+   visibleSegments:cad.views[x.view],
+   hiddenSegments:cad.hiddenSharpViews[x.view]
+  });
+  assert.equal(proof.rows.length,gaps.length);
+  assert.ok(proof.rows.every(row=>
+   row.sourceGapClosedByNativeEndpointEvidence===false&&
+   row.engineeringLineStyle==='undetermined'));
+  assert.equal(proof.generatedToOriginalTopoDSFullHistoryCertified,false);
   assert.equal(proof.signedV5ActionCount,0);
   return proof;
  });
@@ -2279,6 +2302,8 @@ for(const [index,geometry] of general.entries()){
    originalM0DyadicGapWitness:originalGapForensics[i],
    originalNativeOCCTCurveParameterGapWitness:
     originalOcctCurveGapForensics[i],
+   nativeGeneratedVertexGapAdjacencyWitness:
+    nativeGeneratedVertexGapForensics[i],
    view:x.view,sourceEdgeId:x.sourceEdgeId,
    status:x.exactNativeOriginal3DSourceCoverage?.status,
    scopedPaperCandidateFullButNative3DGap:

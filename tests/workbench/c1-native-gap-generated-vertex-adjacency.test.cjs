@@ -1,0 +1,78 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {auditC1NativeGapGeneratedVertexAdjacency:audit}=
+ require('../../workbench/c1-native-gap-generated-vertex-adjacency.cjs');
+const geometry={id:'tetra',data:{points:{
+ A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}
+},edges:[['A','C'],['A','D']]}};
+const native=(id)=>({
+ directlySameOriginalM0VertexId:id,
+ directOriginal3DVertexTopoDSIdentityProven:id!==null});
+const segment=(options={})=>({
+ view:'H',occtHLRVisibilityClass:'visible-sharp',
+ from:{u:0,v:0},to:{u:3,v:16},
+ sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+  originalVertexIds:['A','C'],
+  paperOnlyUnclampedOriginalSourceParameters:[0,1]}],
+ directNativeVertexOriginalSource:[native('A'),native('C')],
+ actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false,
+ ...options
+});
+const run=(gaps,visible=[segment()],hidden=[],view='H')=>audit({
+ geometry,view,sourceEdgeId:'tetra::A|C',
+ uncoveredIntervals:gaps,visibleSegments:visible,hiddenSegments:hidden});
+test('a genuine native IsSame A vertex is distinct from a paper candidate at t=0 and never fills a source gap',()=>{
+ const r=run([[0,5.02742501717052e-18]]);
+ assert.equal(r.rows[0].from.nativeGeneratedPaperCandidateParameterEqualCount,1);
+ assert.equal(r.rows[0].from.directNativeOriginalVertexIsSameEndpointCount,1);
+ assert.equal(r.rows[0].from.directNativeOriginalVertexIsSameAtPaperParameterCount,1);
+ assert.equal(r.rows[0].to.nativeGeneratedPaperCandidateParameterEqualCount,0);
+ assert.equal(r.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('a coincident paper t=0 without real TopoDS vertex IsSame is not A-end topology',()=>{
+ const s=segment({directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,1.1102230246251565e-16]],[s]);
+ assert.equal(r.rows[0].from.nativeGeneratedPaperCandidateParameterEqualCount,1);
+ assert.equal(r.rows[0].from.directNativeOriginalVertexIsSameEndpointCount,0);
+ assert.equal(r.actualNativeDirectIsSameOriginalSourceVertexEndpoints,1);
+});
+test('reversed native generated HLR endpoint order still locates original A identity',()=>{
+ const s=segment({from:{u:3,v:16},to:{u:0,v:0},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[1,0]}],
+  directNativeVertexOriginalSource:[native('C'),native('A')]});
+ const r=run([[0,0.1]],[s]);
+ assert.equal(r.rows[0].from.directNativeOriginalVertexIsSameAtPaperParameterCount,1);
+ assert.equal(r.endpoints[1].directNativeIsSameOriginalM0VertexId,'A');
+});
+test('a false native IsSame original A claim at a different paper point is rejected',()=>{
+ const s=segment({from:{u:0.01,v:0}});
+ assert.throws(()=>run([[0,0.5]],[s]),/contradicts first-angle/);
+});
+test('duplicate source lifts and inconsistent native identity flags fail closed',()=>{
+ const s=segment();
+ assert.throws(()=>run([[0,0.5]],[segment({
+  sourceCandidate3DLifts:[...s.sourceCandidate3DLifts,...s.sourceCandidate3DLifts]
+ })]),/duplicate generated/);
+ assert.throws(()=>run([[0,0.5]],[segment({
+  directNativeVertexOriginalSource:[{
+   directlySameOriginalM0VertexId:'A',
+   directOriginal3DVertexTopoDSIdentityProven:false},native('C')]
+ })]),/inconsistent generated/);
+});
+test('invalid gaps and unrelated HLR source candidates never sign V5',()=>{
+ for(const gaps of [[[0,0]],[[0,1.1]],[[0,0.5],[0.4,1]]])
+  assert.throws(()=>run(gaps),/ordered positive/);
+ const unrelated=segment({sourceCandidate3DLifts:[{
+  sourceEdgeId:'tetra::A|D',originalVertexIds:['A','D'],
+  paperOnlyUnclampedOriginalSourceParameters:[0,1]}]});
+ const r=run([[0,0.25]],[unrelated]);
+ assert.equal(r.actualNativeGeneratedSourceCandidateEndpointCount,0);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+ assert.equal(r.constructionIntentAuthorized,false);
+ assert.ok(Object.isFrozen(r));
+});
