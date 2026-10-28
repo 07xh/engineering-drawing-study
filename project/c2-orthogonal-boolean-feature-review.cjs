@@ -281,6 +281,14 @@ function reviewC2FullPaperStrokeReadiness({
      region.sourceUncoveredProjectedBoundarySegmentCount||
     byView.some(x=>x.sourceCovered+x.sourceIncomplete!==x.regionBoundaryCount))
   throw new Error('C2 三维物理来源与整张闭合图纸的边界证据数不守恒');
+ const sourceSubspanRows=(full.unifiedPaperSourceIdentityEvidence?.groups||[])
+  .flatMap(group=>group.sourceSubspans.map(source=>({...source,view:group.view})));
+ const sourceSubspanById=new Map(sourceSubspanRows.map(source=>
+  [source.sourceSubspanId,source]));
+ const same3Exact=(a,b)=>!!a&&!!b&&['x','y','z'].every(k=>
+  Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
+ if(sourceSubspanById.size!==sourceSubspanRows.length)
+  throw new Error('C2 M5 纸面来源子段身份重复');
  const entries=paper.lines.map(line=>{
   if(line.revision!==revision||!['V','H','W'].includes(line.view)||
      ![line.projectedFromModelMm?.u,line.projectedFromModelMm?.v,
@@ -295,11 +303,29 @@ function reviewC2FullPaperStrokeReadiness({
      !Array.isArray(line.missingProofObligations)||
      line.missingProofObligations.length<5)
    throw new Error('C2 一条纸面候选线绕过了端点或官方 V5 门禁');
+  const sourceSubspanId=line.selectedListed3DSourceSubspanId??null;
+  const selectedSource=sourceSubspanId===null?null:
+   sourceSubspanById.get(sourceSubspanId);
+  if(sourceSubspanId!==null&&(!selectedSource||
+     selectedSource.view!==line.view||
+     selectedSource.sourceSubspanId!==sourceSubspanId||
+     !Array.isArray(line.physical3DEndpointIncidence)||
+     line.physical3DEndpointIncidence.length!==2||
+     !same3Exact(line.physical3DEndpointIncidence[0].physicalSource3DPoint,
+      selectedSource.from3D)||
+     !same3Exact(line.physical3DEndpointIncidence[1].physicalSource3DPoint,
+      selectedSource.to3D)))
+   throw new Error('C2 M5 纸面候选未绑定同一修订的真实三维来源子段');
   return Object.freeze({
    id:line.id,view:line.view,revision,
    from:Object.freeze({...line.projectedFromModelMm}),
    to:Object.freeze({...line.projectedToModelMm}),
-   sourceSubspanId:line.selectedListed3DSourceSubspanId,
+   sourceSubspanId,
+   sourceFeatureId:selectedSource?.originalSourceFeatureId??null,
+   sourceFeatureKind:selectedSource?.kind??null,
+   sourceGeometryIds:Object.freeze([...(selectedSource?.sourceGeometryIds||[])]),
+   source3DFrom:selectedSource?Object.freeze({...selectedSource.from3D}):null,
+   source3DTo:selectedSource?Object.freeze({...selectedSource.to3D}):null,
    sourceMultiplicity:line.sourceMultiplicity,
    rayStatus:line.rayStatus,
    threeDBooleanExteriorOpenSourceVerified:

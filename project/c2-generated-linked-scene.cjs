@@ -61,6 +61,11 @@ function buildC2GeneratedLinkedScene({geometry,revision,orthogonalBooleanFeature
    data:{start:{...s.source3DFrom},end:{...s.source3DTo}}});
   groups.push(Object.freeze({geometryId:id,sourceFeatureId:s.id,
    sourceGeometryIds:Object.freeze([...s.sourceGeometryIds]),
+   // Publish the exact M5-authenticated 3D interval to consumers that need
+   // to join independently split paper subspans back to this one source.
+   // This is identity metadata only; it grants no visibility or V5 status.
+   source3DFrom:Object.freeze({...s.source3DFrom}),
+   source3DTo:Object.freeze({...s.source3DTo}),
    revision,role:'locally-proven-open-generated-concave-crease',
    visibility:'undetermined',certifiedEngineeringStroke:false,
    constructionIntentAuthorized:false,v5ActionAuthorized:false}));
