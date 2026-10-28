@@ -213,4 +213,92 @@ function certifyAxisBoxSubtractiveOpenRay({source,stock,cutter,view}={}){
   constructionIntentAuthorized:false,signedV5Action:false
  });
 }
-module.exports={certifyAxisBoxSourceOpenRay,certifyAxisBoxSubtractiveOpenRay};
+/**
+ * Exact CLOSED source endpoint theorem for S minus C. Unlike the existing
+ * open affine source proof, this independently examines EACH original
+ * endpoint. A stock boundary in an observer-perpendicular coordinate
+ * CANNOT certify strict interior occlusion: a ray tangent to the side
+ * wall is not a positive-volume blocker. A visible outward supporting
+ * axial stock plane, on the other hand, certifies all positive ray depths
+ * clear. No midpoint, source extrapolation, tolerance or epsilon snapping.
+ *
+ * This is M0 source-point visibility ONLY, never a proof that the entire
+ * projected scene is joined, that a line is GB-visible/dashed, or a V5
+ * action can be signed. In particular, paper coincidences remain separate
+ * from the original TopoDS vertex identity.
+ */
+function certifyAxisBoxSubtractiveClosedSourceEndpoints({
+ source,stock,cutter,view
+}={}){
+ const open=certifyAxisBoxSubtractiveOpenRay({
+  source,stock,cutter,view
+ });
+ const ray=FIRST_ANGLE_OBSERVER_RAYS[view],names=['x','y','z'],
+  axis=names.findIndex(k=>ray[k]!==0),positive=ray[names[axis]]===1;
+ const classify=(p,endpoint)=>{
+  const axial=names[axis],v=p[axial],
+   stockInside=names.every((k,i)=>
+    p[k]>=stock.min[i]&&p[k]<=stock.max[i]),
+   strictPerpendicularStock=names.every((k,i)=>
+    i===axis||(p[k]>stock.min[i]&&p[k]<stock.max[i]));
+  if(!stockInside)throw new RangeError('native Cut endpoint escaped original stock');
+  const outward=positive?v===stock.max[axis]:v===stock.min[axis];
+  // The entire positive ray misses the CLOSED stock whenever it leaves
+  // the original outer axial supporting plane outward.
+  let status='undetermined',reason='endpoint-tangent-or-subtractive-occlusion-unproven',
+   witness=null;
+  if(outward){
+   status='certified-clear';
+   reason='exact-closed-stock-axial-outward-support';
+  }else if(strictPerpendicularStock){
+   const frontLow=positive?Math.max(v,stock.min[axis]):stock.min[axis],
+    frontHigh=positive?stock.max[axis]:Math.min(v,stock.max[axis]);
+   const outsidePerpendicular=names.some((k,i)=>i!==axis&&
+    (p[k]<cutter.min[i]||p[k]>cutter.max[i]));
+   const ranges=outsidePerpendicular?[[frontLow,frontHigh]]:
+    positive?[
+     [frontLow,Math.min(frontHigh,cutter.min[axis])],
+     [Math.max(frontLow,cutter.max[axis]),frontHigh]
+    ]:[
+     [frontLow,Math.min(frontHigh,cutter.min[axis])],
+     [Math.max(frontLow,cutter.max[axis]),frontHigh]
+    ];
+   const good=ranges.find(([lo,hi])=>lo<hi);
+   if(good){
+    status='certified-strictly-hidden';
+    reason='strict-positive-front-ray-enters-stock-minus-cutter-interior';
+    witness=freeze({
+     observerAxis:axial,
+     observerDirectionSign:positive?1:-1,
+     materialOpenAxialBoundsMm:[...good],
+     originalEndpointPerpendicularStrictStockInterior:true,
+     originalCutterOutsideByPerpendicularSeparation:
+      outsidePerpendicular
+    });
+   }
+  }
+  return freeze({
+   endpoint,point:{...p},view,status,reason,
+   genuinePositiveRayDepthMaterialWitness:witness,
+   fullClosedEndpointLocalFaceTopologySigned:false,
+   allProjectedAliasesAndEngineeringJunctionsSigned:false,
+   officialEngineeringLineStyle:'undetermined',
+   constructionIntentAuthorized:false,signedV5Action:false
+  });
+ };
+ const endpoints=[classify(source.from,'from'),classify(source.to,'to')];
+ return freeze({
+  schema:'draftai-m0-axis-box-subtractive-closed-source-endpoint-rays/1',
+  sourceId:source.id,stockId:stock.id,cutterId:cutter.id,view,
+  openSourceStatus:open.status,
+  originalClosedEndpoints:endpoints,
+  bothClosedEndpointsStrictlyMatchOpenSource:
+   endpoints.every(x=>x.status===open.status&&
+    x.status!=='undetermined'),
+  source3DTopologyAndNativeJunctionsIndependentlyVerified:false,
+  completeProjectedSceneGBLineStylesAuthorized:false,
+  constructionIntentAuthorized:false,newV5ActionCount:0
+ });
+}
+module.exports={certifyAxisBoxSourceOpenRay,certifyAxisBoxSubtractiveOpenRay,
+ certifyAxisBoxSubtractiveClosedSourceEndpoints};
