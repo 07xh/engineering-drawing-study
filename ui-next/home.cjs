@@ -376,7 +376,8 @@ function homeHTML(){return `
    <a href="labs/recognition-qa.html">本机识图候选检查</a></div>
   </section>
   <section class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
-   <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label></div>
+   <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label>
+   <button type="button" id="v8-paper-focus" aria-pressed="false" aria-controls="v7-sheet">放大图纸</button></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="统一求解结果的正面 V、水平 H、侧面 W 与 V5 作图"></svg>
    <div class="v7-spatial"><div class="v7-line"><strong>同一数学场景的空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
@@ -396,7 +397,7 @@ function homeHTML(){return `
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
    <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p class="v7-warning">点投影与两线段圆弧连接可复用正式 V5。长方体仅呈现已确认原立体和局部数学证据，不推测截交线、虚实线或动画。</p>
+   <p class="v7-warning">正式解题仅限当前已通过 M3/M5 验收的数学范围。C1、C2、C3 只展示已证明的局部几何与辅助作图；未认证的整体轮廓、隐藏线及相贯曲线不能作为标准答案导出。</p>
   </section>
  </div>
 </section>

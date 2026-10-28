@@ -8,7 +8,7 @@ const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
-const {KEYS:C3_KEYS}=require('./c3-reviewed-input.cjs');
+const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
@@ -464,6 +464,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  function populateTaskFields(project){
   $('v7-task').value=project.task;
+  // Never inherit last project's handwritten specialist measurements or
+  // checked topological declarations when opening an EMPTY new project.
+  // Only the currently restored project's saved conditions may repopulate.
+  $('v8-c1-pair').value='VH';
+  $('v8-c1-vertices').value='';
+  $('v8-c1-topology').checked=false;
+  for(const k of C3_KEYS)$('v8-c3-'+k).value='';
+  $('v8-c3-axes').checked=false;
+  $('v8-c3-caps').checked=false;
   const v=project.conditions.find(x=>x.id==='coords')?.value;
   if(!v)return;
   if(project.task==='c3-intersection'&&v.type==='reviewed-c3-finite-cylinders'){
@@ -1028,14 +1037,23 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     value('v7-f-branch')+'；方向 '+value('v7-f-direction')+
     '。请逐条确认两条有限线段的四个端点与行进方向。';
   }else if(snap.task==='c3-intersection'){
-   label='C3 有限正交圆柱：Z 轴圆柱半径 '+value('v8-c3-zRadius')+
-    ' mm，Y 轴圆柱半径 '+value('v8-c3-yRadius')+
-    ' mm；已知轴向与端盖需要人工确认。局部解析 V5 不代表完整相贯线工程图。';
+   const Z=['zRadius','zX','zY','zMin','zMax'].map(k=>value('v8-c3-'+k));
+   const Y=['yRadius','yX','yZ','yMin','yMax'].map(k=>value('v8-c3-'+k));
+   label='C3 两根有限正交圆柱（mm）\n'+
+    'Z 轴圆柱：半径 '+Z[0]+'；轴心 (x,y)=('+Z[1]+','+Z[2]+
+    ')；端盖 z=['+Z[3]+','+Z[4]+']。\n'+
+    'Y 轴圆柱：半径 '+Y[0]+'；轴心 (x,z)=('+Y[1]+','+Y[2]+
+    ')；端盖 y=['+Y[3]+','+Y[4]+']。\n'+
+    '轴向核对：'+($('v8-c3-axes').checked?'已勾选':'未确认')+
+    '；端盖核对：'+($('v8-c3-caps').checked?'已勾选':'未确认')+
+    '。仅提供解析曲线与已证明辅助点；完整实虚线未认证。';
   }else if(snap.task==='c1-third-view'){
-   label='补第三视图（C1）：已知 '+$('v8-c1-pair').value+
-    ' 两视图，手动核对八个对应角点及单个闭合凸长方体拓扑。'+
-    ($('v8-c1-topology').checked?' 拓扑已勾选人工确认。':' 拓扑尚未确认。')+
-    ' 当前仅能签收受限几何与部分 V5，不能给出完整隐藏线标准答案。';
+   const rows=$('v8-c1-vertices').value.trim().split(/\r?\n/).filter(Boolean);
+   label='C1 补第三视图：已知 '+$('v8-c1-pair').value+
+    ' 两视图；已输入 '+rows.length+'/8 行原始角点对应。'+
+    ' 拓扑核对：'+($('v8-c1-topology').checked?'已勾选':'未确认')+
+    '。请检查每一角点的四个模型毫米坐标，不会自动推断原题。'+
+    ' 当前不能给出全部隐藏线标准答案。';
   }else if(snap.task==='exploration'){
    label='长方体截平面：尺寸 '+['v7-p-width','v7-p-depth','v7-p-height'].map(value).join(' × ')+
     ' mm；截平面法向 '+['v7-p-nx','v7-p-ny','v7-p-nz'].map(value).join(' / ')+
@@ -1048,7 +1066,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
   summary.textContent=label+suffix+
    (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'');
-  const allowed=snap.task!=='composition';
+  // This checkbox cannot authorize an empty or contradictory specialist
+  // form. It is reviewed by a person, then STILL checked by M3/M5.
+  let allowed=snap.task!=='composition';
+  if(snap.task==='c1-third-view'){
+   try{
+    if(!$('v8-c1-topology').checked)allowed=false;
+    else parseReviewedC1Rows($('v8-c1-vertices').value,
+      $('v8-c1-pair').value);
+   }catch(_){allowed=false;}
+  }
+  if(snap.task==='c3-intersection'){
+   try{
+    if(!$('v8-c3-axes').checked||!$('v8-c3-caps').checked)
+     allowed=false;
+    else makeReviewedC3Input(Object.fromEntries(C3_KEYS.map(k=>{
+     const raw=value('v8-c3-'+k);
+     if(raw==='')throw Error('缺少圆柱条件');
+     return [k,Number(raw)];
+    })));
+   }catch(_){allowed=false;}
+  }
   ack.disabled=!allowed;
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
@@ -1547,6 +1585,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  });
  for(const id of c2Fields)for(const type of ['input','change'])
   $(id).addEventListener(type,()=>{
+   if(coordinator?.snapshot().task==='composition')
+    uncommittedFormEdit=true;
    $('v8-c2-ack').checked=false;
    $('v8-c2-build').disabled=true;
    if(coordinator?.snapshot().task==='composition')
@@ -1581,6 +1621,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    throw Error('局部组合体数学不允许成为完整标准答案');
   $('v8-c2-ack').checked=false;
   $('v8-c2-build').disabled=true;
+  uncommittedFormEdit=false;
   $('v8-c2-status').textContent='两形体已保存到当前本机项目。已核对空间关系 '+
    result.compositionContactEvidence.pairCount+
    ' 对；完整工程线型与唯一 V5 未签收。';
@@ -1807,6 +1848,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    [id==='v7-yaw'?'yaw':'pitch']:Number($(id).value)
   }));
  }
+ $('v8-paper-focus').addEventListener('click',()=>{
+  const layout=root.querySelector('.v7-layout');
+  const expanded=layout.classList.toggle('v8-paper-focus');
+  $('v8-paper-focus').setAttribute('aria-pressed',String(expanded));
+  $('v8-paper-focus').textContent=expanded?'恢复普通布局':'放大图纸';
+ });
  $('v7-mono').addEventListener('change',render);
  $('v7-guides').addEventListener('change',render);
  $('v7-speed').addEventListener('change',()=>{
