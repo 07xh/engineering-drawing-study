@@ -18,8 +18,10 @@ const MAX_FEATURES=25000;
 function mount(container,{onPick}={}){
  if(!container||typeof onPick!=='function')return null;
  const canvas=document.createElement('canvas');
- canvas.setAttribute('aria-label','三维几何交互视图：拖动旋转，点击棱线与 V/H/W 联动');
- canvas.setAttribute('role','img');
+ const canvasLabel='三维几何交互视图：拖动旋转、点击选择；聚焦后用方向键浏览特征，Enter 选择，Escape 清除键盘目标。';
+ canvas.setAttribute('aria-label',canvasLabel);
+ canvas.setAttribute('role','application');
+ canvas.setAttribute('tabindex','0');
  canvas.style.cssText='width:100%;height:100%;display:block;touch-action:none';
  let renderer=null;
  try{
@@ -40,6 +42,8 @@ function mount(container,{onPick}={}){
  let pickable=[],features=[],currentScene=null,disposed=false;
  let pending=false,center=new THREE.Vector3(),extent=40,angles=null;
  const active=new Set();
+ let keyboardFocus=null;
+ let lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
  function schedule(){
   if(disposed||pending)return;pending=true;
   window.requestAnimationFrame(()=>{
@@ -59,7 +63,8 @@ function mount(container,{onPick}={}){
   while(root.children.length){
    const child=root.children[0];root.remove(child);destroyNode(child);
   }
-  pickable=[];features=[];active.clear();
+  pickable=[];features=[];active.clear();keyboardFocus=null;
+  canvas.setAttribute('aria-label',canvasLabel);
  }
  function resize(){
   if(disposed)return;
@@ -213,24 +218,93 @@ function mount(container,{onPick}={}){
    certifiedEngineeringStroke:false};
   root.add(line);features.push(line);pickable.push(line);
  }
+ function keyboardCandidates(){
+  const seen=new Set(),rows=[];
+  for(const node of pickable){
+   if(!node.visible)continue;
+   const {objectId,sourceFeatureKey:key}=node.userData||{};
+   if(!objectId||!key)continue;
+   const identity=JSON.stringify([objectId,key]);
+   if(seen.has(identity))continue;
+   seen.add(identity);rows.push({objectId,sourceFeatureKey:key});
+  }
+  return rows;
+ }
+ function paintSelection(){
+  const owners=new Set(lastSelection.selectedIds),
+   hidden=new Set(lastSelection.hiddenObjectIds);
+  // The same hidden set controls rendering, touch raycasts and keyboard traversal.
+  for(const node of root.children)node.visible=!hidden.has(node.userData.objectId);
+  if(keyboardFocus&&hidden.has(keyboardFocus.objectId)){
+   keyboardFocus=null;canvas.setAttribute('aria-label',canvasLabel);
+  }
+  for(const feature of features){
+   const {objectId,sourceFeatureKey:key}=feature.userData;
+   const precise=!!lastSelection.selectedSourceFeature&&
+    key===lastSelection.selectedSourceFeature;
+   const focused=keyboardFocus?.objectId===objectId&&
+    keyboardFocus?.sourceFeatureKey===key;
+   const selected=owners.has(objectId);
+   const hex=precise?0x0866ef:focused?0x00a6a6:selected?0xef6730:0x587da4;
+   feature.material.color.setHex(hex);
+  }
+ }
+ function moveKeyboardFocus(direction){
+  const candidates=keyboardCandidates();
+  if(!candidates.length){
+   keyboardFocus=null;
+   canvas.setAttribute('aria-label','三维几何交互视图：当前没有可选择的可见特征。');
+   paintSelection();schedule();return;
+  }
+  let index=candidates.findIndex(x=>
+   x.objectId===keyboardFocus?.objectId&&
+   x.sourceFeatureKey===keyboardFocus?.sourceFeatureKey);
+  if(index<0)index=direction>0?-1:0;
+  index=(index+direction+candidates.length)%candidates.length;
+  keyboardFocus=candidates[index];
+  canvas.setAttribute('aria-label','三维几何交互视图。键盘目标 '+
+   (index+1)+'/'+candidates.length+'：对象 '+keyboardFocus.objectId+
+   '。方向键切换，Enter 选择，Escape 清除键盘目标。');
+  paintSelection();schedule();
+ }
  function update(scene,{selectedIds=[],selectedSourceFeature=null,
   hiddenObjectIds=[],camera:inputCamera}={}){
   if(disposed)return;
-  if(!scene){clear();currentScene=null;schedule();return;}
-  if(scene!==currentScene)build(scene);
-  const owners=new Set(selectedIds),hidden=new Set(hiddenObjectIds);
-  // Render and pick only user-enabled C2 auxiliary sources.
-  for(const node of root.children)node.visible=!hidden.has(node.userData.objectId);
-  for(const feature of features){
-   const {objectId,sourceFeatureKey:key}=feature.userData;
-   const precise=!!selectedSourceFeature&&key===selectedSourceFeature;
-   const selected=owners.has(objectId);
-   const hex=precise?0x0866ef:selected?0xef6730:0x587da4;
-   feature.material.color.setHex(hex);
+  if(!scene){
+   clear();currentScene=null;
+   lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
+   schedule();return;
   }
+  if(scene!==currentScene)build(scene);
+  lastSelection={selectedIds:[...selectedIds],selectedSourceFeature,
+   hiddenObjectIds:[...hiddenObjectIds]};
+  // Rendering, touch raycasts and keyboard navigation share one visibility gate.
+  paintSelection();
   cameraAngle(inputCamera);
   schedule();
  }
+ canvas.addEventListener('keydown',e=>{
+  if(e.altKey||e.ctrlKey||e.metaKey)return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){
+   e.preventDefault();moveKeyboardFocus(1);return;
+  }
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){
+   e.preventDefault();moveKeyboardFocus(-1);return;
+  }
+  if((e.key==='Enter'||e.key===' ')&&keyboardFocus){
+   e.preventDefault();onPick({...keyboardFocus});return;
+  }
+  if(e.key==='Escape'&&keyboardFocus){
+   e.preventDefault();keyboardFocus=null;
+   canvas.setAttribute('aria-label',canvasLabel);
+   paintSelection();schedule();
+  }
+ });
+ canvas.addEventListener('blur',()=>{
+  if(!keyboardFocus)return;
+  keyboardFocus=null;canvas.setAttribute('aria-label',canvasLabel);
+  paintSelection();schedule();
+ });
  let down=null;
  canvas.addEventListener('pointerdown',e=>{down={id:e.pointerId,x:e.clientX,y:e.clientY};});
  canvas.addEventListener('pointercancel',()=>{down=null;});
@@ -240,6 +314,10 @@ function mount(container,{onPick}={}){
   if(Math.hypot(e.clientX-start.x,e.clientY-start.y)>6)return;
   const b=canvas.getBoundingClientRect();
   if(!b.width||!b.height)return;
+  if(keyboardFocus){
+   keyboardFocus=null;canvas.setAttribute('aria-label',canvasLabel);
+   paintSelection();
+  }
   pointer.set((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);
   raycaster.setFromCamera(pointer,camera);
   const hit=raycaster.intersectObjects(pickable.filter(x=>x.visible),false)[0]

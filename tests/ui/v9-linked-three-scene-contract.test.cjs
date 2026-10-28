@@ -10,6 +10,19 @@ test('Three.js source visualizer reuses the ONE geometry scene and matching sour
  assert.match(source,/from 'three'/);
  assert.match(source,/OrbitControls\.js/);
  assert.match(source,/new THREE\.Raycaster\(/);
+ assert.match(source,/setAttribute\('role','application'\)/);
+ assert.match(source,/setAttribute\('tabindex','0'\)/);
+ assert.match(source,/canvas\.addEventListener\('keydown'/);
+ assert.match(source,/ArrowRight/);
+ assert.match(source,/ArrowLeft/);
+ assert.match(source,/onPick\(\{\.\.\.keyboardFocus\}\)/);
+ assert.match(source,/canvas\.addEventListener\('blur'/);
+ assert.match(source,/function keyboardCandidates\(\)/);
+ assert.match(source,/JSON\.stringify\(\[objectId,key\]\)/,
+  'tessellated analytic curve pieces must deduplicate to one selectable source feature');
+ assert.match(source,/pickable\.filter\(x=>x\.visible\)/,
+  'hidden auxiliary features must not be touch-pickable');
+ assert.match(source,/hiddenObjectIds/);
  assert.match(source,/sourceFeatureKey\(obj,extra\)/);
  assert.match(source,/placeLine\(obj,d\.points\[a\],d\.points\[b\],\{edgeIds:\[a,b\]\}\)/);
  assert.match(source,/\{segmentIndex:i\}/);
