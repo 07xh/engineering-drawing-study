@@ -250,6 +250,20 @@ function inspectC1UnsignedNativeBRepSourceCandidates({
  }
  const coverage=exactCandidateIntervalCoverage(
   originalSourceParameterRange,clipped.map(x=>x.interval));
+ // A genuine original 3D BRep geometric candidate can still have a native
+ // HLR paper endpoint that differs by one binary64 ULP. Keep the raw
+ // geometric candidate inventory, but do NOT call that exact paper-bound
+ // coverage. Neither ledger authenticates HLR source history or M5 rays.
+ const paperBound=clipped.filter(x=>x.exactPaperEndpointsMatched);
+ const paperBoundCoverage=exactCandidateIntervalCoverage(
+  originalSourceParameterRange,paperBound.map(x=>x.interval));
+ let paperBoundOverlap=false,paperBoundReach=originalSourceParameterRange[0];
+ for(const row of paperBound){
+  if(row.interval[0]<paperBoundReach)paperBoundOverlap=true;
+  paperBoundReach=Math.max(paperBoundReach,row.interval[1]);
+ }
+ const paperBoundComplete=paperBound.length>0&&!paperBoundOverlap&&
+  paperBoundCoverage.entireOriginalParameterIntervalCovered===true;
  return {
   scope:'read-only-original-brep-source-candidates-not-m5-authenticated',
   matchedGenuineNativeBRepCandidateCount:candidates.length,
@@ -258,6 +272,10 @@ function inspectC1UnsignedNativeBRepSourceCandidates({
   skippedNativeCandidateMatches:skipped,
   nativeCandidateSourceParameterOverlap:positiveOverlap,
   anyNativePaperProjectionDrift:clipped.some(c=>!c.exactPaperEndpointsMatched),
+  exactPaperBoundNativeBRepCandidateIntervals:paperBound,
+  exactPaperBoundSourceParameterCoverage:paperBoundCoverage,
+  exactPaperBoundNativeSourceParameterOverlap:paperBoundOverlap,
+  exactPaperBoundSourceCoverageWithoutOverlap:paperBoundComplete,
   originalSourceM5FrontmostRayAuthenticated:false,
   generatedToOriginalTopoDSHistoricalIdentityProven:false,
   officialEngineeringLineStyleCertified:false,
@@ -537,6 +555,18 @@ function auditC1RealOcctVisibleContourSourceParity({
     x.realOCCTOriginal3DSourceCompleteContourParity===false&&
     x.unsignedNativeBRepSourceCandidateEvidence?.
      anyNativePaperProjectionDrift===true).length,
+  heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage:
+   rows.filter(x=>x.originalM5WholeExteriorContourCertified===true&&
+    x.realOCCTOriginal3DSourceCompleteContourParity===false&&
+    x.unsignedNativeBRepSourceCandidateEvidence?.
+     exactPaperBoundSourceCoverageWithoutOverlap===true).length,
+  heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage:
+   rows.filter(x=>x.originalM5WholeExteriorContourCertified===true&&
+    x.realOCCTOriginal3DSourceCompleteContourParity===false&&
+    x.unsignedNativeBRepSourceCandidateEvidence?.
+     sourceParameterCoverage.entireOriginalParameterIntervalCovered===true&&
+    x.unsignedNativeBRepSourceCandidateEvidence?.
+     exactPaperBoundSourceCoverageWithoutOverlap!==true).length,
   viewsWithOriginalM5GlobalContourSignature:contour.acceptedFirstAngleViews,
   rows,
   fullGeneratedTopoDSEdgeToOriginalTopoDSHistoryProven:false,
