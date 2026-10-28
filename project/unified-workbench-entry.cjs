@@ -1042,6 +1042,41 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       svg.append(node);
      }
     }
+    const sourceRayReview=preview()?.c2PaperRayProof;
+    if(sourceRayReview&&sourceRayReview.revision===snap.revision){
+     if(sourceRayReview.paperIntervalCount!==sourceRayReview.entries.length||
+        sourceRayReview.fullSourceCrossAudit!==true||
+        sourceRayReview.officialDrawingLineStylesVerified!==false||
+        sourceRayReview.completeV5DrawingAuthorized!==false)
+      throw Error('C2 M5 射线分类不得越过正式工程线型验收');
+     for(const candidate of sourceRayReview.entries){
+      if(candidate.engineeringLineStyle!=='undetermined'||
+         candidate.officialV5Approved!==false||
+         candidate.unresolvedObligations.length<5)
+       throw Error('C2 未证明的纸面来源不能生成正式动画');
+      const start=toSheet(candidate.view,candidate.from,frame);
+      const end=toSheet(candidate.view,candidate.to,frame);
+      if(start.x===end.x&&start.y===end.y)continue;
+      // DOTTED diagnostic overlay, never the GB solid/dashed standard.
+      const tone=candidate.rayStatus==='scoped-continuous-front-ray-clear'?
+       ($('v7-mono').checked?'#333':'#2b6dd0'):
+       candidate.rayStatus==='scoped-continuous-front-ray-opaque'?
+       ($('v7-mono').checked?'#777':'#d58b28'):
+       '#9c9ca8';
+      const rayNode=shape('line',{
+       x1:start.x,y1:start.y,x2:end.x,y2:end.y,
+       stroke:tone,'stroke-width':1.6,'stroke-dasharray':'1 7',
+       'data-c2-m5-paper-line-id':candidate.id,
+       'data-c2-m5-ray-status':candidate.rayStatus,
+       'data-c2-m5-paper-view':candidate.view,
+       'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
+       'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
+       'data-visibility':'undetermined',
+       'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
+      });
+      svg.append(rayNode);
+     }
+    }
     for(const generated of c2.generated.segments){
      if(generated.positiveNewConcaveUnionOpenFeatureVerified!==true)
       continue;
@@ -1339,7 +1374,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
          partial.orthogonalBooleanFeatureAudit.projectedLoops.totalSimpleClosedBoundaryLoopCount+
         ' 个、投影孔洞 '+
          partial.orthogonalBooleanFeatureAudit.projectedLoops.totalProjectedHoleClosedLoopCount+
-        ' 个；全部按当前形体来源复算，图纸仅用辅助线预览。':
+        ' 个；全部按当前形体来源复算，图纸仅用辅助线预览。'+
+        (partial.c2PaperRayProof?
+          ' 独立 M0–M5 全局纸面来源线段 '+partial.c2PaperRayProof.paperIntervalCount+
+          ' 项；严格前方开放射线无遮挡 '+partial.c2PaperRayProof.counts.locallyClear+
+          ' 项、被遮挡 '+partial.c2PaperRayProof.counts.locallyOpaque+
+          ' 项、仍未定 '+partial.c2PaperRayProof.counts.unresolved+
+          ' 项；已同时核对三维布尔表面来源 '+partial.c2PaperRayProof.counts.sourceExteriorOpen+
+          ' 项、两个端点局部接合加射线 '+partial.c2PaperRayProof.counts.locallyJointEndpoint+
+          ' 项。蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
+          ' 多于两实体或非正交模型暂不执行完整纸面 M5 清单。'):
 
         ' 非正交凸体仍未取得生成交汇棱的正向证明。')+
        ' 原始棱遮挡和局部布尔生成棱均不证明完整实体外轮廓或国标工程实虚线；没有正式 V5 答案资格。':

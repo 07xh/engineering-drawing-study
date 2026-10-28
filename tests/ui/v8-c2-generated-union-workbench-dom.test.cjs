@@ -31,6 +31,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
  const fire=(id,type)=>$(id).dispatchEvent(new window.Event(type,{bubbles:true}));
  const settle=async(n=10)=>{for(let i=0;i<n;i++)await tick()};
  const all=()=>[...$('v7-sheet').querySelectorAll('[data-c2-generated-source-id]')];
+ const rays=()=>[...$('v7-sheet').querySelectorAll('[data-c2-m5-paper-line-id]')];
  const loops=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-boundary-id]')];
  try{
   require('../../project/unified-workbench-entry.cjs');await settle();
@@ -51,9 +52,19 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.match($('v7-proof').textContent,/精确八象限局部端点签收/);
   assert.match($('v7-proof').textContent,/V\/H\/W 投影区域精确边界/);
   assert.match($('v7-proof').textContent,/简单闭合回路 3 个/);
+  assert.match($('v7-proof').textContent,/独立 M0–M5 全局纸面来源线段/);
+  assert.match($('v7-proof').textContent,/蓝\/橙\/灰点线仅为局部射线证据/);
   assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
-  const strokes=all(),region=loops();
+  const strokes=all(),region=loops(),rayShapes=rays();
+  assert.ok(rayShapes.length>0,'original and generated paper M5 candidates');
+  assert.ok(rayShapes.every(x=>
+   x.getAttribute('stroke-dasharray')==='1 7'&&
+   x.getAttribute('data-visibility')==='undetermined'&&
+   x.getAttribute('data-c2-geometry-status')===
+    'all-opaque-open-ray-only-not-official-style'));
+  assert.equal(new Set(rayShapes.map(x=>
+   x.getAttribute('data-c2-m5-paper-view'))).size,3);
   assert.ok(region.length>0,'all real first-angle projected occupancy boundaries');
   assert.equal(new Set(region.map(x=>
    x.getAttribute('data-c2-region-view'))).size,3);
@@ -71,13 +82,16 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   $('v7-guides').checked=false;fire('v7-guides','change');await settle();
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
   assert.equal(loops().length,0,'2D region loops are not official model strokes');
+  assert.equal(rays().length,0,'source M5 candidates must respect guide toggle');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   assert.equal(all().length,12);
   assert.equal(loops().length,region.length);
+  assert.equal(rays().length,rayShapes.length);
   // An edited unsaved input can never keep the previous math/overlay.
   $('v8-c2-b-x0').value='7';fire('v8-c2-b-x0','input');await settle();
   assert.equal(all().length,0);
   assert.equal(loops().length,0);
+  assert.equal(rays().length,0);
   assert.equal($('v7-play').disabled,true);
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v8-c2-build').disabled,true);
