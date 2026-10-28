@@ -78,6 +78,12 @@ body.ui-next .v7-cal-actions button{font-size:12px;min-height:40px}
 body.ui-next .v7-photo-box{position:relative;border:1px solid #dfe6ee;border-radius:9px;background:#f4f6fa;overflow:hidden;margin:10px 0;touch-action:manipulation}
 body.ui-next #v7-photo{display:block;width:100%;max-height:220px;height:auto;object-fit:contain;cursor:crosshair;border:none;margin:0}
 body.ui-next #v7-photo-marks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+body.ui-next .v8-photo-zoom{position:absolute;z-index:2;top:7px;right:7px;min-width:90px;min-height:44px;padding:8px 12px;border:1px solid #8db4e6;border-radius:9px;background:rgba(255,255,255,.96);color:#245994;cursor:pointer}
+body.ui-next .v8-photo-zoom:focus-visible{outline:3px solid #0866ef;outline-offset:2px}
+body.ui-next .v7-photo-box.v8-photo-expanded{position:fixed;z-index:1200;inset:3dvh 3vw auto;width:94vw;max-height:94dvh;margin:0;background:#f4f7fc;box-shadow:0 0 0 120vmax rgba(12,24,47,.74),0 12px 35px rgba(0,0,0,.2)}
+body.ui-next .v7-photo-box.v8-photo-expanded #v7-photo{max-height:90dvh;object-fit:contain}
+body.ui-next .v7-photo-box.v8-photo-expanded .v8-photo-zoom{background:#fff}
+@media(max-width:520px){body.ui-next .v7-photo-box.v8-photo-expanded{inset:2dvh 2vw auto;width:96vw;max-height:96dvh}body.ui-next .v7-photo-box.v8-photo-expanded #v7-photo{max-height:92dvh}}
 body.ui-next #v7-photo-clear{font-size:12px;padding:7px 9px}
 
 body.ui-next .v7-source-candidates{min-width:0;margin:12px 0}
