@@ -925,22 +925,36 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    // signed limited visible source strokes are rendered by the original V5.
    const certified=scoped.evidence,frame=scoped.clock.snapshot();
    const visible=new Set(certified.certifiedVisibleContourLineActionIds);
-   const physical=new Set(certified.certifiedPhysicalLineBindings.map(b=>b.actionId));
+   const signedBindings=new Map(certified.certifiedPhysicalLineBindings.map(b=>
+    [b.actionId,b]));
    for(const step of certified.steps)for(const action of step.actions){
     const fraction=frame.actionFractions[action.id]||0;
     if(fraction<=0||!['line','point'].includes(action.kind))continue;
-    const signed=action.kind==='line'&&(visible.has(action.id)||physical.has(action.id));
+    const binding=signedBindings.get(action.id);
+    const signed=action.kind==='line'&&(visible.has(action.id)||!!binding);
     if(!signed&&action.kind==='line'&&!$('v7-guides').checked)continue;
+    const hidden=!!binding&&
+     binding.standardLineStyle==='gb-t-4457.4-thin-dashed-hidden-edge';
+    const visibleStroke=visible.has(action.id)||(
+     !!binding&&binding.standardLineStyle===
+      'gb-t-4457.4-continuous-wide-visible-outline');
+    if(binding&&!hidden&&!visibleStroke)
+     throw Error('C1 物理线型无法与 M5 认证来源一一对应');
     const color=$('v7-mono').checked?(signed?'#111':'#777'):
      (signed?'#163954':'#b98639');
     const node=shape(action.kind==='line'?'line':'circle',{
      stroke:color,fill:action.kind==='point'?color:'none',
-     'stroke-width':signed?3:1.7,
-     'stroke-dasharray':signed?'none':'4 4',
+     'stroke-width':signed&&!hidden?3:signed?1.7:1.4,
+     'stroke-dasharray':hidden?'7 4':signed?'none':'4 4',
+     'data-engineering-line-style':hidden?'certified-hidden':
+      signed?'certified-visible':'undetermined',
      'data-v5-scope':signed?'signed-convex-source':'reviewed-point-guide'});
     Motion.updateSvg(node,action,fraction);svg.append(node);
    }
-   text(svg,20,445,'C1：已确认凸体几何与局部 V5；隐藏线及完整实体答案仍待认证','#986945');
+   text(svg,20,445,scoped.scopedProof?.scopedSingleConvexFullyCertified?
+     'C1：单个已确认闭合凸体全部原始棱线已签收；教材原题盲测尚未通过':
+     'C1：局部凸体几何与 V5 已确认；完整原始棱线及隐藏线仍待认证',
+     '#986945');
    return;
   }
   if(scoped?.kind==='prism-evidence'){
@@ -1186,9 +1200,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      partial.kind==='c1-reviewed-preview'?
       'C1 八角点两已知视图复算：'+partial.evidence.sceneResult.provenVertexCount+
       ' 顶点，'+partial.evidence.sceneResult.provenEdgeCount+
-      ' 条几何棱；已认证可见外轮廓 V5 动作 '+
-      partial.evidence.certifiedVisibleContourLineActionCount+
-      ' 段。未签收完整实体棱、隐藏线及原书题盲测，禁止完整答案导出。':
+      ' 条原始几何棱。三视图原始来源区间 '+
+      partial.scopedProof.sourceCoverage.length+' 项；M5 完整无缺口覆盖 '+
+      partial.scopedProof.sourceCoverage.filter(p=>p.completeAndNonOverlapping).length+
+      ' 项；已签正式 V5 线动作 '+partial.scopedProof.signedV5ActionCount+
+      ' 个（含 GB 可见实线及隐藏虚线）。'+
+      (partial.scopedProof.scopedSingleConvexFullyCertified?
+       ' 当前人工确认的单个闭合凸体三视图来源棱线已全部证明，第三视图有可用的正式作用域图纸。':
+       ' 仍缺少 '+partial.scopedProof.missingObligations.length+
+       ' 项完整证明：'+partial.scopedProof.missingObligations.join('、')+'。')+
+      ' 无任意题图自动识别、非凸/组合实体或真实教材原题盲测资格；不可作为通用标准答案导出。':
      partial.kind==='nonlinear-evidence'?
       'M3 非线性局部数值候选 '+partial.evidence.localCandidates.length+
       ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
@@ -1768,7 +1789,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   else if(result.kind==='prism-evidence'&&result.verified===false)
    msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
   else if(result.kind==='c1-reviewed-preview'&&result.verified===false)
-   msg('C1 已确认八点凸体几何及限定 V5；未得到完整实虚线标准答案。');
+   msg(result.scopedProof.scopedSingleConvexFullyCertified?
+    'C1 单个已确认凸体的全部来源棱、三视图线型及唯一 V5 已数学签收；真实教材原题盲测未通过。':
+    'C1 已确认八点凸体几何与限定 V5；完整原始棱线/实虚线证明仍未通过。');
   else if(result.kind==='c3-reviewed-preview'&&result.verified===false)
    msg('C3 已计算三维来源图及 V/H/W M5 区间，'+
     (result.solidOperation?'并按真实实体运算核对射线。':'未选择实体运算；仅证明来源。')+

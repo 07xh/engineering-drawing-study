@@ -51,6 +51,12 @@ test('C1 unified session reuses canonical convex M3 and original V5, never full 
  assert.equal(result.evidence.singleOriginalV5Player,true);
  assert.equal(result.evidence.wholeSolidV5Ready,false);
  assert.equal(result.evidence.completeDrawingExportAllowed,false);
+ assert.equal(result.scopedProof.originalV5ReusablePlayer,result.evidence.player);
+ assert.equal(result.scopedProof.originalV5Timeline,result.evidence.timeline);
+ assert.equal(result.scopedProof.sourceGeometryId,result.evidence.sceneResult.geometry.id);
+ assert.equal(result.scopedProof.revision,coordinator.snapshot().revision);
+ assert.equal(result.scopedProof.fullGenericC1ImagesOrNonconvexVerified,false);
+ assert.equal(result.scopedProof.realTextbookBlindTestPassed,false);
  assert.equal(result.plan.canPromoteToVerifiedResult,false);
  assert.equal(result.clock,result.evidence.player,'reuse single existing player');
  assert.equal(result.clock.canRender(coordinator.snapshot().revision),true);
@@ -82,4 +88,35 @@ test('C1 cannot silently change to an untrusted wrong image or topology',()=>{
  unreviewed.confirmCondition('coords');
  assert.throws(()=>other.solve(),/拓扑/);
  unreviewed.dispose();
+});
+
+test('C1 real oblique convex eight-corner two-view input positively signs all original M5 ranges',()=>{
+ const xyz={
+  V000:{x:0,y:0,z:0},V100:{x:4,y:1,z:0},
+  V110:{x:3,y:4,z:0},V010:{x:-1,y:3,z:0},
+  V001:{x:1,y:-1,z:5},V101:{x:5,y:0,z:5},
+  V111:{x:4,y:3,z:5},V011:{x:0,y:2,z:5}
+ };
+ for(const pair of ['VH','VW','HW']){
+  const rows=IDS.map(id=>[id,...[...pair].flatMap(v=>{
+   const p=project(xyz[id])[v];return [p.u,p.v];
+  })].join(',')).join('\n');
+  const {coordinator,session}=mount(rows,pair);
+  coordinator.confirmCondition('coords');
+  const result=session.solve(),proof=result.scopedProof;
+  assert.equal(result.kind,'c1-reviewed-preview');
+  assert.equal(proof.missingView,['V','H','W'].find(v=>!pair.includes(v)));
+  assert.equal(proof.scopedSingleConvexFullyCertified,true,
+   proof.missingObligations.join(','));
+  assert.equal(proof.allOriginalPositivePhysicalSourceRangesAccounted,true);
+  assert.equal(proof.allThreeViewsGlobalContourCertified,true);
+  assert.ok(proof.signedV5ActionCount>0);
+  assert.ok(proof.sourceCoverage.length>0);
+  assert.ok(proof.sourceCoverage.every(x=>x.completeAndNonOverlapping));
+  assert.match(proof.firstAngleOfficialThirdViewSvg,/<svg/);
+  assert.equal(result.clock,proof.originalV5ReusablePlayer);
+  assert.equal(result.verified,false,'not textbook-verified generalized answer');
+  assert.equal(coordinator.canExport(),false,'generic export still blocked');
+  coordinator.dispose();
+ }
 });

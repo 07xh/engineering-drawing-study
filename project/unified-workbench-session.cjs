@@ -11,6 +11,8 @@ const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
+const {compileScopedFullyProvenConvexC1}=
+ require('../workbench/c1-fully-proven-convex-third-view-delivery.cjs');
 const {compileFiniteCylinderEndpointV5}=
  require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {buildC3LinkedGeometryScene}=require('../workbench/c3-linked-geometry-scene.cjs');
@@ -267,12 +269,30 @@ function createUnifiedProjectSession(){
        new Set(c1.vertices.map(v=>v.id)).size!==8)
      throw new Error('必须确认单个闭合凸体的八个对应角点及其真实拓扑');
     const primitive=prismMesh({solid:{min:P(0,0,0),max:P(1,1,1)}});
-    const certified=compileReviewedSolidVertexV5({input:{
-      geometryId:'C1Solid',confirmedBy:'user',topologyConfirmed:true,
-      revision:latest.revision,unit:'mm',vertices:c1.vertices,
-      edges:primitive.data.edges,faces:primitive.data.faces
-    },sheetTransform:SHEET});
-    if(certified.singleOriginalV5Player!==true||
+    const scopedProof=compileScopedFullyProvenConvexC1({
+      input:{
+       geometryId:'C1Solid',confirmedBy:'user',topologyConfirmed:true,
+       revision:latest.revision,unit:'mm',vertices:c1.vertices,
+       edges:primitive.data.edges,faces:primitive.data.faces
+      },sheetTransform:SHEET,includeCanonicalSolution:true
+    });
+    // Hand off the EXACT SAME canonical solution/player used to prove each
+    // original source interval: no second geometry math or V5 timeline.
+    const certified=scopedProof.canonicalSolution;
+    if(scopedProof.revision!==latest.revision||
+       scopedProof.originalV5ReusablePlayer!==certified.player||
+       scopedProof.originalV5Timeline!==certified.timeline||
+       scopedProof.sourceGeometryId!==certified.sceneResult.geometry.id||
+       scopedProof.originalV5TimelineStepCount!==certified.steps.length||
+       scopedProof.scopedSingleConvexFullyCertified!==
+        (scopedProof.missingObligations.length===0)||
+       scopedProof.fullGenericC1ImagesOrNonconvexVerified!==false||
+       scopedProof.realTextbookBlindTestPassed!==false||
+       (scopedProof.scopedSingleConvexFullyCertified&&
+        (scopedProof.allOriginalPositivePhysicalSourceRangesAccounted!==true||
+         scopedProof.allThreeViewsGlobalContourCertified!==true||
+         !scopedProof.firstAngleOfficialThirdViewSvg))||
+       certified.singleOriginalV5Player!==true||
        certified.sceneResult.revision!==latest.revision||
        certified.geometryVerifiedWithinReviewedConvexScope!==true||
        certified.wholeSolidV5Ready!==false||
@@ -283,7 +303,7 @@ function createUnifiedProjectSession(){
     clock=certified.player;  // existing official V5 clock, no new player
     current=Object.freeze({...resultBase(latest),
       kind:'c1-reviewed-preview',verified:false,status:'geometry-only',
-      evidence:certified,scene,links:projectSelectionLinks(scene),
+      evidence:certified,scopedProof,scene,links:projectSelectionLinks(scene),
       plan:{status:'preview-only',canPromoteToVerifiedResult:false,
        steps:certified.steps,geometryId:'C1Solid'},clock});
     emit();return current;
