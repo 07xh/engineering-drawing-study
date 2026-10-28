@@ -319,7 +319,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   click('v7-u-append');await tick();await tick();
   click('v7-u-confirm');await tick();await tick();
   click('v7-u-solve');await tick();await tick();
-  assert.match($('v7-proof').textContent,/M3 有界仿射未知点 · unique/,
+  assert.match($('v7-proof').textContent,/未知点：唯一解/,
    $('v7-save').textContent);
   assert.ok($('v7-sheet').querySelector('[data-geometry-id="PointB"]'));
   assert.equal($('v7-play').disabled,true);

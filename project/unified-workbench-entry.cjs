@@ -970,10 +970,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
       ' 数值初值残差见左栏；无 ConstructionIntent/DAG/V5 验证资格。':
      partial.kind==='affine-evidence'?
-      'M3 有界仿射未知点 · '+partial.evidence.status+
-      '；矩阵秩 '+String(partial.evidence.rank)+'/'+
-       partial.evidence.variableCount+'，残差 '+String(partial.evidence.residualMm)+
-       ' mm。仅点约束数学证据，原图/完整作图/V5 均未签收。':
+      '未知点：'+({unique:'唯一解',underdetermined:'条件不足',inconsistent:'条件矛盾'}[partial.evidence.status]||partial.evidence.status)+
+      '；残差 '+String(partial.evidence.residualMm)+
+       ' mm。当前只显示已确认的点，完整作图尚未验证。':
      partial.kind==='composition-evidence'?
       '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
        '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
@@ -1286,11 +1285,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    throw Error('未知量数学子集不允许越权生成已验证工程答案/V5');
   const e=result.evidence;
   msg(result.kind==='nonlinear-evidence'?
-   'M3 找到 '+e.localCandidates.length+
-   ' 个局部数值候选；未证明解的总数、唯一性和工程答案，V5 禁用。':
-   'M3 '+e.status+'，秩 '+String(e.rank)+'/'+e.variableCount+
-   '，残差 '+String(e.residualMm)+
-   ' mm。仅在仿射唯一解时显示 Geometry；正式作图仍不可播放。');
+   '找到 '+e.localCandidates.length+
+   ' 个候选解；解的总数和唯一性尚未确定，暂不能播放。':
+   '求解状态：'+({unique:'唯一解',underdetermined:'条件不足',inconsistent:'条件矛盾'}[e.status]||e.status)+
+   '；残差 '+String(e.residualMm)+
+   ' mm。仅唯一解可显示，暂不能播放完整作图。');
  }));
  $('v7-u-reset').addEventListener('click',()=>call(async()=>{
   coordinator.removeAffineProblem();
