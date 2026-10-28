@@ -283,13 +283,17 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  generatedEdge,originalSourceEdges
 }={}){
  if(typeof generatedEdge?.IsSame!=='function'||
-    !Array.isArray(originalSourceEdges))
-  throw new TypeError('actual OCCT generated and original native TopoDS edges required');
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    originalSourceEdges.length>512)
+  throw new TypeError('actual OCCT generated and bounded original native TopoDS edges required');
  const ids=new Set(),visited=new Set();
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
      typeof item.edge?.IsSame!=='function')
    throw new TypeError('untrusted original native TopoDS source edge');
+  if(visited.has(item.sourceEdgeId))
+   throw new RangeError('duplicate original native TopoDS source ID in source ledger');
+  visited.add(item.sourceEdgeId);
   const forward=generatedEdge.IsSame(item.edge),
    backward=item.edge.IsSame(generatedEdge);
   if(typeof forward!=='boolean'||typeof backward!=='boolean'||
@@ -327,13 +331,18 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
 }={}){
  if(typeof edgeMap?.Extent!=='function'||
     typeof edgeMap?.FindKey!=='function'||
-    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length)
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    originalSourceEdges.length>512)
   throw new TypeError('real indexed OCCT HLR DataStructure EdgeMap required');
+ const sourceIds=originalSourceEdges.map(x=>x?.sourceEdgeId);
+ if(sourceIds.some(id=>typeof id!=='string'||!id)||
+    new Set(sourceIds).size!==sourceIds.length||
+    originalSourceEdges.some(x=>typeof x?.edge?.IsSame!=='function'))
+  throw new RangeError('duplicate or unbound original TopoDS source ledger');
  const extent=edgeMap.Extent();
  if(!Number.isSafeInteger(extent)||extent<1||extent>512)
   throw new RangeError('bounded native HLR original edge map extent required');
- const indexed=[],seen=new Set(),originalIds=new Set(
-  originalSourceEdges.map(x=>x.sourceEdgeId));
+ const indexed=[],seen=new Set(),originalIds=new Set(sourceIds);
  for(let i=1;i<=extent;i++){
   // FindKey returns a borrowed reference into OCCT's indexed map.
   // Deleting it would corrupt the owning HLR DataStructure.
@@ -360,6 +369,16 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   internalEdgeMapOriginalSourceIdsMatched:seen.size,
   everyOriginalBRepSourcePresentInHLRDataStructure:
    seen.size===originalIds.size,
+  edgeMapSourceBijectionVerified:extent===originalIds.size&&
+   indexed.length===originalIds.size&&
+   indexed.every(row=>row.directlySameOriginalTopoDSInputEdge===true)&&
+   seen.size===originalIds.size,
+  edgeMapSourceBijectionFailureReasons:[
+   ...(extent!==originalIds.size?['edge-map extent differs from original source inventory']:[]),
+   ...(indexed.some(row=>row.directlySameOriginalTopoDSInputEdge!==true)?
+     ['one or more native index entries have no unique original TopoDS identity']:[]),
+   ...(seen.size!==originalIds.size?['one or more original source edges are absent or duplicated']:[])
+  ],
   indexedOriginalSources:indexed,
   generatedHLREdgeToOriginalTopoDSHistoryProven:false,
   continuousM5VisibilityProven:false,
@@ -754,6 +773,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const indexProof=originalDataStructureIndex;
    if(indexProof.availability!=='real-native-edge-map-inspected'||
       indexProof.everyOriginalBRepSourcePresentInHLRDataStructure!==true||
+      indexProof.edgeMapSourceBijectionVerified!==true||
       !Array.isArray(indexProof.indexedOriginalSources)||
       typeof extractor.VCompound_2!=='function'||
       typeof extractor.HCompound_2!=='function')
