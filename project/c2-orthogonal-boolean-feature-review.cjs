@@ -17,6 +17,12 @@ const {auditUnionPhysicalFeatureJunctions}=
  require('../workbench/m5-union-physical-feature-junctions.cjs');
 const {inspectUnionDirectionalJunctions}=
  require('../workbench/m5-union-directional-junctions.cjs');
+const {createReviewedC2BooleanEndpointNeighborhood}=
+ require('../workbench/m5-c2-boolean-endpoint-octant-neighborhood.cjs');
+const {auditOrthogonalProjectedUnionSilhouette}=
+ require('../workbench/m5-orthogonal-projected-union-silhouette.cjs');
+const {auditOrthogonalProjectedBoundaryTopology}=
+ require('../workbench/m5-orthogonal-projected-boundary-topology.cjs');
 function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
    !Array.isArray(geometry)||geometry.length<2||geometry.length>8)
@@ -34,12 +40,58 @@ function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
  const directional=inspectUnionDirectionalJunctions({
   geometry,revision,physicalJunctionEvidence:physical
  });
+ // Exact independent 3D point/cap neighborhood and 2D projected REGION
+ // loop topology. Neither may promote a stroke, regardless of local truth.
+ const octantScene=createReviewedC2BooleanEndpointNeighborhood({
+  geometry,revision
+ });
+ const projectedRegion=auditOrthogonalProjectedUnionSilhouette({
+  geometry,revision
+ });
+ const projectedLoops=auditOrthogonalProjectedBoundaryTopology({
+  geometry,revision,projectedUnionSilhouetteEvidence:projectedRegion
+ });
+ const nodeByPoint=new Map(physical.nodes.map(n=>
+  [['x','y','z'].map(k=>n.point3D[k]).join('|'),n]));
+ const endpointRows=[];
+ for(const segment of physical.segments){
+  for(const endpointRole of ['from','to']){
+   const point=endpointRole==='from'?
+    segment.source3DFrom:segment.source3DTo;
+   const toward=endpointRole==='from'?
+    segment.source3DTo:segment.source3DFrom;
+   const identity=['x','y','z'].map(k=>point[k]).join('|');
+   const node=nodeByPoint.get(identity);
+   if(!node||!node.incidences.some(i=>
+     i.segmentId===segment.id&&i.endpointRole===endpointRole))
+    throw new Error('C2 原始与生成棱的三维端点来源对应中断');
+   const local=octantScene.inspect(point,toward);
+   if(local.revision!==revision||
+      local.status!=='scoped-closed-3d-boolean-local-neighborhood'||
+      local.outgoingSourceAxis!==segment.sourceAxis||
+      local.closedEndpointCompleteEngineeringLinecapVerified!==false||
+      local.allOtherBodyProjectedOcclusionTransitionsVerified!==false||
+      local.signedV5LineActions!==0||
+      local.v5Ready!==false)
+    throw new Error('C2 端点八象限结果与当前源棱不一致');
+   endpointRows.push(Object.freeze({
+    sourceSegmentId:segment.id,endpointRole,nodeId:node.id,
+    sourceFeatureKind:segment.kind,
+    localBoundaryWitness:local,
+    localBoundaryWithOutgoingSourceVerified:
+     local.localClosedUnionBoundaryWithOutgoingSourceVerified
+   }));
+  }
+ }
+ const completeEndpointCount=endpointRows.filter(e=>
+  e.localBoundaryWithOutgoingSourceVerified).length;
  const originalOpen=source.edges.flatMap(e=>e.subintervals).filter(s=>
   s.positiveUnionExternalCreaseVerified===true).length;
  const generatedOpen=generated.segments.filter(s=>
   s.positiveNewConcaveUnionOpenFeatureVerified===true).length;
  const equalIds=x=>JSON.stringify(x)===JSON.stringify(ids);
- if([source,generated,physical,directional].some(x=>
+ if([source,generated,physical,directional,octantScene,
+     projectedRegion,projectedLoops].some(x=>
     x.revision!==revision||!equalIds(x.sourceGeometryIds))||
    source.status!=='source-orthogonal-union-open-sector-coverage'||
    generated.status!=='scoped-pairwise-new-perpendicular-face-open-features'||
@@ -52,6 +104,20 @@ function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
    physical.generatedSegmentCount!==generatedOpen||
    physical.nodeCount!==physical.nodes.length||
    directional.nodeCount!==physical.nodeCount||
+   octantScene.status!=='m0-reviewed-orthogonal-composite-boolean-neighborhood'||
+   projectedRegion.status!=='complete-first-angle-orthogonal-projected-occupancy-boundary'||
+   projectedLoops.status!=='first-angle-projected-occupancy-boundary-loop-incidence-audited'||
+   projectedRegion.viewCount!==3||
+   projectedLoops.viewCount!==3||
+   projectedLoops.totalProjectedBoundarySegmentCount!==
+    projectedRegion.projectedBoundarySegmentCount||
+   projectedLoops.allReviewedProjectedRegionBoundarySegmentsAccountedFor!==true||
+   projectedRegion.allProjectedOccupancyRegionBoundariesComplete!==true||
+   projectedRegion.fullEngineeringDrawingLineStylesVerified!==false||
+   projectedLoops.officialLineStylesVerified!==false||
+   projectedLoops.signedV5LineActions!==0||
+   projectedLoops.v5Ready!==false||
+   endpointRows.length!==2*physical.segments.length||
    !physical.exactEndpointIncidenceVerified||
    !physical.originalAndGeneratedSourceEdgeKindsAccountedFor||
    !directional.allOriginalAndNewFeatureDirectedEndpointsCovered||
@@ -70,6 +136,10 @@ function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
   schema:'draftai-c2-workbench-original-plus-generated-union-evidence/1',
   revision,sourceGeometryIds:Object.freeze([...ids]),
   source,generated,physical,directional,
+  projectedRegion,projectedLoops,
+  sourceEndpointOctants:Object.freeze(endpointRows),
+  certifiedLocalEndpointCount:completeEndpointCount,
+  unresolvedLocalEndpointCount:endpointRows.length-completeEndpointCount,
   originalOpenSourceIntervalCount:originalOpen,
   generatedOpenSourceIntervalCount:generatedOpen,
   officialDrawingLineStylesVerified:false,

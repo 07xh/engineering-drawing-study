@@ -42,6 +42,38 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
  assert.ok(m.physical.nodeCount>0);
  assert.ok(m.physical.sharedPhysicalNodeCount>0);
  assert.equal(m.physical.exactEndpointIncidenceVerified,true);
+ assert.equal(m.sourceEndpointOctants.length,2*m.physical.segments.length);
+ assert.equal(m.certifiedLocalEndpointCount+m.unresolvedLocalEndpointCount,
+  m.sourceEndpointOctants.length);
+ assert.ok(m.certifiedLocalEndpointCount>0);
+ assert.equal(m.projectedRegion.viewCount,3);
+ assert.equal(m.projectedRegion.allProjectedOccupancyRegionBoundariesComplete,true);
+ assert.equal(m.projectedLoops.totalSimpleClosedBoundaryLoopCount,3);
+ assert.equal(m.projectedLoops.totalExteriorClosedLoopCount,3);
+ assert.equal(m.projectedLoops.totalProjectedHoleClosedLoopCount,0);
+ assert.equal(m.projectedLoops.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
+ assert.equal(m.projectedLoops.totalProjectedBoundarySegmentCount,
+  m.projectedRegion.projectedBoundarySegmentCount);
+ for(const [view,i] of ['V','H','W'].map((v,i)=>[v,i])){
+  const e=m.projectedRegion.projectedViews[i];
+  const topology=m.projectedLoops.projectedViews[i];
+  assert.equal(e.view,view);
+  assert.equal(topology.view,view);
+  assert.equal(e.completeProjectedUnionAreaMm2,175);
+  assert.equal(topology.sourceProjectedUnionAreaMm2,175);
+  assert.equal(topology.signedLoopAreasTotalMm2,175);
+  assert.equal(topology.simpleClosedLoopCount,1);
+  assert.ok(e.boundaries.every(x=>
+   x.exactOpenCellOppositeOccupancyVerified&&
+   x.projectedEngineeringSolidDashedStyle==='undetermined'&&
+   x.canonicalIntentDAGAndV5Approved===false));
+ }
+ assert.ok(m.sourceEndpointOctants.every(x=>
+  x.localBoundaryWitness.outgoingSourceAxis!==null&&
+  x.localBoundaryWitness.closedEndpointCompleteEngineeringLinecapVerified===false&&
+  x.localBoundaryWitness.signedV5LineActions===0));
+ assert.equal(m.projectedLoops.officialLineStylesVerified,false);
+ assert.equal(m.projectedLoops.v5Ready,false);
  assert.equal(m.directional.nodeCount,m.physical.nodeCount);
  assert.equal(m.directional.listedNodesDepthOrderVerified,true);
  assert.ok(m.physical.projectedAliases.some(x=>
@@ -81,7 +113,44 @@ test('C2 planar face contact has NO invented generated pairwise feature and rema
  assert.equal(m.generatedOpenSourceIntervalCount,0);
  assert.equal(m.physical.generatedSegmentCount,0);
  assert.ok(m.source.flatNoCreaseCount>0);
+ assert.equal(m.projectedLoops.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
+ assert.equal(m.projectedRegion.viewCount,3);
+ assert.equal(m.projectedLoops.totalProjectedHoleClosedLoopCount,0);
  assert.equal(m.completeV5DrawingAuthorized,false);
  assert.equal(coordinator.canExport(),false);
  coordinator.dispose();
+});
+
+test('C2 projected frame with a genuine H-view HOLE keeps inner/outer contours independent of hidden-stroke authorization',()=>{
+ const {prismMesh}=require('../../project/unified-workbench-session.cjs');
+ const {reviewC2OrthogonalBooleanFeatures}=
+  require('../../project/c2-orthogonal-boolean-feature-review.cjs');
+ const extents=[
+  [[0,0,0],[10,2,5]],
+  [[0,8,0],[10,10,5]],
+  [[0,2,0],[2,8,5]],
+  [[8,2,0],[10,8,5]]
+ ];
+ const geometry=extents.map(([lo,hi],index)=>({
+  ...prismMesh({solid:{
+   min:{x:lo[0],y:lo[1],z:lo[2]},
+   max:{x:hi[0],y:hi[1],z:hi[2]}}}),id:'Frame'+index
+ }));
+ const r=reviewC2OrthogonalBooleanFeatures({geometry,revision:631});
+ assert.ok(r);
+ assert.equal(r.projectedLoops.viewCount,3);
+ assert.equal(r.projectedLoops.totalProjectedHoleClosedLoopCount>=1,true);
+ const H=r.projectedLoops.projectedViews.find(v=>v.view==='H');
+ assert.equal(H.simpleClosedLoopCount,2);
+ assert.equal(H.exteriorClosedLoopCount,1);
+ assert.equal(H.boundedHoleClosedLoopCount,1);
+ assert.equal(H.sourceProjectedUnionAreaMm2,64);
+ assert.equal(H.signedLoopAreasTotalMm2,64);
+ assert.equal(r.projectedRegion.physical3DSourceReviewMode,
+  'm0-projected-region-geometry-only');
+ assert.equal(r.projectedLoops.allPhysical3DSourceAndFullProjectedIntersectionsContinuouslyVerified,false);
+ assert.equal(r.projectedLoops.officialLineStylesVerified,false);
+ assert.equal(r.completeV5DrawingAuthorized,false);
+ assert.ok(r.sourceEndpointOctants.every(x=>
+  x.localBoundaryWitness.actualGlobalPhysicalFeatureContinuityVerified===false));
 });

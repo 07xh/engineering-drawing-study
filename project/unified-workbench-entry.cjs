@@ -1009,6 +1009,39 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       c2.revision===snap.revision&&
       $('v7-guides').checked){
     const frame=result.paperTransform;
+    // Exact M0 union occupancy boundary in each projection: a complete
+    // CLOSED 2D region, NEVER a certified 3D frontmost engineering stroke.
+    if(c2.projectedRegion.viewCount!==3||
+       c2.projectedLoops.viewCount!==3||
+       c2.projectedLoops.totalProjectedBoundarySegmentCount!==
+        c2.projectedRegion.projectedBoundarySegmentCount||
+       c2.projectedLoops.v5Ready!==false)
+     throw Error('C2 闭合投影区域轮廓来源未被完整校验');
+    for(const view of c2.projectedRegion.projectedViews){
+     const topology=c2.projectedLoops.projectedViews.find(v=>v.view===view.view);
+     if(!topology||topology.sourceBoundarySegmentCount!==view.boundaries.length)
+      throw Error('C2 第一角法闭合轮廓与区域图缺少一一对应');
+     for(const boundary of view.boundaries){
+      if(boundary.exactOpenCellOppositeOccupancyVerified!==true||
+         boundary.projectedEngineeringSolidDashedStyle!=='undetermined'||
+         boundary.canonicalIntentDAGAndV5Approved!==false)
+       throw Error('C2 区域外轮廓不能擅自升级为工程线型');
+      const a=toSheet(view.view,boundary.projectedFromModelMm,frame);
+      const b=toSheet(view.view,boundary.projectedToModelMm,frame);
+      const node=shape('line',{
+       x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+       stroke:$('v7-mono').checked?'#555':'#15868a',
+       'stroke-width':2,'stroke-dasharray':'8 3 2 3',
+       'data-c2-region-boundary-id':boundary.id,
+       'data-c2-region-view':view.view,
+       'data-c2-region-boundary-kind':boundary.type,
+       'data-visibility':'undetermined',
+       'data-c2-geometry-status':'exact-2d-occupancy-only',
+       'aria-label':'C2 投影占据区域的数学外边界，不是正式三维轮廓线'
+      });
+      svg.append(node);
+     }
+    }
     for(const generated of c2.generated.segments){
      if(generated.positiveNewConcaveUnionOpenFeatureVerified!==true)
       continue;
@@ -1292,7 +1325,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         ' 个，投影同点但三维不同点的别名 '+
          partial.orthogonalBooleanFeatureAudit.physical.projectedAliases.filter(x=>
            x.different3DPhysicalPoints).length+
-        ' 项；M5 端点方向已核对，全部新棱仅以辅助虚线候选展示。':
+        ' 项；M5 端点方向已核对。精确八象限局部端点签收 '+
+         partial.orthogonalBooleanFeatureAudit.certifiedLocalEndpointCount+
+        '/'+partial.orthogonalBooleanFeatureAudit.sourceEndpointOctants.length+
+        ' 端，未签收 '+partial.orthogonalBooleanFeatureAudit.unresolvedLocalEndpointCount+
+        ' 端。V/H/W 投影区域精确边界 '+
+         partial.orthogonalBooleanFeatureAudit.projectedRegion.projectedBoundarySegmentCount+
+        ' 段、简单闭合回路 '+
+         partial.orthogonalBooleanFeatureAudit.projectedLoops.totalSimpleClosedBoundaryLoopCount+
+        ' 个、投影孔洞 '+
+         partial.orthogonalBooleanFeatureAudit.projectedLoops.totalProjectedHoleClosedLoopCount+
+        ' 个；全部按当前形体来源复算，图纸仅用辅助线预览。':
+
         ' 非正交凸体仍未取得生成交汇棱的正向证明。')+
        ' 原始棱遮挡和局部布尔生成棱均不证明完整实体外轮廓或国标工程实虚线；没有正式 V5 答案资格。':
      '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；'+

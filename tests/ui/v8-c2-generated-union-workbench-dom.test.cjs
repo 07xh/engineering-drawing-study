@@ -31,6 +31,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
  const fire=(id,type)=>$(id).dispatchEvent(new window.Event(type,{bubbles:true}));
  const settle=async(n=10)=>{for(let i=0;i<n;i++)await tick()};
  const all=()=>[...$('v7-sheet').querySelectorAll('[data-c2-generated-source-id]')];
+ const loops=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-boundary-id]')];
  try{
   require('../../project/unified-workbench-entry.cjs');await settle();
   $('v7-task').value='composition';fire('v7-task','change');await settle();
@@ -47,9 +48,19 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   fire('v8-c2-build','click');await settle(20);
   assert.match($('v7-proof').textContent,/两原始面交汇生成新棱 6 段/,$('v7-save').textContent);
   assert.match($('v7-proof').textContent,/三维来源端点/);
+  assert.match($('v7-proof').textContent,/精确八象限局部端点签收/);
+  assert.match($('v7-proof').textContent,/V\/H\/W 投影区域精确边界/);
+  assert.match($('v7-proof').textContent,/简单闭合回路 3 个/);
   assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
-  const strokes=all();
+  const strokes=all(),region=loops();
+  assert.ok(region.length>0,'all real first-angle projected occupancy boundaries');
+  assert.equal(new Set(region.map(x=>
+   x.getAttribute('data-c2-region-view'))).size,3);
+  assert.ok(region.every(x=>
+   x.getAttribute('data-c2-geometry-status')==='exact-2d-occupancy-only'&&
+   x.getAttribute('data-visibility')==='undetermined'&&
+   x.getAttribute('stroke-dasharray')==='8 3 2 3'));
   assert.equal(strokes.length,12,
    'six real 3D generated lines have two non-collapsed views each');
   assert.equal(new Set(strokes.map(x=>x.getAttribute('data-c2-generated-source-id'))).size,6);
@@ -59,11 +70,14 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
    x.getAttribute('data-c2-geometry-status')==='boolean-feature-preview-only'));
   $('v7-guides').checked=false;fire('v7-guides','change');await settle();
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
+  assert.equal(loops().length,0,'2D region loops are not official model strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   assert.equal(all().length,12);
+  assert.equal(loops().length,region.length);
   // An edited unsaved input can never keep the previous math/overlay.
   $('v8-c2-b-x0').value='7';fire('v8-c2-b-x0','input');await settle();
   assert.equal(all().length,0);
+  assert.equal(loops().length,0);
   assert.equal($('v7-play').disabled,true);
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v8-c2-build').disabled,true);
