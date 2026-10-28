@@ -28,6 +28,8 @@ const {evaluateReviewedCompositeInterfaces}=
  require('../workbench/reviewed-composite-interface-evidence.cjs');
 const {proveReviewedCompositeSeamRays}=
  require('../workbench/m5-reviewed-composite-seam-rays.cjs');
+const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
+ require('../workbench/m5-reviewed-multibody-original-edge-rays.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {auditM0M3M4M5OriginalSources}=
@@ -341,6 +343,38 @@ function createUnifiedProjectSession(){
     const compositionSeamRayEvidence=geometry.length>=2&&
       compositionInterfaceEvidence.contactBoundarySegmentCount>0?
       proveReviewedCompositeSeamRays({geometry,revision:latest.revision}):null;
+    // All ORIGINAL 3D physical edges of 2..8 finite M0 convex bodies,
+    // each checked against EVERY opaque body in all FIRST-ANGLE views.
+    // This is independently proved, not inferred from SVG coincidences.
+    // For mixed/manual non-mesh geometry the scope does not apply.
+    const boundedConvexInventory=geometry.length>=2&&geometry.length<=8&&
+      geometry.every(g=>g.kind==='mesh'&&g.space==='model-3d'&&
+       g.unit==='mm'&&Array.isArray(g.data?.edges))&&
+      geometry.reduce((n,g)=>n+g.data.edges.length,0)<=80;
+    const originalMultiBodyEdgeRays=boundedConvexInventory?
+      auditReviewedMultiBodyWholePhysicalEdgeRays({
+        geometry,revision:latest.revision
+      }):null;
+    if(originalMultiBodyEdgeRays){
+      const audit=originalMultiBodyEdgeRays;
+      const edgeCount=geometry.reduce((n,g)=>n+g.data.edges.length,0);
+      const counted=audit.counts.physicalProjected+audit.counts.collapsed+
+       audit.counts.ambiguousSourceDihedral+
+       audit.counts.coplanarMeshSubdivision;
+      if(audit.revision!==latest.revision||
+         audit.componentCount!==geometry.length||
+         audit.originalSourceEdgeCount!==edgeCount||
+         audit.projectedEdgeRowCount!==3*edgeCount||
+         audit.rows.length!==counted||
+         audit.allBodiesM0ClosedConvexVerified!==true||
+         audit.allContinuousOriginalSourceRaysCheckedAgainstEveryComponent!==true||
+         audit.compositeNonconvexBooleanBoundaryCertified!==false||
+         audit.generatedIntersectionCurveEdgesCertified!==false||
+         audit.combinedC2EngineeringLineStylesCertified!==false||
+         audit.completedDrawingV5Authorized!==false||
+         audit.signedV5ActionCount!==0)
+       throw new Error('C2 原始棱全来源 M5 遮挡或正式线型门禁不一致');
+    }
     const spatialV5Readiness=inspectSpatialV5Readiness({
       sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
@@ -370,7 +404,7 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
-      compositionSeamRayEvidence,sceneDepthEvidence,
+      compositionSeamRayEvidence,originalMultiBodyEdgeRays,sceneDepthEvidence,
       m0M3M5OriginalSourceAcceptance,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
