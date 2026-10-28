@@ -54,6 +54,50 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
   proof.sourceIncompleteBoundaryCount,proof.sourceBoundaries.length);
  assert.equal(proof.sourceBoundariesByView.length,3);
  assert.deepEqual(proof.sourceBoundariesByView.map(x=>x.view),['V','H','W']);
+ assert.equal(proof.boundaryRayEvidence.length,proof.sourceBoundaries.length);
+ assert.equal(proof.boundaryRayOpenPieceCount,proof.boundaryRayEvidence.reduce(
+  (n,b)=>n+b.paperPieces.length,0));
+ assert.equal(proof.boundaryRayCorroboratedPieceCount,
+  proof.boundaryRayEvidence.reduce((n,b)=>n+
+   b.positiveLocalWholeOpenRayPieceCount,0));
+ assert.ok(proof.boundaryRayCorroboratedPieceCount>0,
+  'genuine physical source and open ray corroboration exists');
+ assert.ok(proof.boundaryAllPiecesCorroboratedCount<=
+  proof.sourceCoveredBoundaryCount);
+ for(const bound of proof.boundaryRayEvidence){
+  const src=proof.sourceBoundaries.find(x=>
+   x.id===bound.id&&x.view===bound.view);
+  assert.ok(src);
+  assert.equal(bound.officialEngineeringLineStyle,'undetermined');
+  assert.equal(bound.officialV5Approved,false);
+  assert.equal(bound.full3DBooleanOcclusionAndJunctionProof,false);
+  assert.equal(bound.paperPieces[0].fromT,0);
+  assert.equal(bound.paperPieces.at(-1).toT,1);
+  assert.ok(Math.abs(bound.paperPieces.reduce((n,p)=>
+   n+(p.toT-p.fromT),0)-1)<1e-14);
+  assert.equal(bound.paperPieces.some(p=>
+   p.exactCurrentPhysicalSourceAndOpenRayCorroborated),
+   bound.positiveLocalWholeOpenRayPieceCount>0);
+  for(const [i,p] of bound.paperPieces.entries()){
+   if(i>0)assert.equal(bound.paperPieces[i-1].toT,p.fromT);
+   assert.equal(p.officialEngineeringLineStyle,'undetermined');
+   assert.equal(p.officialV5Approved,false);
+   assert.equal(p.completeClosedEndpointAndGlobalVisibilityCertified,false);
+   if(p.exactCurrentPhysicalSourceAndOpenRayCorroborated){
+    assert.ok(src.completeProjectedPhysicalSourceCoverage);
+    assert.equal(p.real3DSourceClassKeys.length,1);
+    assert.ok(src.physical3DSourceClassKeys.includes(
+     p.real3DSourceClassKeys[0]));
+    assert.ok(['scoped-continuous-front-ray-clear',
+     'scoped-continuous-front-ray-opaque'].includes(
+      p.localWholeOpenRayStatus));
+   }else assert.equal(p.localWholeOpenRayStatus,'undetermined');
+  }
+  if(bound.locallyRayCorroboratedFullBoundary)
+   assert.equal(bound.exactUnprovenBoundaryRanges.length,0);
+  if(!src.completeProjectedPhysicalSourceCoverage)
+   assert.equal(bound.locallyRayCorroboratedFullBoundary,false);
+ }
  assert.ok(proof.sourceBoundaries.every(b=>
   b.revision===proof.revision&&
   b.officialEngineeringLineStyle==='undetermined'&&
@@ -164,6 +208,10 @@ test('C2 planar face contact has NO invented generated pairwise feature and rema
  assert.equal(m.generatedOpenSourceIntervalCount,0);
  assert.equal(m.physical.generatedSegmentCount,0);
  assert.ok(m.source.flatNoCreaseCount>0);
+ assert.ok(out.c2PaperRayProof.boundaryRayEvidence.length>0);
+ assert.ok(out.c2PaperRayProof.boundaryRayEvidence.every(x=>
+  x.officialV5Approved===false&&
+  x.paperPieces.every(p=>p.completeClosedEndpointAndGlobalVisibilityCertified===false)));
  assert.equal(m.projectedLoops.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
  assert.ok(out.c2PaperRayProof.paperIntervalCount>0);
  assert.equal(out.c2PaperRayProof.sourceCoveredBoundaryCount+
