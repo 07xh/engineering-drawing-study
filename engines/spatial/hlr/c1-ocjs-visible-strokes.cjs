@@ -294,6 +294,55 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
 }
 
 /**
+ * Inspect the real HLRBRep_Data EdgeMap (1-based OCCT source index), not
+ * the generated HLR VCompound. This proves only which ORIGINAL TopoDS
+ * edges the internal HLR data structure knows. It does NOT identify a
+ * generated/split HLR edge or close any M5 source-parameter gap.
+ */
+function probeRealOcctHLRDataStructureSourceEdgeMap({
+ edgeMap,originalSourceEdges,hold
+}={}){
+ if(typeof edgeMap?.Extent!=='function'||
+    typeof edgeMap?.FindKey!=='function'||
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    typeof hold!=='function')
+  throw new TypeError('real indexed OCCT HLR DataStructure EdgeMap required');
+ const extent=edgeMap.Extent();
+ if(!Number.isSafeInteger(extent)||extent<1||extent>512)
+  throw new RangeError('bounded native HLR original edge map extent required');
+ const indexed=[],seen=new Set(),originalIds=new Set(
+  originalSourceEdges.map(x=>x.sourceEdgeId));
+ for(let i=1;i<=extent;i++){
+  const edge=hold(edgeMap.FindKey(i));
+  const proof=probeRealOcctHLREdgeDirectOriginalSourceIdentity({
+   generatedEdge:edge,originalSourceEdges
+  });
+  const id=proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
+  if(id!==null){
+   if(seen.has(id))
+    throw new RangeError('HLR internal EdgeMap duplicates one original M0 physical source');
+   seen.add(id);
+  }
+  indexed.push({hlrDataStructureOneBasedEdgeIndex:i,
+   originalPhysicalSourceEdgeId:id,
+   directlySameOriginalTopoDSInputEdge:id!==null,
+   generatedHLREdgeToOriginalTopoDSHistoryProven:false,
+   signedV5Action:false});
+ }
+ return {
+  scope:'native-hlr-internal-original-source-index-only',
+  internalEdgeMapExtent:extent,
+  originalSourceIdsInInputBRep:originalIds.size,
+  internalEdgeMapOriginalSourceIdsMatched:seen.size,
+  everyOriginalBRepSourcePresentInHLRDataStructure:
+   seen.size===originalIds.size,
+  indexedOriginalSources:indexed,
+  generatedHLREdgeToOriginalTopoDSHistoryProven:false,
+  continuousM5VisibilityProven:false,
+  officialEngineeringLineStyleCertified:false,signedV5Action:false
+ };
+}
+/**
  * Compare genuine generated HLR TopoDS VERTICES with ORIGINAL BRep vertex
  * handles before their OCCT lifetime ends. IsSame proves a direct TShape
  * identity, not HLR-generated EDGE history or engineering line style.
@@ -555,11 +604,32 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    if(handle.IsNull())throw new RangeError('null OCJS B-Rep HLR handle');
    const extractor=newObj('HLRBRep_HLRToShape',handle),
     visible=hold(extractor.VCompound_1());
+   let originalDataStructureIndex={
+    scope:'native-hlr-internal-original-source-index-only',
+    availability:'DataStructure-not-exposed',
+    generatedHLREdgeToOriginalTopoDSHistoryProven:false,
+    signedV5Action:false
+   };
+   if(typeof algorithm.DataStructure==='function'){
+    const dsHandle=hold(algorithm.DataStructure());
+    if(dsHandle.IsNull()===false&&typeof dsHandle.get==='function'){
+     const ds=hold(dsHandle.get());
+     if(typeof ds.EdgeMap==='function'){
+      const map=hold(ds.EdgeMap());
+      originalDataStructureIndex={
+       ...probeRealOcctHLRDataStructureSourceEdgeMap({
+        edgeMap:map,originalSourceEdges:originalNativeEdgeHandles,hold
+       }),availability:'real-native-edge-map-inspected'
+      };
+     }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
+    }else originalDataStructureIndex.availability='DataStructure-handle-null';
+   }
    nativeHLRSourceHistoryAPISurfaceByView[view]={
     actualPinnedWasmObjectInspected:true,
     algorithmMethodNames:nativeHLRSourceIndexMethodNames(algorithm),
     algorithmHandleMethodNames:nativeHLRSourceIndexMethodNames(handle),
     extractorMethodNames:nativeHLRSourceIndexMethodNames(extractor),
+    originalDataStructureIndex,
     generatedToOriginalTopoDSHistoryProven:false,
     officialLineStyleCertified:false,signedV5Action:false
    };
@@ -705,4 +775,5 @@ module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
  extractRealOcjsOriginalSourceBRepEdges,
  verifyOriginalOcctLinearCurveWitness,
  probeRealOcctHLREdgeDirectOriginalSourceIdentity,
- probeRealOcctHLRVertexDirectOriginalSourceIdentity};
+ probeRealOcctHLRVertexDirectOriginalSourceIdentity,
+ probeRealOcctHLRDataStructureSourceEdgeMap};
