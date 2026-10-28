@@ -4,6 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
 const Timeline=require('../../workbench/teaching-timeline-v5.js');
 const Motion=require('../../workbench/teaching-motion-v5.js');
+const Projection=require('../../core/projection/conventions.js');
 const base=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.resolve(base,p),'utf8');
 const html=read('labs/c2-native-cut-review.html');
@@ -20,6 +21,7 @@ function setup(){
   });
  window.DA07TimelineV5=Timeline;
  window.DA07MotionV5=Motion;
+ window.DAFirstAngleProjection=Projection;
  const callback={raf:null};
  vm.runInNewContext(js,{
   globalThis:window,document,
@@ -35,7 +37,7 @@ function setup(){
 // checks the file format before replaying the existing V5.
 function syntheticReview(){
  const action={id:'c2_native_action_V_1_0',kind:'line',
-  geometry:{from:{x:120,y:210},to:{x:280,y:210}},
+  geometry:{from:{x:200,y:210},to:{x:260,y:210}},
   engineeringLineStyle:'gb-t-4457.4-continuous-wide-visible-outline'};
  const steps=[{id:'c2_native_V_1_0',dependsOn:[],
   title:'局部认证原始线段',actions:[action]}];
@@ -58,8 +60,12 @@ function syntheticReview(){
    oneExistingV5TimelineRecreated:true,
    realNativeBRepWasExecutedInOriginalRunner:true,
    revision:24,
+   sheetTransform:{origin:{x:320,y:270},scale:12},
    certifiedVisibleHiddenSourceIntervals:[{
     actionId:action.id,view:'V',sourceNativeResultEdgeOrdinal:1,
+    originalGeneratedEdgeParameterRange:[0,1],
+    projectedFromModelMm:{u:10,v:5},
+    projectedToModelMm:{u:5,v:5},
     standardEngineeringLineStyle:action.engineeringLineStyle,
     cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays:true,
     cutOriginalM4PaperAliasStrictDepthReverified:true,
@@ -68,7 +74,10 @@ function syntheticReview(){
    }],
    unsignedNativePhysicalSourceIntervals:[{sourceNativeResultEdgeOrdinal:2}],
    suppressedNativeBackSourceIntervals:[],
-   steps,intents:[{id:'c2_native_V_1_0'}],
+   steps,intents:[{id:'c2_native_V_1_0',
+    outputEntityIds:[action.id],
+    operations:[{id:action.id,kind:'line',
+     coordinateSpace:'sheet-px',geometry:{...action.geometry}}]}],
    timeline:Timeline.compileTimeline(steps)
   }
  };
@@ -93,6 +102,9 @@ test('C2 mobile review packages the actual single V5 modules, excludes raw textb
  assert.match(js,/timelineV5\.compileTimeline\(p\.steps\)/);
  assert.match(js,/timelineV5\.createPlayer\(computed/);
  assert.match(js,/motionV5\.actionShapeAttrs/);
+ assert.match(js,/projection\.toSheet/);
+ assert.match(read('labs/c2-native-cut-review-entry.cjs'),
+  /DAFirstAngleProjection/);
  assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|WebSocket|eval\s*\(/);
  assert.match(read('scripts/build-static.cjs'),/'labs\/c2-native-cut-review.html'/);
  assert.match(read('index.html'),/href="labs\/c2-native-cut-review.html"/);
@@ -199,4 +211,18 @@ test('live same-run OpenCascade Cut JSON imports into mobile single V5: 12 actua
  await importProof(third,premature);
  assert.equal(third.document.getElementById('cutPlay').disabled,true);
  assert.equal(third.document.getElementById('cutDraw').querySelectorAll('line').length,0);
+});
+
+test('signed V5 stroke cannot be shifted off genuine original M4 first-angle paper even if matching style is retained',async()=>{
+ const host=setup(),forged=syntheticReview();
+ forged.sourceCertifiedNativeCanonicalPartialCutV5.steps[0]
+  .actions[0].geometry.to.x+=1;
+ forged.sourceCertifiedNativeCanonicalPartialCutV5.timeline=
+  Timeline.compileTimeline(
+   forged.sourceCertifiedNativeCanonicalPartialCutV5.steps);
+ await importProof(host,forged);
+ assert.equal(host.document.getElementById('cutPlay').disabled,true);
+ assert.equal(host.document.getElementById('cutDraw').querySelectorAll('line').length,0);
+ assert.match(host.document.getElementById('cutStatus').textContent,
+  /V5 终点与 M4 纸面投影/);
 });
