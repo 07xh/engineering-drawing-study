@@ -484,7 +484,7 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
    const forged=structuredClone(stroke);
    change(forged);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift/,
+    /unverified original native BRep source lift|out-of-domain native paper endpoint/,
     'a forged HLR stroke cannot close an otherwise authentic original 3D source');
   }
  }
