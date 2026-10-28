@@ -66,7 +66,7 @@
    const a=step.actions[0],row=indices.get(a?.id);
    if(!row||seen.has(a.id)||a.kind!=='line'||
       a.engineeringLineStyle!==row.standardEngineeringLineStyle||
-      a.coordinateSpace!=='sheet-px'||!a.geometry||
+      !a.geometry||
       ![a.geometry.from?.x,a.geometry.from?.y,a.geometry.to?.x,
         a.geometry.to?.y].every(safeNumber))
     throw new Error('动画包含未经来源和线型匹配的动作');
