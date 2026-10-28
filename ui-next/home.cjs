@@ -25,12 +25,14 @@ const TOOLS=[
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
- <div class="v7-head"><div><p class="next-home-kicker">V7 · 同一份本机项目</p><h1 id="v7-title">统一项目工作台</h1>
- <p>本机原图 → 人工确认毫米条件 → 真实数学 → 第一角 V/H/W、空间视图与单一 V5</p></div>
+ <div class="v7-head"><div><h1 id="v7-title">工程制图解题</h1>
+ <p>导入题图或输入条件，核对后开始求解与逐步作图。</p></div>
  <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
  <section class="v7-course-entry" id="v7-course-entry" aria-labelledby="v7-course-title">
-  <div class="v7-course-head"><h2 id="v7-course-title">当前课程急用：相贯线 · 组合体 · 补第三视图</h2>
-   <p>这些入口使用已有工具，部分仅能演示或核对数学。新标签打开，不会切换本机项目题型、删除已确认条件或将演示提升为 V5 正式答案。</p></div>
+  <details class="v8-course-disclosure">
+  <summary class="v8-course-summary">专项题型与支持范围</summary>
+  <div class="v7-course-head"><h2 id="v7-course-title">C1 补第三视图 · C2 组合体 · C3 相贯线</h2>
+   <p>这些入口在新标签打开，不会切换本机项目题型、删除已确认条件；未完成的预览不等于正式答案。</p></div>
   <div class="v7-course-grid" role="list">
    <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
     <span class="v7-course-status">有限圆柱解析求解 · 已证明辅助点 V5</span>
@@ -53,7 +55,8 @@ function homeHTML(){return `
      <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">单点投影求解 ↗</a></div>
    </article>
   </div>
-  <p class="v7-course-disclosure">课程急用计划只决定开发顺序，不代表相贯线、组合体或实体补第三视图已经完整自动解答；当前已有项目仍使用同一 Geometry Scene 与唯一 V5。</p>
+  <p class="v7-course-disclosure">部分题型仍待完整线型验证；未验证的结果不会作为正式答案。</p>
+  </details>
  </section>
  <div class="v7-bar" aria-label="项目操作">
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
@@ -63,7 +66,7 @@ function homeHTML(){return `
   <button type="button" id="v7-delete" class="v7-danger">删除当前项目</button>
  </div>
  <div class="v7-layout">
-  <section class="v7-card v7-input" aria-label="题图和条件审核"><h2>原图与条件</h2>
+  <section class="v7-card v7-input" aria-label="题图和条件审核"><h2>题目与条件</h2>
    <label>项目名称<input id="v7-title-input" maxlength="120" value="未命名项目" autocomplete="off"></label>
    <label class="v7-file-control">选择本机原题图片<input id="v7-image-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
    <div id="v7-photo-box" class="v7-photo-box" hidden>
@@ -71,6 +74,8 @@ function homeHTML(){return `
     <svg id="v7-photo-marks" viewBox="0 0 1 1" preserveAspectRatio="xMidYMid meet"
      aria-label="原图两组量测线段及端点" aria-hidden="true"></svg>
    </div>
+   <p id="v7-image-status" class="v7-note" role="status">尚未上传原图，可手动输入条件。</p>
+   <details class="v8-source-advanced"><summary>原图标注与尺寸校准（按需展开）</summary>
    <label>在原图上量测 <select id="v7-photo-segment">
     <option value="0">第 1 段：点选两个端点</option>
     <option value="1">第 2 段：点选两个端点</option></select>
@@ -78,10 +83,10 @@ function homeHTML(){return `
    <button type="button" id="v7-photo-clear">重选当前段的两个端点</button>
    <p id="v7-photo-point-status" class="v7-note" role="status">选择原图后，依次点击两端点，像素长度会自动填写；毫米长度仍需人工确认。</p>
    <fieldset class="v7-source-candidates">
-    <legend>原图标注 ↔ ProblemDraft 候选（仅人工审核）</legend>
-    <p class="v7-note">先点选原图一段的两个端点，再创建待审核候选。选中候选可定位原图框与关联的项目条件；它本身不证明模型 mm 坐标。</p>
+    <legend>原图线段与尺寸标注</legend>
+    <p class="v7-note">需要标注时，在原图选择端点并核对对应尺寸。</p>
     <label>候选 ID <input id="v7-candidate-id" value="SourceLine1" maxlength="64" autocomplete="off"></label>
-    <button type="button" id="v7-candidate-stage">从当前像素端点创建待审线段</button>
+    <button type="button" id="v7-candidate-stage">添加待确认线段</button>
     <label>候选与关联条件 <select id="v7-source-link" aria-label="选择原图候选以定位对应条件">
      <option value="">不关联候选</option></select></label>
     <div class="v7-candidate-actions">
@@ -91,10 +96,9 @@ function homeHTML(){return `
     </div>
     <p id="v7-candidate-status" class="v7-note" role="status">当前没有原图候选。上传或选择原图后进行人工标注。</p>
    </fieldset>
-   <p id="v7-image-status" class="v7-note">无原图。可以手动填写数学条件。</p>
    <fieldset class="v7-source-calibration">
-    <legend>原图双比例尺核对（人工量测）</legend>
-    <p class="v7-note">对原图中两段独立的已知长度，分别录入对应像素长度和实际毫米长度；两次所得 mm/px 相差超过 2% 时拒绝确认。不上传图片，不自动识图。</p>
+    <legend>校准原图比例</legend>
+    <p class="v7-note">用两段已知尺寸核对比例；两次结果偏差超过 2% 时不能确认。</p>
     <div class="v7-xyz">
      <label>第 1 段像素 <input id="v7-cal-px1" type="number" step="any" value="100"></label>
      <label>第 1 段毫米 <input id="v7-cal-mm1" type="number" step="any" value="20"></label>
@@ -112,25 +116,26 @@ function homeHTML(){return `
     </div>
     <p id="v7-cal-status" class="v7-note" role="status">没有完成双比例核对；不能把像素自动当作毫米坐标。</p>
    </fieldset>
+   </details>
 
-   <p class="v7-warning">原图仅供人工读取：当前不自动识别未知题型、不读取教材答案。下面坐标必须自行核对。</p>
-   <label>当前项目题型 <select id="v7-task" aria-label="切换同一项目的求解任务">
+   <p class="v7-warning">题图尚不能自动完整解答；请核对下方几何条件。</p>
+   <label>解题类型 <select id="v7-task" aria-label="选择解题类型">
     <option value="projection">点的 V/H/W 三面投影</option>
     <option value="planar">二维两线段圆弧连接 · 正式 V5</option>
     <option value="exploration">长方体截平面 · 限定证据预览</option>
     <option value="composition">多对象几何编辑 · 人工确认的场景预览</option>
    </select></label>
-   <p class="v7-note">更换题型会清除本项目旧对象和已确认条件，保留原题图片。所有步骤仍来自对应正式数学入口。</p>
+   <p class="v7-note">已有条件时切换题型会新建项目，原项目保留；空项目可直接切换。</p>
    <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
     <label>x <input id="v7-x" type="number" step="any" value="15"></label>
     <label>y <input id="v7-y" type="number" step="any" value="10"></label>
     <label>z <input id="v7-z" type="number" step="any" value="12"></label>
-   </div><button type="button" id="v7-stage">提交待确认条件</button>
-   <button type="button" id="v7-confirm">核对并确认条件</button>
-   <button type="button" id="v7-solve" class="v7-primary">重新数学求解与作图</button></fieldset>
-   <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other">提交当前题型条件</button>
+   </div><button type="button" id="v7-stage">保存条件</button>
+   <button type="button" id="v7-confirm">确认条件</button>
+   <button type="button" id="v7-solve" class="v7-primary">开始求解与作图</button></fieldset>
+   <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other">保存条件</button>
     <button type="button" id="v7-confirm-other">核对并确认</button>
-    <button type="button" id="v7-solve-other" class="v7-primary">运行现有 M3 数学</button></div>
+    <button type="button" id="v7-solve-other" class="v7-primary">开始求解</button></div>
 
    <fieldset data-v7-task="planar" hidden>
     <legend>二维圆弧连接 · 两条有限线段（模型 mm）</legend>
@@ -310,8 +315,9 @@ function homeHTML(){return `
   </section>
  </div>
 </section>
-<section class="next-home-hero next-home-workbench next-home-v64" id="ai" aria-label="工程制图解题首页">
- <section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
+<section class="next-home-hero next-home-workbench next-home-v64 v8-project-strip" id="ai" aria-label="工程制图解题首页">
+  <details class="v8-optional-illustration"><summary>查看圆弧连接示例图纸</summary>
+<section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
   <div class="next-home-intro-block">
    <div class="next-home-intro-copy">
     <p class="next-home-kicker">DraftAI · 个人工程制图工作台</p>
@@ -383,22 +389,23 @@ function homeHTML(){return `
    </div>
   </div>
  </section>
- <aside class="next-home-workflow" aria-label="最近任务与我的题目">
+  </details>
+<aside class="next-home-workflow" aria-label="最近任务与我的题目">
   <section class="next-home-workflow-card next-home-continue" id="recent">
-   <div class="next-home-card-heading"><h2>继续解题</h2><a href="labs/auto-fillet-live.html">进入工作台 →</a></div>
+   <div class="next-home-card-heading"><h2>继续解题</h2><a href="#project-workbench">进入工作台 →</a></div>
    <div class="next-home-empty-illustration" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="6" width="34" height="36" rx="5"/><path d="M14 16h20M14 23h15M14 30h10"/><path d="M32 30l4 4-4 4"/></svg></div>
    <p class="next-home-empty-title">暂无可恢复的解题记录</p>
    <p class="next-home-empty-note">历史进度同步尚未接入，不会在这里显示虚构的“上次编辑”。</p>
-   <a class="next-home-continue-button" href="labs/auto-fillet-live.html">打开现有解题工具</a>
+   <a class="next-home-continue-button" href="#project-workbench">返回解题工作台</a>
   </section>
   <section class="next-home-workflow-card next-home-library" id="knowledge">
    <div class="next-home-card-heading"><h2>我的题目</h2><a href="#tools">选择题型 →</a></div>
-   <div class="next-home-library-empty"><span aria-hidden="true">▤</span><div><strong>题库尚未接入</strong><p>当前可先从下方题型中心进入已有的作图功能。</p></div></div>
+   <div class="next-home-library-empty"><span aria-hidden="true">▤</span><div><strong>本机项目</strong><p>已保存项目可从上方工作台打开。</p></div></div>
   </section>
  </aside>
 </section>
 <section class="next-home-section next-home-categories" id="tools">
- <div class="next-section-heading"><h2>选择题型开始解题</h2><a href="#all-tools">查看全部工具 →</a></div>
+ <div class="next-section-heading"><h2>更多专项题型</h2><a href="#all-tools">查看全部工具 →</a></div>
  <div class="next-home-category-grid">
   <a class="next-home-category-card next-cat-plane" id="plane" href="labs/circle-fillet-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="14" y="17" width="42" height="39"/><path d="M14 56L56 17 M14 37l10 8 15-21"/></svg><span><strong>平面作图</strong><small>圆弧连接、正多边形与基本辅助作图</small></span><b aria-hidden="true">→</b></a>
   <a class="next-home-category-card next-cat-projection" id="projection" href="labs/point-projection-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M36 7l18 11v20L36 50 18 38V18z M36 7v22 M18 18l18 11 18-11 M36 29v21 M17 54l19 11 19-11"/></svg><span><strong>三视图与投影</strong><small>第一角法、对应关系与投影作图</small></span><b aria-hidden="true">→</b></a>

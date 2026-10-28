@@ -121,17 +121,16 @@ test('V6.4 home reflects reference-two structure and original topic hierarchy wi
  assert.ok(first.querySelector('.next-home-workflow #recent'),'recent history location');
  assert.ok(first.querySelector('.next-home-workflow #knowledge'),'my problems location');
  assert.match(document.querySelector('#recent').textContent,/暂无可恢复的解题记录/);
- assert.match(document.querySelector('#knowledge').textContent,/题库尚未接入/);
+ assert.match(document.querySelector('#knowledge').textContent,/本机项目/);
  assert.doesNotMatch(document.querySelector('#recent').textContent,/2024|上次编辑：/,'do not invent personal history');
  const categories=[...document.querySelectorAll('.next-home-category-grid>a')];
  assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面作图','三视图与投影','截交与相贯','组合体作图']);
  for(const href of ['labs/circle-fillet-live.html','labs/point-projection-live.html','labs/cone-cut-live.html','labs/composite-geometry.html'])
   assert.ok(categories.some(a=>a.getAttribute('href')===href),'actual category tool '+href);
  const nav=document.querySelector('.next-sidebar');
- assert.ok(nav.querySelector('a[href="index.html#plane"]'),'plane task is direct');
- assert.ok(nav.querySelector('a[href="index.html#projection"]'),'projection task is direct');
- assert.ok(nav.querySelector('a[href="index.html#section"]'),'section task is direct');
- assert.ok(nav.querySelector('a[href="index.html#recent"]'),'history anchor is real');
+ assert.ok(nav.querySelector('a[href="index.html"]'),'main workbench accessible');
+ assert.ok(nav.querySelector('a[href="index.html#tools"]'),'specialist tools accessible');
+ assert.ok(nav.querySelector('a[href="index.html#recent"]'),'local project history accessible');
  for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
  assert.ok(document.querySelector('.next-home-more-tools:not([open])'),'all labs can stay collapsed');
 });
@@ -206,7 +205,7 @@ test('V6.6 enlarged homepage SVG keeps the verified R40 construction fully visib
 test('start page offers actual solver entries and honest knowledge boundaries',()=>{
  const {after}=enhance('index.html');
  assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
- assert.match(after.querySelector('#knowledge').textContent,/题库.*尚未接入/);
+ assert.match(after.querySelector('#knowledge').textContent,/本机项目/);
  assert.ok(after.querySelector('a[href="labs/auto-fillet-live.html"]'));
  // V7 adds local-only image and .daiproject inputs, never a network upload form.
  assert.equal(after.querySelectorAll('form').length,0);
@@ -291,9 +290,9 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
   'new original DXF reviewed C1 source lab must be accessible from home');
  const my=document.querySelector('#knowledge');
  assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
- assert.match(my.textContent,/题库尚未接入/,'no fictional persistent history');
+ assert.match(my.textContent,/本机项目/,'local project boundaries remain explicit');
  const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
- assert.deepEqual(sidebar,['首页','AI 解题','平面作图','三视图与投影','截交与相贯','我的题目','历史记录','更多工具','帮助与协议']);
+ assert.deepEqual(sidebar,['工作台','我的项目','题型工具','帮助']);
 });
 test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
  const {after:document}=enhance('public-use.html');
@@ -310,7 +309,7 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   const favicon=document.querySelector('link[rel="icon"][type="image/svg+xml"]');
   assert.equal(favicon?.getAttribute('href'),root+'favicon.svg',page+' must reference shared blue icon');
   const side=[...document.querySelectorAll('.next-sidebar nav a')];
-  assert.equal(side.length,9,page+' compact task navigation');
+  assert.equal(side.length,4,page+' solver-first compact navigation');
   for(const link of side){
    assert.ok(link.getAttribute('aria-label'),page+' accessible label');
    assert.ok(link.getAttribute('data-ui-tip'),page+' long-press tooltip');
