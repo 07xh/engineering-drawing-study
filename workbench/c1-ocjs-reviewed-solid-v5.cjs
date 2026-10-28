@@ -559,11 +559,15 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   missing3DSourceCoverage:0,missingPhysicalJunctionProof:0,
   missingContinuousFrontRayProof:0,
   exactNative3DSourceParameterCovered:0,
-  exactNative3DSourceParameterGapOrUnbound:0};
+  exactNative3DSourceParameterGapOrUnbound:0,
+  scopedPaperFullButNative3DPositiveGap:0};
  for(const view of VIEWS){
   const pv=proof.views.find(x=>x.view===view);
   const rayView=proof.continuousFrontmostSourceRays.views.find(x=>x.view===view);
   const strokes=cad.views[view];
+  const scopedSources=new Map(
+   nativeScopedSourceLedger.views[view].sourceParameterCandidates.map(row=>
+    [row.originalPhysicalSourceEdgeId,row]));
   if(!pv||!Array.isArray(strokes)||!strokes.length)
    throw new RangeError('C1 original M5 and real HLR V/H/W missing');
   if(!rayView||rayView.intervals.length!==pv.candidateIntervals.length)
@@ -595,6 +599,22 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     }):null;
    const nativeExactCovered=nativeCoverage?.
     entireOriginalParameterIntervalCovered===true;
+   // Compare the same original M5 source subspan using two INDEPENDENT
+   // observations: (1) real native BRep 3D lifts, (2) original TopoDS
+   // source-filtered HLR paper intervals. Paper can look complete while
+   // the strict 3D ledger retains a positive one-ULP gap; never repair it.
+   const scopedSource=validSource?scopedSources.get(x.sourceEdgeId):null;
+   const scopedPaperCoverage=scopedSource&&
+    scopedSource.originalProjectedEdgeCollapsed===false&&
+    Array.isArray(nativeCoverage?.originalSourceParameterRange)?
+    exactCandidateIntervalCoverage(
+     nativeCoverage.originalSourceParameterRange,
+     scopedSource.paperDerivedOriginalSourceParameterCandidateIntervals):null;
+   const paperFull=scopedPaperCoverage?.
+    entireOriginalParameterIntervalCovered===true;
+   const paperFullButNativeGap=paperFull&&!nativeExactCovered;
+   if(paperFullButNativeGap)
+    totals.scopedPaperFullButNative3DPositiveGap++;
    if(nativeExactCovered)totals.exactNative3DSourceParameterCovered++;
    else totals.exactNative3DSourceParameterGapOrUnbound++;
    const local=x.locallyCompleteVisibleHullSegmentProven===true;
@@ -618,6 +638,16 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     status,m5LocalPositive:local,realCadCovered:covered,
     realNativeOriginal3DSourceParameterCovered:nativeExactCovered,
     exactNativeOriginal3DSourceCoverage:nativeCoverage,
+    sourceScopedPaperCandidateCoverage:scopedPaperCoverage?{
+     originalSourceParameterRange:[...scopedPaperCoverage.originalParameterRange],
+     positiveLengthUncoveredCandidateIntervals:
+      scopedPaperCoverage.positiveLengthUncoveredIntervals.map(r=>[...r]),
+     entirePaperCandidateIntervalCovered:paperFull,
+     actualOriginalTopoDSParameterHistoryProven:false,
+     continuousOcclusionProven:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    }:null,
+    sourceScopedPaperFullButNative3DPositiveGap:paperFullButNativeGap,
     blockers:{
      sourceContourCoverageMissing:!x.sourceContourCoverageVerified,
      genuine3DJunctionMissing:!x.genuineFrontSourceEndpointJoinsVerified,
