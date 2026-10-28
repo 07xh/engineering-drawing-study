@@ -41,7 +41,7 @@ function parseReviewedC1Rows(raw,pair){
  const ordered=IDS.map(id=>rows.find(r=>r.id===id));
  // Two orthogonal views determine all three axes. If both 2D pairs
  // coincide for two IDs, they cannot represent distinct physical 3D
- // TopoDS vertices in the fixed eight-vertex closed-source topology.
+ // model vertices in the fixed eight-vertex closed-source topology.
  // Treat near-equality only as a UI preflight hold: M3 and M0 still
  // independently recompute the exact source geometry upon submission.
  for(let i=0;i<ordered.length;i++)for(let j=i+1;j<ordered.length;j++){
