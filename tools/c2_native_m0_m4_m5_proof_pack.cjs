@@ -32,6 +32,8 @@ const {verifiedTeachingActionToV5}=
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {auditC2StrictNativeBehindSignedPaperCoverage}=
  require('../workbench/c2-native-strictly-behind-signed-coverage.cjs');
+const {auditC2CutNativeJunctionGlobalLineGate}=
+ require('../workbench/c2-cut-native-junction-global-line-gate.cjs');
 const Motion=require('../workbench/teaching-motion-v5.js');
 
 /**
@@ -347,6 +349,10 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   throw new RangeError('newly executed native BRep did not return a complete original-shape witness');
  const math=auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport});
  const graph=math.globalPaperEvents;
+ const cutJointGate=operation==='cut'?
+  auditC2CutNativeJunctionGlobalLineGate({
+   math,nativeReport,revision:manifest.revision
+  }):null;
  if(!math.currentNativeReported3DAndM0SourceCrossChecked||
     !math.allNativeResultEdgeEndpointIsSameJunctionsReconciled||
     graph?.actualM4PairwiseSegmentViewChecks!==
@@ -365,6 +371,12 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
      nativeReport.resultVertexCount<12||
      math.counts.clear+math.counts.hidden<=0||
      graph.partialSubtractiveCutRaySubspansProven<=0||
+     cutJointGate?.counts.positiveOpenRaySubspans!==
+      graph.partialSubtractiveCutRaySubspansProven||
+     cutJointGate?.counts.totalM4Subspans!==
+      graph.continuousM5SubspanCount||
+     cutJointGate?.newUniqueV5Actions!==0||
+     cutJointGate?.globalGBEngineeringLineStylesCertified!==false||
      graph.partialSubtractiveCutRaySubspansProven!==
       graph.positiveWholeOpenRayClearSubspans+
       graph.positiveWholeStrictlyHiddenSubspans||
@@ -413,6 +425,7 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   booleanOperation:operation,sourceIds:[...ids],provenance,
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
+  nativeCutOriginal3DJunctionGlobalM4M5JointGate:cutJointGate,
   subtractiveCutPartialRayEvidence:operation==='cut'?{
    scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
    nativeSourceViewClearRayProofs:math.counts.clear,
@@ -472,6 +485,10 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    packed.subtractiveCutPartialRayEvidence?.nativeSourceViewFrontMaterialSlabHiddenProofs??0,
   cutStrictFrontMaterialM4SubspanCount:
    packed.subtractiveCutPartialRayEvidence?.m4SubspanFrontMaterialSlabHiddenProofs??0,
+  cutNative3DEndpointAndGlobalPaperJointCandidateCount:
+   cutJointGate?.counts.jointOpenRayNativeEndpointAndGlobalPaperCandidates??0,
+  cutNativeOriginal3DSourceEndpointPairCount:
+   cutJointGate?.counts.exactOriginalNative3DEndpointPairs??0,
   officiallySignedNativeSubspanCount:
    certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
