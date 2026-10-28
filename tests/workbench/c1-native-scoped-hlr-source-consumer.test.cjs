@@ -445,3 +445,28 @@ test('distinct native HLR paper endpoints whose rounded inverse t collapses stay
  assert.equal(result.globalContinuousVisibilityCertified,false);
  assert.equal(result.signedV5ActionCount,0);
 });
+
+test('cross-axis exact affine witness separates paper rounding from full 3D source proof',()=>{
+ const x=fixture(),base=audit(x);
+ for(const view of ['V','H','W']){
+  const row=base.views[view].sourceParameterCandidates[0];
+  assert.equal(row.allReceivedNativePaperEndpointsExactlyCollinearWithOriginalSource,true);
+  assert.equal(row.fullOriginalPaperCandidateCoverageWithExactAffineCollinearity,true);
+  assert.equal(row.actualOriginalTopoDSParameterCoverageCertified,false);
+ }
+ const view='V',w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ w.from.v+=5e-7;w.to.v+=5e-7;
+ x.cad.views[view][0].from.v+=5e-7;
+ x.cad.views[view][0].to.v+=5e-7;
+ const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
+ assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
+ assert.equal(row.allReceivedNativePaperEndpointsExactlyCollinearWithOriginalSource,false);
+ assert.equal(row.fullOriginalPaperCandidateCoverageWithExactAffineCollinearity,false);
+ assert.equal(result.counts.sourceScopedPaperEndpointsOffExactBinary64OriginalLine,2);
+ assert.equal(result.counts.projectedSourcesWithExactAffinePaperMismatch,1);
+ assert.equal(row.exactBinary64PaperAffineWitnesses.length,1);
+ assert.equal(row.exactBinary64PaperParameterDiagnostics[0].
+  exactBinary64PaperAffineWitness.bothNativeEndpointsExactlyOnOriginalBinary64PaperLine,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5ActionCount,0);
+});
