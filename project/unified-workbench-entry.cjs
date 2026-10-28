@@ -29,7 +29,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const prismOptions=['v7-p-kept'];
  const c1Fields=['v8-c1-pair','v8-c1-vertices','v8-c1-topology'];
  const c3Fields=[...C3_KEYS.map(k=>'v8-c3-'+k),
-  'v8-c3-axes','v8-c3-caps'];
+  'v8-c3-axes','v8-c3-caps','v8-c3-solid-op'];
  const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions,...c1Fields,...c3Fields];
  const c2Fields=['a','b'].flatMap(letter=>['x0','y0','z0','x1','y1','z1']
   .map(part=>'v8-c2-'+letter+'-'+part));
@@ -451,9 +451,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(task==='c3-intersection'){
    if(!$('v8-c3-axes').checked||!$('v8-c3-caps').checked)
     throw Error('请确认两圆柱正交轴向及真实有限端盖');
+   const choice=$('v8-c3-solid-op').value;
+   if(!['','union','intersection'].includes(choice))
+    throw Error('实体组合运算必须由原题明确确认');
    return {type:'reviewed-c3-finite-cylinders',unit:'mm',
     dimensions:Object.fromEntries(C3_KEYS.map(k=>[k,numberFrom('v8-c3-'+k)])),
-    axesConfirmed:true,capsConfirmed:true,imageId};
+    axesConfirmed:true,capsConfirmed:true,solidOperation:choice||null,imageId};
   }
   const v=prismInputs.map(numberFrom);
   const retainedHalfspace=$('v7-p-kept').value;
@@ -473,12 +476,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   for(const k of C3_KEYS)$('v8-c3-'+k).value='';
   $('v8-c3-axes').checked=false;
   $('v8-c3-caps').checked=false;
+  $('v8-c3-solid-op').value='';
   const v=project.conditions.find(x=>x.id==='coords')?.value;
   if(!v)return;
   if(project.task==='c3-intersection'&&v.type==='reviewed-c3-finite-cylinders'){
    for(const k of C3_KEYS)$('v8-c3-'+k).value=String(v.dimensions[k]);
    $('v8-c3-axes').checked=v.axesConfirmed===true;
    $('v8-c3-caps').checked=v.capsConfirmed===true;
+   $('v8-c3-solid-op').value=['union','intersection'].includes(v.solidOperation)?
+    v.solidOperation:'';
   }
   if(project.task==='c1-third-view'&&v.type==='reviewed-c1-third-view'){
    $('v8-c1-pair').value=v.pair;
@@ -1046,7 +1052,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ')；端盖 y=['+Y[3]+','+Y[4]+']。\n'+
     '轴向核对：'+($('v8-c3-axes').checked?'已勾选':'未确认')+
     '；端盖核对：'+($('v8-c3-caps').checked?'已勾选':'未确认')+
-    '。仅提供解析曲线与已证明辅助点；完整实虚线未认证。';
+    '。布尔实体：'+({
+     union:'并集（两实体都保留）',intersection:'交集（保留共同体积）',
+     '':'尚未选择；只给源几何证明'
+    }[$('v8-c3-solid-op').value]||'未确定')+
+    '。该选择参与 M5 射线证明；完整线型仍未认证。';
   }else if(snap.task==='c1-third-view'){
    const rows=$('v8-c1-vertices').value.trim().split(/\r?\n/).filter(Boolean);
    label='C1 补第三视图：已知 '+$('v8-c1-pair').value+
@@ -1159,10 +1169,20 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     partial?
      partial.kind==='c3-reviewed-preview'?
       'C3 真实有限圆柱解析分支 '+partial.evidence.sourceM3.branchCount+
-      ' 条，已证明端点 V5 点动作 '+partial.evidence.signedEndpointPointActionCount+
+      ' 条，已证明端点 V5 动作 '+partial.evidence.signedEndpointPointActionCount+
       ' 个，内部辅助点 '+partial.evidence.signedInteriorAuxiliaryPointActionCount+
-      ' 个；原始 M0/M3/M5 一致性 '+partial.sourceAcceptance.status+
-      '。当前不是完整相贯线，连续交线的接合、遮挡和国标虚实线尚未签收。':
+      ' 个。三维原始源图：'+partial.joint.merged3DSourceGraph.edges.length+
+      ' 条来源特征、'+partial.joint.merged3DSourceGraph.vertices.length+
+      ' 个三维接点；已覆盖全部解析分支。'+
+      ' V/H/W 射线区间 '+partial.joint.intervals.length+
+      ' 个。实体选择：'+(partial.solidOperation||'未选择')+
+      '；布尔体积射线区间 '+partial.selectedRays.intervals.length+
+      ' 个；闭区间全来源覆盖：'+
+      (partial.selectedRays.fullSourceOpenEdgeRayCoverageVerified?'成立':'尚未通过')+
+      '；已核对透明（前方无实体内部）'+partial.selectedRays.certifiedClearCount+
+      '、不透明 '+partial.selectedRays.certifiedOpaqueCount+'、未定 '+
+      partial.selectedRays.undeterminedCount+'。所有区间仅证明当前数学范围；'+
+      '端点可见性、投影重合、完整实体边界和国标实虚线仍未签收。':
      partial.kind==='c1-reviewed-preview'?
       'C1 八角点两已知视图复算：'+partial.evidence.sceneResult.provenVertexCount+
       ' 顶点，'+partial.evidence.sceneResult.provenEdgeCount+
@@ -1740,7 +1760,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   else if(result.kind==='c1-reviewed-preview'&&result.verified===false)
    msg('C1 已确认八点凸体几何及限定 V5；未得到完整实虚线标准答案。');
   else if(result.kind==='c3-reviewed-preview'&&result.verified===false)
-   msg('C3 已核对两根有限圆柱，原有 M3/Geometry Scene/V5 已计算局部求点；完整相贯线及线型未认证。');
+   msg('C3 已计算三维来源图及 V/H/W M5 区间，'+
+    (result.solidOperation?'并按真实实体运算核对射线。':'未选择实体运算；仅证明来源。')+
+    ' 完整相贯线和实虚线未认证。');
   else throw Error('专业数学结果未通过门禁');
  }
  // Human-led single action: the checkbox cannot be inferred from OCR or

@@ -46,11 +46,16 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   }
   $('v8-c3-axes').checked=true;fire('v8-c3-axes','change');
   $('v8-c3-caps').checked=true;fire('v8-c3-caps','change');
+  $('v8-c3-solid-op').value='intersection';
+  fire('v8-c3-solid-op','change');
+  assert.match($('v8-review-summary').textContent,/交集/);
   $('v8-review-ack').checked=true;fire('v8-review-ack','change');
   assert.equal($('v8-review-run').disabled,false);
   fire('v8-review-run','click');
   for(let i=0;i<20;i++)await tick();
   assert.match($('v7-proof').textContent,/C3 真实有限圆柱解析分支/,$('v7-save').textContent);
+  assert.match($('v7-proof').textContent,/布尔体积射线区间/);
+  assert.match($('v7-proof').textContent,/intersection/);
   assert.equal($('v8-result-status').dataset.state,'partial');
   assert.equal($('v7-play').disabled,false);
   assert.ok($('v7-step-list').querySelector('button'));
