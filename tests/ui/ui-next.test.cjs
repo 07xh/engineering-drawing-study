@@ -443,6 +443,20 @@ test('fillet drawing shortcuts select the original tool with one click',()=>{
  assert.equal(document.querySelectorAll('#drawTool').length,1);
 });
 
+test('V8 task chooser labels remain concise and never promise unsupported C1/C3 answers',()=>{
+ const {after:document}=enhance('index.html');
+ const task=document.getElementById('v7-task');
+ assert.ok(task);
+ const options=[...task.querySelectorAll('option')];
+ assert.equal(options.length,6,'all original task types are preserved');
+ const c1=options.find(x=>x.value==='c1-third-view').textContent;
+ const c3=options.find(x=>x.value==='c3-intersection').textContent;
+ assert.match(c1,/补第三视图.*单个凸体/);
+ assert.doesNotMatch(c1,/长方体/,'certified convex solids are not limited to boxes');
+ assert.match(c3,/相贯线.*部分结果/,'full intersection curve is not signed off');
+ assert.equal(options.find(x=>x.value==='composition').textContent,'C2 组合体 · 已知形体');
+});
+
 test('drawing shortcuts refuse unavailable app tools and recover when available',async()=>{
  const {after:document}=enhance('labs/circle-fillet-live.html');
  const tool=document.getElementById('drawTool');
