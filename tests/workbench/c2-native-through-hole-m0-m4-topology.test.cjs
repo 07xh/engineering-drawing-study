@@ -121,6 +121,23 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(joint.originalNativeConstructionIntentAuthorized,false);
   assert.equal(joint.newUniqueV5Actions,0);
   assert.equal(joint.completeBooleanClosedJunctionVisibilityCertified,false);
+  assert.equal(info.cutNative3DEndpointPaperAliasDepthResolvedPairs,
+   joint.counts.fullNative3DEndpointPairsWithResolvedProjectedAliasDepth);
+  assert.equal(info.cutNativeStrictlyOrderedPaperEndpointAliasEvents,
+   joint.counts.strictlyFrontOfPaperEndpointAliasCount+
+    joint.counts.strictlyBehindPaperEndpointAliasCount);
+  assert.equal(joint.counts.distinctProjectedEndpoint3DDepthComparisons,
+   joint.counts.strictlyFrontOfPaperEndpointAliasCount+
+    joint.counts.strictlyBehindPaperEndpointAliasCount+
+    joint.counts.unresolvedPaperEndpointDepthComparisons);
+  assert.ok(joint.positiveSourceIntervals.every(row=>
+   Array.isArray(row.actualOriginal3DEndpointAndPaperAliasDepthEvidence)&&
+   row.actualOriginal3DEndpointAndPaperAliasDepthEvidence.length===2&&
+   row.actualOriginal3DEndpointAndPaperAliasDepthEvidence.every(e=>
+    Array.isArray(e.physical3DAndPaperOnlyDepthComparisons))));
+  assert.ok(joint.positiveSourceIntervals.every(row=>
+   row.officialGBEngineeringLineStyle==='undetermined'&&
+   row.constructionIntentAuthorized===false&&row.signedV5Action===false));
   const evidence=pack.subtractiveCutPartialRayEvidence;
   assert.equal(evidence.nativeSourceViewClearRayProofs,m.counts.clear);
   assert.equal(evidence.nativeSourceViewStrictHiddenRayProofs,m.counts.hidden);
@@ -175,6 +192,20 @@ test('a forged native through-hole report cannot replay a union or altered origi
   assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
    ...jointArgs,nativeReport:forgedVertex
   }),/native C2 result edge|original TopoDS physical endpoint/);
+  const forgedPaperAlias=structuredClone(fullPack.mathM0M4M5);
+  const encountered=forgedPaperAlias.globalPaperEvents.rows.flatMap(row=>
+   row.subspans.filter(span=>span.continuousSubtractiveCutOpenRayClearVerified||
+    span.continuousSubtractiveCutStrictHiddenVerified)
+    .flatMap(span=>row.encounters.filter(w=>
+     w.projectedOnlyMeeting===true&&(
+      w.sourceParameter===span.originalGeneratedEdgeParameterRange[0]||
+      w.sourceParameter===span.originalGeneratedEdgeParameterRange[1]))));
+  assert.ok(encountered.length>0,
+   'actual native Cut must include paper-coincident but distinct-3D join candidates');
+  encountered[0].original3DPhysicalJunctionVerified=true;
+  assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
+   ...jointArgs,math:forgedPaperAlias
+  }),/projected-only endpoint forged|forged actual TopoDS/);
   const forgedM4=structuredClone(fullPack.mathM0M4M5);
   const signedRow=forgedM4.globalPaperEvents.rows.find(x=>
    x.subspans.some(s=>s.continuousSubtractiveCutOpenRayClearVerified||

@@ -13,7 +13,10 @@
  * This is the existing M0/M4/M5 computation's joint acceptance boundary,
  * not a new ray solver, CAD engine, M4 intersection finder, or V5 player.
  */
-const {VIEWS,project}=require('../core/projection/conventions.js');
+const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
+ require('../core/projection/conventions.js');
+const {inspectProjectedEdgeDepth}=
+ require('../core/numeric/projected-edge-depth-events.cjs');
 const POINT_KEYS='x,y,z';
 const same3=(a,b)=>a&&b&&['x','y','z'].every(k=>
  Number.isFinite(a[k])&&Number.isFinite(b[k])&&Object.is(a[k],b[k]));
@@ -108,7 +111,12 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
  if(rowsByKey.size!==3*edges.length)throw new RangeError('missing original C2 result view');
  const all=[],accepted=[];
  let total=0,positive=0,junctionReady=0,globalPaperReady=0,
-  sourceEndpointPairs=0,heldInterior=0,heldPaper=0,heldAliasing=0;
+  sourceEndpointPairs=0,heldInterior=0,heldPaper=0,heldAliasing=0,
+  exact3DDepthResolvedAtAllOriginalSourceEndpoints=0,
+  distinctProjectedEndpoint3DDepthComparisons=0,
+  strictFrontProjectedEndpointAliasCount=0,
+  strictBackProjectedEndpointAliasCount=0,
+  unresolvedProjectedEndpointDepthCount=0;
  for(const row of g.rows){
   const e=original.get(row.sourceNativeResultEdgeOrdinal),
    coords=e.real3DModelMmEndpoints,ids=e.actualNativeTopoDSVertexOrdinals;
@@ -171,6 +179,106 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
       peer.actualNativeTopoDSVertexOrdinals.includes(end.vertexOrdinal);
     }));
    if(endpointTopoDS&&!eachNativeEndpointPaperJoin)heldPaper++;
+   // Independently recompute projected native source crossings using the
+   // existing M0 edge pair oracle. Distinct TopoDS vertices that meet only
+   // on PAPER can still be strictly depth-ordered; they NEVER become the
+   // same physical 3D junction. This check is necessary for a future
+   // line-style review, but not sufficient for a closed-endpoint GB stroke.
+   const observerRay=FIRST_ANGLE_OBSERVER_RAYS[row.view],source3D={
+    id:'NativeC2Edge'+e.finalTopoDSEdgeOrdinal,
+    from:coords[0],to:coords[1]
+   };
+   const endpointDepthRows=ends.map((end,k)=>{
+    const t=range[k],a=k===0?span.realOriginalNative3DFrom:
+     span.realOriginalNative3DTo;
+    const comparisons=events[k].map(w=>{
+     const peer=original.get(w.otherNativeEdgeOrdinal);
+     if(!peer||w.boundaryRounded!==false||
+        !Number.isSafeInteger(w.otherNativeEdgeOrdinal)||
+        w.otherNativeEdgeOrdinal===e.finalTopoDSEdgeOrdinal)
+      throw new RangeError('unbound original M4 projected endpoint pair');
+     if(w.original3DPhysicalJunctionVerified===true){
+      if(!end.ok||w.projectedOnlyMeeting!==false||
+         w.verifiedSharedNativeTopoDSVertexOrdinal!==end.vertexOrdinal||
+         !peer.actualNativeTopoDSVertexOrdinals.includes(end.vertexOrdinal))
+       throw new RangeError('forged actual TopoDS shared-vertex identity at paper intersection');
+      return {peerNativeEdgeOrdinal:w.otherNativeEdgeOrdinal,
+       relation:w.relation,depthStatus:'actual-shared-native-3d-vertex',
+       distinctPhysical3DSource:false};
+     }
+     if(w.projectedOnlyMeeting!==true||
+        w.verifiedSharedNativeTopoDSVertexOrdinal!==null)
+      throw new RangeError('projected-only endpoint forged into real 3D junction');
+     const other3D={
+      id:'NativeC2Peer'+peer.finalTopoDSEdgeOrdinal,
+      from:peer.real3DModelMmEndpoints[0],
+      to:peer.real3DModelMmEndpoints[1]
+     };
+     const witness=inspectProjectedEdgeDepth({
+      first:source3D,second:other3D,view:row.view
+     });
+     // Never invent exact correspondence to a projected peer at a nearby
+     // 2D coordinate. Numerical 1-ULP mismatches remain UNDETERMINED.
+     let u=null;
+     if(witness.status===w.relation&&
+        (witness.status==='crossing'||
+         witness.status==='endpoint-touch-undetermined')){
+      const matched=witness.events.filter(x=>
+       x.firstParameter===t);
+      if(matched.length===1)u=matched[0].secondParameter;
+     }else if(witness.status==='collinear-overlap'&&
+         ['projected-collinear-overlap-start',
+          'projected-collinear-overlap-end'].includes(w.relation)){
+      const atStart=w.relation.endsWith('start'),
+       matched=witness.ranges.filter(x=>
+        x.firstParameterRange[atStart?0:1]===t);
+      if(matched.length===1)
+       u=matched[0].secondParameterRange[atStart?0:1];
+     }
+     let depthStatus='unresolved-paper-only-native-depth';
+     if(Number.isFinite(u)&&u>=0&&u<=1){
+      const b=interp(other3D.from,other3D.to,u),
+       pa=project(a)[row.view],pb=project(b)[row.view];
+      if(same2(pa,pb)){
+       const delta=(a.x-b.x)*observerRay.x+
+        (a.y-b.y)*observerRay.y+(a.z-b.z)*observerRay.z;
+       if(delta>1e-7)depthStatus='candidate-strictly-front-of-paper-alias';
+       else if(delta< -1e-7)
+        depthStatus='candidate-strictly-behind-paper-alias';
+       else if(same3(a,b)){
+        // Different native vertex handles at the same exact 3D point
+        // cannot authenticate the same physical junction.
+        depthStatus='coincident-xyz-but-distinct-native-topods';
+       }
+      }
+     }
+     return {peerNativeEdgeOrdinal:w.otherNativeEdgeOrdinal,
+      relation:w.relation,depthStatus,
+      distinctPhysical3DSource:true};
+    });
+    for(const comparison of comparisons){
+     if(!comparison.distinctPhysical3DSource)continue;
+     distinctProjectedEndpoint3DDepthComparisons++;
+     if(comparison.depthStatus==='candidate-strictly-front-of-paper-alias')
+      strictFrontProjectedEndpointAliasCount++;
+     else if(comparison.depthStatus==='candidate-strictly-behind-paper-alias')
+      strictBackProjectedEndpointAliasCount++;
+     else unresolvedProjectedEndpointDepthCount++;
+    }
+    return {nativeOriginalEndpointVerified:end.ok,
+     originalNativeVertexOrdinal:end.ok?end.vertexOrdinal:null,
+     allProjectedEndpointDepthEventsResolved:end.ok&&
+      comparisons.every(x=>[
+       'actual-shared-native-3d-vertex',
+       'candidate-strictly-front-of-paper-alias',
+       'candidate-strictly-behind-paper-alias'
+      ].includes(x.depthStatus)),
+     physical3DAndPaperOnlyDepthComparisons:comparisons};
+   });
+   const allEndpointDepthResolved=endpointDepthRows.every(x=>
+    x.allProjectedEndpointDepthEventsResolved);
+   if(allEndpointDepthResolved)
+    exact3DDepthResolvedAtAllOriginalSourceEndpoints++;
    const overlaps=span.coProjectedOriginalNative3DDepthWitnesses;
    if(!Array.isArray(overlaps)||span.projectedAliasOrUncertainEventBlocked!==false||
       span.allProjectedPhysicalNativeAliasesStrictlyBehindCertified!==true||
@@ -192,6 +300,8 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
      independentlyTopoDSOriginal3DSourceEndpointPairCertified:endpointTopoDS,
      nativeFullShared3DVertexIncidenceRechecked:true,
      m4EndpointPhysicalJunctionsNotPaperAliases:eachNativeEndpointPaperJoin,
+     actualOriginal3DEndpointAndPaperAliasDepthEvidence:endpointDepthRows,
+     allOriginalNativeEndpointPaperAliasDepthsResolved:allEndpointDepthResolved,
      allCurrentPhysicalCoProjectedSourcesStrictlyBehindOrAbsent:true,
      allClosedJunctionsAndOpenRayEvidenceJointlyCertified:joint,
      pendingJunctionReason:joint?null:
@@ -222,7 +332,14 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
    jointOpenRayNativeEndpointAndGlobalPaperCandidates:junctionReady,
    heldAtInteriorM4Junction:heldInterior,
    heldAtPaperOrUnprovenNativeJunction:heldPaper,
-   heldForGlobalDepthAlias:heldAliasing},
+   heldForGlobalDepthAlias:heldAliasing,
+   fullNative3DEndpointPairsWithResolvedProjectedAliasDepth:
+    exact3DDepthResolvedAtAllOriginalSourceEndpoints,
+   distinctProjectedEndpoint3DDepthComparisons,
+   strictlyFrontOfPaperEndpointAliasCount:strictFrontProjectedEndpointAliasCount,
+   strictlyBehindPaperEndpointAliasCount:strictBackProjectedEndpointAliasCount,
+   unresolvedPaperEndpointDepthComparisons:
+    unresolvedProjectedEndpointDepthCount},
   positiveSourceIntervals:all,
   possibleFullJunctionLineReviewCandidates:accepted,
   completeBooleanClosedJunctionVisibilityCertified:false,
