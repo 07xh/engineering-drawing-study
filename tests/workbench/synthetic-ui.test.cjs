@@ -120,7 +120,9 @@ test('HTML/CSS show structural workspace, accessible controls and responsive mob
  assert.match(css,/@media\(max-width:430px\)/);
  assert.match(css,/prefers-reduced-motion/);
  assert.match(css,/min-height:44px/);
- assert.match(ui,/pointerdown/);assert.match(ui,/pointercancel/);assert.match(ui,/pointerup/);
+ assert.match(ui,/pointerdown/);assert.match(ui,/pointermove/);assert.match(ui,/pointerup/);
+ assert.match(ui,/pointercancel/);assert.match(ui,/lostpointercapture/);
+ assert.match(ui,/data-student-preview/);assert.match(ui,/clearPointerPreview/);
  assert.match(ui,/ArrowLeft/);assert.match(ui,/ArrowRight/);
  assert.match(ui,/createElementNS/);assert.ok(!ui.includes('innerHTML='));
  assert.doesNotMatch(html,/\.\.\/site-ui\.css|https?:\/\/|\.\.\/core\//);

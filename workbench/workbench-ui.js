@@ -81,6 +81,7 @@
   }
   function stopTimer(){if(interval!==null){clearInterval(interval);interval=null}}
   function dispatch(action){
+    clearPointerPreview();
     if(action.type!=='PLAY')stopTimer();
     try{state=Core.transition(doc,state,action);render();}catch(error){$('status').textContent='工作台输入错误：'+error.message;return;}
     if(state.playing){
@@ -91,6 +92,7 @@
     }
   }
   function load(key){
+    clearPointerPreview();
     stopTimer();doc=byId.get(key);
     const valid=Core.validateFixture(doc);
     if(!valid.ok){$('status').textContent='拒绝加载非法 fixture：'+valid.errors.join('；');return;}
@@ -115,17 +117,41 @@
             y:Math.max(0,Math.min(430,Math.round((event.clientY-rect.top)*430/rect.height)))};
   }
   const board=$('drawingBoard');
+  // Pointer preview is a transient student-only SVG mark, not fixture geometry.
+  // Never commit it to the model until a valid pointerup stroke is accepted.
+  function clearPointerPreview(){
+    pointer?.preview?.remove();
+    pointer=null;
+  }
   board.addEventListener('pointerdown',event=>{
-    if(state.mode!=='draw'||state.stale||state.statusProbe!=='preview'||event.button>0)return;
-    const p=position(event);if(!p)return;pointer={id:event.pointerId,...p};board.setPointerCapture?.(event.pointerId);
+    if(pointer||state.mode!=='draw'||state.stale||state.statusProbe!=='preview'||event.button>0)return;
+    const p=position(event);if(!p)return;
+    const preview=element('line',{x1:p.x,y1:p.y,x2:p.x,y2:p.y,stroke:'#397fc0',
+      'stroke-width':3,'stroke-dasharray':'6 5','stroke-linecap':'round',
+      'pointer-events':'none','data-student-preview':'true'});
+    board.append(preview);
+    pointer={id:event.pointerId,...p,preview};
+    board.setPointerCapture?.(event.pointerId);
+  });
+  board.addEventListener('pointermove',event=>{
+    if(!pointer||event.pointerId!==pointer.id)return;
+    const end=position(event);if(!end)return;
+    pointer.preview.setAttribute('x2',String(end.x));
+    pointer.preview.setAttribute('y2',String(end.y));
   });
   board.addEventListener('pointerup',event=>{
     if(!pointer||event.pointerId!==pointer.id)return;
-    const start=pointer;pointer=null;const end=position(event);if(!end)return;
-    if(Math.hypot(end.x-start.x,end.y-start.y)<4)return;
+    const start=pointer,end=position(event);
+    clearPointerPreview();
+    if(!end||Math.hypot(end.x-start.x,end.y-start.y)<4)return;
     dispatch({type:'DRAW',line:{x1:start.x,y1:start.y,x2:end.x,y2:end.y}});
   });
-  board.addEventListener('pointercancel',()=>{pointer=null});
+  board.addEventListener('pointercancel',event=>{
+    if(pointer&&event.pointerId===pointer.id)clearPointerPreview();
+  });
+  board.addEventListener('lostpointercapture',event=>{
+    if(pointer&&event.pointerId===pointer.id)clearPointerPreview();
+  });
   document.addEventListener('keydown',event=>{
     if(event.altKey||event.ctrlKey||event.metaKey||event.target?.matches?.('button,select,input,textarea'))return;
     if(event.key==='ArrowLeft'){event.preventDefault();dispatch({type:'PREV'});}
