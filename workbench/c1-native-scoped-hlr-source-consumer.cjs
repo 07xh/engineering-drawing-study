@@ -13,6 +13,8 @@ const {auditExactBinary64PaperParameterPair,
  auditExactBinary64PaperCandidateCoverage,
  auditExactBinary64PaperVisibilityConflict}=
  require('./c1-exact-binary64-paper-parameter.cjs');
+const {auditC1ExactBinary64PaperAffineWitness}=
+ require('./c1-exact-binary64-paper-affine.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -85,6 +87,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   projectedSourcesWithExactBinary64PaperCandidateGaps:0,
   projectedSourcesWithFullExactBinary64PaperCandidateCoverage:0,
   projectedSourcesWithRoundedFalseFullPaperCandidateCoverage:0,
+  sourceScopedPaperEndpointsOffExactBinary64OriginalLine:0,
+  projectedSourcesWithExactAffinePaperMismatch:0,
   projectedSourcesWithVisibleHiddenCandidateConflicts:0,
   positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
   projectedSourcesWithExactVisibleHiddenCandidateConflicts:0,
@@ -142,6 +146,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   }
   const sourceRanges=new Map(ids.map(id=>[id,[]]));
   const exactPaperDiagnostics=new Map(ids.map(id=>[id,[]]));
+  const exactAffineWitnesses=new Map(ids.map(id=>[id,[]]));
   const exactPaperSegments=new Map(ids.map(id=>[id,[]]));
   const exactClassSegments=Object.fromEntries(['visible','hidden'].map(k=>
    [k,new Map(ids.map(id=>[id,[]]))]));
@@ -187,6 +192,15 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      const exactPaper=auditExactBinary64PaperParameterPair({
       sourceFrom,sourceTo,measuredFrom:w.from,measuredTo:w.to
      });
+     // Cross-axis exact affine incidence is independent of inverse-t coverage.
+     // OCCT may round transverse paper coordinates: diagnose, never snap.
+     const affine=auditC1ExactBinary64PaperAffineWitness({
+      sourceFrom,sourceTo,measuredFrom:w.from,measuredTo:w.to
+     });
+     exactAffineWitnesses.get(source).push(affine);
+     counts.sourceScopedPaperEndpointsOffExactBinary64OriginalLine+=
+      Number(!affine.nativeFromExactlyOnOriginalBinary64PaperLine)+
+      Number(!affine.nativeToExactlyOnOriginalBinary64PaperLine);
      const exactBounds=exactPaper.nativeFromWithinExactBinary64OriginalParameterDomain&&
       exactPaper.nativeToWithinExactBinary64OriginalParameterDomain;
      if(!exactBounds)counts.sourceScopedPaperEndpointsOutsideExactBinary64Domain++;
@@ -215,7 +229,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
       measuredPaperTo:{...w.to},
       roundedPaperInverseParameters:[tFrom,tTo],
       paperDerivedCandidateIntervalRetained:range!==null,
-      ...exactPaper
+      ...exactPaper,
+      exactBinary64PaperAffineWitness:affine
      });
      if(range){
       sourceRanges.get(source).push(range);
@@ -294,6 +309,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    const [a,b]=projectedOriginalBySource.get(source)[view];
    const collapsed=!(Math.hypot(b.u-a.u,b.v-a.v)>0);
    const ranges=sourceRanges.get(source);
+    const affineWitnesses=exactAffineWitnesses.get(source);
+    const exactAffineCollinearity=affineWitnesses.length>0&&
+     affineWitnesses.every(x=>x.bothNativeEndpointsExactlyOnOriginalBinary64PaperLine);
+    if(!collapsed&&affineWitnesses.length>0&&!exactAffineCollinearity)
+     counts.projectedSourcesWithExactAffinePaperMismatch++;
    const coverage=collapsed?null:
     exactCandidateIntervalCoverage([0,1],ranges);
    const exactPaperCoverage=collapsed?null:
@@ -339,6 +359,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      ranges.map(range=>[...range]),
     exactBinary64PaperParameterDiagnostics:
      exactPaperDiagnostics.get(source),
+     exactBinary64PaperAffineWitnesses:affineWitnesses,
+     allReceivedNativePaperEndpointsExactlyCollinearWithOriginalSource:
+      exactAffineCollinearity,
     // These exact rational gaps are PAPER candidate diagnostics only.
     // Never promote their absence to TopoDS history or V5 authority.
     exactBinary64PaperCandidateCoverage:exactPaperCoverage,
@@ -356,7 +379,13 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     entireOriginalSourcePaperCandidateIntervalCovered:
      coverage?.entireOriginalParameterIntervalCovered===true&&
      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true,
-    fullOriginalPaperCandidateCoverageWithoutClassConflict:
+    // A received paper segment can cover t=[0,1] yet drift transversely.
+     // This stricter result remains paper-only, never TopoDS/M5/V5 proof.
+     fullOriginalPaperCandidateCoverageWithExactAffineCollinearity:
+      coverage?.entireOriginalParameterIntervalCovered===true&&
+      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
+      exactAffineCollinearity,
+     fullOriginalPaperCandidateCoverageWithoutClassConflict:
      coverage?.entireOriginalParameterIntervalCovered===true&&
      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
      classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false&&
