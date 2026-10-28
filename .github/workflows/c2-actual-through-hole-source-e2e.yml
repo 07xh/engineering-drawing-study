@@ -5,6 +5,8 @@ on:
     paths:
       - 'tools/c2_occt_boolean_history_reference.py'
       - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
+      - 'core/numeric/axis-box-source-open-ray.cjs'
+      - 'tests/math/m0-axis-box-subtractive-open-ray.test.cjs'
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
       - 'workbench/c2-native-generated-global-m4-m5.cjs'
       - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'tools/c2_occt_boolean_history_reference.py'
       - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
+      - 'core/numeric/axis-box-source-open-ray.cjs'
+      - 'tests/math/m0-axis-box-subtractive-open-ray.test.cjs'
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
       - 'workbench/c2-native-generated-global-m4-m5.cjs'
       - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'

@@ -6,6 +6,8 @@ on:
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
       - 'workbench/c2-native-generated-global-m4-m5.cjs'
       - 'tools/c2_native_m0_m4_m5_proof_pack.cjs'
+      - 'core/numeric/axis-box-source-open-ray.cjs'
+      - 'tests/math/m0-axis-box-subtractive-open-ray.test.cjs'
       - 'tests/workbench/c2-native-m0-m4-m5-proof-pack.test.cjs'
       - 'tests/workbench/c2-native-generated-global-m4-m5.test.cjs'
       - 'tests/workbench/c2-occt-boolean-history-reference.test.cjs'

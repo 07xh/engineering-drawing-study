@@ -74,6 +74,21 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(g.allOfficialEngineeringLinesCertified,false);
   assert.equal(g.subtractiveCutM5WholeSceneOcclusionSigned,false);
   assert.equal(pack.completeSubtractiveBooleanM5RayVisibilityCertified,false);
+  const evidence=pack.subtractiveCutPartialRayEvidence;
+  assert.equal(evidence.nativeSourceViewClearRayProofs,m.counts.clear);
+  assert.equal(evidence.nativeSourceViewStrictHiddenRayProofs,m.counts.hidden);
+  assert.equal(evidence.m4SubspanClearRayProofs,g.positiveWholeOpenRayClearSubspans);
+  assert.equal(evidence.m4SubspanStrictHiddenRayProofs,g.positiveWholeStrictlyHiddenSubspans);
+  assert.equal(evidence.onlyOpenSourceInteriorVerified,true);
+  assert.equal(evidence.allNativeEdgeEndpointAndGlobalDepthJunctionsCertified,false);
+  assert.equal(evidence.fullEngineeringLineStyleAndV5Certified,false);
+  assert.equal(evidence.signedV5ActionCount,0);
+  assert.equal(info.cutProvenWholeSourceViewRayCount,
+   evidence.nativeSourceViewClearRayProofs+evidence.nativeSourceViewStrictHiddenRayProofs);
+  assert.equal(info.cutProvenOpenM4SubspanRayCount,
+   evidence.m4SubspanClearRayProofs+evidence.m4SubspanStrictHiddenRayProofs);
+  assert.ok(info.cutProvenWholeSourceViewRayCount>0);
+  assert.ok(info.cutProvenOpenM4SubspanRayCount>0);
   assert.equal(pack.sourceCertifiedNativeCanonicalV5,null,
    'not even an empty officially reusable original V5 may exist for unsigned subtractive rays');
   assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,false);
