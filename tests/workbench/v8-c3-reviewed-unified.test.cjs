@@ -41,6 +41,14 @@ test('C3 unified task reuses official finite analytic M3 and original V5, fails 
  assert.throws(()=>session.solve(),/确认/);
  coordinator.confirmCondition('coords');
  const result=session.solve();
+ assert.equal(result.joint.status,'scoped-open-interval-joint-evidence');
+ assert.equal(result.joint.allSourceBranchesAccountedFor,true);
+ assert.equal(result.joint.sourceFeature3DIncidenceGraphCovered,true);
+ assert.equal(result.joint.merged3DSourceGraph.allLateralBranchesAndCapSegmentsCovered,true);
+ assert.equal(result.joint.sourceBranchCount,result.evidence.sourceM3.branchCount);
+ assert.equal(result.joint.officialLineStylesVerified,false);
+ assert.equal(result.selectedRays.status,'requires-explicit-solid-operation');
+ assert.equal(result.joint.BooleanSurfaceOperationSelected,false);
  assert.equal(result.kind,'c3-reviewed-preview');
  assert.equal(result.verified,false);
  assert.equal(result.status,'geometry-only');
@@ -84,4 +92,50 @@ test('C3 revision scope, source image and cap confirmation cannot be bypassed',(
  second.coordinator.confirmCondition('coords');
  assert.throws(()=>second.session.solve(),/端盖/);
  second.coordinator.dispose();
+});
+
+test('C3 explicitly chosen intersection and union use different M5 strict-volume rays, never final strokes',()=>{
+ const {coordinator,session}=fixture();
+ const original=coordinator.snapshot().conditions[0];
+ const choose=operation=>{
+  coordinator.putCondition({...original,
+   value:{...original.value,solidOperation:operation}});
+  coordinator.confirmCondition('coords');
+  return session.solve();
+ };
+ const a=choose('intersection');
+ const b=choose('union');
+ for(const [op,out] of [['intersection',a],['union',b]]){
+  assert.equal(out.solidOperation,op);
+  assert.equal(out.sourceAcceptance.solidOperation,op);
+  assert.equal(out.selectedRays.solidOperation,op);
+  assert.equal(out.joint.BooleanSurfaceOperationSelected,true);
+  assert.equal(out.selectedRays.fullSourceOpenEdgeRayCoverageVerified,true);
+  assert.ok(out.selectedRays.intervals.length>0);
+  assert.equal(out.joint.fullCurveTopologyVerified,false);
+  assert.equal(out.joint.officialLineStylesVerified,false);
+  assert.equal(out.selectedRays.finalV5CurveAuthorized,false);
+  assert.equal(out.verified,false);
+  assert.equal(out.plan.canPromoteToVerifiedResult,false);
+  assert.equal(out.evidence.singleOriginalV5Player,true);
+ }
+ const index=new Map(b.selectedRays.intervals.map(row=>
+  [row.edgeId+'|'+row.view+'|'+JSON.stringify(row.openParameterRange),row]));
+ const differs=a.selectedRays.intervals.some(row=>{
+  const other=index.get(row.edgeId+'|'+row.view+'|'+JSON.stringify(row.openParameterRange));
+  return other&&row.openInteriorVolumeRayStatus!==other.openInteriorVolumeRayStatus;
+ });
+ assert.equal(differs,true,'M5 must ACTUALLY depend on the selected Boolean solid');
+ assert.equal(coordinator.canExport(),false);
+ assert.equal(a.clock.canRender(coordinator.snapshot().revision),false,
+  'old solver clock is stale after changing operation');
+ coordinator.dispose();
+});
+test('C3 forged Boolean operation is never interpreted as mathematical proof',()=>{
+ const {coordinator,session}=fixture();
+ const row=coordinator.snapshot().conditions[0];
+ coordinator.putCondition({...row,value:{...row.value,solidOperation:'difference'}});
+ coordinator.confirmCondition('coords');
+ assert.throws(()=>session.solve(),/运算/);
+ coordinator.dispose();
 });

@@ -159,6 +159,13 @@ function homeHTML(){return `
       <label>端盖 y 最大<input id="v8-c3-yMax" type="number" step="any"></label>
      </div></fieldset>
     </div>
+    <label>题目中的实体组合方式（不确定则保留未选择）
+     <select id="v8-c3-solid-op">
+      <option value="" selected>未选择 · 只计算原始相贯线来源</option>
+      <option value="intersection">交集 · 保留两圆柱的共同体积</option>
+      <option value="union">并集 · 保留两个圆柱的总体积</option>
+     </select></label>
+    <p class="v7-note">该选择影响原有 M5 前方体积遮挡射线的严格数学结果，但并不自动批准完整实体轮廓或国标实虚线。</p>
     <label class="v8-review-agree"><input id="v8-c3-axes" type="checkbox">
      我已核对真实题目中两根圆柱的正交轴向、位置与毫米尺寸。</label>
     <label class="v8-review-agree"><input id="v8-c3-caps" type="checkbox">

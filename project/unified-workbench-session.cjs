@@ -18,6 +18,8 @@ const {auditC3M0M3M5AnalyticSources}=
  require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
+const {auditC3JointTopologyVisibility}=
+ require('../workbench/c3-joint-topology-visibility.cjs');
 const {makeReviewedC3Input,c3SheetTransforms}=require('./c3-reviewed-input.cjs');
 const {IDS:REVIEWED_C1_IDS}=require('./c1-reviewed-input.cjs');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
@@ -179,6 +181,9 @@ function createUnifiedProjectSession(){
     if(c3.axesConfirmed!==true||c3.capsConfirmed!==true||
        !c3.dimensions||typeof c3.dimensions!=='object')
      throw new Error('C3 必须人工确认两正交圆柱的轴向、有限端盖及毫米条件');
+    const solidOperation=c3.solidOperation??null;
+    if(![null,'union','intersection'].includes(solidOperation))
+     throw new Error('必须从未选择、实体并、实体交中选择真实题目运算');
     const input=makeReviewedC3Input(c3.dimensions);
     const viewTransforms=c3SheetTransforms(input);
     // The SAME specialist and original player used by the C3 public page.
@@ -198,8 +203,35 @@ function createUnifiedProjectSession(){
     const vhDedup=buildC3VHProjectionDedup({input,revision:latest.revision});
     const sourceAcceptance=auditC3M0M3M5AnalyticSources({
       input,revision:latest.revision,compiled,linked,
-      viewTransforms,solidOperation:null
+      viewTransforms,solidOperation
     });
+    // Recompute M3 source graph, all real 3D cap/curve terminals,
+    // V/H/W open ray intervals and their exact source contact provenance.
+    // Never confuse a scoped original 3D proof with whole drawing styles.
+    const joint=auditC3JointTopologyVisibility({
+     input,revision:latest.revision,solidOperation
+    });
+    const selectedRays=joint.selectedBooleanRayEvidence;
+    if(joint.revision!==latest.revision||
+       joint.status!=='scoped-open-interval-joint-evidence'||
+       joint.sourceBranchCount!==compiled.sourceM3.branchCount||
+       joint.allSourceBranchesAccountedFor!==true||
+       joint.sourceFeature3DIncidenceGraphCovered!==true||
+       joint.fullCurveTopologyVerified!==false||
+       joint.allViewsContinuousVisibilityVerified!==false||
+       joint.officialLineStylesVerified!==false||
+       joint.v5CurveReady!==false||
+       joint.constructionIntentAuthorized!==false||
+       joint.merged3DSourceGraph?.revision!==latest.revision||
+       joint.merged3DSourceGraph?.allLateralBranchesAndCapSegmentsCovered!==true||
+       sourceAcceptance.revision!==latest.revision||
+       sourceAcceptance.solidOperation!==(solidOperation||'unselected')||
+       selectedRays?.revision!==latest.revision||
+       selectedRays?.solidOperation!==(solidOperation||'unselected')||
+       selectedRays?.officialLineStylesVerified!==false||
+       selectedRays?.finalV5CurveAuthorized!==false||
+       joint.BooleanSurfaceOperationSelected!==(solidOperation!==null))
+      throw new Error('C3 三维源图、V/H/W 射线与当前数学输入不一致');
     if(compiled.singleOriginalV5Player!==true||
        compiled.mathematicalSourceVerified!==true||
        compiled.entireCurveV5Ready!==false||
@@ -215,7 +247,8 @@ function createUnifiedProjectSession(){
     clock=compiled.player;
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
-     evidence:compiled,sourceAcceptance,wRay,vhDedup,
+     evidence:compiled,sourceAcceptance,joint,selectedRays,solidOperation,
+     wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
      plan:{status:'preview-only',canPromoteToVerifiedResult:false,
       geometryId:'C3Intersection',steps:compiled.constructionSteps},
