@@ -189,8 +189,16 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(partial.allNativePhysicalSourcesSignedOrProvenSuppressed,false);
   assert.equal(partial.entireCutOriginalDrawingSigned,false);
   assert.equal(partial.onlyCertifiedCutNativeOriginalClosedEndpointAndPaperDepthStrokes,true);
-  assert.ok(partial.certifiedVisibleHiddenSourceIntervals.length>0,
-   'at least one real Cut physical edge with native endpoints, closed M0 and M4 global paper depth must enter existing sole V5');
+  assert.equal(partial.certifiedVisibleHiddenSourceIntervals.length,12,
+   'real pinned OCP through-bore: precisely 12 native original closed-ray and paper-depth certified strokes');
+  assert.equal(partial.suppressedNativeBackSourceIntervals.length,12,
+   'co-projected original native physically behind already-signed source is suppressed, not drawn twice');
+  assert.equal(partial.unsignedNativePhysicalSourceIntervals.length,40,
+   'unverified original Cut physical subspans remain excluded from V5');
+  assert.equal(pack.provenance.nativeReferenceSignedV5ActionCount,0);
+  assert.equal(pack.provenance.signedV5ActionCount,12);
+  assert.equal(pack.completeCutProjectOfficialGBLineStylesAndV5Certified,false);
+  assert.equal(pack.independentlySignedPartialCutV5ActionCount,12);
   assert.equal(info.officiallySignedNativeSubspanCount,
    partial.certifiedVisibleHiddenSourceIntervals.length);
   assert.equal(partial.steps.length,partial.certifiedVisibleHiddenSourceIntervals.length);
