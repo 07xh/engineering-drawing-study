@@ -5,4 +5,5 @@
 // and raw OpenCascade reference reports from the deployed asset tree.
 globalThis.DA07TimelineV5=require('../workbench/teaching-timeline-v5.js');
 globalThis.DA07MotionV5=require('../workbench/teaching-motion-v5.js');
+globalThis.DAFirstAngleProjection=require('../core/projection/conventions.js');
 require('./c2-native-cut-review-ui.js');
