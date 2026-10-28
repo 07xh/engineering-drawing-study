@@ -17,8 +17,8 @@ test('Cut front stock face retains a strict outward M0 ray proof by set inclusio
  assert.equal(r.fullSubtractiveSceneEngineeringLinesCertified,false);
  assert.equal(r.signedV5Action,false);
 });
-test('Cut back stock edge separated from bore in perpendicular axis has an entire open source hidden ray',()=>{
- const r=prove({source:line('ExteriorBack',p(0,0,0),p(10,0,0)),
+test('Cut back stock surface source away from side walls has an entire open source hidden ray',()=>{
+ const r=prove({source:line('ExteriorBack',p(1,5,0),p(3,5,0)),
   stock,cutter,view:'H'});
  assert.equal(r.status,'certified-strictly-hidden');
  assert.equal(r.cutterPerpendicularStrictSeparationAxis,'y');
