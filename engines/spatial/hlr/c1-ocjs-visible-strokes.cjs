@@ -300,12 +300,11 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  * generated/split HLR edge or close any M5 source-parameter gap.
  */
 function probeRealOcctHLRDataStructureSourceEdgeMap({
- edgeMap,originalSourceEdges,hold
+ edgeMap,originalSourceEdges
 }={}){
  if(typeof edgeMap?.Extent!=='function'||
     typeof edgeMap?.FindKey!=='function'||
-    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
-    typeof hold!=='function')
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length)
   throw new TypeError('real indexed OCCT HLR DataStructure EdgeMap required');
  const extent=edgeMap.Extent();
  if(!Number.isSafeInteger(extent)||extent<1||extent>512)
@@ -313,7 +312,9 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
  const indexed=[],seen=new Set(),originalIds=new Set(
   originalSourceEdges.map(x=>x.sourceEdgeId));
  for(let i=1;i<=extent;i++){
-  const edge=hold(edgeMap.FindKey(i));
+  // FindKey returns a borrowed reference into OCCT's indexed map.
+  // Deleting it would corrupt the owning HLR DataStructure.
+  const edge=edgeMap.FindKey(i);
   const proof=probeRealOcctHLREdgeDirectOriginalSourceIdentity({
    generatedEdge:edge,originalSourceEdges
   });
@@ -621,15 +622,17 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     trace('after-handle');
     if(dsHandle.IsNull()===false&&typeof dsHandle.get==='function'){
      trace('before-get');
-     const ds=hold(dsHandle.get());
+     // get() returns a borrowed pointer: the native HLR algorithm owns it.
+     const ds=dsHandle.get();
      trace('after-get');
      if(typeof ds.EdgeMap==='function'){
       trace('before-EdgeMap');
-      const map=hold(ds.EdgeMap());
+      // EdgeMap() also returns a borrowed reference. NEVER delete it.
+      const map=ds.EdgeMap();
       trace('after-EdgeMap');
       originalDataStructureIndex={
        ...probeRealOcctHLRDataStructureSourceEdgeMap({
-        edgeMap:map,originalSourceEdges:originalNativeEdgeHandles,hold
+        edgeMap:map,originalSourceEdges:originalNativeEdgeHandles
        }),availability:'real-native-edge-map-inspected'
       };
       trace('after-index-probe');
