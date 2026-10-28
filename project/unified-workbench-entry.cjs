@@ -472,6 +472,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
  let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
+ let uncommittedFormEdit=false;
  const gid=prefix=>{
    const b=new Uint8Array(12);crypto.getRandomValues(b);
    return prefix+Array.from(b,n=>n.toString(16).padStart(2,'0')).join('');
@@ -642,6 +643,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
+  uncommittedFormEdit=false;
+  $('v8-review-ack').checked=false;
   hydrateCalibration(project);
   $('v7-source-link').value='';
   $('v7-photo-segment').value='0';
@@ -913,6 +916,36 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    btn.setAttribute('aria-current',i===frame.activeStepIndex?'step':'false');
   }
  }
+ function updateReviewPanel(snap){
+  const summary=$('v8-review-summary'),button=$('v8-review-run'),
+   ack=$('v8-review-ack');
+  if(!snap)return;
+  const value=id=>$(id).value.trim();
+  let label;
+  if(snap.task==='projection'){
+   label='已填写的空间点 P（mm）：x='+value('v7-x')+
+    '，y='+value('v7-y')+'，z='+value('v7-z')+'。';
+  }else if(snap.task==='planar'){
+   label='圆弧连接：R='+value('v7-f-radius')+' mm；分支 '+
+    value('v7-f-branch')+'；方向 '+value('v7-f-direction')+
+    '。请逐条确认两条有限线段的四个端点与行进方向。';
+  }else if(snap.task==='exploration'){
+   label='长方体截平面：尺寸 '+['v7-p-width','v7-p-depth','v7-p-height'].map(value).join(' × ')+
+    ' mm；截平面法向 '+['v7-p-nx','v7-p-ny','v7-p-nz'].map(value).join(' / ')+
+    '；仅提供未签完整线型的几何预览。';
+  }else{
+   label='多对象编辑仅用于人工几何及约束核验；尚不能自动生成组合体标准答案。请使用下方的对象与关系工具。';
+  }
+  const suffix=snap.source.imageId?
+   ' 原图仅本机保存；请逐项核对后再确认。':
+   ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
+  summary.textContent=label+suffix+
+   (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'');
+  const allowed=snap.task!=='composition';
+  ack.disabled=!allowed;
+  if(!allowed)ack.checked=false;
+  button.disabled=!allowed||!ack.checked;
+ }
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
@@ -955,12 +988,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 不会将局部隐藏或可见证据直接画成标准实线或虚线。';
   }
   const condition=snap.conditions.find(c=>c.id==='coords');
-  $('v7-review').textContent=!condition?'尚未提交空间坐标；当前没有可求解条件。':
+  updateReviewPanel(snap);
+  $('v7-review').textContent=!condition?'尚未提交当前题目条件；尚不能求解。':
    condition.confirmed?'当前条件已人工确认（修订 v'+snap.revision+'）。':'有待确认的条件；不能自动生成标准答案。';
   $('v7-confirm-other').disabled=snap.task==='projection'||!condition||condition.confirmed;
   $('v7-solve-other').disabled=snap.task==='projection'||!condition||!condition.confirmed;
   $('v7-confirm').disabled=!condition||condition.confirmed;
   $('v7-solve').disabled=!condition||!condition.confirmed;
+  const concise=solved?
+   {status:'已完成当前条件的数学求解与动态作图。',state:'verified'}:
+   partial?{status:'已生成局部数学预览；未通过完整工程线型验证，不是标准答案。',state:'partial'}:
+   condition?.confirmed?{status:'条件已确认，可以开始数学求解。',state:'pending'}:
+   condition?{status:'条件已保存，仍需人工确认。',state:'pending'}:
+   {status:'尚未解题。请先核对并确认题目条件。',state:'pending'};
+  $('v8-result-status').textContent=concise.status;
+  $('v8-result-status').dataset.state=concise.state;
   $('v7-proof').textContent=solved?
     (solved.kind==='planar-fillet'?
      '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
@@ -1180,6 +1222,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!coordinator)return;
   const selected=$('v7-task').value,previous=coordinator.snapshot();
   if(selected===previous.task)return;
+  if(uncommittedFormEdit){
+   $('v7-task').value=previous.task;
+   throw Error('当前有尚未保存的条件修改，请先保存条件，再切换解题类型。');
+  }
   if(hasTaskInputs(previous)){
    $('v7-task').value=previous.task;
    if(!window.confirm('当前项目已有几何条件。是否另建一个新题型项目，保留原项目及全部已输入内容？'))return;
@@ -1197,6 +1243,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    return;
   }
   stopAnimation();coordinator.setTask(selected);
+  $('v8-review-ack').checked=false;
   coordinator.setMode(selected==='planar'?'2d':'split');
   populateTaskFields(coordinator.snapshot());
   msg('已切换解题类型；当前项目原图保留，数学结果需重新计算。');
@@ -1435,40 +1482,90 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }
   });
 
- $('v7-stage-other').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('请先新建本机项目');
+ // Existing project/M3/V5 functions are shared by the guided and manual
+ // confirmation controls. Do not create a second solver or silently approve AI.
+ function stageCurrentTask(){
+  if(!coordinator)throw Error('请先新建项目');
   const task=coordinator.snapshot().task;
-  if(task==='projection')throw Error('点投影请使用上方坐标入口');
-  const object=taskObjects[task];
-  if(!object)throw Error('尚未开放的专业求解任务');
-  if(!coordinator.snapshot().objects.some(o=>o.id===object.id))
-   coordinator.putObject(object);
-  const imageId=coordinator.snapshot().source.imageId;
-  coordinator.putCondition({id:'coords',objectId:object.id,
-   sourceCandidateId:$('v7-source-link').value||null,
-   confirmed:false,value:fieldsToValue(task,imageId)});
+  if(task==='projection'){
+   const xyz=xyzIds.map(id=>{
+    const el=$(id),v=Number(el.value);
+    if(el.value.trim()===''||!Number.isFinite(v)||Math.abs(v)>100000)
+     throw Error('三项坐标均须为 ±100000 mm 内的有限值');
+    return v;
+   });
+   if(!coordinator.snapshot().objects.some(x=>x.id===POINT))
+    coordinator.putObject(projectObject());
+   const id=coordinator.snapshot().source.imageId;
+   coordinator.putCondition({id:'coords',objectId:POINT,
+    sourceCandidateId:$('v7-source-link').value||null,
+    confirmed:false,value:{type:'point-xyz',unit:'mm',xyz,imageId:id}});
+  }else{
+   const object=taskObjects[task];
+   if(!object)throw Error('当前题型尚不支持快捷求解，请使用下方模型编辑工具');
+   // Fully validate the field values before inserting a project object.
+   const imageId=coordinator.snapshot().source.imageId;
+   const value=fieldsToValue(task,imageId);
+   if(!coordinator.snapshot().objects.some(o=>o.id===object.id))
+    coordinator.putObject(object);
+   coordinator.putCondition({id:'coords',objectId:object.id,
+    sourceCandidateId:$('v7-source-link').value||null,
+    confirmed:false,value});
+  }
+  uncommittedFormEdit=false;
+ }
+ function solveCurrentTask(){
+  if(!coordinator)throw Error('没有可求解的项目');
+  const task=coordinator.snapshot().task;
+  if(task==='composition')throw Error('该编辑器仅支持已知几何审核，不能生成标准答案');
+  stopAnimation();
+  const result=session.solve();
+  if(task==='projection'){
+   if(!coordinator.canExport())throw Error('数学一致性未通过，拒绝生成动画');
+   msg('M3 数学与单一 V5 步骤已核验 · v'+coordinator.snapshot().revision);
+   return;
+  }
+  if(result.verified===true&&coordinator.currentResult()===result)
+   msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
+  else if(result.kind==='prism-evidence'&&result.verified===false)
+   msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
+  else throw Error('专业数学结果未通过门禁');
+ }
+ // Human-led single action: the checkbox cannot be inferred from OCR or
+ // restored from a project. The verified flags still originate in M3/M5 only.
+ $('v8-review-ack').addEventListener('change',()=>updateReviewPanel(coordinator?.snapshot()));
+ $('v8-review-run').addEventListener('click',()=>call(async()=>{
+  if(!$('v8-review-ack').checked)throw Error('请先核对题目条件并勾选确认');
+  if(!coordinator||coordinator.snapshot().task==='composition')
+   throw Error('该题型不能使用快捷求解');
+  stageCurrentTask();
+  coordinator.confirmCondition('coords');
+  solveCurrentTask();
+  $('v8-review-ack').checked=false;
+  updateReviewPanel(coordinator.snapshot());
+ }));
+ $('v7-stage-other').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task==='projection')throw Error('点投影请使用坐标入口');
+  stageCurrentTask();
   msg('几何输入已存为候选；请亲自核对原题、尺寸及所选分支。');
  }));
  $('v7-confirm-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator||coordinator.snapshot().task==='projection')
    throw Error('当前没有可确认的专业输入');
   coordinator.confirmCondition('coords');
-  msg('数学条件已人工确认；现在可调用已有专业 M3。');
+  msg('数学条件已人工确认；现在可以开始求解。');
  }));
  $('v7-solve-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator||coordinator.snapshot().task==='projection')
    throw Error('专业求解任务未选择');
-  stopAnimation();
-  const result=session.solve();
-  if(result.verified===true&&coordinator.currentResult()===result)
-   msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
-  else if(result.kind==='prism-evidence'&&result.verified===false)
-   msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
-  else throw Error('专业数学结果未通过门禁');
+  solveCurrentTask();
  }));
  for(const id of allConditionFields){
   for(const type of ['input','change'])$(id).addEventListener(type,()=>{
    if(!coordinator)return;
+   uncommittedFormEdit=true;
+   $('v8-review-ack').checked=false;
+   updateReviewPanel(coordinator.snapshot());
    // Merely typing a new input must destroy any old verified math.
    if(coordinator.snapshot().conditions.some(c=>c.id==='coords')){
     stopAnimation();coordinator.deleteCondition('coords');
@@ -1478,33 +1575,24 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  $('v7-stage').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('请先新建项目');
-  const xyz=xyzIds.map(id=>{
-   const el=$(id),v=Number(el.value);
-   if(el.value.trim()===''||!Number.isFinite(v)||Math.abs(v)>100000)
-    throw Error('三项坐标均须为 ±100000 mm 内的有限值');
-   return v;
-  });
-  if(!coordinator.snapshot().objects.some(x=>x.id===POINT))
-   coordinator.putObject(projectObject());
-  const id=coordinator.snapshot().source.imageId;
-  coordinator.putCondition({id:'coords',objectId:POINT,
-   sourceCandidateId:$('v7-source-link').value||null,
-   confirmed:false,value:{type:'point-xyz',unit:'mm',xyz,imageId:id}});
+  if(coordinator?.snapshot().task!=='projection')throw Error('请选择点投影任务');
+  stageCurrentTask();
   msg('坐标已记录为待确认；请核对原图及单位再确认。');
  }));
  $('v7-confirm').addEventListener('click',()=>call(async()=>{
   if(!coordinator)throw Error('请先新建项目');
   coordinator.confirmCondition('coords');
-  msg('条件已确认，点击重新数学求解。');
+  msg('条件已确认，可以开始数学求解。');
  }));
  $('v7-solve').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('没有项目');
-  stopAnimation();
-  session.solve();
-  if(!coordinator.canExport())throw Error('数学一致性未通过，拒绝生成动画');
-  msg('M3 数学与单一 V5 步骤已核验 · v'+coordinator.snapshot().revision);
+  if(coordinator?.snapshot().task!=='projection')throw Error('请先选择点投影任务');
+  solveCurrentTask();
  }));
+ // A new source candidate is also part of the explicit human review.
+ $('v7-source-link').addEventListener('change',()=>{
+  $('v8-review-ack').checked=false;
+  updateReviewPanel(coordinator?.snapshot());
+ });
  $('v7-image-input').addEventListener('change',()=>call(async()=>{
   if(!store)throw Error('本机存储不可用，不能安全保存原图');
   const file=$('v7-image-input').files?.[0];if(!file)return;
