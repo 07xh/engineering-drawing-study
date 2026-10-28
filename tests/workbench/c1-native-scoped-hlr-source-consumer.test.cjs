@@ -251,3 +251,90 @@ test('submicron CAD paper rounding is candidate-only and never repairs source co
  const gap=exactCandidateIntervalCoverage([0,1],[[0,0.5],[next,1]]);
  assert.deepEqual(gap.positiveLengthUncoveredIntervals,[[0.5,next]]);
 });
+
+
+test('real scoped HLR candidate intervals cover V/H/W only as paper evidence, not native history',()=>{
+ const x=fixture(),r=audit(x);
+ assert.equal(r.counts.projectedSourcesWithFullPaperCandidateCoverage,3);
+ assert.equal(r.counts.projectedSourcesWithPositivePaperCandidateGaps,3);
+ for(const view of ['V','H','W']){
+  const [present,missing]=r.views[view].sourceParameterCandidates;
+  assert.equal(present.originalPhysicalSourceEdgeId,x.id0);
+  assert.deepEqual(present.paperDerivedOriginalSourceParameterCandidateIntervals,[[0,1]]);
+  assert.deepEqual(present.paperDerivedPositiveLengthUncoveredCandidateIntervals,[]);
+  assert.equal(present.entireOriginalSourcePaperCandidateIntervalCovered,true);
+  assert.equal(present.actualOriginalTopoDSParameterCoverageCertified,false);
+  assert.equal(present.nativeOriginal3DEndpointTopologyProven,false);
+  assert.deepEqual(missing.paperDerivedPositiveLengthUncoveredCandidateIntervals,[[0,1]]);
+  const projected=r.views[view].visible[0].paperDerivedOriginalSourceParameterCandidates;
+  assert.equal(projected.length,1);
+  assert.deepEqual(projected[0].paperDerivedOriginal3DEndpointVertexCandidates,['A','B']);
+  assert.equal(projected[0].nativeOriginal3DEndpointTopologyProven,false);
+  assert.equal(r.views[view].visible[0].signedV5Action,false);
+ }
+});
+test('partial and reversed source-filtered HLR paper segments expose bounded candidate t and endpoint IDs',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  const {from:a,to:b}=x.paper(view,x.id0);
+  w.from={u:a.u+(b.u-a.u)*0.25,v:a.v+(b.v-a.v)*0.25};
+  w.to={u:a.u+(b.u-a.u)*0.75,v:a.v+(b.v-a.v)*0.75};
+  x.cad.views[view][0].from={...w.from};
+  x.cad.views[view][0].to={...w.to};
+  const r=audit(x),row=r.views[view].sourceParameterCandidates[0];
+  assert.deepEqual(row.paperDerivedPositiveLengthUncoveredCandidateIntervals,
+   [[0,0.25],[0.75,1]]);
+  assert.deepEqual(r.views[view].visible[0].paperDerivedOriginalSourceParameterCandidates[0].
+   paperDerivedOriginal3DEndpointVertexCandidates,[null,null]);
+  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false);
+ }
+ const y=fixture(),w=y.cad.nativeSourceScopedSharpOutputByView.H.rows[0].visible[0];
+ [w.from,w.to]=[w.to,w.from];
+ const r=audit(y),edge=r.views.H.visible[0].paperDerivedOriginalSourceParameterCandidates[0];
+ assert.deepEqual(edge.paperDerivedOriginalSourceParameterCandidateRange,[0,1]);
+ assert.deepEqual(edge.paperDerivedOriginal3DEndpointVertexCandidates,['B','A']);
+});
+test('real native paper aliases at different 3D depths do not prove a unique source or V5',()=>{
+ const x=fixture(),v='V',scoped=x.cad.nativeSourceScopedSharpOutputByView[v];
+ scoped.rows[1].visible.push(x.witness(v,x.id1));
+ scoped.nativeSourceScopedOutputEdgeCount=2;
+ scoped.paperOnlyScopedOutputEdgeCount=2;
+ x.cad.views[v][0].projectedOriginalEdgeCandidates.push(x.id1);
+ const r=audit(x);
+ assert.equal(r.views.V.visible[0].paperDerivedOriginalSourceParameterCandidates.length,2);
+ assert.equal(r.views.V.sourceParameterCandidates[0].entireOriginalSourcePaperCandidateIntervalCovered,true);
+ assert.equal(r.views.V.sourceParameterCandidates[1].entireOriginalSourcePaperCandidateIntervalCovered,true);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('source-filtered real HLR split retains one-ULP positive original t gap',()=>{
+ const x=fixture(),view='V',scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+ const {from:a,to:b}=x.paper(view,x.id0);
+ const point=t=>({u:a.u+(b.u-a.u)*t,v:a.v+(b.v-a.v)*t});
+ const next=0.5000000000000001;
+ const w=scoped.rows[0].visible[0];
+ w.to=point(0.5);
+ scoped.rows[0].visible.push({...w,from:point(next),to:point(1),
+  globalPaperCandidateOrdinals:[1]});
+ x.cad.views[view]=[
+  {from:point(0),to:point(0.5),projectedOriginalEdgeCandidates:[x.id0]},
+  {from:point(next),to:point(1),projectedOriginalEdgeCandidates:[x.id0]}
+ ];
+ scoped.nativeSourceScopedOutputEdgeCount=2;
+ scoped.paperOnlyScopedOutputEdgeCount=2;
+ const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
+ assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
+  [[0.5,next]]);
+ assert.equal(coverage.entireOriginalSourcePaperCandidateIntervalCovered,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('rounded paper endpoints cannot impersonate exact 3D vertex topology',()=>{
+ const x=fixture(),view='V',w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ w.from.v+=5e-7;w.to.v+=5e-7;
+ x.cad.views[view][0].from.v+=5e-7;
+ x.cad.views[view][0].to.v+=5e-7;
+ const r=audit(x),candidate=r.views.V.visible[0].paperDerivedOriginalSourceParameterCandidates[0];
+ assert.deepEqual(candidate.paperDerivedOriginal3DEndpointVertexCandidates,[null,null]);
+ assert.equal(candidate.actualNativeTopoDSParameterHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
