@@ -935,7 +935,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      node.setAttribute('data-source-feature-key',item.sourceFeatureKey);
      node.setAttribute('data-source-feature-selected',String(featureSelected));
     }
-    if(item.visibility==='undetermined')
+    if(item.visibility==='undetermined'||generated)
      node.setAttribute('data-visibility','undetermined');
    }
    if(item.objectId){
