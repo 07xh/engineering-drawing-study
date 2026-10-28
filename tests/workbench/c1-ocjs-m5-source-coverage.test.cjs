@@ -480,6 +480,8 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
    /rounded inverse boundary/,
    'an interior received paper point cannot impersonate original M0 t=0');
   rounded.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=true;
+  rounded.sourceCandidate3DLifts[0].
+   originalSourceExactParameterCoverageFromRoundingProven=false;
   const held=exactSourceCoverage({...input,strokes:[rounded]});
   assert.equal(held.entireOriginalParameterIntervalCovered,false);
   assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
