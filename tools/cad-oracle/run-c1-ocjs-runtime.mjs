@@ -754,6 +754,21 @@ for(const [index,geometry] of general.entries()){
   exactGapRows.length);
  assert.equal(audited.counts.exactNative3DSourceParameterCovered+
   exactGapRows.length,audited.counts.m5AtomicIntervals);
+ // Genuine native source-filtered HLR paper coverage must be cross-checked
+ // against independently lifted ORIGINAL 3D source intervals. A paper-only
+ // full span can NEVER fill a positive native 3D gap or sign official V5.
+ const paperOnlyGaps=exactSourceRows.filter(x=>
+  x.sourceScopedPaperFullButNative3DPositiveGap===true);
+ assert.equal(audited.counts.scopedPaperFullButNative3DPositiveGap,
+  paperOnlyGaps.length);
+ assert.ok(paperOnlyGaps.every(x=>
+  x.realNativeOriginal3DSourceParameterCovered===false&&
+  x.sourceScopedPaperCandidateCoverage?.entirePaperCandidateIntervalCovered===true&&
+  x.sourceScopedPaperCandidateCoverage.actualOriginalTopoDSParameterHistoryProven===false&&
+  x.signedV5===false&&x.engineeringLineStyle==='undetermined'));
+ assert.ok(exactSourceRows.every(x=>
+  x.sourceScopedPaperCandidateCoverage===null||
+  x.sourceScopedPaperCandidateCoverage.signedV5Action===false));
  assert.ok(exactGapRows.every(x=>
   x.signedV5===false&&x.engineeringLineStyle==='undetermined'&&
   (x.exactNativeOriginal3DSourceCoverage?.status===
@@ -2209,9 +2224,16 @@ for(const [index,geometry] of general.entries()){
    audited.counts.exactNative3DSourceParameterGapOrUnbound,
   exactNative3DSourceParameterCovered:
    audited.counts.exactNative3DSourceParameterCovered,
+  scopedPaperFullButNative3DPositiveGap:
+   audited.counts.scopedPaperFullButNative3DPositiveGap,
   exactNativeSourceGaps:exactGapRows.map(x=>({
    view:x.view,sourceEdgeId:x.sourceEdgeId,
    status:x.exactNativeOriginal3DSourceCoverage?.status,
+   scopedPaperCandidateFullButNative3DGap:
+    x.sourceScopedPaperFullButNative3DPositiveGap,
+   scopedPaperCandidateGaps:
+    x.sourceScopedPaperCandidateCoverage?.
+     positiveLengthUncoveredCandidateIntervals,
    positiveLengthUncoveredIntervals:
     x.exactNativeOriginal3DSourceCoverage?.
      positiveLengthUncoveredIntervals
