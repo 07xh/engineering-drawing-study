@@ -9,6 +9,8 @@
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {dyadic,difference,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
+const {auditC1RoundedInversePaperBoundaryAlias}=
+ require('./c1-rounded-inverse-paper-boundary-alias.cjs');
 const frozen=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const value of Object.values(x))frozen(value);
@@ -34,6 +36,8 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   geometry.id+'::'+[...edge].sort().join('|')===sourceEdgeId);
  if(matches.length!==1)throw new RangeError('unique original M0 source edge required');
  const vertexIds=matches[0];
+ const originalPaperEndpoints=vertexIds.map(id=>
+  project(geometry.data.points[id])[view]);
  const endpoints=[];
  for(const [klass,segments] of [['visible-sharp',visibleSegments],
                                  ['hidden-sharp',hiddenSegments]]){
@@ -56,6 +60,17 @@ function auditC1NativeGapGeneratedVertexAdjacency({
       !Array.isArray(native)||native.length!==2||
       typeof segment.actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven!=='boolean')
     throw new TypeError('invalid real HLR generated endpoint provenance');
+   // A rounded inverse t=0 is only a paper candidate. A literal original
+   // vertex paper point must be checked separately, even when a generated
+   // HLR TopoDS vertex lacks direct original M0 IsSame.
+   const withinRaw=raw.every(t=>t>=0&&t<=1);
+   const boundaryAlias=withinRaw?
+    auditC1RoundedInversePaperBoundaryAlias({
+     sourceFrom:originalPaperEndpoints[0],
+     sourceTo:originalPaperEndpoints[1],
+     measuredFrom:segment.from,measuredTo:segment.to,
+     roundedInverseParameters:raw
+    }):null;
    for(let side=0;side<2;side++){
     const paper=side===0?segment.from:segment.to,
      proof=native[side],id=proof?.directlySameOriginalM0VertexId;
@@ -76,6 +91,14 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      generatedHLREndpointSide:side===0?'from':'to',
      nativeGeneratedPaperPoint:{...paper},
      paperDerivedUnclampedOriginalSourceParameter:raw[side],
+     paperInverseOriginalBoundaryWithinDomain:withinRaw,
+     receivedPaperExactlyAtOriginalSourceBoundary:
+      boundaryAlias!==null&&
+      (raw[side]===0||raw[side]===1)&&
+      !boundaryAlias.rows[side].roundedInverseAliasesDifferentReceivedPaperPoint,
+     receivedPaperRoundedInverseOriginalBoundaryAlias:
+      boundaryAlias?.rows[side].
+       roundedInverseAliasesDifferentReceivedPaperPoint??false,
      directNativeIsSameOriginalM0VertexId:id,
      directNativeIsSameOriginalSourceEndpoint:
       id!==null&&vertexIds.includes(id),
@@ -100,6 +123,14 @@ function auditC1NativeGapGeneratedVertexAdjacency({
    originalM0VertexId:vertexId,
    nativeGeneratedPaperCandidateParameterEqualCount:endpoints.filter(e=>
     relation(e.paperDerivedUnclampedOriginalSourceParameter,t)===0).length,
+   nativeGeneratedLiteralOriginalPaperBoundaryCount:vertexId===null?0:
+    endpoints.filter(e=>
+     relation(e.paperDerivedUnclampedOriginalSourceParameter,t)===0&&
+     e.receivedPaperExactlyAtOriginalSourceBoundary).length,
+   nativeGeneratedRoundedInverseOriginalBoundaryAliasCount:vertexId===null?0:
+    endpoints.filter(e=>
+     relation(e.paperDerivedUnclampedOriginalSourceParameter,t)===0&&
+     e.receivedPaperRoundedInverseOriginalBoundaryAlias).length,
    directNativeOriginalVertexIsSameEndpointCount:vertexId===null?0:
     endpoints.filter(e=>e.directNativeIsSameOriginalM0VertexId===vertexId).length,
    directNativeOriginalVertexIsSameAtPaperParameterCount:vertexId===null?0:
@@ -119,6 +150,8 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   actualNativeGeneratedSourceCandidateEndpointCount:endpoints.length,
   actualNativeDirectIsSameOriginalSourceVertexEndpoints:endpoints.filter(x=>
    x.directNativeIsSameOriginalSourceEndpoint).length,
+  actualNativeRoundedInverseOriginalBoundaryAliasEndpoints:endpoints.filter(x=>
+   x.receivedPaperRoundedInverseOriginalBoundaryAlias).length,
   endpoints,rows,
   generatedToOriginalTopoDSFullHistoryCertified:false,
   globalContinuousVisibilityCertified:false,
