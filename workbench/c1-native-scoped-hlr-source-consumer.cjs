@@ -7,7 +7,7 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
-const {exactCandidateIntervalCoverage}=
+const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -78,6 +78,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  const views={},counts={originalSourceEdgesPerView:ids.length,
   projectedSourcesWithFullPaperCandidateCoverage:0,
   projectedSourcesWithPositivePaperCandidateGaps:0,
+  projectedSourcesWithVisibleHiddenCandidateConflicts:0,
+  positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
   sourceScopedPaperStrokesWithUnboundParameters:0,
   nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
   paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
@@ -127,6 +129,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    item.nativeOwners=new Map();
   }
   const sourceRanges=new Map(ids.map(id=>[id,[]]));
+  const classRanges=Object.fromEntries(['visible','hidden'].map(k=>
+   [k,new Map(ids.map(id=>[id,[]]))]));
   for(const item of Object.values(classes))
    item.parameterCandidates=Array.from({length:item.global.length},()=>[]);
   let total=0,direct=0,seen=new Set();
@@ -167,8 +171,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
       tTo=paperParameter(w.to,source,view);
      const range=tFrom===null||tTo===null||tFrom===tTo?null:
       [Math.min(tFrom,tTo),Math.max(tFrom,tTo)];
-     if(range)sourceRanges.get(source).push(range);
-     else counts.sourceScopedPaperStrokesWithUnboundParameters++;
+     if(range){
+      sourceRanges.get(source).push(range);
+      classRanges[klass].get(source).push(range);
+     }else counts.sourceScopedPaperStrokesWithUnboundParameters++;
      const endpointCandidates=[
       originalEndpointCandidate(w.from,tFrom,source,view),
       originalEndpointCandidate(w.to,tTo,source,view)
@@ -244,6 +250,14 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    const ranges=sourceRanges.get(source);
    const coverage=collapsed?null:
     exactCandidateIntervalCoverage([0,1],ranges);
+   const classOverlap=collapsed?null:exactCandidateVisibilityClassOverlap(
+    classRanges.visible.get(source),classRanges.hidden.get(source)
+   );
+   if(classOverlap?.hasPositiveLengthVisibleHiddenClassConflict){
+    counts.projectedSourcesWithVisibleHiddenCandidateConflicts++;
+    counts.positiveLengthVisibleHiddenCandidateConflictIntervalCount+=
+     classOverlap.paperDerivedPositiveLengthVisibleHiddenConflictIntervals.length;
+   }
    if(coverage?.entireOriginalParameterIntervalCovered)
     counts.projectedSourcesWithFullPaperCandidateCoverage++;
    else if(coverage)
@@ -253,10 +267,21 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     originalProjectedEdgeCollapsed:collapsed,
     paperDerivedOriginalSourceParameterCandidateIntervals:
      ranges.map(range=>[...range]),
+    paperDerivedVisibleCandidateParameterUnion:
+     classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
+    paperDerivedHiddenCandidateParameterUnion:
+     classOverlap?.paperDerivedHiddenOriginalSourceParameterUnion??null,
+    paperDerivedPositiveLengthVisibleHiddenConflictIntervals:
+     classOverlap?.paperDerivedPositiveLengthVisibleHiddenConflictIntervals??null,
+    paperDerivedPositiveLengthVisibleHiddenConflictDetected:
+     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict??false,
     paperDerivedPositiveLengthUncoveredCandidateIntervals:
      coverage?.positiveLengthUncoveredIntervals??null,
     entireOriginalSourcePaperCandidateIntervalCovered:
      coverage?.entireOriginalParameterIntervalCovered??false,
+    fullOriginalPaperCandidateCoverageWithoutClassConflict:
+     coverage?.entireOriginalParameterIntervalCovered===true&&
+     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false,
     actualOriginalTopoDSParameterCoverageCertified:false,
     nativeOriginal3DEndpointTopologyProven:false,
     continuousOcclusionCertified:false,
@@ -269,6 +294,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   views,counts,
   actualOriginalTopoDSSourceFilteredHLRConsumed:true,
   generatedToOriginalTopoDSFullHistoryCertified:false,
+  paperDerivedVisibleHiddenSourceConflictsDetected:
+   counts.projectedSourcesWithVisibleHiddenCandidateConflicts>0,
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,signedV5ActionCount:0});
 }

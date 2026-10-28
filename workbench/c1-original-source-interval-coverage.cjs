@@ -42,4 +42,36 @@ function exactCandidateIntervalCoverage(range,candidates){
   candidateIntervalsExamined:candidates.length
  });
 }
-module.exports={exactCandidateIntervalCoverage};
+/**
+ * Visible/hidden paper HLR candidates can individually span the SAME
+ * ORIGINAL 3D TopoDS source parameter interval. Complete UNION coverage
+ * cannot make two contradictory visibility classes a certified stroke.
+ * Take the exact (represented binary64) open-overlap of two class unions.
+ * Endpoint-only contact is NOT positive-length overlap.
+ */
+function exactCandidateVisibilityClassOverlap(visible,hidden){
+ const v=exactCandidateIntervalCoverage([0,1],visible).positiveLengthCoveredIntervals;
+ const h=exactCandidateIntervalCoverage([0,1],hidden).positiveLengthCoveredIntervals;
+ const overlaps=[];let i=0,j=0;
+ while(i<v.length&&j<h.length){
+  const from=Math.max(v[i][0],h[j][0]),
+   to=Math.min(v[i][1],h[j][1]);
+  if(to>from){
+   if(overlaps.length&&from<=overlaps.at(-1)[1])
+    overlaps.at(-1)[1]=Math.max(to,overlaps.at(-1)[1]);
+   else overlaps.push([from,to]);
+  }
+  if(v[i][1]<h[j][1])i++;
+  else if(v[i][1]>h[j][1])j++;
+  else {i++;j++;}
+ }
+ return frozen({
+  paperDerivedVisibleOriginalSourceParameterUnion:v,
+  paperDerivedHiddenOriginalSourceParameterUnion:h,
+  paperDerivedPositiveLengthVisibleHiddenConflictIntervals:overlaps,
+  hasPositiveLengthVisibleHiddenClassConflict:overlaps.length>0,
+  actualNativeOcctFullVisibilityCertification:false,
+  officialEngineeringLineStyle:'undetermined'
+ });
+}
+module.exports={exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap};
