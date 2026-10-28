@@ -81,9 +81,9 @@ test('C1 is a REAL reviewed task within same local project and original V5 playe
   assert.equal($('v8-review-run').disabled,true);
   // A different 3D vertex identity may not be forged by paper-copying
   // all four model-mm coordinates of another confirmed source vertex.
-  const dup=rows.split('\\n');
+  const dup=rows.split('\n');
   dup[7]='V111,'+dup[0].split(',').slice(1).join(',');
-  $('v8-c1-vertices').value=dup.join('\\n');
+  $('v8-c1-vertices').value=dup.join('\n');
   fire('v8-c1-vertices','input');
   assert.match($('v8-review-summary').textContent,/V000.*V111.*不同三维顶点/);
   assert.equal($('v8-review-ack').disabled,true);
