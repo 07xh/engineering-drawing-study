@@ -5,6 +5,7 @@
  */
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
+const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
@@ -1177,12 +1178,28 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  $('v7-task').addEventListener('change',()=>call(async()=>{
   if(!coordinator)return;
-  const selected=$('v7-task').value;
+  const selected=$('v7-task').value,previous=coordinator.snapshot();
+  if(selected===previous.task)return;
+  if(hasTaskInputs(previous)){
+   $('v7-task').value=previous.task;
+   if(!window.confirm('当前项目已有几何条件。是否另建一个新题型项目，保留原项目及全部已输入内容？'))return;
+   // The existing async save can report an error without rejecting. Read back
+   // the exact revision before leaving the old project.
+   await saving;
+   if(!store)throw Error('本机存储不可用，无法安全切换有条件的项目');
+   const saved=await store.readProject(previous.id);
+   if(!saved?.project||saved.project.revision!==previous.revision)
+    throw Error('原项目尚未保存成功，请先处理保存错误后再切换');
+   const next=forkTaskProject(previous,selected,gid('Project'));
+   stopAnimation();mount(next);queueSave();
+   await saving;await refreshList();
+   msg('已建立新题型项目；原项目及条件仍在本机保存。新项目需重新确认条件。');
+   return;
+  }
   stopAnimation();coordinator.setTask(selected);
-  if(selected==='planar')coordinator.setMode('2d');
-  else coordinator.setMode('split');
+  coordinator.setMode(selected==='planar'?'2d':'split');
   populateTaskFields(coordinator.snapshot());
-  msg('题型已切换；原图保留，旧数学条件、分支和动画全部失效。');
+  msg('已切换解题类型；当前项目原图保留，数学结果需重新计算。');
  }));
 
 

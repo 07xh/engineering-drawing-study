@@ -6,26 +6,16 @@ const fs=require('node:fs');
 const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layout.cjs');
 const {homeHTML}=require('./home.cjs');
 const NAV=[
- ['index.html','首页'],
- ['labs/auto-fillet-live.html','AI 解题'],
- ['index.html#plane','平面作图'],
- ['index.html#projection','三视图与投影'],
- ['index.html#section','截交与相贯'],
- ['index.html#knowledge','我的题目'],
- ['index.html#recent','历史记录'],
- ['index.html#tools','更多工具'],
- ['public-use.html','帮助与协议']
+ ['index.html','工作台'],
+ ['index.html#recent','我的项目'],
+ ['index.html#tools','题型工具'],
+ ['public-use.html','帮助']
 ];
 const NAV_ICONS={
- '首页':'<path d="M3 11.5L12 4l9 7.5v8.5h-6v-6H9v6H3z"/>',
- 'AI 解题':'<path d="M4 5h16v14H4z M8 10l3 3 5-6 M8 3v2 M16 3v2"/>',
- '平面作图':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
- '三视图与投影':'<path d="M12 3l8 5v9l-8 5-8-5V8z M12 3v10 M4 8l8 5 8-5 M12 13v9"/>',
- '截交与相贯':'<path d="M5 18V7a7 3 0 0 1 14 0v11a7 3 0 0 1-14 0 M5 7a7 3 0 0 0 14 0 M3 10l18 6"/>',
- '我的题目':'<path d="M7 3h9l4 4v14H4V3z M8 12l3 3 5-6"/>',
- '历史记录':'<path d="M4 5v5h5 M5 10a8 8 0 1 1-.2 5 M12 7v5l3 2"/>',
- '更多工具':'<path d="M18 4a4 4 0 0 0-4 5l-9 9 3 3 9-9a4 4 0 0 0 5-4l-3 2-3-3z"/>',
- '帮助与协议':'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 1c0 2-3 2-3 4 M12 18h.01"/>'
+ '工作台':'<path d="M4 5h16v14H4z M8 10l3 3 5-6"/>',
+ '我的项目':'<path d="M7 3h9l4 4v14H4V3z M8 12l3 3 5-6"/>',
+ '题型工具':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
+ '帮助':'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 1c0 2-3 2-3 4 M12 18h.01"/>'
 };
 function iconFor(label){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+NAV_ICONS[label]+'</svg>';}
 
