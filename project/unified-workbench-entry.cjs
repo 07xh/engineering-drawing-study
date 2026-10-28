@@ -986,8 +986,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
   $('v7-selection').textContent=activeGeometry?
-    '已选 Geometry 对象 '+activeGeometry+'；同一场景的全部可用表达同步高亮，未更改数学输入。':
-    '点选正式数学场景的任意已知或派生图元，按稳定对象 ID 高亮。';
+    '已选 '+activeGeometry+'，对应视图已高亮。':
+    '点选图元，查看各视图中的对应位置。';
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';

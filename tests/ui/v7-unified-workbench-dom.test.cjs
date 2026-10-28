@@ -88,6 +88,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal(w.getAttribute('data-geometry-view'),'W');
   w.dispatchEvent(new window.Event('click',{bubbles:true}));
   assert.match($('v7-selection').textContent,/Point1/);
+  assert.doesNotMatch($('v7-selection').textContent,/Geometry|数学场景|对象 ID/);
   assert.equal($('v7-3d').querySelectorAll('circle').length,1);
   $('v7-yaw').value='40';
   $('v7-yaw').dispatchEvent(new window.Event('input',{bubbles:true}));
