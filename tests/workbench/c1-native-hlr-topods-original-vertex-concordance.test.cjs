@@ -42,6 +42,12 @@ const completePaperPairInventoryForTest=x=>{
    ...data.sameActualGeneratedOCCTTopoDSVertexPairs,
    ...data.paperCoincidentButDifferentTopoDSVertexPairs
   ].map(nativePairKey));
+  const claimedStarPairIds=new Set();
+  for(const star of data.generatedOCCTSharedNativeJunctionComponents||[]){
+   const members=star.generatedSharpEdgeEndpoints||[];
+   for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++)
+    claimedStarPairIds.add(nativePairKey({a:members[i],b:members[j]}));
+  }
   for(let i=0;i<endpoints.length;i++)for(let j=i+1;j<endpoints.length;j++){
    const a=endpoints[i],b=endpoints[j];
    if(a.edgeKey===b.edgeKey||
@@ -50,7 +56,7 @@ const completePaperPairInventoryForTest=x=>{
    literalPairs++;
    const candidate={a,b};
    const key=nativePairKey(candidate);
-   if(!known.has(key)){
+   if(!known.has(key)&&!claimedStarPairIds.has(key)){
     data.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(a,b,false));
     known.add(key);
    }
