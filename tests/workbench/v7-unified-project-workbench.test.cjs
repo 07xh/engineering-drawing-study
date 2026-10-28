@@ -24,7 +24,7 @@ test('V7 homepage is an operable on-page workbench, not only a decorative landin
   'v7-confirm','v7-solve','v7-sheet','v7-3d','v7-seek','v7-speed','v7-play',
   'v7-import','v7-export','v7-step-list'])
   assert.ok(html.includes('id="'+id+'"'),id+' missing');
- assert.match(html,/V7 · 同一份本机项目/);
+ assert.match(html,/工程制图解题/);
  assert.match(html,/href="#project-workbench"/);
 });
 test('candidate remains untrusted until explicit review, then trusted 03 M3→V5 is reusable',()=>{

@@ -5,6 +5,10 @@
  */
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
+const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
+const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
+const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
+const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
@@ -12,6 +16,7 @@ const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {manualSegment}=require('./source-candidate-bridge.cjs');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
+const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
  const $=id=>document.getElementById(id),root=$('project-workbench');
@@ -23,7 +28,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const prismInputs=['v7-p-width','v7-p-depth','v7-p-height','v7-p-px',
   'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
  const prismOptions=['v7-p-kept'];
- const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions];
+ const c1Fields=['v8-c1-pair','v8-c1-vertices','v8-c1-topology'];
+ const c3Fields=[...C3_KEYS.map(k=>'v8-c3-'+k),
+  'v8-c3-axes','v8-c3-caps','v8-c3-solid-op'];
+ const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions,...c1Fields,...c3Fields];
+ const c2Fields=['a','b'].flatMap(letter=>['x0','y0','z0','x1','y1','z1']
+  .map(part=>'v8-c2-'+letter+'-'+part));
  const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
   'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end',
   'v7-c-direction','v7-c-points','v7-c-closed'];
@@ -404,10 +414,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   planar:{id:'Fillet1',kind:'edge',spatialId:null,
    projections:{V:[],H:[],W:[]}},
   exploration:{id:'Solid1',kind:'solid',spatialId:'Solid1_3D',
-   projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}}
+   projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}},
+  'c1-third-view':{id:'C1Solid',kind:'solid',spatialId:'C1Solid_3D',
+   projections:{V:['C1Solid_V'],H:['C1Solid_H'],W:['C1Solid_W']}},
+  'c3-intersection':{id:'C3Intersection',kind:'solid',spatialId:'C3Intersection_3D',
+   projections:{V:['C3Intersection_V'],H:['C3Intersection_H'],W:['C3Intersection_W']}}
  };
  const fieldsForTask=task=>task==='projection'?xyzIds:
-  task==='planar'?[...filletInputs,...filletOptions]:[...prismInputs,...prismOptions];
+  task==='planar'?[...filletInputs,...filletOptions]:
+  task==='c1-third-view'?c1Fields:
+  task==='c3-intersection'?c3Fields:[...prismInputs,...prismOptions];
  const numberFrom=id=>{
   const raw=$(id).value;
   if(raw.trim()===''||!Number.isFinite(Number(raw))||Math.abs(Number(raw))>100000)
@@ -425,6 +441,24 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     branchId:$('v7-f-branch').value,direction:$('v7-f-direction').value,
     firstTravel:$('v7-f-first').value,secondTravel:$('v7-f-second').value,imageId};
   }
+  if(task==='c1-third-view'){
+   if(!$('v8-c1-topology').checked)
+    throw Error('请先人工核对并确认长方体完整拓扑及八个顶点对应关系');
+   const pair=$('v8-c1-pair').value;
+   const vertices=parseReviewedC1Rows($('v8-c1-vertices').value,pair);
+   return {type:'reviewed-c1-third-view',unit:'mm',pair,vertices,
+    topologyConfirmed:true,imageId};
+  }
+  if(task==='c3-intersection'){
+   if(!$('v8-c3-axes').checked||!$('v8-c3-caps').checked)
+    throw Error('请确认两圆柱正交轴向及真实有限端盖');
+   const choice=$('v8-c3-solid-op').value;
+   if(!['','union','intersection'].includes(choice))
+    throw Error('实体组合运算必须由原题明确确认');
+   return {type:'reviewed-c3-finite-cylinders',unit:'mm',
+    dimensions:Object.fromEntries(C3_KEYS.map(k=>[k,numberFrom('v8-c3-'+k)])),
+    axesConfirmed:true,capsConfirmed:true,solidOperation:choice||null,imageId};
+  }
   const v=prismInputs.map(numberFrom);
   const retainedHalfspace=$('v7-p-kept').value;
   if(!['unreviewed','positive','negative'].includes(retainedHalfspace))
@@ -434,8 +468,30 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  function populateTaskFields(project){
   $('v7-task').value=project.task;
+  // Never inherit last project's handwritten specialist measurements or
+  // checked topological declarations when opening an EMPTY new project.
+  // Only the currently restored project's saved conditions may repopulate.
+  $('v8-c1-pair').value='VH';
+  $('v8-c1-vertices').value='';
+  $('v8-c1-topology').checked=false;
+  for(const k of C3_KEYS)$('v8-c3-'+k).value='';
+  $('v8-c3-axes').checked=false;
+  $('v8-c3-caps').checked=false;
+  $('v8-c3-solid-op').value='';
   const v=project.conditions.find(x=>x.id==='coords')?.value;
   if(!v)return;
+  if(project.task==='c3-intersection'&&v.type==='reviewed-c3-finite-cylinders'){
+   for(const k of C3_KEYS)$('v8-c3-'+k).value=String(v.dimensions[k]);
+   $('v8-c3-axes').checked=v.axesConfirmed===true;
+   $('v8-c3-caps').checked=v.capsConfirmed===true;
+   $('v8-c3-solid-op').value=['union','intersection'].includes(v.solidOperation)?
+    v.solidOperation:'';
+  }
+  if(project.task==='c1-third-view'&&v.type==='reviewed-c1-third-view'){
+   $('v8-c1-pair').value=v.pair;
+   $('v8-c1-vertices').value=serializeReviewedC1Rows(v.vertices,v.pair);
+   $('v8-c1-topology').checked=!!v.topologyConfirmed;
+  }
   if(project.task==='projection'&&v.type==='point-xyz'&&Array.isArray(v.xyz))
    xyzIds.forEach((id,i)=>$(id).value=String(v.xyz[i]));
   if(project.task==='planar'&&v.type==='segment-fillet'){
@@ -454,7 +510,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function preview(){
   const snap=coordinator?.snapshot(),out=session?.readSnapshot();
   return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
-    ['prism-evidence','composition-evidence','affine-evidence','nonlinear-evidence'].includes(out.kind)&&out.verified===false?out:null;
+    ['prism-evidence','composition-evidence','affine-evidence','nonlinear-evidence','c1-reviewed-preview','c3-reviewed-preview'].includes(out.kind)&&out.verified===false?out:null;
  }
  function selectable(node,view,rep,id){
   const pick=()=>coordinator.selectRepresentation(view,rep);
@@ -471,6 +527,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
  let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
+ let uncommittedFormEdit=false;
  const gid=prefix=>{
    const b=new Uint8Array(12);crypto.getRandomValues(b);
    return prefix+Array.from(b,n=>n.toString(16).padStart(2,'0')).join('');
@@ -641,6 +698,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
   $('v7-title-input').value=project.title;
   populateTaskFields(project);
+  uncommittedFormEdit=false;
+  $('v8-review-ack').checked=false;
+  $('v8-c2-ack').checked=false;
+  $('v8-c2-build').disabled=true;
+  for(const id of c2Fields)$(id).value='';
   hydrateCalibration(project);
   $('v7-source-link').value='';
   $('v7-photo-segment').value='0';
@@ -711,7 +773,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function playback(){
   const verified=current();if(verified)return verified;
   const partial=preview(),snap=coordinator?.snapshot();
-  return partial?.kind==='prism-evidence'&&
+  return ['prism-evidence','c1-reviewed-preview','c3-reviewed-preview'].includes(partial?.kind)&&
     partial.plan?.status==='preview-only'&&
     partial.plan.canPromoteToVerifiedResult===false&&
     partial.clock?.canRender(snap.revision)?partial:null;
@@ -774,7 +836,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const hidden=out.kind==='planar-fillet'&&!frame.done?['Fillet1']:[];
   return compileGeometryScene(out.scene,{
    sheet:SHEET,camera:snap.view.camera,selectedObjectId:coordinator.selectedGeometryId(),
-   hiddenObjectIds:hidden
+   hiddenObjectIds:hidden,
+   viewTransforms:out.kind==='c3-reviewed-preview'?out.viewTransforms:null
   });
  }
  function drawPrimitives(svg,primitives,viewKind,snap,frame,monochrome){
@@ -826,6 +889,82 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const svg=$('v7-sheet');svg.replaceChildren();
   const snap=coordinator?.snapshot();if(!snap)return;
   const scoped=playback();
+  if(scoped?.kind==='c3-reviewed-preview'){
+   svg.setAttribute('viewBox','0 0 720 460');
+   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
+   for(const [view,x,y] of [['V',24,24],['H',24,258],['W',444,24]])
+    text(svg,x,y,view+' · 第一角法','#426080');
+   const result=compiled();
+   if(result)drawPrimitives(svg,result.paper,'paper',snap,null,$('v7-mono').checked);
+   // The unified Scene draws analytic model curves only as UNDETERMINED
+   // previews; original V5 provides proven points and auxiliary guides.
+   const frame=scoped.clock.snapshot();
+   for(const step of scoped.evidence.constructionSteps)
+    for(const action of step.actions){
+     const fraction=frame.actionFractions[action.id]||0;
+     if(fraction<=0||!['point','line'].includes(action.kind))continue;
+     const ink=$('v7-mono').checked?'#555':'#946b36';
+     const node=shape(action.kind==='point'?'circle':'line',{
+      stroke:ink,fill:action.kind==='point'?ink:'none',
+      'stroke-width':action.kind==='point'?2.3:1.4,
+      'stroke-dasharray':action.kind==='line'?'5 5':'none',
+      'data-v5-scope':'c3-proven-auxiliary-not-engineering-stroke'
+     });
+     Motion.updateSvg(node,action,fraction);svg.append(node);
+    }
+   text(svg,18,446,'C3 解析求点及曲线预览；端点连接与完整虚实线未经认证','#986945');
+   return;
+  }
+  if(scoped?.kind==='c1-reviewed-preview'){
+   const zoom=snap.view.paper.zoom;
+   svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
+    230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
+   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
+   const prepared=compiled();
+   if(prepared)drawPrimitives(svg,prepared.paper,'paper',snap,null,$('v7-mono').checked);
+   // Only the existing C1 certified point/guide action IDs and explicitly
+   // signed limited visible source strokes are rendered by the original V5.
+   const certified=scoped.evidence,frame=scoped.clock.snapshot();
+   const visible=new Set(certified.certifiedVisibleContourLineActionIds);
+   const signedBindings=new Map(certified.certifiedPhysicalLineBindings.map(b=>
+    [b.actionId,b]));
+   for(const step of certified.steps)for(const action of step.actions){
+    const fraction=frame.actionFractions[action.id]||0;
+    if(fraction<=0||!['line','point'].includes(action.kind))continue;
+    const binding=signedBindings.get(action.id);
+    const signed=action.kind==='line'&&(visible.has(action.id)||!!binding);
+    if(!signed&&action.kind==='line'&&!$('v7-guides').checked)continue;
+    const hidden=!!binding&&
+     binding.standardLineStyle==='gb-t-4457.4-thin-dashed-hidden-edge';
+    const visibleStroke=visible.has(action.id)||(
+     !!binding&&binding.standardLineStyle===
+      'gb-t-4457.4-continuous-wide-visible-outline');
+    if(binding&&!hidden&&!visibleStroke)
+     throw Error('C1 物理线型无法与 M5 认证来源一一对应');
+    const color=$('v7-mono').checked?(signed?'#111':'#777'):
+     (signed?'#163954':'#b98639');
+    const node=shape(action.kind==='line'?'line':'circle',{
+     stroke:color,fill:action.kind==='point'?color:'none',
+     // Certified physical strokes inherit the ORIGINAL V5 GB style,
+     // including the 6/3 hidden dash and one-pixel thin weight.
+     'stroke-width':signed&&!hidden?3:signed?1:1.4,
+     'stroke-dasharray':hidden?'6 3':signed?'none':'4 4',
+     'data-engineering-line-style':hidden?'certified-hidden':
+      signed?'certified-visible':'undetermined',
+     'data-v5-scope':signed?'signed-convex-source':'reviewed-point-guide'});
+    const attrs=Motion.updateSvg(node,action,fraction);
+    if(binding&&(action.engineeringLineStyle!==binding.standardLineStyle||
+      attrs['stroke-dasharray']!==(hidden?'6 3':'none')||
+      attrs['stroke-width']!==(hidden?1:2)))
+     throw Error('C1 唯一 V5 正式笔画与原始 M5 认证实虚线不一致');
+    svg.append(node);
+   }
+   text(svg,20,445,scoped.scopedProof?.scopedSingleConvexFullyCertified?
+     'C1：单个已确认闭合凸体全部原始棱线已签收；教材原题盲测尚未通过':
+     'C1：局部凸体几何与 V5 已确认；完整原始棱线及隐藏线仍待认证',
+     '#986945');
+   return;
+  }
   if(scoped?.kind==='prism-evidence'){
    const width=scoped.plan.sheet.width,height=scoped.plan.sheet.height;
    svg.setAttribute('viewBox','0 0 '+width+' '+height);
@@ -862,6 +1001,113 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const result=compiled(),active=current(),frame=active?.clock.snapshot();
   if(result){
    drawPrimitives(svg,result.paper,'paper',snap,frame,$('v7-mono').checked);
+   // Only an existing, current M0/M5 proof can introduce a NEW two-face
+   // union feature. Show its exact 3D-source projections as dashed SOURCE
+   // CANDIDATES, never signed engineering hidden lines or official V5.
+   const c2=preview()?.orthogonalBooleanFeatureAudit;
+   if(snap.task==='composition'&&c2&&
+      c2.revision===snap.revision&&
+      $('v7-guides').checked){
+    const frame=result.paperTransform;
+    // Exact M0 union occupancy boundary in each projection: a complete
+    // CLOSED 2D region, NEVER a certified 3D frontmost engineering stroke.
+    if(c2.projectedRegion.viewCount!==3||
+       c2.projectedLoops.viewCount!==3||
+       c2.projectedLoops.totalProjectedBoundarySegmentCount!==
+        c2.projectedRegion.projectedBoundarySegmentCount||
+       c2.projectedLoops.v5Ready!==false)
+     throw Error('C2 闭合投影区域轮廓来源未被完整校验');
+    for(const view of c2.projectedRegion.projectedViews){
+     const topology=c2.projectedLoops.projectedViews.find(v=>v.view===view.view);
+     if(!topology||topology.sourceBoundarySegmentCount!==view.boundaries.length)
+      throw Error('C2 第一角法闭合轮廓与区域图缺少一一对应');
+     for(const boundary of view.boundaries){
+      if(boundary.exactOpenCellOppositeOccupancyVerified!==true||
+         boundary.projectedEngineeringSolidDashedStyle!=='undetermined'||
+         boundary.canonicalIntentDAGAndV5Approved!==false)
+       throw Error('C2 区域外轮廓不能擅自升级为工程线型');
+      const a=toSheet(view.view,boundary.projectedFromModelMm,frame);
+      const b=toSheet(view.view,boundary.projectedToModelMm,frame);
+      const node=shape('line',{
+       x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+       stroke:$('v7-mono').checked?'#555':'#15868a',
+       'stroke-width':2,'stroke-dasharray':'8 3 2 3',
+       'data-c2-region-boundary-id':boundary.id,
+       'data-c2-region-view':view.view,
+       'data-c2-region-boundary-kind':boundary.type,
+       'data-visibility':'undetermined',
+       'data-c2-geometry-status':'exact-2d-occupancy-only',
+       'aria-label':'C2 投影占据区域的数学外边界，不是正式三维轮廓线'
+      });
+      svg.append(node);
+     }
+    }
+    const sourceRayReview=preview()?.c2PaperRayProof;
+    if(sourceRayReview&&sourceRayReview.revision===snap.revision){
+     if(sourceRayReview.paperIntervalCount!==sourceRayReview.entries.length||
+        sourceRayReview.fullSourceCrossAudit!==true||
+        sourceRayReview.officialDrawingLineStylesVerified!==false||
+        sourceRayReview.completeV5DrawingAuthorized!==false)
+      throw Error('C2 M5 射线分类不得越过正式工程线型验收');
+     for(const candidate of sourceRayReview.entries){
+      if(candidate.engineeringLineStyle!=='undetermined'||
+         candidate.officialV5Approved!==false||
+         candidate.unresolvedObligations.length<5)
+       throw Error('C2 未证明的纸面来源不能生成正式动画');
+      const start=toSheet(candidate.view,candidate.from,frame);
+      const end=toSheet(candidate.view,candidate.to,frame);
+      if(start.x===end.x&&start.y===end.y)continue;
+      // DOTTED diagnostic overlay, never the GB solid/dashed standard.
+      const tone=candidate.rayStatus==='scoped-continuous-front-ray-clear'?
+       ($('v7-mono').checked?'#333':'#2b6dd0'):
+       candidate.rayStatus==='scoped-continuous-front-ray-opaque'?
+       ($('v7-mono').checked?'#777':'#d58b28'):
+       '#9c9ca8';
+      const rayNode=shape('line',{
+       x1:start.x,y1:start.y,x2:end.x,y2:end.y,
+       stroke:tone,'stroke-width':1.6,'stroke-dasharray':'1 7',
+       'data-c2-m5-paper-line-id':candidate.id,
+       'data-c2-m5-ray-status':candidate.rayStatus,
+       'data-c2-m5-paper-view':candidate.view,
+       'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
+       'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
+       'data-visibility':'undetermined',
+       'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
+      });
+      svg.append(rayNode);
+     }
+    }
+    for(const generated of c2.generated.segments){
+     if(generated.positiveNewConcaveUnionOpenFeatureVerified!==true)
+      continue;
+     if(generated.generatedByTwoSourceFacePlanes!==true||
+        generated.originalSourceMeshEdgeId!==null||
+        generated.supportingFacePlaneIncidenceIndependentlyVerified!==true||
+        generated.officialEngineeringLineStyle!=='undetermined'||
+        generated.officialConstructionStepV5ActionAuthorized!==false)
+      throw Error('C2 生成棱不得冒充已签收的工程线条');
+     const projected0=project(generated.source3DFrom),
+       projected1=project(generated.source3DTo);
+     for(const view of VIEWS){
+      if(generated.projected[view].kind==='collapsed-point')
+       continue;
+      const a=toSheet(view,projected0[view],frame);
+      const b=toSheet(view,projected1[view],frame);
+      if(a.x===b.x&&a.y===b.y)continue;
+      const lineNode=shape('line',{
+       x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+       stroke:$('v7-mono').checked?'#777':'#9563bf',
+       'stroke-width':1.8,'stroke-dasharray':'2 6',
+       'data-c2-generated-source-id':generated.id,
+       'data-c2-generated-view':view,
+       'data-c2-geometry-status':'boolean-feature-preview-only',
+       'data-visibility':'undetermined',
+       'aria-label':'C2 两原始面相交的新棱候选，尚无工程线型证明'
+      });
+      svg.append(lineNode);
+     }
+    }
+   }
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
    if(!planar&&preview())
@@ -912,6 +1158,82 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    btn.setAttribute('aria-current',i===frame.activeStepIndex?'step':'false');
   }
  }
+ function updateReviewPanel(snap){
+  const summary=$('v8-review-summary'),button=$('v8-review-run'),
+   ack=$('v8-review-ack');
+  if(!snap)return;
+  const value=id=>$(id).value.trim();
+  let label;
+  if(snap.task==='projection'){
+   label='已填写的空间点 P（mm）：x='+value('v7-x')+
+    '，y='+value('v7-y')+'，z='+value('v7-z')+'。';
+  }else if(snap.task==='planar'){
+   label='圆弧连接：R='+value('v7-f-radius')+' mm；分支 '+
+    value('v7-f-branch')+'；方向 '+value('v7-f-direction')+
+    '。请逐条确认两条有限线段的四个端点与行进方向。';
+  }else if(snap.task==='c3-intersection'){
+   const Z=['zRadius','zX','zY','zMin','zMax'].map(k=>value('v8-c3-'+k));
+   const Y=['yRadius','yX','yZ','yMin','yMax'].map(k=>value('v8-c3-'+k));
+   label='C3 两根有限正交圆柱（mm）\n'+
+    'Z 轴圆柱：半径 '+Z[0]+'；轴心 (x,y)=('+Z[1]+','+Z[2]+
+    ')；端盖 z=['+Z[3]+','+Z[4]+']。\n'+
+    'Y 轴圆柱：半径 '+Y[0]+'；轴心 (x,z)=('+Y[1]+','+Y[2]+
+    ')；端盖 y=['+Y[3]+','+Y[4]+']。\n'+
+    '轴向核对：'+($('v8-c3-axes').checked?'已勾选':'未确认')+
+    '；端盖核对：'+($('v8-c3-caps').checked?'已勾选':'未确认')+
+    '。布尔实体：'+({
+     union:'并集（两实体都保留）',intersection:'交集（保留共同体积）',
+     '':'尚未选择；只给源几何证明'
+    }[$('v8-c3-solid-op').value]||'未确定')+
+    '。该选择参与 M5 射线证明；完整线型仍未认证。';
+  }else if(snap.task==='c1-third-view'){
+   const rows=$('v8-c1-vertices').value.trim().split(/\r?\n/).filter(Boolean);
+   label='C1 补第三视图：已知 '+$('v8-c1-pair').value+
+    ' 两视图；已输入 '+rows.length+'/8 行原始角点对应。'+
+    ' 拓扑核对：'+($('v8-c1-topology').checked?'已勾选':'未确认')+
+    '。请检查每一角点的四个模型毫米坐标，不会自动推断原题。'+
+    ' 原始棱线仅在 M0–M5 全范围签收后才作为标准实虚线显示。';
+  }else if(snap.task==='exploration'){
+   label='长方体截平面：尺寸 '+['v7-p-width','v7-p-depth','v7-p-height'].map(value).join(' × ')+
+    ' mm；截平面法向 '+['v7-p-nx','v7-p-ny','v7-p-nz'].map(value).join(' / ')+
+    '；仅提供未签完整线型的几何预览。';
+  }else{
+   label='多对象编辑仅用于人工几何及约束核验；尚不能自动生成组合体标准答案。请使用下方的对象与关系工具。';
+  }
+  const suffix=snap.source.imageId?
+   ' 原图仅本机保存；请逐项核对后再确认。':
+   ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
+  // Live UI preflight does not sign geometry: original 03/M0-M5
+  // recompute all reviewed input on confirmed submission.
+  let allowed=snap.task!=='composition',reviewIssue='';
+  if(snap.task==='c1-third-view'){
+   if(!$('v8-c1-topology').checked)allowed=false;
+   try{
+    parseReviewedC1Rows($('v8-c1-vertices').value,
+     $('v8-c1-pair').value);
+   }catch(error){
+    allowed=false;
+    reviewIssue=error.message;
+   }
+  }
+  if(snap.task==='c3-intersection'){
+   try{
+    if(!$('v8-c3-axes').checked||!$('v8-c3-caps').checked)
+     allowed=false;
+    else makeReviewedC3Input(Object.fromEntries(C3_KEYS.map(k=>{
+     const raw=value('v8-c3-'+k);
+     if(raw==='')throw Error('缺少圆柱条件');
+     return [k,Number(raw)];
+    })));
+   }catch(_){allowed=false;}
+  }
+  summary.textContent=label+suffix+
+   (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'')+
+   (reviewIssue?' C1 条件检查：'+reviewIssue:'');
+  ack.disabled=!allowed;
+  if(!allowed)ack.checked=false;
+  button.disabled=!allowed||!ack.checked;
+ }
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
@@ -929,7 +1251,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     snap.task==='composition'&&snap.affineProblem?
      '未知点：仅显示唯一解，虚实线尚未确定':
     snap.task==='planar'?
-   '当前题型仅显示二维图纸':snap.task==='exploration'?
+   '当前题型仅显示二维图纸':
+    snap.task==='c3-intersection'?
+   'C3 两正交有限圆柱，共享解析几何与 V/H/W；整条曲线和线型仍为预览':
+    snap.task==='c1-third-view'?
+   (preview()?.scopedProof?.scopedSingleConvexFullyCertified?
+    'C1 已确认单闭合凸体原始棱线、实虚线与唯一 V5 作用域全部数学签收；原书盲测仍未通过':
+    'C1 已确认凸体及对应顶点；原始来源的未证明棱段保持未定'):snap.task==='exploration'?
    '长方体和截交边仅供预览，虚实线尚未确定':snap.task==='composition'?
    '已确认对象预览':'点投影';
   $('v7-mode').value=snap.view.mode;
@@ -954,17 +1282,55 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 不会将局部隐藏或可见证据直接画成标准实线或虚线。';
   }
   const condition=snap.conditions.find(c=>c.id==='coords');
-  $('v7-review').textContent=!condition?'尚未提交空间坐标；当前没有可求解条件。':
+  updateReviewPanel(snap);
+  $('v7-review').textContent=!condition?'尚未提交当前题目条件；尚不能求解。':
    condition.confirmed?'当前条件已人工确认（修订 v'+snap.revision+'）。':'有待确认的条件；不能自动生成标准答案。';
   $('v7-confirm-other').disabled=snap.task==='projection'||!condition||condition.confirmed;
   $('v7-solve-other').disabled=snap.task==='projection'||!condition||!condition.confirmed;
   $('v7-confirm').disabled=!condition||condition.confirmed;
   $('v7-solve').disabled=!condition||!condition.confirmed;
+  const concise=solved?
+   {status:'已完成当前条件的数学求解与动态作图。',state:'verified'}:
+   partial?{status:'已生成局部数学预览；未通过完整工程线型验证，不是标准答案。',state:'partial'}:
+   condition?.confirmed?{status:'条件已确认，可以开始数学求解。',state:'pending'}:
+   condition?{status:'条件已保存，仍需人工确认。',state:'pending'}:
+   {status:'尚未解题。请先核对并确认题目条件。',state:'pending'};
+  $('v8-result-status').textContent=concise.status;
+  $('v8-result-status').dataset.state=concise.state;
   $('v7-proof').textContent=solved?
     (solved.kind==='planar-fillet'?
      '已验证圆弧连接。所选分支：'+solved.plan.selectedBranchId+'；原图仍需人工审核。':
      '已验证的点投影。最大残差：'+String(solved.residualMm)+' mm。'):
     partial?
+     partial.kind==='c3-reviewed-preview'?
+      'C3 真实有限圆柱解析分支 '+partial.evidence.sourceM3.branchCount+
+      ' 条，已证明端点 V5 动作 '+partial.evidence.signedEndpointPointActionCount+
+      ' 个，内部辅助点 '+partial.evidence.signedInteriorAuxiliaryPointActionCount+
+      ' 个。三维原始源图：'+partial.joint.merged3DSourceGraph.edges.length+
+      ' 条来源特征、'+partial.joint.merged3DSourceGraph.vertices.length+
+      ' 个三维接点；已覆盖全部解析分支。'+
+      ' V/H/W 射线区间 '+partial.joint.intervals.length+
+      ' 个。实体选择：'+(partial.solidOperation||'未选择')+
+      '；布尔体积射线区间 '+partial.selectedRays.intervals.length+
+      ' 个；闭区间全来源覆盖：'+
+      (partial.selectedRays.fullSourceOpenEdgeRayCoverageVerified?'成立':'尚未通过')+
+      '；已核对透明（前方无实体内部）'+partial.selectedRays.certifiedClearCount+
+      '、不透明 '+partial.selectedRays.certifiedOpaqueCount+'、未定 '+
+      partial.selectedRays.undeterminedCount+'。所有区间仅证明当前数学范围；'+
+      '端点可见性、投影重合、完整实体边界和国标实虚线仍未签收。':
+     partial.kind==='c1-reviewed-preview'?
+      'C1 八角点两已知视图复算：'+partial.evidence.sceneResult.provenVertexCount+
+      ' 顶点，'+partial.evidence.sceneResult.provenEdgeCount+
+      ' 条原始几何棱。三视图原始来源区间 '+
+      partial.scopedProof.sourceCoverage.length+' 项；M5 完整无缺口覆盖 '+
+      partial.scopedProof.sourceCoverage.filter(p=>p.completeAndNonOverlapping).length+
+      ' 项；已签正式 V5 线动作 '+partial.scopedProof.signedV5ActionCount+
+      ' 个（含 GB 可见实线及隐藏虚线）。'+
+      (partial.scopedProof.scopedSingleConvexFullyCertified?
+       ' 当前人工确认的单个闭合凸体三视图来源棱线已全部证明，第三视图有可用的正式作用域图纸。':
+       ' 仍缺少 '+partial.scopedProof.missingObligations.length+
+       ' 项完整证明：'+partial.scopedProof.missingObligations.join('、')+'。')+
+      ' 无任意题图自动识别、非凸/组合实体或真实教材原题盲测资格；不可作为通用标准答案导出。':
      partial.kind==='nonlinear-evidence'?
       'M3 非线性局部数值候选 '+partial.evidence.localCandidates.length+
       ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
@@ -975,7 +1341,51 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' mm。当前只显示已确认的点，完整作图尚未验证。':
      partial.kind==='composition-evidence'?
       '手工输入的几何对象已人工确认；M2 关系一致性：'+partial.relationEvidence.status+
-       '（'+partial.relationEvidence.checkedCount+' 条）。只检查输入残差，未求未知量；无 ConstructionIntent/V5 资格。':
+       '（'+partial.relationEvidence.checkedCount+' 条）。'+
+       (partial.originalMultiBodyEdgeRays?
+        'M5 原始三维棱线 '+partial.originalMultiBodyEdgeRays.originalSourceEdgeCount+
+        ' 条，V/H/W 原始投影记录 '+partial.originalMultiBodyEdgeRays.projectedEdgeRowCount+
+        ' 条，整段无遮挡 '+partial.originalMultiBodyEdgeRays.counts.clear+
+        ' 条、严格遮挡 '+partial.originalMultiBodyEdgeRays.counts.strictHidden+
+        ' 条、深度未定 '+partial.originalMultiBodyEdgeRays.counts.undetermined+
+        ' 条；退化点和非物理细分另行记录。所有原始棱均按 '+partial.originalMultiBodyEdgeRays.componentCount+
+        ' 个原始凸体逐一核对，未将二维投影重合当作三维同一点。':
+        '当前包含超出多凸体全棱证明范围的几何，只提供已有局部空间关系核验。')+
+       (partial.orthogonalBooleanFeatureAudit?
+        ' M5 正交并集实体的原始外棱开区间 '+
+         partial.orthogonalBooleanFeatureAudit.originalOpenSourceIntervalCount+
+        ' 段；两原始面交汇生成新棱 '+partial.orthogonalBooleanFeatureAudit.generated.segmentCount+
+        ' 段，其中真实新增凹棱 '+
+         partial.orthogonalBooleanFeatureAudit.generatedOpenSourceIntervalCount+
+        ' 段、埋入内部 '+
+         partial.orthogonalBooleanFeatureAudit.generated.buriedNewFaceIntersectionCount+
+        ' 段。三维来源端点 '+partial.orthogonalBooleanFeatureAudit.physical.nodeCount+
+        ' 个，投影同点但三维不同点的别名 '+
+         partial.orthogonalBooleanFeatureAudit.physical.projectedAliases.filter(x=>
+           x.different3DPhysicalPoints).length+
+        ' 项；M5 端点方向已核对。精确八象限局部端点签收 '+
+         partial.orthogonalBooleanFeatureAudit.certifiedLocalEndpointCount+
+        '/'+partial.orthogonalBooleanFeatureAudit.sourceEndpointOctants.length+
+        ' 端，未签收 '+partial.orthogonalBooleanFeatureAudit.unresolvedLocalEndpointCount+
+        ' 端。V/H/W 投影区域精确边界 '+
+         partial.orthogonalBooleanFeatureAudit.projectedRegion.projectedBoundarySegmentCount+
+        ' 段、简单闭合回路 '+
+         partial.orthogonalBooleanFeatureAudit.projectedLoops.totalSimpleClosedBoundaryLoopCount+
+        ' 个、投影孔洞 '+
+         partial.orthogonalBooleanFeatureAudit.projectedLoops.totalProjectedHoleClosedLoopCount+
+        ' 个；全部按当前形体来源复算，图纸仅用辅助线预览。'+
+        (partial.c2PaperRayProof?
+          ' 独立 M0–M5 全局纸面来源线段 '+partial.c2PaperRayProof.paperIntervalCount+
+          ' 项；严格前方开放射线无遮挡 '+partial.c2PaperRayProof.counts.locallyClear+
+          ' 项、被遮挡 '+partial.c2PaperRayProof.counts.locallyOpaque+
+          ' 项、仍未定 '+partial.c2PaperRayProof.counts.unresolved+
+          ' 项；已同时核对三维布尔表面来源 '+partial.c2PaperRayProof.counts.sourceExteriorOpen+
+          ' 项、两个端点局部接合加射线 '+partial.c2PaperRayProof.counts.locallyJointEndpoint+
+          ' 项。蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
+          ' 多于两实体或非正交模型暂不执行完整纸面 M5 清单。'):
+
+        ' 非正交凸体仍未取得生成交汇棱的正向证明。')+
+       ' 原始棱遮挡和局部布尔生成棱均不证明完整实体外轮廓或国标工程实虚线；没有正式 V5 答案资格。':
      '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；'+
       (partial.evidence?.sectionVisibilityEvidence?.status==='open-edge-ray-only'?
        '保留材料侧已确认，局部截交边开区间射线判断 '+JSON.stringify(
@@ -1176,12 +1586,33 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  $('v7-task').addEventListener('change',()=>call(async()=>{
   if(!coordinator)return;
-  const selected=$('v7-task').value;
+  const selected=$('v7-task').value,previous=coordinator.snapshot();
+  if(selected===previous.task)return;
+  if(uncommittedFormEdit){
+   $('v7-task').value=previous.task;
+   throw Error('当前有尚未保存的条件修改，请先保存条件，再切换解题类型。');
+  }
+  if(hasTaskInputs(previous)){
+   $('v7-task').value=previous.task;
+   if(!window.confirm('当前项目已有几何条件。是否另建一个新题型项目，保留原项目及全部已输入内容？'))return;
+   // The existing async save can report an error without rejecting. Read back
+   // the exact revision before leaving the old project.
+   await saving;
+   if(!store)throw Error('本机存储不可用，无法安全切换有条件的项目');
+   const saved=await store.readProject(previous.id);
+   if(!saved?.project||saved.project.revision!==previous.revision)
+    throw Error('原项目尚未保存成功，请先处理保存错误后再切换');
+   const next=forkTaskProject(previous,selected,gid('Project'));
+   stopAnimation();mount(next);queueSave();
+   await saving;await refreshList();
+   msg('已建立新题型项目；原项目及条件仍在本机保存。新项目需重新确认条件。');
+   return;
+  }
   stopAnimation();coordinator.setTask(selected);
-  if(selected==='planar')coordinator.setMode('2d');
-  else coordinator.setMode('split');
+  $('v8-review-ack').checked=false;
+  coordinator.setMode(selected==='planar'?'2d':'split');
   populateTaskFields(coordinator.snapshot());
-  msg('题型已切换；原图保留，旧数学条件、分支和动画全部失效。');
+  msg('已切换解题类型；当前项目原图保留，数学结果需重新计算。');
  }));
 
 
@@ -1354,6 +1785,57 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
  }
 
+ $('v8-c2-ack').addEventListener('change',()=>{
+  $('v8-c2-build').disabled=!$('v8-c2-ack').checked;
+ });
+ for(const id of c2Fields)for(const type of ['input','change'])
+  $(id).addEventListener(type,()=>{
+   if(coordinator?.snapshot().task==='composition')
+    uncommittedFormEdit=true;
+   $('v8-c2-ack').checked=false;
+   $('v8-c2-build').disabled=true;
+   if(coordinator?.snapshot().task==='composition'){
+    $('v8-c2-status').textContent='形体尺寸已编辑；旧确认不适用于新数值。';
+    // Saved user geometry stays intact but stale mathematics must vanish.
+    if(session?.readSnapshot())session.invalidate();
+    else render();
+   }
+  });
+ $('v8-c2-build').addEventListener('click',()=>call(async()=>{
+  const p=coordinator?.snapshot();
+  if(p?.task!=='composition')throw Error('请先选择 C2 组合体任务');
+  if(!$('v8-c2-ack').checked)throw Error('请先人工确认两组尺寸');
+  if(p.objects.length||p.conditions.length||(p.relations||[]).length||
+     p.affineProblem)
+   throw Error('当前项目已有条件，请新建空组合体项目，避免覆盖原有对象');
+  // Both complete meshes are validated BEFORE any saved project mutation.
+  const read=letter=>({
+   min:['x0','y0','z0'].map(key=>numberFrom('v8-c2-'+letter+'-'+key)),
+   max:['x1','y1','z1'].map(key=>numberFrom('v8-c2-'+letter+'-'+key))
+  });
+  const boxes=buildReviewedC2Boxes([read('a'),read('b')]);
+  stopAnimation();
+  for(const box of boxes){
+   coordinator.putObject(box.model);
+   coordinator.putCondition({
+    id:'geo_'+box.id,objectId:box.id,sourceCandidateId:null,
+    confirmed:false,value:{type:'manual-geometry',unit:'mm',
+     imageId:p.source.imageId,geometry:box.geometry}
+   });
+  }
+  for(const box of boxes)coordinator.confirmCondition('geo_'+box.id);
+  const result=session.solve();
+  if(result.kind!=='composition-evidence'||result.verified!==false||
+     result.clock!==null||coordinator.canExport())
+   throw Error('局部组合体数学不允许成为完整标准答案');
+  $('v8-c2-ack').checked=false;
+  $('v8-c2-build').disabled=true;
+  uncommittedFormEdit=false;
+  $('v8-c2-status').textContent='两形体已保存到当前本机项目。已核对空间关系 '+
+   result.compositionContactEvidence.pairCount+
+   ' 对；完整工程线型与唯一 V5 未签收。';
+  msg('C2 已确认两长方体几何，使用原有 M0/M2/M5 计算接触关系与三视图。不是完整组合体答案。');
+ }));
  $('v7-c-new').addEventListener('click',()=>{
   $('v7-c-objects').value='';
   $('v7-c-id').value='Object'+String((coordinator?.snapshot().objects.length||0)+1);
@@ -1417,40 +1899,98 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }
   });
 
- $('v7-stage-other').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('请先新建本机项目');
+ // Existing project/M3/V5 functions are shared by the guided and manual
+ // confirmation controls. Do not create a second solver or silently approve AI.
+ function stageCurrentTask(){
+  if(!coordinator)throw Error('请先新建项目');
   const task=coordinator.snapshot().task;
-  if(task==='projection')throw Error('点投影请使用上方坐标入口');
-  const object=taskObjects[task];
-  if(!object)throw Error('尚未开放的专业求解任务');
-  if(!coordinator.snapshot().objects.some(o=>o.id===object.id))
-   coordinator.putObject(object);
-  const imageId=coordinator.snapshot().source.imageId;
-  coordinator.putCondition({id:'coords',objectId:object.id,
-   sourceCandidateId:$('v7-source-link').value||null,
-   confirmed:false,value:fieldsToValue(task,imageId)});
+  if(task==='projection'){
+   const xyz=xyzIds.map(id=>{
+    const el=$(id),v=Number(el.value);
+    if(el.value.trim()===''||!Number.isFinite(v)||Math.abs(v)>100000)
+     throw Error('三项坐标均须为 ±100000 mm 内的有限值');
+    return v;
+   });
+   if(!coordinator.snapshot().objects.some(x=>x.id===POINT))
+    coordinator.putObject(projectObject());
+   const id=coordinator.snapshot().source.imageId;
+   coordinator.putCondition({id:'coords',objectId:POINT,
+    sourceCandidateId:$('v7-source-link').value||null,
+    confirmed:false,value:{type:'point-xyz',unit:'mm',xyz,imageId:id}});
+  }else{
+   const object=taskObjects[task];
+   if(!object)throw Error('当前题型尚不支持快捷求解，请使用下方模型编辑工具');
+   // Fully validate the field values before inserting a project object.
+   const imageId=coordinator.snapshot().source.imageId;
+   const value=fieldsToValue(task,imageId);
+   if(!coordinator.snapshot().objects.some(o=>o.id===object.id))
+    coordinator.putObject(object);
+   coordinator.putCondition({id:'coords',objectId:object.id,
+    sourceCandidateId:$('v7-source-link').value||null,
+    confirmed:false,value});
+  }
+  uncommittedFormEdit=false;
+ }
+ function solveCurrentTask(){
+  if(!coordinator)throw Error('没有可求解的项目');
+  const task=coordinator.snapshot().task;
+  if(task==='composition')throw Error('该编辑器仅支持已知几何审核，不能生成标准答案');
+  stopAnimation();
+  const result=session.solve();
+  if(task==='projection'){
+   if(!coordinator.canExport())throw Error('数学一致性未通过，拒绝生成动画');
+   msg('M3 数学与单一 V5 步骤已核验 · v'+coordinator.snapshot().revision);
+   return;
+  }
+  if(result.verified===true&&coordinator.currentResult()===result)
+   msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
+  else if(result.kind==='prism-evidence'&&result.verified===false)
+   msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
+  else if(result.kind==='c1-reviewed-preview'&&result.verified===false)
+   msg(result.scopedProof.scopedSingleConvexFullyCertified?
+    'C1 单个已确认凸体的全部来源棱、三视图线型及唯一 V5 已数学签收；真实教材原题盲测未通过。':
+    'C1 已确认八点凸体几何与限定 V5；完整原始棱线/实虚线证明仍未通过。');
+  else if(result.kind==='c3-reviewed-preview'&&result.verified===false)
+   msg('C3 已计算三维来源图及 V/H/W M5 区间，'+
+    (result.solidOperation?'并按真实实体运算核对射线。':'未选择实体运算；仅证明来源。')+
+    ' 完整相贯线和实虚线未认证。');
+  else throw Error('专业数学结果未通过门禁');
+ }
+ // Human-led single action: the checkbox cannot be inferred from OCR or
+ // restored from a project. The verified flags still originate in M3/M5 only.
+ $('v8-review-ack').addEventListener('change',()=>updateReviewPanel(coordinator?.snapshot()));
+ $('v8-review-run').addEventListener('click',()=>call(async()=>{
+  if(!$('v8-review-ack').checked)throw Error('请先核对题目条件并勾选确认');
+  if(!coordinator||coordinator.snapshot().task==='composition')
+   throw Error('该题型不能使用快捷求解');
+  stageCurrentTask();
+  coordinator.confirmCondition('coords');
+  solveCurrentTask();
+  $('v8-review-ack').checked=false;
+  updateReviewPanel(coordinator.snapshot());
+ }));
+ $('v7-stage-other').addEventListener('click',()=>call(async()=>{
+  if(coordinator?.snapshot().task==='projection')throw Error('点投影请使用坐标入口');
+  stageCurrentTask();
   msg('几何输入已存为候选；请亲自核对原题、尺寸及所选分支。');
  }));
  $('v7-confirm-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator||coordinator.snapshot().task==='projection')
    throw Error('当前没有可确认的专业输入');
   coordinator.confirmCondition('coords');
-  msg('条件已确认，可以求解。');
+  msg('数学条件已人工确认；现在可以开始求解。');
  }));
  $('v7-solve-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator||coordinator.snapshot().task==='projection')
    throw Error('专业求解任务未选择');
-  stopAnimation();
-  const result=session.solve();
-  if(result.verified===true&&coordinator.currentResult()===result)
-   msg('求解完成 · 版本 '+result.inputRevision);
-  else if(result.kind==='prism-evidence'&&result.verified===false)
-   msg('仅得到部分截切结果与长方体线框，暂不能导出完整答案。');
-  else throw Error('专业数学结果未通过门禁');
+  solveCurrentTask();
  }));
  for(const id of allConditionFields){
   for(const type of ['input','change'])$(id).addEventListener(type,()=>{
    if(!coordinator)return;
+   uncommittedFormEdit=true;
+   $('v8-review-ack').checked=false;
+   updateReviewPanel(coordinator.snapshot());
    // Merely typing a new input must destroy any old verified math.
    if(coordinator.snapshot().conditions.some(c=>c.id==='coords')){
     stopAnimation();coordinator.deleteCondition('coords');
@@ -1460,33 +2000,24 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  $('v7-stage').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('请先新建项目');
-  const xyz=xyzIds.map(id=>{
-   const el=$(id),v=Number(el.value);
-   if(el.value.trim()===''||!Number.isFinite(v)||Math.abs(v)>100000)
-    throw Error('三项坐标均须为 ±100000 mm 内的有限值');
-   return v;
-  });
-  if(!coordinator.snapshot().objects.some(x=>x.id===POINT))
-   coordinator.putObject(projectObject());
-  const id=coordinator.snapshot().source.imageId;
-  coordinator.putCondition({id:'coords',objectId:POINT,
-   sourceCandidateId:$('v7-source-link').value||null,
-   confirmed:false,value:{type:'point-xyz',unit:'mm',xyz,imageId:id}});
+  if(coordinator?.snapshot().task!=='projection')throw Error('请选择点投影任务');
+  stageCurrentTask();
   msg('坐标已记录为待确认；请核对原图及单位再确认。');
  }));
  $('v7-confirm').addEventListener('click',()=>call(async()=>{
   if(!coordinator)throw Error('请先新建项目');
   coordinator.confirmCondition('coords');
-  msg('条件已确认，点击重新数学求解。');
+  msg('条件已确认，可以开始数学求解。');
  }));
  $('v7-solve').addEventListener('click',()=>call(async()=>{
-  if(!coordinator)throw Error('没有项目');
-  stopAnimation();
-  session.solve();
-  if(!coordinator.canExport())throw Error('数学一致性未通过，拒绝生成动画');
-  msg('求解完成 · 版本 '+coordinator.snapshot().revision);
+  if(coordinator?.snapshot().task!=='projection')throw Error('请先选择点投影任务');
+  solveCurrentTask();
  }));
+ // A new source candidate is also part of the explicit human review.
+ $('v7-source-link').addEventListener('change',()=>{
+  $('v8-review-ack').checked=false;
+  updateReviewPanel(coordinator?.snapshot());
+ });
  $('v7-image-input').addEventListener('change',()=>call(async()=>{
   if(!store)throw Error('本机存储不可用，不能安全保存原图');
   const file=$('v7-image-input').files?.[0];if(!file)return;
@@ -1530,6 +2061,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    [id==='v7-yaw'?'yaw':'pitch']:Number($(id).value)
   }));
  }
+ $('v8-paper-focus').addEventListener('click',()=>{
+  const layout=root.querySelector('.v7-layout');
+  const expanded=layout.classList.toggle('v8-paper-focus');
+  $('v8-paper-focus').setAttribute('aria-pressed',String(expanded));
+  $('v8-paper-focus').textContent=expanded?'恢复普通布局':'放大图纸';
+ });
  $('v7-mono').addEventListener('change',render);
  $('v7-guides').addEventListener('change',render);
  $('v7-speed').addEventListener('change',()=>{

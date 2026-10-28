@@ -11,3 +11,8 @@ test('workspace headings and tool entries describe user tasks without implementa
  assert.ok(document.querySelector('#v7-task'));
  assert.ok(document.querySelector('#v7-proof'));
 });
+test('task guidance explains capabilities without internal engine labels',()=>{
+ const {document}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
+ for(const node of document.querySelectorAll('.v7-warning,.v7-note,.v8-course-summary'))
+  assert.doesNotMatch(node.textContent,/\b(?:V5|M3|M5|C1|C2|C3)\b|Geometry Scene|ConstructionIntent/,node.textContent.trim());
+});

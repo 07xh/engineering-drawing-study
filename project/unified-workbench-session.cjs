@@ -10,12 +10,30 @@ const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
+const {compileScopedFullyProvenConvexC1}=
+ require('../workbench/c1-fully-proven-convex-third-view-delivery.cjs');
+const {compileFiniteCylinderEndpointV5}=
+ require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
+const {buildC3LinkedGeometryScene}=require('../workbench/c3-linked-geometry-scene.cjs');
+const {auditC3M0M3M5AnalyticSources}=
+ require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
+const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
+const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
+const {auditC3JointTopologyVisibility}=
+ require('../workbench/c3-joint-topology-visibility.cjs');
+const {makeReviewedC3Input,c3SheetTransforms}=require('./c3-reviewed-input.cjs');
+const {IDS:REVIEWED_C1_IDS}=require('./c1-reviewed-input.cjs');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedBoxContacts}=require('../core/geometry/reviewed-box-contact-evidence.cjs');
 const {evaluateReviewedCompositeInterfaces}=
  require('../workbench/reviewed-composite-interface-evidence.cjs');
 const {proveReviewedCompositeSeamRays}=
  require('../workbench/m5-reviewed-composite-seam-rays.cjs');
+const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
+ require('../workbench/m5-reviewed-multibody-original-edge-rays.cjs');
+const {reviewC2OrthogonalBooleanFeatures,reviewC2FullPaperStrokeReadiness}=
+ require('./c2-orthogonal-boolean-feature-review.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {auditM0M3M4M5OriginalSources}=
@@ -163,6 +181,135 @@ function createUnifiedProjectSession(){
   dispose(){latest=null;current=null;clock=null;listeners.clear();},
   solve(){
    current=null;clock=null;
+   if(latest?.task==='c3-intersection'){
+    const c3=verifiedInput(latest,{task:'c3-intersection',
+     type:'reviewed-c3-finite-cylinders',objectId:'C3Intersection'});
+    if(c3.axesConfirmed!==true||c3.capsConfirmed!==true||
+       !c3.dimensions||typeof c3.dimensions!=='object')
+     throw new Error('C3 必须人工确认两正交圆柱的轴向、有限端盖及毫米条件');
+    const solidOperation=c3.solidOperation??null;
+    if(![null,'union','intersection'].includes(solidOperation))
+     throw new Error('必须从未选择、实体并、实体交中选择真实题目运算');
+    const input=makeReviewedC3Input(c3.dimensions);
+    const viewTransforms=c3SheetTransforms(input);
+    // The SAME specialist and original player used by the C3 public page.
+    // These are mathematical guides and points, NOT a signed full curve.
+    const compiled=compileFiniteCylinderEndpointV5({
+      input,revision:latest.revision,
+      stationCountPerBranch:1,sheetTransform:viewTransforms.V,
+      viewTransforms,includeSourceCircleGuides:true,
+      includeProjectedSeamArcGuides:true,
+      includeWAnalyticCurveGuides:true,wRayPartitionedV5:true,
+      includeCapFacePairGuides:true
+    });
+    const linked=buildC3LinkedGeometryScene({
+      input,revision:latest.revision,compiled,viewTransforms
+    });
+    const wRay=buildC3WIntervalPreview({input,revision:latest.revision});
+    const vhDedup=buildC3VHProjectionDedup({input,revision:latest.revision});
+    const sourceAcceptance=auditC3M0M3M5AnalyticSources({
+      input,revision:latest.revision,compiled,linked,
+      viewTransforms,solidOperation
+    });
+    // Recompute M3 source graph, all real 3D cap/curve terminals,
+    // V/H/W open ray intervals and their exact source contact provenance.
+    // Never confuse a scoped original 3D proof with whole drawing styles.
+    const joint=auditC3JointTopologyVisibility({
+     input,revision:latest.revision,solidOperation
+    });
+    const selectedRays=joint.selectedBooleanRayEvidence;
+    if(joint.revision!==latest.revision||
+       joint.status!=='scoped-open-interval-joint-evidence'||
+       joint.sourceBranchCount!==compiled.sourceM3.branchCount||
+       joint.allSourceBranchesAccountedFor!==true||
+       joint.sourceFeature3DIncidenceGraphCovered!==true||
+       joint.fullCurveTopologyVerified!==false||
+       joint.allViewsContinuousVisibilityVerified!==false||
+       joint.officialLineStylesVerified!==false||
+       joint.v5CurveReady!==false||
+       joint.constructionIntentAuthorized!==false||
+       joint.merged3DSourceGraph?.revision!==latest.revision||
+       joint.merged3DSourceGraph?.allLateralBranchesAndCapSegmentsCovered!==true||
+       sourceAcceptance.revision!==latest.revision||
+       sourceAcceptance.solidOperation!==(solidOperation||'unselected')||
+       selectedRays?.revision!==latest.revision||
+       selectedRays?.solidOperation!==(solidOperation||'unselected')||
+       selectedRays?.officialLineStylesVerified!==false||
+       selectedRays?.finalV5CurveAuthorized!==false||
+       joint.BooleanSurfaceOperationSelected!==(solidOperation!==null))
+      throw new Error('C3 三维源图、V/H/W 射线与当前数学输入不一致');
+    if(compiled.singleOriginalV5Player!==true||
+       compiled.mathematicalSourceVerified!==true||
+       compiled.entireCurveV5Ready!==false||
+       compiled.canExportCertifiedDrawing!==false||
+       linked.officialLineStylesVerified!==false||
+       linked.entireCurveV5Ready!==false||
+       wRay.v5CurveReady!==false||
+       vhDedup.v5CurveActionsAuthorized!==false||
+       !Array.isArray(compiled.constructionSteps)||
+       !compiled.constructionSteps.length||
+       !compiled.player.canRender(latest.revision))
+      throw new Error('C3 来源数学、唯一 V5 与线型授权范围不一致');
+    clock=compiled.player;
+    current=Object.freeze({...resultBase(latest),
+     kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
+     evidence:compiled,sourceAcceptance,joint,selectedRays,solidOperation,
+     wRay,vhDedup,
+     viewTransforms,scene:linked.scene,links:linked.links,
+     plan:{status:'preview-only',canPromoteToVerifiedResult:false,
+      geometryId:'C3Intersection',steps:compiled.constructionSteps},
+     clock});
+    emit();return current;
+   }
+   if(latest?.task==='c1-third-view'){
+    const c1=verifiedInput(latest,{task:'c1-third-view',
+     type:'reviewed-c1-third-view',objectId:'C1Solid'});
+    if(c1.topologyConfirmed!==true||
+       !['VH','VW','HW'].includes(c1.pair)||
+       !Array.isArray(c1.vertices)||c1.vertices.length!==8||
+       c1.vertices.some(v=>!REVIEWED_C1_IDS.includes(v.id))||
+       new Set(c1.vertices.map(v=>v.id)).size!==8)
+     throw new Error('必须确认单个闭合凸体的八个对应角点及其真实拓扑');
+    const primitive=prismMesh({solid:{min:P(0,0,0),max:P(1,1,1)}});
+    const scopedProof=compileScopedFullyProvenConvexC1({
+      input:{
+       geometryId:'C1Solid',confirmedBy:'user',topologyConfirmed:true,
+       revision:latest.revision,unit:'mm',vertices:c1.vertices,
+       edges:primitive.data.edges,faces:primitive.data.faces
+      },sheetTransform:SHEET,includeCanonicalSolution:true
+    });
+    // Hand off the EXACT SAME canonical solution/player used to prove each
+    // original source interval: no second geometry math or V5 timeline.
+    const certified=scopedProof.canonicalSolution;
+    if(scopedProof.revision!==latest.revision||
+       scopedProof.originalV5ReusablePlayer!==certified.player||
+       scopedProof.originalV5Timeline!==certified.timeline||
+       scopedProof.sourceGeometryId!==certified.sceneResult.geometry.id||
+       scopedProof.originalV5TimelineStepCount!==certified.steps.length||
+       scopedProof.scopedSingleConvexFullyCertified!==
+        (scopedProof.missingObligations.length===0)||
+       scopedProof.fullGenericC1ImagesOrNonconvexVerified!==false||
+       scopedProof.realTextbookBlindTestPassed!==false||
+       (scopedProof.scopedSingleConvexFullyCertified&&
+        (scopedProof.allOriginalPositivePhysicalSourceRangesAccounted!==true||
+         scopedProof.allThreeViewsGlobalContourCertified!==true||
+         !scopedProof.firstAngleOfficialThirdViewSvg))||
+       certified.singleOriginalV5Player!==true||
+       certified.sceneResult.revision!==latest.revision||
+       certified.geometryVerifiedWithinReviewedConvexScope!==true||
+       certified.wholeSolidV5Ready!==false||
+       certified.completeDrawingExportAllowed!==false||
+       !Array.isArray(certified.steps)||!certified.steps.length)
+     throw new Error('C1 数学与局部 V5 认证范围不一致');
+    const scene=certified.sceneResult.scene;
+    clock=certified.player;  // existing official V5 clock, no new player
+    current=Object.freeze({...resultBase(latest),
+      kind:'c1-reviewed-preview',verified:false,status:'geometry-only',
+      evidence:certified,scopedProof,scene,links:projectSelectionLinks(scene),
+      plan:{status:'preview-only',canPromoteToVerifiedResult:false,
+       steps:certified.steps,geometryId:'C1Solid'},clock});
+    emit();return current;
+   }
    if(latest?.task==='composition'){
     if(latest.affinePending)
       throw new Error('未知点方程尚未经人工确认，禁止自动求解');
@@ -218,6 +365,63 @@ function createUnifiedProjectSession(){
     const compositionSeamRayEvidence=geometry.length>=2&&
       compositionInterfaceEvidence.contactBoundarySegmentCount>0?
       proveReviewedCompositeSeamRays({geometry,revision:latest.revision}):null;
+    // All ORIGINAL 3D physical edges of 2..8 finite M0 convex bodies,
+    // each checked against EVERY opaque body in all FIRST-ANGLE views.
+    // This is independently proved, not inferred from SVG coincidences.
+    // For mixed/manual non-mesh geometry the scope does not apply.
+    const boundedConvexInventory=geometry.length>=2&&geometry.length<=8&&
+      geometry.every(g=>g.kind==='mesh'&&g.space==='model-3d'&&
+       g.unit==='mm'&&Array.isArray(g.data?.edges))&&
+      geometry.reduce((n,g)=>n+g.data.edges.length,0)<=80;
+    const originalMultiBodyEdgeRays=boundedConvexInventory?
+      auditReviewedMultiBodyWholePhysicalEdgeRays({
+        geometry,revision:latest.revision
+      }):null;
+    if(originalMultiBodyEdgeRays){
+      const audit=originalMultiBodyEdgeRays;
+      const edgeCount=geometry.reduce((n,g)=>n+g.data.edges.length,0);
+      const counted=audit.counts.physicalProjected+audit.counts.collapsed+
+       audit.counts.ambiguousSourceDihedral+
+       audit.counts.coplanarMeshSubdivision;
+      if(audit.revision!==latest.revision||
+         audit.componentCount!==geometry.length||
+         audit.originalSourceEdgeCount!==edgeCount||
+         audit.projectedEdgeRowCount!==3*edgeCount||
+         audit.rows.length!==counted||
+         audit.allBodiesM0ClosedConvexVerified!==true||
+         audit.allContinuousOriginalSourceRaysCheckedAgainstEveryComponent!==true||
+         audit.compositeNonconvexBooleanBoundaryCertified!==false||
+         audit.generatedIntersectionCurveEdgesCertified!==false||
+         audit.combinedC2EngineeringLineStylesCertified!==false||
+         audit.completedDrawingV5Authorized!==false||
+         audit.signedV5ActionCount!==0)
+       throw new Error('C2 原始棱全来源 M5 遮挡或正式线型门禁不一致');
+    }
+    // Positive original + generated physical 3D Boolean source proofs;
+    // only for M0-reviewed axis-aligned cuboids. Nothing in this review
+    // signs generated engineering lines or a new animation player.
+    const orthogonalBooleanFeatureAudit=boundedConvexInventory?
+      reviewC2OrthogonalBooleanFeatures({
+       geometry,revision:latest.revision
+      }):null;
+    if(orthogonalBooleanFeatureAudit&&
+       (orthogonalBooleanFeatureAudit.revision!==latest.revision||
+        orthogonalBooleanFeatureAudit.sourceGeometryIds.length!==geometry.length||
+        orthogonalBooleanFeatureAudit.officialDrawingLineStylesVerified!==false||
+        orthogonalBooleanFeatureAudit.completeV5DrawingAuthorized!==false))
+     throw new Error('C2 新交汇棱和当前 M5 作用域不一致');
+    const c2PaperRayProof=orthogonalBooleanFeatureAudit&&geometry.length===2?
+      reviewC2FullPaperStrokeReadiness({
+       geometry,revision:latest.revision,sceneDepthEvidence,
+       orthogonalBooleanFeatureAudit
+      }):null;
+    if(c2PaperRayProof&&(c2PaperRayProof.revision!==latest.revision||
+       c2PaperRayProof.sourceGeometryIds.length!==geometry.length||
+       c2PaperRayProof.paperIntervalCount!==c2PaperRayProof.entries.length||
+       c2PaperRayProof.fullSourceCrossAudit!==true||
+       c2PaperRayProof.officialDrawingLineStylesVerified!==false||
+       c2PaperRayProof.completeV5DrawingAuthorized!==false))
+     throw new Error('C2 原始/生成线 M5 全局遮挡与端点清单不可信');
     const spatialV5Readiness=inspectSpatialV5Readiness({
       sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
@@ -247,7 +451,8 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
-      compositionSeamRayEvidence,sceneDepthEvidence,
+      compositionSeamRayEvidence,originalMultiBodyEdgeRays,
+      orthogonalBooleanFeatureAudit,c2PaperRayProof,sceneDepthEvidence,
       m0M3M5OriginalSourceAcceptance,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});

@@ -118,3 +118,93 @@ body.ui-next .v7-course-card a:focus-visible{outline:3px solid #327acc;outline-o
 body.ui-next .v7-course-disclosure{margin:12px 0 0}
 @media(max-width:900px){body.ui-next .v7-course-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){body.ui-next .v7-course-entry{padding:12px}body.ui-next .v7-course-grid{grid-template-columns:1fr}body.ui-next .v7-course-card{padding:12px}}
+
+/* V8.2 solver-first project home. This layer never changes geometry SVG styles. */
+body.ui-next .v8-legacy-anchor{display:block;height:0;width:0;overflow:hidden}
+body.ui-next .v7-head{margin-bottom:8px}
+body.ui-next .v7-head h1{letter-spacing:-.025em}
+body.ui-next .v7-head p{line-height:1.55}
+body.ui-next .v7-course-entry{margin:8px 0 13px;border:1px solid #dce5f1;border-radius:12px;background:#fff;padding:0;overflow:hidden}
+body.ui-next .v8-course-summary{cursor:pointer;list-style:none;padding:12px 16px;color:#245994;font-size:13px;font-weight:700}
+body.ui-next .v8-course-summary::-webkit-details-marker{display:none}
+body.ui-next .v8-course-summary::after{content:"展开";float:right;color:#637790;font-size:12px}
+body.ui-next .v8-course-disclosure[open] .v8-course-summary::after{content:"收起"}
+body.ui-next .v7-course-entry .v7-course-head,body.ui-next .v7-course-entry .v7-course-grid,body.ui-next .v7-course-entry .v7-course-disclosure{margin-left:14px;margin-right:14px}
+body.ui-next .v8-source-advanced{border:1px solid #dce5f1;border-radius:10px;margin:12px 0;padding:0 11px}
+body.ui-next .v8-source-advanced>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#225d9b;font-weight:650;font-size:13px}
+body.ui-next .v8-source-advanced>summary:focus-visible,body.ui-next .v8-course-summary:focus-visible{outline:2px solid #0866ef;outline-offset:-2px}
+body.ui-next .v8-project-strip{margin:18px 0 14px}
+body.ui-next .v8-project-strip-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+body.ui-next .v8-project-strip-head h2{font-size:17px;margin:0 0 10px;color:#182e4c}
+body.ui-next .v8-project-strip-head a{font-size:13px;color:#0866ef}
+body.ui-next .v8-project-strip .next-home-workflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+body.ui-next .v8-project-strip .next-home-workflow-card{min-width:0;padding:15px}
+@media(max-width:700px){body.ui-next .v8-project-strip .next-home-workflow{grid-template-columns:1fr}body.ui-next .v7-course-entry .v7-course-grid{grid-template-columns:1fr}}
+
+body.ui-next .v8-optional-illustration{min-width:0;align-self:start;border:1px solid #dce5f1;border-radius:12px;background:white}
+body.ui-next .v8-optional-illustration>summary{cursor:pointer;list-style:none;min-height:48px;padding:13px 16px;font-size:13px;font-weight:650;color:#245994}
+body.ui-next .v8-optional-illustration>summary::-webkit-details-marker{display:none}
+body.ui-next .v8-optional-illustration>summary::after{content:"展开";float:right;color:#61768e;font-size:12px}
+body.ui-next .v8-optional-illustration[open]>summary::after{content:"收起"}
+body.ui-next .v8-optional-illustration .next-home-drawing{padding:12px}
+body.ui-next .v8-project-strip{background:transparent;max-width:100%;padding:0;border:0}
+body.ui-next .v8-project-strip .next-home-workflow{min-width:0}
+@media(max-width:900px){body.ui-next .v8-project-strip{grid-template-columns:1fr!important}}
+
+/* V8.2 reviewed-input workflow: one explicit human acknowledgement, one solver action. */
+body.ui-next .v8-review-check{border:1px solid #cbdaf1;border-radius:12px;background:#f6f9ff;padding:13px;margin:16px 0 12px}
+body.ui-next .v8-review-check h3{font-size:15px;line-height:1.4;margin:0 0 6px;color:#1b477e}
+body.ui-next .v8-review-lead,body.ui-next .v8-review-help{font-size:12px;color:#60758e;line-height:1.55;margin:6px 0}
+body.ui-next .v8-review-summary{border-radius:8px;border:1px solid #dce6f5;background:white;padding:10px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+body.ui-next .v8-review-agree{display:flex!important;align-items:flex-start;gap:9px;margin:12px 0!important;font-size:13px;line-height:1.55;color:#233f67!important}
+body.ui-next .v8-review-agree input{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:2px 0 0}
+body.ui-next #v8-review-run{width:100%;min-height:46px;padding:10px 12px;border-radius:9px}
+body.ui-next #v8-review-run:disabled{opacity:.52;cursor:not-allowed}
+body.ui-next .v8-proof-details{margin:0 0 12px;border:1px solid #dbe5f2;border-radius:9px;padding:0 9px}
+body.ui-next .v8-proof-details>summary{cursor:pointer;min-height:42px;display:flex;align-items:center;font-size:13px;color:#2a5d93}
+body.ui-next .v8-result-status{background:#f4f8ff;border:1px solid #dbe6f4;border-left:3px solid #417ad4;border-radius:8px;padding:10px 12px;margin:9px 0;font-size:13px;line-height:1.55}
+body.ui-next .v8-result-status[data-state="partial"]{border-left-color:#bf8840}
+body.ui-next .v8-result-status[data-state="verified"]{border-left-color:#36916a}
+body.ui-next .v8-result-status[data-state="pending"]{border-left-color:#8899ae}
+body.ui-next .v8-review-check :focus-visible,body.ui-next .v8-proof-details :focus-visible{outline:2px solid #0866ef;outline-offset:2px}
+@media(max-width:600px){body.ui-next .v8-review-check{padding:11px}body.ui-next .v8-review-summary{font-size:12px}}
+
+/* C1 reviewed eight-vertex entry uses the same workbench and local project. */
+body.ui-next #v8-c1-vertices{width:100%;min-height:190px;font:12px/1.65 ui-monospace,monospace;white-space:pre;resize:vertical}
+body.ui-next fieldset[data-v7-task="c1-third-view"] .v8-review-agree{display:flex;flex-direction:row;align-items:flex-start;gap:9px}
+body.ui-next #v8-c1-topology{width:20px;min-width:20px;height:20px;flex:0 0 20px}
+
+/* V8.2 C2 reviewed two-box entry: same project, original geometry engine. */
+body.ui-next .v8-c2-entry{padding:12px;border-radius:12px;border:1px solid #c9daf0;background:#f7faff;margin:8px 0 17px}
+body.ui-next .v8-c2-entry h3{font-size:15px;color:#1f5488;margin:2px 0 9px}
+body.ui-next .v8-c2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+body.ui-next .v8-c2-grid fieldset{min-width:0;background:white}
+body.ui-next .v8-c2-grid .v7-xyz{grid-template-columns:repeat(3,minmax(0,1fr))}
+body.ui-next #v8-c2-build{width:100%;min-height:46px}
+body.ui-next #v8-c2-build:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:1100px){body.ui-next .v8-c2-grid{grid-template-columns:1fr}}
+
+/* C3 finite cylinder data stays in one local project, no second solver UI. */
+body.ui-next .v8-c3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+body.ui-next .v8-c3-grid fieldset{background:#fff;min-width:0}
+body.ui-next .v8-c3-grid .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.ui-next fieldset[data-v7-task="c3-intersection"] .v8-review-agree{display:flex;flex-direction:row;align-items:flex-start}
+@media(max-width:1100px){body.ui-next .v8-c3-grid{grid-template-columns:1fr}}
+
+/* V8.3: result-first paper viewing and browser-native hidden discipline. */
+body.ui-next .v7-workspace [hidden]{display:none!important}
+body.ui-next #v8-paper-focus{min-height:42px;white-space:nowrap;font-size:12px;background:#f2f7ff;color:#215894;border:1px solid #c9d9f2;border-radius:9px;padding:7px 12px}
+body.ui-next #v8-paper-focus[aria-pressed="true"]{background:#dceaff;border-color:#6f9de8}
+body.ui-next .v7-layout.v8-paper-focus{grid-template-columns:minmax(280px,1.5fr) minmax(280px,1fr)}
+body.ui-next .v7-layout.v8-paper-focus .v7-paper{grid-column:1/-1;grid-row:1}
+body.ui-next .v7-layout.v8-paper-focus .v7-input{grid-column:1;grid-row:2}
+body.ui-next .v7-layout.v8-paper-focus .v7-steps{grid-column:2;grid-row:2}
+body.ui-next .v7-layout.v8-paper-focus #v7-sheet{max-height:none}
+body.ui-next .v7-layout.v8-paper-focus .v7-spatial{max-width:850px}
+body.ui-next #v8-paper-focus:focus-visible{outline:2px solid #0866ef;outline-offset:2px}
+@media(max-width:860px){
+ body.ui-next .v7-layout.v8-paper-focus{grid-template-columns:minmax(0,1fr)}
+ body.ui-next .v7-layout.v8-paper-focus .v7-paper{grid-column:1;grid-row:1}
+ body.ui-next .v7-layout.v8-paper-focus .v7-input{grid-column:1;grid-row:2}
+ body.ui-next .v7-layout.v8-paper-focus .v7-steps{grid-column:1;grid-row:3}
+}

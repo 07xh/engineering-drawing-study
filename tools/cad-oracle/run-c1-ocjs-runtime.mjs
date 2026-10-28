@@ -33,6 +33,8 @@ const {auditC1RealOcctVisibleContourSourceParity,
  require('../../workbench/c1-real-occt-m5-visible-contour-parity.cjs');
 const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
+const {auditC1NativeScopedHLRSourceConsumer}=
+ require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -176,10 +178,60 @@ for(const [index,geometry] of general.entries()){
    x.directlySameOriginalTopoDSInputEdge===true&&
    x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
    x.signedV5Action===false));
+  // REAL pinned WASM: original TopoDS edge -> source-scoped HLR filter
+  // -> whole-solid HLR projected edge. Only native symmetric IsSame is
+  // allowed to claim direct generated identity; paper aliases stay held.
+  const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+  assert.equal(scoped.schema,
+   'draftai-c1-ocjs-real-original-topods-scoped-hlr/1');
+  assert.equal(scoped.sourceEdgeCount,geometry.data.edges.length);
+  assert.equal(scoped.originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap,true);
+  assert.equal(scoped.allScopedOutputsReboundToWholeSolidPaper,true);
+  assert.ok(scoped.nativeSourceScopedOutputEdgeCount>0,
+   'real original TopoDS per-edge VCompound/HCompound filters must emit HLR');
+  assert.equal(scoped.nativeSourceScopedOutputEdgeCount,
+   scoped.nativeScopedToWholeSolidGeneratedIsSameCount+
+   scoped.paperOnlyScopedOutputEdgeCount);
+  assert.equal(scoped.fullGlobalGeneratedEdgeToOriginalSourceHistoryProven,false);
+  assert.equal(scoped.fullContinuousVisibilityProven,false);
+  assert.equal(scoped.signedV5ActionCount,0);
+  const indexIds=new Map(ds.indexedOriginalSources.map(x=>
+   [x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex]));
+  assert.ok(scoped.rows.every(row=>
+   row.hlrDataStructureOneBasedEdgeIndex===
+    indexIds.get(row.originalPhysicalSourceEdgeId)&&
+   ['visible','hidden'].every(k=>row[k].every(w=>
+    w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
+    w.globalPaperCandidateOrdinals.length>=1&&
+    w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  console.error('REAL HLR original source-scoped '+view+': '+
+   JSON.stringify({sources:scoped.sourceEdgeCount,
+    emitted:scoped.nativeSourceScopedOutputEdgeCount,
+    directNativeIsSame:scoped.nativeScopedToWholeSolidGeneratedIsSameCount,
+    paperOnly:scoped.paperOnlyScopedOutputEdgeCount}));
   assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
  }
+ const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ assert.equal(scopedConsumer.schema,'draftai-c1-real-source-scoped-hlr-m5-consumer/1');
+ assert.equal(scopedConsumer.actualOriginalTopoDSSourceFilteredHLRConsumed,true);
+ assert.ok(scopedConsumer.counts.nativeSourceScopedOutputEdges>0);
+ assert.equal(scopedConsumer.counts.nativeSourceScopedOutputEdges,
+  scopedConsumer.counts.nativeGeneratedIsSameMatches+
+  scopedConsumer.counts.paperOnlySourceScopedEdges);
+ assert.equal(scopedConsumer.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(scopedConsumer.globalContinuousVisibilityCertified,false);
+ assert.equal(scopedConsumer.formalEngineeringLineStyleCertified,false);
+ assert.equal(scopedConsumer.signedV5ActionCount,0);
+ for(const view of ['V','H','W'])
+  for(const klass of ['visible','hidden'])
+   for(const stroke of scopedConsumer.views[view][klass]){
+    assert.equal(stroke.originalTopoDSHistoryProven,false);
+    assert.equal(stroke.originalSourceParameterCoverageProven,false);
+    assert.equal(stroke.continuousFrontRayProven,false);
+    assert.equal(stroke.signedV5Action,false);
+   }
  // Exercise the EXACT production paper overlap predicate on genuine native
  // OpenCascade.js visible AND hidden sharp segments, not only synthetic
  // adversarial fixtures. Reversal must not alter a positive native span.
@@ -702,6 +754,21 @@ for(const [index,geometry] of general.entries()){
   exactGapRows.length);
  assert.equal(audited.counts.exactNative3DSourceParameterCovered+
   exactGapRows.length,audited.counts.m5AtomicIntervals);
+ // Genuine native source-filtered HLR paper coverage must be cross-checked
+ // against independently lifted ORIGINAL 3D source intervals. A paper-only
+ // full span can NEVER fill a positive native 3D gap or sign official V5.
+ const paperOnlyGaps=exactSourceRows.filter(x=>
+  x.sourceScopedPaperFullButNative3DPositiveGap===true);
+ assert.equal(audited.counts.scopedPaperFullButNative3DPositiveGap,
+  paperOnlyGaps.length);
+ assert.ok(paperOnlyGaps.every(x=>
+  x.realNativeOriginal3DSourceParameterCovered===false&&
+  x.sourceScopedPaperCandidateCoverage?.entirePaperCandidateIntervalCovered===true&&
+  x.sourceScopedPaperCandidateCoverage.actualOriginalTopoDSParameterHistoryProven===false&&
+  x.signedV5===false&&x.engineeringLineStyle==='undetermined'));
+ assert.ok(exactSourceRows.every(x=>
+  x.sourceScopedPaperCandidateCoverage===null||
+  x.sourceScopedPaperCandidateCoverage.signedV5Action===false));
  assert.ok(exactGapRows.every(x=>
   x.signedV5===false&&x.engineeringLineStyle==='undetermined'&&
   (x.exactNativeOriginal3DSourceCoverage?.status===
@@ -2157,9 +2224,16 @@ for(const [index,geometry] of general.entries()){
    audited.counts.exactNative3DSourceParameterGapOrUnbound,
   exactNative3DSourceParameterCovered:
    audited.counts.exactNative3DSourceParameterCovered,
+  scopedPaperFullButNative3DPositiveGap:
+   audited.counts.scopedPaperFullButNative3DPositiveGap,
   exactNativeSourceGaps:exactGapRows.map(x=>({
    view:x.view,sourceEdgeId:x.sourceEdgeId,
    status:x.exactNativeOriginal3DSourceCoverage?.status,
+   scopedPaperCandidateFullButNative3DGap:
+    x.sourceScopedPaperFullButNative3DPositiveGap,
+   scopedPaperCandidateGaps:
+    x.sourceScopedPaperCandidateCoverage?.
+     positiveLengthUncoveredCandidateIntervals,
    positiveLengthUncoveredIntervals:
     x.exactNativeOriginal3DSourceCoverage?.
      positiveLengthUncoveredIntervals

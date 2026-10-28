@@ -110,7 +110,16 @@ function enhanceTeaching(document,main,{projection}){
   const status=element(document,'div',{class:'next-status-area'});
  status.append(conditions.querySelector(projection?'#solveStatus':'#status'));
  const drawingControls=steps.querySelector('#drawControls');
- if(drawingControls){drawingControls.classList.add('next-drawing-controls');canvas.append(drawingControls);}
+ if(drawingControls){
+  drawingControls.classList.add('next-drawing-controls');canvas.append(drawingControls);
+  const select=drawingControls.querySelector('#drawTool');
+  if(select){
+   const shortcuts=element(document,'div',{class:'next-draw-shortcuts',role:'group','aria-label':'画图工具'});
+   for(const [value,label] of [['line','辅助线'],['arc','连接弧'],['snap','圆心'],['tangent','切点']])
+    shortcuts.append(element(document,'button',{type:'button','data-next-draw-tool':value,'aria-pressed':String(select.value===value)},label));
+   select.closest('label').after(shortcuts);
+  }
+ }
  const context=createContext(document,[['conditions','条件与求解',conditionPanel],['steps','步骤与自主作图',steps]]);
  layout.append(canvas,context,playback);layout.before(status);
  const title=canvas.querySelector('h2');if(!projection)title.textContent='几何图纸与辅助构造';

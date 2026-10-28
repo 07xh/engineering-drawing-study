@@ -1,0 +1,302 @@
+'use strict';
+/**
+ * Consume REAL source-scoped HLR extraction (original TopoDS input edge
+ * filtered through OCCT) alongside the whole-solid V/H/W HLR result.
+ * No guessed paper alias may be promoted to original TopoDS history:
+ * native scoped IsSame is tracked separately, and original 3D source
+ * parameter intervals and continuous M5 rays remain independent gates.
+ */
+const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
+ require('./c1-original-source-interval-coverage.cjs');
+const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
+ for(const v of Object.values(o))frozen(v);Object.freeze(o);
+}return o;};
+function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
+ if(typeof geometry?.id!=='string'||!geometry.id||
+    !Array.isArray(geometry?.data?.edges)||!geometry.data.edges.length||
+    !geometry.data.points||cad?.sourceGeometryId!==geometry.id||
+    !Number.isSafeInteger(cad?.revision)||cad.revision<1)
+  throw new TypeError('current C1 M0 geometry and real HLR revision required');
+ const ids=geometry.data.edges.map(e=>{
+  if(!Array.isArray(e)||e.length!==2||e[0]===e[1]||e.some(id=>
+      typeof id!=='string'||!Object.hasOwn(geometry.data.points,id)))
+   throw new RangeError('invalid original C1 physical source');
+  const [a,b]=e.map(id=>geometry.data.points[id]);
+  if(![a,b].every(p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k])))||
+     ['x','y','z'].every(k=>a[k]===b[k]))
+   throw new RangeError('nonfinite or degenerate original C1 3D source edge');
+  return geometry.id+'::'+[...e].sort().join('|');
+ });
+ const projectedOriginalBySource=new Map();
+ for(let i=0;i<ids.length;i++){
+  const [a,b]=geometry.data.edges[i].map(id=>geometry.data.points[id]);
+  const projectedA=project(a),projectedB=project(b);
+  projectedOriginalBySource.set(ids[i],Object.fromEntries(VIEWS.map(view=>
+   [view,[projectedA[view],projectedB[view]]])));
+ }
+ const originalVertexIdsBySource=new Map(ids.map((id,i)=>
+  [id,geometry.data.edges[i]]));
+ const expected=new Set(ids);
+ if(expected.size!==ids.length)
+  throw new RangeError('duplicate original M0 physical source edge');
+ const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
+ const same=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v)<=1e-6;
+ // Scoped HLR paper aliases are only CANDIDATES, but even a candidate
+ // must lie on its claimed ORIGINAL M0 edge in the SAME first-angle view.
+ // This tolerance is exclusively for CAD paper rounding, never for exact
+ // source parameter coverage, 3D depth, continuous visibility or V5.
+ const onOriginalPaperEdge=(p,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const dx=b.u-a.u,dy=b.v-a.v,length=Math.hypot(dx,dy);
+  if(!valid(p)||!Number.isFinite(length)||!(length>0))return false;
+  const along=(p.u-a.u)*(dx/length)+(p.v-a.v)*(dy/length);
+  if(!Number.isFinite(along))return false;
+  const bounded=Math.max(0,Math.min(length,along));
+  return Math.hypot(p.u-a.u-(dx/length)*bounded,
+   p.v-a.v-(dy/length)*bounded)<=1e-6;
+ };
+ // Inverting a 2D HLR paper line yields only a CANDIDATE original 3D
+ // parameter. Native TopoDS history, endpoint topology and opaque rays must
+ // still be proven separately. Never clamp rounded endpoints to [0,1]:
+ // that could silently erase a positive original-source parameter gap.
+ const paperParameter=(p,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const du=b.u-a.u,dv=b.v-a.v,useU=Math.abs(du)>=Math.abs(dv);
+  const delta=useU?du:dv;
+  if(!Number.isFinite(delta)||delta===0)return null;
+  const t=((useU?p.u:p.v)-(useU?a.u:a.v))/delta;
+  return Number.isFinite(t)&&t>=0&&t<=1?t:null;
+ };
+ const originalEndpointCandidate=(p,t,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const [aId,bId]=originalVertexIdsBySource.get(source);
+  if(t===0&&p.u===a.u&&p.v===a.v)return aId;
+  if(t===1&&p.u===b.u&&p.v===b.v)return bId;
+  return null;
+ };
+ const views={},counts={originalSourceEdgesPerView:ids.length,
+  projectedSourcesWithFullPaperCandidateCoverage:0,
+  projectedSourcesWithPositivePaperCandidateGaps:0,
+  projectedSourcesWithVisibleHiddenCandidateConflicts:0,
+  positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
+  sourceScopedPaperStrokesWithUnboundParameters:0,
+  nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
+  paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
+  wholeSolidHiddenEdgesWithoutScopedSource:0,
+  paperAliasedWholeSolidEdgesWithMultipleOriginalSources:0};
+ for(const view of VIEWS){
+  const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
+   ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
+  if(scoped?.schema!=='draftai-c1-ocjs-real-original-topods-scoped-hlr/1'||
+     scoped.sourceEdgeCount!==ids.length||
+     scoped.originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap!==true||
+     scoped.allScopedOutputsReboundToWholeSolidPaper!==true||
+     scoped.fullGlobalGeneratedEdgeToOriginalSourceHistoryProven!==false||
+     scoped.fullContinuousVisibilityProven!==false||
+     scoped.signedV5ActionCount!==0||
+     ds?.availability!=='real-native-edge-map-inspected'||
+     ds.everyOriginalBRepSourcePresentInHLRDataStructure!==true||
+     !Array.isArray(ds.indexedOriginalSources)||
+     ds.indexedOriginalSources.length!==ids.length||
+     !Array.isArray(scoped.rows)||scoped.rows.length!==ids.length)
+   throw new RangeError('missing complete real OCCT source-scoped HLR/EdgeMap evidence');
+  // A real OCCT EdgeMap is a bijection: two distinct original TopoDS
+  // source edges cannot own the same one-based native index.
+  const indexed=new Map(),nativeSourceIndices=new Set();
+  for(const x of ds.indexedOriginalSources){
+   if(!expected.has(x.originalPhysicalSourceEdgeId)||
+      !Number.isSafeInteger(x.hlrDataStructureOneBasedEdgeIndex)||
+      x.hlrDataStructureOneBasedEdgeIndex<1||
+      x.directlySameOriginalTopoDSInputEdge!==true||
+      indexed.has(x.originalPhysicalSourceEdgeId)||
+      nativeSourceIndices.has(x.hlrDataStructureOneBasedEdgeIndex))
+    throw new RangeError('stale or duplicated real native HLR source index');
+   indexed.set(x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex);
+   nativeSourceIndices.add(x.hlrDataStructureOneBasedEdgeIndex);
+  }
+  const classes={
+   visible:{global:cad.views?.[view],field:'visible'},
+   hidden:{global:cad.hiddenSharpViews?.[view],field:'hidden'}
+  };
+  for(const item of Object.values(classes)){
+   if(!Array.isArray(item.global)||item.global.length>128)
+    throw new RangeError('invalid whole-solid HLR stroke inventory');
+   item.sources=Array.from({length:item.global.length},()=>new Set());
+   // Direct native IsSame is an identity, not a paper-only alias. A single
+   // generated TopoDS edge may not certify two original sources or appear
+   // twice in one visibility class.
+   item.nativeOwners=new Map();
+  }
+  const sourceRanges=new Map(ids.map(id=>[id,[]]));
+  const classRanges=Object.fromEntries(['visible','hidden'].map(k=>
+   [k,new Map(ids.map(id=>[id,[]]))]));
+  for(const item of Object.values(classes))
+   item.parameterCandidates=Array.from({length:item.global.length},()=>[]);
+  let total=0,direct=0,seen=new Set();
+  for(const row of scoped.rows){
+   const source=row?.originalPhysicalSourceEdgeId;
+   if(!expected.has(source)||seen.has(source)||
+      row.hlrDataStructureOneBasedEdgeIndex!==indexed.get(source))
+    throw new RangeError('source-scoped HLR row is not the current original TopoDS');
+   seen.add(source);
+   for(const [klass,item] of Object.entries(classes)){
+    const witnesses=row[item.field];
+    if(!Array.isArray(witnesses)||witnesses.length>128)
+     throw new RangeError('invalid original-source-filtered HLR class');
+    for(const w of witnesses){
+     const paper=w?.globalPaperCandidateOrdinals,
+      native=w?.globalDirectSameGeneratedTopoDSOrdinals;
+     if(w.view!==view||
+        w.hlrClass!==(klass==='visible'?'visible-sharp':'hidden-sharp')||
+        w.originalPhysicalSourceEdgeId!==source||
+        !valid(w.from)||!valid(w.to)||
+        !Array.isArray(paper)||paper.length===0||
+        !Array.isArray(native)||native.length>1||
+        w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==
+         (native.length===1)||
+        w.fullOriginalSourceParameterCoverageProven!==false||
+        w.globalContinuousOcclusionProven!==false||
+        w.engineeringLineStyle!=='undetermined'||w.signedV5Action!==false)
+      throw new RangeError('invalid unsigned OCCT source-scoped HLR witness');
+     // A native source-filtered HLR line cannot be attributed to an
+     // arbitrary 3D source just because its label occurs in a whole-solid
+     // candidate list. Reproject the original 3D BRep endpoints first.
+     // A collapsed projection has no positive line to attribute.
+     if(!(Math.hypot(w.to.u-w.from.u,w.to.v-w.from.v)>0)||
+        !onOriginalPaperEdge(w.from,source,view)||
+        !onOriginalPaperEdge(w.to,source,view))
+      throw new RangeError('source-scoped HLR paper segment contradicts original M0 3D projection');
+     const tFrom=paperParameter(w.from,source,view),
+      tTo=paperParameter(w.to,source,view);
+     const range=tFrom===null||tTo===null||tFrom===tTo?null:
+      [Math.min(tFrom,tTo),Math.max(tFrom,tTo)];
+     if(range){
+      sourceRanges.get(source).push(range);
+      classRanges[klass].get(source).push(range);
+     }else counts.sourceScopedPaperStrokesWithUnboundParameters++;
+     const endpointCandidates=[
+      originalEndpointCandidate(w.from,tFrom,source,view),
+      originalEndpointCandidate(w.to,tTo,source,view)
+     ];
+     const ordinalSet=new Set();
+     for(const ordinal of paper){
+      if(!Number.isSafeInteger(ordinal)||ordinal<0||
+         ordinal>=item.global.length||ordinalSet.has(ordinal))
+       throw new RangeError('invalid or duplicate whole-solid HLR ordinal');
+      ordinalSet.add(ordinal);
+      const seg=item.global[ordinal];
+      if(!valid(seg?.from)||!valid(seg?.to)||
+         !Array.isArray(seg.projectedOriginalEdgeCandidates)||
+         !seg.projectedOriginalEdgeCandidates.includes(source)||
+         !(same(seg.from,w.from)&&same(seg.to,w.to)||
+           same(seg.from,w.to)&&same(seg.to,w.from)))
+       throw new RangeError('native original source filter contradicts whole-solid HLR physical source');
+      item.sources[ordinal].add(source);
+      if(range)item.parameterCandidates[ordinal].push({
+       originalPhysicalSourceEdgeId:source,
+       paperDerivedOriginalSourceParameterCandidateRange:[...range],
+       paperDerivedOriginal3DEndpointVertexCandidates:[...endpointCandidates],
+       actualNativeTopoDSParameterHistoryProven:false,
+       nativeOriginal3DEndpointTopologyProven:false
+      });
+     }
+     for(const ordinal of native){
+      if(!ordinalSet.has(ordinal))
+       throw new RangeError('native generated IsSame is not a matching whole-solid HLR ordinal');
+      if(item.nativeOwners.has(ordinal))
+       throw new RangeError('duplicate native generated HLR ordinal identity claim');
+      item.nativeOwners.set(ordinal,source);
+     }
+     total++;direct+=native.length;
+    }
+   }
+  }
+  if(seen.size!==expected.size||
+     total!==scoped.nativeSourceScopedOutputEdgeCount||
+     direct!==scoped.nativeScopedToWholeSolidGeneratedIsSameCount||
+     total-direct!==scoped.paperOnlyScopedOutputEdgeCount)
+   throw new RangeError('native source-scoped HLR output accounting mismatch');
+  counts.nativeSourceScopedOutputEdges+=total;
+  counts.nativeGeneratedIsSameMatches+=direct;
+  counts.paperOnlySourceScopedEdges+=total-direct;
+  views[view]={};
+  for(const [klass,item] of Object.entries(classes)){
+   const rows=item.sources.map((sources,ordinal)=>({
+    wholeSolidHLREdgeOrdinal:ordinal,
+    original3DSourceCandidatesFromNativeFilter:[...sources].sort(),
+    paperDerivedOriginalSourceParameterCandidates:
+     item.parameterCandidates[ordinal].sort((a,b)=>
+      a.originalPhysicalSourceEdgeId.localeCompare(b.originalPhysicalSourceEdgeId)),
+    originalTopoDSHistoryProven:false,
+    originalSourceParameterCoverageProven:false,
+    continuousFrontRayProven:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   }));
+   const missing=rows.filter(x=>
+    !x.original3DSourceCandidatesFromNativeFilter.length).length;
+   counts[klass==='visible'?'wholeSolidVisibleEdgesWithoutScopedSource':
+    'wholeSolidHiddenEdgesWithoutScopedSource']+=missing;
+   counts.paperAliasedWholeSolidEdgesWithMultipleOriginalSources+=
+    rows.filter(x=>x.original3DSourceCandidatesFromNativeFilter.length>1).length;
+   views[view][klass]=rows;
+  }
+  // Union the REAL source-filtered HLR outputs, but label all intervals
+  // PAPER-DERIVED CANDIDATES. This reports exact binary64 gaps, including
+  // one-ULP holes, without certifying original TopoDS parameter history.
+  views[view].sourceParameterCandidates=ids.map(source=>{
+   const [a,b]=projectedOriginalBySource.get(source)[view];
+   const collapsed=!(Math.hypot(b.u-a.u,b.v-a.v)>0);
+   const ranges=sourceRanges.get(source);
+   const coverage=collapsed?null:
+    exactCandidateIntervalCoverage([0,1],ranges);
+   const classOverlap=collapsed?null:exactCandidateVisibilityClassOverlap(
+    classRanges.visible.get(source),classRanges.hidden.get(source)
+   );
+   if(classOverlap?.hasPositiveLengthVisibleHiddenClassConflict){
+    counts.projectedSourcesWithVisibleHiddenCandidateConflicts++;
+    counts.positiveLengthVisibleHiddenCandidateConflictIntervalCount+=
+     classOverlap.paperDerivedPositiveLengthVisibleHiddenConflictIntervals.length;
+   }
+   if(coverage?.entireOriginalParameterIntervalCovered)
+    counts.projectedSourcesWithFullPaperCandidateCoverage++;
+   else if(coverage)
+    counts.projectedSourcesWithPositivePaperCandidateGaps++;
+   return {
+    originalPhysicalSourceEdgeId:source,
+    originalProjectedEdgeCollapsed:collapsed,
+    paperDerivedOriginalSourceParameterCandidateIntervals:
+     ranges.map(range=>[...range]),
+    paperDerivedVisibleCandidateParameterUnion:
+     classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
+    paperDerivedHiddenCandidateParameterUnion:
+     classOverlap?.paperDerivedHiddenOriginalSourceParameterUnion??null,
+    paperDerivedPositiveLengthVisibleHiddenConflictIntervals:
+     classOverlap?.paperDerivedPositiveLengthVisibleHiddenConflictIntervals??null,
+    paperDerivedPositiveLengthVisibleHiddenConflictDetected:
+     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict??false,
+    paperDerivedPositiveLengthUncoveredCandidateIntervals:
+     coverage?.positiveLengthUncoveredIntervals??null,
+    entireOriginalSourcePaperCandidateIntervalCovered:
+     coverage?.entireOriginalParameterIntervalCovered??false,
+    fullOriginalPaperCandidateCoverageWithoutClassConflict:
+     coverage?.entireOriginalParameterIntervalCovered===true&&
+     classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false,
+    actualOriginalTopoDSParameterCoverageCertified:false,
+    nativeOriginal3DEndpointTopologyProven:false,
+    continuousOcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   };
+  });
+ }
+ return frozen({schema:'draftai-c1-real-source-scoped-hlr-m5-consumer/1',
+  sourceGeometryId:geometry.id,revision:cad.revision,unit:'mm',
+  views,counts,
+  actualOriginalTopoDSSourceFilteredHLRConsumed:true,
+  generatedToOriginalTopoDSFullHistoryCertified:false,
+  paperDerivedVisibleHiddenSourceConflictsDetected:
+   counts.projectedSourcesWithVisibleHiddenCandidateConflicts>0,
+  globalContinuousVisibilityCertified:false,
+  formalEngineeringLineStyleCertified:false,signedV5ActionCount:0});
+}
+module.exports={auditC1NativeScopedHLRSourceConsumer};

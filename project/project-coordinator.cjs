@@ -12,7 +12,7 @@ const {solveNonlinearPointCandidates}=require('../core/constraints/nonlinear-poi
 const affineSourceStamp=source=>JSON.stringify([source.imageId,source.rotationDeg,source.calibration]);
 const FORMAT = 'draftai-local-project';
 const VERSION = 1;
-const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition']);
+const TASKS = Object.freeze(['planar', 'projection', 'exploration', 'composition', 'c1-third-view', 'c3-intersection']);
 const VIEWS = Object.freeze(['V', 'H', 'W', '3D']);
 const KINDS = Object.freeze(['point', 'line', 'plane', 'edge', 'solid']);
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,79}$/;

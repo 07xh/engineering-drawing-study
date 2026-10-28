@@ -870,7 +870,7 @@ body.ui-next .next-canvas-tools [data-ui-tip] {
  position:relative;
 }
 body.ui-next .next-canvas-tools [data-ui-tip] svg {
- width:19px;height:19px;display:block;flex:0 0 19px;
+ width:19px;height:19px;min-width:0;display:block;flex:0 0 19px;
 }
 body.ui-next .next-canvas-tools [data-ui-tip]:is(:hover,:focus-visible,:active)::after {
  content:attr(data-ui-tip);
@@ -1386,3 +1386,14 @@ body.ui-next .next-home-categories {
 body.ui-next .next-drawing-controls{margin-top:12px;padding:12px;border:1px solid #dce4ef;border-radius:12px;background:#fff}
 body.ui-next .next-drawing-controls .actions{display:flex;flex-wrap:wrap;gap:8px}
 body.ui-next .next-drawing-controls .actions button{min-height:44px}
+body.ui-next .next-draw-shortcuts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+body.ui-next .next-draw-shortcuts button{min-height:44px;flex:1 1 75px}
+body.ui-next .next-draw-shortcuts button[aria-pressed=true]{background:#245de3;color:#fff;border-color:#245de3}
+
+/* Keep mobile playback labels readable and all paper tools touch-sized. */
+body.ui-next .next-canvas-tools [data-ui-tip] {width:44px;min-width:44px;height:44px;min-height:44px}
+@media(max-width:520px){
+ body.ui-next .next-playback #fullControls {display:flex;flex-wrap:wrap;gap:6px}
+ body.ui-next .next-playback #fullControls button {flex:1 1 40%;min-width:80px;white-space:nowrap}
+ body.ui-next .next-playback #fullControls .rate-select {flex:1 1 100%;max-width:none}
+}

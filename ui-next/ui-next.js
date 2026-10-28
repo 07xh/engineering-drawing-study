@@ -18,6 +18,23 @@
    workbench.dataset.nextSteps='open';
    stepPanel.hidden=false;
   }
+  const drawTool=document.getElementById('drawTool');
+  const drawShortcuts=[...document.querySelectorAll('[data-next-draw-tool]')];
+  if(drawTool&&drawShortcuts.length){
+   const sync=()=>drawShortcuts.forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.nextDrawTool===drawTool.value));
+    button.disabled=drawTool.disabled;
+   });
+   for(const button of drawShortcuts)button.addEventListener('click',()=>{
+    if(drawTool.disabled)return;
+    drawTool.value=button.dataset.nextDrawTool;
+    drawTool.dispatchEvent(new document.defaultView.Event('change',{bubbles:true}));
+    sync();
+   });
+   drawTool.addEventListener('change',sync);
+   for(const id of ['learningMode','modeSelect'])document.getElementById(id)?.addEventListener('change',()=>queueMicrotask(sync));
+   sync();
+  }
   let zoom=1;
   for(const button of document.querySelectorAll('[data-next-zoom]'))button.addEventListener('click',()=>{
    zoom=button.dataset.nextZoom==='fit'?1:Math.min(3,Math.max(1,zoom+(button.dataset.nextZoom==='in' ? 0.25 : -0.25)));
