@@ -132,3 +132,71 @@ test('browser refuses a fake complete C2 result even if the file claims a V5 act
  assert.equal(host.document.getElementById('cutPlay').disabled,true);
  assert.match(host.document.getElementById('cutStatus').textContent,/无法加载/);
 });
+
+/**
+ * REQUIRED REAL NATIVE E2E. The genuine OCP BRep Cut CLI creates the
+ * mathematical proof immediately before this test; no synthetic data
+ * and no copy of an old signed artifact are accepted.
+ *
+ * This test is normally inert outside the dedicated native CI, where the
+ * actual proof path is supplied by the same-run producer. Synthetic DOM
+ * fixtures above still test the UI without requiring OCP on the dev host.
+ */
+test('live same-run OpenCascade Cut JSON imports into mobile single V5: 12 actual strokes, all other sources held', {
+ skip:!process.env.DRAFTAI_REAL_C2_NATIVE_PROOF_PACK
+},async()=>{
+ const source=process.env.DRAFTAI_REAL_C2_NATIVE_PROOF_PACK;
+ const raw=fs.readFileSync(source);
+ assert.ok(raw.length>2000&&raw.length<=12*1024*1024);
+ const real=JSON.parse(raw.toString('utf8'));
+ assert.equal(real.provenance.actualNativeOpenCascadeRanInThisProcessTree,true);
+ assert.equal(real.nativeTopology.actualNativeBooleanOperation,'cut');
+ assert.equal(real.nativeTopology.resultEdgeCount,24);
+ assert.equal(real.mathM0M4M5.globalPaperEvents.continuousM5SubspanCount,64);
+ assert.equal(real.sourceCertifiedNativeCanonicalPartialCutV5.certifiedVisibleHiddenSourceIntervals.length,12);
+ assert.equal(real.sourceCertifiedNativeCanonicalPartialCutV5.unsignedNativePhysicalSourceIntervals.length,40);
+ const host=setup();
+ await importProof(host,real);
+ const $=id=>host.document.getElementById(id);
+ assert.equal($('cutStatus').dataset.error,'false',
+  'actual freshly generated native Cut mathematical witness must be browser importable: '+
+   $('cutStatus').textContent);
+ assert.equal($('cutSigned').textContent,'12');
+ assert.equal($('cutSuppressed').textContent,'12');
+ assert.equal($('cutHeld').textContent,'40');
+ const graphics=[...$('cutDraw').querySelectorAll('line')];
+ assert.equal(graphics.length,12);
+ const sourceActions=real.sourceCertifiedNativeCanonicalPartialCutV5.steps.flatMap(x=>x.actions);
+ assert.equal(sourceActions.length,12);
+ for(const [i,node] of graphics.entries()){
+  const a=sourceActions[i],verified=Motion.actionShapeAttrs(a,1);
+  assert.equal(node.dataset.actionId,a.id);
+  assert.equal(node.dataset.engineeringLine,
+   a.engineeringLineStyle.includes('dashed')?'hidden':'visible');
+  assert.ok([verified.x1,verified.y1,verified.x2,verified.y2].every(Number.isFinite));
+ }
+ $('cutPlay').dispatchEvent(new host.window.Event('click'));
+ assert.equal($('cutPlay').textContent,'暂停');
+ assert.equal(typeof host.callback.raf,'function');
+ $('cutPlay').dispatchEvent(new host.window.Event('click'));
+ assert.equal($('cutPlay').textContent,'播放');
+
+ // Same authentic data with tampered GB engineering style must fail closed.
+ const forged=structuredClone(real);
+ forged.sourceCertifiedNativeCanonicalPartialCutV5.steps[0]
+  .actions[0].engineeringLineStyle='bogus-unverified-source-style';
+ const other=setup();
+ await importProof(other,forged);
+ assert.equal(other.document.getElementById('cutPlay').disabled,true);
+ assert.equal(other.document.getElementById('cutDraw').querySelectorAll('line').length,0);
+ assert.equal(other.document.getElementById('cutStatus').dataset.error,'true');
+
+ // A false full-scene flag cannot turn a 12-action partial Cut into
+ // a claimed complete answer.
+ const premature=structuredClone(real);
+ premature.completeCutProjectOfficialGBLineStylesAndV5Certified=true;
+ const third=setup();
+ await importProof(third,premature);
+ assert.equal(third.document.getElementById('cutPlay').disabled,true);
+ assert.equal(third.document.getElementById('cutDraw').querySelectorAll('line').length,0);
+});
