@@ -39,7 +39,10 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      !Array.isArray(originalClosedRayM5.rows))))
   throw new TypeError('real OCCT native graph and original 3D endpoint proof for same geometry/revision required');
  const base=new Map(),byGlobal=[];
- let global=0;
+ let global=0,expectedNativeEndpointPairChecks=0,
+  expectedLiteralPaperEndpointPairs=0;
+ const exhaustiveNativeGraph=
+  graph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing===true;
  for(const view of VIEWS){
   const visible=cad.views?.[view],hidden=cad.hiddenSharpViews?.[view],
    v=graph.views?.[view];
@@ -49,7 +52,38 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
      !Array.isArray(v.sameActualGeneratedOCCTTopoDSVertexPairs)||
      !Array.isArray(v.paperCoincidentButDifferentTopoDSVertexPairs))
    throw new RangeError('genuine V/H/W native graph incomplete');
-  base.set(view,{visible,hidden,globalStart:global});
+  let expectedPaperPairsForView=0;
+  if(exhaustiveNativeGraph){
+   const endpoints=[];
+   for(const [hlrClass,items] of [
+    ['visible-sharp',visible],['hidden-sharp',hidden]
+   ]){
+    for(let ordinal=0;ordinal<items.length;ordinal++){
+     const seg=items[ordinal];
+     if(seg?.occtHLRVisibilityClass!==hlrClass||
+        seg.actualOCCTHLRFlattenedBRepLineVerified!==true||
+        ![seg.from?.u,seg.from?.v,seg.to?.u,seg.to?.v].every(Number.isFinite))
+      throw new RangeError('exhaustive native HLR endpoint inventory contains an invalid emitted edge');
+     const edgeKey=hlrClass+'@'+ordinal;
+     endpoints.push({edgeKey,hlrClass,nativeHLREdgeOrdinal:ordinal,
+      side:'from',nativePaperPoint:{u:seg.from.u,v:seg.from.v}});
+     endpoints.push({edgeKey,hlrClass,nativeHLREdgeOrdinal:ordinal,
+      side:'to',nativePaperPoint:{u:seg.to.u,v:seg.to.v}});
+    }
+   }
+   expectedNativeEndpointPairChecks+=endpoints.length*(endpoints.length-1)/2;
+   for(let i=0;i<endpoints.length;i++)for(let j=i+1;j<endpoints.length;j++){
+    const a=endpoints[i],b=endpoints[j];
+    // The producer deliberately excludes the two ends of the SAME
+    // noncollapsed HLR edge from the literal co-projection pair ledger.
+    if(a.edgeKey!==b.edgeKey&&equal(a.nativePaperPoint,b.nativePaperPoint)){
+     expectedPaperPairsForView++;
+     expectedLiteralPaperEndpointPairs++;
+    }
+   }
+  }
+  base.set(view,{visible,hidden,globalStart:global,
+   expectedPaperPairsForView});
   for(let i=0;i<hidden.length;i++){
    const proof=originalNativeVertexProof.rows[global++];
    if(proof?.view!==view||proof.nativeHiddenSharpEdgeOrdinal!==global-1||
@@ -312,6 +346,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
  // otherwise pairwise M0 junction counts can be inflated or contradictory.
  const endpointKey=ref=>ref.hlrClass+'@'+ref.nativeHLREdgeOrdinal+'@'+ref.side;
  const nativePairKey=pair=>[endpointKey(pair.a),endpointKey(pair.b)].sort().join('|');
+ const seenPaperPairCountsByView=new Map();
  for(const view of VIEWS){
   const data=graph.views[view],seenNativePairTruth=new Map();
   for(const pair of data.sameActualGeneratedOCCTTopoDSVertexPairs){
@@ -382,6 +417,7 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
     actualNativeGeneratedHLRSharedTopoDSVertexCertified:false,
     globalGBLineJoinStillNotCertified:true,signedV5Action:false});
   }
+  seenPaperPairCountsByView.set(view,seenNativePairTruth.size);
  }
  // Consume the *whole* actual OCCT IsSame equivalence-class star, not
  // one paper-coincident native edge pair at a time. A complete native star
@@ -488,11 +524,26 @@ function auditC1NativeHLRGeneratedToOriginalVertexConcordance({
       graph.counts.genuinelySharedNativeJunctionComponents)
    throw new RangeError('generated native junction component count disagrees with OCCT graph');
  }
+ if(exhaustiveNativeGraph){
+  for(const view of VIEWS){
+   const data=graph.views[view];
+   if(data.allNativeGeneratedEndpointPairsIndependentlyCompared!==true||
+      seenPaperPairCountsByView.get(view)!==
+       base.get(view).expectedPaperPairsForView)
+    throw new RangeError('exhaustive native HLR graph omits a literal paper-coincident endpoint pair');
+  }
+ }
  if(counts.actualNativeIsSamePairs!==
     graph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs||
     counts.exactPaperCoincidentButDistinctNativeTopoDSPairsHeld!==
     graph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs)
   throw new RangeError('native OCCT generated vertex graph pair count mismatch');
+ if(exhaustiveNativeGraph&&
+    (graph.counts.allPerViewGeneratedOCCTTopoDSVertexPairsChecked!==
+      expectedNativeEndpointPairChecks||
+     graph.counts.literalSamePaperPointEndpointPairsChecked!==
+      expectedLiteralPaperEndpointPairs))
+  throw new RangeError('exhaustive native OCCT aggregate IsSame comparison counts disagree with actual V/H/W endpoint inventory');
  // Exact union of independently accepted native visible HLR lifts per
  // original source/view. This is a necessary coverage diagnostic, NOT proof
  // of complete generated TopoDS history or that every source must be visible.

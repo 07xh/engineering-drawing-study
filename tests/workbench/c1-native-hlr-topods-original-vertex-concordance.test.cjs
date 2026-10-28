@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {auditC1NativeHLRGeneratedToOriginalVertexConcordance:audit}=
+const {auditC1NativeHLRGeneratedToOriginalVertexConcordance:auditRaw}=
  require('../../workbench/c1-native-hlr-topods-original-vertex-concordance.cjs');
 const revision=27,point={u:10,v:4};
 const nativeEdge=(cl,n)=>({view:'H',occtHLRVisibilityClass:cl,
@@ -15,6 +15,65 @@ const pair=(a,b,same)=>({view:'H',a,b,
  original3DSourceTopoDSVertexIdentityRecovered:false,
  actualNativeHLRStrokeJoinMeetsGlobalEngineeringRules:false,
  signedV5Action:false});
+const nativeEndpointKey=ref=>ref.hlrClass+'@'+ref.nativeHLREdgeOrdinal+'@'+ref.side;
+const nativePairKey=pair=>[nativeEndpointKey(pair.a),nativeEndpointKey(pair.b)]
+ .sort().join('|');
+// Test-fixture constructor: the real OCCT producer compares every endpoint
+// pair synchronously. For unspecified co-projected fixture pairs, model the
+// explicit negative IsSame result; do not silently omit a pair from the ledger.
+const completePaperPairInventoryForTest=x=>{
+ const graph=x.cad.nativeGeneratedVertexGraph;
+ if(graph?.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing!==true)
+  return x;
+ let allPairs=0,literalPairs=0;
+ for(const view of ['V','H','W']){
+  const data=graph.views[view],endpoints=[];
+  for(const [hlrClass,items] of [
+   ['visible-sharp',x.cad.views[view]],
+   ['hidden-sharp',x.cad.hiddenSharpViews[view]]
+  ])for(let ordinal=0;ordinal<items.length;ordinal++){
+   const seg=items[ordinal],edgeKey=hlrClass+'@'+ordinal;
+   for(const side of ['from','to'])
+    endpoints.push({edgeKey,hlrClass,nativeHLREdgeOrdinal:ordinal,side,
+     nativePaperPoint:{...seg[side]}});
+  }
+  allPairs+=endpoints.length*(endpoints.length-1)/2;
+  const known=new Set([
+   ...data.sameActualGeneratedOCCTTopoDSVertexPairs,
+   ...data.paperCoincidentButDifferentTopoDSVertexPairs
+  ].map(nativePairKey));
+  const claimedStarPairIds=new Set();
+  for(const star of data.generatedOCCTSharedNativeJunctionComponents||[]){
+   const members=star.generatedSharpEdgeEndpoints||[];
+   for(let i=0;i<members.length;i++)for(let j=i+1;j<members.length;j++)
+    claimedStarPairIds.add(nativePairKey({a:members[i],b:members[j]}));
+  }
+  for(let i=0;i<endpoints.length;i++)for(let j=i+1;j<endpoints.length;j++){
+   const a=endpoints[i],b=endpoints[j];
+   if(a.edgeKey===b.edgeKey||
+      a.nativePaperPoint.u!==b.nativePaperPoint.u||
+      a.nativePaperPoint.v!==b.nativePaperPoint.v)continue;
+   literalPairs++;
+   const candidate={a,b};
+   const key=nativePairKey(candidate);
+   if(!known.has(key)&&!claimedStarPairIds.has(key)){
+    data.paperCoincidentButDifferentTopoDSVertexPairs.push(pair(a,b,false));
+    known.add(key);
+   }
+  }
+  data.allNativeGeneratedEndpointPairsIndependentlyCompared=true;
+ }
+ graph.counts.allPerViewGeneratedOCCTTopoDSVertexPairsChecked=allPairs;
+ graph.counts.literalSamePaperPointEndpointPairsChecked=literalPairs;
+ graph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=
+  ['V','H','W'].reduce((n,v)=>n+
+   graph.views[v].sameActualGeneratedOCCTTopoDSVertexPairs.length,0);
+ graph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs=
+  ['V','H','W'].reduce((n,v)=>n+
+   graph.views[v].paperCoincidentButDifferentTopoDSVertexPairs.length,0);
+ return x;
+};
+const audit=x=>auditRaw(completePaperPairInventoryForTest(x));
 const fixture=()=>{
  const r={
   geometry:{id:'G',data:{
@@ -713,4 +772,40 @@ test('forged 3D source endpoint or duplicate eligible co-projected lift still ho
  assert.equal(audit(x).counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
  const y=coProjectedSplit();y.cad.views.H[0].sourceCandidate3DLifts.push({...y.cad.views.H[0].sourceCandidate3DLifts[1]});
  assert.equal(audit(y).counts.generatedNativeJunctionComponentsWithExactOriginal3DSourceInteriorSplit,0);
+});
+
+test('exhaustive native HLR proof rejects an omitted paper-coincident pair even when a partial hidden-hidden star looks complete',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ completePaperPairInventoryForTest(x);
+ const accepted=auditRaw(x);
+ assert.equal(accepted.completeGenuineNativeHLRJunctionStars.length,1);
+ assert.equal(accepted.completeGenuineNativeHLRJunctionStars[0].
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex,true);
+ const omitted=structuredClone(x);
+ const graph=omitted.cad.nativeGeneratedVertexGraph;
+ const paper=graph.views.H.paperCoincidentButDifferentTopoDSVertexPairs;
+ const index=paper.findIndex(p=>
+  [nativeEndpointKey(p.a),nativeEndpointKey(p.b)].includes(
+   nativeEndpointKey(ref('visible-sharp',0,'to')))&&
+  [nativeEndpointKey(p.a),nativeEndpointKey(p.b)].includes(
+   nativeEndpointKey(ref('hidden-sharp',0,'to'))));
+ assert.notEqual(index,-1,'fixture must contain the projected but distinct visible endpoint');
+ paper.splice(index,1);
+ assert.throws(()=>auditRaw(omitted),/omits a literal paper-coincident endpoint pair/);
+});
+test('exhaustive native HLR proof rejects aggregate IsSame comparison counts that do not cover every endpoint pair',()=>{
+ const x=fixture();markGraphComplete(x);
+ const a=ref('hidden-sharp',0,'to'),b=ref('hidden-sharp',1,'to'),
+  v=x.cad.nativeGeneratedVertexGraph.views.H;
+ v.sameActualGeneratedOCCTTopoDSVertexPairs.push(pair(a,b,true));
+ v.generatedOCCTSharedNativeJunctionComponents.push(completeStar(a,b));
+ x.cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs=1;
+ completePaperPairInventoryForTest(x);
+ x.cad.nativeGeneratedVertexGraph.counts.allPerViewGeneratedOCCTTopoDSVertexPairsChecked--;
+ assert.throws(()=>auditRaw(x),/aggregate IsSame comparison counts/);
 });
