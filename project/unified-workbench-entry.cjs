@@ -907,11 +907,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     selectedSourceFeature.key===item.sourceFeatureKey;
    const selected=selectedIds.has(item.objectId); // Preserve old owner highlights.
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
-   const stroke=selected?(monochrome?'#111':'#ef6730'):
+   // Match the 3D raycast's precise-feature highlight in all V/H/W views.
+   // Feature selection wins over the broader owner highlight, but is display-only.
+   const stroke=featureSelected?(monochrome?'#111':'#0866ef'):
+    selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
     monochrome?'#323232':item.objectId==='Fillet1'?'#147f65':'#2773a7';
    const attrs={...item.attrs,fill:item.kind==='circle'&&!item.fill?stroke:'none',
-    stroke, 'stroke-width':selected?3.2:item.kind==='path'?3.1:1.8};
+    stroke, 'stroke-width':featureSelected?3.8:selected?3.2:
+     item.kind==='path'?3.1:1.8};
    if(item.fill==='none')attrs.fill='none';
    if(dashed)attrs['stroke-dasharray']='5 4';
    // All primitives carry the exact mathematics-derived stable Geometry ID.
