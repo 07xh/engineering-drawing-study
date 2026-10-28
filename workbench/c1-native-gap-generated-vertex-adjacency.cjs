@@ -20,6 +20,27 @@ const frozen=x=>{
 };
 const validPaper=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
 const relation=(a,b)=>sign(difference(dyadic(a),dyadic(b)));
+// The actual RECEIVED HLR paper coordinate can have a strictly positive
+// rational inverse t even when binary64 division rounded its candidate to 0.
+// This is a dominant-axis PAPER diagnostic, not a native TopoDS edge history.
+const gcd=(a,b)=>{a=a<0n?-a:a;while(b!==0n){const r=a%b;a=b;b=r;}return a;};
+const asRatio=value=>{
+ const {n,e}=dyadic(value);
+ return e>=0?{n:n<<BigInt(e),d:1n}:{n,d:1n<<BigInt(-e)};
+};
+const compareRatio=(a,b)=>sign({n:a.n*b.d-b.n*a.d});
+const printRatio=r=>r.d===1n?String(r.n):String(r.n)+'/'+String(r.d);
+const paperParameterRatio=(paper,a,b)=>{
+ const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v';
+ const origin=dyadic(a[axis]),delta=difference(dyadic(b[axis]),origin);
+ if(sign(delta)===0)return null; // Source projection collapses in this view.
+ const offset=difference(dyadic(paper[axis]),origin);
+ const e=Math.min(offset.e,delta.e);
+ let n=offset.n<<BigInt(offset.e-e),d=delta.n<<BigInt(delta.e-e);
+ if(d<0n){n=-n;d=-d;}
+ const factor=gcd(n,d);
+ return {n:n/factor,d:d/factor};
+};
 function auditC1NativeGapGeneratedVertexAdjacency({
  geometry,view,sourceEdgeId,uncoveredIntervals,visibleSegments,hiddenSegments
 }={}){
@@ -38,7 +59,7 @@ function auditC1NativeGapGeneratedVertexAdjacency({
  const vertexIds=matches[0];
  const originalPaperEndpoints=vertexIds.map(id=>
   project(geometry.data.points[id])[view]);
- const endpoints=[];
+ const endpoints=[],exactReceivedPaperParameters=[];
  for(const [klass,segments] of [['visible-sharp',visibleSegments],
                                  ['hidden-sharp',hiddenSegments]]){
   for(const [ordinal,segment] of segments.entries()){
@@ -86,7 +107,19 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      if(expected.u!==paper.u||expected.v!==paper.v)
       throw new RangeError('native original vertex IsSame contradicts first-angle paper point');
     }
+    const exactPaper=paperParameterRatio(paper,
+     originalPaperEndpoints[0],originalPaperEndpoints[1]);
+    exactReceivedPaperParameters.push(exactPaper);
     endpoints.push({
+     exactReceivedPaperDominantAxisOriginalSourceParameter:
+      exactPaper===null?null:printRatio(exactPaper),
+     exactReceivedPaperParameterWithinOriginalDomain:
+      exactPaper===null?null:
+      compareRatio(exactPaper,asRatio(0))>=0&&
+      compareRatio(exactPaper,asRatio(1))<=0,
+     roundedInverseDiffersFromExactReceivedPaperParameter:
+      exactPaper===null?null:
+      compareRatio(exactPaper,asRatio(raw[side]))!==0,
      hlrClass:klass,generatedHLREdgeOrdinal:ordinal,
      generatedHLREndpointSide:side===0?'from':'to',
      nativeGeneratedPaperPoint:{...paper},
@@ -138,7 +171,20 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      relation(e.paperDerivedUnclampedOriginalSourceParameter,t)===0).length,
    originalGeneratedTopoDSEdgeHistoryCertified:false
   });
+  const fromExact=asRatio(gap[0]),toExact=asRatio(gap[1]);
   return {gapOrdinal:index,originalSourceParameterGap:[...gap],
+   // Strict rational comparisons, including paper tails smaller than the
+   // smallest positive binary64 parameter. Candidate presence is not
+   // coverage or source-history certification.
+   exactReceivedPaperCandidateStrictlyInsideGapCount:
+    exactReceivedPaperParameters.filter(p=>p!==null&&
+     compareRatio(p,fromExact)>0&&compareRatio(p,toExact)<0).length,
+   exactReceivedPaperCandidateAtGapFromCount:
+    exactReceivedPaperParameters.filter(p=>p!==null&&
+     compareRatio(p,fromExact)===0).length,
+   exactReceivedPaperCandidateAtGapToCount:
+    exactReceivedPaperParameters.filter(p=>p!==null&&
+     compareRatio(p,toExact)===0).length,
    from:boundary(gap[0],gap[0]===0?vertexIds[0]:null),
    to:boundary(gap[1],gap[1]===1?vertexIds[1]:null),
    sourceGapClosedByNativeEndpointEvidence:false,
@@ -153,6 +199,9 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   actualNativeRoundedInverseOriginalBoundaryAliasEndpoints:endpoints.filter(x=>
    x.receivedPaperRoundedInverseOriginalBoundaryAlias).length,
   endpoints,rows,
+  roundedInverseDisagreesWithExactReceivedPaperParameterCount:
+   endpoints.filter(x=>
+    x.roundedInverseDiffersFromExactReceivedPaperParameter===true).length,
   generatedToOriginalTopoDSFullHistoryCertified:false,
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,
