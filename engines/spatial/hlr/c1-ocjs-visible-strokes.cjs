@@ -283,13 +283,25 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  generatedEdge,originalSourceEdges
 }={}){
  if(typeof generatedEdge?.IsSame!=='function'||
-    !Array.isArray(originalSourceEdges))
-  throw new TypeError('actual OCCT generated and original native TopoDS edges required');
- const ids=new Set(),visited=new Set();
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    originalSourceEdges.length>512)
+  throw new TypeError('actual OCCT generated and original native TopoDS edges required (bounded source ledger)');
+ const ids=new Set(),visited=new Set(),handleBySourceId=new Map();
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
      typeof item.edge?.IsSame!=='function')
    throw new TypeError('untrusted original native TopoDS source edge');
+  const prior=handleBySourceId.get(item.sourceEdgeId);
+  if(prior){
+   // The same physical TopoDS edge may occur more than once in an explorer
+   // ledger. Accept only symmetric IsSame duplicates, never one source ID
+   // aliased to two different physical TShapes.
+   const sameForward=item.edge.IsSame(prior),sameBackward=prior.IsSame(item.edge);
+   if(typeof sameForward!=='boolean'||typeof sameBackward!=='boolean'||
+      sameForward!==sameBackward||sameForward!==true)
+    throw new RangeError('duplicate original source ID aliases distinct native TopoDS edges');
+  }else handleBySourceId.set(item.sourceEdgeId,item.edge);
+  visited.add(item.sourceEdgeId);
   const forward=generatedEdge.IsSame(item.edge),
    backward=item.edge.IsSame(generatedEdge);
   if(typeof forward!=='boolean'||typeof backward!=='boolean'||
@@ -327,19 +339,35 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
 }={}){
  if(typeof edgeMap?.Extent!=='function'||
     typeof edgeMap?.FindKey!=='function'||
-    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length)
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    originalSourceEdges.length>512)
   throw new TypeError('real indexed OCCT HLR DataStructure EdgeMap required');
+ const sourceById=new Map();
+ for(const item of originalSourceEdges){
+  if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
+     typeof item.edge?.IsSame!=='function')
+   throw new RangeError('duplicate or unbound original TopoDS source ledger');
+  const prior=sourceById.get(item.sourceEdgeId);
+  if(prior){
+   // TopExp explorers can expose repeated occurrences of the SAME physical
+   // source edge. Collapse only when native IsSame is symmetric and true.
+   const forward=item.edge.IsSame(prior.edge),backward=prior.edge.IsSame(item.edge);
+   if(typeof forward!=='boolean'||typeof backward!=='boolean'||
+      forward!==backward||forward!==true)
+    throw new RangeError('duplicate or unbound original TopoDS source ledger');
+  }else sourceById.set(item.sourceEdgeId,item);
+ }
+ const uniqueSourceEdges=[...sourceById.values()];
  const extent=edgeMap.Extent();
  if(!Number.isSafeInteger(extent)||extent<1||extent>512)
   throw new RangeError('bounded native HLR original edge map extent required');
- const indexed=[],seen=new Set(),originalIds=new Set(
-  originalSourceEdges.map(x=>x.sourceEdgeId));
+ const indexed=[],seen=new Set(),originalIds=new Set(sourceById.keys());
  for(let i=1;i<=extent;i++){
   // FindKey returns a borrowed reference into OCCT's indexed map.
   // Deleting it would corrupt the owning HLR DataStructure.
   const edge=edgeMap.FindKey(i);
   const proof=probeRealOcctHLREdgeDirectOriginalSourceIdentity({
-   generatedEdge:edge,originalSourceEdges
+   generatedEdge:edge,originalSourceEdges:uniqueSourceEdges
   });
   const id=proof.directlySameUniqueOriginalOCCTBRepSourceEdgeId;
   if(id!==null){
@@ -357,9 +385,21 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   scope:'native-hlr-internal-original-source-index-only',
   internalEdgeMapExtent:extent,
   originalSourceIdsInInputBRep:originalIds.size,
+  originalSourceEdgeOccurrenceCount:originalSourceEdges.length,
+  uniqueOriginalSourceEdgeCount:uniqueSourceEdges.length,
   internalEdgeMapOriginalSourceIdsMatched:seen.size,
   everyOriginalBRepSourcePresentInHLRDataStructure:
    seen.size===originalIds.size,
+  edgeMapSourceBijectionVerified:extent===originalIds.size&&
+   indexed.length===originalIds.size&&
+   indexed.every(row=>row.directlySameOriginalTopoDSInputEdge===true)&&
+   seen.size===originalIds.size,
+  edgeMapSourceBijectionFailureReasons:[
+   ...(extent!==originalIds.size?['edge-map extent differs from original source inventory']:[]),
+   ...(indexed.some(row=>row.directlySameOriginalTopoDSInputEdge!==true)?
+     ['one or more native index entries have no unique original TopoDS identity']:[]),
+   ...(seen.size!==originalIds.size?['one or more original source edges are absent or duplicated']:[])
+  ],
   indexedOriginalSources:indexed,
   generatedHLREdgeToOriginalTopoDSHistoryProven:false,
   continuousM5VisibilityProven:false,
@@ -754,6 +794,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const indexProof=originalDataStructureIndex;
    if(indexProof.availability!=='real-native-edge-map-inspected'||
       indexProof.everyOriginalBRepSourcePresentInHLRDataStructure!==true||
+      indexProof.edgeMapSourceBijectionVerified!==true||
       !Array.isArray(indexProof.indexedOriginalSources)||
       typeof extractor.VCompound_2!=='function'||
       typeof extractor.HCompound_2!=='function')
