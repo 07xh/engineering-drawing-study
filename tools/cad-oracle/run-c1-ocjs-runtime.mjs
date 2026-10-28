@@ -154,6 +154,17 @@ for(const [index,geometry] of general.entries()){
 
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ assert.deepEqual(Object.keys(cad.nativeHLRSourceHistoryAPISurfaceByView).sort(),
+  ['H','V','W']);
+ for(const view of ['V','H','W']){
+  const api=cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+  assert.equal(api.actualPinnedWasmObjectInspected,true);
+  assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
+   'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
+  assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
+  assert.equal(api.officialLineStyleCertified,false);
+  assert.equal(api.signedV5Action,false);
+ }
  // Exercise the EXACT production paper overlap predicate on genuine native
  // OpenCascade.js visible AND hidden sharp segments, not only synthetic
  // adversarial fixtures. Reversal must not alter a positive native span.
@@ -1655,6 +1666,8 @@ for(const [index,geometry] of general.entries()){
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
+  nativeHLRSourceHistoryAPISurfaceByView:
+   cad.nativeHLRSourceHistoryAPISurfaceByView,
   fullGeneratedEdgeHistoryProven:false,
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
