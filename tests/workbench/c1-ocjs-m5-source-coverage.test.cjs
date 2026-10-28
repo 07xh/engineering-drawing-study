@@ -590,6 +590,11 @@ test('C1 M5 holds paper-rounded native source coverage unless independent origin
   assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
   assert.equal(held.roundedCandidatesWithIndependentM5,0);
   assert.equal(held.signedV5Action,false);
+  const claimedOnly=exactSourceCoverage({...input,
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(claimedOnly.entireOriginalParameterIntervalCovered,false,
+   'M5 flag without literal original 3D vertex projections is not proof');
+  assert.equal(claimedOnly.roundedPaperOnlyCandidatesHeld,1);
   const originalM5=exactSourceCoverage({...input,
    projectedFromModelMm:project(geometry.data.points.A)[view],
    projectedToModelMm:project(geometry.data.points.B)[view],
