@@ -1278,7 +1278,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
   // Preflight is user guidance only. The authoritative M0–M5 checks
   // still run on explicit submission; this cannot certify an answer.
-  let allowed=snap.task!=='composition',reviewIssue='',reviewTarget='';
+  let allowed=snap.task!=='composition',reviewIssue='',reviewTarget='',c1ParseIssue='';
   const edit=$('v8-review-edit'),readiness=$('v8-review-preflight');
   if(edit.dataset.target)$(edit.dataset.target)?.removeAttribute('aria-invalid');
   if(snap.task==='composition'){
@@ -1298,7 +1298,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }
    if(!reviewIssue&&snap.task==='c1-third-view'){
     try{parseReviewedC1Rows($('v8-c1-vertices').value,$('v8-c1-pair').value);}
-    catch(error){allowed=false;reviewIssue=error.message;reviewTarget='v8-c1-vertices';}
+    catch(error){allowed=false;c1ParseIssue=error.message;reviewIssue=c1ParseIssue;reviewTarget='v8-c1-vertices';}
     if(!reviewIssue&&!$('v8-c1-topology').checked){
      allowed=false;reviewIssue='请核对八个角点和闭合实体拓扑后勾选确认。';
      reviewTarget='v8-c1-topology';
@@ -1332,7 +1332,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(reviewTarget)$(reviewTarget)?.setAttribute('aria-invalid','true');
   summary.textContent=label+suffix+
    (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'')+
-   (snap.task==='c1-third-view'&&reviewIssue?' C1 条件检查：'+reviewIssue:'');
+   (c1ParseIssue?' C1 条件检查：'+c1ParseIssue:'');
   ack.disabled=!allowed;
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
