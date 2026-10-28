@@ -239,7 +239,7 @@ test('asymmetric, invalid, or nonreflexive generated/original TopoDS vertex witn
 test('native HLR DataStructure 1-based EdgeMap authenticates all original TopoDS source indices without inventing generated-edge history',()=>{
  const source=originals(),items=[native('c'),native('a'),native('b')];
  const edgeMap={Extent:()=>items.length,FindKey:i=>items[i-1]};
- const result=probeIndex({edgeMap,originalSourceEdges:source,hold:x=>x});
+ const result=probeIndex({edgeMap,originalSourceEdges:source});
  assert.equal(result.internalEdgeMapExtent,3);
  assert.equal(result.originalSourceIdsInInputBRep,3);
  assert.equal(result.internalEdgeMapOriginalSourceIdsMatched,3);
@@ -257,7 +257,7 @@ test('native HLR DataStructure 1-based EdgeMap authenticates all original TopoDS
 test('native HLR original EdgeMap can be incomplete without ever authorizing generated HLR history',()=>{
  const items=[native('a'),native('c')];
  const r=probeIndex({edgeMap:{Extent:()=>2,FindKey:i=>items[i-1]},
-  originalSourceEdges:originals(),hold:x=>x});
+  originalSourceEdges:originals()});
  assert.equal(r.everyOriginalBRepSourcePresentInHLRDataStructure,false);
  assert.equal(r.internalEdgeMapOriginalSourceIdsMatched,2);
  assert.equal(r.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
@@ -265,18 +265,18 @@ test('native HLR original EdgeMap can be incomplete without ever authorizing gen
 test('native HLR EdgeMap duplicate original M0 source identity and asymmetric IsSame are rejected',()=>{
  const dup=[native('a'),native('a'),native('b')];
  assert.throws(()=>probeIndex({edgeMap:{Extent:()=>3,FindKey:i=>dup[i-1]},
-  originalSourceEdges:originals(),hold:x=>x}),/duplicates one original M0 physical source/);
+  originalSourceEdges:originals()}),/duplicates one original M0 physical source/);
  const asym={IsSame:()=>true};
  assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1,FindKey:()=>asym},
-  originalSourceEdges:originals(),hold:x=>x}),/asymmetric/);
+  originalSourceEdges:originals()}),/asymmetric/);
 });
 test('native HLR EdgeMap requires finite bounded one-based index and actual source handles',()=>{
  for(const extent of [0,-1,513,NaN,Infinity,1.5]){
   assert.throws(()=>probeIndex({edgeMap:{Extent:()=>extent,FindKey:()=>native('a')},
-   originalSourceEdges:originals(),hold:x=>x}),/bounded native HLR/);
+   originalSourceEdges:originals()}),/bounded native HLR/);
  }
  assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1},
-  originalSourceEdges:originals(),hold:x=>x}),/real indexed OCCT/);
- assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1,FindKey:()=>native('a')},
   originalSourceEdges:originals()}),/real indexed OCCT/);
+ assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1,FindKey:()=>native('a')},
+  originalSourceEdges:[]}),/real indexed OCCT/);
 });
