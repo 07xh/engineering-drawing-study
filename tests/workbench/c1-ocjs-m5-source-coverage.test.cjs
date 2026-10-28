@@ -646,6 +646,21 @@ test('C1 native HLR source EdgeMap requires a true one-to-one source inventory',
  assert.equal(proof.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
  assert.equal(proof.signedV5Action,false);
 });
+test('C1 native EdgeMap deduplicates repeated occurrences only when TopoDS IsSame confirms one physical source',()=>{
+ const occurrences=nativeSourceLedger();
+ occurrences.push({sourceEdgeId:'G::A|B',edge:nativeEdge('AB')});
+ const proof=probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges:occurrences
+ });
+ assert.equal(proof.originalSourceEdgeOccurrenceCount,3);
+ assert.equal(proof.uniqueOriginalSourceEdgeCount,2);
+ assert.equal(proof.edgeMapSourceBijectionVerified,true);
+ const forged=nativeSourceLedger();
+ forged.push({sourceEdgeId:'G::A|B',edge:nativeEdge('DIFFERENT')});
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges:forged
+ }),/duplicate or unbound original TopoDS source ledger/);
+});
 test('C1 native EdgeMap does not call an extra unknown index a complete source bijection',()=>{
  const extra=probeNativeEdgeMap({
   edgeMap:nativeEdgeMap(['AB','AC','unknown']),originalSourceEdges:nativeSourceLedger()
