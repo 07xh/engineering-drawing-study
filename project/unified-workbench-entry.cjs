@@ -995,6 +995,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         interval.closedEndpointVisibilityCertified!==false||
         interval.projectedFeatureCoincidenceStillUnresolved!==true)
       throw Error('C3 开区间射线候选不得冒充完整曲线实虚线');
+     // A V/H/W open-ray diagnostic is an interval of an existing,
+     // mathematically derived 3D analytic source branch. Bind the EXACT
+     // existing branch identity; never guess from coincident projected ink.
+     const source=scoped.scene.objects.find(x=>x.id===interval.geometryId);
+     if(!source||source.kind!=='analytic-curve'||
+        source.space!=='model-3d'||source.model?.unit!=='mm'||
+        source.model.data.parameter.from>interval.xOpenRange[0]||
+        source.model.data.parameter.to<interval.xOpenRange[1]||
+        JSON.stringify(source.model.data.coordinates)!==
+          JSON.stringify(interval.originalCoordinates))
+      throw Error('C3 三维原始曲线身份与 M5 当前开区间不一致');
+     const sourceKey=sourceFeatureKey(source,{});
+     const featureSelected=selectedSourceFeature?.revision===snap.revision&&
+       selectedSourceFeature.objectId===source.id&&
+       selectedSourceFeature.key===sourceKey;
      const data={
       parameter:{from:interval.xOpenRange[0],to:interval.xOpenRange[1]},
       coordinates:interval.originalCoordinates
@@ -1012,8 +1027,25 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       'data-c3-open-ray-view':interval.view,
       'data-c3-open-ray-class':interval.strictVolumeRayStatus,
       'data-c3-geometry-status':'strict-volume-open-ray-only',
+      'data-geometry-id':source.id,
+      'data-geometry-view':interval.view,
+      'data-source-feature-key':sourceKey,
+      'data-source-feature-selected':String(featureSelected),
       'data-visibility':'undetermined',
       'aria-label':'C3 原始解析曲线开区间前方射线证明，不是正式工程线型'
+     });
+     node.setAttribute('tabindex','0');node.setAttribute('role','button');
+     const pick=()=>{
+      // Selection highlights the WHOLE certified M3 source branch. The
+      // M5 ray interval itself remains open-only and unsigned at endpoints.
+      selectedSourceFeature=selectedSourceFeature?.key===sourceKey&&
+       coordinator.selectedGeometryId()===source.id?null:
+       {key:sourceKey,objectId:source.id,revision:snap.revision};
+      coordinator.selectSceneGeometry(source.id);
+     };
+     node.addEventListener('click',pick);
+     node.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
      });
      svg.append(node);
     }

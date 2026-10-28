@@ -72,6 +72,29 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.ok(rayCurves.every(x=>
    ['strict-interior-ray-clear','opaque-interior-ahead'].includes(
     x.getAttribute('data-c3-open-ray-class'))));
+  // Each exact source-bounded M5 2D open interval can select its ORIGINAL
+  // analytic 3D branch; this never signs its GB line style or V5 actions.
+  assert.ok(rayCurves.every(x=>
+   x.getAttribute('data-geometry-id')?.startsWith('C3Branch3D')&&
+   !!x.getAttribute('data-source-feature-key')&&
+   x.getAttribute('data-source-feature-selected')==='false'&&
+   x.getAttribute('tabindex')==='0'));
+  const first=rayCurves[0],key=first.getAttribute('data-source-feature-key'),
+   originalId=first.getAttribute('data-geometry-id');
+  const samePhysical=[...$('v7-3d').querySelectorAll('[data-source-feature-key]')]
+   .filter(x=>x.getAttribute('data-geometry-id')===originalId);
+  assert.ok(samePhysical.some(x=>x.getAttribute('data-source-feature-key')===key));
+  first.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.equal($('v7-play').disabled,false);
+  assert.ok([...$('v7-3d').querySelectorAll('[data-source-feature-selected="true"]')]
+   .some(x=>x.getAttribute('data-geometry-id')===originalId&&
+    x.getAttribute('data-source-feature-key')===key));
+  assert.ok([...$('v7-sheet').querySelectorAll('[data-c3-open-ray-branch-id]')]
+   .filter(x=>x.getAttribute('data-source-feature-key')===key).every(x=>
+    x.getAttribute('data-source-feature-selected')==='true'));
+  assert.ok([...$('v7-sheet').querySelectorAll('[data-c3-open-ray-branch-id]')]
+   .every(x=>x.getAttribute('data-visibility')==='undetermined'&&
+    x.getAttribute('stroke-dasharray')==='1 6'));
   $('v7-guides').checked=false;fire('v7-guides','change');await tick();
   assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
   $('v7-guides').checked=true;fire('v7-guides','change');await tick();
