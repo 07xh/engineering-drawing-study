@@ -373,9 +373,11 @@ function homeHTML(){return `
     <h3 id="v8-review-title">核对条件并解题</h3>
     <p class="v8-review-lead">以下内容取自当前填写的条件，并非自动识图结果。</p>
     <p id="v8-review-summary" class="v8-review-summary" role="status">请选择解题类型并检查输入。</p>
-    <label class="v8-review-agree"><input id="v8-review-ack" type="checkbox">
+    <p id="v8-review-preflight" class="v8-review-preflight" data-state="pending" role="status" aria-live="polite">请先填写题目条件。</p>
+    <button type="button" id="v8-review-edit" class="v8-review-edit" hidden>定位需要修改的条件</button>
+    <label class="v8-review-agree"><input id="v8-review-ack" type="checkbox" aria-describedby="v8-review-preflight">
      我已逐项核对题目、尺寸、单位及必要的解题分支。</label>
-    <button type="button" id="v8-review-run" class="v7-primary" disabled>确认并开始计算</button>
+    <button type="button" id="v8-review-run" class="v7-primary" aria-describedby="v8-review-preflight" disabled>确认并开始计算</button>
     <p class="v8-review-help">确认后使用现有数学求解器；条件冲突或证据不足仍会阻止正式答案。</p>
    </section>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
