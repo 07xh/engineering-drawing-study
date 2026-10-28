@@ -76,7 +76,7 @@ test('overlap, empty or out-of-range gap endpoints, invalid view and missing sou
   [[NaN,1]],[[-Number.MIN_VALUE,0.5]]])
   assert.throws(()=>run('H',['A','C'],gaps),/ordered positive/);
  assert.throws(()=>run('X',['A','C'],[[0,0.5]]),/reviewed C1/);
- assert.throws(()=>run('H',['B','C'],[[0,0.5]]),/original physical/);
+ assert.throws(()=>run('H',['B','C'],[[0,0.5]],source(['A','C'])),/original physical/);
 });
 test('empty native gap inventory is an immutable diagnostic, never a V5 certificate',()=>{
  const r=run('V',['A','C'],[]);
