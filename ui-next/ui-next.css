@@ -1381,3 +1381,8 @@ body.ui-next .next-home-categories {
  body.ui-next .next-home-strengths>div {padding:2px}
  body.ui-next .next-home-v64 .next-home-library {min-height:0}
 }
+
+/* Keep the app-owned drawing controls next to the paper. */
+body.ui-next .next-drawing-controls{margin-top:12px;padding:12px;border:1px solid #dce4ef;border-radius:12px;background:#fff}
+body.ui-next .next-drawing-controls .actions{display:flex;flex-wrap:wrap;gap:8px}
+body.ui-next .next-drawing-controls .actions button{min-height:44px}

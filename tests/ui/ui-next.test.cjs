@@ -86,7 +86,7 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
   const {after}=enhance(page);
   assert.ok(after.getElementById(svg).closest('.next-canvas'),page);
   assert.ok(after.getElementById('fullControls').closest('.next-playback'),page);
-  for(const id of controls)assert.ok(after.getElementById(id).closest('.next-context'),page+' '+id);
+  for(const id of controls)assert.ok(after.getElementById(id).closest(['drawControls','studentMathFeedback'].includes(id)?'.next-canvas':'.next-context'),page+' '+id);
   assert.ok(after.getElementById('learningMode').closest('[data-next-panel="steps"]'),page);
  }
 });
@@ -415,5 +415,16 @@ test('explicit playback actions reveal explanations while retaining dedicated ca
   document.querySelector('[data-next-focus]').click();
   document.getElementById('next').click();
   assert.equal(document.body.classList.contains('next-focus-canvas'),true,page+' does not exit requested canvas focus');
+ }
+});
+
+test('drawing controls are beside the drawing without cloning app-owned controls',()=>{
+ for(const page of ['labs/point-projection-live.html','labs/circle-fillet-live.html']){
+  const {after}=enhance(page);
+  const controls=after.getElementById('drawControls');
+  assert.ok(controls.closest('.next-canvas'),page+' drawing controls stay near canvas');
+  for(const id of ['undoDraw','redoDraw','clearDraw','checkDraw'])
+   assert.equal(after.querySelectorAll('#'+id).length,1,page+' '+id+' remains unique');
+  assert.ok(controls.hasAttribute('hidden'));
  }
 });

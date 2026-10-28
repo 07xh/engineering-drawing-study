@@ -2,14 +2,14 @@
 const TOOLS=[
  ['cylinder-cut-live','圆柱截切实验','圆柱截切及对应三视图逐笔绘制。','打开实验'],
  ['prism-cut-live','棱柱截切实验','棱柱截切与投影作图。','打开实验'],
- ['cone-cut-live','圆锥斜截 · 统一 V5 动态作图','圆锥斜截与同纸三视图。','打开实验'],
- ['c2-native-cut-review','C2 通孔 · 真实 OCCT 局部 V5','从 GitHub Actions 下载真实 CAD 证明，手机本机导入已签发线条，其他线不绘制。','打开局部审核'],
+ ['cone-cut-live','圆锥斜截','圆锥斜截与同纸三视图。','打开实验'],
+ ['c2-native-cut-review','通孔视图检查','导入已确认的几何文件，查看已核对的线条。','打开局部审核'],
  ['recognition-qa','本地识图质量检查','本地图像质量和图元候选检查。','打开检查'],
  ['auto-fillet-live','二维自动解题','修改尺寸，查看连接弧作图。','开始解题'],
- ['polygon-live','正多边形 · V5 动态作图','正三角形、正六边形逐笔作图。','打开动态作图'],
- ['two-point-v5-live','双点投影 V5 预验收','已知双点坐标，绘制三面投影。','打开预验收'],
+ ['polygon-live','正多边形','正三角形、正六边形逐笔作图。','打开动态作图'],
+ ['two-point-v5-live','双点投影','已知双点坐标，绘制三面投影。','打开预验收'],
  ['solid-third-view-live','已确认基本体补第三视图','两个已知视图及人工确认拓扑，复算八个角点与全部棱的三视图。','打开几何预览'],
- ['c1-reviewed-dxf-live','教材两视图已知量本地审核','本机导入已隔离的可信 CAD 已知量，复核三维凸体并使用原有 V5。','打开私有原题审核'],
+ ['c1-reviewed-dxf-live','教材两视图已知量本地审核','导入已知图形，查看三维形状和作图步骤。','打开私有原题审核'],
  ['point-projection-live','三面投影','给定坐标，求完整三面投影。','进入工作台'],
  ['circle-fillet-live','圆弧连接','圆弧连接与切点辅助作图。','进入工作台'],
  ['free-modeler','自由建模','建立几何模型并查看投影。','打开工具'],
@@ -25,18 +25,18 @@ const TOOLS=[
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
- <div class="v7-head"><div><p class="next-home-kicker">V7 · 同一份本机项目</p><h1 id="v7-title">统一项目工作台</h1>
- <p>本机原图 → 人工确认毫米条件 → 真实数学 → 第一角 V/H/W、空间视图与单一 V5</p></div>
+ <div class="v7-head"><div><p class="next-home-kicker">工程制图</p><h1 id="v7-title">统一项目工作台</h1>
+ <p>导入题图，确认条件，查看作图步骤。</p></div>
  <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
  <section class="v7-course-entry" id="v7-course-entry" aria-labelledby="v7-course-title">
-  <div class="v7-course-head"><h2 id="v7-course-title">当前课程急用：相贯线 · 组合体 · 补第三视图</h2>
-   <p>这些入口使用已有工具，部分仅能演示或核对数学。新标签打开，不会切换本机项目题型、删除已确认条件或将演示提升为 V5 正式答案。</p></div>
+  <div class="v7-course-head"><h2 id="v7-course-title">选择题型</h2>
+   <p>按题目类型选择工具。</p></div>
   <div class="v7-course-grid" role="list">
    <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
-    <span class="v7-course-status">有限圆柱解析求解 · 已证明辅助点 V5</span>
+    <span class="v7-course-status">有限圆柱相贯线</span>
     <h3>相贯线</h3><p>对人工确认的两根有限正交圆柱，解析求交并在 V/H/W 中逐步绘制已验证的端点和内部辅助点；连续曲线仍为未签线型的预览。</p>
-    <div class="v7-course-links"><a href="labs/finite-cylinder-intersection-live.html" target="_blank" rel="noopener noreferrer">打开有限圆柱解析求点 V5 ↗</a>
-     <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">旧无限曲面数学实验 ↗</a></div>
+    <div class="v7-course-links"><a href="labs/finite-cylinder-intersection-live.html" target="_blank" rel="noopener noreferrer">打开相贯线作图 ↗</a>
+     <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">查看曲面相交 ↗</a></div>
    </article>
    <article class="v7-course-card" role="listitem" data-course="composition" data-capability="confirmed-scene-only">
     <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
@@ -48,12 +48,12 @@ function homeHTML(){return `
     <span class="v7-course-status">已确认基本体几何预览 · 非标准虚实线答案</span>
     <h3>补第三视图</h3><p>人工确认两视图中的对应点 A/B，可计算第三投影与已知 AB 线段的投影预览；虚实线和未知实体仍不自动推测。</p>
     <div class="v7-course-links"><a href="labs/solid-third-view-live.html" target="_blank" rel="noopener noreferrer">已确认长方体的第三视图 ↗</a>
-     <a href="labs/c1-reviewed-dxf-live.html" target="_blank" rel="noopener noreferrer">本机教材两视图已知量审核与唯一 V5 ↗</a>
+     <a href="labs/c1-reviewed-dxf-live.html" target="_blank" rel="noopener noreferrer">导入两视图 ↗</a>
      <a href="labs/two-point-v5-live.html" target="_blank" rel="noopener noreferrer">两视图 A/B 对应点与棱线预览 ↗</a>
      <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">单点投影求解 ↗</a></div>
    </article>
   </div>
-  <p class="v7-course-disclosure">课程急用计划只决定开发顺序，不代表相贯线、组合体或实体补第三视图已经完整自动解答；当前已有项目仍使用同一 Geometry Scene 与唯一 V5。</p>
+  <p class="v7-course-disclosure">部分题型仅支持预览，请按页面提示确认条件。</p>
  </section>
  <div class="v7-bar" aria-label="项目操作">
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
@@ -116,7 +116,7 @@ function homeHTML(){return `
    <p class="v7-warning">原图仅供人工读取：当前不自动识别未知题型、不读取教材答案。下面坐标必须自行核对。</p>
    <label>当前项目题型 <select id="v7-task" aria-label="切换同一项目的求解任务">
     <option value="projection">点的 V/H/W 三面投影</option>
-    <option value="planar">二维两线段圆弧连接 · 正式 V5</option>
+    <option value="planar">二维两线段圆弧连接</option>
     <option value="exploration">长方体截平面 · 限定证据预览</option>
     <option value="composition">多对象几何编辑 · 人工确认的场景预览</option>
    </select></label>
@@ -130,11 +130,11 @@ function homeHTML(){return `
    <button type="button" id="v7-solve" class="v7-primary">重新数学求解与作图</button></fieldset>
    <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other">提交当前题型条件</button>
     <button type="button" id="v7-confirm-other">核对并确认</button>
-    <button type="button" id="v7-solve-other" class="v7-primary">运行现有 M3 数学</button></div>
+    <button type="button" id="v7-solve-other" class="v7-primary">求解</button></div>
 
    <fieldset data-v7-task="planar" hidden>
     <legend>二维圆弧连接 · 两条有限线段（模型 mm）</legend>
-    <p class="v7-note">分别确认两条线段端点、半径、求解分支及行进方向。实际圆心与切点由现有 02 M3 求解，不由页面写死。</p>
+    <p class="v7-note">确认两条线段的端点、半径、分支及方向。</p>
     <div class="v7-xyz">
      <label>线段 1 A.x <input id="v7-f-ax" type="number" value="-20" step="any"></label>
      <label>A.y <input id="v7-f-ay" type="number" value="0" step="any"></label>
@@ -153,7 +153,7 @@ function homeHTML(){return `
    </fieldset>
    <fieldset data-v7-task="exploration" hidden>
     <legend>长方体及任意截平面（模型 mm）</legend>
-    <p class="v7-warning">空间 M3 目前仅输出限定几何证据：显示原立体线框和对应 V/H/W，不代表截线、遮挡或逐笔动画已经验收。</p>
+    <p class="v7-warning">当前仅显示立体线框和三视图，截线与虚实线尚不支持。</p>
     <div class="v7-xyz">
      <label>宽 X <input id="v7-p-width" type="number" step="any" value="10"></label>
      <label>深 Y <input id="v7-p-depth" type="number" step="any" value="10"></label>
@@ -177,7 +177,7 @@ function homeHTML(){return `
 
    <fieldset data-v7-task="composition" hidden>
     <legend>多对象几何 · 同一个本机项目</legend>
-    <p class="v7-warning">这里整理人工核对的已知几何，并不是自动求解。每个对象必须确认；不生成已证明的虚实线或 V5 答案。</p>
+    <p class="v7-warning">请逐个确认已知图形；当前不生成虚实线。</p>
     <label>已录入对象 <select id="v7-c-objects" aria-label="选择或编辑项目中的对象">
      <option value="">新增对象</option></select></label>
     <label>对象 ID（英文字母开头）<input id="v7-c-id" maxlength="80" value="ObjectA" autocomplete="off"></label>
@@ -219,10 +219,10 @@ function homeHTML(){return `
     </div>
     <p id="v7-c-status" class="v7-note" role="status">没有已确认对象。</p>
     <p id="v7-c-contacts" class="v7-note" role="status">空间组合关系尚未计算；必须确认至少两个闭合实体。相接或重叠也不代表已完成实体并集或虚实线证明。</p>
-    <p id="v7-c-stroke-proof" class="v7-note" role="status" aria-live="polite">正式 V5 线条证据尚未计算；所有未经签收的工程实线、虚线仍保持未判定。</p>
+    <p id="v7-c-stroke-proof" class="v7-note" role="status" aria-live="polite">尚未判定线条的虚实。</p>
     <fieldset class="v7-relation-editor">
      <legend>对象间约束 · M2 残差核验</legend>
-     <p class="v7-warning">仅检查已确认几何的距离、重合、等长、平行或垂直；不能自动求未知点、证明唯一解或生成 V5。</p>
+     <p class="v7-warning">可检查距离、重合、等长、平行或垂直；暂不求未知点。</p>
      <label>关系 ID <input id="v7-r-id" value="Relation1" maxlength="80" autocomplete="off"></label>
      <label>已存关系列表 <select id="v7-r-list"><option value="">新关系</option></select></label>
      <label>对象 A <select id="v7-r-a"><option value="">选择对象</option></select></label>
@@ -240,8 +240,8 @@ function homeHTML(){return `
      <p id="v7-r-status" role="status" class="v7-note">关系必须经人工确认后核对数值残差。</p>
     </fieldset>
     <details class="v7-unknowns">
-     <summary>通用 M3 未知点求解（二维 / 三维）</summary>
-     <p class="v7-warning">独立仿射点约束：仅适用于固定坐标、单轴数值、点重合、相对位移和中点。与上方非线性 M2 关系不能自动合并，距离、切线、角度暂不支持。结果无原图自动识别或 V5 证明。</p>
+     <summary>未知点求解（二维 / 三维）</summary>
+     <p class="v7-warning">支持固定坐标、点重合、相对位移和中点；暂不支持距离、切线或角度。</p>
      <label>空间维度 <select id="v7-u-frame">
       <option value="model-mm-2d">二维模型 mm</option>
       <option value="model-mm-3d">三维模型 mm</option>
@@ -279,7 +279,7 @@ function homeHTML(){return `
       <button type="button" id="v7-u-solve" class="v7-primary">计算未知点</button>
       <button type="button" id="v7-u-reset" class="v7-danger">清空未知点系统</button>
      </div>
-     <p id="v7-u-status" class="v7-note" role="status">手工确认后：仿射方程可给出唯一性证明；非线性仅报告局部候选与残差，不授予 V5。</p>
+     <p id="v7-u-status" class="v7-note" role="status">确认条件后可检查解的情况。</p>
     </details>
 
 
@@ -291,14 +291,14 @@ function homeHTML(){return `
   </section>
   <section class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label></div>
-   <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="统一求解结果的正面 V、水平 H、侧面 W 与 V5 作图"></svg>
-   <div class="v7-spatial"><div class="v7-line"><strong>同一数学场景的空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
+   <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="正面 V、水平 H、侧面 W 和作图步骤"></svg>
+   <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
     <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
    <p class="v7-note" id="v7-selection">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
   </section>
-  <section class="v7-card v7-steps" aria-label="统一 V5 播放与数学证据"><h2>真实作图步骤 · V5</h2>
+  <section class="v7-card v7-steps" aria-label="作图步骤与播放"><h2>作图步骤</h2>
    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
    <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
@@ -306,7 +306,7 @@ function homeHTML(){return `
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
    <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p class="v7-warning">点投影与两线段圆弧连接可复用正式 V5。长方体仅呈现已确认原立体和局部数学证据，不推测截交线、虚实线或动画。</p>
+   <p class="v7-warning">长方体目前仅显示已确认的线框，不生成截线或虚实线。</p>
   </section>
  </div>
 </section>
