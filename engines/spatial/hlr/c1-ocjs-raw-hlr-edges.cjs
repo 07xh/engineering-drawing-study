@@ -28,7 +28,11 @@ function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold,onG
   vs.Next();
  }
  if(coords.length!==2)throw new RangeError('real HLR BRep sharp edge lacks two vertices');
- if(Math.hypot(coords[0].u-coords[1].u,coords[0].v-coords[1].v)<=1e-7)
+ // Do not silently discard a genuine positive-length HLR fragment merely
+ // because it is shorter than an arbitrary drawing-unit tolerance. Such
+ // fragments can carry the missing endpoint of an original 3D source.
+ // Only literally coincident received binary64 vertices are collapsed.
+ if(coords[0].u===coords[1].u&&coords[0].v===coords[1].v)
   return null;
  const edgeType=hold(method(oc.TopoDS,'Edge_1')(edge));
  const adaptor=newObj('BRepAdaptor_Curve_2',edgeType);
