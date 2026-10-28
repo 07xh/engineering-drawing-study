@@ -524,6 +524,9 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
   sourceCertifiedNativeCanonicalPartialCutV5:certifiedCutPartialV5,
+  independentlySignedPartialCutV5ActionCount:
+   certifiedCutPartialV5?.certifiedVisibleHiddenSourceIntervals.length??0,
+  completeCutProjectOfficialGBLineStylesAndV5Certified:false,
   nativeCutOriginal3DJunctionGlobalM4M5JointGate:cutJointGate,
   subtractiveCutPartialRayEvidence:operation==='cut'?{
    scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
