@@ -1307,39 +1307,48 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       const generatedGroups=(active?.linkedC2?.groups||[]).filter(g=>
        g.revision===snap.revision&&
        sameSourceBodies(g.sourceGeometryIds,candidate.sourceGeometryIds));
-      const pointOnGeneratedSegment=(point,g)=>{
-       const a=g.source3DFrom,b=g.source3DTo;
-       if(!point||!a||!b||
-          ![point.x,point.y,point.z,a.x,a.y,a.z,b.x,b.y,b.z].every(Number.isFinite))
-        return false;
+      // M4/M5 may partition the same physical feature at different event
+      // boundaries. Join only the positive-length 3D interval intersection:
+      // never promote a paper line that merely touches a generated endpoint.
+      const sourceSegmentOverlap=g=>{
+       const a=candidate.source3DFrom,b=candidate.source3DTo,
+        c=g.source3DFrom,d=g.source3DTo;
+       if(!a||!b||!c||!d||
+          ![a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z,d.x,d.y,d.z]
+           .every(Number.isFinite))return null;
        const v=[b.x-a.x,b.y-a.y,b.z-a.z],
-        w=[point.x-a.x,point.y-a.y,point.z-a.z],
         len2=v.reduce((n,x)=>n+x*x,0);
-       if(!(len2>1e-16))return false;
-       const t=w.reduce((n,x,i)=>n+x*v[i],0)/len2,
-        cross=[w[1]*v[2]-w[2]*v[1],
-         w[2]*v[0]-w[0]*v[2],w[0]*v[1]-w[1]*v[0]],
-        distance=Math.hypot(...cross)/Math.sqrt(len2);
-       return t>=-1e-8&&t<=1+1e-8&&
-        distance<=1e-8*Math.max(1,Math.sqrt(len2));
+       if(!(len2>1e-16))return null;
+       const parameter=p=>((p.x-a.x)*v[0]+(p.y-a.y)*v[1]+
+        (p.z-a.z)*v[2])/len2;
+       const lineDistance=p=>{
+        const w=[p.x-a.x,p.y-a.y,p.z-a.z],
+         cross=[w[1]*v[2]-w[2]*v[1],
+          w[2]*v[0]-w[0]*v[2],w[0]*v[1]-w[1]*v[0]];
+        return Math.hypot(...cross)/Math.sqrt(len2);
+       };
+       const tol=1e-8*Math.max(1,Math.sqrt(len2));
+       if(lineDistance(c)>tol||lineDistance(d)>tol)return null;
+       const tc=parameter(c),td=parameter(d);
+       if(!Number.isFinite(tc)||!Number.isFinite(td))return null;
+       const fromT=Math.max(0,Math.min(tc,td)),
+        toT=Math.min(1,Math.max(tc,td));
+       if(!(toT-fromT>1e-8))return null;
+       return {fromT,toT};
       };
-      const sourceSegmentMatches=g=>
-       pointOnGeneratedSegment(candidate.source3DFrom,g)&&
-       pointOnGeneratedSegment(candidate.source3DTo,g)&&
-       Math.hypot(candidate.source3DTo.x-candidate.source3DFrom.x,
-        candidate.source3DTo.y-candidate.source3DFrom.y,
-        candidate.source3DTo.z-candidate.source3DFrom.z)>1e-8;
-      const idMatches=generatedGroups.filter(g=>
-       g.sourceFeatureId===candidate.sourceFeatureId&&sourceSegmentMatches(g));
-      const physicalMatches=generatedGroups.filter(sourceSegmentMatches);
-      // M4/M5 IDs are different namespaces. Prefer an ID match only after
-      // exact 3D subspan containment; otherwise allow a UNIQUE physical
-      // segment match within the same reviewed source bodies and revision.
-      const linkedGenerated=idMatches.length===1?idMatches[0]:
+      const idMatches=generatedGroups.map(g=>({g,overlap:sourceSegmentOverlap(g)}))
+       .filter(x=>x.overlap&&x.g.sourceFeatureId===candidate.sourceFeatureId);
+      const physicalMatches=generatedGroups.map(g=>({g,overlap:sourceSegmentOverlap(g)}))
+       .filter(x=>x.overlap);
+      // IDs are helpful but not interchangeable across M4/M5 namespaces.
+      // A unique exact-3D positive-length overlap is the final join witness.
+      const match=idMatches.length===1?idMatches[0]:
        idMatches.length===0&&physicalMatches.length===1?physicalMatches[0]:null;
+      const linkedGenerated=match?.g??null,linkedOverlap=match?.overlap??null;
       const sourceLinkStatus=candidate.sourceFeatureKind!=='generated-two-face-crease'?
-       'not-a-generated-crease':linkedGenerated?'unique-3d-source-match':
-       physicalMatches.length>1?'ambiguous-3d-source-match':'unmatched-3d-source';
+       'not-a-generated-crease':linkedGenerated?'unique-3d-source-overlap':
+       idMatches.length>1||physicalMatches.length>1?
+        'ambiguous-3d-source-match':'unmatched-3d-source';
       const linkedKey=linkedGenerated?
        JSON.stringify([linkedGenerated.geometryId,'segment']):null;
       const linkedSelected=!!linkedGenerated&&
@@ -1360,28 +1369,51 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-visibility':'undetermined',
        'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
       });
-      if(linkedGenerated){
-       rayNode.setAttribute('data-c2-generated-source-id',linkedGenerated.sourceFeatureId);
-       rayNode.setAttribute('data-geometry-id',linkedGenerated.geometryId);
-       rayNode.setAttribute('data-source-feature-key',linkedKey);
-       rayNode.setAttribute('data-source-feature-selected',String(linkedSelected));
-       rayNode.setAttribute('tabindex','0');rayNode.setAttribute('role','button');
-       rayNode.setAttribute('aria-label','选择对应的 C2 三维新生棱；当前线段仅为开区间射线诊断');
-       const pick=()=>{
-        const already=selectedSourceFeature?.key===linkedKey&&
-         selectedSourceFeature?.objectId===linkedGenerated.geometryId&&
-         coordinator.selectedGeometryId()===linkedGenerated.geometryId;
-        selectedSourceFeature=already?null:{
-         key:linkedKey,objectId:linkedGenerated.geometryId,revision:snap.revision
-        };
-        coordinator.selectSceneGeometry(linkedGenerated.geometryId);
-       };
-       rayNode.addEventListener('click',pick);
-       rayNode.addEventListener('keydown',e=>{
-        if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
-       });
-      }
       svg.append(rayNode);
+      if(linkedGenerated&&linkedOverlap){
+       // Keep the full M5 candidate as an untrusted dotted guide, and put
+       // the accessible selection target ONLY over the authentic 3D overlap.
+       const at=t=>({x:start.x+(end.x-start.x)*t,
+        y:start.y+(end.y-start.y)*t});
+       const linkedStart=at(linkedOverlap.fromT),linkedEnd=at(linkedOverlap.toT);
+       if(Math.hypot(linkedEnd.x-linkedStart.x,linkedEnd.y-linkedStart.y)>1e-8){
+        const linkNode=shape('line',{
+         x1:linkedStart.x,y1:linkedStart.y,x2:linkedEnd.x,y2:linkedEnd.y,
+         stroke:tone,'stroke-width':3,'stroke-dasharray':'1 7',
+         'data-c2-m5-paper-line-id':candidate.id,
+         'data-c2-m5-ray-status':candidate.rayStatus,
+         'data-c2-m5-paper-view':candidate.view,
+         'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
+         'data-c2-m5-source-feature-id':candidate.sourceFeatureId??'unresolved',
+         'data-c2-m5-source-kind':candidate.sourceFeatureKind??'unresolved',
+         'data-c2-m5-source-link-status':'unique-3d-source-overlap',
+         'data-c2-m5-linked-source-t-range':JSON.stringify([
+          linkedOverlap.fromT,linkedOverlap.toT]),
+         'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
+         'data-visibility':'undetermined',
+         'aria-label':'选择真实 C2 三维新生棱的对应重叠区间；仅为开区间射线诊断'
+        });
+        linkNode.setAttribute('data-c2-generated-source-id',linkedGenerated.sourceFeatureId);
+        linkNode.setAttribute('data-geometry-id',linkedGenerated.geometryId);
+        linkNode.setAttribute('data-source-feature-key',linkedKey);
+        linkNode.setAttribute('data-source-feature-selected',String(linkedSelected));
+        linkNode.setAttribute('tabindex','0');linkNode.setAttribute('role','button');
+        const pick=()=>{
+         const already=selectedSourceFeature?.key===linkedKey&&
+          selectedSourceFeature?.objectId===linkedGenerated.geometryId&&
+          coordinator.selectedGeometryId()===linkedGenerated.geometryId;
+         selectedSourceFeature=already?null:{
+          key:linkedKey,objectId:linkedGenerated.geometryId,revision:snap.revision
+         };
+         coordinator.selectSceneGeometry(linkedGenerated.geometryId);
+        };
+        linkNode.addEventListener('click',pick);
+        linkNode.addEventListener('keydown',e=>{
+         if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
+        });
+        svg.append(linkNode);
+       }
+      }
      }
     }
     // Generated creases now render from the SAME validated 3D Geometry
