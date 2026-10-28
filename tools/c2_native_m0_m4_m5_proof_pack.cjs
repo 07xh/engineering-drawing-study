@@ -489,6 +489,12 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    cutJointGate?.counts.jointOpenRayNativeEndpointAndGlobalPaperCandidates??0,
   cutNativeOriginal3DSourceEndpointPairCount:
    cutJointGate?.counts.exactOriginalNative3DEndpointPairs??0,
+  cutNative3DEndpointPaperAliasDepthResolvedPairs:
+   cutJointGate?.counts.fullNative3DEndpointPairsWithResolvedProjectedAliasDepth??0,
+  cutNativeStrictlyOrderedPaperEndpointAliasEvents:
+   cutJointGate===null?0:
+   cutJointGate.counts.strictlyFrontOfPaperEndpointAliasCount+
+   cutJointGate.counts.strictlyBehindPaperEndpointAliasCount,
   officiallySignedNativeSubspanCount:
    certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
