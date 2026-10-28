@@ -191,6 +191,22 @@ function reviewC2FullPaperStrokeReadiness({
     full.signedCount!==0||full.officialLineStylesVerified!==false||
     full.v5Ready!==false)
   throw new Error('C2 全局纸面来源 M0-M5 与现有局部证明不一致');
+ // A 2D silhouette boundary only receives a true ORIGINAL / GENERATED
+ // 3D source-coverage label when the current full M5 deduplicated source
+ // classes cover its ENTIRE projected positive interval. This never
+ // asserts 3D frontmost visibility or a standard drawing line.
+ const dedup=full.exactPhysicalDedupEvidence;
+ if(dedup?.status!=='exact-current-original-generated-3d-physical-feature-classes'||
+    dedup.revision!==revision||!idsEqual(dedup.sourceGeometryIds)||
+    dedup.allReviewedSourceRecordsRetainedAndExactlyGrouped!==true||
+    dedup.allFinalBooleanExteriorFeatureSourcesEnumerated!==false||
+    dedup.officialLineStylesVerified!==false||dedup.v5Ready!==false)
+  throw new Error('C2 完整纸面轮廓缺少当前三维物理来源清单');
+ const sourceKeysByView=new Map(['V','H','W'].map(v=>[v,new Set(
+  dedup.groups.filter(g=>g.view===v).flatMap(g=>
+   g.physicalFeatureClasses.map(c=>c.key))
+ )]));
+ const sourceBoundaries=[],byView=[];
  // Independent complete region area/geometry must agree, not only COUNT.
  for(const view of ['V','H','W']){
   const a=baseline.projectedRegion.projectedViews.find(v=>v.view===view);
@@ -206,7 +222,63 @@ function reviewC2FullPaperStrokeReadiness({
      x.signedLoopAreasTotalMm2!==y.signedLoopAreasTotalMm2||
      x.sourceBoundarySegmentCount!==y.sourceBoundarySegmentCount)
    throw new Error('C2 原生三视图区域与全局纸面线条来源不一致：'+view);
+  const sourceByExactBoundary=new Map();
+  const fingerprint=z=>JSON.stringify([
+   z.type,z.projectedFromModelMm,z.projectedToModelMm
+  ]);
+  for(const item of b.boundaries){
+   const key=fingerprint(item);
+   if(sourceByExactBoundary.has(key))
+    throw new Error('C2 当前投影区域出现重复来源边界');
+   sourceByExactBoundary.set(key,item);
+  }
+  const start=sourceBoundaries.length;
+  for(const origin of a.boundaries){
+   const candidate=sourceByExactBoundary.get(fingerprint(origin));
+   if(!candidate||candidate.view!==view||
+      candidate.exactOpenCellOppositeOccupancyVerified!==true||
+      candidate.projectedEngineeringSolidDashedStyle!=='undetermined'||
+      candidate.canonicalIntentDAGAndV5Approved!==false||
+      candidate.whole3DBooleanFeatureProvenanceAndOcclusionVerified!==false||
+      !Array.isArray(candidate.matchingReviewedPhysicalSourceClassKeys)||
+      candidate.matchingReviewedPhysicalSourceClassKeys.some(key=>
+       !sourceKeysByView.get(view).has(key))||
+      (candidate.originalOrGeneratedProjectedPhysicalSourceCoverageVerified===true&&
+       candidate.matchingReviewedPhysicalSourceClassKeys.length===0))
+    throw new Error('C2 来源区间不可与实际三维物理特征身份匹配：'+view);
+   sourceBoundaries.push(Object.freeze({
+    id:origin.id,view,kind:origin.type,revision,
+    from:Object.freeze({...origin.projectedFromModelMm}),
+    to:Object.freeze({...origin.projectedToModelMm}),
+    completeProjectedPhysicalSourceCoverage:
+     candidate.originalOrGeneratedProjectedPhysicalSourceCoverageVerified===true,
+    physical3DSourceClassKeys:Object.freeze([
+     ...candidate.matchingReviewedPhysicalSourceClassKeys
+    ]),
+    globalContinuousOcclusionProven:false,
+    officialEngineeringLineStyle:'undetermined',
+    officialV5Approved:false
+   }));
+  }
+  const viewBoundaries=sourceBoundaries.slice(start);
+  if(viewBoundaries.length!==b.boundaries.length)
+   throw new Error('C2 三视图物理边界来源记录未闭合');
+  byView.push(Object.freeze({
+   view,regionBoundaryCount:viewBoundaries.length,
+   sourceCovered:viewBoundaries.filter(z=>
+    z.completeProjectedPhysicalSourceCoverage).length,
+   sourceIncomplete:viewBoundaries.filter(z=>
+    !z.completeProjectedPhysicalSourceCoverage).length,
+   projectedAreaMm2:b.completeProjectedUnionAreaMm2
+  }));
  }
+ const matched=sourceBoundaries.filter(z=>
+  z.completeProjectedPhysicalSourceCoverage).length;
+ if(sourceBoundaries.length!==region.projectedBoundarySegmentCount||
+    sourceBoundaries.length-matched!==
+     region.sourceUncoveredProjectedBoundarySegmentCount||
+    byView.some(x=>x.sourceCovered+x.sourceIncomplete!==x.regionBoundaryCount))
+  throw new Error('C2 三维物理来源与整张闭合图纸的边界证据数不守恒');
  const entries=paper.lines.map(line=>{
   if(line.revision!==revision||!['V','H','W'].includes(line.view)||
      ![line.projectedFromModelMm?.u,line.projectedFromModelMm?.v,
@@ -257,6 +329,10 @@ function reviewC2FullPaperStrokeReadiness({
   paperIntervalCount:entries.length,
   entries:Object.freeze(entries),
   counts:Object.freeze(counts),
+  sourceBoundaries:Object.freeze(sourceBoundaries),
+  sourceBoundariesByView:Object.freeze(byView),
+  sourceCoveredBoundaryCount:matched,
+  sourceIncompleteBoundaryCount:sourceBoundaries.length-matched,
   fullSourceCrossAudit:true,
   officialDrawingLineStylesVerified:false,completeV5DrawingAuthorized:false
  });

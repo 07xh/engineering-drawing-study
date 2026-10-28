@@ -1017,6 +1017,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         c2.projectedRegion.projectedBoundarySegmentCount||
        c2.projectedLoops.v5Ready!==false)
      throw Error('C2 闭合投影区域轮廓来源未被完整校验');
+    const sourceRayReview=preview()?.c2PaperRayProof;
+    const boundSources=sourceRayReview?.sourceBoundaries??null;
+    const physicalBySource=boundSources?new Map(boundSources.map(x=>
+     [x.view+':'+x.id,x])):null;
+    if(physicalBySource&&(sourceRayReview.revision!==snap.revision||
+       physicalBySource.size!==boundSources.length||
+       boundSources.length!==c2.projectedRegion.projectedBoundarySegmentCount||
+       sourceRayReview.sourceCoveredBoundaryCount+
+        sourceRayReview.sourceIncompleteBoundaryCount!==boundSources.length))
+     throw Error('C2 M5 实体来源范围与当前投影图纸无法对应');
     for(const view of c2.projectedRegion.projectedViews){
      const topology=c2.projectedLoops.projectedViews.find(v=>v.view===view.view);
      if(!topology||topology.sourceBoundarySegmentCount!==view.boundaries.length)
@@ -1026,23 +1036,43 @@ const Motion=require('../workbench/teaching-motion-v5.js');
          boundary.projectedEngineeringSolidDashedStyle!=='undetermined'||
          boundary.canonicalIntentDAGAndV5Approved!==false)
        throw Error('C2 区域外轮廓不能擅自升级为工程线型');
+      const bound=physicalBySource?.get(view.view+':'+boundary.id);
+      if(physicalBySource&&(!bound||bound.kind!==boundary.type||
+         bound.revision!==snap.revision||
+         bound.from.u!==boundary.projectedFromModelMm.u||
+         bound.from.v!==boundary.projectedFromModelMm.v||
+         bound.to.u!==boundary.projectedToModelMm.u||
+         bound.to.v!==boundary.projectedToModelMm.v||
+         bound.officialEngineeringLineStyle!=='undetermined'||
+         bound.officialV5Approved!==false||
+         bound.globalContinuousOcclusionProven!==false))
+       throw Error('C2 投影边界的物理三维来源或正式线型门禁不一致');
+      const coverage=bound?
+       (bound.completeProjectedPhysicalSourceCoverage?
+        'full-original-or-generated-3d-physical-source':'3d-source-interval-gap'):
+        'unreviewed-m0-2d-only';
       const a=toSheet(view.view,boundary.projectedFromModelMm,frame);
       const b=toSheet(view.view,boundary.projectedToModelMm,frame);
       const node=shape('line',{
        x1:a.x,y1:a.y,x2:b.x,y2:b.y,
-       stroke:$('v7-mono').checked?'#555':'#15868a',
+       stroke:$('v7-mono').checked?'#555':
+        coverage==='3d-source-interval-gap'?'#9996a3':'#15868a',
        'stroke-width':2,'stroke-dasharray':'8 3 2 3',
        'data-c2-region-boundary-id':boundary.id,
        'data-c2-region-view':view.view,
        'data-c2-region-boundary-kind':boundary.type,
+       'data-c2-region-source-coverage':coverage,
+       'data-c2-region-source-classes':
+        bound?bound.physical3DSourceClassKeys.join('|'):'',
        'data-visibility':'undetermined',
        'data-c2-geometry-status':'exact-2d-occupancy-only',
-       'aria-label':'C2 投影占据区域的数学外边界，不是正式三维轮廓线'
+       'aria-label':coverage==='full-original-or-generated-3d-physical-source'?
+        'C2 投影区域边界已有原始或生成三维来源区间，但遮挡与正式线型未证明':
+        'C2 投影区域边界仍缺少完整三维物理来源，非正式工程轮廓线'
       });
       svg.append(node);
      }
     }
-    const sourceRayReview=preview()?.c2PaperRayProof;
     if(sourceRayReview&&sourceRayReview.revision===snap.revision){
      if(sourceRayReview.paperIntervalCount!==sourceRayReview.entries.length||
         sourceRayReview.fullSourceCrossAudit!==true||
@@ -1382,7 +1412,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
           ' 项、仍未定 '+partial.c2PaperRayProof.counts.unresolved+
           ' 项；已同时核对三维布尔表面来源 '+partial.c2PaperRayProof.counts.sourceExteriorOpen+
           ' 项、两个端点局部接合加射线 '+partial.c2PaperRayProof.counts.locallyJointEndpoint+
-          ' 项。蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
+          ' 项。闭合投影边界中已有完整三维物理来源覆盖 '+
+           partial.c2PaperRayProof.sourceCoveredBoundaryCount+'/'+
+           partial.c2PaperRayProof.sourceBoundaries.length+
+          ' 段，来源缺口 '+partial.c2PaperRayProof.sourceIncompleteBoundaryCount+
+          ' 段；淡灰边界表示来源未完整覆盖，均不是正式工程实虚线。'+
+          ' 蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
           ' 多于两实体或非正交模型暂不执行完整纸面 M5 清单。'):
 
         ' 非正交凸体仍未取得生成交汇棱的正向证明。')+

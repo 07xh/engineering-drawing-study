@@ -48,6 +48,34 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
  assert.equal(proof.counts.locallyClear+proof.counts.locallyOpaque+
   proof.counts.unresolved,proof.paperIntervalCount);
  assert.equal(proof.fullSourceCrossAudit,true);
+ assert.equal(proof.sourceBoundaries.length,
+  m.projectedRegion.projectedBoundarySegmentCount);
+ assert.equal(proof.sourceCoveredBoundaryCount+
+  proof.sourceIncompleteBoundaryCount,proof.sourceBoundaries.length);
+ assert.equal(proof.sourceBoundariesByView.length,3);
+ assert.deepEqual(proof.sourceBoundariesByView.map(x=>x.view),['V','H','W']);
+ assert.ok(proof.sourceBoundaries.every(b=>
+  b.revision===proof.revision&&
+  b.officialEngineeringLineStyle==='undetermined'&&
+  b.officialV5Approved===false&&
+  b.globalContinuousOcclusionProven===false));
+ for(const view of ['V','H','W']){
+  const rows=proof.sourceBoundaries.filter(x=>x.view===view);
+  const inventory=m.projectedRegion.projectedViews.find(x=>x.view===view);
+  assert.equal(rows.length,inventory.boundaries.length);
+  assert.equal(rows.filter(x=>x.completeProjectedPhysicalSourceCoverage).length,
+   proof.sourceBoundariesByView.find(x=>x.view===view).sourceCovered);
+  for(const b of inventory.boundaries){
+   const matching=rows.find(x=>x.id===b.id);
+   assert.ok(matching);
+   assert.equal(matching.kind,b.type);
+   assert.deepEqual(matching.from,b.projectedFromModelMm);
+   assert.deepEqual(matching.to,b.projectedToModelMm);
+  }
+ }
+ assert.ok(proof.sourceBoundaries.filter(x=>
+  x.completeProjectedPhysicalSourceCoverage).every(x=>
+   x.physical3DSourceClassKeys.length>0));
  assert.equal(proof.officialDrawingLineStylesVerified,false);
  assert.equal(proof.completeV5DrawingAuthorized,false);
  assert.ok(proof.entries.every(x=>
@@ -138,6 +166,9 @@ test('C2 planar face contact has NO invented generated pairwise feature and rema
  assert.ok(m.source.flatNoCreaseCount>0);
  assert.equal(m.projectedLoops.allProjectedBoundaryCyclesSimpleAndClosedVerified,true);
  assert.ok(out.c2PaperRayProof.paperIntervalCount>0);
+ assert.equal(out.c2PaperRayProof.sourceCoveredBoundaryCount+
+  out.c2PaperRayProof.sourceIncompleteBoundaryCount,
+  m.projectedRegion.projectedBoundarySegmentCount);
  assert.equal(out.c2PaperRayProof.officialDrawingLineStylesVerified,false);
  assert.equal(out.c2PaperRayProof.completeV5DrawingAuthorized,false);
  assert.equal(m.projectedRegion.viewCount,3);
