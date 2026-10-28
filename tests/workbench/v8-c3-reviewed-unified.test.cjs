@@ -117,7 +117,8 @@ test('C3 explicitly chosen intersection and union use different M5 strict-volume
   const paper=out.analyticRayPaperReview;
   assert.equal(paper.schema,'draftai-c3-first-angle-analytic-open-ray-paper/1');
   assert.equal(paper.solidOperation,op);
-  assert.equal(paper.revision,coordinator.snapshot().revision);
+  assert.equal(paper.revision,out.joint.revision,
+   'each saved operation proof must retain its own original revision');
   assert.equal(paper.originalBranchCount,out.evidence.sourceM3.branchCount);
   assert.ok(paper.sourceParameterIntervalCount>=12);
   assert.equal(paper.sourceParameterIntervalCount,paper.intervals.length);
