@@ -202,7 +202,7 @@ for(const [index,geometry] of general.entries()){
     w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
     w.globalPaperCandidateOrdinals.length>=1&&
     w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
-  console.error('REAL HLR original source-scoped '+view+': +
+  console.error('REAL HLR original source-scoped '+view+': '+
    JSON.stringify({sources:scoped.sourceEdgeCount,
     emitted:scoped.nativeSourceScopedOutputEdgeCount,
     directNativeIsSame:scoped.nativeScopedToWholeSolidGeneratedIsSameCount,
