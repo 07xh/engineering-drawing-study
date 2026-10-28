@@ -18,6 +18,7 @@ const {manualSegment}=require('./source-candidate-bridge.cjs');
 const {compileGeometryScene,sourceFeatureKey,drawAnalyticPath}=
  require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
+const {describeSourceFeature}=require('./source-feature-selection-label.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
@@ -1879,8 +1880,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       '完整切后实体与正式工程图未签收，不能导出已验证答案。':
      '未计算／条件失效；恢复项目不可继承“已验证”资格。';
   const activeGeometry=coordinator.selectedGeometryId();
+  const precise=activeGeometry&&selectedSourceFeature?.objectId===activeGeometry?
+   describeSourceFeature(selectedSourceFeature):null;
   $('v7-selection').textContent=activeGeometry?
-    '已选 '+activeGeometry+'，对应视图已高亮。':
+    '已选 '+activeGeometry+(precise?' · '+precise+
+     '；已定位同源图元（不代表虚实线已认证）。':
+     '，对应视图已高亮。'):
     '点选图元，查看各视图中的对应位置。';
   const mode=snap.view.mode;
   $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
