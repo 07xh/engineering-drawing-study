@@ -6,7 +6,7 @@
  * native scoped IsSame is tracked separately, and original 3D source
  * parameter intervals and continuous M5 rays remain independent gates.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -26,11 +26,32 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    throw new RangeError('nonfinite or degenerate original C1 3D source edge');
   return geometry.id+'::'+[...e].sort().join('|');
  });
+ const projectedOriginalBySource=new Map();
+ for(let i=0;i<ids.length;i++){
+  const [a,b]=geometry.data.edges[i].map(id=>geometry.data.points[id]);
+  const projectedA=project(a),projectedB=project(b);
+  projectedOriginalBySource.set(ids[i],Object.fromEntries(VIEWS.map(view=>
+   [view,[projectedA[view],projectedB[view]]])));
+ }
  const expected=new Set(ids);
  if(expected.size!==ids.length)
   throw new RangeError('duplicate original M0 physical source edge');
  const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
  const same=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v)<=1e-6;
+ // Scoped HLR paper aliases are only CANDIDATES, but even a candidate
+ // must lie on its claimed ORIGINAL M0 edge in the SAME first-angle view.
+ // This tolerance is exclusively for CAD paper rounding, never for exact
+ // source parameter coverage, 3D depth, continuous visibility or V5.
+ const onOriginalPaperEdge=(p,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const dx=b.u-a.u,dy=b.v-a.v,length=Math.hypot(dx,dy);
+  if(!valid(p)||!Number.isFinite(length)||!(length>0))return false;
+  const along=(p.u-a.u)*(dx/length)+(p.v-a.v)*(dy/length);
+  if(!Number.isFinite(along))return false;
+  const bounded=Math.max(0,Math.min(length,along));
+  return Math.hypot(p.u-a.u-(dx/length)*bounded,
+   p.v-a.v-(dy/length)*bounded)<=1e-6;
+ };
  const views={},counts={originalSourceEdgesPerView:ids.length,
   nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
   paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
@@ -105,6 +126,14 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
         w.globalContinuousOcclusionProven!==false||
         w.engineeringLineStyle!=='undetermined'||w.signedV5Action!==false)
       throw new RangeError('invalid unsigned OCCT source-scoped HLR witness');
+     // A native source-filtered HLR line cannot be attributed to an
+     // arbitrary 3D source just because its label occurs in a whole-solid
+     // candidate list. Reproject the original 3D BRep endpoints first.
+     // A collapsed projection has no positive line to attribute.
+     if(!(Math.hypot(w.to.u-w.from.u,w.to.v-w.from.v)>0)||
+        !onOriginalPaperEdge(w.from,source,view)||
+        !onOriginalPaperEdge(w.to,source,view))
+      throw new RangeError('source-scoped HLR paper segment contradicts original M0 3D projection');
      const ordinalSet=new Set();
      for(const ordinal of paper){
       if(!Number.isSafeInteger(ordinal)||ordinal<0||
