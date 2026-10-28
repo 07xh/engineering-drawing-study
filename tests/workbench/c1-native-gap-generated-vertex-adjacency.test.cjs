@@ -76,3 +76,52 @@ test('invalid gaps and unrelated HLR source candidates never sign V5',()=>{
  assert.equal(r.constructionIntentAuthorized,false);
  assert.ok(Object.isFrozen(r));
 });
+
+test('genuine A paper point is literal but never supplies a positive source gap history',()=>{
+ const r=run([[0,5.02742501717052e-18]]);
+ assert.equal(r.rows[0].from.nativeGeneratedPaperCandidateParameterEqualCount,1);
+ assert.equal(r.rows[0].from.nativeGeneratedLiteralOriginalPaperBoundaryCount,1);
+ assert.equal(r.rows[0].from.nativeGeneratedRoundedInverseOriginalBoundaryAliasCount,0);
+ assert.equal(r.actualNativeRoundedInverseOriginalBoundaryAliasEndpoints,0);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+});
+test('interior subnormal HLR endpoint with rounded t=0 is not a literal M0 A vertex',()=>{
+ const s=segment({from:{u:Number.MIN_VALUE,v:0},
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,5.02742501717052e-18]],[s]);
+ assert.equal(r.rows[0].from.nativeGeneratedPaperCandidateParameterEqualCount,1);
+ assert.equal(r.rows[0].from.nativeGeneratedLiteralOriginalPaperBoundaryCount,0);
+ assert.equal(r.rows[0].from.nativeGeneratedRoundedInverseOriginalBoundaryAliasCount,1);
+ assert.equal(r.actualNativeRoundedInverseOriginalBoundaryAliasEndpoints,1);
+ assert.equal(r.endpoints[0].directNativeIsSameOriginalM0VertexId,null);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('reversed HLR source and cross-axis paper drift preserve original A-end gap',()=>{
+ for(const s of [
+  segment({from:{u:3,v:16},to:{u:Number.MIN_VALUE,v:0},
+   sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+    originalVertexIds:['A','C'],
+    paperOnlyUnclampedOriginalSourceParameters:[1,0]}],
+   directNativeVertexOriginalSource:[native('C'),native(null)]}),
+  segment({from:{u:0,v:Number.MIN_VALUE},
+   directNativeVertexOriginalSource:[native(null),native('C')]})
+ ]){
+  const r=run([[0,1.1102230246251565e-16]],[s]);
+  assert.equal(r.rows[0].from.nativeGeneratedPaperCandidateParameterEqualCount,1);
+  assert.equal(r.rows[0].from.nativeGeneratedLiteralOriginalPaperBoundaryCount,0);
+  assert.equal(r.rows[0].from.nativeGeneratedRoundedInverseOriginalBoundaryAliasCount,1);
+  assert.equal(r.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+  assert.equal(r.formalEngineeringLineStyleCertified,false);
+ }
+});
+test('unbounded paper inverse parameters never count as literal original M0 vertices',()=>{
+ const s=segment({sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+  originalVertexIds:['A','C'],
+  paperOnlyUnclampedOriginalSourceParameters:[-Number.MIN_VALUE,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,0.1]],[s]);
+ assert.equal(r.endpoints[0].paperInverseOriginalBoundaryWithinDomain,false);
+ assert.equal(r.rows[0].from.nativeGeneratedLiteralOriginalPaperBoundaryCount,0);
+ assert.equal(r.rows[0].from.nativeGeneratedRoundedInverseOriginalBoundaryAliasCount,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
