@@ -218,7 +218,7 @@ function auditC2GeneratedResultProjectedM4M5({
     officialEngineeringLineStyle:'undetermined',V5ActionSignedOff:false
    };
    let status='undetermined-join-or-native-boolean-evidence',
-    clear=false,hidden=false;
+    clear=false,hidden=false,subtractiveCutRay=null;
    if(edge.feature==='coplanar-subdivision')
     status='coplanar-native-subdivision-not-a-line';
    else if(edge.feature!=='physical-crease')
@@ -231,12 +231,12 @@ function auditC2GeneratedResultProjectedM4M5({
     // true M4 subspan. The open source parameter is affine and its exact
     // cutter separation holds for ALL interior points, not a few samples.
     // This is a useful partial proof but never a global GB/V5 signing path.
-    const evidence=certifyAxisBoxSubtractiveOpenRay({
+    subtractiveCutRay=certifyAxisBoxSubtractiveOpenRay({
      source:{id:'NativeEdge'+raw.id+'Part'+k,from,to},
      stock:boxes[0],cutter:boxes[1],view:raw.view
     });
-    clear=evidence.status==='certified-clear';
-    hidden=evidence.status==='certified-strictly-hidden';
+    clear=subtractiveCutRay.status==='certified-clear';
+    hidden=subtractiveCutRay.status==='certified-strictly-hidden';
     status=clear?'analytic-cut-whole-open-subspan-front-ray-clear':
      hidden?'analytic-cut-whole-open-subspan-strictly-hidden':
      'unresolved-subtracted-void-continuous-ray-depth';
@@ -284,6 +284,9 @@ function auditC2GeneratedResultProjectedM4M5({
      operation==='cut'&&clear,
     continuousSubtractiveCutStrictHiddenVerified:
      operation==='cut'&&hidden,
+    originalM0SubtractiveCutOpenSourceRayEvidence:subtractiveCutRay,
+    wholeOpenM4SubspanStrictFrontMaterialSlabProven:
+     subtractiveCutRay?.everyOpenSourcePointHasCommonStrictFrontMaterialDepth===true,
     exactBoxOpenSourceRayProofApplied:
      boxes.length===solids.length,
     projectedAliasOrUncertainEventBlocked:
@@ -321,6 +324,10 @@ function auditC2GeneratedResultProjectedM4M5({
   continuousM5SubspanCount:totalSubspans,
   positiveWholeOpenRayClearSubspans:positiveClear,
   positiveWholeStrictlyHiddenSubspans:positiveHidden,
+  positivelyProvenCutFrontMaterialSlabSubspans:
+   operation==='cut'?rows.reduce((n,row)=>n+
+    row.subspans.filter(s=>
+     s.wholeOpenM4SubspanStrictFrontMaterialSlabProven).length,0):0,
   partialSubtractiveCutRaySubspansProven:
    operation==='cut'?positiveClear+positiveHidden:0,
   wholeSubtractiveSceneAndGBLineStylesCertified:false,
