@@ -1276,33 +1276,63 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const suffix=snap.source.imageId?
    ' 原图仅本机保存；请逐项核对后再确认。':
    ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
-  // Live UI preflight does not sign geometry: original 03/M0-M5
-  // recompute all reviewed input on confirmed submission.
-  let allowed=snap.task!=='composition',reviewIssue='';
-  if(snap.task==='c1-third-view'){
-   if(!$('v8-c1-topology').checked)allowed=false;
-   try{
-    parseReviewedC1Rows($('v8-c1-vertices').value,
-     $('v8-c1-pair').value);
-   }catch(error){
-    allowed=false;
-    reviewIssue=error.message;
+  // Preflight is user guidance only. The authoritative M0–M5 checks
+  // still run on explicit submission; this cannot certify an answer.
+  let allowed=snap.task!=='composition',reviewIssue='',reviewTarget='',c1ParseIssue='';
+  const edit=$('v8-review-edit'),readiness=$('v8-review-preflight');
+  if(edit.dataset.target)$(edit.dataset.target)?.removeAttribute('aria-invalid');
+  if(snap.task==='composition'){
+   reviewIssue='组合体请在上方确认已知形体；这里不生成完整标准答案。';
+   reviewTarget='v8-c2-a-x0';
+  }else{
+   // Follow fieldsForTask, the same input inventory used by submission.
+   for(const id of fieldsForTask(snap.task)){
+    const field=$(id);
+    if(field?.getAttribute('type')!=='number')continue;
+    const raw=field.value.trim(),number=Number(raw);
+    if(raw===''||!Number.isFinite(number)||Math.abs(number)>100000){
+     const title=field.closest('label')?.textContent.trim().replace(/\s+/g,' ').slice(0,28)||'数值';
+     reviewIssue='请检查“'+title+'”：填写 ±100000 mm 内的有效数值。';
+     reviewTarget=id;allowed=false;break;
+    }
+   }
+   if(!reviewIssue&&snap.task==='c1-third-view'){
+    try{parseReviewedC1Rows($('v8-c1-vertices').value,$('v8-c1-pair').value);}
+    catch(error){allowed=false;c1ParseIssue=error.message;reviewIssue=c1ParseIssue;reviewTarget='v8-c1-vertices';}
+    if(!reviewIssue&&!$('v8-c1-topology').checked){
+     allowed=false;reviewIssue='请核对八个角点和闭合实体拓扑后勾选确认。';
+     reviewTarget='v8-c1-topology';
+    }
+   }
+   if(!reviewIssue&&snap.task==='c3-intersection'){
+    if(!$('v8-c3-axes').checked){
+     allowed=false;reviewIssue='请确认两根圆柱的轴向、位置和尺寸。';
+     reviewTarget='v8-c3-axes';
+    }else if(!$('v8-c3-caps').checked){
+     allowed=false;reviewIssue='请确认两根圆柱的端盖及有限范围。';
+     reviewTarget='v8-c3-caps';
+    }else{
+     try{makeReviewedC3Input(Object.fromEntries(C3_KEYS.map(k=>
+      [k,Number(value('v8-c3-'+k))])));}
+     catch(error){allowed=false;reviewIssue=error.message;reviewTarget='v8-c3-zRadius';}
+    }
+   }
+   if(!reviewIssue){
+    try{fieldsToValue(snap.task,snap.source.imageId);}
+    catch(error){allowed=false;reviewIssue=error.message;reviewTarget=fieldsForTask(snap.task)[0];}
    }
   }
-  if(snap.task==='c3-intersection'){
-   try{
-    if(!$('v8-c3-axes').checked||!$('v8-c3-caps').checked)
-     allowed=false;
-    else makeReviewedC3Input(Object.fromEntries(C3_KEYS.map(k=>{
-     const raw=value('v8-c3-'+k);
-     if(raw==='')throw Error('缺少圆柱条件');
-     return [k,Number(raw)];
-    })));
-   }catch(_){allowed=false;}
-  }
+  // Completeness is distinct from mathematical correctness.
+  readiness.dataset.state=allowed?'ready':'blocked';
+  readiness.textContent=allowed?
+   '必要条件已填写。请对照题目核对尺寸、单位和分支，再勾选确认；数学结果仍需正式求解。':
+   reviewIssue;
+  edit.hidden=!reviewTarget;
+  edit.dataset.target=reviewTarget;
+  if(reviewTarget)$(reviewTarget)?.setAttribute('aria-invalid','true');
   summary.textContent=label+suffix+
    (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'')+
-   (reviewIssue?' C1 条件检查：'+reviewIssue:'');
+   (c1ParseIssue?' C1 条件检查：'+c1ParseIssue:'');
   ack.disabled=!allowed;
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
@@ -2043,7 +2073,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  // Human-led single action: the checkbox cannot be inferred from OCR or
  // restored from a project. The verified flags still originate in M3/M5 only.
  $('v8-review-ack').addEventListener('change',()=>updateReviewPanel(coordinator?.snapshot()));
+ $('v8-review-edit').addEventListener('click',()=>{
+  const id=$('v8-review-edit').dataset.target,field=id?$(id):null;
+  if(!field)return;
+  field.closest('details')?.setAttribute('open','');
+  field.focus?.();
+  field.scrollIntoView?.({block:'center',behavior:'auto'});
+ });
  $('v8-review-run').addEventListener('click',()=>call(async()=>{
+  updateReviewPanel(coordinator?.snapshot());
+  if($('v8-review-run').disabled)
+   throw Error('请先补全并核对题目条件');
   if(!$('v8-review-ack').checked)throw Error('请先核对题目条件并勾选确认');
   if(!coordinator||coordinator.snapshot().task==='composition')
    throw Error('该题型不能使用快捷求解');
