@@ -1349,7 +1349,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       // A unique exact-3D positive-length overlap is the final join witness.
       const match=idMatches.length===1?idMatches[0]:
        idMatches.length===0&&physicalMatches.length===1?physicalMatches[0]:null;
-      const linkedGenerated=match?.g??null,linkedOverlap=match?.overlap??null;
+      const linkedGenerated=match?.g??null,generatedOverlap=match?.overlap??null;
       // Original mesh edges also participate in the same selection contract.
       // Resolve their canonical source ID back to the existing scene's actual
       // edge endpoints; do not infer identity from the projected paper line.
@@ -1380,7 +1380,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        linkedOriginal?.sourceFeatureKey??null;
       const linkedObjectId=linkedGenerated?.geometryId??linkedOriginal?.geometryId??null;
       const linkedSourceId=linkedGenerated?.sourceFeatureId??linkedOriginal?.sourceFeatureId??null;
-      const linkedOverlap=linkedGenerated?match?.overlap:
+      const linkedOverlap=linkedGenerated?generatedOverlap:
        linkedOriginal?.overlap??null;
       const linkedTargetKind=linkedGenerated?'generated':
        linkedOriginal?'original':null;
