@@ -557,3 +557,95 @@ test('genuine native closed-ray T-junction depth aliases fail closed in V/H/W wi
  }
  assert.throws(()=>tJunctionConflict({}, {}, 'bad'),/V\/H\/W view required/);
 });
+
+test('V/H/W genuine unsigned BRep candidates have independent exact paper-bound coverage but never M5/V5 authority',()=>{
+ for(const view of VIEWS){
+  const x=initial();
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+   x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+    w=>!(w.view===view&&w.nativeVisibleHLREdgeOrdinal===0));
+  const r=audit(x),held=r.rows.find(row=>row.view===view&&
+   row.trueNativeOCCTGeneratedLineOrdinals.length===0);
+  assert.ok(held);
+  const c=held.unsignedNativeBRepSourceCandidateEvidence;
+  assert.equal(c.sourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+  assert.equal(c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+  assert.equal(c.exactPaperBoundSourceCoverageWithoutOverlap,true);
+  assert.equal(c.exactPaperBoundNativeSourceParameterOverlap,false);
+  assert.equal(c.originalSourceM5FrontmostRayAuthenticated,false);
+  assert.equal(held.realOCCTOriginal3DSourceCompleteContourParity,false);
+  assert.equal(held.signedV5Action,false);
+  assert.equal(r.heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage,1);
+  assert.equal(r.heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage,0);
+ }
+});
+test('one-ULP HLR paper drift is raw 3D BRep candidate coverage, NEVER exact V/H/W paper-bound coverage',()=>{
+ for(const view of VIEWS)for(const side of ['from','to']){
+  const x=initial();
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+   x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+    w=>!(w.view===view&&w.nativeVisibleHLREdgeOrdinal===0));
+  const seg=x.cad.views[view][0];
+  seg[side].u+=Number.EPSILON;
+  const r=audit(x),held=r.rows.find(row=>row.view===view&&
+   row.trueNativeOCCTGeneratedLineOrdinals.length===0);
+  assert.ok(held);
+  const c=held.unsignedNativeBRepSourceCandidateEvidence;
+  assert.equal(c.sourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+  assert.equal(c.anyNativePaperProjectionDrift,true);
+  assert.equal(c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(c.exactPaperBoundSourceParameterCoverage.positiveLengthUncoveredIntervals,[[0,1]]);
+  assert.equal(c.exactPaperBoundSourceCoverageWithoutOverlap,false);
+  assert.equal(r.heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage,1);
+  assert.equal(r.heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage,0);
+  assert.equal(held.realOCCTOriginal3DSourceCompleteContourParity,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('exact paper-bound raw candidate cannot fill a positive original 3D one-ULP parameter gap',()=>{
+ for(const view of VIEWS){
+  const x=initial();
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+   x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+    w=>!(w.view===view&&w.nativeVisibleHLREdgeOrdinal===0));
+  const seg=x.cad.views[view][0],lift=seg.sourceCandidate3DLifts[0];
+  const [aId,bId]=lift.originalVertexIds,
+   a=x.geometry.data.points[aId],b=x.geometry.data.points[bId],
+   t=1-Number.EPSILON/2;
+  const side=lift.sourceParameterAtProjectedFrom===1?'from':'to',
+   point={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,
+    z:a.z+(b.z-a.z)*t};
+  assert.notDeepEqual(project(point)[view],project(b)[view],
+   'one-ULP source gap must remain visible on this chosen original 3D edge');
+  seg[side]=project(point)[view];
+  lift[side==='from'?'sourceParameterAtProjectedFrom':'sourceParameterAtProjectedTo']=t;
+  lift[side==='from'?'fromCandidate3D':'toCandidate3D']=point;
+  lift.originalSourceParameterRange=[0,t];
+  const r=audit(x),held=r.rows.find(row=>row.view===view&&
+   row.trueNativeOCCTGeneratedLineOrdinals.length===0);
+  const c=held.unsignedNativeBRepSourceCandidateEvidence;
+  assert.deepEqual(c.exactPaperBoundSourceParameterCoverage.positiveLengthUncoveredIntervals,[[t,1]]);
+  assert.equal(c.exactPaperBoundSourceCoverageWithoutOverlap,false);
+  assert.equal(held.signedV5Action,false);
+ }
+});
+test('duplicate native candidate fragments cannot masquerade as unique exact paper-bound original-source coverage',()=>{
+ for(const view of VIEWS){
+  const x=initial();
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+   x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+    w=>!(w.view===view&&w.nativeVisibleHLREdgeOrdinal===0));
+  const seg=x.cad.views[view][0];
+  seg.sourceCandidate3DLifts.push(structuredClone(seg.sourceCandidate3DLifts[0]));
+  const r=audit(x),held=r.rows.find(row=>row.view===view&&
+   row.trueNativeOCCTGeneratedLineOrdinals.length===0),
+   c=held.unsignedNativeBRepSourceCandidateEvidence;
+  assert.equal(c.sourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+  assert.equal(c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+  assert.equal(c.exactPaperBoundNativeSourceParameterOverlap,true);
+  assert.equal(c.exactPaperBoundSourceCoverageWithoutOverlap,false);
+  assert.equal(r.heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage,0);
+  assert.equal(r.heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage,1);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
