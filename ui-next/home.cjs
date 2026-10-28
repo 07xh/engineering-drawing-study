@@ -412,7 +412,7 @@ function homeHTML(){return `
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
     <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
-   <p class="v7-note" id="v7-selection">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
+   <p class="v7-note" id="v7-selection" role="status" aria-live="polite">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
   </section>
 
  </div>
