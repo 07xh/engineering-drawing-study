@@ -196,6 +196,9 @@ body.ui-next .v8-c2-preflight[data-state="ready"]{background:#eef6ff;border-left
 body.ui-next .v8-c2-locate{min-height:44px;background:#fff;color:#245994;border:1px solid #b9d0ee;border-radius:8px;padding:8px 12px;margin:0 0 9px}
 body.ui-next .v8-c2-entry [aria-invalid="true"]{outline:2px solid #f5dba6;outline-offset:1px;border-color:#b77b21!important}
 body.ui-next .v8-c2-locate:focus-visible{outline:3px solid #0866ef;outline-offset:2px}
+body.ui-next .v8-c2-entry input:disabled{background:#f4f6fa;color:#65758b;cursor:not-allowed}
+body.ui-next #v8-c2-existing{display:inline-flex;align-items:center;justify-content:center}
+body.ui-next #v8-c2-existing[hidden]{display:none!important}
 body.ui-next .v8-c2-advanced{border:1px solid #dce5f1;border-radius:10px;margin:12px 0;padding:0 11px}
 body.ui-next .v8-c2-advanced>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;color:#245994;font-size:13px;font-weight:650}
 body.ui-next .v8-c2-advanced>summary:focus-visible{outline:2px solid #0866ef;outline-offset:2px}

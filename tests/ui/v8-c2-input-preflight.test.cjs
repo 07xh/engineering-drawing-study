@@ -85,6 +85,19 @@ test('V8.7 C2 real DOM: repair first invalid field and require human acknowledge
   assert.equal($('v8-c2-build').disabled,true);
   assert.match($('v8-c2-preflight').textContent,/已有对象或约束/);
   assert.equal($('v8-result-status').dataset.state,'partial','C2 cannot become certified answer');
+  assert.equal($('v8-c2-a-x0').disabled,true,'saved C2 dimensions cannot be accidentally overwritten');
+  assert.equal($('v8-c2-existing').hidden,false);
+  assert.equal($('v8-c2-advanced').hasAttribute('open'),false);
+  fire('v8-c2-existing','click');
+  assert.equal($('v8-c2-advanced').hasAttribute('open'),true);
+  // Disabled inputs prevent ordinary touch edits. A forged change event
+  // must fail closed: old proof is revoked without deleting saved geometry.
+  assert.equal($('v7-c-objects').querySelectorAll('option').length,3);
+  $('v8-c2-a-x0').value='999';fire('v8-c2-a-x0','input');
+  await tick();await tick();
+  assert.match($('v7-proof').textContent,/未计算/,'untrusted edit invalidates cached math');
+  assert.equal($('v7-c-objects').querySelectorAll('option').length,3,'existing objects remain saved');
+  assert.equal($('v8-c2-build').disabled,true);
  }finally{
   global.document=prev.document;global.window=prev.window;
   delete global.requestAnimationFrame;delete global.cancelAnimationFrame;

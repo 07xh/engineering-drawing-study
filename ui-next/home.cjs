@@ -258,13 +258,14 @@ function homeHTML(){return `
      </div>
      <p id="v8-c2-preflight" class="v8-c2-preflight" data-state="blocked" role="status" aria-live="polite">请填写形体 A 和 B 的已知尺寸。</p>
      <button type="button" id="v8-c2-locate" class="v8-c2-locate" hidden>定位需要修改的尺寸</button>
+     <button type="button" id="v8-c2-existing" class="v8-c2-locate" aria-controls="v8-c2-advanced" hidden>查看和编辑已有形体</button>
      <label class="v8-review-agree"><input id="v8-c2-ack" type="checkbox" aria-describedby="v8-c2-preflight" disabled>
       已按题图核对两个长方体的全部尺寸、位置和接触方式，确认这是当前项目的新输入。</label>
      <button type="button" id="v8-c2-build" class="v7-primary" aria-describedby="v8-c2-preflight" disabled>确认形体并计算组合关系</button>
      <p id="v8-c2-status" class="v7-note" role="status">只在空组合体项目中添加两形体，不覆盖已有对象。</p>
      <p class="v7-warning">当前显示已知形体的接触和投影；完整轮廓和虚实线尚未确定。</p>
     </section>
-    <details class="v8-c2-advanced">
+    <details class="v8-c2-advanced" id="v8-c2-advanced">
      <summary>更多：编辑单个对象、约束与未知点</summary>
     <p class="v7-warning">已有对象或更复杂的题目可在此逐个编辑和确认；当前不生成完整虚实线。</p>
     <label>已录入对象 <select id="v7-c-objects" aria-label="选择或编辑项目中的对象">
