@@ -26,6 +26,8 @@ const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditC1RoundedInversePaperBoundaryAlias}=
+ require('./c1-rounded-inverse-paper-boundary-alias.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('./c1-native-scoped-hlr-source-consumer.cjs');
 // Positive original-M0 boundedness and extreme-vertex proof for the CURRENT
@@ -146,10 +148,27 @@ function exactC1NativeSourceIntervalCoverage({
     if(raw!==undefined&&(!Array.isArray(raw)||raw.length!==2||
        !raw.every(Number.isFinite)))
      throw new RangeError('invalid unclamped native source paper parameter witness');
+    // Recompute from the CURRENT M0 paper endpoints and the actual received
+    // HLR stroke. Never trust a producer-supplied "not rounded" boolean:
+    // t=0 can be a strictly interior binary64 paper point after division
+    // underflow, even when both paper coordinates lie inside [A,B].
+    const roundedBoundary=auditC1RoundedInversePaperBoundaryAlias({
+     sourceFrom:pa,sourceTo:pb,
+     measuredFrom:stroke.from,measuredTo:stroke.to,
+     roundedInverseParameters:[
+      lift.sourceParameterAtProjectedFrom,
+      lift.sourceParameterAtProjectedTo
+     ]
+    });
+    if(lift.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly!==undefined&&
+       lift.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly!==
+        roundedBoundary.anyRoundedInverseBoundaryAlias)
+     throw new RangeError('forged native inverse boundary rounding witness');
     if((!within(stroke.from)||!within(stroke.to)||
-        raw?.some(t=>t<0||t>1))&&
+        raw?.some(t=>t<0||t>1)||
+        roundedBoundary.anyRoundedInverseBoundaryAlias)&&
        lift.sourceParameterWasClampedForPaperOnly!==true)
-     throw new RangeError('out-of-domain native paper endpoint cannot claim exact original source');
+     throw new RangeError('out-of-domain native paper endpoint or rounded inverse boundary cannot claim exact original source');
     // Genuine OCCT can project a native vertex one ULP beyond its M0
     // endpoint. That is display evidence, NOT an exact original-source
     // interval. A rounded candidate is held unless the independent
