@@ -180,14 +180,21 @@ body.ui-next fieldset[data-v7-task="c1-third-view"] .v8-review-agree{display:fle
 body.ui-next #v8-c1-topology{width:20px;min-width:20px;height:20px;flex:0 0 20px}
 
 /* V8.2 C2 reviewed two-box entry: same project, original geometry engine. */
-body.ui-next .v8-c2-entry{padding:12px;border-radius:12px;border:1px solid #c9daf0;background:#f7faff;margin:8px 0 17px}
+body.ui-next .v8-c2-entry{padding:12px;border-radius:12px;border:1px solid #c9daf0;background:#f7faff;margin:8px 0 17px;container-type:inline-size}
 body.ui-next .v8-c2-entry h3{font-size:15px;color:#1f5488;margin:2px 0 9px}
-body.ui-next .v8-c2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+body.ui-next .v8-c2-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
 body.ui-next .v8-c2-grid fieldset{min-width:0;background:white}
-body.ui-next .v8-c2-grid .v7-xyz{grid-template-columns:repeat(3,minmax(0,1fr))}
+body.ui-next .v8-c2-grid .v7-xyz{grid-template-columns:repeat(2,minmax(0,1fr))}
+@container (min-width:600px){
+ body.ui-next .v8-c2-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.ui-next .v8-c2-grid .v7-xyz{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 body.ui-next #v8-c2-build{width:100%;min-height:46px}
 body.ui-next #v8-c2-build:disabled{opacity:.5;cursor:not-allowed}
-@media(max-width:1100px){body.ui-next .v8-c2-grid{grid-template-columns:1fr}}
+body.ui-next .v8-c2-advanced{border:1px solid #dce5f1;border-radius:10px;margin:12px 0;padding:0 11px}
+body.ui-next .v8-c2-advanced>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;color:#245994;font-size:13px;font-weight:650}
+body.ui-next .v8-c2-advanced>summary:focus-visible{outline:2px solid #0866ef;outline-offset:2px}
+body.ui-next .v8-c2-advanced[open]{padding-bottom:10px}
 
 /* C3 finite cylinder data stays in one local project, no second solver UI. */
 body.ui-next .v8-c3-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
