@@ -15,7 +15,8 @@ const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
 const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {manualSegment}=require('./source-candidate-bridge.cjs');
-const {compileGeometryScene,sourceFeatureKey}=require('./geometry-scene-consumer.cjs');
+const {compileGeometryScene,sourceFeatureKey,drawAnalyticPath}=
+ require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -962,6 +963,49 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     text(svg,x,y,view+' · 第一角法','#426080');
    const result=compiled();
    if(result)drawPrimitives(svg,result.paper,'paper',snap,null,$('v7-mono').checked);
+   // Reuse the existing analytic renderer on current source M3 intervals
+   // certified by M5 for the selected Boolean volume. Diagnostics only;
+   // neither engineering line style nor V5 construction is authorized.
+   const rayPaper=scoped.analyticRayPaperReview;
+   if(rayPaper&&$('v7-guides').checked){
+    if(rayPaper.revision!==snap.revision||
+       rayPaper.solidOperation!==scoped.solidOperation||
+       rayPaper.originalBranchCount!==scoped.evidence.sourceM3.branchCount||
+       rayPaper.sourceParameterIntervalCount!==rayPaper.intervals.length||
+       rayPaper.officialEngineeringLineStylesVerified!==false||
+       rayPaper.wholeCurveV5Approved!==false)
+     throw Error('C3 M5 解析曲线辅助线来源已失效');
+    for(const interval of rayPaper.intervals){
+     if(interval.revision!==snap.revision||
+        interval.sourceFirstAngleRayEntireIntervalProven!==true||
+        interval.engineeringLineStyle!=='undetermined'||
+        interval.formalV5StrokeApproved!==false||
+        interval.closedEndpointVisibilityCertified!==false||
+        interval.projectedFeatureCoincidenceStillUnresolved!==true)
+      throw Error('C3 开区间射线候选不得冒充完整曲线实虚线');
+     const data={
+      parameter:{from:interval.xOpenRange[0],to:interval.xOpenRange[1]},
+      coordinates:interval.originalCoordinates
+     };
+     const rendered=drawAnalyticPath(data,p=>
+      toSheet(interval.view,project(p)[interval.view],
+       scoped.viewTransforms[interval.view]));
+     const clear=interval.strictVolumeRayStatus==='strict-interior-ray-clear';
+     const ink=$('v7-mono').checked?(clear?'#333':'#777'):
+      clear?'#1674bd':'#c78935';
+     const node=shape('path',{
+      d:rendered.d,fill:'none',stroke:ink,
+      'stroke-width':2.1,'stroke-dasharray':'1 6',
+      'data-c3-open-ray-branch-id':interval.branchId,
+      'data-c3-open-ray-view':interval.view,
+      'data-c3-open-ray-class':interval.strictVolumeRayStatus,
+      'data-c3-geometry-status':'strict-volume-open-ray-only',
+      'data-visibility':'undetermined',
+      'aria-label':'C3 原始解析曲线开区间前方射线证明，不是正式工程线型'
+     });
+     svg.append(node);
+    }
+   }
    // The unified Scene draws analytic model curves only as UNDETERMINED
    // previews; original V5 provides proven points and auxiliary guides.
    const frame=scoped.clock.snapshot();
@@ -1519,7 +1563,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       (partial.selectedRays.fullSourceOpenEdgeRayCoverageVerified?'成立':'尚未通过')+
       '；已核对透明（前方无实体内部）'+partial.selectedRays.certifiedClearCount+
       '、不透明 '+partial.selectedRays.certifiedOpaqueCount+'、未定 '+
-      partial.selectedRays.undeterminedCount+'。所有区间仅证明当前数学范围；'+
+      partial.selectedRays.undeterminedCount+'。'+
+      (partial.analyticRayPaperReview?
+       ' 三视图曲线已绑定严格体积射线的解析开区间 '+
+       partial.analyticRayPaperReview.sourceParameterIntervalCount+
+       ' 段（蓝色畅通、橙色被遮挡的点线，仅辅助显示）。':
+       ' 尚未选择实体布尔运算，不绘制射线分类辅助图。')+
+      '所有区间仅证明当前数学范围；'+
       '端点可见性、投影重合、完整实体边界和国标实虚线仍未签收。':
      partial.kind==='c1-reviewed-preview'?
       'C1 八角点两已知视图复算：'+partial.evidence.sceneResult.provenVertexCount+

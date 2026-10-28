@@ -49,6 +49,8 @@ test('C3 unified task reuses official finite analytic M3 and original V5, fails 
  assert.equal(result.joint.officialLineStylesVerified,false);
  assert.equal(result.selectedRays.status,'requires-explicit-solid-operation');
  assert.equal(result.joint.BooleanSurfaceOperationSelected,false);
+ assert.equal(result.analyticRayPaperReview,null,
+  'unselected Boolean operation cannot paint ray-classified analytic curves');
  assert.equal(result.kind,'c3-reviewed-preview');
  assert.equal(result.verified,false);
  assert.equal(result.status,'geometry-only');
@@ -112,6 +114,35 @@ test('C3 explicitly chosen intersection and union use different M5 strict-volume
   assert.equal(out.joint.BooleanSurfaceOperationSelected,true);
   assert.equal(out.selectedRays.fullSourceOpenEdgeRayCoverageVerified,true);
   assert.ok(out.selectedRays.intervals.length>0);
+  const paper=out.analyticRayPaperReview;
+  assert.equal(paper.schema,'draftai-c3-first-angle-analytic-open-ray-paper/1');
+  assert.equal(paper.solidOperation,op);
+  assert.equal(paper.revision,out.joint.revision,
+   'each saved operation proof must retain its own original revision');
+  assert.equal(paper.originalBranchCount,out.evidence.sourceM3.branchCount);
+  assert.ok(paper.sourceParameterIntervalCount>=12);
+  assert.equal(paper.sourceParameterIntervalCount,paper.intervals.length);
+  assert.equal(paper.clearOpenIntervals+paper.opaqueOpenIntervals,
+   paper.sourceParameterIntervalCount);
+  assert.equal(paper.original3DCurveSourceIdentityVerified,true);
+  assert.equal(paper.allProjectedCurveIntervalsAccountedFor,true);
+  assert.equal(paper.completeClosedEndpointVisibilityCertified,false);
+  assert.equal(paper.officialEngineeringLineStylesVerified,false);
+  assert.equal(paper.wholeCurveV5Approved,false);
+  for(const branch of out.evidence.sourceM3.branches)
+   for(const view of ['V','H','W']){
+    const cuts=paper.intervals.filter(row=>
+      row.branchId===branch.id&&row.view===view)
+      .sort((a,b)=>a.xOpenRange[0]-b.xOpenRange[0]);
+    assert.ok(cuts.length);
+    assert.equal(cuts[0].xOpenRange[0],branch.xRange[0]);
+    assert.equal(cuts.at(-1).xOpenRange[1],branch.xRange[1]);
+    assert.ok(cuts.every((row,i)=>
+     row.sourceFirstAngleRayEntireIntervalProven&&
+     row.engineeringLineStyle==='undetermined'&&
+     row.formalV5StrokeApproved===false&&
+     (i===0||row.xOpenRange[0]===cuts[i-1].xOpenRange[1])));
+   }
   assert.equal(out.joint.fullCurveTopologyVerified,false);
   assert.equal(out.joint.officialLineStylesVerified,false);
   assert.equal(out.selectedRays.finalV5CurveAuthorized,false);
@@ -126,6 +157,11 @@ test('C3 explicitly chosen intersection and union use different M5 strict-volume
   return other&&row.openInteriorVolumeRayStatus!==other.openInteriorVolumeRayStatus;
  });
  assert.equal(differs,true,'M5 must ACTUALLY depend on the selected Boolean solid');
+ const key=row=>row.branchId+'|'+row.view+'|'+JSON.stringify(row.xOpenRange);
+ const unionRows=new Map(b.analyticRayPaperReview.intervals.map(row=>[key(row),row]));
+ assert.ok(a.analyticRayPaperReview.intervals.some(row=>
+  unionRows.get(key(row))?.strictVolumeRayStatus!==row.strictVolumeRayStatus),
+ 'visible drawn analytic curve ray classes must also change with Boolean operation');
  assert.equal(coordinator.canExport(),false);
  assert.equal(a.clock.canRender(coordinator.snapshot().revision),false,
   'old solver clock is stale after changing operation');

@@ -16,6 +16,8 @@ const {compileScopedFullyProvenConvexC1}=
 const {compileFiniteCylinderEndpointV5}=
  require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
 const {buildC3LinkedGeometryScene}=require('../workbench/c3-linked-geometry-scene.cjs');
+const {reviewC3AnalyticBooleanRayPaper}=
+ require('./c3-analytic-boolean-ray-paper-review.cjs');
 const {auditC3M0M3M5AnalyticSources}=
  require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
@@ -218,6 +220,17 @@ function createUnifiedProjectSession(){
      input,revision:latest.revision,solidOperation
     });
     const selectedRays=joint.selectedBooleanRayEvidence;
+    const analyticRayPaperReview=reviewC3AnalyticBooleanRayPaper({
+     linked,sourceM3:compiled.sourceM3,selectedRays,
+     revision:latest.revision,solidOperation
+    });
+    if(analyticRayPaperReview&&(
+       analyticRayPaperReview.revision!==latest.revision||
+       analyticRayPaperReview.solidOperation!==solidOperation||
+       analyticRayPaperReview.originalBranchCount!==compiled.sourceM3.branchCount||
+       analyticRayPaperReview.officialEngineeringLineStylesVerified!==false||
+       analyticRayPaperReview.wholeCurveV5Approved!==false))
+     throw new Error('C3 解析曲线射线辅助图与当前源修订不一致');
     if(joint.revision!==latest.revision||
        joint.status!=='scoped-open-interval-joint-evidence'||
        joint.sourceBranchCount!==compiled.sourceM3.branchCount||
@@ -253,7 +266,8 @@ function createUnifiedProjectSession(){
     clock=compiled.player;
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
-     evidence:compiled,sourceAcceptance,joint,selectedRays,solidOperation,
+     evidence:compiled,sourceAcceptance,joint,selectedRays,analyticRayPaperReview,
+     solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
      plan:{status:'preview-only',canPromoteToVerifiedResult:false,
