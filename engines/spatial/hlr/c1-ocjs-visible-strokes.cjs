@@ -529,7 +529,18 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
-  const nativeGraphInput={};
+  const nativeGraphInput={},nativeHLRSourceHistoryAPISurfaceByView={};
+  // Read-only discovery of the actual pinned WASM HLR internal source-index
+  // API. Do not call unknown methods, dereference native handles, or infer
+  // generated->original TopoDS history from a method name alone.
+  const nativeHLRSourceIndexMethodNames=obj=>{
+   const names=new Set();
+   for(let p=obj,depth=0;p&&depth<4;p=Object.getPrototypeOf(p),depth++)
+    for(const key of Object.getOwnPropertyNames(p))
+     if(/DataStructure|EdgeMap|Index|GetDS|SourceEdge|OriginalEdge/.test(key))
+      names.add(key);
+   return [...names].sort().slice(0,48);
+  };
   for(const view of VIEWS){
    const f=FRAME[view];
    const axis=newObj('gp_Ax2_2',newObj('gp_Pnt_3',0,0,0),
@@ -544,6 +555,14 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    if(handle.IsNull())throw new RangeError('null OCJS B-Rep HLR handle');
    const extractor=newObj('HLRBRep_HLRToShape',handle),
     visible=hold(extractor.VCompound_1());
+   nativeHLRSourceHistoryAPISurfaceByView[view]={
+    actualPinnedWasmObjectInspected:true,
+    algorithmMethodNames:nativeHLRSourceIndexMethodNames(algorithm),
+    algorithmHandleMethodNames:nativeHLRSourceIndexMethodNames(handle),
+    extractorMethodNames:nativeHLRSourceIndexMethodNames(extractor),
+    generatedToOriginalTopoDSHistoryProven:false,
+    officialLineStyleCertified:false,signedV5Action:false
+   };
    if(visible.IsNull())throw new RangeError('no real OCJS visible HLR geometry');
    const withSourceCandidates=(measured,hlrClass,generatedNativeEdge)=>{
     const lifted=liftOriginalProjectedSourceCandidates(
@@ -656,6 +675,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
    nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   nativeHLRSourceHistoryAPISurfaceByView,
    everyNativeGeneratedEndpointComparedToOriginalTopoDSVertices:true,
    directNativeOriginalVertexIdentityDoesNotProveEdgeHistory:true,
    hiddenHLROutputFromActualOCCT:true,

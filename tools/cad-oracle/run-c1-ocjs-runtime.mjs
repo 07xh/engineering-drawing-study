@@ -154,6 +154,17 @@ for(const [index,geometry] of general.entries()){
 
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ assert.deepEqual(Object.keys(cad.nativeHLRSourceHistoryAPISurfaceByView).sort(),
+  ['H','V','W']);
+ for(const view of ['V','H','W']){
+  const api=cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+  assert.equal(api.actualPinnedWasmObjectInspected,true);
+  assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
+   'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
+  assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
+  assert.equal(api.officialLineStyleCertified,false);
+  assert.equal(api.signedV5Action,false);
+ }
  // Exercise the EXACT production paper overlap predicate on genuine native
  // OpenCascade.js visible AND hidden sharp segments, not only synthetic
  // adversarial fixtures. Reversal must not alter a positive native span.
@@ -964,6 +975,34 @@ for(const [index,geometry] of general.entries()){
    row.realOCCTOriginal3DSourceCompleteContourParity===false&&
    row.unsignedNativeBRepSourceCandidateEvidence?.
     sourceParameterCoverage.entireOriginalParameterIntervalCovered===true).length);
+ // Native HLR paper endpoints must be independently reprojected from
+ // literal original 3D source parameters. Raw BRep geometric candidates
+ // (even with complete [0,1]) are NOT exact paper-bound source history.
+ const heldCandidateRows=nativeM5ExteriorContourParity.rows.filter(row=>
+  row.originalM5WholeExteriorContourCertified===true&&
+  row.realOCCTOriginal3DSourceCompleteContourParity===false);
+ assert.equal(nativeM5ExteriorContourParity.
+  heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage,
+  heldCandidateRows.filter(row=>row.unsignedNativeBRepSourceCandidateEvidence?.
+   exactPaperBoundSourceCoverageWithoutOverlap===true).length);
+ assert.equal(nativeM5ExteriorContourParity.
+  heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage,
+  heldCandidateRows.filter(row=>row.unsignedNativeBRepSourceCandidateEvidence?.
+   sourceParameterCoverage.entireOriginalParameterIntervalCovered===true&&
+   row.unsignedNativeBRepSourceCandidateEvidence?.
+    exactPaperBoundSourceCoverageWithoutOverlap!==true).length);
+ assert.ok(nativeM5ExteriorContourParity.rows.every(row=>{
+  const c=row.unsignedNativeBRepSourceCandidateEvidence;
+  if(c===null)return true;
+  const bound=c.exactPaperBoundNativeBRepCandidateIntervals;
+  return c.signedV5Action===false&&
+   c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered===
+    (c.exactPaperBoundSourceParameterCoverage.positiveLengthUncoveredIntervals.length===0)&&
+   bound.every(x=>x.exactPaperEndpointsMatched===true)&&
+   (!c.exactPaperBoundSourceCoverageWithoutOverlap||
+    (bound.length>0&&!c.exactPaperBoundNativeSourceParameterOverlap&&
+     c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered));
+ }));
  assert.ok(nativeM5ExteriorContourParity.rows.every(row=>
   row.unsignedNativeBRepSourceCandidateEvidence===null||
   (row.unsignedNativeBRepSourceCandidateEvidence.signedV5Action===false&&
@@ -1627,6 +1666,8 @@ for(const [index,geometry] of general.entries()){
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
+  nativeHLRSourceHistoryAPISurfaceByView:
+   cad.nativeHLRSourceHistoryAPISurfaceByView,
   fullGeneratedEdgeHistoryProven:false,
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
