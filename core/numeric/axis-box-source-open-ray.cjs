@@ -105,4 +105,60 @@ function certifyAxisBoxSourceOpenRay({source,box,view}={}){
   signedV5ActionCount:0
  });
 }
-module.exports={certifyAxisBoxSourceOpenRay};
+/**
+ * Conservative S minus C boolean OPEN observer-ray theorem.
+ *
+ * The existing positive stock-box ray proof remains the sole M0 kernel:
+ * 1. S\\C is a subset of S, so a whole ray clear of S is clear of S\\C.
+ * 2. If the ray enters strict interior of S and a perpendicular coordinate
+ *    of EVERY open source point is strictly outside C, that complete ray
+ *    never meets the cutter and must intersect S\\C.
+ *
+ * An affine open source point stays strictly outside C when BOTH endpoint
+ * coordinates lie on the same non-interior side of one cutter plane, with
+ * at least one strictly outside. Equality at both endpoints is NOT enough:
+ * that is a cutter wall and its ray/face topology needs more evidence.
+ *
+ * This does not infer native OCCT history, projected joins, GB style or V5.
+ */
+function certifyAxisBoxSubtractiveOpenRay({source,stock,cutter,view}={}){
+ if(stock?.id===cutter?.id)
+  throw new RangeError('subtractive stock and cutter identities must differ');
+ const stockRay=certifyAxisBoxSourceOpenRay({source,box:stock,view});
+ // Independently validate the cutter as a finite original M0 box; never
+ // trust a caller-supplied isThroughHole or clearance flag.
+ certifyAxisBoxSourceOpenRay({source,box:cutter,view});
+ const direction=FIRST_ANGLE_OBSERVER_RAYS[view],
+  names=['x','y','z'],a=source.from,b=source.to;
+ let cutterSeparatedAxis=null;
+ for(let i=0;i<3;i++){
+  const k=names[i];
+  if(direction[k]!==0)continue;
+  const min=cutter.min[i],max=cutter.max[i];
+  if((a[k]<=min&&b[k]<=min&&(a[k]<min||b[k]<min))||
+     (a[k]>=max&&b[k]>=max&&(a[k]>max||b[k]>max))){
+   cutterSeparatedAxis=k;
+   break;
+  }
+ }
+ let status='undetermined',reason='subtractive-cutter-boundary-or-open-ray-unresolved';
+ if(stockRay.status==='certified-clear'){
+  status='certified-clear';
+  reason='subtracted-material-is-subset-of-original-stock';
+ }else if(stockRay.status==='certified-strictly-hidden'&&
+          cutterSeparatedAxis!==null){
+  status='certified-strictly-hidden';
+  reason='strict-stock-front-interior-ray-and-perpendicular-cutter-separation';
+ }
+ return Object.freeze({
+  schema:'draftai-m0-axis-box-subtractive-open-ray/1',
+  sourceId:source.id,stockId:stock.id,cutterId:cutter.id,view,
+  status,reason,originalStockRayStatus:stockRay.status,
+  cutterPerpendicularStrictSeparationAxis:cutterSeparatedAxis,
+  eachSourceOpenInteriorRayProved:status!=='undetermined',
+  closedEndpointAndAllProjectedNativeJunctionsCertified:false,
+  fullSubtractiveSceneEngineeringLinesCertified:false,
+  constructionIntentAuthorized:false,signedV5Action:false
+ });
+}
+module.exports={certifyAxisBoxSourceOpenRay,certifyAxisBoxSubtractiveOpenRay};
