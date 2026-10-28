@@ -9,7 +9,8 @@
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
-const {auditExactBinary64PaperParameterPair}=
+const {auditExactBinary64PaperParameterPair,
+ auditExactBinary64PaperCandidateCoverage}=
  require('./c1-exact-binary64-paper-parameter.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -80,6 +81,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  const views={},counts={originalSourceEdgesPerView:ids.length,
   projectedSourcesWithFullPaperCandidateCoverage:0,
   projectedSourcesWithPositivePaperCandidateGaps:0,
+  projectedSourcesWithExactBinary64PaperCandidateGaps:0,
+  projectedSourcesWithFullExactBinary64PaperCandidateCoverage:0,
+  projectedSourcesWithRoundedFalseFullPaperCandidateCoverage:0,
   projectedSourcesWithVisibleHiddenCandidateConflicts:0,
   positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
   sourceScopedPaperStrokesWithUnboundParameters:0,
@@ -134,6 +138,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   }
   const sourceRanges=new Map(ids.map(id=>[id,[]]));
   const exactPaperDiagnostics=new Map(ids.map(id=>[id,[]]));
+  const exactPaperSegments=new Map(ids.map(id=>[id,[]]));
   const classRanges=Object.fromEntries(['visible','hidden'].map(k=>
    [k,new Map(ids.map(id=>[id,[]]))]));
   for(const item of Object.values(classes))
@@ -179,6 +184,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      const exactBounds=exactPaper.nativeFromWithinExactBinary64OriginalParameterDomain&&
       exactPaper.nativeToWithinExactBinary64OriginalParameterDomain;
      if(!exactBounds)counts.sourceScopedPaperEndpointsOutsideExactBinary64Domain++;
+     // Retain the RECEIVED binary64 paper endpoints independently of
+     // Number-division candidate t. An interior t can round to 0 or 1,
+     // falsely closing a positive original-source interval tail.
+     if(exactBounds&&exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan)
+      exactPaperSegments.get(source).push({from:{...w.from},to:{...w.to}});
      const tFrom=paperParameter(w.from,source,view),
       tTo=paperParameter(w.to,source,view);
      if(exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan&&
@@ -277,6 +287,17 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    const ranges=sourceRanges.get(source);
    const coverage=collapsed?null:
     exactCandidateIntervalCoverage([0,1],ranges);
+   const exactPaperCoverage=collapsed?null:
+    auditExactBinary64PaperCandidateCoverage({
+     sourceFrom:a,sourceTo:b,segments:exactPaperSegments.get(source)
+    });
+   if(exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete)
+    counts.projectedSourcesWithFullExactBinary64PaperCandidateCoverage++;
+   else if(exactPaperCoverage)
+    counts.projectedSourcesWithExactBinary64PaperCandidateGaps++;
+   if(coverage?.entireOriginalParameterIntervalCovered===true&&
+      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===false)
+    counts.projectedSourcesWithRoundedFalseFullPaperCandidateCoverage++;
    const classOverlap=collapsed?null:exactCandidateVisibilityClassOverlap(
     classRanges.visible.get(source),classRanges.hidden.get(source)
    );
@@ -296,6 +317,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      ranges.map(range=>[...range]),
     exactBinary64PaperParameterDiagnostics:
      exactPaperDiagnostics.get(source),
+    // These exact rational gaps are PAPER candidate diagnostics only.
+    // Never promote their absence to TopoDS history or V5 authority.
+    exactBinary64PaperCandidateCoverage:exactPaperCoverage,
     paperDerivedVisibleCandidateParameterUnion:
      classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
     paperDerivedHiddenCandidateParameterUnion:
@@ -307,9 +331,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     paperDerivedPositiveLengthUncoveredCandidateIntervals:
      coverage?.positiveLengthUncoveredIntervals??null,
     entireOriginalSourcePaperCandidateIntervalCovered:
-     coverage?.entireOriginalParameterIntervalCovered??false,
+     coverage?.entireOriginalParameterIntervalCovered===true&&
+     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true,
     fullOriginalPaperCandidateCoverageWithoutClassConflict:
      coverage?.entireOriginalParameterIntervalCovered===true&&
+     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
      classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false,
     actualOriginalTopoDSParameterCoverageCertified:false,
     nativeOriginal3DEndpointTopologyProven:false,
