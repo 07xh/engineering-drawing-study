@@ -47,7 +47,7 @@ body.ui-next .v7-steps #v7-step-list button[aria-current=step]{background:#e9f1f
 body.ui-next .v7-workspace button:hover:not(:disabled){border-color:#4679df}
 body.ui-next .v7-workspace [role=button]{cursor:pointer}
 @media(max-width:1320px){body.ui-next .v7-layout{grid-template-columns:minmax(250px,.9fr) minmax(380px,1.65fr)}body.ui-next .v7-steps{grid-column:1/-1}}
-@media(max-width:860px){body.ui-next .v7-layout{grid-template-columns:1fr}body.ui-next .v7-steps{grid-column:auto}body.ui-next .v7-head{align-items:start}body.ui-next .v7-card{padding:13px}body.ui-next #v7-sheet{max-height:none}}
+@media(max-width:860px){body.ui-next .v7-layout{grid-template-columns:1fr}body.ui-next .v7-layout:not(.v8-paper-focus) .v7-paper{order:-1}body.ui-next .v7-steps{grid-column:auto}body.ui-next .v7-head{align-items:start}body.ui-next .v7-card{padding:13px}body.ui-next #v7-sheet{max-height:none}}
 @media(max-width:520px){body.ui-next .v7-bar{padding:9px}body.ui-next .v7-bar>*{flex:1 1 135px}body.ui-next .v7-input .v7-xyz{gap:5px}body.ui-next .v7-xyz input{padding:5px!important}body.ui-next .v7-card{padding:11px}}
 @media(prefers-reduced-motion:reduce){body.ui-next .v7-workspace *{scroll-behavior:auto!important}}
 
