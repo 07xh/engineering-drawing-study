@@ -1304,7 +1304,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        a.length===b.length&&new Set(a).size===a.length&&
        new Set(b).size===b.length&&
        [...a].sort().every((id,i)=>id===[...b].sort()[i]);
-      const generatedGroups=(active?.linkedC2?.groups||[]).filter(g=>
+      // The paper diagnostic is sourced from preview(), which remains the
+      // current confirmed C2 evidence even when current() has no V5 clock.
+      // Read the linked scene from that same evidence object, never a stale
+      // animation-only state.
+      const linkedC2State=active?.linkedC2??preview()?.linkedC2;
+      const generatedGroups=(linkedC2State?.groups||[]).filter(g=>
        g.revision===snap.revision&&
        sameSourceBodies(g.sourceGeometryIds,candidate.sourceGeometryIds));
       // M4/M5 may partition the same physical feature at different event
