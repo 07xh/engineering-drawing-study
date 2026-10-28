@@ -199,7 +199,11 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
     '[data-geometry-id="Section1"][data-geometry-view="'+view+'"]')];
    assert.equal(all.filter(el=>el.getAttribute('data-source-feature-key')===sourceKey&&
      el.getAttribute('data-source-feature-selected')==='true').length,1,
-    'exactly one physically matching source feature selected in '+view);
+    'exactly one physically matching source feature selected in '+view+
+      ' key='+sourceKey+' projection='+JSON.stringify(all.map(el=>({
+       key:el.getAttribute('data-source-feature-key'),
+       selected:el.getAttribute('data-source-feature-selected')
+      }))));
    assert.ok(all.filter(el=>el.getAttribute('data-source-feature-key')!==sourceKey)
     .every(el=>el.getAttribute('data-source-feature-selected')==='false'));
   }

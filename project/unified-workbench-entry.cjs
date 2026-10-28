@@ -890,7 +890,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      // Same original edge in 2D and 3D gets one feature key. A second tap
      // switches back to the existing whole-object selection.
      selectedSourceFeature=selectedSourceFeature?.key===item.sourceFeatureKey&&
-      selectedSourceFeature?.objectId===item.objectId?null:
+      selectedSourceFeature?.objectId===item.objectId&&
+      coordinator.selectedGeometryId()===item.objectId?null:
       item.sourceFeatureKey?{key:item.sourceFeatureKey,
        objectId:item.objectId,revision:snap.revision}:null;
      coordinator.selectSceneGeometry(item.objectId);
