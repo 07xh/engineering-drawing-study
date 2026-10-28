@@ -46,6 +46,15 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert(summary.subspanCount>0);
   assert.equal(summary.actualNativeOpenCascadeRan,true);
   assert.equal(summary.fullySignedV5,true);
+  assert.equal(summary.signedOnlySvgPath,output.replace(/\.json$/,'.signed-only.svg'));
+  const svg=fs.readFileSync(summary.signedOnlySvgPath,'utf8');
+  assert.match(svg,/data-math-scope="same-run-two-box-native-partial"/);
+  assert.match(svg,/data-complete-c2="false"/);
+  assert.match(svg,/data-textbook-blind="false"/);
+  assert.match(svg,/data-first-angle-view="V"/);
+  assert.match(svg,/data-first-angle-view="H"/);
+  assert.match(svg,/data-first-angle-view="W"/);
+  assert.doesNotMatch(svg,/data-engineering-line="undetermined"/);
   const pack=JSON.parse(fs.readFileSync(output,'utf8'));
   assert.equal(pack.provenance.actualNativeOpenCascadeRanInThisProcessTree,true);
   assert.equal(pack.nativeTopology.resultVertexCount,18);
@@ -95,6 +104,11 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.equal(summary.provenHiddenDuplicateSuppressionCount,24);
   assert.equal(summary.pendingUnsignedNativeSubspanCount,0);
   assert.equal(c2.certifiedVisibleHiddenSourceIntervals.length,24);
+  const svgStrokes=[...svg.matchAll(/<line /g)].length;
+  assert.equal(svgStrokes,c2.certifiedVisibleHiddenSourceIntervals.length);
+  assert.equal(new Set([...svg.matchAll(/data-v5-action="([^"]+)"/g)].map(m=>m[1])).size,svgStrokes);
+  assert(c2.certifiedVisibleHiddenSourceIntervals.every(e=>svg.includes('data-v5-action="'+e.actionId+'"')));
+  assert(c2.unsignedNativePhysicalSourceIntervals.every(e=>!e.actionId||!svg.includes('data-v5-action="'+e.actionId+'"')));
   assert.equal(c2.suppressedNativeBackSourceIntervals.length,24);
   assert.equal(c2.unsignedNativePhysicalSourceIntervals.length,0);
   assert.equal(c2.allNativePhysicalSourcesSignedOrProvenSuppressed,true);
@@ -110,5 +124,17 @@ test('same-run actual 30 native edges and 1305 source pair-view checks become a 
   assert.throws(()=>generateNativeC2FullMathProofPack({
    inputPath:manifest,outputPath:output
   }),/never overwrite/);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+test('pre-existing signed-only SVG aborts before native computation without replacing source or prior review',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'draftai-c2-native-svg-collision-'));
+ try{
+  const output=path.join(root,'fresh.json'),oldSvg=path.join(root,'fresh.signed-only.svg');
+  fs.writeFileSync(oldSvg,'KEEP EXISTING');
+  assert.throws(()=>generateNativeC2FullMathProofPack({
+   inputPath:manifest,outputPath:output
+  }),/never overwrite/);
+  assert.equal(fs.readFileSync(oldSvg,'utf8'),'KEEP EXISTING');
+  assert.equal(fs.existsSync(output),false);
  }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
