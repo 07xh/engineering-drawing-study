@@ -33,6 +33,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
  const all=()=>[...$('v7-sheet').querySelectorAll('[data-c2-generated-source-id]')];
  const rays=()=>[...$('v7-sheet').querySelectorAll('[data-c2-m5-paper-line-id]')];
  const loops=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-boundary-id]')];
+ const gaps=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-m5-gap-piece]')];
  const supported=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-m5-ray-piece]')];
  try{
   require('../../project/unified-workbench-entry.cjs');await settle();
@@ -57,10 +58,19 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.match($('v7-proof').textContent,/闭合投影边界中已有完整三维物理来源覆盖/);
   assert.match($('v7-proof').textContent,/来源与局部无遮挡\/遮挡射线同时得到核对的/);
   assert.match($('v7-proof').textContent,/来源缺口/);
+  assert.match($('v7-proof').textContent,/精确未证明子段/);
   assert.match($('v7-proof').textContent,/蓝\/橙\/灰点线仅为局部射线证据/);
   assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   const strokes=all(),region=loops(),rayShapes=rays(),positive=supported();
+  const missing=gaps();
+  assert.ok(missing.length>0,'real exact unproven source subspans must be drawn');
+  assert.ok(missing.every(x=>
+   x.getAttribute('stroke-dasharray')==='1 4 1 8'&&
+   x.getAttribute('data-visibility')==='undetermined'&&
+   x.getAttribute('data-c2-geometry-status')===
+     'original-or-generated-3d-source-or-ray-unproven'&&
+   !!x.getAttribute('data-c2-region-m5-gap-reason')));
   assert.ok(positive.length>0,'3D matched proven boundary subspans');
   assert.ok(positive.every(x=>
    x.getAttribute('stroke-dasharray')==='2 5'&&
@@ -106,18 +116,21 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
   assert.equal(loops().length,0,'2D region loops are not official model strokes');
   assert.equal(rays().length,0,'source M5 candidates must respect guide toggle');
+  assert.equal(gaps().length,0,'unproven exact M5 gaps must respect guide toggle');
   assert.equal(supported().length,0,'boundary-ray joint proof must respect guide toggle');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   assert.equal(all().length,12);
   assert.equal(loops().length,region.length);
   assert.equal(rays().length,rayShapes.length);
   assert.equal(supported().length,positive.length);
+  assert.equal(gaps().length,missing.length);
   // An edited unsaved input can never keep the previous math/overlay.
   $('v8-c2-b-x0').value='7';fire('v8-c2-b-x0','input');await settle();
   assert.equal(all().length,0);
   assert.equal(loops().length,0);
   assert.equal(rays().length,0);
   assert.equal(supported().length,0);
+  assert.equal(gaps().length,0);
   assert.equal($('v7-play').disabled,true);
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v8-c2-build').disabled,true);

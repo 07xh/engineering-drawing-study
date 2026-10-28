@@ -1088,11 +1088,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         'C2 投影区域边界仍缺少完整三维物理来源，非正式工程轮廓线'
       });
       svg.append(node);
-      // Render only exact, original-source matched local OPEN ray segments;
-      // these are diagnostic dots, never GB engineering hidden/solid lines.
+      // Every original 3D-source subspan has its own exact M5 proof state.
+      // Highlight unproven ranges as DIAGNOSTIC gap marks, not GB dashes.
       if(ray){
        for(const [i,piece] of ray.paperPieces.entries()){
-        if(!piece.exactCurrentPhysicalSourceAndOpenRayCorroborated)continue;
+        const proven=piece.exactCurrentPhysicalSourceAndOpenRayCorroborated;
+        if(proven===(piece.unprovenLocalSourceOrRayReason!==null))
+         throw Error('C2 局部来源证明与精确缺口相矛盾');
         const from={u:bound.from.u+(bound.to.u-bound.from.u)*piece.fromT,
          v:bound.from.v+(bound.to.v-bound.from.v)*piece.fromT};
         const to={u:bound.from.u+(bound.to.u-bound.from.u)*piece.toT,
@@ -1102,14 +1104,22 @@ const Motion=require('../workbench/teaching-motion-v5.js');
          'scoped-continuous-front-ray-clear';
         const diag=shape('line',{
          x1:a.x,y1:a.y,x2:b.x,y2:b.y,
-         stroke:$('v7-mono').checked?'#333':clear?'#2b6dd0':'#d58b28',
-         'stroke-width':2,'stroke-dasharray':'2 5',
-         'data-c2-region-m5-ray-piece':bound.id+':'+i,
+         stroke:$('v7-mono').checked?(proven?'#333':'#888'):
+          !proven?'#c04856':clear?'#2b6dd0':'#d58b28',
+         'stroke-width':2,'stroke-dasharray':proven?'2 5':'1 4 1 8',
+         ...(proven?
+          {'data-c2-region-m5-ray-piece':bound.id+':'+i}:
+          {'data-c2-region-m5-gap-piece':bound.id+':'+i,
+           'data-c2-region-m5-gap-reason':piece.unprovenLocalSourceOrRayReason}),
          'data-c2-region-m5-view':bound.view,
          'data-c2-region-m5-ray-status':piece.localWholeOpenRayStatus,
-         'data-c2-geometry-status':'source-key-matched-open-ray-only',
+         'data-c2-geometry-status':proven?
+          'source-key-matched-open-ray-only':
+          'original-or-generated-3d-source-or-ray-unproven',
          'data-visibility':'undetermined',
-         'aria-label':'C2 三维来源核对的局部前方射线，非国标正式工程线'
+         'aria-label':proven?
+          'C2 三维来源核对的局部前方射线，非国标正式工程线':
+          'C2 三维来源或连续开区间射线缺少证明的精确参数段'
         });
         svg.append(diag);
        }
@@ -1492,7 +1502,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
            partial.c2PaperRayProof.boundaryRayOpenPieceCount+
           ' 项，来源与局部无遮挡/遮挡射线同时得到核对的 '+
            partial.c2PaperRayProof.boundaryRayCorroboratedPieceCount+
-          ' 项，整段局部射线已核对的边界 '+
+          ' 项；精确未证明子段 '+
+           partial.c2PaperRayProof.boundaryRayUnprovenPieceCount+
+          ' 项（红色短点划线提示具体缺口）。整段局部射线已核对的边界 '+
            partial.c2PaperRayProof.boundaryAllPiecesCorroboratedCount+
           ' 段（不等于全局工程线型）。淡灰边界表示来源未完整覆盖，均不是正式工程实虚线。'+
           ' 蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':

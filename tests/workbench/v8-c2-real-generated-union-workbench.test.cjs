@@ -60,6 +60,9 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
  assert.equal(proof.boundaryRayCorroboratedPieceCount,
   proof.boundaryRayEvidence.reduce((n,b)=>n+
    b.positiveLocalWholeOpenRayPieceCount,0));
+ assert.equal(proof.boundaryRayOpenPieceCount,
+  proof.boundaryRayCorroboratedPieceCount+proof.boundaryRayUnprovenPieceCount);
+ assert.ok(proof.boundaryRayUnprovenPieceCount>0);
  assert.ok(proof.boundaryRayCorroboratedPieceCount>0,
   'genuine physical source and open ray corroboration exists');
  assert.ok(proof.boundaryAllPiecesCorroboratedCount<=
@@ -78,13 +81,22 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
   assert.equal(bound.paperPieces.some(p=>
    p.exactCurrentPhysicalSourceAndOpenRayCorroborated),
    bound.positiveLocalWholeOpenRayPieceCount>0);
+  assert.equal(bound.paperPieces.length,
+   bound.positiveLocalWholeOpenRayPieceCount+
+    bound.unprovenLocalSourceOrRayPieceCount);
+  assert.ok(bound.paperPieces.filter(p=>
+   !p.exactCurrentPhysicalSourceAndOpenRayCorroborated).every(p=>
+     ['missing-canonical-paper-source','nonunique-or-unmatched-3d-source',
+      'boolean-exterior-open-source-unproven',
+      'conflicting-local-open-ray-evidence','continuous-open-ray-undetermined']
+      .includes(p.unprovenLocalSourceOrRayReason)));
   for(const [i,p] of bound.paperPieces.entries()){
    if(i>0)assert.equal(bound.paperPieces[i-1].toT,p.fromT);
    assert.equal(p.officialEngineeringLineStyle,'undetermined');
    assert.equal(p.officialV5Approved,false);
    assert.equal(p.completeClosedEndpointAndGlobalVisibilityCertified,false);
    if(p.exactCurrentPhysicalSourceAndOpenRayCorroborated){
-    assert.ok(src.completeProjectedPhysicalSourceCoverage);
+    assert.equal(p.unprovenLocalSourceOrRayReason,null);
     assert.equal(p.real3DSourceClassKeys.length,1);
     assert.ok(src.physical3DSourceClassKeys.includes(
      p.real3DSourceClassKeys[0]));
