@@ -125,6 +125,7 @@ function homeHTML(){return `
     <option value="exploration">长方体截平面 · 限定证据预览</option>
     <option value="composition">C2 组合体 · 已知形体与关系核验</option>
     <option value="c1-third-view">C1 补第三视图 · 已确认长方体（限定结果）</option>
+    <option value="c3-intersection">C3 相贯线 · 两根有限正交圆柱（解析预览）</option>
    </select></label>
    <p class="v7-note">已有条件时切换题型会新建项目，原项目保留；空项目可直接切换。</p>
    <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
@@ -138,6 +139,32 @@ function homeHTML(){return `
     <button type="button" id="v7-confirm-other">核对并确认</button>
     <button type="button" id="v7-solve-other" class="v7-primary">开始求解</button></div>
 
+   <fieldset data-v7-task="c3-intersection" hidden>
+    <legend>C3 · 已确认的两根正交有限圆柱</legend>
+    <p class="v7-note">输入两根圆柱的半径、中心轴位置和有限端盖范围（mm）。
+     Z 轴圆柱与 Y 轴圆柱互相正交；不适用于任意倾斜圆柱或未知实体。</p>
+    <div class="v8-c3-grid">
+     <fieldset><legend>沿 Z 轴的圆柱</legend><div class="v7-xyz">
+      <label>半径<input id="v8-c3-zRadius" type="number" step="any"></label>
+      <label>中心 x<input id="v8-c3-zX" type="number" step="any"></label>
+      <label>中心 y<input id="v8-c3-zY" type="number" step="any"></label>
+      <label>端盖 z 最小<input id="v8-c3-zMin" type="number" step="any"></label>
+      <label>端盖 z 最大<input id="v8-c3-zMax" type="number" step="any"></label>
+     </div></fieldset>
+     <fieldset><legend>沿 Y 轴的圆柱</legend><div class="v7-xyz">
+      <label>半径<input id="v8-c3-yRadius" type="number" step="any"></label>
+      <label>中心 x<input id="v8-c3-yX" type="number" step="any"></label>
+      <label>中心 z<input id="v8-c3-yZ" type="number" step="any"></label>
+      <label>端盖 y 最小<input id="v8-c3-yMin" type="number" step="any"></label>
+      <label>端盖 y 最大<input id="v8-c3-yMax" type="number" step="any"></label>
+     </div></fieldset>
+    </div>
+    <label class="v8-review-agree"><input id="v8-c3-axes" type="checkbox">
+     我已核对真实题目中两根圆柱的正交轴向、位置与毫米尺寸。</label>
+    <label class="v8-review-agree"><input id="v8-c3-caps" type="checkbox">
+     我已核对两个有限圆柱的端盖位置及截断范围。</label>
+    <p class="v7-warning">仅复用已证明的解析求交点、V/H/W 辅助求点和现有唯一 V5。数学曲线预览不等于整条相贯线已取得工程实虚线资格。</p>
+   </fieldset>
    <fieldset data-v7-task="c1-third-view" hidden>
     <legend>C1 · 已确认单个闭合长方体补第三视图</legend>
     <p class="v7-note">填写两张已知视图中全部八个对应角点的模型毫米坐标。
