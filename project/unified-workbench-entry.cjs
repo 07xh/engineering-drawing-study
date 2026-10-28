@@ -1414,13 +1414,20 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!allowed)ack.checked=false;
   button.disabled=!allowed||!ack.checked;
  }
+ function c2HasSavedWork(snap){
+  return !!(snap&&(snap.objects.length||snap.conditions.length||
+   (snap.relations||[]).length||snap.affineProblem));
+ }
  function updateC2Preflight(){
   const snap=coordinator?.snapshot();
   if(snap?.task!=='composition')return;
   const locate=$('v8-c2-locate'),ack=$('v8-c2-ack');
   if(locate.dataset.target)$(locate.dataset.target)?.removeAttribute('aria-invalid');
-  const occupied=!!(snap.objects.length||snap.conditions.length||
-   (snap.relations||[]).length||snap.affineProblem);
+  const occupied=c2HasSavedWork(snap);
+  // The quick entry is for new C2 geometry only. Its draft inputs must never
+  // invalidate already confirmed project geometry or locally computed proof.
+  for(const id of c2Fields)$(id).disabled=occupied;
+  $('v8-c2-existing').hidden=!occupied;
   const values=Object.fromEntries(c2Fields.map(id=>[id,$(id).value]));
   const review=reviewC2BoxFields(values,{occupied});
   const status=$('v8-c2-preflight');
@@ -2002,6 +2009,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  $('v8-c2-ack').addEventListener('change',updateC2Preflight);
+ $('v8-c2-existing').addEventListener('click',()=>{
+  const advanced=$('v8-c2-advanced');
+  advanced.open=true;
+  advanced.querySelector('summary')?.focus?.();
+  advanced.scrollIntoView?.({block:'start',behavior:'auto'});
+ });
  $('v8-c2-locate').addEventListener('click',()=>{
   const id=$('v8-c2-locate').dataset.target,field=id?$(id):null;
   if(!field)return;
@@ -2010,7 +2023,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  });
  for(const id of c2Fields)for(const type of ['input','change'])
   $(id).addEventListener(type,()=>{
-   if(coordinator?.snapshot().task==='composition')
+   const snap=coordinator?.snapshot();
+   if(snap?.task==='composition'&&c2HasSavedWork(snap)){
+    updateC2Preflight();
+    return;
+   }
+   if(snap?.task==='composition')
     uncommittedFormEdit=true;
    $('v8-c2-ack').checked=false;
    $('v8-c2-build').disabled=true;
