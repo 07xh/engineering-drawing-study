@@ -56,14 +56,32 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/C3 真实有限圆柱解析分支/,$('v7-save').textContent);
   assert.match($('v7-proof').textContent,/布尔体积射线区间/);
   assert.match($('v7-proof').textContent,/intersection/);
+  assert.match($('v7-proof').textContent,/三视图曲线已绑定严格体积射线的解析开区间/);
+  $('v7-guides').checked=true;fire('v7-guides','change');
   assert.equal($('v8-result-status').dataset.state,'partial');
   assert.equal($('v7-play').disabled,false);
   assert.ok($('v7-step-list').querySelector('button'));
   assert.ok($('v7-sheet').querySelector('[data-geometry-id]'));
+  const rayCurves=[...$('v7-sheet').querySelectorAll('[data-c3-open-ray-branch-id]')];
+  assert.ok(rayCurves.length>=12,'at least four M3 branches in three views');
+  assert.equal(new Set(rayCurves.map(x=>x.getAttribute('data-c3-open-ray-view'))).size,3);
+  assert.ok(rayCurves.every(x=>x.tagName.toLowerCase()==='path'&&
+   x.getAttribute('d').startsWith('M ')&&
+   x.getAttribute('stroke-dasharray')==='1 6'&&
+   x.getAttribute('data-visibility')==='undetermined'));
+  assert.ok(rayCurves.every(x=>
+   ['strict-interior-ray-clear','opaque-interior-ahead'].includes(
+    x.getAttribute('data-c3-open-ray-class'))));
+  $('v7-guides').checked=false;fire('v7-guides','change');await tick();
+  assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
+  $('v7-guides').checked=true;fire('v7-guides','change');await tick();
+  assert.equal($('v7-sheet').querySelectorAll('[data-c3-open-ray-branch-id]').length,
+   rayCurves.length);
   assert.equal($('v8-review-ack').checked,false);
   $('v8-c3-yRadius').value='7';fire('v8-c3-yRadius','input');
   await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
   assert.equal($('v7-play').disabled,true);
   assert.equal($('v8-review-run').disabled,true);
   $('v7-task').value='projection';fire('v7-task','change');
