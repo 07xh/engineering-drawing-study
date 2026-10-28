@@ -282,15 +282,34 @@ function verifyOriginalOcctLinearCurveWitness({
 function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  generatedEdge,originalSourceEdges
 }={}){
- if(typeof generatedEdge?.IsSame!=='function'||!Array.isArray(originalSourceEdges))
+ if(typeof generatedEdge?.IsSame!=='function'||
+    generatedEdge.IsNull?.()===true||
+    generatedEdge.IsSame(generatedEdge)!==true||
+    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
+    originalSourceEdges.length>512)
   throw new TypeError('actual OCCT generated and original native TopoDS edges required');
  const ids=new Set(),visited=new Set(),partnerIds=new Set();
+ // This direct probe can be called independently of the HLR EdgeMap audit.
+ // Repeated explorer occurrences must not silently relabel a different
+ // physical TShape with an already accepted original M0 source ID.
+ const originalHandleBySourceId=new Map();
  let partnerRelationSupported=typeof generatedEdge.IsPartner==='function';
  let partnerRelationComparisons=0,partnerOccurrences=0;
+ if(partnerRelationSupported&&generatedEdge.IsPartner(generatedEdge)!==true)
+  throw new RangeError('nonreflexive generated native TopoDS IsPartner');
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
      typeof item.edge?.IsSame!=='function')
    throw new TypeError('untrusted original native TopoDS source edge');
+  if(item.edge.IsNull?.()===true||item.edge.IsSame(item.edge)!==true)
+   throw new RangeError('nonreflexive or null original native TopoDS source edge');
+  const prior=originalHandleBySourceId.get(item.sourceEdgeId);
+  if(prior){
+   const forward=item.edge.IsSame(prior),backward=prior.IsSame(item.edge);
+   if(typeof forward!=='boolean'||typeof backward!=='boolean'||
+      forward!==backward||forward!==true)
+    throw new RangeError('duplicate original source ID aliases distinct native TopoDS edges');
+  }else originalHandleBySourceId.set(item.sourceEdgeId,item.edge);
   const forward=generatedEdge.IsSame(item.edge),backward=item.edge.IsSame(generatedEdge);
   if(typeof forward!=='boolean'||typeof backward!=='boolean'||forward!==backward)
    throw new RangeError('asymmetric or nonboolean actual OCCT TopoDS IsSame proof');
@@ -298,6 +317,8 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
    typeof item.edge.IsPartner==='function';
   if(!hasPartner)partnerRelationSupported=false;
   else{
+   if(item.edge.IsPartner(item.edge)!==true)
+    throw new RangeError('nonreflexive original native TopoDS IsPartner');
    const pf=generatedEdge.IsPartner(item.edge),pr=item.edge.IsPartner(generatedEdge);
    if(typeof pf!=='boolean'||typeof pr!=='boolean'||pf!==pr)
     throw new RangeError('asymmetric or nonboolean actual OCCT TopoDS IsPartner proof');
