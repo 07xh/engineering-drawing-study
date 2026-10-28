@@ -33,7 +33,13 @@ const asRatio=value=>{
 const compareRatio=(a,b)=>sign({n:a.n*b.d-b.n*a.d});
 const printRatio=r=>r.d===1n?String(r.n):String(r.n)+'/'+String(r.d);
 const paperParameterRatio=(paper,a,b)=>{
- const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v';
+ // Ordinary binary64 subtraction can overflow BOTH projected spans to
+ // Infinity and silently pick u even when |dv|>|du|. Choose the dominant
+ // axis using the exact M0 dyadic differences, without a tolerance.
+ const du=difference(dyadic(b.u),dyadic(a.u));
+ const dv=difference(dyadic(b.v),dyadic(a.v));
+ const magnitude=x=>({n:x.n<0n?-x.n:x.n,e:x.e});
+ const axis=sign(difference(magnitude(du),magnitude(dv)))>=0?'u':'v';
  const origin=dyadic(a[axis]),delta=difference(dyadic(b[axis]),origin);
  if(sign(delta)===0)return null; // Source projection collapses in this view.
  const offset=difference(dyadic(paper[axis]),origin);
