@@ -41,6 +41,24 @@ test('V8 review requires explicit approval, calls canonical V5 and revokes appro
   assert.ok($('v8-review-summary').textContent.includes('x=15'));
   assert.equal($('v8-review-run').disabled,true,'cannot skip human review');
   assert.match($('v8-result-status').textContent,/尚未解题/);
+  assert.equal($('v8-review-preflight').dataset.state,'ready');
+  // An empty coordinate is identified before approval, not after attempting solve.
+  $('v7-x').value='';fire('v7-x','input');
+  assert.equal($('v8-review-preflight').dataset.state,'blocked');
+  assert.equal($('v8-review-edit').dataset.target,'v7-x');
+  assert.equal($('v8-review-edit').hidden,false);
+  assert.equal($('v7-x').getAttribute('aria-invalid'),'true');
+  assert.equal($('v8-review-ack').disabled,true);
+  assert.equal($('v8-review-run').disabled,true);
+  // Invalid numeric ranges also block preflight.
+  $('v7-x').value='100001';fire('v7-x','input');
+  assert.equal($('v8-review-preflight').dataset.state,'blocked');
+  assert.match($('v8-review-preflight').textContent,/100000/);
+  $('v7-x').value='15';fire('v7-x','input');
+  assert.equal($('v8-review-preflight').dataset.state,'ready');
+  assert.equal($('v8-review-edit').hidden,true);
+  assert.equal($('v7-x').hasAttribute('aria-invalid'),false);
+  assert.equal($('v8-review-ack').disabled,false);
   // A real user checks displayed coordinates and explicitly grants approval.
   $('v8-review-ack').checked=true;fire('v8-review-ack','change');
   assert.equal($('v8-review-run').disabled,false);
