@@ -64,4 +64,5 @@ jobs:
           path: |
             occt-l-union-native-proof.json
             occt-l-union-full-m0-m4-m5-proof.json
+            occt-l-union-full-m0-m4-m5-proof.signed-only.svg
           retention-days: 14
