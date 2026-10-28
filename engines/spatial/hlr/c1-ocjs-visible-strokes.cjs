@@ -282,52 +282,55 @@ function verifyOriginalOcctLinearCurveWitness({
 function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  generatedEdge,originalSourceEdges
 }={}){
- if(typeof generatedEdge?.IsSame!=='function'||
-    !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
-    originalSourceEdges.length>512)
-  throw new TypeError('actual OCCT generated and original native TopoDS edges required (bounded source ledger)');
- const ids=new Set(),visited=new Set(),handleBySourceId=new Map();
+ if(typeof generatedEdge?.IsSame!=='function'||!Array.isArray(originalSourceEdges))
+  throw new TypeError('actual OCCT generated and original native TopoDS edges required');
+ const ids=new Set(),visited=new Set(),partnerIds=new Set();
+ let partnerRelationSupported=typeof generatedEdge.IsPartner==='function';
+ let partnerRelationComparisons=0,partnerOccurrences=0;
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
      typeof item.edge?.IsSame!=='function')
    throw new TypeError('untrusted original native TopoDS source edge');
-  const prior=handleBySourceId.get(item.sourceEdgeId);
-  if(prior){
-   // The same physical TopoDS edge may occur more than once in an explorer
-   // ledger. Accept only symmetric IsSame duplicates, never one source ID
-   // aliased to two different physical TShapes.
-   const sameForward=item.edge.IsSame(prior),sameBackward=prior.IsSame(item.edge);
-   if(typeof sameForward!=='boolean'||typeof sameBackward!=='boolean'||
-      sameForward!==sameBackward||sameForward!==true)
-    throw new RangeError('duplicate original source ID aliases distinct native TopoDS edges');
-  }else handleBySourceId.set(item.sourceEdgeId,item.edge);
-  visited.add(item.sourceEdgeId);
-  const forward=generatedEdge.IsSame(item.edge),
-   backward=item.edge.IsSame(generatedEdge);
-  if(typeof forward!=='boolean'||typeof backward!=='boolean'||
-     forward!==backward)
+  const forward=generatedEdge.IsSame(item.edge),backward=item.edge.IsSame(generatedEdge);
+  if(typeof forward!=='boolean'||typeof backward!=='boolean'||forward!==backward)
    throw new RangeError('asymmetric or nonboolean actual OCCT TopoDS IsSame proof');
+  const hasPartner=typeof generatedEdge.IsPartner==='function'&&
+   typeof item.edge.IsPartner==='function';
+  if(!hasPartner)partnerRelationSupported=false;
+  else{
+   const pf=generatedEdge.IsPartner(item.edge),pr=item.edge.IsPartner(generatedEdge);
+   if(typeof pf!=='boolean'||typeof pr!=='boolean'||pf!==pr)
+    throw new RangeError('asymmetric or nonboolean actual OCCT TopoDS IsPartner proof');
+   partnerRelationComparisons++;
+   if(forward&&!pf)throw new RangeError('OCCT IsSame edge relation contradicts IsPartner');
+   if(pf){partnerOccurrences++;partnerIds.add(item.sourceEdgeId);}
+  }
   visited.add(item.sourceEdgeId);
   if(forward)ids.add(item.sourceEdgeId);
  }
  if(ids.size>1)
   throw new RangeError('generated HLR TopoDS edge IsSame to multiple different original physical edges');
+ const partnerSources=partnerRelationSupported?[...partnerIds].sort():[];
  return {
   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameCompared:true,
   originalPhysicalOCCTSourceIdsCompared:[...visited].sort(),
   actualOriginalOCCTBRepEdgeOccurrencesCompared:originalSourceEdges.length,
   actualDistinctOriginalOCCTBRepSourceCount:visited.size,
   directlySameOriginalOCCTBRepSourceEdgeIds:[...ids].sort(),
-  directlySameUniqueOriginalOCCTBRepSourceEdgeId:
-   ids.size===1?[...ids][0]:null,
+  directlySameUniqueOriginalOCCTBRepSourceEdgeId:ids.size===1?[...ids][0]:null,
   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:ids.size===1,
-  // Direct IsSame is not history for HLR-created, split or reprojected edges.
+  actualOCCTGeneratedEdgePartnerOriginalBRepIsPartnerCompared:partnerRelationSupported,
+  originalNativeTopoDSEdgePartnerRelationComparisons:partnerRelationComparisons,
+  originalNativeTopoDSEdgePartnerOccurrencesCompared:partnerOccurrences,
+  originalPhysicalOCCTPartnerSourceEdgeIds:partnerSources,
+  partnerUniqueOriginalOCCTBRepSourceEdgeId:partnerSources.length===1?partnerSources[0]:null,
+  actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateCount:partnerSources.length,
+  actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateAmbiguous:partnerSources.length>1,
+  actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateOnly:partnerSources.length===1&&ids.size===0,
+  partnerOriginalBRepTShapeRelationDoesNotProveLocationParameterOrHistory:true,
   completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified:false,
-  wholeSceneEngineeringLineStyleCertified:false,
-  signedV5Action:false
- };
-}
-
+  wholeSceneEngineeringLineStyleCertified:false,signedV5Action:false
+ };}
 /**
  * Inspect the real HLRBRep_Data EdgeMap (1-based OCCT source index), not
  * the generated HLR VCompound. This proves only which ORIGINAL TopoDS
@@ -396,6 +399,10 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   indexed.push({hlrDataStructureOneBasedEdgeIndex:i,
    originalPhysicalSourceEdgeId:id,
    directlySameOriginalTopoDSInputEdge:id!==null,
+   originalPhysicalSourceTShapePartnerCandidateIds:
+    proof.originalPhysicalOCCTPartnerSourceEdgeIds,
+   originalPhysicalSourceTShapePartnerCandidateOnly:
+    proof.actualOCCTGeneratedEdgeTShapePartnerOriginalBRepCandidateOnly,
    generatedHLREdgeToOriginalTopoDSHistoryProven:false,
    signedV5Action:false});
  }
@@ -435,43 +442,62 @@ function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
  generatedVertex,originalSourceVertices,view,nativePaperPoint,geometry
 }={}){
  if(!geometry?.data?.points||!VIEWS.includes(view)||!Number.isFinite(nativePaperPoint?.u)||
-    !Number.isFinite(nativePaperPoint?.v)||
-    typeof generatedVertex?.IsSame!=='function'||
-    generatedVertex.IsNull?.()===true||
-    generatedVertex.IsSame(generatedVertex)!==true||
-    !Array.isArray(originalSourceVertices)||
-    !originalSourceVertices.length||originalSourceVertices.length>1024)
+    !Number.isFinite(nativePaperPoint?.v)||typeof generatedVertex?.IsSame!=='function'||
+    generatedVertex.IsNull?.()===true||generatedVertex.IsSame(generatedVertex)!==true||
+    !Array.isArray(originalSourceVertices)||!originalSourceVertices.length||
+    originalSourceVertices.length>1024)
   throw new TypeError('actual OCCT HLR vertex and bounded original TopoDS vertex ledger required');
- const sameIds=new Set();let sameUnbound=0,paperMismatch=0,direct=0;
+ const sameIds=new Set(),partnerIds=new Set();
+ let sameUnbound=0,paperMismatch=0,direct=0;
+ let partnerRelationSupported=typeof generatedVertex.IsPartner==='function';
+ let partnerRelationComparisons=0,partnerOccurrences=0,partnerUnbound=0,partnerPaperMismatch=0;
  for(const item of originalSourceVertices){
   const original=item?.vertex;
-  if(typeof original?.IsSame!=='function'||
-     original.IsNull?.()===true||
+  if(typeof original?.IsSame!=='function'||original.IsNull?.()===true||
      original.IsSame(original)!==true)
    throw new TypeError('invalid original native TopoDS vertex');
-  const forward=generatedVertex.IsSame(original),
-   reverse=original.IsSame(generatedVertex);
-  if(typeof forward!=='boolean'||typeof reverse!=='boolean'||
-     forward!==reverse)
+  const forward=generatedVertex.IsSame(original),reverse=original.IsSame(generatedVertex);
+  if(typeof forward!=='boolean'||typeof reverse!=='boolean'||forward!==reverse)
    throw new RangeError('asymmetric original/generated TopoDS vertex IsSame');
+  const hasPartner=typeof generatedVertex.IsPartner==='function'&&
+   typeof original.IsPartner==='function';
+  if(!hasPartner)partnerRelationSupported=false;
+  else{
+   const pf=generatedVertex.IsPartner(original),pr=original.IsPartner(generatedVertex);
+   if(typeof pf!=='boolean'||typeof pr!=='boolean'||pf!==pr)
+    throw new RangeError('asymmetric original/generated TopoDS vertex IsPartner');
+   partnerRelationComparisons++;
+   if(forward&&!pf)throw new RangeError('OCCT vertex IsSame relation contradicts IsPartner');
+   if(pf){
+    partnerOccurrences++;
+    if(item.sourceVertexId===null)partnerUnbound++;
+    else{
+     const xyz=item.originalModelXYZ,model=geometry.data.points[item.sourceVertexId];
+     if(typeof item.sourceVertexId!=='string'||!item.sourceVertexId||!xyz||!model||
+        !['x','y','z'].every(k=>Number.isFinite(xyz[k])&&xyz[k]===model[k]))
+      throw new RangeError('unbound original M0 vertex identity in native partner ledger');
+     const paper=project(xyz)[view];
+     if(paper.u!==nativePaperPoint.u||paper.v!==nativePaperPoint.v)partnerPaperMismatch++;
+     else partnerIds.add(item.sourceVertexId);
+    }
+   }
+  }
   if(!forward)continue;
   direct++;
   if(item.sourceVertexId===null){sameUnbound++;continue;}
-  const xyz=item.originalModelXYZ,
-   model=geometry.data.points[item.sourceVertexId];
-  if(typeof item.sourceVertexId!=='string'||!item.sourceVertexId||
-     !xyz||!model||!['x','y','z'].every(k=>
-      Number.isFinite(xyz[k])&&xyz[k]===model[k]))
+  const xyz=item.originalModelXYZ,model=geometry.data.points[item.sourceVertexId];
+  if(typeof item.sourceVertexId!=='string'||!item.sourceVertexId||!xyz||!model||
+     !['x','y','z'].every(k=>Number.isFinite(xyz[k])&&xyz[k]===model[k]))
    throw new RangeError('unbound original M0 vertex identity in native ledger');
   sameIds.add(item.sourceVertexId);
   const paper=project(xyz)[view];
-  if(paper.u!==nativePaperPoint.u||paper.v!==nativePaperPoint.v)
-   paperMismatch++;
+  if(paper.u!==nativePaperPoint.u||paper.v!==nativePaperPoint.v)paperMismatch++;
  }
  if(sameIds.size>1)
   throw new RangeError('one generated TopoDS vertex matches conflicting original M0 vertices');
- const id=sameIds.size===1&&sameUnbound===0&&paperMismatch===0?
-  [...sameIds][0]:null;
+ const id=sameIds.size===1&&sameUnbound===0&&paperMismatch===0?[...sameIds][0]:null;
+ const partnerCandidateIds=partnerRelationSupported&&partnerUnbound===0&&partnerPaperMismatch===0?
+  [...partnerIds].sort():[];
  return {
   originalNativeTopoDSVertexOccurrencesCompared:originalSourceVertices.length,
   directOriginalTopoDSVertexIsSameOccurrenceCount:direct,
@@ -479,11 +505,18 @@ function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
   directOriginalTopoDSVertexPaperMismatchCount:paperMismatch,
   directlySameOriginalM0VertexId:id,
   directOriginal3DVertexTopoDSIdentityProven:id!==null,
+  actualOCCTGeneratedVertexPartnerOriginalBRepIsPartnerCompared:partnerRelationSupported,
+  originalNativeTopoDSVertexPartnerRelationComparisons:partnerRelationComparisons,
+  originalNativeTopoDSVertexPartnerOccurrencesCompared:partnerOccurrences,
+  partnerOriginalTopoDSVertexUnboundOccurrenceCount:partnerUnbound,
+  partnerOriginalTopoDSVertexPaperMismatchCount:partnerPaperMismatch,
+  partnerOriginalM0VertexCandidateIds:partnerCandidateIds,
+  partnerUniqueOriginalM0VertexCandidateId:partnerCandidateIds.length===1?partnerCandidateIds[0]:null,
+  partnerOriginalM0VertexCandidateAmbiguous:partnerCandidateIds.length>1,
+  partnerSourceCandidateDoesNotProveOriginal3DLocationOrTopoDSHistory:true,
   fullGeneratedHLREdgeToOriginalTopoDSHistoryProven:false,
   officialEngineeringLineStyle:'undetermined',signedV5Action:false
- };
-}
-
+ };}
 function extractRealOcjsOriginalSourceBRepEdges({
  oc,shape,geometry,kind,vertexType,avoid,newObj,hold,
  originalNativeEdgeHandles,originalNativeVertexHandles
@@ -748,8 +781,26 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        !lifted.projectedOriginalEdgeCandidates.includes(
         direct.directlySameUniqueOriginalOCCTBRepSourceEdgeId))
      throw new RangeError('actual OCCT native IsSame original edge disagrees with geometric M0 HLR source candidates');
+    const partnerSourceIds=direct.actualOCCTGeneratedEdgePartnerOriginalBRepIsPartnerCompared?
+     direct.originalPhysicalOCCTPartnerSourceEdgeIds:[];
+    const partnerPaperSourceIds=partnerSourceIds.filter(id=>
+     lifted.projectedOriginalEdgeCandidates.includes(id));
+    const uniquePartnerPaperSourceId=partnerSourceIds.length===1&&partnerPaperSourceIds.length===1?
+     partnerPaperSourceIds[0]:null;
+    const liftsWithPartnerCandidates=verifiedLifts.map(lift=>({
+     ...lift,
+     originalBRepTShapePartnerSourceCandidate:uniquePartnerPaperSourceId===lift.sourceEdgeId,
+     originalBRepTShapePartnerSourceCandidateOnly:
+      uniquePartnerPaperSourceId===lift.sourceEdgeId&&
+      direct.directlySameUniqueOriginalOCCTBRepSourceEdgeId===null,
+     originalBRepTShapePartnerCandidateDoesNotProveSourceParameterOrHistory:true
+    }));
     return {...measured,...lifted,...direct,occtHLRVisibilityClass:hlrClass,
-     sourceCandidate3DLifts:verifiedLifts,
+     sourceCandidate3DLifts:liftsWithPartnerCandidates,
+     originalBRepTShapePartnerSourceCandidateIds:partnerSourceIds,
+     originalBRepTShapePartnerSourceCandidatesConsistentWithPaperProjection:partnerPaperSourceIds,
+     uniqueOriginalBRepTShapePartnerSourceCandidate:uniquePartnerPaperSourceId,
+     originalBRepTShapePartnerCandidateIsNotFullSourceHistory:true,
      originalOCCTSourceTopology3DVerified:true,
      actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
      hiddenStrokeEngineeringStyleNotCertified:true};
@@ -908,6 +959,19 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     n+edge.directNativeVertexOriginalSource.filter(x=>
      x.directOriginal3DVertexTopoDSIdentityProven).length,0)
   ]));
+  // IsPartner ignores TopLoc_Location. Its matches are source candidates,
+  // never 3D endpoint identity, parameter history, visibility or V5 authority.
+  const nativeTShapePartnerEdgeCandidatesByView=Object.fromEntries(VIEWS.map(view=>[
+   view,[...rows[view],...hiddenViews[view]].reduce((n,edge)=>n+
+    (edge.actualOCCTGeneratedEdgePartnerOriginalBRepIsPartnerCompared?
+     edge.originalPhysicalOCCTPartnerSourceEdgeIds.length:0),0)
+  ]));
+  const nativeTShapePartnerVertexCandidatesByView=Object.fromEntries(VIEWS.map(view=>[
+   view,[...rows[view],...hiddenViews[view]].reduce((n,edge)=>
+    n+edge.directNativeVertexOriginalSource.reduce((sum,vertex)=>
+     sum+(vertex.actualOCCTGeneratedVertexPartnerOriginalBRepIsPartnerCompared?
+      vertex.partnerOriginalM0VertexCandidateIds.length:0),0),0)
+  ]));
   if(nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges!==
      VIEWS.reduce((n,v)=>n+rows[v].length+hiddenViews[v].length,0)||
      nativeGeneratedVertexGraph.signedV5ActionCount!==0)
@@ -920,6 +984,9 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
    nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   nativeTShapePartnerEdgeCandidatesByView,
+   nativeTShapePartnerVertexCandidatesByView,
+   nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,
    nativeHLRSourceHistoryAPISurfaceByView,
    nativeSourceScopedSharpOutputByView,
    everyNativeGeneratedEndpointComparedToOriginalTopoDSVertices:true,
