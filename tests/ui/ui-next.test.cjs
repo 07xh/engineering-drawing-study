@@ -443,6 +443,30 @@ test('fillet drawing shortcuts select the original tool with one click',()=>{
  assert.equal(document.querySelectorAll('#drawTool').length,1);
 });
 
+test('drawing shortcuts refuse unavailable app tools and recover when available',async()=>{
+ const {after:document}=enhance('labs/circle-fillet-live.html');
+ const tool=document.getElementById('drawTool');
+ let value='line';Object.defineProperty(tool,'value',{configurable:true,get:()=>value,set:v=>{value=v}});
+ const option=tool.querySelector('option[value="arc"]');
+ option.setAttribute('disabled','');
+ require('../../ui-next/ui-next.js').initUI(document);
+ const button=document.querySelector('[data-next-draw-tool="arc"]');
+ assert.equal(button.disabled,true,'disabled native option must disable its shortcut');
+ assert.equal(button.getAttribute('aria-pressed'),'false');
+ let changes=0;tool.addEventListener('change',()=>changes++);
+ button.click();
+ assert.equal(value,'line','disabled shortcut cannot change the native select');
+ assert.equal(changes,0,'disabled shortcut cannot request a geometry action');
+ option.removeAttribute('disabled');
+ document.getElementById('modeSelect').dispatchEvent(new document.defaultView.Event('change',{bubbles:true}));
+ await Promise.resolve();
+ assert.equal(button.disabled,false,'app mode change re-enables valid shortcut');
+ button.click();
+ assert.equal(value,'arc');
+ assert.equal(changes,1);
+ assert.equal(button.getAttribute('aria-pressed'),'true');
+});
+
 test('drawing shortcuts follow app mode changes and disabled state',async()=>{
  const {after:document}=enhance('labs/circle-fillet-live.html');
  const tool=document.getElementById('drawTool');let value='line';
