@@ -22,6 +22,7 @@ function setup(){
  window.DA07TimelineV5=Timeline;
  window.DA07MotionV5=Motion;
  window.DAFirstAngleProjection=Projection;
+ window.DAC2NativeSignedDemo=require('../../labs/c2-native-cut-certified-demo.json');
  const callback={raf:null};
  vm.runInNewContext(js,{
   globalThis:window,document,
@@ -126,6 +127,30 @@ test('same official V5 locally replays only admitted partial Cut shapes',async()
  assert.equal(typeof host.callback.raf,'function');
  $('cutPlay').dispatchEvent(new host.window.Event('click'));
  assert.equal($('cutPlay').textContent,'播放');
+});
+test('one-tap demo animates only the pinned real native Cut 12 signed source rows, never claims full C2',()=>{
+ const host=setup(),$=id=>host.document.getElementById(id);
+ $('cutDemo').dispatchEvent(new host.window.Event('click'));
+ assert.equal($('cutStatus').dataset.error,'false',$('cutStatus').textContent);
+ assert.equal($('cutSigned').textContent,'12');
+ assert.equal($('cutSuppressed').textContent,'12');
+ assert.equal($('cutHeld').textContent,'40');
+ assert.equal($('cutDraw').querySelectorAll('line').length,12);
+ assert.equal($('cutLineList').querySelectorAll('li').length,12);
+ assert.match($('cutStatus').textContent,/不是.*完整|不是.*完整.*解答/);
+ $('cutPlay').dispatchEvent(new host.window.Event('click'));
+ assert.equal($('cutPlay').textContent,'暂停');
+ assert.equal(typeof host.callback.raf,'function');
+});
+test('one-tap demo refuses a forged private-side source or stale/public-incomplete counts',()=>{
+ const host=setup(),$=id=>host.document.getElementById(id);
+ const forged=structuredClone(host.window.DAC2NativeSignedDemo);
+ forged.counts.held=0;
+ host.window.DAC2NativeSignedDemo=forged;
+ $('cutDemo').dispatchEvent(new host.window.Event('click'));
+ assert.equal($('cutStatus').dataset.error,'true');
+ assert.equal($('cutDraw').querySelectorAll('line').length,0);
+ assert.equal($('cutPlay').disabled,true);
 });
 test('an imported partial proof with unauthorized formal line style is rejected before rendering',async()=>{
  const host=setup(),forged=syntheticReview();
