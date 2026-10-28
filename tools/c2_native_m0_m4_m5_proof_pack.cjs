@@ -495,19 +495,35 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    'one-reviewed-box-minus-through-rectangular-bore-unsigned-m4-reference':
    'two-reviewed-axis-aligned-box-boolean-union-reference'
  };
- // The canonical V5 signer is rigorously valid for UNION only.
- // A subtractive void lacks a proven full-scene continuous M5 order. It
- // MUST NOT even create an empty-but-apparently-valid V5 timeline.
+ // Reuse ONE existing ConstructionIntent/DAG/V5 signer. The complete
+ // two-box UNION contract is unchanged. For Cut, only a STRICT original
+ // TopoDS+closed-M0+M4-paper-certified subset may enter an explicitly
+ // incomplete partial timeline. No other Cut source is replayable.
  const certifiedV5=operation==='union'?
   signCertifiedNativeC2OpenRaySubspans({
    math,nativeReport,revision:manifest.revision
   }):null;
+ const certifiedCutPartialV5=operation==='cut'?
+  signCertifiedNativeC2OpenRaySubspans({
+   math,nativeReport,revision:manifest.revision,cutJointGate
+  }):null;
+ if(operation==='cut'&&(
+  certifiedCutPartialV5?.actualOriginalBooleanOperation!=='cut'||
+  certifiedCutPartialV5.entireCutOriginalDrawingSigned!==false||
+  certifiedCutPartialV5.boundedTwoBoxUnionFullFormalV5Certified!==false||
+  certifiedCutPartialV5.allNativePhysicalSourcesSignedOrProvenSuppressed!==false||
+  certifiedCutPartialV5.certifiedVisibleHiddenSourceIntervals.some(line=>
+   line.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays!==true||
+   line.cutOriginalM4PaperAliasStrictDepthReverified!==true||
+   line.completeC2CutResultCertified!==false)))
+  throw new RangeError('Cut partial original V5 must never be promoted to entire Boolean drawing');
  const packed={
   schema:'draftai-c2-actual-native-occt-m0-m4-m5-full-proof-pack/1',
   revision:manifest.revision,status:'same-run-native-brep-math-proof-only',
   booleanOperation:operation,sourceIds:[...ids],provenance,
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
+  sourceCertifiedNativeCanonicalPartialCutV5:certifiedCutPartialV5,
   nativeCutOriginal3DJunctionGlobalM4M5JointGate:cutJointGate,
   subtractiveCutPartialRayEvidence:operation==='cut'?{
    scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
@@ -542,9 +558,12 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
  const out=JSON.stringify(packed,null,2)+'\n';
  if(Buffer.byteLength(out,'utf8')>12*1024*1024)
   throw new RangeError('bounded native CAD mathematical witness output exceeded');
- // Only UNION has positive native M5 + canonical V5 authorization.
- // CUT remains unsigned; it must not produce a formally signed SVG.
- const svg=certifiedV5?renderSameRunSignedC2Svg(certifiedV5):null;
+ // Draw ONLY formally signed source strokes, even for a partial Cut.
+ // All held/uncertified physical lines are deliberately excluded from
+ // the review SVG; this is not a complete answer sheet.
+ const signedSubset=certifiedV5??certifiedCutPartialV5;
+ const svg=signedSubset&&signedSubset.certifiedVisibleHiddenSourceIntervals.length?
+  renderSameRunSignedC2Svg(signedSubset):null;
  if(svg!==null&&Buffer.byteLength(svg,'utf8')>1024*1024)
   throw new RangeError('signed-only native C2 review SVG exceeds size limit');
  if(svg!==null)fs.writeFileSync(signedSheetPath,svg,{flag:'wx',encoding:'utf8'});
@@ -583,13 +602,13 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   cutM0IndividualClosedEndpointRaysUnresolvedCount:
    cutJointGate?.counts.individuallyUnresolvedClosedEndpointRays??0,
   officiallySignedNativeSubspanCount:
-   certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
+   signedSubset?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
-   certifiedV5?.unsignedNativePhysicalSourceIntervals.length??
+   signedSubset?.unsignedNativePhysicalSourceIntervals.length??
    graph.rows.reduce((n,row)=>n+row.subspans.filter(span=>
     span.status!=='coplanar-native-subdivision-not-a-line').length,0),
   provenHiddenDuplicateSuppressionCount:
-   certifiedV5?.suppressedNativeBackSourceIntervals.length??0,
+   signedSubset?.suppressedNativeBackSourceIntervals.length??0,
   actualNativeOpenCascadeRan:true,
   fullySignedV5:operation==='union'&&
    certifiedV5?.boundedTwoBoxUnionFullFormalV5Certified===true
