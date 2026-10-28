@@ -10,8 +10,9 @@ test('Three.js source visualizer reuses the ONE geometry scene and matching sour
  assert.match(source,/from 'three'/);
  assert.match(source,/OrbitControls\.js/);
  assert.match(source,/new THREE\.Raycaster\(/);
- assert.match(source,/sourceFeatureKey\(obj,\{edgeIds:\[a,b\]\}\)/);
- assert.match(source,/sourceFeatureKey\(obj,\{segmentIndex:i\}\)/);
+ assert.match(source,/sourceFeatureKey\(obj,extra\)/);
+ assert.match(source,/placeLine\(obj,d\.points\[a\],d\.points\[b\],\{edgeIds:\[a,b\]\}\)/);
+ assert.match(source,/\{segmentIndex:i\}/);
  assert.match(source,/sourceFeatureKey\(obj,\{\}\)/);
  assert.match(source,/scene\.schema!==SCHEMA/);
  assert.match(source,/certifiedEngineeringStroke:false/);
