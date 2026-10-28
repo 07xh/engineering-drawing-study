@@ -6,6 +6,8 @@ const {generateNativeC2FullMathProofPack}=
  require('../../tools/c2_native_m0_m4_m5_proof_pack.cjs');
 const {auditC2OcctGeneratedEdgeUnionRays}=
  require('../../workbench/c2-native-occt-generated-ray-m5.cjs');
+const {auditC2CutNativeJunctionGlobalLineGate}=
+ require('../../workbench/c2-cut-native-junction-global-line-gate.cjs');
 const fixture=path.resolve(__dirname,
  '../fixtures/c2-rectangular-through-hole-two-boxes-occt.json');
 const native=spawnSync('python3',['-c','from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut'],
@@ -93,6 +95,32 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(g.allOfficialEngineeringLinesCertified,false);
   assert.equal(g.subtractiveCutM5WholeSceneOcclusionSigned,false);
   assert.equal(pack.completeSubtractiveBooleanM5RayVisibilityCertified,false);
+  const joint=pack.nativeCutOriginal3DJunctionGlobalM4M5JointGate;
+  assert.equal(joint.schema,'draftai-c2-cut-native-m4-m5-joint-original-junction-gate/1');
+  assert.equal(joint.sourceRevision,manifest.revision);
+  assert.equal(joint.sourceResultEdgeCount,24);
+  assert.equal(joint.nativeOriginalResultVertexCount,16);
+  assert.equal(joint.counts.totalM4Subspans,64);
+  assert.equal(joint.counts.positiveOpenRaySubspans,28);
+  assert.equal(joint.counts.nativeGlobalPaperAliasFrontDepthAudited,28);
+  assert.equal(joint.counts.positiveOpenRaySubspans,
+   joint.positiveSourceIntervals.length);
+  assert.equal(info.cutNativeOriginal3DSourceEndpointPairCount,
+   joint.counts.exactOriginalNative3DEndpointPairs);
+  assert.equal(info.cutNative3DEndpointAndGlobalPaperJointCandidateCount,
+   joint.counts.jointOpenRayNativeEndpointAndGlobalPaperCandidates);
+  assert.equal(joint.possibleFullJunctionLineReviewCandidates.length,
+   joint.counts.jointOpenRayNativeEndpointAndGlobalPaperCandidates);
+  assert.ok(joint.positiveSourceIntervals.every(x=>
+   x.independentlyNativeSourceOpenRayProof===true&&
+   x.nativeFullShared3DVertexIncidenceRechecked===true&&
+   x.allCurrentPhysicalCoProjectedSourcesStrictlyBehindOrAbsent===true&&
+   x.officialGBEngineeringLineStyle==='undetermined'&&
+   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
+  assert.equal(joint.globalGBEngineeringLineStylesCertified,false);
+  assert.equal(joint.originalNativeConstructionIntentAuthorized,false);
+  assert.equal(joint.newUniqueV5Actions,0);
+  assert.equal(joint.completeBooleanClosedJunctionVisibilityCertified,false);
   const evidence=pack.subtractiveCutPartialRayEvidence;
   assert.equal(evidence.nativeSourceViewClearRayProofs,m.counts.clear);
   assert.equal(evidence.nativeSourceViewStrictHiddenRayProofs,m.counts.hidden);
@@ -136,7 +164,38 @@ test('a forged native through-hole report cannot replay a union or altered origi
  try{
   const output=path.join(root,'fresh.json');
   generateNativeC2FullMathProofPack({inputPath:fixture,outputPath:output});
-  const report=JSON.parse(fs.readFileSync(output,'utf8')).nativeTopology;
+  const fullPack=JSON.parse(fs.readFileSync(output,'utf8'));
+  const report=fullPack.nativeTopology;
+  const jointArgs={math:fullPack.mathM0M4M5,
+   nativeReport:report,revision:manifest.revision};
+  const valid=auditC2CutNativeJunctionGlobalLineGate(jointArgs);
+  assert.equal(valid.counts.positiveOpenRaySubspans,28);
+  const forgedVertex=structuredClone(report);
+  forgedVertex.resultVertexIncidence[0].real3DModelMm.x+=1;
+  assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
+   ...jointArgs,nativeReport:forgedVertex
+  }),/native C2 result edge|original TopoDS physical endpoint/);
+  const forgedM4=structuredClone(fullPack.mathM0M4M5);
+  const signedRow=forgedM4.globalPaperEvents.rows.find(x=>
+   x.subspans.some(s=>s.continuousSubtractiveCutOpenRayClearVerified||
+    s.continuousSubtractiveCutStrictHiddenVerified));
+  assert.ok(signedRow);
+  const positive=signedRow.subspans.find(s=>
+   s.continuousSubtractiveCutOpenRayClearVerified||
+    s.continuousSubtractiveCutStrictHiddenVerified);
+  positive.realOriginalNative3DFrom.x+=0.5;
+  assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
+   ...jointArgs,math:forgedM4
+  }),/parametric 3D source/);
+  const forgedStyle=structuredClone(fullPack.mathM0M4M5);
+  const forgedPos=forgedStyle.globalPaperEvents.rows
+   .flatMap(x=>x.subspans).find(s=>
+    s.continuousSubtractiveCutOpenRayClearVerified||
+    s.continuousSubtractiveCutStrictHiddenVerified);
+  forgedPos.officialEngineeringLineStyle='gb-t-4457.4-thin-dashed-hidden-edge';
+  assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
+   ...jointArgs,math:forgedStyle
+  }),/parametric 3D source/);
   const swapped=structuredClone(manifest);swapped.operation='union';
   assert.throws(()=>auditC2OcctGeneratedEdgeUnionRays({
    manifest:swapped,nativeReport:report
