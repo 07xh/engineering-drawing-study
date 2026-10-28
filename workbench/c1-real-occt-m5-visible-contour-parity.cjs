@@ -176,6 +176,94 @@ function exactOriginalModelVertexProjectedEdge({a,b,view,from,to}={}){
    orientation:'reversed'};
  return null;
 }
+/**
+ * Read-only source-geometry inventory from genuine HLR BRep candidate lifts.
+ * Crucially this does NOT use M5 frontmost/closed-ray witnesses, so even
+ * full candidate coverage cannot be treated as authenticated HLR identity.
+ * A positive exact gap means a real source-parameter coverage gap; paper
+ * rounding cannot make it disappear.
+ */
+function inspectC1UnsignedNativeBRepSourceCandidates({
+ geometry,cad,view,sourceEdgeId,sourceEdge,originalSourceParameterRange
+}={}){
+ if(!VIEWS.includes(view)||!Array.isArray(originalSourceParameterRange)||
+    !Array.isArray(sourceEdge)||sourceEdge.length!==2)
+  throw new TypeError('current unsigned C1 original 3D source and view required');
+ const a=geometry.data.points[sourceEdge[0]],
+  b=geometry.data.points[sourceEdge[1]];
+ const vector=t=>({x:a.x+(b.x-a.x)*t,
+  y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+ const candidates=[],skipped=[];
+ for(const [ordinal,seg] of cad.views[view].entries()){
+  if(!Array.isArray(seg?.sourceCandidate3DLifts))continue;
+  for(const lift of seg.sourceCandidate3DLifts){
+   if(lift.sourceEdgeId!==sourceEdgeId)continue;
+   const range=lift.originalSourceParameterRange,
+    t0=lift.sourceParameterAtProjectedFrom,
+    t1=lift.sourceParameterAtProjectedTo,
+    endpointsBound=(eq3(a,lift.actualOriginalOCCTBRepFrom3D)&&
+      eq3(b,lift.actualOriginalOCCTBRepTo3D))||
+      (eq3(b,lift.actualOriginalOCCTBRepFrom3D)&&
+       eq3(a,lift.actualOriginalOCCTBRepTo3D));
+   const genuine=seg.occtHLRVisibilityClass==='visible-sharp'&&
+    seg.actualOCCTHLRFlattenedBRepLineVerified===true&&
+    seg.actualOCCTHLREdgeToOriginalTopoDSIdentityMatched===false&&
+    lift.actualOriginalOCCTBRepEdge3DEndpointsVerified===true&&
+    lift.originalOCCTSourceLineCurveVerified===true&&
+    lift.originalXYZReprojectsToHLR===true&&
+    lift.v5Authorized===false&&
+    lift.originalVertexIds?.join('|')===sourceEdge.join('|')&&
+    endpointsBound&&
+    [t0,t1].every(Number.isFinite)&&
+    t0>=0&&t0<=1&&t1>=0&&t1<=1&&
+    Array.isArray(range)&&range.length===2&&
+    range.every(Number.isFinite)&&
+    range[0]>=0&&range[1]<=1&&range[0]<range[1]&&
+    range[0]===Math.min(t0,t1)&&range[1]===Math.max(t0,t1)&&
+    eq3(lift.fromCandidate3D,vector(t0))&&
+    eq3(lift.toCandidate3D,vector(t1));
+   if(!genuine){
+    skipped.push({ordinal,reason:'unbound-or-invalid-native-brep-source-candidate'});
+    continue;
+   }
+   candidates.push({
+    ordinal,originalSourceParameterRange:[...range],
+    nativePaperFromMatchesLiteralModelProjection:
+     eq2(seg.from,project(lift.fromCandidate3D)[view]),
+    nativePaperToMatchesLiteralModelProjection:
+     eq2(seg.to,project(lift.toCandidate3D)[view])
+   });
+  }
+ }
+ const clipped=candidates.map(c=>({
+  ordinal:c.ordinal,
+  interval:[Math.max(originalSourceParameterRange[0],c.originalSourceParameterRange[0]),
+   Math.min(originalSourceParameterRange[1],c.originalSourceParameterRange[1])],
+  exactPaperEndpointsMatched:c.nativePaperFromMatchesLiteralModelProjection&&
+   c.nativePaperToMatchesLiteralModelProjection
+ })).filter(c=>c.interval[1]>c.interval[0]);
+ let positiveOverlap=false,right=originalSourceParameterRange[0];
+ for(const row of clipped.sort((x,y)=>x.interval[0]-y.interval[0]||
+  x.interval[1]-y.interval[1])){
+  if(row.interval[0]<right)positiveOverlap=true;
+  right=Math.max(right,row.interval[1]);
+ }
+ const coverage=exactCandidateIntervalCoverage(
+  originalSourceParameterRange,clipped.map(x=>x.interval));
+ return {
+  scope:'read-only-original-brep-source-candidates-not-m5-authenticated',
+  matchedGenuineNativeBRepCandidateCount:candidates.length,
+  sourceParameterCoverage:coverage,
+  candidateIntervals:clipped,
+  skippedNativeCandidateMatches:skipped,
+  nativeCandidateSourceParameterOverlap:positiveOverlap,
+  anyNativePaperProjectionDrift:clipped.some(c=>!c.exactPaperEndpointsMatched),
+  originalSourceM5FrontmostRayAuthenticated:false,
+  generatedToOriginalTopoDSHistoricalIdentityProven:false,
+  officialEngineeringLineStyleCertified:false,
+  constructionIntentAuthorized:false,signedV5Action:false
+ };
+}
 function auditC1RealOcctVisibleContourSourceParity({
  geometry,revision,cad,nativeProof
 }={}){
@@ -331,6 +419,7 @@ function auditC1RealOcctVisibleContourSourceParity({
     throw new RangeError('unproven original contour was signed');
    let reason=null,complete=false,overlap=false,
     claimRange=null,uncovered=[],covering=[],
+    unsignedNativeBRepSourceCandidateEvidence=null,
     exactOriginalPhysical3DVertexPaperBinding=false,
     originalContour3DParameterRecoveryKind='held';
    if(signed){
@@ -373,6 +462,11 @@ function auditC1RealOcctVisibleContourSourceParity({
      originalContour3DParameterRecoveryKind='exact-original-3d-source-interpolation';
     }else reason='cannot-exactly-normalize-original-signed-contour-3d-source';
     if(claimRange){
+     unsignedNativeBRepSourceCandidateEvidence=
+      inspectC1UnsignedNativeBRepSourceCandidates({
+       geometry,cad,view:v.view,sourceEdgeId:line.sourceEdgeId,
+       sourceEdge:e,originalSourceParameterRange:claimRange
+      });
      const raw=nativeByKey.get(v.view+'@'+line.sourceEdgeId)??[];
      covering=raw.map(n=>({
       ordinal:n.ordinal,
@@ -408,6 +502,7 @@ function auditC1RealOcctVisibleContourSourceParity({
     trueNativeOCCTGeneratedLineOrdinals:covering.map(x=>x.ordinal),
     positiveLengthNativeSourceGaps:uncovered,
     nativeGeneratedOriginalSourceOverlap:overlap,
+    unsignedNativeBRepSourceCandidateEvidence,
     realOCCTOriginal3DSourceCompleteContourParity:complete,
     heldReason:reason,
     generatedToOriginalTopoDSHistoricalIdentityRecovered:false,
@@ -432,6 +527,16 @@ function auditC1RealOcctVisibleContourSourceParity({
    rows.filter(x=>x.exactOriginalPhysical3DVertexPaperBinding===true).length,
   originalGloballySignedM5ContoursStillHeldForNativeProof:
    signed.length-positive.length,
+  heldOriginalContoursWithUnsignedRealBRepCandidateFullParameterCoverage:
+   rows.filter(x=>x.originalM5WholeExteriorContourCertified===true&&
+    x.realOCCTOriginal3DSourceCompleteContourParity===false&&
+    x.unsignedNativeBRepSourceCandidateEvidence?.
+     sourceParameterCoverage.entireOriginalParameterIntervalCovered===true).length,
+  heldOriginalContoursWithUnsignedRealBRepCandidatePaperDrift:
+   rows.filter(x=>x.originalM5WholeExteriorContourCertified===true&&
+    x.realOCCTOriginal3DSourceCompleteContourParity===false&&
+    x.unsignedNativeBRepSourceCandidateEvidence?.
+     anyNativePaperProjectionDrift===true).length,
   viewsWithOriginalM5GlobalContourSignature:contour.acceptedFirstAngleViews,
   rows,
   fullGeneratedTopoDSEdgeToOriginalTopoDSHistoryProven:false,

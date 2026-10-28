@@ -955,6 +955,22 @@ for(const [index,geometry] of general.entries()){
   assert.ok(nativeM5ExteriorContourParity.rows.some(row=>
    row.heldReason==='true-occt-generated-contour-source-parameter-gap'));
  }
+ // Real OCCT candidate coverage is a separate, weaker geometry observation.
+ // It cannot repair authentic native M5 closed-ray/frontmost source gaps.
+ assert.equal(nativeM5ExteriorContourParity.
+  heldOriginalContoursWithUnsignedRealBRepCandidateFullParameterCoverage,
+  nativeM5ExteriorContourParity.rows.filter(row=>
+   row.originalM5WholeExteriorContourCertified===true&&
+   row.realOCCTOriginal3DSourceCompleteContourParity===false&&
+   row.unsignedNativeBRepSourceCandidateEvidence?.
+    sourceParameterCoverage.entireOriginalParameterIntervalCovered===true).length);
+ assert.ok(nativeM5ExteriorContourParity.rows.every(row=>
+  row.unsignedNativeBRepSourceCandidateEvidence===null||
+  (row.unsignedNativeBRepSourceCandidateEvidence.signedV5Action===false&&
+   row.unsignedNativeBRepSourceCandidateEvidence.
+    generatedToOriginalTopoDSHistoricalIdentityProven===false&&
+   row.unsignedNativeBRepSourceCandidateEvidence.
+    originalSourceM5FrontmostRayAuthenticated===false)));
  assert.equal(nativeM5ExteriorContourParity.constructionIntentDAGUniqueV5ParityProven,false);
  assert.equal(nativeM5ExteriorContourParity.signedV5ActionCount,0);
  // Live genuine OCCT evidence for unresolved H-source endpoints: report the
@@ -1002,6 +1018,8 @@ for(const [index,geometry] of general.entries()){
     heldReason:row.heldReason,sourceVertices,
     canonicalOriginal3DParameterRange:row.originalSourceParameterRange,
     positiveLengthNativeSourceGaps:row.positiveLengthNativeSourceGaps,
+    unsignedNativeBRepCandidateGeometryOnly:
+     row.unsignedNativeBRepSourceCandidateEvidence,
     independentlyAuthenticatedNativeVisibleOrdinals:
      row.trueNativeOCCTGeneratedLineOrdinals,
     canonicalM5:{from3D:line.real3DFrom,to3D:line.real3DTo,

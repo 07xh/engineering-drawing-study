@@ -91,6 +91,44 @@ test('reviewed cuboid 12 signed convex contours are independently covered by gen
  assert.equal(p.fullGeneratedTopoDSEdgeToOriginalTopoDSHistoryProven,false);
  assert.equal(p.constructionIntentDAGUniqueV5ParityProven,false);
 });
+test('read-only genuine BRep candidate can cover an original edge without an authenticated M5 native source witness',()=>{
+ const x=initial();
+ x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+   w=>!(w.view==='H'&&w.nativeVisibleHLREdgeOrdinal===0));
+ const r=audit(x),held=r.rows.find(y=>y.view==='H'&&
+  y.trueNativeOCCTGeneratedLineOrdinals.length===0);
+ assert.ok(held);
+ assert.equal(r.nativeCADCorroboratesEveryOriginalGloballySignedExteriorContour,false);
+ assert.equal(r.originalGloballySignedM5ContoursStillHeldForNativeProof,1);
+ const candidate=held.unsignedNativeBRepSourceCandidateEvidence;
+ assert.equal(candidate.matchedGenuineNativeBRepCandidateCount,1);
+ assert.equal(candidate.sourceParameterCoverage.entireOriginalParameterIntervalCovered,true);
+ assert.equal(candidate.originalSourceM5FrontmostRayAuthenticated,false);
+ assert.equal(candidate.generatedToOriginalTopoDSHistoricalIdentityProven,false);
+ assert.equal(candidate.constructionIntentAuthorized,false);
+ assert.equal(held.realOCCTOriginal3DSourceCompleteContourParity,false);
+ assert.equal(held.heldReason,'true-occt-generated-contour-source-parameter-gap');
+ assert.equal(held.signedV5Action,false);
+ assert.equal(r.heldOriginalContoursWithUnsignedRealBRepCandidateFullParameterCoverage,1);
+});
+test('fake raw native BRep identity cannot be counted as candidate coverage or make a V5 line',()=>{
+ const x=initial();
+ x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges=
+  x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
+   w=>!(w.view==='H'&&w.nativeVisibleHLREdgeOrdinal===0));
+ const lift=x.cad.views.H[0].sourceCandidate3DLifts[0];
+ lift.actualOriginalOCCTBRepFrom3D={x:999,y:999,z:999};
+ const result=audit(x),held=result.rows.find(y=>y.view==='H'&&
+  y.unsignedNativeBRepSourceCandidateEvidence?.skippedNativeCandidateMatches.length);
+ assert.ok(held);
+ assert.equal(held.unsignedNativeBRepSourceCandidateEvidence.matchedGenuineNativeBRepCandidateCount,0);
+ assert.equal(held.unsignedNativeBRepSourceCandidateEvidence.
+  sourceParameterCoverage.entireOriginalParameterIntervalCovered,false);
+ assert.equal(held.realOCCTOriginal3DSourceCompleteContourParity,false);
+ assert.equal(result.heldOriginalContoursWithUnsignedRealBRepCandidateFullParameterCoverage,0);
+ assert.equal(result.signedV5ActionCount,0);
+});
 test('one actual generated BRep source segment missing last half cannot pass signed contour CAD parity',()=>{
  const x=initial(),c=x.cad.views.H[0],a=x.geometry.data.points[
   c.sourceCandidate3DLifts[0].originalVertexIds[0]],
@@ -111,6 +149,13 @@ test('one actual generated BRep source segment missing last half cannot pass sig
  assert.equal(r.originalGloballySignedM5ContoursStillHeldForNativeProof,1);
  assert.ok(r.rows.some(y=>y.view==='H'&&
   y.heldReason==='true-occt-generated-contour-source-parameter-gap'));
+ const held=r.rows.find(y=>y.view==='H'&&
+  y.heldReason==='true-occt-generated-contour-source-parameter-gap');
+ assert.equal(held.unsignedNativeBRepSourceCandidateEvidence.
+  sourceParameterCoverage.entireOriginalParameterIntervalCovered,false);
+ assert.equal(held.unsignedNativeBRepSourceCandidateEvidence.
+  sourceParameterCoverage.positiveLengthUncoveredIntervals.length,1);
+ assert.equal(held.unsignedNativeBRepSourceCandidateEvidence.signedV5Action,false);
 });
 test('duplicated actual HLR generated VCompound 3D source strokes cannot masquerade as one complete contour',()=>{
  const x=initial();
