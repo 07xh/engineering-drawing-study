@@ -285,7 +285,7 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
  if(typeof generatedEdge?.IsSame!=='function'||
     !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
     originalSourceEdges.length>512)
-  throw new TypeError('actual OCCT generated and bounded original native TopoDS edges required');
+  throw new TypeError('actual OCCT generated and original native TopoDS edges required (bounded source ledger)');
  const ids=new Set(),visited=new Set(),handleBySourceId=new Map();
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
