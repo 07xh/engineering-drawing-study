@@ -363,11 +363,22 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
      nativeReport.resultFaceCount<8||
      nativeReport.resultEdgeCount<20||
      nativeReport.resultVertexCount<12||
-     math.counts.clear!==0||math.counts.hidden!==0||
-     graph.positiveWholeOpenRayClearSubspans!==0||
-     graph.positiveWholeStrictlyHiddenSubspans!==0||
+     math.counts.clear+math.counts.hidden<=0||
+     graph.partialSubtractiveCutRaySubspansProven<=0||
+     graph.partialSubtractiveCutRaySubspansProven!==
+      graph.positiveWholeOpenRayClearSubspans+
+      graph.positiveWholeStrictlyHiddenSubspans||
+     math.subtractiveCutOriginalEdgeOpenRayProofs!==
+      math.counts.clear+math.counts.hidden||
+     math.generatedEdgeContinuousM5SubspansRecomputed!==true||
+     math.allFirstAngleWholeOriginalGeneratedEdgeRaysAudited!==true||
+     graph.rows.some(row=>row.subspans.some(span=>
+      span.continuousUnionStrictInteriorOcclusionVerified!==false||
+      span.continuousAllOpaqueComponentRayClearVerified!==false||
+      span.V5ActionSignedOff!==false||
+      span.officialEngineeringLineStyle!=='undetermined'))||
      math.strictSubtractiveBooleanContinuousM5VisibilityProven!==false))
-  throw new RangeError('real through-hole result incorrectly promoted subtraction to union-style M5 visibility');
+  throw new RangeError('native Cut M0 partial continuous ray proofs may not become a union-style official M5/V5');
  const provenance={
   inputManifestSha256:crypto.createHash('sha256').update(bytes).digest('hex'),
   originalModelBoundsSha256:nativeReport.canonicalOriginalComponentGeometrySHA256,
