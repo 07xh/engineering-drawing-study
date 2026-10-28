@@ -37,6 +37,8 @@ const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {auditC1Original3DSourceGapDyadicWitness}=
  require('../../workbench/c1-original-3d-source-gap-dyadic-forensics.cjs');
+const {auditC1OriginalOcctCurveParameterGapWitness}=
+ require('../../workbench/c1-original-occt-curve-parameter-gap-witness.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -593,6 +595,8 @@ for(const [index,geometry] of general.entries()){
   s.occtCurveTypeIndependentlyVerified===true&&
   s.occtSourceCurveType==='line'&&
   s.occtSourceCurve3DEndpointsAndMidpointVerified===true&&
+  ['occtSourceCurveFirstPoint3D','occtSourceCurveLastPoint3D'].every(k=>
+   ['x','y','z'].every(axis=>Number.isFinite(s[k]?.[axis])))&&
   s.occtSourceCurveParameterRange[1]>s.occtSourceCurveParameterRange[0]));
  // Independently recalculate physical length from REAL OCCT source vertices:
  // a forged [first,last] BRepAdaptor parameter range must not silently
@@ -793,6 +797,30 @@ for(const [index,geometry] of general.entries()){
   assert.equal(proof.exact3DPositiveLengthGaps,gaps.length);
   assert.equal(proof.originalGeneratedTopoDSHistoryCertified,false);
   assert.equal(proof.globalContinuousVisibilityCertified,false);
+  assert.equal(proof.signedV5ActionCount,0);
+  return proof;
+ });
+ // ACTUAL original BRepAdaptor_Curve first/last parameter XYZ independently
+ // fixes the native curve direction relative to the reviewed M0 edge t.
+ // A positive native curve gap may round to a zero-length Number interval;
+ // never fill a generated HLR source-history hole with this witness.
+ const originalOcctCurveGapForensics=exactGapRows.map(x=>{
+  const gaps=x.exactNativeOriginal3DSourceCoverage?.
+   positiveLengthUncoveredIntervals;
+  if(!Array.isArray(gaps))return null;
+  const originalBRepSource=cad.originalBRepSourceEdges.find(source=>
+   source.sourceEdgeId===x.sourceEdgeId);
+  assert.ok(originalBRepSource,'real original BRep curve source required');
+  const proof=auditC1OriginalOcctCurveParameterGapWitness({
+   geometry,view:x.view,sourceEdgeId:x.sourceEdgeId,
+   originalBRepSource,uncoveredIntervals:gaps
+  });
+  assert.equal(proof.gapsExamined,gaps.length);
+  assert.ok(proof.rows.every(row=>
+   row.exactOriginalOcctCurveParameterGapHasPositiveLength===true&&
+   row.generatedHLREdgeToOriginalTopoDSHistoryCertified===false&&
+   row.engineeringLineStyle==='undetermined'));
+  assert.equal(proof.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
   assert.equal(proof.signedV5ActionCount,0);
   return proof;
  });
@@ -2249,6 +2277,8 @@ for(const [index,geometry] of general.entries()){
    audited.counts.scopedPaperFullButNative3DPositiveGap,
   exactNativeSourceGaps:exactGapRows.map((x,i)=>({
    originalM0DyadicGapWitness:originalGapForensics[i],
+   originalNativeOCCTCurveParameterGapWitness:
+    originalOcctCurveGapForensics[i],
    view:x.view,sourceEdgeId:x.sourceEdgeId,
    status:x.exactNativeOriginal3DSourceCoverage?.status,
    scopedPaperCandidateFullButNative3DGap:
