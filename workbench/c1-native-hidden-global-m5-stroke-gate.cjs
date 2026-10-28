@@ -1186,7 +1186,20 @@ function reviewC1NativeHiddenFinalM5Strokes({
      star.wholeSceneAndEngineeringGBJunctionCertified!==false||
      star.signedV5Action!==false)
    throw new RangeError('untrusted complete generated HLR TopoDS original source star');
+  // A genuine native TopoDS IsSame star must not contain invented,
+  // duplicate or non-integral HLR endpoint identities, including visible
+  // members. This validates evidence only; it never authorizes GB or V5.
+  const distinctMembers=new Set();
   for(const member of star.generatedHLREndpoints){
+   if(!Number.isSafeInteger(member?.nativeHLREdgeOrdinal)||
+      member.nativeHLREdgeOrdinal<0||
+      !['from','to'].includes(member.side)||
+      typeof member.hlrClass!=='string'||member.hlrClass.length===0)
+    throw new RangeError('invalid genuine native HLR endpoint identity');
+   const key=member.hlrClass+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
+   if(distinctMembers.has(key))
+    throw new RangeError('duplicate generated native HLR junction endpoint');
+   distinctMembers.add(key);
    if(member.hlrClass!=='hidden-sharp')continue;
    const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
    if(!['from','to'].includes(member.side)||nativeStarByEndpoint.has(key))
