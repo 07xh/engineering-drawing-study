@@ -80,6 +80,43 @@ test('native OCCT IsSame identifies a directly shared original source TShape irr
  assert.equal(result.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
  assert.equal(result.signedV5Action,false);
 });
+test('duplicate original M0 source ID with a different native TShape fails even when the generated edge matches neither',()=>{
+ const sources=originals();
+ sources.push({sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('forged-second-TShape')});
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:sources}),/duplicate original source ID aliases distinct native TopoDS edges/);
+});
+test('same original ID with a different native Location cannot silently alias a source edge',()=>{
+ const sources=originals();
+ sources.push({sourceEdgeId:'RealSourceBRep3D::A|B',edge:native('a',5)});
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:sources}),/duplicate original source ID aliases distinct native TopoDS edges/);
+});
+test('original and generated native edge reflexivity and null handles are mandatory',()=>{
+ const sources=originals();
+ sources[0].edge={IsSame:()=>false};
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:sources}),/nonreflexive or null original/);
+ const nullOriginal=originals();
+ nullOriginal[0].edge={...native('a'),IsNull:()=>true};
+ assert.throws(()=>probe({generatedEdge:native('unrelated-generated'),
+  originalSourceEdges:nullOriginal}),/nonreflexive or null original/);
+ assert.throws(()=>probe({generatedEdge:{IsSame:()=>false},
+  originalSourceEdges:originals()}),/actual OCCT generated/);
+ assert.throws(()=>probe({generatedEdge:native('a'),
+  originalSourceEdges:[]}),/actual OCCT generated/);
+});
+test('native IsPartner must be reflexive before suggesting TShape-only source candidates',()=>{
+ const generated=native('a');
+ generated.IsPartner=()=>false;
+ assert.throws(()=>probe({generatedEdge:generated,
+  originalSourceEdges:originals()}),/nonreflexive generated native TopoDS IsPartner/);
+ const sources=originals();
+ sources[0].edge.IsPartner=()=>false;
+ assert.throws(()=>probe({generatedEdge:native('a'),
+  originalSourceEdges:sources}),/nonreflexive original native TopoDS IsPartner/);
+});
+
 test('projected HLR output edge with matching paper line but distinct native TShape never gains original TopoDS identity',()=>{
  const proof=probe({generatedEdge:native('hlr-generated'),
   originalSourceEdges:originals()});
