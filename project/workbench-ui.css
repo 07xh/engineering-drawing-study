@@ -168,3 +168,8 @@ body.ui-next .v8-result-status[data-state="verified"]{border-left-color:#36916a}
 body.ui-next .v8-result-status[data-state="pending"]{border-left-color:#8899ae}
 body.ui-next .v8-review-check :focus-visible,body.ui-next .v8-proof-details :focus-visible{outline:2px solid #0866ef;outline-offset:2px}
 @media(max-width:600px){body.ui-next .v8-review-check{padding:11px}body.ui-next .v8-review-summary{font-size:12px}}
+
+/* C1 reviewed eight-vertex entry uses the same workbench and local project. */
+body.ui-next #v8-c1-vertices{width:100%;min-height:190px;font:12px/1.65 ui-monospace,monospace;white-space:pre;resize:vertical}
+body.ui-next fieldset[data-v7-task="c1-third-view"] .v8-review-agree{display:flex;flex-direction:row;align-items:flex-start;gap:9px}
+body.ui-next #v8-c1-topology{width:20px;min-width:20px;height:20px;flex:0 0 20px}

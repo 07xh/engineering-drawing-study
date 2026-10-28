@@ -123,7 +123,8 @@ function homeHTML(){return `
     <option value="projection">点的 V/H/W 三面投影</option>
     <option value="planar">二维两线段圆弧连接 · 正式 V5</option>
     <option value="exploration">长方体截平面 · 限定证据预览</option>
-    <option value="composition">多对象几何编辑 · 人工确认的场景预览</option>
+    <option value="composition">C2 组合体 · 已知形体与关系核验</option>
+    <option value="c1-third-view">C1 补第三视图 · 已确认长方体（限定结果）</option>
    </select></label>
    <p class="v7-note">已有条件时切换题型会新建项目，原项目保留；空项目可直接切换。</p>
    <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
@@ -137,6 +138,22 @@ function homeHTML(){return `
     <button type="button" id="v7-confirm-other">核对并确认</button>
     <button type="button" id="v7-solve-other" class="v7-primary">开始求解</button></div>
 
+   <fieldset data-v7-task="c1-third-view" hidden>
+    <legend>C1 · 已确认单个闭合长方体补第三视图</legend>
+    <p class="v7-note">填写两张已知视图中全部八个对应角点的模型毫米坐标。
+    请依据真实题目人工确认棱与面的固定拓扑，不识别任意照片中的未知实体。</p>
+    <label>已知视图 <select id="v8-c1-pair">
+     <option value="VH">正面 V + 水平 H</option>
+     <option value="VW">正面 V + 侧面 W</option>
+     <option value="HW">水平 H + 侧面 W</option>
+    </select></label>
+    <label>角点表（每行：ID, 第一视图 u,v, 第二视图 u,v）
+     <textarea id="v8-c1-vertices" rows="9" spellcheck="false"
+      placeholder="V000,0,0,0,0"></textarea></label>
+    <label class="v8-review-agree"><input id="v8-c1-topology" type="checkbox">
+     我已经对照原题确认八个顶点 ID 的对应关系、长方体全部 12 条棱与 6 个面的闭合凸拓扑。</label>
+    <p class="v7-warning">仅支持已知拓扑的单个凸长方体。已证明的顶点与部分来源轮廓可进入唯一 V5；隐藏线和完整实体解答仍待认证。</p>
+   </fieldset>
    <fieldset data-v7-task="planar" hidden>
     <legend>二维圆弧连接 · 两条有限线段（模型 mm）</legend>
     <p class="v7-note">分别确认两条线段端点、半径、求解分支及行进方向。实际圆心与切点由现有 02 M3 求解，不由页面写死。</p>
