@@ -187,6 +187,32 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal(childFromOwnerW.getAttribute('stroke'),childFromOwnerV.getAttribute('stroke'));
   assert.equal(childFromOwner3D.getAttribute('stroke'),childFromOwnerV.getAttribute('stroke'),
    '3D + V/H/W owner selection must stay synchronized');
+
+  // New feature-level blue overlay is additive to the existing owner
+  // selection (orange stroke attributes). One real 3D source span selects
+  // the same exact span in V/H/W, never all co-projected physical edges.
+  const sourceKey=childFromOwner3D.getAttribute('data-source-feature-key');
+  assert.ok(sourceKey,'source-backed 3D span identity must be present');
+  childFromOwner3D.dispatchEvent(new window.Event('click',{bubbles:true}));
+  for(const view of ['V','H','W']){
+   const all=[...$('v7-sheet').querySelectorAll(
+    '[data-geometry-id="Section1"][data-geometry-view="'+view+'"]')];
+   assert.equal(all.filter(el=>el.getAttribute('data-source-feature-key')===sourceKey&&
+     el.getAttribute('data-source-feature-selected')==='true').length,1,
+    'exactly one physically matching source feature selected in '+view);
+   assert.ok(all.filter(el=>el.getAttribute('data-source-feature-key')!==sourceKey)
+    .every(el=>el.getAttribute('data-source-feature-selected')==='false'));
+  }
+  const selected3D=[...$('v7-3d').querySelectorAll('[data-geometry-id="Section1"]')];
+  assert.equal(selected3D.filter(el=>el.getAttribute('data-source-feature-selected')==='true').length,1);
+  assert.equal(selected3D.find(el=>el.getAttribute('data-source-feature-key')===sourceKey)
+   .getAttribute('stroke'),'#ef6730','owner selection remains intact beneath blue CSS overlay');
+  selected3D.find(el=>el.getAttribute('data-source-feature-key')===sourceKey)
+   .dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.ok([...$('v7-3d').querySelectorAll('[data-source-feature-selected]')]
+   .every(el=>el.getAttribute('data-source-feature-selected')==='false'),
+   'second activation returns to whole-owner selection without changing M3');
+
   assert.ok(section3D.length>=3&&section3D.length<=6,
    'actual M3 verified section polygon is visible as bounded straight edges');
   assert.equal(sectionSheet.length,section3D.length*3,

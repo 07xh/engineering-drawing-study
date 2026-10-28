@@ -857,7 +857,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     selectedSourceFeature.revision===snap.revision&&
     selectedSourceFeature.objectId===item.objectId&&
     selectedSourceFeature.key===item.sourceFeatureKey;
-   const selected=selectedSourceFeature?featureSelected:selectedIds.has(item.objectId);
+   const selected=selectedIds.has(item.objectId); // Preserve old owner highlights.
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
