@@ -884,6 +884,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   // V5 is the only authority that can reveal constructed Geometry.
   const frame=out.clock?.snapshot();
   const hidden=out.kind==='planar-fillet'&&!frame.done?['Fillet1']:[];
+  if(out.linkedC2&&!$('v7-guides').checked)
+   hidden.push(...out.linkedC2.groups.map(g=>g.geometryId));
   return compileGeometryScene(out.scene,{
    sheet:SHEET,camera:snap.view.camera,selectedObjectId:coordinator.selectedGeometryId(),
    hiddenObjectIds:hidden,
@@ -896,6 +898,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const out=current()||preview();
   const selectedIds=new Set(sceneSelectionGroup(out?.scene,
    coordinator.selectedGeometryId(),snap.revision));
+  const c2Groups=new Map((out?.linkedC2?.groups||[]).map(g=>[g.geometryId,g]));
   // Math-output object IDs may be derived rather than saved input objects.
   for(const item of primitives){
    // A named 3D point's third projection is released by the verified V5
@@ -906,24 +909,33 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     selectedSourceFeature.objectId===item.objectId&&
     selectedSourceFeature.key===item.sourceFeatureKey;
    const selected=selectedIds.has(item.objectId); // Preserve old owner highlights.
+   const generated=c2Groups.get(item.objectId);
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
     monochrome?'#323232':item.objectId==='Fillet1'?'#147f65':'#2773a7';
    const attrs={...item.attrs,fill:item.kind==='circle'&&!item.fill?stroke:'none',
-    stroke, 'stroke-width':selected?3.2:item.kind==='path'?3.1:1.8};
+    stroke:generated&&!selected?(monochrome?'#777':'#9563bf'):stroke,
+    'stroke-width':selected?3.2:generated?1.8:item.kind==='path'?3.1:1.8};
    if(item.fill==='none')attrs.fill='none';
-   if(dashed)attrs['stroke-dasharray']='5 4';
+   if(generated)attrs['stroke-dasharray']='2 6';
+   else if(dashed)attrs['stroke-dasharray']='5 4';
    // All primitives carry the exact mathematics-derived stable Geometry ID.
    const node=shape(item.kind==='line'?'line':item.kind==='path'?'path':'circle',attrs);
    if(item.objectId){
     node.setAttribute('data-geometry-id',item.objectId);
     node.setAttribute('data-geometry-view',item.view);
+    if(generated){
+     // The generated edge is the SAME original M5 segment in all views.
+     node.setAttribute('data-c2-generated-source-id',generated.sourceFeatureId);
+     node.setAttribute('data-c2-generated-view',item.view);
+     node.setAttribute('data-c2-geometry-status','boolean-feature-preview-only');
+    }
     if(item.sourceFeatureKey){
      node.setAttribute('data-source-feature-key',item.sourceFeatureKey);
      node.setAttribute('data-source-feature-selected',String(featureSelected));
     }
-    if(item.visibility==='undetermined')
+    if(item.visibility==='undetermined'||generated)
      node.setAttribute('data-visibility','undetermined');
    }
    if(item.objectId){
@@ -1270,36 +1282,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       svg.append(rayNode);
      }
     }
-    for(const generated of c2.generated.segments){
-     if(generated.positiveNewConcaveUnionOpenFeatureVerified!==true)
-      continue;
-     if(generated.generatedByTwoSourceFacePlanes!==true||
-        generated.originalSourceMeshEdgeId!==null||
-        generated.supportingFacePlaneIncidenceIndependentlyVerified!==true||
-        generated.officialEngineeringLineStyle!=='undetermined'||
-        generated.officialConstructionStepV5ActionAuthorized!==false)
-      throw Error('C2 生成棱不得冒充已签收的工程线条');
-     const projected0=project(generated.source3DFrom),
-       projected1=project(generated.source3DTo);
-     for(const view of VIEWS){
-      if(generated.projected[view].kind==='collapsed-point')
-       continue;
-      const a=toSheet(view,projected0[view],frame);
-      const b=toSheet(view,projected1[view],frame);
-      if(a.x===b.x&&a.y===b.y)continue;
-      const lineNode=shape('line',{
-       x1:a.x,y1:a.y,x2:b.x,y2:b.y,
-       stroke:$('v7-mono').checked?'#777':'#9563bf',
-       'stroke-width':1.8,'stroke-dasharray':'2 6',
-       'data-c2-generated-source-id':generated.id,
-       'data-c2-generated-view':view,
-       'data-c2-geometry-status':'boolean-feature-preview-only',
-       'data-visibility':'undetermined',
-       'aria-label':'C2 两原始面相交的新棱候选，尚无工程线型证明'
-      });
-      svg.append(lineNode);
-     }
-    }
+    // Generated creases now render from the SAME validated 3D Geometry
+    // Scene, not a second hand-projected 2D-only source overlay.
    }
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
@@ -1351,6 +1335,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     selectedIds:sceneSelectionGroup(out.scene,
      coordinator.selectedGeometryId(),snap.revision),
     selectedSourceFeature:selectedSourceFeature?.key||null,
+    hiddenObjectIds:!$('v7-guides').checked?
+     (out.linkedC2?.groups||[]).map(g=>g.geometryId):[],
     camera:snap.view.camera
    });
    svg.hidden=true;$('v9-three-space').hidden=false;
