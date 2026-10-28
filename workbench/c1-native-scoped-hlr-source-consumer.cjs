@@ -17,9 +17,13 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     !Number.isSafeInteger(cad?.revision)||cad.revision<1)
   throw new TypeError('current C1 M0 geometry and real HLR revision required');
  const ids=geometry.data.edges.map(e=>{
-  if(!Array.isArray(e)||e.length!==2||e.some(id=>
+  if(!Array.isArray(e)||e.length!==2||e[0]===e[1]||e.some(id=>
       typeof id!=='string'||!Object.hasOwn(geometry.data.points,id)))
    throw new RangeError('invalid original C1 physical source');
+  const [a,b]=e.map(id=>geometry.data.points[id]);
+  if(![a,b].every(p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k])))||
+     ['x','y','z'].every(k=>a[k]===b[k]))
+   throw new RangeError('nonfinite or degenerate original C1 3D source edge');
   return geometry.id+'::'+[...e].sort().join('|');
  });
  const expected=new Set(ids);
@@ -48,15 +52,19 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      ds.indexedOriginalSources.length!==ids.length||
      !Array.isArray(scoped.rows)||scoped.rows.length!==ids.length)
    throw new RangeError('missing complete real OCCT source-scoped HLR/EdgeMap evidence');
-  const indexed=new Map();
+  // A real OCCT EdgeMap is a bijection: two distinct original TopoDS
+  // source edges cannot own the same one-based native index.
+  const indexed=new Map(),nativeSourceIndices=new Set();
   for(const x of ds.indexedOriginalSources){
    if(!expected.has(x.originalPhysicalSourceEdgeId)||
       !Number.isSafeInteger(x.hlrDataStructureOneBasedEdgeIndex)||
       x.hlrDataStructureOneBasedEdgeIndex<1||
       x.directlySameOriginalTopoDSInputEdge!==true||
-      indexed.has(x.originalPhysicalSourceEdgeId))
+      indexed.has(x.originalPhysicalSourceEdgeId)||
+      nativeSourceIndices.has(x.hlrDataStructureOneBasedEdgeIndex))
     throw new RangeError('stale or duplicated real native HLR source index');
    indexed.set(x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex);
+   nativeSourceIndices.add(x.hlrDataStructureOneBasedEdgeIndex);
   }
   const classes={
    visible:{global:cad.views?.[view],field:'visible'},
@@ -66,6 +74,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    if(!Array.isArray(item.global)||item.global.length>128)
     throw new RangeError('invalid whole-solid HLR stroke inventory');
    item.sources=Array.from({length:item.global.length},()=>new Set());
+   // Direct native IsSame is an identity, not a paper-only alias. A single
+   // generated TopoDS edge may not certify two original sources or appear
+   // twice in one visibility class.
+   item.nativeOwners=new Map();
   }
   let total=0,direct=0,seen=new Set();
   for(const row of scoped.rows){
@@ -108,8 +120,13 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
        throw new RangeError('native original source filter contradicts whole-solid HLR physical source');
       item.sources[ordinal].add(source);
      }
-     if(native.some(ordinal=>!ordinalSet.has(ordinal)))
-      throw new RangeError('native generated IsSame is not a matching whole-solid HLR ordinal');
+     for(const ordinal of native){
+      if(!ordinalSet.has(ordinal))
+       throw new RangeError('native generated IsSame is not a matching whole-solid HLR ordinal');
+      if(item.nativeOwners.has(ordinal))
+       throw new RangeError('duplicate native generated HLR ordinal identity claim');
+      item.nativeOwners.set(ordinal,source);
+     }
      total++;direct+=native.length;
     }
    }
