@@ -1021,11 +1021,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     const boundSources=sourceRayReview?.sourceBoundaries??null;
     const physicalBySource=boundSources?new Map(boundSources.map(x=>
      [x.view+':'+x.id,x])):null;
+    const boundaryRays=sourceRayReview?.boundaryRayEvidence??null;
+    const raysByBoundary=boundaryRays?new Map(boundaryRays.map(x=>
+     [x.view+':'+x.id,x])):null;
     if(physicalBySource&&(sourceRayReview.revision!==snap.revision||
        physicalBySource.size!==boundSources.length||
        boundSources.length!==c2.projectedRegion.projectedBoundarySegmentCount||
        sourceRayReview.sourceCoveredBoundaryCount+
-        sourceRayReview.sourceIncompleteBoundaryCount!==boundSources.length))
+        sourceRayReview.sourceIncompleteBoundaryCount!==boundSources.length||
+       !raysByBoundary||raysByBoundary.size!==boundaryRays.length||
+       boundaryRays.length!==boundSources.length))
      throw Error('C2 M5 实体来源范围与当前投影图纸无法对应');
     for(const view of c2.projectedRegion.projectedViews){
      const topology=c2.projectedLoops.projectedViews.find(v=>v.view===view.view);
@@ -1047,6 +1052,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
          bound.officialV5Approved!==false||
          bound.globalContinuousOcclusionProven!==false))
        throw Error('C2 投影边界的物理三维来源或正式线型门禁不一致');
+      const ray=raysByBoundary?.get(view.view+':'+boundary.id);
+      if(raysByBoundary&&(!ray||ray.revision!==snap.revision||
+         ray.officialEngineeringLineStyle!=='undetermined'||
+         ray.officialV5Approved!==false||
+         ray.paperPieces.some(p=>p.officialEngineeringLineStyle!=='undetermined'||
+          p.officialV5Approved!==false||
+          p.completeClosedEndpointAndGlobalVisibilityCertified!==false)))
+       throw Error('C2 投影边界局部射线不能冒充正式可见实线');
       const coverage=bound?
        (bound.completeProjectedPhysicalSourceCoverage?
         'full-original-or-generated-3d-physical-source':'3d-source-interval-gap'):
@@ -1064,6 +1077,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-c2-region-source-coverage':coverage,
        'data-c2-region-source-classes':
         bound?bound.physical3DSourceClassKeys.join('|'):'',
+       'data-c2-region-m5-local-ray-full':
+        ray?.locallyRayCorroboratedFullBoundary?'true':'false',
+       'data-c2-region-m5-open-piece-count':
+        ray?.positiveLocalWholeOpenRayPieceCount??0,
        'data-visibility':'undetermined',
        'data-c2-geometry-status':'exact-2d-occupancy-only',
        'aria-label':coverage==='full-original-or-generated-3d-physical-source'?
@@ -1071,6 +1088,32 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         'C2 投影区域边界仍缺少完整三维物理来源，非正式工程轮廓线'
       });
       svg.append(node);
+      // Render only exact, original-source matched local OPEN ray segments;
+      // these are diagnostic dots, never GB engineering hidden/solid lines.
+      if(ray){
+       for(const [i,piece] of ray.paperPieces.entries()){
+        if(!piece.exactCurrentPhysicalSourceAndOpenRayCorroborated)continue;
+        const from={u:bound.from.u+(bound.to.u-bound.from.u)*piece.fromT,
+         v:bound.from.v+(bound.to.v-bound.from.v)*piece.fromT};
+        const to={u:bound.from.u+(bound.to.u-bound.from.u)*piece.toT,
+         v:bound.from.v+(bound.to.v-bound.from.v)*piece.toT};
+        const a=toSheet(bound.view,from,frame),b=toSheet(bound.view,to,frame);
+        const clear=piece.localWholeOpenRayStatus===
+         'scoped-continuous-front-ray-clear';
+        const diag=shape('line',{
+         x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+         stroke:$('v7-mono').checked?'#333':clear?'#2b6dd0':'#d58b28',
+         'stroke-width':2,'stroke-dasharray':'2 5',
+         'data-c2-region-m5-ray-piece':bound.id+':'+i,
+         'data-c2-region-m5-view':bound.view,
+         'data-c2-region-m5-ray-status':piece.localWholeOpenRayStatus,
+         'data-c2-geometry-status':'source-key-matched-open-ray-only',
+         'data-visibility':'undetermined',
+         'aria-label':'C2 三维来源核对的局部前方射线，非国标正式工程线'
+        });
+        svg.append(diag);
+       }
+      }
      }
     }
     if(sourceRayReview&&sourceRayReview.revision===snap.revision){
@@ -1415,7 +1458,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
            partial.c2PaperRayProof.sourceCoveredBoundaryCount+'/'+
            partial.c2PaperRayProof.sourceBoundaries.length+
           ' 段，来源缺口 '+partial.c2PaperRayProof.sourceIncompleteBoundaryCount+
-          ' 段；淡灰边界表示来源未完整覆盖，均不是正式工程实虚线。'+
+          ' 段；其中边界划分 M5 开区间 '+
+           partial.c2PaperRayProof.boundaryRayOpenPieceCount+
+          ' 项，来源与局部无遮挡/遮挡射线同时得到核对的 '+
+           partial.c2PaperRayProof.boundaryRayCorroboratedPieceCount+
+          ' 项，整段局部射线已核对的边界 '+
+           partial.c2PaperRayProof.boundaryAllPiecesCorroboratedCount+
+          ' 段（不等于全局工程线型）。淡灰边界表示来源未完整覆盖，均不是正式工程实虚线。'+
           ' 蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
           ' 多于两实体或非正交模型暂不执行完整纸面 M5 清单。'):
 
