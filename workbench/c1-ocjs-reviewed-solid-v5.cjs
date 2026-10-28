@@ -135,6 +135,21 @@ function exactC1NativeSourceIntervalCoverage({
    throw new RangeError('unverified actual native HLR candidate lift list');
   for(const lift of stroke.sourceCandidate3DLifts){
    if(lift?.sourceEdgeId===sourceEdgeId){
+    // Recheck the original finite paper bounds independently of the
+    // producer's rounding flag. A forged false/missing flag must not
+    // turn an out-of-domain native paper endpoint into exact M5 coverage.
+    const pa=project(a)[view],pb=project(b)[view];
+    const within=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v)&&
+     p.u>=Math.min(pa.u,pb.u)&&p.u<=Math.max(pa.u,pb.u)&&
+     p.v>=Math.min(pa.v,pb.v)&&p.v<=Math.max(pa.v,pb.v);
+    const raw=lift.paperOnlyUnclampedOriginalSourceParameters;
+    if(raw!==undefined&&(!Array.isArray(raw)||raw.length!==2||
+       !raw.every(Number.isFinite)))
+     throw new RangeError('invalid unclamped native source paper parameter witness');
+    if((!within(stroke.from)||!within(stroke.to)||
+        raw?.some(t=>t<0||t>1))&&
+       lift.sourceParameterWasClampedForPaperOnly!==true)
+     throw new RangeError('out-of-domain native paper endpoint cannot claim exact original source');
     // Genuine OCCT can project a native vertex one ULP beyond its M0
     // endpoint. That is display evidence, NOT an exact original-source
     // interval. A rounded candidate is held unless the independent
