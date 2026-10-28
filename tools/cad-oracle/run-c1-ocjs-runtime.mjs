@@ -964,6 +964,34 @@ for(const [index,geometry] of general.entries()){
    row.realOCCTOriginal3DSourceCompleteContourParity===false&&
    row.unsignedNativeBRepSourceCandidateEvidence?.
     sourceParameterCoverage.entireOriginalParameterIntervalCovered===true).length);
+ // Native HLR paper endpoints must be independently reprojected from
+ // literal original 3D source parameters. Raw BRep geometric candidates
+ // (even with complete [0,1]) are NOT exact paper-bound source history.
+ const heldCandidateRows=nativeM5ExteriorContourParity.rows.filter(row=>
+  row.originalM5WholeExteriorContourCertified===true&&
+  row.realOCCTOriginal3DSourceCompleteContourParity===false);
+ assert.equal(nativeM5ExteriorContourParity.
+  heldOriginalContoursWithUnsignedRealBRepCandidateExactPaperBoundCoverage,
+  heldCandidateRows.filter(row=>row.unsignedNativeBRepSourceCandidateEvidence?.
+   exactPaperBoundSourceCoverageWithoutOverlap===true).length);
+ assert.equal(nativeM5ExteriorContourParity.
+  heldOriginalContoursWithRawBRepCoverageButNoExactPaperBoundCoverage,
+  heldCandidateRows.filter(row=>row.unsignedNativeBRepSourceCandidateEvidence?.
+   sourceParameterCoverage.entireOriginalParameterIntervalCovered===true&&
+   row.unsignedNativeBRepSourceCandidateEvidence?.
+    exactPaperBoundSourceCoverageWithoutOverlap!==true).length);
+ assert.ok(nativeM5ExteriorContourParity.rows.every(row=>{
+  const c=row.unsignedNativeBRepSourceCandidateEvidence;
+  if(c===null)return true;
+  const bound=c.exactPaperBoundNativeBRepCandidateIntervals;
+  return c.signedV5Action===false&&
+   c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered===
+    (c.exactPaperBoundSourceParameterCoverage.positiveLengthUncoveredIntervals.length===0)&&
+   bound.every(x=>x.exactPaperEndpointsMatched===true)&&
+   (!c.exactPaperBoundSourceCoverageWithoutOverlap||
+    (bound.length>0&&!c.exactPaperBoundNativeSourceParameterOverlap&&
+     c.exactPaperBoundSourceParameterCoverage.entireOriginalParameterIntervalCovered));
+ }));
  assert.ok(nativeM5ExteriorContourParity.rows.every(row=>
   row.unsignedNativeBRepSourceCandidateEvidence===null||
   (row.unsignedNativeBRepSourceCandidateEvidence.signedV5Action===false&&
