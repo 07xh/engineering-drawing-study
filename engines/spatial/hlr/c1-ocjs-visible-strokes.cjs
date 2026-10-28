@@ -309,7 +309,17 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
    if(typeof forward!=='boolean'||typeof backward!=='boolean'||
       forward!==backward||forward!==true)
     throw new RangeError('duplicate original source ID aliases distinct native TopoDS edges');
-  }else originalHandleBySourceId.set(item.sourceEdgeId,item.edge);
+  }else{
+   // A different M0 source ID cannot alias the same native original edge,
+   // even when the generated HLR edge matches neither source.
+   for(const other of originalHandleBySourceId.values()){
+    const f=item.edge.IsSame(other),b=other.IsSame(item.edge);
+    if(typeof f!=='boolean'||typeof b!=='boolean'||f!==b)
+     throw new RangeError('asymmetric original native TopoDS source ledger IsSame');
+    if(f)throw new RangeError('multiple different original physical edges share native TopoDS identity');
+   }
+   originalHandleBySourceId.set(item.sourceEdgeId,item.edge);
+  }
   const forward=generatedEdge.IsSame(item.edge),backward=item.edge.IsSame(generatedEdge);
   if(typeof forward!=='boolean'||typeof backward!=='boolean'||forward!==backward)
    throw new RangeError('asymmetric or nonboolean actual OCCT TopoDS IsSame proof');
@@ -469,14 +479,40 @@ function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
     originalSourceVertices.length>1024)
   throw new TypeError('actual OCCT HLR vertex and bounded original TopoDS vertex ledger required');
  const sameIds=new Set(),partnerIds=new Set();
+ // Validate the entire original vertex ledger, not only matches to this
+ // generated HLR vertex. Repeated explorer occurrences must retain identity.
+ const originalHandleByVertexId=new Map();
  let sameUnbound=0,paperMismatch=0,direct=0;
  let partnerRelationSupported=typeof generatedVertex.IsPartner==='function';
  let partnerRelationComparisons=0,partnerOccurrences=0,partnerUnbound=0,partnerPaperMismatch=0;
+ if(partnerRelationSupported&&generatedVertex.IsPartner(generatedVertex)!==true)
+  throw new RangeError('nonreflexive generated native TopoDS vertex IsPartner');
  for(const item of originalSourceVertices){
   const original=item?.vertex;
   if(typeof original?.IsSame!=='function'||original.IsNull?.()===true||
      original.IsSame(original)!==true)
    throw new TypeError('invalid original native TopoDS vertex');
+  if(item.sourceVertexId!==null){
+   const id=item.sourceVertexId,xyz=item.originalModelXYZ,
+    model=geometry.data.points[id];
+   if(typeof id!=='string'||!id||!xyz||!model||
+      !['x','y','z'].every(k=>Number.isFinite(xyz[k])&&xyz[k]===model[k]))
+    throw new RangeError('unbound original M0 vertex identity in native ledger');
+   const prior=originalHandleByVertexId.get(id);
+   if(prior){
+    const f=original.IsSame(prior),b=prior.IsSame(original);
+    if(typeof f!=='boolean'||typeof b!=='boolean'||f!==b||!f)
+     throw new RangeError('duplicate original M0 vertex ID aliases distinct native TopoDS vertices');
+   }else{
+    for(const other of originalHandleByVertexId.values()){
+     const f=original.IsSame(other),b=other.IsSame(original);
+     if(typeof f!=='boolean'||typeof b!=='boolean'||f!==b)
+      throw new RangeError('asymmetric original native TopoDS vertex ledger IsSame');
+     if(f)throw new RangeError('one generated TopoDS vertex matches conflicting original M0 vertices');
+    }
+    originalHandleByVertexId.set(id,original);
+   }
+  }
   const forward=generatedVertex.IsSame(original),reverse=original.IsSame(generatedVertex);
   if(typeof forward!=='boolean'||typeof reverse!=='boolean'||forward!==reverse)
    throw new RangeError('asymmetric original/generated TopoDS vertex IsSame');
@@ -484,6 +520,8 @@ function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
    typeof original.IsPartner==='function';
   if(!hasPartner)partnerRelationSupported=false;
   else{
+   if(original.IsPartner(original)!==true)
+    throw new RangeError('nonreflexive original native TopoDS vertex IsPartner');
    const pf=generatedVertex.IsPartner(original),pr=original.IsPartner(generatedVertex);
    if(typeof pf!=='boolean'||typeof pr!=='boolean'||pf!==pr)
     throw new RangeError('asymmetric original/generated TopoDS vertex IsPartner');
