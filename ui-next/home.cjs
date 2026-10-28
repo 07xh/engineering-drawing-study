@@ -392,6 +392,7 @@ function homeHTML(){return `
    <button type="button" id="v8-paper-focus" aria-pressed="false" aria-controls="v7-sheet">放大图纸</button></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="正面 V、水平 H、侧面 W 和作图步骤"></svg>
    <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
+    <div id="v9-three-space" class="v9-three-space" role="group" aria-label="三维立体旋转与来源棱拾取" hidden></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
     <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>

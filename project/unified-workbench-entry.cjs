@@ -526,7 +526,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
  // Local per-stroke visual selection; never persisted into input or M3/V5.
- let selectedSourceFeature=null;
+ let selectedSourceFeature=null,linkedThree=null,linkedThreeAttempted=false;
  let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
  let uncommittedFormEdit=false;
@@ -1276,11 +1276,44 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    drawV5(svg,active,colors);
   }
  }
+ function ensureLinkedThree(){
+  if(linkedThreeAttempted)return linkedThree;
+  const mount=window.DraftAILinkedThreeViewer?.mount;
+  if(typeof mount!=='function')return null;
+  linkedThreeAttempted=true;
+  // Three consumes ONLY the original revision-bound math Scene,
+  // and cannot sign any M5 or V5 line style.
+  linkedThree=mount($('v9-three-space'),{onPick:({objectId,sourceFeatureKey:key})=>{
+   const snap=coordinator?.snapshot(),out=current()||preview();
+   if(!snap||!out?.scene||out.scene.revision!==snap.revision||
+      !out.scene.objects.some(o=>o.id===objectId))return;
+   selectedSourceFeature=selectedSourceFeature?.key===key&&
+     coordinator.selectedGeometryId()===objectId?null:
+     {key,objectId,revision:snap.revision};
+   coordinator.selectSceneGeometry(objectId);
+  }});
+  if(linkedThree)$('v9-three-space').hidden=false;
+  return linkedThree;
+ }
  function renderSpatial(){
   const svg=$('v7-3d');svg.replaceChildren();
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
   const snap=coordinator?.snapshot();if(!snap)return;
-  const result=compiled();if(!result)return;
+  const result=compiled(),out=current()||preview();
+  const three=result&&out?.scene?ensureLinkedThree():null;
+  if(three&&out.scene.revision===snap.revision){
+   three.update(out.scene,{
+    selectedIds:sceneSelectionGroup(out.scene,
+     coordinator.selectedGeometryId(),snap.revision),
+    selectedSourceFeature:selectedSourceFeature?.key||null,
+    camera:snap.view.camera
+   });
+   svg.hidden=true;$('v9-three-space').hidden=false;
+   return;
+  }
+  svg.hidden=false;
+  if(linkedThree)$('v9-three-space').hidden=true;
+  if(!result)return;
   drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked);
   if(result.spatial.some(p=>p.visibility==='undetermined'))
    text(svg,14,22,'空间网格线框 · 不推测隐藏边','#986945');

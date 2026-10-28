@@ -57,6 +57,7 @@ function enhancePage(html,{page,preview=true}){
    '<meta name="draftai-ui-release" content="v6.6-home-20261023">'+
    '<meta name="draftai-project-workbench" content="v7-real-20261024">'+
    '<link rel="stylesheet" href="project/workbench-ui.css">'+
+   '<script defer src="project/linked-three-scene-bundle.js"></script>'+
    '<script defer src="project/unified-workbench-bundle.js"></script>'));
  return document.toString();
 }

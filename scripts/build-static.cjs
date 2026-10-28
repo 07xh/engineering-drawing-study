@@ -235,6 +235,15 @@ esbuild.buildSync({
  target:['es2020'],legalComments:'inline',sourcemap:false
 });
 
+/* Canonical Geometry Scene WebGL consumer: pinned Three.js, no second
+ * solver or runtime CDN. Production UI retains SVG fallback. */
+esbuild.buildSync({
+ entryPoints:[path.join(root,'project/linked-three-scene-entry.js')],
+ outfile:path.join(out,'project/linked-three-scene-bundle.js'),
+ platform:'browser',format:'iife',bundle:true,minify:true,
+ target:['es2020'],legalComments:'inline',sourcemap:false
+});
+
 /* Production V7 homepage: one local project session, existing M3/Geometry/V5. */
 esbuild.buildSync({
  entryPoints:[path.join(root,'project/unified-workbench-entry.cjs')],
