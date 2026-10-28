@@ -964,12 +964,25 @@ for(const [index,geometry] of general.entries()){
   row.originalM5WholeExteriorContourCertified===true&&
   row.realOCCTOriginal3DSourceCompleteContourParity===false);
  if(heldPhysicalContours.length){
+  // Diagnostic ONLY. Every binary64 coordinate is serialized as its actual
+  // 64-bit payload, including signed zero and one-ULP HLR source drift.
+  // Rounded decimal/2D equality must not manufacture TopoDS provenance.
+  const binary64=n=>{
+   if(!Number.isFinite(n))throw new RangeError('nonfinite native HLR forensic coordinate');
+   const data=new DataView(new ArrayBuffer(8));
+   data.setFloat64(0,n,false);
+   return '0x'+data.getBigUint64(0,false).toString(16).padStart(16,'0');
+  };
+  const exactBits=p=>Object.fromEntries(Object.entries(p).map(
+   ([axis,value])=>[axis,binary64(value)]));
   const {auditC1GlobalVisibleContourProof}=require('../../workbench/m5-c1-global-visible-contour-proof.cjs');
   const canonicalContour=auditC1GlobalVisibleContourProof({geometry,revision:40+index});
   const heldEndpointEvidence=heldPhysicalContours.map(row=>{
    const ids=row.originalPhysical3DSourceEdgeId.split('::').at(-1).split('|');
    const sourceVertices=ids.map(id=>({id,xyz:geometry.data.points[id],
-    paper:project(geometry.data.points[id])[row.view]}));
+    xyzBinary64:exactBits(geometry.data.points[id]),
+    paper:project(geometry.data.points[id])[row.view],
+    paperBinary64:exactBits(project(geometry.data.points[id])[row.view])}));
    const line=canonicalContour.views.find(v=>v.view===row.view)
     ?.candidateIntervals[row.canonicalHullIntervalOrdinal];
    assert.equal(line?.sourceEdgeId,row.originalPhysical3DSourceEdgeId);
@@ -978,17 +991,31 @@ for(const [index,geometry] of general.entries()){
     (seg.sourceCandidate3DLifts??[]).filter(lift=>
      lift.sourceEdgeId===row.originalPhysical3DSourceEdgeId)
     .map(lift=>({ordinal,from:seg.from,to:seg.to,
+     nativeFromBinary64:exactBits(seg.from),
+     nativeToBinary64:exactBits(seg.to),
      originalSourceParameterRange:lift.originalSourceParameterRange,
-     fromCandidate3D:lift.fromCandidate3D,toCandidate3D:lift.toCandidate3D})));
+     sourceRangeBinary64:lift.originalSourceParameterRange.map(binary64),
+     fromCandidate3D:lift.fromCandidate3D,toCandidate3D:lift.toCandidate3D,
+     nativeGeneratedToOriginalTopoDSHistoryProven:false})));
    return {view:row.view,ordinal:row.canonicalHullIntervalOrdinal,
     sourceEdgeId:row.originalPhysical3DSourceEdgeId,
     heldReason:row.heldReason,sourceVertices,
+    canonicalOriginal3DParameterRange:row.originalSourceParameterRange,
+    positiveLengthNativeSourceGaps:row.positiveLengthNativeSourceGaps,
+    independentlyAuthenticatedNativeVisibleOrdinals:
+     row.trueNativeOCCTGeneratedLineOrdinals,
     canonicalM5:{from3D:line.real3DFrom,to3D:line.real3DTo,
      paperFrom:line.projectedFromModelMm,paperTo:line.projectedToModelMm,
      physicalCoverage:line.sourceContourCoverageVerified,
      endpointJoins:line.genuineFrontSourceEndpointJoinsVerified,
      continuousFrontRay:line.continuouslyFrontRayClearVerified},native};
   });
+  // Emit stable, structured forensics on stderr (stdout remains one JSON
+  // consumer report). The real WASM CI stores this line as an artifact.
+  assert.equal(heldEndpointEvidence.length,heldPhysicalContours.length);
+  assert.ok(heldEndpointEvidence.every(row=>
+   row.positiveLengthNativeSourceGaps.length>0||
+   row.heldReason!=='true-occt-generated-contour-source-parameter-gap'));
   console.error('C1_HELD_ORIGINAL_3D_ENDPOINTS '+JSON.stringify(heldEndpointEvidence));
  }
  const generatedVisibleM5PhysicalTiling=hiddenFormalGate.nativeVisibleHLRSourceTiling;
