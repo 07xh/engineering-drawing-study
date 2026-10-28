@@ -11,6 +11,14 @@ const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
 const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
+const {compileFiniteCylinderEndpointV5}=
+ require('../workbench/finite-cylinder-intersection-endpoint-v5.cjs');
+const {buildC3LinkedGeometryScene}=require('../workbench/c3-linked-geometry-scene.cjs');
+const {auditC3M0M3M5AnalyticSources}=
+ require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
+const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
+const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
+const {makeReviewedC3Input,c3SheetTransforms}=require('./c3-reviewed-input.cjs');
 const {IDS:REVIEWED_C1_IDS}=require('./c1-reviewed-input.cjs');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedBoxContacts}=require('../core/geometry/reviewed-box-contact-evidence.cjs');
@@ -165,6 +173,55 @@ function createUnifiedProjectSession(){
   dispose(){latest=null;current=null;clock=null;listeners.clear();},
   solve(){
    current=null;clock=null;
+   if(latest?.task==='c3-intersection'){
+    const c3=verifiedInput(latest,{task:'c3-intersection',
+     type:'reviewed-c3-finite-cylinders',objectId:'C3Intersection'});
+    if(c3.axesConfirmed!==true||c3.capsConfirmed!==true||
+       !c3.dimensions||typeof c3.dimensions!=='object')
+     throw new Error('C3 必须人工确认两正交圆柱的轴向、有限端盖及毫米条件');
+    const input=makeReviewedC3Input(c3.dimensions);
+    const viewTransforms=c3SheetTransforms(input);
+    // The SAME specialist and original player used by the C3 public page.
+    // These are mathematical guides and points, NOT a signed full curve.
+    const compiled=compileFiniteCylinderEndpointV5({
+      input,revision:latest.revision,
+      stationCountPerBranch:1,sheetTransform:viewTransforms.V,
+      viewTransforms,includeSourceCircleGuides:true,
+      includeProjectedSeamArcGuides:true,
+      includeWAnalyticCurveGuides:true,wRayPartitionedV5:true,
+      includeCapFacePairGuides:true
+    });
+    const linked=buildC3LinkedGeometryScene({
+      input,revision:latest.revision,compiled,viewTransforms
+    });
+    const wRay=buildC3WIntervalPreview({input,revision:latest.revision});
+    const vhDedup=buildC3VHProjectionDedup({input,revision:latest.revision});
+    const sourceAcceptance=auditC3M0M3M5AnalyticSources({
+      input,revision:latest.revision,compiled,linked,
+      viewTransforms,solidOperation:null
+    });
+    if(compiled.singleOriginalV5Player!==true||
+       compiled.mathematicalSourceVerified!==true||
+       compiled.entireCurveV5Ready!==false||
+       compiled.canExportCertifiedDrawing!==false||
+       linked.officialLineStylesVerified!==false||
+       linked.entireCurveV5Ready!==false||
+       wRay.v5CurveReady!==false||
+       vhDedup.v5CurveActionsAuthorized!==false||
+       !Array.isArray(compiled.constructionSteps)||
+       !compiled.constructionSteps.length||
+       !compiled.player.canRender(latest.revision))
+      throw new Error('C3 来源数学、唯一 V5 与线型授权范围不一致');
+    clock=compiled.player;
+    current=Object.freeze({...resultBase(latest),
+     kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
+     evidence:compiled,sourceAcceptance,wRay,vhDedup,
+     viewTransforms,scene:linked.scene,links:linked.links,
+     plan:{status:'preview-only',canPromoteToVerifiedResult:false,
+      geometryId:'C3Intersection',steps:compiled.constructionSteps},
+     clock});
+    emit();return current;
+   }
    if(latest?.task==='c1-third-view'){
     const c1=verifiedInput(latest,{task:'c1-third-view',
      type:'reviewed-c1-third-view',objectId:'C1Solid'});
