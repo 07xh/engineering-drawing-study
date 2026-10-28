@@ -1488,3 +1488,147 @@ test('two independently verified native OCCT endpoint stars satisfy only local j
  assert.equal(r.wholeSolidV5Ready,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+// Reconciled from #797: reject forged native TopoDS identities without V5 promotion.
+test('malformed native generated HLR endpoint ordinal cannot masquerade as real TopoDS proof',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:-1,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars[0].
+  generatedHLREndpoints[0].nativeHLREdgeOrdinal=0.5;
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
+});
+
+test('visible HLR star member cannot carry invalid ordinal or duplicate its IsSame witness',()=>{
+ const x=caseData();
+ const star={
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:-1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ };
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push(star);
+ assert.throws(()=>review(x),/invalid genuine native HLR endpoint identity/);
+ star.generatedHLREndpoints[1].nativeHLREdgeOrdinal=0;
+ star.generatedHLREndpoints.push({...star.generatedHLREndpoints[1]});
+ assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
+});
+
+test('orphan visible-only native IsSame star cannot enter the reviewed hidden-edge proof ledger',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/no reviewed hidden HLR endpoint/);
+});
+
+test('a native IsSame star with only one distinct endpoint cannot count a duplicated member as a junction',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/duplicate endpoint inside genuine native IsSame star/);
+});
+
+test('both ends of the same generated HLR edge cannot fake a two-edge native IsSame junction',()=>{
+ const x=caseData();
+ x.nativeHLRJunctionConcordance.completeGenuineNativeHLRJunctionStars.push({
+  view:'H',genuineNativeGeneratedOCCTVertexPairwiseIsSame:true,
+  generatedHLREndpoints:[
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'from'},
+   {hlrClass:'hidden-sharp',nativeHLREdgeOrdinal:0,side:'to'}],
+  allNativeGeneratedEndpointsProvenToTheSameOriginal3DVertex:true,
+  independentlyVerifiedOriginalM03DVertexId:'A',
+  independentlyTracedOriginal3DSourceEdges:['G::A|B'],
+  originalOCCTGeneratedToSourceTopoDSEdgeHistoryRecovered:false,
+  wholeSceneAndEngineeringGBJunctionCertified:false,signedV5Action:false
+ });
+ assert.throws(()=>review(x),/only one generated HLR edge/);
+});
+
+
+function withOriginalBRepInventory(){
+ const x=caseData();
+ x.geometry={id:'G',data:{points:{
+  A:{x:0,y:0,z:0},B:{x:1,y:0,z:0}
+ },edges:[['A','B']]}};
+ x.cad={sourceGeometryId:'G',revision,
+  hiddenHLROutputFromActualOCCT:true,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+  v5Authorized:false,originalBRepSourceEdges:[{
+   sourceEdgeId:'G::A|B',originalVertexIds:['A','B'],
+   fromOCCT3D:{x:0,y:0,z:0},toOCCT3D:{x:1,y:0,z:0},
+   occtEdgeOrientation:'forward',
+   originalOCCTBRepVertexXYZMatched:true,
+   occtCurveTypeIndependentlyVerified:true,
+   occtSourceCurveType:'line',
+   occtSourceCurveParameterRange:[0,1],
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,
+   generatedHLREdgeTopoDSIdentityMatched:false
+  }]
+ };
+ return x;
+}
+
+
+test('independent original OCCT BRep edge and M0 XYZ inventory match does not grant HLR history or V5',()=>{
+ const r=review(withOriginalBRepInventory());
+ assert.deepEqual(r.originalOCCTBRepSourceInventory,{
+  available:true,completeOriginal3DSourceCorrespondence:true,
+  matchedOriginalPhysicalSourceEdges:1,expectedOriginalPhysicalSourceEdges:1,
+  generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  signedV5Action:false
+ });
+ assert.equal(r.actualHLRGeneratedBRepEdgeTopoDSHistoryComplete,false);
+ assert.equal(r.wholeSolidV5Ready,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('forged, missing or duplicated OCCT original source topology fails closed',()=>{
+ const tamper=withOriginalBRepInventory();
+ tamper.cad.originalBRepSourceEdges[0].toOCCT3D.x=2;
+ assert.throws(()=>review(tamper),/BRep endpoints disagree with M0 XYZ/);
+ const duplicate=withOriginalBRepInventory();
+ duplicate.cad.originalBRepSourceEdges.push({
+  ...duplicate.cad.originalBRepSourceEdges[0]
+ });
+ assert.throws(()=>review(duplicate),/untrusted real OCCT original BRep physical source correspondence/);
+ const missing=withOriginalBRepInventory();
+ missing.cad.originalBRepSourceEdges=[];
+ assert.throws(()=>review(missing),/original BRep source inventory missing M0 physical edges/);
+ const stale=withOriginalBRepInventory();
+ stale.cad.revision=revision+1;
+ assert.throws(()=>review(stale),/current real OCCT original BRep source inventory required/);
+});
