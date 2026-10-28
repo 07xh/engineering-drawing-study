@@ -612,14 +612,20 @@ function extractRealOcjsOriginalSourceBRepEdges({
    const pt=hold(adaptor.Value(t));
    return {x:pt.X(),y:pt.Y(),z:pt.Z()};
   };
+  const actualCurveSamples=[readCurvePoint(first),
+   readCurvePoint((first+last)/2),readCurvePoint(last)];
   const curveProof=verifyOriginalOcctLinearCurveWitness({
    sourceEndpoints:coords,parameterRange:[first,last],
-   curveSamples:[readCurvePoint(first),
-    readCurvePoint((first+last)/2),readCurvePoint(last)],
+   curveSamples:actualCurveSamples,
    curveKind:'line',requireUnitSpeedOCCTLineParameterization:true
   });
+  // Preserve REAL BRepAdaptor.Value(First/Last) model XYZ independently of
+  // TopExp_Explorer vertex traversal. They may run in opposite directions.
+  // This is original 3D curve evidence, never generated HLR edge history.
   const record={...matchOriginalBRepEdgeByXYZ(geometry,coords[0],coords[1]),
-   ...curveProof};
+   ...curveProof,
+   occtSourceCurveFirstPoint3D:{...actualCurveSamples[0]},
+   occtSourceCurveLastPoint3D:{...actualCurveSamples[2]}};
   if(originalNativeEdgeHandles instanceof Array)
    originalNativeEdgeHandles.push({sourceEdgeId:record.sourceEdgeId,edge:edgeType});
   if(originalNativeVertexHandles instanceof Array){
