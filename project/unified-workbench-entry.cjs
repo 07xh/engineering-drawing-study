@@ -786,7 +786,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  // The original V5 stays the sole authority for when the stroke appears.
  function v5ResultSourceFeature(solved,action,view){
   if(solved.kind!=='prism-evidence'||!view)return null;
-  const match=action.id.match(/^prism-section-(\\d+)-(V|H|W)$/);
+  const match=action.id.match(/^prism-section-([0-9]+)-(V|H|W)$/);
   if(!match||match[2]!==view)return null;
   const n=Number(match[1])-1;
   const obj=solved.scene.objects.find(o=>o.id===solved.plan.geometryId);
