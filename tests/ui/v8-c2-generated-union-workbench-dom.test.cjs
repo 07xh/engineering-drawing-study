@@ -30,7 +30,9 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
  const $=id=>document.getElementById(id);
  const fire=(id,type)=>$(id).dispatchEvent(new window.Event(type,{bubbles:true}));
  const settle=async(n=10)=>{for(let i=0;i<n;i++)await tick()};
- const all=()=>[...$('v7-sheet').querySelectorAll('[data-c2-generated-source-id]')];
+ const all=()=>[...$('v7-sheet').querySelectorAll('line[data-c2-generated-source-id]')];
+ const collapsed=()=>[...$('v7-sheet').querySelectorAll('circle[data-c2-generated-source-id]')];
+ const source3D=()=>[...$('v7-3d').querySelectorAll('line[data-c2-generated-source-id]')];
  const rays=()=>[...$('v7-sheet').querySelectorAll('[data-c2-m5-paper-line-id]')];
  const loops=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-boundary-id]')];
  const gaps=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-m5-gap-piece]')];
@@ -112,14 +114,39 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.ok(strokes.every(x=>x.getAttribute('data-visibility')==='undetermined'));
   assert.ok(strokes.every(x=>
    x.getAttribute('data-c2-geometry-status')==='boolean-feature-preview-only'));
+  assert.equal(collapsed().length,6,'each new 3D edge has one real projected point-collapse');
+  assert.equal(source3D().length,6,'all six generated new edges have actual 3D scene geometry');
+  for(const line of source3D()){
+   const key=line.getAttribute('data-source-feature-key');
+   const id=line.getAttribute('data-c2-generated-source-id');
+   assert.ok(key&&id);
+   assert.equal(strokes.filter(x=>x.getAttribute('data-source-feature-key')===key).length,2);
+   assert.equal(collapsed().filter(x=>x.getAttribute('data-source-feature-key')===key).length,1);
+   assert.ok([...strokes,...collapsed()].filter(x=>
+    x.getAttribute('data-source-feature-key')===key).every(x=>
+     x.getAttribute('data-c2-generated-source-id')===id));
+   assert.equal(line.getAttribute('data-visibility'),'undetermined');
+  }
+  const first3D=source3D()[0],pickedKey=first3D.getAttribute('data-source-feature-key');
+  first3D.dispatchEvent(new window.Event('click',{bubbles:true}));
+  assert.equal(source3D().filter(x=>
+   x.getAttribute('data-source-feature-selected')==='true').length,1);
+  assert.equal([...strokes,...collapsed()].length,18);
+  assert.equal([...$('v7-sheet').querySelectorAll('[data-source-feature-selected="true"]')]
+   .filter(x=>x.getAttribute('data-source-feature-key')===pickedKey).length,3);
+  assert.equal($('v7-play').disabled,true,'selection never approves generated V5');
   $('v7-guides').checked=false;fire('v7-guides','change');await settle();
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
+  assert.equal(collapsed().length,0);
+  assert.equal(source3D().length,0,'3D SVG also respects user disabled guides');
   assert.equal(loops().length,0,'2D region loops are not official model strokes');
   assert.equal(rays().length,0,'source M5 candidates must respect guide toggle');
   assert.equal(gaps().length,0,'unproven exact M5 gaps must respect guide toggle');
   assert.equal(supported().length,0,'boundary-ray joint proof must respect guide toggle');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   assert.equal(all().length,12);
+  assert.equal(collapsed().length,6);
+  assert.equal(source3D().length,6);
   assert.equal(loops().length,region.length);
   assert.equal(rays().length,rayShapes.length);
   assert.equal(supported().length,positive.length);
@@ -127,6 +154,8 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   // An edited unsaved input can never keep the previous math/overlay.
   $('v8-c2-b-x0').value='7';fire('v8-c2-b-x0','input');await settle();
   assert.equal(all().length,0);
+  assert.equal(source3D().length,0);
+  assert.equal(collapsed().length,0);
   assert.equal(loops().length,0);
   assert.equal(rays().length,0);
   assert.equal(supported().length,0);
