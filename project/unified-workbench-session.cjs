@@ -32,6 +32,8 @@ const {proveReviewedCompositeSeamRays}=
  require('../workbench/m5-reviewed-composite-seam-rays.cjs');
 const {auditReviewedMultiBodyWholePhysicalEdgeRays}=
  require('../workbench/m5-reviewed-multibody-original-edge-rays.cjs');
+const {reviewC2OrthogonalBooleanFeatures}=
+ require('./c2-orthogonal-boolean-feature-review.cjs');
 const {evaluateReviewedConvexMeshDepth}=
  require('../workbench/reviewed-convex-scene-depth.cjs');
 const {auditM0M3M4M5OriginalSources}=
@@ -395,6 +397,19 @@ function createUnifiedProjectSession(){
          audit.signedV5ActionCount!==0)
        throw new Error('C2 原始棱全来源 M5 遮挡或正式线型门禁不一致');
     }
+    // Positive original + generated physical 3D Boolean source proofs;
+    // only for M0-reviewed axis-aligned cuboids. Nothing in this review
+    // signs generated engineering lines or a new animation player.
+    const orthogonalBooleanFeatureAudit=boundedConvexInventory?
+      reviewC2OrthogonalBooleanFeatures({
+       geometry,revision:latest.revision
+      }):null;
+    if(orthogonalBooleanFeatureAudit&&
+       (orthogonalBooleanFeatureAudit.revision!==latest.revision||
+        orthogonalBooleanFeatureAudit.sourceGeometryIds.length!==geometry.length||
+        orthogonalBooleanFeatureAudit.officialDrawingLineStylesVerified!==false||
+        orthogonalBooleanFeatureAudit.completeV5DrawingAuthorized!==false))
+     throw new Error('C2 新交汇棱和当前 M5 作用域不一致');
     const spatialV5Readiness=inspectSpatialV5Readiness({
       sceneDepthEvidence,revision:latest.revision});
     // The existing Geometry Scene compiler already fixes first-angle
@@ -424,7 +439,8 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),kind:'composition-evidence',
       verified:false,status:'confirmed-input-only',scene,relationEvidence,
       compositionContactEvidence,compositionInterfaceEvidence,
-      compositionSeamRayEvidence,originalMultiBodyEdgeRays,sceneDepthEvidence,
+      compositionSeamRayEvidence,originalMultiBodyEdgeRays,
+      orthogonalBooleanFeatureAudit,sceneDepthEvidence,
       m0M3M5OriginalSourceAcceptance,spatialV5Readiness,
       scopedMotionParity,spatialStrokeConstructionDAG,spatialV5ActionRelease,
       links:projectSelectionLinks(scene),plan:null,clock:null});
