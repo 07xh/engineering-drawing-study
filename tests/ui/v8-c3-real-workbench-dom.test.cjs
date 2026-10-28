@@ -72,6 +72,33 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.ok(rayCurves.every(x=>
    ['strict-interior-ray-clear','opaque-interior-ahead'].includes(
     x.getAttribute('data-c3-open-ray-class'))));
+  // Selecting one original source feature must visibly highlight the same
+  // stable key across V/H/W projections, not merely set data attributes.
+  const sourceNodes=[...$('v7-sheet').querySelectorAll('[data-source-feature-key]')];
+  const groups=new Map();
+  for(const node of sourceNodes){
+   const key=node.getAttribute('data-source-feature-key');
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(node);
+  }
+  const linked=[...groups.entries()].find(([,nodes])=>
+   new Set(nodes.map(n=>n.getAttribute('data-geometry-view'))).size>=2);
+  assert.ok(linked,'one original source feature must exist in multiple projections');
+  const [sourceKey,sourceViews]=linked;
+  sourceViews[0].dispatchEvent(new window.Event('click',{bubbles:true}));
+  await tick();await tick();
+  const selectedViews=[...$('v7-sheet').querySelectorAll('[data-source-feature-key]')]
+   .filter(n=>n.getAttribute('data-source-feature-key')===sourceKey);
+  assert.ok(selectedViews.length>=sourceViews.length);
+  assert.ok(selectedViews.every(n=>
+   n.getAttribute('data-source-feature-selected')==='true'),
+   'the exact source feature selection must propagate to all projected views');
+  assert.ok(selectedViews.every(n=>Number(n.getAttribute('stroke-width'))>=3.8),
+   'the selected source strokes must be visually emphasized');
+  assert.ok([...$('v7-sheet').querySelectorAll('[data-source-feature-key]')]
+   .filter(n=>n.getAttribute('data-source-feature-key')!==sourceKey)
+   .every(n=>n.getAttribute('data-source-feature-selected')!=='true'),
+   'selection must not leak to another source feature');
   $('v7-guides').checked=false;fire('v7-guides','change');await tick();
   assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
   $('v7-guides').checked=true;fire('v7-guides','change');await tick();
