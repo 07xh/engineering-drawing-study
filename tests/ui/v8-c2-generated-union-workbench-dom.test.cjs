@@ -97,7 +97,16 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
    x.getAttribute('data-geometry-id')&&
    x.getAttribute('data-source-feature-key')&&
    x.getAttribute('tabindex')==='0'&&
-   x.getAttribute('data-source-feature-selected')==='false'));
+   x.getAttribute('data-source-feature-selected')==='false'&&
+   x.getAttribute('data-c2-m5-linked-source-t-range')));
+  const linkedOriginalRayShapes=rayShapes.filter(x=>
+   x.getAttribute('data-c2-m5-linked-original-source-id'));
+  assert.ok(linkedOriginalRayShapes.length>0,
+   'original-edge M5 diagnostics must link to the exact existing Geometry Scene mesh edge');
+  assert.ok(linkedOriginalRayShapes.every(x=>
+   x.getAttribute('data-source-feature-key')&&
+   x.getAttribute('data-c2-m5-source-link-status')==='unique-original-3d-source-overlap'&&
+   x.getAttribute('tabindex')==='0'));
   for(const ray of linkedRayShapes){
    const id=ray.getAttribute('data-c2-m5-linked-generated-source-id');
    const key=ray.getAttribute('data-source-feature-key');
@@ -170,6 +179,16 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
     x.getAttribute('data-source-feature-key')===raySourceKey&&
     x.getAttribute('data-source-feature-selected')==='true'));
   assert.equal($('v7-play').disabled,true,'M5 selection never approves generated V5');
+  const originalPick=linkedOriginalRayShapes[0];
+  const originalKey=originalPick.getAttribute('data-source-feature-key');
+  originalPick.dispatchEvent(new window.Event('click',{bubbles:true}));await settle();
+  assert.ok([...$('v7-sheet').querySelectorAll('[data-source-feature-selected="true"]')]
+   .some(x=>x.getAttribute('data-source-feature-key')===originalKey),
+   '2D original mesh edge follows M5 source selection');
+  assert.ok([...$('v7-3d').querySelectorAll('[data-source-feature-selected="true"]')]
+   .some(x=>x.getAttribute('data-source-feature-key')===originalKey),
+   '3D original mesh edge follows the same M5 source selection');
+  assert.equal($('v7-play').disabled,true,'original-edge selection never approves V5');
   $('v7-guides').checked=false;fire('v7-guides','change');await settle();
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
   assert.equal(collapsed().length,0);

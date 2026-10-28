@@ -1350,15 +1350,50 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       const match=idMatches.length===1?idMatches[0]:
        idMatches.length===0&&physicalMatches.length===1?physicalMatches[0]:null;
       const linkedGenerated=match?.g??null,linkedOverlap=match?.overlap??null;
-      const sourceLinkStatus=candidate.sourceFeatureKind!=='generated-two-face-crease'?
-       'not-a-generated-crease':linkedGenerated?'unique-3d-source-overlap':
-       idMatches.length>1||physicalMatches.length>1?
-        'ambiguous-3d-source-match':'unmatched-3d-source';
+      // Original mesh edges also participate in the same selection contract.
+      // Resolve their canonical source ID back to the existing scene's actual
+      // edge endpoints; do not infer identity from the projected paper line.
+      const linkedOriginal=(()=>{
+       if(candidate.sourceFeatureKind!=='original-physical-crease'||
+          candidate.sourceGeometryIds?.length!==1||
+          typeof candidate.sourceFeatureId!=='string')return null;
+       const geometryId=candidate.sourceGeometryIds[0],prefix=geometryId+'::';
+       if(!candidate.sourceFeatureId.startsWith(prefix))return null;
+       const edgeIds=candidate.sourceFeatureId.slice(prefix.length).split('|');
+       if(edgeIds.length!==2||edgeIds.some(id=>!id))return null;
+       const object=(linkedC2State?.scene?.objects||[]).find(x=>x.id===geometryId);
+       const data=object?.model?.data;
+       if(!data?.points||!Array.isArray(data.edges))return null;
+       const wanted=[...edgeIds].sort();
+       const edge=data.edges.find(e=>Array.isArray(e)&&e.length===2&&
+        JSON.stringify([...e].sort())===JSON.stringify(wanted));
+       if(!edge)return null;
+       const source3DFrom=data.points[edge[0]],source3DTo=data.points[edge[1]];
+       const overlap=sourceSegmentOverlap({source3DFrom,source3DTo});
+       if(!overlap)return null;
+       return {geometryId,sourceFeatureId:candidate.sourceFeatureId,
+        sourceFeatureKey:JSON.stringify([geometryId,'mesh-edge',...wanted]),
+        source3DFrom,source3DTo,overlap};
+      })();
       const linkedKey=linkedGenerated?
-       JSON.stringify([linkedGenerated.geometryId,'segment']):null;
-      const linkedSelected=!!linkedGenerated&&
+       JSON.stringify([linkedGenerated.geometryId,'segment']):
+       linkedOriginal?.sourceFeatureKey??null;
+      const linkedObjectId=linkedGenerated?.geometryId??linkedOriginal?.geometryId??null;
+      const linkedSourceId=linkedGenerated?.sourceFeatureId??linkedOriginal?.sourceFeatureId??null;
+      const linkedOverlap=linkedGenerated?match?.overlap:
+       linkedOriginal?.overlap??null;
+      const linkedTargetKind=linkedGenerated?'generated':
+       linkedOriginal?'original':null;
+      const sourceLinkStatus=candidate.sourceFeatureKind==='generated-two-face-crease'?
+       linkedGenerated?'unique-3d-source-overlap':
+        idMatches.length>1||physicalMatches.length>1?
+         'ambiguous-3d-source-match':'unmatched-3d-source':
+       candidate.sourceFeatureKind==='original-physical-crease'?
+        linkedOriginal?'unique-original-3d-source-overlap':'unmatched-original-3d-source':
+       'unresolved-source-kind';
+      const linkedSelected=!!linkedObjectId&&
        selectedSourceFeature?.revision===snap.revision&&
-       selectedSourceFeature.objectId===linkedGenerated.geometryId&&
+       selectedSourceFeature.objectId===linkedObjectId&&
        selectedSourceFeature.key===linkedKey;
       const rayNode=shape('line',{
        x1:start.x,y1:start.y,x2:end.x,y2:end.y,
@@ -1375,7 +1410,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
       });
       svg.append(rayNode);
-      if(linkedGenerated&&linkedOverlap){
+      if(linkedTargetKind&&linkedOverlap){
        // Keep the full M5 candidate as an untrusted dotted guide, and put
        // the accessible selection target ONLY over the authentic 3D overlap.
        const at=t=>({x:start.x+(end.x-start.x)*t,
@@ -1384,37 +1419,40 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        if(Math.hypot(linkedEnd.x-linkedStart.x,linkedEnd.y-linkedStart.y)>1e-8){
         const linkNode=shape('line',{
          x1:linkedStart.x,y1:linkedStart.y,x2:linkedEnd.x,y2:linkedEnd.y,
-         stroke:tone,'stroke-width':3,'stroke-dasharray':'1 7',
+         stroke:tone,'stroke-width':linkedSelected?3:2.2,'stroke-dasharray':'1 7',
          'data-c2-m5-paper-line-id':candidate.id,
          'data-c2-m5-ray-status':candidate.rayStatus,
          'data-c2-m5-paper-view':candidate.view,
          'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
          'data-c2-m5-source-feature-id':candidate.sourceFeatureId??'unresolved',
          'data-c2-m5-source-kind':candidate.sourceFeatureKind??'unresolved',
-         'data-c2-m5-source-link-status':'unique-3d-source-overlap',
+         'data-c2-m5-source-link-status':sourceLinkStatus,
          'data-c2-m5-linked-source-t-range':JSON.stringify([
           linkedOverlap.fromT,linkedOverlap.toT]),
          'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
          'data-visibility':'undetermined',
-         'aria-label':'选择真实 C2 三维新生棱的对应重叠区间；仅为开区间射线诊断'
+         'aria-label':linkedTargetKind==='generated'?
+          '选择真实 C2 三维新生棱的对应重叠区间；仅为开区间射线诊断':
+          '选择原始三维棱的对应重叠区间；仅为开区间射线诊断'
         });
         // M5 diagnostic overlays use a separate namespace from the actual
         // rendered Geometry Scene strokes, so DOM consumers cannot count
         // a proof guide as an extra physical 3D projection.
-        linkNode.setAttribute('data-c2-m5-linked-generated-source-id',
-         linkedGenerated.sourceFeatureId);
-        linkNode.setAttribute('data-geometry-id',linkedGenerated.geometryId);
+        if(linkedTargetKind==='generated')
+         linkNode.setAttribute('data-c2-m5-linked-generated-source-id',linkedSourceId);
+        else linkNode.setAttribute('data-c2-m5-linked-original-source-id',linkedSourceId);
+        linkNode.setAttribute('data-geometry-id',linkedObjectId);
         linkNode.setAttribute('data-source-feature-key',linkedKey);
         linkNode.setAttribute('data-source-feature-selected',String(linkedSelected));
         linkNode.setAttribute('tabindex','0');linkNode.setAttribute('role','button');
         const pick=()=>{
          const already=selectedSourceFeature?.key===linkedKey&&
-          selectedSourceFeature?.objectId===linkedGenerated.geometryId&&
-          coordinator.selectedGeometryId()===linkedGenerated.geometryId;
+          selectedSourceFeature?.objectId===linkedObjectId&&
+          coordinator.selectedGeometryId()===linkedObjectId;
          selectedSourceFeature=already?null:{
-          key:linkedKey,objectId:linkedGenerated.geometryId,revision:snap.revision
+          key:linkedKey,objectId:linkedObjectId,revision:snap.revision
          };
-         coordinator.selectSceneGeometry(linkedGenerated.geometryId);
+         coordinator.selectSceneGeometry(linkedObjectId);
         };
         linkNode.addEventListener('click',pick);
         linkNode.addEventListener('keydown',e=>{
