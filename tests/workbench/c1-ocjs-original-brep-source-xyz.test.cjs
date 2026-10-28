@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const {matchOriginalBRepEdgeByXYZ:match,
  probeRealOcctHLREdgeDirectOriginalSourceIdentity:probe,
  probeRealOcctHLRVertexDirectOriginalSourceIdentity:probeVertex,
+ probeRealOcctHLRDataStructureSourceEdgeMap:probeIndex,
  verifyOriginalOcctLinearCurveWitness:verifyLine}=
  require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const xyz=(x,y,z)=>({x,y,z});
@@ -233,4 +234,49 @@ test('asymmetric, invalid, or nonreflexive generated/original TopoDS vertex witn
  ],paper),/invalid original native/);
  assert.throws(()=>probeVertexIn(g,'V',native('a'),[],
   paper),/bounded original TopoDS vertex ledger/);
+});
+
+test('native HLR DataStructure 1-based EdgeMap authenticates all original TopoDS source indices without inventing generated-edge history',()=>{
+ const source=originals(),items=[native('c'),native('a'),native('b')];
+ const edgeMap={Extent:()=>items.length,FindKey:i=>items[i-1]};
+ const result=probeIndex({edgeMap,originalSourceEdges:source});
+ assert.equal(result.internalEdgeMapExtent,3);
+ assert.equal(result.originalSourceIdsInInputBRep,3);
+ assert.equal(result.internalEdgeMapOriginalSourceIdsMatched,3);
+ assert.equal(result.everyOriginalBRepSourcePresentInHLRDataStructure,true);
+ assert.deepEqual(result.indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId),[
+  'RealSourceBRep3D::A|E','RealSourceBRep3D::A|B','RealSourceBRep3D::C|D']);
+ assert.ok(result.indexedOriginalSources.every(x=>
+  x.directlySameOriginalTopoDSInputEdge===true&&
+  x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
+  x.signedV5Action===false));
+ assert.equal(result.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+ assert.equal(result.continuousM5VisibilityProven,false);
+ assert.equal(result.signedV5Action,false);
+});
+test('native HLR original EdgeMap can be incomplete without ever authorizing generated HLR history',()=>{
+ const items=[native('a'),native('c')];
+ const r=probeIndex({edgeMap:{Extent:()=>2,FindKey:i=>items[i-1]},
+  originalSourceEdges:originals()});
+ assert.equal(r.everyOriginalBRepSourcePresentInHLRDataStructure,false);
+ assert.equal(r.internalEdgeMapOriginalSourceIdsMatched,2);
+ assert.equal(r.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+});
+test('native HLR EdgeMap duplicate original M0 source identity and asymmetric IsSame are rejected',()=>{
+ const dup=[native('a'),native('a'),native('b')];
+ assert.throws(()=>probeIndex({edgeMap:{Extent:()=>3,FindKey:i=>dup[i-1]},
+  originalSourceEdges:originals()}),/duplicates one original M0 physical source/);
+ const asym={IsSame:()=>true};
+ assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1,FindKey:()=>asym},
+  originalSourceEdges:originals()}),/asymmetric/);
+});
+test('native HLR EdgeMap requires finite bounded one-based index and actual source handles',()=>{
+ for(const extent of [0,-1,513,NaN,Infinity,1.5]){
+  assert.throws(()=>probeIndex({edgeMap:{Extent:()=>extent,FindKey:()=>native('a')},
+   originalSourceEdges:originals()}),/bounded native HLR/);
+ }
+ assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1},
+  originalSourceEdges:originals()}),/real indexed OCCT/);
+ assert.throws(()=>probeIndex({edgeMap:{Extent:()=>1,FindKey:()=>native('a')},
+  originalSourceEdges:[]}),/real indexed OCCT/);
 });

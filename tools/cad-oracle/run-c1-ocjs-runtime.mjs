@@ -161,6 +161,21 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.actualPinnedWasmObjectInspected,true);
   assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
    'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
+  const ds=api.originalDataStructureIndex;
+  assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+  assert.equal(ds.signedV5Action,false);
+  assert.equal(ds.availability,'real-native-edge-map-inspected',
+   'pinned real WASM must expose the native HLR internal original EdgeMap');
+  assert.equal(ds.internalEdgeMapExtent,geometry.data.edges.length);
+  assert.equal(ds.originalSourceIdsInInputBRep,geometry.data.edges.length);
+  assert.equal(ds.internalEdgeMapOriginalSourceIdsMatched,
+   geometry.data.edges.length);
+  assert.equal(ds.everyOriginalBRepSourcePresentInHLRDataStructure,true);
+  assert.equal(ds.indexedOriginalSources.length,ds.internalEdgeMapExtent);
+  assert.ok(ds.indexedOriginalSources.every(x=>
+   x.directlySameOriginalTopoDSInputEdge===true&&
+   x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
+   x.signedV5Action===false));
   assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
