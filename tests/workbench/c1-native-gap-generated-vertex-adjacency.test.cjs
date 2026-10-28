@@ -236,3 +236,60 @@ test('transverse drift at rounded A boundary is not a collinear native A point',
  assert.equal(literal.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,true);
  assert.equal(literal.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
 });
+
+test('exact dominant-axis inverse remains correct when BOTH projected binary64 spans overflow in V/H/W',()=>{
+ const max=Number.MAX_VALUE;
+ const pointsByView={
+  H:{A:{x:-max,y:-max,z:0},C:{x:0.8*max,y:max,z:0}},
+  V:{A:{x:-max,y:0,z:-max},C:{x:0.8*max,y:0,z:max}},
+  W:{A:{x:0,y:-max,z:-max},C:{x:0,y:0.8*max,z:max}}
+ };
+ for(const [view,points] of Object.entries(pointsByView)){
+  const g={id:'overflow',data:{points,edges:[['A','C']]}};
+  const s={
+   view,occtHLRVisibilityClass:'visible-sharp',
+   from:{u:0,v:0},to:{u:0.8*max,v:max},
+   sourceCandidate3DLifts:[{sourceEdgeId:'overflow::A|C',
+    originalVertexIds:['A','C'],
+    paperOnlyUnclampedOriginalSourceParameters:[0.5,1]}],
+   directNativeVertexOriginalSource:[native(null),native('C')],
+   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false
+  };
+  // Math.abs(delta) would be Infinity for BOTH axes and previously
+  // selected u (wrong); the exact larger span is v, yielding t=1/2.
+  assert.equal(Math.abs(s.to.u-(-max)),Infinity);
+  assert.equal(Math.abs(s.to.v-(-max)),Infinity);
+  const check=segments=>audit({geometry:g,view,sourceEdgeId:'overflow::A|C',
+   uncoveredIntervals:[[0.4,0.6]],visibleSegments:segments,hiddenSegments:[]});
+  const r=check([s]);
+  assert.equal(r.endpoints[0].exactReceivedPaperDominantAxisOriginalSourceParameter,'1/2',view);
+  assert.equal(r.rows[0].exactReceivedPaperCandidateStrictlyInsideGapCount,1,view);
+  assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1,view);
+  assert.equal(r.rows[0].sourceGapClosedByNativeEndpointEvidence,false,view);
+  assert.equal(r.signedV5ActionCount,0,view);
+  const reversed=check([{...s,from:s.to,to:s.from,
+   sourceCandidate3DLifts:[{...s.sourceCandidate3DLifts[0],
+    paperOnlyUnclampedOriginalSourceParameters:[1,0.5]}],
+   directNativeVertexOriginalSource:[native('C'),native(null)]}]);
+  assert.equal(reversed.endpoints[1].exactReceivedPaperDominantAxisOriginalSourceParameter,'1/2',view);
+  assert.equal(reversed.generatedToOriginalTopoDSFullHistoryCertified,false,view);
+ }
+});
+test('exact dominant-axis inverse preserves u preference when u is truly larger despite overflow',()=>{
+ const max=Number.MAX_VALUE;
+ const g={id:'overflow',data:{points:{
+  A:{x:-max,y:-max,z:0},C:{x:max,y:0.8*max,z:0}
+ },edges:[['A','C']]}};
+ const s={view:'H',occtHLRVisibilityClass:'visible-sharp',
+  from:{u:0,v:0},to:{u:max,v:0.8*max},
+  sourceCandidate3DLifts:[{sourceEdgeId:'overflow::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.5,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')],
+  actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false};
+ const r=audit({geometry:g,view:'H',sourceEdgeId:'overflow::A|C',
+  uncoveredIntervals:[[0.4,0.6]],visibleSegments:[s],hiddenSegments:[]});
+ assert.equal(r.endpoints[0].exactReceivedPaperDominantAxisOriginalSourceParameter,'1/2');
+ assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+});
