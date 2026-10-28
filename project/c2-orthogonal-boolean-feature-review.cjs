@@ -380,18 +380,27 @@ function reviewC2FullPaperStrokeReadiness({
    const inside=candidates.filter(x=>x.fromT<=lo&&x.toT>=hi),
     keys=[...new Set(inside.map(x=>x.matching3DPhysicalSourceKey)
       .filter(Boolean))];
-   const same=inside.length>0&&keys.length===1&&
-    inside.every(x=>x.matching3DPhysicalSourceKey===keys[0]&&
-      x.status===inside[0].status&&x.sourceExteriorOpenVerified===true);
-   const localStatus=same&&boundary.completeProjectedPhysicalSourceCoverage?
-     inside[0].status:'undetermined';
-   const proved=['scoped-continuous-front-ray-clear',
-    'scoped-continuous-front-ray-opaque'].includes(localStatus);
+   // Independently prove each exact OPEN piece: a source gap elsewhere on
+   // the boundary cannot erase this piece's original 3D source/ray witness.
+   const reason=inside.length===0?'missing-canonical-paper-source':
+    keys.length!==1||inside.some(x=>
+     x.matching3DPhysicalSourceKey!==keys[0])?
+     'nonunique-or-unmatched-3d-source':
+    inside.some(x=>x.sourceExteriorOpenVerified!==true)?
+     'boolean-exterior-open-source-unproven':
+    inside.some(x=>x.status!==inside[0].status)?
+     'conflicting-local-open-ray-evidence':
+    !['scoped-continuous-front-ray-clear',
+      'scoped-continuous-front-ray-opaque'].includes(inside[0].status)?
+     'continuous-open-ray-undetermined':null;
+   const proved=reason===null;
    pieces.push(Object.freeze({
-    fromT:lo,toT:hi,localWholeOpenRayStatus:proved?localStatus:'undetermined',
+    fromT:lo,toT:hi,
+    localWholeOpenRayStatus:proved?inside[0].status:'undetermined',
     sourceGroupIds:Object.freeze(inside.map(x=>x.paperGroupId).sort()),
     real3DSourceClassKeys:Object.freeze(keys.sort()),
     exactCurrentPhysicalSourceAndOpenRayCorroborated:proved,
+    unprovenLocalSourceOrRayReason:reason,
     completeClosedEndpointAndGlobalVisibilityCertified:false,
     officialEngineeringLineStyle:'undetermined',officialV5Approved:false
    }));
@@ -399,11 +408,21 @@ function reviewC2FullPaperStrokeReadiness({
   const covered=exactCandidateIntervalCoverage([0,1],
    pieces.filter(x=>x.exactCurrentPhysicalSourceAndOpenRayCorroborated)
     .map(x=>[x.fromT,x.toT]));
+  const unresolved=exactCandidateIntervalCoverage([0,1],
+   pieces.filter(x=>!x.exactCurrentPhysicalSourceAndOpenRayCorroborated)
+    .map(x=>[x.fromT,x.toT]));
+  if(JSON.stringify(covered.positiveLengthUncoveredIntervals)!==
+     JSON.stringify(unresolved.positiveLengthCoveredIntervals)||
+     pieces.some(x=>x.exactCurrentPhysicalSourceAndOpenRayCorroborated===
+       (x.unprovenLocalSourceOrRayReason!==null)))
+   throw new Error('C2 精确开放参数缺口与三维来源/射线审计不一致');
   return Object.freeze({
    id:boundary.id,view:boundary.view,revision,
    paperPieces:Object.freeze(pieces),
    positiveLocalWholeOpenRayPieceCount:pieces.filter(x=>
     x.exactCurrentPhysicalSourceAndOpenRayCorroborated).length,
+   unprovenLocalSourceOrRayPieceCount:pieces.filter(x=>
+    !x.exactCurrentPhysicalSourceAndOpenRayCorroborated).length,
    locallyRayCorroboratedFullBoundary:covered.entireOriginalParameterIntervalCovered,
    exactUnprovenBoundaryRanges:Object.freeze(
     covered.positiveLengthUncoveredIntervals.map(x=>Object.freeze([...x]))),
@@ -416,6 +435,8 @@ function reviewC2FullPaperStrokeReadiness({
  const rayEvidenceCount=boundaryRayEvidence.reduce((n,b)=>n+b.paperPieces.length,0),
   corroborated=boundaryRayEvidence.reduce((n,b)=>n+
    b.positiveLocalWholeOpenRayPieceCount,0),
+  unresolvedLocal=boundaryRayEvidence.reduce((n,b)=>n+
+   b.unprovenLocalSourceOrRayPieceCount,0),
   fullyCorroborated=boundaryRayEvidence.filter(x=>
    x.locallyRayCorroboratedFullBoundary).length;
  if(boundaryRayEvidence.length!==sourceBoundaries.length||
@@ -427,7 +448,8 @@ function reviewC2FullPaperStrokeReadiness({
      x.paperPieces.some((p,k)=>
       k>0&&p.fromT!==x.paperPieces[k-1].toT))||
     fullyCorroborated>sourceBoundaries.filter(x=>
-     x.completeProjectedPhysicalSourceCoverage).length)
+     x.completeProjectedPhysicalSourceCoverage).length||
+    corroborated+unresolvedLocal!==rayEvidenceCount)
   throw new Error('C2 投影闭合边界局部 M5 射线证据未守恒');
 
  const counts={
@@ -458,6 +480,7 @@ function reviewC2FullPaperStrokeReadiness({
   boundaryRayEvidence:Object.freeze(boundaryRayEvidence),
   boundaryRayOpenPieceCount:rayEvidenceCount,
   boundaryRayCorroboratedPieceCount:corroborated,
+  boundaryRayUnprovenPieceCount:unresolvedLocal,
   boundaryAllPiecesCorroboratedCount:fullyCorroborated,
   fullSourceCrossAudit:true,
   officialDrawingLineStylesVerified:false,completeV5DrawingAuthorized:false
