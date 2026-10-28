@@ -118,6 +118,14 @@ function certifyAxisBoxSourceOpenRay({source,box,view}={}){
  * coordinates lie on the same non-interior side of one cutter plane, with
  * at least one strictly outside. Equality at both endpoints is NOT enough:
  * that is a cutter wall and its ray/face topology needs more evidence.
+ * 3. A front-facing, nonempty STOCK MATERIAL SLAB strictly beyond the
+ *    entire original source and strictly outside the cutting box in the
+ *    observer's AXIAL coordinate is another sufficient hidden-ray theorem.
+ *    The two other affine source coordinates must lie strictly inside the
+ *    stock at EVERY open source point. One common slab point then lies
+ *    strictly within S\\C in front of every such point. This recovers
+ *    native side-view bore-wall rays, without guessing a surface normal or
+ *    testing a single representative point.
  *
  * This does not infer native OCCT history, projected joins, GB style or V5.
  */
@@ -141,6 +149,40 @@ function certifyAxisBoxSubtractiveOpenRay({source,stock,cutter,view}={}){
    break;
   }
  }
+ // Check all original binary64 endpoint bounds; affine interpolation
+ // makes each non-view-axis coordinate STRICTLY interior to stock for
+ // every 0<s<1 iff both endpoints are in the closed stock interval and
+ // not both lie on either same boundary plane.
+ const rayAxis=names.findIndex(k=>direction[k]!==0);
+ if(rayAxis<0||names.filter(k=>direction[k]!==0).length!==1||
+    ![1,-1].includes(direction[names[rayAxis]]))
+  throw new RangeError('expected exact canonical first-angle axis ray');
+ const perpendicularSourceOpenInterior=names.every((k,i)=>{
+  if(i===rayAxis)return true;
+  const lower=stock.min[i],upper=stock.max[i],
+   x=a[k],y=b[k];
+  return x>=lower&&x<=upper&&y>=lower&&y<=upper&&
+   (x>lower||y>lower)&&(x<upper||y<upper);
+ });
+ // Keep the interval OPEN, never materialize a rounded midpoint or
+ // silently snap a 1-ULP positive real interval into a nonempty witness.
+ // Direction +: max(source axial endpoints, cutter max) < stock max.
+ // Direction -: stock min < min(source axial endpoints, cutter min).
+ const plus=direction[names[rayAxis]]===1,
+  axial=names[rayAxis],
+  frontSlabLow=plus?
+   Math.max(a[axial],b[axial],cutter.max[rayAxis],stock.min[rayAxis]):
+   stock.min[rayAxis],
+  frontSlabHigh=plus?
+   stock.max[rayAxis]:
+   Math.min(a[axial],b[axial],cutter.min[rayAxis],stock.max[rayAxis]),
+  frontMaterialSlab=perpendicularSourceOpenInterior&&
+   frontSlabLow<frontSlabHigh?Object.freeze({
+    axis:axial,lowerExclusiveMm:frontSlabLow,
+    upperExclusiveMm:frontSlabHigh,
+    fixedCommonFrontMaterialDepthExists:true,
+    allOriginalOpenSourcePerpendicularCoordinatesStrictlyWithinStock:true
+   }):null;
  let status='undetermined',reason='subtractive-cutter-boundary-or-open-ray-unresolved';
  if(stockRay.status==='certified-clear'){
   status='certified-clear';
@@ -149,12 +191,22 @@ function certifyAxisBoxSubtractiveOpenRay({source,stock,cutter,view}={}){
           cutterSeparatedAxis!==null){
   status='certified-strictly-hidden';
   reason='strict-stock-front-interior-ray-and-perpendicular-cutter-separation';
+ }else if(frontMaterialSlab!==null){
+  // Every open segment point has a STRICT positive observer-ray
+  // intersection with stock interior, outside the cutter in this axis.
+  // This is exact whole-segment depth evidence, NOT projected M4 junction
+  // proof, and it cannot authorize a formally drawn hidden line.
+  status='certified-strictly-hidden';
+  reason='common-front-stock-material-slab-outside-subtractive-cutter';
  }
  return Object.freeze({
   schema:'draftai-m0-axis-box-subtractive-open-ray/1',
   sourceId:source.id,stockId:stock.id,cutterId:cutter.id,view,
   status,reason,originalStockRayStatus:stockRay.status,
   cutterPerpendicularStrictSeparationAxis:cutterSeparatedAxis,
+  commonFrontSubtractiveMaterialSlab:frontMaterialSlab,
+  everyOpenSourcePointHasCommonStrictFrontMaterialDepth:
+   status==='certified-strictly-hidden'&&frontMaterialSlab!==null,
   eachSourceOpenInteriorRayProved:status!=='undetermined',
   closedEndpointAndAllProjectedNativeJunctionsCertified:false,
   fullSubtractiveSceneEngineeringLinesCertified:false,
