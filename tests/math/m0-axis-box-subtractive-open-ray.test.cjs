@@ -51,3 +51,60 @@ test('invalid original boxes, observer, and same stock/cutter identity are rejec
  assert.throws(()=>prove({source:line('Bad',p(0,0,0),p(10,0,0)),
   stock,cutter,view:'Q'}),/first-angle/);
 });
+
+test('V side view: through-bore vertical inner wall has a common strict front-stock slab, not a guessed hidden line',()=>{
+ const ray=prove({source:line('BoreV',p(4,4,0),p(4,4,10)),
+  stock,cutter,view:'V'});
+ assert.equal(ray.originalStockRayStatus,'undetermined');
+ assert.equal(ray.status,'certified-strictly-hidden');
+ assert.equal(ray.reason,'common-front-stock-material-slab-outside-subtractive-cutter');
+ assert.deepEqual(ray.commonFrontSubtractiveMaterialSlab,{
+  axis:'y',lowerExclusiveMm:0,upperExclusiveMm:4,
+  fixedCommonFrontMaterialDepthExists:true,
+  allOriginalOpenSourcePerpendicularCoordinatesStrictlyWithinStock:true
+ });
+ assert.equal(ray.everyOpenSourcePointHasCommonStrictFrontMaterialDepth,true);
+ assert.equal(ray.closedEndpointAndAllProjectedNativeJunctionsCertified,false);
+ assert.equal(ray.signedV5Action,false);
+});
+test('W side view: observer +X proves identical Cut wall depth with opposite native edge orientation',()=>{
+ for(const [a,b] of [[p(6,6,0),p(6,6,10)],
+                     [p(6,6,10),p(6,6,0)]]){
+  const r=prove({source:line('BoreW',a,b),stock,cutter,view:'W'});
+  assert.equal(r.status,'certified-strictly-hidden');
+  assert.equal(r.commonFrontSubtractiveMaterialSlab.axis,'x');
+  assert.equal(r.commonFrontSubtractiveMaterialSlab.lowerExclusiveMm,6);
+  assert.equal(r.commonFrontSubtractiveMaterialSlab.upperExclusiveMm,10);
+  assert.equal(r.constructionIntentAuthorized,false);
+ }
+});
+test('H through-axis has NO fictional material slab: cutter traverses entire axial stock',()=>{
+ const r=prove({source:line('BoreH',p(4,5,1),p(4,5,9)),
+  stock,cutter,view:'H'});
+ assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
+ assert.equal(r.status,'undetermined');
+ assert.equal(r.signedV5Action,false);
+});
+test('a coincident exterior stock wall must NOT be mislabeled strict interior by the new slab lemma',()=>{
+ const r=prove({source:line('StockTangency',p(0,4,3),p(0,4,7)),
+  stock,cutter,view:'V'});
+ assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
+ assert.equal(r.status,'undetermined');
+});
+test('when cutter reaches the observer-facing outer stock plane there is no separate front-material slab',()=>{
+ const frontCut={...cutter,min:[4,0,-1]};
+ const r=prove({source:line('NoSlabV',p(4,4,0),p(4,4,10)),
+  stock,cutter:frontCut,view:'V'});
+ assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
+ assert.equal(r.status,'undetermined');
+});
+test('a cutter interior-to-stock witness cannot be inferred through a zero-width floating boundary gap',()=>{
+ const adjacent=Number.MIN_VALUE;
+ const s={...stock,min:[0,0,0],max:[10,10,10]};
+ const q={...cutter,min:[4,0,-1],max:[6,10,11]};
+ const r=prove({source:line('NoSlab',p(4,10,0),p(4,10,10)),
+  stock:s,cutter:q,view:'V'});
+ assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
+ assert.equal(r.signedV5Action,false);
+ assert.equal(adjacent>0,true);
+});
