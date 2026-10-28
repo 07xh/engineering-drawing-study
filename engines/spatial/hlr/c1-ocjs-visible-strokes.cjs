@@ -611,16 +611,28 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     signedV5Action:false
    };
    if(typeof algorithm.DataStructure==='function'){
+    const trace=stage=>{
+     if(typeof process!=='undefined'&&
+        process.env?.DRAFTAI_OCJS_DS_TRACE==='1')
+      console.error('C1 real OCCT HLR DataStructure trace '+view+': '+stage);
+    };
+    trace('before-handle');
     const dsHandle=hold(algorithm.DataStructure());
+    trace('after-handle');
     if(dsHandle.IsNull()===false&&typeof dsHandle.get==='function'){
+     trace('before-get');
      const ds=hold(dsHandle.get());
+     trace('after-get');
      if(typeof ds.EdgeMap==='function'){
+      trace('before-EdgeMap');
       const map=hold(ds.EdgeMap());
+      trace('after-EdgeMap');
       originalDataStructureIndex={
        ...probeRealOcctHLRDataStructureSourceEdgeMap({
         edgeMap:map,originalSourceEdges:originalNativeEdgeHandles,hold
        }),availability:'real-native-edge-map-inspected'
       };
+      trace('after-index-probe');
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
    }
