@@ -132,12 +132,12 @@ function homeHTML(){return `
     <label>x <input id="v7-x" type="number" step="any" value="15"></label>
     <label>y <input id="v7-y" type="number" step="any" value="10"></label>
     <label>z <input id="v7-z" type="number" step="any" value="12"></label>
-   </div><button type="button" id="v7-stage">保存条件</button>
-   <button type="button" id="v7-confirm">确认条件</button>
-   <button type="button" id="v7-solve" class="v7-primary">开始求解与作图</button></fieldset>
-   <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other">保存条件</button>
-    <button type="button" id="v7-confirm-other">核对并确认</button>
-    <button type="button" id="v7-solve-other" class="v7-primary">开始求解</button></div>
+   </div><button type="button" id="v7-stage" hidden>保存条件</button>
+   <button type="button" id="v7-confirm" hidden>确认条件</button>
+   <button type="button" id="v7-solve" hidden class="v7-primary">开始求解与作图</button></fieldset>
+   <div class="v7-nonpoint-actions" hidden><button type="button" id="v7-stage-other" hidden>保存条件</button>
+    <button type="button" id="v7-confirm-other" hidden>核对并确认</button>
+    <button type="button" id="v7-solve-other" hidden class="v7-primary">开始求解</button></div>
 
    <fieldset data-v7-task="c3-intersection" hidden>
     <legend>C3 · 已确认的两根正交有限圆柱</legend>
@@ -380,9 +380,8 @@ function homeHTML(){return `
     <p id="v8-review-summary" class="v8-review-summary" role="status">请选择解题类型并检查输入。</p>
     <p id="v8-review-preflight" class="v8-review-preflight" data-state="pending" role="status" aria-live="polite">请先填写题目条件。</p>
     <button type="button" id="v8-review-edit" class="v8-review-edit" hidden>定位需要修改的条件</button>
-    <label class="v8-review-agree"><input id="v8-review-ack" type="checkbox" aria-describedby="v8-review-preflight">
-     我已逐项核对题目、尺寸、单位及必要的解题分支。</label>
-    <button type="button" id="v8-review-run" class="v7-primary" aria-describedby="v8-review-preflight" disabled>确认并开始计算</button>
+    <input id="v8-review-ack" type="checkbox" hidden aria-hidden="true" tabindex="-1">
+    <button type="button" id="v8-review-run" class="v7-primary" aria-describedby="v8-review-preflight" disabled>我已核对，开始求解</button>
     <p class="v8-review-help">确认后使用现有数学求解器；条件冲突或证据不足仍会阻止正式答案。</p>
    </section>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
@@ -394,6 +393,20 @@ function homeHTML(){return `
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label>
    <button type="button" id="v8-paper-focus" aria-pressed="false" aria-controls="v7-sheet">放大图纸</button></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="正面 V、水平 H、侧面 W 和作图步骤"></svg>
+  <section class="v7-card v7-steps" aria-label="作图步骤与播放"><h2>作图步骤</h2>
+   <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
+   <div id="v7-step-list" aria-label="可点选作图步骤"></div>
+   <p id="v8-result-status" class="v8-result-status" role="status">尚未求解。请先确认条件。</p>
+   <details class="v8-proof-details">
+    <summary>查看数学验证与线型依据</summary>
+    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
+   </details>
+   <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
+   <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
+    <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
+   <p class="v7-warning">部分题型仅显示局部作图；未确认的完整轮廓和虚实线不能作为答案导出。</p>
+  </section>
    <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
     <div id="v9-three-space" class="v9-three-space" role="group" aria-label="三维立体旋转与来源棱拾取" hidden></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
@@ -401,20 +414,7 @@ function homeHTML(){return `
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
    <p class="v7-note" id="v7-selection">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
   </section>
-  <section class="v7-card v7-steps" aria-label="作图步骤与播放"><h2>作图步骤</h2>
-   <p id="v8-result-status" class="v8-result-status" role="status">尚未求解。请先确认条件。</p>
-   <details class="v8-proof-details">
-    <summary>查看数学验证与线型依据</summary>
-    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
-    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
-   </details>
-   <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
-   <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
-   <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
-    <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
-   <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p class="v7-warning">部分题型仅显示局部作图；未确认的完整轮廓和虚实线不能作为答案导出。</p>
-  </section>
+
  </div>
 </section>
 <section class="next-home-hero next-home-workbench next-home-v64 v8-project-strip" id="ai" aria-label="工程制图解题首页">
