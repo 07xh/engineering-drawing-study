@@ -22,11 +22,15 @@
   const drawShortcuts=[...document.querySelectorAll('[data-next-draw-tool]')];
   if(drawTool&&drawShortcuts.length){
    const sync=()=>drawShortcuts.forEach(button=>{
-    button.setAttribute('aria-pressed',String(button.dataset.nextDrawTool===drawTool.value));
-    button.disabled=drawTool.disabled;
+    const option=[...drawTool.querySelectorAll('option')].find(item=>item.value===button.dataset.nextDrawTool);
+    const available=!!option&&!option.disabled&&!option.hidden&&!option.hasAttribute('disabled')&&!option.hasAttribute('hidden');
+    button.disabled=drawTool.disabled||!available;
+    button.setAttribute('aria-pressed',String(!button.disabled&&button.dataset.nextDrawTool===drawTool.value));
    });
    for(const button of drawShortcuts)button.addEventListener('click',()=>{
-    if(drawTool.disabled)return;
+    // Re-check the live app-owned select: its available tools depend on the exercise.
+    sync();
+    if(button.disabled)return;
     drawTool.value=button.dataset.nextDrawTool;
     drawTool.dispatchEvent(new document.defaultView.Event('change',{bubbles:true}));
     sync();

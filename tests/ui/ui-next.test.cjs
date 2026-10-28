@@ -443,6 +443,44 @@ test('fillet drawing shortcuts select the original tool with one click',()=>{
  assert.equal(document.querySelectorAll('#drawTool').length,1);
 });
 
+test('V8 task chooser labels remain concise and never promise unsupported C1/C3 answers',()=>{
+ const {after:document}=enhance('index.html');
+ const task=document.getElementById('v7-task');
+ assert.ok(task);
+ const options=[...task.querySelectorAll('option')];
+ assert.equal(options.length,6,'all original task types are preserved');
+ const c1=options.find(x=>x.value==='c1-third-view').textContent;
+ const c3=options.find(x=>x.value==='c3-intersection').textContent;
+ assert.match(c1,/补第三视图.*单个凸体/);
+ assert.doesNotMatch(c1,/长方体/,'certified convex solids are not limited to boxes');
+ assert.match(c3,/相贯线.*部分结果/,'full intersection curve is not signed off');
+ assert.equal(options.find(x=>x.value==='composition').textContent,'C2 组合体 · 已知形体');
+});
+
+test('drawing shortcuts refuse unavailable app tools and recover when available',async()=>{
+ const {after:document}=enhance('labs/circle-fillet-live.html');
+ const tool=document.getElementById('drawTool');
+ let value='line';Object.defineProperty(tool,'value',{configurable:true,get:()=>value,set:v=>{value=v}});
+ const option=tool.querySelector('option[value="arc"]');
+ option.setAttribute('disabled','');
+ require('../../ui-next/ui-next.js').initUI(document);
+ const button=document.querySelector('[data-next-draw-tool="arc"]');
+ assert.equal(button.disabled,true,'disabled native option must disable its shortcut');
+ assert.equal(button.getAttribute('aria-pressed'),'false');
+ let changes=0;tool.addEventListener('change',()=>changes++);
+ button.click();
+ assert.equal(value,'line','disabled shortcut cannot change the native select');
+ assert.equal(changes,0,'disabled shortcut cannot request a geometry action');
+ option.removeAttribute('disabled');
+ document.getElementById('modeSelect').dispatchEvent(new document.defaultView.Event('change',{bubbles:true}));
+ await Promise.resolve();
+ assert.equal(button.disabled,false,'app mode change re-enables valid shortcut');
+ button.click();
+ assert.equal(value,'arc');
+ assert.equal(changes,1);
+ assert.equal(button.getAttribute('aria-pressed'),'true');
+});
+
 test('drawing shortcuts follow app mode changes and disabled state',async()=>{
  const {after:document}=enhance('labs/circle-fillet-live.html');
  const tool=document.getElementById('drawTool');let value='line';
