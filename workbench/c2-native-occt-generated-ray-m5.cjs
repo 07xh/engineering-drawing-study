@@ -157,7 +157,7 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
  const recomputedIncidence=new Map([...vertexByOrdinal.keys()].map(id=>[id,[]]));
  const counts={physicalGeneratedEdges:0,coplanarNativeSubdivisions:0,
   undeterminedNativeFeatures:0,collapsed:0,clear:0,hidden:0,
-  unresolvedDepth:0};
+  unresolvedDepth:0,strictFrontMaterialSlabHidden:0};
  const surfaceNear=(a,b)=>Math.abs(a-b)<=1e-9;
  const outward=(source,solid,ray)=>{
   // One verified M0 supporting plane is sufficient: endpoints both lie
@@ -274,16 +274,21 @@ function auditC2OcctGeneratedEdgeUnionRays({manifest,nativeReport}={}){
     const clear=cutRay.status==='certified-clear',
      hidden=cutRay.status==='certified-strictly-hidden';
     if(clear)counts.clear++;
-    else if(hidden)counts.hidden++;
-    else counts.unresolvedDepth++;
+    else if(hidden){
+     counts.hidden++;
+     if(cutRay.everyOpenSourcePointHasCommonStrictFrontMaterialDepth===true)
+      counts.strictFrontMaterialSlabHidden++;
+    }else counts.unresolvedDepth++;
     rows.push({...base,
      status:clear?'entire-native-cut-edge-stock-monotonic-front-ray-clear':
-      hidden?'entire-native-cut-edge-strict-stock-front-outside-cutter':
+      hidden?'entire-native-cut-edge-strict-subtractive-material-occlusion':
       'unresolved-subtracted-void-continuous-ray-depth',
      fullNativeTopoDSResultEdgeContinuousRayProof:clear||hidden,
      originalSubtractiveBooleanM0OpenRayEvidence:cutRay,
      verifiedSubtractiveFrontRayClear:clear,
-     verifiedSubtractiveStrictlyHidden: hidden,
+     verifiedSubtractiveStrictlyHidden:hidden,
+     originalOpenSourceFrontStockMaterialSlabWitness:
+      cutRay.commonFrontSubtractiveMaterialSlab,
      allComponentClearIds:[],continuousUnionStrictOcclusionVerified:false,
      allOriginalConvexComponentIds:solids.map(s=>s.id),
      officialEngineeringLineStyle:'undetermined',V5ActionSignedOff:false
