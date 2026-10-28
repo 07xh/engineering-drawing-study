@@ -9,6 +9,8 @@
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditExactBinary64PaperParameterPair}=
+ require('./c1-exact-binary64-paper-parameter.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -81,6 +83,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   projectedSourcesWithVisibleHiddenCandidateConflicts:0,
   positiveLengthVisibleHiddenCandidateConflictIntervalCount:0,
   sourceScopedPaperStrokesWithUnboundParameters:0,
+  sourceScopedPaperEndpointsOutsideExactBinary64Domain:0,
+  sourceScopedPaperPositiveIntervalsLostByRoundedInverse:0,
   nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
   paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
   wholeSolidHiddenEdgesWithoutScopedSource:0,
@@ -129,6 +133,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    item.nativeOwners=new Map();
   }
   const sourceRanges=new Map(ids.map(id=>[id,[]]));
+  const exactPaperDiagnostics=new Map(ids.map(id=>[id,[]]));
   const classRanges=Object.fromEntries(['visible','hidden'].map(k=>
    [k,new Map(ids.map(id=>[id,[]]))]));
   for(const item of Object.values(classes))
@@ -167,10 +172,32 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
         !onOriginalPaperEdge(w.from,source,view)||
         !onOriginalPaperEdge(w.to,source,view))
       throw new RangeError('source-scoped HLR paper segment contradicts original M0 3D projection');
+     const [sourceFrom,sourceTo]=projectedOriginalBySource.get(source)[view];
+     const exactPaper=auditExactBinary64PaperParameterPair({
+      sourceFrom,sourceTo,measuredFrom:w.from,measuredTo:w.to
+     });
+     const exactBounds=exactPaper.nativeFromWithinExactBinary64OriginalParameterDomain&&
+      exactPaper.nativeToWithinExactBinary64OriginalParameterDomain;
+     if(!exactBounds)counts.sourceScopedPaperEndpointsOutsideExactBinary64Domain++;
      const tFrom=paperParameter(w.from,source,view),
       tTo=paperParameter(w.to,source,view);
-     const range=tFrom===null||tTo===null||tFrom===tTo?null:
+     if(exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan&&
+        tFrom!==null&&tTo!==null&&tFrom===tTo)
+      counts.sourceScopedPaperPositiveIntervalsLostByRoundedInverse++;
+     // A rounded t=0 or t=1 cannot override an exact one-ULP paper
+     // overshoot. Likewise, two distinct dyadic positions whose rounded
+     // inverse parameters coincide cannot certify a positive interval.
+     const range=!exactBounds||
+      !exactPaper.nativePaperSourceParameterPairHasExactPositiveSpan||
+      tFrom===null||tTo===null||tFrom===tTo?null:
       [Math.min(tFrom,tTo),Math.max(tFrom,tTo)];
+     exactPaperDiagnostics.get(source).push({
+      hlrClass:w.hlrClass,measuredPaperFrom:{...w.from},
+      measuredPaperTo:{...w.to},
+      roundedPaperInverseParameters:[tFrom,tTo],
+      paperDerivedCandidateIntervalRetained:range!==null,
+      ...exactPaper
+     });
      if(range){
       sourceRanges.get(source).push(range);
       classRanges[klass].get(source).push(range);
@@ -267,6 +294,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     originalProjectedEdgeCollapsed:collapsed,
     paperDerivedOriginalSourceParameterCandidateIntervals:
      ranges.map(range=>[...range]),
+    exactBinary64PaperParameterDiagnostics:
+     exactPaperDiagnostics.get(source),
     paperDerivedVisibleCandidateParameterUnion:
      classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
     paperDerivedHiddenCandidateParameterUnion:
