@@ -143,7 +143,7 @@ function exactC1NativeSourceIntervalCoverage({
     if(lift.sourceParameterWasClampedForPaperOnly===true){
      if(lift.originalSourceExactParameterCoverageFromRoundingProven!==false)
       throw new RangeError('rounded native paper source falsely claims exact original parameter coverage');
-     if(independentlyM5SourceAndJunctionsProven!==true){
+     if(independentlyM5SourceAndJunctionsProven!==true||!literal){
       roundedPaperOnlyCandidatesHeld++;
       continue;
      }
