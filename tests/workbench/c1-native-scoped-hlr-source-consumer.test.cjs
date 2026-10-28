@@ -125,3 +125,55 @@ test('false native IsSame, stale revision, missing original source candidate and
   visible[0].globalContinuousOcclusionProven=true;
  assert.throws(()=>audit(w),/unsigned OCCT/);
 });
+
+test('original M0 physical edges require distinct finite 3D endpoints in every view',()=>{
+ for(const mutate of [
+  x=>{x.geometry.data.edges[0]=['A','A'];},
+  x=>{x.geometry.data.points.B={...x.geometry.data.points.A};},
+  x=>{x.geometry.data.points.B.z=NaN;},
+  x=>{x.geometry.data.points.A.x=Infinity;}
+ ]){
+  const x=fixture();mutate(x);
+  assert.throws(()=>audit(x),/physical source|3D source edge/);
+ }
+});
+test('V/H/W native EdgeMap source indices are injective, not merely source-ID unique',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),rows=x.cad.nativeHLRSourceHistoryAPISurfaceByView[view]
+   .originalDataStructureIndex.indexedOriginalSources;
+  rows[1].hlrDataStructureOneBasedEdgeIndex=rows[0].hlrDataStructureOneBasedEdgeIndex;
+  x.cad.nativeSourceScopedSharpOutputByView[view].rows[1]
+   .hlrDataStructureOneBasedEdgeIndex=rows[0].hlrDataStructureOneBasedEdgeIndex;
+  assert.throws(()=>audit(x),/duplicated real native HLR source index/);
+ }
+});
+test('one generated native HLR ordinal cannot certify two distinct original TopoDS edges',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
+  c.rows[1].visible.push(x.witness(view,x.id1));
+  c.nativeSourceScopedOutputEdgeCount=2;
+  c.nativeScopedToWholeSolidGeneratedIsSameCount=2;
+  c.paperOnlyScopedOutputEdgeCount=0;
+  for(const row of c.rows){
+   row.visible[0].globalDirectSameGeneratedTopoDSOrdinals=[0];
+   row.visible[0].actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  }
+  assert.throws(()=>audit(x),/duplicate native generated HLR ordinal identity claim/);
+ }
+});
+test('repeated native identity for one original source also fails; paper-only aliases remain unsigned',()=>{
+ const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView.H;
+ c.rows[0].visible.push({...x.witness('H',x.id0),
+  globalDirectSameGeneratedTopoDSOrdinals:[0],
+  actualNativeScopedToGlobalGeneratedEdgeIsSameProven:true});
+ c.rows[0].visible[0].globalDirectSameGeneratedTopoDSOrdinals=[0];
+ c.rows[0].visible[0].actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ c.nativeSourceScopedOutputEdgeCount=2;
+ c.nativeScopedToWholeSolidGeneratedIsSameCount=2;
+ c.paperOnlyScopedOutputEdgeCount=0;
+ assert.throws(()=>audit(x),/duplicate native generated HLR ordinal identity claim/);
+ const y=fixture(),r=audit(y);
+ assert.equal(r.signedV5ActionCount,0);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+});
