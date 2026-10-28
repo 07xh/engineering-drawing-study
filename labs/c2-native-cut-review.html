@@ -47,6 +47,8 @@ small{color:#60738f}
 <section class="panel">
 <h2>导入真实计算证据</h2>
 <p class="hint">打开 <a href="https://github.com/07xh/engineering-drawing-study/actions/workflows/c2-actual-through-hole-source-e2e.yml" rel="noopener noreferrer" target="_blank">C2 原生 OCCT 验收记录</a>，选择最新成功的 <code>main</code> 运行，在 Artifacts 下载 <code>genuine-c2-rectangular-through-hole-topods</code> 并解压，导入其中的 <code>original-c2-through-hole-m0-m4.json</code>。</p>
+<button id="cutDemo" type="button">一键播放已认证通孔示例（12 条）</button>
+<p class="hint">无需下载文件：示例由真实 OpenCascade CI 计算生成，并在每次对应源码更新时验证与实际证明一致；仅展示已认证的局部线段，非完整答案。</p>
 <label for="cutProofFile">本机证明 JSON（不上载服务器）
 <input id="cutProofFile" type="file" accept=".json,application/json"></label>
 <p id="cutStatus" role="status" aria-live="polite">请导入最新成功的真实 OCCT C2 通孔证明。</p>
