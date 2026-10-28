@@ -370,6 +370,17 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
       graph.positiveWholeStrictlyHiddenSubspans||
      math.subtractiveCutOriginalEdgeOpenRayProofs!==
       math.counts.clear+math.counts.hidden||
+     math.counts.strictFrontMaterialSlabHidden<0||
+     math.counts.strictFrontMaterialSlabHidden>math.counts.hidden||
+     graph.positivelyProvenCutFrontMaterialSlabSubspans<0||
+     graph.positivelyProvenCutFrontMaterialSlabSubspans>
+      graph.positiveWholeStrictlyHiddenSubspans||
+     math.rows.filter(r=>r.originalOpenSourceFrontStockMaterialSlabWitness!==null&&
+      r.originalOpenSourceFrontStockMaterialSlabWitness!==undefined).length!==
+      math.counts.strictFrontMaterialSlabHidden||
+     graph.rows.reduce((n,r)=>n+r.subspans.filter(s=>
+      s.wholeOpenM4SubspanStrictFrontMaterialSlabProven===true).length,0)!==
+      graph.positivelyProvenCutFrontMaterialSlabSubspans||
      math.generatedEdgeContinuousM5SubspansRecomputed!==true||
      math.allFirstAngleWholeOriginalGeneratedEdgeRaysAudited!==true||
      graph.rows.some(row=>row.subspans.some(span=>
@@ -406,9 +417,13 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
    nativeSourceViewClearRayProofs:math.counts.clear,
    nativeSourceViewStrictHiddenRayProofs:math.counts.hidden,
+   nativeSourceViewFrontMaterialSlabHiddenProofs:
+    math.counts.strictFrontMaterialSlabHidden,
    nativeSourceViewUnresolvedRayCount:math.counts.unresolvedDepth,
    m4SubspanClearRayProofs:graph.positiveWholeOpenRayClearSubspans,
    m4SubspanStrictHiddenRayProofs:graph.positiveWholeStrictlyHiddenSubspans,
+   m4SubspanFrontMaterialSlabHiddenProofs:
+    graph.positivelyProvenCutFrontMaterialSlabSubspans,
    m4SubspanUnresolvedRayCount:graph.unresolvedSubspans+
     graph.unsignedProjectedAliasSubspans,
    onlyOpenSourceInteriorVerified:true,
@@ -453,6 +468,10 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    packed.subtractiveCutPartialRayEvidence===null?0:
    packed.subtractiveCutPartialRayEvidence.m4SubspanClearRayProofs+
    packed.subtractiveCutPartialRayEvidence.m4SubspanStrictHiddenRayProofs,
+  cutStrictFrontMaterialWholeSourceViewCount:
+   packed.subtractiveCutPartialRayEvidence?.nativeSourceViewFrontMaterialSlabHiddenProofs??0,
+  cutStrictFrontMaterialM4SubspanCount:
+   packed.subtractiveCutPartialRayEvidence?.m4SubspanFrontMaterialSlabHiddenProofs??0,
   officiallySignedNativeSubspanCount:
    certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
