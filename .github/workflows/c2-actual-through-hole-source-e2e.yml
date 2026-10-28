@@ -10,6 +10,9 @@ on:
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
       - 'workbench/c2-native-generated-global-m4-m5.cjs'
       - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
+      - 'tests/ui/c2-native-cut-review-ui.test.cjs'
+      - 'labs/c2-native-cut-review-ui.js'
+      - 'labs/c2-native-cut-review-entry.cjs'
       - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
       - '.github/workflows/c2-actual-through-hole-source-e2e.yml'
   push:
@@ -22,6 +25,9 @@ on:
       - 'workbench/c2-native-occt-generated-ray-m5.cjs'
       - 'workbench/c2-native-generated-global-m4-m5.cjs'
       - 'tests/workbench/c2-native-through-hole-m0-m4-topology.test.cjs'
+      - 'tests/ui/c2-native-cut-review-ui.test.cjs'
+      - 'labs/c2-native-cut-review-ui.js'
+      - 'labs/c2-native-cut-review-entry.cjs'
       - 'tests/fixtures/c2-rectangular-through-hole-two-boxes-occt.json'
       - '.github/workflows/c2-actual-through-hole-source-e2e.yml'
 
@@ -75,6 +81,12 @@ jobs:
           assert.equal(c.unsignedNativePhysicalSourceIntervals.length,40);
           assert.equal(fs.existsSync('original-c2-through-hole-m0-m4.signed-only.svg'),true);
           JS
+      - name: Install pinned web DOM test dependencies for genuine proof importer
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Re-import SAME-RUN genuine native Cut JSON in the deployed mobile proof UI and sole V5
+        env:
+          DRAFTAI_REAL_C2_NATIVE_PROOF_PACK: original-c2-through-hole-m0-m4.json
+        run: node --test tests/ui/c2-native-cut-review-ui.test.cjs
       - name: Keep generated original Cut proof, certified-only SVG and native TopoDS for local mobile review
         uses: actions/upload-artifact@v4
         with:
