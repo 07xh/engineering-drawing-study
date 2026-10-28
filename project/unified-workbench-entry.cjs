@@ -14,7 +14,7 @@ const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
 const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {manualSegment}=require('./source-candidate-bridge.cjs');
-const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
+const {compileGeometryScene,sourceFeatureKey}=require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -525,6 +525,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 
  let store=null,coordinator=null,session=null,unsub=null;
  let saving=Promise.resolve(),imageURL=null,imageEpoch=0,raf=null;
+ // Local per-stroke visual selection; never persisted into input or M3/V5.
+ let selectedSourceFeature=null;
  let photoMarkers=[[],[]];
  let sessionStatus='尚未创建项目',projectList=[];
  let uncommittedFormEdit=false;
@@ -685,14 +687,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
 
  function mount(project){
-  stopAnimation();closePhoto();
+  stopAnimation();closePhoto();selectedSourceFeature=null;
   if(unsub)unsub();unsub=null;
   coordinator?.dispose();
   coordinator=createCoordinator(project);
   session=createUnifiedProjectSession();
   coordinator.attachSolver(session);
   unsub=coordinator.subscribe(event=>{
-   if(event.kind==='input'){stopAnimation();}
+   if(event.kind==='input'){stopAnimation();selectedSourceFeature=null;}
    if(event.kind==='input'||event.kind==='view')queueSave();
    render();
   });
@@ -779,6 +781,37 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     partial.clock?.canRender(snap.revision)?partial:null;
  }
 
+ // Bind an original V5 result action to its independently derived M3
+ // source span ONLY after validating all projected mm/paper endpoints.
+ // The original V5 stays the sole authority for when the stroke appears.
+ function v5ResultSourceFeature(solved,action,view){
+  if(solved.kind!=='prism-evidence'||!view)return null;
+  const match=action.id.match(/^prism-section-([0-9]+)-(V|H|W)$/);
+  if(!match||match[2]!==view)return null;
+  const n=Number(match[1])-1;
+  const obj=solved.scene.objects.find(o=>o.id===solved.plan.geometryId);
+  const projection=obj?.representations?.[view];
+  const span=projection?.kind==='polyline-projection'?
+   projection.spans[n]:null;
+  const transform=solved.plan.viewTransforms?.[view];
+  const metric=span?.projection;
+  if(!obj||obj.space!=='model-3d'||obj.kind!=='polyline'||
+     !span||span.fromIndex!==n||!action.sourceSectionEdgeId||
+     !transform||!metric||!['point','segment'].includes(metric.kind))
+   throw Error('V5 截交线未能对应当前 M3 原始三维来源');
+  const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&
+   Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(a),Math.abs(b));
+  const same=(a,b)=>a&&b&&close(a.x,b.x)&&close(a.y,b.y);
+  const a=toSheet(view,metric.kind==='point'?metric.at:metric.start,transform);
+  const b=metric.kind==='point'?a:toSheet(view,metric.end,transform);
+  const matchShape=metric.kind==='point'?
+   action.kind==='point'&&same(action.geometry?.center,a):
+   action.kind==='line'&&(
+    (same(action.geometry?.from,a)&&same(action.geometry?.to,b))||
+    (same(action.geometry?.from,b)&&same(action.geometry?.to,a)));
+  if(!matchShape)throw Error('V5 纸面笔画未通过原始三维来源投影复核');
+  return sourceFeatureKey(obj,{segmentIndex:n});
+ }
  function drawV5(svg,solved,colors){
   const frame=solved.clock.snapshot(),scoped=solved.verified===false;
   // The original V5 overlay and scene geometry share one revision-bound
@@ -805,6 +838,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     node.setAttribute('data-geometry-id',solved.plan.geometryId);
     if(view)node.setAttribute('data-geometry-view',view);
     node.setAttribute('data-source-section-edge',action.sourceSectionEdgeId);
+    const sourceKey=v5ResultSourceFeature(solved,action,view);
+    const featureSelected=!!sourceKey&&selectedSourceFeature?.revision===
+     solved.inputRevision&&selectedSourceFeature.key===sourceKey;
+    if(sourceKey){
+     node.setAttribute('data-source-feature-key',sourceKey);
+     node.setAttribute('data-source-feature-selected',String(featureSelected));
+    }
     const evidence=solved.evidence?.sectionEvidenceV5Bindings?.bindings
      .find(link=>link.v5ActionId===action.id);
     if(evidence){
@@ -819,7 +859,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     }
     node.setAttribute('role','button');node.setAttribute('tabindex','0');
     node.setAttribute('aria-label','选择 '+solved.plan.geometryId+' 的 '+view+' 表达');
-    const pick=()=>coordinator.selectSceneGeometry(solved.plan.geometryId);
+    const pick=()=>{
+     if(sourceKey){
+      selectedSourceFeature=selectedSourceFeature?.key===sourceKey&&
+       coordinator.selectedGeometryId()===solved.plan.geometryId?null:
+       {key:sourceKey,objectId:solved.plan.geometryId,
+        revision:solved.inputRevision};
+     }else selectedSourceFeature=null;
+     coordinator.selectSceneGeometry(solved.plan.geometryId);
+    };
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
@@ -851,7 +899,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    // A named 3D point's third projection is released by the verified V5
    // timeline, not by the generic Geometry Scene visualizer.
    if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;
-   const selected=selectedIds.has(item.objectId);
+   const featureSelected=!!selectedSourceFeature&&
+    selectedSourceFeature.revision===snap.revision&&
+    selectedSourceFeature.objectId===item.objectId&&
+    selectedSourceFeature.key===item.sourceFeatureKey;
+   const selected=selectedIds.has(item.objectId); // Preserve old owner highlights.
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
    const stroke=selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
@@ -865,6 +917,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(item.objectId){
     node.setAttribute('data-geometry-id',item.objectId);
     node.setAttribute('data-geometry-view',item.view);
+    if(item.sourceFeatureKey){
+     node.setAttribute('data-source-feature-key',item.sourceFeatureKey);
+     node.setAttribute('data-source-feature-selected',String(featureSelected));
+    }
     if(item.visibility==='undetermined')
      node.setAttribute('data-visibility','undetermined');
    }
@@ -876,7 +932,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       '选择 '+item.objectId+' 的 '+item.view+' 表达';
     node.setAttribute('tabindex','0');node.setAttribute('role','button');
     node.setAttribute('aria-label',label);
-    const pick=()=>coordinator.selectSceneGeometry(item.objectId);
+    const pick=()=>{
+     // Same original edge in 2D and 3D gets one feature key. A second tap
+     // switches back to the existing whole-object selection.
+     selectedSourceFeature=selectedSourceFeature?.key===item.sourceFeatureKey&&
+      selectedSourceFeature?.objectId===item.objectId&&
+      coordinator.selectedGeometryId()===item.objectId?null:
+      item.sourceFeatureKey?{key:item.sourceFeatureKey,
+       objectId:item.objectId,revision:snap.revision}:null;
+     coordinator.selectSceneGeometry(item.objectId);
+    };
     node.addEventListener('click',pick);
     node.addEventListener('keydown',e=>{
      if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
@@ -1350,6 +1415,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function render(){
   const snap=coordinator?.snapshot(),solved=current();
   if(!snap)return;
+  if(selectedSourceFeature&&(selectedSourceFeature.revision!==snap.revision||
+     coordinator.selectedGeometryId()!==selectedSourceFeature.objectId))
+   selectedSourceFeature=null;
   refreshCandidateLinks();
   paintPhotoMarkers();
   $('v7-cal-status').textContent=calibrationStatus(snap.source);

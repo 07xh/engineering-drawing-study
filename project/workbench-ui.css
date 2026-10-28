@@ -220,3 +220,13 @@ body.ui-next #v8-paper-focus:focus-visible{outline:2px solid #0866ef;outline-off
  body.ui-next .v7-layout.v8-paper-focus .v7-input{grid-column:1;grid-row:2}
  body.ui-next .v7-layout.v8-paper-focus .v7-steps{grid-column:1;grid-row:3}
 }
+
+/* Exact model-source edge selection across V/H/W and the 3D sketch.
+   A selection is visual only: keep undetermined dash patterns unchanged. */
+body.ui-next :is(#v7-sheet,#v7-3d) [data-source-feature-key]{touch-action:manipulation}
+body.ui-next :is(#v7-sheet,#v7-3d) [data-source-feature-selected="true"]{
+ stroke:#0866ef!important;stroke-width:3.8!important
+}
+body.ui-next :is(#v7-sheet,#v7-3d) [data-source-feature-key]:focus-visible{
+ outline:2px solid #89b8ff;outline-offset:2px
+}

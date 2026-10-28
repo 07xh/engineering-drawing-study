@@ -17,10 +17,22 @@ function finiteAttrs(attrs){
  if(Object.entries(attrs).some(([k,v])=>k!=='d'&&!finite(v)))fail('画面坐标无效或溢出');
  return attrs;
 }
+// Presentation-only identity for an ORIGINAL 3D feature, not a 2D position.
+// Coincident V/H/W ink must never merge different physical source edges.
+function sourceFeatureKey(obj,extra){
+ if(typeof obj?.id!=='string')return null;
+ if(Array.isArray(extra.edgeIds)&&extra.edgeIds.length===2&&
+    extra.edgeIds.every(id=>typeof id==='string'))
+  return JSON.stringify([obj.id,'mesh-edge',...extra.edgeIds.slice().sort()]);
+ if(Number.isSafeInteger(extra.segmentIndex)&&extra.segmentIndex>=0)
+  return JSON.stringify([obj.id,'polyline-span',extra.segmentIndex]);
+ return JSON.stringify([obj.id,obj.kind]);
+}
 function make(kind,attrs,obj,view,extra={}){
  return Object.freeze({kind,attrs:Object.freeze(finiteAttrs(attrs)),
   objectId:obj?.id??null,
   selectionObjectId:obj?.selectionObjectId??obj?.id??null,
+  sourceFeatureKey:sourceFeatureKey(obj,extra),
   view,...extra});
 }
 function add(target,primitive){
@@ -298,4 +310,4 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
   objectCount:objects.length,selectedObjectId,revision:scene.revision,
   projection:'first-angle-orthographic',proof:'display-only'});
 }
-module.exports={compileGeometryScene,arcPath};
+module.exports={compileGeometryScene,arcPath,sourceFeatureKey};
