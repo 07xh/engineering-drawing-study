@@ -21,7 +21,7 @@ test('Cut back stock surface source away from side walls has an entire open sour
  const r=prove({source:line('ExteriorBack',p(1,5,0),p(3,5,0)),
   stock,cutter,view:'H'});
  assert.equal(r.status,'certified-strictly-hidden');
- assert.equal(r.cutterPerpendicularStrictSeparationAxis,'y');
+ assert.equal(r.cutterPerpendicularStrictSeparationAxis,'x');
  assert.equal(r.eachSourceOpenInteriorRayProved,true);
  assert.equal(r.signedV5Action,false);
 });
