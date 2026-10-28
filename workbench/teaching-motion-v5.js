@@ -128,8 +128,13 @@
    throw new TypeError('trusted V5 analytic curve presentation required');
   const lo=g.parameter.from;
   const hi=lo+(g.parameter.to-lo)*u;
-  const start=evaluateAnalyticCurvePoint(g,lo);
-  const pen=evaluateAnalyticCurvePoint(g,hi);
+  // Presentation subdivision can round one ULP beyond its exact source
+  // interval (especially the clipped C3 W analytic span). Never change
+  // or enlarge the verified domain itself; clamp ONLY generated samples.
+  const at=t=>evaluateAnalyticCurvePoint(g,
+   Math.max(g.parameter.from,Math.min(g.parameter.to,t)));
+  const start=at(lo);
+  const pen=at(hi);
   if(u===0)return {d:'M '+start.x+' '+start.y,pen,finished:false,
    renderApproximationOnly:true};
   const positions=[start];
@@ -143,9 +148,9 @@
   };
   function visit(a,pa,b,pb,depth){
    const q1=a+(b-a)*.25,m=a+(b-a)*.5,q3=a+(b-a)*.75;
-   const p1=evaluateAnalyticCurvePoint(g,q1),
-     pm=evaluateAnalyticCurvePoint(g,m),
-     p3=evaluateAnalyticCurvePoint(g,q3);
+   const p1=at(q1),
+     pm=at(m),
+     p3=at(q3);
    const error=Math.max(dist(p1,pa,pb),dist(pm,pa,pb),
       dist(p3,pa,pb));
    if(error<=.35||depth>=10){
