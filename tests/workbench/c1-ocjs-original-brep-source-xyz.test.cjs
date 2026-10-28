@@ -154,7 +154,8 @@ test('shared TShape instantiated at multiple original locations remains ambiguou
  assert.equal(proof.completeOCCTGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
 });
 test('asymmetric native OCCT IsPartner is rejected rather than accepted as source history',()=>{
- const generated={IsSame:()=>false,IsPartner:()=>true},original={IsSame:()=>false,IsPartner:()=>false};
+ const generated={IsSame(other){return other===this;},IsPartner:()=>true};
+ const original={IsSame(other){return other===this;},IsPartner(other){return other===this;}};
  assert.throws(()=>probe({generatedEdge:generated,originalSourceEdges:[{sourceEdgeId:'G::A|B',edge:original}]}),/IsPartner/);
 });
 
@@ -165,7 +166,7 @@ test('native generated OCCT edge matching two DISTINCT original M0 source identi
   originalSourceEdges:sources}),/multiple different original physical edges/);
 });
 test('fabricated OCCT IsSame asymmetry or invalid source native TopoDS handle fails closed',()=>{
- const yes={IsSame:()=>true},no={IsSame:()=>false};
+ const yes={IsSame:()=>true},no={IsSame(other){return other===this;}};
  assert.throws(()=>probe({generatedEdge:yes,originalSourceEdges:[
   {sourceEdgeId:'G::A|B',edge:no}
  ]}),/asymmetric/);
@@ -174,7 +175,7 @@ test('fabricated OCCT IsSame asymmetry or invalid source native TopoDS handle fa
  assert.throws(()=>probe({generatedEdge:native('a'),originalSourceEdges:[
   {sourceEdgeId:'G::A|B',edge:{}}
  ]}),/untrusted original/);
- assert.throws(()=>probe({generatedEdge:{IsSame:()=>1},originalSourceEdges:[
+ assert.throws(()=>probe({generatedEdge:{IsSame(other){return other===this?true:1;}},originalSourceEdges:[
   {sourceEdgeId:'G::A|B',edge:native('a')}
  ]}),/asymmetric or nonboolean/);
 });
