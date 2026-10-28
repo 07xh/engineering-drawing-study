@@ -586,7 +586,12 @@ test('one-ULP HLR paper drift is raw 3D BRep candidate coverage, NEVER exact V/H
    x.nativeProof.independentlyM5AuthenticatedVisibleNativeGeneratedEdges.filter(
     w=>!(w.view===view&&w.nativeVisibleHLREdgeOrdinal===0));
   const seg=x.cad.views[view][0];
-  seg[side].u+=Number.EPSILON;
+  const bits=new DataView(new ArrayBuffer(8));
+  bits.setFloat64(0,seg[side].u,false);
+  const u=seg[side].u;
+  seg[side].u=u===0?Number.MIN_VALUE:(bits.setBigUint64(0,
+   bits.getBigUint64(0,false)+(u>0?1n:-1n),false),
+   bits.getFloat64(0,false));
   const r=audit(x),held=r.rows.find(row=>row.view===view&&
    row.trueNativeOCCTGeneratedLineOrdinals.length===0);
   assert.ok(held);
