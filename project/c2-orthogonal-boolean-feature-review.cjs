@@ -25,6 +25,8 @@ const {auditOrthogonalProjectedBoundaryTopology}=
  require('../workbench/m5-orthogonal-projected-boundary-topology.cjs');
 const {inspectFinalSourceStrokeObligations}=
  require('../workbench/m5-final-source-stroke-obligations.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('../workbench/c1-original-source-interval-coverage.cjs');
 function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<0||
    !Array.isArray(geometry)||geometry.length<2||geometry.length>8)
@@ -308,6 +310,126 @@ function reviewC2FullPaperStrokeReadiness({
    engineeringLineStyle:'undetermined',officialV5Approved:false
   });
  });
+
+ /**
+  * Associate each exact 2D occupancy boundary with existing M5 canonical
+  * paper groups via their GENUINE physical 3D class key (not 2D coincidence).
+  * Classify all open pieces cut at every paper event, without midpoint RAY
+  * sampling. Even clear/opaque WHOLE-OPEN-ray pieces do NOT license a GB
+  * stroke: closed endpoints, global Boolean boundary and V5 stay blocked.
+  */
+ const paperById=new Map(paper.lines.map(x=>[x.paperGroupId,x]));
+ const groupsById=new Map(dedup.groups.map(x=>[x.paperGroupId,x]));
+ if(paperById.size!==paper.lines.length||
+    groupsById.size!==dedup.groups.length||
+    groupsById.size!==paperById.size)
+  throw new Error('C2 原始及生成棱来源纸面 ID 不是一一对应');
+ const boundaryRayEvidence=sourceBoundaries.map(boundary=>{
+  const vertical=boundary.from.u===boundary.to.u;
+  if(!vertical&&boundary.from.v!==boundary.to.v)
+   throw new Error('C2 正交区域边界必须是水平或竖直线');
+  const axis=vertical?'v':'u',other=vertical?'u':'v',
+   length=boundary.to[axis]-boundary.from[axis];
+  if(!(Math.abs(length)>0))throw new Error('C2 零长度投影外边界');
+  const matchedClassKeys=new Set(boundary.physical3DSourceClassKeys);
+  const candidates=[];
+  for(const group of dedup.groups){
+   if(group.view!==boundary.view||
+      group.projectedFromModelMm[other]!==boundary.from[other]||
+      group.projectedToModelMm[other]!==boundary.from[other])
+    continue;
+   const p=group.projectedFromModelMm,q=group.projectedToModelMm,
+    start=(p[axis]-boundary.from[axis])/length,
+    stop=(q[axis]-boundary.from[axis])/length,
+    a=Math.max(0,Math.min(start,stop)),b=Math.min(1,Math.max(start,stop));
+   if(!(b>a))continue;
+   const line=paperById.get(group.paperGroupId);
+   if(!line||line.revision!==revision||line.view!==boundary.view||
+      line.projectedFromModelMm.u!==p.u||
+      line.projectedFromModelMm.v!==p.v||
+      line.projectedToModelMm.u!==q.u||
+      line.projectedToModelMm.v!==q.v)
+    throw new Error('C2 外边界射线与原始纸面来源端点不一致');
+   const frontKey=group.closestListed3DPhysicalFeatureClassKey,
+    physical=group.physicalFeatureClasses.find(x=>x.key===frontKey);
+   const frontReal=frontKey!==null&&matchedClassKeys.has(frontKey)&&
+    group.exactlyOneNearestPhysicalFeatureClassWithinListedSources===true&&
+    !!physical&&physical.contributors.some(c=>
+     c.sourceSubspanId===line.selectedListed3DSourceSubspanId);
+   if(frontReal&&line.rayStatus==='no-unique-3d-source')
+    throw new Error('C2 局部前方三维来源与原始 M5 射线矛盾');
+   candidates.push(Object.freeze({fromT:a,toT:b,
+    paperGroupId:group.paperGroupId,
+    matching3DPhysicalSourceKey:frontReal?frontKey:null,
+    status:frontReal?line.rayStatus:'unresolved-3d-source',
+    sourceExteriorOpenVerified:frontReal&&
+     line.selectedWholeSource3DBooleanExteriorOpenFeatureVerified===true,
+    closedEndpointAndGlobalOcclusionCertified:false,
+    officialEngineeringStyle:'undetermined'}));
+  }
+  const cuts=[0,1,...candidates.flatMap(x=>[x.fromT,x.toT])]
+   .filter(x=>Number.isFinite(x)&&x>=0&&x<=1);
+  cuts.sort((a,b)=>a-b);
+  const unique=cuts.filter((x,i)=>i===0||x!==cuts[i-1]);
+  const pieces=[];
+  for(let i=1;i<unique.length;i++){
+   const lo=unique[i-1],hi=unique[i];
+   if(!(hi>lo))continue;
+   // The exact event cut has a CONSTANT set of interval-source witnesses
+   // throughout this OPEN paper piece; no new 3D ray evaluation is made.
+   const inside=candidates.filter(x=>x.fromT<=lo&&x.toT>=hi),
+    keys=[...new Set(inside.map(x=>x.matching3DPhysicalSourceKey)
+      .filter(Boolean))];
+   const same=inside.length>0&&keys.length===1&&
+    inside.every(x=>x.matching3DPhysicalSourceKey===keys[0]&&
+      x.status===inside[0].status&&x.sourceExteriorOpenVerified===true);
+   const localStatus=same&&boundary.completeProjectedPhysicalSourceCoverage?
+     inside[0].status:'undetermined';
+   const proved=['scoped-continuous-front-ray-clear',
+    'scoped-continuous-front-ray-opaque'].includes(localStatus);
+   pieces.push(Object.freeze({
+    fromT:lo,toT:hi,localWholeOpenRayStatus:proved?localStatus:'undetermined',
+    sourceGroupIds:Object.freeze(inside.map(x=>x.paperGroupId).sort()),
+    real3DSourceClassKeys:Object.freeze(keys.sort()),
+    exactCurrentPhysicalSourceAndOpenRayCorroborated:proved,
+    completeClosedEndpointAndGlobalVisibilityCertified:false,
+    officialEngineeringLineStyle:'undetermined',officialV5Approved:false
+   }));
+  }
+  const covered=exactCandidateIntervalCoverage([0,1],
+   pieces.filter(x=>x.exactCurrentPhysicalSourceAndOpenRayCorroborated)
+    .map(x=>[x.fromT,x.toT]));
+  return Object.freeze({
+   id:boundary.id,view:boundary.view,revision,
+   paperPieces:Object.freeze(pieces),
+   positiveLocalWholeOpenRayPieceCount:pieces.filter(x=>
+    x.exactCurrentPhysicalSourceAndOpenRayCorroborated).length,
+   locallyRayCorroboratedFullBoundary:covered.entireOriginalParameterIntervalCovered,
+   exactUnprovenBoundaryRanges:Object.freeze(
+    covered.positiveLengthUncoveredIntervals.map(x=>Object.freeze([...x]))),
+   physicalSourceCoveredBeforeRayProof:
+    boundary.completeProjectedPhysicalSourceCoverage,
+   full3DBooleanOcclusionAndJunctionProof:false,
+   officialEngineeringLineStyle:'undetermined',officialV5Approved:false
+  });
+ });
+ const rayEvidenceCount=boundaryRayEvidence.reduce((n,b)=>n+b.paperPieces.length,0),
+  corroborated=boundaryRayEvidence.reduce((n,b)=>n+
+   b.positiveLocalWholeOpenRayPieceCount,0),
+  fullyCorroborated=boundaryRayEvidence.filter(x=>
+   x.locallyRayCorroboratedFullBoundary).length;
+ if(boundaryRayEvidence.length!==sourceBoundaries.length||
+    boundaryRayEvidence.some((x,i)=>x.id!==sourceBoundaries[i].id||
+     x.view!==sourceBoundaries[i].view||
+     x.paperPieces.length===0||
+     x.paperPieces[0].fromT!==0||
+     x.paperPieces.at(-1).toT!==1||
+     x.paperPieces.some((p,k)=>
+      k>0&&p.fromT!==x.paperPieces[k-1].toT))||
+    fullyCorroborated>sourceBoundaries.filter(x=>
+     x.completeProjectedPhysicalSourceCoverage).length)
+  throw new Error('C2 投影闭合边界局部 M5 射线证据未守恒');
+
  const counts={
   locallyClear:entries.filter(e=>
    e.rayStatus==='scoped-continuous-front-ray-clear').length,
@@ -333,6 +455,10 @@ function reviewC2FullPaperStrokeReadiness({
   sourceBoundariesByView:Object.freeze(byView),
   sourceCoveredBoundaryCount:matched,
   sourceIncompleteBoundaryCount:sourceBoundaries.length-matched,
+  boundaryRayEvidence:Object.freeze(boundaryRayEvidence),
+  boundaryRayOpenPieceCount:rayEvidenceCount,
+  boundaryRayCorroboratedPieceCount:corroborated,
+  boundaryAllPiecesCorroboratedCount:fullyCorroborated,
   fullSourceCrossAudit:true,
   officialDrawingLineStylesVerified:false,completeV5DrawingAuthorized:false
  });
