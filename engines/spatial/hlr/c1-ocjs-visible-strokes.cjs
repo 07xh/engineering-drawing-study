@@ -358,6 +358,24 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   }else sourceById.set(item.sourceEdgeId,item);
  }
  const uniqueSourceEdges=[...sourceById.values()];
+ // A source ID is a physical TopoDS identity, not a display label.
+ // Verify injectivity across the COMPLETE original ledger before reading
+ // any HLR index. Otherwise two different M0 edges could share one TShape
+ // and a partial/unknown EdgeMap would conceal the source contradiction.
+ for(let i=0;i<uniqueSourceEdges.length;i++){
+  const current=uniqueSourceEdges[i].edge;
+  if(current.IsNull?.()===true||current.IsSame(current)!==true)
+   throw new RangeError('nonreflexive or null original TopoDS source edge');
+  for(let j=0;j<i;j++){
+   const previous=uniqueSourceEdges[j].edge;
+   const forward=current.IsSame(previous),reverse=previous.IsSame(current);
+   if(typeof forward!=='boolean'||typeof reverse!=='boolean'||
+      forward!==reverse)
+    throw new RangeError('asymmetric original TopoDS source ledger IsSame');
+   if(forward)
+    throw new RangeError('distinct original source IDs alias one native TopoDS edge');
+  }
+ }
  const extent=edgeMap.Extent();
  if(!Number.isSafeInteger(extent)||extent<1||extent>512)
   throw new RangeError('bounded native HLR original edge map extent required');
@@ -387,6 +405,7 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
   originalSourceIdsInInputBRep:originalIds.size,
   originalSourceEdgeOccurrenceCount:originalSourceEdges.length,
   uniqueOriginalSourceEdgeCount:uniqueSourceEdges.length,
+  sourceLedgerDistinctNativeTopoDSIdentityVerified:true,
   internalEdgeMapOriginalSourceIdsMatched:seen.size,
   everyOriginalBRepSourcePresentInHLRDataStructure:
    seen.size===originalIds.size,
@@ -795,6 +814,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    if(indexProof.availability!=='real-native-edge-map-inspected'||
       indexProof.everyOriginalBRepSourcePresentInHLRDataStructure!==true||
       indexProof.edgeMapSourceBijectionVerified!==true||
+      indexProof.sourceLedgerDistinctNativeTopoDSIdentityVerified!==true||
       !Array.isArray(indexProof.indexedOriginalSources)||
       typeof extractor.VCompound_2!=='function'||
       typeof extractor.HCompound_2!=='function')
