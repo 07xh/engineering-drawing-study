@@ -120,12 +120,12 @@ function homeHTML(){return `
 
    <p class="v7-warning">题图尚不能自动完整解答；请核对下方几何条件。</p>
    <label>解题类型 <select id="v7-task" aria-label="选择解题类型">
-    <option value="projection">点的 V/H/W 三面投影</option>
-    <option value="planar">二维两线段圆弧连接</option>
-    <option value="exploration">长方体截平面 · 限定证据预览</option>
-    <option value="composition">C2 组合体 · 已知形体与关系核验</option>
-    <option value="c1-third-view">C1 补第三视图 · 已确认长方体（限定结果）</option>
-    <option value="c3-intersection">C3 相贯线 · 两根有限正交圆柱（解析预览）</option>
+    <option value="projection">单点三视图</option>
+    <option value="planar">平面圆弧连接</option>
+    <option value="exploration">长方体截切（预览）</option>
+    <option value="composition">C2 组合体 · 已知形体</option>
+    <option value="c1-third-view">C1 补第三视图 · 已确认单个凸体</option>
+    <option value="c3-intersection">C3 相贯线 · 正交有限圆柱（部分结果）</option>
    </select></label>
    <p class="v7-note">已有条件时切换题型会新建项目，原项目保留；空项目可直接切换。</p>
    <fieldset data-v7-task="projection"><legend>空间点 P（模型 mm）</legend><div class="v7-xyz">
