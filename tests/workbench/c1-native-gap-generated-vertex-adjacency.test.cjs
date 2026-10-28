@@ -185,3 +185,54 @@ test('ordinary quarter source parameter is an exact received-paper candidate, no
  assert.equal(r.endpoints[0].roundedInverseDiffersFromExactReceivedPaperParameter,false);
  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
 });
+
+test('exact received paper inverse interior may be off the original 2D source line',()=>{
+ const s=segment({from:{u:0,v:Number.MIN_VALUE},
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,Number.MIN_VALUE]],[s]);
+ assert.equal(r.rows[0].exactReceivedPaperCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.rows[0].exactReceivedPaperCollinearCandidateStrictlyInsideGapCount,0);
+ assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,false);
+ assert.equal(r.actualNativeExactReceivedPaperOffLineEndpoints,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('genuine collinear quarter paper endpoint is a candidate, not TopoDS history',()=>{
+ const s=segment({from:{u:0.75,v:4},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.25,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,0.5]],[s]);
+ assert.equal(r.rows[0].exactReceivedPaperCollinearCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,0);
+ assert.equal(r.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,true);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('one-ULP transverse shift at quarter parameter cannot forge collinear gap evidence',()=>{
+ const s=segment({from:{u:0.75,v:4+4*Number.EPSILON},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.25,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,0.5]],[s]);
+ assert.equal(r.rows[0].exactReceivedPaperCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.rows[0].exactReceivedPaperCollinearCandidateStrictlyInsideGapCount,0);
+ assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1);
+ assert.equal(r.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+});
+test('transverse drift at rounded A boundary is not a collinear native A point',()=>{
+ const r=run([[0,Number.MIN_VALUE]],[segment({
+  from:{u:Number.MIN_VALUE,v:0},
+  directNativeVertexOriginalSource:[native(null),native('C')]
+ })]);
+ assert.equal(r.rows[0].exactReceivedPaperCandidateAtGapFromCount,1);
+ assert.equal(r.rows[0].exactReceivedPaperCollinearCandidateAtGapFromCount,0);
+ assert.equal(r.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,false);
+ const literal=run([[0,Number.MIN_VALUE]]);
+ assert.equal(literal.rows[0].exactReceivedPaperCollinearCandidateAtGapFromCount,1);
+ assert.equal(literal.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,true);
+ assert.equal(literal.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+});

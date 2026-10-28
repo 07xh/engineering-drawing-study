@@ -843,6 +843,24 @@ for(const [index,geometry] of general.entries()){
   assert.ok(proof.rows.every(row=>
    row.sourceGapClosedByNativeEndpointEvidence===false&&
    row.engineeringLineStyle==='undetermined'));
+  // Actual pinned OCJS HLR endpoints: an exact rational dominant-axis t
+  // is not collinearity. Independent exact M0 cross-axis incidence must
+  // partition all interior candidates, including subnormal and ULP drift.
+  assert.equal(proof.actualNativeExactReceivedPaperOffLineEndpoints,
+   proof.endpoints.filter(e=>
+    e.exactReceivedPaperOnOriginalProjectedLine===false).length);
+  assert.ok(proof.endpoints.every(e=>
+   !e.directNativeIsSameOriginalSourceEndpoint||
+   e.exactReceivedPaperOnOriginalProjectedLine===true));
+  for(const row of proof.rows){
+   assert.equal(row.exactReceivedPaperCandidateStrictlyInsideGapCount,
+    row.exactReceivedPaperCollinearCandidateStrictlyInsideGapCount+
+    row.exactReceivedPaperOffLineCandidateStrictlyInsideGapCount);
+   assert.ok(row.exactReceivedPaperCollinearCandidateAtGapFromCount<=
+    row.exactReceivedPaperCandidateAtGapFromCount);
+   assert.ok(row.exactReceivedPaperCollinearCandidateAtGapToCount<=
+    row.exactReceivedPaperCandidateAtGapToCount);
+  }
   // Genuine pinned WASM A-end gaps: partition inverse t=0 paper
   // candidates into literal original vertex points versus rounded aliases.
   // Neither class is generated-to-original TopoDS edge history.

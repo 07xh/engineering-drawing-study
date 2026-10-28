@@ -11,6 +11,8 @@ const {dyadic,difference,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
 const {auditC1RoundedInversePaperBoundaryAlias}=
  require('./c1-rounded-inverse-paper-boundary-alias.cjs');
+const {auditC1ExactBinary64PaperAffineWitness}=
+ require('./c1-exact-binary64-paper-affine.cjs');
 const frozen=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const value of Object.values(x))frozen(value);
@@ -92,6 +94,15 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      measuredFrom:segment.from,measuredTo:segment.to,
      roundedInverseParameters:raw
     }):null;
+   // A dominant-axis rational parameter is not a point-on-line proof.
+   // Reuse the independent M0 exact cross-axis affine predicate; do not
+   // count transverse drift as a physically collinear source endpoint.
+   const sourceCollapsed=originalPaperEndpoints[0].u===originalPaperEndpoints[1].u&&
+    originalPaperEndpoints[0].v===originalPaperEndpoints[1].v;
+   const affine=sourceCollapsed?null:auditC1ExactBinary64PaperAffineWitness({
+    sourceFrom:originalPaperEndpoints[0],sourceTo:originalPaperEndpoints[1],
+    measuredFrom:segment.from,measuredTo:segment.to
+   });
    for(let side=0;side<2;side++){
     const paper=side===0?segment.from:segment.to,
      proof=native[side],id=proof?.directlySameOriginalM0VertexId;
@@ -109,8 +120,12 @@ function auditC1NativeGapGeneratedVertexAdjacency({
     }
     const exactPaper=paperParameterRatio(paper,
      originalPaperEndpoints[0],originalPaperEndpoints[1]);
-    exactReceivedPaperParameters.push(exactPaper);
+    const collinear=affine===null?null:side===0?
+     affine.nativeFromExactlyOnOriginalBinary64PaperLine:
+     affine.nativeToExactlyOnOriginalBinary64PaperLine;
+    exactReceivedPaperParameters.push({parameter:exactPaper,collinear});
     endpoints.push({
+     exactReceivedPaperOnOriginalProjectedLine:collinear,
      exactReceivedPaperDominantAxisOriginalSourceParameter:
       exactPaper===null?null:printRatio(exactPaper),
      exactReceivedPaperParameterWithinOriginalDomain:
@@ -172,19 +187,31 @@ function auditC1NativeGapGeneratedVertexAdjacency({
    originalGeneratedTopoDSEdgeHistoryCertified:false
   });
   const fromExact=asRatio(gap[0]),toExact=asRatio(gap[1]);
+  const strictlyInside=p=>p.parameter!==null&&
+   compareRatio(p.parameter,fromExact)>0&&
+   compareRatio(p.parameter,toExact)<0;
+  const atFrom=p=>p.parameter!==null&&
+   compareRatio(p.parameter,fromExact)===0;
+  const atTo=p=>p.parameter!==null&&
+   compareRatio(p.parameter,toExact)===0;
   return {gapOrdinal:index,originalSourceParameterGap:[...gap],
    // Strict rational comparisons, including paper tails smaller than the
    // smallest positive binary64 parameter. Candidate presence is not
    // coverage or source-history certification.
    exactReceivedPaperCandidateStrictlyInsideGapCount:
-    exactReceivedPaperParameters.filter(p=>p!==null&&
-     compareRatio(p,fromExact)>0&&compareRatio(p,toExact)<0).length,
+    exactReceivedPaperParameters.filter(strictlyInside).length,
+   exactReceivedPaperCollinearCandidateStrictlyInsideGapCount:
+    exactReceivedPaperParameters.filter(p=>strictlyInside(p)&&p.collinear===true).length,
+   exactReceivedPaperOffLineCandidateStrictlyInsideGapCount:
+    exactReceivedPaperParameters.filter(p=>strictlyInside(p)&&p.collinear===false).length,
    exactReceivedPaperCandidateAtGapFromCount:
-    exactReceivedPaperParameters.filter(p=>p!==null&&
-     compareRatio(p,fromExact)===0).length,
+    exactReceivedPaperParameters.filter(atFrom).length,
+   exactReceivedPaperCollinearCandidateAtGapFromCount:
+    exactReceivedPaperParameters.filter(p=>atFrom(p)&&p.collinear===true).length,
    exactReceivedPaperCandidateAtGapToCount:
-    exactReceivedPaperParameters.filter(p=>p!==null&&
-     compareRatio(p,toExact)===0).length,
+    exactReceivedPaperParameters.filter(atTo).length,
+   exactReceivedPaperCollinearCandidateAtGapToCount:
+    exactReceivedPaperParameters.filter(p=>atTo(p)&&p.collinear===true).length,
    from:boundary(gap[0],gap[0]===0?vertexIds[0]:null),
    to:boundary(gap[1],gap[1]===1?vertexIds[1]:null),
    sourceGapClosedByNativeEndpointEvidence:false,
@@ -199,6 +226,8 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   actualNativeRoundedInverseOriginalBoundaryAliasEndpoints:endpoints.filter(x=>
    x.receivedPaperRoundedInverseOriginalBoundaryAlias).length,
   endpoints,rows,
+  actualNativeExactReceivedPaperOffLineEndpoints:
+   endpoints.filter(x=>x.exactReceivedPaperOnOriginalProjectedLine===false).length,
   roundedInverseDisagreesWithExactReceivedPaperParameterCount:
    endpoints.filter(x=>
     x.roundedInverseDiffersFromExactReceivedPaperParameter===true).length,
