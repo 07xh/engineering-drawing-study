@@ -757,3 +757,40 @@ test('C1 original source identity stays distinct for paper-coincident edges at d
  assert.equal(proof.officialEngineeringLineStyleCertified,false);
  assert.equal(proof.signedV5Action,false);
 });
+
+test('C1 M5 independently holds native interior paper t=0 aliases even when rounded lift claims full [0,1]',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0],lift=stroke.sourceCandidate3DLifts[0];
+  const first=project(geometry.data.points.A)[view];
+  const axis=project(geometry.data.points.B)[view].u!==first.u?'u':'v';
+  stroke.from[axis]=Number.MIN_VALUE;
+  lift.sourceParameterWasClampedForPaperOnly=true;
+  lift.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly=true;
+  lift.originalSourceExactParameterCoverageFromRoundingProven=false;
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  const held=exactSourceCoverage(input);
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(held.positiveLengthUncoveredIntervals,[[0,1]]);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
+  assert.equal(held.signedV5Action,false);
+  const forged=structuredClone(stroke);
+  forged.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+   /rounded inverse boundary/);
+  const forgedWitness=structuredClone(stroke);
+  forgedWitness.sourceCandidate3DLifts[0].
+   sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forgedWitness]}),
+   /forged native inverse boundary/);
+  const proven=exactSourceCoverage({...input,
+   projectedFromModelMm:project(geometry.data.points.A)[view],
+   projectedToModelMm:project(geometry.data.points.B)[view],
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(proven.entireOriginalParameterIntervalCovered,true,
+   'only independent literal M0/M5 endpoint proof may retain the candidate');
+  assert.equal(proven.signedV5Action,false);
+ }
+});
