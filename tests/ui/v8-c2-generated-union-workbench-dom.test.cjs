@@ -92,7 +92,12 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   const linkedRayShapes=rayShapes.filter(x=>
    x.getAttribute('data-c2-generated-source-id'));
   assert.ok(linkedRayShapes.length>0,
-   'generated-source M5 ray diagnostics must point to the authentic 3D source');
+   'generated-source M5 ray diagnostics must point to the authentic 3D source; '+JSON.stringify(
+    rayShapes.map(x=>({view:x.getAttribute('data-c2-m5-paper-view'),
+     kind:x.getAttribute('data-c2-m5-source-kind'),
+     status:x.getAttribute('data-c2-m5-source-link-status'),
+     source:x.getAttribute('data-c2-m5-source-feature-id'),
+     subspan:x.getAttribute('data-c2-m5-source-subspan')}))));
   assert.ok(linkedRayShapes.every(x=>
    x.getAttribute('data-geometry-id')&&
    x.getAttribute('data-source-feature-key')&&

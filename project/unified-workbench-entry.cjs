@@ -1354,6 +1354,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-c2-m5-paper-view':candidate.view,
        'data-c2-m5-source-subspan':candidate.sourceSubspanId??'unresolved',
        'data-c2-m5-source-feature-id':candidate.sourceFeatureId??'unresolved',
+       'data-c2-m5-source-kind':candidate.sourceFeatureKind??'unresolved',
        'data-c2-m5-source-link-status':sourceLinkStatus,
        'data-c2-geometry-status':'all-opaque-open-ray-only-not-official-style',
        'data-visibility':'undetermined',
