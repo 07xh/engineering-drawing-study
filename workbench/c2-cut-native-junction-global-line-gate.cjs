@@ -184,7 +184,7 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
    // on PAPER can still be strictly depth-ordered; they NEVER become the
    // same physical 3D junction. This check is necessary for a future
    // line-style review, but not sufficient for a closed-endpoint GB stroke.
-   const ray=FIRST_ANGLE_OBSERVER_RAYS[row.view],source3D={
+   const observerRay=FIRST_ANGLE_OBSERVER_RAYS[row.view],source3D={
     id:'NativeC2Edge'+e.finalTopoDSEdgeOrdinal,
     from:coords[0],to:coords[1]
    };
@@ -240,8 +240,8 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
       const b=interp(other3D.from,other3D.to,u),
        pa=project(a)[row.view],pb=project(b)[row.view];
       if(same2(pa,pb)){
-       const delta=(a.x-b.x)*ray.x+
-        (a.y-b.y)*ray.y+(a.z-b.z)*ray.z;
+       const delta=(a.x-b.x)*observerRay.x+
+        (a.y-b.y)*observerRay.y+(a.z-b.z)*observerRay.z;
        if(delta>1e-7)depthStatus='candidate-strictly-front-of-paper-alias';
        else if(delta< -1e-7)
         depthStatus='candidate-strictly-behind-paper-alias';
