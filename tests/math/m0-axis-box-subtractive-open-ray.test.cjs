@@ -98,13 +98,16 @@ test('when cutter reaches the observer-facing outer stock plane there is no sepa
  assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
  assert.equal(r.status,'undetermined');
 });
-test('a cutter interior-to-stock witness cannot be inferred through a zero-width floating boundary gap',()=>{
- const adjacent=Number.MIN_VALUE;
- const s={...stock,min:[0,0,0],max:[10,10,10]};
- const q={...cutter,min:[4,0,-1],max:[6,10,11]};
- const r=prove({source:line('NoSlab',p(4,10,0),p(4,10,10)),
-  stock:s,cutter:q,view:'V'});
- assert.equal(r.commonFrontSubtractiveMaterialSlab,null);
- assert.equal(r.signedV5Action,false);
- assert.equal(adjacent>0,true);
+test('one positive binary64 step of front material is NOT silently snapped away',()=>{
+ const q={...cutter,min:[4,Number.MIN_VALUE,-1],max:[6,6,11]};
+ const source=line('ExactGap',p(4,4,0),p(4,4,10));
+ const r=prove({source,stock,cutter:q,view:'V'});
+ assert.equal(r.status,'certified-strictly-hidden');
+ assert.equal(r.commonFrontSubtractiveMaterialSlab.lowerExclusiveMm,0);
+ assert.equal(r.commonFrontSubtractiveMaterialSlab.upperExclusiveMm,Number.MIN_VALUE);
+ const touching={...q,min:[4,0,-1]};
+ const held=prove({source,stock,cutter:touching,view:'V'});
+ assert.equal(held.commonFrontSubtractiveMaterialSlab,null);
+ assert.equal(held.status,'undetermined');
+ assert.equal(held.signedV5Action,false);
 });
