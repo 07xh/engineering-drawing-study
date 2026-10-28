@@ -1196,10 +1196,10 @@ function reviewC1NativeHiddenFinalM5Strokes({
       !['from','to'].includes(member.side)||
       typeof member.hlrClass!=='string'||member.hlrClass.length===0)
     throw new RangeError('invalid genuine native HLR endpoint identity');
-   const key=member.hlrClass+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
-   if(distinctMembers.has(key))
+   const memberId=member.hlrClass+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
+   if(distinctMembers.has(memberId))
     throw new RangeError('duplicate generated native HLR junction endpoint');
-   distinctMembers.add(key);
+   distinctMembers.add(memberId);
    if(member.hlrClass!=='hidden-sharp')continue;
    const key=star.view+'@'+member.nativeHLREdgeOrdinal+'@'+member.side;
    if(!['from','to'].includes(member.side)||nativeStarByEndpoint.has(key))
