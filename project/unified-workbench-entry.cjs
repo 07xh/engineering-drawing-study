@@ -7,6 +7,7 @@ const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
+const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
@@ -27,6 +28,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const prismOptions=['v7-p-kept'];
  const c1Fields=['v8-c1-pair','v8-c1-vertices','v8-c1-topology'];
  const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions,...c1Fields];
+ const c2Fields=['a','b'].flatMap(letter=>['x0','y0','z0','x1','y1','z1']
+  .map(part=>'v8-c2-'+letter+'-'+part));
  const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
   'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end',
   'v7-c-direction','v7-c-points','v7-c-closed'];
@@ -663,6 +666,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   populateTaskFields(project);
   uncommittedFormEdit=false;
   $('v8-review-ack').checked=false;
+  $('v8-c2-ack').checked=false;
+  $('v8-c2-build').disabled=true;
+  for(const id of c2Fields)$(id).value='';
   hydrateCalibration(project);
   $('v7-source-link').value='';
   $('v7-photo-segment').value='0';
@@ -1479,6 +1485,50 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   });
  }
 
+ $('v8-c2-ack').addEventListener('change',()=>{
+  $('v8-c2-build').disabled=!$('v8-c2-ack').checked;
+ });
+ for(const id of c2Fields)for(const type of ['input','change'])
+  $(id).addEventListener(type,()=>{
+   $('v8-c2-ack').checked=false;
+   $('v8-c2-build').disabled=true;
+   if(coordinator?.snapshot().task==='composition')
+    $('v8-c2-status').textContent='形体尺寸已编辑；旧确认不适用于新数值。';
+  });
+ $('v8-c2-build').addEventListener('click',()=>call(async()=>{
+  const p=coordinator?.snapshot();
+  if(p?.task!=='composition')throw Error('请先选择 C2 组合体任务');
+  if(!$('v8-c2-ack').checked)throw Error('请先人工确认两组尺寸');
+  if(p.objects.length||p.conditions.length||(p.relations||[]).length||
+     p.affineProblem)
+   throw Error('当前项目已有条件，请新建空组合体项目，避免覆盖原有对象');
+  // Both complete meshes are validated BEFORE any saved project mutation.
+  const read=letter=>({
+   min:['x0','y0','z0'].map(key=>numberFrom('v8-c2-'+letter+'-'+key)),
+   max:['x1','y1','z1'].map(key=>numberFrom('v8-c2-'+letter+'-'+key))
+  });
+  const boxes=buildReviewedC2Boxes([read('a'),read('b')]);
+  stopAnimation();
+  for(const box of boxes){
+   coordinator.putObject(box.model);
+   coordinator.putCondition({
+    id:'geo_'+box.id,objectId:box.id,sourceCandidateId:null,
+    confirmed:false,value:{type:'manual-geometry',unit:'mm',
+     imageId:p.source.imageId,geometry:box.geometry}
+   });
+  }
+  for(const box of boxes)coordinator.confirmCondition('geo_'+box.id);
+  const result=session.solve();
+  if(result.kind!=='composition-evidence'||result.verified!==false||
+     result.clock!==null||coordinator.canExport())
+   throw Error('局部组合体数学不允许成为完整标准答案');
+  $('v8-c2-ack').checked=false;
+  $('v8-c2-build').disabled=true;
+  $('v8-c2-status').textContent='两形体已保存到当前本机项目。已核对空间关系 '+
+   result.compositionContactEvidence.pairCount+
+   ' 对；完整工程线型与唯一 V5 未签收。';
+  msg('C2 已确认两长方体几何，使用原有 M0/M2/M5 计算接触关系与三视图。不是完整组合体答案。');
+ }));
  $('v7-c-new').addEventListener('click',()=>{
   $('v7-c-objects').value='';
   $('v7-c-id').value='Object'+String((coordinator?.snapshot().objects.length||0)+1);

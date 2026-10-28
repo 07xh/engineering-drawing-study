@@ -198,7 +198,35 @@ function homeHTML(){return `
    </fieldset>
 
    <fieldset data-v7-task="composition" hidden>
-    <legend>多对象几何 · 同一个本机项目</legend>
+    <legend>组合体 · 同一个本机项目</legend>
+    <section class="v8-c2-entry" aria-labelledby="v8-c2-title">
+     <h3 id="v8-c2-title">C2 · 两个已知长方体</h3>
+     <p class="v7-note">按原题填写两个长方体的最小角与最大角（x、y、z，单位 mm）。
+      确认后直接计算同一几何场景的投影与接触关系，不自动推导未知轮廓。</p>
+     <div class="v8-c2-grid">
+      <fieldset><legend>形体 A</legend><div class="v7-xyz">
+       <label>最小 x<input id="v8-c2-a-x0" type="number" step="any"></label>
+       <label>最小 y<input id="v8-c2-a-y0" type="number" step="any"></label>
+       <label>最小 z<input id="v8-c2-a-z0" type="number" step="any"></label>
+       <label>最大 x<input id="v8-c2-a-x1" type="number" step="any"></label>
+       <label>最大 y<input id="v8-c2-a-y1" type="number" step="any"></label>
+       <label>最大 z<input id="v8-c2-a-z1" type="number" step="any"></label>
+      </div></fieldset>
+      <fieldset><legend>形体 B</legend><div class="v7-xyz">
+       <label>最小 x<input id="v8-c2-b-x0" type="number" step="any"></label>
+       <label>最小 y<input id="v8-c2-b-y0" type="number" step="any"></label>
+       <label>最小 z<input id="v8-c2-b-z0" type="number" step="any"></label>
+       <label>最大 x<input id="v8-c2-b-x1" type="number" step="any"></label>
+       <label>最大 y<input id="v8-c2-b-y1" type="number" step="any"></label>
+       <label>最大 z<input id="v8-c2-b-z1" type="number" step="any"></label>
+      </div></fieldset>
+     </div>
+     <label class="v8-review-agree"><input id="v8-c2-ack" type="checkbox">
+      已按题图核对两个长方体的全部尺寸、位置和接触方式，确认这是当前项目的新输入。</label>
+     <button type="button" id="v8-c2-build" class="v7-primary" disabled>确认形体并计算组合关系</button>
+     <p id="v8-c2-status" class="v7-note" role="status">仅支持空组合体项目；已有对象请使用下方编辑器，避免覆盖原有条件。</p>
+     <p class="v7-warning">结果仅证明已知形体的空间接触、投影及局部来源；实体并集、内部接缝、全部端点与标准虚实线尚未签收，不生成完整 V5 答案。</p>
+    </section>
     <p class="v7-warning">这里整理人工核对的已知几何，并不是自动求解。每个对象必须确认；不生成已证明的虚实线或 V5 答案。</p>
     <label>已录入对象 <select id="v7-c-objects" aria-label="选择或编辑项目中的对象">
      <option value="">新增对象</option></select></label>
