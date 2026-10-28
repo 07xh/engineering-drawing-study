@@ -235,3 +235,14 @@ body.ui-next :is(#v7-sheet,#v7-3d) [data-source-feature-selected="true"]{
 body.ui-next :is(#v7-sheet,#v7-3d) [data-source-feature-key]:focus-visible{
  outline:2px solid #89b8ff;outline-offset:2px
 }
+
+/* Optional Three.js WebGL view of ONE model-mm Geometry Scene.
+   The SVG drawing and original V5 remain authoritative. */
+body.ui-next .v9-three-space{
+ position:relative;width:100%;height:clamp(230px,33vh,385px);
+ border:1px solid #d7e5f6;border-radius:10px;overflow:hidden;
+ background:#f5f9ff
+}
+body.ui-next .v9-three-space[hidden],body.ui-next #v7-3d[hidden]{display:none!important}
+body.ui-next .v9-three-space canvas:focus-visible{outline:3px solid #83b3ff;outline-offset:-3px}
+@media(max-width:560px){body.ui-next .v9-three-space{height:250px;touch-action:none}}
