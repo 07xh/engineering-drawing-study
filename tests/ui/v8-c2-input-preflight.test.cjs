@@ -90,12 +90,13 @@ test('V8.7 C2 real DOM: repair first invalid field and require human acknowledge
   assert.equal($('v8-c2-advanced').hasAttribute('open'),false);
   fire('v8-c2-existing','click');
   assert.equal($('v8-c2-advanced').hasAttribute('open'),true);
-  const contactBefore=$('v7-c-contacts').textContent;
-  // Synthetic input on disabled HTML controls must also be ignored by the controller.
+  // Disabled inputs prevent ordinary touch edits. A forged change event
+  // must fail closed: old proof is revoked without deleting saved geometry.
+  assert.equal($('v7-c-objects').querySelectorAll('option').length,3);
   $('v8-c2-a-x0').value='999';fire('v8-c2-a-x0','input');
   await tick();await tick();
-  assert.equal($('v8-result-status').dataset.state,'partial','existing C2 preview remains intact');
-  assert.equal($('v7-c-contacts').textContent,contactBefore,'saved contact evidence is not invalidated');
+  assert.match($('v7-proof').textContent,/未计算/,'untrusted edit invalidates cached math');
+  assert.equal($('v7-c-objects').querySelectorAll('option').length,3,'existing objects remain saved');
   assert.equal($('v8-c2-build').disabled,true);
  }finally{
   global.document=prev.document;global.window=prev.window;
