@@ -75,7 +75,8 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   click('v7-confirm');await tick();await tick();
   assert.match($('v7-review').textContent,/已人工确认/);
   click('v7-solve');await tick();await tick();
-  assert.match($('v7-proof').textContent,/M3.*ConstructionIntent.*V5/);
+  assert.match($('v7-proof').textContent,/已验证的点投影/);
+  assert.doesNotMatch($('v7-proof').textContent,/M3|ConstructionIntent|V5/);
   assert.ok($('v7-step-list').querySelector('button'));
   assert.ok($('v7-sheet').querySelector('circle'));
   // Move the exact V5 clock to completion: reveal mathematically derived W.
@@ -105,7 +106,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.match($('v7-review').textContent,/待确认/);
   click('v7-confirm-other');await tick();await tick();
   click('v7-solve-other');await tick();await tick();
-  assert.match($('v7-proof').textContent,/已验证的二维圆弧连接/,$('v7-save').textContent);
+  assert.match($('v7-proof').textContent,/已验证圆弧连接/,$('v7-save').textContent);
   assert.ok($('v7-step-list').querySelector('button'));
   $('v7-seek').value='1000';
   $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));

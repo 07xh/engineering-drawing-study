@@ -865,7 +865,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
    if(!planar&&preview())
-    text(svg,22,432,'实体与已算截交边的投影：虚实线及 V5 尚未证明','#986945');
+    text(svg,22,432,'立体与截交边的投影：虚实线尚未确定','#986945');
    if(planar){
     const b=result.paperBounds;
     if(b)svg.setAttribute('viewBox',[b.x,b.y,b.width,b.height].join(' '));
@@ -927,11 +927,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   refreshComposition();
   $('v7-spatial-boundary').textContent=
     snap.task==='composition'&&snap.affineProblem?
-     '仿射未知点：仅数学唯一解绘图，无空间可见性/V5 审核':
+     '未知点：仅显示唯一解，虚实线尚未确定':
     snap.task==='planar'?
-   '纯二维数学不制造三维立体':snap.task==='exploration'?
-   '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
-   '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
+   '当前题型仅显示二维图纸':snap.task==='exploration'?
+   '长方体和截交边仅供预览，虚实线尚未确定':snap.task==='composition'?
+   '已确认对象预览':'点投影';
   $('v7-mode').value=snap.view.mode;
   $('v7-yaw').value=String(snap.view.camera.yaw);
   $('v7-pitch').value=String(snap.view.camera.pitch);
@@ -962,8 +962,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-solve').disabled=!condition||!condition.confirmed;
   $('v7-proof').textContent=solved?
     (solved.kind==='planar-fillet'?
-     '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
-     '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
+     '已验证圆弧连接。所选分支：'+solved.plan.selectedBranchId+'；原图仍需人工审核。':
+     '已验证的点投影。最大残差：'+String(solved.residualMm)+' mm。'):
     partial?
      partial.kind==='nonlinear-evidence'?
       'M3 非线性局部数值候选 '+partial.evidence.localCandidates.length+
@@ -1273,7 +1273,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }));
  $('v7-u-confirm').addEventListener('click',()=>call(async()=>{
   coordinator.confirmAffineProblem();
-  msg('整组未知点数学条件已人工确认，可独立执行 M3 线性求解。');
+  msg('整组未知点条件已确认，可以求解未知点。');
  }));
  $('v7-u-solve').addEventListener('click',()=>call(async()=>{
   if(coordinator?.snapshot().task!=='composition')
@@ -1436,7 +1436,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!coordinator||coordinator.snapshot().task==='projection')
    throw Error('当前没有可确认的专业输入');
   coordinator.confirmCondition('coords');
-  msg('数学条件已人工确认；现在可调用已有专业 M3。');
+  msg('条件已确认，可以求解。');
  }));
  $('v7-solve-other').addEventListener('click',()=>call(async()=>{
   if(!coordinator||coordinator.snapshot().task==='projection')
@@ -1444,9 +1444,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   stopAnimation();
   const result=session.solve();
   if(result.verified===true&&coordinator.currentResult()===result)
-   msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
+   msg('求解完成 · 版本 '+result.inputRevision);
   else if(result.kind==='prism-evidence'&&result.verified===false)
-   msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
+   msg('仅得到部分截切结果与长方体线框，暂不能导出完整答案。');
   else throw Error('专业数学结果未通过门禁');
  }));
  for(const id of allConditionFields){
@@ -1486,7 +1486,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   stopAnimation();
   session.solve();
   if(!coordinator.canExport())throw Error('数学一致性未通过，拒绝生成动画');
-  msg('M3 数学与单一 V5 步骤已核验 · v'+coordinator.snapshot().revision);
+  msg('求解完成 · 版本 '+coordinator.snapshot().revision);
  }));
  $('v7-image-input').addEventListener('change',()=>call(async()=>{
   if(!store)throw Error('本机存储不可用，不能安全保存原图');
