@@ -16,6 +16,8 @@ const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
+const {auditC1ScopedHLRGeneratedEdgeMatch}=
+ require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
 const finite=Number.isFinite;
@@ -579,7 +581,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
-  const nativeGraphInput={},nativeHLRSourceHistoryAPISurfaceByView={};
+  const nativeGraphInput={},nativeHLRSourceHistoryAPISurfaceByView={},
+   nativeSourceScopedSharpOutputByView={};
   // Read-only discovery of the actual pinned WASM HLR internal source-index
   // API. Do not call unknown methods, dereference native handles, or infer
   // generated->original TopoDS history from a method name alone.
@@ -675,7 +678,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    // Neither represents original TopoDS identity or a GB line style.
    const traverse=(compound,hlrClass)=>{
     const edges=newObj('TopExp_Explorer_2',compound,kind,avoid);
-    const result=[],vertexRecords=[];
+    const result=[],vertexRecords=[],nativeEdges=[];
     while(edges.More()){
      const edge=hold(edges.Current());
      let nativeEndpoints=null;
@@ -696,6 +699,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        }));
       const ordinal=result.length;
       result.push({...checked,directNativeVertexOriginalSource});
+      nativeEdges.push(edge);
       vertexRecords.push({nativeHLREdgeOrdinal:ordinal,
        vertices:nativeEndpoints.nativeVertices,
        projectedEndpoints:nativeEndpoints.projectedEndpoints});
@@ -704,7 +708,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       throw new RangeError('unbounded real BRep HLR sharp-edge output');
      edges.Next();
     }
-    return {segments:result,vertexRecords};
+    return {segments:result,vertexRecords,nativeEdges};
    };
    const visibleNative=traverse(visible,'visible-sharp');
    const segments=visibleNative.segments;
@@ -717,8 +721,93 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const emptyHiddenSharp=hidden.IsNull();
    if(emptyHiddenSharp)hiddenSharpNullCompoundViews.push(view);
    const hiddenNative=emptyHiddenSharp?
-    {segments:[],vertexRecords:[]}:traverse(hidden,'hidden-sharp');
+    {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(hidden,'hidden-sharp');
    const hiddenSegments=hiddenNative.segments;
+   // Native OCCT HLRBRep_HLRToShape has source-filtered extraction
+   // VCompound(S)/HCompound(S). Query EACH actual original TopoDS edge
+   // while the algorithm and its internal EdgeMap are still alive.
+   // Compare its newly generated projected output with the whole-solid
+   // generated TopoDS edges using symmetric native IsSame, NEVER paper
+   // coincidence alone. This is a source-scoped witness, not a global
+   // parameter/occlusion or GB line-style certificate.
+   const indexProof=originalDataStructureIndex;
+   if(indexProof.availability!=='real-native-edge-map-inspected'||
+      indexProof.everyOriginalBRepSourcePresentInHLRDataStructure!==true||
+      !Array.isArray(indexProof.indexedOriginalSources)||
+      typeof extractor.VCompound_2!=='function'||
+      typeof extractor.HCompound_2!=='function')
+    throw new RangeError('pinned native HLR source-scoped extraction and original EdgeMap required');
+   const byOriginalSource=new Map();
+   for(const row of indexProof.indexedOriginalSources){
+    if(row.directlySameOriginalTopoDSInputEdge===true&&
+       typeof row.originalPhysicalSourceEdgeId==='string'){
+     if(byOriginalSource.has(row.originalPhysicalSourceEdgeId))
+      throw new RangeError('duplicate native HLR indexed original source');
+     byOriginalSource.set(row.originalPhysicalSourceEdgeId,
+      row.hlrDataStructureOneBasedEdgeIndex);
+    }
+   }
+   const scopedRows=[],processed=new Set();
+   let scopedOutputEdges=0,directGeneratedIdentityMatches=0,
+    paperOnlyScopedOutputEdges=0;
+   for(const original of originalNativeEdgeHandles){
+    if(processed.has(original.sourceEdgeId))continue;
+    processed.add(original.sourceEdgeId);
+    const index=byOriginalSource.get(original.sourceEdgeId);
+    if(!Number.isSafeInteger(index)||index<1)
+     throw new RangeError('original OCCT source missing native HLR EdgeMap index');
+    const row={originalPhysicalSourceEdgeId:original.sourceEdgeId,
+     hlrDataStructureOneBasedEdgeIndex:index};
+    for(const [klass,methodName,global] of [
+     ['visible-sharp','VCompound_2',visibleNative],
+     ['hidden-sharp','HCompound_2',hiddenNative]
+    ]){
+     const filtered=hold(extractor[methodName](original.edge));
+     const witnesses=[];
+     if(!filtered.IsNull()){
+      const scopedExplorer=newObj('TopExp_Explorer_2',filtered,kind,avoid);
+      while(scopedExplorer.More()){
+       const nativeEdge=hold(scopedExplorer.Current());
+       const measured=readRealOcjsSharpHLREdge({
+        oc,edge:nativeEdge,view,vertexType,avoid,newObj,hold
+       });
+       if(measured){
+        const witness=auditC1ScopedHLRGeneratedEdgeMatch({
+         view,hlrClass:klass,sourceEdgeId:original.sourceEdgeId,
+         globalSegments:global.segments,
+         globalNativeEdges:global.nativeEdges,
+         scopedSegment:measured,scopedNativeEdge:nativeEdge
+        });
+        witnesses.push({...witness,from:measured.from,to:measured.to});
+        scopedOutputEdges++;
+        if(witness.actualNativeScopedToGlobalGeneratedEdgeIsSameProven)
+         directGeneratedIdentityMatches++;
+        else paperOnlyScopedOutputEdges++;
+       }
+       if(witnesses.length>128)
+        throw new RangeError('unbounded source-scoped native HLR sharp edges');
+       scopedExplorer.Next();
+      }
+     }
+     row[klass==='visible-sharp'?'visible':'hidden']=witnesses;
+    }
+    scopedRows.push(row);
+   }
+   if(processed.size!==byOriginalSource.size)
+    throw new RangeError('source-scoped HLR filter did not enumerate every original edge');
+   nativeSourceScopedSharpOutputByView[view]={
+    schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
+    sourceEdgeCount:scopedRows.length,
+    nativeSourceScopedOutputEdgeCount:scopedOutputEdges,
+    nativeScopedToWholeSolidGeneratedIsSameCount:directGeneratedIdentityMatches,
+    paperOnlyScopedOutputEdgeCount:paperOnlyScopedOutputEdges,
+    originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap:true,
+    allScopedOutputsReboundToWholeSolidPaper:true,
+    rows:scopedRows,
+    fullGlobalGeneratedEdgeToOriginalSourceHistoryProven:false,
+    fullContinuousVisibilityProven:false,
+    engineeringLineStyle:'undetermined',signedV5ActionCount:0
+   };
    nativeGraphInput[view]={
     visible:visibleNative.vertexRecords,
     hidden:hiddenNative.vertexRecords
@@ -750,6 +839,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    views:rows,hiddenSharpViews:hiddenViews,
    nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
    nativeHLRSourceHistoryAPISurfaceByView,
+   nativeSourceScopedSharpOutputByView,
    everyNativeGeneratedEndpointComparedToOriginalTopoDSVertices:true,
    directNativeOriginalVertexIdentityDoesNotProveEdgeHistory:true,
    hiddenHLROutputFromActualOCCT:true,

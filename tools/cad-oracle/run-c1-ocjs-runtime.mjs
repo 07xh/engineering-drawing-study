@@ -176,6 +176,37 @@ for(const [index,geometry] of general.entries()){
    x.directlySameOriginalTopoDSInputEdge===true&&
    x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
    x.signedV5Action===false));
+  // REAL pinned WASM: original TopoDS edge -> source-scoped HLR filter
+  // -> whole-solid HLR projected edge. Only native symmetric IsSame is
+  // allowed to claim direct generated identity; paper aliases stay held.
+  const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+  assert.equal(scoped.schema,
+   'draftai-c1-ocjs-real-original-topods-scoped-hlr/1');
+  assert.equal(scoped.sourceEdgeCount,geometry.data.edges.length);
+  assert.equal(scoped.originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap,true);
+  assert.equal(scoped.allScopedOutputsReboundToWholeSolidPaper,true);
+  assert.ok(scoped.nativeSourceScopedOutputEdgeCount>0,
+   'real original TopoDS per-edge VCompound/HCompound filters must emit HLR');
+  assert.equal(scoped.nativeSourceScopedOutputEdgeCount,
+   scoped.nativeScopedToWholeSolidGeneratedIsSameCount+
+   scoped.paperOnlyScopedOutputEdgeCount);
+  assert.equal(scoped.fullGlobalGeneratedEdgeToOriginalSourceHistoryProven,false);
+  assert.equal(scoped.fullContinuousVisibilityProven,false);
+  assert.equal(scoped.signedV5ActionCount,0);
+  const indexIds=new Map(ds.indexedOriginalSources.map(x=>
+   [x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex]));
+  assert.ok(scoped.rows.every(row=>
+   row.hlrDataStructureOneBasedEdgeIndex===
+    indexIds.get(row.originalPhysicalSourceEdgeId)&&
+   ['visible','hidden'].every(k=>row[k].every(w=>
+    w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
+    w.globalPaperCandidateOrdinals.length>=1&&
+    w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  console.error('REAL HLR original source-scoped '+view+': '+
+   JSON.stringify({sources:scoped.sourceEdgeCount,
+    emitted:scoped.nativeSourceScopedOutputEdgeCount,
+    directNativeIsSame:scoped.nativeScopedToWholeSolidGeneratedIsSameCount,
+    paperOnly:scoped.paperOnlyScopedOutputEdgeCount}));
   assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
