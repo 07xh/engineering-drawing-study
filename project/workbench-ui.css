@@ -128,7 +128,7 @@ body.ui-next .v7-course-entry{margin:8px 0 13px;border:1px solid #dce5f1;border-
 body.ui-next .v8-course-summary{cursor:pointer;list-style:none;padding:12px 16px;color:#245994;font-size:13px;font-weight:700}
 body.ui-next .v8-course-summary::-webkit-details-marker{display:none}
 body.ui-next .v8-course-summary::after{content:"展开";float:right;color:#637790;font-size:12px}
-body.ui-next .v7-course-entry[open] .v8-course-summary::after{content:"收起"}
+body.ui-next .v8-course-disclosure[open] .v8-course-summary::after{content:"收起"}
 body.ui-next .v7-course-entry .v7-course-head,body.ui-next .v7-course-entry .v7-course-grid,body.ui-next .v7-course-entry .v7-course-disclosure{margin-left:14px;margin-right:14px}
 body.ui-next .v8-source-advanced{border:1px solid #dce5f1;border-radius:10px;margin:12px 0;padding:0 11px}
 body.ui-next .v8-source-advanced>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:#225d9b;font-weight:650;font-size:13px}
@@ -140,3 +140,13 @@ body.ui-next .v8-project-strip-head a{font-size:13px;color:#0866ef}
 body.ui-next .v8-project-strip .next-home-workflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 body.ui-next .v8-project-strip .next-home-workflow-card{min-width:0;padding:15px}
 @media(max-width:700px){body.ui-next .v8-project-strip .next-home-workflow{grid-template-columns:1fr}body.ui-next .v7-course-entry .v7-course-grid{grid-template-columns:1fr}}
+
+body.ui-next .v8-optional-illustration{min-width:0;align-self:start;border:1px solid #dce5f1;border-radius:12px;background:white}
+body.ui-next .v8-optional-illustration>summary{cursor:pointer;list-style:none;min-height:48px;padding:13px 16px;font-size:13px;font-weight:650;color:#245994}
+body.ui-next .v8-optional-illustration>summary::-webkit-details-marker{display:none}
+body.ui-next .v8-optional-illustration>summary::after{content:"展开";float:right;color:#61768e;font-size:12px}
+body.ui-next .v8-optional-illustration[open]>summary::after{content:"收起"}
+body.ui-next .v8-optional-illustration .next-home-drawing{padding:12px}
+body.ui-next .v8-project-strip{background:transparent;max-width:100%;padding:0;border:0}
+body.ui-next .v8-project-strip .next-home-workflow{min-width:0}
+@media(max-width:900px){body.ui-next .v8-project-strip{grid-template-columns:1fr!important}}

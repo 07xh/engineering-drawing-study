@@ -41,6 +41,16 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
  global.cancelAnimationFrame=clearImmediate;
  const $=id=>document.getElementById(id);
  const click=id=>$(id).dispatchEvent(new window.Event('click',{bubbles:true}));
+ // This smoke runner has no IndexedDB. Explicitly opening a new temporary
+ // project is required before changing task; switching a populated project
+ // must fail closed rather than discard data.
+ window.confirm=()=>true;
+ const switchToFresh=async task=>{
+  click('v7-new');await tick();await tick();
+  $('v7-task').value=task;
+  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
+  await tick();await tick();
+ };
  try{
   require('../../project/unified-workbench-entry.cjs');
   for(let i=0;i<12&&!$('v7-review').textContent.includes('尚未提交');i++)await tick();
@@ -96,10 +106,15 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   click('v7-stage');await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-step-list').querySelectorAll('button').length,0);
-  // Same page, same project: change task, re-confirm, reuse canonical V5.
+  // A populated project must not switch tasks when its original input
+  // cannot be backed up (storage intentionally unavailable in this smoke).
   $('v7-task').value='planar';
   $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
   await tick();await tick();
+  assert.equal($('v7-task').value,'projection','unsafe task change must be rejected');
+  assert.match($('v7-save').textContent,/本机存储不可用/);
+  // Start an explicit fresh project for the next independent solver scenario.
+  await switchToFresh('planar');
   assert.equal(document.querySelector('fieldset[data-v7-task=planar]').hidden,false);
   click('v7-stage-other');await tick();await tick();
   assert.match($('v7-review').textContent,/待确认/);
@@ -122,9 +137,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-3d').hidden,false,'spatial panel may be hidden as a group');
   // New spatial task revokes the verified planar timeline, but can use the
   // parity-audited scoped ConstructionStep preview on the same V5 controls.
-  $('v7-task').value='exploration';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
+  await switchToFresh('exploration');
   assert.match($('v7-proof').textContent,/未计算/);
   click('v7-stage-other');await tick();await tick();
   click('v7-confirm-other');await tick();await tick();
@@ -210,9 +223,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-play').disabled,false);
   // Same original homepage, one local project, two independently confirmed
   // manual geometry inputs and NO implied solved math or V5 entitlement.
-  $('v7-task').value='composition';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
+  await switchToFresh('composition');
   assert.equal(document.querySelector('fieldset[data-v7-task=composition]').hidden,false);
   $('v7-c-id').value='PointA';$('v7-c-kind').value='point3d';
   click('v7-c-stage');await tick();await tick();
@@ -291,12 +302,8 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   // Enter the shared unknown-point M3 within the SAME existing project UI,
   // but after switching to a new mathematical task so M2 objects are not
   // silently misinterpreted as unknown affine coordinates.
-  $('v7-task').value='projection';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
-  $('v7-task').value='composition';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
+  await switchToFresh('projection');
+  await switchToFresh('composition');
   for(const id of ['v7-u-frame','v7-u-points','v7-u-id','v7-u-list',
    'v7-u-kind','v7-u-a','v7-u-b','v7-u-m','v7-u-x','v7-u-y',
    'v7-u-z','v7-u-append','v7-u-confirm','v7-u-solve','v7-u-status'])
@@ -330,12 +337,8 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.equal($('v7-play').disabled,true);
   // Preserve the same V7 workbench; a fresh model task keeps nonlinear
   // numeric candidates segregated from already displayed affine Geometry.
-  $('v7-task').value='projection';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
-  $('v7-task').value='composition';
-  $('v7-task').dispatchEvent(new window.Event('change',{bubbles:true}));
-  await tick();await tick();
+  await switchToFresh('projection');
+  await switchToFresh('composition');
   assert.ok($('v7-u-seeds'));
   $('v7-u-points').value='A,B,P';$('v7-u-frame').value='model-mm-2d';
   for(const [id,kind,a,b,x,y] of [

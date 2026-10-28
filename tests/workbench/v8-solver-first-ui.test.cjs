@@ -13,7 +13,9 @@ test('V8 home is solver-first with one main heading and no duplicate marketing h
  const {document}=parseHTML('<main>'+homeHTML()+'</main>');
  assert.equal(document.querySelectorAll('#project-workbench').length,1);
  assert.equal(document.querySelectorAll('#ai').length,1);
- assert.equal(document.querySelectorAll('.next-home-hero').length,0);
+ assert.equal(document.querySelectorAll('.next-home-hero').length,1);
+ assert.ok(!document.querySelector('.v8-optional-illustration').hasAttribute('open'));
+ assert.ok(document.querySelector('#project-workbench').compareDocumentPosition(document.querySelector('.v8-optional-illustration'))&4);
  assert.equal(document.querySelectorAll('#v7-title').length,1);
  for(const id of ['v7-image-input','v7-task','v7-stage','v7-confirm','v7-solve','v7-sheet','v7-3d','v7-play','recent','knowledge','tools'])
   assert.equal(document.querySelectorAll('#'+id).length,1,id);
@@ -22,9 +24,11 @@ test('Specialist explanation and manual source tools are opt-in, not deleted',()
  const {document}=parseHTML('<main>'+homeHTML()+'</main>');
  const courses=document.getElementById('v7-course-entry');
  const source=document.querySelector('.v8-source-advanced');
- assert.equal(courses.tagName,'DETAILS');
+ assert.equal(courses.tagName,'SECTION');
+ const specialist=courses.querySelector('.v8-course-disclosure');
+ assert.equal(specialist.tagName,'DETAILS');
  assert.equal(source.tagName,'DETAILS');
- assert.ok(!courses.hasAttribute('open')&&!source.hasAttribute('open'));
+ assert.ok(!specialist.hasAttribute('open')&&!source.hasAttribute('open'));
  for(const id of ['v7-candidate-stage','v7-source-link','v7-cal-apply','v7-cal-status'])
   assert.ok(source.querySelector('#'+id),id);
  assert.ok(!source.contains(document.getElementById('v7-image-status')));
