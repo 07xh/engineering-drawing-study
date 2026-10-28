@@ -4,6 +4,10 @@ const {intervalCoverage,positiveCollinearOverlap}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
 const {validateC1RealHLRSourceCandidates:validateNative}=
  require('../../workbench/c1-ocjs-reviewed-solid-v5.cjs');
+const {
+ probeRealOcctHLRDataStructureSourceEdgeMap:probeNativeEdgeMap,
+ probeRealOcctHLREdgeDirectOriginalSourceIdentity:probeNativeEdgeIdentity
+}=require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {auditC1M0ExtremeVertexCompleteness:auditM0Vertices}=
@@ -614,4 +618,72 @@ test('C1 M5 holds paper-rounded native source coverage unless independent origin
    /out-of-domain native paper endpoint/,
    'negative subnormal beyond the literal original source cannot bypass M5 by forging a false flag');
  }
+});
+
+function nativeEdge(identity){
+ return {identity,IsSame(other){return !!other&&other.identity===identity;}};
+}
+function nativeSourceLedger(){
+ return [
+  {sourceEdgeId:'G::A|B',edge:nativeEdge('AB')},
+  {sourceEdgeId:'G::A|C',edge:nativeEdge('AC')}
+ ];
+}
+function nativeEdgeMap(ids){
+ const rows=ids.map(nativeEdge);
+ return {Extent:()=>rows.length,FindKey:i=>rows[i-1]};
+}
+test('C1 native HLR source EdgeMap requires a true one-to-one source inventory',()=>{
+ const originalSourceEdges=nativeSourceLedger();
+ const proof=probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges
+ });
+ assert.equal(proof.everyOriginalBRepSourcePresentInHLRDataStructure,true);
+ assert.equal(proof.edgeMapSourceBijectionVerified,true);
+ assert.equal(proof.internalEdgeMapExtent,2);
+ assert.deepEqual(proof.indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId),
+  ['G::A|B','G::A|C']);
+ assert.equal(proof.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+ assert.equal(proof.signedV5Action,false);
+});
+test('C1 native EdgeMap does not call an extra unknown index a complete source bijection',()=>{
+ const extra=probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC','unknown']),originalSourceEdges:nativeSourceLedger()
+ });
+ assert.equal(extra.everyOriginalBRepSourcePresentInHLRDataStructure,true,
+  'all originals can be present even when the map also has an unknown index');
+ assert.equal(extra.edgeMapSourceBijectionVerified,false);
+ assert.ok(extra.edgeMapSourceBijectionFailureReasons.some(x=>/extent differs/.test(x)));
+ assert.ok(extra.indexedOriginalSources.some(x=>
+  x.directlySameOriginalTopoDSInputEdge===false));
+ const missing=probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','unknown']),originalSourceEdges:nativeSourceLedger()
+ });
+ assert.equal(missing.everyOriginalBRepSourcePresentInHLRDataStructure,false);
+ assert.equal(missing.edgeMapSourceBijectionVerified,false);
+});
+test('C1 native EdgeMap rejects duplicate physical indices and duplicate source ledger IDs',()=>{
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AB']),originalSourceEdges:nativeSourceLedger()
+ }),/HLR internal EdgeMap duplicates one original M0 physical source/);
+ const duplicated=nativeSourceLedger();
+ duplicated[1].sourceEdgeId=duplicated[0].sourceEdgeId;
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges:duplicated
+ }),/duplicate or unbound original TopoDS source ledger/);
+ assert.throws(()=>probeNativeEdgeIdentity({
+  generatedEdge:nativeEdge('AB'),
+  originalSourceEdges:[nativeSourceLedger()[0],{
+   sourceEdgeId:'G::A|B',edge:nativeEdge('AB')
+  }]
+ }),/duplicate original native TopoDS source ID/);
+});
+test('C1 native source identity rejects two IDs that alias one physical TopoDS edge',()=>{
+ const ledger=[
+  {sourceEdgeId:'G::A|B',edge:nativeEdge('AB')},
+  {sourceEdgeId:'G::A|C',edge:nativeEdge('AB')}
+ ];
+ assert.throws(()=>probeNativeEdgeIdentity({
+  generatedEdge:nativeEdge('AB'),originalSourceEdges:ledger
+ }),/multiple different original physical edges/);
 });
