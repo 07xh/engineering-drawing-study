@@ -2011,7 +2011,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  $('v8-c2-ack').addEventListener('change',updateC2Preflight);
  $('v8-c2-existing').addEventListener('click',()=>{
   const advanced=$('v8-c2-advanced');
-  advanced.open=true;
+  advanced.setAttribute('open','');
   advanced.querySelector('summary')?.focus?.();
   advanced.scrollIntoView?.({block:'start',behavior:'auto'});
  });
@@ -2024,10 +2024,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  for(const id of c2Fields)for(const type of ['input','change'])
   $(id).addEventListener(type,()=>{
    const snap=coordinator?.snapshot();
-   if(snap?.task==='composition'&&c2HasSavedWork(snap)){
-    updateC2Preflight();
-    return;
-   }
+   // Disabled quick inputs cannot be edited through the ordinary UI, but
+   // programmatic or forged edits MUST still invalidate stale math evidence.
    if(snap?.task==='composition')
     uncommittedFormEdit=true;
    $('v8-c2-ack').checked=false;
