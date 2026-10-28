@@ -671,14 +671,17 @@ test('C1 native EdgeMap rejects duplicate physical indices and duplicate source 
  assert.throws(()=>probeNativeEdgeMap({
   edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges:duplicated
  }),/duplicate or unbound original TopoDS source ledger/);
- assert.throws(()=>probeNativeEdgeIdentity({
+ const duplicateOccurrence=probeNativeEdgeIdentity({
   generatedEdge:nativeEdge('AB'),
   originalSourceEdges:[nativeSourceLedger()[0],{
    sourceEdgeId:'G::A|B',edge:nativeEdge('AB')
   }]
- }),/duplicate original native TopoDS source ID/);
+ });
+ assert.equal(duplicateOccurrence.directlySameUniqueOriginalOCCTBRepSourceEdgeId,
+  'G::A|B','duplicate occurrences of the same physical TopoDS edge are legal');
+ assert.equal(duplicateOccurrence.actualOriginalOCCTBRepEdgeOccurrencesCompared,2);
 });
-test('C1 native source identity rejects two IDs that alias one physical TopoDS edge',()=>{
+test('C1 native source identity rejects one source ID aliased to distinct physical TopoDS edges',()=>{
  const ledger=[
   {sourceEdgeId:'G::A|B',edge:nativeEdge('AB')},
   {sourceEdgeId:'G::A|C',edge:nativeEdge('AB')}
