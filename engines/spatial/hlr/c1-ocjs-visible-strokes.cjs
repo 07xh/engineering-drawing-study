@@ -112,8 +112,10 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
  // A projected point is not a B-Rep line, even when it lies on several
  // original edges. Never assign it a 3D source identity.
  const degenerate=Math.hypot(to.u-from.u,to.v-from.v)<=1e-8;
- const ids=degenerate?[]:provenanceCandidates(g,view,from,to);
- const sourceCandidate3DLifts=ids.map(sourceEdgeId=>{
+ const paperCollinearIds=degenerate?[]:provenanceCandidates(g,view,from,to);
+ const rejectedOutsideOriginalSource=[];
+ const sourceCandidate3DLifts=[];
+ for(const sourceEdgeId of paperCollinearIds){
   const edge=g.data.edges.find(e=>
    g.id+'::'+[...e].sort().join('|')===sourceEdgeId);
   if(!edge)throw new RangeError('original 3D source edge missing');
@@ -124,9 +126,22 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
    throw new RangeError('projected original source edge collapsed');
   const fraction=q=>((q.u-pa.u)*du+(q.v-pa.v)*dv)/den;
   const ta=fraction(from),tb=fraction(to);
-  if(![ta,tb].every(finite)||ta < -1e-6||ta>1+1e-6||
-     tb < -1e-6||tb>1+1e-6)
+  // Paper collinearity uses an OCCT display tolerance. It must never
+  // become exact original TopoDS parameter coverage: even a one-ULP
+  // overrun (or negative subnormal underflow) is positive geometry.
+  // Preserve genuine OCCT display candidates, but expose a separate
+  // explicit rounding flag that independent M5 source proofs must gate.
+  const within=(q)=>q.u>=Math.min(pa.u,pb.u)&&q.u<=Math.max(pa.u,pb.u)&&
+   q.v>=Math.min(pa.v,pb.v)&&q.v<=Math.max(pa.v,pb.v);
+  if(![ta,tb].every(finite)||ta<-1e-6||ta>1+1e-6||
+     tb<-1e-6||tb>1+1e-6)
    throw new RangeError('HLR endpoint lies outside original source edge');
+  const paperRounded=!(within(from)&&within(to))||
+   ta<0||ta>1||tb<0||tb>1;
+  if(paperRounded)rejectedOutsideOriginalSource.push(sourceEdgeId);
+  // Preserve real OCCT display candidates with a *separate* untrusted
+  // rounding witness. No consumer may treat a rounded [0,1] as native
+  // exact original-source coverage without independent M5 source proof.
   const clamp=t=>Math.max(0,Math.min(1,t));
   const t0=clamp(ta),t1=clamp(tb);
   const point=t=>({x:a.x+(b.x-a.x)*t,
@@ -137,20 +152,26 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   if(Math.hypot(pf.u-from.u,pf.v-from.v)>1e-6||
      Math.hypot(pt.u-to.u,pt.v-to.v)>1e-6)
    throw new RangeError('original 3D source candidate fails HLR reprojection');
-  return {
+  sourceCandidate3DLifts.push({
    sourceEdgeId,originalVertexIds:[...edge],
    sourceParameterAtProjectedFrom:t0,sourceParameterAtProjectedTo:t1,
    originalSourceParameterRange:[Math.min(t0,t1),Math.max(t0,t1)],
+   paperOnlyUnclampedOriginalSourceParameters:[ta,tb],
+   sourceParameterWasClampedForPaperOnly:paperRounded,
+   originalSourceExactParameterCoverageFromRoundingProven:false,
    fromCandidate3D,toCandidate3D,
    originalSourceCurveType:'straight-m0-polyhedral-edge',
    originalXYZReprojectsToHLR:true,
    actualOCCTTopoDSEdgeIdentityRecovered:false,
    actualOCCT3DCurveExtracted:false,
    officialEngineeringLineStyle:'undetermined',v5Authorized:false
-  };
- });
+  });
+ }
+ const ids=sourceCandidate3DLifts.map(w=>w.sourceEdgeId);
  return {
   projectedOriginalEdgeCandidates:ids,sourceCandidate3DLifts,
+  // These are explicitly REJECTED candidates, never source identities.
+  paperCollinearSourcesRoundedOutsideOriginalBounds:rejectedOutsideOriginalSource,
   unmappedReason:ids.length?null:degenerate?
    'degenerate-projected-hlr-not-a-physical-segment':
    'no-original-m0-edge-reprojects-to-both-hlr-endpoints',

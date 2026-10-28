@@ -484,7 +484,7 @@ test('C1 exact native source-gap audit rejects forged V/H/W paper strokes withou
    const forged=structuredClone(stroke);
    change(forged);
    assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
-    /unverified original native BRep source lift/,
+    /unverified original native BRep source lift|out-of-domain native paper endpoint/,
     'a forged HLR stroke cannot close an otherwise authentic original 3D source');
   }
  }
@@ -571,5 +571,47 @@ test('C1 native V/H/W gap evidence refuses forged original BRep XYZ, curve and 3
   assert.equal(exactSourceCoverage({...input,strokes:[reversed]})
    .entireOriginalParameterIntervalCovered,true,
    'native BRep reversal and independent parameter origin remain valid');
+ }
+});
+
+test('C1 M5 holds paper-rounded native source coverage unless independent original 3D junctions prove literal endpoints',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0],lift=stroke.sourceCandidate3DLifts[0];
+  lift.sourceParameterWasClampedForPaperOnly=true;
+  lift.originalSourceExactParameterCoverageFromRoundingProven=false;
+  lift.paperOnlyUnclampedOriginalSourceParameters=[-Number.MIN_VALUE,1];
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  const held=exactSourceCoverage(input);
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(held.positiveLengthUncoveredIntervals,[[0,1]]);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
+  assert.equal(held.roundedCandidatesWithIndependentM5,0);
+  assert.equal(held.signedV5Action,false);
+  const claimedOnly=exactSourceCoverage({...input,
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(claimedOnly.entireOriginalParameterIntervalCovered,false,
+   'M5 flag without literal original 3D vertex projections is not proof');
+  assert.equal(claimedOnly.roundedPaperOnlyCandidatesHeld,1);
+  const originalM5=exactSourceCoverage({...input,
+   projectedFromModelMm:project(geometry.data.points.A)[view],
+   projectedToModelMm:project(geometry.data.points.B)[view],
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(originalM5.entireOriginalParameterIntervalCovered,true);
+  assert.equal(originalM5.roundedPaperOnlyCandidatesHeld,0);
+  assert.equal(originalM5.roundedCandidatesWithIndependentM5,1);
+  assert.equal(originalM5.signedV5Action,false);
+  const forged=structuredClone(stroke);
+  forged.sourceCandidate3DLifts[0].originalSourceExactParameterCoverageFromRoundingProven=true;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+   /rounded native paper source falsely claims/);
+  const falselyUnrounded=structuredClone(stroke);
+  falselyUnrounded.from.u=-Number.MIN_VALUE;
+  falselyUnrounded.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly=false;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[falselyUnrounded]}),
+   /out-of-domain native paper endpoint/,
+   'negative subnormal beyond the literal original source cannot bypass M5 by forging a false flag');
  }
 });

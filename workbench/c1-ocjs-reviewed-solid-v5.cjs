@@ -129,11 +129,41 @@ function exactC1NativeSourceIntervalCoverage({
    engineeringLineStyle:'undetermined',signedV5Action:false};
  const range=literal?[...literal.range]:
   [Math.min(t0,t1),Math.max(t0,t1)],candidates=[];
+ let roundedPaperOnlyCandidatesHeld=0,roundedCandidatesWithIndependentM5=0;
  for(const stroke of strokes){
   if(!Array.isArray(stroke?.sourceCandidate3DLifts))
    throw new RangeError('unverified actual native HLR candidate lift list');
   for(const lift of stroke.sourceCandidate3DLifts){
    if(lift?.sourceEdgeId===sourceEdgeId){
+    // Recheck the original finite paper bounds independently of the
+    // producer's rounding flag. A forged false/missing flag must not
+    // turn an out-of-domain native paper endpoint into exact M5 coverage.
+    const pa=project(a)[view],pb=project(b)[view];
+    const within=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v)&&
+     p.u>=Math.min(pa.u,pb.u)&&p.u<=Math.max(pa.u,pb.u)&&
+     p.v>=Math.min(pa.v,pb.v)&&p.v<=Math.max(pa.v,pb.v);
+    const raw=lift.paperOnlyUnclampedOriginalSourceParameters;
+    if(raw!==undefined&&(!Array.isArray(raw)||raw.length!==2||
+       !raw.every(Number.isFinite)))
+     throw new RangeError('invalid unclamped native source paper parameter witness');
+    if((!within(stroke.from)||!within(stroke.to)||
+        raw?.some(t=>t<0||t>1))&&
+       lift.sourceParameterWasClampedForPaperOnly!==true)
+     throw new RangeError('out-of-domain native paper endpoint cannot claim exact original source');
+    // Genuine OCCT can project a native vertex one ULP beyond its M0
+    // endpoint. That is display evidence, NOT an exact original-source
+    // interval. A rounded candidate is held unless the independent
+    // current M5 source + 3D junction proof has already signed the literal
+    // original endpoints; no epsilon repairs the native parameter range.
+    if(lift.sourceParameterWasClampedForPaperOnly===true){
+     if(lift.originalSourceExactParameterCoverageFromRoundingProven!==false)
+      throw new RangeError('rounded native paper source falsely claims exact original parameter coverage');
+     if(independentlyM5SourceAndJunctionsProven!==true||!literal){
+      roundedPaperOnlyCandidatesHeld++;
+      continue;
+     }
+     roundedCandidatesWithIndependentM5++;
+    }
     // Do not treat an earlier boolean-only CAD audit as a source certificate:
     // rebind every candidate to this CURRENT original BRep edge in 3D.
     // This diagnostic is also exported and can receive an isolated HLR
@@ -204,6 +234,7 @@ function exactC1NativeSourceIntervalCoverage({
   status:proof.entireOriginalParameterIntervalCovered?
    'exact-original-3d-native-source-covered':
    'exact-original-3d-native-source-positive-gap',
+  roundedPaperOnlyCandidatesHeld,roundedCandidatesWithIndependentM5,
   engineeringLineStyle:'undetermined',signedV5Action:false};
 }
 // A projected HLR candidate is not a TopoDS history match. Even unsigned

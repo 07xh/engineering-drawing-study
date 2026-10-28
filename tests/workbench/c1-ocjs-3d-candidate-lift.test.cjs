@@ -73,3 +73,72 @@ test('invalid HLR coordinates or non-first-angle view do not enter source liftin
  assert.throws(()=>lift(g,'V',{u:NaN,v:0},{u:8,v:0}),/finite/);
  assert.throws(()=>lift(g,'V',{u:2,v:0},{u:Infinity,v:0}),/finite/);
 });
+
+const nextUpPositive=n=>{
+ const buf=new ArrayBuffer(8),bits=new DataView(buf);
+ bits.setFloat64(0,n);
+ bits.setBigUint64(0,bits.getBigUint64(0)+1n);
+ return bits.getFloat64(0);
+};
+test('V/H/W native one-ULP overruns remain explicitly rounded paper candidates, never exact source proof',()=>{
+ const g=fixture();
+ for(const [view,max,point] of [
+  ['V',10,t=>({u:t,v:0})],
+  ['H',10,t=>({u:t,v:0})],
+  ['W',8,t=>({u:0,v:t})]
+ ]){
+  const outside=nextUpPositive(max);
+  assert.ok(outside>max&&outside-max>0);
+  for(const [from,to] of [[point(0),point(outside)],
+   [point(outside),point(0)],[point(max/2),point(outside)]]){
+   const r=lift(g,view,from,to);
+   assert.ok(r.sourceCandidate3DLifts.length>=1,
+    'genuine OCCT rounded HLR source remains available for display');
+   assert.ok(r.paperCollinearSourcesRoundedOutsideOriginalBounds.length>=1);
+   assert.ok(r.sourceCandidate3DLifts.every(x=>
+    x.sourceParameterWasClampedForPaperOnly===true&&
+    x.originalSourceExactParameterCoverageFromRoundingProven===false&&
+    x.v5Authorized===false));
+   assert.ok(r.sourceCandidate3DLifts.some(x=>
+    x.paperOnlyUnclampedOriginalSourceParameters.some(t=>t>1)));
+   assert.equal(r.actualOCCTTopoDSIdentityRecovered,false);
+  }
+  const inside=lift(g,view,point(0),point(max));
+  assert.ok(inside.sourceCandidate3DLifts.length>0);
+  assert.ok(inside.sourceCandidate3DLifts.every(x=>
+   x.originalSourceParameterRange[0]===0&&
+   x.originalSourceParameterRange[1]===1&&
+   x.sourceParameterWasClampedForPaperOnly===false));
+ }
+});
+test('negative subnormal paper overrun is reported even if binary64 t underflows to zero',()=>{
+ const g=fixture();
+ for(const [view,point] of [
+  ['V',t=>({u:t,v:0})],
+  ['H',t=>({u:t,v:0})],
+  ['W',t=>({u:0,v:t})]
+ ]){
+  const r=lift(g,view,point(-Number.MIN_VALUE),point(1));
+  assert.ok(r.sourceCandidate3DLifts.length>=1);
+  assert.ok(r.sourceCandidate3DLifts.every(x=>
+   x.sourceParameterWasClampedForPaperOnly===true&&
+   x.originalSourceExactParameterCoverageFromRoundingProven===false));
+  assert.equal(r.v5Authorized,false);
+ }
+});
+test('2D aliases at different 3D depths remain separate rounded candidates, not a unique source',()=>{
+ const g=fixture(),over=nextUpPositive(10);
+ for(const view of ['V','H']){
+  const r=lift(g,view,{u:2,v:0},{u:over,v:0});
+  assert.ok(r.sourceCandidate3DLifts.length>=2);
+  assert.equal(new Set(r.projectedOriginalEdgeCandidates).size,
+   r.projectedOriginalEdgeCandidates.length);
+  assert.ok(r.sourceCandidate3DLifts.every(x=>
+   x.sourceParameterWasClampedForPaperOnly===true));
+ }
+ const good=lift(g,'V',{u:2,v:0},{u:8,v:0});
+ assert.equal(good.sourceCandidate3DLifts.length,2);
+ assert.deepEqual(good.paperCollinearSourcesRoundedOutsideOriginalBounds,[]);
+ assert.ok(good.sourceCandidate3DLifts.every(x=>
+  x.sourceParameterWasClampedForPaperOnly===false&&x.v5Authorized===false));
+});
