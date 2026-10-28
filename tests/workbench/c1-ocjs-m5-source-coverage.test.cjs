@@ -705,3 +705,55 @@ test('C1 native source identity rejects one source ID aliased to distinct physic
   generatedEdge:nativeEdge('AB'),originalSourceEdges:ledger
  }),/multiple different original physical edges/);
 });
+
+test('C1 HLR original source ledger proves native TShape injectivity before reading even an incomplete EdgeMap',()=>{
+ const sources=[
+  {sourceEdgeId:'G::A|B',edge:nativeEdge('same-native-TShape')},
+  {sourceEdgeId:'G::C|D',edge:nativeEdge('same-native-TShape')}
+ ];
+ // No indexed HLR edge matches either source. The source-ledger alias
+ // must still fail before the map is allowed to report a harmless gap.
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['unrelated']),originalSourceEdges:sources
+ }),/distinct original source IDs alias one native TopoDS edge/);
+});
+
+test('C1 HLR original source ledger rejects asymmetric or nonreflexive native IsSame evidence',()=>{
+ const a=nativeEdge('a'),b=nativeEdge('b');
+ a.IsSame=other=>other===a||other===b;
+ b.IsSame=other=>other===b;
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['unrelated']),
+  originalSourceEdges:[
+   {sourceEdgeId:'G::A|B',edge:a},
+   {sourceEdgeId:'G::C|D',edge:b}
+  ]
+ }),/asymmetric original TopoDS source ledger IsSame/);
+ const nonreflexive=nativeEdge('x');
+ nonreflexive.IsSame=()=>false;
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['unrelated']),
+  originalSourceEdges:[{sourceEdgeId:'G::A|B',edge:nonreflexive}]
+ }),/nonreflexive or null original TopoDS source edge/);
+ const nullHandle=nativeEdge('x');
+ nullHandle.IsNull=()=>true;
+ assert.throws(()=>probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['unrelated']),
+  originalSourceEdges:[{sourceEdgeId:'G::A|B',edge:nullHandle}]
+ }),/nonreflexive or null original TopoDS source edge/);
+});
+
+test('C1 original source identity stays distinct for paper-coincident edges at different 3D depths',()=>{
+ const sources=nativeSourceLedger();
+ const proof=probeNativeEdgeMap({
+  edgeMap:nativeEdgeMap(['AB','AC']),originalSourceEdges:sources
+ });
+ assert.equal(proof.sourceLedgerDistinctNativeTopoDSIdentityVerified,true);
+ assert.equal(proof.edgeMapSourceBijectionVerified,true);
+ assert.deepEqual(proof.indexedOriginalSources.map(row=>
+  row.originalPhysicalSourceEdgeId),['G::A|B','G::A|C']);
+ assert.equal(proof.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
+ assert.equal(proof.continuousM5VisibilityProven,false);
+ assert.equal(proof.officialEngineeringLineStyleCertified,false);
+ assert.equal(proof.signedV5Action,false);
+});
