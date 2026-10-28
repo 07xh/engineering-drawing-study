@@ -131,7 +131,9 @@ function renderSameRunSignedC2Svg(certified){
  * all remaining physical generated BRep edges stay in a separate unsigned
  * inventory, and it is NEVER exported as a complete C2 result.
  */
-function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
+function signCertifiedNativeC2OpenRaySubspans({
+ math,nativeReport,revision,cutJointGate=null
+}){
  const graph=math?.globalPaperEvents,raw=nativeReport?.outputEdges;
  if(graph?.schema!=='draftai-c2-native-generated-m4-m5-global-paper-events/1'||
     graph.revision!==revision||!Array.isArray(graph.rows)||
@@ -139,6 +141,33 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
     math.allNativeResultEdgeEndpointIsSameJunctionsReconciled!==true||
     !Number.isSafeInteger(revision)||revision<1)
   throw new RangeError('fresh actual OCCT original M0/M4/M5 scene proof required');
+ const operation=math.actualNativeBooleanOperation;
+ if(!['union','cut'].includes(operation)||
+    operation!==nativeReport.actualNativeBooleanOperation)
+  throw new RangeError('native C2 V5 signer cannot change the original Boolean');
+ const cut=operation==='cut';
+ if(cut&&(
+   cutJointGate?.schema!=='draftai-c2-cut-native-m4-m5-joint-original-junction-gate/1'||
+   cutJointGate.sourceRevision!==revision||
+   cutJointGate.counts.positiveOpenRaySubspans!==
+    graph.partialSubtractiveCutRaySubspansProven||
+   cutJointGate.originalNativeConstructionIntentAuthorized!==false||
+   cutJointGate.globalGBEngineeringLineStylesCertified!==false||
+   cutJointGate.newUniqueV5Actions!==0))
+  throw new RangeError('original Cut V5 must follow complete same-run readonly native joint M0-M5 gate');
+ if(!cut&&cutJointGate!==null)
+  throw new RangeError('union signer cannot replay a Cut source proof');
+ const cutSource=new Map();
+ if(cut){
+  for(const item of cutJointGate.positiveSourceIntervals){
+   const key=item.view+'@'+item.nativeResultSourceEdgeOrdinal+'@'+
+    JSON.stringify(item.originalGeneratedEdgeParameterRange);
+   if(cutSource.has(key))throw new RangeError('duplicate original Cut M4 source interval');
+   cutSource.set(key,item);
+  }
+  if(cutSource.size!==cutJointGate.counts.positiveOpenRaySubspans)
+   throw new RangeError('incomplete original Cut joint source inventory');
+ }
  const byId=new Map(raw.map(e=>[e.finalTopoDSEdgeOrdinal,e]));
  if(byId.size!==raw.length||graph.VHWSourceRows!==3*raw.length)
   throw new RangeError('incomplete native C2 generated BRep source inventory');
@@ -147,12 +176,18 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
    'analytic-whole-open-subspan-front-ray-clear':
     'gb-t-4457.4-continuous-wide-visible-outline',
    'analytic-whole-open-subspan-strictly-hidden':
+    'gb-t-4457.4-thin-dashed-hidden-edge',
+   'analytic-cut-whole-open-subspan-front-ray-clear':
+    'gb-t-4457.4-continuous-wide-visible-outline',
+   'analytic-cut-whole-open-subspan-strictly-hidden':
     'gb-t-4457.4-thin-dashed-hidden-edge'
   },signed=[],unsigned=[],noLine=[],intents=[],steps=[],
   styleByIntentId=Object.create(null);
  const source={solver:'tools/c2_native_m0_m4_m5_proof_pack.cjs',
   revision,unit:'mm',
-  proofScope:'same-run-native-BRep-M0-M4-M5-two-convex-box-union',
+  proofScope:cut?
+   'same-run-native-BRep-cut-verified-closed-original-M0-M4-M5-partial':
+   'same-run-native-BRep-M0-M4-M5-two-convex-box-union',
   proofLevel:'analytic',resultId:null,branchId:null,status:'unique',
   evidenceSource:'fresh-real-OCCT-IsSame-continuous-M5-generated-edge'};
  const counts={positiveSignedVisible:0,positiveSignedHidden:0,
@@ -206,14 +241,46 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
      reason:'native-physical-dihedral-not-certified'});
     continue;
    }
-   const style=styles[span.status],clear=
+   const style=styles[span.status],clear=cut?
+    span.status==='analytic-cut-whole-open-subspan-front-ray-clear'&&
+     span.continuousSubtractiveCutOpenRayClearVerified===true&&
+     span.continuousSubtractiveCutStrictHiddenVerified===false:
     span.status==='analytic-whole-open-subspan-front-ray-clear'&&
-    span.continuousAllOpaqueComponentRayClearVerified===true&&
-    span.continuousUnionStrictInteriorOcclusionVerified===false,
-    hidden=span.status==='analytic-whole-open-subspan-strictly-hidden'&&
-    span.continuousUnionStrictInteriorOcclusionVerified===true&&
-    span.continuousAllOpaqueComponentRayClearVerified===false;
-   if(!style||!(clear||hidden)||span.projectedAliasOrUncertainEventBlocked!==false||
+     span.continuousAllOpaqueComponentRayClearVerified===true&&
+     span.continuousUnionStrictInteriorOcclusionVerified===false,
+    hidden=cut?
+     span.status==='analytic-cut-whole-open-subspan-strictly-hidden'&&
+      span.continuousSubtractiveCutStrictHiddenVerified===true&&
+      span.continuousSubtractiveCutOpenRayClearVerified===false:
+     span.status==='analytic-whole-open-subspan-strictly-hidden'&&
+      span.continuousUnionStrictInteriorOcclusionVerified===true&&
+      span.continuousAllOpaqueComponentRayClearVerified===false;
+   const cutEvidence=cut?cutSource.get(row.view+'@'+
+    row.sourceNativeResultEdgeOrdinal+'@'+JSON.stringify(range)):null;
+   const certifiedCutOriginalClosedPhysicalAndPaper=cut&&
+    cutEvidence?.independentlyNativeSourceOpenRayProof===true&&
+    cutEvidence.independentlyTopoDSOriginal3DSourceEndpointPairCertified===true&&
+    cutEvidence.bothOriginal3DClosedEndpointRaysAgreeWithOpenM5===true&&
+    cutEvidence.allOriginalNativeEndpointPaperAliasDepthsResolved===true&&
+    cutEvidence.allCurrentPhysicalCoProjectedSourcesStrictlyBehindOrAbsent===true&&
+    cutEvidence.officialGBEngineeringLineStyle==='undetermined'&&
+    cutEvidence.constructionIntentAuthorized===false&&
+    cutEvidence.signedV5Action===false&&
+    cutEvidence.positiveOpenM5RayStatus===(clear?'strictly-clear':'strictly-hidden')&&
+    cutEvidence.actualOriginal3DEndpointAndPaperAliasDepthEvidence.every(v=>
+     v.nativeOriginalEndpointVerified===true&&
+     v.allProjectedEndpointDepthEventsResolved===true&&
+     v.physical3DAndPaperOnlyDepthComparisons.every(d=>
+      !clear||d.depthStatus!=='candidate-strictly-behind-paper-alias'));
+   // For Cut, a paper-only crossing need not be a physical junction.
+   // We DO require actual native TopoDS source endpoints, exact 3D paper
+   // depth ordering, a continuous open ray AND independently proven
+   // closed rays of the SAME M5 style. All other Cut lines stay unsigned.
+   if(!style||!(clear||hidden)||
+      (cut&&!certifiedCutOriginalClosedPhysicalAndPaper)||
+      (!cut&&['analytic-cut-whole-open-subspan-front-ray-clear',
+       'analytic-cut-whole-open-subspan-strictly-hidden'].includes(span.status))||
+      span.projectedAliasOrUncertainEventBlocked!==false||
       span.continuousSourceGeometryIsOriginalNativeTopoDSEdge!==true||
       span.nativeActualTopologySourceNotIndependentlyAttestedHere!==true){
     counts.unsignedPhysicalIntervals++;unsigned.push({...base,
@@ -247,6 +314,11 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
      sheetTransform)]});
    styleByIntentId[id]=style;
    signed.push({...base,actionId,standardEngineeringLineStyle:style,
+    ...(cut?{
+     cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays:true,
+     cutOriginalM4PaperAliasStrictDepthReverified:true,
+     completeC2CutResultCertified:false
+    }:{}),
     fullOriginalC2NativeM0M4M5ProofVerifiedInFreshRun:true,
     signedByExistingConstructionIntentDagAndSingleV5:true});
    if(clear)counts.positiveSignedVisible++;
@@ -275,7 +347,7 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
     suppression.suppressed.length+suppression.held.length!==unsigned.length||
     suppression.supplementaryV5ActionCount!==0)
   throw new RangeError('original native source back-edge suppression drifted');
- const full=signed.length>0&&suppression.held.length===0;
+ const full=!cut&&signed.length>0&&suppression.held.length===0;
  return Object.freeze({
   schema:'draftai-c2-trusted-native-partial-construction-intent-v5/1',
   status:full?'all-two-axis-box-union-native-physical-sources-signed-or-strictly-suppressed':
@@ -293,6 +365,10 @@ function signCertifiedNativeC2OpenRaySubspans({math,nativeReport,revision}){
    full&&suppression.suppressed.length===0,
   allNativePhysicalSourcesSignedOrProvenSuppressed:full,
   boundedTwoBoxUnionFullFormalV5Certified:full,
+  actualOriginalBooleanOperation:operation,
+  onlyCertifiedCutNativeOriginalClosedEndpointAndPaperDepthStrokes:
+   cut&&signed.every(x=>x.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays===true),
+  entireCutOriginalDrawingSigned:false,
   sheetTransform,intents,steps,timeline,
   originalV5PlayerFactory:'workbench/teaching-timeline-v5.js',
   canonicalConstructionIntentDagChecked:true,
@@ -414,24 +490,48 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   originalModelBoundsSha256:nativeReport.canonicalOriginalComponentGeometrySHA256,
   actualNativeOpenCascadeRanInThisProcessTree:true,
   sourceManifestHadNoReferenceAnswer:true,
+  // The bare OCP topology reference never signs V5; the sole existing
+  // ConstructionIntent signer below may sign a strictly verified subset.
+  nativeReferenceSignedV5ActionCount:0,
   signedV5ActionCount:0,
   scope:operation==='cut'?
    'one-reviewed-box-minus-through-rectangular-bore-unsigned-m4-reference':
    'two-reviewed-axis-aligned-box-boolean-union-reference'
  };
- // The canonical V5 signer is rigorously valid for UNION only.
- // A subtractive void lacks a proven full-scene continuous M5 order. It
- // MUST NOT even create an empty-but-apparently-valid V5 timeline.
+ // Reuse ONE existing ConstructionIntent/DAG/V5 signer. The complete
+ // two-box UNION contract is unchanged. For Cut, only a STRICT original
+ // TopoDS+closed-M0+M4-paper-certified subset may enter an explicitly
+ // incomplete partial timeline. No other Cut source is replayable.
  const certifiedV5=operation==='union'?
   signCertifiedNativeC2OpenRaySubspans({
    math,nativeReport,revision:manifest.revision
   }):null;
+ const certifiedCutPartialV5=operation==='cut'?
+  signCertifiedNativeC2OpenRaySubspans({
+   math,nativeReport,revision:manifest.revision,cutJointGate
+  }):null;
+ provenance.signedV5ActionCount=
+  (certifiedV5??certifiedCutPartialV5)?.certifiedVisibleHiddenSourceIntervals.length??0;
+ if(operation==='cut'&&(
+  certifiedCutPartialV5?.actualOriginalBooleanOperation!=='cut'||
+  certifiedCutPartialV5.entireCutOriginalDrawingSigned!==false||
+  certifiedCutPartialV5.boundedTwoBoxUnionFullFormalV5Certified!==false||
+  certifiedCutPartialV5.allNativePhysicalSourcesSignedOrProvenSuppressed!==false||
+  certifiedCutPartialV5.certifiedVisibleHiddenSourceIntervals.some(line=>
+   line.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays!==true||
+   line.cutOriginalM4PaperAliasStrictDepthReverified!==true||
+   line.completeC2CutResultCertified!==false)))
+  throw new RangeError('Cut partial original V5 must never be promoted to entire Boolean drawing');
  const packed={
   schema:'draftai-c2-actual-native-occt-m0-m4-m5-full-proof-pack/1',
   revision:manifest.revision,status:'same-run-native-brep-math-proof-only',
   booleanOperation:operation,sourceIds:[...ids],provenance,
   nativeTopology:nativeReport,mathM0M4M5:math,
   sourceCertifiedNativeCanonicalV5:certifiedV5,
+  sourceCertifiedNativeCanonicalPartialCutV5:certifiedCutPartialV5,
+  independentlySignedPartialCutV5ActionCount:
+   certifiedCutPartialV5?.certifiedVisibleHiddenSourceIntervals.length??0,
+  completeCutProjectOfficialGBLineStylesAndV5Certified:false,
   nativeCutOriginal3DJunctionGlobalM4M5JointGate:cutJointGate,
   subtractiveCutPartialRayEvidence:operation==='cut'?{
    scope:'same-run-real-occt-source-view-open-ray-and-m4-subspan',
@@ -466,9 +566,12 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
  const out=JSON.stringify(packed,null,2)+'\n';
  if(Buffer.byteLength(out,'utf8')>12*1024*1024)
   throw new RangeError('bounded native CAD mathematical witness output exceeded');
- // Only UNION has positive native M5 + canonical V5 authorization.
- // CUT remains unsigned; it must not produce a formally signed SVG.
- const svg=certifiedV5?renderSameRunSignedC2Svg(certifiedV5):null;
+ // Draw ONLY formally signed source strokes, even for a partial Cut.
+ // All held/uncertified physical lines are deliberately excluded from
+ // the review SVG; this is not a complete answer sheet.
+ const signedSubset=certifiedV5??certifiedCutPartialV5;
+ const svg=signedSubset&&signedSubset.certifiedVisibleHiddenSourceIntervals.length?
+  renderSameRunSignedC2Svg(signedSubset):null;
  if(svg!==null&&Buffer.byteLength(svg,'utf8')>1024*1024)
   throw new RangeError('signed-only native C2 review SVG exceeds size limit');
  if(svg!==null)fs.writeFileSync(signedSheetPath,svg,{flag:'wx',encoding:'utf8'});
@@ -507,13 +610,13 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
   cutM0IndividualClosedEndpointRaysUnresolvedCount:
    cutJointGate?.counts.individuallyUnresolvedClosedEndpointRays??0,
   officiallySignedNativeSubspanCount:
-   certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
+   signedSubset?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:
-   certifiedV5?.unsignedNativePhysicalSourceIntervals.length??
+   signedSubset?.unsignedNativePhysicalSourceIntervals.length??
    graph.rows.reduce((n,row)=>n+row.subspans.filter(span=>
     span.status!=='coplanar-native-subdivision-not-a-line').length,0),
   provenHiddenDuplicateSuppressionCount:
-   certifiedV5?.suppressedNativeBackSourceIntervals.length??0,
+   signedSubset?.suppressedNativeBackSourceIntervals.length??0,
   actualNativeOpenCascadeRan:true,
   fullySignedV5:operation==='union'&&
    certifiedV5?.boundedTwoBoxUnionFullFormalV5Certified===true

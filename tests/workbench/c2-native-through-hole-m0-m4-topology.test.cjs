@@ -182,7 +182,38 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.ok(info.cutProvenWholeSourceViewRayCount>0);
   assert.ok(info.cutProvenOpenM4SubspanRayCount>0);
   assert.equal(pack.sourceCertifiedNativeCanonicalV5,null,
-   'not even an empty officially reusable original V5 may exist for unsigned subtractive rays');
+   'Cut cannot masquerade as an ALL-source signed UNION formal V5');
+  const partial=pack.sourceCertifiedNativeCanonicalPartialCutV5;
+  assert.equal(partial.actualOriginalBooleanOperation,'cut');
+  assert.equal(partial.boundedTwoBoxUnionFullFormalV5Certified,false);
+  assert.equal(partial.allNativePhysicalSourcesSignedOrProvenSuppressed,false);
+  assert.equal(partial.entireCutOriginalDrawingSigned,false);
+  assert.equal(partial.onlyCertifiedCutNativeOriginalClosedEndpointAndPaperDepthStrokes,true);
+  assert.equal(partial.certifiedVisibleHiddenSourceIntervals.length,12,
+   'real pinned OCP through-bore: precisely 12 native original closed-ray and paper-depth certified strokes');
+  assert.equal(partial.suppressedNativeBackSourceIntervals.length,12,
+   'co-projected original native physically behind already-signed source is suppressed, not drawn twice');
+  assert.equal(partial.unsignedNativePhysicalSourceIntervals.length,40,
+   'unverified original Cut physical subspans remain excluded from V5');
+  assert.equal(pack.provenance.nativeReferenceSignedV5ActionCount,0);
+  assert.equal(pack.provenance.signedV5ActionCount,12);
+  assert.equal(pack.completeCutProjectOfficialGBLineStylesAndV5Certified,false);
+  assert.equal(pack.independentlySignedPartialCutV5ActionCount,12);
+  assert.equal(info.officiallySignedNativeSubspanCount,
+   partial.certifiedVisibleHiddenSourceIntervals.length);
+  assert.equal(partial.steps.length,partial.certifiedVisibleHiddenSourceIntervals.length);
+  assert.equal(partial.intents.length,partial.steps.length);
+  assert.equal(partial.canonicalConstructionIntentDagChecked,true);
+  assert.equal(partial.oneExistingV5TimelineRecreated,true);
+  assert.ok(partial.certifiedVisibleHiddenSourceIntervals.every(line=>
+   line.cutVerifiedOriginalTopoDSEndpointsAndClosedM0Rays===true&&
+   line.cutOriginalM4PaperAliasStrictDepthReverified===true&&
+   line.completeC2CutResultCertified===false&&
+   line.signedByExistingConstructionIntentDagAndSingleV5===true));
+  assert.ok(info.signedOnlySvgPath&&fs.existsSync(info.signedOnlySvgPath));
+  const sheet=fs.readFileSync(info.signedOnlySvgPath,'utf8');
+  assert.match(sheet,/data-complete-c2="false"/);
+  assert.match(sheet,/data-v5-action="c2_native_action_/);
   assert.equal(pack.ConstructionIntentDAGSingleV5FullySigned,false);
   assert.equal(pack.realTextbookBlindTestPassed,false);
   assert.throws(()=>generateNativeC2FullMathProofPack({
