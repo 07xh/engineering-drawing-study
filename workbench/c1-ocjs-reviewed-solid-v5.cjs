@@ -26,6 +26,8 @@ const {positiveCollinearOverlap}=
  require('./c1-ocjs-paper-collinear-overlap.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditC1NativeScopedHLRSourceConsumer}=
+ require('./c1-native-scoped-hlr-source-consumer.cjs');
 // Positive original-M0 boundedness and extreme-vertex proof for the CURRENT
 // reviewed source. Never accept a caller-supplied status or CAD projection
 // as a substitute for an independent 3D halfspace/recession certificate.
@@ -459,6 +461,7 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    strictNativeContour.originalGloballySignedM5ContoursWithExactNativeOriginal3DSourceCoverage+
    '/'+strictNativeContour.originalGloballySignedM5ContourStrokeCount);
  validateC1RealHLRSourceCandidates({geometry:g,cad});
+ const nativeScopedSourceLedger=auditC1NativeScopedHLRSourceConsumer({geometry:g,cad});
  const resolved=canonical.certifiedVisibleContourLineBindings;
  const out={};
  for(const view of VIEWS){
@@ -510,7 +513,8 @@ function compileC1WithOcjsHLR({input,sheetTransform,oc}={}){
    supportedScope:cad.proofScope,
    independentlyM0BoundedExtremeVertexSetVerified:true,
    independentlyM0ExtremeVertexProof:m0ExtremeVertices,
-   perView:out,nativeThirdViewEvidence,sourceIdsMappedByExistingM5:true,
+   perView:out,nativeThirdViewEvidence,nativeScopedSourceLedger,
+   sourceIdsMappedByExistingM5:true,
    independentCadComputedSegments:cad,
    everyM5SignedContourReboundToRealNativeOCCTOriginal3DSource:true,
    fullyNative3DSourceVerifiedExteriorM5ContourStrokes:
@@ -544,6 +548,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  const ledger=original.wholeSourceEdgeRayEvidence;
  const ledgerIds=new Set(ledger.edges.map(x=>x.sourceEdgeId));
  validateC1RealHLRSourceCandidates({geometry:g,cad});
+ const nativeScopedSourceLedger=auditC1NativeScopedHLRSourceConsumer({geometry:g,cad});
  if(cad.revision!==revision||cad.sourceGeometryId!==g.id||
     cad.lineStyleCertified!==false||cad.v5Authorized!==false||
     !Array.isArray(proof.views)||proof.views.length!==3)
@@ -636,7 +641,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   independentlyM0BoundedExtremeVertexSetVerified:
    m0ExtremeVertices.vertexHullVerified===true,
   allThreeViewsGlobalM5Certified:proof.allThreeViewsGlobalContourCertified,
-  counts:totals,views,
+  counts:totals,views,nativeScopedSourceLedger,
   globalOfficialV5GateUnchanged:true,
   officialLineStylesVerified:false,signedV5ActionCount:0,
   hiddenOrInternalEdgesSigned:false,wholeSolidV5Ready:false,
