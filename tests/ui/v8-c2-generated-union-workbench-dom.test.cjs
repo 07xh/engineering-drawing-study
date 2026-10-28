@@ -89,6 +89,22 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
     'all-opaque-open-ray-only-not-official-style'));
   assert.equal(new Set(rayShapes.map(x=>
    x.getAttribute('data-c2-m5-paper-view'))).size,3);
+  const linkedRayShapes=rayShapes.filter(x=>
+   x.getAttribute('data-c2-generated-source-id'));
+  assert.ok(linkedRayShapes.length>0,
+   'generated-source M5 ray diagnostics must point to the authentic 3D source');
+  assert.ok(linkedRayShapes.every(x=>
+   x.getAttribute('data-geometry-id')&&
+   x.getAttribute('data-source-feature-key')&&
+   x.getAttribute('tabindex')==='0'&&
+   x.getAttribute('data-source-feature-selected')==='false'));
+  for(const ray of linkedRayShapes){
+   const id=ray.getAttribute('data-c2-generated-source-id');
+   const key=ray.getAttribute('data-source-feature-key');
+   assert.ok(source3D().some(x=>
+    x.getAttribute('data-c2-generated-source-id')===id&&
+    x.getAttribute('data-source-feature-key')===key));
+  }
   assert.ok(region.length>0,'all real first-angle projected occupancy boundaries');
   assert.equal(new Set(region.map(x=>
    x.getAttribute('data-c2-region-view'))).size,3);
@@ -135,6 +151,25 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal([...$('v7-sheet').querySelectorAll('[data-source-feature-selected="true"]')]
    .filter(x=>x.getAttribute('data-source-feature-key')===pickedKey).length,3);
   assert.equal($('v7-play').disabled,true,'selection never approves generated V5');
+  const rayPick=rays().find(x=>
+   x.getAttribute('data-c2-generated-source-id')&&
+   x.getAttribute('data-c2-generated-source-id')!==
+    first3D.getAttribute('data-c2-generated-source-id'));
+  assert.ok(rayPick,'choose an M5 diagnostic for a different real generated source');
+  const raySourceId=rayPick.getAttribute('data-c2-generated-source-id'),
+   raySourceKey=rayPick.getAttribute('data-source-feature-key');
+  rayPick.dispatchEvent(new window.Event('click',{bubbles:true}));await settle();
+  assert.equal(source3D().filter(x=>
+   x.getAttribute('data-c2-generated-source-id')===raySourceId&&
+   x.getAttribute('data-source-feature-selected')==='true').length,1);
+  assert.equal([...all(),...collapsed()].filter(x=>
+   x.getAttribute('data-c2-generated-source-id')===raySourceId&&
+   x.getAttribute('data-source-feature-selected')==='true').length,3);
+  assert.ok(rays().filter(x=>
+   x.getAttribute('data-c2-generated-source-id')===raySourceId).every(x=>
+    x.getAttribute('data-source-feature-key')===raySourceKey&&
+    x.getAttribute('data-source-feature-selected')==='true'));
+  assert.equal($('v7-play').disabled,true,'M5 selection never approves generated V5');
   $('v7-guides').checked=false;fire('v7-guides','change');await settle();
   assert.equal(all().length,0,'source candidate overlays are user-controlled');
   assert.equal(collapsed().length,0);

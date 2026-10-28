@@ -1300,9 +1300,24 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        candidate.rayStatus==='scoped-continuous-front-ray-opaque'?
        ($('v7-mono').checked?'#777':'#d58b28'):
        '#9c9ca8';
+      const linkedGenerated=candidate.sourceFeatureKind==='generated-two-face-crease'?
+       (active?.linkedC2?.groups||[]).find(g=>
+        g.sourceFeatureId===candidate.sourceFeatureId&&
+        g.revision===snap.revision&&
+        JSON.stringify(g.sourceGeometryIds)===
+         JSON.stringify(candidate.sourceGeometryIds)):null;
+      if(candidate.sourceFeatureKind==='generated-two-face-crease'&&
+         candidate.sourceFeatureId!==null&&!linkedGenerated)
+       throw Error('C2 M5 生成棱诊断未绑定到同一修订的真实三维场景来源');
+      const linkedKey=linkedGenerated?
+       JSON.stringify([linkedGenerated.geometryId,'segment']):null;
+      const linkedSelected=!!linkedGenerated&&
+       selectedSourceFeature?.revision===snap.revision&&
+       selectedSourceFeature.objectId===linkedGenerated.geometryId&&
+       selectedSourceFeature.key===linkedKey;
       const rayNode=shape('line',{
        x1:start.x,y1:start.y,x2:end.x,y2:end.y,
-       stroke:tone,'stroke-width':1.6,'stroke-dasharray':'1 7',
+       stroke:tone,'stroke-width':linkedSelected?3:1.6,'stroke-dasharray':'1 7',
        'data-c2-m5-paper-line-id':candidate.id,
        'data-c2-m5-ray-status':candidate.rayStatus,
        'data-c2-m5-paper-view':candidate.view,
@@ -1311,6 +1326,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        'data-visibility':'undetermined',
        'aria-label':'C2 M5 原始/生成棱的局部前方射线证据，非国标实虚线'
       });
+      if(linkedGenerated){
+       rayNode.setAttribute('data-c2-generated-source-id',linkedGenerated.sourceFeatureId);
+       rayNode.setAttribute('data-geometry-id',linkedGenerated.geometryId);
+       rayNode.setAttribute('data-source-feature-key',linkedKey);
+       rayNode.setAttribute('data-source-feature-selected',String(linkedSelected));
+       rayNode.setAttribute('tabindex','0');rayNode.setAttribute('role','button');
+       rayNode.setAttribute('aria-label','选择对应的 C2 三维新生棱；当前线段仅为开区间射线诊断');
+       const pick=()=>{
+        const already=selectedSourceFeature?.key===linkedKey&&
+         selectedSourceFeature?.objectId===linkedGenerated.geometryId&&
+         coordinator.selectedGeometryId()===linkedGenerated.geometryId;
+        selectedSourceFeature=already?null:{
+         key:linkedKey,objectId:linkedGenerated.geometryId,revision:snap.revision
+        };
+        coordinator.selectSceneGeometry(linkedGenerated.geometryId);
+       };
+       rayNode.addEventListener('click',pick);
+       rayNode.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}
+       });
+      }
       svg.append(rayNode);
      }
     }
