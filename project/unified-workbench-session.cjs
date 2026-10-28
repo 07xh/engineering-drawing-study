@@ -10,6 +10,8 @@ const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 const {deriveGeometryScene,projectSelectionLinks}=
   require('../core/projection/geometry-scene-views.cjs');
 const Timeline=require('../workbench/teaching-timeline-v5.js');
+const {compileReviewedSolidVertexV5}=require('../workbench/reviewed-solid-vertex-v5.cjs');
+const {IDS:REVIEWED_C1_IDS}=require('./c1-reviewed-input.cjs');
 const {analyzeConfirmedRelations}=require('../core/constraints/multiobject-relation-evidence.cjs');
 const {evaluateReviewedBoxContacts}=require('../core/geometry/reviewed-box-contact-evidence.cjs');
 const {evaluateReviewedCompositeInterfaces}=
@@ -163,6 +165,37 @@ function createUnifiedProjectSession(){
   dispose(){latest=null;current=null;clock=null;listeners.clear();},
   solve(){
    current=null;clock=null;
+   if(latest?.task==='c1-third-view'){
+    const c1=verifiedInput(latest,{task:'c1-third-view',
+     type:'reviewed-c1-third-view',objectId:'C1Solid'});
+    if(c1.topologyConfirmed!==true||
+       !['VH','VW','HW'].includes(c1.pair)||
+       !Array.isArray(c1.vertices)||c1.vertices.length!==8||
+       c1.vertices.some(v=>!REVIEWED_C1_IDS.includes(v.id))||
+       new Set(c1.vertices.map(v=>v.id)).size!==8)
+     throw new Error('必须确认单个闭合凸体的八个对应角点及其真实拓扑');
+    const primitive=prismMesh({solid:{min:P(0,0,0),max:P(1,1,1)}});
+    const certified=compileReviewedSolidVertexV5({input:{
+      geometryId:'C1Solid',confirmedBy:'user',topologyConfirmed:true,
+      revision:latest.revision,unit:'mm',vertices:c1.vertices,
+      edges:primitive.data.edges,faces:primitive.data.faces
+    },sheetTransform:SHEET});
+    if(certified.singleOriginalV5Player!==true||
+       certified.sceneResult.revision!==latest.revision||
+       certified.geometryVerifiedWithinReviewedConvexScope!==true||
+       certified.wholeSolidV5Ready!==false||
+       certified.completeDrawingExportAllowed!==false||
+       !Array.isArray(certified.steps)||!certified.steps.length)
+     throw new Error('C1 数学与局部 V5 认证范围不一致');
+    const scene=certified.sceneResult.scene;
+    clock=certified.player;  // existing official V5 clock, no new player
+    current=Object.freeze({...resultBase(latest),
+      kind:'c1-reviewed-preview',verified:false,status:'geometry-only',
+      evidence:certified,scene,links:projectSelectionLinks(scene),
+      plan:{status:'preview-only',canPromoteToVerifiedResult:false,
+       steps:certified.steps,geometryId:'C1Solid'},clock});
+    emit();return current;
+   }
    if(latest?.task==='composition'){
     if(latest.affinePending)
       throw new Error('未知点方程尚未经人工确认，禁止自动求解');

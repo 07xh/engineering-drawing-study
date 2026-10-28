@@ -6,6 +6,7 @@
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
+const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {reviewDoubleScale}=require('./source-calibration.cjs');
@@ -24,7 +25,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  const prismInputs=['v7-p-width','v7-p-depth','v7-p-height','v7-p-px',
   'v7-p-py','v7-p-pz','v7-p-nx','v7-p-ny','v7-p-nz'];
  const prismOptions=['v7-p-kept'];
- const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions];
+ const c1Fields=['v8-c1-pair','v8-c1-vertices','v8-c1-topology'];
+ const allConditionFields=[...xyzIds,...filletInputs,...filletOptions,...prismInputs,...prismOptions,...c1Fields];
  const compositionFields=['v7-c-id','v7-c-kind','v7-c-ax','v7-c-ay','v7-c-az',
   'v7-c-bx','v7-c-by','v7-c-bz','v7-c-radius','v7-c-start','v7-c-end',
   'v7-c-direction','v7-c-points','v7-c-closed'];
@@ -405,10 +407,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   planar:{id:'Fillet1',kind:'edge',spatialId:null,
    projections:{V:[],H:[],W:[]}},
   exploration:{id:'Solid1',kind:'solid',spatialId:'Solid1_3D',
-   projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}}
+   projections:{V:['Solid1_V'],H:['Solid1_H'],W:['Solid1_W']}},
+  'c1-third-view':{id:'C1Solid',kind:'solid',spatialId:'C1Solid_3D',
+   projections:{V:['C1Solid_V'],H:['C1Solid_H'],W:['C1Solid_W']}}
  };
  const fieldsForTask=task=>task==='projection'?xyzIds:
-  task==='planar'?[...filletInputs,...filletOptions]:[...prismInputs,...prismOptions];
+  task==='planar'?[...filletInputs,...filletOptions]:
+  task==='c1-third-view'?c1Fields:[...prismInputs,...prismOptions];
  const numberFrom=id=>{
   const raw=$(id).value;
   if(raw.trim()===''||!Number.isFinite(Number(raw))||Math.abs(Number(raw))>100000)
@@ -426,6 +431,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     branchId:$('v7-f-branch').value,direction:$('v7-f-direction').value,
     firstTravel:$('v7-f-first').value,secondTravel:$('v7-f-second').value,imageId};
   }
+  if(task==='c1-third-view'){
+   if(!$('v8-c1-topology').checked)
+    throw Error('请先人工核对并确认长方体完整拓扑及八个顶点对应关系');
+   const pair=$('v8-c1-pair').value;
+   const vertices=parseReviewedC1Rows($('v8-c1-vertices').value,pair);
+   return {type:'reviewed-c1-third-view',unit:'mm',pair,vertices,
+    topologyConfirmed:true,imageId};
+  }
   const v=prismInputs.map(numberFrom);
   const retainedHalfspace=$('v7-p-kept').value;
   if(!['unreviewed','positive','negative'].includes(retainedHalfspace))
@@ -437,6 +450,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   $('v7-task').value=project.task;
   const v=project.conditions.find(x=>x.id==='coords')?.value;
   if(!v)return;
+  if(project.task==='c1-third-view'&&v.type==='reviewed-c1-third-view'){
+   $('v8-c1-pair').value=v.pair;
+   $('v8-c1-vertices').value=serializeReviewedC1Rows(v.vertices,v.pair);
+   $('v8-c1-topology').checked=!!v.topologyConfirmed;
+  }
   if(project.task==='projection'&&v.type==='point-xyz'&&Array.isArray(v.xyz))
    xyzIds.forEach((id,i)=>$(id).value=String(v.xyz[i]));
   if(project.task==='planar'&&v.type==='segment-fillet'){
@@ -455,7 +473,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function preview(){
   const snap=coordinator?.snapshot(),out=session?.readSnapshot();
   return out&&out.projectId===snap?.id&&out.inputRevision===snap.revision&&
-    ['prism-evidence','composition-evidence','affine-evidence','nonlinear-evidence'].includes(out.kind)&&out.verified===false?out:null;
+    ['prism-evidence','composition-evidence','affine-evidence','nonlinear-evidence','c1-reviewed-preview'].includes(out.kind)&&out.verified===false?out:null;
  }
  function selectable(node,view,rep,id){
   const pick=()=>coordinator.selectRepresentation(view,rep);
@@ -715,7 +733,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  function playback(){
   const verified=current();if(verified)return verified;
   const partial=preview(),snap=coordinator?.snapshot();
-  return partial?.kind==='prism-evidence'&&
+  return (partial?.kind==='prism-evidence'||partial?.kind==='c1-reviewed-preview')&&
     partial.plan?.status==='preview-only'&&
     partial.plan.canPromoteToVerifiedResult===false&&
     partial.clock?.canRender(snap.revision)?partial:null;
@@ -830,6 +848,35 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const svg=$('v7-sheet');svg.replaceChildren();
   const snap=coordinator?.snapshot();if(!snap)return;
   const scoped=playback();
+  if(scoped?.kind==='c1-reviewed-preview'){
+   const zoom=snap.view.paper.zoom;
+   svg.setAttribute('viewBox',[360-360/zoom+snap.view.paper.panX,
+    230-230/zoom+snap.view.paper.panY,720/zoom,460/zoom].join(' '));
+   svg.append(shape('rect',{x:0,y:0,width:720,height:460,fill:'#fff'}));
+   const prepared=compiled();
+   if(prepared)drawPrimitives(svg,prepared.paper,'paper',snap,null,$('v7-mono').checked);
+   // Only the existing C1 certified point/guide action IDs and explicitly
+   // signed limited visible source strokes are rendered by the original V5.
+   const certified=scoped.evidence,frame=scoped.clock.snapshot();
+   const visible=new Set(certified.certifiedVisibleContourLineActionIds);
+   const physical=new Set(certified.certifiedPhysicalLineBindings.map(b=>b.actionId));
+   for(const step of certified.steps)for(const action of step.actions){
+    const fraction=frame.actionFractions[action.id]||0;
+    if(fraction<=0||!['line','point'].includes(action.kind))continue;
+    const signed=action.kind==='line'&&(visible.has(action.id)||physical.has(action.id));
+    if(!signed&&action.kind==='line'&&!$('v7-guides').checked)continue;
+    const color=$('v7-mono').checked?(signed?'#111':'#777'):
+     (signed?'#163954':'#b98639');
+    const node=shape(action.kind==='line'?'line':'circle',{
+     stroke:color,fill:action.kind==='point'?color:'none',
+     'stroke-width':signed?3:1.7,
+     'stroke-dasharray':signed?'none':'4 4',
+     'data-v5-scope':signed?'signed-convex-source':'reviewed-point-guide'});
+    Motion.updateSvg(node,action,fraction);svg.append(node);
+   }
+   text(svg,20,445,'C1：已确认凸体几何与局部 V5；隐藏线及完整实体答案仍待认证','#986945');
+   return;
+  }
   if(scoped?.kind==='prism-evidence'){
    const width=scoped.plan.sheet.width,height=scoped.plan.sheet.height;
    svg.setAttribute('viewBox','0 0 '+width+' '+height);
@@ -929,6 +976,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    label='圆弧连接：R='+value('v7-f-radius')+' mm；分支 '+
     value('v7-f-branch')+'；方向 '+value('v7-f-direction')+
     '。请逐条确认两条有限线段的四个端点与行进方向。';
+  }else if(snap.task==='c1-third-view'){
+   label='补第三视图（C1）：已知 '+$('v8-c1-pair').value+
+    ' 两视图，手动核对八个对应角点及单个闭合凸长方体拓扑。'+
+    ($('v8-c1-topology').checked?' 拓扑已勾选人工确认。':' 拓扑尚未确认。')+
+    ' 当前仅能签收受限几何与部分 V5，不能给出完整隐藏线标准答案。';
   }else if(snap.task==='exploration'){
    label='长方体截平面：尺寸 '+['v7-p-width','v7-p-depth','v7-p-height'].map(value).join(' × ')+
     ' mm；截平面法向 '+['v7-p-nx','v7-p-ny','v7-p-nz'].map(value).join(' / ')+
@@ -963,7 +1015,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     snap.task==='composition'&&snap.affineProblem?
      '仿射未知点：仅数学唯一解绘图，无空间可见性/V5 审核':
     snap.task==='planar'?
-   '纯二维数学不制造三维立体':snap.task==='exploration'?
+   '纯二维数学不制造三维立体':
+    snap.task==='c1-third-view'?
+   'C1 已确认凸体及对应顶点；非外轮廓/隐藏棱未完整签收':snap.task==='exploration'?
    '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
    '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
   $('v7-mode').value=snap.view.mode;
@@ -1008,6 +1062,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '已验证的二维圆弧连接 · 现有 M3→ConstructionIntent→DAG→唯一 V5。数学分支 '+solved.plan.selectedBranchId+'；原图仍需人工审核。':
      '已验证的点投影 · 真实 M3→ConstructionIntent→DAG→V5 · 最大残差 '+String(solved.residualMm)+' mm。'):
     partial?
+     partial.kind==='c1-reviewed-preview'?
+      'C1 八角点两已知视图复算：'+partial.evidence.sceneResult.provenVertexCount+
+      ' 顶点，'+partial.evidence.sceneResult.provenEdgeCount+
+      ' 条几何棱；已认证可见外轮廓 V5 动作 '+
+      partial.evidence.certifiedVisibleContourLineActionCount+
+      ' 段。未签收完整实体棱、隐藏线及原书题盲测，禁止完整答案导出。':
      partial.kind==='nonlinear-evidence'?
       'M3 非线性局部数值候选 '+partial.evidence.localCandidates.length+
       ' 个，不能宣称全局唯一、所有分支齐全或正式工程图。'+
@@ -1529,6 +1589,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    msg('现有 M3→ConstructionIntent→V5 已验算 · v'+result.inputRevision);
   else if(result.kind==='prism-evidence'&&result.verified===false)
    msg('仅取得 M3 局部截切证据与长方体线框；禁止播放或导出完整答案。');
+  else if(result.kind==='c1-reviewed-preview'&&result.verified===false)
+   msg('C1 已确认八点凸体几何及限定 V5；未得到完整实虚线标准答案。');
   else throw Error('专业数学结果未通过门禁');
  }
  // Human-led single action: the checkbox cannot be inferred from OCR or
