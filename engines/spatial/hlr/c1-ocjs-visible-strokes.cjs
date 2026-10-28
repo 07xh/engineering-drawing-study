@@ -113,7 +113,11 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   throw new TypeError('finite actual HLR V/H/W projected endpoints required');
  // A projected point is not a B-Rep line, even when it lies on several
  // original edges. Never assign it a 3D source identity.
- const degenerate=Math.hypot(to.u-from.u,to.v-from.v)<=1e-8;
+ // Positive real HLR fragments must reach the original M0 source lift even
+ // when their paper length is below the old 1e-8 mm cutoff. The resulting
+ // inverse parameter may round to zero; the independent exact boundary
+ // alias witness below still holds such candidates without M5/V5 authority.
+ const degenerate=from.u===to.u&&from.v===to.v;
  const paperCollinearIds=degenerate?[]:provenanceCandidates(g,view,from,to);
  const rejectedOutsideOriginalSource=[];
  const sourceCandidate3DLifts=[];
