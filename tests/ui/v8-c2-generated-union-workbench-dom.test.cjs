@@ -97,7 +97,8 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
      kind:x.getAttribute('data-c2-m5-source-kind'),
      status:x.getAttribute('data-c2-m5-source-link-status'),
      source:x.getAttribute('data-c2-m5-source-feature-id'),
-     subspan:x.getAttribute('data-c2-m5-source-subspan')}))));
+     subspan:x.getAttribute('data-c2-m5-source-subspan'),
+     debug:x.getAttribute('data-c2-m5-link-debug')}))));
   assert.ok(linkedRayShapes.every(x=>
    x.getAttribute('data-geometry-id')&&
    x.getAttribute('data-source-feature-key')&&
