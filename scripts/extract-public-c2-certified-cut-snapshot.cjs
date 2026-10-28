@@ -42,7 +42,7 @@ function extractPublicC2CutSignedOnlySnapshot(full){
   schema:'draftai-public-occt-c2-cut-signed-only-preview/1',
   sourceRevision:p.revision,sourceGeometryHash:p.sourceGeometryHash,
   originalBRepActualOCP:true,completeDrawing:false,
-  counts:{signed:12,covered:12,held:40},strokes:visible
+  counts:{signed:12,suppressed:12,held:40},strokes:visible
  };
  const data=JSON.stringify(output)+'\n';
  assert.ok(Buffer.byteLength(data,'utf8')<15*1024);
