@@ -50,6 +50,15 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.ok(m.subtractiveCutOriginalEdgeOpenRayProofs>0);
   assert.equal(m.subtractiveCutOriginalEdgeOpenRayProofs,
    m.counts.clear+m.counts.hidden);
+  assert.ok(m.counts.strictFrontMaterialSlabHidden>=4,
+   'actual side-view bore-wall native 3D edges must have strict front material');
+  assert.ok(m.rows.some(row=>row.view==='V'&&
+   row.originalOpenSourceFrontStockMaterialSlabWitness?.axis==='y'));
+  assert.ok(m.rows.some(row=>row.view==='W'&&
+   row.originalOpenSourceFrontStockMaterialSlabWitness?.axis==='x'));
+  assert.ok(m.rows.filter(row=>row.originalOpenSourceFrontStockMaterialSlabWitness)
+   .every(row=>row.verifiedSubtractiveStrictlyHidden===true&&
+    row.V5ActionSignedOff===false));
   assert.ok(m.rows.some(row=>row.verifiedSubtractiveFrontRayClear===true));
   assert.ok(m.rows.filter(row=>row.verifiedSubtractiveFrontRayClear||
     row.verifiedSubtractiveStrictlyHidden).every(row=>
@@ -64,6 +73,16 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(g.partialSubtractiveCutRaySubspansProven,
    g.positiveWholeOpenRayClearSubspans+
     g.positiveWholeStrictlyHiddenSubspans);
+  assert.ok(g.positivelyProvenCutFrontMaterialSlabSubspans>0,
+   'M4 must consume original native through-hole open-ray material slabs');
+  assert.ok(g.rows.some(row=>row.subspans.some(span=>
+   span.wholeOpenM4SubspanStrictFrontMaterialSlabProven===true&&
+   span.originalM0SubtractiveCutOpenSourceRayEvidence?.
+    commonFrontSubtractiveMaterialSlab?.axis==='y')));
+  assert.ok(g.rows.some(row=>row.subspans.some(span=>
+   span.wholeOpenM4SubspanStrictFrontMaterialSlabProven===true&&
+   span.originalM0SubtractiveCutOpenSourceRayEvidence?.
+    commonFrontSubtractiveMaterialSlab?.axis==='x')));
   assert.ok(g.rows.some(row=>row.subspans.some(span=>
    span.continuousSubtractiveCutOpenRayClearVerified===true)));
   assert.ok(g.rows.every(row=>row.subspans.every(span=>
@@ -77,8 +96,20 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   const evidence=pack.subtractiveCutPartialRayEvidence;
   assert.equal(evidence.nativeSourceViewClearRayProofs,m.counts.clear);
   assert.equal(evidence.nativeSourceViewStrictHiddenRayProofs,m.counts.hidden);
+  assert.equal(evidence.nativeSourceViewFrontMaterialSlabHiddenProofs,
+   m.counts.strictFrontMaterialSlabHidden);
   assert.equal(evidence.m4SubspanClearRayProofs,g.positiveWholeOpenRayClearSubspans);
   assert.equal(evidence.m4SubspanStrictHiddenRayProofs,g.positiveWholeStrictlyHiddenSubspans);
+  assert.equal(evidence.m4SubspanFrontMaterialSlabHiddenProofs,
+   g.positivelyProvenCutFrontMaterialSlabSubspans);
+  assert.equal(info.cutStrictFrontMaterialWholeSourceViewCount,
+   m.counts.strictFrontMaterialSlabHidden);
+  assert.equal(info.cutStrictFrontMaterialM4SubspanCount,
+   g.positivelyProvenCutFrontMaterialSlabSubspans);
+  assert.ok(info.cutProvenWholeSourceViewRayCount>16,
+   'new M0 strict front material theorem must improve previous 16/72 Cut rays');
+  assert.ok(info.cutProvenOpenM4SubspanRayCount>24,
+   'new M0 strict material theorem must improve previous 24/64 Cut subspans');
   assert.equal(evidence.onlyOpenSourceInteriorVerified,true);
   assert.equal(evidence.allNativeEdgeEndpointAndGlobalDepthJunctionsCertified,false);
   assert.equal(evidence.fullEngineeringLineStyleAndV5Certified,false);
