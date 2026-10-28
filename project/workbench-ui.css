@@ -160,7 +160,7 @@ body.ui-next .v8-review-preflight{padding:9px 11px;margin:8px 0;border-radius:8p
 body.ui-next .v8-review-preflight[data-state="blocked"]{border-left-color:#c18732;background:#fffaf0;color:#7b581f}
 body.ui-next .v8-review-preflight[data-state="ready"]{border-left-color:#2476c6;background:#edf5ff;color:#1c558e}
 body.ui-next .v8-review-edit{min-height:44px;border:1px solid #9dbce4;border-radius:8px;background:#fff;color:#1e5da2;padding:8px 12px;font-size:13px;text-align:left}
-body.ui-next .v8-review-check [aria-invalid="true"]{border-color:#b77b21!important;outline:2px solid #f5dba6;outline-offset:1px}
+body.ui-next .v7-input [aria-invalid="true"]{border-color:#b77b21!important;outline:2px solid #f5dba6;outline-offset:1px}
 body.ui-next .v8-review-agree{display:flex!important;align-items:flex-start;gap:9px;margin:12px 0!important;font-size:13px;line-height:1.55;color:#233f67!important}
 body.ui-next .v8-review-agree input{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:2px 0 0}
 body.ui-next #v8-review-run{width:100%;min-height:46px;padding:10px 12px;border-radius:9px}
