@@ -17,6 +17,8 @@ const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
 const {inspectProjectedEdgeDepth}=
  require('../core/numeric/projected-edge-depth-events.cjs');
+const {certifyAxisBoxSubtractiveClosedSourceEndpoints}=
+ require('../core/numeric/axis-box-source-open-ray.cjs');
 const POINT_KEYS='x,y,z';
 const same3=(a,b)=>a&&b&&['x','y','z'].every(k=>
  Number.isFinite(a[k])&&Number.isFinite(b[k])&&Object.is(a[k],b[k]));
@@ -109,8 +111,19 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
   rowsByKey.set(k,row);
  }
  if(rowsByKey.size!==3*edges.length)throw new RangeError('missing original C2 result view');
+ const boxes=nativeReport.actualNativeSourceBoxBoundsMm;
+ if(!Array.isArray(boxes)||boxes.length!==2||
+    boxes.some(x=>!x||typeof x.id!=='string'||
+     !Array.isArray(x.min)||!Array.isArray(x.max)||
+     x.min.length!==3||x.max.length!==3))
+  throw new RangeError('original genuine native stock and cutter bounds required for M0 closed endpoints');
+ const stock={...boxes[0],type:'box'},cutter={...boxes[1],type:'box'};
  const all=[],accepted=[];
- let total=0,positive=0,junctionReady=0,globalPaperReady=0,
+ let closedMatchingOpenRaySourceIntervals=0,
+  closedMatchingOpenRayOriginalNativeEndpointPairs=0,
+  closedUnresolvedSourceEndPoints=0,closedSourcePointsClear=0,
+  closedSourcePointsStrictlyHidden=0,
+  total=0,positive=0,junctionReady=0,globalPaperReady=0,
   sourceEndpointPairs=0,heldInterior=0,heldPaper=0,heldAliasing=0,
   exact3DDepthResolvedAtAllOriginalSourceEndpoints=0,
   distinctProjectedEndpoint3DDepthComparisons=0,
@@ -150,6 +163,24 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
       span.continuousAllOpaqueComponentRayClearVerified!==false||
       span.continuousUnionStrictInteriorOcclusionVerified!==false)
     throw new RangeError('claimed positive Cut source interval is not backed by genuine unsigned M0/M5 ray');
+   const closed=certifyAxisBoxSubtractiveClosedSourceEndpoints({
+    source:{id:ray.sourceId,from:span.realOriginalNative3DFrom,
+     to:span.realOriginalNative3DTo},
+    stock,cutter,view:row.view
+   });
+   if(closed.openSourceStatus!==ray.status||
+      closed.sourceId!==ray.sourceId||
+      closed.constructionIntentAuthorized!==false||
+      closed.newV5ActionCount!==0)
+    throw new RangeError('actual closed M0 endpoint rays are not from the same genuine Cut source');
+   if(closed.bothClosedEndpointsStrictlyMatchOpenSource)
+    closedMatchingOpenRaySourceIntervals++;
+   for(const endpoint of closed.originalClosedEndpoints){
+    if(endpoint.status==='certified-clear')closedSourcePointsClear++;
+    else if(endpoint.status==='certified-strictly-hidden')
+     closedSourcePointsStrictlyHidden++;
+    else closedUnresolvedSourceEndPoints++;
+   }
    // Only literal native source endpoints are native TopoDS vertices;
    // M4 interior crossings are not converted into fabricated vertices.
    const checkEnd=(t,p)=>{
@@ -163,8 +194,11 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
    const ends=[checkEnd(range[0],span.realOriginalNative3DFrom),
     checkEnd(range[1],span.realOriginalNative3DTo)];
    const endpointTopoDS=ends.every(x=>x.ok);
-   if(endpointTopoDS)sourceEndpointPairs++;
-   else heldInterior++;
+   if(endpointTopoDS){
+    sourceEndpointPairs++;
+    if(closed.bothClosedEndpointsStrictlyMatchOpenSource)
+     closedMatchingOpenRayOriginalNativeEndpointPairs++;
+   }else heldInterior++;
    // Consume all native-generated projected events at BOTH source
    // boundaries. A 2D touching peer is not a physical TopoDS junction.
    const atBoundary=t=>row.encounters.filter(x=>x.sourceParameter===t);
@@ -297,6 +331,9 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
      projectedToModelMm:{...span.projectedToModelMm},
      positiveOpenM5RayStatus:clear?'strictly-clear':'strictly-hidden',
      independentlyNativeSourceOpenRayProof:true,
+     original3DClosedSourceEndpointM0RayEvidence:closed,
+     bothOriginal3DClosedEndpointRaysAgreeWithOpenM5:
+      closed.bothClosedEndpointsStrictlyMatchOpenSource,
      independentlyTopoDSOriginal3DSourceEndpointPairCertified:endpointTopoDS,
      nativeFullShared3DVertexIncidenceRechecked:true,
      m4EndpointPhysicalJunctionsNotPaperAliases:eachNativeEndpointPaperJoin,
@@ -317,7 +354,11 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
     positive!==g.positiveWholeOpenRayClearSubspans+
      g.positiveWholeStrictlyHiddenSubspans||
     all.length!==positive||globalPaperReady!==positive||
-    accepted.length!==junctionReady)
+    accepted.length!==junctionReady||
+    closedMatchingOpenRaySourceIntervals>positive||
+    closedMatchingOpenRayOriginalNativeEndpointPairs>sourceEndpointPairs||
+    2*positive!==closedSourcePointsClear+
+     closedSourcePointsStrictlyHidden+closedUnresolvedSourceEndPoints)
   throw new RangeError('C2 signed-candidate proof accounting differs from true M4');
  return freeze({
   schema:'draftai-c2-cut-native-m4-m5-joint-original-junction-gate/1',
@@ -327,6 +368,14 @@ function auditC2CutNativeJunctionGlobalLineGate({math,nativeReport,revision}={})
   allActualSameRunNativeVertex3DIncidenceRechecked:true,
   allActualFirstAngleM4SourceIntervalsReboundToNative3D:true,
   counts:{totalM4Subspans:total,positiveOpenRaySubspans:positive,
+   positiveM5IntervalsWithBothM0ClosedEndpointRaysCertified:
+    closedMatchingOpenRaySourceIntervals,
+   originalNativeVertexEndpointPairsWithClosedRaysCertified:
+    closedMatchingOpenRayOriginalNativeEndpointPairs,
+   individuallyCertifiedClosedEndpointClearRays:closedSourcePointsClear,
+   individuallyCertifiedClosedEndpointStrictHiddenRays:
+    closedSourcePointsStrictlyHidden,
+   individuallyUnresolvedClosedEndpointRays:closedUnresolvedSourceEndPoints,
    exactOriginalNative3DEndpointPairs:sourceEndpointPairs,
    nativeGlobalPaperAliasFrontDepthAudited:globalPaperReady,
    jointOpenRayNativeEndpointAndGlobalPaperCandidates:junctionReady,

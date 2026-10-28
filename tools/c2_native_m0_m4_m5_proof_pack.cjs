@@ -375,6 +375,13 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
       graph.partialSubtractiveCutRaySubspansProven||
      cutJointGate?.counts.totalM4Subspans!==
       graph.continuousM5SubspanCount||
+     cutJointGate?.counts.positiveM5IntervalsWithBothM0ClosedEndpointRaysCertified>
+      cutJointGate?.counts.positiveOpenRaySubspans||
+     cutJointGate?.counts.individuallyUnresolvedClosedEndpointRays<0||
+     cutJointGate?.counts.individuallyCertifiedClosedEndpointClearRays+
+      cutJointGate?.counts.individuallyCertifiedClosedEndpointStrictHiddenRays+
+      cutJointGate?.counts.individuallyUnresolvedClosedEndpointRays!==
+      2*cutJointGate?.counts.positiveOpenRaySubspans||
      cutJointGate?.newUniqueV5Actions!==0||
      cutJointGate?.globalGBEngineeringLineStylesCertified!==false||
      graph.partialSubtractiveCutRaySubspansProven!==
@@ -495,6 +502,10 @@ function generateNativeC2FullMathProofPack({inputPath,outputPath}={}){
    cutJointGate===null?0:
    cutJointGate.counts.strictlyFrontOfPaperEndpointAliasCount+
    cutJointGate.counts.strictlyBehindPaperEndpointAliasCount,
+  cutM0BothClosedEndpointRaysAgreeWithM5OpenIntervalCount:
+   cutJointGate?.counts.positiveM5IntervalsWithBothM0ClosedEndpointRaysCertified??0,
+  cutM0IndividualClosedEndpointRaysUnresolvedCount:
+   cutJointGate?.counts.individuallyUnresolvedClosedEndpointRays??0,
   officiallySignedNativeSubspanCount:
    certifiedV5?.certifiedVisibleHiddenSourceIntervals.length??0,
   pendingUnsignedNativeSubspanCount:

@@ -102,6 +102,22 @@ test('real BRepAlgoAPI_Cut: through-hole 24 edges, 16 native vertices, partial p
   assert.equal(joint.nativeOriginalResultVertexCount,16);
   assert.equal(joint.counts.totalM4Subspans,64);
   assert.equal(joint.counts.positiveOpenRaySubspans,28);
+  assert.equal(joint.counts.individuallyCertifiedClosedEndpointClearRays+
+   joint.counts.individuallyCertifiedClosedEndpointStrictHiddenRays+
+   joint.counts.individuallyUnresolvedClosedEndpointRays,56);
+  assert.equal(info.cutM0BothClosedEndpointRaysAgreeWithM5OpenIntervalCount,
+   joint.counts.positiveM5IntervalsWithBothM0ClosedEndpointRaysCertified);
+  assert.equal(info.cutM0IndividualClosedEndpointRaysUnresolvedCount,
+   joint.counts.individuallyUnresolvedClosedEndpointRays);
+  assert.ok(joint.positiveSourceIntervals.every(x=>
+   x.original3DClosedSourceEndpointM0RayEvidence?.
+    schema==='draftai-m0-axis-box-subtractive-closed-source-endpoint-rays/1'&&
+   x.original3DClosedSourceEndpointM0RayEvidence.originalClosedEndpoints.length===2&&
+   x.bothOriginal3DClosedEndpointRaysAgreeWithOpenM5===
+    x.original3DClosedSourceEndpointM0RayEvidence.
+     bothClosedEndpointsStrictlyMatchOpenSource&&
+   x.original3DClosedSourceEndpointM0RayEvidence.newV5ActionCount===0));
+  assert.equal(joint.globalGBEngineeringLineStylesCertified,false);
   assert.equal(joint.counts.nativeGlobalPaperAliasFrontDepthAudited,28);
   assert.equal(joint.counts.positiveOpenRaySubspans,
    joint.positiveSourceIntervals.length);
@@ -206,6 +222,17 @@ test('a forged native through-hole report cannot replay a union or altered origi
   assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
    ...jointArgs,math:forgedPaperAlias
   }),/projected-only endpoint forged|forged actual TopoDS/);
+  const forgedM0Endpoint=structuredClone(fullPack.mathM0M4M5);
+  const rowWithPositive=forgedM0Endpoint.globalPaperEvents.rows.find(row=>
+   row.subspans.some(span=>span.continuousSubtractiveCutOpenRayClearVerified||
+    span.continuousSubtractiveCutStrictHiddenVerified));
+  const changed=rowWithPositive.subspans.find(span=>
+   span.continuousSubtractiveCutOpenRayClearVerified||
+    span.continuousSubtractiveCutStrictHiddenVerified);
+  changed.originalM0SubtractiveCutOpenSourceRayEvidence.status='undetermined';
+  assert.throws(()=>auditC2CutNativeJunctionGlobalLineGate({
+   ...jointArgs,math:forgedM0Endpoint
+  }),/claimed positive Cut source interval/);
   const forgedM4=structuredClone(fullPack.mathM0M4M5);
   const signedRow=forgedM4.globalPaperEvents.rows.find(x=>
    x.subspans.some(s=>s.continuousSubtractiveCutOpenRayClearVerified||
