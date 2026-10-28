@@ -1,0 +1,74 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {parseHTML}=require('linkedom');
+const {homeHTML}=require('../../ui-next/home.cjs');
+const tick=()=>new Promise(r=>setImmediate(r));
+test('C2 visible generated face intersection previews carry true 3D source, never official V5',async()=>{
+ const {document,window}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
+ const create=document.createElement.bind(document);
+ function adapt(el){
+  if(!el||el.nodeType!==1)return el;
+  for(const name of ['hidden','disabled','checked'])Object.defineProperty(el,name,{
+   configurable:true,get(){return this.hasAttribute(name)},
+   set(v){v?this.setAttribute(name,''):this.removeAttribute(name)}});
+  if(['INPUT','SELECT','OPTION','TEXTAREA'].includes(el.tagName))
+   Object.defineProperty(el,'value',{configurable:true,
+    get(){
+     if(Object.hasOwn(this,'_testVal'))return this._testVal;
+     if(this.tagName==='SELECT')return (this.querySelector('option[selected]')||
+      this.querySelector('option'))?.value||'';
+     return this.getAttribute('value')??'';
+    },set(v){this._testVal=String(v)}});
+  return el;
+ }
+ for(const el of document.querySelectorAll('*'))adapt(el);
+ Object.defineProperty(document,'createElement',{configurable:true,value:t=>adapt(create(t))});
+ const old={document:global.document,window:global.window};
+ global.document=document;global.window=window;
+ global.requestAnimationFrame=cb=>setImmediate(()=>cb(performance.now()));
+ global.cancelAnimationFrame=clearImmediate;
+ const $=id=>document.getElementById(id);
+ const fire=(id,type)=>$(id).dispatchEvent(new window.Event(type,{bubbles:true}));
+ const settle=async(n=10)=>{for(let i=0;i<n;i++)await tick()};
+ const all=()=>[...$('v7-sheet').querySelectorAll('[data-c2-generated-source-id]')];
+ try{
+  require('../../project/unified-workbench-entry.cjs');await settle();
+  $('v7-task').value='composition';fire('v7-task','change');await settle();
+  for(const [letter,values] of Object.entries({
+   a:[0,0,0,10,10,10],b:[5,5,5,15,15,15]
+  })){
+   ['x0','y0','z0','x1','y1','z1'].forEach((p,i)=>{
+    const id='v8-c2-'+letter+'-'+p;
+    $(id).value=String(values[i]);fire(id,'input');
+   });
+  }
+  $('v8-c2-ack').checked=true;fire('v8-c2-ack','change');
+  assert.equal($('v8-c2-build').disabled,false);
+  fire('v8-c2-build','click');await settle(20);
+  assert.match($('v7-proof').textContent,/两原始面交汇生成新棱 6 段/,$('v7-save').textContent);
+  assert.match($('v7-proof').textContent,/三维来源端点/);
+  assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
+  $('v7-guides').checked=true;fire('v7-guides','change');await settle();
+  const strokes=all();
+  assert.equal(strokes.length,12,
+   'six real 3D generated lines have two non-collapsed views each');
+  assert.equal(new Set(strokes.map(x=>x.getAttribute('data-c2-generated-source-id'))).size,6);
+  assert.ok(strokes.every(x=>x.getAttribute('stroke-dasharray')==='2 6'));
+  assert.ok(strokes.every(x=>x.getAttribute('data-visibility')==='undetermined'));
+  assert.ok(strokes.every(x=>
+   x.getAttribute('data-c2-geometry-status')==='boolean-feature-preview-only'));
+  $('v7-guides').checked=false;fire('v7-guides','change');await settle();
+  assert.equal(all().length,0,'source candidate overlays are user-controlled');
+  $('v7-guides').checked=true;fire('v7-guides','change');await settle();
+  assert.equal(all().length,12);
+  // An edited unsaved input can never keep the previous math/overlay.
+  $('v8-c2-b-x0').value='7';fire('v8-c2-b-x0','input');await settle();
+  assert.equal(all().length,0);
+  assert.equal($('v7-play').disabled,true);
+  assert.match($('v7-proof').textContent,/未计算/);
+  assert.equal($('v8-c2-build').disabled,true);
+ }finally{
+  global.document=old.document;global.window=old.window;
+  delete global.requestAnimationFrame;delete global.cancelAnimationFrame;
+ }
+});

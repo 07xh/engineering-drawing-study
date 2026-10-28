@@ -16,6 +16,7 @@ const {clientToPhoto,measuredPixels}=require('./photo-measurements.cjs');
 const {manualSegment}=require('./source-candidate-bridge.cjs');
 const {compileGeometryScene}=require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
+const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
 (function(){
  const $=id=>document.getElementById(id),root=$('project-workbench');
@@ -1000,6 +1001,45 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const result=compiled(),active=current(),frame=active?.clock.snapshot();
   if(result){
    drawPrimitives(svg,result.paper,'paper',snap,frame,$('v7-mono').checked);
+   // Only an existing, current M0/M5 proof can introduce a NEW two-face
+   // union feature. Show its exact 3D-source projections as dashed SOURCE
+   // CANDIDATES, never signed engineering hidden lines or official V5.
+   const c2=preview()?.orthogonalBooleanFeatureAudit;
+   if(snap.task==='composition'&&c2&&
+      c2.revision===snap.revision&&
+      $('v7-guides').checked){
+    const frame=result.paperTransform;
+    for(const generated of c2.generated.segments){
+     if(generated.positiveNewConcaveUnionOpenFeatureVerified!==true)
+      continue;
+     if(generated.generatedByTwoSourceFacePlanes!==true||
+        generated.originalSourceMeshEdgeId!==null||
+        generated.supportingFacePlaneIncidenceIndependentlyVerified!==true||
+        generated.officialEngineeringLineStyle!=='undetermined'||
+        generated.officialConstructionStepV5ActionAuthorized!==false)
+      throw Error('C2 生成棱不得冒充已签收的工程线条');
+     const projected0=project(generated.source3DFrom),
+       projected1=project(generated.source3DTo);
+     for(const view of VIEWS){
+      if(generated.projected[view].kind==='collapsed-point')
+       continue;
+      const a=toSheet(view,projected0[view],frame);
+      const b=toSheet(view,projected1[view],frame);
+      if(a.x===b.x&&a.y===b.y)continue;
+      const lineNode=shape('line',{
+       x1:a.x,y1:a.y,x2:b.x,y2:b.y,
+       stroke:$('v7-mono').checked?'#777':'#9563bf',
+       'stroke-width':1.8,'stroke-dasharray':'2 6',
+       'data-c2-generated-source-id':generated.id,
+       'data-c2-generated-view':view,
+       'data-c2-geometry-status':'boolean-feature-preview-only',
+       'data-visibility':'undetermined',
+       'aria-label':'C2 两原始面相交的新棱候选，尚无工程线型证明'
+      });
+      svg.append(lineNode);
+     }
+    }
+   }
    if(result.warnings.length)
     text(svg,22,450,result.warnings[0], '#986945');
    if(!planar&&preview())
@@ -1084,7 +1124,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 两视图；已输入 '+rows.length+'/8 行原始角点对应。'+
     ' 拓扑核对：'+($('v8-c1-topology').checked?'已勾选':'未确认')+
     '。请检查每一角点的四个模型毫米坐标，不会自动推断原题。'+
-    ' 当前不能给出全部隐藏线标准答案。';
+    ' 原始棱线仅在 M0–M5 全范围签收后才作为标准实虚线显示。';
   }else if(snap.task==='exploration'){
    label='长方体截平面：尺寸 '+['v7-p-width','v7-p-depth','v7-p-height'].map(value).join(' × ')+
     ' mm；截平面法向 '+['v7-p-nx','v7-p-ny','v7-p-nz'].map(value).join(' / ')+
@@ -1143,7 +1183,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     snap.task==='c3-intersection'?
    'C3 两正交有限圆柱，共享解析几何与 V/H/W；整条曲线和线型仍为预览':
     snap.task==='c1-third-view'?
-   'C1 已确认凸体及对应顶点；非外轮廓/隐藏棱未完整签收':snap.task==='exploration'?
+   (preview()?.scopedProof?.scopedSingleConvexFullyCertified?
+    'C1 已确认单闭合凸体原始棱线、实虚线与唯一 V5 作用域全部数学签收；原书盲测仍未通过':
+    'C1 已确认凸体及对应顶点；原始来源的未证明棱段保持未定'):snap.task==='exploration'?
    '长方体及截交边共享同源数学；V5 仅预览，虚实线未签收':snap.task==='composition'?
    '多对象人工几何预览，不等于空间求解':'点投影（非实体 CAD）';
   $('v7-mode').value=snap.view.mode;
@@ -1238,7 +1280,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         ' 条；退化点和非物理细分另行记录。所有原始棱均按 '+partial.originalMultiBodyEdgeRays.componentCount+
         ' 个原始凸体逐一核对，未将二维投影重合当作三维同一点。':
         '当前包含超出多凸体全棱证明范围的几何，只提供已有局部空间关系核验。')+
-       ' 原始棱遮挡不证明交汇生成边、完整实体外轮廓或国标工程线型；没有完整 V5 答案资格。':
+       (partial.orthogonalBooleanFeatureAudit?
+        ' M5 正交并集实体的原始外棱开区间 '+
+         partial.orthogonalBooleanFeatureAudit.originalOpenSourceIntervalCount+
+        ' 段；两原始面交汇生成新棱 '+partial.orthogonalBooleanFeatureAudit.generated.segmentCount+
+        ' 段，其中真实新增凹棱 '+
+         partial.orthogonalBooleanFeatureAudit.generatedOpenSourceIntervalCount+
+        ' 段、埋入内部 '+
+         partial.orthogonalBooleanFeatureAudit.generated.buriedNewFaceIntersectionCount+
+        ' 段。三维来源端点 '+partial.orthogonalBooleanFeatureAudit.physical.nodeCount+
+        ' 个，投影同点但三维不同点的别名 '+
+         partial.orthogonalBooleanFeatureAudit.physical.projectedAliases.filter(x=>
+           x.different3DPhysicalPoints).length+
+        ' 项；M5 端点方向已核对，全部新棱仅以辅助虚线候选展示。':
+        ' 非正交凸体仍未取得生成交汇棱的正向证明。')+
+       ' 原始棱遮挡和局部布尔生成棱均不证明完整实体外轮廓或国标工程实虚线；没有正式 V5 答案资格。':
      '限定证据：截交多边形已通过 M3、V/H/W 与 V5 步骤一致性审核，可使用唯一 V5 逐笔预览；'+
       (partial.evidence?.sectionVisibilityEvidence?.status==='open-edge-ray-only'?
        '保留材料侧已确认，局部截交边开区间射线判断 '+JSON.stringify(
@@ -1647,8 +1703,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     uncommittedFormEdit=true;
    $('v8-c2-ack').checked=false;
    $('v8-c2-build').disabled=true;
-   if(coordinator?.snapshot().task==='composition')
+   if(coordinator?.snapshot().task==='composition'){
     $('v8-c2-status').textContent='形体尺寸已编辑；旧确认不适用于新数值。';
+    // Saved user geometry stays intact but stale mathematics must vanish.
+    if(session?.readSnapshot())session.invalidate();
+    else render();
+   }
   });
  $('v8-c2-build').addEventListener('click',()=>call(async()=>{
   const p=coordinator?.snapshot();
