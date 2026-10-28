@@ -80,7 +80,7 @@ const nextUpPositive=n=>{
  bits.setBigUint64(0,bits.getBigUint64(0)+1n);
  return bits.getFloat64(0);
 };
-test('V/H/W real one-ULP source overruns cannot be rounded into full original TopoDS coverage',()=>{
+test('V/H/W native one-ULP overruns remain explicitly rounded paper candidates, never exact source proof',()=>{
  const g=fixture();
  for(const [view,max,point] of [
   ['V',10,t=>({u:t,v:0})],
@@ -92,51 +92,53 @@ test('V/H/W real one-ULP source overruns cannot be rounded into full original To
   for(const [from,to] of [[point(0),point(outside)],
    [point(outside),point(0)],[point(max/2),point(outside)]]){
    const r=lift(g,view,from,to);
-   assert.deepEqual(r.projectedOriginalEdgeCandidates,[],
-    view+' must not clamp an original 3D source to t=1');
-   assert.equal(r.sourceCandidate3DLifts.length,0);
-   assert.ok(r.paperCollinearSourcesRejectedOutsideOriginalBounds.length>=1);
-   assert.equal(r.unmappedReason,
-    'paper-collinear-but-outside-finite-original-source-domain');
+   assert.ok(r.sourceCandidate3DLifts.length>=1,
+    'genuine OCCT rounded HLR source remains available for display');
+   assert.ok(r.paperCollinearSourcesRoundedOutsideOriginalBounds.length>=1);
+   assert.ok(r.sourceCandidate3DLifts.every(x=>
+    x.sourceParameterWasClampedForPaperOnly===true&&
+    x.originalSourceExactParameterCoverageFromRoundingProven===false&&
+    x.v5Authorized===false));
+   assert.ok(r.sourceCandidate3DLifts.some(x=>
+    x.paperOnlyUnclampedOriginalSourceParameters.some(t=>t>1)));
    assert.equal(r.actualOCCTTopoDSIdentityRecovered,false);
-   assert.equal(r.v5Authorized,false);
   }
   const inside=lift(g,view,point(0),point(max));
-  assert.ok(inside.sourceCandidate3DLifts.length>0,
-   'exact source endpoint remains a valid unsigned candidate in '+view);
+  assert.ok(inside.sourceCandidate3DLifts.length>0);
   assert.ok(inside.sourceCandidate3DLifts.every(x=>
    x.originalSourceParameterRange[0]===0&&
-   x.originalSourceParameterRange[1]===1));
+   x.originalSourceParameterRange[1]===1&&
+   x.sourceParameterWasClampedForPaperOnly===false));
  }
 });
-test('subnormal negative paper overrun survives floating parameter underflow and is held',()=>{
+test('negative subnormal paper overrun is reported even if binary64 t underflows to zero',()=>{
  const g=fixture();
  for(const [view,point] of [
   ['V',t=>({u:t,v:0})],
   ['H',t=>({u:t,v:0})],
   ['W',t=>({u:0,v:t})]
  ]){
-  const outside=point(-Number.MIN_VALUE),inside=point(1);
-  assert.ok(Object.values(outside).some(x=>x<0));
-  const r=lift(g,view,outside,inside);
-  assert.equal(r.sourceCandidate3DLifts.length,0,
-   'negative subnormal cannot round to t=0 and impersonate a full source');
-  assert.ok(r.paperCollinearSourcesRejectedOutsideOriginalBounds.length>=1);
+  const r=lift(g,view,point(-Number.MIN_VALUE),point(1));
+  assert.ok(r.sourceCandidate3DLifts.length>=1);
+  assert.ok(r.sourceCandidate3DLifts.every(x=>
+   x.sourceParameterWasClampedForPaperOnly===true&&
+   x.originalSourceExactParameterCoverageFromRoundingProven===false));
   assert.equal(r.v5Authorized,false);
  }
 });
-test('near-collinear but finite out-of-domain source aliases are all withheld, not reassigned to another depth',()=>{
- const g=fixture();
- const over=nextUpPositive(10);
+test('2D aliases at different 3D depths remain separate rounded candidates, not a unique source',()=>{
+ const g=fixture(),over=nextUpPositive(10);
  for(const view of ['V','H']){
   const r=lift(g,view,{u:2,v:0},{u:over,v:0});
-  assert.equal(r.sourceCandidate3DLifts.length,0);
-  assert.ok(r.paperCollinearSourcesRejectedOutsideOriginalBounds.length>=2,
-   'V/H physically distinct 3D edges with coincident paper cannot rescue a forged overrun');
+  assert.ok(r.sourceCandidate3DLifts.length>=2);
+  assert.equal(new Set(r.projectedOriginalEdgeCandidates).size,
+   r.projectedOriginalEdgeCandidates.length);
+  assert.ok(r.sourceCandidate3DLifts.every(x=>
+   x.sourceParameterWasClampedForPaperOnly===true));
  }
  const good=lift(g,'V',{u:2,v:0},{u:8,v:0});
  assert.equal(good.sourceCandidate3DLifts.length,2);
- assert.deepEqual(good.paperCollinearSourcesRejectedOutsideOriginalBounds,[]);
+ assert.deepEqual(good.paperCollinearSourcesRoundedOutsideOriginalBounds,[]);
  assert.ok(good.sourceCandidate3DLifts.every(x=>
-  x.actualOCCTTopoDSEdgeIdentityRecovered===false&&x.v5Authorized===false));
+  x.sourceParameterWasClampedForPaperOnly===false&&x.v5Authorized===false));
 });
