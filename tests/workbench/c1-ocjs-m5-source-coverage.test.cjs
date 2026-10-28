@@ -573,3 +573,34 @@ test('C1 native V/H/W gap evidence refuses forged original BRep XYZ, curve and 3
    'native BRep reversal and independent parameter origin remain valid');
  }
 });
+
+test('C1 M5 holds paper-rounded native source coverage unless independent original 3D junctions prove literal endpoints',()=>{
+ for(const view of ['V','H','W']){
+  const {geometry,cad,edgeId}=physicalLedger();
+  const stroke=cad.views[view][0],lift=stroke.sourceCandidate3DLifts[0];
+  lift.sourceParameterWasClampedForPaperOnly=true;
+  lift.originalSourceExactParameterCoverageFromRoundingProven=false;
+  lift.paperOnlyUnclampedOriginalSourceParameters=[-Number.MIN_VALUE,1];
+  const input={geometry,view,sourceEdgeId:edgeId,
+   real3DFrom:geometry.data.points.A,real3DTo:geometry.data.points.B,
+   strokes:[stroke]};
+  const held=exactSourceCoverage(input);
+  assert.equal(held.entireOriginalParameterIntervalCovered,false);
+  assert.deepEqual(held.positiveLengthUncoveredIntervals,[[0,1]]);
+  assert.equal(held.roundedPaperOnlyCandidatesHeld,1);
+  assert.equal(held.roundedCandidatesWithIndependentM5,0);
+  assert.equal(held.signedV5Action,false);
+  const originalM5=exactSourceCoverage({...input,
+   projectedFromModelMm:project(geometry.data.points.A)[view],
+   projectedToModelMm:project(geometry.data.points.B)[view],
+   independentlyM5SourceAndJunctionsProven:true});
+  assert.equal(originalM5.entireOriginalParameterIntervalCovered,true);
+  assert.equal(originalM5.roundedPaperOnlyCandidatesHeld,0);
+  assert.equal(originalM5.roundedCandidatesWithIndependentM5,1);
+  assert.equal(originalM5.signedV5Action,false);
+  const forged=structuredClone(stroke);
+  forged.sourceCandidate3DLifts[0].originalSourceExactParameterCoverageFromRoundingProven=true;
+  assert.throws(()=>exactSourceCoverage({...input,strokes:[forged]}),
+   /rounded native paper source falsely claims/);
+ }
+});
