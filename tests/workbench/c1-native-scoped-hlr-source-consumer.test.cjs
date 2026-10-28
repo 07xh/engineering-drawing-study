@@ -381,3 +381,67 @@ test('native source-scoped HLR never treats simultaneously visible and hidden or
  assert.equal(r.formalEngineeringLineStyleCertified,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+
+const {auditExactBinary64PaperParameterPair:exactPaperPair}=
+ require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
+const paper=(u,v=0)=>({u,v});
+test('M0 dyadic paper parameters reject a one-ULP overshoot and preserve reversed orientation',()=>{
+ const relation=exactPaperPair({sourceFrom:paper(0),sourceTo:paper(1),
+  measuredFrom:paper(-Number.MIN_VALUE),measuredTo:paper(1+Number.EPSILON)});
+ assert.equal(relation.nativeFromWithinExactBinary64OriginalParameterDomain,false);
+ assert.equal(relation.nativeToWithinExactBinary64OriginalParameterDomain,false);
+ assert.equal(relation.nativePaperSourceParameterPairHasExactPositiveSpan,true);
+ assert.equal(relation.generatedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(relation.engineeringLineStyle,'undetermined');
+ assert.equal(relation.signedV5Action,false);
+ const reversed=exactPaperPair({sourceFrom:paper(10),sourceTo:paper(0),
+  measuredFrom:paper(2),measuredTo:paper(8)});
+ assert.equal(reversed.exactBinary64OriginalSourceParameterOrder,-1);
+ assert.equal(reversed.nativeFromWithinExactBinary64OriginalParameterDomain,true);
+ assert.equal(reversed.nativeToWithinExactBinary64OriginalParameterDomain,true);
+ const vertical=exactPaperPair({sourceFrom:paper(4,0),sourceTo:paper(4,5),
+  measuredFrom:paper(4,1),measuredTo:paper(4,3)});
+ assert.equal(vertical.dominantOriginalProjectionAxis,'v');
+ assert.equal(vertical.exactBinary64OriginalSourceParameterOrder,1);
+ assert.throws(()=>exactPaperPair({sourceFrom:paper(0),sourceTo:paper(0),
+  measuredFrom:paper(0),measuredTo:paper(0)}),/invertible/);
+});
+test('positive exact binary64 paper interval survives even if rounded t inverse underflows',()=>{
+ const relation=exactPaperPair({sourceFrom:paper(0),sourceTo:paper(1e300),
+  measuredFrom:paper(0),measuredTo:paper(Number.MIN_VALUE)});
+ assert.equal(Number.MIN_VALUE/1e300,0);
+ assert.equal(relation.nativePaperSourceParameterPairHasExactPositiveSpan,true);
+ assert.equal(relation.exactBinary64OriginalSourceParameterOrder,1);
+ assert.equal(relation.nativeToWithinExactBinary64OriginalParameterDomain,true);
+});
+test('source-scoped HLR one-ULP outside M0 domain cannot fill paper parameter coverage',()=>{
+ const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0];
+ w.from.u=-Number.MIN_VALUE;
+ x.cad.views.V[0].from.u=-Number.MIN_VALUE;
+ const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
+ assert.equal(result.counts.sourceScopedPaperEndpointsOutsideExactBinary64Domain,1);
+ assert.equal(row.exactBinary64PaperParameterDiagnostics.length,1);
+ assert.equal(row.exactBinary64PaperParameterDiagnostics[0].
+  nativeFromWithinExactBinary64OriginalParameterDomain,false);
+ assert.equal(row.exactBinary64PaperParameterDiagnostics[0].
+  paperDerivedCandidateIntervalRetained,false);
+ assert.deepEqual(row.paperDerivedPositiveLengthUncoveredCandidateIntervals,[[0,1]]);
+ assert.equal(row.actualOriginalTopoDSParameterCoverageCertified,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('distinct native HLR paper endpoints whose rounded inverse t collapses stay unbound',()=>{
+ const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0];
+ w.to={u:Number.MIN_VALUE,v:0};
+ x.cad.views.V[0].to={...w.to};
+ const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
+ assert.equal(result.counts.sourceScopedPaperPositiveIntervalsLostByRoundedInverse,1);
+ assert.equal(result.counts.sourceScopedPaperStrokesWithUnboundParameters,1);
+ assert.equal(row.exactBinary64PaperParameterDiagnostics[0].
+  nativePaperSourceParameterPairHasExactPositiveSpan,true);
+ assert.deepEqual(row.exactBinary64PaperParameterDiagnostics[0].
+  roundedPaperInverseParameters,[0,0]);
+ assert.deepEqual(row.paperDerivedPositiveLengthUncoveredCandidateIntervals,[[0,1]]);
+ assert.equal(result.globalContinuousVisibilityCertified,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
