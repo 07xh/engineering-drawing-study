@@ -286,13 +286,21 @@ function probeRealOcctHLREdgeDirectOriginalSourceIdentity({
     !Array.isArray(originalSourceEdges)||!originalSourceEdges.length||
     originalSourceEdges.length>512)
   throw new TypeError('actual OCCT generated and bounded original native TopoDS edges required');
- const ids=new Set(),visited=new Set();
+ const ids=new Set(),visited=new Set(),handleBySourceId=new Map();
  for(const item of originalSourceEdges){
   if(typeof item?.sourceEdgeId!=='string'||!item.sourceEdgeId||
      typeof item.edge?.IsSame!=='function')
    throw new TypeError('untrusted original native TopoDS source edge');
-  if(visited.has(item.sourceEdgeId))
-   throw new RangeError('duplicate original native TopoDS source ID in source ledger');
+  const prior=handleBySourceId.get(item.sourceEdgeId);
+  if(prior){
+   // The same physical TopoDS edge may occur more than once in an explorer
+   // ledger. Accept only symmetric IsSame duplicates, never one source ID
+   // aliased to two different physical TShapes.
+   const sameForward=item.edge.IsSame(prior),sameBackward=prior.IsSame(item.edge);
+   if(typeof sameForward!=='boolean'||typeof sameBackward!=='boolean'||
+      sameForward!==sameBackward||sameForward!==true)
+    throw new RangeError('duplicate original source ID aliases distinct native TopoDS edges');
+  }else handleBySourceId.set(item.sourceEdgeId,item.edge);
   visited.add(item.sourceEdgeId);
   const forward=generatedEdge.IsSame(item.edge),
    backward=item.edge.IsSame(generatedEdge);
