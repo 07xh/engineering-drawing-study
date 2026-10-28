@@ -1293,8 +1293,9 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const edit=$('v8-review-edit'),readiness=$('v8-review-preflight');
   if(edit.dataset.target)$(edit.dataset.target)?.removeAttribute('aria-invalid');
   if(snap.task==='composition'){
-   reviewIssue='组合体请在上方确认已知形体；这里不生成完整标准答案。';
-   reviewTarget='v8-c2-a-x0';
+   // C2 owns its own preflight; never mark a real dimension invalid here.
+   reviewIssue='组合体请使用上方独立的两形体检查与人工确认入口。';
+   reviewTarget='';
   }else{
    // Follow fieldsForTask, the same input inventory used by submission.
    for(const id of fieldsForTask(snap.task)){
@@ -1957,10 +1958,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   updateC2Preflight();
   const p=coordinator?.snapshot();
   if(p?.task!=='composition')throw Error('请先选择 C2 组合体任务');
-  if($('v8-c2-build').disabled)throw Error('请先补全两组尺寸并人工核对确认');
   if(p.objects.length||p.conditions.length||(p.relations||[]).length||
      p.affineProblem)
    throw Error('当前项目已有条件，请新建空组合体项目，避免覆盖原有对象');
+  if($('v8-c2-build').disabled)throw Error('请先补全两组尺寸并人工核对确认');
   // Both complete meshes are validated BEFORE any saved project mutation.
   const read=letter=>({
    min:['x0','y0','z0'].map(key=>numberFrom('v8-c2-'+letter+'-'+key)),
