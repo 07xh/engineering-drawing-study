@@ -80,6 +80,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - 'tests/workbench/c1-ocjs-m5-source-coverage.test.cjs'
+      - 'workbench/c1-native-scoped-hlr-source-consumer.cjs'
+      - 'tests/workbench/c1-native-scoped-hlr-source-consumer.test.cjs'
       - '.github/workflows/c1-opencascade-js-hlr.yml'
   push:
     branches: [main]
@@ -161,6 +163,8 @@ on:
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-reviewed-solid-v5.cjs'
       - 'tests/workbench/c1-ocjs-m5-source-coverage.test.cjs'
+      - 'workbench/c1-native-scoped-hlr-source-consumer.cjs'
+      - 'tests/workbench/c1-native-scoped-hlr-source-consumer.test.cjs'
       - '.github/workflows/c1-opencascade-js-hlr.yml'
   workflow_dispatch:
 
