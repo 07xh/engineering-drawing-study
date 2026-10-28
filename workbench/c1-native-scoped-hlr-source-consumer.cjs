@@ -7,6 +7,8 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -33,6 +35,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   projectedOriginalBySource.set(ids[i],Object.fromEntries(VIEWS.map(view=>
    [view,[projectedA[view],projectedB[view]]])));
  }
+ const originalVertexIdsBySource=new Map(ids.map((id,i)=>
+  [id,geometry.data.edges[i]]));
  const expected=new Set(ids);
  if(expected.size!==ids.length)
   throw new RangeError('duplicate original M0 physical source edge');
@@ -52,7 +56,29 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   return Math.hypot(p.u-a.u-(dx/length)*bounded,
    p.v-a.v-(dy/length)*bounded)<=1e-6;
  };
+ // Inverting a 2D HLR paper line yields only a CANDIDATE original 3D
+ // parameter. Native TopoDS history, endpoint topology and opaque rays must
+ // still be proven separately. Never clamp rounded endpoints to [0,1]:
+ // that could silently erase a positive original-source parameter gap.
+ const paperParameter=(p,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const du=b.u-a.u,dv=b.v-a.v,useU=Math.abs(du)>=Math.abs(dv);
+  const delta=useU?du:dv;
+  if(!Number.isFinite(delta)||delta===0)return null;
+  const t=((useU?p.u:p.v)-(useU?a.u:a.v))/delta;
+  return Number.isFinite(t)&&t>=0&&t<=1?t:null;
+ };
+ const originalEndpointCandidate=(p,t,source,view)=>{
+  const [a,b]=projectedOriginalBySource.get(source)[view];
+  const [aId,bId]=originalVertexIdsBySource.get(source);
+  if(t===0&&p.u===a.u&&p.v===a.v)return aId;
+  if(t===1&&p.u===b.u&&p.v===b.v)return bId;
+  return null;
+ };
  const views={},counts={originalSourceEdgesPerView:ids.length,
+  projectedSourcesWithFullPaperCandidateCoverage:0,
+  projectedSourcesWithPositivePaperCandidateGaps:0,
+  sourceScopedPaperStrokesWithUnboundParameters:0,
   nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
   paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
   wholeSolidHiddenEdgesWithoutScopedSource:0,
@@ -100,6 +126,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    // twice in one visibility class.
    item.nativeOwners=new Map();
   }
+  const sourceRanges=new Map(ids.map(id=>[id,[]]));
+  for(const item of Object.values(classes))
+   item.parameterCandidates=Array.from({length:item.global.length},()=>[]);
   let total=0,direct=0,seen=new Set();
   for(const row of scoped.rows){
    const source=row?.originalPhysicalSourceEdgeId;
@@ -134,6 +163,16 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
         !onOriginalPaperEdge(w.from,source,view)||
         !onOriginalPaperEdge(w.to,source,view))
       throw new RangeError('source-scoped HLR paper segment contradicts original M0 3D projection');
+     const tFrom=paperParameter(w.from,source,view),
+      tTo=paperParameter(w.to,source,view);
+     const range=tFrom===null||tTo===null||tFrom===tTo?null:
+      [Math.min(tFrom,tTo),Math.max(tFrom,tTo)];
+     if(range)sourceRanges.get(source).push(range);
+     else counts.sourceScopedPaperStrokesWithUnboundParameters++;
+     const endpointCandidates=[
+      originalEndpointCandidate(w.from,tFrom,source,view),
+      originalEndpointCandidate(w.to,tTo,source,view)
+     ];
      const ordinalSet=new Set();
      for(const ordinal of paper){
       if(!Number.isSafeInteger(ordinal)||ordinal<0||
@@ -148,6 +187,13 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
            same(seg.from,w.to)&&same(seg.to,w.from)))
        throw new RangeError('native original source filter contradicts whole-solid HLR physical source');
       item.sources[ordinal].add(source);
+      if(range)item.parameterCandidates[ordinal].push({
+       originalPhysicalSourceEdgeId:source,
+       paperDerivedOriginalSourceParameterCandidateRange:[...range],
+       paperDerivedOriginal3DEndpointVertexCandidates:[...endpointCandidates],
+       actualNativeTopoDSParameterHistoryProven:false,
+       nativeOriginal3DEndpointTopologyProven:false
+      });
      }
      for(const ordinal of native){
       if(!ordinalSet.has(ordinal))
@@ -173,6 +219,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    const rows=item.sources.map((sources,ordinal)=>({
     wholeSolidHLREdgeOrdinal:ordinal,
     original3DSourceCandidatesFromNativeFilter:[...sources].sort(),
+    paperDerivedOriginalSourceParameterCandidates:
+     item.parameterCandidates[ordinal].sort((a,b)=>
+      a.originalPhysicalSourceEdgeId.localeCompare(b.originalPhysicalSourceEdgeId)),
     originalTopoDSHistoryProven:false,
     originalSourceParameterCoverageProven:false,
     continuousFrontRayProven:false,
@@ -186,6 +235,34 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     rows.filter(x=>x.original3DSourceCandidatesFromNativeFilter.length>1).length;
    views[view][klass]=rows;
   }
+  // Union the REAL source-filtered HLR outputs, but label all intervals
+  // PAPER-DERIVED CANDIDATES. This reports exact binary64 gaps, including
+  // one-ULP holes, without certifying original TopoDS parameter history.
+  views[view].sourceParameterCandidates=ids.map(source=>{
+   const [a,b]=projectedOriginalBySource.get(source)[view];
+   const collapsed=!(Math.hypot(b.u-a.u,b.v-a.v)>0);
+   const ranges=sourceRanges.get(source);
+   const coverage=collapsed?null:
+    exactCandidateIntervalCoverage([0,1],ranges);
+   if(coverage?.entireOriginalParameterIntervalCovered)
+    counts.projectedSourcesWithFullPaperCandidateCoverage++;
+   else if(coverage)
+    counts.projectedSourcesWithPositivePaperCandidateGaps++;
+   return {
+    originalPhysicalSourceEdgeId:source,
+    originalProjectedEdgeCollapsed:collapsed,
+    paperDerivedOriginalSourceParameterCandidateIntervals:
+     ranges.map(range=>[...range]),
+    paperDerivedPositiveLengthUncoveredCandidateIntervals:
+     coverage?.positiveLengthUncoveredIntervals??null,
+    entireOriginalSourcePaperCandidateIntervalCovered:
+     coverage?.entireOriginalParameterIntervalCovered??false,
+    actualOriginalTopoDSParameterCoverageCertified:false,
+    nativeOriginal3DEndpointTopologyProven:false,
+    continuousOcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   };
+  });
  }
  return frozen({schema:'draftai-c1-real-source-scoped-hlr-m5-consumer/1',
   sourceGeometryId:geometry.id,revision:cad.revision,unit:'mm',
