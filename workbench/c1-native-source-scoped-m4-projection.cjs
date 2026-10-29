@@ -123,10 +123,19 @@ function projectC1Native3DSourceIntervalsToM4({
   original3DSourceCurveDirection:forward?'forward':'reversed',
   native3DSourceParameterPartitionCompleteExactlyOnce:
    nativePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce,
+  // A positive native one-ULP gap can disappear when two distinct
+  // OCCT parameters round to the SAME binary64 M0 fraction. Never
+  // promote the rounded [0,1] union to a complete M4 source witness
+  // unless the ORIGINAL native parameter partition is also complete.
   M4OriginalUnitIntervalCandidateCoverageComplete:
+   nativePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce&&
    normalized.entireOriginalParameterIntervalCovered,
   M4OriginalUnitIntervalCandidatePositiveGaps:
    normalized.positiveLengthUncoveredIntervals,
+  native3DOriginalParameterPositiveGaps:
+   nativePartition.positiveLengthUncoveredNativeParameterIntervals,
+  native3DOriginalParameterPositiveOverlaps:
+   nativePartition.positiveLengthOverlappingNativeParameterIntervals,
   M4OriginalUnitIntervalNativeClassConflicts:
    nativeClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,
   segments,
