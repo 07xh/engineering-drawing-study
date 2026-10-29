@@ -171,7 +171,41 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
      originalTopoDSHistoryCertified:false,
      engineeringLineStyle:'undetermined',signedV5Action:false
     });
+ // Rebind each omitted M0 source/view to ACTUAL whole-solid HLR paper
+ // candidates. This is deliberately not native generated TopoDS history:
+ // one projected segment can match multiple different-depth 3D edges.
+ const unrepresentedM0NativeHLRCandidateForensics=
+  unrepresentedOriginalM0ProjectedSources.map(({view,sourceEdgeId})=>{
+   const candidates=[];
+   for(const [klass,segments] of [
+    ['visible-sharp',cad.views[view]],
+    ['hidden-sharp',cad.hiddenSharpViews[view]]
+   ]){
+    if(segments.length>128)throw new RangeError('unbounded real native HLR edges');
+    for(let ordinal=0;ordinal<segments.length;ordinal++){
+     const segment=segments[ordinal];
+     const lifts=segment?.sourceCandidate3DLifts;
+     if(!Array.isArray(lifts)||lifts.length>originalIds.size||
+        lifts.some(x=>!originalIds.has(x?.sourceEdgeId)))
+      throw new RangeError('real HLR paper candidate inventory lacks M0 provenance bounds');
+     if(lifts.some(x=>x.sourceEdgeId===sourceEdgeId))
+      candidates.push({hlrClass:klass,ordinal,
+       projectedFrom:{...segment.from},projectedTo:{...segment.to},
+       original3DLiftCount:lifts.length,
+       nativeGeneratedTopoDSToOriginalSourceHistoryCertified:false,
+       engineeringLineStyle:'undetermined',signedV5Action:false});
+    }
+   }
+   return {view,sourceEdgeId,
+    nativeHLRPaperCandidateCount:candidates.length,
+    nativeHLRPaperCandidates:candidates,
+    noHLRPaperCandidateDoesNotProveGlobalOcclusion:true,
+    paperCandidateDoesNotProveOriginalTopoDSHistory:true,
+    continuousOcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false};
+  });
  return freeze({schema:'draftai-c1-all-original-3d-native-source-gaps/1',
+  unrepresentedM0NativeHLRCandidateForensics,
   unrepresentedOriginalM0ProjectedSources,
   allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5:
    unrepresentedOriginalM0ProjectedSources.length===0,

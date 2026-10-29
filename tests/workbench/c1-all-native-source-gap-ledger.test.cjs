@@ -151,3 +151,39 @@ test('collapsed original source projection is not a missing positive HLR stroke'
   x.view==='H'&&x.sourceEdgeId==='C1SkewTetra::A|C'),true);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('unrepresented M0 edge is linked only to genuine native HLR paper candidates, not TopoDS history',()=>{
+ const x=fixture();
+ const sourceEdgeId='C1SkewTetra::A|C';
+ x.cad.views.V.push({
+  from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}],
+  engineeringLineStyle:'undetermined',v5Authorized:false
+ });
+ const out=audit(x);
+ const v=out.unrepresentedM0NativeHLRCandidateForensics.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(v.nativeHLRPaperCandidateCount,1);
+ assert.deepEqual(v.nativeHLRPaperCandidates.map(x=>[x.hlrClass,x.ordinal]),
+  [['visible-sharp',0]]);
+ assert.equal(v.nativeHLRPaperCandidates[0].original3DLiftCount,1);
+ assert.equal(v.nativeHLRPaperCandidates[0].nativeGeneratedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(v.continuousOcclusionCertified,false);
+ assert.equal(v.signedV5Action,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('a native HLR paper candidate from an unknown M0 edge fails closed',()=>{
+ const x=fixture();
+ x.cad.hiddenSharpViews.V.push({
+  from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId:'C1SkewTetra::A|B'}]
+ });
+ assert.throws(()=>audit(x),/lacks M0 provenance bounds/);
+});
+test('no native HLR paper candidate is not evidence of continuous occlusion',()=>{
+ const out=audit(fixture());
+ assert.ok(out.unrepresentedM0NativeHLRCandidateForensics.every(x=>
+  x.nativeHLRPaperCandidateCount===0&&
+  x.noHLRPaperCandidateDoesNotProveGlobalOcclusion===true&&
+  x.continuousOcclusionCertified===false));
+});
