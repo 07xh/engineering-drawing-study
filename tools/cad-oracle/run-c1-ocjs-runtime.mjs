@@ -1031,6 +1031,40 @@ for(const [index,geometry] of general.entries()){
   missingOriginalRays.filter(row=>
    row.exactBinary64PaperVisibleHiddenCandidateConflict.
     hasExactPositiveLengthVisibleHiddenPaperClassConflict).length);
+ // A genuine whole-original-3D convex ray can EXCLUDE an opposite-class
+ // paper alias as this physical source, while retaining the original HLR
+ // class conflict and leaving native TopoDS history/V5 unsigned.
+ assert.equal(candidateDiagnostics.rayExcludedOppositeHLRClassPaperAliases,
+  missingOriginalRays.reduce((n,row)=>n+
+   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.filter(x=>
+    x.oppositeClassExcludedAsThisOriginal3DSourceByExactRay).length,0));
+ assert.equal(candidateDiagnostics.rayCompatiblePaperFullSourceViewCoverage+
+  candidateDiagnostics.rayCompatiblePaperPositiveGapSourceViews,
+  missingOriginalRays.length);
+ assert.equal(candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews,
+  missingOriginalRays.filter(row=>
+   row.rayCompatibleOriginal3DSourcePaperVisibility.
+    hasExactPositiveLengthVisibleHiddenPaperClassConflict).length);
+ assert.ok(candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews<=
+  candidateDiagnostics.exactPaperVisibleHiddenPositiveConflictSourceViews);
+ assert.ok(missingOriginalRays.every(row=>
+  row.rayCompatibleCandidateCount<=row.nativeHLRPaperCandidateCount&&
+  row.rayClassPruningIsNotNativeHLROwnershipOrContinuousVisibility===true&&
+  row.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ console.error('REAL C1 M0 EXACT RAY-CLASS SOURCE-SPECIFIC HLR ALIAS PRUNING '+
+  geometry.id+': '+JSON.stringify({
+   rawPaperVisibleHiddenConflictSourceViews:
+    candidateDiagnostics.exactPaperVisibleHiddenPositiveConflictSourceViews,
+   rayCompatiblePaperVisibleHiddenConflictSourceViews:
+    candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews,
+   oppositeClassPaperAliasesExcludedAsThisSource:
+    candidateDiagnostics.rayExcludedOppositeHLRClassPaperAliases,
+   rayCompatibleFullPaperSourceViews:
+    candidateDiagnostics.rayCompatiblePaperFullSourceViewCoverage,
+   nativeOriginalHistoryCertified:false,
+   officialV5Authorized:false
+  }));
  assert.ok(missingOriginalRays.every(row=>
   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.length===
    row.nativeHLRPaperCandidateCount&&
