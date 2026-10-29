@@ -179,3 +179,73 @@ test('exact parametric diagonal ordering remains unresolved when other physical 
  assert.equal(out.comparisons[0].status,'partial-or-ambiguous-coproject-overlap');
  assert.equal(out.comparisons[0].exactOriginalSourceWholePaperOverlapProven,false);
 });
+
+test('a true shared original 3D vertex proves strict OPEN observer depth, never closed-line signoff',()=>{
+ const geom={id:'PhysicalFan',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:0,y:0,z:5},C:{x:0,y:3,z:5}
+  },edges:[['A','B'],['A','C']]}};
+ const peerOf=(id,status)=>({
+  view:'V',sourceGeometryId:geom.id,sourceEdgeId:id,
+  originalParameterRange:[0,1],status});
+ const back=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'PhysicalFan::A|C',
+  originalParameterRange:[0,1],
+  peers:[peerOf('PhysicalFan::A|B','single-opaque-solid-whole-open-ray-clear')]
+ });
+ assert.equal(back.status,'undetermined-coproject-source-order');
+ assert.equal(back.originalPhysicalVertexOpenDepthOrderingProven,true);
+ assert.equal(back.visibleSourceCoversEntireLine,false);
+ assert.equal(back.wholeIntervalFrontmostCertified,false);
+ assert.deepEqual(back.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,-1]);
+ assert.deepEqual(back.comparisons[0].exactDepthTiesAtOriginalShared3DVertex,[true,false]);
+ assert.equal(back.comparisons[0].status,
+  'candidate-strictly-behind-open-at-original-3d-vertex');
+ assert.equal(back.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,true);
+ assert.equal(back.engineeringLineStyleSigned,false);
+ const front=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'PhysicalFan::A|B',
+  originalParameterRange:[0,1],
+  peers:[peerOf('PhysicalFan::A|C','single-opaque-solid-whole-open-ray-strictly-hidden')]
+ });
+ assert.equal(front.wholeIntervalFrontmostCertified,false);
+ assert.equal(front.originalPhysicalVertexOpenDepthOrderingProven,true);
+ assert.equal(front.comparisons[0].status,
+  'candidate-strictly-front-open-at-original-3d-vertex');
+ assert.deepEqual(front.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,1]);
+});
+test('paper and XYZ coincidence with different original vertex IDs cannot forge a 3D junction',()=>{
+ const geom={id:'UnjoinedFan',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:0,y:0,z:5},
+   OtherA:{x:0,y:0,z:0},C:{x:0,y:3,z:5}
+  },edges:[['A','B'],['OtherA','C']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'UnjoinedFan::C|OtherA',
+  originalParameterRange:[0,1],
+  peers:[{view:'V',sourceGeometryId:geom.id,
+   sourceEdgeId:'UnjoinedFan::A|B',originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-clear'}]
+ });
+ assert.equal(out.originalPhysicalVertexOpenDepthOrderingProven,false);
+ assert.equal(out.visibleSourceCoversEntireLine,false);
+ assert.equal(out.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,false);
+});
+test('a real positive 3D source interval that renders below paper resolution remains held, not collapsed',()=>{
+ const geom={id:'MicroSource',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:10,z:0}},
+   edges:[['A','B']]}};
+ const args={geometry:geom,view:'H',sourceEdgeId:'MicroSource::A|B',
+  originalParameterRange:[1-Number.EPSILON,1],peers:[]};
+ const out=auditC1OriginalCoProjectedDepthOrder(args);
+ assert.equal(out.status,'positive-original-dyadic-projection-below-paper-resolution-held');
+ assert.equal(out.originalDyadicProjectedIntervalPositive,true);
+ assert.equal(out.renderedPaperSegmentNotCertified,true);
+ assert.deepEqual(out.originalParameterRange,[1-Number.EPSILON,1]);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const collapsed=auditC1OriginalCoProjectedDepthOrder({...args,
+  view:'V'});
+ assert.equal(collapsed.status,'collapsed-source-projection');
+ assert.equal(collapsed.originalDyadicProjectedIntervalPositive,false);
+});
