@@ -20,6 +20,7 @@ test('actual original 3D source topology joins all six tetrahedral edges at four
  assert.equal(r.originalSamePhysicalVertexTopoDSPairs,12);
  assert.equal(r.originalDistinctPhysicalVertexTopoDSPairs,54);
  assert.deepEqual(r.originalM0SourceVertexIds,['A','B','C','D']);
+ assert.deepEqual(r.originalM0VertexNativeOccurrenceCounts,{A:3,B:3,C:3,D:3});
  assert.equal(r.allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
  assert.equal(r.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
  assert.equal(r.signedV5ActionCount,0);
