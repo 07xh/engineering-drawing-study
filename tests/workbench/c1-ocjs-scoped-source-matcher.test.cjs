@@ -152,3 +152,29 @@ test('a tiny transverse shift exceeding relative span tolerance cannot forge Top
  x.scopedNativeEdge=native('tiny');
  assert.throws(()=>match(x),/inconsistent paper endpoints/);
 });
+
+test('native source-scoped identities reject different original edges claiming one generated edge',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=match(setup('H'));
+ const b=match({...setup('H'),sourceEdgeId:'g::C|D'});
+ assert.throws(()=>audit({matches:[a,b]}),/conflicting original TopoDS/);
+ const result=audit({matches:[a,match(setup('W'))]});
+ assert.equal(result.uniqueNativeClaims,2);
+ assert.equal(result.fullOriginalSourceHistoryCertified,false);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.rows[0]));
+});
+test('paper and IsPartner candidates never become native source identity claims',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=setup('V');a.scopedNativeEdge=native('scoped','shared');
+ a.globalNativeEdges[0]=native('global','shared');
+ const candidate=match(a);
+ assert.equal(candidate.nativePartnerOnlyCandidate,true);
+ const result=audit({matches:[candidate]});
+ assert.equal(result.uniqueNativeClaims,0);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.throws(()=>audit({matches:[match(setup()),match(setup())]}),
+  /duplicate native scoped source claim/);
+});
