@@ -240,6 +240,9 @@ test('one-subnormal-ULP paper alias drift and out-of-domain source interval rema
  assert.equal(row.nativeHLRPaperCandidateCount,1);
  const diagnostic=row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0];
  assert.equal(diagnostic.exactBinary64PaperAffineAligned,false);
+ assert.equal(diagnostic.exactBinary64PaperAffineCrossProductDyadic.length,2);
+ assert.ok(diagnostic.exactBinary64PaperAffineCrossProductDyadic.some(x=>
+  x.numerator!=='0'&&Number.isSafeInteger(x.exponent2)));
  assert.equal(diagnostic.exactBinary64PaperWithinOriginalParameterDomain,false);
  assert.equal(diagnostic.sourceScopedGeneratedIsSameOwnerClaim,false);
  assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.exactAffineDrift,1);
