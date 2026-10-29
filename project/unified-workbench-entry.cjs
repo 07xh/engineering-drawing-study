@@ -2680,6 +2680,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   else await makeNew();
  }));
  $('v7-mode').addEventListener('change',()=>coordinator?.setMode($('v7-mode').value));
+ $('v9-three-reframe').addEventListener('click',()=>{
+  // Reframe affects only viewing; it does not invalidate solved Geometry or V5.
+  if(!coordinator)return;
+  coordinator.setCamera({yaw:0,pitch:25});
+  linkedThree?.fitToScene?.();
+ });
  for(const [id,fn] of [['v7-yaw','setCamera'],['v7-pitch','setCamera']]){
   $(id).addEventListener('input',()=>coordinator?.[fn]({
    [id==='v7-yaw'?'yaw':'pitch']:Number($(id).value)

@@ -414,7 +414,8 @@ function homeHTML(){return `
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
    <p class="v7-warning">部分题型仅显示局部作图；未确认的完整轮廓和虚实线不能作为答案导出。</p>
   </section>
-   <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span></div>
+   <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span>
+    <button type="button" id="v9-three-reframe" class="v9-three-reframe" aria-controls="v9-three-space v7-3d">重新取景</button></div>
     <div id="v9-three-space" class="v9-three-space" role="group" aria-label="三维立体旋转与来源棱拾取" hidden></div>
     <svg id="v7-3d" viewBox="0 0 500 220" role="img" aria-label="可旋转的空间点与坐标轴"></svg>
     <div class="v7-xyz"><label>旋转 <input id="v7-yaw" type="range" min="-180" max="180" value="0"></label>

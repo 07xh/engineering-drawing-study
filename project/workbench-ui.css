@@ -256,6 +256,8 @@ body.ui-next .v9-three-space{
  background:#f5f9ff
 }
 body.ui-next .v9-three-space[hidden],body.ui-next #v7-3d[hidden]{display:none!important}
+body.ui-next .v9-three-reframe{min-height:44px;padding:7px 12px;border-radius:8px;border:1px solid #b6d0ed;background:#fff;color:#245994;cursor:pointer}
+body.ui-next .v9-three-reframe:focus-visible{outline:3px solid #0866ef;outline-offset:2px}
 body.ui-next .v9-three-space canvas:focus-visible{outline:3px solid #83b3ff;outline-offset:-3px}
 @media(max-width:560px){body.ui-next .v9-three-space{height:250px;touch-action:none}}
 

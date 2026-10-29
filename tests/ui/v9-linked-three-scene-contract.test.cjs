@@ -10,6 +10,10 @@ test('Three.js source visualizer reuses the ONE geometry scene and matching sour
  assert.match(source,/from 'three'/);
  assert.match(source,/OrbitControls\.js/);
  assert.match(source,/new THREE\.Raycaster\(/);
+ assert.match(source,/function fitToScene\(\)/);
+ assert.match(source,/camera\.zoom=1/,'new scenes and reframe reset camera zoom');
+ assert.match(source,/return \{update,dispose,resize,fitToScene\}/);
+ assert.match(home,/id="v9-three-reframe"/);
  assert.match(source,/setAttribute\('role','application'\)/);
  assert.match(source,/setAttribute\('tabindex','0'\)/);
  assert.match(source,/canvas\.addEventListener\('keydown'/);
