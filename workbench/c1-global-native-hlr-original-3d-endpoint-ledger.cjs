@@ -195,7 +195,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       signedV5Action:false});
      if(modelVerified&&sourceClassFull&&(originalPaperExact||boundedPaper)){
       const node=vertices.get(candidateId)??[];
-      node.push({klass,ordinal,side:side===0?'from':'to',
+      node.push({klass,ordinal,sourceEdgeId:originalId,
+       side:side===0?'from':'to',
        paperExactlyOriginalM0:p2eq(paper,projectedM0)});
       vertices.set(candidateId,node);
      }
@@ -234,6 +235,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     counts.physicalJunctionPairsWithBothExactGeneratedPaperEndpoints+=Number(both);
     counts.physicalJunctionPairsWithAtLeastOneRoundedEndpoint+=Number(!both);
     pairRows.push({view,originalPhysicalM0VertexId:vertexId,
+     originalPhysicalM0SourceEdges:[group[i].sourceEdgeId,group[j].sourceEdgeId],
      globalGeneratedHLREndpoints:[group[i],group[j]],
      actualNativeGeneratedTopoDSVertexIsSameForThisPairProven:false,
      original3DPhysicalVertexCoincidenceProvenFromIndependentM0:true,
@@ -293,12 +295,11 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
     const pair=realPairs.get(pairKey(ref(a),ref(b)));
     if(pair===true){
-     if(!a.paperExactlyOriginalM0||!b.paperExactlyOriginalM0){
-      // Even same generated 2D TopoDS vertex and same independently
-      // identified M0 physical vertex cannot close a rounded paper
-      // endpoint or original source parameter identity.
-      row.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven=true;
-     }else row.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven=true;
+     // A genuine generated TopoDS pairwise IsSame can be recorded,
+     // even if its PAPER endpoint representation was rounded. This
+     // still cannot establish exact original 3D source-parameter
+     // endpoint identity, whole-scene occlusion or official V5.
+     row.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven=true;
      counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame++;
     }else if(pair===false){
      row.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin=true;
