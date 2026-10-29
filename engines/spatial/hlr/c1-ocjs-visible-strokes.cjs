@@ -1033,10 +1033,23 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
        if(![...Object.values(from3D),...Object.values(to3D)].every(finite))
         throw new RangeError('nonfinite actual native HLR 3D source segment');
+       // HLRBRep::MakeEdge3d is supposed to reuse the original 3D
+       // curve with a trimmed parameter range. Verify the claim against
+       // the ACTUAL original OCCT BRepAdaptor at three native parameters,
+       // not an inferred 2D lift or a tolerance-based source label.
+       const originalCurve3D=newObj('BRepAdaptor_Curve_2',original.edge);
+       for(const t of [first,(first+last)/2,last]){
+        const sourcePoint=hold(originalCurve3D.Value(t));
+        const generatedPoint=hold(curve3D.Value(t));
+        if(['X','Y','Z'].some(axis=>
+         sourcePoint[axis]()!==generatedPoint[axis]()))
+         throw new RangeError('native source-filtered HLR 3D curve differs from original BRep at same parameter');
+       }
        native3DIntervals.push({
         nativeOriginalCurveParameterRange:[first,last],
         actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
         nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DCurveExactlySameAsOriginalAtThreeParameters:true,
         originalGeneratedTopoDSHistoryCertified:false,
         engineeringLineStyle:'undetermined',signedV5Action:false
        });
