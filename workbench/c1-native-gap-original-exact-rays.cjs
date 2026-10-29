@@ -17,6 +17,27 @@ const {auditC1AllOriginalSourceNativeGaps}=
 const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
 const {project}=require('../core/projection/conventions.js');
+const {dyadic,difference,product,sign}=
+ require('../core/numeric/binary64-dyadic.cjs');
+// Exact received-binary64 3D incidence, independent of HLR paper aliasing.
+// A generated native vertex can project onto an original M0 edge while
+// belonging to a DIFFERENT-depth original vertex. This is a veto witness,
+// not a generated TopoDS edge ownership or visibility certificate.
+function exactOriginal3DVertexOnSourceSegment(a,b,p){
+ const axes=['x','y','z'];
+ if([a,b,p].some(q=>!q||axes.some(k=>!Number.isFinite(q[k]))))
+  throw new TypeError('finite original M0 source and native vertex required');
+ const d=axes.map(k=>difference(dyadic(b[k]),dyadic(a[k])));
+ const q=axes.map(k=>difference(dyadic(p[k]),dyadic(a[k])));
+ const pivot=d.findIndex(x=>sign(x)!==0);
+ if(pivot<0)throw new RangeError('collapsed original 3D source edge');
+ if(axes.some((_,i)=>sign(difference(
+  product(q[i],d[pivot]),product(q[pivot],d[i])))!==0))
+  return false;
+ const direction=sign(d[pivot]);
+ return sign(q[pivot])*direction>=0&&
+  sign(difference(d[pivot],q[pivot]))*direction>=0;
+}
 const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
 const {auditExactBinary64PaperParameterPair,
@@ -71,7 +92,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   paperAliasExactPositiveGapSourceViews:0,
   nativeScopedOwnerExactFullSourceViewCoverage:0,
   nativeScopedOwnerExactPositiveGapSourceViews:0,
-  exactPaperVisibleHiddenPositiveConflictSourceViews:0
+  exactPaperVisibleHiddenPositiveConflictSourceViews:0,
+  nativeEndpoint3DContradictoryPaperAliases:0,
+  nativeEndpoint3DConsistentPaperAliases:0,
+  nativeEndpoint3DUnknownPaperAliases:0
  };
  for(const missing of gaps.unrepresentedOriginalM0ProjectedSources){
   const key=missing.view+'|'+missing.sourceEdgeId;
@@ -121,6 +145,44 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    const bounded=parameter.nativeFromWithinExactBinary64OriginalParameterDomain&&
     parameter.nativeToWithinExactBinary64OriginalParameterDomain;
    const nativeOwner=nativeOwners.has(key);
+   const nativeSegment=paper.hlrClass==='visible-sharp'?
+    cad.views[missing.view]?.[paper.ordinal]:
+    cad.hiddenSharpViews[missing.view]?.[paper.ordinal];
+   const directVertices=nativeSegment?.directNativeVertexOriginalSource;
+   if(directVertices!==undefined&&
+      (!Array.isArray(directVertices)||directVertices.length!==2))
+    throw new RangeError('invalid native generated vertex TopoDS identity pair');
+   let positiveOriginal3DVertexEndpoints=0,contradictory3DEndpoints=0;
+   if(directVertices)for(let side=0;side<2;side++){
+    const witness=directVertices[side];
+    const vertexId=witness?.directlySameOriginalM0VertexId;
+    if(vertexId===null||vertexId===undefined){
+     if(witness?.directOriginal3DVertexTopoDSIdentityProven===true)
+      throw new RangeError('unbound positive native original vertex identity');
+     continue;
+    }
+    const point=geometry.data.points[vertexId];
+    if(witness?.directOriginal3DVertexTopoDSIdentityProven!==true||!point)
+     throw new RangeError('forged original native vertex TopoDS identity');
+    const projected=project(point)[missing.view];
+    const endpoint=side===0?paper.projectedFrom:paper.projectedTo;
+    if(projected.u!==endpoint.u||projected.v!==endpoint.v)
+     throw new RangeError('native IsSame original vertex contradicts actual HLR paper endpoint');
+    if(exactOriginal3DVertexOnSourceSegment(
+      geometry.data.points[original[0]],
+      geometry.data.points[original[1]],point))
+     positiveOriginal3DVertexEndpoints++;
+    else contradictory3DEndpoints++;
+   }
+   const nativeEndpoint3DSourceStatus=contradictory3DEndpoints?
+    'contradicted-by-native-original-vertex':
+    positiveOriginal3DVertexEndpoints?
+    'positive-original-vertex-incidence-only':'unverified';
+   if(contradictory3DEndpoints)
+    omittedCandidateCounts.nativeEndpoint3DContradictoryPaperAliases++;
+   else if(positiveOriginal3DVertexEndpoints)
+    omittedCandidateCounts.nativeEndpoint3DConsistentPaperAliases++;
+   else omittedCandidateCounts.nativeEndpoint3DUnknownPaperAliases++;
    const classMatches=expectedClass===null?null:paper.hlrClass===expectedClass;
    omittedCandidateCounts.examined++;
    if(aligned)omittedCandidateCounts.exactAffineAligned++;
@@ -141,6 +203,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     exactBinary64PaperHasPositiveParameterSpan:
      parameter.nativePaperSourceParameterPairHasExactPositiveSpan,
     sourceScopedGeneratedIsSameOwnerClaim:nativeOwner,
+    nativeEndpoint3DSourceStatus,
+    nativeOriginal3DVertexIncidenceCount:positiveOriginal3DVertexEndpoints,
+    nativeOriginal3DVertexContradictionCount:contradictory3DEndpoints,
+    nativeOriginalVertexIncidenceIsNotGeneratedEdgeHistory:true,
     nativeGeneratedEdgeClaimedByDifferentOriginalSource:otherOwners.has(key),
     classConsistentWithIndependentWholeOriginal3DRay:classMatches,
     sourceScopedIdentityIsNotCompleteGeneratedTopoDSHistory:true,
@@ -156,7 +222,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   // Keep native IsSame scoped-owner subsets separate from paper aliases.
   const eligible=candidate.nativeHLRPaperCandidates.filter((paper,i)=>{
    const proof=candidateDiagnostics[i];
-   return proof.exactBinary64PaperAffineAligned&&
+   return proof.nativeEndpoint3DSourceStatus!=='contradicted-by-native-original-vertex'&&
+    proof.exactBinary64PaperAffineAligned&&
     proof.exactBinary64PaperWithinOriginalParameterDomain&&
     proof.exactBinary64PaperHasPositiveParameterSpan;
   });
@@ -215,6 +282,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
  if(missingCandidates.size!==missingSeen.size||
     omittedCandidateCounts.examined!==
      omittedCandidateCounts.exactAffineAligned+omittedCandidateCounts.exactAffineDrift||
+    omittedCandidateCounts.examined!==
+     omittedCandidateCounts.nativeEndpoint3DContradictoryPaperAliases+
+     omittedCandidateCounts.nativeEndpoint3DConsistentPaperAliases+
+     omittedCandidateCounts.nativeEndpoint3DUnknownPaperAliases||
     omittedCandidateCounts.nativeOwnerRayClassConsistent+
      omittedCandidateCounts.nativeOwnerRayClassContradictions>
      omittedCandidateCounts.nativeIsSameOwnerClaims||
