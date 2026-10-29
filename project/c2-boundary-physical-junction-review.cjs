@@ -20,6 +20,7 @@ function reviewC2BoundaryPhysicalJunctions({
     sourceBoundaries.length!==boundaryRayEvidence.length||
     !Array.isArray(paperLines)||
     !Array.isArray(physicalJunctionEvidence?.nodes)||
+    !Array.isArray(physicalJunctionEvidence?.segments)||
     physicalJunctionEvidence?.revision!==revision||
     physicalJunctionEvidence.status!==
      'source-recomputed-physical-3d-feature-incidence'||
@@ -38,6 +39,23 @@ function reviewC2BoundaryPhysicalJunctions({
  const finite3=p=>p&&['x','y','z'].every(k=>
   typeof p[k]==='number'&&Number.isFinite(p[k]));
  const key3=p=>[p.x,p.y,p.z].join('|');
+ const axes=['x','y','z'];
+ // C2 verified physical source features are axis-aligned 3D intervals.
+ // The paper source must be an actual positive subsegment entering one
+ // physical endpoint, not merely ANY other edge incident at that node.
+ const onPhysicalIncidentSegment=(at,toward,segment)=>{
+  const a=segment.source3DFrom,b=segment.source3DTo;
+  if(!finite3(at)||!finite3(toward)||!finite3(a)||!finite3(b))return false;
+  const varying=axes.filter(k=>a[k]!==b[k]);
+  if(varying.length!==1)return false;
+  const axis=varying[0],start=axes.every(k=>at[k]===a[k])?a:
+   axes.every(k=>at[k]===b[k])?b:null;
+  if(!start)return false;
+  const far=start===a?b:a,d=far[axis]-start[axis],
+   t=(toward[axis]-start[axis])/d;
+  return Number.isFinite(t)&&t>0&&t<=1&&
+   axes.every(k=>k===axis||toward[k]===start[k]);
+ };
  // Even when V=(x,z) looks valid, unprojected depth y must be finite.
  // The 3D ledger is the ONLY authority for a real multi-source junction.
  if(physicalJunctionEvidence.nodes.some(n=>
@@ -46,6 +64,15 @@ function reviewC2BoundaryPhysicalJunctions({
    typeof n.original3DPhysicalCoincidenceVerified!=='boolean'||
    typeof n.localMultiSourcePhysicalJunctionCandidate!=='boolean'))
   throw new TypeError('C2 native physical source junction ledger is incomplete');
+ const physicalSegments=new Map();
+ for(const segment of physicalJunctionEvidence.segments){
+  if(typeof segment?.id!=='string'||!segment.id||
+     physicalSegments.has(segment.id)||
+     !finite3(segment.source3DFrom)||!finite3(segment.source3DTo)||
+     segment.sourcePhysicalFeatureOpenIntervalVerified!==true)
+   throw new TypeError('C2 physical source segment ledger is incomplete');
+  physicalSegments.set(segment.id,segment);
+ }
  const actualNodes=new Map(physicalJunctionEvidence.nodes.map(n=>
   [key3(n.point3D),n]));
  if(actualNodes.size!==physicalJunctionEvidence.nodes.length)
@@ -173,7 +200,41 @@ function reviewC2BoundaryPhysicalJunctions({
     physicalNode.original3DPhysicalCoincidenceVerified===true&&
     physicalNode.localMultiSourcePhysicalJunctionCandidate===true&&
     sourceGroupsIndependentlyBound;
-   const realJunction=samePhysical&&positive;
+   // Check that THESE specific M5 paper groups really originate from
+   // DIFFERENT segments incident at this very physical 3D node. A genuine
+   // node may have unrelated neighboring edges that cannot certify a
+   // candidate paper boundary. Distinct paper IDs alone are not enough.
+   const localPhysicalIncidences=physicalNode?.incidences;
+   const segmentChoices=positive&&Array.isArray(localPhysicalIncidences)?
+    n.incidences.map(row=>{
+     const group=byPaper.get(row.matchedCanonicalPaperGroups[0]);
+     const pp=group?.physical3DEndpointIncidence;
+     if(!Array.isArray(pp)||pp.length!==2)return [];
+     const index=pp.findIndex(x=>x?.physicalSource3DPoint&&
+      finite3(x.physicalSource3DPoint)&&
+      key3(x.physicalSource3DPoint)===key3(point));
+     if(index<0)return [];
+     const other=pp[1-index]?.physicalSource3DPoint;
+     return [...new Set(localPhysicalIncidences.filter(inc=>{
+      const segment=physicalSegments.get(inc.segmentId);
+      return !!segment&&onPhysicalIncidentSegment(point,other,segment);
+     }).map(inc=>inc.segmentId))];
+    }):[];
+   const selected=new Set();
+   const matchPhysical=(i)=>{
+    if(i===segmentChoices.length)return true;
+    for(const id of segmentChoices[i]){
+     if(selected.has(id))continue;
+     selected.add(id);
+     if(matchPhysical(i+1))return true;
+     selected.delete(id);
+    }
+    return false;
+   };
+   const paperSourceSegmentsIndependentlyMatched=positive&&
+    segmentChoices.length>=2&&segmentChoices.every(x=>x.length>0)&&
+    matchPhysical(0);
+   const realJunction=samePhysical&&paperSourceSegmentsIndependentlyMatched;
    const allAliasEndpointsListed=points.size>=2&&
     [...points.keys()].every(k=>actualNodes.has(k));
    const certifiedPaperAlias=alias&&allAliasEndpointsListed;
@@ -185,6 +246,7 @@ function reviewC2BoundaryPhysicalJunctions({
     distinctReal3DEndpointCandidateCount:points.size,
     exactSame3DSourceEndpointCandidateAtAllIncidences:samePhysical,
     distinctCanonicalPaperSourceGroupsVerified:sourceGroupsIndependentlyBound,
+    independentPhysical3DIncidentSegmentsVerified:paperSourceSegmentsIndependentlyMatched,
     sourceLedgerMultiFeatureJunctionVerified:realJunction,
     realOriginalOrGenerated3DJunctionNodeListed:realJunction,
     paperOnlyDifferent3DDepthOrLocationAliasDetected:certifiedPaperAlias,
