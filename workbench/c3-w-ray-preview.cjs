@@ -18,7 +18,8 @@ function buildC3WIntervalPreview({input,revision}={}){
   throw new TypeError('current reviewed C3 model revision required');
  const audit=auditC3JointTopologyVisibility({input,revision});
  const notCovered=()=>freeze({schema:'draftai-c3-w-ray-preview/1',
-  revision,status:'not-covered',intervals:[],certifiedClearCount:0,
+  revision,status:'not-covered',intervals:[],sourceOutlineEvents:[],
+  sourceOutlineEventCount:0,certifiedClearCount:0,
   certifiedOccludedCount:0,undeterminedCount:0,
   officialLineStylesVerified:false,v5CurveReady:false});
  if(audit.status!=='scoped-open-interval-joint-evidence')return notCovered();
@@ -72,6 +73,10 @@ function buildC3WIntervalPreview({input,revision}={}){
   sourceM3BranchCount:audit.sourceBranchCount,
   exactProjectedLateralSelfOverlapExcluded:injective,
   sourceOutlineEventCount:outline.eventCount||0,
+  sourceOutlineEvents:outline.events,
+  sourceOutlineEventProofStatus:outline.status,
+  originalSourceOutlineOpenOverlapExcluded:
+   outline.sourceOutlineOpenOverlapExcluded===true,
   projectedSourceOutlineEventsSeparatedAtWBoundaries:sourceContourPartitionComplete,
   intervals,
   certifiedClearCount:intervals.filter(i=>i.openInteriorRayStatus==='clear').length,
