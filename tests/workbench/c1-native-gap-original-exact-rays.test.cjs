@@ -63,6 +63,17 @@ test('skew tetra: all three tiny real-shaped HLR gaps receive independently reco
  assert.equal(out.counts.positiveNativeGapIntervals,3);
  assert.equal(out.rows.length,3);
  assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
+ assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,3);
+ assert.equal(out.counts.unrepresentedOriginalM0SourceViews,15);
+ assert.equal(out.counts.noncollapsedOriginalM0SourceViews,18);
+ assert.equal(out.counts.representedOriginalM0SourceViewsInM5,3);
+ assert.equal(out.missingOriginalM0SourceViewRows.length,15);
+ assert.equal(out.allNoncollapsedOriginalM0SourcesRepresentedInM5,false);
+ assert.ok(out.missingOriginalM0SourceViewRows.every(row=>
+  row.missingM5SourceViewRemainsUncovered===true&&
+  row.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ assert.ok(out.rows.every(row=>row.independentOriginalOCCTCurveGapPositive===true));
  assert.equal(out.allNativeHLRSourceGapsClosed,false);
  assert.equal(out.globalContinuousVisibilityCertified,false);
  assert.ok(out.rows.every(row=>row.original3DVertexIds[0]==='A'&&
@@ -108,4 +119,59 @@ test('incomplete convex topology and altered native source range fail closed',()
  const wrongRevision=structuredClone(input);
  wrongRevision.m5Ledger.revision++;
  assert.throws(()=>audit(wrongRevision),/current unsigned/);
+});
+
+test('original M0 sources absent from M5 are reconciled with real HLR paper aliases but never signed',()=>{
+ const g=tetra(),sourceEdgeId=id(g,['A','C']);
+ const input=fixture(g,[['H',['A','C'],[0,1e-18]]]);
+ input.cad.views.V.push({
+  from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}],
+  engineeringLineStyle:'undetermined',v5Authorized:false
+ });
+ const out=audit(input);
+ const missing=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.ok(missing);
+ assert.equal(missing.nativeHLRPaperCandidateCount,1);
+ assert.deepEqual(missing.nativeHLRPaperCandidates,
+  [{hlrClass:'visible-sharp',ordinal:0}]);
+ assert.equal(missing.originalM4SourcePartitionComplete,true);
+ assert.equal(missing.generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(missing.globalCoProjectedFrontmostSourceCertified,false);
+ assert.equal(out.counts.unrepresentedM0SourceViewsWithNativeHLRPaperCandidates,1);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('collapsed original source projection is not falsely treated as missing drawable M5 evidence',()=>{
+ const g=box(),out=audit(fixture(g,[
+  ['V',['V000','V001'],[0,Number.MIN_VALUE]]
+ ]));
+ assert.ok(out.counts.unrepresentedOriginalM0SourceViews>0);
+ assert.ok(out.missingOriginalM0SourceViewRows.every(row=>
+  row.missingM5SourceViewRemainsUncovered===true));
+ assert.equal(out.counts.unrepresentedOriginalM0SourceViews,
+  out.missingOriginalM0SourceViewRows.length);
+ assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
+ assert.equal(out.signedV5ActionCount,0);
+});
+
+test('reversed native BRep parameter and sub-ULP rounded gap retain exact positive original curve and unsigned ray',()=>{
+ const g=tetra(),input=fixture(g,[
+  ['H',['A','C'],[0,1e-18]]
+ ]);
+ const source=input.cad.originalBRepSourceEdges.find(x=>
+  x.sourceEdgeId===id(g,['A','C']));
+ const originalFirst=source.occtSourceCurveFirstPoint3D;
+ source.occtSourceCurveFirstPoint3D=source.occtSourceCurveLastPoint3D;
+ source.occtSourceCurveLastPoint3D=originalFirst;
+ const length=source.occtSourceCurveParameterRange[1];
+ source.occtSourceCurveParameterRange=[100,100+length];
+ const out=audit(input);
+ assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,1);
+ assert.equal(out.rows[0].independentOriginalOCCTCurveGapPositive,true);
+ assert.equal(out.rows[0].originalOCCTCurveGapRoundedToZero,true);
+ assert.equal(out.rows[0].nativeHLRGeneratedEdgeCoversGap,false);
+ assert.equal(out.rows[0].generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(out.rows[0].engineeringLineStyle,'undetermined');
+ assert.equal(out.rows[0].signedV5Action,false);
 });
