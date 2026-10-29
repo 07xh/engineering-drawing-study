@@ -168,7 +168,7 @@ function homeHTML(){return `
       <option value="intersection">交集 · 保留两圆柱的共同体积</option>
       <option value="union">并集 · 保留两个圆柱的总体积</option>
      </select></label>
-    <p class="v7-note">更改形体会影响遮挡判断；完整轮廓和虚实线仍需核对。</p>
+    <p class="v7-note">修改圆柱半径、位置或端盖后，原轴向与端盖勾选将自动取消，须重新对照原题确认；完整轮廓和虚实线仍需核对。</p>
     <label class="v8-review-agree"><input id="v8-c3-axes" type="checkbox">
      我已核对真实题目中两根圆柱的正交轴向、位置与毫米尺寸。</label>
     <label class="v8-review-agree"><input id="v8-c3-caps" type="checkbox">
@@ -191,7 +191,7 @@ function homeHTML(){return `
       placeholder="V000,0,0,0,0"></textarea></label>
     <button type="button" id="v8-c1-template" class="v8-c1-template" aria-controls="v8-c1-vertices">插入8行空白顶点编号</button>
     <p id="v8-c1-template-status" class="v7-note" role="status" aria-live="polite"></p>
-    <p class="v7-note">修改坐标即撤销旧确认与动画；坐标冲突或重合角点会在确认区提示具体编号。</p>
+    <p class="v7-note">修改角点或已知视图组合会取消原有拓扑勾选并撤销旧动画；请重新对照原题确认。坐标冲突或重合角点会提示具体编号。</p>
     <label class="v8-review-agree"><input id="v8-c1-topology" type="checkbox">
      我已经对照原题确认八个顶点 ID 的对应关系、单个八角点实体全部 12 条棱与 6 个面的闭合凸拓扑。</label>
     <p class="v7-warning">请确认八个对应角点和完整闭合形体；仅支持符合条件的凸体。</p>
