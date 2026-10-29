@@ -109,5 +109,35 @@ function auditC1ThreeNativeGapBatch({geometry,records}={}){
   gapsClosed:0,formalEngineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5ActionCount:0});
 }
+/**
+ * Read-only bridge to computeC1OcjsVisibleSegments' actual returned CAD
+ * payload. Caller must independently supply the M5 uncovered source spans.
+ * Validating this JS payload does NOT attest that WASM was executed or that
+ * any generated edge has a complete original TopoDS history.
+ */
+function auditC1JointNativeGapFromCad({
+ geometry,cad,view,sourceEdgeId,uncoveredIntervals
+}={}){
+ if(!geometry?.id||!VIEWS.includes(view)||
+    cad?.schema!=='draftai-c1-ocjs-real-visible-brep/1'||
+    cad.engine!=='opencascade.js'||cad.sourceGeometryId!==geometry.id||
+    !Number.isSafeInteger(cad.revision)||cad.revision<1||
+    cad.completeSourceTopology3DEndpointCorrespondence!==true||
+    cad.actualOCCTCurveTypeIndependentlyVerified!==true||
+    cad.actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified!==false||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
+    !Array.isArray(cad.originalBRepSourceEdges)||
+    !Array.isArray(cad.views?.[view])||
+    !Array.isArray(cad.hiddenSharpViews?.[view]))
+  throw new TypeError('unsigned complete OCJS CAD payload and M0 geometry required');
+ const sources=cad.originalBRepSourceEdges.filter(x=>x?.sourceEdgeId===sourceEdgeId);
+ if(sources.length!==1)
+  throw new RangeError('unique real original OCCT source required in CAD payload');
+ return auditC1JointNativeGapFromRealHLR({
+  geometry,view,sourceEdgeId,uncoveredIntervals,
+  originalBRepSource:sources[0],
+  visibleSegments:cad.views[view],hiddenSegments:cad.hiddenSharpViews[view]
+ });
+}
 module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR,
- auditC1ThreeNativeGapBatch};
+ auditC1ThreeNativeGapBatch,auditC1JointNativeGapFromCad};
