@@ -1,7 +1,8 @@
 'use strict';
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
-const {auditC1Native3DSourceScopedIntervals:audit}=
+const {auditC1Native3DSourceScopedIntervals:audit,
+ auditC1Native3DClassPaperCandidateVeto:veto}=
  require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 test('full native 3D source-scoped interval is complete but still cannot sign V5',()=>{
  const r=audit({originalNativeParameterRange:[-5,15],
@@ -46,4 +47,71 @@ test('forged out-of-range and collapsed native segments fail closed',()=>{
   generatedNativeParameterRanges}),/native|interval/);
  assert.throws(()=>audit({originalNativeParameterRange:[0,0],
   generatedNativeParameterRanges:[]}),/native/);
+});
+
+const source='C1::A|B';
+const edge=(range)=>({
+ nativeSourceFilterOriginalEdgeId:source,
+ nativeOriginalCurveParameterRange:range,
+ native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+ originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
+});
+const group=(ranges)=>({
+ nativeSourceFilteredOriginalTopoDSEdge:true,
+ native3DGeneratedCurveIntervals:ranges.map(edge)
+});
+const scoped=(visible,hidden)=>({
+ originalPhysicalSourceEdgeId:source,
+ visible3D:group(visible),hidden3D:group(hidden)
+});
+const paper=[
+ {hlrClass:'visible-sharp',ordinal:0},
+ {hlrClass:'hidden-sharp',ordinal:1}
+];
+test('real native 3D visible-only source vetoes hidden whole-solid paper alias',()=>{
+ const r=veto({view:'V',sourceEdgeId:source,
+  scopedRow:scoped([[0,1]],[]),paperCandidates:paper});
+ assert.equal(r.originalWholeSolidPaperCandidateCount,2);
+ assert.deepEqual(r.native3DClassCompatiblePaperCandidates,
+  [{hlrClass:'visible-sharp',ordinal:0}]);
+ assert.deepEqual(r.paperCandidatesExcludedByNative3DClassAbsence,
+  [{hlrClass:'hidden-sharp',ordinal:1}]);
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+ assert.equal(r.globalContinuousVisibilityCertified,false);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5Action,false);
+ assert.ok(Object.isFrozen(r.paperCandidatesExcludedByNative3DClassAbsence));
+});
+test('native 3D visible/hidden split retains both candidate classes unsigned',()=>{
+ const r=veto({view:'H',sourceEdgeId:source,
+  scopedRow:scoped([[0,0.5]],[[0.5,1]]),paperCandidates:paper});
+ assert.equal(r.native3DClassCompatiblePaperCandidates.length,2);
+ assert.equal(r.paperCandidatesExcludedByNative3DClassAbsence.length,0);
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+});
+test('native 3D empty source cannot borrow any co-projected class',()=>{
+ const r=veto({view:'W',sourceEdgeId:source,
+  scopedRow:scoped([],[]),paperCandidates:paper});
+ assert.equal(r.native3DClassCompatiblePaperCandidates.length,0);
+ assert.equal(r.paperCandidatesExcludedByNative3DClassAbsence.length,2);
+});
+test('forged class, duplicate paper ordinal and fake native provenance fail closed',()=>{
+ const args={view:'V',sourceEdgeId:source,
+  scopedRow:scoped([[0,1]],[]),paperCandidates:paper};
+ for(const changed of [
+  {...args,view:'X'},
+  {...args,sourceEdgeId:'other'},
+  {...args,paperCandidates:[paper[0],paper[0]]},
+  {...args,paperCandidates:[{hlrClass:'visible-sharp',ordinal:-1}]},
+  {...args,paperCandidates:[{hlrClass:'contour',ordinal:0}]},
+  {...args,scopedRow:scoped([[0,0]],[])},
+  {...args,scopedRow:scoped([[0,1]],[])}
+ ]) {
+  if(changed.scopedRow!==args.scopedRow&&
+     changed.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
+      nativeOriginalCurveParameterRange[1]===1)
+   changed.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
+    nativeSourceFilterOriginalEdgeId='forged';
+  assert.throws(()=>veto(changed),/native|source|paper|original/);
+ }
 });
