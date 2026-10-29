@@ -64,6 +64,27 @@ test('native exact one-ULP positive gap is retained in M4 rather than absorbed b
  assert.deepEqual(out.M4OriginalUnitIntervalCandidatePositiveGaps,[[.5,next/10]]);
  assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
 });
+test('native one-ULP gap remains a blocker when normalization rounds both ends to the same M0 fraction',()=>{
+ // Both distinct received OCCT binary64 parameters normalize to the
+ // identical 0.6489320296857823 fraction. M4 must not report completion.
+ const a=6.489320296857823,b=6.489320296857824;
+ assert.ok(b>a);
+ assert.equal(a/10,b/10);
+ const out=projectNative(input([[0,a]],[[b,10]]));
+ assert.deepEqual(out.M4OriginalUnitIntervalCandidatePositiveGaps,[]);
+ assert.deepEqual(out.native3DOriginalParameterPositiveGaps,[[a,b]]);
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('same-class native positive overlap also prevents M4 completeness despite a full normalized union',()=>{
+ const out=projectNative(input([[0,7],[4,10]],[]));
+ assert.deepEqual(out.native3DOriginalParameterPositiveOverlaps,[[4,7]]);
+ assert.deepEqual(out.M4OriginalUnitIntervalCandidatePositiveGaps,[]);
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.officialV5Authorized,false);
+});
 test('two overlapping native opposite visibility classes never grant signed strokes',()=>{
  const out=projectNative(input([[0,7]],[[4,10]]));
  assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,false);
