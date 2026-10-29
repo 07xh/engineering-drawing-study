@@ -58,11 +58,22 @@ function reviewC2BoundaryPhysicalJunctions({
      edge.revision!==revision||ray.revision!==revision||
      !['V','H','W'].includes(edge.view)||
      !Array.isArray(ray.paperPieces)||ray.paperPieces.length===0||
+     ray.paperPieces.length>4096||
      ray.paperPieces[0].fromT!==0||
      ray.paperPieces.at(-1).toT!==1||
+     ray.paperPieces.some((span,k)=>!span||
+      !Number.isFinite(span.fromT)||!Number.isFinite(span.toT)||
+      span.fromT<0||span.toT>1||span.fromT>=span.toT||
+      (k>0&&span.fromT!==ray.paperPieces[k-1].toT))||
      edge.officialV5Approved!==false||
      ray.officialV5Approved!==false)
    throw new Error('C2 physical junction boundary/ray identity mismatch');
+  const du=edge.to?.u-edge.from?.u,dv=edge.to?.v-edge.from?.v;
+  // The true region boundary is a non-degenerate orthogonal paper span.
+  // Merely touching an endpoint is not positive source coverage of that span.
+  if(!Number.isFinite(du)||!Number.isFinite(dv)||
+     (du===0&&dv===0)||(du!==0&&dv!==0))
+   throw new Error('C2 first-angle boundary must have a finite positive axis span');
   edgeIds.add(boundaryId);
   for(const role of ['from','to']){
    const paper=role==='from'?edge.from:edge.to,
@@ -73,6 +84,9 @@ function reviewC2BoundaryPhysicalJunctions({
       !Array.isArray(piece.sourceGroupIds))
     throw new Error('C2 junction endpoint has no bounded unsigned open source');
    const candidates=[];
+   let invalidEndpointSourceGroup=false;
+   if(new Set(piece.sourceGroupIds).size!==piece.sourceGroupIds.length)
+    invalidEndpointSourceGroup=true;
    if(piece.exactCurrentPhysicalSourceAndOpenRayCorroborated===true){
     for(const groupId of piece.sourceGroupIds){
      const line=byPaper.get(groupId);
@@ -83,32 +97,50 @@ function reviewC2BoundaryPhysicalJunctions({
         !Array.isArray(line.physical3DEndpointIncidence)||
         line.physical3DEndpointIncidence.length!==2)
       throw new Error('C2 local ray claimed a missing or unverified true 3D paper group');
-     for(const [index,xy] of [
-       line.projectedFromModelMm,line.projectedToModelMm].entries()){
+     let positiveEndpointSourceFound=false;
+     const endpoints=[line.projectedFromModelMm,line.projectedToModelMm];
+     for(const [index,xy] of endpoints.entries()){
       if(!same2(xy,paper))continue;
+      const other=endpoints[1-index];
+      // Require the source to head INTO this actual boundary, not just
+      // touch the vertex from a perpendicular or outward-going 3D edge.
+      const into=(other.u-paper.u)*du+(other.v-paper.v)*dv;
+      const cross=(other.u-paper.u)*dv-(other.v-paper.v)*du;
+      if(!Number.isFinite(into)||cross!==0||
+         (role==='from'?into<=0:into>=0))continue;
       const candidate=line.physical3DEndpointIncidence[index]?.physicalSource3DPoint;
       if(candidate&&!finite3(candidate))
        throw new TypeError('C2 M5 3D source endpoint has a nonfinite hidden axis');
       if(candidate&&!same2(project(candidate)[edge.view],paper))
        throw new Error('C2 M5 original 3D endpoint contradicts its first-angle paper point');
-      if(candidate&&same2(project(candidate)[edge.view],paper))
+      if(candidate&&same2(project(candidate)[edge.view],paper)){
        candidates.push({groupId,point3D:{...candidate}});
+       positiveEndpointSourceFound=true;
+      }
      }
+     if(!positiveEndpointSourceFound)invalidEndpointSourceGroup=true;
     }
    }
-   const keys=[...new Set(candidates.map(x=>key3(x.point3D)))];
+   // Do not allow another valid group to mask an invalid/spurious source
+   // claimed by this same local ray piece.
+   const keys=invalidEndpointSourceGroup?[]:
+    [...new Set(candidates.map(x=>key3(x.point3D)))];
    const resolved=keys.length===1?candidates[0].point3D:null;
    const incidence=Object.freeze({
     boundaryId:edge.id,role,revision,
     localSourceAndWholeOpenRayCorroborated:
      piece.exactCurrentPhysicalSourceAndOpenRayCorroborated===true,
     physicalPointCandidate:resolved?Object.freeze({...resolved}):null,
-    unresolvedReason:piece.exactCurrentPhysicalSourceAndOpenRayCorroborated!==true?
+    allClaimedSourceGroupsReachPositiveBoundaryEndpoint:!invalidEndpointSourceGroup,
+    unresolvedReason:invalidEndpointSourceGroup?
+      'source-group-not-bound-to-positive-boundary-endpoint':
+      piece.exactCurrentPhysicalSourceAndOpenRayCorroborated!==true?
       piece.unprovenLocalSourceOrRayReason:
       keys.length>1?'multiple-physical-source-endpoints-at-paper-vertex':
       keys.length===0?'paper-vertex-is-not-listed-source-endpoint':null,
     matchedCanonicalPaperGroups:Object.freeze(
-     [...new Set(candidates.map(x=>x.groupId))].sort()),
+     (invalidEndpointSourceGroup?[]:
+      [...new Set(candidates.map(x=>x.groupId))]).sort()),
     closedGlobalOcclusionAndOfficialLineCapCertified:false
    });
    const k=edge.view+':'+paper.u+':'+paper.v;
