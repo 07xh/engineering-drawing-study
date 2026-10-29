@@ -17,6 +17,8 @@ const {auditC3SourceJunctionTangents}=require('./c3-source-junction-tangents.cjs
 const {auditC3LocalBooleanCreases}=require('./c3-local-boolean-crease.cjs');
 const {auditC3SelectedBooleanVHWOpenRays}=
  require('./c3-selected-boolean-vhw-open-rays.cjs');
+const {auditC3BooleanRayM5Concordance}=
+ require('./c3-boolean-ray-m5-concordance.cjs');
 const {auditC3ProjectedCapLineArrangement}=
  require('./c3-projected-cap-line-arrangement.cjs');
 const {auditC3VHArcCapLineContacts}=
@@ -251,6 +253,17 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
     constructionIntentAuthorized:false,v5ActionAuthorized:false});
   }
  }
+ // CROSS-AUDIT the same M3 branch against two independent M5 ray
+ // certificates. A positive local Boolean theorem never overrides a
+ // conflicting existing finite-cylinder strict-volume certificate.
+ const booleanRayConcordance=auditC3BooleanRayM5Concordance({
+  revision,sourceBranches:m3.branches,legacyIntervals:intervals,
+  selectedRayEvidence:selectedBooleanRayEvidence
+ });
+ if(selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true&&
+    (booleanRayConcordance.allAnalyticSourceBranchOpenCellsCrossChecked!==true||
+     booleanRayConcordance.sourceRayContradictions!==0))
+  throw new RangeError('C3 selected Boolean source ray cross-audit incomplete');
  return freeze({schema:'draftai-c3-joint-topology-visibility/1',
   revision,status:'scoped-open-interval-joint-evidence',
   sourceBranchCount:m3.branchCount,componentCount:topology.componentCount,
@@ -268,7 +281,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   capLineSourceProjectionPartitionVerified:
    projectedCapLineEvidence.allProjectedCapLinesAccountedFor===true,
   localSourceTangentEvidence,localBooleanCreaseEvidence,
-  selectedBooleanRayEvidence,
+  selectedBooleanRayEvidence,booleanRayConcordance,
   selectedBooleanThreeViewSourceRayCoverageVerified:
    selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true,
   localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,
