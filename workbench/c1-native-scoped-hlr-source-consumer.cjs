@@ -131,7 +131,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D:0,
   nativeSourceScoped2DEdgesExactlyBackedBySame3DClass:0,
   nativeSourceScoped2DEdgesClassOrRoundingHeld:0,
-  nativeSourceScoped2DEdgesWithOpposite3DClassOverlap:0};
+  nativeSourceScoped2DEdgesWithOpposite3DClassOverlap:0,
+  nativeSourceScoped2DEdgesWithFullSourceOneULPCompatibility:0,
+  nativeSourceScoped2DEdgesPreciselyHeldButULPBounded:0,
+  nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -371,6 +374,13 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      joined.counts.paperDriftOrClassCoverageHeld;
     counts.nativeSourceScoped2DEdgesWithOpposite3DClassOverlap+=
      joined.counts.exactOppositeClassPositiveOverlapEdges;
+    counts.nativeSourceScoped2DEdgesWithFullSourceOneULPCompatibility+=
+     joined.counts.originalFullEdgeOneULPPaperEnvelopeCompatible;
+    counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded+=
+     joined.counts.roundedPaperRepresentationCompatibleButNotExactCertified;
+    counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass+=
+     joined.counts.paperDriftOrClassCoverageHeld-
+      joined.counts.roundedPaperRepresentationCompatibleButNotExactCertified;
    }
    if(nativeScoped2D3DClassBindings.length!==
       nativeOriginal3DM4Candidates.length||
