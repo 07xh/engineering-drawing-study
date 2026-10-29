@@ -139,5 +139,43 @@ function auditC1JointNativeGapFromCad({
   visibleSegments:cad.views[view],hiddenSegments:cad.hiddenSharpViews[view]
  });
 }
+/**
+ * Run all three real-source gap audits directly against ONE OCJS CAD result.
+ * This deliberately accepts no caller-provided native vertex/curve reports:
+ * original BRep evidence and generated HLR fragments come from cad itself.
+ * The independently computed M5 uncovered intervals must still be supplied.
+ */
+function auditC1ThreeNativeGapBatchFromCad({
+ geometry,cad,uncoveredByViewAndSource
+}={}){
+ const expected=[
+  ['H','A|C',5.02742501717052e-18],
+  ['W','A|C',1.1102230246251565e-16],
+  ['W','A|D',9.431983218054427e-18]
+ ];
+ if(!geometry?.id||!uncoveredByViewAndSource||
+    typeof uncoveredByViewAndSource!=='object'||
+    Array.isArray(uncoveredByViewAndSource))
+  throw new TypeError('one original geometry, OCJS CAD and M5 gap inventory required');
+ const expectedKeys=expected.map(([view,edge])=>view+'::'+geometry.id+'::'+edge);
+ const keys=Object.keys(uncoveredByViewAndSource);
+ if(keys.length!==3||keys.some(key=>!expectedKeys.includes(key)))
+  throw new RangeError('exactly three independently measured original-source gaps required');
+ const results=expected.map(([view,edge,end])=>{
+  const sourceEdgeId=geometry.id+'::'+edge;
+  const uncoveredIntervals=uncoveredByViewAndSource[view+'::'+sourceEdgeId];
+  if(!Array.isArray(uncoveredIntervals)||uncoveredIntervals.length!==1||
+     !same(uncoveredIntervals[0],[0,end]))
+   throw new RangeError('unverified original-source gap: '+view+' '+edge);
+  return auditC1JointNativeGapFromCad({
+   geometry,cad,view,sourceEdgeId,uncoveredIntervals
+  });
+ });
+ return freeze({schema:'draftai-c1-three-native-gap-cad-batch/1',
+  sourceGeometryId:geometry.id,recordsExamined:results.length,results,
+  gapsClosed:0,globalContinuousVisibilityCertified:false,
+  constructionIntentAuthorized:false,signedV5ActionCount:0});
+}
 module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR,
- auditC1ThreeNativeGapBatch,auditC1JointNativeGapFromCad};
+ auditC1ThreeNativeGapBatch,auditC1JointNativeGapFromCad,
+ auditC1ThreeNativeGapBatchFromCad};
