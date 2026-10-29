@@ -22,6 +22,8 @@ on:
       - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
       - 'tests/workbench/c1-all-native-source-gap-ledger.test.cjs'
       - 'workbench/c1-native-source-scoped-3d-parameter-coverage.cjs'
+      - 'workbench/c1-native-source-scoped-m4-projection.cjs'
+      - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
       - 'tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
@@ -102,6 +104,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'workbench/c1-native-source-scoped-m4-projection.cjs'
+      - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
@@ -231,6 +235,7 @@ jobs:
           node --test tests/workbench/c1-native-gap-original-exact-rays.test.cjs
           node --test tests/workbench/c1-all-native-source-gap-ledger.test.cjs
           node --test tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs
+          node --test tests/workbench/c1-native-source-scoped-m4-projection.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
