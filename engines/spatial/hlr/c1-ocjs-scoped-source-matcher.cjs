@@ -97,8 +97,8 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
  * identity. Paper and IsPartner candidates are diagnostics, not provenance.
  */
 function auditC1ScopedHLRSourceIdentityConflicts({matches}={}){
- if(!Array.isArray(matches)||!matches.length||matches.length>1024)
-  throw new TypeError('nonempty genuine scoped HLR match inventory required');
+ if(!Array.isArray(matches)||matches.length>1024)
+  throw new TypeError('genuine scoped HLR match inventory required');
  const claimed=new Map(),seen=new Set(),rows=[];
  for(const match of matches){
   const view=match?.view,hlrClass=match?.hlrClass;
