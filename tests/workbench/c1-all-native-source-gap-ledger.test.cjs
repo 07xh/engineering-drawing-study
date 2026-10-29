@@ -235,3 +235,34 @@ test('native owner claims reject unknown original source, invalid ordinal and du
   assert.throws(()=>audit(x),/invalid actual native HLR|duplicate actual native HLR/);
  }
 });
+
+test('canonical M5 row present for original M0 source cannot conceal an unrepresented tail',()=>{
+ const x=fixture();
+ const row=x.m5Ledger.views.V.intervals[0];
+ row.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0,0.5];
+ const out=audit(x);
+ const v=out.originalM0CanonicalSourceInventory.rows.find(row=>
+  row.view==='V'&&row.sourceEdgeId==='C1SkewTetra::A|D');
+ assert.deepEqual(v.positiveLengthUnrepresentedM5ParameterIntervals,[[0.5,1]]);
+ assert.equal(v.wholeOriginalM0SourceParameterInventoryComplete,false);
+ assert.equal(out.originalM0CanonicalSourceInventory.
+  allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('canonical M5 original source overlap remains unsigned even when union covers [0,1]',()=>{
+ const x=fixture();
+ const row=x.m5Ledger.views.V.intervals[0];
+ row.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0,0.75];
+ const second=structuredClone(row);
+ second.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0.5,1];
+ x.m5Ledger.views.V.intervals.push(second);
+ const out=audit(x);
+ const v=out.originalM0CanonicalSourceInventory.rows.find(row=>
+  row.view==='V'&&row.sourceEdgeId==='C1SkewTetra::A|D');
+ assert.deepEqual(v.positiveLengthUnrepresentedM5ParameterIntervals,[]);
+ assert.deepEqual(v.positiveLengthOverlappingM5ParameterIntervals,[[0.5,0.75]]);
+ assert.equal(v.wholeOriginalM0SourceParameterInventoryComplete,false);
+ assert.equal(out.originalM0CanonicalSourceInventory.counts.
+  sourceViewsWithOverlappingM5ParameterSpans,1);
+ assert.equal(out.officialV5Authorized,false);
+});
