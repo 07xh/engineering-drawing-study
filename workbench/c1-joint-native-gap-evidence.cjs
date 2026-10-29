@@ -186,7 +186,8 @@ function auditC1ThreeNativeGapBatchFromCad({
 function auditC1ThreeNativeGapBatchFromM5Ledger({
  geometry,cad,m5Ledger
 }={}){
- if(m5Ledger?.schema!=='draftai-c1-ocjs-m5-convex-proof-gap-ledger/1'||
+ if(typeof geometry?.id!=='string'||!geometry.id||
+    m5Ledger?.schema!=='draftai-c1-ocjs-m5-convex-proof-gap-ledger/1'||
     m5Ledger.sourceGeometryId!==geometry?.id||
     m5Ledger.revision!==cad?.revision||
     m5Ledger.engine!=='opencascade.js'||
