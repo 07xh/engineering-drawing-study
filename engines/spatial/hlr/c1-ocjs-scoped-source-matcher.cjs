@@ -91,4 +91,50 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
 }
-module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame};
+/**
+ * Join multiple genuine source-scoped native HLR audits without allowing
+ * two different ORIGINAL edges to claim one whole-solid generated TopoDS
+ * identity. Paper and IsPartner candidates are diagnostics, not provenance.
+ */
+function auditC1ScopedHLRSourceIdentityConflicts({matches}={}){
+ if(!Array.isArray(matches)||!matches.length||matches.length>1024)
+  throw new TypeError('nonempty genuine scoped HLR match inventory required');
+ const claimed=new Map(),seen=new Set(),rows=[];
+ for(const match of matches){
+  const view=match?.view,hlrClass=match?.hlrClass;
+  const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
+  const ordinals=match?.globalDirectSameGeneratedTopoDSOrdinals;
+  if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
+     typeof sourceEdgeId!=='string'||!sourceEdgeId||
+     !Array.isArray(ordinals)||ordinals.length>1||
+     match.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(ordinals.length===1)||
+     match.fullOriginalSourceParameterCoverageProven!==false||
+     match.globalContinuousOcclusionProven!==false||
+     match.signedV5Action!==false||
+     ordinals.some(n=>!Number.isSafeInteger(n)||n<0))
+   throw new TypeError('unsigned actual native scoped match required');
+  if(!ordinals.length)continue;
+  const ordinal=ordinals[0],key=view+'|'+hlrClass+'|'+ordinal;
+  const pair=key+'|'+sourceEdgeId;
+  if(seen.has(pair))throw new RangeError('duplicate native scoped source claim');
+  seen.add(pair);
+  const previous=claimed.get(key);
+  if(previous!==undefined&&previous!==sourceEdgeId)
+   throw new RangeError('conflicting original TopoDS sources claim one generated HLR edge');
+  claimed.set(key,sourceEdgeId);
+  rows.push({view,hlrClass,nativeWholeSolidEdgeOrdinal:ordinal,
+   originalPhysicalSourceEdgeId:sourceEdgeId,
+   nativeScopedGeneratedEdgeIsSame:true,
+   completeOriginalSourceHistoryCertified:false,
+   globalContinuousOcclusionCertified:false,signedV5Action:false});
+ }
+ return Object.freeze({schema:'draftai-c1-native-scoped-source-identity-conflicts/1',
+  uniqueNativeClaims:rows.length,
+  rows:Object.freeze(rows.map(r=>Object.freeze(r))),
+  conflictingSourceClaimsRejected:true,
+  fullOriginalSourceHistoryCertified:false,
+  globalContinuousOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5ActionCount:0});
+}
+module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame,
+ auditC1ScopedHLRSourceIdentityConflicts};
