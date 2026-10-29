@@ -473,6 +473,22 @@ for(const [index,geometry] of general.entries()){
   for(const binding of records){
    assert.equal(binding.schema,
     'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1');
+   const sourceM4=scopedConsumer.views[view].nativeOriginal3DM4Candidates.find(
+    candidate=>candidate.sourceEdgeId===binding.sourceEdgeId);
+   assert.ok(sourceM4,'real native 2D/3D class row must retain its original M0 source');
+   const nativePartitionProven=
+    sourceM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+    sourceM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+    sourceM4.native3DOriginalParameterPositiveGaps.length===0&&
+    sourceM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+    sourceM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+   assert.equal(binding.originalNativeParameterPartitionIndependentlyVerified,
+    nativePartitionProven,'real OCJS native parameter gaps cannot disappear in M4 2D class join');
+   assert.ok(binding.rows.every(row=>
+    row.originalNativeParameterPartitionIndependentlyVerified===nativePartitionProven&&
+    (!nativePartitionProven?
+     !row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment&&
+     !row.generated2DRepresentationWithinOneULPOfFullOriginalM0Source:true)));
    assert.equal(binding.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified,false);
    assert.equal(binding.wholeSceneM5Certified,false);
    assert.equal(binding.officialV5Authorized,false);
