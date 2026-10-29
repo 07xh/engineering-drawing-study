@@ -35,6 +35,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
  const source3D=()=>[...$('v7-3d').querySelectorAll('line[data-c2-generated-source-id]')];
  const rays=()=>[...$('v7-sheet').querySelectorAll('[data-c2-m5-paper-line-id]')];
  const loops=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-boundary-id]')];
+ const junctions=()=>[...$('v7-sheet').querySelectorAll('[data-c2-paper-junction-id]')];
  const gaps=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-m5-gap-piece]')];
  const supported=()=>[...$('v7-sheet').querySelectorAll('[data-c2-region-m5-ray-piece]')];
  try{
@@ -56,6 +57,8 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.match($('v7-proof').textContent,/精确八象限局部端点签收/);
   assert.match($('v7-proof').textContent,/V\/H\/W 投影区域精确边界/);
   assert.match($('v7-proof').textContent,/简单闭合回路 3 个/);
+  assert.match($('v7-proof').textContent,/V\/H\/W 纸面交点/);
+  assert.match($('v7-proof').textContent,/二维重合但三维来源不同/);
   assert.match($('v7-proof').textContent,/独立 M0–M5 全局纸面来源线段/);
   assert.match($('v7-proof').textContent,/闭合投影边界中已有完整三维物理来源覆盖/);
   assert.match($('v7-proof').textContent,/来源与局部无遮挡\/遮挡射线同时得到核对的/);
@@ -65,6 +68,17 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal($('v7-play').disabled,true,'only V5 can sign official strokes');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
   const strokes=all(),region=loops(),rayShapes=rays(),positive=supported();
+  const nodeShapes=junctions();
+  assert.ok(nodeShapes.length>0,'C2 exact source junction paper proof exists');
+  assert.ok(nodeShapes.every(x=>
+   x.getAttribute('data-c2-geometry-status')===
+    '3d-junction-evidence-not-engineering-linecap'&&
+   x.getAttribute('data-visibility')==='undetermined'&&
+   ['real-3d-source-node','different-3d-depth-paper-alias',
+    'unresolved-source-junction'].includes(
+     x.getAttribute('data-c2-paper-junction-status'))));
+  assert.equal(new Set(nodeShapes.map(x=>
+   x.getAttribute('data-c2-paper-junction-view'))).size,3);
   const missing=gaps();
   assert.ok(missing.length>0,'real exact unproven source subspans must be drawn');
   assert.ok(missing.every(x=>
@@ -195,6 +209,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal(source3D().length,0,'3D SVG also respects user disabled guides');
   assert.equal(loops().length,0,'2D region loops are not official model strokes');
   assert.equal(rays().length,0,'source M5 candidates must respect guide toggle');
+  assert.equal(junctions().length,0,'3D junctions respect guide toggle');
   assert.equal(gaps().length,0,'unproven exact M5 gaps must respect guide toggle');
   assert.equal(supported().length,0,'boundary-ray joint proof must respect guide toggle');
   $('v7-guides').checked=true;fire('v7-guides','change');await settle();
@@ -203,6 +218,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal(source3D().length,6);
   assert.equal(loops().length,region.length);
   assert.equal(rays().length,rayShapes.length);
+  assert.equal(junctions().length,nodeShapes.length);
   assert.equal(supported().length,positive.length);
   assert.equal(gaps().length,missing.length);
   // An edited unsaved input can never keep the previous math/overlay.
@@ -212,6 +228,7 @@ test('C2 visible generated face intersection previews carry true 3D source, neve
   assert.equal(collapsed().length,0);
   assert.equal(loops().length,0);
   assert.equal(rays().length,0);
+  assert.equal(junctions().length,0);
   assert.equal(supported().length,0);
   assert.equal(gaps().length,0);
   assert.equal($('v7-play').disabled,true);

@@ -1189,6 +1189,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     const physicalBySource=boundSources?new Map(boundSources.map(x=>
      [x.view+':'+x.id,x])):null;
     const boundaryRays=sourceRayReview?.boundaryRayEvidence??null;
+    const physicalJunctions=sourceRayReview?.projectedBoundaryJunctions??null;
     const raysByBoundary=boundaryRays?new Map(boundaryRays.map(x=>
      [x.view+':'+x.id,x])):null;
     if(physicalBySource&&(sourceRayReview.revision!==snap.revision||
@@ -1197,8 +1198,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        sourceRayReview.sourceCoveredBoundaryCount+
         sourceRayReview.sourceIncompleteBoundaryCount!==boundSources.length||
        !raysByBoundary||raysByBoundary.size!==boundaryRays.length||
-       boundaryRays.length!==boundSources.length))
-     throw Error('C2 M5 实体来源范围与当前投影图纸无法对应');
+       boundaryRays.length!==boundSources.length||
+       !physicalJunctions||
+       physicalJunctions.revision!==snap.revision||
+       physicalJunctions.allRegionBoundaryEndpointsAccountedFor!==true||
+       physicalJunctions.globalClosedEndpointEngineeringLineStylesProven!==false||
+       physicalJunctions.officialV5Authorized!==false||
+       physicalJunctions.exactPhysical3DSourceNodeCount+
+        physicalJunctions.paperOnlyDifferent3DSourceAliasCount+
+        physicalJunctions.unresolvedPhysicalSourceJoinCount!==
+        physicalJunctions.paperJunctionCount))
+     throw Error('C2 M5 实体来源与三维端点无法对应当前投影图纸');
     for(const view of c2.projectedRegion.projectedViews){
      const topology=c2.projectedLoops.projectedViews.find(v=>v.view===view.view);
      if(!topology||topology.sourceBoundarySegmentCount!==view.boundaries.length)
@@ -1291,6 +1301,40 @@ const Motion=require('../workbench/teaching-motion-v5.js');
         svg.append(diag);
        }
       }
+     }
+    }
+    // Paper intersection is not a physical 3D junction. Render ONLY
+    // exact source-reviewed nodes or explicit aliases/unresolved candidates,
+    // using circles (never an official GB edge/linecap or V5 action).
+    if(physicalJunctions){
+     for(const junction of physicalJunctions.nodes){
+      if(junction.revision!==snap.revision||
+         junction.officialV5JunctionAuthorized!==false||
+         junction.globalClosedEndpointAndStandardLineStylesProven!==false)
+       throw Error('C2 真实物理端点不能越过 V5 签收门禁');
+      const paper=toSheet(junction.view,junction.paperPoint,frame);
+      const physical=junction.realOriginalOrGenerated3DJunctionNodeListed;
+      const alias=junction.paperOnlyDifferent3DDepthOrLocationAliasDetected;
+      const marker=shape('circle',{
+       cx:paper.x,cy:paper.y,r:physical?3.2:2.5,
+       fill:'none',
+       stroke:$('v7-mono').checked?'#555':
+        physical?'#15856a':alias?'#cf703e':'#8f9aa5',
+       'stroke-width':physical?2:1.3,
+       'stroke-dasharray':physical?'none':'2 2',
+       'data-c2-paper-junction-id':junction.id,
+       'data-c2-paper-junction-view':junction.view,
+       'data-c2-paper-junction-status':physical?
+        'real-3d-source-node':alias?
+        'different-3d-depth-paper-alias':'unresolved-source-junction',
+       'data-c2-geometry-status':'3d-junction-evidence-not-engineering-linecap',
+       'data-visibility':'undetermined',
+       'aria-label':physical?
+        'C2 M5 原始/生成棱共有的真实三维端点，整体线型尚未批准':
+        alias?'C2 仅二维投影重合，三维来源端点不同':
+        'C2 纸面端点尚缺完整三维来源接合证明'
+      });
+      svg.append(marker);
      }
     }
     if(sourceRayReview&&sourceRayReview.revision===snap.revision){
@@ -1867,6 +1911,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
           ' 项（红色短点划线提示具体缺口）。整段局部射线已核对的边界 '+
            partial.c2PaperRayProof.boundaryAllPiecesCorroboratedCount+
           ' 段（不等于全局工程线型）。淡灰边界表示来源未完整覆盖，均不是正式工程实虚线。'+
+          ' V/H/W 纸面交点 '+partial.c2PaperRayProof.projectedBoundaryJunctions.paperJunctionCount+
+          ' 个：已核对真实三维共有端点 '+
+           partial.c2PaperRayProof.projectedBoundaryJunctions.exactPhysical3DSourceNodeCount+
+          ' 个、二维重合但三维来源不同 '+
+           partial.c2PaperRayProof.projectedBoundaryJunctions.paperOnlyDifferent3DSourceAliasCount+
+          ' 个、三维接合未证明 '+
+           partial.c2PaperRayProof.projectedBoundaryJunctions.unresolvedPhysicalSourceJoinCount+
+          ' 个；绿色空圆/橙色空圆/灰色空圆仅表示端点证据。'+
           ' 蓝/橙/灰点线仅为局部射线证据，绝不代表正式实虚线。':
           ' 多于两实体或非正交模型暂不执行完整纸面 M5 清单。'):
 

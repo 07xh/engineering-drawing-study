@@ -50,6 +50,25 @@ test('C2 actual overlapping cuboids: generated AND original 3D union sources are
  assert.equal(proof.fullSourceCrossAudit,true);
  assert.equal(proof.sourceBoundaries.length,
   m.projectedRegion.projectedBoundarySegmentCount);
+ const joins=proof.projectedBoundaryJunctions;
+ assert.equal(joins.schema,'draftai-c2-first-angle-paper-versus-real-3d-junction-ledger/1');
+ assert.equal(joins.revision,proof.revision);
+ assert.deepEqual(joins.sourceGeometryIds,proof.sourceGeometryIds);
+ assert.ok(joins.paperJunctionCount>0);
+ assert.equal(joins.paperJunctionCount,joins.nodes.length);
+ assert.equal(joins.nodes.reduce((n,x)=>n+x.incidentBoundaryCount,0),
+  2*proof.sourceBoundaries.length);
+ assert.equal(joins.exactPhysical3DSourceNodeCount+
+  joins.paperOnlyDifferent3DSourceAliasCount+
+  joins.unresolvedPhysicalSourceJoinCount,joins.paperJunctionCount);
+ assert.equal(joins.allRegionBoundaryEndpointsAccountedFor,true);
+ assert.equal(joins.globalClosedEndpointEngineeringLineStylesProven,false);
+ assert.equal(joins.officialV5Authorized,false);
+ assert.ok(joins.nodes.every(x=>
+  x.officialV5JunctionAuthorized===false&&
+  x.globalClosedEndpointAndStandardLineStylesProven===false&&
+  x.incidentBoundaryCount>=1));
+ assert.equal(new Set(joins.nodes.map(x=>x.view)).size,3);
  assert.equal(proof.sourceCoveredBoundaryCount+
   proof.sourceIncompleteBoundaryCount,proof.sourceBoundaries.length);
  assert.equal(proof.sourceBoundariesByView.length,3);
