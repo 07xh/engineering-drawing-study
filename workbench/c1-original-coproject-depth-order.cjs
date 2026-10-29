@@ -19,14 +19,64 @@ const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
 // overlap is a real M4 split obligation, not a toleranced non-event.
 const {exactPositiveCollinearPaperOverlap}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
+const {dyadic,difference,product,sign}=
+ require('../core/numeric/binary64-dyadic.cjs');
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))frozen(v);Object.freeze(x);
 }return x;};
 const edgeKey=(g,a,b)=>g+'::'+[a,b].sort().join('|');
 const d3=(a,b)=>({x:a.x-b.x,y:a.y-b.y,z:a.z-b.z});
 const dot=(p,q)=>p.x*q.x+p.y*q.y+p.z*q.z;
-const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,
- z:a.z+(b.z-a.z)*t});
+// Exact endpoints are essential for one-ULP M0 incidence. Arithmetic
+// for interior cuts remains a received binary64 model point, never an
+// idealized arbitrary-precision geometric source claim.
+const lerp=(a,b,t)=>t===0?a:t===1?b:
+ ({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,
+  z:a.z+(b.z-a.z)*t});
+const diff=(a,b)=>difference(dyadic(a),dyadic(b));
+const collinear=(a,b,p)=>sign(difference(
+ product(diff(b.u,a.u),diff(p.v,a.v)),
+ product(diff(b.v,a.v),diff(p.u,a.u))))===0;
+// For exact projected collinearity and complete overlapping paper support:
+// at each candidate end, peer depth is an EXACT rational interpolation
+// of ORIGINAL received binary64 endpoints. Comparing
+// (candidateDepth-peerDepth)*den-(peerEndDepth-peerStartDepth)*num
+// is exact even when the resulting difference is below floating epsilon.
+function exactOriginalCoProjectedDepthEndSigns({
+ view,p,q,s,t,candidateStart,candidateEnd,peerStart,peerEnd
+}){
+ if(!collinear(p,q,s)||!collinear(p,q,t))
+  return null;
+ const axis=Math.abs(q.u-p.u)>=Math.abs(q.v-p.v)?'u':'v';
+ const denom=diff(t[axis],s[axis]);
+ const signDenom=sign(denom);
+ if(!signDenom)return null;
+ const firstAngleDepth={
+  V:{axis:'y',sign:-1},H:{axis:'z',sign:1},W:{axis:'x',sign:1}
+ }[view];
+ const [a,b]=[p,q], [from,to]=[candidateStart,candidateEnd];
+ const comparisons=[],approx=[];
+ const peerDepthStart=peerStart[firstAngleDepth.axis],
+  peerDepthEnd=peerEnd[firstAngleDepth.axis],
+  peerDepthDelta=diff(peerDepthEnd,peerDepthStart);
+ for(const [paper,model] of [[a,from],[b,to]]){
+  const num=diff(paper[axis],s[axis]);
+  // The peer interpolating parameter must be literally in [0,1].
+  if(sign(num)*signDenom<0||
+     sign(difference(denom,num))*signDenom<0)
+   return null;
+  const delta= difference(
+   product(diff(model[firstAngleDepth.axis],peerDepthStart),denom),
+   product(peerDepthDelta,num)
+  );
+  comparisons.push(sign(delta)*signDenom*firstAngleDepth.sign);
+  const fraction=(paper[axis]-s[axis])/(t[axis]-s[axis]);
+  approx.push((model[firstAngleDepth.axis]-
+   (peerDepthStart+(peerDepthEnd-peerDepthStart)*fraction))*
+    firstAngleDepth.sign);
+ }
+ return {signs:comparisons,displayApproxMm:approx};
+}
 const dist2=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
 function auditC1OriginalCoProjectedDepthOrder({
  geometry,view,sourceEdgeId,originalParameterRange,peers
@@ -86,7 +136,9 @@ function auditC1OriginalCoProjectedDepthOrder({
    s=project(u)[view],t=project(v)[view];
   if(!exactPositiveCollinearPaperOverlap(p,q,s,t))continue;
   const across=dist2(s,t);
-  const near=lineError(s)<=1e-9&&lineError(t)<=1e-9;
+  // Exact original M0 paper identity is required for a mathematical
+  // source depth theorem. Even tiny off-line paper drift stays unsigned.
+  const near=collinear(p,q,s)&&collinear(p,q,t);
   const scalar0=fraction(s),scalar1=fraction(t);
   const start=Math.max(0,Math.min(scalar0,scalar1)),
    end=Math.min(1,Math.max(scalar0,scalar1));
@@ -120,29 +172,24 @@ function auditC1OriginalCoProjectedDepthOrder({
     depthDifferenceAtEndsMm:null});
    continue;
   }
-  const ux=t.u-s.u,uy=t.v-s.v,ulen=ux*ux+uy*uy;
-  const peerParam=k=>((k.u-s.u)*ux+(k.v-s.v)*uy)/ulen;
-  const ta=peerParam(p),tb=peerParam(q);
-  if(!Number.isFinite(ta)||!Number.isFinite(tb)||
-     ta< -1e-12||ta>1+1e-12||tb< -1e-12||tb>1+1e-12){
+  // This replaces tolerance-based ray ordering. It proves the sign
+  // of the exact rational depth difference at BOTH projected endpoints.
+  // Straight original source depths are affine over a shared paper axis;
+  // strict same-sign endpoints prove the entire OPEN overlap.
+  const exact=exactOriginalCoProjectedDepthEndSigns({
+   view,p,q,s,t,candidateStart:a,candidateEnd:b,
+   peerStart:u,peerEnd:v
+  });
+  if(!exact){
    hasPartialOrTie=true;
    comparisons.push({...base,status:'peer-parameter-outside-covered-source',
     depthDifferenceAtEndsMm:null});
    continue;
   }
-  const x=lerp(u,v,ta),y=lerp(u,v,tb);
-  if(dist2(project(x)[view],p)>1e-9||
-     dist2(project(y)[view],q)>1e-9){
-   hasPartialOrTie=true;
-   comparisons.push({...base,status:'source-paper-correspondence-not-certified',
-    depthDifferenceAtEndsMm:null});
-   continue;
-  }
-  const startDepth=dot(d3(a,x),ray),
-   endDepth=dot(d3(b,y),ray);
-  const strictMargin=1e-7;
-  const front=startDepth>strictMargin&&endDepth>strictMargin;
-  const behind=startDepth< -strictMargin&&endDepth< -strictMargin;
+  const [s0,s1]=exact.signs;
+  const front=s0===1&&s1===1;
+  const behind=s0===-1&&s1===-1;
+  const [startDepth,endDepth]=exact.displayApproxMm;
   if(!front&&!behind)hasPartialOrTie=true;
   if(behind&&(
      peer.status==='single-opaque-solid-whole-open-ray-clear'||
@@ -152,6 +199,8 @@ function auditC1OriginalCoProjectedDepthOrder({
    status:front?'candidate-strictly-front':
     behind?'candidate-strictly-behind':'depth-switch-or-tie',
    depthDifferenceAtEndsMm:[startDepth,endDepth],
+   exactBinary64RationalOriginalDepthDifferenceEndSigns:exact.signs,
+   strictOriginal3DDepthOrderNoToleranceUsed:true,
    entireOriginalStraightSubspanDepthOrderCertified:front||behind,
    competingSourceHasCertifiedClearForwardRay:
     peer.status==='single-opaque-solid-whole-open-ray-clear'||
@@ -173,6 +222,7 @@ function auditC1OriginalCoProjectedDepthOrder({
   visibleSourceCoversEntireLine:
    status==='suppressed-by-front-original-visible-source',
   theorem:'original-straight-source-3d-affine-depth-order-all-projected-points',
+  exactDyadicDepthOrderRequiresStrictWholeCoProjectedPaperSupport:true,
   paperOnlyCrossingsNeverInventOriginal3DJunctions:true,
   engineeringLineStyleSigned:false,signedV5ActionCount:0});
 }
