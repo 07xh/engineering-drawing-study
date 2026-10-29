@@ -23,6 +23,8 @@ const {auditC3BooleanWCriticalSwitchRays}=
  require('./c3-boolean-w-critical-switch-rays.cjs');
 const {auditC3WBooleanForwardExitDepth}=
  require('./c3-w-boolean-forward-exit-depth.cjs');
+const {auditC3WFiniteCapLineForwardRays}=
+ require('./c3-w-finite-cap-line-forward-rays.cjs');
 const {auditC3WExactMirrorDepthOrder}=
  require('./c3-w-mirror-depth-order.cjs');
 const {auditC3WMirrorCapContactPartition}=
@@ -185,6 +187,13 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
  const wBooleanForwardExitDepth=auditC3WBooleanForwardExitDepth({
   input,revision,selectedRayEvidence:selectedBooleanRayEvidence
  });
+ const wFiniteCapLineForwardRays=auditC3WFiniteCapLineForwardRays({
+  input,revision,selectedRayEvidence:selectedBooleanRayEvidence
+ });
+ if(wFiniteCapLineForwardRays.officialV5Authorized!==false||
+    wFiniteCapLineForwardRays.officialLineStylesVerified!==false||
+    wFiniteCapLineForwardRays.revision!==revision)
+  throw new RangeError('C3 W finite cap-source strict volume cannot sign V5');
  if(wBooleanForwardExitDepth.officialV5Authorized!==false||
     wBooleanForwardExitDepth.engineeringLineStylesVerified!==false||
     wBooleanForwardExitDepth.revision!==revision)
@@ -323,6 +332,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   localSourceTangentEvidence,localBooleanCreaseEvidence,
   selectedBooleanRayEvidence,booleanRayConcordance,
   selectedBooleanWCriticalPointEvidence,wBooleanForwardExitDepth,
+  wFiniteCapLineForwardRays,
   wExactMirrorDepthEvidence,
   wMirrorCapContactPartition,
   selectedBooleanThreeViewSourceRayCoverageVerified:

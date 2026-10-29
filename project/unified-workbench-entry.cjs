@@ -1867,6 +1867,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个；仍未认证的端盖或数值单元 '+
        partial.wBooleanForwardExitDepth.unresolvedCapOrNumericalCellCount+
        ' 个（不是已签署工程线型）。':'')+
+      (partial.wFiniteCapLineForwardRays?.allPhysicalCapSourceLinesIndependentlyVerified===true&&
+       partial.wFiniteCapLineForwardRays.lineSourceRays.length>0?
+       ' W 有限端盖源线独立复核：'+
+       partial.wFiniteCapLineForwardRays.capLateralSourceCount+
+       ' 条端盖/侧面来源线，'+
+       partial.wFiniteCapLineForwardRays.capCapWCollapsedSourceCount+
+       ' 条端盖/端盖空间交线投影为点；严格实体遮挡 '+
+       partial.wFiniteCapLineForwardRays.strictlyOpaqueLineCount+
+       ' 项，无严格体积遮挡 '+
+       partial.wFiniteCapLineForwardRays.strictlyClearLineCount+
+       ' 项（端盖面遮挡及线型尚未签收）。':'')+
       (partial.wLateralCollisionInventory?.allPositiveWSourceCurveProjectionCollisionsClassified===true?
        ' W 相贯曲线全部来源投影重合排查：'+
        partial.wLateralCollisionInventory.currentM3LateralSourceBranchCount+

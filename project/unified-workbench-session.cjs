@@ -231,6 +231,23 @@ function createUnifiedProjectSession(){
     const rayConcordance=joint.booleanRayConcordance;
     const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
     const wBooleanForwardExitDepth=joint.wBooleanForwardExitDepth;
+    const wFiniteCapLineForwardRays=joint.wFiniteCapLineForwardRays;
+    if(!wFiniteCapLineForwardRays||
+       wFiniteCapLineForwardRays.revision!==latest.revision||
+       wFiniteCapLineForwardRays.solidOperation!==(solidOperation||'unselected')||
+       wFiniteCapLineForwardRays.officialV5Authorized!==false||
+       wFiniteCapLineForwardRays.officialLineStylesVerified!==false||
+       wFiniteCapLineForwardRays.allCompositeSourceDepthAndSurfaceContactsProven!==false||
+       wFiniteCapLineForwardRays.closedJunctionsAndLineStylesCertified!==false||
+       (solidOperation!==null?
+        (wFiniteCapLineForwardRays.status!=='scoped-all-real-W-cap-source-open-rays'||
+         wFiniteCapLineForwardRays.allPhysicalCapSourceLinesIndependentlyVerified!==true||
+         wFiniteCapLineForwardRays.lineSourceRays.length!==
+          selectedRays.intervals.filter(x=>x.view==='W'&&
+            x.sourceKind==='line').length):
+        (wFiniteCapLineForwardRays.status!=='not-covered'||
+         wFiniteCapLineForwardRays.lineSourceRays.length!==0)))
+     throw new Error('C3 当前真实有限端盖 W 射线与三维来源直线联合证明不一致');
     if(!wBooleanForwardExitDepth||
        wBooleanForwardExitDepth.revision!==latest.revision||
        wBooleanForwardExitDepth.solidOperation!==(solidOperation||'unselected')||
@@ -408,7 +425,7 @@ function createUnifiedProjectSession(){
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
      wCriticalPointRays,wBooleanForwardExitDepth,
-     wMirrorDepthEvidence,wMirrorCapContactPartition,
+     wFiniteCapLineForwardRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
      wMirrorSourceOutlineUnion,wMirrorExitOutlineConcordance,
      wLateralCollisionInventory,analyticRayPaperReview,
      solidOperation,
