@@ -425,6 +425,62 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   if(native2DClassByOriginalSourceView.size!==m4BySource.size)
    throw new RangeError('real original 2D/3D source-class inventory lost source views');
  }
+ // Import the real WHOLE-SOLID generated HLR ordinal crosswalk, rather
+ // than treating a source-scoped 2D match as if it carried the original
+ // generated TopoDS IsSame identity. These still-unsigned matches are now
+ // explicitly visible at the corresponding M5 original-source gaps.
+ const globalGenerated2DBySource=new Map();
+ if(scopedConsumer!==undefined){
+  const ledger=scopedConsumer.globalNativeHLRSourceScopeRebinding;
+  if(ledger?.schema!==
+       'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1'||
+     ledger.sourceGeometryId!==geometry.id||ledger.revision!==cad.revision||
+     ledger.officialV5Authorized!==false||ledger.signedV5ActionCount!==0||
+     ledger.actualGlobalGeneratedEdgeToOriginalTopoDSHistoryCertified!==false)
+   throw new RangeError('missing same-revision whole-solid generated HLR source-scope crosswalk');
+  let inventory=0;
+  for(const view of ['V','H','W']){
+   const rows=ledger.views?.[view];
+   if(!Array.isArray(rows))throw new RangeError('missing whole-solid generated view ledger');
+   for(const row of rows){
+    if(row.view!==view||
+       !['visible-sharp','hidden-sharp'].includes(row.hlrClass)||
+       !Number.isSafeInteger(row.wholeSolidGeneratedHLREdgeOrdinal)||
+       !Array.isArray(row.originalSourceScopedCandidates)||
+       row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false||
+       row.signedV5Action!==false)
+     throw new RangeError('unbound unsigned whole-solid native generated HLR row');
+    inventory++;
+    const originalSource=row.uniqueOriginalSourceFilteredPaperCandidate;
+    if(originalSource===null)continue; // paper ambiguity cannot label M5
+    const key=view+'|'+originalSource;
+    if(!native2DClassByOriginalSourceView.has(key)||
+       !row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge||
+       !row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree||
+       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===
+        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge||
+       row.directNativeScopedGeneratedEdgeIsSameSource!==null&&
+        row.directNativeScopedGeneratedEdgeIsSameSource!==originalSource)
+     throw new RangeError('whole-solid HLR generated ordinal/source/class claim contradicts original native 3D');
+    const list=globalGenerated2DBySource.get(key)??[];
+    list.push(Object.freeze({
+     view,sourceEdgeId:originalSource,hlrClass:row.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
+     sourceScopedWholeGeneratedBinary64PaperExactlyMatched:true,
+     originalNative3DClassExactlyBacksEntireGeneratedLine:
+      row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,
+     originalNative3DClassWithinFullSourceOneULPEnvelopeOnly:
+      row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge,
+     actualGeneratedToOriginalTopoDSHistoryCertified:false,
+     allOpaqueFaceOcclusionCertified:false,
+     signedV5Action:false
+    }));
+    globalGenerated2DBySource.set(key,list);
+   }
+  }
+  if(inventory!==ledger.counts?.wholeSolidNativeHLREdges)
+   throw new RangeError('whole-solid native generated HLR ordinal inventory incomplete');
+ }
  // A missing M5 source/view is a distinct coverage obligation from a
  // positive gap inside an existing M5 span. Audit every noncollapsed
  // original M0 edge, including sources never emitted by the M5 ledger.
@@ -732,6 +788,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    nativeScoped2DToOriginal3DClassWitness:
     native2DClassByOriginalSourceView.get(key)??null,
    native2DClassWitnessCannotCloseMissingM5SourceRow:true,
+   wholeSolidGeneratedHLROriginalSourceFilterMatches:
+    globalGenerated2DBySource.get(key)??[],
+   wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory:true,
    nativeOriginalM4CoProjectedDepthOrder:
     m4DepthBySource.get(key)??[],
    originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -920,6 +979,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
     nativeScoped2DToOriginal3DClassWitness:
      native2DClassByOriginalSourceView.get(entry.view+'|'+entry.sourceEdgeId)??null,
     native2DClassWitnessCannotCloseM5PaperGap:true,
+    wholeSolidGeneratedHLROriginalSourceFilterMatches:
+     globalGenerated2DBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
+    wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory:true,
     nativeOriginalM4CoProjectedDepthOrder:
      m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -969,6 +1031,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    scopedConsumer!==undefined,
   nativeGenerated2DToOriginal3DClassSourceViews:
    native2DClassByOriginalSourceView.size,
+  actualWholeSolidGeneratedHLRSourceOrdinalCrosswalkConsumed:
+   scopedConsumer!==undefined,
+  wholeSolidGeneratedHLRSourceViewMatches:
+   globalGenerated2DBySource.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
