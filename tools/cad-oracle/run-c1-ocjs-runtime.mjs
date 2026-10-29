@@ -372,6 +372,30 @@ for(const [index,geometry] of general.entries()){
  assert.equal(scopedConsumer.globalContinuousVisibilityCertified,false);
  assert.equal(scopedConsumer.formalEngineeringLineStyleCertified,false);
  assert.equal(scopedConsumer.signedV5ActionCount,0);
+ assert.equal(scopedConsumer.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
+ assert.equal(scopedConsumer.nativeOriginal3DProjectionIsNotGenerated2DSourceHistory,true);
+ assert.ok(scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates>0);
+ assert.ok(scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments>0);
+ for(const view of ['V','H','W'])
+  for(const row of scopedConsumer.views[view].nativeOriginal3DM4Candidates){
+   assert.equal(row.sourceGeometryId,geometry.id);
+   assert.equal(row.revision,cad.revision);
+   assert.equal(row.native3DProvenanceIsNotGenerated2DHLREdgeIdentity,true);
+   assert.equal(row.officialV5Authorized,false);
+   assert.ok(row.segments.every(segment=>
+    segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+    segment.generated2DHLREdgeTopologyProven===false&&
+    segment.engineeringLineStyle==='undetermined'&&
+    segment.signedV5Action===false));
+  }
+ console.error('REAL C1 M4 CONSUMER NATIVE 3D SOURCE PROJECTED '+geometry.id+': '+
+  JSON.stringify({
+   sourceViews:scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates,
+   native3DProjectedClassSegments:
+    scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments,
+   signedOfficialV5Actions:scopedConsumer.signedV5ActionCount
+  }));
+
  for(const view of ['V','H','W'])
   for(const klass of ['visible','hidden'])
    for(const stroke of scopedConsumer.views[view][klass]){
