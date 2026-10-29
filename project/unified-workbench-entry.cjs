@@ -2602,6 +2602,16 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  for(const id of allConditionFields){
   for(const type of ['input','change'])$(id).addEventListener(type,()=>{
    if(!coordinator)return;
+   const task=coordinator.snapshot().task;
+   // A previous human declaration is bound to the EXACT reviewed geometry.
+   // Edits must revoke it before preflight checks or submission can run.
+   if(task==='c1-third-view'&&
+      (id==='v8-c1-pair'||id==='v8-c1-vertices'))
+    $('v8-c1-topology').checked=false;
+   if(task==='c3-intersection'&&C3_KEYS.some(k=>id==='v8-c3-'+k)){
+    $('v8-c3-axes').checked=false;
+    $('v8-c3-caps').checked=false;
+   }
    uncommittedFormEdit=true;
    $('v8-review-ack').checked=false;
    updateReviewPanel(coordinator.snapshot());
