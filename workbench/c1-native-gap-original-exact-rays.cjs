@@ -47,6 +47,109 @@ const {auditExactBinary64PaperParameterPair,
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
+/**
+ * Reconcile every drawable original source's REAL source-filtered HLR 3D
+ * visibility classes with an INDEPENDENT full-edge exact M0 ray theorem.
+ * A native positive-length opposite-class span cannot be silently treated
+ * as a signed line. A matching class is only concordance, NOT proof that
+ * the generated 2D edge belongs to this source or is globally frontmost.
+ * Reuses the existing native partition and exact ray audits; no HLR/V5 fork.
+ */
+function auditC1Native3DOriginalRayConcordance({
+ native3DSourceViewLedger,rays
+}={}){
+ if(native3DSourceViewLedger?.schema!==
+    'draftai-c1-m5-real-native-3d-source-scoped-partition/1'||
+    rays?.schema!==
+    'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1'||
+    !Array.isArray(native3DSourceViewLedger.rows)||!Array.isArray(rays.rows))
+  throw new TypeError('current canonical native 3D source partitions and independent M0 rays required');
+ const available=native3DSourceViewLedger.availableFromActualPinnedOCJS===true;
+ if(!available&&native3DSourceViewLedger.rows.length)
+  throw new RangeError('unavailable native 3D source data cannot contain certified rows');
+ const byRay=new Map();
+ for(const ray of rays.rows){
+  const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
+  if(byRay.has(key))throw new RangeError('duplicate exact original source ray in class audit');
+  byRay.set(key,ray);
+ }
+ const rows=[],counts={
+  projectedOriginalSourceViewsExamined:0,
+  sourceViewsWithExactClosedClearRay:0,
+  sourceViewsWithExactStrictHiddenRay:0,
+  sourceViewsWithUnknownRayClass:0,
+  sourceViewsWithOppositeNative3DClass:0,
+  sourceViewsWithCompleteConcordantNative3DPartition:0,
+  sourceViewsWithIncompleteNative3DPartition:0
+ };
+ const seen=new Set();
+ for(const native of native3DSourceViewLedger.rows){
+  const key=native.view+'|'+native.sourceEdgeId;
+  if(seen.has(key))throw new RangeError('duplicate source-scoped native 3D class partition');
+  seen.add(key);
+  if(native.originalProjectedSourceNoncollapsed!==true)continue;
+  const ray=byRay.get(key);
+  const partition=native.exactOriginalNative3DSourcePartition;
+  if(!ray||ray.projectionCollapsed!==false||
+     native.nativeSourceScopedOriginalCurveProven!==true||
+     !Number.isSafeInteger(native.native3DVisibleSharpCount)||
+     native.native3DVisibleSharpCount<0||
+     !Number.isSafeInteger(native.native3DHiddenSharpCount)||
+     native.native3DHiddenSharpCount<0||
+     partition?.schema!=='draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'||
+     !Array.isArray(partition.generatedNativeParameterRanges)||
+     partition.generatedNativeParameterRanges.length!==
+      native.native3DVisibleSharpCount+native.native3DHiddenSharpCount||
+     native.signedV5Action!==false)
+   throw new RangeError('native source class lacks corresponding real interval or M0 ray');
+  const closed=ray.originalPhysicalCreaseProven===true&&
+   ray.completeSourceOriginal3DRayClosedIntervalClear===true&&
+   ray.exactlyBothOriginalVertexForwardRaysClear===true;
+  const hidden=ray.originalPhysicalCreaseProven===true&&
+   ray.originalOpenEdgeStrictInteriorOcclusionProven===true;
+  if(closed&&hidden)throw new RangeError('contradictory independently proven original ray classes');
+  const expected=closed?'visible-sharp':hidden?'hidden-sharp':null;
+  const opposite=(closed&&native.native3DHiddenSharpCount>0)||
+   (hidden&&native.native3DVisibleSharpCount>0);
+  const complete=partition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce===true;
+  const concordant=expected!==null&&complete&&!opposite&&
+   (closed?native.native3DVisibleSharpCount:native.native3DHiddenSharpCount)>0;
+  counts.projectedOriginalSourceViewsExamined++;
+  if(closed)counts.sourceViewsWithExactClosedClearRay++;
+  else if(hidden)counts.sourceViewsWithExactStrictHiddenRay++;
+  else counts.sourceViewsWithUnknownRayClass++;
+  if(opposite)counts.sourceViewsWithOppositeNative3DClass++;
+  if(concordant)counts.sourceViewsWithCompleteConcordantNative3DPartition++;
+  if(!complete)counts.sourceViewsWithIncompleteNative3DPartition++;
+  rows.push({view:native.view,sourceEdgeId:native.sourceEdgeId,
+   expectedClassFromIndependentExactOriginalRay:expected,
+   native3DVisibleSharpCount:native.native3DVisibleSharpCount,
+   native3DHiddenSharpCount:native.native3DHiddenSharpCount,
+   exactNative3DCombinedParameterPartitionComplete:complete,
+   oppositeNative3DClassContradictsOriginalRay:opposite,
+   fullNative3DClassConcordanceOnly:concordant,
+   originalToGenerated2DTopoDSHistoryCertified:false,
+   globalCoProjectedVisibilityCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false});
+ }
+ if(available&&rows.length!==native3DSourceViewLedger.counts?.projectedOriginalSourceViews)
+  throw new RangeError('real native 3D HLR source ray audit lost drawable sources');
+ if(counts.projectedOriginalSourceViewsExamined!==
+     counts.sourceViewsWithExactClosedClearRay+
+     counts.sourceViewsWithExactStrictHiddenRay+
+     counts.sourceViewsWithUnknownRayClass)
+  throw new RangeError('native 3D visibility class audit counts inconsistent');
+ return freeze({
+  schema:'draftai-c1-native-3d-original-ray-class-concordance/1',
+  actualNativeSourceScopedHLRAvailable:available,
+  counts,rows,
+  noOriginalRayVersusNative3DClassContradictions:
+   available&&counts.sourceViewsWithOppositeNative3DClass===0,
+  native2DGeneratedTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  officialV5Authorized:false
+ });
+}
 function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
  const gaps=auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger});
  // Recompute the existing M0/M4/M5 exact halfspace and original-vertex
@@ -60,6 +163,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     rays.signedV5ActionCount!==0||rays.wholeSolidV5Ready!==false||
     rays.allActualOccludingSceneFacesCertified!==false)
   throw new RangeError('current unsigned exact original 3D convex source rays required');
+ const native3DOriginalRayClassConcordance=auditC1Native3DOriginalRayConcordance({
+  native3DSourceViewLedger:gaps.native3DSourceViewLedger,rays
+ });
  const bySource=new Map();
  for(const ray of rays.rows){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
@@ -545,6 +651,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   originalSourceGapLedgerSchema:gaps.schema,
   independentOriginalClosedRaySchema:rays.schema,
   counts,rows,missingOriginalM0SourceViewRows,
+  native3DOriginalRayClassConcordance,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
   allNativeHLRSourceGapsClosed:false,
@@ -554,4 +661,5 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   officialV5Authorized:false,signedV5ActionCount:0
  });
 }
-module.exports={auditC1NativeGapOriginalExactRays,exactOriginal3DVertexOnSourceSegment};
+module.exports={auditC1NativeGapOriginalExactRays,
+ auditC1Native3DOriginalRayConcordance,exactOriginal3DVertexOnSourceSegment};
