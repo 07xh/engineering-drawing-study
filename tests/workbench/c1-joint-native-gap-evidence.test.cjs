@@ -57,3 +57,31 @@ test('claimed native history or signed V5 is rejected',()=>{
  p.curve.generatedHLREdgeToOriginalTopoDSHistoryCertified=true;
  assert.throws(()=>audit(p),/unsigned/);
 });
+
+test('shared raw OCCT input invokes both independent auditors for all three skew-tetra gaps',()=>{
+ const {auditC1JointNativeGapFromRealHLR:run}=
+  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}};
+ const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C'],['A','D']]}};
+ for(const [view,edge,end] of gaps){
+  const [a,b]=edge.split('|');
+  const sourceEdgeId='C1SkewTetra::'+edge;
+  const originalBRepSource={
+   sourceEdgeId,occtSourceCurveParameterRange:[0,
+    Math.hypot(...['x','y','z'].map(k=>points[b][k]-points[a][k]))],
+   occtSourceCurveFirstPoint3D:points[a],occtSourceCurveLastPoint3D:points[b],
+   originalOCCTBRepVertexXYZMatched:true,occtCurveTypeIndependentlyVerified:true,
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,occtSourceCurveType:'line'
+  };
+  const input={geometry,view,sourceEdgeId,originalBRepSource,
+   uncoveredIntervals:[[0,end]],visibleSegments:[],hiddenSegments:[]};
+  const result=run(input);
+  assert.equal(result.positiveGapCount,1);
+  assert.equal(result.rows[0].diagnosis,'no-generated-history-for-positive-source-gap');
+  assert.equal(result.constructionIntentAuthorized,false);
+  assert.equal(result.signedV5ActionCount,0);
+  assert.throws(()=>run({...input,originalBRepSource:{
+   ...originalBRepSource,occtCurveTypeIndependentlyVerified:false}}),
+   /actual original OCCT/);
+ }
+});
