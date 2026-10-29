@@ -22,6 +22,8 @@ const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflict
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
+const {auditC1OriginalBRepVertexTShapeTopology}=
+ require('./c1-ocjs-original-source-vertex-topology.cjs');
 const {auditC1Native3DSourceScopedIntervals}=
  require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
@@ -773,6 +775,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    throw new RangeError('actual original TopoDS vertex occurrence inventory incomplete');
   if(originalNativeEdgeHandles.length!==sourceBRep.occtOriginalEdgeOccurrenceCount)
    throw new RangeError('native source OCCT TopoDS edge occurrence ledger incomplete');
+  // ORIGINAL physical vertex TShapes are independently stable even when
+  // OCCT HLR creates distinct projected TopoDS vertices at the same junction.
+  const originalNativeVertexTopology=auditC1OriginalBRepVertexTShapeTopology({
+   geometry,originalNativeVertexHandles
+  });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
@@ -1180,7 +1187,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
-   nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   nativeGeneratedVertexGraph,originalNativeVertexTopology,
+   directNativeOriginalVertexMatches,
    nativeTShapePartnerEdgeCandidatesByView,
    nativeTShapePartnerVertexCandidatesByView,
    nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,
