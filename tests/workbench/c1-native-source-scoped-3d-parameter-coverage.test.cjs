@@ -62,7 +62,11 @@ const group=(ranges)=>({
 });
 const scoped=(visible,hidden)=>({
  originalPhysicalSourceEdgeId:source,
- visible3D:group(visible),hidden3D:group(hidden)
+ visible3D:group(visible),hidden3D:group(hidden),
+ combinedNative3DSourceParameterPartition:audit({
+  originalNativeParameterRange:[0,1],
+  generatedNativeParameterRanges:[...visible,...hidden]
+ })
 });
 const paper=[
  {hlrClass:'visible-sharp',ordinal:0},
@@ -89,29 +93,35 @@ test('native 3D visible/hidden split retains both candidate classes unsigned',()
  assert.equal(r.paperCandidatesExcludedByNative3DClassAbsence.length,0);
  assert.equal(r.fullOriginalSourceHistoryCertified,false);
 });
-test('native 3D empty source cannot borrow any co-projected class',()=>{
+test('incomplete native 3D source partition cannot veto a paper class',()=>{
  const r=veto({view:'W',sourceEdgeId:source,
   scopedRow:scoped([],[]),paperCandidates:paper});
- assert.equal(r.native3DClassCompatiblePaperCandidates.length,0);
- assert.equal(r.paperCandidatesExcludedByNative3DClassAbsence.length,2);
+ assert.equal(r.native3DClassVetoEligibleOnlyAfterExactFullPartition,false);
+ assert.equal(r.native3DClassCompatiblePaperCandidates.length,2);
+ assert.equal(r.paperCandidatesExcludedByNative3DClassAbsence.length,0);
 });
 test('forged class, duplicate paper ordinal and fake native provenance fail closed',()=>{
  const args={view:'V',sourceEdgeId:source,
   scopedRow:scoped([[0,1]],[]),paperCandidates:paper};
+ const badRange=scoped([[0,1]],[]);
+ badRange.visible3D.native3DGeneratedCurveIntervals[0].
+  nativeOriginalCurveParameterRange=[0,0];
+ const stalePartition=scoped([[0,1]],[]);
+ stalePartition.combinedNative3DSourceParameterPartition={
+  ...stalePartition.combinedNative3DSourceParameterPartition,
+  sourceScopedNative3DParameterInventoryCompleteExactlyOnce:false
+ };
  for(const changed of [
   {...args,view:'X'},
   {...args,sourceEdgeId:'other'},
   {...args,paperCandidates:[paper[0],paper[0]]},
   {...args,paperCandidates:[{hlrClass:'visible-sharp',ordinal:-1}]},
   {...args,paperCandidates:[{hlrClass:'contour',ordinal:0}]},
-  {...args,scopedRow:scoped([[0,0]],[])},
-  {...args,scopedRow:scoped([[0,1]],[])}
- ]) {
-  if(changed.scopedRow!==args.scopedRow&&
-     changed.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
-      nativeOriginalCurveParameterRange[1]===1)
-   changed.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
-    nativeSourceFilterOriginalEdgeId='forged';
-  assert.throws(()=>veto(changed),/native|source|paper|original/);
- }
+  {...args,scopedRow:badRange},
+  {...args,scopedRow:stalePartition}
+ ])assert.throws(()=>veto(changed),/native|source|paper|original/);
+ const forged=scoped([[0,1]],[]);
+ forged.visible3D.native3DGeneratedCurveIntervals[0].
+  nativeSourceFilterOriginalEdgeId='forged';
+ assert.throws(()=>veto({...args,scopedRow:forged}),/native|source/);
 });
