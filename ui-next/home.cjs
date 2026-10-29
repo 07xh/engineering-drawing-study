@@ -189,6 +189,8 @@ function homeHTML(){return `
      <textarea id="v8-c1-vertices" rows="9" spellcheck="false"
       aria-describedby="v8-c1-columns"
       placeholder="V000,0,0,0,0"></textarea></label>
+    <button type="button" id="v8-c1-template" class="v8-c1-template" aria-controls="v8-c1-vertices">插入8行空白顶点编号</button>
+    <p id="v8-c1-template-status" class="v7-note" role="status" aria-live="polite"></p>
     <p class="v7-note">修改坐标即撤销旧确认与动画；坐标冲突或重合角点会在确认区提示具体编号。</p>
     <label class="v8-review-agree"><input id="v8-c1-topology" type="checkbox">
      我已经对照原题确认八个顶点 ID 的对应关系、单个八角点实体全部 12 条棱与 6 个面的闭合凸拓扑。</label>
