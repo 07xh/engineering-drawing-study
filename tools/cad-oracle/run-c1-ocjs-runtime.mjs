@@ -1129,6 +1129,9 @@ for(const [index,geometry] of general.entries()){
   depthCounts.canonicalM4CutSourceIntervalsFullyPartitioned);
  assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+ assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
+  depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering<=
+  depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering);
  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  // The rotated convex genuine WASM fixture has four original shared
@@ -1136,6 +1139,8 @@ for(const [index,geometry] of general.entries()){
  // They are mathematical witnesses, NOT signed official strokes.
  if(geometry.id==='C1rotated'){
   assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>=4);
+  assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
+   depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>=4);
   assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>=2);
  }
  for(const item of [
@@ -1150,6 +1155,13 @@ for(const [index,geometry] of general.entries()){
    row.canonicalOriginalM4EventCutDepthRows.length>0&&
    row.canonicalOriginalM4EventCutDepthRows.every(cut=>
     cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction===true&&
+    cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices===true&&
+    cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly===
+     (cut.coProjectedOriginal3DDepthOrder.
+       entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)&&
+    cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly===
+     (cut.coProjectedOriginal3DDepthOrder.
+       entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)&&
     cut.engineeringLineStyle==='undetermined'&&cut.signedV5Action===false)&&
    row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
  }
