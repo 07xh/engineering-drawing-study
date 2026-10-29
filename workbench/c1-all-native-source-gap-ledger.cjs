@@ -15,7 +15,8 @@ const {auditC1JointNativeGapFromCad}=
  require('./c1-joint-native-gap-evidence.cjs');
 const {auditC1OriginalM0InventoryCoverage}=
  require('./c1-original-m0-inventory-coverage.cjs');
-const {auditC1Native3DSourceScopedIntervals}=
+const {auditC1Native3DSourceScopedIntervals,
+ auditC1Native3DClassPaperCandidateVeto}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
@@ -68,6 +69,8 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
  // A fully covered native 3D source is NOT yet a whole-solid generated 2D
  // TopoDS identity, global occlusion, engineering style or V5 certificate.
  const native3DSourceViewRows=[];
+ const native3DScopedRowsByView=Object.fromEntries(VIEWS.map(view=>
+  [view,new Map()]));
  const native3DSourceViewCounts={
   projectedOriginalSourceViews:0,
   native3DProjectedSourceViewsWithCompleteCombinedPartition:0,
@@ -148,6 +151,7 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       throw new RangeError('projected collapsed source emitted a native sharp HLR segment');
      native3DSourceViewCounts.collapsedSourceViewsWithoutNative3DSharpSegments++;
     }
+    native3DScopedRowsByView[view].set(id,row);
     native3DSourceViewRows.push({view,sourceEdgeId:id,
      originalProjectedSourceNoncollapsed:drawable,
      native3DVisibleSharpCount:visible.length,
@@ -362,7 +366,22 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
      claim.hlrClass===candidate.hlrClass&&
      claim.nativeWholeSolidEdgeOrdinal===candidate.ordinal&&
      claim.originalPhysicalSourceEdgeId!==sourceEdgeId));
+   // A paper-only match in a class with NO original-source native 3D
+   // HLR interval is an impossible class attribution. Exclude it from
+   // subsequent candidate exploration, not from the raw audit record.
+   // A retained candidate is still unsigned and never a TopoDS history.
+   const native3DClassVeto=hasScoped3D?
+    auditC1Native3DClassPaperCandidateVeto({
+     view,sourceEdgeId,
+     scopedRow:native3DScopedRowsByView[view].get(sourceEdgeId),
+     paperCandidates:candidates
+    }):null;
    return {view,sourceEdgeId,
+    native3DClassPaperCandidateVeto:native3DClassVeto,
+    native3DClassCompatiblePaperCandidateCount:
+     native3DClassVeto?.native3DClassCompatiblePaperCandidates.length??null,
+    native3DClassContradictoryPaperCandidateCount:
+     native3DClassVeto?.paperCandidatesExcludedByNative3DClassAbsence.length??null,
     directNativeGeneratedIdentityCandidateCount:directNativeIdentityCandidates.length,
     directNativeGeneratedIdentityCandidates:directNativeIdentityCandidates.map(
      candidate=>({hlrClass:candidate.hlrClass,ordinal:candidate.ordinal})),
