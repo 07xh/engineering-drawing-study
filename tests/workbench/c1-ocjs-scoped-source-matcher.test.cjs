@@ -210,3 +210,11 @@ test('real whole-solid generated HLR inventory exposes unclaimed edges without s
  assert.equal(empty.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim,true);
  assert.equal(empty.fullOriginalSourceHistoryCertified,false);
 });
+
+test('one native whole-solid inventory cannot mix V and W generated edge ordinals',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ assert.throws(()=>audit({matches:[match(setup('V')),match(setup('W'))],
+  wholeSolidCounts:{'visible-sharp':3,'hidden-sharp':0}}),
+  /one HLR view/);
+});
