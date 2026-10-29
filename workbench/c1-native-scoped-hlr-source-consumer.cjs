@@ -19,6 +19,8 @@ const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
 const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
+const {auditC1RealNativeScoped2D3DClassBinding}=
+ require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -125,7 +127,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   paperAliasedWholeSolidEdgesWithMultipleOriginalSources:0,
   nativeOriginal3DM4SourceViewCandidates:0,
   nativeOriginal3DM4ProjectedClassSegments:0,
-  nativeOriginal3DM4PositiveIntervalsHeldForBinary64:0};
+  nativeOriginal3DM4PositiveIntervalsHeldForBinary64:0,
+  nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D:0,
+  nativeSourceScoped2DEdgesExactlyBackedBySame3DClass:0,
+  nativeSourceScoped2DEdgesClassOrRoundingHeld:0,
+  nativeSourceScoped2DEdgesWithOpposite3DClassOverlap:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -333,7 +339,48 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      projected.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length;
    }
   }
-  views[view]={nativeOriginal3DM4Candidates};
+  // Same original TopoDS EdgeMap index, TWO independent source-filtered
+  // native HLR result classes: generated 2D edge vs original native 3D
+  // curve parameters. Check the exact dyadic source parameter support of
+  // each received generated 2D segment, not a rounded 2D inverse t.
+  // Direct native global-generated IsSame, M5 global visibility and V5
+  // remain distinct unproven obligations.
+  const nativeScoped2D3DClassBindings=[];
+  if(nativeM4Available){
+   const nativeM4ById=new Map(nativeOriginal3DM4Candidates.map(x=>
+    [x.sourceEdgeId,x]));
+   if(nativeM4ById.size!==nativeOriginal3DM4Candidates.length)
+    throw new RangeError('duplicate original native 3D M4 source for 2D class binding');
+   for(const source of scoped.rows){
+    const originalId=source.originalPhysicalSourceEdgeId,
+     nativeM4=nativeM4ById.get(originalId);
+    if(!nativeM4)continue; // source collapses in this first-angle view
+    const [sourceProjectedFrom,sourceProjectedTo]=
+     projectedOriginalBySource.get(originalId)[view];
+    const joined=auditC1RealNativeScoped2D3DClassBinding({
+     view,sourceEdgeId:originalId,sourceProjectedFrom,sourceProjectedTo,
+     scoped2DVisible:source.visible,scoped2DHidden:source.hidden,
+     nativeOriginal3DM4:nativeM4
+    });
+    nativeScoped2D3DClassBindings.push(joined);
+    counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D+=
+     joined.counts.scoped2DGeneratedEdgesChecked;
+    counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+=
+     joined.counts.exactSameClassNative3DBackedEdges;
+    counts.nativeSourceScoped2DEdgesClassOrRoundingHeld+=
+     joined.counts.paperDriftOrClassCoverageHeld;
+    counts.nativeSourceScoped2DEdgesWithOpposite3DClassOverlap+=
+     joined.counts.exactOppositeClassPositiveOverlapEdges;
+   }
+   if(nativeScoped2D3DClassBindings.length!==
+      nativeOriginal3DM4Candidates.length||
+      counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D!==
+      counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+
+      counts.nativeSourceScoped2DEdgesClassOrRoundingHeld)
+    throw new RangeError('native source-scoped 2D/3D HLR class inventory incomplete');
+  }
+  views[view]={nativeOriginal3DM4Candidates,
+   nativeScoped2D3DClassBindings};
   for(const [klass,item] of Object.entries(classes)){
    const rows=item.sources.map((sources,ordinal)=>({
     wholeSolidHLREdgeOrdinal:ordinal,
