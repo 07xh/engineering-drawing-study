@@ -147,3 +147,94 @@ test('forged current source M4, duplicate global ordinal and original BRep alias
   assert.throws(()=>audit(x),/native|source|original|global|forged|ordinal|required/i);
  }
 });
+
+test('strict native 3D class support may have a one-ULP original 2D endpoint drift without false vertex identity',()=>{
+ const x=setup({rounded:true}),row=x.globalRebinding.views.V[0];
+ row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge=true;
+ row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge=false;
+ const r=audit(x);
+ assert.equal(r.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,1);
+ assert.equal(r.counts.roundedOnlyOriginalM0PaperEndpointPairs,1);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,0);
+ assert.equal(r.views.V.rows[0].strictlyOriginal3DClassBackedButPaperEndpointsRounded,true);
+ assert.equal(r.views.V.rows[0].receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly,false);
+ assert.equal(r.views.V.rows[0].originalM0PaperEndpointRoundoffEnvelope.compatible,true);
+ assert.equal(r.views.V.rows[0].exactOriginalM0PaperEndpointsNotReplacedByRoundoffEvidence,true);
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+});
+test('paper displacement larger than the actual original source ULP envelope stays held even if class exactly covers',()=>{
+ const x=setup(),row=x.globalRebinding.views.V[0];
+ x.cad.views.V[0].from.u=1e-7;
+ row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge=true;
+ row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge=false;
+ const r=audit(x);
+ assert.equal(r.counts.sourceScaleULPEnvelopeRejectedOriginalM0PaperEndpoints,1);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ assert.equal(r.views.V.rows[0].originalM0PaperEndpointRoundoffEnvelope.compatible,false);
+});
+function attachGenuineNativePair(x,{same=true,pointDifferent=false}={}){
+ const graph={schema:'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1',
+  realOCCTIsSameComparedBeforeNativeObjectDeletion:true,
+  allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing:true,
+  actualGeneratedToOriginalTopoDSHistoryRecovered:false,
+  signedV5ActionCount:0,
+  views:{}};
+ for(const view of ['V','H','W']){
+  const first=x.cad.views[view][0],second=x.cad.views[view][1];
+  const pair={view,
+   a:{hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'from',
+    nativePaperPoint:{...first.from}},
+   b:{hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'from',
+    nativePaperPoint:{...second.from}},
+   nativeGeneratedOCCTTopoDSVertexIsSame:same,
+   signedV5Action:false};
+  if(pointDifferent&&view==='V')pair.b.nativePaperPoint={u:200,v:100};
+  graph.views[view]={
+   view,realNativeSharpEdgeCount:x.cad.views[view].length,
+   allNativeGeneratedEndpointPairsIndependentlyCompared:true,
+   sameActualGeneratedOCCTTopoDSVertexPairs:same?[pair]:[],
+   paperCoincidentButDifferentTopoDSVertexPairs:same?[]:[pair]
+  };
+ }
+ x.cad.nativeGeneratedVertexGraph=graph;
+ return x;
+}
+test('native IsSame physical M0 junction is proven for a generated vertex pair, never full generated edge history',()=>{
+ const x=attachGenuineNativePair(setup({two:true}));
+ const r=audit(x);
+ assert.equal(r.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame,3);
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices,0);
+ assert.equal(r.counts.realNativeGeneratedVertexGraphPairsChecked,3);
+ for(const view of ['V','H','W']){
+  assert.equal(r.views[view].originalPhysicalEndpointPairCandidates[0].
+   actualNativeGeneratedTopoDSVertexIsSameForThisPairProven,true);
+ }
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('paper-coincident but different actual TopoDS native vertices do not create a generated junction',()=>{
+ const r=audit(attachGenuineNativePair(setup({two:true}),{same:false}));
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices,3);
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame,0);
+ assert.equal(r.views.V.originalPhysicalEndpointPairCandidates[0].
+  nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin,true);
+ assert.equal(r.views.V.originalPhysicalEndpointPairCandidates[0].
+  actualNativeGeneratedTopoDSVertexIsSameForThisPairProven,false);
+});
+test('forged native generated graph vertex identity or paper endpoint is rejected even with true M0 shared physical vertices',()=>{
+ for(const mutate of [
+  x=>{x.cad.nativeGeneratedVertexGraph.signedV5ActionCount=1;},
+  x=>{x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs[0].
+   b.nativePaperPoint.u=200;},
+  x=>{x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs[0].
+   b.nativeHLREdgeOrdinal=20;},
+  x=>{x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs[0].
+   signedV5Action=true;},
+  x=>{const a=x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs;
+   a.push(structuredClone(a[0]));}
+ ]){
+  const x=attachGenuineNativePair(setup({two:true}));mutate(x);
+  assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
+ }
+});
