@@ -1859,6 +1859,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个正长度开单元；尚有 '+
        partial.wMirrorCapContactPartition.unassignedProjectedCapContactCount+
        ' 个未归属端盖投影事件（全局遮挡及线型不放行）。':'')+
+      (partial.wBooleanForwardExitDepth?.allWSourceOpenCellsAccountedFor?
+       ' W 视图真实有限圆柱前方体积退出深度：解析遮挡开单元 '+
+       partial.wBooleanForwardExitDepth.provedOpaqueExitCellCount+
+       ' 个，解析无体积遮挡开单元 '+
+       partial.wBooleanForwardExitDepth.provedClearForwardCellCount+
+       ' 个；仍未认证的端盖或数值单元 '+
+       partial.wBooleanForwardExitDepth.unresolvedCapOrNumericalCellCount+
+       ' 个（不是已签署工程线型）。':'')+
       (partial.wMirrorSourceOutlineUnion?.originalCapPartitionOpenCellCount>0?
        ' W 全部原始圆柱轮廓线交点：已复查 '+
        partial.wMirrorSourceOutlineUnion.sourceOutlineContactCount+
