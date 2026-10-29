@@ -197,6 +197,11 @@ test('a true shared original 3D vertex proves strict OPEN observer depth, never 
  assert.equal(back.originalPhysicalVertexOpenDepthOrderingProven,true);
  assert.equal(back.visibleSourceCoversEntireLine,false);
  assert.equal(back.wholeIntervalFrontmostCertified,false);
+ assert.equal(back.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,true);
+ assert.equal(back.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,true);
+ assert.equal(back.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(back.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
+ assert.equal(back.openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces,true);
  assert.deepEqual(back.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,-1]);
  assert.deepEqual(back.comparisons[0].exactDepthTiesAtOriginalShared3DVertex,[true,false]);
  assert.equal(back.comparisons[0].status,
@@ -210,6 +215,9 @@ test('a true shared original 3D vertex proves strict OPEN observer depth, never 
  });
  assert.equal(front.wholeIntervalFrontmostCertified,false);
  assert.equal(front.originalPhysicalVertexOpenDepthOrderingProven,true);
+ assert.equal(front.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,true);
+ assert.equal(front.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(front.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
  assert.equal(front.comparisons[0].status,
   'candidate-strictly-front-open-at-original-3d-vertex');
  assert.deepEqual(front.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,1]);
@@ -229,6 +237,9 @@ test('paper and XYZ coincidence with different original vertex IDs cannot forge 
  });
  assert.equal(out.originalPhysicalVertexOpenDepthOrderingProven,false);
  assert.equal(out.visibleSourceCoversEntireLine,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
  assert.equal(out.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,false);
 });
 test('a real positive 3D source interval that renders below paper resolution remains held, not collapsed',()=>{
@@ -248,4 +259,25 @@ test('a real positive 3D source interval that renders below paper resolution rem
   view:'V'});
  assert.equal(collapsed.status,'collapsed-source-projection');
  assert.equal(collapsed.originalDyadicProjectedIntervalPositive,false);
+});
+
+test('partial projected overlap cannot be promoted to strict entire OPEN source visibility',()=>{
+ const geom=geometry();
+ geom.data.points.H.z=2;
+ const out=check(geom,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('source depth switch/tie away from physical original vertex never proves OPEN frontmost',()=>{
+ const geom=geometry();
+ geom.data.points.D.y=3;
+ geom.data.points.H.y=-3;
+ const out=check(geom,source('A','E'),[peer('D','H')]);
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,false);
 });
