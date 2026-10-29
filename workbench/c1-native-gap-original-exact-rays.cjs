@@ -134,6 +134,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     omittedCandidateCounts.paperOnlyRayClassDisagreements++;
    return {hlrClass:paper.hlrClass,ordinal:paper.ordinal,
     exactBinary64PaperAffineAligned:aligned,
+    exactBinary64PaperAffineCrossProductDyadic:[
+     affine.exactBinary64PaperFromCrossProductDyadic,
+     affine.exactBinary64PaperToCrossProductDyadic],
     exactBinary64PaperWithinOriginalParameterDomain:bounded,
     exactBinary64PaperHasPositiveParameterSpan:
      parameter.nativePaperSourceParameterPairHasExactPositiveSpan,
