@@ -56,4 +56,24 @@ function auditC1JointNativeGapEvidence({curve,adjacency}={}){
   globalContinuousVisibilityCertified:false,formalEngineeringLineStyleCertified:false,
   constructionIntentAuthorized:false,signedV5ActionCount:0});
 }
-module.exports={auditC1JointNativeGapEvidence};
+/**
+ * Run the actual existing forensic auditors on ONE shared real-WASM input.
+ * No pre-fabricated audit reports can be substituted in this entry point.
+ */
+function auditC1JointNativeGapFromRealHLR({
+ geometry,view,sourceEdgeId,originalBRepSource,uncoveredIntervals,
+ visibleSegments,hiddenSegments
+}={}){
+ const {auditC1OriginalOcctCurveParameterGapWitness}=
+  require('./c1-original-occt-curve-parameter-gap-witness.cjs');
+ const {auditC1NativeGapGeneratedVertexAdjacency}=
+  require('./c1-native-gap-generated-vertex-adjacency.cjs');
+ const curve=auditC1OriginalOcctCurveParameterGapWitness({
+  geometry,view,sourceEdgeId,originalBRepSource,uncoveredIntervals
+ });
+ const adjacency=auditC1NativeGapGeneratedVertexAdjacency({
+  geometry,view,sourceEdgeId,uncoveredIntervals,visibleSegments,hiddenSegments
+ });
+ return auditC1JointNativeGapEvidence({curve,adjacency});
+}
+module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR};
