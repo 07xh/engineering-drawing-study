@@ -18,7 +18,7 @@ const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
 const {auditC1RoundedInversePaperBoundaryAlias}=
  require('../../../workbench/c1-rounded-inverse-paper-boundary-alias.cjs');
-const {auditC1ScopedHLRGeneratedEdgeMatch}=
+const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflicts}=
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
@@ -1008,7 +1008,16 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    if(processed.size!==byOriginalSource.size)
     throw new RangeError('source-scoped HLR filter did not enumerate every original edge');
+   // The native EdgeMap and source-filtered output are still the only
+   // authority for each claim. Cross-check ALL original sources here, before
+   // returning serializable evidence to M5 or deleting WASM handles.
+   const nativeSourceIdentityConflicts=auditC1ScopedHLRSourceIdentityConflicts({
+    matches:scopedRows.flatMap(source=>[
+     ...source.visible,...source.hidden
+    ])
+   });
    nativeSourceScopedSharpOutputByView[view]={
+    nativeSourceIdentityConflicts,
     schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
     sourceEdgeCount:scopedRows.length,
     nativeSourceScopedOutputEdgeCount:scopedOutputEdges,
