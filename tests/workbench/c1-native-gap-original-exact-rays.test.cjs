@@ -152,3 +152,24 @@ test('collapsed original source projection is not falsely treated as missing dra
  assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
  assert.equal(out.signedV5ActionCount,0);
 });
+
+test('reversed native BRep parameter and sub-ULP rounded gap retain exact positive original curve and unsigned ray',()=>{
+ const g=tetra(),input=fixture(g,[
+  ['H',['A','C'],[0,1e-18]]
+ ]);
+ const source=input.cad.originalBRepSourceEdges.find(x=>
+  x.sourceEdgeId===id(g,['A','C']));
+ const originalFirst=source.occtSourceCurveFirstPoint3D;
+ source.occtSourceCurveFirstPoint3D=source.occtSourceCurveLastPoint3D;
+ source.occtSourceCurveLastPoint3D=originalFirst;
+ const length=source.occtSourceCurveParameterRange[1];
+ source.occtSourceCurveParameterRange=[100,100+length];
+ const out=audit(input);
+ assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,1);
+ assert.equal(out.rows[0].independentOriginalOCCTCurveGapPositive,true);
+ assert.equal(out.rows[0].originalOCCTCurveGapRoundedToZero,true);
+ assert.equal(out.rows[0].nativeHLRGeneratedEdgeCoversGap,false);
+ assert.equal(out.rows[0].generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(out.rows[0].engineeringLineStyle,'undetermined');
+ assert.equal(out.rows[0].signedV5Action,false);
+});
