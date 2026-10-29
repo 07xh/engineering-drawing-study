@@ -144,7 +144,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     // Do not turn this into exact original [0,1] paper or TopoDS history.
     sourcePaperEnvelope=boundedOriginalFullPaperEndpointEnvelope(
      p,q,line.from,line.to);
-    const boundedPaper=!originalPaperExact&&
+    boundedPaper=!originalPaperExact&&
      sourcePaperEnvelope.compatible===true&&sourceClassFull&&modelVerified&&
      (row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true||
       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===true);
