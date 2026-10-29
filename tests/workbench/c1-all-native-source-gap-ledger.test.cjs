@@ -214,3 +214,24 @@ test('omitted M0 source paper alias cannot borrow a different native TopoDS owne
  assert.equal(same.continuousOcclusionCertified,false);
  assert.equal(same.signedV5Action,false);
 });
+
+test('native owner claims reject unknown original source, invalid ordinal and duplicates',()=>{
+ const changes=[
+  rows=>{rows[0].originalPhysicalSourceEdgeId='C1SkewTetra::A|B';},
+  rows=>{rows[0].nativeWholeSolidEdgeOrdinal=1;},
+  rows=>{rows.push({...rows[0]});},
+  rows=>{rows[0].nativeScopedGeneratedEdgeIsSame=false;}
+ ];
+ for(const change of changes){
+  const x=fixture(),sourceEdgeId='C1SkewTetra::A|C';
+  x.cad.views.V.push({from:{u:0,v:0},to:{u:3,v:2},
+   sourceCandidate3DLifts:[{sourceEdgeId}]});
+  const rows=[{view:'V',hlrClass:'visible-sharp',
+   nativeWholeSolidEdgeOrdinal:0,originalPhysicalSourceEdgeId:sourceEdgeId,
+   nativeScopedGeneratedEdgeIsSame:true}];
+  change(rows);
+  x.cad.nativeSourceScopedSharpOutputByView={V:{
+   nativeSourceIdentityConflicts:{rows}}};
+  assert.throws(()=>audit(x),/invalid actual native HLR|duplicate actual native HLR/);
+ }
+});
