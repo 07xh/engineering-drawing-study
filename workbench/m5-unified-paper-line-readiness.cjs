@@ -276,6 +276,13 @@ function auditUnifiedPaperLineReadiness({geometry,revision,
    projectedToModelMm:{...group.projectedToModelMm},
    sourceMultiplicity:group.sourceMultiplicity,
    selectedListed3DSourceSubspanId:selected?.sourceSubspanId??null,
+   // Preserve M0/M4 physical provenance through M5 paper partitions:
+   // two spatially collinear features may NOT substitute for each other.
+   selectedOriginalPhysicalSourceFeatureId:
+    selected?.originalSourceFeatureId??null,
+   selectedOriginalPhysicalSourceFeatureKind:selected?.kind??null,
+   selectedOriginalPhysicalSourceGeometryIds:
+    selected?[...selected.sourceGeometryIds]:[],
    nearestListed3DSourceOnlyVerified:Boolean(selected),
    booleanOriginalOrGeneratedFeatureWitness:
     originalAndNewBoolean.contributions.map(x=>({...x})),

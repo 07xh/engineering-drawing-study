@@ -40,6 +40,25 @@ function reviewC2BoundaryPhysicalJunctions({
   typeof p[k]==='number'&&Number.isFinite(p[k]));
  const key3=p=>[p.x,p.y,p.z].join('|');
  const axes=['x','y','z'];
+ const sameSourceSet=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
+  a.length>0&&a.length===b.length&&
+  new Set(a).size===a.length&&new Set(b).size===b.length&&
+  [...a].sort().every((id,i)=>id===[...b].sort()[i]);
+ const matchingOriginalPhysicalFeature=(paper,segment)=>{
+  if(typeof paper?.selectedOriginalPhysicalSourceFeatureId!=='string'||
+     !paper.selectedOriginalPhysicalSourceFeatureId||
+     !sameSourceSet(paper.selectedOriginalPhysicalSourceGeometryIds,
+       segment.sourceGeometryIds))return false;
+  if(paper.selectedOriginalPhysicalSourceFeatureKind==='original-physical-crease')
+   return segment.kind==='original-source-crease'&&
+    segment.sourceEdgeId===paper.selectedOriginalPhysicalSourceFeatureId&&
+    segment.sourceGeneratedFeatureId===null;
+  if(paper.selectedOriginalPhysicalSourceFeatureKind==='generated-two-face-crease')
+   return segment.kind==='generated-source-face-crease'&&
+    segment.sourceGeneratedFeatureId===paper.selectedOriginalPhysicalSourceFeatureId&&
+    segment.sourceEdgeId===null;
+  return false;
+ };
  // C2 verified physical source features are axis-aligned 3D intervals.
  // The paper source must be an actual positive subsegment entering one
  // physical endpoint, not merely ANY other edge incident at that node.
@@ -217,7 +236,8 @@ function reviewC2BoundaryPhysicalJunctions({
      const other=pp[1-index]?.physicalSource3DPoint;
      return [...new Set(localPhysicalIncidences.filter(inc=>{
       const segment=physicalSegments.get(inc.segmentId);
-      return !!segment&&onPhysicalIncidentSegment(point,other,segment);
+      return !!segment&&matchingOriginalPhysicalFeature(group,segment)&&
+       onPhysicalIncidentSegment(point,other,segment);
      }).map(inc=>inc.segmentId))];
     }):[];
    const selected=new Set();
@@ -247,6 +267,8 @@ function reviewC2BoundaryPhysicalJunctions({
     exactSame3DSourceEndpointCandidateAtAllIncidences:samePhysical,
     distinctCanonicalPaperSourceGroupsVerified:sourceGroupsIndependentlyBound,
     independentPhysical3DIncidentSegmentsVerified:paperSourceSegmentsIndependentlyMatched,
+    exactOriginalOrGeneratedSourceFeatureLineageVerified:
+     paperSourceSegmentsIndependentlyMatched,
     sourceLedgerMultiFeatureJunctionVerified:realJunction,
     realOriginalOrGenerated3DJunctionNodeListed:realJunction,
     paperOnlyDifferent3DDepthOrLocationAliasDetected:certifiedPaperAlias,
