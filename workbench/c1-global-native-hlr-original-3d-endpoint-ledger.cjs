@@ -64,6 +64,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   originalModelPhysicalJunctionPairCandidates:0,
   physicalJunctionPairsWithBothExactGeneratedPaperEndpoints:0,
   physicalJunctionPairsWithAtLeastOneRoundedEndpoint:0,
+  physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame:0,
+  physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices:0,
+  nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join:0,
+  realNativeGeneratedVertexGraphPairsChecked:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
   signedOfficialV5Actions:0
  };
@@ -237,6 +241,79 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      signedV5Action:false});
    }
   }
+  // Consume the independent genuine OCCT generated TopoDS *vertex*
+  // graph (not generated edge-to-original 3D TopoDS history).
+  // The true IsSame comparison was performed while native handles lived.
+  // NEVER synthesize connectivity from paper or shared original M0 vertex.
+  const nativeGraph=cad.nativeGeneratedVertexGraph;
+  if(nativeGraph!==undefined){
+   const g=nativeGraph.views?.[view],
+    expectedCount=cad.views[view].length+cad.hiddenSharpViews[view].length;
+   if(nativeGraph.schema!==
+       'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1'||
+      nativeGraph.realOCCTIsSameComparedBeforeNativeObjectDeletion!==true||
+      nativeGraph.allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing!==true||
+      nativeGraph.actualGeneratedToOriginalTopoDSHistoryRecovered!==false||
+      nativeGraph.signedV5ActionCount!==0||
+      g?.view!==view||g.realNativeSharpEdgeCount!==expectedCount||
+      g.allNativeGeneratedEndpointPairsIndependentlyCompared!==true||
+      !Array.isArray(g.sameActualGeneratedOCCTTopoDSVertexPairs)||
+      !Array.isArray(g.paperCoincidentButDifferentTopoDSVertexPairs))
+    throw new RangeError('genuine native generated HLR TopoDS vertex graph unavailable or forged');
+   const endKey=r=>r.hlrClass+'|'+r.nativeHLREdgeOrdinal+'|'+r.side;
+   const pairKey=(a,b)=>[endKey(a),endKey(b)].sort().join('#');
+   const realPairs=new Map();
+   for(const [positive,items] of [
+    [true,g.sameActualGeneratedOCCTTopoDSVertexPairs],
+    [false,g.paperCoincidentButDifferentTopoDSVertexPairs]
+   ])for(const pair of items){
+    if(pair?.view!==view||pair.signedV5Action!==false||
+       pair.nativeGeneratedOCCTTopoDSVertexIsSame!==positive)
+     throw new RangeError('forged native HLR vertex IsSame pair');
+    const check=r=>{
+     if(!['visible-sharp','hidden-sharp'].includes(r?.hlrClass)||
+        !['from','to'].includes(r?.side)||
+        !Number.isSafeInteger(r.nativeHLREdgeOrdinal)||r.nativeHLREdgeOrdinal<0)
+      throw new RangeError('bad genuine HLR native generated endpoint ref');
+     const list=r.hlrClass==='visible-sharp'?
+      cad.views[view]:cad.hiddenSharpViews[view];
+     const seg=list[r.nativeHLREdgeOrdinal],pt=seg?.[r.side];
+     if(!p2eq(pt,r.nativePaperPoint))
+      throw new RangeError('genuine native vertex IsSame paper point contradicts generated HLR edge');
+    };
+    check(pair.a);check(pair.b);
+    const key=pairKey(pair.a,pair.b);
+    if(realPairs.has(key)||endKey(pair.a)===endKey(pair.b))
+     throw new RangeError('duplicated or self native generated vertex IsSame pair');
+    realPairs.set(key,positive);
+    counts.realNativeGeneratedVertexGraphPairsChecked++;
+   }
+   for(const row of pairRows){
+    const [a,b]=row.globalGeneratedHLREndpoints;
+    const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
+    const pair=realPairs.get(pairKey(ref(a),ref(b)));
+    if(pair===true){
+     if(!a.paperExactlyOriginalM0||!b.paperExactlyOriginalM0){
+      // Even same generated 2D TopoDS vertex and same independently
+      // identified M0 physical vertex cannot close a rounded paper
+      // endpoint or original source parameter identity.
+      row.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven=true;
+     }else row.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven=true;
+     counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame++;
+    }else if(pair===false){
+     row.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin=true;
+     counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices++;
+    }
+   }
+   const physical=new Set(pairRows.map(p=>{
+    const [a,b]=p.globalGeneratedHLREndpoints;
+    return pairKey({hlrClass:a.klass,nativeHLREdgeOrdinal:a.ordinal,side:a.side},
+     {hlrClass:b.klass,nativeHLREdgeOrdinal:b.ordinal,side:b.side});
+   }));
+   for(const [pair,positive] of realPairs)
+    if(positive&&!physical.has(pair))
+     counts.nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join++;
+  }
   views[view]={rows:result,originalPhysicalEndpointPairCandidates:pairRows};
  }
  return freeze({
@@ -245,6 +322,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   counts,views,
   trueOriginal3DPhysicalSourceEndpointsRecheckedIndependently:true,
   originalM0SharedVertexDoesNotProveGeneratedTopoDSIsSame:true,
+  originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced:
+   cad.nativeGeneratedVertexGraph!==undefined,
   generated2DToOriginal3DNativeTopoDSVertexTopologyCertified:false,
   allOpaqueFaceOcclusionCertified:false,
   officialV5Authorized:false,signedV5ActionCount:0
