@@ -371,6 +371,36 @@ for(const [index,geometry] of general.entries()){
  const globalScopedRebind=scopedConsumer.globalNativeHLRSourceScopeRebinding;
  assert.equal(globalScopedRebind?.schema,
   'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
+ const nativePhysical3DEndpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+ assert.equal(nativePhysical3DEndpoints?.schema,
+  'draftai-c1-global-generated-hlr-to-original-m0-3d-endpoint-junction-ledger/1');
+ assert.equal(nativePhysical3DEndpoints.sourceGeometryId,geometry.id);
+ assert.equal(nativePhysical3DEndpoints.revision,cad.revision);
+ assert.equal(nativePhysical3DEndpoints.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(nativePhysical3DEndpoints.allOpaqueFaceOcclusionCertified,false);
+ assert.equal(nativePhysical3DEndpoints.signedV5ActionCount,0);
+ assert.equal(nativePhysical3DEndpoints.counts.globalGeneratedHLREdgesChecked,
+  globalScopedRebind.counts.wholeSolidNativeHLREdges);
+ assert.equal(nativePhysical3DEndpoints.counts.uniqueOriginalSourceGlobalEdgesExamined,
+  globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
+ for(const view of ['V','H','W']){
+  const e=nativePhysical3DEndpoints.views[view];
+  assert.equal(e.rows.length,globalScopedRebind.views[view].length);
+  assert.ok(e.rows.every(row=>
+   row.generated2DToOriginalNativeTopoDSFullVertexTopologyCertified===false&&
+   row.continuousAllOpaqueFaceVisibilityProven===false&&
+   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false&&
+   row.original3DToGenerated2DEndpointWitnesses.every(w=>
+    w.paperAndSourceProximityIsNotNativeVertexTopologyIdentity===true&&
+    w.signedV5Action===false)));
+  assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
+   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===false&&
+   pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
+   pair['2DPaperCoincidenceCannotSignEngineeringJunction']===true&&
+   pair.signedV5Action===false));
+ }
+ console.error('REAL C1 NATIVE GLOBAL HLR ORIGINAL 3D BREP ENDPOINT GRAPH '+
+  geometry.id+': '+JSON.stringify(nativePhysical3DEndpoints.counts));
  assert.equal(globalScopedRebind.sourceGeometryId,geometry.id);
  assert.equal(globalScopedRebind.revision,cad.revision);
  assert.equal(globalScopedRebind.nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted,true);
