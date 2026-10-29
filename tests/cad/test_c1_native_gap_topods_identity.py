@@ -155,5 +155,57 @@ class NativeC1GapTopoDSIdentity(unittest.TestCase):
         self.assertTrue(found, 'expected real noncollinear near-A W HLR endpoint')
 
 
+    def test_native_source_scoped_hlr_matches_global_paper_not_global_identity(self):
+        # VCompound(original TopoDS edge) is real source-scoped extraction.
+        # Its generated edge is NEW even if whole-solid paper coordinates match.
+        for view, name, visible in [
+            ('H', ('A', 'C'), True),
+            ('H', ('A', 'D'), False),
+            ('W', ('A', 'C'), True),
+            ('W', ('A', 'D'), True),
+        ]:
+            with self.subTest(view=view, source=name):
+                camera, xdir = FRAMES[view]
+                algo = HLRBRep_Algo()
+                algo.Add(self.solid)
+                algo.Projector(HLRAlgo_Projector(gp_Ax2(
+                    gp_Pnt(0, 0, 0), gp_Dir(*camera), gp_Dir(*xdir))))
+                algo.Update()
+                algo.Hide()
+                extractor = HLRBRep_HLRToShape(algo)
+                source = original_source(self.original, name)
+                scoped_shape = (extractor.VCompound(source) if visible
+                                else extractor.HCompound(source))
+                global_shape = (extractor.VCompound() if visible
+                                else extractor.HCompound())
+                scoped = [TopoDS.Edge_s(e) for e in explore(scoped_shape, TopAbs_EDGE)]
+                global_edges = [TopoDS.Edge_s(e)
+                                for e in explore(global_shape, TopAbs_EDGE)]
+                self.assertEqual(len(scoped), 1)
+                self.assertGreater(len(global_edges), 0)
+
+                def paper(edge):
+                    return sorted((coords(v)[0], coords(v)[1])
+                                  for v in explore(edge, TopAbs_VERTEX))
+
+                for edge in scoped:
+                    self.assertTrue(any(paper(edge) == paper(other)
+                                        for other in global_edges))
+                    self.assertFalse(any(edge.IsSame(other)
+                                         for other in global_edges))
+                    self.assertFalse(edge.IsSame(source))
+        # Negative control: A-D is hidden, not visible, in H.
+        camera, xdir = FRAMES['H']
+        algo = HLRBRep_Algo()
+        algo.Add(self.solid)
+        algo.Projector(HLRAlgo_Projector(gp_Ax2(
+            gp_Pnt(0, 0, 0), gp_Dir(*camera), gp_Dir(*xdir))))
+        algo.Update()
+        algo.Hide()
+        extractor = HLRBRep_HLRToShape(algo)
+        self.assertFalse(explore(
+            extractor.VCompound(original_source(self.original, ('A', 'D'))),
+            TopAbs_EDGE))
+
 if __name__ == '__main__':
     unittest.main()
