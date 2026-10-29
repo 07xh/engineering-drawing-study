@@ -88,6 +88,18 @@ function auditC1RealNativeScoped2D3DClassBinding({
     !Array.isArray(nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)||
     nativeOriginal3DM4.officialV5Authorized!==false)
   throw new TypeError('current genuine source-filtered 2D and original-3D native HLR needed');
+ // The original OCCT native parameter partition is authoritative. Two
+ // distinct native endpoints can round to the SAME M4 fraction, hiding a
+ // genuine positive-length gap even when the M4 [0,1] union looks complete.
+ // A generated 2D class witness must never borrow that false completeness.
+ const nativePartitionProven=
+  nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+  nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveGaps.length===0&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
  const a=sourceProjectedFrom,b=sourceProjectedTo;
  const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
   denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
@@ -152,7 +164,8 @@ function auditC1RealNativeScoped2D3DClassBinding({
    if(compare(cursor,to)<0)gaps.push([cursor,to]);
    const opposite=m4.some(x=>x.klass!==klass&&
     compare(high(x.from,from),low(x.to,to))<0);
-   const backed=positive&&bounded&&aligned&&gaps.length===0&&!opposite;
+   const backed=nativePartitionProven&&positive&&bounded&&aligned&&
+    gaps.length===0&&!opposite;
    const roundedEnvelope=boundedOriginalFullPaperEndpointEnvelope(
     a,b,stroke.from,stroke.to);
    const sameWhole=m4.filter(x=>x.klass===klass)
@@ -164,7 +177,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
     if(compare(end,wholeReach)>0)wholeReach=end;
    }
    const native3DSameClassCoversWholeOriginalSource=
-    compare(wholeReach,one)>=0&&
+    nativePartitionProven&&compare(wholeReach,one)>=0&&
     nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0&&
     !m4.some(x=>x.klass!==klass);
    const boundedRepresentationConsistent=!backed&&positive&&
@@ -194,6 +207,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
     exactNative3DSourceClassPositivePaperCoverageGaps:
      gaps.map(([u,v])=>[printable(u),printable(v)]),
     nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment:backed,
+    originalNativeParameterPartitionIndependentlyVerified:nativePartitionProven,
     originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope:
      roundedEnvelope,
     native3DSameVisibilityClassExactlyCoversWholeOriginalSource:
@@ -210,6 +224,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
  return freeze({
   schema:'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1',
   view,sourceEdgeId,counts,rows,
+  originalNativeParameterPartitionIndependentlyVerified:nativePartitionProven,
   genuineOriginalNative3DParametersMayBeHeldByBinary64:
    nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length>0,
   sourceScoped2DClassBoundWithoutRounding:
