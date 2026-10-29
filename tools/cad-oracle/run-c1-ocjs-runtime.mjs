@@ -45,6 +45,8 @@ const {auditC1ThreeNativeGapBatchFromM5Ledger}=
  require('../../workbench/c1-joint-native-gap-evidence.cjs');
 const {auditC1AllOriginalSourceNativeGaps}=
  require('../../workbench/c1-all-native-source-gap-ledger.cjs');
+const {auditC1NativeGapOriginalExactRays}=
+ require('../../workbench/c1-native-gap-original-exact-rays.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -914,6 +916,30 @@ for(const [index,geometry] of general.entries()){
  const allOriginalSourceNativeGapLedger=auditC1AllOriginalSourceNativeGaps({
   geometry,cad,m5Ledger:audited
  });
+ // Genuine pinned WASM CAD and the SAME M5 source gap ledger now feed an
+ // independently recomputed, positive M0 exact convex observer-ray theorem.
+ // This does not fill the missing native HLR generated TopoDS edges.
+ const positiveOriginalGapRays=auditC1NativeGapOriginalExactRays({
+  geometry,cad,m5Ledger:audited
+ });
+ assert.equal(positiveOriginalGapRays.counts.positiveNativeGapIntervals,
+  allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
+ assert.equal(positiveOriginalGapRays.counts.nativeGeneratedHistoryGapsClosed,0);
+ assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
+ assert.ok(positiveOriginalGapRays.rows.every(row=>
+  row.originalSourceParameterGap[0]<row.originalSourceParameterGap[1]&&
+  row.nativeHLRGeneratedEdgeCoversGap===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ console.error('REAL C1 POSITIVE ORIGINAL SOURCE RAYS ON NATIVE HLR GAPS '+
+  geometry.id+': '+JSON.stringify({
+   counts:positiveOriginalGapRays.counts,
+   gaps:positiveOriginalGapRays.rows.map(row=>({
+    view:row.view,source:row.sourceEdgeId,
+    gap:row.originalSourceParameterGap,
+    exactM0Ray:row.independentOriginal3DExactRayStatus,
+    nativeHLRHistoryClosed:false
+   }))
+  }));
  const fullM5SourceSpanCount=['V','H','W'].reduce((n,view)=>
   n+audited.views[view].intervals.length,0);
  assert.equal(allOriginalSourceNativeGapLedger.totals.currentM5SourceSpans,
@@ -1974,6 +2000,7 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  positiveOriginalGapRays,
   threeNativeGapJointM5CadAudit,
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
   nativeHLRSourceHistoryAPISurfaceByView:
