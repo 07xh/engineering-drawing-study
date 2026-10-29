@@ -260,3 +260,48 @@ test('co-projected native owner from another M0 edge cannot borrow exact 3D ray 
  assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.nativeIsSameOwnerClaims,0);
  assert.equal(out.signedV5ActionCount,0);
 });
+
+test('two exact paper aliases can cover omitted M0 source while native owner history remains absent',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const middle={u:(from.u+to.u)/2,v:(from.v+to.v)/2};
+ for(const [a,b] of [[from,middle],[middle,to]])
+  input.cad.views.V.push({from:a,to:b,
+   sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.deepEqual(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+ assert.equal(row.exactPaperCoverageIsNotNativeSourceParameterCoverage,true);
+ assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(out.allNativeHLRSourceGapsClosed,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('one subnormal ULP gap in omitted source exact paper union cannot be rounded away',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const axis=from.u!==to.u?'u':'v';
+ assert.equal(from[axis],0);
+ const start={...from,[axis]:Math.sign(to[axis]-from[axis])*Number.MIN_VALUE};
+ input.cad.views.V.push({from:start,to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  exactBinary64PaperAffineAligned,true);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  exactBinary64PaperWithinOriginalParameterDomain,true);
+ const coverage=row.allPaperAliasCandidateExactBinary64Coverage;
+ assert.equal(coverage.exactBinary64PaperCandidateCoverageComplete,false);
+ assert.equal(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals.length,1);
+ assert.equal(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][0],'0');
+ assert.notEqual(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][1],'0');
+ assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(out.officialV5Authorized,false);
+});
