@@ -18,6 +18,16 @@ const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
 const paperSame=(a,b,spanA,spanB)=>
  Math.hypot(a.u-b.u,a.v-b.v)<=
   Math.min(1e-6,Math.min(spanA,spanB)*1e-6);
+const nativeScopedPaperSegmentsSame=(a,b)=>{
+ if(!valid(a?.from)||!valid(a?.to)||!valid(b?.from)||!valid(b?.to))return false;
+ const spanA=Math.hypot(a.to.u-a.from.u,a.to.v-a.from.v);
+ const spanB=Math.hypot(b.to.u-b.from.u,b.to.v-b.from.v);
+ if(!(spanA>0)||!(spanB>0))return false;
+ return paperSame(a.from,b.from,spanA,spanB)&&
+  paperSame(a.to,b.to,spanA,spanB)||
+  paperSame(a.from,b.to,spanA,spanB)&&
+  paperSame(a.to,b.from,spanA,spanB);
+};
 function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
@@ -45,13 +55,7 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
   const forward=scopedNativeEdge.IsSame(native),reverse=native.IsSame(scopedNativeEdge);
   if(typeof forward!=='boolean'||typeof reverse!=='boolean'||forward!==reverse)
    throw new RangeError('asymmetric native scoped/global TopoDS IsSame');
-  const globalSpan=Math.hypot(seg.to.u-seg.from.u,seg.to.v-seg.from.v);
-  const scopedSpan=Math.hypot(scopedSegment.to.u-scopedSegment.from.u,
-   scopedSegment.to.v-scopedSegment.from.v);
-  const samePaper=paperSame(seg.from,scopedSegment.from,globalSpan,scopedSpan)&&
-   paperSame(seg.to,scopedSegment.to,globalSpan,scopedSpan)||
-   paperSame(seg.from,scopedSegment.to,globalSpan,scopedSpan)&&
-   paperSame(seg.to,scopedSegment.from,globalSpan,scopedSpan);
+  const samePaper=nativeScopedPaperSegmentsSame(seg,scopedSegment);
   if(samePaper)paper.push(i);
   if(forward){if(!samePaper)throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');same.push(i);}
   if(typeof scopedNativeEdge.IsPartner!=='function'||typeof native.IsPartner!=='function')
@@ -87,4 +91,4 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
 }
-module.exports={auditC1ScopedHLRGeneratedEdgeMatch};
+module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame};
