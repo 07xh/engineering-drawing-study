@@ -94,6 +94,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   nativeScopedOwnerExactPositiveGapSourceViews:0,
   exactPaperVisibleHiddenPositiveConflictSourceViews:0,
   rayExcludedOppositeHLRClassPaperAliases:0,
+  native3DClassExcludedPaperAliases:0,
+  native3DAndRayCompatiblePaperCandidateCount:0,
+  native3DAndRayCompatiblePaperFullSourceViews:0,
+  native3DAndRayCompatiblePaperPositiveGapSourceViews:0,
+  native3DAndRayCompatiblePaperConflictSourceViews:0,
   rayCompatiblePaperFullSourceViewCoverage:0,
   rayCompatiblePaperPositiveGapSourceViews:0,
   rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews:0,
@@ -136,6 +141,27 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   const otherOwners=new Set(candidate.paperCandidatesClaimedByDifferentOriginalNativeSource?.
    map(x=>x.hlrClass+'|'+x.ordinal)??[]);
   const expectedClass=closed?'visible-sharp':hidden?'hidden-sharp':null;
+  const classVeto=candidate.native3DClassPaperCandidateVeto;
+  const native3DClassAllowed=classVeto===null?null:new Set(
+   classVeto.native3DClassCompatiblePaperCandidates.map(x=>
+    x.hlrClass+'|'+x.ordinal));
+  const native3DClassExcluded=classVeto===null?new Set():new Set(
+   classVeto.paperCandidatesExcludedByNative3DClassAbsence.map(x=>
+    x.hlrClass+'|'+x.ordinal));
+  const rawKeys=new Set(candidate.nativeHLRPaperCandidates.map(x=>
+   x.hlrClass+'|'+x.ordinal));
+  if(classVeto!==null&&(
+     classVeto.view!==missing.view||
+     classVeto.sourceEdgeId!==missing.sourceEdgeId||
+     classVeto.fullOriginalSourceHistoryCertified!==false||
+     classVeto.globalContinuousVisibilityCertified!==false||
+     classVeto.signedV5Action!==false||
+     classVeto.originalWholeSolidPaperCandidateCount!==rawKeys.size||
+     native3DClassAllowed.size+native3DClassExcluded.size!==rawKeys.size||
+     [...native3DClassAllowed,...native3DClassExcluded].some(x=>!rawKeys.has(x))||
+     [...native3DClassExcluded].some(x=>nativeOwners.has(x))))
+   throw new RangeError('native 3D class veto contradicts original HLR paper or direct native ownership');
+  omittedCandidateCounts.native3DClassExcludedPaperAliases+=native3DClassExcluded.size;
   const candidateDiagnostics=candidate.nativeHLRPaperCandidates.map(paper=>{
    const key=paper.hlrClass+'|'+paper.ordinal;
    if(nativeOwners.has(key)&&otherOwners.has(key))
@@ -221,6 +247,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     nativeOriginalVertexIncidenceIsNotGeneratedEdgeHistory:true,
     nativeGeneratedEdgeClaimedByDifferentOriginalSource:otherOwners.has(key),
     classConsistentWithIndependentWholeOriginal3DRay:classMatches,
+    native3DClassConsistentWithOriginalSource:
+     native3DClassAllowed===null?null:native3DClassAllowed.has(key),
+    native3DClassVetoExcludesThisSourcePaperAlias:
+     native3DClassExcluded.has(key),
     oppositeClassExcludedAsThisOriginal3DSourceByExactRay:classMatches===false,
     sourceScopedIdentityIsNotCompleteGeneratedTopoDSHistory:true,
     engineeringLineStyle:'undetermined',signedV5Action:false};
@@ -248,6 +278,29 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   const rayCompatibleEligible=eligible.filter(paper=>
    candidateDiagnostics[candidate.nativeHLRPaperCandidates.indexOf(paper)].
     classConsistentWithIndependentWholeOriginal3DRay!==false);
+  const native3DAndRayEligible=rayCompatibleEligible.filter(paper=>
+   native3DClassAllowed===null||
+   native3DClassAllowed.has(paper.hlrClass+'|'+paper.ordinal));
+  omittedCandidateCounts.native3DAndRayCompatiblePaperCandidateCount+=
+   native3DAndRayEligible.length;
+  const native3DAndRayPaperCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:from,sourceTo:to,
+   segments:native3DAndRayEligible.map(paper=>({
+    from:paper.projectedFrom,to:paper.projectedTo
+   }))
+  });
+  const native3DAndRayPaperVisibility=auditExactBinary64PaperVisibilityConflict({
+   sourceFrom:from,sourceTo:to,
+   visibleSegments:native3DAndRayEligible.filter(p=>p.hlrClass==='visible-sharp').
+    map(p=>({from:p.projectedFrom,to:p.projectedTo})),
+   hiddenSegments:native3DAndRayEligible.filter(p=>p.hlrClass==='hidden-sharp').
+    map(p=>({from:p.projectedFrom,to:p.projectedTo}))
+  });
+  if(native3DAndRayPaperCoverage.exactBinary64PaperCandidateCoverageComplete)
+   omittedCandidateCounts.native3DAndRayCompatiblePaperFullSourceViews++;
+  else omittedCandidateCounts.native3DAndRayCompatiblePaperPositiveGapSourceViews++;
+  if(native3DAndRayPaperVisibility.hasExactPositiveLengthVisibleHiddenPaperClassConflict)
+   omittedCandidateCounts.native3DAndRayCompatiblePaperConflictSourceViews++;
   const rayCompatiblePaperCoverage=auditExactBinary64PaperCandidateCoverage({
    sourceFrom:from,sourceTo:to,
    segments:rayCompatibleEligible.map(paper=>({
@@ -319,6 +372,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     nativeOwnerRayClassContradiction,
    exactBinary64PaperVisibleHiddenCandidateConflict:paperVisibility,
    rayCompatibleOriginal3DSourcePaperCoverage:rayCompatiblePaperCoverage,
+   native3DAndRayCompatibleOriginalSourcePaperCoverage:native3DAndRayPaperCoverage,
+   native3DAndRayCompatibleOriginalSourcePaperVisibility:native3DAndRayPaperVisibility,
+   native3DAndRayCompatibleCandidateCount:native3DAndRayEligible.length,
+   native3DClassExcludedPaperAliasCount:native3DClassExcluded.size,
+   native3DClassVetoIsNotOriginalGeneratedTopoDSHistory:true,
    rayCompatibleOriginal3DSourcePaperVisibility:rayCompatiblePaperVisibility,
    rayCompatibleCandidateCount:rayCompatibleEligible.length,
    rayClassPruningIsNotNativeHLROwnershipOrContinuousVisibility:true,
@@ -360,6 +418,12 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     omittedCandidateCounts.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews>
      omittedCandidateCounts.exactPaperVisibleHiddenPositiveConflictSourceViews||
     omittedCandidateCounts.rayExcludedOppositeHLRClassPaperAliases>
+     omittedCandidateCounts.examined||
+    omittedCandidateCounts.native3DAndRayCompatiblePaperFullSourceViews+
+     omittedCandidateCounts.native3DAndRayCompatiblePaperPositiveGapSourceViews!==missingSeen.size||
+    omittedCandidateCounts.native3DAndRayCompatiblePaperConflictSourceViews>
+     omittedCandidateCounts.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews||
+    omittedCandidateCounts.native3DClassExcludedPaperAliases>
      omittedCandidateCounts.examined||
     omittedCandidateCounts.rayCompatibleNativeOwnerFullSourceViewCoverage+
      omittedCandidateCounts.rayCompatibleNativeOwnerPositiveGapSourceViews!==missingSeen.size||
