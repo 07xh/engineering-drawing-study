@@ -372,6 +372,17 @@ for(const [index,geometry] of general.entries()){
  assert.equal(globalScopedRebind?.schema,
   'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
  const nativePhysical3DEndpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+ const originalFaceAdjacency=cad.originalNativeFaceAdjacency;
+ assert.equal(originalFaceAdjacency?.schema,
+  'draftai-c1-original-occt-brep-face-edge-adjacency/1');
+ assert.equal(originalFaceAdjacency.sourceGeometryId,geometry.id);
+ assert.equal(originalFaceAdjacency.allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified,true);
+ assert.equal(originalFaceAdjacency.nativeBRepFacesChecked,geometry.data.faces.length);
+ assert.equal(originalFaceAdjacency.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces,
+  geometry.data.edges.length);
+ assert.equal(originalFaceAdjacency.edges.length,geometry.data.edges.length);
+ assert.equal(originalFaceAdjacency.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(originalFaceAdjacency.signedV5ActionCount,0);
  const originalPhysicalTopology=cad.originalNativeVertexTopology;
  assert.equal(originalPhysicalTopology?.schema,
   'draftai-c1-original-occt-brep-vertex-physical-topology/1');
@@ -413,6 +424,9 @@ for(const [index,geometry] of general.entries()){
   globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
  assert.equal(nativePhysical3DEndpoints.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
  assert.equal(nativePhysical3DEndpoints.originalNativeBRepPhysicalVertexTopologyVerified,true);
+ assert.equal(nativePhysical3DEndpoints.originalNativeBRepFaceEdgeAdjacencyVerified,true);
+ assert.equal(nativePhysical3DEndpoints.counts.originalBRepSourceEdgesWithNativeFaceAdjacencyVerified,
+  geometry.data.edges.length);
  assert.equal(nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape,
   nativePhysical3DEndpoints.counts.originalModelPhysicalJunctionPairCandidates);
  assert.equal(
