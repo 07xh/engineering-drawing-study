@@ -61,7 +61,12 @@ test('C3 coincident cylinder X centers have same exact affine far-ray exit match
   for(const x of r.sourceOpenCells.filter(row=>row.sourceFirstExitXAffine)){
    assert.equal(x.sourceFirstExitXAffine.twiceXCenter,0);
    const [a,b]=x.originalSourceXOpenRange;
-   assert.deepEqual(x.sourceFirstExitXAffine.firstExitXDomain,[-b,-a]);
+   assert.ok(x.sourceFirstExitXAffine.firstExitXDomain[0]===-b);
+   assert.ok(x.sourceFirstExitXAffine.firstExitXDomain[1]===-a);
+   assert.deepEqual(x.sourceFirstExitSourceIds,['zCylinder','yCylinder']);
+   assert.equal(x.sourceFirstExitCylinder,null);
+   assert.equal(x.sourceFirstExitPhysicalSourceUnique,false);
+   assert.equal(x.simultaneousFiniteCylinderExitSourcesVerified,true);
   }
  }
 });
