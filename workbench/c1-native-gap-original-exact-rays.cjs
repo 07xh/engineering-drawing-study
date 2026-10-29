@@ -94,7 +94,20 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
  }
  if(missingCandidates.size!==missingSeen.size)
   throw new RangeError('incomplete omitted original M0 source/view reconciliation');
+ // Independent whole-M0 inventory equation: every drawable original
+ // source/view is either represented by at least one current M5 span or
+ // explicitly missing. Multiple M5 subspans must not inflate the count.
+ const noncollapsedOriginalM0SourceViews=rays.rows.filter(x=>
+  x.projectionCollapsed===false).length;
+ const representedOriginalM0SourceViewsInM5=new Set(gaps.rows.filter(x=>
+  x.sourceEdgeId&&bySource.get(x.view+'|'+x.sourceEdgeId)?.
+   projectionCollapsed===false).map(x=>x.view+'|'+x.sourceEdgeId)).size;
+ if(noncollapsedOriginalM0SourceViews!==
+    representedOriginalM0SourceViewsInM5+missingSeen.size)
+  throw new RangeError('incomplete whole-M0 noncollapsed V/H/W source inventory');
  const rows=[],counts={
+  noncollapsedOriginalM0SourceViews,
+  representedOriginalM0SourceViewsInM5,
   unrepresentedOriginalM0SourceViews:missingOriginalM0SourceViewRows.length,
   unrepresentedM0SourceViewsWithNativeHLRPaperCandidates:
    missingOriginalM0SourceViewRows.filter(x=>x.nativeHLRPaperCandidateCount>0).length,
