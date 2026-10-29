@@ -245,6 +245,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   canonicalM4CutSubspansHeldForDepthOrTopology:0,
   sourceIntervalsWithStrictOriginal3DVertexOpenOrdering:0,
   canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering:0,
+  canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering:0,
+  canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
@@ -307,6 +309,12 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      });
      if(sliced.originalPhysicalVertexOpenDepthOrderingProven===true)
       m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering++;
+     if(sliced.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary===true){
+      if(sliced.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)
+       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering++;
+      if(sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)
+       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering++;
+     }
      if(sliced.status===
         'positive-original-dyadic-projection-below-paper-resolution-held')
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
@@ -315,6 +323,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
       originalM4CutFromCurrentReviewedEventGraph:true,
       originalM4EventPaperOnlyIsNot3DPhysicalJunction:true,
       coProjectedOriginal3DDepthOrder:sliced,
+      strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly:
+       sliced.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true,
+      hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:
+       sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true,
+      openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
       engineeringLineStyle:'undetermined',signedV5Action:false
      });
      cursor=to;
@@ -369,7 +382,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
-      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology)
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+     m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
+      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>
+      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // A missing M5 source/view is a distinct coverage obligation from a
