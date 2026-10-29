@@ -523,11 +523,6 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
- // Distinguish REAL source-scoped OCCT 3D full coverage from the
- // still-missing M5 2D source ownership and projected parameter ledger.
- counts.missingM5SourceViewsWithCompleteNative3DParameterPartition=
-  missingOriginalM0SourceViewRows.filter(row=>
-   row.missingM5SourceViewWithNative3DAlreadyFullyAccountedFor).length;
  if(missingCandidates.size!==missingSeen.size||
     omittedCandidateCounts.examined!==
      omittedCandidateCounts.exactAffineAligned+omittedCandidateCounts.exactAffineDrift||
@@ -589,7 +584,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   exactOriginalOpenStrictInteriorGapIntervals:0,
   originalSourceRayUnresolvedGapIntervals:0,
   nativeGeneratedHistoryGapsClosed:0,
-  missingM5SourceViewsWithCompleteNative3DParameterPartition:0,
+  missingM5SourceViewsWithCompleteNative3DParameterPartition:
+   missingOriginalM0SourceViewRows.filter(row=>
+    row.missingM5SourceViewWithNative3DAlreadyFullyAccountedFor).length,
   positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition:0,
   officialV5Actions:0
  };
