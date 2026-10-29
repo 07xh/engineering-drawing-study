@@ -489,3 +489,23 @@ test('V/H/W independent consumer rejects disjoint tiny native scoped fragments e
   assert.throws(()=>audit(x),/contradicts whole-solid HLR physical source/);
  }
 });
+
+test('V/H/W tiny original M0 sources cannot absorb remote native HLR lines within old absolute paper tolerance',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture();
+  x.geometry.data.points.B={x:1e-10,y:2e-10,z:3e-10};
+  for(const v of ['V','H','W']){
+   const p=x.paper(v,x.id0);
+   const global=x.cad.views[v][0];
+   const w=x.cad.nativeSourceScopedSharpOutputByView[v].rows[0].visible[0];
+   global.from={...p.from};global.to={...p.to};
+   w.from={...p.from};w.to={...p.to};
+  }
+  const global=x.cad.views[view][0];
+  const w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  for(const seg of [global,w]){
+   seg.from.v+=1e-8;seg.to.v+=1e-8;
+  }
+  assert.throws(()=>audit(x),/original M0 3D projection/);
+ }
+});
