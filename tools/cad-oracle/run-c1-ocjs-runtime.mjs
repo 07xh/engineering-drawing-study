@@ -379,9 +379,20 @@ for(const [index,geometry] of general.entries()){
  assert.equal(originalPhysicalTopology.allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
  const degrees=Object.fromEntries(Object.keys(geometry.data.points).map(id=>[id,0]));
  for(const edge of geometry.data.edges)for(const id of edge)degrees[id]++;
- const nativeOccurrences=2*geometry.data.edges.length;
- const expectedOriginalNativeShared=Object.values(degrees).reduce((sum,n)=>
-  sum+n*(n-1)/2,0);
+ // A sewn OCCT shell can expose each physical edge more than once during
+ // TopExp traversal. Use the REAL native occurrence ledger, not a guessed
+ // two-vertices-per-unique-M0-edge multiplicity.
+ const nativeOccurrences=2*cad.occtOriginalEdgeOccurrenceCount;
+ const actualVertexOccurrences=originalPhysicalTopology.originalM0VertexNativeOccurrenceCounts;
+ assert.deepEqual(Object.keys(actualVertexOccurrences).sort(),
+  Object.keys(degrees).filter(id=>degrees[id]>0).sort());
+ for(const [id,degree] of Object.entries(degrees))if(degree>0)
+  assert.ok(Number.isSafeInteger(actualVertexOccurrences[id])&&
+   actualVertexOccurrences[id]>=degree);
+ assert.equal(Object.values(actualVertexOccurrences).reduce((a,b)=>a+b,0),
+  nativeOccurrences);
+ const expectedOriginalNativeShared=Object.values(actualVertexOccurrences).reduce(
+  (sum,n)=>sum+n*(n-1)/2,0);
  assert.equal(originalPhysicalTopology.originalBRepVertexOccurrencesChecked,nativeOccurrences);
  assert.equal(originalPhysicalTopology.originalSamePhysicalVertexTopoDSPairs,
   expectedOriginalNativeShared);
