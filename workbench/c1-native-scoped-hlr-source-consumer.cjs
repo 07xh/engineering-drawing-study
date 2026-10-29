@@ -7,6 +7,8 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {nativeScopedPaperSegmentsSame}=
+ require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditExactBinary64PaperParameterPair,
@@ -47,7 +49,6 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  if(expected.size!==ids.length)
   throw new RangeError('duplicate original M0 physical source edge');
  const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
- const same=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v)<=1e-6;
  // Scoped HLR paper aliases are only CANDIDATES, but even a candidate
  // must lie on its claimed ORIGINAL M0 edge in the SAME first-angle view.
  // This tolerance is exclusively for CAD paper rounding, never for exact
@@ -250,8 +251,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
       if(!valid(seg?.from)||!valid(seg?.to)||
          !Array.isArray(seg.projectedOriginalEdgeCandidates)||
          !seg.projectedOriginalEdgeCandidates.includes(source)||
-         !(same(seg.from,w.from)&&same(seg.to,w.to)||
-           same(seg.from,w.to)&&same(seg.to,w.from)))
+         !nativeScopedPaperSegmentsSame(seg,w))
        throw new RangeError('native original source filter contradicts whole-solid HLR physical source');
       item.sources[ordinal].add(source);
       if(range)item.parameterCandidates[ordinal].push({
