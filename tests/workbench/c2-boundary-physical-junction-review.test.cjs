@@ -33,7 +33,12 @@ function fixture(depthAlias=false){
   }))
  }));
  const nodes=[a,b,c,q,r].filter((n,i,all)=>all.findIndex(k=>
-  k.x===n.x&&k.y===n.y&&k.z===n.z)===i).map(point3D=>({point3D}));
+  k.x===n.x&&k.y===n.y&&k.z===n.z)===i).map(point3D=>({
+   point3D,
+   incidentSegmentCount:!depthAlias&&point3D===b?2:1,
+   original3DPhysicalCoincidenceVerified:true,
+   localMultiSourcePhysicalJunctionCandidate:!depthAlias&&point3D===b
+  }));
  const physicalJunctionEvidence={
   status:'source-recomputed-physical-3d-feature-incidence',
   revision,sourceGeometryIds,nodes
@@ -67,6 +72,51 @@ test('identical first-angle V paper endpoint but different real 3D depths MUST b
  assert.equal(alias.realOriginalOrGenerated3DJunctionNodeListed,false);
  assert.equal(alias.globalClosedEndpointAndStandardLineStylesProven,false);
  assert.equal(r.allRegionBoundaryEndpointsAccountedFor,true);
+});
+test('C2 rejects a paper join whose matching 3D source has only ONE incident source feature',()=>{
+ const x=fixture();
+ const junction=x.physicalJunctionEvidence.nodes.find(n=>
+  n.point3D.x===10&&n.point3D.y===0&&n.point3D.z===0);
+ junction.incidentSegmentCount=1;
+ junction.localMultiSourcePhysicalJunctionCandidate=false;
+ const reviewed=review(x);
+ const corner=reviewed.nodes.find(n=>n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(corner.exactSame3DSourceEndpointCandidateAtAllIncidences,true,
+  'matching spatial coordinates do not establish an actual joined feature');
+ assert.equal(corner.sourceLedgerMultiFeatureJunctionVerified,false);
+ assert.equal(corner.realOriginalOrGenerated3DJunctionNodeListed,false);
+ assert.equal(corner.unresolvedReal3DJunctionIncidence,true);
+ assert.equal(reviewed.exactPhysical3DSourceNodeCount,0);
+ assert.equal(reviewed.officialV5Authorized,false);
+});
+test('C2 near-critical or non-positive M5 source ledger may not certify a 3D junction',()=>{
+ const x=fixture();
+ const n=x.physicalJunctionEvidence.nodes.find(n=>
+  n.point3D.x===10&&n.point3D.y===0&&n.point3D.z===0);
+ n.localMultiSourcePhysicalJunctionCandidate=false;
+ const result=review(x);
+ assert.equal(result.exactPhysical3DSourceNodeCount,0);
+ assert.equal(result.unresolvedPhysicalSourceJoinCount,3);
+});
+test('C2 alias must have BOTH independent actual 3D endpoints in recomputed source ledger',()=>{
+ const x=fixture(true);
+ x.physicalJunctionEvidence.nodes=x.physicalJunctionEvidence.nodes.filter(n=>
+  !(n.point3D.x===10&&n.point3D.y===5&&n.point3D.z===0));
+ const result=review(x),joint=result.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(joint.distinctReal3DEndpointCandidateCount,2);
+ assert.equal(joint.paperOnlyDifferent3DDepthOrLocationAliasDetected,false);
+ assert.equal(joint.unresolvedReal3DJunctionIncidence,true);
+ assert.equal(result.paperOnlyDifferent3DSourceAliasCount,0);
+});
+test('C2 must validate hidden 3D coordinate even when visible paper x,z are finite',()=>{
+ const x=fixture();
+ x.paperLines[0].physical3DEndpointIncidence[1].physicalSource3DPoint=
+  p(10,Number.NaN,0);
+ assert.throws(()=>review(x),/nonfinite hidden axis/);
+ const y=fixture();
+ y.physicalJunctionEvidence.nodes[1].point3D.y=Number.NaN;
+ assert.throws(()=>review(y),/junction ledger is incomplete/);
 });
 test('stale revision and incorrect projection of alleged real M5 endpoint fail closed',()=>{
  const x=fixture();
