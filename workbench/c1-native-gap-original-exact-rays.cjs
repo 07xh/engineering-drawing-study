@@ -488,6 +488,77 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   if(inventory!==ledger.counts?.wholeSolidNativeHLREdges)
    throw new RangeError('whole-solid native generated HLR ordinal inventory incomplete');
  }
+ // Correlate actual original BRep 3D physical endpoints to each M5
+ // missing-source and positive-gap obstacle, after global native source
+ // matching. Generated HLR vertex topology still requires true OCCT IsSame
+ // or independent native graph proof, never a paper-only substitution.
+ const globalOriginal3DEndpointsBySource=new Map();
+ if(scopedConsumer!==undefined){
+  const endpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+  if(endpoints?.schema!==
+       'draftai-c1-global-generated-hlr-to-original-m0-3d-endpoint-junction-ledger/1'||
+     endpoints.sourceGeometryId!==geometry.id||
+     endpoints.revision!==cad.revision||
+     endpoints.signedV5ActionCount!==0||
+     endpoints.officialV5Authorized!==false||
+     endpoints.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified!==false)
+   throw new RangeError('missing same-revision original 3D source physical endpoint ledger');
+  let seen=0;
+  for(const view of ['V','H','W']){
+   const records=endpoints.views?.[view]?.rows;
+   if(!Array.isArray(records))
+    throw new RangeError('missing real native generated original 3D physical endpoint view');
+   for(const row of records){
+    if(row.view!==view||
+       row.generated2DToOriginalNativeTopoDSFullVertexTopologyCertified!==false||
+       row.signedV5Action!==false||
+       !Array.isArray(row.original3DToGenerated2DEndpointWitnesses))
+     throw new RangeError('invalid original HLR source physical endpoint witness');
+    seen++;
+    const src=row.uniqueOriginalSourceFilteredPaperCandidate;
+    if(src===null)continue;
+    const key=view+'|'+src;
+    const global=globalGenerated2DBySource.get(key)?.find(e=>
+      e.hlrClass===row.hlrClass&&
+      e.wholeSolidGeneratedHLREdgeOrdinal===
+       row.wholeSolidGeneratedHLREdgeOrdinal);
+    if(!global)continue;
+    if(!Array.isArray(row.originalPhysicalM0EdgeEndpointIds)||
+       row.originalPhysicalM0EdgeEndpointIds.length!==2||
+       row.original3DToGenerated2DEndpointWitnesses.length!==2||
+       row.original3DToGenerated2DEndpointWitnesses.some(w=>
+        w.paperAndSourceProximityIsNotNativeVertexTopologyIdentity!==true||
+        w.signedV5Action!==false))
+     throw new RangeError('incomplete original M0 physical endpoint correspondence');
+    const linked=globalOriginal3DEndpointsBySource.get(key)??[];
+    if(linked.some(x=>x.hlrClass===row.hlrClass&&
+       x.wholeSolidGeneratedHLREdgeOrdinal===row.wholeSolidGeneratedHLREdgeOrdinal))
+     throw new RangeError('duplicate original source physical endpoint claim');
+    linked.push(Object.freeze({
+     view,sourceEdgeId:src,hlrClass:row.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
+     originalM0PhysicalVertexIds:row.originalPhysicalM0EdgeEndpointIds,
+     original3DBRepExactModelVertexEndpoints:
+      row.trueOriginalNativeOCCT3DEndpointsMatchM0Exactly,
+     original3DSourceClassComplete:
+      row.completeOriginalNativeSource3DClassCoversWholeEdge,
+     generatedPaperExactlyReprojectsBothOriginalVertices:
+      row.receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly,
+     generatedPaperBoundedOnlyWithoutNativeVertexIsSame:
+      row.generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity,
+     generated2DEndpointOriginal3DVertexWitnesses:
+      row.original3DToGenerated2DEndpointWitnesses,
+     nativeGenerated3DJunctionIdentityCertified:false,
+     globalOpaqueFaceOcclusionCertified:false,signedV5Action:false
+    }));
+    globalOriginal3DEndpointsBySource.set(key,linked);
+   }
+  }
+  if(seen!==endpoints.counts.globalGeneratedHLREdgesChecked||
+     [...globalGenerated2DBySource].some(([key,lines])=>
+      (globalOriginal3DEndpointsBySource.get(key)?.length??0)!==lines.length))
+   throw new RangeError('original 3D physical endpoint evidence does not cover filtered global HLR claims');
+ }
  // A missing M5 source/view is a distinct coverage obligation from a
  // positive gap inside an existing M5 span. Audit every noncollapsed
  // original M0 edge, including sources never emitted by the M5 ledger.
@@ -798,6 +869,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    wholeSolidGeneratedHLROriginalSourceFilterMatches:
     globalGenerated2DBySource.get(key)??[],
    wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory:true,
+   wholeSolidGeneratedHLROriginal3DEndpointWitnesses:
+    globalOriginal3DEndpointsBySource.get(key)??[],
+   originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity:true,
    nativeOriginalM4CoProjectedDepthOrder:
     m4DepthBySource.get(key)??[],
    originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -989,6 +1063,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
     wholeSolidGeneratedHLROriginalSourceFilterMatches:
      globalGenerated2DBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory:true,
+    wholeSolidGeneratedHLROriginal3DEndpointWitnesses:
+     globalOriginal3DEndpointsBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
+    originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity:true,
     nativeOriginalM4CoProjectedDepthOrder:
      m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -1042,6 +1119,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    scopedConsumer!==undefined,
   wholeSolidGeneratedHLRSourceViewMatches:
    globalGenerated2DBySource.size,
+  actualOriginal3DPhysicalEndpointGlobalHLRJunctionEvidenceConsumed:
+   scopedConsumer!==undefined,
+  wholeSolidOriginal3DEndpointSourceViewMatches:
+   globalOriginal3DEndpointsBySource.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
