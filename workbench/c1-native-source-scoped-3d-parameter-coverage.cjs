@@ -99,6 +99,28 @@ function auditC1Native3DClassPaperCandidateVeto({
    throw new RangeError('unverified native original-source 3D visibility class');
   classRanges[klass]=intervals;
  }
+ // Absence of one visibility class is only a sound veto when the
+ // COMBINED native 3D source partition has been independently proved
+ // complete. A positive native gap could contain the missing class.
+ const claimed=scopedRow.combinedNative3DSourceParameterPartition;
+ if(claimed?.schema!=='draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1')
+  throw new RangeError('missing independently auditable native 3D source partition');
+ const actual=auditC1Native3DSourceScopedIntervals({
+  originalNativeParameterRange:claimed.originalNativeParameterRange,
+  generatedNativeParameterRanges:[
+   ...classRanges['visible-sharp'],...classRanges['hidden-sharp']
+  ].map(edge=>edge.nativeOriginalCurveParameterRange)
+ });
+ if(JSON.stringify(claimed.generatedNativeParameterRanges)!==
+     JSON.stringify(actual.generatedNativeParameterRanges)||
+    JSON.stringify(claimed.positiveLengthUncoveredNativeParameterIntervals)!==
+     JSON.stringify(actual.positiveLengthUncoveredNativeParameterIntervals)||
+    JSON.stringify(claimed.positiveLengthOverlappingNativeParameterIntervals)!==
+     JSON.stringify(actual.positiveLengthOverlappingNativeParameterIntervals)||
+    claimed.sourceScopedNative3DParameterInventoryCompleteExactlyOnce!==
+     actual.sourceScopedNative3DParameterInventoryCompleteExactlyOnce)
+  throw new RangeError('native 3D class veto source partition contradicts independent interval audit');
+ const vetoEligible=actual.sourceScopedNative3DParameterInventoryCompleteExactlyOnce;
  const retained=[],rejected=[],seen=new Set();
  for(const candidate of paperCandidates){
   const klass=candidate?.hlrClass,ordinal=candidate?.ordinal;
@@ -108,7 +130,7 @@ function auditC1Native3DClassPaperCandidateVeto({
    throw new RangeError('invalid or duplicate whole-solid HLR paper candidate');
   seen.add(klass+'|'+ordinal);
   const row={hlrClass:klass,ordinal};
-  (classRanges[klass].length?retained:rejected).push(row);
+  (vetoEligible&&classRanges[klass].length===0?rejected:retained).push(row);
  }
  return freeze({
   schema:'draftai-c1-native-3d-source-class-paper-candidate-veto/1',
@@ -116,6 +138,7 @@ function auditC1Native3DClassPaperCandidateVeto({
   nativeVisible3DSourceIntervalCount:classRanges['visible-sharp'].length,
   nativeHidden3DSourceIntervalCount:classRanges['hidden-sharp'].length,
   originalWholeSolidPaperCandidateCount:paperCandidates.length,
+  native3DClassVetoEligibleOnlyAfterExactFullPartition:vetoEligible,
   native3DClassCompatiblePaperCandidates:retained,
   paperCandidatesExcludedByNative3DClassAbsence:rejected,
   native3DClassVetoIsNotGenerated2DTopoDSIdentity:true,
