@@ -137,3 +137,45 @@ test('large original source coordinates retain strict rational ray sign across r
  assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
  assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
 });
+
+test('diagonal original M4 cut lies on its exact affine M0 line even when JS projection drifts',()=>{
+ const g={id:'RoundedDiagonal',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:17,y:0,z:3},
+   C:{x:0,y:2,z:0},D:{x:17,y:2,z:3}
+  },edges:[['A','B'],['C','D']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:g,view:'V',sourceEdgeId:'RoundedDiagonal::A|B',
+  originalParameterRange:[.1,.9],
+  peers:[{view:'V',sourceGeometryId:'RoundedDiagonal',
+   sourceEdgeId:'RoundedDiagonal::C|D',
+   originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-strictly-hidden'}]
+ });
+ assert.equal(out.wholeIntervalFrontmostCertified,true);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+ assert.equal(out.originalM0AffineSourceAndM4CutParametersComparedExactly,true);
+ assert.equal(out.roundedM4PaperInterpolationCannotCreateOrEraseSourceOverlap,true);
+ assert.equal(out.engineeringLineStyleSigned,false);
+});
+test('exact parametric diagonal ordering remains unresolved when other physical source is only a partial alias',()=>{
+ const g={id:'PartialDiagonal',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:17,y:0,z:3},
+   C:{x:8.5,y:2,z:1.5},D:{x:17,y:2,z:3}
+  },edges:[['A','B'],['C','D']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:g,view:'V',sourceEdgeId:'PartialDiagonal::A|B',
+  originalParameterRange:[.1,.9],
+  peers:[{view:'V',sourceGeometryId:'PartialDiagonal',
+   sourceEdgeId:'PartialDiagonal::C|D',
+   originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-clear'}]
+ });
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.comparisons[0].status,'partial-or-ambiguous-coproject-overlap');
+ assert.equal(out.comparisons[0].exactOriginalSourceWholePaperOverlapProven,false);
+});
