@@ -1867,6 +1867,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个；仍未认证的端盖或数值单元 '+
        partial.wBooleanForwardExitDepth.unresolvedCapOrNumericalCellCount+
        ' 个（不是已签署工程线型）。':'')+
+      (partial.wMirrorExitOutlineConcordance?.checkedMirroredAtomicOpenCells>0?
+       ' W 三维镜像曲线/实体退出边界联合证明：'+
+       partial.wMirrorExitOutlineConcordance.rearFirstExitOntoFrontSourceCellCount+
+       ' 段后方曲线的严格体积射线恰好到达前方曲线的真实三维来源；端点及全局组合轮廓尚未签收。':'')+
       (partial.wMirrorSourceOutlineUnion?.originalCapPartitionOpenCellCount>0?
        ' W 全部原始圆柱轮廓线交点：已复查 '+
        partial.wMirrorSourceOutlineUnion.sourceOutlineContactCount+

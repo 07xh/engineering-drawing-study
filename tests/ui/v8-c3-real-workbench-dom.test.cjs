@@ -63,6 +63,8 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/W 视图内部解析切换点 \d+ 个/);
   assert.match($('v7-proof').textContent,/已独立核验点位严格体积射线 \d+ 个/);
   assert.match($('v7-proof').textContent,/仍未签收曲线端点、投影重合和标准线型/);
+  assert.match($('v7-proof').textContent,/W 三维镜像曲线\/实体退出边界联合证明：\d+ 段后方曲线/);
+  assert.match($('v7-proof').textContent,/严格体积射线恰好到达前方曲线的真实三维来源/);
   assert.match($('v7-proof').textContent,/W 视图真实有限圆柱前方体积退出深度：解析遮挡开单元 \d+ 个/);
   assert.match($('v7-proof').textContent,/解析无体积遮挡开单元 \d+ 个/);
   assert.match($('v7-proof').textContent,/不是已签署工程线型/);
