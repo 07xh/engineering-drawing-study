@@ -88,3 +88,107 @@ test('hidden generated 2D source-scoped line may be proven class-consistent only
  assert.equal(r.rows[0].entireOpaqueSceneVisibilityCertified,false);
  assert.equal(r.rows[0].engineeringLineStyle,'undetermined');
 });
+
+test('genuine skew tetra rounded generated 2D endpoint is bounded by one source-scale ULP, not exact source geometry',()=>{
+ const original={from:{u:0,v:0},to:{u:3,v:2}};
+ const observed=stroke('hidden-sharp');
+ observed.from={u:3,v:2};
+ observed.to={u:0,v:-4.440892098500626e-16};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  view,sourceEdgeId,
+  segments:[native('hidden-sharp',0,1)],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+  officialV5Authorized:false
+ };
+ const r=audit({view,sourceEdgeId,
+  sourceProjectedFrom:original.from,sourceProjectedTo:original.to,
+  scoped2DVisible:[],scoped2DHidden:[observed],
+  nativeOriginal3DM4:nativeM4});
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(r.counts.paperDriftOrClassCoverageHeld,1);
+ assert.equal(r.counts.roundedPaperRepresentationCompatibleButNotExactCertified,1);
+ assert.equal(r.native2DAnd3DSourceClassHasBoundedRoundoffOnlyForHeldRows,true);
+ assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,true);
+ assert.equal(r.rows[0].native3DSameVisibilityClassExactlyCoversWholeOriginalSource,true);
+ assert.equal(r.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,true);
+ assert.equal(r.rows[0].roundedPaperEnvelopeCannotReplaceExactM0SourceParameterCoverage,true);
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('real skew tetra slightly outside native paper domain remains exact one-ULP gap despite bounded output representation',()=>{
+ const observed=stroke('visible-sharp');
+ observed.from={u:5,v:23};
+ observed.to={u:0,v:-3.552713678800501e-15};
+ const r=audit({view,sourceEdgeId,
+  sourceProjectedFrom:{u:0,v:0},sourceProjectedTo:{u:5,v:23},
+  scoped2DVisible:[observed],scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }});
+ assert.equal(r.rows[0].exactReceived2DPaperWithinOriginalSourceDomain,false);
+ assert.equal(r.rows[0].exactSameClassNative3DSourceIntervalCoverage,false);
+ assert.deepEqual(r.rows[0].originalM0ExactRationalPaperInterval,
+  ['-1/6473924464345088','1']);
+ assert.equal(r.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,true);
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(r.counts.paperDriftOrClassCoverageHeld,1);
+});
+test('a larger-than-one-ULP or long-distance paper alias never borrows source class',()=>{
+ const observed=stroke('hidden-sharp');
+ observed.from={u:3,v:2};
+ observed.to={u:0,v:-1.7763568394002505e-15};
+ const r=audit({view,sourceEdgeId,
+  sourceProjectedFrom:{u:0,v:0},sourceProjectedTo:{u:3,v:2},
+  scoped2DVisible:[],scoped2DHidden:[observed],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   view,sourceEdgeId,segments:[native('hidden-sharp',0,1)],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }});
+ assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
+ assert.equal(r.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ assert.equal(r.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+});
+test('source envelope must also have whole original native 3D class coverage, without opposite class or held native bits',()=>{
+ const observed=stroke('visible-sharp');
+ observed.to.v=Number.MIN_VALUE;
+ const args={view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
+  scoped2DVisible:[observed],scoped2DHidden:[]};
+ const mk=(parts,held=[])=>audit({...args,nativeOriginal3DM4:{
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  view,sourceEdgeId,segments:parts,
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:held,
+  officialV5Authorized:false
+ }});
+ const partial=mk([native('visible-sharp',0,.5)]);
+ assert.equal(partial.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ const opposite=mk([native('visible-sharp',0,.5),native('hidden-sharp',.5,1)]);
+ assert.equal(opposite.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ const held=mk([native('visible-sharp',0,1)],[{
+  originalNative3DParameterRange:[.5,.5000000000000001]
+ }]);
+ assert.equal(held.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+});
+test('large-absolute-coordinate short edge cannot use 1-ULP of global position to cover arbitrary local offset',()=>{
+ const offset=2**50;
+ const observed=stroke('visible-sharp');
+ observed.from={u:offset,v:0};
+ observed.to={u:offset+1,v:1e-5};
+ const r=audit({view,sourceEdgeId,
+  sourceProjectedFrom:{u:offset,v:0},
+  sourceProjectedTo:{u:offset+1,v:0},
+  scoped2DVisible:[observed],scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }});
+ assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
+ assert.equal(r.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+});
