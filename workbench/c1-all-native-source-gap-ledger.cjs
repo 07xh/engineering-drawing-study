@@ -196,7 +196,35 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
        engineeringLineStyle:'undetermined',signedV5Action:false});
     }
    }
+   // Native IsSame is a generated-edge identity witness only. It must
+   // agree with the same original source and whole-solid ordinal; a paper
+   // candidate alone is never allowed to borrow another source's claim.
+   const nativeClaims=cad.nativeSourceScopedSharpOutputByView?.[view]?.
+    nativeSourceIdentityConflicts?.rows;
+   if(nativeClaims!==undefined&&(!Array.isArray(nativeClaims)||
+      nativeClaims.length>256))
+    throw new RangeError('invalid actual native HLR source claim inventory');
+   const claims=nativeClaims??[];
+   const directNativeIdentityCandidates=candidates.filter(candidate=>
+    claims.some(claim=>claim.view===view&&
+     claim.originalPhysicalSourceEdgeId===sourceEdgeId&&
+     claim.hlrClass===candidate.hlrClass&&
+     claim.nativeWholeSolidEdgeOrdinal===candidate.ordinal&&
+     claim.nativeScopedGeneratedEdgeIsSame===true));
+   const mismatchedNativeIdentityClaims=candidates.filter(candidate=>
+    claims.some(claim=>claim.view===view&&
+     claim.hlrClass===candidate.hlrClass&&
+     claim.nativeWholeSolidEdgeOrdinal===candidate.ordinal&&
+     claim.originalPhysicalSourceEdgeId!==sourceEdgeId));
    return {view,sourceEdgeId,
+    directNativeGeneratedIdentityCandidateCount:directNativeIdentityCandidates.length,
+    directNativeGeneratedIdentityCandidates:directNativeIdentityCandidates.map(
+     candidate=>({hlrClass:candidate.hlrClass,ordinal:candidate.ordinal})),
+    paperCandidatesClaimedByDifferentOriginalNativeSource:
+     mismatchedNativeIdentityClaims.map(candidate=>({
+      hlrClass:candidate.hlrClass,ordinal:candidate.ordinal
+     })),
+    nativeIdentityDoesNotCertifyOriginalSourceParameterCoverage:true,
     nativeHLRPaperCandidateCount:candidates.length,
     nativeHLRPaperCandidates:candidates,
     noHLRPaperCandidateDoesNotProveGlobalOcclusion:true,

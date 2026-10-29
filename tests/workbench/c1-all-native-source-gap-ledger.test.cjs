@@ -187,3 +187,30 @@ test('no native HLR paper candidate is not evidence of continuous occlusion',()=
   x.noHLRPaperCandidateDoesNotProveGlobalOcclusion===true&&
   x.continuousOcclusionCertified===false));
 });
+
+test('omitted M0 source paper alias cannot borrow a different native TopoDS owner',()=>{
+ const x=fixture(),sourceEdgeId='C1SkewTetra::A|C';
+ x.cad.views.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ x.cad.nativeSourceScopedSharpOutputByView={V:{
+  nativeSourceIdentityConflicts:{rows:[{
+   view:'V',hlrClass:'visible-sharp',nativeWholeSolidEdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:'C1SkewTetra::A|D',
+   nativeScopedGeneratedEdgeIsSame:true
+  }]}}};
+ const out=audit(x),row=out.unrepresentedM0NativeHLRCandidateForensics.find(
+  x=>x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRPaperCandidateCount,1);
+ assert.equal(row.directNativeGeneratedIdentityCandidateCount,0);
+ assert.deepEqual(row.paperCandidatesClaimedByDifferentOriginalNativeSource,
+  [{hlrClass:'visible-sharp',ordinal:0}]);
+ assert.equal(row.signedV5Action,false);
+ x.cad.nativeSourceScopedSharpOutputByView.V.nativeSourceIdentityConflicts.rows[0].
+  originalPhysicalSourceEdgeId=sourceEdgeId;
+ const same=audit(x).unrepresentedM0NativeHLRCandidateForensics.find(
+  x=>x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(same.directNativeGeneratedIdentityCandidateCount,1);
+ assert.equal(same.nativeIdentityDoesNotCertifyOriginalSourceParameterCoverage,true);
+ assert.equal(same.continuousOcclusionCertified,false);
+ assert.equal(same.signedV5Action,false);
+});
