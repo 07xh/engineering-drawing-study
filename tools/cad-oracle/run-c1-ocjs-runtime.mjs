@@ -417,6 +417,29 @@ for(const [index,geometry] of general.entries()){
   scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates);
  assert.equal(checked2DClassEdges,
   scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D);
+ const heldClassRows=['V','H','W'].flatMap(view=>
+  scopedConsumer.views[view].nativeScoped2D3DClassBindings.flatMap(binding=>{
+   const m4=scopedConsumer.views[view].nativeOriginal3DM4Candidates.find(
+    candidate=>candidate.sourceEdgeId===binding.sourceEdgeId);
+   return binding.rows.filter(row=>
+    !row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment).map(row=>({
+     view,sourceEdgeId:binding.sourceEdgeId,klass:row.hlrClass,
+     paperRange:row.originalM0ExactRationalPaperInterval,
+     aligned:row.exactOriginalM0PaperAffineCollinearity,
+     withinSource:row.exactReceived2DPaperWithinOriginalSourceDomain,
+     positive:row.exactPositive2DSourcePaperParameterSpan,
+     sameClassCovered:row.exactSameClassNative3DSourceIntervalCoverage,
+     oppositeClass:row.exactOppositeNative3DClassPositiveIntervalConflict,
+     exactPositiveGaps:row.exactNative3DSourceClassPositivePaperCoverageGaps,
+     nativeM4SourceClassRanges:m4.segments.map(s=>({
+      klass:s.native3DHLRClass,range:s.originalM0UnitParameterRange
+     })),
+     heldNative3DSourceRanges:
+      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation
+   }));
+  }));
+ console.error('REAL C1 HELD 2D VS ORIGINAL 3D SOURCE CLASS REASONS '+
+  geometry.id+': '+JSON.stringify(heldClassRows));
  console.error('REAL C1 SOURCE-FILTERED GENERATED 2D VS ORIGINAL 3D CLASS '+
   geometry.id+': '+JSON.stringify({
    sourceViews:checked2DClassBindings,
