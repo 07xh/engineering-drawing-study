@@ -12,11 +12,14 @@
  */
 const {project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../core/projection/conventions.js');
+const {evaluateUnifiedMath}=require('./unified-math-pipeline.cjs');
+const {auditC3CapBoundaryIncidence}=
+ require('./c3-cap-boundary-incidence.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
 function auditC3WMirrorCapContactPartition({
- revision,mirrorEvidence,wCapEvidence
+ input,revision,mirrorEvidence,wCapEvidence
 }={}){
  if(!Number.isSafeInteger(revision)||revision<0||
     mirrorEvidence?.revision!==revision||
@@ -49,7 +52,20 @@ function auditC3WMirrorCapContactPartition({
     project({x:7,y:2,z:3}).W.u!==2||
     project({x:7,y:2,z:3}).W.v!==3)
   throw new RangeError('incorrect C3 first-angle W depth convention');
+ const m3=evaluateUnifiedMath({
+  kind:'finite-orthogonal-cylinder-intersection',input,revision});
+ const cap=auditC3CapBoundaryIncidence({input,revision});
+ if(m3.status!=='scoped-analytic-ready'||m3.sourceConfirmed!==true||
+    !['scoped-analytic-cap-junction-incidence',
+      'undetermined-unmatched-lateral-cap-junction'].includes(cap.status)||
+    cap.capSourceStatus!=='scoped-analytic-cap-boundary-pairs')
+  return blocked('independent current M3 and finite 3D cap features absent');
+ const branchById=new Map(m3.branches.map(b=>[b.id,b]));
+ const featureById=new Map(cap.capSegments.map(e=>[e.id,e]));
+ const Z=m3.source.zCylinder,Y=m3.source.yCylinder;
  const center=mirrorEvidence.exactSharedXCenter;
+ if(center!==Z.xCenter||center!==Y.xCenter)
+  throw new RangeError('C3 W mirror center differs from actual reviewed M3');
  const pairs=mirrorEvidence.mirroredOpenDepthCells;
  if(!Number.isFinite(center)||!Array.isArray(pairs)||!pairs.length||
     pairs.length>512||!Array.isArray(wCapEvidence.events)||
@@ -101,6 +117,42 @@ function auditC3WMirrorCapContactPartition({
      event.officialLineStyle!=='undetermined'||
      event.finalV5StrokeAuthorized!==false)
    throw new RangeError('untrusted genuine W projected finite cap source crossing');
+  const branch=branchById.get(event.sourceBranchId),
+   feature=featureById.get(event.sourceCapFeatureId);
+  if(!branch||!feature||
+     event.sourceXParameter<branch.xRange[0]||
+     event.sourceXParameter>branch.xRange[1])
+   throw new RangeError('C3 W cap crossing lacks real current M3 branch or cap source');
+  const x=event.sourceXParameter;
+  const u=(Z.radius-Math.abs(x-Z.xCenter))*
+   (Z.radius+Math.abs(x-Z.xCenter));
+  const v=(Y.radius-Math.abs(x-Y.xCenter))*
+   (Y.radius+Math.abs(x-Y.xCenter));
+  if(u<0||v<0)throw new RangeError('C3 cap crossing outside analytic real M3 lateral branch');
+  const expected3D={x,
+   y:Z.yCenter+branch.signY*Math.sqrt(u),
+   z:Y.zCenter+branch.signZ*Math.sqrt(v)};
+  const scale3D=Math.max(1,Z.radius,Y.radius,
+   Math.abs(x),Math.abs(expected3D.y),Math.abs(expected3D.z));
+  if(Math.hypot(...['x','y','z'].map(k=>
+     event.sourceCurve3DPoint[k]-expected3D[k]))>1e-8*scale3D)
+   throw new RangeError('C3 W projected cap witness does not lie on true signed M3 curve');
+  const start=feature.from,end=feature.to;
+  if(!start||!end||!['x','y','z'].every(k=>
+      Number.isFinite(start[k])&&Number.isFinite(end[k])))
+   throw new RangeError('missing real finite source cap segment endpoints');
+  const dominant=['x','y','z'].sort((a,b)=>
+   Math.abs(end[b]-start[b])-Math.abs(end[a]-start[a]))[0];
+  const length=end[dominant]-start[dominant];
+  if(!Number.isFinite(length)||length===0)
+   throw new RangeError('collapsed current finite cap source segment');
+  const t=(event.sourceCap3DPoint[dominant]-start[dominant])/length;
+  const sourceLineResidual=Math.hypot(...['x','y','z'].map(k=>
+   event.sourceCap3DPoint[k]-
+    (start[k]+t*(end[k]-start[k]))));
+  const sourceLineBounded=t>=0&&t<=1;
+  if(sourceLineResidual>1e-8*scale3D)
+   throw new RangeError('C3 W apparent cap contact does not belong to its current native 3D segment');
   const p=project(event.sourceCurve3DPoint).W;
   const q=project(event.sourceCap3DPoint).W;
   if(![p.u,p.v,q.u,q.v].every(Number.isFinite)||
@@ -115,6 +167,11 @@ function auditC3WMirrorCapContactPartition({
      Math.hypot(q.u-event.projectedUV.u,q.v-event.projectedUV.v)>tolerance||
      event.sourceCurve3DPoint.x!==event.sourceXParameter)
    throw new RangeError('C3 cap event is not bound to the same M3 W projected source');
+  if(!sourceLineBounded){
+   unassigned.push({eventId:event.id,sourceBranchId:event.sourceBranchId,
+    reason:'projected-cap-source-is-outside-current-3d-segment'});
+   continue;
+  }
   const candidates=(sources.get(event.sourceBranchId)||[]).filter(row=>
    event.sourceXParameter>=row.range[0]&&
    event.sourceXParameter<=row.range[1]);
