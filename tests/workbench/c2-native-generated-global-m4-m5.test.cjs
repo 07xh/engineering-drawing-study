@@ -67,3 +67,47 @@ test('missing native edge, duplicate ID and nonpositive segment stay rejected',(
   nativeReport:report([edge(1,[1,2],A,B),edge(1,[3,4],C,D)])
  }),/untrusted native result/);
 });
+
+test('global native TopoDS vertex identity rejects mismatched 3D ownership even without a paper crossing',()=>{
+ // The forged shared vertex #2 is different in all of the raw 3D
+ // coordinates; pairwise HLR paper intersection discovery need not
+ // enumerate a common point for this inconsistency to be fatal.
+ const first=edge(1,[1,2],
+  {x:0,y:0,z:0},{x:2,y:2,z:2},'physical-crease');
+ const second=edge(2,[2,3],
+  {x:30,y:31,z:32},{x:35,y:36,z:37},'physical-crease');
+ assert.throws(()=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,nativeReport:report([first,second])
+ }),/shared native TopoDS vertex has inconsistent actual 3D coordinates/);
+});
+test('native output TopoDS shared endpoint mapping is globally conserved across V/H/W',()=>{
+ const p={x:4,y:4,z:0};
+ const result=auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,nativeReport:report([
+   edge(1,[1,2],A,p,'physical-crease'),
+   edge(2,[2,3],p,{x:8,y:4,z:0},'physical-crease'),
+   edge(3,[2,4],p,{x:4,y:4,z:6},'physical-crease')
+  ])
+ });
+ assert.equal(result.independentlyAccountedNative3DVertexCount,4);
+ assert.equal(result.actualNative3DVertexEndpointIncidenceCount,6);
+ assert.equal(result.allNativeEdgeEndpointVertexIncidencesGloballyReconciled,true);
+ assert.equal(result.rows.length,9);
+ assert.equal(result.allOfficialEngineeringLinesCertified,false);
+});
+test('native output may not substitute duplicate result edge ordinal or a different endpoint vertex ID',()=>{
+ assert.throws(()=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,
+  nativeReport:report([
+   edge(1,[1,2],A,B),edge(1,[2,3],B,D)
+  ])
+ }),/untrusted native result/);
+ const distinct=auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,
+  nativeReport:report([
+   edge(1,[1,2],A,B),edge(2,[3,4],B,D)
+  ])
+ });
+ assert.equal(distinct.independentlyAccountedNative3DVertexCount,4,
+  'equal 3D coordinates with DIFFERENT TopoDS vertex IDs cannot be silently fused');
+});

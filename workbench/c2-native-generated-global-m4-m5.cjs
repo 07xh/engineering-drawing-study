@@ -58,6 +58,11 @@ function auditC2GeneratedResultProjectedM4M5({
     (boxes.length!==0&&boxes.length!==solids.length)||
     boxes.some((x,i)=>x?.id!==solids[i].id||x.type!=='box'))
   throw new TypeError('bounded native generated BRep edges and actual M0 scene required');
+ // Authenticate the entire native topology BEFORE projected pairwise
+ // discovery. A shared TopoDS vertex is one physical 3D point even when
+ // none of the three 2D paper event engines reports an intersection.
+ // A per-encounter check alone would miss inconsistent owner coordinates.
+ const nativeVertexCoordinates=new Map(),nativeVertexIncidences=new Map();
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
   const id=item?.finalTopoDSEdgeOrdinal,ids=item?.actualNativeTopoDSVertexOrdinals,
@@ -75,6 +80,18 @@ function auditC2GeneratedResultProjectedM4M5({
    throw new RangeError('untrusted native result edge endpoints or true TopoDS identity');
   const e={id,ids:[...ids],from:xyz[0],to:xyz[1],
    feature:item.currentNativeResultFeatureStatus};
+  for(let i=0;i<2;i++){
+   const vertexId=ids[i],pt=xyz[i];
+   const previous=nativeVertexCoordinates.get(vertexId);
+   if(previous&&!near(previous,pt))
+    throw new RangeError(
+     'shared native TopoDS vertex has inconsistent actual 3D coordinates across output edges');
+   if(!previous)nativeVertexCoordinates.set(vertexId,{...pt});
+   const incident=nativeVertexIncidences.get(vertexId)||[];
+   incident.push({sourceNativeEdgeOrdinal:id,
+    endpointRole:i===0?'from':'to',actualModelMm:{...pt}});
+   nativeVertexIncidences.set(vertexId,incident);
+  }
   source.set(id,e);all.push(e);
   for(const view of VIEWS){
    const a=project(e.from)[view],b=project(e.to)[view];
@@ -82,6 +99,31 @@ function auditC2GeneratedResultProjectedM4M5({
     collapsed:Math.hypot(a.u-b.u,a.v-b.v)<=1e-7,
     cutParameters:[0,1],encounters:[],collinearOverlapRanges:[],
     unresolvedWholeEdge:false,roundedCut:false});
+  }
+ }
+ if(source.size!==edges.length||
+    [...source.keys()].some((id)=>!Number.isSafeInteger(id)||id<1||
+      id>edges.length)||
+    nativeVertexIncidences.size!==nativeVertexCoordinates.size||
+    [...nativeVertexIncidences.values()].reduce((n,items)=>n+items.length,0)!==
+      edges.length*2)
+  throw new RangeError('native output edge/vertex identity inventory incomplete');
+ // A repeated native vertex ID needs identical projected first-angle
+ // positions in ALL views, regardless of which projected events are found.
+ for(const [vertexId,incidences] of nativeVertexIncidences){
+  const point=nativeVertexCoordinates.get(vertexId);
+  if(!point||incidences.length<1)throw new RangeError(
+   'native output has unowned TopoDS vertex ID');
+  const parent=project(point);
+  for(const row of incidences){
+   const current=project(row.actualModelMm);
+   for(const view of VIEWS){
+    const a=parent[view],b=current[view];
+    if(![a.u,a.v,b.u,b.v].every(finite)||
+       Math.hypot(a.u-b.u,a.v-b.v)>=1e-8)
+     throw new RangeError(
+      'native TopoDS vertex has inconsistent first-angle V/H/W endpoint ownership');
+   }
   }
  }
  let pairwiseEventChecks=0,transverseProjectedCrossings=0,
@@ -314,6 +356,9 @@ function auditC2GeneratedResultProjectedM4M5({
   revision,actualNativeBooleanOperation:operation,
   subtractiveCutM5WholeSceneOcclusionSigned:false,
   sourceResultEdgeCount:all.length,
+  independentlyAccountedNative3DVertexCount:nativeVertexCoordinates.size,
+  allNativeEdgeEndpointVertexIncidencesGloballyReconciled:true,
+  actualNative3DVertexEndpointIncidenceCount:edges.length*2,
   VHWSourceRows:rows.length,
   actualM4PairwiseSegmentViewChecks:pairwiseEventChecks,
   exactM4TransverseProjectedCrossings:transverseProjectedCrossings,
