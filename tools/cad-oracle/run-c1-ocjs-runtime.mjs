@@ -1111,6 +1111,10 @@ for(const [index,geometry] of general.entries()){
  const depthCounts=positiveOriginalGapRays.counts.realOriginalM4ToM5CoProjectedDepthCounts;
  assert.equal(depthCounts.sourceIntervalsExamined,
   scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments);
+ // Real pinned WASM must reconcile EVERY native-positive subspan that
+ // cannot be represented as an M4 binary64 segment. It is held, not lost.
+ assert.equal(depthCounts.native3DPositiveIntervalsHeldBeforeM4DepthForBinary64,
+  scopedConsumer.counts.nativeOriginal3DM4PositiveIntervalsHeldForBinary64);
  assert.equal(depthCounts.sourceIntervalsExamined,
   depthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
   depthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
