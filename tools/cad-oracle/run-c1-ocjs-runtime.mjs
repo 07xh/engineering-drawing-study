@@ -212,6 +212,32 @@ for(const [index,geometry] of general.entries()){
     w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
     w.globalPaperCandidateOrdinals.length>=1&&
     w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  const nativeClaims=scoped.nativeSourceIdentityConflicts;
+  assert.equal(nativeClaims.schema,
+   'draftai-c1-native-scoped-source-identity-conflicts/1');
+  assert.equal(nativeClaims.conflictingSourceClaimsRejected,true);
+  assert.equal(nativeClaims.fullOriginalSourceHistoryCertified,false);
+  assert.equal(nativeClaims.signedV5ActionCount,0);
+  assert.equal(nativeClaims.wholeSolidNativeGeneratedEdgeCount,
+   cad.views[view].length+cad.hiddenSharpViews[view].length);
+  assert.equal(nativeClaims.uniqueNativeClaims,
+   scoped.nativeScopedToWholeSolidGeneratedIsSameCount);
+  assert.equal(nativeClaims.unclaimedWholeSolidGeneratedEdgeOrdinals.length,
+   scoped.unclaimedNativeGeneratedHLREdges.length);
+  for(const edge of scoped.unclaimedNativeGeneratedHLREdges){
+   assert.equal(edge.view,view);
+   assert.equal(edge.actualNativeScopedOriginalSourceIdentityRecovered,false);
+   assert.equal(edge.originalSourceParameterIntervalCertified,false);
+   assert.equal(edge.signedV5Action,false);
+  }
+  console.error('REAL HLR unclaimed native source identities '+geometry.id+' '+view+': '+
+   JSON.stringify({total:nativeClaims.wholeSolidNativeGeneratedEdgeCount,
+    claimed:nativeClaims.uniqueNativeClaims,
+    unclaimed:scoped.unclaimedNativeGeneratedHLREdges.map(edge=>({
+     klass:edge.hlrClass,ordinal:edge.ordinal,
+     from:edge.projectedFrom,to:edge.projectedTo,
+     m0CandidateCount:edge.sourceCandidate3DLifts?.length??0
+    }))}));
   console.error('REAL HLR original source-scoped '+view+': '+
    JSON.stringify({sources:scoped.sourceEdgeCount,
     emitted:scoped.nativeSourceScopedOutputEdgeCount,

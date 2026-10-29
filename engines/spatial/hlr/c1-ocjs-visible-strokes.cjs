@@ -18,7 +18,7 @@ const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
 const {auditC1RoundedInversePaperBoundaryAlias}=
  require('../../../workbench/c1-rounded-inverse-paper-boundary-alias.cjs');
-const {auditC1ScopedHLRGeneratedEdgeMatch}=
+const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflicts}=
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
@@ -1008,7 +1008,37 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    if(processed.size!==byOriginalSource.size)
     throw new RangeError('source-scoped HLR filter did not enumerate every original edge');
+   // The native EdgeMap and source-filtered output are still the only
+   // authority for each claim. Cross-check ALL original sources here, before
+   // returning serializable evidence to M5 or deleting WASM handles.
+   const nativeSourceIdentityConflicts=auditC1ScopedHLRSourceIdentityConflicts({
+    matches:scopedRows.flatMap(source=>[
+     ...source.visible,...source.hidden
+    ]),
+    wholeSolidCounts:{'visible-sharp':visibleNative.segments.length,
+     'hidden-sharp':hiddenNative.segments.length}
+   });
+   // Preserve exact unclaimed native ordinals and their measured projected
+   // endpoints for independent source/parameter forensics. These are NOT
+   // inferred M0 source labels and must not authorize engineering strokes.
+   const unclaimedNativeGeneratedHLREdges=
+    nativeSourceIdentityConflicts.unclaimedWholeSolidGeneratedEdgeOrdinals.map(
+     ({hlrClass,ordinal})=>{
+      const generated=hlrClass==='visible-sharp'?
+       visibleNative.segments[ordinal]:hiddenNative.segments[ordinal];
+      if(!generated||!generated.from||!generated.to)
+       throw new RangeError('missing actual native generated HLR edge for unclaimed ordinal');
+      return Object.freeze({view,hlrClass,ordinal,
+       projectedFrom:Object.freeze({...generated.from}),
+       projectedTo:Object.freeze({...generated.to}),
+       sourceCandidate3DLifts:generated.sourceCandidate3DLifts,
+       actualNativeScopedOriginalSourceIdentityRecovered:false,
+       originalSourceParameterIntervalCertified:false,
+       engineeringLineStyle:'undetermined',signedV5Action:false});
+     });
    nativeSourceScopedSharpOutputByView[view]={
+    unclaimedNativeGeneratedHLREdges,
+    nativeSourceIdentityConflicts,
     schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
     sourceEdgeCount:scopedRows.length,
     nativeSourceScopedOutputEdgeCount:scopedOutputEdges,
