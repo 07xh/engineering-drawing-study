@@ -175,3 +175,19 @@ test('reversed native BRep parameter and sub-ULP rounded gap retain exact positi
  assert.equal(out.rows[0].engineeringLineStyle,'undetermined');
  assert.equal(out.rows[0].signedV5Action,false);
 });
+
+test('entire M5 source ledger absent: all noncollapsed M0 views remain explicit unsigned obligations',()=>{
+ const g=tetra(),out=audit(fixture(g,[]));
+ assert.equal(out.counts.positiveNativeGapIntervals,0);
+ assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,0);
+ assert.equal(out.counts.noncollapsedOriginalM0SourceViews,18);
+ assert.equal(out.counts.representedOriginalM0SourceViewsInM5,0);
+ assert.equal(out.counts.unrepresentedOriginalM0SourceViews,18);
+ assert.equal(out.missingOriginalM0SourceViewRows.length,18);
+ assert.equal(out.allNoncollapsedOriginalM0SourcesRepresentedInM5,false);
+ assert.ok(out.missingOriginalM0SourceViewRows.every(x=>
+  x.missingM5SourceViewRemainsUncovered===true&&
+  x.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  x.signedV5Action===false));
+ assert.equal(out.officialV5Authorized,false);
+});
