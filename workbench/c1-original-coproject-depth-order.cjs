@@ -19,7 +19,7 @@ const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
 // overlap is a real M4 split obligation, not a toleranced non-event.
 const {exactPositiveCollinearPaperOverlap}=
  require('./c1-real-occt-m5-visible-contour-parity.cjs');
-const {dyadic,difference,product,sign}=
+const {dyadic,difference,product,sign,sum}=
  require('../core/numeric/binary64-dyadic.cjs');
 const frozen=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))frozen(v);Object.freeze(x);
@@ -78,6 +78,70 @@ function exactOriginalCoProjectedDepthEndSigns({
  }
  return {signs:comparisons,displayApproxMm:approx};
 }
+/**
+ * Recover the EXACT ideal M0 source point at an existing binary64 M4 cut
+ * parameter. The JS expression a+(b-a)*t may round its projected endpoint
+ * OFF the original projected line; multiplying dyadics preserves the
+ * original source's affine incidence and the real positive tiny subspan.
+ *
+ * This evaluates ONLY the independently reviewed original source geometry.
+ * It is not a claim of generated HLR 2D TopoDS ownership.
+ */
+function exactOriginalPointOnStraightEdge(a,b,t,view){
+ const axes={V:['x','z','y',-1],H:['x','y','z',1],
+  W:['y','z','x',1]}[view];
+ const value=axis=>sum(dyadic(a[axis]),
+  product(difference(dyadic(b[axis]),dyadic(a[axis])),dyadic(t)));
+ return {u:value(axes[0]),v:value(axes[1]),
+  depth:value(axes[2]),observerSign:axes[3]};
+}
+const cmpExact=(a,b)=>sign(difference(a,b));
+const crossExact=(a,b,p)=>difference(
+ product(difference(b.u,a.u),difference(p.v,a.v)),
+ product(difference(b.v,a.v),difference(p.u,a.u)));
+function exactParametricCoProjectedSourceRelation({
+ view,sourceStart,sourceEnd,sourceRange,
+ peerStart,peerEnd,peerRange
+}){
+ const p=exactOriginalPointOnStraightEdge(sourceStart,sourceEnd,sourceRange[0],view),
+  q=exactOriginalPointOnStraightEdge(sourceStart,sourceEnd,sourceRange[1],view),
+  s=exactOriginalPointOnStraightEdge(peerStart,peerEnd,peerRange[0],view),
+  t=exactOriginalPointOnStraightEdge(peerStart,peerEnd,peerRange[1],view);
+ const axis=cmpExact(p.u,q.u)!==0?'u':cmpExact(p.v,q.v)!==0?'v':null;
+ if(!axis||cmpExact(s.u,t.u)===0&&cmpExact(s.v,t.v)===0||
+    sign(crossExact(p,q,s))!==0||sign(crossExact(p,q,t))!==0)
+  return null;
+ const sorted=(a,b)=>cmpExact(a,b)<=0?[a,b]:[b,a];
+ const [aMin,aMax]=sorted(p[axis],q[axis]),
+  [bMin,bMax]=sorted(s[axis],t[axis]);
+ if(cmpExact(aMin,bMax)>=0||cmpExact(bMin,aMax)>=0)
+  return null;
+ const whole=cmpExact(bMin,aMin)<=0&&cmpExact(aMax,bMax)<=0;
+ if(!whole)return {status:'partial-or-ambiguous-coproject-overlap',
+  wholeIntervalCovered:false,exactOriginalSourcePaperIncidence:true,
+  strictOriginal3DDepthOrderNoToleranceUsed:true,depthEndSigns:null};
+ const denom=difference(t[axis],s[axis]),denomSign=sign(denom);
+ if(denomSign===0)throw new RangeError('exact co-projected peer has zero source axis');
+ const depthDelta=difference(t.depth,s.depth);
+ const depthEndSigns=[];
+ for(const endpoint of [p,q]){
+  const num=difference(endpoint[axis],s[axis]);
+  if(cmpExact(product(num,denom),{n:0n,e:0})<0||
+     cmpExact(product(difference(denom,num),denom),{n:0n,e:0})<0)
+   throw new RangeError('original M0 paper interval fully covered but exact peer fraction escaped');
+  const numerator=difference(
+   product(difference(endpoint.depth,s.depth),denom),
+   product(depthDelta,num));
+  const depthSign=sign(numerator);
+  depthEndSigns.push(depthSign===0?0:depthSign*denomSign*p.observerSign);
+ }
+ return {status:depthEndSigns.every(v=>v===1)?
+   'candidate-strictly-front':depthEndSigns.every(v=>v===-1)?
+    'candidate-strictly-behind':'depth-switch-or-tie',
+  wholeIntervalCovered:true,exactOriginalSourcePaperIncidence:true,
+  strictOriginal3DDepthOrderNoToleranceUsed:true,depthEndSigns};
+}
+
 const dist2=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
 function auditC1OriginalCoProjectedDepthOrder({
  geometry,view,sourceEdgeId,originalParameterRange,peers
@@ -135,62 +199,48 @@ function auditC1OriginalCoProjectedDepthOrder({
   if(peer.sourceEdgeId===sourceEdgeId)continue;
   const [u,v]=coords(peer.sourceEdgeId,peer.originalParameterRange),
    s=project(u)[view],t=project(v)[view];
-  if(!exactPositiveCollinearPaperOverlap(p,q,s,t))continue;
-  const across=dist2(s,t);
-  // Exact original M0 paper identity is required for a mathematical
-  // source depth theorem. Even tiny off-line paper drift stays unsigned.
-  const near=collinear(p,q,s)&&collinear(p,q,t);
-  const scalar0=fraction(s),scalar1=fraction(t);
-  const start=Math.max(0,Math.min(scalar0,scalar1)),
-   end=Math.min(1,Math.max(scalar0,scalar1));
-  // Exact paper overlap can be positive even when a floating projection
-  // fraction rounds both ends to the same binary64 value. Never discard
-  // that competing original 3D source or sign the whole candidate.
-  if(!(end>start)){
-   hasPartialOrTie=true;
-   comparisons.push({peerSourceEdgeId:peer.sourceEdgeId,
-    peerOriginalParameterRange:[...peer.originalParameterRange],
-    overlapCandidateParameterRange:null,peerRayStatus:peer.status,
-    status:'exact-positive-overlap-unresolved-parameter-fraction',
-    depthDifferenceAtEndsMm:null});
-   continue;
-  }
+  // The same exact original 3D source with a *rounded* M4 cut endpoint
+  // can look transversely off-line in JS paper arithmetic. Do not mistake
+  // that floating drift for an original source crossing or lose a real
+  // one-ULP overlap. Compute the original affine source relation exactly.
+  const relation=exactParametricCoProjectedSourceRelation({
+   view,sourceStart:sources.get(sourceEdgeId)[0],
+   sourceEnd:sources.get(sourceEdgeId)[1],
+   sourceRange:originalParameterRange,
+   peerStart:sources.get(peer.sourceEdgeId)[0],
+   peerEnd:sources.get(peer.sourceEdgeId)[1],
+   peerRange:peer.originalParameterRange
+  });
+  if(!relation)continue;
   const base={peerSourceEdgeId:peer.sourceEdgeId,
    peerOriginalParameterRange:[...peer.originalParameterRange],
-   overlapCandidateParameterRange:[start,end],
+   // Exact original source cuts need not be representable as a rounded
+   // paper inverse fraction. Keep this field null, not a false [0,1].
+   overlapCandidateParameterRange:null,
    peerRayStatus:peer.status,
-   exactPaperCollinearityVerified:near};
-  // Positive partial overlap is not a complete source stroke.
-  // Fraction endpoints can round 1 ULP of real paper coverage away.
-  // Use literal source-axis endpoints to prove WHOLE paper coverage.
-  const axis=Math.abs(du)>=Math.abs(dv)?'u':'v';
-  const wholePaperCovered=
-   Math.min(s[axis],t[axis])<=Math.min(p[axis],q[axis])&&
-   Math.max(s[axis],t[axis])>=Math.max(p[axis],q[axis]);
-  if(!near||!wholePaperCovered||start>0||end<1||across<=1e-8){
+   exactPaperCollinearityVerified:true,
+   originalAffineM0ParametricIncidenceVerified:true};
+  if(!relation.wholeIntervalCovered){
    hasPartialOrTie=true;
    comparisons.push({...base,status:'partial-or-ambiguous-coproject-overlap',
+    exactOriginalSourceWholePaperOverlapProven:false,
     depthDifferenceAtEndsMm:null});
    continue;
   }
-  // This replaces tolerance-based ray ordering. It proves the sign
-  // of the exact rational depth difference at BOTH projected endpoints.
-  // Straight original source depths are affine over a shared paper axis;
-  // strict same-sign endpoints prove the entire OPEN overlap.
-  const exact=exactOriginalCoProjectedDepthEndSigns({
-   view,p,q,s,t,candidateStart:a,candidateEnd:b,
-   peerStart:u,peerEnd:v
+  const front=relation.status==='candidate-strictly-front',
+   behind=relation.status==='candidate-strictly-behind';
+  // The full binary64 rational sign is authoritative. Approximate model
+  // depth values are display-only and can underflow to zero; never use
+  // them to decide the visibility ordering.
+  const axis=Math.abs(t.u-s.u)>=Math.abs(t.v-s.v)?'u':'v';
+  const depth={V:['y',-1],H:['z',1],W:['x',1]}[view];
+  const approximate=[a,b].map((model,i)=>{
+   const paper=i===0?p:q;
+   const frac=(paper[axis]-s[axis])/(t[axis]-s[axis]);
+   return (model[depth[0]]-(u[depth[0]]+
+    (v[depth[0]]-u[depth[0]])*frac))*depth[1];
   });
-  if(!exact){
-   hasPartialOrTie=true;
-   comparisons.push({...base,status:'peer-parameter-outside-covered-source',
-    depthDifferenceAtEndsMm:null});
-   continue;
-  }
-  const [s0,s1]=exact.signs;
-  const front=s0===1&&s1===1;
-  const behind=s0===-1&&s1===-1;
-  const [startDepth,endDepth]=exact.displayApproxMm;
+  const [startDepth,endDepth]=approximate;
   if(!front&&!behind)hasPartialOrTie=true;
   if(behind&&(
      peer.status==='single-opaque-solid-whole-open-ray-clear'||
@@ -200,7 +250,8 @@ function auditC1OriginalCoProjectedDepthOrder({
    status:front?'candidate-strictly-front':
     behind?'candidate-strictly-behind':'depth-switch-or-tie',
    depthDifferenceAtEndsMm:[startDepth,endDepth],
-   exactBinary64RationalOriginalDepthDifferenceEndSigns:exact.signs,
+   exactBinary64RationalOriginalDepthDifferenceEndSigns:
+    relation.depthEndSigns,
    strictOriginal3DDepthOrderNoToleranceUsed:true,
    entireOriginalStraightSubspanDepthOrderCertified:front||behind,
    competingSourceHasCertifiedClearForwardRay:
@@ -224,6 +275,8 @@ function auditC1OriginalCoProjectedDepthOrder({
    status==='suppressed-by-front-original-visible-source',
   theorem:'original-straight-source-3d-affine-depth-order-all-projected-points',
   exactDyadicDepthOrderRequiresStrictWholeCoProjectedPaperSupport:true,
+  originalM0AffineSourceAndM4CutParametersComparedExactly:true,
+  roundedM4PaperInterpolationCannotCreateOrEraseSourceOverlap:true,
   paperOnlyCrossingsNeverInventOriginal3DJunctions:true,
   engineeringLineStyleSigned:false,signedV5ActionCount:0});
 }
