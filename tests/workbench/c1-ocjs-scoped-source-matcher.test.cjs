@@ -178,3 +178,13 @@ test('paper and IsPartner candidates never become native source identity claims'
  assert.throws(()=>audit({matches:[match(setup()),match(setup())]}),
   /duplicate native scoped source claim/);
 });
+
+test('a legitimate empty source-scoped view cannot invent generated source history',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const r=audit({matches:[]});
+ assert.equal(r.uniqueNativeClaims,0);
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+ assert.equal(r.globalContinuousOcclusionCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
