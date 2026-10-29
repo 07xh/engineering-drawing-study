@@ -456,12 +456,19 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
     const key=view+'|'+originalSource;
     if(!native2DClassByOriginalSourceView.has(key)||
        !row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge||
-       !row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree||
-       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===
-        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge||
        row.directNativeScopedGeneratedEdgeIsSameSource!==null&&
-        row.directNativeScopedGeneratedEdgeIsSameSource!==originalSource)
+        row.directNativeScopedGeneratedEdgeIsSameSource!==originalSource||
+       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge&&
+        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge)
      throw new RangeError('whole-solid HLR generated ordinal/source/class claim contradicts original native 3D');
+    // A genuinely unique original-source-filtered paper alias is not
+    // enough. Only EXACT global/scoped binary64 paper agreement, plus
+    // independently checked native 3D source class, reaches the M5
+    // correlation ledger. Other observations stay held at M4.
+    if(!row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree||
+       !row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge&&
+       !row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge)
+     continue;
     const list=globalGenerated2DBySource.get(key)??[];
     list.push(Object.freeze({
      view,sourceEdgeId:originalSource,hlrClass:row.hlrClass,
