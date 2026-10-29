@@ -490,6 +490,77 @@ function probeRealOcctHLRDataStructureSourceEdgeMap({
  * identity, not HLR-generated EDGE history or engineering line style.
  * Exact current M0 XYZ and first-angle paper projection are also required.
  */
+/** Read real original EdgeMap-indexed HLR status, not generated 2D history. */
+function auditC1NativeIndexedOriginalHLRStatus({dataStructure,indexProof,scopedRows,geometry,view}={}){
+ const unavailable=availability=>({schema:'draftai-c1-native-indexed-original-hlr-status/1',
+  availability,view,rows:[],fullSourceClassConcordant:0,
+  generated2DTopoDSLineageCertified:false,officialV5Authorized:false});
+ if(typeof dataStructure?.EDataArray!=='function')
+  return unavailable('HLRBRep_Data-EDataArray-not-exposed');
+ const array=dataStructure.EDataArray();
+ if(typeof array?.Value!=='function')
+  return unavailable('HLRBRep_Array1OfEData-Value-not-exposed');
+ if(indexProof?.edgeMapSourceBijectionVerified!==true||
+    !Array.isArray(indexProof.indexedOriginalSources)||
+    !Array.isArray(scopedRows)||!geometry?.data?.points||
+    !Array.isArray(geometry.data.edges)||!VIEWS.includes(view))
+  throw new RangeError('native HLR original indexed status requires exact original source ledger');
+ const bySource=new Map(scopedRows.map(r=>[r.originalPhysicalSourceEdgeId,r]));
+ if(bySource.size!==indexProof.indexedOriginalSources.length)
+  throw new RangeError('incomplete native original indexed source status');
+ const rows=[];
+ for(const original of indexProof.indexedOriginalSources){
+  const id=original.originalPhysicalSourceEdgeId,
+   index=original.hlrDataStructureOneBasedEdgeIndex,
+   source=bySource.get(id);
+  if(!original.directlySameOriginalTopoDSInputEdge||
+     !Number.isSafeInteger(index)||index<1||!source)
+   throw new RangeError('unbound actual HLR EdgeMap original source');
+  const status=array.Value(index)?.Status?.();
+  if(typeof status?.AllVisible!=='function'||
+     typeof status?.AllHidden!=='function'||
+     typeof status?.NbVisiblePart!=='function')
+   return unavailable('HLRAlgo_EdgeStatus-methods-not-exposed');
+  const allVisible=status.AllVisible(),allHidden=status.AllHidden(),
+   n=status.NbVisiblePart();
+  if(typeof allVisible!=='boolean'||typeof allHidden!=='boolean'||
+     allVisible&&allHidden||!Number.isSafeInteger(n)||n<0||n>128||
+     allVisible&&n!==1||allHidden&&n!==0)
+   throw new RangeError('contradictory actual native original indexed HLR status');
+  const physical=geometry.data.edges.find(e=>
+   geometry.id+'::'+[...e].sort().join('|')===id);
+  if(!physical)throw new RangeError('missing native indexed original M0 edge');
+  const [a,b]=physical.map(k=>project(geometry.data.points[k])[view]),
+   collapsed=a.u===b.u&&a.v===b.v;
+  const vis=source.visible3D?.native3DGeneratedCurveIntervals,
+   hid=source.hidden3D?.native3DGeneratedCurveIntervals,
+   combined=source.combinedNative3DSourceParameterPartition;
+  if(!Array.isArray(vis)||!Array.isArray(hid)||!combined)
+   throw new RangeError('missing actual source-scoped 3D HLR class');
+  const full=combined.sourceScopedNative3DParameterInventoryCompleteExactlyOnce===true,
+   klass=allVisible?'visible-sharp':allHidden?'hidden-sharp':'undetermined';
+  if(!collapsed&&full&&klass!=='undetermined'){
+   const chosen=allVisible?vis:hid,other=allVisible?hid:vis;
+   if(chosen.length!==1||other.length!==0||
+      chosen[0].nativeOriginalCurveParameterRange?.[0]!==combined.originalNativeParameterRange?.[0]||
+      chosen[0].nativeOriginalCurveParameterRange?.[1]!==combined.originalNativeParameterRange?.[1])
+    throw new RangeError('original indexed HLR status contradicts source-scoped 3D class');
+  }
+  rows.push({view,sourceEdgeId:id,originalHLREdgeMapIndex:index,
+   originalHLRStatusFullClass:klass,originalHLRStatusVisibleParts:n,
+   originalM0PaperProjectionCollapsed:collapsed,
+   independentOriginalIndexedStatusAndNative3DClassConcordant:
+    !collapsed&&full&&klass!=='undetermined',
+   generated2DTopoDSLineageCertified:false,engineeringLineStyle:'undetermined',
+   signedV5Action:false});
+ }
+ return {schema:'draftai-c1-native-indexed-original-hlr-status/1',
+  availability:'real-native-original-edge-indexed-status-inspected',view,rows,
+  fullSourceClassConcordant:rows.filter(x=>
+   x.independentOriginalIndexedStatusAndNative3DClassConcordant).length,
+  generated2DTopoDSLineageCertified:false,officialV5Authorized:false};
+}
+
 function probeRealOcctHLRVertexDirectOriginalSourceIdentity({
  generatedVertex,originalSourceVertices,view,nativePaperPoint,geometry
 }={}){
@@ -836,6 +907,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    if(handle.IsNull())throw new RangeError('null OCJS B-Rep HLR handle');
    const extractor=newObj('HLRBRep_HLRToShape',handle),
     visible=hold(extractor.VCompound_1());
+   let originalStatusDataStructure=null;
    let originalDataStructureIndex={
     scope:'native-hlr-internal-original-source-index-only',
     availability:'DataStructure-not-exposed',
@@ -1128,6 +1200,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    if(processed.size!==byOriginalSource.size)
     throw new RangeError('source-scoped HLR filter did not enumerate every original edge');
+    const originalIndexedVisibilityStatus=auditC1NativeIndexedOriginalHLRStatus({
+     dataStructure:originalStatusDataStructure,indexProof,scopedRows,geometry,view
+    });
+    nativeHLRSourceHistoryAPISurfaceByView[view].originalIndexedVisibilityStatus=
+     originalIndexedVisibilityStatus;
    // The native EdgeMap and source-filtered output are still the only
    // authority for each claim. Cross-check ALL original sources here, before
    // returning serializable evidence to M5 or deleting WASM handles.
