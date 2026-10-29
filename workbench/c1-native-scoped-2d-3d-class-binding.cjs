@@ -240,4 +240,5 @@ function auditC1RealNativeScoped2D3DClassBinding({
   wholeSceneM5Certified:false,officialV5Authorized:false
  });
 }
-module.exports={auditC1RealNativeScoped2D3DClassBinding};
+module.exports={auditC1RealNativeScoped2D3DClassBinding,
+ boundedOriginalFullPaperEndpointEnvelope};
