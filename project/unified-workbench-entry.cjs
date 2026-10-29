@@ -1847,6 +1847,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个，已独立核验点位严格体积射线 '+
        partial.wCriticalPointRays.certifiedPointRayCount+' 个，仍未签收曲线端点、投影重合和标准线型。':
        ' W 视图内部解析切换点尚无可授权的实体射线证明。')+
+      (partial.wMirrorDepthEvidence?.sameSignedLateralSourceWDepthOrderProven===true?
+       ' W 视图同轴心曲线重合：已严格证明 '+
+       partial.wMirrorDepthEvidence.verifiedMirroredOpenDepthCellCount+
+       ' 组前后镜像解析开区间的三维深度次序；其余图元重合及国标线型未签收。':'')+
       (partial.analyticRayPaperReview?
        ' 三视图曲线已绑定严格体积射线的解析开区间 '+
        partial.analyticRayPaperReview.sourceParameterIntervalCount+

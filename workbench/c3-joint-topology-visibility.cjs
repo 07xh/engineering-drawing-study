@@ -21,6 +21,8 @@ const {auditC3BooleanRayM5Concordance}=
  require('./c3-boolean-ray-m5-concordance.cjs');
 const {auditC3BooleanWCriticalSwitchRays}=
  require('./c3-boolean-w-critical-switch-rays.cjs');
+const {auditC3WExactMirrorDepthOrder}=
+ require('./c3-w-mirror-depth-order.cjs');
 const {auditC3ProjectedCapLineArrangement}=
  require('./c3-projected-cap-line-arrangement.cjs');
 const {auditC3VHArcCapLineContacts}=
@@ -176,6 +178,12 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   auditC3BooleanWCriticalSwitchRays({
    input,revision,selectedRayEvidence:selectedBooleanRayEvidence
   });
+ // Source X-center coincidence is NOT injectivity in W. It can instead
+ // admit an exact analytic reflected front/back pairing of two distinct
+ // 3D points sharing the same W paper position.
+ const wExactMirrorDepthEvidence=auditC3WExactMirrorDepthOrder({
+  input,revision,selectedRayEvidence:selectedBooleanRayEvidence
+ });
  if(selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true&&
     (selectedBooleanWCriticalPointEvidence.
       everyCurrentAnalyticWRootEnumerated!==true||
@@ -254,6 +262,8 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
     physicalGraphBranchAccountedFor:true,
     wLateralProjectionCollisionExcludedWithinSourceScope:view==='W'&&
      wLateralProjection.projectedLateralLateralPointInjectivityVerified===true,
+    wLateralMirroredDepthOrderProvenWithinSourceScope:view==='W'&&
+     wExactMirrorDepthEvidence.sameSignedLateralSourceWDepthOrderProven===true,
     endpointVisibilityVerified:false,
     blockers:[
      ...(!certifiedOccluded&&!certifiedClear?['open-interval-ray-sign-undetermined']:[]),
@@ -293,7 +303,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
    projectedCapLineEvidence.allProjectedCapLinesAccountedFor===true,
   localSourceTangentEvidence,localBooleanCreaseEvidence,
   selectedBooleanRayEvidence,booleanRayConcordance,
-  selectedBooleanWCriticalPointEvidence,
+  selectedBooleanWCriticalPointEvidence,wExactMirrorDepthEvidence,
   selectedBooleanThreeViewSourceRayCoverageVerified:
    selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true,
   localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,
