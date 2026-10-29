@@ -109,7 +109,21 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-sheet').querySelector('[data-c3-open-ray-branch-id]'),null);
   assert.equal($('v7-play').disabled,true);
-  assert.equal($('v8-review-run').disabled,false,'button can explicitly confirm the changed input');
+  assert.equal($('v8-c3-axes').checked,false,
+   'a changed cylinder radius revokes the previous axis/size declaration');
+  assert.equal($('v8-c3-caps').checked,false,
+   'a changed cylinder radius revokes the previous finite-solid declaration');
+  assert.equal($('v8-review-run').disabled,true,
+   'an edited C3 solid cannot be reconfirmed using stale human checkmarks');
+  $('v8-c3-axes').checked=true;fire('v8-c3-axes','change');
+  assert.equal($('v8-review-run').disabled,true,'cap review is still missing');
+  $('v8-c3-caps').checked=true;fire('v8-c3-caps','change');
+  assert.equal($('v8-review-run').disabled,false,'only fresh declarations enable C3 solve');
+  $('v8-c3-solid-op').value='union';fire('v8-c3-solid-op','change');
+  assert.equal($('v8-c3-axes').checked,true,
+   'changing selected Boolean operation does not change the underlying cylinder axes');
+  assert.equal($('v8-c3-caps').checked,true);
+  assert.match($('v8-review-summary').textContent,/并集/);
   $('v7-task').value='projection';fire('v7-task','change');
   await tick();await tick();
   assert.equal($('v7-task').value,'c3-intersection','unsaved C3 edit blocks task switching');
