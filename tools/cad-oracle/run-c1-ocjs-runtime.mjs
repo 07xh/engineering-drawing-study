@@ -47,6 +47,8 @@ const {auditC1AllOriginalSourceNativeGaps}=
  require('../../workbench/c1-all-native-source-gap-ledger.cjs');
 const {auditC1NativeGapOriginalExactRays}=
  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
+const {projectC1Native3DSourceIntervalsToM4}=
+ require('../../workbench/c1-native-source-scoped-m4-projection.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -228,6 +230,48 @@ for(const [index,geometry] of general.entries()){
     w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
     w.globalPaperCandidateOrdinals.length>=1&&
     w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  // Real native original 3D HLR -> existing first-angle project() -> M4
+  // source-preserving candidate. No rounded generated 2D HLR inverse,
+  // no alternative M3, M5 line style or second V5.
+  const nativeCurveBySource=new Map(cad.originalBRepSourceEdges.map(row=>
+   [row.sourceEdgeId,row]));
+  let native3DM4Noncollapsed=0,native3DM4ProjectedSegments=0;
+  for(const source of scoped.rows){
+   const edge=geometry.data.edges.find(e=>
+    geometry.id+'::'+[...e].sort().join('|')===source.originalPhysicalSourceEdgeId);
+   assert.ok(edge,'real native source must belong to original M0 edge list');
+   const [a,b]=edge.map(id=>project(geometry.data.points[id])[view]);
+   if(a.u===b.u&&a.v===b.v){
+    assert.equal(source.visible3D.native3DGeneratedCurveIntervals.length,0);
+    assert.equal(source.hidden3D.native3DGeneratedCurveIntervals.length,0);
+    continue;
+   }
+   const witness=projectC1Native3DSourceIntervalsToM4({
+    geometry,revision:cad.revision,view,
+    sourceEdgeId:source.originalPhysicalSourceEdgeId,
+    originalCurve:nativeCurveBySource.get(source.originalPhysicalSourceEdgeId),
+    scopedRow:source
+   });
+   native3DM4Noncollapsed++;
+   native3DM4ProjectedSegments+=witness.segments.length;
+   assert.equal(witness.sourceGeometryId,geometry.id);
+   assert.equal(witness.revision,cad.revision);
+   assert.equal(witness.native3DProvenanceIsNotGenerated2DHLREdgeIdentity,true);
+   assert.equal(witness.native3DSourceParameterPartitionCompleteExactlyOnce,
+    source.combinedNative3DSourceParameterPartition.
+     sourceScopedNative3DParameterInventoryCompleteExactlyOnce);
+   assert.equal(witness.officialV5Authorized,false);
+   assert.ok(witness.segments.every(s=>
+    s.generated2DHLREdgeTopologyProven===false&&
+    s.completeGlobalCoProjectedVisibilityCertified===false&&
+    s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false));
+  }
+  console.error('REAL C1 NATIVE 3D -> M4 SOURCE PROJECTION '+
+   geometry.id+' '+view+': '+JSON.stringify({
+    noncollapsedOriginalSources:native3DM4Noncollapsed,
+    projectedSourceScoped3DIntervals:native3DM4ProjectedSegments,
+    generated2DHLREdgeHistoryCertified:false,signedV5Actions:0
+   }));
   // Actual pinned OCJS source-filtered In3d sharp output retains OCCT
   // original-curve parameter intervals. A complete scoped 3D union is
   // stronger than a paper alias, but is NOT generated 2D IsSame history,
