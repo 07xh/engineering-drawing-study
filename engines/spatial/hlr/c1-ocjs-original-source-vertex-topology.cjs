@@ -52,6 +52,8 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
   schema:'draftai-c1-original-occt-brep-vertex-physical-topology/1',
   sourceGeometryId:geometry.id,
   originalM0SourceVertexIds:ids,
+  originalM0VertexNativeOccurrenceCounts:Object.fromEntries(ids.map(id=>
+   [id,byId.get(id).length])),
   originalBRepVertexOccurrencesChecked:occurrences.length,
   allOriginalBRepVertexPairsCompared:
    occurrences.length*(occurrences.length-1)/2,
