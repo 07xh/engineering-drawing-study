@@ -1878,6 +1878,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 项，无严格体积遮挡 '+
        partial.wFiniteCapLineForwardRays.strictlyClearLineCount+
        ' 项（端盖面遮挡及线型尚未签收）。':'')+
+      (partial.wGlobalSourceCurveSolidDepth?.allOriginalM3WSourceCurveAtomsGloballyDepthProven===true?
+       ' W 相贯曲线对完整有限实体的正向深度证明：'+
+       partial.wGlobalSourceCurveSolidDepth.certifiedGlobalFrontmostCells+
+       ' 个原始来源开区间前侧全局无遮挡、后侧存在严格实体体积遮挡；闭合端点与国标线型尚未签收。':'')+
       (partial.wLateralCollisionInventory?.allPositiveWSourceCurveProjectionCollisionsClassified===true?
        ' W 相贯曲线全部来源投影重合排查：'+
        partial.wLateralCollisionInventory.currentM3LateralSourceBranchCount+
