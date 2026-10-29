@@ -1224,6 +1224,35 @@ for(const [index,geometry] of general.entries()){
  assert.equal(
   positiveOriginalGapRays.nativeGenerated2DToOriginal3DHLRSourceClassEvidenceConsumed,
   true);
+ assert.equal(positiveOriginalGapRays.actualWholeSolidGeneratedHLRSourceOrdinalCrosswalkConsumed,true);
+ assert.equal(positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches,
+  globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking+
+  globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding);
+ const heldM5=[
+  ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+  ...positiveOriginalGapRays.rows
+ ];
+ for(const row of heldM5){
+  assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
+  assert.ok(row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0);
+  for(const claim of row.wholeSolidGeneratedHLROriginalSourceFilterMatches){
+   assert.equal(claim.sourceEdgeId,row.sourceEdgeId);
+   assert.equal(claim.view,row.view);
+   assert.equal(claim.sourceScopedWholeGeneratedBinary64PaperExactlyMatched,true);
+   assert.equal(claim.actualGeneratedToOriginalTopoDSHistoryCertified,false);
+   assert.equal(claim.allOpaqueFaceOcclusionCertified,false);
+   assert.equal(claim.signedV5Action,false);
+  }
+ }
+ console.error('REAL C1 M5 MISSING SOURCE AND POSITIVE PAPER GAPS WITH GLOBAL HLR ORDINAL SOURCES '+
+  geometry.id+': '+JSON.stringify({
+   missingOriginalSourceViews:positiveOriginalGapRays.missingOriginalM0SourceViewRows.length,
+   nativePositiveGapIntervals:positiveOriginalGapRays.rows.length,
+   missingOrGapRowsWithExactGlobalHLRFilteredSourceAndNative3DClass:
+    heldM5.filter(row=>
+     row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0).length,
+   stillOfficialV5:positiveOriginalGapRays.signedV5ActionCount
+  }));
  assert.equal(
   positiveOriginalGapRays.nativeGenerated2DToOriginal3DClassSourceViews,
   positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount);
