@@ -1062,6 +1062,22 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       engineeringLineStyle:'undetermined',signedV5Action:false
      };
     }
+    // Source-scoped native 3D V+H partition is the direct OCCT curve
+    // domain ledger. Visible-only and hidden-only gaps are expected;
+    // the COMBINED partition must be checked before interpreting a 2D
+    // rounded-inverse micro-gap as missing original physical source.
+    const native3DSource=sourceById.get(original.sourceEdgeId);
+    row.combinedNative3DSourceParameterPartition=
+     auditC1Native3DSourceScopedIntervals({
+      originalNativeParameterRange:native3DSource.occtSourceCurveParameterRange,
+      generatedNativeParameterRanges:[
+       ...row.visible3D.native3DGeneratedCurveIntervals,
+       ...row.hidden3D.native3DGeneratedCurveIntervals
+      ].map(x=>x.nativeOriginalCurveParameterRange)
+     });
+    row.combinedNative3DPartitionIsNotGenerated2DTopoDSHistory=true;
+    row.engineeringLineStyle='undetermined';
+    row.signedV5Action=false;
     scopedRows.push(row);
    }
    if(processed.size!==byOriginalSource.size)
