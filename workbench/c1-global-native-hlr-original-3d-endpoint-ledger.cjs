@@ -7,6 +7,8 @@
  * endpoint cannot certify exact physical junction topology or GB/V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {boundedOriginalFullPaperEndpointEnvelope}=
+ require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))freeze(v);Object.freeze(o);
 }return o;};
@@ -55,6 +57,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   completeOriginalNative3DClassSourceIntervalRows:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
+  strictlyClassBackedButRoundedOriginalM0PaperEndpoints:0,
+  sourceScaleULPEnvelopeRejectedOriginalM0PaperEndpoints:0,
   physicalOriginalM0EndpointRowsHeld:0,
   generatedOriginalTopoDSDirectVertexIdentityEndpoints:0,
   originalModelPhysicalJunctionPairCandidates:0,
@@ -129,10 +133,23 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      reverse=p2eq(line.from,q)&&p2eq(line.to,p);
     originalPaperExact=forward||reverse;
     if(originalPaperExact)counts.exactOriginalM0PaperEndpointPairs++;
-    boundedPaper=!originalPaperExact&&
-     row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true&&
-     sourceClassFull&&modelVerified;
-    if(boundedPaper)counts.roundedOnlyOriginalM0PaperEndpointPairs++;
+    // The 2D rational native-class check can still be STRICTLY backed
+    // while the received OCCT paper ENDPOINT is rounded by <1 ULP.
+    // Re-check the physical full-source endpoint pair against the same
+    // tightly bounded envelope independently of class interval support.
+    // Do not turn this into exact original [0,1] paper or TopoDS history.
+    const sourcePaperEnvelope=boundedOriginalFullPaperEndpointEnvelope(
+     p,q,line.from,line.to);
+    const boundedPaper=!originalPaperExact&&
+     sourcePaperEnvelope.compatible===true&&sourceClassFull&&modelVerified&&
+     (row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true||
+      row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===true);
+    if(boundedPaper){
+     counts.roundedOnlyOriginalM0PaperEndpointPairs++;
+     if(row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===true)
+      counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints++;
+    }else if(!originalPaperExact)
+     counts.sourceScaleULPEnvelopeRejectedOriginalM0PaperEndpoints++;
     // A source-scoped generated segment may have a matching native
     // interval while the independent entire-original native 3D partition
     // still contains gaps. HOLD this endpoint proof instead of treating
@@ -191,6 +208,11 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      originalPaperExact,
     generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity:
      boundedPaper,
+    strictlyOriginal3DClassBackedButPaperEndpointsRounded:
+     boundedPaper&&
+      row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===true,
+    originalM0PaperEndpointRoundoffEnvelope:sourcePaperEnvelope??null,
+    exactOriginalM0PaperEndpointsNotReplacedByRoundoffEvidence:true,
     original3DToGenerated2DEndpointWitnesses:links,
     generated2DToOriginalNativeTopoDSFullVertexTopologyCertified:false,
     continuousAllOpaqueFaceVisibilityProven:false,
