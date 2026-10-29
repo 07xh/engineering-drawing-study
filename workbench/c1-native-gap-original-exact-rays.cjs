@@ -420,4 +420,4 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   officialV5Authorized:false,signedV5ActionCount:0
  });
 }
-module.exports={auditC1NativeGapOriginalExactRays};
+module.exports={auditC1NativeGapOriginalExactRays,exactOriginal3DVertexOnSourceSegment};
