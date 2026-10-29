@@ -21,6 +21,8 @@ const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
 const {auditC1RealNativeScoped2D3DClassBinding}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
+const {auditC1WholeSolidNativeHLRSourceScopeRebinding}=
+ require('./c1-global-native-hlr-original-source-rebind.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -506,9 +508,20 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    };
   });
  }
+ // Join all actual WHOLE-SOLID generated 2D HLR edge ordinals against
+ // original TopoDS edge-filtered HLR, with strict original native 3D
+ // same-class backing. A unique source-filtered candidate is evidence,
+ // never a fabricated original/generated TShape or official line style.
+ const globalNativeHLRSourceScopeRebinding=nativeM4Available?
+  auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}):null;
+ if(nativeM4Available&&globalNativeHLRSourceScopeRebinding.counts.
+    wholeSolidNativeHLREdges!==
+      VIEWS.reduce((n,v)=>n+cad.views[v].length+
+       cad.hiddenSharpViews[v].length,0))
+  throw new RangeError('whole-solid OCCT generated 2D HLR edge inventory was not fully rebound');
  return frozen({schema:'draftai-c1-real-source-scoped-hlr-m5-consumer/1',
   sourceGeometryId:geometry.id,revision:cad.revision,unit:'mm',
-  views,counts,
+  views,counts,globalNativeHLRSourceScopeRebinding,
   actualOriginalTopoDSSourceFilteredHLRConsumed:true,
   nativeOriginal3DToM4ProjectionConsumerAvailable:nativeM4Available,
   nativeOriginal3DProjectionIsNotGenerated2DSourceHistory:true,
