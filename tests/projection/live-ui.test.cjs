@@ -122,6 +122,8 @@ function createInteractivePage(){
  const nodeRequire=id=>{
   if(id==='../engines/projection/point-projection.cjs')
    return require('../../engines/projection/point-projection.cjs');
+  if(id==='./projection-label-layout.cjs')
+   return require('../../labs/projection-label-layout.cjs');
   if(id==='../core/projection/conventions.js')
    return require('../../core/projection/conventions.js');
   if(id==='../workbench/verified-projection-drawing.cjs')

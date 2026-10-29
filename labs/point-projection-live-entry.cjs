@@ -2,6 +2,7 @@
 /* Real, user-editable single-point math. No textbook answers or external API. */
 const {solveProjection}=require('../engines/projection/point-projection.cjs');
 const {toSheet}=require('../core/projection/conventions.js');
+const {placeLabel}=require('./projection-label-layout.cjs');
 const {gradeProjectionDrawing}=require('../workbench/verified-projection-drawing.cjs');
 const {verifiedLiveIntentTimeline}=require('../workbench/verified-live-intent-v1.cjs');
 const TimelineV5=require('../workbench/teaching-timeline-v5.js');
@@ -101,10 +102,11 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
     return el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:color,'stroke-width':width,
       'stroke-dasharray':dash||'none','vector-effect':'non-scaling-stroke'});
   }
-  function point(p,label,color){
+  function point(p,label,color,occupied){
+    const position=placeLabel(p,label,paperCamera,occupied);
     const group=el('g');
     group.append(el('circle',{cx:p.x,cy:p.y,r:5.3,fill:color}));
-    group.append(el('text',{x:p.x+10,y:p.y-10,fill:color,'font-size':14,'font-weight':700},label));
+    group.append(el('text',{x:position.x,y:position.y,fill:color,'font-size':14,'font-weight':700},label));
     return group;
   }
   const format=n=>Number.isFinite(n)?Number(n.toFixed(6)).toString():'?';
@@ -176,12 +178,12 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
   }
   function render(){
     const svg=$('paperSvg');svg.replaceChildren();liveGuideNodes.clear();axes(svg);
-    const s=solution,pair=$('pairSelect').value;
+    const s=solution,pair=$('pairSelect').value,occupiedLabels=[];
     if(s){
       const {origin,scale}=s.userInput.sheetTransform;
       for(const name of s.knownViews){
         const uv=s.userInput.knownViews[name],xy=toSheet(name,{u:uv[0],v:uv[1]}, {origin,scale});
-        svg.append(point(xy,'已知 '+name,COLOR.known));
+        svg.append(point(xy,'已知 '+name,COLOR.known,occupiedLabels));
       }
       if(s.status==='unique'&&teaching?.status==='ready'&&learningMode==='full'){
         if($('showGuides').checked){
@@ -198,7 +200,7 @@ const MotionV5=require('../workbench/teaching-motion-v5.js');
         if(shownStep===s.steps.length&&(!stageClock||stageClock.snapshot().done)){
           for(const name of ['V','H','W']){
             if(s.knownPoint||!s.knownViews.includes(name))
-              svg.append(point(s.sheet[name],s.knownPoint?'由空间点投影 '+name:'求得 '+name,COLOR.computed));
+              svg.append(point(s.sheet[name],s.knownPoint?'由空间点投影 '+name:'求得 '+name,COLOR.computed,occupiedLabels));
           }
         }
       }
