@@ -43,6 +43,8 @@ const {auditC1NativeGapGeneratedVertexAdjacency}=
  require('../../workbench/c1-native-gap-generated-vertex-adjacency.cjs');
 const {auditC1ThreeNativeGapBatchFromM5Ledger}=
  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+const {auditC1AllOriginalSourceNativeGaps}=
+ require('../../workbench/c1-all-native-source-gap-ledger.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -905,6 +907,43 @@ for(const [index,geometry] of general.entries()){
   return proof;
  });
 
+ // Generic WHOLE M5 original-source inventory, including all positive
+ // gaps (not just the three known skew-tetra A-end micro-gaps), and every
+ // unreconstructable original subspan. These proof objects come from the
+ // same real OCJS WASM calculation, never a user-supplied gap map.
+ const allOriginalSourceNativeGapLedger=auditC1AllOriginalSourceNativeGaps({
+  geometry,cad,m5Ledger:audited
+ });
+ const fullM5SourceSpanCount=['V','H','W'].reduce((n,view)=>
+  n+audited.views[view].intervals.length,0);
+ assert.equal(allOriginalSourceNativeGapLedger.totals.currentM5SourceSpans,
+  fullM5SourceSpanCount);
+ assert.equal(allOriginalSourceNativeGapLedger.rows.length,
+  fullM5SourceSpanCount);
+ assert.equal(allOriginalSourceNativeGapLedger.allCurrentM5SourceSpansAccountedFor,true);
+ const absentM0=allOriginalSourceNativeGapLedger.unrepresentedOriginalM0ProjectedSources;
+ assert.equal(allOriginalSourceNativeGapLedger.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,
+  absentM0.length===0);
+ assert.ok(absentM0.every(x=>['V','H','W'].includes(x.view)&&
+  x.sourceEdgeId.startsWith(geometry.id+'::')&&
+  x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
+  !audited.views[x.view].intervals.some(row=>row.sourceEdgeId===x.sourceEdgeId)));
+ console.error('REAL C1 M0 SOURCES ABSENT FROM M5 '+geometry.id+': '+
+  JSON.stringify(absentM0.map(x=>({view:x.view,source:x.sourceEdgeId}))));
+ assert.equal(allOriginalSourceNativeGapLedger.generatedHLRToOriginalTopoDSHistoryCertified,false);
+ assert.equal(allOriginalSourceNativeGapLedger.signedV5ActionCount,0);
+ console.error('REAL C1 ALL ORIGINAL SOURCE GAP INVENTORY '+geometry.id+': '+
+  JSON.stringify(allOriginalSourceNativeGapLedger.totals));
+ if(geometry.id==='C1SkewTetra'){
+  for(const [view,edge] of [['H','A|C'],['W','A|C'],['W','A|D']]){
+   const sourceEdgeId=geometry.id+'::'+edge;
+   assert.ok(allOriginalSourceNativeGapLedger.rows.some(row=>
+    row.view===view&&row.sourceEdgeId===sourceEdgeId&&
+    row.kind==='positive-original-native-source-gap'&&
+    row.positiveGaps.length>=1&&
+    row.jointNativeGapForensics?.signedV5ActionCount===0));
+  }
+ }
  // Run the newly bound THREE-gap consumer on the genuine pinned OCJS WASM
  // CAD payload and independently recomputed canonical M5 gap ledger.
  // Only the skew tetrahedron is the reviewed three-A-end-gap regression.

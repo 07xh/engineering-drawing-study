@@ -1,0 +1,189 @@
+'use strict';
+/**
+ * Generic C1 native ORIGINAL-source coverage audit, not tied to known
+ * A-end skew-tetra regression values or any one textbook drawing.
+ *
+ * Walk ALL canonical M5 source spans in V/H/W, preserve positive native
+ * gaps and source spans whose native parameters cannot be reconstructed.
+ * Recompute the independent source-curve and actual generated HLR endpoint
+ * forensic proofs for EVERY positive gap. NEVER turn a 2D paper match into
+ * original TopoDS generated-edge history, closed M5 occlusion, GB line
+ * styles or signed official V5 actions.
+ */
+const {VIEWS,project}=require('../core/projection/conventions.js');
+const {auditC1JointNativeGapFromCad}=
+ require('./c1-joint-native-gap-evidence.cjs');
+const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
+ for(const v of Object.values(x))freeze(v);Object.freeze(x);
+}return x;};
+function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
+ if(typeof geometry?.id!=='string'||!geometry.id||
+    !Array.isArray(geometry.data?.edges)||!geometry.data.edges.length||
+    !geometry.data.points||
+    cad?.schema!=='draftai-c1-ocjs-real-visible-brep/1'||
+    cad.engine!=='opencascade.js'||cad.sourceGeometryId!==geometry.id||
+    !Number.isSafeInteger(cad.revision)||cad.revision<1||
+    cad.actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified!==false||
+    cad.lineStyleCertified!==false||cad.v5Authorized!==false||
+    m5Ledger?.schema!=='draftai-c1-ocjs-m5-convex-proof-gap-ledger/1'||
+    m5Ledger.revision!==cad.revision||
+    m5Ledger.sourceGeometryId!==geometry.id||
+    m5Ledger.engine!=='opencascade.js'||
+    m5Ledger.realCadSourceCandidateOnly!==true||
+    m5Ledger.officialLineStylesVerified!==false||
+    m5Ledger.wholeSolidV5Ready!==false||
+    m5Ledger.signedV5ActionCount!==0)
+  throw new TypeError('current unsigned C1 M0, real OCJS and canonical M5 evidence required');
+ const originalIds=new Set();
+ for(const e of geometry.data.edges){
+  if(!Array.isArray(e)||e.length!==2||e[0]===e[1]||
+     e.some(id=>typeof id!=='string'||
+      !Object.hasOwn(geometry.data.points,id)))
+   throw new RangeError('invalid original C1 3D source topology');
+  const id=geometry.id+'::'+[...e].sort().join('|');
+  if(originalIds.has(id))throw new RangeError('duplicated original C1 source');
+  originalIds.add(id);
+ }
+ // M5 may omit an original physical edge entirely. Counting only the rows
+ // already in M5 would then report a misleading 'complete' inventory.
+ // Independently enumerate every noncollapsed original M0 source per view.
+ // A missing row is an UNSIGNED evidence obligation, not a hidden line.
+ const projectedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>[
+  view,new Set(geometry.data.edges.filter(([a,b])=>{
+   const p=project(geometry.data.points[a])[view],
+    q=project(geometry.data.points[b])[view];
+   if(![p.u,p.v,q.u,q.v].every(Number.isFinite))
+    throw new RangeError('nonfinite projected original C1 source');
+   return p.u!==q.u||p.v!==q.v;
+  }).map(e=>geometry.id+'::'+[...e].sort().join('|')))
+ ]));
+ const representedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>
+  [view,new Set()]));
+ const result=[],seen=new Set(),totals={
+  currentM5SourceSpans:0,fullyNativeCoveredSpans:0,
+  positiveGapSourceSpans:0,individualPositiveNativeGaps:0,
+  originalParameterUnreconstructableSpans:0,
+  missingOrUnboundSourceSpans:0
+ };
+ for(const view of VIEWS){
+  const ledgerRows=m5Ledger.views?.[view]?.intervals;
+  if(!Array.isArray(ledgerRows)||ledgerRows.length>2048||
+     !Array.isArray(cad.views?.[view])||
+     !Array.isArray(cad.hiddenSharpViews?.[view]))
+   throw new RangeError('complete bounded C1 M5 and real OCJS V/H/W views required');
+  for(const row of ledgerRows){
+   totals.currentM5SourceSpans++;
+   if(row?.view!==view||
+      row.engineeringLineStyle!=='undetermined'||row.signedV5!==false)
+    throw new RangeError('C1 M5 source span incorrectly signed or wrong view');
+   const id=row.sourceEdgeId,proof=row.exactNativeOriginal3DSourceCoverage;
+   if(id&&originalIds.has(id))representedOriginalSourcesByView[view].add(id);
+   if(id!==null&&(!originalIds.has(id)||
+      typeof id!=='string'))
+    throw new RangeError('M5 source must be an actual original M0 3D edge');
+   // Invalid/non-M0 source identity is accounted for but never promoted.
+   if(!id||!proof){
+    if(row.realNativeOriginal3DSourceParameterCovered===true)
+     throw new RangeError('C1 source declared covered without any native source proof');
+    totals.missingOrUnboundSourceSpans++;
+    result.push({view,sourceEdgeId:id||null,originalParameterRange:null,
+     kind:'unbound-original-native-source-or-missing-proof',
+     positiveGaps:[],jointNativeGapForensics:null,
+     entireSourceHistoryAndOcclusionVerified:false,signedV5Action:false});
+    continue;
+   }
+   if(proof.sourceEdgeId!==id||proof.view!==view||
+      proof.engineeringLineStyle!=='undetermined'||
+      proof.signedV5Action!==false)
+    throw new RangeError('C1 native source proof conflicts with canonical M5 identity');
+   const range=proof.originalSourceParameterRange;
+   if(range===null){
+    if(proof.status!=='unreconstructable-original-3d-source-parameter'||
+       proof.entireOriginalParameterIntervalCovered!==false||
+       row.realNativeOriginal3DSourceParameterCovered!==false||
+       !Array.isArray(proof.positiveLengthUncoveredIntervals)||
+       proof.positiveLengthUncoveredIntervals.length!==0)
+     throw new RangeError('C1 unreconstructable original source must remain explicitly unsigned');
+    totals.originalParameterUnreconstructableSpans++;
+    result.push({view,sourceEdgeId:id,originalParameterRange:null,
+     kind:'unreconstructable-original-native-source-parameter',
+     positiveGaps:[],jointNativeGapForensics:null,
+     entireSourceHistoryAndOcclusionVerified:false,signedV5Action:false});
+    continue;
+   }
+   if(!Array.isArray(range)||range.length!==2||
+      !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+      !(range[1]>range[0])||
+      !Array.isArray(proof.positiveLengthUncoveredIntervals)||
+      proof.positiveLengthUncoveredIntervals.length>128)
+    throw new RangeError('C1 positive and bounded native original source interval required');
+   const key=view+'|'+id+'|'+range.join(',');
+   if(seen.has(key))throw new RangeError('C1 duplicate canonical source span');
+   seen.add(key);
+   const gaps=proof.positiveLengthUncoveredIntervals;
+   let previous=range[0];
+   for(const [a,b] of gaps){
+    if(!Number.isFinite(a)||!Number.isFinite(b)||
+       a<previous||a<range[0]||b>range[1]||!(b>a))
+     throw new RangeError('C1 ordered positive original native gaps must not overlap');
+    previous=b;
+   }
+   const covered=proof.entireOriginalParameterIntervalCovered===true;
+   if(covered!== (gaps.length===0)||
+      row.realNativeOriginal3DSourceParameterCovered!==covered||
+      proof.status!==(covered?
+       'exact-original-3d-native-source-covered':
+       'exact-original-3d-native-source-positive-gap'))
+    throw new RangeError('C1 positive native gap count contradicts exact M5 source coverage');
+   const joint=gaps.length?auditC1JointNativeGapFromCad({
+    geometry,cad,view,sourceEdgeId:id,
+    uncoveredIntervals:gaps
+   }):null;
+   if(joint&&(joint.positiveGapCount!==gaps.length||
+      joint.fullOriginalSourceHistoryCertified!==false||
+      joint.globalContinuousVisibilityCertified!==false||
+      joint.signedV5ActionCount!==0))
+    throw new RangeError('C1 joint independent native gap evidence promoted unsigned input');
+   if(covered)totals.fullyNativeCoveredSpans++;
+   else {totals.positiveGapSourceSpans++;totals.individualPositiveNativeGaps+=gaps.length;}
+   result.push({view,sourceEdgeId:id,originalParameterRange:[...range],
+    kind:covered?'native-source-interval-covered-candidate-only':
+     'positive-original-native-source-gap',
+    positiveGaps:gaps.map(x=>[...x]),
+    jointNativeGapForensics:joint,
+    entireSourceHistoryAndOcclusionVerified:false,signedV5Action:false});
+  }
+ }
+ if(result.length!==totals.currentM5SourceSpans||
+    Object.values(totals).some(x=>!Number.isSafeInteger(x)||x<0)||
+    totals.currentM5SourceSpans!==
+     totals.fullyNativeCoveredSpans+totals.positiveGapSourceSpans+
+      totals.originalParameterUnreconstructableSpans+
+      totals.missingOrUnboundSourceSpans)
+  throw new RangeError('C1 complete canonical M5 original source gap accounting lost');
+ const unrepresentedOriginalM0ProjectedSources=[];
+ for(const view of VIEWS)
+  for(const sourceEdgeId of projectedOriginalSourcesByView[view])
+   if(!representedOriginalSourcesByView[view].has(sourceEdgeId))
+    unrepresentedOriginalM0ProjectedSources.push({
+     view,sourceEdgeId,
+     reason:'noncollapsed-original-source-absent-from-current-M5-ledger',
+     originalTopoDSHistoryCertified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
+ return freeze({schema:'draftai-c1-all-original-3d-native-source-gaps/1',
+  unrepresentedOriginalM0ProjectedSources,
+  allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5:
+   unrepresentedOriginalM0ProjectedSources.length===0,
+  revision:cad.revision,sourceGeometryId:geometry.id,
+  status:'full-current-M5-interval-inventory-unsigned',
+  originalM0PhysicalSourceCount:originalIds.size,
+  totals,rows:result,
+  allCurrentM5SourceSpansAccountedFor:true,
+  knownThreeGapCoordinatesNotUsedToSelectRecords:true,
+  generatedHLRToOriginalTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  fullEngineeringLineStyleCertified:false,
+  officialV5Authorized:false,signedV5ActionCount:0});
+}
+module.exports={auditC1AllOriginalSourceNativeGaps};
