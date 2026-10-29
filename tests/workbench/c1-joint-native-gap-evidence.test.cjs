@@ -121,3 +121,37 @@ test('batch rejects absent, duplicate, altered and invented native HLR records',
  invented[2]={...invented[2],sourceEdgeId:'C1SkewTetra::B|C'};
  assert.throws(()=>batch({geometry,records:invented}),/missing or duplicated/);
 });
+
+test('actual-shaped HLR native IsSame and transverse dyadic drift remain unsigned together',()=>{
+ const {auditC1JointNativeGapFromRealHLR:run}=
+  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2}};
+ const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C']]}};
+ const sourceEdgeId='C1SkewTetra::A|C';
+ const originalBRepSource={sourceEdgeId,
+  occtSourceCurveParameterRange:[0,Math.hypot(3,16,2)],
+  occtSourceCurveFirstPoint3D:points.A,occtSourceCurveLastPoint3D:points.C,
+  originalOCCTBRepVertexXYZMatched:true,occtCurveTypeIndependentlyVerified:true,
+  occtSourceCurve3DEndpointsAndMidpointVerified:true,occtSourceCurveType:'line'};
+ const native=id=>({directlySameOriginalM0VertexId:id,
+  directOriginal3DVertexTopoDSIdentityProven:id!==null});
+ const segment=(from,fromId,edgeSame)=>({
+  view:'W',occtHLRVisibilityClass:'visible-sharp',from,to:{u:16,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId,originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0,1]}],
+  directNativeVertexOriginalSource:[native(fromId),native('C')],
+  actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:edgeSame
+ });
+ const input={geometry,view:'W',sourceEdgeId,originalBRepSource,
+  uncoveredIntervals:[[0,1.1102230246251565e-16]],hiddenSegments:[]};
+ const nativeSame=run({...input,visibleSegments:[
+  segment({u:0,v:0},'A',true)]});
+ assert.equal(nativeSame.rows[0].nativeGeneratedOriginalVertexAtGapStart,true);
+ assert.equal(nativeSame.rows[0].generatedToOriginalTopoDSHistoryProven,false);
+ assert.equal(nativeSame.signedV5ActionCount,0);
+ const drift=run({...input,visibleSegments:[
+  segment({u:8.881784197001252e-16,v:0},null,false)]});
+ assert.equal(drift.rows[0].transversePaperEndpointInsideGap,true);
+ assert.equal(drift.rows[0].diagnosis,'off-line-paper-candidate-without-generated-history');
+ assert.equal(drift.rows[0].completeOriginalSourceIntervalCoverageProven,false);
+});
