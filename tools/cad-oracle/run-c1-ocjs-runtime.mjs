@@ -372,6 +372,23 @@ for(const [index,geometry] of general.entries()){
  assert.equal(globalScopedRebind?.schema,
   'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
  const nativePhysical3DEndpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+ const originalPhysicalTopology=cad.originalNativeVertexTopology;
+ assert.equal(originalPhysicalTopology?.schema,
+  'draftai-c1-original-occt-brep-vertex-physical-topology/1');
+ assert.equal(originalPhysicalTopology.sourceGeometryId,geometry.id);
+ assert.equal(originalPhysicalTopology.allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
+ const degrees=Object.fromEntries(Object.keys(geometry.data.points).map(id=>[id,0]));
+ for(const edge of geometry.data.edges)for(const id of edge)degrees[id]++;
+ const nativeOccurrences=2*geometry.data.edges.length;
+ const expectedOriginalNativeShared=Object.values(degrees).reduce((sum,n)=>
+  sum+n*(n-1)/2,0);
+ assert.equal(originalPhysicalTopology.originalBRepVertexOccurrencesChecked,nativeOccurrences);
+ assert.equal(originalPhysicalTopology.originalSamePhysicalVertexTopoDSPairs,
+  expectedOriginalNativeShared);
+ assert.equal(originalPhysicalTopology.originalDistinctPhysicalVertexTopoDSPairs,
+  nativeOccurrences*(nativeOccurrences-1)/2-expectedOriginalNativeShared);
+ assert.equal(originalPhysicalTopology.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(originalPhysicalTopology.signedV5ActionCount,0);
  assert.equal(nativePhysical3DEndpoints?.schema,
   'draftai-c1-global-generated-hlr-to-original-m0-3d-endpoint-junction-ledger/1');
  assert.equal(nativePhysical3DEndpoints.sourceGeometryId,geometry.id);
@@ -384,6 +401,9 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativePhysical3DEndpoints.counts.uniqueOriginalSourceGlobalEdgesExamined,
   globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
  assert.equal(nativePhysical3DEndpoints.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
+ assert.equal(nativePhysical3DEndpoints.originalNativeBRepPhysicalVertexTopologyVerified,true);
+ assert.equal(nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape,
+  nativePhysical3DEndpoints.counts.originalModelPhysicalJunctionPairCandidates);
  assert.equal(
   nativePhysical3DEndpoints.counts.realNativeGeneratedVertexGraphPairsChecked,
   cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs+
@@ -2932,6 +2952,14 @@ for(const [index,geometry] of general.entries()){
     nativePhysicalEnd.counts.missingM4EndpointsStillLackingIndependentNativeProof,
    actualNativeHiddenEdgesWithOriginalPhysicalVertexEndpointsPositive:
     nativePhysicalEnd.counts.nativeHiddenEdgesWithAllOriginal3DVertexEndpointsVerified,
+   originalBRepPhysicalVertexTShapesIndependentlyVerified:
+    originalPhysicalTopology.originalM0SourceVertexIds.length,
+   originalBRepSamePhysicalVertexNativeTShapePairs:
+    originalPhysicalTopology.originalSamePhysicalVertexTopoDSPairs,
+   globalHLREndpointPairsWithIndependentOriginalBRepPhysicalTShape:
+    nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape,
+   originalBRepPhysicalJoinsDespiteDistinctGeneratedHLRTShapes:
+    nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes,
    actualGeneratedOCCTHLRSharpEdgesTopologicallyAudited:
     nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges,
    nativeGeneratedActualIsSameSharedTopoDSVertexPairs:
