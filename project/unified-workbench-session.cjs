@@ -25,6 +25,8 @@ const {auditC3WMirrorSourceOutlineUnion}=
  require('../workbench/c3-w-mirror-source-outline-union.cjs');
 const {auditC3WMirrorExitOutlineConcordance}=
  require('../workbench/c3-w-mirror-exit-outline-concordance.cjs');
+const {auditC3WAllLateralProjectionCollisions}=
+ require('../workbench/c3-w-lateral-projection-collision-inventory.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
 const {auditC3JointTopologyVisibility}=
  require('../workbench/c3-joint-topology-visibility.cjs');
@@ -259,6 +261,24 @@ function createUnifiedProjectSession(){
      exitEvidence:wBooleanForwardExitDepth,
      outlineEvidence:wMirrorSourceOutlineUnion
     });
+    const wLateralCollisionInventory=auditC3WAllLateralProjectionCollisions({
+     input,revision:latest.revision,
+     mirrorExitEvidence:wMirrorExitOutlineConcordance
+    });
+    if(wLateralCollisionInventory.revision!==latest.revision||
+       wLateralCollisionInventory.solidOperation!==(solidOperation||'unselected')||
+       wLateralCollisionInventory.officialV5Authorized!==false||
+       wLateralCollisionInventory.officialEngineeringLineStylesVerified!==false||
+       wLateralCollisionInventory.otherFiniteCapAndCompositeContourOcclusionProven!==false||
+       wLateralCollisionInventory.closedCenterAndRadicalEndpointTopologyCertified!==false||
+       (wMirrorExitOutlineConcordance.checkedMirroredAtomicOpenCells>0&&
+        (wLateralCollisionInventory.allPositiveWSourceCurveProjectionCollisionsClassified!==true||
+         wLateralCollisionInventory.entireOriginalM3OpenSourceInventoryExactlyOnce!==true||
+         wLateralCollisionInventory.currentM3LateralSourceBranchCount!==
+           compiled.sourceM3.branchCount||
+         wLateralCollisionInventory.checkedMirrorAtomicOpenCells!==
+           wMirrorExitOutlineConcordance.checkedMirroredAtomicOpenCells)))
+     throw new Error('C3 W 全来源相贯曲线投影重合与原始 M3 参数库存不一致');
     if(wMirrorExitOutlineConcordance.revision!==latest.revision||
        wMirrorExitOutlineConcordance.solidOperation!==(solidOperation||'unselected')||
        wMirrorExitOutlineConcordance.officialV5Authorized!==false||
@@ -390,7 +410,7 @@ function createUnifiedProjectSession(){
      wCriticalPointRays,wBooleanForwardExitDepth,
      wMirrorDepthEvidence,wMirrorCapContactPartition,
      wMirrorSourceOutlineUnion,wMirrorExitOutlineConcordance,
-     analyticRayPaperReview,
+     wLateralCollisionInventory,analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
