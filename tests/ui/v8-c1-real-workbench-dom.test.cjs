@@ -49,8 +49,6 @@ test('C1 is a REAL reviewed task within same local project and original V5 playe
   const blankScaffold=$('v8-c1-vertices').value;
   assert.equal(blankScaffold.split('\n').length,8);
   assert.deepEqual(blankScaffold.split('\n').map(line=>line.split(',')[0]),IDS);
-  assert.ok(blankScaffold.split('\n').every(line=>/^V[01]{3},,,,\$/.test(line)===false),
-   'no real or synthetic dimensions may be inferred');
   assert.ok(blankScaffold.split('\n').every(line=>/^V[01]{3},,,,$/.test(line)),
    'the template must contain IDs and four EMPTY coordinate fields');
   assert.equal($('v8-review-run').disabled,true,'a blank scaffold cannot be solved');
