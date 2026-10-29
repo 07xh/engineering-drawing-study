@@ -1838,6 +1838,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       '；已核对透明（前方无实体内部）'+partial.selectedRays.certifiedClearCount+
       '、不透明 '+partial.selectedRays.certifiedOpaqueCount+'、未定 '+
       partial.selectedRays.undeterminedCount+'。'+
+      (partial.rayConcordance?.allAnalyticSourceBranchOpenCellsCrossChecked?
+       ' 独立 M5/实体布尔射线交叉核验 '+partial.rayConcordance.checkedOpenCells+
+       ' 个正长度解析开区间，V/H/W 均无数学矛盾（端点与正式线型仍未签收）。':
+       ' 未选择实体运算或局部来源尚未证明，独立射线交叉核验未放行。')+
       (partial.analyticRayPaperReview?
        ' 三视图曲线已绑定严格体积射线的解析开区间 '+
        partial.analyticRayPaperReview.sourceParameterIntervalCount+

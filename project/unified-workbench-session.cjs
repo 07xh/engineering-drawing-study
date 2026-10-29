@@ -222,6 +222,23 @@ function createUnifiedProjectSession(){
      input,revision:latest.revision,solidOperation
     });
     const selectedRays=joint.selectedBooleanRayEvidence;
+    const rayConcordance=joint.booleanRayConcordance;
+    if(!rayConcordance||
+       rayConcordance.revision!==latest.revision||
+       rayConcordance.solidOperation!==(solidOperation||'unselected')||
+       rayConcordance.officialLineStylesVerified!==false||
+       rayConcordance.finalV5CurveAuthorized!==false||
+       rayConcordance.closedEndpointContinuityCertified!==false||
+       rayConcordance.completeProjectedFeatureOcclusionCertified!==false||
+       rayConcordance.sourceRayContradictions!==0||
+       (solidOperation!==null?
+        (rayConcordance.status!=='scoped-boolean-versus-geometric-open-ray-concordance'||
+         rayConcordance.allAnalyticSourceBranchOpenCellsCrossChecked!==true||
+         rayConcordance.checkedOpenCells<3*compiled.sourceM3.branchCount||
+         rayConcordance.viewCounts.length!==3):
+        (rayConcordance.status!=='boolean-ray-proof-not-available'||
+         rayConcordance.checkedOpenCells!==0)))
+     throw new Error('C3 当前三视图独立 M5 与布尔射线联合核验未通过');
     const analyticRayPaperReview=reviewC3AnalyticBooleanRayPaper({
      linked,sourceM3:compiled.sourceM3,selectedRays,
      revision:latest.revision,solidOperation
@@ -268,7 +285,8 @@ function createUnifiedProjectSession(){
     clock=compiled.player;
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
-     evidence:compiled,sourceAcceptance,joint,selectedRays,analyticRayPaperReview,
+     evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
+     analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,

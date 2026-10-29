@@ -57,6 +57,9 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/布尔体积射线区间/);
   assert.match($('v7-proof').textContent,/intersection/);
   assert.match($('v7-proof').textContent,/三视图曲线已绑定严格体积射线的解析开区间/);
+  assert.match($('v7-proof').textContent,/独立 M5\/实体布尔射线交叉核验 \d+ 个正长度解析开区间/);
+  assert.match($('v7-proof').textContent,/V\/H\/W 均无数学矛盾/);
+  assert.match($('v7-proof').textContent,/端点与正式线型仍未签收/);
   $('v7-guides').checked=true;fire('v7-guides','change');
   assert.equal($('v8-result-status').dataset.state,'partial');
   assert.equal($('v7-play').disabled,false);
