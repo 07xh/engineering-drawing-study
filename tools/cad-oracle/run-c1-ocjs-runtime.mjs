@@ -984,6 +984,34 @@ for(const [index,geometry] of general.entries()){
  assert.equal(native3DM5.officialV5Authorized,false);
  console.error('REAL C1 M5 ORIGINAL NATIVE 3D VHW PARTITION '+geometry.id+': '+
   JSON.stringify(native3DM5.counts));
+
+ // The genuine native 3D source-scoped HLR class is a NEGATIVE paper
+ // candidate filter. Check the consumer on real pinned WASM data: it may
+ // reject a false co-projected class, never certify surviving 2D ownership.
+ const omittedClassRows=allOriginalSourceNativeGapLedger.
+  unrepresentedM0NativeHLRCandidateForensics;
+ const classVetoCounts={raw:0,compatible:0,excluded:0};
+ for(const row of omittedClassRows){
+  const veto=row.native3DClassPaperCandidateVeto;
+  assert.equal(veto?.view,row.view);
+  assert.equal(veto.sourceEdgeId,row.sourceEdgeId);
+  assert.equal(veto.originalWholeSolidPaperCandidateCount,
+   row.nativeHLRPaperCandidateCount);
+  assert.equal(veto.fullOriginalSourceHistoryCertified,false);
+  assert.equal(veto.globalContinuousVisibilityCertified,false);
+  assert.equal(veto.signedV5Action,false);
+  assert.equal(row.native3DClassCompatiblePaperCandidateCount,
+   veto.native3DClassCompatiblePaperCandidates.length);
+  assert.equal(row.native3DClassContradictoryPaperCandidateCount,
+   veto.paperCandidatesExcludedByNative3DClassAbsence.length);
+  classVetoCounts.raw+=veto.originalWholeSolidPaperCandidateCount;
+  classVetoCounts.compatible+=veto.native3DClassCompatiblePaperCandidates.length;
+  classVetoCounts.excluded+=veto.paperCandidatesExcludedByNative3DClassAbsence.length;
+ }
+ assert.equal(classVetoCounts.raw,classVetoCounts.compatible+classVetoCounts.excluded);
+ console.error('REAL C1 NATIVE 3D CLASS PAPER CANDIDATE VETO '+geometry.id+': '+
+  JSON.stringify(classVetoCounts));
+
  // Genuine pinned WASM CAD and the SAME M5 source gap ledger now feed an
  // independently recomputed, positive M0 exact convex observer-ray theorem.
  // This does not fill the missing native HLR generated TopoDS edges.
