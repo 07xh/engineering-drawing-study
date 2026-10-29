@@ -131,6 +131,8 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  let wholeSolidNativeGeneratedEdgeCount=null;
  let unclaimedWholeSolidGeneratedEdgeOrdinals=null;
  if(wholeSolidCounts!==undefined){
+  if(new Set(matches.map(m=>m.view)).size>1)
+   throw new RangeError('one whole-solid inventory must belong to one HLR view');
   if(!wholeSolidCounts||typeof wholeSolidCounts!=='object'||
      !['visible-sharp','hidden-sharp'].every(klass=>
       Number.isSafeInteger(wholeSolidCounts[klass])&&
