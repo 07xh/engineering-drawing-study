@@ -6,9 +6,14 @@ const {auditC1GlobalNativeHLROriginalM0EndpointLinks:audit}=
 const baseGeometry={id:'g',kind:'mesh',space:'model-3d',unit:'mm',data:{
  points:{A:{x:0,y:0,z:0},B:{x:12,y:5,z:7},C:{x:6,y:3,z:11}},
  edges:[['A','B']]}};
-function setup({two=false,rounded=false,missingPartition=false}={}){
+function setup({two=false,rounded=false,missingPartition=false,tetra=false}={}){
  const geometry=structuredClone(baseGeometry);
  if(two)geometry.data.edges.push(['A','C']);
+ if(tetra){
+  geometry.data.points.D={x:5,y:6,z:23};
+  geometry.data.edges=[['A','B'],['A','C'],['A','D'],['B','C'],['B','D'],['C','D']];
+  geometry.data.faces=[['A','B','C'],['A','B','D'],['A','C','D'],['B','C','D']];
+ }
  const sources=geometry.data.edges.map(([a,b])=>({
   id:geometry.id+'::'+[a,b].sort().join('|'),edge:[a,b]
  }));
@@ -289,5 +294,46 @@ test('stale or forged original physical BRep TShape graph cannot certify generat
   const x=attachOriginalPhysicalBRepVertexTopology(setup({two:true}));
   mutate(x.cad.originalNativeVertexTopology);
   assert.throws(()=>audit(x),/original native 3D vertex topology/);
+ }
+});
+
+function attachOriginalFaceAdjacency(x){
+ const sourceEdgeId=(a,b)=>x.geometry.id+'::'+[a,b].sort().join('|');
+ const faces=x.geometry.data.faces.map((f,i)=>({
+  originalM0FaceIndex:i,
+  originalM0BoundarySourceEdgeIds:f.map((a,j)=>
+   sourceEdgeId(a,f[(j+1)%f.length])).sort()
+ }));
+ const edges=x.geometry.data.edges.map(([a,b])=>({
+  sourceEdgeId:sourceEdgeId(a,b),
+  originalM0AdjacentFaceIndices:faces.filter(f=>
+   f.originalM0BoundarySourceEdgeIds.includes(sourceEdgeId(a,b)))
+   .map(f=>f.originalM0FaceIndex)
+ })).sort((a,b)=>a.sourceEdgeId.localeCompare(b.sourceEdgeId));
+ x.cad.originalNativeFaceAdjacency={
+  schema:'draftai-c1-original-occt-brep-face-edge-adjacency/1',
+  sourceGeometryId:x.geometry.id,nativeBRepFacesChecked:faces.length,
+  nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces:edges.length,
+  allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified:true,
+  faces,edges,generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  signedV5ActionCount:0
+ };
+ return x;
+}
+test('M4 consumes real original BRep face adjacency without authorizing HLR history or V5',()=>{
+ const x=attachOriginalFaceAdjacency(setup({tetra:true})),r=audit(x);
+ assert.equal(r.originalNativeBRepFaceEdgeAdjacencyVerified,true);
+ assert.equal(r.counts.originalBRepSourceEdgesWithNativeFaceAdjacencyVerified,6);
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('M4 rejects forged native face adjacency or false generated-edge history',()=>{
+ for(const mutate of [
+  x=>{x.cad.originalNativeFaceAdjacency.edges[0].originalM0AdjacentFaceIndices=[1,3];},
+  x=>{x.cad.originalNativeFaceAdjacency.faces[0].originalM0BoundarySourceEdgeIds.pop();},
+  x=>{x.cad.originalNativeFaceAdjacency.generatedHLREdgeToOriginalTopoDSHistoryCertified=true;}
+ ]){
+  const x=attachOriginalFaceAdjacency(setup({tetra:true}));
+  mutate(x);assert.throws(()=>audit(x),/native BRep face\/edge adjacency/);
  }
 });
