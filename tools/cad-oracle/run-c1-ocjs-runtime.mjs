@@ -1024,6 +1024,25 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.counts.independentOriginalOCCTCurvePositiveGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
+ // Reconcile every REAL source-filtered 3D HLR visibility class with its
+ // independent full original M0 ray theorem, not just the omitted source
+ // rows or positive native gaps. Concordance never grants generated 2D
+ // edge ownership, global frontmost ordering or official V5.
+ const nativeRayConcordance=positiveOriginalGapRays.native3DOriginalRayClassConcordance;
+ assert.equal(nativeRayConcordance.schema,
+  'draftai-c1-native-3d-original-ray-class-concordance/1');
+ assert.equal(nativeRayConcordance.actualNativeSourceScopedHLRAvailable,true);
+ assert.equal(nativeRayConcordance.counts.projectedOriginalSourceViewsExamined,
+  allOriginalSourceNativeGapLedger.native3DSourceViewLedger.counts.
+   projectedOriginalSourceViews);
+ assert.ok(nativeRayConcordance.rows.every(row=>
+  row.originalToGenerated2DTopoDSHistoryCertified===false&&
+  row.globalCoProjectedVisibilityCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ assert.equal(nativeRayConcordance.officialV5Authorized,false);
+ console.error('REAL C1 NATIVE 3D/M0 RAY CLASS CONCORDANCE '+geometry.id+': '+
+  JSON.stringify(nativeRayConcordance.counts));
+
  assert.ok(positiveOriginalGapRays.rows.every(row=>
   row.originalSourceParameterGap[0]<row.originalSourceParameterGap[1]&&
   row.nativeHLRGeneratedEdgeCoversGap===false&&
