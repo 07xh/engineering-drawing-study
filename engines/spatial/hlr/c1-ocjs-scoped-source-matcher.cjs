@@ -148,6 +148,9 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
     if(!found)unclaimedWholeSolidGeneratedEdgeOrdinals.push(
      Object.freeze({hlrClass:klass,ordinal}));
    }
+  // Each native generated ordinal is a distinct TopoDS object in the
+  // whole-solid compound. The same ordinal cannot be consumed twice even
+  // if the original source label is identical and scoped output is split.
   for(const r of rows)if(r.nativeWholeSolidEdgeOrdinal>=wholeSolidCounts[r.hlrClass])
    throw new RangeError('scoped source claims nonexistent whole-solid native HLR edge');
  }
