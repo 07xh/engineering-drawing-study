@@ -921,6 +921,15 @@ for(const [index,geometry] of general.entries()){
  assert.equal(allOriginalSourceNativeGapLedger.rows.length,
   fullM5SourceSpanCount);
  assert.equal(allOriginalSourceNativeGapLedger.allCurrentM5SourceSpansAccountedFor,true);
+ const absentM0=allOriginalSourceNativeGapLedger.unrepresentedOriginalM0ProjectedSources;
+ assert.equal(allOriginalSourceNativeGapLedger.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,
+  absentM0.length===0);
+ assert.ok(absentM0.every(x=>['V','H','W'].includes(x.view)&&
+  x.sourceEdgeId.startsWith(geometry.id+'::')&&
+  x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
+  !audited.views[x.view].intervals.some(row=>row.sourceEdgeId===x.sourceEdgeId)));
+ console.error('REAL C1 M0 SOURCES ABSENT FROM M5 '+geometry.id+': '+
+  JSON.stringify(absentM0.map(x=>({view:x.view,source:x.sourceEdgeId}))));
  assert.equal(allOriginalSourceNativeGapLedger.generatedHLRToOriginalTopoDSHistoryCertified,false);
  assert.equal(allOriginalSourceNativeGapLedger.signedV5ActionCount,0);
  console.error('REAL C1 ALL ORIGINAL SOURCE GAP INVENTORY '+geometry.id+': '+
