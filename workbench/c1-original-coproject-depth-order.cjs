@@ -156,13 +156,14 @@ function auditC1OriginalCoProjectedDepthOrder({
      originalParameterRange[1]>originalParameterRange[0])||
    !Array.isArray(peers)||peers.length>1024)
   throw new TypeError('bounded current original 3D source and M4 peers required');
- const sources=new Map();
+ const sources=new Map(),sourceVertices=new Map();
  for(const edge of geometry.data.edges){
   const [a,b]=edge,k=edgeKey(geometry.id,a,b);
   if(sources.has(k)||!geometry.data.points[a]||
       !geometry.data.points[b])
    throw new TypeError('duplicate or missing genuine original 3D source');
   sources.set(k,[geometry.data.points[a],geometry.data.points[b]]);
+  sourceVertices.set(k,[a,b]);
  }
  if(!sources.has(sourceEdgeId))
   throw new RangeError('unrecognized original source edge identity');
@@ -173,11 +174,26 @@ function auditC1OriginalCoProjectedDepthOrder({
  const [a,b]=coords(sourceEdgeId,originalParameterRange);
  const p=project(a)[view],q=project(b)[view];
  const du=q.u-p.u,dv=q.v-p.v,len2=du*du+dv*dv;
- if(!Number.isFinite(len2)||len2<=1e-16)
-  return frozen({status:'collapsed-source-projection',view,
-   sourceEdgeId,aliasesExamined:0,comparisons:[],
+ if(!Number.isFinite(len2)||len2<=1e-16){
+  const original=sources.get(sourceEdgeId),range=originalParameterRange;
+  const from=exactOriginalPointOnStraightEdge(original[0],original[1],range[0],view),
+   to=exactOriginalPointOnStraightEdge(original[0],original[1],range[1],view);
+  const mathematicallyPositive=cmpExact(from.u,to.u)!==0||
+   cmpExact(from.v,to.v)!==0;
+  // A one-ULP/subpixel source is NOT a point, even if the JS-rendered
+  // endpoints coincide. Preserve its original parameter interval and
+  // explicitly withhold a drawable engineering stroke.
+  return frozen({status:mathematicallyPositive?
+   'positive-original-dyadic-projection-below-paper-resolution-held':
+   'collapsed-source-projection',view,sourceEdgeId,
+   originalParameterRange:[...originalParameterRange],
+   originalDyadicProjectedIntervalPositive:mathematicallyPositive,
+   renderedPaperSegmentNotCertified:mathematicallyPositive,
+   aliasesExamined:0,comparisons:[],
    wholeIntervalFrontmostCertified:false,
-   visibleSourceCoversEntireLine:false});
+   visibleSourceCoversEntireLine:false,
+   engineeringLineStyleSigned:false,signedV5ActionCount:0});
+ }
  const candidateProjectionLength=Math.sqrt(len2);
  const ray=FIRST_ANGLE_OBSERVER_RAYS[view];
  const fraction=t=>((t.u-p.u)*du+(t.v-p.v)*dv)/len2;
@@ -229,6 +245,29 @@ function auditC1OriginalCoProjectedDepthOrder({
   }
   const front=relation.status==='candidate-strictly-front',
    behind=relation.status==='candidate-strictly-behind';
+  // A single endpoint tie at a genuine shared M0 vertex permits a
+  // strict OPEN-interval ordering: affine depth cannot switch sign in
+  // the interior when the other endpoint has a strict sign.
+  // This is NOT an entire CLOSED-interval ordering or a generated HLR
+  // TopoDS identity witness. Paper-only coincidence is insufficient.
+  const originalIds=sourceVertices.get(sourceEdgeId),
+   peerIds=sourceVertices.get(peer.sourceEdgeId);
+  const original3DVertexTies=relation.depthEndSigns.map((x,i)=>{
+   if(x!==0)return false;
+   const end=originalParameterRange[i];
+   const vertex=end===0?originalIds[0]:
+    end===1?originalIds[1]:null;
+   return vertex!==null&&(
+    vertex===peerIds[0]&&peer.originalParameterRange[0]===0||
+    vertex===peerIds[1]&&peer.originalParameterRange[1]===1);
+  });
+  const signs=relation.depthEndSigns;
+  const hasVertexTie=signs.some(x=>x===0)&&signs.every((x,i)=>
+   x!==0||original3DVertexTies[i]);
+  const strictlyFrontOpen=hasVertexTie&&signs.some(x=>x===1)&&
+   signs.every(x=>x>=0);
+  const strictlyBehindOpen=hasVertexTie&&signs.some(x=>x===-1)&&
+   signs.every(x=>x<=0);
   // The full binary64 rational sign is authoritative. Approximate model
   // depth values are display-only and can underflow to zero; never use
   // them to decide the visibility ordering.
@@ -248,8 +287,16 @@ function auditC1OriginalCoProjectedDepthOrder({
     behindCertifiedVisible=true;
   comparisons.push({...base,
    status:front?'candidate-strictly-front':
-    behind?'candidate-strictly-behind':'depth-switch-or-tie',
+    behind?'candidate-strictly-behind':
+    strictlyFrontOpen?'candidate-strictly-front-open-at-original-3d-vertex':
+    strictlyBehindOpen?'candidate-strictly-behind-open-at-original-3d-vertex':
+     'depth-switch-or-tie',
    depthDifferenceAtEndsMm:[startDepth,endDepth],
+   exactDepthTiesAtOriginalShared3DVertex:original3DVertexTies,
+   strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction:
+    strictlyFrontOpen||strictlyBehindOpen,
+   closedSourceDepthOrderNotImpliedByOriginalVertexOpenProof:
+    strictlyFrontOpen||strictlyBehindOpen,
    exactBinary64RationalOriginalDepthDifferenceEndSigns:
     relation.depthEndSigns,
    strictOriginal3DDepthOrderNoToleranceUsed:true,
@@ -273,6 +320,14 @@ function auditC1OriginalCoProjectedDepthOrder({
    status==='no-positive-projected-source-alias',
   visibleSourceCoversEntireLine:
    status==='suppressed-by-front-original-visible-source',
+  originalPhysicalVertexOpenDepthOrderingProven:
+   comparisons.some(row=>
+    row.strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction===true)&&
+   comparisons.every(row=>
+    row.status==='candidate-strictly-front'||
+    row.status==='candidate-strictly-behind'||
+    row.strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction===true),
+  originalVertexTieDoesNotCertifyClosedIntervalVisibility:true,
   theorem:'original-straight-source-3d-affine-depth-order-all-projected-points',
   exactDyadicDepthOrderRequiresStrictWholeCoProjectedPaperSupport:true,
   originalM0AffineSourceAndM4CutParametersComparedExactly:true,
