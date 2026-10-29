@@ -518,6 +518,10 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
   const [a,b]=edge.map(id=>x.geometry.data.points[id]);
   return {sourceEdgeId:x.geometry.id+'::'+[...edge].sort().join('|'),
    occtSourceCurveType:'line',
+   // Synthetic test BRep agrees exactly with this fixture's original M0
+   // vertices. This is not a claim about any production generated HLR edge.
+   originalOCCTBRepVertexXYZMatched:true,
+   fromOCCT3D:{...a},toOCCT3D:{...b},
    occtSourceCurve3DEndpointsAndMidpointVerified:true,
    occtSourceCurveParameterRange:[0,Math.hypot(
     b.x-a.x,b.y-a.y,b.z-a.z)],
