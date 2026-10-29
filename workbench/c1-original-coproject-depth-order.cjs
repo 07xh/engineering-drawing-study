@@ -69,7 +69,8 @@ function exactOriginalCoProjectedDepthEndSigns({
    product(diff(model[firstAngleDepth.axis],peerDepthStart),denom),
    product(peerDepthDelta,num)
   );
-  comparisons.push(sign(delta)*signDenom*firstAngleDepth.sign);
+  const depthSign=sign(delta);
+  comparisons.push(depthSign===0?0:depthSign*signDenom*firstAngleDepth.sign);
   const fraction=(paper[axis]-s[axis])/(t[axis]-s[axis]);
   approx.push((model[firstAngleDepth.axis]-
    (peerDepthStart+(peerDepthEnd-peerDepthStart)*fraction))*
