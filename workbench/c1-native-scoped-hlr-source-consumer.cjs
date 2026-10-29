@@ -17,6 +17,8 @@ const {auditExactBinary64PaperParameterPair,
  require('./c1-exact-binary64-paper-parameter.cjs');
 const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
+const {projectC1Native3DSourceIntervalsToM4}=
+ require('./c1-native-source-scoped-m4-projection.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -46,6 +48,22 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  const originalVertexIdsBySource=new Map(ids.map((id,i)=>
   [id,geometry.data.edges[i]]));
  const expected=new Set(ids);
+ // Real source-scoped 3D geometry is a stronger, independent M4 input
+ // than an inverse of rounded 2D generated HLR paper endpoints.
+ const nativeM4Available=geometry.kind==='mesh'&&
+  geometry.space==='model-3d'&&geometry.unit==='mm'&&
+  cad.actualOCCTCurveTypeIndependentlyVerified===true&&
+  Array.isArray(cad.originalBRepSourceEdges)&&
+  cad.originalBRepSourceEdges.length===ids.length;
+ const nativeCurveBySource=new Map();
+ if(nativeM4Available){
+  for(const curve of cad.originalBRepSourceEdges){
+   if(!expected.has(curve?.sourceEdgeId)||
+      nativeCurveBySource.has(curve.sourceEdgeId))
+    throw new RangeError('unbound original native 3D curve in M4 source consumer');
+   nativeCurveBySource.set(curve.sourceEdgeId,curve);
+  }
+ }
  if(expected.size!==ids.length)
   throw new RangeError('duplicate original M0 physical source edge');
  const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
@@ -104,7 +122,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   nativeSourceScopedOutputEdges:0,nativeGeneratedIsSameMatches:0,
   paperOnlySourceScopedEdges:0,wholeSolidVisibleEdgesWithoutScopedSource:0,
   wholeSolidHiddenEdgesWithoutScopedSource:0,
-  paperAliasedWholeSolidEdgesWithMultipleOriginalSources:0};
+  paperAliasedWholeSolidEdgesWithMultipleOriginalSources:0,
+  nativeOriginal3DM4SourceViewCandidates:0,
+  nativeOriginal3DM4ProjectedClassSegments:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -284,7 +304,33 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   counts.nativeSourceScopedOutputEdges+=total;
   counts.nativeGeneratedIsSameMatches+=direct;
   counts.paperOnlySourceScopedEdges+=total-direct;
-  views[view]={};
+  // Project actual source-filtered native 3D curve parameters into M4
+  // without inverting received rounded generated HLR paper coordinates.
+  // Still held: generated-edge identity, co-projected depth, GB line type,
+  // ConstructionIntent and the sole formal V5 player.
+  const nativeOriginal3DM4Candidates=[];
+  if(nativeM4Available){
+   for(const source of scoped.rows){
+    const [from,to]=projectedOriginalBySource.get(
+     source.originalPhysicalSourceEdgeId)[view];
+    if(from.u===to.u&&from.v===to.v){
+     if((source.visible3D?.native3DGeneratedCurveIntervals.length??0)!==0||
+        (source.hidden3D?.native3DGeneratedCurveIntervals.length??0)!==0)
+      throw new RangeError('collapsed source cannot emit native 3D line in this view');
+     continue;
+    }
+    const projected=projectC1Native3DSourceIntervalsToM4({
+     geometry,revision:cad.revision,view,
+     sourceEdgeId:source.originalPhysicalSourceEdgeId,
+     originalCurve:nativeCurveBySource.get(source.originalPhysicalSourceEdgeId),
+     scopedRow:source
+    });
+    nativeOriginal3DM4Candidates.push(projected);
+    counts.nativeOriginal3DM4SourceViewCandidates++;
+    counts.nativeOriginal3DM4ProjectedClassSegments+=projected.segments.length;
+   }
+  }
+  views[view]={nativeOriginal3DM4Candidates};
   for(const [klass,item] of Object.entries(classes)){
    const rows=item.sources.map((sources,ordinal)=>({
     wholeSolidHLREdgeOrdinal:ordinal,
@@ -404,6 +450,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   sourceGeometryId:geometry.id,revision:cad.revision,unit:'mm',
   views,counts,
   actualOriginalTopoDSSourceFilteredHLRConsumed:true,
+  nativeOriginal3DToM4ProjectionConsumerAvailable:nativeM4Available,
+  nativeOriginal3DProjectionIsNotGenerated2DSourceHistory:true,
   generatedToOriginalTopoDSFullHistoryCertified:false,
   paperDerivedVisibleHiddenSourceConflictsDetected:
    counts.projectedSourcesWithVisibleHiddenCandidateConflicts>0||
