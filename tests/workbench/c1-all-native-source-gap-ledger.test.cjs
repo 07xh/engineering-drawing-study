@@ -284,8 +284,10 @@ function withNative3D(x){
    }];
    const hidden3D=[];
    return {originalPhysicalSourceEdgeId:id,
-    visible3D:{native3DGeneratedCurveIntervals:visible3D},
-    hidden3D:{native3DGeneratedCurveIntervals:hidden3D},
+    visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:visible3D},
+    hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:hidden3D},
     combinedNative3DSourceParameterPartition:partition3D({
      originalNativeParameterRange:range,
      generatedNativeParameterRanges:visible3D.map(v=>v.nativeOriginalCurveParameterRange)
