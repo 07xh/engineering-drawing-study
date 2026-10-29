@@ -105,7 +105,19 @@ test('C1 is a REAL reviewed task within same local project and original V5 playe
   assert.match($('v8-review-summary').textContent,/角点 V000.*公共 x 坐标不一致/);
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-play').disabled,true);
+  assert.equal($('v8-c1-topology').checked,false,
+   'changing a confirmed C1 vertex must revoke previous human topology signoff');
   assert.equal($('v8-review-run').disabled,true);
+  $('v8-c1-vertices').value=rows;fire('v8-c1-vertices','input');
+  assert.equal($('v8-review-run').disabled,true,
+   'corrected numeric rows cannot silently reuse the old topology declaration');
+  assert.match($('v8-review-preflight').textContent,/拓扑/);
+  $('v8-c1-topology').checked=true;fire('v8-c1-topology','change');
+  assert.equal($('v8-review-run').disabled,false);
+  $('v8-c1-pair').value='VW';fire('v8-c1-pair','change');
+  assert.equal($('v8-c1-topology').checked,false,
+   'changing known-view interpretation also revokes old topology signoff');
+  $('v8-c1-pair').value='VH';fire('v8-c1-pair','change');
   // A different 3D vertex identity may not be forged by paper-copying
   // all four model-mm coordinates of another confirmed source vertex.
   const dup=rows.split('\n');
