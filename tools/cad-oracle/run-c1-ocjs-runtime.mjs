@@ -204,6 +204,25 @@ for(const [index,geometry] of general.entries()){
    x.directlySameOriginalTopoDSInputEdge===true&&
    x.generatedHLREdgeToOriginalTopoDSHistoryProven===false&&
    x.signedV5Action===false));
+   // Original HLRBRep_Data EdgeStatus is indexed by the actual input
+   // TopoDS EdgeMap, independently of projected generated 2D edges.
+   const indexedStatus=api.originalIndexedVisibilityStatus;
+   assert.equal(indexedStatus.availability,
+    'real-native-original-edge-indexed-status-inspected',
+    'pinned WASM must expose original-indexed HLR EdgeStatus');
+   assert.equal(indexedStatus.rows.length,geometry.data.edges.length);
+   const expectedNoncollapsed=geometry.id==='C1rotated'?
+    (view==='V'?12:8):6;
+   assert.equal(indexedStatus.fullSourceClassConcordant,expectedNoncollapsed);
+   assert.equal(indexedStatus.generated2DTopoDSLineageCertified,false);
+   assert.equal(indexedStatus.officialV5Authorized,false);
+   assert.ok(indexedStatus.rows.every(x=>
+    x.originalHLRStatusFullClass!=='undetermined'&&
+    x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false));
+   console.error('REAL C1 ORIGINAL INDEXED HLR EDGE STATUS '+geometry.id+' '+view+': '+
+    JSON.stringify({sources:indexedStatus.rows.length,
+     fullClassConcordant:indexedStatus.fullSourceClassConcordant,
+     stillGeneratedHistoryCertified:false,officialV5:0}));
   // REAL pinned WASM: original TopoDS edge -> source-scoped HLR filter
   // -> whole-solid HLR projected edge. Only native symmetric IsSame is
   // allowed to claim direct generated identity; paper aliases stay held.
