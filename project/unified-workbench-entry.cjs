@@ -1867,6 +1867,12 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个；仍未认证的端盖或数值单元 '+
        partial.wBooleanForwardExitDepth.unresolvedCapOrNumericalCellCount+
        ' 个（不是已签署工程线型）。':'')+
+      (partial.wLateralCollisionInventory?.allPositiveWSourceCurveProjectionCollisionsClassified===true?
+       ' W 相贯曲线全部来源投影重合排查：'+
+       partial.wLateralCollisionInventory.currentM3LateralSourceBranchCount+
+       ' 条原始三维解析分支、'+
+       partial.wLateralCollisionInventory.checkedSourceOpenFlankCount+
+       ' 个前后单侧来源区间逐段完整覆盖；确认不同符号曲线开区间不会投影重合，尚未证明端盖或最终组合轮廓。':'')+
       (partial.wMirrorExitOutlineConcordance?.checkedMirroredAtomicOpenCells>0?
        ' W 三维镜像曲线/实体退出边界联合证明：'+
        partial.wMirrorExitOutlineConcordance.rearFirstExitOntoFrontSourceCellCount+
