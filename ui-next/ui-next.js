@@ -1,9 +1,22 @@
 /* Layout only. Mathematical state belongs to each existing application. */
 (function(root){
  'use strict';
+ function syncNavigation(document,hash){
+  if(!document.getElementById('project-workbench'))return;
+  const name=hash==='#recent'?'我的项目':(['#tools','#all-tools','#plane','#projection','#section','#composite'].includes(hash)?'题型工具':'工作台');
+  for(const link of document.querySelectorAll('.next-sidebar nav a,.next-menu nav a')){
+   if(link.getAttribute('aria-label')===name)link.setAttribute('aria-current','page');
+   else link.removeAttribute('aria-current');
+  }
+ }
  function initUI(document){
   if(document.body.dataset.nextInitialized)return;
   document.body.dataset.nextInitialized='true';
+  if(document.getElementById('project-workbench')){
+   const view=document.defaultView;
+   const sync=()=>syncNavigation(document,view?.location?.hash||'');
+   sync();view?.addEventListener?.('hashchange',sync);
+  }
   const tabs=[...document.querySelectorAll('[data-next-panel-button]')];
   const focusControl=document.querySelector('[data-next-focus]');
   const canvas=document.querySelector('.next-canvas');
@@ -151,7 +164,7 @@
    }
   });
  }
- if(typeof module==='object'&&module.exports)module.exports={initUI};
+ if(typeof module==='object'&&module.exports)module.exports={initUI,syncNavigation};
  else if(root.document){
   if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',()=>initUI(root.document),{once:true});
   else initUI(root.document);

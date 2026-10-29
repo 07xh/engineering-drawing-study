@@ -279,3 +279,12 @@ body.ui-next .v7-paper .v7-spatial svg{max-height:140px}
 @media(min-width:861px){body.ui-next .v7-paper #v7-sheet{position:sticky;top:0;z-index:2;background:#fff}}
 body.ui-next #v7-sheet{scroll-margin-top:75px}
 @media(max-width:1100px){body.ui-next .v8-project-strip{grid-template-columns:minmax(0,1fr)!important}}
+
+/* On narrow screens the form and the paper are separated by scrolling. */
+body.ui-next .v7-mobile-jump{display:none}
+@media(max-width:860px){
+ body.ui-next .v7-mobile-jump{display:flex;position:sticky;top:68px;z-index:40;gap:6px;padding:6px;background:#f3f5f8;border-bottom:1px solid #dce5f1}
+ body.ui-next .v7-mobile-jump a{display:flex;justify-content:center;align-items:center;flex:1 1 0;min-height:44px;padding:6px 4px;border:1px solid #c9d8ed;border-radius:8px;background:#fff;color:#245994;text-decoration:none;font-size:13px;font-weight:600}
+ body.ui-next .v7-mobile-jump a:focus-visible{outline:2px solid #0866ef;outline-offset:2px}
+ body.ui-next :is(#v7-input-section,#v7-paper-section,#v7-sheet,#v7-step-list){scroll-margin-top:132px}
+}
