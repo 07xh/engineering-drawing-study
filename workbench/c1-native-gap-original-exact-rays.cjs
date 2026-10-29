@@ -236,6 +236,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   sourceIntervalsProvenBehindIndependentlyClearOriginalSource:0,
   sourceIntervalsHeldForDepthOrProjectedSplits:0,
   crossSourceProjectedAliasesExamined:0,
+  native3DPositiveIntervalsHeldBeforeM4DepthForBinary64:0,
   canonicalM4CutSourceIntervalsExamined:0,
   canonicalM4CutSourceIntervalsFullyPartitioned:0,
   canonicalM4CutSubspansExamined:0,
@@ -262,6 +263,17 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
       peer.originalOpenEdgeStrictInteriorOcclusionProven===true?
        'single-opaque-solid-whole-open-ray-strictly-hidden':'undetermined'
     }));
+   // Do not silently drop positive native OCCT intervals whose normalized
+   // [0,1] or paper endpoints are unrepresentable as binary64 segments.
+   // Those intervals are distinct from M5 gaps and cannot enter depth
+   // competition, source-coverage certification or V5 by rounding.
+   const held=m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation;
+   if(!Array.isArray(held)||held.some(x=>
+      !Array.isArray(x.originalNative3DParameterRange)||
+      !(x.originalNative3DParameterRange[1]>x.originalNative3DParameterRange[0])||
+      x.engineeringLineStyle!=='undetermined'||x.signedV5Action!==false))
+    throw new RangeError('invalid native positive intervals held before M4 depth');
+   m4DepthCounts.native3DPositiveIntervalsHeldBeforeM4DepthForBinary64+=held.length;
    const rows=m4.segments.map(segment=>{
     const order=auditC1OriginalCoProjectedDepthOrder({
      geometry,view,sourceEdgeId,
@@ -829,7 +841,12 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    const nativeM4GapCoverage=nativeM4===null?null:
     exactCandidateIntervalCoverage(range,nativeM4.segments.map(x=>
      x.originalM0UnitParameterRange));
-   if(nativeM4GapCoverage?.entireOriginalParameterIntervalCovered===true)
+   // Rounded normalized neighboring segments can appear to cover a
+   // positive M5 gap while a positive native OCCT subspan was lost.
+   // Require a complete, representable original-source M4 inventory,
+   // not just the rounded candidate union across the requested gap.
+   if(nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+      nativeM4GapCoverage?.entireOriginalParameterIntervalCovered===true)
     counts.positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection++;
    const nativePartition=nativePartitionFor(entry.view,entry.sourceEdgeId);
    if(nativePartition?.exactNative3DCombinedParameterPartitionComplete===true)
@@ -848,6 +865,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
     realNative3DM4OriginalParameterGapCoverage:nativeM4GapCoverage,
+    nativeOriginalM4PositiveIntervalsHeldForBinary64:
+     nativeM4?.M4ProjectedNative3DIntervalsHeldForBinary64Representation??[],
     native3DM4CandidateDoesNotCertifyGenerated2DHistory:true,
     completeRealNative3DSourceParameterPartition:
      nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
