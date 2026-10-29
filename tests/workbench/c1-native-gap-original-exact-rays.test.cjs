@@ -511,3 +511,54 @@ test('a direct native IsSame claim with opposite exact original ray class cannot
  assert.equal(row.engineeringLineStyle,'undetermined');
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('independent native 3D class veto and exact original ray intersect without signing omitted M0',()=>{
+ const {auditC1Native3DSourceScopedIntervals:partition}=
+  require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
+ const g=tetra(),input=fixture(g,[]),sourceEdgeId=id(g,['A','C']);
+ input.cad.views.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.hiddenSharpViews.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.nativeSourceScopedSharpOutputByView={};
+ for(const view of ['V','H','W']){
+  const rows=input.cad.originalBRepSourceEdges.map(src=>{
+   const range=src.occtSourceCurveParameterRange;
+   const edge={
+    nativeSourceFilterOriginalEdgeId:src.sourceEdgeId,
+    nativeOriginalCurveParameterRange:[...range],
+    native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+    originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
+   };
+   return {
+    originalPhysicalSourceEdgeId:src.sourceEdgeId,
+    visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:[edge]},
+    hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:[]},
+    combinedNative3DSourceParameterPartition:partition({
+     originalNativeParameterRange:range,
+     generatedNativeParameterRanges:[range]
+    })
+   };
+  });
+  input.cad.nativeSourceScopedSharpOutputByView[view]={
+   schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
+   originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap:true,rows
+  };
+ }
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(r=>
+  r.view==='V'&&r.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRPaperCandidateCount,2);
+ assert.equal(row.native3DClassExcludedPaperAliasCount,1);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  native3DClassExcludedPaperAliases,1);
+ assert.ok(row.native3DAndRayCompatibleCandidateCount<=
+  row.rayCompatibleCandidateCount);
+ assert.ok(row.nativeHLRCandidateExactBinary64AndRayDiagnostics.some(x=>
+  x.hlrClass==='hidden-sharp'&&
+  x.native3DClassVetoExcludesThisSourcePaperAlias===true));
+ assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(row.signedV5Action,false);
+ assert.equal(out.officialV5Authorized,false);
+});
