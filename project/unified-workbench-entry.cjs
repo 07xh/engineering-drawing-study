@@ -1842,6 +1842,11 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 独立 M5/实体布尔射线交叉核验 '+partial.rayConcordance.checkedOpenCells+
        ' 个正长度解析开区间，V/H/W 均无数学矛盾（端点与正式线型仍未签收）。':
        ' 未选择实体运算或局部来源尚未证明，独立射线交叉核验未放行。')+
+      (partial.wCriticalPointRays?.everyCurrentAnalyticWRootEnumerated?
+       ' W 视图内部解析切换点 '+partial.wCriticalPointRays.internalSourceSwitchPointCount+
+       ' 个，已独立核验点位严格体积射线 '+
+       partial.wCriticalPointRays.certifiedPointRayCount+' 个，仍未签收曲线端点、投影重合和标准线型。':
+       ' W 视图内部解析切换点尚无可授权的实体射线证明。')+
       (partial.analyticRayPaperReview?
        ' 三视图曲线已绑定严格体积射线的解析开区间 '+
        partial.analyticRayPaperReview.sourceParameterIntervalCount+

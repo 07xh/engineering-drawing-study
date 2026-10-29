@@ -223,6 +223,24 @@ function createUnifiedProjectSession(){
     });
     const selectedRays=joint.selectedBooleanRayEvidence;
     const rayConcordance=joint.booleanRayConcordance;
+    const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
+    if(!wCriticalPointRays||
+       wCriticalPointRays.revision!==latest.revision||
+       wCriticalPointRays.solidOperation!==(solidOperation||'unselected')||
+       wCriticalPointRays.officialEngineeringLineStylesVerified!==false||
+       wCriticalPointRays.finalV5Authorized!==false||
+       wCriticalPointRays.closedSourceCurveEndpointAndCapContactVisibilityCertified!==false||
+       wCriticalPointRays.globalProjectedFeatureDepthAndOcclusionCertified!==false||
+       (solidOperation!==null?
+        (wCriticalPointRays.everyCurrentAnalyticWRootEnumerated!==true||
+         wCriticalPointRays.internalSourceSwitchPointCount!==
+          wCriticalPointRays.pointRays.length||
+         wCriticalPointRays.certifiedPointRayCount+
+          wCriticalPointRays.unresolvedPointRayCount!==
+          wCriticalPointRays.internalSourceSwitchPointCount):
+        (wCriticalPointRays.status!=='not-covered'||
+         wCriticalPointRays.internalSourceSwitchPointCount!==0)))
+     throw new Error('C3 W 临界解析点严格体积射线与当前来源修订不一致');
     if(!rayConcordance||
        rayConcordance.revision!==latest.revision||
        rayConcordance.solidOperation!==(solidOperation||'unselected')||
@@ -286,6 +304,7 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
+     wCriticalPointRays,
      analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
