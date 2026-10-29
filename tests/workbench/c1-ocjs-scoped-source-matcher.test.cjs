@@ -109,3 +109,46 @@ test('missing IsPartner binding is explicitly reported as unsupported without ch
  assert.deepEqual(r.globalPartnerGeneratedTopoDSOrdinals,[]);
  assert.equal(r.partnerCandidateDoesNotProveOriginalSourceHistory,true);
 });
+
+test('V/H/W tiny disjoint source-scoped HLR fragments cannot borrow whole-solid paper aliases',()=>{
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  x.globalSegments=[edge(2e-10,3e-10)];
+  x.globalNativeEdges=[native('other')];
+  x.scopedSegment=edge(0,1e-10);
+  x.scopedNativeEdge=native('scoped');
+  assert.throws(()=>match(x),/absent from whole-solid/);
+  x.scopedNativeEdge=native('other');
+  assert.throws(()=>match(x),/inconsistent paper endpoints/);
+ }
+});
+test('tiny exact and reversed generated HLR segments remain native-identifiable, paper-only stays unsigned',()=>{
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  x.globalSegments=[edge(0,1e-10)];
+  x.globalNativeEdges=[native('tiny')];
+  x.scopedSegment=edge(1e-10,0);
+  x.scopedNativeEdge=native('tiny');
+  assert.deepEqual(match(x).globalDirectSameGeneratedTopoDSOrdinals,[0]);
+  x.scopedNativeEdge=native('other');
+  const held=match(x);
+  assert.deepEqual(held.globalPaperCandidateOrdinals,[0]);
+  assert.equal(held.actualNativeScopedToGlobalGeneratedEdgeIsSameProven,false);
+  assert.equal(held.engineeringLineStyle,'undetermined');
+  assert.equal(held.signedV5Action,false);
+ }
+});
+test('native source-scoped inventory rejects zero-length generated edges rather than matching a paper point',()=>{
+ const x=setup('H');x.scopedSegment=edge(0,0);
+ assert.throws(()=>match(x),/genuine source-scoped/);
+ const y=setup('W');y.globalSegments[0]=edge(0,0);
+ assert.throws(()=>match(y),/complete native whole-solid/);
+});
+test('a tiny transverse shift exceeding relative span tolerance cannot forge TopoDS paper agreement',()=>{
+ const x=setup('V');
+ x.globalSegments=[edge(0,1e-10)];
+ x.globalNativeEdges=[native('tiny')];
+ x.scopedSegment={from:{u:0,v:1e-12},to:{u:1e-10,v:1e-12}};
+ x.scopedNativeEdge=native('tiny');
+ assert.throws(()=>match(x),/inconsistent paper endpoints/);
+});
