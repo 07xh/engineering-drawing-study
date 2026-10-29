@@ -50,6 +50,28 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  }
  if(native.size!==originals.size)
   throw new RangeError('incomplete original native 3D source inventory');
+ // This is ORIGINAL 3D BRep vertex topology, never the independent
+ // GENERATED HLR vertex graph. A generated junction can have distinct
+ // native TShapes even when both source edges truly share one 3D vertex.
+ const physicalGraph=cad.originalNativeVertexTopology;
+ if(physicalGraph!==undefined){
+  const ids=[...new Set([...originals.values()].flat())].sort();
+  if(physicalGraph.schema!==
+      'draftai-c1-original-occt-brep-vertex-physical-topology/1'||
+     physicalGraph.sourceGeometryId!==geometry.id||
+     physicalGraph.allReviewedOriginalSourceVerticesNativeTShapeVerified!==true||
+     physicalGraph.generatedHLREdgeToOriginalTopoDSHistoryCertified!==false||
+     physicalGraph.signedV5ActionCount!==0||
+     JSON.stringify(physicalGraph.originalM0SourceVertexIds)!==JSON.stringify(ids)||
+     physicalGraph.originalBRepVertexOccurrencesChecked!==2*cad.occtOriginalEdgeOccurrenceCount||
+     physicalGraph.allOriginalBRepVertexPairsCompared!==
+      physicalGraph.originalBRepVertexOccurrencesChecked*
+       (physicalGraph.originalBRepVertexOccurrencesChecked-1)/2||
+     physicalGraph.originalSamePhysicalVertexTopoDSPairs+
+      physicalGraph.originalDistinctPhysicalVertexTopoDSPairs!==
+       physicalGraph.allOriginalBRepVertexPairsCompared)
+   throw new RangeError('untrusted same-run original native 3D vertex topology');
+ }
  const counts={
   globalGeneratedHLREdgesChecked:0,
   uniqueOriginalSourceGlobalEdgesExamined:0,
@@ -66,6 +88,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   physicalJunctionPairsWithAtLeastOneRoundedEndpoint:0,
   physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame:0,
   physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices:0,
+  originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape:0,
+  originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes:0,
   nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join:0,
   realNativeGeneratedVertexGraphPairsChecked:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
@@ -232,6 +256,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      throw new RangeError('one noncollapsed global HLR edge has duplicate physical vertex endpoints');
     const both=group[i].paperExactlyOriginalM0&&group[j].paperExactlyOriginalM0;
     counts.originalModelPhysicalJunctionPairCandidates++;
+    if(physicalGraph)counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape++;
     counts.physicalJunctionPairsWithBothExactGeneratedPaperEndpoints+=Number(both);
     counts.physicalJunctionPairsWithAtLeastOneRoundedEndpoint+=Number(!both);
     pairRows.push({view,originalPhysicalM0VertexId:vertexId,
@@ -239,6 +264,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      globalGeneratedHLREndpoints:[group[i],group[j]],
      actualNativeGeneratedTopoDSVertexIsSameForThisPairProven:false,
      original3DPhysicalVertexCoincidenceProvenFromIndependentM0:true,
+     originalBRepPhysicalVertexTShapeIdentityProven:!!physicalGraph,
+     distinctGeneratedHLRTShapesCannotVetoOriginalBRepPhysicalJunction:true,
      paperCoincidenceCannotSignEngineeringJunction:true,
      signedV5Action:false});
    }
@@ -304,6 +331,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     }else if(pair===false){
      row.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin=true;
      counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices++;
+     if(row.originalBRepPhysicalVertexTShapeIdentityProven)
+      counts.originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes++;
     }
    }
    const physical=new Set(pairRows.map(p=>{
@@ -325,6 +354,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   originalM0SharedVertexDoesNotProveGeneratedTopoDSIsSame:true,
   originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced:
    cad.nativeGeneratedVertexGraph!==undefined,
+  originalNativeBRepPhysicalVertexTopologyVerified:
+   physicalGraph!==undefined,
   generated2DToOriginal3DNativeTopoDSVertexTopologyCertified:false,
   allOpaqueFaceOcclusionCertified:false,
   officialV5Authorized:false,signedV5ActionCount:0
