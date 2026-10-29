@@ -286,6 +286,10 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
   assert.throws(()=>run({...input,m5Ledger:copy}),
    /current unsigned|nonunique canonical|M5 native source gap/);
  };
+ mutated(x=>delete x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage);
+ mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage=null);
+ mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage={
+  sourceEdgeId:x.views.H.intervals[0].sourceEdgeId});
  mutated(x=>x.revision=6);
  mutated(x=>x.signedV5ActionCount=1);
  mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
