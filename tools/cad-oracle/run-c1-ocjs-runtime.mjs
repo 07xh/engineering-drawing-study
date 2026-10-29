@@ -1047,6 +1047,17 @@ for(const [index,geometry] of general.entries()){
     hasExactPositiveLengthVisibleHiddenPaperClassConflict).length);
  assert.ok(candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews<=
   candidateDiagnostics.exactPaperVisibleHiddenPositiveConflictSourceViews);
+ assert.equal(candidateDiagnostics.rayCompatibleNativeOwnerFullSourceViewCoverage+
+  candidateDiagnostics.rayCompatibleNativeOwnerPositiveGapSourceViews,
+  missingOriginalRays.length);
+ assert.equal(candidateDiagnostics.nativeOwnerRayClassContradictorySourceViews,
+  missingOriginalRays.filter(row=>
+   row.nativeOwnerRayClassContradictionRequiresHistoryReview).length);
+ assert.ok(missingOriginalRays.every(row=>
+  row.rayCompatibleNativeScopedOwnerPaperCoverage.
+   exactBinary64PaperCandidateCoverageComplete!==true||
+  row.rayCompatibleOriginal3DSourcePaperCoverage.
+   exactBinary64PaperCandidateCoverageComplete===true));
  assert.ok(missingOriginalRays.every(row=>
   row.rayCompatibleCandidateCount<=row.nativeHLRPaperCandidateCount&&
   row.rayClassPruningIsNotNativeHLROwnershipOrContinuousVisibility===true&&
@@ -1062,6 +1073,10 @@ for(const [index,geometry] of general.entries()){
     candidateDiagnostics.rayExcludedOppositeHLRClassPaperAliases,
    rayCompatibleFullPaperSourceViews:
     candidateDiagnostics.rayCompatiblePaperFullSourceViewCoverage,
+   rayCompatibleNativeOwnerFullSourceViews:
+    candidateDiagnostics.rayCompatibleNativeOwnerFullSourceViewCoverage,
+   contradictoryNativeOwnerRayClassSourceViews:
+    candidateDiagnostics.nativeOwnerRayClassContradictorySourceViews,
    nativeOriginalHistoryCertified:false,
    officialV5Authorized:false
   }));
