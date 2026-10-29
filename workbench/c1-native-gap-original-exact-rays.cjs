@@ -16,6 +16,10 @@ const {auditC1AllOriginalSourceNativeGaps}=
  require('./c1-all-native-source-gap-ledger.cjs');
 const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
+const {projectC1Native3DSourceIntervalsToM4}=
+ require('./c1-native-source-scoped-m4-projection.cjs');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
@@ -179,6 +183,40 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      !row)throw new RangeError('missing original source native 3D parameter reconciliation');
   return row??null;
  };
+ // Bind real ORIGINAL-3D-parametric M4 projected candidates to the
+ // SAME M5 source/view gaps. Never claim the received generated 2D HLR
+ // edge gained a TopoDS history through coincident paper endpoints.
+ const m4Available=gaps.native3DSourceViewLedger.availableFromActualPinnedOCJS&&
+  geometry.kind==='mesh'&&geometry.space==='model-3d'&&geometry.unit==='mm'&&
+  Array.isArray(cad.originalBRepSourceEdges)&&
+  cad.originalBRepSourceEdges.every(curve=>
+   curve?.occtSourceCurveFirstPoint3D&&
+   curve?.occtSourceCurveLastPoint3D);
+ const m4BySource=new Map();
+ if(m4Available){
+  const curveById=new Map(cad.originalBRepSourceEdges.map(x=>
+   [x.sourceEdgeId,x]));
+  for(const view of ['V','H','W']){
+   const native=cad.nativeSourceScopedSharpOutputByView?.[view];
+   if(!Array.isArray(native?.rows))
+    throw new RangeError('native 3D M4 projection missing real source scoped view');
+   for(const row of native.rows){
+    const key=view+'|'+row.originalPhysicalSourceEdgeId;
+    if(!nativeConcordanceBySource.has(key))continue; // collapsed in this view
+    if(m4BySource.has(key))throw new RangeError('repeated native 3D M4 source identity');
+    const projected=projectC1Native3DSourceIntervalsToM4({
+     geometry,revision:cad.revision,view,
+     sourceEdgeId:row.originalPhysicalSourceEdgeId,
+     originalCurve:curveById.get(row.originalPhysicalSourceEdgeId),
+     scopedRow:row
+    });
+    m4BySource.set(key,projected);
+   }
+  }
+  if(m4BySource.size!==
+     native3DOriginalRayClassConcordance.counts.projectedOriginalSourceViewsExamined)
+   throw new RangeError('M4 native source projection does not cover every drawable M0 source');
+ }
  const bySource=new Map();
  for(const ray of rays.rows){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
@@ -482,8 +520,14 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage++;
   else omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews++;
   const nativePartition=nativePartitionFor(missing.view,missing.sourceEdgeId);
+  const nativeM4=m4BySource.get(key)??null;
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
+   nativeOriginal3DM4SourceProjectionPresent:nativeM4!==null,
+   nativeOriginal3DM4ProjectionWholeSourceCoverage:
+    nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete??null,
+   native3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+   native3DM4CandidateDoesNotCertifyGenerated2DHistory:true,
    completeRealNative3DSourceParameterPartition:
     nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
    missingM5SourceViewWithNative3DAlreadyFullyAccountedFor:
@@ -588,6 +632,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    missingOriginalM0SourceViewRows.filter(row=>
     row.missingM5SourceViewWithNative3DAlreadyFullyAccountedFor).length,
   positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition:0,
+  missingM5SourceViewsWithCompleteOriginalNativeM4Projection:
+   missingOriginalM0SourceViewRows.filter(row=>
+    row.nativeOriginal3DM4ProjectionWholeSourceCoverage===true).length,
+  positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection:0,
   officialV5Actions:0
  };
  for(const entry of gaps.rows){
@@ -636,6 +684,12 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    const status=closedClear?'exact-original-closed-ray-clear':
     openHidden?'exact-original-open-strict-interior':'undetermined';
    counts.positiveNativeGapIntervals++;
+   const nativeM4=m4BySource.get(entry.view+'|'+entry.sourceEdgeId)??null;
+   const nativeM4GapCoverage=nativeM4===null?null:
+    exactCandidateIntervalCoverage(range,nativeM4.segments.map(x=>
+     x.originalM0UnitParameterRange));
+   if(nativeM4GapCoverage?.entireOriginalParameterIntervalCovered===true)
+    counts.positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection++;
    const nativePartition=nativePartitionFor(entry.view,entry.sourceEdgeId);
    if(nativePartition?.exactNative3DCombinedParameterPartitionComplete===true)
     counts.positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition++;
@@ -647,6 +701,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     originalSourceParameterGap:[...range],
     original3DVertexIds:[...ray.originalVertexIds],
     independentOriginalOCCTCurveGapPositive:true,
+    nativeOriginal3DM4GapSourceProjectionAvailable:nativeM4!==null,
+    nativeOriginal3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+    realNative3DM4OriginalParameterGapCoverage:nativeM4GapCoverage,
+    native3DM4CandidateDoesNotCertifyGenerated2DHistory:true,
     completeRealNative3DSourceParameterPartition:
      nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
     positivePaperM5GapDespiteFullNative3DSourceCoverage:
@@ -683,6 +741,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   independentOriginalClosedRaySchema:rays.schema,
   counts,rows,missingOriginalM0SourceViewRows,
   native3DOriginalRayClassConcordance,
+  nativeOriginal3DM4SourceProjectionAvailable:m4Available,
+  nativeOriginal3DM4SourceProjectedCount:m4BySource.size,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
   allNativeHLRSourceGapsClosed:false,
