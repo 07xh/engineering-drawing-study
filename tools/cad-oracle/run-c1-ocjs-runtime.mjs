@@ -1020,6 +1020,23 @@ for(const [index,geometry] of general.entries()){
    row.nativeHLRPaperCandidateCount&&
   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.every(x=>
    x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false)));
+ // Surface the exact magnitude of every genuine WASM transverse
+ // HLR-paper drift. Signs alone cannot distinguish one-ULP rounding
+ // from a substantial source-geometry mismatch; neither permits V5.
+ const exactAffineDrifts=missingOriginalRays.flatMap(row=>
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.
+   filter(candidate=>!candidate.exactBinary64PaperAffineAligned).
+   map(candidate=>({view:row.view,sourceEdgeId:row.sourceEdgeId,
+    hlrClass:candidate.hlrClass,ordinal:candidate.ordinal,
+    residuals:candidate.exactBinary64PaperAffineCrossProductDyadic})));
+ assert.equal(exactAffineDrifts.length,candidateDiagnostics.exactAffineDrift);
+ assert.ok(exactAffineDrifts.every(row=>
+  row.residuals.length===2&&
+  row.residuals.some(r=>r.numerator!=='0')&&
+  row.residuals.every(r=>typeof r.numerator==='string'&&
+   Number.isSafeInteger(r.exponent2))));
+ console.error('REAL C1 EXACT HLR TRANSVERSE AFFINE DRIFT '+geometry.id+
+  ': '+JSON.stringify(exactAffineDrifts));
  console.error('REAL C1 OMITTED SOURCE NATIVE OWNER/EXACT PAPER/RAY JOIN '+
   geometry.id+': '+JSON.stringify(candidateDiagnostics));
  const missingRayByKey=new Map(missingOriginalRays.map(x=>[key(x),x]));
