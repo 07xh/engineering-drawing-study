@@ -565,6 +565,16 @@ test('independent native 3D class veto and exact original ray intersect without 
  assert.ok(row.nativeHLRCandidateExactBinary64AndRayDiagnostics.some(x=>
   x.hlrClass==='hidden-sharp'&&
   x.native3DClassVetoExcludesThisSourcePaperAlias===true));
+ // The same fake native source-filtered 3D curves are projected back to
+ // first-angle M4 by original 3D parameter; M5 paper omission remains held.
+ assert.equal(out.nativeOriginal3DM4SourceProjectionAvailable,true);
+ assert.equal(out.nativeOriginal3DM4SourceProjectedCount,18);
+ assert.equal(out.counts.missingM5SourceViewsWithCompleteOriginalNativeM4Projection,
+  out.missingOriginalM0SourceViewRows.length);
+ assert.equal(row.nativeOriginal3DM4SourceProjectionPresent,true);
+ assert.equal(row.nativeOriginal3DM4ProjectionWholeSourceCoverage,true);
+ assert.ok(row.native3DM4ProjectedCandidateSegments.length>0);
+ assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
  assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
  assert.equal(row.signedV5Action,false);
  assert.equal(out.counts.missingM5SourceViewsWithCompleteNative3DParameterPartition,
