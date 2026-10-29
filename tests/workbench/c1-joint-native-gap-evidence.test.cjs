@@ -155,3 +155,41 @@ test('actual-shaped HLR native IsSame and transverse dyadic drift remain unsigne
  assert.equal(drift.rows[0].diagnosis,'off-line-paper-candidate-without-generated-history');
  assert.equal(drift.rows[0].completeOriginalSourceIntervalCoverageProven,false);
 });
+
+test('real OCJS result schema adapter reads original BRep ledger and rejects forged authority',()=>{
+ const {auditC1JointNativeGapFromCad:fromCad}=
+  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2}};
+ const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C']]}};
+ const sourceEdgeId='C1SkewTetra::A|C';
+ const original={sourceEdgeId,
+  occtSourceCurveParameterRange:[0,Math.hypot(3,16,2)],
+  occtSourceCurveFirstPoint3D:points.A,
+  occtSourceCurveLastPoint3D:points.C,
+  originalOCCTBRepVertexXYZMatched:true,
+  occtCurveTypeIndependentlyVerified:true,
+  occtSourceCurve3DEndpointsAndMidpointVerified:true,
+  occtSourceCurveType:'line'};
+ const cad={schema:'draftai-c1-ocjs-real-visible-brep/1',
+  engine:'opencascade.js',sourceGeometryId:geometry.id,revision:1,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  actualOCCTCurveTypeIndependentlyVerified:true,
+  actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:false,
+  lineStyleCertified:false,v5Authorized:false,
+  originalBRepSourceEdges:[original],
+  views:{W:[]},hiddenSharpViews:{W:[]}};
+ const input={geometry,cad,view:'W',sourceEdgeId,
+  uncoveredIntervals:[[0,1.1102230246251565e-16]]};
+ const result=fromCad(input);
+ assert.equal(result.positiveGapCount,1);
+ assert.equal(result.fullOriginalSourceHistoryCertified,false);
+ assert.equal(result.signedV5ActionCount,0);
+ for(const forged of [
+  {...cad,sourceGeometryId:'wrong'},
+  {...cad,revision:0},
+  {...cad,actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:true},
+  {...cad,v5Authorized:true},
+  {...cad,originalBRepSourceEdges:[original,original]},
+  {...cad,views:{}}
+ ])assert.throws(()=>fromCad({...input,cad:forged}),/OCJS CAD|unique real original/);
+});
