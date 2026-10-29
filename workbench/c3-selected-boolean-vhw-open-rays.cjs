@@ -30,6 +30,45 @@ const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);Object.freeze(o);
 }return o;};
+/**
+ * Preserve EVERY representable positive W x-cell bounded by the two genuine
+ * analytic radial-normal roots. The previous fixed 1e-10*radius tolerance
+ * could discard a real, very short cell at an x-center and then assert the
+ * WRONG sign throughout a larger interval. The sign is a theorem of the
+ * OPEN interval endpoints, NOT an unreliable floating-point midpoint.
+ *
+ * This proves only the sign of each original-cylinder outward normal in W,
+ * not the visibility of projected coincident features, critical points,
+ * closed endpoints or a national engineering line.
+ */
+function partitionC3WDirectionalOpenIntervals(xRange,zCenter,yCenter){
+ if(!Array.isArray(xRange)||xRange.length!==2||
+    ![...xRange,zCenter,yCenter].every(Number.isFinite)||
+    !(xRange[1]>xRange[0]))
+  throw new RangeError('C3 W strict positive M3 x-domain and centers required');
+ const [lo,hi]=xRange;
+ const cuts=[lo,hi];
+ for(const center of [zCenter,yCenter])
+  if(center>lo&&center<hi)cuts.push(center);
+ const sorted=[...new Set(cuts)].sort((a,b)=>a-b),cells=[];
+ for(let k=1;k<sorted.length;k++){
+  const a=sorted[k-1],c=sorted[k];
+  if(!(c>a))throw new RangeError('C3 W zero-length analytic root cell');
+  const sign=center=>c<=center?-1:a>=center?1:null;
+  const zSign=sign(zCenter),ySign=sign(yCenter);
+  if(zSign===null||ySign===null)
+   throw new RangeError('C3 W x-center inside supposedly sign-fixed open interval');
+  cells.push({xOpenRange:[a,c],zCylinderOutwardRaySign:zSign,
+   yCylinderOutwardRaySign:ySign});
+ }
+ if(cells.length<1||cells.length>3||
+    cells[0].xOpenRange[0]!==lo||
+    cells.at(-1).xOpenRange[1]!==hi||
+    cells.some((row,i)=>i>0&&
+     row.xOpenRange[0]!==cells[i-1].xOpenRange[1]))
+  throw new RangeError('C3 W source root cells not exactly conserved');
+ return freeze(cells);
+}
 function auditC3SelectedBooleanVHWOpenRays({input,revision,solidOperation=null}={}){
  if(!Number.isSafeInteger(revision)||revision<0)
   throw new TypeError('current C3 finite-source revision required');
@@ -83,19 +122,15 @@ function auditC3SelectedBooleanVHWOpenRays({input,revision,solidOperation=null}=
    const b=branches.get(edge.sourceId);
    if(!b)throw new RangeError('lost analytic lateral source identity');
    for(const view of ['V','H','W']){
-    const [lo,hi]=b.xRange;
-    const cuts=[lo,hi];
-    if(view==='W')for(const center of [Z.xCenter,Y.xCenter])
-     if(center>lo+tol&&center<hi-tol)cuts.push(center);
-    const sorted=[...new Set(cuts)].sort((a,c)=>a-c);
-    for(let k=1;k<sorted.length;k++){
-     const a=sorted[k-1],c=sorted[k];
-     if(!(c-a>tol))throw new RangeError('unresolved small directional ray interval');
-     const x=(a+c)/2;
-     const zSign=view==='V'?-b.signY:
-       view==='H'?0:raySign(x-Z.xCenter);
-     const ySign=view==='V'?0:
-       view==='H'?b.signZ:raySign(x-Y.xCenter);
+    const cells=view==='W'?
+     partitionC3WDirectionalOpenIntervals(b.xRange,Z.xCenter,Y.xCenter):
+     [{xOpenRange:[...b.xRange]}];
+    for(const cell of cells){
+     const [a,c]=cell.xOpenRange;
+     const zSign=view==='V'?-b.signY:view==='H'?0:
+      cell.zCylinderOutwardRaySign;
+     const ySign=view==='V'?0:view==='H'?b.signZ:
+      cell.yCylinderOutwardRaySign;
      const status=rayOutcome(zSign,ySign);
      intervals.push({
       edgeId:edge.id,sourceId:edge.sourceId,sourceKind:edge.kind,view,
@@ -176,4 +211,5 @@ function auditC3SelectedBooleanVHWOpenRays({input,revision,solidOperation=null}=
   officialLineStylesVerified:false,finalV5CurveAuthorized:false
  });
 }
-module.exports={auditC3SelectedBooleanVHWOpenRays};
+module.exports={auditC3SelectedBooleanVHWOpenRays,
+ partitionC3WDirectionalOpenIntervals};
