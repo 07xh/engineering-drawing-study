@@ -480,3 +480,34 @@ test('half visible and half opposite-class aliases retain exact positive source-
  assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('a direct native IsSame claim with opposite exact original ray class cannot certify source-owned interval',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ input.cad.hiddenSharpViews.V.push({from,to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.nativeSourceScopedSharpOutputByView={V:{
+  nativeSourceIdentityConflicts:{rows:[{
+   view:'V',hlrClass:'hidden-sharp',nativeWholeSolidEdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:sourceEdgeId,
+   nativeScopedGeneratedEdgeIsSame:true
+  }]}
+ }};
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.expectedHLRClassFromIndependentOriginalRay,'visible-sharp');
+ assert.equal(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.rayCompatibleNativeScopedOwnerPaperCoverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.deepEqual(row.rayCompatibleNativeScopedOwnerPaperCoverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+ assert.equal(row.nativeOwnerRayClassContradictionRequiresHistoryReview,true);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  nativeOwnerRayClassContradictions,1);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  nativeOwnerRayClassContradictorySourceViews,1);
+ assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(out.officialV5Authorized,false);
+});
