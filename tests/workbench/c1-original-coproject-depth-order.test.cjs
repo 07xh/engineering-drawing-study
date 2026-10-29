@@ -95,3 +95,45 @@ test('one-ULP positive overlap at a source endpoint cannot be discarded by float
  assert.equal(out.wholeIntervalFrontmostCertified,false);
  assert.equal(out.status,'undetermined-coproject-source-order');
 });
+
+test('one-subnormal-unit positive original observer depth establishes strict order without a 1e-7 mm cutoff',()=>{
+ const g=geometry();
+ g.data.points.D.y=Number.MIN_VALUE;
+ g.data.points.H.y=Number.MIN_VALUE;
+ const front=check(g,source('A','E'),[peer('D','H',
+  'single-opaque-solid-whole-open-ray-strictly-hidden')]);
+ assert.equal(front.status,'candidate-strictly-front-of-all-aliases');
+ assert.equal(front.wholeIntervalFrontmostCertified,true);
+ assert.deepEqual(front.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+ assert.equal(front.comparisons[0].strictOriginal3DDepthOrderNoToleranceUsed,true);
+ const back=check(g,source('D','H'),[peer('A','E')]);
+ assert.equal(back.status,'suppressed-by-front-original-visible-source');
+ assert.deepEqual(back.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[-1,-1]);
+ assert.equal(back.engineeringLineStyleSigned,false);
+ assert.equal(back.signedV5ActionCount,0);
+});
+test('reversed original 3D peer edge preserves strict all-endpoint proof',()=>{
+ const g=geometry();g.data.edges[1]=['H','D'];
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+});
+test('exact overlapping paper sources at identical depth remain unresolved even with a clear peer',()=>{
+ const g=geometry();g.data.points.D.y=0;g.data.points.H.y=0;
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.comparisons[0].status,'depth-switch-or-tie');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,0]);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+});
+test('large original source coordinates retain strict rational ray sign across rounded paper orientation',()=>{
+ const g=geometry(),offset=2**50;
+ for(const v of Object.values(g.data.points)){
+  v.x+=offset;v.z+=offset;v.y+=offset;
+ }
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+});
