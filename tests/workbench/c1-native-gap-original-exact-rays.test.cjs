@@ -562,3 +562,89 @@ test('independent native 3D class veto and exact original ray intersect without 
  assert.equal(row.signedV5Action,false);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('source-scoped native 3D visible and hidden classes agree only with independently proved rays',()=>{
+ const {auditC1Native3DOriginalRayConcordance:check}=
+  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
+ const make=(rayStatus,visible,hidden,complete=true)=>({
+  native3DSourceViewLedger:{
+   schema:'draftai-c1-m5-real-native-3d-source-scoped-partition/1',
+   availableFromActualPinnedOCJS:true,
+   counts:{projectedOriginalSourceViews:1},
+   rows:[{view:'V',sourceEdgeId:'mesh::A|B',
+    originalProjectedSourceNoncollapsed:true,
+    nativeSourceScopedOriginalCurveProven:true,
+    native3DVisibleSharpCount:visible,native3DHiddenSharpCount:hidden,
+    signedV5Action:false,exactOriginalNative3DSourcePartition:{
+     schema:'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1',
+     generatedNativeParameterRanges:Array.from({length:visible+hidden},()=>[0,1]),
+     sourceScopedNative3DParameterInventoryCompleteExactlyOnce:complete
+    }}]
+  },
+  rays:{schema:'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1',
+   rows:[{view:'V',originalPhysicalSourceEdgeId:'mesh::A|B',
+    projectionCollapsed:false,originalPhysicalCreaseProven:true,
+    completeSourceOriginal3DRayClosedIntervalClear:rayStatus==='clear',
+    exactlyBothOriginalVertexForwardRaysClear:rayStatus==='clear',
+    originalOpenEdgeStrictInteriorOcclusionProven:rayStatus==='hidden'}]}
+ });
+ const visible=check(make('clear',1,0));
+ assert.equal(visible.counts.sourceViewsWithCompleteConcordantNative3DPartition,1);
+ assert.equal(visible.noOriginalRayVersusNative3DClassContradictions,true);
+ assert.equal(visible.rows[0].expectedClassFromIndependentExactOriginalRay,'visible-sharp');
+ assert.equal(visible.rows[0].fullNative3DClassConcordanceOnly,true);
+ const mistakenHidden=check(make('clear',0,1));
+ assert.equal(mistakenHidden.counts.sourceViewsWithOppositeNative3DClass,1);
+ assert.equal(mistakenHidden.rows[0].oppositeNative3DClassContradictsOriginalRay,true);
+ assert.equal(mistakenHidden.noOriginalRayVersusNative3DClassContradictions,false);
+ const hidden=check(make('hidden',0,1));
+ assert.equal(hidden.rows[0].expectedClassFromIndependentExactOriginalRay,'hidden-sharp');
+ assert.equal(hidden.counts.sourceViewsWithCompleteConcordantNative3DPartition,1);
+ const mistakenVisible=check(make('hidden',1,0));
+ assert.equal(mistakenVisible.counts.sourceViewsWithOppositeNative3DClass,1);
+ for(const output of [visible,mistakenHidden,hidden,mistakenVisible]){
+  assert.equal(output.officialV5Authorized,false);
+  assert.equal(output.rows[0].engineeringLineStyle,'undetermined');
+  assert.equal(output.rows[0].signedV5Action,false);
+  assert.ok(Object.isFrozen(output.rows[0]));
+ }
+});
+
+test('incomplete native 3D source partition or unknown exact M0 class never becomes a line-style proof',()=>{
+ const {auditC1Native3DOriginalRayConcordance:check}=
+  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
+ const ray={view:'H',originalPhysicalSourceEdgeId:'scene::A|C',
+  projectionCollapsed:false,originalPhysicalCreaseProven:false,
+  completeSourceOriginal3DRayClosedIntervalClear:false,
+  exactlyBothOriginalVertexForwardRaysClear:false,
+  originalOpenEdgeStrictInteriorOcclusionProven:false};
+ const source={view:'H',sourceEdgeId:'scene::A|C',
+  originalProjectedSourceNoncollapsed:true,nativeSourceScopedOriginalCurveProven:true,
+  native3DVisibleSharpCount:1,native3DHiddenSharpCount:0,signedV5Action:false,
+  exactOriginalNative3DSourcePartition:{
+   schema:'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1',
+   generatedNativeParameterRanges:[[0,0.5]],
+   sourceScopedNative3DParameterInventoryCompleteExactlyOnce:false}};
+ const input={
+  native3DSourceViewLedger:{
+   schema:'draftai-c1-m5-real-native-3d-source-scoped-partition/1',
+   availableFromActualPinnedOCJS:true,counts:{projectedOriginalSourceViews:1},
+   rows:[source]},
+  rays:{schema:'draftai-c1-m5-exact-closed-original-edge-ray-and-cut-continuity/1',
+   rows:[ray]}
+ };
+ const output=check(input);
+ assert.equal(output.counts.sourceViewsWithUnknownRayClass,1);
+ assert.equal(output.counts.sourceViewsWithIncompleteNative3DPartition,1);
+ assert.equal(output.counts.sourceViewsWithCompleteConcordantNative3DPartition,0);
+ assert.equal(output.rows[0].expectedClassFromIndependentExactOriginalRay,null);
+ assert.equal(output.rows[0].fullNative3DClassConcordanceOnly,false);
+ const wrong={...input,native3DSourceViewLedger:{
+  ...input.native3DSourceViewLedger,counts:{projectedOriginalSourceViews:2}}};
+ assert.throws(()=>check(wrong),/lost drawable sources/);
+ const missing={...input,rays:{...input.rays,rows:[]}};
+ assert.throws(()=>check(missing),/lacks corresponding real interval or M0 ray/);
+ const duplicated={...input,native3DSourceViewLedger:{
+  ...input.native3DSourceViewLedger,rows:[source,source]}};
+ assert.throws(()=>check(duplicated),/duplicate source-scoped/);
+});
