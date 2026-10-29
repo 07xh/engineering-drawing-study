@@ -188,3 +188,25 @@ test('a legitimate empty source-scoped view cannot invent generated source histo
  assert.equal(r.globalContinuousOcclusionCertified,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('real whole-solid generated HLR inventory exposes unclaimed edges without signing history',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const claim=match(setup('V'));
+ const r=audit({matches:[claim],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':1}});
+ assert.equal(r.wholeSolidNativeGeneratedEdgeCount,4);
+ assert.equal(r.uniqueNativeClaims,1);
+ assert.deepEqual(r.unclaimedWholeSolidGeneratedEdgeOrdinals,[
+  {hlrClass:'visible-sharp',ordinal:1},
+  {hlrClass:'visible-sharp',ordinal:2},
+  {hlrClass:'hidden-sharp',ordinal:0}]);
+ assert.equal(r.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim,false);
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+ assert.throws(()=>audit({matches:[claim],wholeSolidCounts:{
+  'visible-sharp':0,'hidden-sharp':0}}),/nonexistent whole-solid/);
+ const empty=audit({matches:[],wholeSolidCounts:{
+  'visible-sharp':0,'hidden-sharp':0}});
+ assert.equal(empty.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim,true);
+ assert.equal(empty.fullOriginalSourceHistoryCertified,false);
+});
