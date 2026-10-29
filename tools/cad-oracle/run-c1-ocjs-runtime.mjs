@@ -228,6 +228,37 @@ for(const [index,geometry] of general.entries()){
     w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
     w.globalPaperCandidateOrdinals.length>=1&&
     w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  // Actual pinned OCJS source-filtered In3d sharp output retains OCCT
+  // original-curve parameter intervals. A complete scoped 3D union is
+  // stronger than a paper alias, but is NOT generated 2D IsSame history,
+  // whole-scene visibility or formal V5 permission.
+  const native3D=scoped.rows.flatMap(row=>[row.visible3D,row.hidden3D]);
+  assert.equal(native3D.length,2*geometry.data.edges.length);
+  assert.ok(native3D.every(x=>
+   x.nativeSourceFilteredOriginalTopoDSEdge===true&&
+   x.generated2DSourceIdentityIsSameProven===false&&
+   x.signedV5Action===false&&
+   x.exactNative3DSourceParameterCoverage?.schema===
+    'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'&&
+   x.native3DGeneratedCurveIntervals.every(e=>
+    e.nativeSourceFilterOriginalEdgeId&&
+    e.originalGeneratedTopoDSHistoryCertified===false&&
+    e.nativeOriginalCurveParameterRange[1]>
+     e.nativeOriginalCurveParameterRange[0])));
+  console.error('REAL C1 SOURCE-SCOPED NATIVE 3D HLR '+geometry.id+' '+view+': '+
+   JSON.stringify({
+    emitted3D:native3D.reduce((n,x)=>n+x.native3DGeneratedCurveIntervals.length,0),
+    complete3DSourceClassIntervals:native3D.filter(x=>
+     x.exactNative3DSourceParameterCoverage.
+      sourceScopedNative3DParameterInventoryCompleteExactlyOnce).length,
+    native3DPositiveGapIntervals:native3D.reduce((n,x)=>n+
+     x.exactNative3DSourceParameterCoverage.
+      positiveLengthUncoveredNativeParameterIntervals.length,0),
+    native3DPositiveOverlapIntervals:native3D.reduce((n,x)=>n+
+     x.exactNative3DSourceParameterCoverage.
+      positiveLengthOverlappingNativeParameterIntervals.length,0),
+    sourceFiltered2DOutputs:scoped.nativeSourceScopedOutputEdgeCount
+   }));
   const nativeClaims=scoped.nativeSourceIdentityConflicts;
   assert.equal(nativeClaims.schema,
    'draftai-c1-native-scoped-source-identity-conflicts/1');
