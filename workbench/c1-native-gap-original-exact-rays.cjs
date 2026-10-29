@@ -20,6 +20,8 @@ const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
 const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
+const {auditC1OriginalCoProjectedDepthOrder}=
+ require('./c1-original-coproject-depth-order.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
@@ -222,6 +224,63 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
   if(bySource.has(key))throw new RangeError('duplicate exact original source ray');
   bySource.set(key,ray);
+ }
+ // M4 -> M5 co-projected original 3D source competition. This uses the
+ // existing exact-depth M5 audit on EVERY genuine native-3D-backed M4
+ // projected interval against EVERY other M0 physical source in that view.
+ // Positive partial paper overlap remains a cut obligation, never a
+ // misleading whole-stroke clear/source-frontmost certificate.
+ const m4DepthBySource=new Map();
+ const m4DepthCounts={sourceIntervalsExamined:0,
+  sourceIntervalsWithFullOriginal3DDepthFrontOrdering:0,
+  sourceIntervalsProvenBehindIndependentlyClearOriginalSource:0,
+  sourceIntervalsHeldForDepthOrProjectedSplits:0,
+  crossSourceProjectedAliasesExamined:0};
+ if(m4Available){
+  for(const [key,m4] of m4BySource){
+   const [view,sourceEdgeId]=key.split('|');
+   const peers=rays.rows.filter(peer=>
+    peer.view===view&&peer.projectionCollapsed===false&&
+    peer.originalPhysicalSourceEdgeId!==sourceEdgeId).map(peer=>({
+     view,sourceGeometryId:geometry.id,
+     sourceEdgeId:peer.originalPhysicalSourceEdgeId,
+     originalParameterRange:[0,1],
+     status:peer.fullProjectedVisibleSourceLineProven===true?
+      'single-opaque-solid-whole-open-ray-clear':
+      peer.originalOpenEdgeStrictInteriorOcclusionProven===true?
+       'single-opaque-solid-whole-open-ray-strictly-hidden':'undetermined'
+    }));
+   const rows=m4.segments.map(segment=>{
+    const order=auditC1OriginalCoProjectedDepthOrder({
+     geometry,view,sourceEdgeId,
+     originalParameterRange:segment.originalM0UnitParameterRange,
+     peers
+    });
+    m4DepthCounts.sourceIntervalsExamined++;
+    m4DepthCounts.crossSourceProjectedAliasesExamined+=order.aliasesExamined;
+    if(order.wholeIntervalFrontmostCertified)
+     m4DepthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering++;
+    else if(order.visibleSourceCoversEntireLine)
+     m4DepthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource++;
+    else m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits++;
+    return {
+     originalM0UnitParameterRange:[...segment.originalM0UnitParameterRange],
+     native3DHLRClass:segment.native3DHLRClass,
+     coProjectedOriginalM0DepthOrder:order,
+     originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility:true,
+     generated2DHLREdgeTopologyProven:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    };
+   });
+   m4DepthBySource.set(key,rows);
+  }
+  if(m4DepthCounts.sourceIntervalsExamined!==
+      [...m4BySource.values()].reduce((n,row)=>n+row.segments.length,0)||
+     m4DepthCounts.sourceIntervalsExamined!==
+      m4DepthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
+      m4DepthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
+      m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits)
+    throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // A missing M5 source/view is a distinct coverage obligation from a
  // positive gap inside an existing M5 span. Audit every noncollapsed
@@ -527,6 +586,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    nativeOriginal3DM4ProjectionWholeSourceCoverage:
     nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete??null,
    native3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+   nativeOriginalM4CoProjectedDepthOrder:
+    m4DepthBySource.get(key)??[],
+   originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
    native3DM4CandidateDoesNotCertifyGenerated2DHistory:true,
    completeRealNative3DSourceParameterPartition:
     nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
@@ -611,6 +673,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   throw new RangeError('incomplete whole-M0 noncollapsed V/H/W source inventory');
  const rows=[],counts={
   noncollapsedOriginalM0SourceViews,
+  realOriginalM4ToM5CoProjectedDepthCounts:m4DepthCounts,
   representedOriginalM0SourceViewsInM5,
   unrepresentedOriginalM0SourceViews:missingOriginalM0SourceViewRows.length,
   unrepresentedM0SourceViewsWithNativeHLRPaperCandidates:
@@ -703,6 +766,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     independentOriginalOCCTCurveGapPositive:true,
     nativeOriginal3DM4GapSourceProjectionAvailable:nativeM4!==null,
     nativeOriginal3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+    nativeOriginalM4CoProjectedDepthOrder:
+     m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
+    originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
     realNative3DM4OriginalParameterGapCoverage:nativeM4GapCoverage,
     native3DM4CandidateDoesNotCertifyGenerated2DHistory:true,
     completeRealNative3DSourceParameterPartition:
@@ -743,6 +809,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   native3DOriginalRayClassConcordance,
   nativeOriginal3DM4SourceProjectionAvailable:m4Available,
   nativeOriginal3DM4SourceProjectedCount:m4BySource.size,
+  nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
   allNativeHLRSourceGapsClosed:false,
