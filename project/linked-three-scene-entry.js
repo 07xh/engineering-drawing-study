@@ -175,6 +175,9 @@ function mount(container,{onPick}={}){
   points.forEach(p=>box.expandByPoint(p));
   center=box.isEmpty()?new THREE.Vector3():box.getCenter(new THREE.Vector3());
   extent=box.isEmpty()?40:Math.max(20,box.getSize(new THREE.Vector3()).length());
+  // A newly proved geometry scene must not inherit the prior object's touch zoom.
+  camera.zoom=1;
+  camera.updateProjectionMatrix();
   raycaster.params.Line.threshold=Math.max(.5,extent*.018);
   for(const obj of scene.objects){
    if(obj.space!=='model-3d')continue;
@@ -217,6 +220,15 @@ function mount(container,{onPick}={}){
    presentationOnly:true,svgApproximationOnly:true,
    certifiedEngineeringStroke:false};
   root.add(line);features.push(line);pickable.push(line);
+ }
+ function fitToScene(){
+  if(disposed)return;
+  // Camera-only operation; original 3D source identities remain unchanged.
+  camera.zoom=1;
+  camera.updateProjectionMatrix();
+  controls.target.copy(center);
+  camera.lookAt(center);
+  resize();
  }
  function keyboardCandidates(){
   const seen=new Set(),rows=[];
@@ -335,6 +347,6 @@ function mount(container,{onPick}={}){
   controls.dispose();clear();renderer.dispose();canvas.remove();
  }
  resize();
- return {update,dispose,resize};
+ return {update,dispose,resize,fitToScene};
 }
 window.DraftAILinkedThreeViewer=Object.freeze({mount});
