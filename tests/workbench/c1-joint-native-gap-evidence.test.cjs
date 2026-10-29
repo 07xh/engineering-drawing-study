@@ -295,4 +295,13 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
  mutated(x=>x.views.H.intervals[0].realNativeOriginal3DSourceParameterCovered=true);
  mutated(x=>x.views.W.intervals[1].exactNativeOriginal3DSourceCoverage
   .originalSourceParameterRange=[Number.MIN_VALUE,1]);
+ // A single representable binary64 ULP is positive source-space geometry,
+ // even if both paper endpoints round to the same displayed pixel.
+ const dv=new DataView(new ArrayBuffer(8));
+ dv.setFloat64(0,5.02742501717052e-18);
+ dv.setBigUint64(0,dv.getBigUint64(0)-1n);
+ const oneUlpShorter=dv.getFloat64(0);
+ assert.ok(oneUlpShorter>0&&oneUlpShorter<5.02742501717052e-18);
+ mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
+  .positiveLengthUncoveredIntervals=[[0,oneUlpShorter]]);
 });
