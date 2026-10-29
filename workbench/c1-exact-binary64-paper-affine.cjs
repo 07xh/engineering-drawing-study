@@ -9,6 +9,15 @@
  */
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
+ // Exact received-binary64 cross product, canonical n * 2^e.
+ // Keep the signed magnitude rather than a rounded mm^2 Number:
+ // one-ULP drift and subnormal products must remain inspectable.
+const canonical=value=>{
+ let {n,e}=value;
+ if(n===0n)return Object.freeze({numerator:'0',exponent2:0});
+ while(n%2n===0n){n/=2n;e++;}
+ return Object.freeze({numerator:String(n),exponent2:e});
+};
 function auditC1ExactBinary64PaperAffineWitness({
  sourceFrom,sourceTo,measuredFrom,measuredTo
 }={}){
@@ -21,13 +30,16 @@ function auditC1ExactBinary64PaperAffineWitness({
  const dv=difference(dyadic(sourceTo.v),aV);
  if(sign(du)===0&&sign(dv)===0)
   throw new RangeError('collapsed original M0 paper source has no affine line');
- const orientation=p=>sign(difference(
+ const orientation=p=>difference(
   product(difference(dyadic(p.u),aU),dv),
-  product(difference(dyadic(p.v),aV),du)));
- const from=orientation(measuredFrom),to=orientation(measuredTo);
+  product(difference(dyadic(p.v),aV),du));
+ const fromResidual=orientation(measuredFrom),toResidual=orientation(measuredTo);
+ const from=sign(fromResidual),to=sign(toResidual);
  return Object.freeze({
   exactBinary64PaperFromSignedCrossProductSign:from,
   exactBinary64PaperToSignedCrossProductSign:to,
+  exactBinary64PaperFromCrossProductDyadic:canonical(fromResidual),
+  exactBinary64PaperToCrossProductDyadic:canonical(toResidual),
   nativeFromExactlyOnOriginalBinary64PaperLine:from===0,
   nativeToExactlyOnOriginalBinary64PaperLine:to===0,
   bothNativeEndpointsExactlyOnOriginalBinary64PaperLine:from===0&&to===0,
