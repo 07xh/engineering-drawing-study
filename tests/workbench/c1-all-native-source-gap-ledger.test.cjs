@@ -61,6 +61,12 @@ test('generic C1 M5 traverses ALL native positive source gaps, not only a hard-c
   row.jointNativeGapForensics?.signedV5ActionCount===0));
  assert.ok(Object.isFrozen(out.rows[0].positiveGaps));
  assert.equal(out.knownThreeGapCoordinatesNotUsedToSelectRecords,true);
+ assert.equal(out.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,false);
+ assert.deepEqual(out.unrepresentedOriginalM0ProjectedSources.map(x=>
+  [x.view,x.sourceEdgeId]),[
+  ['V','C1SkewTetra::A|C'],['H','C1SkewTetra::A|D']]);
+ assert.ok(out.unrepresentedOriginalM0ProjectedSources.every(x=>
+  x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false));
  assert.equal(out.generatedHLRToOriginalTopoDSHistoryCertified,false);
  assert.equal(out.officialV5Authorized,false);
 });
@@ -117,4 +123,31 @@ test('an original 3D source identity, revision or gap partition cannot be forged
  for(const change of changes){const x=fixture();change(x);
   assert.throws(()=>audit(x),/current unsigned|original M0|ordered positive|positive native gap count|incorrectly signed/);
  }
+});
+
+test('an omitted entire M0 source is not silently counted as a complete native inventory',()=>{
+ const x=fixture();
+ // Remove one canonical M5 row: remaining rows are internally consistent,
+ // but the physical source is still present in the original 3D geometry.
+ x.m5Ledger.views.V.intervals.length=0;
+ const out=audit(x);
+ assert.equal(out.allCurrentM5SourceSpansAccountedFor,true);
+ assert.equal(out.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,false);
+ assert.deepEqual(out.unrepresentedOriginalM0ProjectedSources.filter(x=>
+  x.view==='V').map(x=>x.sourceEdgeId),[
+  'C1SkewTetra::A|C','C1SkewTetra::A|D']);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('collapsed original source projection is not a missing positive HLR stroke',()=>{
+ const x=fixture();
+ // A|C collapses only in V (same x,z, different y); do not run native
+ // gap forensics on altered source BRep witnesses in this counterexample.
+ x.geometry.data.points.C={x:0,y:16,z:0};
+ for(const view of ['V','H','W'])x.m5Ledger.views[view].intervals=[];
+ const out=audit(x);
+ assert.equal(out.unrepresentedOriginalM0ProjectedSources.some(x=>
+  x.view==='V'&&x.sourceEdgeId==='C1SkewTetra::A|C'),false);
+ assert.equal(out.unrepresentedOriginalM0ProjectedSources.some(x=>
+  x.view==='H'&&x.sourceEdgeId==='C1SkewTetra::A|C'),true);
+ assert.equal(out.officialV5Authorized,false);
 });
