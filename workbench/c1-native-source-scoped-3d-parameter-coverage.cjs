@@ -63,4 +63,67 @@ function auditC1Native3DSourceScopedIntervals({
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
 }
-module.exports={auditC1Native3DSourceScopedIntervals};
+
+/**
+ * Native source-filtered 3D HLR has a stronger class witness than a
+ * co-projected whole-solid 2D edge: if the ORIGINAL source has no native
+ * visible (or hidden) 3D interval in this view, a same-class paper alias
+ * cannot be attributed to it. This is a NEGATIVE candidate veto only.
+ * A surviving paper alias still lacks generated TopoDS identity, endpoint
+ * adjacency, global occlusion and official V5 authorization.
+ */
+function auditC1Native3DClassPaperCandidateVeto({
+ view,sourceEdgeId,scopedRow,paperCandidates
+}={}){
+ if(!['V','H','W'].includes(view)||
+    typeof sourceEdgeId!=='string'||!sourceEdgeId||
+    scopedRow?.originalPhysicalSourceEdgeId!==sourceEdgeId||
+    !Array.isArray(paperCandidates)||paperCandidates.length>256)
+  throw new TypeError('current original-source native 3D class and bounded paper candidates required');
+ const classRanges={};
+ for(const [klass,key] of [['visible-sharp','visible3D'],['hidden-sharp','hidden3D']]){
+  const group=scopedRow[key];
+  const intervals=group?.native3DGeneratedCurveIntervals;
+  if(group?.nativeSourceFilteredOriginalTopoDSEdge!==true||
+     !Array.isArray(intervals)||intervals.length>128||
+     intervals.some(edge=>
+      edge?.nativeSourceFilterOriginalEdgeId!==sourceEdgeId||
+      edge.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
+      edge.originalGeneratedTopoDSHistoryCertified!==false||
+      edge.signedV5Action!==false||
+      !Array.isArray(edge.nativeOriginalCurveParameterRange)||
+      edge.nativeOriginalCurveParameterRange.length!==2||
+      !edge.nativeOriginalCurveParameterRange.every(Number.isFinite)||
+      !(edge.nativeOriginalCurveParameterRange[1]>
+        edge.nativeOriginalCurveParameterRange[0])))
+   throw new RangeError('unverified native original-source 3D visibility class');
+  classRanges[klass]=intervals;
+ }
+ const retained=[],rejected=[],seen=new Set();
+ for(const candidate of paperCandidates){
+  const klass=candidate?.hlrClass,ordinal=candidate?.ordinal;
+  if(!Object.hasOwn(classRanges,klass)||
+     !Number.isSafeInteger(ordinal)||ordinal<0||
+     seen.has(klass+'|'+ordinal))
+   throw new RangeError('invalid or duplicate whole-solid HLR paper candidate');
+  seen.add(klass+'|'+ordinal);
+  const row={hlrClass:klass,ordinal};
+  (classRanges[klass].length?retained:rejected).push(row);
+ }
+ return freeze({
+  schema:'draftai-c1-native-3d-source-class-paper-candidate-veto/1',
+  view,sourceEdgeId,
+  nativeVisible3DSourceIntervalCount:classRanges['visible-sharp'].length,
+  nativeHidden3DSourceIntervalCount:classRanges['hidden-sharp'].length,
+  originalWholeSolidPaperCandidateCount:paperCandidates.length,
+  native3DClassCompatiblePaperCandidates:retained,
+  paperCandidatesExcludedByNative3DClassAbsence:rejected,
+  native3DClassVetoIsNotGenerated2DTopoDSIdentity:true,
+  fullOriginalSourceHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
+
+module.exports={auditC1Native3DSourceScopedIntervals,
+ auditC1Native3DClassPaperCandidateVeto};
