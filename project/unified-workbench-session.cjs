@@ -29,6 +29,8 @@ const {auditC3WAllLateralProjectionCollisions}=
  require('../workbench/c3-w-lateral-projection-collision-inventory.cjs');
 const {auditC3WGlobalSourceCurveSolidDepth}=
  require('../workbench/c3-w-global-source-curve-solid-depth.cjs');
+const {auditC3WCenterClosedFoldVisibility}=
+ require('../workbench/c3-w-center-closed-fold-visibility.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
 const {auditC3JointTopologyVisibility}=
  require('../workbench/c3-joint-topology-visibility.cjs');
@@ -289,6 +291,21 @@ function createUnifiedProjectSession(){
      collisionEvidence:wLateralCollisionInventory,
      forwardExitEvidence:wBooleanForwardExitDepth
     });
+    const wClosedInternalCenterFold=auditC3WCenterClosedFoldVisibility({
+     input,revision:latest.revision,
+     criticalPointEvidence:wCriticalPointRays,
+     globalSourceCurveDepth:wGlobalSourceCurveSolidDepth
+    });
+    if(wClosedInternalCenterFold.revision!==latest.revision||
+       wClosedInternalCenterFold.solidOperation!==(solidOperation||'unselected')||
+       wClosedInternalCenterFold.finalV5Authorized!==false||
+       wClosedInternalCenterFold.completeDrawingWLineStyleSigned!==false||
+       wClosedInternalCenterFold.originalCurveTerminalAndCapContactVisibilityCertified!==false||
+       (wGlobalSourceCurveSolidDepth.allOriginalM3WSourceCurveAtomsGloballyDepthProven===true&&
+        (wClosedInternalCenterFold.allCurrentInternalSignedSourceCenterFoldsCertified!==true||
+         wClosedInternalCenterFold.globallyFrontmostCenterPointCount!==
+          wCriticalPointRays.internalSourceSwitchPointCount)))
+     throw new Error('C3 W 内部轴心临界点与真实三维连续/完整实体深度联合证据不一致');
     if(wGlobalSourceCurveSolidDepth.revision!==latest.revision||
        wGlobalSourceCurveSolidDepth.solidOperation!==(solidOperation||'unselected')||
        wGlobalSourceCurveSolidDepth.officialV5Authorized!==false||
@@ -446,7 +463,7 @@ function createUnifiedProjectSession(){
      wFiniteCapLineForwardRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
      wMirrorSourceOutlineUnion,wMirrorExitOutlineConcordance,
      wLateralCollisionInventory,wGlobalSourceCurveSolidDepth,
-     analyticRayPaperReview,
+     wClosedInternalCenterFold,analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
