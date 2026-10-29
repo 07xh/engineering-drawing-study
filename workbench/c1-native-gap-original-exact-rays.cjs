@@ -238,7 +238,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   crossSourceProjectedAliasesExamined:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
-   const [view,sourceEdgeId]=key.split('|');
+   // The source ID itself contains an original endpoint separator '|'.
+   // Only the first character is the view prefix: never split the full
+   // original source identity and accidentally truncate 'g::A|B'.
+   const view=key[0],sourceEdgeId=key.slice(2);
    const peers=rays.rows.filter(peer=>
     peer.view===view&&peer.projectionCollapsed===false&&
     peer.originalPhysicalSourceEdgeId!==sourceEdgeId).map(peer=>({
