@@ -19,6 +19,8 @@ const {auditC3SelectedBooleanVHWOpenRays}=
  require('./c3-selected-boolean-vhw-open-rays.cjs');
 const {auditC3BooleanRayM5Concordance}=
  require('./c3-boolean-ray-m5-concordance.cjs');
+const {auditC3BooleanWCriticalSwitchRays}=
+ require('./c3-boolean-w-critical-switch-rays.cjs');
 const {auditC3ProjectedCapLineArrangement}=
  require('./c3-projected-cap-line-arrangement.cjs');
 const {auditC3VHArcCapLineContacts}=
@@ -170,6 +172,15 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
  const localBooleanCreaseEvidence=auditC3LocalBooleanCreases({input,revision,solidOperation});
  const selectedBooleanRayEvidence=auditC3SelectedBooleanVHWOpenRays({
   input,revision,solidOperation});
+ const selectedBooleanWCriticalPointEvidence=
+  auditC3BooleanWCriticalSwitchRays({
+   input,revision,selectedRayEvidence:selectedBooleanRayEvidence
+  });
+ if(selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true&&
+    (selectedBooleanWCriticalPointEvidence.
+      everyCurrentAnalyticWRootEnumerated!==true||
+     selectedBooleanWCriticalPointEvidence.finalV5Authorized!==false))
+  throw new RangeError('C3 W native critical source ray ledger incomplete');
  const capByLateralJunction=new Map(capBoundaryEvidence.capJunctions.flatMap(j=>
   j.sourceLateralJunctionIds.map(id=>[id,j])));
  if(wLateralProjection.status==='not-covered')
@@ -282,6 +293,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
    projectedCapLineEvidence.allProjectedCapLinesAccountedFor===true,
   localSourceTangentEvidence,localBooleanCreaseEvidence,
   selectedBooleanRayEvidence,booleanRayConcordance,
+  selectedBooleanWCriticalPointEvidence,
   selectedBooleanThreeViewSourceRayCoverageVerified:
    selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true,
   localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,
