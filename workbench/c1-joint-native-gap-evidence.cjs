@@ -212,7 +212,7 @@ function auditC1ThreeNativeGapBatchFromM5Ledger({
   const row=matches[0],proof=row.exactNativeOriginal3DSourceCoverage;
   if(row.engineeringLineStyle!=='undetermined'||row.signedV5!==false||
      row.realNativeOriginal3DSourceParameterCovered!==false||
-     proof?.sourceEdgeId!==sourceEdgeId||proof.view!==view||
+     proof?.sourceEdgeId!==sourceEdgeId||proof?.view!==view||
      !same(proof.originalSourceParameterRange,[0,1])||
      proof.entireOriginalParameterIntervalCovered!==false||
      proof.status!=='exact-original-3d-native-source-positive-gap'||
