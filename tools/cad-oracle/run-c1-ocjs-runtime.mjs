@@ -1028,6 +1028,38 @@ for(const [index,geometry] of general.entries()){
   row.originalSourceParameterGap[0]<row.originalSourceParameterGap[1]&&
   row.nativeHLRGeneratedEdgeCoversGap===false&&
   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+
+ const jointClassCounts=positiveOriginalGapRays.counts.
+  omittedNativeHLRPaperCandidateDiagnostics;
+ const nativeClassRejected=allOriginalSourceNativeGapLedger.
+  unrepresentedM0NativeHLRCandidateForensics.reduce((n,row)=>
+   n+row.native3DClassContradictoryPaperCandidateCount,0);
+ assert.equal(jointClassCounts.native3DClassExcludedPaperAliases,nativeClassRejected);
+ assert.equal(jointClassCounts.native3DAndRayCompatiblePaperFullSourceViews+
+  jointClassCounts.native3DAndRayCompatiblePaperPositiveGapSourceViews,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.length);
+ assert.equal(jointClassCounts.native3DAndRayCompatiblePaperCandidateCount,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.reduce((n,row)=>
+   n+row.native3DAndRayCompatibleCandidateCount,0));
+ assert.ok(jointClassCounts.native3DAndRayCompatiblePaperConflictSourceViews<=
+  jointClassCounts.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.native3DClassVetoIsNotOriginalGeneratedTopoDSHistory===true&&
+  row.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.signedV5Action===false));
+ console.error('REAL C1 NATIVE 3D SOURCE CLASS AND M0 EXACT RAY JOIN '+geometry.id+': '+
+  JSON.stringify({
+   rawPaperCandidates:jointClassCounts.examined,
+   native3DClassRejected:nativeClassRejected,
+   rayClassRejected:jointClassCounts.rayExcludedOppositeHLRClassPaperAliases,
+   bothCompatibleCandidates:jointClassCounts.native3DAndRayCompatiblePaperCandidateCount,
+   bothCompatiblePaperFullSourceViews:
+    jointClassCounts.native3DAndRayCompatiblePaperFullSourceViews,
+   bothCompatiblePaperConflictSourceViews:
+    jointClassCounts.native3DAndRayCompatiblePaperConflictSourceViews,
+   signedV5Actions:0
+  }));
+
  console.error('REAL C1 POSITIVE ORIGINAL SOURCE RAYS ON NATIVE HLR GAPS '+
   geometry.id+': '+JSON.stringify({
    counts:positiveOriginalGapRays.counts,
