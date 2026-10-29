@@ -107,7 +107,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
-    boundedPaper=false,links=[];
+    boundedPaper=false,sourcePaperEnvelope=null,links=[];
    if(originalId!==null){
     if(!physical||!originalBRep||
        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
@@ -142,7 +142,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     // Re-check the physical full-source endpoint pair against the same
     // tightly bounded envelope independently of class interval support.
     // Do not turn this into exact original [0,1] paper or TopoDS history.
-    const sourcePaperEnvelope=boundedOriginalFullPaperEndpointEnvelope(
+    sourcePaperEnvelope=boundedOriginalFullPaperEndpointEnvelope(
      p,q,line.from,line.to);
     const boundedPaper=!originalPaperExact&&
      sourcePaperEnvelope.compatible===true&&sourceClassFull&&modelVerified&&
