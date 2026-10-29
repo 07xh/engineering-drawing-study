@@ -96,7 +96,7 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
  * two different ORIGINAL edges to claim one whole-solid generated TopoDS
  * identity. Paper and IsPartner candidates are diagnostics, not provenance.
  */
-function auditC1ScopedHLRSourceIdentityConflicts({matches}={}){
+function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(!Array.isArray(matches)||matches.length>1024)
   throw new TypeError('genuine scoped HLR match inventory required');
  const claimed=new Map(),seen=new Set(),rows=[];
@@ -128,8 +128,35 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches}={}){
    completeOriginalSourceHistoryCertified:false,
    globalContinuousOcclusionCertified:false,signedV5Action:false});
  }
+ let wholeSolidNativeGeneratedEdgeCount=null;
+ let unclaimedWholeSolidGeneratedEdgeOrdinals=null;
+ if(wholeSolidCounts!==undefined){
+  if(!wholeSolidCounts||typeof wholeSolidCounts!=='object'||
+     !['visible-sharp','hidden-sharp'].every(klass=>
+      Number.isSafeInteger(wholeSolidCounts[klass])&&
+      wholeSolidCounts[klass]>=0&&wholeSolidCounts[klass]<=128))
+   throw new TypeError('actual whole-solid visible/hidden native HLR counts required');
+  wholeSolidNativeGeneratedEdgeCount=
+   wholeSolidCounts['visible-sharp']+wholeSolidCounts['hidden-sharp'];
+  unclaimedWholeSolidGeneratedEdgeOrdinals=[];
+  for(const klass of ['visible-sharp','hidden-sharp'])
+   for(let ordinal=0;ordinal<wholeSolidCounts[klass];ordinal++){
+    const found=rows.some(r=>r.hlrClass===klass&&
+     r.nativeWholeSolidEdgeOrdinal===ordinal);
+    if(!found)unclaimedWholeSolidGeneratedEdgeOrdinals.push(
+     Object.freeze({hlrClass:klass,ordinal}));
+   }
+  for(const r of rows)if(r.nativeWholeSolidEdgeOrdinal>=wholeSolidCounts[r.hlrClass])
+   throw new RangeError('scoped source claims nonexistent whole-solid native HLR edge');
+ }
  return Object.freeze({schema:'draftai-c1-native-scoped-source-identity-conflicts/1',
   uniqueNativeClaims:rows.length,
+  wholeSolidNativeGeneratedEdgeCount,
+  unclaimedWholeSolidGeneratedEdgeOrdinals:unclaimedWholeSolidGeneratedEdgeOrdinals===null?
+   null:Object.freeze(unclaimedWholeSolidGeneratedEdgeOrdinals),
+  everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim:
+   unclaimedWholeSolidGeneratedEdgeOrdinals!==null&&
+   unclaimedWholeSolidGeneratedEdgeOrdinals.length===0,
   rows:Object.freeze(rows.map(r=>Object.freeze(r))),
   conflictingSourceClaimsRejected:true,
   fullOriginalSourceHistoryCertified:false,
