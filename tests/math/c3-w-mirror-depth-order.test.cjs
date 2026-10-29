@@ -27,8 +27,10 @@ test('EXACT equal cylinder X centers have genuine distinct-depth W mirror source
     c.rearOriginalXOpenRange[1]&&c.rearOriginalXOpenRange[1]<=0);
    assert.ok(c.frontOriginalXOpenRange[1]>
     c.frontOriginalXOpenRange[0]&&c.frontOriginalXOpenRange[0]>=0);
-   assert.equal(c.frontOriginalXOpenRange[0],-c.rearOriginalXOpenRange[1]);
-   assert.equal(c.frontOriginalXOpenRange[1],-c.rearOriginalXOpenRange[0]);
+   assert.ok(c.frontOriginalXOpenRange[0]===-c.rearOriginalXOpenRange[1],
+    'zero-sign bit cannot alter analytic x-center reflection');
+   assert.ok(c.frontOriginalXOpenRange[1]===-c.rearOriginalXOpenRange[0],
+    'positive mirror endpoint must be numerically identical');
    assert.equal(c.distinctRearAndFront3DPointsShareExactAnalyticWProjection,true);
    assert.equal(c.front3DDepthStrictlyGreaterThroughoutOpenCell,true);
    assert.equal(c.rearSelectedBooleanInteriorAheadProven,true);
