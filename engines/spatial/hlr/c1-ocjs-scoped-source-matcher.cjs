@@ -11,8 +11,23 @@
  */
 const {VIEWS}=require('../../../core/projection/conventions.js');
 const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
-const paperSame=(a,b,tol=1e-6)=>
- Math.hypot(a.u-b.u,a.v-b.v)<=tol;
+// A fixed 1e-6 mm paper tolerance would identify unrelated, disjoint
+// sub-micrometre HLR fragments as the same generated edge. Scale the
+// comparison by the shorter measured segment: A-end tails must not borrow
+// another whole-solid edge's original TopoDS source label.
+const paperSame=(a,b,spanA,spanB)=>
+ Math.hypot(a.u-b.u,a.v-b.v)<=
+  Math.min(1e-6,Math.min(spanA,spanB)*1e-6);
+const nativeScopedPaperSegmentsSame=(a,b)=>{
+ if(!valid(a?.from)||!valid(a?.to)||!valid(b?.from)||!valid(b?.to))return false;
+ const spanA=Math.hypot(a.to.u-a.from.u,a.to.v-a.from.v);
+ const spanB=Math.hypot(b.to.u-b.from.u,b.to.v-b.from.v);
+ if(!(spanA>0)||!(spanB>0))return false;
+ return paperSame(a.from,b.from,spanA,spanB)&&
+  paperSame(a.to,b.to,spanA,spanB)||
+  paperSame(a.from,b.to,spanA,spanB)&&
+  paperSame(a.to,b.from,spanA,spanB);
+};
 function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
@@ -22,6 +37,8 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
     !Array.isArray(globalSegments)||!Array.isArray(globalNativeEdges)||
     globalSegments.length!==globalNativeEdges.length||!globalSegments.length||
     !valid(scopedSegment?.from)||!valid(scopedSegment?.to)||
+    (scopedSegment.from.u===scopedSegment.to.u&&
+     scopedSegment.from.v===scopedSegment.to.v)||
     typeof scopedNativeEdge?.IsSame!=='function'||scopedNativeEdge.IsNull?.()===true||
     scopedNativeEdge.IsSame(scopedNativeEdge)!==true)
   throw new TypeError('genuine source-scoped and whole-solid OCCT HLR edges required');
@@ -30,14 +47,15 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
   partnerRelationComparisons=0;
  for(let i=0;i<globalSegments.length;i++){
   const seg=globalSegments[i],native=globalNativeEdges[i];
-  if(!valid(seg?.from)||!valid(seg?.to)||typeof native?.IsSame!=='function'||
+  if(!valid(seg?.from)||!valid(seg?.to)||
+     (seg.from.u===seg.to.u&&seg.from.v===seg.to.v)||
+     typeof native?.IsSame!=='function'||
      native.IsNull?.()===true||native.IsSame(native)!==true)
    throw new TypeError('complete native whole-solid HLR edge inventory required');
   const forward=scopedNativeEdge.IsSame(native),reverse=native.IsSame(scopedNativeEdge);
   if(typeof forward!=='boolean'||typeof reverse!=='boolean'||forward!==reverse)
    throw new RangeError('asymmetric native scoped/global TopoDS IsSame');
-  const samePaper=paperSame(seg.from,scopedSegment.from)&&paperSame(seg.to,scopedSegment.to)||
-   paperSame(seg.from,scopedSegment.to)&&paperSame(seg.to,scopedSegment.from);
+  const samePaper=nativeScopedPaperSegmentsSame(seg,scopedSegment);
   if(samePaper)paper.push(i);
   if(forward){if(!samePaper)throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');same.push(i);}
   if(typeof scopedNativeEdge.IsPartner!=='function'||typeof native.IsPartner!=='function')
@@ -73,4 +91,4 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
 }
-module.exports={auditC1ScopedHLRGeneratedEdgeMatch};
+module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame};
