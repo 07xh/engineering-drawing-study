@@ -368,6 +368,35 @@ for(const [index,geometry] of general.entries()){
  assert.equal(scopedConsumer.counts.nativeSourceScopedOutputEdges,
   scopedConsumer.counts.nativeGeneratedIsSameMatches+
   scopedConsumer.counts.paperOnlySourceScopedEdges);
+ const globalScopedRebind=scopedConsumer.globalNativeHLRSourceScopeRebinding;
+ assert.equal(globalScopedRebind?.schema,
+  'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
+ assert.equal(globalScopedRebind.sourceGeometryId,geometry.id);
+ assert.equal(globalScopedRebind.revision,cad.revision);
+ assert.equal(globalScopedRebind.nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted,true);
+ assert.equal(globalScopedRebind.actualGlobalGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(globalScopedRebind.globalSceneM5OpaqueVisibilityCertified,false);
+ assert.equal(globalScopedRebind.signedV5ActionCount,0);
+ assert.equal(globalScopedRebind.counts.wholeSolidNativeHLREdges,
+  ['V','H','W'].reduce((n,view)=>n+cad.views[view].length+
+   cad.hiddenSharpViews[view].length,0));
+ for(const view of ['V','H','W']){
+  assert.equal(globalScopedRebind.views[view].length,
+   cad.views[view].length+cad.hiddenSharpViews[view].length);
+  for(const row of globalScopedRebind.views[view]){
+   assert.equal(row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+   assert.equal(row.globalSceneOpaqueFaceVisibilityCertified,false);
+   assert.equal(row.true3DAllEndpointJunctionsCertified,false);
+   assert.equal(row.signedV5Action,false);
+   assert.ok(row.originalSourceScopedCandidates.every(candidate=>
+    candidate.sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory===false&&
+    candidate.actualWholeSolidGenerated2DOriginalTopoDSHistoryProven===false&&
+    candidate.engineeringLineStyle==='undetermined'&&
+    candidate.signedV5Action===false));
+  }
+ }
+ console.error('REAL C1 WHOLE-SOLID GENERATED HLR TO ORIGINAL SOURCE FILTER '+
+  geometry.id+': '+JSON.stringify(globalScopedRebind.counts));
  assert.equal(scopedConsumer.generatedToOriginalTopoDSFullHistoryCertified,false);
  assert.equal(scopedConsumer.globalContinuousVisibilityCertified,false);
  assert.equal(scopedConsumer.formalEngineeringLineStyleCertified,false);
