@@ -65,6 +65,8 @@ test('skew tetra: all three tiny real-shaped HLR gaps receive independently reco
  assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
  assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,3);
  assert.equal(out.counts.unrepresentedOriginalM0SourceViews,15);
+ assert.equal(out.counts.noncollapsedOriginalM0SourceViews,18);
+ assert.equal(out.counts.representedOriginalM0SourceViewsInM5,3);
  assert.equal(out.missingOriginalM0SourceViewRows.length,15);
  assert.equal(out.allNoncollapsedOriginalM0SourcesRepresentedInM5,false);
  assert.ok(out.missingOriginalM0SourceViewRows.every(row=>
