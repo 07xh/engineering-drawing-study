@@ -65,8 +65,11 @@ function homeHTML(){return `
   <label class="v7-file-control">导入项目包<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
   <button type="button" id="v7-delete" class="v7-danger">删除当前项目</button>
  </div>
+ <nav class="v7-mobile-jump" aria-label="工作台快捷导航">
+  <a href="#v7-input-section">填写条件</a><a href="#v7-paper-section">查看图纸</a><a href="#v7-step-list">作图步骤</a>
+ </nav>
  <div class="v7-layout">
-  <section class="v7-card v7-input" aria-label="题图和条件审核"><h2>题目与条件</h2>
+  <section id="v7-input-section" class="v7-card v7-input" aria-label="题图和条件审核"><h2>题目与条件</h2>
    <label>项目名称<input id="v7-title-input" maxlength="120" value="未命名项目" autocomplete="off"></label>
    <label class="v7-file-control">选择本机原题图片<input id="v7-image-input" type="file" accept="image/png,image/jpeg,image/webp"></label>
    <div id="v7-photo-box" class="v7-photo-box" hidden>
@@ -396,7 +399,7 @@ function homeHTML(){return `
    <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
    <a href="labs/recognition-qa.html">本机识图候选检查</a></div>
   </section>
-  <section class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
+  <section id="v7-paper-section" class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label>
    <button type="button" id="v8-paper-focus" aria-pressed="false" aria-controls="v7-sheet">放大图纸</button></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="正面 V、水平 H、侧面 W 和作图步骤"></svg>

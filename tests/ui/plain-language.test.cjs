@@ -28,3 +28,11 @@ test('the current drawing step is placed before optional details',()=>{
  const details=document.querySelector('.v8-proof-details');
  assert.ok(steps.compareDocumentPosition(details)&4,'current steps precede optional proof');
 });
+test('mobile users can jump directly between conditions, drawing and steps',()=>{
+ const {document}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
+ const nav=document.querySelector('nav[aria-label="工作台快捷导航"]');assert.ok(nav);
+ for(const target of ['#v7-input-section','#v7-paper-section','#v7-step-list']){
+  assert.ok(nav.querySelector('a[href="'+target+'"]'),target);
+  assert.ok(document.querySelector(target),target+' target');
+ }
+});
