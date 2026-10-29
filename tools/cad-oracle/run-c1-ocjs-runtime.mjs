@@ -949,7 +949,25 @@ for(const [index,geometry] of general.entries()){
  assert.equal(allOriginalSourceNativeGapLedger.rows.length,
   fullM5SourceSpanCount);
  assert.equal(allOriginalSourceNativeGapLedger.allCurrentM5SourceSpansAccountedFor,true);
+ // Independently require complete M0 [0,1] inventory accounting from
+ // the SAME pinned real WASM C1 M5 rows. This is not native HLR history.
+ const originalInventory=allOriginalSourceNativeGapLedger.
+  originalM0CanonicalSourceInventory;
+ assert.equal(originalInventory.rows.length,
+  originalInventory.counts.originalProjectedSourceViews);
+ assert.equal(originalInventory.counts.originalProjectedSourceViews,
+  originalInventory.counts.sourceViewsWithCompleteCanonicalM5ParameterInventory+
+  originalInventory.rows.filter(row=>
+   !row.wholeOriginalM0SourceParameterInventoryComplete).length);
+ assert.ok(originalInventory.rows.every(row=>
+  row.nativeGeneratedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.globalContinuousVisibilityCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ assert.equal(originalInventory.officialV5Authorized,false);
+ console.error('REAL C1 ORIGINAL M0 CANONICAL M5 PARAMETER INVENTORY '+
+  geometry.id+': '+JSON.stringify(originalInventory.counts));
  const absentM0=allOriginalSourceNativeGapLedger.unrepresentedOriginalM0ProjectedSources;
+ assert.equal(originalInventory.counts.sourceViewsWithNoM5Rows,absentM0.length);
  assert.equal(allOriginalSourceNativeGapLedger.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,
   absentM0.length===0);
  assert.ok(absentM0.every(x=>['V','H','W'].includes(x.view)&&
