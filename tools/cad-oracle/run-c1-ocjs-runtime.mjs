@@ -975,6 +975,25 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.counts.noncollapsedOriginalM0SourceViews,
   positiveOriginalGapRays.counts.representedOriginalM0SourceViewsInM5+
   absentM0.length);
+ // Recompute exact dyadic paper incidence/domain and independently classify
+ // native source-owned HLR visibility against the original 3D ray theorem.
+ // These are forensic obligations, never a generated TopoDS history bridge.
+ const candidateDiagnostics=
+  positiveOriginalGapRays.counts.omittedNativeHLRPaperCandidateDiagnostics;
+ assert.equal(candidateDiagnostics.examined,
+  missingOriginalRays.reduce((sum,x)=>sum+x.nativeHLRPaperCandidateCount,0));
+ assert.equal(candidateDiagnostics.examined,
+  candidateDiagnostics.exactAffineAligned+candidateDiagnostics.exactAffineDrift);
+ assert.ok(candidateDiagnostics.nativeOwnerRayClassConsistent+
+  candidateDiagnostics.nativeOwnerRayClassContradictions<=
+  candidateDiagnostics.nativeIsSameOwnerClaims);
+ assert.ok(missingOriginalRays.every(row=>
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.length===
+   row.nativeHLRPaperCandidateCount&&
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.every(x=>
+   x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false)));
+ console.error('REAL C1 OMITTED SOURCE NATIVE OWNER/EXACT PAPER/RAY JOIN '+
+  geometry.id+': '+JSON.stringify(candidateDiagnostics));
  const missingRayByKey=new Map(missingOriginalRays.map(x=>[key(x),x]));
  for(const candidate of missingM5HLRCandidates){
   const ray=missingRayByKey.get(key(candidate));
