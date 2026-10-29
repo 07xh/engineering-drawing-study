@@ -19,13 +19,15 @@ function auditC1OriginalM0InventoryCoverage({
 }={}){
  if(!projectedOriginalSourcesByView||!canonicalM5RowsByView)
   throw new TypeError('original projected M0 sources and canonical M5 rows required');
- const rows=[],counts={
+ const rows=[],orphanCanonicalM5Rows=[],counts={
   originalProjectedSourceViews:0,
   sourceViewsWithNoM5Rows:0,
   sourceViewsWithPartialM5ParameterCoverage:0,
   sourceViewsWithOverlappingM5ParameterSpans:0,
   sourceViewsWithUnboundM5SourceSpans:0,
-  sourceViewsWithCompleteCanonicalM5ParameterInventory:0
+  sourceViewsWithCompleteCanonicalM5ParameterInventory:0,
+  canonicalM5RowsWithUnboundSourceIdentity:0,
+  canonicalM5RowsOutsideNoncollapsedOriginalM0Inventory:0
  };
  for(const view of VIEWS){
   const original=projectedOriginalSourcesByView[view];
@@ -33,6 +35,26 @@ function auditC1OriginalM0InventoryCoverage({
   if(!(original instanceof Set)||original.size>2048||
      !Array.isArray(ledger)||ledger.length>2048)
    throw new TypeError('bounded canonical V/H/W original M0 source inventory required');
+  // A complete inventory must account for the M5 ledger in BOTH directions.
+  // Otherwise a perfectly covered original source could coexist with a
+  // fabricated, collapsed-in-this-view or unbound M5 row and still report
+  // all sources represented exactly once. Never promote such a ledger.
+  for(let ordinal=0;ordinal<ledger.length;ordinal++){
+   const row=ledger[ordinal];
+   if(!row||row.view!==view||
+      (row.sourceEdgeId!==null&&
+       (typeof row.sourceEdgeId!=='string'||!row.sourceEdgeId)))
+    throw new TypeError('canonical M5 row must have current view and a source identity or null');
+   if(row.sourceEdgeId===null){
+    counts.canonicalM5RowsWithUnboundSourceIdentity++;
+    orphanCanonicalM5Rows.push({view,ordinal,sourceEdgeId:null,
+     reason:'unbound-canonical-m5-source-identity'});
+   }else if(!original.has(row.sourceEdgeId)){
+    counts.canonicalM5RowsOutsideNoncollapsedOriginalM0Inventory++;
+    orphanCanonicalM5Rows.push({view,ordinal,sourceEdgeId:row.sourceEdgeId,
+     reason:'not-a-noncollapsed-original-m0-source-in-this-view'});
+   }
+  }
   for(const sourceEdgeId of original){
    if(typeof sourceEdgeId!=='string'||!sourceEdgeId)
     throw new RangeError('original M0 source identity required');
@@ -74,10 +96,12 @@ function auditC1OriginalM0InventoryCoverage({
   }
  }
  return freeze({schema:'draftai-c1-original-m0-canonical-m5-parameter-inventory/1',
-  counts,rows,
+  counts,rows,orphanCanonicalM5Rows,
   allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce:
    counts.originalProjectedSourceViews===
-    counts.sourceViewsWithCompleteCanonicalM5ParameterInventory,
+    counts.sourceViewsWithCompleteCanonicalM5ParameterInventory&&
+   counts.canonicalM5RowsWithUnboundSourceIdentity===0&&
+   counts.canonicalM5RowsOutsideNoncollapsedOriginalM0Inventory===0,
   originalTopoDSHistoryCertified:false,
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,
