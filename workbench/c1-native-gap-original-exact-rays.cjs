@@ -559,6 +559,43 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       (globalOriginal3DEndpointsBySource.get(key)?.length??0)!==lines.length))
    throw new RangeError('original 3D physical endpoint evidence does not cover filtered global HLR claims');
  }
+ // Native generated HLR vertex IsSame was measured by genuine OCJS while
+ // its TopoDS handles lived. Link physical M0 original sources to these
+ // actual generated junction candidates; never infer IsSame from paper.
+ const globalOriginal3DJunctionsBySource=new Map();
+ if(scopedConsumer!==undefined){
+  const endpointLedger=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+  for(const view of ['V','H','W']){
+   const pairs=endpointLedger.views?.[view]?.originalPhysicalEndpointPairCandidates;
+   if(!Array.isArray(pairs))throw new RangeError('missing real OCJS physical endpoint pair ledger');
+   for(const pair of pairs){
+    const ids=pair.originalPhysicalM0SourceEdges;
+    if(pair.view!==view||!Array.isArray(ids)||ids.length!==2||
+       ids.some(id=>typeof id!=='string'||!id)||
+       pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0!==true||
+       pair.signedV5Action!==false)
+     throw new RangeError('forged original generated 3D vertex junction candidate');
+    for(const sourceEdgeId of new Set(ids)){
+     const key=view+'|'+sourceEdgeId;
+     if(!globalOriginal3DEndpointsBySource.has(key))continue;
+     const list=globalOriginal3DJunctionsBySource.get(key)??[];
+     list.push(Object.freeze({
+      view,originalPhysicalM0VertexId:pair.originalPhysicalM0VertexId,
+      originalPhysicalM0SourceEdges:[...ids],
+      globalGeneratedHLREndpoints:pair.globalGeneratedHLREndpoints,
+      generatedHLRNativeTopoDSIsSamePairProven:
+       pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true,
+      generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join:
+       pair.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin===true,
+      original3DPhysicalVertexProvenFromM0NotNativeHistory:true,
+      noIndependentGlobalOpaqueVisibilityOrGBLineJoinCertification:true,
+      signedV5Action:false
+     }));
+     globalOriginal3DJunctionsBySource.set(key,list);
+    }
+   }
+  }
+ }
  // A missing M5 source/view is a distinct coverage obligation from a
  // positive gap inside an existing M5 span. Audit every noncollapsed
  // original M0 edge, including sources never emitted by the M5 ledger.
@@ -872,6 +909,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    wholeSolidGeneratedHLROriginal3DEndpointWitnesses:
     globalOriginal3DEndpointsBySource.get(key)??[],
    originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity:true,
+   wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs:
+    globalOriginal3DJunctionsBySource.get(key)??[],
+   originalPhysicalJunctionAndGeneratedNativeIsSameCannotReplaceSceneM5:true,
    nativeOriginalM4CoProjectedDepthOrder:
     m4DepthBySource.get(key)??[],
    originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -1066,6 +1106,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
     wholeSolidGeneratedHLROriginal3DEndpointWitnesses:
      globalOriginal3DEndpointsBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity:true,
+    wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs:
+     globalOriginal3DJunctionsBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
+    originalPhysicalJunctionAndGeneratedNativeIsSameCannotReplaceSceneM5:true,
     nativeOriginalM4CoProjectedDepthOrder:
      m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -1123,6 +1166,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    scopedConsumer!==undefined,
   wholeSolidOriginal3DEndpointSourceViewMatches:
    globalOriginal3DEndpointsBySource.size,
+  actualNativeGenerated3DJunctionIsSameEvidenceLinkedToHeldM5:
+   scopedConsumer!==undefined,
+  wholeSolidOriginal3DJunctionsSourceViewMatches:
+   globalOriginal3DJunctionsBySource.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
