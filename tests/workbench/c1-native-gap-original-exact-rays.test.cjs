@@ -65,6 +65,13 @@ test('skew tetra: all three tiny real-shaped HLR gaps receive independently reco
  assert.equal(out.counts.positiveNativeGapIntervals,3);
  assert.equal(out.rows.length,3);
  assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
+ // Synthetic CAD fixture has no authentic source-filtered native 3D class
+ // extraction; the M5 paper gap must NOT borrow a nonexistent certificate.
+ assert.equal(out.counts.missingM5SourceViewsWithCompleteNative3DParameterPartition,0);
+ assert.equal(out.counts.positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition,0);
+ assert.ok(out.rows.every(row=>
+  row.completeRealNative3DSourceParameterPartition===null&&
+  row.positivePaperM5GapDespiteFullNative3DSourceCoverage===false));
  assert.equal(out.counts.independentOriginalOCCTCurvePositiveGapIntervals,3);
  assert.equal(out.counts.unrepresentedOriginalM0SourceViews,15);
  assert.equal(out.counts.noncollapsedOriginalM0SourceViews,18);
@@ -560,6 +567,12 @@ test('independent native 3D class veto and exact original ray intersect without 
   x.native3DClassVetoExcludesThisSourcePaperAlias===true));
  assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
  assert.equal(row.signedV5Action,false);
+ assert.equal(out.counts.missingM5SourceViewsWithCompleteNative3DParameterPartition,
+  out.missingOriginalM0SourceViewRows.length);
+ assert.ok(out.missingOriginalM0SourceViewRows.every(m=>
+  m.completeRealNative3DSourceParameterPartition===true&&
+  m.missingM5SourceViewWithNative3DAlreadyFullyAccountedFor===true&&
+  m.missingM5SourceViewRemainsUncovered===true));
  assert.equal(out.officialV5Authorized,false);
 });
 
