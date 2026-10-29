@@ -155,6 +155,7 @@ function interactiveFillet(){
   }
  };
  const modules={
+  './projection-label-layout.cjs':require('../../labs/projection-label-layout.cjs'),
   '../engines/planar/circle-circle-fillet.cjs':require('../../engines/planar/circle-circle-fillet.cjs'),
   '../engines/planar/directed-circle-fillet.cjs':require('../../engines/planar/directed-circle-fillet.cjs'),
   '../engines/planar/two-segment-fillet.cjs':require('../../engines/planar/two-segment-fillet.cjs'),
@@ -1714,4 +1715,13 @@ test('verified segment-circle offset line click follows exact stage, does not le
  assert.match(get('paperPicked').textContent,/已选第 1 步 · 辅助线/);
  assert.equal(get('counter').textContent,'1 / 5');
  assert.equal(collect().filter(x=>x.attributes?.['data-verified-arc']==='true').length,0);
+});
+test('shared segment endpoints remain readable as separate point labels',()=>{
+ const {get,fire,collect}=interactiveFillet();
+ get('modeSelect').value='segments';fire('modeSelect','change');
+ for(const id of ['line1Ax','line1Ay','line2Ax','line2Ay']){get(id).value='0';fire(id,'input');}
+ const a=collect().find(n=>n.tag==='text'&&n.textContent==='A₁');
+ const b=collect().find(n=>n.tag==='text'&&n.textContent==='A₂');
+ assert.ok(a&&b);
+ assert.notDeepEqual([a.attributes.x,a.attributes.y],[b.attributes.x,b.attributes.y]);
 });

@@ -1,4 +1,5 @@
 'use strict';
+const {placeLabel}=require('./projection-label-layout.cjs');
 const {circleCircleFilletCenters}=require('../engines/planar/circle-circle-fillet.cjs');
 const {chooseDirectedFillet}=require('../engines/planar/directed-circle-fillet.cjs');
 const {finiteTwoSegmentFillets}=require('../engines/planar/two-segment-fillet.cjs');
@@ -241,10 +242,11 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
   return elem('line',{x1:start.x,y1:start.y,x2:end.x,y2:end.y,
    stroke:color,'stroke-width':2,'stroke-dasharray':dash||'none'});
  };
+ let labelBoxes=[];
  const dot=(p,color,label)=>{
-  const g=elem('g'),v=sheet(p);
+  const g=elem('g'),v=sheet(p),position=placeLabel(v,label,paperCamera,labelBoxes);
   g.append(elem('circle',{cx:v.x,cy:v.y,r:4.5,fill:color}));
-  g.append(elem('text',{x:v.x+7,y:v.y-8,'font-size':12,fill:color},label));
+  g.append(elem('text',{x:position.x,y:position.y,'font-size':12,fill:color},label));
   return g;
  };
  function parse(){
@@ -403,7 +405,7 @@ const StrokeReasonV5=require('../workbench/verified-fillet-stroke-reasons.cjs');
    '本页仅解释真实数学求解能支持的内容，不代替整本教材题验收。';
  }
  function render(){
-  const svg=$('diagram');svg.replaceChildren();activeActionNodes.clear();
+  const svg=$('diagram');svg.replaceChildren();activeActionNodes.clear();labelBoxes=[];
   svg.append(elem('rect',{width:720,height:440,fill:'#fff'}));
   for(let x=30;x<720;x+=30)svg.append(elem('line',{x1:x,y1:0,x2:x,y2:440,stroke:'#edf1ed','stroke-width':.65}));
   for(let y=10;y<440;y+=30)svg.append(elem('line',{x1:0,y1:y,x2:720,y2:y,stroke:'#edf1ed','stroke-width':.65}));
