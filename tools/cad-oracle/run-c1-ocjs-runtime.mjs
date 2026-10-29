@@ -1002,6 +1002,22 @@ for(const [index,geometry] of general.entries()){
   missingOriginalRays.reduce((sum,x)=>sum+x.nativeHLRPaperCandidateCount,0));
  assert.equal(candidateDiagnostics.examined,
   candidateDiagnostics.exactAffineAligned+candidateDiagnostics.exactAffineDrift);
+ assert.equal(candidateDiagnostics.examined,
+  candidateDiagnostics.nativeEndpoint3DContradictoryPaperAliases+
+  candidateDiagnostics.nativeEndpoint3DConsistentPaperAliases+
+  candidateDiagnostics.nativeEndpoint3DUnknownPaperAliases);
+ const nativeEndpoint3DContradictions=missingOriginalRays.flatMap(row=>
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.
+   filter(x=>x.nativeEndpoint3DSourceStatus===
+    'contradicted-by-native-original-vertex').
+   map(x=>({view:row.view,sourceEdgeId:row.sourceEdgeId,
+    hlrClass:x.hlrClass,ordinal:x.ordinal,
+    nativeOriginal3DVertexContradictionCount:
+     x.nativeOriginal3DVertexContradictionCount})));
+ assert.equal(nativeEndpoint3DContradictions.length,
+  candidateDiagnostics.nativeEndpoint3DContradictoryPaperAliases);
+ console.error('REAL C1 NATIVE ORIGINAL 3D VERTEX VETO OF PAPER ALIASES '+
+  geometry.id+': '+JSON.stringify(nativeEndpoint3DContradictions));
  assert.ok(candidateDiagnostics.nativeOwnerRayClassConsistent+
   candidateDiagnostics.nativeOwnerRayClassContradictions<=
   candidateDiagnostics.nativeIsSameOwnerClaims);
