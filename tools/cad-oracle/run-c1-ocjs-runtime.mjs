@@ -1137,8 +1137,22 @@ for(const [index,geometry] of general.entries()){
  // independently recomputed, positive M0 exact convex observer-ray theorem.
  // This does not fill the missing native HLR generated TopoDS edges.
  const positiveOriginalGapRays=auditC1NativeGapOriginalExactRays({
-  geometry,cad,m5Ledger:audited
+  geometry,cad,m5Ledger:audited,scopedConsumer
  });
+ assert.equal(
+  positiveOriginalGapRays.nativeGenerated2DToOriginal3DHLRSourceClassEvidenceConsumed,
+  true);
+ assert.equal(
+  positiveOriginalGapRays.nativeGenerated2DToOriginal3DClassSourceViews,
+  positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.nativeScoped2DToOriginal3DClassWitness?.officialV5Authorized===false&&
+  row.native2DClassWitnessCannotCloseMissingM5SourceRow===true&&
+  row.missingM5SourceViewRemainsUncovered===true));
+ assert.ok(positiveOriginalGapRays.rows.every(row=>
+  row.nativeScoped2DToOriginal3DClassWitness?.officialV5Authorized===false&&
+  row.native2DClassWitnessCannotCloseM5PaperGap===true&&
+  row.nativeHLRGeneratedEdgeCoversGap===false));
  assert.equal(positiveOriginalGapRays.counts.positiveNativeGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.counts.nativeGeneratedHistoryGapsClosed,0);
