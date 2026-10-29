@@ -1103,6 +1103,31 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.counts.independentOriginalOCCTCurvePositiveGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
+ // EVERY real native 3D-backed M4 segment now passes through the
+ // independent exact ORIGINAL 3D co-projected source depth audit.
+ // This may prove local source front ordering, but NOT global face
+ // occlusion, generated HLR TopoDS identity or formal V5.
+ assert.equal(positiveOriginalGapRays.nativeOriginalM4Original3DDepthOrderRecomputed,true);
+ const depthCounts=positiveOriginalGapRays.counts.realOriginalM4ToM5CoProjectedDepthCounts;
+ assert.equal(depthCounts.sourceIntervalsExamined,
+  scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments);
+ assert.equal(depthCounts.sourceIntervalsExamined,
+  depthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
+  depthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
+  depthCounts.sourceIntervalsHeldForDepthOrProjectedSplits);
+ for(const item of [
+  ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+  ...positiveOriginalGapRays.rows]){
+  assert.equal(item.originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility,true);
+  assert.ok(item.nativeOriginalM4CoProjectedDepthOrder.length>0);
+  assert.ok(item.nativeOriginalM4CoProjectedDepthOrder.every(row=>
+   row.originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility===true&&
+   row.generated2DHLREdgeTopologyProven===false&&
+   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ }
+ console.error('REAL C1 EXACT ORIGINAL M4->M5 COPROJECTED DEPTH '+
+  geometry.id+': '+JSON.stringify(depthCounts));
+
  // M5 now consumes actual M4 candidates constructed from source-filtered
  // ORIGINAL native 3D parameters, not the inverse of generated HLR paper.
  assert.equal(positiveOriginalGapRays.nativeOriginal3DM4SourceProjectionAvailable,true);
