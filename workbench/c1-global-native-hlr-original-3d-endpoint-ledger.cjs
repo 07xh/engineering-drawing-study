@@ -85,6 +85,40 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
        physicalGraph.allOriginalBRepVertexPairsCompared)
    throw new RangeError('untrusted same-run original native 3D vertex topology');
  }
+ // Real sewn OCCT face incidence proves ORIGINAL 3D adjacency only;
+ // generated HLR edge history and occlusion remain separate obligations.
+ const faceGraph=cad.originalNativeFaceAdjacency;
+ if(faceGraph!==undefined){
+  const expectedFaceAdjacency=new Map([...originals.keys()].map(id=>[id,[]]));
+  const expectedFaces=geometry.data.faces.map((face,index)=>{
+   if(!Array.isArray(face)||face.length<3||new Set(face).size!==face.length)
+    throw new RangeError('invalid reviewed M0 face for native BRep adjacency');
+   const boundary=face.map((a,i)=>{
+    const b=face[(i+1)%face.length];
+    const id=geometry.id+'::'+[a,b].sort().join('|');
+    if(!originals.has(id))
+     throw new RangeError('native BRep adjacency refers to absent original M0 edge');
+    expectedFaceAdjacency.get(id).push(index);
+    return id;
+   }).sort();
+   return {originalM0FaceIndex:index,originalM0BoundarySourceEdgeIds:boundary};
+  });
+  const expectedEdges=[...expectedFaceAdjacency].sort((a,b)=>a[0].localeCompare(b[0]))
+   .map(([sourceEdgeId,faces])=>({sourceEdgeId,
+    originalM0AdjacentFaceIndices:faces.sort((a,b)=>a-b)}));
+  if(faceGraph.schema!=='draftai-c1-original-occt-brep-face-edge-adjacency/1'||
+     faceGraph.sourceGeometryId!==geometry.id||
+     faceGraph.allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified!==true||
+     faceGraph.generatedHLREdgeToOriginalTopoDSHistoryCertified!==false||
+     faceGraph.signedV5ActionCount!==0||
+     faceGraph.nativeBRepFacesChecked!==expectedFaces.length||
+     faceGraph.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces!==originals.size||
+     !Array.isArray(faceGraph.edges)||
+     JSON.stringify(faceGraph.edges)!==JSON.stringify(expectedEdges)||
+     JSON.stringify(faceGraph.faces)!==JSON.stringify(expectedFaces)||
+     expectedEdges.some(x=>x.originalM0AdjacentFaceIndices.length!==2))
+   throw new RangeError('untrusted original native BRep face/edge adjacency');
+ }
  const counts={
   globalGeneratedHLREdgesChecked:0,
   uniqueOriginalSourceGlobalEdgesExamined:0,
@@ -103,6 +137,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices:0,
   originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape:0,
   originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes:0,
+  originalBRepSourceEdgesWithNativeFaceAdjacencyVerified:
+   faceGraph?.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces??0,
   nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join:0,
   realNativeGeneratedVertexGraphPairsChecked:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
@@ -369,6 +405,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    cad.nativeGeneratedVertexGraph!==undefined,
   originalNativeBRepPhysicalVertexTopologyVerified:
    physicalGraph!==undefined,
+  originalNativeBRepFaceEdgeAdjacencyVerified:faceGraph!==undefined,
   generated2DToOriginal3DNativeTopoDSVertexTopologyCertified:false,
   allOpaqueFaceOcclusionCertified:false,
   officialV5Authorized:false,signedV5ActionCount:0
