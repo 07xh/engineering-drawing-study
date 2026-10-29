@@ -14,26 +14,36 @@ const SHARED=Object.freeze({
 });
 const MAX_REVIEW_MISMATCH_MM=1e-8;
 const DECIMAL_MM=/^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+function rowError(row,message){
+ const error=new Error('第 '+row+' 行：'+message);
+ error.lineNumber=row;
+ return error;
+}
 function parseReviewedC1Rows(raw,pair){
  if(!PAIRS.includes(pair))throw new Error('请选择有效的两张已知视图');
  if(typeof raw!=='string'||raw.length>16000)throw new Error('原题角点输入太长');
  const lines=raw.trim().split(/\r?\n/);
  if(lines.length!==8)throw new Error('请填写完整的 8 个对应角点，每行一个');
- const seen=new Set();
- const rows=lines.map(line=>{
-  const fields=line.split(/[,，]/).map(s=>s.trim());
-  if(fields.length!==5||!IDS.includes(fields[0])||seen.has(fields[0]))
-   throw new Error('角点编号必须且只能包含 V000 至 V111 各一次');
+ const seen=new Set(),lineById=new Map();
+ const rows=lines.map((line,index)=>{
+  const row=index+1,fields=line.split(/[,，]/).map(s=>s.trim());
+  if(fields.length!==5)
+   throw rowError(row,'每行必须包含角点编号和四个视图坐标（共 5 项）');
+  if(!IDS.includes(fields[0]))
+   throw rowError(row,'角点编号必须且只能包含 V000 至 V111 各一次');
+  if(seen.has(fields[0]))
+   throw rowError(row,'重复角点 '+fields[0]+'；八个编号每个只能出现一次');
   const numbers=fields.slice(1).map(s=>DECIMAL_MM.test(s)?Number(s):NaN);
   if(numbers.some(n=>!Number.isFinite(n)||Math.abs(n)>100000))
-   throw new Error('角点 '+fields[0]+' 的四项视图坐标必须是 ±100000 mm 内的十进制有限数值');
+   throw rowError(row,'角点 '+fields[0]+
+    ' 的四项视图坐标必须是 ±100000 mm 内的十进制有限数值');
   const shared=SHARED[pair],first=numbers[shared.first],
    second=numbers[2+shared.second];
   if(Math.abs(first-second)>MAX_REVIEW_MISMATCH_MM)
-   throw new Error('角点 '+fields[0]+' 的 '+pair[0]+'/'+pair[1]+
+   throw rowError(row,'角点 '+fields[0]+' 的 '+pair[0]+'/'+pair[1]+
     ' 视图公共 '+shared.axis+' 坐标不一致：'+first+' 与 '+second+
     ' mm。请对照原题检查对应点或尺寸');
-  seen.add(fields[0]);
+  seen.add(fields[0]);lineById.set(fields[0],row);
   return {id:fields[0],knownViews:{
    [pair[0]]:numbers.slice(0,2),[pair[1]]:numbers.slice(2,4)}};
  });
@@ -48,7 +58,8 @@ function parseReviewedC1Rows(raw,pair){
   const a=ordered[i].knownViews,b=ordered[j].knownViews;
   if([...a[pair[0]],...a[pair[1]]].every((v,k)=>
     Math.abs(v-[...b[pair[0]],...b[pair[1]]][k])<=MAX_REVIEW_MISMATCH_MM))
-   throw new Error('角点 '+ordered[i].id+' 与 '+ordered[j].id+
+   throw rowError(lineById.get(ordered[j].id),
+    '角点 '+ordered[i].id+' 与 '+ordered[j].id+
     ' 在两张已知视图中重合，不能作为固定拓扑的两个不同三维顶点');
  }
  return ordered;
