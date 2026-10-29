@@ -470,3 +470,22 @@ test('cross-axis exact affine witness separates paper rounding from full 3D sour
  assert.equal(row.engineeringLineStyle,'undetermined');
  assert.equal(result.signedV5ActionCount,0);
 });
+
+test('V/H/W independent consumer rejects disjoint tiny native scoped fragments even with forged paper ordinal',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture();
+  x.geometry.data.points.B={x:1e-10,y:2e-10,z:3e-10};
+  for(const v of ['V','H','W']){
+   const p=x.paper(v,x.id0);
+   x.cad.views[v][0].from={...p.from};
+   x.cad.views[v][0].to={...p.to};
+   const w=x.cad.nativeSourceScopedSharpOutputByView[v].rows[0].visible[0];
+   w.from={...p.from};w.to={...p.to};
+  }
+  const p=x.paper(view,x.id0);
+  const midpoint={u:(p.from.u+p.to.u)/2,v:(p.from.v+p.to.v)/2};
+  x.cad.views[view][0].to={...midpoint};
+  x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0].from={...midpoint};
+  assert.throws(()=>audit(x),/contradicts whole-solid HLR physical source/);
+ }
+});
