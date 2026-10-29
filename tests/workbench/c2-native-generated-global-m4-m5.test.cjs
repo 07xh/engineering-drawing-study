@@ -111,3 +111,54 @@ test('native output may not substitute duplicate result edge ordinal or a differ
  assert.equal(distinct.independentlyAccountedNative3DVertexCount,4,
   'equal 3D coordinates with DIFFERENT TopoDS vertex IDs cannot be silently fused');
 });
+
+test('native output edges outside original union input solid volume fail before projected M4 and M5',()=>{
+ const boxes=parts;
+ const call=outputEdges=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,boxes,nativeReport:report(outputEdges)
+ });
+ // A bounding box enclosing all components is not enough: x=4.5 lies
+ // strictly in the GAP, so it belongs to neither original physical solid.
+ const gap={x:4.5,y:2,z:2};
+ assert.throws(()=>call([
+  edge(1,[1,2],{x:0,y:0,z:0},{x:4,y:4,z:0}),
+  edge(2,[3,4],gap,{x:6,y:2,z:2})
+ ]),/native Boolean result vertex escapes authenticated original source solid volume/);
+ const outside={x:100,y:2,z:2};
+ assert.throws(()=>call([
+  edge(1,[1,2],{x:0,y:0,z:0},{x:4,y:4,z:0}),
+  edge(2,[3,4],outside,{x:6,y:2,z:2})
+ ]),/native Boolean result vertex escapes authenticated original source solid volume/);
+ const valid=call([
+  edge(1,[1,2],{x:0,y:0,z:0},{x:4,y:4,z:0}),
+  edge(2,[3,4],{x:5,y:2,z:2},{x:6,y:2,z:2})
+ ]);
+ assert.equal(valid.allNativeResultEndpointsWithinOriginalBooleanInputVolumeVerified,true);
+ assert.equal(valid.boundingSourceDomainOperation,'union');
+ assert.equal(valid.allOfficialEngineeringLinesCertified,false);
+});
+test('native subtractive result cannot claim an edge in cutter-only space outside stock',()=>{
+ const cut=edges=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,boxes:parts,operation:'cut',
+  nativeReport:{...report(edges),actualNativeBooleanOperation:'cut'}
+ });
+ assert.throws(()=>cut([
+  edge(1,[1,2],{x:0,y:0,z:0},{x:4,y:4,z:0}),
+  edge(2,[3,4],{x:5,y:1,z:1},{x:6,y:1,z:1})
+ ]),/native Boolean result vertex escapes authenticated original source solid volume/);
+});
+test('native source volume check refuses nonfinite, reversed and unbounded source boxes',()=>{
+ for(const bounds of [
+  {...parts[0],min:[0,NaN,0]},
+  {...parts[0],min:[4,0,0]},
+  {...parts[0],max:[Infinity,4,4]},
+  {...parts[0],max:[1e7,4,4]}
+ ]){
+  assert.throws(()=>auditC2GeneratedResultProjectedM4M5({
+   revision:1,solids,boxes:[bounds,parts[1]],
+   nativeReport:report([
+    edge(1,[1,2],A,B),edge(2,[3,4],C,D)
+   ])
+  }),/actual native output source box bounds must be finite and positive/);
+ }
+});
