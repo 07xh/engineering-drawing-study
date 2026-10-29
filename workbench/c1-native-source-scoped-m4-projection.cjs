@@ -60,7 +60,8 @@ function projectC1Native3DSourceIntervalsToM4({
  if(forward===reversed)
   throw new RangeError('ambiguous or contradictory original native 3D curve direction');
  const groups=[['visible-sharp',scopedRow.visible3D],
-  ['hidden-sharp',scopedRow.hidden3D]],segments=[],ranges={};
+  ['hidden-sharp',scopedRow.hidden3D]],segments=[],ranges={},
+  nativeIntervalsHeldForM4=[];
  for(const [klass,group] of groups){
   const parts=group?.native3DGeneratedCurveIntervals;
   if(group?.nativeSourceFilteredOriginalTopoDSEdge!==true||
@@ -84,15 +85,38 @@ function projectC1Native3DSourceIntervalsToM4({
    const u=normalize(interval[0]),v=normalize(interval[1]),
     from=Math.min(u,v),to=Math.max(u,v);
    if(!Number.isFinite(from)||!Number.isFinite(to)||
-      from<0||to>1||!(to>from))
-    throw new RangeError('native 3D source interval cannot be exactly bounded in original M0 [0,1]');
+      from<0||to>1)
+    throw new RangeError('native 3D source interval outside original M0 [0,1]');
+   // Native parameters can be DISTINCT positive-length binary64 values
+   // while both normalize to the SAME rounded M0 fraction. Preserve the
+   // genuine interval as a held witness; never invent a zero-width M4
+   // segment or let adjacent normalized spans certify full coverage.
+   if(!(to>from)){
+    nativeIntervalsHeldForM4.push({
+     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
+     roundedOriginalM0UnitParameterRange:[from,to],
+     reason:'positive-native-interval-collapsed-by-binary64-normalization',
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
+    continue;
+   }
    const fromModelMm=lerp(a,b,from),toModelMm=lerp(a,b,to);
    const fromPaper=project(fromModelMm)[view],
     toPaper=project(toModelMm)[view];
    if(![fromPaper.u,fromPaper.v,toPaper.u,toPaper.v].every(Number.isFinite))
     throw new RangeError('nonfinite first-angle M4 projection');
-   if(fromPaper.u===toPaper.u&&fromPaper.v===toPaper.v)
-    throw new RangeError('noncollapsed original edge emitted collapsed M4 projected interval');
+   if(fromPaper.u===toPaper.u&&fromPaper.v===toPaper.v){
+    // A valid positive original M0 subspan can be smaller than the ULP
+    // of a large absolute paper coordinate. The original 3D source is
+    // still real; the rounded paper stroke is NOT drawable/proven.
+    nativeIntervalsHeldForM4.push({
+     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
+     roundedOriginalM0UnitParameterRange:[from,to],
+     reason:'positive-original-interval-collapsed-by-binary64-paper-projection',
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
+    continue;
+   }
    segments.push({view,sourceEdgeId,originalVertexIds:[id0,id1],
     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
     originalM0UnitParameterRange:[from,to],
@@ -129,9 +153,12 @@ function projectC1Native3DSourceIntervalsToM4({
   // unless the ORIGINAL native parameter partition is also complete.
   M4OriginalUnitIntervalCandidateCoverageComplete:
    nativePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce&&
+   nativeIntervalsHeldForM4.length===0&&
    normalized.entireOriginalParameterIntervalCovered,
   M4OriginalUnitIntervalCandidatePositiveGaps:
    normalized.positiveLengthUncoveredIntervals,
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:
+   nativeIntervalsHeldForM4,
   native3DOriginalParameterPositiveGaps:
    nativePartition.positiveLengthUncoveredNativeParameterIntervals,
   native3DOriginalParameterPositiveOverlaps:
