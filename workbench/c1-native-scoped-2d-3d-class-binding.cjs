@@ -38,6 +38,40 @@ const low=(a,b)=>compare(a,b)<=0?a:b;
 const high=(a,b)=>compare(a,b)>=0?a:b;
 const printable=x=>x.d===1n?String(x.n):String(x.n)+'/'+String(x.d);
 const zero={n:0n,d:1n},one={n:1n,d:1n};
+// A *necessary* native output rounding compatibility witness, not a
+// second paper inversion or an authorization to snap original t=0/1.
+// One binary64 ULP at the original edge's GLOBAL source-paper magnitude
+// is bounded by 1e-6 of the projected edge length: a tiny original edge
+// may never borrow an unrelated point only because its absolute XYZ is
+// huge. The source-scoped TopoDS HLR filter is independently verified.
+const ulpBits=new DataView(new ArrayBuffer(8));
+const ulpAtPositiveScale=x=>{
+ if(!(x>=1)&&!(x>0)||!Number.isFinite(x))
+  throw new TypeError('positive finite binary64 source scale required');
+ ulpBits.setFloat64(0,x,false);
+ const exponent=(ulpBits.getUint32(0,false)>>>20)&0x7ff;
+ return exponent<=1?Number.MIN_VALUE:2**(exponent-1023-52);
+};
+function boundedOriginalFullPaperEndpointEnvelope(a,b,from,to){
+ const length=Math.hypot(b.u-a.u,b.v-a.v);
+ if(!(length>0)||!Number.isFinite(length))
+  return {compatible:false,absolutePaperEnvelopeMm:0,
+   exactClosedOriginalEndpointGeometryCertified:false};
+ const magnitude=Math.max(1,Math.abs(a.u),Math.abs(a.v),
+  Math.abs(b.u),Math.abs(b.v));
+ const budget=Math.min(ulpAtPositiveScale(magnitude),length*1e-6);
+ if(!(budget>0))
+  return {compatible:false,absolutePaperEnvelopeMm:0,
+   exactClosedOriginalEndpointGeometryCertified:false};
+ const close=(p,q)=>Math.abs(p.u-q.u)<=budget&&
+  Math.abs(p.v-q.v)<=budget;
+ return {
+  compatible:close(from,a)&&close(to,b)||close(from,b)&&close(to,a),
+  absolutePaperEnvelopeMm:budget,
+  exactClosedOriginalEndpointGeometryCertified:false,
+  sourceScopedHLRWithinOneScaleULPIsNotOriginalParameterIdentity:true
+ };
+}
 function auditC1RealNativeScoped2D3DClassBinding({
  view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
  scoped2DVisible,scoped2DHidden,nativeOriginal3DM4
@@ -79,7 +113,10 @@ function auditC1RealNativeScoped2D3DClassBinding({
   exactOppositeClassPositiveOverlapEdges:0,
   positiveNative3DClassCoverageGapsFor2DEdges:0,
   exactPaperOutOfOriginalParameterDomain:0,
-  paperDriftOrClassCoverageHeld:0};
+  paperDriftOrClassCoverageHeld:0,
+  originalFullEdgeOneULPPaperEnvelopeCompatible:0,
+  exactNative3DWholeSourceSameClassForBoundedPaper:0,
+  roundedPaperRepresentationCompatibleButNotExactCertified:0};
  const cross=(p)=>sub(product(sub(dyadic(b.u),dyadic(a.u)),
     sub(dyadic(p.v),dyadic(a.v))),
    product(sub(dyadic(b.v),dyadic(a.v)),
@@ -116,6 +153,24 @@ function auditC1RealNativeScoped2D3DClassBinding({
    const opposite=m4.some(x=>x.klass!==klass&&
     compare(high(x.from,from),low(x.to,to))<0);
    const backed=positive&&bounded&&aligned&&gaps.length===0&&!opposite;
+   const roundedEnvelope=boundedOriginalFullPaperEndpointEnvelope(
+    a,b,stroke.from,stroke.to);
+   const sameWhole=m4.filter(x=>x.klass===klass)
+    .map(x=>[x.from,x.to])
+    .sort((x,y)=>compare(x[0],y[0])||compare(x[1],y[1]));
+   let wholeReach=zero;
+   for(const [start,end] of sameWhole){
+    if(compare(start,wholeReach)>0)break;
+    if(compare(end,wholeReach)>0)wholeReach=end;
+   }
+   const native3DSameClassCoversWholeOriginalSource=
+    compare(wholeReach,one)>=0&&
+    nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0&&
+    !m4.some(x=>x.klass!==klass);
+   const boundedRepresentationConsistent=!backed&&positive&&
+    roundedEnvelope.compatible&&
+    native3DSameClassCoversWholeOriginalSource&&
+    !opposite;
    counts.scoped2DGeneratedEdgesChecked++;
    counts.exact2DSourcePaperAffineAligned+=Number(aligned);
    counts.exactSameClassNative3DBackedEdges+=Number(backed);
@@ -123,6 +178,12 @@ function auditC1RealNativeScoped2D3DClassBinding({
    counts.positiveNative3DClassCoverageGapsFor2DEdges+=Number(gaps.length>0);
    counts.exactPaperOutOfOriginalParameterDomain+=Number(!bounded);
    counts.paperDriftOrClassCoverageHeld+=Number(!backed);
+   counts.originalFullEdgeOneULPPaperEnvelopeCompatible+=
+    Number(roundedEnvelope.compatible);
+   counts.exactNative3DWholeSourceSameClassForBoundedPaper+=
+    Number(native3DSameClassCoversWholeOriginalSource);
+   counts.roundedPaperRepresentationCompatibleButNotExactCertified+=
+    Number(boundedRepresentationConsistent);
    rows.push({view,sourceEdgeId,hlrClass:klass,
     originalM0ExactRationalPaperInterval:[printable(from),printable(to)],
     exactOriginalM0PaperAffineCollinearity:aligned,
@@ -133,6 +194,13 @@ function auditC1RealNativeScoped2D3DClassBinding({
     exactNative3DSourceClassPositivePaperCoverageGaps:
      gaps.map(([u,v])=>[printable(u),printable(v)]),
     nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment:backed,
+    originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope:
+     roundedEnvelope,
+    native3DSameVisibilityClassExactlyCoversWholeOriginalSource:
+     native3DSameClassCoversWholeOriginalSource,
+    generated2DRepresentationWithinOneULPOfFullOriginalM0Source:
+     boundedRepresentationConsistent,
+    roundedPaperEnvelopeCannotReplaceExactM0SourceParameterCoverage:true,
     sourceFilteredExtractionDoesNotProveGlobalGenerated2DEdgeIsSame:true,
     actualGlobalHLRGenerated2DTopoDSHistoryCertified:false,
     entireOpaqueSceneVisibilityCertified:false,
@@ -147,6 +215,11 @@ function auditC1RealNativeScoped2D3DClassBinding({
   sourceScoped2DClassBoundWithoutRounding:
    counts.scoped2DGeneratedEdgesChecked>0&&counts.paperDriftOrClassCoverageHeld===0&&
    !nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length,
+  native2DAnd3DSourceClassHasBoundedRoundoffOnlyForHeldRows:
+   counts.paperDriftOrClassCoverageHeld>0&&
+   counts.paperDriftOrClassCoverageHeld===
+    counts.roundedPaperRepresentationCompatibleButNotExactCertified,
+  boundedOneULPPaperWitnessNeverClosesExactSourceOrM5Gaps:true,
   globalGenerated2DEdgeToOriginalTopoDSIdentityCertified:false,
   originalSource3DClosedEndpointTopologyCertified:false,
   wholeSceneM5Certified:false,officialV5Authorized:false
