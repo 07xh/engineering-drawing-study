@@ -60,3 +60,50 @@ test('diagnostic result and intervals cannot be mutated into V5 authority',()=>{
  assert.throws(()=>{r.rows[0].signedV5Action=true;},TypeError);
  assert.equal(r.originalTopoDSHistoryCertified,false);
 });
+
+test('complete original M0 interval cannot conceal an extra unknown canonical M5 owner',()=>{
+ const data=input([[0,1]]);
+ data.canonicalM5RowsByView.V.push({view:'V',
+  sourceEdgeId:'scene::forged|source',originalParameterRange:[0,1]});
+ const r=audit(data);
+ assert.equal(r.counts.sourceViewsWithCompleteCanonicalM5ParameterInventory,1);
+ assert.equal(r.counts.canonicalM5RowsOutsideNoncollapsedOriginalM0Inventory,1);
+ assert.deepEqual(r.orphanCanonicalM5Rows,[{
+  view:'V',ordinal:1,sourceEdgeId:'scene::forged|source',
+  reason:'not-a-noncollapsed-original-m0-source-in-this-view'
+ }]);
+ assert.equal(r.allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('complete original M0 source cannot conceal an unbound M5 row',()=>{
+ const data=input([[0,1]]);
+ data.canonicalM5RowsByView.V.push({view:'V',
+  sourceEdgeId:null,originalParameterRange:[0,1]});
+ const r=audit(data);
+ assert.equal(r.counts.canonicalM5RowsWithUnboundSourceIdentity,1);
+ assert.equal(r.allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce,false);
+ assert.equal(r.orphanCanonicalM5Rows[0].reason,'unbound-canonical-m5-source-identity');
+ assert.equal(r.orphanCanonicalM5Rows[0].sourceEdgeId,null);
+ assert.ok(Object.isFrozen(r.orphanCanonicalM5Rows[0]));
+});
+test('M5 source projected to a point in this view cannot borrow another view inventory',()=>{
+ const data=input([[0,1]]);
+ data.projectedOriginalSourcesByView.H.add('scene::C|D');
+ data.canonicalM5RowsByView.V.push({view:'V',
+  sourceEdgeId:'scene::C|D',originalParameterRange:[0,1]});
+ const r=audit(data);
+ assert.equal(r.counts.canonicalM5RowsOutsideNoncollapsedOriginalM0Inventory,1);
+ assert.equal(r.allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce,false);
+ assert.equal(r.originalTopoDSHistoryCertified,false);
+});
+test('canonical M5 wrong-view and missing owner identities fail closed',()=>{
+ for(const sourceEdgeId of [undefined,'']){
+  const data=input([[0,1]]);
+  data.canonicalM5RowsByView.V.push({view:'V',sourceEdgeId});
+  assert.throws(()=>audit(data),/canonical M5 row must have current view/);
+ }
+ const data=input([[0,1]]);
+ data.canonicalM5RowsByView.V.push({view:'H',
+  sourceEdgeId:'scene::A|B',originalParameterRange:[0,1]});
+ assert.throws(()=>audit(data),/canonical M5 row must have current view/);
+});
