@@ -32,16 +32,22 @@ function fixture(depthAlias=false){
    physicalSource3DPoint:point
   }))
  }));
- const nodes=[a,b,c,q,r].filter((n,i,all)=>all.findIndex(k=>
-  k.x===n.x&&k.y===n.y&&k.z===n.z)===i).map(point3D=>({
-   point3D,
-   incidentSegmentCount:!depthAlias&&point3D===b?2:1,
+ const segments=[[a,b],[q,r]].map(([source3DFrom,source3DTo],i)=>({
+  id:'RealPhysical'+(i+1),source3DFrom,source3DTo,
+  sourcePhysicalFeatureOpenIntervalVerified:true
+ }));
+ const nodes=[a,b,q,r].filter((n,i,all)=>all.findIndex(k=>
+  k.x===n.x&&k.y===n.y&&k.z===n.z)===i).map(point3D=>{
+  const incidences=segments.filter(seg=>[seg.source3DFrom,seg.source3DTo]
+   .some(pt=>['x','y','z'].every(k=>pt[k]===point3D[k])))
+   .map(seg=>({segmentId:seg.id}));
+  return {point3D,incidences,incidentSegmentCount:incidences.length,
    original3DPhysicalCoincidenceVerified:true,
-   localMultiSourcePhysicalJunctionCandidate:!depthAlias&&point3D===b
-  }));
+   localMultiSourcePhysicalJunctionCandidate:incidences.length>=2};
+ });
  const physicalJunctionEvidence={
   status:'source-recomputed-physical-3d-feature-incidence',
-  revision,sourceGeometryIds,nodes
+  revision,sourceGeometryIds,nodes,segments
  };
  return {revision,sourceGeometryIds,sourceBoundaries:boundaries,
   boundaryRayEvidence:rayEvidence,paperLines:lines,
@@ -57,6 +63,7 @@ test('same paper endpoint with exact same verified real 3D source is not merely 
  const joint=r.nodes.find(n=>n.paperPoint.u===10&&n.paperPoint.v===0);
  assert.equal(joint.incidentBoundaryCount,2);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,true);
+ assert.equal(joint.independentPhysical3DIncidentSegmentsVerified,true);
  assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,true);
  assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
  assert.equal(joint.officialV5JunctionAuthorized,false);
@@ -117,6 +124,34 @@ test('C2 ambiguous multiple overlapping source groups do not identify one edge p
  assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,false);
  assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,false);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
+});
+test('C2 physical junction must match THESE exact paper source segments, not unrelated incident ledger edges',()=>{
+ const x=fixture(),junction=x.physicalJunctionEvidence.nodes.find(n=>
+  n.point3D.x===10&&n.point3D.y===0&&n.point3D.z===0);
+ assert.equal(junction.incidentSegmentCount,2);
+ // Deliberately substitute one unrelated physical edge ending at the SAME
+ // real 3D junction while retaining the authenticated local node count.
+ x.physicalJunctionEvidence.segments[0].source3DFrom=p(10,0,5);
+ const result=review(x),joint=result.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+ assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,true);
+ assert.equal(joint.independentPhysical3DIncidentSegmentsVerified,false);
+ assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
+ assert.equal(result.exactPhysical3DSourceNodeCount,0);
+ assert.equal(result.officialV5Authorized,false);
+});
+test('C2 M5 physical source ledger must retain real finite current segments',()=>{
+ const noSegment=fixture();
+ noSegment.physicalJunctionEvidence.segments=[];
+ const result=review(noSegment);
+ assert.equal(result.exactPhysical3DSourceNodeCount,0);
+ const bad=fixture();
+ bad.physicalJunctionEvidence.segments[0].source3DFrom.y=Infinity;
+ assert.throws(()=>review(bad),/physical source segment ledger is incomplete/);
+ const forged=fixture();
+ forged.physicalJunctionEvidence.segments[0].sourcePhysicalFeatureOpenIntervalVerified=false;
+ assert.throws(()=>review(forged),/physical source segment ledger is incomplete/);
 });
 test('C2 rejects a perpendicular source group despite its exact common 3D endpoint',()=>{
  const x=fixture();
