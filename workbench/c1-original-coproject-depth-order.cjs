@@ -305,6 +305,29 @@ function auditC1OriginalCoProjectedDepthOrder({
     peer.status==='single-opaque-solid-whole-open-ray-clear'||
     peer.status==='exterior-contour-held-by-original-m5'});
  }
+ // A strict affine ordering in the OPEN source interval survives a
+ // genuine shared M0 vertex depth tie at the boundary. This is strictly
+ // weaker than CLOSED-interval/frontmost/whole-scene line certification.
+ // All projected aliases must have an independently proven open relation.
+ const openSafe=(row)=>[
+  'candidate-strictly-front',
+  'candidate-strictly-behind',
+  'candidate-strictly-front-open-at-original-3d-vertex',
+  'candidate-strictly-behind-open-at-original-3d-vertex'
+ ].includes(row.status);
+ const allOpenSourceRelationsResolved=comparisons.every(openSafe);
+ const allOriginalCoProjectedSourcesBehindCandidateOnOpenInterval=
+  allOpenSourceRelationsResolved&&comparisons.every(row=>
+   row.status==='candidate-strictly-front'||
+   row.status==='candidate-strictly-front-open-at-original-3d-vertex');
+ const someProvenClearFrontOriginalSourceOnOpenInterval=
+  allOpenSourceRelationsResolved&&comparisons.some(row=>
+   row.competingSourceHasCertifiedClearForwardRay===true&&(
+    row.status==='candidate-strictly-behind'||
+    row.status==='candidate-strictly-behind-open-at-original-3d-vertex'));
+ const openSourceOrderRequiresTruePhysicalM0VertexBoundary=
+  comparisons.some(row=>
+   row.strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction===true);
  const status=hasPartialOrTie?'undetermined-coproject-source-order':
   behindCertifiedVisible?'suppressed-by-front-original-visible-source':
   comparisons.some(x=>x.status==='candidate-strictly-behind')?
@@ -320,6 +343,15 @@ function auditC1OriginalCoProjectedDepthOrder({
    status==='no-positive-projected-source-alias',
   visibleSourceCoversEntireLine:
    status==='suppressed-by-front-original-visible-source',
+  allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval:
+   allOpenSourceRelationsResolved,
+  entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources:
+   allOriginalCoProjectedSourcesBehindCandidateOnOpenInterval,
+  entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource:
+   someProvenClearFrontOriginalSourceOnOpenInterval,
+  openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary:
+   openSourceOrderRequiresTruePhysicalM0VertexBoundary,
+  openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces:true,
   originalPhysicalVertexOpenDepthOrderingProven:
    comparisons.some(row=>
     row.strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction===true)&&
