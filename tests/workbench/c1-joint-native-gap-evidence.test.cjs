@@ -232,3 +232,67 @@ test('single OCJS CAD payload drives all three gap auditors; forged source data 
   ...uncoveredByViewAndSource,'V::C1SkewTetra::A|C':[[0,1e-18]]}}),
   /exactly three/);
 });
+
+test('current OCJS/M5 proof ledger supplies three gaps without caller-provided interval map',()=>{
+ const {auditC1ThreeNativeGapBatchFromM5Ledger:run}=
+  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}};
+ const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C'],['A','D']]}};
+ const source=edge=>{
+  const [a,b]=edge.split('|'),sourceEdgeId=geometry.id+'::'+edge;
+  return {sourceEdgeId,occtSourceCurveParameterRange:[0,
+   Math.hypot(...['x','y','z'].map(k=>points[b][k]-points[a][k]))],
+   occtSourceCurveFirstPoint3D:points[a],occtSourceCurveLastPoint3D:points[b],
+   originalOCCTBRepVertexXYZMatched:true,occtCurveTypeIndependentlyVerified:true,
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,occtSourceCurveType:'line'};
+ };
+ const cad={schema:'draftai-c1-ocjs-real-visible-brep/1',engine:'opencascade.js',
+  sourceGeometryId:geometry.id,revision:7,
+  completeSourceTopology3DEndpointCorrespondence:true,
+  actualOCCTCurveTypeIndependentlyVerified:true,
+  actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:false,
+  lineStyleCertified:false,v5Authorized:false,
+  originalBRepSourceEdges:[source('A|C'),source('A|D')],
+  views:{V:[],H:[],W:[]},hiddenSharpViews:{V:[],H:[],W:[]}};
+ const m5Ledger={schema:'draftai-c1-ocjs-m5-convex-proof-gap-ledger/1',
+  sourceGeometryId:geometry.id,revision:7,engine:'opencascade.js',
+  realCadSourceCandidateOnly:true,officialLineStylesVerified:false,
+  wholeSolidV5Ready:false,signedV5ActionCount:0,
+  views:{V:{intervals:[]},H:{intervals:[]},W:{intervals:[]}}};
+ for(const [view,edge,end] of gaps){
+  const sourceEdgeId=geometry.id+'::'+edge;
+  m5Ledger.views[view].intervals.push({
+   sourceEdgeId,engineeringLineStyle:'undetermined',signedV5:false,
+   realNativeOriginal3DSourceParameterCovered:false,
+   exactNativeOriginal3DSourceCoverage:{
+    sourceEdgeId,view,originalSourceParameterRange:[0,1],
+    entireOriginalParameterIntervalCovered:false,
+    positiveLengthUncoveredIntervals:[[0,end]],
+    status:'exact-original-3d-native-source-positive-gap',
+    engineeringLineStyle:'undetermined',signedV5Action:false}
+  });
+ }
+ const input={geometry,cad,m5Ledger};
+ const result=run(input);
+ assert.equal(result.recordsExamined,3);
+ assert.equal(result.canonicalM5GapLedgerBound,true);
+ assert.equal(result.revision,7);
+ assert.equal(result.gapsClosed,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.equal(result.originalTopoDSHistoryCertified,false);
+ assert.ok(Object.isFrozen(result.results[0]));
+ const mutated=change=>{
+  const copy=structuredClone(m5Ledger);change(copy);
+  assert.throws(()=>run({...input,m5Ledger:copy}),
+   /current unsigned|nonunique canonical|M5 native source gap/);
+ };
+ mutated(x=>x.revision=6);
+ mutated(x=>x.signedV5ActionCount=1);
+ mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
+  .positiveLengthUncoveredIntervals=[[0,0]]);
+ mutated(x=>x.views.W.intervals.push(
+  structuredClone(x.views.W.intervals[0])));
+ mutated(x=>x.views.H.intervals[0].realNativeOriginal3DSourceParameterCovered=true);
+ mutated(x=>x.views.W.intervals[1].exactNativeOriginal3DSourceCoverage
+  .originalSourceParameterRange=[Number.MIN_VALUE,1]);
+});
