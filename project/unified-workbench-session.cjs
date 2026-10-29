@@ -21,6 +21,8 @@ const {reviewC3AnalyticBooleanRayPaper}=
 const {auditC3M0M3M5AnalyticSources}=
  require('../workbench/c3-m0-m3-m5-analytic-source-acceptance.cjs');
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
+const {auditC3WMirrorSourceOutlineUnion}=
+ require('../workbench/c3-w-mirror-source-outline-union.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
 const {auditC3JointTopologyVisibility}=
  require('../workbench/c3-joint-topology-visibility.cjs');
@@ -226,6 +228,23 @@ function createUnifiedProjectSession(){
     const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
     const wMirrorDepthEvidence=joint.wExactMirrorDepthEvidence;
     const wMirrorCapContactPartition=joint.wMirrorCapContactPartition;
+    const wMirrorSourceOutlineUnion=auditC3WMirrorSourceOutlineUnion({
+     input,revision:latest.revision,
+     capPartitionEvidence:wMirrorCapContactPartition,
+     wRayPreview:wRay
+    });
+    if(!wMirrorSourceOutlineUnion||
+       wMirrorSourceOutlineUnion.revision!==latest.revision||
+       wMirrorSourceOutlineUnion.solidOperation!==(solidOperation||'unselected')||
+       wMirrorSourceOutlineUnion.officialV5Authorized!==false||
+       wMirrorSourceOutlineUnion.engineeringLineStylesCertified!==false||
+       wMirrorSourceOutlineUnion.fullyGloballyFrontmostOutlineCertified!==false||
+       (wMirrorCapContactPartition?.originalMirroredOpenCellCount>0&&
+        (wMirrorSourceOutlineUnion.originalCapPartitionOpenCellCount!==
+          wMirrorCapContactPartition.atomicMirroredOpenCellCount||
+         wMirrorSourceOutlineUnion.allSourceOutlinePartitionOpenCellCount<
+          wMirrorSourceOutlineUnion.originalCapPartitionOpenCellCount)))
+     throw new Error('C3 W 全部原始投影轮廓交点与镜像端盖开区间切分证据不一致');
     if(!wMirrorCapContactPartition||
        wMirrorCapContactPartition.revision!==latest.revision||
        wMirrorCapContactPartition.solidOperation!==(solidOperation||'unselected')||
@@ -332,7 +351,7 @@ function createUnifiedProjectSession(){
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
      wCriticalPointRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
-     analyticRayPaperReview,
+     wMirrorSourceOutlineUnion,analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,

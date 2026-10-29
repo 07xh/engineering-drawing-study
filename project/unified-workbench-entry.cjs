@@ -1859,6 +1859,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 个正长度开单元；尚有 '+
        partial.wMirrorCapContactPartition.unassignedProjectedCapContactCount+
        ' 个未归属端盖投影事件（全局遮挡及线型不放行）。':'')+
+      (partial.wMirrorSourceOutlineUnion?.originalCapPartitionOpenCellCount>0?
+       ' W 全部原始圆柱轮廓线交点：已复查 '+
+       partial.wMirrorSourceOutlineUnion.sourceOutlineContactCount+
+       ' 个事件，把端盖/镜像来源开区间进一步分为 '+
+       partial.wMirrorSourceOutlineUnion.allSourceOutlinePartitionOpenCellCount+
+       ' 段；仍有 '+partial.wMirrorSourceOutlineUnion.unassignedSourceOutlineEventCount+
+       ' 个未归属事件，闭合接点和全实体可见性未签收。':'')+
       (partial.analyticRayPaperReview?
        ' 三视图曲线已绑定严格体积射线的解析开区间 '+
        partial.analyticRayPaperReview.sourceParameterIntervalCount+
