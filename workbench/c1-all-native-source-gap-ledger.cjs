@@ -205,6 +205,26 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       nativeClaims.length>256))
     throw new RangeError('invalid actual native HLR source claim inventory');
    const claims=nativeClaims??[];
+   // Reject forged or stale claims before joining a native ordinal to a
+   // paper alias. Otherwise an unrelated M0 source can impersonate the
+   // current real-WASM native inventory and skew omission forensics.
+   const seenNativeClaims=new Set();
+   for(const claim of claims){
+    const segments=claim?.hlrClass==='visible-sharp'?cad.views[view]:
+     claim?.hlrClass==='hidden-sharp'?cad.hiddenSharpViews[view]:null;
+    const ordinal=claim?.nativeWholeSolidEdgeOrdinal;
+    if(claim?.view!==view||
+       !originalIds.has(claim.originalPhysicalSourceEdgeId)||
+       !Array.isArray(segments)||
+       !Number.isSafeInteger(ordinal)||ordinal<0||
+       ordinal>=segments.length||
+       claim.nativeScopedGeneratedEdgeIsSame!==true)
+     throw new RangeError('invalid actual native HLR source ownership claim');
+    const key=claim.hlrClass+'|'+ordinal;
+    if(seenNativeClaims.has(key))
+     throw new RangeError('duplicate actual native HLR generated edge owner');
+    seenNativeClaims.add(key);
+   }
    const directNativeIdentityCandidates=candidates.filter(candidate=>
     claims.some(claim=>claim.view===view&&
      claim.originalPhysicalSourceEdgeId===sourceEdgeId&&
