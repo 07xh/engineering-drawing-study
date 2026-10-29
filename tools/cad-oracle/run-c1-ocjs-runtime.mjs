@@ -1040,6 +1040,33 @@ for(const [index,geometry] of general.entries()){
   row.globalCoProjectedVisibilityCertified===false&&
   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
  assert.equal(nativeRayConcordance.officialV5Authorized,false);
+ // For both real convex controls, ALL noncollapsed ORIGINAL 3D source
+ // ranges are accounted for by native source-filtered HLR, despite the
+ // still unsigned canonical 2D/M5 source omissions and rounded gaps.
+ // This isolates the remaining 2D provenance/depth/junction blocker.
+ const native3DCovered=
+  allOriginalSourceNativeGapLedger.native3DSourceViewLedger.
+   allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition;
+ if(native3DCovered){
+  assert.equal(positiveOriginalGapRays.counts.
+   missingM5SourceViewsWithCompleteNative3DParameterPartition,
+   positiveOriginalGapRays.counts.unrepresentedOriginalM0SourceViews);
+  assert.equal(positiveOriginalGapRays.counts.
+   positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition,
+   positiveOriginalGapRays.counts.positiveNativeGapIntervals);
+ }
+ console.error('REAL C1 NATIVE 3D SOURCE COMPLETE, M5 PAPER STILL HELD '+
+  geometry.id+': '+JSON.stringify({
+   native3DAllProjectedSourcePartitionsComplete:native3DCovered,
+   missingM5SourceViewsWithCompleteNative3DSourcePartition:
+    positiveOriginalGapRays.counts.
+     missingM5SourceViewsWithCompleteNative3DParameterPartition,
+   positiveM5PaperGapIntervalsWithCompleteNative3DSourcePartition:
+    positiveOriginalGapRays.counts.
+     positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition,
+   signedV5Actions:positiveOriginalGapRays.signedV5ActionCount
+  }));
+
  console.error('REAL C1 NATIVE 3D/M0 RAY CLASS CONCORDANCE '+geometry.id+': '+
   JSON.stringify(nativeRayConcordance.counts));
 
