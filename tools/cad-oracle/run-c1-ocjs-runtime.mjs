@@ -396,7 +396,7 @@ for(const [index,geometry] of general.entries()){
   assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
    pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===false&&
    pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
-   pair['2DPaperCoincidenceCannotSignEngineeringJunction']===true&&
+   pair.paperCoincidenceCannotSignEngineeringJunction===true&&
    pair.signedV5Action===false));
  }
  console.error('REAL C1 NATIVE GLOBAL HLR ORIGINAL 3D BREP ENDPOINT GRAPH '+
