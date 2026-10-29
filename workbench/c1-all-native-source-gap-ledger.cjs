@@ -10,7 +10,7 @@
  * original TopoDS generated-edge history, closed M5 occlusion, GB line
  * styles or signed official V5 actions.
  */
-const {VIEWS}=require('../core/projection/conventions.js');
+const {VIEWS,project}=require('../core/projection/conventions.js');
 const {auditC1JointNativeGapFromCad}=
  require('./c1-joint-native-gap-evidence.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
@@ -44,6 +44,21 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
   if(originalIds.has(id))throw new RangeError('duplicated original C1 source');
   originalIds.add(id);
  }
+ // M5 may omit an original physical edge entirely. Counting only the rows
+ // already in M5 would then report a misleading 'complete' inventory.
+ // Independently enumerate every noncollapsed original M0 source per view.
+ // A missing row is an UNSIGNED evidence obligation, not a hidden line.
+ const projectedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>[
+  view,new Set(geometry.data.edges.filter(([a,b])=>{
+   const p=project(geometry.data.points[a])[view],
+    q=project(geometry.data.points[b])[view];
+   if(![p.u,p.v,q.u,q.v].every(Number.isFinite))
+    throw new RangeError('nonfinite projected original C1 source');
+   return p.u!==q.u||p.v!==q.v;
+  }).map(e=>geometry.id+'::'+[...e].sort().join('|'))
+ ]));
+ const representedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>
+  [view,new Set()]));
  const result=[],seen=new Set(),totals={
   currentM5SourceSpans:0,fullyNativeCoveredSpans:0,
   positiveGapSourceSpans:0,individualPositiveNativeGaps:0,
@@ -62,6 +77,7 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       row.engineeringLineStyle!=='undetermined'||row.signedV5!==false)
     throw new RangeError('C1 M5 source span incorrectly signed or wrong view');
    const id=row.sourceEdgeId,proof=row.exactNativeOriginal3DSourceCoverage;
+   if(id&&originalIds.has(id))representedOriginalSourcesByView[view].add(id);
    if(id!==null&&(!originalIds.has(id)||
       typeof id!=='string'))
     throw new RangeError('M5 source must be an actual original M0 3D edge');
@@ -145,7 +161,20 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       totals.originalParameterUnreconstructableSpans+
       totals.missingOrUnboundSourceSpans)
   throw new RangeError('C1 complete canonical M5 original source gap accounting lost');
+ const unrepresentedOriginalM0ProjectedSources=[];
+ for(const view of VIEWS)
+  for(const sourceEdgeId of projectedOriginalSourcesByView[view])
+   if(!representedOriginalSourcesByView[view].has(sourceEdgeId))
+    unrepresentedOriginalM0ProjectedSources.push({
+     view,sourceEdgeId,
+     reason:'noncollapsed-original-source-absent-from-current-M5-ledger',
+     originalTopoDSHistoryCertified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
  return freeze({schema:'draftai-c1-all-original-3d-native-source-gaps/1',
+  unrepresentedOriginalM0ProjectedSources,
+  allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5:
+   unrepresentedOriginalM0ProjectedSources.length===0,
   revision:cad.revision,sourceGeometryId:geometry.id,
   status:'full-current-M5-interval-inventory-unsigned',
   originalM0PhysicalSourceCount:originalIds.size,
