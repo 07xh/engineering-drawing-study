@@ -60,6 +60,18 @@ const entry=pathToFileURL(resolve(pkg,'dist/node.js')).href;
 const {default:init}=await import(entry);
 const t0=performance.now();
 const oc=await init();
+// Probe the REAL pinned OCJS source-filtered 3D HLR path. OCCT's
+// HLRBRep::MakeEdge3d retains original 3D curve parameter intervals,
+// unlike the projected 2D VCompound/HCompound edges. Do not treat
+// mere API availability as a successful source/history certificate.
+console.error('REAL C1 OCJS SOURCE-SCOPED 3D HLR API '+JSON.stringify({
+ extractorMethods:Object.getOwnPropertyNames(oc.HLRBRep_HLRToShape?.prototype??{}).
+  filter(x=>/CompoundOfEdges|VCompound|HCompound/.test(x)),
+ sharpEnumGroupKeys:Object.keys(oc.HLRBRep_TypeOfResultingEdge??{}).
+  filter(x=>/Sharp|SharpLine|Rg/.test(x)),
+ sharpEnumDirectType:typeof oc.HLRBRep_Sharp,
+ sharpEnumGroupType:typeof oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_Sharp
+}));
 const initMs=performance.now()-t0;
 const xyz=(x,y,z)=>({x,y,z});
 function reviewed(min,max,revision,id){
