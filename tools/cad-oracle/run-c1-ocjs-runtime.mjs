@@ -383,6 +383,21 @@ for(const [index,geometry] of general.entries()){
   globalScopedRebind.counts.wholeSolidNativeHLREdges);
  assert.equal(nativePhysical3DEndpoints.counts.uniqueOriginalSourceGlobalEdgesExamined,
   globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
+ assert.equal(nativePhysical3DEndpoints.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
+ assert.equal(
+  nativePhysical3DEndpoints.counts.realNativeGeneratedVertexGraphPairsChecked,
+  cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs+
+  cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs);
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(nativePhysical3DEndpoints.counts.nativeOriginalBRepExactPhysicalEndpointPairs,18);
+  assert.equal(nativePhysical3DEndpoints.counts.exactOriginalM0PaperEndpointPairs,10);
+  assert.equal(nativePhysical3DEndpoints.counts.roundedOnlyOriginalM0PaperEndpointPairs,8);
+  assert.equal(nativePhysical3DEndpoints.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,1);
+  assert.equal(nativePhysical3DEndpoints.counts.physicalOriginalM0EndpointRowsHeld,0);
+ }else if(geometry.id==='C1rotated'){
+  assert.equal(nativePhysical3DEndpoints.counts.roundedOnlyOriginalM0PaperEndpointPairs,0);
+  assert.equal(nativePhysical3DEndpoints.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,0);
+ }
  for(const view of ['V','H','W']){
   const e=nativePhysical3DEndpoints.views[view];
   assert.equal(e.rows.length,globalScopedRebind.views[view].length);
@@ -1285,6 +1300,17 @@ for(const [index,geometry] of general.entries()){
  for(const row of heldM5){
   assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
   assert.equal(row.originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity,true);
+  assert.equal(row.originalPhysicalJunctionAndGeneratedNativeIsSameCannotReplaceSceneM5,true);
+  assert.ok(Array.isArray(row.wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs));
+  for(const pair of row.wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs){
+   assert.equal(pair.view,row.view);
+   assert.ok(pair.originalPhysicalM0SourceEdges.includes(row.sourceEdgeId));
+   assert.equal(pair.original3DPhysicalVertexProvenFromM0NotNativeHistory,true);
+   assert.equal(pair.noIndependentGlobalOpaqueVisibilityOrGBLineJoinCertification,true);
+   assert.equal(pair.signedV5Action,false);
+   assert.ok(!(pair.generatedHLRNativeTopoDSIsSamePairProven&&
+    pair.generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join));
+  }
   assert.equal(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length,
    row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length);
   assert.ok(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0);
@@ -1315,6 +1341,12 @@ for(const [index,geometry] of general.entries()){
      row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0).length,
    original3DBRepEndpointMappedM5Rows:heldM5.filter(row=>
     row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0).length,
+   physicalM0OriginalJunctionCandidatePairs:
+    nativePhysical3DEndpoints.counts.originalModelPhysicalJunctionPairCandidates,
+   verifiedGeneratedNativeIsSamePhysicalM0JunctionPairs:
+    nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame,
+   generatedNativeDistinctDespiteM0SharedPhysicalVertex:
+    nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices,
    stillOfficialV5:positiveOriginalGapRays.signedV5ActionCount
   }));
  assert.equal(
