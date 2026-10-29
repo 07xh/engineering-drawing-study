@@ -56,8 +56,21 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  const physicalGraph=cad.originalNativeVertexTopology;
  if(physicalGraph!==undefined){
   const ids=[...new Set([...originals.values()].flat())].sort();
+  const occurrenceCounts=physicalGraph.originalM0VertexNativeOccurrenceCounts;
+  const expectedDegrees=Object.fromEntries(ids.map(id=>[id,0]));
+  for(const edge of originals.values())for(const id of edge)expectedDegrees[id]++;
+  const occurrenceCountsValid=occurrenceCounts&&
+   JSON.stringify(Object.keys(occurrenceCounts).sort())===JSON.stringify(ids)&&
+   ids.every(id=>Number.isSafeInteger(occurrenceCounts[id])&&
+    occurrenceCounts[id]>=expectedDegrees[id])&&
+   ids.reduce((n,id)=>n+occurrenceCounts[id],0)===
+    physicalGraph.originalBRepVertexOccurrencesChecked;
+  const samePairs=occurrenceCountsValid?ids.reduce((n,id)=>
+   n+occurrenceCounts[id]*(occurrenceCounts[id]-1)/2,0):null;
   if(physicalGraph.schema!==
       'draftai-c1-original-occt-brep-vertex-physical-topology/1'||
+     !occurrenceCountsValid||
+     physicalGraph.originalSamePhysicalVertexTopoDSPairs!==samePairs||
      physicalGraph.sourceGeometryId!==geometry.id||
      physicalGraph.allReviewedOriginalSourceVerticesNativeTShapeVerified!==true||
      physicalGraph.generatedHLREdgeToOriginalTopoDSHistoryCertified!==false||
