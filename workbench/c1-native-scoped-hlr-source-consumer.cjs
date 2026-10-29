@@ -60,8 +60,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   const along=(p.u-a.u)*(dx/length)+(p.v-a.v)*(dy/length);
   if(!Number.isFinite(along))return false;
   const bounded=Math.max(0,Math.min(length,along));
+  // For a very short original M0 projection, an absolute 1e-6 mm
+  // allowance could assign an entirely unrelated generated line to it.
+  // Keep the CAD rounding cap but scale it to the actual source span.
   return Math.hypot(p.u-a.u-(dx/length)*bounded,
-   p.v-a.v-(dy/length)*bounded)<=1e-6;
+   p.v-a.v-(dy/length)*bounded)<=Math.min(1e-6,length*1e-6);
  };
  // Inverting a 2D HLR paper line yields only a CANDIDATE original 3D
  // parameter. Native TopoDS history, endpoint topology and opaque rays must
