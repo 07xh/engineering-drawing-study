@@ -416,3 +416,67 @@ test('exact 3D source incidence preserves one-subnormal-ULP transverse offset',(
  assert.throws(()=>on3DSource(a,a,P(0,0,0)),/collapsed/);
  assert.throws(()=>on3DSource(a,b,P(Infinity,0,0)),/finite/);
 });
+
+test('exact front original 3D ray excludes co-projected hidden HLR paper aliases without altering raw OCCT class evidence',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const alias={from,to,sourceCandidate3DLifts:[{sourceEdgeId}]};
+ input.cad.views.V.push(structuredClone(alias));
+ input.cad.hiddenSharpViews.V.push(structuredClone(alias));
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.expectedHLRClassFromIndependentOriginalRay,'visible-sharp');
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,true);
+ assert.equal(row.rayCompatibleOriginal3DSourcePaperVisibility.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,false);
+ assert.equal(row.rayCompatibleOriginal3DSourcePaperCoverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.rayCompatibleCandidateCount,1);
+ assert.deepEqual(row.nativeHLRCandidateExactBinary64AndRayDiagnostics.map(x=>
+  x.oppositeClassExcludedAsThisOriginal3DSourceByExactRay),[false,true]);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  rayExcludedOppositeHLRClassPaperAliases,1);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews,0);
+ assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('hidden-only whole-paper alias cannot cover an independently clear original 3D source',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ input.cad.hiddenSharpViews.V.push({from,to,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.rayCompatibleOriginal3DSourcePaperCoverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.deepEqual(row.rayCompatibleOriginal3DSourcePaperCoverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+ assert.equal(row.rayCompatibleCandidateCount,0);
+ assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(out.signedV5ActionCount,0);
+});
+
+test('half visible and half opposite-class aliases retain exact positive source-specific gap',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const mid={u:(from.u+to.u)/2,v:(from.v+to.v)/2};
+ input.cad.views.V.push({from,to:mid,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.hiddenSharpViews.V.push({from:mid,to,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,false);
+ assert.equal(row.rayCompatibleOriginal3DSourcePaperCoverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.deepEqual(row.rayCompatibleOriginal3DSourcePaperCoverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['1/2','1']]);
+ assert.equal(row.generatedTopoDSToOriginalSourceHistoryCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});
