@@ -13,6 +13,8 @@
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {auditC1JointNativeGapFromCad}=
  require('./c1-joint-native-gap-evidence.cjs');
+const {auditC1OriginalM0InventoryCoverage}=
+ require('./c1-original-m0-inventory-coverage.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -161,6 +163,16 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       totals.originalParameterUnreconstructableSpans+
       totals.missingOrUnboundSourceSpans)
   throw new RangeError('C1 complete canonical M5 original source gap accounting lost');
+ // A canonical M5 source row may cover only a strict subinterval of [0,1],
+ // or overlap another row. Audit ALL original M0 source/view parameters,
+ // including source views entirely absent from M5. This is separate from
+ // native HLR generated-edge provenance and from native gaps within a row.
+ const originalM0CanonicalSourceInventory=auditC1OriginalM0InventoryCoverage({
+  projectedOriginalSourcesByView,
+  canonicalM5RowsByView:Object.fromEntries(VIEWS.map(view=>[
+   view,result.filter(row=>row.view===view)
+  ]))
+ });
  const unrepresentedOriginalM0ProjectedSources=[];
  for(const view of VIEWS)
   for(const sourceEdgeId of projectedOriginalSourcesByView[view])
@@ -253,6 +265,7 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
     engineeringLineStyle:'undetermined',signedV5Action:false};
   });
  return freeze({schema:'draftai-c1-all-original-3d-native-source-gaps/1',
+  originalM0CanonicalSourceInventory,
   unrepresentedM0NativeHLRCandidateForensics,
   unrepresentedOriginalM0ProjectedSources,
   allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5:
