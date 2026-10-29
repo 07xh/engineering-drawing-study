@@ -348,3 +348,24 @@ test('forged native 3D partition claim, source identity and curve parity fail cl
   assert.throws(()=>audit(x),/native|source|partition/);
  }
 });
+
+test('omitted original M0 paper aliases of absent native 3D HLR class are vetoed, never signed',()=>{
+ const x=withNative3D(fixture()),sourceEdgeId='C1SkewTetra::A|C';
+ x.cad.views.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ x.cad.hiddenSharpViews.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(x);
+ const row=out.unrepresentedM0NativeHLRCandidateForensics.find(r=>
+  r.view==='V'&&r.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRPaperCandidateCount,2,
+  'raw native paper evidence remains auditable');
+ assert.equal(row.native3DClassCompatiblePaperCandidateCount,1);
+ assert.equal(row.native3DClassContradictoryPaperCandidateCount,1);
+ assert.deepEqual(row.native3DClassPaperCandidateVeto.
+  paperCandidatesExcludedByNative3DClassAbsence,
+  [{hlrClass:'hidden-sharp',ordinal:0}]);
+ assert.equal(row.native3DClassPaperCandidateVeto.fullOriginalSourceHistoryCertified,false);
+ assert.equal(row.continuousOcclusionCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});
