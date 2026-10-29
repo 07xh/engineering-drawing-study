@@ -63,6 +63,21 @@ function auditC2GeneratedResultProjectedM4M5({
  // none of the three 2D paper event engines reports an intersection.
  // A per-encounter check alone would miss inconsistent owner coordinates.
  const nativeVertexCoordinates=new Map(),nativeVertexIncidences=new Map();
+ // OCCT Boolean union can only contain points from at least one input
+ // closed source box; subtraction is a SUBSET of its original stock, not
+ // of the cutter. This is only a necessary source-geometry condition:
+ // it does not prove that an output edge is an exterior Boolean crease.
+ const sourceBoxes=boxes.map(box=>{
+  if(!Array.isArray(box.min)||!Array.isArray(box.max)||
+     box.min.length!==3||box.max.length!==3||
+     [...box.min,...box.max].some(v=>!finite(v)||Math.abs(v)>1e6)||
+     box.min.some((lo,i)=>!(box.max[i]>lo)))
+   throw new TypeError('actual native output source box bounds must be finite and positive');
+  return {id:box.id,min:box.min,max:box.max};
+ });
+ const insideOriginalBox=(point,box)=>['x','y','z'].every((axis,i)=>
+  point[axis]>=box.min[i]-1e-8&&point[axis]<=box.max[i]+1e-8);
+ const allNativeEndpointsFromOriginalBooleanSource=sourceBoxes.length>0;
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
   const id=item?.finalTopoDSEdgeOrdinal,ids=item?.actualNativeTopoDSVertexOrdinals,
@@ -78,6 +93,12 @@ function auditC2GeneratedResultProjectedM4M5({
      !['physical-crease','coplanar-subdivision',
        'undetermined-dihedral'].includes(item.currentNativeResultFeatureStatus))
    throw new RangeError('untrusted native result edge endpoints or true TopoDS identity');
+  if(allNativeEndpointsFromOriginalBooleanSource&&xyz.some(pt=>
+    operation==='cut'?
+     !insideOriginalBox(pt,sourceBoxes[0]):
+     !sourceBoxes.some(box=>insideOriginalBox(pt,box))))
+   throw new RangeError(
+    'native Boolean result vertex escapes authenticated original source solid volume');
   const e={id,ids:[...ids],from:xyz[0],to:xyz[1],
    feature:item.currentNativeResultFeatureStatus};
   for(let i=0;i<2;i++){
@@ -359,6 +380,10 @@ function auditC2GeneratedResultProjectedM4M5({
   independentlyAccountedNative3DVertexCount:nativeVertexCoordinates.size,
   allNativeEdgeEndpointVertexIncidencesGloballyReconciled:true,
   actualNative3DVertexEndpointIncidenceCount:edges.length*2,
+  allNativeResultEndpointsWithinOriginalBooleanInputVolumeVerified:
+   allNativeEndpointsFromOriginalBooleanSource,
+  boundingSourceDomainOperation:
+   allNativeEndpointsFromOriginalBooleanSource?operation:null,
   VHWSourceRows:rows.length,
   actualM4PairwiseSegmentViewChecks:pairwiseEventChecks,
   exactM4TransverseProjectedCrossings:transverseProjectedCrossings,
