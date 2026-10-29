@@ -141,6 +141,11 @@ function auditC3WBooleanForwardExitDepth({input,revision,selectedRayEvidence}={}
     (Z.xCenter<=Y.xCenter?'zCylinder':'yCylinder')):null;
    const exitCenter=winner==='zCylinder'?Z.xCenter:
     winner==='yCylinder'?Y.xCenter:null;
+   // At a shared X center both true source surfaces are the far exit
+   // boundary simultaneously. Never fabricate a UNIQUE 3D source owner.
+   const sharedExit=opaque&&Z.xCenter===Y.xCenter;
+   const exitSourceIds=opaque?(sharedExit?
+    ['zCylinder','yCylinder']:[winner]):[];
    // Genuine source-cap proof is more than a Boolean from old M5.
    // Require exact original source endpoint limits in BOTH finite cap
    // domains. An unverified near-cap rounding is held UNSIGNED.
@@ -165,7 +170,10 @@ function auditC3WBooleanForwardExitDepth({input,revision,selectedRayEvidence}={}
     selectedSolidOperation:op,
     strictForwardVolumeRayStatus:status,
     continuousForwardRayAnalyticIdentity:'t*(t+2*(x-Xcenter))',
-    sourceFirstExitCylinder:winner,
+    sourceFirstExitCylinder:sharedExit?null:winner,
+    sourceFirstExitSourceIds:exitSourceIds,
+    sourceFirstExitPhysicalSourceUnique:!!(opaque&&!sharedExit),
+    simultaneousFiniteCylinderExitSourcesVerified:sharedExit,
     sourceFirstExitXAffine:exitRange?{
      slope:-1,twiceXCenter:2*exitCenter,
      firstExitXDomain:[...exitRange],
