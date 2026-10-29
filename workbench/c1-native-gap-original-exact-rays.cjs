@@ -241,7 +241,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   canonicalM4CutSubspansExamined:0,
   canonicalM4CutSubspansStrictlyFrontmost:0,
   canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource:0,
-  canonicalM4CutSubspansHeldForDepthOrTopology:0};
+  canonicalM4CutSubspansHeldForDepthOrTopology:0,
+  sourceIntervalsWithStrictOriginal3DVertexOpenOrdering:0,
+  canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering:0,
+  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
    // The source ID itself contains an original endpoint separator '|'.
@@ -290,6 +293,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
       geometry,view,sourceEdgeId,
       originalParameterRange:[from,to],peers
      });
+     if(sliced.originalPhysicalVertexOpenDepthOrderingProven===true)
+      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering++;
+     if(sliced.status===
+        'positive-original-dyadic-projection-below-paper-resolution-held')
+      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
       originalM4CutFromCurrentReviewedEventGraph:true,
@@ -311,6 +319,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     if(cutPartitionComplete)
      m4DepthCounts.canonicalM4CutSourceIntervalsFullyPartitioned++;
     m4DepthCounts.sourceIntervalsExamined++;
+    if(order.originalPhysicalVertexOpenDepthOrderingProven===true)
+     m4DepthCounts.sourceIntervalsWithStrictOriginal3DVertexOpenOrdering++;
     m4DepthCounts.crossSourceProjectedAliasesExamined+=order.aliasesExamined;
     if(order.wholeIntervalFrontmostCertified)
      m4DepthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering++;
@@ -343,7 +353,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSourceIntervalsExamined!==
-      m4DepthCounts.sourceIntervalsExamined)
+      m4DepthCounts.sourceIntervalsExamined||
+     m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+     m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // A missing M5 source/view is a distinct coverage obligation from a
