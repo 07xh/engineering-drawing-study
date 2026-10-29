@@ -57,6 +57,7 @@ test('same paper endpoint with exact same verified real 3D source is not merely 
  const joint=r.nodes.find(n=>n.paperPoint.u===10&&n.paperPoint.v===0);
  assert.equal(joint.incidentBoundaryCount,2);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,true);
+ assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,true);
  assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
  assert.equal(joint.officialV5JunctionAuthorized,false);
  assert.equal(r.officialV5Authorized,false);
@@ -88,6 +89,32 @@ test('C2 rejects a paper join whose matching 3D source has only ONE incident sou
  assert.equal(corner.unresolvedReal3DJunctionIncidence,true);
  assert.equal(reviewed.exactPhysical3DSourceNodeCount,0);
  assert.equal(reviewed.officialV5Authorized,false);
+});
+test('C2 paper junction cannot reuse ONE physical source group as two independent boundary edges',()=>{
+ const x=fixture();
+ // Paper B2 has the same projected endpoint as B1, but its ray witness
+ // references B1's SAME canonical group instead of an independently
+ // authenticated group for B2. The real multi-source M5 node alone cannot
+ // prove that these particular projected boundaries are connected.
+ x.boundaryRayEvidence[1].paperPieces[0].sourceGroupIds=['Group1'];
+ const out=review(x),joint=out.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+ assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,false);
+ assert.equal(joint.sourceLedgerMultiFeatureJunctionVerified,false);
+ assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
+ assert.equal(joint.unresolvedReal3DJunctionIncidence,true);
+ assert.equal(out.exactPhysical3DSourceNodeCount,0);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('C2 ambiguous multiple overlapping source groups do not identify one edge per boundary',()=>{
+ const x=fixture();
+ x.boundaryRayEvidence[0].paperPieces[0].sourceGroupIds=['Group1','Group2'];
+ const out=review(x),joint=out.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+ assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,false);
+ assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
 });
 test('C2 near-critical or non-positive M5 source ledger may not certify a 3D junction',()=>{
  const x=fixture();
