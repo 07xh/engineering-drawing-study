@@ -85,3 +85,39 @@ test('shared raw OCCT input invokes both independent auditors for all three skew
    /actual original OCCT/);
  }
 });
+
+test('batch rejects absent, duplicate, altered and invented native HLR records',()=>{
+ const {auditC1ThreeNativeGapBatch:batch}=
+  require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}};
+ const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C'],['A','D']]}};
+ const records=gaps.map(([view,edge,end])=>{
+  const [a,b]=edge.split('|'),sourceEdgeId=geometry.id+'::'+edge;
+  return {view,sourceEdgeId,uncoveredIntervals:[[0,end]],
+   visibleSegments:[],hiddenSegments:[],
+   originalBRepSource:{sourceEdgeId,
+    occtSourceCurveParameterRange:[0,
+     Math.hypot(...['x','y','z'].map(k=>points[b][k]-points[a][k]))],
+    occtSourceCurveFirstPoint3D:points[a],
+    occtSourceCurveLastPoint3D:points[b],
+    originalOCCTBRepVertexXYZMatched:true,
+    occtCurveTypeIndependentlyVerified:true,
+    occtSourceCurve3DEndpointsAndMidpointVerified:true,
+    occtSourceCurveType:'line'}
+  };
+ });
+ const result=batch({geometry,records:[...records].reverse()});
+ assert.equal(result.recordsExamined,3);
+ assert.equal(result.gapsClosed,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(result.results.every(r=>r.positiveGapCount===1));
+ assert.throws(()=>batch({geometry,records:records.slice(1)}),/three actual/);
+ assert.throws(()=>batch({geometry,records:[records[0],records[0],records[2]]}),
+  /missing or duplicated/);
+ const altered=records.map(r=>({...r}));
+ altered[1]={...altered[1],uncoveredIntervals:[[0,1e-16]]};
+ assert.throws(()=>batch({geometry,records:altered}),/native gap intervals/);
+ const invented=records.map(r=>({...r}));
+ invented[2]={...invented[2],sourceEdgeId:'C1SkewTetra::B|C'};
+ assert.throws(()=>batch({geometry,records:invented}),/missing or duplicated/);
+});
