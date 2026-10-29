@@ -21,6 +21,8 @@ on:
       - 'workbench/c1-all-native-source-gap-ledger.cjs'
       - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
       - 'tests/workbench/c1-all-native-source-gap-ledger.test.cjs'
+      - 'workbench/c1-native-source-scoped-3d-parameter-coverage.cjs'
+      - 'tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
@@ -228,6 +230,7 @@ jobs:
           node --test tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs
           node --test tests/workbench/c1-native-gap-original-exact-rays.test.cjs
           node --test tests/workbench/c1-all-native-source-gap-ledger.test.cjs
+          node --test tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
