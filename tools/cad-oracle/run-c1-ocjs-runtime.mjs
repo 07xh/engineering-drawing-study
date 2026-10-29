@@ -987,6 +987,12 @@ for(const [index,geometry] of general.entries()){
  assert.ok(candidateDiagnostics.nativeOwnerRayClassConsistent+
   candidateDiagnostics.nativeOwnerRayClassContradictions<=
   candidateDiagnostics.nativeIsSameOwnerClaims);
+ assert.equal(candidateDiagnostics.paperAliasExactFullSourceViewCoverage+
+  candidateDiagnostics.paperAliasExactPositiveGapSourceViews,
+  missingOriginalRays.length);
+ assert.equal(candidateDiagnostics.nativeScopedOwnerExactFullSourceViewCoverage+
+  candidateDiagnostics.nativeScopedOwnerExactPositiveGapSourceViews,
+  missingOriginalRays.length);
  assert.ok(missingOriginalRays.every(row=>
   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.length===
    row.nativeHLRPaperCandidateCount&&
