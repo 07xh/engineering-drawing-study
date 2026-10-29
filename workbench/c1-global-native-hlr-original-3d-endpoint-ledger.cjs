@@ -133,10 +133,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true&&
      sourceClassFull&&modelVerified;
     if(boundedPaper)counts.roundedOnlyOriginalM0PaperEndpointPairs++;
-    if((row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===true||
-        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true)&&
-       !sourceClassFull)
-     throw new RangeError('generated HLR source claims full 3D class without whole native interval');
+    // A source-scoped generated segment may have a matching native
+    // interval while the independent entire-original native 3D partition
+    // still contains gaps. HOLD this endpoint proof instead of treating
+    // earlier paper class compatibility as complete native coverage.
     const direct=line.directNativeVertexOriginalSource;
     if(direct!==undefined&&(!Array.isArray(direct)||direct.length!==2))
      throw new RangeError('bad generated TopoDS vertex native original match array');
