@@ -247,6 +247,7 @@ for(const [index,geometry] of general.entries()){
     'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'&&
    x.native3DGeneratedCurveIntervals.every(e=>
     e.nativeSourceFilterOriginalEdgeId&&
+    e.native3DCurveExactlySameAsOriginalAtThreeParameters===true&&
     e.originalGeneratedTopoDSHistoryCertified===false&&
     e.nativeOriginalCurveParameterRange[1]>
      e.nativeOriginalCurveParameterRange[0])));
