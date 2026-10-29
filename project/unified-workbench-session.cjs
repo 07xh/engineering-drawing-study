@@ -226,6 +226,25 @@ function createUnifiedProjectSession(){
     const selectedRays=joint.selectedBooleanRayEvidence;
     const rayConcordance=joint.booleanRayConcordance;
     const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
+    const wBooleanForwardExitDepth=joint.wBooleanForwardExitDepth;
+    if(!wBooleanForwardExitDepth||
+       wBooleanForwardExitDepth.revision!==latest.revision||
+       wBooleanForwardExitDepth.solidOperation!==(solidOperation||'unselected')||
+       wBooleanForwardExitDepth.officialV5Authorized!==false||
+       wBooleanForwardExitDepth.engineeringLineStylesVerified!==false||
+       wBooleanForwardExitDepth.closedEndpointVisibilityProven!==false||
+       wBooleanForwardExitDepth.allProjectedFeatureDepthAndContactVisibilityProven!==false||
+       (solidOperation!==null?
+        (wBooleanForwardExitDepth.allWSourceOpenCellsAccountedFor!==true||
+         wBooleanForwardExitDepth.originalM3AnalyticSourceBranchCount!==
+          compiled.sourceM3.branchCount||
+         wBooleanForwardExitDepth.provedOpaqueExitCellCount+
+          wBooleanForwardExitDepth.provedClearForwardCellCount+
+          wBooleanForwardExitDepth.unresolvedCapOrNumericalCellCount!==
+          wBooleanForwardExitDepth.sourceOpenCells.length):
+        (wBooleanForwardExitDepth.status!=='not-covered'||
+         wBooleanForwardExitDepth.sourceOpenCells.length!==0)))
+     throw new Error('C3 当前 W 真实有限实体射线退出深度与 M3–M5 来源不一致');
     const wMirrorDepthEvidence=joint.wExactMirrorDepthEvidence;
     const wMirrorCapContactPartition=joint.wMirrorCapContactPartition;
     const wMirrorSourceOutlineUnion=auditC3WMirrorSourceOutlineUnion({
@@ -350,7 +369,8 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
-     wCriticalPointRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
+     wCriticalPointRays,wBooleanForwardExitDepth,
+     wMirrorDepthEvidence,wMirrorCapContactPartition,
      wMirrorSourceOutlineUnion,analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
