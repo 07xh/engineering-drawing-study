@@ -1,8 +1,20 @@
-# DraftAI｜唯一现行“整题交付优先”开发规则（2026-10-27）
+# DraftAI｜唯一现行“整题交付优先 + V9 逻辑推理”开发规则（2026-10-29）
 
 > **正式替换旧开发计划与加速规则。** 原文件路径保留仅为兼容仓库历史链接；旧文件的第 1–11 节已从现行正文移除，不再作为执行依据。Git 提交历史可追溯，但不是并行有效规则。原 F0–F5、按日期强制串行 C0→C1→C2→C3→C4、一次一个碎片 PR、把 OCI/CAD 只能用于离线 oracle 的绝对禁令及仅用 PR/CI 数量衡量进度，均停止执行。
 >
 > **不废止：** [#372](https://github.com/07xh/engineering-drawing-study/issues/372) 的 M0–M5 数学真实性、连续可见性、完整拓扑、来源/版本、正式工程线型门禁；[#152](https://github.com/07xh/engineering-drawing-study/issues/152) 的 GitHub 合并与发布边界；[#497](https://github.com/07xh/engineering-drawing-study/issues/497) 的单一 Geometry Scene/二维三维联动/唯一 V5；[#380](https://github.com/07xh/engineering-drawing-study/issues/380) 的教材真实题型对照。**唯一短期交付总单为 [#377](https://github.com/07xh/engineering-drawing-study/issues/377)。**
+
+## V9｜几何逻辑驱动自动解题（2026-10-29 起现行补充规则）
+
+**用户目标**：不需要预知“第三视图/截交投影最后长什么形状”，可从经审核的点、线、面、尺寸、投影对应与空间拓扑出发，逐线约束传播、前向/反向推理、枚举候选，再经真实三维来源及 M4/M5 验证输出。**绝不**把“未知最终形状”误解成可以忽视第一角法投影、空间拓扑或可见性。
+
+1. 以现有 M0 稳健谓词、M1 约束/三维来源关系、M2 多解/自由度、M3 专业求解为**一条唯一数学主线**；拓展通用点线关系而不是另造求解系统。优先复用 `constraint-incidence`、`linear-point-global-solver`、`nonlinear-distance-branch-graph`、`source-feature-graph-3d`、C1 两视图候选和现有 OCCT。
+2. 未确定空间同源/连接时不能仅凭二维重合画线；未知形体可以保留多候选/branch，只有独立完整证据才能声明唯一解。候选不得伪造 SolveResult/工程实虚线。
+3. 推理步骤记录 `ReasoningTrace` 附属证据（原始 ID、规则/依赖、空间坐标、残差/精确见证、revision/branch、阻断），真实已认证结果再交给**现有** ConstructionIntent→Step DAG→唯一 V5；不可从静态 SVG 或文案反向造证明。
+4. **先解 C1 现有正长度区间缺口/HLR 来源/连续遮挡**，与 V9 通用逻辑推理可独立并行；不得把“先建全新通用推理体系”设为 C1 正式整题前置门槛。C2 直接消费 #896 现有原生布尔证明，C3 消费有限圆柱解析 M3。
+5. 任何改动均以无答案真实题、独立反例、同源三视图、全区间连续遮挡、正式 V5 及 Android/生产独立验证为标准；不将局部诊断与 PR 数替代整题。具体交付规格见 [V9 几何逻辑实施规范](DA-V9-GEOMETRY-LOGIC-PLAN-20261029.md)。
+
+**正式废止冲突执行法**：必须先识别出最终投影形状才可解、固定题型图像套模板即签收、用二维重合直接认定三维同源、以采样/容差掩盖小缺口、先完工通用 OCR 才允许几何求解、旧 F0–F5/C0–C4 硬串行、另建平行 SolveResult/Scene/V5、旧“Cloudflare 原生 Builds 是唯一发布路径”的说法。历史保留溯源；#372/#152/#497 的现行数学与安全门禁不变。
 
 ## 1. 产品目标与唯一工作单位
 

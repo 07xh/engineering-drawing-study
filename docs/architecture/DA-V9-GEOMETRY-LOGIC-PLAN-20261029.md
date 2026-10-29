@@ -1,0 +1,72 @@
+# DraftAI V9｜几何逻辑驱动的逐线推导与整题交付实施规范（2026-10-29）
+
+> **状态：新开发目标与验收规范，不是已实现声明。** 本文是现行[整题交付规则](DA-OPEN-SOURCE-ACCELERATION-REUSE-20261025.md)的**专项技术附录**，不另立并列权威。优先级始终是 [#372](https://github.com/07xh/engineering-drawing-study/issues/372) 数学与 fail-closed、[#152](https://github.com/07xh/engineering-drawing-study/issues/152) 合并/发布、[#497](https://github.com/07xh/engineering-drawing-study/issues/497) 唯一 Geometry Scene/V5、现行交付规则和 [#377](https://github.com/07xh/engineering-drawing-study/issues/377) 整题验收。
+
+## 1. 核心目标与反目标
+
+**目标**：面对未预先标注“第三视图/截交曲线最终形状”的新题，从可信的已知点、线、面、尺寸、第一角法 V/H/W 与空间关系，逐步构造并证明新点、新线、新曲线/空间拓扑；最终通过既有 M4/M5 门禁，才签发正式线型和唯一 V5 作图。**不知道目标曲线是什么，不等于不知道投影几何规则**；推导必须仍使用确定的数学模型、方向和坐标约定。
+
+**非目标**：从任意两张二维投影臆造唯一实体；用视觉相似度判定连接；用 AI 文字解释代替运算；用有限曲线采样代替连续拓扑/遮挡证明；绕过 3D 来源和标准线型签收；新建平行几何内核、SolveResult、Geometry Scene、投影约定、M5 签发器或 V5 时间轴；为固定教材题写硬编码。
+
+**首批覆盖**：经人工确认的受限 C1 两视图（允许点未标注，但必须证实对应/假设）、已有凸体/几何子集；接着复用 C2 原生 OCCT 布尔历史、C3 有限圆柱解析 M3。未知形体、多解释、非凸和泛化 OCR 必须显示边界，不准暗中放宽约束。
+
+## 2. 与现有 M0–M5 的一一对应（禁止重复开发）
+
+| 层级 | V9 增量 | 现有资产/不可跨越的边界 |
+| --- | --- | --- |
+| M0 | 精确稳健点线几何谓词、参数区间、退化及 mm 坐标语义 | 复用 core/numeric；二进制浮点上的精确符号不等于真实世界无误差 |
+| M1 | 可追踪的约束-实体关联图、原始/导出点线面来源、候选端点/邻面拓扑 | `core/constraints/constraint-incidence.cjs` 当前仅限点；`core/topology/source-feature-graph-3d.cjs` 保留真实 3D 身份。扩展前先确认适用范围 |
+| M2 | 约束传播、冗余/矛盾、自由度与唯一/多解证据；候选理由与反例 | 复用线性等式/非线性分支证据；不得反向依赖 M3、不得把局部秩当全局唯一证明 |
+| M3 | 通用前向/反向构造调度；复用专业投影、曲面/布尔/HLR 计算产出真实解或有限候选 | 解题器才可以写可信 SolveResult，候选推断不可伪造“verified” |
+| M4 | 原始 3D sourceFeatureId 与生成 TopoDS/HLR 线的可核验历史、投影事件和端点/参数区间；解释性 ConstructionIntent/DAG | 原始 source ID 不等于二维重合坐标；纸面取整/epsilon 不可替代空间同一性 |
+| M5 | 完整来源区间、连续深度遮挡、全局线合并与国标工程线型；联合负例 | `undetermined` 未认证线不得签发正式实/虚线或 V5；局部证明/CI 绿灯不等于整题完成 |
+| 单一 V5/UI | 可点选某条线，查看前置约束、推导原因、辅助步骤和来源；统一播放与 2D/3D 联动 | 不从最终 SVG 坐标逆向编造作图原因，不开第二时间轴 |
+
+**已有消费方先审计后扩展**：`core/constraints/linear-point-global-solver.cjs`、`nonlinear-distance-branch-graph.cjs`、`workbench/c1-unique-two-view-convex-candidate.cjs`、`project/geometry-scene-consumer.cjs`、`core/contracts/{construction-intent,spatial-stroke-construction-intent}.js`。应遵守当前 schema，不能把 3D 点塞进冻结的二维 ConstructionIntent 1.0.0。
+
+## 3. 新规则：先约束、再构造、后认证
+
+1. **审查输入**：保留原图来源/尺寸/单位/坐标、视图身份、题目 revision、已经确认的线及待确认候选。OCR/视觉识别只供审核，不签发空间真值。GIVEN 与 ANSWER 必须物理隔离。
+2. **关系建图**：给每个原始点/线/面、生成候选、投影对象、交点/辅助线分配稳定 ID；边是“投影对应、共线、共面、相交、相切、平行、垂直、棱面邻接、遮挡先后”等有明确证据的谓词。不能以投影端点重合作为三维相等。
+3. **前向/后向推导**：从确定条件传播坐标/交点/构造；从目标缺口反查还需要何种顶点/棱线/面约束。只调用现有适用范围内的内核；允许候选多分支及预算上限，无结果即明确阻断。
+4. **数学与拓扑联合筛选**：依据独立残差、参数范围、第一角法一致性、真实连接和实体边界排除非法候选；没有唯一证明则保留 branchId，不因“最像答案”自动选唯一。
+5. **完整来源/遮挡认证**：每条正式物理边在各视图的原始参数域必须被明确分割，缺口、重叠、来源多认领、正长度子区间、前后遮挡与生成 HLR 边历史同一份证据独立验证；不允许忽略任何小但正的 gap。
+6. **作图与说明**：仅从已认证 Geometry/SolveResult 生成 ConstructionIntent→ConstructionStep DAG→唯一 V5；逐线解释“依据哪些已知条件、为什么位于此处、为何连通、为何是实/虚线”。未获签发的推理可放在“候选/待验证”查看区，不混入正式答案。
+
+### ReasoningTrace 建议数据（附属证据，不是新 SolveResult）
+
+记录 `revision`、`branchId`、`ruleId`、`givenEntityIds`、`derivedEntityIds`、`sourceFeatureIds`、`dependencies`、`coordinateSpace`、`equationOrPredicate`、`residualOrExactWitness`、`parameterRanges`、`proofScope`、`status`、`blockingEvidence`。
+
+- 解释文字只能引用实际证据，不允许语言模型自行把一条线说成已证明。
+- `ReasoningTrace` 必须为已有 revision/分支绑定的证明附录；更改已知条件后整体失效。
+- 允许未证候选 `proposed`，数学合格但缺可见性 `geometry-verified`；只有既有 M5 全签收才能产生正式动作。
+- 保证引用的构造实体存在于 DAG 祖先或已审输入中；可复算、可重放、可独立测试。
+
+## 4. 首批真实阻断：不以 V9 规划替代攻关
+
+依最新 2026-10-29 仓库 C1 本机记录及未合并 PR #1028，目前仍有真实原始参数缺口、HLR 生边→原始 TopoDS 完整来源历史、二维重合的深度别名、全局可见/隐藏冲突及未解决的 M5 来源义务。PR #1028 的测试增强未自动关闭这些义务。运行时须**重新审计最新 main 与每个开放 PR HEAD**，以上数字是检查点不是永恒常量。
+
+优先完成：① 原始来源清单 exact-once；② 生成 HLR 边的真实三维历史与独立参数映射交叉核验；③ 全 V/H/W 连续来源区间；④ 端点和邻接/深度合法性；⑤ 全场景连续遮挡、相互重合、正式 GB 线型；⑥ 已审结构化/可信 DXF GIVEN 的**无答案** C1 整题 → 唯一 V5 → 独立 ANSWER 比对。不能通过只添诊断、改容差、跳过真实 WASM 或重画示意图来伪装已完成。
+
+## 5. 分批并行与交付顺序
+
+- **批次 A，P0 不变**：集中解决现有 C1 原生 HLR/M4/M5 全局证明缺口，尽快让受限真实原题第一道完整进入 V5；新 V9 推理设计不可成为 C1 当前完成的先决依赖。
+- **批次 B，P1 并行**：在已有 M1/M2 点约束之上实现可复用点线关联与双向构造，独立反例覆盖同投影异源、错端点、欠约束、多分支、尺度/极小 gap。
+- **批次 C，P1 并行**：将可证明的拓扑候选、约束分支交给现有 C1 M3→M4→M5 正式消费者；只在明确凸体/已知顶点范围内声明自动恢复。
+- **批次 D**：C2 重用原生 OCP/OCCT 布尔历史，C3 重用有限解析曲线；共同接通同一个来源、连续可见性和 V5 桥，扩展非凸与真实教材题；工作台/Android 交互独立验证。
+- 每批以“真实整题通过数、阻断减少、可复现几何证据、正式 V5 动作”为主要产出，禁止为凑 PR 拆微修或按教材题编特判。2026-11-20 是争取的受限首版验收目标，不作保证。
+
+## 6. 强制数学/产品验收
+
+- **正例**：未见/无参考答案的真实结构化题，真正从 GIVEN 求解并重建目标线；投影点/线/面空间 ID、真实端点与闭合拓扑一致，完整视图区间和连续遮挡通过，ConstructionIntent/DAG 与唯一 V5 一致。
+- **负例**：坐标/尺度退化、同纸面不同 3D 深度、错连、非凸假凸包、零长度投影但非零空间特征、参数 1 ULP 间隙/重叠、极小正长度缺口、多解/无解/欠约束、错误分支/修订、无交曲线、非法曲面切触。
+- **证明分层**：独立数学 oracle 与真实 CAD WASM/native（受影响时）必须按最新 HEAD 执行，不能用 skip、采样或截图代替 continuous proof；PR CI、main、真实教材盲测、Android/浏览器、线上 Production Active SHA 各自记录，不互相替代。
+- **不满足即停**：任何来源历史/全局遮挡未齐，保持 `undetermined`、正式 V5 不签收；合成反例通过不等于教材题验收。
+
+## 7. 冲突规则清理与发布边界（2026-10-29）
+
+**立即停止作为现行执行依据**：旧 F0–F5 或 C0–C4 硬性日历串行、必须先泛化 OCR 才能解题、以识别出某种投影形状作为作图的必要前提、固定教材题预制答案/动作、只有一个二维投影匹配就假设唯一 3D、CAD 永久只能离线、另起求解器/Scene/M5/V5、局部 CI/小 PR 数量作为完成指标、补证据时用 epsilon 消除真实缺口、旧 Cloudflare 原生 Builds 为唯一部署途径的说法。
+
+**保留且永不降低**：#372 M0–M5 真实数学/证据、#152 的实际 GitHub 审计和发布权限、#497 唯一共享 Scene+V5、#380 真实教材对照与隐私、当前通过验证的旧专业算法及可复算 oracle。
+
+**发布安全**：现行仓库含 `.github/workflows/deploy-worker-github-actions.yml`，main push 在 `ENABLE_DRAFTAI_GHA_DEPLOY=true` 时可自动发布 Worker；控制台中的旧 Cloudflare Git Builds 也须独立核实是否关闭。仅授权 GitHub 合并不等于获准引发未知的生产部署。若生产自动触发链未核实且无发布授权，停止在已验证 PR，**不要为了“规则合并”触发生产**；本次规则变更绝不主动修改 secrets、变量、Wrangler/Cloudflare 配置或部署流程。Github 历史提交和旧 Issue 编辑记录保留追溯，不做破坏性删除。
