@@ -249,6 +249,8 @@ function attachOriginalPhysicalBRepVertexTopology(x){
  x.cad.originalNativeVertexTopology={
   schema:'draftai-c1-original-occt-brep-vertex-physical-topology/1',
   sourceGeometryId:x.geometry.id,originalM0SourceVertexIds:ids,
+  originalM0VertexNativeOccurrenceCounts:Object.fromEntries(ids.map(id=>
+   [id,x.geometry.data.edges.filter(e=>e.includes(id)).length])),
   originalBRepVertexOccurrencesChecked:occurrences,
   allOriginalBRepVertexPairsCompared:occurrences*(occurrences-1)/2,
   originalSamePhysicalVertexTopoDSPairs:same,
