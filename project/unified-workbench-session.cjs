@@ -27,6 +27,8 @@ const {auditC3WMirrorExitOutlineConcordance}=
  require('../workbench/c3-w-mirror-exit-outline-concordance.cjs');
 const {auditC3WAllLateralProjectionCollisions}=
  require('../workbench/c3-w-lateral-projection-collision-inventory.cjs');
+const {auditC3WGlobalSourceCurveSolidDepth}=
+ require('../workbench/c3-w-global-source-curve-solid-depth.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
 const {auditC3JointTopologyVisibility}=
  require('../workbench/c3-joint-topology-visibility.cjs');
@@ -282,6 +284,22 @@ function createUnifiedProjectSession(){
      input,revision:latest.revision,
      mirrorExitEvidence:wMirrorExitOutlineConcordance
     });
+    const wGlobalSourceCurveSolidDepth=auditC3WGlobalSourceCurveSolidDepth({
+     input,revision:latest.revision,
+     collisionEvidence:wLateralCollisionInventory,
+     forwardExitEvidence:wBooleanForwardExitDepth
+    });
+    if(wGlobalSourceCurveSolidDepth.revision!==latest.revision||
+       wGlobalSourceCurveSolidDepth.solidOperation!==(solidOperation||'unselected')||
+       wGlobalSourceCurveSolidDepth.officialV5Authorized!==false||
+       wGlobalSourceCurveSolidDepth.standardEngineeringLineStylesVerified!==false||
+       wGlobalSourceCurveSolidDepth.fullProjectedDrawingStrokeSetCertified!==false||
+       wGlobalSourceCurveSolidDepth.closedEndpointsCapTouchesCertified!==false||
+       (wLateralCollisionInventory.allPositiveWSourceCurveProjectionCollisionsClassified===true&&
+        (wGlobalSourceCurveSolidDepth.allOriginalM3WSourceCurveAtomsGloballyDepthProven!==true||
+         wGlobalSourceCurveSolidDepth.certifiedGlobalFrontmostCells!==
+          wLateralCollisionInventory.checkedMirrorAtomicOpenCells)))
+     throw new Error('C3 W 相贯曲线对整个有限实体的前后深度全开区间证明不一致');
     if(wLateralCollisionInventory.revision!==latest.revision||
        wLateralCollisionInventory.solidOperation!==(solidOperation||'unselected')||
        wLateralCollisionInventory.officialV5Authorized!==false||
@@ -427,7 +445,8 @@ function createUnifiedProjectSession(){
      wCriticalPointRays,wBooleanForwardExitDepth,
      wFiniteCapLineForwardRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
      wMirrorSourceOutlineUnion,wMirrorExitOutlineConcordance,
-     wLateralCollisionInventory,analyticRayPaperReview,
+     wLateralCollisionInventory,wGlobalSourceCurveSolidDepth,
+     analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
