@@ -23,6 +23,8 @@ const {auditC3M0M3M5AnalyticSources}=
 const {buildC3WIntervalPreview}=require('../workbench/c3-w-ray-preview.cjs');
 const {auditC3WMirrorSourceOutlineUnion}=
  require('../workbench/c3-w-mirror-source-outline-union.cjs');
+const {auditC3WMirrorExitOutlineConcordance}=
+ require('../workbench/c3-w-mirror-exit-outline-concordance.cjs');
 const {buildC3VHProjectionDedup}=require('../workbench/c3-vh-projection-dedup.cjs');
 const {auditC3JointTopologyVisibility}=
  require('../workbench/c3-joint-topology-visibility.cjs');
@@ -252,6 +254,22 @@ function createUnifiedProjectSession(){
      capPartitionEvidence:wMirrorCapContactPartition,
      wRayPreview:wRay
     });
+    const wMirrorExitOutlineConcordance=auditC3WMirrorExitOutlineConcordance({
+     input,revision:latest.revision,
+     exitEvidence:wBooleanForwardExitDepth,
+     outlineEvidence:wMirrorSourceOutlineUnion
+    });
+    if(wMirrorExitOutlineConcordance.revision!==latest.revision||
+       wMirrorExitOutlineConcordance.solidOperation!==(solidOperation||'unselected')||
+       wMirrorExitOutlineConcordance.officialV5Authorized!==false||
+       wMirrorExitOutlineConcordance.standardEngineeringLineStylesVerified!==false||
+       wMirrorExitOutlineConcordance.completeCompositeSourceDepthRankingCertified!==false||
+       wMirrorExitOutlineConcordance.allClosedCurveAndCapJunctionsCertified!==false||
+       (wMirrorSourceOutlineUnion.allSourceOutlinePartitionOpenCellCount>0&&
+        (wMirrorExitOutlineConcordance.allMirroredOpenSourceCellsCrossCertified!==true||
+         wMirrorExitOutlineConcordance.checkedMirroredAtomicOpenCells!==
+          wMirrorSourceOutlineUnion.allSourceOutlinePartitionOpenCellCount)))
+     throw new Error('C3 W 全来源分区的前后曲线与有限实体射线退出深度不一致');
     if(!wMirrorSourceOutlineUnion||
        wMirrorSourceOutlineUnion.revision!==latest.revision||
        wMirrorSourceOutlineUnion.solidOperation!==(solidOperation||'unselected')||
@@ -371,7 +389,8 @@ function createUnifiedProjectSession(){
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
      wCriticalPointRays,wBooleanForwardExitDepth,
      wMirrorDepthEvidence,wMirrorCapContactPartition,
-     wMirrorSourceOutlineUnion,analyticRayPaperReview,
+     wMirrorSourceOutlineUnion,wMirrorExitOutlineConcordance,
+     analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
      viewTransforms,scene:linked.scene,links:linked.links,
