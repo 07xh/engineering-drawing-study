@@ -1140,6 +1140,29 @@ for(const [index,geometry] of general.entries()){
  }
  console.error('REAL C1 EXACT ORIGINAL M4->M5 COPROJECTED DEPTH '+
   geometry.id+': '+JSON.stringify(depthCounts));
+ // Emit evidence for EVERY genuinely unresolved canonical M4 subspan.
+ // Compact provenance only; no diagnostic result is treated as M5 signoff.
+ console.error('REAL C1 ORIGINAL M4 HELD COPROJECTED SUBSPANS '+
+  geometry.id+': '+JSON.stringify([
+   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+   ...positiveOriginalGapRays.rows].flatMap(row=>
+    row.nativeOriginalM4CoProjectedDepthOrder.flatMap(seg=>
+     seg.canonicalOriginalM4EventCutDepthRows
+      .filter(cut=>!cut.coProjectedOriginal3DDepthOrder.
+       wholeIntervalFrontmostCertified&&
+       !cut.coProjectedOriginal3DDepthOrder.visibleSourceCoversEntireLine)
+      .map(cut=>({
+       view:row.view,sourceEdgeId:row.sourceEdgeId,
+       cut:cut.originalM4SourceCutParameterRange,
+       status:cut.coProjectedOriginal3DDepthOrder.status,
+       comparisons:cut.coProjectedOriginal3DDepthOrder.comparisons.map(c=>({
+        peer:c.peerSourceEdgeId,status:c.status,
+        signs:c.exactBinary64RationalOriginalDepthDifferenceEndSigns??null,
+        exactFullPaperOverlap:c.exactOriginalSourceWholePaperOverlapProven??null
+       }))
+      }))
+    ))
+  ));
 
  // M5 now consumes actual M4 candidates constructed from source-filtered
  // ORIGINAL native 3D parameters, not the inverse of generated HLR paper.
