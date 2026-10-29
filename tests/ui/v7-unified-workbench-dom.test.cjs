@@ -128,6 +128,13 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   $('v7-yaw').value='40';
   $('v7-yaw').dispatchEvent(new window.Event('input',{bubbles:true}));
   assert.match($('v7-selection').textContent,/Point1/);
+  assert.ok($('v9-three-reframe'),'reframe must exist for SVG and WebGL');
+  click('v9-three-reframe');await tick();
+  assert.equal($('v7-yaw').value,'0');
+  assert.equal($('v7-pitch').value,'25');
+  assert.match($('v7-proof').textContent,/已验证的点投影/,
+   'view-only reframe must not revoke the original solved mathematics');
+  assert.equal($('v7-play').disabled,false,'reframing cannot cancel original V5');
   // A changed condition is a candidate again; V5 may not continue.
   $('v7-x').value='23';
   click('v7-stage');await tick();await tick();
