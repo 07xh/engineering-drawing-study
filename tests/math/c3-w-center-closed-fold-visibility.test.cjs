@@ -63,13 +63,22 @@ test('shared-X-center real finite cylinder union/intersection has genuine closed
   assert.equal(result.finalV5Authorized,false);
  }
 });
-test('real finite cap clipping retains internal center continuity only with strict cap interior',()=>{
- const m=model();m.zCylinder.zMin=-7;m.zCylinder.zMax=7;
- m.yCylinder.yMin=-10;m.yCylinder.yMax=10;
+test('finite end caps can be shortened while still strictly containing the four real W center points',()=>{
+ const m=model();m.zCylinder.zMin=-10;m.zCylinder.zMax=10;
+ m.yCylinder.yMin=-13;m.yCylinder.yMax=13;
  const result=audit(evidence(m,212,'intersection'));
  assert.equal(result.closedInternalCenterCount,4);
  assert.ok(result.closedInternalCenterPoints.every(x=>
   x.globallyFrontmostClosedPointAgainstEntireFiniteSelectedSolid));
+ assert.equal(result.finalV5Authorized,false);
+});
+test('finite caps clipping away actual W center means NO invented closed fold source point',()=>{
+ const m=model();m.zCylinder.zMin=-7;m.zCylinder.zMax=7;
+ m.yCylinder.yMin=-10;m.yCylinder.yMax=10;
+ const result=audit(evidence(m,219,'union'));
+ assert.equal(result.status,'not-covered');
+ assert.equal(result.closedInternalCenterCount,0);
+ assert.equal(result.allCurrentInternalSignedSourceCenterFoldsCertified,false);
  assert.equal(result.finalV5Authorized,false);
 });
 test('source translation keeps physically identical center fold and tangent-axis theorem',()=>{
