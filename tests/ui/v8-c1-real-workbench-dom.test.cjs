@@ -52,7 +52,7 @@ test('C1 is a REAL reviewed task within same local project and original V5 playe
   $('v8-c1-vertices').value=contradiction;
   fire('v8-c1-vertices','input');
   assert.match($('v8-review-summary').textContent,
-   /C1 条件检查：角点 V000.*V\/H 视图公共 x 坐标不一致/);
+   /C1 条件检查：第 1 行：角点 V000.*V\/H 视图公共 x 坐标不一致/);
   assert.equal($('v8-review-ack').disabled,true,
    'impossible shared-axis data must not invite review confirmation');
   assert.equal($('v8-review-run').disabled,true);
