@@ -19,7 +19,8 @@ const {auditC1OriginalClosedEdgeRayContinuity}=
 const {project}=require('../core/projection/conventions.js');
 const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
-const {auditExactBinary64PaperParameterPair}=
+const {auditExactBinary64PaperParameterPair,
+ auditExactBinary64PaperCandidateCoverage}=
  require('./c1-exact-binary64-paper-parameter.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
@@ -64,7 +65,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   examined:0,exactAffineAligned:0,exactAffineDrift:0,
   exactParameterDomainFailures:0,nativeIsSameOwnerClaims:0,
   nativeOwnerRayClassConsistent:0,nativeOwnerRayClassContradictions:0,
-  paperOnlyRayClassDisagreements:0
+  paperOnlyRayClassDisagreements:0,
+  paperAliasExactFullSourceViewCoverage:0,
+  paperAliasExactPositiveGapSourceViews:0,
+  nativeScopedOwnerExactFullSourceViewCoverage:0,
+  nativeScopedOwnerExactPositiveGapSourceViews:0
  };
  for(const missing of gaps.unrepresentedOriginalM0ProjectedSources){
   const key=missing.view+'|'+missing.sourceEdgeId;
@@ -140,9 +145,41 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      [...nativeOwners,...otherOwners].some(key=>
       !candidateDiagnostics.some(x=>x.hlrClass+'|'+x.ordinal===key)))
    throw new RangeError('omitted original source native HLR candidate/claim inventory mismatch');
+  // These are exact dyadic unions of received binary64 HLR PAPER
+  // coordinates, not recovered native source parameters. Only exactly
+  // affine-aligned, in-domain, positive-length fragments may contribute.
+  // Keep native IsSame scoped-owner subsets separate from paper aliases.
+  const eligible=candidate.nativeHLRPaperCandidates.filter((paper,i)=>{
+   const proof=candidateDiagnostics[i];
+   return proof.exactBinary64PaperAffineAligned&&
+    proof.exactBinary64PaperWithinOriginalParameterDomain&&
+    proof.exactBinary64PaperHasPositiveParameterSpan;
+  });
+  const paperCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:from,sourceTo:to,
+   segments:eligible.map(paper=>({
+    from:paper.projectedFrom,to:paper.projectedTo
+   }))
+  });
+  const nativeOwnedCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:from,sourceTo:to,
+   segments:eligible.filter(paper=>nativeOwners.has(
+    paper.hlrClass+'|'+paper.ordinal)).map(paper=>({
+     from:paper.projectedFrom,to:paper.projectedTo
+    }))
+  });
+  if(paperCoverage.exactBinary64PaperCandidateCoverageComplete)
+   omittedCandidateCounts.paperAliasExactFullSourceViewCoverage++;
+  else omittedCandidateCounts.paperAliasExactPositiveGapSourceViews++;
+  if(nativeOwnedCoverage.exactBinary64PaperCandidateCoverageComplete)
+   omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage++;
+  else omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews++;
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
    expectedHLRClassFromIndependentOriginalRay:expectedClass,
+   allPaperAliasCandidateExactBinary64Coverage:paperCoverage,
+   nativeScopedOwnerCandidateExactBinary64Coverage:nativeOwnedCoverage,
+   exactPaperCoverageIsNotNativeSourceParameterCoverage:true,
    nativeHLRCandidateExactBinary64AndRayDiagnostics:candidateDiagnostics,
    original3DVertexIds:[...ray.originalVertexIds],
    original3DRayStatus:closed?'exact-original-closed-ray-clear':
@@ -164,7 +201,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      omittedCandidateCounts.exactAffineAligned+omittedCandidateCounts.exactAffineDrift||
     omittedCandidateCounts.nativeOwnerRayClassConsistent+
      omittedCandidateCounts.nativeOwnerRayClassContradictions>
-     omittedCandidateCounts.nativeIsSameOwnerClaims)
+     omittedCandidateCounts.nativeIsSameOwnerClaims||
+    omittedCandidateCounts.paperAliasExactFullSourceViewCoverage+
+     omittedCandidateCounts.paperAliasExactPositiveGapSourceViews!==missingSeen.size||
+    omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage+
+     omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews!==missingSeen.size)
   throw new RangeError('incomplete omitted original M0 native HLR/ray reconciliation');
  // Independent whole-M0 inventory equation: every drawable original
  // source/view is either represented by at least one current M5 span or
