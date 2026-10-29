@@ -302,9 +302,12 @@ function createUnifiedProjectSession(){
        wClosedInternalCenterFold.completeDrawingWLineStyleSigned!==false||
        wClosedInternalCenterFold.originalCurveTerminalAndCapContactVisibilityCertified!==false||
        (wGlobalSourceCurveSolidDepth.allOriginalM3WSourceCurveAtomsGloballyDepthProven===true&&
-        (wClosedInternalCenterFold.allCurrentInternalSignedSourceCenterFoldsCertified!==true||
-         wClosedInternalCenterFold.globallyFrontmostCenterPointCount!==
-          wCriticalPointRays.internalSourceSwitchPointCount)))
+        (wCriticalPointRays.internalSourceSwitchPointCount>0?
+         (wClosedInternalCenterFold.allCurrentInternalSignedSourceCenterFoldsCertified!==true||
+          wClosedInternalCenterFold.globallyFrontmostCenterPointCount!==
+           wCriticalPointRays.internalSourceSwitchPointCount):
+         (wClosedInternalCenterFold.status!=='not-covered'||
+          wClosedInternalCenterFold.globallyFrontmostCenterPointCount!==0))))
      throw new Error('C3 W 内部轴心临界点与真实三维连续/完整实体深度联合证据不一致');
     if(wGlobalSourceCurveSolidDepth.revision!==latest.revision||
        wGlobalSourceCurveSolidDepth.solidOperation!==(solidOperation||'unselected')||
