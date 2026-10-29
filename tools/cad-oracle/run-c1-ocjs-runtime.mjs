@@ -1103,6 +1103,43 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.counts.independentOriginalOCCTCurvePositiveGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
+ // M5 now consumes actual M4 candidates constructed from source-filtered
+ // ORIGINAL native 3D parameters, not the inverse of generated HLR paper.
+ assert.equal(positiveOriginalGapRays.nativeOriginal3DM4SourceProjectionAvailable,true);
+ assert.equal(positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount,
+  positiveOriginalGapRays.counts.noncollapsedOriginalM0SourceViews);
+ assert.equal(positiveOriginalGapRays.counts.
+  missingM5SourceViewsWithCompleteOriginalNativeM4Projection,
+  positiveOriginalGapRays.counts.unrepresentedOriginalM0SourceViews);
+ assert.equal(positiveOriginalGapRays.counts.
+  positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection,
+  positiveOriginalGapRays.counts.positiveNativeGapIntervals);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.nativeOriginal3DM4SourceProjectionPresent===true&&
+  row.nativeOriginal3DM4ProjectionWholeSourceCoverage===true&&
+  row.native3DM4ProjectedCandidateSegments.length>0&&
+  row.native3DM4CandidateDoesNotCertifyGenerated2DHistory===true&&
+  row.missingM5SourceViewRemainsUncovered===true&&
+  row.signedV5Action===false));
+ assert.ok(positiveOriginalGapRays.rows.every(row=>
+  row.nativeOriginal3DM4GapSourceProjectionAvailable===true&&
+  row.realNative3DM4OriginalParameterGapCoverage.
+   entireOriginalParameterIntervalCovered===true&&
+  row.nativeHLRGeneratedEdgeCoversGap===false&&
+  row.signedV5Action===false));
+ console.error('REAL C1 M4 TO M5 NATIVE SOURCE RECONCILIATION '+geometry.id+': '+
+  JSON.stringify({
+   allProjectedM0SourceViews:
+    positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount,
+   missingM5SourceViewsWithFull3DBackedM4Projection:
+    positiveOriginalGapRays.counts.
+     missingM5SourceViewsWithCompleteOriginalNativeM4Projection,
+   positiveM5PaperGapIntervalsWithFull3DBackedM4Projection:
+    positiveOriginalGapRays.counts.
+     positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection,
+   officialV5Actions:positiveOriginalGapRays.signedV5ActionCount
+  }));
+
  // Reconcile every REAL source-filtered 3D HLR visibility class with its
  // independent full original M0 ray theorem, not just the omitted source
  // rows or positive native gaps. Concordance never grants generated 2D
