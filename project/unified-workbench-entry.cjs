@@ -1570,6 +1570,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!snap)return;
   const value=id=>$(id).value.trim();
   let label;
+  if(snap.task==='c1-third-view'){
+   const columns={VH:'正面 V 的 x,z；水平 H 的 x,y',
+    VW:'正面 V 的 x,z；侧面 W 的 y,z',
+    HW:'水平 H 的 x,y；侧面 W 的 y,z'};
+   $('v8-c1-columns').textContent='当前列顺序：编号、'+
+    (columns[$('v8-c1-pair').value]||'请重新选择已知视图')+'（mm）。';
+  }
   if(snap.task==='projection'){
    label='已填写的空间点 P（mm）：x='+value('v7-x')+
     '，y='+value('v7-y')+'，z='+value('v7-z')+'。';
@@ -1611,7 +1618,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    ' 当前没有原图；请按手动输入的真实题目条件逐项核对。';
   // Preflight is user guidance only. The authoritative M0–M5 checks
   // still run on explicit submission; this cannot certify an answer.
-  let allowed=snap.task!=='composition',reviewIssue='',reviewTarget='',c1ParseIssue='';
+  let allowed=snap.task!=='composition',reviewIssue='',reviewTarget='',c1ParseIssue='',errorLine=0;
   const edit=$('v8-review-edit'),readiness=$('v8-review-preflight');
   if(edit.dataset.target)$(edit.dataset.target)?.removeAttribute('aria-invalid');
   if(snap.task==='composition'){
@@ -1632,7 +1639,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    }
    if(!reviewIssue&&snap.task==='c1-third-view'){
     try{parseReviewedC1Rows($('v8-c1-vertices').value,$('v8-c1-pair').value);}
-    catch(error){allowed=false;c1ParseIssue=error.message;reviewIssue=c1ParseIssue;reviewTarget='v8-c1-vertices';}
+    catch(error){allowed=false;c1ParseIssue=error.message;reviewIssue=c1ParseIssue;
+     reviewTarget='v8-c1-vertices';errorLine=Number(error.lineNumber)||0;}
     if(!reviewIssue&&!$('v8-c1-topology').checked){
      allowed=false;reviewIssue='请核对八个角点和闭合实体拓扑后勾选确认。';
      reviewTarget='v8-c1-topology';
@@ -1663,6 +1671,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    reviewIssue;
   edit.hidden=!reviewTarget;
   edit.dataset.target=reviewTarget;
+  edit.dataset.line=String(errorLine||'');
+  edit.textContent=errorLine?'定位第 '+errorLine+' 行错误':'定位需要修改的条件';
   if(reviewTarget)$(reviewTarget)?.setAttribute('aria-invalid','true');
   summary.textContent=label+suffix+
    (uncommittedFormEdit?' 当前有尚未保存的表单修改。':'')+
@@ -2480,6 +2490,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(!field)return;
   field.closest('details')?.setAttribute('open','');
   field.focus?.();
+  if(id==='v8-c1-vertices'){
+   const line=Number($('v8-review-edit').dataset.line);
+   const rows=field.value.split(/\r?\n/);
+   if(Number.isSafeInteger(line)&&line>=1&&line<=rows.length){
+    const offset=rows.slice(0,line-1).reduce((n,row)=>n+row.length+1,0);
+    field.setSelectionRange?.(offset,offset+rows[line-1].length);
+   }
+  }
   field.scrollIntoView?.({block:'center',behavior:'auto'});
  });
  $('v8-review-run').addEventListener('click',()=>call(async()=>{
