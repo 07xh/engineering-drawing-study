@@ -24,6 +24,8 @@ const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
 const {auditC1OriginalBRepVertexTShapeTopology}=
  require('./c1-ocjs-original-source-vertex-topology.cjs');
+const {auditC1OriginalBRepFaceEdgeAdjacency}=
+ require('./c1-ocjs-original-source-face-adjacency.cjs');
 const {auditC1Native3DSourceScopedIntervals}=
  require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
@@ -780,6 +782,30 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   const originalNativeVertexTopology=auditC1OriginalBRepVertexTShapeTopology({
    geometry,originalNativeVertexHandles
   });
+  // Independently verify real sewn BRep face-edge incidence against the
+  // reviewed M0 face boundaries. This is ORIGINAL 3D adjacency only;
+  // generated HLR edges still need their own source/occlusion evidence.
+  const faceKind=enumValue('TopAbs_FACE');
+  if(faceKind===undefined)throw new TypeError('real OCJS TopAbs_FACE unavailable');
+  const nativeFaceEdgeInventories=[];
+  const faceExplorer=newObj('TopExp_Explorer_2',solid,faceKind,avoid);
+  while(faceExplorer.More()){
+   if(nativeFaceEdgeInventories.length>=64)
+    throw new RangeError('too many native BRep faces');
+   const face=hold(faceExplorer.Current());
+   const faceEdges=newObj('TopExp_Explorer_2',face,kind,avoid),edges=[];
+   while(faceEdges.More()){
+    if(edges.length>=256)throw new RangeError('too many native BRep face edges');
+    const edge=hold(faceEdges.Current());
+    edges.push(hold(method(oc.TopoDS,'Edge_1')(edge)));
+    faceEdges.Next();
+   }
+   nativeFaceEdgeInventories.push(edges);
+   faceExplorer.Next();
+  }
+  const originalNativeFaceAdjacency=auditC1OriginalBRepFaceEdgeAdjacency({
+   geometry,originalNativeEdgeHandles,nativeFaceEdgeInventories
+  });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
@@ -1188,7 +1214,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
    nativeGeneratedVertexGraph,originalNativeVertexTopology,
-   directNativeOriginalVertexMatches,
+   originalNativeFaceAdjacency,directNativeOriginalVertexMatches,
    nativeTShapePartnerEdgeCandidatesByView,
    nativeTShapePartnerVertexCandidatesByView,
    nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,
