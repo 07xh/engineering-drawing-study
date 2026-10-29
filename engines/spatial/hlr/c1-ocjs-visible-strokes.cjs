@@ -22,6 +22,8 @@ const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflict
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
+const {auditC1Native3DSourceScopedIntervals}=
+ require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
@@ -1003,7 +1005,92 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       }
      }
      row[klass==='visible-sharp'?'visible':'hidden']=witnesses;
+     // OCCT HLRBRep::MakeEdge3d, unlike VCompound/HCompound's 2D
+     // MakeEdge, retains the ORIGINAL source curve and native 3D
+     // parameter range. Source-filtered extraction is tied to the real
+     // indexed original TopoDS edge; these are not guessed paper lifts.
+     // Keep native 3D intervals separate from generated 2D TShape IsSame
+     // and from whole-scene M5 continuous visibility.
+     const sharp=oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_Sharp;
+     if(sharp===undefined||typeof extractor.CompoundOfEdges_2!=='function')
+      throw new TypeError('pinned OCJS source-scoped native 3D HLR sharp extraction missing');
+     const native3DCompound=hold(extractor.CompoundOfEdges_2(
+      original.edge,sharp,klass==='visible-sharp',true));
+     const native3DIntervals=[];
+     if(!native3DCompound.IsNull()){
+      const explorer3D=newObj('TopExp_Explorer_2',native3DCompound,kind,avoid);
+      while(explorer3D.More()){
+       const shape3D=hold(explorer3D.Current());
+       const edge3D=hold(method(oc.TopoDS,'Edge_1')(shape3D));
+       const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
+       const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
+       const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+       if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
+          !finite(first)||!finite(last)||!(last>first))
+        throw new RangeError('actual source-filtered native HLR 3D edge is not a positive line');
+       const p0=hold(curve3D.Value(first)),p1=hold(curve3D.Value(last));
+       const from3D={x:p0.X(),y:p0.Y(),z:p0.Z()};
+       const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
+       if(![...Object.values(from3D),...Object.values(to3D)].every(finite))
+        throw new RangeError('nonfinite actual native HLR 3D source segment');
+       // HLRBRep::MakeEdge3d is supposed to reuse the original 3D
+       // curve with a trimmed parameter range. Verify the claim against
+       // the ACTUAL original OCCT BRepAdaptor at three native parameters,
+       // not an inferred 2D lift or a tolerance-based source label.
+       const originalCurve3D=newObj('BRepAdaptor_Curve_2',original.edge);
+       for(const t of [first,(first+last)/2,last]){
+        const sourcePoint=hold(originalCurve3D.Value(t));
+        const generatedPoint=hold(curve3D.Value(t));
+        if(['X','Y','Z'].some(axis=>
+         sourcePoint[axis]()!==generatedPoint[axis]()))
+         throw new RangeError('native source-filtered HLR 3D curve differs from original BRep at same parameter');
+       }
+       native3DIntervals.push({
+        nativeOriginalCurveParameterRange:[first,last],
+        actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
+        nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+        originalGeneratedTopoDSHistoryCertified:false,
+        engineeringLineStyle:'undetermined',signedV5Action:false
+       });
+       if(native3DIntervals.length>128)
+        throw new RangeError('unbounded native source-scoped 3D HLR sharp intervals');
+       explorer3D.Next();
+      }
+     }
+     const source3D=sourceById.get(original.sourceEdgeId);
+     if(!source3D?.occtSourceCurve3DEndpointsAndMidpointVerified)
+      throw new RangeError('native source-scoped 3D HLR lost original OCCT curve');
+     const native3DCoverage=auditC1Native3DSourceScopedIntervals({
+      originalNativeParameterRange:source3D.occtSourceCurveParameterRange,
+      generatedNativeParameterRanges:native3DIntervals.map(x=>
+       x.nativeOriginalCurveParameterRange)
+     });
+     row[klass==='visible-sharp'?'visible3D':'hidden3D']={
+      nativeSourceFilteredOriginalTopoDSEdge:true,
+      native3DGeneratedCurveIntervals:native3DIntervals,
+      exactNative3DSourceParameterCoverage:native3DCoverage,
+      generated2DSourceIdentityIsSameProven:false,
+      globalContinuousVisibilityCertified:false,
+      engineeringLineStyle:'undetermined',signedV5Action:false
+     };
     }
+    // Source-scoped native 3D V+H partition is the direct OCCT curve
+    // domain ledger. Visible-only and hidden-only gaps are expected;
+    // the COMBINED partition must be checked before interpreting a 2D
+    // rounded-inverse micro-gap as missing original physical source.
+    const native3DSource=sourceById.get(original.sourceEdgeId);
+    row.combinedNative3DSourceParameterPartition=
+     auditC1Native3DSourceScopedIntervals({
+      originalNativeParameterRange:native3DSource.occtSourceCurveParameterRange,
+      generatedNativeParameterRanges:[
+       ...row.visible3D.native3DGeneratedCurveIntervals,
+       ...row.hidden3D.native3DGeneratedCurveIntervals
+      ].map(x=>x.nativeOriginalCurveParameterRange)
+     });
+    row.combinedNative3DPartitionIsNotGenerated2DTopoDSHistory=true;
+    row.engineeringLineStyle='undetermined';
+    row.signedV5Action=false;
     scopedRows.push(row);
    }
    if(processed.size!==byOriginalSource.size)

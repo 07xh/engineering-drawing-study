@@ -509,3 +509,53 @@ test('V/H/W tiny original M0 sources cannot absorb remote native HLR lines withi
   assert.throws(()=>audit(x),/original M0 3D projection/);
  }
 });
+
+test('existing HLR consumer exposes original native 3D M4 candidates without signing false paper history',()=>{
+ const x=fixture();
+ Object.assign(x.geometry,{kind:'mesh',space:'model-3d',unit:'mm'});
+ x.cad.actualOCCTCurveTypeIndependentlyVerified=true;
+ x.cad.originalBRepSourceEdges=x.geometry.data.edges.map(edge=>{
+  const [a,b]=edge.map(id=>x.geometry.data.points[id]);
+  return {sourceEdgeId:x.geometry.id+'::'+[...edge].sort().join('|'),
+   occtSourceCurveType:'line',
+   // Synthetic test BRep agrees exactly with this fixture's original M0
+   // vertices. This is not a claim about any production generated HLR edge.
+   originalOCCTBRepVertexXYZMatched:true,
+   fromOCCT3D:{...a},toOCCT3D:{...b},
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,
+   occtSourceCurveParameterRange:[0,Math.hypot(
+    b.x-a.x,b.y-a.y,b.z-a.z)],
+   occtSourceCurveFirstPoint3D:a,occtSourceCurveLastPoint3D:b};
+ });
+ for(const view of ['V','H','W']){
+  for(const row of x.cad.nativeSourceScopedSharpOutputByView[view].rows){
+   const source=x.cad.originalBRepSourceEdges.find(c=>
+    c.sourceEdgeId===row.originalPhysicalSourceEdgeId);
+   const edge={
+    nativeSourceFilterOriginalEdgeId:source.sourceEdgeId,
+    nativeOriginalCurveParameterRange:[...source.occtSourceCurveParameterRange],
+    native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+    originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
+   };
+   row.visible3D={nativeSourceFilteredOriginalTopoDSEdge:true,
+    native3DGeneratedCurveIntervals:row.visible.length?[edge]:[]};
+   row.hidden3D={nativeSourceFilteredOriginalTopoDSEdge:true,
+    native3DGeneratedCurveIntervals:[]};
+  }
+ }
+ const out=audit(x);
+ assert.equal(out.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
+ assert.equal(out.counts.nativeOriginal3DM4SourceViewCandidates,6);
+ assert.equal(out.counts.nativeOriginal3DM4ProjectedClassSegments,3);
+ for(const view of ['V','H','W']){
+  const rows=out.views[view].nativeOriginal3DM4Candidates;
+  assert.equal(rows.length,2);
+  assert.equal(rows[0].M4OriginalUnitIntervalCandidateCoverageComplete,true);
+  assert.equal(rows[0].segments[0].native3DHLRClass,'visible-sharp');
+  assert.equal(rows[0].segments[0].generated2DHLREdgeTopologyProven,false);
+  assert.equal(rows[1].M4OriginalUnitIntervalCandidateCoverageComplete,false);
+  assert.equal(rows[1].officialV5Authorized,false);
+ }
+ assert.equal(out.formalEngineeringLineStyleCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+});

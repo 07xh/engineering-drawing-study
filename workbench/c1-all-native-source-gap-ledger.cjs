@@ -13,6 +13,11 @@
 const {VIEWS,project}=require('../core/projection/conventions.js');
 const {auditC1JointNativeGapFromCad}=
  require('./c1-joint-native-gap-evidence.cjs');
+const {auditC1OriginalM0InventoryCoverage}=
+ require('./c1-original-m0-inventory-coverage.cjs');
+const {auditC1Native3DSourceScopedIntervals,
+ auditC1Native3DClassPaperCandidateVeto}=
+ require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -57,6 +62,121 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
    return p.u!==q.u||p.v!==q.v;
   }).map(e=>geometry.id+'::'+[...e].sort().join('|')))
  ]));
+ // Independent M5 consumer of REAL OCCT source-filtered In3d HLR output.
+ // Unlike projected 2D VCompound inverses, these are original BRep curve
+ // parameters emitted by MakeEdge3d. Recompute every V/H/W source union
+ // from raw native ranges; never trust a producer's 'complete' boolean.
+ // A fully covered native 3D source is NOT yet a whole-solid generated 2D
+ // TopoDS identity, global occlusion, engineering style or V5 certificate.
+ const native3DSourceViewRows=[];
+ const native3DScopedRowsByView=Object.fromEntries(VIEWS.map(view=>
+  [view,new Map()]));
+ const native3DSourceViewCounts={
+  projectedOriginalSourceViews:0,
+  native3DProjectedSourceViewsWithCompleteCombinedPartition:0,
+  native3DProjectedSourceViewsWithPositiveGaps:0,
+  native3DProjectedSourceViewsWithPositiveOverlaps:0,
+  collapsedSourceViewsWithoutNative3DSharpSegments:0
+ };
+ const scoped3D=cad.nativeSourceScopedSharpOutputByView;
+ const hasScoped3D=VIEWS.some(view=>
+  scoped3D?.[view]?.rows?.some(row=>
+   row.combinedNative3DSourceParameterPartition!==undefined));
+ if(hasScoped3D){
+  const originalCurves=new Map();
+  if(!Array.isArray(cad.originalBRepSourceEdges)||
+     cad.originalBRepSourceEdges.length!==originalIds.size)
+   throw new RangeError('complete real original BRep 3D source curve ledger required');
+  for(const curve of cad.originalBRepSourceEdges){
+   if(!originalIds.has(curve?.sourceEdgeId)||
+      originalCurves.has(curve.sourceEdgeId)||
+      curve.occtSourceCurve3DEndpointsAndMidpointVerified!==true)
+    throw new RangeError('invalid original BRep source 3D curve inventory');
+   originalCurves.set(curve.sourceEdgeId,curve);
+  }
+  for(const view of VIEWS){
+   const scoped=scoped3D?.[view];
+   if(scoped?.schema!=='draftai-c1-ocjs-real-original-topods-scoped-hlr/1'||
+      !Array.isArray(scoped.rows)||scoped.rows.length!==originalIds.size||
+      scoped.originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap!==true)
+    throw new RangeError('incomplete native source-scoped 3D HLR view');
+   const seen3D=new Set();
+   for(const row of scoped.rows){
+    const id=row?.originalPhysicalSourceEdgeId;
+    if(!originalIds.has(id)||seen3D.has(id))
+     throw new RangeError('duplicate or unknown native source-scoped 3D edge');
+    seen3D.add(id);
+    const source=originalCurves.get(id);
+    const visible=row.visible3D?.native3DGeneratedCurveIntervals;
+    const hidden=row.hidden3D?.native3DGeneratedCurveIntervals;
+    if(!Array.isArray(visible)||!Array.isArray(hidden)||
+       visible.length+hidden.length>256)
+     throw new RangeError('missing real native 3D source-scoped visibility partition');
+    const emitted=[...visible,...hidden];
+    if(emitted.some(edge=>
+     edge.nativeSourceFilterOriginalEdgeId!==id||
+     edge.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
+     edge.originalGeneratedTopoDSHistoryCertified!==false||
+     edge.signedV5Action!==false))
+     throw new RangeError('native 3D source curve/parameter identity contradicted');
+    const actual=auditC1Native3DSourceScopedIntervals({
+     originalNativeParameterRange:source.occtSourceCurveParameterRange,
+     generatedNativeParameterRanges:emitted.map(edge=>
+      edge.nativeOriginalCurveParameterRange)
+    });
+    const claimed=row.combinedNative3DSourceParameterPartition;
+    if(claimed?.schema!==actual.schema||
+       JSON.stringify(claimed.originalNativeParameterRange)!==
+        JSON.stringify(actual.originalNativeParameterRange)||
+       JSON.stringify(claimed.generatedNativeParameterRanges)!==
+        JSON.stringify(actual.generatedNativeParameterRanges)||
+       JSON.stringify(claimed.positiveLengthUncoveredNativeParameterIntervals)!==
+        JSON.stringify(actual.positiveLengthUncoveredNativeParameterIntervals)||
+       JSON.stringify(claimed.positiveLengthOverlappingNativeParameterIntervals)!==
+        JSON.stringify(actual.positiveLengthOverlappingNativeParameterIntervals)||
+       claimed.sourceScopedNative3DParameterInventoryCompleteExactlyOnce!==
+        actual.sourceScopedNative3DParameterInventoryCompleteExactlyOnce)
+     throw new RangeError('native source-scoped 3D partition disagrees with independent M5 recomputation');
+    const drawable=projectedOriginalSourcesByView[view].has(id);
+    if(drawable){
+     native3DSourceViewCounts.projectedOriginalSourceViews++;
+     if(actual.sourceScopedNative3DParameterInventoryCompleteExactlyOnce)
+      native3DSourceViewCounts.native3DProjectedSourceViewsWithCompleteCombinedPartition++;
+     if(actual.positiveLengthUncoveredNativeParameterIntervals.length)
+      native3DSourceViewCounts.native3DProjectedSourceViewsWithPositiveGaps++;
+     if(actual.positiveLengthOverlappingNativeParameterIntervals.length)
+      native3DSourceViewCounts.native3DProjectedSourceViewsWithPositiveOverlaps++;
+    }else{
+     if(emitted.length)
+      throw new RangeError('projected collapsed source emitted a native sharp HLR segment');
+     native3DSourceViewCounts.collapsedSourceViewsWithoutNative3DSharpSegments++;
+    }
+    native3DScopedRowsByView[view].set(id,row);
+    native3DSourceViewRows.push({view,sourceEdgeId:id,
+     originalProjectedSourceNoncollapsed:drawable,
+     native3DVisibleSharpCount:visible.length,
+     native3DHiddenSharpCount:hidden.length,
+     exactOriginalNative3DSourcePartition:actual,
+     nativeSourceScopedOriginalCurveProven:true,
+     wholeSolidGenerated2DTopoDSIdentityCertified:false,
+     globalContinuousVisibilityCertified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false});
+   }
+  }
+ }
+ const native3DSourceViewLedger=freeze({
+  schema:'draftai-c1-m5-real-native-3d-source-scoped-partition/1',
+  availableFromActualPinnedOCJS:hasScoped3D,
+  counts:native3DSourceViewCounts,
+  rows:native3DSourceViewRows,
+  allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition:
+   hasScoped3D&&native3DSourceViewCounts.projectedOriginalSourceViews===
+    native3DSourceViewCounts.native3DProjectedSourceViewsWithCompleteCombinedPartition,
+  generated2DTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  formalEngineeringLineStyleCertified:false,
+  officialV5Authorized:false
+ });
  const representedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>
   [view,new Set()]));
  const result=[],seen=new Set(),totals={
@@ -161,6 +281,16 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
       totals.originalParameterUnreconstructableSpans+
       totals.missingOrUnboundSourceSpans)
   throw new RangeError('C1 complete canonical M5 original source gap accounting lost');
+ // A canonical M5 source row may cover only a strict subinterval of [0,1],
+ // or overlap another row. Audit ALL original M0 source/view parameters,
+ // including source views entirely absent from M5. This is separate from
+ // native HLR generated-edge provenance and from native gaps within a row.
+ const originalM0CanonicalSourceInventory=auditC1OriginalM0InventoryCoverage({
+  projectedOriginalSourcesByView,
+  canonicalM5RowsByView:Object.fromEntries(VIEWS.map(view=>[
+   view,result.filter(row=>row.view===view)
+  ]))
+ });
  const unrepresentedOriginalM0ProjectedSources=[];
  for(const view of VIEWS)
   for(const sourceEdgeId of projectedOriginalSourcesByView[view])
@@ -236,7 +366,22 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
      claim.hlrClass===candidate.hlrClass&&
      claim.nativeWholeSolidEdgeOrdinal===candidate.ordinal&&
      claim.originalPhysicalSourceEdgeId!==sourceEdgeId));
+   // A paper-only match in a class with NO original-source native 3D
+   // HLR interval is an impossible class attribution. Exclude it from
+   // subsequent candidate exploration, not from the raw audit record.
+   // A retained candidate is still unsigned and never a TopoDS history.
+   const native3DClassVeto=hasScoped3D?
+    auditC1Native3DClassPaperCandidateVeto({
+     view,sourceEdgeId,
+     scopedRow:native3DScopedRowsByView[view].get(sourceEdgeId),
+     paperCandidates:candidates
+    }):null;
    return {view,sourceEdgeId,
+    native3DClassPaperCandidateVeto:native3DClassVeto,
+    native3DClassCompatiblePaperCandidateCount:
+     native3DClassVeto?.native3DClassCompatiblePaperCandidates.length??null,
+    native3DClassContradictoryPaperCandidateCount:
+     native3DClassVeto?.paperCandidatesExcludedByNative3DClassAbsence.length??null,
     directNativeGeneratedIdentityCandidateCount:directNativeIdentityCandidates.length,
     directNativeGeneratedIdentityCandidates:directNativeIdentityCandidates.map(
      candidate=>({hlrClass:candidate.hlrClass,ordinal:candidate.ordinal})),
@@ -253,6 +398,7 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
     engineeringLineStyle:'undetermined',signedV5Action:false};
   });
  return freeze({schema:'draftai-c1-all-original-3d-native-source-gaps/1',
+  originalM0CanonicalSourceInventory,native3DSourceViewLedger,
   unrepresentedM0NativeHLRCandidateForensics,
   unrepresentedOriginalM0ProjectedSources,
   allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5:

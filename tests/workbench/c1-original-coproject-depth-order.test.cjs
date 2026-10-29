@@ -95,3 +95,189 @@ test('one-ULP positive overlap at a source endpoint cannot be discarded by float
  assert.equal(out.wholeIntervalFrontmostCertified,false);
  assert.equal(out.status,'undetermined-coproject-source-order');
 });
+
+test('one-subnormal-unit positive original observer depth establishes strict order without a 1e-7 mm cutoff',()=>{
+ const g=geometry();
+ g.data.points.D.y=Number.MIN_VALUE;
+ g.data.points.H.y=Number.MIN_VALUE;
+ const front=check(g,source('A','E'),[peer('D','H',
+  'single-opaque-solid-whole-open-ray-strictly-hidden')]);
+ assert.equal(front.status,'candidate-strictly-front-of-all-aliases');
+ assert.equal(front.wholeIntervalFrontmostCertified,true);
+ assert.deepEqual(front.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+ assert.equal(front.comparisons[0].strictOriginal3DDepthOrderNoToleranceUsed,true);
+ const back=check(g,source('D','H'),[peer('A','E')]);
+ assert.equal(back.status,'suppressed-by-front-original-visible-source');
+ assert.deepEqual(back.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[-1,-1]);
+ assert.equal(back.engineeringLineStyleSigned,false);
+ assert.equal(back.signedV5ActionCount,0);
+});
+test('reversed original 3D peer edge preserves strict all-endpoint proof',()=>{
+ const g=geometry();g.data.edges[1]=['H','D'];
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+});
+test('exact overlapping paper sources at identical depth remain unresolved even with a clear peer',()=>{
+ const g=geometry();g.data.points.D.y=0;g.data.points.H.y=0;
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.comparisons[0].status,'depth-switch-or-tie');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,0]);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+});
+test('large original source coordinates retain strict rational ray sign across rounded paper orientation',()=>{
+ const g=geometry(),offset=2**50;
+ for(const v of Object.values(g.data.points)){
+  v.x+=offset;v.z+=offset;v.y+=offset;
+ }
+ const out=check(g,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+});
+
+test('diagonal original M4 cut lies on its exact affine M0 line even when JS projection drifts',()=>{
+ const g={id:'RoundedDiagonal',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:17,y:0,z:3},
+   C:{x:0,y:2,z:0},D:{x:17,y:2,z:3}
+  },edges:[['A','B'],['C','D']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:g,view:'V',sourceEdgeId:'RoundedDiagonal::A|B',
+  originalParameterRange:[.1,.9],
+  peers:[{view:'V',sourceGeometryId:'RoundedDiagonal',
+   sourceEdgeId:'RoundedDiagonal::C|D',
+   originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-strictly-hidden'}]
+ });
+ assert.equal(out.wholeIntervalFrontmostCertified,true);
+ assert.equal(out.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(out.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+ assert.equal(out.originalM0AffineSourceAndM4CutParametersComparedExactly,true);
+ assert.equal(out.roundedM4PaperInterpolationCannotCreateOrEraseSourceOverlap,true);
+ assert.equal(out.engineeringLineStyleSigned,false);
+});
+test('exact parametric diagonal ordering remains unresolved when other physical source is only a partial alias',()=>{
+ const g={id:'PartialDiagonal',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:17,y:0,z:3},
+   C:{x:8.5,y:2,z:1.5},D:{x:17,y:2,z:3}
+  },edges:[['A','B'],['C','D']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:g,view:'V',sourceEdgeId:'PartialDiagonal::A|B',
+  originalParameterRange:[.1,.9],
+  peers:[{view:'V',sourceGeometryId:'PartialDiagonal',
+   sourceEdgeId:'PartialDiagonal::C|D',
+   originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-clear'}]
+ });
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.comparisons[0].status,'partial-or-ambiguous-coproject-overlap');
+ assert.equal(out.comparisons[0].exactOriginalSourceWholePaperOverlapProven,false);
+});
+
+test('a true shared original 3D vertex proves strict OPEN observer depth, never closed-line signoff',()=>{
+ const geom={id:'PhysicalFan',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:0,y:0,z:5},C:{x:0,y:3,z:5}
+  },edges:[['A','B'],['A','C']]}};
+ const peerOf=(id,status)=>({
+  view:'V',sourceGeometryId:geom.id,sourceEdgeId:id,
+  originalParameterRange:[0,1],status});
+ const back=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'PhysicalFan::A|C',
+  originalParameterRange:[0,1],
+  peers:[peerOf('PhysicalFan::A|B','single-opaque-solid-whole-open-ray-clear')]
+ });
+ assert.equal(back.status,'undetermined-coproject-source-order');
+ assert.equal(back.originalPhysicalVertexOpenDepthOrderingProven,true);
+ assert.equal(back.visibleSourceCoversEntireLine,false);
+ assert.equal(back.wholeIntervalFrontmostCertified,false);
+ assert.equal(back.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,true);
+ assert.equal(back.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,true);
+ assert.equal(back.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(back.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
+ assert.equal(back.openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces,true);
+ assert.deepEqual(back.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,-1]);
+ assert.deepEqual(back.comparisons[0].exactDepthTiesAtOriginalShared3DVertex,[true,false]);
+ assert.equal(back.comparisons[0].status,
+  'candidate-strictly-behind-open-at-original-3d-vertex');
+ assert.equal(back.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,true);
+ assert.equal(back.engineeringLineStyleSigned,false);
+ const front=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'PhysicalFan::A|B',
+  originalParameterRange:[0,1],
+  peers:[peerOf('PhysicalFan::A|C','single-opaque-solid-whole-open-ray-strictly-hidden')]
+ });
+ assert.equal(front.wholeIntervalFrontmostCertified,false);
+ assert.equal(front.originalPhysicalVertexOpenDepthOrderingProven,true);
+ assert.equal(front.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,true);
+ assert.equal(front.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(front.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
+ assert.equal(front.comparisons[0].status,
+  'candidate-strictly-front-open-at-original-3d-vertex');
+ assert.deepEqual(front.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,1]);
+});
+test('paper and XYZ coincidence with different original vertex IDs cannot forge a 3D junction',()=>{
+ const geom={id:'UnjoinedFan',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{
+   A:{x:0,y:0,z:0},B:{x:0,y:0,z:5},
+   OtherA:{x:0,y:0,z:0},C:{x:0,y:3,z:5}
+  },edges:[['A','B'],['OtherA','C']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'V',sourceEdgeId:'UnjoinedFan::C|OtherA',
+  originalParameterRange:[0,1],
+  peers:[{view:'V',sourceGeometryId:geom.id,
+   sourceEdgeId:'UnjoinedFan::A|B',originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-clear'}]
+ });
+ assert.equal(out.originalPhysicalVertexOpenDepthOrderingProven,false);
+ assert.equal(out.visibleSourceCoversEntireLine,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,false);
+});
+test('a real positive 3D source interval that renders below paper resolution remains held, not collapsed',()=>{
+ const geom={id:'MicroSource',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:10,z:0}},
+   edges:[['A','B']]}};
+ const args={geometry:geom,view:'H',sourceEdgeId:'MicroSource::A|B',
+  originalParameterRange:[1-Number.EPSILON,1],peers:[]};
+ const out=auditC1OriginalCoProjectedDepthOrder(args);
+ assert.equal(out.status,'positive-original-dyadic-projection-below-paper-resolution-held');
+ assert.equal(out.originalDyadicProjectedIntervalPositive,true);
+ assert.equal(out.renderedPaperSegmentNotCertified,true);
+ assert.deepEqual(out.originalParameterRange,[1-Number.EPSILON,1]);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const collapsed=auditC1OriginalCoProjectedDepthOrder({...args,
+  view:'V'});
+ assert.equal(collapsed.status,'collapsed-source-projection');
+ assert.equal(collapsed.originalDyadicProjectedIntervalPositive,false);
+});
+
+test('partial projected overlap cannot be promoted to strict entire OPEN source visibility',()=>{
+ const geom=geometry();
+ geom.data.points.H.z=2;
+ const out=check(geom,source('A','E'),[peer('D','H')]);
+ assert.equal(out.status,'undetermined-coproject-source-order');
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('source depth switch/tie away from physical original vertex never proves OPEN frontmost',()=>{
+ const geom=geometry();
+ geom.data.points.D.y=3;
+ geom.data.points.H.y=-3;
+ const out=check(geom,source('A','E'),[peer('D','H')]);
+ assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,false);
+});

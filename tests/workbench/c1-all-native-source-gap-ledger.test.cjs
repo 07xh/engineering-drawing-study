@@ -235,3 +235,137 @@ test('native owner claims reject unknown original source, invalid ordinal and du
   assert.throws(()=>audit(x),/invalid actual native HLR|duplicate actual native HLR/);
  }
 });
+
+test('canonical M5 row present for original M0 source cannot conceal an unrepresented tail',()=>{
+ const x=fixture();
+ const row=x.m5Ledger.views.V.intervals[0];
+ row.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0,0.5];
+ const out=audit(x);
+ const v=out.originalM0CanonicalSourceInventory.rows.find(row=>
+  row.view==='V'&&row.sourceEdgeId==='C1SkewTetra::A|D');
+ assert.deepEqual(v.positiveLengthUnrepresentedM5ParameterIntervals,[[0.5,1]]);
+ assert.equal(v.wholeOriginalM0SourceParameterInventoryComplete,false);
+ assert.equal(out.originalM0CanonicalSourceInventory.
+  allNoncollapsedOriginalM0SourceParametersRepresentedExactlyOnce,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('canonical M5 original source overlap remains unsigned even when union covers [0,1]',()=>{
+ const x=fixture();
+ const row=x.m5Ledger.views.V.intervals[0];
+ row.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0,0.75];
+ const second=structuredClone(row);
+ second.exactNativeOriginal3DSourceCoverage.originalSourceParameterRange=[0.5,1];
+ x.m5Ledger.views.V.intervals.push(second);
+ const out=audit(x);
+ const v=out.originalM0CanonicalSourceInventory.rows.find(row=>
+  row.view==='V'&&row.sourceEdgeId==='C1SkewTetra::A|D');
+ assert.deepEqual(v.positiveLengthUnrepresentedM5ParameterIntervals,[]);
+ assert.deepEqual(v.positiveLengthOverlappingM5ParameterIntervals,[[0.5,0.75]]);
+ assert.equal(v.wholeOriginalM0SourceParameterInventoryComplete,false);
+ assert.equal(out.originalM0CanonicalSourceInventory.counts.
+  sourceViewsWithOverlappingM5ParameterSpans,1);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+const {auditC1Native3DSourceScopedIntervals:partition3D}=
+ require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
+function withNative3D(x){
+ const {cad,geometry}=x;
+ cad.nativeSourceScopedSharpOutputByView={};
+ for(const view of ['V','H','W']){
+  const rows=cad.originalBRepSourceEdges.map(source=>{
+   const id=source.sourceEdgeId,range=source.occtSourceCurveParameterRange;
+   const visible3D=[{
+    nativeSourceFilterOriginalEdgeId:id,
+    nativeOriginalCurveParameterRange:[...range],
+    native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+    originalGeneratedTopoDSHistoryCertified:false,
+    signedV5Action:false
+   }];
+   const hidden3D=[];
+   return {originalPhysicalSourceEdgeId:id,
+    visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:visible3D},
+    hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+     native3DGeneratedCurveIntervals:hidden3D},
+    combinedNative3DSourceParameterPartition:partition3D({
+     originalNativeParameterRange:range,
+     generatedNativeParameterRanges:visible3D.map(v=>v.nativeOriginalCurveParameterRange)
+    })};
+  });
+  cad.nativeSourceScopedSharpOutputByView[view]={
+   schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
+   originalTopoDSEdgeIndexCheckedAgainstActualHLREdgeMap:true,
+   rows
+  };
+ }
+ return x;
+}
+test('native source-filtered 3D V/H/W full partition is independently consumed but cannot sign M5 or V5',()=>{
+ const x=withNative3D(fixture()),out=audit(x);
+ const n=out.native3DSourceViewLedger;
+ assert.equal(n.availableFromActualPinnedOCJS,true);
+ assert.equal(n.rows.length,6);
+ assert.equal(n.counts.projectedOriginalSourceViews,6);
+ assert.equal(n.counts.native3DProjectedSourceViewsWithCompleteCombinedPartition,6);
+ assert.equal(n.allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition,true);
+ assert.equal(out.totals.individualPositiveNativeGaps,3,
+  'original paper-inverse gaps remain visible until 2D generated history is proved');
+ assert.equal(n.generated2DTopoDSHistoryCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('native source-filtered 3D missing ULP is reported even when 2D paper coverage claims full',()=>{
+ const x=withNative3D(fixture()),row=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0];
+ const end=row.visible3D.native3DGeneratedCurveIntervals[0].
+  nativeOriginalCurveParameterRange[1];
+ row.visible3D.native3DGeneratedCurveIntervals[0].
+  nativeOriginalCurveParameterRange=[Number.MIN_VALUE,end];
+ row.combinedNative3DSourceParameterPartition=partition3D({
+  originalNativeParameterRange:[0,end],
+  generatedNativeParameterRanges:[[Number.MIN_VALUE,end]]
+ });
+ const n=audit(x).native3DSourceViewLedger;
+ assert.equal(n.counts.native3DProjectedSourceViewsWithPositiveGaps,1);
+ assert.deepEqual(n.rows.find(r=>r.view==='V'&&r.sourceEdgeId===row.originalPhysicalSourceEdgeId).
+  exactOriginalNative3DSourcePartition.positiveLengthUncoveredNativeParameterIntervals,
+  [[0,Number.MIN_VALUE]]);
+ assert.equal(n.allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition,false);
+});
+test('forged native 3D partition claim, source identity and curve parity fail closed',()=>{
+ const changes=[
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].
+   combinedNative3DSourceParameterPartition={...x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].
+    combinedNative3DSourceParameterPartition,
+    sourceScopedNative3DParameterInventoryCompleteExactlyOnce:false},
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].
+   visible3D.native3DGeneratedCurveIntervals[0].nativeSourceFilterOriginalEdgeId='forged',
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].
+   visible3D.native3DGeneratedCurveIntervals[0].
+    native3DCurveExactlySameAsOriginalAtThreeParameters=false
+ ];
+ for(const change of changes){
+  const x=withNative3D(fixture());change(x);
+  assert.throws(()=>audit(x),/native|source|partition/);
+ }
+});
+
+test('omitted original M0 paper aliases of absent native 3D HLR class are vetoed, never signed',()=>{
+ const x=withNative3D(fixture()),sourceEdgeId='C1SkewTetra::A|C';
+ x.cad.views.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ x.cad.hiddenSharpViews.V.push({from:{u:0,v:0},to:{u:3,v:2},
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(x);
+ const row=out.unrepresentedM0NativeHLRCandidateForensics.find(r=>
+  r.view==='V'&&r.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRPaperCandidateCount,2,
+  'raw native paper evidence remains auditable');
+ assert.equal(row.native3DClassCompatiblePaperCandidateCount,1);
+ assert.equal(row.native3DClassContradictoryPaperCandidateCount,1);
+ assert.deepEqual(row.native3DClassPaperCandidateVeto.
+  paperCandidatesExcludedByNative3DClassAbsence,
+  [{hlrClass:'hidden-sharp',ordinal:0}]);
+ assert.equal(row.native3DClassPaperCandidateVeto.fullOriginalSourceHistoryCertified,false);
+ assert.equal(row.continuousOcclusionCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});

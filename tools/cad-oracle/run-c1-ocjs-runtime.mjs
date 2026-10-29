@@ -47,6 +47,8 @@ const {auditC1AllOriginalSourceNativeGaps}=
  require('../../workbench/c1-all-native-source-gap-ledger.cjs');
 const {auditC1NativeGapOriginalExactRays}=
  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
+const {projectC1Native3DSourceIntervalsToM4}=
+ require('../../workbench/c1-native-source-scoped-m4-projection.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -60,6 +62,18 @@ const entry=pathToFileURL(resolve(pkg,'dist/node.js')).href;
 const {default:init}=await import(entry);
 const t0=performance.now();
 const oc=await init();
+// Probe the REAL pinned OCJS source-filtered 3D HLR path. OCCT's
+// HLRBRep::MakeEdge3d retains original 3D curve parameter intervals,
+// unlike the projected 2D VCompound/HCompound edges. Do not treat
+// mere API availability as a successful source/history certificate.
+console.error('REAL C1 OCJS SOURCE-SCOPED 3D HLR API '+JSON.stringify({
+ extractorMethods:Object.getOwnPropertyNames(oc.HLRBRep_HLRToShape?.prototype??{}).
+  filter(x=>/CompoundOfEdges|VCompound|HCompound/.test(x)),
+ sharpEnumGroupKeys:Object.keys(oc.HLRBRep_TypeOfResultingEdge??{}).
+  filter(x=>/Sharp|SharpLine|Rg/.test(x)),
+ sharpEnumDirectType:typeof oc.HLRBRep_Sharp,
+ sharpEnumGroupType:typeof oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_Sharp
+}));
 const initMs=performance.now()-t0;
 const xyz=(x,y,z)=>({x,y,z});
 function reviewed(min,max,revision,id){
@@ -216,6 +230,102 @@ for(const [index,geometry] of general.entries()){
     w.originalPhysicalSourceEdgeId===row.originalPhysicalSourceEdgeId&&
     w.globalPaperCandidateOrdinals.length>=1&&
     w.engineeringLineStyle==='undetermined'&&w.signedV5Action===false))));
+  // Real native original 3D HLR -> existing first-angle project() -> M4
+  // source-preserving candidate. No rounded generated 2D HLR inverse,
+  // no alternative M3, M5 line style or second V5.
+  const nativeCurveBySource=new Map(cad.originalBRepSourceEdges.map(row=>
+   [row.sourceEdgeId,row]));
+  let native3DM4Noncollapsed=0,native3DM4ProjectedSegments=0;
+  for(const source of scoped.rows){
+   const edge=geometry.data.edges.find(e=>
+    geometry.id+'::'+[...e].sort().join('|')===source.originalPhysicalSourceEdgeId);
+   assert.ok(edge,'real native source must belong to original M0 edge list');
+   const [a,b]=edge.map(id=>project(geometry.data.points[id])[view]);
+   if(a.u===b.u&&a.v===b.v){
+    assert.equal(source.visible3D.native3DGeneratedCurveIntervals.length,0);
+    assert.equal(source.hidden3D.native3DGeneratedCurveIntervals.length,0);
+    continue;
+   }
+   const witness=projectC1Native3DSourceIntervalsToM4({
+    geometry,revision:cad.revision,view,
+    sourceEdgeId:source.originalPhysicalSourceEdgeId,
+    originalCurve:nativeCurveBySource.get(source.originalPhysicalSourceEdgeId),
+    scopedRow:source
+   });
+   native3DM4Noncollapsed++;
+   native3DM4ProjectedSegments+=witness.segments.length;
+   assert.equal(witness.sourceGeometryId,geometry.id);
+   assert.equal(witness.revision,cad.revision);
+   assert.equal(witness.native3DProvenanceIsNotGenerated2DHLREdgeIdentity,true);
+   assert.equal(witness.native3DSourceParameterPartitionCompleteExactlyOnce,
+    source.combinedNative3DSourceParameterPartition.
+     sourceScopedNative3DParameterInventoryCompleteExactlyOnce);
+   assert.deepEqual(witness.native3DOriginalParameterPositiveGaps,
+    source.combinedNative3DSourceParameterPartition.
+     positiveLengthUncoveredNativeParameterIntervals);
+   assert.deepEqual(witness.native3DOriginalParameterPositiveOverlaps,
+    source.combinedNative3DSourceParameterPartition.
+     positiveLengthOverlappingNativeParameterIntervals);
+   // M4 must never certify a rounded fraction union that conceals a
+   // positive native gap or overlap; this is not formal HLR ownership.
+   assert.equal(witness.M4OriginalUnitIntervalCandidateCoverageComplete,
+    witness.native3DSourceParameterPartitionCompleteExactlyOnce&&
+    witness.M4OriginalUnitIntervalCandidatePositiveGaps.length===0);
+   assert.equal(witness.officialV5Authorized,false);
+   assert.ok(witness.segments.every(s=>
+    s.generated2DHLREdgeTopologyProven===false&&
+    s.completeGlobalCoProjectedVisibilityCertified===false&&
+    s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false));
+  }
+  console.error('REAL C1 NATIVE 3D -> M4 SOURCE PROJECTION '+
+   geometry.id+' '+view+': '+JSON.stringify({
+    noncollapsedOriginalSources:native3DM4Noncollapsed,
+    projectedSourceScoped3DIntervals:native3DM4ProjectedSegments,
+    generated2DHLREdgeHistoryCertified:false,signedV5Actions:0
+   }));
+  // Actual pinned OCJS source-filtered In3d sharp output retains OCCT
+  // original-curve parameter intervals. A complete scoped 3D union is
+  // stronger than a paper alias, but is NOT generated 2D IsSame history,
+  // whole-scene visibility or formal V5 permission.
+  const combined3D=scoped.rows.map(row=>row.combinedNative3DSourceParameterPartition);
+  assert.equal(combined3D.length,geometry.data.edges.length);
+  assert.ok(combined3D.every(x=>x?.schema===
+   'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'&&
+   x.signedV5Action===false));
+  const native3D=scoped.rows.flatMap(row=>[row.visible3D,row.hidden3D]);
+  assert.equal(native3D.length,2*geometry.data.edges.length);
+  assert.ok(native3D.every(x=>
+   x.nativeSourceFilteredOriginalTopoDSEdge===true&&
+   x.generated2DSourceIdentityIsSameProven===false&&
+   x.signedV5Action===false&&
+   x.exactNative3DSourceParameterCoverage?.schema===
+    'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'&&
+   x.native3DGeneratedCurveIntervals.every(e=>
+    e.nativeSourceFilterOriginalEdgeId&&
+    e.native3DCurveExactlySameAsOriginalAtThreeParameters===true&&
+    e.originalGeneratedTopoDSHistoryCertified===false&&
+    e.nativeOriginalCurveParameterRange[1]>
+     e.nativeOriginalCurveParameterRange[0])));
+  console.error('REAL C1 SOURCE-SCOPED NATIVE 3D HLR '+geometry.id+' '+view+': '+
+   JSON.stringify({
+    emitted3D:native3D.reduce((n,x)=>n+x.native3DGeneratedCurveIntervals.length,0),
+    complete3DSourceClassIntervals:native3D.filter(x=>
+     x.exactNative3DSourceParameterCoverage.
+      sourceScopedNative3DParameterInventoryCompleteExactlyOnce).length,
+    native3DPositiveGapIntervals:native3D.reduce((n,x)=>n+
+     x.exactNative3DSourceParameterCoverage.
+      positiveLengthUncoveredNativeParameterIntervals.length,0),
+    native3DPositiveOverlapIntervals:native3D.reduce((n,x)=>n+
+     x.exactNative3DSourceParameterCoverage.
+      positiveLengthOverlappingNativeParameterIntervals.length,0),
+    sourceFiltered2DOutputs:scoped.nativeSourceScopedOutputEdgeCount,
+    combined3DSourceFullPartition:combined3D.filter(x=>
+     x.sourceScopedNative3DParameterInventoryCompleteExactlyOnce).length,
+    combined3DSourcePositiveGapIntervals:combined3D.reduce((n,x)=>n+
+     x.positiveLengthUncoveredNativeParameterIntervals.length,0),
+    combined3DSourcePositiveOverlapIntervals:combined3D.reduce((n,x)=>n+
+     x.positiveLengthOverlappingNativeParameterIntervals.length,0)
+   }));
   const nativeClaims=scoped.nativeSourceIdentityConflicts;
   assert.equal(nativeClaims.schema,
    'draftai-c1-native-scoped-source-identity-conflicts/1');
@@ -258,10 +368,219 @@ for(const [index,geometry] of general.entries()){
  assert.equal(scopedConsumer.counts.nativeSourceScopedOutputEdges,
   scopedConsumer.counts.nativeGeneratedIsSameMatches+
   scopedConsumer.counts.paperOnlySourceScopedEdges);
+ const globalScopedRebind=scopedConsumer.globalNativeHLRSourceScopeRebinding;
+ assert.equal(globalScopedRebind?.schema,
+  'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
+ const nativePhysical3DEndpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
+ assert.equal(nativePhysical3DEndpoints?.schema,
+  'draftai-c1-global-generated-hlr-to-original-m0-3d-endpoint-junction-ledger/1');
+ assert.equal(nativePhysical3DEndpoints.sourceGeometryId,geometry.id);
+ assert.equal(nativePhysical3DEndpoints.revision,cad.revision);
+ assert.equal(nativePhysical3DEndpoints.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(nativePhysical3DEndpoints.allOpaqueFaceOcclusionCertified,false);
+ assert.equal(nativePhysical3DEndpoints.signedV5ActionCount,0);
+ assert.equal(nativePhysical3DEndpoints.counts.globalGeneratedHLREdgesChecked,
+  globalScopedRebind.counts.wholeSolidNativeHLREdges);
+ assert.equal(nativePhysical3DEndpoints.counts.uniqueOriginalSourceGlobalEdgesExamined,
+  globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
+ assert.equal(nativePhysical3DEndpoints.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
+ assert.equal(
+  nativePhysical3DEndpoints.counts.realNativeGeneratedVertexGraphPairsChecked,
+  cad.nativeGeneratedVertexGraph.counts.positivelySameGeneratedOCCTTopoDSVertexPairs+
+  cad.nativeGeneratedVertexGraph.counts.coincidentPaperButDistinctGeneratedTopoDSVertexPairs);
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(nativePhysical3DEndpoints.counts.nativeOriginalBRepExactPhysicalEndpointPairs,18);
+  assert.equal(nativePhysical3DEndpoints.counts.exactOriginalM0PaperEndpointPairs,10);
+  assert.equal(nativePhysical3DEndpoints.counts.roundedOnlyOriginalM0PaperEndpointPairs,8);
+  assert.equal(nativePhysical3DEndpoints.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,1);
+  assert.equal(nativePhysical3DEndpoints.counts.physicalOriginalM0EndpointRowsHeld,0);
+ }else if(geometry.id==='C1rotated'){
+  assert.equal(nativePhysical3DEndpoints.counts.roundedOnlyOriginalM0PaperEndpointPairs,0);
+  assert.equal(nativePhysical3DEndpoints.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,0);
+ }
+ for(const view of ['V','H','W']){
+  const e=nativePhysical3DEndpoints.views[view];
+  assert.equal(e.rows.length,globalScopedRebind.views[view].length);
+  assert.ok(e.rows.every(row=>
+   row.generated2DToOriginalNativeTopoDSFullVertexTopologyCertified===false&&
+   row.continuousAllOpaqueFaceVisibilityProven===false&&
+   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false&&
+   row.original3DToGenerated2DEndpointWitnesses.every(w=>
+    w.paperAndSourceProximityIsNotNativeVertexTopologyIdentity===true&&
+    w.signedV5Action===false)));
+  assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
+   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===false&&
+   pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
+   pair.paperCoincidenceCannotSignEngineeringJunction===true&&
+   pair.signedV5Action===false));
+ }
+ console.error('REAL C1 NATIVE GLOBAL HLR ORIGINAL 3D BREP ENDPOINT GRAPH '+
+  geometry.id+': '+JSON.stringify(nativePhysical3DEndpoints.counts));
+ assert.equal(globalScopedRebind.sourceGeometryId,geometry.id);
+ assert.equal(globalScopedRebind.revision,cad.revision);
+ assert.equal(globalScopedRebind.nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted,true);
+ assert.equal(globalScopedRebind.actualGlobalGeneratedEdgeToOriginalTopoDSHistoryCertified,false);
+ assert.equal(globalScopedRebind.globalSceneM5OpaqueVisibilityCertified,false);
+ assert.equal(globalScopedRebind.signedV5ActionCount,0);
+ assert.equal(globalScopedRebind.counts.wholeSolidNativeHLREdges,
+  ['V','H','W'].reduce((n,view)=>n+cad.views[view].length+
+   cad.hiddenSharpViews[view].length,0));
+ for(const view of ['V','H','W']){
+  assert.equal(globalScopedRebind.views[view].length,
+   cad.views[view].length+cad.hiddenSharpViews[view].length);
+  for(const row of globalScopedRebind.views[view]){
+   assert.equal(row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+   assert.equal(row.globalSceneOpaqueFaceVisibilityCertified,false);
+   assert.equal(row.true3DAllEndpointJunctionsCertified,false);
+   assert.equal(row.signedV5Action,false);
+   assert.ok(row.originalSourceScopedCandidates.every(candidate=>
+    candidate.sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory===false&&
+    candidate.actualWholeSolidGenerated2DOriginalTopoDSHistoryProven===false&&
+    candidate.engineeringLineStyle==='undetermined'&&
+    candidate.signedV5Action===false));
+  }
+ }
+ console.error('REAL C1 WHOLE-SOLID GENERATED HLR TO ORIGINAL SOURCE FILTER '+
+  geometry.id+': '+JSON.stringify(globalScopedRebind.counts));
  assert.equal(scopedConsumer.generatedToOriginalTopoDSFullHistoryCertified,false);
  assert.equal(scopedConsumer.globalContinuousVisibilityCertified,false);
  assert.equal(scopedConsumer.formalEngineeringLineStyleCertified,false);
  assert.equal(scopedConsumer.signedV5ActionCount,0);
+ assert.equal(scopedConsumer.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
+ assert.equal(scopedConsumer.nativeOriginal3DProjectionIsNotGenerated2DSourceHistory,true);
+ assert.ok(scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates>0);
+ assert.ok(scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments>0);
+ for(const view of ['V','H','W'])
+  for(const row of scopedConsumer.views[view].nativeOriginal3DM4Candidates){
+   assert.equal(row.sourceGeometryId,geometry.id);
+   assert.equal(row.revision,cad.revision);
+   assert.equal(row.native3DProvenanceIsNotGenerated2DHLREdgeIdentity,true);
+   assert.equal(row.officialV5Authorized,false);
+   assert.ok(row.segments.every(segment=>
+    segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+    segment.generated2DHLREdgeTopologyProven===false&&
+    segment.engineeringLineStyle==='undetermined'&&
+    segment.signedV5Action===false));
+  }
+ // Each real source-scoped OCCT 2D generated edge now joins the
+ // independent ORIGINAL 3D native curve parameter/visibility class by
+ // exact rational original M0 source parameter. This does NOT prove the
+ // generated whole-solid 2D TopoDS IsSame or continuous opaque-scene rays.
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D,
+  scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+
+  scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld);
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld,
+  scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded+
+  scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass);
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,7);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,0);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass,11);
+ }else if(geometry.id==='C1rotated'){
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,0);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,0);
+ }
+ assert.ok(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D>0);
+ let checked2DClassBindings=0,checked2DClassEdges=0;
+ for(const view of ['V','H','W']){
+  const records=scopedConsumer.views[view].nativeScoped2D3DClassBindings;
+  assert.equal(records.length,scopedConsumer.views[view].nativeOriginal3DM4Candidates.length);
+  for(const binding of records){
+   assert.equal(binding.schema,
+    'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1');
+   const sourceM4=scopedConsumer.views[view].nativeOriginal3DM4Candidates.find(
+    candidate=>candidate.sourceEdgeId===binding.sourceEdgeId);
+   assert.ok(sourceM4,'real native 2D/3D class row must retain its original M0 source');
+   const nativePartitionProven=
+    sourceM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+    sourceM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+    sourceM4.native3DOriginalParameterPositiveGaps.length===0&&
+    sourceM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+    sourceM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+   assert.equal(binding.originalNativeParameterPartitionIndependentlyVerified,
+    nativePartitionProven,'real OCJS native parameter gaps cannot disappear in M4 2D class join');
+   assert.ok(binding.rows.every(row=>
+    row.originalNativeParameterPartitionIndependentlyVerified===nativePartitionProven&&
+    (!nativePartitionProven?
+     !row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment&&
+     !row.generated2DRepresentationWithinOneULPOfFullOriginalM0Source:true)));
+   assert.equal(binding.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified,false);
+   assert.equal(binding.wholeSceneM5Certified,false);
+   assert.equal(binding.officialV5Authorized,false);
+   checked2DClassBindings++;
+   checked2DClassEdges+=binding.counts.scoped2DGeneratedEdgesChecked;
+   assert.ok(binding.rows.every(row=>
+    row.actualGlobalHLRGenerated2DTopoDSHistoryCertified===false&&
+    row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+  }
+ }
+ assert.equal(checked2DClassBindings,
+  scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates);
+ assert.equal(checked2DClassEdges,
+  scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D);
+ const heldClassRows=['V','H','W'].flatMap(view=>
+  scopedConsumer.views[view].nativeScoped2D3DClassBindings.flatMap(binding=>{
+   const m4=scopedConsumer.views[view].nativeOriginal3DM4Candidates.find(
+    candidate=>candidate.sourceEdgeId===binding.sourceEdgeId);
+   return binding.rows.filter(row=>
+    !row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment).map(row=>({
+     view,sourceEdgeId:binding.sourceEdgeId,klass:row.hlrClass,
+     paperRange:row.originalM0ExactRationalPaperInterval,
+     aligned:row.exactOriginalM0PaperAffineCollinearity,
+     withinSource:row.exactReceived2DPaperWithinOriginalSourceDomain,
+     positive:row.exactPositive2DSourcePaperParameterSpan,
+     sameClassCovered:row.exactSameClassNative3DSourceIntervalCoverage,
+     oppositeClass:row.exactOppositeNative3DClassPositiveIntervalConflict,
+     exactPositiveGaps:row.exactNative3DSourceClassPositivePaperCoverageGaps,
+     nativeM4SourceClassRanges:m4.segments.map(s=>({
+      klass:s.native3DHLRClass,range:s.originalM0UnitParameterRange
+     })),
+     heldNative3DSourceRanges:
+      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation,
+     oneULPFullSourceRoundingCompatible:row.
+      generated2DRepresentationWithinOneULPOfFullOriginalM0Source,
+     roundedOutputOnlyNotExactSourceParameterCoverage:row.
+      roundedPaperEnvelopeCannotReplaceExactM0SourceParameterCoverage,
+     actualSourceM0ProjectedEndpoints:(()=>{
+      const edge=geometry.data.edges.find(e=>geometry.id+'::'+
+       [...e].sort().join('|')===binding.sourceEdgeId);
+      return edge.map(id=>project(geometry.data.points[id])[view]);
+     })(),
+     actualNativeSourceScoped2DPaperEdges:(()=>{
+      const source=cad.nativeSourceScopedSharpOutputByView[view].rows.find(
+       x=>x.originalPhysicalSourceEdgeId===binding.sourceEdgeId);
+      return source[row.hlrClass==='visible-sharp'?'visible':'hidden'].map(
+       item=>({from:item.from,to:item.to}));
+     })()
+   }));
+  }));
+ console.error('REAL C1 HELD 2D VS ORIGINAL 3D SOURCE CLASS REASONS '+
+  geometry.id+': '+JSON.stringify(heldClassRows));
+ console.error('REAL C1 SOURCE-FILTERED GENERATED 2D VS ORIGINAL 3D CLASS '+
+  geometry.id+': '+JSON.stringify({
+   sourceViews:checked2DClassBindings,
+   generated2DEdges:checked2DClassEdges,
+   exactlyBackedBySameNative3DClass:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass,
+   classPaperOrBinary64Held:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld,
+   preciselyHeldButNativeSourceOneULPCompatible:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,
+   beyondOneULPOrWithoutFullNativeSourceClass:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,
+   oppositeNative3DClassPositiveOverlap:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesWithOpposite3DClassOverlap,
+   officialV5:scopedConsumer.signedV5ActionCount
+  }));
+
+ console.error('REAL C1 M4 CONSUMER NATIVE 3D SOURCE PROJECTED '+geometry.id+': '+
+  JSON.stringify({
+   sourceViews:scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates,
+   native3DProjectedClassSegments:
+    scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments,
+   signedOfficialV5Actions:scopedConsumer.signedV5ActionCount
+  }));
+
  for(const view of ['V','H','W'])
   for(const klass of ['visible','hidden'])
    for(const stroke of scopedConsumer.views[view][klass]){
@@ -916,22 +1235,344 @@ for(const [index,geometry] of general.entries()){
  const allOriginalSourceNativeGapLedger=auditC1AllOriginalSourceNativeGaps({
   geometry,cad,m5Ledger:audited
  });
+ const native3DM5=allOriginalSourceNativeGapLedger.native3DSourceViewLedger;
+ assert.equal(native3DM5.availableFromActualPinnedOCJS,true);
+ assert.equal(native3DM5.rows.length,3*geometry.data.edges.length);
+ assert.equal(native3DM5.counts.projectedOriginalSourceViews,
+  allOriginalSourceNativeGapLedger.originalM0CanonicalSourceInventory.
+   counts.originalProjectedSourceViews);
+ assert.equal(native3DM5.allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition,true);
+ assert.equal(native3DM5.counts.native3DProjectedSourceViewsWithPositiveGaps,0);
+ assert.equal(native3DM5.counts.native3DProjectedSourceViewsWithPositiveOverlaps,0);
+ assert.equal(native3DM5.generated2DTopoDSHistoryCertified,false);
+ assert.equal(native3DM5.officialV5Authorized,false);
+ console.error('REAL C1 M5 ORIGINAL NATIVE 3D VHW PARTITION '+geometry.id+': '+
+  JSON.stringify(native3DM5.counts));
+
+ // The genuine native 3D source-scoped HLR class is a NEGATIVE paper
+ // candidate filter. Check the consumer on real pinned WASM data: it may
+ // reject a false co-projected class, never certify surviving 2D ownership.
+ const omittedClassRows=allOriginalSourceNativeGapLedger.
+  unrepresentedM0NativeHLRCandidateForensics;
+ const classVetoCounts={raw:0,compatible:0,excluded:0};
+ for(const row of omittedClassRows){
+  const veto=row.native3DClassPaperCandidateVeto;
+  assert.equal(veto?.view,row.view);
+  assert.equal(veto.sourceEdgeId,row.sourceEdgeId);
+  assert.equal(veto.originalWholeSolidPaperCandidateCount,
+   row.nativeHLRPaperCandidateCount);
+  assert.equal(veto.fullOriginalSourceHistoryCertified,false);
+  assert.equal(veto.globalContinuousVisibilityCertified,false);
+  assert.equal(veto.signedV5Action,false);
+  assert.equal(row.native3DClassCompatiblePaperCandidateCount,
+   veto.native3DClassCompatiblePaperCandidates.length);
+  assert.equal(row.native3DClassContradictoryPaperCandidateCount,
+   veto.paperCandidatesExcludedByNative3DClassAbsence.length);
+  classVetoCounts.raw+=veto.originalWholeSolidPaperCandidateCount;
+  classVetoCounts.compatible+=veto.native3DClassCompatiblePaperCandidates.length;
+  classVetoCounts.excluded+=veto.paperCandidatesExcludedByNative3DClassAbsence.length;
+ }
+ assert.equal(classVetoCounts.raw,classVetoCounts.compatible+classVetoCounts.excluded);
+ console.error('REAL C1 NATIVE 3D CLASS PAPER CANDIDATE VETO '+geometry.id+': '+
+  JSON.stringify(classVetoCounts));
+
  // Genuine pinned WASM CAD and the SAME M5 source gap ledger now feed an
  // independently recomputed, positive M0 exact convex observer-ray theorem.
  // This does not fill the missing native HLR generated TopoDS edges.
  const positiveOriginalGapRays=auditC1NativeGapOriginalExactRays({
-  geometry,cad,m5Ledger:audited
+  geometry,cad,m5Ledger:audited,scopedConsumer
  });
+ assert.equal(
+  positiveOriginalGapRays.nativeGenerated2DToOriginal3DHLRSourceClassEvidenceConsumed,
+  true);
+ assert.equal(positiveOriginalGapRays.actualWholeSolidGeneratedHLRSourceOrdinalCrosswalkConsumed,true);
+ assert.equal(
+  positiveOriginalGapRays.actualOriginal3DPhysicalEndpointGlobalHLRJunctionEvidenceConsumed,true);
+ assert.equal(positiveOriginalGapRays.wholeSolidOriginal3DEndpointSourceViewMatches,
+  positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches);
+ assert.equal(positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches,
+  globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking+
+  globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding);
+ const heldM5=[
+  ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+  ...positiveOriginalGapRays.rows
+ ];
+ for(const row of heldM5){
+  assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
+  assert.equal(row.originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity,true);
+  assert.equal(row.originalPhysicalJunctionAndGeneratedNativeIsSameCannotReplaceSceneM5,true);
+  assert.ok(Array.isArray(row.wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs));
+  for(const pair of row.wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs){
+   assert.equal(pair.view,row.view);
+   assert.ok(pair.originalPhysicalM0SourceEdges.includes(row.sourceEdgeId));
+   assert.equal(pair.original3DPhysicalVertexProvenFromM0NotNativeHistory,true);
+   assert.equal(pair.noIndependentGlobalOpaqueVisibilityOrGBLineJoinCertification,true);
+   assert.equal(pair.signedV5Action,false);
+   assert.ok(!(pair.generatedHLRNativeTopoDSIsSamePairProven&&
+    pair.generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join));
+  }
+  assert.equal(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length,
+   row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length);
+  assert.ok(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0);
+  for(const witness of row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses){
+   assert.equal(witness.sourceEdgeId,row.sourceEdgeId);
+   assert.equal(witness.view,row.view);
+   assert.equal(witness.nativeGenerated3DJunctionIdentityCertified,false);
+   assert.equal(witness.globalOpaqueFaceOcclusionCertified,false);
+   assert.equal(witness.signedV5Action,false);
+   assert.equal(witness.generated2DEndpointOriginal3DVertexWitnesses.length,2);
+  }
+  assert.ok(row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0);
+  for(const claim of row.wholeSolidGeneratedHLROriginalSourceFilterMatches){
+   assert.equal(claim.sourceEdgeId,row.sourceEdgeId);
+   assert.equal(claim.view,row.view);
+   assert.equal(claim.sourceScopedWholeGeneratedBinary64PaperExactlyMatched,true);
+   assert.equal(claim.actualGeneratedToOriginalTopoDSHistoryCertified,false);
+   assert.equal(claim.allOpaqueFaceOcclusionCertified,false);
+   assert.equal(claim.signedV5Action,false);
+  }
+ }
+ console.error('REAL C1 M5 MISSING SOURCE AND POSITIVE PAPER GAPS WITH GLOBAL HLR ORDINAL SOURCES '+
+  geometry.id+': '+JSON.stringify({
+   missingOriginalSourceViews:positiveOriginalGapRays.missingOriginalM0SourceViewRows.length,
+   nativePositiveGapIntervals:positiveOriginalGapRays.rows.length,
+   missingOrGapRowsWithExactGlobalHLRFilteredSourceAndNative3DClass:
+    heldM5.filter(row=>
+     row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0).length,
+   original3DBRepEndpointMappedM5Rows:heldM5.filter(row=>
+    row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0).length,
+   physicalM0OriginalJunctionCandidatePairs:
+    nativePhysical3DEndpoints.counts.originalModelPhysicalJunctionPairCandidates,
+   verifiedGeneratedNativeIsSamePhysicalM0JunctionPairs:
+    nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame,
+   generatedNativeDistinctDespiteM0SharedPhysicalVertex:
+    nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices,
+   stillOfficialV5:positiveOriginalGapRays.signedV5ActionCount
+  }));
+ assert.equal(
+  positiveOriginalGapRays.nativeGenerated2DToOriginal3DClassSourceViews,
+  positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.nativeScoped2DToOriginal3DClassWitness?.officialV5Authorized===false&&
+  row.native2DClassWitnessCannotCloseMissingM5SourceRow===true&&
+  row.missingM5SourceViewRemainsUncovered===true));
+ assert.ok(positiveOriginalGapRays.rows.every(row=>
+  row.nativeScoped2DToOriginal3DClassWitness?.officialV5Authorized===false&&
+  row.native2DClassWitnessCannotCloseM5PaperGap===true&&
+  row.nativeHLRGeneratedEdgeCoversGap===false));
  assert.equal(positiveOriginalGapRays.counts.positiveNativeGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.counts.nativeGeneratedHistoryGapsClosed,0);
  assert.equal(positiveOriginalGapRays.counts.independentOriginalOCCTCurvePositiveGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
+ // EVERY real native 3D-backed M4 segment now passes through the
+ // independent exact ORIGINAL 3D co-projected source depth audit.
+ // This may prove local source front ordering, but NOT global face
+ // occlusion, generated HLR TopoDS identity or formal V5.
+ assert.equal(positiveOriginalGapRays.nativeOriginalM4Original3DDepthOrderRecomputed,true);
+ const depthCounts=positiveOriginalGapRays.counts.realOriginalM4ToM5CoProjectedDepthCounts;
+ assert.equal(depthCounts.sourceIntervalsExamined,
+  scopedConsumer.counts.nativeOriginal3DM4ProjectedClassSegments);
+ // Real pinned WASM must reconcile EVERY native-positive subspan that
+ // cannot be represented as an M4 binary64 segment. It is held, not lost.
+ assert.equal(depthCounts.native3DPositiveIntervalsHeldBeforeM4DepthForBinary64,
+  scopedConsumer.counts.nativeOriginal3DM4PositiveIntervalsHeldForBinary64);
+ assert.equal(depthCounts.sourceIntervalsExamined,
+  depthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
+  depthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
+  depthCounts.sourceIntervalsHeldForDepthOrProjectedSplits);
+ assert.equal(depthCounts.canonicalM4CutSourceIntervalsExamined,
+  depthCounts.sourceIntervalsExamined);
+ assert.equal(depthCounts.canonicalM4CutSubspansExamined,
+  depthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+  depthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+ assert.ok(depthCounts.canonicalM4CutSubspansExamined>=
+  depthCounts.canonicalM4CutSourceIntervalsFullyPartitioned);
+ assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering<=
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+ assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
+  depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering<=
+  depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering);
+ assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+ // The rotated convex genuine WASM fixture has four original shared
+ // 3D vertex depth ties and two one-ULP positive M4 source tails.
+ // They are mathematical witnesses, NOT signed official strokes.
+ if(geometry.id==='C1rotated'){
+  assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>=4);
+  assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
+   depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>=4);
+  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>=2);
+ }
+ for(const item of [
+  ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+  ...positiveOriginalGapRays.rows]){
+  assert.equal(item.originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility,true);
+  assert.ok(item.nativeOriginalM4CoProjectedDepthOrder.length>0);
+  assert.ok(item.nativeOriginalM4CoProjectedDepthOrder.every(row=>
+   row.originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility===true&&
+   row.generated2DHLREdgeTopologyProven===false&&
+   Array.isArray(row.canonicalOriginalM4EventCutDepthRows)&&
+   row.canonicalOriginalM4EventCutDepthRows.length>0&&
+   row.canonicalOriginalM4EventCutDepthRows.every(cut=>
+    cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction===true&&
+    cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices===true&&
+    cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly===
+     (cut.coProjectedOriginal3DDepthOrder.
+       entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)&&
+    cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly===
+     (cut.coProjectedOriginal3DDepthOrder.
+       entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)&&
+    cut.engineeringLineStyle==='undetermined'&&cut.signedV5Action===false)&&
+   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ }
+ console.error('REAL C1 EXACT ORIGINAL M4->M5 COPROJECTED DEPTH '+
+  geometry.id+': '+JSON.stringify(depthCounts));
+ // Emit evidence for EVERY genuinely unresolved canonical M4 subspan.
+ // Compact provenance only; no diagnostic result is treated as M5 signoff.
+ console.error('REAL C1 ORIGINAL M4 HELD COPROJECTED SUBSPANS '+
+  geometry.id+': '+JSON.stringify([
+   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+   ...positiveOriginalGapRays.rows].flatMap(row=>
+    row.nativeOriginalM4CoProjectedDepthOrder.flatMap(seg=>
+     seg.canonicalOriginalM4EventCutDepthRows
+      .filter(cut=>!cut.coProjectedOriginal3DDepthOrder.
+       wholeIntervalFrontmostCertified&&
+       !cut.coProjectedOriginal3DDepthOrder.visibleSourceCoversEntireLine)
+      .map(cut=>({
+       view:row.view,sourceEdgeId:row.sourceEdgeId,
+       cut:cut.originalM4SourceCutParameterRange,
+       status:cut.coProjectedOriginal3DDepthOrder.status,
+       comparisons:cut.coProjectedOriginal3DDepthOrder.comparisons.map(c=>({
+        peer:c.peerSourceEdgeId,status:c.status,
+        signs:c.exactBinary64RationalOriginalDepthDifferenceEndSigns??null,
+        exactFullPaperOverlap:c.exactOriginalSourceWholePaperOverlapProven??null
+       }))
+      }))
+    ))
+  ));
+
+ // M5 now consumes actual M4 candidates constructed from source-filtered
+ // ORIGINAL native 3D parameters, not the inverse of generated HLR paper.
+ assert.equal(positiveOriginalGapRays.nativeOriginal3DM4SourceProjectionAvailable,true);
+ assert.equal(positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount,
+  positiveOriginalGapRays.counts.noncollapsedOriginalM0SourceViews);
+ assert.equal(positiveOriginalGapRays.counts.
+  missingM5SourceViewsWithCompleteOriginalNativeM4Projection,
+  positiveOriginalGapRays.counts.unrepresentedOriginalM0SourceViews);
+ assert.equal(positiveOriginalGapRays.counts.
+  positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection,
+  positiveOriginalGapRays.counts.positiveNativeGapIntervals);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.nativeOriginal3DM4SourceProjectionPresent===true&&
+  row.nativeOriginal3DM4ProjectionWholeSourceCoverage===true&&
+  row.native3DM4ProjectedCandidateSegments.length>0&&
+  row.native3DM4CandidateDoesNotCertifyGenerated2DHistory===true&&
+  row.missingM5SourceViewRemainsUncovered===true&&
+  row.signedV5Action===false));
+ assert.ok(positiveOriginalGapRays.rows.every(row=>
+  row.nativeOriginal3DM4GapSourceProjectionAvailable===true&&
+  row.realNative3DM4OriginalParameterGapCoverage.
+   entireOriginalParameterIntervalCovered===true&&
+  row.nativeHLRGeneratedEdgeCoversGap===false&&
+  row.signedV5Action===false));
+ console.error('REAL C1 M4 TO M5 NATIVE SOURCE RECONCILIATION '+geometry.id+': '+
+  JSON.stringify({
+   allProjectedM0SourceViews:
+    positiveOriginalGapRays.nativeOriginal3DM4SourceProjectedCount,
+   missingM5SourceViewsWithFull3DBackedM4Projection:
+    positiveOriginalGapRays.counts.
+     missingM5SourceViewsWithCompleteOriginalNativeM4Projection,
+   positiveM5PaperGapIntervalsWithFull3DBackedM4Projection:
+    positiveOriginalGapRays.counts.
+     positivePaperM5GapIntervalsCoveredByOriginalNativeM4Projection,
+   officialV5Actions:positiveOriginalGapRays.signedV5ActionCount
+  }));
+
+ // Reconcile every REAL source-filtered 3D HLR visibility class with its
+ // independent full original M0 ray theorem, not just the omitted source
+ // rows or positive native gaps. Concordance never grants generated 2D
+ // edge ownership, global frontmost ordering or official V5.
+ const nativeRayConcordance=positiveOriginalGapRays.native3DOriginalRayClassConcordance;
+ assert.equal(nativeRayConcordance.schema,
+  'draftai-c1-native-3d-original-ray-class-concordance/1');
+ assert.equal(nativeRayConcordance.actualNativeSourceScopedHLRAvailable,true);
+ assert.equal(nativeRayConcordance.counts.projectedOriginalSourceViewsExamined,
+  allOriginalSourceNativeGapLedger.native3DSourceViewLedger.counts.
+   projectedOriginalSourceViews);
+ assert.ok(nativeRayConcordance.rows.every(row=>
+  row.originalToGenerated2DTopoDSHistoryCertified===false&&
+  row.globalCoProjectedVisibilityCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ assert.equal(nativeRayConcordance.officialV5Authorized,false);
+ // For both real convex controls, ALL noncollapsed ORIGINAL 3D source
+ // ranges are accounted for by native source-filtered HLR, despite the
+ // still unsigned canonical 2D/M5 source omissions and rounded gaps.
+ // This isolates the remaining 2D provenance/depth/junction blocker.
+ const native3DCovered=
+  allOriginalSourceNativeGapLedger.native3DSourceViewLedger.
+   allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition;
+ if(native3DCovered){
+  assert.equal(positiveOriginalGapRays.counts.
+   missingM5SourceViewsWithCompleteNative3DParameterPartition,
+   positiveOriginalGapRays.counts.unrepresentedOriginalM0SourceViews);
+  assert.equal(positiveOriginalGapRays.counts.
+   positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition,
+   positiveOriginalGapRays.counts.positiveNativeGapIntervals);
+ }
+ console.error('REAL C1 NATIVE 3D SOURCE COMPLETE, M5 PAPER STILL HELD '+
+  geometry.id+': '+JSON.stringify({
+   native3DAllProjectedSourcePartitionsComplete:native3DCovered,
+   missingM5SourceViewsWithCompleteNative3DSourcePartition:
+    positiveOriginalGapRays.counts.
+     missingM5SourceViewsWithCompleteNative3DParameterPartition,
+   positiveM5PaperGapIntervalsWithCompleteNative3DSourcePartition:
+    positiveOriginalGapRays.counts.
+     positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition,
+   signedV5Actions:positiveOriginalGapRays.signedV5ActionCount
+  }));
+
+ console.error('REAL C1 NATIVE 3D/M0 RAY CLASS CONCORDANCE '+geometry.id+': '+
+  JSON.stringify(nativeRayConcordance.counts));
+
  assert.ok(positiveOriginalGapRays.rows.every(row=>
   row.originalSourceParameterGap[0]<row.originalSourceParameterGap[1]&&
   row.nativeHLRGeneratedEdgeCoversGap===false&&
   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+
+ const jointClassCounts=positiveOriginalGapRays.counts.
+  omittedNativeHLRPaperCandidateDiagnostics;
+ const nativeClassRejected=allOriginalSourceNativeGapLedger.
+  unrepresentedM0NativeHLRCandidateForensics.reduce((n,row)=>
+   n+row.native3DClassContradictoryPaperCandidateCount,0);
+ assert.equal(jointClassCounts.native3DClassExcludedPaperAliases,nativeClassRejected);
+ assert.equal(jointClassCounts.native3DAndRayCompatiblePaperFullSourceViews+
+  jointClassCounts.native3DAndRayCompatiblePaperPositiveGapSourceViews,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.length);
+ assert.equal(jointClassCounts.native3DAndRayCompatiblePaperCandidateCount,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.reduce((n,row)=>
+   n+row.native3DAndRayCompatibleCandidateCount,0));
+ assert.ok(jointClassCounts.native3DAndRayCompatiblePaperConflictSourceViews<=
+  jointClassCounts.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews);
+ assert.ok(positiveOriginalGapRays.missingOriginalM0SourceViewRows.every(row=>
+  row.native3DClassVetoIsNotOriginalGeneratedTopoDSHistory===true&&
+  row.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.signedV5Action===false));
+ console.error('REAL C1 NATIVE 3D SOURCE CLASS AND M0 EXACT RAY JOIN '+geometry.id+': '+
+  JSON.stringify({
+   rawPaperCandidates:jointClassCounts.examined,
+   native3DClassRejected:nativeClassRejected,
+   rayClassRejected:jointClassCounts.rayExcludedOppositeHLRClassPaperAliases,
+   bothCompatibleCandidates:jointClassCounts.native3DAndRayCompatiblePaperCandidateCount,
+   bothCompatiblePaperFullSourceViews:
+    jointClassCounts.native3DAndRayCompatiblePaperFullSourceViews,
+   bothCompatiblePaperConflictSourceViews:
+    jointClassCounts.native3DAndRayCompatiblePaperConflictSourceViews,
+   signedV5Actions:0
+  }));
+
  console.error('REAL C1 POSITIVE ORIGINAL SOURCE RAYS ON NATIVE HLR GAPS '+
   geometry.id+': '+JSON.stringify({
    counts:positiveOriginalGapRays.counts,
@@ -949,7 +1590,25 @@ for(const [index,geometry] of general.entries()){
  assert.equal(allOriginalSourceNativeGapLedger.rows.length,
   fullM5SourceSpanCount);
  assert.equal(allOriginalSourceNativeGapLedger.allCurrentM5SourceSpansAccountedFor,true);
+ // Independently require complete M0 [0,1] inventory accounting from
+ // the SAME pinned real WASM C1 M5 rows. This is not native HLR history.
+ const originalInventory=allOriginalSourceNativeGapLedger.
+  originalM0CanonicalSourceInventory;
+ assert.equal(originalInventory.rows.length,
+  originalInventory.counts.originalProjectedSourceViews);
+ assert.equal(originalInventory.counts.originalProjectedSourceViews,
+  originalInventory.counts.sourceViewsWithCompleteCanonicalM5ParameterInventory+
+  originalInventory.rows.filter(row=>
+   !row.wholeOriginalM0SourceParameterInventoryComplete).length);
+ assert.ok(originalInventory.rows.every(row=>
+  row.nativeGeneratedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.globalContinuousVisibilityCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ assert.equal(originalInventory.officialV5Authorized,false);
+ console.error('REAL C1 ORIGINAL M0 CANONICAL M5 PARAMETER INVENTORY '+
+  geometry.id+': '+JSON.stringify(originalInventory.counts));
  const absentM0=allOriginalSourceNativeGapLedger.unrepresentedOriginalM0ProjectedSources;
+ assert.equal(originalInventory.counts.sourceViewsWithNoM5Rows,absentM0.length);
  assert.equal(allOriginalSourceNativeGapLedger.allNoncollapsedOriginalM0SourcesRepresentedInCurrentM5,
   absentM0.length===0);
  assert.ok(absentM0.every(x=>['V','H','W'].includes(x.view)&&
@@ -984,6 +1643,22 @@ for(const [index,geometry] of general.entries()){
   missingOriginalRays.reduce((sum,x)=>sum+x.nativeHLRPaperCandidateCount,0));
  assert.equal(candidateDiagnostics.examined,
   candidateDiagnostics.exactAffineAligned+candidateDiagnostics.exactAffineDrift);
+ assert.equal(candidateDiagnostics.examined,
+  candidateDiagnostics.nativeEndpoint3DContradictoryPaperAliases+
+  candidateDiagnostics.nativeEndpoint3DConsistentPaperAliases+
+  candidateDiagnostics.nativeEndpoint3DUnknownPaperAliases);
+ const nativeEndpoint3DContradictions=missingOriginalRays.flatMap(row=>
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.
+   filter(x=>x.nativeEndpoint3DSourceStatus===
+    'contradicted-by-native-original-vertex').
+   map(x=>({view:row.view,sourceEdgeId:row.sourceEdgeId,
+    hlrClass:x.hlrClass,ordinal:x.ordinal,
+    nativeOriginal3DVertexContradictionCount:
+     x.nativeOriginal3DVertexContradictionCount})));
+ assert.equal(nativeEndpoint3DContradictions.length,
+  candidateDiagnostics.nativeEndpoint3DContradictoryPaperAliases);
+ console.error('REAL C1 NATIVE ORIGINAL 3D VERTEX VETO OF PAPER ALIASES '+
+  geometry.id+': '+JSON.stringify(nativeEndpoint3DContradictions));
  assert.ok(candidateDiagnostics.nativeOwnerRayClassConsistent+
   candidateDiagnostics.nativeOwnerRayClassContradictions<=
   candidateDiagnostics.nativeIsSameOwnerClaims);
@@ -997,11 +1672,77 @@ for(const [index,geometry] of general.entries()){
   missingOriginalRays.filter(row=>
    row.exactBinary64PaperVisibleHiddenCandidateConflict.
     hasExactPositiveLengthVisibleHiddenPaperClassConflict).length);
+ // A genuine whole-original-3D convex ray can EXCLUDE an opposite-class
+ // paper alias as this physical source, while retaining the original HLR
+ // class conflict and leaving native TopoDS history/V5 unsigned.
+ assert.equal(candidateDiagnostics.rayExcludedOppositeHLRClassPaperAliases,
+  missingOriginalRays.reduce((n,row)=>n+
+   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.filter(x=>
+    x.oppositeClassExcludedAsThisOriginal3DSourceByExactRay).length,0));
+ assert.equal(candidateDiagnostics.rayCompatiblePaperFullSourceViewCoverage+
+  candidateDiagnostics.rayCompatiblePaperPositiveGapSourceViews,
+  missingOriginalRays.length);
+ assert.equal(candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews,
+  missingOriginalRays.filter(row=>
+   row.rayCompatibleOriginal3DSourcePaperVisibility.
+    hasExactPositiveLengthVisibleHiddenPaperClassConflict).length);
+ assert.ok(candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews<=
+  candidateDiagnostics.exactPaperVisibleHiddenPositiveConflictSourceViews);
+ assert.equal(candidateDiagnostics.rayCompatibleNativeOwnerFullSourceViewCoverage+
+  candidateDiagnostics.rayCompatibleNativeOwnerPositiveGapSourceViews,
+  missingOriginalRays.length);
+ assert.equal(candidateDiagnostics.nativeOwnerRayClassContradictorySourceViews,
+  missingOriginalRays.filter(row=>
+   row.nativeOwnerRayClassContradictionRequiresHistoryReview).length);
+ assert.ok(missingOriginalRays.every(row=>
+  row.rayCompatibleNativeScopedOwnerPaperCoverage.
+   exactBinary64PaperCandidateCoverageComplete!==true||
+  row.rayCompatibleOriginal3DSourcePaperCoverage.
+   exactBinary64PaperCandidateCoverageComplete===true));
+ assert.ok(missingOriginalRays.every(row=>
+  row.rayCompatibleCandidateCount<=row.nativeHLRPaperCandidateCount&&
+  row.rayClassPruningIsNotNativeHLROwnershipOrContinuousVisibility===true&&
+  row.generatedTopoDSToOriginalSourceHistoryCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ console.error('REAL C1 M0 EXACT RAY-CLASS SOURCE-SPECIFIC HLR ALIAS PRUNING '+
+  geometry.id+': '+JSON.stringify({
+   rawPaperVisibleHiddenConflictSourceViews:
+    candidateDiagnostics.exactPaperVisibleHiddenPositiveConflictSourceViews,
+   rayCompatiblePaperVisibleHiddenConflictSourceViews:
+    candidateDiagnostics.rayCompatiblePaperVisibleHiddenPositiveConflictSourceViews,
+   oppositeClassPaperAliasesExcludedAsThisSource:
+    candidateDiagnostics.rayExcludedOppositeHLRClassPaperAliases,
+   rayCompatibleFullPaperSourceViews:
+    candidateDiagnostics.rayCompatiblePaperFullSourceViewCoverage,
+   rayCompatibleNativeOwnerFullSourceViews:
+    candidateDiagnostics.rayCompatibleNativeOwnerFullSourceViewCoverage,
+   contradictoryNativeOwnerRayClassSourceViews:
+    candidateDiagnostics.nativeOwnerRayClassContradictorySourceViews,
+   nativeOriginalHistoryCertified:false,
+   officialV5Authorized:false
+  }));
  assert.ok(missingOriginalRays.every(row=>
   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.length===
    row.nativeHLRPaperCandidateCount&&
   row.nativeHLRCandidateExactBinary64AndRayDiagnostics.every(x=>
    x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false)));
+ // Surface the exact magnitude of every genuine WASM transverse
+ // HLR-paper drift. Signs alone cannot distinguish one-ULP rounding
+ // from a substantial source-geometry mismatch; neither permits V5.
+ const exactAffineDrifts=missingOriginalRays.flatMap(row=>
+  row.nativeHLRCandidateExactBinary64AndRayDiagnostics.
+   filter(candidate=>!candidate.exactBinary64PaperAffineAligned).
+   map(candidate=>({view:row.view,sourceEdgeId:row.sourceEdgeId,
+    hlrClass:candidate.hlrClass,ordinal:candidate.ordinal,
+    residuals:candidate.exactBinary64PaperAffineCrossProductDyadic})));
+ assert.equal(exactAffineDrifts.length,candidateDiagnostics.exactAffineDrift);
+ assert.ok(exactAffineDrifts.every(row=>
+  row.residuals.length===2&&
+  row.residuals.some(r=>r.numerator!=='0')&&
+  row.residuals.every(r=>typeof r.numerator==='string'&&
+   Number.isSafeInteger(r.exponent2))));
+ console.error('REAL C1 EXACT HLR TRANSVERSE AFFINE DRIFT '+geometry.id+
+  ': '+JSON.stringify(exactAffineDrifts));
  console.error('REAL C1 OMITTED SOURCE NATIVE OWNER/EXACT PAPER/RAY JOIN '+
   geometry.id+': '+JSON.stringify(candidateDiagnostics));
  const missingRayByKey=new Map(missingOriginalRays.map(x=>[key(x),x]));

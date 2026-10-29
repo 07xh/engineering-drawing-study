@@ -13,6 +13,24 @@ on:
       - 'workbench/c1-native-hidden-front-visible-mask.cjs'
       - 'workbench/c1-native-hidden-dual-proof-open-interval-union.cjs'
       - 'workbench/c1-original-source-interval-coverage.cjs'
+      - 'workbench/c1-exact-binary64-paper-affine.cjs'
+      - 'workbench/c1-native-gap-original-exact-rays.cjs'
+      - 'tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs'
+      - 'tests/workbench/c1-native-gap-original-exact-rays.test.cjs'
+      - 'workbench/c1-original-m0-inventory-coverage.cjs'
+      - 'workbench/c1-all-native-source-gap-ledger.cjs'
+      - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
+      - 'tests/workbench/c1-all-native-source-gap-ledger.test.cjs'
+      - 'workbench/c1-native-source-scoped-3d-parameter-coverage.cjs'
+      - 'workbench/c1-native-source-scoped-m4-projection.cjs'
+      - 'workbench/c1-native-scoped-2d-3d-class-binding.cjs'
+      - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'
+      - 'workbench/c1-global-native-hlr-original-3d-endpoint-ledger.cjs'
+      - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
+      - 'tests/workbench/c1-native-scoped-2d-3d-class-binding.test.cjs'
+      - 'tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs'
+      - 'tests/workbench/c1-global-native-hlr-original-3d-endpoint-ledger.test.cjs'
+      - 'tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
@@ -92,6 +110,14 @@ on:
   push:
     branches: [main]
     paths:
+      - 'workbench/c1-native-source-scoped-m4-projection.cjs'
+      - 'workbench/c1-native-scoped-2d-3d-class-binding.cjs'
+      - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'
+      - 'workbench/c1-global-native-hlr-original-3d-endpoint-ledger.cjs'
+      - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
+      - 'tests/workbench/c1-native-scoped-2d-3d-class-binding.test.cjs'
+      - 'tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs'
+      - 'tests/workbench/c1-global-native-hlr-original-3d-endpoint-ledger.test.cjs'
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
@@ -102,6 +128,14 @@ on:
       - 'workbench/c1-native-hidden-front-visible-mask.cjs'
       - 'workbench/c1-native-hidden-dual-proof-open-interval-union.cjs'
       - 'workbench/c1-original-source-interval-coverage.cjs'
+      - 'workbench/c1-exact-binary64-paper-affine.cjs'
+      - 'workbench/c1-native-gap-original-exact-rays.cjs'
+      - 'tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs'
+      - 'tests/workbench/c1-native-gap-original-exact-rays.test.cjs'
+      - 'workbench/c1-original-m0-inventory-coverage.cjs'
+      - 'workbench/c1-all-native-source-gap-ledger.cjs'
+      - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
+      - 'tests/workbench/c1-all-native-source-gap-ledger.test.cjs'
       - 'workbench/c1-native-hidden-exact-model-front-mask.cjs'
       - 'workbench/c1-native-hidden-exact-original-front-gap.cjs'
       - 'workbench/c1-native-hidden-global-m5-stroke-gate.cjs'
@@ -208,6 +242,15 @@ jobs:
           node --test tests/workbench/c1-original-coproject-depth-order.test.cjs
           node --test tests/workbench/c1-whole-original-signed-hull-mask.test.cjs
           node --test tests/workbench/c1-ocjs-m5-source-coverage.test.cjs
+          node --test tests/workbench/c1-original-m0-inventory-coverage.test.cjs
+          node --test tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs
+          node --test tests/workbench/c1-native-gap-original-exact-rays.test.cjs
+          node --test tests/workbench/c1-all-native-source-gap-ledger.test.cjs
+          node --test tests/workbench/c1-native-source-scoped-3d-parameter-coverage.test.cjs
+          node --test tests/workbench/c1-native-source-scoped-m4-projection.test.cjs
+          node --test tests/workbench/c1-native-scoped-2d-3d-class-binding.test.cjs
+          node --test tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs
+          node --test tests/workbench/c1-global-native-hlr-original-3d-endpoint-ledger.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
