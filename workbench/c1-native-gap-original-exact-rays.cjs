@@ -156,7 +156,7 @@ function auditC1Native3DOriginalRayConcordance({
   officialV5Authorized:false
  });
 }
-function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
+function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer}={}){
  const gaps=auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger});
  // Recompute the existing M0/M4/M5 exact halfspace and original-vertex
  // certificates directly from the geometry, never from caller-supplied
@@ -387,6 +387,43 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>
       m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
+ }
+ // Bind only the already independently computed, revision-matched
+ // real original-source-filtered generated 2D -> native original 3D HLR
+ // class witness. A class-backed 2D segment is a NECESSARY provenance
+ // check, never a global generated TShape IsSame/opaque-scene certificate.
+ const native2DClassByOriginalSourceView=new Map();
+ if(scopedConsumer!==undefined){
+  if(!m4Available||
+     scopedConsumer?.schema!=='draftai-c1-real-source-scoped-hlr-m5-consumer/1'||
+     scopedConsumer.sourceGeometryId!==geometry.id||
+     scopedConsumer.revision!==cad.revision||
+     scopedConsumer.generatedToOriginalTopoDSFullHistoryCertified!==false||
+     scopedConsumer.signedV5ActionCount!==0||
+     scopedConsumer.nativeOriginal3DToM4ProjectionConsumerAvailable!==true)
+   throw new RangeError('stale or forged genuine native 2D/3D original-source class consumer');
+  for(const view of ['V','H','W']){
+   const records=scopedConsumer.views?.[view]?.nativeScoped2D3DClassBindings;
+   if(!Array.isArray(records))
+    throw new RangeError('missing same-revision native source 2D/3D class record');
+   for(const joined of records){
+    const key=view+'|'+joined.sourceEdgeId;
+    if(joined.schema!==
+       'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1'||
+       joined.view!==view||!m4BySource.has(key)||
+       native2DClassByOriginalSourceView.has(key)||
+       !Array.isArray(joined.rows)||joined.officialV5Authorized!==false||
+       joined.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified!==false||
+       joined.rows.some(row=>row.view!==view||
+        row.sourceEdgeId!==joined.sourceEdgeId||
+        row.actualGlobalHLRGenerated2DTopoDSHistoryCertified!==false||
+        row.engineeringLineStyle!=='undetermined'||row.signedV5Action!==false))
+     throw new RangeError('native original 2D/3D class witness lacks verified source identity');
+    native2DClassByOriginalSourceView.set(key,joined);
+   }
+  }
+  if(native2DClassByOriginalSourceView.size!==m4BySource.size)
+   throw new RangeError('real original 2D/3D source-class inventory lost source views');
  }
  // A missing M5 source/view is a distinct coverage obligation from a
  // positive gap inside an existing M5 span. Audit every noncollapsed
@@ -692,6 +729,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    nativeOriginal3DM4ProjectionWholeSourceCoverage:
     nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete??null,
    native3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+   nativeScoped2DToOriginal3DClassWitness:
+    native2DClassByOriginalSourceView.get(key)??null,
+   native2DClassWitnessCannotCloseMissingM5SourceRow:true,
    nativeOriginalM4CoProjectedDepthOrder:
     m4DepthBySource.get(key)??[],
    originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -877,6 +917,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     independentOriginalOCCTCurveGapPositive:true,
     nativeOriginal3DM4GapSourceProjectionAvailable:nativeM4!==null,
     nativeOriginal3DM4ProjectedCandidateSegments:nativeM4?.segments??[],
+    nativeScoped2DToOriginal3DClassWitness:
+     native2DClassByOriginalSourceView.get(entry.view+'|'+entry.sourceEdgeId)??null,
+    native2DClassWitnessCannotCloseM5PaperGap:true,
     nativeOriginalM4CoProjectedDepthOrder:
      m4DepthBySource.get(entry.view+'|'+entry.sourceEdgeId)??[],
     originalM4DepthOrderDoesNotConstituteGlobalSceneVisibility:true,
@@ -922,6 +965,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   native3DOriginalRayClassConcordance,
   nativeOriginal3DM4SourceProjectionAvailable:m4Available,
   nativeOriginal3DM4SourceProjectedCount:m4BySource.size,
+  nativeGenerated2DToOriginal3DHLRSourceClassEvidenceConsumed:
+   scopedConsumer!==undefined,
+  nativeGenerated2DToOriginal3DClassSourceViews:
+   native2DClassByOriginalSourceView.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
