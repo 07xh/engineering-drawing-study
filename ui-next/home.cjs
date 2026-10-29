@@ -184,8 +184,10 @@ function homeHTML(){return `
      <option value="VW">正面 V + 侧面 W</option>
      <option value="HW">水平 H + 侧面 W</option>
     </select></label>
+    <p id="v8-c1-columns" class="v7-note" role="status" aria-live="polite">当前列顺序：编号、正面 V 的 x,z、水平 H 的 x,y（mm）。</p>
     <label>八个角点（每行：编号, 第一视图 u,v, 第二视图 u,v；单位 mm）
      <textarea id="v8-c1-vertices" rows="9" spellcheck="false"
+      aria-describedby="v8-c1-columns"
       placeholder="V000,0,0,0,0"></textarea></label>
     <p class="v7-note">修改坐标即撤销旧确认与动画；坐标冲突或重合角点会在确认区提示具体编号。</p>
     <label class="v8-review-agree"><input id="v8-c1-topology" type="checkbox">
