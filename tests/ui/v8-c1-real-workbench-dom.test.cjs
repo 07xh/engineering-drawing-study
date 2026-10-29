@@ -43,6 +43,19 @@ test('C1 is a REAL reviewed task within same local project and original V5 playe
   $('v7-task').value='c1-third-view';fire('v7-task','change');
   for(let i=0;i<6;i++)await tick();
   assert.equal(document.querySelector('fieldset[data-v7-task="c1-third-view"]').hidden,false);
+  assert.equal($('v8-c1-vertices').value,'');
+  assert.ok($('v8-c1-template'));
+  fire('v8-c1-template','click');
+  const blankScaffold=$('v8-c1-vertices').value;
+  assert.equal(blankScaffold.split('\n').length,8);
+  assert.deepEqual(blankScaffold.split('\n').map(line=>line.split(',')[0]),IDS);
+  assert.ok(blankScaffold.split('\n').every(line=>/^V[01]{3},,,,$/.test(line)),
+   'the template must contain IDs and four EMPTY coordinate fields');
+  assert.equal($('v8-review-run').disabled,true,'a blank scaffold cannot be solved');
+  assert.match($('v8-c1-template-status').textContent,/没有填写任何尺寸/);
+  fire('v8-c1-template','click');
+  assert.equal($('v8-c1-vertices').value,blankScaffold);
+  assert.match($('v8-c1-template-status').textContent,/已保留现有角点内容/);
   const template=prismMesh({solid:{min:{x:0,y:0,z:0},max:{x:30,y:15,z:20}}});
   const rows=IDS.map(id=>{
     const views=project(template.data.points[id]);

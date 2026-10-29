@@ -6,7 +6,7 @@
 const {newProject,createCoordinator}=require('./project-coordinator.cjs');
 const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
-const {parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
+const {IDS:C1_IDS,parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
 const {reviewC2BoxFields}=require('./c2-reviewed-preflight.cjs');
 const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
@@ -2483,6 +2483,21 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     ' 完整相贯线和实虚线未认证。');
   else throw Error('专业数学结果未通过门禁');
  }
+ // The scaffold contains IDs only, NEVER inferred vertex coordinates. It
+ // cannot overwrite user work, saved topology or pre-existing C1 measurements.
+ $('v8-c1-template').addEventListener('click',()=>{
+  if(coordinator?.snapshot().task!=='c1-third-view')return;
+  const field=$('v8-c1-vertices'),status=$('v8-c1-template-status');
+  if(field.value.trim()){
+   status.textContent='已保留现有角点内容；请先手动清空后再插入编号模板。';
+   return;
+  }
+  field.value=C1_IDS.map(id=>id+',,,,').join('\n');
+  $('v8-c1-topology').checked=false;
+  field.dispatchEvent(new window.Event('input',{bubbles:true}));
+  status.textContent='已插入 8 个编号，没有填写任何尺寸；请按原题逐项输入并核对。';
+  field.focus?.();
+ });
  // The button itself is the explicit confirmation for the current displayed input.
  $('v8-review-ack').addEventListener('change',()=>updateReviewPanel(coordinator?.snapshot()));
  $('v8-review-edit').addEventListener('click',()=>{
