@@ -211,7 +211,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      globalGeneratedHLREndpoints:[group[i],group[j]],
      actualNativeGeneratedTopoDSVertexIsSameForThisPairProven:false,
      original3DPhysicalVertexCoincidenceProvenFromIndependentM0:true,
-     2DPaperCoincidenceCannotSignEngineeringJunction:true,
+     paperCoincidenceCannotSignEngineeringJunction:true,
      signedV5Action:false});
    }
   }
