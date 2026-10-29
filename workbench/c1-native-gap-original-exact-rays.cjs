@@ -166,6 +166,19 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
  const native3DOriginalRayClassConcordance=auditC1Native3DOriginalRayConcordance({
   native3DSourceViewLedger:gaps.native3DSourceViewLedger,rays
  });
+ const nativeConcordanceBySource=new Map();
+ for(const row of native3DOriginalRayClassConcordance.rows){
+  const key=row.view+'|'+row.sourceEdgeId;
+  if(nativeConcordanceBySource.has(key))
+   throw new RangeError('duplicate native 3D/M0 source class concordance');
+  nativeConcordanceBySource.set(key,row);
+ }
+ const nativePartitionFor=(view,id)=>{
+  const row=nativeConcordanceBySource.get(view+'|'+id);
+  if(native3DOriginalRayClassConcordance.actualNativeSourceScopedHLRAvailable&&
+     !row)throw new RangeError('missing original source native 3D parameter reconciliation');
+  return row??null;
+ };
  const bySource=new Map();
  for(const ray of rays.rows){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
@@ -468,8 +481,14 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   if(nativeOwnedCoverage.exactBinary64PaperCandidateCoverageComplete)
    omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage++;
   else omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews++;
+  const nativePartition=nativePartitionFor(missing.view,missing.sourceEdgeId);
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
+   completeRealNative3DSourceParameterPartition:
+    nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
+   missingM5SourceViewWithNative3DAlreadyFullyAccountedFor:
+    nativePartition?.exactNative3DCombinedParameterPartitionComplete===true,
+   native3DSourcePartitionDoesNotProveGenerated2DIdentity:true,
    expectedHLRClassFromIndependentOriginalRay:expectedClass,
    allPaperAliasCandidateExactBinary64Coverage:paperCoverage,
    nativeScopedOwnerCandidateExactBinary64Coverage:nativeOwnedCoverage,
@@ -504,6 +523,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
+ // Distinguish REAL source-scoped OCCT 3D full coverage from the
+ // still-missing M5 2D source ownership and projected parameter ledger.
+ counts.missingM5SourceViewsWithCompleteNative3DParameterPartition=
+  missingOriginalM0SourceViewRows.filter(row=>
+   row.missingM5SourceViewWithNative3DAlreadyFullyAccountedFor).length;
  if(missingCandidates.size!==missingSeen.size||
     omittedCandidateCounts.examined!==
      omittedCandidateCounts.exactAffineAligned+omittedCandidateCounts.exactAffineDrift||
@@ -565,6 +589,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   exactOriginalOpenStrictInteriorGapIntervals:0,
   originalSourceRayUnresolvedGapIntervals:0,
   nativeGeneratedHistoryGapsClosed:0,
+  missingM5SourceViewsWithCompleteNative3DParameterPartition:0,
+  positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition:0,
   officialV5Actions:0
  };
  for(const entry of gaps.rows){
@@ -613,6 +639,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    const status=closedClear?'exact-original-closed-ray-clear':
     openHidden?'exact-original-open-strict-interior':'undetermined';
    counts.positiveNativeGapIntervals++;
+   const nativePartition=nativePartitionFor(entry.view,entry.sourceEdgeId);
+   if(nativePartition?.exactNative3DCombinedParameterPartitionComplete===true)
+    counts.positivePaperM5GapIntervalsWithCompleteNative3DSourcePartition++;
    if(closedClear)counts.exactOriginalClosedRayClearGapIntervals++;
    else if(openHidden)counts.exactOriginalOpenStrictInteriorGapIntervals++;
    else counts.originalSourceRayUnresolvedGapIntervals++;
@@ -621,6 +650,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
     originalSourceParameterGap:[...range],
     original3DVertexIds:[...ray.originalVertexIds],
     independentOriginalOCCTCurveGapPositive:true,
+    completeRealNative3DSourceParameterPartition:
+     nativePartition?.exactNative3DCombinedParameterPartitionComplete??null,
+    positivePaperM5GapDespiteFullNative3DSourceCoverage:
+     nativePartition?.exactNative3DCombinedParameterPartitionComplete===true,
+    native3DParameterCoverageDoesNotFillM5PaperOrGeneratedEdgeHistory:true,
     originalOCCTCurveGapRoundedToZero:
      originalCurve.originalCurveRoundedParameterCollapsed===true,
     nativeHLRGapDiagnosis:originalCurve.diagnosis,
