@@ -40,7 +40,7 @@ function auditC3WAllLateralProjectionCollisions({input,revision,mirrorExitEviden
   revision,solidOperation:op,status:'not-covered',reason,
   currentM3LateralSourceBranchCount:0,sourceFlankInventories:[],
   checkedSourceOpenFlankCount:0,completeSourceOpenFlankCount:0,
-  checkedMirrorAtomicOpenCells:0,exactlyTwoSpatialLateralSourcesPerWInterior:true,
+  checkedMirrorAtomicOpenCells:0,exactlyTwoSpatialLateralSourcesPerWInterior:false,
   entireOriginalM3OpenSourceInventoryExactlyOnce:false,
   allPositiveWSourceCurveProjectionCollisionsClassified:false,
   differentSignLateralWProjectionCollisionExcluded:false,
