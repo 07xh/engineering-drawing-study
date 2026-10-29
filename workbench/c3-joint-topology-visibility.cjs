@@ -187,7 +187,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   input,revision,selectedRayEvidence:selectedBooleanRayEvidence
  });
  const wMirrorCapContactPartition=auditC3WMirrorCapContactPartition({
-  revision,mirrorEvidence:wExactMirrorDepthEvidence,
+  input,revision,mirrorEvidence:wExactMirrorDepthEvidence,
   wCapEvidence:WCurveCapLineEvidence
  });
  if(wMirrorCapContactPartition.officialV5Authorized!==false||
