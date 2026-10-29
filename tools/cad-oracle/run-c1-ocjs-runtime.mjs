@@ -2985,6 +2985,10 @@ for(const [index,geometry] of general.entries()){
     nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape,
    originalBRepPhysicalJoinsDespiteDistinctGeneratedHLRTShapes:
     nativePhysical3DEndpoints.counts.originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes,
+   originalBRepNativeFacesWithVerifiedM0Boundaries:
+    originalFaceAdjacency.nativeBRepFacesChecked,
+   originalBRepSourceEdgesWithTwoActualNativeAdjacentFaces:
+    originalFaceAdjacency.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces,
    actualGeneratedOCCTHLRSharpEdgesTopologicallyAudited:
     nativeGeneratedVertexGraph.counts.genuineOCCTNativeHLRSharpEdges,
    nativeGeneratedActualIsSameSharedTopoDSVertexPairs:
