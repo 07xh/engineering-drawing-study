@@ -928,6 +928,19 @@ for(const [index,geometry] of general.entries()){
   x.sourceEdgeId.startsWith(geometry.id+'::')&&
   x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
   !audited.views[x.view].intervals.some(row=>row.sourceEdgeId===x.sourceEdgeId)));
+ const missingM5HLRCandidates=
+  allOriginalSourceNativeGapLedger.unrepresentedM0NativeHLRCandidateForensics;
+ assert.equal(missingM5HLRCandidates.length,absentM0.length);
+ assert.ok(missingM5HLRCandidates.every(x=>
+  x.paperCandidateDoesNotProveOriginalTopoDSHistory===true&&
+  x.continuousOcclusionCertified===false&&
+  x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
+  x.nativeHLRPaperCandidateCount===x.nativeHLRPaperCandidates.length));
+ console.error('REAL C1 M0->NATIVE HLR PAPER CANDIDATES ABSENT FROM M5 '+geometry.id+': '+
+  JSON.stringify(missingM5HLRCandidates.map(x=>({
+   view:x.view,source:x.sourceEdgeId,
+   candidates:x.nativeHLRPaperCandidates.map(y=>[y.hlrClass,y.ordinal])
+  }))));
  console.error('REAL C1 M0 SOURCES ABSENT FROM M5 '+geometry.id+': '+
   JSON.stringify(absentM0.map(x=>({view:x.view,source:x.sourceEdgeId}))));
  assert.equal(allOriginalSourceNativeGapLedger.generatedHLRToOriginalTopoDSHistoryCertified,false);
