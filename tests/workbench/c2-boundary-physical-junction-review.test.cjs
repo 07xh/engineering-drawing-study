@@ -99,8 +99,10 @@ test('C2 paper junction cannot reuse ONE physical source group as two independen
  x.boundaryRayEvidence[1].paperPieces[0].sourceGroupIds=['Group1'];
  const out=review(x),joint=out.nodes.find(n=>
   n.paperPoint.u===10&&n.paperPoint.v===0);
- assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+ assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,false,
+  'a perpendicular line may touch the vertex but cannot prove this boundary');
  assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,false);
+ assert.equal(joint.incidences[1].allClaimedSourceGroupsReachPositiveBoundaryEndpoint,false);
  assert.equal(joint.sourceLedgerMultiFeatureJunctionVerified,false);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
  assert.equal(joint.unresolvedReal3DJunctionIncidence,true);
@@ -112,9 +114,52 @@ test('C2 ambiguous multiple overlapping source groups do not identify one edge p
  x.boundaryRayEvidence[0].paperPieces[0].sourceGroupIds=['Group1','Group2'];
  const out=review(x),joint=out.nodes.find(n=>
   n.paperPoint.u===10&&n.paperPoint.v===0);
- assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+ assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,false);
  assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,false);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
+});
+test('C2 rejects a perpendicular source group despite its exact common 3D endpoint',()=>{
+ const x=fixture();
+ const b=p(10,0,0),vertical=p(10,0,5),line=x.paperLines[0];
+ line.projectedFromModelMm=V(b);
+ line.projectedToModelMm=V(vertical);
+ line.physical3DEndpointIncidence=[
+  {physicalSource3DPoint:b},{physicalSource3DPoint:vertical}];
+ const r=review(x),j=r.nodes.find(n=>n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(j.incidentBoundaryCount,2);
+ assert.equal(j.realOriginalOrGenerated3DJunctionNodeListed,false);
+ assert.equal(j.incidences[0].allClaimedSourceGroupsReachPositiveBoundaryEndpoint,false);
+ assert.equal(j.incidences[0].unresolvedReason,
+  'source-group-not-bound-to-positive-boundary-endpoint');
+ assert.equal(r.exactPhysical3DSourceNodeCount,0);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('C2 rejects an outward-facing source at a boundary endpoint, even with exact 3D identity',()=>{
+ const x=fixture(),b=p(10,0,0),outward=p(20,0,0),line=x.paperLines[0];
+ line.projectedFromModelMm=V(b);
+ line.projectedToModelMm=V(outward);
+ line.physical3DEndpointIncidence=[
+  {physicalSource3DPoint:b},{physicalSource3DPoint:outward}];
+ const r=review(x),j=r.nodes.find(n=>n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(j.realOriginalOrGenerated3DJunctionNodeListed,false);
+ assert.equal(j.incidences[0].allClaimedSourceGroupsReachPositiveBoundaryEndpoint,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('C2 rejects non-contiguous, overlapped, reversed and zero ray pieces in [0,1]',()=>{
+ const variations=[
+  [[0,.4],[.5,1]],
+  [[0,.6],[.5,1]],
+  [[0,.8],[.8,.7],[.7,1]],
+  [[0,0],[0,1]],
+  [[0,Number.NaN],[Number.NaN,1]]
+ ];
+ for(const spans of variations){
+  const x=fixture(),old=x.boundaryRayEvidence[0].paperPieces[0];
+  x.boundaryRayEvidence[0].paperPieces=spans.map(([fromT,toT])=>
+   ({...old,fromT,toT}));
+  assert.throws(()=>review(x),/boundary\/ray identity mismatch/,
+   'every positive paper parameter must be covered exactly once');
+ }
 });
 test('C2 near-critical or non-positive M5 source ledger may not certify a 3D junction',()=>{
  const x=fixture();
