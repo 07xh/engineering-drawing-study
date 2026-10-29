@@ -238,3 +238,54 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
   assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
  }
 });
+
+
+function attachOriginalPhysicalBRepVertexTopology(x){
+ const ids=[...new Set(x.geometry.data.edges.flat())].sort();
+ const occurrences=2*x.geometry.data.edges.length;
+ const same=ids.reduce((total,id)=>{const n=x.geometry.data.edges.filter(e=>e.includes(id)).length;
+  return total+n*(n-1)/2;},0);
+ x.cad.occtOriginalEdgeOccurrenceCount=x.geometry.data.edges.length;
+ x.cad.originalNativeVertexTopology={
+  schema:'draftai-c1-original-occt-brep-vertex-physical-topology/1',
+  sourceGeometryId:x.geometry.id,originalM0SourceVertexIds:ids,
+  originalBRepVertexOccurrencesChecked:occurrences,
+  allOriginalBRepVertexPairsCompared:occurrences*(occurrences-1)/2,
+  originalSamePhysicalVertexTopoDSPairs:same,
+  originalDistinctPhysicalVertexTopoDSPairs:occurrences*(occurrences-1)/2-same,
+  allReviewedOriginalSourceVerticesNativeTShapeVerified:true,
+  generatedHLREdgeToOriginalTopoDSHistoryCertified:false,
+  signedV5ActionCount:0
+ };
+ return x;
+}
+test('genuine original BRep physical vertex proof survives distinct generated HLR native vertices',()=>{
+ const x=attachOriginalPhysicalBRepVertexTopology(
+  attachGenuineNativePair(setup({two:true}),{same:false}));
+ const r=audit(x);
+ assert.equal(r.originalNativeBRepPhysicalVertexTopologyVerified,true);
+ assert.equal(r.counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape,3);
+ assert.equal(r.counts.originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes,3);
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame,0);
+ for(const view of ['V','H','W']){
+  const pair=r.views[view].originalPhysicalEndpointPairCandidates[0];
+  assert.equal(pair.originalBRepPhysicalVertexTShapeIdentityProven,true);
+  assert.equal(pair.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin,true);
+  assert.equal(pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven,false);
+  assert.equal(pair.signedV5Action,false);
+ }
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('stale or forged original physical BRep TShape graph cannot certify generated junction',()=>{
+ for(const mutate of [
+  g=>{g.sourceGeometryId='old';},
+  g=>{g.originalM0SourceVertexIds=['A','B'];},
+  g=>{g.allOriginalBRepVertexPairsCompared=0;},
+  g=>{g.generatedHLREdgeToOriginalTopoDSHistoryCertified=true;}
+ ]){
+  const x=attachOriginalPhysicalBRepVertexTopology(setup({two:true}));
+  mutate(x.cad.originalNativeVertexTopology);
+  assert.throws(()=>audit(x),/original native 3D vertex topology/);
+ }
+});
