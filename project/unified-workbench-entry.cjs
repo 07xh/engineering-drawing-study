@@ -1878,6 +1878,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' 项，无严格体积遮挡 '+
        partial.wFiniteCapLineForwardRays.strictlyClearLineCount+
        ' 项（端盖面遮挡及线型尚未签收）。':'')+
+      (partial.wClosedInternalCenterFold?.allCurrentInternalSignedSourceCenterFoldsCertified===true?
+       ' W 视图同轴心闭合临界点：'+
+       partial.wClosedInternalCenterFold.globallyFrontmostCenterPointCount+
+       ' 个真实三维正则点已证明投影二阶折返点和对完整实体的前方无遮挡；原始端点和线型未签收。':'')+
       (partial.wGlobalSourceCurveSolidDepth?.allOriginalM3WSourceCurveAtomsGloballyDepthProven===true?
        ' W 相贯曲线对完整有限实体的正向深度证明：'+
        partial.wGlobalSourceCurveSolidDepth.certifiedGlobalFrontmostCells+

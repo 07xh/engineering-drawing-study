@@ -68,6 +68,8 @@ test('C3 finite cylinder input, user review and canonical local V5 in same page'
   assert.match($('v7-proof').textContent,/不同符号曲线开区间不会投影重合/);
   assert.match($('v7-proof').textContent,/W 相贯曲线对完整有限实体的正向深度证明：\d+ 个原始来源开区间/);
   assert.match($('v7-proof').textContent,/前侧全局无遮挡、后侧存在严格实体体积遮挡/);
+  assert.match($('v7-proof').textContent,/W 视图同轴心闭合临界点：\d+ 个真实三维正则点/);
+  assert.match($('v7-proof').textContent,/投影二阶折返点和对完整实体的前方无遮挡/);
   assert.match($('v7-proof').textContent,/闭合端点与国标线型尚未签收/);
   assert.match($('v7-proof').textContent,/严格体积射线恰好到达前方曲线的真实三维来源/);
   assert.match($('v7-proof').textContent,/W 视图真实有限圆柱前方体积退出深度：解析遮挡开单元 \d+ 个/);
