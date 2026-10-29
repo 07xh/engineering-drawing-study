@@ -111,3 +111,49 @@ test('native source filter, original curve, M0 identity and bounds must agree',(
  for(const bad of errors)
   assert.throws(()=>projectNative(bad));
 });
+
+// A complete native 3D partition does not imply a drawable binary64 M4
+// partition. Positive native subspans must survive as explicit held evidence.
+test('positive native M4 subspan whose normalized endpoints coincide remains held, not signed',()=>{
+ const a=6.489320296857823,b=6.489320296857824;
+ assert.ok(a<b);
+ assert.equal(a/10,b/10);
+ const out=projectNative(input([[0,a],[a,b],[b,10]],[]));
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.deepEqual(out.M4OriginalUnitIntervalCandidatePositiveGaps,[]);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length,1);
+ assert.deepEqual(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[a,b]);
+ assert.equal(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0].reason,
+  'positive-native-interval-collapsed-by-binary64-normalization');
+ assert.equal(out.segments.length,2);
+ assert.equal(out.officialV5Authorized,false);
+ assert.ok(Object.isFrozen(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0]));
+});
+test('large absolute paper coordinates cannot silently erase a positive native M4 stroke',()=>{
+ const big=2**50,sourceEdgeId='NativeM4HugePaper::A|B';
+ const good=input([[0,1],[1,1.1],[1.1,10]],[]);
+ const geom={id:'NativeM4HugePaper',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:P(big,0,0),B:P(big+10,0,0)},edges:[['A','B']]}};
+ const scopedRow={...good.scopedRow,originalPhysicalSourceEdgeId:sourceEdgeId,
+  visible3D:{...good.scopedRow.visible3D,
+   native3DGeneratedCurveIntervals:good.scopedRow.visible3D.
+    native3DGeneratedCurveIntervals.map(part=>({...part,
+     nativeSourceFilterOriginalEdgeId:sourceEdgeId}))}};
+ const originalCurve={...good.originalCurve,sourceEdgeId,
+  occtSourceCurveFirstPoint3D:P(big,0,0),
+  occtSourceCurveLastPoint3D:P(big+10,0,0)};
+ const out=projectNative({geometry:geom,revision:11,view:'V',
+  sourceEdgeId,originalCurve,scopedRow});
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length,1);
+ assert.deepEqual(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[1,1.1]);
+ assert.equal(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0].reason,
+  'positive-original-interval-collapsed-by-binary64-paper-projection');
+ assert.equal(out.segments.length,2);
+ assert.equal(out.formalEngineeringLineStyleCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+});
