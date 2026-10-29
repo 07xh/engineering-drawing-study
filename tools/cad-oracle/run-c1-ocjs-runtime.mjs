@@ -435,7 +435,18 @@ for(const [index,geometry] of general.entries()){
       klass:s.native3DHLRClass,range:s.originalM0UnitParameterRange
      })),
      heldNative3DSourceRanges:
-      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation
+      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation,
+     actualSourceM0ProjectedEndpoints:(()=>{
+      const edge=geometry.data.edges.find(e=>geometry.id+'::'+
+       [...e].sort().join('|')===binding.sourceEdgeId);
+      return edge.map(id=>project(geometry.data.points[id])[view]);
+     })(),
+     actualNativeSourceScoped2DPaperEdges:(()=>{
+      const source=cad.nativeSourceScopedSharpOutputByView[view].rows.find(
+       x=>x.originalPhysicalSourceEdgeId===binding.sourceEdgeId);
+      return source[row.hlrClass==='visible-sharp'?'visible':'hidden'].map(
+       item=>({from:item.from,to:item.to}));
+     })()
    }));
   }));
  console.error('REAL C1 HELD 2D VS ORIGINAL 3D SOURCE CLASS REASONS '+
