@@ -21,6 +21,10 @@ const make=(v,h,segments)=>audit({
  nativeOriginal3DM4:{
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
   view,sourceEdgeId,segments,
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
   officialV5Authorized:false
  }
@@ -98,6 +102,10 @@ test('genuine skew tetra rounded generated 2D endpoint is bounded by one source-
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
   view,sourceEdgeId,
   segments:[native('hidden-sharp',0,1)],
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
   officialV5Authorized:false
  };
@@ -126,7 +134,11 @@ test('real skew tetra slightly outside native paper domain remains exact one-ULP
   nativeOriginal3DM4:{
    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
    view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
-   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
    officialV5Authorized:false
   }});
  assert.equal(r.rows[0].exactReceived2DPaperWithinOriginalSourceDomain,false);
@@ -147,7 +159,11 @@ test('a larger-than-one-ULP or long-distance paper alias never borrows source cl
   nativeOriginal3DM4:{
    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
    view,sourceEdgeId,segments:[native('hidden-sharp',0,1)],
-   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
    officialV5Authorized:false
   }});
  assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
@@ -162,6 +178,10 @@ test('source envelope must also have whole original native 3D class coverage, wi
  const mk=(parts,held=[])=>audit({...args,nativeOriginal3DM4:{
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
   view,sourceEdgeId,segments:parts,
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
   M4ProjectedNative3DIntervalsHeldForBinary64Representation:held,
   officialV5Authorized:false
  }});
@@ -186,9 +206,42 @@ test('large-absolute-coordinate short edge cannot use 1-ULP of global position t
   nativeOriginal3DM4:{
    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
    view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
-   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
    officialV5Authorized:false
   }});
  assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
  assert.equal(r.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+});
+
+test('native positive gap erased by binary64 M4 normalization cannot falsely certify 2D class',()=>{
+ const nativeGap=[6.489320296857823,6.489320296857824];
+ assert.ok(nativeGap[1]>nativeGap[0]);
+ assert.equal(nativeGap[0]/10,nativeGap[1]/10,
+  'distinct native curve parameters can map to one rounded M4 fraction');
+ const fakeRoundedM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  view,sourceEdgeId,
+  // M4 paper intervals deceptively cover [0,1] without a visible gap.
+  segments:[native('visible-sharp',0,.5),native('visible-sharp',.5,1)],
+  native3DSourceParameterPartitionCompleteExactlyOnce:false,
+  M4OriginalUnitIntervalCandidateCoverageComplete:false,
+  native3DOriginalParameterPositiveGaps:[nativeGap],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+  officialV5Authorized:false
+ };
+ const r=audit({view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
+  scoped2DVisible:[stroke('visible-sharp')],scoped2DHidden:[],
+  nativeOriginal3DM4:fakeRoundedM4});
+ assert.equal(r.rows[0].exactSameClassNative3DSourceIntervalCoverage,true,
+  'rounded M4 arithmetic alone cannot detect the native gap');
+ assert.equal(r.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(r.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(r.officialV5Authorized,false);
 });
