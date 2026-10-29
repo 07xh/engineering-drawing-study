@@ -124,7 +124,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   wholeSolidHiddenEdgesWithoutScopedSource:0,
   paperAliasedWholeSolidEdgesWithMultipleOriginalSources:0,
   nativeOriginal3DM4SourceViewCandidates:0,
-  nativeOriginal3DM4ProjectedClassSegments:0};
+  nativeOriginal3DM4ProjectedClassSegments:0,
+  nativeOriginal3DM4PositiveIntervalsHeldForBinary64:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -328,6 +329,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     nativeOriginal3DM4Candidates.push(projected);
     counts.nativeOriginal3DM4SourceViewCandidates++;
     counts.nativeOriginal3DM4ProjectedClassSegments+=projected.segments.length;
+    counts.nativeOriginal3DM4PositiveIntervalsHeldForBinary64+=
+     projected.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length;
    }
   }
   views[view]={nativeOriginal3DM4Candidates};
