@@ -147,7 +147,9 @@ test('C2 M5 physical source ledger must retain real finite current segments',()=
  const result=review(noSegment);
  assert.equal(result.exactPhysical3DSourceNodeCount,0);
  const bad=fixture();
- bad.physicalJunctionEvidence.segments[0].source3DFrom.y=Infinity;
+ bad.physicalJunctionEvidence.segments[0].source3DFrom={
+  ...bad.physicalJunctionEvidence.segments[0].source3DFrom,y:Infinity
+ };
  assert.throws(()=>review(bad),/physical source segment ledger is incomplete/);
  const forged=fixture();
  forged.physicalJunctionEvidence.segments[0].sourcePhysicalFeatureOpenIntervalVerified=false;
