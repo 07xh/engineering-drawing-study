@@ -126,13 +126,21 @@ function reviewC2BoundaryPhysicalJunctions({
    const alias=points.size>=2;
    const point=samePhysical?resolved[0]:null;
    const physicalNode=point?actualNodes.get(key3(point)):null;
+   // A physical multi-edge node does not prove that TWO PAPER boundary
+   // incidences meet there: both could reference the SAME canonical source.
+   // Ambiguous/multiple groups also cannot identify which 3D edge joins.
+   const sourceSets=n.incidences.map(row=>row.matchedCanonicalPaperGroups);
+   const sourceGroupsIndependentlyBound=sourceSets.every(groups=>groups.length===1)&&
+    new Set(sourceSets.map(groups=>groups[0])).size>=2;
    // Numerical co-location is not sufficient: one segment can end at a
    // projected corner while the paper has two different boundary incidences.
-   // Demand the actual recomputed M5 ledger's MULTI-feature node verdict.
+   // Demand actual recomputed M5 MULTI-feature proof and DISTINCT paper source
+   // identities, never paper coordinates alone.
    const positive=!!physicalNode&&
     physicalNode.incidentSegmentCount>=2&&
     physicalNode.original3DPhysicalCoincidenceVerified===true&&
-    physicalNode.localMultiSourcePhysicalJunctionCandidate===true;
+    physicalNode.localMultiSourcePhysicalJunctionCandidate===true&&
+    sourceGroupsIndependentlyBound;
    const realJunction=samePhysical&&positive;
    const allAliasEndpointsListed=points.size>=2&&
     [...points.keys()].every(k=>actualNodes.has(k));
@@ -144,6 +152,7 @@ function reviewC2BoundaryPhysicalJunctions({
     incidences:Object.freeze(n.incidences),
     distinctReal3DEndpointCandidateCount:points.size,
     exactSame3DSourceEndpointCandidateAtAllIncidences:samePhysical,
+    distinctCanonicalPaperSourceGroupsVerified:sourceGroupsIndependentlyBound,
     sourceLedgerMultiFeatureJunctionVerified:realJunction,
     realOriginalOrGenerated3DJunctionNodeListed:realJunction,
     paperOnlyDifferent3DDepthOrLocationAliasDetected:certifiedPaperAlias,
