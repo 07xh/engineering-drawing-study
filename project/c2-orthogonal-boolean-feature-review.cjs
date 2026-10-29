@@ -25,6 +25,8 @@ const {auditOrthogonalProjectedBoundaryTopology}=
  require('../workbench/m5-orthogonal-projected-boundary-topology.cjs');
 const {inspectFinalSourceStrokeObligations}=
  require('../workbench/m5-final-source-stroke-obligations.cjs');
+const {reviewC2BoundaryPhysicalJunctions}=
+ require('./c2-boundary-physical-junction-review.cjs');
 const {exactCandidateIntervalCoverage}=
  require('../workbench/c1-original-source-interval-coverage.cjs');
 function reviewC2OrthogonalBooleanFeatures({geometry,revision}={}){
@@ -478,6 +480,15 @@ function reviewC2FullPaperStrokeReadiness({
     corroborated+unresolvedLocal!==rayEvidenceCount)
   throw new Error('C2 投影闭合边界局部 M5 射线证据未守恒');
 
+ const projectedBoundaryJunctions=reviewC2BoundaryPhysicalJunctions({
+  revision,sourceGeometryIds:ids,sourceBoundaries,boundaryRayEvidence,
+  paperLines:paper.lines,physicalJunctionEvidence:baseline.physical
+ });
+ if(projectedBoundaryJunctions.paperJunctionCount<=0||
+    projectedBoundaryJunctions.allRegionBoundaryEndpointsAccountedFor!==true||
+    projectedBoundaryJunctions.globalClosedEndpointEngineeringLineStylesProven!==false||
+    projectedBoundaryJunctions.officialV5Authorized!==false)
+  throw new Error('C2 真实端点与 V/H/W 区域边界联合证明不一致');
  const counts={
   locallyClear:entries.filter(e=>
    e.rayStatus==='scoped-continuous-front-ray-clear').length,
@@ -508,6 +519,7 @@ function reviewC2FullPaperStrokeReadiness({
   boundaryRayCorroboratedPieceCount:corroborated,
   boundaryRayUnprovenPieceCount:unresolvedLocal,
   boundaryAllPiecesCorroboratedCount:fullyCorroborated,
+  projectedBoundaryJunctions,
   fullSourceCrossAudit:true,
   officialDrawingLineStylesVerified:false,completeV5DrawingAuthorized:false
  });
