@@ -76,4 +76,38 @@ function auditC1JointNativeGapFromRealHLR({
  });
  return auditC1JointNativeGapEvidence({curve,adjacency});
 }
-module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR};
+/**
+ * Accept one captured WASM diagnostic envelope with all three known positive
+ * A-end gaps. Never infer missing sources or synthesize HLR edge records.
+ * This remains forensic-only even if every record is present.
+ */
+function auditC1ThreeNativeGapBatch({geometry,records}={}){
+ const expected=[
+  ['H','A|C',5.02742501717052e-18],
+  ['W','A|C',1.1102230246251565e-16],
+  ['W','A|D',9.431983218054427e-18]
+ ];
+ if(typeof geometry?.id!=='string'||!geometry.id||
+    !Array.isArray(records)||records.length!==expected.length)
+  throw new TypeError('three actual original-source gap records required');
+ const results=expected.map(([view,edge,end])=>{
+  const sourceEdgeId=geometry.id+'::'+edge;
+  const matches=records.filter(r=>r?.view===view&&r?.sourceEdgeId===sourceEdgeId);
+  if(matches.length!==1)throw new RangeError('missing or duplicated native gap record: '+view+' '+edge);
+  const r=matches[0];
+  if(!same(r.uncoveredIntervals?.[0],[0,end])||
+     r.uncoveredIntervals.length!==1||
+     !Array.isArray(r.visibleSegments)||!Array.isArray(r.hiddenSegments))
+   throw new RangeError('native gap intervals or HLR segments missing: '+view+' '+edge);
+  return auditC1JointNativeGapFromRealHLR({...r,geometry});
+ });
+ if(records.some(r=>!expected.some(([view,edge])=>
+    r?.view===view&&r?.sourceEdgeId===geometry.id+'::'+edge)))
+  throw new RangeError('unrecognized native source gap record');
+ return freeze({schema:'draftai-c1-three-native-gap-batch/1',
+  sourceGeometryId:geometry.id,recordsExamined:results.length,results,
+  gapsClosed:0,formalEngineeringLineStyleCertified:false,
+  constructionIntentAuthorized:false,signedV5ActionCount:0});
+}
+module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR,
+ auditC1ThreeNativeGapBatch};
