@@ -235,7 +235,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   sourceIntervalsWithFullOriginal3DDepthFrontOrdering:0,
   sourceIntervalsProvenBehindIndependentlyClearOriginalSource:0,
   sourceIntervalsHeldForDepthOrProjectedSplits:0,
-  crossSourceProjectedAliasesExamined:0};
+  crossSourceProjectedAliasesExamined:0,
+  canonicalM4CutSourceIntervalsExamined:0,
+  canonicalM4CutSourceIntervalsFullyPartitioned:0,
+  canonicalM4CutSubspansExamined:0,
+  canonicalM4CutSubspansStrictlyFrontmost:0,
+  canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource:0,
+  canonicalM4CutSubspansHeldForDepthOrTopology:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
    // The source ID itself contains an original endpoint separator '|'.
@@ -259,6 +265,51 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      originalParameterRange:segment.originalM0UnitParameterRange,
      peers
     });
+    // Reuse the existing M4 original-source projected EVENT CUTS already
+    // cross-checked by M0/M5 exact ray continuity. Splitting by these
+    // verified source-parameter intervals is not a second geometry engine.
+    // Never infer a physical 3D junction from a paper-only event.
+    const originalRay=bySource.get(key);
+    if(!originalRay||originalRay.projectionCollapsed!==false||
+       !Array.isArray(originalRay.originalCutSubspans))
+     throw new RangeError('native M4 original 3D depth check lacks canonical source-event cut');
+    const [nativeStart,nativeEnd]=segment.originalM0UnitParameterRange;
+    const cutRows=[];
+    let cursor=nativeStart,cutPartitionComplete=true;
+    for(const cut of originalRay.originalCutSubspans){
+     const range=cut.originalParameterRange;
+     if(!Array.isArray(range)||range.length!==2||
+        !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+        range[0]>=range[1])
+      throw new RangeError('invalid original M4 source cut');
+     const from=Math.max(range[0],nativeStart),
+      to=Math.min(range[1],nativeEnd);
+     if(!(to>from))continue;
+     if(from!==cursor)cutPartitionComplete=false;
+     const sliced=auditC1OriginalCoProjectedDepthOrder({
+      geometry,view,sourceEdgeId,
+      originalParameterRange:[from,to],peers
+     });
+     cutRows.push({
+      originalM4SourceCutParameterRange:[from,to],
+      originalM4CutFromCurrentReviewedEventGraph:true,
+      originalM4EventPaperOnlyIsNot3DPhysicalJunction:true,
+      coProjectedOriginal3DDepthOrder:sliced,
+      engineeringLineStyle:'undetermined',signedV5Action:false
+     });
+     cursor=to;
+     m4DepthCounts.canonicalM4CutSubspansExamined++;
+     if(sliced.wholeIntervalFrontmostCertified)
+      m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost++;
+     else if(sliced.visibleSourceCoversEntireLine)
+      m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource++;
+     else m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology++;
+    }
+    cutPartitionComplete=cutPartitionComplete&&cutRows.length>0&&
+     cursor===nativeEnd;
+    m4DepthCounts.canonicalM4CutSourceIntervalsExamined++;
+    if(cutPartitionComplete)
+     m4DepthCounts.canonicalM4CutSourceIntervalsFullyPartitioned++;
     m4DepthCounts.sourceIntervalsExamined++;
     m4DepthCounts.crossSourceProjectedAliasesExamined+=order.aliasesExamined;
     if(order.wholeIntervalFrontmostCertified)
@@ -270,6 +321,10 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      originalM0UnitParameterRange:[...segment.originalM0UnitParameterRange],
      native3DHLRClass:segment.native3DHLRClass,
      coProjectedOriginalM0DepthOrder:order,
+     canonicalOriginalM4EventCutDepthRows:cutRows,
+     canonicalOriginalM4EventCutPartitionCoversNative3DInterval:
+      cutPartitionComplete,
+     originalM4CutEndpointDoesNotAuthorize3DPhysicalJunction:true,
      originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility:true,
      generated2DHLREdgeTopologyProven:false,
      engineeringLineStyle:'undetermined',signedV5Action:false
@@ -282,7 +337,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
      m4DepthCounts.sourceIntervalsExamined!==
       m4DepthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
       m4DepthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
-      m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits)
+      m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits||
+     m4DepthCounts.canonicalM4CutSubspansExamined!==
+      m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+      m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+     m4DepthCounts.canonicalM4CutSourceIntervalsExamined!==
+      m4DepthCounts.sourceIntervalsExamined)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // A missing M5 source/view is a distinct coverage obligation from a
