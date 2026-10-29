@@ -332,3 +332,74 @@ test('visible/hidden candidate paper classes touching only at endpoint do not ov
   exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals,[]);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('native IsSame original vertex at different depth vetoes a false HLR paper source alias',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],
+  sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ // V010 and V011 have the SAME V paper points as V000 and V001,
+ // but lie 10 mm deeper along Y: their actual 3D source is different.
+ assert.deepEqual(project(g.data.points.V010).V,from);
+ assert.deepEqual(project(g.data.points.V011).V,to);
+ input.cad.views.V.push({from,to,sourceCandidate3DLifts:[{sourceEdgeId}],
+  directNativeVertexOriginalSource:['V010','V011'].map(vertex=>({
+   directlySameOriginalM0VertexId:vertex,
+   directOriginal3DVertexTopoDSIdentityProven:true
+  }))});
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  nativeEndpoint3DSourceStatus,'contradicted-by-native-original-vertex');
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  nativeOriginal3DVertexContradictionCount,2);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  nativeEndpoint3DContradictoryPaperAliases,1);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('native IsSame endpoints on the same original 3D source are positive vertex incidence, not generated edge history',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],
+  sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ input.cad.views.V.push({from,to,sourceCandidate3DLifts:[{sourceEdgeId}],
+  directNativeVertexOriginalSource:edge.map(vertex=>({
+   directlySameOriginalM0VertexId:vertex,
+   directOriginal3DVertexTopoDSIdentityProven:true
+  }))});
+ const out=audit(input),row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  nativeEndpoint3DSourceStatus,'positive-original-vertex-incidence-only');
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  nativeOriginal3DVertexIncidenceCount,2);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.
+  nativeEndpoint3DConsistentPaperAliases,1);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('forged native IsSame original vertex paper mismatch and unbound identity fail closed',()=>{
+ const g=box(),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ for(const witness of [
+  {directlySameOriginalM0VertexId:'V100',
+   directOriginal3DVertexTopoDSIdentityProven:true},
+  {directlySameOriginalM0VertexId:null,
+   directOriginal3DVertexTopoDSIdentityProven:true},
+  {directlySameOriginalM0VertexId:'V000',
+   directOriginal3DVertexTopoDSIdentityProven:false}
+ ]){
+  const input=fixture(g,[]);
+  input.cad.views.V.push({from,to,sourceCandidate3DLifts:[{sourceEdgeId}],
+   directNativeVertexOriginalSource:[witness,{
+    directlySameOriginalM0VertexId:null,
+    directOriginal3DVertexTopoDSIdentityProven:false
+   }]});
+  assert.throws(()=>audit(input),/native|Top[oD]DS|vertex|identity/);
+ }
+});
