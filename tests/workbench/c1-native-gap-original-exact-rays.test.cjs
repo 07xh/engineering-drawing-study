@@ -3,6 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {auditC1NativeGapOriginalExactRays:audit}=
  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
+const {project}=require('../../core/projection/conventions.js');
 const P=(x,y,z)=>({x,y,z});
 const tetra=()=>({id:'C1SkewTetra',kind:'mesh',space:'model-3d',
  unit:'mm',data:{
@@ -189,5 +190,142 @@ test('entire M5 source ledger absent: all noncollapsed M0 views remain explicit 
   x.missingM5SourceViewRemainsUncovered===true&&
   x.generatedTopoDSToOriginalSourceHistoryCertified===false&&
   x.signedV5Action===false));
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('omitted original M0 convex front source crosschecks real native HLR classes without signing',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const segment={from,to,sourceCandidate3DLifts:[{sourceEdgeId}]};
+ input.cad.views.V.push(structuredClone(segment));
+ input.cad.hiddenSharpViews.V.push(structuredClone(segment));
+ input.cad.nativeSourceScopedSharpOutputByView={V:{nativeSourceIdentityConflicts:{rows:[
+  {view:'V',hlrClass:'visible-sharp',nativeWholeSolidEdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:sourceEdgeId,nativeScopedGeneratedEdgeIsSame:true},
+  {view:'V',hlrClass:'hidden-sharp',nativeWholeSolidEdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:sourceEdgeId,nativeScopedGeneratedEdgeIsSame:true}
+ ]}}};
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.original3DRayStatus,'exact-original-closed-ray-clear');
+ assert.equal(row.expectedHLRClassFromIndependentOriginalRay,'visible-sharp');
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,true);
+ assert.deepEqual(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals,[['0','1']]);
+ assert.equal(row.paperClassConflictCannotCertifyGlobal3DDepthOrVisibility,true);
+ assert.deepEqual(row.nativeHLRCandidateExactBinary64AndRayDiagnostics.map(x=>
+  [x.hlrClass,x.exactBinary64PaperAffineAligned,
+   x.exactBinary64PaperWithinOriginalParameterDomain,
+   x.sourceScopedGeneratedIsSameOwnerClaim,
+   x.classConsistentWithIndependentWholeOriginal3DRay]),[
+  ['visible-sharp',true,true,true,true],
+  ['hidden-sharp',true,true,true,false]
+ ]);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.nativeOwnerRayClassConsistent,1);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.nativeOwnerRayClassContradictions,1);
+ assert.equal(out.counts.nativeGeneratedHistoryGapsClosed,0);
+ assert.equal(out.globalContinuousVisibilityCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('one-subnormal-ULP paper alias drift and out-of-domain source interval remain visible',()=>{
+ const g=tetra(),input=fixture(g,[]),edge=['A','C'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ input.cad.views.V.push({from:{u:-Number.MIN_VALUE,v:from.v},to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRPaperCandidateCount,1);
+ const diagnostic=row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0];
+ assert.equal(diagnostic.exactBinary64PaperAffineAligned,false);
+ assert.equal(diagnostic.exactBinary64PaperWithinOriginalParameterDomain,false);
+ assert.equal(diagnostic.sourceScopedGeneratedIsSameOwnerClaim,false);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.exactAffineDrift,1);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.exactParameterDomainFailures,1);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('co-projected native owner from another M0 edge cannot borrow exact 3D ray identity',()=>{
+ const g=tetra(),input=fixture(g,[]),edge=['A','C'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ input.cad.views.V.push({from,to,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.nativeSourceScopedSharpOutputByView={V:{nativeSourceIdentityConflicts:{rows:[
+  {view:'V',hlrClass:'visible-sharp',nativeWholeSolidEdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:id(g,['A','D']),
+   nativeScopedGeneratedEdgeIsSame:true}
+ ]}}};
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  sourceScopedGeneratedIsSameOwnerClaim,false);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  nativeGeneratedEdgeClaimedByDifferentOriginalSource,true);
+ assert.equal(out.counts.omittedNativeHLRPaperCandidateDiagnostics.nativeIsSameOwnerClaims,0);
+ assert.equal(out.signedV5ActionCount,0);
+});
+
+test('two exact paper aliases can cover omitted M0 source while native owner history remains absent',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const middle={u:(from.u+to.u)/2,v:(from.v+to.v)/2};
+ for(const [a,b] of [[from,middle],[middle,to]])
+  input.cad.views.V.push({from:a,to:b,
+   sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,false);
+ assert.deepEqual(row.nativeScopedOwnerCandidateExactBinary64Coverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+ assert.equal(row.exactPaperCoverageIsNotNativeSourceParameterCoverage,true);
+ assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(out.allNativeHLRSourceGapsClosed,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
+test('one subnormal ULP gap in omitted source exact paper union cannot be rounded away',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const axis=from.u!==to.u?'u':'v';
+ assert.equal(from[axis],0);
+ const start={...from,[axis]:Math.sign(to[axis]-from[axis])*Number.MIN_VALUE};
+ input.cad.views.V.push({from:start,to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  exactBinary64PaperAffineAligned,true);
+ assert.equal(row.nativeHLRCandidateExactBinary64AndRayDiagnostics[0].
+  exactBinary64PaperWithinOriginalParameterDomain,true);
+ const coverage=row.allPaperAliasCandidateExactBinary64Coverage;
+ assert.equal(coverage.exactBinary64PaperCandidateCoverageComplete,false);
+ assert.equal(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals.length,1);
+ assert.equal(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][0],'0');
+ assert.notEqual(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][1],'0');
+ assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('visible/hidden candidate paper classes touching only at endpoint do not overlap positively',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const middle={u:(from.u+to.u)/2,v:(from.v+to.v)/2};
+ input.cad.views.V.push({from,to:middle,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.hiddenSharpViews.V.push({from:middle,to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,false);
+ assert.deepEqual(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals,[]);
  assert.equal(out.officialV5Authorized,false);
 });

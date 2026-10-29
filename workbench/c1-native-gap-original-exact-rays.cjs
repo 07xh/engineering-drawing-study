@@ -16,6 +16,13 @@ const {auditC1AllOriginalSourceNativeGaps}=
  require('./c1-all-native-source-gap-ledger.cjs');
 const {auditC1OriginalClosedEdgeRayContinuity}=
  require('./c1-m5-closed-original-edge-ray-continuity.cjs');
+const {project}=require('../core/projection/conventions.js');
+const {auditC1ExactBinary64PaperAffineWitness}=
+ require('./c1-exact-binary64-paper-affine.cjs');
+const {auditExactBinary64PaperParameterPair,
+ auditExactBinary64PaperCandidateCoverage,
+ auditExactBinary64PaperVisibilityConflict}=
+ require('./c1-exact-binary64-paper-parameter.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -55,6 +62,17 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
  }
  const missingOriginalM0SourceViewRows=[];
  const missingSeen=new Set();
+ const omittedCandidateCounts={
+  examined:0,exactAffineAligned:0,exactAffineDrift:0,
+  exactParameterDomainFailures:0,nativeIsSameOwnerClaims:0,
+  nativeOwnerRayClassConsistent:0,nativeOwnerRayClassContradictions:0,
+  paperOnlyRayClassDisagreements:0,
+  paperAliasExactFullSourceViewCoverage:0,
+  paperAliasExactPositiveGapSourceViews:0,
+  nativeScopedOwnerExactFullSourceViewCoverage:0,
+  nativeScopedOwnerExactPositiveGapSourceViews:0,
+  exactPaperVisibleHiddenPositiveConflictSourceViews:0
+ };
  for(const missing of gaps.unrepresentedOriginalM0ProjectedSources){
   const key=missing.view+'|'+missing.sourceEdgeId;
   const ray=bySource.get(key),candidate=missingCandidates.get(key);
@@ -75,8 +93,107 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    ray.originalOpenEdgeStrictInteriorOcclusionProven===true;
   if(closed&&hidden)
    throw new RangeError('contradictory omitted M0 original ray witnesses');
+  const original=geometry.data.edges.find(edge=>
+   geometry.id+'::'+[...edge].sort().join('|')===missing.sourceEdgeId);
+  if(!original||original.some((id,i)=>id!==ray.originalVertexIds[i]))
+   throw new RangeError('omitted HLR source is not the original M0 3D edge');
+  const [from,to]=original.map(id=>project(geometry.data.points[id])[missing.view]);
+  const nativeOwners=new Set(candidate.directNativeGeneratedIdentityCandidates?.map(x=>
+   x.hlrClass+'|'+x.ordinal)??[]);
+  if(candidate.directNativeGeneratedIdentityCandidateCount!==nativeOwners.size)
+   throw new RangeError('incomplete omitted M0 genuine native identity claims');
+  const otherOwners=new Set(candidate.paperCandidatesClaimedByDifferentOriginalNativeSource?.
+   map(x=>x.hlrClass+'|'+x.ordinal)??[]);
+  const expectedClass=closed?'visible-sharp':hidden?'hidden-sharp':null;
+  const candidateDiagnostics=candidate.nativeHLRPaperCandidates.map(paper=>{
+   const key=paper.hlrClass+'|'+paper.ordinal;
+   if(nativeOwners.has(key)&&otherOwners.has(key))
+    throw new RangeError('contradictory original native HLR edge owners');
+   const affine=auditC1ExactBinary64PaperAffineWitness({
+    sourceFrom:from,sourceTo:to,
+    measuredFrom:paper.projectedFrom,measuredTo:paper.projectedTo
+   });
+   const parameter=auditExactBinary64PaperParameterPair({
+    sourceFrom:from,sourceTo:to,
+    measuredFrom:paper.projectedFrom,measuredTo:paper.projectedTo
+   });
+   const aligned=affine.bothNativeEndpointsExactlyOnOriginalBinary64PaperLine;
+   const bounded=parameter.nativeFromWithinExactBinary64OriginalParameterDomain&&
+    parameter.nativeToWithinExactBinary64OriginalParameterDomain;
+   const nativeOwner=nativeOwners.has(key);
+   const classMatches=expectedClass===null?null:paper.hlrClass===expectedClass;
+   omittedCandidateCounts.examined++;
+   if(aligned)omittedCandidateCounts.exactAffineAligned++;
+   else omittedCandidateCounts.exactAffineDrift++;
+   if(!bounded)omittedCandidateCounts.exactParameterDomainFailures++;
+   if(nativeOwner){
+    omittedCandidateCounts.nativeIsSameOwnerClaims++;
+    if(classMatches===true)omittedCandidateCounts.nativeOwnerRayClassConsistent++;
+    if(classMatches===false)omittedCandidateCounts.nativeOwnerRayClassContradictions++;
+   }else if(classMatches===false)
+    omittedCandidateCounts.paperOnlyRayClassDisagreements++;
+   return {hlrClass:paper.hlrClass,ordinal:paper.ordinal,
+    exactBinary64PaperAffineAligned:aligned,
+    exactBinary64PaperWithinOriginalParameterDomain:bounded,
+    exactBinary64PaperHasPositiveParameterSpan:
+     parameter.nativePaperSourceParameterPairHasExactPositiveSpan,
+    sourceScopedGeneratedIsSameOwnerClaim:nativeOwner,
+    nativeGeneratedEdgeClaimedByDifferentOriginalSource:otherOwners.has(key),
+    classConsistentWithIndependentWholeOriginal3DRay:classMatches,
+    sourceScopedIdentityIsNotCompleteGeneratedTopoDSHistory:true,
+    engineeringLineStyle:'undetermined',signedV5Action:false};
+  });
+  if(candidateDiagnostics.length!==candidate.nativeHLRPaperCandidateCount||
+     [...nativeOwners,...otherOwners].some(key=>
+      !candidateDiagnostics.some(x=>x.hlrClass+'|'+x.ordinal===key)))
+   throw new RangeError('omitted original source native HLR candidate/claim inventory mismatch');
+  // These are exact dyadic unions of received binary64 HLR PAPER
+  // coordinates, not recovered native source parameters. Only exactly
+  // affine-aligned, in-domain, positive-length fragments may contribute.
+  // Keep native IsSame scoped-owner subsets separate from paper aliases.
+  const eligible=candidate.nativeHLRPaperCandidates.filter((paper,i)=>{
+   const proof=candidateDiagnostics[i];
+   return proof.exactBinary64PaperAffineAligned&&
+    proof.exactBinary64PaperWithinOriginalParameterDomain&&
+    proof.exactBinary64PaperHasPositiveParameterSpan;
+  });
+  const paperCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:from,sourceTo:to,
+   segments:eligible.map(paper=>({
+    from:paper.projectedFrom,to:paper.projectedTo
+   }))
+  });
+  const nativeOwnedCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:from,sourceTo:to,
+   segments:eligible.filter(paper=>nativeOwners.has(
+    paper.hlrClass+'|'+paper.ordinal)).map(paper=>({
+     from:paper.projectedFrom,to:paper.projectedTo
+    }))
+  });
+  const paperVisibility=auditExactBinary64PaperVisibilityConflict({
+   sourceFrom:from,sourceTo:to,
+   visibleSegments:eligible.filter(p=>p.hlrClass==='visible-sharp').
+    map(p=>({from:p.projectedFrom,to:p.projectedTo})),
+   hiddenSegments:eligible.filter(p=>p.hlrClass==='hidden-sharp').
+    map(p=>({from:p.projectedFrom,to:p.projectedTo}))
+  });
+  if(paperVisibility.hasExactPositiveLengthVisibleHiddenPaperClassConflict)
+   omittedCandidateCounts.exactPaperVisibleHiddenPositiveConflictSourceViews++;
+  if(paperCoverage.exactBinary64PaperCandidateCoverageComplete)
+   omittedCandidateCounts.paperAliasExactFullSourceViewCoverage++;
+  else omittedCandidateCounts.paperAliasExactPositiveGapSourceViews++;
+  if(nativeOwnedCoverage.exactBinary64PaperCandidateCoverageComplete)
+   omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage++;
+  else omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews++;
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
+   expectedHLRClassFromIndependentOriginalRay:expectedClass,
+   allPaperAliasCandidateExactBinary64Coverage:paperCoverage,
+   nativeScopedOwnerCandidateExactBinary64Coverage:nativeOwnedCoverage,
+   exactBinary64PaperVisibleHiddenCandidateConflict:paperVisibility,
+   paperClassConflictCannotCertifyGlobal3DDepthOrVisibility:true,
+   exactPaperCoverageIsNotNativeSourceParameterCoverage:true,
+   nativeHLRCandidateExactBinary64AndRayDiagnostics:candidateDiagnostics,
    original3DVertexIds:[...ray.originalVertexIds],
    original3DRayStatus:closed?'exact-original-closed-ray-clear':
     hidden?'exact-original-open-strict-interior':'undetermined',
@@ -92,8 +209,18 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
- if(missingCandidates.size!==missingSeen.size)
-  throw new RangeError('incomplete omitted original M0 source/view reconciliation');
+ if(missingCandidates.size!==missingSeen.size||
+    omittedCandidateCounts.examined!==
+     omittedCandidateCounts.exactAffineAligned+omittedCandidateCounts.exactAffineDrift||
+    omittedCandidateCounts.nativeOwnerRayClassConsistent+
+     omittedCandidateCounts.nativeOwnerRayClassContradictions>
+     omittedCandidateCounts.nativeIsSameOwnerClaims||
+    omittedCandidateCounts.paperAliasExactFullSourceViewCoverage+
+     omittedCandidateCounts.paperAliasExactPositiveGapSourceViews!==missingSeen.size||
+    omittedCandidateCounts.nativeScopedOwnerExactFullSourceViewCoverage+
+     omittedCandidateCounts.nativeScopedOwnerExactPositiveGapSourceViews!==missingSeen.size||
+    omittedCandidateCounts.exactPaperVisibleHiddenPositiveConflictSourceViews>missingSeen.size)
+  throw new RangeError('incomplete omitted original M0 native HLR/ray reconciliation');
  // Independent whole-M0 inventory equation: every drawable original
  // source/view is either represented by at least one current M5 span or
  // explicitly missing. Multiple M5 subspans must not inflate the count.
@@ -111,6 +238,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger}={}){
   unrepresentedOriginalM0SourceViews:missingOriginalM0SourceViewRows.length,
   unrepresentedM0SourceViewsWithNativeHLRPaperCandidates:
    missingOriginalM0SourceViewRows.filter(x=>x.nativeHLRPaperCandidateCount>0).length,
+  omittedNativeHLRPaperCandidateDiagnostics:omittedCandidateCounts,
   unrepresentedM0SourceViewsWithExactClosedRays:
    missingOriginalM0SourceViewRows.filter(x=>
     x.original3DRayStatus==='exact-original-closed-ray-clear').length,
