@@ -23,6 +23,8 @@ const {auditC3BooleanWCriticalSwitchRays}=
  require('./c3-boolean-w-critical-switch-rays.cjs');
 const {auditC3WExactMirrorDepthOrder}=
  require('./c3-w-mirror-depth-order.cjs');
+const {auditC3WMirrorCapContactPartition}=
+ require('./c3-w-mirror-cap-contact-partition.cjs');
 const {auditC3ProjectedCapLineArrangement}=
  require('./c3-projected-cap-line-arrangement.cjs');
 const {auditC3VHArcCapLineContacts}=
@@ -184,6 +186,14 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
  const wExactMirrorDepthEvidence=auditC3WExactMirrorDepthOrder({
   input,revision,selectedRayEvidence:selectedBooleanRayEvidence
  });
+ const wMirrorCapContactPartition=auditC3WMirrorCapContactPartition({
+  input,revision,mirrorEvidence:wExactMirrorDepthEvidence,
+  wCapEvidence:WCurveCapLineEvidence
+ });
+ if(wMirrorCapContactPartition.officialV5Authorized!==false||
+    wMirrorCapContactPartition.engineeringLineStylesCertified!==false||
+    wMirrorCapContactPartition.revision!==revision)
+  throw new RangeError('C3 current finite-cap W mirror partition cannot authorize V5');
  if(selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true&&
     (selectedBooleanWCriticalPointEvidence.
       everyCurrentAnalyticWRootEnumerated!==true||
@@ -304,6 +314,7 @@ function auditC3JointTopologyVisibility({input,revision,solidOperation=null}={})
   localSourceTangentEvidence,localBooleanCreaseEvidence,
   selectedBooleanRayEvidence,booleanRayConcordance,
   selectedBooleanWCriticalPointEvidence,wExactMirrorDepthEvidence,
+  wMirrorCapContactPartition,
   selectedBooleanThreeViewSourceRayCoverageVerified:
    selectedBooleanRayEvidence.fullSourceOpenEdgeRayCoverageVerified===true,
   localRegularBooleanCreaseCount:localBooleanCreaseEvidence.regularLocalCreaseCount||0,

@@ -1851,6 +1851,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
        ' W 视图同轴心曲线重合：已严格证明 '+
        partial.wMirrorDepthEvidence.verifiedMirroredOpenDepthCellCount+
        ' 组前后镜像解析开区间的三维深度次序；其余图元重合及国标线型未签收。':'')+
+      (partial.wMirrorCapContactPartition?.originalMirroredOpenCellCount>0?
+       ' W 镜像/端盖投影事件联合核验：'+
+       partial.wMirrorCapContactPartition.originalMirroredOpenCellCount+
+       ' 组来源镜像区间切为 '+
+       partial.wMirrorCapContactPartition.atomicMirroredOpenCellCount+
+       ' 个正长度开单元；尚有 '+
+       partial.wMirrorCapContactPartition.unassignedProjectedCapContactCount+
+       ' 个未归属端盖投影事件（全局遮挡及线型不放行）。':'')+
       (partial.analyticRayPaperReview?
        ' 三视图曲线已绑定严格体积射线的解析开区间 '+
        partial.analyticRayPaperReview.sourceParameterIntervalCount+

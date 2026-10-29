@@ -225,6 +225,20 @@ function createUnifiedProjectSession(){
     const rayConcordance=joint.booleanRayConcordance;
     const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
     const wMirrorDepthEvidence=joint.wExactMirrorDepthEvidence;
+    const wMirrorCapContactPartition=joint.wMirrorCapContactPartition;
+    if(!wMirrorCapContactPartition||
+       wMirrorCapContactPartition.revision!==latest.revision||
+       wMirrorCapContactPartition.solidOperation!==(solidOperation||'unselected')||
+       wMirrorCapContactPartition.officialV5Authorized!==false||
+       wMirrorCapContactPartition.engineeringLineStylesCertified!==false||
+       wMirrorCapContactPartition.globalProjectedFeatureDepthVerified!==false||
+       wMirrorCapContactPartition.closedSourceJunctionContinuityVerified!==false||
+       (wMirrorDepthEvidence?.sameSignedLateralSourceWDepthOrderProven===true&&
+        (wMirrorCapContactPartition.originalMirroredOpenCellCount!==
+          wMirrorDepthEvidence.verifiedMirroredOpenDepthCellCount||
+         wMirrorCapContactPartition.atomicMirroredOpenCellCount<
+          wMirrorCapContactPartition.originalMirroredOpenCellCount)))
+     throw new Error('C3 当前 W 镜像开区间与有限端盖投影接触切分证据不一致');
     if(!wMirrorDepthEvidence||
        wMirrorDepthEvidence.revision!==latest.revision||
        wMirrorDepthEvidence.solidOperation!==(solidOperation||'unselected')||
@@ -317,7 +331,7 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
-     wCriticalPointRays,wMirrorDepthEvidence,
+     wCriticalPointRays,wMirrorDepthEvidence,wMirrorCapContactPartition,
      analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
