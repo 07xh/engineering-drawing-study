@@ -55,7 +55,7 @@ function auditC1AllOriginalSourceNativeGaps({geometry,cad,m5Ledger}={}){
    if(![p.u,p.v,q.u,q.v].every(Number.isFinite))
     throw new RangeError('nonfinite projected original C1 source');
    return p.u!==q.u||p.v!==q.v;
-  }).map(e=>geometry.id+'::'+[...e].sort().join('|'))
+  }).map(e=>geometry.id+'::'+[...e].sort().join('|')))
  ]));
  const representedOriginalSourcesByView=Object.fromEntries(VIEWS.map(view=>
   [view,new Set()]));
