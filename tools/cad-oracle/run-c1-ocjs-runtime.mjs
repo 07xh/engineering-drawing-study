@@ -1115,6 +1115,14 @@ for(const [index,geometry] of general.entries()){
   depthCounts.sourceIntervalsWithFullOriginal3DDepthFrontOrdering+
   depthCounts.sourceIntervalsProvenBehindIndependentlyClearOriginalSource+
   depthCounts.sourceIntervalsHeldForDepthOrProjectedSplits);
+ assert.equal(depthCounts.canonicalM4CutSourceIntervalsExamined,
+  depthCounts.sourceIntervalsExamined);
+ assert.equal(depthCounts.canonicalM4CutSubspansExamined,
+  depthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+  depthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+ assert.ok(depthCounts.canonicalM4CutSubspansExamined>=
+  depthCounts.canonicalM4CutSourceIntervalsFullyPartitioned);
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
   ...positiveOriginalGapRays.rows]){
@@ -1123,6 +1131,11 @@ for(const [index,geometry] of general.entries()){
   assert.ok(item.nativeOriginalM4CoProjectedDepthOrder.every(row=>
    row.originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility===true&&
    row.generated2DHLREdgeTopologyProven===false&&
+   Array.isArray(row.canonicalOriginalM4EventCutDepthRows)&&
+   row.canonicalOriginalM4EventCutDepthRows.length>0&&
+   row.canonicalOriginalM4EventCutDepthRows.every(cut=>
+    cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction===true&&
+    cut.engineeringLineStyle==='undetermined'&&cut.signedV5Action===false)&&
    row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
  }
  console.error('REAL C1 EXACT ORIGINAL M4->M5 COPROJECTED DEPTH '+
