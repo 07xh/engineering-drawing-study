@@ -41,6 +41,8 @@ const {auditC1OriginalOcctCurveParameterGapWitness}=
  require('../../workbench/c1-original-occt-curve-parameter-gap-witness.cjs');
 const {auditC1NativeGapGeneratedVertexAdjacency}=
  require('../../workbench/c1-native-gap-generated-vertex-adjacency.cjs');
+const {auditC1ThreeNativeGapBatchFromM5Ledger}=
+ require('../../workbench/c1-joint-native-gap-evidence.cjs');
 async function main(){
 const key='2.0.0-beta.b5ff984';
 const root=resolve(process.argv[2]??'');
@@ -877,6 +879,26 @@ for(const [index,geometry] of general.entries()){
   return proof;
  });
 
+ // Run the newly bound THREE-gap consumer on the genuine pinned OCJS WASM
+ // CAD payload and independently recomputed canonical M5 gap ledger.
+ // Only the skew tetrahedron is the reviewed three-A-end-gap regression.
+ // This must not pass on the mock-shaped unit-test payload alone.
+ const threeNativeGapJointM5CadAudit=geometry.id==='C1SkewTetra'?
+  auditC1ThreeNativeGapBatchFromM5Ledger({
+   geometry,cad,m5Ledger:audited
+  }):null;
+ if(threeNativeGapJointM5CadAudit){
+  assert.equal(threeNativeGapJointM5CadAudit.recordsExamined,3);
+  assert.equal(threeNativeGapJointM5CadAudit.gapsClosed,0);
+  assert.equal(threeNativeGapJointM5CadAudit.revision,40+index);
+  assert.equal(threeNativeGapJointM5CadAudit.canonicalM5GapLedgerBound,true);
+  assert.equal(threeNativeGapJointM5CadAudit.originalTopoDSHistoryCertified,false);
+  assert.equal(threeNativeGapJointM5CadAudit.signedV5ActionCount,0);
+  assert.ok(threeNativeGapJointM5CadAudit.results.every(row=>
+   row.positiveGapCount===1&&row.signedV5ActionCount===0&&
+   row.fullOriginalSourceHistoryCertified===false&&
+   row.globalContinuousVisibilityCertified===false));
+ }
  // An independently valid M5 paper hull source may still lack exact
  // true OCCT generated original physical 3D source coverage. Do not
  // upgrade paper overlap into a production V5 signoff.
@@ -1848,6 +1870,7 @@ for(const [index,geometry] of general.entries()){
   row.physicalProjectedJunctionEncounters.every(event=>
    event.original3DPhysicalJunctionProven!==event.projectedOnlyUnresolved)));
  polyhedra.push({geometryId:geometry.id,revision:40+index,
+  threeNativeGapJointM5CadAudit,
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
   nativeHLRSourceHistoryAPISurfaceByView:
    cad.nativeHLRSourceHistoryAPISurfaceByView,
