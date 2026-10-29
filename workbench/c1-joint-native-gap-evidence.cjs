@@ -139,5 +139,104 @@ function auditC1JointNativeGapFromCad({
   visibleSegments:cad.views[view],hiddenSegments:cad.hiddenSharpViews[view]
  });
 }
+/**
+ * Run all three real-source gap audits directly against ONE OCJS CAD result.
+ * This deliberately accepts no caller-provided native vertex/curve reports:
+ * original BRep evidence and generated HLR fragments come from cad itself.
+ * The independently computed M5 uncovered intervals must still be supplied.
+ */
+function auditC1ThreeNativeGapBatchFromCad({
+ geometry,cad,uncoveredByViewAndSource
+}={}){
+ const expected=[
+  ['H','A|C',5.02742501717052e-18],
+  ['W','A|C',1.1102230246251565e-16],
+  ['W','A|D',9.431983218054427e-18]
+ ];
+ if(!geometry?.id||!uncoveredByViewAndSource||
+    typeof uncoveredByViewAndSource!=='object'||
+    Array.isArray(uncoveredByViewAndSource))
+  throw new TypeError('one original geometry, OCJS CAD and M5 gap inventory required');
+ const expectedKeys=expected.map(([view,edge])=>view+'::'+geometry.id+'::'+edge);
+ const keys=Object.keys(uncoveredByViewAndSource);
+ if(keys.length!==3||keys.some(key=>!expectedKeys.includes(key)))
+  throw new RangeError('exactly three independently measured original-source gaps required');
+ const results=expected.map(([view,edge,end])=>{
+  const sourceEdgeId=geometry.id+'::'+edge;
+  const uncoveredIntervals=uncoveredByViewAndSource[view+'::'+sourceEdgeId];
+  if(!Array.isArray(uncoveredIntervals)||uncoveredIntervals.length!==1||
+     !same(uncoveredIntervals[0],[0,end]))
+   throw new RangeError('unverified original-source gap: '+view+' '+edge);
+  return auditC1JointNativeGapFromCad({
+   geometry,cad,view,sourceEdgeId,uncoveredIntervals
+  });
+ });
+ return freeze({schema:'draftai-c1-three-native-gap-cad-batch/1',
+  sourceGeometryId:geometry.id,recordsExamined:results.length,results,
+  gapsClosed:0,globalContinuousVisibilityCertified:false,
+  constructionIntentAuthorized:false,signedV5ActionCount:0});
+}
+/**
+ * Bind the three-gap CAD audit to the EXISTING recomputed C1 M5/OCJS
+ * proof-gap ledger, rather than a caller-written gap map. This does not
+ * certify that a JS ledger originated from WASM: only the trusted runtime
+ * which invokes auditC1OcjsM5ProofGaps can establish that provenance.
+ * Multiple source subspans are not silently unioned or snapped.
+ */
+function auditC1ThreeNativeGapBatchFromM5Ledger({
+ geometry,cad,m5Ledger
+}={}){
+ if(m5Ledger?.schema!=='draftai-c1-ocjs-m5-convex-proof-gap-ledger/1'||
+    m5Ledger.sourceGeometryId!==geometry?.id||
+    m5Ledger.revision!==cad?.revision||
+    m5Ledger.engine!=='opencascade.js'||
+    m5Ledger.realCadSourceCandidateOnly!==true||
+    m5Ledger.officialLineStylesVerified!==false||
+    m5Ledger.wholeSolidV5Ready!==false||
+    m5Ledger.signedV5ActionCount!==0)
+  throw new TypeError('current unsigned recomputed C1 OCJS/M5 proof-gap ledger required');
+ const expected=[
+  ['H','A|C',5.02742501717052e-18],
+  ['W','A|C',1.1102230246251565e-16],
+  ['W','A|D',9.431983218054427e-18]
+ ];
+ const uncoveredByViewAndSource=Object.create(null);
+ for(const [view,edge,end] of expected){
+  const sourceEdgeId=geometry.id+'::'+edge;
+  const rows=m5Ledger.views?.[view]?.intervals;
+  if(!Array.isArray(rows))
+   throw new TypeError('missing canonical M5 view intervals: '+view);
+  const matches=rows.filter(x=>x?.sourceEdgeId===sourceEdgeId);
+  if(matches.length!==1)
+   throw new RangeError('nonunique canonical M5 source interval: '+view+' '+edge);
+  const row=matches[0],proof=row.exactNativeOriginal3DSourceCoverage;
+  if(row.engineeringLineStyle!=='undetermined'||row.signedV5!==false||
+     row.realNativeOriginal3DSourceParameterCovered!==false||
+     proof?.sourceEdgeId!==sourceEdgeId||proof.view!==view||
+     !same(proof.originalSourceParameterRange,[0,1])||
+     proof.entireOriginalParameterIntervalCovered!==false||
+     proof.status!=='exact-original-3d-native-source-positive-gap'||
+     proof.engineeringLineStyle!=='undetermined'||
+     proof.signedV5Action!==false||
+     !Array.isArray(proof.positiveLengthUncoveredIntervals)||
+     proof.positiveLengthUncoveredIntervals.length!==1||
+     !same(proof.positiveLengthUncoveredIntervals[0],[0,end]))
+   throw new RangeError('M5 native source gap differs from reviewed positive interval: '+view+' '+edge);
+  uncoveredByViewAndSource[view+'::'+sourceEdgeId]=
+   proof.positiveLengthUncoveredIntervals.map(range=>[...range]);
+ }
+ const batch=auditC1ThreeNativeGapBatchFromCad({
+  geometry,cad,uncoveredByViewAndSource
+ });
+ return freeze({...batch,
+  schema:'draftai-c1-three-native-gap-m5-bound-cad-batch/1',
+  revision:m5Ledger.revision,
+  canonicalM5GapLedgerBound:true,
+  originalTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  signedV5ActionCount:0});
+}
 module.exports={auditC1JointNativeGapEvidence,auditC1JointNativeGapFromRealHLR,
- auditC1ThreeNativeGapBatch,auditC1JointNativeGapFromCad};
+ auditC1ThreeNativeGapBatch,auditC1JointNativeGapFromCad,
+ auditC1ThreeNativeGapBatchFromCad,
+ auditC1ThreeNativeGapBatchFromM5Ledger};
