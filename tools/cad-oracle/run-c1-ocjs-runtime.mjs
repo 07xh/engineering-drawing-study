@@ -232,6 +232,11 @@ for(const [index,geometry] of general.entries()){
   // original-curve parameter intervals. A complete scoped 3D union is
   // stronger than a paper alias, but is NOT generated 2D IsSame history,
   // whole-scene visibility or formal V5 permission.
+  const combined3D=scoped.rows.map(row=>row.combinedNative3DSourceParameterPartition);
+  assert.equal(combined3D.length,geometry.data.edges.length);
+  assert.ok(combined3D.every(x=>x?.schema===
+   'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1'&&
+   x.signedV5Action===false));
   const native3D=scoped.rows.flatMap(row=>[row.visible3D,row.hidden3D]);
   assert.equal(native3D.length,2*geometry.data.edges.length);
   assert.ok(native3D.every(x=>
@@ -257,7 +262,13 @@ for(const [index,geometry] of general.entries()){
     native3DPositiveOverlapIntervals:native3D.reduce((n,x)=>n+
      x.exactNative3DSourceParameterCoverage.
       positiveLengthOverlappingNativeParameterIntervals.length,0),
-    sourceFiltered2DOutputs:scoped.nativeSourceScopedOutputEdgeCount
+    sourceFiltered2DOutputs:scoped.nativeSourceScopedOutputEdgeCount,
+    combined3DSourceFullPartition:combined3D.filter(x=>
+     x.sourceScopedNative3DParameterInventoryCompleteExactlyOnce).length,
+    combined3DSourcePositiveGapIntervals:combined3D.reduce((n,x)=>n+
+     x.positiveLengthUncoveredNativeParameterIntervals.length,0),
+    combined3DSourcePositiveOverlapIntervals:combined3D.reduce((n,x)=>n+
+     x.positiveLengthOverlappingNativeParameterIntervals.length,0)
    }));
   const nativeClaims=scoped.nativeSourceIdentityConflicts;
   assert.equal(nativeClaims.schema,
