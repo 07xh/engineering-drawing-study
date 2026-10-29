@@ -210,6 +210,11 @@ test('omitted original M0 convex front source crosschecks real native HLR classe
   x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
  assert.equal(row.original3DRayStatus,'exact-original-closed-ray-clear');
  assert.equal(row.expectedHLRClassFromIndependentOriginalRay,'visible-sharp');
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,true);
+ assert.deepEqual(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals,[['0','1']]);
+ assert.equal(row.paperClassConflictCannotCertifyGlobal3DDepthOrVisibility,true);
  assert.deepEqual(row.nativeHLRCandidateExactBinary64AndRayDiagnostics.map(x=>
   [x.hlrClass,x.exactBinary64PaperAffineAligned,
    x.exactBinary64PaperWithinOriginalParameterDomain,
@@ -303,5 +308,24 @@ test('one subnormal ULP gap in omitted source exact paper union cannot be rounde
  assert.equal(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][0],'0');
  assert.notEqual(coverage.exactBinary64PaperPositiveLengthUncoveredIntervals[0][1],'0');
  assert.equal(row.missingM5SourceViewRemainsUncovered,true);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('visible/hidden candidate paper classes touching only at endpoint do not overlap positively',()=>{
+ const g=box(),input=fixture(g,[]),edge=['V000','V001'],sourceEdgeId=id(g,edge);
+ const [from,to]=edge.map(vertex=>project(g.data.points[vertex]).V);
+ const middle={u:(from.u+to.u)/2,v:(from.v+to.v)/2};
+ input.cad.views.V.push({from,to:middle,sourceCandidate3DLifts:[{sourceEdgeId}]});
+ input.cad.hiddenSharpViews.V.push({from:middle,to,
+  sourceCandidate3DLifts:[{sourceEdgeId}]});
+ const out=audit(input);
+ const row=out.missingOriginalM0SourceViewRows.find(x=>
+  x.view==='V'&&x.sourceEdgeId===sourceEdgeId);
+ assert.equal(row.allPaperAliasCandidateExactBinary64Coverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  hasExactPositiveLengthVisibleHiddenPaperClassConflict,false);
+ assert.deepEqual(row.exactBinary64PaperVisibleHiddenCandidateConflict.
+  exactBinary64PaperPositiveLengthVisibleHiddenConflictIntervals,[]);
  assert.equal(out.officialV5Authorized,false);
 });
