@@ -260,6 +260,17 @@ for(const [index,geometry] of general.entries()){
    assert.equal(witness.native3DSourceParameterPartitionCompleteExactlyOnce,
     source.combinedNative3DSourceParameterPartition.
      sourceScopedNative3DParameterInventoryCompleteExactlyOnce);
+   assert.deepEqual(witness.native3DOriginalParameterPositiveGaps,
+    source.combinedNative3DSourceParameterPartition.
+     positiveLengthUncoveredNativeParameterIntervals);
+   assert.deepEqual(witness.native3DOriginalParameterPositiveOverlaps,
+    source.combinedNative3DSourceParameterPartition.
+     positiveLengthOverlappingNativeParameterIntervals);
+   // M4 must never certify a rounded fraction union that conceals a
+   // positive native gap or overlap; this is not formal HLR ownership.
+   assert.equal(witness.M4OriginalUnitIntervalCandidateCoverageComplete,
+    witness.native3DSourceParameterPartitionCompleteExactlyOnce&&
+    witness.M4OriginalUnitIntervalCandidatePositiveGaps.length===0);
    assert.equal(witness.officialV5Authorized,false);
    assert.ok(witness.segments.every(s=>
     s.generated2DHLREdgeTopologyProven===false&&
