@@ -224,6 +224,19 @@ function createUnifiedProjectSession(){
     const selectedRays=joint.selectedBooleanRayEvidence;
     const rayConcordance=joint.booleanRayConcordance;
     const wCriticalPointRays=joint.selectedBooleanWCriticalPointEvidence;
+    const wMirrorDepthEvidence=joint.wExactMirrorDepthEvidence;
+    if(!wMirrorDepthEvidence||
+       wMirrorDepthEvidence.revision!==latest.revision||
+       wMirrorDepthEvidence.solidOperation!==(solidOperation||'unselected')||
+       wMirrorDepthEvidence.officialV5Authorized!==false||
+       wMirrorDepthEvidence.standardEngineeringLineStylesVerified!==false||
+       wMirrorDepthEvidence.otherProjectedFeatureDepthResolved!==false||
+       wMirrorDepthEvidence.closedCenterAndCurveEndpointVisibilityProven!==false||
+       (wMirrorDepthEvidence.sameSignedLateralSourceWDepthOrderProven===true&&
+        (wMirrorDepthEvidence.status!=='scoped-exact-signed-W-lateral-mirror-depth'||
+         wMirrorDepthEvidence.verifiedMirroredOpenDepthCellCount!==
+          wMirrorDepthEvidence.mirroredOpenDepthCells.length)))
+     throw new Error('C3 W 解析镜像前后深度与当前原始三维来源不一致');
     if(!wCriticalPointRays||
        wCriticalPointRays.revision!==latest.revision||
        wCriticalPointRays.solidOperation!==(solidOperation||'unselected')||
@@ -304,7 +317,7 @@ function createUnifiedProjectSession(){
     current=Object.freeze({...resultBase(latest),
      kind:'c3-reviewed-preview',verified:false,status:'geometry-only',
      evidence:compiled,sourceAcceptance,joint,selectedRays,rayConcordance,
-     wCriticalPointRays,
+     wCriticalPointRays,wMirrorDepthEvidence,
      analyticRayPaperReview,
      solidOperation,
      wRay,vhDedup,
