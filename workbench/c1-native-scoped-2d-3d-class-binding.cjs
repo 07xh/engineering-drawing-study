@@ -27,7 +27,11 @@ const rat=(n,d)=>{
  const e=Math.min(n.e,d.e);
  let x=n.n<<BigInt(n.e-e),y=d.n<<BigInt(d.e-e);
  if(y<0n){x=-x;y=-y;}
- return {n:x,d:y};
+ // Canonical rational strings are used in evidence and exact test
+ // fixtures: 1/2 must not depend on the 53-bit dyadic mantissa size.
+ let m=x<0n?-x:x,k=y;
+ while(k!==0n){const r=m%k;m=k;k=r;}
+ return {n:x/m,d:y/m};
 };
 const compare=(a,b)=>a.n*b.d<b.n*a.d?-1:a.n*b.d>b.n*a.d?1:0;
 const low=(a,b)=>compare(a,b)<=0?a:b;
