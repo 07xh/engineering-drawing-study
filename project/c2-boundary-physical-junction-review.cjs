@@ -19,6 +19,7 @@ function reviewC2BoundaryPhysicalJunctions({
     !Array.isArray(sourceBoundaries)||!Array.isArray(boundaryRayEvidence)||
     sourceBoundaries.length!==boundaryRayEvidence.length||
     !Array.isArray(paperLines)||
+    !Array.isArray(physicalJunctionEvidence?.nodes)||
     physicalJunctionEvidence?.revision!==revision||
     physicalJunctionEvidence.status!==
      'source-recomputed-physical-3d-feature-incidence'||
@@ -34,9 +35,17 @@ function reviewC2BoundaryPhysicalJunctions({
   byPaper.set(l.paperGroupId,l);
  }
  const same2=(a,b)=>a&&b&&a.u===b.u&&a.v===b.v;
- const same3=(a,b)=>a&&b&&['x','y','z'].every(k=>
-  Number.isFinite(a[k])&&a[k]===b[k]);
+ const finite3=p=>p&&['x','y','z'].every(k=>
+  typeof p[k]==='number'&&Number.isFinite(p[k]));
  const key3=p=>[p.x,p.y,p.z].join('|');
+ // Even when V=(x,z) looks valid, unprojected depth y must be finite.
+ // The 3D ledger is the ONLY authority for a real multi-source junction.
+ if(physicalJunctionEvidence.nodes.some(n=>
+   !finite3(n?.point3D)||!Number.isSafeInteger(n.incidentSegmentCount)||
+   n.incidentSegmentCount<1||
+   typeof n.original3DPhysicalCoincidenceVerified!=='boolean'||
+   typeof n.localMultiSourcePhysicalJunctionCandidate!=='boolean'))
+  throw new TypeError('C2 native physical source junction ledger is incomplete');
  const actualNodes=new Map(physicalJunctionEvidence.nodes.map(n=>
   [key3(n.point3D),n]));
  if(actualNodes.size!==physicalJunctionEvidence.nodes.length)
@@ -78,6 +87,8 @@ function reviewC2BoundaryPhysicalJunctions({
        line.projectedFromModelMm,line.projectedToModelMm].entries()){
       if(!same2(xy,paper))continue;
       const candidate=line.physical3DEndpointIncidence[index]?.physicalSource3DPoint;
+      if(candidate&&!finite3(candidate))
+       throw new TypeError('C2 M5 3D source endpoint has a nonfinite hidden axis');
       if(candidate&&!same2(project(candidate)[edge.view],paper))
        throw new Error('C2 M5 original 3D endpoint contradicts its first-angle paper point');
       if(candidate&&same2(project(candidate)[edge.view],paper))
@@ -114,7 +125,18 @@ function reviewC2BoundaryPhysicalJunctions({
    const samePhysical=allResolved&&points.size===1;
    const alias=points.size>=2;
    const point=samePhysical?resolved[0]:null;
-   const listed=!!point&&actualNodes.has(key3(point));
+   const physicalNode=point?actualNodes.get(key3(point)):null;
+   // Numerical co-location is not sufficient: one segment can end at a
+   // projected corner while the paper has two different boundary incidences.
+   // Demand the actual recomputed M5 ledger's MULTI-feature node verdict.
+   const positive=!!physicalNode&&
+    physicalNode.incidentSegmentCount>=2&&
+    physicalNode.original3DPhysicalCoincidenceVerified===true&&
+    physicalNode.localMultiSourcePhysicalJunctionCandidate===true;
+   const realJunction=samePhysical&&positive;
+   const allAliasEndpointsListed=points.size>=2&&
+    [...points.keys()].every(k=>actualNodes.has(k));
+   const certifiedPaperAlias=alias&&allAliasEndpointsListed;
    return Object.freeze({
     id:'C2PaperJunction'+index,view:n.view,revision,
     paperPoint:Object.freeze({...n.point}),
@@ -122,9 +144,10 @@ function reviewC2BoundaryPhysicalJunctions({
     incidences:Object.freeze(n.incidences),
     distinctReal3DEndpointCandidateCount:points.size,
     exactSame3DSourceEndpointCandidateAtAllIncidences:samePhysical,
-    realOriginalOrGenerated3DJunctionNodeListed:samePhysical&&listed,
-    paperOnlyDifferent3DDepthOrLocationAliasDetected:alias,
-    unresolvedReal3DJunctionIncidence:!samePhysical,
+    sourceLedgerMultiFeatureJunctionVerified:realJunction,
+    realOriginalOrGenerated3DJunctionNodeListed:realJunction,
+    paperOnlyDifferent3DDepthOrLocationAliasDetected:certifiedPaperAlias,
+    unresolvedReal3DJunctionIncidence:!realJunction,
     globalClosedEndpointAndStandardLineStylesProven:false,
     officialV5JunctionAuthorized:false
    });
