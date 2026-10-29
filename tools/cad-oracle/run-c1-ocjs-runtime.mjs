@@ -395,6 +395,17 @@ for(const [index,geometry] of general.entries()){
  assert.equal(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D,
   scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+
   scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld);
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld,
+  scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded+
+  scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass);
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,7);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,0);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass,11);
+ }else if(geometry.id==='C1rotated'){
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,0);
+  assert.equal(scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,0);
+ }
  assert.ok(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D>0);
  let checked2DClassBindings=0,checked2DClassEdges=0;
  for(const view of ['V','H','W']){
@@ -436,6 +447,10 @@ for(const [index,geometry] of general.entries()){
      })),
      heldNative3DSourceRanges:
       m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation,
+     oneULPFullSourceRoundingCompatible:row.
+      generated2DRepresentationWithinOneULPOfFullOriginalM0Source,
+     roundedOutputOnlyNotExactSourceParameterCoverage:row.
+      roundedPaperEnvelopeCannotReplaceExactM0SourceParameterCoverage,
      actualSourceM0ProjectedEndpoints:(()=>{
       const edge=geometry.data.edges.find(e=>geometry.id+'::'+
        [...e].sort().join('|')===binding.sourceEdgeId);
@@ -459,6 +474,10 @@ for(const [index,geometry] of general.entries()){
     scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass,
    classPaperOrBinary64Held:
     scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld,
+   preciselyHeldButNativeSourceOneULPCompatible:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesPreciselyHeldButULPBounded,
+   beyondOneULPOrWithoutFullNativeSourceClass:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass,
    oppositeNative3DClassPositiveOverlap:
     scopedConsumer.counts.nativeSourceScoped2DEdgesWithOpposite3DClassOverlap,
    officialV5:scopedConsumer.signedV5ActionCount
