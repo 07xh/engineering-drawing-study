@@ -73,6 +73,8 @@ function auditC3WCenterClosedFoldVisibility({
   throw new RangeError('first-angle W observer or paper projection changed');
  const expected=m3.branches.filter(branch=>
   branch.xRange[0]<c&&c<branch.xRange[1]);
+ if(expected.length===0)
+  return blocked('all real internal center source points were clipped by finite caps');
  const points=criticalPointEvidence.pointRays;
  const solid=globalSourceCurveDepth.provedWSourceCurveOpenCells;
  if(!Array.isArray(points)||points.length>512||
