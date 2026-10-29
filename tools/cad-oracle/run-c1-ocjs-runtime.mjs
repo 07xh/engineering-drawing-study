@@ -925,6 +925,8 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.counts.positiveNativeGapIntervals,
   allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.counts.nativeGeneratedHistoryGapsClosed,0);
+ assert.equal(positiveOriginalGapRays.counts.independentOriginalOCCTCurvePositiveGapIntervals,
+  allOriginalSourceNativeGapLedger.totals.individualPositiveNativeGaps);
  assert.equal(positiveOriginalGapRays.officialV5Authorized,false);
  assert.ok(positiveOriginalGapRays.rows.every(row=>
   row.originalSourceParameterGap[0]<row.originalSourceParameterGap[1]&&
@@ -962,6 +964,41 @@ for(const [index,geometry] of general.entries()){
   x.continuousOcclusionCertified===false&&
   x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
   x.nativeHLRPaperCandidateCount===x.nativeHLRPaperCandidates.length));
+ // The REAL pinned OCCT WASM result must now join every absent M0
+ // source/view to its independently recomputed exact original 3D ray.
+ // Candidate paper aliases are diagnostic only, even when ray-clear.
+ const missingOriginalRays=positiveOriginalGapRays.missingOriginalM0SourceViewRows;
+ const key=x=>x.view+'|'+x.sourceEdgeId;
+ assert.deepEqual(missingOriginalRays.map(key).sort(),absentM0.map(key).sort());
+ assert.equal(positiveOriginalGapRays.counts.unrepresentedOriginalM0SourceViews,
+  absentM0.length);
+ assert.equal(positiveOriginalGapRays.counts.noncollapsedOriginalM0SourceViews,
+  positiveOriginalGapRays.counts.representedOriginalM0SourceViewsInM5+
+  absentM0.length);
+ const missingRayByKey=new Map(missingOriginalRays.map(x=>[key(x),x]));
+ for(const candidate of missingM5HLRCandidates){
+  const ray=missingRayByKey.get(key(candidate));
+  assert.ok(ray);
+  assert.equal(ray.nativeHLRPaperCandidateCount,
+   candidate.nativeHLRPaperCandidateCount);
+  assert.deepEqual(ray.nativeHLRPaperCandidates,
+   candidate.nativeHLRPaperCandidates.map(x=>({
+    hlrClass:x.hlrClass,ordinal:x.ordinal
+   })));
+  assert.equal(ray.missingM5SourceViewRemainsUncovered,true);
+  assert.equal(ray.generatedTopoDSToOriginalSourceHistoryCertified,false);
+  assert.equal(ray.globalCoProjectedFrontmostSourceCertified,false);
+  assert.equal(ray.engineeringLineStyle,'undetermined');
+  assert.equal(ray.signedV5Action,false);
+ }
+ console.error('REAL C1 ALL M0 ORIGINAL RAYS ABSENT FROM M5 '+geometry.id+': '+
+  JSON.stringify({counts:positiveOriginalGapRays.counts,
+   missing:missingOriginalRays.map(x=>({
+    view:x.view,source:x.sourceEdgeId,
+    originalRay:x.original3DRayStatus,
+    candidateCount:x.nativeHLRPaperCandidateCount,
+    nativeHistoryCertified:false
+   }))}));
  console.error('REAL C1 M0->NATIVE HLR PAPER CANDIDATES ABSENT FROM M5 '+geometry.id+': '+
   JSON.stringify(missingM5HLRCandidates.map(x=>({
    view:x.view,source:x.sourceEdgeId,
