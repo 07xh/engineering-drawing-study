@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {auditC1NativeGapOriginalExactRays:audit}=
+const {auditC1NativeGapOriginalExactRays:audit,
+ exactOriginal3DVertexOnSourceSegment:on3DSource}=
  require('../../workbench/c1-native-gap-original-exact-rays.cjs');
 const {prismMesh}=require('../../project/unified-workbench-session.cjs');
 const {project}=require('../../core/projection/conventions.js');
@@ -402,4 +403,16 @@ test('forged native IsSame original vertex paper mismatch and unbound identity f
    }]});
   assert.throws(()=>audit(input),/native|Top[oD]DS|vertex|identity/);
  }
+});
+
+test('exact 3D source incidence preserves one-subnormal-ULP transverse offset',()=>{
+ const a=P(0,0,0),b=P(1,0,0);
+ assert.equal(on3DSource(a,b,P(0.5,0,0)),true);
+ assert.equal(on3DSource(a,b,P(0.5,Number.MIN_VALUE,0)),false);
+ assert.equal(on3DSource(a,b,P(0.5,0,Number.MIN_VALUE)),false);
+ assert.equal(on3DSource(a,b,P(1+Number.EPSILON,0,0)),false);
+ assert.equal(on3DSource(b,a,P(0.5,0,0)),true);
+ assert.equal(on3DSource(b,a,P(1+Number.EPSILON,0,0)),false);
+ assert.throws(()=>on3DSource(a,a,P(0,0,0)),/collapsed/);
+ assert.throws(()=>on3DSource(a,b,P(Infinity,0,0)),/finite/);
 });
