@@ -24,6 +24,9 @@ function fixture(depthAlias=false){
  }));
  const lines=[[a,b],[q,r]].map((endpoints,i)=>({
   paperGroupId:'Group'+(i+1),revision,view:'V',
+  selectedOriginalPhysicalSourceFeatureId:'Edge'+(i+1),
+  selectedOriginalPhysicalSourceFeatureKind:'original-physical-crease',
+  selectedOriginalPhysicalSourceGeometryIds:[sourceGeometryIds[i]],
   projectedFromModelMm:V(endpoints[0]),
   projectedToModelMm:V(endpoints[1]),
   selectedWholeSource3DBooleanExteriorOpenFeatureVerified:true,
@@ -33,7 +36,10 @@ function fixture(depthAlias=false){
   }))
  }));
  const segments=[[a,b],[q,r]].map(([source3DFrom,source3DTo],i)=>({
-  id:'RealPhysical'+(i+1),source3DFrom,source3DTo,
+  id:'RealPhysical'+(i+1),kind:'original-source-crease',
+  sourceGeometryIds:[sourceGeometryIds[i]],
+  sourceEdgeId:'Edge'+(i+1),sourceGeneratedFeatureId:null,
+  source3DFrom,source3DTo,
   sourcePhysicalFeatureOpenIntervalVerified:true
  }));
  const nodes=[a,b,q,r].filter((n,i,all)=>all.findIndex(k=>
@@ -64,6 +70,7 @@ test('same paper endpoint with exact same verified real 3D source is not merely 
  assert.equal(joint.incidentBoundaryCount,2);
  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,true);
  assert.equal(joint.independentPhysical3DIncidentSegmentsVerified,true);
+ assert.equal(joint.exactOriginalOrGeneratedSourceFeatureLineageVerified,true);
  assert.equal(joint.distinctCanonicalPaperSourceGroupsVerified,true);
  assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
  assert.equal(joint.officialV5JunctionAuthorized,false);
@@ -234,4 +241,46 @@ test('stale revision and incorrect projection of alleged real M5 endpoint fail c
  const y=fixture();
  y.paperLines[0].physical3DEndpointIncidence[1].physicalSource3DPoint=p(9,0,0);
  assert.throws(()=>review(y),/contradicts/);
+});
+
+test('C2 co-located real 3D physical edges with WRONG named M5 sources cannot forge a positive joined paper vertex',()=>{
+ for(const mutate of [
+  x=>{x.physicalJunctionEvidence.segments[0].sourceEdgeId='UnrelatedEdge';},
+  x=>{x.physicalJunctionEvidence.segments[0].sourceGeometryIds=['BoxB'];},
+  x=>{x.paperLines[0].selectedOriginalPhysicalSourceFeatureId='UnrelatedEdge';},
+  x=>{x.paperLines[0].selectedOriginalPhysicalSourceGeometryIds=['BoxB'];},
+  x=>{x.paperLines[0].selectedOriginalPhysicalSourceFeatureKind='generated-two-face-crease';},
+  x=>{delete x.paperLines[0].selectedOriginalPhysicalSourceFeatureId;}
+ ]){
+  const x=fixture();mutate(x);
+  const result=review(x),joint=result.nodes.find(n=>
+   n.paperPoint.u===10&&n.paperPoint.v===0);
+  assert.equal(joint.exactSame3DSourceEndpointCandidateAtAllIncidences,true);
+  assert.equal(joint.independentPhysical3DIncidentSegmentsVerified,false);
+  assert.equal(joint.exactOriginalOrGeneratedSourceFeatureLineageVerified,false);
+  assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,false);
+  assert.equal(result.officialV5Authorized,false);
+ }
+});
+test('C2 authentic generated face-intersection feature joins a real original mesh source only under its own named two-face provenance',()=>{
+ const x=fixture(),original='Edge1',generated='NewFacePair';
+ const g=x.paperLines[1],s=x.physicalJunctionEvidence.segments[1];
+ assert.equal(x.paperLines[0].selectedOriginalPhysicalSourceFeatureId,original);
+ g.selectedOriginalPhysicalSourceFeatureId=generated;
+ g.selectedOriginalPhysicalSourceFeatureKind='generated-two-face-crease';
+ g.selectedOriginalPhysicalSourceGeometryIds=['BoxA','BoxB'];
+ s.kind='generated-source-face-crease';
+ s.sourceGeneratedFeatureId=generated;
+ s.sourceEdgeId=null;
+ s.sourceGeometryIds=['BoxB','BoxA'];
+ const result=review(x),joint=result.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(joint.realOriginalOrGenerated3DJunctionNodeListed,true);
+ assert.equal(joint.exactOriginalOrGeneratedSourceFeatureLineageVerified,true);
+ assert.equal(result.officialV5Authorized,false);
+ s.sourceGeneratedFeatureId='AnotherFacePair';
+ const rejected=review(x),held=rejected.nodes.find(n=>
+  n.paperPoint.u===10&&n.paperPoint.v===0);
+ assert.equal(held.exactOriginalOrGeneratedSourceFeatureLineageVerified,false);
+ assert.equal(held.realOriginalOrGenerated3DJunctionNodeListed,false);
 });
