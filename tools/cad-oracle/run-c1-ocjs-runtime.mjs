@@ -388,6 +388,48 @@ for(const [index,geometry] of general.entries()){
     segment.engineeringLineStyle==='undetermined'&&
     segment.signedV5Action===false));
   }
+ // Each real source-scoped OCCT 2D generated edge now joins the
+ // independent ORIGINAL 3D native curve parameter/visibility class by
+ // exact rational original M0 source parameter. This does NOT prove the
+ // generated whole-solid 2D TopoDS IsSame or continuous opaque-scene rays.
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D,
+  scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+
+  scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld);
+ assert.ok(scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D>0);
+ let checked2DClassBindings=0,checked2DClassEdges=0;
+ for(const view of ['V','H','W']){
+  const records=scopedConsumer.views[view].nativeScoped2D3DClassBindings;
+  assert.equal(records.length,scopedConsumer.views[view].nativeOriginal3DM4Candidates.length);
+  for(const binding of records){
+   assert.equal(binding.schema,
+    'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1');
+   assert.equal(binding.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified,false);
+   assert.equal(binding.wholeSceneM5Certified,false);
+   assert.equal(binding.officialV5Authorized,false);
+   checked2DClassBindings++;
+   checked2DClassEdges+=binding.counts.scoped2DGeneratedEdgesChecked;
+   assert.ok(binding.rows.every(row=>
+    row.actualGlobalHLRGenerated2DTopoDSHistoryCertified===false&&
+    row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+  }
+ }
+ assert.equal(checked2DClassBindings,
+  scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates);
+ assert.equal(checked2DClassEdges,
+  scopedConsumer.counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D);
+ console.error('REAL C1 SOURCE-FILTERED GENERATED 2D VS ORIGINAL 3D CLASS '+
+  geometry.id+': '+JSON.stringify({
+   sourceViews:checked2DClassBindings,
+   generated2DEdges:checked2DClassEdges,
+   exactlyBackedBySameNative3DClass:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass,
+   classPaperOrBinary64Held:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesClassOrRoundingHeld,
+   oppositeNative3DClassPositiveOverlap:
+    scopedConsumer.counts.nativeSourceScoped2DEdgesWithOpposite3DClassOverlap,
+   officialV5:scopedConsumer.signedV5ActionCount
+  }));
+
  console.error('REAL C1 M4 CONSUMER NATIVE 3D SOURCE PROJECTED '+geometry.id+': '+
   JSON.stringify({
    sourceViews:scopedConsumer.counts.nativeOriginal3DM4SourceViewCandidates,
