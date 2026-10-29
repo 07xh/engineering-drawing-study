@@ -971,6 +971,19 @@ for(const [index,geometry] of general.entries()){
  const allOriginalSourceNativeGapLedger=auditC1AllOriginalSourceNativeGaps({
   geometry,cad,m5Ledger:audited
  });
+ const native3DM5=allOriginalSourceNativeGapLedger.native3DSourceViewLedger;
+ assert.equal(native3DM5.availableFromActualPinnedOCJS,true);
+ assert.equal(native3DM5.rows.length,3*geometry.data.edges.length);
+ assert.equal(native3DM5.counts.projectedOriginalSourceViews,
+  allOriginalSourceNativeGapLedger.originalM0CanonicalSourceInventory.
+   counts.originalProjectedSourceViews);
+ assert.equal(native3DM5.allNoncollapsedOriginalM0SourceViewsHaveCompleteNative3DPartition,true);
+ assert.equal(native3DM5.counts.native3DProjectedSourceViewsWithPositiveGaps,0);
+ assert.equal(native3DM5.counts.native3DProjectedSourceViewsWithPositiveOverlaps,0);
+ assert.equal(native3DM5.generated2DTopoDSHistoryCertified,false);
+ assert.equal(native3DM5.officialV5Authorized,false);
+ console.error('REAL C1 M5 ORIGINAL NATIVE 3D VHW PARTITION '+geometry.id+': '+
+  JSON.stringify(native3DM5.counts));
  // Genuine pinned WASM CAD and the SAME M5 source gap ledger now feed an
  // independently recomputed, positive M0 exact convex observer-ray theorem.
  // This does not fill the missing native HLR generated TopoDS edges.
