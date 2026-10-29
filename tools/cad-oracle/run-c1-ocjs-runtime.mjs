@@ -1255,6 +1255,10 @@ for(const [index,geometry] of general.entries()){
   positiveOriginalGapRays.nativeGenerated2DToOriginal3DHLRSourceClassEvidenceConsumed,
   true);
  assert.equal(positiveOriginalGapRays.actualWholeSolidGeneratedHLRSourceOrdinalCrosswalkConsumed,true);
+ assert.equal(
+  positiveOriginalGapRays.actualOriginal3DPhysicalEndpointGlobalHLRJunctionEvidenceConsumed,true);
+ assert.equal(positiveOriginalGapRays.wholeSolidOriginal3DEndpointSourceViewMatches,
+  positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches);
  assert.equal(positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches,
   globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking+
   globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding);
@@ -1264,6 +1268,18 @@ for(const [index,geometry] of general.entries()){
  ];
  for(const row of heldM5){
   assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
+  assert.equal(row.originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity,true);
+  assert.equal(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length,
+   row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length);
+  assert.ok(row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0);
+  for(const witness of row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses){
+   assert.equal(witness.sourceEdgeId,row.sourceEdgeId);
+   assert.equal(witness.view,row.view);
+   assert.equal(witness.nativeGenerated3DJunctionIdentityCertified,false);
+   assert.equal(witness.globalOpaqueFaceOcclusionCertified,false);
+   assert.equal(witness.signedV5Action,false);
+   assert.equal(witness.generated2DEndpointOriginal3DVertexWitnesses.length,2);
+  }
   assert.ok(row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0);
   for(const claim of row.wholeSolidGeneratedHLROriginalSourceFilterMatches){
    assert.equal(claim.sourceEdgeId,row.sourceEdgeId);
@@ -1281,6 +1297,8 @@ for(const [index,geometry] of general.entries()){
    missingOrGapRowsWithExactGlobalHLRFilteredSourceAndNative3DClass:
     heldM5.filter(row=>
      row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0).length,
+   original3DBRepEndpointMappedM5Rows:heldM5.filter(row=>
+    row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses.length>0).length,
    stillOfficialV5:positiveOriginalGapRays.signedV5ActionCount
   }));
  assert.equal(
