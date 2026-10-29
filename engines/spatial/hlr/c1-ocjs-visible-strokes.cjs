@@ -1014,7 +1014,9 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const nativeSourceIdentityConflicts=auditC1ScopedHLRSourceIdentityConflicts({
     matches:scopedRows.flatMap(source=>[
      ...source.visible,...source.hidden
-    ])
+    ]),
+    wholeSolidCounts:{'visible-sharp':visibleNative.segments.length,
+     'hidden-sharp':hiddenNative.segments.length}
    });
    nativeSourceScopedSharpOutputByView[view]={
     nativeSourceIdentityConflicts,
