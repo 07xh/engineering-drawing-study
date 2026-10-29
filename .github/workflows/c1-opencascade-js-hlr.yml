@@ -16,6 +16,7 @@ on:
       - 'workbench/c1-exact-binary64-paper-affine.cjs'
       - 'workbench/c1-native-gap-original-exact-rays.cjs'
       - 'tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs'
+      - 'tests/workbench/c1-native-gap-original-exact-rays.test.cjs'
       - 'workbench/c1-original-m0-inventory-coverage.cjs'
       - 'workbench/c1-all-native-source-gap-ledger.cjs'
       - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
@@ -112,6 +113,7 @@ on:
       - 'workbench/c1-exact-binary64-paper-affine.cjs'
       - 'workbench/c1-native-gap-original-exact-rays.cjs'
       - 'tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs'
+      - 'tests/workbench/c1-native-gap-original-exact-rays.test.cjs'
       - 'workbench/c1-original-m0-inventory-coverage.cjs'
       - 'workbench/c1-all-native-source-gap-ledger.cjs'
       - 'tests/workbench/c1-original-m0-inventory-coverage.test.cjs'
@@ -224,6 +226,7 @@ jobs:
           node --test tests/workbench/c1-ocjs-m5-source-coverage.test.cjs
           node --test tests/workbench/c1-original-m0-inventory-coverage.test.cjs
           node --test tests/workbench/c1-exact-affine-dyadic-magnitude.test.cjs
+          node --test tests/workbench/c1-native-gap-original-exact-rays.test.cjs
           node --test tests/workbench/c1-all-native-source-gap-ledger.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
