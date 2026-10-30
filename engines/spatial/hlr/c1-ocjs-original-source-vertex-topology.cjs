@@ -16,12 +16,14 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
     originalNativeVertexHandles.length<2||
     originalNativeVertexHandles.length>1024)
   throw new TypeError('current original BRep vertex occurrences and reviewed M0 edges required');
- const used=new Set();
+ const used=new Set(),expectedOccurrences=new Map();
  for(const edge of edges){
   if(!Array.isArray(edge)||edge.length!==2||edge[0]===edge[1]||
      edge.some(id=>typeof id!=='string'||!Object.hasOwn(points,id)))
    throw new RangeError('invalid reviewed physical source edge');
-  edge.forEach(id=>used.add(id));
+  edge.forEach(id=>{used.add(id);
+   expectedOccurrences.set(id,(expectedOccurrences.get(id)||0)+1);
+  });
  }
  const byId=new Map();
  for(const row of originalNativeVertexHandles){
@@ -34,8 +36,10 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
   if(!byId.has(id))byId.set(id,[]);
   byId.get(id).push(shape);
  }
- if(byId.size!==used.size)
-  throw new RangeError('missing original native 3D TopoDS source vertex');
+ if(byId.size!==used.size||
+    originalNativeVertexHandles.length!==2*edges.length||
+    [...expectedOccurrences].some(([id,count])=>byId.get(id)?.length!==count))
+  throw new RangeError('missing or duplicated original native 3D TopoDS source vertex occurrence');
  let same=0,different=0;
  const occurrences=originalNativeVertexHandles;
  for(let i=0;i<occurrences.length;i++)for(let j=i+1;j<occurrences.length;j++){
