@@ -29,6 +29,8 @@ function fixture(){
    view,sourceEdgeId:source,officialV5Authorized:false,
    globalGenerated2DEdgeToOriginalTopoDSIdentityCertified:false,
    rows:[{view,sourceEdgeId:source,hlrClass:'visible-sharp',
+    nativeScopedReceivedPaperFrom:{...w.from},
+    nativeScopedReceivedPaperTo:{...w.to},
     nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment:true,
     generated2DRepresentationWithinOneULPOfFullOriginalM0Source:false,
     actualGlobalHLRGenerated2DTopoDSHistoryCertified:false,
@@ -85,6 +87,8 @@ test('same source but duplicate filtered HLR claims cannot fake a unique origina
 test('exact paper identity is stronger than tolerant native candidate and neither yields TopoDS history',()=>{
  const x=fixture(),v='V',w=x.cad.nativeSourceScopedSharpOutputByView[v].rows[0].visible[0];
  w.to={u:12-1e-7,v:0};
+ x.views[v].nativeScoped2D3DClassBindings[0].rows[0].
+  nativeScopedReceivedPaperTo={...w.to};
  const r=audit(x);
  assert.equal(r.counts.wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding,1);
  assert.equal(r.views.V[0].uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree,false);
@@ -331,7 +335,9 @@ function withSecondDistinctIndexedOriginalSource(x){
  const originalBinding=x.views[view].nativeScoped2D3DClassBindings[0];
  x.views[view].nativeScoped2D3DClassBindings.push({
   ...originalBinding,sourceEdgeId:other,
-  rows:originalBinding.rows.map(row=>({...row,sourceEdgeId:other}))
+  rows:originalBinding.rows.map(row=>({...row,sourceEdgeId:other,
+   nativeScopedReceivedPaperFrom:{...newSegment.from},
+   nativeScopedReceivedPaperTo:{...newSegment.to}}))
  });
  const ledger=x.cad.nativeHLRSourceHistoryAPISurfaceByView[view];
  ledger.originalDataStructureIndex.indexedOriginalSources.push({
@@ -365,6 +371,22 @@ test('two real source filters require distinct positive integer native EdgeMap i
   originalDataStructureIndex.indexedOriginalSources[1].
   originalPhysicalSourceEdgeId=source;
  assert.throws(()=>audit(duplicateId),/non-bijective original HLR EdgeStatus source index/);
+});
+test('global ordinal cannot borrow same-class 3D evidence from a different scoped paper emission',()=>{
+ const x=withRealIndexedStatus(fixture());
+ const witness=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0];
+ // A forged generated segment still matches the whole-solid paper,
+ // but the independent native 2D/3D class proof belongs to another edge.
+ const binding=x.views.V.nativeScoped2D3DClassBindings[0].rows[0];
+ binding.nativeScopedReceivedPaperTo={u:11,v:0};
+ assert.throws(()=>audit(x),/forged original filtered 2D HLR or native 3D class witness/);
+ const moved=fixture();
+ moved.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].to={u:12-1e-7,v:0};
+ assert.throws(()=>audit(moved),/forged original filtered 2D HLR or native 3D class witness/);
+ const valid=fixture();
+ const r=audit(valid);
+ assert.equal(r.views.V[0].exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,true);
+ assert.equal(r.officialV5Authorized,false);
 });
 test('original native EdgeStatus must carry non-contradictory boolean visibility classes',()=>{
  const valid=withRealIndexedStatus(fixture());
