@@ -35,10 +35,11 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness:0,
   wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking:0,
+  wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding:0,
   wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding:0,
   wholeSolidEdgesHeldForAmbiguityOrMissing3DClass:0};
- const byView={};
+ const byView={},exactSourceFilterBijectionByView={};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    consumer=views[view];
@@ -162,6 +163,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
       throw new RangeError('actual native direct IsSame edge lacks bounded original 3D support');
      claims.get(klass+'|'+ordinal).push({
       sourceEdgeId,view,hlrClass:klass,ordinal,
+      originalSourceScopedEmissionIndex:i,
       actualNativeScopedToWholeSolidTopoDSIsSame:direct,
       globallyReceivedBinary64PaperExactlySameAsNativeScoped:
        samePaper(whole,witness),
@@ -205,8 +207,17 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      inputStatus.originalSourceClass==='all-hidden'&&klass==='hidden-sharp'),
     nativeCausal=unique&&paperExact&&exact3D&&
      candidate.actualNativeScopedToWholeSolidTopoDSIsSame===true&&
-     statusClassAgrees;
+     statusClassAgrees,
+    // Same-run actual original EdgeMap identity plus complete original
+    // native 3D class, unique source filter output and EXACT global paper.
+    // This is not direct generated IsSame, parameter history or scene M5.
+    exactIndexedSourceFilterAttribution=unique&&paperExact&&exact3D&&
+     statusClassAgrees&&
+     Number.isSafeInteger(inputStatus.nativeHLROriginalEdgeMapIndex)&&
+     inputStatus.nativeHLROriginalEdgeMapIndex>0;
    counts.wholeSolidNativeHLREdges++;
+   counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution+=
+    Number(exactIndexedSourceFilterAttribution);
    counts.wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness+=
     Number(nativeCausal);
    counts.wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch+=
@@ -248,12 +259,43 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     // not a full native original curve-parameter interval history.
     exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified:
      nativeCausal,
+    exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame:
+     exactIndexedSourceFilterAttribution,
+    exactIndexedSourceScopedEmissionIndex:
+     exactIndexedSourceFilterAttribution?
+      candidate.originalSourceScopedEmissionIndex:null,
     generatedOriginalTopoDSParameterHistoryStillNotCertified:true,
     wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified:false,
     globalSceneOpaqueFaceVisibilityCertified:false,
     true3DAllEndpointJunctionsCertified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false});
   }
+  // The complete global and source-scoped output multisets must be
+  // one-to-one, including original source + exact scoped emission number.
+  // Duplicate same-source emissions cannot masquerade as distinct edges.
+  const scopedEmissionCount=scoped.rows.reduce((sum,r)=>
+   sum+r.visible.length+r.hidden.length,0);
+  const attributed=rows.filter(r=>
+   r.exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame);
+  const scopedEmissionIds=new Set(attributed.map(r=>
+   r.uniqueOriginalSourceFilteredPaperCandidate+'|'+
+   r.exactIndexedSourceScopedEmissionIndex));
+  const exactExhaustive=sourceStatusById.size===scoped.rows.length&&
+   scopedEmissionCount===rows.length&&
+   attributed.length===rows.length&&
+   scopedEmissionIds.size===scopedEmissionCount;
+  exactSourceFilterBijectionByView[view]={
+   view,wholeSolidGeneratedEdgeCount:rows.length,
+   originalSourceFilteredGeneratedEdgeCount:scopedEmissionCount,
+   uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount:attributed.length,
+   uniqueScopedOutputEmissionCount:scopedEmissionIds.size,
+   completeExactSourceScopedToWholeSolidOutputBijectionProven:exactExhaustive,
+   originalIndexedTopoDSSourceAndNative3DClassRequired:true,
+   onlySourceFilterAttributionNoGeneratedTopoDSDirectIsSame:true,
+   original3DParameterHistoryOnGenerated2DNotCertified:true,
+   globalContinuousOcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5ActionCount:0
+  };
   byView[view]=rows;
  }
  if(counts.wholeSolidNativeHLREdges!==
@@ -264,7 +306,10 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
  return freeze({
   schema:'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1',
   sourceGeometryId:cad.sourceGeometryId,revision:cad.revision,
-  counts,views:byView,
+  counts,views:byView,exactSourceFilterBijectionByView,
+  allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection:
+   VIEWS.every(view=>exactSourceFilterBijectionByView[view]
+    .completeExactSourceScopedToWholeSolidOutputBijectionProven),
   nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted:true,
   paperUniqueSourceFilterDoesNotImplyOriginalTopoDSHistory:true,
   actualGlobalGeneratedEdgeToOriginalTopoDSHistoryCertified:false,
