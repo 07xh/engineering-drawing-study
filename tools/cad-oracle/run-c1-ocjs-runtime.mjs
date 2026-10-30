@@ -472,6 +472,24 @@ for(const [index,geometry] of general.entries()){
  assert.equal(nativePhysical3DEndpoints.signedV5ActionCount,0);
  assert.equal(nativePhysical3DEndpoints.counts.globalGeneratedHLREdgesChecked,
   globalScopedRebind.counts.wholeSolidNativeHLREdges);
+ // This checks genuine native 3D HLR source history against current M4
+ // source/class/parameter, NOT generated 2D TopoDS edge history.
+ assert.equal(
+  nativePhysical3DEndpoints.counts.
+   genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4+
+  nativePhysical3DEndpoints.counts.
+   genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4,
+  nativePhysical3DEndpoints.counts.globalGeneratedHLREdgesChecked);
+ assert.equal(
+  nativePhysical3DEndpoints.counts.
+   genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4,0,
+  'real whole-solid native 3D HLR/M4 source interval mismatch');
+ for(const view of ['V','H','W'])
+  for(const row of nativePhysical3DEndpoints.views[view].rows){
+   assert.equal(row.independentGlobal3DClassNativeParameterRangeMatchedCurrentM4,true);
+   assert.equal(row.independentGlobal3DClassNativeParameterRangeMatchIsNotHLRHistory,true);
+   assert.equal(row.signedV5Action,false);
+  }
  assert.equal(nativePhysical3DEndpoints.counts.uniqueOriginalSourceGlobalEdgesExamined,
   globalScopedRebind.counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim);
  assert.equal(nativePhysical3DEndpoints.originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced,true);
