@@ -11,7 +11,8 @@
  * Dependency inversion: the caller injects a pinned, independently initialized
  * OCJS instance, so no 50-MB WASM or node/fs import enters the normal bundle.
  */
-const {VIEWS,project}=require('../../../core/projection/conventions.js');
+const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
+ require('../../../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
 const {readRealOcjsSharpHLREdge}=
@@ -692,10 +693,11 @@ function extractRealOcjsOriginalSourceBRepEdges({
 // first-angle rays; the flattened HLR Y coordinate is now +paper V.
 // Reversing the normal to make paper V look correct silently reverses
 // visible/hidden OCCT classes even though the 2D lines still overlap.
+const ray=view=>['x','y','z'].map(k=>FIRST_ANGLE_OBSERVER_RAYS[view][k]);
 const FRAME=Object.freeze({
- V:{normal:[0,-1,0],xdir:[1,0,0]},
- H:{normal:[0,0,1],xdir:[1,0,0]},
- W:{normal:[1,0,0],xdir:[0,1,0]}
+ V:{normal:ray('V'),xdir:[1,0,0]},
+ H:{normal:ray('H'),xdir:[1,0,0]},
+ W:{normal:ray('W'),xdir:[0,1,0]}
 });
 /**
  * Every polygonal face is reconstructed from REVIEWED M0 mesh coordinates,
