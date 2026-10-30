@@ -27,9 +27,12 @@ function auditExistingM4OpenSourceDepth(row,kind){
  const gap=kind==='positive-original-m0-parameter-gap';
  if((gap?row.nativeOriginal3DM4GapSourceProjectionAvailable:
      row.nativeOriginal3DM4SourceProjectionPresent)!==true)return null;
- if(gap&&row.realNative3DM4OriginalParameterGapCoverage?.originalParameterRange&&
-    (row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[0]!==row.originalSourceParameterGap[0]||
-     row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[1]!==row.originalSourceParameterGap[1]))
+ // A positive M5 gap may have a full-source M4 partition, but it must
+ // ALSO carry a same-interval positive-gap witness. Missing is not proof.
+ if(gap&&(!Array.isArray(row.realNative3DM4OriginalParameterGapCoverage?.originalParameterRange)||
+    row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange.length!==2||
+    row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[0]!==row.originalSourceParameterGap[0]||
+    row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[1]!==row.originalSourceParameterGap[1]))
   throw new RangeError('original M4 depth does not belong to the positive M5 gap');
  if((gap?
       row.realNative3DM4OriginalParameterGapCoverage?.entireOriginalParameterIntervalCovered:
@@ -91,7 +94,13 @@ function auditExistingM4OpenSourceDepth(row,kind){
        cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly!==
         (d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)||
        cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly!==
-        (d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true))
+        (d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)||
+       // Do not let a tampered closed-interval convenience flag promote
+       // an unresolved exact open-source depth interval at M5.
+       (d.wholeIntervalFrontmostCertified===true&&
+        d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources!==true)||
+       (d.visibleSourceCoversEntireLine===true&&
+        d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource!==true))
      throw new RangeError('M4 open-depth class not backed by canonical exact source theorem');
     const f=cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly||
      d.wholeIntervalFrontmostCertified===true;
