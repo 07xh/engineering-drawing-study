@@ -53,7 +53,12 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   // identities separate, especially for co-projected M0 source edges.
   const indexedStatus=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view];
   const sourceStatusById=new Map();
-  if(indexedStatus!==undefined){
+  // Legacy isolated M4 fixtures may carry only an EdgeMap input
+  // ledger, without the NEW actual native EdgeStatus API. Such fixtures
+  // must receive NO causal certificate, but remain valid for earlier
+  // source-paper/3D regression checks. If a status API is supplied, its
+  // entire input source inventory MUST pass strict validation below.
+  if(indexedStatus?.originalEdgeStatusAPI!==undefined){
    const edgeMap=indexedStatus?.originalDataStructureIndex,
     status=indexedStatus?.originalEdgeStatusAPI,
     originalIndices=edgeMap?.indexedOriginalSources,
