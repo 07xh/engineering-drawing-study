@@ -1539,6 +1539,31 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
  assert.equal(unresolvedM5.records.length,heldM5.length);
+ // The existing exact convex supporting-halfspace theorem now also
+ // re-enters M5 as an ORIGINAL PHYSICAL closed-endpoint ray proof.
+ // It is checked against real same-run OCCT BRep source endpoints and
+ // global HLR paper witnesses, without claiming generated TShape lineage.
+ const closedOriginal=unresolvedM5.records.filter(row=>
+  row.originalPhysicalClosedEndpointRaysIndependentlyCertified===true);
+ const exactPaper=closedOriginal.filter(row=>
+  row.originalPhysicalClosedEndpointRaysWithExactGlobalHLRPaperEndpoints===true);
+ const roundedPaper=closedOriginal.filter(row=>
+  row.roundedOrUnresolvedGlobalHLREndpointPaperStillHeld===true);
+ assert.equal(unresolvedM5.counts.originalPhysicalClosedEndpointRayRowsIndependentlyCertified,
+  closedOriginal.length);
+ assert.equal(unresolvedM5.counts.originalPhysicalClosedEndpointRayRowsWithExactGlobalHLRPaperEndpoints,
+  exactPaper.length);
+ assert.equal(unresolvedM5.counts.originalPhysicalClosedEndpointRayRowsWithRoundedGlobalHLRPaperEndpointsHeld,
+  roundedPaper.length);
+ assert.equal(exactPaper.length+roundedPaper.length,closedOriginal.length);
+ assert.equal(unresolvedM5.counts.distinctOriginalPhysicalClosedEndpointRaySourceViews,
+  new Set(closedOriginal.map(row=>row.view+'|'+row.sourceEdgeId)).size);
+ assert.ok(closedOriginal.length>0,
+  'real native WASM must exercise independent original CLOSED endpoint rays on held M5 source rows');
+ assert.ok(unresolvedM5.records.every(row=>
+  row.originalClosedEndpointRayProofOnlyCoversOneReviewedConvexSolid===true&&
+  row.generatedHLRVertexTopoDSHistoryAndWholeSceneEndpointOcclusionStillUnproven===true&&
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&row.signedV5Action===false));
  const newlyOpen=unresolvedM5.records.filter(row=>
   row.exactConvexOriginalOpenRayNativeHLRClassCorroborated===true&&
   row.independentOriginal3DAllFaceRayClass===null);
