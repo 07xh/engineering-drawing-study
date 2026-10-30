@@ -363,15 +363,16 @@ def audit_original_hlr_source_status(case, view):
                 if any(i not in matching_paper for i in native):
                     reject("same generated TopoDS edge contradicts exact whole-solid paper")
                 for i in matching_paper:
-                    global_ordinal_claims.setdefault((style, i), set()).add(key)
+                    global_ordinal_claims.setdefault((style, i), []).append((key, local_ordinal))
                 generated_global_correspondence.append({
                     "hlrClass": style,
                     "sourceScopedOrdinal": local_ordinal,
                     "sameGlobalGeneratedTopoDSOrdinals": native,
                     "exactPaperGlobalGeneratedOrdinals": matching_paper,
-                    "causalGlobalGeneratedTopoDSIdentityCertified":
+                    "directGeneratedTopoDSShapeIsSameWholeSolid":
                         len(native) == 1 and len(matching_paper) == 1
                         and native == matching_paper,
+                    "causalGlobalGeneratedTopoDSIdentityCertified": False,
                     "paperOnlyCorrespondenceDoesNotProveNativeIdentity": True,
                 })
         # The original 3D edge has an exact M0 endpoint pair. The
@@ -431,11 +432,15 @@ def audit_original_hlr_source_status(case, view):
             native = match["sameGlobalGeneratedTopoDSOrdinals"]
             paper = match["exactPaperGlobalGeneratedOrdinals"]
             claim_unique = len(paper) == 1 and (
-                global_ordinal_claims.get((match["hlrClass"], paper[0])) == {source_key}
+                global_ordinal_claims.get((match["hlrClass"], paper[0])) ==
+                [(source_key, match["sourceScopedOrdinal"])]
             )
             match["globallyUniqueExactPaperSourceCandidate"] = claim_unique
-            match["uniqueRealNativeGlobalSourceLink"] = bool(
-                claim_unique and match["causalGlobalGeneratedTopoDSIdentityCertified"]
+            match["causalGlobalGeneratedTopoDSIdentityCertified"] = bool(
+                claim_unique and match["directGeneratedTopoDSShapeIsSameWholeSolid"]
+            )
+            match["uniqueRealNativeGlobalSourceLink"] = (
+                match["causalGlobalGeneratedTopoDSIdentityCertified"]
             )
             unique_native += int(match["uniqueRealNativeGlobalSourceLink"])
             ambiguous_paper += int(len(paper) != 1 or not claim_unique)
