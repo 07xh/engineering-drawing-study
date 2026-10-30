@@ -410,3 +410,60 @@ test('same-run original OCCT indexed EdgeStatus reaches unresolved M5 without be
   assert.throws(()=>audit(bad),/original indexed HLR EdgeStatus cannot replace M5 source history/);
  }
 });
+
+test('direct native source-filter causal 2D edges remain unsigned in both absent-source and positive-gap M5 obligations',()=>{
+ const x=fixture(),native={
+  view:'V',originalPhysicalSourceEdgeId:'g::A|B',
+  nativeHLROriginalEdgeMapIndex:1,originalSourceClass:'all-hidden',
+  nativeOriginalVisiblePartCount:0,originalEdgeStatusAllVisible:false,
+  originalEdgeStatusAllHidden:true,
+  generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+  globalContinuousM5OcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ };
+ x.cad.nativeHLRSourceHistoryAPISurfaceByView={V:{
+  originalDataStructureIndex:{edgeMapSourceBijectionVerified:true,
+   indexedOriginalSources:[{originalPhysicalSourceEdgeId:'g::A|B',
+    hlrDataStructureOneBasedEdgeIndex:1}]},
+  originalEdgeStatusAPI:{originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+   nativeOriginalSourceEdgeStatusRows:[native]}
+ }};
+ for(const held of [...x.positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+                   ...x.positiveOriginalGapRays.rows]){
+  held.independentOriginalNativeHLREdgeStatusSource={...native};
+  held.nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory=true;
+  Object.assign(held.wholeSolidGeneratedHLROriginalSourceFilterMatches[0],{
+   originalHLRSourceFilterToGenerated2DCausalNativeIsSameVerified:true,
+   originalHLRIndexedSourceStatusClass:'all-hidden',
+   originalHLRIndexedSourceStatusOneBasedIndex:1,
+   sourceFilterNativeGeneratedIdentityDoesNotCertifyOriginalParameterHistory:true
+  });
+ }
+ const r=audit(x);
+ assert.equal(r.counts.unresolvedM5Obligations,2);
+ assert.equal(r.counts.unresolvedObligationsWithDirectNativeSourceFilteredGeneratedCausalEdges,2);
+ assert.equal(r.counts.directNativeSourceFilteredGeneratedCausalEdgesStillMissingParameterHistory,2);
+ assert.ok(r.records.every(row=>
+  row.directNativeSourceFilteredToWholeSolidGeneratedEdgeCausalOrdinals.length===1&&
+  row.directCausalGeneratedEdgeCannotReplaceOriginalParameterHistory===true&&
+  row.sourceOriginalTopoDSGeneratedHistoryCertified===false));
+ assert.equal(r.officialV5Authorized,false);
+ assert.equal(r.signedV5ActionCount,0);
+ for(const corrupt of [
+  y=>{y.positiveOriginalGapRays.rows[0].
+   wholeSolidGeneratedHLROriginalSourceFilterMatches[0].
+   originalHLRIndexedSourceStatusOneBasedIndex=2;},
+  y=>{y.positiveOriginalGapRays.rows[0].
+   wholeSolidGeneratedHLROriginalSourceFilterMatches[0].
+   originalHLRIndexedSourceStatusClass='all-visible';},
+  y=>{y.positiveOriginalGapRays.rows[0].
+   wholeSolidGeneratedHLROriginalSourceFilterMatches[0].
+   originalNative3DClassExactlyBacksEntireGeneratedLine=false;},
+  y=>{y.positiveOriginalGapRays.rows[0].
+   wholeSolidGeneratedHLROriginalSourceFilterMatches[0].
+   sourceFilterNativeGeneratedIdentityDoesNotCertifyOriginalParameterHistory=false;}
+ ]){
+  const bad=structuredClone(x);corrupt(bad);
+  assert.throws(()=>audit(bad),/native source-filter causal edge cannot authorize original M5 history|one original native source class/);
+ }
+});
