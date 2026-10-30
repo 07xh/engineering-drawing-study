@@ -1158,6 +1158,27 @@ for(const [index,geometry] of general.entries()){
   exactGapRows.length);
  assert.equal(audited.counts.exactNative3DSourceParameterCovered+
   exactGapRows.length,audited.counts.m5AtomicIntervals);
+ // The native ORIGINAL 3D source-scoped HLR proof is independent of the
+ // received 2D generated HLR paper inverse. A genuine positive 2D inverse
+ // gap must remain held even when the original native 3D visible class
+ // covers the entire source. Never count that as generated history/V5.
+ const native3DWholeVisible=exactSourceRows.filter(x=>
+  x.independentSourceFilteredNative3DVisibleFullSourceProven===true);
+ const inverseOnlyHeld=exactGapRows.filter(x=>
+  x.paperInversePositiveGapDespiteCompleteNative3DVisibleSource===true);
+ assert.equal(audited.counts.sourceFilteredNative3DWholeVisibleSourceCertified,
+  native3DWholeVisible.length);
+ assert.equal(audited.counts.paperInverseGapDespiteCompleteNative3DVisibleSource,
+  inverseOnlyHeld.length);
+ assert.ok(inverseOnlyHeld.every(x=>
+  x.paperInverseGapRemainsUnclosedForGenerated2DAndM5===true&&
+  x.generated2DTopoDSHistoryCertifiedByNative3DPartition===false&&
+  x.exactNativeOriginal3DSourceCoverage.positiveLengthUncoveredIntervals.length>0&&
+  x.signedV5===false&&x.engineeringLineStyle==='undetermined'));
+ if(geometry.id==='C1SkewTetra')
+  assert.equal(inverseOnlyHeld.length,3,
+   'the three positive paper-inverse gaps must be independently cross-checked against full native 3D visible source, never snapped');
+
  // Genuine native source-filtered HLR paper coverage must be cross-checked
  // against independently lifted ORIGINAL 3D source intervals. A paper-only
  // full span can NEVER fill a positive native 3D gap or sign official V5.
