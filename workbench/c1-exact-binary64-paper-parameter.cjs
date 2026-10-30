@@ -12,6 +12,19 @@
  * parameters, continuous all-face occlusion, GB line style or V5 authority.
  */
 const {dyadic,difference,sign}=require('../core/numeric/binary64-dyadic.cjs');
+ // Select the paper axis using EXACT received-binary64 source spans.
+ // Subtracting near +/-Number.MAX_VALUE in Number overflows to Infinity
+ // on both axes; Math.abs then chooses u even when v is truly longer.
+ // That corrupts the rational source interval before any M5 proof.
+ const exactDominantPaperAxis=(sourceFrom,sourceTo)=>{
+  const du=difference(dyadic(sourceTo.u),dyadic(sourceFrom.u));
+  const dv=difference(dyadic(sourceTo.v),dyadic(sourceFrom.v));
+  const abs=x=>({n:x.n<0n?-x.n:x.n,e:x.e});
+  const a=abs(du),b=abs(dv);
+  const {n}=difference(a,b);
+  return n>=0n?'u':'v';
+ };
+
 function auditExactBinary64PaperParameterPair({
  sourceFrom,sourceTo,measuredFrom,measuredTo
 }={}){
@@ -21,8 +34,7 @@ function auditExactBinary64PaperParameterPair({
   throw new TypeError('finite original and native HLR paper endpoints required');
  // Use the same dominant projected coordinate as the existing source-scoped
  // consumer, but compare it as exact dyadic integers rather than rounded t.
- const axis=Math.abs(sourceTo.u-sourceFrom.u)>=
-  Math.abs(sourceTo.v-sourceFrom.v)?'u':'v';
+ const axis=exactDominantPaperAxis(sourceFrom,sourceTo);
  const a=dyadic(sourceFrom[axis]),b=dyadic(sourceTo[axis]);
  const delta=difference(b,a),direction=sign(delta);
  if(direction===0)
@@ -58,8 +70,7 @@ function auditExactBinary64PaperCandidateCoverage({
  if(!valid(sourceFrom)||!valid(sourceTo)||
     !Array.isArray(segments)||segments.length>512)
   throw new TypeError('finite original paper source and bounded native segments required');
- const axis=Math.abs(sourceTo.u-sourceFrom.u)>=
-  Math.abs(sourceTo.v-sourceFrom.v)?'u':'v';
+ const axis=exactDominantPaperAxis(sourceFrom,sourceTo);
  const a=dyadic(sourceFrom[axis]);
  const delta=difference(dyadic(sourceTo[axis]),a);
  if(sign(delta)===0)
