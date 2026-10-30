@@ -55,6 +55,14 @@ test('C1 signed oblique solid: real DOM V5 draws authenticated hidden sources da
   assert.equal($('v8-result-status').dataset.state,'partial',
    'scoped single-convex solution is not textbook OCR blind verified');
   assert.equal($('v7-play').disabled,false);
+  // At t=0 the missing W view must be empty, even though the unified
+  // Geometry Scene already knows its final 3D geometry. Only GIVEN V/H
+  // projections may be rendered; signed V5 strokes start with zero ink.
+  assert.ok($('v7-sheet').querySelector('[data-geometry-view="V"]'));
+  assert.ok($('v7-sheet').querySelector('[data-geometry-view="H"]'));
+  assert.equal($('v7-sheet').querySelector('[data-geometry-view="W"]'),null,
+   'C1 final W projection leaked from Scene before V5 construction');
+  assert.equal($('v7-sheet').querySelector('[data-v5-scope="signed-convex-source"]'),null);
   $('v7-seek').value='1000';fire('v7-seek','input');await settle();
   const signed=[...$('v7-sheet').querySelectorAll('[data-v5-scope="signed-convex-source"]')];
   assert.ok(signed.length>0,'canonical V5 certified strokes must actually render');
@@ -65,6 +73,11 @@ test('C1 signed oblique solid: real DOM V5 draws authenticated hidden sources da
   assert.ok(hidden.every(x=>x.getAttribute('stroke-dasharray')==='6 3'));
   assert.ok(visible.every(x=>x.getAttribute('stroke-dasharray')==='none'));
   assert.ok(hidden.every(x=>Number(x.getAttribute('stroke-width'))<3));
+  $('v7-seek').value='0';fire('v7-seek','input');await settle();
+  assert.equal($('v7-sheet').querySelector('[data-geometry-view="W"]'),null,
+   'rewinding must not restore a static answer projection');
+  assert.equal($('v7-sheet').querySelector('[data-v5-scope="signed-convex-source"]'),null,
+   'rewinding must remove all signed V5 ink');
   // A new form edit invalidates all signed line actions and old source proof.
   $('v8-c1-vertices').value+=' ';
   fire('v8-c1-vertices','input');await settle();
