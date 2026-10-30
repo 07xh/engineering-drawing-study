@@ -61,6 +61,21 @@ class C1CADOracleTests(unittest.TestCase):
                         self.assertIn(match["hlrClass"], ("visible", "hidden"))
                         self.assertGreater(match["sourceScopedOrdinal"], 0)
                         self.assertTrue(match["paperOnlyCorrespondenceDoesNotProveNativeIdentity"])
+                        # Real same-run source-filtered paper geometry is
+                        # compared to the original 3D source by exact
+                        # rational binary64 coordinates, not a tolerance.
+                        affine = match["exactReceivedBinary64SourceScopedHLRPaperWitness"]
+                        if affine is not None:
+                            self.assertFalse(affine["generated2DTopoDSHistoryCertified"])
+                            self.assertFalse(affine["signedV5Action"])
+                            self.assertEqual(
+                                affine["originalFullSourcePaperCoverageProven"],
+                                not affine["projectedOriginalSourceCollapsedToPoint"] and
+                                not affine["exactTransversePaperDriftDetected"] and
+                                not affine["exactLongitudinalPaperSourceGapDetected"] and
+                                all(p["insideOriginalUnitParameterDomain"]
+                                    for p in affine["exactReceivedEndpointAffineWitnesses"])
+                            )
                         self.assertTrue(set(match["sameGlobalGeneratedTopoDSOrdinals"])
                                         <= set(match["exactPaperGlobalGeneratedOrdinals"]))
                         if match["uniqueRealNativeGlobalSourceLink"]:
@@ -151,10 +166,56 @@ class C1CADOracleTests(unittest.TestCase):
             self.assertFalse(row["generated2DTopoDSEdgeHistoryCertified"])
             self.assertFalse(row["wholeSceneContinuousOcclusionCertified"])
             self.assertFalse(row["singleGeneratedFullEdgePaperEndpointsExactlyEqualOriginalM0"])
+            matches = row["sourceScopedToWholeSolidGeneratedHLREdges"]
+            self.assertEqual(len(matches), 1)
+            affine = matches[0]["exactReceivedBinary64SourceScopedHLRPaperWitness"]
+            self.assertFalse(affine["projectedOriginalSourceCollapsedToPoint"])
+            self.assertFalse(affine["originalFullSourcePaperCoverageProven"])
+            self.assertFalse(affine["generated2DTopoDSHistoryCertified"])
+            self.assertFalse(affine["signedV5Action"])
+            if source == "A|C":
+                self.assertFalse(affine["exactTransversePaperDriftDetected"])
+                self.assertTrue(affine["exactLongitudinalPaperSourceGapDetected"])
+                self.assertEqual(affine["exactDominantAxisUncoveredPositiveSourceSubranges"],
+                                 [["9007199254740991/9007199254740992", "1"]])
+                self.assertTrue(all(p["exactlyCollinearWithOriginalProjectedSource"]
+                                    for p in affine["exactReceivedEndpointAffineWitnesses"]))
+            else:
+                self.assertTrue(affine["exactTransversePaperDriftDetected"])
+                self.assertFalse(affine["exactLongitudinalPaperSourceGapDetected"])
+                self.assertEqual(affine["exactDominantAxisUncoveredPositiveSourceSubranges"], [])
+                self.assertTrue(any(p["exactOriginalProjectionLineCrossResidual"] != "0"
+                                    for p in affine["exactReceivedEndpointAffineWitnesses"]))
         forged = copy.deepcopy(case)
         forged["geometry"]["data"]["edges"][0] = ["A", "D"]
         with self.assertRaisesRegex(ValueError, "missing original edge|duplicates"):
             oracle.audit_original_hlr_source_status(forged, "W")
+
+    def test_exact_source_scoped_paper_affine_rejects_transverse_and_one_ulp_gaps(self):
+        audit = oracle.exact_binary64_source_scoped_hlr_paper_witness
+        exact = audit((0, 0), (16, 2), (0, 0), (16, 2))
+        self.assertTrue(exact["originalFullSourcePaperCoverageProven"])
+        self.assertFalse(exact["signedV5Action"])
+        near = audit((0, 0), (16, 2), (0, 0),
+                     (15.999999999999998, 1.9999999999999998))
+        self.assertTrue(near["exactLongitudinalPaperSourceGapDetected"])
+        self.assertFalse(near["exactTransversePaperDriftDetected"])
+        self.assertFalse(near["originalFullSourcePaperCoverageProven"])
+        transverse = audit((0, 0), (6, 23), (8.881784197001252e-16, 0),
+                           (6, 23))
+        self.assertTrue(transverse["exactTransversePaperDriftDetected"])
+        self.assertFalse(transverse["exactLongitudinalPaperSourceGapDetected"])
+        self.assertFalse(transverse["originalFullSourcePaperCoverageProven"])
+        # Complete dominant-axis coverage does not excuse transverse error.
+        off_line = audit((0, 0), (16, 2), (0, 0), (16, 3))
+        self.assertTrue(off_line["exactTransversePaperDriftDetected"])
+        self.assertFalse(off_line["originalFullSourcePaperCoverageProven"])
+        collapsed = audit((0, 0), (0, 0), (0, 0), (0, 0))
+        self.assertTrue(collapsed["projectedOriginalSourceCollapsedToPoint"])
+        self.assertFalse(collapsed["originalFullSourcePaperCoverageProven"])
+        for forged in ((float("nan"), 0), (float("inf"), 0)):
+            with self.assertRaisesRegex(ValueError, "finite"):
+                audit((0, 0), (16, 2), forged, (16, 2))
 
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
