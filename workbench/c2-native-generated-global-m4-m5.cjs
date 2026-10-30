@@ -116,8 +116,33 @@ function auditC2GeneratedResultProjectedM4M5({
   }
   return {covered:reach>=1-1e-12,intervals};
  };
+ // A Cut edge may lie on the original cutter FACE, but must never pass
+ // through cutter open INTERIOR: that is removed material, not the
+ // boundary of (stock minus cutter). Independently intersect the entire
+ // affine original edge [0,1] with a robustly shrunken open cutter box.
+ // This is a necessary negative witness, NOT a global Boolean boundary
+ // or engineering line-style certification.
+ const robustRemovedCutterOpenInteriorSpan=(from,to,cutter)=>{
+  let lo=0,hi=1;
+  for(let i=0;i<3;i++){
+   const axis=['x','y','z'][i],start=from[axis],
+    delta=to[axis]-start,
+    low=cutter.min[i]+1e-9,high=cutter.max[i]-1e-9;
+   if(!(high>low))return null;
+   if(delta===0){
+    if(!(start>low&&start<high))return null;
+    continue;
+   }
+   let a=(low-start)/delta,b=(high-start)/delta;
+   if(a>b)[a,b]=[b,a];
+   lo=Math.max(lo,a);hi=Math.min(hi,b);
+   if(!(hi>lo))return null;
+  }
+  return [lo,hi];
+ };
  const allNativeEndpointsFromOriginalBooleanSource=sourceBoxes.length>0;
  const nativeEdgeClosedSourceVolumeCoverages=[];
+ const nativeCutOpenCutterInteriorExclusion=[];
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
   const id=item?.finalTopoDSEdgeOrdinal,ids=item?.actualNativeTopoDSVertexOrdinals,
@@ -149,6 +174,17 @@ function auditC2GeneratedResultProjectedM4M5({
     nativeResultEdgeOrdinal:id,
     allOriginalEdgeParametersCoveredByBooleanInputClosedSolids:true,
     originalSourceBoxParameterSpans:volume.intervals
+   });
+  }
+  if(operation==='cut'&&sourceBoxes.length===2){
+   const removedSpan=robustRemovedCutterOpenInteriorSpan(
+    xyz[0],xyz[1],sourceBoxes[1]);
+   if(removedSpan)
+    throw new RangeError(
+     'native Cut result edge crosses removed cutter strict interior volume');
+   nativeCutOpenCutterInteriorExclusion.push({
+    nativeResultEdgeOrdinal:id,
+    noRobustRemovedCutterOpenInteriorSourceSubspan:true
    });
   }
   const e={id,ids:[...ids],from:xyz[0],to:xyz[1],
@@ -441,6 +477,12 @@ function auditC2GeneratedResultProjectedM4M5({
    nativeEdgeClosedSourceVolumeCoverages.length,
   originalNativeResultEdgeClosedSourceVolumeIntervalWitnesses:
    nativeEdgeClosedSourceVolumeCoverages,
+  allOriginalCutNativeEdgesCheckedForRobustRemovedCutterInterior:
+   operation==='cut'&&sourceBoxes.length===2&&
+   nativeCutOpenCutterInteriorExclusion.length===edges.length,
+  originalCutNativeEdgeRemovedOpenInteriorExclusionWitnesses:
+   nativeCutOpenCutterInteriorExclusion,
+  robustCutterOpenInteriorExclusionIsOnlyNecessaryNotSufficient:true,
   boundingSourceDomainOperation:
    allNativeEndpointsFromOriginalBooleanSource?operation:null,
   VHWSourceRows:rows.length,
