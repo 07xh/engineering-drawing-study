@@ -53,6 +53,7 @@ test('exact M0 convex all-face open-edge rays agree with independently known tet
  assert.equal(result.exactOriginalClosedConvexSupportingHalfspacesProven,true);
  assert.equal(result.counts.exactOpenEdgeNativeClassAgreements,18);
  assert.equal(result.counts.heldSourceViewRows,0);
+ assert.equal(result.counts.originalVisibleClosedEndpointRayRowsCertified,15);
  assert.deepEqual(Object.fromEntries(Object.entries(result.views).map(([v,rows])=>
   [v,rows.map(x=>x.exactOriginalOpenEdgeOpaqueFaceRayClass)])),
   Object.fromEntries(Object.entries(expected).map(([v,rows])=>
@@ -60,7 +61,8 @@ test('exact M0 convex all-face open-edge rays agree with independently known tet
  assert.ok(Object.values(result.views).flat().every(x=>
   x.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified===true&&
   x.generated2DTopoDSHistoryCertified===false&&
-  x.originalClosedEndpointRayCertified===false&&
+  x.originalClosedEndpointRayCertified===
+   (x.exactOriginalOpenEdgeOpaqueFaceRayClass==='visible-sharp')&&
   x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false));
  assert.equal(result.signedV5ActionCount,0);
 });
@@ -106,11 +108,13 @@ test('one strict exterior face certifies a convex open edge despite another tang
  assert.ok(visible.exactIncidentOutwardObserverSigns.some(sign=>sign>0));
  assert.equal(visible.exactOriginalOpenEdgeOpaqueFaceRayClass,'visible-sharp');
  assert.equal(visible.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,true);
+ assert.equal(visible.originalClosedEndpointRayCertified,true);
  assert.ok(r.counts.exactTangentStrictExteriorRowsCertified>0);
  const held=r.views.H.find(row=>row.sourceEdgeId===ab);
  assert.ok(held.exactIncidentOutwardObserverSigns.includes(0));
  assert.ok(held.exactIncidentOutwardObserverSigns.some(sign=>sign<0));
  assert.equal(held.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ assert.equal(held.originalClosedEndpointRayCertified,false);
  assert.equal(held.engineeringLineStyle,'undetermined');
  const wrong=nativeM4();
  wrong.V.nativeOriginal3DM4Candidates[0].segments[0].native3DHLRClass='hidden-sharp';
@@ -119,6 +123,8 @@ test('one strict exterior face certifies a convex open edge despite another tang
  });
  assert.equal(mismatch.views.V.find(row=>row.sourceEdgeId===ab).
   originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ assert.equal(mismatch.views.V.find(row=>row.sourceEdgeId===ab).
+  originalClosedEndpointRayCertified,false);
  assert.equal(mismatch.signedV5ActionCount,0);
  assert.equal(r.signedV5ActionCount,0);
 });

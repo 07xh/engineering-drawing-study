@@ -2,7 +2,9 @@
 /**
  * Exact M0 binary64 supporting-halfspace proof for ORIGINAL convex open
  * source edges, cross-checked with same-run native source-filtered 3D HLR.
- * It does not identify a generated 2D TopoDS edge, prove endpoint pixels,
+ * A strict exterior supporting face also proves the original CLOSED 3D
+ * source endpoints' observer rays clear the convex solid. This does not
+ * identify generated 2D TopoDS endpoints or their paper pixel coordinates,
  * resolve co-projected sources, issue a GB line type, or authorize V5.
  */
 const {VIEWS,FIRST_ANGLE_OBSERVER_RAYS,project}=
@@ -132,6 +134,7 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
  const views={},counts={exactOpenEdgeNativeClassAgreements:0,
   heldSourceViewRows:0,exactTangentFaceRayRows:0,
   exactTangentStrictExteriorRowsCertified:0,
+  originalVisibleClosedEndpointRayRowsCertified:0,
   native3DClassOrParameterHeldRows:0};
  for(const view of VIEWS){
   const rows=nativeM4Views[view]?.nativeOriginal3DM4Candidates;
@@ -209,11 +212,20 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
      counts.native3DClassOrParameterHeldRows++;}
    }
    if(!certified)counts.heldSourceViewRows++;
+   // Both ORIGINAL 3D endpoints lie on the same verified supporting
+   // face as this physical source edge. For any endpoint p and t>0,
+   // n·(p+t*observer-anchor)=t*(n·observer)>0: the entire outward ray
+   // is outside the convex solid. This says NOTHING about generated
+   // HLR vertex TShape identity or rounded paper endpoint closure.
+   const closedOriginalExterior=certified&&candidate==='visible-sharp'&&
+    (sa>0||sb>0);
+   if(closedOriginalExterior)
+    counts.originalVisibleClosedEndpointRayRowsCertified++;
    views[view].push({view,sourceEdgeId,
     exactIncidentOutwardObserverSigns:[sa,sb],
     exactOriginalOpenEdgeOpaqueFaceRayClass:candidate,
     originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified:certified,
-    reason,originalClosedEndpointRayCertified:false,
+    reason,originalClosedEndpointRayCertified:closedOriginalExterior,
     generated2DTopoDSHistoryCertified:false,
     wholeSceneCoProjectedDepthCertified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false});
