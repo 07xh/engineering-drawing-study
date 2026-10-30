@@ -305,6 +305,14 @@ class C1CADOracleTests(unittest.TestCase):
         self.assertFalse(dup["exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"])
         with self.assertRaisesRegex(ValueError, "duplicated"):
             fn(global_paper, [claims[0], claims[0], claims[1]])
+        with self.assertRaisesRegex(ValueError, "EdgeMap.*bijection"):
+            fn(global_paper, [claims[0], {
+                **claims[1], "originalEdgeMapIndex": 1,
+            }])
+        with self.assertRaisesRegex(ValueError, "EdgeMap.*bijection"):
+            fn(global_paper, [claims[0], {
+                **claims[1], "originalSourceEdgeId": "A|C",
+            }])
 
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
