@@ -49,6 +49,30 @@ class C1CADOracleTests(unittest.TestCase):
                 self.assertTrue(source["nativeOriginalSourceEdgeMapBijectionVerified"])
                 self.assertTrue(source["nativeOriginalCurveParameterPartitionVerified"])
                 self.assertTrue(source["sourceScopedGeneratedHLRClassCorroborated"])
+                # Actual global-vs-original-scoped identity is measured from
+                # one live native HLR engine. Identical paper coordinates do
+                # not create TopoDS.IsSame identity or authorize M5.
+                self.assertGreater(source["wholeSolidGeneratedVisibleEdgeCount"], 0)
+                self.assertGreaterEqual(source["wholeSolidGeneratedHiddenEdgeCount"], 0)
+                native_links = 0
+                paper_holds = 0
+                for original in source["rows"]:
+                    for match in original["sourceScopedToWholeSolidGeneratedHLREdges"]:
+                        self.assertIn(match["hlrClass"], ("visible", "hidden"))
+                        self.assertGreater(match["sourceScopedOrdinal"], 0)
+                        self.assertTrue(match["paperOnlyCorrespondenceDoesNotProveNativeIdentity"])
+                        self.assertTrue(set(match["sameGlobalGeneratedTopoDSOrdinals"])
+                                        <= set(match["exactPaperGlobalGeneratedOrdinals"]))
+                        if match["uniqueRealNativeGlobalSourceLink"]:
+                            self.assertTrue(match["causalGlobalGeneratedTopoDSIdentityCertified"])
+                            self.assertTrue(match["globallyUniqueExactPaperSourceCandidate"])
+                            self.assertEqual(len(match["sameGlobalGeneratedTopoDSOrdinals"]), 1)
+                            native_links += 1
+                        if not match["globallyUniqueExactPaperSourceCandidate"]:
+                            paper_holds += 1
+                self.assertEqual(native_links, source["uniqueSameTopoDSGlobalSourceScopedEdgeLinks"])
+                self.assertEqual(paper_holds,
+                                 source["ambiguousOrUnmatchedGlobalPaperSourceCandidates"])
                 self.assertFalse(source["generated2DTopoDSEdgeHistoryCertified"])
                 self.assertFalse(source["formalM5LineStyleAuthorized"])
                 self.assertEqual(source["originalBRepSourcesChecked"], len(source["rows"]))
