@@ -5,6 +5,10 @@
  * 3D BRep endpoints is useful diagnostic evidence, not a signed line.
  * This module specifically vetoes cross-source class/ordinal laundering.
  */
+const {auditC1NativeScopedHLRSourceConsumer}=
+ require('./c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1ExactConvexOriginalOpenEdgeRays}=
+ require('./c1-exact-convex-original-open-edge-ray.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -117,6 +121,26 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     !Array.isArray(audit.missingOriginalM0SourceViewRows)||
     !Array.isArray(audit.rows))
   throw new TypeError('current unsigned original native M5 source gap and ray inventory required');
+ // Recompute the ORIGINAL convex all-face OPEN-edge theorem from the
+ // current M0 geometry, same-revision native BRep face adjacency and
+ // same-run source-filtered 3D HLR. No caller-supplied proof flags and
+ // no generated TopoDS history or closed-endpoint promotion.
+ const openRayBySource=new Map();
+ if(geometry.kind==='mesh'&&cad.originalNativeFaceAdjacency){
+  const native=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+  const exact=auditC1ExactConvexOriginalOpenEdgeRays({
+   geometry,nativeFaceAdjacency:cad.originalNativeFaceAdjacency,
+   nativeM4Views:native.views
+  });
+  if(exact.status==='audited'){
+   for(const [view,rows] of Object.entries(exact.views))for(const r of rows){
+    const key=view+'|'+r.sourceEdgeId;
+    if(openRayBySource.has(key))
+     throw new RangeError('duplicate same-run exact original convex ray');
+    openRayBySource.set(key,r);
+   }
+  }
+ }
  const counts={unrepresentedOriginalSourceViews:0,positiveOriginalPaperGapIntervals:0,
   unresolvedM5Obligations:0,obligationsWithGlobalOriginalSourceAnd3DEndpoints:0,
   obligationsWithStrictNative3DClass:0,obligationsWithBoundedOnlyNative3DClass:0,
@@ -126,6 +150,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithIndependentExactOriginalRayClass:0,
   generatedHLRSourceClassContradictionsHeldForHistory:0,
   missingSourcesWhoseOriginalRayClassRemainsUnknown:0,
+  obligationsWithExactConvexOpenRayAndNativeHLRClass:0,
+  newlyCorroboratedOpenRaysWithoutClosedEndpointRayClass:0,
+  exactConvexOpenRayVersusGeneratedHLRClassConflictsHeld:0,
   originalM4FullSourceOpenDepthPartitions:0,
   originalM4FullSourceOpenDepthAllClassified:0,
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
@@ -199,6 +226,24 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    throw new RangeError('unverified original 3D all-face ray classification');
   const conflicting=paper.filter(p=>rayClass!==null&&rayClass!==undefined&&
    p.hlrClass!==rayClass);
+  const openRay=openRayBySource.get(row.view+'|'+row.sourceEdgeId);
+  const certifiedOpen=openRay?.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified===true;
+  const openClass=certifiedOpen?openRay.exactOriginalOpenEdgeOpaqueFaceRayClass:null;
+  if(certifiedOpen&&(openRay.generated2DTopoDSHistoryCertified!==false||
+     openRay.wholeSceneCoProjectedDepthCertified!==false||
+     openRay.engineeringLineStyle!=='undetermined'||
+     openRay.signedV5Action!==false||
+     !['visible-sharp','hidden-sharp'].includes(openClass)||
+     (rayClass!==null&&rayClass!==undefined&&rayClass!==openClass)))
+   throw new RangeError('same-run convex open-ray proof conflicts with original closed-ray evidence');
+  const openConflicts=certifiedOpen?
+   paper.filter(p=>p.hlrClass!==openClass):[];
+  const openCorroborated=certifiedOpen&&openConflicts.length===0;
+  counts.obligationsWithExactConvexOpenRayAndNativeHLRClass+=Number(openCorroborated);
+  counts.newlyCorroboratedOpenRaysWithoutClosedEndpointRayClass+=
+   Number(openCorroborated&&(rayClass===null||rayClass===undefined));
+  counts.exactConvexOpenRayVersusGeneratedHLRClassConflictsHeld+=
+   Number(openConflicts.length>0);
   counts.obligationsWithIndependentExactOriginalRayClass+=Number(rayClass!==null&&rayClass!==undefined);
   counts.missingSourcesWhoseOriginalRayClassRemainsUnknown+=
    Number(interval===null&&(rayClass===null||rayClass===undefined));
@@ -245,6 +290,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    strictNativeClassWitnesses:strict,boundedNativeClassWitnesses:bounded,
    sharedOriginalM0JunctionCandidates:joins.length,
    independentOriginal3DAllFaceRayClass:rayClass??null,
+   exactConvexOriginalOpenRayClass:openClass,
+   exactConvexOriginalOpenRayNativeHLRClassCorroborated:openCorroborated,
+   exactConvexOpenRayDoesNotProveClosedEndpointsOrGeneratedHistory:true,
+   generatedHLRClassesDisagreeingWithExactConvexOpenRay:
+    openConflicts.map(p=>({hlrClass:p.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:p.wholeSolidGeneratedHLREdgeOrdinal})),
    generatedHLRClassesDisagreeingWithOriginal3DRay:
     conflicting.map(p=>({hlrClass:p.hlrClass,
      wholeSolidGeneratedHLREdgeOrdinal:p.wholeSolidGeneratedHLREdgeOrdinal})),
