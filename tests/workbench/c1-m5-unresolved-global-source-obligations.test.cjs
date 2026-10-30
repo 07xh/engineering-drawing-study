@@ -174,3 +174,57 @@ test('same-revision M4 full [0,1] source and exact OPEN depth cuts reach M5 with
   coProjectedOriginal3DDepthOrder.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources=false;
  assert.throws(()=>audit(missing),/M4 open-depth class/);
 });
+
+
+test('positive M5 paper gap consumes complete original M4 3D open-depth partition but remains unsigned',()=>{
+ const x=fixture(),missing=x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0],
+  gap=x.positiveOriginalGapRays.rows[0],view=gap.view,
+  sourceEdgeId=gap.sourceEdgeId;
+ Object.assign(gap,{
+  nativeOriginal3DM4GapSourceProjectionAvailable:true,
+  completeRealNative3DSourceParameterPartition:true,
+  originalM4SourcePartitionComplete:true,
+  realNative3DM4OriginalParameterGapCoverage:{
+   originalParameterRange:[0.2,0.3],
+   entireOriginalParameterIntervalCovered:true},
+  nativeOriginal3DM4ProjectedCandidateSegments:[{
+   view,sourceEdgeId,native3DHLRClass:'hidden-sharp',
+   originalM0UnitParameterRange:[0,1]}],
+  nativeOriginalM4CoProjectedDepthOrder:[{
+   originalM0UnitParameterRange:[0,1],native3DHLRClass:'hidden-sharp',
+   canonicalOriginalM4EventCutPartitionCoversNative3DInterval:true,
+   originalM4CutEndpointDoesNotAuthorize3DPhysicalJunction:true,
+   originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility:true,
+   generated2DHLREdgeTopologyProven:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false,
+   canonicalOriginalM4EventCutDepthRows:[{
+    originalM4SourceCutParameterRange:[0,1],
+    originalM4CutFromCurrentReviewedEventGraph:true,
+    originalM4EventPaperOnlyIsNot3DPhysicalJunction:true,
+    openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
+    engineeringLineStyle:'undetermined',signedV5Action:false,
+    strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly:false,
+    hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:true,
+    coProjectedOriginal3DDepthOrder:{
+     schema:'draftai-c1-original-3d-coproject-depth-order/1',
+     view,sourceEdgeId,originalParameterRange:[0,1],
+     entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources:false,
+     entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource:true,
+     wholeIntervalFrontmostCertified:false,visibleSourceCoversEntireLine:false,
+     engineeringLineStyleSigned:false,signedV5ActionCount:0
+    }
+   }]
+  }]
+ });
+ const r=audit(x);
+ assert.equal(r.counts.positivePaperGapsWithFullOriginalM4OpenDepthPartition,1);
+ assert.equal(r.counts.originalM4OpenHiddenCuts,1);
+ assert.equal(r.counts.unresolvedM5Obligations,2);
+ assert.equal(r.records[1].originalM4OpenSourceDepthEvidence.
+  generatedHLRToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.records[1].generatedEdgeEngineeringLineStyle,'undetermined');
+ const forged=structuredClone(x);
+ forged.positiveOriginalGapRays.rows[0].
+  realNative3DM4OriginalParameterGapCoverage.originalParameterRange=[0.2,0.4];
+ assert.throws(()=>audit(forged),/does not belong to the positive M5 gap/);
+});
