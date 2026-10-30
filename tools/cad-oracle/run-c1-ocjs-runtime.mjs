@@ -1627,6 +1627,33 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
  assert.equal(unresolvedM5.records.length,heldM5.length);
+ // The TWO real W-view tiny positive gaps must now independently join
+ // original-indexed HLR visibility class, complete native source 3D
+ // parameter bounds, full closed convex original vertex rays, and
+ // exact M4 open-front ordering. They STILL retain positive 2D paper
+ // residual and have NO formal GB/V5 generated-edge history.
+ const wGaps=unresolvedM5.records.filter(r=>
+  r.kind==='positive-original-m0-parameter-gap'&&r.view==='W');
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof,
+  wGaps.filter(r=>r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+   ?.jointOriginalClosedPhysicalSourceVisibilityProven===true).length);
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithOriginal3DJointProofHeld,
+  wGaps.length-unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof);
+ assert.ok(wGaps.every(r=>{
+  const joint=r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence;
+  return joint?.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
+   joint.generatedPaperGapStrictlyPositiveStillHeld===true&&
+   joint.generated2DTopoDSHistoryCertified===false&&
+   joint.globalOpaqueSceneContinuousVisibilityCertified===false&&
+   joint.engineeringLineStyle==='undetermined'&&joint.signedV5Action===false;
+ }));
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(wGaps.length,2,'both real SkewTetra W positive paper gaps must remain recorded');
+  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof,2,
+   'real OCJS W original 3D closed-ray/parameter/depth proof must be complete on both paper gaps');
+  assert.deepEqual(new Set(wGaps.map(r=>r.sourceEdgeId)),
+   new Set(['C1SkewTetra::A|C','C1SkewTetra::A|D']));
+ }else assert.equal(wGaps.length,0);
  // Exercise the real same-run global GENERATED 3D HLR -> original BRep
  // source ledger at every held M5 paper candidate. A paper alias to a
  // different original edge cannot inherit its source curve parameter history.
