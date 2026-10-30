@@ -103,6 +103,25 @@ class C1CADOracleTests(unittest.TestCase):
         self.assertFalse(any("signedVisibleContourActions" in str(r) or
                              "officialLineStyle" in str(r) for r in results))
 
+    def test_generated_global_source_ownership_rejects_duplicate_scoped_claims(self):
+        # The adversary can claim a generated HLR edge twice using the SAME
+        # original source ID; a set-of-source-IDs would silently erase that.
+        claim = ("visible", 3)
+        good = {claim: [("A|C", 1)]}
+        self.assertTrue(oracle.unique_global_generated_edge_claim(
+            good, "visible", 3, "A|C", 1))
+        for forged in (
+            {claim: [("A|C", 1), ("A|C", 1)]},
+            {claim: [("A|C", 1), ("A|D", 1)]},
+            {claim: [("A|C", 2)]},
+            {},
+        ):
+            self.assertFalse(oracle.unique_global_generated_edge_claim(
+                forged, "visible", 3, "A|C", 1))
+        # Paper correspondence never grants native 2D TopoDS identity.
+        self.assertFalse(oracle.unique_global_generated_edge_claim(
+            good, "hidden", 3, "A|C", 1))
+
     def test_skew_tetra_w_positive_paper_tails_are_not_original_hlr_source_gaps(self):
         # Public synthetic regression: OCCT's received W paper endpoints
         # drift in binary64, but the internal ORIGINAL EdgeStatus still
