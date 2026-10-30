@@ -173,6 +173,22 @@ test('same-revision M4 full [0,1] source and exact OPEN depth cuts reach M5 with
   canonicalOriginalM4EventCutDepthRows[0].
   coProjectedOriginal3DDepthOrder.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources=false;
  assert.throws(()=>audit(missing),/M4 open-depth class/);
+ // Neither an unverified "frontmost" flag nor an unverified "covered"
+ // flag may override the canonical open-source theorem.
+ for(const [flag,property] of [
+  ['wholeIntervalFrontmostCertified',
+   'entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources'],
+  ['visibleSourceCoversEntireLine',
+   'entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource']
+ ]){
+  const forged=structuredClone(x),cut=forged.positiveOriginalGapRays.
+   missingOriginalM0SourceViewRows[0].nativeOriginalM4CoProjectedDepthOrder[0].
+   canonicalOriginalM4EventCutDepthRows[0];
+  cut.coProjectedOriginal3DDepthOrder[flag]=true;
+  cut.coProjectedOriginal3DDepthOrder[property]=false;
+  cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly=false;
+  assert.throws(()=>audit(forged),/M4 open-depth class/);
+ }
 });
 
 
@@ -227,6 +243,15 @@ test('positive M5 paper gap consumes complete original M4 3D open-depth partitio
  forged.positiveOriginalGapRays.rows[0].
   realNative3DM4OriginalParameterGapCoverage.originalParameterRange=[0.2,0.4];
  assert.throws(()=>audit(forged),/does not belong to the positive M5 gap/);
+ for(const mutate of [
+  row=>{delete row.realNative3DM4OriginalParameterGapCoverage;},
+  row=>{delete row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange;},
+  row=>{row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange=[];}
+ ]){
+  const bad=structuredClone(x);
+  mutate(bad.positiveOriginalGapRays.rows[0]);
+  assert.throws(()=>audit(bad),/does not belong to the positive M5 gap/);
+ }
 });
 
 test('positive dyadic binary64-collapsed original M4 event cut is held, not a fake drawable line',()=>{
