@@ -36,6 +36,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking:0,
   wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution:0,
+  wholeSolidEdgesWithBoundedNative3DPaperDriftIndexedSourceFilterAttribution:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding:0,
   wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding:0,
   wholeSolidEdgesHeldForAmbiguityOrMissing3DClass:0};
@@ -211,13 +212,16 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     // Same-run actual original EdgeMap identity plus complete original
     // native 3D class, unique source filter output and EXACT global paper.
     // This is not direct generated IsSame, parameter history or scene M5.
-    exactIndexedSourceFilterAttribution=unique&&paperExact&&exact3D&&
-     statusClassAgrees&&
+    indexedFilterEligible=unique&&paperExact&&statusClassAgrees&&
      Number.isSafeInteger(inputStatus.nativeHLROriginalEdgeMapIndex)&&
-     inputStatus.nativeHLROriginalEdgeMapIndex>0;
+     inputStatus.nativeHLROriginalEdgeMapIndex>0,
+    exactIndexedSourceFilterAttribution=indexedFilterEligible&&exact3D,
+    boundedIndexedSourceFilterAttribution=indexedFilterEligible&&!exact3D&&round3D;
    counts.wholeSolidNativeHLREdges++;
    counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution+=
     Number(exactIndexedSourceFilterAttribution);
+   counts.wholeSolidEdgesWithBoundedNative3DPaperDriftIndexedSourceFilterAttribution+=
+    Number(boundedIndexedSourceFilterAttribution);
    counts.wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness+=
     Number(nativeCausal);
    counts.wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch+=
@@ -261,8 +265,10 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      nativeCausal,
     exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame:
      exactIndexedSourceFilterAttribution,
+    indexedOriginal3DSourceFilterAttributionWithExplicitBoundedPaperDriftHeld:
+     boundedIndexedSourceFilterAttribution,
     exactIndexedSourceScopedEmissionIndex:
-     exactIndexedSourceFilterAttribution?
+     exactIndexedSourceFilterAttribution||boundedIndexedSourceFilterAttribution?
       candidate.originalSourceScopedEmissionIndex:null,
     generatedOriginalTopoDSParameterHistoryStillNotCertified:true,
     wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified:false,
@@ -277,18 +283,32 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
    sum+r.visible.length+r.hidden.length,0);
   const attributed=rows.filter(r=>
    r.exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame);
+  const bounded=rows.filter(r=>
+   r.indexedOriginal3DSourceFilterAttributionWithExplicitBoundedPaperDriftHeld);
+  const indexedWithHeldRounding=[...attributed,...bounded];
   const scopedEmissionIds=new Set(attributed.map(r=>
+   r.uniqueOriginalSourceFilteredPaperCandidate+'|'+
+   r.exactIndexedSourceScopedEmissionIndex));
+  const sourceOwnerEmissionIds=new Set(indexedWithHeldRounding.map(r=>
    r.uniqueOriginalSourceFilteredPaperCandidate+'|'+
    r.exactIndexedSourceScopedEmissionIndex));
   const exactExhaustive=sourceStatusById.size===scoped.rows.length&&
    scopedEmissionCount===rows.length&&
    attributed.length===rows.length&&
    scopedEmissionIds.size===scopedEmissionCount;
+  const sourceFilterOwnerComplete=sourceStatusById.size===scoped.rows.length&&
+   scopedEmissionCount===rows.length&&
+   indexedWithHeldRounding.length===rows.length&&
+   sourceOwnerEmissionIds.size===scopedEmissionCount;
   exactSourceFilterBijectionByView[view]={
    view,wholeSolidGeneratedEdgeCount:rows.length,
    originalSourceFilteredGeneratedEdgeCount:scopedEmissionCount,
    uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount:attributed.length,
+   native3DBoundedPaperDriftHeldButSourceFilterAttributedCount:bounded.length,
    uniqueScopedOutputEmissionCount:scopedEmissionIds.size,
+   uniqueScopedOwnerWithExplicitBoundedRoundingCount:sourceOwnerEmissionIds.size,
+   completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift:
+    sourceFilterOwnerComplete,
    completeExactSourceScopedToWholeSolidOutputBijectionProven:exactExhaustive,
    originalIndexedTopoDSSourceAndNative3DClassRequired:true,
    onlySourceFilterAttributionNoGeneratedTopoDSDirectIsSame:true,
@@ -310,6 +330,9 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection:
    VIEWS.every(view=>exactSourceFilterBijectionByView[view]
     .completeExactSourceScopedToWholeSolidOutputBijectionProven),
+  allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift:
+   VIEWS.every(view=>exactSourceFilterBijectionByView[view]
+    .completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift),
   nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted:true,
   paperUniqueSourceFilterDoesNotImplyOriginalTopoDSHistory:true,
   actualGlobalGeneratedEdgeToOriginalTopoDSHistoryCertified:false,
