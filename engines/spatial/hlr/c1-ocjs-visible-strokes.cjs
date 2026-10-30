@@ -888,6 +888,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const originalEdgeStatusAPI={
     originalHLRDataStructureMethodNames:[],
     originalEdgeStatusArrayMethodNames:[],
+    originalHLREdgeDataMethodNames:[],
+    originalHLREdgeStatusMethodNames:[],
+    originalEdgeStatusArrayBounds:null,
+    firstOriginalIndexedEdgeStatusAllVisible:null,
+    firstOriginalIndexedEdgeStatusAllHidden:null,
     statusArrayExposedInPinnedWasm:false,
     originalHLREdgeStatusIntervalsExtracted:false,
     originalHLREdgeStatusToGeneratedPaperLineageCertified:false,
@@ -910,6 +915,36 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       originalEdgeStatusAPI.statusArrayExposedInPinnedWasm=!!statuses;
       originalEdgeStatusAPI.originalEdgeStatusArrayMethodNames=
        nativeHLREdgeStatusMethodNames(statuses);
+      if(statuses&&typeof statuses.Lower==='function'&&
+         typeof statuses.Upper==='function'){
+       const lower=statuses.Lower(),upper=statuses.Upper();
+       if(!Number.isSafeInteger(lower)||!Number.isSafeInteger(upper)||
+          lower>1||upper<1||upper>512)
+        throw new RangeError('invalid real HLR original EdgeStatus array bounds');
+       originalEdgeStatusAPI.originalEdgeStatusArrayBounds=[lower,upper];
+       if(typeof statuses.Value==='function'){
+        // Original 1-based native array indexing, NOT generated HLR
+        // paper ordinals. All returned objects are borrowed from HLR DS.
+        const nativeEdgeData=statuses.Value(1);
+        originalEdgeStatusAPI.originalHLREdgeDataMethodNames=
+         nativeHLREdgeStatusMethodNames(nativeEdgeData);
+        if(typeof nativeEdgeData?.Status==='function'){
+         const nativeStatus=nativeEdgeData.Status();
+         originalEdgeStatusAPI.originalHLREdgeStatusMethodNames=
+          nativeHLREdgeStatusMethodNames(nativeStatus);
+         if(typeof nativeStatus?.AllVisible==='function'&&
+            typeof nativeStatus.AllHidden==='function'){
+          const allVisible=nativeStatus.AllVisible(),
+           allHidden=nativeStatus.AllHidden();
+          if(typeof allVisible!=='boolean'||typeof allHidden!=='boolean'||
+             allVisible&&allHidden)
+           throw new RangeError('inconsistent real native original HLR EdgeStatus class');
+          originalEdgeStatusAPI.firstOriginalIndexedEdgeStatusAllVisible=allVisible;
+          originalEdgeStatusAPI.firstOriginalIndexedEdgeStatusAllHidden=allHidden;
+         }
+        }
+       }
+      }
      }
      if(typeof ds.EdgeMap==='function'){
       const map=ds.EdgeMap();
