@@ -1,0 +1,77 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {auditC1M5NativeGlobal3DSourceJoin:audit}=
+ require('../../workbench/c1-m5-global-native-3d-source-join.cjs');
+function setup(){
+ const geometry={id:'g',data:{edges:[['A','B'],['A','C'],['B','C']]}};
+ const cad={sourceGeometryId:'g',revision:4,
+  views:{V:[]},hiddenSharpViews:{V:[{},{},{}]},
+  nativeSourceScopedSharpOutputByView:{V:{
+   nativeGlobal3DOriginalSourceEvidence:{
+    schema:'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1',
+    sourceGeometryId:'g',revision:4,view:'V',
+    globalGenerated2DSharpEdges:3,
+    globalGenerated3DSharpEdgesWithUniqueOriginalCurve:3,
+    allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper:true,
+    generated2DTo3DTopoDSHistoryCertified:false,
+    globalContinuousVisibilityCertified:false,
+    officialV5Authorized:false,signedV5ActionCount:0,
+    rows:['g::A|C','g::B|C','g::A|B'].map((source,i)=>({
+     view:'V',hlrClass:'hidden-sharp',wholeSolidGeneratedHLREdgeOrdinal:i,
+     originalPhysicalSourceEdgeId:source,originalNativeCurveParameterRange:[0,10+i],
+     globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
+     global3DAnd2DHLRMeasuredPaperPairUnique:true,
+     global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
+     globalGenerated2DTo3DTopoDSHistoryCertified:false,
+     fullOpaqueSceneContinuousOcclusionCertified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    }))
+   }
+  }}
+ };
+ return {geometry,cad,view:'V',sourceEdgeId:'g::A|B',
+  generatedClaims:[{hlrClass:'hidden-sharp',wholeSolidGeneratedHLREdgeOrdinal:2}]};
+}
+test('genuine global native 3D BRep source corroborates correct held HLR ordinal but cannot sign V5',()=>{
+ const result=audit(setup());
+ assert.equal(result.globallyUnique3DBRepCurveSources,3);
+ assert.equal(result.sourceCorroboratedClaims,1);
+ assert.equal(result.differentOriginal3DSourceClaimsHeld,0);
+ assert.deepEqual(result.claims[0].originalNativeCurveParameterRange,[0,12]);
+ assert.equal(result.claims[0].generated2DTopoDSHistoryCertified,false);
+ assert.equal(result.officialV5Authorized,false);
+ assert.ok(Object.isFrozen(result.claims[0]));
+});
+test('genuine 2D paper alias from another 3D edge is held as a source contradiction',()=>{
+ const x=setup();
+ x.generatedClaims[0].wholeSolidGeneratedHLREdgeOrdinal=1;
+ const result=audit(x);
+ assert.equal(result.sourceCorroboratedClaims,0);
+ assert.equal(result.differentOriginal3DSourceClaimsHeld,1);
+ assert.equal(result.claims[0].actualNativeGlobal3DOriginalSourceEdgeId,'g::B|C');
+ assert.equal(result.claims[0].paperOnlyCandidateActuallyBelongsToDifferent3DSource,true);
+ assert.equal(result.officialV5Authorized,false);
+});
+test('missing native global 3D proof remains absent, never turns paper claims into evidence',()=>{
+ const x=setup();
+ delete x.cad.nativeSourceScopedSharpOutputByView;
+ assert.equal(audit(x),null);
+});
+test('reject forged global generated 3D ownership, ordinal gaps, stale proof and false history',()=>{
+ const modifications=[
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.revision=3,
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows[0].originalPhysicalSourceEdgeId='g::FAKE',
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows[1].wholeSolidGeneratedHLREdgeOrdinal=0,
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows[1].originalNativeCurveParameterRange=[3,3],
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows[1].globalGenerated2DTo3DTopoDSHistoryCertified=true,
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows[1].global3DAndOriginalScoped3DHLRParameterIntervalExact=false,
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.globalContinuousVisibilityCertified=true,
+  x=>x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.rows.pop(),
+  x=>x.generatedClaims.push({...x.generatedClaims[0]}),
+  x=>x.generatedClaims[0].wholeSolidGeneratedHLREdgeOrdinal=3
+ ];
+ for(const modify of modifications){
+  const x=setup();modify(x);
+  assert.throws(()=>audit(x),/global|source|duplicate|native|incomplete|unsigned|ordinal|invalid|contract/i);
+ }
+});
