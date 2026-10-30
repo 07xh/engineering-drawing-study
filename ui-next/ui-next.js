@@ -3,9 +3,11 @@
  'use strict';
  function syncNavigation(document,hash){
   if(!document.getElementById('project-workbench'))return;
-  const name=hash==='#recent'?'我的项目':(['#tools','#all-tools','#plane','#projection','#section','#composite'].includes(hash)?'题型工具':'工作台');
-  for(const link of document.querySelectorAll('.next-sidebar nav a,.next-menu nav a')){
-   if(link.getAttribute('aria-label')===name)link.setAttribute('aria-current','page');
+  const name=['#tools','#all-tools','#plane','#projection','#section','#composite'].includes(hash)?'工具':'解题';
+  document.body.classList.toggle('next-show-tools',name==='工具');
+  if(hash==='#all-tools')document.getElementById('all-tools')?.setAttribute('open','');
+  for(const link of document.querySelectorAll('[data-task-nav]')){
+   if(link.dataset.taskNav===name)link.setAttribute('aria-current','page');
    else link.removeAttribute('aria-current');
   }
  }

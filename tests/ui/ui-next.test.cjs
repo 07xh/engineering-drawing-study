@@ -28,7 +28,7 @@ test('all public pages preserve control IDs, values, hidden states and applicati
    assert.equal(candidate.hasAttribute('defer'),script.hasAttribute('defer'));
   }
   assert.equal(after.querySelectorAll('.next-topbar').length,1,page);
-  assert.equal(after.querySelectorAll('.next-sidebar').length,1,page);
+  assert.equal(after.querySelectorAll('.next-task-nav').length,1,page);
   assert.ok(after.querySelector('.next-skip'),page+' skip link');
   assert.ok(after.querySelector('main.next-main'),page+' main landmark');
   assert.equal(after.querySelectorAll('[id]').length,new Set([...after.querySelectorAll('[id]')].map(x=>x.id)).size,page+' all IDs unique');
@@ -91,131 +91,18 @@ test('projection and fillet keep learning, drawing and proof controls in the sha
  }
 });
 
-test('V6.5 homepage puts accurate arc construction next to entry actions',()=>{
+test('homepage puts the existing solver first and lists real tools',()=>{
  const {after:document}=enhance('index.html');
- const dashboard=document.querySelector('.next-home-workbench');
- assert.ok(dashboard,'new homepage workbench must be the first screen');
- assert.ok(dashboard.querySelector('.next-home-drawing'),'large drawing region missing');
- const svg=dashboard.querySelector('.next-home-paper svg');
- assert.ok(svg,'one-sheet preview missing');
- assert.equal(dashboard.querySelectorAll('.next-home-paper svg').length,1,'views must stay on one sheet');
- const labels=svg.textContent;
- for(const label of ['R40','T₁','T₂','O'])
-  assert.ok(labels.includes(label),'required fillet construction label missing: '+label);
- assert.ok(dashboard.querySelector('.next-home-workflow'),'right-side quick actions missing');
- for(const dest of ['labs/cone-cut-live.html','labs/circle-fillet-live.html','labs/point-projection-live.html'])
-  assert.ok(document.querySelector('a[href="'+dest+'"]'),'real solver route missing: '+dest);
- assert.ok(document.querySelector('.next-home-more-tools>summary'),'secondary tool list must be collapsible');
- assert.ok(document.querySelector('meta[name="draftai-ui-release"][content="v6.6-home-20261023"]'),'verifiable homepage release marker missing');
- assert.match(dashboard.textContent,/非上传题目答案/,'hero must identify geometry drawing as an example');
- assert.match(dashboard.textContent,/自动识别尚未开放/,'unsupported AI recognition must remain clearly indicated');
- assert.ok(document.querySelector('.next-home-workbench').compareDocumentPosition(document.querySelector('#tools')) & 4,'drawing workspace must precede tool list');
-});
-
-test('V6.4 home reflects reference-two structure and original topic hierarchy without fake records',()=>{
- const {after:document}=enhance('index.html');
- const first=document.querySelector('.next-home-v64');
- assert.ok(first?.querySelector('.next-home-intro-block'),'hero has intro + large paper');
- assert.ok(first.querySelector('.next-home-intro-copy h1'),'clear primary action');
- assert.ok(first.querySelector('.next-home-intro-sheet [data-construction-example="right-angle-fillet"]'),'independently checked fillet drawing retained');
- assert.ok(first.querySelector('.next-home-workflow #recent'),'recent history location');
- assert.ok(first.querySelector('.next-home-workflow #knowledge'),'my problems location');
- assert.match(document.querySelector('#recent').textContent,/暂无可恢复的解题记录/);
- assert.match(document.querySelector('#knowledge').textContent,/本机项目/);
- assert.doesNotMatch(document.querySelector('#recent').textContent,/2024|上次编辑：/,'do not invent personal history');
+ assert.ok(document.querySelector('#project-workbench #v7-sheet'));
+ assert.ok(document.querySelector('#project-workbench #v7-projects'));
+ assert.ok(document.querySelector('#project-workbench #v7-confirm'));
+ assert.ok(document.querySelector('#project-workbench #v7-solve'));
+ assert.equal(document.querySelectorAll('form').length,0);
+ for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(document.querySelector('a[href="'+page+'"]'),page+' discoverable');
+ assert.doesNotMatch(document.body.textContent,/题库已接入|任意题图一键解答/);
  const categories=[...document.querySelectorAll('.next-home-category-grid>a')];
  assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面作图','三视图与投影','截交与相贯','组合体作图']);
- for(const href of ['labs/circle-fillet-live.html','labs/point-projection-live.html','labs/cone-cut-live.html','labs/composite-geometry.html'])
-  assert.ok(categories.some(a=>a.getAttribute('href')===href),'actual category tool '+href);
- const nav=document.querySelector('.next-sidebar');
- assert.ok(nav.querySelector('a[href="index.html"]'),'main workbench accessible');
- assert.ok(nav.querySelector('a[href="index.html#tools"]'),'specialist tools accessible');
- assert.ok(nav.querySelector('a[href="index.html#recent"]'),'local project history accessible');
  for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
- assert.ok(document.querySelector('.next-home-more-tools:not([open])'),'all labs can stay collapsed');
-});
-test('homepage R40 fillet obeys exact radius and two orthogonal tangencies',()=>{
- const {after:document}=enhance('index.html');
- const sheet=document.querySelector('[data-construction-example="right-angle-fillet"]');
- assert.ok(sheet,'the hero must show the new fillet instead of the old cone');
- const svg=sheet.querySelector('svg');
- assert.ok(svg);
- const arc=svg.querySelector('[data-fillet-arc="true"]');
- const m=/^M(\d+) (\d+) A(\d+) (\d+) 0 0 0 (\d+) (\d+)$/.exec(arc.getAttribute('d'));
- assert.ok(m,'fillet must be a true circular quarter arc, not decorative Bezier');
- const [x1,y1,rx,ry,x2,y2]=m.slice(1).map(Number);
- assert.equal(rx,ry,'a fillet arc must be circular');
- const scale=Number(arc.getAttribute('data-px-per-mm'));
- assert.equal(rx/scale,40,'the displayed R40 dimension must match the radius');
- const center=svg.querySelector('[data-fillet-center="true"]');
- const cx=+center.getAttribute('cx'),cy=+center.getAttribute('cy');
- const t1=svg.querySelector('[data-tangent="t1"]'),t2=svg.querySelector('[data-tangent="t2"]');
- assert.equal(+t1.getAttribute('cx'),x1);
- assert.equal(+t1.getAttribute('cy'),y1);
- assert.equal(+t2.getAttribute('cx'),x2);
- assert.equal(+t2.getAttribute('cy'),y2);
- assert.equal(x1,cx,'horizontal-line tangency radius must be vertical');
- assert.equal(y1,cy+rx);
- assert.equal(x2,cx+rx,'vertical-line tangency radius must be horizontal');
- assert.equal(y2,cy);
- const horizontal=/^M(\d+) (\d+)H(\d+)$/.exec(svg.querySelector('[data-horizontal-line]').getAttribute('d'));
- const vertical=/^M(\d+) (\d+)V(\d+)$/.exec(svg.querySelector('[data-vertical-line]').getAttribute('d'));
- assert.ok(horizontal&&vertical,'both true-line sections must exist');
- assert.equal(+horizontal[2],y1);
- assert.equal(+horizontal[3],x1,'horizontal line must end at T1');
- assert.equal(+vertical[1],x2);
- assert.equal(+vertical[2],y2,'vertical line must start at T2');
- assert.equal(svg.querySelectorAll('[data-fillet-arc]').length,1,'one real fillet');
- assert.equal(svg.querySelectorAll('[data-construction-guides] [data-radius-to-t1], [data-construction-guides] [data-radius-to-t2]').length,2);
- assert.match(sheet.querySelector('.next-home-paper-caption').textContent,/非上传题目答案/);
- assert.ok(document.querySelector('.next-home-example[href="labs/circle-fillet-live.html"]'));
- assert.ok(!document.querySelector('[data-projection-example="right-circular-cone"]'),'old repeated cone must be replaced');
-});
-
-test('V6.6 enlarged homepage SVG keeps the verified R40 construction fully visible',()=>{
- const {after:document}=enhance('index.html');
- const hero=document.querySelector('.next-home-v64');
- const sheet=hero.querySelector('[data-construction-example="right-angle-fillet"]');
- assert.ok(sheet,'hero drawing remains linked to actual fillet example');
- const svg=sheet.querySelector('svg');
- const [minX,minY,width,height]=svg.getAttribute('viewBox').trim().split(' ').filter(Boolean).map(Number);
- assert.ok(width>0&&height>0);
- assert.ok(width<=550&&height<=400,'SVG viewBox must tightly frame construction');
- assert.ok(minX<=290 && minY<=123,'known horizontal/vertical segments remain visible');
- const arc=svg.querySelector('[data-fillet-arc="true"]');
- assert.ok(arc,'no artistic replacement of the verified arc');
- for(const [x,y] of [[512,440],[672,280],[512,280],[672,123],[290,440],[465,474]]){
-  assert.ok(x>=minX&&x<=minX+width&&y>=minY&&y<=minY+height,
-   'key geometry or dimension label must remain inside clipped sheet');
- }
- assert.ok(hero.querySelectorAll('.next-home-strengths svg').length===3,'three feature icons replace verbose space');
- assert.ok(document.querySelector('.next-home-workflow #recent'),'keep genuine recent-task card');
- assert.ok(document.querySelector('.next-home-workflow #knowledge'),'keep honest my-problems card');
- assert.equal(hero.querySelectorAll('.next-home-intro-sheet [data-next-illustration]').length,1,
-  'exactly one paper view');
- const css=fs.readFileSync(path.join(root,'ui-next/ui-next.css'),'utf8');
- assert.ok(css.includes('V6.6 | Homepage paper-first hero'));
- assert.ok(css.includes('grid-template-columns:minmax(0,.81fr) minmax(0,1.19fr)'));
- assert.ok(css.includes('aspect-ratio:525 / 387'));
- assert.ok(css.includes('align-items:start'));
- assert.ok(css.includes('@media(min-width:641px) and (max-width:790px)'));
-
-});
-
-test('start page offers actual solver entries and honest knowledge boundaries',()=>{
- const {after}=enhance('index.html');
- assert.ok(after.querySelector('.next-home-hero'),'new task-oriented home');
- assert.match(after.querySelector('#knowledge').textContent,/本机项目/);
- assert.ok(after.querySelector('a[href="labs/auto-fillet-live.html"]'));
- // V7 adds local-only image and .daiproject inputs, never a network upload form.
- assert.equal(after.querySelectorAll('form').length,0);
- assert.equal(after.querySelectorAll('#project-workbench input[type=file]').length,2);
- assert.ok(after.getElementById('v7-photo'));
- assert.ok(after.getElementById('v7-confirm'));
- assert.ok(after.getElementById('v7-solve'));
- assert.doesNotMatch(after.body.textContent,/已保存 · 示例|题库已接入|任意题图一键解答/);
- for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(after.querySelector('a[href="'+page+'"]'),page+' discoverable');
- assert.ok(after.querySelector('[data-next-illustration]'));
 });
 
 test('V6.2 preserves full-size drawing and source contracts in seven workbenches',()=>{
@@ -282,17 +169,14 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
  // The newest source-private C1 review tool is an additional REAL tool,
  // not a duplicate of the old fixed 8-vertex long-box demonstration.
- assert.equal(links.length,21,'all published special-purpose tools, including signed-only C2 Cut, remain reachable');
- assert.equal(new Set(links).size,21,'tool entries should not repeat');
+ assert.equal(links.length,22,'all published special-purpose tools, including signed-only C2 Cut, remain reachable');
+ assert.equal(new Set(links).size,22,'tool entries should not repeat');
  assert(links.includes('labs/c2-native-cut-review.html'),
   'real native Cut partial certified V5 preview is visible from the enhanced homepage');
  assert(links.includes('labs/c1-reviewed-dxf-live.html'),
   'new original DXF reviewed C1 source lab must be accessible from home');
- const my=document.querySelector('#knowledge');
- assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
- assert.match(my.textContent,/本机项目/,'local project boundaries remain explicit');
- const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
- assert.deepEqual(sidebar,['工作台','我的项目','题型工具','帮助']);
+ const navigation=[...document.querySelectorAll('.next-task-nav a')].map(a=>a.textContent.trim());
+ assert.deepEqual(navigation,['解题','工具']);
 });
 test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
  const {after:document}=enhance('public-use.html');
@@ -308,14 +192,10 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   const root=page.includes('/')?'../':'';
   const favicon=document.querySelector('link[rel="icon"][type="image/svg+xml"]');
   assert.equal(favicon?.getAttribute('href'),root+'favicon.svg',page+' must reference shared blue icon');
-  const side=[...document.querySelectorAll('.next-sidebar nav a')];
-  assert.equal(side.length,4,page+' solver-first compact navigation');
-  for(const link of side){
-   assert.ok(link.getAttribute('aria-label'),page+' accessible label');
-   assert.ok(link.getAttribute('data-ui-tip'),page+' long-press tooltip');
-   assert.ok(link.querySelector('svg'),page+' genuine visible icon');
-  }
-  assert.ok(document.querySelector('.next-sidebar .next-start svg'),page+' launch icon');
+  const links=[...document.querySelectorAll('.next-task-nav a')];
+  assert.deepEqual(links.map(link=>link.textContent.trim()),['解题','工具']);
+  assert.equal(links[0].getAttribute('href'),page==='index.html'?'#project-workbench':root+'index.html#project-workbench');
+  assert.equal(links[1].getAttribute('href'),page==='index.html'?'#tools':root+'index.html#tools');
  }
  const svg=fs.readFileSync(path.join(root,'favicon.svg'),'utf8');
  assert.match(svg,/#0871f5/);
