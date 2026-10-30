@@ -75,6 +75,28 @@ function auditC2GeneratedResultProjectedM4M5({
    throw new TypeError('actual native output source box bounds must be finite and positive');
   return {id:box.id,min:box.min,max:box.max};
  });
+ // M5 consumes the actual closed-convex M0 halfspaces, while the native
+ // source-volume/open-ray checks consume the original axis-box bounds.
+ // Equality of component IDs alone cannot make two contradictory source
+ // solids the SAME geometry. Check all SIX original supporting planes
+ // exactly, independent of face order, before ANY M4/M5 evidence.
+ const sourceBoxHalfspacesReconciled=sourceBoxes.length===solids.length;
+ if(sourceBoxHalfspacesReconciled){
+  for(let i=0;i<sourceBoxes.length;i++){
+   const box=sourceBoxes[i],halfspaces=solids[i].halfspaces;
+   const expected=[
+    ['x',-1,-box.min[0]],['x',1,box.max[0]],
+    ['y',-1,-box.min[1]],['y',1,box.max[1]],
+    ['z',-1,-box.min[2]],['z',1,box.max[2]]
+   ];
+   if(halfspaces.length!==6||expected.some(([axis,sign,offset])=>
+    halfspaces.filter(h=>h&&h.normal&&
+      ['x','y','z'].every(k=>h.normal[k]===(k===axis?sign:0))&&
+      h.offsetMm===offset).length!==1))
+    throw new RangeError(
+     'native C2 original M0 convex halfspaces disagree with current box bounds');
+  }
+ }
  const insideOriginalBox=(point,box)=>['x','y','z'].every((axis,i)=>
   point[axis]>=box.min[i]-1e-8&&point[axis]<=box.max[i]+1e-8);
  // Endpoints are insufficient: a forged straight native edge can have
@@ -465,6 +487,8 @@ function auditC2GeneratedResultProjectedM4M5({
   revision,actualNativeBooleanOperation:operation,
   subtractiveCutM5WholeSceneOcclusionSigned:false,
   sourceResultEdgeCount:all.length,
+  originalM0BoxBoundsAndConvexHalfspacesExactlyReconciled:
+   sourceBoxHalfspacesReconciled,
   independentlyAccountedNative3DVertexCount:nativeVertexCoordinates.size,
   allNativeEdgeEndpointVertexIncidencesGloballyReconciled:true,
   actualNative3DVertexEndpointIncidenceCount:edges.length*2,

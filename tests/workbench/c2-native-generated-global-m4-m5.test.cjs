@@ -246,3 +246,28 @@ test('Cut rejects phantom native edge passing THROUGH a removed open void even w
  assert.equal(retained.allOfficialEngineeringLinesCertified,false);
  assert.equal(retained.fullOriginalConstructionIntentDAGSingleV5Authorized,false);
 });
+
+test('C2 refuses contradictory original M0 convex halfspaces even if source IDs and box bounds match',()=>{
+ const output=[edge(1,[1,2],{x:0,y:0,z:0},{x:4,y:0,z:0}),
+  edge(2,[3,4],{x:5,y:0,z:0},{x:9,y:0,z:0})];
+ const run=geometry=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids:geometry,boxes:parts,nativeReport:report(output)
+ });
+ const valid=run(solids);
+ assert.equal(valid.originalM0BoxBoundsAndConvexHalfspacesExactlyReconciled,true);
+ assert.equal(valid.allOfficialEngineeringLinesCertified,false);
+ // A convex occluder shifted by 1 mm cannot be used as evidence of
+ // visibility for a completely different source BRep with the same ID.
+ const forged=structuredClone(solids);
+ forged[0].halfspaces[0].offsetMm+=1;
+ assert.throws(()=>run(forged),
+  /original M0 convex halfspaces disagree with current box bounds/);
+ const other=structuredClone(solids);
+ other[1].halfspaces[0].normal.x=0.5;
+ assert.throws(()=>run(other),
+  /original M0 convex halfspaces disagree with current box bounds/);
+ // M0 face enumeration order is irrelevant.
+ const shuffled=structuredClone(solids);
+ shuffled[0].halfspaces.reverse();
+ assert.equal(run(shuffled).originalM0BoxBoundsAndConvexHalfspacesExactlyReconciled,true);
+});
