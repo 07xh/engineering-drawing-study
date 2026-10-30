@@ -314,3 +314,50 @@ test('HLR paper endpoints and caller-supplied flags cannot fabricate original cl
   row.generatedEdgeEngineeringLineStyle==='undetermined'&&
   row.signedV5Action===false));
 });
+
+test('same-run exact generated-paper rational partial gap is consumed by M5 only as unsigned evidence',()=>{
+ const x=fixture(),row=x.positiveOriginalGapRays.rows[0];
+ row.sameRunExactCollinearGeneratedHLRPaperGapCandidate={
+  originalSourceParameterGap:[0.2,0.3],
+  exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory:[
+   ['1/4','5404319552844595/18014398509481984']
+  ],
+  positiveRationalGapResidualAfterCollinearPaperCandidates:[
+   ['3602879701896397/18014398509481984','1/4']
+  ],
+  originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory:true,
+  sourceGapClosedByNativeEndpointEvidence:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ };
+ const out=audit(x),stats=out.counts;
+ assert.equal(stats.unresolvedM5Obligations,2);
+ assert.equal(stats.positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness,1);
+ assert.equal(stats.positiveM5GapsWithExactRationalPaperCandidateSubranges,1);
+ assert.equal(stats.positiveM5GapsWithExactRationalPaperResidualStillPositive,1);
+ assert.equal(stats.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory,0);
+ assert.deepEqual(out.records[1].sameRunExactCollinearHLRPaperCandidateOnlyGapEvidence.
+  positiveRationalGapResidualAfterCollinearPaperCandidates,
+  [['3602879701896397/18014398509481984','1/4']]);
+ assert.equal(out.records[1].generatedPaperCandidateDoesNotCloseOriginalM5SourceGap,true);
+ assert.equal(out.records[1].sourceOriginalTopoDSGeneratedHistoryCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const fullyPaper=structuredClone(x);
+ fullyPaper.positiveOriginalGapRays.rows[0].
+  sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+  positiveRationalGapResidualAfterCollinearPaperCandidates=[];
+ const onlyPaper=audit(fullyPaper);
+ assert.equal(onlyPaper.counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory,1);
+ assert.equal(onlyPaper.counts.unresolvedM5Obligations,2);
+ assert.equal(onlyPaper.officialV5Authorized,false);
+ for(const corrupt of [
+  y=>y.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+   originalSourceParameterGap=[0.2,0.4],
+  y=>y.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+   sourceGapClosedByNativeEndpointEvidence=true,
+  y=>y.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+   signedV5Action=true
+ ]){
+  const forged=structuredClone(x);corrupt(forged);
+  assert.throws(()=>audit(forged),/same-run rational generated HLR paper candidate/);
+ }
+});
