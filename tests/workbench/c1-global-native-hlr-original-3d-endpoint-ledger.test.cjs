@@ -353,17 +353,18 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
 });
 
 
-function attachOriginalPhysicalBRepVertexTopology(x){
+function attachOriginalPhysicalBRepVertexTopology(x,multiplicity=1){
  const ids=[...new Set(x.geometry.data.edges.flat())].sort();
- const occurrences=2*x.geometry.data.edges.length;
- const same=ids.reduce((total,id)=>{const n=x.geometry.data.edges.filter(e=>e.includes(id)).length;
+ const occurrences=2*x.geometry.data.edges.length*multiplicity;
+ const same=ids.reduce((total,id)=>{const n=multiplicity*
+  x.geometry.data.edges.filter(e=>e.includes(id)).length;
   return total+n*(n-1)/2;},0);
- x.cad.occtOriginalEdgeOccurrenceCount=x.geometry.data.edges.length;
+ x.cad.occtOriginalEdgeOccurrenceCount=x.geometry.data.edges.length*multiplicity;
  x.cad.originalNativeVertexTopology={
   schema:'draftai-c1-original-occt-brep-vertex-physical-topology/1',
   sourceGeometryId:x.geometry.id,originalM0SourceVertexIds:ids,
   originalM0VertexNativeOccurrenceCounts:Object.fromEntries(ids.map(id=>
-   [id,x.geometry.data.edges.filter(e=>e.includes(id)).length])),
+   [id,multiplicity*x.geometry.data.edges.filter(e=>e.includes(id)).length])),
   originalBRepVertexOccurrencesChecked:occurrences,
   allOriginalBRepVertexPairsCompared:occurrences*(occurrences-1)/2,
   originalSamePhysicalVertexTopoDSPairs:same,
@@ -391,6 +392,19 @@ test('genuine original BRep physical vertex proof survives distinct generated HL
  }
  assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
  assert.equal(r.officialV5Authorized,false);
+});
+test('real two-face TopExp original BRep edge occurrences preserve authentic vertex topology',()=>{
+ const x=attachOriginalPhysicalBRepVertexTopology(
+  setup({two:true}),2);
+ const r=audit(x);
+ assert.equal(r.originalNativeBRepPhysicalVertexTopologyVerified,true);
+ assert.equal(r.views.V.rows[0].signedV5Action,false);
+ assert.equal(r.counts.globalGeneratedHLREdgesChecked,6);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('surplus three-face original BRep edge occurrence multiplier cannot impersonate a closed manifold',()=>{
+ const x=attachOriginalPhysicalBRepVertexTopology(setup({two:true}),3);
+ assert.throws(()=>audit(x),/untrusted same-run original native 3D vertex topology/);
 });
 test('stale or forged original physical BRep TShape graph cannot certify generated junction',()=>{
  for(const mutate of [
