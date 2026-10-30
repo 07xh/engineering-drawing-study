@@ -30,6 +30,8 @@ const {auditC1RoundedInversePaperBoundaryAlias}=
  require('./c1-rounded-inverse-paper-boundary-alias.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('./c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1ExactConvexOriginalOpenEdgeRays}=
+ require('./c1-exact-convex-original-open-edge-ray.cjs');
 // Positive original-M0 boundedness and extreme-vertex proof for the CURRENT
 // reviewed source. Never accept a caller-supplied status or CAD projection
 // as a substitute for an independent 3D halfspace/recession certificate.
@@ -599,6 +601,10 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
  const ledgerIds=new Set(ledger.edges.map(x=>x.sourceEdgeId));
  validateC1RealHLRSourceCandidates({geometry:g,cad});
  const nativeScopedSourceLedger=auditC1NativeScopedHLRSourceConsumer({geometry:g,cad});
+ const exactOpenEdgeRays=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry:g,nativeFaceAdjacency:cad.originalNativeFaceAdjacency,
+  nativeM4Views:nativeScopedSourceLedger.views
+ });
  if(cad.revision!==revision||cad.sourceGeometryId!==g.id||
     cad.lineStyleCertified!==false||cad.v5Authorized!==false||
     !Array.isArray(proof.views)||proof.views.length!==3)
@@ -753,6 +759,7 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   revision,sourceGeometryId:g.id,unit:'mm',
   engine:'opencascade.js',proofScope:cad.proofScope,
   independentlyM0ExtremeVertexProof:m0ExtremeVertices,
+  independentExactConvexOriginalOpenEdgeAllFaceRays:exactOpenEdgeRays,
   independentlyM0BoundedExtremeVertexSetVerified:
    m0ExtremeVertices.vertexHullVerified===true,
   allThreeViewsGlobalM5Certified:proof.allThreeViewsGlobalContourCertified,
