@@ -111,3 +111,66 @@ test('forged independent all-face original ray class is rejected',()=>{
   expectedHLRClassFromIndependentOriginalRay='visible-and-hidden';
  assert.throws(()=>audit(x),/original 3D all-face ray classification/);
 });
+
+
+test('same-revision M4 full [0,1] source and exact OPEN depth cuts reach M5 without signing V5',()=>{
+ const x=fixture(),row=x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0],
+  view=row.view,sourceEdgeId=row.sourceEdgeId;
+ Object.assign(row,{
+  nativeOriginal3DM4SourceProjectionPresent:true,
+  nativeOriginal3DM4ProjectionWholeSourceCoverage:true,
+  completeRealNative3DSourceParameterPartition:true,
+  originalM4SourcePartitionComplete:true,
+  native3DM4ProjectedCandidateSegments:[{
+   view,sourceEdgeId,native3DHLRClass:'hidden-sharp',
+   originalM0UnitParameterRange:[0,1]}],
+  nativeOriginalM4CoProjectedDepthOrder:[{
+   originalM0UnitParameterRange:[0,1],native3DHLRClass:'hidden-sharp',
+   canonicalOriginalM4EventCutPartitionCoversNative3DInterval:true,
+   originalM4CutEndpointDoesNotAuthorize3DPhysicalJunction:true,
+   originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility:true,
+   generated2DHLREdgeTopologyProven:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false,
+   canonicalOriginalM4EventCutDepthRows:[{
+    originalM4SourceCutParameterRange:[0,1],
+    originalM4CutFromCurrentReviewedEventGraph:true,
+    originalM4EventPaperOnlyIsNot3DPhysicalJunction:true,
+    openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
+    engineeringLineStyle:'undetermined',signedV5Action:false,
+    strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly:true,
+    hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:false,
+    coProjectedOriginal3DDepthOrder:{
+     schema:'draftai-c1-original-3d-coproject-depth-order/1',
+     view,sourceEdgeId,originalParameterRange:[0,1],
+     entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources:true,
+     entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource:false,
+     wholeIntervalFrontmostCertified:false,visibleSourceCoversEntireLine:false,
+     engineeringLineStyleSigned:false,signedV5ActionCount:0
+    }
+   }]
+  }]
+ });
+ const positive=audit(x);
+ assert.equal(positive.counts.originalM4FullSourceOpenDepthPartitions,1);
+ assert.equal(positive.counts.originalM4FullSourceOpenDepthAllClassified,1);
+ assert.equal(positive.counts.originalM4OpenFrontCuts,1);
+ assert.equal(positive.counts.unresolvedM5Obligations,2);
+ assert.equal(positive.records[0].sourceOriginalTopoDSGeneratedHistoryCertified,false);
+ assert.equal(positive.officialV5Authorized,false);
+ const gap=structuredClone(x);
+ gap.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  nativeOriginalM4CoProjectedDepthOrder[0].
+  canonicalOriginalM4EventCutDepthRows[0].
+  originalM4SourceCutParameterRange=[Number.MIN_VALUE,1];
+ assert.throws(()=>audit(gap),/M4 canonical event cut/);
+ const swapped=structuredClone(x);
+ swapped.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  native3DM4ProjectedCandidateSegments[0].sourceEdgeId='g::C|D';
+ assert.throws(()=>audit(swapped),/native M4 source\/depth/);
+ const missing=structuredClone(x);
+ missing.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  nativeOriginalM4CoProjectedDepthOrder[0].
+  canonicalOriginalM4EventCutDepthRows[0].
+  coProjectedOriginal3DDepthOrder.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources=false;
+ assert.throws(()=>audit(missing),/M4 open-depth class/);
+});
