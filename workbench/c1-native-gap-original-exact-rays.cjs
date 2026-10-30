@@ -250,6 +250,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder:0,
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth:0,
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth:0,
+  canonicalM4CutSubspansWeakFrontWithClosedOriginalRay:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
@@ -324,6 +325,17 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      if(sliced.status===
         'positive-original-dyadic-projection-binary64-collapsed-held')
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
+     // This exact original-source endpoint proof is independently
+     // recomputed from M0 convex halfspaces, not a caller-supplied HLR
+     // endpoint or paper coincidence. A physical vertex depth tie plus
+     // a CLOSED clear ray permits weak frontmost source ordering on the
+     // entire original 3D cut. It still does NOT establish generated
+     // 2D HLR lineage, paper endpoint closure or formal M5/V5.
+     const weakFrontWithClosedOriginalRay=
+      sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true&&
+      originalRay.originalPhysicalCreaseProven===true&&
+      originalRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
+      originalRay.exactlyBothOriginalVertexForwardRaysClear===true;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
       originalM4CutFromCurrentReviewedEventGraph:true,
@@ -337,6 +349,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true,
       weakClosedOriginalSourceDepthBehindClearOpenRayPeerWithPhysicalVertexTie:
        sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true,
+      weakFrontWithIndependentOriginalClosedEndpointRay:
+       weakFrontWithClosedOriginalRay,
+      weakFrontWithOriginalClosedRayCannotCertifyGeneratedHLROrV5:true,
       weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5:true,
       openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
       engineeringLineStyle:'undetermined',signedV5Action:false
@@ -355,6 +370,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth++;
      if(sliced.wholeIntervalFrontmostCertified)
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost++;
+     else if(weakFrontWithClosedOriginalRay)
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay++;
      else if(sliced.visibleSourceCoversEntireLine)
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource++;
      else m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology++;
