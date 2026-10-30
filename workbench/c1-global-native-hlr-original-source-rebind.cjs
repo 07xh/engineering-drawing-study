@@ -80,7 +80,8 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      nativeIndex=entry?.hlrDataStructureOneBasedEdgeIndex;
     if(typeof sourceId!=='string'||!sourceId||
        !Number.isSafeInteger(nativeIndex)||nativeIndex<1||
-       indexBySource.has(sourceId)||usedNativeIndices.has(nativeIndex))
+       indexBySource.has(sourceId)||usedNativeIndices.has(nativeIndex)||
+       nativeIndex>originalIndices.length)
      throw new RangeError('non-bijective original HLR EdgeStatus source index');
     indexBySource.set(sourceId,nativeIndex);
     usedNativeIndices.add(nativeIndex);
@@ -94,6 +95,14 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
        typeof x.originalEdgeStatusAllVisible!=='boolean'||
        typeof x.originalEdgeStatusAllHidden!=='boolean'||
        (x.originalEdgeStatusAllVisible&&x.originalEdgeStatusAllHidden)||
+       !Number.isSafeInteger(x.nativeOriginalVisiblePartCount)||
+       x.nativeOriginalVisiblePartCount<0||x.nativeOriginalVisiblePartCount>512||
+       (x.originalEdgeStatusAllVisible&&x.nativeOriginalVisiblePartCount!==1)||
+       (x.originalEdgeStatusAllHidden&&x.nativeOriginalVisiblePartCount!==0)||
+       (!x.originalEdgeStatusAllVisible&&!x.originalEdgeStatusAllHidden&&
+        x.nativeOriginalVisiblePartCount===0)||
+       x.sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit!==true||
+       x.engineeringLineStyle!=='undetermined'||
        !['all-visible','all-hidden','mixed'].includes(x.originalSourceClass)||
        x.originalSourceClass!==(x.originalEdgeStatusAllVisible?
         'all-visible':x.originalEdgeStatusAllHidden?'all-hidden':'mixed')||
