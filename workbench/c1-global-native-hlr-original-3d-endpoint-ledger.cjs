@@ -152,6 +152,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   realNativeGeneratedVertexGraphPairsChecked:0,
   genuineGlobal3DSourceCurvePaperPairsCrossChecked:0,
   genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim:0,
+  genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4:0,
+  genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
   signedOfficialV5Actions:0
  };
@@ -237,6 +239,29 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    const line=lines[ordinal],originalId=row.uniqueOriginalSourceFilteredPaperCandidate,
     physical=originals.get(originalId),
     originalBRep=native.get(originalId);
+   // Bind the ACTUAL global 3D curve's native source parameter domain
+   // back to the SAME-REVISION M4 original source, class and exact range.
+   // An M4 interval lost to binary64 rounding stays held, not invented.
+   let native3DRangeMatchedCurrentM4=false;
+   if(global3DSource){
+    const actual=global3DSource.originalNativeCurveParameterRange;
+    const m4=m4ById.get(global3DSource.originalPhysicalSourceEdgeId);
+    const witnesses=m4?.segments.filter(segment=>{
+     const range=segment?.originalNative3DParameterRange;
+     return segment.sourceEdgeId===global3DSource.originalPhysicalSourceEdgeId&&
+      segment.view===view&&segment.native3DHLRClass===klass&&
+      segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+      segment.generated2DHLREdgeTopologyProven===false&&
+      segment.engineeringLineStyle==='undetermined'&&
+      segment.signedV5Action===false&&
+      Array.isArray(range)&&range.length===2&&
+      range[0]===actual[0]&&range[1]===actual[1];
+    })??[];
+    native3DRangeMatchedCurrentM4=witnesses.length===1;
+    if(native3DRangeMatchedCurrentM4)
+     counts.genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4++;
+    else counts.genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4++;
+   }
    if(!line?.from||!line.to||!['u','v'].every(k=>
        Number.isFinite(line.from[k])&&Number.isFinite(line.to[k])))
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
@@ -287,7 +312,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
      m4.native3DOriginalParameterPositiveGaps?.length===0&&
      m4.native3DOriginalParameterPositiveOverlaps?.length===0&&
-     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation?.length===0;
+     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation?.length===0&&
+     (!global3DSource||native3DRangeMatchedCurrentM4);
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
     const forward=p2eq(line.from,p)&&p2eq(line.to,q),
@@ -367,6 +393,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     independentGlobal3DOriginalCurveParameterRange:
      global3DSource?[...global3DSource.originalNativeCurveParameterRange]:null,
     independentGlobal3DSourceIsNotGenerated2DTopoDSHistory:true,
+    independentGlobal3DClassNativeParameterRangeMatchedCurrentM4:
+     native3DRangeMatchedCurrentM4,
+    independentGlobal3DClassNativeParameterRangeMatchIsNotHLRHistory:true,
     uniqueOriginalSourceFilteredPaperCandidate:originalId,
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
