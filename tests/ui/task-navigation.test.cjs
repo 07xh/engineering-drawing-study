@@ -38,3 +38,7 @@ test('home links do not reload the active project',()=>{
  const {document}=parseHTML(enhancePage(fs.readFileSync('index.html','utf8'),{page:'index.html'}));
  assert.deepEqual([...document.querySelectorAll('.next-task-nav a')].map(a=>a.getAttribute('href')),['#project-workbench','#tools']);
 });
+test('brand returns to workbench without reloading current home session',()=>{
+ const {document}=parseHTML(enhancePage(fs.readFileSync('index.html','utf8'),{page:'index.html'}));
+ assert.equal(document.querySelector('.next-brand').getAttribute('href'),'#project-workbench');
+});
