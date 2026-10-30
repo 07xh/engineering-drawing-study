@@ -184,6 +184,10 @@ function auditC1OriginalCoProjectedDepthOrder({
   to=exactOriginalPointOnStraightEdge(original[0],original[1],range[1],view);
  const mathematicallyPositive=cmpExact(from.u,to.u)!==0||
   cmpExact(from.v,to.v)!==0;
+ // Historical subpixel threshold is DIAGNOSTICS ONLY. Exact dyadic
+ // incidence, not this approximate display length, controls all proofs.
+ const positiveReceivedSubpixelDisplayRange=mathematicallyPositive&&
+  dist2(p,q)>0&&dist2(p,q)<=1e-8;
  if(![p.u,p.v,q.u,q.v].every(Number.isFinite))
   throw new RangeError('nonfinite rendered original source projection');
  if(!mathematicallyPositive||p.u===q.u&&p.v===q.v){
@@ -415,6 +419,10 @@ function auditC1OriginalCoProjectedDepthOrder({
   view,sourceGeometryId:geometry.id,sourceEdgeId,
   originalParameterRange:[...originalParameterRange],
   status,aliasesExamined:comparisons.length,comparisons,
+  originalDyadicProjectedIntervalPositive:mathematicallyPositive,
+  positiveSubpixelDisplaySourceNowPreciselyAudited:
+   positiveReceivedSubpixelDisplayRange,
+  displayThresholdNeverDeterminesExactSourceDepthOrVisibility:true,
   wholeIntervalFrontmostCertified:
    status==='candidate-strictly-front-of-all-aliases'|| 
    status==='no-positive-projected-source-alias',
