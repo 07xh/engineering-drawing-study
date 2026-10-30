@@ -22,6 +22,8 @@ const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditC1OriginalCoProjectedDepthOrder}=
  require('./c1-original-coproject-depth-order.cjs');
+const {auditC1NativeGapGeneratedVertexAdjacency}=
+ require('./c1-native-gap-generated-vertex-adjacency.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
@@ -1132,6 +1134,25 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      joint.fullOriginalSourceHistoryCertified!==false||
      joint.globalContinuousVisibilityCertified!==false)
    throw new RangeError('native gap lacks independent original OCCT curve evidence');
+  // Only the same-run true native OCJS source-scoped M4 pathway may
+  // supply a generated-paper witness. Synthetic CAD and unavailable
+  // source-filtered output must remain null, not fabricated coverage.
+  // This exact rational paper decomposition does NOT close source gaps
+  // without generated TopoDS source history and global M5 occlusion.
+  const exactNativePaperGap=m4Available&&
+   Array.isArray(cad.views?.[entry.view])&&
+   Array.isArray(cad.hiddenSharpViews?.[entry.view])?
+   auditC1NativeGapGeneratedVertexAdjacency({
+    geometry,view:entry.view,sourceEdgeId:entry.sourceEdgeId,
+    uncoveredIntervals:entry.positiveGaps,
+    visibleSegments:cad.views[entry.view],
+    hiddenSegments:cad.hiddenSharpViews[entry.view]
+   }):null;
+  if(exactNativePaperGap&&(
+     exactNativePaperGap.rows.length!==entry.positiveGaps.length||
+     exactNativePaperGap.generatedToOriginalTopoDSFullHistoryCertified!==false||
+     exactNativePaperGap.signedV5ActionCount!==0))
+   throw new RangeError('forged same-run native paper/source gap decomposition');
   for(const [gapOrdinal,range] of entry.positiveGaps.entries()){
    const originalCurve=joint.rows[gapOrdinal];
    if(originalCurve?.gapOrdinal!==gapOrdinal||
@@ -1172,6 +1193,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    rows.push({
     view:entry.view,sourceEdgeId:entry.sourceEdgeId,
     originalSourceParameterGap:[...range],
+    // Exact rational received HLR paper alone can shrink the PAPER
+    // diagnostic remainder but never close this original 3D M5 obligation.
+    sameRunExactCollinearGeneratedHLRPaperGapCandidate:
+     exactNativePaperGap?.rows[gapOrdinal]??null,
+    receivedPaperCandidateOnlyCannotCertifySourceHistory:true,
     original3DVertexIds:[...ray.originalVertexIds],
     independentOriginalOCCTCurveGapPositive:true,
     nativeOriginal3DM4GapSourceProjectionAvailable:nativeM4!==null,
