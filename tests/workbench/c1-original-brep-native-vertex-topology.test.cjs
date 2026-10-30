@@ -28,11 +28,12 @@ test('real sewn closed tetra has two face-owned occurrences per physical edge an
   {A:6,B:6,C:6,D:6});
  assert.equal(r.originalSamePhysicalVertexTopoDSPairs,60);
  assert.equal(r.signedV5ActionCount,0);
- const extra=structuredClone(x);
- extra.originalNativeVertexHandles.push(extra.originalNativeVertexHandles[0]);
+ const extra={...x,originalNativeVertexHandles:[
+  ...x.originalNativeVertexHandles,x.originalNativeVertexHandles[0]
+ ]};
  assert.throws(()=>audit(extra),/missing or duplicated original native/);
- const dropped=structuredClone(x);
- dropped.originalNativeVertexHandles.pop();
+ const dropped={...x,originalNativeVertexHandles:
+  x.originalNativeVertexHandles.slice(0,-1)};
  assert.throws(()=>audit(dropped),/missing or duplicated original native/);
 });
 test('actual original 3D source topology joins all six tetrahedral edges at four native TShapes',()=>{
