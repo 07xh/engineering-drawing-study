@@ -135,3 +135,70 @@ test('forged original source, mismatched 2D class and unsound ordinals are rejec
   assert.throws(()=>audit(x),/source|class|ordinal|paper|witness|duplicate|forged/i);
  }
 });
+
+test('native indexed original EdgeStatus plus scoped-to-global generated IsSame yields a positive causal filter witness',()=>{
+ const x=fixture();
+ for(const view of ['V','H','W']){
+  x.cad.nativeHLRSourceHistoryAPISurfaceByView??={};
+  const status={view,originalPhysicalSourceEdgeId:source,
+   nativeHLROriginalEdgeMapIndex:1,originalSourceClass:'all-visible',
+   originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false,
+   generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+   globalContinuousM5OcclusionCertified:false,signedV5Action:false};
+  x.cad.nativeHLRSourceHistoryAPISurfaceByView[view]={
+   originalDataStructureIndex:{edgeMapSourceBijectionVerified:true,
+    indexedOriginalSources:[{originalPhysicalSourceEdgeId:source,
+     hlrDataStructureOneBasedEdgeIndex:1}]},
+   originalEdgeStatusAPI:{
+    originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+    nativeOriginalSourceEdgeStatusRows:[status]
+   }
+  };
+ }
+ const witness=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0];
+ witness.globalDirectSameGeneratedTopoDSOrdinals=[0];
+ witness.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ const out=audit(x);
+ assert.equal(out.counts.wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness,1);
+ assert.equal(out.views.V[0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,true);
+ assert.equal(out.views.V[0].nativeOriginalHLREdgeMapSourceStatusClass,'all-visible');
+ assert.equal(out.views.V[0].nativeOriginalHLREdgeMapSourceIndex,1);
+ assert.equal(out.views.V[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(out.views.V[0].generatedOriginalTopoDSParameterHistoryStillNotCertified,true);
+ assert.equal(out.views.H[0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
+ assert.equal(out.officialV5Authorized,false);
+ // Original EdgeStatus is a stronger independent class check than
+ // mere paper coincidence; contradictory original class must HOLD.
+ const contrary=structuredClone(x);
+ const wrong=contrary.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+  originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0];
+ wrong.originalSourceClass='all-hidden';
+ wrong.originalEdgeStatusAllVisible=false;
+ wrong.originalEdgeStatusAllHidden=true;
+ const held=audit(contrary);
+ assert.equal(held.views.V[0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
+ assert.equal(held.counts.wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch,1);
+ assert.equal(held.signedV5ActionCount,0);
+ // A unique paper alias without native IsSame never earns a causal
+ // generated-2D edge identity, even when the ORIGINAL source is visible.
+ const paperOnly=structuredClone(x);
+ paperOnly.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].
+  globalDirectSameGeneratedTopoDSOrdinals=[];
+ paperOnly.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].
+  actualNativeScopedToGlobalGeneratedEdgeIsSameProven=false;
+ assert.equal(audit(paperOnly).counts.
+  wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness,0);
+ for(const mutate of [
+  y=>{y.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalEdgeStatusAPI.
+   nativeOriginalSourceEdgeStatusRows[0].nativeHLROriginalEdgeMapIndex=2;},
+  y=>{y.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalDataStructureIndex.
+   indexedOriginalSources[0].originalPhysicalSourceEdgeId=other;},
+  y=>{y.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalEdgeStatusAPI.
+   originalHLROpenSourceClassBoundToOriginalEdgeMap=false;},
+  y=>{y.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalEdgeStatusAPI.
+   nativeOriginalSourceEdgeStatusRows[0].generated2DHLREdgeToOriginalSourceHistoryCertified=true;}
+ ]){
+  const forged=structuredClone(x);mutate(forged);
+  assert.throws(()=>audit(forged),/native original HLR EdgeStatus|unverified original HLR EdgeStatus|forged native original HLR/);
+ }
+});
