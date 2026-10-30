@@ -103,6 +103,20 @@ test('a positive one-ULP native overlap cannot certify an entire original edge',
  assert.equal(r.views.W[1].signedV5Action,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+test('exactly adjacent native intervals preserve valid source-ray certification',()=>{
+ const m=nativeM4(),row=m.W.nativeOriginal3DM4Candidates[1];
+ row.segments=[{...row.segments[0],originalM0UnitParameterRange:[0,0.5]},
+  {...row.segments[0],originalM0UnitParameterRange:[0.5,1]}];
+ const r=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry,nativeFaceAdjacency,nativeM4Views:m
+ });
+ assert.equal(r.status,'audited');
+ assert.equal(r.counts.exactOpenEdgeNativeClassAgreements,18);
+ assert.equal(r.views.W[1].originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,true);
+ assert.equal(r.views.W[1].engineeringLineStyle,'undetermined');
+ assert.equal(r.views.W[1].signedV5Action,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
 test('forged native face adjacency cannot certify an original 3D ray',()=>{
  const fake=structuredClone(nativeFaceAdjacency);
  fake.edges[0].originalM0AdjacentFaceIndices=[0,0];
