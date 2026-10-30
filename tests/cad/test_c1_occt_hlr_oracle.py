@@ -67,6 +67,7 @@ class C1CADOracleTests(unittest.TestCase):
                     self.assertFalse(edge["generated2DTopoDSEdgeHistoryCertified"])
                     self.assertFalse(edge["wholeSceneContinuousOcclusionCertified"])
                     self.assertFalse(edge["signedV5Action"])
+                    self.assertIn(edge["singleGeneratedFullEdgePaperEndpointsExactlyEqualOriginalM0"], (None, True, False))
                 self.assertTrue(v["hullVerticesAgreement"])
                 self.assertTrue(v["hullAreasAgreement"])
                 self.assertTrue(v["occtVisibleHLRCoversWholeM5Hull"])
@@ -106,6 +107,7 @@ class C1CADOracleTests(unittest.TestCase):
             self.assertGreater(row["sourceScopedGeneratedVisibleEdgeCount"], 0)
             self.assertFalse(row["generated2DTopoDSEdgeHistoryCertified"])
             self.assertFalse(row["wholeSceneContinuousOcclusionCertified"])
+            self.assertFalse(row["singleGeneratedFullEdgePaperEndpointsExactlyEqualOriginalM0"])
         forged = copy.deepcopy(case)
         forged["geometry"]["data"]["edges"][0] = ["A", "D"]
         with self.assertRaisesRegex(ValueError, "missing original edge|duplicates"):
