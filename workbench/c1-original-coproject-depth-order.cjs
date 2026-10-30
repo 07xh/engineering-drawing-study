@@ -285,9 +285,10 @@ function auditC1OriginalCoProjectedDepthOrder({
   });
   const [startDepth,endDepth]=approximate;
   if(!front&&!behind)hasPartialOrTie=true;
-  if(behind&&(
-     peer.status==='single-opaque-solid-whole-open-ray-clear'||
-     peer.status==='exterior-contour-held-by-original-m5'))
+  // A contour explicitly held by M5 is NOT a certified clear ray.
+  // Only positive original opaque-solid evidence can suppress a source
+  // behind it; otherwise the relative depth is a HOLD.
+  if(behind&&peer.status==='single-opaque-solid-whole-open-ray-clear')
     behindCertifiedVisible=true;
   comparisons.push({...base,
    status:front?'candidate-strictly-front':
@@ -311,8 +312,7 @@ function auditC1OriginalCoProjectedDepthOrder({
    strictOriginal3DDepthOrderNoToleranceUsed:true,
    entireOriginalStraightSubspanDepthOrderCertified:front||behind,
    competingSourceHasCertifiedClearForwardRay:
-    peer.status==='single-opaque-solid-whole-open-ray-clear'||
-    peer.status==='exterior-contour-held-by-original-m5'});
+    peer.status==='single-opaque-solid-whole-open-ray-clear'});
  }
  // A strict affine ordering in the OPEN source interval survives a
  // genuine shared M0 vertex depth tie at the boundary. This is strictly
