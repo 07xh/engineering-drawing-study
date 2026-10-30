@@ -16,12 +16,14 @@ import sys
 import time
 from pathlib import Path
 
-# OCCT projector points INTO the object, opposite DraftAI model->observer.
-# Local OCCT projection axes are (paper u, -paper v) in all three views.
+# HLRAlgo_Projector's axis direction is the observer direction. Reversing
+# it preserves a convex 2D silhouette but swaps visible/hidden source edges.
+# Match core/projection/conventions.js FIRST_ANGLE_OBSERVER_RAYS exactly.
+# These Ax2 frames flatten directly to (paper u, paper v).
 FRAMES = {
-    "V": ((0, 1, 0), (1, 0, 0)),
-    "H": ((0, 0, -1), (1, 0, 0)),
-    "W": ((-1, 0, 0), (0, 1, 0)),
+    "V": ((0, -1, 0), (1, 0, 0)),
+    "H": ((0, 0, 1), (1, 0, 0)),
+    "W": ((1, 0, 0), (0, 1, 0)),
 }
 
 
@@ -187,7 +189,7 @@ def extract_occt_visible_hlr(shape, view):
         pts = []
         while verts.More():
             p = BRep_Tool.Pnt_s(TopoDS.Vertex_s(verts.Current()))
-            pts.append((p.X(), -p.Y()))
+            pts.append((p.X(), p.Y()))
             verts.Next()
         if len(pts) != 2:
             reject("OCCT projected HLR edge not bounded by two vertices")
