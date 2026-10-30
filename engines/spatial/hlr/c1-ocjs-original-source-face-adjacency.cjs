@@ -29,20 +29,31 @@ function auditC1OriginalBRepFaceEdgeAdjacency({
   if(expectedEdges.has(id))throw new RangeError('duplicate reviewed original source edge');
   expectedEdges.add(id);
  }
- const nativeEdges=[];
+ // TopExp_Explorer on a sewn shell can return one occurrence per face.
+ // A physical source edge is allowed to occur twice ONLY when both native
+ // occurrences are symmetrically IsSame: it is one actual shared TShape,
+ // not two coincident but topologically unrelated edges. Deduplicate for
+ // the source/face bijection without discarding the occurrence evidence.
+ const nativeEdges=[],nativeBySource=new Map();
  for(const row of originalNativeEdgeHandles){
   if(!expectedEdges.has(row?.sourceEdgeId)||
      typeof row.edge?.IsSame!=='function'||row.edge.IsNull?.()===true||
      row.edge.IsSame(row.edge)!==true)
    throw new RangeError('unbound original native BRep source edge');
-  nativeEdges.push(row);
+  const prior=nativeBySource.get(row.sourceEdgeId);
+  if(prior){
+   const forward=row.edge.IsSame(prior.edge),
+    reverse=prior.edge.IsSame(row.edge);
+   if(typeof forward!=='boolean'||typeof reverse!=='boolean'||
+      forward!==reverse||!forward)
+    throw new RangeError('repeated sewn source edge is not the same native TopoDS TShape');
+  }else{
+   nativeBySource.set(row.sourceEdgeId,row);
+   nativeEdges.push(row);
+  }
  }
- // A duplicated native handle can pass the pairwise IsSame graph while
- // falsely inflating the source inventory. Require a bijection, not merely
- // that every reviewed source ID occurs at least once.
- if(nativeEdges.length!==expectedEdges.size||
-    new Set(nativeEdges.map(x=>x.sourceEdgeId)).size!==expectedEdges.size)
-  throw new RangeError('missing or duplicated original native BRep source edge');
+ if(nativeEdges.length!==expectedEdges.size)
+  throw new RangeError('missing original native BRep source edge');
  for(let i=0;i<nativeEdges.length;i++)for(let j=i+1;j<nativeEdges.length;j++){
   const a=nativeEdges[i],b=nativeEdges[j];
   const f=a.edge.IsSame(b.edge),r=b.edge.IsSame(a.edge);
@@ -99,6 +110,7 @@ function auditC1OriginalBRepFaceEdgeAdjacency({
  return freeze({schema:'draftai-c1-original-occt-brep-face-edge-adjacency/1',
   sourceGeometryId:geometry.id,
   nativeBRepFacesChecked:faceRows.length,
+  nativeOriginalBRepEdgeExplorerOccurrencesChecked:originalNativeEdgeHandles.length,
   nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces:sourceRows.length,
   allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified:true,
   faces:faceRows.sort((a,b)=>a.originalM0FaceIndex-b.originalM0FaceIndex),
