@@ -333,6 +333,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      // 2D HLR lineage, paper endpoint closure or formal M5/V5.
      const weakFrontWithClosedOriginalRay=
       sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true&&
+      segment.native3DHLRClass==='visible-sharp'&&
+      nativePartitionFor(view,sourceEdgeId)?.fullNative3DClassConcordanceOnly===true&&
+      originalRay.fullProjectedVisibleSourceLineProven===true&&
       originalRay.originalPhysicalCreaseProven===true&&
       originalRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
       originalRay.exactlyBothOriginalVertexForwardRaysClear===true;
