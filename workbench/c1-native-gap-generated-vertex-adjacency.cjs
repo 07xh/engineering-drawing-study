@@ -164,6 +164,54 @@ function auditC1NativeGapGeneratedVertexAdjacency({
    }
   }
  }
+ // Compute the exact rational intersection between RECEIVED native HLR
+ // paper candidates and each STILL-POSITIVE original M5 parameter gap.
+ // Only segments with BOTH endpoints exactly on the original projected
+ // M0 line and inside [0,1] enter this diagnostic. A rounded dominant
+ // axis inverse alone is NOT a line-incidence or ownership proof.
+ // Even complete paper-candidate coverage cannot replace generated
+ // TopoDS source history, a closed ray, or a formal V5 line.
+ const one=asRatio(1),zeroRatio=asRatio(0);
+ const collinearPaperRanges=[];
+ for(let i=0;i<exactReceivedPaperParameters.length;i+=2){
+  const a=exactReceivedPaperParameters[i],
+   b=exactReceivedPaperParameters[i+1];
+  if(a.collinear!==true||b.collinear!==true||
+     a.parameter===null||b.parameter===null||
+     compareRatio(a.parameter,zeroRatio)<0||
+     compareRatio(b.parameter,zeroRatio)<0||
+     compareRatio(a.parameter,one)>0||
+     compareRatio(b.parameter,one)>0||
+     compareRatio(a.parameter,b.parameter)===0)continue;
+  collinearPaperRanges.push(compareRatio(a.parameter,b.parameter)<0?
+   [a.parameter,b.parameter]:[b.parameter,a.parameter]);
+ }
+ collinearPaperRanges.sort((a,b)=>
+  compareRatio(a[0],b[0])||compareRatio(a[1],b[1]));
+ const paperCandidateGapIntersection=(from,to)=>{
+  let cursor=from;
+  const seen=[],residual=[];
+  for(const [a,b] of collinearPaperRanges){
+   const left=compareRatio(a,from)<0?from:a,
+    right=compareRatio(b,to)>0?to:b;
+   if(compareRatio(left,right)>=0)continue;
+   if(compareRatio(left,cursor)>0)
+    residual.push([cursor,left]);
+   if(compareRatio(right,cursor)>0){
+    if(seen.length&&compareRatio(left,seen.at(-1)[1])<=0)
+     seen.at(-1)[1]=right;
+    else seen.push([compareRatio(left,cursor)<0?cursor:left,right]);
+    cursor=right;
+   }
+  }
+  if(compareRatio(cursor,to)<0)residual.push([cursor,to]);
+  const serialize=parts=>parts.map(row=>row.map(printRatio));
+  return {
+   exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory:serialize(seen),
+   positiveRationalGapResidualAfterCollinearPaperCandidates:serialize(residual),
+   originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory:true
+  };
+ };
  let previous=0;
  const rows=uncoveredIntervals.map((gap,index)=>{
   if(!Array.isArray(gap)||gap.length!==2||
@@ -201,6 +249,7 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   const atTo=p=>p.parameter!==null&&
    compareRatio(p.parameter,toExact)===0;
   return {gapOrdinal:index,originalSourceParameterGap:[...gap],
+   ...paperCandidateGapIntersection(fromExact,toExact),
    // Strict rational comparisons, including paper tails smaller than the
    // smallest positive binary64 parameter. Candidate presence is not
    // coverage or source-history certification.
@@ -232,6 +281,12 @@ function auditC1NativeGapGeneratedVertexAdjacency({
   actualNativeRoundedInverseOriginalBoundaryAliasEndpoints:endpoints.filter(x=>
    x.receivedPaperRoundedInverseOriginalBoundaryAlias).length,
   endpoints,rows,
+  exactReceivedPaperSegmentsWithBothEndpointsCollinearAndInOriginalDomain:
+   collinearPaperRanges.length,
+  positiveOriginalM5GapsWithPartiallyCorroboratedExactCollinearPaperCandidates:
+   rows.filter(r=>r.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory.length>0).length,
+  positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage:
+   rows.filter(r=>r.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0).length,
   actualNativeExactReceivedPaperOffLineEndpoints:
    endpoints.filter(x=>x.exactReceivedPaperOnOriginalProjectedLine===false).length,
   roundedInverseDisagreesWithExactReceivedPaperParameterCount:
