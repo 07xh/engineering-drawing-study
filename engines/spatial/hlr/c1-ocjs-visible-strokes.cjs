@@ -986,6 +986,29 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      if(typeof edgeData?.Status!=='function')
       throw new RangeError('original native EdgeStatus missing from indexed source');
      const status=edgeData.Status();
+     // Capability-only probe on the first borrowed native original status:
+     // pinned embind may expose Bounds/VisiblePart while its real-ref output
+     // calling convention differs from python-OCP. Never synthesize a
+     // parameter interval from a method name or an unsuccessful invocation.
+     // This is deliberately non-authoritative for M5, paper gaps and V5.
+     if(rows.length===0&&typeof status?.Bounds==='function'){
+      const arity=Number(status.Bounds.length);
+      const p={method:'Bounds',reportedArity:arity,
+       visiblePartReportedArity:typeof status.VisiblePart==='function'?
+        Number(status.VisiblePart.length):null,
+       nativeParameterIntervalCertified:false};
+      try{
+       const value=status.Bounds(0,0);
+       p.actualReturnKind=Array.isArray(value)?'array':typeof value;
+       if(Array.isArray(value))p.actualReturnedNumbers=value.slice(0,8);
+       else if(value&&typeof value==='object')
+        p.actualReturnKeys=Object.keys(value).slice(0,12);
+      }catch(error){
+       p.errorName=String(error?.name??'Error').slice(0,80);
+       p.errorMessage=String(error?.message??error).slice(0,240);
+      }
+      originalEdgeStatusAPI.boundsCallingConventionProbe=p;
+     }
      if(typeof status?.AllVisible_1!=='function'||
         typeof status?.AllHidden_1!=='function'||
         typeof status?.NbVisiblePart!=='function')
