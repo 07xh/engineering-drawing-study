@@ -1399,6 +1399,21 @@ for(const [index,geometry] of general.entries()){
   assert.equal(proof.actualNativeExactReceivedPaperOffLineEndpoints,
    proof.endpoints.filter(e=>
     e.exactReceivedPaperOnOriginalProjectedLine===false).length);
+  // Recompute the candidate-on-original-line subranges from CURRENT
+  // real native W/V/H paper output. A positive rational remainder is a
+  // real open M5 paper gap, even when binary64 inverse t rounds to 0/1.
+  // Candidate-only completeness still never authorizes generated history.
+  assert.equal(proof.positiveOriginalM5GapsWithPartiallyCorroboratedExactCollinearPaperCandidates,
+   proof.rows.filter(row=>
+    row.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory.length>0).length);
+  assert.equal(proof.positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage,
+   proof.rows.filter(row=>
+    row.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0).length);
+  assert.ok(proof.rows.every(row=>
+   Array.isArray(row.positiveRationalGapResidualAfterCollinearPaperCandidates)&&
+   Array.isArray(row.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory)&&
+   row.originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory===true&&
+   row.sourceGapClosedByNativeEndpointEvidence===false));
   assert.ok(proof.endpoints.every(e=>
    !e.directNativeIsSameOriginalSourceEndpoint||
    e.exactReceivedPaperOnOriginalProjectedLine===true));
