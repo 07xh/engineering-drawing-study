@@ -71,16 +71,29 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
       originalIndices.length!==scoped.rows.length||
       originalStatuses.length!==originalIndices.length)
     throw new RangeError('unverified original HLR EdgeStatus source index for causal generated-edge join');
-   const indexBySource=new Map(originalIndices.map(x=>
-    [x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex]));
-   if(indexBySource.size!==originalIndices.length)
-    throw new RangeError('duplicated original HLR EdgeStatus source index');
+   // A claimed EdgeMap bijection must be checked here, not trusted as
+   // a boolean: two different original TopoDS edges cannot own one native
+   // one-based index, even if their source IDs are distinct.
+   const indexBySource=new Map(),usedNativeIndices=new Set();
+   for(const entry of originalIndices){
+    const sourceId=entry?.originalPhysicalSourceEdgeId,
+     nativeIndex=entry?.hlrDataStructureOneBasedEdgeIndex;
+    if(typeof sourceId!=='string'||!sourceId||
+       !Number.isSafeInteger(nativeIndex)||nativeIndex<1||
+       indexBySource.has(sourceId)||usedNativeIndices.has(nativeIndex))
+     throw new RangeError('non-bijective original HLR EdgeStatus source index');
+    indexBySource.set(sourceId,nativeIndex);
+    usedNativeIndices.add(nativeIndex);
+   }
    for(const x of originalStatuses){
     if(x?.view!==view||typeof x.originalPhysicalSourceEdgeId!=='string'||
        !indexBySource.has(x.originalPhysicalSourceEdgeId)||
        indexBySource.get(x.originalPhysicalSourceEdgeId)!==
         x.nativeHLROriginalEdgeMapIndex||
        sourceStatusById.has(x.originalPhysicalSourceEdgeId)||
+       typeof x.originalEdgeStatusAllVisible!=='boolean'||
+       typeof x.originalEdgeStatusAllHidden!=='boolean'||
+       (x.originalEdgeStatusAllVisible&&x.originalEdgeStatusAllHidden)||
        !['all-visible','all-hidden','mixed'].includes(x.originalSourceClass)||
        x.originalSourceClass!==(x.originalEdgeStatusAllVisible?
         'all-visible':x.originalEdgeStatusAllHidden?'all-hidden':'mixed')||

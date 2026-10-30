@@ -317,3 +317,72 @@ test('a legacy EdgeMap-only source audit may not inherit native EdgeStatus causa
  assert.equal(result.views.V[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
  assert.equal(result.signedV5ActionCount,0);
 });
+
+function withSecondDistinctIndexedOriginalSource(x){
+ const view='V',newSegment=segment(1);
+ x.cad.views[view].push(newSegment);
+ const original=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ x.cad.nativeSourceScopedSharpOutputByView[view].rows.push({
+  originalPhysicalSourceEdgeId:other,
+  visible:[{...original,originalPhysicalSourceEdgeId:other,
+   from:{...newSegment.from},to:{...newSegment.to},
+   globalPaperCandidateOrdinals:[1]}],hidden:[]
+ });
+ const originalBinding=x.views[view].nativeScoped2D3DClassBindings[0];
+ x.views[view].nativeScoped2D3DClassBindings.push({
+  ...originalBinding,sourceEdgeId:other,
+  rows:originalBinding.rows.map(row=>({...row,sourceEdgeId:other}))
+ });
+ const ledger=x.cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+ ledger.originalDataStructureIndex.indexedOriginalSources.push({
+  originalPhysicalSourceEdgeId:other,hlrDataStructureOneBasedEdgeIndex:2
+ });
+ ledger.originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows.push({
+  ...ledger.originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0],
+  originalPhysicalSourceEdgeId:other,nativeHLROriginalEdgeMapIndex:2
+ });
+ return x;
+}
+test('two real source filters require distinct positive integer native EdgeMap indices before causal attribution',()=>{
+ const valid=withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()));
+ const accepted=audit(valid);
+ assert.equal(accepted.exactSourceFilterBijectionByView.V.
+  completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
+ assert.equal(accepted.views.V.length,2);
+ assert.equal(accepted.views.V[1].nativeOriginalHLREdgeMapSourceIndex,2);
+ for(const badIndex of [1,0,-1,1.5,'2',null,undefined,Number.MAX_SAFE_INTEGER+1]){
+  const forged=structuredClone(valid);
+  forged.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+   originalDataStructureIndex.indexedOriginalSources[1].
+   hlrDataStructureOneBasedEdgeIndex=badIndex;
+  forged.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+   originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[1].
+   nativeHLROriginalEdgeMapIndex=badIndex;
+  assert.throws(()=>audit(forged),/non-bijective original HLR EdgeStatus source index/);
+ }
+ const duplicateId=structuredClone(valid);
+ duplicateId.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+  originalDataStructureIndex.indexedOriginalSources[1].
+  originalPhysicalSourceEdgeId=source;
+ assert.throws(()=>audit(duplicateId),/non-bijective original HLR EdgeStatus source index/);
+});
+test('original native EdgeStatus must carry non-contradictory boolean visibility classes',()=>{
+ const valid=withRealIndexedStatus(fixture());
+ for(const [visible,hidden] of [[true,true],[1,false],[false,0],[null,false]]){
+  const forged=structuredClone(valid);
+  const status=forged.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+   originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0];
+  status.originalEdgeStatusAllVisible=visible;
+  status.originalEdgeStatusAllHidden=hidden;
+  assert.throws(()=>audit(forged),/forged native original HLR EdgeStatus/);
+ }
+ const mixed=structuredClone(valid);
+ const status=mixed.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+  originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0];
+ status.originalSourceClass='mixed';
+ status.originalEdgeStatusAllVisible=false;
+ status.originalEdgeStatusAllHidden=false;
+ assert.equal(audit(mixed).views.V[0].
+  exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
+ assert.equal(audit(mixed).officialV5Authorized,false);
+});
