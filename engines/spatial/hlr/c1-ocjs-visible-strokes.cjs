@@ -849,6 +849,19 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       names.add(key);
    return [...names].sort().slice(0,48);
   };
+  // Probe the SAME original HLR DataStructure EdgeStatus API that the
+  // independent native OCP oracle uses. Read only method availability:
+  // an exposed EdgeMap is proof of original INPUT identity, but neither
+  // an EdgeStatus method nor a generated paper shape proves TopoDS history.
+  const nativeHLREdgeStatusMethodNames=obj=>{
+   if(!obj)return [];
+   const names=new Set();
+   for(let p=obj,depth=0;p&&depth<4;p=Object.getPrototypeOf(p),depth++)
+    for(const key of Object.getOwnPropertyNames(p))
+     if(/EDataArray|EData|Value|Lower|Upper|Status|Bounds|AllVisible|AllHidden|VisiblePart|NbVisiblePart/.test(key))
+      names.add(key);
+   return [...names].sort().slice(0,48);
+  };
   for(const view of VIEWS){
    const f=FRAME[view];
    const axis=newObj('gp_Ax2_2',newObj('gp_Pnt_3',0,0,0),
@@ -869,6 +882,17 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     generatedHLREdgeToOriginalTopoDSHistoryProven:false,
     signedV5Action:false
    };
+   // This is a bounded runtime CAPABILITY probe, not an EdgeStatus
+   // certificate. Do not treat names or array availability as evidence
+   // that any generated 2D curve belongs to an original source.
+   const originalEdgeStatusAPI={
+    originalHLRDataStructureMethodNames:[],
+    originalEdgeStatusArrayMethodNames:[],
+    statusArrayExposedInPinnedWasm:false,
+    originalHLREdgeStatusIntervalsExtracted:false,
+    originalHLREdgeStatusToGeneratedPaperLineageCertified:false,
+    signedV5Action:false
+   };
    if(typeof algorithm.DataStructure==='function'){
     // Only the returned handle is an owned value. get(), EdgeMap() and
     // FindKey() expose borrowed OCCT objects: deleting them corrupts
@@ -876,6 +900,17 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     const dsHandle=hold(algorithm.DataStructure());
     if(dsHandle.IsNull()===false&&typeof dsHandle.get==='function'){
      const ds=dsHandle.get();
+     originalEdgeStatusAPI.originalHLRDataStructureMethodNames=
+      nativeHLREdgeStatusMethodNames(ds);
+     if(typeof ds.EDataArray==='function'){
+      // Borrowed reference: neither delete nor hold this native array.
+      // Query its read-only API surface before attempting any parameter
+      // interval extraction; pinned JS wrappers can omit native OCP APIs.
+      const statuses=ds.EDataArray();
+      originalEdgeStatusAPI.statusArrayExposedInPinnedWasm=!!statuses;
+      originalEdgeStatusAPI.originalEdgeStatusArrayMethodNames=
+       nativeHLREdgeStatusMethodNames(statuses);
+     }
      if(typeof ds.EdgeMap==='function'){
       const map=ds.EdgeMap();
       originalDataStructureIndex={
@@ -892,6 +927,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     algorithmHandleMethodNames:nativeHLRSourceIndexMethodNames(handle),
     extractorMethodNames:nativeHLRSourceIndexMethodNames(extractor),
     originalDataStructureIndex,
+    originalEdgeStatusAPI,
     generatedToOriginalTopoDSHistoryProven:false,
     officialLineStyleCertified:false,signedV5Action:false
    };
