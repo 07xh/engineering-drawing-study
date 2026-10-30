@@ -24,10 +24,24 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
   })
  };
  const geometry={id:'tetra',kind:'mesh',space:'model-3d',unit:'mm',
-  data:{edges:[edge.split('|')]}};
+  data:{points:{
+   A:{x:0,y:0,z:0},C:{x:0,y:16,z:2},D:{x:0,y:0,z:24}
+  },edges:[edge.split('|')]}};
+ const nativeW=edge==='A|C'?
+  {from:{u:0,v:0},to:{u:15.999999999999998,v:1.9999999999999998}}:
+  {from:{u:8.881784197001252e-16,v:0},to:{u:0,v:24}};
+ const originalEndpointWitnesses=[{view:'W',sourceEdgeId,
+  hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
+  originalM0PhysicalVertexIds:edge.split('|'),
+  original3DBRepExactModelVertexEndpoints:true,
+  original3DSourceClassComplete:true,
+  generatedPaperExactlyReprojectsBothOriginalVertices:false,
+  nativeGenerated3DJunctionIdentityCertified:false,
+  globalOpaqueFaceOcclusionCertified:false,signedV5Action:false}];
+
  return {
   geometry,view:'W',sourceEdgeId,positiveGap:[...gap],
-  cad:{revision:7,originalBRepSourceEdges:[{
+  cad:{revision:7,views:{W:[nativeW]},hiddenSharpViews:{W:[]},originalBRepSourceEdges:[{
    sourceEdgeId,occtSourceCurveType:'line',
    occtSourceCurveParameterRange:bounds,
    originalOCCTBRepVertexXYZMatched:true,
@@ -46,12 +60,14 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
    differentOriginal3DSourceClaimsHeld:0,unknownGlobalOrdinalClaimsHeld:0,
    claims:[{actualNativeGlobal3DOriginalSourceEdgeId:sourceEdgeId,
     original3DCurveAndScopedNativeParameterIntervalCorroborated:true,
-    hlrClass:'visible-sharp',originalNativeCurveParameterRange:[...bounds]}]
+    hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
+    originalNativeCurveParameterRange:[...bounds]}]
   },
   m4Depth:{completeOriginalM4SourceDepthPartition:true,
    everyOpenDepthCutClassified:true,openDepthFrontCuts:1,openDepthHiddenCuts:0,
    openDepthHeldCuts:0,positiveSubpixelCutsHeld:0},
   originalClosedRayClear:true,openRayClass:'visible-sharp',
+  originalEndpointWitnesses,
   exactPaperGap:{
    originalSourceParameterGap:[...gap],
    originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory:true,
@@ -69,6 +85,10 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
   assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
   assert.equal(r.coProjectedOriginalSourceOpenFrontmostProven,true);
   assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
+  assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+   .nativeGlobalWEdgesWithReceivedBinary64EndpointDrift,1);
+  assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+   .nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints,0);
   assert.equal(r.actualGlobal2DPaperClosedEndpointsCertified,false);
   assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
   assert.equal(r.engineeringLineStyle,'undetermined');
@@ -125,6 +145,30 @@ test('reject forged source bounds, false status ancestry, stale revision and eli
   assert.throws(()=>audit(x),/W|positive|native|source|history|interval|gap|revision/i);
  }
 });
+test('rejects altered received native W paper geometry and forged physical endpoint parity',()=>{
+ for(const mutate of [
+  x=>x.originalEndpointWitnesses[0].generatedPaperExactlyReprojectsBothOriginalVertices=true,
+  x=>x.originalEndpointWitnesses[0].originalM0PhysicalVertexIds=['B','C'],
+  x=>x.originalEndpointWitnesses[0].nativeGenerated3DJunctionIdentityCertified=true,
+  x=>x.cad.views.W[0].from.u=Infinity,
+  x=>x.cad.views.W[0].to.v+=1e-12,
+  x=>x.global3DSource.claims[0].wholeSolidGeneratedHLREdgeOrdinal=1,
+  x=>x.originalEndpointWitnesses.push({...x.originalEndpointWitnesses[0]})
+ ]){
+  const x=fixture();mutate(x);
+  // A different but still finite received endpoint is legitimate drift;
+  // it must remain recorded, not silently matched to the M0 vertex.
+  if(Number.isFinite(x.cad.views.W[0].to.v)&&
+     x.cad.views.W[0].to.v!==1.9999999999999998){
+   const r=audit(x);
+   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+    .nativeGlobalWEdgesWithReceivedBinary64EndpointDrift,1);
+   continue;
+  }
+  assert.throws(()=>audit(x),/W|paper|witness|ordinal|source|endpoint/i);
+ }
+});
+
 test('non-W original gaps are outside this witness, never considered a certified line',()=>{
  const x=fixture();x.view='H';
  assert.equal(audit(x),null);
