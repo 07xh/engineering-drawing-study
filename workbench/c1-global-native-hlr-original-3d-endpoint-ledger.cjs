@@ -178,7 +178,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view];
   const global3D=scoped?.nativeGlobal3DOriginalSourceEvidence;
   const byNative3DCurve=new Map();
-  if(scoped!==undefined){
+  // An isolated legacy M4 fixture may not carry this optional independent
+  // whole-solid 3D curve export. Never fabricate it or claim a 3D binding.
+  // In real pinned OCJS runs the export exists and is cross-checked below.
+  if(global3D!==undefined){
    if(global3D?.schema!==
        'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1'||
       global3D.sourceGeometryId!==geometry.id||
