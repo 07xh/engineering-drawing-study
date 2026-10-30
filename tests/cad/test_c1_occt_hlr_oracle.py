@@ -78,6 +78,39 @@ class C1CADOracleTests(unittest.TestCase):
         self.assertFalse(any("signedVisibleContourActions" in str(r) or
                              "officialLineStyle" in str(r) for r in results))
 
+    def test_skew_tetra_w_positive_paper_tails_are_not_original_hlr_source_gaps(self):
+        # Public synthetic regression: OCCT's received W paper endpoints
+        # drift in binary64, but the internal ORIGINAL EdgeStatus still
+        # contains the complete positive 3D source curve for A|C and A|D.
+        # This does not authorize generated TopoDS lineage, M5 or V5.
+        points = {"A": (0, 0, 0), "B": (17, 1, 3),
+                  "C": (3, 16, 2), "D": (5, 6, 23)}
+        faces = [["A", "C", "B"], ["A", "B", "D"],
+                 ["A", "D", "C"], ["B", "C", "D"]]
+        edges = sorted({tuple(sorted((face[i], face[(i + 1) % len(face)])))
+                        for face in faces for i in range(len(face))})
+        case = {"id": "C1SkewTetra", "geometry": {"data": {
+            "points": {k: dict(zip(("x", "y", "z"), v))
+                       for k, v in points.items()},
+            "faces": faces, "edges": [list(edge) for edge in edges]
+        }}}
+        witness = oracle.audit_original_hlr_source_status(case, "W")
+        self.assertEqual(witness["originalBRepSourcesChecked"], 6)
+        self.assertEqual(witness["nativeOriginalSourcesAllVisible"], 6)
+        by_source = {r["sourceEdgeId"]: r for r in witness["rows"]}
+        for source in ("A|C", "A|D"):
+            row = by_source["C1SkewTetra::" + source]
+            self.assertEqual(row["visibleOriginalCurveParameterIntervals"],
+                             [row["originalCurveParameterBounds"]])
+            self.assertEqual(row["hiddenOriginalCurveParameterIntervals"], [])
+            self.assertGreater(row["sourceScopedGeneratedVisibleEdgeCount"], 0)
+            self.assertFalse(row["generated2DTopoDSEdgeHistoryCertified"])
+            self.assertFalse(row["wholeSceneContinuousOcclusionCertified"])
+        forged = copy.deepcopy(case)
+        forged["geometry"]["data"]["edges"][0] = ["A", "D"]
+        with self.assertRaisesRegex(ValueError, "missing original edge|duplicates"):
+            oracle.audit_original_hlr_source_status(forged, "W")
+
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
         x["geometry"]["data"]["faces"].pop()
