@@ -1225,8 +1225,21 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        }
        if(same)originalCurveCandidates.push(original.sourceEdgeId);
       }
-      if(originalCurveCandidates.length!==1)
-       throw new RangeError('global native 3D HLR curve has no unique original BRep curve');
+      if(originalCurveCandidates.length!==1){
+       const diagnostic=originalNativeEdgeHandles.map(original=>{
+        const sourceCurve=newObj('BRepAdaptor_Curve_2',original.edge);
+        const lo=sourceCurve.FirstParameter(),hi=sourceCurve.LastParameter();
+        if(first<lo||last>hi)return {source:original.sourceEdgeId,
+         outOfRange:[lo,hi]};
+        const p=hold(sourceCurve.Value(first));
+        return {source:original.sourceEdgeId,
+         firstResidualMm:Math.hypot(p.X()-from3D.x,
+          p.Y()-from3D.y,p.Z()-from3D.z)};
+       }).sort((a,b)=>(a.firstResidualMm??Infinity)-(b.firstResidualMm??Infinity));
+       throw new RangeError('global native 3D HLR curve has no unique original BRep curve: '+
+        JSON.stringify({view,klass,first,last,from3D,to3D,
+         candidateCount:originalCurveCandidates.length,nearest:diagnostic.slice(0,3)}));
+      }
       const sourceEdgeId=originalCurveCandidates[0];
       const scoped=scopedRows.find(x=>x.originalPhysicalSourceEdgeId===sourceEdgeId);
       const scopedIntervals=scoped?.[isVisible?'visible3D':'hidden3D']
