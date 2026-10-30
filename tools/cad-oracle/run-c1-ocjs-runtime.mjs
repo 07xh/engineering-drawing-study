@@ -190,6 +190,16 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.actualPinnedWasmObjectInspected,true);
   assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
    'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
+  const statusAPI=api.originalEdgeStatusAPI;
+  assert.ok(statusAPI,'real native HLR status capability must be inventoried');
+  assert.ok(Array.isArray(statusAPI.originalHLRDataStructureMethodNames));
+  assert.ok(Array.isArray(statusAPI.originalEdgeStatusArrayMethodNames));
+  assert.ok(statusAPI.originalHLRDataStructureMethodNames.length<=48);
+  assert.ok(statusAPI.originalEdgeStatusArrayMethodNames.length<=48);
+  assert.equal(typeof statusAPI.statusArrayExposedInPinnedWasm,'boolean');
+  assert.equal(statusAPI.originalHLREdgeStatusIntervalsExtracted,false);
+  assert.equal(statusAPI.originalHLREdgeStatusToGeneratedPaperLineageCertified,false);
+  assert.equal(statusAPI.signedV5Action,false);
   const ds=api.originalDataStructureIndex;
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
   assert.equal(ds.signedV5Action,false);
