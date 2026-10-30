@@ -34,12 +34,14 @@ function auditC1OriginalBRepFaceEdgeAdjacency({
  // occurrences are symmetrically IsSame: it is one actual shared TShape,
  // not two coincident but topologically unrelated edges. Deduplicate for
  // the source/face bijection without discarding the occurrence evidence.
- const nativeEdges=[],nativeBySource=new Map();
+ const nativeEdges=[],nativeBySource=new Map(),nativeOccurrences=new Map();
  for(const row of originalNativeEdgeHandles){
   if(!expectedEdges.has(row?.sourceEdgeId)||
      typeof row.edge?.IsSame!=='function'||row.edge.IsNull?.()===true||
      row.edge.IsSame(row.edge)!==true)
    throw new RangeError('unbound original native BRep source edge');
+  nativeOccurrences.set(row.sourceEdgeId,
+   (nativeOccurrences.get(row.sourceEdgeId)??0)+1);
   const prior=nativeBySource.get(row.sourceEdgeId);
   if(prior){
    const forward=row.edge.IsSame(prior.edge),
@@ -52,8 +54,14 @@ function auditC1OriginalBRepFaceEdgeAdjacency({
    nativeEdges.push(row);
   }
  }
- if(nativeEdges.length!==expectedEdges.size)
-  throw new RangeError('missing original native BRep source edge');
+ // On this closed, two-face-manifold source, the real TopExp traversal
+ // sees each physical edge in both incident faces. Its repeated TShapes
+ // must be consistent (checked above), and its multiplicity must not be
+ // silently inflated by extra or missing occurrence records.
+ if(nativeEdges.length!==expectedEdges.size||
+    originalNativeEdgeHandles.length!==2*expectedEdges.size||
+    [...expectedEdges].some(id=>nativeOccurrences.get(id)!==2))
+  throw new RangeError('missing or surplus native BRep source edge face occurrence');
  for(let i=0;i<nativeEdges.length;i++)for(let j=i+1;j<nativeEdges.length;j++){
   const a=nativeEdges[i],b=nativeEdges[j];
   const f=a.edge.IsSame(b.edge),r=b.edge.IsSame(a.edge);
