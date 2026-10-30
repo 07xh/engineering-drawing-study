@@ -130,8 +130,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
  // same-run source-filtered 3D HLR. No caller-supplied proof flags and
  // no generated TopoDS history or closed-endpoint promotion.
  const openRayBySource=new Map();
+ let indexedOriginal3DGlobalHLRRebind=null;
  if(geometry.kind==='mesh'&&cad.originalNativeFaceAdjacency){
   const native=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+  indexedOriginal3DGlobalHLRRebind=native.globalNativeHLRSourceScopeRebinding;
   const exact=auditC1ExactConvexOriginalOpenEdgeRays({
    geometry,nativeFaceAdjacency:cad.originalNativeFaceAdjacency,
    nativeM4Views:native.views
@@ -156,6 +158,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   unresolvedObligationsWithDirectNativeSourceFilteredGeneratedCausalEdges:0,
   directNativeSourceFilteredGeneratedCausalEdgesStillMissingParameterHistory:0,
   obligationsWithNativeGlobal3DBRepCurveSource:0,
+  heldObligationsWithExactIndexedOriginal3DSourceFilterCausalEdges:0,
+  heldExactIndexedOriginal3DSourceFilterCausalEdgeWitnesses:0,
   globalNative3DSourceAliasedPaperCandidatesHeld:0,
   globalNative3DSourceClaimUnmatchedOrdinalsHeld:0,
   nativeOriginalIndexedHLRAllVisibleObligationsStillHeld:0,
@@ -224,6 +228,27 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    global3DSource?.unknownGlobalOrdinalClaimsHeld??0;
   const key=x=>x.hlrClass+'|'+x.wholeSolidGeneratedHLREdgeOrdinal;
   const paperIds=new Set(paper.map(key)),endpointIds=new Set(endpoints.map(key));
+  // Genuine original EdgeMap source + real original 3D HLR class + exact
+  // source-filter/global edge attribution. This remains UNSIGNED.
+  const indexedSourceAttributed=
+   indexedOriginal3DGlobalHLRRebind?.views?.[row.view]?.filter(r=>
+    r.uniqueOriginalSourceFilteredPaperCandidate===row.sourceEdgeId&&
+    r.exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame===true)??[];
+  const correlatedIndexed=indexedSourceAttributed.filter(r=>
+   paperIds.has(key({hlrClass:r.hlrClass,
+    wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal})));
+  for(const r of correlatedIndexed)if(
+    r.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge!==true||
+    r.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true||
+    !Number.isSafeInteger(r.nativeOriginalHLREdgeMapSourceIndex)||
+    r.nativeOriginalHLREdgeMapSourceIndex<1||
+    r.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false||
+    r.signedV5Action!==false)
+   throw new RangeError('invalid indexed original 3D HLR source-filter witness at M5');
+  counts.heldObligationsWithExactIndexedOriginal3DSourceFilterCausalEdges+=
+   Number(correlatedIndexed.length>0);
+  counts.heldExactIndexedOriginal3DSourceFilterCausalEdgeWitnesses+=
+   correlatedIndexed.length;
   if(!paper.length||paper.length!==endpoints.length||
      paperIds.size!==paper.length||endpointIds.size!==endpoints.length||
      [...paperIds].some(k=>!endpointIds.has(k)))
@@ -483,6 +508,13 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     nativeCausal.map(p=>({hlrClass:p.hlrClass,
      wholeSolidGeneratedHLREdgeOrdinal:p.wholeSolidGeneratedHLREdgeOrdinal,
      originalNativeEdgeMapSourceIndex:p.originalHLRIndexedSourceStatusOneBasedIndex})),
+   independentlyExactIndexedOriginal3DSourceFilteredGlobalHLREdges:
+    correlatedIndexed.map(r=>({
+     hlrClass:r.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal,
+     originalNativeEdgeMapSourceIndex:r.nativeOriginalHLREdgeMapSourceIndex
+    })),
+   exactIndexedSourceFilterCausalityCannotSignPaperGapsOrM5:true,
    directCausalGeneratedEdgeCannotReplaceOriginalParameterHistory:true,
    sameRunNativeOriginalHLREdgeStatus:originalStatus,
    nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory:true,
