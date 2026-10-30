@@ -1639,6 +1639,10 @@ for(const [index,geometry] of general.entries()){
    ?.jointOriginalClosedPhysicalSourceVisibilityProven===true).length);
  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithOriginal3DJointProofHeld,
   wGaps.length-unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof);
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift,
+  wGaps.filter(r=>(r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+   ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+   ?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0).length);
  assert.ok(wGaps.every(r=>{
   const joint=r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence;
   return joint?.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
@@ -1651,6 +1655,11 @@ for(const [index,geometry] of general.entries()){
   assert.equal(wGaps.length,2,'both real SkewTetra W positive paper gaps must remain recorded');
   assert.equal(unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof,2,
    'real OCJS W original 3D closed-ray/parameter/depth proof must be complete on both paper gaps');
+  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift,2,
+   'real native OCJS must show two received W paper endpoint drifts without snapping');
+  assert.ok(wGaps.every(r=>r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+   ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+   ?.rows.every(x=>x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false)));
   assert.deepEqual(new Set(wGaps.map(r=>r.sourceEdgeId)),
    new Set(['C1SkewTetra::A|C','C1SkewTetra::A|D']));
  }else assert.equal(wGaps.length,0);
