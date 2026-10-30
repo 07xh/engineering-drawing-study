@@ -286,6 +286,104 @@ def exact_binary64_source_scoped_hlr_paper_witness(original_from, original_to,
     }
 
 
+def audit_exhaustive_native_hlr_global_source_filter_bijection(global_papers,
+                                                                 scoped_claims):
+    """Full, one-to-one HLR output attribution through SAME-RUN source filters.
+
+    Proven: every whole-solid generated 2D edge has one exact binary64
+    matching source-scoped generated edge of the same visibility class, and
+    every scoped edge is accounted for. The source was already indexed by
+    its ORIGINAL live TopoDS EdgeMap entry. No 2D-only coincidence is
+    promoted to an original 3D identity: the native input EdgeMap, original
+    BRep curve/domain and source filter are independent prerequisites.
+    Not proven: direct generated IsSame, generated curve subparameter
+    history, whole-scene continuous occlusion, signed engineering lines.
+    """
+    if not isinstance(global_papers, dict) or set(global_papers) != {"visible", "hidden"} or (
+        not isinstance(scoped_claims, list) or len(scoped_claims) > 2048
+    ):
+        reject("complete bounded native HLR source/global inventories required")
+
+    def signature(endpoints):
+        if endpoints is None or len(endpoints) != 2 or any(
+            len(p) != 3 or any(type(v) not in (float, int) or not math.isfinite(v)
+                               for v in p) for p in endpoints
+        ):
+            return None
+        return tuple(sorted(tuple(p) for p in endpoints))
+
+    rows, holds = [], []
+    for klass in ("visible", "hidden"):
+        global_edges = global_papers[klass]
+        if not isinstance(global_edges, list) or len(global_edges) > 1024:
+            reject("bounded actual native whole-solid HLR edges required")
+        scoped = [c for c in scoped_claims if c.get("hlrClass") == klass]
+        by_paper, scoped_ids = {}, set()
+        for c in scoped:
+            source, index, ordinal = (c.get("originalSourceEdgeId"),
+                                       c.get("originalEdgeMapIndex"),
+                                       c.get("sourceScopedOrdinal"))
+            if (not isinstance(source, str) or not source or
+                not isinstance(index, int) or index < 1 or
+                not isinstance(ordinal, int) or ordinal < 1 or
+                (source, ordinal) in scoped_ids):
+                reject("invalid or duplicated original source-scoped HLR provenance")
+            scoped_ids.add((source, ordinal))
+            sig = signature(c.get("paper"))
+            if sig is None:
+                holds.append({"hlrClass": klass, "reason": "invalid-scoped-paper"})
+                continue
+            by_paper.setdefault(sig, []).append(c)
+        global_ids = set()
+        for ordinal, paper in enumerate(global_edges, 1):
+            sig = signature(paper)
+            if sig is None:
+                holds.append({"hlrClass": klass, "globalOrdinal": ordinal,
+                              "reason": "invalid-global-paper"})
+                continue
+            claims = by_paper.get(sig, [])
+            if sig in global_ids or len(claims) != 1:
+                holds.append({"hlrClass": klass, "globalOrdinal": ordinal,
+                              "reason": "duplicate-or-ambiguous-scoped-owner",
+                              "candidateCount": len(claims)})
+                continue
+            global_ids.add(sig)
+            claim = claims[0]
+            rows.append({
+                "hlrClass": klass,
+                "wholeSolidGeneratedHLREdgeOrdinal": ordinal,
+                "originalSourceEdgeId": claim["originalSourceEdgeId"],
+                "originalNativeEdgeMapIndex": claim["originalEdgeMapIndex"],
+                "sourceScopedOrdinal": claim["sourceScopedOrdinal"],
+                "sourceFilterProducesExactSameReceivedBinary64Paper": True,
+                "generatedWholeEdgeDirectIsSameOriginalSource": False,
+                "completeGeneratedTopoDSParameterHistoryCertified": False,
+                "wholeSceneContinuousOcclusionCertified": False,
+                "signedV5Action": False,
+            })
+        if len(global_edges) != len(scoped) or global_ids != set(by_paper):
+            holds.append({"hlrClass": klass, "reason": "global-scoped-multiset-incomplete",
+                          "globalEdgeCount": len(global_edges),
+                          "scopedEdgeCount": len(scoped)})
+    certified = len(holds) == 0 and len(rows) == sum(
+        len(global_papers[k]) for k in ("visible", "hidden")
+    )
+    return {
+        "wholeSolidGeneratedEdges": sum(len(global_papers[k]) for k in
+                                        ("visible", "hidden")),
+        "sourceScopedGeneratedEdges": len(scoped_claims),
+        "exactSameRunCompleteUniqueSourceFilterPaperBijectionProven": certified,
+        "originalTopoDSInputIndexedBeforeSourceFilteringRequired": True,
+        "nativeGlobalSourceFilterAttributionOnlyNotGeneratedShapeIsSame": True,
+        "unresolvedGlobalSourceFilterAttributionRows": holds,
+        "attributedGlobalGeneratedEdges": rows if certified else [],
+        "original3DCurveToGenerated2DSubparameterHistoryCertified": False,
+        "allSceneContinuousOcclusionCertified": False,
+        "formalM5Authorized": False,
+        "signedV5ActionCount": 0,
+    }
+
+
 def audit_original_hlr_source_status(case, view):
     """Independent original TopoDS EdgeMap -> HLR EdgeStatus -> scoped output.
 
@@ -401,6 +499,7 @@ def audit_original_hlr_source_status(case, view):
         for kind, group in global_edges.items()
     }
     global_ordinal_claims = {}
+    scoped_global_claims = []
     rows = []
     for key in sorted(expected):
         original = originals[key]
@@ -485,6 +584,13 @@ def audit_original_hlr_source_status(case, view):
                 ]
                 if any(i not in matching_paper for i in native):
                     reject("same generated TopoDS edge contradicts exact whole-solid paper")
+                scoped_global_claims.append({
+                    "hlrClass": style,
+                    "sourceScopedOrdinal": local_ordinal,
+                    "originalSourceEdgeId": key,
+                    "originalEdgeMapIndex": index,
+                    "paper": paper,
+                })
                 for i in matching_paper:
                     global_ordinal_claims.setdefault((style, i), []).append((key, local_ordinal))
                 exact_affine = (
@@ -548,6 +654,13 @@ def audit_original_hlr_source_status(case, view):
         })
     if len({row["nativeHLROriginalEdgeMapIndex"] for row in rows}) != len(expected):
         reject("HLR original source edge indices are not bijective")
+    # This is a stronger exhaustive source-filtered CAUSAL ledger than
+    # independent paper lookups: it reuses the live original EdgeMap and
+    # requires a complete global/scoped multiset bijection in both classes.
+    # It does not assert native generated-edge IsSame or M5 line readiness.
+    exhaustive_source_bijection = audit_exhaustive_native_hlr_global_source_filter_bijection(
+        global_papers, scoped_global_claims
+    )
     # Even a real same-TShape witness is not unique source ownership until
     # all source-scoped claims in the same global HLR output are reconciled.
     unique_native = 0
@@ -586,6 +699,7 @@ def audit_original_hlr_source_status(case, view):
         "wholeSolidGeneratedHiddenEdgeCount": len(global_edges["hidden"]),
         "uniqueSameTopoDSGlobalSourceScopedEdgeLinks": unique_native,
         "ambiguousOrUnmatchedGlobalPaperSourceCandidates": ambiguous_paper,
+        "exhaustiveSameRunNativeGlobalSourceFilterBijection": exhaustive_source_bijection,
         "generated2DTopoDSEdgeHistoryCertified": False,
         "formalM5LineStyleAuthorized": False,
         "rows": rows,
