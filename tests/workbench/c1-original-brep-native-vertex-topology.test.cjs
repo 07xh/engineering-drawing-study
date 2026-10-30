@@ -33,6 +33,22 @@ test('original native TShape may be shared even if all generated HLR vertex TSha
  const r=audit(x);
  assert.equal(r.generatedHLRVertexIsSameNotRequiredForOriginalPhysicalJunction,true);
 });
+test('native vertex occurrences must match every reviewed M0 edge endpoint exactly once',()=>{
+ const missing=fixture();
+ missing.originalNativeVertexHandles.splice(0,1);
+ assert.throws(()=>audit(missing),/missing or duplicated original native/);
+ const duplicate=fixture();
+ duplicate.originalNativeVertexHandles.push({...duplicate.originalNativeVertexHandles[0]});
+ assert.throws(()=>audit(duplicate),/missing or duplicated original native/);
+ const reassigned=fixture();
+ // All four vertex IDs remain represented and native IsSame remains
+ // consistent, but one M0 endpoint occurrence is reassigned to another ID.
+ const row=reassigned.originalNativeVertexHandles[0];
+ row.sourceVertexId='B';
+ row.originalModelXYZ={...geometry.data.points.B};
+ row.vertex={id:'B',IsSame(other){return this.id===other.id;},IsNull(){return false;}};
+ assert.throws(()=>audit(reassigned),/missing or duplicated original native/);
+});
 test('two distinct M0 3D vertices aliased to one native TopoDS vertex are rejected',()=>{
  const x=fixture();
  x.originalNativeVertexHandles[1].vertex.id='A';
