@@ -203,6 +203,78 @@ test('native indexed original EdgeStatus plus scoped-to-global generated IsSame 
  }
 });
 
+function withRealIndexedStatus(fixtureCase){
+ for(const view of ['V','H','W']){
+  fixtureCase.cad.nativeHLRSourceHistoryAPISurfaceByView??={};
+  fixtureCase.cad.nativeHLRSourceHistoryAPISurfaceByView[view]={
+   originalDataStructureIndex:{edgeMapSourceBijectionVerified:true,
+    indexedOriginalSources:[{originalPhysicalSourceEdgeId:source,
+     hlrDataStructureOneBasedEdgeIndex:1}]},
+   originalEdgeStatusAPI:{
+    originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+    nativeOriginalSourceEdgeStatusRows:[{
+     view,originalPhysicalSourceEdgeId:source,
+     nativeHLROriginalEdgeMapIndex:1,
+     originalSourceClass:'all-visible',
+     originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false,
+     generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+     globalContinuousM5OcclusionCertified:false,signedV5Action:false
+    }]
+   }
+  };
+ }
+ return fixtureCase;
+}
+test('exact original EdgeMap, native 3D class and source-filter output form one-to-one V/H/W global attribution without IsSame',()=>{
+ const x=withRealIndexedStatus(fixture()),r=audit(x);
+ assert.equal(r.counts.wholeSolidNativeHLREdges,3);
+ assert.equal(r.counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution,3);
+ assert.equal(r.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,true);
+ for(const view of ['V','H','W']){
+  const b=r.exactSourceFilterBijectionByView[view];
+  assert.equal(b.completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
+  assert.equal(b.originalSourceFilteredGeneratedEdgeCount,1);
+  assert.equal(b.uniqueScopedOutputEmissionCount,1);
+  assert.equal(b.original3DParameterHistoryOnGenerated2DNotCertified,true);
+  assert.equal(b.signedV5ActionCount,0);
+  assert.equal(r.views[view][0].
+   exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame,true);
+  assert.equal(r.views[view][0].exactIndexedSourceScopedEmissionIndex,0);
+  assert.equal(r.views[view][0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
+  assert.equal(r.views[view][0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ }
+ assert.equal(r.officialV5Authorized,false);
+});
+test('source-filter/global bijection fails closed for duplicate source, partial global, bounded only and false native EdgeStatus',()=>{
+ const cases=[
+  x=>{
+   const v=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0];
+   v.visible.push({...v.visible[0]});
+   x.views.V.nativeScoped2D3DClassBindings[0].rows.push({
+    ...x.views.V.nativeScoped2D3DClassBindings[0].rows[0]
+   });
+  },
+  x=>{x.cad.views.H.push(segment());},
+  x=>{const z=x.views.W.nativeScoped2D3DClassBindings[0].rows[0];
+   z.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment=false;
+   z.generated2DRepresentationWithinOneULPOfFullOriginalM0Source=true;},
+  x=>{const z=x.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
+    originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0];
+   z.originalSourceClass='all-hidden';
+   z.originalEdgeStatusAllVisible=false;z.originalEdgeStatusAllHidden=true;}
+ ];
+ for(const mutate of cases){
+  const x=withRealIndexedStatus(fixture());mutate(x);
+  const r=audit(x);
+  assert.equal(r.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+  assert.ok(['V','H','W'].some(view=>
+   !r.exactSourceFilterBijectionByView[view].
+    completeExactSourceScopedToWholeSolidOutputBijectionProven));
+  assert.equal(r.officialV5Authorized,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+
 test('a legacy EdgeMap-only source audit may not inherit native EdgeStatus causality',()=>{
  const x=fixture();
  x.cad.nativeHLRSourceHistoryAPISurfaceByView={V:{
