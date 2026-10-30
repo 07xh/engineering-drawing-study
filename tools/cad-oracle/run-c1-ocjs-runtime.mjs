@@ -1643,6 +1643,34 @@ for(const [index,geometry] of general.entries()){
   wGaps.filter(r=>(r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
    ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
    ?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0).length);
+ const receivedW=wGaps.map(r=>
+  r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+   ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence);
+ assert.ok(receivedW.every(p=>p&&
+  p.nativeGlobalWGeneratedHLREdgesChecked===
+   p.nativeGlobalWEdgesExactlyCollinearWithOriginalSource+
+    p.nativeGlobalWEdgesWithTransverseBinary64PaperDrift&&
+  p.receivedExactBinary64PaperCandidateCoverage
+   ?.exactForReceivedBinary64PaperCoordinates===true&&
+  p.receivedExactBinary64PaperCandidateCoverage
+   ?.generatedToOriginalTopoDSHistoryCertified===false));
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift,
+  receivedW.filter(p=>p.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift>0&&
+   p.nativeGlobalWEdgesWithTransverseBinary64PaperDrift===0).length);
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithTransverseGlobalWPaperDrift,
+  receivedW.filter(p=>p.nativeGlobalWEdgesWithTransverseBinary64PaperDrift>0).length);
+ assert.equal(unresolvedM5.counts.WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift+
+  unresolvedM5.counts.WPositivePaperGapsWithTransverseGlobalWPaperDrift,
+  unresolvedM5.counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift);
+ console.error('REAL C1 W ORIGINAL SOURCE PAPER DRIFT EXACT CLASS '+
+  geometry.id+': '+JSON.stringify(wGaps.map((r,i)=>({
+   sourceEdgeId:r.sourceEdgeId,
+   collinear:receivedW[i].nativeGlobalWEdgesExactlyCollinearWithOriginalSource,
+   transverse:receivedW[i].nativeGlobalWEdgesWithTransverseBinary64PaperDrift,
+   exactReceivedPaperGaps:receivedW[i].receivedExactBinary64PaperCandidateCoverage
+    .exactBinary64PaperPositiveLengthUncoveredIntervals,
+   M5PositiveGapStillHeld:true
+  }))));
  assert.ok(wGaps.every(r=>{
   const joint=r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence;
   return joint?.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
