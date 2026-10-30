@@ -13,6 +13,28 @@ function fixture(){
  })));
  return {geometry,originalNativeVertexHandles:occurrences};
 }
+test('real sewn closed tetra has two face-owned occurrences per physical edge and six native appearances per vertex',()=>{
+ const x=fixture();
+ x.geometry=structuredClone(x.geometry);
+ x.geometry.data.faces=[['A','B','C'],['A','B','D'],
+  ['A','C','D'],['B','C','D']];
+ x.originalNativeVertexHandles=[
+  ...x.originalNativeVertexHandles,
+  ...x.originalNativeVertexHandles.map(r=>({...r,vertex:{...r.vertex}}))
+ ];
+ const r=audit(x);
+ assert.equal(r.originalBRepVertexOccurrencesChecked,24);
+ assert.deepEqual(r.originalM0VertexNativeOccurrenceCounts,
+  {A:6,B:6,C:6,D:6});
+ assert.equal(r.originalSamePhysicalVertexTopoDSPairs,60);
+ assert.equal(r.signedV5ActionCount,0);
+ const extra=structuredClone(x);
+ extra.originalNativeVertexHandles.push(extra.originalNativeVertexHandles[0]);
+ assert.throws(()=>audit(extra),/missing or duplicated original native/);
+ const dropped=structuredClone(x);
+ dropped.originalNativeVertexHandles.pop();
+ assert.throws(()=>audit(dropped),/missing or duplicated original native/);
+});
 test('actual original 3D source topology joins all six tetrahedral edges at four native TShapes',()=>{
  const r=audit(fixture());
  assert.equal(r.originalBRepVertexOccurrencesChecked,12);
@@ -71,7 +93,7 @@ test('asymmetric native IsSame, missing source occurrence and forged XYZ are rej
  assert.throws(()=>audit(a),/asymmetric|contradicts/);
  const b=fixture();
  b.originalNativeVertexHandles=b.originalNativeVertexHandles.filter(r=>r.sourceVertexId!=='D');
- assert.throws(()=>audit(b),/missing original native/);
+ assert.throws(()=>audit(b),/missing.*original native/);
  const c=fixture();
  c.originalNativeVertexHandles[0].originalModelXYZ.x=999;
  assert.throws(()=>audit(c),/unbound or invalid/);
