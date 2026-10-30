@@ -1504,6 +1504,11 @@ for(const [index,geometry] of general.entries()){
  assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
   depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering<=
   depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering);
+ assert.equal(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
+  depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth,
+  depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder);
+ assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder<=
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  // The rotated convex genuine WASM fixture has four original shared
@@ -1516,6 +1521,9 @@ for(const [index,geometry] of general.entries()){
   assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
    depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>=4);
   assert.equal(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld,0);
+  // Original source-depth weak-closed vertex ties are NOT closed endpoint
+  // observer-ray proofs, global HLR history or engineering-line signoff.
+  assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>=4);
  }
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
@@ -1530,6 +1538,13 @@ for(const [index,geometry] of general.entries()){
    row.canonicalOriginalM4EventCutDepthRows.every(cut=>
     cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction===true&&
     cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices===true&&
+    cut.weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5===true&&
+    cut.weakClosedOriginalSourceDepthFrontWithOnlyPhysicalVertexTies===
+     (cut.coProjectedOriginal3DDepthOrder.
+      exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true)&&
+    cut.weakClosedOriginalSourceDepthBehindClearOpenRayPeerWithPhysicalVertexTie===
+     (cut.coProjectedOriginal3DDepthOrder.
+      exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true)&&
     cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly===
      (cut.coProjectedOriginal3DDepthOrder.
        entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)&&
