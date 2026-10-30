@@ -170,6 +170,43 @@ test('one strict exterior face certifies a convex open edge despite another tang
  assert.equal(mismatch.signedV5ActionCount,0);
  assert.equal(r.signedV5ActionCount,0);
 });
+test('negative tangent ray is blocked by an opaque incident face on the whole OPEN edge',()=>{
+ // Unit tetra, H observer +z, original A--B is on z=0 and y=0.
+ // For every interior (x,0,0), 0<t<1-x places (x,0,t) in
+ // the relative interior of opaque face A--B--D (y=0).
+ // This is an exact continuous OPEN-edge theorem, not an endpoint claim.
+ const tangent=structuredClone(geometry);
+ tangent.data.points={A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},
+  C:{x:0,y:1,z:0},D:{x:0,y:0,z:1}};
+ const m=nativeM4();
+ const ab=source('A','B');
+ m.H.nativeOriginal3DM4Candidates[0].segments[0].native3DHLRClass='hidden-sharp';
+ const proven=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry:tangent,nativeFaceAdjacency,nativeM4Views:m
+ });
+ const row=proven.views.H.find(x=>x.sourceEdgeId===ab);
+ assert.deepEqual([...row.exactIncidentOutwardObserverSigns].sort((a,b)=>a-b),[-1,0]);
+ assert.equal(row.exactOriginalOpenEdgeOpaqueFaceRayClass,'hidden-sharp');
+ assert.equal(row.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,true);
+ assert.equal(row.originalOpenEdgeTangentOpaqueFaceBlockerCertified,true);
+ assert.equal(row.originalClosedEndpointRayCertified,false);
+ assert.ok(proven.counts.exactTangentOpaqueFaceBlockerRowsCertified>=1);
+ assert.equal(row.generated2DTopoDSHistoryCertified,false);
+ assert.equal(row.wholeSceneCoProjectedDepthCertified,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(proven.signedV5ActionCount,0);
+ // Native class disagreement must HOLD, never overwrite the native class.
+ m.H.nativeOriginal3DM4Candidates[0].segments[0].native3DHLRClass='visible-sharp';
+ const opposite=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry:tangent,nativeFaceAdjacency,nativeM4Views:m
+ });
+ const mismatch=opposite.views.H.find(x=>x.sourceEdgeId===ab);
+ assert.equal(mismatch.exactOriginalOpenEdgeOpaqueFaceRayClass,'hidden-sharp');
+ assert.equal(mismatch.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ assert.equal(mismatch.originalOpenEdgeTangentOpaqueFaceBlockerCertified,false);
+ assert.equal(mismatch.signedV5Action,false);
+});
+
 test('degenerate source geometry and tangential observer cannot become full proof',()=>{
  const degenerate=structuredClone(geometry);
  degenerate.data.points.D={...degenerate.data.points.A};
@@ -185,7 +222,8 @@ test('degenerate source geometry and tangential observer cannot become full proo
   geometry:tangent,nativeFaceAdjacency,nativeM4Views:nativeM4()
  });
  assert.equal(r.status,'audited');
- assert.ok(r.counts.exactTangentFaceRayRows>0);
+ assert.ok(r.counts.exactTangentFaceRayRows+
+  r.counts.exactTangentOpaqueFaceBlockerRowsCertified>0);
  assert.ok(r.counts.heldSourceViewRows>0);
  assert.equal(r.signedV5ActionCount,0);
 });
