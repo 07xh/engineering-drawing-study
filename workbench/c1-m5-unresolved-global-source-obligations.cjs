@@ -75,7 +75,7 @@ function auditExistingM4OpenSourceDepth(row,kind){
       d.originalParameterRange?.[1]!==t[1]||
       d.engineeringLineStyleSigned!==false||d.signedV5ActionCount!==0)
     throw new RangeError('M4 canonical event cut has a positive gap or forged source');
-   if(d.status==='positive-original-dyadic-projection-below-paper-resolution-held'){
+   if(d.status==='positive-original-dyadic-projection-binary64-collapsed-held'){
     if(d.originalDyadicProjectedIntervalPositive!==true||
        d.renderedPaperSegmentNotCertified!==true||
        cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly!==false||
