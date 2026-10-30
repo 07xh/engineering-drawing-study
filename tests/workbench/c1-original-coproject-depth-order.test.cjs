@@ -315,3 +315,23 @@ test('source depth switch/tie away from physical original vertex never proves OP
  assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
  assert.equal(out.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,false);
 });
+
+test('M5-held exterior contour cannot suppress a rear source as if its open ray were proven clear',()=>{
+ const out=check(geometry(),source('D','H'),[
+  peer('A','E','exterior-contour-held-by-original-m5')
+ ]);
+ assert.equal(out.aliasesExamined,1);
+ assert.equal(out.comparisons[0].status,'candidate-strictly-behind');
+ assert.equal(out.comparisons[0].competingSourceHasCertifiedClearForwardRay,false);
+ assert.equal(out.status,'undetermined-source-behind-unverified-peer');
+ assert.equal(out.visibleSourceCoversEntireLine,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.engineeringLineStyleSigned,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const certified=check(geometry(),source('D','H'),[
+  peer('A','E','single-opaque-solid-whole-open-ray-clear')
+ ]);
+ assert.equal(certified.comparisons[0].competingSourceHasCertifiedClearForwardRay,true);
+ assert.equal(certified.status,'suppressed-by-front-original-visible-source');
+});
