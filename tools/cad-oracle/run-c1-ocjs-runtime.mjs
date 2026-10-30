@@ -1495,6 +1495,7 @@ for(const [index,geometry] of general.entries()){
   depthCounts.sourceIntervalsExamined);
  assert.equal(depthCounts.canonicalM4CutSubspansExamined,
   depthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
   depthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  assert.ok(depthCounts.canonicalM4CutSubspansExamined>=
@@ -1508,7 +1509,10 @@ for(const [index,geometry] of general.entries()){
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth,
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder);
  assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder<=
-  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay);
+ assert.ok(depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay<=
+  depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth);
  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  // The rotated convex genuine WASM fixture has four original shared
@@ -1539,6 +1543,10 @@ for(const [index,geometry] of general.entries()){
     cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction===true&&
     cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices===true&&
     cut.weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5===true&&
+    cut.weakFrontWithOriginalClosedRayCannotCertifyGeneratedHLROrV5===true&&
+    (cut.weakFrontWithIndependentOriginalClosedEndpointRay!==true||
+     cut.coProjectedOriginal3DDepthOrder.
+      exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true)&&
     cut.weakClosedOriginalSourceDepthFrontWithOnlyPhysicalVertexTies===
      (cut.coProjectedOriginal3DDepthOrder.
       exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true)&&
