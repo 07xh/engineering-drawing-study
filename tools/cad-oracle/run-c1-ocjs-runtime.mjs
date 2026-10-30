@@ -1496,13 +1496,15 @@ for(const [index,geometry] of general.entries()){
  assert.equal(depthCounts.canonicalM4CutSubspansExamined,
   depthCounts.canonicalM4CutSubspansStrictlyFrontmost+
   depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+  depthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource+
   depthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  assert.ok(depthCounts.canonicalM4CutSubspansExamined>=
   depthCounts.canonicalM4CutSourceIntervalsFullyPartitioned);
  assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay);
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+  depthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource);
  assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
   depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering<=
   depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering);
@@ -1511,9 +1513,12 @@ for(const [index,geometry] of general.entries()){
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder);
  assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay);
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+  depthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource);
  assert.ok(depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay<=
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth);
+ assert.ok(depthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource<=
+  depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth);
  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  // The rotated convex genuine WASM fixture has four original shared
@@ -1532,7 +1537,9 @@ for(const [index,geometry] of general.entries()){
   // Require a genuine positive same-run M0/native/endpoint-ray join;
   // otherwise this is only an added diagnostic field, not M4 progress.
   assert.ok(depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay>0);
-  assert.ok(depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology>0);
+  // Genuine pinned WASM must exhibit a positive independently closed
+  // front-peer witness, not merely an extra diagnostic field.
+  assert.ok(depthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource>0);
  }
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
@@ -1549,6 +1556,10 @@ for(const [index,geometry] of general.entries()){
     cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices===true&&
     cut.weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5===true&&
     cut.weakFrontWithOriginalClosedRayCannotCertifyGeneratedHLROrV5===true&&
+    cut.weakBehindSourceSuppressionDoesNotCertifyHiddenEndpointOrV5===true&&
+    (cut.weakBehindWithIndependentClosedClearFrontSource!==true||
+     cut.coProjectedOriginal3DDepthOrder.
+      exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true)&&
     (cut.weakFrontWithIndependentOriginalClosedEndpointRay!==true||
      cut.coProjectedOriginal3DDepthOrder.
       exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true)&&
