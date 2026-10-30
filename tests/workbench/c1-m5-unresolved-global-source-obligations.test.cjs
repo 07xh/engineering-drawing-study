@@ -228,3 +228,69 @@ test('positive M5 paper gap consumes complete original M4 3D open-depth partitio
   realNative3DM4OriginalParameterGapCoverage.originalParameterRange=[0.2,0.4];
  assert.throws(()=>audit(forged),/does not belong to the positive M5 gap/);
 });
+
+test('positive dyadic binary64-collapsed original M4 event cut is held, not a fake drawable line',()=>{
+ const x=fixture(),row=x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0];
+ const view=row.view,sourceEdgeId=row.sourceEdgeId;
+ const basicCut=(range,collapsed)=>({
+  originalM4SourceCutParameterRange:range,
+  originalM4CutFromCurrentReviewedEventGraph:true,
+  originalM4EventPaperOnlyIsNot3DPhysicalJunction:true,
+  openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
+  strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly:!collapsed,
+  hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false,
+  coProjectedOriginal3DDepthOrder:collapsed?{
+   status:'positive-original-dyadic-projection-binary64-collapsed-held',
+   view,sourceEdgeId,originalParameterRange:range,
+   originalDyadicProjectedIntervalPositive:true,
+   renderedPaperSegmentNotCertified:true,
+   wholeIntervalFrontmostCertified:false,
+   visibleSourceCoversEntireLine:false,
+   engineeringLineStyleSigned:false,signedV5ActionCount:0
+  }:{
+   schema:'draftai-c1-original-3d-coproject-depth-order/1',
+   view,sourceEdgeId,originalParameterRange:range,
+   entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources:true,
+   entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource:false,
+   wholeIntervalFrontmostCertified:true,
+   visibleSourceCoversEntireLine:false,
+   engineeringLineStyleSigned:false,signedV5ActionCount:0
+  }
+ });
+ Object.assign(row,{
+  nativeOriginal3DM4SourceProjectionPresent:true,
+  nativeOriginal3DM4ProjectionWholeSourceCoverage:true,
+  completeRealNative3DSourceParameterPartition:true,
+  originalM4SourcePartitionComplete:true,
+  native3DM4ProjectedCandidateSegments:[{
+   view,sourceEdgeId,native3DHLRClass:'hidden-sharp',
+   originalM0UnitParameterRange:[0,1]
+  }],
+  nativeOriginalM4CoProjectedDepthOrder:[{
+   originalM0UnitParameterRange:[0,1],native3DHLRClass:'hidden-sharp',
+   canonicalOriginalM4EventCutPartitionCoversNative3DInterval:true,
+   originalM4CutEndpointDoesNotAuthorize3DPhysicalJunction:true,
+   originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility:true,
+   generated2DHLREdgeTopologyProven:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false,
+   canonicalOriginalM4EventCutDepthRows:[
+    basicCut([0,0.5],true),basicCut([0.5,1],false)
+   ]
+  }]
+ });
+ const out=audit(x),depth=out.records[0].originalM4OpenSourceDepthEvidence;
+ assert.equal(depth.completeOriginalM4SourceDepthPartition,true);
+ assert.equal(depth.everyOpenDepthCutClassified,false);
+ assert.equal(depth.positiveSubpixelCutsHeld,1);
+ assert.equal(depth.openDepthHeldCuts,1);
+ assert.equal(depth.openDepthFrontCuts,1);
+ assert.equal(out.counts.originalM4PositiveSubpixelCutsHeld,1);
+ assert.equal(out.officialV5Authorized,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const forged=structuredClone(x);
+ forged.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  nativeOriginalM4CoProjectedDepthOrder[0].canonicalOriginalM4EventCutDepthRows[0].
+  strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly=true;
+ assert.throws(()=>audit(forged),/subpixel positive M4 cut cannot become a stroke/);
+});
