@@ -492,3 +492,27 @@ test('direct native source-filter causal 2D edges remain unsigned in both absent
   assert.throws(()=>audit(bad),/native source-filter causal edge cannot authorize original M5 history|one original native source class/);
  }
 });
+
+test('M5 positive gap inventory rejects out-of-domain binary64 intervals without epsilon',()=>{
+ for(const range of [[-Number.EPSILON,0.3],[0.2,1+Number.EPSILON],
+  [0.5,0.5],[0.6,0.4],[NaN,0.3],[0.2,Infinity]]){
+  const x=fixture();
+  x.positiveOriginalGapRays.rows[0].originalSourceParameterGap=range;
+  assert.throws(()=>audit(x),/positive M5 gap outside exact original/);
+ }
+});
+test('M5 rejects overlapping same-source positive parameter obligations, permits exact adjacency',()=>{
+ const overlap=fixture();
+ const duplicate=structuredClone(overlap.positiveOriginalGapRays.rows[0]);
+ duplicate.originalSourceParameterGap=[0.25,0.4];
+ overlap.positiveOriginalGapRays.rows.push(duplicate);
+ assert.throws(()=>audit(overlap),/overlapping positive M5 original source parameter gap/);
+ const adjacent=fixture();
+ const next=structuredClone(adjacent.positiveOriginalGapRays.rows[0]);
+ next.originalSourceParameterGap=[0.3,0.4];
+ adjacent.positiveOriginalGapRays.rows.push(next);
+ const result=audit(adjacent);
+ assert.equal(result.counts.positiveOriginalPaperGapIntervals,2);
+ assert.equal(result.officialV5Authorized,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
