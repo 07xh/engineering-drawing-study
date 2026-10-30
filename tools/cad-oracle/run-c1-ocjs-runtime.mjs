@@ -1119,6 +1119,26 @@ for(const [index,geometry] of general.entries()){
  assert.equal(audited.signedV5ActionCount,0);
  assert.equal(audited.hiddenOrInternalEdgesSigned,false);
  assert.equal(audited.wholeSolidV5Ready,false);
+ // Independent EXACT M0 supporting-halfspace proof for every original
+ // open edge; the actual native BRep face graph and source-filtered 3D
+ // HLR class must agree. Generated 2D history/endpoint/M5 remain held.
+ const exactOpenRays=audited.independentExactConvexOriginalOpenEdgeAllFaceRays;
+ assert.equal(exactOpenRays.schema,
+  'draftai-c1-exact-convex-original-open-edge-rays/1');
+ assert.equal(exactOpenRays.sourceGeometryId,geometry.id);
+ assert.equal(exactOpenRays.generated2DTopoDSHistoryCertified,false);
+ assert.equal(exactOpenRays.originalClosedEndpointRayCertified,false);
+ assert.equal(exactOpenRays.wholeSceneCoProjectedDepthCertified,false);
+ assert.equal(exactOpenRays.signedV5ActionCount,0);
+ assert.ok(Object.values(exactOpenRays.views).flat().every(row=>
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(exactOpenRays.status,'audited');
+  assert.equal(exactOpenRays.counts.exactOpenEdgeNativeClassAgreements,18);
+  assert.equal(exactOpenRays.counts.heldSourceViewRows,0);
+ }
+ console.error('REAL C1 EXACT ORIGINAL OPEN-EDGE ALL-FACE RAYS '+
+  geometry.id+': '+JSON.stringify(exactOpenRays.counts));
  assert.ok(audited.counts.m5AtomicIntervals>=9);
  assert.equal(Object.values(audited.views).length,3);
  assert.equal(Object.values(audited.views).flatMap(v=>v.intervals).length,
