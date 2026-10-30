@@ -33,21 +33,27 @@ test('original native TShape may be shared even if all generated HLR vertex TSha
  const r=audit(x);
  assert.equal(r.generatedHLRVertexIsSameNotRequiredForOriginalPhysicalJunction,true);
 });
-test('native vertex occurrences must match every reviewed M0 edge endpoint exactly once',()=>{
+test('sewn native vertex explorer may repeat a proven physical TShape but cannot omit an original endpoint',()=>{
  const missing=fixture();
  missing.originalNativeVertexHandles.splice(0,1);
- assert.throws(()=>audit(missing),/missing or duplicated original native/);
+ assert.throws(()=>audit(missing),/missing original native/);
  const duplicate=fixture();
  duplicate.originalNativeVertexHandles.push({...duplicate.originalNativeVertexHandles[0]});
- assert.throws(()=>audit(duplicate),/missing or duplicated original native/);
+ const accepted=audit(duplicate);
+ assert.equal(accepted.originalBRepVertexOccurrencesChecked,13);
+ assert.equal(accepted.allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
+ const split=fixture();
+ split.originalNativeVertexHandles.push({
+  ...split.originalNativeVertexHandles[0],
+  vertex:{id:'distinct-native-tshape',IsSame(other){return this.id===other.id;},IsNull(){return false;}}
+ });
+ assert.throws(()=>audit(split),/contradicts actual BRep TShape/);
  const reassigned=fixture();
- // All four vertex IDs remain represented and native IsSame remains
- // consistent, but one M0 endpoint occurrence is reassigned to another ID.
  const row=reassigned.originalNativeVertexHandles[0];
  row.sourceVertexId='B';
  row.originalModelXYZ={...geometry.data.points.B};
  row.vertex={id:'B',IsSame(other){return this.id===other.id;},IsNull(){return false;}};
- assert.throws(()=>audit(reassigned),/missing or duplicated original native/);
+ assert.throws(()=>audit(reassigned),/missing original native/);
 });
 test('two distinct M0 3D vertices aliased to one native TopoDS vertex are rejected',()=>{
  const x=fixture();
