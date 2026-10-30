@@ -212,6 +212,80 @@ def unique_global_generated_edge_claim(claims, style, ordinal, source, scoped_or
     return claims.get((style, ordinal)) == [(source, scoped_ordinal)]
 
 
+
+def exact_binary64_source_scoped_hlr_paper_witness(original_from, original_to,
+                                                  generated_from, generated_to):
+    """Exact binary64-as-rational comparison, never a TopoDS lineage or M5 proof.
+
+    Both received HLR paper axes are checked. Dominant-axis coverage alone
+    cannot certify a line if the generated endpoint is transversely displaced.
+    No epsilon, clamping or endpoint snapping is permitted here.
+    """
+    from fractions import Fraction
+
+    def finite_pair(pair):
+        if len(pair) != 2 or any(
+            type(v) not in (int, float) or not math.isfinite(v) for v in pair
+        ):
+            reject("finite original and generated HLR paper endpoints required")
+        return tuple(Fraction(v) for v in pair)
+
+    a, b = finite_pair(original_from), finite_pair(original_to)
+    g0, g1 = finite_pair(generated_from), finite_pair(generated_to)
+    du, dv = b[0] - a[0], b[1] - a[1]
+    if du == 0 and dv == 0:
+        return {
+            "projectedOriginalSourceCollapsedToPoint": True,
+            "exactTransversePaperDriftDetected": False,
+            "exactDominantAxisUncoveredPositiveSourceSubranges": [],
+            "originalFullSourcePaperCoverageProven": False,
+            "generated2DTopoDSHistoryCertified": False,
+            "signedV5Action": False,
+        }
+    axis = 0 if abs(du) >= abs(dv) else 1
+    direction = (du, dv)[axis]
+    endpoint_rows = []
+    for p in (g0, g1):
+        cross = du * (p[1] - a[1]) - dv * (p[0] - a[0])
+        t = (p[axis] - a[axis]) / direction
+        endpoint_rows.append({
+            "originalUnitParameterFromExactReceivedDominantAxis": str(t),
+            "exactOriginalProjectionLineCrossResidual": str(cross),
+            "exactlyCollinearWithOriginalProjectedSource": cross == 0,
+            "insideOriginalUnitParameterDomain": 0 <= t <= 1,
+        })
+    t0, t1 = sorted(Fraction(row[
+        "originalUnitParameterFromExactReceivedDominantAxis"
+    ]) for row in endpoint_rows)
+    gaps = []
+    if t0 > 0:
+        gaps.append(["0", str(min(t0, Fraction(1)))])
+    if t1 < 1:
+        gaps.append([str(max(t1, Fraction(0))), "1"])
+    transverse = any(
+        not row["exactlyCollinearWithOriginalProjectedSource"]
+        for row in endpoint_rows
+    )
+    return {
+        "projectedOriginalSourceCollapsedToPoint": False,
+        "sourceDominantPaperAxis": ("u", "v")[axis],
+        "receivedGeneratedPaperEndpoints": [
+            list(generated_from), list(generated_to)
+        ],
+        "exactReceivedEndpointAffineWitnesses": endpoint_rows,
+        "exactTransversePaperDriftDetected": transverse,
+        "exactLongitudinalPaperSourceGapDetected": bool(gaps),
+        "exactDominantAxisUncoveredPositiveSourceSubranges": gaps,
+        "originalFullSourcePaperCoverageProven": (
+            not transverse and not gaps and t0 >= 0 and t1 <= 1
+        ),
+        # The real original edge can be fully visible in HLR EdgeStatus
+        # while output paper coordinates differ. This only audits numbers.
+        "generated2DTopoDSHistoryCertified": False,
+        "signedV5Action": False,
+    }
+
+
 def audit_original_hlr_source_status(case, view):
     """Independent original TopoDS EdgeMap -> HLR EdgeStatus -> scoped output.
 
@@ -354,6 +428,16 @@ def audit_original_hlr_source_status(case, view):
         visible_edges = generated_edges(filtered.VCompound(original))
         hidden_edges = generated_edges(filtered.HCompound(original))
         scoped_visible, scoped_hidden = len(visible_edges), len(hidden_edges)
+        # Independently project the ORIGINAL 3D BRep source endpoints using
+        # the same first-angle Ax2 paper basis as this native HLR run.
+        ydir = (direction[1] * xdir[2] - direction[2] * xdir[1],
+                direction[2] * xdir[0] - direction[0] * xdir[2],
+                direction[0] * xdir[1] - direction[1] * xdir[0])
+        def source_paper(vertex):
+            p = points[vertex]
+            return (sum(p[i] * xdir[i] for i in range(3)),
+                    sum(p[i] * ydir[i] for i in range(3)))
+        original_paper = [source_paper(vertex) for vertex in original_ids[key]]
         generated_global_correspondence = []
         for style, scoped in (("visible", visible_edges),
                               ("hidden", hidden_edges)):
@@ -374,7 +458,14 @@ def audit_original_hlr_source_status(case, view):
                     reject("same generated TopoDS edge contradicts exact whole-solid paper")
                 for i in matching_paper:
                     global_ordinal_claims.setdefault((style, i), []).append((key, local_ordinal))
+                exact_affine = (
+                    exact_binary64_source_scoped_hlr_paper_witness(
+                        original_paper[0], original_paper[1],
+                        paper[0][:2], paper[1][:2],
+                    ) if paper is not None else None
+                )
                 generated_global_correspondence.append({
+                    "exactReceivedBinary64SourceScopedHLRPaperWitness": exact_affine,
                     "hlrClass": style,
                     "sourceScopedOrdinal": local_ordinal,
                     "sameGlobalGeneratedTopoDSOrdinals": native,
@@ -402,15 +493,7 @@ def audit_original_hlr_source_status(case, view):
                 vertex_explorer.Next()
             if len(received) != 2:
                 reject("single native generated HLR paper edge lacks two endpoints")
-            ydir = (direction[1] * xdir[2] - direction[2] * xdir[1],
-                    direction[2] * xdir[0] - direction[0] * xdir[2],
-                    direction[0] * xdir[1] - direction[1] * xdir[0])
-            def paper(vertex):
-                p = points[vertex]
-                return (sum(p[i] * xdir[i] for i in range(3)),
-                        sum(p[i] * ydir[i] for i in range(3)))
-            paper_exact = sorted(received) == sorted(
-                paper(vertex) for vertex in original_ids[key])
+            paper_exact = sorted(received) == sorted(original_paper)
         if (status.AllVisible() and scoped_hidden) or (
             status.AllHidden() and scoped_visible
         ):
