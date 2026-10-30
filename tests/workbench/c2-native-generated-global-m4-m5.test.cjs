@@ -162,3 +162,50 @@ test('native source volume check refuses nonfinite, reversed and unbounded sourc
   }),/actual native output source box bounds must be finite and positive/);
  }
 });
+
+test('native result rejects a straight bridge through EMPTY SPACE between otherwise valid source endpoints',()=>{
+ const bridge=edge(1,[1,2],
+  {x:4,y:2,z:2},{x:5,y:2,z:2},'physical-crease');
+ const supported=edge(2,[3,4],
+  {x:0,y:0,z:0},{x:4,y:4,z:0},'physical-crease');
+ // Both bridge endpoints are in one of the boxes and passed the old
+ // endpoint-only condition, but all 0<t<1 lies outside their UNION.
+ assert.throws(()=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,boxes:parts,
+  nativeReport:report([bridge,supported])
+ }),/edge crosses uncovered original source solid volume/);
+});
+test('a native edge traversing touching closed source boxes has exact closed source interval coverage',()=>{
+ const joinedParts=[
+  {...parts[0]},
+  {...parts[1],min:[4,0,0],max:[8,4,4]}
+ ];
+ const joinedSolids=joinedParts.map(p=>{
+  const g=originalBoxGeometry(p);
+  return {id:g.id,halfspaces:verifiedConvexMeshHalfspaces(g).halfspaces};
+ });
+ const result=auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids:joinedSolids,boxes:joinedParts,
+  nativeReport:report([
+   edge(1,[1,2],{x:2,y:2,z:2},{x:6,y:2,z:2},'physical-crease'),
+   edge(2,[3,4],{x:4,y:1,z:2},{x:4,y:3,z:2},'physical-crease')
+  ])
+ });
+ assert.equal(result.allNativeResultEdgeWholeClosedSpansWithinOriginalBooleanInputVolumeVerified,true);
+ assert.equal(result.originalBooleanInputVolumeWholeNativeEdgeCount,2);
+ const longitudinal=result.originalNativeResultEdgeClosedSourceVolumeIntervalWitnesses
+  .find(w=>w.nativeResultEdgeOrdinal===1);
+ assert.equal(longitudinal.allOriginalEdgeParametersCoveredByBooleanInputClosedSolids,true);
+ assert.equal(longitudinal.originalSourceBoxParameterSpans.length,2);
+ assert.equal(result.allOfficialEngineeringLinesCertified,false);
+});
+test('whole-native-edge source solid coverage is not claimed without independent input boxes',()=>{
+ const result=auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids,
+  nativeReport:report([
+   edge(1,[1,2],A,B),edge(2,[3,4],C,D)
+  ])
+ });
+ assert.equal(result.allNativeResultEdgeWholeClosedSpansWithinOriginalBooleanInputVolumeVerified,false);
+ assert.equal(result.originalBooleanInputVolumeWholeNativeEdgeCount,0);
+});
