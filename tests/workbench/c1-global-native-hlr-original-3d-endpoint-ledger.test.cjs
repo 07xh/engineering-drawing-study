@@ -74,6 +74,74 @@ function setup({two=false,rounded=false,missingPartition=false,tetra=false}={}){
  }
  return {geometry,cad,globalRebinding,sourceM4Views};
 }
+function attachGlobalNative3DOriginalCurveProof(x){
+ x.cad.nativeSourceScopedSharpOutputByView={};
+ for(const view of ['V','H','W']){
+  const rows=x.globalRebinding.views[view].map(r=>({
+   view,hlrClass:r.hlrClass,
+   wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal,
+   originalPhysicalSourceEdgeId:r.uniqueOriginalSourceFilteredPaperCandidate,
+   originalNativeCurveParameterRange:[0,1],
+   globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
+   global3DAnd2DHLRMeasuredPaperPairUnique:true,
+   global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
+   globalGenerated2DTo3DTopoDSHistoryCertified:false,
+   fullOpaqueSceneContinuousOcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  }));
+  x.cad.nativeSourceScopedSharpOutputByView[view]={
+   nativeGlobal3DOriginalSourceEvidence:{
+    schema:'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1',
+    sourceGeometryId:x.geometry.id,revision:x.cad.revision,view,
+    globalGenerated2DSharpEdges:rows.length,
+    globalGenerated3DSharpEdgesWithUniqueOriginalCurve:rows.length,
+    allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper:true,
+    generated2DTo3DTopoDSHistoryCertified:false,
+    globalContinuousVisibilityCertified:false,
+    officialV5Authorized:false,signedV5ActionCount:0,rows
+   }
+  };
+ }
+ return x;
+}
+test('real global 3D native source curve witnesses independently bind every 2D ordinal without V5 signoff',()=>{
+ const x=attachGlobalNative3DOriginalCurveProof(setup({two:true}));
+ const r=audit(x);
+ assert.equal(r.counts.genuineGlobal3DSourceCurvePaperPairsCrossChecked,6);
+ assert.equal(r.counts.genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim,0);
+ assert.equal(r.views.V.rows[0].independentlyMeasuredGlobalNative3DOriginalSourceCandidate,
+  'g::A|B');
+ assert.deepEqual(r.views.V.rows[0].independentGlobal3DOriginalCurveParameterRange,[0,1]);
+ assert.equal(r.views.V.rows[0].independentGlobal3DSourceIsNotGenerated2DTopoDSHistory,true);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('a measured global 3D original curve cannot contradict the independently scoped 2D original source',()=>{
+ const x=attachGlobalNative3DOriginalCurveProof(setup({two:true}));
+ x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence.
+  rows[0].originalPhysicalSourceEdgeId='g::A|C';
+ assert.throws(()=>audit(x),/contradicts independently measured/);
+});
+test('unclaimed scoped 2D HLR ordinal retains measured 3D original curve as unsigned candidate only',()=>{
+ const x=attachGlobalNative3DOriginalCurveProof(setup());
+ x.globalRebinding.views.V[0].uniqueOriginalSourceFilteredPaperCandidate=null;
+ const r=audit(x);
+ assert.equal(r.counts.genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim,1);
+ assert.equal(r.views.V.rows[0].uniqueOriginalSourceFilteredPaperCandidate,null);
+ assert.equal(r.views.V.rows[0].independentlyMeasuredGlobalNative3DOriginalSourceCandidate,'g::A|B');
+ assert.equal(r.views.V.rows[0].signedV5Action,false);
+ assert.equal(r.views.V.rows[0].continuousAllOpaqueFaceVisibilityProven,false);
+});
+test('missing or duplicated whole-solid global 3D source ordinal fails closed',()=>{
+ for(const mutate of [
+  g=>{g.rows.pop();},
+  g=>{g.rows[1].wholeSolidGeneratedHLREdgeOrdinal=0;},
+  g=>{g.rows[0].global3DAndOriginalScoped3DHLRParameterIntervalExact=false;}
+ ]){
+  const x=attachGlobalNative3DOriginalCurveProof(setup({two:true}));
+  mutate(x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence);
+  assert.throws(()=>audit(x),/whole-solid native 3D|global native 3D/);
+ }
+});
 test('first-angle global HLR generated edge has independently verified ORIGINAL BRep 3D physical endpoints',()=>{
  const r=audit(setup());
  assert.equal(r.counts.globalGeneratedHLREdgesChecked,3);
