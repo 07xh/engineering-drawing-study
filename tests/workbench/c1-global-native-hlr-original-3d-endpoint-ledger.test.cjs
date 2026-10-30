@@ -62,6 +62,8 @@ function setup({two=false,rounded=false,missingPartition=false,tetra=false}={}){
     view,sourceEdgeId:id,officialV5Authorized:false,
     native3DSourceParameterPartitionCompleteExactlyOnce:!missingPartition,
     M4OriginalUnitIntervalCandidateCoverageComplete:!missingPartition,
+    native3DOriginalParameterPositiveGaps:[],
+    native3DOriginalParameterPositiveOverlaps:[],
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
     segments:[{view,sourceEdgeId:id,native3DHLRClass:'visible-sharp',
      originalM0UnitParameterRange:[0,1],
@@ -119,6 +121,44 @@ test('native original 3D partition gaps preserve hold even with exact original e
  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,3);
  assert.equal(r.counts.originalModelPhysicalJunctionPairCandidates,0);
  assert.equal(r.officialV5Authorized,false);
+});
+test('two exactly adjacent original native 3D class intervals preserve full physical endpoint proof',()=>{
+ const x=setup({two:true});
+ for(const view of ['V','H','W']){
+  const m=x.sourceM4Views[view].nativeOriginal3DM4Candidates[0];
+  m.segments=[{...m.segments[0],originalM0UnitParameterRange:[0,0.5]},
+   {...m.segments[0],originalM0UnitParameterRange:[0.5,1]}];
+ }
+ const r=audit(x);
+ assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,6);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,0);
+ assert.equal(r.counts.originalModelPhysicalJunctionPairCandidates,3);
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('one-ULP overlap, one-ULP gap, and mixed visibility class cannot forge full original native source proof',()=>{
+ const corrupt=[
+  ranges=>{ranges[0][1]=0.5000000000000001;},
+  ranges=>{ranges[1][0]=0.5000000000000001;}
+ ];
+ for(const mutate of corrupt){
+  const x=setup(),m=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+  const ranges=[[0,0.5],[0.5,1]];mutate(ranges);
+  m.segments=ranges.map(originalM0UnitParameterRange=>({
+   ...m.segments[0],originalM0UnitParameterRange
+  }));
+  const r=audit(x);
+  assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.views.V.rows[0].signedV5Action,false);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ }
+ const mixed=setup(),m=mixed.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m.segments=[{...m.segments[0],originalM0UnitParameterRange:[0,0.5]},
+  {...m.segments[0],native3DHLRClass:'hidden-sharp',
+   originalM0UnitParameterRange:[0.5,1]}];
+ const r=audit(mixed);
+ assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.views.V.rows[0].signedV5Action,false);
 });
 test('generated HLR TopoDS vertex IsSame to a wrong ORIGINAL physical model vertex is rejected',()=>{
  const x=setup(),w=x.cad.views.V[0];
