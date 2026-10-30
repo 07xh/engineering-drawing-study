@@ -8,6 +8,95 @@
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
+
+/**
+ * Recheck the existing M4 original 3D source intervals and canonical exact
+ * event cuts as ONE continuous [0,1] source-depth partition. Genuine
+ * original-vertex ties may certify OPEN depth order; they do not certify
+ * closed endpoints, opaque-face visibility, generated TopoDS history or V5.
+ */
+function auditExistingM4OpenSourceDepth(row){
+ if(row.nativeOriginal3DM4SourceProjectionPresent!==true)return null;
+ if(row.nativeOriginal3DM4ProjectionWholeSourceCoverage!==true||
+    row.completeRealNative3DSourceParameterPartition!==true||
+    row.originalM4SourcePartitionComplete!==true)
+  return {completeOriginalM4SourceDepthPartition:false,
+   reason:'incomplete-original-native-3d-m4-partition',signedV5Action:false};
+ const source=row.native3DM4ProjectedCandidateSegments,
+  depth=row.nativeOriginalM4CoProjectedDepthOrder;
+ if(!Array.isArray(source)||!Array.isArray(depth)||
+    !source.length||source.length!==depth.length)
+  throw new RangeError('M4 source and depth intervals lack a bijection');
+ const rows=depth.map((item,i)=>{
+  const r=item.originalM0UnitParameterRange,p=source[i];
+  if(!Array.isArray(r)||r.length!==2||!r.every(Number.isFinite)||
+     r[0]<0||!(r[1]>r[0])||r[1]>1||
+     p?.sourceEdgeId!==row.sourceEdgeId||p.view!==row.view||
+     p.native3DHLRClass!==item.native3DHLRClass||
+     p.originalM0UnitParameterRange?.[0]!==r[0]||
+     p.originalM0UnitParameterRange?.[1]!==r[1]||
+     item.canonicalOriginalM4EventCutPartitionCoversNative3DInterval!==true||
+     item.originalM4CutEndpointDoesNotAuthorize3DPhysicalJunction!==true||
+     item.originalSourceCompetitionOnlyNotWholeOpaqueSceneVisibility!==true||
+     item.generated2DHLREdgeTopologyProven!==false||
+     item.engineeringLineStyle!=='undetermined'||item.signedV5Action!==false||
+     !Array.isArray(item.canonicalOriginalM4EventCutDepthRows)||
+     !item.canonicalOriginalM4EventCutDepthRows.length)
+   throw new RangeError('invalid native M4 source/depth interval witness');
+  return {r,item};
+ }).sort((a,b)=>a.r[0]-b.r[0]);
+ let cursor=0,front=0,hidden=0,held=0,subpixel=0;
+ for(const {r,item} of rows){
+  if(r[0]!==cursor)throw new RangeError('positive M4 original source gap or overlap');
+  let cutCursor=r[0];
+  for(const cut of item.canonicalOriginalM4EventCutDepthRows){
+   const t=cut.originalM4SourceCutParameterRange,d=cut.coProjectedOriginal3DDepthOrder;
+   if(!Array.isArray(t)||t.length!==2||!t.every(Number.isFinite)||
+      t[0]!==cutCursor||!(t[1]>t[0])||t[1]>r[1]||
+      cut.originalM4CutFromCurrentReviewedEventGraph!==true||
+      cut.originalM4EventPaperOnlyIsNot3DPhysicalJunction!==true||
+      cut.openIntervalSourceOrderCannotCertifyClosedOriginalVertices!==true||
+      cut.engineeringLineStyle!=='undetermined'||cut.signedV5Action!==false||
+      d?.view!==row.view||d.sourceEdgeId!==row.sourceEdgeId||
+      d.originalParameterRange?.[0]!==t[0]||
+      d.originalParameterRange?.[1]!==t[1]||
+      d.engineeringLineStyleSigned!==false||d.signedV5ActionCount!==0)
+    throw new RangeError('M4 canonical event cut has a positive gap or forged source');
+   if(d.status==='positive-original-dyadic-projection-below-paper-resolution-held'){
+    if(d.originalDyadicProjectedIntervalPositive!==true||
+       d.renderedPaperSegmentNotCertified!==true||
+       cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly!==false||
+       cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly!==false)
+     throw new RangeError('subpixel positive M4 cut cannot become a stroke');
+    held++;subpixel++;
+   }else{
+    if(d.schema!=='draftai-c1-original-3d-coproject-depth-order/1'||
+       cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly!==
+        (d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true)||
+       cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly!==
+        (d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true))
+     throw new RangeError('M4 open-depth class not backed by canonical exact source theorem');
+    const f=cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly||
+     d.wholeIntervalFrontmostCertified===true;
+    const h=cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly||
+     d.visibleSourceCoversEntireLine===true;
+    if(f&&h)throw new RangeError('contradictory front and hidden M4 depth');
+    if(f)front++;else if(h)hidden++;else held++;
+   }
+   cutCursor=t[1];
+  }
+  if(cutCursor!==r[1])throw new RangeError('positive missing M4 depth event cut');
+  cursor=r[1];
+ }
+ if(cursor!==1)throw new RangeError('M4 source depth partition did not reach 1');
+ return {completeOriginalM4SourceDepthPartition:true,
+  openDepthFrontCuts:front,openDepthHiddenCuts:hidden,
+  openDepthHeldCuts:held,positiveSubpixelCutsHeld:subpixel,
+  everyOpenDepthCutClassified:held===0,
+  closedOriginalVerticesAndOpaqueSceneStillUnproven:true,
+  generatedHLRToOriginalTopoDSHistoryCertified:false,signedV5Action:false};
+}
+
 function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOriginalGapRays}={}){
  const audit=positiveOriginalGapRays;
  if(!geometry?.id||cad?.sourceGeometryId!==geometry.id||
@@ -28,6 +117,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithIndependentExactOriginalRayClass:0,
   generatedHLRSourceClassContradictionsHeldForHistory:0,
   missingSourcesWhoseOriginalRayClassRemainsUnknown:0,
+  originalM4FullSourceOpenDepthPartitions:0,
+  originalM4FullSourceOpenDepthAllClassified:0,
+  originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
+  originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   unsignedV5Actions:0},records=[],seen=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -120,7 +213,19 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    Number(joins.some(j=>j.generatedHLRNativeTopoDSIsSamePairProven===true));
   counts.obligationsWithDistinctNativeGeneratedVertices+=
    Number(joins.some(j=>j.generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join===true));
+  const m4Depth=kind==='unrepresented-original-m0-view'?
+   auditExistingM4OpenSourceDepth(row):null;
+  if(m4Depth?.completeOriginalM4SourceDepthPartition===true){
+   counts.originalM4FullSourceOpenDepthPartitions++;
+   counts.originalM4FullSourceOpenDepthAllClassified+=
+    Number(m4Depth.everyOpenDepthCutClassified);
+   counts.originalM4OpenFrontCuts+=m4Depth.openDepthFrontCuts;
+   counts.originalM4OpenHiddenCuts+=m4Depth.openDepthHiddenCuts;
+   counts.originalM4OpenHeldCuts+=m4Depth.openDepthHeldCuts;
+   counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
+  }
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   originalM4OpenSourceDepthEvidence:m4Depth,
    originalM0PositiveParameterGap:interval===null?null:[...interval],
    actualGlobalHLROrdinals:paper.map(p=>({
     hlrClass:p.hlrClass,ordinal:p.wholeSolidGeneratedHLREdgeOrdinal
