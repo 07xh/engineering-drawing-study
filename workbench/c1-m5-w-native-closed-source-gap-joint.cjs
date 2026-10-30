@@ -11,6 +11,8 @@
  */
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
+const {project}=require('../core/projection/conventions.js');
+const {dyadic,difference}=require('../core/numeric/binary64-dyadic.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -25,7 +27,7 @@ const same=(a,b)=>a?.[0]===b?.[0]&&a?.[1]===b?.[1];
 function auditC1WNativeClosedPhysicalGap({
  geometry,cad,view,sourceEdgeId,positiveGap,
  originalStatus,global3DSource,m4Depth,
- originalClosedRayClear,openRayClass,exactPaperGap
+ originalClosedRayClear,openRayClass,exactPaperGap,originalEndpointWitnesses
 }={}){
  if(view!=='W')return null;
  if(typeof geometry?.id!=='string'||!geometry.id||
@@ -129,6 +131,90 @@ function auditC1WNativeClosedPhysicalGap({
   global3DSource.differentOriginal3DSourceClaimsHeld===0&&
   global3DSource.unknownGlobalOrdinalClaimsHeld===0&&
   globalVisible.sourceScopedNative3DParameterInventoryCompleteExactlyOnce;
+ // Independently check RECEIVED whole-solid generated 2D sharp-edge
+ // paper coordinates against the original M0 vertices. Native 3D source
+ // identity is already proved by the separate global3DSource consumer,
+ // but never grants identical binary64 paper endpoints or vertex TShape
+ // history. Record the exact dyadic displacements without epsilon.
+ let paperEndpointAudit=null;
+ if(originalEndpointWitnesses!==undefined){
+  const matches=global3DSource.claims.filter(x=>
+   x.actualNativeGlobal3DOriginalSourceEdgeId===sourceEdgeId&&
+   x.original3DCurveAndScopedNativeParameterIntervalCorroborated===true);
+  if(!Array.isArray(originalEndpointWitnesses)||
+     originalEndpointWitnesses.length!==matches.length||!matches.length)
+   throw new RangeError('W original source and generated HLR endpoint ledgers lack bijection');
+  const [a,b]=sources[0].map(id=>project(geometry.data.points?.[id])?.W);
+  if(![a,b].every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
+   throw new RangeError('nonfinite original W paper projected physical endpoint');
+  const samePaper=(x,y)=>x.u===y.u&&x.v===y.v;
+  const seen=new Set(),rows=[];
+  for(const claim of matches){
+   const cls=claim.hlrClass,ordinal=claim.wholeSolidGeneratedHLREdgeOrdinal;
+   const outputs=cls==='visible-sharp'?cad.views?.W:
+    cls==='hidden-sharp'?cad.hiddenSharpViews?.W:null;
+   if(!Array.isArray(outputs)||!Number.isSafeInteger(ordinal)||
+      ordinal<0||ordinal>=outputs.length)
+    throw new RangeError('original global W HLR edge ordinal not present');
+   const id=cls+'|'+ordinal;
+   if(seen.has(id))throw new RangeError('duplicated original W paper claimant');
+   seen.add(id);
+   const native=outputs[ordinal];
+   if(![native?.from,native?.to].every(p=>
+      p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
+    throw new RangeError('invalid native generated W paper endpoints');
+   const direct=samePaper(native.from,a)&&samePaper(native.to,b);
+   const reversed=samePaper(native.from,b)&&samePaper(native.to,a);
+   const exact=direct||reversed;
+   const witness=originalEndpointWitnesses.filter(x=>
+    x.view==='W'&&x.sourceEdgeId===sourceEdgeId&&
+    x.hlrClass===cls&&x.wholeSolidGeneratedHLREdgeOrdinal===ordinal);
+   if(witness.length!==1||
+      witness[0].original3DBRepExactModelVertexEndpoints!==true||
+      witness[0].original3DSourceClassComplete!==true||
+      witness[0].nativeGenerated3DJunctionIdentityCertified!==false||
+      witness[0].globalOpaqueFaceOcclusionCertified!==false||
+      witness[0].signedV5Action!==false||
+      !Array.isArray(witness[0].originalM0PhysicalVertexIds)||
+      [...witness[0].originalM0PhysicalVertexIds].sort().join('|')!==
+       [...sources[0]].sort().join('|')||
+      witness[0].generatedPaperExactlyReprojectsBothOriginalVertices!==exact)
+    throw new RangeError('real generated W paper endpoint differs from original BRep witness');
+   // Report both orientations. The native projected segment is UNMODIFIED;
+   // dyadic differences capture tiny, nonzero received binary64 offsets.
+   const fromRef=direct||(!reversed&&
+     Math.hypot(native.from.u-a.u,native.from.v-a.v)<=
+      Math.hypot(native.from.u-b.u,native.from.v-b.v))?a:b;
+   const toRef=fromRef===a?b:a;
+   const delta=(point,ref)=>({
+    u:(()=>{const x=difference(dyadic(point.u),dyadic(ref.u));
+     return {numerator:String(x.n),powerOfTwo:x.e};})(),
+    v:(()=>{const x=difference(dyadic(point.v),dyadic(ref.v));
+     return {numerator:String(x.n),powerOfTwo:x.e};})()
+   });
+   rows.push({hlrClass:cls,wholeSolidGeneratedHLREdgeOrdinal:ordinal,
+    originalProjectedPhysicalEndpointIds:[...sources[0]],
+    receivedFrom:{...native.from},receivedTo:{...native.to},
+    fromDisplacementFromPhysicalSource:delta(native.from,fromRef),
+    toDisplacementFromPhysicalSource:delta(native.to,toRef),
+    receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices:exact,
+    actualGeneratedHLR2DEndpointPhysicalTopoDSIdentityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false});
+  }
+  paperEndpointAudit=freeze({
+   sourceEdgeId,view:'W',sourceGeometryId:geometry.id,revision:cad.revision,
+   exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
+   nativeGlobalWGeneratedHLREdgesChecked:rows.length,
+   nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints:
+    rows.filter(x=>x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
+   nativeGlobalWEdgesWithReceivedBinary64EndpointDrift:
+    rows.filter(x=>!x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
+   rows,receivedPaperOffsetsDoNotClosePositiveSourceParameterGap:true,
+   generated2DTopoDSHistoryCertified:false,
+   globalContinuousSceneOcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  });
+ }
  const rayClear=originalClosedRayClear===true&&openRayClass==='visible-sharp';
  const originalFront=m4Depth?.completeOriginalM4SourceDepthPartition===true&&
   m4Depth.everyOpenDepthCutClassified===true&&
@@ -159,6 +245,7 @@ function auditC1WNativeClosedPhysicalGap({
   wholeReviewedConvexOriginalClosedSourceRayClear:rayClear,
   coProjectedOriginalSourceOpenFrontmostProven:originalFront,
   jointOriginalClosedPhysicalSourceVisibilityProven:physicalComplete,
+  nativeGlobalGeneratedW2DPaperEndpointDriftEvidence:paperEndpointAudit,
   generatedPaperGapStrictlyPositiveStillHeld:true,
   generated2DTopoDSHistoryCertified:false,
   globalOpaqueSceneContinuousVisibilityCertified:false,
