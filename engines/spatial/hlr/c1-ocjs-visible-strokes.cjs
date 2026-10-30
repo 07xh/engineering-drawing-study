@@ -21,7 +21,8 @@ const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
 const {auditC1RoundedInversePaperBoundaryAlias}=
  require('../../../workbench/c1-rounded-inverse-paper-boundary-alias.cjs');
-const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflicts}=
+const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflicts,
+ nativeScopedPaperSegmentsSame}=
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
@@ -1164,6 +1165,109 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     wholeSolidCounts:{'visible-sharp':visibleNative.segments.length,
      'hidden-sharp':hiddenNative.segments.length}
    });
+   // The SAME HLR algorithm can also return generated 3D sharp edges.
+   // Unlike paper-only matching, their actual 3D curve can be compared at
+   // three native parameters with the original BRep curve, even when
+   // unrelated source edges have identical V/H/W paper projections.
+   // Pair global 2D and global 3D by measured paper endpoints, never by
+   // assuming OCCT compound enumeration order or generated TShape IsSame.
+   // This is positive causal 3D source evidence, NOT an OCCT 2D->3D
+   // generated TopoDS history API or an M5 global occlusion certificate.
+   const sharp3D=oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_Sharp;
+   if(sharp3D===undefined||typeof extractor.CompoundOfEdges_1!=='function')
+    throw new TypeError('pinned OCJS global generated 3D sharp HLR extraction unavailable');
+   const global3DSourceRows=[];
+   for(const [klass,isVisible,global] of [
+    ['visible-sharp',true,visibleNative],
+    ['hidden-sharp',false,hiddenNative]
+   ]){
+    const generated3DCompound=hold(extractor.CompoundOfEdges_1(
+     sharp3D,isVisible,true));
+    const used2D=new Set();
+    if(!generated3DCompound.IsNull()){
+     const explorer3D=newObj('TopExp_Explorer_2',
+      generated3DCompound,kind,avoid);
+     while(explorer3D.More()){
+      const shape3D=hold(explorer3D.Current());
+      const edge3D=hold(method(oc.TopoDS,'Edge_1')(shape3D));
+      const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
+      const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
+      const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+      if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
+         !finite(first)||!finite(last)||!(last>first))
+       throw new RangeError('global native 3D HLR sharp curve is not a positive finite line');
+      const at=t=>{
+       const p=hold(curve3D.Value(t));
+       return {x:p.X(),y:p.Y(),z:p.Z()};
+      };
+      const from3D=at(first),to3D=at(last);
+      if(![...Object.values(from3D),...Object.values(to3D)].every(finite))
+       throw new RangeError('nonfinite global native HLR 3D endpoints');
+      const paper={from:project(from3D)[view],to:project(to3D)[view]};
+      const paperOrdinals=[];
+      for(let i=0;i<global.segments.length;i++)
+       if(nativeScopedPaperSegmentsSame(paper,global.segments[i]))
+        paperOrdinals.push(i);
+      if(paperOrdinals.length!==1||used2D.has(paperOrdinals[0]))
+       throw new RangeError('global HLR 3D/2D sharp output lacks unique measured paper pairing');
+      used2D.add(paperOrdinals[0]);
+      const originalCurveCandidates=[];
+      for(const original of originalNativeEdgeHandles){
+       const sourceCurve=newObj('BRepAdaptor_Curve_2',original.edge);
+       if(first<sourceCurve.FirstParameter()||
+          last>sourceCurve.LastParameter())continue;
+       let same=true;
+       for(const t of [first,(first+last)/2,last]){
+        const p=hold(sourceCurve.Value(t)),q=hold(curve3D.Value(t));
+        if(['X','Y','Z'].some(axis=>p[axis]()!==q[axis]())){
+         same=false;break;
+        }
+       }
+       if(same)originalCurveCandidates.push(original.sourceEdgeId);
+      }
+      if(originalCurveCandidates.length!==1)
+       throw new RangeError('global native 3D HLR curve has no unique original BRep curve');
+      const sourceEdgeId=originalCurveCandidates[0];
+      const scoped=scopedRows.find(x=>x.originalPhysicalSourceEdgeId===sourceEdgeId);
+      const scopedIntervals=scoped?.[isVisible?'visible3D':'hidden3D']
+       ?.native3DGeneratedCurveIntervals;
+      if(!Array.isArray(scopedIntervals)||
+         scopedIntervals.filter(x=>
+          x.nativeOriginalCurveParameterRange[0]===first&&
+          x.nativeOriginalCurveParameterRange[1]===last).length!==1)
+       throw new RangeError('global 3D HLR source curve disagrees with original TopoDS scoped 3D HLR');
+      global3DSourceRows.push({
+       view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:paperOrdinals[0],
+       originalPhysicalSourceEdgeId:sourceEdgeId,
+       originalNativeCurveParameterRange:[first,last],
+       globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
+       global3DAnd2DHLRMeasuredPaperPairUnique:true,
+       global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
+       globalGenerated2DTo3DTopoDSHistoryCertified:false,
+       fullOpaqueSceneContinuousOcclusionCertified:false,
+       engineeringLineStyle:'undetermined',signedV5Action:false
+      });
+      if(global3DSourceRows.length>256)
+       throw new RangeError('unbounded native global 3D HLR source inventory');
+      explorer3D.Next();
+     }
+    }
+    if(used2D.size!==global.segments.length)
+     throw new RangeError('global native 3D HLR source did not cover every generated 2D sharp edge');
+   }
+   if(global3DSourceRows.length!==segments.length+hiddenSegments.length)
+    throw new RangeError('global 3D source inventory differs from actual 2D HLR');
+   const nativeGlobal3DOriginalSourceEvidence={
+    schema:'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1',
+    sourceGeometryId:geometry.id,revision,view,
+    globalGenerated2DSharpEdges:segments.length+hiddenSegments.length,
+    globalGenerated3DSharpEdgesWithUniqueOriginalCurve:global3DSourceRows.length,
+    rows:global3DSourceRows,
+    allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper:true,
+    generated2DTo3DTopoDSHistoryCertified:false,
+    globalContinuousVisibilityCertified:false,
+    officialV5Authorized:false,signedV5ActionCount:0
+   };
    // Preserve exact unclaimed native ordinals and their measured projected
    // endpoints for independent source/parameter forensics. These are NOT
    // inferred M0 source labels and must not authorize engineering strokes.
@@ -1183,6 +1287,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        engineeringLineStyle:'undetermined',signedV5Action:false});
      });
    nativeSourceScopedSharpOutputByView[view]={
+    nativeGlobal3DOriginalSourceEvidence,
     unclaimedNativeGeneratedHLREdges,
     nativeSourceIdentityConflicts,
     schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
