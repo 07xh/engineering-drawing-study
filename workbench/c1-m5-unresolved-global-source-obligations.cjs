@@ -160,6 +160,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithNativeGlobal3DBRepCurveSource:0,
   heldObligationsWithExactIndexedOriginal3DSourceFilterCausalEdges:0,
   heldExactIndexedOriginal3DSourceFilterCausalEdgeWitnesses:0,
+  heldObligationsWithBoundedIndexedOriginal3DPaperDriftCausalEdges:0,
+  heldBoundedIndexedOriginal3DPaperDriftCausalEdgeWitnesses:0,
   globalNative3DSourceAliasedPaperCandidatesHeld:0,
   globalNative3DSourceClaimUnmatchedOrdinalsHeld:0,
   nativeOriginalIndexedHLRAllVisibleObligationsStillHeld:0,
@@ -249,6 +251,31 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    Number(correlatedIndexed.length>0);
   counts.heldExactIndexedOriginal3DSourceFilterCausalEdgeWitnesses+=
    correlatedIndexed.length;
+  // Original indexed native source filters may causally own a global
+  // generated HLR edge with a real bounded binary64 paper drift.
+  // This never erases that drift, a positive source gap, or M5 duties.
+  const roundedIndexed=indexedOriginal3DGlobalHLRRebind?.views?.[row.view]?.filter(r=>
+   r.uniqueOriginalSourceFilteredPaperCandidate===row.sourceEdgeId&&
+   r.indexedOriginal3DSourceFilterAttributionWithExplicitBoundedPaperDriftHeld===true&&
+   paperIds.has(key({hlrClass:r.hlrClass,
+    wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal})))??[];
+  for(const r of roundedIndexed)if(
+    r.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge!==true||
+    r.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge!==false||
+    r.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true||
+    !Number.isSafeInteger(r.nativeOriginalHLREdgeMapSourceIndex)||
+    r.nativeOriginalHLREdgeMapSourceIndex<1||
+    r.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false||
+    r.signedV5Action!==false)
+   throw new RangeError('bounded indexed original 3D HLR drift cannot certify M5');
+  if(roundedIndexed.some(r=>correlatedIndexed.some(q=>
+      q.hlrClass===r.hlrClass&&
+      q.wholeSolidGeneratedHLREdgeOrdinal===r.wholeSolidGeneratedHLREdgeOrdinal)))
+   throw new RangeError('one generated HLR edge cannot be strict and paper-rounded');
+  counts.heldObligationsWithBoundedIndexedOriginal3DPaperDriftCausalEdges+=
+   Number(roundedIndexed.length>0);
+  counts.heldBoundedIndexedOriginal3DPaperDriftCausalEdgeWitnesses+=
+   roundedIndexed.length;
   if(!paper.length||paper.length!==endpoints.length||
      paperIds.size!==paper.length||endpointIds.size!==endpoints.length||
      [...paperIds].some(k=>!endpointIds.has(k)))
@@ -510,6 +537,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
      originalNativeEdgeMapSourceIndex:p.originalHLRIndexedSourceStatusOneBasedIndex})),
    independentlyExactIndexedOriginal3DSourceFilteredGlobalHLREdges:
     correlatedIndexed.map(r=>({
+     hlrClass:r.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal,
+     originalNativeEdgeMapSourceIndex:r.nativeOriginalHLREdgeMapSourceIndex
+    })),
+   boundedIndexedOriginal3DSourceFilteredGlobalHLREdgesHeld:
+    roundedIndexed.map(r=>({
      hlrClass:r.hlrClass,
      wholeSolidGeneratedHLREdgeOrdinal:r.wholeSolidGeneratedHLREdgeOrdinal,
      originalNativeEdgeMapSourceIndex:r.nativeOriginalHLREdgeMapSourceIndex
