@@ -361,3 +361,52 @@ test('same-run exact generated-paper rational partial gap is consumed by M5 only
   assert.throws(()=>audit(forged),/same-run rational generated HLR paper candidate/);
  }
 });
+
+test('same-run original OCCT indexed EdgeStatus reaches unresolved M5 without becoming generated history',()=>{
+ const x=fixture(),row=x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0],
+  native={view:'V',originalPhysicalSourceEdgeId:'g::A|B',
+   nativeHLROriginalEdgeMapIndex:1,originalSourceClass:'all-hidden',
+   nativeOriginalVisiblePartCount:0,originalEdgeStatusAllVisible:false,
+   originalEdgeStatusAllHidden:true,
+   generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+   globalContinuousM5OcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false};
+ x.cad.nativeHLRSourceHistoryAPISurfaceByView={V:{
+  originalDataStructureIndex:{edgeMapSourceBijectionVerified:true,
+   indexedOriginalSources:[{
+    originalPhysicalSourceEdgeId:'g::A|B',hlrDataStructureOneBasedEdgeIndex:1}]},
+  originalEdgeStatusAPI:{originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+   nativeOriginalSourceEdgeStatusRows:[native]}
+ }};
+ for(const held of [row,x.positiveOriginalGapRays.rows[0]]){
+  held.independentOriginalNativeHLREdgeStatusSource={...native};
+  held.nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory=true;
+ }
+ const out=audit(x);
+ assert.equal(out.counts.unresolvedM5Obligations,2);
+ assert.equal(out.counts.obligationsWithNativeOriginalIndexedHLREdgeStatus,2);
+ assert.equal(out.counts.nativeOriginalIndexedHLRAllHiddenObligationsStillHeld,2);
+ assert.equal(out.records[0].sameRunNativeOriginalHLREdgeStatus.nativeHLROriginalEdgeMapIndex,1);
+ assert.equal(out.records[1].nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory,true);
+ assert.equal(out.records[1].sourceOriginalTopoDSGeneratedHistoryCertified,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const disagree=structuredClone(x);
+ disagree.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  expectedHLRClassFromIndependentOriginalRay='visible-sharp';
+ const held=audit(disagree);
+ assert.equal(held.counts.nativeOriginalHLREdgeStatusContradictsIndependentRayHeld,1);
+ assert.equal(held.officialV5Authorized,false);
+ for(const corrupt of [
+  y=>y.positiveOriginalGapRays.rows[0].
+   independentOriginalNativeHLREdgeStatusSource.nativeHLROriginalEdgeMapIndex=2,
+  y=>y.positiveOriginalGapRays.rows[0].
+   independentOriginalNativeHLREdgeStatusSource.originalSourceClass='all-visible',
+  y=>y.positiveOriginalGapRays.rows[0].
+   independentOriginalNativeHLREdgeStatusSource.generated2DHLREdgeToOriginalSourceHistoryCertified=true,
+  y=>y.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalDataStructureIndex.
+   indexedOriginalSources[0].hlrDataStructureOneBasedEdgeIndex=2
+ ]){
+  const bad=structuredClone(x);corrupt(bad);
+  assert.throws(()=>audit(bad),/original indexed HLR EdgeStatus cannot replace M5 source history/);
+ }
+});
