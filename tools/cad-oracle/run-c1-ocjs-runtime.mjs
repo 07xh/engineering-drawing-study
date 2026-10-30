@@ -1700,6 +1700,8 @@ for(const [index,geometry] of general.entries()){
    ?.exactBinary64PaperPositiveLengthUncoveredIntervals,
    [['9007199254740991/9007199254740992','1']]);
   assert.equal(ad?.falseDominantAxisFullCoverageVetoed,true);
+  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithStrictTwoAxisPaperResidual,2);
+  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithFalseDominantAxisCompleteVeto,1);
   assert.equal(ad?.unsafeDominantAxisOnlyCoverage
    ?.exactBinary64PaperCandidateCoverageComplete,true);
   assert.equal(ad?.strictReceivedTwoAxisPaperCoverageComplete,false);
