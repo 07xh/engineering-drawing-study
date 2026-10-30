@@ -85,7 +85,14 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      physicalGraph.originalSamePhysicalVertexTopoDSPairs+
       physicalGraph.originalDistinctPhysicalVertexTopoDSPairs!==
        physicalGraph.allOriginalBRepVertexPairsCompared)
-   throw new RangeError('untrusted same-run original native 3D vertex topology');
+   throw new RangeError('untrusted same-run original native 3D vertex topology: '+
+    JSON.stringify({source:geometry.id,ids,expectedDegrees,
+     occurrenceCounts,occurrenceCountsValid,
+     reportedCount:physicalGraph.originalBRepVertexOccurrencesChecked,
+     expectedCount:2*cad.occtOriginalEdgeOccurrenceCount,
+     samePairs,reportedSamePairs:physicalGraph.originalSamePhysicalVertexTopoDSPairs,
+     claimedSource:physicalGraph.sourceGeometryId,
+     schema:physicalGraph.schema}));
  }
  // Real sewn OCCT face incidence proves ORIGINAL 3D adjacency only;
  // generated HLR edge history and occlusion remain separate obligations.
