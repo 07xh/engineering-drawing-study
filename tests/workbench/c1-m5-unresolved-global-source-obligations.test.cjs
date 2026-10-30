@@ -82,3 +82,32 @@ test('rejects missing/duplicate generated edge or forged cross-source physical e
   assert.throws(()=>audit(x),/gap|source|endpoint|bijection|class|junction|native|contradicted/i);
  }
 });
+
+test('independent original 3D all-face rays classify native HLR owner without signing a source',()=>{
+ const x=fixture(),missing=x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0],
+  positive=x.positiveOriginalGapRays.rows[0];
+ missing.expectedHLRClassFromIndependentOriginalRay='hidden-sharp';
+ positive.independentOriginal3DExactRayStatus='exact-original-open-strict-interior';
+ const r=audit(x);
+ assert.equal(r.counts.obligationsWithIndependentExactOriginalRayClass,2);
+ assert.equal(r.counts.generatedHLRSourceClassContradictionsHeldForHistory,0);
+ assert.equal(r.records[0].independentOriginal3DAllFaceRayClass,'hidden-sharp');
+ assert.equal(r.records[1].independentOriginal3DAllFaceRayClass,'hidden-sharp');
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('opposing global HLR class versus independently proven original all-face ray is held, not relabeled',()=>{
+ const x=fixture(),row=x.positiveOriginalGapRays.rows[0];
+ row.independentOriginal3DExactRayStatus='exact-original-closed-ray-clear';
+ const r=audit(x);
+ assert.equal(r.counts.generatedHLRSourceClassContradictionsHeldForHistory,1);
+ assert.equal(r.records[1].independentOriginal3DAllFaceRayClass,'visible-sharp');
+ assert.deepEqual(r.records[1].generatedHLRClassesDisagreeingWithOriginal3DRay,
+  [{hlrClass:'hidden-sharp',wholeSolidGeneratedHLREdgeOrdinal:2}]);
+ assert.equal(r.records[1].nativeHLRClassContradictionNotAllowedToOverrideOriginalRay,true);
+ assert.equal(r.records[1].signedV5Action,false);
+});
+test('forged independent all-face original ray class is rejected',()=>{
+ const x=fixture();x.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+  expectedHLRClassFromIndependentOriginalRay='visible-and-hidden';
+ assert.throws(()=>audit(x),/original 3D all-face ray classification/);
+});
