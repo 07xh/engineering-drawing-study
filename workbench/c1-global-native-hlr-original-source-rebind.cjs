@@ -49,6 +49,15 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      !Array.isArray(cad.views?.[view])||
      !Array.isArray(cad.hiddenSharpViews?.[view]))
    throw new RangeError('missing genuine whole-solid and original filtered HLR source inventory');
+  // A duplicated empty scoped row must not impersonate an absent original
+  // source in the EdgeMap and falsely complete the global HLR inventory.
+  const scopedSourceIds=new Set();
+  for(const row of scoped.rows){
+   const id=row?.originalPhysicalSourceEdgeId;
+   if(typeof id!=='string'||!id||scopedSourceIds.has(id))
+    throw new RangeError('duplicate or invalid original TopoDS source-filter inventory');
+   scopedSourceIds.add(id);
+  }
   // Original HLR EdgeStatus belongs to the INPUT TopoDS source index;
   // source-scoped output + direct native IsSame supplies an independent
   // causal path to the WHOLE-SOLID generated 2D edge. Keep all three
@@ -86,6 +95,8 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     indexBySource.set(sourceId,nativeIndex);
     usedNativeIndices.add(nativeIndex);
    }
+   if([...indexBySource.keys()].some(id=>!scopedSourceIds.has(id)))
+    throw new RangeError('native original HLR EdgeStatus includes unfiltered phantom source');
    for(const x of originalStatuses){
     if(x?.view!==view||typeof x.originalPhysicalSourceEdgeId!=='string'||
        !indexBySource.has(x.originalPhysicalSourceEdgeId)||
@@ -119,6 +130,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   const sourceBind=new Map();
   for(const binding of consumer.nativeScoped2D3DClassBindings){
    if(binding?.view!==view||!binding.sourceEdgeId||
+      !scopedSourceIds.has(binding.sourceEdgeId)||
       sourceBind.has(binding.sourceEdgeId)||
       !Array.isArray(binding.rows)||binding.officialV5Authorized!==false||
       binding.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified!==false)

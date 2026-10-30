@@ -449,3 +449,25 @@ test('native original EdgeStatus part-count and unsigned-source obligations cann
  assert.equal(out.views.V[0].exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame,false);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('duplicated original TopoDS source-filter rows and orphan 3D bindings fail closed',()=>{
+ const duplicate=fixture();
+ duplicate.cad.nativeSourceScopedSharpOutputByView.V.rows.push({
+  originalPhysicalSourceEdgeId:source,visible:[],hidden:[]
+ });
+ assert.throws(()=>audit(duplicate),/duplicate or invalid original TopoDS source-filter inventory/);
+ const orphan=fixture();
+ orphan.views.V.nativeScoped2D3DClassBindings.push({
+  view:'V',sourceEdgeId:other,rows:[],officialV5Authorized:false,
+  globalGenerated2DEdgeToOriginalTopoDSIdentityCertified:false
+ });
+ assert.throws(()=>audit(orphan),/forged or duplicated native original 3D class source binding/);
+});
+test('indexed native EdgeMap cannot launder a duplicated scoped source into complete V/H/W attribution',()=>{
+ const x=withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()));
+ const v=x.cad.nativeSourceScopedSharpOutputByView.V;
+ v.rows[1].originalPhysicalSourceEdgeId=source;
+ assert.throws(()=>audit(x),/duplicate or invalid original TopoDS source-filter inventory/);
+ assert.equal(audit(withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()))).
+  exactSourceFilterBijectionByView.V.completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
+});

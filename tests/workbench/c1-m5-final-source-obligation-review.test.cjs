@@ -100,3 +100,11 @@ test('disjoint source pieces remain separately represented and never gain global
  assert.ok(result.rows.every(x=>x.formalLineStyle==='undetermined'&&
   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
 });
+
+test('overlapping positive original source intervals cannot inflate M5 review completeness',()=>{
+ const first=span({originalSourceParameterRange:[0,.5]});
+ const overlap=span({originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.throws(()=>review(ledger([first,overlap])),/overlapping original 3D source intervals/);
+ const distinct=span({view:'H',originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.equal(review(ledger([first,distinct])).total,2);
+});
