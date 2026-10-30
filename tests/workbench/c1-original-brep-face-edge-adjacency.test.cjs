@@ -8,8 +8,12 @@ const geometry={id:'C1SkewTetra',data:{points:{A:{},B:{},C:{},D:{}},
 const key=(a,b)=>geometry.id+'::'+[a,b].sort().join('|');
 const shape=id=>({id,IsSame(x){return this.id===x.id;},IsNull(){return false;}});
 function fixture(){
- const originalNativeEdgeHandles=geometry.data.edges.map(([a,b])=>({
-  sourceEdgeId:key(a,b),edge:shape(key(a,b))}));
+ // Real TopExp visits each closed physical edge once per incident face:
+ // two native handles with the SAME physical TShape and M0 source ID.
+ const originalNativeEdgeHandles=geometry.data.edges.flatMap(([a,b])=>[
+  {sourceEdgeId:key(a,b),edge:shape(key(a,b))},
+  {sourceEdgeId:key(a,b),edge:shape(key(a,b))}
+ ]);
  const nativeFaceEdgeInventories=geometry.data.faces.map(face=>
   face.map((a,i)=>shape(key(a,face[(i+1)%face.length]))));
  return {geometry,originalNativeEdgeHandles,nativeFaceEdgeInventories};
@@ -41,7 +45,7 @@ test('reject missing, duplicated and aliased original BRep face-edge topology',(
   x=>{x.originalNativeEdgeHandles.push({
    sourceEdgeId:x.originalNativeEdgeHandles[0].sourceEdgeId,
    edge:shape('distinct-native-tshape')});},
-  x=>{x.originalNativeEdgeHandles[1].edge.id=x.originalNativeEdgeHandles[0].edge.id;},
+  x=>{x.originalNativeEdgeHandles[2].edge.id=x.originalNativeEdgeHandles[0].edge.id;},
   x=>{x.nativeFaceEdgeInventories[1]=x.nativeFaceEdgeInventories[0];}
  ];
  for(const mutate of mutations){
