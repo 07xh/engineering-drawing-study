@@ -298,6 +298,8 @@ def audit_original_hlr_source_status(case, view):
     )
     from OCP.BRepCheck import BRepCheck_Analyzer
     from OCP.BRep import BRep_Tool
+    from OCP.BRepAdaptor import BRepAdaptor_Curve
+    from OCP.GeomAbs import GeomAbs_Line
     from OCP.HLRBRep import HLRBRep_Algo, HLRBRep_HLRToShape
     from OCP.HLRAlgo import HLRAlgo_Projector
     from OCP.TopExp import TopExp, TopExp_Explorer
@@ -409,6 +411,33 @@ def audit_original_hlr_source_status(case, view):
         lo, hi = status.Bounds(0.0, 0.0)
         if not (math.isfinite(lo) and math.isfinite(hi) and hi > lo):
             reject("HLR original source curve has no positive parameter interval")
+        # Independent ORIGINAL native BRep curve, on the SAME live input
+        # TopoDS edge that the HLR internal EdgeMap indexes. A complete
+        # EdgeStatus source interval means nothing if it is not the real
+        # original curve's parameter domain. Never infer that from paper.
+        source_curve = BRepAdaptor_Curve(original)
+        if source_curve.GetType() != GeomAbs_Line or (
+            source_curve.FirstParameter() != lo or
+            source_curve.LastParameter() != hi
+        ):
+            reject("native original 3D line domain contradicts HLR indexed EdgeStatus")
+        def curve_xyz(t):
+            pt = source_curve.Value(t)
+            return (pt.X(), pt.Y(), pt.Z())
+        curve_ends = [curve_xyz(lo), curve_xyz(hi)]
+        physical_ends = [points[id] for id in original_ids[key]]
+        residual = min(
+            max(math.dist(p, q) for p, q in zip(curve_ends, order))
+            for order in (physical_ends, physical_ends[::-1])
+        )
+        mid = curve_xyz((lo + hi) / 2)
+        midpoint = tuple((a + b) / 2 for a, b in zip(*physical_ends))
+        midpoint_residual = math.dist(mid, midpoint)
+        if not all(math.isfinite(value) for point in curve_ends + [mid]
+                   for value in point) or (
+            residual > 1e-9 or midpoint_residual > 1e-9
+        ):
+            reject("native original 3D BRep curve does not pass reviewed physical endpoints/midpoint")
         visible = [status.VisiblePart(i, 0.0, 0.0)
                    for i in range(1, status.NbVisiblePart() + 1)]
         hidden, cursor = [], lo
@@ -502,6 +531,10 @@ def audit_original_hlr_source_status(case, view):
             "sourceEdgeId": case["id"] + "::" + key,
             "nativeHLROriginalEdgeMapIndex": index,
             "originalCurveParameterBounds": [lo, hi],
+            "nativeOriginalTopoDSCurveTypeLineAndHLRParameterDomainVerified": True,
+            "nativeOriginalBRep3DEndpointResidualMm": residual,
+            "nativeOriginalBRep3DMidpointResidualMm": midpoint_residual,
+            "nativeOriginalBRepCurveAndEdgeStatusShareExactParameterDomain": True,
             "visibleOriginalCurveParameterIntervals": [list(x) for x in visible],
             "hiddenOriginalCurveParameterIntervals": hidden,
             "sourceScopedGeneratedVisibleEdgeCount": scoped_visible,
@@ -543,6 +576,7 @@ def audit_original_hlr_source_status(case, view):
         "originalBRepSourcesChecked": len(rows),
         "nativeOriginalSourceEdgeMapBijectionVerified": True,
         "nativeOriginalCurveParameterPartitionVerified": True,
+        "nativeOriginalBRepCurveAndHLREdgeStatusConcordanceVerified": True,
         "nativeOriginalSourcesAllVisible": sum(
             not row["hiddenOriginalCurveParameterIntervals"] for row in rows),
         "nativeOriginalSourcesAllHidden": sum(
