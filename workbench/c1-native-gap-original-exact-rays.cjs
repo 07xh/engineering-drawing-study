@@ -221,6 +221,52 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      native3DOriginalRayClassConcordance.counts.projectedOriginalSourceViewsExamined)
    throw new RangeError('M4 native source projection does not cover every drawable M0 source');
  }
+ // Bind the SAME-RUN actual HLR algorithm's ORIGINAL EdgeStatus to
+ // each genuine M0 physical 3D source/view through the OCCT EdgeMap
+ // one-based source identity. This is independent original visibility
+ // classification, NOT generated 2D edge history or a paper gap fill.
+ const originalNativeHLRClassBySource=new Map();
+ const nativeIndexByView=cad.nativeHLRSourceHistoryAPISurfaceByView;
+ if(nativeIndexByView!==undefined){
+  const expectedSources=new Set(geometry.data.edges.map(edge=>
+   geometry.id+'::'+[...edge].sort().join('|')));
+  for(const view of ['V','H','W']){
+   const proof=nativeIndexByView?.[view],
+    ds=proof?.originalDataStructureIndex,
+    status=proof?.originalEdgeStatusAPI;
+   if(ds?.edgeMapSourceBijectionVerified!==true||
+      status?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      !Array.isArray(ds.indexedOriginalSources)||
+      !Array.isArray(status.nativeOriginalSourceEdgeStatusRows)||
+      ds.indexedOriginalSources.length!==expectedSources.size||
+      status.nativeOriginalSourceEdgeStatusRows.length!==expectedSources.size)
+    throw new RangeError('incomplete real original EdgeMap and native HLR EdgeStatus join');
+   const indices=new Map(ds.indexedOriginalSources.map(row=>
+    [row.originalPhysicalSourceEdgeId,row.hlrDataStructureOneBasedEdgeIndex]));
+   if(indices.size!==expectedSources.size)
+    throw new RangeError('duplicate original indexed native HLR sources');
+   for(const row of status.nativeOriginalSourceEdgeStatusRows){
+    const id=row.originalPhysicalSourceEdgeId,key=view+'|'+id;
+    if(!expectedSources.has(id)||row.view!==view||
+       originalNativeHLRClassBySource.has(key)||
+       indices.get(id)!==row.nativeHLROriginalEdgeMapIndex||
+       !Number.isSafeInteger(row.nativeOriginalVisiblePartCount)||
+       row.nativeOriginalVisiblePartCount<0||
+       row.originalSourceClass!==(row.originalEdgeStatusAllVisible?
+        'all-visible':row.originalEdgeStatusAllHidden?
+         'all-hidden':'mixed')||
+       row.originalEdgeStatusAllVisible===true&&row.originalEdgeStatusAllHidden===true||
+       row.sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit!==true||
+       row.generated2DHLREdgeToOriginalSourceHistoryCertified!==false||
+       row.globalContinuousM5OcclusionCertified!==false||
+       row.engineeringLineStyle!=='undetermined'||row.signedV5Action!==false)
+     throw new RangeError('contradicted real original HLR indexed visibility source');
+    originalNativeHLRClassBySource.set(key,row);
+   }
+  }
+  if(originalNativeHLRClassBySource.size!==expectedSources.size*3)
+   throw new RangeError('incomplete V/H/W original native HLR indexed source classes');
+ }
  const bySource=new Map();
  for(const ray of rays.rows){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
@@ -977,6 +1023,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   const nativeM4=m4BySource.get(key)??null;
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
+   independentOriginalNativeHLREdgeStatusSource:
+    originalNativeHLRClassBySource.get(key)??null,
+   nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory:true,
    nativeOriginal3DM4SourceProjectionPresent:nativeM4!==null,
    nativeOriginal3DM4ProjectionWholeSourceCoverage:
     nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete??null,
@@ -1193,6 +1242,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    rows.push({
     view:entry.view,sourceEdgeId:entry.sourceEdgeId,
     originalSourceParameterGap:[...range],
+    independentOriginalNativeHLREdgeStatusSource:
+     originalNativeHLRClassBySource.get(entry.view+'|'+entry.sourceEdgeId)??null,
+    nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory:true,
     // Exact rational received HLR paper alone can shrink the PAPER
     // diagnostic remainder but never close this original 3D M5 obligation.
     sameRunExactCollinearGeneratedHLRPaperGapCandidate:
@@ -1276,6 +1328,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   wholeSolidOriginal3DJunctionsSourceViewMatches:
    globalOriginal3DJunctionsBySource.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
+  realOriginalNativeHLRIndexedSourceViewClassesVerified:
+   originalNativeHLRClassBySource.size,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
   allNativeHLRSourceGapsClosed:false,
