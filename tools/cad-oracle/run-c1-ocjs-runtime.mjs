@@ -1507,13 +1507,15 @@ for(const [index,geometry] of general.entries()){
  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
  // The rotated convex genuine WASM fixture has four original shared
- // 3D vertex depth ties and two one-ULP positive M4 source tails.
- // They are mathematical witnesses, NOT signed official strokes.
+ // 3D vertex depth ties and positive one-ULP M4 source tails. Distinct
+ // received binary64 paper endpoints now enter the exact affine depth
+ // consumer, instead of being discarded by a 1e-8 mm length threshold.
+ // This never grants HLR generated-edge lineage, GB style or V5 authority.
  if(geometry.id==='C1rotated'){
   assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>=4);
   assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
    depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>=4);
-  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>=2);
+  assert.equal(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld,0);
  }
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
