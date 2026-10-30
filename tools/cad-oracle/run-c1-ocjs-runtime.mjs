@@ -1501,7 +1501,8 @@ for(const [index,geometry] of general.entries()){
  assert.ok(depthCounts.canonicalM4CutSubspansExamined>=
   depthCounts.canonicalM4CutSourceIntervalsFullyPartitioned);
  assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering<=
-  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology);
+  depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay);
  assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
   depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering<=
   depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering);
