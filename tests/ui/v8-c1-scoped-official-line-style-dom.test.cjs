@@ -73,6 +73,20 @@ test('C1 signed oblique solid: real DOM V5 draws authenticated hidden sources da
   assert.ok(hidden.every(x=>x.getAttribute('stroke-dasharray')==='6 3'));
   assert.ok(visible.every(x=>x.getAttribute('stroke-dasharray')==='none'));
   assert.ok(hidden.every(x=>Number(x.getAttribute('stroke-width'))<3));
+  // Real C1 ConstructionStep consumer must draw a physical -45-degree
+  // H->W depth transfer, not a horizontal H->M line mislabeled as 45°.
+  // This is source-computed per vertex and is not an official edge stroke.
+  const guides=[...$('v7-sheet').querySelectorAll(
+   'line[data-v5-scope="reviewed-point-guide"]')];
+  const diagonal=guides.filter(n=>{
+   const dx=Number(n.getAttribute('x2'))-Number(n.getAttribute('x1'));
+   const dy=Number(n.getAttribute('y2'))-Number(n.getAttribute('y1'));
+   return Math.abs(dx)>1e-8&&Math.abs(dx+dy)<1e-8;
+  });
+  assert.ok(diagonal.length>0,'C1 point DAG must draw real 45-degree depth guides');
+  assert.ok(diagonal.some(n=>
+   Number(n.getAttribute('x2'))<Number(n.getAttribute('x1'))),
+   'negative model depth must transfer to the left, not mirror W');
   $('v7-seek').value='0';fire('v7-seek','input');await settle();
   assert.equal($('v7-sheet').querySelector('[data-geometry-view="W"]'),null,
    'rewinding must not restore a static answer projection');
