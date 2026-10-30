@@ -85,6 +85,10 @@ test('a positive one-ULP native parameter gap remains held',()=>{
  });
  assert.equal(r.counts.exactOpenEdgeNativeClassAgreements,17);
  assert.equal(r.views.H[0].originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ // A one-ULP hole is still positive: it cannot inherit a whole-edge
+ // certificate or authorize a formal engineering stroke.
+ assert.equal(r.views.H[0].engineeringLineStyle,'undetermined');
+ assert.equal(r.views.H[0].signedV5Action,false);
  assert.equal(r.signedV5ActionCount,0);
 });
 test('forged native face adjacency cannot certify an original 3D ray',()=>{
