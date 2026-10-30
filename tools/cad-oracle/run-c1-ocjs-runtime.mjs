@@ -234,7 +234,8 @@ for(const [index,geometry] of general.entries()){
   // no alternative M3, M5 line style or second V5.
   const nativeCurveBySource=new Map(cad.originalBRepSourceEdges.map(row=>
    [row.sourceEdgeId,row]));
-  let native3DM4Noncollapsed=0,native3DM4ProjectedSegments=0;
+  let native3DM4Noncollapsed=0,native3DM4ProjectedSegments=0,
+   nativeM4ExactPhysicalBoundaryChecks=0;
   for(const source of scoped.rows){
    const edge=geometry.data.edges.find(e=>
     geometry.id+'::'+[...e].sort().join('|')===source.originalPhysicalSourceEdgeId);
@@ -253,6 +254,22 @@ for(const [index,geometry] of general.entries()){
    });
    native3DM4Noncollapsed++;
    native3DM4ProjectedSegments+=witness.segments.length;
+   // Real pinned WASM source intervals reaching the LITERAL M0 t=0/1
+   // must project from the exact physical vertex, not a rounded lerp.
+   // Interior fractions and the generated 2D HLR output remain separate.
+   for(const segment of witness.segments){
+    const [start,end]=segment.originalM0UnitParameterRange;
+    if(start===0){
+     assert.deepEqual(segment.fromModelMm,geometry.data.points[edge[0]]);
+     assert.deepEqual(segment.fromPaper,a);
+     nativeM4ExactPhysicalBoundaryChecks++;
+    }
+    if(end===1){
+     assert.deepEqual(segment.toModelMm,geometry.data.points[edge[1]]);
+     assert.deepEqual(segment.toPaper,b);
+     nativeM4ExactPhysicalBoundaryChecks++;
+    }
+   }
    assert.equal(witness.sourceGeometryId,geometry.id);
    assert.equal(witness.revision,cad.revision);
    assert.equal(witness.native3DProvenanceIsNotGenerated2DHLREdgeIdentity,true);
@@ -280,6 +297,7 @@ for(const [index,geometry] of general.entries()){
    geometry.id+' '+view+': '+JSON.stringify({
     noncollapsedOriginalSources:native3DM4Noncollapsed,
     projectedSourceScoped3DIntervals:native3DM4ProjectedSegments,
+    exactOriginalM0PhysicalBoundaryChecks:nativeM4ExactPhysicalBoundaryChecks,
     generated2DHLREdgeHistoryCertified:false,signedV5Actions:0
    }));
   // Actual pinned OCJS source-filtered In3d sharp output retains OCCT
