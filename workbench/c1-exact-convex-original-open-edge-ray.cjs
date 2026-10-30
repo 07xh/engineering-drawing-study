@@ -5,7 +5,7 @@
  * It does not identify a generated 2D TopoDS edge, prove endpoint pixels,
  * resolve co-projected sources, issue a GB line type, or authorize V5.
  */
-const {VIEWS,FIRST_ANGLE_OBSERVER_RAYS}=
+const {VIEWS,FIRST_ANGLE_OBSERVER_RAYS,project}=
  require('../core/projection/conventions.js');
 const {dyadic,difference,product,sum,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
@@ -134,7 +134,7 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
   native3DClassOrParameterHeldRows:0};
  for(const view of VIEWS){
   const rows=nativeM4Views[view]?.nativeOriginal3DM4Candidates;
-  if(!Array.isArray(rows)||rows.length!==edges.size)
+  if(!Array.isArray(rows)||rows.length>edges.size)
    throw new RangeError('incomplete same-run original 3D HLR source ledger');
   const bySource=new Map();
   for(const row of rows){
@@ -153,6 +153,26 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
     return held('coplanar-adjacent-faces-not-physical-crease');
    const sa=sign(dot(na,exactRay)),sb=sign(dot(nb,exactRay));
    const native=bySource.get(sourceEdgeId);
+   // An original 3D edge can collapse to a point in this first-angle
+   // view. The existing M4 consumer intentionally omits that source;
+   // do not invent a drawable stroke or demand a native 3D HLR row.
+   if(!native){
+    const [id0,id1]=edges.get(sourceEdgeId);
+    const p0=project(points[id0])[view],p1=project(points[id1])[view];
+    if(p0.u!==p1.u||p0.v!==p1.v)
+     throw new RangeError('missing noncollapsed native source HLR class');
+    counts.heldSourceViewRows++;
+    views[view].push({view,sourceEdgeId,
+     exactIncidentOutwardObserverSigns:[sa,sb],
+     exactOriginalOpenEdgeOpaqueFaceRayClass:null,
+     originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified:false,
+     reason:'original-edge-projection-collapsed',
+     originalClosedEndpointRayCertified:false,
+     generated2DTopoDSHistoryCertified:false,
+     wholeSceneCoProjectedDepthCertified:false,
+     engineeringLineStyle:'undetermined',signedV5Action:false});
+    continue;
+   }
    const candidate=sa===0||sb===0?null:
     sa>0||sb>0?'visible-sharp':'hidden-sharp';
    let certified=false,reason=null;
