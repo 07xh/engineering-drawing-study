@@ -462,7 +462,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay||
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+      m4DepthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth!==
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder)
