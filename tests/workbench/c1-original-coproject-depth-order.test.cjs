@@ -274,6 +274,9 @@ test('one-ULP positive M4 cut with distinct paper endpoints enters exact depth o
    sourceEdgeId:'MicroSource::C|D',originalParameterRange:[0,1],
    status:'single-opaque-solid-whole-open-ray-strictly-hidden'}]});
  assert.equal(front.status,'candidate-strictly-front-of-all-aliases');
+ assert.equal(front.positiveSubpixelDisplaySourceNowPreciselyAudited,true);
+ assert.equal(front.originalDyadicProjectedIntervalPositive,true);
+ assert.equal(front.displayThresholdNeverDeterminesExactSourceDepthOrVisibility,true);
  assert.deepEqual(front.comparisons[0].
   exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
  assert.equal(front.engineeringLineStyleSigned,false);
