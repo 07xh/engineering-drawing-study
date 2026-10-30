@@ -25,6 +25,32 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
    expectedOccurrences.set(id,(expectedOccurrences.get(id)||0)+1);
   });
  }
+ // For a complete closed M0 shell, verify every physical edge belongs to
+ // exactly two faces. TopExp returns an edge endpoint once PER face-owned
+ // source edge occurrence. Isolated fixtures without faces have one.
+ const faces=geometry.data.faces;
+ const multiplicity=Array.isArray(faces)&&faces.length?2:1;
+ if(multiplicity===2){
+  const key=(a,b)=>[a,b].sort().join('|');
+  const incidences=new Map(edges.map(edge=>[key(...edge),0]));
+  if(incidences.size!==edges.length)
+   throw new RangeError('duplicate original physical edge in native vertex audit');
+  for(const face of faces){
+   if(!Array.isArray(face)||face.length<3||
+      new Set(face).size!==face.length)
+    throw new RangeError('invalid original closed M0 face incidence');
+   for(let i=0;i<face.length;i++){
+    const id=key(face[i],face[(i+1)%face.length]);
+    if(!incidences.has(id))
+     throw new RangeError('unknown original closed M0 face edge');
+    incidences.set(id,incidences.get(id)+1);
+   }
+  }
+  if([...incidences.values()].some(count=>count!==2))
+   throw new RangeError('original closed M0 source is not exactly two-face manifold');
+ }
+ for(const [id,count] of expectedOccurrences)
+  expectedOccurrences.set(id,count*multiplicity);
  const byId=new Map();
  for(const row of originalNativeVertexHandles){
   const id=row?.sourceVertexId,shape=row?.vertex,model=points[id],xyz=row?.originalModelXYZ;
@@ -36,15 +62,13 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
   if(!byId.has(id))byId.set(id,[]);
   byId.get(id).push(shape);
  }
- // A sewn shell explorer can report the same source edge from both
- // adjacent faces. Each occurrence contributes both endpoint vertices.
- // Require at least the reviewed edge-incidence counts; the pairwise
- // symmetric IsSame graph below MUST prove all repeated occurrences
- // refer to the same physical TopoDS vertex, never a second alias.
+ // Native traversal is face-owned for complete closed shapes. The exact
+ // per-vertex multiplicity is determined by reviewed M0 face incidence;
+ // arbitrary extra same-TShape records are NOT accepted as evidence.
  if(byId.size!==used.size||
-    originalNativeVertexHandles.length<2*edges.length||
-    [...expectedOccurrences].some(([id,count])=>byId.get(id)?.length<count))
-  throw new RangeError('missing original native 3D TopoDS source vertex occurrence');
+    originalNativeVertexHandles.length!==2*edges.length*multiplicity||
+    [...expectedOccurrences].some(([id,count])=>byId.get(id)?.length!==count))
+  throw new RangeError('missing or duplicated original native 3D TopoDS source vertex occurrence');
  let same=0,different=0;
  const occurrences=originalNativeVertexHandles;
  for(let i=0;i<occurrences.length;i++)for(let j=i+1;j<occurrences.length;j++){
