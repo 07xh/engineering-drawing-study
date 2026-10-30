@@ -48,6 +48,7 @@ class C1CADOracleTests(unittest.TestCase):
                 source = v["independentOriginalHLRSourceStatus"]
                 self.assertTrue(source["nativeOriginalSourceEdgeMapBijectionVerified"])
                 self.assertTrue(source["nativeOriginalCurveParameterPartitionVerified"])
+                self.assertTrue(source["nativeOriginalBRepCurveAndHLREdgeStatusConcordanceVerified"])
                 self.assertTrue(source["sourceScopedGeneratedHLRClassCorroborated"])
                 # Actual global-vs-original-scoped identity is measured from
                 # one live native HLR engine. Identical paper coordinates do
@@ -97,6 +98,10 @@ class C1CADOracleTests(unittest.TestCase):
                 )
                 for edge in source["rows"]:
                     lo, hi = edge["originalCurveParameterBounds"]
+                    self.assertTrue(edge["nativeOriginalTopoDSCurveTypeLineAndHLRParameterDomainVerified"])
+                    self.assertTrue(edge["nativeOriginalBRepCurveAndEdgeStatusShareExactParameterDomain"])
+                    self.assertLessEqual(edge["nativeOriginalBRep3DEndpointResidualMm"], 1e-9)
+                    self.assertLessEqual(edge["nativeOriginalBRep3DMidpointResidualMm"], 1e-9)
                     pieces = sorted(edge["visibleOriginalCurveParameterIntervals"] +
                                     edge["hiddenOriginalCurveParameterIntervals"])
                     self.assertEqual(pieces[0][0], lo)
@@ -162,6 +167,9 @@ class C1CADOracleTests(unittest.TestCase):
             self.assertEqual(row["visibleOriginalCurveParameterIntervals"],
                              [row["originalCurveParameterBounds"]])
             self.assertEqual(row["hiddenOriginalCurveParameterIntervals"], [])
+            self.assertTrue(row["nativeOriginalBRepCurveAndEdgeStatusShareExactParameterDomain"])
+            self.assertEqual(row["nativeOriginalBRep3DEndpointResidualMm"], 0)
+            self.assertEqual(row["nativeOriginalBRep3DMidpointResidualMm"], 0)
             self.assertGreater(row["sourceScopedGeneratedVisibleEdgeCount"], 0)
             self.assertFalse(row["generated2DTopoDSEdgeHistoryCertified"])
             self.assertFalse(row["wholeSceneContinuousOcclusionCertified"])
