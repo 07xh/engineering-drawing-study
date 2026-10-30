@@ -610,7 +610,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   missingContinuousFrontRayProof:0,
   exactNative3DSourceParameterCovered:0,
   exactNative3DSourceParameterGapOrUnbound:0,
-  scopedPaperFullButNative3DPositiveGap:0};
+  scopedPaperFullButNative3DPositiveGap:0,
+  sourceFilteredNative3DWholeVisibleSourceCertified:0,
+  paperInverseGapDespiteCompleteNative3DVisibleSource:0};
  for(const view of VIEWS){
   const pv=proof.views.find(x=>x.view===view);
   const rayView=proof.continuousFrontmostSourceRays.views.find(x=>x.view===view);
@@ -618,6 +620,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   const scopedSources=new Map(
    nativeScopedSourceLedger.views[view].sourceParameterCandidates.map(row=>
     [row.originalPhysicalSourceEdgeId,row]));
+  const native3DBySource=new Map(
+   nativeScopedSourceLedger.views[view].nativeOriginal3DM4Candidates.map(row=>
+    [row.sourceEdgeId,row]));
   if(!pv||!Array.isArray(strokes)||!strokes.length)
    throw new RangeError('C1 original M5 and real HLR V/H/W missing');
   if(!rayView||rayView.intervals.length!==pv.candidateIntervals.length)
@@ -649,6 +654,31 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     }):null;
    const nativeExactCovered=nativeCoverage?.
     entireOriginalParameterIntervalCovered===true;
+   // The historical HLR 2D inverse is NOT the native 3D source-filtered
+   // parameter domain. Keep its positive gaps intact, but separately
+   // consume the same-run original TopoDS -> native 3D scoped HLR M4
+   // interval proof. This is a positive source/visibility-class witness,
+   // not generated 2D TopoDS history, paper closure, or M5/V5 authority.
+   const native3D=validSource?native3DBySource.get(x.sourceEdgeId):null;
+   const nativeVisibleRanges=native3D?.segments.filter(segment=>
+    segment.native3DHLRClass==='visible-sharp'&&
+    segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+    segment.engineeringLineStyle==='undetermined'&&
+    segment.signedV5Action===false).map(segment=>
+     segment.originalM0UnitParameterRange)??[];
+   const native3DVisibleFull=!!native3D&&
+    native3D.view===view&&native3D.sourceEdgeId===x.sourceEdgeId&&
+    native3D.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+    native3D.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+    native3D.native3DOriginalParameterPositiveGaps.length===0&&
+    native3D.native3DOriginalParameterPositiveOverlaps.length===0&&
+    native3D.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0&&
+    native3D.segments.every(segment=>segment.native3DHLRClass==='visible-sharp')&&
+    exactCandidateIntervalCoverage([0,1],nativeVisibleRanges).
+     entireOriginalParameterIntervalCovered===true;
+   if(native3DVisibleFull)totals.sourceFilteredNative3DWholeVisibleSourceCertified++;
+   if(native3DVisibleFull&&!nativeExactCovered)
+    totals.paperInverseGapDespiteCompleteNative3DVisibleSource++;
    // Compare the same original M5 source subspan using two INDEPENDENT
    // observations: (1) real native BRep 3D lifts, (2) original TopoDS
    // source-filtered HLR paper intervals. Paper can look complete while
@@ -688,6 +718,11 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     status,m5LocalPositive:local,realCadCovered:covered,
     realNativeOriginal3DSourceParameterCovered:nativeExactCovered,
     exactNativeOriginal3DSourceCoverage:nativeCoverage,
+    independentSourceFilteredNative3DVisibleFullSourceProven:native3DVisibleFull,
+    paperInversePositiveGapDespiteCompleteNative3DVisibleSource:
+     native3DVisibleFull&&!nativeExactCovered,
+    paperInverseGapRemainsUnclosedForGenerated2DAndM5:true,
+    generated2DTopoDSHistoryCertifiedByNative3DPartition:false,
     sourceScopedPaperCandidateCoverage:scopedPaperCoverage?{
      originalSourceParameterRange:[...scopedPaperCoverage.originalParameterRange],
      positiveLengthUncoveredCandidateIntervals:
