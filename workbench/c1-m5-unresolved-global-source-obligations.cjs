@@ -9,6 +9,8 @@ const {auditC1NativeScopedHLRSourceConsumer}=
  require('./c1-native-scoped-hlr-source-consumer.cjs');
 const {auditC1ExactConvexOriginalOpenEdgeRays}=
  require('./c1-exact-convex-original-open-edge-ray.cjs');
+const {auditC1M5NativeGlobal3DSourceJoin}=
+ require('./c1-m5-global-native-3d-source-join.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -149,6 +151,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithDistinctNativeGeneratedVertices:0,
   obligationsWithIndependentExactOriginalRayClass:0,
   obligationsWithNativeOriginalIndexedHLREdgeStatus:0,
+  obligationsWithNativeGlobal3DBRepCurveSource:0,
+  globalNative3DSourceAliasedPaperCandidatesHeld:0,
+  globalNative3DSourceClaimUnmatchedOrdinalsHeld:0,
   nativeOriginalIndexedHLRAllVisibleObligationsStillHeld:0,
   nativeOriginalIndexedHLRAllHiddenObligationsStillHeld:0,
   nativeOriginalHLREdgeStatusContradictsIndependentRayHeld:0,
@@ -197,6 +202,15 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   else counts.positiveOriginalPaperGapIntervals++;
   const paper=row.wholeSolidGeneratedHLROriginalSourceFilterMatches;
   const endpoints=row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses;
+  const global3DSource=auditC1M5NativeGlobal3DSourceJoin({
+   geometry,cad,view:row.view,sourceEdgeId:row.sourceEdgeId,generatedClaims:paper
+  });
+  counts.obligationsWithNativeGlobal3DBRepCurveSource+=
+   Number(global3DSource?.sourceCorroboratedClaims>0);
+  counts.globalNative3DSourceAliasedPaperCandidatesHeld+=
+   global3DSource?.differentOriginal3DSourceClaimsHeld??0;
+  counts.globalNative3DSourceClaimUnmatchedOrdinalsHeld+=
+   global3DSource?.unknownGlobalOrdinalClaimsHeld??0;
   const key=x=>x.hlrClass+'|'+x.wholeSolidGeneratedHLREdgeOrdinal;
   const paperIds=new Set(paper.map(key)),endpointIds=new Set(endpoints.map(key));
   if(!paper.length||paper.length!==endpoints.length||
@@ -403,6 +417,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
   }
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   sameRunNativeGlobal3DSourceCurveAttribution:global3DSource,
+   global3DSourceDoesNotAuthorizePaperHistoryOrV5:true,
    sameRunNativeOriginalHLREdgeStatus:originalStatus,
    nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory:true,
    originalHLREdgeStatusVsIndependentRayContradictionHeld:indexedClassContradiction,
