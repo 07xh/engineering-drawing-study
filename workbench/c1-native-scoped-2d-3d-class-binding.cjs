@@ -198,6 +198,11 @@ function auditC1RealNativeScoped2D3DClassBinding({
    counts.roundedPaperRepresentationCompatibleButNotExactCertified+=
     Number(boundedRepresentationConsistent);
    rows.push({view,sourceEdgeId,hlrClass:klass,
+    // Preserve the exact received generated 2D edge for the downstream
+    // global HLR ordinal join. A same-class witness for a DIFFERENT
+    // scoped emission must never be reused to certify this one.
+    nativeScopedReceivedPaperFrom:{u:stroke.from.u,v:stroke.from.v},
+    nativeScopedReceivedPaperTo:{u:stroke.to.u,v:stroke.to.v},
     originalM0ExactRationalPaperInterval:[printable(from),printable(to)],
     exactOriginalM0PaperAffineCollinearity:aligned,
     exactReceived2DPaperWithinOriginalSourceDomain:bounded,
