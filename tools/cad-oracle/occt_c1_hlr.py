@@ -202,6 +202,16 @@ def extract_occt_visible_hlr(shape, view):
 
 
 
+def unique_global_generated_edge_claim(claims, style, ordinal, source, scoped_ordinal):
+    """Require one occurrence, not merely one unique source label.
+
+    Repeated source-scoped edges from the SAME original source must not
+    masquerade as distinct globally generated HLR edges. This cannot
+    substitute for a real TopoDS.IsSame link or full-scene M5 proof.
+    """
+    return claims.get((style, ordinal)) == [(source, scoped_ordinal)]
+
+
 def audit_original_hlr_source_status(case, view):
     """Independent original TopoDS EdgeMap -> HLR EdgeStatus -> scoped output.
 
@@ -432,8 +442,10 @@ def audit_original_hlr_source_status(case, view):
             native = match["sameGlobalGeneratedTopoDSOrdinals"]
             paper = match["exactPaperGlobalGeneratedOrdinals"]
             claim_unique = len(paper) == 1 and (
-                global_ordinal_claims.get((match["hlrClass"], paper[0])) ==
-                [(source_key, match["sourceScopedOrdinal"])]
+                unique_global_generated_edge_claim(
+                    global_ordinal_claims, match["hlrClass"], paper[0],
+                    source_key, match["sourceScopedOrdinal"]
+                )
             )
             match["globallyUniqueExactPaperSourceCandidate"] = claim_unique
             match["causalGlobalGeneratedTopoDSIdentityCertified"] = bool(
