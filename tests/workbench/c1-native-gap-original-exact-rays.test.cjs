@@ -671,3 +671,38 @@ test('incomplete native 3D source partition or unknown exact M0 class never beco
   ...input.native3DSourceViewLedger,rows:[source,source]}};
  assert.throws(()=>check(duplicated),/duplicate source-scoped/);
 });
+
+test('dominant paper axis uses exact received binary64 spans even when both Number subtractions overflow',()=>{
+ const {auditExactBinary64PaperParameterPair:pair,
+  auditExactBinary64PaperCandidateCoverage:coverage,
+  auditExactBinary64PaperVisibilityConflict:conflict}=
+  require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
+ const max=Number.MAX_VALUE;
+ for(const [start,end,middle,axis] of [
+  [{u:-max,v:-max},{u:0.8*max,v:max},{u:0,v:0},'v'],
+  [{u:-max,v:-max},{u:max,v:0.8*max},{u:0,v:0},'u']
+ ]){
+  // Both source deltas overflow Number, but only one axis is truly
+  // dominant as an exact dyadic difference.
+  assert.equal(Math.abs(end.u-start.u),Infinity);
+  assert.equal(Math.abs(end.v-start.v),Infinity);
+  const interval=pair({sourceFrom:start,sourceTo:end,
+   measuredFrom:start,measuredTo:middle});
+  assert.equal(interval.dominantOriginalProjectionAxis,axis);
+  assert.equal(interval.exactBinary64OriginalSourceParameterOrder,1);
+  const c=coverage({sourceFrom:start,sourceTo:end,
+   segments:[{from:start,to:middle}]});
+  assert.equal(c.dominantOriginalProjectionAxis,axis);
+  assert.equal(c.exactBinary64PaperCandidateCoverageComplete,false);
+  assert.deepEqual(c.exactBinary64PaperPositiveLengthUncoveredIntervals,
+   [['1/2','1']]);
+  assert.equal(c.generatedToOriginalTopoDSHistoryCertified,false);
+  assert.equal(c.signedV5Action,false);
+  const classes=conflict({sourceFrom:start,sourceTo:end,
+   visibleSegments:[{from:start,to:middle}],
+   hiddenSegments:[{from:middle,to:end}]});
+  assert.equal(classes.dominantOriginalProjectionAxis,axis);
+  assert.equal(classes.hasExactPositiveLengthVisibleHiddenPaperClassConflict,false);
+  assert.equal(classes.signedV5Action,false);
+ }
+});
