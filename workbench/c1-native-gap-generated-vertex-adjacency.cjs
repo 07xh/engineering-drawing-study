@@ -28,7 +28,10 @@ const relation=(a,b)=>sign(difference(dyadic(a),dyadic(b)));
 const gcd=(a,b)=>{a=a<0n?-a:a;while(b!==0n){const r=a%b;a=b;b=r;}return a;};
 const asRatio=value=>{
  const {n,e}=dyadic(value);
- return e>=0?{n:n<<BigInt(e),d:1n}:{n,d:1n<<BigInt(-e)};
+ const ratio=e>=0?{n:n<<BigInt(e),d:1n}:
+  {n,d:1n<<BigInt(-e)};
+ const factor=gcd(ratio.n,ratio.d);
+ return {n:ratio.n/factor,d:ratio.d/factor};
 };
 const compareRatio=(a,b)=>sign({n:a.n*b.d-b.n*a.d});
 const printRatio=r=>r.d===1n?String(r.n):String(r.n)+'/'+String(r.d);
