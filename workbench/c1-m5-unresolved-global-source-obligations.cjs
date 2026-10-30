@@ -151,6 +151,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithDistinctNativeGeneratedVertices:0,
   obligationsWithIndependentExactOriginalRayClass:0,
   obligationsWithNativeOriginalIndexedHLREdgeStatus:0,
+  unresolvedObligationsWithDirectNativeSourceFilteredGeneratedCausalEdges:0,
+  directNativeSourceFilteredGeneratedCausalEdgesStillMissingParameterHistory:0,
   obligationsWithNativeGlobal3DBRepCurveSource:0,
   globalNative3DSourceAliasedPaperCandidatesHeld:0,
   globalNative3DSourceClaimUnmatchedOrdinalsHeld:0,
@@ -286,6 +288,27 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.nativeOriginalIndexedHLRAllHiddenObligationsStillHeld+=
     Number(originalStatus.originalSourceClass==='all-hidden');
   }
+  // The native original input EdgeMap -> scoped HLR output -> SAME
+  // whole-solid generated 2D edge is a positive causal FILTER path.
+  // It does not prove complete ORIGINAL curve parameter history,
+  // opaque-face occlusion, native vertex topology, or a formal line.
+  const nativeCausal=paper.filter(p=>
+   p.originalHLRSourceFilterToGenerated2DCausalNativeIsSameVerified===true);
+  for(const p of nativeCausal){
+   if(originalStatus===null||
+      p.originalHLRIndexedSourceStatusClass!==originalStatus.originalSourceClass||
+      p.originalHLRIndexedSourceStatusOneBasedIndex!==
+       originalStatus.nativeHLROriginalEdgeMapIndex||
+      p.originalNative3DClassExactlyBacksEntireGeneratedLine!==true||
+      p.sourceFilterNativeGeneratedIdentityDoesNotCertifyOriginalParameterHistory!==true||
+      p.actualGeneratedToOriginalTopoDSHistoryCertified!==false||
+      p.allOpaqueFaceOcclusionCertified!==false||p.signedV5Action!==false)
+    throw new RangeError('generated native source-filter causal edge cannot authorize original M5 history');
+  }
+  counts.unresolvedObligationsWithDirectNativeSourceFilteredGeneratedCausalEdges+=
+   Number(nativeCausal.length>0);
+  counts.directNativeSourceFilteredGeneratedCausalEdgesStillMissingParameterHistory+=
+   nativeCausal.length;
   const indexedClassContradiction=originalStatus!==null&&
    (originalStatus.originalSourceClass==='all-visible'&&rayClass==='hidden-sharp'||
     originalStatus.originalSourceClass==='all-hidden'&&rayClass==='visible-sharp');
@@ -419,6 +442,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
    sameRunNativeGlobal3DSourceCurveAttribution:global3DSource,
    global3DSourceDoesNotAuthorizePaperHistoryOrV5:true,
+   directNativeSourceFilteredToWholeSolidGeneratedEdgeCausalOrdinals:
+    nativeCausal.map(p=>({hlrClass:p.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:p.wholeSolidGeneratedHLREdgeOrdinal,
+     originalNativeEdgeMapSourceIndex:p.originalHLRIndexedSourceStatusOneBasedIndex})),
+   directCausalGeneratedEdgeCannotReplaceOriginalParameterHistory:true,
    sameRunNativeOriginalHLREdgeStatus:originalStatus,
    nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory:true,
    originalHLREdgeStatusVsIndependentRayContradictionHeld:indexedClassContradiction,
