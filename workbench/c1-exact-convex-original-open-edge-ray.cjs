@@ -194,10 +194,15 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
     const ranges=segments.map(s=>s.originalM0UnitParameterRange);
     // Union coverage alone does not prove exactly-once source ownership:
     // two individually valid HLR pieces may overlap by one binary64 ULP.
-    const sortedRanges=[...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
-    const disjointPositiveInteriors=sortedRanges.every((r,i)=>
+    // Validate native intervals before sorting: a malformed or stale
+    // source row is an unsigned HOLD, not a thrown proof or V5 action.
+    const wellFormedRanges=ranges.length<=512&&ranges.every(r=>
      Array.isArray(r)&&r.length===2&&
-     (i===0||r[0]>=sortedRanges[i-1][1]));
+     r.every(Number.isFinite)&&r[0]>=0&&r[1]<=1&&r[1]>r[0]);
+    const sortedRanges=wellFormedRanges?
+     [...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]):[];
+    const disjointPositiveInteriors=wellFormedRanges&&sortedRanges.every((r,i)=>
+     i===0||r[0]>=sortedRanges[i-1][1]);
     const valid=disjointPositiveInteriors&& native.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      native.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
      native.native3DOriginalParameterPositiveGaps?.length===0&&
