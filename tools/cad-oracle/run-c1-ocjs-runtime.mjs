@@ -199,6 +199,37 @@ for(const [index,geometry] of general.entries()){
   assert.equal(typeof statusAPI.statusArrayExposedInPinnedWasm,'boolean');
   assert.equal(statusAPI.originalHLREdgeStatusIntervalsExtracted,false);
   assert.equal(statusAPI.originalHLREdgeStatusToGeneratedPaperLineageCertified,false);
+  assert.equal(statusAPI.originalHLROpenSourceClassBoundToOriginalEdgeMap,true);
+  const statusRows=statusAPI.nativeOriginalSourceEdgeStatusRows;
+  assert.equal(statusRows.length,geometry.data.edges.length,
+   'each current original M0 physical edge must have a native HLR status');
+  const expectedM0Ids=new Set(geometry.data.edges.map(edge=>
+   geometry.id+'::'+[...edge].sort().join('|')));
+  assert.deepEqual(new Set(statusRows.map(x=>x.originalPhysicalSourceEdgeId)),
+   expectedM0Ids);
+  assert.deepEqual(new Set(statusRows.map(x=>x.nativeHLROriginalEdgeMapIndex)),
+   new Set(statusRows.map((_,i)=>i+1)));
+  for(const row of statusRows){
+   assert.equal(row.view,view);
+   assert.equal(row.generated2DHLREdgeToOriginalSourceHistoryCertified,false);
+   assert.equal(row.globalContinuousM5OcclusionCertified,false);
+   assert.equal(row.engineeringLineStyle,'undetermined');
+   assert.equal(row.signedV5Action,false);
+   assert.equal(row.originalSourceClass,
+    row.originalEdgeStatusAllVisible?'all-visible':
+     row.originalEdgeStatusAllHidden?'all-hidden':'mixed');
+  }
+  if(geometry.id==='C1SkewTetra'&&view==='W'){
+   for(const suffix of ['A|C','A|D']){
+    const row=statusRows.find(s=>
+     s.originalPhysicalSourceEdgeId==='C1SkewTetra::'+suffix);
+    assert.ok(row,'genuine native W source must remain indexed');
+    assert.equal(row.originalEdgeStatusAllVisible,true,
+     'original HLR source EdgeStatus must agree with independent OCP oracle');
+    assert.equal(row.originalEdgeStatusAllHidden,false);
+    assert.equal(row.nativeOriginalVisiblePartCount,1);
+   }
+  }
   // Native OCP has already proved original EdgeMap -> EdgeStatus; check
   // the pinned JavaScript WASM binding itself before building a consumer.
   assert.equal(statusAPI.statusArrayExposedInPinnedWasm,true);
