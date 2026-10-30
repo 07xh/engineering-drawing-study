@@ -178,6 +178,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   WPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   WPositivePaperGapsWithOriginal3DJointProofHeld:0,
   WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift:0,
+  WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift:0,
+  WPositivePaperGapsWithTransverseGlobalWPaperDrift:0,
   positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness:0,
   positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
   positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
@@ -459,6 +461,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift+=
    Number((jointW?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
     ?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0);
+  const receivedW=jointW?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence;
+  counts.WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift+=
+   Number((receivedW?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0&&
+    (receivedW?.nativeGlobalWEdgesWithTransverseBinary64PaperDrift??0)===0);
+  counts.WPositivePaperGapsWithTransverseGlobalWPaperDrift+=
+   Number((receivedW?.nativeGlobalWEdgesWithTransverseBinary64PaperDrift??0)>0);
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
    WOriginalPhysicalNativeParameterClosedRayM4JointEvidence:jointW,
    WPositivePaperGapDoesNotTurnIntoOfficialLine:true,
