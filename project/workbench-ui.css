@@ -263,8 +263,8 @@ body.ui-next .v9-three-space canvas:focus-visible{outline:3px solid #83b3ff;outl
 
 /* Keep the diagram and its playback/step controls together. */
 body.ui-next .v7-layout{grid-template-columns:minmax(245px,.85fr) minmax(340px,2fr)}
-body.ui-next .v7-paper{position:sticky;top:72px;max-height:58dvh;overflow:auto}
-body.ui-next .v7-paper #v7-sheet{max-height:30dvh}
+body.ui-next .v7-paper{position:sticky;top:72px;max-height:75dvh;overflow:auto}
+body.ui-next .v7-paper #v7-sheet{max-height:42dvh}
 body.ui-next .v7-paper .v7-steps{margin:10px 0;padding:10px;border-radius:10px;max-height:28dvh;overflow:auto}
 body.ui-next .v7-paper .v7-spatial{max-height:28dvh;overflow:auto}
 body.ui-next .v7-paper .v7-spatial svg{max-height:140px}
