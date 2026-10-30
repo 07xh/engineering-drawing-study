@@ -1696,6 +1696,39 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
  assert.equal(unresolvedM5.records.length,heldM5.length);
+ // The genuine native 3D source/index/source-filter evidence is consumed
+ // at the very same still-unsigned M5 obligations. Bounds drift is counted
+ // separately, never hidden inside strict exact lineage.
+ const strictIndexedM5=unresolvedM5.records.filter(row=>
+  row.independentlyExactIndexedOriginal3DSourceFilteredGlobalHLREdges.length>0);
+ const roundedIndexedM5=unresolvedM5.records.filter(row=>
+  row.boundedIndexedOriginal3DSourceFilteredGlobalHLREdgesHeld.length>0);
+ assert.equal(unresolvedM5.counts.
+  heldObligationsWithExactIndexedOriginal3DSourceFilterCausalEdges,
+  strictIndexedM5.length);
+ assert.equal(unresolvedM5.counts.
+  heldObligationsWithBoundedIndexedOriginal3DPaperDriftCausalEdges,
+  roundedIndexedM5.length);
+ assert.equal(unresolvedM5.counts.
+  heldExactIndexedOriginal3DSourceFilterCausalEdgeWitnesses,
+  unresolvedM5.records.reduce((sum,row)=>sum+
+   row.independentlyExactIndexedOriginal3DSourceFilteredGlobalHLREdges.length,0));
+ assert.equal(unresolvedM5.counts.
+  heldBoundedIndexedOriginal3DPaperDriftCausalEdgeWitnesses,
+  unresolvedM5.records.reduce((sum,row)=>sum+
+   row.boundedIndexedOriginal3DSourceFilteredGlobalHLREdgesHeld.length,0));
+ assert.ok(unresolvedM5.records.every(row=>
+  row.sourceOriginalTopoDSGeneratedHistoryCertified===false&&
+  row.exactIndexedSourceFilterCausalityCannotSignPaperGapsOrM5===true&&
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false));
+ console.error('REAL WASM M5 held indexed source-filter causal claims '+geometry.id+
+  ': '+JSON.stringify({
+   heldM5Obligations:unresolvedM5.counts.unresolvedM5Obligations,
+   exactOriginal3DClassSourceAttributions:strictIndexedM5.length,
+   boundedPaperDriftSourceAttributionsHeld:roundedIndexedM5.length,
+   stillUnsigned:true
+  }));
  // The TWO real W-view tiny positive gaps must now independently join
  // original-indexed HLR visibility class, complete native source 3D
  // parameter bounds, full closed convex original vertex rays, and
