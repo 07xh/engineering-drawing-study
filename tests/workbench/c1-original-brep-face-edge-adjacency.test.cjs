@@ -28,6 +28,9 @@ test('reject missing, duplicated and aliased original BRep face-edge topology',(
   x=>{x.nativeFaceEdgeInventories[0][0]=shape('other');},
   x=>{x.nativeFaceEdgeInventories[0][1]=x.nativeFaceEdgeInventories[0][0];},
   x=>{x.originalNativeEdgeHandles.pop();},
+  // Duplicate a genuine source handle: every expected ID is still present,
+  // but the native inventory is no longer exactly once per physical edge.
+  x=>{x.originalNativeEdgeHandles.push({...x.originalNativeEdgeHandles[0]});},
   x=>{x.originalNativeEdgeHandles[1].edge.id=x.originalNativeEdgeHandles[0].edge.id;},
   x=>{x.nativeFaceEdgeInventories[1]=x.nativeFaceEdgeInventories[0];}
  ];
