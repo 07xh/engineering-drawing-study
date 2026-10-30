@@ -481,6 +481,51 @@ for(const [index,geometry] of general.entries()){
  const globalScopedRebind=scopedConsumer.globalNativeHLRSourceScopeRebinding;
  assert.equal(globalScopedRebind?.schema,
   'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');
+ // Independent real pinned WASM check of exact indexed original TopoDS
+ // input source + full native 3D class + globally unique filtered HLR.
+ // No source interval, global opaque visibility, or V5 is signed here.
+ const sourceAttribution=globalScopedRebind.exactSourceFilterBijectionByView;
+ assert.deepEqual(Object.keys(sourceAttribution).sort(),['H','V','W']);
+ let actualAttributed=0;
+ for(const view of ['V','H','W']){
+  const summary=sourceAttribution[view],rows=globalScopedRebind.views[view];
+  assert.equal(summary.view,view);
+  assert.equal(summary.wholeSolidGeneratedEdgeCount,rows.length);
+  const qualified=rows.filter(row=>
+   row.exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame);
+  assert.equal(summary.uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount,
+   qualified.length);
+  actualAttributed+=qualified.length;
+  assert.equal(summary.original3DParameterHistoryOnGenerated2DNotCertified,true);
+  assert.equal(summary.globalContinuousOcclusionCertified,false);
+  assert.equal(summary.signedV5ActionCount,0);
+  if(summary.completeExactSourceScopedToWholeSolidOutputBijectionProven){
+   assert.equal(qualified.length,rows.length);
+   assert.equal(summary.originalSourceFilteredGeneratedEdgeCount,rows.length);
+   assert.equal(summary.uniqueScopedOutputEmissionCount,rows.length);
+  }
+  for(const row of qualified){
+   assert.ok(Number.isSafeInteger(row.nativeOriginalHLREdgeMapSourceIndex));
+   assert.ok(row.nativeOriginalHLREdgeMapSourceIndex>0);
+   assert.equal(row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree,true);
+   assert.equal(row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,true);
+   assert.equal(row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+   assert.equal(row.signedV5Action,false);
+  }
+ }
+ assert.equal(globalScopedRebind.counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution,
+  actualAttributed);
+ console.error('REAL WASM exact original TopoDS-indexed HLR global source-filter attribution '+
+  geometry.id+': '+JSON.stringify({
+   globalEdges:globalScopedRebind.counts.wholeSolidNativeHLREdges,
+   indexed3DClassAttributed:actualAttributed,
+   viewBijections:Object.fromEntries(['V','H','W'].map(view=>[view,{
+    global:sourceAttribution[view].wholeSolidGeneratedEdgeCount,
+    attributed:sourceAttribution[view].uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount,
+    complete:sourceAttribution[view].completeExactSourceScopedToWholeSolidOutputBijectionProven
+   }])),
+   generated2DTopoDSParameterHistoryCertified:false,signedV5ActionCount:0
+  }));
  const nativePhysical3DEndpoints=scopedConsumer.globalNativeHLROriginal3DEndpointLedger;
  const originalFaceAdjacency=cad.originalNativeFaceAdjacency;
  assert.equal(originalFaceAdjacency?.schema,
