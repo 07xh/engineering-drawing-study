@@ -7,6 +7,8 @@
  * endpoint cannot certify exact physical junction topology or GB/V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {boundedOriginalFullPaperEndpointEnvelope}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
@@ -62,7 +64,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   const occurrenceCountsValid=occurrenceCounts&&
    JSON.stringify(Object.keys(occurrenceCounts).sort())===JSON.stringify(ids)&&
    ids.every(id=>Number.isSafeInteger(occurrenceCounts[id])&&
-    occurrenceCounts[id]>=expectedDegrees[id])&&
+    occurrenceCounts[id]===expectedDegrees[id])&&
    ids.reduce((n,id)=>n+occurrenceCounts[id],0)===
     physicalGraph.originalBRepVertexOccurrencesChecked;
   const samePairs=occurrenceCountsValid?ids.reduce((n,id)=>
@@ -193,17 +195,31 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      (xyz(originalBRep.fromOCCT3D,b)&&
       xyz(originalBRep.toOCCT3D,a));
     if(modelVerified)counts.nativeOriginalBRepExactPhysicalEndpointPairs++;
-    const m4=m4ById.get(originalId),matching=m4?.segments.filter(s=>
+    // The genuine ORIGINAL native 3D class may be split across multiple
+    // adjacent parameter spans. A single [0,1] segment is not required:
+    // certify exact full coverage with no positive gaps or overlaps instead.
+    // Never turn a union containing duplicate spans into once-only lineage.
+    const m4=m4ById.get(originalId),segments=m4?.segments??[];
+    const ranges=segments.map(s=>s?.originalM0UnitParameterRange);
+    const wellFormed=ranges.length>0&&ranges.length<=512&&ranges.every(r=>
+     Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&
+     r[0]>=0&&r[1]<=1&&r[1]>r[0]);
+    const sorted=wellFormed?[...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]):[];
+    const disjoint=wellFormed&&sorted.every((r,i)=>
+     i===0||r[0]>=sorted[i-1][1]);
+    const classConsistent=segments.length>0&&segments.every(s=>
      s.sourceEdgeId===originalId&&s.view===view&&
      s.native3DHLRClass===klass&&
      s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
-     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
-     s.originalM0UnitParameterRange?.[0]===0&&
-     s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
+     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false);
+    sourceClassFull=disjoint&&classConsistent&&
+     exactCandidateIntervalCoverage([0,1],ranges).
+      entireOriginalParameterIntervalCovered===true&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
-     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+     m4.native3DOriginalParameterPositiveGaps?.length===0&&
+     m4.native3DOriginalParameterPositiveOverlaps?.length===0&&
+     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation?.length===0;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
     const forward=p2eq(line.from,p)&&p2eq(line.to,q),
