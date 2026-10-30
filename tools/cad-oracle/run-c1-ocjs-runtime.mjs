@@ -486,7 +486,7 @@ for(const [index,geometry] of general.entries()){
  // No source interval, global opaque visibility, or V5 is signed here.
  const sourceAttribution=globalScopedRebind.exactSourceFilterBijectionByView;
  assert.deepEqual(Object.keys(sourceAttribution).sort(),['H','V','W']);
- let actualAttributed=0;
+ let actualAttributed=0,actualBoundedSourceOwners=0;
  for(const view of ['V','H','W']){
   const summary=sourceAttribution[view],rows=globalScopedRebind.views[view];
   assert.equal(summary.view,view);
@@ -496,6 +496,21 @@ for(const [index,geometry] of general.entries()){
   assert.equal(summary.uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount,
    qualified.length);
   actualAttributed+=qualified.length;
+  const bounded=rows.filter(row=>
+   row.indexedOriginal3DSourceFilterAttributionWithExplicitBoundedPaperDriftHeld);
+  actualBoundedSourceOwners+=bounded.length;
+  assert.equal(summary.native3DBoundedPaperDriftHeldButSourceFilterAttributedCount,
+   bounded.length);
+  assert.ok(bounded.every(row=>
+   row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge===true&&
+   row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge===false&&
+   row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree===true&&
+   row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified===false&&
+   row.signedV5Action===false));
+  if(summary.completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift){
+   assert.equal(qualified.length+bounded.length,rows.length);
+   assert.equal(summary.uniqueScopedOwnerWithExplicitBoundedRoundingCount,rows.length);
+  }
   assert.equal(summary.original3DParameterHistoryOnGenerated2DNotCertified,true);
   assert.equal(summary.globalContinuousOcclusionCertified,false);
   assert.equal(summary.signedV5ActionCount,0);
@@ -515,14 +530,23 @@ for(const [index,geometry] of general.entries()){
  }
  assert.equal(globalScopedRebind.counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution,
   actualAttributed);
+ assert.equal(globalScopedRebind.counts.
+  wholeSolidEdgesWithBoundedNative3DPaperDriftIndexedSourceFilterAttribution,
+  actualBoundedSourceOwners);
  console.error('REAL WASM exact original TopoDS-indexed HLR global source-filter attribution '+
   geometry.id+': '+JSON.stringify({
    globalEdges:globalScopedRebind.counts.wholeSolidNativeHLREdges,
    indexed3DClassAttributed:actualAttributed,
+   indexedSourceOwnersWithBoundedPaperDriftHeld:actualBoundedSourceOwners,
+   allThreeViewsSourceOwnerAttributionWithHeldRounding:
+    globalScopedRebind.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,
    viewBijections:Object.fromEntries(['V','H','W'].map(view=>[view,{
     global:sourceAttribution[view].wholeSolidGeneratedEdgeCount,
     attributed:sourceAttribution[view].uniquelyExactIndexedOriginal3DClassAttributedGlobalEdgeCount,
-    complete:sourceAttribution[view].completeExactSourceScopedToWholeSolidOutputBijectionProven
+    boundedPaperDriftHeld:sourceAttribution[view].native3DBoundedPaperDriftHeldButSourceFilterAttributedCount,
+    complete:sourceAttribution[view].completeExactSourceScopedToWholeSolidOutputBijectionProven,
+    sourceOwnerBijectionWithDriftHeld:
+     sourceAttribution[view].completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift
    }])),
    generated2DTopoDSParameterHistoryCertified:false,signedV5ActionCount:0
   }));
