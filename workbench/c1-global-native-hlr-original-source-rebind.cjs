@@ -32,6 +32,8 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   wholeSolidEdgesWithMultipleOriginalSourceClaims:0,
   wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim:0,
   wholeSolidEdgesWithNativeScopedIsSameIdentity:0,
+  wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness:0,
+  wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding:0,
   wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding:0,
@@ -45,6 +47,46 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      !Array.isArray(cad.views?.[view])||
      !Array.isArray(cad.hiddenSharpViews?.[view]))
    throw new RangeError('missing genuine whole-solid and original filtered HLR source inventory');
+  // Original HLR EdgeStatus belongs to the INPUT TopoDS source index;
+  // source-scoped output + direct native IsSame supplies an independent
+  // causal path to the WHOLE-SOLID generated 2D edge. Keep all three
+  // identities separate, especially for co-projected M0 source edges.
+  const indexedStatus=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view];
+  const sourceStatusById=new Map();
+  if(indexedStatus!==undefined){
+   const edgeMap=indexedStatus?.originalDataStructureIndex,
+    status=indexedStatus?.originalEdgeStatusAPI,
+    originalIndices=edgeMap?.indexedOriginalSources,
+    originalStatuses=status?.nativeOriginalSourceEdgeStatusRows;
+   if(edgeMap?.edgeMapSourceBijectionVerified!==true||
+      status?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      !Array.isArray(originalIndices)||!Array.isArray(originalStatuses)||
+      originalIndices.length!==scoped.rows.length||
+      originalStatuses.length!==originalIndices.length)
+    throw new RangeError('unverified original HLR EdgeStatus source index for causal generated-edge join');
+   const indexBySource=new Map(originalIndices.map(x=>
+    [x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex]));
+   if(indexBySource.size!==originalIndices.length)
+    throw new RangeError('duplicated original HLR EdgeStatus source index');
+   for(const x of originalStatuses){
+    if(x?.view!==view||typeof x.originalPhysicalSourceEdgeId!=='string'||
+       !indexBySource.has(x.originalPhysicalSourceEdgeId)||
+       indexBySource.get(x.originalPhysicalSourceEdgeId)!==
+        x.nativeHLROriginalEdgeMapIndex||
+       sourceStatusById.has(x.originalPhysicalSourceEdgeId)||
+       !['all-visible','all-hidden','mixed'].includes(x.originalSourceClass)||
+       x.originalSourceClass!==(x.originalEdgeStatusAllVisible?
+        'all-visible':x.originalEdgeStatusAllHidden?'all-hidden':'mixed')||
+       x.generated2DHLREdgeToOriginalSourceHistoryCertified!==false||
+       x.globalContinuousM5OcclusionCertified!==false||
+       x.signedV5Action!==false)
+     throw new RangeError('forged native original HLR EdgeStatus for generated source');
+    sourceStatusById.set(x.originalPhysicalSourceEdgeId,x);
+   }
+   if(sourceStatusById.size!==scoped.rows.length||
+      scoped.rows.some(x=>!sourceStatusById.has(x.originalPhysicalSourceEdgeId)))
+    throw new RangeError('native original HLR EdgeStatus misses source-filtered input');
+  }
   const sourceBind=new Map();
   for(const binding of consumer.nativeScoped2D3DClassBindings){
    if(binding?.view!==view||!binding.sourceEdgeId||
@@ -150,8 +192,22 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     candidate=unique?list[0]:null,
     exact3D=!!candidate?.nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper,
     round3D=!!candidate?.nativeOriginal3DWholeSourceClassAndOneULPCompatible,
-    paperExact=!!candidate?.globallyReceivedBinary64PaperExactlySameAsNativeScoped;
+    paperExact=!!candidate?.globallyReceivedBinary64PaperExactlySameAsNativeScoped,
+    inputStatus=candidate?sourceStatusById.get(candidate.sourceEdgeId)??null:null,
+    statusClassAgrees=inputStatus!==null&&(
+     inputStatus.originalSourceClass==='mixed'||
+     inputStatus.originalSourceClass==='all-visible'&&klass==='visible-sharp'||
+     inputStatus.originalSourceClass==='all-hidden'&&klass==='hidden-sharp'),
+    nativeCausal=unique&&paperExact&&exact3D&&
+     candidate.actualNativeScopedToWholeSolidTopoDSIsSame===true&&
+     statusClassAgrees;
    counts.wholeSolidNativeHLREdges++;
+   counts.wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness+=
+    Number(nativeCausal);
+   counts.wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch+=
+    Number(unique&&paperExact&&exact3D&&
+     candidate.actualNativeScopedToWholeSolidTopoDSIsSame===true&&
+     inputStatus!==null&&!statusClassAgrees);
    if(!owners.length)counts.wholeSolidEdgesWithNoOriginalNativeSourceClaim++;
    if(owners.length>1)counts.wholeSolidEdgesWithMultipleOriginalSourceClaims++;
    if(unique)counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim++;
@@ -177,6 +233,17 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     directNativeScopedGeneratedEdgeIsSameSource:
      direct.length===1?direct[0].sourceEdgeId:null,
     nativeIsSameIsNotGeneratedToOriginal3DTopoDSIdentity:true,
+    nativeOriginalHLREdgeMapSourceStatusClass:
+     inputStatus?.originalSourceClass??null,
+    nativeOriginalHLREdgeMapSourceIndex:
+     inputStatus?.nativeHLROriginalEdgeMapIndex??null,
+    // A strictly checked original input EdgeMap source + native
+    // source-filtered 2D output + global generated IsSame is a causal
+    // source FILTER witness. Not a direct original/generated edge IsSame,
+    // not a full native original curve-parameter interval history.
+    exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified:
+     nativeCausal,
+    generatedOriginalTopoDSParameterHistoryStillNotCertified:true,
     wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified:false,
     globalSceneOpaqueFaceVisibilityCertified:false,
     true3DAllEndpointJunctionsCertified:false,
