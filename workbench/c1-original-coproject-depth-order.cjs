@@ -203,6 +203,60 @@ function auditC1OriginalCoProjectedDepthOrder({
  // A distinct but subpixel received projection can enter the existing
  // exact original M0/M4 co-projected depth proof. This is NOT HLR output
  // history, M5 line-style permission, or V5 action authorization.
+ // A caller-supplied peer list is NOT proof that no other original M0
+ // source projects over this cut. Independently enumerate the entire
+ // reviewed original source inventory using exact dyadic paper geometry.
+ // Existing consumers supply full [0,1] original peer edges, which avoids
+ // hiding a competing subspan behind a partial/omitted candidate list.
+ // This gate refuses full-line depth claims whenever the inventory is
+ // incomplete, even if the supplied peers all have favorable depth.
+ for(const peer of peers){
+  if(peer?.view!==view||peer.sourceGeometryId!==geometry.id||
+     typeof peer.sourceEdgeId!=='string'||
+     !sources.has(peer.sourceEdgeId)||
+     !Array.isArray(peer.originalParameterRange)||
+     peer.originalParameterRange.length!==2||
+     !peer.originalParameterRange.every(Number.isFinite)||
+     peer.originalParameterRange[0]<0||
+     peer.originalParameterRange[1]>1||
+     peer.originalParameterRange[0]>=peer.originalParameterRange[1])
+   throw new RangeError('forged original peer identity or parameter range');
+ }
+ const missingWholeOriginalPeers=[];
+ for(const [peerId,[peerStart,peerEnd]] of sources){
+  if(peerId===sourceEdgeId)continue;
+  const overlaps=exactParametricCoProjectedSourceRelation({
+   view,sourceStart:original[0],sourceEnd:original[1],
+   sourceRange:originalParameterRange,
+   peerStart,peerEnd,peerRange:[0,1]
+  });
+  if(!overlaps)continue;
+  const peersForEdge=peers.filter(row=>row.sourceEdgeId===peerId);
+  if(peersForEdge.length!==1||
+     peersForEdge[0].originalParameterRange[0]!==0||
+     peersForEdge[0].originalParameterRange[1]!==1)
+   missingWholeOriginalPeers.push(peerId);
+ }
+ if(missingWholeOriginalPeers.length)return frozen({
+  schema:'draftai-c1-original-3d-coproject-depth-order/1',
+  view,sourceGeometryId:geometry.id,sourceEdgeId,
+  originalParameterRange:[...originalParameterRange],
+  status:'undetermined-incomplete-original-coproject-peer-inventory',
+  missingWholeOriginalPeerSourceIds:missingWholeOriginalPeers.sort(),
+  aliasesExamined:0,comparisons:[],
+  wholeIntervalFrontmostCertified:false,
+  visibleSourceCoversEntireLine:false,
+  allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval:false,
+  entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources:false,
+  entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource:false,
+  originalPhysicalVertexOpenDepthOrderingProven:false,
+  openSourceDepthOrderUsesTruePhysicalM0VertexBoundary:false,
+  exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies:false,
+  exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie:false,
+  weakClosedSourceDepthCannotCertifyEndpointObserverRayOrGeneratedHLR:true,
+  openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces:true,
+  engineeringLineStyleSigned:false,signedV5ActionCount:0
+ });
  const comparisons=[];
  let behindCertifiedVisible=false,hasPartialOrTie=false;
  for(const peer of peers){
@@ -285,9 +339,10 @@ function auditC1OriginalCoProjectedDepthOrder({
   });
   const [startDepth,endDepth]=approximate;
   if(!front&&!behind)hasPartialOrTie=true;
-  if(behind&&(
-     peer.status==='single-opaque-solid-whole-open-ray-clear'||
-     peer.status==='exterior-contour-held-by-original-m5'))
+  // A contour explicitly held by M5 is NOT a certified clear ray.
+  // Only positive original opaque-solid evidence can suppress a source
+  // behind it; otherwise the relative depth is a HOLD.
+  if(behind&&peer.status==='single-opaque-solid-whole-open-ray-clear')
     behindCertifiedVisible=true;
   comparisons.push({...base,
    status:front?'candidate-strictly-front':
@@ -311,8 +366,7 @@ function auditC1OriginalCoProjectedDepthOrder({
    strictOriginal3DDepthOrderNoToleranceUsed:true,
    entireOriginalStraightSubspanDepthOrderCertified:front||behind,
    competingSourceHasCertifiedClearForwardRay:
-    peer.status==='single-opaque-solid-whole-open-ray-clear'||
-    peer.status==='exterior-contour-held-by-original-m5'});
+    peer.status==='single-opaque-solid-whole-open-ray-clear'});
  }
  // A strict affine ordering in the OPEN source interval survives a
  // genuine shared M0 vertex depth tie at the boundary. This is strictly
