@@ -1145,6 +1145,15 @@ for(const [index,geometry] of general.entries()){
   audited.counts.m5AtomicIntervals);
  assert.ok(Object.values(audited.views).flatMap(v=>v.intervals).every(x=>
   x.engineeringLineStyle==='undetermined'&&x.signedV5===false));
+ const independentOpenM5=Object.values(audited.views).flatMap(v=>v.intervals)
+  .filter(x=>x.independentExactConvexOpenSourceAllFaceRayVisible===true);
+ assert.equal(audited.counts.independentExactAllFaceOpenRayReboundToM5VisibleSource,
+  independentOpenM5.length);
+ assert.ok(independentOpenM5.every(x=>
+  x.independentExactConvexOpenSourceRayWitness.
+   originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified===true&&
+  x.exactOpenRayCannotAuthorizeGenerated2DOrFormalM5===true&&
+  x.signedV5===false&&x.engineeringLineStyle==='undetermined'));
  // If generic M5 cannot positively prove its WHOLE visible ring, real CAD
  // agreement may still be useful forensic evidence but may NOT sign an
  // Intent/DAG/V5 stroke. Keep the original formal C1 gate fail-closed.
