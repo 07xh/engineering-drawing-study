@@ -67,6 +67,8 @@ function setup({two=false,rounded=false,missingPartition=false,tetra=false}={}){
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
     segments:[{view,sourceEdgeId:id,native3DHLRClass:'visible-sharp',
      originalM0UnitParameterRange:[0,1],
+     originalNative3DParameterRange:[0,1],
+     generated2DHLREdgeTopologyProven:false,
      derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
      engineeringLineStyle:'undetermined',signedV5Action:false}]
    });
@@ -114,6 +116,44 @@ test('real global 3D native source curve witnesses independently bind every 2D o
  assert.deepEqual(r.views.V.rows[0].independentGlobal3DOriginalCurveParameterRange,[0,1]);
  assert.equal(r.views.V.rows[0].independentGlobal3DSourceIsNotGenerated2DTopoDSHistory,true);
  assert.equal(r.officialV5Authorized,false);
+});
+test('independent whole-solid native 3D range matches precisely one original M4 source/class segment',()=>{
+ const x=attachGlobalNative3DOriginalCurveProof(setup({two:true}));
+ const r=audit(x);
+ assert.equal(r.counts.genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4,6);
+ assert.equal(r.counts.genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4,0);
+ assert.equal(r.views.V.rows[0].independentGlobal3DClassNativeParameterRangeMatchedCurrentM4,true);
+ assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ assert.equal(r.views.V.rows[0].independentGlobal3DClassNativeParameterRangeMatchIsNotHLRHistory,true);
+ assert.equal(r.views.V.rows[0].signedV5Action,false);
+});
+test('wrong measured global 3D interval or missing M4 interval cannot borrow full original endpoint certificate',()=>{
+ for(const mutate of [
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.
+   nativeGlobal3DOriginalSourceEvidence.rows[0].originalNativeCurveParameterRange=[0,0.5];},
+  x=>{x.sourceM4Views.V.nativeOriginal3DM4Candidates[0].segments[0].
+   originalNative3DParameterRange=[0,0.5];},
+  x=>{delete x.sourceM4Views.V.nativeOriginal3DM4Candidates[0].segments[0].
+   originalNative3DParameterRange;}
+ ]){
+  const x=attachGlobalNative3DOriginalCurveProof(setup());mutate(x);
+  const r=audit(x);
+  assert.equal(r.counts.genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4,1);
+  assert.equal(r.views.V.rows[0].independentGlobal3DClassNativeParameterRangeMatchedCurrentM4,false);
+  assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.views.V.rows[0].original3DToGenerated2DEndpointWitnesses[0].
+   entireOriginal3DSourceNativeClassConfirmed,false);
+  assert.equal(r.views.V.rows[0].signedV5Action,false);
+ }
+});
+test('duplicate original M4 native interval owners cannot produce a unique global 3D subrange witness',()=>{
+ const x=attachGlobalNative3DOriginalCurveProof(setup());
+ const m=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m.segments.push({...m.segments[0]});
+ const r=audit(x);
+ assert.equal(r.views.V.rows[0].independentGlobal3DClassNativeParameterRangeMatchedCurrentM4,false);
+ assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.signedV5ActionCount,0);
 });
 test('a measured global 3D original curve cannot contradict the independently scoped 2D original source',()=>{
  const x=attachGlobalNative3DOriginalCurveProof(setup({two:true}));
