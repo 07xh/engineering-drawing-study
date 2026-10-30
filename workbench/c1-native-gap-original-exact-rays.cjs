@@ -315,8 +315,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       if(sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)
        m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering++;
      }
+     // Count only truly binary64-collapsed positive dyadic cuts as held.
+     // A distinct received paper segment, however short, now proceeds
+     // through exact original affine source depth ordering instead.
      if(sliced.status===
-        'positive-original-dyadic-projection-below-paper-resolution-held')
+        'positive-original-dyadic-projection-binary64-collapsed-held')
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
