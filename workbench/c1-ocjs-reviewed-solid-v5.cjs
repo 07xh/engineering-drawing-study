@@ -618,7 +618,8 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   exactNative3DSourceParameterGapOrUnbound:0,
   scopedPaperFullButNative3DPositiveGap:0,
   sourceFilteredNative3DWholeVisibleSourceCertified:0,
-  paperInverseGapDespiteCompleteNative3DVisibleSource:0};
+  paperInverseGapDespiteCompleteNative3DVisibleSource:0,
+  independentExactAllFaceOpenRayReboundToM5VisibleSource:0};
  for(const view of VIEWS){
   const pv=proof.views.find(x=>x.view===view);
   const rayView=proof.continuousFrontmostSourceRays.views.find(x=>x.view===view);
@@ -629,6 +630,8 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
   const native3DBySource=new Map(
    nativeScopedSourceLedger.views[view].nativeOriginal3DM4Candidates.map(row=>
     [row.sourceEdgeId,row]));
+  const exactOpenRayBySource=new Map(
+   exactOpenEdgeRays.views[view].map(row=>[row.sourceEdgeId,row]));
   if(!pv||!Array.isArray(strokes)||!strokes.length)
    throw new RangeError('C1 original M5 and real HLR V/H/W missing');
   if(!rayView||rayView.intervals.length!==pv.candidateIntervals.length)
@@ -665,6 +668,12 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
    // consume the same-run original TopoDS -> native 3D scoped HLR M4
    // interval proof. This is a positive source/visibility-class witness,
    // not generated 2D TopoDS history, paper closure, or M5/V5 authority.
+   const exactOpenRay=validSource?exactOpenRayBySource.get(x.sourceEdgeId):null;
+   const independentOpenRay=exactOpenRay?.
+    originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified===true&&
+    exactOpenRay.exactOriginalOpenEdgeOpaqueFaceRayClass==='visible-sharp';
+   if(independentOpenRay)
+    totals.independentExactAllFaceOpenRayReboundToM5VisibleSource++;
    const native3D=validSource?native3DBySource.get(x.sourceEdgeId):null;
    const nativeVisibleRanges=native3D?.segments.filter(segment=>
     segment.native3DHLRClass==='visible-sharp'&&
@@ -724,6 +733,9 @@ function auditC1OcjsM5ProofGaps({input,sheetTransform,oc}={}){
     status,m5LocalPositive:local,realCadCovered:covered,
     realNativeOriginal3DSourceParameterCovered:nativeExactCovered,
     exactNativeOriginal3DSourceCoverage:nativeCoverage,
+    independentExactConvexOpenSourceAllFaceRayVisible:independentOpenRay,
+    independentExactConvexOpenSourceRayWitness:exactOpenRay??null,
+    exactOpenRayCannotAuthorizeGenerated2DOrFormalM5:true,
     independentSourceFilteredNative3DVisibleFullSourceProven:native3DVisibleFull,
     paperInversePositiveGapDespiteCompleteNative3DVisibleSource:
      native3DVisibleFull&&!nativeExactCovered,
