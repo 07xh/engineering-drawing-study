@@ -220,6 +220,41 @@ for(const [index,geometry] of general.entries()){
   assert.equal(scoped.fullGlobalGeneratedEdgeToOriginalSourceHistoryProven,false);
   assert.equal(scoped.fullContinuousVisibilityProven,false);
   assert.equal(scoped.signedV5ActionCount,0);
+  // A second native output route now supplies actual WHOLE-SOLID
+  // generated 3D curves. Independently verify every global 2D sharp
+  // ordinal against one original 3D BRep curve, not paper-only aliases.
+  const global3D=scoped.nativeGlobal3DOriginalSourceEvidence;
+  assert.equal(global3D.schema,
+   'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1');
+  assert.equal(global3D.sourceGeometryId,geometry.id);
+  assert.equal(global3D.revision,cad.revision);
+  assert.equal(global3D.view,view);
+  assert.equal(global3D.globalGenerated2DSharpEdges,
+   cad.views[view].length+cad.hiddenSharpViews[view].length);
+  assert.equal(global3D.globalGenerated3DSharpEdgesWithUniqueOriginalCurve,
+   global3D.globalGenerated2DSharpEdges);
+  assert.equal(global3D.rows.length,global3D.globalGenerated2DSharpEdges);
+  assert.equal(global3D.allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper,true);
+  assert.equal(global3D.generated2DTo3DTopoDSHistoryCertified,false);
+  assert.equal(global3D.globalContinuousVisibilityCertified,false);
+  assert.equal(global3D.officialV5Authorized,false);
+  assert.equal(global3D.signedV5ActionCount,0);
+  const global3DOrdinals=new Set();
+  for(const row of global3D.rows){
+   const key=row.hlrClass+'|'+row.wholeSolidGeneratedHLREdgeOrdinal;
+   assert.equal(global3DOrdinals.has(key),false);
+   global3DOrdinals.add(key);
+   assert.ok(geometry.data.edges.some(edge=>
+    geometry.id+'::'+[...edge].sort().join('|')===
+     row.originalPhysicalSourceEdgeId));
+   assert.equal(row.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters,true);
+   assert.equal(row.global3DAnd2DHLRMeasuredPaperPairUnique,true);
+   assert.equal(row.global3DAndOriginalScoped3DHLRParameterIntervalExact,true);
+   assert.equal(row.globalGenerated2DTo3DTopoDSHistoryCertified,false);
+   assert.equal(row.fullOpaqueSceneContinuousOcclusionCertified,false);
+   assert.equal(row.engineeringLineStyle,'undetermined');
+   assert.equal(row.signedV5Action,false);
+  }
   const indexIds=new Map(ds.indexedOriginalSources.map(x=>
    [x.originalPhysicalSourceEdgeId,x.hlrDataStructureOneBasedEdgeIndex]));
   assert.ok(scoped.rows.every(row=>
