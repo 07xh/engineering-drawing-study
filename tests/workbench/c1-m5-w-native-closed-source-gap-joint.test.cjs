@@ -100,9 +100,11 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
 test('wrong W source 3D owner or native partial curve cannot become a positive physical visibility certificate',()=>{
  const alias=fixture();
  alias.global3DSource.claims[0].actualNativeGlobal3DOriginalSourceEdgeId='tetra::B|C';
- const r=audit(alias);
- assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
- assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ // Once actual global W endpoints are independently cross-checked, a
+ // forged original owner with no matching genuine endpoint witness must
+ // FAIL CLOSED rather than quietly become a held physical source.
+ assert.throws(()=>audit(alias),
+  /W original source and generated HLR endpoint ledgers lack bijection/);
  const partial=fixture();
  const scoped=partial.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
  scoped.visible3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange=[0,16];
