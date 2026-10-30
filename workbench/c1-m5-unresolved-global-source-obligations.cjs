@@ -11,6 +11,8 @@ const {auditC1ExactConvexOriginalOpenEdgeRays}=
  require('./c1-exact-convex-original-open-edge-ray.cjs');
 const {auditC1M5NativeGlobal3DSourceJoin}=
  require('./c1-m5-global-native-3d-source-join.cjs');
+const {auditC1WNativeClosedPhysicalGap}=
+ require('./c1-m5-w-native-closed-source-gap-joint.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
@@ -173,6 +175,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
+  WPositivePaperGapsWithRealNativeClosed3DJointProof:0,
+  WPositivePaperGapsWithOriginal3DJointProofHeld:0,
   positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness:0,
   positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
   positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
@@ -439,7 +443,21 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.originalM4OpenHeldCuts+=m4Depth.openDepthHeldCuts;
    counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
   }
+  const jointW=kind==='positive-original-m0-parameter-gap'&&
+   row.view==='W'&&geometry.kind==='mesh'?
+   auditC1WNativeClosedPhysicalGap({
+    geometry,cad,view:row.view,sourceEdgeId:row.sourceEdgeId,
+    positiveGap:interval,originalStatus,global3DSource,m4Depth,
+    originalClosedRayClear:closedOriginalSourceRay,openRayClass:openClass,
+    exactPaperGap
+   }):null;
+  counts.WPositivePaperGapsWithRealNativeClosed3DJointProof+=
+   Number(jointW?.jointOriginalClosedPhysicalSourceVisibilityProven===true);
+  counts.WPositivePaperGapsWithOriginal3DJointProofHeld+=
+   Number(jointW!=null&&jointW.jointOriginalClosedPhysicalSourceVisibilityProven!==true);
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   WOriginalPhysicalNativeParameterClosedRayM4JointEvidence:jointW,
+   WPositivePaperGapDoesNotTurnIntoOfficialLine:true,
    sameRunNativeGlobal3DSourceCurveAttribution:global3DSource,
    global3DSourceDoesNotAuthorizePaperHistoryOrV5:true,
    directNativeSourceFilteredToWholeSolidGeneratedEdgeCausalOrdinals:
