@@ -251,7 +251,6 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth:0,
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth:0,
   canonicalM4CutSubspansWeakFrontWithClosedOriginalRay:0,
-  canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
@@ -340,30 +339,6 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       originalRay.originalPhysicalCreaseProven===true&&
       originalRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
       originalRay.exactlyBothOriginalVertexForwardRaysClear===true;
-     // A hidden source can meet a genuinely visible original source at
-     // the SAME physical 3D vertex. Its OPEN edge is strictly behind
-     // that source, while the tied endpoint's observer ray is clear
-     // because it is the peer's independently proven closed endpoint.
-     // This certifies a source-level visibility TRANSITION event, not
-     // a uniformly hidden closed stroke or a generated HLR junction.
-     const verifiedClearPhysicalPeer=sliced.comparisons.some(c=>{
-      if(c.status!=='candidate-strictly-behind-open-at-original-3d-vertex'||
-         c.competingSourceHasCertifiedClearForwardRay!==true||
-         !c.exactDepthTiesAtOriginalShared3DVertex?.some(Boolean))
-       return false;
-      const peerRay=bySource.get(view+'|'+c.peerSourceEdgeId);
-      return peerRay?.originalPhysicalCreaseProven===true&&
-       peerRay.fullProjectedVisibleSourceLineProven===true&&
-       peerRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
-       peerRay.exactlyBothOriginalVertexForwardRaysClear===true;
-     });
-     const weakBehindWithVisiblePhysicalJunctionEvent=
-      sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true&&
-      segment.native3DHLRClass==='hidden-sharp'&&
-      nativePartitionFor(view,sourceEdgeId)?.fullNative3DClassConcordanceOnly===true&&
-      originalRay.originalPhysicalCreaseProven===true&&
-      originalRay.originalOpenEdgeStrictInteriorOcclusionProven===true&&
-      verifiedClearPhysicalPeer;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
       originalM4CutFromCurrentReviewedEventGraph:true,
@@ -379,8 +354,6 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true,
       weakFrontWithIndependentOriginalClosedEndpointRay:
        weakFrontWithClosedOriginalRay,
-      weakBehindWithIndependentVisiblePhysicalJunctionEvent:
-       weakBehindWithVisiblePhysicalJunctionEvent,
       weakFrontWithOriginalClosedRayCannotCertifyGeneratedHLROrV5:true,
       weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5:true,
       openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
@@ -402,8 +375,6 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost++;
      else if(weakFrontWithClosedOriginalRay)
       m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay++;
-     else if(weakBehindWithVisiblePhysicalJunctionEvent)
-      m4DepthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent++;
      else if(sliced.visibleSourceCoversEntireLine)
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource++;
      else m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology++;
@@ -446,15 +417,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      m4DepthCounts.canonicalM4CutSubspansExamined!==
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost+
       m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
-      m4DepthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent+
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSourceIntervalsExamined!==
       m4DepthCounts.sourceIntervalsExamined||
      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
-      m4DepthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent||
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay||
      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
@@ -462,8 +431,7 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
-      m4DepthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent||
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth!==
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder)
