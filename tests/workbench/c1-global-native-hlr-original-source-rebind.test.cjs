@@ -230,6 +230,8 @@ test('exact original EdgeMap, native 3D class and source-filter output form one-
  assert.equal(r.counts.wholeSolidNativeHLREdges,3);
  assert.equal(r.counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution,3);
  assert.equal(r.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,true);
+ assert.equal(r.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,true);
+ assert.equal(r.counts.wholeSolidEdgesWithBoundedNative3DPaperDriftIndexedSourceFilterAttribution,0);
  for(const view of ['V','H','W']){
   const b=r.exactSourceFilterBijectionByView[view];
   assert.equal(b.completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
@@ -245,6 +247,28 @@ test('exact original EdgeMap, native 3D class and source-filter output form one-
  }
  assert.equal(r.officialV5Authorized,false);
 });
+test('same-run native source filter keeps the bounded W paper drift as an attributed but UNPROVEN geometry',()=>{
+ const x=withRealIndexedStatus(fixture());
+ const w=x.views.W.nativeScoped2D3DClassBindings[0].rows[0];
+ w.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment=false;
+ w.generated2DRepresentationWithinOneULPOfFullOriginalM0Source=true;
+ const r=audit(x);
+ assert.equal(r.counts.wholeSolidEdgesWithExactIndexedSourceFilterClassAttribution,2);
+ assert.equal(r.counts.wholeSolidEdgesWithBoundedNative3DPaperDriftIndexedSourceFilterAttribution,1);
+ assert.equal(r.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+ assert.equal(r.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,true);
+ assert.equal(r.exactSourceFilterBijectionByView.W.
+  completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift,true);
+ assert.equal(r.exactSourceFilterBijectionByView.W.
+  native3DBoundedPaperDriftHeldButSourceFilterAttributedCount,1);
+ assert.equal(r.views.W[0].
+  indexedOriginal3DSourceFilterAttributionWithExplicitBoundedPaperDriftHeld,true);
+ assert.equal(r.views.W[0].exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,false);
+ assert.equal(r.views.W[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.views.W[0].engineeringLineStyle,'undetermined');
+ assert.equal(r.officialV5Authorized,false);
+});
+
 test('source-filter/global bijection fails closed for duplicate source, partial global, bounded only and false native EdgeStatus',()=>{
  const cases=[
   x=>{
