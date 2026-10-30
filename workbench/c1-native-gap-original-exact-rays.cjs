@@ -315,8 +315,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       if(sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)
        m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering++;
      }
-     if(sliced.status===
-        'positive-original-dyadic-projection-below-paper-resolution-held')
+     // Count ONLY a mathematically positive original projection whose
+     // received binary64 paper endpoints collapse. Exact positive tiny
+     // subspans that remain distinct now enter depth proof and MUST NOT
+     // be counted as held merely because they are below display scale.
+     // Use the proof flags rather than a renamed diagnostic status string.
+     if(sliced.originalDyadicProjectedIntervalPositive===true&&
+        sliced.renderedPaperSegmentNotCertified===true)
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
