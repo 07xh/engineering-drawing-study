@@ -192,7 +192,13 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
    }else{
     const segments=native.segments??[];
     const ranges=segments.map(s=>s.originalM0UnitParameterRange);
-    const valid= native.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+    // Union coverage alone does not prove exactly-once source ownership:
+    // two individually valid HLR pieces may overlap by one binary64 ULP.
+    const sortedRanges=[...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+    const disjointPositiveInteriors=sortedRanges.every((r,i)=>
+     Array.isArray(r)&&r.length===2&&
+     (i===0||r[0]>=sortedRanges[i-1][1]));
+    const valid=disjointPositiveInteriors&& native.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      native.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
      native.native3DOriginalParameterPositiveGaps?.length===0&&
      native.native3DOriginalParameterPositiveOverlaps?.length===0&&
