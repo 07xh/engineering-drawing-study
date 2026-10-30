@@ -294,3 +294,23 @@ test('positive dyadic binary64-collapsed original M4 event cut is held, not a fa
   strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly=true;
  assert.throws(()=>audit(forged),/subpixel positive M4 cut cannot become a stroke/);
 });
+
+test('HLR paper endpoints and caller-supplied flags cannot fabricate original closed endpoint rays',()=>{
+ const x=fixture();
+ for(const row of [...x.positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+                    ...x.positiveOriginalGapRays.rows]){
+  row.originalPhysicalClosedEndpointRaysIndependentlyCertified=true;
+  row.wholeSolidGeneratedHLROriginal3DEndpointWitnesses[0].
+   generatedPaperExactlyReprojectsBothOriginalVertices=true;
+ }
+ const result=audit(x);
+ assert.equal(result.counts.originalPhysicalClosedEndpointRayRowsIndependentlyCertified,0);
+ assert.equal(result.counts.originalPhysicalClosedEndpointRayRowsWithExactGlobalHLRPaperEndpoints,0);
+ assert.equal(result.counts.distinctOriginalPhysicalClosedEndpointRaySourceViews,0);
+ assert.ok(result.records.every(row=>
+  row.originalPhysicalClosedEndpointRaysIndependentlyCertified===false&&
+  row.originalPhysicalClosedEndpointRaysWithExactGlobalHLRPaperEndpoints===false&&
+  row.generatedHLRVertexTopoDSHistoryAndWholeSceneEndpointOcclusionStillUnproven===true&&
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false));
+});
