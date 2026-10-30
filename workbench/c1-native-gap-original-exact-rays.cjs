@@ -588,6 +588,15 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge&&
         row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge)
      throw new RangeError('whole-solid HLR generated ordinal/source/class claim contradicts original native 3D');
+    if(row.exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified===true&&
+       (row.directNativeScopedGeneratedEdgeIsSameSource!==originalSource||
+        row.nativeOriginalHLREdgeMapSourceIndex===null||
+        !Number.isSafeInteger(row.nativeOriginalHLREdgeMapSourceIndex)||
+        row.nativeOriginalHLREdgeMapSourceIndex<1||
+        !['all-visible','all-hidden','mixed'].includes(
+         row.nativeOriginalHLREdgeMapSourceStatusClass)||
+        !row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge))
+     throw new RangeError('unsigned M5 native generated causal source proof contradicts original EdgeStatus');
     // A genuinely unique original-source-filtered paper alias is not
     // enough. Only EXACT global/scoped binary64 paper agreement, plus
     // independently checked native 3D source class, reaches the M5
@@ -601,6 +610,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      view,sourceEdgeId:originalSource,hlrClass:row.hlrClass,
      wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
      sourceScopedWholeGeneratedBinary64PaperExactlyMatched:true,
+     originalHLRSourceFilterToGenerated2DCausalNativeIsSameVerified:
+      row.exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified===true,
+     originalHLRIndexedSourceStatusClass:
+      row.nativeOriginalHLREdgeMapSourceStatusClass??null,
+     originalHLRIndexedSourceStatusOneBasedIndex:
+      row.nativeOriginalHLREdgeMapSourceIndex??null,
+     sourceFilterNativeGeneratedIdentityDoesNotCertifyOriginalParameterHistory:true,
      originalNative3DClassExactlyBacksEntireGeneratedLine:
       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,
      originalNative3DClassWithinFullSourceOneULPEnvelopeOnly:
