@@ -87,8 +87,19 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
   assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
    .nativeGlobalWEdgesWithReceivedBinary64EndpointDrift,1);
-  assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
-   .nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints,0);
+  const paper=r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence;
+  assert.equal(paper.nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints,0);
+  assert.equal(paper.nativeGlobalWEdgesExactlyCollinearWithOriginalSource,
+   id==='A|C'?1:0);
+  assert.equal(paper.nativeGlobalWEdgesWithTransverseBinary64PaperDrift,
+   id==='A|D'?1:0);
+  assert.equal(paper.receivedExactBinary64PaperCandidateCoverage
+   .exactBinary64PaperCandidateCoverageComplete,id==='A|D');
+  assert.deepEqual(paper.receivedExactBinary64PaperCandidateCoverage
+   .exactBinary64PaperPositiveLengthUncoveredIntervals,id==='A|C'?
+    [['9007199254740991/9007199254740992','1']]:[]);
+  assert.equal(paper.receivedExactBinary64PaperCandidateCoverage
+   .generatedToOriginalTopoDSHistoryCertified,false);
   assert.equal(r.actualGlobal2DPaperClosedEndpointsCertified,false);
   assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
   assert.equal(r.engineeringLineStyle,'undetermined');
@@ -165,6 +176,9 @@ test('rejects altered received native W paper geometry and forged physical endpo
    const r=audit(x);
    assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
     .nativeGlobalWEdgesWithReceivedBinary64EndpointDrift,1);
+   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+    .nativeGlobalWEdgesWithTransverseBinary64PaperDrift,1);
+   assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
    continue;
   }
   assert.throws(()=>audit(x),/W|paper|witness|ordinal|source|endpoint/i);
