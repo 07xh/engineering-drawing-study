@@ -19,8 +19,13 @@ const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
 }return x;};
 const finite3=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
-const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,
- y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});
+// Preserve literal M0 physical endpoints for native intervals that reach t=0/1.
+// The generic a+(b-a)*1 operation can differ from b by a positive ULP
+// (e.g. 1.1+(0.3-1.1) !== 0.3), breaking exact original 3D junctions.
+// This is exact endpoint selection, NOT snapping a nearby t or a paper gap.
+const lerp=(a,b,t)=>t===0?{...a}:t===1?{...b}:{
+ x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t
+};
 function projectC1Native3DSourceIntervalsToM4({
  geometry,revision,view,sourceEdgeId,originalCurve,scopedRow
 }={}){
