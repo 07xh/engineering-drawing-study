@@ -56,15 +56,13 @@ test('original native TShape may be shared even if all generated HLR vertex TSha
  const r=audit(x);
  assert.equal(r.generatedHLRVertexIsSameNotRequiredForOriginalPhysicalJunction,true);
 });
-test('sewn native vertex explorer may repeat a proven physical TShape but cannot omit an original endpoint',()=>{
+test('isolated native vertex inventory is exact; closed shell repeats are verified by face incidence',()=>{
  const missing=fixture();
  missing.originalNativeVertexHandles.splice(0,1);
- assert.throws(()=>audit(missing),/missing original native/);
+ assert.throws(()=>audit(missing),/missing or duplicated original native/);
  const duplicate=fixture();
  duplicate.originalNativeVertexHandles.push({...duplicate.originalNativeVertexHandles[0]});
- const accepted=audit(duplicate);
- assert.equal(accepted.originalBRepVertexOccurrencesChecked,13);
- assert.equal(accepted.allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
+ assert.throws(()=>audit(duplicate),/missing or duplicated original native/);
  const split=fixture();
  split.originalNativeVertexHandles.push({
   ...split.originalNativeVertexHandles[0],
@@ -76,7 +74,7 @@ test('sewn native vertex explorer may repeat a proven physical TShape but cannot
  row.sourceVertexId='B';
  row.originalModelXYZ={...geometry.data.points.B};
  row.vertex={id:'B',IsSame(other){return this.id===other.id;},IsNull(){return false;}};
- assert.throws(()=>audit(reassigned),/missing original native/);
+ assert.throws(()=>audit(reassigned),/missing or duplicated original native/);
 });
 test('two distinct M0 3D vertices aliased to one native TopoDS vertex are rejected',()=>{
  const x=fixture();
