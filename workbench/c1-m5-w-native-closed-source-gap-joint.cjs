@@ -12,6 +12,8 @@
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const {project}=require('../core/projection/conventions.js');
+const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
+ require('./c1-exact-two-axis-generated-paper-coverage.cjs');
 const {dyadic,difference,product,sign}=require('../core/numeric/binary64-dyadic.cjs');
 const {auditExactBinary64PaperCandidateCoverage}=
  require('./c1-exact-binary64-paper-parameter.cjs');
@@ -220,6 +222,16 @@ function auditC1WNativeClosedPhysicalGap({
    sourceFrom:a,sourceTo:b,
    segments:rows.map(row=>({from:row.receivedFrom,to:row.receivedTo}))
   });
+  const twoAxis=auditC1ExactTwoAxisGeneratedPaperCoverage({
+   sourceFrom:a,sourceTo:b,
+   segments:rows.map(row=>({from:row.receivedFrom,to:row.receivedTo}))
+  });
+  if(twoAxis.exactlyCollinearGeneratedSegments!==
+      rows.filter(r=>r.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length||
+     JSON.stringify(twoAxis.unsafeDominantAxisOnlyCoverage.
+      exactBinary64PaperPositiveLengthUncoveredIntervals)!==
+     JSON.stringify(receivedExactPaperCoverage.exactBinary64PaperPositiveLengthUncoveredIntervals))
+   throw new RangeError('native W exact two-axis paper source proof contradicts whole-solid HLR');
   paperEndpointAudit=freeze({
    sourceEdgeId,view:'W',sourceGeometryId:geometry.id,revision:cad.revision,
    exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
@@ -233,6 +245,7 @@ function auditC1WNativeClosedPhysicalGap({
    nativeGlobalWEdgesWithTransverseBinary64PaperDrift:
     rows.filter(x=>!x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
    receivedExactBinary64PaperCandidateCoverage:receivedExactPaperCoverage,
+   receivedExactTwoAxisQualifiedPaperCoverage:twoAxis,
    rows,receivedPaperOffsetsDoNotClosePositiveSourceParameterGap:true,
    generated2DTopoDSHistoryCertified:false,
    globalContinuousSceneOcclusionCertified:false,
