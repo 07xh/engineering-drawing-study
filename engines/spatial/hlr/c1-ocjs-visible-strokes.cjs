@@ -15,6 +15,8 @@ const {VIEWS,project,FIRST_ANGLE_OBSERVER_RAYS}=
  require('../../../core/projection/conventions.js');
 const {verifiedConvexMeshHalfspaces}=
  require('../../../core/geometry/verified-convex-mesh-halfspaces.cjs');
+const {subtractObject3:sub3,crossObject3:cross3,dotObject3:dot3}=
+ require('../../../core/numeric/object-vector3.cjs');
 const {readRealOcjsSharpHLREdge}=
  require('./c1-ocjs-raw-hlr-edges.cjs');
 const {auditC1RoundedInversePaperBoundaryAlias}=
@@ -715,9 +717,26 @@ function makeConvexOcjsShell({oc,geometry,newObj,hold}){
   throw new RangeError('independently M0-proven closed convex source required');
  const sewing=newObj('BRepBuilderAPI_Sewing',
   Math.min(1e-7,proof.toleranceMm),true,true,true,false);
- for(const faceIds of geometry.data.faces){
+ for(const [index,faceIds] of geometry.data.faces.entries()){
+  // The reviewed M0 face vertex order is NOT guaranteed outward. OCCT
+  // HLR visibility depends on native BRep face orientation: sewing a
+  // mixed-winding tetrahedron can produce the right 2D silhouette but
+  // reverse hidden/visible source classes. Reuse the EXISTING M0 convex
+  // supporting halfspace, never infer the normal from a paper projection.
+  const outward=proof.halfspaces[index]?.normal;
+  const a=geometry.data.points[faceIds[0]];
+  let winding=0;
+  for(let k=1;k<faceIds.length-1&&!winding;k++){
+   const b=geometry.data.points[faceIds[k]],
+    c=geometry.data.points[faceIds[k+1]];
+   const signed=dot3(cross3(sub3(b,a),sub3(c,a)),outward);
+   if(Math.abs(signed)>proof.toleranceMm*proof.toleranceMm)
+    winding=Math.sign(signed);
+  }
+  if(!winding)throw new RangeError('M0 outward face orientation not recoverable');
+  const outwardFaceIds=winding>0?faceIds:[...faceIds].reverse();
   const polygon=newObj('BRepBuilderAPI_MakePolygon_1');
-  for(const id of faceIds){
+  for(const id of outwardFaceIds){
    const p=geometry.data.points[id];
    // Added() indicates creation of the latest polygon EDGE; the first
    // vertex has no edge yet. The final closed Wire/Face and sewing are
