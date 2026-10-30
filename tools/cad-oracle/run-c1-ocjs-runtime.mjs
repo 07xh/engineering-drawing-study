@@ -199,6 +199,18 @@ for(const [index,geometry] of general.entries()){
   assert.equal(typeof statusAPI.statusArrayExposedInPinnedWasm,'boolean');
   assert.equal(statusAPI.originalHLREdgeStatusIntervalsExtracted,false);
   assert.equal(statusAPI.originalHLREdgeStatusToGeneratedPaperLineageCertified,false);
+  // Native OCP has already proved original EdgeMap -> EdgeStatus; check
+  // the pinned JavaScript WASM binding itself before building a consumer.
+  assert.equal(statusAPI.statusArrayExposedInPinnedWasm,true);
+  assert.ok(Array.isArray(statusAPI.originalHLREdgeDataMethodNames));
+  assert.ok(Array.isArray(statusAPI.originalHLREdgeStatusMethodNames));
+  assert.deepEqual(statusAPI.originalEdgeStatusArrayBounds,
+   [1,geometry.data.edges.length],
+   'actual original HLR EdgeStatus array must cover same complete M0 ledger');
+  assert.ok(statusAPI.firstOriginalIndexedEdgeStatusAllVisible===null||
+   typeof statusAPI.firstOriginalIndexedEdgeStatusAllVisible==='boolean');
+  assert.ok(statusAPI.firstOriginalIndexedEdgeStatusAllHidden===null||
+   typeof statusAPI.firstOriginalIndexedEdgeStatusAllHidden==='boolean');
   assert.equal(statusAPI.signedV5Action,false);
   const ds=api.originalDataStructureIndex;
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
