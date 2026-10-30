@@ -77,7 +77,47 @@ function auditC2GeneratedResultProjectedM4M5({
  });
  const insideOriginalBox=(point,box)=>['x','y','z'].every((axis,i)=>
   point[axis]>=box.min[i]-1e-8&&point[axis]<=box.max[i]+1e-8);
+ // Endpoints are insufficient: a forged straight native edge can have
+ // one endpoint in each separated input component and cross empty space.
+ // Clip the ENTIRE affine source [0,1] against each closed source box,
+ // then prove that its union covers [0,1] without an open gap.
+ // The 1e-8 mm pad is the existing native coordinate allowance; the
+ // smaller 1e-12 parameter allowance guards only floating-point seams.
+ const closedOriginalSourceBoxParameterSpan=(from,to,box)=>{
+  let lo=0,hi=1;
+  for(let i=0;i<3;i++){
+   const axis=['x','y','z'][i],start=from[axis],
+    delta=to[axis]-start,low=box.min[i]-1e-8,
+    high=box.max[i]+1e-8;
+   if(delta===0){
+    if(start<low||start>high)return null;
+    continue;
+   }
+   let a=(low-start)/delta,b=(high-start)/delta;
+   if(a>b)[a,b]=[b,a];
+   lo=Math.max(lo,a);hi=Math.min(hi,b);
+   if(hi<lo)return null;
+  }
+  return [lo,hi];
+ };
+ const entireOriginalSourceSegmentInsideBooleanInputs=(from,to)=>{
+  const current=operation==='cut'?[sourceBoxes[0]]:sourceBoxes;
+  const intervals=current.map(box=>({
+   originalSourceBoxId:box.id,
+   sourceEdgeParameterRange:closedOriginalSourceBoxParameterSpan(from,to,box)
+  })).filter(entry=>entry.sourceEdgeParameterRange!==null)
+   .sort((a,b)=>a.sourceEdgeParameterRange[0]-b.sourceEdgeParameterRange[0]);
+  let reach=0;
+  for(const item of intervals){
+   const [lo,hi]=item.sourceEdgeParameterRange;
+   if(lo>reach+1e-12)return {covered:false,intervals};
+   reach=Math.max(reach,hi);
+   if(reach>=1-1e-12)break;
+  }
+  return {covered:reach>=1-1e-12,intervals};
+ };
  const allNativeEndpointsFromOriginalBooleanSource=sourceBoxes.length>0;
+ const nativeEdgeClosedSourceVolumeCoverages=[];
  const source=new Map(),per=new Map(),all=[];
  for(const item of edges){
   const id=item?.finalTopoDSEdgeOrdinal,ids=item?.actualNativeTopoDSVertexOrdinals,
@@ -99,6 +139,18 @@ function auditC2GeneratedResultProjectedM4M5({
      !sourceBoxes.some(box=>insideOriginalBox(pt,box))))
    throw new RangeError(
     'native Boolean result vertex escapes authenticated original source solid volume');
+  if(allNativeEndpointsFromOriginalBooleanSource){
+   const volume=entireOriginalSourceSegmentInsideBooleanInputs(
+    xyz[0],xyz[1]);
+   if(!volume.covered)
+    throw new RangeError(
+     'native Boolean result edge crosses uncovered original source solid volume');
+   nativeEdgeClosedSourceVolumeCoverages.push({
+    nativeResultEdgeOrdinal:id,
+    allOriginalEdgeParametersCoveredByBooleanInputClosedSolids:true,
+    originalSourceBoxParameterSpans:volume.intervals
+   });
+  }
   const e={id,ids:[...ids],from:xyz[0],to:xyz[1],
    feature:item.currentNativeResultFeatureStatus};
   for(let i=0;i<2;i++){
@@ -382,6 +434,13 @@ function auditC2GeneratedResultProjectedM4M5({
   actualNative3DVertexEndpointIncidenceCount:edges.length*2,
   allNativeResultEndpointsWithinOriginalBooleanInputVolumeVerified:
    allNativeEndpointsFromOriginalBooleanSource,
+  allNativeResultEdgeWholeClosedSpansWithinOriginalBooleanInputVolumeVerified:
+   allNativeEndpointsFromOriginalBooleanSource&&
+   nativeEdgeClosedSourceVolumeCoverages.length===edges.length,
+  originalBooleanInputVolumeWholeNativeEdgeCount:
+   nativeEdgeClosedSourceVolumeCoverages.length,
+  originalNativeResultEdgeClosedSourceVolumeIntervalWitnesses:
+   nativeEdgeClosedSourceVolumeCoverages,
   boundingSourceDomainOperation:
    allNativeEndpointsFromOriginalBooleanSource?operation:null,
   VHWSourceRows:rows.length,
