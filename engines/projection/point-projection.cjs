@@ -59,7 +59,7 @@ function solveProjection({knownViews={},knownPoint,sheetTransform={origin:{x:360
   VH:'正面与水平投影具有相同的 x 值，沿同一竖联系线传递。',
   'height-VW':'正面与侧面投影保持相同高度 z。',
   'depth-HD':'从 H 面对应点沿水平辅助线到 45° 深度转移线起点 D。',
-  'depth-DE':'沿真实 45° 斜线从 D 到 E；横向位移与纵向位移大小相等、符号相反。',
+  'depth-DE':'沿真实 45° 斜线从 D 到 E 转移深度；横向位移与纵向位移大小相等、符号相反。',
   'depth-EW':'从 E 竖直引线至 W 面，与主视图的等高线相交确定侧面投影。'
  };
  const steps=transfer.guides.map((guide,index)=>({
