@@ -1211,7 +1211,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       if(paperOrdinals.length!==1||used2D.has(paperOrdinals[0]))
        throw new RangeError('global HLR 3D/2D sharp output lacks unique measured paper pairing');
       used2D.add(paperOrdinals[0]);
-      const originalCurveCandidates=[];
+      const originalCurveCandidates=new Set();
       for(const original of originalNativeEdgeHandles){
        const sourceCurve=newObj('BRepAdaptor_Curve_2',original.edge);
        if(first<sourceCurve.FirstParameter()||
@@ -1223,9 +1223,9 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
          same=false;break;
         }
        }
-       if(same)originalCurveCandidates.push(original.sourceEdgeId);
+       if(same)originalCurveCandidates.add(original.sourceEdgeId);
       }
-      if(originalCurveCandidates.length!==1){
+      if(originalCurveCandidates.size!==1){
        const diagnostic=originalNativeEdgeHandles.map(original=>{
         const sourceCurve=newObj('BRepAdaptor_Curve_2',original.edge);
         const lo=sourceCurve.FirstParameter(),hi=sourceCurve.LastParameter();
@@ -1238,9 +1238,9 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        }).sort((a,b)=>(a.firstResidualMm??Infinity)-(b.firstResidualMm??Infinity));
        throw new RangeError('global native 3D HLR curve has no unique original BRep curve: '+
         JSON.stringify({view,klass,first,last,from3D,to3D,
-         candidateCount:originalCurveCandidates.length,nearest:diagnostic.slice(0,3)}));
+         candidateCount:originalCurveCandidates.size,nearest:diagnostic.slice(0,3)}));
       }
-      const sourceEdgeId=originalCurveCandidates[0];
+      const sourceEdgeId=[...originalCurveCandidates][0];
       const scoped=scopedRows.find(x=>x.originalPhysicalSourceEdgeId===sourceEdgeId);
       const scopedIntervals=scoped?.[isVisible?'visible3D':'hidden3D']
        ?.native3DGeneratedCurveIntervals;
