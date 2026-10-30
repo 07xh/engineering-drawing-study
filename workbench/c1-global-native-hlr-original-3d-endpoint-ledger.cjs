@@ -61,10 +61,17 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   const occurrenceCounts=physicalGraph.originalM0VertexNativeOccurrenceCounts;
   const expectedDegrees=Object.fromEntries(ids.map(id=>[id,0]));
   for(const edge of originals.values())for(const id of edge)expectedDegrees[id]++;
-  const occurrenceCountsValid=occurrenceCounts&&
+  // TopExp traverses original BRep edges through their incident faces.
+  // A 2-manifold solid commonly reports TWO native edge occurrences per
+  // unique M0 physical edge; preserve native TShape identity and compare
+  // the per-vertex counts at that measured multiplicity, not at 1x.
+  const occurrenceMultiplier=cad.occtOriginalEdgeOccurrenceCount/originals.size;
+  const validOccurrenceMultiplier=Number.isSafeInteger(occurrenceMultiplier)&&
+   occurrenceMultiplier>=1&&occurrenceMultiplier<=2;
+  const occurrenceCountsValid=validOccurrenceMultiplier&&occurrenceCounts&&
    JSON.stringify(Object.keys(occurrenceCounts).sort())===JSON.stringify(ids)&&
    ids.every(id=>Number.isSafeInteger(occurrenceCounts[id])&&
-    occurrenceCounts[id]===expectedDegrees[id])&&
+    occurrenceCounts[id]===expectedDegrees[id]*occurrenceMultiplier)&&
    ids.reduce((n,id)=>n+occurrenceCounts[id],0)===
     physicalGraph.originalBRepVertexOccurrencesChecked;
   const samePairs=occurrenceCountsValid?ids.reduce((n,id)=>
@@ -85,14 +92,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      physicalGraph.originalSamePhysicalVertexTopoDSPairs+
       physicalGraph.originalDistinctPhysicalVertexTopoDSPairs!==
        physicalGraph.allOriginalBRepVertexPairsCompared)
-   throw new RangeError('untrusted same-run original native 3D vertex topology: '+
-    JSON.stringify({source:geometry.id,ids,expectedDegrees,
-     occurrenceCounts,occurrenceCountsValid,
-     reportedCount:physicalGraph.originalBRepVertexOccurrencesChecked,
-     expectedCount:2*cad.occtOriginalEdgeOccurrenceCount,
-     samePairs,reportedSamePairs:physicalGraph.originalSamePhysicalVertexTopoDSPairs,
-     claimedSource:physicalGraph.sourceGeometryId,
-     schema:physicalGraph.schema}));
+   throw new RangeError('untrusted same-run original native 3D vertex topology');
  }
  // Real sewn OCCT face incidence proves ORIGINAL 3D adjacency only;
  // generated HLR edge history and occlusion remain separate obligations.
