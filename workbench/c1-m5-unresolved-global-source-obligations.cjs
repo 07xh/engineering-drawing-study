@@ -180,6 +180,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift:0,
   WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift:0,
   WPositivePaperGapsWithTransverseGlobalWPaperDrift:0,
+  WPositivePaperGapsWithStrictTwoAxisPaperResidual:0,
+  WPositivePaperGapsWithFalseDominantAxisCompleteVeto:0,
   positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness:0,
   positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
   positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
@@ -467,6 +469,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     (receivedW?.nativeGlobalWEdgesWithTransverseBinary64PaperDrift??0)===0);
   counts.WPositivePaperGapsWithTransverseGlobalWPaperDrift+=
    Number((receivedW?.nativeGlobalWEdgesWithTransverseBinary64PaperDrift??0)>0);
+  const strict2D=receivedW?.receivedExactTwoAxisQualifiedPaperCoverage;
+  counts.WPositivePaperGapsWithStrictTwoAxisPaperResidual+=
+   Number(strict2D?.positiveLengthTwoAxisPaperResidualsStillPresent===true);
+  counts.WPositivePaperGapsWithFalseDominantAxisCompleteVeto+=
+   Number(strict2D?.falseDominantAxisFullCoverageVetoed===true);
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
    WOriginalPhysicalNativeParameterClosedRayM4JointEvidence:jointW,
    WPositivePaperGapDoesNotTurnIntoOfficialLine:true,
