@@ -117,6 +117,18 @@ test('exactly adjacent native intervals preserve valid source-ray certification'
  assert.equal(r.views.W[1].signedV5Action,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+test('malformed native source ranges stay unsigned instead of crashing the proof',()=>{
+ for(const invalid of [null,[0,NaN],[0,Infinity],[-0.1,1],[0.7,0.2]]){
+  const m=nativeM4();
+  m.H.nativeOriginal3DM4Candidates[0].segments[0].originalM0UnitParameterRange=invalid;
+  const r=auditC1ExactConvexOriginalOpenEdgeRays({
+   geometry,nativeFaceAdjacency,nativeM4Views:m
+  });
+  assert.equal(r.views.H[0].originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+  assert.equal(r.views.H[0].engineeringLineStyle,'undetermined');
+  assert.equal(r.views.H[0].signedV5Action,false);
+ }
+});
 test('forged native face adjacency cannot certify an original 3D ray',()=>{
  const fake=structuredClone(nativeFaceAdjacency);
  fake.edges[0].originalM0AdjacentFaceIndices=[0,0];
