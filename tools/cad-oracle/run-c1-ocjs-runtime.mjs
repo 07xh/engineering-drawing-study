@@ -35,6 +35,8 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1M5UnresolvedGlobalSourceObligations}=
+ require('../../workbench/c1-m5-unresolved-global-source-obligations.cjs');
 const {auditC1Original3DSourceGapDyadicWitness}=
  require('../../workbench/c1-original-3d-source-gap-dyadic-forensics.cjs');
 const {auditC1OriginalOcctCurveParameterGapWitness}=
@@ -1332,6 +1334,21 @@ for(const [index,geometry] of general.entries()){
    assert.equal(claim.signedV5Action,false);
   }
  }
+ const unresolvedM5=auditC1M5UnresolvedGlobalSourceObligations({
+  geometry,cad,positiveOriginalGapRays
+ });
+ assert.equal(unresolvedM5.allUnresolvedM5ObligationsExplicitlyPreserved,true);
+ assert.equal(unresolvedM5.officialV5Authorized,false);
+ assert.equal(unresolvedM5.signedV5ActionCount,0);
+ assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
+ assert.equal(unresolvedM5.counts.obligationsWithGlobalOriginalSourceAnd3DEndpoints,heldM5.length);
+ assert.ok(unresolvedM5.records.every(row=>
+  row.sourceOriginalTopoDSGeneratedHistoryCertified===false&&
+  row.allOpaqueSceneContinuousOcclusionCertified===false&&
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false));
+ console.error('REAL C1 M5 UNRESOLVED WHOLE-SOLID SOURCE BREP BIJECTION '+
+  geometry.id+': '+JSON.stringify(unresolvedM5.counts));
  console.error('REAL C1 M5 MISSING SOURCE AND POSITIVE PAPER GAPS WITH GLOBAL HLR ORDINAL SOURCES '+
   geometry.id+': '+JSON.stringify({
    missingOriginalSourceViews:positiveOriginalGapRays.missingOriginalM0SourceViewRows.length,
