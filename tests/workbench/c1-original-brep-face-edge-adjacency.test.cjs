@@ -27,13 +27,16 @@ test('real original face-edge source incidence has two faces per tetra edge',()=
  assert.equal(r.signedV5ActionCount,0);
  assert.ok(Object.isFrozen(r.edges[0].originalM0AdjacentFaceIndices));
 });
-test('a sewn source edge may occur in two faces only when native IsSame proves the same TShape',()=>{
- const x=fixture(),edge=x.originalNativeEdgeHandles[0];
- x.originalNativeEdgeHandles.push({sourceEdgeId:edge.sourceEdgeId,edge:shape(edge.edge.id)});
- const r=audit(x);
- assert.equal(r.nativeOriginalBRepEdgeExplorerOccurrencesChecked,7);
+test('two actual face-owned occurrences must have identical native TShapes; a third forged occurrence is held',()=>{
+ const x=fixture(),r=audit(x);
+ assert.equal(r.nativeOriginalBRepEdgeExplorerOccurrencesChecked,12);
  assert.equal(r.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces,6);
  assert.equal(r.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ const extra=fixture(),edge=extra.originalNativeEdgeHandles[0];
+ extra.originalNativeEdgeHandles.push({
+  sourceEdgeId:edge.sourceEdgeId,edge:shape(edge.edge.id)
+ });
+ assert.throws(()=>audit(extra),/source edge face occurrence/);
 });
 test('reject missing, duplicated and aliased original BRep face-edge topology',()=>{
  const mutations=[
