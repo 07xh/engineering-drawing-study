@@ -687,10 +687,15 @@ function extractRealOcjsOriginalSourceBRepEdges({
   engineeringLineStylesCertified:false,v5Authorized:false
  };
 }
+// HLRAlgo_Projector normal is the observer direction, not merely the
+// 2D drawing-plane orientation. These MUST agree with the canonical
+// first-angle rays; the flattened HLR Y coordinate is now +paper V.
+// Reversing the normal to make paper V look correct silently reverses
+// visible/hidden OCCT classes even though the 2D lines still overlap.
 const FRAME=Object.freeze({
- V:{normal:[0,1,0],xdir:[1,0,0]},
- H:{normal:[0,0,-1],xdir:[1,0,0]},
- W:{normal:[-1,0,0],xdir:[0,1,0]}
+ V:{normal:[0,-1,0],xdir:[1,0,0]},
+ H:{normal:[0,0,1],xdir:[1,0,0]},
+ W:{normal:[1,0,0],xdir:[0,1,0]}
 });
 /**
  * Every polygonal face is reconstructed from REVIEWED M0 mesh coordinates,
