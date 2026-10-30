@@ -242,23 +242,46 @@ test('paper and XYZ coincidence with different original vertex IDs cannot forge 
  assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
  assert.equal(out.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,false);
 });
-test('a real positive 3D source interval that renders below paper resolution remains held, not collapsed',()=>{
+test('one-ULP positive M4 cut with distinct paper endpoints enters exact depth ordering, not a scale cutoff',()=>{
  const geom={id:'MicroSource',kind:'mesh',space:'model-3d',unit:'mm',
-  data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:10,z:0}},
-   edges:[['A','B']]}};
+  data:{points:{A:{x:0,y:0,z:0},B:{x:0,y:10,z:0},
+   C:{x:0,y:0,z:-1},D:{x:0,y:10,z:-1}},
+   edges:[['A','B'],['C','D']]}};
  const args={geometry:geom,view:'H',sourceEdgeId:'MicroSource::A|B',
   originalParameterRange:[1-Number.EPSILON,1],peers:[]};
  const out=auditC1OriginalCoProjectedDepthOrder(args);
- assert.equal(out.status,'positive-original-dyadic-projection-below-paper-resolution-held');
- assert.equal(out.originalDyadicProjectedIntervalPositive,true);
- assert.equal(out.renderedPaperSegmentNotCertified,true);
+ assert.equal(out.status,'no-positive-projected-source-alias');
+ assert.equal(out.wholeIntervalFrontmostCertified,true);
  assert.deepEqual(out.originalParameterRange,[1-Number.EPSILON,1]);
- assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.engineeringLineStyleSigned,false);
  assert.equal(out.signedV5ActionCount,0);
- const collapsed=auditC1OriginalCoProjectedDepthOrder({...args,
-  view:'V'});
+ const front=auditC1OriginalCoProjectedDepthOrder({...args,
+  peers:[{view:'H',sourceGeometryId:'MicroSource',
+   sourceEdgeId:'MicroSource::C|D',originalParameterRange:[0,1],
+   status:'single-opaque-solid-whole-open-ray-strictly-hidden'}]});
+ assert.equal(front.status,'candidate-strictly-front-of-all-aliases');
+ assert.deepEqual(front.comparisons[0].
+  exactBinary64RationalOriginalDepthDifferenceEndSigns,[1,1]);
+ assert.equal(front.engineeringLineStyleSigned,false);
+ const collapsed=auditC1OriginalCoProjectedDepthOrder({...args,view:'V'});
  assert.equal(collapsed.status,'collapsed-source-projection');
  assert.equal(collapsed.originalDyadicProjectedIntervalPositive,false);
+});
+test('exact positive M4 cut with literally collapsed binary64 paper endpoints stays held',()=>{
+ const origin=2**53;
+ const geom={id:'RoundedMicroSource',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:{x:origin,y:0,z:0},B:{x:origin+2,y:0,z:0}},
+   edges:[['A','B']]}};
+ const out=auditC1OriginalCoProjectedDepthOrder({
+  geometry:geom,view:'H',sourceEdgeId:'RoundedMicroSource::A|B',
+  originalParameterRange:[1-Number.EPSILON,1],peers:[]
+ });
+ assert.equal(out.status,'positive-original-dyadic-projection-binary64-collapsed-held');
+ assert.equal(out.originalDyadicProjectedIntervalPositive,true);
+ assert.equal(out.renderedPaperSegmentNotCertified,true);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.engineeringLineStyleSigned,false);
+ assert.equal(out.signedV5ActionCount,0);
 });
 
 test('partial projected overlap cannot be promoted to strict entire OPEN source visibility',()=>{
