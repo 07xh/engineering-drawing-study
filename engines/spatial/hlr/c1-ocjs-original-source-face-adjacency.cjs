@@ -37,8 +37,12 @@ function auditC1OriginalBRepFaceEdgeAdjacency({
    throw new RangeError('unbound original native BRep source edge');
   nativeEdges.push(row);
  }
- if(new Set(nativeEdges.map(x=>x.sourceEdgeId)).size!==expectedEdges.size)
-  throw new RangeError('missing original native BRep source edge');
+ // A duplicated native handle can pass the pairwise IsSame graph while
+ // falsely inflating the source inventory. Require a bijection, not merely
+ // that every reviewed source ID occurs at least once.
+ if(nativeEdges.length!==expectedEdges.size||
+    new Set(nativeEdges.map(x=>x.sourceEdgeId)).size!==expectedEdges.size)
+  throw new RangeError('missing or duplicated original native BRep source edge');
  for(let i=0;i<nativeEdges.length;i++)for(let j=i+1;j<nativeEdges.length;j++){
   const a=nativeEdges[i],b=nativeEdges[j];
   const f=a.edge.IsSame(b.edge),r=b.edge.IsSame(a.edge);
