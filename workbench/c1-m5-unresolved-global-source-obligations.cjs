@@ -15,14 +15,23 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  * original-vertex ties may certify OPEN depth order; they do not certify
  * closed endpoints, opaque-face visibility, generated TopoDS history or V5.
  */
-function auditExistingM4OpenSourceDepth(row){
- if(row.nativeOriginal3DM4SourceProjectionPresent!==true)return null;
- if(row.nativeOriginal3DM4ProjectionWholeSourceCoverage!==true||
+function auditExistingM4OpenSourceDepth(row,kind){
+ const gap=kind==='positive-original-m0-parameter-gap';
+ if((gap?row.nativeOriginal3DM4GapSourceProjectionAvailable:
+     row.nativeOriginal3DM4SourceProjectionPresent)!==true)return null;
+ if(gap&&row.realNative3DM4OriginalParameterGapCoverage?.originalParameterRange&&
+    (row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[0]!==row.originalSourceParameterGap[0]||
+     row.realNative3DM4OriginalParameterGapCoverage.originalParameterRange[1]!==row.originalSourceParameterGap[1]))
+  throw new RangeError('original M4 depth does not belong to the positive M5 gap');
+ if((gap?
+      row.realNative3DM4OriginalParameterGapCoverage?.entireOriginalParameterIntervalCovered:
+      row.nativeOriginal3DM4ProjectionWholeSourceCoverage)!==true||
     row.completeRealNative3DSourceParameterPartition!==true||
     row.originalM4SourcePartitionComplete!==true)
   return {completeOriginalM4SourceDepthPartition:false,
    reason:'incomplete-original-native-3d-m4-partition',signedV5Action:false};
- const source=row.native3DM4ProjectedCandidateSegments,
+ const source=gap?row.nativeOriginal3DM4ProjectedCandidateSegments:
+   row.native3DM4ProjectedCandidateSegments,
   depth=row.nativeOriginalM4CoProjectedDepthOrder;
  if(!Array.isArray(source)||!Array.isArray(depth)||
     !source.length||source.length!==depth.length)
@@ -121,6 +130,7 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4FullSourceOpenDepthAllClassified:0,
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
+  positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
   unsignedV5Actions:0},records=[],seen=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -213,10 +223,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    Number(joins.some(j=>j.generatedHLRNativeTopoDSIsSamePairProven===true));
   counts.obligationsWithDistinctNativeGeneratedVertices+=
    Number(joins.some(j=>j.generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join===true));
-  const m4Depth=kind==='unrepresented-original-m0-view'?
-   auditExistingM4OpenSourceDepth(row):null;
+  const m4Depth=auditExistingM4OpenSourceDepth(row,kind);
   if(m4Depth?.completeOriginalM4SourceDepthPartition===true){
    counts.originalM4FullSourceOpenDepthPartitions++;
+   if(kind==='positive-original-m0-parameter-gap')
+    counts.positivePaperGapsWithFullOriginalM4OpenDepthPartition++;
    counts.originalM4FullSourceOpenDepthAllClassified+=
     Number(m4Depth.everyOpenDepthCutClassified);
    counts.originalM4OpenFrontCuts+=m4Depth.openDepthFrontCuts;
