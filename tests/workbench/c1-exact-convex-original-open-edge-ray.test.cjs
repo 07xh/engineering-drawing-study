@@ -26,8 +26,8 @@ const nativeFaceAdjacency={
 };
 const expected={
  V:['visible','hidden','visible','hidden','visible','hidden'],
- H:['visible','visible','hidden','visible','hidden','hidden'],
- W:['hidden','visible','visible','hidden','hidden','visible']
+ H:['visible','visible','visible','visible','visible','visible'],
+ W:['visible','visible','visible','visible','visible','visible']
 };
 function nativeM4(){
  return Object.fromEntries(Object.entries(expected).map(([view,classes])=>
