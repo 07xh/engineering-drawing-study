@@ -45,6 +45,28 @@ class C1CADOracleTests(unittest.TestCase):
             self.assertEqual(set(row["views"]), {"V", "H", "W"})
             for v in row["views"].values():
                 self.assertGreater(v["occtVisibleHLREdgeCount"], 0)
+                source = v["independentOriginalHLRSourceStatus"]
+                self.assertTrue(source["nativeOriginalSourceEdgeMapBijectionVerified"])
+                self.assertTrue(source["nativeOriginalCurveParameterPartitionVerified"])
+                self.assertTrue(source["sourceScopedGeneratedHLRClassCorroborated"])
+                self.assertFalse(source["generated2DTopoDSEdgeHistoryCertified"])
+                self.assertFalse(source["formalM5LineStyleAuthorized"])
+                self.assertEqual(source["originalBRepSourcesChecked"], len(source["rows"]))
+                self.assertEqual(
+                    len({x["nativeHLROriginalEdgeMapIndex"] for x in source["rows"]}),
+                    len(source["rows"])
+                )
+                for edge in source["rows"]:
+                    lo, hi = edge["originalCurveParameterBounds"]
+                    pieces = sorted(edge["visibleOriginalCurveParameterIntervals"] +
+                                    edge["hiddenOriginalCurveParameterIntervals"])
+                    self.assertEqual(pieces[0][0], lo)
+                    self.assertEqual(pieces[-1][1], hi)
+                    self.assertTrue(all(a[1] == b[0]
+                                        for a, b in zip(pieces, pieces[1:])))
+                    self.assertFalse(edge["generated2DTopoDSEdgeHistoryCertified"])
+                    self.assertFalse(edge["wholeSceneContinuousOcclusionCertified"])
+                    self.assertFalse(edge["signedV5Action"])
                 self.assertTrue(v["hullVerticesAgreement"])
                 self.assertTrue(v["hullAreasAgreement"])
                 self.assertTrue(v["occtVisibleHLRCoversWholeM5Hull"])
