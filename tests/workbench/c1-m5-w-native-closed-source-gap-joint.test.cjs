@@ -101,6 +101,18 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
     [['9007199254740991/9007199254740992','1']]:[]);
   assert.equal(paper.receivedExactBinary64PaperCandidateCoverage
    .generatedToOriginalTopoDSHistoryCertified,false);
+  const strict=paper.receivedExactTwoAxisQualifiedPaperCoverage;
+  assert.equal(strict.schema,
+   'draftai-c1-generated-hlr-exact-two-axis-paper-source-coverage/1');
+  assert.equal(strict.strictReceivedTwoAxisPaperCoverageComplete,false);
+  assert.equal(strict.exactlyCollinearGeneratedSegments,id==='A|C'?1:0);
+  assert.equal(strict.transverseDisplacedGeneratedSegments,id==='A|D'?1:0);
+  assert.equal(strict.falseDominantAxisFullCoverageVetoed,id==='A|D');
+  assert.deepEqual(strict.exactTwoAxisQualifiedPaperCoverage
+   .exactBinary64PaperPositiveLengthUncoveredIntervals,id==='A|C'?
+    [['9007199254740991/9007199254740992','1']]:[['0','1']]);
+  assert.equal(strict.generated2DTopoDSHistoryCertified,false);
+  assert.equal(strict.globalOpaqueSceneContinuousOcclusionCertified,false);
   assert.equal(r.actualGlobal2DPaperClosedEndpointsCertified,false);
   assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
   assert.equal(r.engineeringLineStyle,'undetermined');
