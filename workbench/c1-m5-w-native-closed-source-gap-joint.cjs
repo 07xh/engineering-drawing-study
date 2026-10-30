@@ -12,7 +12,9 @@
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const {project}=require('../core/projection/conventions.js');
-const {dyadic,difference}=require('../core/numeric/binary64-dyadic.cjs');
+const {dyadic,difference,product,sign}=require('../core/numeric/binary64-dyadic.cjs');
+const {auditExactBinary64PaperCandidateCoverage}=
+ require('./c1-exact-binary64-paper-parameter.cjs');
 const freeze=x=>{
  if(x&&typeof x==='object'&&!Object.isFrozen(x)){
   for(const v of Object.values(x))freeze(v);
@@ -149,6 +151,14 @@ function auditC1WNativeClosedPhysicalGap({
    throw new RangeError('nonfinite original W paper projected physical endpoint');
   const samePaper=(x,y)=>x.u===y.u&&x.v===y.v;
   const seen=new Set(),rows=[];
+  // Exact cross product of RECEIVED binary64 coordinates. Distinguish
+  // longitudinal HLR endpoint rounding from a genuine transverse paper
+  // displacement; neither one may silently close a positive M5 gap.
+  const sourceDu=difference(dyadic(b.u),dyadic(a.u));
+  const sourceDv=difference(dyadic(b.v),dyadic(a.v));
+  const onOriginalLine=p=>sign(difference(
+   product(sourceDu,difference(dyadic(p.v),dyadic(a.v))),
+   product(sourceDv,difference(dyadic(p.u),dyadic(a.u)))))===0;
   for(const claim of matches){
    const cls=claim.hlrClass,ordinal=claim.wholeSolidGeneratedHLREdgeOrdinal;
    const outputs=cls==='visible-sharp'?cad.views?.W:
@@ -198,9 +208,18 @@ function auditC1WNativeClosedPhysicalGap({
     fromDisplacementFromPhysicalSource:delta(native.from,fromRef),
     toDisplacementFromPhysicalSource:delta(native.to,toRef),
     receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices:exact,
+    receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine:
+     onOriginalLine(native.from)&&onOriginalLine(native.to),
     actualGeneratedHLR2DEndpointPhysicalTopoDSIdentityCertified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false});
   }
+  // Reuse the existing exact rational PAPER interval union. It is not
+  // the native original 3D parameter partition, and a complete dominant
+  // axis alone is insufficient if the received 2D edge is off-line.
+  const receivedExactPaperCoverage=auditExactBinary64PaperCandidateCoverage({
+   sourceFrom:a,sourceTo:b,
+   segments:rows.map(row=>({from:row.receivedFrom,to:row.receivedTo}))
+  });
   paperEndpointAudit=freeze({
    sourceEdgeId,view:'W',sourceGeometryId:geometry.id,revision:cad.revision,
    exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
@@ -209,6 +228,11 @@ function auditC1WNativeClosedPhysicalGap({
     rows.filter(x=>x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
    nativeGlobalWEdgesWithReceivedBinary64EndpointDrift:
     rows.filter(x=>!x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
+   nativeGlobalWEdgesExactlyCollinearWithOriginalSource:
+    rows.filter(x=>x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
+   nativeGlobalWEdgesWithTransverseBinary64PaperDrift:
+    rows.filter(x=>!x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
+   receivedExactBinary64PaperCandidateCoverage:receivedExactPaperCoverage,
    rows,receivedPaperOffsetsDoNotClosePositiveSourceParameterGap:true,
    generated2DTopoDSHistoryCertified:false,
    globalContinuousSceneOcclusionCertified:false,
