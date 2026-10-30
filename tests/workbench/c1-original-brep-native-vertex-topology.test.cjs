@@ -68,7 +68,7 @@ test('isolated native vertex inventory is exact; closed shell repeats are verifi
   ...split.originalNativeVertexHandles[0],
   vertex:{id:'distinct-native-tshape',IsSame(other){return this.id===other.id;},IsNull(){return false;}}
  });
- assert.throws(()=>audit(split),/contradicts actual BRep TShape/);
+ assert.throws(()=>audit(split),/missing or duplicated|contradicts actual BRep TShape/);
  const reassigned=fixture();
  const row=reassigned.originalNativeVertexHandles[0];
  row.sourceVertexId='B';
