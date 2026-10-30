@@ -1563,11 +1563,28 @@ for(const [index,geometry] of general.entries()){
  assert.equal(positiveOriginalGapRays.wholeSolidGeneratedHLRSourceViewMatches,
   globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking+
   globalScopedRebind.counts.wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding);
+ assert.equal(
+  positiveOriginalGapRays.realOriginalNativeHLRIndexedSourceViewClassesVerified,
+  3*geometry.data.edges.length,
+  'M4/M5 must consume every original 1-based native HLR source EdgeStatus');
  const heldM5=[
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
   ...positiveOriginalGapRays.rows
  ];
  for(const row of heldM5){
+  const status=row.independentOriginalNativeHLREdgeStatusSource;
+  assert.ok(status,'real native original HLR source status must reach each held M5 row');
+  assert.equal(status.view,row.view);
+  assert.equal(status.originalPhysicalSourceEdgeId,row.sourceEdgeId);
+  assert.equal(status.generated2DHLREdgeToOriginalSourceHistoryCertified,false);
+  assert.equal(status.globalContinuousM5OcclusionCertified,false);
+  assert.equal(status.signedV5Action,false);
+  assert.equal(row.nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory,true);
+  if(geometry.id==='C1SkewTetra'&&row.view==='W'&&
+     ['C1SkewTetra::A|C','C1SkewTetra::A|D'].includes(row.sourceEdgeId)){
+   assert.equal(status.originalSourceClass,'all-visible');
+   assert.equal(status.nativeOriginalVisiblePartCount,1);
+  }
   assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
   assert.equal(row.originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity,true);
   assert.equal(row.originalPhysicalJunctionAndGeneratedNativeIsSameCannotReplaceSceneM5,true);
