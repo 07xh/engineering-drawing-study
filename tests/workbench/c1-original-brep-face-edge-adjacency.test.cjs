@@ -23,14 +23,24 @@ test('real original face-edge source incidence has two faces per tetra edge',()=
  assert.equal(r.signedV5ActionCount,0);
  assert.ok(Object.isFrozen(r.edges[0].originalM0AdjacentFaceIndices));
 });
+test('a sewn source edge may occur in two faces only when native IsSame proves the same TShape',()=>{
+ const x=fixture(),edge=x.originalNativeEdgeHandles[0];
+ x.originalNativeEdgeHandles.push({sourceEdgeId:edge.sourceEdgeId,edge:shape(edge.edge.id)});
+ const r=audit(x);
+ assert.equal(r.nativeOriginalBRepEdgeExplorerOccurrencesChecked,7);
+ assert.equal(r.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces,6);
+ assert.equal(r.generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+});
 test('reject missing, duplicated and aliased original BRep face-edge topology',()=>{
  const mutations=[
   x=>{x.nativeFaceEdgeInventories[0][0]=shape('other');},
   x=>{x.nativeFaceEdgeInventories[0][1]=x.nativeFaceEdgeInventories[0][0];},
   x=>{x.originalNativeEdgeHandles.pop();},
-  // Duplicate a genuine source handle: every expected ID is still present,
-  // but the native inventory is no longer exactly once per physical edge.
-  x=>{x.originalNativeEdgeHandles.push({...x.originalNativeEdgeHandles[0]});},
+  // Two coincident source labels backed by DIFFERENT native TShapes are
+  // not a sewn shared physical edge and must never be silently deduplicated.
+  x=>{x.originalNativeEdgeHandles.push({
+   sourceEdgeId:x.originalNativeEdgeHandles[0].sourceEdgeId,
+   edge:shape('distinct-native-tshape')});},
   x=>{x.originalNativeEdgeHandles[1].edge.id=x.originalNativeEdgeHandles[0].edge.id;},
   x=>{x.nativeFaceEdgeInventories[1]=x.nativeFaceEdgeInventories[0];}
  ];
