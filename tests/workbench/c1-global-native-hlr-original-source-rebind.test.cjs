@@ -147,6 +147,9 @@ test('native indexed original EdgeStatus plus scoped-to-global generated IsSame 
   const status={view,originalPhysicalSourceEdgeId:source,
    nativeHLROriginalEdgeMapIndex:1,originalSourceClass:'all-visible',
    originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false,
+   nativeOriginalVisiblePartCount:1,
+   sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit:true,
+   engineeringLineStyle:'undetermined',
    generated2DHLREdgeToOriginalSourceHistoryCertified:false,
    globalContinuousM5OcclusionCertified:false,signedV5Action:false};
   x.cad.nativeHLRSourceHistoryAPISurfaceByView[view]={
@@ -179,6 +182,7 @@ test('native indexed original EdgeStatus plus scoped-to-global generated IsSame 
  wrong.originalSourceClass='all-hidden';
  wrong.originalEdgeStatusAllVisible=false;
  wrong.originalEdgeStatusAllHidden=true;
+ wrong.nativeOriginalVisiblePartCount=0;
  const held=audit(contrary);
  assert.equal(held.views.V[0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
  assert.equal(held.counts.wholeSolidDirectNativeSourceMatchesHeldForOriginalEdgeStatusMismatch,1);
@@ -221,6 +225,9 @@ function withRealIndexedStatus(fixtureCase){
      nativeHLROriginalEdgeMapIndex:1,
      originalSourceClass:'all-visible',
      originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false,
+     nativeOriginalVisiblePartCount:1,
+     sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit:true,
+     engineeringLineStyle:'undetermined',
      generated2DHLREdgeToOriginalSourceHistoryCertified:false,
      globalContinuousM5OcclusionCertified:false,signedV5Action:false
     }]
@@ -289,7 +296,8 @@ test('source-filter/global bijection fails closed for duplicate source, partial 
   x=>{const z=x.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
     originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0];
    z.originalSourceClass='all-hidden';
-   z.originalEdgeStatusAllVisible=false;z.originalEdgeStatusAllHidden=true;}
+   z.originalEdgeStatusAllVisible=false;z.originalEdgeStatusAllHidden=true;
+   z.nativeOriginalVisiblePartCount=0;}
  ];
  for(const mutate of cases){
   const x=withRealIndexedStatus(fixture());mutate(x);
@@ -356,7 +364,7 @@ test('two real source filters require distinct positive integer native EdgeMap i
   completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
  assert.equal(accepted.views.V.length,2);
  assert.equal(accepted.views.V[1].nativeOriginalHLREdgeMapSourceIndex,2);
- for(const badIndex of [1,0,-1,1.5,'2',null,undefined,Number.MAX_SAFE_INTEGER+1]){
+ for(const badIndex of [1,0,-1,1.5,3,'2',null,undefined,Number.MAX_SAFE_INTEGER+1]){
   const forged=structuredClone(valid);
   forged.cad.nativeHLRSourceHistoryAPISurfaceByView.V.
    originalDataStructureIndex.indexedOriginalSources[1].
@@ -407,4 +415,37 @@ test('original native EdgeStatus must carry non-contradictory boolean visibility
  assert.equal(audit(mixed).views.V[0].
   exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
  assert.equal(audit(mixed).officialV5Authorized,false);
+});
+
+test('native original EdgeStatus part-count and unsigned-source obligations cannot be forged',()=>{
+ const valid=withRealIndexedStatus(fixture());
+ assert.equal(audit(valid).views.V[0].exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame,true);
+ const forged=[
+  row=>{row.nativeOriginalVisiblePartCount=0;},
+  row=>{row.nativeOriginalVisiblePartCount=2;},
+  row=>{row.nativeOriginalVisiblePartCount=-1;},
+  row=>{row.nativeOriginalVisiblePartCount=1.5;},
+  row=>{delete row.nativeOriginalVisiblePartCount;},
+  row=>{row.sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit=false;},
+  row=>{row.engineeringLineStyle='solid';},
+  row=>{row.originalSourceClass='all-hidden';row.originalEdgeStatusAllVisible=false;
+   row.originalEdgeStatusAllHidden=true;row.nativeOriginalVisiblePartCount=1;},
+  row=>{row.originalSourceClass='mixed';row.originalEdgeStatusAllVisible=false;
+   row.originalEdgeStatusAllHidden=false;row.nativeOriginalVisiblePartCount=0;}
+ ];
+ for(const mutate of forged){
+  const x=structuredClone(valid);
+  const row=x.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalEdgeStatusAPI.
+   nativeOriginalSourceEdgeStatusRows[0];
+  mutate(row);
+  assert.throws(()=>audit(x),/forged native original HLR EdgeStatus/);
+ }
+ const held=structuredClone(valid);
+ const row=held.cad.nativeHLRSourceHistoryAPISurfaceByView.V.originalEdgeStatusAPI.
+  nativeOriginalSourceEdgeStatusRows[0];
+ row.originalSourceClass='all-hidden';row.originalEdgeStatusAllVisible=false;
+ row.originalEdgeStatusAllHidden=true;row.nativeOriginalVisiblePartCount=0;
+ const out=audit(held);
+ assert.equal(out.views.V[0].exactIndexedOriginal3DClassSourceFilterAttributionWithoutIsSame,false);
+ assert.equal(out.officialV5Authorized,false);
 });
