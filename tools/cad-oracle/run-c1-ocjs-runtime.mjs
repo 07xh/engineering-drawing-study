@@ -1627,6 +1627,27 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
  assert.equal(unresolvedM5.records.length,heldM5.length);
+ // Exercise the real same-run global GENERATED 3D HLR -> original BRep
+ // source ledger at every held M5 paper candidate. A paper alias to a
+ // different original edge cannot inherit its source curve parameter history.
+ const nativeGlobal3D=unresolvedM5.records.map(r=>
+  r.sameRunNativeGlobal3DSourceCurveAttribution);
+ assert.ok(nativeGlobal3D.every(r=>
+  r?.schema==='draftai-c1-m5-global-native-3d-original-source-join/1'&&
+  r.sourceGeometryId===geometry.id&&r.revision===cad.revision&&
+  r.globallyUnique3DBRepCurveSources===r.globalGeneratedEdgeCount&&
+  r.claimCount===r.claims.length&&
+  r.sourceCorroboratedClaims+r.differentOriginal3DSourceClaimsHeld+
+   r.unknownGlobalOrdinalClaimsHeld===r.claimCount&&
+  r.generated2DTopoDSHistoryCertified===false&&
+  r.globalOpaqueSceneContinuousOcclusionCertified===false&&
+  r.officialV5Authorized===false&&r.signedV5ActionCount===0));
+ assert.equal(unresolvedM5.counts.obligationsWithNativeGlobal3DBRepCurveSource,
+  nativeGlobal3D.filter(r=>r.sourceCorroboratedClaims>0).length);
+ assert.equal(unresolvedM5.counts.globalNative3DSourceAliasedPaperCandidatesHeld,
+  nativeGlobal3D.reduce((n,r)=>n+r.differentOriginal3DSourceClaimsHeld,0));
+ assert.equal(unresolvedM5.counts.globalNative3DSourceClaimUnmatchedOrdinalsHeld,
+  nativeGlobal3D.reduce((n,r)=>n+r.unknownGlobalOrdinalClaimsHeld,0));
  // The existing exact convex supporting-halfspace theorem now also
  // re-enters M5 as an ORIGINAL PHYSICAL closed-endpoint ray proof.
  // It is checked against real same-run OCCT BRep source endpoints and
