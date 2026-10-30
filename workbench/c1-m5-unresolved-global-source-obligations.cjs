@@ -25,6 +25,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithPhysicalOriginalM0JunctionCandidates:0,
   obligationsWithActualNativeGeneratedJunctionIsSame:0,
   obligationsWithDistinctNativeGeneratedVertices:0,
+  obligationsWithIndependentExactOriginalRayClass:0,
+  generatedHLRSourceClassContradictionsHeldForHistory:0,
+  missingSourcesWhoseOriginalRayClassRemainsUnknown:0,
   unsignedV5Actions:0},records=[],seen=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -79,6 +82,24 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    if(s===b)throw new RangeError('one original native source class requires exact or bounded-only evidence');
    strict+=Number(s);bounded+=Number(b);
   }
+  // Original M0 all-face rays are independent of OCCT generated HLR
+  // filtering; a class contradiction is an explicit source-history
+  // obstacle, not permission to relabel a native 2D HLR stroke.
+  const rayClass=interval===null?
+   row.expectedHLRClassFromIndependentOriginalRay:
+   row.independentOriginal3DExactRayStatus==='exact-original-closed-ray-clear'?
+    'visible-sharp':
+    row.independentOriginal3DExactRayStatus==='exact-original-open-strict-interior'?
+     'hidden-sharp':null;
+  if(rayClass!==null&&rayClass!==undefined&&
+     !['visible-sharp','hidden-sharp'].includes(rayClass))
+   throw new RangeError('unverified original 3D all-face ray classification');
+  const conflicting=paper.filter(p=>rayClass!==null&&rayClass!==undefined&&
+   p.hlrClass!==rayClass);
+  counts.obligationsWithIndependentExactOriginalRayClass+=Number(rayClass!==null&&rayClass!==undefined);
+  counts.missingSourcesWhoseOriginalRayClassRemainsUnknown+=
+   Number(interval===null&&(rayClass===null||rayClass===undefined));
+  counts.generatedHLRSourceClassContradictionsHeldForHistory+=Number(conflicting.length>0);
   const joins=row.wholeSolidGeneratedOriginal3DPhysicalNativeJunctionPairs;
   for(const j of joins){
    if(j.view!==row.view||
@@ -107,6 +128,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    independentlyOriginalBRep3DEndpointsPresent:true,
    strictNativeClassWitnesses:strict,boundedNativeClassWitnesses:bounded,
    sharedOriginalM0JunctionCandidates:joins.length,
+   independentOriginal3DAllFaceRayClass:rayClass??null,
+   generatedHLRClassesDisagreeingWithOriginal3DRay:
+    conflicting.map(p=>({hlrClass:p.hlrClass,
+     wholeSolidGeneratedHLREdgeOrdinal:p.wholeSolidGeneratedHLREdgeOrdinal})),
+   nativeHLRClassContradictionNotAllowedToOverrideOriginalRay:true,
    sourceOriginalTopoDSGeneratedHistoryCertified:false,
    allOpaqueSceneContinuousOcclusionCertified:false,
    generatedEdgeEngineeringLineStyle:'undetermined',
