@@ -5,7 +5,8 @@ const {auditC1WNativeClosedPhysicalGap:audit}=
 const {auditC1Native3DSourceScopedIntervals:coverage}=
  require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 function fixture(edge='A|C',gap=[0.9999999999999998,1]){
- const sourceEdgeId='tetra::'+edge,bounds=[0,16.401219466856727];
+ const sourceEdgeId='tetra::'+edge,bounds=edge==='A|D'?
+  [0,24.289915602982237]:[0,16.401219466856727];
  const generated=[{
   nativeSourceFilterOriginalEdgeId:sourceEdgeId,
   native3DCurveExactlySameAsOriginalAtThreeParameters:true,
@@ -25,11 +26,11 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
  };
  const geometry={id:'tetra',kind:'mesh',space:'model-3d',unit:'mm',
   data:{points:{
-   A:{x:0,y:0,z:0},C:{x:0,y:16,z:2},D:{x:0,y:0,z:24}
+   A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}
   },edges:[edge.split('|')]}};
  const nativeW=edge==='A|C'?
   {from:{u:0,v:0},to:{u:15.999999999999998,v:1.9999999999999998}}:
-  {from:{u:8.881784197001252e-16,v:0},to:{u:0,v:24}};
+  {from:{u:8.881784197001252e-16,v:0},to:{u:6,v:23}};
  const originalEndpointWitnesses=[{view:'W',sourceEdgeId,
   hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
   originalM0PhysicalVertexIds:edge.split('|'),
