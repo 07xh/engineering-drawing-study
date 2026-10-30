@@ -148,6 +148,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithActualNativeGeneratedJunctionIsSame:0,
   obligationsWithDistinctNativeGeneratedVertices:0,
   obligationsWithIndependentExactOriginalRayClass:0,
+  obligationsWithNativeOriginalIndexedHLREdgeStatus:0,
+  nativeOriginalIndexedHLRAllVisibleObligationsStillHeld:0,
+  nativeOriginalIndexedHLRAllHiddenObligationsStillHeld:0,
+  nativeOriginalHLREdgeStatusContradictsIndependentRayHeld:0,
   generatedHLRSourceClassContradictionsHeldForHistory:0,
   missingSourcesWhoseOriginalRayClassRemainsUnknown:0,
   obligationsWithExactConvexOpenRayAndNativeHLRClass:0,
@@ -232,6 +236,47 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   if(rayClass!==null&&rayClass!==undefined&&
      !['visible-sharp','hidden-sharp'].includes(rayClass))
    throw new RangeError('unverified original 3D all-face ray classification');
+  // Independently join the current original HLR EdgeMap index and its
+  // native EdgeStatus to this specific held M5 source (or positive gap).
+  // The native ORIGINAL input-edge class can corroborate M0/M4 but cannot
+  // establish GENERATED projected TopoDS history or close a paper gap.
+  const originalStatus=row.independentOriginalNativeHLREdgeStatusSource??null;
+  if(originalStatus){
+   const current=cad.nativeHLRSourceHistoryAPISurfaceByView?.[row.view],
+    indexed=current?.originalDataStructureIndex,
+    status=current?.originalEdgeStatusAPI;
+   const matching=status?.nativeOriginalSourceEdgeStatusRows?.filter(x=>
+    x.originalPhysicalSourceEdgeId===row.sourceEdgeId)??[],
+    sourceIndex=indexed?.indexedOriginalSources?.filter(x=>
+     x.originalPhysicalSourceEdgeId===row.sourceEdgeId)??[];
+   const fromCad=matching[0],fromIndex=sourceIndex[0];
+   if(indexed?.edgeMapSourceBijectionVerified!==true||
+      status?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      row.nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory!==true||
+      matching.length!==1||sourceIndex.length!==1||
+      fromCad?.view!==row.view||fromIndex?.hlrDataStructureOneBasedEdgeIndex!==
+       originalStatus.nativeHLROriginalEdgeMapIndex||
+      fromCad.nativeHLROriginalEdgeMapIndex!==originalStatus.nativeHLROriginalEdgeMapIndex||
+      fromCad.originalSourceClass!==originalStatus.originalSourceClass||
+      fromCad.nativeOriginalVisiblePartCount!==originalStatus.nativeOriginalVisiblePartCount||
+      fromCad.originalEdgeStatusAllVisible!==originalStatus.originalEdgeStatusAllVisible||
+      fromCad.originalEdgeStatusAllHidden!==originalStatus.originalEdgeStatusAllHidden||
+      originalStatus.generated2DHLREdgeToOriginalSourceHistoryCertified!==false||
+      originalStatus.globalContinuousM5OcclusionCertified!==false||
+      originalStatus.engineeringLineStyle!=='undetermined'||
+      originalStatus.signedV5Action!==false)
+    throw new RangeError('original indexed HLR EdgeStatus cannot replace M5 source history');
+   counts.obligationsWithNativeOriginalIndexedHLREdgeStatus++;
+   counts.nativeOriginalIndexedHLRAllVisibleObligationsStillHeld+=
+    Number(originalStatus.originalSourceClass==='all-visible');
+   counts.nativeOriginalIndexedHLRAllHiddenObligationsStillHeld+=
+    Number(originalStatus.originalSourceClass==='all-hidden');
+  }
+  const indexedClassContradiction=originalStatus!==null&&
+   (originalStatus.originalSourceClass==='all-visible'&&rayClass==='hidden-sharp'||
+    originalStatus.originalSourceClass==='all-hidden'&&rayClass==='visible-sharp');
+  counts.nativeOriginalHLREdgeStatusContradictsIndependentRayHeld+=
+   Number(indexedClassContradiction);
   const conflicting=paper.filter(p=>rayClass!==null&&rayClass!==undefined&&
    p.hlrClass!==rayClass);
   const openRay=openRayBySource.get(row.view+'|'+row.sourceEdgeId);
@@ -358,6 +403,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
   }
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   sameRunNativeOriginalHLREdgeStatus:originalStatus,
+   nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory:true,
+   originalHLREdgeStatusVsIndependentRayContradictionHeld:indexedClassContradiction,
    sameRunExactCollinearHLRPaperCandidateOnlyGapEvidence:exactPaperGap,
    generatedPaperCandidateDoesNotCloseOriginalM5SourceGap:true,
    originalM4OpenSourceDepthEvidence:m4Depth,
