@@ -151,6 +151,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   generatedHLRSourceClassContradictionsHeldForHistory:0,
   missingSourcesWhoseOriginalRayClassRemainsUnknown:0,
   obligationsWithExactConvexOpenRayAndNativeHLRClass:0,
+  originalPhysicalClosedEndpointRayRowsIndependentlyCertified:0,
+  originalPhysicalClosedEndpointRayRowsWithExactGlobalHLRPaperEndpoints:0,
+  originalPhysicalClosedEndpointRayRowsWithRoundedGlobalHLRPaperEndpointsHeld:0,
+  distinctOriginalPhysicalClosedEndpointRaySourceViews:0,
   newlyCorroboratedOpenRaysWithoutClosedEndpointRayClass:0,
   exactConvexOpenRayVersusGeneratedHLRClassConflictsHeld:0,
   originalM4FullSourceOpenDepthPartitions:0,
@@ -158,7 +162,7 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
-  unsignedV5Actions:0},records=[],seen=new Set();
+  unsignedV5Actions:0},records=[],seen=new Set(),closedSourceViews=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
   ['positive-original-m0-parameter-gap',audit.rows]
@@ -239,6 +243,50 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   const openConflicts=certifiedOpen?
    paper.filter(p=>p.hlrClass!==openClass):[];
   const openCorroborated=certifiedOpen&&openConflicts.length===0;
+  // The EXISTING exact convex supporting-halfspace theorem also proves
+  // BOTH original physical endpoint rays clear the one reviewed solid.
+  // Join that independently recomputed proof to real original OCCT BRep
+  // endpoints and the same-run whole-solid HLR paper endpoint witnesses.
+  // A rounded HLR paper endpoint is not a physical 3D vertex, and neither
+  // exact paper agreement nor a clear original ray proves generated
+  // TopoDS lineage or whole-scene closed-endpoint visibility.
+  const closedOriginalSourceRay=openCorroborated&&
+   openRay.originalClosedEndpointRayCertified===true&&
+   openClass==='visible-sharp';
+  if(openRay?.originalClosedEndpointRayCertified===true&&
+     (!certifiedOpen||openClass!=='visible-sharp'))
+   throw new RangeError('original closed endpoint ray lacks positive exact convex open-ray proof');
+  let closedOriginalPaperExact=false;
+  if(closedOriginalSourceRay){
+   const originalEdges=geometry.data.edges.filter(edge=>
+    geometry.id+'::'+[...edge].sort().join('|')===row.sourceEdgeId);
+   if(originalEdges.length!==1||originalEdges[0].length!==2)
+    throw new RangeError('closed original ray has no unique physical M0 edge');
+   const originalVertexIds=[...originalEdges[0]].sort();
+   for(const e of endpoints){
+    if([...e.originalM0PhysicalVertexIds].sort().join('|')!==
+       originalVertexIds.join('|')||
+       !Array.isArray(e.generated2DEndpointOriginal3DVertexWitnesses)||
+       e.generated2DEndpointOriginal3DVertexWitnesses.length!==2||
+       e.generated2DEndpointOriginal3DVertexWitnesses.some(w=>
+        !originalVertexIds.includes(w.originalPhysicalM0VertexId)||
+        w.originalNativeBRep3DSourceEndpointIndependentlyExact!==true||
+        w.entireOriginal3DSourceNativeClassConfirmed!==true||
+        w.signedV5Action!==false))
+     throw new RangeError('exact original closed endpoint ray contradicts native BRep or global HLR endpoint witness');
+   }
+   closedOriginalPaperExact=endpoints.every(e=>
+    e.generatedPaperExactlyReprojectsBothOriginalVertices===true&&
+    e.generated2DEndpointOriginal3DVertexWitnesses.every(w=>
+     w.generatedPaperExactlyEqualsOriginalM0Vertex===true));
+   closedSourceViews.add(row.view+'|'+row.sourceEdgeId);
+  }
+  counts.originalPhysicalClosedEndpointRayRowsIndependentlyCertified+=
+   Number(closedOriginalSourceRay);
+  counts.originalPhysicalClosedEndpointRayRowsWithExactGlobalHLRPaperEndpoints+=
+   Number(closedOriginalPaperExact);
+  counts.originalPhysicalClosedEndpointRayRowsWithRoundedGlobalHLRPaperEndpointsHeld+=
+   Number(closedOriginalSourceRay&&!closedOriginalPaperExact);
   counts.obligationsWithExactConvexOpenRayAndNativeHLRClass+=Number(openCorroborated);
   counts.newlyCorroboratedOpenRaysWithoutClosedEndpointRayClass+=
    Number(openCorroborated&&(rayClass===null||rayClass===undefined));
@@ -292,6 +340,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    independentOriginal3DAllFaceRayClass:rayClass??null,
    exactConvexOriginalOpenRayClass:openClass,
    exactConvexOriginalOpenRayNativeHLRClassCorroborated:openCorroborated,
+   originalPhysicalClosedEndpointRaysIndependentlyCertified:closedOriginalSourceRay,
+   originalPhysicalClosedEndpointRaysWithExactGlobalHLRPaperEndpoints:closedOriginalPaperExact,
+   roundedOrUnresolvedGlobalHLREndpointPaperStillHeld:
+    closedOriginalSourceRay&&!closedOriginalPaperExact,
+   originalClosedEndpointRayProofOnlyCoversOneReviewedConvexSolid:true,
+   generatedHLRVertexTopoDSHistoryAndWholeSceneEndpointOcclusionStillUnproven:true,
    exactConvexOpenRayDoesNotProveClosedEndpointsOrGeneratedHistory:true,
    generatedHLRClassesDisagreeingWithExactConvexOpenRay:
     openConflicts.map(p=>({hlrClass:p.hlrClass,
@@ -308,6 +362,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
  if(counts.unrepresentedOriginalSourceViews!==audit.missingOriginalM0SourceViewRows.length||
     counts.positiveOriginalPaperGapIntervals!==audit.rows.length)
   throw new RangeError('M5 unrepresented/source-gap original inventory incomplete');
+ counts.distinctOriginalPhysicalClosedEndpointRaySourceViews=closedSourceViews.size;
+ if(counts.originalPhysicalClosedEndpointRayRowsIndependentlyCertified!==
+    counts.originalPhysicalClosedEndpointRayRowsWithExactGlobalHLRPaperEndpoints+
+    counts.originalPhysicalClosedEndpointRayRowsWithRoundedGlobalHLRPaperEndpointsHeld)
+  throw new RangeError('original closed endpoint ray/global HLR paper proof budget mismatch');
  return frozen({schema:'draftai-c1-m5-unresolved-global-original-source-junction-obligations/1',
   sourceGeometryId:geometry.id,revision:cad.revision,counts,records,
   allUnresolvedM5ObligationsExplicitlyPreserved:true,
