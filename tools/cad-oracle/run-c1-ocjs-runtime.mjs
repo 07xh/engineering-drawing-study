@@ -204,9 +204,12 @@ for(const [index,geometry] of general.entries()){
   assert.equal(statusAPI.statusArrayExposedInPinnedWasm,true);
   assert.ok(Array.isArray(statusAPI.originalHLREdgeDataMethodNames));
   assert.ok(Array.isArray(statusAPI.originalHLREdgeStatusMethodNames));
+  // The pinned OCJS native EDataArray has a 0-indexed spare entry,
+  // while OCCT EdgeMap uses original physical input-edge IDs 1..N.
+  // Never shift those genuine EdgeMap indices or read source 0 as M0.
   assert.deepEqual(statusAPI.originalEdgeStatusArrayBounds,
-   [1,geometry.data.edges.length],
-   'actual original HLR EdgeStatus array must cover same complete M0 ledger');
+   [0,geometry.data.edges.length],
+   'native EdgeStatus array [0,N] must contain the 1-based original M0 EdgeMap index');
   assert.ok(statusAPI.firstOriginalIndexedEdgeStatusAllVisible===null||
    typeof statusAPI.firstOriginalIndexedEdgeStatusAllVisible==='boolean');
   assert.ok(statusAPI.firstOriginalIndexedEdgeStatusAllHidden===null||
