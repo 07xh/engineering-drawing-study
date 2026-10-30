@@ -889,8 +889,18 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   const selectedIds=new Set(sceneSelectionGroup(out?.scene,
    coordinator.selectedGeometryId(),snap.revision));
   const c2Groups=new Map((out?.linkedC2?.groups||[]).map(g=>[g.geometryId,g]));
+  // C1 first-frame gate: the Geometry Scene is a proof/selection source,
+  // NOT an answer image. The missing view is blank until the existing V5
+  // ConstructionStep timeline draws its authenticated point/line actions.
+  // Keep the two GIVEN projections visible; do not hide the shared 3D model.
+  const c1Missing=out?.kind==='c1-reviewed-preview'&&viewKind==='paper'?
+   out.evidence?.sceneResult?.missingView:null;
+  if(out?.kind==='c1-reviewed-preview'&&viewKind==='paper'&&
+     !['V','H','W'].includes(c1Missing))
+   throw Error('C1 原题待求视图缺失，拒绝预绘答案');
   // Math-output object IDs may be derived rather than saved input objects.
   for(const item of primitives){
+   if(c1Missing&&item.view===c1Missing)continue;
    // A named 3D point's third projection is released by the verified V5
    // timeline, not by the generic Geometry Scene visualizer.
    if(item.objectId==='Point1'&&item.view==='W'&&frame&&!frame.done)continue;

@@ -46,16 +46,16 @@ test('P0/03: point math -> R1/V5 guide actions -> student millimetre grading',()
  assert.equal(solved.status,'unique');assert.equal(plan.status,'ready');
  assert.equal(plan.mathematicallyVerified,true);
  assert.equal(plan.revision,rev);
- assert.equal(plan.steps.length,5);
- assert.equal(plan.steps[4].actions[0].kind,'point');
+ assert.equal(plan.steps.length,6);
+ assert.equal(plan.steps[5].actions[0].kind,'point');
  const strokes=solved.steps.map(s=>({
   from:{...s.from},to:{...s.to},revision:rev
  }));
  const grade=gradeProjectionDrawing(solved.steps,strokes,{scale:4,revision:rev});
  assert.equal(grade.status,'correct');
- assert.equal(grade.matchedCount,4);
- assert.equal(grade.targetCount,4);
- for(let i=0;i<4;i++){
+ assert.equal(grade.matchedCount,5);
+ assert.equal(grade.targetCount,5);
+ for(let i=0;i<5;i++){
   assert.deepEqual(plan.steps[i].actions[0].geometry.from,solved.steps[i].from);
   assert.deepEqual(plan.steps[i].actions[0].geometry.to,solved.steps[i].to);
  }

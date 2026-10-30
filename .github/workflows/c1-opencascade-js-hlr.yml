@@ -3,6 +3,9 @@ name: DraftAI isolated OpenCascade.js C1 HLR ABI
 on:
   pull_request:
     paths:
+      - 'core/projection/conventions.js'
+      - 'engines/projection/point-projection.cjs'
+      - 'workbench/verified-teaching-plan.cjs'
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
@@ -110,6 +113,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'core/projection/conventions.js'
+      - 'engines/projection/point-projection.cjs'
+      - 'workbench/verified-teaching-plan.cjs'
       - 'workbench/c1-native-source-scoped-m4-projection.cjs'
       - 'workbench/c1-native-scoped-2d-3d-class-binding.cjs'
       - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'
