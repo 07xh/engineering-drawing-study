@@ -1341,6 +1341,11 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.officialV5Authorized,false);
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
+ assert.equal(unresolvedM5.records.length,heldM5.length);
+ assert.ok(unresolvedM5.records.every(row=>
+  row.nativeHLRClassContradictionNotAllowedToOverrideOriginalRay===true&&
+  row.generatedHLRClassesDisagreeingWithOriginal3DRay.every(item=>
+   ['visible-sharp','hidden-sharp'].includes(item.hlrClass))));
  assert.equal(unresolvedM5.counts.obligationsWithGlobalOriginalSourceAnd3DEndpoints,heldM5.length);
  assert.ok(unresolvedM5.records.every(row=>
   row.sourceOriginalTopoDSGeneratedHistoryCertified===false&&
