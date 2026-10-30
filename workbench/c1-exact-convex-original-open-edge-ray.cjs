@@ -131,6 +131,7 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
  }
  const views={},counts={exactOpenEdgeNativeClassAgreements:0,
   heldSourceViewRows:0,exactTangentFaceRayRows:0,
+  exactTangentStrictExteriorRowsCertified:0,
   native3DClassOrParameterHeldRows:0};
  for(const view of VIEWS){
   const rows=nativeM4Views[view]?.nativeOriginal3DM4Candidates;
@@ -173,8 +174,14 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
      engineeringLineStyle:'undetermined',signedV5Action:false});
     continue;
    }
-   const candidate=sa===0||sb===0?null:
-    sa>0||sb>0?'visible-sharp':'hidden-sharp';
+   // A strictly positive incident outward halfspace derivative makes
+   // EVERY open-edge observer ray leave this convex solid immediately.
+   // The other face may be exactly tangent: its zero derivative cannot
+   // cancel the strict exterior halfspace. A negative/zero or zero/zero
+   // pair still has a tangential boundary ray and remains unsigned.
+   const tangent=sa===0||sb===0;
+   const candidate=sa>0||sb>0?'visible-sharp':
+    sa<0&&sb<0?'hidden-sharp':null;
    let certified=false,reason=null;
    if(!candidate){
     reason='exact-tangent-face-ray';
@@ -194,7 +201,10 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
       s.native3DHLRClass===candidate)&&
      exactCandidateIntervalCoverage([0,1],ranges).
       entireOriginalParameterIntervalCovered===true;
-    if(valid){certified=true;counts.exactOpenEdgeNativeClassAgreements++;}
+    if(valid){
+     certified=true;counts.exactOpenEdgeNativeClassAgreements++;
+     if(tangent)counts.exactTangentStrictExteriorRowsCertified++;
+    }
     else {reason='native-3d-class-or-exact-parameter-not-certified';
      counts.native3DClassOrParameterHeldRows++;}
    }

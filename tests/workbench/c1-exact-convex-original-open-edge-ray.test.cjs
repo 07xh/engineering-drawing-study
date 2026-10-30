@@ -92,6 +92,36 @@ test('forged native face adjacency cannot certify an original 3D ray',()=>{
   geometry,nativeFaceAdjacency:fake,nativeM4Views:nativeM4()
  }),/native BRep face topology/);
 });
+test('one strict exterior face certifies a convex open edge despite another tangent face, but negative tangent stays held',()=>{
+ const tangent=structuredClone(geometry);
+ tangent.data.points={A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},
+  C:{x:0,y:1,z:0},D:{x:0,y:0,z:1}};
+ const m=nativeM4();
+ const r=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry:tangent,nativeFaceAdjacency,nativeM4Views:m
+ });
+ const ab=source('A','B');
+ const visible=r.views.V.find(row=>row.sourceEdgeId===ab);
+ assert.ok(visible.exactIncidentOutwardObserverSigns.includes(0));
+ assert.ok(visible.exactIncidentOutwardObserverSigns.some(sign=>sign>0));
+ assert.equal(visible.exactOriginalOpenEdgeOpaqueFaceRayClass,'visible-sharp');
+ assert.equal(visible.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,true);
+ assert.ok(r.counts.exactTangentStrictExteriorRowsCertified>0);
+ const held=r.views.H.find(row=>row.sourceEdgeId===ab);
+ assert.ok(held.exactIncidentOutwardObserverSigns.includes(0));
+ assert.ok(held.exactIncidentOutwardObserverSigns.some(sign=>sign<0));
+ assert.equal(held.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ assert.equal(held.engineeringLineStyle,'undetermined');
+ const wrong=nativeM4();
+ wrong.V.nativeOriginal3DM4Candidates[0].segments[0].native3DHLRClass='hidden-sharp';
+ const mismatch=auditC1ExactConvexOriginalOpenEdgeRays({
+  geometry:tangent,nativeFaceAdjacency,nativeM4Views:wrong
+ });
+ assert.equal(mismatch.views.V.find(row=>row.sourceEdgeId===ab).
+  originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified,false);
+ assert.equal(mismatch.signedV5ActionCount,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
 test('degenerate source geometry and tangential observer cannot become full proof',()=>{
  const degenerate=structuredClone(geometry);
  degenerate.data.points.D={...degenerate.data.points.A};
