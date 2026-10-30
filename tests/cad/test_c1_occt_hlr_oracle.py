@@ -282,9 +282,11 @@ class C1CADOracleTests(unittest.TestCase):
         self.assertFalse(good["original3DCurveToGenerated2DSubparameterHistoryCertified"])
         self.assertFalse(good["formalM5Authorized"])
         self.assertEqual(good["signedV5ActionCount"], 0)
+        # A repeated genuine source-scoped ordinal is a malformed
+        # inventory and must be REJECTED (not merely marked ambiguous).
+        with self.assertRaisesRegex(ValueError, "duplicated"):
+            fn(global_paper, [claims[0], claims[0]])
         for forged in (
-            # Duplicate scoped claim, even when source labels agree.
-            [claims[0], claims[0]],
             claims[:1],
             [{**claims[0], "hlrClass": "hidden"}, claims[1]],
             [claims[0], {**claims[1], "paper": a}],
