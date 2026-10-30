@@ -202,6 +202,10 @@ test('a true shared original 3D vertex proves strict OPEN observer depth, never 
  assert.equal(back.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
  assert.equal(back.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
  assert.equal(back.openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces,true);
+ assert.equal(back.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie,true);
+ assert.equal(back.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies,false);
+ assert.equal(back.weakClosedSourceDepthCannotCertifyEndpointObserverRayOrGeneratedHLR,true);
+ assert.equal(back.comparisons[0].exactClosedWeakDepthOrderOnlyTiesAtOriginalPhysicalVertex,true);
  assert.deepEqual(back.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,-1]);
  assert.deepEqual(back.comparisons[0].exactDepthTiesAtOriginalShared3DVertex,[true,false]);
  assert.equal(back.comparisons[0].status,
@@ -218,6 +222,10 @@ test('a true shared original 3D vertex proves strict OPEN observer depth, never 
  assert.equal(front.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,true);
  assert.equal(front.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
  assert.equal(front.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,true);
+ assert.equal(front.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies,true);
+ assert.equal(front.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie,false);
+ assert.equal(front.visibleSourceCoversEntireLine,false);
+ assert.equal(front.engineeringLineStyleSigned,false);
  assert.equal(front.comparisons[0].status,
   'candidate-strictly-front-open-at-original-3d-vertex');
  assert.deepEqual(front.comparisons[0].exactBinary64RationalOriginalDepthDifferenceEndSigns,[0,1]);
@@ -240,6 +248,9 @@ test('paper and XYZ coincidence with different original vertex IDs cannot forge 
  assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
  assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
  assert.equal(out.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(out.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies,false);
+ assert.equal(out.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie,false);
+ assert.equal(out.comparisons[0].exactClosedWeakDepthOrderOnlyTiesAtOriginalPhysicalVertex,false);
  assert.equal(out.comparisons[0].strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction,false);
 });
 test('one-ULP positive M4 cut with distinct paper endpoints enters exact depth ordering, not a scale cutoff',()=>{
