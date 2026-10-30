@@ -173,18 +173,24 @@ function auditC1OriginalCoProjectedDepthOrder({
  };
  const [a,b]=coords(sourceEdgeId,originalParameterRange);
  const p=project(a)[view],q=project(b)[view];
- const du=q.u-p.u,dv=q.v-p.v,len2=du*du+dv*dv;
- if(!Number.isFinite(len2)||len2<=1e-16){
-  const original=sources.get(sourceEdgeId),range=originalParameterRange;
-  const from=exactOriginalPointOnStraightEdge(original[0],original[1],range[0],view),
-   to=exactOriginalPointOnStraightEdge(original[0],original[1],range[1],view);
-  const mathematicallyPositive=cmpExact(from.u,to.u)!==0||
-   cmpExact(from.v,to.v)!==0;
-  // A one-ULP/subpixel source is NOT a point, even if the JS-rendered
-  // endpoints coincide. Preserve its original parameter interval and
-  // explicitly withhold a drawable engineering stroke.
+ // A positive original source interval must not disappear because its
+ // projected squared length is <= 1e-16 mm². That old display-scale
+ // threshold held real 1-ULP M4 cuts despite exact dyadic paper separation.
+ // The affine depth/overlap theorem below uses original rational geometry,
+ // not division by the rounded paper length. Hold ONLY when the received
+ // binary64 endpoints literally collapse (or the exact projection does).
+ const original=sources.get(sourceEdgeId),range=originalParameterRange;
+ const from=exactOriginalPointOnStraightEdge(original[0],original[1],range[0],view),
+  to=exactOriginalPointOnStraightEdge(original[0],original[1],range[1],view);
+ const mathematicallyPositive=cmpExact(from.u,to.u)!==0||
+  cmpExact(from.v,to.v)!==0;
+ if(![p.u,p.v,q.u,q.v].every(Number.isFinite))
+  throw new RangeError('nonfinite rendered original source projection');
+ if(!mathematicallyPositive||p.u===q.u&&p.v===q.v){
+  // Exact positive dyadic source geometry can still round to ONE paper
+  // point. Such a cut is never silently certified as a drawable line.
   return frozen({status:mathematicallyPositive?
-   'positive-original-dyadic-projection-below-paper-resolution-held':
+   'positive-original-dyadic-projection-binary64-collapsed-held':
    'collapsed-source-projection',view,sourceEdgeId,
    originalParameterRange:[...originalParameterRange],
    originalDyadicProjectedIntervalPositive:mathematicallyPositive,
@@ -194,11 +200,9 @@ function auditC1OriginalCoProjectedDepthOrder({
    visibleSourceCoversEntireLine:false,
    engineeringLineStyleSigned:false,signedV5ActionCount:0});
  }
- const candidateProjectionLength=Math.sqrt(len2);
- const ray=FIRST_ANGLE_OBSERVER_RAYS[view];
- const fraction=t=>((t.u-p.u)*du+(t.v-p.v)*dv)/len2;
- const lineError=t=>Math.abs(du*(t.v-p.v)-dv*(t.u-p.u))/
-  candidateProjectionLength;
+ // A distinct but subpixel received projection can enter the existing
+ // exact original M0/M4 co-projected depth proof. This is NOT HLR output
+ // history, M5 line-style permission, or V5 action authorization.
  const comparisons=[];
  let behindCertifiedVisible=false,hasPartialOrTie=false;
  for(const peer of peers){
@@ -297,6 +301,11 @@ function auditC1OriginalCoProjectedDepthOrder({
     strictlyFrontOpen||strictlyBehindOpen,
    closedSourceDepthOrderNotImpliedByOriginalVertexOpenProof:
     strictlyFrontOpen||strictlyBehindOpen,
+   // Affine depth has a weak CLOSED ordering: equality is confined to
+   // the proven shared original 3D vertex, with strict order elsewhere.
+   // This does NOT establish a clear endpoint ray or a drawable stroke.
+   exactClosedWeakDepthOrderOnlyTiesAtOriginalPhysicalVertex:
+    strictlyFrontOpen||strictlyBehindOpen,
    exactBinary64RationalOriginalDepthDifferenceEndSigns:
     relation.depthEndSigns,
    strictOriginal3DDepthOrderNoToleranceUsed:true,
@@ -328,6 +337,20 @@ function auditC1OriginalCoProjectedDepthOrder({
  const openSourceOrderRequiresTruePhysicalM0VertexBoundary=
   comparisons.some(row=>
    row.strictSourceDepthOrderAcrossOpenIntervalWithGenuine3DJunction===true);
+ // An affine strict inequality over the open span, with a genuine 3D
+ // vertex tie at an endpoint, is a weak inequality on the CLOSED span.
+ // This is source-depth order only: no endpoint ray, full opaque scene,
+ // generated HLR history, engineering style or V5 authority follows.
+ const weakClosedFrontWithPhysicalVertexTies=
+  allOpenSourceRelationsResolved&&comparisons.some(row=>
+   row.status==='candidate-strictly-front-open-at-original-3d-vertex')&&
+  comparisons.every(row=>row.status==='candidate-strictly-front'||
+   row.status==='candidate-strictly-front-open-at-original-3d-vertex');
+ const weakClosedBehindClearPeerWithPhysicalVertexTie=
+  allOpenSourceRelationsResolved&&comparisons.some(row=>
+   row.status==='candidate-strictly-behind-open-at-original-3d-vertex'&&
+   row.exactClosedWeakDepthOrderOnlyTiesAtOriginalPhysicalVertex===true&&
+   row.competingSourceHasCertifiedClearForwardRay===true);
  const status=hasPartialOrTie?'undetermined-coproject-source-order':
   behindCertifiedVisible?'suppressed-by-front-original-visible-source':
   comparisons.some(x=>x.status==='candidate-strictly-behind')?
@@ -351,6 +374,11 @@ function auditC1OriginalCoProjectedDepthOrder({
    someProvenClearFrontOriginalSourceOnOpenInterval,
   openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary:
    openSourceOrderRequiresTruePhysicalM0VertexBoundary,
+  exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies:
+   weakClosedFrontWithPhysicalVertexTies,
+  exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie:
+   weakClosedBehindClearPeerWithPhysicalVertexTie,
+  weakClosedSourceDepthCannotCertifyEndpointObserverRayOrGeneratedHLR:true,
   openIntervalSourceDepthOrderDoesNotCertifyClosedEndpointsOrOpaqueFaces:true,
   originalPhysicalVertexOpenDepthOrderingProven:
    comparisons.some(row=>
