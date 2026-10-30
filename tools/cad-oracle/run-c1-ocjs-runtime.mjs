@@ -1539,6 +1539,22 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.signedV5ActionCount,0);
  assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
  assert.equal(unresolvedM5.records.length,heldM5.length);
+ const newlyOpen=unresolvedM5.records.filter(row=>
+  row.exactConvexOriginalOpenRayNativeHLRClassCorroborated===true&&
+  row.independentOriginal3DAllFaceRayClass===null);
+ assert.equal(
+  unresolvedM5.counts.newlyCorroboratedOpenRaysWithoutClosedEndpointRayClass,
+  newlyOpen.length);
+ assert.equal(unresolvedM5.counts.obligationsWithExactConvexOpenRayAndNativeHLRClass,
+  unresolvedM5.records.filter(row=>
+   row.exactConvexOriginalOpenRayNativeHLRClassCorroborated===true).length);
+ assert.ok(unresolvedM5.records.every(row=>
+  row.exactConvexOpenRayDoesNotProveClosedEndpointsOrGeneratedHistory===true&&
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&
+  row.signedV5Action===false));
+ if(geometry.id==='C1rotated')
+  assert.ok(newlyOpen.length>0,
+   'exact tangent-face ray proof must resolve previously unknown ORIGINAL open-ray classes');
  assert.ok(unresolvedM5.records.every(row=>
   row.nativeHLRClassContradictionNotAllowedToOverrideOriginalRay===true&&
   row.generatedHLRClassesDisagreeingWithOriginal3DRay.every(item=>
