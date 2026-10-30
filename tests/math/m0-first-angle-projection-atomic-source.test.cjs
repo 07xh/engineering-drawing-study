@@ -28,7 +28,7 @@ test('all V/H/W sheet views, transfer guides and 45-degree point use the SAME so
   W:{x:120,y:176},M:{x:120,y:220}
  });
  assert.deepEqual(result.guides.map(g=>g.kind),
-  ['VH','height-VW','depth-HM','depth-MW']);
+  ['VH','height-VW','depth-HD','depth-DE','depth-EW']);
  assert.deepEqual(reads.map(f=>f()),[1,1,1,1,1,1,1]);
 });
 test('single inverse/projection views never re-read source coordinates or scale',()=>{
