@@ -134,6 +134,7 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
  const views={},counts={exactOpenEdgeNativeClassAgreements:0,
   heldSourceViewRows:0,exactTangentFaceRayRows:0,
   exactTangentStrictExteriorRowsCertified:0,
+  exactTangentOpaqueFaceBlockerRowsCertified:0,
   originalVisibleClosedEndpointRayRowsCertified:0,
   native3DClassOrParameterHeldRows:0};
  for(const view of VIEWS){
@@ -177,14 +178,19 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
      engineeringLineStyle:'undetermined',signedV5Action:false});
     continue;
    }
-   // A strictly positive incident outward halfspace derivative makes
-   // EVERY open-edge observer ray leave this convex solid immediately.
-   // The other face may be exactly tangent: its zero derivative cannot
-   // cancel the strict exterior halfspace. A negative/zero or zero/zero
-   // pair still has a tangential boundary ray and remains unsigned.
+   // Positive incident outward derivative: every observer ray leaves the
+   // convex solid, even if its other incident face is tangent.
+   // Negative/zero derivative: at each OPEN-edge point the observer ray
+   // remains in the zero-derivative face plane, enters the other incident
+   // halfspace strictly, and remains strictly inside every nonincident
+   // halfspace for some positive distance. Thus the ray meets the opaque
+   // relative interior of that incident face: an exact hidden-ray proof.
+   // It says nothing about CLOSED original endpoints or generated HLR
+   // topology. Zero/zero remains unclassified (often a collapsed view).
    const tangent=sa===0||sb===0;
+   const tangentOpaqueBlocker=(sa===0&&sb<0)||(sb===0&&sa<0);
    const candidate=sa>0||sb>0?'visible-sharp':
-    sa<0&&sb<0?'hidden-sharp':null;
+    sa<=0&&sb<=0&&(sa<0||sb<0)?'hidden-sharp':null;
    let certified=false,reason=null;
    if(!candidate){
     reason='exact-tangent-face-ray';
@@ -217,7 +223,10 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
       entireOriginalParameterIntervalCovered===true;
     if(valid){
      certified=true;counts.exactOpenEdgeNativeClassAgreements++;
-     if(tangent)counts.exactTangentStrictExteriorRowsCertified++;
+     if(tangent&&candidate==='visible-sharp')
+      counts.exactTangentStrictExteriorRowsCertified++;
+     if(tangentOpaqueBlocker)
+      counts.exactTangentOpaqueFaceBlockerRowsCertified++;
     }
     else {reason='native-3d-class-or-exact-parameter-not-certified';
      counts.native3DClassOrParameterHeldRows++;}
@@ -236,6 +245,8 @@ function auditC1ExactConvexOriginalOpenEdgeRays({
     exactIncidentOutwardObserverSigns:[sa,sb],
     exactOriginalOpenEdgeOpaqueFaceRayClass:candidate,
     originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified:certified,
+    originalOpenEdgeTangentOpaqueFaceBlockerCertified:
+     certified&&tangentOpaqueBlocker,
     reason,originalClosedEndpointRayCertified:closedOriginalExterior,
     generated2DTopoDSHistoryCertified:false,
     wholeSceneCoProjectedDepthCertified:false,
