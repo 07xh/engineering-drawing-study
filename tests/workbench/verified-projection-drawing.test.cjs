@@ -6,11 +6,11 @@ const {solveProjection}=require('../../engines/projection/point-projection.cjs')
 const math=(p={x:15,y:10,z:12},scale=4)=>
  solveProjection({knownPoint:p,sheetTransform:{origin:{x:360,y:210},scale}});
 const strokes=(s,revision=1)=>s.map(step=>({from:{...step.from},to:{...step.to},revision}));
-test('real analytical guides with 4 correct drawn lines reach verified 4/4',()=>{
+test('real analytical guides including true 45-degree line reach verified 5/5',()=>{
  const s=math().steps,g=grade(s,strokes(s),{scale:4,revision:1});
  assert.equal(g.status,'correct');
- assert.equal(g.matchedCount,4);
- assert.equal(g.targetCount,4);
+ assert.equal(g.matchedCount,5);
+ assert.equal(g.targetCount,5);
  assert.deepEqual(g.acceptedIds,s.map(x=>x.id));
  assert.deepEqual(g.remainingIds,[]);
  assert.equal(g.extraCount,0);
@@ -21,7 +21,7 @@ test('reverse drawing and permute strokes cannot change the geometric grade',()=
  const reversed=strokes(s).reverse().map(p=>({...p,from:p.to,to:p.from}));
  const g=grade(s,reversed,{scale:4,revision:1});
  assert.equal(g.status,'correct');
- assert.equal(g.matchedCount,4);
+ assert.equal(g.matchedCount,5);
 });
 test('model mm tolerance accepts modest drawing errors and rejects clearly displaced parallel',()=>{
  const s=math().steps;
@@ -31,7 +31,7 @@ test('model mm tolerance accepts modest drawing errors and rejects clearly displ
  close[0].from.x+=5;close[0].to.x+=5; // 1.7 mm from expected line
  const g=grade(s,close,{scale:4,revision:1});
  assert.equal(g.status,'partial');
- assert.equal(g.matchedCount,3);
+ assert.equal(g.matchedCount,4);
  assert.ok(g.remainingIds.includes(s[0].id));
 });
 test('longer collinear construction lines are acceptable without endpoint pixel equality',()=>{
@@ -51,14 +51,20 @@ test('shorter collinear strokes missing a target endpoint must fail coverage',()
     y:s[1].from.y+(s[1].to.y-s[1].from.y)*0.2}};
  const g=grade(s,attempt,{scale:4,revision:1});
  assert.equal(g.status,'partial');
- assert.equal(g.matchedCount,3);
+ assert.equal(g.matchedCount,4);
 });
-test('45-degree stroke cannot be mistaken for horizontal or vertical guide',()=>{
+test('wrong positive-slope diagonal cannot impersonate actual negative-slope 45-degree guide',()=>{
  const s=math().steps;
  const diagonal={revision:1,from:{x:280,y:200},to:{x:380,y:300}};
  const g=grade(s,[diagonal],{scale:4,revision:1});
  assert.equal(g.status,'incorrect');
  assert.equal(g.matchedCount,0);
+});
+test('omitting the genuine 45-degree guide cannot certify full construction',()=>{
+ const s=math().steps;
+ const g=grade(s,strokes(s.filter(x=>x.kind!=='depth-DE')),{scale:4,revision:1});
+ assert.equal(g.status,'partial');assert.equal(g.matchedCount,4);
+ assert.ok(g.remainingIds.includes(s.find(x=>x.kind==='depth-DE').id));
 });
 test('a single very long line cannot certify two distinct line guides',()=>{
  const s=math({x:15,y:10,z:12}).steps;
@@ -70,7 +76,7 @@ test('duplicated strokes do not count as new steps and flag an extra',()=>{
  const same=strokes(s);
  same.push({...same[0]});
  const result=grade(s,same,{scale:4,revision:1});
- assert.equal(result.matchedCount,4);
+ assert.equal(result.matchedCount,5);
  assert.equal(result.extraCount,1);
  assert.equal(result.status,'partial');
 });

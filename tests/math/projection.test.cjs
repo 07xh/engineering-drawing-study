@@ -25,7 +25,17 @@ test('legacy first-angle V/H/W math stays exactly compatible',()=>{
 });
 test('45-degree transfer preserves depth and height correspondence',()=>{
  const p={x:35,y:22,z:51},trace=P.transferGuides(p,T);
- assert.deepEqual(trace.guides.map(g=>g.kind),G.transfer(p).guide.map(g=>g.kind));
+ assert.deepEqual(trace.guides.map(g=>g.kind),
+  ['VH','height-VW','depth-HD','depth-DE','depth-EW']);
+ const diagonal=trace.guides[3],dx=diagonal.to.x-diagonal.from.x,
+  dy=diagonal.to.y-diagonal.from.y;
+ assert(near(dx+dy,0)&&Math.abs(dx)>0);
+ assert(near(diagonal.from.x,T.origin.x));
+ assert(near(diagonal.to.y,T.origin.y));
+ // Legacy 4-guide geometry remains a parity oracle for V/H/W/M points,
+ // not evidence of an actually drawn 45-degree line.
+ for(const view of ['V','H','W','M'])
+  assert.deepEqual(trace.points[view],G.projectPoint(p)[view]);
  const {V,H,W,M}=trace.points;
  assert(near(V.x,H.x)&&near(V.y,W.y));
  assert(near(H.y-T.origin.y,W.x-T.origin.x));
