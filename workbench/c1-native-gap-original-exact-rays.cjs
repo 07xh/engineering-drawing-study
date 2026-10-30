@@ -416,19 +416,22 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits||
      m4DepthCounts.canonicalM4CutSubspansExamined!==
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSourceIntervalsExamined!==
       m4DepthCounts.sourceIntervalsExamined||
      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>
-      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay||
      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>
       m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>
-      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay||
      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth!==
       m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder)
