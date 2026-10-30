@@ -247,7 +247,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering:0,
-  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
+  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0,
+  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
    // The source ID itself contains an original endpoint separator '|'.
@@ -315,9 +316,21 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       if(sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)
        m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering++;
      }
-     if(sliced.status===
-        'positive-original-dyadic-projection-below-paper-resolution-held')
+     // Count ONLY a mathematically positive original projection whose
+     // received binary64 paper endpoints collapse. Exact positive tiny
+     // subspans that remain distinct now enter depth proof and MUST NOT
+     // be counted as held merely because they are below display scale.
+     // Use the proof flags rather than a renamed diagnostic status string.
+     if(sliced.originalDyadicProjectedIntervalPositive===true&&
+        sliced.renderedPaperSegmentNotCertified===true)
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
+     // A tiny but LITERALLY distinct generated M4 paper span no longer
+     // needs to be held by the old display-scale cutoff. Audit it exactly
+     // and retain its separate accounting without signing M5 or V5.
+     if(sliced.positiveSubpixelDisplaySourceNowPreciselyAudited===true&&
+        sliced.originalDyadicProjectedIntervalPositive===true&&
+        sliced.displayThresholdNeverDeterminesExactSourceDepthOrVisibility===true)
+      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited++;
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
       originalM4CutFromCurrentReviewedEventGraph:true,

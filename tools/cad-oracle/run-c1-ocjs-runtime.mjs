@@ -1404,7 +1404,32 @@ for(const [index,geometry] of general.entries()){
   assert.ok(depthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>=4);
   assert.ok(depthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
    depthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>=4);
-  assert.ok(depthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>=2);
+  // The old subpixel-size cutoff held these genuine source cuts even when
+  // exact M0 paper coordinates were distinct. They now ENTER the depth
+  // audit, so a count of rounded-collapsed cuts is no longer required to
+  // be >=2. Instead prove the native M4 micro-intervals survived into
+  // the actual consumer with identical positive t bounds and no V5 signoff.
+  // EPSILON is only a diagnostic size bound on normalized t here: it does
+  // not remove, merge, or certify any positive interval.
+  const microCuts=[
+   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
+   ...positiveOriginalGapRays.rows
+  ].flatMap(row=>row.nativeOriginalM4CoProjectedDepthOrder.flatMap(seg=>
+   seg.canonicalOriginalM4EventCutDepthRows)).filter(cut=>{
+    const [from,to]=cut.originalM4SourceCutParameterRange;
+    return to>from&&to-from<=Number.EPSILON;
+   });
+  assert.ok(microCuts.length>=2,
+   'real native C1 one-ULP positive M4 cuts must reach exact depth audit');
+  assert.ok(microCuts.every(cut=>{
+   const proof=cut.coProjectedOriginal3DDepthOrder;
+   const [from,to]=cut.originalM4SourceCutParameterRange;
+   return proof.originalParameterRange?.[0]===from&&
+    proof.originalParameterRange?.[1]===to&&
+    proof.engineeringLineStyleSigned===false&&
+    proof.signedV5ActionCount===0&&
+    cut.engineeringLineStyle==='undetermined'&&cut.signedV5Action===false;
+  }));
  }
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
