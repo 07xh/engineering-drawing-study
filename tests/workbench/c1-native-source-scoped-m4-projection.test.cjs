@@ -157,3 +157,39 @@ test('large absolute paper coordinates cannot silently erase a positive native M
  assert.equal(out.formalEngineeringLineStyleCertified,false);
  assert.equal(out.officialV5Authorized,false);
 });
+
+test('native full source endpoints retain exact original 3D vertex and paper identity, not a rounded affine re-evaluation',()=>{
+ // The old a+(b-a)*1 produced 0.30000000000000004 rather than the
+ // reviewed original endpoint 0.3, despite the native interval reaching
+ // the exact original curve boundary. No epsilon or interval snap is used.
+ assert.notEqual(1.1+(0.3-1.1),0.3);
+ const sourceGeometry={id:'NativeM4Endpoint',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:P(1.1,0,0),B:P(0.3,0,0)},edges:[['A','B']]}};
+ const sourceId='NativeM4Endpoint::A|B';
+ const sourceCurve={sourceEdgeId:sourceId,occtSourceCurveType:'line',
+  occtSourceCurve3DEndpointsAndMidpointVerified:true,
+  occtSourceCurveParameterRange:[0,0.8],
+  occtSourceCurveFirstPoint3D:P(1.1,0,0),
+  occtSourceCurveLastPoint3D:P(0.3,0,0)};
+ const nativePart={...part(0,0.8),nativeSourceFilterOriginalEdgeId:sourceId};
+ const nativeRow={originalPhysicalSourceEdgeId:sourceId,
+  visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+   native3DGeneratedCurveIntervals:[nativePart]},
+  hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+   native3DGeneratedCurveIntervals:[]}};
+ for(const reverse of [false,true]){
+  const curve=reverse?{...sourceCurve,
+   occtSourceCurveFirstPoint3D:P(0.3,0,0),
+   occtSourceCurveLastPoint3D:P(1.1,0,0)}:sourceCurve;
+  const out=projectNative({geometry:sourceGeometry,revision:11,view:'V',
+   sourceEdgeId:sourceId,originalCurve:curve,scopedRow:nativeRow});
+  assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+  assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,true);
+  assert.deepEqual(out.segments[0].originalM0UnitParameterRange,[0,1]);
+  assert.deepEqual(out.segments[0].fromModelMm,sourceGeometry.data.points.A);
+  assert.deepEqual(out.segments[0].toModelMm,sourceGeometry.data.points.B);
+  assert.deepEqual(out.segments[0].fromPaper,project(sourceGeometry.data.points.A).V);
+  assert.deepEqual(out.segments[0].toPaper,project(sourceGeometry.data.points.B).V);
+  assert.equal(out.officialV5Authorized,false);
+ }
+});
