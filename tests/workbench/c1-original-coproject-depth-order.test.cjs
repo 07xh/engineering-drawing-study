@@ -261,8 +261,11 @@ test('one-ULP positive M4 cut with distinct paper endpoints enters exact depth o
  const args={geometry:geom,view:'H',sourceEdgeId:'MicroSource::A|B',
   originalParameterRange:[1-Number.EPSILON,1],peers:[]};
  const out=auditC1OriginalCoProjectedDepthOrder(args);
- assert.equal(out.status,'no-positive-projected-source-alias');
- assert.equal(out.wholeIntervalFrontmostCertified,true);
+ // The other original physical edge is co-projected in H. Omitting its
+ // complete source inventory must not grant an empty-set frontmost proof.
+ assert.equal(out.status,'undetermined-incomplete-original-coproject-peer-inventory');
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.deepEqual(out.missingWholeOriginalPeerSourceIds,['MicroSource::C|D']);
  assert.deepEqual(out.originalParameterRange,[1-Number.EPSILON,1]);
  assert.equal(out.engineeringLineStyleSigned,false);
  assert.equal(out.signedV5ActionCount,0);
@@ -314,4 +317,59 @@ test('source depth switch/tie away from physical original vertex never proves OP
  assert.equal(out.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources,false);
  assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
  assert.equal(out.openSourceDepthOrderUsesTrueOriginalM0PhysicalVertexBoundary,false);
+});
+
+test('M5-held exterior contour cannot suppress a rear source as if its open ray were proven clear',()=>{
+ const out=check(geometry(),source('D','H'),[
+  peer('A','E','exterior-contour-held-by-original-m5')
+ ]);
+ assert.equal(out.aliasesExamined,1);
+ assert.equal(out.comparisons[0].status,'candidate-strictly-behind');
+ assert.equal(out.comparisons[0].competingSourceHasCertifiedClearForwardRay,false);
+ assert.equal(out.status,'undetermined-source-behind-unverified-peer');
+ assert.equal(out.visibleSourceCoversEntireLine,false);
+ assert.equal(out.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource,false);
+ assert.equal(out.wholeIntervalFrontmostCertified,false);
+ assert.equal(out.engineeringLineStyleSigned,false);
+ assert.equal(out.signedV5ActionCount,0);
+ const certified=check(geometry(),source('D','H'),[
+  peer('A','E','single-opaque-solid-whole-open-ray-clear')
+ ]);
+ assert.equal(certified.comparisons[0].competingSourceHasCertifiedClearForwardRay,true);
+ assert.equal(certified.status,'suppressed-by-front-original-visible-source');
+});
+
+test('an omitted co-projected original physical source cannot grant vacuous frontmost certification',()=>{
+ const omitted=check(geometry(),source('A','E'),[]);
+ assert.equal(omitted.status,'undetermined-incomplete-original-coproject-peer-inventory');
+ assert.deepEqual(omitted.missingWholeOriginalPeerSourceIds,[source('D','H')]);
+ assert.equal(omitted.wholeIntervalFrontmostCertified,false);
+ assert.equal(omitted.allOriginalCoProjectedSourceDepthRelationsResolvedOnOpenInterval,false);
+ assert.equal(omitted.visibleSourceCoversEntireLine,false);
+ assert.equal(omitted.engineeringLineStyleSigned,false);
+ assert.equal(omitted.signedV5ActionCount,0);
+ const unrelated=check(geometry(),source('A','E'),[peer('A','B')]);
+ assert.deepEqual(unrelated.missingWholeOriginalPeerSourceIds,[source('D','H')]);
+ assert.equal(unrelated.wholeIntervalFrontmostCertified,false);
+ const complete=check(geometry(),source('A','E'),[
+  peer('D','H','single-opaque-solid-whole-open-ray-strictly-hidden')
+ ]);
+ assert.equal(complete.status,'candidate-strictly-front-of-all-aliases');
+ assert.equal(complete.wholeIntervalFrontmostCertified,true);
+});
+test('partial or duplicate peer source inventory cannot masquerade as all of M0',()=>{
+ const partial=check(geometry(),source('A','E'),[
+  peer('D','H','single-opaque-solid-whole-open-ray-strictly-hidden',[.25,.75])
+ ]);
+ assert.equal(partial.status,'undetermined-incomplete-original-coproject-peer-inventory');
+ assert.deepEqual(partial.missingWholeOriginalPeerSourceIds,[source('D','H')]);
+ assert.equal(partial.wholeIntervalFrontmostCertified,false);
+ const duplicate=check(geometry(),source('A','E'),[
+  peer('D','H'),peer('D','H')
+ ]);
+ assert.equal(duplicate.status,'undetermined-incomplete-original-coproject-peer-inventory');
+ assert.deepEqual(duplicate.missingWholeOriginalPeerSourceIds,[source('D','H')]);
+ assert.equal(duplicate.wholeIntervalFrontmostCertified,false);
+ assert.equal(duplicate.engineeringLineStyleSigned,false);
+ assert.equal(duplicate.signedV5ActionCount,0);
 });
