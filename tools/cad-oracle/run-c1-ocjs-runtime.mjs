@@ -1529,6 +1529,10 @@ for(const [index,geometry] of general.entries()){
   // Original source-depth weak-closed vertex ties are NOT closed endpoint
   // observer-ray proofs, global HLR history or engineering-line signoff.
   assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>=4);
+  // Require a genuine positive same-run M0/native/endpoint-ray join;
+  // otherwise this is only an added diagnostic field, not M4 progress.
+  assert.ok(depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay>0);
+  assert.ok(depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology>0);
  }
  for(const item of [
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
