@@ -36,10 +36,15 @@ function auditC1OriginalBRepVertexTShapeTopology({geometry,originalNativeVertexH
   if(!byId.has(id))byId.set(id,[]);
   byId.get(id).push(shape);
  }
+ // A sewn shell explorer can report the same source edge from both
+ // adjacent faces. Each occurrence contributes both endpoint vertices.
+ // Require at least the reviewed edge-incidence counts; the pairwise
+ // symmetric IsSame graph below MUST prove all repeated occurrences
+ // refer to the same physical TopoDS vertex, never a second alias.
  if(byId.size!==used.size||
-    originalNativeVertexHandles.length!==2*edges.length||
-    [...expectedOccurrences].some(([id,count])=>byId.get(id)?.length!==count))
-  throw new RangeError('missing or duplicated original native 3D TopoDS source vertex occurrence');
+    originalNativeVertexHandles.length<2*edges.length||
+    [...expectedOccurrences].some(([id,count])=>byId.get(id)?.length<count))
+  throw new RangeError('missing original native 3D TopoDS source vertex occurrence');
  let same=0,different=0;
  const occurrences=originalNativeVertexHandles;
  for(let i=0;i<occurrences.length;i++)for(let j=i+1;j<occurrences.length;j++){
