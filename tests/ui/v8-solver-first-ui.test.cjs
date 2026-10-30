@@ -37,10 +37,10 @@ test('Navigation routes to the real project, not one special fillet solver',()=>
  const input=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const html=enhancePage(input,{page:'index.html',preview:false});
  const {document}=parseHTML(html);
- const anchors=[...document.querySelectorAll('.next-sidebar nav a')];
- assert.deepEqual(anchors.map(x=>x.textContent.trim()),['工作台','我的项目','题型工具','帮助']);
- assert.equal(document.querySelector('.next-sidebar .next-start').getAttribute('href'),'index.html#project-workbench');
- assert.equal(anchors[0].getAttribute('href'),'index.html');
+ const anchors=[...document.querySelectorAll('.next-task-nav a')];
+ assert.deepEqual(anchors.map(x=>x.textContent.trim()),['解题','工具']);
+ assert.equal(anchors[0].getAttribute('href'),'#project-workbench');
+ assert.equal(anchors[1].getAttribute('href'),'#tools');
  assert.ok(!anchors.some(a=>a.textContent.includes('AI 解题')));
 });
 test('Task switch guards all meaningful existing input types',()=>{

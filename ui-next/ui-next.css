@@ -1399,3 +1399,20 @@ body.ui-next .next-canvas-tools [data-ui-tip] {width:44px;min-width:44px;height:
  body.ui-next .next-playback #fullControls button {flex:1 1 40%;min-width:80px;white-space:nowrap}
  body.ui-next .next-playback #fullControls .rate-select {flex:1 1 100%;max-width:none}
 }
+
+/* Task navigation stays visible at every viewport without a separate rail. */
+body.ui-next{padding-left:0}
+body.ui-next .next-topbar{margin-left:0;width:100%;display:flex;align-items:center;gap:clamp(12px,3vw,32px);padding-inline:clamp(12px,2vw,28px)}
+body.ui-next .next-task-nav{display:flex;align-self:stretch;gap:4px}
+body.ui-next .next-task-nav a,body.ui-next .next-help-link{display:inline-flex;align-items:center;justify-content:center;min-width:56px;min-height:44px;padding:0 12px;text-decoration:none;color:#334155;font-weight:650}
+body.ui-next .next-task-nav a[aria-current=page]{color:#075be7;box-shadow:inset 0 -3px #075be7}
+body.ui-next .next-task-nav a:focus-visible,body.ui-next .next-help-link:focus-visible{outline:3px solid #1d4ed8;outline-offset:-3px}
+body.ui-next .next-help-link{margin-left:auto}
+@media(max-width:520px){body.ui-next .next-topbar{gap:4px}body.ui-next .next-task-nav a,body.ui-next .next-help-link{min-width:44px;padding:0 8px}}
+
+@media(min-width:1160px){body.ui-next{padding-left:0!important}body.ui-next .next-topbar{margin-left:0!important;width:100%!important}}
+
+/* Keep task and tool browsing distinct without destroying the live project. */
+body.ui-next.next-show-tools #project-workbench,
+body.ui-next.next-show-tools .v8-project-strip{display:none}
+body.ui-next .next-help-link[aria-current=page]{color:#075be7;box-shadow:inset 0 -3px #075be7}

@@ -28,7 +28,7 @@ test('all public pages preserve control IDs, values, hidden states and applicati
    assert.equal(candidate.hasAttribute('defer'),script.hasAttribute('defer'));
   }
   assert.equal(after.querySelectorAll('.next-topbar').length,1,page);
-  assert.equal(after.querySelectorAll('.next-sidebar').length,1,page);
+  assert.equal(after.querySelectorAll('.next-task-nav').length,1,page);
   assert.ok(after.querySelector('.next-skip'),page+' skip link');
   assert.ok(after.querySelector('main.next-main'),page+' main landmark');
   assert.equal(after.querySelectorAll('[id]').length,new Set([...after.querySelectorAll('[id]')].map(x=>x.id)).size,page+' all IDs unique');
@@ -127,10 +127,9 @@ test('V6.4 home reflects reference-two structure and original topic hierarchy wi
  assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面作图','三视图与投影','截交与相贯','组合体作图']);
  for(const href of ['labs/circle-fillet-live.html','labs/point-projection-live.html','labs/cone-cut-live.html','labs/composite-geometry.html'])
   assert.ok(categories.some(a=>a.getAttribute('href')===href),'actual category tool '+href);
- const nav=document.querySelector('.next-sidebar');
- assert.ok(nav.querySelector('a[href="index.html"]'),'main workbench accessible');
- assert.ok(nav.querySelector('a[href="index.html#tools"]'),'specialist tools accessible');
- assert.ok(nav.querySelector('a[href="index.html#recent"]'),'local project history accessible');
+ const nav=document.querySelector('.next-task-nav');
+ assert.ok(nav.querySelector('a[href="#project-workbench"]'),'main workbench accessible');
+ assert.ok(nav.querySelector('a[href="#tools"]'),'specialist tools accessible');
  for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
  assert.ok(document.querySelector('.next-home-more-tools:not([open])'),'all labs can stay collapsed');
 });
@@ -291,8 +290,8 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const my=document.querySelector('#knowledge');
  assert.ok(my?.closest('.next-home-workflow'),'My Problems should be a compact card beside paper');
  assert.match(my.textContent,/本机项目/,'local project boundaries remain explicit');
- const sidebar=[...document.querySelectorAll('.next-sidebar nav a')].map(a=>a.textContent.trim());
- assert.deepEqual(sidebar,['工作台','我的项目','题型工具','帮助']);
+ const navigation=[...document.querySelectorAll('.next-task-nav a')].map(a=>a.textContent.trim());
+ assert.deepEqual(navigation,['解题','工具']);
 });
 test('help page uses practical guidance while retaining accurate AI and data boundaries',()=>{
  const {after:document}=enhance('public-use.html');
@@ -308,14 +307,10 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   const root=page.includes('/')?'../':'';
   const favicon=document.querySelector('link[rel="icon"][type="image/svg+xml"]');
   assert.equal(favicon?.getAttribute('href'),root+'favicon.svg',page+' must reference shared blue icon');
-  const side=[...document.querySelectorAll('.next-sidebar nav a')];
-  assert.equal(side.length,4,page+' solver-first compact navigation');
-  for(const link of side){
-   assert.ok(link.getAttribute('aria-label'),page+' accessible label');
-   assert.ok(link.getAttribute('data-ui-tip'),page+' long-press tooltip');
-   assert.ok(link.querySelector('svg'),page+' genuine visible icon');
-  }
-  assert.ok(document.querySelector('.next-sidebar .next-start svg'),page+' launch icon');
+  const links=[...document.querySelectorAll('.next-task-nav a')];
+  assert.deepEqual(links.map(link=>link.textContent.trim()),['解题','工具']);
+  assert.equal(links[0].getAttribute('href'),page==='index.html'?'#project-workbench':root+'index.html#project-workbench');
+  assert.equal(links[1].getAttribute('href'),page==='index.html'?'#tools':root+'index.html#tools');
  }
  const svg=fs.readFileSync(path.join(root,'favicon.svg'),'utf8');
  assert.match(svg,/#0871f5/);
