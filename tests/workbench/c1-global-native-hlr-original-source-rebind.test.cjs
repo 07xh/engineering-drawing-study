@@ -202,3 +202,22 @@ test('native indexed original EdgeStatus plus scoped-to-global generated IsSame 
   assert.throws(()=>audit(forged),/native original HLR EdgeStatus|unverified original HLR EdgeStatus|forged native original HLR/);
  }
 });
+
+test('a legacy EdgeMap-only source audit may not inherit native EdgeStatus causality',()=>{
+ const x=fixture();
+ x.cad.nativeHLRSourceHistoryAPISurfaceByView={V:{
+  originalDataStructureIndex:{edgeMapSourceBijectionVerified:true,
+   indexedOriginalSources:[{originalPhysicalSourceEdgeId:source,
+    hlrDataStructureOneBasedEdgeIndex:1}]}
+ }};
+ const witness=x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0];
+ witness.globalDirectSameGeneratedTopoDSOrdinals=[0];
+ witness.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ const result=audit(x);
+ assert.equal(result.counts.wholeSolidEdgesWithNativeScopedIsSameIdentity,1);
+ assert.equal(result.counts.wholeSolidGeneratedEdgesWithExactNativeSourceFilteredCausalWitness,0);
+ assert.equal(result.views.V[0].nativeOriginalHLREdgeMapSourceStatusClass,null);
+ assert.equal(result.views.V[0].exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified,false);
+ assert.equal(result.views.V[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
