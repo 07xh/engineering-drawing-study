@@ -1213,6 +1213,23 @@ for(const [index,geometry] of general.entries()){
  assert.equal(exactOpenRays.signedV5ActionCount,0);
  assert.ok(Object.values(exactOpenRays.views).flat().every(row=>
   row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ // A negative/zero incident face-ray is hidden behind the opaque tangent
+ // face on the entire ORIGINAL open edge, provided actual source-scoped
+ // native HLR agrees. This is not an endpoint or generated TopoDS claim.
+ const tangentOpaqueRows=Object.values(exactOpenRays.views).flat()
+  .filter(row=>row.originalOpenEdgeTangentOpaqueFaceBlockerCertified===true);
+ assert.equal(exactOpenRays.counts.exactTangentOpaqueFaceBlockerRowsCertified,
+  tangentOpaqueRows.length);
+ assert.ok(tangentOpaqueRows.every(row=>
+  row.exactOriginalOpenEdgeOpaqueFaceRayClass==='hidden-sharp'&&
+  row.originalOpenEdgeAllFaceContinuousRayAndNativeClassCertified===true&&
+  row.originalClosedEndpointRayCertified===false&&
+  row.generated2DTopoDSHistoryCertified===false&&
+  row.wholeSceneCoProjectedDepthCertified===false&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ if(geometry.id==='C1rotated')
+  assert.ok(tangentOpaqueRows.length>0,
+   'real pinned native HLR must corroborate convex tangent-face occlusion');
  if(geometry.id==='C1SkewTetra'){
   assert.equal(exactOpenRays.status,'audited');
   assert.equal(exactOpenRays.counts.exactOpenEdgeNativeClassAgreements,18);
