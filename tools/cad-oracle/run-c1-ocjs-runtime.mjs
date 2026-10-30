@@ -1685,6 +1685,29 @@ for(const [index,geometry] of general.entries()){
    'real OCJS W original 3D closed-ray/parameter/depth proof must be complete on both paper gaps');
   assert.equal(unresolvedM5.counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift,2,
    'real native OCJS must show two received W paper endpoint drifts without snapping');
+  // Two-axis source geometry is stronger than dominant-axis inverse t.
+  // A|C has exact longitudinal ULP tail; A|D falsely appears complete
+  // on dominant axis while its received generated W line lies off-source.
+  const strictW=Object.fromEntries(wGaps.map(r=>[
+   r.sourceEdgeId,r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+    ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
+    ?.receivedExactTwoAxisQualifiedPaperCoverage
+  ]));
+  const ac=strictW['C1SkewTetra::A|C'],ad=strictW['C1SkewTetra::A|D'];
+  assert.equal(ac?.strictReceivedTwoAxisPaperCoverageComplete,false);
+  assert.equal(ac?.transverseDisplacedGeneratedSegments,0);
+  assert.deepEqual(ac?.exactTwoAxisQualifiedPaperCoverage
+   ?.exactBinary64PaperPositiveLengthUncoveredIntervals,
+   [['9007199254740991/9007199254740992','1']]);
+  assert.equal(ad?.falseDominantAxisFullCoverageVetoed,true);
+  assert.equal(ad?.unsafeDominantAxisOnlyCoverage
+   ?.exactBinary64PaperCandidateCoverageComplete,true);
+  assert.equal(ad?.strictReceivedTwoAxisPaperCoverageComplete,false);
+  assert.deepEqual(ad?.exactTwoAxisQualifiedPaperCoverage
+   ?.exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+  assert.ok([ac,ad].every(x=>x?.generated2DTopoDSHistoryCertified===false&&
+   x.globalOpaqueSceneContinuousOcclusionCertified===false&&
+   x.signedV5Action===false));
   assert.ok(wGaps.every(r=>r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
    ?.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
    ?.rows.every(x=>x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false)));
