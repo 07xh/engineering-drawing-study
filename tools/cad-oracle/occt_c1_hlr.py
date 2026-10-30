@@ -279,6 +279,42 @@ def audit_original_hlr_source_status(case, view):
     ):
         reject("HLR internal source EdgeMap and EdgeStatus inventory differ")
     filtered = HLRBRep_HLRToShape(algo)
+
+    # Run the WHOLE-solid and original-source-scoped HLR extraction against
+    # the SAME live HLRBRep_Algo. A paper-coordinate match is only a candidate:
+    # HLRToShape may build fresh TopoDS edges on each extraction. Only a real
+    # TopoDS.IsSame link can prove a particular global output TShape is the
+    # one returned by the source-scoped extraction.
+    def generated_edges(compound):
+        explorer = TopExp_Explorer(compound, TopAbs_EDGE)
+        result = []
+        while explorer.More():
+            result.append(TopoDS.Edge_s(explorer.Current()))
+            explorer.Next()
+        return result
+
+    def exact_paper_vertices(edge):
+        explorer = TopExp_Explorer(edge, TopAbs_VERTEX)
+        coords = []
+        while explorer.More():
+            point = BRep_Tool.Pnt_s(TopoDS.Vertex_s(explorer.Current()))
+            coords.append((point.X(), point.Y(), point.Z()))
+            explorer.Next()
+        if len(coords) != 2 or not all(
+            math.isfinite(value) for p in coords for value in p
+        ):
+            return None
+        return tuple(sorted(coords))
+
+    global_edges = {
+        "visible": generated_edges(filtered.VCompound()),
+        "hidden": generated_edges(filtered.HCompound()),
+    }
+    global_papers = {
+        kind: [exact_paper_vertices(edge) for edge in group]
+        for kind, group in global_edges.items()
+    }
+    global_ordinal_claims = {}
     rows = []
     for key in sorted(expected):
         original = originals[key]
@@ -305,16 +341,39 @@ def audit_original_hlr_source_status(case, view):
             status.AllHidden() != (len(visible) == 0)
         ):
             reject("HLR original source status contradicts exact interval partition")
-        def generated_edges(compound):
-            explorer = TopExp_Explorer(compound, TopAbs_EDGE)
-            result = []
-            while explorer.More():
-                result.append(TopoDS.Edge_s(explorer.Current()))
-                explorer.Next()
-            return result
         visible_edges = generated_edges(filtered.VCompound(original))
         hidden_edges = generated_edges(filtered.HCompound(original))
         scoped_visible, scoped_hidden = len(visible_edges), len(hidden_edges)
+        generated_global_correspondence = []
+        for style, scoped in (("visible", visible_edges),
+                              ("hidden", hidden_edges)):
+            for local_ordinal, generated in enumerate(scoped, 1):
+                paper = exact_paper_vertices(generated)
+                # Native 1-based IsSame and exact received binary64 paper
+                # parity are independently recorded. Never synthesize IsSame
+                # from geometric proximity or paper-coordinate equality.
+                native = [
+                    i for i, full in enumerate(global_edges[style], 1)
+                    if generated.IsSame(full)
+                ]
+                matching_paper = [
+                    i for i, received in enumerate(global_papers[style], 1)
+                    if paper is not None and received == paper
+                ]
+                if any(i not in matching_paper for i in native):
+                    reject("same generated TopoDS edge contradicts exact whole-solid paper")
+                for i in matching_paper:
+                    global_ordinal_claims.setdefault((style, i), set()).add(key)
+                generated_global_correspondence.append({
+                    "hlrClass": style,
+                    "sourceScopedOrdinal": local_ordinal,
+                    "sameGlobalGeneratedTopoDSOrdinals": native,
+                    "exactPaperGlobalGeneratedOrdinals": matching_paper,
+                    "causalGlobalGeneratedTopoDSIdentityCertified":
+                        len(native) == 1 and len(matching_paper) == 1
+                        and native == matching_paper,
+                    "paperOnlyCorrespondenceDoesNotProveNativeIdentity": True,
+                })
         # The original 3D edge has an exact M0 endpoint pair. The
         # generated 2D paper edge may NOT reproduce that pair bit-for-bit,
         # even when original HLR EdgeStatus covers the entire curve.
@@ -353,6 +412,7 @@ def audit_original_hlr_source_status(case, view):
             "hiddenOriginalCurveParameterIntervals": hidden,
             "sourceScopedGeneratedVisibleEdgeCount": scoped_visible,
             "sourceScopedGeneratedHiddenEdgeCount": scoped_hidden,
+            "sourceScopedToWholeSolidGeneratedHLREdges": generated_global_correspondence,
             "singleGeneratedFullEdgePaperEndpointsExactlyEqualOriginalM0": paper_exact,
             "originalTopoDSInputEdgeIsSameEdgeMapKey": True,
             "generated2DTopoDSEdgeHistoryCertified": False,
@@ -361,6 +421,24 @@ def audit_original_hlr_source_status(case, view):
         })
     if len({row["nativeHLROriginalEdgeMapIndex"] for row in rows}) != len(expected):
         reject("HLR original source edge indices are not bijective")
+    # Even a real same-TShape witness is not unique source ownership until
+    # all source-scoped claims in the same global HLR output are reconciled.
+    unique_native = 0
+    ambiguous_paper = 0
+    for row in rows:
+        source_key = row["sourceEdgeId"].split("::", 1)[1]
+        for match in row["sourceScopedToWholeSolidGeneratedHLREdges"]:
+            native = match["sameGlobalGeneratedTopoDSOrdinals"]
+            paper = match["exactPaperGlobalGeneratedOrdinals"]
+            claim_unique = len(paper) == 1 and (
+                global_ordinal_claims.get((match["hlrClass"], paper[0])) == {source_key}
+            )
+            match["globallyUniqueExactPaperSourceCandidate"] = claim_unique
+            match["uniqueRealNativeGlobalSourceLink"] = bool(
+                claim_unique and match["causalGlobalGeneratedTopoDSIdentityCertified"]
+            )
+            unique_native += int(match["uniqueRealNativeGlobalSourceLink"])
+            ambiguous_paper += int(len(paper) != 1 or not claim_unique)
     return {
         "originalBRepSourcesChecked": len(rows),
         "nativeOriginalSourceEdgeMapBijectionVerified": True,
@@ -370,6 +448,10 @@ def audit_original_hlr_source_status(case, view):
         "nativeOriginalSourcesAllHidden": sum(
             not row["visibleOriginalCurveParameterIntervals"] for row in rows),
         "sourceScopedGeneratedHLRClassCorroborated": True,
+        "wholeSolidGeneratedVisibleEdgeCount": len(global_edges["visible"]),
+        "wholeSolidGeneratedHiddenEdgeCount": len(global_edges["hidden"]),
+        "uniqueSameTopoDSGlobalSourceScopedEdgeLinks": unique_native,
+        "ambiguousOrUnmatchedGlobalPaperSourceCandidates": ambiguous_paper,
         "generated2DTopoDSEdgeHistoryCertified": False,
         "formalM5LineStyleAuthorized": False,
         "rows": rows,
