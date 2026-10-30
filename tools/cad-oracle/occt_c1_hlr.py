@@ -313,6 +313,23 @@ def audit_exhaustive_native_hlr_global_source_filter_bijection(global_papers,
         return tuple(sorted(tuple(p) for p in endpoints))
 
     rows, holds = [], []
+    # The independent HLR DataStructure EdgeMap must map each ORIGINAL
+    # physical source to ONE native index and vice versa. An attacker may
+    # supply distinct source names and exact paper without a real BRep.
+    source_to_index, index_to_source = {}, {}
+    for claim in scoped_claims:
+        if not isinstance(claim, dict):
+            reject("native source-scoped HLR claim must be a real indexed record")
+        source = claim.get("originalSourceEdgeId")
+        index = claim.get("originalEdgeMapIndex")
+        if (not isinstance(source, str) or not source or
+            type(index) is not int or index < 1):
+            reject("native source identity/index must be nonempty and positive")
+        if ((source in source_to_index and source_to_index[source] != index) or
+            (index in index_to_source and index_to_source[index] != source)):
+            reject("original TopoDS EdgeMap identity is not a source/index bijection")
+        source_to_index[source] = index
+        index_to_source[index] = source
     for klass in ("visible", "hidden"):
         global_edges = global_papers[klass]
         if not isinstance(global_edges, list) or len(global_edges) > 1024:
