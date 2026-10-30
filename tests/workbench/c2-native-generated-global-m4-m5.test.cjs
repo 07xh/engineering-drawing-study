@@ -209,3 +209,40 @@ test('whole-native-edge source solid coverage is not claimed without independent
  assert.equal(result.allNativeResultEdgeWholeClosedSpansWithinOriginalBooleanInputVolumeVerified,false);
  assert.equal(result.originalBooleanInputVolumeWholeNativeEdgeCount,0);
 });
+
+test('Cut rejects phantom native edge passing THROUGH a removed open void even when both endpoints remain inside stock',()=>{
+ const stock={id:'Stock',type:'box',min:[0,0,0],max:[10,10,10]};
+ const cutter={id:'Tool',type:'box',min:[3,3,3],max:[7,7,7]};
+ const source=[stock,cutter];
+ const sourceSolids=source.map(p=>{
+  const g=originalBoxGeometry(p);
+  return {id:g.id,halfspaces:verifiedConvexMeshHalfspaces(g).halfspaces};
+ });
+ const cut=outputEdges=>auditC2GeneratedResultProjectedM4M5({
+  revision:1,solids:sourceSolids,boxes:source,operation:'cut',
+  nativeReport:{...report(outputEdges),actualNativeBooleanOperation:'cut'}
+ });
+ const supported=edge(2,[3,4],
+  {x:0,y:0,z:0},{x:10,y:0,z:0},'physical-crease');
+ // Old source-input check passed: both endpoints and the entire line
+ // are WITHIN the stock. The middle open interval is nevertheless
+ // inside the removed tool volume, so it cannot be a Cut result edge.
+ assert.throws(()=>cut([
+  edge(1,[1,2],{x:2,y:5,z:5},{x:8,y:5,z:5},'physical-crease'),
+  supported
+ ]),/native Cut result edge crosses removed cutter strict interior volume/);
+ assert.throws(()=>cut([
+  edge(1,[1,2],{x:4,y:4,z:4},{x:6,y:6,z:6},'physical-crease'),
+  supported
+ ]),/native Cut result edge crosses removed cutter strict interior volume/);
+ // Touching or remaining ON the physical cutter wall is not an
+ // intersection with its OPEN removed interior.
+ const retained=cut([
+  edge(1,[1,2],{x:3,y:4,z:4},{x:3,y:6,z:6},'physical-crease'),
+  supported
+ ]);
+ assert.equal(retained.allOriginalCutNativeEdgesCheckedForRobustRemovedCutterInterior,true);
+ assert.equal(retained.originalCutNativeEdgeRemovedOpenInteriorExclusionWitnesses.length,2);
+ assert.equal(retained.allOfficialEngineeringLinesCertified,false);
+ assert.equal(retained.fullOriginalConstructionIntentDAGSingleV5Authorized,false);
+});
