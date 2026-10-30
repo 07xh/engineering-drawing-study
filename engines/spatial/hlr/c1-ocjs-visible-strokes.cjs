@@ -896,8 +896,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     statusArrayExposedInPinnedWasm:false,
     originalHLREdgeStatusIntervalsExtracted:false,
     originalHLREdgeStatusToGeneratedPaperLineageCertified:false,
+    originalHLROpenSourceClassBoundToOriginalEdgeMap:false,
+    nativeOriginalSourceEdgeStatusRows:[],
     signedV5Action:false
    };
+   let nativeOriginalEdgeStatusArray=null;
    if(typeof algorithm.DataStructure==='function'){
     // Only the returned handle is an owned value. get(), EdgeMap() and
     // FindKey() expose borrowed OCCT objects: deleting them corrupts
@@ -912,6 +915,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       // Query its read-only API surface before attempting any parameter
       // interval extraction; pinned JS wrappers can omit native OCP APIs.
       const statuses=ds.EDataArray();
+      nativeOriginalEdgeStatusArray=statuses;
       originalEdgeStatusAPI.statusArrayExposedInPinnedWasm=!!statuses;
       originalEdgeStatusAPI.originalEdgeStatusArrayMethodNames=
        nativeHLREdgeStatusMethodNames(statuses);
@@ -955,6 +959,61 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       };
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
+   }
+   // Read the real ORIGINAL edge-status classes through the complete,
+   // independently verified 1-based native HLR EdgeMap. This is a
+   // positive original-source visibility-class witness, independent of
+   // projected native paper endpoints. It is not a native generated
+   // 2D edge/source TopoDS history or a closed scene M5 certificate.
+   if(nativeOriginalEdgeStatusArray&&
+      originalDataStructureIndex.edgeMapSourceBijectionVerified===true){
+    const originals=originalDataStructureIndex.indexedOriginalSources;
+    const bounds=originalEdgeStatusAPI.originalEdgeStatusArrayBounds;
+    if(!Array.isArray(bounds)||bounds.length!==2||
+       bounds[0]>1||bounds[1]<originals.length||
+       typeof nativeOriginalEdgeStatusArray.Value!=='function')
+     throw new RangeError('original HLR EdgeStatus cannot cover real native EdgeMap');
+    const rows=[],seen=new Set();
+    for(const indexed of originals){
+     const id=indexed.originalPhysicalSourceEdgeId,
+      position=indexed.hlrDataStructureOneBasedEdgeIndex;
+     if(typeof id!=='string'||!id||
+        seen.has(id)||!Number.isSafeInteger(position)||
+        position<1||position>originals.length)
+      throw new RangeError('original native HLR source EdgeStatus identity conflict');
+     seen.add(id);
+     const edgeData=nativeOriginalEdgeStatusArray.Value(position);
+     if(typeof edgeData?.Status!=='function')
+      throw new RangeError('original native EdgeStatus missing from indexed source');
+     const status=edgeData.Status();
+     if(typeof status?.AllVisible_1!=='function'||
+        typeof status?.AllHidden_1!=='function'||
+        typeof status?.NbVisiblePart!=='function')
+      throw new RangeError('native HLR visibility-class getters not exposed');
+     const clear=status.AllVisible_1(),hidden=status.AllHidden_1(),
+      parts=status.NbVisiblePart();
+     if(typeof clear!=='boolean'||typeof hidden!=='boolean'||
+        clear&&hidden||!Number.isSafeInteger(parts)||parts<0||parts>512||
+        clear&&parts!==1||hidden&&parts!==0||
+        !clear&&!hidden&&parts===0)
+      throw new RangeError('contradictory real original HLR EdgeStatus');
+     rows.push({
+      view,originalPhysicalSourceEdgeId:id,
+      nativeHLROriginalEdgeMapIndex:position,
+      originalEdgeStatusAllVisible:clear,
+      originalEdgeStatusAllHidden:hidden,
+      nativeOriginalVisiblePartCount:parts,
+      originalSourceClass:clear?'all-visible':hidden?'all-hidden':'mixed',
+      sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit:true,
+      generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+      globalContinuousM5OcclusionCertified:false,
+      engineeringLineStyle:'undetermined',signedV5Action:false
+     });
+    }
+    if(seen.size!==originals.length)
+     throw new RangeError('incomplete original HLR EdgeStatus identity inventory');
+    originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows=rows;
+    originalEdgeStatusAPI.originalHLROpenSourceClassBoundToOriginalEdgeMap=true;
    }
    nativeHLRSourceHistoryAPISurfaceByView[view]={
     actualPinnedWasmObjectInspected:true,
