@@ -152,7 +152,12 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     if(!global||witness.view!==view||
        witness.originalPhysicalSourceEdgeId!==sourceEdgeId||
        classRow.view!==view||classRow.sourceEdgeId!==sourceEdgeId||
-       classRow.hlrClass!==klass||classRow.signedV5Action!==false||
+       classRow.hlrClass!==klass||
+       !valid(classRow.nativeScopedReceivedPaperFrom)||
+       !valid(classRow.nativeScopedReceivedPaperTo)||
+       !eq(classRow.nativeScopedReceivedPaperFrom,witness.from)||
+       !eq(classRow.nativeScopedReceivedPaperTo,witness.to)||
+       classRow.signedV5Action!==false||
        classRow.actualGlobalHLRGenerated2DTopoDSHistoryCertified!==false||
        witness.signedV5Action!==false||
        !valid(witness.from)||!valid(witness.to)||
