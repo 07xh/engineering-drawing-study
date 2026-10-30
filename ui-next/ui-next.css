@@ -1422,3 +1422,24 @@ body.ui-next.next-focus-canvas .next-workspace[data-next-side] {grid-template-co
 body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-context {display:none!important}
 body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-canvas,
 body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-playback {grid-column:1!important}
+
+/* Keep existing paper and panel controls reachable while editing on small screens. */
+@media(max-width:850px){
+ body.ui-next .next-workspace-title{position:sticky;top:68px;z-index:49;background:#f5f8fd;padding:4px 0}
+ body.ui-next .next-workspace-caption{display:none}
+ body.ui-next .next-context-panel{scroll-margin-top:190px}
+}
+@media(max-width:850px){
+ body.ui-next .next-context-panel :is(input,select,button,textarea,summary){scroll-margin-top:190px;scroll-margin-bottom:8px}
+}
+@media(max-width:850px) and (max-height:500px){
+ body.ui-next .next-workspace-title{position:static}
+}
+/* At narrow phone widths keep the controls on one row; each panel button also closes its own panel. */
+@media(max-width:384px){
+ body.ui-next .next-canvas-tools output,
+ body.ui-next .next-canvas-tools [data-next-close-panel]{display:none}
+}
+@media(max-width:850px) and (min-height:501px){
+ body.ui-next .next-workspace>.next-playback{top:120px}
+}
