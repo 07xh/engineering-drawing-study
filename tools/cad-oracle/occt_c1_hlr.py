@@ -241,7 +241,7 @@ def audit_original_hlr_source_status(case, view):
 
     unique_edges = TopTools_IndexedMapOfShape()
     TopExp.MapShapes_s(shape, TopAbs_EDGE, unique_edges)
-    originals = {}
+    originals, original_ids = {}, {}
     for index in range(1, unique_edges.Extent() + 1):
         edge = TopoDS.Edge_s(unique_edges.FindKey(index))
         explorer = TopExp_Explorer(edge, TopAbs_VERTEX)
@@ -260,6 +260,7 @@ def audit_original_hlr_source_status(case, view):
         if key in originals or key not in expected:
             reject("native original HLR EdgeMap duplicates or invents M0 source")
         originals[key] = edge
+        original_ids[key] = vertex_ids
     if set(originals) != expected:
         reject("native original HLR source inventory has a missing original edge")
 
@@ -304,15 +305,42 @@ def audit_original_hlr_source_status(case, view):
             status.AllHidden() != (len(visible) == 0)
         ):
             reject("HLR original source status contradicts exact interval partition")
-        def generated_count(compound):
+        def generated_edges(compound):
             explorer = TopExp_Explorer(compound, TopAbs_EDGE)
-            count = 0
+            result = []
             while explorer.More():
-                count += 1
+                result.append(TopoDS.Edge_s(explorer.Current()))
                 explorer.Next()
-            return count
-        scoped_visible = generated_count(filtered.VCompound(original))
-        scoped_hidden = generated_count(filtered.HCompound(original))
+            return result
+        visible_edges = generated_edges(filtered.VCompound(original))
+        hidden_edges = generated_edges(filtered.HCompound(original))
+        scoped_visible, scoped_hidden = len(visible_edges), len(hidden_edges)
+        # The original 3D edge has an exact M0 endpoint pair. The
+        # generated 2D paper edge may NOT reproduce that pair bit-for-bit,
+        # even when original HLR EdgeStatus covers the entire curve.
+        # Record this drift without snapping either endpoint or source t.
+        paper_exact = None
+        if (status.AllVisible() and scoped_visible == 1 and not scoped_hidden) or (
+            status.AllHidden() and scoped_hidden == 1 and not scoped_visible
+        ):
+            selected = (visible_edges if status.AllVisible() else hidden_edges)[0]
+            vertex_explorer = TopExp_Explorer(selected, TopAbs_VERTEX)
+            received = []
+            while vertex_explorer.More():
+                point = BRep_Tool.Pnt_s(TopoDS.Vertex_s(vertex_explorer.Current()))
+                received.append((point.X(), point.Y()))
+                vertex_explorer.Next()
+            if len(received) != 2:
+                reject("single native generated HLR paper edge lacks two endpoints")
+            ydir = (direction[1] * xdir[2] - direction[2] * xdir[1],
+                    direction[2] * xdir[0] - direction[0] * xdir[2],
+                    direction[0] * xdir[1] - direction[1] * xdir[0])
+            def paper(vertex):
+                p = points[vertex]
+                return (sum(p[i] * xdir[i] for i in range(3)),
+                        sum(p[i] * ydir[i] for i in range(3)))
+            paper_exact = sorted(received) == sorted(
+                paper(vertex) for vertex in original_ids[key])
         if (status.AllVisible() and scoped_hidden) or (
             status.AllHidden() and scoped_visible
         ):
@@ -325,6 +353,7 @@ def audit_original_hlr_source_status(case, view):
             "hiddenOriginalCurveParameterIntervals": hidden,
             "sourceScopedGeneratedVisibleEdgeCount": scoped_visible,
             "sourceScopedGeneratedHiddenEdgeCount": scoped_hidden,
+            "singleGeneratedFullEdgePaperEndpointsExactlyEqualOriginalM0": paper_exact,
             "originalTopoDSInputEdgeIsSameEdgeMapKey": True,
             "generated2DTopoDSEdgeHistoryCertified": False,
             "wholeSceneContinuousOcclusionCertified": False,
