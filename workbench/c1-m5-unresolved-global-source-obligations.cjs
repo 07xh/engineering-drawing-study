@@ -162,6 +162,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
+  positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness:0,
+  positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
+  positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
+  positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory:0,
   unsignedV5Actions:0},records=[],seen=new Set(),closedSourceViews=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -316,6 +320,31 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    Number(joins.some(j=>j.generatedHLRNativeTopoDSIsSamePairProven===true));
   counts.obligationsWithDistinctNativeGeneratedVertices+=
    Number(joins.some(j=>j.generatedHLRNativeTopoDSDistinctDespitePhysicalM0Join===true));
+  // Join the same-run REAL native paper-candidate rational remainder to
+  // the still-open source gap. This is a diagnostic reduction of a paper
+  // interval, NOT an original TopoDS history, global visibility or M5
+  // signoff. A complete paper candidate still leaves the obligation open.
+  const exactPaperGap=kind==='positive-original-m0-parameter-gap'?
+   row.sameRunExactCollinearGeneratedHLRPaperGapCandidate??null:null;
+  if(exactPaperGap!==null){
+   if(!Array.isArray(exactPaperGap.originalSourceParameterGap)||
+      exactPaperGap.originalSourceParameterGap[0]!==interval[0]||
+      exactPaperGap.originalSourceParameterGap[1]!==interval[1]||
+      !Array.isArray(exactPaperGap.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory)||
+      !Array.isArray(exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates)||
+      exactPaperGap.originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory!==true||
+      exactPaperGap.sourceGapClosedByNativeEndpointEvidence!==false||
+      exactPaperGap.signedV5Action!==false||
+      exactPaperGap.engineeringLineStyle!=='undetermined')
+    throw new RangeError('same-run rational generated HLR paper candidate cannot close M5 source gap');
+   counts.positiveM5GapsWithSameRunExactCollinearGeneratedPaperWitness++;
+   counts.positiveM5GapsWithExactRationalPaperCandidateSubranges+=Number(
+    exactPaperGap.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory.length>0);
+   counts.positiveM5GapsWithExactRationalPaperResidualStillPositive+=Number(
+    exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length>0);
+   counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory+=Number(
+    exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0);
+  }
   const m4Depth=auditExistingM4OpenSourceDepth(row,kind);
   if(m4Depth?.completeOriginalM4SourceDepthPartition===true){
    counts.originalM4FullSourceOpenDepthPartitions++;
@@ -329,6 +358,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
   }
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   sameRunExactCollinearHLRPaperCandidateOnlyGapEvidence:exactPaperGap,
+   generatedPaperCandidateDoesNotCloseOriginalM5SourceGap:true,
    originalM4OpenSourceDepthEvidence:m4Depth,
    originalM0PositiveParameterGap:interval===null?null:[...interval],
    actualGlobalHLROrdinals:paper.map(p=>({
