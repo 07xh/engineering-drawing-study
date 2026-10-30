@@ -429,6 +429,7 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   await tick();await tick();
   assert.match($('v7-proof').textContent,/未计算/);
   assert.equal($('v7-play').disabled,true);
+  assert.equal($('v7-storage-warning').hidden,false,'storage warning persists after edits');
 
  }finally{
   global.document=original.document;global.window=original.window;
