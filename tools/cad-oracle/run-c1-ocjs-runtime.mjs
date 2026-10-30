@@ -1513,7 +1513,8 @@ for(const [index,geometry] of general.entries()){
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder);
  assert.ok(depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder<=
   depthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
-  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay);
+  depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+  depthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent);
  assert.ok(depthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay<=
   depthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth);
  assert.ok(depthCounts.canonicalM4CutSubspansWeakBehindWithVisiblePhysicalJunctionEvent<=
