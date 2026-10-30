@@ -201,6 +201,152 @@ def extract_occt_visible_hlr(shape, view):
     return strokes
 
 
+
+def audit_original_hlr_source_status(case, view):
+    """Independent original TopoDS EdgeMap -> HLR EdgeStatus -> scoped output.
+
+    Status intervals use ORIGINAL OCCT curve parameters, not rounded inverse
+    paper t. A source-scoped generated edge is causal filter evidence, not
+    native generated-edge IsSame, complete scene visibility, or V5 authority.
+    """
+    from OCP.BRepBuilderAPI import (
+        BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakePolygon, BRepBuilderAPI_Sewing
+    )
+    from OCP.BRepCheck import BRepCheck_Analyzer
+    from OCP.BRep import BRep_Tool
+    from OCP.HLRBRep import HLRBRep_Algo, HLRBRep_HLRToShape
+    from OCP.HLRAlgo import HLRAlgo_Projector
+    from OCP.TopExp import TopExp, TopExp_Explorer
+    from OCP.TopTools import TopTools_IndexedMapOfShape
+    from OCP.TopAbs import TopAbs_EDGE, TopAbs_VERTEX
+    from OCP.TopoDS import TopoDS
+    from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt
+
+    data = case["geometry"]["data"]
+    points = {k: xyz(p) for k, p in data["points"].items()}
+    expected = {"|".join(sorted(edge)) for edge in data["edges"]}
+    sewing = BRepBuilderAPI_Sewing(1e-9)
+    for ring in data["faces"]:
+        polygon = BRepBuilderAPI_MakePolygon()
+        for vertex in ring:
+            polygon.Add(gp_Pnt(*points[vertex]))
+        polygon.Close()
+        sewing.Add(BRepBuilderAPI_MakeFace(polygon.Wire()).Face())
+    sewing.Perform()
+    if sewing.NbFreeEdges() or sewing.NbMultipleEdges():
+        reject("native original HLR source faces did not sew into one manifold")
+    shape = sewing.SewedShape()
+    if not BRepCheck_Analyzer(shape).IsValid():
+        reject("native original HLR source BRep failed topology validation")
+
+    unique_edges = TopTools_IndexedMapOfShape()
+    TopExp.MapShapes_s(shape, TopAbs_EDGE, unique_edges)
+    originals = {}
+    for index in range(1, unique_edges.Extent() + 1):
+        edge = TopoDS.Edge_s(unique_edges.FindKey(index))
+        explorer = TopExp_Explorer(edge, TopAbs_VERTEX)
+        vertex_ids = []
+        while explorer.More():
+            p = BRep_Tool.Pnt_s(TopoDS.Vertex_s(explorer.Current()))
+            native = (p.X(), p.Y(), p.Z())
+            matches = [name for name, original in points.items() if native == original]
+            if len(matches) != 1:
+                reject("native original HLR vertex has no exact unique M0 identity")
+            vertex_ids.append(matches[0])
+            explorer.Next()
+        if len(vertex_ids) != 2 or vertex_ids[0] == vertex_ids[1]:
+            reject("native original HLR edge lacks two distinct physical endpoints")
+        key = "|".join(sorted(vertex_ids))
+        if key in originals or key not in expected:
+            reject("native original HLR EdgeMap duplicates or invents M0 source")
+        originals[key] = edge
+    if set(originals) != expected:
+        reject("native original HLR source inventory has a missing original edge")
+
+    direction, xdir = FRAMES[view]
+    algo = HLRBRep_Algo()
+    algo.Add(shape)
+    algo.Projector(HLRAlgo_Projector(
+        gp_Ax2(gp_Pnt(0, 0, 0), gp_Dir(*direction), gp_Dir(*xdir))))
+    algo.Update()
+    algo.Hide()
+    native_data = algo.DataStructure()
+    edge_map = native_data.EdgeMap()
+    status_array = native_data.EDataArray()
+    if edge_map.Extent() != len(expected) or (
+        status_array.Lower() > 1 or status_array.Upper() < len(expected)
+    ):
+        reject("HLR internal source EdgeMap and EdgeStatus inventory differ")
+    filtered = HLRBRep_HLRToShape(algo)
+    rows = []
+    for key in sorted(expected):
+        original = originals[key]
+        index = edge_map.FindIndex(original)
+        if index < 1 or not edge_map.FindKey(index).IsSame(original):
+            reject("HLR internal EdgeMap lost original TopoDS source identity")
+        status = status_array.Value(index).Status()
+        lo, hi = status.Bounds(0.0, 0.0)
+        if not (math.isfinite(lo) and math.isfinite(hi) and hi > lo):
+            reject("HLR original source curve has no positive parameter interval")
+        visible = [status.VisiblePart(i, 0.0, 0.0)
+                   for i in range(1, status.NbVisiblePart() + 1)]
+        hidden, cursor = [], lo
+        for start, end in visible:
+            if not (math.isfinite(start) and math.isfinite(end) and
+                    cursor <= start < end <= hi):
+                reject("HLR original source visible interval overlaps or escapes bounds")
+            if start > cursor:
+                hidden.append([cursor, start])
+            cursor = end
+        if cursor < hi:
+            hidden.append([cursor, hi])
+        if status.AllVisible() != (len(hidden) == 0) or (
+            status.AllHidden() != (len(visible) == 0)
+        ):
+            reject("HLR original source status contradicts exact interval partition")
+        def generated_count(compound):
+            explorer = TopExp_Explorer(compound, TopAbs_EDGE)
+            count = 0
+            while explorer.More():
+                count += 1
+                explorer.Next()
+            return count
+        scoped_visible = generated_count(filtered.VCompound(original))
+        scoped_hidden = generated_count(filtered.HCompound(original))
+        if (status.AllVisible() and scoped_hidden) or (
+            status.AllHidden() and scoped_visible
+        ):
+            reject("native source-filtered generated HLR contradicts original EdgeStatus")
+        rows.append({
+            "sourceEdgeId": case["id"] + "::" + key,
+            "nativeHLROriginalEdgeMapIndex": index,
+            "originalCurveParameterBounds": [lo, hi],
+            "visibleOriginalCurveParameterIntervals": [list(x) for x in visible],
+            "hiddenOriginalCurveParameterIntervals": hidden,
+            "sourceScopedGeneratedVisibleEdgeCount": scoped_visible,
+            "sourceScopedGeneratedHiddenEdgeCount": scoped_hidden,
+            "originalTopoDSInputEdgeIsSameEdgeMapKey": True,
+            "generated2DTopoDSEdgeHistoryCertified": False,
+            "wholeSceneContinuousOcclusionCertified": False,
+            "signedV5Action": False,
+        })
+    if len({row["nativeHLROriginalEdgeMapIndex"] for row in rows}) != len(expected):
+        reject("HLR original source edge indices are not bijective")
+    return {
+        "originalBRepSourcesChecked": len(rows),
+        "nativeOriginalSourceEdgeMapBijectionVerified": True,
+        "nativeOriginalCurveParameterPartitionVerified": True,
+        "nativeOriginalSourcesAllVisible": sum(
+            not row["hiddenOriginalCurveParameterIntervals"] for row in rows),
+        "nativeOriginalSourcesAllHidden": sum(
+            not row["visibleOriginalCurveParameterIntervals"] for row in rows),
+        "sourceScopedGeneratedHLRClassCorroborated": True,
+        "generated2DTopoDSEdgeHistoryCertified": False,
+        "formalM5LineStyleAuthorized": False,
+        "rows": rows,
+    }
+
+
 def hull(points):
     # Independent hull of OCCT's VISIBLE B-Rep HLR results. OCCT's
     # binary-float projected split vertices can differ by ~1e-15 even
@@ -264,6 +410,7 @@ def cross_check(case, tolerance=1e-6):
               "independentlyCoveredSignedV5ActionCount":0}
     for view in FRAMES:
         strokes = extract_occt_visible_hlr(solid, view)
+        source_status = audit_original_hlr_source_status(case, view)
         observed = hull([p for edge in strokes for p in edge])
         ref = case["reference"][view]["boundarySides"]
         expected_poly = [(s["from"]["u"], s["from"]["v"]) for s in ref]
@@ -289,6 +436,7 @@ def cross_check(case, tolerance=1e-6):
         answer["independentlyCoveredSignedV5ActionCount"] += len(signed)
         answer["views"][view] = {
             "occtVisibleHLREdgeCount":len(strokes),
+            "independentOriginalHLRSourceStatus":source_status,
             "occtProjectedHullAreaMm2":measured_area,
             "currentM5HullAreaMm2":expected_area,
             "maxSourceSideUncoveredFraction":gap,
