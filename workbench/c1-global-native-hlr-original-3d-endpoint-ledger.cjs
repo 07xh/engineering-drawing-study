@@ -143,6 +143,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    faceGraph?.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces??0,
   nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join:0,
   realNativeGeneratedVertexGraphPairsChecked:0,
+  genuineGlobal3DSourceCurvePaperPairsCrossChecked:0,
+  genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
   signedOfficialV5Actions:0
  };
@@ -162,6 +164,51 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('stale or forged native source M4 interval');
    m4ById.set(x.sourceEdgeId,x);
   }
+  // The independently extracted WHOLE-SOLID native 3D HLR source curve
+  // is checked against each generated 2D ordinal. This is stronger than
+  // rounded-paper collinearity, but still NOT an OCCT 2D TopoDS source
+  // history API and cannot authorize a standard engineering stroke.
+  const scoped=cad.nativeSourceScopedSharpOutputByView?.[view];
+  const global3D=scoped?.nativeGlobal3DOriginalSourceEvidence;
+  const byNative3DCurve=new Map();
+  if(scoped!==undefined){
+   if(global3D?.schema!==
+       'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1'||
+      global3D.sourceGeometryId!==geometry.id||
+      global3D.revision!==cad.revision||global3D.view!==view||
+      global3D.allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper!==true||
+      global3D.generated2DTo3DTopoDSHistoryCertified!==false||
+      global3D.globalContinuousVisibilityCertified!==false||
+      global3D.officialV5Authorized!==false||
+      global3D.signedV5ActionCount!==0||
+      !Array.isArray(global3D.rows)||
+      global3D.rows.length!==cad.views[view].length+
+       cad.hiddenSharpViews[view].length||
+      global3D.globalGenerated2DSharpEdges!==global3D.rows.length||
+      global3D.globalGenerated3DSharpEdgesWithUniqueOriginalCurve!==
+       global3D.rows.length)
+    throw new RangeError('missing independent whole-solid native 3D original source curve witness');
+   for(const curve of global3D.rows){
+    const klass=curve?.hlrClass,ordinal=curve?.wholeSolidGeneratedHLREdgeOrdinal,
+     key=klass+'|'+ordinal,
+     available=klass==='visible-sharp'?cad.views[view]:
+      klass==='hidden-sharp'?cad.hiddenSharpViews[view]:null,
+     range=curve?.originalNativeCurveParameterRange;
+    if(curve.view!==view||!available||
+       !Number.isSafeInteger(ordinal)||ordinal<0||ordinal>=available.length||
+       byNative3DCurve.has(key)||!originals.has(curve.originalPhysicalSourceEdgeId)||
+       !Array.isArray(range)||range.length!==2||
+       !range.every(Number.isFinite)||!(range[1]>range[0])||
+       curve.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters!==true||
+       curve.global3DAnd2DHLRMeasuredPaperPairUnique!==true||
+       curve.global3DAndOriginalScoped3DHLRParameterIntervalExact!==true||
+       curve.globalGenerated2DTo3DTopoDSHistoryCertified!==false||
+       curve.fullOpaqueSceneContinuousOcclusionCertified!==false||
+       curve.engineeringLineStyle!=='undetermined'||curve.signedV5Action!==false)
+     throw new RangeError('forged global native 3D original source curve and generated 2D pairing');
+    byNative3DCurve.set(key,curve);
+   }
+  }
   const result=[],seen=new Set(),vertices=new Map();
   for(const row of rows){
    const klass=row.hlrClass,ordinal=row.wholeSolidGeneratedHLREdgeOrdinal,
@@ -174,12 +221,23 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false)
     throw new RangeError('forged or duplicate global HLR native ordinal');
    seen.add(key);
+   const global3DSource=byNative3DCurve.get(key)??null;
+   if(global3D&& !global3DSource)
+    throw new RangeError('missing independently measured 3D curve for generated HLR ordinal');
    const line=lines[ordinal],originalId=row.uniqueOriginalSourceFilteredPaperCandidate,
     physical=originals.get(originalId),
     originalBRep=native.get(originalId);
    if(!line?.from||!line.to||!['u','v'].every(k=>
        Number.isFinite(line.from[k])&&Number.isFinite(line.to[k])))
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
+   if(global3DSource){
+    counts.genuineGlobal3DSourceCurvePaperPairsCrossChecked++;
+    if(originalId!==null&&originalId!==
+       global3DSource.originalPhysicalSourceEdgeId)
+     throw new RangeError('unique scoped 2D source contradicts independently measured whole-solid native 3D original curve');
+    if(originalId===null)
+     counts.genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim++;
+   }
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
     boundedPaper=false,sourcePaperEnvelope=null,links=[];
@@ -294,6 +352,11 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    if(!modelVerified||!sourceClassFull||!originalPaperExact&&!boundedPaper)
     counts.physicalOriginalM0EndpointRowsHeld++;
    result.push({view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:ordinal,
+    independentlyMeasuredGlobalNative3DOriginalSourceCandidate:
+     global3DSource?.originalPhysicalSourceEdgeId??null,
+    independentGlobal3DOriginalCurveParameterRange:
+     global3DSource?[...global3DSource.originalNativeCurveParameterRange]:null,
+    independentGlobal3DSourceIsNotGenerated2DTopoDSHistory:true,
     uniqueOriginalSourceFilteredPaperCandidate:originalId,
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
