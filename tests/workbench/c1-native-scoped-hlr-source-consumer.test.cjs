@@ -543,6 +543,28 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
     native3DGeneratedCurveIntervals:[]};
   }
  }
+ // The strict causal source rebind now also consumes the genuine
+ // original EdgeMap -> original HLR EdgeStatus inventory. Supply an
+ // internally consistent synthetic source-status ledger for this M4
+ // contract test, without inventing generated-2D TopoDS history.
+ for(const view of ['V','H','W']){
+  const status=x.cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+  status.originalDataStructureIndex.edgeMapSourceBijectionVerified=true;
+  status.originalEdgeStatusAPI={
+   originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+   nativeOriginalSourceEdgeStatusRows:[x.id0,x.id1].map((source,index)=>({
+    view,originalPhysicalSourceEdgeId:source,
+    nativeHLROriginalEdgeMapIndex:index+1,
+    originalSourceClass:index===0?'all-visible':'all-hidden',
+    originalEdgeStatusAllVisible:index===0,
+    originalEdgeStatusAllHidden:index!==0,
+    nativeOriginalVisiblePartCount:index===0?1:0,
+    generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+    globalContinuousM5OcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   }))
+  };
+ }
  const out=audit(x);
  assert.equal(out.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
  assert.equal(out.counts.nativeOriginal3DM4SourceViewCandidates,6);
