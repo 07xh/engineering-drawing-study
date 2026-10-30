@@ -87,6 +87,37 @@ class C1CADOracleTests(unittest.TestCase):
                         if not match["globallyUniqueExactPaperSourceCandidate"]:
                             paper_holds += 1
                 self.assertEqual(native_links, source["uniqueSameTopoDSGlobalSourceScopedEdgeLinks"])
+                # Native EdgeMap-indexed ORIGINAL source filters plus a
+                # complete whole-solid HLR output give an independently
+                # auditable source-ownership bijection, not IsSame/history.
+                bijection = source["exhaustiveSameRunNativeGlobalSourceFilterBijection"]
+                self.assertTrue(bijection[
+                    "originalTopoDSInputIndexedBeforeSourceFilteringRequired"])
+                self.assertTrue(bijection[
+                    "nativeGlobalSourceFilterAttributionOnlyNotGeneratedShapeIsSame"])
+                self.assertFalse(bijection[
+                    "original3DCurveToGenerated2DSubparameterHistoryCertified"])
+                self.assertFalse(bijection["allSceneContinuousOcclusionCertified"])
+                self.assertFalse(bijection["formalM5Authorized"])
+                self.assertEqual(bijection["signedV5ActionCount"], 0)
+                if bijection["exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"]:
+                    self.assertEqual(
+                        bijection["wholeSolidGeneratedEdges"],
+                        bijection["sourceScopedGeneratedEdges"])
+                    self.assertEqual(
+                        len(bijection["attributedGlobalGeneratedEdges"]),
+                        bijection["wholeSolidGeneratedEdges"])
+                    self.assertEqual(
+                        len({(x["hlrClass"], x["wholeSolidGeneratedHLREdgeOrdinal"])
+                             for x in bijection["attributedGlobalGeneratedEdges"]}),
+                        bijection["wholeSolidGeneratedEdges"])
+                    self.assertEqual(bijection[
+                        "unresolvedGlobalSourceFilterAttributionRows"], [])
+                    self.assertTrue(all(
+                        x["sourceFilterProducesExactSameReceivedBinary64Paper"] and
+                        not x["completeGeneratedTopoDSParameterHistoryCertified"] and
+                        not x["signedV5Action"]
+                        for x in bijection["attributedGlobalGeneratedEdges"]))
                 self.assertEqual(paper_holds,
                                  source["ambiguousOrUnmatchedGlobalPaperSourceCandidates"])
                 self.assertFalse(source["generated2DTopoDSEdgeHistoryCertified"])
@@ -194,6 +225,12 @@ class C1CADOracleTests(unittest.TestCase):
                 self.assertEqual(affine["exactDominantAxisUncoveredPositiveSourceSubranges"], [])
                 self.assertTrue(any(p["exactOriginalProjectionLineCrossResidual"] != "0"
                                     for p in affine["exactReceivedEndpointAffineWitnesses"]))
+        self.assertTrue(witness[
+            "exhaustiveSameRunNativeGlobalSourceFilterBijection"
+        ]["exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"])
+        self.assertEqual(witness[
+            "exhaustiveSameRunNativeGlobalSourceFilterBijection"
+        ]["wholeSolidGeneratedEdges"], 6)
         forged = copy.deepcopy(case)
         forged["geometry"]["data"]["edges"][0] = ["A", "D"]
         with self.assertRaisesRegex(ValueError, "missing original edge|duplicates"):
@@ -224,6 +261,48 @@ class C1CADOracleTests(unittest.TestCase):
         for forged in ((float("nan"), 0), (float("inf"), 0)):
             with self.assertRaisesRegex(ValueError, "finite"):
                 audit((0, 0), (16, 2), forged, (16, 2))
+
+    def test_native_global_original_source_bijection_requires_exact_unique_complete_match(self):
+        fn = oracle.audit_exhaustive_native_hlr_global_source_filter_bijection
+        a = ((0.0, 0.0, 0.0), (16.0, 2.0, 0.0))
+        b = ((0.0, 0.0, 0.0), (6.0, 23.0, 0.0))
+        global_paper = {"visible": [a, b], "hidden": []}
+        claims = [
+            {"hlrClass": "visible", "sourceScopedOrdinal": 1,
+             "originalSourceEdgeId": "A|C", "originalEdgeMapIndex": 1,
+             "paper": a},
+            {"hlrClass": "visible", "sourceScopedOrdinal": 1,
+             "originalSourceEdgeId": "A|D", "originalEdgeMapIndex": 2,
+             "paper": b},
+        ]
+        good = fn(global_paper, claims)
+        self.assertTrue(good["exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"])
+        self.assertEqual(good["wholeSolidGeneratedEdges"], 2)
+        self.assertEqual(len(good["attributedGlobalGeneratedEdges"]), 2)
+        self.assertFalse(good["original3DCurveToGenerated2DSubparameterHistoryCertified"])
+        self.assertFalse(good["formalM5Authorized"])
+        self.assertEqual(good["signedV5ActionCount"], 0)
+        for forged in (
+            # Duplicate scoped claim, even when source labels agree.
+            [claims[0], claims[0]],
+            claims[:1],
+            [{**claims[0], "hlrClass": "hidden"}, claims[1]],
+            [claims[0], {**claims[1], "paper": a}],
+            [claims[0], {**claims[1], "paper":
+                         ((0.0, 0.0, 0.0), (6.0, 23.0 + 2**-48, 0.0))}],
+        ):
+            witness = fn(global_paper, forged)
+            self.assertFalse(witness[
+                "exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"])
+            self.assertEqual(witness["attributedGlobalGeneratedEdges"], [])
+            self.assertFalse(witness["formalM5Authorized"])
+        # Repeating a global generated edge cannot manufacture a unique
+        # global edge ordinal even if the paper geometries are identical.
+        dup = fn({"visible": [a, a], "hidden": []},
+                 [claims[0], {**claims[0], "sourceScopedOrdinal": 2}])
+        self.assertFalse(dup["exactSameRunCompleteUniqueSourceFilterPaperBijectionProven"])
+        with self.assertRaisesRegex(ValueError, "duplicated"):
+            fn(global_paper, [claims[0], claims[0], claims[1]])
 
     def test_source_face_deletion_is_refused(self):
         x = copy.deepcopy(self.corpus["cases"][0])
