@@ -123,6 +123,34 @@ function auditExistingM4OpenSourceDepth(row,kind){
   generatedHLRToOriginalTopoDSHistoryCertified:false,signedV5Action:false};
 }
 
+// Exact ORIGINAL parameter-domain audit across the entire held M5 gap
+// inventory. Independent witnesses for adjacent gaps are allowed, but a
+// repeated positive-length slice must not be counted as two distinct source
+// obligations. No epsilon and no rounding of binary64 interval endpoints.
+function auditC1PositiveOriginalGapInventory(rows){
+ if(!Array.isArray(rows))throw new TypeError('M5 positive gap inventory required');
+ const bySource=new Map();
+ for(const row of rows){
+  const range=row?.originalSourceParameterGap;
+  if(!['V','H','W'].includes(row?.view)||
+     typeof row.sourceEdgeId!=='string'||!row.sourceEdgeId||
+     !Array.isArray(range)||range.length!==2||
+     !range.every(Number.isFinite)||range[0]<0||range[1]>1||
+     !(range[1]>range[0]))
+   throw new RangeError('positive M5 gap outside exact original [0,1] source parameter domain');
+  const key=row.view+'|'+row.sourceEdgeId;
+  if(!bySource.has(key))bySource.set(key,[]);
+  bySource.get(key).push(range);
+ }
+ for(const intervals of bySource.values()){
+  intervals.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  for(let i=1;i<intervals.length;i++){
+   if(intervals[i][0]<intervals[i-1][1])
+    throw new RangeError('overlapping positive M5 original source parameter gap obligations');
+  }
+ }
+}
+
 function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOriginalGapRays}={}){
  const audit=positiveOriginalGapRays;
  if(!geometry?.id||cad?.sourceGeometryId!==geometry.id||
@@ -134,6 +162,7 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     !Array.isArray(audit.missingOriginalM0SourceViewRows)||
     !Array.isArray(audit.rows))
   throw new TypeError('current unsigned original native M5 source gap and ray inventory required');
+ auditC1PositiveOriginalGapInventory(audit.rows);
  // Recompute the ORIGINAL convex all-face OPEN-edge theorem from the
  // current M0 geometry, same-revision native BRep face adjacency and
  // same-run source-filtered 3D HLR. No caller-supplied proof flags and
