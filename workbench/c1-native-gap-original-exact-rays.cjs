@@ -247,6 +247,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
@@ -330,11 +333,26 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        sliced.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true,
       hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:
        sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true,
+      weakClosedOriginalSourceDepthFrontWithOnlyPhysicalVertexTies:
+       sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true,
+      weakClosedOriginalSourceDepthBehindClearOpenRayPeerWithPhysicalVertexTie:
+       sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true,
+      weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5:true,
       openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
       engineeringLineStyle:'undetermined',signedV5Action:false
      });
      cursor=to;
      m4DepthCounts.canonicalM4CutSubspansExamined++;
+     const weakFront=sliced.
+      exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true;
+     const weakBehind=sliced.
+      exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true;
+     if(weakFront||weakBehind)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder++;
+     if(weakFront)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth++;
+     if(weakBehind)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth++;
      if(sliced.wholeIntervalFrontmostCertified)
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost++;
      else if(sliced.visibleSourceCoversEntireLine)
@@ -388,7 +406,12 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>
-      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering)
+      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering||
+     m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+     m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth!==
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // Bind only the already independently computed, revision-matched
