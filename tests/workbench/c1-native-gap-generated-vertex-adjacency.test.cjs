@@ -293,3 +293,54 @@ test('exact dominant-axis inverse preserves u preference when u is truly larger 
  assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1);
  assert.equal(r.formalEngineeringLineStyleCertified,false);
 });
+
+test('strict rational on-line HLR paper candidates partition a genuine M5 gap without filling source history',()=>{
+ const s=segment({from:{u:0.75,v:4},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.25,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,0.5]],[s]),gap=r.rows[0];
+ assert.equal(r.exactReceivedPaperSegmentsWithBothEndpointsCollinearAndInOriginalDomain,1);
+ assert.deepEqual(gap.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory,
+  [['1/4','1/2']]);
+ assert.deepEqual(gap.positiveRationalGapResidualAfterCollinearPaperCandidates,
+  [['0','1/4']]);
+ assert.equal(r.positiveOriginalM5GapsWithPartiallyCorroboratedExactCollinearPaperCandidates,1);
+ assert.equal(r.positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage,0);
+ assert.equal(gap.originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory,true);
+ assert.equal(gap.sourceGapClosedByNativeEndpointEvidence,false);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+ const reversed=run([[0,0.5]],[{
+  ...s,from:s.to,to:s.from,
+  sourceCandidate3DLifts:[{...s.sourceCandidate3DLifts[0],
+   paperOnlyUnclampedOriginalSourceParameters:[1,0.25]}],
+  directNativeVertexOriginalSource:[native('C'),native(null)]
+ }]);
+ assert.deepEqual(reversed.rows[0].positiveRationalGapResidualAfterCollinearPaperCandidates,
+  [['0','1/4']]);
+});
+test('off-line paper endpoints never cover a positive source gap even if dominant inverse rounds to zero',()=>{
+ const s=segment({from:{u:0,v:Number.MIN_VALUE},
+  directNativeVertexOriginalSource:[native(null),native('C')]});
+ const r=run([[0,Number.MIN_VALUE]],[s]);
+ assert.equal(r.endpoints[0].exactReceivedPaperOnOriginalProjectedLine,false);
+ assert.equal(r.exactReceivedPaperSegmentsWithBothEndpointsCollinearAndInOriginalDomain,0);
+ assert.deepEqual(r.rows[0].exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory,[]);
+ assert.equal(r.rows[0].positiveRationalGapResidualAfterCollinearPaperCandidates.length,1);
+ assert.equal(r.rows[0].positiveRationalGapResidualAfterCollinearPaperCandidates[0][0],'0');
+ assert.equal(r.positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('complete on-line HLR paper candidate remains distinct from generated source-history proof',()=>{
+ const r=run([[0.2,0.3]]);
+ assert.equal(r.exactReceivedPaperSegmentsWithBothEndpointsCollinearAndInOriginalDomain,1);
+ assert.deepEqual(r.rows[0].positiveRationalGapResidualAfterCollinearPaperCandidates,[]);
+ assert.equal(r.positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage,1);
+ assert.equal(r.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+ assert.equal(r.rows[0].originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory,true);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
