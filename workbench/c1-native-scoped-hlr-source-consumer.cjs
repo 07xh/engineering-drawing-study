@@ -7,7 +7,7 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
-const {nativeScopedPaperSegmentsSame}=
+const {nativeScopedPaperSegmentsSame,auditC1ScopedHLRSourceIdentityConflicts}=
  require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
@@ -321,6 +321,23 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      direct!==scoped.nativeScopedToWholeSolidGeneratedIsSameCount||
      total-direct!==scoped.paperOnlyScopedOutputEdgeCount)
    throw new RangeError('native source-scoped HLR output accounting mismatch');
+  // Recompute the producer's whole-solid native IsSame ownership ledger
+  // from the SAME V/H/W scoped rows and actual generated edge inventory.
+  // The serialized ledger is not an independent source of truth: stale,
+  // dropped, duplicated or promoted source claims must never reach M4/M5.
+  // Native identity is still only generated-edge identity, NOT complete
+  // original BRep -> generated HLR parameter history or a V5 signature.
+  const recomputedNativeClaims=auditC1ScopedHLRSourceIdentityConflicts({
+   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+   wholeSolidCounts:{
+    'visible-sharp':classes.visible.global.length,
+    'hidden-sharp':classes.hidden.global.length
+   }
+  });
+  if(!scoped.nativeSourceIdentityConflicts||
+     JSON.stringify(scoped.nativeSourceIdentityConflicts)!==
+      JSON.stringify(recomputedNativeClaims))
+   throw new RangeError('stale or forged native scoped/global HLR source identity ledger');
   counts.nativeSourceScopedOutputEdges+=total;
   counts.nativeGeneratedIsSameMatches+=direct;
   counts.paperOnlySourceScopedEdges+=total-direct;
