@@ -176,6 +176,12 @@ function auditC1NativeGapGeneratedVertexAdjacency({
  // TopoDS source history, a closed ray, or a formal V5 line.
  const one=asRatio(1),zeroRatio=asRatio(0);
  const collinearPaperRanges=[];
+ // A paper-only union across visible and hidden HLR classes can conceal
+ // a genuine class boundary. Keep independent exact candidate inventories;
+ // neither class is a signed engineering line without M5 source/occlusion.
+ const collinearPaperRangesByClass={
+  'visible-sharp':[], 'hidden-sharp':[]
+ };
  for(let i=0;i<exactReceivedPaperParameters.length;i+=2){
   const a=exactReceivedPaperParameters[i],
    b=exactReceivedPaperParameters[i+1];
@@ -186,15 +192,23 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      compareRatio(a.parameter,one)>0||
      compareRatio(b.parameter,one)>0||
      compareRatio(a.parameter,b.parameter)===0)continue;
-  collinearPaperRanges.push(compareRatio(a.parameter,b.parameter)<0?
-   [a.parameter,b.parameter]:[b.parameter,a.parameter]);
+  const range=compareRatio(a.parameter,b.parameter)<0?
+   [a.parameter,b.parameter]:[b.parameter,a.parameter];
+  const klass=endpoints[i]?.hlrClass;
+  if(!Object.hasOwn(collinearPaperRangesByClass,klass)||
+     endpoints[i+1]?.hlrClass!==klass)
+   throw new RangeError('native generated paper candidate class mismatch');
+  collinearPaperRanges.push(range);
+  collinearPaperRangesByClass[klass].push(range);
  }
- collinearPaperRanges.sort((a,b)=>
+ const sortRanges=ranges=>ranges.sort((a,b)=>
   compareRatio(a[0],b[0])||compareRatio(a[1],b[1]));
- const paperCandidateGapIntersection=(from,to)=>{
+ sortRanges(collinearPaperRanges);
+ for(const ranges of Object.values(collinearPaperRangesByClass))sortRanges(ranges);
+ const paperCandidateGapIntersection=(from,to,ranges=collinearPaperRanges)=>{
   let cursor=from;
   const seen=[],residual=[];
-  for(const [a,b] of collinearPaperRanges){
+  for(const [a,b] of ranges){
    const left=compareRatio(a,from)<0?from:a,
     right=compareRatio(b,to)>0?to:b;
    if(compareRatio(left,right)>=0)continue;
@@ -251,8 +265,34 @@ function auditC1NativeGapGeneratedVertexAdjacency({
    compareRatio(p.parameter,fromExact)===0;
   const atTo=p=>p.parameter!==null&&
    compareRatio(p.parameter,toExact)===0;
+  const combinedPaper=paperCandidateGapIntersection(fromExact,toExact);
+  const visiblePaper=paperCandidateGapIntersection(
+   fromExact,toExact,collinearPaperRangesByClass['visible-sharp']);
+  const hiddenPaper=paperCandidateGapIntersection(
+   fromExact,toExact,collinearPaperRangesByClass['hidden-sharp']);
+  // A genuine overlap of candidate paper intervals assigned to opposite
+  // native classes is held as a class conflict, not resolved by union.
+  const oppositeClassOverlap=collinearPaperRangesByClass['visible-sharp']
+   .some(([a,b])=>collinearPaperRangesByClass['hidden-sharp'].some(([c,d])=>{
+    const left=[a,c,fromExact].reduce((x,y)=>compareRatio(x,y)>0?x:y);
+    const right=[b,d,toExact].reduce((x,y)=>compareRatio(x,y)<0?x:y);
+    return compareRatio(left,right)<0;
+   }));
   return {gapOrdinal:index,originalSourceParameterGap:[...gap],
-   ...paperCandidateGapIntersection(fromExact,toExact),
+   ...combinedPaper,
+   exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory:
+    visiblePaper.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory,
+   exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory:
+    hiddenPaper.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory,
+   positiveRationalGapResidualAfterVisiblePaperCandidates:
+    visiblePaper.positiveRationalGapResidualAfterCollinearPaperCandidates,
+   positiveRationalGapResidualAfterHiddenPaperCandidates:
+    hiddenPaper.positiveRationalGapResidualAfterCollinearPaperCandidates,
+   mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility:
+    combinedPaper.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0&&
+    visiblePaper.positiveRationalGapResidualAfterCollinearPaperCandidates.length>0&&
+    hiddenPaper.positiveRationalGapResidualAfterCollinearPaperCandidates.length>0,
+   oppositeHLRClassPositivePaperOverlapStillHeld:oppositeClassOverlap,
    // Strict rational comparisons, including paper tails smaller than the
    // smallest positive binary64 parameter. Candidate presence is not
    // coverage or source-history certification.
@@ -290,6 +330,10 @@ function auditC1NativeGapGeneratedVertexAdjacency({
    rows.filter(r=>r.exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory.length>0).length,
   positiveOriginalM5GapsWithExactCollinearPaperCandidateOnlyFullCoverage:
    rows.filter(r=>r.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0).length,
+  positiveOriginalM5GapsWithMixedHLRClassPaperOnlyFullCoverageHeld:
+   rows.filter(r=>r.mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility).length,
+  positiveOriginalM5GapsWithOppositeHLRClassPaperOverlapHeld:
+   rows.filter(r=>r.oppositeHLRClassPositivePaperOverlapStillHeld).length,
   actualNativeExactReceivedPaperOffLineEndpoints:
    endpoints.filter(x=>x.exactReceivedPaperOnOriginalProjectedLine===false).length,
   roundedInverseDisagreesWithExactReceivedPaperParameterCount:
