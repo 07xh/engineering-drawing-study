@@ -271,6 +271,32 @@ test('real whole-solid generated HLR inventory exposes unclaimed edges without s
  assert.equal(empty.fullOriginalSourceHistoryCertified,false);
 });
 
+test('same-run native HLR inventory bounds every unsigned paper-only candidate, not only IsSame',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const genuine=match(setup('V'));
+ const counts={'visible-sharp':3,'hidden-sharp':0};
+ assert.equal(audit({matches:[genuine],wholeSolidCounts:counts}).uniqueNativeClaims,1);
+ // The real direct native identity 0 cannot excuse a forged extra paper
+ // candidate 9: no such generated HLR edge exists in the measured output.
+ const forged={...genuine,globalPaperCandidateOrdinals:[0,1,9]};
+ assert.throws(()=>audit({matches:[forged],wholeSolidCounts:counts}),
+  /paper candidate claims nonexistent whole-solid/);
+ // A paper-only witness (without any native IsSame) must be bounded too.
+ const x=setup('H');x.scopedNativeEdge=native('not-generated');
+ const paperOnly=match(x);
+ assert.deepEqual(paperOnly.globalDirectSameGeneratedTopoDSOrdinals,[]);
+ assert.throws(()=>audit({matches:[paperOnly],wholeSolidCounts:{
+  'visible-sharp':0,'hidden-sharp':0}}),
+  /paper candidate claims nonexistent whole-solid/);
+ // A class-specific inventory cannot borrow a valid ordinal from the
+ // other visibility class; neither diagnostic can authorize V5.
+ const wrongClass={...paperOnly,hlrClass:'hidden-sharp'};
+ assert.throws(()=>audit({matches:[wrongClass],wholeSolidCounts:counts}),
+  /paper candidate claims nonexistent whole-solid/);
+ assert.equal(audit({matches:[paperOnly],wholeSolidCounts:counts}).signedV5ActionCount,0);
+});
+
 test('one native whole-solid inventory cannot mix V and W generated edge ordinals',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
