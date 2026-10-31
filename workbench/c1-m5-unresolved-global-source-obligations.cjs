@@ -11,7 +11,7 @@ const {auditC1ExactConvexOriginalOpenEdgeRays}=
  require('./c1-exact-convex-original-open-edge-ray.cjs');
 const {auditC1M5NativeGlobal3DSourceJoin}=
  require('./c1-m5-global-native-3d-source-join.cjs');
-const {auditC1WNativeClosedPhysicalGap}=
+const {auditC1NativeClosedPhysicalGap}=
  require('./c1-m5-w-native-closed-source-gap-joint.cjs');
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
@@ -219,6 +219,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
+  VPositivePaperGapsWithRealNativeClosed3DJointProof:0,
+  HPositivePaperGapsWithRealNativeClosed3DJointProof:0,
+  HPositivePaperGapsWithOriginal3DJointProofHeld:0,
+  HPositivePaperGapsWithReceivedGlobalHPaperEndpointDrift:0,
+  HPositivePaperGapsWithStrictTwoAxisPaperResidual:0,
+  HPositivePaperGapsWithFalseDominantAxisCompleteVeto:0,
   WPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   WPositivePaperGapsWithOriginal3DJointProofHeld:0,
   WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift:0,
@@ -538,14 +544,29 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.originalM4OpenHeldCuts+=m4Depth.openDepthHeldCuts;
    counts.originalM4PositiveSubpixelCutsHeld+=m4Depth.positiveSubpixelCutsHeld;
   }
-  const jointW=kind==='positive-original-m0-parameter-gap'&&
-   row.view==='W'&&geometry.kind==='mesh'?
-   auditC1WNativeClosedPhysicalGap({
+  const joint=kind==='positive-original-m0-parameter-gap'&&
+   geometry.kind==='mesh'?
+   auditC1NativeClosedPhysicalGap({
     geometry,cad,view:row.view,sourceEdgeId:row.sourceEdgeId,
     positiveGap:interval,originalStatus,global3DSource,m4Depth,
     originalClosedRayClear:closedOriginalSourceRay,openRayClass:openClass,
     originalEndpointWitnesses:endpoints,exactPaperGap
    }):null;
+  const jointW=row.view==='W'?joint:null,
+   jointH=row.view==='H'?joint:null,
+   receivedH=jointH?.nativeGlobalGenerated2DPaperEndpointDriftEvidence;
+  counts.HPositivePaperGapsWithRealNativeClosed3DJointProof+=
+   Number(jointH?.jointOriginalClosedPhysicalSourceVisibilityProven===true);
+  counts.HPositivePaperGapsWithOriginal3DJointProofHeld+=
+   Number(jointH!=null&&jointH.jointOriginalClosedPhysicalSourceVisibilityProven!==true);
+  counts.HPositivePaperGapsWithReceivedGlobalHPaperEndpointDrift+=
+   Number((receivedH?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0);
+  counts.HPositivePaperGapsWithStrictTwoAxisPaperResidual+=
+   Number(receivedH?.receivedExactTwoAxisQualifiedPaperCoverage?.positiveLengthTwoAxisPaperResidualsStillPresent===true);
+  counts.HPositivePaperGapsWithFalseDominantAxisCompleteVeto+=
+   Number(receivedH?.receivedExactTwoAxisQualifiedPaperCoverage?.falseDominantAxisFullCoverageVetoed===true);
+  counts.VPositivePaperGapsWithRealNativeClosed3DJointProof+=
+   Number(row.view==='V'&&joint?.jointOriginalClosedPhysicalSourceVisibilityProven===true);
   counts.WPositivePaperGapsWithRealNativeClosed3DJointProof+=
    Number(jointW?.jointOriginalClosedPhysicalSourceVisibilityProven===true);
   counts.WPositivePaperGapsWithOriginal3DJointProofHeld+=
@@ -566,6 +587,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    Number(strict2D?.falseDominantAxisFullCoverageVetoed===true);
   records.push({kind,view:row.view,sourceEdgeId:row.sourceEdgeId,
    WOriginalPhysicalNativeParameterClosedRayM4JointEvidence:jointW,
+   OriginalPhysicalNativeParameterClosedRayM4JointEvidence:joint,
+   VHWPositivePaperGapDoesNotTurnIntoOfficialLine:true,
    WPositivePaperGapDoesNotTurnIntoOfficialLine:true,
    sameRunNativeGlobal3DSourceCurveAttribution:global3DSource,
    global3DSourceDoesNotAuthorizePaperHistoryOrV5:true,
