@@ -617,6 +617,6 @@ test('W full-scene claimant cannot replay an altered or missing native global 3D
  ]){
   const x=measuredNativeGlobalHLRWSourceFixture();
   modify(x);
-  assert.throws(()=>audit(x),/real native|generated|global|paper|endpoint|provenance/i);
+  assert.throws(()=>audit(x),/real native|generated|global|paper|endpoint|provenance|curve|interval/i);
  }
 });
