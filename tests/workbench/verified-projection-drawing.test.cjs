@@ -6,11 +6,11 @@ const {solveProjection}=require('../../engines/projection/point-projection.cjs')
 const math=(p={x:15,y:10,z:12},scale=4)=>
  solveProjection({knownPoint:p,sheetTransform:{origin:{x:360,y:210},scale}});
 const strokes=(s,revision=1)=>s.map(step=>({from:{...step.from},to:{...step.to},revision}));
-test('real analytical guides with 4 correct drawn lines reach verified 4/4',()=>{
+test('real analytical guides require real fifth 45-degree source line for verified 5/5',()=>{
  const s=math().steps,g=grade(s,strokes(s),{scale:4,revision:1});
  assert.equal(g.status,'correct');
- assert.equal(g.matchedCount,4);
- assert.equal(g.targetCount,4);
+ assert.equal(g.matchedCount,5);
+ assert.equal(g.targetCount,5);
  assert.deepEqual(g.acceptedIds,s.map(x=>x.id));
  assert.deepEqual(g.remainingIds,[]);
  assert.equal(g.extraCount,0);
@@ -21,7 +21,7 @@ test('reverse drawing and permute strokes cannot change the geometric grade',()=
  const reversed=strokes(s).reverse().map(p=>({...p,from:p.to,to:p.from}));
  const g=grade(s,reversed,{scale:4,revision:1});
  assert.equal(g.status,'correct');
- assert.equal(g.matchedCount,4);
+ assert.equal(g.matchedCount,5);
 });
 test('model mm tolerance accepts modest drawing errors and rejects clearly displaced parallel',()=>{
  const s=math().steps;
@@ -31,7 +31,7 @@ test('model mm tolerance accepts modest drawing errors and rejects clearly displ
  close[0].from.x+=5;close[0].to.x+=5; // 1.7 mm from expected line
  const g=grade(s,close,{scale:4,revision:1});
  assert.equal(g.status,'partial');
- assert.equal(g.matchedCount,3);
+ assert.equal(g.matchedCount,4);
  assert.ok(g.remainingIds.includes(s[0].id));
 });
 test('longer collinear construction lines are acceptable without endpoint pixel equality',()=>{
@@ -51,7 +51,7 @@ test('shorter collinear strokes missing a target endpoint must fail coverage',()
     y:s[1].from.y+(s[1].to.y-s[1].from.y)*0.2}};
  const g=grade(s,attempt,{scale:4,revision:1});
  assert.equal(g.status,'partial');
- assert.equal(g.matchedCount,3);
+ assert.equal(g.matchedCount,4);
 });
 test('45-degree stroke cannot be mistaken for horizontal or vertical guide',()=>{
  const s=math().steps;
@@ -70,7 +70,7 @@ test('duplicated strokes do not count as new steps and flag an extra',()=>{
  const same=strokes(s);
  same.push({...same[0]});
  const result=grade(s,same,{scale:4,revision:1});
- assert.equal(result.matchedCount,4);
+ assert.equal(result.matchedCount,5);
  assert.equal(result.extraCount,1);
  assert.equal(result.status,'partial');
 });
@@ -107,8 +107,8 @@ test('unknown fixtures, synthetic lines and malformed step IDs are not verified'
 test('multiple valid strokes with overlap still get a deterministic max matching',()=>{
  const s=math().steps;
  const one=strokes(s);
- const reordered=[one[3],one[0],one[2],one[1]];
- assert.equal(grade(s,reordered,{scale:4,revision:1}).matchedCount,4);
+ const reordered=[one[3],one[0],one[4],one[2],one[1]];
+ assert.equal(grade(s,reordered,{scale:4,revision:1}).matchedCount,5);
 });
 test('grade results are pure and do not modify solved geometry or student strokes',()=>{
  const steps=math().steps,drawn=strokes(steps);
@@ -117,4 +117,19 @@ test('grade results are pure and do not modify solved geometry or student stroke
  assert.equal(JSON.stringify({steps,drawn}),snap);
  const match=matchLine(steps[0],drawn[0],{scale:4,toleranceMm:.75});
  assert.equal(match.ok,true);
+});
+
+test('wrong-slope or missing 45-degree stroke cannot pass actual first-angle guide grading',()=>{
+ const s=math().steps;
+ assert.equal(s[2].kind,'depth-45');
+ const without=strokes(s).filter((_,i)=>i!==2);
+ const missing=grade(s,without,{scale:4,revision:1});
+ assert.equal(missing.status,'partial');
+ assert.equal(missing.matchedCount,4);
+ assert.ok(missing.remainingIds.includes(s[2].id));
+ const wrong=strokes(s);
+ wrong[2]={...wrong[2],to:{x:s[2].to.x,y:s[2].from.y-(s[2].to.y-s[2].from.y)}};
+ const rejected=grade(s,wrong,{scale:4,revision:1});
+ assert.equal(rejected.status,'partial');
+ assert.ok(rejected.remainingIds.includes(s[2].id));
 });
