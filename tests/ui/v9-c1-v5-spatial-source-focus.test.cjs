@@ -124,3 +124,41 @@ test('the existing WebGL/SVG visualizers consume this focus without creating any
  assert.match(controller,/data-v5-source-focus/);
  assert.doesNotMatch(viewer,/new Timeline|createPlayer\(/);
 });
+
+test('a REAL independently reviewed skew-prism M0-M5 signed action locates its original 3D edge in the only V5',()=>{
+ const {compileReviewedSolidVertexV5}=
+  require('../../workbench/reviewed-solid-vertex-v5.cjs');
+ const points={A:p(0,0,0),B:p(4,1,0),C:p(3,4,0),D:p(-1,3,0),
+  E:p(1,-1,5),F:p(5,0,5),G:p(4,3,5),H:p(0,2,5)};
+ const faces=[['A','D','C','B'],['E','F','G','H'],['A','B','F','E'],
+  ['D','H','G','C'],['A','E','H','D'],['B','C','G','F']];
+ const edges=[],seen=new Set();
+ for(const face of faces)for(let i=0;i<face.length;i++){
+  const a=face[i],b=face[(i+1)%face.length],key=[a,b].sort().join('|');
+  if(!seen.has(key)){seen.add(key);edges.push([a,b]);}
+ }
+ const input={geometryId:'C1SourceReality',revision:11,unit:'mm',
+  confirmedBy:'user',topologyConfirmed:true,
+  vertices:Object.entries(points).map(([id,xyz])=>{
+   const V=project(xyz).V,H=project(xyz).H;
+   return {id,knownViews:{V:[V.u,V.v],H:[H.u,H.v]}};
+  }),edges,faces};
+ const solution=compileReviewedSolidVertexV5({input,sheetTransform:sheet});
+ const binding=solution.certifiedPhysicalLineBindings[0];
+ assert(binding,'requires a real positive M5 source-backed V5 action');
+ const timing=solution.timeline.segments.find(t=>t.id===binding.actionId);
+ assert(timing);
+ solution.player.seekMs(timing.startMs+Math.min(10,timing.durationMs/2),0);
+ const scene=solution.sceneResult.scene;
+ const actual=focus({scene,solution,revision:11,frame:solution.player.snapshot()});
+ assert.equal(actual.originalSourceActions.length,1);
+ assert.equal(actual.originalSourceActions[0].actionId,binding.actionId);
+ assert.equal(actual.originalSourceActions[0].sourceEdgeId,binding.sourceEdgeId);
+ assert.deepEqual(actual.sourceFeatureKeys,[
+  sourceFeatureKey(scene.objects.find(o=>o.id===binding.sourceGeometryId),{
+   edgeIds:binding.sourceEdgeId.split('::')[1].split('|')
+  })
+ ]);
+ assert.equal(actual.displayOnly,true);
+ assert.equal(actual.formalV5ActionsCreated,0);
+});
