@@ -108,9 +108,13 @@ function adaptPointProjection(input,{revision=0}={}){
  const diagonal=solved.steps.find(s=>s.kind==='depth-45');
  if(diagonal){
   const origin=input.sheetTransform?.origin||{x:360,y:175};
+  const expectedKnown=Object.hasOwn(input.knownViews||{},'H')?'H':
+   Object.hasOwn(input.knownViews||{},'W')?'W':null;
+  const expectedTarget=expectedKnown==='H'?'W':expectedKnown==='W'?'H':null;
   demand(diagonal.sourceModelAxis==='y'&&
    diagonal.sourceModelValue===solved.point.y&&
-   diagonal.sourceKnownView==='H'&&diagonal.targetView==='W'&&
+   diagonal.sourceKnownView===expectedKnown&&
+   diagonal.targetView===expectedTarget&&
    diagonal.constructionOnly===true&&
    diagonal.from.x===origin.x&&diagonal.from.y===origin.y&&
    diagonal.to.x===solved.sheet.M.x&&diagonal.to.y===solved.sheet.M.y&&
