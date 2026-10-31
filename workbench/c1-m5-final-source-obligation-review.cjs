@@ -34,6 +34,7 @@ function reviewC1M5FinalStrokeObligations(ledger){
     typeof ledger.sourceGeometryId!=='string'||!ledger.sourceGeometryId.trim())
   throw new TypeError('canonical unsigned real-WASM M5 obligations required');
  const exactSourceKeys=new Set(),intervalsBySourceView=new Map();
+ const viewsSeen=new Set();
  const rows=ledger.subspans.map((span,index)=>{
   if(span.sourceGeometryId!==ledger.sourceGeometryId||
      span.revision!==ledger.revision||
@@ -53,6 +54,7 @@ function reviewC1M5FinalStrokeObligations(ledger){
   if(!Number.isFinite(start)||!Number.isFinite(end)||
      start<0||end>1)
    throw new TypeError('invalid original source parameter domain');
+  viewsSeen.add(span.view);
   const sourceKey=JSON.stringify([span.view,span.sourceEdgeId,start,end]);
   if(exactSourceKeys.has(sourceKey))
    throw new TypeError('duplicate original 3D source interval');
@@ -100,7 +102,8 @@ function reviewC1M5FinalStrokeObligations(ledger){
  return freeze({
   schema:'draftai-c1-m5-final-source-obligation-review/1',
   sourceGeometryId:ledger.sourceGeometryId,revision:ledger.revision,
-  total:rows.length,localPositiveCount:rows.filter(x=>x.localPositive).length,
+  total:rows.length,viewsRepresented:['V','H','W'].filter(view=>viewsSeen.has(view)),
+  localPositiveCount:rows.filter(x=>x.localPositive).length,
   fullyCertifiedCount:0,signedV5ActionCount:0,
   unresolvedByProofClass:Object.fromEntries(
    ['original3DSourceIdentity','completeIntervalVisibility',
