@@ -285,3 +285,58 @@ test('exact adjacent complete M4 source partition retains valid partial 2D class
  assert.equal(complete.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,true);
  assert.equal(complete.officialV5Authorized,false);
 });
+
+test('both finite original paper spans overflow Number but exact longer v axis preserves a positive received interval',()=>{
+ // Both naive differences are +Infinity. v is actually 60% longer,
+ // so an Infinity>=Infinity u-axis tie would falsely report zero length.
+ const from={u:-1e308,v:-1.6e308},to={u:1e308,v:1.6e308};
+ assert.equal(to.u-from.u,Infinity);
+ assert.equal(to.v-from.v,Infinity);
+ const observed=stroke('visible-sharp');
+ observed.from={u:0,v:0};
+ observed.to={u:0,v:8e307};
+ const result=audit({
+  view,sourceEdgeId,sourceProjectedFrom:from,sourceProjectedTo:to,
+  scoped2DVisible:[observed],scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }
+ });
+ assert.deepEqual(result.rows[0].originalM0ExactRationalPaperInterval,
+  ['1/2','3/4']);
+ assert.equal(result.rows[0].exactPositive2DSourcePaperParameterSpan,true);
+ // A transverse drift is not a source proof, even on the correct axis.
+ assert.equal(result.rows[0].exactOriginalM0PaperAffineCollinearity,false);
+ assert.equal(result.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(result.officialV5Authorized,false);
+});
+test('huge finite exact original source line remains class-backed without Number overflow or epsilon',()=>{
+ const from={u:-1e308,v:-1.6e308},to={u:1e308,v:1.6e308};
+ const observed=stroke('hidden-sharp');
+ observed.from={...from};observed.to={...to};
+ const r=audit({view,sourceEdgeId,sourceProjectedFrom:from,
+  sourceProjectedTo:to,scoped2DVisible:[],scoped2DHidden:[observed],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   view,sourceEdgeId,segments:[native('hidden-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }});
+ assert.deepEqual(r.rows[0].originalM0ExactRationalPaperInterval,['0','1']);
+ assert.equal(r.rows[0].exactOriginalM0PaperAffineCollinearity,true);
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,true);
+ assert.equal(r.rows[0].actualGlobalHLRGenerated2DTopoDSHistoryCertified,false);
+ assert.equal(r.rows[0].entireOpaqueSceneVisibilityCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
