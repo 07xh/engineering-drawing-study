@@ -77,6 +77,45 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
 });
+test('canonical frame replay rejects early target strokes and out-of-sync text/progress',()=>{
+ const mutate=edit=>{
+  const f=fixture();edit(f);return()=>inspect(f);
+ };
+ // At frame zero the future M5 stroke cannot be rendered, even when the
+ // attacker keeps the correct step title and a valid signed source binding.
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.edge_2_action=1;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.g_1=0.25;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.completedIds.push('edge_2_action');
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.activeStepId='edge_2';
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.forged_final_answer=1;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=900;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=Number.POSITIVE_INFINITY;
+ }),/elapsed time/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=-1;
+ }),/elapsed time/);
+ const valid=fixture();
+ valid.solution.player.seekStep(2,10);
+ const current=valid.solution.player.snapshot();
+ const inspected=inspect({...valid,frame:current});
+ assert.equal(inspected.id,'edge_2');
+ assert.equal(inspected.actions[0].formalLineCertified,true);
+ assert.equal(inspected.actions[0].progress,0);
+});
+
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(
   '../../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
