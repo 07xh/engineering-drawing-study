@@ -1,6 +1,6 @@
 'use strict';
 /**
- * One reviewed convex C1 V/H/W paper positive gap: corroborate the SAME physical
+ * One reviewed convex C1 V/H/W original-source positive gap: corroborate the SAME physical
  * M0 source and same-run OCCT original EdgeStatus / native generated 3D
  * source-curve intervals / original CLOSED ray / M4 open co-projected depth.
  *
@@ -189,7 +189,7 @@ function auditC1NativeClosedPhysicalGap({
     cls==='hidden-sharp'?cad.hiddenSharpViews?.[view]:null;
    if(!Array.isArray(outputs)||!Number.isSafeInteger(ordinal)||
       ordinal<0||ordinal>=outputs.length)
-    throw new RangeError('original global W HLR edge ordinal not present');
+    throw new RangeError('original global V/H/W HLR edge ordinal not present');
    const id=cls+'|'+ordinal;
    if(seen.has(id))throw new RangeError('duplicated original W paper claimant');
    seen.add(id);
@@ -254,14 +254,25 @@ function auditC1NativeClosedPhysicalGap({
    throw new RangeError('native W exact two-axis paper source proof contradicts whole-solid HLR');
   paperEndpointAudit=freeze({
    sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
+   exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedSourceTo:{...b},
+   exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedWTo:{...b},
    exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
+   nativeGlobalGeneratedHLREdgesChecked:rows.length,
    nativeGlobalWGeneratedHLREdgesChecked:rows.length,
+   nativeGlobalGeneratedEdgesWithExactTwoPhysicalPaperEndpoints:
+    rows.filter(x=>x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
    nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints:
     rows.filter(x=>x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
+   nativeGlobalGeneratedEdgesWithReceivedBinary64EndpointDrift:
+    rows.filter(x=>!x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
    nativeGlobalWEdgesWithReceivedBinary64EndpointDrift:
     rows.filter(x=>!x.receivedWPaperEndpointsExactlyMatchBothPhysicalOriginalVertices).length,
+   nativeGlobalGeneratedEdgesExactlyCollinearWithOriginalSource:
+    rows.filter(x=>x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
    nativeGlobalWEdgesExactlyCollinearWithOriginalSource:
     rows.filter(x=>x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
+   nativeGlobalGeneratedEdgesWithTransverseBinary64PaperDrift:
+    rows.filter(x=>!x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
    nativeGlobalWEdgesWithTransverseBinary64PaperDrift:
     rows.filter(x=>!x.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine).length,
    receivedExactBinary64PaperCandidateCoverage:receivedExactPaperCoverage,
