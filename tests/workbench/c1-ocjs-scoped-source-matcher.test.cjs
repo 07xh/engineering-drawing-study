@@ -333,3 +333,19 @@ test('coordinate-local ULP accepts genuine one-ULP endpoint rounding without sig
  assert.equal(result.engineeringLineStyle,'undetermined');
  assert.equal(result.signedV5Action,false);
 });
+
+test('real pinned OCCT pcurve may round zero by one same-axis source-span ULP only',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const original={from:{u:5,v:23},to:{u:0,v:0}};
+ const generated={from:{u:5,v:23},to:{u:0,v:-(2**-48)}};
+ const result=audit(original,generated);
+ assert.equal(result.compatible,true);
+ assert.equal(result.exactBinary64Endpoints,false);
+ assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+ // This same V-scale must NOT justify an unrelated U-axis drift.
+ assert.equal(audit(original,{from:original.from,
+  to:{u:-1e-9,v:0}}).compatible,false);
+});
