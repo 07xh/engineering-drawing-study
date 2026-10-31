@@ -248,8 +248,16 @@ test('non-W original gaps are outside this witness, never considered a certified
 test('whole-solid hidden native 3D HLR claim vetoes an original all-visible W certificate',()=>{
  const x=fixture();
  x.cad.hiddenSharpViews.W.push(structuredClone(x.cad.views.W[0]));
- x.global3DSource.claims.push({
-  ...x.global3DSource.claims[0],hlrClass:'hidden-sharp'
+ const ledger=x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence;
+ ledger.rows.push({...ledger.rows[0],hlrClass:'hidden-sharp'});
+ ledger.globalGenerated2DSharpEdges=2;
+ ledger.globalGenerated3DSharpEdgesWithUniqueOriginalCurve=2;
+ x.global3DSource=rebindNativeGlobal({
+  geometry:x.geometry,cad:x.cad,view:'W',sourceEdgeId:x.sourceEdgeId,
+  generatedClaims:[
+   {hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0},
+   {hlrClass:'hidden-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}
+  ]
  });
  x.originalEndpointWitnesses.push({
   ...x.originalEndpointWitnesses[0],hlrClass:'hidden-sharp'
@@ -285,9 +293,16 @@ function hGapFixture(){
  // output has a positive binary64 endpoint drift. Do NOT snap it to M0.
  record.cad.views={H:[{from:{u:0,v:0},to:{u:3,v:15.999999999999998}}]};
  record.cad.hiddenSharpViews={H:[]};
- record.cad.nativeSourceScopedSharpOutputByView={
-  H:record.cad.nativeSourceScopedSharpOutputByView.W
- };
+ const scoped=record.cad.nativeSourceScopedSharpOutputByView.W,
+  native=scoped.nativeGlobal3DOriginalSourceEvidence;
+ native.view='H';
+ for(const row of native.rows)row.view='H';
+ record.cad.nativeSourceScopedSharpOutputByView={H:scoped};
+ record.global3DSource=rebindNativeGlobal({
+  geometry:record.geometry,cad:record.cad,view:'H',
+  sourceEdgeId:record.sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ });
  return record;
 }
 test('H A|C positive source gap consumes SAME original BRep, native HLR, M4 and closed rays, but keeps real paper residual',()=>{
@@ -432,4 +447,37 @@ test('neutral original paper endpoints are V/H/W scoped; legacy W-only aliases n
  assert.deepEqual(h.exactOriginalProjectedSourceTo,{u:3,v:16});
  assert.equal(h.exactOriginalProjectedWFrom,null);
  assert.equal(h.exactOriginalProjectedWTo,null);
+});
+
+test('current generated HLR native 3D source/ordinal/class/parameter must replay identically from raw same-run CAD',()=>{
+ for(const mutate of [
+  x=>{x.global3DSource.claims[0].originalNativeCurveParameterRange[1]-=0.001;},
+  x=>{x.global3DSource.claims[0].hlrClass='hidden-sharp';},
+  x=>{x.global3DSource.claims[0].actualNativeGlobal3DOriginalSourceEdgeId='tetra::A|D';},
+  x=>{x.global3DSource.sourceEdgeId='tetra::A|D';},
+  x=>{x.global3DSource.claimCount=2;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence.
+   rows[0].originalNativeCurveParameterRange[1]-=0.001;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence.
+   rows[0].originalPhysicalSourceEdgeId='tetra::A|D';},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence.
+   revision=8;},
+  x=>{delete x.cad.nativeSourceScopedSharpOutputByView.W.
+   nativeGlobal3DOriginalSourceEvidence;}
+ ]){
+  const x=fixture();mutate(x);
+  assert.throws(()=>audit(x),/native|global|revision|source|ordinal|HLR|CAD|interval/i);
+ }
+});
+test('a completed original native global 3D owner replay is still not generated projected TopoDS history',()=>{
+ for(const x of [fixture(),hGapFixture()]){
+  const r=auditAllViews(x);
+  assert.equal(r.sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified,true);
+  assert.equal(r.generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay,true);
+  assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+  assert.equal(r.generated2DTopoDSHistoryCertified,false);
+  assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
+  assert.equal(r.actualGlobal2DPaperClosedEndpointsCertified,false);
+  assert.equal(r.signedV5Action,false);
+ }
 });
