@@ -322,6 +322,16 @@ test('foreign or inconsistent M4 summary cannot certify same-source positive gap
  const h=hGapFixture();h.m4Depth.sourceEdgeId='tetra::A|D';
  assert.throws(()=>auditAllViews(h),/M4 source-depth summary/);
 });
+test('H positive source gap also requires original 3D endpoint witnesses',()=>{
+ const x=hGapFixture();x.originalEndpointWitnesses=undefined;
+ const r=auditAllViews(x);
+ assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+ assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5Action,false);
+});
 test('V/H/W source-gap consumers reject foreign views and genuine zero-length gaps without epsilon escape',()=>{
  const h=hGapFixture();
  assert.equal(auditAllViews({...h,view:'drawing-2d'}),null);
