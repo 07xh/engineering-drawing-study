@@ -27,6 +27,35 @@ test('V/H/W real scoped native IsSame distinguishes front and rear coincident pr
   assert.equal(r.signedV5Action,false);
  }
 });
+test('native IsSame rejects tolerant paper alias even when the native identity method says true',()=>{
+ const {nativeScopedPaperSegmentsSame:paperCandidate}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  // 1e-7 mm was previously accepted as a scoped/global match because
+  // the paper discovery tolerance is 1e-6 mm at this source span.
+  x.scopedSegment={from:{u:0,v:1e-7},to:{u:10,v:1e-7}};
+  assert.equal(paperCandidate(x.globalSegments[0],x.scopedSegment),true);
+  assert.throws(()=>match(x),/native IsSame.*inconsistent paper/);
+  // Reversing the paper stroke must not bypass the independent veto.
+  x.scopedSegment={from:{u:10,v:1e-7},to:{u:0,v:1e-7}};
+  assert.throws(()=>match(x),/native IsSame.*inconsistent paper/);
+ }
+});
+test('scoped/global native IsSame accepts exact and one binary64 ULP paper agreement only as unsigned identity',()=>{
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  x.scopedSegment={from:{u:0,v:0},
+   to:{u:10+Number.EPSILON*8,v:0}};
+  const r=match(x);
+  assert.deepEqual(r.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+  assert.equal(r.actualNativeScopedToGlobalGeneratedEdgeIsSameProven,true);
+  assert.equal(r.fullOriginalSourceParameterCoverageProven,false);
+  assert.equal(r.globalContinuousOcclusionProven,false);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5Action,false);
+ }
+});
 test('coincident paper without native identity remains unsigned candidate only',()=>{
  const x=setup('W');x.scopedNativeEdge=native('generated-again');
  const r=match(x);
