@@ -27,6 +27,13 @@ const freeze=x=>{
 const finiteRange=r=>Array.isArray(r)&&r.length===2&&
  r.every(Number.isFinite)&&r[1]>r[0];
 const same=(a,b)=>a?.[0]===b?.[0]&&a?.[1]===b?.[1];
+// Audit literal original TopoDS BRep XYZ, not only the producer's
+// tolerant nearest-original-edge flag. Swapped orientation is legitimate.
+const valid3D=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+const eq3D=(a,b)=>valid3D(a)&&valid3D(b)&&
+ ['x','y','z'].every(k=>a[k]===b[k]);
+const exact3DPair=(a,b,p,q)=>
+ (eq3D(a,p)&&eq3D(b,q))||(eq3D(a,q)&&eq3D(b,p));
 // The actual native HLR paper edge can be a PARTIAL source interval.
 // Pair both received endpoints to both physical source endpoints using
 // exact binary64 squared distance, not a single Math.hypot decision.
@@ -82,6 +89,30 @@ function auditC1NativeClosedPhysicalGap({
  if(curve.length!==1||scoped.length!==1)
   throw new RangeError('duplicated native original W BRep source');
  const original=curve[0],src=scoped[0],bounds=original.occtSourceCurveParameterRange;
+ const [m0A,m0B]=sources[0].map(id=>geometry.data.points?.[id]);
+ if(!valid3D(m0A)||!valid3D(m0B)||eq3D(m0A,m0B))
+  throw new RangeError('original M0 source has no distinct finite 3D endpoints');
+ const nativeOriginal3DVerticesExact=exact3DPair(
+  original.fromOCCT3D,original.toOCCT3D,m0A,m0B);
+ const curveSamplesPresent=valid3D(original.occtSourceCurveFirstPoint3D)&&
+  valid3D(original.occtSourceCurveLastPoint3D);
+ const nativeOriginal3DCurveEndpointsExact=curveSamplesPresent&&exact3DPair(
+  original.occtSourceCurveFirstPoint3D,
+  original.occtSourceCurveLastPoint3D,m0A,m0B);
+ // Actual BRepAdaptor endpoints may differ in received binary64. Report
+ // this separately: a rounded curve sample is NOT a TopoDS vertex identity.
+ const exactOriginal3DPhysicalSource={
+  sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
+  originalM0VertexIds:[...sources[0]],
+  nativeOriginalTopoDSVertexCoordinatesChecked:valid3D(original.fromOCCT3D)&&
+   valid3D(original.toOCCT3D),
+  exactNativeOriginal3DVertexToM0EndpointBijection:nativeOriginal3DVerticesExact,
+  nativeOriginalCurveSampleEndpointsChecked:curveSamplesPresent,
+  nativeOriginalCurveEndpointSamplesExactlyEqualM0:nativeOriginal3DCurveEndpointsExact,
+  rounded3DCurveSamplesCannotReplaceActualOriginalTopoDSVertexIdentity:true,
+  generated2DTopoDSEndpointHistoryCertified:false,
+  officialV5Authorized:false,signedV5Action:false
+ };
  if(!finiteRange(bounds)||original.occtSourceCurveType!=='line'||
     original.originalOCCTBRepVertexXYZMatched!==true||
     original.occtSourceCurve3DEndpointsAndMidpointVerified!==true||
@@ -255,8 +286,8 @@ function auditC1NativeClosedPhysicalGap({
   paperEndpointAudit=freeze({
    sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
    exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedSourceTo:{...b},
-   exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedWTo:{...b},
-   exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
+   exactOriginalProjectedWFrom:view==='W'?{...a}:null,
+   exactOriginalProjectedWTo:view==='W'?{...b}:null,
    nativeGlobalGeneratedHLREdgesChecked:rows.length,
    nativeGlobalWGeneratedHLREdgesChecked:rows.length,
    nativeGlobalGeneratedEdgesWithExactTwoPhysicalPaperEndpoints:
@@ -319,12 +350,15 @@ function auditC1NativeClosedPhysicalGap({
  // Positive-source physical visibility needs all independent same-source
  // witnesses. Even then, the PAPER residual and V5 gate remain untouched.
  // No original 3D physical endpoint ledger means no joint physical proof.
- const physicalComplete=globalFull&&rayClear&&originalFront&&paperEndpointAudit!==null;
+ const physicalComplete=globalFull&&rayClear&&originalFront&&
+  nativeOriginal3DVerticesExact&&paperEndpointAudit!==null;
  return freeze({
   schema:(view==='W'?'draftai-c1-w-m5-native-closed-original-gap-joint/1':'draftai-c1-vhw-m5-native-closed-original-gap-joint/1'),
   sourceGeometryId:geometry.id,revision:cad.revision,view,sourceEdgeId,
   originalPositivePaperGap:[...positiveGap],
   originalNativeCurveParameterBounds:[...bounds],
+  originalNativeBRepToM0ExactPhysicalVertexEvidence:exactOriginal3DPhysicalSource,
+  originalNativeBRepM0PhysicalVertexBijectionCertified:nativeOriginal3DVerticesExact,
   status:physicalComplete?
    'physical-original-3d-source-closed-ray-complete-paper-held':
    'held-physical-source-proof-incomplete',
