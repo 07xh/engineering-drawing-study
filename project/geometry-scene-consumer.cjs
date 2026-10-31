@@ -269,6 +269,40 @@ function paperBounds(primitives){
  const height=Math.max(220,(Math.max(...y)-Math.min(...y))*1.24);
  return {x:cx-width/2,y:cy-height/2,width,height};
 }
+// WebGL is a display-only consumer. It MUST NOT silently omit later source
+// features when a large source model exceeds the Three.js per-object budget.
+// Account for every pickable primitive BEFORE clearing/rebuilding its scene:
+// a mesh edge is one feature; an analytic M3 curve uses 96 render-only spans.
+// This is not geometry solving, visibility proof, or V5 authorisation.
+const WEBGL_FEATURE_LIMIT=25000;
+function requireCompleteWebGLFeatureBudget(scene){
+ if(!scene||scene.schema!==SCHEMA||!Array.isArray(scene.objects)||
+    !Number.isSafeInteger(scene.revision))
+  fail('三维渲染容量检查需要当前完整 Geometry Scene');
+ let required=0;
+ for(const obj of scene.objects){
+  if(obj.space!=='model-3d')continue;
+  const d=obj.representations?.['3D']?.data;
+  if(!d)continue;
+  let n;
+  if(obj.kind==='point'||obj.kind==='segment'||obj.kind==='line')n=1;
+  else if(obj.kind==='mesh')n=d.edges?.length;
+  else if(obj.kind==='polyline')
+   n=Array.isArray(d.points)?d.points.length-(d.closed?0:1):NaN;
+  else if(obj.kind==='analytic-curve')n=96;
+  else if(obj.kind==='plane')n=0;
+  else fail('未知三维源特征类型，拒绝不完整 WebGL 显示');
+  if(!Number.isSafeInteger(n)||n<0)
+   fail('三维源特征数量无效，拒绝不完整 WebGL 显示');
+  required+=n;
+  if(!Number.isSafeInteger(required)||required>WEBGL_FEATURE_LIMIT)
+   fail('三维源特征超出 WebGL 完整显示容量，必须使用既有 SVG 线框或缩小场景');
+ }
+ return Object.freeze({required,limit:WEBGL_FEATURE_LIMIT,
+  allOriginal3DSourceFeaturesCounted:true,displayOnly:true,
+  engineeringLineStyle:'undetermined',v5Authorized:false});
+}
+
 function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
  camera={yaw:0,pitch:25},hiddenObjectIds=[],selectedObjectId=null,
  viewTransforms=null}={}){
@@ -312,4 +346,5 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
 }
 // One display-only raster path renderer is shared with C3's exact
 // source-interval annotations. It is NOT a mathematical approximation.
-module.exports={compileGeometryScene,arcPath,sourceFeatureKey,drawAnalyticPath};
+module.exports={compileGeometryScene,arcPath,sourceFeatureKey,drawAnalyticPath,
+ requireCompleteWebGLFeatureBudget};
