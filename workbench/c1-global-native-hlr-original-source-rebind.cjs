@@ -376,7 +376,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
  // an all-three-views certificate (including mixed-geometry namespaces).
  const referenceOriginalSources=originalSourceIdsByView[VIEWS[0]];
  const allThreeViewsShareExactOriginalPhysicalSourceInventory=
-  VIEWS.every(view=>{
+  referenceOriginalSources.size>0&&VIEWS.every(view=>{
    const ids=originalSourceIdsByView[view];
    return ids?.size===referenceOriginalSources.size&&
     [...ids].every(id=>id.startsWith(cad.sourceGeometryId+'::')&&
