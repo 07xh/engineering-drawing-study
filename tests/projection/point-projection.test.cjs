@@ -132,3 +132,16 @@ test('negative depth transfers left/up along real 45-degree line; zero depth has
  assert.equal(zero.steps.some(s=>s.kind==='depth-45'),false);
  assert.equal(zero.sheet.W.x,sheetTransform.origin.x);
 });
+
+test('45-degree step explanation cannot pretend H was GIVEN when only V/W or XYZ was supplied',()=>{
+ const vw=solveProjection({knownViews:{V,W},sheetTransform});
+ const d=vw.steps.find(s=>s.kind==='depth-45');
+ assert.equal(d.sourceKnownView,'W');
+ assert.equal(d.targetView,'H');
+ assert.match(d.explanation,/已知侧视图 W/);
+ const xyz=solveProjection({knownPoint:{x:15,y:10,z:12},sheetTransform});
+ const from3D=xyz.steps.find(s=>s.kind==='depth-45');
+ assert.equal(from3D.sourceKnownView,null);
+ assert.equal(from3D.targetView,null);
+ assert.match(from3D.explanation,/已审三维点/);
+});
