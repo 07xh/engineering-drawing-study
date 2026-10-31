@@ -1934,6 +1934,12 @@ for(const [index,geometry] of general.entries()){
    replayVerified:wGaps.filter(r=>
     r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
      ?.sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified===true).length,
+   completeSameOriginalGlobalOwnerClaimSets:wGaps.filter(r=>
+    r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+     ?.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge===true).length,
+   originalOwnerGeneratedHLRRowCounts:wGaps.map(r=>
+    r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+     ?.sameRunWholeSolidNative3DOriginalOwnerRowCount??null),
    generated2DTopoDSHistoryCertified:false,stillSignedV5:0
   }));
  console.error('REAL C1 W ORIGINAL SOURCE PAPER DRIFT EXACT CLASS '+
@@ -1948,6 +1954,11 @@ for(const [index,geometry] of general.entries()){
  assert.ok(wGaps.every(r=>{
   const joint=r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence;
   return joint?.sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified===true&&
+   Number.isSafeInteger(joint.sameRunWholeSolidNative3DOriginalOwnerRowCount)&&
+   joint.sameRunWholeSolidNative3DOriginalOwnerRowCount>0&&
+   typeof joint.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge==='boolean'&&
+   (joint.jointOriginalClosedPhysicalSourceVisibilityProven!==true||
+    joint.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge===true)&&
    joint.generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay===true&&
    joint.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
    joint.generatedPaperGapStrictlyPositiveStillHeld===true&&
