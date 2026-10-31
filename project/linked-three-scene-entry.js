@@ -8,7 +8,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Consumer from './geometry-scene-consumer.cjs';
 import Analytic from '../core/geometry/analytic-curve-3d.cjs';
 import Views from '../core/projection/geometry-scene-views.cjs';
-const {sourceFeatureKey,requireCompleteWebGLFeatureBudget}=Consumer;
+const {sourceFeatureKey,requireCompleteWebGLFeatureBudget,
+ canShadeMeshFaceForDisplay}=Consumer;
 const {atAnalyticCurve3D}=Analytic;
 const {SCHEMA}=Views;
 const validPoint=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
@@ -140,24 +141,11 @@ function mount(container,{onPick}={}){
   for(const face of d.faces){
    const verts=face.map(id=>d.points[id]);
    if(verts.length<3||!verts.every(validPoint))continue;
-   const coords=verts.map(vec),n=new THREE.Vector3()
-    .subVectors(coords[1],coords[0]).cross(
-     new THREE.Vector3().subVectors(coords[2],coords[0]));
-   if(n.length()<1e-9)continue;
-   n.normalize();
-   const tol=1e-7*Math.max(1,extent),a=coords[0];
-   let orientation=0,okay=true;
-   for(let i=0;i<coords.length;i++){
-    const b=coords[i],c=coords[(i+1)%coords.length],
-     next=coords[(i+2)%coords.length];
-    if(Math.abs(n.dot(new THREE.Vector3().subVectors(b,a)))>tol){okay=false;break;}
-    const cross=new THREE.Vector3().subVectors(c,b)
-     .cross(new THREE.Vector3().subVectors(next,c)).dot(n);
-    if(Math.abs(cross)<tol)continue;
-    if(orientation&&cross*orientation<0){okay=false;break;}
-    orientation=cross;
-   }
-   if(!okay)continue;
+   // A star-shaped/self-crossing loop can have uniform LOCAL turns.
+   // Only draw a translucent face if EVERY supporting edge keeps all face
+   // vertices on one side; unsupported faces retain their source wireframe.
+   if(!canShadeMeshFaceForDisplay(d.points,face,extent))continue;
+   const coords=verts.map(vec);
    const arr=[];
    for(let i=1;i<coords.length-1;i++)for(const p of [coords[0],coords[i],coords[i+1]])
     arr.push(p.x,p.y,p.z);
