@@ -448,7 +448,7 @@ async function compile(){
   renderOriginalPaper();
   $('showGiven').disabled=true;
   $('showCandidate').disabled=true;
-  $('showGiven').setAttribute('aria-pressed','false');
+  $('showGiven').setAttribute('aria-pressed','true');
   $('showCandidate').setAttribute('aria-pressed','false');
   $('paperMode').textContent='当前仍仅显示原始 GIVEN 点和空白待求视图；'+
    '下方唯一 V5 才按实际 DAG 逐笔作图。未证明线段不签工程线型，教材整题盲测仍未通过。';
