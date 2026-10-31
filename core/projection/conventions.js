@@ -110,7 +110,8 @@ function transferGuides(point,transform){
   sourceKnownView:'H',targetView:'W',
   constructionOnly:true
  }];
- if(p.M.x!==t.origin.x+depth||p.M.y!==t.origin.y+depth||
+ if((depth!==0&&p.M.x===t.origin.x&&p.M.y===t.origin.y)||
+    p.M.x!==t.origin.x+depth||p.M.y!==t.origin.y+depth||
     p.W.x!==p.M.x||p.H.y!==p.M.y)
   throw new RangeError('first-angle 45-degree depth transfer is not geometrically aligned');
  return {points:p,guides:[
