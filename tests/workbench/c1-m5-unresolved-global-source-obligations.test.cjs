@@ -524,3 +524,38 @@ test('M5 rejects overlapping same-source positive parameter obligations, permits
  assert.equal(result.officialV5Authorized,false);
  assert.equal(result.signedV5ActionCount,0);
 });
+
+test('global M5 keeps mixed visible/hidden exact paper candidate coverage unsigned',()=>{
+ const x=fixture();
+ x.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate={
+  originalSourceParameterGap:[0.2,0.3],
+  exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['3602879701896397/18014398509481984','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterCollinearPaperCandidates:[],
+  exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['3602879701896397/18014398509481984','1/4']],
+  exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['1/4','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterVisiblePaperCandidates:[['1/4','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterHiddenPaperCandidates:[['3602879701896397/18014398509481984','1/4']],
+  mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility:true,
+  oppositeHLRClassPositivePaperOverlapStillHeld:false,
+  originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory:true,
+  sourceGapClosedByNativeEndpointEvidence:false,
+  signedV5Action:false,engineeringLineStyle:'undetermined'
+ };
+ const result=audit(x);
+ assert.equal(result.counts.positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld,1);
+ assert.equal(result.counts.positiveM5GapsWithOppositeHLRClassPaperOverlapHeld,0);
+ assert.equal(result.counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory,1);
+ assert.equal(result.officialV5Authorized,false);
+ assert.equal(result.signedV5ActionCount,0);
+ const bad=structuredClone(x);
+ bad.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+  positiveRationalGapResidualAfterVisiblePaperCandidates=[];
+ assert.throws(()=>audit(bad),/opposite native HLR class paper candidates/);
+ const badClass=structuredClone(x);
+ badClass.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+  oppositeHLRClassPositivePaperOverlapStillHeld='certified';
+ assert.throws(()=>audit(badClass),/opposite native HLR class paper candidates/);
+});
