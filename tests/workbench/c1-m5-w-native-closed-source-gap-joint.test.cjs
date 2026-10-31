@@ -105,6 +105,8 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
    originalNativeCurveParameterRange:[...bounds],
    globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
    global3DAnd2DHLRMeasuredPaperPairUnique:true,
+   global3DAnd2DHLRMeasuredPaperPairExactBinary64:true,
+   global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly:false,
    global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
    globalGenerated2DTo3DTopoDSHistoryCertified:false,
    fullOpaqueSceneContinuousOcclusionCertified:false,
