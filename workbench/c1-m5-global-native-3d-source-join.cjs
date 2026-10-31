@@ -33,6 +33,33 @@ function auditC1M5NativeGlobal3DSourceJoin({
   throw new TypeError('reviewed C1 global 3D source proof requires original geometry and generated claims');
  const originalIds=new Set(geometry.data.edges.map(e=>
   geometry.id+'::'+[...e].sort().join('|')));
+ // Use the ACTUAL same-run ORIGINAL BRep curve ledger, rather than trusting
+ // the generated 3D row's "already matched" flag or its source ID alone.
+ const originalCurves=new Map();
+ if(!Array.isArray(cad.originalBRepSourceEdges)||
+    cad.originalBRepSourceEdges.length!==originalIds.size)
+  throw new RangeError('native global 3D HLR needs complete actual original BRep curve inventory');
+ for(const original of cad.originalBRepSourceEdges){
+  const range=original?.occtSourceCurveParameterRange,owner=original?.sourceEdgeId;
+  if(!originalIds.has(owner)||originalCurves.has(owner)||
+     original.occtSourceCurveType!=='line'||
+     original.originalOCCTBRepVertexXYZMatched!==true||
+     original.occtSourceCurve3DEndpointsAndMidpointVerified!==true||
+     !Array.isArray(range)||range.length!==2||
+     !range.every(Number.isFinite)||!(range[1]>range[0]))
+   throw new RangeError('native global 3D HLR original BRep curve source is incomplete');
+  originalCurves.set(owner,range);
+ }
+ const scopedSources=cad.nativeSourceScopedSharpOutputByView?.[view]?.rows;
+ if(!Array.isArray(scopedSources)||scopedSources.length!==originalIds.size)
+  throw new RangeError('native global 3D HLR needs full original scoped 3D source inventory');
+ const scopedById=new Map();
+ for(const scoped of scopedSources){
+  const owner=scoped?.originalPhysicalSourceEdgeId;
+  if(!originalIds.has(owner)||scopedById.has(owner))
+   throw new RangeError('native global 3D HLR scoped source IDs invalid or repeated');
+  scopedById.set(owner,scoped);
+ }
  const counts={};
  for(const [klass,collection] of Object.entries(CLASS_COUNTS)){
   const edges=cad?.[collection]?.[view];
@@ -56,13 +83,31 @@ function auditC1M5NativeGlobal3DSourceJoin({
  for(const row of native.rows){
   const ordinal=row?.wholeSolidGeneratedHLREdgeOrdinal;
   const klass=row?.hlrClass;
-  const interval=row?.originalNativeCurveParameterRange;
+  const interval=row?.originalNativeCurveParameterRange,
+   originalInterval=originalCurves.get(row?.originalPhysicalSourceEdgeId),
+   scoped=scopedById.get(row?.originalPhysicalSourceEdgeId),
+   sourceClass=klass==='visible-sharp'?scoped?.visible3D:scoped?.hidden3D,
+   scopedIntervals=sourceClass?.native3DGeneratedCurveIntervals,
+   matchingScoped=Array.isArray(scopedIntervals)&&Array.isArray(interval)?
+    scopedIntervals.filter(x=>x?.nativeSourceFilterOriginalEdgeId===
+      row.originalPhysicalSourceEdgeId&&
+      x.native3DCurveExactlySameAsOriginalAtThreeParameters===true&&
+      x.originalGeneratedTopoDSHistoryCertified===false&&
+      x.signedV5Action===false&&
+      Array.isArray(x.nativeOriginalCurveParameterRange)&&
+      x.nativeOriginalCurveParameterRange.length===2&&
+      x.nativeOriginalCurveParameterRange[0]===interval[0]&&
+      x.nativeOriginalCurveParameterRange[1]===interval[1]):[];
   if(!Object.hasOwn(CLASS_COUNTS,klass)||
      row.view!==view||!Number.isSafeInteger(ordinal)||
      ordinal<0||ordinal>=counts[klass]||
      !originalIds.has(row.originalPhysicalSourceEdgeId)||
      !Array.isArray(interval)||interval.length!==2||
      !interval.every(Number.isFinite)||!(interval[1]>interval[0])||
+     !Array.isArray(originalInterval)||interval[0]<originalInterval[0]||
+     interval[1]>originalInterval[1]||
+     sourceClass?.nativeSourceFilteredOriginalTopoDSEdge!==true||
+     matchingScoped.length!==1||
      row.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters!==true||
      row.global3DAnd2DHLRMeasuredPaperPairUnique!==true||
      row.global3DAndOriginalScoped3DHLRParameterIntervalExact!==true||
@@ -101,6 +146,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
    original3DCurveAndScopedNativeParameterIntervalCorroborated:same,
    paperOnlyCandidateActuallyBelongsToDifferent3DSource:!!truth&&!same,
    originalNativeCurveParameterRange:same?[...truth.originalNativeCurveParameterRange]:null,
+   sameRunOriginalBRepCurveBoundsAndSourceFilteredNative3DIntervalRechecked:true,
    generated2DTopoDSHistoryCertified:false,
    wholeOpaqueSceneContinuousVisibilityCertified:false,
    engineeringLineStyle:'undetermined',signedV5Action:false
@@ -114,6 +160,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
   claimCount:claims.length,sourceCorroboratedClaims:sourceCorroborated,
   differentOriginal3DSourceClaimsHeld:differentSource,
   unknownGlobalOrdinalClaimsHeld:unknownOrdinal,claims,
+  sameRunOriginalBRepAndScoped3DParameterInventoryRechecked:true,
   generated2DTopoDSHistoryCertified:false,
   globalOpaqueSceneContinuousOcclusionCertified:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0,
