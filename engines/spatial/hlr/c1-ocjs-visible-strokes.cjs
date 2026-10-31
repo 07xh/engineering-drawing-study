@@ -22,7 +22,7 @@ const {readRealOcjsSharpHLREdge}=
 const {auditC1RoundedInversePaperBoundaryAlias}=
  require('../../../workbench/c1-rounded-inverse-paper-boundary-alias.cjs');
 const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflicts,
- nativeScopedPaperSegmentsSame}=
+ nativeScopedPaperSegmentsSame,auditC1Global3D2DPaperPairEnvelope}=
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
@@ -1355,6 +1355,13 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
         paperOrdinals.push(i);
       if(paperOrdinals.length!==1||used2D.has(paperOrdinals[0]))
        throw new RangeError('global HLR 3D/2D sharp output lacks unique measured paper pairing');
+      // A tolerant paper hit is a candidate, not original TopoDS history.
+      // Reject generated 3D/2D pairings that exceed one source-scale ULP,
+      // even when a permissive paper matcher found a unique ordinal.
+      const pairEnvelope=auditC1Global3D2DPaperPairEnvelope(
+       paper,global.segments[paperOrdinals[0]]);
+      if(!pairEnvelope.compatible)
+       throw new RangeError('global generated 3D/2D HLR paper candidate exceeds source-scale ULP; cannot claim original source');
       used2D.add(paperOrdinals[0]);
       const originalCurveCandidates=new Set();
       for(const original of originalNativeEdgeHandles){
@@ -1400,6 +1407,10 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        originalNativeCurveParameterRange:[first,last],
        globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
        global3DAnd2DHLRMeasuredPaperPairUnique:true,
+       global3DAnd2DHLRMeasuredPaperPairExactBinary64:
+        pairEnvelope.exactBinary64Endpoints,
+       global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly:
+        pairEnvelope.sourceScaleOneULPBoundedRoundingOnly,
        global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
        globalGenerated2DTo3DTopoDSHistoryCertified:false,
        fullOpaqueSceneContinuousOcclusionCertified:false,
