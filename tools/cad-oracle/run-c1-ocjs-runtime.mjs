@@ -35,6 +35,9 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {auditExactBinary64PaperParameterPair,
+ auditExactBinary64PaperCandidateCoverage}=
+ require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
 const {auditC1Original3DSourceGapDyadicWitness}=
  require('../../workbench/c1-original-3d-source-gap-dyadic-forensics.cjs');
 const {auditC1OriginalOcctCurveParameterGapWitness}=
@@ -362,6 +365,45 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ // Keep the exact M5 source-axis audit live on the REAL pinned WASM scenes.
+ // All normal-scale original native V/H/W paper spans should agree with
+ // the historical scalar dominant-axis choice. The extreme independent
+ // counterexample below must NOT let overflowing binary64 choose u.
+ const exactAxisMap=new Map(geometry.data.edges.map(([v1,v2])=>[
+  geometry.id+'::'+[v1,v2].sort().join('|'),
+  [project(geometry.data.points[v1]),project(geometry.data.points[v2])]
+ ]));
+ let realNativePaperAxisChecks=0;
+ for(const view of ['V','H','W'])for(const row of
+  scopedConsumer.views[view].sourceParameterCandidates){
+  const endpoints=exactAxisMap.get(row.originalPhysicalSourceEdgeId);
+  assert.ok(endpoints,'missing original native source in axis check');
+  const p=endpoints[0][view],q=endpoints[1][view];
+  for(const diagnostic of row.exactBinary64PaperParameterDiagnostics){
+   const expected=Math.abs(q.u-p.u)>=Math.abs(q.v-p.v)?'u':'v';
+   assert.equal(diagnostic.dominantOriginalProjectionAxis,expected);
+   realNativePaperAxisChecks++;
+  }
+ }
+ assert.ok(realNativePaperAxisChecks>0);
+ console.error('REAL C1 DYADIC PAPER AXIS SOURCE CONCORDANCE '+
+  geometry.id+': '+JSON.stringify({receivedNativeHLRParameterPairsChecked:
+   realNativePaperAxisChecks,fullOriginal2DTopoDSHistoryCertified:false,
+   signedOfficialV5Actions:0}));
+ const huge=Number.MAX_VALUE;
+ const aHuge={u:-huge/2,v:-huge},bHuge={u:huge,v:huge};
+ assert.equal(Math.abs(bHuge.u-aHuge.u),Infinity);
+ assert.equal(Math.abs(bHuge.v-aHuge.v),Infinity);
+ const extreme=auditExactBinary64PaperParameterPair({sourceFrom:aHuge,
+  sourceTo:bHuge,measuredFrom:{u:huge/4,v:0},measuredTo:bHuge});
+ assert.equal(extreme.dominantOriginalProjectionAxis,'v');
+ const half=auditExactBinary64PaperCandidateCoverage({
+  sourceFrom:aHuge,sourceTo:bHuge,
+  segments:[{from:{u:aHuge.u,v:0},to:bHuge}]});
+ assert.equal(half.dominantOriginalProjectionAxis,'v');
+ assert.deepEqual(half.exactBinary64PaperPositiveLengthUncoveredIntervals,
+  [['0','1/2']]);
+ assert.equal(half.signedV5Action,false);
  assert.equal(scopedConsumer.schema,'draftai-c1-real-source-scoped-hlr-m5-consumer/1');
  assert.equal(scopedConsumer.actualOriginalTopoDSSourceFilteredHLRConsumed,true);
  assert.ok(scopedConsumer.counts.nativeSourceScopedOutputEdges>0);
