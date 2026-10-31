@@ -536,3 +536,41 @@ test('measured real native generated 3D evidence cannot bypass original BRep par
    /real generated HLR 3D source has no original native BRep endpoint samples/);
  }
 });
+
+test('exact dyadic HLR paper endpoint orientation distinguishes a one-ULP midpoint tie',()=>{
+ const {exactNativePaperEndpointOrientation:orientation}=
+  require('../../workbench/c1-m5-global-native-3d-source-join.cjs');
+ const p={u:0.5-2**-54,v:0},q={u:0.5,v:0};
+ const pair={projectedGenerated3DPaperFrom:{u:0,v:0},
+  projectedGenerated3DPaperTo:{u:1,v:0},
+  receivedGenerated2DPaperFrom:p,receivedGenerated2DPaperTo:q};
+ // The former Euclidean-sum comparison rounded both assignments to 1
+ // and falsely treated the received endpoint order as ambiguous.
+ const direct=Math.hypot(p.u,0)+Math.hypot(1-q.u,0);
+ const reverse=Math.hypot(q.u,0)+Math.hypot(1-p.u,0);
+ assert.equal(direct,reverse);
+ assert.equal(orientation(pair),'direct');
+ assert.equal(orientation({...pair,
+  receivedGenerated2DPaperFrom:q,receivedGenerated2DPaperTo:p}),'reverse');
+});
+
+test('native paper seam orientation remains exact at extreme scales and holds true ambiguity',()=>{
+ const {exactNativePaperEndpointOrientation:orientation}=
+  require('../../workbench/c1-m5-global-native-3d-source-join.cjs');
+ const max=Number.MAX_VALUE;
+ const large={projectedGenerated3DPaperFrom:{u:-max,v:0},
+  projectedGenerated3DPaperTo:{u:max,v:0},
+  receivedGenerated2DPaperFrom:{u:-max,v:0},
+  receivedGenerated2DPaperTo:{u:max,v:0}};
+ assert.equal(orientation(large),'direct');
+ assert.equal(orientation({...large,
+  receivedGenerated2DPaperFrom:large.receivedGenerated2DPaperTo,
+  receivedGenerated2DPaperTo:large.receivedGenerated2DPaperFrom}),'reverse');
+ const perpendicular={projectedGenerated3DPaperFrom:{u:0,v:0},
+  projectedGenerated3DPaperTo:{u:1,v:0},
+  receivedGenerated2DPaperFrom:{u:0,v:0},
+  receivedGenerated2DPaperTo:{u:0,v:1}};
+ assert.equal(orientation(perpendicular),'ambiguous');
+ assert.throws(()=>orientation({...perpendicular,
+  receivedGenerated2DPaperTo:{u:Infinity,v:0}}),/finite same-run/);
+});

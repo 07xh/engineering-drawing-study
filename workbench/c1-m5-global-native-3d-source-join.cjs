@@ -20,6 +20,8 @@ const freeze=o=>{
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const {project}=require('../core/projection/conventions.js');
+const {dyadic,difference,product,sum,sign}=
+ require('../core/numeric/binary64-dyadic.cjs');
 const {auditC1Global3D2DPaperPairEnvelope}=
  require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {auditC1ExactBinary64PaperAffineWitness}=
@@ -28,6 +30,35 @@ const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
  require('./c1-exact-two-axis-generated-paper-coverage.cjs');
 const CLASS_COUNTS={'visible-sharp':'views','hidden-sharp':'hiddenSharpViews'};
 const key=(klass,ordinal)=>klass+'|'+ordinal;
+
+/**
+ * Exact binary64 dyadic orientation of RECEIVED generated 2D HLR endpoints
+ * against the independently projected native 3D curve endpoints.
+ *
+ * The difference between the two squared endpoint-assignment costs is
+ * -2 * dot(sourceTo-sourceFrom, receivedTo-receivedFrom). Comparing
+ * Euclidean-distance sums with Math.hypot can round distinct assignments
+ * to a false tie (or overflow). This only selects the observed paper
+ * endpoint order; it never certifies generated TopoDS vertex identity,
+ * source parameter history, occlusion, engineering style or V5.
+ */
+function exactNativePaperEndpointOrientation(pair){
+ const points=[pair?.projectedGenerated3DPaperFrom,
+  pair?.projectedGenerated3DPaperTo,
+  pair?.receivedGenerated2DPaperFrom,
+  pair?.receivedGenerated2DPaperTo];
+ if(!points.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
+  throw new TypeError('finite same-run native 3D and generated 2D paper endpoints required');
+ const [a,b,p,q]=points;
+ const dot=sum(
+  product(difference(dyadic(b.u),dyadic(a.u)),
+   difference(dyadic(q.u),dyadic(p.u))),
+  product(difference(dyadic(b.v),dyadic(a.v)),
+   difference(dyadic(q.v),dyadic(p.v))));
+ const direction=sign(dot);
+ return direction>0?'direct':direction<0?'reverse':'ambiguous';
+}
+
 
 /**
  * Replay native global HLR 3D endpoint coordinates at the ORIGINAL BRep
@@ -491,29 +522,15 @@ function auditC1M5NativeGlobal3DSourceJoin({
    const left=a.nativeGenerated3DTo,right=b.nativeGenerated3DFrom;
    if(!['x','y','z'].every(axis=>left[axis]===right[axis]))
     throw new RangeError('adjacent real native generated 3D HLR source pieces have different XYZ at one original parameter');
-   const endPaper=pair=>{
-    const d=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
-    const direct=d(pair.projectedGenerated3DPaperFrom,
-      pair.receivedGenerated2DPaperFrom)+
-     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperTo);
-    const reverse=d(pair.projectedGenerated3DPaperFrom,
-      pair.receivedGenerated2DPaperTo)+
-     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperFrom);
-    return direct<reverse?pair.receivedGenerated2DPaperTo:
-     reverse<direct?pair.receivedGenerated2DPaperFrom:null;
-   };
-   const startPaper=pair=>{
-    const d=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
-    const direct=d(pair.projectedGenerated3DPaperFrom,
-      pair.receivedGenerated2DPaperFrom)+
-     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperTo);
-    const reverse=d(pair.projectedGenerated3DPaperFrom,
-      pair.receivedGenerated2DPaperTo)+
-     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperFrom);
-    return direct<reverse?pair.receivedGenerated2DPaperFrom:
-     reverse<direct?pair.receivedGenerated2DPaperTo:null;
-   };
-   const lp=endPaper(a),rp=startPaper(b);
+   // The native 3D seam is already checked in exact XYZ. Pair the
+   // RECEIVED 2D endpoints by exact dyadic orientation, not rounded
+   // Euclidean sums that can erase a one-ULP distinction.
+   const leftOrientation=exactNativePaperEndpointOrientation(a),
+    rightOrientation=exactNativePaperEndpointOrientation(b);
+   const lp=leftOrientation==='direct'?a.receivedGenerated2DPaperTo:
+    leftOrientation==='reverse'?a.receivedGenerated2DPaperFrom:null;
+   const rp=rightOrientation==='direct'?b.receivedGenerated2DPaperFrom:
+    rightOrientation==='reverse'?b.receivedGenerated2DPaperTo:null;
    native3DGeneratedSourceParameterSeams.push({
     nativeOriginalParameter:common,
     previousHLRClass:previous.part.hlrClass,
@@ -651,4 +668,5 @@ function auditC1M5NativeGlobal3DSourceJoin({
   officialV5Authorized:false
  });
 }
-module.exports={auditC1M5NativeGlobal3DSourceJoin};
+module.exports={auditC1M5NativeGlobal3DSourceJoin,
+ exactNativePaperEndpointOrientation};
