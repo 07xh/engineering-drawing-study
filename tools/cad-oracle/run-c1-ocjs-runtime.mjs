@@ -1729,6 +1729,40 @@ for(const [index,geometry] of general.entries()){
    boundedPaperDriftSourceAttributionsHeld:roundedIndexedM5.length,
    stillUnsigned:true
   }));
+ // In the REAL pinned WASM run, the H-view C1SkewTetra A|C tiny
+ // original-source gap now consumes the SAME exact OCCT 3D/closed-ray/M4
+ // joint as W A|C/A|D, without upgrading its generated paper to M5/V5.
+ const hGaps=unresolvedM5.records.filter(r=>
+  r.kind==='positive-original-m0-parameter-gap'&&r.view==='H');
+ const auditedH=hGaps.map(r=>
+  r.OriginalPhysicalNativeParameterClosedRayM4JointEvidence);
+ assert.equal(unresolvedM5.counts.HPositivePaperGapsWithRealNativeClosed3DJointProof,
+  auditedH.filter(r=>r?.jointOriginalClosedPhysicalSourceVisibilityProven===true).length);
+ assert.equal(unresolvedM5.counts.HPositivePaperGapsWithOriginal3DJointProofHeld,
+  auditedH.filter(r=>r?.jointOriginalClosedPhysicalSourceVisibilityProven!==true).length);
+ assert.ok(auditedH.every(j=>j&&j.view==='H'&&
+  j.generatedPaperGapStrictlyPositiveStillHeld===true&&
+  j.generated2DTopoDSHistoryCertified===false&&
+  j.globalOpaqueSceneContinuousVisibilityCertified===false&&
+  j.actualGlobal2DPaperClosedEndpointsCertified===false&&
+  j.engineeringLineStyle==='undetermined'&&j.signedV5Action===false));
+ if(geometry.id==='C1SkewTetra'){
+  assert.equal(hGaps.length,1,'genuine H A|C original source gap must remain positive');
+  assert.equal(hGaps[0].sourceEdgeId,'C1SkewTetra::A|C');
+  assert.ok(hGaps[0].originalM0PositiveParameterGap[1]>
+   hGaps[0].originalM0PositiveParameterGap[0]);
+ }else assert.equal(hGaps.length,0);
+ console.error('REAL C1 H ORIGINAL SOURCE NATIVE CLOSED-RAY/M4 JOINT '+
+  geometry.id+': '+JSON.stringify(hGaps.map((r,i)=>({
+   sourceEdgeId:r.sourceEdgeId,positiveGap:r.originalM0PositiveParameterGap,
+   physicalOriginal3DSourceJointProven:
+    auditedH[i].jointOriginalClosedPhysicalSourceVisibilityProven===true,
+   exactTwoAxisPaperResidual:
+    auditedH[i].nativeGlobalGenerated2DPaperEndpointDriftEvidence
+     ?.receivedExactTwoAxisQualifiedPaperCoverage
+     ?.positiveLengthTwoAxisPaperResidualsStillPresent??null,
+   generatedTopoDSHistoryCertified:false,formalM5V5Signed:false
+  }))));
  // The TWO real W-view tiny positive gaps must now independently join
  // original-indexed HLR visibility class, complete native source 3D
  // parameter bounds, full closed convex original vertex rays, and
