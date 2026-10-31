@@ -103,14 +103,14 @@ function transferGuides(point,transform){
  // not a precomputed result stroke or a source of line-style authority.
  // At zero depth M=origin: omit the collapsed diagonal instead of
  // inventing a visible 45-degree line.
- const depth=p.H.y-t.origin.y;
+ const depth=project(point).H.v*t.scale;
  const diagonal=depth===0?[]:[{
   kind:'depth-45',from:{...t.origin},to:{...p.M},
   sourceModelAxis:'y',sourceModelValue:project(point).H.v,
   sourceKnownView:'H',targetView:'W',
   constructionOnly:true
  }];
- if(p.M.x-t.origin.x!==depth||p.M.y-t.origin.y!==depth||
+ if(p.M.x!==t.origin.x+depth||p.M.y!==t.origin.y+depth||
     p.W.x!==p.M.x||p.H.y!==p.M.y)
   throw new RangeError('first-angle 45-degree depth transfer is not geometrically aligned');
  return {points:p,guides:[
