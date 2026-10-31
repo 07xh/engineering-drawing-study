@@ -222,6 +222,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
+  positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection:0,
+  positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity:0,
   VPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   HPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   HPositivePaperGapsWithOriginal3DJointProofHeld:0,
@@ -556,6 +558,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     originalClosedRayClear:closedOriginalSourceRay,openRayClass:openClass,
     originalEndpointWitnesses:endpoints,exactPaperGap
    }):null;
+  if(kind==='positive-original-m0-parameter-gap'){
+   const exactNativeM0=joint?.originalNativeBRepM0PhysicalVertexBijectionCertified===true;
+   counts.positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection+=Number(exactNativeM0);
+   counts.positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity+=Number(!exactNativeM0);
+  }
   const jointW=row.view==='W'?joint:null,
    jointH=row.view==='H'?joint:null,
    receivedH=jointH?.nativeGlobalGenerated2DPaperEndpointDriftEvidence;
@@ -649,6 +656,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    generatedEdgeEngineeringLineStyle:'undetermined',
    signedV5Action:false});
  }
+ if(counts.positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection+
+    counts.positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity!==
+    counts.positiveOriginalPaperGapIntervals)
+  throw new RangeError('original native TopoDS 3D endpoint identity evidence partition incomplete');
  if(counts.unrepresentedOriginalSourceViews!==audit.missingOriginalM0SourceViewRows.length||
     counts.positiveOriginalPaperGapIntervals!==audit.rows.length)
   throw new RangeError('M5 unrepresented/source-gap original inventory incomplete');
