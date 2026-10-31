@@ -29,6 +29,90 @@ const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
 const CLASS_COUNTS={'visible-sharp':'views','hidden-sharp':'hiddenSharpViews'};
 const key=(klass,ordinal)=>klass+'|'+ordinal;
 
+/**
+ * Replay native global HLR 3D endpoint coordinates at the ORIGINAL BRep
+ * curve's native parameters. A 2D projection cannot detect a forged change
+ * along the observer ray: this separate 3D check must happen BEFORE the
+ * generated 3D->2D paper pairing is accepted.
+ *
+ * Exact binary64 original BRepAdaptor endpoint samples are mandatory for
+ * start/end anchors. Partial native curve cuts can introduce OCCT roundoff;
+ * allow a tightly source-scaled numeric COMPATIBILITY check there, never
+ * a TopoDS identity, full visibility or M5 signoff.
+ */
+const ulpView=new DataView(new ArrayBuffer(8));
+function ulpAtScale(value){
+ if(!Number.isFinite(value)||value<0)
+  throw new TypeError('finite absolute native BRep coordinate scale required');
+ ulpView.setFloat64(0,value,false);
+ const exponent=(ulpView.getUint32(0,false)>>>20)&0x7ff;
+ return exponent<=1?Number.MIN_VALUE:2**(exponent-1023-52);
+}
+function replayGenerated3DEndpointsAgainstOriginalNativeCurve(original,range,from,to){
+ const a=original?.occtSourceCurveFirstPoint3D,
+  b=original?.occtSourceCurveLastPoint3D,
+  originalRange=original?.occtSourceCurveParameterRange;
+ const valid=p=>p&&['x','y','z'].every(k=>
+  typeof p[k]==='number'&&Number.isFinite(p[k]));
+ if(!valid(a)||!valid(b)||!valid(from)||!valid(to)||
+    !Array.isArray(originalRange)||originalRange.length!==2||
+    !Array.isArray(range)||range.length!==2||
+    !range.every(Number.isFinite)||!(range[1]>range[0])||
+    !(originalRange[1]>originalRange[0])||
+    range[0]<originalRange[0]||range[1]>originalRange[1])
+  throw new RangeError('complete ORIGINAL native BRep curve samples and global generated 3D parameters required');
+ const span=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+ if(!(span>0)||!Number.isFinite(span))
+  throw new RangeError('original native BRep source curve collapsed');
+ const sourceScale=Math.max(...[a,b].flatMap(p=>
+  ['x','y','z'].map(k=>Math.abs(p[k]))));
+ const maxRoundoff=Math.min(32*ulpAtScale(sourceScale),span*1e-6);
+ const exactPoint=(x,y)=>['x','y','z'].every(k=>x[k]===y[k]);
+ const rows=[[range[0],from,'from'],[range[1],to,'to']].map(([t,point,side])=>{
+  const fraction=(t-originalRange[0])/(originalRange[1]-originalRange[0]);
+  const expected={x:a.x+(b.x-a.x)*fraction,
+   y:a.y+(b.y-a.y)*fraction,z:a.z+(b.z-a.z)*fraction};
+  if(!Number.isFinite(fraction)||fraction<0||fraction>1||
+     !valid(expected))
+   throw new RangeError('original BRep native source parameter interpolation invalid');
+  const atOriginalFirst=t===originalRange[0],
+   atOriginalLast=t===originalRange[1];
+  // On exact original native parameter endpoints, compare received
+  // BRepAdaptor.Value samples directly, never through an interpolation.
+  const anchor=atOriginalFirst?a:atOriginalLast?b:null;
+  const discrepancy=Math.max(...['x','y','z'].map(k=>
+   Math.abs(point[k]-(anchor??expected)[k])));
+  const sourceAnchorExactlyMatched=anchor!==null&&exactPoint(point,anchor);
+  if((anchor!==null&&!sourceAnchorExactlyMatched)||
+     (anchor===null&&!(discrepancy<=maxRoundoff)))
+   throw new RangeError('generated global HLR 3D endpoint changes original native BRep curve depth or parameter');
+  return {
+   side,nativeSourceParameter:t,atOriginalFirst,atOriginalLast,
+   originalNativeCurveEndpointExact:sourceAnchorExactlyMatched,
+   interiorNativeCurveWithinSourceScaleRoundoff:
+    anchor===null&&discrepancy<=maxRoundoff,
+   measuredNative3DPoint:{...point},
+   originalNative3DPointAtThisParameter:{...(anchor??expected)},
+   native3DCoordinateDiscrepancyMm:discrepancy,
+   sourceScaledUncertifiedRoundoffEnvelopeMm:anchor===null?maxRoundoff:0,
+   generatedToOriginalTopoDSVertexIdentityCertified:false,
+   signedV5Action:false
+  };
+ });
+ return freeze({
+  schema:'draftai-c1-native-generated-3d-endpoint-to-original-brep-parameter-replay/1',
+  originalNativeParameterRange:[...originalRange],
+  actualGeneratedNativeParameterRange:[...range],
+  nativeGlobal3DCurveEndpointParameterReplayCompatible:true,
+  nativeSourceCurveFirstAndLastParameterAnchorsNeverRounded:true,
+  endpoints:rows,
+  generated2DTopoDSHistoryCertified:false,
+  continuousAllOpaqueSceneVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
+
+
 function auditC1M5NativeGlobal3DSourceJoin({
  geometry,cad,view,sourceEdgeId,generatedClaims
 }={}){
@@ -44,7 +128,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
   geometry.id+'::'+[...e].sort().join('|')));
  // Use the ACTUAL same-run ORIGINAL BRep curve ledger, rather than trusting
  // the generated 3D row's "already matched" flag or its source ID alone.
- const originalCurves=new Map();
+ const originalCurves=new Map(),originalBRepById=new Map();
  if(!Array.isArray(cad.originalBRepSourceEdges)||
     cad.originalBRepSourceEdges.length!==originalIds.size)
   throw new RangeError('native global 3D HLR needs complete actual original BRep curve inventory');
@@ -58,6 +142,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
      !range.every(Number.isFinite)||!(range[1]>range[0]))
    throw new RangeError('native global 3D HLR original BRep curve source is incomplete');
   originalCurves.set(owner,range);
+  originalBRepById.set(owner,original);
  }
  const scopedSources=cad.nativeSourceScopedSharpOutputByView?.[view]?.rows;
  if(!Array.isArray(scopedSources)||scopedSources.length!==originalIds.size)
@@ -237,6 +322,14 @@ function auditC1M5NativeGlobal3DSourceJoin({
     typeof p[axis]==='number'&&Number.isFinite(p[axis]));
    if(!finite3D(actualFrom)||!finite3D(actualTo))
     throw new RangeError('nonfinite real global native HLR 3D curve endpoint');
+   // Check actual 3D depth/XYZ at native source t, not just V/H/W paper.
+   // Fake depth-only edits leave paper unchanged but violate the original
+   // BRep curve and must never borrow source provenance.
+   const originalBRep=originalBRepById.get(row.originalPhysicalSourceEdgeId);
+   const native3DParameterReplay=originalBRep?.occtSourceCurveFirstPoint3D&&
+      originalBRep?.occtSourceCurveLastPoint3D?
+    replayGenerated3DEndpointsAgainstOriginalNativeCurve(
+     originalBRep,interval,actualFrom,actualTo):null;
    const actualPaper={from:project(actualFrom)[view],to:project(actualTo)[view]};
    const global2D=cad[CLASS_COUNTS[klass]][view][ordinal];
    const verified=auditC1Global3D2DPaperPairEnvelope(actualPaper,global2D);
@@ -250,6 +343,8 @@ function auditC1M5NativeGlobal3DSourceJoin({
     view,hlrClass:klass,globalOrdinal:ordinal,
     sourceEdgeId:row.originalPhysicalSourceEdgeId,
     nativeGenerated3DFrom:{...actualFrom},nativeGenerated3DTo:{...actualTo},
+    measured3DEndpointsAgainstOriginalBRepNativeParameterReplay:
+     native3DParameterReplay,
     projectedGenerated3DPaperFrom:{...actualPaper.from},
     projectedGenerated3DPaperTo:{...actualPaper.to},
     receivedGenerated2DPaperFrom:{...global2D.from},
