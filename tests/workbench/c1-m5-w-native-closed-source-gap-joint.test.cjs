@@ -382,7 +382,7 @@ test('tolerantly source-matched but EXACTLY displaced native original 3D vertice
 });
 test('rounded original BRepAdaptor endpoint sample is explicitly distinct from actual TopoDS M0 vertex identity',()=>{
  const x=fixture(),source=x.cad.originalBRepSourceEdges[0];
- source.occtSourceCurveLastPoint3D.z+=Number.EPSILON;
+ source.occtSourceCurveLastPoint3D.z+=1e-12;
  const r=audit(x),proof=r.originalNativeBRepToM0ExactPhysicalVertexEvidence;
  assert.equal(proof.exactNativeOriginal3DVertexToM0EndpointBijection,true);
  assert.equal(proof.nativeOriginalCurveEndpointSamplesExactlyEqualM0,false);
