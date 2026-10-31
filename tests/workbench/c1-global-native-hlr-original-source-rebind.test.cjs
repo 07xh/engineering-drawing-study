@@ -357,6 +357,31 @@ function withSecondDistinctIndexedOriginalSource(x){
  });
  return x;
 }
+test('V/H/W source inventories must be the same reviewed original solid before any all-view attribution',()=>{
+ const genuine=audit(withRealIndexedStatus(fixture()));
+ assert.equal(genuine.allThreeViewsShareExactOriginalPhysicalSourceInventory,true);
+ assert.equal(genuine.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,true);
+ assert.equal(genuine.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,true);
+ // Every individual view has a locally valid exact source/filter bijection,
+ // but the V view has a second original input edge absent from H and W.
+ // A conjunction of three independent per-view booleans is not a
+ // whole-solid source-identity proof.
+ const mixed=audit(withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture())));
+ for(const view of ['V','H','W'])
+  assert.equal(mixed.exactSourceFilterBijectionByView[view].
+   completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
+ assert.equal(mixed.allThreeViewsShareExactOriginalPhysicalSourceInventory,false);
+ assert.equal(mixed.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+ assert.equal(mixed.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,false);
+ assert.equal(mixed.officialV5Authorized,false);
+ // Even matching source sets cannot be borrowed by another geometry ID.
+ const foreign=withRealIndexedStatus(fixture());
+ foreign.cad.sourceGeometryId='foreign-geometry';
+ const foreignResult=audit(foreign);
+ assert.equal(foreignResult.allThreeViewsShareExactOriginalPhysicalSourceInventory,false);
+ assert.equal(foreignResult.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+ assert.equal(foreignResult.signedV5ActionCount,0);
+});
 test('two real source filters require distinct positive integer native EdgeMap indices before causal attribution',()=>{
  const valid=withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()));
  const accepted=audit(valid);
