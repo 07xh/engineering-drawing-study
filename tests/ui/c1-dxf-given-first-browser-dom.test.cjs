@@ -33,7 +33,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no V5 signing',async()=>{
  const raw=fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8');
  const {document,window}=parseHTML(raw);
- for(const e of document.querySelectorAll('input,button,img,textarea')){
+ for(const e of document.querySelectorAll('input,button,img,textarea,select')){
   for(const prop of ['disabled','checked','hidden'])
    Object.defineProperty(e,prop,{configurable:true,
     get(){return this.hasAttribute(prop);},
@@ -44,6 +44,14 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
    set(value){this.__typed=String(value);}
   });
  }
+ // LinkeDOM models the real HTMLSelectElement value as read-only;
+ // the browser permits seeking by setting it, so mirror that behavior.
+ const jump=document.getElementById('v5StepJump');
+ Object.defineProperty(jump,'value',{configurable:true,
+  get(){return this.__selectedV5Step??
+   this.querySelector('option')?.getAttribute('value')??'';},
+  set(value){this.__selectedV5Step=String(value);}
+ });
  const pack=given(),body=JSON.stringify(pack);
  const file={name:'source.json',size:body.length,text:async()=>body};
  Object.defineProperty(document.getElementById('givenFile'),'files',{
