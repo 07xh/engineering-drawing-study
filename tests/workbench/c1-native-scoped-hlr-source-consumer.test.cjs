@@ -7,6 +7,18 @@ const {auditC1ScopedHLRSourceIdentityConflicts:checkNativeClaims}=
  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
+// Only positive synthetic alternative OCCT inventories refresh their expected
+// producer ledger. Tampering tests deliberately leave it stale.
+function rebindFixtureNativeLedger(cad,view){
+ const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+ scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+  matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+  wholeSolidCounts:{
+   'visible-sharp':cad.views[view].length,
+   'hidden-sharp':cad.hiddenSharpViews[view].length
+  }
+ });
+}
 function fixture(){
  const geometry={id:'g',data:{points:{
   A:{x:0,y:0,z:0},B:{x:10,y:2,z:3},
@@ -62,16 +74,7 @@ function fixture(){
    ]
   };
  }
- for(const view of ['V','H','W']){
-  const scoped=cad.nativeSourceScopedSharpOutputByView[view];
-  scoped.nativeSourceIdentityConflicts=checkNativeClaims({
-   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
-   wholeSolidCounts:{
-    'visible-sharp':cad.views[view].length,
-    'hidden-sharp':cad.hiddenSharpViews[view].length
-   }
-  });
- }
+ for(const view of ['V','H','W'])rebindFixtureNativeLedger(cad,view);
  return {geometry,cad,id0,id1,witness,paper};
 }
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
@@ -334,6 +337,7 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  ];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ rebindFixtureNativeLedger(x.cad,view);
  const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
  assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
   [[0.5,next]]);
@@ -378,6 +382,7 @@ test('native source-scoped HLR never treats simultaneously visible and hidden or
  }];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ rebindFixtureNativeLedger(x.cad,view);
  const r=audit(x),row=r.views.V.sourceParameterCandidates[0];
  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
  assert.equal(row.paperDerivedPositiveLengthVisibleHiddenConflictDetected,true);
