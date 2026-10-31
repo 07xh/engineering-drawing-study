@@ -16,14 +16,15 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
    });
   }
  }
- const scene=vm.runInNewContext(
+ const scene={document,window,require:createRequire(entry),
+  URL:{createObjectURL:()=>'',revokeObjectURL:()=>{}},
+  performance:{now:()=>0},requestAnimationFrame:()=>0,
+  cancelAnimationFrame:()=>{},console};
+ vm.runInNewContext(
   fs.readFileSync(entry,'utf8')+
   '\n;this.__setCurrent=(r)=>{current=r;revision=r.solution.revision;};'+
   '\n;this.__draw=()=>drawV5();',
-  {document,window,require:createRequire(entry),
-   URL:{createObjectURL:()=>'',revokeObjectURL:()=>{}},
-   performance:{now:()=>0},requestAnimationFrame:()=>0,
-   cancelAnimationFrame:()=>{},console},{filename:entry});
+  scene,{filename:entry});
  const $=id=>document.getElementById(id);
  assert.equal($('v5StepJump').disabled,true);
  assert.equal($('v5StepActions').children.length,0);
