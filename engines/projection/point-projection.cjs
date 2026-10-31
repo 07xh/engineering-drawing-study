@@ -58,7 +58,8 @@ function solveProjection({knownViews={},knownPoint,sheetTransform={origin:{x:360
  const reasons={
   VH:'正面与水平投影具有相同的 x 值，沿同一竖联系线传递。',
   'height-VW':'正面与侧面投影保持相同高度 z。',
-  'depth-HM':'使用 45°深度转移，水平投影的 y 值先传到等距辅助点 M。',
+  'depth-45':'以已知俯视图深度 y 和画纸原点 O 构造真实 45°线 O→M；M 的水平、竖直偏移均为 y×比例，不能反向画线或猜测待求点。',
+  'depth-HM':'从已知俯视图 H 沿水平辅助线到已构造的 45°转移点 M，保持相同深度 y。',
   'depth-MW':'由 M 引出竖联系线，将相同的深度 y 转给侧面投影。'
  };
  const steps=transfer.guides.map((guide,index)=>({
@@ -67,7 +68,14 @@ function solveProjection({knownViews={},knownPoint,sheetTransform={origin:{x:360
   from:{...guide.from},to:{...guide.to},
   explanation:reasons[guide.kind],
   style:'auxiliary',unit:'px',resultScope:'point-3d-linear',
-  source:'computed-first-angle-guides'
+  source:'computed-first-angle-guides',
+  ...(guide.kind==='depth-45'?{
+   sourceModelAxis:guide.sourceModelAxis,
+   sourceModelValue:guide.sourceModelValue,
+   sourceKnownView:guide.sourceKnownView,
+   targetView:guide.targetView,
+   constructionOnly:true
+  }:{})
  }));
  return {...base,point:{...point},views, sheet:transfer.points,
   guides:transfer.guides,steps,reason:
