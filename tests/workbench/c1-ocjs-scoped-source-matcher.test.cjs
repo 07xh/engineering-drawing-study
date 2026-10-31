@@ -194,6 +194,37 @@ test('native source-scoped identities reject different original edges claiming o
  assert.equal(result.signedV5ActionCount,0);
  assert.ok(Object.isFrozen(result.rows[0]));
 });
+test('native global ordinal claim must belong to the same-run paper inventory and stay unsigned',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const genuine=match(setup('V'));
+ assert.equal(audit({matches:[genuine],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0}}).uniqueNativeClaims,1);
+ for(const mutate of [
+  x=>{x.globalPaperCandidateOrdinals=[1,2];},
+  x=>{x.globalPaperCandidateOrdinals=[];},
+  x=>{x.globalPaperCandidateOrdinals=[0,0];},
+  x=>{x.globalPaperCandidateOrdinals=[-1,0];},
+  x=>{x.paperCoincidenceAloneIsNotOriginalTopoDSHistory=false;},
+  x=>{x.partnerCandidateDoesNotProveOriginalSourceHistory=false;},
+  x=>{x.engineeringLineStyle='solid';},
+  x=>{x.nativePartnerOnlyCandidate=true;}
+ ]){
+  const forged={...genuine,
+   globalPaperCandidateOrdinals:[...genuine.globalPaperCandidateOrdinals],
+   globalDirectSameGeneratedTopoDSOrdinals:
+    [...genuine.globalDirectSameGeneratedTopoDSOrdinals]};
+  mutate(forged);
+  assert.throws(()=>audit({matches:[forged],wholeSolidCounts:{
+   'visible-sharp':3,'hidden-sharp':0}}),/unsigned actual native scoped match/);
+ }
+ // Paper-only and native partner-only candidates remain diagnostic.
+ const paperOnly=setup('W');paperOnly.scopedNativeEdge=native('unrelated');
+ const held=match(paperOnly);
+ assert.equal(audit({matches:[held]}).uniqueNativeClaims,0);
+ assert.equal(audit({matches:[held]}).signedV5ActionCount,0);
+});
+
 test('paper and IsPartner candidates never become native source identity claims',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
