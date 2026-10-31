@@ -63,17 +63,19 @@ function auditC1Global3D2DPaperPairEnvelope(source3DPaper,generated2DPaper){
  const span=Math.hypot(
   source3DPaper.to.u-source3DPaper.from.u,
   source3DPaper.to.v-source3DPaper.from.v);
- // A large offset on V must never enlarge the U rounding allowance
- // (or vice versa). The ULP budget is local to each ORIGINAL endpoint
- // coordinate; using the largest 2D coordinate lets an unrelated axis
- // hide a positive transverse drift on a long generated HLR edge.
+ // Each axis gets its OWN original segment-scale ULP. Native OCCT
+ // pcurve extraction may round an endpoint at zero by one ULP of the
+ // SAME-axis source extent (e.g. V=23 -> V=-(2**-48) at the origin).
+ // An unrelated huge V offset must not enlarge the U budget.
+ // This is a necessary unsigned paper witness, NOT a proof that a
+ // positive gap is closed or that generated TopoDS history exists.
  const cap=Number.isFinite(span)&&span>0?span*1e-6:0;
- const bound=(p,axis)=>Math.min(oneUlpAtScale(Math.abs(p[axis])),cap);
- const budget=Math.max(
-  bound(source3DPaper.from,'u'),bound(source3DPaper.from,'v'),
-  bound(source3DPaper.to,'u'),bound(source3DPaper.to,'v'));
- const close=(a,b)=>Math.abs(a.u-b.u)<=bound(a,'u')&&
-  Math.abs(a.v-b.v)<=bound(a,'v');
+ const axisBound=axis=>Math.min(oneUlpAtScale(Math.max(
+  Math.abs(source3DPaper.from[axis]),Math.abs(source3DPaper.to[axis]))),cap);
+ const uBudget=axisBound('u'),vBudget=axisBound('v');
+ const budget=Math.max(uBudget,vBudget);
+ const close=(a,b)=>Math.abs(a.u-b.u)<=uBudget&&
+  Math.abs(a.v-b.v)<=vBudget;
  const compatible=budget>0&&(
   close(source3DPaper.from,generated2DPaper.from)&&
   close(source3DPaper.to,generated2DPaper.to)||
