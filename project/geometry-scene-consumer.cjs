@@ -303,6 +303,53 @@ function requireCompleteWebGLFeatureBudget(scene){
   engineeringLineStyle:'undetermined',v5Authorized:false});
 }
 
+// A conservative DISPLAY-ONLY guard against shading concave, nonplanar or
+// self-intersecting mesh loops as invented triangular surfaces. Local turns
+// alone are insufficient: all pentagram turns can share one sign even though
+// edges cross. Every boundary edge must support all other face vertices on
+// the SAME side of its plane. Failure leaves the true source edges as lines.
+// Not an M0 convex-body, watertightness, occlusion or official line-style proof.
+function canShadeMeshFaceForDisplay(points,face,extent){
+ if(!points||typeof points!=='object'||!Array.isArray(face)||
+    face.length<3||face.length>128||
+    !Number.isFinite(extent)||extent<=0)return false;
+ const vertices=face.map(id=>points[id]);
+ if(vertices.some(p=>!p||!['x','y','z'].every(k=>finite(p[k]))))
+  return false;
+ const subtract=(a,b)=>[a.x-b.x,a.y-b.y,a.z-b.z];
+ const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],
+  a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+ const origin=vertices[0],normal=cross(
+  subtract(vertices[1],origin),subtract(vertices[2],origin));
+ const magnitude=Math.hypot(...normal);
+ const tolerance=1e-7*Math.max(1,extent);
+ if(!finite(magnitude)||magnitude<=tolerance*tolerance)return false;
+ for(const p of vertices)
+  if(Math.abs(dot(normal,subtract(p,origin))/magnitude)>tolerance)
+   return false;
+ let winding=0;
+ for(let i=0;i<vertices.length;i++){
+  const start=vertices[i],next=vertices[(i+1)%vertices.length],
+   direction=subtract(next,start),length=Math.hypot(...direction);
+  if(!(length>tolerance)||!finite(length))return false;
+  let side=0;
+  for(let j=0;j<vertices.length;j++){
+   if(j===i||j===(i+1)%vertices.length)continue;
+   const signed=dot(cross(direction,subtract(vertices[j],start)),
+    normal)/magnitude;
+   if(!finite(signed))return false;
+   if(Math.abs(signed)<=tolerance*length)continue;
+   const nextSide=Math.sign(signed);
+   if(side&&nextSide!==side)return false;
+   side=nextSide;
+  }
+  if(!side||winding&&winding!==side)return false;
+  winding=side;
+ }
+ return true;
+}
+
 function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
  camera={yaw:0,pitch:25},hiddenObjectIds=[],selectedObjectId=null,
  viewTransforms=null}={}){
@@ -347,4 +394,4 @@ function compileGeometryScene(scene,{sheet={origin:{x:360,y:208},scale:5},
 // One display-only raster path renderer is shared with C3's exact
 // source-interval annotations. It is NOT a mathematical approximation.
 module.exports={compileGeometryScene,arcPath,sourceFeatureKey,drawAnalyticPath,
- requireCompleteWebGLFeatureBudget};
+ requireCompleteWebGLFeatureBudget,canShadeMeshFaceForDisplay};
