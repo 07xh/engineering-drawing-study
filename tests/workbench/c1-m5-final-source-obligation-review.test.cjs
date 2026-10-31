@@ -123,3 +123,14 @@ test('source IDs containing delimiters cannot collide with source interval keys'
  const d=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[.5,1]});
  assert.equal(review(ledger([c,d])).total,2);
 });
+
+test('audited view coverage is derived from actual rows, not a claimed V/H/W completion',()=>{
+ const result=review(ledger([
+  span({view:'W',sourceEdgeId:'G::A|B'}),
+  span({view:'V',sourceEdgeId:'G::A|B'})
+ ]));
+ assert.deepEqual(result.viewsRepresented,['V','W']);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.viewsRepresented));
+});
