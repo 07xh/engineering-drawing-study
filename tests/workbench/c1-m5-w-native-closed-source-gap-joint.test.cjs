@@ -152,8 +152,9 @@ test('closed endpoints, original EdgeStatus and M4 co-projected front order are 
   x=>x.openRayClass='hidden-sharp',
   x=>x.originalStatus.originalSourceClass='all-hidden',
   x=>x.originalStatus.originalEdgeStatusAllVisible=false,
-  x=>x.m4Depth.openDepthHiddenCuts=1,
-  x=>x.m4Depth.openDepthHeldCuts=1
+  x=>{x.m4Depth.openDepthFrontCuts=0;x.m4Depth.openDepthHiddenCuts=1;},
+  x=>{x.m4Depth.openDepthFrontCuts=0;x.m4Depth.openDepthHeldCuts=1;
+   x.m4Depth.everyOpenDepthCutClassified=false;}
  ]){
   const x=fixture();mutate(x);
   assert.equal(audit(x).jointOriginalClosedPhysicalSourceVisibilityProven,false);
