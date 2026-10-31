@@ -16,6 +16,14 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
    });
   }
  }
+ // LinkeDOM intentionally exposes select.value as getter-only; model the
+ // native writable HTMLSelectElement.value for this real event/DOM test.
+ const jump=document.getElementById('v5StepJump');
+ Object.defineProperty(jump,'value',{configurable:true,
+  get(){return this.__selectedV5Step??
+   this.querySelector('option')?.getAttribute('value')??'';},
+  set(value){this.__selectedV5Step=String(value);}
+ });
  const scene={document,window,require:createRequire(entry),
   URL:{createObjectURL:()=>'',revokeObjectURL:()=>{}},
   performance:{now:()=>0},requestAnimationFrame:()=>0,
