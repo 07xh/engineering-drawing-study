@@ -113,7 +113,16 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
    throw new RangeError('asymmetric native scoped/global TopoDS IsSame');
   const samePaper=nativeScopedPaperSegmentsSame(seg,scopedSegment);
   if(samePaper)paper.push(i);
-  if(forward){if(!samePaper)throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');same.push(i);}
+  if(forward){
+   // A tolerant discovery match must NEVER certify a native TopoDS
+   // identity. The scoped and global output paths may round their paper
+   // coordinates independently, but at most by one source-scale ULP.
+   // This is necessary only: it cannot close a positive M5 paper gap.
+   const strictPaper=auditC1Global3D2DPaperPairEnvelope(seg,scopedSegment);
+   if(!samePaper||!strictPaper.compatible)
+    throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');
+   same.push(i);
+  }
   if(typeof scopedNativeEdge.IsPartner!=='function'||typeof native.IsPartner!=='function')
    partnerRelationSupported=false;
   else{
