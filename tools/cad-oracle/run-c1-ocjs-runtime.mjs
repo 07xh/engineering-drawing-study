@@ -35,6 +35,8 @@ const {auditC1NativeHiddenSharpVsM5}=
  require('../../workbench/c1-ocjs-hidden-sharp-m5-corroboration.cjs');
 const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1M5UnresolvedGlobalSourceObligations}=
+ require('../../workbench/c1-m5-unresolved-global-source-obligations.cjs');
 const {auditExactBinary64PaperParameterPair,
  auditExactBinary64PaperCandidateCoverage}=
  require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
@@ -1375,6 +1377,31 @@ for(const [index,geometry] of general.entries()){
   ...positiveOriginalGapRays.missingOriginalM0SourceViewRows,
   ...positiveOriginalGapRays.rows
  ];
+ // Certify the CLOSED INVENTORY of still-UNRESOLVED ORIGINAL M0/M5
+ // obligations from the actual pinned native OCJS HLR same-run data.
+ // This is an audit of remaining blockers, NEVER a line or V5 signer.
+ const unresolvedM5=auditC1M5UnresolvedGlobalSourceObligations({
+  geometry,cad,positiveOriginalGapRays
+ });
+ assert.equal(unresolvedM5.schema,
+  'draftai-c1-m5-unresolved-global-original-source-junction-obligations/1');
+ assert.equal(unresolvedM5.counts.unresolvedM5Obligations,heldM5.length);
+ assert.equal(unresolvedM5.records.length,heldM5.length);
+ assert.equal(unresolvedM5.counts.unrepresentedOriginalSourceViews,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.length);
+ assert.equal(unresolvedM5.counts.positiveOriginalPaperGapIntervals,
+  positiveOriginalGapRays.rows.length);
+ assert.equal(unresolvedM5.allUnresolvedM5ObligationsExplicitlyPreserved,true);
+ assert.equal(unresolvedM5.generatedHistoryAndContinuousSceneOcclusionStillRequired,true);
+ assert.equal(unresolvedM5.officialV5Authorized,false);
+ assert.equal(unresolvedM5.signedV5ActionCount,0);
+ assert.ok(unresolvedM5.records.every(row=>
+  row.generatedEdgeEngineeringLineStyle==='undetermined'&&
+  row.sourceOriginalTopoDSGeneratedHistoryCertified===false&&
+  row.allOpaqueSceneContinuousOcclusionCertified===false&&
+  row.signedV5Action===false));
+ console.error('REAL C1 UNRESOLVED SAME-RUN ORIGINAL M5 OBLIGATIONS '+
+  geometry.id+': '+JSON.stringify(unresolvedM5.counts));
  for(const row of heldM5){
   assert.equal(row.wholeSolidNativePaperSourceMatchDoesNotCloseM5OrProveTopoDSHistory,true);
   assert.equal(row.originalM0PhysicalEndpointEvidenceCannotReplaceNativeHLRJunctionIdentity,true);
