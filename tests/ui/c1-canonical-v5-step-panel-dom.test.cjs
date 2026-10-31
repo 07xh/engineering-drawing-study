@@ -47,6 +47,7 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  vm.runInNewContext(
   fs.readFileSync(entry,'utf8')+
   '\n;this.__setCurrent=(r,p)=>{current=r;revision=r.solution.revision;rawGiven=p;given=p;renderOriginalPaper();};'+
+  '\n;this.__setGiven=(p)=>{given=p;};'+
   '\n;this.__draw=()=>drawV5();',
   scene,{filename:entry});
  const $=id=>document.getElementById(id);
@@ -86,6 +87,12 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  $('sheetPreview').querySelector('svg').append(malicious);
  assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
  malicious.remove();scene.__draw();
+ // Same SHA labels and same number of points cannot conceal a stale or
+ // altered GIVEN coordinate in the active M3/M5 source.
+ const altered=givenPacket();altered.views.V[0].u=100;
+ scene.__setGiven(altered);
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ scene.__setGiven(givenPacket());scene.__draw();
  assert.equal($('v5StepJump').disabled,false);
  assert.match($('v5StepTitle').textContent,/第 1 \/ 2 步/);
  assert.equal($('v5StepExplanation').textContent,steps[0].explanation);
