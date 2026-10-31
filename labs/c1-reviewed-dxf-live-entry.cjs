@@ -12,6 +12,8 @@ const {validateGivenPacket,reconstructC1FromDxfGiven,
  require('../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {buildC1DxfGivenFirstPaper}=
+ require('../workbench/c1-dxf-given-first-paper.cjs');
 const {listGivenSourceProjectionIndices,stringifyReviewedSourcePairs,
  withEditedReviewedSourcePairs}=
  require('../workbench/c1-local-review-correspondence-editor.cjs');
@@ -43,6 +45,9 @@ function invalidateDerived(){
  $('compile').disabled=true;
  $('candidate').textContent='原始投影点对应关系尚未独立确认。';
  $('sheetPreview').replaceChildren();
+ $('showCandidate').disabled=true;
+ $('showGiven').disabled=!rawGiven;
+ renderOriginalPaper();
  $('animation').replaceChildren();
  $('v5Status').textContent='数学条件发生变化，旧唯一 V5 已全部失效。';
  $('proof').textContent='没有签发当前版本的任何原题实虚线或动画结果。';
@@ -62,6 +67,7 @@ function invalidate(){
  $('applyPairs').disabled=true;
  $('previewFile').value='';
  clearPreview();
+ renderOriginalPaper();
 }
 function projectCandidate(src){
  const geometry=src.inferred.candidateGeometry,
@@ -72,17 +78,61 @@ function projectCandidate(src){
  const scale=Math.min(5,210/max);
  return {origin:{x:380,y:270},scale};
 }
+// Present only authenticated GIVEN source points on first entry; M0/M3
+// candidate geometry and unknown target view are never fetched here.
+function renderOriginalPaper(){
+ const container=$('sheetPreview');container.replaceChildren();
+ $('showGiven').setAttribute('aria-pressed','true');
+ $('showCandidate').setAttribute('aria-pressed','false');
+ if(!rawGiven){
+  $('paperMode').textContent='尚未加载原题：不展示三维候选或第三视图答案。';
+  return;
+ }
+ const paper=buildC1DxfGivenFirstPaper(rawGiven);
+ const outer=node('svg',{viewBox:'0 0 960 720',
+  'data-c1-paper-mode':'given','data-missing-view':paper.missingView,
+  'aria-label':'原始 GIVEN 点集；待补第三视图严格留白，不含推测答案'});
+ const labels={V:{x:130,y:38},H:{x:130,y:664},W:{x:640,y:38}};
+ const blanks={V:{x:150,y:150},H:{x:150,y:510},W:{x:625,y:170}};
+ for(const view of VIEWS){
+  const source=paper.views[view],pos=labels[view];
+  const group=node('g',{'data-view':view,'data-source-role':source.sourceRole});
+  const title=node('text',{x:pos.x,y:pos.y,'font-size':18,
+   fill:source.sourceRole==='GIVEN'?'#1b547c':'#8b5d24'});
+  title.textContent=view+(source.sourceRole==='GIVEN'?' · 原题已知点':' · 待补空白');
+  group.append(title);
+  if(source.sourceRole==='UNKNOWN'){
+   const blank=node('text',{x:blanks[view].x,y:blanks[view].y,
+    fill:'#8d98a5','font-size':16,'data-c1-unanswered-view':view});
+   blank.textContent='待求 · 未作答';group.append(blank);
+  }else for(const point of source.points){
+   group.append(node('circle',{cx:point.paper.x,cy:point.paper.y,r:4.3,
+    fill:'#216b9b','data-given-point-index':point.index,
+    'data-source-point-only':'true'}));
+   const label=node('text',{x:point.paper.x+6,y:point.paper.y-7,
+    fill:'#174f78','font-size':13,'data-original-point-label':point.index});
+   label.textContent=String(point.index);group.append(label);
+  }
+  outer.append(group);
+ }
+ container.append(outer);
+ $('paperMode').textContent='仅显示原题 '+paper.knownViewPair.join('/')+
+  ' 的 '+paper.knownViewPair.reduce((n,v)=>n+paper.views[v].points.length,0)+
+  ' 个原始 CAD 投影点（非已认证线条）；'+paper.missingView+
+  ' 视图严格留白。候选必须主动预览，不能作为标准答案。';
+}
 function renderCandidate(src,transform){
  const svg=$('sheetPreview');
  svg.replaceChildren();
- const outer=node('svg',{viewBox:'0 0 960 720','aria-label':
-  '仅为复原候选：V/H/W 三视图的未确认三维棱线'});
+ const outer=node('svg',{viewBox:'0 0 960 720',
+  'data-c1-paper-mode':'unsigned-candidate',
+  'aria-label':'用户主动打开：V/H/W 未认证三维候选，绝非正式工程线或参考答案'});
  const geometry=src.inferred.candidateGeometry,pts=geometry.data.points;
  for(const [n,view] of VIEWS.entries()){
   const g=node('g',{'data-view':view});
-  const label=node('text',{x:30+n*110,y:25,fill:'#1c5e91',
-   'font-size':15});
-  label.textContent=view+' 未确认候选';
+  const pos={V:[130,38],H:[130,664],W:[640,38]}[view];
+  const label=node('text',{x:pos[0],y:pos[1],fill:'#99531f','font-size':18});
+  label.textContent=view+' · 未认证候选';
   g.append(label);
   for(const [a,b] of geometry.data.edges){
    const from=toSheet(view,project(pts[a])[view],transform),
@@ -95,6 +145,10 @@ function renderCandidate(src,transform){
   outer.append(g);
  }
  svg.append(outer);
+ $('showGiven').setAttribute('aria-pressed','false');
+ $('showCandidate').setAttribute('aria-pressed','true');
+ $('paperMode').textContent='你正在主动检查未认证三维候选：全部灰色虚线只是几何草稿，'+
+  '不是 V5 动作、正式实虚线或教材答案。点击“原题已知视图”恢复空白待补视图。';
 }
 function drawV5(){
  const paper=$('animation');paper.replaceChildren();
