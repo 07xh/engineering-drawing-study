@@ -11,6 +11,8 @@
  */
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
+const {auditC1M5NativeGlobal3DSourceJoin}=
+ require('./c1-m5-global-native-3d-source-join.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
  require('./c1-exact-two-axis-generated-paper-coverage.cjs');
@@ -162,6 +164,23 @@ function auditC1NativeClosedPhysicalGap({
     global3DSource.officialV5Authorized!==false||
     !Array.isArray(global3DSource.claims))
   throw new RangeError('W global native generated 3D HLR source revision mismatch');
+ // The caller's M5 source/ordinal summary is NOT a substitute for the
+ // actual same-run global 3D HLR source inventory. Re-execute the existing
+ // independent native-global-curve/source join with its real CAD inputs and
+ // EVERY original candidate ordinal, then require identical output. This
+ // prevents a copied or tampered 3D source/class/parameter witness from
+ // laundering a W or H paper gap into physical source proof.
+ const reconstructedGlobal3DSource=auditC1M5NativeGlobal3DSourceJoin({
+  geometry,cad,view,sourceEdgeId,
+  generatedClaims:global3DSource.claims.map(claim=>({
+   hlrClass:claim.hlrClass,
+   wholeSolidGeneratedHLREdgeOrdinal:claim.wholeSolidGeneratedHLREdgeOrdinal
+  }))
+ });
+ if(!reconstructedGlobal3DSource||
+    JSON.stringify(reconstructedGlobal3DSource)!==
+     JSON.stringify(global3DSource))
+  throw new RangeError('current native global generated 3D HLR source provenance does not replay from actual CAD');
  const sameClass=originalStatus.originalSourceClass==='all-visible'&&
   originalStatus.originalEdgeStatusAllVisible===true&&
   originalStatus.originalEdgeStatusAllHidden===false&&
@@ -359,6 +378,8 @@ function auditC1NativeClosedPhysicalGap({
   originalNativeCurveParameterBounds:[...bounds],
   originalNativeBRepToM0ExactPhysicalVertexEvidence:exactOriginal3DPhysicalSource,
   originalNativeBRepM0PhysicalVertexBijectionCertified:nativeOriginal3DVerticesExact,
+  sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified:true,
+  generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay:true,
   status:physicalComplete?
    'physical-original-3d-source-closed-ray-complete-paper-held':
    'held-physical-source-proof-incomplete',
