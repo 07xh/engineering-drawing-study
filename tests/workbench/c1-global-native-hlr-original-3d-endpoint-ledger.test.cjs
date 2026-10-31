@@ -325,28 +325,54 @@ test('paper displacement larger than the actual original source ULP envelope sta
  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
  assert.equal(r.views.V.rows[0].originalM0PaperEndpointRoundoffEnvelope.compatible,false);
 });
-function attachGenuineNativePair(x,{same=true,pointDifferent=false}={}){
+function attachGenuineNativePair(x,{same=true}={}){
  const graph={schema:'draftai-ocjs-genuine-hlr-generated-topods-issame-vertex-graph/1',
   realOCCTIsSameComparedBeforeNativeObjectDeletion:true,
   allVHWGeneratedNativeTopologyPairsComparedWithoutPaperBucketing:true,
   actualGeneratedToOriginalTopoDSHistoryRecovered:false,
-  signedV5ActionCount:0,
-  views:{}};
+  signedV5ActionCount:0,views:{}};
  for(const view of ['V','H','W']){
-  const first=x.cad.views[view][0],second=x.cad.views[view][1];
-  const pair={view,
-   a:{hlrClass:'visible-sharp',nativeHLREdgeOrdinal:0,side:'from',
-    nativePaperPoint:{...first.from}},
-   b:{hlrClass:'visible-sharp',nativeHLREdgeOrdinal:1,side:'from',
-    nativePaperPoint:{...second.from}},
-   nativeGeneratedOCCTTopoDSVertexIsSame:same,
-   signedV5Action:false};
-  if(pointDifferent&&view==='V')pair.b.nativePaperPoint={u:200,v:100};
+  const endpoints=[];
+  for(const [hlrClass,lines] of [
+   ['visible-sharp',x.cad.views[view]],
+   ['hidden-sharp',x.cad.hiddenSharpViews[view]]
+  ])lines.forEach((line,n)=>{
+   for(const side of ['from','to'])endpoints.push({
+    hlrClass,nativeHLREdgeOrdinal:n,side,
+    nativePaperPoint:{...line[side]}
+   });
+  });
+  const samePairs=[],differentPairs=[],groups=new Map();
+  for(const ref of endpoints){
+   const key=JSON.stringify([ref.nativePaperPoint.u,ref.nativePaperPoint.v]);
+   if(!groups.has(key))groups.set(key,[]);
+   groups.get(key).push(ref);
+  }
+  const components=[];
+  for(const refs of groups.values()){
+   if(refs.length<2)continue;
+   for(let i=0;i<refs.length;i++)for(let j=i+1;j<refs.length;j++){
+    const pair={view,a:structuredClone(refs[i]),b:structuredClone(refs[j]),
+     nativeGeneratedOCCTTopoDSVertexIsSame:same,
+     signedV5Action:false};
+    (same?samePairs:differentPairs).push(pair);
+   }
+   if(same)components.push({
+    view,originalGeneratedTopoDSHistoryRecovered:false,
+    actualGeneratedOCCTTopoDSVertexPairwiseIsSame:true,
+    exactNativePaperCoordinatesForEntireComponent:{...refs[0].nativePaperPoint},
+    generatedSharpEdgeEndpoints:structuredClone(refs),
+    independentlyCertifiedOriginal3DSourceVertexId:null,
+    engineeringLineJoinCertified:false,signedV5Action:false
+   });
+  }
   graph.views[view]={
-   view,realNativeSharpEdgeCount:x.cad.views[view].length,
+   view,realNativeSharpEdgeCount:x.cad.views[view].length+
+    x.cad.hiddenSharpViews[view].length,
    allNativeGeneratedEndpointPairsIndependentlyCompared:true,
-   sameActualGeneratedOCCTTopoDSVertexPairs:same?[pair]:[],
-   paperCoincidentButDifferentTopoDSVertexPairs:same?[]:[pair]
+   sameActualGeneratedOCCTTopoDSVertexPairs:samePairs,
+   paperCoincidentButDifferentTopoDSVertexPairs:differentPairs,
+   generatedOCCTSharedNativeJunctionComponents:components
   };
  }
  x.cad.nativeGeneratedVertexGraph=graph;
@@ -390,6 +416,48 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
   const x=attachGenuineNativePair(setup({two:true}));mutate(x);
   assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
  }
+});
+
+
+test('native generated vertex graph inventory is exhaustive over all exact paper coincidences',()=>{
+ const r=audit(attachGenuineNativePair(setup({tetra:true})));
+ assert.equal(r.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame>3,true);
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('M5 rejects omitted co-projected native vertex pairs and omitted junction components',()=>{
+ for(const mutate of [
+  x=>x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs.pop(),
+  x=>x.cad.nativeGeneratedVertexGraph.views.V.generatedOCCTSharedNativeJunctionComponents.pop(),
+  x=>x.cad.nativeGeneratedVertexGraph.views.V.generatedOCCTSharedNativeJunctionComponents[0].
+   exactNativePaperCoordinatesForEntireComponent.u=123,
+  x=>x.cad.nativeGeneratedVertexGraph.views.V.sameActualGeneratedOCCTTopoDSVertexPairs[0].
+   b.side='to'
+ ]){
+  const x=attachGenuineNativePair(setup({two:true}));mutate(x);
+  assert.throws(()=>audit(x),/native|generated|junction|inventory|paper|component/i);
+ }
+});
+test('M5 rejects non-transitive native IsSame and non-coincident false pairs',()=>{
+ const tetra=attachGenuineNativePair(setup({tetra:true}));
+ const pairs=tetra.cad.nativeGeneratedVertexGraph.views.V.
+  sameActualGeneratedOCCTTopoDSVertexPairs;
+ // Three different physical edges meet at the same original A vertex.
+ // A~B and B~C with A!=C is impossible for real TopoDS IsSame.
+ const victim=pairs.findIndex(p=>p.a.nativePaperPoint.u===0&&
+  p.a.nativePaperPoint.v===0);
+ assert.notEqual(victim,-1);
+ const flipped=pairs.splice(victim,1)[0];
+ flipped.nativeGeneratedOCCTTopoDSVertexIsSame=false;
+ tetra.cad.nativeGeneratedVertexGraph.views.V.
+  paperCoincidentButDifferentTopoDSVertexPairs.push(flipped);
+ assert.throws(()=>audit(tetra),/non-transitive native generated HLR vertex IsSame graph/);
+ const wrong=attachGenuineNativePair(setup({two:true}),{same:false});
+ const p=wrong.cad.nativeGeneratedVertexGraph.views.V.
+  paperCoincidentButDifferentTopoDSVertexPairs[0];
+ p.b.side='to';
+ p.b.nativePaperPoint={...wrong.cad.views.V[1].to};
+ assert.throws(()=>audit(wrong),/non-paper-coincident native generated HLR vertex pair inventory/);
 });
 
 
