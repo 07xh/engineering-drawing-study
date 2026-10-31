@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {auditC1WNativeClosedPhysicalGap:audit}=
+const {auditC1WNativeClosedPhysicalGap:audit,
+ auditC1NativeClosedPhysicalGap:auditAllViews}=
  require('../../workbench/c1-m5-w-native-closed-source-gap-joint.cjs');
 const {auditC1Native3DSourceScopedIntervals:coverage}=
  require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
@@ -230,4 +231,66 @@ test('partial W generated edge pairs BOTH endpoints to original vertices exactly
  assert.equal(BigInt(row.toDisplacementFromPhysicalSource.u.numerator),0n);
  assert.equal(result.generatedPaperGapStrictlyPositiveStillHeld,true);
  assert.equal(result.signedV5Action,false);
+});
+
+function hGapFixture(){
+ const record=fixture('A|C',[0,5.02742501717052e-18]);
+ record.view='H';
+ record.originalStatus.view='H';
+ record.global3DSource.view='H';
+ record.originalEndpointWitnesses[0].view='H';
+ // The original A->C in H is (0,0)->(3,16). The received native
+ // output has a positive binary64 endpoint drift. Do NOT snap it to M0.
+ record.cad.views={H:[{from:{u:0,v:0},to:{u:3,v:15.999999999999998}}]};
+ record.cad.hiddenSharpViews={H:[]};
+ record.cad.nativeSourceScopedSharpOutputByView={
+  H:record.cad.nativeSourceScopedSharpOutputByView.W
+ };
+ return record;
+}
+test('H A|C positive source gap consumes SAME original BRep, native HLR, M4 and closed rays, but keeps real paper residual',()=>{
+ const row=hGapFixture(),r=auditAllViews(row);
+ assert.equal(r.schema,'draftai-c1-vhw-m5-native-closed-original-gap-joint/1');
+ assert.equal(r.view,'H');
+ assert.equal(r.sourceEdgeId,'tetra::A|C');
+ assert.deepEqual(r.originalPositivePaperGap,[0,5.02742501717052e-18]);
+ assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,true);
+ assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+ assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5Action,false);
+ assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence,null);
+ const paper=r.nativeGlobalGenerated2DPaperEndpointDriftEvidence;
+ assert.equal(paper.view,'H');
+ assert.equal(paper.nativeGlobalGeneratedHLREdgesChecked,1);
+ assert.equal(paper.nativeGlobalGeneratedEdgesWithReceivedBinary64EndpointDrift,1);
+ assert.equal(paper.nativeGlobalGeneratedEdgesWithTransverseBinary64PaperDrift,1);
+ assert.equal(paper.receivedExactTwoAxisQualifiedPaperCoverage.strictReceivedTwoAxisPaperCoverageComplete,false);
+ assert.equal(paper.receivedExactTwoAxisQualifiedPaperCoverage.positiveLengthTwoAxisPaperResidualsStillPresent,true);
+ assert.equal(audit(row),null,'previous W-only entry cannot claim H physics');
+});
+test('H closed-source proof is never inferred from different view, revised M0 owner or unverified depth',()=>{
+ for(const mutate of [
+  x=>{x.originalStatus.view='W';},
+  x=>{x.originalEndpointWitnesses[0].view='W';},
+  x=>{x.global3DSource.revision=8;},
+  x=>{x.cad.views.H[0].to.v=Infinity;},
+  x=>{x.originalEndpointWitnesses[0].generatedPaperExactlyReprojectsBothOriginalVertices=true;}
+ ]){
+  const x=hGapFixture();mutate(x);
+  assert.throws(()=>auditAllViews(x),/H|W|native|source|revision|endpoint|global/i);
+ }
+ const x=hGapFixture();x.originalClosedRayClear=false;
+ const held=auditAllViews(x);
+ assert.equal(held.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(held.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(held.signedV5Action,false);
+});
+test('V/H/W source-gap consumers reject foreign views and genuine zero-length gaps without epsilon escape',()=>{
+ const h=hGapFixture();
+ assert.equal(auditAllViews({...h,view:'drawing-2d'}),null);
+ assert.throws(()=>auditAllViews({...h,positiveGap:[0,0]}),/positive|gap/i);
+ assert.throws(()=>auditAllViews({...h,positiveGap:[1,1]}),/positive|gap/i);
 });
