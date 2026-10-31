@@ -1405,6 +1405,10 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:paperOrdinals[0],
        originalPhysicalSourceEdgeId:sourceEdgeId,
        originalNativeCurveParameterRange:[first,last],
+       // Actual generated 3D HLR curve, reprojected by the M5 consumer.
+       // This is a same-run binary64 witness, NOT TopoDS history.
+       nativeGlobalGeneratedHLR3DFrom:{...from3D},
+       nativeGlobalGeneratedHLR3DTo:{...to3D},
        globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
        global3DAnd2DHLRMeasuredPaperPairUnique:true,
        global3DAnd2DHLRMeasuredPaperPairExactBinary64:
@@ -1432,6 +1436,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     globalGenerated2DSharpEdges:segments.length+hiddenSegments.length,
     globalGenerated3DSharpEdgesWithUniqueOriginalCurve:global3DSourceRows.length,
     rows:global3DSourceRows,
+    receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal:true,
     allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper:true,
     generated2DTo3DTopoDSHistoryCertified:false,
     globalContinuousVisibilityCertified:false,
