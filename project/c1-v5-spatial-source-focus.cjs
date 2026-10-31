@@ -89,7 +89,10 @@ function currentC1V5SpatialSourceFocus({scene,solution,revision,frame}={}){
   if(!keys.includes(key))keys.push(key);
   details.push(Object.freeze({actionId:action.id,sourceEdgeId:binding.sourceEdgeId,
    sourceFeatureKey:key,view:binding.view,progress:action.progress,
-   sourceParameterRange:range?[...range]:null,
+   sourceParameterRange:range?Object.freeze([...range]):null,
+   // Source-key highlighting identifies the WHOLE physical origin edge.
+   // It does not pretend the full 3D edge is the signed subspan's geometry.
+   highlightedExtent:'original-3d-source-identity-only',
    certifiedV5ActionIdOnly:true}));
  }
  return Object.freeze({
@@ -100,6 +103,7 @@ function currentC1V5SpatialSourceFocus({scene,solution,revision,frame}={}){
   // Focus never releases or restyles ink, including partially certified
   // contour/physical source segments or unresolved textbook HLR gaps.
   engineeringLineStyle:'undetermined',
+  sourceFocusIsNotASignedSubspanDrawing:true,
   globalGeneratedHLRHistoryCertifiedByThisFocus:false,
   formalV5ActionsCreated:0,
   displayOnly:true
