@@ -17,6 +17,8 @@ const freeze=o=>{
  }
  return o;
 };
+const {auditC1Native3DSourceScopedIntervals}=
+ require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const CLASS_COUNTS={'visible-sharp':'views','hidden-sharp':'hiddenSharpViews'};
 const key=(klass,ordinal)=>klass+'|'+ordinal;
 
@@ -59,6 +61,57 @@ function auditC1M5NativeGlobal3DSourceJoin({
   if(!originalIds.has(owner)||scopedById.has(owner))
    throw new RangeError('native global 3D HLR scoped source IDs invalid or repeated');
   scopedById.set(owner,scoped);
+ }
+ // Reconstruct the COMPLETE source-scoped native 3D interval multiset
+ // before trusting any whole-solid generated ordinal. One global HLR edge
+ // cannot reuse the first scoped native interval while silently dropping a
+ // second interval from the same physical source and visibility class.
+ // The source-filtered 3D intervals are real OCCT curve parameters, not
+ // inverses derived from rounded 2D paper endpoints.
+ const scopedIntervalOwners=new Map();
+ const native3DParameterCoverageByOriginalSource=[];
+ for(const [sourceId,scoped] of scopedById){
+  const originalRange=originalCurves.get(sourceId),allRanges=[];
+  for(const [klass,groupName] of [
+   ['visible-sharp','visible3D'],['hidden-sharp','hidden3D']
+  ]){
+   const group=scoped[groupName],intervals=group?.native3DGeneratedCurveIntervals;
+   if(group?.nativeSourceFilteredOriginalTopoDSEdge!==true||
+      !Array.isArray(intervals)||intervals.length>512)
+    throw new RangeError('incomplete native source-scoped 3D HLR visibility class');
+   for(const emitted of intervals){
+    const range=emitted?.nativeOriginalCurveParameterRange;
+    if(emitted?.nativeSourceFilterOriginalEdgeId!==sourceId||
+       emitted.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
+       emitted.originalGeneratedTopoDSHistoryCertified!==false||
+       emitted.signedV5Action!==false||
+       !Array.isArray(range)||range.length!==2||
+       !range.every(Number.isFinite)||!(range[1]>range[0]))
+     throw new RangeError('invalid native source-scoped 3D HLR parameter interval');
+    const emissionKey=JSON.stringify([sourceId,klass,...range]);
+    if(scopedIntervalOwners.has(emissionKey))
+     throw new RangeError('duplicate native source-scoped 3D HLR parameter interval');
+    scopedIntervalOwners.set(emissionKey,false);
+    allRanges.push(range);
+   }
+  }
+  const proof=auditC1Native3DSourceScopedIntervals({
+   originalNativeParameterRange:originalRange,
+   generatedNativeParameterRanges:allRanges
+  });
+  native3DParameterCoverageByOriginalSource.push({
+   sourceEdgeId:sourceId,
+   originalNativeParameterRange:[...originalRange],
+   positiveLengthUncoveredNativeParameterIntervals:
+    proof.positiveLengthUncoveredNativeParameterIntervals,
+   positiveLengthOverlappingNativeParameterIntervals:
+    proof.positiveLengthOverlappingNativeParameterIntervals,
+   native3DSourceIntervalsCoverWholeOriginalExactlyOnce:
+    proof.sourceScopedNative3DParameterInventoryCompleteExactlyOnce,
+   generated2DTopoDSHistoryCertified:false,
+   globalContinuousVisibilityCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  });
  }
  const counts={};
  for(const [klass,collection] of Object.entries(CLASS_COUNTS)){
@@ -122,6 +175,12 @@ function auditC1M5NativeGlobal3DSourceJoin({
      row.fullOpaqueSceneContinuousOcclusionCertified!==false||
      row.engineeringLineStyle!=='undetermined'||row.signedV5Action!==false)
    throw new RangeError('invalid native whole-solid HLR original 3D curve identity or source interval');
+  const scopedIntervalKey=JSON.stringify([
+   row.originalPhysicalSourceEdgeId,klass,...interval
+  ]);
+  if(scopedIntervalOwners.get(scopedIntervalKey)!==false)
+   throw new RangeError('whole-solid native 3D HLR reuses or lacks scoped interval owner');
+  scopedIntervalOwners.set(scopedIntervalKey,true);
   const id=key(klass,ordinal);
   if(globallyGenerated.has(id))
    throw new RangeError('duplicate original 3D source owner of global generated HLR edge');
@@ -129,6 +188,8 @@ function auditC1M5NativeGlobal3DSourceJoin({
  }
  if(globallyGenerated.size!==total)
   throw new RangeError('whole-solid native 3D HLR source does not cover every global ordinal');
+ if([...scopedIntervalOwners.values()].some(consumed=>!consumed))
+  throw new RangeError('whole-solid native 3D HLR omitted a source-scoped original parameter interval');
  if(!originalIds.has(sourceEdgeId))
   throw new RangeError('held M5 source is not an original reviewed 3D edge');
  let sourceCorroborated=0,differentSource=0,unknownOrdinal=0;
@@ -168,6 +229,14 @@ function auditC1M5NativeGlobal3DSourceJoin({
   differentOriginal3DSourceClaimsHeld:differentSource,
   unknownGlobalOrdinalClaimsHeld:unknownOrdinal,claims,
   sameRunOriginalBRepAndScoped3DParameterInventoryRechecked:true,
+  wholeSolidAndScopedNative3DParameterIntervalBijectionVerified:true,
+  native3DSourceParameterCoverageByOriginalSource,
+  originalSourcesWithPositiveNative3DParameterGaps:
+   native3DParameterCoverageByOriginalSource.filter(x=>
+    x.positiveLengthUncoveredNativeParameterIntervals.length>0).length,
+  originalSourcesWithOverlappingNative3DParameters:
+   native3DParameterCoverageByOriginalSource.filter(x=>
+    x.positiveLengthOverlappingNativeParameterIntervals.length>0).length,
   generated2DTopoDSHistoryCertified:false,
   globalOpaqueSceneContinuousOcclusionCertified:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0,
