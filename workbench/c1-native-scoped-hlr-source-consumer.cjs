@@ -17,6 +17,8 @@ const {auditExactBinary64PaperParameterPair,
  require('./c1-exact-binary64-paper-parameter.cjs');
 const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
+const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
+ require('./c1-exact-two-axis-generated-paper-coverage.cjs');
 const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
 const {auditC1RealNativeScoped2D3DClassBinding}=
@@ -115,6 +117,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   projectedSourcesWithExactBinary64PaperCandidateGaps:0,
   projectedSourcesWithFullExactBinary64PaperCandidateCoverage:0,
   projectedSourcesWithRoundedFalseFullPaperCandidateCoverage:0,
+  projectedSourcesWithStrictTwoAxisFullPaperCoverage:0,
+  projectedSourcesWithStrictTwoAxisPositivePaperResiduals:0,
+  projectedSourcesWithFalseDominantAxisFullCoverageVetoed:0,
+  sourceScopedGenerated2DSegmentsTransverselyOffOriginalSource:0,
   sourceScopedPaperEndpointsOffExactBinary64OriginalLine:0,
   projectedSourcesWithExactAffinePaperMismatch:0,
   projectedSourcesWithVisibleHiddenCandidateConflicts:0,
@@ -433,6 +439,29 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     auditExactBinary64PaperCandidateCoverage({
      sourceFrom:a,sourceTo:b,segments:exactPaperSegments.get(source)
     });
+   // The original M0 line MUST be exact in BOTH binary64 paper axes.
+   // A dominant-axis inverse can incorrectly cover [0,1] when the
+   // generated HLR endpoint has a real transverse paper displacement.
+   const twoAxisCoverage=collapsed?null:
+    auditC1ExactTwoAxisGeneratedPaperCoverage({
+     sourceFrom:a,sourceTo:b,segments:exactPaperSegments.get(source)
+    });
+   if(twoAxisCoverage){
+    if(twoAxisCoverage.generatedPaperSegmentCount!==
+       exactPaperSegments.get(source).length||
+       twoAxisCoverage.unsafeDominantAxisOnlyCoverage.
+        exactBinary64PaperCandidateCoverageComplete!==
+        exactPaperCoverage.exactBinary64PaperCandidateCoverageComplete)
+     throw new RangeError('native original paper strict two-axis union disagrees with candidate ledger');
+    counts.projectedSourcesWithStrictTwoAxisFullPaperCoverage+=
+     Number(twoAxisCoverage.strictReceivedTwoAxisPaperCoverageComplete);
+    counts.projectedSourcesWithStrictTwoAxisPositivePaperResiduals+=
+     Number(twoAxisCoverage.positiveLengthTwoAxisPaperResidualsStillPresent);
+    counts.projectedSourcesWithFalseDominantAxisFullCoverageVetoed+=
+     Number(twoAxisCoverage.falseDominantAxisFullCoverageVetoed);
+    counts.sourceScopedGenerated2DSegmentsTransverselyOffOriginalSource+=
+     twoAxisCoverage.transverseDisplacedGeneratedSegments;
+   }
    if(exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete)
     counts.projectedSourcesWithFullExactBinary64PaperCandidateCoverage++;
    else if(exactPaperCoverage)
@@ -478,6 +507,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     // These exact rational gaps are PAPER candidate diagnostics only.
     // Never promote their absence to TopoDS history or V5 authority.
     exactBinary64PaperCandidateCoverage:exactPaperCoverage,
+    exactTwoAxisQualifiedNativePaperCoverage:twoAxisCoverage,
+    strictTwoAxisPaperOnlyCoverageComplete:
+     twoAxisCoverage?.strictReceivedTwoAxisPaperCoverageComplete===true,
+    originalM0SourcePaperTransverseDriftNeverClosesGap:true,
     exactBinary64PaperVisibleHiddenClassOverlap:exactClassOverlap,
     paperDerivedVisibleCandidateParameterUnion:
      classOverlap?.paperDerivedVisibleOriginalSourceParameterUnion??null,
@@ -491,16 +524,19 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      coverage?.positiveLengthUncoveredIntervals??null,
     entireOriginalSourcePaperCandidateIntervalCovered:
      coverage?.entireOriginalParameterIntervalCovered===true&&
-     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true,
+     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
+     twoAxisCoverage?.strictReceivedTwoAxisPaperCoverageComplete===true,
     // A received paper segment can cover t=[0,1] yet drift transversely.
      // This stricter result remains paper-only, never TopoDS/M5/V5 proof.
      fullOriginalPaperCandidateCoverageWithExactAffineCollinearity:
       coverage?.entireOriginalParameterIntervalCovered===true&&
       exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
-      exactAffineCollinearity,
+      exactAffineCollinearity&&
+      twoAxisCoverage?.strictReceivedTwoAxisPaperCoverageComplete===true,
      fullOriginalPaperCandidateCoverageWithoutClassConflict:
      coverage?.entireOriginalParameterIntervalCovered===true&&
      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
+     twoAxisCoverage?.strictReceivedTwoAxisPaperCoverageComplete===true&&
      classOverlap?.hasPositiveLengthVisibleHiddenClassConflict===false&&
      exactClassOverlap?.hasExactPositiveLengthVisibleHiddenPaperClassConflict===false,
     actualOriginalTopoDSParameterCoverageCertified:false,
