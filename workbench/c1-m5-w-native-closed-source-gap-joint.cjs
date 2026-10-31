@@ -365,6 +365,15 @@ function auditC1NativeClosedPhysicalGap({
      joint[0].signedV5Action!==false)
    throw new RangeError('same-run original native 3D to generated 2D paper source joint invalid');
   const sourceJoint=joint[0];
+  // On a true real-OCJS run, all native generated 3D curves now include
+  // actual measured XYZ. Refuse an M5 source witness that bypasses their
+  // independently replayed 3D->2D global-ordinal correspondence.
+  if(global3DSource.completeMeasuredNativeGlobal3D2DPaperReplayAvailable===true&&
+     sourceJoint.parts.some(p=>
+      p.nativeGenerated3DEndpointTo2DPaperReplayVerified!==true||
+      !p.original3DSourceCurveProjectedPaperFrom||
+      !p.original3DSourceCurveProjectedPaperTo))
+   throw new RangeError('genuine native global generated 3D/2D HLR endpoint pairing not independently replayed');
   if(paperEndpointAudit!==null){
    const rows=paperEndpointAudit.rows;
    // The M5 claimant list may deliberately be a proper subset. Never
@@ -445,6 +454,22 @@ function auditC1NativeClosedPhysicalGap({
    original3DToActual2DJoint,
   sameRunOriginal3DAnd2DJointIndependentlyRechecked:
    original3DToActual2DJoint!==null&&paperEndpointAudit!==null,
+  independentlyReplayedRealNativeGenerated3DTo2DPaperEndpoints:
+   global3DSource.completeMeasuredNativeGlobal3D2DPaperReplayAvailable===true&&
+   original3DToActual2DJoint!==null&&
+   original3DToActual2DJoint.parts.every(p=>
+    p.nativeGenerated3DEndpointTo2DPaperReplayVerified===true),
+  measuredNative3DProjectedOriginalPaperCoverageComplete:
+   original3DToActual2DJoint?.
+    native3DProjectedSourcePaperTwoAxisCoverageComplete??false,
+  measuredGenerated2DReceivedPaperCoverageComplete:
+   original3DToActual2DJoint?.
+    exactReceived2DTwoAxisPaperCoverageComplete??false,
+  measuredNative3DProjectivelyCompleteButGenerated2DPaperHeld:
+   original3DToActual2DJoint?.
+    native3DProjectedSourcePaperTwoAxisCoverageComplete===true&&
+   original3DToActual2DJoint?.
+    exactReceived2DTwoAxisPaperCoverageComplete===false,
   sameRunSelectedM5GeneratedEdgesExhaustNative3DAnd2DSource:
    original3DToActual2DJoint!==null&&paperEndpointAudit!==null&&
    original3DToActual2DJoint.parts.length===paperEndpointAudit.rows.length,
