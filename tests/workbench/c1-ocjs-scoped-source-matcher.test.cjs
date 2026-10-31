@@ -301,3 +301,35 @@ test('tiny positive HLR tails, distant paper aliases and invalid native 3D/2D en
   null
  ])assert.throws(()=>audit(far,pair),/noncollapsed finite/);
 });
+
+test('an unrelated huge paper axis cannot mask transverse drift on the small axis',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const axis of ['u','v']){
+  const other=axis==='u'?'v':'u';
+  const source={from:{u:0,v:0},to:{u:0,v:0}};
+  source.from[axis]=0;source.to[axis]=1e6;
+  source.from[other]=1e15;source.to[other]=1e15;
+  const forged=structuredClone(source);
+  forged.from[axis]+=0.0625;forged.to[axis]+=0.0625;
+  const result=audit(source,forged);
+  assert.equal(result.compatible,false,axis+' transverse drift');
+  assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+  assert.equal(result.engineeringLineStyle,'undetermined');
+  assert.equal(result.signedV5Action,false);
+  const reversed={from:forged.to,to:forged.from};
+  assert.equal(audit(source,reversed).compatible,false);
+ }
+});
+test('coordinate-local ULP accepts genuine one-ULP endpoint rounding without signing HLR history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:1e15},to:{u:1e6,v:1e15}};
+ const rounded={from:{...source.from},to:{u:1e6+2**-33,v:1e15}};
+ const result=audit(source,rounded);
+ assert.equal(result.compatible,true);
+ assert.equal(result.exactBinary64Endpoints,false);
+ assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+});
