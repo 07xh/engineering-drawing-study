@@ -73,7 +73,8 @@ test('nonfinite source, collapsed genuine paper source and forged outside-domain
  assert.throws(()=>pair({sourceFrom:from,sourceTo:point(Infinity,1),
   measuredFrom:from,measuredTo:to}),TypeError);
  assert.throws(()=>coverage({sourceFrom:from,sourceTo:from,segments:[]}),RangeError);
- assert.throws(()=>coverage({sourceFrom:from,sourceTo:to,
-  segments:[{from:point(from.u,from.v),to:point(to.u,-M)}]}),
+ assert.throws(()=>coverage({sourceFrom:point(-M/2,-M/2),
+  sourceTo:point(M/2,M/2),
+  segments:[{from:point(-M,-M),to:point(M/2,M/2)}]}),
   /source|domain/i);
 });
