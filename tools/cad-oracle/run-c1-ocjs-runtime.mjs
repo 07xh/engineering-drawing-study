@@ -1788,6 +1788,20 @@ for(const [index,geometry] of general.entries()){
   assert.equal(join.claimCount,row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length);
   assert.equal(join.wholeSolidAndScopedNative3DParameterIntervalBijectionVerified,true);
   assert.equal(join.sameRunOriginalBRepAndScoped3DParameterInventoryRechecked,true);
+  // On REAL pinned OCJS the generated 3D XYZ and original native BRep
+  // curve samples MUST be replayable for every 2D HLR global ordinal;
+  // not merely present as fields or precomputed producer booleans.
+  assert.equal(join.completeMeasuredNativeGlobal3D2DPaperReplayAvailable,true);
+  assert.equal(join.independentlyReplayedMeasuredGlobal3D2DPaperCount,
+   join.globalGeneratedEdgeCount);
+  assert.equal(join.nativeGlobal3DTo2DMeasuredPaperPairs.length,
+   join.globalGeneratedEdgeCount);
+  assert.ok(join.nativeGlobal3DTo2DMeasuredPaperPairs.every(pair=>
+   pair.measured3DEndpointsAgainstOriginalBRepNativeParameterReplay?.
+    nativeGlobal3DCurveEndpointParameterReplayCompatible===true&&
+   pair.generated2DTopoDSHistoryCertified===false&&
+   pair.globalOpaqueSceneContinuousOcclusionCertified===false&&
+   pair.signedV5Action===false));
   assert.equal(join.officialV5Authorized,false);
   assert.equal(join.signedV5ActionCount,0);
   assert.equal(join.generated2DTopoDSHistoryCertified,false);
@@ -1802,11 +1816,53 @@ for(const [index,geometry] of general.entries()){
   sourcesWithPositiveNative3DGaps:nativeM5Original3DJoins.reduce((n,j)=>
    n+j.originalSourcesWithPositiveNative3DParameterGaps,0),
   sourceClaimsHaveActualGlobalScoped3DParameterBijection:true,
+  realGenerated3DEndpointOriginalCurveParameterReplayPassedForEveryHeldView:
+   nativeM5Original3DJoins.every(j=>
+    j.completeMeasuredNativeGlobal3D2DPaperReplayAvailable===true&&
+    j.nativeGlobal3DTo2DMeasuredPaperPairs.every(pair=>
+     pair.measured3DEndpointsAgainstOriginalBRepNativeParameterReplay?.
+      nativeGlobal3DCurveEndpointParameterReplayCompatible===true)),
   generated2DTopoDSHistoryCertified:false,globalOcclusionCertified:false,
   signedV5ActionCount:0
  };
  console.error('REAL WASM M5 global native 3D original parameter source joins '+
   geometry.id+': '+JSON.stringify(native3DJoinTotals));
+ if(geometry.id==='C1SkewTetra'){
+  // Report the exact remaining W source-paper geometry separately from
+  // COMPLETE original 3D-native source coverage. A real 2D paper tail
+  // or transverse endpoint drift remains positive even when native 3D
+  // XYZ replays without contradiction.
+  const heldW=new Map();
+  for(const j of nativeM5Original3DJoins){
+   if(j.view!=='W')continue;
+   for(const source of j.native3DToGenerated2DPaperByOriginalSource){
+    if(!['C1SkewTetra::A|C','C1SkewTetra::A|D'].includes(source.sourceEdgeId))
+     continue;
+    heldW.set(source.sourceEdgeId,{
+     sourceEdgeId:source.sourceEdgeId,
+     exactNative3DOriginalSourceCoverageComplete:
+      source.exactNative3DParameterCoverageCompleteOnce,
+     measured3DProjectionTwoAxisCoverageComplete:
+      source.native3DProjectedSourcePaperTwoAxisCoverageComplete,
+     actualReceived2DTwoAxisCoverageComplete:
+      source.exactReceived2DTwoAxisPaperCoverageComplete,
+     exactPositiveReceived2DPaperGaps:
+      source.positiveExactReceived2DPaperGaps,
+     transverseReceived2DPaperDrift:
+      source.transverseGenerated2DPaperDriftEdges,
+     native3DExactGeometricSeams:
+      source.actualNative3DGeometricSeamsReplayed,
+     native3DSeamsWithReceived2DExactJunction:
+      source.actualReceived2DPaperSeamsExactlyJoined,
+     original2DGeneratedTopoDSHistoryCertified:false,
+     wholeSceneContinuousOcclusionCertified:false,
+     signedV5Actions:0
+    });
+   }
+  }
+  console.error('REAL WASM C1SkewTetra W native 3D-vs-generated 2D HLR unsatisfied paper obligations: '+
+   JSON.stringify([...heldW.values()]));
+ }
  const unresolvedM5=auditC1M5UnresolvedGlobalSourceObligations({
   geometry,cad,positiveOriginalGapRays
  });
