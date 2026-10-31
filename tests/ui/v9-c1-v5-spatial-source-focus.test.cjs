@@ -101,7 +101,7 @@ test('forged sheet endpoints, duplicate or unowned signed actions cannot gain a 
  z.frame=z.solution.player.snapshot();z.solution.certifiedVisibleContourLineBindings=[];
  assert.throws(()=>run(z),/unbound engineering/i);
 });
-test('a legitimate signed source partition can highlight only its actual 3D subspan',()=>{
+test('a legitimate signed subspan locates its parent source without pretending to draw the entire 3D interval',()=>{
  const x=fixture();x.solution.player.seekMs(x.startOfInk+20,0);
  x.frame=x.solution.player.snapshot();
  const b=x.binding;
@@ -110,6 +110,9 @@ test('a legitimate signed source partition can highlight only its actual 3D subs
  b.toModelMm=project(b.real3DTo).V;
  const out=run(x);
  assert.deepEqual(out.originalSourceActions[0].sourceParameterRange,[0,.5]);
+ assert.equal(out.originalSourceActions[0].highlightedExtent,
+  'original-3d-source-identity-only');
+ assert.equal(out.sourceFocusIsNotASignedSubspanDrawing,true);
  b.real3DTo=p(5,1,0);
  assert.throws(()=>run(x),/not the signed original edge/);
 });
