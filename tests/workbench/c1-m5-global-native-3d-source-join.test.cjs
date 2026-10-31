@@ -302,6 +302,10 @@ function withRealMeasured3DSourceTo2DPaper(){
   row.nativeGlobalGeneratedHLR3DFrom={...original.fromOCCT3D};
   row.nativeGlobalGeneratedHLR3DTo={...original.toOCCT3D};
  }
+ for(const original of x.cad.originalBRepSourceEdges){
+  original.occtSourceCurveFirstPoint3D={...original.fromOCCT3D};
+  original.occtSourceCurveLastPoint3D={...original.toOCCT3D};
+ }
  return x;
 }
 
@@ -385,4 +389,65 @@ test('invalid, missing or contradictory measured HLR 3D endpoints and claimed ou
   .nativeGlobal3DOriginalSourceEvidence.rows[0].nativeGlobalGeneratedHLR3DFrom=
    {x:0,y:0,z:0};
  assert.throws(()=>audit(legacy),/incomplete same-run measured global native HLR 3D endpoints/);
+});
+
+test('native global 3D HLR source endpoints replay ORIGINAL BRep native parameter anchors',()=>{
+ const r=audit(withRealMeasured3DSourceTo2DPaper());
+ assert.equal(r.completeMeasuredNativeGlobal3D2DPaperReplayAvailable,true);
+ assert.ok(r.nativeGlobal3DTo2DMeasuredPaperPairs.every(pair=>{
+  const proof=pair.measured3DEndpointsAgainstOriginalBRepNativeParameterReplay;
+  return proof?.nativeGlobal3DCurveEndpointParameterReplayCompatible===true&&
+   proof.endpoints.length===2&&
+   proof.endpoints.every(e=>
+    e.originalNativeCurveEndpointExact===true&&
+    e.sourceScaledUncertifiedRoundoffEnvelopeMm===0&&
+    e.generatedToOriginalTopoDSVertexIdentityCertified===false);
+ }));
+ assert.equal(r.officialV5Authorized,false);
+});
+
+test('depth-only 3D HLR edits cannot reuse an unchanged V paper projection and original source label',()=>{
+ for(const axis of ['y']){
+  for(const side of ['nativeGlobalGeneratedHLR3DFrom','nativeGlobalGeneratedHLR3DTo']){
+   const x=withRealMeasured3DSourceTo2DPaper();
+   const row=x.cad.nativeSourceScopedSharpOutputByView.V
+    .nativeGlobal3DOriginalSourceEvidence.rows[2];
+   row[side][axis]+=1;
+   // V paper is x/z, so a forged y depth is invisible to any 2D
+   // matching or transverse paper error test.
+   assert.deepEqual(x.cad.hiddenSharpViews.V[2].to,{u:12,v:1});
+   assert.throws(()=>audit(x),/generated global HLR 3D endpoint changes original native BRep curve depth or parameter/);
+  }
+ }
+});
+
+test('partial source t native HLR depth cannot be forged below a fixed 2D projection',()=>{
+ const x=withRealMeasured3DSourceTo2DPaper();
+ const native=x.cad.nativeSourceScopedSharpOutputByView.V;
+ const row=native.nativeGlobal3DOriginalSourceEvidence.rows[2];
+ row.originalNativeCurveParameterRange=[0,6];
+ row.nativeGlobalGeneratedHLR3DTo={x:6,y:0.001,z:0.5};
+ native.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]
+  .nativeOriginalCurveParameterRange=[0,6];
+ x.cad.hiddenSharpViews.V[2].to={u:6,v:0.5};
+ assert.throws(()=>audit(x),/generated global HLR 3D endpoint changes original native BRep curve depth or parameter/);
+});
+
+test('native interior source parameter cut is held as bounded computation, not false vertex identity',()=>{
+ const x=withRealMeasured3DSourceTo2DPaper();
+ const native=x.cad.nativeSourceScopedSharpOutputByView.V;
+ const row=native.nativeGlobal3DOriginalSourceEvidence.rows[2];
+ row.originalNativeCurveParameterRange=[0,6];
+ row.nativeGlobalGeneratedHLR3DTo={x:6,y:0,z:0.5};
+ native.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]
+  .nativeOriginalCurveParameterRange=[0,6];
+ x.cad.hiddenSharpViews.V[2].to={u:6,v:0.5};
+ const r=audit(x),pair=r.nativeGlobal3DTo2DMeasuredPaperPairs
+  .find(p=>p.sourceEdgeId==='g::A|B');
+ const witness=pair.measured3DEndpointsAgainstOriginalBRepNativeParameterReplay;
+ assert.equal(witness.endpoints[0].originalNativeCurveEndpointExact,true);
+ assert.equal(witness.endpoints[1].interiorNativeCurveWithinSourceScaleRoundoff,true);
+ assert.equal(witness.endpoints[1].originalNativeCurveEndpointExact,false);
+ assert.equal(witness.endpoints[1].generatedToOriginalTopoDSVertexIdentityCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
 });
