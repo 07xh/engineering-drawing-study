@@ -5,6 +5,8 @@ const {auditC1WNativeClosedPhysicalGap:audit,
  require('../../workbench/c1-m5-w-native-closed-source-gap-joint.cjs');
 const {auditC1Native3DSourceScopedIntervals:coverage}=
  require('../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
+const {auditC1M5NativeGlobal3DSourceJoin:rebindNativeGlobal}=
+ require('../../workbench/c1-m5-global-native-3d-source-join.cjs');
 function fixture(edge='A|C',gap=[0.9999999999999998,1]){
  const sourceEdgeId='tetra::'+edge,bounds=edge==='A|D'?
   [0,24.289915602982237]:[0,16.401219466856727];
@@ -42,7 +44,7 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
   nativeGenerated3DJunctionIdentityCertified:false,
   globalOpaqueFaceOcclusionCertified:false,signedV5Action:false}];
 
- return {
+ const result={
   geometry,view:'W',sourceEdgeId,positiveGap:[...gap],
   cad:{revision:7,views:{W:[nativeW]},hiddenSharpViews:{W:[]},originalBRepSourceEdges:[{
    sourceEdgeId,occtSourceCurveType:'line',
@@ -86,6 +88,36 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
    positiveRationalGapResidualAfterCollinearPaperCandidates:[[...gap]]
   }
  };
+ // Construct same-run native-global 3D witness; do not hand-invent a
+ // M5 summary and then treat the summary as independent CAD truth.
+ const ledger={
+  schema:'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1',
+  sourceGeometryId:'tetra',revision:7,view:'W',
+  allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper:true,
+  globalGenerated2DSharpEdges:1,
+  globalGenerated3DSharpEdgesWithUniqueOriginalCurve:1,
+  generated2DTo3DTopoDSHistoryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  officialV5Authorized:false,signedV5ActionCount:0,
+  rows:[{
+   view:'W',hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
+   originalPhysicalSourceEdgeId:sourceEdgeId,
+   originalNativeCurveParameterRange:[...bounds],
+   globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
+   global3DAnd2DHLRMeasuredPaperPairUnique:true,
+   global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
+   globalGenerated2DTo3DTopoDSHistoryCertified:false,
+   fullOpaqueSceneContinuousOcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  }]
+ };
+ result.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence=ledger;
+ result.global3DSource=rebindNativeGlobal({
+  geometry:result.geometry,cad:result.cad,
+  view:'W',sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ });
+ return result;
 }
 test('genuine native original all-visible EdgeStatus, full 3D curve, closed convex rays and M4 open depth jointly prove original physical W source, NOT its paper gap',()=>{
  for(const [id,gap] of [['A|C',[0.9999999999999998,1]],['A|D',[0,9.431983218054427e-18]]]){
@@ -137,7 +169,7 @@ test('wrong W source 3D owner or native partial curve cannot become a positive p
  // forged original owner with no matching genuine endpoint witness must
  // FAIL CLOSED rather than quietly become a held physical source.
  assert.throws(()=>audit(alias),
-  /W original source and generated HLR endpoint ledgers lack bijection/);
+  /native global generated 3D HLR source provenance|W original source and generated HLR endpoint ledgers/);
  const partial=fixture();
  const scoped=partial.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
  scoped.visible3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange=[0,16];
