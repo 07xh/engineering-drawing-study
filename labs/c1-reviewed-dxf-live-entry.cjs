@@ -226,12 +226,20 @@ function drawV5(){
   preview=$('sheetPreview').querySelector('svg'),
   viewBox=preview?.getAttribute('viewBox')||'0 0 960 720';
  paper.setAttribute('viewBox',viewBox);
+ // Verify actual DAG + every signed action's source before rendering a line.
+ // Unbound contours are never allowed to borrow engineering line styles.
+ renderStepInspector(frame);
+ const signedBindings=new Map([
+  ...(actual.certifiedVisibleContourLineBindings||[]),
+  ...(actual.certifiedPhysicalLineBindings||[])
+ ].map(binding=>[binding.actionId,binding]));
  const layer=node('g',{'data-player':'one-existing-canonical-v5',
   'aria-label':'当前已审核的唯一 ConstructionIntent DAG V5'});
  for(const step of actual.steps)for(const a of step.actions){
   const fraction=frame.actionFractions[a.id]||0;
   if(fraction<=0||!['line','point'].includes(a.kind))continue;
-  const official=a.engineeringLineStyle,
+  const binding=signedBindings.get(a.id);
+  const official=binding?.standardLineStyle||a.engineeringLineStyle,
    hidden=official==='gb-t-4457.4-thin-dashed-hidden-edge',
    visible=official==='gb-t-4457.4-continuous-wide-visible-outline';
   const el=node(a.kind==='line'?'line':'circle',{
@@ -239,6 +247,7 @@ function drawV5(){
    stroke:hidden?'#1b334d':visible?'#092e53':'#3982be',
    'stroke-width':a.kind==='point'?2:hidden?1.25:visible?2.6:1,
    'data-action-id':a.id,
+   'data-original-source-id':binding?.sourceEdgeId||'not-signed',
    'data-official-line-style':hidden?'hidden':visible?'visible':'not-signed'
   });
   if(hidden)el.setAttribute('stroke-dasharray','6 3');
@@ -249,7 +258,6 @@ function drawV5(){
  $('v5Status').textContent='唯一 V5：'+frame.completedIds.length+
   '/'+actual.timeline.segments.length+' 个当前版本动作已完成。'+
   (frame.done?'本轮播放完成。':'未经 M5 认证的边不会作为标准工程线。');
- renderStepInspector(frame);
 }
 function tick(now){
  if(!playing||!current?.solution?.player?.canRender(revision)){
