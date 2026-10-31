@@ -1,6 +1,6 @@
 'use strict';
 /**
- * One reviewed convex C1 W-paper positive gap: corroborate the SAME physical
+ * One reviewed convex C1 V/H/W paper positive gap: corroborate the SAME physical
  * M0 source and same-run OCCT original EdgeStatus / native generated 3D
  * source-curve intervals / original CLOSED ray / M4 open co-projected depth.
  *
@@ -42,12 +42,12 @@ const exactPhysicalEndpointAssignment=(from,to,a,b)=>{
  return sign(difference(forward,reverse))<=0?[a,b]:[b,a];
 };
 
-function auditC1WNativeClosedPhysicalGap({
+function auditC1NativeClosedPhysicalGap({
  geometry,cad,view,sourceEdgeId,positiveGap,
  originalStatus,global3DSource,m4Depth,
  originalClosedRayClear,openRayClass,exactPaperGap,originalEndpointWitnesses
 }={}){
- if(view!=='W')return null;
+ if(!['V','H','W'].includes(view))return null;
  if(typeof geometry?.id!=='string'||!geometry.id||
     geometry.kind!=='mesh'||geometry.space!=='model-3d'||
     geometry.unit!=='mm'||!Number.isSafeInteger(cad?.revision)||
@@ -64,11 +64,11 @@ function auditC1WNativeClosedPhysicalGap({
  // never a fabricated positive source proof.
  const curve=cad.originalBRepSourceEdges?.filter(x=>
   x.sourceEdgeId===sourceEdgeId)??[];
- const scoped=cad.nativeSourceScopedSharpOutputByView?.W?.rows?.filter(x=>
+ const scoped=cad.nativeSourceScopedSharpOutputByView?.[view]?.rows?.filter(x=>
   x.originalPhysicalSourceEdgeId===sourceEdgeId)??[];
  if(curve.length===0||scoped.length===0||originalStatus==null||
     global3DSource==null)return freeze({
-  schema:'draftai-c1-w-m5-native-closed-original-gap-joint/1',
+  schema:(view==='W'?'draftai-c1-w-m5-native-closed-original-gap-joint/1':'draftai-c1-vhw-m5-native-closed-original-gap-joint/1'),
   view,sourceEdgeId,originalPositivePaperGap:[...positiveGap],
   status:'held-missing-real-native-original-proof',
   exactWholeOriginal3DSourceNativeVisibleCurveProven:false,
@@ -116,7 +116,7 @@ function auditC1WNativeClosedPhysicalGap({
     JSON.stringify(claimed.positiveLengthOverlappingNativeParameterIntervals)!==
      JSON.stringify(checked.positiveLengthOverlappingNativeParameterIntervals))
   throw new RangeError('W original native 3D parameter partition contradicts current OCCT source');
- if(originalStatus.view!=='W'||originalStatus.originalPhysicalSourceEdgeId!==sourceEdgeId||
+ if(originalStatus.view!==view||originalStatus.originalPhysicalSourceEdgeId!==sourceEdgeId||
     !Number.isSafeInteger(originalStatus.nativeHLROriginalEdgeMapIndex)||
     originalStatus.nativeHLROriginalEdgeMapIndex<1||
     originalStatus.generated2DHLREdgeToOriginalSourceHistoryCertified!==false||
@@ -124,7 +124,7 @@ function auditC1WNativeClosedPhysicalGap({
     originalStatus.engineeringLineStyle!=='undetermined'||
     originalStatus.signedV5Action!==false)
   throw new RangeError('W native original EdgeStatus does not bind original source');
- if(global3DSource.view!=='W'||global3DSource.sourceEdgeId!==sourceEdgeId||
+ if(global3DSource.view!==view||global3DSource.sourceEdgeId!==sourceEdgeId||
     global3DSource.sourceGeometryId!==geometry.id||
     global3DSource.revision!==cad.revision||
     global3DSource.generated2DTopoDSHistoryCertified!==false||
@@ -170,7 +170,7 @@ function auditC1WNativeClosedPhysicalGap({
   if(!Array.isArray(originalEndpointWitnesses)||
      originalEndpointWitnesses.length!==matches.length||!matches.length)
    throw new RangeError('W original source and generated HLR endpoint ledgers lack bijection');
-  const [a,b]=sources[0].map(id=>project(geometry.data.points?.[id])?.W);
+  const [a,b]=sources[0].map(id=>project(geometry.data.points?.[id])?.[view]);
   if(![a,b].every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
    throw new RangeError('nonfinite original W paper projected physical endpoint');
   const samePaper=(x,y)=>x.u===y.u&&x.v===y.v;
@@ -185,8 +185,8 @@ function auditC1WNativeClosedPhysicalGap({
    product(sourceDv,difference(dyadic(p.u),dyadic(a.u)))))===0;
   for(const claim of matches){
    const cls=claim.hlrClass,ordinal=claim.wholeSolidGeneratedHLREdgeOrdinal;
-   const outputs=cls==='visible-sharp'?cad.views?.W:
-    cls==='hidden-sharp'?cad.hiddenSharpViews?.W:null;
+   const outputs=cls==='visible-sharp'?cad.views?.[view]:
+    cls==='hidden-sharp'?cad.hiddenSharpViews?.[view]:null;
    if(!Array.isArray(outputs)||!Number.isSafeInteger(ordinal)||
       ordinal<0||ordinal>=outputs.length)
     throw new RangeError('original global W HLR edge ordinal not present');
@@ -201,7 +201,7 @@ function auditC1WNativeClosedPhysicalGap({
    const reversed=samePaper(native.from,b)&&samePaper(native.to,a);
    const exact=direct||reversed;
    const witness=originalEndpointWitnesses.filter(x=>
-    x.view==='W'&&x.sourceEdgeId===sourceEdgeId&&
+    x.view===view&&x.sourceEdgeId===sourceEdgeId&&
     x.hlrClass===cls&&x.wholeSolidGeneratedHLREdgeOrdinal===ordinal);
    if(witness.length!==1||
       witness[0].original3DBRepExactModelVertexEndpoints!==true||
@@ -253,7 +253,7 @@ function auditC1WNativeClosedPhysicalGap({
      JSON.stringify(receivedExactPaperCoverage.exactBinary64PaperPositiveLengthUncoveredIntervals))
    throw new RangeError('native W exact two-axis paper source proof contradicts whole-solid HLR');
   paperEndpointAudit=freeze({
-   sourceEdgeId,view:'W',sourceGeometryId:geometry.id,revision:cad.revision,
+   sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
    exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
    nativeGlobalWGeneratedHLREdgesChecked:rows.length,
    nativeGlobalWEdgesWithExactTwoPhysicalPaperEndpoints:
@@ -288,7 +288,7 @@ function auditC1WNativeClosedPhysicalGap({
  // witnesses. Even then, the PAPER residual and V5 gate remain untouched.
  const physicalComplete=globalFull&&rayClear&&originalFront;
  return freeze({
-  schema:'draftai-c1-w-m5-native-closed-original-gap-joint/1',
+  schema:(view==='W'?'draftai-c1-w-m5-native-closed-original-gap-joint/1':'draftai-c1-vhw-m5-native-closed-original-gap-joint/1'),
   sourceGeometryId:geometry.id,revision:cad.revision,view,sourceEdgeId,
   originalPositivePaperGap:[...positiveGap],
   originalNativeCurveParameterBounds:[...bounds],
@@ -303,7 +303,8 @@ function auditC1WNativeClosedPhysicalGap({
   wholeReviewedConvexOriginalClosedSourceRayClear:rayClear,
   coProjectedOriginalSourceOpenFrontmostProven:originalFront,
   jointOriginalClosedPhysicalSourceVisibilityProven:physicalComplete,
-  nativeGlobalGeneratedW2DPaperEndpointDriftEvidence:paperEndpointAudit,
+  nativeGlobalGenerated2DPaperEndpointDriftEvidence:paperEndpointAudit,
+  nativeGlobalGeneratedW2DPaperEndpointDriftEvidence:view==='W'?paperEndpointAudit:null,
   generatedPaperGapStrictlyPositiveStillHeld:true,
   generated2DTopoDSHistoryCertified:false,
   globalOpaqueSceneContinuousVisibilityCertified:false,
@@ -311,4 +312,9 @@ function auditC1WNativeClosedPhysicalGap({
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
 }
-module.exports={auditC1WNativeClosedPhysicalGap};
+// The prior W-only contract remains stable. V/H must use the same exact
+// original source audit, with no new solver, clipping or signature guess.
+function auditC1WNativeClosedPhysicalGap(args={}){
+ return args.view==='W'?auditC1NativeClosedPhysicalGap(args):null;
+}
+module.exports={auditC1WNativeClosedPhysicalGap,auditC1NativeClosedPhysicalGap};
