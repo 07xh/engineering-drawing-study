@@ -43,9 +43,9 @@ function resetStepInspector(){
  $('v5StepJump').replaceChildren();
  $('v5StepJump').disabled=true;
  $('v5StepTitle').textContent='原题条件未审核';
- $('v5StepExplanation').textContent='当前版本无真实 ConstructionStep，不能展示推测作图。';
+ $('v5StepExplanation').textContent='当前条件尚未通过核验，暂无作图步骤。';
  $('v5StepActions').replaceChildren();
- $('v5StepProof').textContent='未得到当前版本已证的来源和线型；没有正式 V5 动作可签发。';
+ $('v5StepProof').textContent='来源和线型尚未核验，暂无可用作图。';
 }
 function invalidateDerived(){
  halt();revision++;
@@ -60,7 +60,7 @@ function invalidateDerived(){
  $('showGiven').disabled=!rawGiven;
  renderOriginalPaper();
  $('animation').replaceChildren();
- $('v5Status').textContent='数学条件发生变化，旧唯一 V5 已全部失效。';
+ $('v5Status').textContent='条件已修改，原作图已失效，请重新核对。';
  $('proof').textContent='没有签发当前版本的任何原题实虚线或动画结果。';
 }
 function clearPreview(){
@@ -73,7 +73,7 @@ function clearPreview(){
 function invalidate(){
  invalidateDerived();
  rawGiven=null;
- $('sourcePoints').textContent='请先选择本机原题 GIVEN JSON。';
+ $('sourcePoints').textContent='请先选择已知视图 JSON。';
  $('sourcePairs').value='';
  $('applyPairs').disabled=true;
  $('previewFile').value='';
@@ -102,7 +102,7 @@ function renderOriginalPaper(){
  const paper=buildC1DxfGivenFirstPaper(rawGiven);
  const outer=node('svg',{viewBox:'0 0 960 720',
   'data-c1-paper-mode':'given','data-missing-view':paper.missingView,
-  'aria-label':'原始 GIVEN 点集；待补第三视图严格留白，不含推测答案'});
+  'aria-label':'原题已知点；待补第三视图留白'});
  const labels={V:{x:130,y:38},H:{x:130,y:664},W:{x:640,y:38}};
  const blanks={V:{x:150,y:150},H:{x:150,y:510},W:{x:625,y:170}};
  for(const view of VIEWS){
@@ -159,7 +159,7 @@ function renderCandidate(src,transform){
  $('showGiven').setAttribute('aria-pressed','false');
  $('showCandidate').setAttribute('aria-pressed','true');
  $('paperMode').textContent='你正在主动检查未认证三维候选：全部灰色虚线只是几何草稿，'+
-  '不是 V5 动作、正式实虚线或教材答案。点击“原题已知视图”恢复空白待补视图。';
+  '不是已验证作图、正式实虚线或题目答案。点击“原题已知视图”恢复空白待补视图。';
 }
 // Never invent a teaching sentence: this is a READ-ONLY projection of
 // the existing same-revision ConstructionStep DAG, M5 bindings and V5 frame.
@@ -185,7 +185,7 @@ function renderStepInspector(frame){
   currentStep.totalSteps+' 步 · '+currentStep.title;
  $('v5StepExplanation').textContent=
   currentStep.explanationVerifiedAvailable?currentStep.explanation:
-   '原 ConstructionStep 没有提供可复核的作图原因；这一步仍须补充真实数学推导，不能自动编造讲解。';
+   '此步骤缺少可核对的作图依据，暂不提供说明。';
  const list=$('v5StepActions');
  list.replaceChildren();
  for(const action of currentStep.actions){
@@ -234,7 +234,7 @@ function drawV5(){
   ...(actual.certifiedPhysicalLineBindings||[])
  ].map(binding=>[binding.actionId,binding]));
  const layer=node('g',{'data-player':'one-existing-canonical-v5',
-  'aria-label':'当前已审核的唯一 ConstructionIntent DAG V5'});
+  'aria-label':'当前条件下的作图动画'});
  for(const step of actual.steps)for(const a of step.actions){
   const fraction=frame.actionFractions[a.id]||0;
   if(fraction<=0||!['line','point'].includes(a.kind))continue;
@@ -255,9 +255,9 @@ function drawV5(){
   layer.append(el);
  }
  paper.append(layer);
- $('v5Status').textContent='唯一 V5：'+frame.completedIds.length+
+ $('v5Status').textContent='作图进度：'+frame.completedIds.length+
   '/'+actual.timeline.segments.length+' 个当前版本动作已完成。'+
-  (frame.done?'本轮播放完成。':'未经 M5 认证的边不会作为标准工程线。');
+  (frame.done?'本轮播放完成。':'未验证的边不会显示为标准工程线。');
 }
 function tick(now){
  if(!playing||!current?.solution?.player?.canRender(revision)){
@@ -312,19 +312,19 @@ async function applyReviewedPairs(){
    '\\n当前有 '+p.inferredOriginal3DPointCount+' 个独立三维角点；'+
    (p.explicitlyReviewedManyToOnePaperProjectionPairs?
     '由人工明确配对的二维索引：'+p.reviewedOriginal3DPairCount:
-    '由现有 M3 自动唯一对应')+
+    '自动对应，仍需核对')+
    '\\nM0 验证闭合凸体候选：'+p.independentlyValidatedByCurrentM0+
    '\\n候选三维面：'+p.candidateGeometry.data.faces.length+
    ' 面；候选实体棱线：'+p.candidateGeometry.data.edges.length+
    ' 条。\\n这是审核候选，并不能证明原题中所有隐藏角点、孔槽或非凸部分已识别。';
   $('reviewCheck').disabled=false;
-  setStatus('真实原题二维对应关系已提交 M3 和 M0；请独立检查每一面、每条棱后再确认 V5。');
+  setStatus('角点对应关系已提交；请核对每个面和棱后确认。');
  }catch(e){
   if(revision!==currentRevision)return;
   const message=e?.message||String(e);
   setStatus(/ambiguous|duplicate\/collapsed|different source vertex counts/.test(message)?
    '二维投影存在真实多对一歧义。请按上方各视图索引逐行填写三维角点对应，不得自动猜测。'+message:
-   '原题二维配对审核被 M3/M0 阻断：'+message,true);
+   '角点对应未通过检查：'+message,true);
  }
 }
 async function loadGiven(){
@@ -367,13 +367,13 @@ function loadSourcePreview(){
  previewObjectUrl=URL.createObjectURL(file);
  $('sourcePreview').src=previewObjectUrl;
  $('sourcePreview').hidden=false;
- setStatus('已载入本机原题参考图；原有数学和 V5 审核失效。请重新配对确认。');
+ setStatus('原图已更换，之前的审核已失效，请重新核对角点。');
 }
 async function compile(){
  halt();current=null;controls(false);resetStepInspector();
  $('animation').replaceChildren();
  if(!given||!candidate||!$('reviewCheck').checked){
-  setStatus('未明确人工核对凸体全部角点和面拓扑，禁止签发 V5。',true);return;
+  setStatus('请先核对全部角点、面和棱的对应关系。',true);return;
  }
  try{
   const source=given,rev=revision,
@@ -419,7 +419,7 @@ async function compile(){
   $('showCandidate').disabled=true;
   $('showGiven').setAttribute('aria-pressed','false');
   $('showCandidate').setAttribute('aria-pressed','false');
-  $('paperMode').textContent='当前显示通过当前版本 M3/M5 门禁筛选的求解输出；'+
+  $('paperMode').textContent='当前显示本次核验通过的结果；'+
    '未证明线段不得按正式工程线展示，教材整题盲测仍未通过。';
   controls(true);
   $('proof').textContent='真实教材题图自动识别/全部角点完整性：尚未独立认证。'+
@@ -443,9 +443,9 @@ async function compile(){
     '。未认证棱线只供灰色审阅。');
   setStatus(fullyProven?
    '本次受限凸体全三视图原始棱线数学签收通过；原教材盲测仍未通过。':
-   '本次仅显示已证明的 V5 动作；全体实体棱线或教材盲测仍未签收。');
+   '当前显示局部作图；完整棱线和题目结果仍未全部核验。');
   drawV5();
- }catch(e){setStatus('M3/M5/V5 正向门禁阻断：'+(e?.message||String(e)),true);}
+ }catch(e){setStatus('条件未通过核验：'+(e?.message||String(e)),true);}
 }
 $('showGiven').addEventListener('click',()=>{
  if(!rawGiven||$('showGiven').disabled)return;
@@ -459,7 +459,7 @@ $('givenFile').addEventListener('change',loadGiven);
 $('sourcePairs').addEventListener('input',()=>{
  invalidateDerived();
  $('applyPairs').disabled=!rawGiven;
- setStatus('人工对应关系已编辑：旧 M3/M5/V5 结果已全部作废，请重新核验。');
+ setStatus('角点对应已修改，旧结果已失效，请重新核对。');
 });
 $('applyPairs').addEventListener('click',applyReviewedPairs);
 $('previewFile').addEventListener('change',loadSourcePreview);
@@ -468,7 +468,7 @@ $('reviewCheck').addEventListener('change',()=>{
  $('animation').replaceChildren();
  resetStepInspector();
  $('compile').disabled=!candidate||!$('reviewCheck').checked;
- $('v5Status').textContent='确认条件已改变，旧 V5 动作立即失效。';
+ $('v5Status').textContent='确认条件已改变，旧作图已失效。';
 });
 $('compile').addEventListener('click',compile);
 $('v5StepJump').addEventListener('change',()=>{
@@ -485,4 +485,4 @@ $('prev').addEventListener('click',()=>seek(-1));
 $('next').addEventListener('click',()=>seek(1));
 window.addEventListener('pagehide',()=>{halt();clearPreview();});
 invalidate();
-setStatus('请选择本机生成的原题 GIVEN JSON，绝不能选私有答案 JSON。');
+setStatus('请选择本机生成的已知量 JSON，不要选择答案文件。');

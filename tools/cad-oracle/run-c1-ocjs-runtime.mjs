@@ -368,6 +368,42 @@ for(const [index,geometry] of general.entries()){
  assert.equal(scopedConsumer.counts.nativeSourceScopedOutputEdges,
   scopedConsumer.counts.nativeGeneratedIsSameMatches+
   scopedConsumer.counts.paperOnlySourceScopedEdges);
+ // Audit EVERY original native source in all three first-angle views. This
+ // never interprets exact 2D collinearity as generated TopoDS causal history.
+ const realTwoAxisRows=['V','H','W'].flatMap(view=>
+  scopedConsumer.views[view].sourceParameterCandidates
+   .filter(row=>!row.originalProjectedEdgeCollapsed)
+   .map(row=>({view,source:row.originalPhysicalSourceEdgeId,...row})));
+ const strictFull=realTwoAxisRows.filter(row=>
+   row.strictTwoAxisPaperOnlyCoverageComplete).length,
+  strictResiduals=realTwoAxisRows.filter(row=>
+   row.exactTwoAxisQualifiedNativePaperCoverage.
+    positiveLengthTwoAxisPaperResidualsStillPresent).length,
+  drift=realTwoAxisRows.reduce((n,row)=>n+
+   row.exactTwoAxisQualifiedNativePaperCoverage.
+    transverseDisplacedGeneratedSegments,0),
+  falseFull=realTwoAxisRows.filter(row=>
+   row.exactTwoAxisQualifiedNativePaperCoverage.
+    falseDominantAxisFullCoverageVetoed).length;
+ assert.equal(strictFull,
+  scopedConsumer.counts.projectedSourcesWithStrictTwoAxisFullPaperCoverage);
+ assert.equal(strictResiduals,
+  scopedConsumer.counts.projectedSourcesWithStrictTwoAxisPositivePaperResiduals);
+ assert.equal(drift,
+  scopedConsumer.counts.sourceScopedGenerated2DSegmentsTransverselyOffOriginalSource);
+ assert.equal(falseFull,
+  scopedConsumer.counts.projectedSourcesWithFalseDominantAxisFullCoverageVetoed);
+ assert.ok(realTwoAxisRows.every(row=>
+  row.exactTwoAxisQualifiedNativePaperCoverage.generated2DTopoDSHistoryCertified===false&&
+  row.exactTwoAxisQualifiedNativePaperCoverage.signedV5Action===false&&
+  row.originalM0SourcePaperTransverseDriftNeverClosesGap===true&&
+  (row.entireOriginalSourcePaperCandidateIntervalCovered!==true||
+   row.strictTwoAxisPaperOnlyCoverageComplete===true)&&
+  row.engineeringLineStyle==='undetermined'&&row.signedV5Action===false));
+ console.error('REAL C1 VHW STRICT TWO-AXIS NATIVE ORIGINAL PAPER COVERAGE '+
+  geometry.id+': '+JSON.stringify({sourceViews:realTwoAxisRows.length,
+   strictFull,strictResiduals,offOriginalSourceDyadicLineSegments:drift,
+   singleAxisFalseFullVetoed:falseFull,officialV5Actions:0}));
  const globalScopedRebind=scopedConsumer.globalNativeHLRSourceScopeRebinding;
  assert.equal(globalScopedRebind?.schema,
   'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1');

@@ -32,12 +32,14 @@ function homeHTML(){return `
  <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
  <div class="v7-bar" aria-label="项目操作">
   <span id="recent" class="v8-legacy-anchor"></span><span id="knowledge" class="v8-legacy-anchor"></span>
-  <p id="v7-storage-warning" class="v7-warning" role="status" hidden>本机存储不可用，当前编辑不会自动保存；请导出项目。</p>
+  <p id="v7-storage-warning" class="v7-warning" role="status" hidden>本机存储不可用，当前修改无法保存或导出；请检查浏览器存储权限。</p>
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
   <button type="button" id="v7-open">打开项目</button><button type="button" id="v7-new">新建项目</button>
-  <button type="button" id="v7-export">导出 .daiproject</button>
-  <label class="v7-file-control">导入项目包<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
+  <details class="v7-project-menu"><summary>更多项目操作</summary><div class="v7-project-actions">
+  <button type="button" id="v7-export">导出项目</button>
+  <label class="v7-file-control">导入项目<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
   <button type="button" id="v7-delete" class="v7-danger">删除当前项目</button>
+  </div></details>
  </div>
  <nav class="v7-mobile-jump" aria-label="工作台快捷导航">
   <a href="#v7-input-section">填写条件</a><a href="#v7-paper-section">查看图纸</a><a href="#v7-step-list">作图步骤</a>
@@ -360,18 +362,15 @@ function homeHTML(){return `
    </fieldset>
    <section class="v8-review-check" aria-labelledby="v8-review-title">
     <h3 id="v8-review-title">核对条件并解题</h3>
-    <p class="v8-review-lead">以下内容取自当前填写的条件，并非自动识图结果。</p>
+    <p class="v8-review-lead">请核对以下条件；有题图时请对照原题。</p>
     <p id="v8-review-summary" class="v8-review-summary" role="status">请选择解题类型并检查输入。</p>
     <p id="v8-review-preflight" class="v8-review-preflight" data-state="pending" role="status" aria-live="polite">请先填写题目条件。</p>
     <button type="button" id="v8-review-edit" class="v8-review-edit" hidden>定位需要修改的条件</button>
     <input id="v8-review-ack" type="checkbox" hidden aria-hidden="true" tabindex="-1">
     <button type="button" id="v8-review-run" class="v7-primary" aria-describedby="v8-review-preflight" disabled>我已核对，开始求解</button>
-    <p class="v8-review-help">确认后使用现有数学求解器；条件冲突或证据不足仍会阻止正式答案。</p>
+
    </section>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
-   <div class="v7-advanced"><strong>更多已存在专业工具</strong>
-   <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
-   <a href="labs/recognition-qa.html">本机识图候选检查</a></div>
   </section>
   <section id="v7-paper-section" class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label>

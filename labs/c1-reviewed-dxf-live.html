@@ -53,59 +53,59 @@ small{color:#61768c}
 </head>
 <body><main>
 <a href="solid-third-view-live.html">← 返回基本体补第三视图工作台</a>
-<h1>教材 C1：可信 DXF 已知量 → 自动对应 → 人工审核 → 唯一 V5</h1>
-<p class="hint">仅使用本机可信转换器导出的 <strong>GIVEN 已知量 JSON</strong>。默认仅展示真实输入的两个视图投影点，第三视图空白；原题 JSON 不含已认证 CAD 线段拓扑。候选图必须主动点击查看，灰色虚线不是答案或标准虚线。不要选择参考答案 JSON、原始教材 DWG。文件只在浏览器内读取，不发送、不保存。CAD 顶点与实体拓扑必须独立人工审核；算法示例通过不代表真实教材题验收。</p>
+<h1>两视图补第三视图</h1>
+<p class="hint">请导入可信转换器生成的已知量 JSON，不要导入参考答案或原始 DWG。默认显示两个已知视图，候选图不是答案；原始线段拓扑和角点对应须人工核对。文件仅在本机读取。</p>
 <div class="grid">
 <section class="panel" aria-label="原始 CAD 输入及人工确认">
-<h2>一、原题输入与数学重建</h2>
+<h2>一、导入已知视图</h2>
 <label for="givenFile">本机原题两视图已知量 JSON（不含答案）
 <input id="givenFile" type="file" accept=".json,application/json"></label>
 <label for="previewFile">可选：本机原题截图 / 已验证原始 DWG 缩略图（仅供自己核对）
 <input id="previewFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
 <img id="sourcePreview" hidden alt="本机原始题目参考图，仅人工审阅，不是几何证明">
-<h2>二、校对二维点与三维角点</h2>
+<h2>二、核对角点对应</h2>
 <p class="hint">长方体在三维中可以有 8 个角点，但每张二维视图只有 4 个不同投影点。原题数据不许自动猜测这些重合点的对应关系；请按以下 0 开始编号，明确一行对应一个三维角点。</p>
-<pre id="sourcePoints" aria-live="polite">请先选择本机原题 GIVEN JSON。</pre>
+<pre id="sourcePoints" aria-live="polite">请先选择已知视图 JSON。</pre>
 <label for="sourcePairs">原题人工确认的三维角点配对（每行：第一个已知视图编号, 第二个已知视图编号；例如 0,0）
 <textarea id="sourcePairs" rows="7" spellcheck="false" placeholder="0,0&#10;0,1&#10;1,2&#10;…"></textarea></label>
-<button id="applyPairs" type="button" disabled>用当前原题二维配对重建 M3/M0 候选</button>
+<button id="applyPairs" type="button" disabled>生成待核对候选</button>
 <pre id="candidate" aria-live="polite">尚未加载本机已知量。</pre>
 <label class="checkbox" for="reviewCheck">
 <input id="reviewCheck" type="checkbox" disabled>
 <span>我已核对纸质原题、每行二维角点对应、第一角法、全部原始三维角点、闭合凸体前提和实体面/棱拓扑；没有借用教材答案决定形体。</span>
 </label>
-<button id="compile" type="button" disabled>按人工确认条件生成三视图与唯一 V5</button>
+<button id="compile" type="button" disabled>确认条件并作图</button>
 <p id="status" data-status="review" role="status" aria-live="polite"></p>
-<p class="hint">本机配对可解决“二维点多对一”且你已确认全部真实三维角点的闭合凸体。对于带孔、开槽、非凸组合体、缺失角点或不确定来源的原题，仍必须拒绝整题签收；仅靠缩略图或猜测线型不会获得 V5 资格。</p>
+<p class="hint">此工具仅适用于角点已核对的闭合凸体。带孔、开槽、非凸或角点缺失的题目不能作为完整答案；缩略图和猜测的线型不能代替核对。</p>
 </section>
-<section class="panel" aria-label="三视图真实结果与唯一 V5 播放">
-<h2>三、V/H/W 同纸显示</h2>
-<p id="paperMode" role="status" aria-live="polite">尚未选择原题。首帧只显示 GIVEN 已知视图，待补视图留白。</p>
+<section class="panel" aria-label="三视图与作图播放">
+<h2>三、三视图</h2>
+<p id="paperMode" role="status" aria-live="polite">尚未选择原题。默认只显示已知视图，待补视图留白。</p>
 <div class="paper-switch" role="group" aria-label="原题与未认证候选分开查看">
 <button id="showGiven" type="button" aria-pressed="true" disabled>原题已知视图（默认）</button>
 <button id="showCandidate" type="button" aria-pressed="false" disabled>查看未认证三维候选</button>
 </div>
-<div id="sheetPreview" aria-label="默认仅含原始 GIVEN 点集且第三视图空白；手动切换后才显示未认证候选"></div>
-<h2>四、唯一 V5 逐笔动画</h2>
-<div class="controls" aria-label="现有唯一 V5 播放器">
+<div id="sheetPreview" aria-label="默认显示已知点并留空待补视图；切换后显示未认证候选"></div>
+<h2>四、逐步作图</h2>
+<div class="controls" aria-label="作图播放控制">
 <button id="play" type="button" disabled>播放</button>
 <button id="pause" type="button" disabled>暂停</button>
 <button id="prev" type="button" disabled>上一步</button>
 <button id="next" type="button" disabled>下一步</button>
 </div>
-<svg id="animation" viewBox="0 0 960 720" role="img" aria-label="当前数学版本的唯一 V5 绘制动作"></svg>
+<svg id="animation" viewBox="0 0 960 720" role="img" aria-label="当前条件下的作图动画"></svg>
 <p id="v5Status" aria-live="polite">原始条件未审核，无已签收动画动作。</p>
-<section class="v5-step-panel" aria-label="与唯一 V5 同步的来源和步骤说明">
+<section class="v5-step-panel" aria-label="与动画同步的来源和步骤说明">
 <label for="v5StepJump">真实作图步骤（与当前动画同步）</label>
-<select id="v5StepJump" disabled aria-label="跳转已签收的真实 ConstructionStep"></select>
+<select id="v5StepJump" disabled aria-label="跳转已验证的作图步骤"></select>
 <h3 id="v5StepTitle">原题条件未审核</h3>
-<p id="v5StepExplanation">尚未取得当前版本的数学 ConstructionStep，不能展示推测作图过程。</p>
+<p id="v5StepExplanation">条件尚未核对，暂无作图步骤。</p>
 <ol id="v5StepActions" aria-label="本步骤真实绘图动作和来源"></ol>
-<small id="v5StepProof">只有同版本 M3/M4/M5 确认且匹配原始来源绑定的线条才能显示正式线型；仅看动画不能证明答案正确。</small>
+<small id="v5StepProof">仅来源和线型已核对的线条可显示为正式线型；辅助线和点不代表整题正确。</small>
 </section>
-<h2>五、可复核证明及适用范围</h2>
+<details><summary>验证依据和适用范围</summary>
 <pre id="proof">原题完整盲测与国标全部线型未签收。</pre>
-<small>私密教材 DWG/DXF、参考答案及人工审核记录不进入站点构建产物；只发布通用本机阅读和计算代码。</small>
+<small>原题和人工审核记录不会上传。</small></details>
 </section>
 </div>
 </main>

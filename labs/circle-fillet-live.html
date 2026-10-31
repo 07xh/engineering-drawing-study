@@ -72,7 +72,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <div id="drawingWrap"><svg id="diagram" viewBox="0 0 720 440" role="img" aria-label="两圆或有限线段相切几何和候选圆心"></svg></div>
 <div class="draftai-playdock" aria-label="绘图播放控制">
 <div class="actions" id="fullControls"><button id="prev" type="button">上一步</button><button id="next" class="primary" type="button">下一步</button><button id="playPause" type="button">逐笔播放</button><label for="animationSpeed" class="rate-select">速度<select id="animationSpeed" aria-label="动画播放速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.65">0.65×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="2.5">2.5×</option><option value="3">3×</option><option value="4">4×</option></select></label>
-<p class="note" style="flex:1 1 100%;margin:0">看辅助线、辅助圆和切点逐渐画出，请使用「逐笔播放」；「下一步」会立即显示该步骤的完整图形。系统开启减少动态效果时可使用静态步进。</p></div>
+<p class="note" style="flex:1 1 100%;margin:0">逐笔播放可观看绘制；上一步和下一步切换完整步骤。</p></div>
 <div class="playback-scrub" id="filletScrubBar">
 <label for="filletProgress">笔迹进度（拖动到任意一步的中间，支持触屏与方向键）</label>
 <input id="filletProgress" type="range" min="0" max="1000" step="1" value="0" disabled aria-label="圆弧连接逐笔作图进度">
@@ -81,7 +81,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 </div>
 </div>
 <p class="legend">绿色：已知圆或线段　橙色虚线：圆心辅助轨迹　紫色：学生绘制的辅助线或弧线　蓝色：选定连接圆弧　小圆点：候选圆心和切点</p>
-<p class="note">可用下一步查看：辅助圆轨迹 → 有效候选圆心 → 两个切点 → 已明确方向的连接弧。选择有限圆弧时，绿色图线只显示给定弧段，不绘制未经给出的整圆。未标为“有限”的起止角不参与限制；多解不会自动选第一种。</p>
+<p class="note">步骤依次显示辅助轨迹、候选圆心、切点和连接弧。有限圆弧只显示给定弧段；只有标为有限的角度参与限制。多解时请自行选择。</p>
 </section>
 <section class="panel controls">
 <h2>题目条件</h2>
@@ -136,7 +136,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 <label class="circle-only">已知圆 2 轮廓方向<select id="travel2"><option value="">未指定</option><option value="cw">CW</option><option value="ccw">CCW</option></select></label>
 </div><div class="actions"><button class="primary" id="calculate" type="button">重新计算</button><button id="reset" type="button">恢复示例</button></div>
 <p class="card" id="status" aria-live="polite">正在求解……</p>
-<p class="note">“有限线段＋圆／有限已知圆弧”支持真实求解、V5 教学、数字化偏移线与同心辅助圆、学生自主圆心点选、两切点及有向圆弧判题。四项已支持的构造全部正确也不等于整道教材题完成。</p>
+<p class="note">可求解有限线段与圆或圆弧的连接，并检查辅助轨迹、圆心、切点和弧线。局部构造正确不代表整题完成。</p>
 <h2>作图方式</h2>
 <label>学习方式<select id="learningMode"><option value="full">完整教学</option><option value="hint">逐步提示</option><option value="draw">自己作图（数学辅助线／连接弧）</option></select></label>
 
