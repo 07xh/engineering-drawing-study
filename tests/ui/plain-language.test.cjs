@@ -19,7 +19,7 @@ test('task guidance explains capabilities without internal engine labels',()=>{
 test('drawing and step controls stay together without duplicate control ids',()=>{
  const {document}=parseHTML('<html><body>'+homeHTML()+'</body></html>');
  const paper=document.querySelector('.v7-paper');
- assert.ok(paper.contains(document.querySelector('.v7-steps')),'steps remain next to the drawing');
+ assert.equal(paper.parentElement,document.querySelector('.v7-steps').parentElement,'steps share the drawing workspace');
  for(const id of ['v7-sheet','v7-play','v7-back','v7-next','v7-step-list'])assert.equal(document.querySelectorAll('#'+id).length,1,id);
 });
 test('the current drawing step is placed before optional details',()=>{
