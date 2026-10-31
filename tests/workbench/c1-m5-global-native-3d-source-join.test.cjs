@@ -290,3 +290,99 @@ test('native original 3D parameter gap remains held even with perfectly complete
  assert.equal(source.exactReceived2DTwoAxisPaperCoverageComplete,true);
  assert.equal(source.native3DAndReceived2DPaperGeometryBothClosedButNotTopoDSHistory,false);
 });
+
+function withRealMeasured3DSourceTo2DPaper(){
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ const native=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence;
+ native.receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal=true;
+ for(const row of native.rows){
+  const original=x.cad.originalBRepSourceEdges.find(o=>
+   o.sourceEdgeId===row.originalPhysicalSourceEdgeId);
+  row.nativeGlobalGeneratedHLR3DFrom={...original.fromOCCT3D};
+  row.nativeGlobalGeneratedHLR3DTo={...original.toOCCT3D};
+ }
+ return x;
+}
+
+test('same-run REAL native generated 3D XYZ is independently reprojected to all global 2D HLR ordinals',()=>{
+ const r=audit(withRealMeasured3DSourceTo2DPaper());
+ assert.equal(r.completeMeasuredNativeGlobal3D2DPaperReplayAvailable,true);
+ assert.equal(r.independentlyReplayedMeasuredGlobal3D2DPaperCount,3);
+ assert.equal(r.nativeGlobal3DTo2DMeasuredPaperPairs.length,3);
+ assert.ok(r.nativeGlobal3DTo2DMeasuredPaperPairs.every(row=>
+  row.exactBinary64PaperEndpoints===true&&
+  row.sourceScaleULPBoundedOnly===false&&
+  row.generated2DTopoDSHistoryCertified===false));
+ assert.ok(r.native3DToGenerated2DPaperByOriginalSource.every(row=>
+  row.native3DProjectedSourcePaperCoverageReplayed===true&&
+  row.native3DProjectedSourcePaperTwoAxisCoverageComplete===true&&
+  row.exactReceived2DTwoAxisPaperCoverageComplete===true&&
+  row.generated2DTopoDSHistoryCertified===false));
+ assert.equal(r.claims[0].sameRunNativeGenerated3DCurveReprojectedOntoActual2D,true);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('a one-ULP generated 2D drift is held unless real native 3D pairing class is recomputed',()=>{
+ const x=withRealMeasured3DSourceTo2DPaper();
+ x.cad.hiddenSharpViews.V[2].to.v=1+Number.EPSILON;
+ assert.throws(()=>audit(x),/real native generated 3D endpoints contradict global 2D HLR paper/);
+ const row=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows[2];
+ row.global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;
+ row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly=true;
+ const r=audit(x),source=r.native3DToGenerated2DPaperByOriginalSource
+  .find(t=>t.sourceEdgeId==='g::A|B');
+ assert.equal(r.independentlyReplayedMeasuredGlobal3D2DPaperCount,3);
+ assert.equal(r.nativeGlobal3DTo2DMeasuredPaperPairs[2].sourceScaleULPBoundedOnly,true);
+ assert.equal(source.native3DProjectedSourcePaperTwoAxisCoverageComplete,true);
+ assert.equal(source.exactReceived2DTwoAxisPaperCoverageComplete,false);
+ assert.equal(source.transverseGenerated2DPaperDriftEdges.length,1);
+ assert.equal(r.officialV5Authorized,false);
+});
+
+test('real partial native 3D interval and matching partial 2D output retain exact positive paper residual',()=>{
+ const x=withRealMeasured3DSourceTo2DPaper();
+ const native=x.cad.nativeSourceScopedSharpOutputByView.V;
+ const generated=native.nativeGlobal3DOriginalSourceEvidence.rows[2];
+ generated.originalNativeCurveParameterRange=[0,6];
+ generated.nativeGlobalGeneratedHLR3DTo={x:6,y:0,z:0.5};
+ native.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]
+  .nativeOriginalCurveParameterRange=[0,6];
+ x.cad.hiddenSharpViews.V[2].to={u:6,v:0.5};
+ const r=audit(x),source=r.native3DToGenerated2DPaperByOriginalSource
+  .find(t=>t.sourceEdgeId==='g::A|B');
+ assert.deepEqual(source.positiveNative3DSourceParameterGaps,[[6,12]]);
+ assert.deepEqual(source.positiveNative3DProjectedSourcePaperGaps,[['1/2','1']]);
+ assert.deepEqual(source.positiveExactReceived2DPaperGaps,[['1/2','1']]);
+ assert.equal(source.native3DAndReceived2DPaperGeometryBothClosedButNotTopoDSHistory,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+
+test('invalid, missing or contradictory measured HLR 3D endpoints and claimed output pairs fail closed',()=>{
+ const mutate=[
+  x=>{delete x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence.rows[2].nativeGlobalGeneratedHLR3DFrom;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence.rows[2].nativeGlobalGeneratedHLR3DFrom.x=Infinity;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence.rows[2].nativeGlobalGeneratedHLR3DTo.z+=0.5;},
+  x=>{x.cad.hiddenSharpViews.V[2].to.v+=0.001;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence.rows[2].
+    global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence
+    .receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal=false;}
+ ];
+ for(const change of mutate){
+  const x=withRealMeasured3DSourceTo2DPaper();
+  change(x);
+  assert.throws(()=>audit(x),/native|3D|HLR|paper|endpoints|flag/i);
+ }
+ const legacy=setup();
+ legacy.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows[0].nativeGlobalGeneratedHLR3DFrom=
+   {x:0,y:0,z:0};
+ assert.throws(()=>audit(legacy),/incomplete same-run measured global native HLR 3D endpoints/);
+});
