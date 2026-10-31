@@ -522,9 +522,12 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      classOverlap?.hasPositiveLengthVisibleHiddenClassConflict??false,
     paperDerivedPositiveLengthUncoveredCandidateIntervals:
      coverage?.positiveLengthUncoveredIntervals??null,
+    // Claim of 'entire original paper candidate' must now survive BOTH
+    // received coordinates, not merely a rounded or one-axis interval.
     entireOriginalSourcePaperCandidateIntervalCovered:
      coverage?.entireOriginalParameterIntervalCovered===true&&
-     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true,
+     exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&
+     twoAxisCoverage?.strictReceivedTwoAxisPaperCoverageComplete===true,
     // A received paper segment can cover t=[0,1] yet drift transversely.
      // This stricter result remains paper-only, never TopoDS/M5/V5 proof.
      fullOriginalPaperCandidateCoverageWithExactAffineCollinearity:
