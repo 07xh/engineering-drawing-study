@@ -20,6 +20,8 @@ const freeze=o=>{
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const {project}=require('../core/projection/conventions.js');
+const {auditC1Global3D2DPaperPairEnvelope}=
+ require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {auditC1ExactBinary64PaperAffineWitness}=
  require('./c1-exact-binary64-paper-affine.cjs');
 const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
@@ -164,6 +166,16 @@ function auditC1M5NativeGlobal3DSourceJoin({
     native.signedV5ActionCount!==0||
     !Array.isArray(native.rows)||native.rows.length!==total)
   throw new RangeError('same-run global native 3D HLR source ledger is incomplete or unsigned contract forged');
+ // A real OCJS run retains the actual GENERATED 3D edge endpoint XYZ.
+ // Reproject those binary64 points onto the same-run whole-solid 2D HLR
+ // ordinal. A summary boolean is not enough: M5 rechecks real coordinates.
+ // Legacy isolated fixtures without these XYZ points remain unsigned.
+ const measured3DInventory=
+  native.receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal===true;
+ if(native.receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal!==undefined&&
+    !measured3DInventory)
+  throw new RangeError('invalid real native 3D HLR endpoint inventory flag');
+ const measured3D2DPairs=new Map();
  const globallyGenerated=new Map();
  for(const row of native.rows){
   const ordinal=row?.wholeSolidGeneratedHLREdgeOrdinal;
@@ -213,7 +225,43 @@ function auditC1M5NativeGlobal3DSourceJoin({
   if(scopedIntervalOwners.get(scopedIntervalKey)!==false)
    throw new RangeError('whole-solid native 3D HLR reuses or lacks scoped interval owner');
   scopedIntervalOwners.set(scopedIntervalKey,true);
+  const actualFrom=row.nativeGlobalGeneratedHLR3DFrom,
+   actualTo=row.nativeGlobalGeneratedHLR3DTo,
+   hasActualFrom=Object.hasOwn(row,'nativeGlobalGeneratedHLR3DFrom'),
+   hasActualTo=Object.hasOwn(row,'nativeGlobalGeneratedHLR3DTo');
+  if(hasActualFrom!==hasActualTo||measured3DInventory!==hasActualFrom)
+   throw new RangeError('incomplete same-run measured global native HLR 3D endpoints');
+  let measuredPair=null;
+  if(measured3DInventory){
+   const finite3D=p=>p&&['x','y','z'].every(axis=>
+    typeof p[axis]==='number'&&Number.isFinite(p[axis]));
+   if(!finite3D(actualFrom)||!finite3D(actualTo))
+    throw new RangeError('nonfinite real global native HLR 3D curve endpoint');
+   const actualPaper={from:project(actualFrom)[view],to:project(actualTo)[view]};
+   const global2D=cad[CLASS_COUNTS[klass]][view][ordinal];
+   const verified=auditC1Global3D2DPaperPairEnvelope(actualPaper,global2D);
+   if(!verified.compatible||
+      verified.exactBinary64Endpoints!==
+       row.global3DAnd2DHLRMeasuredPaperPairExactBinary64||
+      verified.sourceScaleOneULPBoundedRoundingOnly!==
+       row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly)
+    throw new RangeError('real native generated 3D endpoints contradict global 2D HLR paper or recorded ULP class');
+   measuredPair={
+    view,hlrClass:klass,globalOrdinal:ordinal,
+    sourceEdgeId:row.originalPhysicalSourceEdgeId,
+    nativeGenerated3DFrom:{...actualFrom},nativeGenerated3DTo:{...actualTo},
+    projectedGenerated3DPaperFrom:{...actualPaper.from},
+    projectedGenerated3DPaperTo:{...actualPaper.to},
+    receivedGenerated2DPaperFrom:{...global2D.from},
+    receivedGenerated2DPaperTo:{...global2D.to},
+    exactBinary64PaperEndpoints:verified.exactBinary64Endpoints,
+    sourceScaleULPBoundedOnly:verified.sourceScaleOneULPBoundedRoundingOnly,
+    generated2DTopoDSHistoryCertified:false,
+    globalOpaqueSceneContinuousOcclusionCertified:false,signedV5Action:false
+   };
+  }
   const id=key(klass,ordinal);
+  if(measuredPair)measured3D2DPairs.set(id,measuredPair);
   if(globallyGenerated.has(id))
    throw new RangeError('duplicate original 3D source owner of global generated HLR edge');
   globallyGenerated.set(id,row);
@@ -246,7 +294,14 @@ function auditC1M5NativeGlobal3DSourceJoin({
      sourceFrom:originalFrom,sourceTo:originalTo,
      measuredFrom:from,measuredTo:to
     });
+   const measured3D=measured3D2DPairs.get(
+    key(row.hlrClass,row.wholeSolidGeneratedHLREdgeOrdinal))??null;
    parts.push({
+    nativeGenerated3DEndpointTo2DPaperReplayVerified:measured3D!==null,
+    original3DSourceCurveProjectedPaperFrom:
+     measured3D?.projectedGenerated3DPaperFrom??null,
+    original3DSourceCurveProjectedPaperTo:
+     measured3D?.projectedGenerated3DPaperTo??null,
     hlrClass:row.hlrClass,
     wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
     originalNative3DSourceParameterInterval:[...row.originalNativeCurveParameterRange],
@@ -284,6 +339,25 @@ function auditC1M5NativeGlobal3DSourceJoin({
     heldReason='actual-generated-2d-paper-outside-original-exact-source-domain';
    }
   }else heldReason='original-source-collapses-under-this-first-angle-projection';
+  // Keep 3D curve projection and RECEIVED generated 2D paper as separate
+  // exact two-axis source-coverage witnesses: an actual positive drift in
+  // either one is never silently rounded into full source coverage.
+  let measured3DTwoAxis=null;
+  if(!collapsed&&measured3DInventory){
+   try{
+    measured3DTwoAxis=auditC1ExactTwoAxisGeneratedPaperCoverage({
+     sourceFrom,sourceTo,
+     segments:parts.map(p=>({
+      from:p.original3DSourceCurveProjectedPaperFrom,
+      to:p.original3DSourceCurveProjectedPaperTo
+     }))
+    });
+   }catch(error){
+    if(!(error instanceof RangeError&&
+       /outside exact original source domain/.test(error.message)))
+     throw error;
+   }
+  }
   const nativeCoverage=native3DSourceParameterCoverageByOriginalSource
    .find(x=>x.sourceEdgeId===sourceId);
   if(!nativeCoverage)
@@ -296,6 +370,14 @@ function auditC1M5NativeGlobal3DSourceJoin({
    originalPhysical3DEndpointsVerifiedAgainstNativeBRep:true,
    exactNative3DParameterCoverageCompleteOnce:native3DComplete,
    exactReceived2DTwoAxisPaperCoverageComplete:paperComplete,
+   native3DProjectedSourcePaperCoverageReplayed:measured3DTwoAxis!==null,
+   native3DProjectedSourcePaperTwoAxisCoverageComplete:
+    measured3DTwoAxis?.strictReceivedTwoAxisPaperCoverageComplete??false,
+   positiveNative3DProjectedSourcePaperGaps:
+    measured3DTwoAxis?.exactTwoAxisQualifiedPaperCoverage
+     .exactBinary64PaperPositiveLengthUncoveredIntervals??null,
+   native3DGeneratedPaperTransverseDriftEdges:
+    measured3DTwoAxis?.transverseDisplacedSegmentsHeld??null,
    positiveNative3DSourceParameterGaps:
     nativeCoverage.positiveLengthUncoveredNativeParameterIntervals,
    positiveNative3DSourceParameterOverlaps:
@@ -342,6 +424,8 @@ function auditC1M5NativeGlobal3DSourceJoin({
    paperOnlyCandidateActuallyBelongsToDifferent3DSource:!!truth&&!same,
    originalNativeCurveParameterRange:same?[...truth.originalNativeCurveParameterRange]:null,
    sameRunOriginalBRepCurveBoundsAndSourceFilteredNative3DIntervalRechecked:true,
+   sameRunNativeGenerated3DCurveReprojectedOntoActual2D:
+    measured3D2DPairs.has(id),
    generated2DTopoDSHistoryCertified:false,
    wholeOpaqueSceneContinuousVisibilityCertified:false,
    engineeringLineStyle:'undetermined',signedV5Action:false
@@ -357,6 +441,9 @@ function auditC1M5NativeGlobal3DSourceJoin({
   unknownGlobalOrdinalClaimsHeld:unknownOrdinal,claims,
   sameRunOriginalBRepAndScoped3DParameterInventoryRechecked:true,
   wholeSolidAndScopedNative3DParameterIntervalBijectionVerified:true,
+  completeMeasuredNativeGlobal3D2DPaperReplayAvailable:measured3DInventory,
+  independentlyReplayedMeasuredGlobal3D2DPaperCount:measured3D2DPairs.size,
+  nativeGlobal3DTo2DMeasuredPaperPairs:[...measured3D2DPairs.values()],
   native3DSourceParameterCoverageByOriginalSource,
   wholeSolid3DOriginalSourceToGenerated2DExactPaperJointAvailable:
    physicalModelPresent,
