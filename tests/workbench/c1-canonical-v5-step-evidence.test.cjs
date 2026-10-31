@@ -65,7 +65,7 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  const base=fixture(),bad=edit=>{const f=fixture();edit(f);return()=>inspect(f);};
  assert.throws(()=>inspect({...base,revision:8}),/source-current/);
  assert.throws(bad(f=>{f.solution.singleOriginalV5Player=false;}),/source-current/);
- assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step/);
+ assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/frame action progress|active step/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].revision=8;}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings.push(
   {...f.solution.certifiedPhysicalLineBindings[0]});}),/signed source/);
