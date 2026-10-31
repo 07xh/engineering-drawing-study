@@ -35,6 +35,8 @@ function fixture(){
   globalPaperCandidateOrdinals:[0],
   globalDirectSameGeneratedTopoDSOrdinals:[],
   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+  paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+  partnerCandidateDoesNotProveOriginalSourceHistory:true,
   fullOriginalSourceParameterCoverageProven:false,
   globalContinuousOcclusionProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false,
@@ -90,6 +92,23 @@ test('actual native V/H/W scoped-source ledger is consumed but does not sign V5'
  }
  assert.equal(r.signedV5ActionCount,0);
 });
+test('M4/M5 native source consumer rejects a forged IsSame ordinal outside measured paper candidates',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const claim=scoped.rows[0].visible[0];
+  claim.globalDirectSameGeneratedTopoDSOrdinals=[0];
+  claim.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  scoped.nativeScopedToWholeSolidGeneratedIsSameCount=1;
+  scoped.paperOnlyScopedOutputEdgeCount=0;
+  claim.globalPaperCandidateOrdinals=[1];
+  // Recomputing the claimed ledger cannot launder an ordinal that is
+  // absent from its own native paper inventory.
+  assert.throws(()=>rebindFixtureNativeLedger(x.cad,view),
+   /unsigned actual native scoped match/);
+  assert.throws(()=>audit(x),/native|ordinal|source|unsigned/i);
+ }
+});
+
 test('two different original 3D edges with identical paper output remain ambiguous',()=>{
  const x=fixture();
  // The original model edges differ in 3D depth; no 2D point can resolve it.
