@@ -54,6 +54,15 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
       segment.id!==action.id||segment.stepId!==step.id||
       segment.stepIndex!==i)
     throw new RangeError('V5 action does not belong to exact current step');
+   const signed=owners.get(action.id);
+   // Verify ALL future/current/past actions before painting any frame:
+   // an unsigned later step cannot smuggle an engineering line style.
+   if(!signed&&action.engineeringLineStyle!==undefined)
+    throw new RangeError('unbound engineering line style in V5 step');
+   if(signed&&(action.kind!=='line'||(
+     action.engineeringLineStyle!==undefined&&
+     action.engineeringLineStyle!==signed.standardLineStyle)))
+    throw new RangeError('signed source contradicts V5 action geometry or style');
    seenActions.add(action.id);
   }
   options.push({index:i,id:step.id,title:step.title||step.id});
