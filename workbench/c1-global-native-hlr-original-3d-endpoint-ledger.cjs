@@ -17,6 +17,98 @@ const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 const p2eq=(a,b)=>a&&b&&a.u===b.u&&a.v===b.v;
 const xyz=(p,q)=>p&&q&&['x','y','z'].every(k=>
  Number.isFinite(p[k])&&Number.isFinite(q[k])&&p[k]===q[k]);
+/**
+ * M5 replays the native GENERATED HLR vertex graph's complete literal-paper
+ * pair inventory. OCCT IsSame itself was measured while the native handles
+ * lived; this independent consumer can reject missing, swapped, contradictory
+ * or non-transitive serialized pairs, but cannot reconstruct native identity.
+ * No epsilon, source-history inference, line-style signing or V5 promotion.
+ */
+function verifyCompleteGeneratedNativeJunctionGraph({cad,view,g,realPairs,pairKey,endKey}){
+ const endpoints=[],byId=new Map();
+ for(const [klass,lines] of [
+  ['visible-sharp',cad.views[view]],
+  ['hidden-sharp',cad.hiddenSharpViews[view]]
+ ]){
+  for(let ordinal=0;ordinal<lines.length;ordinal++){
+   const edge=lines[ordinal];
+   if(!p2eq(edge?.from,edge?.from)||!p2eq(edge?.to,edge?.to)||
+      !['from','to'].every(side=>['u','v'].every(k=>
+       Number.isFinite(edge[side][k])))||
+      p2eq(edge.from,edge.to))
+    throw new RangeError('invalid native generated HLR edge for complete vertex graph');
+   for(const side of ['from','to']){
+    const ref={hlrClass:klass,nativeHLREdgeOrdinal:ordinal,side,
+     nativePaperPoint:{...edge[side]}};
+    endpoints.push(ref);
+    byId.set(endKey(ref),ref);
+   }
+  }
+ }
+ if(endpoints.length>512)
+  throw new RangeError('native generated HLR vertex graph exceeds bounded inventory');
+ const expected=new Set();
+ for(let i=0;i<endpoints.length;i++)for(let j=i+1;j<endpoints.length;j++){
+  const a=endpoints[i],b=endpoints[j];
+  if(p2eq(a.nativePaperPoint,b.nativePaperPoint))
+   expected.add(pairKey(a,b));
+ }
+ if(realPairs.size!==expected.size||
+    [...realPairs.keys()].some(key=>!expected.has(key)))
+  throw new RangeError('incomplete or non-paper-coincident native generated HLR vertex pair inventory');
+ const parent=new Map(endpoints.map(e=>[endKey(e),endKey(e)]));
+ const root=id=>{while(parent.get(id)!==id)id=parent.get(id);return id;};
+ for(const [pair,positive] of realPairs){
+  if(!positive)continue;
+  const [a,b]=pair.split('#');
+  parent.set(root(b),root(a));
+ }
+ // A real OCCT TopoDS IsSame relation is an equivalence relation.
+ // In particular, A~B and B~C cannot coexist with A!=C.
+ for(const a of endpoints)for(const b of endpoints){
+  if(endKey(a)>=endKey(b)||!p2eq(a.nativePaperPoint,b.nativePaperPoint))
+   continue;
+  if(realPairs.get(pairKey(a,b))!==(root(endKey(a))===root(endKey(b))))
+   throw new RangeError('non-transitive native generated HLR vertex IsSame graph');
+ }
+ const actual=new Map();
+ for(const ref of endpoints){
+  const owner=root(endKey(ref));
+  if(!actual.has(owner))actual.set(owner,[]);
+  actual.get(owner).push(endKey(ref));
+ }
+ const expectedComponents=new Set([...actual.values()].filter(x=>x.length>1)
+  .map(x=>x.sort().join('#')));
+ const reported=g.generatedOCCTSharedNativeJunctionComponents;
+ if(!Array.isArray(reported)||reported.length!==expectedComponents.size)
+  throw new RangeError('incomplete native generated HLR shared-junction components');
+ const reportedKeys=new Set();
+ for(const component of reported){
+  const refs=component?.generatedSharpEdgeEndpoints;
+  if(component.view!==view||
+     component.originalGeneratedTopoDSHistoryRecovered!==false||
+     component.actualGeneratedOCCTTopoDSVertexPairwiseIsSame!==true||
+     component.independentlyCertifiedOriginal3DSourceVertexId!==null||
+     component.engineeringLineJoinCertified!==false||
+     component.signedV5Action!==false||
+     !Array.isArray(refs)||refs.length<2)
+   throw new RangeError('forged native generated HLR junction component');
+  const ids=new Set();
+  for(const ref of refs){
+   const id=endKey(ref),actualRef=byId.get(id);
+   if(!actualRef||ids.has(id)||
+      !p2eq(actualRef.nativePaperPoint,ref.nativePaperPoint)||
+      !p2eq(actualRef.nativePaperPoint,
+       component.exactNativePaperCoordinatesForEntireComponent))
+    throw new RangeError('native generated HLR junction component endpoint mismatch');
+   ids.add(id);
+  }
+  const key=[...ids].sort().join('#');
+  if(!expectedComponents.has(key)||reportedKeys.has(key))
+   throw new RangeError('native generated HLR junction component contradicts IsSame pairs');
+  reportedKeys.add(key);
+ }
+}
 function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  geometry,cad,globalRebinding,sourceM4Views
 }={}){
@@ -484,6 +576,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     realPairs.set(key,positive);
     counts.realNativeGeneratedVertexGraphPairsChecked++;
    }
+   verifyCompleteGeneratedNativeJunctionGraph({
+    cad,view,g,realPairs,pairKey,endKey
+   });
    for(const row of pairRows){
     const [a,b]=row.globalGeneratedHLREndpoints;
     const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
