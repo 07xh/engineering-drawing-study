@@ -245,3 +245,43 @@ test('native positive gap erased by binary64 M4 normalization cannot falsely cer
  assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
  assert.equal(r.officialV5Authorized,false);
 });
+
+
+test('partial source-scoped 2D stroke cannot borrow forged complete M4 source coverage',()=>{
+ const incomplete=make([stroke('visible-sharp',0,5)],[],
+  [native('visible-sharp',0,.5)]);
+ assert.equal(incomplete.rows[0].exactSameClassNative3DSourceIntervalCoverage,true);
+ assert.equal(incomplete.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(incomplete.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(incomplete.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(incomplete.officialV5Authorized,false);
+});
+
+test('same-class overlapping original M4 intervals cannot double-count a full native source',()=>{
+ const overlap=make([stroke('visible-sharp')],[],[
+  native('visible-sharp',0,.75),native('visible-sharp',.5,1)
+ ]);
+ assert.equal(overlap.rows[0].exactSameClassNative3DSourceIntervalCoverage,true);
+ assert.equal(overlap.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(overlap.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(overlap.counts.exactSameClassNative3DBackedEdges,0);
+});
+
+test('one-ULP M4 gap outside a partial paper stroke is still a whole-source proof blocker',()=>{
+ const gap=make([stroke('visible-sharp',0,5)],[],[
+  native('visible-sharp',0,.5),
+  native('visible-sharp',.5000000000000001,1)
+ ]);
+ assert.equal(gap.rows[0].exactSameClassNative3DSourceIntervalCoverage,true);
+ assert.equal(gap.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(gap.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+});
+
+test('exact adjacent complete M4 source partition retains valid partial 2D class support',()=>{
+ const complete=make([stroke('visible-sharp',0,5)],[],[
+  native('visible-sharp',0,.5),native('visible-sharp',.5,1)
+ ]);
+ assert.equal(complete.rows[0].originalNativeParameterPartitionIndependentlyVerified,true);
+ assert.equal(complete.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,true);
+ assert.equal(complete.officialV5Authorized,false);
+});
