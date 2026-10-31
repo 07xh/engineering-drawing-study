@@ -114,7 +114,8 @@ function adaptPointProjection(input,{revision=0}={}){
    diagonal.constructionOnly===true&&
    diagonal.from.x===origin.x&&diagonal.from.y===origin.y&&
    diagonal.to.x===solved.sheet.M.x&&diagonal.to.y===solved.sheet.M.y&&
-   diagonal.to.x-origin.x===diagonal.to.y-origin.y&&
+   diagonal.to.x===origin.x+solved.point.y*(input.sheetTransform?.scale??4)&&
+   diagonal.to.y===origin.y+solved.point.y*(input.sheetTransform?.scale??4)&&
    diagonal.to.x!==origin.x,
    'unverified or reversed first-angle 45-degree source transfer');
  }
