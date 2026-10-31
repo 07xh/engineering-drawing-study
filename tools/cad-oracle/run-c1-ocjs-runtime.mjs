@@ -1807,9 +1807,12 @@ for(const [index,geometry] of general.entries()){
    boundedPaperDriftSourceAttributionsHeld:roundedIndexedM5.length,
    stillUnsigned:true
   }));
- // In the REAL pinned WASM run, the H-view C1SkewTetra A|C tiny
- // original-source gap now consumes the SAME exact OCCT 3D/closed-ray/M4
- // joint as W A|C/A|D, without upgrading its generated paper to M5/V5.
+ // IMPORTANT: independent native 3D-source/HLR endpoint audits may
+ // report a tiny H A|C residual, but the CURRENT canonical M5 positive-gap
+ // inventory does NOT contain an H source-gap row. Do not manufacture that
+ // missing obligation by mislabelling a paper/source diagnostic as M5.
+ // If any future H source becomes a genuine positive M5 interval, consume
+ // the same exact native 3D/closed-ray/M4 joint as W and keep it unsigned.
  const hGaps=unresolvedM5.records.filter(r=>
   r.kind==='positive-original-m0-parameter-gap'&&r.view==='H');
  const auditedH=hGaps.map(r=>
@@ -1825,10 +1828,10 @@ for(const [index,geometry] of general.entries()){
   j.actualGlobal2DPaperClosedEndpointsCertified===false&&
   j.engineeringLineStyle==='undetermined'&&j.signedV5Action===false));
  if(geometry.id==='C1SkewTetra'){
-  assert.equal(hGaps.length,1,'genuine H A|C original source gap must remain positive');
-  assert.equal(hGaps[0].sourceEdgeId,'C1SkewTetra::A|C');
-  assert.ok(hGaps[0].originalM0PositiveParameterGap[1]>
-   hGaps[0].originalM0PositiveParameterGap[0]);
+  // The source-level H residual is held by independent HLR/source ledgers,
+  // not present as a positive M5 paper gap in this current real fixture.
+  assert.equal(hGaps.length,0,
+   'native H endpoint/inversion residual must not become a fake M5 paper gap');
  }else assert.equal(hGaps.length,0);
  console.error('REAL C1 H ORIGINAL SOURCE NATIVE CLOSED-RAY/M4 JOINT '+
   geometry.id+': '+JSON.stringify(hGaps.map((r,i)=>({
