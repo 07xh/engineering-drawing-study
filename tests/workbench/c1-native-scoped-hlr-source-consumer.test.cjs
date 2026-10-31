@@ -559,6 +559,7 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
     originalEdgeStatusAllVisible:index===0,
     originalEdgeStatusAllHidden:index!==0,
     nativeOriginalVisiblePartCount:index===0?1:0,
+    sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit:true,
     generated2DHLREdgeToOriginalSourceHistoryCertified:false,
     globalContinuousM5OcclusionCertified:false,
     engineeringLineStyle:'undetermined',signedV5Action:false
