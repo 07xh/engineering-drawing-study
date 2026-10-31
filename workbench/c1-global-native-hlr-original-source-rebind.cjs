@@ -40,7 +40,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding:0,
   wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding:0,
   wholeSolidEdgesHeldForAmbiguityOrMissing3DClass:0};
- const byView={},exactSourceFilterBijectionByView={};
+ const byView={},exactSourceFilterBijectionByView={},originalSourceIdsByView={};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    consumer=views[view];
@@ -58,6 +58,7 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     throw new RangeError('duplicate or invalid original TopoDS source-filter inventory');
    scopedSourceIds.add(id);
   }
+  originalSourceIdsByView[view]=scopedSourceIds;
   // Original HLR EdgeStatus belongs to the INPUT TopoDS source index;
   // source-scoped output + direct native IsSame supplies an independent
   // causal path to the WHOLE-SOLID generated 2D edge. Keep all three
@@ -369,6 +370,18 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   };
   byView[view]=rows;
  }
+ // A per-view source-filter bijection is not a whole-solid V/H/W proof
+ // when the three views refer to different original input edge inventories.
+ // Keep per-view diagnostics, but never promote inconsistent source sets to
+ // an all-three-views certificate (including mixed-geometry namespaces).
+ const referenceOriginalSources=originalSourceIdsByView[VIEWS[0]];
+ const allThreeViewsShareExactOriginalPhysicalSourceInventory=
+  VIEWS.every(view=>{
+   const ids=originalSourceIdsByView[view];
+   return ids?.size===referenceOriginalSources.size&&
+    [...ids].every(id=>id.startsWith(cad.sourceGeometryId+'::')&&
+     referenceOriginalSources.has(id));
+  });
  if(counts.wholeSolidNativeHLREdges!==
     counts.wholeSolidEdgesWithNoOriginalNativeSourceClaim+
     counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim+
@@ -378,11 +391,12 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   schema:'draftai-c1-global-native-generated-2d-to-original-filtered-source-evidence/1',
   sourceGeometryId:cad.sourceGeometryId,revision:cad.revision,
   counts,views:byView,exactSourceFilterBijectionByView,
+  allThreeViewsShareExactOriginalPhysicalSourceInventory,
   allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection:
-   VIEWS.every(view=>exactSourceFilterBijectionByView[view]
+   allThreeViewsShareExactOriginalPhysicalSourceInventory&&VIEWS.every(view=>exactSourceFilterBijectionByView[view]
     .completeExactSourceScopedToWholeSolidOutputBijectionProven),
   allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift:
-   VIEWS.every(view=>exactSourceFilterBijectionByView[view]
+   allThreeViewsShareExactOriginalPhysicalSourceInventory&&VIEWS.every(view=>exactSourceFilterBijectionByView[view]
     .completeNativeIndexedSourceFilterAttributionIncludingHeldPaperDrift),
   nativeGenerated2DOutputVsOriginal3DSourceClassesJointlyAccounted:true,
   paperUniqueSourceFilterDoesNotImplyOriginalTopoDSHistory:true,
