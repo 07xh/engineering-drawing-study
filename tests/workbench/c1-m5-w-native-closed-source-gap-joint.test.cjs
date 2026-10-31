@@ -236,19 +236,12 @@ test('rejects altered received native W paper geometry and forged physical endpo
   x=>x.originalEndpointWitnesses.push({...x.originalEndpointWitnesses[0]})
  ]){
   const x=fixture();mutate(x);
-  // A different but still finite received endpoint is legitimate drift;
-  // it must remain recorded, not silently matched to the M0 vertex.
-  if(Number.isFinite(x.cad.views.W[0].to.v)&&
-     x.cad.views.W[0].to.v!==1.9999999999999998){
-   const r=audit(x);
-   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
-    .nativeGlobalWEdgesWithReceivedBinary64EndpointDrift,1);
-   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
-    .nativeGlobalWEdgesWithTransverseBinary64PaperDrift,1);
-   assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
-   continue;
-  }
-  assert.throws(()=>audit(x),/W|paper|witness|ordinal|source|endpoint/i);
+  // Altering actual received HLR paper AFTER the native original-3D
+  // replay certificate was generated makes that certificate stale.
+  // A genuine one-ULP drift is represented by a fresh same-run ledger;
+  // replaying this old certificate must fail closed, never silently update.
+  assert.throws(()=>audit(x),
+   /W|paper|witness|ordinal|source|endpoint|provenance/i);
  }
 });
 
@@ -356,12 +349,11 @@ test('held W claimant omitting second visible original subinterval cannot certif
 test('partial W generated edge pairs BOTH endpoints to original vertices exactly, not just nearest from',()=>{
  const x=fixture();
  x.cad.views.W[0]={from:{u:7.84,v:0.98},to:{u:0,v:0}};
- const result=audit(x);
- const row=result.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence.rows[0];
- assert.equal(BigInt(row.fromDisplacementFromPhysicalSource.u.numerator)<0n,true);
- assert.equal(BigInt(row.toDisplacementFromPhysicalSource.u.numerator),0n);
- assert.equal(result.generatedPaperGapStrictlyPositiveStillHeld,true);
- assert.equal(result.signedV5Action,false);
+ // The generated paper edge was changed after its same-run global
+ // native 3D/source parameter proof. The old proof cannot be replayed,
+ // regardless of how convincing the new 2D coordinates look.
+ assert.throws(()=>audit(x),
+  /native global generated 3D HLR source provenance does not replay/);
 });
 
 function hGapFixture(){
@@ -499,14 +491,11 @@ test('tolerantly source-matched but EXACTLY displaced native original 3D vertice
    {...x.cad.originalBRepSourceEdges[0].fromOCCT3D};}
  ]){
   const x=fixture();drift(x);
-  const r=audit(x);
-  assert.equal(r.originalNativeBRepM0PhysicalVertexBijectionCertified,false);
-  assert.equal(r.originalNativeBRepToM0ExactPhysicalVertexEvidence.
-   exactNativeOriginal3DVertexToM0EndpointBijection,false);
-  assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
-  assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
-  assert.equal(r.engineeringLineStyle,'undetermined');
-  assert.equal(r.signedV5Action,false);
+  // Unlike an unsigned class candidate, the global native source
+  // rebind now requires exact original TopoDS vertices against M0.
+  // Invalid/stale physical BRep input is rejected before any M5 result.
+  assert.throws(()=>audit(x),
+   /original native BRep physical 3D endpoints contradict current M0/);
  }
 });
 test('rounded original BRepAdaptor endpoint sample is explicitly distinct from actual TopoDS M0 vertex identity',()=>{
