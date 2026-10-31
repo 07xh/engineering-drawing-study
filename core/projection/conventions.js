@@ -107,7 +107,7 @@ function transferGuides(point,transform){
  const diagonal=depth===0?[]:[{
   kind:'depth-45',from:{...t.origin},to:{...p.M},
   sourceModelAxis:'y',sourceModelValue:q.y,
-  sourceKnownView:'H',targetView:'W',
+  sourceProjectionView:'H',targetProjectionView:'W',
   constructionOnly:true
  }];
  if((depth!==0&&p.M.x===t.origin.x&&p.M.y===t.origin.y)||
