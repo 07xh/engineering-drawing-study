@@ -1856,6 +1856,48 @@ for(const [index,geometry] of general.entries()){
  // parameter bounds, full closed convex original vertex rays, and
  // exact M4 open-front ordering. They STILL retain positive 2D paper
  // residual and have NO formal GB/V5 generated-edge history.
+ // Independently re-read the ACTUAL original OCCT BRep TopoDS 3D
+ // vertices before any positive original physical M5 proof. An x-only
+ // depth displacement can leave W paper pixel-identical but alter the
+ // true 3D source. Both native orientation orders are allowed; tolerance
+ // and generated paper never repair a mismatched original vertex.
+ const positiveM5SourceGaps=unresolvedM5.records.filter(r=>
+  r.kind==='positive-original-m0-parameter-gap');
+ const exactOriginalBRepJoints=positiveM5SourceGaps.filter(r=>
+  r.OriginalPhysicalNativeParameterClosedRayM4JointEvidence
+   ?.originalNativeBRepM0PhysicalVertexBijectionCertified===true);
+ assert.equal(unresolvedM5.counts.
+  positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection,
+  exactOriginalBRepJoints.length);
+ assert.equal(unresolvedM5.counts.
+  positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity,
+  positiveM5SourceGaps.length-exactOriginalBRepJoints.length);
+ assert.ok(positiveM5SourceGaps.every(r=>{
+  const j=r.OriginalPhysicalNativeParameterClosedRayM4JointEvidence,
+   source=j?.originalNativeBRepToM0ExactPhysicalVertexEvidence;
+  return j&&source&&source.view===r.view&&source.sourceEdgeId===r.sourceEdgeId&&
+   source.sourceGeometryId===geometry.id&&source.revision===cad.revision&&
+   source.generated2DTopoDSEndpointHistoryCertified===false&&
+   source.officialV5Authorized===false&&source.signedV5Action===false&&
+   (j.jointOriginalClosedPhysicalSourceVisibilityProven!==true||
+    source.exactNativeOriginal3DVertexToM0EndpointBijection===true)&&
+   j.generatedPaperGapStrictlyPositiveStillHeld===true&&
+   j.engineeringLineStyle==='undetermined'&&j.signedV5Action===false;
+ }));
+ if(geometry.id==='C1SkewTetra')
+  assert.equal(exactOriginalBRepJoints.length,2,
+   'two real W positive M5 gaps require exact original native BRep vertex identity');
+ console.error('REAL C1 EXACT ORIGINAL BREP/M0 PHYSICAL 3D VERTEX JOIN '+
+  geometry.id+': '+JSON.stringify({
+   positiveM5Gaps:positiveM5SourceGaps.length,
+   exactOriginal3DBRepM0VertexJoints:exactOriginalBRepJoints.length,
+   realBRepAdaptorCurveSamplesExactM0:
+    exactOriginalBRepJoints.filter(r=>
+     r.OriginalPhysicalNativeParameterClosedRayM4JointEvidence
+      .originalNativeBRepToM0ExactPhysicalVertexEvidence
+      .nativeOriginalCurveEndpointSamplesExactlyEqualM0).length,
+   stillUnsigned:true
+  }));
  const wGaps=unresolvedM5.records.filter(r=>
   r.kind==='positive-original-m0-parameter-gap'&&r.view==='W');
  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithRealNativeClosed3DJointProof,
