@@ -459,7 +459,15 @@ test('cross-axis exact affine witness separates paper rounding from full 3D sour
  x.cad.views[view][0].from.v+=5e-7;
  x.cad.views[view][0].to.v+=5e-7;
  const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
- assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
+ // The previous weaker dominant-axis check once returned TRUE here.
+ // This must now remain FALSE because received u,v are transversely
+ // displaced from the actual original M0 source's exact affine line.
+ assert.equal(row.exactBinary64PaperCandidateCoverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false);
+ assert.equal(row.strictTwoAxisPaperOnlyCoverageComplete,false);
+ assert.equal(row.exactTwoAxisQualifiedNativePaperCoverage.
+  falseDominantAxisFullCoverageVetoed,true);
  assert.equal(row.allReceivedNativePaperEndpointsExactlyCollinearWithOriginalSource,false);
  assert.equal(row.fullOriginalPaperCandidateCoverageWithExactAffineCollinearity,false);
  assert.equal(result.counts.sourceScopedPaperEndpointsOffExactBinary64OriginalLine,2);
