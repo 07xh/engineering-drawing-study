@@ -560,7 +560,7 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   counts.HPositivePaperGapsWithOriginal3DJointProofHeld+=
    Number(jointH!=null&&jointH.jointOriginalClosedPhysicalSourceVisibilityProven!==true);
   counts.HPositivePaperGapsWithReceivedGlobalHPaperEndpointDrift+=
-   Number((receivedH?.nativeGlobalWEdgesWithReceivedBinary64EndpointDrift??0)>0);
+   Number((receivedH?.nativeGlobalGeneratedEdgesWithReceivedBinary64EndpointDrift??0)>0);
   counts.HPositivePaperGapsWithStrictTwoAxisPaperResidual+=
    Number(receivedH?.receivedExactTwoAxisQualifiedPaperCoverage?.positiveLengthTwoAxisPaperResidualsStillPresent===true);
   counts.HPositivePaperGapsWithFalseDominantAxisCompleteVeto+=
