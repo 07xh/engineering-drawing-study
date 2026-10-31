@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Consumer from './geometry-scene-consumer.cjs';
 import Analytic from '../core/geometry/analytic-curve-3d.cjs';
 import Views from '../core/projection/geometry-scene-views.cjs';
-const {sourceFeatureKey}=Consumer;
+const {sourceFeatureKey,requireCompleteWebGLFeatureBudget}=Consumer;
 const {atAnalyticCurve3D}=Analytic;
 const {SCHEMA}=Views;
 const validPoint=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
@@ -108,7 +108,9 @@ function mount(container,{onPick}={}){
   return points;
  }
  function placeLine(obj,a,b,extra={}){
-  if(!validPoint(a)||!validPoint(b)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(a)||!validPoint(b))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source feature budget exceeded: refusing partial 3D model');
   const key=sourceFeatureKey(obj,extra);
   const geometry=new THREE.BufferGeometry().setFromPoints([vec(a),vec(b)]);
   const material=new THREE.LineBasicMaterial({color:0x587da4,
@@ -119,7 +121,9 @@ function mount(container,{onPick}={}){
   root.add(line);pickable.push(line);features.push(line);
  }
  function placePoint(obj,p){
-  if(!validPoint(p)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(p))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source point budget exceeded: refusing partial 3D model');
   const geometry=new THREE.SphereGeometry(Math.max(.4,extent*.012),10,7);
   const marker=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({
    color:0x476d93,depthTest:false}));
@@ -170,6 +174,11 @@ function mount(container,{onPick}={}){
  function build(scene){
   if(!scene||scene.schema!==SCHEMA||!Array.isArray(scene.objects)||
      !Number.isSafeInteger(scene.revision))throw Error('无效的几何场景版本');
+  // Preflight before destroying the previous complete scene. Never turn a
+  // truncated 3D mesh into an apparently authentic engineering model.
+  const budget=requireCompleteWebGLFeatureBudget(scene);
+  if(budget.limit!==MAX_FEATURES)
+   throw new Error('3D source and WebGL feature budgets disagree');
   clear();
   const points=allPoints(scene),box=new THREE.Box3();
   points.forEach(p=>box.expandByPoint(p));
@@ -213,7 +222,9 @@ function mount(container,{onPick}={}){
   resize();
  }
  function placeCurvePiece(obj,a,b){
-  if(!validPoint(a)||!validPoint(b)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(a)||!validPoint(b))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source feature budget exceeded: refusing partial 3D model');
   const g=new THREE.BufferGeometry().setFromPoints([vec(a),vec(b)]);
   const line=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x587da4}));
   line.userData={objectId:obj.id,sourceFeatureKey:sourceFeatureKey(obj,{}),
