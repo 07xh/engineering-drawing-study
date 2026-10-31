@@ -559,3 +559,64 @@ test('a completed original native global 3D owner replay is still not generated 
   assert.equal(r.signedV5Action,false);
  }
 });
+
+function measuredNativeGlobalHLRWSourceFixture(edge='A|C'){
+ const x=fixture(edge);
+ const raw=x.cad.nativeSourceScopedSharpOutputByView.W
+  .nativeGlobal3DOriginalSourceEvidence;
+ const [idA,idB]=edge.split('|');
+ raw.receivedNativeGenerated3DSourceEndpointsRecordedForEveryGlobal2DOrdinal=true;
+ raw.rows[0].nativeGlobalGeneratedHLR3DFrom={...x.geometry.data.points[idA]};
+ raw.rows[0].nativeGlobalGeneratedHLR3DTo={...x.geometry.data.points[idB]};
+ // Genuine source-filtered OCCT 3D curve projects to the ORIGINAL model
+ // edge, while actual 2D HLR generated endpoints may differ by a real ULP.
+ raw.rows[0].global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;
+ raw.rows[0].global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly=true;
+ x.global3DSource=structuredClone(rebindNativeGlobal({
+  geometry:x.geometry,cad:x.cad,view:'W',sourceEdgeId:x.sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ }));
+ return x;
+}
+
+test('true native generated 3D A-C endpoints close original paper but one-ULP received 2D HLR tail still blocks M5 W',()=>{
+ const x=measuredNativeGlobalHLRWSourceFixture('A|C'),r=audit(x);
+ assert.equal(r.independentlyReplayedRealNativeGenerated3DTo2DPaperEndpoints,true);
+ assert.equal(r.measuredNative3DProjectedOriginalPaperCoverageComplete,true);
+ assert.equal(r.measuredGenerated2DReceivedPaperCoverageComplete,false);
+ assert.equal(r.measuredNative3DProjectivelyCompleteButGenerated2DPaperHeld,true);
+ const joint=r.sameRunOriginal3DNativeParameterAndActual2DPaperJoint;
+ assert.deepEqual(joint.positiveNative3DProjectedSourcePaperGaps,[]);
+ assert.deepEqual(joint.positiveExactReceived2DPaperGaps,
+  [['9007199254740991/9007199254740992','1']]);
+ assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(r.globalOpaqueSceneContinuousVisibilityCertified,false);
+ assert.equal(r.signedV5Action,false);
+});
+
+test('true native generated 3D A-D endpoints cannot snap an off-axis received W paper stroke',()=>{
+ const x=measuredNativeGlobalHLRWSourceFixture('A|D'),r=audit(x);
+ assert.equal(r.independentlyReplayedRealNativeGenerated3DTo2DPaperEndpoints,true);
+ assert.equal(r.measuredNative3DProjectedOriginalPaperCoverageComplete,true);
+ assert.equal(r.measuredGenerated2DReceivedPaperCoverageComplete,false);
+ const joint=r.sameRunOriginal3DNativeParameterAndActual2DPaperJoint;
+ assert.equal(joint.transverseGenerated2DPaperDriftEdges.length,1);
+ assert.deepEqual(joint.positiveExactReceived2DPaperGaps,[['0','1']]);
+ assert.equal(r.actualGlobal2DPaperClosedEndpointsCertified,false);
+ assert.equal(r.signedV5Action,false);
+});
+
+test('W full-scene claimant cannot replay an altered or missing native global 3D endpoint witness',()=>{
+ for(const modify of [
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence
+   .rows[0].nativeGlobalGeneratedHLR3DTo.y+=0.5;},
+  x=>{delete x.cad.nativeSourceScopedSharpOutputByView.W
+   .nativeGlobal3DOriginalSourceEvidence.rows[0].nativeGlobalGeneratedHLR3DTo;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence
+   .rows[0].global3DAnd2DHLRMeasuredPaperPairExactBinary64=true;}
+ ]){
+  const x=measuredNativeGlobalHLRWSourceFixture();
+  modify(x);
+  assert.throws(()=>audit(x),/real native|generated|global|paper|endpoint|provenance/i);
+ }
+});
