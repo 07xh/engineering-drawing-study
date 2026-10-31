@@ -29,7 +29,7 @@ test('true first-angle XYZ solution includes real 45-degree source step in mathe
  assert.equal(plan.proof.verified,true);
  assert.ok(plan.steps.every(x=>x.actions.every(a=>a.coordinateSpace==='sheet-px')));
  assert.deepEqual(plan.steps.map(s=>s.dependsOn),
-  [[],['guide_1'],['guide_2'],['guide_3']]);
+  [[],['guide_1'],['guide_2'],['guide_3'],['guide_4']]);
  assert.deepEqual(Object.keys(args),['knownPoint']);
 });
 test('two-view V/H real input and direct XYZ give equal normalized projected point',()=>{
