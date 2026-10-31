@@ -18,6 +18,8 @@ const {manualSegment}=require('./source-candidate-bridge.cjs');
 const {compileGeometryScene,sourceFeatureKey,drawAnalyticPath}=
  require('./geometry-scene-consumer.cjs');
 const {sceneSelectionGroup}=require('./scene-selection-group.cjs');
+const {currentC1V5SpatialSourceFocus}=
+ require('./c1-v5-spatial-source-focus.cjs');
 const {describeSourceFeature}=require('./source-feature-selection-label.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
@@ -882,7 +884,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    viewTransforms:out.kind==='c3-reviewed-preview'?out.viewTransforms:null
   });
  }
- function drawPrimitives(svg,primitives,viewKind,snap,frame,monochrome){
+ function drawPrimitives(svg,primitives,viewKind,snap,frame,monochrome,
+  activeV5SourceKeys=[]){
   // Both 2D projections and the 3D view consume the SAME scene's owner IDs.
   // Display-only selection changes never rerun mathematics or certify a line.
   const out=current()||preview();
@@ -899,14 +902,19 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     selectedSourceFeature.objectId===item.objectId&&
     selectedSourceFeature.key===item.sourceFeatureKey;
    const selected=selectedIds.has(item.objectId); // Preserve old owner highlights.
+   const v5Focus=viewKind==='3D'&&activeV5SourceKeys.includes(item.sourceFeatureKey);
    const generated=c2Groups.get(item.objectId);
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
-   const stroke=selected?(monochrome?'#111':'#ef6730'):
+   const stroke=featureSelected?(monochrome?'#111':'#0866ef'):
+    v5Focus?(monochrome?'#222':'#00877d'):
+    selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
     monochrome?'#323232':item.objectId==='Fillet1'?'#147f65':'#2773a7';
    const attrs={...item.attrs,fill:item.kind==='circle'&&!item.fill?stroke:'none',
-    stroke:generated&&!selected?(monochrome?'#777':'#9563bf'):stroke,
-    'stroke-width':selected?3.2:generated?1.8:item.kind==='path'?3.1:1.8};
+    stroke:generated&&!selected&&!featureSelected&&!v5Focus?
+     (monochrome?'#777':'#9563bf'):stroke,
+    'stroke-width':featureSelected||v5Focus||selected?3.2:
+     generated?1.8:item.kind==='path'?3.1:1.8};
    if(item.fill==='none')attrs.fill='none';
    if(generated)attrs['stroke-dasharray']='2 6';
    else if(dashed)attrs['stroke-dasharray']='5 4';
@@ -924,6 +932,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
     if(item.sourceFeatureKey){
      node.setAttribute('data-source-feature-key',item.sourceFeatureKey);
      node.setAttribute('data-source-feature-selected',String(featureSelected));
+     if(viewKind==='3D')node.setAttribute('data-v5-source-focus',String(v5Focus));
     }
     if(item.visibility==='undetermined'||generated)
      node.setAttribute('data-visibility','undetermined');
@@ -1544,6 +1553,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
   const snap=coordinator?.snapshot();if(!snap)return;
   const result=compiled(),out=current()||preview();
+  // Only the current ONE C1 V5 step may focus a signed original 3D source.
+  // An absent/mismatched proof simply means no automatic 3D highlight.
+  let c1V5Focus=null;
+  if(out?.kind==='c1-reviewed-preview'&&out.scene?.revision===snap.revision){
+   try{c1V5Focus=currentC1V5SpatialSourceFocus({
+    scene:out.scene,solution:out.evidence,revision:snap.revision,
+    frame:out.clock.snapshot()
+   });}catch(_){c1V5Focus=null;}
+  }
   let three=null;
   if(result&&out?.scene){
    try{three=ensureLinkedThree();}
@@ -1558,6 +1576,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      selectedIds:sceneSelectionGroup(out.scene,
       coordinator.selectedGeometryId(),snap.revision),
      selectedSourceFeature:selectedSourceFeature?.key||null,
+     activeV5SourceFeatures:c1V5Focus?.sourceFeatureKeys||[],
      hiddenObjectIds:!$('v7-guides').checked?
       (out.linkedC2?.groups||[]).map(g=>g.geometryId):[],
      camera:snap.view.camera
@@ -1571,7 +1590,8 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   svg.hidden=false;svg.removeAttribute('hidden');
   $('v9-three-space').hidden=true;
   if(!result)return;
-  drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked);
+  drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked,
+   c1V5Focus?.sourceFeatureKeys||[]);
   if(result.spatial.some(p=>p.visibility==='undetermined'))
    text(svg,14,22,'空间网格线框 · 不推测隐藏边','#986945');
  }
