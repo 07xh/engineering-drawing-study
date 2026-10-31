@@ -459,7 +459,14 @@ test('cross-axis exact affine witness separates paper rounding from full 3D sour
  x.cad.views[view][0].from.v+=5e-7;
  x.cad.views[view][0].to.v+=5e-7;
  const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
- assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
+ // The latest main requires strict BOTH-axis HLR alignment, not a
+ // dominant-axis [0,1] inverse that hides transverse paper displacement.
+ assert.equal(row.exactBinary64PaperCandidateCoverage.
+  exactBinary64PaperCandidateCoverageComplete,true);
+ assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false);
+ assert.equal(row.strictTwoAxisPaperOnlyCoverageComplete,false);
+ assert.equal(row.exactTwoAxisQualifiedNativePaperCoverage.
+  falseDominantAxisFullCoverageVetoed,true);
  assert.equal(row.allReceivedNativePaperEndpointsExactlyCollinearWithOriginalSource,false);
  assert.equal(row.fullOriginalPaperCandidateCoverageWithExactAffineCollinearity,false);
  assert.equal(result.counts.sourceScopedPaperEndpointsOffExactBinary64OriginalLine,2);
@@ -581,4 +588,73 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
  }
  assert.equal(out.formalEngineeringLineStyleCertified,false);
  assert.equal(out.signedV5ActionCount,0);
+});
+
+test('native V/H/W source consumer now jointly certifies only exact BOTH-axis candidate paper',()=>{
+ const x=fixture(),r=audit(x);
+ assert.equal(r.counts.projectedSourcesWithStrictTwoAxisFullPaperCoverage,3);
+ assert.equal(r.counts.projectedSourcesWithStrictTwoAxisPositivePaperResiduals,3);
+ assert.equal(r.counts.projectedSourcesWithFalseDominantAxisFullCoverageVetoed,0);
+ assert.equal(r.counts.sourceScopedGenerated2DSegmentsTransverselyOffOriginalSource,0);
+ for(const v of ['V','H','W']){
+  const [present,absent]=r.views[v].sourceParameterCandidates;
+  assert.equal(present.strictTwoAxisPaperOnlyCoverageComplete,true);
+  assert.equal(present.entireOriginalSourcePaperCandidateIntervalCovered,true);
+  assert.equal(present.exactTwoAxisQualifiedNativePaperCoverage.
+   strictReceivedTwoAxisPaperCoverageComplete,true);
+  assert.equal(absent.strictTwoAxisPaperOnlyCoverageComplete,false);
+  assert.deepEqual(absent.exactTwoAxisQualifiedNativePaperCoverage.
+   exactTwoAxisQualifiedPaperCoverage.
+   exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']]);
+  assert.equal(absent.signedV5Action,false);
+ }
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('all three real native view consumers veto false dominant-axis full coverage after transverse submicron drift',()=>{
+ for(const [view,coordinate] of [['V','v'],['H','v'],['W','u']]){
+  const x=fixture();
+  const edge=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  // Stay within the pre-existing 1e-6 candidate tolerance, but perturb
+  // one orthogonal binary64 coordinate at one endpoint. The old single
+  // dominant-axis inverse t will falsely cover t=[0,1].
+  edge.from[coordinate]+=2e-7;
+  x.cad.views[view][0].from[coordinate]=edge.from[coordinate];
+  const r=audit(x),row=r.views[view].sourceParameterCandidates[0],
+   measured=row.exactTwoAxisQualifiedNativePaperCoverage;
+  assert.equal(row.exactBinary64PaperCandidateCoverage.
+   exactBinary64PaperCandidateCoverageComplete,true,view);
+  assert.equal(measured.unsafeDominantAxisOnlyCoverage.
+   exactBinary64PaperCandidateCoverageComplete,true,view);
+  assert.equal(measured.transverseDisplacedGeneratedSegments,1,view);
+  assert.equal(measured.falseDominantAxisFullCoverageVetoed,true,view);
+  assert.equal(row.strictTwoAxisPaperOnlyCoverageComplete,false,view);
+  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false,view);
+  assert.equal(row.fullOriginalPaperCandidateCoverageWithoutClassConflict,false,view);
+  assert.equal(row.fullOriginalPaperCandidateCoverageWithExactAffineCollinearity,false,view);
+  assert.deepEqual(measured.exactTwoAxisQualifiedPaperCoverage.
+   exactBinary64PaperPositiveLengthUncoveredIntervals,[['0','1']],view);
+  assert.equal(r.counts.projectedSourcesWithFalseDominantAxisFullCoverageVetoed,1,view);
+  assert.equal(r.counts.sourceScopedGenerated2DSegmentsTransverselyOffOriginalSource,1,view);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('genuine half-source native W paper remains an exact positive source gap, never invented hidden line',()=>{
+ const x=fixture(),view='W';
+ const w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+ // Exactly collinear original W source (u,v): (0,0)->(2,3).
+ w.to={u:1,v:1.5};x.cad.views[view][0].to={...w.to};
+ const r=audit(x),row=r.views.W.sourceParameterCandidates[0];
+ const strict=row.exactTwoAxisQualifiedNativePaperCoverage;
+ assert.equal(strict.transverseDisplacedGeneratedSegments,0);
+ assert.equal(strict.strictReceivedTwoAxisPaperCoverageComplete,false);
+ assert.deepEqual(strict.exactTwoAxisQualifiedPaperCoverage.
+  exactBinary64PaperPositiveLengthUncoveredIntervals,[['1/2','1']]);
+ assert.equal(r.counts.projectedSourcesWithFalseDominantAxisFullCoverageVetoed,0);
+ assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false);
+ assert.equal(row.originalM0SourcePaperTransverseDriftNeverClosesGap,true);
+ assert.equal(row.actualOriginalTopoDSParameterCoverageCertified,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
 });
