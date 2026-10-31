@@ -195,8 +195,24 @@ function auditC1NativeClosedPhysicalGap({
  // the same-run WHOLE-SOLID 3D HLR ledger also attributes a hidden or
  // uncorroborated generated edge to that physical source. The original
  // source-filtered partition alone does not establish this consistency.
- const globalClassConsistent=global3DSource.claims.every(x=>
-  x.actualNativeGlobal3DOriginalSourceEdgeId!==sourceEdgeId||
+ // The caller's M5 claims are a SUBSET of generated edges, not a
+ // guarantee that every global generated HLR edge of this source is here.
+ // Independently replay the SAME-RUN whole-solid original-owner inventory;
+ // an omitted hidden or second partial generated edge cannot be laundered
+ // into a "complete" all-visible physical source certificate.
+ const rawGlobalRows=cad.nativeSourceScopedSharpOutputByView[view]
+  .nativeGlobal3DOriginalSourceEvidence.rows;
+ const rawOwned=rawGlobalRows.filter(x=>
+  x.originalPhysicalSourceEdgeId===sourceEdgeId);
+ const ownedClaims=global3DSource.claims.filter(x=>
+  x.actualNativeGlobal3DOriginalSourceEdgeId===sourceEdgeId);
+ const nativeKey=x=>x.hlrClass+'|'+x.wholeSolidGeneratedHLREdgeOrdinal;
+ const ownedClaimKeys=new Set(ownedClaims.map(nativeKey));
+ const everyNativeOwnedGeneratedEdgeClaimed=rawOwned.length>0&&
+  rawOwned.length===ownedClaimKeys.size&&
+  rawOwned.every(x=>ownedClaimKeys.has(nativeKey(x)));
+ const globalClassConsistent=rawOwned.length>0&&rawOwned.every(x=>
+  x.hlrClass==='visible-sharp')&&ownedClaims.every(x=>
   x.original3DCurveAndScopedNativeParameterIntervalCorroborated===true&&
   x.hlrClass==='visible-sharp');
  const globalVisible=auditC1Native3DSourceScopedIntervals({
@@ -204,6 +220,7 @@ function auditC1NativeClosedPhysicalGap({
   generatedNativeParameterRanges:claimed3D.map(x=>x.originalNativeCurveParameterRange)
  });
  const globalFull=nativeFullVisible&&globalClassConsistent&&
+  everyNativeOwnedGeneratedEdgeClaimed&&
   global3DSource.differentOriginal3DSourceClaimsHeld===0&&
   global3DSource.unknownGlobalOrdinalClaimsHeld===0&&
   globalVisible.sourceScopedNative3DParameterInventoryCompleteExactlyOnce;
@@ -386,6 +403,9 @@ function auditC1NativeClosedPhysicalGap({
   nativeOriginalEdgeStatusAllVisible:sameClass,
   scopedNativeOriginal3DVisibilityParameterComplete:nativeFullVisible,
   globalGeneratedNative3DToOriginalBRepIntervalComplete:globalFull,
+  sameRunWholeSolidNative3DOriginalOwnerRowCount:rawOwned.length,
+  heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge:
+   everyNativeOwnedGeneratedEdgeClaimed,
   globalGeneratedNative3DClassConsistentWithOriginalAllVisible:globalClassConsistent,
   exactWholeOriginal3DSourceNativeVisibleCurveProven:globalFull,
   wholeReviewedConvexOriginalClosedSourceRayClear:rayClear,
