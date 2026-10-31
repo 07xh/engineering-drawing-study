@@ -19,6 +19,11 @@ const freeze=o=>{
 };
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
+const {project}=require('../core/projection/conventions.js');
+const {auditC1ExactBinary64PaperAffineWitness}=
+ require('./c1-exact-binary64-paper-affine.cjs');
+const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
+ require('./c1-exact-two-axis-generated-paper-coverage.cjs');
 const CLASS_COUNTS={'visible-sharp':'views','hidden-sharp':'hiddenSharpViews'};
 const key=(klass,ordinal)=>klass+'|'+ordinal;
 
@@ -113,6 +118,33 @@ function auditC1M5NativeGlobal3DSourceJoin({
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
+ // Cross-check actual ORIGINAL TopoDS physical endpoints with M0 before
+ // matching 2D generated output. In legacy isolated tests without M0 points,
+ // leave this entire additional joint certificate explicitly unavailable.
+ // A successful native interval bijection alone does NOT imply paper history.
+ const originalPhysicalEndpoints=new Map();
+ const physicalModelPresent=geometry.kind==='mesh'&&
+  geometry.space==='model-3d'&&geometry.unit==='mm'&&
+  geometry.data?.points&&typeof geometry.data.points==='object';
+ if(physicalModelPresent){
+  const p=geometry.data.points;
+  const eq=(a,b)=>a&&b&&['x','y','z'].every(k=>
+   Number.isFinite(a[k])&&Number.isFinite(b[k])&&a[k]===b[k]);
+  for(const edge of geometry.data.edges){
+   if(!Array.isArray(edge)||edge.length!==2||edge[0]===edge[1]||
+      !edge.every(id=>typeof id==='string'&&Object.hasOwn(p,id)))
+    throw new RangeError('original physical M0 edge endpoints incomplete');
+   const id=geometry.id+'::'+[...edge].sort().join('|');
+   const original=cad.originalBRepSourceEdges.find(x=>x.sourceEdgeId===id);
+   const a=p[edge[0]],b=p[edge[1]];
+   if(!original||!(eq(original.fromOCCT3D,a)&&eq(original.toOCCT3D,b)||
+                   eq(original.fromOCCT3D,b)&&eq(original.toOCCT3D,a)))
+    throw new RangeError('original native BRep physical 3D endpoints contradict current M0');
+   originalPhysicalEndpoints.set(id,{sourceFrom3D:{...a},sourceTo3D:{...b}});
+  }
+  if(originalPhysicalEndpoints.size!==originalIds.size)
+   throw new RangeError('original M0/native BRep physical identity inventory incomplete');
+ }
  const counts={};
  for(const [klass,collection] of Object.entries(CLASS_COUNTS)){
   const edges=cad?.[collection]?.[view];
@@ -190,6 +222,101 @@ function auditC1M5NativeGlobal3DSourceJoin({
   throw new RangeError('whole-solid native 3D HLR source does not cover every global ordinal');
  if([...scopedIntervalOwners.values()].some(consumed=>!consumed))
   throw new RangeError('whole-solid native 3D HLR omitted a source-scoped original parameter interval');
+ // Join real same-run whole-solid 3D ORIGINAL curve intervals to the
+ // corresponding actual 2D HLR edges by ordinal, then re-check the
+ // independent M0 physical projection with exact dyadic arithmetic.
+ // OCCT 2D endpoints may drift by a positive ULP; keep those unmodified,
+ // and never infer original/generated TopoDS ancestry from a paper pairing.
+ const native3DToGenerated2DPaperByOriginalSource=[];
+ if(physicalModelPresent)for(const sourceId of originalIds){
+  const endpoints=originalPhysicalEndpoints.get(sourceId),parts=[];
+  for(const row of native.rows){
+   if(row.originalPhysicalSourceEdgeId!==sourceId)continue;
+   const keyName=CLASS_COUNTS[row.hlrClass];
+   const generated=cad[keyName][view][row.wholeSolidGeneratedHLREdgeOrdinal];
+   const from=generated?.from,to=generated?.to;
+   if(![from,to].every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+      from.u===to.u&&from.v===to.v)
+    throw new RangeError('actual whole-solid HLR generated 2D edge is missing or collapsed');
+   const originalFrom=project(endpoints.sourceFrom3D)[view],
+    originalTo=project(endpoints.sourceTo3D)[view];
+   let exactPaperAffine=null;
+   if(originalFrom.u!==originalTo.u||originalFrom.v!==originalTo.v)
+    exactPaperAffine=auditC1ExactBinary64PaperAffineWitness({
+     sourceFrom:originalFrom,sourceTo:originalTo,
+     measuredFrom:from,measuredTo:to
+    });
+   parts.push({
+    hlrClass:row.hlrClass,
+    wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
+    originalNative3DSourceParameterInterval:[...row.originalNativeCurveParameterRange],
+    receivedNative2DPaperFrom:{...from},receivedNative2DPaperTo:{...to},
+    exactReceivedPaperBothEndpointsOnOriginalSourceLine:
+     exactPaperAffine?.bothNativeEndpointsExactlyOnOriginalBinary64PaperLine??null,
+    exactReceivedPaperFromCrossProduct:
+     exactPaperAffine?.exactBinary64PaperFromCrossProductDyadic??null,
+    exactReceivedPaperToCrossProduct:
+     exactPaperAffine?.exactBinary64PaperToCrossProductDyadic??null,
+    actualGenerated2DTopoDSOriginalSourceParameterHistoryProven:false,
+    nativeGenerated2DVertex3DJunctionIdentityCertified:false,
+    allOpaqueSceneContinuousOcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   });
+  }
+  const sourceFrom=project(endpoints.sourceFrom3D)[view],
+   sourceTo=project(endpoints.sourceTo3D)[view],
+   collapsed=sourceFrom.u===sourceTo.u&&sourceFrom.v===sourceTo.v;
+  let exactTwoAxis=null,heldReason=null;
+  if(!collapsed){
+   try{
+    exactTwoAxis=auditC1ExactTwoAxisGeneratedPaperCoverage({
+     sourceFrom,sourceTo,
+     segments:parts.map(p=>({
+      from:p.receivedNative2DPaperFrom,to:p.receivedNative2DPaperTo
+     }))
+    });
+   }catch(error){
+    // Positive out-of-domain paper drift is a mathematical hold,
+    // NOT an excuse to snap or trim the received HLR endpoints.
+    if(!(error instanceof RangeError&&
+         /outside exact original source domain/.test(error.message)))
+     throw error;
+    heldReason='actual-generated-2d-paper-outside-original-exact-source-domain';
+   }
+  }else heldReason='original-source-collapses-under-this-first-angle-projection';
+  const nativeCoverage=native3DSourceParameterCoverageByOriginalSource
+   .find(x=>x.sourceEdgeId===sourceId);
+  if(!nativeCoverage)
+   throw new RangeError('missing whole-solid original 3D native source coverage');
+  const native3DComplete=nativeCoverage.native3DSourceIntervalsCoverWholeOriginalExactlyOnce;
+  const paperComplete=exactTwoAxis?.strictReceivedTwoAxisPaperCoverageComplete===true;
+  native3DToGenerated2DPaperByOriginalSource.push({
+   view,sourceEdgeId:sourceId,revision:cad.revision,
+   originalProjectedSourceFrom:sourceFrom,originalProjectedSourceTo:sourceTo,
+   originalPhysical3DEndpointsVerifiedAgainstNativeBRep:true,
+   exactNative3DParameterCoverageCompleteOnce:native3DComplete,
+   exactReceived2DTwoAxisPaperCoverageComplete:paperComplete,
+   positiveNative3DSourceParameterGaps:
+    nativeCoverage.positiveLengthUncoveredNativeParameterIntervals,
+   positiveNative3DSourceParameterOverlaps:
+    nativeCoverage.positiveLengthOverlappingNativeParameterIntervals,
+   positiveExactReceived2DPaperGaps:
+    exactTwoAxis?.exactTwoAxisQualifiedPaperCoverage
+     .exactBinary64PaperPositiveLengthUncoveredIntervals??null,
+   transverseGenerated2DPaperDriftEdges:
+    parts.filter(p=>p.exactReceivedPaperBothEndpointsOnOriginalSourceLine===false)
+     .map(p=>({hlrClass:p.hlrClass,
+      ordinal:p.wholeSolidGeneratedHLREdgeOrdinal})),
+   heldReason,parts,
+   native3DAndReceived2DPaperGeometryBothClosedButNotTopoDSHistory:
+    native3DComplete&&paperComplete,
+   generated2DTopoDSHistoryCertified:false,
+   physicalGenerated3DEndpointJunctionsCertified:false,
+   globalOpaqueSceneContinuousOcclusionCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  });
+ }
+
  if(!originalIds.has(sourceEdgeId))
   throw new RangeError('held M5 source is not an original reviewed 3D edge');
  let sourceCorroborated=0,differentSource=0,unknownOrdinal=0;
@@ -231,6 +358,15 @@ function auditC1M5NativeGlobal3DSourceJoin({
   sameRunOriginalBRepAndScoped3DParameterInventoryRechecked:true,
   wholeSolidAndScopedNative3DParameterIntervalBijectionVerified:true,
   native3DSourceParameterCoverageByOriginalSource,
+  wholeSolid3DOriginalSourceToGenerated2DExactPaperJointAvailable:
+   physicalModelPresent,
+  native3DToGenerated2DPaperByOriginalSource,
+  sourceViewsWithNative3DAndExactGenerated2DPaperCoverage:
+   native3DToGenerated2DPaperByOriginalSource.filter(x=>
+    x.native3DAndReceived2DPaperGeometryBothClosedButNotTopoDSHistory).length,
+  sourceViewsWithTransverseGeneratedPaperDrift:
+   native3DToGenerated2DPaperByOriginalSource.filter(x=>
+    x.transverseGenerated2DPaperDriftEdges.length>0).length,
   originalSourcesWithPositiveNative3DParameterGaps:
    native3DSourceParameterCoverageByOriginalSource.filter(x=>
     x.positiveLengthUncoveredNativeParameterIntervals.length>0).length,
