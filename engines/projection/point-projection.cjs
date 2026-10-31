@@ -63,7 +63,7 @@ function solveProjection({knownViews={},knownPoint,sheetTransform={origin:{x:360
   VH:'正面与水平投影具有相同的 x 值，沿同一竖联系线传递。',
   'height-VW':'正面与侧面投影保持相同高度 z。',
   'depth-45':'由'+depthSource+'取得深度 y，以画纸原点 O 构造真实 45°线 O→M；M 的水平、竖直偏移均为 y×比例，不能反向画线或猜测待求点。',
-  'depth-HM':'从已知俯视图 H 沿水平辅助线到已构造的 45°转移点 M，保持相同深度 y。',
+  'depth-HM':'从 H 投影沿水平辅助线到已构造的 45°转移点 M，保持相同深度 y；若 H 为待求视图，则这条线仅用于复核，不冒充已知依据。',
   'depth-MW':'由 M 引出竖联系线，将相同的深度 y 转给侧面投影。'
  };
  const steps=transfer.guides.map((guide,index)=>({
