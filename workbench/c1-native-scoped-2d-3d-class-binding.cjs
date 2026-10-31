@@ -92,14 +92,12 @@ function auditC1RealNativeScoped2D3DClassBinding({
  // distinct native endpoints can round to the SAME M4 fraction, hiding a
  // genuine positive-length gap even when the M4 [0,1] union looks complete.
  // A generated 2D class witness must never borrow that false completeness.
- const nativePartitionProven=
-  nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
-  nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
-  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
-  nativeOriginal3DM4.native3DOriginalParameterPositiveGaps.length===0&&
-  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps)&&
-  nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
-  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+ // Caller flags describe the NATIVE curve partition, but cannot prove
+ // that its rounded M4 source intervals still cover [0,1] exactly once.
+ // In particular, a partial 2D stroke can otherwise borrow a claimed
+ // whole-source certificate from M4 segments covering only that stroke,
+ // or two overlapping same-class intervals can silently double-count.
+ // Check the actual dyadic-rational M4 source cuts independently below.
  const a=sourceProjectedFrom,b=sourceProjectedTo;
  const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
   denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
@@ -119,6 +117,23 @@ function auditC1RealNativeScoped2D3DClassBinding({
   return {klass:seg.native3DHLRClass,
    from:rat(dyadic(s),dyadic(1)),to:rat(dyadic(t),dyadic(1))};
  });
+ const sortedM4=m4.map(x=>[x.from,x.to]).sort((x,y)=>
+  compare(x[0],y[0])||compare(x[1],y[1]));
+ let m4Reach=zero,m4PartitionExactlyOnce=sortedM4.length>0;
+ for(const [from,to] of sortedM4){
+  if(compare(from,m4Reach)!==0){m4PartitionExactlyOnce=false;break;}
+  m4Reach=to;
+ }
+ if(compare(m4Reach,one)!==0)m4PartitionExactlyOnce=false;
+ const nativePartitionProven=
+  nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+  nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveGaps.length===0&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0&&
+  m4PartitionExactlyOnce;
  const rows=[],counts={scoped2DGeneratedEdgesChecked:0,
   exact2DSourcePaperAffineAligned:0,
   exactSameClassNative3DBackedEdges:0,
