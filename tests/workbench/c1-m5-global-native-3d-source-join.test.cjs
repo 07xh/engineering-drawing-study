@@ -206,3 +206,87 @@ test('real positive-length native source gap stays numerically visible and unsig
  assert.equal(source.native3DSourceIntervalsCoverWholeOriginalExactlyOnce,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+function withRealOriginalPhysicalAndGeneratedPaper(){
+ const x=setup();
+ x.geometry.kind='mesh';x.geometry.space='model-3d';x.geometry.unit='mm';
+ x.geometry.data.points={
+  A:{x:0,y:0,z:0},B:{x:12,y:0,z:1},C:{x:0,y:0,z:11}
+ };
+ const projection=([a,b])=>({
+  from:{u:x.geometry.data.points[a].x,v:x.geometry.data.points[a].z},
+  to:{u:x.geometry.data.points[b].x,v:x.geometry.data.points[b].z}
+ });
+ for(const original of x.cad.originalBRepSourceEdges){
+  const edge=x.geometry.data.edges.find(e=>
+   'g::'+[...e].sort().join('|')===original.sourceEdgeId);
+  original.fromOCCT3D={...x.geometry.data.points[edge[0]]};
+  original.toOCCT3D={...x.geometry.data.points[edge[1]]};
+ }
+ const native=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows;
+ x.cad.hiddenSharpViews.V=native.map(row=>{
+  const edge=x.geometry.data.edges.find(e=>
+   'g::'+[...e].sort().join('|')===row.originalPhysicalSourceEdgeId);
+  return projection(edge);
+ });
+ return x;
+}
+
+test('same-run original physical endpoints + native interval + exact received 2D HLR jointly close source geometry, not topology',()=>{
+ const r=audit(withRealOriginalPhysicalAndGeneratedPaper());
+ assert.equal(r.wholeSolid3DOriginalSourceToGenerated2DExactPaperJointAvailable,true);
+ assert.equal(r.sourceViewsWithNative3DAndExactGenerated2DPaperCoverage,3);
+ assert.equal(r.sourceViewsWithTransverseGeneratedPaperDrift,0);
+ assert.equal(r.native3DToGenerated2DPaperByOriginalSource.length,3);
+ assert.ok(r.native3DToGenerated2DPaperByOriginalSource.every(x=>
+  x.exactNative3DParameterCoverageCompleteOnce===true&&
+  x.exactReceived2DTwoAxisPaperCoverageComplete===true&&
+  x.generated2DTopoDSHistoryCertified===false&&
+  x.physicalGenerated3DEndpointJunctionsCertified===false&&
+  x.globalOpaqueSceneContinuousOcclusionCertified===false&&
+  x.signedV5Action===false));
+});
+
+test('native original physical BRep endpoints cannot impersonate a different M0 3D source',()=>{
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ x.cad.originalBRepSourceEdges[0].fromOCCT3D.z=999;
+ assert.throws(()=>audit(x),/original native BRep physical 3D endpoints contradict/);
+});
+
+test('real HLR transverse endpoint drift vetoes native 3D complete source paper despite matching source IDs',()=>{
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ const paper=x.cad.hiddenSharpViews.V[2];
+ paper.to.v+=Number.EPSILON;
+ const r=audit(x),source=r.native3DToGenerated2DPaperByOriginalSource
+  .find(s=>s.sourceEdgeId==='g::A|B');
+ assert.equal(source.exactNative3DParameterCoverageCompleteOnce,true);
+ assert.equal(source.exactReceived2DTwoAxisPaperCoverageComplete,false);
+ assert.equal(source.transverseGenerated2DPaperDriftEdges.length,1);
+ assert.deepEqual(source.positiveExactReceived2DPaperGaps,[['0','1']]);
+ assert.equal(source.generated2DTopoDSHistoryCertified,false);
+});
+
+test('actual HLR missing half the exact 2D source cannot borrow complete original 3D native parameters',()=>{
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ x.cad.hiddenSharpViews.V[2].to={u:6,v:0.5};
+ const r=audit(x),source=r.native3DToGenerated2DPaperByOriginalSource
+  .find(s=>s.sourceEdgeId==='g::A|B');
+ assert.equal(source.exactNative3DParameterCoverageCompleteOnce,true);
+ assert.equal(source.exactReceived2DTwoAxisPaperCoverageComplete,false);
+ assert.deepEqual(source.positiveExactReceived2DPaperGaps,[['1/2','1']]);
+});
+
+test('native original 3D parameter gap remains held even with perfectly complete 2D HLR paper',()=>{
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D
+  .native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange=[1,12];
+ x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows[2].originalNativeCurveParameterRange=[1,12];
+ const r=audit(x),source=r.native3DToGenerated2DPaperByOriginalSource
+  .find(s=>s.sourceEdgeId==='g::A|B');
+ assert.deepEqual(source.positiveNative3DSourceParameterGaps,[[0,1]]);
+ assert.equal(source.exactNative3DParameterCoverageCompleteOnce,false);
+ assert.equal(source.exactReceived2DTwoAxisPaperCoverageComplete,true);
+ assert.equal(source.native3DAndReceived2DPaperGeometryBothClosedButNotTopoDSHistory,false);
+});
