@@ -200,10 +200,6 @@ function auditC1OriginalCoProjectedDepthOrder({
    originalDyadicProjectedIntervalPositive:mathematicallyPositive,
    renderedPaperSegmentNotCertified:mathematicallyPositive,
    aliasesExamined:0,comparisons:[],
-  originalDyadicProjectedIntervalPositive:mathematicallyPositive,
-  originalDyadicProjectedIntervalPositive:mathematicallyPositive,
-   renderedPaperSegmentNotCertified:mathematicallyPositive,
-   aliasesExamined:0,comparisons:[],
    wholeIntervalFrontmostCertified:false,
    visibleSourceCoversEntireLine:false,
    engineeringLineStyleSigned:false,signedV5ActionCount:0});
@@ -423,6 +419,10 @@ function auditC1OriginalCoProjectedDepthOrder({
   view,sourceGeometryId:geometry.id,sourceEdgeId,
   originalParameterRange:[...originalParameterRange],
   status,aliasesExamined:comparisons.length,comparisons,
+  originalDyadicProjectedIntervalPositive:mathematicallyPositive,
+  positiveSubpixelDisplaySourceNowPreciselyAudited:
+   positiveReceivedSubpixelDisplayRange,
+  displayThresholdNeverDeterminesExactSourceDepthOrVisibility:true,
   wholeIntervalFrontmostCertified:
    status==='candidate-strictly-front-of-all-aliases'|| 
    status==='no-positive-projected-source-alias',
