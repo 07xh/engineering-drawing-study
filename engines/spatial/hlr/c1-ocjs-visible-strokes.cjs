@@ -1361,7 +1361,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       const pairEnvelope=auditC1Global3D2DPaperPairEnvelope(
        paper,global.segments[paperOrdinals[0]]);
       if(!pairEnvelope.compatible)
-       throw new RangeError('global generated 3D/2D HLR paper candidate exceeds source-scale ULP; cannot claim original source');
+       throw new RangeError('global generated 3D/2D HLR paper candidate exceeds coordinate-local ULP; cannot claim original source: '+JSON.stringify({view,klass,source3DPaper:paper,generated2DPaper:global.segments[paperOrdinals[0]],ordinal:paperOrdinals[0]}));
       used2D.add(paperOrdinals[0]);
       const originalCurveCandidates=new Set();
       for(const original of originalNativeEdgeHandles){
