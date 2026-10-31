@@ -7,8 +7,8 @@ const {homeHTML}=require('../../ui-next/home.cjs');
 function courseSection(){
  const full=homeHTML();
  const start=full.indexOf('<section class="v7-course-entry"');
- const end=full.indexOf('<div class="v7-bar"',start);
- assert.ok(start>=0 && end>start,'course entry must be before V7 project operations');
+ const end=full.indexOf('<section class="next-home-section',start);
+ assert.ok(start>=0 && end>start,'course entry remains in the workbench');
  return {full,html:full.slice(start,end)};
 }
 function hrefs(section){
@@ -17,7 +17,7 @@ function hrefs(section){
 test('C0 course-first paths are in the actual production V7 workbench template',()=>{
  const {full,html}=courseSection();
  assert.ok(full.indexOf('id="project-workbench"')<full.indexOf('id="v7-course-entry"'));
- assert.ok(full.indexOf('id="v7-course-entry"')<full.indexOf('id="v7-projects"'));
+ assert.ok(full.indexOf('id="v7-projects"')<full.indexOf('id="v7-course-entry"'));
  assert.deepEqual([...html.matchAll(/data-course="([^"]+)"/g)].map(m=>m[1]),
   ['intersection','composition','third-view']);
  for(const id of ['v7-projects','v7-image-input','v7-task','v7-solve','v7-sheet','v7-3d','v7-play']){

@@ -288,3 +288,33 @@ body.ui-next .v7-mobile-jump{display:none}
  body.ui-next .v7-mobile-jump a:focus-visible{outline:2px solid #0866ef;outline-offset:2px}
  body.ui-next :is(#v7-input-section,#v7-paper-section,#v7-sheet,#v7-step-list){scroll-margin-top:132px}
 }
+
+/* Place the existing conditions, paper and steps in separate workspace regions. */
+body.ui-next .v7-playback{display:grid;gap:8px;margin-top:10px;padding:10px;border:1px solid #dce5f1;border-radius:10px;background:#fff}
+body.ui-next .v7-playback>label{margin:0}
+body.ui-next .v7-playback input[type=range]{width:100%}
+body.ui-next .v7-playback .v7-controls button{min-height:44px}
+body.ui-next .v7-steps #v7-step-list{max-height:48dvh}
+@media(min-width:1000px){
+ body.ui-next .v7-layout:not(.v8-paper-focus){grid-template-columns:minmax(260px,0.9fr) minmax(400px,2.1fr) minmax(240px,0.8fr);gap:12px}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-input{grid-column:1;grid-row:1}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-paper{grid-column:2;grid-row:1;max-height:calc(100dvh - 80px)}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-steps{grid-column:3;grid-row:1;position:sticky;top:72px;max-height:calc(100dvh - 80px);overflow:auto}
+ body.ui-next .v7-layout:not(.v8-paper-focus) .v7-paper #v7-sheet{max-height:55dvh}
+}
+@media(min-width:861px) and (max-width:999px){
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-input{grid-column:1;grid-row:1 / span 2}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-paper{grid-column:2;grid-row:1}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-steps{grid-column:2;grid-row:2}
+}
+@media(max-width:860px){
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-steps{grid-column:1;grid-row:3}
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-input{grid-column:1;grid-row:2}
+}
+
+/* Put the working area before optional topic guidance and keep project actions compact. */
+body.ui-next .v7-bar{align-items:center;padding:7px 10px}
+body.ui-next .v7-bar .v7-file-control{flex-direction:row;min-height:44px;padding:5px 8px}
+body.ui-next .v7-bar .v7-file-control input[type=file]{max-width:180px}
+/* Keep playback controls above the sticky paper during internal scrolling. */
+body.ui-next .v7-playback{position:relative;z-index:3}
