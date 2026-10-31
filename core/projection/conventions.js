@@ -95,7 +95,7 @@ function sheetPoint(point,transform){
  return r;
 }
 function transferGuides(point,transform){
- const p=sheetPoint(point,transform),t=config(transform);
+ const q=snap3(point,'空间点须为有限数值坐标'),t=config(transform),p=sheetPoint(q,t);
  // First-angle H depth is measured DOWN from the shared paper origin;
  // W depth is measured RIGHT. Their actual 45-degree transfer point M
  // lies on the ray (origin.x+d, origin.y+d), d=y*scale. Draw that
@@ -103,10 +103,10 @@ function transferGuides(point,transform){
  // not a precomputed result stroke or a source of line-style authority.
  // At zero depth M=origin: omit the collapsed diagonal instead of
  // inventing a visible 45-degree line.
- const depth=project(point).H.v*t.scale;
+ const depth=q.y*t.scale;
  const diagonal=depth===0?[]:[{
   kind:'depth-45',from:{...t.origin},to:{...p.M},
-  sourceModelAxis:'y',sourceModelValue:project(point).H.v,
+  sourceModelAxis:'y',sourceModelValue:q.y,
   sourceKnownView:'H',targetView:'W',
   constructionOnly:true
  }];
