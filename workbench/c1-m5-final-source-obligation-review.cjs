@@ -30,14 +30,15 @@ function reviewC1M5FinalStrokeObligations(ledger){
     !Number.isSafeInteger(ledger.revision)||ledger.revision<1||
     ledger.realCADAndM5RecomputedFromCurrentOriginalReviewedSource!==true||
     ledger.signedV5ActionCount!==0||ledger.wholeSolidV5Ready!==false||
-    !Array.isArray(ledger.subspans))
+    !Array.isArray(ledger.subspans)||
+    typeof ledger.sourceGeometryId!=='string'||!ledger.sourceGeometryId.trim())
   throw new TypeError('canonical unsigned real-WASM M5 obligations required');
  const exactSourceKeys=new Set(),intervalsBySourceView=new Map();
  const rows=ledger.subspans.map((span,index)=>{
   if(span.sourceGeometryId!==ledger.sourceGeometryId||
      span.revision!==ledger.revision||
      !['V','H','W'].includes(span.view)||
-     typeof span.sourceEdgeId!=='string'||
+     typeof span.sourceEdgeId!=='string'||!span.sourceEdgeId.trim()||
      !Array.isArray(span.originalSourceParameterRange)||
      span.originalSourceParameterRange.length!==2||
      !(span.originalSourceParameterRange[0]<span.originalSourceParameterRange[1])||
