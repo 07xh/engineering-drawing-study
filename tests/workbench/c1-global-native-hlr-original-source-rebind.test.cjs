@@ -492,3 +492,28 @@ test('all same-paper global ordinals must be enumerated: truncated candidate set
   globalPaperCandidateOrdinals=[1,0];
  assert.throws(()=>audit(swapped),/incomplete or reordered native scoped\/global paper candidate inventory/);
 });
+
+test('two original sources cannot fabricate complete bijection by partitioning coincident global paper edges',()=>{
+ const x=withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()));
+ const global=x.cad.views.V;
+ // Two distinct whole-solid TopoDS generated edges have identical paper.
+ global[1]={...global[0],from:{...global[0].from},to:{...global[0].to}};
+ const scoped=x.cad.nativeSourceScopedSharpOutputByView.V.rows[1].visible[0];
+ scoped.from={...global[1].from};
+ scoped.to={...global[1].to};
+ const proof=x.views.V.nativeScoped2D3DClassBindings[1].rows[0];
+ proof.nativeScopedReceivedPaperFrom={...scoped.from};
+ proof.nativeScopedReceivedPaperTo={...scoped.to};
+ // Both lists are truncated to a disjoint singleton. Before the fix,
+ // this fabricated exact 2/2 source-output bijection from 2D aliases.
+ assert.throws(()=>audit(x),/incomplete or reordered native scoped\/global paper candidate inventory/);
+ const complete=structuredClone(x);
+ for(const row of complete.cad.nativeSourceScopedSharpOutputByView.V.rows)
+  row.visible[0].globalPaperCandidateOrdinals=[0,1];
+ const out=audit(complete);
+ assert.equal(out.counts.wholeSolidEdgesWithMultipleOriginalSourceClaims,2);
+ assert.equal(out.exactSourceFilterBijectionByView.V.
+  completeExactSourceScopedToWholeSolidOutputBijectionProven,false);
+ assert.equal(out.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+ assert.equal(out.signedV5ActionCount,0);
+});
