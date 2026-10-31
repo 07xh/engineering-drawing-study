@@ -218,3 +218,57 @@ test('one native whole-solid inventory cannot mix V and W generated edge ordinal
   wholeSolidCounts:{'visible-sharp':3,'hidden-sharp':0}}),
   /one HLR view/);
 });
+
+test('same-run global native 3D to generated 2D paper witness distinguishes exact, reversed and source-scale ULP rounding without TopoDS history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:0},to:{u:3,v:2}};
+ const exact=audit(source,structuredClone(source));
+ assert.equal(exact.compatible,true);
+ assert.equal(exact.exactBinary64Endpoints,true);
+ assert.equal(exact.sourceScaleOneULPBoundedRoundingOnly,false);
+ const reversed=audit(source,{from:source.to,to:source.from});
+ assert.equal(reversed.exactBinary64Endpoints,true);
+ const rounded=audit(source,{from:source.from,
+  to:{u:3,v:2+Number.EPSILON*2}});
+ assert.equal(rounded.compatible,true);
+ assert.equal(rounded.exactBinary64Endpoints,false);
+ assert.equal(rounded.sourceScaleOneULPBoundedRoundingOnly,true);
+ assert.equal(rounded.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(rounded.engineeringLineStyle,'undetermined');
+ assert.equal(rounded.signedV5Action,false);
+ assert.ok(Object.isFrozen(rounded));
+});
+test('a unique but merely tolerance-close generated 2D HLR edge cannot borrow native 3D source history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit,
+  nativeScopedPaperSegmentsSame:oldPaperCandidate}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:0},to:{u:10,v:0}};
+ const forged={from:{u:0,v:1e-7},to:{u:10,v:1e-7}};
+ // Old discovery tolerance accepts the forged source, but the new
+ // mandatory native 3D/2D binding must refuse its original owner.
+ assert.equal(oldPaperCandidate(source,forged),true);
+ const held=audit(source,forged);
+ assert.equal(held.compatible,false);
+ assert.equal(held.exactBinary64Endpoints,false);
+ assert.equal(held.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(held.signedV5Action,false);
+ const reversed={from:forged.to,to:forged.from};
+ assert.equal(audit(source,reversed).compatible,false);
+});
+test('tiny positive HLR tails, distant paper aliases and invalid native 3D/2D endpoints remain fail closed',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const tiny={from:{u:0,v:0},to:{u:Number.MIN_VALUE,v:0}};
+ assert.equal(audit(tiny,structuredClone(tiny)).exactBinary64Endpoints,true);
+ assert.equal(audit(tiny,{from:{u:0,v:0},to:{u:Number.MIN_VALUE,v:Number.MIN_VALUE}}).compatible,false);
+ const far={from:{u:1e5,v:1e5},to:{u:1e5+1e-4,v:1e5}};
+ assert.equal(audit(far,{from:{u:1e5,v:1e5+1e-8},
+  to:{u:1e5+1e-4,v:1e5+1e-8}}).compatible,false);
+ for(const pair of [
+  {from:{u:0,v:0},to:{u:0,v:0}},
+  {from:{u:NaN,v:0},to:{u:3,v:2}},
+  {from:{u:0,v:0},to:{u:Infinity,v:0}},
+  null
+ ])assert.throws(()=>audit(far,pair),/noncollapsed finite/);
+});
