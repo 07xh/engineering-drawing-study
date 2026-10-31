@@ -11,7 +11,7 @@
  * This is an unsigned necessary M4->M5 source-inventory gate only.
  */
 const {VIEWS}=require('../core/projection/conventions.js');
-const {nativeScopedPaperSegmentsSame}=
+const {nativeScopedPaperSegmentsSame,auditC1Global3D2DPaperPairEnvelope}=
  require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const x of Object.values(o))freeze(x);
@@ -211,6 +211,12 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      if(!nativeScopedPaperSegmentsSame(whole,witness))
       throw new RangeError('original native 2D filter not consistent with actual global paper');
      const direct=witness.globalDirectSameGeneratedTopoDSOrdinals.includes(ordinal);
+     // Recompute the same strict binary64/one-ULP envelope in the actual
+     // M4/M5 source consumer: serialized scoped ledgers are not a trusted
+     // native handle, and a forged direct-IsSame boolean must not bypass
+     // the real HLR matcher merely by staying inside discovery tolerance.
+     if(direct&&!auditC1Global3D2DPaperPairEnvelope(whole,witness).compatible)
+      throw new RangeError('forged native direct IsSame paper envelope exceeds one ULP');
      if(direct&&!classRow.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment&&
         !classRow.generated2DRepresentationWithinOneULPOfFullOriginalM0Source)
       throw new RangeError('actual native direct IsSame edge lacks bounded original 3D support');
