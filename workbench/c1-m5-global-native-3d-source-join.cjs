@@ -110,6 +110,11 @@ function auditC1M5NativeGlobal3DSourceJoin({
      matchingScoped.length!==1||
      row.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters!==true||
      row.global3DAnd2DHLRMeasuredPaperPairUnique!==true||
+     // The actual native 3D->generated 2D paper pairing must be exact
+     // or one source-scale ULP bounded. A tolerant paper alias is NOT a
+     // source proof, and neither branch certifies TopoDS history.
+     Number(row.global3DAnd2DHLRMeasuredPaperPairExactBinary64===true)+
+     Number(row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly===true)!==1||
      row.global3DAndOriginalScoped3DHLRParameterIntervalExact!==true||
      row.globalGenerated2DTo3DTopoDSHistoryCertified!==false||
      row.fullOpaqueSceneContinuousOcclusionCertified!==false||
