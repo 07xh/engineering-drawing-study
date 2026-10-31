@@ -344,3 +344,70 @@ test('complete on-line HLR paper candidate remains distinct from generated sourc
  assert.equal(r.formalEngineeringLineStyleCertified,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('opposite HLR classes covering disjoint paper halves cannot certify one visible source',()=>{
+ const first=segment({
+  from:{u:0,v:0},to:{u:1.5,v:8},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0,0.5]}],
+  directNativeVertexOriginalSource:[native('A'),native(null)]
+ });
+ const second=segment({
+  view:'H',occtHLRVisibilityClass:'hidden-sharp',
+  from:{u:1.5,v:8},to:{u:3,v:16},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.5,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]
+ });
+ const r=run([[0,1]],[first],[second]);
+ const gap=r.rows[0];
+ assert.deepEqual(gap.positiveRationalGapResidualAfterCollinearPaperCandidates,[]);
+ assert.deepEqual(gap.exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory,
+  [['0','1/2']]);
+ assert.deepEqual(gap.exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory,
+  [['1/2','1']]);
+ assert.deepEqual(gap.positiveRationalGapResidualAfterVisiblePaperCandidates,
+  [['1/2','1']]);
+ assert.deepEqual(gap.positiveRationalGapResidualAfterHiddenPaperCandidates,
+  [['0','1/2']]);
+ assert.equal(gap.mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility,true);
+ assert.equal(gap.oppositeHLRClassPositivePaperOverlapStillHeld,false);
+ assert.equal(r.positiveOriginalM5GapsWithMixedHLRClassPaperOnlyFullCoverageHeld,1);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('overlapping opposite-class collinear HLR paper intervals remain an explicit M5 conflict',()=>{
+ const visible=segment({
+  from:{u:0,v:0},to:{u:2.25,v:12},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0,0.75]}],
+  directNativeVertexOriginalSource:[native('A'),native(null)]
+ });
+ const hidden=segment({
+  occtHLRVisibilityClass:'hidden-sharp',
+  from:{u:0.75,v:4},to:{u:3,v:16},
+  sourceCandidate3DLifts:[{sourceEdgeId:'tetra::A|C',
+   originalVertexIds:['A','C'],
+   paperOnlyUnclampedOriginalSourceParameters:[0.25,1]}],
+  directNativeVertexOriginalSource:[native(null),native('C')]
+ });
+ const r=run([[0,1]],[visible],[hidden]);
+ assert.equal(r.rows[0].oppositeHLRClassPositivePaperOverlapStillHeld,true);
+ assert.equal(r.positiveOriginalM5GapsWithOppositeHLRClassPaperOverlapHeld,1);
+ assert.equal(r.rows[0].mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility,true);
+ assert.equal(r.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('one native class fully covering paper does not create a false mixed-class warning',()=>{
+ const r=run([[0.2,0.3]]);
+ assert.equal(r.rows[0].mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility,false);
+ assert.equal(r.rows[0].oppositeHLRClassPositivePaperOverlapStillHeld,false);
+ assert.deepEqual(r.rows[0].positiveRationalGapResidualAfterVisiblePaperCandidates,[]);
+ assert.deepEqual(r.rows[0].positiveRationalGapResidualAfterHiddenPaperCandidates,
+  [['3602879701896397/18014398509481984','5404319552844595/18014398509481984']]);
+ assert.equal(r.signedV5ActionCount,0);
+});
