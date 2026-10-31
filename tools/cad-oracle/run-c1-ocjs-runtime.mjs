@@ -37,6 +37,8 @@ const {auditC1NativeScopedHLRSourceConsumer}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {auditC1M5UnresolvedGlobalSourceObligations}=
  require('../../workbench/c1-m5-unresolved-global-source-obligations.cjs');
+const {auditC1M5NativeGlobal3DSourceJoin}=
+ require('../../workbench/c1-m5-global-native-3d-source-join.cjs');
 const {auditExactBinary64PaperParameterPair,
  auditExactBinary64PaperCandidateCoverage}=
  require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
@@ -1770,6 +1772,41 @@ for(const [index,geometry] of general.entries()){
    assert.equal(claim.signedV5Action,false);
   }
  }
+ // Replay the independently verified REAL whole-solid 3D HLR curve
+ // parameter inventory against every still-held M5 original source claim.
+ // The global/scoped native parameter bijection is a prerequisite for
+ // accepting any provenance claim, NOT a V5 line/occlusion certificate.
+ const nativeM5Original3DJoins=heldM5.map(row=>{
+  const join=auditC1M5NativeGlobal3DSourceJoin({
+   geometry,cad,view:row.view,sourceEdgeId:row.sourceEdgeId,
+   generatedClaims:row.wholeSolidGeneratedHLROriginalSourceFilterMatches.map(c=>({
+    hlrClass:c.hlrClass,
+    wholeSolidGeneratedHLREdgeOrdinal:c.wholeSolidGeneratedHLREdgeOrdinal
+   }))
+  });
+  assert.ok(join,'real same-run global native 3D original source ledger absent');
+  assert.equal(join.claimCount,row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length);
+  assert.equal(join.wholeSolidAndScopedNative3DParameterIntervalBijectionVerified,true);
+  assert.equal(join.sameRunOriginalBRepAndScoped3DParameterInventoryRechecked,true);
+  assert.equal(join.officialV5Authorized,false);
+  assert.equal(join.signedV5ActionCount,0);
+  assert.equal(join.generated2DTopoDSHistoryCertified,false);
+  assert.equal(join.globalOpaqueSceneContinuousOcclusionCertified,false);
+  return join;
+ });
+ const native3DJoinTotals={
+  heldM5Obligations:nativeM5Original3DJoins.length,
+  sameSourceNative3DClaims:nativeM5Original3DJoins.reduce((n,j)=>n+j.sourceCorroboratedClaims,0),
+  otherSourceNative3DClaimsHeld:nativeM5Original3DJoins.reduce((n,j)=>n+j.differentOriginal3DSourceClaimsHeld,0),
+  unknownNative3DOrdinalsHeld:nativeM5Original3DJoins.reduce((n,j)=>n+j.unknownGlobalOrdinalClaimsHeld,0),
+  sourcesWithPositiveNative3DGaps:nativeM5Original3DJoins.reduce((n,j)=>
+   n+j.originalSourcesWithPositiveNative3DParameterGaps,0),
+  sourceClaimsHaveActualGlobalScoped3DParameterBijection:true,
+  generated2DTopoDSHistoryCertified:false,globalOcclusionCertified:false,
+  signedV5ActionCount:0
+ };
+ console.error('REAL WASM M5 global native 3D original parameter source joins '+
+  geometry.id+': '+JSON.stringify(native3DJoinTotals));
  const unresolvedM5=auditC1M5UnresolvedGlobalSourceObligations({
   geometry,cad,positiveOriginalGapRays
  });
