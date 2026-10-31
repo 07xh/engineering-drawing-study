@@ -25,7 +25,14 @@ test('legacy first-angle V/H/W math stays exactly compatible',()=>{
 });
 test('45-degree transfer preserves depth and height correspondence',()=>{
  const p={x:35,y:22,z:51},trace=P.transferGuides(p,T);
- assert.deepEqual(trace.guides.map(g=>g.kind),G.transfer(p).guide.map(g=>g.kind));
+ assert.deepEqual(trace.guides.map(g=>g.kind),
+  ['VH','height-VW','depth-45','depth-HM','depth-MW']);
+ const diagonal=trace.guides.find(g=>g.kind==='depth-45');
+ assert.deepEqual(diagonal.from,T.origin);
+ assert.deepEqual(diagonal.to,trace.points.M);
+ assert.equal(diagonal.sourceModelAxis,'y');
+ assert.equal(diagonal.sourceModelValue,p.y);
+ assert.equal(diagonal.constructionOnly,true);
  const {V,H,W,M}=trace.points;
  assert(near(V.x,H.x)&&near(V.y,W.y));
  assert(near(H.y-T.origin.y,W.x-T.origin.x));
@@ -37,4 +44,23 @@ test('screen transforms reject invalid scale and never affect model coordinates'
  assert.throws(()=>P.project({x:12,y:Infinity,z:33}));
  P.sheetPoint(p,{origin:{x:999,y:-10},scale:17});
  assert.deepEqual(P.project(p),before);
+});
+
+test('first-angle 45-degree construction is correctly directed for positive/negative depth and omitted for zero depth',()=>{
+ for(const y of [22,-22]){
+  const origin={x:317,y:-89},scale=3;
+  const t=P.transferGuides({x:8,y,z:13},{origin,scale});
+  const d=t.guides.find(g=>g.kind==='depth-45');
+  assert.ok(d,'nonzero depth requires a real diagonal stroke');
+  assert.deepEqual(d.from,origin);
+  assert.deepEqual(d.to,{x:origin.x+y*scale,y:origin.y+y*scale});
+  assert.equal(d.to.x-d.from.x,d.to.y-d.from.y);
+  assert.equal(Math.sign(d.to.x-d.from.x),Math.sign(y),
+   'reverse or mirrored 45-degree guide must not be accepted');
+  assert.deepEqual(t.guides.find(g=>g.kind==='depth-HM').to,d.to);
+  assert.deepEqual(t.guides.find(g=>g.kind==='depth-MW').from,d.to);
+ }
+ const zero=P.transferGuides({x:8,y:0,z:13},T);
+ assert.equal(zero.guides.some(g=>g.kind==='depth-45'),false,
+  'do not manufacture a zero-length decorative 45-degree action');
 });
