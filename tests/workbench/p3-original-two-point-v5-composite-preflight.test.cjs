@@ -65,16 +65,16 @@ test('one original exercise with two given points constructs one V5 timeline and
  const out=createPreflight(points,74);
  assert.equal(item.questionLabel,'2-4-3');
  assert.equal(out.proofGroups.length,2);
- assert.equal(out.steps.length,8);
+ assert.equal(out.steps.length,9);
  assert.equal(out.productionReady,false);
  for(const p of out.proofGroups){
-  assert.equal(p.intents.length,4);
+  assert.equal(p.intents.length,p.steps.length);
   assert.equal(p.revision,74);
   assert.equal(validateConstructionIntentDAG(p.intents).ok,true);
   assert.equal(p.proofScope,'single-point-first-angle');
  }
- assert.ok(out.steps.slice(0,4).every(s=>s.id.startsWith('A-')));
- assert.ok(out.steps.slice(4).every(s=>s.id.startsWith('B-')));
+ assert.ok(out.steps.slice(0,5).every(s=>s.id.startsWith('A-')));
+ assert.ok(out.steps.slice(5).every(s=>s.id.startsWith('B-')));
  const names=out.timing.segments.map(s=>s.id);
  assert.equal(new Set(names).size,names.length);
  assert.ok(names.some(s=>s.startsWith('A-')));
@@ -87,8 +87,8 @@ test('single existing V5 player supports seek/reverse/variable speed and stale-r
  const out=createPreflight(submitted(item.givens),75);
  const player=V5.createPlayer(out.timing,{speed:1,revision:75});
  assert.equal(player.canRender(75),true);
- player.seekStep(4,1000);
- assert.equal(player.snapshot().activeStepId,'B-'+out.steps[4].id.slice(2));
+ player.seekStep(5,1000);
+ assert.equal(player.snapshot().activeStepId,'B-'+out.steps[5].id.slice(2));
  player.seekStep(0,1001);
  assert.equal(player.snapshot().activeStepIndex,0);
  player.setSpeed(2,1002);
@@ -105,8 +105,8 @@ test('two-point question changes only the mathematically affected per-point V5 g
  const first=createPreflight(givens,80);
  const changed={...givens[1],given:{...givens[1].given,z:givens[1].given.z+5}};
  const second=createPreflight([givens[0],changed],81);
- assert.deepEqual(first.steps.slice(0,4),second.steps.slice(0,4));
- assert.notDeepEqual(first.steps.slice(4),second.steps.slice(4));
+ assert.deepEqual(first.steps.slice(0,5),second.steps.slice(0,5));
+ assert.notDeepEqual(first.steps.slice(5),second.steps.slice(5));
  assert.equal(second.proofGroups[0].intents[0].source.revision,81);
  assert.equal(second.proofGroups[1].intents[0].source.revision,81);
  assert.equal(V5.frame(second.timing,second.timing.totalMs).done,true);
