@@ -125,6 +125,8 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
   assert.equal(r.status,'physical-original-3d-source-closed-ray-complete-paper-held');
   assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,true);
   assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+  assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,true);
+  assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,1);
   assert.equal(r.coProjectedOriginalSourceOpenFrontmostProven,true);
   assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
   assert.equal(r.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence
@@ -286,6 +288,68 @@ test('whole-solid hidden native 3D HLR claim vetoes an original all-visible W ce
  assert.equal(result.generatedPaperGapStrictlyPositiveStillHeld,true);
  assert.equal(result.engineeringLineStyle,'undetermined');
  assert.equal(result.signedV5Action,false);
+});
+test('held W claimant omitting another native hidden owner edge cannot certify whole original source',()=>{
+ const x=fixture();
+ x.cad.hiddenSharpViews.W.push(structuredClone(x.cad.views.W[0]));
+ const scoped=x.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
+ const hidden=structuredClone(scoped.visible3D.native3DGeneratedCurveIntervals[0]);
+ scoped.hidden3D.native3DGeneratedCurveIntervals.push(hidden);
+ scoped.combinedNative3DSourceParameterPartition=coverage({
+  originalNativeParameterRange:x.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange,
+  generatedNativeParameterRanges:[
+   scoped.visible3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange,
+   hidden.nativeOriginalCurveParameterRange]
+ });
+ const native=x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence;
+ native.rows.push({...native.rows[0],hlrClass:'hidden-sharp'});
+ native.globalGenerated2DSharpEdges=2;
+ native.globalGenerated3DSharpEdgesWithUniqueOriginalCurve=2;
+ x.global3DSource=rebindNativeGlobal({
+  geometry:x.geometry,cad:x.cad,view:'W',sourceEdgeId:x.sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ });
+ const r=audit(x);
+ assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,2);
+ assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,false);
+ assert.equal(r.globalGeneratedNative3DClassConsistentWithOriginalAllVisible,false);
+ assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,false);
+ assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5Action,false);
+});
+test('held W claimant omitting second visible original subinterval cannot certify complete global source',()=>{
+ const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
+ const range=x.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange,mid=range[1]/2;
+ const first=structuredClone(scoped.visible3D.native3DGeneratedCurveIntervals[0]);
+ const second=structuredClone(first);
+ first.nativeOriginalCurveParameterRange=[range[0],mid];
+ second.nativeOriginalCurveParameterRange=[mid,range[1]];
+ scoped.visible3D.native3DGeneratedCurveIntervals=[first,second];
+ scoped.combinedNative3DSourceParameterPartition=coverage({
+  originalNativeParameterRange:range,
+  generatedNativeParameterRanges:[[range[0],mid],[mid,range[1]]]
+ });
+ x.cad.views.W.push(structuredClone(x.cad.views.W[0]));
+ const native=x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence;
+ native.rows[0].originalNativeCurveParameterRange=[range[0],mid];
+ native.rows.push({...native.rows[0],wholeSolidGeneratedHLREdgeOrdinal:1,
+  originalNativeCurveParameterRange:[mid,range[1]]});
+ native.globalGenerated2DSharpEdges=2;
+ native.globalGenerated3DSharpEdgesWithUniqueOriginalCurve=2;
+ x.global3DSource=rebindNativeGlobal({
+  geometry:x.geometry,cad:x.cad,view:'W',sourceEdgeId:x.sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ });
+ const r=audit(x);
+ assert.equal(r.scopedNativeOriginal3DVisibilityParameterComplete,true);
+ assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,2);
+ assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,false);
+ assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,false);
+ assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.signedV5Action,false);
 });
 test('partial W generated edge pairs BOTH endpoints to original vertices exactly, not just nearest from',()=>{
  const x=fixture();
