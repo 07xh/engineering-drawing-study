@@ -68,7 +68,7 @@ test('one original exercise with two given points constructs one V5 timeline and
  assert.equal(out.steps.length,9);
  assert.equal(out.productionReady,false);
  for(const p of out.proofGroups){
-  assert.equal(p.intents.length,p.steps.length);
+  assert.equal(p.intents.length,p.actionIds.length);
   assert.equal(p.revision,74);
   assert.equal(validateConstructionIntentDAG(p.intents).ok,true);
   assert.equal(p.proofScope,'single-point-first-angle');
