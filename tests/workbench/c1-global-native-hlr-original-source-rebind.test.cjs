@@ -107,7 +107,7 @@ test('one-ULP original source class compatibility is reported separately from ex
  assert.equal(r.officialV5Authorized,false);
 });
 test('unclaimed whole-solid generated 2D edge never borrows another source-paper candidate',()=>{
- const x=fixture();x.cad.views.W.push(segment());
+ const x=fixture();x.cad.views.W.push(segment(1));
  const r=audit(x);
  assert.equal(r.counts.wholeSolidEdgesWithNoOriginalNativeSourceClaim,1);
  assert.equal(r.views.W[1].uniqueOriginalSourceFilteredPaperCandidate,null);
@@ -470,4 +470,25 @@ test('indexed native EdgeMap cannot launder a duplicated scoped source into comp
  assert.throws(()=>audit(x),/duplicate or invalid original TopoDS source-filter inventory/);
  assert.equal(audit(withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()))).
   exactSourceFilterBijectionByView.V.completeExactSourceScopedToWholeSolidOutputBijectionProven,true);
+});
+
+test('all same-paper global ordinals must be enumerated: truncated candidate sets cannot fabricate source bijection',()=>{
+ const x=fixture();
+ // Two distinct native generated edges may have identical paper endpoints.
+ // The real native matcher would return both ordinals for this scoped edge.
+ x.cad.views.V.push(segment());
+ assert.throws(()=>audit(x),/incomplete or reordered native scoped\/global paper candidate inventory/);
+ const full=structuredClone(x);
+ full.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].
+  globalPaperCandidateOrdinals=[0,1];
+ const out=audit(full);
+ assert.equal(out.views.V[0].exactlyOneNativeSourceScopedWitnessForWholeSolidEdge,true);
+ assert.equal(out.views.V[1].exactlyOneNativeSourceScopedWitnessForWholeSolidEdge,true);
+ assert.equal(out.exactSourceFilterBijectionByView.V.
+  completeExactSourceScopedToWholeSolidOutputBijectionProven,false);
+ assert.equal(out.officialV5Authorized,false);
+ const swapped=structuredClone(full);
+ swapped.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].
+  globalPaperCandidateOrdinals=[1,0];
+ assert.throws(()=>audit(swapped),/incomplete or reordered native scoped\/global paper candidate inventory/);
 });
