@@ -44,7 +44,8 @@ function mount(container,{onPick}={}){
  let pending=false,center=new THREE.Vector3(),extent=40,angles=null;
  const active=new Set();
  let keyboardFocus=null;
- let lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
+ let lastSelection={selectedIds:[],selectedSourceFeature:null,
+  activeV5SourceFeatures:[],hiddenObjectIds:[]};
  function schedule(){
   if(disposed||pending)return;pending=true;
   window.requestAnimationFrame(()=>{
@@ -243,7 +244,8 @@ function mount(container,{onPick}={}){
  }
  function paintSelection(){
   const owners=new Set(lastSelection.selectedIds),
-   hidden=new Set(lastSelection.hiddenObjectIds);
+   hidden=new Set(lastSelection.hiddenObjectIds),
+   activeV5=new Set(lastSelection.activeV5SourceFeatures);
   // The same hidden set controls rendering, touch raycasts and keyboard traversal.
   for(const node of root.children)node.visible=!hidden.has(node.userData.objectId);
   if(keyboardFocus&&hidden.has(keyboardFocus.objectId)){
@@ -255,8 +257,11 @@ function mount(container,{onPick}={}){
     key===lastSelection.selectedSourceFeature;
    const focused=keyboardFocus?.objectId===objectId&&
     keyboardFocus?.sourceFeatureKey===key;
-   const selected=owners.has(objectId);
-   const hex=precise?0x0866ef:focused?0x00a6a6:selected?0xef6730:0x587da4;
+   const selected=owners.has(objectId),stepFocus=activeV5.has(key);
+   // Active canonical V5 source identity changes only the 3D color.
+   // It does not alter geometry, depth or GB visible/hidden line styling.
+   const hex=precise?0x0866ef:focused?0x00a6a6:
+    stepFocus?0x00877d:selected?0xef6730:0x587da4;
    feature.material.color.setHex(hex);
   }
  }
@@ -279,15 +284,17 @@ function mount(container,{onPick}={}){
   paintSelection();schedule();
  }
  function update(scene,{selectedIds=[],selectedSourceFeature=null,
-  hiddenObjectIds=[],camera:inputCamera}={}){
+  activeV5SourceFeatures=[],hiddenObjectIds=[],camera:inputCamera}={}){
   if(disposed)return;
   if(!scene){
    clear();currentScene=null;
-   lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
+   lastSelection={selectedIds:[],selectedSourceFeature:null,
+    activeV5SourceFeatures:[],hiddenObjectIds:[]};
    schedule();return;
   }
   if(scene!==currentScene)build(scene);
   lastSelection={selectedIds:[...selectedIds],selectedSourceFeature,
+   activeV5SourceFeatures:[...activeV5SourceFeatures],
    hiddenObjectIds:[...hiddenObjectIds]};
   // Rendering, touch raycasts and keyboard navigation share one visibility gate.
   paintSelection();
