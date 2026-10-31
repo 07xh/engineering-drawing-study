@@ -112,11 +112,11 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
   }]
  };
  result.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence=ledger;
- result.global3DSource=rebindNativeGlobal({
+ result.global3DSource=structuredClone(rebindNativeGlobal({
   geometry:result.geometry,cad:result.cad,
   view:'W',sourceEdgeId,
   generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
- });
+ }));
  return result;
 }
 test('genuine native original all-visible EdgeStatus, full 3D curve, closed convex rays and M4 open depth jointly prove original physical W source, NOT its paper gap',()=>{
@@ -298,11 +298,11 @@ function hGapFixture(){
  native.view='H';
  for(const row of native.rows)row.view='H';
  record.cad.nativeSourceScopedSharpOutputByView={H:scoped};
- record.global3DSource=rebindNativeGlobal({
+ record.global3DSource=structuredClone(rebindNativeGlobal({
   geometry:record.geometry,cad:record.cad,view:'H',
   sourceEdgeId:record.sourceEdgeId,
   generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
- });
+ }));
  return record;
 }
 test('H A|C positive source gap consumes SAME original BRep, native HLR, M4 and closed rays, but keeps real paper residual',()=>{
