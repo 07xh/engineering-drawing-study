@@ -451,3 +451,88 @@ test('native interior source parameter cut is held as bounded computation, not f
  assert.equal(witness.endpoints[1].generatedToOriginalTopoDSVertexIdentityCertified,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+function withTwoRealNative3DGeneratedFragments(){
+ const x=withRealMeasured3DSourceTo2DPaper(),
+  scoped=x.cad.nativeSourceScopedSharpOutputByView.V,
+  global=scoped.nativeGlobal3DOriginalSourceEvidence,
+  original=global.rows[2],
+  source3D=scoped.rows.find(row=>row.originalPhysicalSourceEdgeId==='g::A|B')
+   .hidden3D.native3DGeneratedCurveIntervals;
+ const tail=structuredClone(original);
+ original.originalNativeCurveParameterRange=[0,6];
+ original.nativeGlobalGeneratedHLR3DTo={x:6,y:0,z:0.5};
+ source3D[0].nativeOriginalCurveParameterRange=[0,6];
+ tail.wholeSolidGeneratedHLREdgeOrdinal=3;
+ tail.originalNativeCurveParameterRange=[6,12];
+ tail.nativeGlobalGeneratedHLR3DFrom={x:6,y:0,z:0.5};
+ tail.nativeGlobalGeneratedHLR3DTo={x:12,y:0,z:1};
+ source3D.push({...structuredClone(source3D[0]),
+  nativeOriginalCurveParameterRange:[6,12]});
+ global.rows.push(tail);
+ global.globalGenerated2DSharpEdges++;
+ global.globalGenerated3DSharpEdgesWithUniqueOriginalCurve++;
+ x.cad.hiddenSharpViews.V[2].to={u:6,v:0.5};
+ x.cad.hiddenSharpViews.V.push({from:{u:6,v:0.5},to:{u:12,v:1}});
+ return x;
+}
+
+test('adjacent real global native 3D HLR source intervals share one exact XYZ point without inventing a generated TopoDS vertex',()=>{
+ const r=audit(withTwoRealNative3DGeneratedFragments());
+ assert.equal(r.completeMeasuredNativeGlobal3D2DPaperReplayAvailable,true);
+ assert.equal(r.independentlyReplayedMeasuredGlobal3D2DPaperCount,4);
+ const source=r.native3DToGenerated2DPaperByOriginalSource.find(x=>
+  x.sourceEdgeId==='g::A|B');
+ assert.equal(source.exactNative3DParameterCoverageCompleteOnce,true);
+ assert.equal(source.actualNative3DGeometricSeamsReplayed,1);
+ assert.equal(source.actualReceived2DPaperSeamsExactlyJoined,1);
+ const seam=source.actualNativeGenerated3DSourceParameterSeams[0];
+ assert.equal(seam.nativeOriginalParameter,6);
+ assert.deepEqual(seam.actualSharedNative3DPoint,{x:6,y:0,z:0.5});
+ assert.equal(seam.realGenerated3DCurveEndpointXYZEqualityProven,true);
+ assert.equal(seam.actualReceivedGenerated2DPaperEndpointExactlyEqual,true);
+ assert.equal(seam.generated2DTopoDSIsSameCertified,false);
+ assert.equal(seam.globalContinuousVisibilityCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('one-ULP received 2D paper junction gap does not erase exact real native 3D source continuity',()=>{
+ const x=withTwoRealNative3DGeneratedFragments();
+ x.cad.hiddenSharpViews.V[3].from.v+=Number.EPSILON/2;
+ const row=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows[3];
+ row.global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;
+ row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly=true;
+ const r=audit(x);
+ const source=r.native3DToGenerated2DPaperByOriginalSource.find(x=>
+  x.sourceEdgeId==='g::A|B');
+ assert.equal(source.actualNative3DGeometricSeamsReplayed,1);
+ assert.equal(source.actualReceived2DPaperSeamsExactlyJoined,0);
+ assert.equal(source.actualNativeGenerated3DSourceParameterSeams[0]
+  .actualReceivedGenerated2DPaperEndpointExactlyEqual,false);
+ assert.equal(source.actualNativeGenerated3DSourceParameterSeams[0]
+  .generated2DTopoDSIsSameCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+
+test('distinct native generated 3D endpoints at one ORIGINAL curve parameter cannot fake physical seam from identical V paper',()=>{
+ const x=withTwoRealNative3DGeneratedFragments();
+ // V discards y, and the source-scaled interior curve check can accept
+ // this tiny coordinate error as an UNSIGNED rounding candidate.
+ // But two different generated XYZ endpoints cannot become an exact join.
+ x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence
+  .rows[3].nativeGlobalGeneratedHLR3DFrom.y=1e-14;
+ assert.throws(()=>audit(x),
+  /adjacent real native generated 3D HLR source pieces have different XYZ/);
+});
+
+test('measured real native generated 3D evidence cannot bypass original BRep parameter replay by deleting its samples',()=>{
+ for(const field of ['occtSourceCurveFirstPoint3D',
+                      'occtSourceCurveLastPoint3D']){
+  const x=withRealMeasured3DSourceTo2DPaper();
+  delete x.cad.originalBRepSourceEdges.find(row=>
+   row.sourceEdgeId==='g::A|B')[field];
+  assert.throws(()=>audit(x),
+   /real generated HLR 3D source has no original native BRep endpoint samples/);
+ }
+});
