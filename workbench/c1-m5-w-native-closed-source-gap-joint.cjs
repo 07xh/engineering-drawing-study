@@ -350,6 +350,46 @@ function auditC1NativeClosedPhysicalGap({
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
+ // Jointly replay the NEW same-run original BRep -> native 3D source
+ // parameter -> WHOLE-SOLID generated 2D HLR measured paper ledger against
+ // this independent M5 endpoint/affine computation. A clean original 3D
+ // interval never launders an off-axis paper edge into an engineering line.
+ let original3DToActual2DJoint=null;
+ if(global3DSource.wholeSolid3DOriginalSourceToGenerated2DExactPaperJointAvailable===true){
+  const candidates=global3DSource.native3DToGenerated2DPaperByOriginalSource;
+  const joint=candidates?.filter(x=>x.view===view&&
+   x.sourceEdgeId===sourceEdgeId&&x.revision===cad.revision)??[];
+  if(joint.length!==1||joint[0].originalPhysical3DEndpointsVerifiedAgainstNativeBRep!==true||
+     joint[0].generated2DTopoDSHistoryCertified!==false||
+     joint[0].globalOpaqueSceneContinuousOcclusionCertified!==false||
+     joint[0].signedV5Action!==false)
+   throw new RangeError('same-run original native 3D to generated 2D paper source joint invalid');
+  const sourceJoint=joint[0];
+  if(paperEndpointAudit!==null){
+   const rows=paperEndpointAudit.rows;
+   if(sourceJoint.parts.length!==rows.length||rows.some(r=>{
+    const q=sourceJoint.parts.find(q=>
+     q.hlrClass===r.hlrClass&&
+     q.wholeSolidGeneratedHLREdgeOrdinal===r.wholeSolidGeneratedHLREdgeOrdinal);
+    return !q||q.receivedNative2DPaperFrom.u!==r.receivedFrom.u||
+     q.receivedNative2DPaperFrom.v!==r.receivedFrom.v||
+     q.receivedNative2DPaperTo.u!==r.receivedTo.u||
+     q.receivedNative2DPaperTo.v!==r.receivedTo.v||
+     q.exactReceivedPaperBothEndpointsOnOriginalSourceLine!==
+      r.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine;
+   }))
+    throw new RangeError('same-run native 3D/2D source joint contradicts M5 paper endpoint and topology inventory');
+   const qualified=paperEndpointAudit.receivedExactTwoAxisQualifiedPaperCoverage;
+   // Both independent consumers must preserve any actual positive
+   // rational paper residual, including A-C tails and A-D drift.
+   if(sourceJoint.positiveExactReceived2DPaperGaps!==null&&
+      JSON.stringify(sourceJoint.positiveExactReceived2DPaperGaps)!==
+       JSON.stringify(qualified.exactTwoAxisQualifiedPaperCoverage
+        .exactBinary64PaperPositiveLengthUncoveredIntervals))
+    throw new RangeError('same-run source joint contradicts exact two-axis M5 paper gaps');
+  }
+  original3DToActual2DJoint=sourceJoint;
+ }
  // An M4 summary cannot be borrowed from another original source/view
  // or revision. Counts and the unsigned event-cut scope must agree.
  if(m4Depth!=null&&(
@@ -396,6 +436,10 @@ function auditC1NativeClosedPhysicalGap({
   originalNativeBRepToM0ExactPhysicalVertexEvidence:exactOriginal3DPhysicalSource,
   originalNativeBRepM0PhysicalVertexBijectionCertified:nativeOriginal3DVerticesExact,
   sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified:true,
+  sameRunOriginal3DNativeParameterAndActual2DPaperJoint:
+   original3DToActual2DJoint,
+  sameRunOriginal3DAnd2DJointIndependentlyRechecked:
+   original3DToActual2DJoint!==null&&paperEndpointAudit!==null,
   generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay:true,
   status:physicalComplete?
    'physical-original-3d-source-closed-ray-complete-paper-held':
