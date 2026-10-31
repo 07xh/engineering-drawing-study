@@ -65,7 +65,7 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  const base=fixture(),bad=edit=>{const f=fixture();edit(f);return()=>inspect(f);};
  assert.throws(()=>inspect({...base,revision:8}),/source-current/);
  assert.throws(bad(f=>{f.solution.singleOriginalV5Player=false;}),/source-current/);
- assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step/);
+ assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step|frame fractions/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].revision=8;}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings.push(
   {...f.solution.certifiedPhysicalLineBindings[0]});}),/signed source/);
@@ -76,6 +76,24 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
+});
+test('frame zero rejects future line, forged completed action, extra action and foreign timeline before paint',()=>{
+ const corrupt=[
+  f=>{f.frame.actionFractions.edge_2_action=1;},
+  f=>{f.frame.completedIds.push('edge_2_action');},
+  f=>{f.frame.actionFractions.future_answer=1;},
+  f=>{f.frame.elapsedMs=f.solution.timeline.totalMs;},
+  f=>{f.solution.timeline={...f.solution.timeline};}
+ ];
+ for(const mutate of corrupt){
+  const f=fixture();mutate(f);
+  assert.throws(()=>inspect(f),/canonical|source-current|frame fractions/);
+ }
+ const f=fixture();
+ f.solution.player.seekStep(2,20);
+ const legitimate=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(legitimate.actions[0].formalLineCertified,true);
+ assert.equal(legitimate.stepIndex,2);
 });
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(
