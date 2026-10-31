@@ -69,7 +69,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
  // The source-filtered 3D intervals are real OCCT curve parameters, not
  // inverses derived from rounded 2D paper endpoints.
  const scopedIntervalOwners=new Map();
- const native3DParameterCoverageByOriginalSource=[];
+ const native3DSourceParameterCoverageByOriginalSource=[];
  for(const [sourceId,scoped] of scopedById){
   const originalRange=originalCurves.get(sourceId),allRanges=[];
   for(const [klass,groupName] of [
@@ -99,7 +99,7 @@ function auditC1M5NativeGlobal3DSourceJoin({
    originalNativeParameterRange:originalRange,
    generatedNativeParameterRanges:allRanges
   });
-  native3DParameterCoverageByOriginalSource.push({
+  native3DSourceParameterCoverageByOriginalSource.push({
    sourceEdgeId:sourceId,
    originalNativeParameterRange:[...originalRange],
    positiveLengthUncoveredNativeParameterIntervals:
@@ -232,10 +232,10 @@ function auditC1M5NativeGlobal3DSourceJoin({
   wholeSolidAndScopedNative3DParameterIntervalBijectionVerified:true,
   native3DSourceParameterCoverageByOriginalSource,
   originalSourcesWithPositiveNative3DParameterGaps:
-   native3DParameterCoverageByOriginalSource.filter(x=>
+   native3DSourceParameterCoverageByOriginalSource.filter(x=>
     x.positiveLengthUncoveredNativeParameterIntervals.length>0).length,
   originalSourcesWithOverlappingNative3DParameters:
-   native3DParameterCoverageByOriginalSource.filter(x=>
+   native3DSourceParameterCoverageByOriginalSource.filter(x=>
     x.positiveLengthOverlappingNativeParameterIntervals.length>0).length,
   generated2DTopoDSHistoryCertified:false,
   globalOpaqueSceneContinuousOcclusionCertified:false,
