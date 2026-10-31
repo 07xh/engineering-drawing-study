@@ -108,3 +108,9 @@ test('overlapping positive original source intervals cannot inflate M5 review co
  const distinct=span({view:'H',originalSourceParameterRange:[.5-Number.EPSILON,1]});
  assert.equal(review(ledger([first,distinct])).total,2);
 });
+
+test('blank geometry and original edge identifiers never enter the unsigned proof ledger',()=>{
+ assert.throws(()=>review(ledger([span()],{sourceGeometryId:'  '})),/canonical unsigned/);
+ for(const sourceEdgeId of ['', '  '])
+  assert.throws(()=>review(ledger([span({sourceEdgeId})])),/invalid, stale/);
+});
