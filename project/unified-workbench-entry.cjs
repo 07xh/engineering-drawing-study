@@ -905,15 +905,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    const v5Focus=viewKind==='3D'&&activeV5SourceKeys.includes(item.sourceFeatureKey);
    const generated=c2Groups.get(item.objectId);
    const dashed=item.visibility==='undetermined'||item.viewportOnly;
-   const stroke=featureSelected?(monochrome?'#111':'#0866ef'):
-    v5Focus?(monochrome?'#222':'#00877d'):
+   // Preserve the existing orange whole-object SVG stroke; original
+   // precise source selection is applied by the CSS feature overlay. Only
+   // the active V5 3D source uses a new display-only tint.
+   const stroke=v5Focus?(monochrome?'#222':'#00877d'):
     selected?(monochrome?'#111':'#ef6730'):
     item.visibility==='undetermined'?(monochrome?'#666':'#6280a1'):
     monochrome?'#323232':item.objectId==='Fillet1'?'#147f65':'#2773a7';
    const attrs={...item.attrs,fill:item.kind==='circle'&&!item.fill?stroke:'none',
-    stroke:generated&&!selected&&!featureSelected&&!v5Focus?
+    stroke:generated&&!selected&&!v5Focus?
      (monochrome?'#777':'#9563bf'):stroke,
-    'stroke-width':featureSelected||v5Focus||selected?3.2:
+    'stroke-width':v5Focus||selected?3.2:
      generated?1.8:item.kind==='path'?3.1:1.8};
    if(item.fill==='none')attrs.fill='none';
    if(generated)attrs['stroke-dasharray']='2 6';
