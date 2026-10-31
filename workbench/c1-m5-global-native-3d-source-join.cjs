@@ -326,10 +326,15 @@ function auditC1M5NativeGlobal3DSourceJoin({
    // Fake depth-only edits leave paper unchanged but violate the original
    // BRep curve and must never borrow source provenance.
    const originalBRep=originalBRepById.get(row.originalPhysicalSourceEdgeId);
-   const native3DParameterReplay=originalBRep?.occtSourceCurveFirstPoint3D&&
-      originalBRep?.occtSourceCurveLastPoint3D?
+   // A real OCJS global generated 3D source record is NEVER allowed
+   // to become a paper-only witness by omitting its original curve
+   // endpoint samples. That would hide depth-only tampering.
+   if(!originalBRep?.occtSourceCurveFirstPoint3D||
+      !originalBRep.occtSourceCurveLastPoint3D)
+    throw new RangeError('real generated HLR 3D source has no original native BRep endpoint samples');
+   const native3DParameterReplay=
     replayGenerated3DEndpointsAgainstOriginalNativeCurve(
-     originalBRep,interval,actualFrom,actualTo):null;
+     originalBRep,interval,actualFrom,actualTo);
    const actualPaper={from:project(actualFrom)[view],to:project(actualTo)[view]};
    const global2D=cad[CLASS_COUNTS[klass]][view][ordinal];
    const verified=auditC1Global3D2DPaperPairEnvelope(actualPaper,global2D);
@@ -453,6 +458,83 @@ function auditC1M5NativeGlobal3DSourceJoin({
      throw error;
    }
   }
+  // ORIGINAL native-curve adjacency: two emitted 3D HLR pieces which
+  // share the same source parameter MUST agree in real XYZ at that
+  // parameter. The source curve has already been checked at this native
+  // parameter in the producer. This proves geometric endpoint continuity
+  // for the generated 3D pieces, NOT 2D TopoDS vertex IsSame or occlusion.
+  const native3DGeneratedSourceParameterSeams=[];
+  const pieces=parts.map(p=>({
+   part:p,pair:measured3D2DPairs.get(key(p.hlrClass,
+    p.wholeSolidGeneratedHLREdgeOrdinal))??null
+  })).sort((a,b)=>
+   a.part.originalNative3DSourceParameterInterval[0]-
+    b.part.originalNative3DSourceParameterInterval[0]||
+   a.part.originalNative3DSourceParameterInterval[1]-
+    b.part.originalNative3DSourceParameterInterval[1]);
+  for(let i=1;i<pieces.length;i++){
+   const previous=pieces[i-1],next=pieces[i],
+    common=previous.part.originalNative3DSourceParameterInterval[1];
+   if(common!==next.part.originalNative3DSourceParameterInterval[0])
+    continue;
+   const a=previous.pair,b=next.pair;
+   if(!measured3DInventory||!a||!b){
+    native3DGeneratedSourceParameterSeams.push({
+     nativeOriginalParameter:common,
+     realGenerated3DCurveEndpointXYZEqualityProven:false,
+     actualGenerated2DPaperJunctionCertified:false,
+     generated2DTopoDSIsSameCertified:false,
+     globalContinuousVisibilityCertified:false,signedV5Action:false
+    });
+    continue;
+   }
+   const left=a.nativeGenerated3DTo,right=b.nativeGenerated3DFrom;
+   if(!['x','y','z'].every(axis=>left[axis]===right[axis]))
+    throw new RangeError('adjacent real native generated 3D HLR source pieces have different XYZ at one original parameter');
+   const endPaper=pair=>{
+    const d=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
+    const direct=d(pair.projectedGenerated3DPaperFrom,
+      pair.receivedGenerated2DPaperFrom)+
+     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperTo);
+    const reverse=d(pair.projectedGenerated3DPaperFrom,
+      pair.receivedGenerated2DPaperTo)+
+     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperFrom);
+    return direct<reverse?pair.receivedGenerated2DPaperTo:
+     reverse<direct?pair.receivedGenerated2DPaperFrom:null;
+   };
+   const startPaper=pair=>{
+    const d=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
+    const direct=d(pair.projectedGenerated3DPaperFrom,
+      pair.receivedGenerated2DPaperFrom)+
+     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperTo);
+    const reverse=d(pair.projectedGenerated3DPaperFrom,
+      pair.receivedGenerated2DPaperTo)+
+     d(pair.projectedGenerated3DPaperTo,pair.receivedGenerated2DPaperFrom);
+    return direct<reverse?pair.receivedGenerated2DPaperFrom:
+     reverse<direct?pair.receivedGenerated2DPaperTo:null;
+   };
+   const lp=endPaper(a),rp=startPaper(b);
+   native3DGeneratedSourceParameterSeams.push({
+    nativeOriginalParameter:common,
+    previousHLRClass:previous.part.hlrClass,
+    previousGeneratedGlobalOrdinal:
+     previous.part.wholeSolidGeneratedHLREdgeOrdinal,
+    nextHLRClass:next.part.hlrClass,
+    nextGeneratedGlobalOrdinal:
+     next.part.wholeSolidGeneratedHLREdgeOrdinal,
+    realGenerated3DCurveEndpointXYZEqualityProven:true,
+    actualSharedNative3DPoint:{...left},
+    nativeGenerated3DPaperPoint:{...project(left)[view]},
+    receivedGenerated2DPaperEndpointOrientationUnambiguous:
+     lp!==null&&rp!==null,
+    actualReceivedGenerated2DPaperEndpointExactlyEqual:
+     lp!==null&&rp!==null&&lp.u===rp.u&&lp.v===rp.v,
+    native3DGeometricConnectionIsNotGenerated2DTopoDSJunction:true,
+    generated2DTopoDSIsSameCertified:false,
+    globalContinuousVisibilityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   });
+  }
   const nativeCoverage=native3DSourceParameterCoverageByOriginalSource
    .find(x=>x.sourceEdgeId===sourceId);
   if(!nativeCoverage)
@@ -465,6 +547,14 @@ function auditC1M5NativeGlobal3DSourceJoin({
    originalPhysical3DEndpointsVerifiedAgainstNativeBRep:true,
    exactNative3DParameterCoverageCompleteOnce:native3DComplete,
    exactReceived2DTwoAxisPaperCoverageComplete:paperComplete,
+   actualNativeGenerated3DSourceParameterSeams:
+    native3DGeneratedSourceParameterSeams,
+   actualNative3DGeometricSeamsReplayed:
+    native3DGeneratedSourceParameterSeams.filter(s=>
+     s.realGenerated3DCurveEndpointXYZEqualityProven).length,
+   actualReceived2DPaperSeamsExactlyJoined:
+    native3DGeneratedSourceParameterSeams.filter(s=>
+     s.actualReceivedGenerated2DPaperEndpointExactlyEqual===true).length,
    native3DProjectedSourcePaperCoverageReplayed:measured3DTwoAxis!==null,
    native3DProjectedSourcePaperTwoAxisCoverageComplete:
     measured3DTwoAxis?.strictReceivedTwoAxisPaperCoverageComplete??false,
