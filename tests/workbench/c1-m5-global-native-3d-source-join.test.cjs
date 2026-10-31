@@ -29,6 +29,28 @@ function setup(){
    }
   }}
  };
+ // Real-source-shaped independent input BRep and filtered 3D class
+ // inventories, not a fabricated "already corroborated" summary flag.
+ const originals=cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows;
+ cad.originalBRepSourceEdges=originals.map(row=>({
+  sourceEdgeId:row.originalPhysicalSourceEdgeId,occtSourceCurveType:'line',
+  occtSourceCurveParameterRange:[...row.originalNativeCurveParameterRange],
+  originalOCCTBRepVertexXYZMatched:true,
+  occtSourceCurve3DEndpointsAndMidpointVerified:true
+ }));
+ cad.nativeSourceScopedSharpOutputByView.V.rows=originals.map(row=>({
+  originalPhysicalSourceEdgeId:row.originalPhysicalSourceEdgeId,
+  visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+   native3DGeneratedCurveIntervals:[]},
+  hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+   native3DGeneratedCurveIntervals:[{
+    nativeSourceFilterOriginalEdgeId:row.originalPhysicalSourceEdgeId,
+    native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+    originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false,
+    nativeOriginalCurveParameterRange:[...row.originalNativeCurveParameterRange]
+   }]}
+ }));
  return {geometry,cad,view:'V',sourceEdgeId:'g::A|B',
   generatedClaims:[{hlrClass:'hidden-sharp',wholeSolidGeneratedHLREdgeOrdinal:2}]};
 }
@@ -73,5 +95,45 @@ test('reject forged global generated 3D ownership, ordinal gaps, stale proof and
  for(const modify of modifications){
   const x=setup();modify(x);
   assert.throws(()=>audit(x),/global|source|duplicate|native|incomplete|unsigned|ordinal|invalid|contract/i);
+ }
+});
+
+test('native global source attribution replays ORIGINAL BRep bounds and exact filtered 3D HLR class intervals',()=>{
+ const x=setup(),r=audit(x);
+ assert.equal(r.sameRunOriginalBRepAndScoped3DParameterInventoryRechecked,true);
+ assert.equal(r.claims[0].sameRunOriginalBRepCurveBoundsAndSourceFilteredNative3DIntervalRechecked,true);
+ assert.equal(r.claims[0].generated2DTopoDSHistoryCertified,false);
+ // A genuine subspan is allowed only when it is present in the actual
+ // original source filtered 3D class inventory and stays within BRep.
+ const src=x.cad.nativeSourceScopedSharpOutputByView.V;
+ const raw=src.nativeGlobal3DOriginalSourceEvidence.rows[2];
+ raw.originalNativeCurveParameterRange=[1,12];
+ src.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]
+  .nativeOriginalCurveParameterRange=[1,12];
+ const sub=audit(x);
+ assert.deepEqual(sub.claims[0].originalNativeCurveParameterRange,[1,12]);
+ assert.equal(sub.officialV5Authorized,false);
+});
+test('forged original BRep bounds, source identities and native 3D filtered class intervals cannot borrow valid global flags',()=>{
+ for(const mutate of [
+  x=>{delete x.cad.originalBRepSourceEdges;},
+  x=>{x.cad.originalBRepSourceEdges.pop();},
+  x=>{x.cad.originalBRepSourceEdges[2].sourceEdgeId='g::A|C';},
+  x=>{x.cad.originalBRepSourceEdges[2].occtSourceCurveParameterRange=[0,10];},
+  x=>{x.cad.originalBRepSourceEdges[2].occtSourceCurveType='circle';},
+  x=>{x.cad.originalBRepSourceEdges[2].originalOCCTBRepVertexXYZMatched=false;},
+  x=>{delete x.cad.nativeSourceScopedSharpOutputByView.V.rows;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows.pop();},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].originalPhysicalSourceEdgeId='g::A|C';},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.nativeSourceFilteredOriginalTopoDSEdge=false;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange=[0,11];},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals[0].nativeSourceFilterOriginalEdgeId='g::A|C';},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals[0].native3DCurveExactlySameAsOriginalAtThreeParameters=false;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals.push(
+    structuredClone(x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]));},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[2].hidden3D.native3DGeneratedCurveIntervals=[];}
+ ]){
+  const x=setup();mutate(x);
+  assert.throws(()=>audit(x),/original|native|source|invalid|interval|scoped|global|curve|incomplete|class/i);
  }
 });
