@@ -12,6 +12,8 @@ const {validateGivenPacket,reconstructC1FromDxfGiven,
  require('../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');
 const {project,toSheet,VIEWS}=require('../core/projection/conventions.js');
 const Motion=require('../workbench/teaching-motion-v5.js');
+const {inspectC1CanonicalV5Step}=
+ require('../workbench/c1-canonical-v5-step-evidence.cjs');
 const {buildC1DxfGivenFirstPaper}=
  require('../workbench/c1-dxf-given-first-paper.cjs');
 const {listGivenSourceProjectionIndices,stringifyReviewedSourcePairs,
@@ -37,6 +39,14 @@ function halt(){
  playing=false;
  if(current?.solution?.player)current.solution.player.pause(performance.now());
 }
+function resetStepInspector(){
+ $('v5StepJump').replaceChildren();
+ $('v5StepJump').disabled=true;
+ $('v5StepTitle').textContent='原题条件未审核';
+ $('v5StepExplanation').textContent='当前版本无真实 ConstructionStep，不能展示推测作图。';
+ $('v5StepActions').replaceChildren();
+ $('v5StepProof').textContent='未得到当前版本已证的来源和线型；没有正式 V5 动作可签发。';
+}
 function invalidateDerived(){
  halt();revision++;
  given=null;candidate=null;current=null;
@@ -44,6 +54,7 @@ function invalidateDerived(){
  $('reviewCheck').checked=false;$('reviewCheck').disabled=true;
  $('compile').disabled=true;
  $('candidate').textContent='原始投影点对应关系尚未独立确认。';
+ resetStepInspector();
  $('sheetPreview').replaceChildren();
  $('showCandidate').disabled=true;
  $('showGiven').disabled=!rawGiven;
@@ -150,6 +161,64 @@ function renderCandidate(src,transform){
  $('paperMode').textContent='你正在主动检查未认证三维候选：全部灰色虚线只是几何草稿，'+
   '不是 V5 动作、正式实虚线或教材答案。点击“原题已知视图”恢复空白待补视图。';
 }
+// Never invent a teaching sentence: this is a READ-ONLY projection of
+// the existing same-revision ConstructionStep DAG, M5 bindings and V5 frame.
+function renderStepInspector(frame){
+ const currentStep=inspectC1CanonicalV5Step({
+  solution:current.solution,revision,frame
+ });
+ const select=$('v5StepJump');
+ if(select.options.length!==currentStep.totalSteps||
+    select.dataset.revision!==String(revision)){
+  select.replaceChildren();
+  for(const item of currentStep.options){
+   const option=document.createElement('option');
+   option.value=String(item.index);
+   option.textContent=(item.index+1)+' / '+currentStep.totalSteps+' · '+item.title;
+   select.append(option);
+  }
+  select.dataset.revision=String(revision);
+ }
+ select.disabled=false;
+ select.value=String(currentStep.stepIndex);
+ $('v5StepTitle').textContent='第 '+currentStep.stepNumber+' / '+
+  currentStep.totalSteps+' 步 · '+currentStep.title;
+ $('v5StepExplanation').textContent=
+  currentStep.explanationVerifiedAvailable?currentStep.explanation:
+   '原 ConstructionStep 没有提供可复核的作图原因；这一步仍须补充真实数学推导，不能自动编造讲解。';
+ const list=$('v5StepActions');
+ list.replaceChildren();
+ for(const action of currentStep.actions){
+  const item=document.createElement('li');
+  item.dataset.proof=action.formalLineCertified?'signed':'unsigned';
+  item.dataset.actionId=action.id;
+  const kind=action.kind==='point'?'点':action.kind==='line'?'线':action.kind;
+  const state=action.status==='completed'?'已绘制':
+   action.status==='drawing'?'绘制中':'未开始';
+  const proof=action.formalLineCertified?
+   ' · 已签收 '+(action.officialLineStyle===
+     'gb-t-4457.4-continuous-wide-visible-outline'?'可见粗实线':'隐藏虚线')+
+   ' · '+action.view+' 来源 '+action.originalSourceEdgeId+
+   (action.sourceParameterRange?
+    ' 参数 ['+action.sourceParameterRange.join(', ')+']':''):
+   ' · 辅助/点动作（未签收工程线型）';
+  item.textContent=kind+' '+action.id+' · '+state+proof;
+  list.append(item);
+ }
+ if(!currentStep.actions.length){
+  const item=document.createElement('li');
+  item.dataset.proof='unsigned';
+  item.textContent='该步骤没有绘图动作，不能作为已完成的正式逐笔作图计数。';
+  list.append(item);
+ }
+ const deps=currentStep.dependsOn.length?
+  currentStep.dependsOn.join('、'):'无';
+ $('v5StepProof').textContent='来源：'+
+  (currentStep.registeredProofSourceSolver||'当前 DAG 未提供求解器来源')+
+  '；证明范围：'+(currentStep.proofScope||'未附完整范围说明')+
+  '；前置步骤：'+deps+
+  '。本面板只展示已有证据，不补签二维 HLR 历史、全场景遮挡或教材整题。';
+}
 function drawV5(){
  const paper=$('animation');paper.replaceChildren();
  if(!current?.solution?.player?.canRender(revision))return;
@@ -157,12 +226,20 @@ function drawV5(){
   preview=$('sheetPreview').querySelector('svg'),
   viewBox=preview?.getAttribute('viewBox')||'0 0 960 720';
  paper.setAttribute('viewBox',viewBox);
+ // Verify actual DAG + every signed action's source before rendering a line.
+ // Unbound contours are never allowed to borrow engineering line styles.
+ renderStepInspector(frame);
+ const signedBindings=new Map([
+  ...(actual.certifiedVisibleContourLineBindings||[]),
+  ...(actual.certifiedPhysicalLineBindings||[])
+ ].map(binding=>[binding.actionId,binding]));
  const layer=node('g',{'data-player':'one-existing-canonical-v5',
   'aria-label':'当前已审核的唯一 ConstructionIntent DAG V5'});
  for(const step of actual.steps)for(const a of step.actions){
   const fraction=frame.actionFractions[a.id]||0;
   if(fraction<=0||!['line','point'].includes(a.kind))continue;
-  const official=a.engineeringLineStyle,
+  const binding=signedBindings.get(a.id);
+  const official=binding?.standardLineStyle||a.engineeringLineStyle,
    hidden=official==='gb-t-4457.4-thin-dashed-hidden-edge',
    visible=official==='gb-t-4457.4-continuous-wide-visible-outline';
   const el=node(a.kind==='line'?'line':'circle',{
@@ -170,6 +247,7 @@ function drawV5(){
    stroke:hidden?'#1b334d':visible?'#092e53':'#3982be',
    'stroke-width':a.kind==='point'?2:hidden?1.25:visible?2.6:1,
    'data-action-id':a.id,
+   'data-original-source-id':binding?.sourceEdgeId||'not-signed',
    'data-official-line-style':hidden?'hidden':visible?'visible':'not-signed'
   });
   if(hidden)el.setAttribute('stroke-dasharray','6 3');
@@ -292,7 +370,7 @@ function loadSourcePreview(){
  setStatus('已载入本机原题参考图；原有数学和 V5 审核失效。请重新配对确认。');
 }
 async function compile(){
- halt();current=null;controls(false);
+ halt();current=null;controls(false);resetStepInspector();
  $('animation').replaceChildren();
  if(!given||!candidate||!$('reviewCheck').checked){
   setStatus('未明确人工核对凸体全部角点和面拓扑，禁止签发 V5。',true);return;
@@ -388,10 +466,19 @@ $('previewFile').addEventListener('change',loadSourcePreview);
 $('reviewCheck').addEventListener('change',()=>{
  halt();current=null;controls(false);
  $('animation').replaceChildren();
+ resetStepInspector();
  $('compile').disabled=!candidate||!$('reviewCheck').checked;
  $('v5Status').textContent='确认条件已改变，旧 V5 动作立即失效。';
 });
 $('compile').addEventListener('click',compile);
+$('v5StepJump').addEventListener('change',()=>{
+ if(!current?.solution?.player?.canRender(revision))return;
+ const index=Number($('v5StepJump').value);
+ if(!Number.isInteger(index)||index<0||index>=current.solution.steps.length)return;
+ halt();
+ current.solution.player.seekStep(index,performance.now());
+ drawV5();
+});
 $('play').addEventListener('click',play);
 $('pause').addEventListener('click',()=>{halt();drawV5();});
 $('prev').addEventListener('click',()=>seek(-1));
