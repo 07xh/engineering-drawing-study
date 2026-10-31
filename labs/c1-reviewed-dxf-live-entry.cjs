@@ -229,7 +229,13 @@ function drawV5(){
  // as a frame-zero background, even after the user confirms a candidate.
  const known=given&&Object.keys(given.views).sort();
  const expectedPoints=known?.reduce((n,v)=>n+given.views[v].length,0);
- if(!given||!rawGiven||!preview||
+ const sameOriginalGivenPoints=known?.length===2&&known.every(view=>
+  Array.isArray(rawGiven?.views?.[view])&&
+  rawGiven.views[view].length===given.views[view].length&&
+  given.views[view].every((point,i)=>
+   point.u===rawGiven.views[view][i].u&&
+   point.v===rawGiven.views[view][i].v));
+ if(!given||!rawGiven||!preview||!sameOriginalGivenPoints||
     rawGiven.sourceSha256!==given.sourceSha256||
     rawGiven.convertedDxfSha256!==given.convertedDxfSha256||
     preview.getAttribute('data-missing-view')!==given.missingView||
