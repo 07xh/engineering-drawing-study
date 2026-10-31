@@ -27,6 +27,10 @@ on:
       - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'
       - 'workbench/c1-global-native-hlr-original-3d-endpoint-ledger.cjs'
       - 'workbench/c1-m5-unresolved-global-source-obligations.cjs'
+      - 'workbench/c1-m5-global-native-3d-source-join.cjs'
+      - 'workbench/c1-m5-w-native-closed-source-gap-joint.cjs'
+      - 'tests/workbench/c1-m5-global-native-3d-source-join.test.cjs'
+      - 'tests/workbench/c1-m5-w-native-closed-source-gap-joint.test.cjs'
       - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
       - 'tests/workbench/c1-native-scoped-2d-3d-class-binding.test.cjs'
       - 'tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs'
@@ -117,6 +121,10 @@ on:
       - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'
       - 'workbench/c1-global-native-hlr-original-3d-endpoint-ledger.cjs'
       - 'workbench/c1-m5-unresolved-global-source-obligations.cjs'
+      - 'workbench/c1-m5-global-native-3d-source-join.cjs'
+      - 'workbench/c1-m5-w-native-closed-source-gap-joint.cjs'
+      - 'tests/workbench/c1-m5-global-native-3d-source-join.test.cjs'
+      - 'tests/workbench/c1-m5-w-native-closed-source-gap-joint.test.cjs'
       - 'tests/workbench/c1-native-source-scoped-m4-projection.test.cjs'
       - 'tests/workbench/c1-native-scoped-2d-3d-class-binding.test.cjs'
       - 'tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs'
@@ -256,6 +264,8 @@ jobs:
           node --test tests/workbench/c1-global-native-hlr-original-source-rebind.test.cjs
           node --test tests/workbench/c1-global-native-hlr-original-3d-endpoint-ledger.test.cjs
           node --test tests/workbench/c1-m5-unresolved-global-source-obligations.test.cjs
+          node --test tests/workbench/c1-m5-global-native-3d-source-join.test.cjs
+          node --test tests/workbench/c1-m5-w-native-closed-source-gap-joint.test.cjs
           node --test tests/workbench/c1-ocjs-original-brep-source-xyz.test.cjs
           node --test tests/workbench/c1-ocjs-original-curve-type.test.cjs
           node --test tests/workbench/c1-ocjs-hlr-output-curve-witness.test.cjs
