@@ -1,5 +1,6 @@
 'use strict';
 const TOOLS=[
+ ['finite-cylinder-intersection-live','圆柱相贯线','查看已确认圆柱的交点与辅助作图。','打开工具'],
  ['cylinder-cut-live','圆柱截切实验','圆柱截切及对应三视图逐笔绘制。','打开实验'],
  ['prism-cut-live','棱柱截切实验','棱柱截切与投影作图。','打开实验'],
  ['cone-cut-live','圆锥斜截','圆锥斜截与同纸三视图。','打开实验'],
@@ -22,8 +23,9 @@ const TOOLS=[
  ['constraints','几何约束','查看几何条件的关系。','打开工具'],
  ['analysis','约束分析','核对几何条件。','打开工具']
 ];
-const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
+const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
+<section id="ai" class="v8-legacy-anchor"></section>
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
  <div class="v7-head"><div><h1 id="v7-title">工程制图解题</h1>
  <p>导入题图或输入条件，核对后开始求解与逐步作图。</p></div>
@@ -59,6 +61,8 @@ function homeHTML(){return `
   </details>
  </section>
  <div class="v7-bar" aria-label="项目操作">
+  <span id="recent" class="v8-legacy-anchor"></span><span id="knowledge" class="v8-legacy-anchor"></span>
+  <p id="v7-storage-warning" class="v7-warning" role="status" hidden>本机存储不可用，当前编辑不会自动保存；请导出项目。</p>
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
   <button type="button" id="v7-open">打开项目</button><button type="button" id="v7-new">新建项目</button>
   <button type="button" id="v7-export">导出 .daiproject</button>
@@ -428,95 +432,6 @@ function homeHTML(){return `
 
  </div>
 </section>
-<section class="next-home-hero next-home-workbench next-home-v64 v8-project-strip" id="ai" aria-label="工程制图解题首页">
-  <details class="v8-optional-illustration"><summary>查看圆弧连接示例图纸</summary>
-<section class="next-home-drawing" aria-labelledby="next-home-drawing-title">
-  <div class="next-home-intro-block">
-   <div class="next-home-intro-copy">
-    <p class="next-home-kicker">DraftAI · 个人工程制图工作台</p>
-    <h1 id="next-home-drawing-title">工程制图自动解题</h1>
-    <p class="next-home-lead">确认条件，查看逐笔作图和完整工程图纸。</p>
-    <div class="next-home-hero-actions">
-     <a class="next-home-edit" href="#project-workbench">＋ 开始解题</a>
-     <a class="next-home-example" href="labs/circle-fillet-live.html">查看圆弧连接 →</a>
-    </div>
-    <p class="next-home-capability">当前提供部分题型的条件求解与动态作图；任意图片自动识别尚未开放。</p>
-    <div class="next-home-strengths" aria-label="核心功能">
-     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 20V5h14v15H5z M5 20 19 5"/></svg><strong>按题型解答</strong><span>圆弧、投影、截切</span></div>
-     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/></svg><strong>逐笔观看</strong><span>辅助线与作图步骤</span></div>
-     <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2 20 6v12l-8 4-8-4V6z M4 6l8 4 8-4 M12 10v12"/></svg><strong>投影对应</strong><span>同纸 V/H/W 视图</span></div>
-    </div>
-   </div>
-   <div class="next-home-intro-sheet">
-  <div class="next-home-paper next-home-fillet-paper" data-next-illustration data-construction-example="right-angle-fillet" aria-label="R40 圆弧连接几何构造示例，解析几何关系计算">
-   <div class="next-home-paper-top"><strong>圆弧连接 · R40</strong><span>直线相切构造 · 单位 mm</span></div>
-   <svg viewBox="260 106 525 387" role="img" preserveAspectRatio="xMidYMid meet" aria-label="放大的 R40 圆弧连接工程作图：水平线、竖直线、圆心 O、切点 T1 与 T2 及辅助构造线">
-    <rect x="266" y="111" width="513" height="377" fill="#fff" stroke="#dce6f3" stroke-width="1.5" rx="3"/>
-    <g stroke="#edf3fa" fill="none" stroke-width="1">
-     <path d="M280 440H762 M280 280H762"/>
-    </g>
-    <!-- One drawing-unit model: four SVG units correspond to 1 mm.
-         Fillet center (512,280), radius 160 SVG units = 40 mm.
-         Horizontal line y=440, vertical line x=672.
-         Tangency T1=(512,440), T2=(672,280). -->
-    <g data-construction-extensions="true" fill="none" stroke="#a3b4ca" stroke-width="1.6" stroke-dasharray="9 8">
-     <path d="M512 440H672 V280"/>
-     <path d="M512 155V475"/>
-     <path d="M385 280H710"/>
-    </g>
-    <g data-construction-guides="true" fill="none" stroke="#8db5e8" stroke-width="1.75" stroke-dasharray="7 6">
-     <path data-radius-to-t1="true" d="M512 280V440"/>
-     <path data-radius-to-t2="true" d="M512 280H672"/>
-    </g>
-    <g data-profile="true" fill="none" stroke="#1e304b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-     <path data-horizontal-line="true" d="M290 440H512"/>
-     <path data-vertical-line="true" d="M672 280V123"/>
-    </g>
-    <path data-fillet-radius-mm="40" data-px-per-mm="4" data-fillet-arc="true"
-       d="M512 440 A160 160 0 0 0 672 280" fill="none" stroke="#0871f5" stroke-width="5.5" stroke-linecap="round"/>
-    <g stroke="#0871f5" stroke-width="1.7" fill="#fff">
-     <circle data-fillet-center="true" cx="512" cy="280" r="5.5"/>
-     <circle data-tangent="t1" cx="512" cy="440" r="5.5"/>
-     <circle data-tangent="t2" cx="672" cy="280" r="5.5"/>
-    </g>
-    <g fill="#254f89" font-family="system-ui,sans-serif" font-size="19">
-     <text x="486" y="258">O</text>
-     <text x="465" y="474">T₁</text>
-     <text x="690" y="274">T₂</text>
-    </g>
-    <g data-radius-mark="true" fill="none" stroke="#577fae" stroke-width="2.2" stroke-linecap="round">
-     <path d="M512 280L625.137 393.137"/>
-     <path d="M617 388L630 399L622 382"/>
-    </g>
-    <rect x="567" y="325" width="77" height="34" rx="7" fill="#eaf3ff" stroke="#c9defa"/>
-    <text x="605" y="349" text-anchor="middle" fill="#0866ef" font-size="22" font-weight="650" font-family="system-ui,sans-serif">R40</text>
-    <g font-family="system-ui,sans-serif" font-size="15" fill="#667d99">
-     <text x="575" y="473">原直角顶点</text>
-    </g>
-    <g fill="none" stroke="#cfdaea" stroke-width="1.2">
-     <path d="M570 454L670 443"/>
-    </g>
-   </svg>
-   <div class="next-home-paper-caption">R40 圆弧连接 · 圆心与两个切点经过几何核算。非上传题目答案。</div>
-  </div>
-   </div>
-  </div>
- </section>
-  </details>
-<aside class="next-home-workflow" aria-label="最近任务与我的题目">
-  <section class="next-home-workflow-card next-home-continue" id="recent">
-   <div class="next-home-card-heading"><h2>继续解题</h2><a href="#project-workbench">进入工作台 →</a></div>
-   <div class="next-home-empty-illustration" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="7" y="6" width="34" height="36" rx="5"/><path d="M14 16h20M14 23h15M14 30h10"/><path d="M32 30l4 4-4 4"/></svg></div>
-   <p class="next-home-empty-title">暂无可恢复的解题记录</p>
-   <p class="next-home-empty-note">历史进度同步尚未接入，不会在这里显示虚构的“上次编辑”。</p>
-   <a class="next-home-continue-button" href="#project-workbench">返回解题工作台</a>
-  </section>
-  <section class="next-home-workflow-card next-home-library" id="knowledge">
-   <div class="next-home-card-heading"><h2>我的题目</h2><a href="#tools">选择题型 →</a></div>
-   <div class="next-home-library-empty"><span aria-hidden="true">▤</span><div><strong>本机项目</strong><p>已保存项目可从上方工作台打开。</p></div></div>
-  </section>
- </aside>
-</section>
 <section class="next-home-section next-home-categories" id="tools">
  <div class="next-section-heading"><h2>更多专项题型</h2><a href="#all-tools">查看全部工具 →</a></div>
  <div class="next-home-category-grid">
@@ -527,6 +442,6 @@ function homeHTML(){return `
  </div>
  <details class="next-home-more-tools" id="all-tools"><summary>展开全部题型及辅助工具</summary>${CATEGORIES.map(([category,slugs])=>`<section class="next-home-tool-group"><h3>${category}</h3><div class="next-tool-grid">${TOOLS.filter(([slug])=>slugs.includes(slug)).map(([slug,label,description,action])=>`<a class="next-tool-card" href="labs/${slug}.html"><h3>${label}</h3><p>${description}</p><span class="next-tool-action">${action} →</span></a>`).join("")}</div></section>`).join("")}</details>
 </section>
-<footer class="next-footer"><span>DraftAI · 工程制图自动解题与动态作图</span><a href="public-use.html">帮助与用户协议 →</a></footer>
+<footer class="next-footer"><a href="public-use.html">帮助</a></footer>
 `;}
 module.exports={homeHTML};

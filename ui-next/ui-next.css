@@ -1399,3 +1399,47 @@ body.ui-next .next-canvas-tools [data-ui-tip] {width:44px;min-width:44px;height:
  body.ui-next .next-playback #fullControls button {flex:1 1 40%;min-width:80px;white-space:nowrap}
  body.ui-next .next-playback #fullControls .rate-select {flex:1 1 100%;max-width:none}
 }
+
+/* Task navigation stays visible at every viewport without a separate rail. */
+body.ui-next{padding-left:0}
+body.ui-next .next-topbar{margin-left:0;width:100%;display:flex;align-items:center;gap:clamp(12px,3vw,32px);padding-inline:clamp(12px,2vw,28px)}
+body.ui-next .next-task-nav{display:flex;align-self:stretch;gap:4px}
+body.ui-next .next-task-nav a,body.ui-next .next-help-link{display:inline-flex;align-items:center;justify-content:center;min-width:56px;min-height:44px;padding:0 12px;text-decoration:none;color:#334155;font-weight:650}
+body.ui-next .next-task-nav a[aria-current=page]{color:#075be7;box-shadow:inset 0 -3px #075be7}
+body.ui-next .next-task-nav a:focus-visible,body.ui-next .next-help-link:focus-visible{outline:3px solid #1d4ed8;outline-offset:-3px}
+body.ui-next .next-help-link{margin-left:auto}
+@media(max-width:520px){body.ui-next .next-topbar{gap:4px}body.ui-next .next-task-nav a,body.ui-next .next-help-link{min-width:44px;padding:0 8px}}
+
+@media(min-width:1160px){body.ui-next{padding-left:0!important}body.ui-next .next-topbar{margin-left:0!important;width:100%!important}}
+
+/* Keep task and tool browsing distinct without destroying the live project. */
+body.ui-next.next-show-tools #project-workbench,
+body.ui-next.next-show-tools .v8-project-strip{display:none}
+body.ui-next .next-help-link[aria-current=page]{color:#075be7;box-shadow:inset 0 -3px #075be7}
+
+/* Dedicated paper view must override the wide three-column workspace. */
+body.ui-next.next-focus-canvas .next-workspace[data-next-side] {grid-template-columns:minmax(0,1fr)!important}
+body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-context {display:none!important}
+body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-canvas,
+body.ui-next.next-focus-canvas .next-workspace[data-next-side]>.next-playback {grid-column:1!important}
+
+/* Keep existing paper and panel controls reachable while editing on small screens. */
+@media(max-width:850px){
+ body.ui-next .next-workspace-title{position:sticky;top:68px;z-index:49;background:#f5f8fd;padding:4px 0}
+ body.ui-next .next-workspace-caption{display:none}
+ body.ui-next .next-context-panel{scroll-margin-top:190px}
+}
+@media(max-width:850px){
+ body.ui-next .next-context-panel :is(input,select,button,textarea,summary){scroll-margin-top:190px;scroll-margin-bottom:8px}
+}
+@media(max-width:850px) and (max-height:500px){
+ body.ui-next .next-workspace-title{position:static}
+}
+/* At narrow phone widths keep the controls on one row; each panel button also closes its own panel. */
+@media(max-width:384px){
+ body.ui-next .next-canvas-tools output,
+ body.ui-next .next-canvas-tools [data-next-close-panel]{display:none}
+}
+@media(max-width:850px) and (min-height:501px){
+ body.ui-next .next-workspace>.next-playback{top:120px}
+}

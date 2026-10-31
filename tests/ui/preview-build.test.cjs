@@ -8,10 +8,10 @@ test('preview output is isolated, application bundles match production and priva
  build([]);const before=fs.readFileSync(path.join(root,'dist/index.html'));
  build(['--ui-preview']);
  assert.deepEqual(fs.readFileSync(path.join(root,'dist/index.html')),before,'preview must not touch production output');
- assert.match(before.toString(),/next-home-hero/);
+ assert.match(before.toString(),/project-workbench/g);
  assert.doesNotMatch(before.toString(),/新版预览/);
  const html=fs.readFileSync(path.join(root,'dist-ui-next/index.html'),'utf8');
- assert.match(html,/next-home-hero/);assert.match(html,/ui-next\.js/);
+ assert.match(html,/project-workbench/g);assert.match(html,/ui-next\.js/);
  for(const bundle of ['auto-fillet-live','point-projection-live','circle-fillet-live'])
   assert.deepEqual(fs.readFileSync(path.join(root,'dist-ui-next/labs/'+bundle+'-bundle.js')),fs.readFileSync(path.join(root,'dist/labs/'+bundle+'-bundle.js')),'math bundle identical: '+bundle);
  for(const dir of ['dist','dist-ui-next'])for(const banned of ['knowledge','recognition','engines','core','tests','docs','ui-next','labs/local-native-ocr-ui.cjs','labs/local-raster-geometry-review-ui.cjs'])
@@ -30,7 +30,7 @@ test('preview output is isolated, application bundles match production and priva
 test('release candidate uses production directory and removes preview badge',()=>{
  build(['--ui-release']);
  const html=fs.readFileSync(path.join(root,'dist/index.html'),'utf8');
- assert.match(html,/next-home-hero/);
+ assert.match(html,/project-workbench/g);
  assert.doesNotMatch(html,/新版预览/);
  assert.equal(run(['scripts/check-static-site-dependencies.cjs']).status,0);
 });

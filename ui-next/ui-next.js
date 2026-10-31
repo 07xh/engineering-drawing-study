@@ -3,9 +3,11 @@
  'use strict';
  function syncNavigation(document,hash){
   if(!document.getElementById('project-workbench'))return;
-  const name=hash==='#recent'?'我的项目':(['#tools','#all-tools','#plane','#projection','#section','#composite'].includes(hash)?'题型工具':'工作台');
-  for(const link of document.querySelectorAll('.next-sidebar nav a,.next-menu nav a')){
-   if(link.getAttribute('aria-label')===name)link.setAttribute('aria-current','page');
+  const name=['#tools','#all-tools','#plane','#projection','#section','#composite'].includes(hash)?'工具':'解题';
+  document.body.classList.toggle('next-show-tools',name==='工具');
+  if(hash==='#all-tools')document.getElementById('all-tools')?.setAttribute('open','');
+  for(const link of document.querySelectorAll('[data-task-nav]')){
+   if(link.dataset.taskNav===name)link.setAttribute('aria-current','page');
    else link.removeAttribute('aria-current');
   }
  }
@@ -21,7 +23,9 @@
   const focusControl=document.querySelector('[data-next-focus]');
   const canvas=document.querySelector('.next-canvas');
   const workbench=document.querySelector('.next-workspace');
-  const wide=!!document.defaultView?.matchMedia?.('(min-width: 1160px)')?.matches;
+  const media=document.defaultView?.matchMedia?.('(min-width: 1160px)');
+  let wide=!!media?.matches;
+  let userClosed=false;
   const conditionPanel=document.querySelector('[data-next-panel="conditions"]');
   const stepPanel=document.querySelector('[data-next-panel="steps"]');
   const reviewPanel=document.querySelector('[data-next-panel="review"]');
@@ -71,6 +75,7 @@
    }
   }
   function showPanel(key,{exitFocus=true}={}){
+   userClosed=false;
    if(exitFocus)setCanvasFocus(false);
    if(wide&&workbench&&conditionPanel&&stepPanel){
     if(key==='conditions'){workbench.dataset.nextConditions='open';conditionPanel.hidden=false;}
@@ -87,9 +92,36 @@
    for(const tab of tabs){const selected=tab.dataset.nextPanelButton===key;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;}
    syncRailButtons();
   }
+  const resizePanels=event=>{
+   if(!workbench||!conditionPanel||!stepPanel||wide===event.matches)return;
+   let selected=tabs.find(tab=>tab.getAttribute('aria-selected')==='true')?.dataset.nextPanelButton||'conditions';
+   const active=document.activeElement?.closest?.('[data-next-panel]');
+   if(active&&!active.hidden)selected=active.dataset.nextPanel;
+   else if(wide&&document.querySelector('[data-next-panel="'+selected+'"]')?.hidden){
+    selected=!stepPanel.hidden?'steps':reviewPanel&&!reviewPanel.hidden?'review':'conditions';
+   }
+   const wasClosed=workbench.dataset.nextSide==='none'&&userClosed;
+   wide=event.matches;
+   if(wide&&wasClosed){
+    workbench.dataset.nextConditions='closed';workbench.dataset.nextSteps='closed';
+    workbench.dataset.nextSide='none';syncRailButtons();
+   }else if(wide){
+    workbench.dataset.nextSide='both';
+    workbench.dataset.nextConditions='open';workbench.dataset.nextSteps='open';
+    conditionPanel.hidden=false;stepPanel.hidden=selected==='review';
+    if(reviewPanel)reviewPanel.hidden=selected!=='review';
+    syncRailButtons();
+   }else if(wasClosed){
+    for(const panel of document.querySelectorAll('[data-next-panel]'))panel.hidden=panel.dataset.nextPanel!==selected;
+    workbench.dataset.nextSide='none';syncRailButtons();
+   }else showPanel(selected,{exitFocus:false});
+  };
+  if(media?.addEventListener)media.addEventListener('change',resizePanels);
+  else media?.addListener?.(resizePanels);
   syncRailButtons();
   for(const control of document.querySelectorAll('[data-next-open-panel]'))control.addEventListener('click',()=>{
    const key=control.dataset.nextOpenPanel;
+   userClosed=false;
    if(wide&&workbench){
     const field=key==='conditions'?'nextConditions':'nextSteps';
     const now=workbench.dataset[field]==='open';
@@ -99,13 +131,14 @@
      if(key==='conditions')conditionPanel.hidden=true;
      if(key==='steps'){stepPanel.hidden=true;if(reviewPanel)reviewPanel.hidden=true;}
      workbench.dataset.nextSide=workbench.dataset.nextConditions==='closed'&&workbench.dataset.nextSteps==='closed'?'none':'both';
-     syncRailButtons();
+     userClosed=workbench.dataset.nextSide==='none';syncRailButtons();
     }
    }else if(workbench?.dataset.nextSide===key){
-    workbench.dataset.nextSide='none';syncRailButtons();
+    userClosed=true;workbench.dataset.nextSide='none';syncRailButtons();
    }else showPanel(key);
   });
   for(const control of document.querySelectorAll('[data-next-close-panel]'))control.addEventListener('click',()=>{
+   userClosed=true;
    if(workbench)workbench.dataset.nextSide='none';
    if(wide&&workbench){workbench.dataset.nextConditions='closed';workbench.dataset.nextSteps='closed';}
    syncRailButtons();

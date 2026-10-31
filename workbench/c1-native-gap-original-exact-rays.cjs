@@ -300,7 +300,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth:0,
   canonicalM4CutSubspansWeakFrontWithClosedOriginalRay:0,
   canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource:0,
-  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0};
+  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0,
+  canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited:0};
  if(m4Available){
   for(const [key,m4] of m4BySource){
    // The source ID itself contains an original endpoint separator '|'.
@@ -371,9 +372,14 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      // Count only truly binary64-collapsed positive dyadic cuts as held.
      // A distinct received paper segment, however short, now proceeds
      // through exact original affine source depth ordering instead.
-     if(sliced.status===
-        'positive-original-dyadic-projection-binary64-collapsed-held')
+     if(sliced.originalDyadicProjectedIntervalPositive===true&&
+        sliced.renderedPaperSegmentNotCertified===true)
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
+     // Distinct positive micro-spans enter exact depth audit; not V5.
+     if(sliced.positiveSubpixelDisplaySourceNowPreciselyAudited===true&&
+        sliced.originalDyadicProjectedIntervalPositive===true&&
+        sliced.displayThresholdNeverDeterminesExactSourceDepthOrVisibility===true)
+      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited++;
      // This exact original-source endpoint proof is independently
      // recomputed from M0 convex halfspaces, not a caller-supplied HLR
      // endpoint or paper coincidence. A physical vertex depth tie plus
@@ -499,6 +505,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
       m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
       m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource||
+     m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited>
+      m4DepthCounts.canonicalM4CutSubspansExamined||
      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+

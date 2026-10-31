@@ -6,18 +6,9 @@ const fs=require('node:fs');
 const {enhanceAuto,enhanceTeaching,enhanceDrawingLab}=require('./workbench-layout.cjs');
 const {homeHTML}=require('./home.cjs');
 const NAV=[
- ['index.html','工作台'],
- ['index.html#recent','我的项目'],
- ['index.html#tools','题型工具'],
- ['public-use.html','帮助']
+ ['index.html#project-workbench','解题'],
+ ['index.html#tools','工具']
 ];
-const NAV_ICONS={
- '工作台':'<path d="M4 5h16v14H4z M8 10l3 3 5-6"/>',
- '我的项目':'<path d="M7 3h9l4 4v14H4V3z M8 12l3 3 5-6"/>',
- '题型工具':'<path d="M5 19V5h14v14z M5 19L19 5 M8 10l3 3"/>',
- '帮助':'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 1c0 2-3 2-3 4 M12 18h.01"/>'
-};
-function iconFor(label){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+NAV_ICONS[label]+'</svg>';}
 
 function relative(page,target){
  const [file,hash]=target.split('#');
@@ -31,8 +22,7 @@ function enhancePage(html,{page,preview=true}){
  document.body.classList.add('ui-next');
  const oldHeader=document.querySelector('header.site-topbar');
  oldHeader?.remove();
- const active=target=>page===target.split('#')[0]&&!target.includes('#');
- const links=NAV.map(([target,label])=>`<a class="next-rail-link" href="${relative(page,target)}" title="${label}" aria-label="${label}" data-ui-tip="${label}"${active(target)?' aria-current="page"':''}>${iconFor(label)}<span class="next-nav-label">${label}</span></a>`).join('');
+ const links=NAV.map(([target,label],i)=>`<a href="${page==='index.html'?'#'+target.split('#')[1]:relative(page,target)}" data-task-nav="${label}"${(page==='index.html'&&i===0)||(page.startsWith('labs/')&&i===1)?' aria-current="page"':''}>${label}</a>`).join('');
  const main=document.querySelector('main')||document.createElement('main');
  if(!main.parentNode){
   for(const child of [...document.body.childNodes])if(child.nodeType!==1||!['SCRIPT','STYLE'].includes(child.tagName))main.append(child);
@@ -48,8 +38,7 @@ function enhancePage(html,{page,preview=true}){
  if(['labs/cone-cut-live.html','labs/cylinder-cut-live.html','labs/prism-cut-live.html','labs/polygon-live.html'].includes(page))enhanceDrawingLab(document,main,{page});
  if(page==='public-use.html')main.classList.add('next-disclosure');
  document.body.prepend(fragment(document,`<a class="next-skip" href="#${main.id}">跳到主要内容</a>
- <header class="next-topbar"><a class="next-brand" href="${root}index.html"><span class="next-brand-emblem" aria-hidden="true">D</span> DraftAI<small>工程制图自动解题</small></a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<details class="next-menu"><summary>导航菜单</summary><nav aria-label="移动端导航">${links}</nav></details></header>
- <aside class="next-sidebar"><a class="next-start" href="${root}index.html#project-workbench" aria-label="开始解题" title="开始解题" data-ui-tip="开始解题"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v16 M4 12h16"/></svg><span class="next-nav-label">开始解题</span></a><nav aria-label="工作区导航">${links}</nav><div class="next-sidebar-note"><a href="${root}index.html">返回首页</a></div></aside>`));
+ <header class="next-topbar"><a class="next-brand" href="${page==='index.html'?'#project-workbench':root+'index.html#project-workbench'}"><span class="next-brand-emblem" aria-hidden="true">D</span> DraftAI</a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<nav class="next-task-nav" aria-label="主要导航">${links}</nav><a class="next-help-link" href="${root}public-use.html"${page==='public-use.html'?' aria-current="page"':''}>帮助</a></header>`));
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
