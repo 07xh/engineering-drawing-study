@@ -7,7 +7,7 @@ const pt=(x,y,z=0)=>({x,y,z});
 const good=()=>({
  view:'V',projectedEndpoints:[{u:2,v:3},{u:10,v:7}],
  parameterRange:[-2,6],curveKind:'line',
- curveSamples:[pt(2,-3),pt(4,-4),pt(6,-5),pt(8,-6),pt(10,-7)]
+ curveSamples:[pt(2,3),pt(4,4),pt(6,5),pt(8,6),pt(10,7)]
 });
 test('real GeomAbs_Line projected HLR samples bind the whole finite curve to V projection while remaining unsigned',()=>{
  const r=verify(good());

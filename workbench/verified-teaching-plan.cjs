@@ -28,9 +28,9 @@ function segment(from,to,space){
  const length=Math.hypot(from.x-to.x,from.y-to.y);
  // Coincident first-angle transfer guides are mathematical points, not
  // zero-length drawable lines. Preserve the original solver evidence.
- if(length<=1e-9&&space==='sheet-px')
+ if(length===0&&space==='sheet-px')
   return {kind:'point',coordinateSpace:space,at:copy(to)};
- demand(length>1e-9,'invalid construction segment');
+ demand(length>0,'invalid construction segment');
  return {kind:'line',coordinateSpace:space,from:copy(from),to:copy(to)};
 }
 function circle(center,radius){
@@ -99,13 +99,39 @@ function adaptPointProjection(input,{revision=0}={}){
     !finite(solved.maxResidual)||solved.maxResidual>1e-8)
   return blocked('point-projection',revision,'engines/projection/point-projection',
    solved.status,solved.reason);
- demand(Array.isArray(solved.steps)&&solved.steps.length===4,'unverified guide count');
+ const expectedKinds=solved.point.y===0?
+  ['VH','height-VW','depth-HM','depth-MW']:
+  ['VH','height-VW','depth-45','depth-HM','depth-MW'];
+ demand(Array.isArray(solved.steps)&&
+  JSON.stringify(solved.steps.map(s=>s.kind))===JSON.stringify(expectedKinds),
+  'unverified first-angle source-derived construction order');
+ const diagonal=solved.steps.find(s=>s.kind==='depth-45');
+ if(diagonal){
+  const origin=input.sheetTransform?.origin||{x:360,y:175};
+  const expectedKnown=Object.hasOwn(input.knownViews||{},'H')?'H':
+   Object.hasOwn(input.knownViews||{},'W')?'W':null;
+  const expectedTarget=expectedKnown==='H'?'W':expectedKnown==='W'?'H':null;
+  demand(diagonal.sourceModelAxis==='y'&&
+   diagonal.sourceModelValue===solved.point.y&&
+   diagonal.sourceKnownView===expectedKnown&&
+   diagonal.targetView===expectedTarget&&
+   diagonal.constructionOnly===true&&
+   diagonal.from.x===origin.x&&diagonal.from.y===origin.y&&
+   diagonal.to.x===solved.sheet.M.x&&diagonal.to.y===solved.sheet.M.y&&
+   diagonal.to.x===origin.x+solved.point.y*(input.sheetTransform?.scale??4)&&
+   diagonal.to.y===origin.y+solved.point.y*(input.sheetTransform?.scale??4)&&
+   diagonal.to.x!==origin.x,
+   'unverified or reversed first-angle 45-degree source transfer');
+ }
  const steps=solved.steps.map((s,i)=>{
   demand(s.source==='computed-first-angle-guides'&&s.unit==='px'&&
    typeof s.explanation==='string','unverified first-angle guide source');
   return {id:s.id,dependsOn:[...(s.dependsOn||[])],
    rule:s.kind,explanation:s.explanation,role:'auxiliary',
-   provenance:{solverResultId:solved.resultId,source:s.source},
+   provenance:{solverResultId:solved.resultId,source:s.source,
+    ...(s.kind==='depth-45'?{sourceModelAxis:s.sourceModelAxis,
+     sourceModelValue:s.sourceModelValue,sourceKnownView:s.sourceKnownView,
+     targetView:s.targetView,constructionOnly:true}:{})},
    actions:[{id:s.id+'_line',...segment(s.from,s.to,'sheet-px')}]};
  });
  return verifiedPlan('point-projection',revision,

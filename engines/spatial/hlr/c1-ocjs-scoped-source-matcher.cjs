@@ -28,6 +28,67 @@ const nativeScopedPaperSegmentsSame=(a,b)=>{
   paperSame(a.from,b.to,spanA,spanB)&&
   paperSame(a.to,b.from,spanA,spanB);
 };
+/**
+ * Necessary SAME-RUN global generated 3D->2D HLR paper corroboration.
+ * OCCT's two extraction paths can round coordinates differently, but a
+ * millimetre-scale tolerance cannot stand in for generated TopoDS history.
+ * An exact match is allowed at ANY positive binary64 span (including a
+ * subnormal one); otherwise every received endpoint must stay within ONE
+ * binary64 ULP at the source-paper coordinate scale, additionally capped by
+ * one-millionth of the actual 3D projected span. This does not certify
+ * original->generated edge identity or close even a one-ULP M5 gap.
+ */
+const ulpWords=new DataView(new ArrayBuffer(8));
+const oneUlpAtScale=x=>{
+ ulpWords.setFloat64(0,x,false);
+ const exponent=(ulpWords.getUint32(0,false)>>>20)&0x7ff;
+ return exponent<=1?Number.MIN_VALUE:2**(exponent-1023-52);
+};
+function auditC1Global3D2DPaperPairEnvelope(source3DPaper,generated2DPaper){
+ if(![source3DPaper,generated2DPaper].every(s=>
+     valid(s?.from)&&valid(s?.to)&&
+     (s.from.u!==s.to.u||s.from.v!==s.to.v)))
+  throw new TypeError('two noncollapsed finite native 3D/2D HLR paper edges required');
+ const same=(a,b)=>a.u===b.u&&a.v===b.v;
+ const direct=same(source3DPaper.from,generated2DPaper.from)&&
+  same(source3DPaper.to,generated2DPaper.to);
+ const reverse=same(source3DPaper.from,generated2DPaper.to)&&
+  same(source3DPaper.to,generated2DPaper.from);
+ if(direct||reverse)return Object.freeze({
+  compatible:true,exactBinary64Endpoints:true,
+  sourceScaleOneULPBoundedRoundingOnly:false,
+  originalGeneratedTopoDSHistoryCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const span=Math.hypot(
+  source3DPaper.to.u-source3DPaper.from.u,
+  source3DPaper.to.v-source3DPaper.from.v);
+ // Each axis gets its OWN original segment-scale ULP. Native OCCT
+ // pcurve extraction may round an endpoint at zero by one ULP of the
+ // SAME-axis source extent (e.g. V=23 -> V=-(2**-48) at the origin).
+ // An unrelated huge V offset must not enlarge the U budget.
+ // This is a necessary unsigned paper witness, NOT a proof that a
+ // positive gap is closed or that generated TopoDS history exists.
+ const cap=Number.isFinite(span)&&span>0?span*1e-6:0;
+ const axisBound=axis=>Math.min(oneUlpAtScale(Math.max(
+  Math.abs(source3DPaper.from[axis]),Math.abs(source3DPaper.to[axis]))),cap);
+ const uBudget=axisBound('u'),vBudget=axisBound('v');
+ const budget=Math.max(uBudget,vBudget);
+ const close=(a,b)=>Math.abs(a.u-b.u)<=uBudget&&
+  Math.abs(a.v-b.v)<=vBudget;
+ const compatible=budget>0&&(
+  close(source3DPaper.from,generated2DPaper.from)&&
+  close(source3DPaper.to,generated2DPaper.to)||
+  close(source3DPaper.from,generated2DPaper.to)&&
+  close(source3DPaper.to,generated2DPaper.from));
+ return Object.freeze({
+  compatible,exactBinary64Endpoints:false,
+  sourceScaleOneULPBoundedRoundingOnly:compatible,
+  absolutePaperEnvelopeMm:budget,
+  originalGeneratedTopoDSHistoryCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
 function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
@@ -57,7 +118,16 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
    throw new RangeError('asymmetric native scoped/global TopoDS IsSame');
   const samePaper=nativeScopedPaperSegmentsSame(seg,scopedSegment);
   if(samePaper)paper.push(i);
-  if(forward){if(!samePaper)throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');same.push(i);}
+  if(forward){
+   // A tolerant discovery match must NEVER certify a native TopoDS
+   // identity. The scoped and global output paths may round their paper
+   // coordinates independently, but at most by one source-scale ULP.
+   // This is necessary only: it cannot close a positive M5 paper gap.
+   const strictPaper=auditC1Global3D2DPaperPairEnvelope(seg,scopedSegment);
+   if(!samePaper||!strictPaper.compatible)
+    throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');
+   same.push(i);
+  }
   if(typeof scopedNativeEdge.IsPartner!=='function'||typeof native.IsPartner!=='function')
    partnerRelationSupported=false;
   else{
@@ -104,9 +174,22 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   const view=match?.view,hlrClass=match?.hlrClass;
   const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
   const ordinals=match?.globalDirectSameGeneratedTopoDSOrdinals;
+  const paperOrdinals=match?.globalPaperCandidateOrdinals;
+  // A claimed native IsSame ordinal must also be present in the same
+  // native run's measured paper inventory. The serialized identity ledger
+  // cannot invent an ordinal or borrow a different paper alias. This is
+  // still only generated-2D identity, NOT original BRep parameter history.
   if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
      typeof sourceEdgeId!=='string'||!sourceEdgeId||
      !Array.isArray(ordinals)||ordinals.length>1||
+     !Array.isArray(paperOrdinals)||paperOrdinals.length===0||
+     paperOrdinals.some(n=>!Number.isSafeInteger(n)||n<0)||
+     new Set(paperOrdinals).size!==paperOrdinals.length||
+     ordinals.some(n=>!paperOrdinals.includes(n))||
+     match.paperCoincidenceAloneIsNotOriginalTopoDSHistory!==true||
+     match.partnerCandidateDoesNotProveOriginalSourceHistory!==true||
+     match.engineeringLineStyle!=='undetermined'||
+     (ordinals.length===1&&match.nativePartnerOnlyCandidate===true)||
      match.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(ordinals.length===1)||
      match.fullOriginalSourceParameterCoverageProven!==false||
      match.globalContinuousOcclusionProven!==false||
@@ -138,6 +221,15 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
       Number.isSafeInteger(wholeSolidCounts[klass])&&
       wholeSolidCounts[klass]>=0&&wholeSolidCounts[klass]<=128))
    throw new TypeError('actual whole-solid visible/hidden native HLR counts required');
+  // The complete measured whole-solid inventory bounds EVERY scoped
+  // paper candidate, not just a native IsSame claim. Otherwise a paper-only
+  // witness can invent a nonexistent ordinal while the summary reports
+  // all real generated edges accounted for. This is an unsigned ledger
+  // consistency check, never a source-history or line-style certificate.
+  for(const match of matches)
+   if(match.globalPaperCandidateOrdinals.some(ordinal=>
+       ordinal>=wholeSolidCounts[match.hlrClass]))
+    throw new RangeError('scoped paper candidate claims nonexistent whole-solid native HLR edge');
   wholeSolidNativeGeneratedEdgeCount=
    wholeSolidCounts['visible-sharp']+wholeSolidCounts['hidden-sharp'];
   unclaimedWholeSolidGeneratedEdgeOrdinals=[];
@@ -169,4 +261,4 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   engineeringLineStyle:'undetermined',signedV5ActionCount:0});
 }
 module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame,
- auditC1ScopedHLRSourceIdentityConflicts};
+ auditC1Global3D2DPaperPairEnvelope,auditC1ScopedHLRSourceIdentityConflicts};

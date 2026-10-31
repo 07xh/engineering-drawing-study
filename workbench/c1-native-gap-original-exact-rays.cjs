@@ -22,6 +22,8 @@ const {exactCandidateIntervalCoverage}=
  require('./c1-original-source-interval-coverage.cjs');
 const {auditC1OriginalCoProjectedDepthOrder}=
  require('./c1-original-coproject-depth-order.cjs');
+const {auditC1NativeGapGeneratedVertexAdjacency}=
+ require('./c1-native-gap-generated-vertex-adjacency.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
@@ -219,6 +221,52 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      native3DOriginalRayClassConcordance.counts.projectedOriginalSourceViewsExamined)
    throw new RangeError('M4 native source projection does not cover every drawable M0 source');
  }
+ // Bind the SAME-RUN actual HLR algorithm's ORIGINAL EdgeStatus to
+ // each genuine M0 physical 3D source/view through the OCCT EdgeMap
+ // one-based source identity. This is independent original visibility
+ // classification, NOT generated 2D edge history or a paper gap fill.
+ const originalNativeHLRClassBySource=new Map();
+ const nativeIndexByView=cad.nativeHLRSourceHistoryAPISurfaceByView;
+ if(nativeIndexByView!==undefined){
+  const expectedSources=new Set(geometry.data.edges.map(edge=>
+   geometry.id+'::'+[...edge].sort().join('|')));
+  for(const view of ['V','H','W']){
+   const proof=nativeIndexByView?.[view],
+    ds=proof?.originalDataStructureIndex,
+    status=proof?.originalEdgeStatusAPI;
+   if(ds?.edgeMapSourceBijectionVerified!==true||
+      status?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      !Array.isArray(ds.indexedOriginalSources)||
+      !Array.isArray(status.nativeOriginalSourceEdgeStatusRows)||
+      ds.indexedOriginalSources.length!==expectedSources.size||
+      status.nativeOriginalSourceEdgeStatusRows.length!==expectedSources.size)
+    throw new RangeError('incomplete real original EdgeMap and native HLR EdgeStatus join');
+   const indices=new Map(ds.indexedOriginalSources.map(row=>
+    [row.originalPhysicalSourceEdgeId,row.hlrDataStructureOneBasedEdgeIndex]));
+   if(indices.size!==expectedSources.size)
+    throw new RangeError('duplicate original indexed native HLR sources');
+   for(const row of status.nativeOriginalSourceEdgeStatusRows){
+    const id=row.originalPhysicalSourceEdgeId,key=view+'|'+id;
+    if(!expectedSources.has(id)||row.view!==view||
+       originalNativeHLRClassBySource.has(key)||
+       indices.get(id)!==row.nativeHLROriginalEdgeMapIndex||
+       !Number.isSafeInteger(row.nativeOriginalVisiblePartCount)||
+       row.nativeOriginalVisiblePartCount<0||
+       row.originalSourceClass!==(row.originalEdgeStatusAllVisible?
+        'all-visible':row.originalEdgeStatusAllHidden?
+         'all-hidden':'mixed')||
+       row.originalEdgeStatusAllVisible===true&&row.originalEdgeStatusAllHidden===true||
+       row.sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit!==true||
+       row.generated2DHLREdgeToOriginalSourceHistoryCertified!==false||
+       row.globalContinuousM5OcclusionCertified!==false||
+       row.engineeringLineStyle!=='undetermined'||row.signedV5Action!==false)
+     throw new RangeError('contradicted real original HLR indexed visibility source');
+    originalNativeHLRClassBySource.set(key,row);
+   }
+  }
+  if(originalNativeHLRClassBySource.size!==expectedSources.size*3)
+   throw new RangeError('incomplete V/H/W original native HLR indexed source classes');
+ }
  const bySource=new Map();
  for(const ray of rays.rows){
   const key=ray.view+'|'+ray.originalPhysicalSourceEdgeId;
@@ -247,6 +295,11 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering:0,
   canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth:0,
+  canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth:0,
+  canonicalM4CutSubspansWeakFrontWithClosedOriginalRay:0,
+  canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld:0,
   canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited:0};
  if(m4Available){
@@ -316,21 +369,50 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       if(sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true)
        m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering++;
      }
-     // Count ONLY a mathematically positive original projection whose
-     // received binary64 paper endpoints collapse. Exact positive tiny
-     // subspans that remain distinct now enter depth proof and MUST NOT
-     // be counted as held merely because they are below display scale.
-     // Use the proof flags rather than a renamed diagnostic status string.
+     // Count only truly binary64-collapsed positive dyadic cuts as held.
+     // A distinct received paper segment, however short, now proceeds
+     // through exact original affine source depth ordering instead.
      if(sliced.originalDyadicProjectedIntervalPositive===true&&
         sliced.renderedPaperSegmentNotCertified===true)
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld++;
-     // A tiny but LITERALLY distinct generated M4 paper span no longer
-     // needs to be held by the old display-scale cutoff. Audit it exactly
-     // and retain its separate accounting without signing M5 or V5.
+     // Distinct positive micro-spans enter exact depth audit; not V5.
      if(sliced.positiveSubpixelDisplaySourceNowPreciselyAudited===true&&
         sliced.originalDyadicProjectedIntervalPositive===true&&
         sliced.displayThresholdNeverDeterminesExactSourceDepthOrVisibility===true)
       m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited++;
+     // This exact original-source endpoint proof is independently
+     // recomputed from M0 convex halfspaces, not a caller-supplied HLR
+     // endpoint or paper coincidence. A physical vertex depth tie plus
+     // a CLOSED clear ray permits weak frontmost source ordering on the
+     // entire original 3D cut. It still does NOT establish generated
+     // 2D HLR lineage, paper endpoint closure or formal M5/V5.
+     const weakFrontWithClosedOriginalRay=
+      sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true&&
+      segment.native3DHLRClass==='visible-sharp'&&
+      nativePartitionFor(view,sourceEdgeId)?.fullNative3DClassConcordanceOnly===true&&
+      originalRay.fullProjectedVisibleSourceLineProven===true&&
+      originalRay.originalPhysicalCreaseProven===true&&
+      originalRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
+      originalRay.exactlyBothOriginalVertexForwardRaysClear===true;
+     // A weak-BEHIND shared-vertex tie proves source suppression only
+     // when the front peer has an independently certified CLOSED ray,
+     // physical M0 crease and same-run native 3D class/partition.
+     // It cannot certify the hidden candidate's endpoint, generated HLR
+     // ownership, global opaque faces, engineering line style or V5.
+     const weakBehindWithClosedClearFrontPeer=
+      sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true&&
+      sliced.comparisons.some(row=>{
+       if(row.status!=='candidate-strictly-behind-open-at-original-3d-vertex'||
+          row.exactClosedWeakDepthOrderOnlyTiesAtOriginalPhysicalVertex!==true||
+          row.competingSourceHasCertifiedClearForwardRay!==true)
+        return false;
+       const peerRay=bySource.get(view+'|'+row.peerSourceEdgeId);
+       return peerRay?.fullProjectedVisibleSourceLineProven===true&&
+        peerRay.originalPhysicalCreaseProven===true&&
+        peerRay.completeSourceOriginal3DRayClosedIntervalClear===true&&
+        peerRay.exactlyBothOriginalVertexForwardRaysClear===true&&
+        nativePartitionFor(view,row.peerSourceEdgeId)?.fullNative3DClassConcordanceOnly===true;
+      });
      cutRows.push({
       originalM4SourceCutParameterRange:[from,to],
       originalM4CutFromCurrentReviewedEventGraph:true,
@@ -340,15 +422,40 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        sliced.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true,
       hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly:
        sliced.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true,
+      weakClosedOriginalSourceDepthFrontWithOnlyPhysicalVertexTies:
+       sliced.exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true,
+      weakClosedOriginalSourceDepthBehindClearOpenRayPeerWithPhysicalVertexTie:
+       sliced.exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true,
+      weakFrontWithIndependentOriginalClosedEndpointRay:
+       weakFrontWithClosedOriginalRay,
+      weakBehindWithIndependentClosedClearFrontSource:
+       weakBehindWithClosedClearFrontPeer,
+      weakBehindSourceSuppressionDoesNotCertifyHiddenEndpointOrV5:true,
+      weakFrontWithOriginalClosedRayCannotCertifyGeneratedHLROrV5:true,
+      weakClosedDepthDoesNotAuthorizeClosedEndpointRayOrV5:true,
       openIntervalSourceOrderCannotCertifyClosedOriginalVertices:true,
       engineeringLineStyle:'undetermined',signedV5Action:false
      });
      cursor=to;
      m4DepthCounts.canonicalM4CutSubspansExamined++;
+     const weakFront=sliced.
+      exactClosedWeakSourceDepthFrontmostOnlyAtTruePhysicalVertexTies===true;
+     const weakBehind=sliced.
+      exactClosedWeakSourceDepthBehindOpenRayClearPeerAtPhysicalVertexTie===true;
+     if(weakFront||weakBehind)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder++;
+     if(weakFront)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth++;
+     if(weakBehind)
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth++;
      if(sliced.wholeIntervalFrontmostCertified)
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost++;
+     else if(weakFrontWithClosedOriginalRay)
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay++;
      else if(sliced.visibleSourceCoversEntireLine)
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource++;
+     else if(weakBehindWithClosedClearFrontPeer)
+      m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource++;
      else m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology++;
     }
     cutPartitionComplete=cutPartitionComplete&&cutRows.length>0&&
@@ -388,17 +495,32 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
       m4DepthCounts.sourceIntervalsHeldForDepthOrProjectedSplits||
      m4DepthCounts.canonicalM4CutSubspansExamined!==
       m4DepthCounts.canonicalM4CutSubspansStrictlyFrontmost+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+      m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource+
       m4DepthCounts.canonicalM4CutSubspansSuppressedBehindVerifiedFrontSource+
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSourceIntervalsExamined!==
       m4DepthCounts.sourceIntervalsExamined||
      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering>
-      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+      m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource||
+     m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsPreciselyAudited>
+      m4DepthCounts.canonicalM4CutSubspansExamined||
      m4DepthCounts.canonicalM4CutPositiveOriginal3DSubpixelProjectionIntervalsHeld>
       m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology||
      m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenFrontSourceOrdering+
       m4DepthCounts.canonicalM4CutSubspansWithRealVertexOpenHiddenSourceOrdering>
-      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering)
+      m4DepthCounts.canonicalM4CutSubspansWithStrictOriginal3DVertexOpenOrdering||
+     m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder>
+      m4DepthCounts.canonicalM4CutSubspansHeldForDepthOrTopology+
+      m4DepthCounts.canonicalM4CutSubspansWeakFrontWithClosedOriginalRay+
+      m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource||
+     m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexFrontDepth+
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth!==
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexSourceDepthOrder||
+     m4DepthCounts.canonicalM4CutSubspansWeakBehindVerifiedClosedFrontSource>
+      m4DepthCounts.canonicalM4CutSubspansWithWeakClosedPhysicalVertexBehindDepth)
     throw new RangeError('source-specific M4/M5 original 3D projected depth coverage incomplete');
  }
  // Bind only the already independently computed, revision-matched
@@ -474,6 +596,15 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
        row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge&&
         row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge)
      throw new RangeError('whole-solid HLR generated ordinal/source/class claim contradicts original native 3D');
+    if(row.exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified===true&&
+       (row.directNativeScopedGeneratedEdgeIsSameSource!==originalSource||
+        row.nativeOriginalHLREdgeMapSourceIndex===null||
+        !Number.isSafeInteger(row.nativeOriginalHLREdgeMapSourceIndex)||
+        row.nativeOriginalHLREdgeMapSourceIndex<1||
+        !['all-visible','all-hidden','mixed'].includes(
+         row.nativeOriginalHLREdgeMapSourceStatusClass)||
+        !row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge))
+     throw new RangeError('unsigned M5 native generated causal source proof contradicts original EdgeStatus');
     // A genuinely unique original-source-filtered paper alias is not
     // enough. Only EXACT global/scoped binary64 paper agreement, plus
     // independently checked native 3D source class, reaches the M5
@@ -487,6 +618,13 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      view,sourceEdgeId:originalSource,hlrClass:row.hlrClass,
      wholeSolidGeneratedHLREdgeOrdinal:row.wholeSolidGeneratedHLREdgeOrdinal,
      sourceScopedWholeGeneratedBinary64PaperExactlyMatched:true,
+     originalHLRSourceFilterToGenerated2DCausalNativeIsSameVerified:
+      row.exactNativeOriginalSourceFilterToGlobalGenerated2DCausalityCertified===true,
+     originalHLRIndexedSourceStatusClass:
+      row.nativeOriginalHLREdgeMapSourceStatusClass??null,
+     originalHLRIndexedSourceStatusOneBasedIndex:
+      row.nativeOriginalHLREdgeMapSourceIndex??null,
+     sourceFilterNativeGeneratedIdentityDoesNotCertifyOriginalParameterHistory:true,
      originalNative3DClassExactlyBacksEntireGeneratedLine:
       row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge,
      originalNative3DClassWithinFullSourceOneULPEnvelopeOnly:
@@ -909,6 +1047,9 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   const nativeM4=m4BySource.get(key)??null;
   missingOriginalM0SourceViewRows.push({
    view:missing.view,sourceEdgeId:missing.sourceEdgeId,
+   independentOriginalNativeHLREdgeStatusSource:
+    originalNativeHLRClassBySource.get(key)??null,
+   nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory:true,
    nativeOriginal3DM4SourceProjectionPresent:nativeM4!==null,
    nativeOriginal3DM4ProjectionWholeSourceCoverage:
     nativeM4?.M4OriginalUnitIntervalCandidateCoverageComplete??null,
@@ -1066,6 +1207,25 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
      joint.fullOriginalSourceHistoryCertified!==false||
      joint.globalContinuousVisibilityCertified!==false)
    throw new RangeError('native gap lacks independent original OCCT curve evidence');
+  // Only the same-run true native OCJS source-scoped M4 pathway may
+  // supply a generated-paper witness. Synthetic CAD and unavailable
+  // source-filtered output must remain null, not fabricated coverage.
+  // This exact rational paper decomposition does NOT close source gaps
+  // without generated TopoDS source history and global M5 occlusion.
+  const exactNativePaperGap=m4Available&&
+   Array.isArray(cad.views?.[entry.view])&&
+   Array.isArray(cad.hiddenSharpViews?.[entry.view])?
+   auditC1NativeGapGeneratedVertexAdjacency({
+    geometry,view:entry.view,sourceEdgeId:entry.sourceEdgeId,
+    uncoveredIntervals:entry.positiveGaps,
+    visibleSegments:cad.views[entry.view],
+    hiddenSegments:cad.hiddenSharpViews[entry.view]
+   }):null;
+  if(exactNativePaperGap&&(
+     exactNativePaperGap.rows.length!==entry.positiveGaps.length||
+     exactNativePaperGap.generatedToOriginalTopoDSFullHistoryCertified!==false||
+     exactNativePaperGap.signedV5ActionCount!==0))
+   throw new RangeError('forged same-run native paper/source gap decomposition');
   for(const [gapOrdinal,range] of entry.positiveGaps.entries()){
    const originalCurve=joint.rows[gapOrdinal];
    if(originalCurve?.gapOrdinal!==gapOrdinal||
@@ -1106,6 +1266,14 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
    rows.push({
     view:entry.view,sourceEdgeId:entry.sourceEdgeId,
     originalSourceParameterGap:[...range],
+    independentOriginalNativeHLREdgeStatusSource:
+     originalNativeHLRClassBySource.get(entry.view+'|'+entry.sourceEdgeId)??null,
+    nativeOriginalEdgeStatusDoesNotCloseGenerated2DSourceHistory:true,
+    // Exact rational received HLR paper alone can shrink the PAPER
+    // diagnostic remainder but never close this original 3D M5 obligation.
+    sameRunExactCollinearGeneratedHLRPaperGapCandidate:
+     exactNativePaperGap?.rows[gapOrdinal]??null,
+    receivedPaperCandidateOnlyCannotCertifySourceHistory:true,
     original3DVertexIds:[...ray.originalVertexIds],
     independentOriginalOCCTCurveGapPositive:true,
     nativeOriginal3DM4GapSourceProjectionAvailable:nativeM4!==null,
@@ -1184,6 +1352,8 @@ function auditC1NativeGapOriginalExactRays({geometry,cad,m5Ledger,scopedConsumer
   wholeSolidOriginal3DJunctionsSourceViewMatches:
    globalOriginal3DJunctionsBySource.size,
   nativeOriginalM4Original3DDepthOrderRecomputed:m4Available,
+  realOriginalNativeHLRIndexedSourceViewClassesVerified:
+   originalNativeHLRClassBySource.size,
   allNoncollapsedOriginalM0SourcesRepresentedInM5:
    missingOriginalM0SourceViewRows.length===0,
   allNativeHLRSourceGapsClosed:false,

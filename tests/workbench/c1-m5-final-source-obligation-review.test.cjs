@@ -100,3 +100,37 @@ test('disjoint source pieces remain separately represented and never gain global
  assert.ok(result.rows.every(x=>x.formalLineStyle==='undetermined'&&
   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
 });
+
+test('overlapping positive original source intervals cannot inflate M5 review completeness',()=>{
+ const first=span({originalSourceParameterRange:[0,.5]});
+ const overlap=span({originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.throws(()=>review(ledger([first,overlap])),/overlapping original 3D source intervals/);
+ const distinct=span({view:'H',originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.equal(review(ledger([first,distinct])).total,2);
+});
+
+test('blank geometry and original edge identifiers never enter the unsigned proof ledger',()=>{
+ assert.throws(()=>review(ledger([span()],{sourceGeometryId:'  '})),/canonical unsigned/);
+ for(const sourceEdgeId of ['', '  '])
+  assert.throws(()=>review(ledger([span({sourceEdgeId})])),/invalid, stale/);
+});
+
+test('source IDs containing delimiters cannot collide with source interval keys',()=>{
+ const a=span({sourceEdgeId:'edge@0@1',originalSourceParameterRange:[0,1]});
+ const b=span({sourceEdgeId:'edge',originalSourceParameterRange:[0,1]});
+ assert.equal(review(ledger([a,b])).total,2);
+ const c=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[0,.5]});
+ const d=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[.5,1]});
+ assert.equal(review(ledger([c,d])).total,2);
+});
+
+test('audited view coverage is derived from actual rows, not a claimed V/H/W completion',()=>{
+ const result=review(ledger([
+  span({view:'W',sourceEdgeId:'G::A|B'}),
+  span({view:'V',sourceEdgeId:'G::A|B'})
+ ]));
+ assert.deepEqual(result.viewsRepresented,['V','W']);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.viewsRepresented));
+});

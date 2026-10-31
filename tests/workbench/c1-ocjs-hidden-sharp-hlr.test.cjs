@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {readRealOcjsSharpHLREdge:read}=
  require('../../engines/spatial/hlr/c1-ocjs-raw-hlr-edges.cjs');
-const paper3=(u,v,z=0)=>({x:u,y:-v,z});
+const paper3=(u,v,z=0)=>({x:u,y:v,z});
 function fakeNativeHLREdge({
  from=paper3(2,3),to=paper3(10,7),
  curveType='line',curveIs3D=false,interiorBump=0,

@@ -11,6 +11,8 @@
  */
 const {auditC1Native3DSourceScopedIntervals}=
  require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
+const {auditC1M5NativeGlobal3DSourceJoin}=
+ require('./c1-m5-global-native-3d-source-join.cjs');
 const {project}=require('../core/projection/conventions.js');
 const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
  require('./c1-exact-two-axis-generated-paper-coverage.cjs');
@@ -27,6 +29,13 @@ const freeze=x=>{
 const finiteRange=r=>Array.isArray(r)&&r.length===2&&
  r.every(Number.isFinite)&&r[1]>r[0];
 const same=(a,b)=>a?.[0]===b?.[0]&&a?.[1]===b?.[1];
+// Audit literal original TopoDS BRep XYZ, not only the producer's
+// tolerant nearest-original-edge flag. Swapped orientation is legitimate.
+const valid3D=p=>!!p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+const eq3D=(a,b)=>valid3D(a)&&valid3D(b)&&
+ ['x','y','z'].every(k=>a[k]===b[k]);
+const exact3DPair=(a,b,p,q)=>
+ (eq3D(a,p)&&eq3D(b,q))||(eq3D(a,q)&&eq3D(b,p));
 // The actual native HLR paper edge can be a PARTIAL source interval.
 // Pair both received endpoints to both physical source endpoints using
 // exact binary64 squared distance, not a single Math.hypot decision.
@@ -82,6 +91,30 @@ function auditC1NativeClosedPhysicalGap({
  if(curve.length!==1||scoped.length!==1)
   throw new RangeError('duplicated native original W BRep source');
  const original=curve[0],src=scoped[0],bounds=original.occtSourceCurveParameterRange;
+ const [m0A,m0B]=sources[0].map(id=>geometry.data.points?.[id]);
+ if(!valid3D(m0A)||!valid3D(m0B)||eq3D(m0A,m0B))
+  throw new RangeError('original M0 source has no distinct finite 3D endpoints');
+ const nativeOriginal3DVerticesExact=exact3DPair(
+  original.fromOCCT3D,original.toOCCT3D,m0A,m0B);
+ const curveSamplesPresent=valid3D(original.occtSourceCurveFirstPoint3D)&&
+  valid3D(original.occtSourceCurveLastPoint3D);
+ const nativeOriginal3DCurveEndpointsExact=curveSamplesPresent&&exact3DPair(
+  original.occtSourceCurveFirstPoint3D,
+  original.occtSourceCurveLastPoint3D,m0A,m0B);
+ // Actual BRepAdaptor endpoints may differ in received binary64. Report
+ // this separately: a rounded curve sample is NOT a TopoDS vertex identity.
+ const exactOriginal3DPhysicalSource={
+  sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
+  originalM0VertexIds:[...sources[0]],
+  nativeOriginalTopoDSVertexCoordinatesChecked:valid3D(original.fromOCCT3D)&&
+   valid3D(original.toOCCT3D),
+  exactNativeOriginal3DVertexToM0EndpointBijection:nativeOriginal3DVerticesExact,
+  nativeOriginalCurveSampleEndpointsChecked:curveSamplesPresent,
+  nativeOriginalCurveEndpointSamplesExactlyEqualM0:nativeOriginal3DCurveEndpointsExact,
+  rounded3DCurveSamplesCannotReplaceActualOriginalTopoDSVertexIdentity:true,
+  generated2DTopoDSEndpointHistoryCertified:false,
+  officialV5Authorized:false,signedV5Action:false
+ };
  if(!finiteRange(bounds)||original.occtSourceCurveType!=='line'||
     original.originalOCCTBRepVertexXYZMatched!==true||
     original.occtSourceCurve3DEndpointsAndMidpointVerified!==true||
@@ -131,6 +164,23 @@ function auditC1NativeClosedPhysicalGap({
     global3DSource.officialV5Authorized!==false||
     !Array.isArray(global3DSource.claims))
   throw new RangeError('W global native generated 3D HLR source revision mismatch');
+ // The caller's M5 source/ordinal summary is NOT a substitute for the
+ // actual same-run global 3D HLR source inventory. Re-execute the existing
+ // independent native-global-curve/source join with its real CAD inputs and
+ // EVERY original candidate ordinal, then require identical output. This
+ // prevents a copied or tampered 3D source/class/parameter witness from
+ // laundering a W or H paper gap into physical source proof.
+ const reconstructedGlobal3DSource=auditC1M5NativeGlobal3DSourceJoin({
+  geometry,cad,view,sourceEdgeId,
+  generatedClaims:global3DSource.claims.map(claim=>({
+   hlrClass:claim.hlrClass,
+   wholeSolidGeneratedHLREdgeOrdinal:claim.wholeSolidGeneratedHLREdgeOrdinal
+  }))
+ });
+ if(!reconstructedGlobal3DSource||
+    JSON.stringify(reconstructedGlobal3DSource)!==
+     JSON.stringify(global3DSource))
+  throw new RangeError('current native global generated 3D HLR source provenance does not replay from actual CAD');
  const sameClass=originalStatus.originalSourceClass==='all-visible'&&
   originalStatus.originalEdgeStatusAllVisible===true&&
   originalStatus.originalEdgeStatusAllHidden===false&&
@@ -145,8 +195,24 @@ function auditC1NativeClosedPhysicalGap({
  // the same-run WHOLE-SOLID 3D HLR ledger also attributes a hidden or
  // uncorroborated generated edge to that physical source. The original
  // source-filtered partition alone does not establish this consistency.
- const globalClassConsistent=global3DSource.claims.every(x=>
-  x.actualNativeGlobal3DOriginalSourceEdgeId!==sourceEdgeId||
+ // The caller's M5 claims are a SUBSET of generated edges, not a
+ // guarantee that every global generated HLR edge of this source is here.
+ // Independently replay the SAME-RUN whole-solid original-owner inventory;
+ // an omitted hidden or second partial generated edge cannot be laundered
+ // into a "complete" all-visible physical source certificate.
+ const rawGlobalRows=cad.nativeSourceScopedSharpOutputByView[view]
+  .nativeGlobal3DOriginalSourceEvidence.rows;
+ const rawOwned=rawGlobalRows.filter(x=>
+  x.originalPhysicalSourceEdgeId===sourceEdgeId);
+ const ownedClaims=global3DSource.claims.filter(x=>
+  x.actualNativeGlobal3DOriginalSourceEdgeId===sourceEdgeId);
+ const nativeKey=x=>x.hlrClass+'|'+x.wholeSolidGeneratedHLREdgeOrdinal;
+ const ownedClaimKeys=new Set(ownedClaims.map(nativeKey));
+ const everyNativeOwnedGeneratedEdgeClaimed=rawOwned.length>0&&
+  rawOwned.length===ownedClaimKeys.size&&
+  rawOwned.every(x=>ownedClaimKeys.has(nativeKey(x)));
+ const globalClassConsistent=rawOwned.length>0&&rawOwned.every(x=>
+  x.hlrClass==='visible-sharp')&&ownedClaims.every(x=>
   x.original3DCurveAndScopedNativeParameterIntervalCorroborated===true&&
   x.hlrClass==='visible-sharp');
  const globalVisible=auditC1Native3DSourceScopedIntervals({
@@ -154,6 +220,7 @@ function auditC1NativeClosedPhysicalGap({
   generatedNativeParameterRanges:claimed3D.map(x=>x.originalNativeCurveParameterRange)
  });
  const globalFull=nativeFullVisible&&globalClassConsistent&&
+  everyNativeOwnedGeneratedEdgeClaimed&&
   global3DSource.differentOriginal3DSourceClaimsHeld===0&&
   global3DSource.unknownGlobalOrdinalClaimsHeld===0&&
   globalVisible.sourceScopedNative3DParameterInventoryCompleteExactlyOnce;
@@ -255,8 +322,8 @@ function auditC1NativeClosedPhysicalGap({
   paperEndpointAudit=freeze({
    sourceEdgeId,view,sourceGeometryId:geometry.id,revision:cad.revision,
    exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedSourceTo:{...b},
-   exactOriginalProjectedSourceFrom:{...a},exactOriginalProjectedWTo:{...b},
-   exactOriginalProjectedWFrom:{...a},exactOriginalProjectedWTo:{...b},
+   exactOriginalProjectedWFrom:view==='W'?{...a}:null,
+   exactOriginalProjectedWTo:view==='W'?{...b}:null,
    nativeGlobalGeneratedHLREdgesChecked:rows.length,
    nativeGlobalWGeneratedHLREdgesChecked:rows.length,
    nativeGlobalGeneratedEdgesWithExactTwoPhysicalPaperEndpoints:
@@ -283,6 +350,81 @@ function auditC1NativeClosedPhysicalGap({
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
+ // Jointly replay the NEW same-run original BRep -> native 3D source
+ // parameter -> WHOLE-SOLID generated 2D HLR measured paper ledger against
+ // this independent M5 endpoint/affine computation. A clean original 3D
+ // interval never launders an off-axis paper edge into an engineering line.
+ let original3DToActual2DJoint=null;
+ if(global3DSource.wholeSolid3DOriginalSourceToGenerated2DExactPaperJointAvailable===true){
+  const candidates=global3DSource.native3DToGenerated2DPaperByOriginalSource;
+  const joint=candidates?.filter(x=>x.view===view&&
+   x.sourceEdgeId===sourceEdgeId&&x.revision===cad.revision)??[];
+  if(joint.length!==1||joint[0].originalPhysical3DEndpointsVerifiedAgainstNativeBRep!==true||
+     joint[0].generated2DTopoDSHistoryCertified!==false||
+     joint[0].globalOpaqueSceneContinuousOcclusionCertified!==false||
+     joint[0].signedV5Action!==false)
+   throw new RangeError('same-run original native 3D to generated 2D paper source joint invalid');
+  const sourceJoint=joint[0];
+  // On a true real-OCJS run, all native generated 3D curves now include
+  // actual measured XYZ. Refuse an M5 source witness that bypasses their
+  // independently replayed 3D->2D global-ordinal correspondence.
+  if(global3DSource.completeMeasuredNativeGlobal3D2DPaperReplayAvailable===true&&
+     sourceJoint.parts.some(p=>
+      p.nativeGenerated3DEndpointTo2DPaperReplayVerified!==true||
+      !p.original3DSourceCurveProjectedPaperFrom||
+      !p.original3DSourceCurveProjectedPaperTo))
+   throw new RangeError('genuine native global generated 3D/2D HLR endpoint pairing not independently replayed');
+  if(paperEndpointAudit!==null){
+   const rows=paperEndpointAudit.rows;
+   // The M5 claimant list may deliberately be a proper subset. Never
+   // reject merely because the same-run global inventory contains MORE
+   // true generated edges; that is exactly a held ownership gap. Only a
+   // foreign, duplicated or mismatched selected claimant is invalid.
+   if(sourceJoint.parts.length<rows.length||rows.some(r=>{
+    const q=sourceJoint.parts.find(q=>
+     q.hlrClass===r.hlrClass&&
+     q.wholeSolidGeneratedHLREdgeOrdinal===r.wholeSolidGeneratedHLREdgeOrdinal);
+    return !q||q.receivedNative2DPaperFrom.u!==r.receivedFrom.u||
+     q.receivedNative2DPaperFrom.v!==r.receivedFrom.v||
+     q.receivedNative2DPaperTo.u!==r.receivedTo.u||
+     q.receivedNative2DPaperTo.v!==r.receivedTo.v||
+     q.exactReceivedPaperBothEndpointsOnOriginalSourceLine!==
+      r.receivedWPaperEndpointsExactlyOnOriginalProjectedSourceLine;
+   }))
+    throw new RangeError('same-run native 3D/2D source joint contradicts M5 paper endpoint and topology inventory');
+   const qualified=paperEndpointAudit.receivedExactTwoAxisQualifiedPaperCoverage;
+   // Both independent consumers must preserve any actual positive
+   // rational paper residual, including A-C tails and A-D drift.
+   if(sourceJoint.parts.length===rows.length&&
+      sourceJoint.positiveExactReceived2DPaperGaps!==null&&
+      JSON.stringify(sourceJoint.positiveExactReceived2DPaperGaps)!==
+       JSON.stringify(qualified.exactTwoAxisQualifiedPaperCoverage
+        .exactBinary64PaperPositiveLengthUncoveredIntervals))
+    throw new RangeError('same-run source joint contradicts exact two-axis M5 paper gaps');
+  }
+  original3DToActual2DJoint=sourceJoint;
+ }
+ // An M4 summary cannot be borrowed from another original source/view
+ // or revision. Counts and the unsigned event-cut scope must agree.
+ if(m4Depth!=null&&(
+    m4Depth.view!==view||m4Depth.sourceEdgeId!==sourceEdgeId||
+    m4Depth.sourceGeometryId!==geometry.id||m4Depth.revision!==cad.revision||
+    m4Depth.signedV5Action!==false||
+    (m4Depth.completeOriginalM4SourceDepthPartition===true&&(
+     m4Depth.closedOriginalVerticesAndOpaqueSceneStillUnproven!==true||
+     m4Depth.generatedHLRToOriginalTopoDSHistoryCertified!==false||
+     !Number.isSafeInteger(m4Depth.openDepthSourceIntervalCount)||
+     m4Depth.openDepthSourceIntervalCount<1||
+     !Number.isSafeInteger(m4Depth.openDepthCutCount)||
+     m4Depth.openDepthCutCount<1||
+     !['openDepthFrontCuts','openDepthHiddenCuts','openDepthHeldCuts',
+       'positiveSubpixelCutsHeld'].every(k=>
+        Number.isSafeInteger(m4Depth[k])&&m4Depth[k]>=0)||
+     m4Depth.openDepthCutCount!==m4Depth.openDepthFrontCuts+
+      m4Depth.openDepthHiddenCuts+m4Depth.openDepthHeldCuts||
+     m4Depth.positiveSubpixelCutsHeld>m4Depth.openDepthHeldCuts||
+     m4Depth.everyOpenDepthCutClassified!==(m4Depth.openDepthHeldCuts===0)
+    ))))throw new RangeError('stale, foreign or inconsistent original M4 source-depth summary');
  const rayClear=originalClosedRayClear===true&&openRayClass==='visible-sharp';
  const originalFront=m4Depth?.completeOriginalM4SourceDepthPartition===true&&
   m4Depth.everyOpenDepthCutClassified===true&&
@@ -297,18 +439,50 @@ function auditC1NativeClosedPhysicalGap({
   throw new RangeError('positive W paper residual must remain native-history held');
  // Positive-source physical visibility needs all independent same-source
  // witnesses. Even then, the PAPER residual and V5 gate remain untouched.
- const physicalComplete=globalFull&&rayClear&&originalFront;
+ // No original 3D physical endpoint ledger means no joint physical proof.
+ const physicalComplete=globalFull&&rayClear&&originalFront&&
+  nativeOriginal3DVerticesExact&&paperEndpointAudit!==null;
  return freeze({
   schema:(view==='W'?'draftai-c1-w-m5-native-closed-original-gap-joint/1':'draftai-c1-vhw-m5-native-closed-original-gap-joint/1'),
   sourceGeometryId:geometry.id,revision:cad.revision,view,sourceEdgeId,
   originalPositivePaperGap:[...positiveGap],
   originalNativeCurveParameterBounds:[...bounds],
+  originalNativeBRepToM0ExactPhysicalVertexEvidence:exactOriginal3DPhysicalSource,
+  originalNativeBRepM0PhysicalVertexBijectionCertified:nativeOriginal3DVerticesExact,
+  sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified:true,
+  sameRunOriginal3DNativeParameterAndActual2DPaperJoint:
+   original3DToActual2DJoint,
+  sameRunOriginal3DAnd2DJointIndependentlyRechecked:
+   original3DToActual2DJoint!==null&&paperEndpointAudit!==null,
+  independentlyReplayedRealNativeGenerated3DTo2DPaperEndpoints:
+   global3DSource.completeMeasuredNativeGlobal3D2DPaperReplayAvailable===true&&
+   original3DToActual2DJoint!==null&&
+   original3DToActual2DJoint.parts.every(p=>
+    p.nativeGenerated3DEndpointTo2DPaperReplayVerified===true),
+  measuredNative3DProjectedOriginalPaperCoverageComplete:
+   original3DToActual2DJoint?.
+    native3DProjectedSourcePaperTwoAxisCoverageComplete??false,
+  measuredGenerated2DReceivedPaperCoverageComplete:
+   original3DToActual2DJoint?.
+    exactReceived2DTwoAxisPaperCoverageComplete??false,
+  measuredNative3DProjectivelyCompleteButGenerated2DPaperHeld:
+   original3DToActual2DJoint?.
+    native3DProjectedSourcePaperTwoAxisCoverageComplete===true&&
+   original3DToActual2DJoint?.
+    exactReceived2DTwoAxisPaperCoverageComplete===false,
+  sameRunSelectedM5GeneratedEdgesExhaustNative3DAnd2DSource:
+   original3DToActual2DJoint!==null&&paperEndpointAudit!==null&&
+   original3DToActual2DJoint.parts.length===paperEndpointAudit.rows.length,
+  generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay:true,
   status:physicalComplete?
    'physical-original-3d-source-closed-ray-complete-paper-held':
    'held-physical-source-proof-incomplete',
   nativeOriginalEdgeStatusAllVisible:sameClass,
   scopedNativeOriginal3DVisibilityParameterComplete:nativeFullVisible,
   globalGeneratedNative3DToOriginalBRepIntervalComplete:globalFull,
+  sameRunWholeSolidNative3DOriginalOwnerRowCount:rawOwned.length,
+  heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge:
+   everyNativeOwnedGeneratedEdgeClaimed,
   globalGeneratedNative3DClassConsistentWithOriginalAllVisible:globalClassConsistent,
   exactWholeOriginal3DSourceNativeVisibleCurveProven:globalFull,
   wholeReviewedConvexOriginalClosedSourceRayClear:rayClear,

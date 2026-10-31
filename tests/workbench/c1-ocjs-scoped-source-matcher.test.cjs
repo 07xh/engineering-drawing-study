@@ -27,6 +27,35 @@ test('V/H/W real scoped native IsSame distinguishes front and rear coincident pr
   assert.equal(r.signedV5Action,false);
  }
 });
+test('native IsSame rejects tolerant paper alias even when the native identity method says true',()=>{
+ const {nativeScopedPaperSegmentsSame:paperCandidate}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  // 1e-7 mm was previously accepted as a scoped/global match because
+  // the paper discovery tolerance is 1e-6 mm at this source span.
+  x.scopedSegment={from:{u:0,v:1e-7},to:{u:10,v:1e-7}};
+  assert.equal(paperCandidate(x.globalSegments[0],x.scopedSegment),true);
+  assert.throws(()=>match(x),/native IsSame.*inconsistent paper/);
+  // Reversing the paper stroke must not bypass the independent veto.
+  x.scopedSegment={from:{u:10,v:1e-7},to:{u:0,v:1e-7}};
+  assert.throws(()=>match(x),/native IsSame.*inconsistent paper/);
+ }
+});
+test('scoped/global native IsSame accepts exact and one binary64 ULP paper agreement only as unsigned identity',()=>{
+ for(const view of ['V','H','W']){
+  const x=setup(view);
+  x.scopedSegment={from:{u:0,v:0},
+   to:{u:10+Number.EPSILON*8,v:0}};
+  const r=match(x);
+  assert.deepEqual(r.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+  assert.equal(r.actualNativeScopedToGlobalGeneratedEdgeIsSameProven,true);
+  assert.equal(r.fullOriginalSourceParameterCoverageProven,false);
+  assert.equal(r.globalContinuousOcclusionProven,false);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5Action,false);
+ }
+});
 test('coincident paper without native identity remains unsigned candidate only',()=>{
  const x=setup('W');x.scopedNativeEdge=native('generated-again');
  const r=match(x);
@@ -165,6 +194,37 @@ test('native source-scoped identities reject different original edges claiming o
  assert.equal(result.signedV5ActionCount,0);
  assert.ok(Object.isFrozen(result.rows[0]));
 });
+test('native global ordinal claim must belong to the same-run paper inventory and stay unsigned',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const genuine=match(setup('V'));
+ assert.equal(audit({matches:[genuine],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0}}).uniqueNativeClaims,1);
+ for(const mutate of [
+  x=>{x.globalPaperCandidateOrdinals=[1,2];},
+  x=>{x.globalPaperCandidateOrdinals=[];},
+  x=>{x.globalPaperCandidateOrdinals=[0,0];},
+  x=>{x.globalPaperCandidateOrdinals=[-1,0];},
+  x=>{x.paperCoincidenceAloneIsNotOriginalTopoDSHistory=false;},
+  x=>{x.partnerCandidateDoesNotProveOriginalSourceHistory=false;},
+  x=>{x.engineeringLineStyle='solid';},
+  x=>{x.nativePartnerOnlyCandidate=true;}
+ ]){
+  const forged={...genuine,
+   globalPaperCandidateOrdinals:[...genuine.globalPaperCandidateOrdinals],
+   globalDirectSameGeneratedTopoDSOrdinals:
+    [...genuine.globalDirectSameGeneratedTopoDSOrdinals]};
+  mutate(forged);
+  assert.throws(()=>audit({matches:[forged],wholeSolidCounts:{
+   'visible-sharp':3,'hidden-sharp':0}}),/unsigned actual native scoped match/);
+ }
+ // Paper-only and native partner-only candidates remain diagnostic.
+ const paperOnly=setup('W');paperOnly.scopedNativeEdge=native('unrelated');
+ const held=match(paperOnly);
+ assert.equal(audit({matches:[held]}).uniqueNativeClaims,0);
+ assert.equal(audit({matches:[held]}).signedV5ActionCount,0);
+});
+
 test('paper and IsPartner candidates never become native source identity claims',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
@@ -211,10 +271,138 @@ test('real whole-solid generated HLR inventory exposes unclaimed edges without s
  assert.equal(empty.fullOriginalSourceHistoryCertified,false);
 });
 
+test('same-run native HLR inventory bounds every unsigned paper-only candidate, not only IsSame',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const genuine=match(setup('V'));
+ const counts={'visible-sharp':3,'hidden-sharp':0};
+ assert.equal(audit({matches:[genuine],wholeSolidCounts:counts}).uniqueNativeClaims,1);
+ // The real direct native identity 0 cannot excuse a forged extra paper
+ // candidate 9: no such generated HLR edge exists in the measured output.
+ const forged={...genuine,globalPaperCandidateOrdinals:[0,1,9]};
+ assert.throws(()=>audit({matches:[forged],wholeSolidCounts:counts}),
+  /paper candidate claims nonexistent whole-solid/);
+ // A paper-only witness (without any native IsSame) must be bounded too.
+ const x=setup('H');x.scopedNativeEdge=native('not-generated');
+ const paperOnly=match(x);
+ assert.deepEqual(paperOnly.globalDirectSameGeneratedTopoDSOrdinals,[]);
+ assert.throws(()=>audit({matches:[paperOnly],wholeSolidCounts:{
+  'visible-sharp':0,'hidden-sharp':0}}),
+  /paper candidate claims nonexistent whole-solid/);
+ // A class-specific inventory cannot borrow a valid ordinal from the
+ // other visibility class; neither diagnostic can authorize V5.
+ const wrongClass={...paperOnly,hlrClass:'hidden-sharp'};
+ assert.throws(()=>audit({matches:[wrongClass],wholeSolidCounts:counts}),
+  /paper candidate claims nonexistent whole-solid/);
+ assert.equal(audit({matches:[paperOnly],wholeSolidCounts:counts}).signedV5ActionCount,0);
+});
+
 test('one native whole-solid inventory cannot mix V and W generated edge ordinals',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
  assert.throws(()=>audit({matches:[match(setup('V')),match(setup('W'))],
   wholeSolidCounts:{'visible-sharp':3,'hidden-sharp':0}}),
   /one HLR view/);
+});
+
+test('same-run global native 3D to generated 2D paper witness distinguishes exact, reversed and source-scale ULP rounding without TopoDS history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:0},to:{u:3,v:2}};
+ const exact=audit(source,structuredClone(source));
+ assert.equal(exact.compatible,true);
+ assert.equal(exact.exactBinary64Endpoints,true);
+ assert.equal(exact.sourceScaleOneULPBoundedRoundingOnly,false);
+ const reversed=audit(source,{from:source.to,to:source.from});
+ assert.equal(reversed.exactBinary64Endpoints,true);
+ const rounded=audit(source,{from:source.from,
+  to:{u:3,v:2+Number.EPSILON*2}});
+ assert.equal(rounded.compatible,true);
+ assert.equal(rounded.exactBinary64Endpoints,false);
+ assert.equal(rounded.sourceScaleOneULPBoundedRoundingOnly,true);
+ assert.equal(rounded.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(rounded.engineeringLineStyle,'undetermined');
+ assert.equal(rounded.signedV5Action,false);
+ assert.ok(Object.isFrozen(rounded));
+});
+test('a unique but merely tolerance-close generated 2D HLR edge cannot borrow native 3D source history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit,
+  nativeScopedPaperSegmentsSame:oldPaperCandidate}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:0},to:{u:10,v:0}};
+ const forged={from:{u:0,v:1e-7},to:{u:10,v:1e-7}};
+ // Old discovery tolerance accepts the forged source, but the new
+ // mandatory native 3D/2D binding must refuse its original owner.
+ assert.equal(oldPaperCandidate(source,forged),true);
+ const held=audit(source,forged);
+ assert.equal(held.compatible,false);
+ assert.equal(held.exactBinary64Endpoints,false);
+ assert.equal(held.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(held.signedV5Action,false);
+ const reversed={from:forged.to,to:forged.from};
+ assert.equal(audit(source,reversed).compatible,false);
+});
+test('tiny positive HLR tails, distant paper aliases and invalid native 3D/2D endpoints remain fail closed',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const tiny={from:{u:0,v:0},to:{u:Number.MIN_VALUE,v:0}};
+ assert.equal(audit(tiny,structuredClone(tiny)).exactBinary64Endpoints,true);
+ assert.equal(audit(tiny,{from:{u:0,v:0},to:{u:Number.MIN_VALUE,v:Number.MIN_VALUE}}).compatible,false);
+ const far={from:{u:1e5,v:1e5},to:{u:1e5+1e-4,v:1e5}};
+ assert.equal(audit(far,{from:{u:1e5,v:1e5+1e-8},
+  to:{u:1e5+1e-4,v:1e5+1e-8}}).compatible,false);
+ for(const pair of [
+  {from:{u:0,v:0},to:{u:0,v:0}},
+  {from:{u:NaN,v:0},to:{u:3,v:2}},
+  {from:{u:0,v:0},to:{u:Infinity,v:0}},
+  null
+ ])assert.throws(()=>audit(far,pair),/noncollapsed finite/);
+});
+
+test('an unrelated huge paper axis cannot mask transverse drift on the small axis',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const axis of ['u','v']){
+  const other=axis==='u'?'v':'u';
+  const source={from:{u:0,v:0},to:{u:0,v:0}};
+  source.from[axis]=0;source.to[axis]=1e6;
+  source.from[other]=1e15;source.to[other]=1e15;
+  const forged=structuredClone(source);
+  forged.from[axis]+=0.0625;forged.to[axis]+=0.0625;
+  const result=audit(source,forged);
+  assert.equal(result.compatible,false,axis+' transverse drift');
+  assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+  assert.equal(result.engineeringLineStyle,'undetermined');
+  assert.equal(result.signedV5Action,false);
+  const reversed={from:forged.to,to:forged.from};
+  assert.equal(audit(source,reversed).compatible,false);
+ }
+});
+test('coordinate-local ULP accepts genuine one-ULP endpoint rounding without signing HLR history',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const source={from:{u:0,v:1e15},to:{u:1e6,v:1e15}};
+ const rounded={from:{...source.from},to:{u:1e6+2**-33,v:1e15}};
+ const result=audit(source,rounded);
+ assert.equal(result.compatible,true);
+ assert.equal(result.exactBinary64Endpoints,false);
+ assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+});
+
+test('real pinned OCCT pcurve may round zero by one same-axis source-span ULP only',()=>{
+ const {auditC1Global3D2DPaperPairEnvelope:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const original={from:{u:5,v:23},to:{u:0,v:0}};
+ const generated={from:{u:5,v:23},to:{u:0,v:-(2**-48)}};
+ const result=audit(original,generated);
+ assert.equal(result.compatible,true);
+ assert.equal(result.exactBinary64Endpoints,false);
+ assert.equal(result.originalGeneratedTopoDSHistoryCertified,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+ // This same V-scale must NOT justify an unrelated U-axis drift.
+ assert.equal(audit(original,{from:original.from,
+  to:{u:-1e-9,v:0}}).compatible,false);
 });

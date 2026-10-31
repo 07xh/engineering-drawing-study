@@ -7,6 +7,8 @@
  * endpoint cannot certify exact physical junction topology or GB/V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {exactCandidateIntervalCoverage}=
+ require('./c1-original-source-interval-coverage.cjs');
 const {boundedOriginalFullPaperEndpointEnvelope}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
@@ -15,6 +17,98 @@ const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 const p2eq=(a,b)=>a&&b&&a.u===b.u&&a.v===b.v;
 const xyz=(p,q)=>p&&q&&['x','y','z'].every(k=>
  Number.isFinite(p[k])&&Number.isFinite(q[k])&&p[k]===q[k]);
+/**
+ * M5 replays the native GENERATED HLR vertex graph's complete literal-paper
+ * pair inventory. OCCT IsSame itself was measured while the native handles
+ * lived; this independent consumer can reject missing, swapped, contradictory
+ * or non-transitive serialized pairs, but cannot reconstruct native identity.
+ * No epsilon, source-history inference, line-style signing or V5 promotion.
+ */
+function verifyCompleteGeneratedNativeJunctionGraph({cad,view,g,realPairs,pairKey,endKey}){
+ const endpoints=[],byId=new Map();
+ for(const [klass,lines] of [
+  ['visible-sharp',cad.views[view]],
+  ['hidden-sharp',cad.hiddenSharpViews[view]]
+ ]){
+  for(let ordinal=0;ordinal<lines.length;ordinal++){
+   const edge=lines[ordinal];
+   if(!p2eq(edge?.from,edge?.from)||!p2eq(edge?.to,edge?.to)||
+      !['from','to'].every(side=>['u','v'].every(k=>
+       Number.isFinite(edge[side][k])))||
+      p2eq(edge.from,edge.to))
+    throw new RangeError('invalid native generated HLR edge for complete vertex graph');
+   for(const side of ['from','to']){
+    const ref={hlrClass:klass,nativeHLREdgeOrdinal:ordinal,side,
+     nativePaperPoint:{...edge[side]}};
+    endpoints.push(ref);
+    byId.set(endKey(ref),ref);
+   }
+  }
+ }
+ if(endpoints.length>512)
+  throw new RangeError('native generated HLR vertex graph exceeds bounded inventory');
+ const expected=new Set();
+ for(let i=0;i<endpoints.length;i++)for(let j=i+1;j<endpoints.length;j++){
+  const a=endpoints[i],b=endpoints[j];
+  if(p2eq(a.nativePaperPoint,b.nativePaperPoint))
+   expected.add(pairKey(a,b));
+ }
+ if(realPairs.size!==expected.size||
+    [...realPairs.keys()].some(key=>!expected.has(key)))
+  throw new RangeError('incomplete or non-paper-coincident native generated HLR vertex pair inventory');
+ const parent=new Map(endpoints.map(e=>[endKey(e),endKey(e)]));
+ const root=id=>{while(parent.get(id)!==id)id=parent.get(id);return id;};
+ for(const [pair,positive] of realPairs){
+  if(!positive)continue;
+  const [a,b]=pair.split('#');
+  parent.set(root(b),root(a));
+ }
+ // A real OCCT TopoDS IsSame relation is an equivalence relation.
+ // In particular, A~B and B~C cannot coexist with A!=C.
+ for(const a of endpoints)for(const b of endpoints){
+  if(endKey(a)>=endKey(b)||!p2eq(a.nativePaperPoint,b.nativePaperPoint))
+   continue;
+  if(realPairs.get(pairKey(a,b))!==(root(endKey(a))===root(endKey(b))))
+   throw new RangeError('non-transitive native generated HLR vertex IsSame graph');
+ }
+ const actual=new Map();
+ for(const ref of endpoints){
+  const owner=root(endKey(ref));
+  if(!actual.has(owner))actual.set(owner,[]);
+  actual.get(owner).push(endKey(ref));
+ }
+ const expectedComponents=new Set([...actual.values()].filter(x=>x.length>1)
+  .map(x=>x.sort().join('#')));
+ const reported=g.generatedOCCTSharedNativeJunctionComponents;
+ if(!Array.isArray(reported)||reported.length!==expectedComponents.size)
+  throw new RangeError('incomplete native generated HLR shared-junction components');
+ const reportedKeys=new Set();
+ for(const component of reported){
+  const refs=component?.generatedSharpEdgeEndpoints;
+  if(component.view!==view||
+     component.originalGeneratedTopoDSHistoryRecovered!==false||
+     component.actualGeneratedOCCTTopoDSVertexPairwiseIsSame!==true||
+     component.independentlyCertifiedOriginal3DSourceVertexId!==null||
+     component.engineeringLineJoinCertified!==false||
+     component.signedV5Action!==false||
+     !Array.isArray(refs)||refs.length<2)
+   throw new RangeError('forged native generated HLR junction component');
+  const ids=new Set();
+  for(const ref of refs){
+   const id=endKey(ref),actualRef=byId.get(id);
+   if(!actualRef||ids.has(id)||
+      !p2eq(actualRef.nativePaperPoint,ref.nativePaperPoint)||
+      !p2eq(actualRef.nativePaperPoint,
+       component.exactNativePaperCoordinatesForEntireComponent))
+    throw new RangeError('native generated HLR junction component endpoint mismatch');
+   ids.add(id);
+  }
+  const key=[...ids].sort().join('#');
+  if(!expectedComponents.has(key)||reportedKeys.has(key))
+   throw new RangeError('native generated HLR junction component contradicts IsSame pairs');
+  reportedKeys.add(key);
+ }
+}
 function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  geometry,cad,globalRebinding,sourceM4Views
 }={}){
@@ -50,6 +144,82 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  }
  if(native.size!==originals.size)
   throw new RangeError('incomplete original native 3D source inventory');
+ // This is ORIGINAL 3D BRep vertex topology, never the independent
+ // GENERATED HLR vertex graph. A generated junction can have distinct
+ // native TShapes even when both source edges truly share one 3D vertex.
+ const physicalGraph=cad.originalNativeVertexTopology;
+ if(physicalGraph!==undefined){
+  const ids=[...new Set([...originals.values()].flat())].sort();
+  const occurrenceCounts=physicalGraph.originalM0VertexNativeOccurrenceCounts;
+  const expectedDegrees=Object.fromEntries(ids.map(id=>[id,0]));
+  for(const edge of originals.values())for(const id of edge)expectedDegrees[id]++;
+  // TopExp traverses original BRep edges through their incident faces.
+  // A 2-manifold solid commonly reports TWO native edge occurrences per
+  // unique M0 physical edge; preserve native TShape identity and compare
+  // the per-vertex counts at that measured multiplicity, not at 1x.
+  const occurrenceMultiplier=cad.occtOriginalEdgeOccurrenceCount/originals.size;
+  const validOccurrenceMultiplier=Number.isSafeInteger(occurrenceMultiplier)&&
+   occurrenceMultiplier>=1&&occurrenceMultiplier<=2;
+  const occurrenceCountsValid=validOccurrenceMultiplier&&occurrenceCounts&&
+   JSON.stringify(Object.keys(occurrenceCounts).sort())===JSON.stringify(ids)&&
+   ids.every(id=>Number.isSafeInteger(occurrenceCounts[id])&&
+    occurrenceCounts[id]===expectedDegrees[id]*occurrenceMultiplier)&&
+   ids.reduce((n,id)=>n+occurrenceCounts[id],0)===
+    physicalGraph.originalBRepVertexOccurrencesChecked;
+  const samePairs=occurrenceCountsValid?ids.reduce((n,id)=>
+   n+occurrenceCounts[id]*(occurrenceCounts[id]-1)/2,0):null;
+  if(physicalGraph.schema!==
+      'draftai-c1-original-occt-brep-vertex-physical-topology/1'||
+     !occurrenceCountsValid||
+     physicalGraph.originalSamePhysicalVertexTopoDSPairs!==samePairs||
+     physicalGraph.sourceGeometryId!==geometry.id||
+     physicalGraph.allReviewedOriginalSourceVerticesNativeTShapeVerified!==true||
+     physicalGraph.generatedHLREdgeToOriginalTopoDSHistoryCertified!==false||
+     physicalGraph.signedV5ActionCount!==0||
+     JSON.stringify(physicalGraph.originalM0SourceVertexIds)!==JSON.stringify(ids)||
+     physicalGraph.originalBRepVertexOccurrencesChecked!==2*cad.occtOriginalEdgeOccurrenceCount||
+     physicalGraph.allOriginalBRepVertexPairsCompared!==
+      physicalGraph.originalBRepVertexOccurrencesChecked*
+       (physicalGraph.originalBRepVertexOccurrencesChecked-1)/2||
+     physicalGraph.originalSamePhysicalVertexTopoDSPairs+
+      physicalGraph.originalDistinctPhysicalVertexTopoDSPairs!==
+       physicalGraph.allOriginalBRepVertexPairsCompared)
+   throw new RangeError('untrusted same-run original native 3D vertex topology');
+ }
+ // Real sewn OCCT face incidence proves ORIGINAL 3D adjacency only;
+ // generated HLR edge history and occlusion remain separate obligations.
+ const faceGraph=cad.originalNativeFaceAdjacency;
+ if(faceGraph!==undefined){
+  const expectedFaceAdjacency=new Map([...originals.keys()].map(id=>[id,[]]));
+  const expectedFaces=geometry.data.faces.map((face,index)=>{
+   if(!Array.isArray(face)||face.length<3||new Set(face).size!==face.length)
+    throw new RangeError('invalid reviewed M0 face for native BRep adjacency');
+   const boundary=face.map((a,i)=>{
+    const b=face[(i+1)%face.length];
+    const id=geometry.id+'::'+[a,b].sort().join('|');
+    if(!originals.has(id))
+     throw new RangeError('native BRep adjacency refers to absent original M0 edge');
+    expectedFaceAdjacency.get(id).push(index);
+    return id;
+   }).sort();
+   return {originalM0FaceIndex:index,originalM0BoundarySourceEdgeIds:boundary};
+  });
+  const expectedEdges=[...expectedFaceAdjacency].sort((a,b)=>a[0].localeCompare(b[0]))
+   .map(([sourceEdgeId,faces])=>({sourceEdgeId,
+    originalM0AdjacentFaceIndices:faces.sort((a,b)=>a-b)}));
+  if(faceGraph.schema!=='draftai-c1-original-occt-brep-face-edge-adjacency/1'||
+     faceGraph.sourceGeometryId!==geometry.id||
+     faceGraph.allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified!==true||
+     faceGraph.generatedHLREdgeToOriginalTopoDSHistoryCertified!==false||
+     faceGraph.signedV5ActionCount!==0||
+     faceGraph.nativeBRepFacesChecked!==expectedFaces.length||
+     faceGraph.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces!==originals.size||
+     !Array.isArray(faceGraph.edges)||
+     JSON.stringify(faceGraph.edges)!==JSON.stringify(expectedEdges)||
+     JSON.stringify(faceGraph.faces)!==JSON.stringify(expectedFaces)||
+     expectedEdges.some(x=>x.originalM0AdjacentFaceIndices.length!==2))
+   throw new RangeError('untrusted original native BRep face/edge adjacency');
+ }
  const counts={
   globalGeneratedHLREdgesChecked:0,
   uniqueOriginalSourceGlobalEdgesExamined:0,
@@ -66,8 +236,16 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   physicalJunctionPairsWithAtLeastOneRoundedEndpoint:0,
   physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame:0,
   physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices:0,
+  originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape:0,
+  originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes:0,
+  originalBRepSourceEdgesWithNativeFaceAdjacencyVerified:
+   faceGraph?.nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces??0,
   nativeGeneratedTopoDSJunctionPairsWithoutPhysicalOriginalM0Join:0,
   realNativeGeneratedVertexGraphPairsChecked:0,
+  genuineGlobal3DSourceCurvePaperPairsCrossChecked:0,
+  genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim:0,
+  genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4:0,
+  genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4:0,
   wholeGeneratedEdgeOriginalTopoDSHistoryCertified:0,
   signedOfficialV5Actions:0
  };
@@ -87,6 +265,54 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('stale or forged native source M4 interval');
    m4ById.set(x.sourceEdgeId,x);
   }
+  // The independently extracted WHOLE-SOLID native 3D HLR source curve
+  // is checked against each generated 2D ordinal. This is stronger than
+  // rounded-paper collinearity, but still NOT an OCCT 2D TopoDS source
+  // history API and cannot authorize a standard engineering stroke.
+  const scoped=cad.nativeSourceScopedSharpOutputByView?.[view];
+  const global3D=scoped?.nativeGlobal3DOriginalSourceEvidence;
+  const byNative3DCurve=new Map();
+  // An isolated legacy M4 fixture may not carry this optional independent
+  // whole-solid 3D curve export. Never fabricate it or claim a 3D binding.
+  // In real pinned OCJS runs the export exists and is cross-checked below.
+  if(global3D!==undefined){
+   if(global3D?.schema!==
+       'draftai-c1-global-native-hlr-3d-original-curve-corroboration/1'||
+      global3D.sourceGeometryId!==geometry.id||
+      global3D.revision!==cad.revision||global3D.view!==view||
+      global3D.allGenerated3DSharpCurvesBoundToOriginalBRepAnd2DPaper!==true||
+      global3D.generated2DTo3DTopoDSHistoryCertified!==false||
+      global3D.globalContinuousVisibilityCertified!==false||
+      global3D.officialV5Authorized!==false||
+      global3D.signedV5ActionCount!==0||
+      !Array.isArray(global3D.rows)||
+      global3D.rows.length!==cad.views[view].length+
+       cad.hiddenSharpViews[view].length||
+      global3D.globalGenerated2DSharpEdges!==global3D.rows.length||
+      global3D.globalGenerated3DSharpEdgesWithUniqueOriginalCurve!==
+       global3D.rows.length)
+    throw new RangeError('missing independent whole-solid native 3D original source curve witness');
+   for(const curve of global3D.rows){
+    const klass=curve?.hlrClass,ordinal=curve?.wholeSolidGeneratedHLREdgeOrdinal,
+     key=klass+'|'+ordinal,
+     available=klass==='visible-sharp'?cad.views[view]:
+      klass==='hidden-sharp'?cad.hiddenSharpViews[view]:null,
+     range=curve?.originalNativeCurveParameterRange;
+    if(curve.view!==view||!available||
+       !Number.isSafeInteger(ordinal)||ordinal<0||ordinal>=available.length||
+       byNative3DCurve.has(key)||!originals.has(curve.originalPhysicalSourceEdgeId)||
+       !Array.isArray(range)||range.length!==2||
+       !range.every(Number.isFinite)||!(range[1]>range[0])||
+       curve.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters!==true||
+       curve.global3DAnd2DHLRMeasuredPaperPairUnique!==true||
+       curve.global3DAndOriginalScoped3DHLRParameterIntervalExact!==true||
+       curve.globalGenerated2DTo3DTopoDSHistoryCertified!==false||
+       curve.fullOpaqueSceneContinuousOcclusionCertified!==false||
+       curve.engineeringLineStyle!=='undetermined'||curve.signedV5Action!==false)
+     throw new RangeError('forged global native 3D original source curve and generated 2D pairing');
+    byNative3DCurve.set(key,curve);
+   }
+  }
   const result=[],seen=new Set(),vertices=new Map();
   for(const row of rows){
    const klass=row.hlrClass,ordinal=row.wholeSolidGeneratedHLREdgeOrdinal,
@@ -99,12 +325,46 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false)
     throw new RangeError('forged or duplicate global HLR native ordinal');
    seen.add(key);
+   const global3DSource=byNative3DCurve.get(key)??null;
+   if(global3D&& !global3DSource)
+    throw new RangeError('missing independently measured 3D curve for generated HLR ordinal');
    const line=lines[ordinal],originalId=row.uniqueOriginalSourceFilteredPaperCandidate,
     physical=originals.get(originalId),
     originalBRep=native.get(originalId);
+   // Bind the ACTUAL global 3D curve's native source parameter domain
+   // back to the SAME-REVISION M4 original source, class and exact range.
+   // An M4 interval lost to binary64 rounding stays held, not invented.
+   let native3DRangeMatchedCurrentM4=false;
+   if(global3DSource){
+    const actual=global3DSource.originalNativeCurveParameterRange;
+    const m4=m4ById.get(global3DSource.originalPhysicalSourceEdgeId);
+    const witnesses=m4?.segments.filter(segment=>{
+     const range=segment?.originalNative3DParameterRange;
+     return segment.sourceEdgeId===global3DSource.originalPhysicalSourceEdgeId&&
+      segment.view===view&&segment.native3DHLRClass===klass&&
+      segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+      segment.generated2DHLREdgeTopologyProven===false&&
+      segment.engineeringLineStyle==='undetermined'&&
+      segment.signedV5Action===false&&
+      Array.isArray(range)&&range.length===2&&
+      range[0]===actual[0]&&range[1]===actual[1];
+    })??[];
+    native3DRangeMatchedCurrentM4=witnesses.length===1;
+    if(native3DRangeMatchedCurrentM4)
+     counts.genuineGlobal3DSourceClassNativeParameterRangesMatchedCurrentM4++;
+    else counts.genuineGlobal3DSourceClassNativeParameterRangesHeldCurrentM4++;
+   }
    if(!line?.from||!line.to||!['u','v'].every(k=>
        Number.isFinite(line.from[k])&&Number.isFinite(line.to[k])))
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
+   if(global3DSource){
+    counts.genuineGlobal3DSourceCurvePaperPairsCrossChecked++;
+    if(originalId!==null&&originalId!==
+       global3DSource.originalPhysicalSourceEdgeId)
+     throw new RangeError('unique scoped 2D source contradicts independently measured whole-solid native 3D original curve');
+    if(originalId===null)
+     counts.genuineGlobal3DSourceCurveWithoutUniqueScoped2DClaim++;
+   }
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
     boundedPaper=false,sourcePaperEnvelope=null,links=[];
@@ -120,17 +380,32 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      (xyz(originalBRep.fromOCCT3D,b)&&
       xyz(originalBRep.toOCCT3D,a));
     if(modelVerified)counts.nativeOriginalBRepExactPhysicalEndpointPairs++;
-    const m4=m4ById.get(originalId),matching=m4?.segments.filter(s=>
+    // The genuine ORIGINAL native 3D class may be split across multiple
+    // adjacent parameter spans. A single [0,1] segment is not required:
+    // certify exact full coverage with no positive gaps or overlaps instead.
+    // Never turn a union containing duplicate spans into once-only lineage.
+    const m4=m4ById.get(originalId),segments=m4?.segments??[];
+    const ranges=segments.map(s=>s?.originalM0UnitParameterRange);
+    const wellFormed=ranges.length>0&&ranges.length<=512&&ranges.every(r=>
+     Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&
+     r[0]>=0&&r[1]<=1&&r[1]>r[0]);
+    const sorted=wellFormed?[...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]):[];
+    const disjoint=wellFormed&&sorted.every((r,i)=>
+     i===0||r[0]>=sorted[i-1][1]);
+    const classConsistent=segments.length>0&&segments.every(s=>
      s.sourceEdgeId===originalId&&s.view===view&&
      s.native3DHLRClass===klass&&
      s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
-     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
-     s.originalM0UnitParameterRange?.[0]===0&&
-     s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
+     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false);
+    sourceClassFull=disjoint&&classConsistent&&
+     exactCandidateIntervalCoverage([0,1],ranges).
+      entireOriginalParameterIntervalCovered===true&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
-     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+     m4.native3DOriginalParameterPositiveGaps?.length===0&&
+     m4.native3DOriginalParameterPositiveOverlaps?.length===0&&
+     m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation?.length===0&&
+     (!global3DSource||native3DRangeMatchedCurrentM4);
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
     const forward=p2eq(line.from,p)&&p2eq(line.to,q),
@@ -205,6 +480,14 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    if(!modelVerified||!sourceClassFull||!originalPaperExact&&!boundedPaper)
     counts.physicalOriginalM0EndpointRowsHeld++;
    result.push({view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:ordinal,
+    independentlyMeasuredGlobalNative3DOriginalSourceCandidate:
+     global3DSource?.originalPhysicalSourceEdgeId??null,
+    independentGlobal3DOriginalCurveParameterRange:
+     global3DSource?[...global3DSource.originalNativeCurveParameterRange]:null,
+    independentGlobal3DSourceIsNotGenerated2DTopoDSHistory:true,
+    independentGlobal3DClassNativeParameterRangeMatchedCurrentM4:
+     native3DRangeMatchedCurrentM4,
+    independentGlobal3DClassNativeParameterRangeMatchIsNotHLRHistory:true,
     uniqueOriginalSourceFilteredPaperCandidate:originalId,
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
@@ -232,6 +515,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      throw new RangeError('one noncollapsed global HLR edge has duplicate physical vertex endpoints');
     const both=group[i].paperExactlyOriginalM0&&group[j].paperExactlyOriginalM0;
     counts.originalModelPhysicalJunctionPairCandidates++;
+    if(physicalGraph)counts.originalBRepPhysicalJunctionPairsWithVerifiedNativeTShape++;
     counts.physicalJunctionPairsWithBothExactGeneratedPaperEndpoints+=Number(both);
     counts.physicalJunctionPairsWithAtLeastOneRoundedEndpoint+=Number(!both);
     pairRows.push({view,originalPhysicalM0VertexId:vertexId,
@@ -239,6 +523,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      globalGeneratedHLREndpoints:[group[i],group[j]],
      actualNativeGeneratedTopoDSVertexIsSameForThisPairProven:false,
      original3DPhysicalVertexCoincidenceProvenFromIndependentM0:true,
+     originalBRepPhysicalVertexTShapeIdentityProven:!!physicalGraph,
+     distinctGeneratedHLRTShapesCannotVetoOriginalBRepPhysicalJunction:true,
      paperCoincidenceCannotSignEngineeringJunction:true,
      signedV5Action:false});
    }
@@ -290,6 +576,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     realPairs.set(key,positive);
     counts.realNativeGeneratedVertexGraphPairsChecked++;
    }
+   verifyCompleteGeneratedNativeJunctionGraph({
+    cad,view,g,realPairs,pairKey,endKey
+   });
    for(const row of pairRows){
     const [a,b]=row.globalGeneratedHLREndpoints;
     const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
@@ -304,6 +593,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     }else if(pair===false){
      row.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin=true;
      counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices++;
+     if(row.originalBRepPhysicalVertexTShapeIdentityProven)
+      counts.originalBRepPhysicalJunctionPairsDespiteDistinctGeneratedTShapes++;
     }
    }
    const physical=new Set(pairRows.map(p=>{
@@ -325,6 +616,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   originalM0SharedVertexDoesNotProveGeneratedTopoDSIsSame:true,
   originalNativeOCCTHLRGeneratedVertexGraphCrossReferenced:
    cad.nativeGeneratedVertexGraph!==undefined,
+  originalNativeBRepPhysicalVertexTopologyVerified:
+   physicalGraph!==undefined,
+  originalNativeBRepFaceEdgeAdjacencyVerified:faceGraph!==undefined,
   generated2DToOriginal3DNativeTopoDSVertexTopologyCertified:false,
   allOpaqueFaceOcclusionCertified:false,
   officialV5Authorized:false,signedV5ActionCount:0

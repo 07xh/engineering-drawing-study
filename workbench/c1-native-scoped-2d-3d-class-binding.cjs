@@ -92,17 +92,22 @@ function auditC1RealNativeScoped2D3DClassBinding({
  // distinct native endpoints can round to the SAME M4 fraction, hiding a
  // genuine positive-length gap even when the M4 [0,1] union looks complete.
  // A generated 2D class witness must never borrow that false completeness.
- const nativePartitionProven=
-  nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
-  nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
-  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
-  nativeOriginal3DM4.native3DOriginalParameterPositiveGaps.length===0&&
-  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps)&&
-  nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
-  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+ // Caller flags describe the NATIVE curve partition, but cannot prove
+ // that its rounded M4 source intervals still cover [0,1] exactly once.
+ // In particular, a partial 2D stroke can otherwise borrow a claimed
+ // whole-source certificate from M4 segments covering only that stroke,
+ // or two overlapping same-class intervals can silently double-count.
+ // Check the actual dyadic-rational M4 source cuts independently below.
  const a=sourceProjectedFrom,b=sourceProjectedTo;
- const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
-  denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
+ // Choose the dominant ORIGINAL paper axis with exact dyadic squares.
+ // Both binary64 differences can overflow to Infinity even though every
+ // input coordinate is finite. Infinity >= Infinity silently selects u,
+ // which can be the SHORTER axis and can erase a genuine 2D paper span.
+ // This is an audit of native source geometry, never a tolerance or M5 signoff.
+ const deltaU=sub(dyadic(b.u),dyadic(a.u));
+ const deltaV=sub(dyadic(b.v),dyadic(a.v));
+ const axis=sign(sub(product(deltaU,deltaU),product(deltaV,deltaV)))>=0?'u':'v',
+  denominator=axis==='u'?deltaU:deltaV;
  if(sign(denominator)===0)
   throw new RangeError('collapsed original M0 source paper line');
  const m4=nativeOriginal3DM4.segments.map(seg=>{
@@ -119,6 +124,23 @@ function auditC1RealNativeScoped2D3DClassBinding({
   return {klass:seg.native3DHLRClass,
    from:rat(dyadic(s),dyadic(1)),to:rat(dyadic(t),dyadic(1))};
  });
+ const sortedM4=m4.map(x=>[x.from,x.to]).sort((x,y)=>
+  compare(x[0],y[0])||compare(x[1],y[1]));
+ let m4Reach=zero,m4PartitionExactlyOnce=sortedM4.length>0;
+ for(const [from,to] of sortedM4){
+  if(compare(from,m4Reach)!==0){m4PartitionExactlyOnce=false;break;}
+  m4Reach=to;
+ }
+ if(compare(m4Reach,one)!==0)m4PartitionExactlyOnce=false;
+ const nativePartitionProven=
+  nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+  nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveGaps.length===0&&
+  Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps)&&
+  nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0&&
+  m4PartitionExactlyOnce;
  const rows=[],counts={scoped2DGeneratedEdgesChecked:0,
   exact2DSourcePaperAffineAligned:0,
   exactSameClassNative3DBackedEdges:0,
@@ -198,6 +220,11 @@ function auditC1RealNativeScoped2D3DClassBinding({
    counts.roundedPaperRepresentationCompatibleButNotExactCertified+=
     Number(boundedRepresentationConsistent);
    rows.push({view,sourceEdgeId,hlrClass:klass,
+    // Preserve the exact received generated 2D edge for the downstream
+    // global HLR ordinal join. A same-class witness for a DIFFERENT
+    // scoped emission must never be reused to certify this one.
+    nativeScopedReceivedPaperFrom:{u:stroke.from.u,v:stroke.from.v},
+    nativeScopedReceivedPaperTo:{u:stroke.to.u,v:stroke.to.v},
     originalM0ExactRationalPaperInterval:[printable(from),printable(to)],
     exactOriginalM0PaperAffineCollinearity:aligned,
     exactReceived2DPaperWithinOriginalSourceDomain:bounded,

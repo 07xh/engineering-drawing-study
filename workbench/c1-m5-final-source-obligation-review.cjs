@@ -30,14 +30,16 @@ function reviewC1M5FinalStrokeObligations(ledger){
     !Number.isSafeInteger(ledger.revision)||ledger.revision<1||
     ledger.realCADAndM5RecomputedFromCurrentOriginalReviewedSource!==true||
     ledger.signedV5ActionCount!==0||ledger.wholeSolidV5Ready!==false||
-    !Array.isArray(ledger.subspans))
+    !Array.isArray(ledger.subspans)||
+    typeof ledger.sourceGeometryId!=='string'||!ledger.sourceGeometryId.trim())
   throw new TypeError('canonical unsigned real-WASM M5 obligations required');
- const exactSourceKeys=new Set();
+ const exactSourceKeys=new Set(),intervalsBySourceView=new Map();
+ const viewsSeen=new Set();
  const rows=ledger.subspans.map((span,index)=>{
   if(span.sourceGeometryId!==ledger.sourceGeometryId||
      span.revision!==ledger.revision||
      !['V','H','W'].includes(span.view)||
-     typeof span.sourceEdgeId!=='string'||
+     typeof span.sourceEdgeId!=='string'||!span.sourceEdgeId.trim()||
      !Array.isArray(span.originalSourceParameterRange)||
      span.originalSourceParameterRange.length!==2||
      !(span.originalSourceParameterRange[0]<span.originalSourceParameterRange[1])||
@@ -52,10 +54,14 @@ function reviewC1M5FinalStrokeObligations(ledger){
   if(!Number.isFinite(start)||!Number.isFinite(end)||
      start<0||end>1)
    throw new TypeError('invalid original source parameter domain');
-  const sourceKey=span.view+'@'+span.sourceEdgeId+'@'+start+'@'+end;
+  viewsSeen.add(span.view);
+  const sourceKey=JSON.stringify([span.view,span.sourceEdgeId,start,end]);
   if(exactSourceKeys.has(sourceKey))
    throw new TypeError('duplicate original 3D source interval');
   exactSourceKeys.add(sourceKey);
+  const owner=JSON.stringify([span.view,span.sourceEdgeId]);
+  if(!intervalsBySourceView.has(owner))intervalsBySourceView.set(owner,[]);
+  intervalsBySourceView.get(owner).push([start,end]);
   const independentGlobalProofGaps={
    original3DSourceIdentity:span.blockers.originalSourceUniquenessNotProvenEvenAfterExactM0Pruning||
     span.originalCADTopoDSEdgeIdentityRecovered!==true,
@@ -83,12 +89,21 @@ function reviewC1M5FinalStrokeObligations(ledger){
    constructionIntentAuthorized:false,signedV5Action:false
   };
  });
+ // This original-parameter partition may share exact endpoints, but
+ // strictly positive overlap must never inflate independent M5 subspans.
+ for(const intervals of intervalsBySourceView.values()){
+  intervals.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  for(let i=1;i<intervals.length;i++)
+   if(intervals[i][0]<intervals[i-1][1])
+    throw new TypeError('overlapping original 3D source intervals');
+ }
  if(ledger.counts?.totalOriginalSourceEdgeViewSubspans!==rows.length)
   throw new TypeError('source interval count mismatch');
  return freeze({
   schema:'draftai-c1-m5-final-source-obligation-review/1',
   sourceGeometryId:ledger.sourceGeometryId,revision:ledger.revision,
-  total:rows.length,localPositiveCount:rows.filter(x=>x.localPositive).length,
+  total:rows.length,viewsRepresented:['V','H','W'].filter(view=>viewsSeen.has(view)),
+  localPositiveCount:rows.filter(x=>x.localPositive).length,
   fullyCertifiedCount:0,signedV5ActionCount:0,
   unresolvedByProofClass:Object.fromEntries(
    ['original3DSourceIdentity','completeIntervalVisibility',

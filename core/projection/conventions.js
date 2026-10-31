@@ -95,10 +95,29 @@ function sheetPoint(point,transform){
  return r;
 }
 function transferGuides(point,transform){
- const p=sheetPoint(point,transform);
+ const q=snap3(point,'空间点须为有限数值坐标'),t=config(transform),p=sheetPoint(q,t);
+ // First-angle H depth is measured DOWN from the shared paper origin;
+ // W depth is measured RIGHT. Their actual 45-degree transfer point M
+ // lies on the ray (origin.x+d, origin.y+d), d=y*scale. Draw that
+ // diagonal BEFORE the H->M and M->W construction. It is a real guide,
+ // not a precomputed result stroke or a source of line-style authority.
+ // At zero depth M=origin: omit the collapsed diagonal instead of
+ // inventing a visible 45-degree line.
+ const depth=q.y*t.scale;
+ const diagonal=depth===0?[]:[{
+  kind:'depth-45',from:{...t.origin},to:{...p.M},
+  sourceModelAxis:'y',sourceModelValue:q.y,
+  sourceProjectionView:'H',targetProjectionView:'W',
+  constructionOnly:true
+ }];
+ if((depth!==0&&p.M.x===t.origin.x&&p.M.y===t.origin.y)||
+    p.M.x!==t.origin.x+depth||p.M.y!==t.origin.y+depth||
+    p.W.x!==p.M.x||p.H.y!==p.M.y)
+  throw new RangeError('first-angle 45-degree depth transfer is not geometrically aligned');
  return {points:p,guides:[
  {kind:'VH',from:p.V,to:p.H},
  {kind:'height-VW',from:p.V,to:p.W},
+ ...diagonal,
  {kind:'depth-HM',from:p.H,to:p.M},
  {kind:'depth-MW',from:p.M,to:p.W}
  ]};

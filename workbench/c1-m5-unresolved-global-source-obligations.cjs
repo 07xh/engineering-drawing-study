@@ -23,7 +23,7 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  * original-vertex ties may certify OPEN depth order; they do not certify
  * closed endpoints, opaque-face visibility, generated TopoDS history or V5.
  */
-function auditExistingM4OpenSourceDepth(row,kind){
+function auditExistingM4OpenSourceDepth(row,kind,{sourceGeometryId,revision}={}){
  const gap=kind==='positive-original-m0-parameter-gap';
  if((gap?row.nativeOriginal3DM4GapSourceProjectionAvailable:
      row.nativeOriginal3DM4SourceProjectionPresent)!==true)return null;
@@ -39,7 +39,8 @@ function auditExistingM4OpenSourceDepth(row,kind){
       row.nativeOriginal3DM4ProjectionWholeSourceCoverage)!==true||
     row.completeRealNative3DSourceParameterPartition!==true||
     row.originalM4SourcePartitionComplete!==true)
-  return {completeOriginalM4SourceDepthPartition:false,
+  return {view:row.view,sourceEdgeId:row.sourceEdgeId,sourceGeometryId,revision,
+   completeOriginalM4SourceDepthPartition:false,
    reason:'incomplete-original-native-3d-m4-partition',signedV5Action:false};
  const source=gap?row.nativeOriginal3DM4ProjectedCandidateSegments:
    row.native3DM4ProjectedCandidateSegments,
@@ -115,7 +116,9 @@ function auditExistingM4OpenSourceDepth(row,kind){
   cursor=r[1];
  }
  if(cursor!==1)throw new RangeError('M4 source depth partition did not reach 1');
- return {completeOriginalM4SourceDepthPartition:true,
+ return {view:row.view,sourceEdgeId:row.sourceEdgeId,sourceGeometryId,revision,
+  completeOriginalM4SourceDepthPartition:true,
+  openDepthSourceIntervalCount:rows.length,openDepthCutCount:front+hidden+held,
   openDepthFrontCuts:front,openDepthHiddenCuts:hidden,
   openDepthHeldCuts:held,positiveSubpixelCutsHeld:subpixel,
   everyOpenDepthCutClassified:held===0,
@@ -219,6 +222,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   originalM4OpenFrontCuts:0,originalM4OpenHiddenCuts:0,
   originalM4OpenHeldCuts:0,originalM4PositiveSubpixelCutsHeld:0,
   positivePaperGapsWithFullOriginalM4OpenDepthPartition:0,
+  positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection:0,
+  positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity:0,
   VPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   HPositivePaperGapsWithRealNativeClosed3DJointProof:0,
   HPositivePaperGapsWithOriginal3DJointProofHeld:0,
@@ -236,6 +241,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
   positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
   positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory:0,
+  positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld:0,
+  positiveM5GapsWithOppositeHLRClassPaperOverlapHeld:0,
   unsignedV5Actions:0},records=[],seen=new Set(),closedSourceViews=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -531,8 +538,29 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length>0);
    counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory+=Number(
     exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0);
+   // Consume the producer's exact class-separated paper-only ledger. A
+   // visible+hidden union must never masquerade as one continuous visible
+   // engineering stroke; even a single-class full paper candidate is held
+   // until source history and whole-scene M5 visibility are proved.
+   const mixed=exactPaperGap.mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility;
+   const opposite=exactPaperGap.oppositeHLRClassPositivePaperOverlapStillHeld;
+   if(mixed!==undefined||opposite!==undefined){
+    if(typeof mixed!=='boolean'||typeof opposite!=='boolean'||
+       !Array.isArray(exactPaperGap.exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory)||
+       !Array.isArray(exactPaperGap.exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory)||
+       !Array.isArray(exactPaperGap.positiveRationalGapResidualAfterVisiblePaperCandidates)||
+       !Array.isArray(exactPaperGap.positiveRationalGapResidualAfterHiddenPaperCandidates)||
+       (mixed&&(
+        exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length!==0||
+        exactPaperGap.positiveRationalGapResidualAfterVisiblePaperCandidates.length===0||
+        exactPaperGap.positiveRationalGapResidualAfterHiddenPaperCandidates.length===0)))
+     throw new RangeError('opposite native HLR class paper candidates cannot certify M5 visibility');
+    counts.positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld+=Number(mixed);
+    counts.positiveM5GapsWithOppositeHLRClassPaperOverlapHeld+=Number(opposite);
+   }
   }
-  const m4Depth=auditExistingM4OpenSourceDepth(row,kind);
+  const m4Depth=auditExistingM4OpenSourceDepth(row,kind,
+   {sourceGeometryId:geometry.id,revision:cad.revision});
   if(m4Depth?.completeOriginalM4SourceDepthPartition===true){
    counts.originalM4FullSourceOpenDepthPartitions++;
    if(kind==='positive-original-m0-parameter-gap')
@@ -552,6 +580,11 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     originalClosedRayClear:closedOriginalSourceRay,openRayClass:openClass,
     originalEndpointWitnesses:endpoints,exactPaperGap
    }):null;
+  if(kind==='positive-original-m0-parameter-gap'){
+   const exactNativeM0=joint?.originalNativeBRepM0PhysicalVertexBijectionCertified===true;
+   counts.positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection+=Number(exactNativeM0);
+   counts.positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity+=Number(!exactNativeM0);
+  }
   const jointW=row.view==='W'?joint:null,
    jointH=row.view==='H'?joint:null,
    receivedH=jointH?.nativeGlobalGenerated2DPaperEndpointDriftEvidence;
@@ -645,6 +678,10 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    generatedEdgeEngineeringLineStyle:'undetermined',
    signedV5Action:false});
  }
+ if(counts.positivePaperGapsWithExactOriginalBRepM0PhysicalVertexBijection+
+    counts.positivePaperGapsHeldForMissingOrInexactOriginalBRepVertexIdentity!==
+    counts.positiveOriginalPaperGapIntervals)
+  throw new RangeError('original native TopoDS 3D endpoint identity evidence partition incomplete');
  if(counts.unrepresentedOriginalSourceViews!==audit.missingOriginalM0SourceViewRows.length||
     counts.positiveOriginalPaperGapIntervals!==audit.rows.length)
   throw new RangeError('M5 unrepresented/source-gap original inventory incomplete');
