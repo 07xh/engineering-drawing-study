@@ -127,6 +127,9 @@ test('genuine native original all-visible EdgeStatus, full 3D curve, closed conv
   assert.equal(r.status,'physical-original-3d-source-closed-ray-complete-paper-held');
   assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,true);
   assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+  assert.equal(r.sameRunOriginal3DAnd2DJointIndependentlyRechecked,true);
+  assert.equal(r.sameRunOriginal3DNativeParameterAndActual2DPaperJoint
+   .generated2DTopoDSHistoryCertified,false);
   assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,true);
   assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,1);
   assert.equal(r.coProjectedOriginalSourceOpenFrontmostProven,true);
