@@ -90,7 +90,7 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  $('showCandidate').dispatchEvent(new window.Event('click'));
  assert.equal(mode(),'unsigned-candidate');
  assert.equal(document.querySelectorAll('#sheetPreview line').length,18);
- assert.match($('paperMode').textContent,/不是 V5 动作/);
+ assert.match($('paperMode').textContent,/不是已验证作图/);
  assert.equal(compileCalls,0);
  $('showGiven').dispatchEvent(new window.Event('click'));
  assert.equal(mode(),'given');

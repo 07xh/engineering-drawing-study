@@ -64,7 +64,7 @@ summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-botto
 </div></header>
 <main class="wrap">
 <h1>圆柱截切</h1>
-<p class="sub">这是供个人研究的真实几何实验：修改圆柱与截平面，系统重新解析求交，再依数学残差、端盖截线拓扑和观察方向逐笔生成同纸三视图。不是教材预置动画，也不是任意题图 AI 自动识别。</p>
+<p class="sub">输入圆柱与截平面条件，查看三视图和逐步作图。当前不能自动识别任意题图。</p>
 <div class="layout">
 <section class="card" aria-label="圆柱和斜截平面条件">
 <h2>已知数学条件 <span style="font-size:12px;color:#70907a">单位 mm</span></h2>
@@ -135,7 +135,7 @@ summary{font-size:13px;color:#426f50;font-weight:700;cursor:pointer;margin-botto
 <p id="stepDetail" class="helper">选择步骤可跳转到对应的真实绘制进度，修改条件会使旧动画失效。</p>
 </section>
 </div>
-<p class="sub" style="margin-top:17px">安全与精度说明：仅浏览器本地计算，不上传数据；圆柱截线由解析数学求交，屏幕曲线采用有界采样近似。此页面是实验性动态作图工具，尚未实现照片自动识别、截面填充、任意轴线圆柱及工程规范的完整线型验收。</p>
+<p class="sub" style="margin-top:17px">计算在本机完成，截线以采样曲线显示。暂不支持照片自动识别、截面填充、任意轴线圆柱和完整标准线型。</p>
 </main>
 <script defer src="cylinder-cut-live-bundle.js"></script>
 </body>

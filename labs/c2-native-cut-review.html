@@ -41,11 +41,11 @@ small{color:#60738f}
 <nav class="site-nav"><a href="../index.html">首页</a><a href="composite-geometry.html">组合体实验</a><a href="../public-use.html">使用范围</a></nav>
 </div></header>
 <main>
-<h1>C2 矩形通孔 · 已认证图线回放</h1>
-<p class="hint">当前仅支持从仓库原生 OpenCascade CI 下载的 C2 通孔证明文件。局部工程线型使用现有唯一 V5 逐笔回放，未证明部分不会绘制。</p>
+<h1>矩形通孔图线回放</h1>
+<p class="hint">仅支持导入指定的通孔核验记录。只回放已验证的局部线段，未核验部分不会绘制。</p>
 <div class="top">
 <section class="panel">
-<h2>导入真实计算证据</h2>
+<h2>导入图线核验记录</h2>
 <p class="hint">打开 <a href="https://github.com/07xh/engineering-drawing-study/actions/workflows/c2-actual-through-hole-source-e2e.yml" rel="noopener noreferrer" target="_blank">C2 原生 OCCT 验收记录</a>，选择最新成功的 <code>main</code> 运行，在 Artifacts 下载 <code>genuine-c2-rectangular-through-hole-topods</code> 并解压，导入其中的 <code>original-c2-through-hole-m0-m4.json</code>。</p>
 <button id="cutDemo" type="button">一键播放已认证通孔示例（12 条）</button>
 <p class="hint">无需下载文件：示例由真实 OpenCascade CI 计算生成，并在每次对应源码更新时验证与实际证明一致；仅展示已认证的局部线段，非完整答案。</p>
