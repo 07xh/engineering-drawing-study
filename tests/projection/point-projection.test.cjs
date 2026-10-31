@@ -64,7 +64,7 @@ test('45 degree transfer guides represent V-H same x, V-W same z, H-M-W same y',
  const o=solveProjection({knownViews:{V,H},sheetTransform});
  assert.deepEqual(o.guides.map(g=>g.kind),
   ['VH','height-VW','depth-45','depth-HM','depth-MW']);
- assert.equal(o.steps.length,4);
+ assert.equal(o.steps.length,5);
  for(const s of o.steps){
   assert.equal(s.source,'computed-first-angle-guides');
   assert.equal(s.style,'auxiliary');
