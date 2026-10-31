@@ -1544,21 +1544,35 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   svg.append(shape('rect',{x:0,y:0,width:500,height:220,fill:'#f8fbff'}));
   const snap=coordinator?.snapshot();if(!snap)return;
   const result=compiled(),out=current()||preview();
-  const three=result&&out?.scene?ensureLinkedThree():null;
+  let three=null;
+  if(result&&out?.scene){
+   try{three=ensureLinkedThree();}
+   catch(_){
+    // WebGL is OPTIONAL. Unsupported GPU/driver initialisation must never
+    // prevent the canonical Geometry Scene from rendering in the SVG viewer.
+    linkedThreeAttempted=true;linkedThree=null;
+   }
+  }
   if(three&&out.scene.revision===snap.revision){
-   three.update(out.scene,{
-    selectedIds:sceneSelectionGroup(out.scene,
-     coordinator.selectedGeometryId(),snap.revision),
-    selectedSourceFeature:selectedSourceFeature?.key||null,
-    hiddenObjectIds:!$('v7-guides').checked?
-     (out.linkedC2?.groups||[]).map(g=>g.geometryId):[],
-    camera:snap.view.camera
-   });
-   svg.hidden=true;$('v9-three-space').hidden=false;
-   return;
+   try{
+    three.update(out.scene,{
+     selectedIds:sceneSelectionGroup(out.scene,
+      coordinator.selectedGeometryId(),snap.revision),
+     selectedSourceFeature:selectedSourceFeature?.key||null,
+     hiddenObjectIds:!$('v7-guides').checked?
+      (out.linkedC2?.groups||[]).map(g=>g.geometryId):[],
+     camera:snap.view.camera
+    });
+    svg.hidden=true;$('v9-three-space').hidden=false;
+    return;
+   }catch(_){
+    // Fail closed for an over-budget/incomplete GPU scene. Use the already
+    // prepared SVG lines, not an incorrectly truncated Three.js model.
+    // A later smaller revision can still retry the same existing viewer.
+   }
   }
   svg.hidden=false;
-  if(linkedThree)$('v9-three-space').hidden=true;
+  $('v9-three-space').hidden=true;
   if(!result)return;
   drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked);
   if(result.spatial.some(p=>p.visibility==='undetermined'))
