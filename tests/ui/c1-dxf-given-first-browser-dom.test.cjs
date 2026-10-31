@@ -144,6 +144,8 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  assert.equal(compileCalls,0);
  // Reconfirm actual original source correspondence, then exercise the
  // REAL page compile/paint flow with a maliciously prefilled final SVG.
+ // The preceding edit omitted point 3; review every original GIVEN point.
+ $('sourcePairs').value='0,0\n1,1\n2,2\n3,3';
  $('applyPairs').dispatchEvent(new window.Event('click'));
  for(let i=0;i<8&&$('reviewCheck').disabled;i++)await tick();
  assert.equal($('reviewCheck').disabled,false);
