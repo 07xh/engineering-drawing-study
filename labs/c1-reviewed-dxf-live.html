@@ -26,6 +26,22 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f7fb;border-radius
 .hint{padding:10px 13px;border-left:3px solid #4e81b6;background:#f1f6fc;border-radius:5px}
 svg{width:100%;height:auto;background:white;border:1px solid #dbe4ef;border-radius:8px}
 #sheetPreview svg{max-height:550px}
+#paperMode{font-size:13px;color:#365979;margin:4px 0 8px}
+.paper-switch{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0 12px}
+.paper-switch button{background:#ebf3fd;color:#174c85;border:1px solid #a8c2df}
+.paper-switch button[aria-pressed="true"]{background:#174c85;color:white}
+.paper-switch button:disabled{background:#f5f7fa;color:#7d8792}
+#sheetPreview{min-height:260px}
+.v5-step-panel{margin:14px 0;padding:14px 16px;border:1px solid #bfd2e5;background:#f6f9fe;border-radius:10px}
+.v5-step-panel label{margin:0 0 5px}
+.v5-step-panel select{max-width:100%;width:100%;min-height:44px;border:1px solid #a8c3df;border-radius:8px;padding:8px;color:#183d68;background:#fff}
+.v5-step-panel h3{margin:12px 0 4px;font-size:16px;color:#1b3f60}
+.v5-step-panel p{margin:5px 0}
+.v5-step-panel ol{padding-left:23px;margin:8px 0;max-height:230px;overflow:auto}
+.v5-step-panel li{margin:6px 0;overflow-wrap:anywhere}
+.v5-step-panel small{display:block;overflow-wrap:anywhere}
+.v5-step-panel [data-proof="unsigned"]{color:#875b22}
+.v5-step-panel [data-proof="signed"]{color:#236449;font-weight:700}
 #animation{height:auto;max-height:540px;min-height:260px}
 #status{font-weight:650;color:#1f6293;padding:9px}
 #status[data-status=blocked]{color:#a02b33}
@@ -38,7 +54,7 @@ small{color:#61768c}
 <body><main>
 <a href="solid-third-view-live.html">← 返回基本体补第三视图工作台</a>
 <h1>教材 C1：可信 DXF 已知量 → 自动对应 → 人工审核 → 唯一 V5</h1>
-<p class="hint">仅使用本机可信转换器导出的 <strong>GIVEN 已知量 JSON</strong>。不要上传或在此页面选择参考答案 JSON、原始教材 DWG。文件只在浏览器内读取，不发送、不保存。CAD 顶点、体积拓扑都需要独立人工审核；算法示例通过不代表图 3-50 / 图 3-52 原题验收。</p>
+<p class="hint">仅使用本机可信转换器导出的 <strong>GIVEN 已知量 JSON</strong>。默认仅展示真实输入的两个视图投影点，第三视图空白；原题 JSON 不含已认证 CAD 线段拓扑。候选图必须主动点击查看，灰色虚线不是答案或标准虚线。不要选择参考答案 JSON、原始教材 DWG。文件只在浏览器内读取，不发送、不保存。CAD 顶点与实体拓扑必须独立人工审核；算法示例通过不代表真实教材题验收。</p>
 <div class="grid">
 <section class="panel" aria-label="原始 CAD 输入及人工确认">
 <h2>一、原题输入与数学重建</h2>
@@ -63,9 +79,14 @@ small{color:#61768c}
 <p class="hint">本机配对可解决“二维点多对一”且你已确认全部真实三维角点的闭合凸体。对于带孔、开槽、非凸组合体、缺失角点或不确定来源的原题，仍必须拒绝整题签收；仅靠缩略图或猜测线型不会获得 V5 资格。</p>
 </section>
 <section class="panel" aria-label="三视图真实结果与唯一 V5 播放">
-<h2>二、V/H/W 同纸显示</h2>
-<div id="sheetPreview" aria-label="原题数学候选与 M5 审核后的完整三视图预览"></div>
-<h2>三、唯一 V5 逐笔动画</h2>
+<h2>三、V/H/W 同纸显示</h2>
+<p id="paperMode" role="status" aria-live="polite">尚未选择原题。首帧只显示 GIVEN 已知视图，待补视图留白。</p>
+<div class="paper-switch" role="group" aria-label="原题与未认证候选分开查看">
+<button id="showGiven" type="button" aria-pressed="true" disabled>原题已知视图（默认）</button>
+<button id="showCandidate" type="button" aria-pressed="false" disabled>查看未认证三维候选</button>
+</div>
+<div id="sheetPreview" aria-label="默认仅含原始 GIVEN 点集且第三视图空白；手动切换后才显示未认证候选"></div>
+<h2>四、唯一 V5 逐笔动画</h2>
 <div class="controls" aria-label="现有唯一 V5 播放器">
 <button id="play" type="button" disabled>播放</button>
 <button id="pause" type="button" disabled>暂停</button>
@@ -74,7 +95,15 @@ small{color:#61768c}
 </div>
 <svg id="animation" viewBox="0 0 960 720" role="img" aria-label="当前数学版本的唯一 V5 绘制动作"></svg>
 <p id="v5Status" aria-live="polite">原始条件未审核，无已签收动画动作。</p>
-<h2>四、可复核证明及适用范围</h2>
+<section class="v5-step-panel" aria-label="与唯一 V5 同步的来源和步骤说明">
+<label for="v5StepJump">真实作图步骤（与当前动画同步）</label>
+<select id="v5StepJump" disabled aria-label="跳转已签收的真实 ConstructionStep"></select>
+<h3 id="v5StepTitle">原题条件未审核</h3>
+<p id="v5StepExplanation">尚未取得当前版本的数学 ConstructionStep，不能展示推测作图过程。</p>
+<ol id="v5StepActions" aria-label="本步骤真实绘图动作和来源"></ol>
+<small id="v5StepProof">只有同版本 M3/M4/M5 确认且匹配原始来源绑定的线条才能显示正式线型；仅看动画不能证明答案正确。</small>
+</section>
+<h2>五、可复核证明及适用范围</h2>
 <pre id="proof">原题完整盲测与国标全部线型未签收。</pre>
 <small>私密教材 DWG/DXF、参考答案及人工审核记录不进入站点构建产物；只发布通用本机阅读和计算代码。</small>
 </section>

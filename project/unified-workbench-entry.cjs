@@ -1548,8 +1548,7 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(result&&out?.scene){
    try{three=ensureLinkedThree();}
    catch(_){
-    // WebGL is OPTIONAL. Unsupported GPU/driver initialisation must never
-    // prevent the canonical Geometry Scene from rendering in the SVG viewer.
+    // WebGL is optional; a renderer error must not block the canonical SVG.
     linkedThreeAttempted=true;linkedThree=null;
    }
   }
@@ -1563,15 +1562,13 @@ const Motion=require('../workbench/teaching-motion-v5.js');
       (out.linkedC2?.groups||[]).map(g=>g.geometryId):[],
      camera:snap.view.camera
     });
-    svg.hidden=true;$('v9-three-space').hidden=false;
+    svg.hidden=true;svg.setAttribute('hidden','');$('v9-three-space').hidden=false;
     return;
    }catch(_){
-    // Fail closed for an over-budget/incomplete GPU scene. Use the already
-    // prepared SVG lines, not an incorrectly truncated Three.js model.
-    // A later smaller revision can still retry the same existing viewer.
+    // A partial/over-budget GPU scene cannot replace the complete SVG.
    }
   }
-  svg.hidden=false;
+  svg.hidden=false;svg.removeAttribute('hidden');
   $('v9-three-space').hidden=true;
   if(!result)return;
   drawPrimitives(svg,result.spatial,'3D',snap,null,$('v7-mono').checked);
@@ -2006,7 +2003,10 @@ const Motion=require('../workbench/teaching-motion-v5.js');
      '，对应视图已高亮。'):
     '点选图元，查看各视图中的对应位置。';
   const mode=snap.view.mode;
-  $('v7-sheet').hidden=mode==='3d'&&snap.task!=='planar';
+  const hideSheet=mode==='3d'&&snap.task!=='planar';
+  $('v7-sheet').hidden=hideSheet;
+  if(hideSheet)$('v7-sheet').setAttribute('hidden','');
+  else $('v7-sheet').removeAttribute('hidden');
   root.querySelector('.v7-spatial').hidden=mode==='2d'||snap.task==='planar';
   const timed=playback(),ready=!!timed;
   for(const id of ['v7-back','v7-play','v7-next','v7-seek','v7-speed'])
