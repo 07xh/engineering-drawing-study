@@ -4,6 +4,7 @@
  * DAG / V5 timeline. Never creates or signs geometry, guesses pedagogical
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
+const Timeline=require('./teaching-timeline-v5.js');
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -25,6 +26,25 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
  const steps=solution.steps,timeline=solution.timeline,
   bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
    ...(solution.certifiedPhysicalLineBindings||[])];
+ // Recompute the CURRENT frame using the existing sole V5 timeline.
+ // A forged future fraction, stale completion list or mismatched active
+ // step must never reveal an answer stroke ahead of its DAG explanation.
+ // This is presentation integrity only; it grants no M5 line signature.
+ if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>timeline.totalMs)
+  throw new RangeError('V5 frame elapsed time is outside current timeline');
+ const expectedFrame=Timeline.frame(timeline,frame.elapsedMs);
+ if(frame.totalMs!==expectedFrame.totalMs||
+    frame.done!==expectedFrame.done||
+    frame.activeStepIndex!==expectedFrame.activeStepIndex||
+    frame.activeStepId!==expectedFrame.activeStepId||
+    frame.activeActionId!==expectedFrame.activeActionId||
+    frame.completedIds.length!==expectedFrame.completedIds.length||
+    frame.completedIds.some((id,i)=>id!==expectedFrame.completedIds[i])||
+    Object.keys(frame.actionFractions).length!==timeline.segments.length||
+    timeline.segments.some(a=>
+     frame.actionFractions[a.id]!==expectedFrame.actionFractions[a.id]))
+  throw new RangeError('V5 frame action progress contradicts canonical DAG timeline');
  const owners=new Map(),seenActions=new Set(),seenSteps=new Set();
  for(const binding of bindings){
   if(!binding||typeof binding.actionId!=='string'||
