@@ -28,6 +28,62 @@ const nativeScopedPaperSegmentsSame=(a,b)=>{
   paperSame(a.from,b.to,spanA,spanB)&&
   paperSame(a.to,b.from,spanA,spanB);
 };
+/**
+ * Necessary SAME-RUN global generated 3D->2D HLR paper corroboration.
+ * OCCT's two extraction paths can round coordinates differently, but a
+ * millimetre-scale tolerance cannot stand in for generated TopoDS history.
+ * An exact match is allowed at ANY positive binary64 span (including a
+ * subnormal one); otherwise every received endpoint must stay within ONE
+ * binary64 ULP at the source-paper coordinate scale, additionally capped by
+ * one-millionth of the actual 3D projected span. This does not certify
+ * original->generated edge identity or close even a one-ULP M5 gap.
+ */
+const ulpWords=new DataView(new ArrayBuffer(8));
+const oneUlpAtScale=x=>{
+ ulpWords.setFloat64(0,x,false);
+ const exponent=(ulpWords.getUint32(0,false)>>>20)&0x7ff;
+ return exponent<=1?Number.MIN_VALUE:2**(exponent-1023-52);
+};
+function auditC1Global3D2DPaperPairEnvelope(source3DPaper,generated2DPaper){
+ if(![source3DPaper,generated2DPaper].every(s=>
+     valid(s?.from)&&valid(s?.to)&&
+     (s.from.u!==s.to.u||s.from.v!==s.to.v)))
+  throw new TypeError('two noncollapsed finite native 3D/2D HLR paper edges required');
+ const same=(a,b)=>a.u===b.u&&a.v===b.v;
+ const direct=same(source3DPaper.from,generated2DPaper.from)&&
+  same(source3DPaper.to,generated2DPaper.to);
+ const reverse=same(source3DPaper.from,generated2DPaper.to)&&
+  same(source3DPaper.to,generated2DPaper.from);
+ if(direct||reverse)return Object.freeze({
+  compatible:true,exactBinary64Endpoints:true,
+  sourceScaleOneULPBoundedRoundingOnly:false,
+  originalGeneratedTopoDSHistoryCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const span=Math.hypot(
+  source3DPaper.to.u-source3DPaper.from.u,
+  source3DPaper.to.v-source3DPaper.from.v);
+ const scale=Math.max(1,...[
+  source3DPaper.from,source3DPaper.to,
+  generated2DPaper.from,generated2DPaper.to
+ ].flatMap(p=>[Math.abs(p.u),Math.abs(p.v)]));
+ const budget=Number.isFinite(span)&&span>0?
+  Math.min(oneUlpAtScale(scale),span*1e-6):0;
+ const close=(a,b)=>Math.abs(a.u-b.u)<=budget&&
+  Math.abs(a.v-b.v)<=budget;
+ const compatible=budget>0&&(
+  close(source3DPaper.from,generated2DPaper.from)&&
+  close(source3DPaper.to,generated2DPaper.to)||
+  close(source3DPaper.from,generated2DPaper.to)&&
+  close(source3DPaper.to,generated2DPaper.from));
+ return Object.freeze({
+  compatible,exactBinary64Endpoints:false,
+  sourceScaleOneULPBoundedRoundingOnly:compatible,
+  absolutePaperEnvelopeMm:budget,
+  originalGeneratedTopoDSHistoryCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
 function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
@@ -169,4 +225,4 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   engineeringLineStyle:'undetermined',signedV5ActionCount:0});
 }
 module.exports={auditC1ScopedHLRGeneratedEdgeMatch,nativeScopedPaperSegmentsSame,
- auditC1ScopedHLRSourceIdentityConflicts};
+ auditC1Global3D2DPaperPairEnvelope,auditC1ScopedHLRSourceIdentityConflicts};
