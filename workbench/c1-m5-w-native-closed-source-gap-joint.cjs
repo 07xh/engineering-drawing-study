@@ -14,7 +14,7 @@ const {auditC1Native3DSourceScopedIntervals}=
 const {project}=require('../core/projection/conventions.js');
 const {auditC1ExactTwoAxisGeneratedPaperCoverage}=
  require('./c1-exact-two-axis-generated-paper-coverage.cjs');
-const {dyadic,difference,product,sign}=require('../core/numeric/binary64-dyadic.cjs');
+const {dyadic,difference,product,sum,sign}=require('../core/numeric/binary64-dyadic.cjs');
 const {auditExactBinary64PaperCandidateCoverage}=
  require('./c1-exact-binary64-paper-parameter.cjs');
 const freeze=x=>{
@@ -27,6 +27,20 @@ const freeze=x=>{
 const finiteRange=r=>Array.isArray(r)&&r.length===2&&
  r.every(Number.isFinite)&&r[1]>r[0];
 const same=(a,b)=>a?.[0]===b?.[0]&&a?.[1]===b?.[1];
+// The actual native HLR paper edge can be a PARTIAL source interval.
+// Pair both received endpoints to both physical source endpoints using
+// exact binary64 squared distance, not a single Math.hypot decision.
+// Rounded Number distances can overflow or choose the wrong orientation.
+const exactPaperDistanceSquared=(p,q)=>{
+ const du=difference(dyadic(p.u),dyadic(q.u));
+ const dv=difference(dyadic(p.v),dyadic(q.v));
+ return sum(product(du,du),product(dv,dv));
+};
+const exactPhysicalEndpointAssignment=(from,to,a,b)=>{
+ const forward=sum(exactPaperDistanceSquared(from,a),exactPaperDistanceSquared(to,b));
+ const reverse=sum(exactPaperDistanceSquared(from,b),exactPaperDistanceSquared(to,a));
+ return sign(difference(forward,reverse))<=0?[a,b]:[b,a];
+};
 
 function auditC1WNativeClosedPhysicalGap({
  geometry,cad,view,sourceEdgeId,positiveGap,
@@ -127,11 +141,19 @@ function auditC1WNativeClosedPhysicalGap({
   x.actualNativeGlobal3DOriginalSourceEdgeId===sourceEdgeId&&
   x.original3DCurveAndScopedNativeParameterIntervalCorroborated===true&&
   x.hlrClass==='visible-sharp');
+ // An original all-visible source cannot be declared fully visible if
+ // the same-run WHOLE-SOLID 3D HLR ledger also attributes a hidden or
+ // uncorroborated generated edge to that physical source. The original
+ // source-filtered partition alone does not establish this consistency.
+ const globalClassConsistent=global3DSource.claims.every(x=>
+  x.actualNativeGlobal3DOriginalSourceEdgeId!==sourceEdgeId||
+  x.original3DCurveAndScopedNativeParameterIntervalCorroborated===true&&
+  x.hlrClass==='visible-sharp');
  const globalVisible=auditC1Native3DSourceScopedIntervals({
   originalNativeParameterRange:bounds,
   generatedNativeParameterRanges:claimed3D.map(x=>x.originalNativeCurveParameterRange)
  });
- const globalFull=nativeFullVisible&&
+ const globalFull=nativeFullVisible&&globalClassConsistent&&
   global3DSource.differentOriginal3DSourceClaimsHeld===0&&
   global3DSource.unknownGlobalOrdinalClaimsHeld===0&&
   globalVisible.sourceScopedNative3DParameterInventoryCompleteExactlyOnce;
@@ -194,10 +216,8 @@ function auditC1WNativeClosedPhysicalGap({
     throw new RangeError('real generated W paper endpoint differs from original BRep witness');
    // Report both orientations. The native projected segment is UNMODIFIED;
    // dyadic differences capture tiny, nonzero received binary64 offsets.
-   const fromRef=direct||(!reversed&&
-     Math.hypot(native.from.u-a.u,native.from.v-a.v)<=
-      Math.hypot(native.from.u-b.u,native.from.v-b.v))?a:b;
-   const toRef=fromRef===a?b:a;
+   const [fromRef,toRef]=exactPhysicalEndpointAssignment(
+    native.from,native.to,a,b);
    const delta=(point,ref)=>({
     u:(()=>{const x=difference(dyadic(point.u),dyadic(ref.u));
      return {numerator:String(x.n),powerOfTwo:x.e};})(),
@@ -278,6 +298,7 @@ function auditC1WNativeClosedPhysicalGap({
   nativeOriginalEdgeStatusAllVisible:sameClass,
   scopedNativeOriginal3DVisibilityParameterComplete:nativeFullVisible,
   globalGeneratedNative3DToOriginalBRepIntervalComplete:globalFull,
+  globalGeneratedNative3DClassConsistentWithOriginalAllVisible:globalClassConsistent,
   exactWholeOriginal3DSourceNativeVisibleCurveProven:globalFull,
   wholeReviewedConvexOriginalClosedSourceRayClear:rayClear,
   coProjectedOriginalSourceOpenFrontmostProven:originalFront,

@@ -202,3 +202,32 @@ test('non-W original gaps are outside this witness, never considered a certified
  const x=fixture();x.view='H';
  assert.equal(audit(x),null);
 });
+
+test('whole-solid hidden native 3D HLR claim vetoes an original all-visible W certificate',()=>{
+ const x=fixture();
+ x.cad.hiddenSharpViews.W.push(structuredClone(x.cad.views.W[0]));
+ x.global3DSource.claims.push({
+  ...x.global3DSource.claims[0],hlrClass:'hidden-sharp'
+ });
+ x.originalEndpointWitnesses.push({
+  ...x.originalEndpointWitnesses[0],hlrClass:'hidden-sharp'
+ });
+ const result=audit(x);
+ assert.equal(result.globalGeneratedNative3DClassConsistentWithOriginalAllVisible,false);
+ assert.equal(result.globalGeneratedNative3DToOriginalBRepIntervalComplete,false);
+ assert.equal(result.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(result.status,'held-physical-source-proof-incomplete');
+ assert.equal(result.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+});
+test('partial W generated edge pairs BOTH endpoints to original vertices exactly, not just nearest from',()=>{
+ const x=fixture();
+ x.cad.views.W[0]={from:{u:7.84,v:0.98},to:{u:0,v:0}};
+ const result=audit(x);
+ const row=result.nativeGlobalGeneratedW2DPaperEndpointDriftEvidence.rows[0];
+ assert.equal(BigInt(row.fromDisplacementFromPhysicalSource.u.numerator)<0n,true);
+ assert.equal(BigInt(row.toDisplacementFromPhysicalSource.u.numerator),0n);
+ assert.equal(result.generatedPaperGapStrictlyPositiveStillHeld,true);
+ assert.equal(result.signedV5Action,false);
+});
