@@ -114,3 +114,12 @@ test('blank geometry and original edge identifiers never enter the unsigned proo
  for(const sourceEdgeId of ['', '  '])
   assert.throws(()=>review(ledger([span({sourceEdgeId})])),/invalid, stale/);
 });
+
+test('source IDs containing delimiters cannot collide with source interval keys',()=>{
+ const a=span({sourceEdgeId:'edge@0@1',originalSourceParameterRange:[0,1]});
+ const b=span({sourceEdgeId:'edge',originalSourceParameterRange:[0,1]});
+ assert.equal(review(ledger([a,b])).total,2);
+ const c=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[0,.5]});
+ const d=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[.5,1]});
+ assert.equal(review(ledger([c,d])).total,2);
+});
