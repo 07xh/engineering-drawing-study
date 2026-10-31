@@ -123,6 +123,38 @@ test('native IsSame from genuine scoped to whole-solid edge is distinct from ORI
  assert.equal(r.views.V[0].nativeIsSameIsNotGeneratedToOriginal3DTopoDSIdentity,true);
  assert.equal(r.views.V[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
 });
+test('M4/M5 independently rejects forged native direct IsSame paper alias despite tolerant candidate match',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].visible[0];
+  w.globalDirectSameGeneratedTopoDSOrdinals=[0];
+  w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  w.from={u:0,v:1e-7};w.to={u:12,v:1e-7};
+  const cls=x.views[view].nativeScoped2D3DClassBindings[0].rows[0];
+  cls.nativeScopedReceivedPaperFrom={...w.from};
+  cls.nativeScopedReceivedPaperTo={...w.to};
+  // The candidate is within the old 1e-6 discovery envelope; the
+  // independent source consumer must reject the forged native claim.
+  assert.throws(()=>audit(x),/forged native direct IsSame paper envelope/);
+  // Reverse orientation does not change the physical requirement.
+  w.from={u:12,v:1e-7};w.to={u:0,v:1e-7};
+  cls.nativeScopedReceivedPaperFrom={...w.from};
+  cls.nativeScopedReceivedPaperTo={...w.to};
+  assert.throws(()=>audit(x),/forged native direct IsSame paper envelope/);
+ }
+});
+test('M4/M5 accepts a one-ULP native direct IsSame endpoint only as unsigned provenance',()=>{
+ const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView.W.rows[0].visible[0];
+ w.globalDirectSameGeneratedTopoDSOrdinals=[0];
+ w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ w.to={u:12+Number.EPSILON*8,v:0};
+ const cls=x.views.W.nativeScoped2D3DClassBindings[0].rows[0];
+ cls.nativeScopedReceivedPaperTo={...w.to};
+ const r=audit(x);
+ assert.equal(r.counts.wholeSolidEdgesWithNativeScopedIsSameIdentity,1);
+ assert.equal(r.views.W[0].nativeIsSameIsNotGeneratedToOriginal3DTopoDSIdentity,true);
+ assert.equal(r.views.W[0].wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
 test('forged original source, mismatched 2D class and unsound ordinals are rejected',()=>{
  const mutate=[
   x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].visible[0].originalPhysicalSourceEdgeId=other;},
