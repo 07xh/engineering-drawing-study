@@ -99,8 +99,15 @@ function auditC1RealNativeScoped2D3DClassBinding({
  // or two overlapping same-class intervals can silently double-count.
  // Check the actual dyadic-rational M4 source cuts independently below.
  const a=sourceProjectedFrom,b=sourceProjectedTo;
- const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
-  denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
+ // Choose the dominant ORIGINAL paper axis with exact dyadic squares.
+ // Both binary64 differences can overflow to Infinity even though every
+ // input coordinate is finite. Infinity >= Infinity silently selects u,
+ // which can be the SHORTER axis and can erase a genuine 2D paper span.
+ // This is an audit of native source geometry, never a tolerance or M5 signoff.
+ const deltaU=sub(dyadic(b.u),dyadic(a.u));
+ const deltaV=sub(dyadic(b.v),dyadic(a.v));
+ const axis=sign(sub(product(deltaU,deltaU),product(deltaV,deltaV)))>=0?'u':'v',
+  denominator=axis==='u'?deltaU:deltaV;
  if(sign(denominator)===0)
   throw new RangeError('collapsed original M0 source paper line');
  const m4=nativeOriginal3DM4.segments.map(seg=>{
