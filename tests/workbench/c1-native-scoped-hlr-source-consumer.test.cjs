@@ -3,6 +3,8 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const {auditC1NativeScopedHLRSourceConsumer:audit}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
+const {auditC1ScopedHLRSourceIdentityConflicts:checkNativeClaims}=
+ require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
 function fixture(){
@@ -59,6 +61,16 @@ function fixture(){
      visible:[],hidden:[]}
    ]
   };
+ }
+ for(const view of ['V','H','W']){
+  const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+  scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+   wholeSolidCounts:{
+    'visible-sharp':cad.views[view].length,
+    'hidden-sharp':cad.hiddenSharpViews[view].length
+   }
+  });
  }
  return {geometry,cad,id0,id1,witness,paper};
 }
@@ -657,4 +669,53 @@ test('genuine half-source native W paper remains an exact positive source gap, n
  assert.equal(row.actualOriginalTopoDSParameterCoverageCertified,false);
  assert.equal(row.engineeringLineStyle,'undetermined');
  assert.equal(row.signedV5Action,false);
+});
+
+test('M4/M5 independently reconciles serialized native source claims with whole-solid HLR',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const w=scoped.rows[0].visible[0];
+  w.globalDirectSameGeneratedTopoDSOrdinals=[0];
+  w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  scoped.nativeScopedToWholeSolidGeneratedIsSameCount=1;
+  scoped.paperOnlyScopedOutputEdgeCount=0;
+  // An authentic native claim has to be represented by the complete
+  // producer ledger. Even then, it does not certify original BRep history.
+  assert.throws(()=>audit(x),/native scoped\/global HLR source identity ledger/);
+  scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+   wholeSolidCounts:{'visible-sharp':1,'hidden-sharp':0}
+  });
+  const r=audit(x);
+  assert.equal(r.counts.nativeGeneratedIsSameMatches,1);
+  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+  assert.equal(r.globalContinuousVisibilityCertified,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('dropped, invented, or stale native generated-edge ledger evidence fails closed',()=>{
+ for(const view of ['V','H','W']){
+  for(const mutate of [
+   ledger=>{ledger.unclaimedWholeSolidGeneratedEdgeOrdinals=[];},
+   ledger=>{ledger.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim=true;},
+   ledger=>{ledger.uniqueNativeClaims=1;},
+   ledger=>{ledger.rows=[{view,hlrClass:'visible-sharp',
+    nativeWholeSolidEdgeOrdinal:0,originalPhysicalSourceEdgeId:'g::A|B',
+    nativeScopedGeneratedEdgeIsSame:true,
+    completeOriginalSourceHistoryCertified:true,
+    globalContinuousOcclusionCertified:true,signedV5Action:true}];},
+   ledger=>{ledger.signedV5ActionCount=1;},
+   ledger=>{ledger.fullOriginalSourceHistoryCertified=true;}
+  ]){
+   const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+   scoped.nativeSourceIdentityConflicts=
+    structuredClone(scoped.nativeSourceIdentityConflicts);
+   mutate(scoped.nativeSourceIdentityConflicts);
+   assert.throws(()=>audit(x),/native scoped\/global HLR source identity ledger/);
+  }
+  const missing=fixture();
+  delete missing.cad.nativeSourceScopedSharpOutputByView[view].
+   nativeSourceIdentityConflicts;
+  assert.throws(()=>audit(missing),/native scoped\/global HLR source identity ledger/);
+ }
 });
