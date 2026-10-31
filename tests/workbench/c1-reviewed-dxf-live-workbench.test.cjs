@@ -37,7 +37,10 @@ test('actual local-only DXF given review page is wired to official site with one
  assert.match(js,/\bURL\.revokeObjectURL\(previewObjectUrl\)/);
  assert.match(js,/\bURL\.createObjectURL\(file\)/);
  assert.match(js,/Motion\.updateSvg/);
- assert.match(js,/sheetPreview'\)\.innerHTML=result\.solution\.threeViewSvgSheet\.sheetSvg/);
+ // #377: the opening paper must never be the precomputed third view.
+ assert.match(js,/transformed=buildC1DxfGivenFirstPaper\(source\)\.transform/);
+ assert.match(js,/renderOriginalPaper\(\);\s*\$\('showGiven'\)\.disabled=true/);
+ assert.doesNotMatch(js,/sheetPreview'\)\.innerHTML=result\.solution\.threeViewSvgSheet\.sheetSvg/);
  assert.doesNotMatch(js,/\bfetch\(|\blocalStorage\.|\bsessionStorage\.|XMLHttpRequest/);
  assert.doesNotMatch(js,/referenceStrokes|referencePacket|referenceStrokes\.json/);
 });
