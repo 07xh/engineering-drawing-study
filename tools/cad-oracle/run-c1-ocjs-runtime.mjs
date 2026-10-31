@@ -1769,6 +1769,13 @@ for(const [index,geometry] of general.entries()){
  const unresolvedM5=auditC1M5UnresolvedGlobalSourceObligations({
   geometry,cad,positiveOriginalGapRays
  });
+ assert.equal(unresolvedM5.schema,
+  'draftai-c1-m5-unresolved-global-original-source-junction-obligations/1');
+ assert.equal(unresolvedM5.counts.unrepresentedOriginalSourceViews,
+  positiveOriginalGapRays.missingOriginalM0SourceViewRows.length);
+ assert.equal(unresolvedM5.counts.positiveOriginalPaperGapIntervals,
+  positiveOriginalGapRays.rows.length);
+ assert.equal(unresolvedM5.generatedHistoryAndContinuousSceneOcclusionStillRequired,true);
  assert.equal(unresolvedM5.allUnresolvedM5ObligationsExplicitlyPreserved,true);
  assert.equal(unresolvedM5.officialV5Authorized,false);
  assert.equal(unresolvedM5.signedV5ActionCount,0);
