@@ -91,6 +91,8 @@ function nativeUnderflowFixture(){
    globalPaperCandidateOrdinals:[0],
    globalDirectSameGeneratedTopoDSOrdinals:[],
    actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+   paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+   partnerCandidateDoesNotProveOriginalSourceHistory:true,
    fullOriginalSourceParameterCoverageProven:false,
    globalContinuousOcclusionProven:false,
    engineeringLineStyle:'undetermined',signedV5Action:false
@@ -197,6 +199,8 @@ test('C1 real native consumer cannot miss an exact conflicting visibility class 
   globalPaperCandidateOrdinals:[0],
   globalDirectSameGeneratedTopoDSOrdinals:[],
   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+  paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+  partnerCandidateDoesNotProveOriginalSourceHistory:true,
   fullOriginalSourceParameterCoverageProven:false,
   globalContinuousOcclusionProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false
