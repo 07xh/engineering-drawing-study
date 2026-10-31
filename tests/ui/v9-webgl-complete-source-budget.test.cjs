@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const {deriveGeometryScene}=require('../../core/projection/geometry-scene-views.cjs');
-const {requireCompleteWebGLFeatureBudget:budget}=
+const {requireCompleteWebGLFeatureBudget:budget,canShadeMeshFaceForDisplay}=
  require('../../project/geometry-scene-consumer.cjs');
 const G=(id,kind,data,space='model-3d')=>
  ({id,kind,space,unit:'mm',data});
@@ -83,4 +83,28 @@ test('WebGL builds only a complete model, and any mount/build failure uses exist
  assert.match(section,/svg\.hidden=false/);
  assert.match(section,/drawPrimitives\(svg,result\.spatial,'3D'/);
  assert.match(section,/\$\('v9-three-space'\)\.hidden=true/);
+});
+
+test('a convex model face may be shaded in either orientation, but it never certifies an engineering line',()=>{
+ const points={a:p(0,0,0),b:p(10,0,0),c:p(10,10,0),d:p(0,10,0)};
+ assert.equal(canShadeMeshFaceForDisplay(points,['a','b','c','d'],20),true);
+ assert.equal(canShadeMeshFaceForDisplay(points,['d','c','b','a'],20),true);
+ assert.equal(canShadeMeshFaceForDisplay(points,['a','b','c','d'],Infinity),false);
+ assert.match(src,/certifiedEngineeringStroke:false/);
+});
+test('nonplanar, concave and self-intersecting source faces remain wireframe-only',()=>{
+ const plane={a:p(0,0,0),b:p(10,0,0),c:p(10,10,0),d:p(0,10,1)};
+ assert.equal(canShadeMeshFaceForDisplay(plane,['a','b','c','d'],20),false);
+ const concave={a:p(0,0,0),b:p(10,0,0),c:p(4,3,0),
+  d:p(10,10,0),e:p(0,10,0)};
+ assert.equal(canShadeMeshFaceForDisplay(concave,['a','b','c','d','e'],20),false);
+ // Each local turn in a five-point star has the SAME orientation; the old
+ // adjacent-turn-only guard would shade a false surface. Global edge-side
+ // validation must reject it even though its source edges remain pickable.
+ const star=Object.fromEntries(Array.from({length:5},(_,i)=>[
+  'p'+i,p(10*Math.cos(i*2*Math.PI/5),10*Math.sin(i*2*Math.PI/5),0)
+ ]));
+ assert.equal(canShadeMeshFaceForDisplay(star,['p0','p2','p4','p1','p3'],30),false);
+ assert.match(src,/canShadeMeshFaceForDisplay\(d\.points,face,extent\)/);
+ assert.match(src,/for\(const \[a,b\] of d\.edges\)placeLine/);
 });
