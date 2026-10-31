@@ -34,7 +34,7 @@ small{display:block;color:#4c637a}
 <p class="notice"><strong>范围提示：</strong>V/H 的紫色点划曲线是解析几何的采样预览，W 视图的青色、橙色和紫色预览标示 M5 开区间无遮挡、遮挡和未判定，<strong>都不是</strong>经过国标实虚线认证的工程答案。W 视图额外使用深紫色 V5 参数曲线动作，数学来源为完整连续解析方程，屏幕 SVG 则采用自适应分段显示；蓝色辅助点、浅蓝色原始圆形辅助线，以及紫色精确相贯投影弧均从数学条件验算并沿唯一 V5 逐笔绘制；紫色圆弧属于真实解析几何动作，但没有获得正式工程实虚线资格。有限端盖—侧面、端盖—端盖的已验证交线可作为绿色辅助 V5 线段或其点投影显示；尚未签发完整实体轮廓与通用斜交圆柱解答。</p>
 <div class="layout">
 <article>
-<h2>已确认的圆柱数学条件 · mm</h2>
+<h2>圆柱条件 · mm</h2>
 <h3>圆柱 Z（轴平行 z）</h3>
 <div class="fields">
 <label for="zRadius">半径 R<input id="zRadius" type="number" step="any" value="12"></label>
@@ -74,9 +74,9 @@ small{display:block;color:#4c637a}
 <small>任何数值或确认状态变动都会立即撤销旧结果及动画资格；数据只在本页计算。</small>
 </article>
 <article>
-<h2>第一角法三视图及真实辅助求点 V5</h2>
+<h2>第一角法三视图与辅助点</h2>
 <svg id="board" viewBox="0 0 960 680" role="img" aria-label="相贯线 V/H/W 三视图，紫色未签线型预览和蓝色 V5 点动作"></svg>
-<h2>同一数学源的三维辅助几何</h2>
+<h2>三维辅助视图</h2>
 <div class="fields">
 <label for="c3-yaw">三维旋转角度<input id="c3-yaw" type="range" min="-180" max="180" value="35"></label>
 <label for="c3-pitch">三维俯仰角度<input id="c3-pitch" type="range" min="-75" max="75" value="25"></label>

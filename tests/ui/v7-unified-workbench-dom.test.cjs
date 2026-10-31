@@ -33,6 +33,9 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   return el;
  };
  for(const el of document.querySelectorAll('*'))adapt(el);
+ // Browser SVG elements do not reflect the HTML hidden property.
+ Object.defineProperty(document.getElementById('v7-sheet'),'hidden',{configurable:true,writable:true,value:false});
+ Object.defineProperty(document.getElementById('v7-3d'),'hidden',{configurable:true,writable:true,value:false});
  Object.defineProperty(document,'createElement',{configurable:true,
   value:tag=>adapt(nativeCreate(tag))});
  const original={document:global.document,window:global.window};
@@ -114,6 +117,10 @@ test('V7 real homepage DOM: stage→human confirm→M3→one V5 and 2D/3D select
   assert.doesNotMatch($('v7-proof').textContent,/M3|ConstructionIntent|V5/);
   assert.ok($('v7-step-list').querySelector('button'));
   assert.ok($('v7-sheet').querySelector('circle'));
+  $('v7-mode').value='3d';$('v7-mode').dispatchEvent(new window.Event('change',{bubbles:true}));
+  assert.equal($('v7-sheet').hasAttribute('hidden'),true,'3D mode hides the SVG paper');
+  $('v7-mode').value='split';$('v7-mode').dispatchEvent(new window.Event('change',{bubbles:true}));
+  assert.equal($('v7-sheet').hasAttribute('hidden'),false,'split mode restores the SVG paper');
   // Move the exact V5 clock to completion: reveal mathematically derived W.
   $('v7-seek').value='1000';
   $('v7-seek').dispatchEvent(new window.Event('input',{bubbles:true}));

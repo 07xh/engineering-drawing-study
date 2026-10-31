@@ -30,44 +30,16 @@ function homeHTML(){return `
  <div class="v7-head"><div><h1 id="v7-title">工程制图解题</h1>
  <p>导入题图或输入条件，核对后开始求解与逐步作图。</p></div>
  <span id="v7-save" role="status" aria-live="polite">本机存储检查中…</span></div>
- <section class="v7-course-entry" id="v7-course-entry" aria-labelledby="v7-course-title">
-  <details class="v8-course-disclosure">
-  <summary class="v8-course-summary">专项题型与支持范围</summary>
-  <div class="v7-course-head"><h2 id="v7-course-title">C1 补第三视图 · C2 组合体 · C3 相贯线</h2>
-   <p>这些入口在新标签打开，不会切换本机项目题型、删除已确认条件；未完成的预览不等于正式答案。</p></div>
-  <div class="v7-course-grid" role="list">
-   <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
-    <span class="v7-course-status">有限圆柱相贯线</span>
-    <h3>相贯线</h3><p>对人工确认的两根有限正交圆柱，解析求交并在 V/H/W 中逐步绘制已验证的端点和内部辅助点；连续曲线仍为未签线型的预览。</p>
-    <div class="v7-course-links"><a href="labs/finite-cylinder-intersection-live.html" target="_blank" rel="noopener noreferrer">打开相贯线作图 ↗</a>
-     <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">查看曲面相交 ↗</a></div>
-   </article>
-   <article class="v7-course-card" role="listitem" data-course="composition" data-capability="confirmed-scene-only">
-    <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
-    <h3>组合体</h3><p>在本项目用“多对象几何编辑”确认长方体并共享三视图；另一实验仅展示基座和凸台的简单组合。</p>
-    <div class="v7-course-links"><a href="#v7-task">定位本项目题型选择 ↓</a>
-     <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a></div>
-   </article>
-   <article class="v7-course-card" role="listitem" data-course="third-view" data-capability="identified-point-only">
-    <span class="v7-course-status">已确认基本体几何预览 · 非标准虚实线答案</span>
-    <h3>补第三视图</h3><p>人工确认两视图中的对应点 A/B，可计算第三投影与已知 AB 线段的投影预览；虚实线和未知实体仍不自动推测。</p>
-    <div class="v7-course-links"><a href="labs/solid-third-view-live.html" target="_blank" rel="noopener noreferrer">已确认长方体的第三视图 ↗</a>
-     <a href="labs/c1-reviewed-dxf-live.html" target="_blank" rel="noopener noreferrer">导入两视图 ↗</a>
-     <a href="labs/two-point-v5-live.html" target="_blank" rel="noopener noreferrer">两视图 A/B 对应点与棱线预览 ↗</a>
-     <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">单点投影求解 ↗</a></div>
-   </article>
-  </div>
-  <p class="v7-course-disclosure">部分题型仍待完整线型验证；未验证的结果不会作为正式答案。</p>
-  </details>
- </section>
  <div class="v7-bar" aria-label="项目操作">
   <span id="recent" class="v8-legacy-anchor"></span><span id="knowledge" class="v8-legacy-anchor"></span>
-  <p id="v7-storage-warning" class="v7-warning" role="status" hidden>本机存储不可用，当前编辑不会自动保存；请导出项目。</p>
+  <p id="v7-storage-warning" class="v7-warning" role="status" hidden>本机存储不可用，当前修改无法保存或导出；请检查浏览器存储权限。</p>
   <label>本机项目 <select id="v7-projects" aria-label="选择本机项目"><option value="">暂无记录</option></select></label>
   <button type="button" id="v7-open">打开项目</button><button type="button" id="v7-new">新建项目</button>
-  <button type="button" id="v7-export">导出 .daiproject</button>
-  <label class="v7-file-control">导入项目包<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
+  <details class="v7-project-menu"><summary>更多项目操作</summary><div class="v7-project-actions">
+  <button type="button" id="v7-export">导出项目</button>
+  <label class="v7-file-control">导入项目<input id="v7-import" type="file" accept=".daiproject,application/x-draftai-project"></label>
   <button type="button" id="v7-delete" class="v7-danger">删除当前项目</button>
+  </div></details>
  </div>
  <nav class="v7-mobile-jump" aria-label="工作台快捷导航">
   <a href="#v7-input-section">填写条件</a><a href="#v7-paper-section">查看图纸</a><a href="#v7-step-list">作图步骤</a>
@@ -390,37 +362,26 @@ function homeHTML(){return `
    </fieldset>
    <section class="v8-review-check" aria-labelledby="v8-review-title">
     <h3 id="v8-review-title">核对条件并解题</h3>
-    <p class="v8-review-lead">以下内容取自当前填写的条件，并非自动识图结果。</p>
+    <p class="v8-review-lead">请核对以下条件；有题图时请对照原题。</p>
     <p id="v8-review-summary" class="v8-review-summary" role="status">请选择解题类型并检查输入。</p>
     <p id="v8-review-preflight" class="v8-review-preflight" data-state="pending" role="status" aria-live="polite">请先填写题目条件。</p>
     <button type="button" id="v8-review-edit" class="v8-review-edit" hidden>定位需要修改的条件</button>
     <input id="v8-review-ack" type="checkbox" hidden aria-hidden="true" tabindex="-1">
     <button type="button" id="v8-review-run" class="v7-primary" aria-describedby="v8-review-preflight" disabled>我已核对，开始求解</button>
-    <p class="v8-review-help">确认后使用现有数学求解器；条件冲突或证据不足仍会阻止正式答案。</p>
+
    </section>
    <p id="v7-review" class="v7-note" role="status">等待人工确认。</p>
-   <div class="v7-advanced"><strong>更多已存在专业工具</strong>
-   <a href="labs/auto-fillet-live.html">二维圆弧</a><a href="labs/cone-cut-live.html">圆锥斜截</a>
-   <a href="labs/recognition-qa.html">本机识图候选检查</a></div>
   </section>
   <section id="v7-paper-section" class="v7-card v7-paper" aria-label="统一几何视图"><div class="v7-line"><h2>工程图纸 · 第一角法</h2>
    <label>显示 <select id="v7-mode"><option value="split">二维 + 三维</option><option value="2d">仅二维</option><option value="3d">仅三维</option></select></label>
    <button type="button" id="v8-paper-focus" aria-pressed="false" aria-controls="v7-sheet">放大图纸</button></div>
    <svg id="v7-sheet" viewBox="0 0 720 460" role="img" aria-label="正面 V、水平 H、侧面 W 和作图步骤"></svg>
-  <section class="v7-card v7-steps" aria-label="作图步骤与播放"><h2>作图步骤</h2>
+   <div class="v7-playback" aria-label="作图播放控制">
    <div class="v7-controls"><button id="v7-back" type="button">上一步</button><button id="v7-play" type="button">▶ 播放</button><button id="v7-next" type="button">下一步</button></div>
-   <div id="v7-step-list" aria-label="可点选作图步骤"></div>
-   <p id="v8-result-status" class="v8-result-status" role="status">尚未求解。请先确认条件。</p>
-   <details class="v8-proof-details">
-    <summary>查看数学验证与线型依据</summary>
-    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
-    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
-   </details>
    <label>播放进度 <input id="v7-seek" type="range" min="0" max="1000" value="0"></label>
    <div class="v7-line"><label>速度 <select id="v7-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option></select></label>
     <label><input type="checkbox" id="v7-guides" checked> 辅助线</label><label><input type="checkbox" id="v7-mono"> 黑白</label></div>
-   <p class="v7-warning">部分题型仅显示局部作图；未确认的完整轮廓和虚实线不能作为答案导出。</p>
-  </section>
+   </div>
    <div class="v7-spatial"><div class="v7-line"><strong>空间视图</strong><span id="v7-spatial-boundary">点投影 / 长方体仅线框</span>
     <button type="button" id="v9-three-reframe" class="v9-three-reframe" aria-controls="v9-three-space v7-3d">重新取景</button></div>
     <div id="v9-three-space" class="v9-three-space" role="group" aria-label="三维立体旋转与来源棱拾取" hidden></div>
@@ -429,8 +390,48 @@ function homeHTML(){return `
     <label>俯仰 <input id="v7-pitch" type="range" min="-70" max="70" value="25"></label></div></div>
    <p class="v7-note" id="v7-selection" role="status" aria-live="polite">点选 V/H/W 或三维点，同步高亮同一个对象。</p>
   </section>
+  <section class="v7-card v7-steps" aria-label="作图步骤与播放"><h2>作图步骤</h2>
+   <div id="v7-step-list" aria-label="可点选作图步骤"></div>
+   <p id="v8-result-status" class="v8-result-status" role="status">尚未求解。请先确认条件。</p>
+   <details class="v8-proof-details">
+    <summary>查看数学验证与线型依据</summary>
+    <p id="v7-proof" class="v7-note" role="status">未计算。恢复项目后必须重新求解，不能继承“已验证”。</p>
+    <p id="v7-spatial-v5-readiness" class="v7-warning" role="status" hidden>空间实体的完整轮廓、端点及标准虚实线尚未签收。</p>
+   </details>
+   <p class="v7-warning">部分题型仅显示局部作图；未确认的完整轮廓和虚实线不能作为答案导出。</p>
+  </section>
 
  </div>
+ <section class="v7-course-entry" id="v7-course-entry" aria-labelledby="v7-course-title">
+  <details class="v8-course-disclosure">
+  <summary class="v8-course-summary">专项题型与支持范围</summary>
+  <div class="v7-course-head"><h2 id="v7-course-title">C1 补第三视图 · C2 组合体 · C3 相贯线</h2>
+   <p>这些入口在新标签打开，不会切换本机项目题型、删除已确认条件；未完成的预览不等于正式答案。</p></div>
+  <div class="v7-course-grid" role="list">
+   <article class="v7-course-card" role="listitem" data-course="intersection" data-capability="math-demo">
+    <span class="v7-course-status">有限圆柱相贯线</span>
+    <h3>相贯线</h3><p>对人工确认的两根有限正交圆柱，解析求交并在 V/H/W 中逐步绘制已验证的端点和内部辅助点；连续曲线仍为未签线型的预览。</p>
+    <div class="v7-course-links"><a href="labs/finite-cylinder-intersection-live.html" target="_blank" rel="noopener noreferrer">打开相贯线作图 ↗</a>
+     <a href="labs/composite-geometry.html?mode=intersection" target="_blank" rel="noopener noreferrer">查看曲面相交 ↗</a></div>
+   </article>
+   <article class="v7-course-card" role="listitem" data-course="composition" data-capability="confirmed-scene-only">
+    <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
+    <h3>组合体</h3><p>在本项目用“多对象几何编辑”确认长方体并共享三视图；另一实验仅展示基座和凸台的简单组合。</p>
+    <div class="v7-course-links"><a href="#v7-task">定位本项目题型选择 ↓</a>
+     <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a></div>
+   </article>
+   <article class="v7-course-card" role="listitem" data-course="third-view" data-capability="identified-point-only">
+    <span class="v7-course-status">已确认基本体几何预览 · 非标准虚实线答案</span>
+    <h3>补第三视图</h3><p>人工确认两视图中的对应点 A/B，可计算第三投影与已知 AB 线段的投影预览；虚实线和未知实体仍不自动推测。</p>
+    <div class="v7-course-links"><a href="labs/solid-third-view-live.html" target="_blank" rel="noopener noreferrer">已确认长方体的第三视图 ↗</a>
+     <a href="labs/c1-reviewed-dxf-live.html" target="_blank" rel="noopener noreferrer">导入两视图 ↗</a>
+     <a href="labs/two-point-v5-live.html" target="_blank" rel="noopener noreferrer">两视图 A/B 对应点与棱线预览 ↗</a>
+     <a href="labs/point-projection-live.html" target="_blank" rel="noopener noreferrer">单点投影求解 ↗</a></div>
+   </article>
+  </div>
+  <p class="v7-course-disclosure">部分题型仍待完整线型验证；未验证的结果不会作为正式答案。</p>
+  </details>
+ </section>
 </section>
 <section class="next-home-section next-home-categories" id="tools">
  <div class="next-section-heading"><h2>更多专项题型</h2><a href="#all-tools">查看全部工具 →</a></div>
