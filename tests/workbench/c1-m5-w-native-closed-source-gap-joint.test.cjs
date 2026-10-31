@@ -173,6 +173,14 @@ test('wrong W source 3D owner or native partial curve cannot become a positive p
  const partial=fixture();
  const scoped=partial.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
  scoped.visible3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange=[0,16];
+ const ledger=partial.cad.nativeSourceScopedSharpOutputByView.W
+  .nativeGlobal3DOriginalSourceEvidence;
+ ledger.rows[0].originalNativeCurveParameterRange=[0,16];
+ partial.global3DSource=structuredClone(rebindNativeGlobal({
+  geometry:partial.geometry,cad:partial.cad,view:'W',
+  sourceEdgeId:partial.sourceEdgeId,
+  generatedClaims:[{hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0}]
+ }));
  scoped.combinedNative3DSourceParameterPartition=coverage({
   originalNativeParameterRange:[0,16.401219466856727],
   generatedNativeParameterRanges:[[0,16]]
@@ -248,6 +256,14 @@ test('non-W original gaps are outside this witness, never considered a certified
 test('whole-solid hidden native 3D HLR claim vetoes an original all-visible W certificate',()=>{
  const x=fixture();
  x.cad.hiddenSharpViews.W.push(structuredClone(x.cad.views.W[0]));
+ const scoped=x.cad.nativeSourceScopedSharpOutputByView.W.rows[0];
+ const original=structuredClone(scoped.visible3D.native3DGeneratedCurveIntervals[0]);
+ scoped.hidden3D.native3DGeneratedCurveIntervals.push(original);
+ scoped.combinedNative3DSourceParameterPartition=coverage({
+  originalNativeParameterRange:x.cad.originalBRepSourceEdges[0].occtSourceCurveParameterRange,
+  generatedNativeParameterRanges:[original.nativeOriginalCurveParameterRange,
+   scoped.visible3D.native3DGeneratedCurveIntervals[0].nativeOriginalCurveParameterRange]
+ });
  const ledger=x.cad.nativeSourceScopedSharpOutputByView.W.nativeGlobal3DOriginalSourceEvidence;
  ledger.rows.push({...ledger.rows[0],hlrClass:'hidden-sharp'});
  ledger.globalGenerated2DSharpEdges=2;
