@@ -318,3 +318,10 @@ body.ui-next .v7-bar .v7-file-control{flex-direction:row;min-height:44px;padding
 body.ui-next .v7-bar .v7-file-control input[type=file]{max-width:180px}
 /* Keep playback controls above the sticky paper during internal scrolling. */
 body.ui-next .v7-playback{position:relative;z-index:3}
+
+/* Keep project import, export and deletion available without crowding the workspace. */
+body.ui-next .v7-project-menu>summary{display:flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid #c9d8ed;border-radius:8px;background:#fff;color:#245994;cursor:pointer;list-style:none}
+body.ui-next .v7-project-menu>summary::-webkit-details-marker{display:none}
+body.ui-next .v7-project-menu>summary::after{content:' ▾';margin-left:6px}
+body.ui-next .v7-project-menu>summary:focus-visible{outline:3px solid #0866ef;outline-offset:2px}
+body.ui-next .v7-project-actions{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;align-items:center}
