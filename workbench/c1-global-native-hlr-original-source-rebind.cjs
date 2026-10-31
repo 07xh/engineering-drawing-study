@@ -188,6 +188,18 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
         (witness.globalDirectSameGeneratedTopoDSOrdinals.length===1)||
        witness.globalDirectSameGeneratedTopoDSOrdinals.length>1)
      throw new RangeError('forged original filtered 2D HLR or native 3D class witness');
+    // The native matcher enumerates ALL paper candidates, not a chosen
+    // subset. A truncated ledger can falsely make two coincident whole-solid
+    // edges look uniquely owned by different original source filters.
+    // Recompute the complete candidate set from the actual global output.
+    const actualPaperOrdinals=[];
+    for(let ordinal=0;ordinal<global.length;ordinal++)
+     if(nativeScopedPaperSegmentsSame(global[ordinal],witness))
+      actualPaperOrdinals.push(ordinal);
+    if(witness.globalPaperCandidateOrdinals.length!==actualPaperOrdinals.length||
+       actualPaperOrdinals.some((ordinal,i)=>
+        witness.globalPaperCandidateOrdinals[i]!==ordinal))
+     throw new RangeError('incomplete or reordered native scoped/global paper candidate inventory');
     const tested=new Set();
     for(const ordinal of witness.globalPaperCandidateOrdinals){
      if(!Number.isSafeInteger(ordinal)||ordinal<0||
