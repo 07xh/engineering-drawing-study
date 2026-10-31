@@ -414,3 +414,27 @@ test('projection V5 camera follows partial real guide and manual reset preserves
  get('learningMode').value='draw';fire('learningMode','change');
  assert.equal(get('paperSvg').attributes.viewBox,'0 0 720 470');
 });
+
+test('actual 45-degree guide is drawn at its own step and no W answer leaks at frame zero',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ const guides=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
+ const answers=()=>allSvgNodes().filter(n=>n.tag==='text'&&
+  String(n.textContent).startsWith('由空间点投影 '));
+ assert.equal(get('stepCounter').textContent,'0 / 5');
+ assert.equal(guides().length,0);
+ assert.equal(answers().length,0);
+ fire('next','click');fire('next','click');
+ assert.equal(guides().length,2);
+ assert.equal(answers().length,0);
+ fire('next','click');
+ const diag=guides()[2];
+ assert.equal(Number(diag.attributes.x1),360);
+ assert.equal(Number(diag.attributes.y1),210);
+ assert.equal(Number(diag.attributes.x2),400);
+ assert.equal(Number(diag.attributes.y2),250);
+ assert.equal(answers().length,0);
+ fire('next','click');
+ assert.equal(answers().length,0);
+ fire('next','click');
+ assert.equal(answers().length,3);
+});
