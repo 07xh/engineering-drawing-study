@@ -174,9 +174,22 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   const view=match?.view,hlrClass=match?.hlrClass;
   const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
   const ordinals=match?.globalDirectSameGeneratedTopoDSOrdinals;
+  const paperOrdinals=match?.globalPaperCandidateOrdinals;
+  // A claimed native IsSame ordinal must also be present in the same
+  // native run's measured paper inventory. The serialized identity ledger
+  // cannot invent an ordinal or borrow a different paper alias. This is
+  // still only generated-2D identity, NOT original BRep parameter history.
   if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
      typeof sourceEdgeId!=='string'||!sourceEdgeId||
      !Array.isArray(ordinals)||ordinals.length>1||
+     !Array.isArray(paperOrdinals)||paperOrdinals.length===0||
+     paperOrdinals.some(n=>!Number.isSafeInteger(n)||n<0)||
+     new Set(paperOrdinals).size!==paperOrdinals.length||
+     ordinals.some(n=>!paperOrdinals.includes(n))||
+     match.paperCoincidenceAloneIsNotOriginalTopoDSHistory!==true||
+     match.partnerCandidateDoesNotProveOriginalSourceHistory!==true||
+     match.engineeringLineStyle!=='undetermined'||
+     (ordinals.length===1&&match.nativePartnerOnlyCandidate===true)||
      match.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(ordinals.length===1)||
      match.fullOriginalSourceParameterCoverageProven!==false||
      match.globalContinuousOcclusionProven!==false||
