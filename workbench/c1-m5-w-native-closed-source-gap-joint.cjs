@@ -29,7 +29,7 @@ const finiteRange=r=>Array.isArray(r)&&r.length===2&&
 const same=(a,b)=>a?.[0]===b?.[0]&&a?.[1]===b?.[1];
 // Audit literal original TopoDS BRep XYZ, not only the producer's
 // tolerant nearest-original-edge flag. Swapped orientation is legitimate.
-const valid3D=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
+const valid3D=p=>!!p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
 const eq3D=(a,b)=>valid3D(a)&&valid3D(b)&&
  ['x','y','z'].every(k=>a[k]===b[k]);
 const exact3DPair=(a,b,p,q)=>
