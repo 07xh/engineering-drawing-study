@@ -4,6 +4,7 @@
  * DAG / V5 timeline. Never creates or signs geometry, guesses pedagogical
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
+const Timeline=require('./teaching-timeline-v5.js');
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -14,6 +15,7 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    solution.revision!==revision||
    !solution.player?.canRender(revision)||
    !Array.isArray(solution.steps)||!solution.timeline||
+   solution.player.timeline!==solution.timeline||
    !Array.isArray(solution.timeline.steps)||
    !Array.isArray(solution.timeline.segments)||
    solution.steps.length!==solution.timeline.steps.length||
@@ -25,6 +27,26 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
  const steps=solution.steps,timeline=solution.timeline,
   bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
    ...(solution.certifiedPhysicalLineBindings||[])];
+ // Recompute the ENTIRE frame from the sole canonical V5 timeline.
+ // A forged completed/future fraction must never reveal a final line before
+ // its actual ConstructionStep, even when the active step itself is valid.
+ if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>timeline.totalMs)
+  throw new RangeError('V5 frame time is outside canonical timeline');
+ const expected=Timeline.frame(timeline,frame.elapsedMs);
+ const expectedFractions=expected.actionFractions,
+  actualIds=Object.keys(frame.actionFractions),
+  expectedIds=Object.keys(expectedFractions);
+ if(frame.totalMs!==expected.totalMs||
+    frame.ratio!==expected.ratio||frame.done!==expected.done||
+    frame.activeStepIndex!==expected.activeStepIndex||
+    frame.activeStepId!==expected.activeStepId||
+    frame.activeActionId!==expected.activeActionId||
+    JSON.stringify(frame.completedIds)!==JSON.stringify(expected.completedIds)||
+    actualIds.length!==expectedIds.length||
+    expectedIds.some(id=>!Object.hasOwn(frame.actionFractions,id)||
+     frame.actionFractions[id]!==expectedFractions[id]))
+  throw new RangeError('V5 frame fractions or completed actions contradict canonical DAG timeline');
  const owners=new Map(),seenActions=new Set(),seenSteps=new Set();
  for(const binding of bindings){
   if(!binding||typeof binding.actionId!=='string'||
