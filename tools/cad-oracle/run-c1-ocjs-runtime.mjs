@@ -310,6 +310,10 @@ for(const [index,geometry] of general.entries()){
      row.originalPhysicalSourceEdgeId));
    assert.equal(row.globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters,true);
    assert.equal(row.global3DAnd2DHLRMeasuredPaperPairUnique,true);
+   assert.equal(
+    Number(row.global3DAnd2DHLRMeasuredPaperPairExactBinary64===true)+
+    Number(row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly===true),
+    1,'every global generated 3D/2D pair must be exact or bounded one source-scale ULP');
    assert.equal(row.global3DAndOriginalScoped3DHLRParameterIntervalExact,true);
    assert.equal(row.globalGenerated2DTo3DTopoDSHistoryCertified,false);
    assert.equal(row.fullOpaqueSceneContinuousOcclusionCertified,false);
