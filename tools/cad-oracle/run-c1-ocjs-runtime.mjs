@@ -1928,6 +1928,14 @@ for(const [index,geometry] of general.entries()){
  assert.equal(unresolvedM5.counts.WPositivePaperGapsWithExactLongitudinalGlobalWPaperDrift+
   unresolvedM5.counts.WPositivePaperGapsWithTransverseGlobalWPaperDrift,
   unresolvedM5.counts.WPositivePaperGapsWithReceivedGlobalWPaperEndpointDrift);
+ console.error('REAL C1 SAME-RUN NATIVE GLOBAL GENERATED 3D HLR OWNER REPLAY '+
+  geometry.id+': '+JSON.stringify({
+   positiveM5Gaps:wGaps.length,
+   replayVerified:wGaps.filter(r=>
+    r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence
+     ?.sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified===true).length,
+   generated2DTopoDSHistoryCertified:false,stillSignedV5:0
+  }));
  console.error('REAL C1 W ORIGINAL SOURCE PAPER DRIFT EXACT CLASS '+
   geometry.id+': '+JSON.stringify(wGaps.map((r,i)=>({
    sourceEdgeId:r.sourceEdgeId,
@@ -1939,7 +1947,9 @@ for(const [index,geometry] of general.entries()){
   }))));
  assert.ok(wGaps.every(r=>{
   const joint=r.WOriginalPhysicalNativeParameterClosedRayM4JointEvidence;
-  return joint?.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
+  return joint?.sameRunGlobalGenerated3DHLROriginalSourceAndParameterReplayVerified===true&&
+   joint.generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay===true&&
+   joint.view==='W'&&joint.sourceEdgeId===r.sourceEdgeId&&
    joint.generatedPaperGapStrictlyPositiveStillHeld===true&&
    joint.generated2DTopoDSHistoryCertified===false&&
    joint.globalOpaqueSceneContinuousVisibilityCertified===false&&
