@@ -221,6 +221,15 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
       Number.isSafeInteger(wholeSolidCounts[klass])&&
       wholeSolidCounts[klass]>=0&&wholeSolidCounts[klass]<=128))
    throw new TypeError('actual whole-solid visible/hidden native HLR counts required');
+  // The complete measured whole-solid inventory bounds EVERY scoped
+  // paper candidate, not just a native IsSame claim. Otherwise a paper-only
+  // witness can invent a nonexistent ordinal while the summary reports
+  // all real generated edges accounted for. This is an unsigned ledger
+  // consistency check, never a source-history or line-style certificate.
+  for(const match of matches)
+   if(match.globalPaperCandidateOrdinals.some(ordinal=>
+       ordinal>=wholeSolidCounts[match.hlrClass]))
+    throw new RangeError('scoped paper candidate claims nonexistent whole-solid native HLR edge');
   wholeSolidNativeGeneratedEdgeCount=
    wholeSolidCounts['visible-sharp']+wholeSolidCounts['hidden-sharp'];
   unclaimedWholeSolidGeneratedEdgeOrdinals=[];
