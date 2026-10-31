@@ -65,7 +65,11 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
     hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
     originalNativeCurveParameterRange:[...bounds]}]
   },
-  m4Depth:{completeOriginalM4SourceDepthPartition:true,
+  m4Depth:{view:'W',sourceEdgeId,sourceGeometryId:'tetra',revision:7,
+   completeOriginalM4SourceDepthPartition:true,
+   openDepthSourceIntervalCount:1,openDepthCutCount:1,
+   closedOriginalVerticesAndOpaqueSceneStillUnproven:true,
+   generatedHLRToOriginalTopoDSHistoryCertified:false,signedV5Action:false,
    everyOpenDepthCutClassified:true,openDepthFrontCuts:1,openDepthHiddenCuts:0,
    openDepthHeldCuts:0,positiveSubpixelCutsHeld:0},
   originalClosedRayClear:true,openRayClass:'visible-sharp',
@@ -236,6 +240,7 @@ test('partial W generated edge pairs BOTH endpoints to original vertices exactly
 function hGapFixture(){
  const record=fixture('A|C',[0,5.02742501717052e-18]);
  record.view='H';
+ record.m4Depth.view='H';
  record.originalStatus.view='H';
  record.global3DSource.view='H';
  record.originalEndpointWitnesses[0].view='H';
@@ -287,6 +292,35 @@ test('H closed-source proof is never inferred from different view, revised M0 ow
  assert.equal(held.jointOriginalClosedPhysicalSourceVisibilityProven,false);
  assert.equal(held.generatedPaperGapStrictlyPositiveStillHeld,true);
  assert.equal(held.signedV5Action,false);
+});
+test('missing global original physical endpoint ledger holds joint proof and never signs',()=>{
+ const x=fixture();delete x.originalEndpointWitnesses;
+ const r=audit(x);
+ assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,true);
+ assert.equal(r.nativeGlobalGenerated2DPaperEndpointDriftEvidence,null);
+ assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+ assert.equal(r.status,'held-physical-source-proof-incomplete');
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5Action,false);
+});
+test('foreign or inconsistent M4 summary cannot certify same-source positive gap',()=>{
+ for(const mutate of [
+  x=>x.m4Depth.view='H',
+  x=>x.m4Depth.sourceEdgeId='tetra::A|D',
+  x=>x.m4Depth.sourceGeometryId='other',
+  x=>x.m4Depth.revision=8,
+  x=>x.m4Depth.openDepthCutCount=2,
+  x=>x.m4Depth.openDepthSourceIntervalCount=0,
+  x=>x.m4Depth.openDepthHeldCuts=-1,
+  x=>x.m4Depth.everyOpenDepthCutClassified=false,
+  x=>x.m4Depth.generatedHLRToOriginalTopoDSHistoryCertified=true,
+  x=>x.m4Depth.signedV5Action=true
+ ]){
+  const x=fixture();mutate(x);
+  assert.throws(()=>audit(x),/M4 source-depth summary/);
+ }
+ const h=hGapFixture();h.m4Depth.sourceEdgeId='tetra::A|D';
+ assert.throws(()=>auditAllViews(h),/M4 source-depth summary/);
 });
 test('V/H/W source-gap consumers reject foreign views and genuine zero-length gaps without epsilon escape',()=>{
  const h=hGapFixture();

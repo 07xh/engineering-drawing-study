@@ -23,7 +23,7 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  * original-vertex ties may certify OPEN depth order; they do not certify
  * closed endpoints, opaque-face visibility, generated TopoDS history or V5.
  */
-function auditExistingM4OpenSourceDepth(row,kind){
+function auditExistingM4OpenSourceDepth(row,kind,{sourceGeometryId,revision}={}){
  const gap=kind==='positive-original-m0-parameter-gap';
  if((gap?row.nativeOriginal3DM4GapSourceProjectionAvailable:
      row.nativeOriginal3DM4SourceProjectionPresent)!==true)return null;
@@ -39,7 +39,8 @@ function auditExistingM4OpenSourceDepth(row,kind){
       row.nativeOriginal3DM4ProjectionWholeSourceCoverage)!==true||
     row.completeRealNative3DSourceParameterPartition!==true||
     row.originalM4SourcePartitionComplete!==true)
-  return {completeOriginalM4SourceDepthPartition:false,
+  return {view:row.view,sourceEdgeId:row.sourceEdgeId,sourceGeometryId,revision,
+   completeOriginalM4SourceDepthPartition:false,
    reason:'incomplete-original-native-3d-m4-partition',signedV5Action:false};
  const source=gap?row.nativeOriginal3DM4ProjectedCandidateSegments:
    row.native3DM4ProjectedCandidateSegments,
@@ -115,7 +116,9 @@ function auditExistingM4OpenSourceDepth(row,kind){
   cursor=r[1];
  }
  if(cursor!==1)throw new RangeError('M4 source depth partition did not reach 1');
- return {completeOriginalM4SourceDepthPartition:true,
+ return {view:row.view,sourceEdgeId:row.sourceEdgeId,sourceGeometryId,revision,
+  completeOriginalM4SourceDepthPartition:true,
+  openDepthSourceIntervalCount:rows.length,openDepthCutCount:front+hidden+held,
   openDepthFrontCuts:front,openDepthHiddenCuts:hidden,
   openDepthHeldCuts:held,positiveSubpixelCutsHeld:subpixel,
   everyOpenDepthCutClassified:held===0,
@@ -532,7 +535,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory+=Number(
     exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0);
   }
-  const m4Depth=auditExistingM4OpenSourceDepth(row,kind);
+  const m4Depth=auditExistingM4OpenSourceDepth(row,kind,
+   {sourceGeometryId:geometry.id,revision:cad.revision});
   if(m4Depth?.completeOriginalM4SourceDepthPartition===true){
    counts.originalM4FullSourceOpenDepthPartitions++;
    if(kind==='positive-original-m0-parameter-gap')

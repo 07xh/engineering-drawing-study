@@ -283,6 +283,27 @@ function auditC1NativeClosedPhysicalGap({
    engineeringLineStyle:'undetermined',signedV5Action:false
   });
  }
+ // An M4 summary cannot be borrowed from another original source/view
+ // or revision. Counts and the unsigned event-cut scope must agree.
+ if(m4Depth!=null&&(
+    m4Depth.view!==view||m4Depth.sourceEdgeId!==sourceEdgeId||
+    m4Depth.sourceGeometryId!==geometry.id||m4Depth.revision!==cad.revision||
+    m4Depth.signedV5Action!==false||
+    (m4Depth.completeOriginalM4SourceDepthPartition===true&&(
+     m4Depth.closedOriginalVerticesAndOpaqueSceneStillUnproven!==true||
+     m4Depth.generatedHLRToOriginalTopoDSHistoryCertified!==false||
+     !Number.isSafeInteger(m4Depth.openDepthSourceIntervalCount)||
+     m4Depth.openDepthSourceIntervalCount<1||
+     !Number.isSafeInteger(m4Depth.openDepthCutCount)||
+     m4Depth.openDepthCutCount<1||
+     !['openDepthFrontCuts','openDepthHiddenCuts','openDepthHeldCuts',
+       'positiveSubpixelCutsHeld'].every(k=>
+        Number.isSafeInteger(m4Depth[k])&&m4Depth[k]>=0)||
+     m4Depth.openDepthCutCount!==m4Depth.openDepthFrontCuts+
+      m4Depth.openDepthHiddenCuts+m4Depth.openDepthHeldCuts||
+     m4Depth.positiveSubpixelCutsHeld>m4Depth.openDepthHeldCuts||
+     m4Depth.everyOpenDepthCutClassified!==(m4Depth.openDepthHeldCuts===0)
+    ))))throw new RangeError('stale, foreign or inconsistent original M4 source-depth summary');
  const rayClear=originalClosedRayClear===true&&openRayClass==='visible-sharp';
  const originalFront=m4Depth?.completeOriginalM4SourceDepthPartition===true&&
   m4Depth.everyOpenDepthCutClassified===true&&
@@ -297,7 +318,8 @@ function auditC1NativeClosedPhysicalGap({
   throw new RangeError('positive W paper residual must remain native-history held');
  // Positive-source physical visibility needs all independent same-source
  // witnesses. Even then, the PAPER residual and V5 gate remain untouched.
- const physicalComplete=globalFull&&rayClear&&originalFront;
+ // No original 3D physical endpoint ledger means no joint physical proof.
+ const physicalComplete=globalFull&&rayClear&&originalFront&&paperEndpointAudit!==null;
  return freeze({
   schema:(view==='W'?'draftai-c1-w-m5-native-closed-original-gap-joint/1':'draftai-c1-vhw-m5-native-closed-original-gap-joint/1'),
   sourceGeometryId:geometry.id,revision:cad.revision,view,sourceEdgeId,

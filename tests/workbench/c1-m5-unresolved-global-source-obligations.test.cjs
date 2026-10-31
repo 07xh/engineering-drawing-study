@@ -154,6 +154,14 @@ test('same-revision M4 full [0,1] source and exact OPEN depth cuts reach M5 with
  assert.equal(positive.counts.originalM4FullSourceOpenDepthPartitions,1);
  assert.equal(positive.counts.originalM4FullSourceOpenDepthAllClassified,1);
  assert.equal(positive.counts.originalM4OpenFrontCuts,1);
+ const boundM4=positive.records[0].originalM4OpenSourceDepthEvidence;
+ assert.equal(boundM4.view,'V');
+ assert.equal(boundM4.sourceEdgeId,'g::A|B');
+ assert.equal(boundM4.sourceGeometryId,'g');
+ assert.equal(boundM4.revision,3);
+ assert.equal(boundM4.openDepthSourceIntervalCount,1);
+ assert.equal(boundM4.openDepthCutCount,1);
+ assert.equal(boundM4.generatedHLRToOriginalTopoDSHistoryCertified,false);
  assert.equal(positive.counts.unresolvedM5Obligations,2);
  assert.equal(positive.records[0].sourceOriginalTopoDSGeneratedHistoryCertified,false);
  assert.equal(positive.officialV5Authorized,false);
