@@ -289,7 +289,7 @@ test('source-filter/global bijection fails closed for duplicate source, partial 
     ...x.views.V.nativeScoped2D3DClassBindings[0].rows[0]
    });
   },
-  x=>{x.cad.views.H.push(segment());},
+  x=>{x.cad.views.H.push(segment(1));},
   x=>{const z=x.views.W.nativeScoped2D3DClassBindings[0].rows[0];
    z.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment=false;
    z.generated2DRepresentationWithinOneULPOfFullOriginalM0Source=true;},
