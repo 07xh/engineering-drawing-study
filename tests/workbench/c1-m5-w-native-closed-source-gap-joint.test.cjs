@@ -310,6 +310,8 @@ test('held W claimant omitting another native hidden owner edge cannot certify w
  const r=audit(x);
  assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,2);
  assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,false);
+ assert.equal(r.sameRunOriginal3DAnd2DJointIndependentlyRechecked,true);
+ assert.equal(r.sameRunSelectedM5GeneratedEdgesExhaustNative3DAnd2DSource,false);
  assert.equal(r.globalGeneratedNative3DClassConsistentWithOriginalAllVisible,false);
  assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,false);
  assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
@@ -344,6 +346,8 @@ test('held W claimant omitting second visible original subinterval cannot certif
  assert.equal(r.scopedNativeOriginal3DVisibilityParameterComplete,true);
  assert.equal(r.sameRunWholeSolidNative3DOriginalOwnerRowCount,2);
  assert.equal(r.heldM5ClaimsCoverEverySameOriginalGlobalGenerated3DEdge,false);
+ assert.equal(r.sameRunOriginal3DAnd2DJointIndependentlyRechecked,true);
+ assert.equal(r.sameRunSelectedM5GeneratedEdgesExhaustNative3DAnd2DSource,false);
  assert.equal(r.globalGeneratedNative3DToOriginalBRepIntervalComplete,false);
  assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
  assert.equal(r.generated2DTopoDSHistoryCertified,false);
