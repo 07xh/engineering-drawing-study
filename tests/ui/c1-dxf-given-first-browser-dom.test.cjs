@@ -59,7 +59,7 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
       knownViewPair:['V','H'],missingView:'W',
       inferredOriginal3DPointCount:4,
       explicitlyReviewedManyToOnePaperProjectionPairs:false,
-      independentlyValidatedByCurrentM0:true}},
+      independentlyValidatedByCurrentM0:true}};},
     compileReviewedC1DxfGivenToSoleV5:async()=>{compileCalls++;
      throw Error('must not compile without human check');}
    };
