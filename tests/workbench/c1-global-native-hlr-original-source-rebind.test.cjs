@@ -381,6 +381,22 @@ test('V/H/W source inventories must be the same reviewed original solid before a
  assert.equal(foreignResult.allThreeViewsShareExactOriginalPhysicalSourceInventory,false);
  assert.equal(foreignResult.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
  assert.equal(foreignResult.signedV5ActionCount,0);
+ // A three-view empty HLR ledger is not an authenticated physical solid:
+ // otherwise all three per-view completeness booleans pass vacuously.
+ const empty=withRealIndexedStatus(fixture());
+ for(const view of ['V','H','W']){
+  empty.cad.views[view]=[];
+  empty.cad.nativeSourceScopedSharpOutputByView[view].rows=[];
+  empty.views[view].nativeScoped2D3DClassBindings=[];
+  const ledger=empty.cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+  ledger.originalDataStructureIndex.indexedOriginalSources=[];
+  ledger.originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows=[];
+ }
+ const noSolid=audit(empty);
+ assert.equal(noSolid.allThreeViewsShareExactOriginalPhysicalSourceInventory,false);
+ assert.equal(noSolid.allThreeViewsHaveExactOriginal3DBoundSourceFilterBijection,false);
+ assert.equal(noSolid.allThreeViewsHaveNativeSourceFilterAttributionWithExplicitHeldPaperDrift,false);
+ assert.equal(noSolid.officialV5Authorized,false);
 });
 test('two real source filters require distinct positive integer native EdgeMap indices before causal attribution',()=>{
  const valid=withSecondDistinctIndexedOriginalSource(withRealIndexedStatus(fixture()));
