@@ -32,6 +32,16 @@ svg{width:100%;height:auto;background:white;border:1px solid #dbe4ef;border-radi
 .paper-switch button[aria-pressed="true"]{background:#174c85;color:white}
 .paper-switch button:disabled{background:#f5f7fa;color:#7d8792}
 #sheetPreview{min-height:260px}
+.v5-step-panel{margin:14px 0;padding:14px 16px;border:1px solid #bfd2e5;background:#f6f9fe;border-radius:10px}
+.v5-step-panel label{margin:0 0 5px}
+.v5-step-panel select{max-width:100%;width:100%;min-height:44px;border:1px solid #a8c3df;border-radius:8px;padding:8px;color:#183d68;background:#fff}
+.v5-step-panel h3{margin:12px 0 4px;font-size:16px;color:#1b3f60}
+.v5-step-panel p{margin:5px 0}
+.v5-step-panel ol{padding-left:23px;margin:8px 0;max-height:230px;overflow:auto}
+.v5-step-panel li{margin:6px 0;overflow-wrap:anywhere}
+.v5-step-panel small{display:block;overflow-wrap:anywhere}
+.v5-step-panel [data-proof="unsigned"]{color:#875b22}
+.v5-step-panel [data-proof="signed"]{color:#236449;font-weight:700}
 #animation{height:auto;max-height:540px;min-height:260px}
 #status{font-weight:650;color:#1f6293;padding:9px}
 #status[data-status=blocked]{color:#a02b33}
@@ -85,6 +95,14 @@ small{color:#61768c}
 </div>
 <svg id="animation" viewBox="0 0 960 720" role="img" aria-label="当前数学版本的唯一 V5 绘制动作"></svg>
 <p id="v5Status" aria-live="polite">原始条件未审核，无已签收动画动作。</p>
+<section class="v5-step-panel" aria-label="与唯一 V5 同步的来源和步骤说明">
+<label for="v5StepJump">真实作图步骤（与当前动画同步）</label>
+<select id="v5StepJump" disabled aria-label="跳转已签收的真实 ConstructionStep"></select>
+<h3 id="v5StepTitle">原题条件未审核</h3>
+<p id="v5StepExplanation">尚未取得当前版本的数学 ConstructionStep，不能展示推测作图过程。</p>
+<ol id="v5StepActions" aria-label="本步骤真实绘图动作和来源"></ol>
+<small id="v5StepProof">只有同版本 M3/M4/M5 确认且匹配原始来源绑定的线条才能显示正式线型；仅看动画不能证明答案正确。</small>
+</section>
 <h2>五、可复核证明及适用范围</h2>
 <pre id="proof">原题完整盲测与国标全部线型未签收。</pre>
 <small>私密教材 DWG/DXF、参考答案及人工审核记录不进入站点构建产物；只发布通用本机阅读和计算代码。</small>
