@@ -53,11 +53,11 @@ function reviewC1M5FinalStrokeObligations(ledger){
   if(!Number.isFinite(start)||!Number.isFinite(end)||
      start<0||end>1)
    throw new TypeError('invalid original source parameter domain');
-  const sourceKey=span.view+'@'+span.sourceEdgeId+'@'+start+'@'+end;
+  const sourceKey=JSON.stringify([span.view,span.sourceEdgeId,start,end]);
   if(exactSourceKeys.has(sourceKey))
    throw new TypeError('duplicate original 3D source interval');
   exactSourceKeys.add(sourceKey);
-  const owner=span.view+'@'+span.sourceEdgeId;
+  const owner=JSON.stringify([span.view,span.sourceEdgeId]);
   if(!intervalsBySourceView.has(owner))intervalsBySourceView.set(owner,[]);
   intervalsBySourceView.get(owner).push([start,end]);
   const independentGlobalProofGaps={
