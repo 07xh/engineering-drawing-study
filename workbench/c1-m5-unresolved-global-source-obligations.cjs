@@ -241,6 +241,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   positiveM5GapsWithExactRationalPaperCandidateSubranges:0,
   positiveM5GapsWithExactRationalPaperResidualStillPositive:0,
   positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory:0,
+  positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld:0,
+  positiveM5GapsWithOppositeHLRClassPaperOverlapHeld:0,
   unsignedV5Actions:0},records=[],seen=new Set(),closedSourceViews=new Set();
  for(const [kind,rows] of [
   ['unrepresented-original-m0-view',audit.missingOriginalM0SourceViewRows],
@@ -536,6 +538,26 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
     exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length>0);
    counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory+=Number(
     exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length===0);
+   // Consume the producer's exact class-separated paper-only ledger. A
+   // visible+hidden union must never masquerade as one continuous visible
+   // engineering stroke; even a single-class full paper candidate is held
+   // until source history and whole-scene M5 visibility are proved.
+   const mixed=exactPaperGap.mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility;
+   const opposite=exactPaperGap.oppositeHLRClassPositivePaperOverlapStillHeld;
+   if(mixed!==undefined||opposite!==undefined){
+    if(typeof mixed!=='boolean'||typeof opposite!=='boolean'||
+       !Array.isArray(exactPaperGap.exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory)||
+       !Array.isArray(exactPaperGap.exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory)||
+       !Array.isArray(exactPaperGap.positiveRationalGapResidualAfterVisiblePaperCandidates)||
+       !Array.isArray(exactPaperGap.positiveRationalGapResidualAfterHiddenPaperCandidates)||
+       (mixed&&(
+        exactPaperGap.positiveRationalGapResidualAfterCollinearPaperCandidates.length!==0||
+        exactPaperGap.positiveRationalGapResidualAfterVisiblePaperCandidates.length===0||
+        exactPaperGap.positiveRationalGapResidualAfterHiddenPaperCandidates.length===0)))
+     throw new RangeError('opposite native HLR class paper candidates cannot certify M5 visibility');
+    counts.positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld+=Number(mixed);
+    counts.positiveM5GapsWithOppositeHLRClassPaperOverlapHeld+=Number(opposite);
+   }
   }
   const m4Depth=auditExistingM4OpenSourceDepth(row,kind,
    {sourceGeometryId:geometry.id,revision:cad.revision});
