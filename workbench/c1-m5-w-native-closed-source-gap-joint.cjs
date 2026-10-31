@@ -367,7 +367,11 @@ function auditC1NativeClosedPhysicalGap({
   const sourceJoint=joint[0];
   if(paperEndpointAudit!==null){
    const rows=paperEndpointAudit.rows;
-   if(sourceJoint.parts.length!==rows.length||rows.some(r=>{
+   // The M5 claimant list may deliberately be a proper subset. Never
+   // reject merely because the same-run global inventory contains MORE
+   // true generated edges; that is exactly a held ownership gap. Only a
+   // foreign, duplicated or mismatched selected claimant is invalid.
+   if(sourceJoint.parts.length<rows.length||rows.some(r=>{
     const q=sourceJoint.parts.find(q=>
      q.hlrClass===r.hlrClass&&
      q.wholeSolidGeneratedHLREdgeOrdinal===r.wholeSolidGeneratedHLREdgeOrdinal);
@@ -382,7 +386,8 @@ function auditC1NativeClosedPhysicalGap({
    const qualified=paperEndpointAudit.receivedExactTwoAxisQualifiedPaperCoverage;
    // Both independent consumers must preserve any actual positive
    // rational paper residual, including A-C tails and A-D drift.
-   if(sourceJoint.positiveExactReceived2DPaperGaps!==null&&
+   if(sourceJoint.parts.length===rows.length&&
+      sourceJoint.positiveExactReceived2DPaperGaps!==null&&
       JSON.stringify(sourceJoint.positiveExactReceived2DPaperGaps)!==
        JSON.stringify(qualified.exactTwoAxisQualifiedPaperCoverage
         .exactBinary64PaperPositiveLengthUncoveredIntervals))
@@ -440,6 +445,9 @@ function auditC1NativeClosedPhysicalGap({
    original3DToActual2DJoint,
   sameRunOriginal3DAnd2DJointIndependentlyRechecked:
    original3DToActual2DJoint!==null&&paperEndpointAudit!==null,
+  sameRunSelectedM5GeneratedEdgesExhaustNative3DAnd2DSource:
+   original3DToActual2DJoint!==null&&paperEndpointAudit!==null&&
+   original3DToActual2DJoint.parts.length===paperEndpointAudit.rows.length,
   generated2DTopoDSSourceHistoryCannotBeInferredFromGlobal3DReplay:true,
   status:physicalComplete?
    'physical-original-3d-source-closed-ray-complete-paper-held':
