@@ -32,6 +32,7 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
  const nativeW=edge==='A|C'?
   {from:{u:0,v:0},to:{u:15.999999999999998,v:1.9999999999999998}}:
   {from:{u:8.881784197001252e-16,v:0},to:{u:6,v:23}};
+ const [originalFirst,originalLast]=edge.split('|').map(id=>geometry.data.points[id]);
  const originalEndpointWitnesses=[{view:'W',sourceEdgeId,
   hlrClass:'visible-sharp',wholeSolidGeneratedHLREdgeOrdinal:0,
   originalM0PhysicalVertexIds:edge.split('|'),
@@ -46,6 +47,9 @@ function fixture(edge='A|C',gap=[0.9999999999999998,1]){
   cad:{revision:7,views:{W:[nativeW]},hiddenSharpViews:{W:[]},originalBRepSourceEdges:[{
    sourceEdgeId,occtSourceCurveType:'line',
    occtSourceCurveParameterRange:bounds,
+   fromOCCT3D:{...originalFirst},toOCCT3D:{...originalLast},
+   occtSourceCurveFirstPoint3D:{...originalFirst},
+   occtSourceCurveLastPoint3D:{...originalLast},
    originalOCCTBRepVertexXYZMatched:true,
    occtSourceCurve3DEndpointsAndMidpointVerified:true
   }],nativeSourceScopedSharpOutputByView:{W:{rows:[scoped]}}},
@@ -338,4 +342,62 @@ test('V/H/W source-gap consumers reject foreign views and genuine zero-length ga
  assert.equal(auditAllViews({...h,view:'drawing-2d'}),null);
  assert.throws(()=>auditAllViews({...h,positiveGap:[0,0]}),/positive|gap/i);
  assert.throws(()=>auditAllViews({...h,positiveGap:[1,1]}),/positive|gap/i);
+});
+
+test('native original TopoDS BRep source 3D vertices independently match BOTH exact M0 endpoints, including inverse orientation',()=>{
+ for(const view of ['W','H']){
+  const x=view==='W'?fixture():hGapFixture();
+  const source=x.cad.originalBRepSourceEdges[0],a=source.fromOCCT3D,b=source.toOCCT3D;
+  source.fromOCCT3D=b;source.toOCCT3D=a;
+  const out=auditAllViews(x);
+  assert.equal(out.originalNativeBRepM0PhysicalVertexBijectionCertified,true);
+  assert.equal(out.originalNativeBRepToM0ExactPhysicalVertexEvidence.
+   exactNativeOriginal3DVertexToM0EndpointBijection,true);
+  assert.equal(out.originalNativeBRepToM0ExactPhysicalVertexEvidence.
+   nativeOriginalCurveEndpointSamplesExactlyEqualM0,true);
+  assert.equal(out.jointOriginalClosedPhysicalSourceVisibilityProven,true);
+  assert.equal(out.generatedPaperGapStrictlyPositiveStillHeld,true);
+  assert.equal(out.generated2DTopoDSHistoryCertified,false);
+  assert.equal(out.signedV5Action,false);
+ }
+});
+test('tolerantly source-matched but EXACTLY displaced native original 3D vertices cannot certify M5 original physical junction',()=>{
+ for(const drift of [
+  x=>{x.cad.originalBRepSourceEdges[0].fromOCCT3D.x+=1e-9;},
+  x=>{delete x.cad.originalBRepSourceEdges[0].fromOCCT3D;},
+  x=>{x.cad.originalBRepSourceEdges[0].toOCCT3D.x=Infinity;},
+  x=>{x.cad.originalBRepSourceEdges[0].toOCCT3D=
+   {...x.cad.originalBRepSourceEdges[0].fromOCCT3D};}
+ ]){
+  const x=fixture();drift(x);
+  const r=audit(x);
+  assert.equal(r.originalNativeBRepM0PhysicalVertexBijectionCertified,false);
+  assert.equal(r.originalNativeBRepToM0ExactPhysicalVertexEvidence.
+   exactNativeOriginal3DVertexToM0EndpointBijection,false);
+  assert.equal(r.jointOriginalClosedPhysicalSourceVisibilityProven,false);
+  assert.equal(r.generatedPaperGapStrictlyPositiveStillHeld,true);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5Action,false);
+ }
+});
+test('rounded original BRepAdaptor endpoint sample is explicitly distinct from actual TopoDS M0 vertex identity',()=>{
+ const x=fixture(),source=x.cad.originalBRepSourceEdges[0];
+ source.occtSourceCurveLastPoint3D.z+=Number.EPSILON;
+ const r=audit(x),proof=r.originalNativeBRepToM0ExactPhysicalVertexEvidence;
+ assert.equal(proof.exactNativeOriginal3DVertexToM0EndpointBijection,true);
+ assert.equal(proof.nativeOriginalCurveEndpointSamplesExactlyEqualM0,false);
+ assert.equal(proof.rounded3DCurveSamplesCannotReplaceActualOriginalTopoDSVertexIdentity,true);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('neutral original paper endpoints are V/H/W scoped; legacy W-only aliases never masquerade as H coordinates',()=>{
+ const w=audit(fixture()).nativeGlobalGenerated2DPaperEndpointDriftEvidence;
+ assert.deepEqual(w.exactOriginalProjectedSourceFrom,w.exactOriginalProjectedWFrom);
+ assert.deepEqual(w.exactOriginalProjectedSourceTo,w.exactOriginalProjectedWTo);
+ const h=auditAllViews(hGapFixture()).nativeGlobalGenerated2DPaperEndpointDriftEvidence;
+ assert.equal(h.view,'H');
+ assert.deepEqual(h.exactOriginalProjectedSourceFrom,{u:0,v:0});
+ assert.deepEqual(h.exactOriginalProjectedSourceTo,{u:3,v:16});
+ assert.equal(h.exactOriginalProjectedWFrom,null);
+ assert.equal(h.exactOriginalProjectedWTo,null);
 });
