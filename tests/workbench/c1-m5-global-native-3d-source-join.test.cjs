@@ -162,3 +162,47 @@ test('M5 consumer rejects forged global 3D-to-2D paper aliases despite source ow
  assert.equal(r.generated2DTopoDSHistoryCertified,false);
  assert.equal(r.officialV5Authorized,false);
 });
+
+test('all real global native 3D intervals bijectively consume source-scoped intervals',()=>{
+ const r=audit(setup());
+ assert.equal(r.wholeSolidAndScopedNative3DParameterIntervalBijectionVerified,true);
+ assert.equal(r.originalSourcesWithPositiveNative3DParameterGaps,0);
+ assert.equal(r.originalSourcesWithOverlappingNative3DParameters,0);
+ assert.equal(r.native3DSourceParameterCoverageByOriginalSource.length,3);
+ assert.ok(r.native3DSourceParameterCoverageByOriginalSource.every(x=>
+  x.native3DSourceIntervalsCoverWholeOriginalExactlyOnce===true&&
+  x.generated2DTopoDSHistoryCertified===false&&x.signedV5Action===false));
+});
+
+test('global native 3D HLR cannot consume one scoped interval and silently drop a second',()=>{
+ const x=setup(),scoped=x.cad.nativeSourceScopedSharpOutputByView.V.rows[2]
+  .hidden3D.native3DGeneratedCurveIntervals;
+ scoped[0].nativeOriginalCurveParameterRange=[0,6];
+ scoped.push({...scoped[0],nativeOriginalCurveParameterRange:[6,12]});
+ x.cad.nativeSourceScopedSharpOutputByView.V.nativeGlobal3DOriginalSourceEvidence
+  .rows[2].originalNativeCurveParameterRange=[0,6];
+ assert.throws(()=>audit(x),/omitted a source-scoped original parameter interval/);
+});
+
+test('duplicate global native 3D ownership cannot reuse one source parameter interval',()=>{
+ const x=setup(),rows=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows;
+ rows[1]={...rows[2],wholeSolidGeneratedHLREdgeOrdinal:1};
+ assert.throws(()=>audit(x),/reuses or lacks scoped interval owner/);
+});
+
+test('real positive-length native source gap stays numerically visible and unsigned',()=>{
+ const x=setup(),native=x.cad.nativeSourceScopedSharpOutputByView.V;
+ native.rows[2].hidden3D.native3DGeneratedCurveIntervals[0]
+  .nativeOriginalCurveParameterRange=[1,12];
+ native.nativeGlobal3DOriginalSourceEvidence.rows[2]
+  .originalNativeCurveParameterRange=[1,12];
+ const r=audit(x);
+ assert.equal(r.wholeSolidAndScopedNative3DParameterIntervalBijectionVerified,true);
+ assert.equal(r.originalSourcesWithPositiveNative3DParameterGaps,1);
+ const source=r.native3DSourceParameterCoverageByOriginalSource
+  .find(x=>x.sourceEdgeId==='g::A|B');
+ assert.deepEqual(source.positiveLengthUncoveredNativeParameterIntervals,[[0,1]]);
+ assert.equal(source.native3DSourceIntervalsCoverWholeOriginalExactlyOnce,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
