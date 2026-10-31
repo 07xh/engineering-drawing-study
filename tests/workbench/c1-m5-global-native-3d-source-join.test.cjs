@@ -21,6 +21,8 @@ function setup(){
      originalPhysicalSourceEdgeId:source,originalNativeCurveParameterRange:[0,10+i],
      globalNative3DHLRCurveEqualsOriginalBRepAtThreeParameters:true,
      global3DAnd2DHLRMeasuredPaperPairUnique:true,
+     global3DAnd2DHLRMeasuredPaperPairExactBinary64:true,
+     global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly:false,
      global3DAndOriginalScoped3DHLRParameterIntervalExact:true,
      globalGenerated2DTo3DTopoDSHistoryCertified:false,
      fullOpaqueSceneContinuousOcclusionCertified:false,
@@ -136,4 +138,27 @@ test('forged original BRep bounds, source identities and native 3D filtered clas
   const x=setup();mutate(x);
   assert.throws(()=>audit(x),/original|native|source|invalid|interval|scoped|global|curve|incomplete|class/i);
  }
+});
+
+test('M5 consumer rejects forged global 3D-to-2D paper aliases despite source owner, native parameter and old unique flags',()=>{
+ for(const mutate of [
+  row=>{delete row.global3DAnd2DHLRMeasuredPaperPairExactBinary64;},
+  row=>{row.global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;},
+  row=>{row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly=true;},
+  row=>{row.global3DAnd2DHLRMeasuredPaperPairExactBinary64='true';},
+  row=>{row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly='true';}
+ ]){
+  const x=setup(),row=x.cad.nativeSourceScopedSharpOutputByView.V
+   .nativeGlobal3DOriginalSourceEvidence.rows[2];
+  mutate(row);
+  assert.throws(()=>audit(x),/invalid native whole-solid HLR/);
+ }
+ const x=setup(),row=x.cad.nativeSourceScopedSharpOutputByView.V
+  .nativeGlobal3DOriginalSourceEvidence.rows[2];
+ row.global3DAnd2DHLRMeasuredPaperPairExactBinary64=false;
+ row.global3DAnd2DHLRMeasuredPaperPairBoundedSourceScaleULPOnly=true;
+ const r=audit(x);
+ assert.equal(r.sourceCorroboratedClaims,1);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.officialV5Authorized,false);
 });
