@@ -25,6 +25,29 @@ const TOOLS=[
 ];
 const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
+<section class="df-live-hero" aria-labelledby="df-live-title">
+  <div class="df-live-copy">
+    <span class="df-live-kicker">DRAFTFLOW · ENGINEERING GEOMETRY</span>
+    <h2 id="df-live-title">从几何条件，到<em>每一笔有据可循。</em></h2>
+    <p>绘序 · DraftFlow 将数学求解、三视图和逐步作图组织进同一个工作台。先确认条件，再计算与播放；未完成证明的工程线型不会当作标准答案。</p>
+    <div class="df-live-actions">
+      <a class="df-live-primary" href="#v7-input-section">开始解题　↘</a>
+      <a class="df-live-secondary" href="#tools">查看几何工具</a>
+    </div>
+    <small>目前支持受限题型和本地人工确认 · 通用图片自动解题尚未完成</small>
+  </div>
+  <div class="df-live-geometry" aria-hidden="true">
+    <svg viewBox="0 0 280 160" xmlns="http://www.w3.org/2000/svg">
+      <g fill="none" stroke="#9cc0f7" stroke-width="1" stroke-dasharray="5 5"><path d="M0 85H280M145 0V160M32 140L215 28"/><circle cx="145" cy="85" r="69"/></g>
+      <path d="M105 40L157 16L222 45L170 73Z" fill="#e2efff" stroke="#4079e2" stroke-width="2"/>
+      <path d="M105 40V105L170 137V73Z" fill="#76a9f4" fill-opacity=".65" stroke="#4079e2" stroke-width="2"/>
+      <path d="M170 73L222 45V109L170 137Z" fill="#b7d1fc" stroke="#4079e2" stroke-width="2"/>
+      <path d="M120 48V90L158 109V67L191 50" fill="none" stroke="#275ece" stroke-width="2.3"/>
+      <path d="M18 24H76V79H18ZM32 39H57V65H32ZM237 18H266V73H237" fill="none" stroke="#6798ee" stroke-width="1.5"/>
+      <g font-family="sans-serif" font-size="9" font-weight="bold" fill="#5a86cc"><text x="21" y="17">V</text><text x="242" y="14">W</text><text x="136" y="153">H / FIRST ANGLE</text></g>
+    </svg>
+  </div>
+</section>
 <section id="ai" class="v8-legacy-anchor"></section>
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
  <div class="v7-head"><div><h1 id="v7-title">工程制图解题</h1>
