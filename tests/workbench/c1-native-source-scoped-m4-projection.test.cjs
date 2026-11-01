@@ -71,6 +71,7 @@ test('original OCCT curve reversed orientation recovers correct M0 parameter dir
 });
 test('native source-filtered outline intervals are kept separate from sharp intervals',()=>{
  const out=projectNative(input([[0,10]],[],false));
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
  assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
  assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
  assert.deepEqual(out.native3DOutlineSegments,[]);
@@ -80,6 +81,7 @@ test('native visible and hidden outline source intervals project to an exact M0 
  const x=input([[0,10]],[],false);
  x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
  const out=projectNative(x);
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
  assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
  assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
  assert.deepEqual(out.native3DOutlineOriginalParameterPositiveGaps,[]);
