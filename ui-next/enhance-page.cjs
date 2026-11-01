@@ -56,6 +56,7 @@ function applyPreview(out,{preview=true}={}){
   if(e.isDirectory())walk(file);
   else if(e.name.endsWith('.html')){
    const page=path.relative(out,file).split(path.sep).join('/');
+   if(page==='welcome.html')continue; // Branded splash stays lightweight and never duplicates V7 UI.
    fs.writeFileSync(file,enhancePage(fs.readFileSync(file,'utf8'),{page,preview}));
   }
  }}
