@@ -68,6 +68,7 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  scene.__setCurrent({solution:{revision:8,singleOriginalV5Player:true,steps,timeline,player,
   certifiedVisibleContourLineBindings:[{actionId:'edge_a',revision:8,
    sourceEdgeId:'Real::A|D',view:'W',standardLineStyle:visible,
+   fromSheetPx:{x:5,y:8},toSheetPx:{x:45,y:48},
    signedFormalLineV5:true}],
   // A final SVG exists in the solver result but MUST NEVER enter frame zero.
   threeViewSvgSheet:{sheetSvg:'<svg data-forbidden-final-answer="true"><line x1="1" y1="2" x2="3" y2="4"/></svg>'},
