@@ -190,10 +190,29 @@ function projectC1Native3DSourceIntervalsToM4({
     });
     continue;
    }
+   // Preserve native source evidence even when first-angle projection
+   // collapses a positive original interval to one rounded paper point.
+   // Such an interval cannot authorize a drawable M4 outline stroke.
+   const fromModelMm=lerp(a,b,from),toModelMm=lerp(a,b,to);
+   const fromPaper=project(fromModelMm)[view],
+    toPaper=project(toModelMm)[view];
+   if(![fromPaper.u,fromPaper.v,toPaper.u,toPaper.v].every(Number.isFinite))
+    throw new RangeError('nonfinite first-angle M4 outline projection');
+   const paperDrawableCandidate=
+    fromPaper.u!==toPaper.u||fromPaper.v!==toPaper.v;
+   if(!paperDrawableCandidate)
+    outlineIntervalsHeldForM4.push({
+     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
+     roundedOriginalM0UnitParameterRange:[from,to],
+     reason:'positive-native-outline-interval-collapsed-by-binary64-paper-projection',
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
    native3DOutlineSegments.push({
-    view,sourceEdgeId,native3DHLRClass:klass,
+    view,sourceEdgeId,originalVertexIds:[id0,id1],
+    native3DHLRClass:klass,
     originalNative3DParameterRange:[...interval],
     originalM0UnitParameterRange:[from,to],
+    fromModelMm,toModelMm,fromPaper,toPaper,paperDrawableCandidate,
     derivedFromOriginalNative3DOutlineNotGeneratedHLRPaper:true,
     generated2DHLREdgeTopologyProven:false,
     completeGlobalCoProjectedVisibilityCertified:false,
