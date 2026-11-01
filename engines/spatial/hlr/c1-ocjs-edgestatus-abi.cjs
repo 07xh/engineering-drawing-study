@@ -26,17 +26,23 @@ function pair(value){
  }
  return null;
 }
-function resolveMethod(owner,name){
- const names=methodNames(owner);
- return names.find(key=>key===name||key.startsWith(name+'_'))??null;
+// Embind can expose several overloads for the same C++ method. Probe all
+// actual exports, never assume the lexicographically first suffix is callable.
+function resolveMethods(owner,name){
+ return methodNames(owner).filter(key=>
+  key===name||(key.startsWith(name+'_')&&
+   /^\\d+$/.test(key.slice(name.length+1)))).sort((a,b)=>
+    a===name?-1:b===name?1:
+    Number(a.slice(name.length+1))-Number(b.slice(name.length+1)));
 }
+function resolveMethod(owner,name){return resolveMethods(owner,name)[0]??null;}
 function invokePair(owner,name,argSets){
- const resolved=resolveMethod(owner,name);
- if(!resolved)return {readable:false,reason:'method-not-exposed'};
+ const methods=resolveMethods(owner,name);
+ if(!methods.length)return {readable:false,reason:'method-not-exposed'};
  let last='output-reference-not-marshalled';
- for(const args of argSets){
+ for(const method of methods)for(const args of argSets){
   try{
-   const value=owner[resolved](...args),interval=pair(value);
+   const value=owner[method](...args),interval=pair(value);
    if(interval)return {readable:true,interval};
    if(value!==undefined)last='unsupported-return-shape';
   }catch(error){last=String(error?.message??error).slice(0,180);}
@@ -44,23 +50,30 @@ function invokePair(owner,name,argSets){
  return {readable:false,reason:last};
 }
 function callBoolean(owner,name){
- const resolved=resolveMethod(owner,name);
- if(!resolved)return null;
- const value=owner[resolved]();
- return typeof value==='boolean'?value:null;
+ for(const method of resolveMethods(owner,name)){
+  try{
+   const value=owner[method]();
+   if(typeof value==='boolean')return value;
+  }catch{/* incompatible binding overload: try next real export */}
+ }
+ return null;
 }
 function callCount(owner,name){
- const resolved=resolveMethod(owner,name);
- if(!resolved)return null;
- const value=owner[resolved]();
- return Number.isSafeInteger(value)&&value>=0?value:null;
+ for(const method of resolveMethods(owner,name)){
+  try{
+   const value=owner[method]();
+   if(Number.isSafeInteger(value)&&value>=0)return value;
+  }catch{/* incompatible binding overload: try next real export */}
+ }
+ return null;
 }
 function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOriginalSources}={}){
  if(!oc||typeof oc!=='object'||!dataStructure||typeof dataStructure!=='object'||
     !Number.isSafeInteger(edgeMapExtent)||edgeMapExtent<1||edgeMapExtent>512||
     !Array.isArray(indexedOriginalSources)||indexedOriginalSources.length!==edgeMapExtent||
     indexedOriginalSources.some((x,i)=>!x||x.hlrDataStructureOneBasedEdgeIndex!==i+1||
-      typeof x.originalPhysicalSourceEdgeId!=='string'||!x.originalPhysicalSourceEdgeId))
+      typeof x.originalPhysicalSourceEdgeId!=='string'||!x.originalPhysicalSourceEdgeId)||
+    new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId)).size!==edgeMapExtent)
   throw new TypeError('same-run real OCJS HLR data structure and complete original source index required');
  const dsMethods=methodNames(dataStructure);
  const statusExports=Object.keys(oc).filter(k=>/HLR.*(EdgeStatus|EdgeData|Array1OfEData)/i.test(k)).sort();
@@ -106,6 +119,10 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
   const count=callCount(status,'NbVisiblePart');
   const allVisible=callBoolean(status,'AllVisible');
   const allHidden=callBoolean(status,'AllHidden');
+  // A corrupt or incompatible native ABI must not create an unbounded
+  // synchronous JS loop on the workbench/Android UI thread.
+  if(count!==null&&count>4096)
+   throw new RangeError('native HLR EdgeStatus visible-part count exceeds diagnostic budget');
   const visibleParts=[];
   let partFailure=null;
   if(count!==null){
