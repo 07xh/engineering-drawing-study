@@ -445,6 +445,27 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ // Real pinned OCCT cross-consistency, not a paper-line or V5 certificate.
+ // Publish exact source-side split diagnostics for each first-angle view;
+ // the difference between EdgeStatus and extracted 3D Sharp is visible.
+ console.error('REAL C1 ORIGINAL EDGESTATUS VS SCOPED 3D SHARP '+geometry.id+': '+
+  JSON.stringify({
+   compared:scopedConsumer.counts.originalStatusVsNative3DCompared,
+   concordant:scopedConsumer.counts.originalStatusVsNative3DConcordant,
+   conflicting:scopedConsumer.counts.originalStatusVsNative3DConflicting,
+   uncomparable:scopedConsumer.counts.originalStatusVsNative3DHeld,
+   views:Object.fromEntries(['V','H','W'].map(view=>[
+    view,scopedConsumer.views[view].originalStatusReconciliation.map(x=>({
+     sourceEdgeId:x.sourceEdgeId,comparable:x.comparable,
+     agreement:x.nativeOriginalStatusClassAgreesWith3DSharp,
+     reason:x.reason??null,
+     mismatches:x.mismatchedNativeVisibilitySubintervals??[],
+     gaps:x.uncoveredSourceScoped3DSubintervals??[],
+     overlaps:x.overlappingNative3DClassSubintervals??[]
+    }))
+   ])),
+   certifiedGenerated2DAncestry:false,officialV5Actions:0
+  }));
  const parameterizedLineageByView=Object.fromEntries(['V','H','W'].map(view=>{
   const lineage=scopedConsumer.views[view].parameterizedGlobalHLRSourceLineage;
   assert.equal(lineage?.schema,'draftai-c1-parameterized-global-hlr-source-lineage/1');
