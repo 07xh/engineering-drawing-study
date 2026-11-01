@@ -1475,3 +1475,36 @@ test('reversed native Sharp source intervals retain raw parameter proof without 
  assert.equal(r.nativeSharpOriginalParameterClassBacked,true);
  assert.equal(r.nativeM4ClassBacked,true);
 });
+
+test('native M4 outline consumer refuses forged paper drawability and missing held source',()=>{
+ const mk=()=>({
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'W',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}],
+  native3DOutlineEvidenceAvailable:true,
+  native3DOutlineSegments:[{
+   ...outlineSegment('W','g::E0','visible-outline',[0,10],[0,1]),
+   fromModelMm:{x:0,y:0,z:0},toModelMm:{x:10,y:0,z:0},
+   fromPaper:{u:0,v:0},toPaper:{u:0,v:0},paperDrawableCandidate:false
+  }],
+  M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation:[]
+ });
+ const check=nativeM4=>auditParameterizedM4({
+  view:'W',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[0,10]},
+  klass:'visible',nativeM4
+ });
+ const missing=mk();
+ assert.throws(()=>check(missing),/paper-collapsed native outline missing held/);
+ const forged=mk();
+ forged.native3DOutlineSegments[0].paperDrawableCandidate=true;
+ assert.throws(()=>check(forged),/paper drawable witness is inconsistent/);
+ const valid=mk();
+ valid.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation=[{
+  native3DHLRClass:'visible-outline',originalNative3DParameterRange:[0,10]
+ }];
+ const result=check(valid);
+ assert.equal(result.nativeOutlineClassBacked,false);
+ assert.deepEqual(result.nativeOutlineOriginalParameterCoverage.
+  nativeOriginalHeldBinary64PositiveOverlaps,[[0,10]]);
+});
