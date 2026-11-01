@@ -1215,3 +1215,83 @@ test('all three views retain unsigned status when a paper candidate has no direc
   assert.equal(r.globalContinuousVisibilityCertified,false);
  }
 });
+
+function fixtureWithRealStatusReplay(){
+ const x=fixture();
+ Object.assign(x.geometry,{kind:'mesh',space:'model-3d',unit:'mm'});
+ x.cad.actualOCCTCurveTypeIndependentlyVerified=true;
+ x.cad.originalBRepSourceEdges=x.geometry.data.edges.map(edge=>{
+  const [a,b]=edge.map(id=>x.geometry.data.points[id]),
+   range=[0,Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)];
+  return {sourceEdgeId:x.geometry.id+'::'+[...edge].sort().join('|'),
+   occtSourceCurveType:'line',originalOCCTBRepVertexXYZMatched:true,
+   fromOCCT3D:{...a},toOCCT3D:{...b},
+   occtSourceCurve3DEndpointsAndMidpointVerified:true,
+   occtSourceCurveParameterRange:range,
+   occtSourceCurveFirstPoint3D:{...a},occtSourceCurveLastPoint3D:{...b}};
+ });
+ const {auditOriginalEdgeStatusVsSourceScoped3DSharp:auditStatus}=
+  require('../../engines/spatial/hlr/c1-ocjs-edgestatus-abi.cjs');
+ for(const view of ['V','H','W']){
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view],
+   statuses=[];
+  for(const row of scoped.rows){
+   const curve=x.cad.originalBRepSourceEdges.find(z=>
+    z.sourceEdgeId===row.originalPhysicalSourceEdgeId);
+   const range=[...curve.occtSourceCurveParameterRange],
+    part={nativeSourceFilterOriginalEdgeId:curve.sourceEdgeId,
+     nativeOriginalCurveParameterRange:range,
+     native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+     originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false};
+   row.visible3D={nativeSourceFilteredOriginalTopoDSEdge:true,
+    native3DGeneratedCurveIntervals:row.visible.length?[part]:[]};
+   row.hidden3D={nativeSourceFilteredOriginalTopoDSEdge:true,
+    native3DGeneratedCurveIntervals:[]};
+   const status={sourceEdgeId:curve.sourceEdgeId,
+    parameterPartitionValidated:true,bounds:range,
+    visibleParts:row.visible.length?[range]:[]};
+   statuses.push(status);
+   row.originalEdgeStatusVsNative3DSharp=auditStatus({
+    sourceEdgeId:curve.sourceEdgeId,originalNativeParameterRange:range,
+    statusRow:status,
+    visibleNativeIntervals:row.visible3D.native3DGeneratedCurveIntervals
+     .map(z=>z.nativeOriginalCurveParameterRange),
+    hiddenNativeIntervals:[]
+   });
+  }
+  x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].originalEdgeStatusAbi={
+   rows:statuses};
+  scoped.originalStatusVsNative3DSharpSummary={
+   comparedOriginalSources:2,concordantOriginalSources:1,
+   mismatchedOriginalSources:1,heldUncomparableOriginalSources:0,
+   directGenerated2DTopoDSHistoryCertified:false,
+   officialV5Authorized:false
+  };
+ }
+ return x;
+}
+test('source M4 independently replays real indexed EdgeStatus/3D diagnostics without V5 promotion',()=>{
+ const x=fixtureWithRealStatusReplay(),r=audit(x);
+ assert.equal(r.counts.originalStatusVsNative3DCompared,6);
+ assert.equal(r.counts.originalStatusVsNative3DConcordant,3);
+ assert.equal(r.counts.originalStatusVsNative3DConflicting,3);
+ assert.equal(r.counts.originalStatusVsNative3DHeld,0);
+ assert.equal(r.views.V.originalStatusReconciliation.length,2);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('source M4 rejects a forged native status report, source index and aggregate',()=>{
+ for(const mutate of [
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[0].
+   originalEdgeStatusVsNative3DSharp.nativeOriginalStatusClassAgreesWith3DSharp=false;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.W.
+   originalStatusVsNative3DSharpSummary.concordantOriginalSources=2;},
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.H.
+   originalEdgeStatusAbi.rows[0].sourceEdgeId='g::invented';},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V.rows[1].
+   originalEdgeStatusVsNative3DSharp.signedV5Action=true;}
+ ]){
+  const x=fixtureWithRealStatusReplay();mutate(x);
+  assert.throws(()=>audit(x),/status|source|replayable|aggregate|invented/i);
+ }
+});
