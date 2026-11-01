@@ -96,7 +96,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      report.engineeringLineStyle!=='undetermined'||
      report.signedV5ActionCount!==0)
    throw new RangeError('invalid parameterized whole-solid HLR source report');
-  const seenOrdinals=new Set();
+  const seenOrdinals=new Set(),distinctParameterDomainBoundSourceIds=new Set();
   let rawUnique=0,rawAmbiguous=0,rawUnmatched=0;
   let unique=0,ambiguous=0,unmatched=0,disagreements=0;
   const rows=report.rows.map(row=>{
@@ -175,6 +175,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         Math.max(...sampleResiduals)>segment.actualOCCTHLRCurveSampleToleranceMm))
      throw new RangeError('parameterized HLR curve residual summary is inconsistent');
     candidateIds.add(sourceId);
+    distinctParameterDomainBoundSourceIds.add(sourceId);
    }
    const rawStatus=matches.length===0?'no-parameterized-source-curve-match':
     matches.length===1?'unique-parameterized-source-curve-match':
@@ -231,8 +232,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      rawUnmatched!==report.unmatchedGeneratedOutputEdgeCount||
      rawUnique+rawAmbiguous+rawUnmatched!==item.global.length)
    throw new RangeError('parameterized HLR source report counts do not reconcile');
-  if(rawUnique+rawAmbiguous>report.topoDSParameterDomainBoundSourceCurveCount)
-   throw new RangeError('parameterized HLR matches exceed original BRep parameter-domain identity ledger');
+  if(distinctParameterDomainBoundSourceIds.size>
+      report.topoDSParameterDomainBoundSourceCurveCount)
+   throw new RangeError('parameterized HLR source IDs exceed original BRep parameter-domain identity ledger');
   result.classes[klass]={sourceCurveCandidateCount:report.sourceCurveCandidateCount,
    topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
    topoDSParameterDomainBoundSourceCurveCount:
