@@ -85,6 +85,70 @@ function callNoArg(owner,name,predicate){
 function methodInventory(owner,names){
  return Object.fromEntries(names.map(name=>[name,methodArities(owner,name)]));
 }
+function callFiniteOneArg(owner,name,arg){
+ for(const method of resolveMethods(owner,name)){
+  if(owner[method].length!==1)continue;
+  try{
+   const value=owner[method](arg);
+   if(Number.isFinite(value))return {readable:true,value,method};
+  }catch{/* try next exact one-argument overload */}
+ }
+ return {readable:false,value:null,method:null};
+}
+function callPointOneArg(owner,name,arg,dimension){
+ for(const method of resolveMethods(owner,name)){
+  if(owner[method].length!==1)continue;
+  let value;
+  try{
+   value=owner[method](arg);
+   if(!value||typeof value!=='object')continue;
+   const keys=dimension===3?['X','Y','Z']:['X','Y'];
+   const coords=keys.map(key=>typeof value[key]==='function'?value[key]():NaN);
+   if(coords.every(Number.isFinite))
+    return {readable:true,coordinates:coords,method};
+  }catch{/* try next exact one-argument overload */}
+  finally{
+   // Value/Value3D return gp_Pnt values by value; release only wrappers
+   // that expose an owning delete(), never borrowed Geometry/Edge handles.
+   if(value&&typeof value.delete==='function')value.delete();
+  }
+ }
+ return {readable:false,coordinates:null,method:null};
+}
+function inspectCurveParameterMap(curve,range){
+ if(!Array.isArray(range)||range.length!==2||
+    !range.every(Number.isFinite)||!(range[1]>range[0]))
+  return {readable:false,reason:'original-3d-curve-range-unreadable',samples:[]};
+ const samples=[range[0],range[0]+(range[1]-range[0])/2,range[1]];
+ const rows=samples.map(parameter3d=>{
+  const parameter2d=callFiniteOneArg(curve,'Parameter2d',parameter3d);
+  if(!parameter2d.readable)return {parameter3d,parameter2d:null,
+   parameter3dRoundTrip:null,roundTripResidual:null,
+   sourcePoint3D:null,projectedPoint2D:null,readable:false};
+  const back=callFiniteOneArg(curve,'Parameter3d',parameter2d.value);
+  const sourcePoint3D=callPointOneArg(curve,'Value3D',parameter3d,3);
+  const projectedPoint2D=callPointOneArg(curve,'Value',parameter2d.value,2);
+  const residual=back.readable?Math.abs(back.value-parameter3d):null;
+  return {parameter3d,parameter2d:parameter2d.value,
+   parameter3dRoundTrip:back.readable?back.value:null,
+   roundTripResidual:residual,
+   sourcePoint3D:sourcePoint3D.readable?sourcePoint3D.coordinates:null,
+   projectedPoint2D:projectedPoint2D.readable?projectedPoint2D.coordinates:null,
+   readable:back.readable&&sourcePoint3D.readable&&projectedPoint2D.readable};
+ });
+ const tolerance=1e-10*Math.max(1,Math.abs(range[0]),Math.abs(range[1]));
+ return {
+  readable:rows.every(x=>x.readable),
+  parameter2dMethodArities:methodArities(curve,'Parameter2d'),
+  parameter3dMethodArities:methodArities(curve,'Parameter3d'),
+  value3dMethodArities:methodArities(curve,'Value3D'),
+  value2dMethodArities:methodArities(curve,'Value'),
+  roundTripTolerance:tolerance,
+  roundTripWithinDiagnosticTolerance:rows.every(x=>
+   x.roundTripResidual!==null&&x.roundTripResidual<=tolerance),
+  samples:rows
+ };
+}
 function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles}){
  const scalarMethods={
   VSta:value=>Number.isSafeInteger(value)&&value>=0,
@@ -102,9 +166,9 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   flags[name]=callNoArg(edgeData,name,value=>typeof value==='boolean');
  const geometryResult=callNoArg(edgeData,'Geometry',value=>
   value&&typeof value==='object');
- let curve=null,adaptor=null,edge=null;
+ let curve=null,edge=null;
  let geometryMethods=[],adaptorMethods=[],edgeMethods=[];
- let curveParameters=null,identityMatches=[];
+ let curveParameters=null,curveParameterMap=null,identityMatches=[];
  if(geometryResult.readable){
   const geometry=geometryResult.value;
   geometryMethods=methodNames(geometry);
@@ -117,8 +181,10 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
    adaptorMethods=methodNames(curve);
    const first=callNoArg(curve,'FirstParameter',Number.isFinite);
    const last=callNoArg(curve,'LastParameter',Number.isFinite);
-   if(first.readable&&last.readable&&last.value>first.value)
+   if(first.readable&&last.readable&&last.value>first.value){
     curveParameters=[first.value,last.value];
+    curveParameterMap=inspectCurveParameterMap(geometry,curveParameters);
+   }
    const edgeResult=callNoArg(curve,'Edge',value=>
     value&&typeof value==='object'&&typeof value.IsSame==='function');
    if(edgeResult.readable){
@@ -147,6 +213,7 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   flagValues:Object.fromEntries(Object.entries(flags).map(([k,v])=>
    [k,v.readable?v.value:null])),
   original3DCurveParameterRange:curveParameters,
+  original3DToProjected2DCurveParameterMap:curveParameterMap,
   directOriginalTopoDSEdgeIsSameMatches:identityMatches,
   directOriginalTopoDSEdgeIdentityProven:
    identityMatches.length===1&&identityMatches[0]===sourceEdgeId,
