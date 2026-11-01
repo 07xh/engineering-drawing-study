@@ -168,6 +168,7 @@ function projectC1Native3DSourceIntervalsToM4({
       native.nativeResultingEdgeType!=='HLRBRep_OutLine'||
       native.native3DHLRClass!==klass||
       native.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
+      native.originalGeneratedTopoDSHistoryCertified!==false||
       native.generated2DHLREdgeTopologyProven!==false||
       native.signedV5Action!==false||
       !Array.isArray(interval)||interval.length!==2||
