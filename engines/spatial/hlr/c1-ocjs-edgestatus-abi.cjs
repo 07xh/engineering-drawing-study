@@ -205,7 +205,9 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   value&&typeof value==='object');
  let curve=null,edge=null;
  let geometryMethods=[],adaptorMethods=[],edgeMethods=[];
- let curveParameters=null,curveParameterMap=null,identityMatches=[];
+ let curveParameters=null,curveParameterMap=null,identityMatches=[],
+  identityHandleMatches=[],originalBRepParameterRange=null,
+  originalBRepParameterRangeMatches=false;
  if(geometryResult.readable){
   const geometry=geometryResult.value;
   geometryMethods=methodNames(geometry);
@@ -232,10 +234,29 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
         typeof candidate.edge?.IsSame!=='function')continue;
      const forward=edge.IsSame(candidate.edge)===true;
      const reverse=candidate.edge.IsSame(edge)===true;
-     if(forward&&reverse&&!identityMatches.includes(candidate.sourceEdgeId))
-      identityMatches.push(candidate.sourceEdgeId);
+     if(forward&&reverse){
+      if(!identityMatches.includes(candidate.sourceEdgeId))
+       identityMatches.push(candidate.sourceEdgeId);
+      if(candidate.sourceEdgeId===sourceEdgeId)
+       identityHandleMatches.push(candidate);
+     }
     }
    }
+  }
+ }
+ if(identityMatches.length===1&&identityMatches[0]===sourceEdgeId&&
+    identityHandleMatches.length>0){
+  const ranges=identityHandleMatches.map(x=>x.parameterRange);
+  const firstRange=ranges[0];
+  const allRangesValid=ranges.every(range=>Array.isArray(range)&&
+   range.length===2&&range.every(Number.isFinite)&&
+   range[0]===firstRange?.[0]&&range[1]===firstRange?.[1]);
+  if(allRangesValid){
+   originalBRepParameterRange=[...firstRange];
+   originalBRepParameterRangeMatches=Array.isArray(curveParameters)&&
+    curveParameters.length===2&&
+    curveParameters[0]===originalBRepParameterRange[0]&&
+    curveParameters[1]===originalBRepParameterRange[1];
   }
  }
  if(nativeCurveHandlesBySourceId instanceof Map&&curveParameters&&
@@ -245,6 +266,9 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   nativeCurveHandlesBySourceId.set(sourceEdgeId,{
    curve:geometryResult.value,
    parameterRange:[...curveParameters],
+   originalBRepParameterRange:originalBRepParameterRange?
+    [...originalBRepParameterRange]:null,
+   originalBRepParameterRangeMatches,
    tolerance:scalars.Tolerance.readable?scalars.Tolerance.value:null,
    directOriginalTopoDSEdgeIdentityProven:
     identityMatches.length===1&&identityMatches[0]===sourceEdgeId
@@ -266,6 +290,8 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   directOriginalTopoDSEdgeIsSameMatches:identityMatches,
   directOriginalTopoDSEdgeIdentityProven:
    identityMatches.length===1&&identityMatches[0]===sourceEdgeId,
+  originalBRepSourceParameterRange:originalBRepParameterRange,
+  originalBRepParameterRangeMatches,
   generated2DHLRTopoDSHistoryProven:false
  };
 }
@@ -466,6 +492,8 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
 
 function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  if(!source?.directOriginalTopoDSEdgeIdentityProven||
+    !source?.originalBRepParameterRangeMatches||
+    !Array.isArray(source.originalBRepParameterRange)||
     !source.curve||!Array.isArray(source.parameterRange)||
     source.parameterRange.length!==2||
     !source.parameterRange.every(Number.isFinite)||
@@ -525,6 +553,8 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   // This curve was admitted to the same-run map only after symmetric
   // native TopoDS IsSame matched its EdgeData geometry to one original M0 edge.
   originalTopoDSEdgeIdentityProven:true,
+  originalBRepParameterRangeMatches:true,
+  originalBRepSourceParameterRange:[...source.originalBRepParameterRange],
   original3DCurveParameterRange:[...source.parameterRange],
   source3DParameterRange:[samples[0].source3DParameter,samples[4].source3DParameter],
   generated2DParameterRange:[...outputRange],
@@ -569,6 +599,8 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   sourceCurveCandidateCount:nativeCurveHandlesBySourceId.size,
   topoDSIdentityBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
    .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true).length,
+  topoDSParameterDomainBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
+   .filter(source=>source.originalBRepParameterRangeMatches===true).length,
   generatedOutputEdgeCount:rows.length,
   uniqueParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount===1).length,
   ambiguousParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount>1).length,
