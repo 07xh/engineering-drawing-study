@@ -19,7 +19,8 @@ const make=(v,h,segments)=>audit({
  view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
  scoped2DVisible:v,scoped2DHidden:h,
  nativeOriginal3DM4:{
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   view,sourceEdgeId,segments,
   native3DSourceParameterPartitionCompleteExactlyOnce:true,
   M4OriginalUnitIntervalCandidateCoverageComplete:true,
@@ -99,7 +100,8 @@ test('genuine skew tetra rounded generated 2D endpoint is bounded by one source-
  observed.from={u:3,v:2};
  observed.to={u:0,v:-4.440892098500626e-16};
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   view,sourceEdgeId,
   segments:[native('hidden-sharp',0,1)],
   native3DSourceParameterPartitionCompleteExactlyOnce:true,
@@ -132,7 +134,8 @@ test('real skew tetra slightly outside native paper domain remains exact one-ULP
   sourceProjectedFrom:{u:0,v:0},sourceProjectedTo:{u:5,v:23},
   scoped2DVisible:[observed],scoped2DHidden:[],
   nativeOriginal3DM4:{
-   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
    view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
    native3DSourceParameterPartitionCompleteExactlyOnce:true,
   M4OriginalUnitIntervalCandidateCoverageComplete:true,
@@ -157,7 +160,8 @@ test('a larger-than-one-ULP or long-distance paper alias never borrows source cl
   sourceProjectedFrom:{u:0,v:0},sourceProjectedTo:{u:3,v:2},
   scoped2DVisible:[],scoped2DHidden:[observed],
   nativeOriginal3DM4:{
-   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
    view,sourceEdgeId,segments:[native('hidden-sharp',0,1)],
    native3DSourceParameterPartitionCompleteExactlyOnce:true,
   M4OriginalUnitIntervalCandidateCoverageComplete:true,
@@ -176,7 +180,8 @@ test('source envelope must also have whole original native 3D class coverage, wi
  const args={view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
   scoped2DVisible:[observed],scoped2DHidden:[]};
  const mk=(parts,held=[])=>audit({...args,nativeOriginal3DM4:{
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   view,sourceEdgeId,segments:parts,
   native3DSourceParameterPartitionCompleteExactlyOnce:true,
   M4OriginalUnitIntervalCandidateCoverageComplete:true,
@@ -204,7 +209,8 @@ test('large-absolute-coordinate short edge cannot use 1-ULP of global position t
   sourceProjectedTo:{u:offset+1,v:0},
   scoped2DVisible:[observed],scoped2DHidden:[],
   nativeOriginal3DM4:{
-   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
    view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
    native3DSourceParameterPartitionCompleteExactlyOnce:true,
   M4OriginalUnitIntervalCandidateCoverageComplete:true,
@@ -223,7 +229,8 @@ test('native positive gap erased by binary64 M4 normalization cannot falsely cer
  assert.equal(nativeGap[0]/10,nativeGap[1]/10,
   'distinct native curve parameters can map to one rounded M4 fraction');
  const fakeRoundedM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   view,sourceEdgeId,
   // M4 paper intervals deceptively cover [0,1] without a visible gap.
   segments:[native('visible-sharp',0,.5),native('visible-sharp',.5,1)],
