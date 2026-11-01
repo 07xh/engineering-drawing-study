@@ -363,7 +363,7 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  const curve={
   Parameter2d(value){return value+2;},
   Parameter3d(value){return value-2;},
-  Value(value){return {X(){return value-2;},Y(){return -2*(value-2);}};}
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
   curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true
@@ -392,7 +392,7 @@ test('parameterized generated curve rejects an output interval outside the origi
  const curve={
   Parameter2d(value){return value+2;},
   Parameter3d(value){return value-2;},
-  Value(value){return {X(){return value-2;},Y(){return -2*(value-2);}};}
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
   curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true
@@ -413,7 +413,7 @@ test('two original native source curves with identical projected parameterizatio
  const makeCurve=()=>({
   Parameter2d(value){return value+2;},
   Parameter3d(value){return value-2;},
-  Value(value){return {X(){return value-2;},Y(){return -2*(value-2);}};}
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
  });
  const nativeCurveHandlesBySourceId=new Map([
   ['g::E0',{curve:makeCurve(),parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true}],
@@ -437,7 +437,7 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
  const curve={
   Parameter2d(value){return value+2;},
   Parameter3d(value){return value-2;},
-  Value(value){return {X(){return value-2;},Y(){return -2*(value-2);}};}
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
   curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:false
