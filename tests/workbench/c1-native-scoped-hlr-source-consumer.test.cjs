@@ -807,6 +807,22 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
  }
  assert.equal(out.formalEngineeringLineStyleCertified,false);
  assert.equal(out.signedV5ActionCount,0);
+ // An inverse parameter one ULP outside the original domain must not
+ // inherit the otherwise unique same-run source-lineage label. The M0
+ // replay returns HELD, even though the paper samples still agree.
+ const match=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ match.source3DParameterRange[0]=-Number.EPSILON;
+ match.samples[0].source3DParameter=-Number.EPSILON;
+ const held=audit(x),lineage=held.views.V.parameterizedGlobalHLRSourceLineage;
+ const row=lineage.classes.visible.rows[0];
+ assert.equal(row.reviewedOriginalM0PaperHeld,true);
+ assert.equal(row.status,'reviewed-original-m0-source-paper-held');
+ assert.equal(row.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(row.parameterizedSourceIntervals[0].reviewedOriginalM0PaperSampleAudit.
+  originalM0SourcePaperSamplesCorroborated,false);
+ assert.equal(lineage.counts.reviewedOriginalM0PaperHeldGeneratedEdges,1);
+ assert.equal(held.signedV5ActionCount,0);
 });
 
 test('native V/H/W source consumer now jointly certifies only exact BOTH-axis candidate paper',()=>{
@@ -970,6 +986,27 @@ test('malformed parameterized source reports and forged generated-edge history a
  }
 });
 
+
+test('M4 refuses forged nonmonotone interior native source parameters even when paper samples agree',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),match=x.cad.nativeSourceScopedSharpOutputByView[view]
+   .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+  // The two endpoint parameters and all five 2D paper samples remain
+  // unchanged. Only the native 3D parameter path doubles back.
+  match.samples[2].source3DParameter=0.9;
+  assert.throws(()=>audit(x),/source parameter samples reverse/,view);
+ }
+});
+test('M4 preserves a legitimately reversed monotone native source parameter map',()=>{
+ const x=fixture(),match=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ match.source3DParameterRange=[1,0];
+ match.samples.forEach((sample,i)=>{sample.source3DParameter=1-i/4;});
+ const row=audit(x).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'unique-parameterized-source-lineage');
+ assert.equal(row.generated2DTopoDSHistoryProven,false);
+ assert.equal(row.signedV5Action,false);
+});
 
 test('native class-specific HLR filter narrows a projected curve alias but never upgrades it to unique',()=>{
  const x=fixture(),view='V',report=x.cad.nativeSourceScopedSharpOutputByView[view].
