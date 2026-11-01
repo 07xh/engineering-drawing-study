@@ -311,8 +311,32 @@ test('paper-collapsed W source still consumes genuine positive native outline ev
  assert.equal(out.native3DOutlineSegments.length,1);
  assert.deepEqual(out.native3DOutlineSegments[0].originalNative3DParameterRange,[0,10]);
  assert.equal(out.native3DOutlineSegments[0].generated2DHLREdgeTopologyProven,false);
- assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+ assert.equal(out.native3DOutlineSegments[0].paperDrawableCandidate,false);
+ assert.deepEqual(out.native3DOutlineSegments[0].fromPaper,
+  out.native3DOutlineSegments[0].toPaper);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length,1);
+ assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[0,10]);
  assert.equal(out.officialV5Authorized,false);
+});
+test('native outline paper geometry uses original 3D M0 endpoints in V/H, not generated HLR',()=>{
+ for(const view of ['V','H']){
+  const x=input([[0,10]],[]);
+  x.view=view;
+  x.scopedRow=row([[0,10]],[],[[0,10]],[]);
+  const out=projectNative(x),segment=out.native3DOutlineSegments[0];
+  assert.equal(segment.paperDrawableCandidate,true);
+  assert.deepEqual(segment.fromModelMm,geometry.data.points.A);
+  assert.deepEqual(segment.toModelMm,geometry.data.points.B);
+  assert.deepEqual(segment.fromPaper,project(geometry.data.points.A)[view]);
+  assert.deepEqual(segment.toPaper,project(geometry.data.points.B)[view]);
+  assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length,0);
+  assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+  assert.equal(segment.generated2DHLREdgeTopologyProven,false);
+  assert.equal(segment.signedV5Action,false);
+ }
 });
 test('native outline producer must explicitly deny generated 2D topology ancestry',()=>{
  const x=input([],[],false);
