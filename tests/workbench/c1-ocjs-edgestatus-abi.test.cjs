@@ -74,6 +74,8 @@ test('fails closed when C++ output-reference methods do not marshal to JS return
   indexedOriginalSources:sources(1)});
  assert.equal(r.availability,'bounds-output-not-readable');
  assert.equal(r.rows[0].boundsReadFailure,'output-reference-not-marshalled');
+ assert.deepEqual(r.rows[0].boundsMethodArities,[{name:'Bounds',length:0}]);
+ assert.equal(r.diagnostic.statusGetterMethod,'Status');
  assert.equal(r.signedV5ActionCount,0);
 });
 
