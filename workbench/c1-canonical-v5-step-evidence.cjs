@@ -52,7 +52,15 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
     binding.revision!==revision||
     typeof binding.sourceEdgeId!=='string'||!binding.sourceEdgeId||
     !['V','H','W'].includes(binding.view)||
-    ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle))
+    ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle)||
+    // A signed V5 action must carry its actual positive ORIGINAL 3D
+    // parameter domain, not a guessed or absent paper-only line span.
+    !Array.isArray(binding.originalParameterRange)||
+    binding.originalParameterRange.length!==2||
+    !binding.originalParameterRange.every(Number.isFinite)||
+    binding.originalParameterRange[0]<0||
+    !(binding.originalParameterRange[1]>binding.originalParameterRange[0])||
+    binding.originalParameterRange[1]>1)
    throw new RangeError('missing or duplicated authentic signed source binding');
   owners.set(binding.actionId,binding);
  }
