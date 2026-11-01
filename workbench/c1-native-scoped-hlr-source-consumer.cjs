@@ -61,15 +61,37 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
     !sourceRange.every(Number.isFinite)||
     !['forward','reversed'].includes(direction))
   throw new RangeError('invalid native M4 source-class interval binding for parameterized HLR edge');
+ const parameterTolerance=1e-10*Math.max(1,...domain.map(Math.abs),
+  ...sourceRange.map(Math.abs));
+ if(Math.min(...sourceRange)<domain[0]-parameterTolerance||
+    Math.max(...sourceRange)>domain[1]+parameterTolerance)
+  throw new RangeError('parameterized source interval escapes original BRep parameter domain');
+ const exactDomainContainment=Math.min(...sourceRange)>=domain[0]&&
+  Math.max(...sourceRange)<=domain[1];
  const normalize=t=>direction==='reversed'?
   (domain[1]-t)/(domain[1]-domain[0]):
   (t-domain[0])/(domain[1]-domain[0]);
  const a=normalize(sourceRange[0]),b=normalize(sourceRange[1]),
   normalizedRange=[Math.min(a,b),Math.max(a,b)];
  if(!normalizedRange.every(Number.isFinite)||
-    normalizedRange[0]<0||normalizedRange[1]>1||
     !(normalizedRange[1]>normalizedRange[0]))
   throw new RangeError('parameterized generated HLR source interval cannot normalize to original M0 [0,1]');
+ // Never clamp a source endpoint back onto [0,1]. A tolerance-bounded
+ // overshoot is retained as evidence and held from M4 class backing.
+ if(!exactDomainContainment||normalizedRange[0]<0||normalizedRange[1]>1)
+  return {
+   availability:'available',sourceEdgeId:sourceId,
+   original3DSourceCurveDirection:direction,
+   generated2DHLRClass:sameClass,
+   originalM0UnitParameterRange:normalizedRange,
+   sourceParameterDomainContainment:'within-tolerance-but-outside',
+   nativeM4SameClassCoverageComplete:false,
+   nativeM4SameClassCoverageGaps:null,
+   nativeM4OppositeClassPositiveOverlap:null,
+   nativeM4OppositeClassOverlaps:null,
+   nativeM4ClassBacked:false,
+   reason:'source-parameter-interval-outside-original-M0-unit-domain-no-clamp'
+  };
  const sameRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===sameClass)
   .map(x=>x.originalM0UnitParameterRange);
  const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
@@ -82,6 +104,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   original3DSourceCurveDirection:direction,
   generated2DHLRClass:sameClass,
   originalM0UnitParameterRange:normalizedRange,
+  sourceParameterDomainContainment:'exact',
   nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
   nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
   nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
