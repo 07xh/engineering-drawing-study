@@ -488,10 +488,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // mean "not verified", NOT "physically excluded" from the 3D solid.
    // Never promote one successful candidate to unique merely because
    // every competitor failed to provide a readable native witness.
-   const conclusiveNativeCurveExclusions=new Set([
-    'generated-parameter-range-outside-source-projection',
-    'source-parameterized-curve-does-not-match-generated-edge'
-   ]);
+   const conclusiveParameterRangeExclusion=
+    'generated-parameter-range-outside-source-projection';
    if(rejectedCandidates!==undefined){
     if(!Array.isArray(rejectedCandidates)||
        rejectedCandidates.length!==row.rejectedSourceCandidateCount)
@@ -504,9 +502,46 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         typeof rejected.reason!=='string'||!rejected.reason.trim())
       throw new RangeError('forged or repeated original HLR rejection source identity');
      rejectedIds.add(rejected.sourceEdgeId);
-     if(!conclusiveNativeCurveExclusions.has(rejected.reason))
+     let measuredPaperExclusion=false;
+     const witness=rejected.nativePaperMismatchWitness;
+     if(witness!==undefined){
+      // The native HLR producer must identify one exact generated paper
+      // sample, the incompatible original source's evaluated paper point,
+      // and a strictly positive observed residual beyond the received
+      // generated-line tolerance. A rejection *string* cannot prove this.
+      const idx=witness?.sampleIndex,
+       sourcePaper=witness?.sourceProjectedPaperPointMm,
+       generatedPaper=witness?.generatedProjectedPaperPointMm,
+       nativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm,
+       nativeTolerance=segment.actualOCCTHLRCurveSampleToleranceMm;
+      if(rejected.reason!=='source-parameterized-curve-does-not-match-generated-edge'||
+         !Number.isInteger(idx)||idx<0||idx>4||
+         !Array.isArray(sourcePaper)||sourcePaper.length!==2||
+         !sourcePaper.every(Number.isFinite)||
+         !Array.isArray(generatedPaper)||generatedPaper.length!==2||
+         !generatedPaper.every(Number.isFinite)||
+         !Array.isArray(nativeSamples)||nativeSamples.length!==5||
+         nativeSamples[idx]?.u!==generatedPaper[0]||
+         nativeSamples[idx]?.v!==generatedPaper[1]||
+         !Number.isFinite(nativeTolerance)||nativeTolerance<0||
+         witness.generatedNativePaperToleranceMm!==nativeTolerance||
+         witness.generated2DTopoDSHistoryCertified!==false||
+         witness.signedV5Action!==false)
+       throw new RangeError('invalid actual native HLR geometric rejection witness');
+      const residual=Math.hypot(sourcePaper[0]-generatedPaper[0],
+       sourcePaper[1]-generatedPaper[1]);
+      if(!Number.isFinite(residual)||
+         residual!==witness.measuredPaperResidualMm||
+         !(residual>nativeTolerance))
+       throw new RangeError('forged native HLR paper source rejection residual');
+      measuredPaperExclusion=true;
+     }
+     if(rejected.reason!==conclusiveParameterRangeExclusion&&
+        !measuredPaperExclusion)
       inconclusiveRejections.push({
-       sourceEdgeId:rejected.sourceEdgeId,reason:rejected.reason
+       sourceEdgeId:rejected.sourceEdgeId,reason:rejected.reason,
+       missingIndependentPaperMismatchWitness:
+        rejected.reason==='source-parameterized-curve-does-not-match-generated-edge'
       });
     }
    }
