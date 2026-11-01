@@ -1155,3 +1155,18 @@ test('parameterized source interval outside the original M0 domain is rejected, 
   match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[-1,1]},
   klass:'visible',nativeM4}),/original M0|parameterized/i);
 });
+
+test('paper-only aliases in each missing-view orientation never become signed V5 strokes',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  c.rows[1].visible.push(x.witness(view,x.id1));
+  c.nativeSourceScopedOutputEdgeCount=2;
+  c.paperOnlyScopedOutputEdgeCount=2;
+  x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
+  const r=audit(x);
+  assert.equal(r.signedV5ActionCount,0);
+  assert.equal(r.formalEngineeringLineStyleCertified,false);
+  assert.equal(r.views[view].visible[0].signedV5Action,false);
+  assert.equal(r.views[view].visible[0].originalTopoDSHistoryProven,false);
+ }
+});
