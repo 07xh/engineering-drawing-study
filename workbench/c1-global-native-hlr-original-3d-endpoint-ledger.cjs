@@ -127,10 +127,27 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
      s.originalM0UnitParameterRange?.[0]===0&&
      s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
-     m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
-     m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+    // Re-check the RECEIVED complete native interval ledger, not only
+    // producer-supplied "complete" booleans. A forged full visible [0,1]
+    // plus a contradictory hidden subspan, a duplicate class span, or
+    // reported positive native OCCT gap must NOT certify a physical
+    // endpoint, even when a matching full visible segment exists.
+    // Native OCCT curve history remains a separate mandatory gate.
+    const native3DClassPartitionInventoryConsistent=
+     m4?.segments.length===1&&matching.length===1&&
+     Array.isArray(m4.native3DOriginalParameterPositiveGaps)&&
+     m4.native3DOriginalParameterPositiveGaps.length===0&&
+     Array.isArray(m4.native3DOriginalParameterPositiveOverlaps)&&
+     m4.native3DOriginalParameterPositiveOverlaps.length===0&&
+     Array.isArray(m4.M4OriginalUnitIntervalCandidatePositiveGaps)&&
+     m4.M4OriginalUnitIntervalCandidatePositiveGaps.length===0&&
+     Array.isArray(m4.M4OriginalUnitIntervalNativeClassConflicts)&&
+     m4.M4OriginalUnitIntervalNativeClassConflicts.length===0&&
+     Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+    sourceClassFull=native3DClassPartitionInventoryConsistent&&
+     m4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+     m4.M4OriginalUnitIntervalCandidateCoverageComplete===true;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
     const forward=p2eq(line.from,p)&&p2eq(line.to,q),
