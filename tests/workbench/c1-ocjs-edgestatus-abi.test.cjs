@@ -133,3 +133,45 @@ test('supports Embind overload suffixes without guessing method names',()=>{
  assert.deepEqual(r.rows[0].bounds,[0,3]);
  assert.deepEqual(r.rows[0].visibleParts,[[0,3]]);
 });
+
+
+test('duplicate physical source IDs are rejected even with consecutive native indices',()=>{
+ const ids=sources();
+ ids[1].originalPhysicalSourceEdgeId=ids[0].originalPhysicalSourceEdgeId;
+ assert.throws(()=>probe({oc:{},dataStructure:{},edgeMapExtent:2,
+  indexedOriginalSources:ids}),/complete original source index/);
+});
+
+test('corrupt visible-part count cannot lock the workbench in an unbounded loop',()=>{
+ let visiblePartCalls=0;
+ const ds=dataStructure([{
+  Bounds(){return [0,1];},
+  NbVisiblePart(){return Number.MAX_SAFE_INTEGER;},
+  VisiblePart(){visiblePartCalls++;return [0,1];},
+  AllVisible(){return false;},AllHidden(){return false;}
+ }]);
+ assert.throws(()=>probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1)}),/exceeds diagnostic budget/);
+ assert.equal(visiblePartCalls,0);
+});
+
+test('incompatible first Embind overload does not mask a readable second overload',()=>{
+ const ds=dataStructure([{
+  Bounds_1(){throw new TypeError('wrong overload');},
+  Bounds_2(){return [0,1];},
+  NbVisiblePart_1(){throw new TypeError('wrong overload');},
+  NbVisiblePart_2(){return 1;},
+  VisiblePart_1(){throw new TypeError('wrong overload');},
+  VisiblePart_2(i){return i===1?[0,1]:null;},
+  AllVisible_1(){throw new TypeError('wrong overload');},
+  AllVisible_2(){return true;},
+  AllHidden_1(){throw new TypeError('wrong overload');},
+  AllHidden_2(){return false;}
+ }]);
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.equal(r.rows[0].parameterPartitionValidated,true);
+ assert.deepEqual(r.rows[0].visibleParts,[[0,1]]);
+ assert.equal(r.signedV5ActionCount,0);
+});
