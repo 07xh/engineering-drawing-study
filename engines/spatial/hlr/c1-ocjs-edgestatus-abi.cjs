@@ -162,13 +162,9 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
     new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId)).size!==edgeMapExtent||
     (originalNativeEdgeHandles!==undefined&&
      (!Array.isArray(originalNativeEdgeHandles)||
-      originalNativeEdgeHandles.length!==edgeMapExtent||
+      originalNativeEdgeHandles.length>512||
       originalNativeEdgeHandles.some(x=>!x||
-       typeof x.sourceEdgeId!=='string'||
-       typeof x.edge?.IsSame!=='function')||
-      new Set(originalNativeEdgeHandles.map(x=>x.sourceEdgeId)).size!==edgeMapExtent||
-      originalNativeEdgeHandles.some(x=>!indexedOriginalSources.some(y=>
-       y.originalPhysicalSourceEdgeId===x.sourceEdgeId)))))
+       typeof x.sourceEdgeId!=='string'||!x.sourceEdgeId))))
   throw new TypeError('same-run real OCJS HLR data structure and complete original source index required');
  const dsMethods=methodNames(dataStructure);
  const statusExports=Object.keys(oc).filter(k=>/HLR.*(EdgeStatus|EdgeData|Array1OfEData)/i.test(k)).sort();
@@ -194,6 +190,14 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
  if(!array||!valueMethod)
   return {...base,availability:'edge-data-array-value-not-exposed',
    arrayMethodNames:methodNames(array),readableSourceStatusRows:0,rows:[]};
+ const originalHandleIds=new Set((originalNativeEdgeHandles??[]).map(x=>x.sourceEdgeId));
+ const indexedSourceIds=new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId));
+ const originalNativeEdgeHandleLedgerComplete=
+  originalNativeEdgeHandles!==undefined&&
+  originalNativeEdgeHandles.length===edgeMapExtent&&
+  originalNativeEdgeHandles.every(x=>typeof x.edge?.IsSame==='function')&&
+  originalHandleIds.size===edgeMapExtent&&
+  [...indexedSourceIds].every(id=>originalHandleIds.has(id));
  const rows=[];
  for(let index=1;index<=edgeMapExtent;index++){
   let edgeData;
@@ -288,6 +292,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   readableSourceStatusRows:rows.length,rows,
   originalEdgeStatusParameterIntervalsRead:true,
   generated2DHLRHistoryStillUnproven:true,
+  originalNativeEdgeHandleLedgerComplete,
   original3DEdgeDataInspectionComplete:rows.every(x=>
    x.originalEdgeData&&Array.isArray(x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches)),
   directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
