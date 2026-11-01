@@ -3,7 +3,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {
  probeRealOcjsHLREdgeStatusABI:probe,
- auditGeneratedOutputEdgesAgainstOriginalSourceCurves:auditGenerated
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves:auditGenerated,
+ auditOriginalEdgeStatusVsSourceScoped3DSharp:auditNativeClass
 } = require('../../engines/spatial/hlr/c1-ocjs-edgestatus-abi.cjs');
 
 function sources(n=2){
@@ -585,4 +586,67 @@ test('negative or non-finite OCCT output-reference tolerances remain unreadable 
  assert.equal(r.rows[0].bounds,null);
  assert.equal(r.rows[0].parameterPartitionValidated,false);
  assert.equal(r.signedV5ActionCount,0);
+});
+
+test('original EdgeStatus and independently extracted native 3D Sharp agree on exact visible/hidden partition',()=>{
+ const r=auditNativeClass({
+  sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,4],[6,10]]},
+  visibleNativeIntervals:[[6,10],[0,4]],
+  hiddenNativeIntervals:[[4,6]]
+ });
+ assert.equal(r.comparable,true);
+ assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,true);
+ assert.equal(r.exactAlignedSubintervals,3);
+ assert.deepEqual(r.mismatchedNativeVisibilitySubintervals,[]);
+ assert.deepEqual(r.uncoveredSourceScoped3DSubintervals,[]);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('one-ULP native 3D Sharp gap is observed without tolerances or rounded midpoints',()=>{
+ const next=1+Number.EPSILON;
+ const r=auditNativeClass({
+  sourceEdgeId:'g::E0',originalNativeParameterRange:[0,2],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,2],visibleParts:[[0,2]]},
+  visibleNativeIntervals:[[0,1],[next,2]],hiddenNativeIntervals:[]
+ });
+ assert.equal(r.comparable,true);
+ assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+ assert.deepEqual(r.uncoveredSourceScoped3DSubintervals.map(x=>x.originalNativeParameterRange),
+  [[1,next]]);
+ assert.equal(r.exactBinary64OpenSubintervalsChecked,3);
+ assert.equal(r.signedV5Action,false);
+});
+test('genuine native sharp class disagreement and overlap are separated from 2D HLR history',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,5]]}};
+ const opposite=auditNativeClass({...base,
+  visibleNativeIntervals:[[0,7]],hiddenNativeIntervals:[[7,10]]});
+ assert.deepEqual(opposite.mismatchedNativeVisibilitySubintervals.map(x=>x.originalNativeParameterRange),
+  [[5,7]]);
+ assert.equal(opposite.nativeOriginalStatusClassAgreesWith3DSharp,false);
+ const overlapping=auditNativeClass({...base,
+  visibleNativeIntervals:[[0,7]],hiddenNativeIntervals:[[5,10]]});
+ assert.deepEqual(overlapping.overlappingNative3DClassSubintervals.map(x=>x.originalNativeParameterRange),
+  [[5,7]]);
+ assert.equal(overlapping.generated2DTopoDSHistoryCertified,false);
+});
+test('unreadable or nonidentical native original source parameter domain is held',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  visibleNativeIntervals:[[0,10]],hiddenNativeIntervals:[]};
+ for(const statusRow of [
+  undefined,
+  {sourceEdgeId:'g::E0',parameterPartitionValidated:false,
+   bounds:[0,10],visibleParts:[[0,10]]},
+  {sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10-Number.EPSILON*8],visibleParts:[[0,10-Number.EPSILON*8]]}
+ ]){
+  const r=auditNativeClass({...base,statusRow});
+  assert.equal(r.comparable,false);
+  assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+  assert.equal(r.signedV5Action,false);
+ }
 });
