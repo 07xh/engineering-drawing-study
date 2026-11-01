@@ -87,7 +87,7 @@ function auditNativeOriginalOutlineClassInterval(query,same,opposite,held){
  let reach=query[0];
  for(const [a,b] of parts){
   if(a>reach)gaps.push([reach,a]);
-  if(a<reach&&b>reach)overlaps.push([a,reach]);
+  if(a<reach&&b>a)overlaps.push([a,Math.min(b,reach)]);
   reach=Math.max(reach,b);
  }
  if(reach<query[1])gaps.push([reach,query[1]]);
