@@ -258,3 +258,17 @@ test('native full source endpoints retain exact original 3D vertex and paper ide
   assert.equal(out.officialV5Authorized,false);
  }
 });
+
+test('native positive interval gaps cannot be hidden by neighboring visible spans in any projection',()=>{
+ for(const view of ['V','H','W']){
+  const good=input([[0,4],[4,10]],[]);
+  const baseline=projectNative({...good,view});
+  assert.equal(baseline.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+  assert.equal(baseline.officialV5Authorized,false);
+  const next=4+Number.EPSILON*4;
+  const bad=projectNative({...input([[0,4],[next,10]],[]),view});
+  assert.equal(bad.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+  assert.equal(bad.officialV5Authorized,false);
+  assert.equal(bad.formalEngineeringLineStyleCertified,false);
+ }
+});
