@@ -9,9 +9,11 @@ const out = path.join(root, uiPreview ? 'dist-ui-next' : 'dist');
 // and user-submitted traced exercise data stay out of the published assets.
 const files = [
   'index.html',
+  'welcome.html',
   'public-use.html',
   'site-ui.css',
   'workbench-blue.css',
+  'draftflow-brand.css',
   'project/workbench-ui.css',
   'favicon.svg',
   'robots.txt',
