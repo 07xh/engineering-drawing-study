@@ -102,7 +102,8 @@ function fixture(){
  });
  const parameterReport=(matches,generatedOutputEdgeCount)=>({
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
-  sourceCurveCandidateCount:2,topoDSIdentityBoundSourceCurveCount:2,
+  sourceCurveCandidateCount:2,originalSourceCurveIds:[id0,id1],
+  topoDSIdentityBoundSourceCurveCount:2,
   topoDSParameterDomainBoundSourceCurveCount:2,generatedOutputEdgeCount,
   uniqueParameterizedSourceMatchCount:matches.filter(x=>x.length===1).length,
   ambiguousParameterizedSourceMatchCount:matches.filter(x=>x.length>1).length,
@@ -253,6 +254,59 @@ test('M4 rejects forged five-point residuals, parameter grids and native interio
   const x=fixtureWithNativePaperParameterEndpointWitness();
   mutate(x);
   assert.throws(()=>audit(x),/five-point sample|five-point source endpoints|residual summary/i);
+ }
+});
+test('M4 requires complete original HLR source-curve candidates before calling unique ancestry proven',()=>{
+ const complete=fixture(),ok=audit(complete);
+ assert.equal(ok.views.V.parameterizedGlobalHLRSourceLineage
+  .classes.visible.completeOriginalSourceCurveInventory,true);
+ assert.equal(ok.views.V.parameterizedGlobalHLRSourceLineage
+  .classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,true);
+ // Older cached reports have no original source list; the one remaining
+ // candidate must not be certified unique against unknown competitors.
+ const legacy=fixture();
+ delete legacy.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.originalSourceCurveIds;
+ const held=audit(legacy).views.V.parameterizedGlobalHLRSourceLineage;
+ assert.equal(held.classes.visible.completeOriginalSourceCurveInventory,false);
+ assert.equal(held.classes.visible.rows[0].status,
+  'incomplete-original-hlr-source-curve-inventory-held');
+ assert.equal(held.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(held.counts.heldForIncompleteOriginalCurveCandidateInventory,1);
+ assert.equal(held.generated2DTopoDSHistoryProven,false);
+ assert.equal(held.signedV5ActionCount,0);
+});
+test('one original source silently omitted from same-run HLR curve map cannot yield unique causal source',()=>{
+ const x=fixture();
+ const report=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible;
+ report.originalSourceCurveIds=[x.id0];
+ report.sourceCurveCandidateCount=1;
+ report.topoDSIdentityBoundSourceCurveCount=1;
+ report.topoDSParameterDomainBoundSourceCurveCount=1;
+ report.rows[0].rejectedSourceCandidateCount=0;
+ const lineage=audit(x).views.V.parameterizedGlobalHLRSourceLineage;
+ assert.equal(lineage.classes.visible.reviewedOriginalSourceCurveCount,2);
+ assert.equal(lineage.classes.visible.completeOriginalSourceCurveInventory,false);
+ assert.equal(lineage.counts.uniqueParameterizedSourceLineage,0);
+ assert.equal(lineage.counts.heldForIncompleteOriginalCurveCandidateInventory,1);
+ assert.equal(lineage.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(lineage.engineeringLineStyle,'undetermined');
+ assert.equal(lineage.signedV5ActionCount,0);
+});
+test('forged native HLR source-curve ID lists fail closed before M4 source matching',()=>{
+ for(const changed of [
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.originalSourceCurveIds=[x.id0,x.id0];},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.originalSourceCurveIds=[x.id0,'g::INVENTED'];},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.originalSourceCurveIds=[x.id0];},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.originalSourceCurveIds='not-a-ledger';}
+ ]){
+  const x=fixture();changed(x);
+  assert.throws(()=>audit(x),/original HLR source-curve candidate ID inventory/);
  }
 });
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
