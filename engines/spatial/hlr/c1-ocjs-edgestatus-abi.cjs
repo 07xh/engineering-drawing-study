@@ -76,7 +76,7 @@ function invokeCurrentReferencePair(owner,name,argSets){
     return {readable:true,interval:[start,end],
      endpointTolerances:[tolStart,tolEnd],
      readABI:'mutable-current-reference',method};
-   if(refs.some(ref=>Number.isFinite(ref.current)))
+   if(refs.some(ref=>ref.current!==0))
     last='invalid-output-reference-values';
    else if(value!==undefined)last='unsupported-return-shape';
   }catch(error){last=String(error?.message??error).slice(0,180);}
