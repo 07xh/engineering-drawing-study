@@ -587,12 +587,27 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
    sourceProjectedPointMm:sourceP2,generatedProjectedPointMm:outputP2,
    projectedPointResidualMm:residual
   });
-  if(p3.value<sourceFirst-parameterTolerance||
-     p3.value>sourceLast+parameterTolerance||
-     Math.abs(p2Back.value-p2)>parameterTolerance||
-     residual>sampleTolerance)
-   return {matched:false,reason:'source-parameterized-curve-does-not-match-generated-edge',
-    samples,maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))};
+  // A parameter inverse can be unreadable or numerically inconsistent
+  // even when its independently sampled projected paper point agrees.
+  // Such an uncertainty cannot exclude a competing original BRep source.
+  // Only an actual measured 2D geometric mismatch is a source-curve
+  // contradiction; never promote an inverse-only failure to unique M4
+  // ancestry by using the same "mismatched curve" reason.
+  const inverseUnproven=p3.value<sourceFirst-parameterTolerance||
+   p3.value>sourceLast+parameterTolerance||
+   Math.abs(p2Back.value-p2)>parameterTolerance;
+  const nativePaperContradiction=residual>sampleTolerance;
+  if(inverseUnproven||nativePaperContradiction)
+   return {
+    matched:false,
+    reason:nativePaperContradiction?
+     'source-parameterized-curve-does-not-match-generated-edge':
+     'source-parameter-inversion-unproven',
+    nativeProjectedPointMismatchMeasured:nativePaperContradiction,
+    nativeInverseParameterMapUnproven:inverseUnproven,
+    samples,
+    maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))
+   };
  }
  return {
   matched:true,
