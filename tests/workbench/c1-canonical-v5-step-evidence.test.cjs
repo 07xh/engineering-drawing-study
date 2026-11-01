@@ -90,6 +90,23 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
 });
+test('existing hull contour cannot borrow an invented original 3D source parameter range',()=>{
+ const f=fixture();
+ const physical=f.solution.certifiedPhysicalLineBindings.pop();
+ f.solution.certifiedVisibleContourLineBindings.push({
+  actionId:physical.actionId,revision:physical.revision,
+  sourceEdgeId:physical.sourceEdgeId,view:physical.view,
+  standardLineStyle:physical.standardLineStyle,
+  signedFormalLineV5:true
+ });
+ const first=inspect(f);
+ assert.equal(first.actions[0].formalLineCertified,false);
+ f.solution.player.seekStep(2,10);
+ const current=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(current.actions[0].formalLineCertified,true);
+ assert.equal(current.actions[0].sourceParameterRange,null);
+ assert.equal(current.wholeTextbookC1BlindAccepted,false);
+});
 test('canonical frame replay rejects early target strokes and out-of-sync text/progress',()=>{
  const mutate=edit=>{
   const f=fixture();edit(f);return()=>inspect(f);
