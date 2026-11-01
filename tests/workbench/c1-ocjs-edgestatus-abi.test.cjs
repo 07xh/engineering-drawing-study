@@ -332,7 +332,7 @@ test('classifies a view-collapsed original edge as non-invertible without treati
  const curve={
   GetCurve(){return adaptor;},
   Parameter2d(_parameter){return 0;},Parameter3d(_parameter){return 0;},
-  Value3D(t){return {X(){return 2;},Y(){return 0;},Z(){return t;}};},
+  Value3D(t){return {X(){return 2;},Y(){return t;},Z(){return 0;}};},
   Value(_parameter){return {X(){return 2;},Y(){return 0;}};}
  };
  const ds={EDataArray(){return {Value(){return {
