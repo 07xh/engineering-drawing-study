@@ -74,6 +74,19 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].standardLineStyle=
   'arbitrary';}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
+ // A paper stroke cannot masquerade as a formal M5-signed source
+ // without its positive, bounded, original 3D parameter interval.
+ for(const invalid of [undefined,null,[],[0,0],[1,0],[-0.1,0.5],
+  [0.5,1.01],[0,Infinity],[NaN,1],[0,0.5,1]]){
+  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].
+   originalParameterRange=invalid;}),/signed source/);
+ }
+ // An arbitrarily small but genuinely positive binary64 span remains
+ // distinguishable from a zero-length stroke; this gate does not snap it.
+ const tiny=fixture();
+ tiny.solution.certifiedPhysicalLineBindings[0].originalParameterRange=
+  [0,Number.MIN_VALUE];
+ assert.deepEqual(inspect(tiny).actions[0].formalLineCertified,false);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
 });
