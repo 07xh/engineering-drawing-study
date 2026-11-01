@@ -56,6 +56,32 @@ test('positive one-ULP original native 3D class gap survives rational 2D join',(
  assert.equal(r.rows[0].exactNative3DSourceClassPositivePaperCoverageGaps.length,1);
  assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
 });
+test('a forged native-complete flag cannot hide an unrepresented original source suffix',()=>{
+ // The generated 2D line only occupies [0,1/2], so local same-class
+ // coverage alone passes. The original M4 inventory is nevertheless
+ // incomplete; its upstream "complete" flags must not be blindly trusted.
+ const r=make([stroke('visible-sharp',0,5)],[],[
+  native('visible-sharp',0,.5)
+ ]);
+ assert.equal(r.rows[0].exactSameClassNative3DSourceIntervalCoverage,true);
+ assert.equal(r.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('duplicated or overlapping native M4 source intervals cannot borrow completeness flags',()=>{
+ for(const parts of [
+  [native('visible-sharp',0,1),native('visible-sharp',0,1)],
+  [native('visible-sharp',0,.75),native('hidden-sharp',.5,1)]
+ ]){
+  const r=make([stroke('visible-sharp',0,.5)],[],parts);
+  assert.equal(r.rows[0].exactSameClassNative3DSourceIntervalCoverage,true);
+  assert.equal(r.rows[0].originalNativeParameterPartitionIndependentlyVerified,false);
+  assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+  assert.equal(r.officialV5Authorized,false);
+ }
+});
 test('opposite true native 3D visibility class never authorizes generated 2D paper alias',()=>{
  const r=make([stroke('visible-sharp')],[],[
   native('visible-sharp',0,.5),native('hidden-sharp',.5,1)
