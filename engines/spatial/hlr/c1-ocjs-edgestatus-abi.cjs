@@ -637,6 +637,7 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
    candidateSourceMatchCount:candidateSourceMatches.length,
    candidateSourceMatches,
    rejectedSourceCandidateCount:rejectedSourceCandidates.length,
+   rejectedSourceCandidates,
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===1?
