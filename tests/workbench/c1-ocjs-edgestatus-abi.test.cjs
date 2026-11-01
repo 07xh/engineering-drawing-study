@@ -397,6 +397,39 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  assert.equal(match.signedV5Action,false);
 });
 
+test('native generated parameter overhang is not a disjoint original BRep source exclusion',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source={curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true};
+ const run=range=>auditGenerated({
+  segments:[{
+   actualOCCTHLRCurveParameterRange:range,
+   actualOCCTHLRCurveSamplesProjectedMm:[0,1,2,3,4]
+    .map(t=>({u:t,v:2*t})),
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],
+  nativeCurveHandlesBySourceId:new Map([['g::E',source]])
+ }).rows[0].rejectedSourceCandidates[0];
+ for(const range of [[1,8],[12,14],[2,13]]){
+  const rejected=run(range);
+  assert.equal(rejected.reason,'generated-parameter-range-not-contained-in-source-projection');
+  assert.equal(rejected.nativeParameterRangeExclusionWitness,undefined);
+ }
+ const rejected=run([13,15]);
+ assert.equal(rejected.reason,'generated-parameter-range-outside-source-projection');
+ const w=rejected.nativeParameterRangeExclusionWitness;
+ assert.deepEqual(w.sourceProjected2DParameterRangeSorted,[2,12]);
+ assert.deepEqual(w.sourceProjected2DParameterEndpoints,[2,12]);
+ assert.deepEqual(w.generated2DParameterRange,[13,15]);
+ assert.equal(w.parameterComparisonTolerance,1.5e-9);
+ assert.equal(w.generated2DTopoDSHistoryCertified,false);
+ assert.equal(w.signedV5Action,false);
+});
 test('parameterized HLR source candidates replay actual native paper edge endpoints in either orientation',()=>{
  const curve={
   Parameter2d(t){return t+2;},
