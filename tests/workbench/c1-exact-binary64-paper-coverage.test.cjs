@@ -6,6 +6,18 @@ const {auditExactBinary64PaperCandidateCoverage:audit,
  require('../../workbench/c1-exact-binary64-paper-parameter.cjs');
 const {auditC1NativeScopedHLRSourceConsumer:consume}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {auditC1ScopedHLRSourceIdentityConflicts:checkNativeClaims}=
+ require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+function rebindFixtureNativeLedger(cad,view){
+ const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+ scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+  matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+  wholeSolidCounts:{
+   'visible-sharp':cad.views[view].length,
+   'hidden-sharp':cad.hiddenSharpViews[view].length
+  }
+ });
+}
 const p=u=>({u,v:0});
 const segment=(from,to)=>({from:p(from),to:p(to)});
 const run=(sourceFrom,sourceTo,segments)=>audit({
@@ -79,6 +91,8 @@ function nativeUnderflowFixture(){
    globalPaperCandidateOrdinals:[0],
    globalDirectSameGeneratedTopoDSOrdinals:[],
    actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+   paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+   partnerCandidateDoesNotProveOriginalSourceHistory:true,
    fullOriginalSourceParameterCoverageProven:false,
    globalContinuousOcclusionProven:false,
    engineeringLineStyle:'undetermined',signedV5Action:false
@@ -113,6 +127,7 @@ function nativeUnderflowFixture(){
     hlrDataStructureOneBasedEdgeIndex:1,visible,hidden:[]}]
   };
  }
+ for(const view of ['V','H','W'])rebindFixtureNativeLedger(cad,view);
  return {geometry,cad};
 }
 
@@ -184,6 +199,8 @@ test('C1 real native consumer cannot miss an exact conflicting visibility class 
   globalPaperCandidateOrdinals:[0],
   globalDirectSameGeneratedTopoDSOrdinals:[],
   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+  paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+  partnerCandidateDoesNotProveOriginalSourceHistory:true,
   fullOriginalSourceParameterCoverageProven:false,
   globalContinuousOcclusionProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false
@@ -196,6 +213,7 @@ test('C1 real native consumer cannot miss an exact conflicting visibility class 
  scoped.rows[0].hidden=[hidden];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ rebindFixtureNativeLedger(cad,'V');
  const result=consume({geometry,cad});
  const V=result.views.V.sourceParameterCandidates[0];
  assert.equal(V.paperDerivedPositiveLengthVisibleHiddenConflictDetected,false);

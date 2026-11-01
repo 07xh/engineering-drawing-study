@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Independent witness for REAL HLR OUTPUT TopoDS curves, not original 3D edges.
- * OCCT's flattened output uses XYZ=(paper U,-paper V,0). A native
+ * Canonical first-angle observer frames flatten to XYZ=(paper U,paper V,0). A native
  * GeomAbs_Line is analytic across its finite parameter interval; five
  * sampled OCCT points confirm it agrees with extracted TopoDS vertices.
  * No HLR-to-original-TopoDS identity, M5 line style, or V5 authorization.
@@ -36,7 +36,7 @@ function verifyOcjsHLRProjectedLineCurveWitness({
  const samples=curveSamples.map(p=>{
   if(Math.abs(p.z)>1e-6)
    throw new RangeError('real OCCT HLR curve is not in flattened projection plane');
-  return {u:p.x,v:-p.y};
+  return {u:p.x,v:p.y};
  });
  const direct=difference(samples[0],from)<=sampleTolerance&&
   difference(samples[4],to)<=sampleTolerance;

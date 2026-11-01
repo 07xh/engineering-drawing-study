@@ -16,7 +16,7 @@ const circleInput=()=>({
  branchId:'center-1',direction:'cw',
  knownFirstTravel:'ccw',knownSecondTravel:'ccw'
 });
-test('true first-angle XYZ solution becomes 4 mathematically sourced drawing steps',()=>{
+test('true first-angle XYZ solution includes real 45-degree source step in mathematical DAG',()=>{
  const args={knownPoint:{x:15,y:10,z:12}};
  const plan=point(args,{revision:17});
  assert.equal(plan.schema,'draftai-teaching-plan/0.1');
@@ -25,11 +25,11 @@ test('true first-angle XYZ solution becomes 4 mathematically sourced drawing ste
  assert.equal(plan.result.globallyUnique,true);
  assert.equal(plan.result.point.z,12);
  assert.equal(plan.revision,17);
- assert.equal(plan.stepCount,4);
+ assert.equal(plan.stepCount,5);
  assert.equal(plan.proof.verified,true);
  assert.ok(plan.steps.every(x=>x.actions.every(a=>a.coordinateSpace==='sheet-px')));
  assert.deepEqual(plan.steps.map(s=>s.dependsOn),
-  [[],['guide_1'],['guide_2'],['guide_3']]);
+  [[],['guide_1'],['guide_2'],['guide_3'],['guide_4']]);
  assert.deepEqual(Object.keys(args),['knownPoint']);
 });
 test('two-view V/H real input and direct XYZ give equal normalized projected point',()=>{
@@ -226,4 +226,17 @@ test('segment-circle invalid result cannot invent SVG paths or mutation of input
  assert.ok(a.steps.at(-1).actions[0].kind==='arc');
  assert.equal(Object.hasOwn(a.steps.at(-1).actions[0],'svgPath'),false);
  assert.throws(()=>fillet('segment-circle',args,{revision:-1}),/revision/);
+});
+
+test('canonical point plan omits collapsed 45-degree line and preserves tiny positive source guide',()=>{
+ const zero=point({knownPoint:{x:15,y:0,z:12}});
+ assert.equal(zero.stepCount,4);
+ assert.equal(zero.steps.some(s=>s.rule==='depth-45'),false);
+ const tiny=point({knownPoint:{x:15,y:1e-10,z:12},
+  sheetTransform:{origin:{x:0,y:0},scale:1}});
+ assert.equal(tiny.stepCount,5);
+ const diagonal=tiny.steps.find(s=>s.rule==='depth-45');
+ assert.equal(diagonal.actions[0].kind,'line',
+  'a genuine positive model-mm depth must not be rounded into a point');
+ assert.deepEqual(diagonal.actions[0].to,{x:1e-10,y:1e-10});
 });

@@ -13,7 +13,7 @@ test('P0 03: V+H reconstructs unique xyz and third W from real math',()=>{
  assert.deepEqual(o.point,{x:15,y:10,z:12});
  assert.deepEqual(o.views,{V:{u:15,v:12},H:{u:15,v:10},W:{u:10,v:12}});
  assert.deepEqual(o.sheet,{V:{x:70,y:76},H:{x:70,y:120},W:{x:120,y:76},M:{x:120,y:120}});
- assert.equal(o.steps.length,4);
+ assert.equal(o.steps.length,5);
  assert.equal(o.maxResidual,0);
  assert.equal(o.globallyUnique,true);
 });
@@ -62,15 +62,26 @@ test('given spatial point and conflicting 2D view are rejected as none',()=>{
 });
 test('45 degree transfer guides represent V-H same x, V-W same z, H-M-W same y',()=>{
  const o=solveProjection({knownViews:{V,H},sheetTransform});
- assert.deepEqual(o.guides.map(g=>g.kind),['VH','height-VW','depth-HM','depth-MW']);
- assert.equal(o.steps.length,4);
+ assert.deepEqual(o.guides.map(g=>g.kind),
+  ['VH','height-VW','depth-45','depth-HM','depth-MW']);
+ assert.equal(o.steps.length,5);
  for(const s of o.steps){
   assert.equal(s.source,'computed-first-angle-guides');
   assert.equal(s.style,'auxiliary');
   assert.equal(s.unit,'px');
   assert.match(s.explanation,/投影|联系|深度/);
  }
- for(let i=1;i<4;i++)assert.deepEqual(o.steps[i].dependsOn,['guide_'+i]);
+ for(let i=1;i<5;i++)assert.deepEqual(o.steps[i].dependsOn,['guide_'+i]);
+ const diagonal=o.steps.find(s=>s.kind==='depth-45');
+ assert.ok(diagonal);
+ assert.deepEqual(diagonal.from,sheetTransform.origin);
+ assert.deepEqual(diagonal.to,o.sheet.M);
+ assert.equal(diagonal.sourceModelAxis,'y');
+ assert.equal(diagonal.sourceModelValue,10);
+ assert.equal(diagonal.sourceKnownView,'H');
+ assert.equal(diagonal.targetView,'W');
+ assert.equal(diagonal.constructionOnly,true);
+ assert.match(diagonal.explanation,/45°|俯视图/);
  nearly(o.sheet.V.x,o.sheet.H.x);
  nearly(o.sheet.V.y,o.sheet.W.y);
  nearly(o.sheet.H.y-100,o.sheet.M.x-100);
@@ -106,4 +117,31 @@ test('supplied input projection arrays are not mutated',()=>{
  const knownViews={V:[15,12],H:[15,10]},original=JSON.stringify(knownViews);
  solveProjection({knownViews,sheetTransform});
  assert.equal(JSON.stringify(knownViews),original);
+});
+
+test('negative depth transfers left/up along real 45-degree line; zero depth has no decorative diagonal',()=>{
+ const neg=solveProjection({knownViews:{V:[15,12],H:[15,-10]},sheetTransform});
+ const d=neg.steps.find(s=>s.kind==='depth-45');
+ assert.deepEqual(d.from,{x:100,y:100});
+ assert.deepEqual(d.to,{x:80,y:80});
+ assert.equal(d.to.x-d.from.x,d.to.y-d.from.y);
+ assert.deepEqual(neg.steps.map(s=>s.kind),
+  ['VH','height-VW','depth-45','depth-HM','depth-MW']);
+ const zero=solveProjection({knownViews:{V:[15,12],H:[15,0]},sheetTransform});
+ assert.equal(zero.steps.length,4);
+ assert.equal(zero.steps.some(s=>s.kind==='depth-45'),false);
+ assert.equal(zero.sheet.W.x,sheetTransform.origin.x);
+});
+
+test('45-degree step explanation cannot pretend H was GIVEN when only V/W or XYZ was supplied',()=>{
+ const vw=solveProjection({knownViews:{V,W},sheetTransform});
+ const d=vw.steps.find(s=>s.kind==='depth-45');
+ assert.equal(d.sourceKnownView,'W');
+ assert.equal(d.targetView,'H');
+ assert.match(d.explanation,/已知侧视图 W/);
+ const xyz=solveProjection({knownPoint:{x:15,y:10,z:12},sheetTransform});
+ const from3D=xyz.steps.find(s=>s.kind==='depth-45');
+ assert.equal(from3D.sourceKnownView,null);
+ assert.equal(from3D.targetView,null);
+ assert.match(from3D.explanation,/已审三维点/);
 });

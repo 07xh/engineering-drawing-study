@@ -21,8 +21,8 @@ function assertOriginalPathParity(given){
  assert.equal(modern.status,'ready');
  assert.equal(modern.mathematicallyVerified,true);
  assert.equal(modern.revision,revision);
- assert.equal(modern.intents.length,4);
- assert.equal(modern.steps.length,4);
+ assert.equal(modern.intents.length,modern.steps.length);
+ assert.equal(modern.steps.length,given.y===0?4:5);
  assert.equal(validateConstructionIntentDAG(modern.intents).ok,true);
  assert.deepEqual(modern.steps,legacy.steps);
  assert.deepEqual(modern.timing,legacy.timing);

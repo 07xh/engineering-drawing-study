@@ -7,7 +7,7 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
-const {nativeScopedPaperSegmentsSame}=
+const {nativeScopedPaperSegmentsSame,auditC1ScopedHLRSourceIdentityConflicts}=
  require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('./c1-original-source-interval-coverage.cjs');
@@ -23,6 +23,8 @@ const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
 const {auditC1RealNativeScoped2D3DClassBinding}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
+const {auditC1OriginalHLRStatusScopedClassConcordance}=
+ require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1WholeSolidNativeHLRSourceScopeRebinding}=
  require('./c1-global-native-hlr-original-source-rebind.cjs');
 const {auditC1GlobalNativeHLROriginalM0EndpointLinks}=
@@ -161,6 +163,28 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      ds.indexedOriginalSources.length!==ids.length||
      !Array.isArray(scoped.rows)||scoped.rows.length!==ids.length)
    throw new RangeError('missing complete real OCCT source-scoped HLR/EdgeMap evidence');
+  // Recheck the real producer's native original EdgeStatus/scoped class
+  // ledger in the actual M4/M5 consumer. Synthetic legacy fixtures may
+  // omit this optional native API, but an advertised native status proof
+  // must never be accepted without its complete, independently recomputed
+  // unsigned source/class inventory.
+  const statusAPI=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.
+   originalEdgeStatusAPI;
+  if(statusAPI||scoped.statusScopedClassConcordance){
+   if(statusAPI?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      !Array.isArray(statusAPI.nativeOriginalSourceEdgeStatusRows)||
+      !scoped.statusScopedClassConcordance)
+    throw new RangeError('incomplete native HLR original status/scoped class consumer proof');
+   const recomputed=auditC1OriginalHLRStatusScopedClassConcordance({
+    view,statusRows:statusAPI.nativeOriginalSourceEdgeStatusRows,
+    scopedRows:scoped.rows
+   });
+   if(JSON.stringify(scoped.statusScopedClassConcordance)!==
+      JSON.stringify(recomputed)||
+      JSON.stringify(statusAPI.sourceScopedClassConcordance)!==
+      JSON.stringify(recomputed))
+    throw new RangeError('native HLR original status/scoped class consumer ledger mismatch');
+  }
   // A real OCCT EdgeMap is a bijection: two distinct original TopoDS
   // source edges cannot own the same one-based native index.
   const indexed=new Map(),nativeSourceIndices=new Set();
@@ -321,6 +345,23 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      direct!==scoped.nativeScopedToWholeSolidGeneratedIsSameCount||
      total-direct!==scoped.paperOnlyScopedOutputEdgeCount)
    throw new RangeError('native source-scoped HLR output accounting mismatch');
+  // Recompute the producer's whole-solid native IsSame ownership ledger
+  // from the SAME V/H/W scoped rows and actual generated edge inventory.
+  // The serialized ledger is not an independent source of truth: stale,
+  // dropped, duplicated or promoted source claims must never reach M4/M5.
+  // Native identity is still only generated-edge identity, NOT complete
+  // original BRep -> generated HLR parameter history or a V5 signature.
+  const recomputedNativeClaims=auditC1ScopedHLRSourceIdentityConflicts({
+   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+   wholeSolidCounts:{
+    'visible-sharp':classes.visible.global.length,
+    'hidden-sharp':classes.hidden.global.length
+   }
+  });
+  if(!scoped.nativeSourceIdentityConflicts||
+     JSON.stringify(scoped.nativeSourceIdentityConflicts)!==
+      JSON.stringify(recomputedNativeClaims))
+   throw new RangeError('stale or forged native scoped/global HLR source identity ledger');
   counts.nativeSourceScopedOutputEdges+=total;
   counts.nativeGeneratedIsSameMatches+=direct;
   counts.paperOnlySourceScopedEdges+=total-direct;
@@ -439,9 +480,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     auditExactBinary64PaperCandidateCoverage({
      sourceFrom:a,sourceTo:b,segments:exactPaperSegments.get(source)
     });
-   // Strict original physical M0 line collinearity in BOTH received native
-   // coordinates, never just a dominant-axis inverse-t union. An actual
-   // generated 2D OCCT TopoDS causal source claim is still NOT proven.
+   // The original M0 line MUST be exact in BOTH binary64 paper axes.
+   // A dominant-axis inverse can incorrectly cover [0,1] when the
+   // generated HLR endpoint has a real transverse paper displacement.
    const twoAxisCoverage=collapsed?null:
     auditC1ExactTwoAxisGeneratedPaperCoverage({
      sourceFrom:a,sourceTo:b,segments:exactPaperSegments.get(source)
@@ -452,7 +493,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
        twoAxisCoverage.unsafeDominantAxisOnlyCoverage.
         exactBinary64PaperCandidateCoverageComplete!==
         exactPaperCoverage.exactBinary64PaperCandidateCoverageComplete)
-     throw new RangeError('native two-axis original paper and exact one-axis union disagree');
+     throw new RangeError('native original paper strict two-axis union disagrees with candidate ledger');
     counts.projectedSourcesWithStrictTwoAxisFullPaperCoverage+=
      Number(twoAxisCoverage.strictReceivedTwoAxisPaperCoverageComplete);
     counts.projectedSourcesWithStrictTwoAxisPositivePaperResiduals+=
@@ -522,8 +563,6 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      classOverlap?.hasPositiveLengthVisibleHiddenClassConflict??false,
     paperDerivedPositiveLengthUncoveredCandidateIntervals:
      coverage?.positiveLengthUncoveredIntervals??null,
-    // Claim of 'entire original paper candidate' must now survive BOTH
-    // received coordinates, not merely a rounded or one-axis interval.
     entireOriginalSourcePaperCandidateIntervalCovered:
      coverage?.entireOriginalParameterIntervalCovered===true&&
      exactPaperCoverage?.exactBinary64PaperCandidateCoverageComplete===true&&

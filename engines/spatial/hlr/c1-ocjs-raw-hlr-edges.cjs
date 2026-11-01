@@ -21,7 +21,7 @@ function readRealOcjsSharpHLREdge({oc,edge,view,vertexType,avoid,newObj,hold,onG
   const p=hold(method(oc.BRep_Tool,'Pnt')(vertex));
   if(![p.X(),p.Y(),p.Z()].every(Number.isFinite)||Math.abs(p.Z())>1e-6)
    throw new RangeError('nonfinite or nonplanar real HLR BRep vertex');
-  coords.push({u:p.X(),v:-p.Y()});
+  coords.push({u:p.X(),v:p.Y()});
   nativeVertices.push(vertex);
   if(coords.length>2)
    throw new RangeError('nonsegment HLR BRep source edge');

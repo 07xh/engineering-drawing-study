@@ -114,7 +114,7 @@ test('actual 03 projection remains in source sheet-px through the shared V5 conv
   sheetTransform:{origin:{x:100,y:100},scale:2}},8);
  assert.equal(lesson.status,'ready');
  assert.equal(lesson.mathematicallyVerified,true);
- assert.equal(lesson.steps.length,5);
+ assert.equal(lesson.steps.length,6);
  assert.equal(lesson.steps[0].actions[0].kind,'line');
  assert.deepEqual(lesson.steps[0].actions[0].geometry.from,
   lesson.originalLesson.steps[0].actions[0].from);

@@ -40,13 +40,22 @@ function projectionPlan(args={},revision=0){
  const r=solveProjection(args);
  if(r.status!=='unique'||r.globallyUnique!==true||r.solutionCount!==1||
     r.degrees!==0||r.proofLevel!=='linear-algebra'||!pt(r.sheet?.W)||
-    !Array.isArray(r.steps)||r.steps.length!==4||r.steps.some(s=>
+    !Array.isArray(r.steps)||
+    JSON.stringify(r.steps.map(s=>s.kind))!==JSON.stringify(r.point.y===0?
+     ['VH','height-VW','depth-HM','depth-MW']:
+     ['VH','height-VW','depth-45','depth-HM','depth-MW'])||
+    r.steps.some(s=>
       s.source!=='computed-first-angle-guides'||s.unit!=='px'||s.style!=='auxiliary'||
       !pt(s.from)||!pt(s.to)||!finite(s.from.x)||!finite(s.to.x)))
   return rejection(r,revision,'03-validated-first-angle');
- const steps=r.steps.map((s,i)=>step(s.id,
-    ['V/H 联系线','正侧高度联系线','45° 深度转移','深度转至侧面'][i],
-    s.explanation,[action(s.id,'line',{from:s.from,to:s.to})],s.dependsOn));
+ const titles={VH:'V/H 联系线','height-VW':'正侧高度联系线',
+  'depth-45':'从原点真实绘制 45° 深度转移线',
+  'depth-HM':'从俯视图水平转移深度到 M',
+  'depth-MW':'由 M 竖直转至侧面'};
+ const steps=r.steps.map(s=>step(s.id,titles[s.kind],s.explanation,
+  [action(s.id,s.from.x===s.to.x&&s.from.y===s.to.y?'point':'line',
+   s.from.x===s.to.x&&s.from.y===s.to.y?
+    {center:s.to,radius:3}:{from:s.from,to:s.to})],s.dependsOn));
  const givens=(r.knownViews||[]).map(name=>({
    id:'given-'+name,kind:'point',geometry:{center:{...r.sheet[name]},radius:5},role:'given',name
  }));

@@ -154,6 +154,14 @@ test('same-revision M4 full [0,1] source and exact OPEN depth cuts reach M5 with
  assert.equal(positive.counts.originalM4FullSourceOpenDepthPartitions,1);
  assert.equal(positive.counts.originalM4FullSourceOpenDepthAllClassified,1);
  assert.equal(positive.counts.originalM4OpenFrontCuts,1);
+ const boundM4=positive.records[0].originalM4OpenSourceDepthEvidence;
+ assert.equal(boundM4.view,'V');
+ assert.equal(boundM4.sourceEdgeId,'g::A|B');
+ assert.equal(boundM4.sourceGeometryId,'g');
+ assert.equal(boundM4.revision,3);
+ assert.equal(boundM4.openDepthSourceIntervalCount,1);
+ assert.equal(boundM4.openDepthCutCount,1);
+ assert.equal(boundM4.generatedHLRToOriginalTopoDSHistoryCertified,false);
  assert.equal(positive.counts.unresolvedM5Obligations,2);
  assert.equal(positive.records[0].sourceOriginalTopoDSGeneratedHistoryCertified,false);
  assert.equal(positive.officialV5Authorized,false);
@@ -318,6 +326,26 @@ test('positive dyadic binary64-collapsed original M4 event cut is held, not a fa
   nativeOriginalM4CoProjectedDepthOrder[0].canonicalOriginalM4EventCutDepthRows[0].
   strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly=true;
  assert.throws(()=>audit(forged),/subpixel positive M4 cut cannot become a stroke/);
+ // The actual paper segment remains non-drawable even if someone injects
+ // an unrelated whole-source or open-interval visibility certificate.
+ // Both cases used to pass this M5 consumer while still being "held".
+ for(const mutate of [
+  d=>{d.wholeIntervalFrontmostCertified=true;},
+  d=>{d.visibleSourceCoversEntireLine=true;},
+  d=>{d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources=true;},
+  d=>{d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource=true;}
+ ]){
+  const bad=structuredClone(x);
+  const d=bad.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+   nativeOriginalM4CoProjectedDepthOrder[0].
+   canonicalOriginalM4EventCutDepthRows[0].coProjectedOriginal3DDepthOrder;
+  mutate(d);
+  assert.throws(()=>audit(bad),/subpixel positive M4 cut cannot become a stroke/);
+ }
+ // The exact [0,0.5] subpixel source range must remain present and
+ // unsigned in the accepted evidence; no epsilon or snapping.
+ assert.equal(depth.openDepthHeldCuts,1);
+ assert.equal(out.records[0].signedV5Action,false);
 });
 
 test('HLR paper endpoints and caller-supplied flags cannot fabricate original closed endpoint rays',()=>{
@@ -515,4 +543,39 @@ test('M5 rejects overlapping same-source positive parameter obligations, permits
  assert.equal(result.counts.positiveOriginalPaperGapIntervals,2);
  assert.equal(result.officialV5Authorized,false);
  assert.equal(result.signedV5ActionCount,0);
+});
+
+test('global M5 keeps mixed visible/hidden exact paper candidate coverage unsigned',()=>{
+ const x=fixture();
+ x.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate={
+  originalSourceParameterGap:[0.2,0.3],
+  exactReceivedCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['3602879701896397/18014398509481984','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterCollinearPaperCandidates:[],
+  exactVisibleCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['3602879701896397/18014398509481984','1/4']],
+  exactHiddenCollinearPaperCandidateSubrangesWithoutSourceHistory:
+   [['1/4','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterVisiblePaperCandidates:[['1/4','5404319552844595/18014398509481984']],
+  positiveRationalGapResidualAfterHiddenPaperCandidates:[['3602879701896397/18014398509481984','1/4']],
+  mixedHLRClassPaperOnlyFullCoverageCannotSignVisibility:true,
+  oppositeHLRClassPositivePaperOverlapStillHeld:false,
+  originalPositiveM5GapRemainsUnclosedWithoutGeneratedTopoDSHistory:true,
+  sourceGapClosedByNativeEndpointEvidence:false,
+  signedV5Action:false,engineeringLineStyle:'undetermined'
+ };
+ const result=audit(x);
+ assert.equal(result.counts.positiveM5GapsWithMixedHLRClassPaperOnlyCoverageHeld,1);
+ assert.equal(result.counts.positiveM5GapsWithOppositeHLRClassPaperOverlapHeld,0);
+ assert.equal(result.counts.positiveM5GapsWithCandidateOnlyPaperCoverageButNoSourceHistory,1);
+ assert.equal(result.officialV5Authorized,false);
+ assert.equal(result.signedV5ActionCount,0);
+ const bad=structuredClone(x);
+ bad.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+  positiveRationalGapResidualAfterVisiblePaperCandidates=[];
+ assert.throws(()=>audit(bad),/opposite native HLR class paper candidates/);
+ const badClass=structuredClone(x);
+ badClass.positiveOriginalGapRays.rows[0].sameRunExactCollinearGeneratedHLRPaperGapCandidate.
+  oppositeHLRClassPositivePaperOverlapStillHeld='certified';
+ assert.throws(()=>audit(badClass),/opposite native HLR class paper candidates/);
 });

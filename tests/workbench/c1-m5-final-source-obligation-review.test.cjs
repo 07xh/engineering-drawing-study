@@ -100,3 +100,138 @@ test('disjoint source pieces remain separately represented and never gain global
  assert.ok(result.rows.every(x=>x.formalLineStyle==='undetermined'&&
   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
 });
+
+test('overlapping positive original source intervals cannot inflate M5 review completeness',()=>{
+ const first=span({originalSourceParameterRange:[0,.5]});
+ const overlap=span({originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.throws(()=>review(ledger([first,overlap])),/overlapping original 3D source intervals/);
+ const distinct=span({view:'H',originalSourceParameterRange:[.5-Number.EPSILON,1]});
+ assert.equal(review(ledger([first,distinct])).total,2);
+});
+
+test('blank geometry and original edge identifiers never enter the unsigned proof ledger',()=>{
+ assert.throws(()=>review(ledger([span()],{sourceGeometryId:'  '})),/canonical unsigned/);
+ for(const sourceEdgeId of ['', '  '])
+  assert.throws(()=>review(ledger([span({sourceEdgeId})])),/invalid, stale/);
+});
+
+test('source IDs containing delimiters cannot collide with source interval keys',()=>{
+ const a=span({sourceEdgeId:'edge@0@1',originalSourceParameterRange:[0,1]});
+ const b=span({sourceEdgeId:'edge',originalSourceParameterRange:[0,1]});
+ assert.equal(review(ledger([a,b])).total,2);
+ const c=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[0,.5]});
+ const d=span({sourceEdgeId:'edge@part',originalSourceParameterRange:[.5,1]});
+ assert.equal(review(ledger([c,d])).total,2);
+});
+
+test('audited view coverage is derived from actual rows, not a claimed V/H/W completion',()=>{
+ const result=review(ledger([
+  span({view:'W',sourceEdgeId:'G::A|B'}),
+  span({view:'V',sourceEdgeId:'G::A|B'})
+ ]));
+ assert.deepEqual(result.viewsRepresented,['V','W']);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.viewsRepresented));
+});
+
+test('M5 reports exact positive [0,1] original-source holes without epsilon or a signed line',()=>{
+ const tiny=Number.MIN_VALUE;
+ const result=review(ledger([
+  span({view:'W',sourceEdgeId:'G::A|C',
+   originalSourceParameterRange:[tiny,.5]}),
+  span({view:'W',sourceEdgeId:'G::A|C',
+   originalSourceParameterRange:[.5,1-tiny]}),
+  span({view:'H',sourceEdgeId:'G::A|D',
+   originalSourceParameterRange:[0,.25]}),
+  span({view:'H',sourceEdgeId:'G::A|D',
+   originalSourceParameterRange:[.75,1]})
+ ]));
+ // 1 - Number.MIN_VALUE rounds to 1 in binary64. The leading
+ // positive subnormal gap must nevertheless survive unchanged.
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[
+  {view:'W',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,tiny]},
+  {view:'H',sourceEdgeId:'G::A|D',originalSourceParameterRange:[.25,.75]}
+ ]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,2);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.uncoveredOriginalParameterRanges));
+ assert.ok(Object.isFrozen(result.uncoveredOriginalParameterRanges[0].originalSourceParameterRange));
+});
+
+test('adjacent complete source pieces do not manufacture a positive M5 hole',()=>{
+ const result=review(ledger([
+  span({originalSourceParameterRange:[0,.25]}),
+  span({originalSourceParameterRange:[.25,.5]}),
+  span({originalSourceParameterRange:[.5,1]})
+ ]));
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,0);
+ assert.equal(result.signedV5ActionCount,0);
+});
+
+test('distinct view/source partitions never cover one another’s positive gap',()=>{
+ const result=review(ledger([
+  span({view:'V',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,.5]}),
+  span({view:'H',sourceEdgeId:'G::A|B',originalSourceParameterRange:[.5,1]}),
+  span({view:'V',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,1]})
+ ]));
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[
+  {view:'V',sourceEdgeId:'G::A|B',originalSourceParameterRange:[.5,1]},
+  {view:'H',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,.5]}
+ ]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,2);
+});
+
+function originalGeometry(edges=[['A','B'],['A','C']]){
+ return {id:'G',kind:'mesh',space:'model-3d',unit:'mm',
+  data:{points:{A:{x:0,y:0,z:0},B:{x:1,y:0,z:0},
+   C:{x:0,y:1,z:0}},edges}};
+}
+test('real original M0 edge inventory exposes wholly missing V/H/W source pairs',()=>{
+ const geometry=originalGeometry();
+ const result=review(ledger([span()]),{geometry});
+ assert.equal(result.independentOriginalM0InventoryAudited,true);
+ assert.equal(result.expectedOriginalSourceViewCount,6);
+ assert.equal(result.observedOriginalSourceViewCount,1);
+ assert.equal(result.missingOriginalSourceViewCount,5);
+ assert.deepEqual(result.missingOriginalSourceViews,[
+  {view:'H',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,1]},
+  {view:'W',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,1]},
+  {view:'V',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,1]},
+  {view:'H',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,1]},
+  {view:'W',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,1]}
+ ]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,0);
+ assert.equal(result.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.missingOriginalSourceViews));
+});
+test('even an empty M5 ledger cannot silently claim complete source inventory',()=>{
+ const result=review(ledger([]),{geometry:originalGeometry([['A','B']])});
+ assert.equal(result.total,0);
+ assert.equal(result.missingOriginalSourceViewCount,3);
+ assert.equal(result.allOriginalSourceViewsHaveCompleteParameterPartitions,false);
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('complete M0 source/view partitions are diagnostic only, never signed V5',()=>{
+ const rows=['V','H','W'].flatMap(view=>
+  ['G::A|B','G::A|C'].map(sourceEdgeId=>span({view,sourceEdgeId})));
+ const result=review(ledger(rows),{geometry:originalGeometry()});
+ assert.equal(result.expectedOriginalSourceViewCount,6);
+ assert.equal(result.missingOriginalSourceViewCount,0);
+ assert.equal(result.allOriginalSourceViewsHaveCompleteParameterPartitions,true);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+});
+test('M5 cannot invent source IDs or reuse a stale/duplicated M0 inventory',()=>{
+ assert.throws(()=>review(ledger([span({sourceEdgeId:'G::X|Y'})]),
+  {geometry:originalGeometry()}),/no original M0 physical source/);
+ assert.throws(()=>review(ledger(),{geometry:{...originalGeometry(),id:'old'}}),
+  /current original M0 geometry/);
+ assert.throws(()=>review(ledger(),{geometry:originalGeometry([['A','B'],['B','A']])}),
+  /duplicate original M0 physical edge/);
+ assert.throws(()=>review(ledger(),{geometry:originalGeometry([['A','missing']])}),
+  /invalid original M0 physical edge/);
+});

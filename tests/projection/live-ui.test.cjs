@@ -49,7 +49,7 @@ test('live solver uses true point projection and fails closed on contradictory d
  const success=solveProjection({knownViews:{V:[15,12],H:[15,10]}});
  assert.equal(success.status,'unique');
  assert.deepEqual(success.point,{x:15,y:10,z:12});
- assert.equal(success.steps.length,4);
+ assert.equal(success.steps.length,5);
  const bad=solveProjection({knownViews:{V:[15,12],H:[16,10]}});
  assert.equal(bad.status,'none');
  assert.deepEqual(bad.steps,[]);
@@ -160,10 +160,10 @@ test('real UI computes XYZ, all three V/H/W results, and mathematical guide togg
  const {get,fire,allSvgNodes}=page;
  assert.match(get('solveStatus').textContent,/15, 10, 12/);
  assert.match(get('stepExplanation').textContent,/空间点 P/);
- for(let i=0;i<4;i++)fire('next','click');
- assert.equal(get('stepCounter').textContent,'4 / 4');
+ for(let i=0;i<5;i++)fire('next','click');
+ assert.equal(get('stepCounter').textContent,'5 / 5');
  let nodes=allSvgNodes();
- assert.equal(nodes.filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,4);
+ assert.equal(nodes.filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,5);
  assert.equal(nodes.filter(n=>n.tag==='text'&&n.textContent.startsWith('由空间点投影 ')).length,3);
  get('showGuides').checked=false;fire('showGuides','change');
  nodes=allSvgNodes();
@@ -171,7 +171,7 @@ test('real UI computes XYZ, all three V/H/W results, and mathematical guide togg
  assert.equal(nodes.filter(n=>n.tag==='text'&&n.textContent.startsWith('由空间点投影 ')).length,3);
  assert.match(get('solveStatus').textContent,/15, 10, 12/);
  get('spaceX').value='-7';fire('spaceX','input');
- assert.equal(get('stepCounter').textContent,'0 / 4');
+ assert.equal(get('stepCounter').textContent,'0 / 5');
  assert.match(get('solveStatus').textContent,/-7, 10, 12/);
  assert.equal(allSvgNodes().some(n=>n.tag==='text'&&n.textContent.startsWith('由空间点投影 ')),false);
 });
@@ -180,12 +180,12 @@ test('UI mode switch recalculates via real VH solver and rejects invalid XYZ wit
  const {get,fire,allSvgNodes}=createInteractivePage();
  get('pairSelect').value='VH';fire('pairSelect','change');
  assert.match(get('solveStatus').textContent,/15, 10, 12/);
- for(let i=0;i<4;i++)fire('next','click');
+ for(let i=0;i<5;i++)fire('next','click');
  let nodes=allSvgNodes();
  assert.equal(nodes.filter(n=>n.tag==='text'&&n.textContent==='求得 W').length,1);
  assert.equal(nodes.filter(n=>n.tag==='text'&&n.textContent.startsWith('已知 ')).length,2);
  get('pairSelect').value='XYZ';fire('pairSelect','change');
- for(let i=0;i<4;i++)fire('next','click');
+ for(let i=0;i<5;i++)fire('next','click');
  get('spaceY').value='';fire('spaceY','input');
  assert.match(get('solveStatus').textContent,/输入尚未有效/);
  assert.equal(get('stepCounter').textContent,'0 / 0');
@@ -220,9 +220,9 @@ test('hint mode shows reasons without exposing future computed SVG guide or W an
  assert.equal(seen().length,0);
  fire('hintReveal','click');
  assert.match(get('stepExplanation').textContent,/正面与水平投影/);
- assert.equal(get('hintCounter').textContent,'1 / 4');
+ assert.equal(get('hintCounter').textContent,'1 / 5');
  for(let i=0;i<5;i++)fire('hintReveal','click');
- assert.equal(get('hintCounter').textContent,'4 / 4');
+ assert.equal(get('hintCounter').textContent,'5 / 5');
  assert.equal(get('hintReveal').disabled,true);
  assert.equal(seen().length,0);
  assert.equal(allSvgNodes().filter(n=>n.tag==='text'&&String(n.textContent).startsWith('由空间点投影 ')).length,0);
@@ -242,20 +242,20 @@ test('student pen strokes are graded against actual 4 mathematical guides withou
  assert.equal(get('drawControls').hidden,false);
  assert.equal(get('fullControls').hidden,true);
  assert.equal(lineNodes().length,0);
- for(let i=0;i<4;i++)draw(result.steps[i].from,result.steps[i].to,i+1);
- assert.equal(lineNodes().length,4);
- assert.match(get('drawStatus').textContent,/已验证 4 \/ 4/);
+ for(let i=0;i<5;i++)draw(result.steps[i].from,result.steps[i].to,i+1);
+ assert.equal(lineNodes().length,5);
+ assert.match(get('drawStatus').textContent,/已验证 5 \/ 5/);
  assert.match(get('drawStatus').textContent,/全部通过/);
  assert.equal(allSvgNodes().some(n=>n.tag==='text'&&String(n.textContent).startsWith('由空间点投影 ')),false);
  fire('undoDraw','click');
- assert.equal(lineNodes().length,3);
- assert.match(get('drawStatus').textContent,/已验证 3 \/ 4/);
- fire('redoDraw','click');
  assert.equal(lineNodes().length,4);
- assert.match(get('drawStatus').textContent,/已验证 4 \/ 4/);
+ assert.match(get('drawStatus').textContent,/已验证 4 \/ 5/);
+ fire('redoDraw','click');
+ assert.equal(lineNodes().length,5);
+ assert.match(get('drawStatus').textContent,/已验证 5 \/ 5/);
  fire('clearDraw','click');
  assert.equal(lineNodes().length,0);
- assert.match(get('drawStatus').textContent,/已验证 0 \/ 4/);
+ assert.match(get('drawStatus').textContent,/已验证 0 \/ 5/);
 });
 test('incorrect, repeated and stale student lines cannot certify all guides',()=>{
  const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
@@ -267,14 +267,14 @@ test('incorrect, repeated and stale student lines cannot certify all guides',()=
   svg.listeners.pointerup({pointerId:id,button:0,clientX:to.x,clientY:to.y});
  };
  for(let i=0;i<4;i++)draw(result.steps[0].from,result.steps[0].to,i+10);
- assert.match(get('drawStatus').textContent,/已验证 1 \/ 4/);
+ assert.match(get('drawStatus').textContent,/已验证 1 \/ 5/);
  assert.match(get('drawStatus').textContent,/额外线条 3/);
  const before=allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length;
  assert.equal(before,4);
  get('spaceX').value='21';fire('spaceX','input');
  assert.match(get('solveStatus').textContent,/21, 10, 12/);
  assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8').length,0);
- assert.match(get('drawStatus').textContent,/已验证 0 \/ 4/);
+ assert.match(get('drawStatus').textContent,/已验证 0 \/ 5/);
  get('spaceY').value='';fire('spaceY','input');
  assert.match(get('drawStatus').textContent,/不能判题/);
  assert.equal(get('paperSvg').classList===undefined,false);
@@ -290,9 +290,9 @@ test('input zoom change clears old touch strokes; mode switching does not expose
  const svg=get('paperSvg');
  svg.listeners.pointerdown({pointerId:1,button:0,clientX:guide.from.x,clientY:guide.from.y});
  svg.listeners.pointerup({pointerId:1,button:0,clientX:guide.to.x,clientY:guide.to.y});
- assert.match(get('drawStatus').textContent,/1 \/ 4/);
+ assert.match(get('drawStatus').textContent,/1 \/ 5/);
  get('scaleInput').value='8';fire('scaleInput','input');
- assert.match(get('drawStatus').textContent,/0 \/ 4/);
+ assert.match(get('drawStatus').textContent,/0 \/ 5/);
  fire('undoDraw','click');assert.equal(get('undoDraw').disabled,true);
  get('learningMode').value='hint';fire('learningMode','change');
  assert.equal(allSvgNodes().some(n=>n.tag==='line'&&n.attributes.stroke==='#8651a8'),false);
@@ -308,10 +308,10 @@ test('official point page uses the same proof-backed drawing line coordinates as
  const plan=pointTimeline({knownPoint:{x:15,y:10,z:12},
    sheetTransform:{origin:{x:360,y:210},scale:4}},1);
  assert.equal(plan.status,'ready');
- for(let i=0;i<4;i++)p.fire('next','click');
+ for(let i=0;i<5;i++)p.fire('next','click');
  const visible=p.allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
- assert.equal(visible.length,4);
- for(let i=0;i<4;i++){
+ assert.equal(visible.length,5);
+ for(let i=0;i<5;i++){
   const data=plan.steps[i].actions[0].geometry;
   assert.equal(Number(visible[i].attributes.x1),data.from.x);
   assert.equal(Number(visible[i].attributes.y1),data.from.y);
@@ -321,10 +321,10 @@ test('official point page uses the same proof-backed drawing line coordinates as
 });
 test('when the input changes the shared teaching plan cannot retain a prior drawable frame',()=>{
  const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
- for(let i=0;i<4;i++)fire('next','click');
- assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,4);
+ for(let i=0;i<5;i++)fire('next','click');
+ assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,5);
  get('spaceX').value='28';fire('spaceX','input');
- assert.equal(get('stepCounter').textContent,'0 / 4');
+ assert.equal(get('stepCounter').textContent,'0 / 5');
  assert.equal(allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133').length,0);
  assert.match(get('solveStatus').textContent,/28, 10, 12/);
 });
@@ -332,7 +332,7 @@ test('when the input changes the shared teaching plan cannot retain a prior draw
 test('V5 real point guide animates across frames and speed change preserves proof-backed math',()=>{
  const page=createInteractivePage(),{get,fire,advance,allSvgNodes}=page;
  const guides=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
- assert.equal(get('stepCounter').textContent,'0 / 4');
+ assert.equal(get('stepCounter').textContent,'0 / 5');
  fire('playPause','click');advance(300);
  assert.equal(guides().length,1);
  const partial=guides()[0];
@@ -351,7 +351,7 @@ test('V5 real point guide animates across frames and speed change preserves proo
  assert.equal(guides().length,2,'paused guide should not progress on external clocks');
  get('spaceX').value='-4';fire('spaceX','input');
  assert.equal(guides().length,0,'revision change clears old animation');
- assert.equal(get('stepCounter').textContent,'0 / 4');
+ assert.equal(get('stepCounter').textContent,'0 / 5');
 });
 
 
@@ -368,7 +368,7 @@ test('clicking actually painted point projection guide navigates corresponding t
  const nodes=allSvgNodes().filter(n=>n.attributes?.['data-v5-pick']);
  assert.equal(nodes.length,2);
  get('paperSvg').listeners.click({target:nodes[0]});
- assert.equal(get('stepCounter').textContent,'1 / 4');
+ assert.equal(get('stepCounter').textContent,'1 / 5');
  assert.match(get('projectionPicked').textContent,/已选第 1 条/);
  assert.match(get('stepTitle').textContent,/第 1 步/);
  assert.ok(allSvgNodes().some(n=>n.attributes?.['data-v5-selected']==='true'));
@@ -413,4 +413,28 @@ test('projection V5 camera follows partial real guide and manual reset preserves
  assert.equal(get('paperSvg').attributes.viewBox,'0 0 720 470');
  get('learningMode').value='draw';fire('learningMode','change');
  assert.equal(get('paperSvg').attributes.viewBox,'0 0 720 470');
+});
+
+test('actual 45-degree guide is drawn at its own step and no W answer leaks at frame zero',()=>{
+ const p=createInteractivePage(),{get,fire,allSvgNodes}=p;
+ const guides=()=>allSvgNodes().filter(n=>n.tag==='line'&&n.attributes.stroke==='#c28133');
+ const answers=()=>allSvgNodes().filter(n=>n.tag==='text'&&
+  String(n.textContent).startsWith('由空间点投影 '));
+ assert.equal(get('stepCounter').textContent,'0 / 5');
+ assert.equal(guides().length,0);
+ assert.equal(answers().length,0);
+ fire('next','click');fire('next','click');
+ assert.equal(guides().length,2);
+ assert.equal(answers().length,0);
+ fire('next','click');
+ const diag=guides()[2];
+ assert.equal(Number(diag.attributes.x1),360);
+ assert.equal(Number(diag.attributes.y1),210);
+ assert.equal(Number(diag.attributes.x2),400);
+ assert.equal(Number(diag.attributes.y2),250);
+ assert.equal(answers().length,0);
+ fire('next','click');
+ assert.equal(answers().length,0);
+ fire('next','click');
+ assert.equal(answers().length,3);
 });

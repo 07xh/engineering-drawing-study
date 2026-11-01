@@ -4,6 +4,7 @@
  * DAG / V5 timeline. Never creates or signs geometry, guesses pedagogical
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
+const Timeline=require('./teaching-timeline-v5.js');
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -23,8 +24,33 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    !frame.actionFractions||typeof frame.actionFractions!=='object')
   throw new RangeError('source-current sole V5 frame and true step DAG required');
  const steps=solution.steps,timeline=solution.timeline,
+  // Full original [0,1] source subranges are mandatory for M5-signed
+  // PHYSICAL edges. The existing convex-hull contour proof signs atomic
+  // exterior paper sides but does not export original 3D parameter ranges;
+  // do not invent [0,1] for those different, still-scoped actions.
+  physicalBindings=solution.certifiedPhysicalLineBindings||[],
   bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
-   ...(solution.certifiedPhysicalLineBindings||[])];
+   ...physicalBindings],
+  physicalBindingSet=new Set(physicalBindings);
+ // Recompute the CURRENT frame using the existing sole V5 timeline.
+ // A forged future fraction, stale completion list or mismatched active
+ // step must never reveal an answer stroke ahead of its DAG explanation.
+ // This is presentation integrity only; it grants no M5 line signature.
+ if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>timeline.totalMs)
+  throw new RangeError('V5 frame elapsed time is outside current timeline');
+ const expectedFrame=Timeline.frame(timeline,frame.elapsedMs);
+ if(frame.totalMs!==expectedFrame.totalMs||
+    frame.done!==expectedFrame.done||
+    frame.activeStepIndex!==expectedFrame.activeStepIndex||
+    frame.activeStepId!==expectedFrame.activeStepId||
+    frame.activeActionId!==expectedFrame.activeActionId||
+    frame.completedIds.length!==expectedFrame.completedIds.length||
+    frame.completedIds.some((id,i)=>id!==expectedFrame.completedIds[i])||
+    Object.keys(frame.actionFractions).length!==timeline.segments.length||
+    timeline.segments.some(a=>
+     frame.actionFractions[a.id]!==expectedFrame.actionFractions[a.id]))
+  throw new RangeError('V5 frame action progress contradicts canonical DAG timeline');
  const owners=new Map(),seenActions=new Set(),seenSteps=new Set();
  for(const binding of bindings){
   if(!binding||typeof binding.actionId!=='string'||
@@ -32,7 +58,17 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
     binding.revision!==revision||
     typeof binding.sourceEdgeId!=='string'||!binding.sourceEdgeId||
     !['V','H','W'].includes(binding.view)||
-    ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle))
+    ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle)||
+    // The original M5 physical edge is not signed without a positive
+    // source interval. Exterior contour-only bindings cannot assert
+    // a fabricated original parameter interval on this legacy path.
+    (physicalBindingSet.has(binding)&&(
+     !Array.isArray(binding.originalParameterRange)||
+     binding.originalParameterRange.length!==2||
+     !binding.originalParameterRange.every(Number.isFinite)||
+     binding.originalParameterRange[0]<0||
+     !(binding.originalParameterRange[1]>binding.originalParameterRange[0])||
+     binding.originalParameterRange[1]>1)))
    throw new RangeError('missing or duplicated authentic signed source binding');
   owners.set(binding.actionId,binding);
  }

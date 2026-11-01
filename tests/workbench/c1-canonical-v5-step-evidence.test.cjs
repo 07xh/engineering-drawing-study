@@ -65,7 +65,7 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  const base=fixture(),bad=edit=>{const f=fixture();edit(f);return()=>inspect(f);};
  assert.throws(()=>inspect({...base,revision:8}),/source-current/);
  assert.throws(bad(f=>{f.solution.singleOriginalV5Player=false;}),/source-current/);
- assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step/);
+ assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/frame action progress|active step/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].revision=8;}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings.push(
   {...f.solution.certifiedPhysicalLineBindings[0]});}),/signed source/);
@@ -74,9 +74,78 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].standardLineStyle=
   'arbitrary';}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
+ // A paper stroke cannot masquerade as a formal M5-signed source
+ // without its positive, bounded, original 3D parameter interval.
+ for(const invalid of [undefined,null,[],[0,0],[1,0],[-0.1,0.5],
+  [0.5,1.01],[0,Infinity],[NaN,1],[0,0.5,1]]){
+  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].
+   originalParameterRange=invalid;}),/signed source/);
+ }
+ // An arbitrarily small but genuinely positive binary64 span remains
+ // distinguishable from a zero-length stroke; this gate does not snap it.
+ const tiny=fixture();
+ tiny.solution.certifiedPhysicalLineBindings[0].originalParameterRange=
+  [0,Number.MIN_VALUE];
+ assert.deepEqual(inspect(tiny).actions[0].formalLineCertified,false);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
 });
+test('existing hull contour cannot borrow an invented original 3D source parameter range',()=>{
+ const f=fixture();
+ const physical=f.solution.certifiedPhysicalLineBindings.pop();
+ f.solution.certifiedVisibleContourLineBindings.push({
+  actionId:physical.actionId,revision:physical.revision,
+  sourceEdgeId:physical.sourceEdgeId,view:physical.view,
+  standardLineStyle:physical.standardLineStyle,
+  signedFormalLineV5:true
+ });
+ const first=inspect(f);
+ assert.equal(first.actions[0].formalLineCertified,false);
+ f.solution.player.seekStep(2,10);
+ const current=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(current.actions[0].formalLineCertified,true);
+ assert.equal(current.actions[0].sourceParameterRange,null);
+ assert.equal(current.wholeTextbookC1BlindAccepted,false);
+});
+test('canonical frame replay rejects early target strokes and out-of-sync text/progress',()=>{
+ const mutate=edit=>{
+  const f=fixture();edit(f);return()=>inspect(f);
+ };
+ // At frame zero the future M5 stroke cannot be rendered, even when the
+ // attacker keeps the correct step title and a valid signed source binding.
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.edge_2_action=1;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.g_1=0.25;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.completedIds.push('edge_2_action');
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.activeStepId='edge_2';
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.actionFractions.forged_final_answer=1;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=900;
+ }),/frame action progress contradicts/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=Number.POSITIVE_INFINITY;
+ }),/elapsed time/);
+ assert.throws(mutate(f=>{
+  f.frame.elapsedMs=-1;
+ }),/elapsed time/);
+ const valid=fixture();
+ valid.solution.player.seekStep(2,10);
+ const current=valid.solution.player.snapshot();
+ const inspected=inspect({...valid,frame:current});
+ assert.equal(inspected.id,'edge_2');
+ assert.equal(inspected.actions[0].formalLineCertified,true);
+ assert.equal(inspected.actions[0].progress,0);
+});
+
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(
   '../../workbench/c1-authenticated-dxf-to-reviewed-v5.cjs');

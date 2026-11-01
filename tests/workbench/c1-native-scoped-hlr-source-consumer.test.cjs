@@ -1,10 +1,27 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
+const {auditC1OriginalHLRStatusScopedClassConcordance:
+ auditC1OriginalHLRStatusScopedClassConcordanceForFixture}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1NativeScopedHLRSourceConsumer:audit}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
+const {auditC1ScopedHLRSourceIdentityConflicts:checkNativeClaims}=
+ require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
+// Only positive synthetic alternative OCCT inventories refresh their expected
+// producer ledger. Tampering tests deliberately leave it stale.
+function rebindFixtureNativeLedger(cad,view){
+ const scoped=cad.nativeSourceScopedSharpOutputByView[view];
+ scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+  matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+  wholeSolidCounts:{
+   'visible-sharp':cad.views[view].length,
+   'hidden-sharp':cad.hiddenSharpViews[view].length
+  }
+ });
+}
 function fixture(){
  const geometry={id:'g',data:{points:{
   A:{x:0,y:0,z:0},B:{x:10,y:2,z:3},
@@ -21,6 +38,8 @@ function fixture(){
   globalPaperCandidateOrdinals:[0],
   globalDirectSameGeneratedTopoDSOrdinals:[],
   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false,
+  paperCoincidenceAloneIsNotOriginalTopoDSHistory:true,
+  partnerCandidateDoesNotProveOriginalSourceHistory:true,
   fullOriginalSourceParameterCoverageProven:false,
   globalContinuousOcclusionProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false,
@@ -60,6 +79,7 @@ function fixture(){
    ]
   };
  }
+ for(const view of ['V','H','W'])rebindFixtureNativeLedger(cad,view);
  return {geometry,cad,id0,id1,witness,paper};
 }
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
@@ -75,6 +95,23 @@ test('actual native V/H/W scoped-source ledger is consumed but does not sign V5'
  }
  assert.equal(r.signedV5ActionCount,0);
 });
+test('M4/M5 native source consumer rejects a forged IsSame ordinal outside measured paper candidates',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const claim=scoped.rows[0].visible[0];
+  claim.globalDirectSameGeneratedTopoDSOrdinals=[0];
+  claim.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  scoped.nativeScopedToWholeSolidGeneratedIsSameCount=1;
+  scoped.paperOnlyScopedOutputEdgeCount=0;
+  claim.globalPaperCandidateOrdinals=[1];
+  // Recomputing the claimed ledger cannot launder an ordinal that is
+  // absent from its own native paper inventory.
+  assert.throws(()=>rebindFixtureNativeLedger(x.cad,view),
+   /unsigned actual native scoped match/);
+  assert.throws(()=>audit(x),/native|ordinal|source|unsigned/i);
+ }
+});
+
 test('two different original 3D edges with identical paper output remain ambiguous',()=>{
  const x=fixture();
  // The original model edges differ in 3D depth; no 2D point can resolve it.
@@ -322,6 +359,7 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  ];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ rebindFixtureNativeLedger(x.cad,view);
  const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
  assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
   [[0.5,next]]);
@@ -366,6 +404,7 @@ test('native source-scoped HLR never treats simultaneously visible and hidden or
  }];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ rebindFixtureNativeLedger(x.cad,view);
  const r=audit(x),row=r.views.V.sourceParameterCandidates[0];
  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
  assert.equal(row.paperDerivedPositiveLengthVisibleHiddenConflictDetected,true);
@@ -459,9 +498,8 @@ test('cross-axis exact affine witness separates paper rounding from full 3D sour
  x.cad.views[view][0].from.v+=5e-7;
  x.cad.views[view][0].to.v+=5e-7;
  const result=audit(x),row=result.views.V.sourceParameterCandidates[0];
- // The previous weaker dominant-axis check once returned TRUE here.
- // This must now remain FALSE because received u,v are transversely
- // displaced from the actual original M0 source's exact affine line.
+ // The latest main requires strict BOTH-axis HLR alignment, not a
+ // dominant-axis [0,1] inverse that hides transverse paper displacement.
  assert.equal(row.exactBinary64PaperCandidateCoverage.
   exactBinary64PaperCandidateCoverageComplete,true);
  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,false);
@@ -551,6 +589,38 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
     native3DGeneratedCurveIntervals:[]};
   }
  }
+ // The strict causal source rebind now also consumes the genuine
+ // original EdgeMap -> original HLR EdgeStatus inventory. Supply an
+ // internally consistent synthetic source-status ledger for this M4
+ // contract test, without inventing generated-2D TopoDS history.
+ for(const view of ['V','H','W']){
+  const status=x.cad.nativeHLRSourceHistoryAPISurfaceByView[view];
+  status.originalDataStructureIndex.edgeMapSourceBijectionVerified=true;
+  status.originalEdgeStatusAPI={
+   originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+   nativeOriginalSourceEdgeStatusRows:[x.id0,x.id1].map((source,index)=>({
+    view,originalPhysicalSourceEdgeId:source,
+    nativeHLROriginalEdgeMapIndex:index+1,
+    originalSourceClass:index===0?'all-visible':'all-hidden',
+    originalEdgeStatusAllVisible:index===0,
+    originalEdgeStatusAllHidden:index!==0,
+    nativeOriginalVisiblePartCount:index===0?1:0,
+    sourceOriginalNativeParameterBoundsStillRequireSeparateCurveAudit:true,
+    generated2DHLREdgeToOriginalSourceHistoryCertified:false,
+    globalContinuousM5OcclusionCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   }))
+  };
+  // The M4 contract fixture advertises native EdgeStatus; include the
+  // same-run scoped 3D class certificate instead of bypassing its gate.
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const certificate=auditC1OriginalHLRStatusScopedClassConcordanceForFixture({
+   view,statusRows:status.originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows,
+   scopedRows:scoped.rows
+  });
+  status.originalEdgeStatusAPI.sourceScopedClassConcordance=certificate;
+  scoped.statusScopedClassConcordance=certificate;
+ }
  const out=audit(x);
  assert.equal(out.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
  assert.equal(out.counts.nativeOriginal3DM4SourceViewCandidates,6);
@@ -635,4 +705,130 @@ test('genuine half-source native W paper remains an exact positive source gap, n
  assert.equal(row.actualOriginalTopoDSParameterCoverageCertified,false);
  assert.equal(row.engineeringLineStyle,'undetermined');
  assert.equal(row.signedV5Action,false);
+});
+
+test('M4/M5 independently reconciles serialized native source claims with whole-solid HLR',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const w=scoped.rows[0].visible[0];
+  w.globalDirectSameGeneratedTopoDSOrdinals=[0];
+  w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+  scoped.nativeScopedToWholeSolidGeneratedIsSameCount=1;
+  scoped.paperOnlyScopedOutputEdgeCount=0;
+  // An authentic native claim has to be represented by the complete
+  // producer ledger. Even then, it does not certify original BRep history.
+  assert.throws(()=>audit(x),/native scoped\/global HLR source identity ledger/);
+  scoped.nativeSourceIdentityConflicts=checkNativeClaims({
+   matches:scoped.rows.flatMap(row=>[...row.visible,...row.hidden]),
+   wholeSolidCounts:{'visible-sharp':1,'hidden-sharp':0}
+  });
+  const r=audit(x);
+  assert.equal(r.counts.nativeGeneratedIsSameMatches,1);
+  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+  assert.equal(r.globalContinuousVisibilityCertified,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('dropped, invented, or stale native generated-edge ledger evidence fails closed',()=>{
+ for(const view of ['V','H','W']){
+  for(const mutate of [
+   ledger=>{ledger.unclaimedWholeSolidGeneratedEdgeOrdinals=[];},
+   ledger=>{ledger.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim=true;},
+   ledger=>{ledger.uniqueNativeClaims=1;},
+   ledger=>{ledger.rows=[{view,hlrClass:'visible-sharp',
+    nativeWholeSolidEdgeOrdinal:0,originalPhysicalSourceEdgeId:'g::A|B',
+    nativeScopedGeneratedEdgeIsSame:true,
+    completeOriginalSourceHistoryCertified:true,
+    globalContinuousOcclusionCertified:true,signedV5Action:true}];},
+   ledger=>{ledger.signedV5ActionCount=1;},
+   ledger=>{ledger.fullOriginalSourceHistoryCertified=true;}
+  ]){
+   const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+   scoped.nativeSourceIdentityConflicts=
+    structuredClone(scoped.nativeSourceIdentityConflicts);
+   mutate(scoped.nativeSourceIdentityConflicts);
+   assert.throws(()=>audit(x),/native scoped\/global HLR source identity ledger/);
+  }
+  const missing=fixture();
+  delete missing.cad.nativeSourceScopedSharpOutputByView[view].
+   nativeSourceIdentityConflicts;
+  assert.throws(()=>audit(missing),/native scoped\/global HLR source identity ledger/);
+ }
+});
+
+const {auditC1OriginalHLRStatusScopedClassConcordance:statusClassAudit}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+function fixtureWithNativeStatusClass(view='W'){
+ const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+ for(const row of scoped.rows){
+  row.visible3D={native3DGeneratedCurveIntervals:[]};
+  row.hidden3D={native3DGeneratedCurveIntervals:[]};
+ }
+ const statusRows=scoped.rows.map((row,i)=>({
+  view,originalPhysicalSourceEdgeId:row.originalPhysicalSourceEdgeId,
+  nativeHLROriginalEdgeMapIndex:row.hlrDataStructureOneBasedEdgeIndex,
+  originalEdgeStatusAllVisible:i===0,
+  originalEdgeStatusAllHidden:i!==0,
+  nativeOriginalVisiblePartCount:i===0?1:0,
+  originalSourceClass:i===0?'all-visible':'all-hidden'
+ }));
+ const certificate=statusClassAudit({view,statusRows,scopedRows:scoped.rows});
+ scoped.statusScopedClassConcordance=certificate;
+ x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].originalEdgeStatusAPI={
+  originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+  nativeOriginalSourceEdgeStatusRows:statusRows,
+  sourceScopedClassConcordance:certificate
+ };
+ return x;
+}
+test('M4/M5 recomputes native EdgeStatus class proof instead of trusting serialized certificate',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixtureWithNativeStatusClass(view),r=audit(x);
+  assert.equal(r.signedV5ActionCount,0);
+  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  scoped.statusScopedClassConcordance={...scoped.statusScopedClassConcordance,
+   signedV5ActionCount:1};
+  assert.throws(()=>audit(x),/native HLR original status\/scoped class consumer ledger mismatch/);
+ }
+});
+test('M4/M5 rejects forged native source status and opposite 3D sharp classes',()=>{
+ for(const view of ['V','H','W']){
+  const mutations=[
+   x=>{delete x.cad.nativeSourceScopedSharpOutputByView[view].statusScopedClassConcordance;},
+   x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].originalEdgeStatusAPI.
+    nativeOriginalSourceEdgeStatusRows[0].originalEdgeStatusAllHidden=true;},
+   x=>{x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+    hidden3D.native3DGeneratedCurveIntervals.push([0,1]);},
+   x=>{x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+    hlrDataStructureOneBasedEdgeIndex=2;}
+  ];
+  for(const mutate of mutations){
+   const x=fixtureWithNativeStatusClass(view);mutate(x);
+   assert.throws(()=>audit(x),/original HLR|scoped HLR|native HLR/);
+  }
+ }
+});
+
+test('M4/M5 rejects native EdgeStatus visible-part count or class label laundering',()=>{
+ for(const view of ['V','H','W']){
+  const mutations=[
+   row=>{row.nativeOriginalVisiblePartCount=0;},
+   row=>{row.nativeOriginalVisiblePartCount=2;},
+   row=>{row.nativeOriginalVisiblePartCount=-1;},
+   row=>{row.nativeOriginalVisiblePartCount=1.5;},
+   row=>{row.originalSourceClass='all-hidden';}
+  ];
+  for(const mutate of mutations){
+   const x=fixtureWithNativeStatusClass(view);
+   mutate(x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].
+    originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0]);
+   assert.throws(()=>audit(x),/original HLR source status identity|visible parts/);
+  }
+  const x=fixtureWithNativeStatusClass(view);
+  x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].
+   originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[1].
+   nativeOriginalVisiblePartCount=1;
+  assert.throws(()=>audit(x),/original HLR source status identity|visible parts/);
+ }
 });
