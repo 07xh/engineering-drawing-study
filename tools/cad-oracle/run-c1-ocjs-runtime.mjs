@@ -304,6 +304,39 @@ for(const [index,geometry] of general.entries()){
    assert.deepEqual(witness.native3DOriginalParameterPositiveOverlaps,
     source.combinedNative3DSourceParameterPartition.
      positiveLengthOverlappingNativeParameterIntervals);
+   // The distinct HLRBRep_OutLine result must survive the real producer ->
+   // original-M0 parameter normalization -> existing M4 candidate consumer.
+   // Do not infer silhouette membership from Sharp, and do not let a missing
+   // outline ledger masquerade as an empty (negative) outline result.
+   const outlinePartition=source.combinedNative3DOutlineSourceParameterPartition;
+   assert.equal(outlinePartition?.schema,
+    'draftai-c1-native-source-scoped-3d-curve-parameter-coverage/1');
+   assert.equal(witness.native3DOutlineEvidenceAvailable,true,
+    'real native visible/hidden OutLine extraction must reach M4');
+   assert.equal(witness.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,
+    outlinePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce);
+   assert.deepEqual(witness.native3DOutlineOriginalParameterPositiveGaps,
+    outlinePartition.positiveLengthUncoveredNativeParameterIntervals);
+   assert.deepEqual(witness.native3DOutlineOriginalParameterPositiveOverlaps,
+    outlinePartition.positiveLengthOverlappingNativeParameterIntervals);
+   assert.ok(Array.isArray(witness.native3DOutlineSegments));
+   assert.ok(witness.native3DOutlineSegments.every(segment=>
+    segment.view===view&&segment.sourceEdgeId===source.originalPhysicalSourceEdgeId&&
+    ['visible-outline','hidden-outline'].includes(segment.native3DHLRClass)&&
+    Array.isArray(segment.originalNative3DParameterRange)&&
+    segment.originalNative3DParameterRange.length===2&&
+    segment.originalNative3DParameterRange[1]>
+     segment.originalNative3DParameterRange[0]&&
+    segment.derivedFromOriginalNative3DOutlineNotGeneratedHLRPaper===true&&
+    segment.generated2DHLREdgeTopologyProven===false&&
+    segment.completeGlobalCoProjectedVisibilityCertified===false&&
+    segment.engineeringLineStyle==='undetermined'&&segment.signedV5Action===false));
+   assert.equal(witness.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,
+    witness.native3DOutlineSourceParameterPartitionCompleteExactlyOnce&&
+    witness.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length===0&&
+    witness.M4OutlineOriginalUnitIntervalCandidatePositiveGaps.length===0&&
+    witness.M4OutlineOriginalUnitIntervalNativeClassConflicts.length===0);
+
    // M4 must never certify a rounded fraction union that conceals a
    // positive native gap or overlap; this is not formal HLR ownership.
    assert.equal(witness.M4OriginalUnitIntervalCandidateCoverageComplete,
