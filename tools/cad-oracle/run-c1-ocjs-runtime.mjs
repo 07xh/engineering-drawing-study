@@ -195,6 +195,33 @@ for(const [index,geometry] of general.entries()){
   assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
    'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
   const ds=api.originalDataStructureIndex;
+  const edgeStatus=api.originalEdgeStatusAbi;
+  assert.equal(edgeStatus.schema,'draftai-c1-ocjs-edgestatus-abi-probe/1');
+  assert.ok([
+   'all-original-edge-status-intervals-readable',
+   'edge-data-array-not-exposed','edge-data-array-call-failed',
+   'edge-data-array-value-not-exposed','edge-data-index-unreadable',
+   'edge-data-entry-null','edge-status-object-not-exposed',
+   'bounds-output-not-readable','visible-part-count-not-readable',
+   'visibility-class-not-readable','visible-part-output-not-readable'
+  ].includes(edgeStatus.availability));
+  assert.equal(edgeStatus.generated2DHLRTopoDSHistoryCertified,false);
+  assert.equal(edgeStatus.engineeringLineStyle,'undetermined');
+  assert.equal(edgeStatus.signedV5ActionCount,0);
+  if(edgeStatus.availability==='all-original-edge-status-intervals-readable'){
+   assert.equal(edgeStatus.readableSourceStatusRows,geometry.data.edges.length);
+   assert.ok(edgeStatus.rows.every(row=>row.parameterPartitionValidated===true));
+  }else{
+   assert.equal(edgeStatus.generated2DHLRTopoDSHistoryCertified,false);
+   assert.equal(edgeStatus.signedV5ActionCount,0);
+  }
+  console.error('REAL PINNED OCJS ORIGINAL HLR EDGESTATUS ABI '+geometry.id+' '+view+': '+
+   JSON.stringify({availability:edgeStatus.availability,
+    readableSourceStatusRows:edgeStatus.readableSourceStatusRows??0,
+    originalSourceRows:edgeStatus.originalSourceRows??geometry.data.edges.length,
+    methods:edgeStatus.dataStructureMethodNames??[],
+    statusExports:edgeStatus.statusRelatedExports??[],
+    officialV5Actions:0}));
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
   assert.equal(ds.signedV5Action,false);
   assert.equal(ds.availability,'real-native-edge-map-inspected',
