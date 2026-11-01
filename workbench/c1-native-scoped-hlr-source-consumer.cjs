@@ -291,8 +291,14 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        (segment.actualOCCTHLRCurveParameterRange[0]!==generatedRange[0]||
         segment.actualOCCTHLRCurveParameterRange[1]!==generatedRange[1]))
      throw new RangeError('parameterized HLR match disagrees with generated edge parameter domain');
+    // Recompute the received five-point evidence instead of trusting a
+    // producer-supplied residual or a grafted interior generated sample.
+    // This validates candidate provenance only, never source TopoDS
+    // ancestry, continuous visibility, engineering style or V5.
     const sampleResiduals=[],roundTripResiduals=[];
-    for(const sample of samples){
+    const reportedNativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm;
+    for(let sampleIndex=0;sampleIndex<samples.length;sampleIndex++){
+     const sample=samples[sampleIndex];
      const sourcePoint=sample?.sourceProjectedPointMm,
       generatedPoint=sample?.generatedProjectedPointMm;
      if(!Number.isFinite(sample?.generated2DParameter)||
@@ -306,11 +312,22 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         !Number.isFinite(sample.projectedPointResidualMm)||
         sample.projectedPointResidualMm<0)
       throw new RangeError('invalid parameterized HLR five-point curve correspondence');
-     sampleResiduals.push(sample.projectedPointResidualMm);
+     const measured=Math.hypot(sourcePoint[0]-generatedPoint[0],
+      sourcePoint[1]-generatedPoint[1]);
+     const expectedP2=generatedRange[0]+
+      (generatedRange[1]-generatedRange[0])*(sampleIndex/4);
+     if(!Number.isFinite(measured)||
+        measured!==sample.projectedPointResidualMm||
+        sample.generated2DParameter!==expectedP2||
+        (Array.isArray(reportedNativeSamples)&&
+         (reportedNativeSamples[sampleIndex]?.u!==generatedPoint[0]||
+          reportedNativeSamples[sampleIndex]?.v!==generatedPoint[1])))
+      throw new RangeError('M4 parameterized HLR five-point sample contradicts actual native paper curve');
+     sampleResiduals.push(measured);
      roundTripResiduals.push(sample.parameterRoundTripResidual);
     }
-    if(Math.max(...sampleResiduals)>match.maximumProjectedPointResidualMm||
-       Math.max(...roundTripResiduals)>match.maximumParameterRoundTripResidual||
+    if(Math.max(...sampleResiduals)!==match.maximumProjectedPointResidualMm||
+       Math.max(...roundTripResiduals)!==match.maximumParameterRoundTripResidual||
        (Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)&&
         Math.max(...sampleResiduals)>segment.actualOCCTHLRCurveSampleToleranceMm))
      throw new RangeError('parameterized HLR curve residual summary is inconsistent');
