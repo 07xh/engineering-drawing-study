@@ -211,6 +211,18 @@ for(const [index,geometry] of general.entries()){
   if(edgeStatus.availability==='all-original-edge-status-intervals-readable'){
    assert.equal(edgeStatus.readableSourceStatusRows,geometry.data.edges.length);
    assert.ok(edgeStatus.rows.every(row=>row.parameterPartitionValidated===true));
+   assert.ok(edgeStatus.rows.every(row=>
+    row.boundsReadABI==='mutable-current-reference'&&
+    Array.isArray(row.boundsEndpointTolerances)&&
+    row.boundsEndpointTolerances.length===2&&
+    row.boundsEndpointTolerances.every(x=>Number.isFinite(x)&&x>=0)&&
+    row.visiblePartReadABIs.length===row.visiblePartCount&&
+    row.visiblePartReadABIs.every(x=>x==='mutable-current-reference')&&
+    row.visiblePartEndpointTolerances.length===row.visiblePartCount&&
+    row.visiblePartEndpointTolerances.every(pair=>
+     Array.isArray(pair)&&pair.length===2&&
+     pair.every(x=>Number.isFinite(x)&&x>=0))),
+    'real pinned EdgeStatus output refs and endpoint tolerances must be preserved');
   }else{
    assert.equal(edgeStatus.generated2DHLRTopoDSHistoryCertified,false);
    assert.equal(edgeStatus.signedV5ActionCount,0);
