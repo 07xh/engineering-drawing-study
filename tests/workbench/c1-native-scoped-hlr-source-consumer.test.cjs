@@ -1,5 +1,8 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
+const {auditC1OriginalHLRStatusScopedClassConcordance:
+ auditC1OriginalHLRStatusScopedClassConcordanceForFixture}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1NativeScopedHLRSourceConsumer:audit}=
  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
@@ -608,6 +611,15 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
     engineeringLineStyle:'undetermined',signedV5Action:false
    }))
   };
+  // The M4 contract fixture advertises native EdgeStatus; include the
+  // same-run scoped 3D class certificate instead of bypassing its gate.
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const certificate=auditC1OriginalHLRStatusScopedClassConcordanceForFixture({
+   view,statusRows:status.originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows,
+   scopedRows:scoped.rows
+  });
+  status.originalEdgeStatusAPI.sourceScopedClassConcordance=certificate;
+  scoped.statusScopedClassConcordance=certificate;
  }
  const out=audit(x);
  assert.equal(out.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
