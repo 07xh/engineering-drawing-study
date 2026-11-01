@@ -46,6 +46,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
   view,availability:'available',classes:{},counts:{
    uniqueParameterizedSourceLineage:0,
    ambiguousParameterizedSourceLineage:0,
+   nativeFilterNarrowedAmbiguousParameterizedSourceLineage:0,
    unmatchedGeneratedOutputEdges:0,
    unavailableGeneratedOutputEdges:0,
    sourceFilterOrPaperCandidateDisagreements:0
@@ -178,22 +179,34 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // source-filtered HLR inventory and the original M0 paper candidate set.
    // Extra source-filter claims are a disagreement, not a reason to pick one.
    const filterSources=item.sources[ordinal];
-   const filterAgreement=matches.length>0&&
-    candidateIds.size===filterSources.size&&
-    [...candidateIds].every(id=>filterSources.has(id)&&paperCandidates.includes(id));
+   // A view-collapsed pair can legitimately match the same generated 2D
+   // curve in two different 3D source parameter maps. The class-specific
+   // native source filter may narrow that set to the one source emitted in
+   // this visible/hidden class. Preserve the geometric ambiguity; record
+   // the narrowing separately instead of calling it a unique 3D identity.
+   const filterConsistent=matches.length>0&&filterSources.size>0&&
+    [...filterSources].every(id=>candidateIds.has(id))&&
+    [...candidateIds].every(id=>paperCandidates.includes(id));
+   const filterNarrows=filterConsistent&&filterSources.size<candidateIds.size;
    const status=matches.length===0?'unmatched':
-    !filterAgreement?'source-filter-or-paper-candidate-disagreement':
+    !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
-      'ambiguous-parameterized-source-lineage';
+      filterNarrows?'ambiguous-parameterized-source-lineage-native-filter-narrowed':
+       'ambiguous-parameterized-source-lineage';
    if(status==='unique-parameterized-source-lineage')unique++;
-   else if(status==='ambiguous-parameterized-source-lineage')ambiguous++;
+   else if(status==='ambiguous-parameterized-source-lineage'||
+           status==='ambiguous-parameterized-source-lineage-native-filter-narrowed')
+    ambiguous++;
    else if(status==='unmatched')unmatched++;
    else disagreements++;
    return {
     wholeSolidHLREdgeOrdinal:ordinal,
     parameterizedSourceMatchCount:matches.length,
     parameterizedOriginalSourceEdgeIds:[...candidateIds].sort(),
-    nativeSourceFilterAndM0PaperCandidatesAgree:filterAgreement,
+    nativeSourceFilterCandidateIds:[...filterSources].sort(),
+    m0PaperCandidateIds:[...paperCandidates].sort(),
+    nativeSourceFilterAndM0PaperCandidatesAgree:filterConsistent,
+    nativeFilterNarrowsParameterizedCandidates:filterNarrows,
     status,
     sameRunOriginalHLRCurveParameterLineageProven:
      status==='unique-parameterized-source-lineage',
@@ -216,10 +229,14 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    rawUnmatchedGeneratedOutputEdges:rawUnmatched,
    uniqueParameterizedSourceLineage:unique,
    ambiguousParameterizedSourceLineage:ambiguous,
+   nativeFilterNarrowedAmbiguousParameterizedSourceLineage:
+    rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length,
    unmatchedGeneratedOutputEdges:unmatched,
    sourceFilterOrPaperCandidateDisagreements:disagreements,rows};
   result.counts.uniqueParameterizedSourceLineage+=unique;
   result.counts.ambiguousParameterizedSourceLineage+=ambiguous;
+  result.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage+=
+   rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length;
   result.counts.unmatchedGeneratedOutputEdges+=unmatched;
   result.counts.sourceFilterOrPaperCandidateDisagreements+=disagreements;
  }
@@ -342,6 +359,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass:0,
   globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage:0,
+  globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage:0,
   globalGeneratedHLREdgesWithoutParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithoutParameterizedSourceReport:0,
   globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0};
@@ -605,6 +623,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.uniqueParameterizedSourceLineage;
   counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage+=
    parameterizedGlobalHLRSourceLineage.counts.ambiguousParameterizedSourceLineage;
+  counts.globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage;
   counts.globalGeneratedHLREdgesWithoutParameterizedSourceReport+=
    parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
   counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage+=
