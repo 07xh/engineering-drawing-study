@@ -144,7 +144,13 @@ function projectC1Native3DSourceIntervalsToM4({
  const outlineGroups=[['visible-outline',scopedRow.visibleOutline3D],
   ['hidden-outline',scopedRow.hiddenOutline3D]],
   native3DOutlineSegments=[],outlineRanges={},outlineIntervalsHeldForM4=[];
- const native3DOutlineEvidenceAvailable=outlineGroups.every(([,group])=>group!==undefined&&group!==null);
+ // A partial producer result is NOT the same as an older producer that
+ // supplies no outline evidence at all. Dropping the surviving visible or
+ // hidden native class would conceal real positive-length source intervals.
+ const presentOutlineGroups=outlineGroups.filter(([,group])=>group!==undefined&&group!==null);
+ if(presentOutlineGroups.length===1)
+  throw new RangeError('incomplete native source-filtered 3D HLR outline class inventory');
+ const native3DOutlineEvidenceAvailable=presentOutlineGroups.length===2;
  for(const [klass,group] of outlineGroups){
   const parts=group?.native3DGeneratedCurveIntervals;
   if(!native3DOutlineEvidenceAvailable){
