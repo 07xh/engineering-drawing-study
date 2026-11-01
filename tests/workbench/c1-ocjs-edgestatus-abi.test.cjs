@@ -386,10 +386,38 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  const match=r.rows[0].candidateSourceMatches[0];
  assert.equal(match.originalTopoDSEdgeIdentityProven,true);
  assert.deepEqual(match.original3DCurveParameterRange,[0,10]);
+ assert.deepEqual(match.sourceProjected2DParameterRange,[2,12]);
+ assert.deepEqual(match.sourceProjected2DParameterRangeSorted,[2,12]);
+ assert.equal(match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange,false);
+ assert.deepEqual(match.sourceProjected2DParameterEndpointResiduals,[0,-4]);
  assert.deepEqual(match.source3DParameterRange,[0,6]);
  assert.equal(match.generated2DTopoDSHistoryProven,false);
  assert.equal(match.engineeringLineStyle,'undetermined');
  assert.equal(match.signedV5Action,false);
+});
+
+test('forward-mapped original source endpoints exactly bind a full generated 2D output interval',()=>{
+ const curve={
+  Parameter2d(value){return value+2;},
+  Parameter3d(value){return value-2;},
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
+ };
+ const nativeCurveHandlesBySourceId=new Map([['g::E0',{
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
+ }]]);
+ const segment={
+  actualOCCTHLRCurveParameterRange:[2,12],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,2.5,5,7.5,10].map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
+ const match=r.rows[0].candidateSourceMatches[0];
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ assert.deepEqual(match.source3DParameterRange,[0,10]);
+ assert.deepEqual(match.sourceProjected2DParameterRange,[2,12]);
+ assert.equal(match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange,true);
+ assert.deepEqual(match.sourceProjected2DParameterEndpointResiduals,[0,0]);
 });
 
 test('parameterized generated curve rejects an output interval outside the original projected source domain',()=>{
