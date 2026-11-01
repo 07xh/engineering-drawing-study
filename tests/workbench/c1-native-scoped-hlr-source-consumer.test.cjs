@@ -1159,6 +1159,23 @@ test('parameterized source interval outside the original M0 domain is rejected, 
 test('paper-only aliases in each missing-view orientation never become signed V5 strokes',()=>{
  for(const view of ['V','H','W']){
   const x=fixture(),c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  // Each orientation needs a GENUINE paper alias. The default second
+  // source is coincident only in V: it is shifted in H and W, so claiming
+  // its global ordinal there is correctly rejected by the strict matcher.
+  // Keep the two physical 3D sources distinct in the eliminated axis.
+  if(view==='H'){
+   x.geometry.data.points.C.y=0;
+   x.geometry.data.points.D.y=2;
+   x.geometry.data.points.C.z=1;
+   x.geometry.data.points.D.z=4;
+  }else if(view==='W'){
+   x.geometry.data.points.C.y=0;
+   x.geometry.data.points.D.y=2;
+   x.geometry.data.points.C.x=1;
+   x.geometry.data.points.D.x=11;
+  }
+  assert.deepEqual(x.paper(view,x.id1),x.paper(view,x.id0),
+   'the negative source-alias fixture must match the actual view');
   c.rows[1].visible.push(x.witness(view,x.id1));
   c.nativeSourceScopedOutputEdgeCount=2;
   c.paperOnlyScopedOutputEdgeCount=2;
