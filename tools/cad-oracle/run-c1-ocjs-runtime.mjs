@@ -429,7 +429,13 @@ for(const [index,geometry] of general.entries()){
   unavailable:['V','H','W'].reduce((n,view)=>n+
    parameterizedLineageByView[view].counts.unavailableGeneratedOutputEdges,0),
   sourceFilterOrPaperDisagreements:
-   scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement
+   scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement,
+  nativeM4ClassBackedUniqueFilterSourceEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter,
+  nativeM4ClassEvidenceUnavailableEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence,
+  nativeM4ClassBackingUnprovenEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking
  };
  console.error('REAL C1 SAME-RUN PARAMETERIZED GLOBAL HLR SOURCE LINEAGE '+
   geometry.id+': '+JSON.stringify({
