@@ -125,7 +125,7 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
     edge=edgeResult.value;
     edgeMethods=methodNames(edge);
     for(const candidate of originalNativeEdgeHandles??[]){
-     if(!candidate||candidate.sourceEdgeId!==sourceEdgeId||
+     if(!candidate||typeof candidate.sourceEdgeId!=='string'||
         typeof candidate.edge?.IsSame!=='function')continue;
      const forward=edge.IsSame(candidate.edge)===true;
      const reverse=candidate.edge.IsSame(edge)===true;
