@@ -7,6 +7,8 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {auditOriginalEdgeStatusVsSourceScoped3DSharp}=
+ require('../engines/spatial/hlr/c1-ocjs-edgestatus-abi.cjs');
 const {nativeScopedPaperSegmentsSame}=
  require('../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
@@ -734,7 +736,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking:0,
   globalGeneratedHLREdgesWithUniqueNativeOutlineClassBackedSourceFilter:0,
   globalGeneratedHLREdgesWithoutNativeOutlineEvidence:0,
-  globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking:0};
+  globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking:0,
+  originalStatusVsNative3DCompared:0,originalStatusVsNative3DConcordant:0,
+  originalStatusVsNative3DConflicting:0,originalStatusVsNative3DHeld:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -1020,8 +1024,65 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.nativeOutlineEvidenceUnavailableEdges;
   counts.globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking+=
    parameterizedGlobalHLRSourceLineage.counts.nativeOutlineClassBackingUnprovenEdges;
+  // Independently replay real original HLR status vs source-scoped 3D
+  // Sharp classes. This remains source-side diagnosis only; a received
+  // agree flag cannot certify generated 2D TopoDS ancestry or M5/V5.
+  const originalStatusReconciliation=[];
+  const summary=scoped.originalStatusVsNative3DSharpSummary;
+  if(summary!==undefined){
+   const rows=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.
+    originalEdgeStatusAbi?.rows;
+   if(!nativeM4Available||!Array.isArray(rows)||
+      summary?.directGenerated2DTopoDSHistoryCertified!==false||
+      summary?.officialV5Authorized!==false)
+    throw new RangeError('missing independently indexed original HLR status');
+   const statusById=new Map();
+   for(const x of rows){
+    if(!expected.has(x.sourceEdgeId)||statusById.has(x.sourceEdgeId))
+     throw new RangeError('duplicate or invented original EdgeStatus source');
+    statusById.set(x.sourceEdgeId,x);
+   }
+   if(statusById.size!==expected.size)
+    throw new RangeError('incomplete original native EdgeStatus source ledger');
+   for(const source of scoped.rows){
+    const id=source.originalPhysicalSourceEdgeId,
+     curve=nativeCurveBySource.get(id);
+    if(!curve||!Array.isArray(curve.occtSourceCurveParameterRange))
+     throw new RangeError('original status lacks reviewed BRep source curve');
+    const visible=source.visible3D?.native3DGeneratedCurveIntervals,
+     hidden=source.hidden3D?.native3DGeneratedCurveIntervals;
+    const computed=auditOriginalEdgeStatusVsSourceScoped3DSharp({
+     sourceEdgeId:id,
+     originalNativeParameterRange:curve.occtSourceCurveParameterRange,
+     statusRow:statusById.get(id),
+     visibleNativeIntervals:Array.isArray(visible)?
+      visible.map(x=>x.nativeOriginalCurveParameterRange):null,
+     hiddenNativeIntervals:Array.isArray(hidden)?
+      hidden.map(x=>x.nativeOriginalCurveParameterRange):null
+    });
+    if(JSON.stringify(computed)!==
+       JSON.stringify(source.originalEdgeStatusVsNative3DSharp))
+     throw new RangeError('original native EdgeStatus/3D Sharp report is not replayable');
+    originalStatusReconciliation.push(computed);
+   }
+   const compared=originalStatusReconciliation.filter(x=>x.comparable).length,
+    concordant=originalStatusReconciliation.filter(x=>
+     x.nativeOriginalStatusClassAgreesWith3DSharp).length,
+    conflicting=compared-concordant,
+    held=originalStatusReconciliation.length-compared;
+   if(summary.comparedOriginalSources!==compared||
+      summary.concordantOriginalSources!==concordant||
+      summary.mismatchedOriginalSources!==conflicting||
+      summary.heldUncomparableOriginalSources!==held)
+    throw new RangeError('native original status/3D class aggregate is forged');
+   counts.originalStatusVsNative3DCompared+=compared;
+   counts.originalStatusVsNative3DConcordant+=concordant;
+   counts.originalStatusVsNative3DConflicting+=conflicting;
+   counts.originalStatusVsNative3DHeld+=held;
+  }
   views[view]={nativeOriginal3DM4Candidates,
-   nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage};
+   nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage,
+   originalStatusReconciliation};
   for(const [klass,item] of Object.entries(classes)){
    const rows=item.sources.map((sources,ordinal)=>({
     wholeSolidHLREdgeOrdinal:ordinal,
