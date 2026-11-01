@@ -22,6 +22,8 @@ const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflict
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
+const {auditC1OriginalBRepFaceEdgeAdjacency}=
+ require('./c1-ocjs-original-source-face-adjacency.cjs');
 const {auditC1Native3DSourceScopedIntervals}=
  require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
@@ -757,8 +759,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
  const enumValue=(name)=>oc.TopAbs_ShapeEnum?.[name]??oc[name];
  try{
   const kind=enumValue('TopAbs_EDGE'),vertexType=enumValue('TopAbs_VERTEX'),
-   avoid=enumValue('TopAbs_SHAPE');
-  if([kind,vertexType,avoid].some(x=>x===undefined))
+   faceType=enumValue('TopAbs_FACE'),avoid=enumValue('TopAbs_SHAPE');
+  if([kind,vertexType,faceType,avoid].some(x=>x===undefined))
    throw new TypeError('real OCJS TopAbs enum unavailable');
   let solid;
   if(b){
@@ -780,6 +782,29 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    throw new RangeError('actual original TopoDS vertex occurrence inventory incomplete');
   if(originalNativeEdgeHandles.length!==sourceBRep.occtOriginalEdgeOccurrenceCount)
    throw new RangeError('native source OCCT TopoDS edge occurrence ledger incomplete');
+  // Reuse the original BRep face-edge IsSame auditor while the actual
+  // TopoDS handles are alive. Paper coincidence is not native topology.
+  const nativeFaceEdgeInventories=[];
+  const sourceFaces=newObj('TopExp_Explorer_2',solid,faceType,avoid);
+  while(sourceFaces.More()){
+   const face=hold(sourceFaces.Current());
+   const edges=newObj('TopExp_Explorer_2',face,kind,avoid);
+   const inventory=[];
+   while(edges.More()){
+    const edge=hold(edges.Current());
+    inventory.push(hold(method(oc.TopoDS,'Edge_1')(edge)));
+    if(inventory.length>256)
+     throw new RangeError('unbounded native original face edge incidence');
+    edges.Next();
+   }
+   nativeFaceEdgeInventories.push(inventory);
+   if(nativeFaceEdgeInventories.length>64)
+    throw new RangeError('unbounded native original source face inventory');
+   sourceFaces.Next();
+  }
+  const originalNativeFaceAdjacency=auditC1OriginalBRepFaceEdgeAdjacency({
+   geometry,originalNativeEdgeHandles,nativeFaceEdgeInventories
+  });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
@@ -1333,7 +1358,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
-   nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   nativeGeneratedVertexGraph,originalNativeFaceAdjacency,
+   directNativeOriginalVertexMatches,
    nativeTShapePartnerEdgeCandidatesByView,
    nativeTShapePartnerVertexCandidatesByView,
    nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,
