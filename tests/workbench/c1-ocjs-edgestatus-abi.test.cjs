@@ -231,7 +231,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
   Parameter2d(value){return value+0.25;},
   Parameter3d(value){return value-0.25;},
   Value3D(value){return {X(){return value;},Y(){return value*2;},Z(){return value*3;}};},
-  Value(value){return {X(){return value-0.25;},Y(){return (value-0.25)*2;}};}
+  Value(value){return {X(){return value;},Y(){return -value*2;}};}
  };
  const edgeData={
   Status(){return status([2.5,8.5],[[2.5,8.5]],true,false);},
@@ -264,7 +264,11 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples.map(x=>x.parameter2d),
   [2.75,5.75,8.75]);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].projectedPoint2D,
+  [2.5,-5]);
+ assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].expectedCanonicalProjectedPoint2D,
   [2.5,5]);
+ assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].expectedProjectorLocalPoint2D,
+  [2.5,-5]);
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
