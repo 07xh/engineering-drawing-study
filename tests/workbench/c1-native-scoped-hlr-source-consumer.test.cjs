@@ -111,6 +111,9 @@ function fixture(){
   rows:matches.map((candidateSourceMatches,ordinal)=>({
    ordinal,candidateSourceMatchCount:candidateSourceMatches.length,
    candidateSourceMatches,rejectedSourceCandidateCount:2-candidateSourceMatches.length,
+   rejectedSourceCandidates:[id0,id1].filter(id=>
+    !candidateSourceMatches.some(x=>x.sourceEdgeId===id))
+    .map(sourceEdgeId=>({sourceEdgeId,reason:'no-source-parameter-match'})),
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===0?
@@ -285,6 +288,7 @@ test('one original source silently omitted from same-run HLR curve map cannot yi
  report.topoDSIdentityBoundSourceCurveCount=1;
  report.topoDSParameterDomainBoundSourceCurveCount=1;
  report.rows[0].rejectedSourceCandidateCount=0;
+ report.rows[0].rejectedSourceCandidates=[];
  const lineage=audit(x).views.V.parameterizedGlobalHLRSourceLineage;
  assert.equal(lineage.classes.visible.reviewedOriginalSourceCurveCount,2);
  assert.equal(lineage.classes.visible.completeOriginalSourceCurveInventory,false);
@@ -574,11 +578,15 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  report.rows=[
   {ordinal:0,candidateSourceMatchCount:1,
    candidateSourceMatches:[x.parameterMatch(x.id0,[0,0.5])],
-   rejectedSourceCandidateCount:1,uniqueOriginalSourceEdgeId:x.id0,
+   rejectedSourceCandidateCount:1,
+   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'no-source-parameter-match'}],
+   uniqueOriginalSourceEdgeId:x.id0,
    status:'unique-parameterized-source-curve-match'},
   {ordinal:1,candidateSourceMatchCount:1,
    candidateSourceMatches:[x.parameterMatch(x.id0,[next,1])],
-   rejectedSourceCandidateCount:1,uniqueOriginalSourceEdgeId:x.id0,
+   rejectedSourceCandidateCount:1,
+   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'no-source-parameter-match'}],
+   uniqueOriginalSourceEdgeId:x.id0,
    status:'unique-parameterized-source-curve-match'}
  ];
  report.uniqueParameterizedSourceMatchCount=2;
@@ -970,6 +978,7 @@ test('a unique parameterized curve match that conflicts with native source filte
  const x=fixture(),report=x.cad.nativeSourceScopedSharpOutputByView.V.
   generated2DSourceParameterMatches.visible;
  report.rows[0].candidateSourceMatches[0].sourceEdgeId=x.id1;
+ report.rows[0].rejectedSourceCandidates[0].sourceEdgeId=x.id0;
  report.rows[0].uniqueOriginalSourceEdgeId=x.id1;
  const r=audit(x),lineage=r.views.V.parameterizedGlobalHLRSourceLineage;
  assert.equal(lineage.counts.uniqueParameterizedSourceLineage,0);
@@ -992,6 +1001,7 @@ test('coincident original curves remain ambiguous even when both native source f
  row.candidateSourceMatches.push(x.parameterMatch(x.id1));
  row.candidateSourceMatchCount=2;
  row.rejectedSourceCandidateCount=0;
+ row.rejectedSourceCandidates=[];
  row.uniqueOriginalSourceEdgeId=null;
  row.status='ambiguous-parameterized-source-curve-match';
  report.uniqueParameterizedSourceMatchCount=0;
@@ -1011,6 +1021,8 @@ test('unmatched global HLR output remains explicitly unmatched rather than inher
  row.candidateSourceMatches=[];
  row.candidateSourceMatchCount=0;
  row.rejectedSourceCandidateCount=2;
+ row.rejectedSourceCandidates=[x.id0,x.id1]
+  .map(sourceEdgeId=>({sourceEdgeId,reason:'no-source-parameter-match'}));
  row.uniqueOriginalSourceEdgeId=null;
  row.status='no-parameterized-source-curve-match';
  report.uniqueParameterizedSourceMatchCount=0;
@@ -1022,6 +1034,27 @@ test('unmatched global HLR output remains explicitly unmatched rather than inher
  assert.equal(lineage.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
 });
 
+test('M4 refuses a fake rejected-source ledger hiding an original BRep competitor',()=>{
+ for(const mutate of [
+  row=>{row.rejectedSourceCandidates=[];},
+  row=>{row.rejectedSourceCandidates[0].sourceEdgeId=row.candidateSourceMatches[0].sourceEdgeId;},
+  row=>{row.rejectedSourceCandidates[0].sourceEdgeId='g::INVENTED';},
+  row=>{row.rejectedSourceCandidates[0].reason='';},
+  row=>{delete row.rejectedSourceCandidates;}
+ ]){
+  const x=fixture(),row=x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.rows[0];
+  mutate(row);
+  if(row.rejectedSourceCandidates===undefined){
+   const lineage=audit(x).views.V.parameterizedGlobalHLRSourceLineage;
+   assert.equal(lineage.classes.visible.rows[0].status,
+    'incomplete-original-hlr-source-curve-inventory-held');
+   assert.equal(lineage.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
+  }else{
+   assert.throws(()=>audit(x),/HLR rejected original BRep source inventory|original HLR rejection source identity|rejection partition incomplete/);
+  }
+ }
+});
 test('malformed parameterized source reports and forged generated-edge history are rejected',()=>{
  for(const mutate of [
   report=>{report.rows[0].ordinal=4;},
@@ -1069,6 +1102,7 @@ test('native class-specific HLR filter narrows a projected curve alias but never
  row.candidateSourceMatches.push(x.parameterMatch(x.id1));
  row.candidateSourceMatchCount=2;
  row.rejectedSourceCandidateCount=0;
+ row.rejectedSourceCandidates=[];
  row.uniqueOriginalSourceEdgeId=null;
  row.status='ambiguous-parameterized-source-curve-match';
  report.uniqueParameterizedSourceMatchCount=0;
