@@ -219,7 +219,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    sourceFilterOrPaperCandidateDisagreements:0,
    nativeM4ClassBackedUniqueFilterSourceEdges:0,
    nativeM4ClassEvidenceUnavailableEdges:0,
-   nativeM4ClassBackingUnprovenEdges:0
+   nativeM4ClassBackingUnprovenEdges:0,
+   reviewedOriginalM0PaperHeldGeneratedEdges:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
@@ -348,6 +349,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        samples[4].source3DParameter!==sourceRange[1])
      throw new RangeError('M4 parameterized HLR five-point source endpoints disagree with source interval');
     const sampleResiduals=[],roundTripResiduals=[];
+    const sourceDirection=Math.sign(sourceRange[1]-sourceRange[0]);
     const reportedNativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm;
     for(let sampleIndex=0;sampleIndex<samples.length;sampleIndex++){
      const sample=samples[sampleIndex];
@@ -375,6 +377,15 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
          (reportedNativeSamples[sampleIndex]?.u!==generatedPoint[0]||
           reportedNativeSamples[sampleIndex]?.v!==generatedPoint[1])))
       throw new RangeError('M4 parameterized HLR five-point sample contradicts actual native paper curve');
+     // Parameter3d must not jump backward within one witnessed source
+     // interval, even if a forged projected residual happens to be zero.
+     // Preserve the exact binary64 interval: no epsilon or clamping.
+     if(sampleIndex>0&&sourceDirection*(sample.source3DParameter-
+        samples[sampleIndex-1].source3DParameter)<0)
+      throw new RangeError('M4 original HLR source parameter samples reverse inside generated edge');
+     if(sample.source3DParameter<Math.min(...sourceRange)||
+        sample.source3DParameter>Math.max(...sourceRange))
+      throw new RangeError('M4 original HLR source sample escapes witnessed parameter interval');
      sampleResiduals.push(measured);
      roundTripResiduals.push(sample.parameterRoundTripResidual);
     }
@@ -499,7 +510,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      result.counts.nativeM4ClassBackedUniqueFilterSourceEdges++;
     else result.counts.nativeM4ClassBackingUnprovenEdges++;
    }
+   // A held reviewed M0 paper sample (including a one-ULP original
+   // parameter overshoot) vetoes a 'proven' lineage diagnostic.
+   const reviewedM0PaperHeld=[...m0SampleAudits.values()].some(x=>
+    x!==null&&x.originalM0SourcePaperSamplesCorroborated!==true);
    const status=matches.length===0?'unmatched':
+    reviewedM0PaperHeld?'reviewed-original-m0-source-paper-held':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
       filterNarrows?'ambiguous-parameterized-source-lineage-native-filter-narrowed':
@@ -517,6 +533,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     nativeSourceFilterCandidateIds:[...filterSources].sort(),
     m0PaperCandidateIds:[...paperCandidates].sort(),
     nativeSourceFilterAndM0PaperCandidatesAgree:filterConsistent,
+    reviewedOriginalM0PaperHeld,
     nativeFilterNarrowsParameterizedCandidates:filterNarrows,
     parameterizedSourceIntervals,
     nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
@@ -560,6 +577,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeM4ClassBackingUnprovenEdges:
     rows.filter(x=>x.parameterizedSourceMatchCount>0&&x.nativeM4ClassEvidenceAvailable&&
      !x.nativeM4ClassBackedUniqueFilterSource).length,
+   reviewedOriginalM0PaperHeldGeneratedEdges:
+    rows.filter(x=>x.reviewedOriginalM0PaperHeld).length,
    rows};
   result.counts.uniqueParameterizedSourceLineage+=unique;
   result.counts.ambiguousParameterizedSourceLineage+=ambiguous;
@@ -567,6 +586,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length;
   result.counts.unmatchedGeneratedOutputEdges+=unmatched;
   result.counts.sourceFilterOrPaperCandidateDisagreements+=disagreements;
+  result.counts.reviewedOriginalM0PaperHeldGeneratedEdges+=
+   rows.filter(x=>x.reviewedOriginalM0PaperHeld).length;
  }
  return result;
 }
