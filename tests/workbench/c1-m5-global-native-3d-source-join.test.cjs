@@ -84,6 +84,41 @@ test('M5 rejects malformed original physical source edges even if a native ledge
   assert.throws(()=>audit(x),/invalid original M0 physical edge inventory/);
  }
 });
+test('M5 rejects ambiguous canonical source delimiters instead of borrowing another edge identity',()=>{
+ for(const mutate of [
+  x=>{x.geometry.data.edges[0]=['A|B','C'];},
+  x=>{x.geometry.data.edges[0]=['A::B','C'];},
+  x=>{x.geometry.id='g::other';}
+ ]){
+  const x=setup();mutate(x);
+  assert.throws(()=>audit(x),/invalid original M0 physical edge inventory|reviewed C1 global 3D source proof/);
+ }
+});
+test('native HLR cannot reuse an original BRep ledger from another geometry revision',()=>{
+ const valid=setup();
+ valid.geometry.revision=valid.cad.revision;
+ assert.equal(audit(valid).officialV5Authorized,false);
+ for(const mutate of [
+  x=>{x.cad.sourceGeometryId='other';},
+  x=>{x.geometry.revision=x.cad.revision+1;},
+  x=>{x.geometry.revision=NaN;}
+ ]){
+  const x=setup();mutate(x);
+  assert.throws(()=>audit(x),/stale or mismatched original M0 geometry identity\/revision/);
+ }
+});
+test('a physical mesh edge with two distinct IDs but identical XYZ cannot back HLR source proof',()=>{
+ const x=withRealOriginalPhysicalAndGeneratedPaper();
+ x.geometry.data.points.B={...x.geometry.data.points.A};
+ for(const original of x.cad.originalBRepSourceEdges){
+  const endpoints=x.geometry.data.edges.find(edge=>
+   'g::'+[...edge].sort().join('|')===original.sourceEdgeId);
+  original.fromOCCT3D={...x.geometry.data.points[endpoints[0]]};
+  original.toOCCT3D={...x.geometry.data.points[endpoints[1]]};
+ }
+ assert.throws(()=>audit(x),/original M0 physical BRep source has coincident 3D endpoints/);
+});
+
 test('genuine 2D paper alias from another 3D edge is held as a source contradiction',()=>{
  const x=setup();
  x.generatedClaims[0].wholeSolidGeneratedHLREdgeOrdinal=1;
