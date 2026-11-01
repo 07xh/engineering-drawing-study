@@ -23,6 +23,8 @@ const {projectC1Native3DSourceIntervalsToM4}=
  require('./c1-native-source-scoped-m4-projection.cjs');
 const {auditC1RealNativeScoped2D3DClassBinding}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
+const {auditC1OriginalHLRStatusScopedClassConcordance}=
+ require('../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
 const {auditC1WholeSolidNativeHLRSourceScopeRebinding}=
  require('./c1-global-native-hlr-original-source-rebind.cjs');
 const {auditC1GlobalNativeHLROriginalM0EndpointLinks}=
@@ -161,6 +163,28 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      ds.indexedOriginalSources.length!==ids.length||
      !Array.isArray(scoped.rows)||scoped.rows.length!==ids.length)
    throw new RangeError('missing complete real OCCT source-scoped HLR/EdgeMap evidence');
+  // Recheck the real producer's native original EdgeStatus/scoped class
+  // ledger in the actual M4/M5 consumer. Synthetic legacy fixtures may
+  // omit this optional native API, but an advertised native status proof
+  // must never be accepted without its complete, independently recomputed
+  // unsigned source/class inventory.
+  const statusAPI=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.
+   originalEdgeStatusAPI;
+  if(statusAPI||scoped.statusScopedClassConcordance){
+   if(statusAPI?.originalHLROpenSourceClassBoundToOriginalEdgeMap!==true||
+      !Array.isArray(statusAPI.nativeOriginalSourceEdgeStatusRows)||
+      !scoped.statusScopedClassConcordance)
+    throw new RangeError('incomplete native HLR original status/scoped class consumer proof');
+   const recomputed=auditC1OriginalHLRStatusScopedClassConcordance({
+    view,statusRows:statusAPI.nativeOriginalSourceEdgeStatusRows,
+    scopedRows:scoped.rows
+   });
+   if(JSON.stringify(scoped.statusScopedClassConcordance)!==
+      JSON.stringify(recomputed)||
+      JSON.stringify(statusAPI.sourceScopedClassConcordance)!==
+      JSON.stringify(recomputed))
+    throw new RangeError('native HLR original status/scoped class consumer ledger mismatch');
+  }
   // A real OCCT EdgeMap is a bijection: two distinct original TopoDS
   // source edges cannot own the same one-based native index.
   const indexed=new Map(),nativeSourceIndices=new Set();
