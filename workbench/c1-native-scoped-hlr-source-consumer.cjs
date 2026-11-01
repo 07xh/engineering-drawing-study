@@ -52,7 +52,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   sourceRange=match?.source3DParameterRange,
   direction=nativeM4.original3DSourceCurveDirection;
  if(nativeM4.schema!==
-    'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1'||
+    'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2'||
     nativeM4.sourceEdgeId!==sourceId||nativeM4.view!==view||
     !sameClass||!Array.isArray(nativeM4.segments)||
     !Array.isArray(domain)||domain.length!==2||
@@ -131,6 +131,20 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
+ if(!Array.isArray(nativeM4.native3DOutlineSegments))
+  throw new RangeError('native source-filtered 3D outline interval ledger missing');
+ const sameOutlineClass=klass==='visible'?'visible-outline':'hidden-outline',
+  oppositeOutlineClass=klass==='visible'?'hidden-outline':'visible-outline';
+ const sameOutlineRanges=nativeM4.native3DOutlineSegments.filter(x=>
+  x?.native3DHLRClass===sameOutlineClass).map(x=>x.originalM0UnitParameterRange);
+ const oppositeOutlineRanges=nativeM4.native3DOutlineSegments.filter(x=>
+  x?.native3DHLRClass===oppositeOutlineClass).map(x=>x.originalM0UnitParameterRange);
+ const sameOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,sameOutlineRanges);
+ const oppositeOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeOutlineRanges);
+ const oppositeOutlineOverlaps=oppositeOutlineCoverage.positiveLengthCoveredIntervals;
+ const nativeOutlineClassBacked=
+  sameOutlineCoverage.entireOriginalParameterIntervalCovered&&
+  oppositeOutlineOverlaps.length===0;
  return {
   availability:'available',sourceEdgeId:sourceId,
   original3DSourceCurveDirection:direction,
@@ -146,7 +160,14 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
   nativeM4OppositeClassOverlaps:oppositeOverlaps,
   nativeM4ClassBacked:
-   sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0
+   sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0,
+  nativeOutlineEvidenceAvailable:true,
+  nativeOutlineSameClassCoverageComplete:
+   sameOutlineCoverage.entireOriginalParameterIntervalCovered,
+  nativeOutlineSameClassCoverageGaps:sameOutlineCoverage.positiveLengthUncoveredIntervals,
+  nativeOutlineOppositeClassPositiveOverlap:oppositeOutlineOverlaps.length>0,
+  nativeOutlineOppositeClassOverlaps:oppositeOutlineOverlaps,
+  nativeOutlineClassBacked
  };
 }
 /**
@@ -170,7 +191,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    sourceFilterOrPaperCandidateDisagreements:0,
    nativeM4ClassBackedUniqueFilterSourceEdges:0,
    nativeM4ClassEvidenceUnavailableEdges:0,
-   nativeM4ClassBackingUnprovenEdges:0
+   nativeM4ClassBackingUnprovenEdges:0,
+   nativeOutlineClassBackedUniqueFilterSourceEdges:0,
+   nativeOutlineEvidenceUnavailableEdges:0,
+   nativeOutlineClassBackingUnprovenEdges:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
@@ -331,7 +355,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // Extra source-filter claims are a disagreement, not a reason to pick one.
    const filterSources=item.sources[ordinal];
    const parameterizedSourceIntervals=[],nativeM4ClassBackedSourceIds=new Set(),
-    nativeM4Audits=[];
+    nativeOutlineClassBackedSourceIds=new Set(),nativeM4Audits=[];
    for(const match of matches){
     const m4Audit=auditC1ParameterizedSourceMatchAgainstNativeM4({
      view,sourceId:match.sourceEdgeId,match,klass,
@@ -340,6 +364,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     nativeM4Audits.push(m4Audit);
     if(m4Audit.nativeM4ClassBacked===true)
      nativeM4ClassBackedSourceIds.add(match.sourceEdgeId);
+    if(m4Audit.nativeOutlineClassBacked===true)
+     nativeOutlineClassBackedSourceIds.add(match.sourceEdgeId);
     parameterizedSourceIntervals.push({
      sourceEdgeId:match.sourceEdgeId,
      originalBRepSourceParameterRange:[...match.originalBRepSourceParameterRange],
@@ -371,11 +397,21 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     filterConsistent&&filterSources.size===1&&
     nativeM4ClassBackedSourceIds.has([...filterSources][0]);
    const m4Available=nativeM4Audits.some(x=>x.availability==='available');
+   const nativeOutlineEvidenceAvailable=nativeM4Audits.some(x=>
+    x.nativeOutlineEvidenceAvailable===true);
+   const nativeOutlineClassBackedUniqueFilterSource=
+    filterConsistent&&filterSources.size===1&&
+    nativeOutlineClassBackedSourceIds.has([...filterSources][0]);
    if(matches.length>0){
     if(!m4Available)result.counts.nativeM4ClassEvidenceUnavailableEdges++;
     else if(nativeM4ClassBackedUniqueFilterSource)
      result.counts.nativeM4ClassBackedUniqueFilterSourceEdges++;
     else result.counts.nativeM4ClassBackingUnprovenEdges++;
+    if(!nativeOutlineEvidenceAvailable)
+     result.counts.nativeOutlineEvidenceUnavailableEdges++;
+    else if(nativeOutlineClassBackedUniqueFilterSource)
+     result.counts.nativeOutlineClassBackedUniqueFilterSourceEdges++;
+    else result.counts.nativeOutlineClassBackingUnprovenEdges++;
    }
    const status=matches.length===0?'unmatched':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
@@ -400,6 +436,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
     nativeM4ClassBackedUniqueFilterSource,
     nativeM4ClassEvidenceAvailable:m4Available,
+    nativeOutlineClassBackedSourceEdgeIds:[...nativeOutlineClassBackedSourceIds].sort(),
+    nativeOutlineClassBackedUniqueFilterSource,
+    nativeOutlineEvidenceAvailable,
     status,
     sameRunOriginalHLRCurveParameterLineageProven:
      status==='unique-parameterized-source-lineage',
@@ -438,6 +477,13 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeM4ClassBackingUnprovenEdges:
     rows.filter(x=>x.parameterizedSourceMatchCount>0&&x.nativeM4ClassEvidenceAvailable&&
      !x.nativeM4ClassBackedUniqueFilterSource).length,
+   nativeOutlineClassBackedUniqueFilterSourceEdges:
+    rows.filter(x=>x.nativeOutlineClassBackedUniqueFilterSource).length,
+   nativeOutlineEvidenceUnavailableEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&!x.nativeOutlineEvidenceAvailable).length,
+   nativeOutlineClassBackingUnprovenEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&x.nativeOutlineEvidenceAvailable&&
+     !x.nativeOutlineClassBackedUniqueFilterSource).length,
    rows};
   result.counts.uniqueParameterizedSourceLineage+=unique;
   result.counts.ambiguousParameterizedSourceLineage+=ambiguous;
@@ -571,7 +617,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0,
   globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter:0,
   globalGeneratedHLREdgesWithoutNativeM4ClassEvidence:0,
-  globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking:0};
+  globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking:0,
+  globalGeneratedHLREdgesWithUniqueNativeOutlineClassBackedSourceFilter:0,
+  globalGeneratedHLREdgesWithoutNativeOutlineEvidence:0,
+  globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -851,6 +900,12 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
   counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
    parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
+  counts.globalGeneratedHLREdgesWithUniqueNativeOutlineClassBackedSourceFilter+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeOutlineClassBackedUniqueFilterSourceEdges;
+  counts.globalGeneratedHLREdgesWithoutNativeOutlineEvidence+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeOutlineEvidenceUnavailableEdges;
+  counts.globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeOutlineClassBackingUnprovenEdges;
   views[view]={nativeOriginal3DM4Candidates,
    nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage};
   for(const [klass,item] of Object.entries(classes)){
