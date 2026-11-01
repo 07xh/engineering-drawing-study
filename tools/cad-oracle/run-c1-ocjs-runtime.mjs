@@ -4056,6 +4056,12 @@ for(const [index,geometry] of general.entries()){
     features.counts.locallyCADAndM5Visible,
    finalSourceObligations:{
     total:finalGate.counts.totalOriginalSourceEdgeViewSubspans,
+    // Exact binary64 source-domain gaps from the ACTUAL current M5 rows.
+    // Only observed source/view pairs; wholly absent pairs are a separate gate.
+    observedSourceViewsWithUncoveredOriginalParameters:
+     unsignedReview.observedSourceViewsWithUncoveredOriginalParameters,
+    uncoveredOriginalParameterRanges:
+     unsignedReview.uncoveredOriginalParameterRanges,
     existingOuterContourHeld:finalGate.counts.externalContourHeld,
     physicalFeatureUnproven:finalGate.counts.unprovenPhysicalFeatureHeld,
     visibleCadRayCorroboratedAwaitingFinalM5:
