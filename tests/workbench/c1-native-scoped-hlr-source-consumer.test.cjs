@@ -1295,3 +1295,53 @@ test('source M4 rejects a forged native status report, source index and aggregat
   assert.throws(()=>audit(x),/status|source|replayable|aggregate|invented/i);
  }
 });
+
+test('forward paper endpoint witness cannot expand a partial inverse source interval into a full original BRep edge',()=>{
+ for(const view of ['V','H','W']){
+  for(const sourceRange of [
+   [-Number.EPSILON,0.5],
+   [0.5,1+2*Number.EPSILON],
+   [1+2*Number.EPSILON,0.5]
+  ]){
+   const nativeM4={
+    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+    native3DOutlineSegments:[],
+    sourceEdgeId:'g::E0',view,original3DSourceCurveDirection:'forward',
+    segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
+   };
+   const r=auditParameterizedM4({view,sourceId:'g::E0',
+    match:{original3DCurveParameterRange:[0,1],
+     source3DParameterRange:sourceRange,
+     generated2DParameterRange:[0,1],
+     sourceProjected2DParameterRange:[0,1],
+     sourceProjected2DParameterRangeSorted:[0,1],
+     sourceProjected2DParameterEndpointResiduals:[0,0],
+     sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
+    klass:'visible',nativeM4});
+   assert.equal(r.sourceParameterDomainContainment,'within-tolerance-but-outside');
+   assert.equal(r.sourceDomainEndpointForwardMapProof,false);
+   assert.equal(r.nativeM4ClassBacked,false);
+   assert.deepEqual(r.source3DParameterRangeFromInverse,sourceRange);
+  }
+ }
+});
+test('full-domain reverse inverse overshoot with exact forward endpoints remains a candidate, never V5 authorization',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
+  sourceEdgeId:'g::E0',view:'W',original3DSourceCurveDirection:'reversed',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
+ };
+ const r=auditParameterizedM4({view:'W',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,1],
+   source3DParameterRange:[1+2*Number.EPSILON,0],
+   generated2DParameterRange:[0,1],
+   sourceProjected2DParameterRange:[0,1],
+   sourceProjected2DParameterRangeSorted:[0,1],
+   sourceProjected2DParameterEndpointResiduals:[0,0],
+   sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
+  klass:'visible',nativeM4});
+ assert.deepEqual(r.originalM0UnitParameterRange,[0,1]);
+ assert.equal(r.nativeM4ClassBacked,true);
+ assert.equal(r.sourceDomainEndpointForwardMapProof,true);
+});
