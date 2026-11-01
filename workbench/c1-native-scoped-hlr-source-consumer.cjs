@@ -502,6 +502,43 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         typeof rejected.reason!=='string'||!rejected.reason.trim())
       throw new RangeError('forged or repeated original HLR rejection source identity');
      rejectedIds.add(rejected.sourceEdgeId);
+     // A producer rejection label is not a native parameter-domain
+     // contradiction. Replay the actual numeric intervals and the exact
+     // producer tolerance. A partial overhang is NOT a disjoint source.
+     let verifiedDisjointParameterRange=false;
+     const rangeWitness=rejected.nativeParameterRangeExclusionWitness;
+     if(rangeWitness!==undefined){
+      const sourceRange=rangeWitness?.sourceProjected2DParameterRangeSorted,
+       sourceEndpoints=rangeWitness?.sourceProjected2DParameterEndpoints,
+       generatedRange=rangeWitness?.generated2DParameterRange,
+       originalRange=rangeWitness?.original3DCurveParameterRange,
+       receivedRange=segment.actualOCCTHLRCurveParameterRange,
+       tolerance=rangeWitness?.parameterComparisonTolerance;
+      if(rejected.reason!==conclusiveParameterRangeExclusion||
+         !Array.isArray(sourceRange)||sourceRange.length!==2||
+         !sourceRange.every(Number.isFinite)||!(sourceRange[1]>sourceRange[0])||
+         !Array.isArray(sourceEndpoints)||sourceEndpoints.length!==2||
+         !sourceEndpoints.every(Number.isFinite)||
+         Math.min(...sourceEndpoints)!==sourceRange[0]||
+         Math.max(...sourceEndpoints)!==sourceRange[1]||
+         !Array.isArray(generatedRange)||generatedRange.length!==2||
+         !generatedRange.every(Number.isFinite)||!(generatedRange[1]>generatedRange[0])||
+         !Array.isArray(receivedRange)||receivedRange.length!==2||
+         generatedRange[0]!==receivedRange[0]||
+         generatedRange[1]!==receivedRange[1]||
+         !Array.isArray(originalRange)||originalRange.length!==2||
+         !originalRange.every(Number.isFinite)||!(originalRange[1]>originalRange[0])||
+         !Number.isFinite(tolerance)||tolerance<0||
+         tolerance!==1e-10*Math.max(1,...sourceRange,
+          Math.abs(generatedRange[0]),Math.abs(generatedRange[1]))||
+         rangeWitness.generated2DTopoDSHistoryCertified!==false||
+         rangeWitness.signedV5Action!==false)
+       throw new RangeError('invalid native original source parameter-domain exclusion witness');
+      if(!(generatedRange[1]<sourceRange[0]-tolerance||
+           generatedRange[0]>sourceRange[1]+tolerance))
+       throw new RangeError('original HLR source parameter intervals overlap: cannot exclude BRep candidate');
+      verifiedDisjointParameterRange=true;
+     }
      let measuredPaperExclusion=false;
      const witness=rejected.nativePaperMismatchWitness;
      if(witness!==undefined){
@@ -536,10 +573,11 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        throw new RangeError('forged native HLR paper source rejection residual');
       measuredPaperExclusion=true;
      }
-     if(rejected.reason!==conclusiveParameterRangeExclusion&&
-        !measuredPaperExclusion)
+     if(!verifiedDisjointParameterRange&&!measuredPaperExclusion)
       inconclusiveRejections.push({
        sourceEdgeId:rejected.sourceEdgeId,reason:rejected.reason,
+       ...(rejected.reason===conclusiveParameterRangeExclusion?
+        {missingNativeDisjointParameterWitness:true}:{}),
        ...(rejected.reason==='source-parameterized-curve-does-not-match-generated-edge'?
         {missingIndependentPaperMismatchWitness:true}:{})
       });
