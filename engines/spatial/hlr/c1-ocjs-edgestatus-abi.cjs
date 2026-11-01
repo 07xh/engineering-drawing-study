@@ -130,20 +130,32 @@ function inspectCurveParameterMap(curve,range,view){
    sourcePoint3D:null,projectedPoint2D:null,readable:false};
   const back=callFiniteOneArg(curve,'Parameter3d',parameter2d.value);
   const sourcePoint3D=callPointOneArg(curve,'Value3D',parameter3d,3);
-  const projectedPoint2D=callPointOneArg(curve,'Value',parameter2d.value,2);
+  // OCCT HLRBRep_Curve::Value(U) delegates to the underlying 3D
+  // BRepAdaptor_Curve at U, then projects it. Parameter2d(P3d) is the
+  // separate generated-2D-edge parameter conversion, not Value's input.
+  const projectedPoint2D=callPointOneArg(curve,'Value',parameter3d,2);
   const residual=back.readable?Math.abs(back.value-parameter3d):null;
   const sourceXYZ=sourcePoint3D.readable?sourcePoint3D.coordinates:null;
   const expected=view&&sourceXYZ?project({x:sourceXYZ[0],y:sourceXYZ[1],z:sourceXYZ[2]})[view]:null;
   const actual2D=projectedPoint2D.readable?projectedPoint2D.coordinates:null;
+  // The pinned HLR projector uses its local right-handed Y axis,
+  // opposite the canonical paper V axis. The existing raw HLR reader
+  // normalizes this as {u:X,v:-Y}; compare both frames explicitly.
+  const projectorLocalExpected=expected?[expected.u,-expected.v]:null;
   const projectionResidual=expected&&actual2D?
-   Math.hypot(actual2D[0]-expected.u,actual2D[1]-expected.v):null;
+   Math.hypot(actual2D[0]-projectorLocalExpected[0],
+    actual2D[1]-projectorLocalExpected[1]):null;
+  const canonicalResidual=expected&&actual2D?
+   Math.hypot(actual2D[0]-expected.u,-actual2D[1]-expected.v):null;
   return {parameter3d,parameter2d:parameter2d.value,
    parameter3dRoundTrip:back.readable?back.value:null,
    roundTripResidual:residual,
    sourcePoint3D:sourceXYZ,
    projectedPoint2D:actual2D,
    expectedCanonicalProjectedPoint2D:expected?[expected.u,expected.v]:null,
-   canonicalProjectionResidual:projectionResidual,
+   expectedProjectorLocalPoint2D:projectorLocalExpected,
+   projectorLocalProjectionResidual:projectionResidual,
+   canonicalProjectionResidual:canonicalResidual,
    readable:back.readable&&sourcePoint3D.readable&&projectedPoint2D.readable};
  });
  const tolerance=1e-10*Math.max(1,Math.abs(range[0]),Math.abs(range[1]));
