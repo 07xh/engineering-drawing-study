@@ -31,7 +31,7 @@ function pair(value){
 function resolveMethods(owner,name){
  return methodNames(owner).filter(key=>
   key===name||(key.startsWith(name+'_')&&
-   /^\\d+$/.test(key.slice(name.length+1)))).sort((a,b)=>
+   /^\d+$/.test(key.slice(name.length+1)))).sort((a,b)=>
     a===name?-1:b===name?1:
     Number(a.slice(name.length+1))-Number(b.slice(name.length+1)));
 }
