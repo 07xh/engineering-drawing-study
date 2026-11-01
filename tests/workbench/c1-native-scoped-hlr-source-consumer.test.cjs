@@ -7,6 +7,15 @@ const {
 const {project}=require('../../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
+function outlineSegment(view,sourceEdgeId,klass,nativeRange,m0Range){
+ return {view,sourceEdgeId,native3DHLRClass:klass,
+  originalNative3DParameterRange:[...nativeRange],
+  originalM0UnitParameterRange:[...m0Range],
+  derivedFromOriginalNative3DOutlineNotGeneratedHLRPaper:true,
+  generated2DHLREdgeTopologyProven:false,
+  completeGlobalCoProjectedVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false};
+}
 function fixture(){
  const geometry={id:'g',data:{points:{
   A:{x:0,y:0,z:0},B:{x:10,y:2,z:3},
@@ -856,9 +865,7 @@ test('native outline class intervals independently back a parameterized visible 
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
   native3DOutlineEvidenceAvailable:true,
-  native3DOutlineSegments:[{
-   native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]
-  }]
+  native3DOutlineSegments:[outlineSegment('V','g::E0','visible-outline',[2,8],[0.2,0.8])]
  };
  const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
   klass:'visible',nativeM4});
@@ -869,6 +876,43 @@ test('native outline class intervals independently back a parameterized visible 
  assert.equal(r.nativeOutlineClassBacked,true);
 });
 
+test('same-class native outline overlap cannot be hidden by union coverage',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineEvidenceAvailable:true,
+  native3DOutlineSegments:[
+   outlineSegment('V','g::E0','visible-outline',[2,6],[0.2,0.6]),
+   outlineSegment('V','g::E0','visible-outline',[4,8],[0.4,0.8])
+  ]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]},
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,true);
+ assert.deepEqual(r.nativeOutlineSameClassPositiveOverlaps,[[0.4,0.6]]);
+ assert.equal(r.nativeOutlineClassBacked,false);
+});
+test('native outline segment from a foreign source or mismatched M0 interval is rejected',()=>{
+ for(const mutate of [
+  x=>{x.native3DOutlineSegments[0].sourceEdgeId='g::FOREIGN';},
+  x=>{x.native3DOutlineSegments[0].originalM0UnitParameterRange=[0.1,0.9];},
+  x=>{x.native3DOutlineSegments[0].signedV5Action=true;}
+ ]){
+  const nativeM4={
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+   native3DOutlineEvidenceAvailable:true,
+   native3DOutlineSegments:[outlineSegment('V','g::E0','visible-outline',[2,8],[0.2,0.8])]
+  };
+  mutate(nativeM4);
+  assert.throws(()=>auditParameterizedM4({view:'V',sourceId:'g::E0',
+   match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]},
+   klass:'visible',nativeM4}),/outline|source|M0|identity/i);
+ }
+});
 test('opposite native outline class overlap prevents a parameterized contour source claim',()=>{
  const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
  const nativeM4={
@@ -877,8 +921,8 @@ test('opposite native outline class overlap prevents a parameterized contour sou
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
   native3DOutlineEvidenceAvailable:true,
   native3DOutlineSegments:[
-   {native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]},
-   {native3DHLRClass:'hidden-outline',originalM0UnitParameterRange:[0.4,0.6]}
+   outlineSegment('V','g::E0','visible-outline',[2,8],[0.2,0.8]),
+   outlineSegment('V','g::E0','hidden-outline',[4,6],[0.4,0.6])
   ]
  };
  const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
