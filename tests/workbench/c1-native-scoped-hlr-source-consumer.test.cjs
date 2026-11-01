@@ -1345,3 +1345,35 @@ test('full-domain reverse inverse overshoot with exact forward endpoints remains
  assert.equal(r.nativeM4ClassBacked,true);
  assert.equal(r.sourceDomainEndpointForwardMapProof,true);
 });
+
+test('M4 native same-class partition must not double-assign positive source length',()=>{
+ const mk=(ranges,held=[],partition=true)=>({
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:ranges.map(originalM0UnitParameterRange=>({
+   native3DHLRClass:'visible-sharp',originalM0UnitParameterRange
+  })),
+  native3DSourceParameterPartitionCompleteExactlyOnce:partition,
+  M4OriginalUnitIntervalCandidateCoverageComplete:partition,
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:held
+ });
+ const match={original3DCurveParameterRange:[0,1],source3DParameterRange:[0,1]};
+ const check=nativeM4=>auditParameterizedM4({
+  view:'V',sourceId:'g::E0',match,klass:'visible',nativeM4
+ });
+ const adjacent=check(mk([[0,.5],[.5,1]]));
+ assert.equal(adjacent.nativeM4ClassBacked,true);
+ assert.deepEqual(adjacent.nativeM4SameClassPositiveOverlaps,[]);
+ const duplicated=check(mk([[0,.7],[.4,1]]));
+ assert.deepEqual(duplicated.nativeM4SameClassPositiveOverlaps,[[.4,.7]]);
+ assert.equal(duplicated.nativeM4SameClassCoverageComplete,true);
+ assert.equal(duplicated.nativeM4ClassBacked,false);
+ const tiny=check(mk([[0,.5],[.5,1]],[{
+  originalNative3DParameterRange:[.5,.5+Number.EPSILON]
+ }]));
+ assert.equal(tiny.nativeM4HeldOriginalParameterPositiveOverlap,true);
+ assert.equal(tiny.nativeM4ClassBacked,false);
+ const incomplete=check(mk([[0,1]],[],false));
+ assert.equal(incomplete.nativeM4IndependentPartitionNotDisproven,false);
+ assert.equal(incomplete.nativeM4ClassBacked,false);
+});
