@@ -138,6 +138,71 @@ function projectC1Native3DSourceIntervalsToM4({
   generatedNativeParameterRanges:[
    ...ranges['visible-sharp'],...ranges['hidden-sharp']]
  });
+ // Outline is a separate HLR result class (silhouette), not a synonym for
+ // Sharp. Preserve its native 3D source intervals in the same original M0
+ // parameter frame so a generated global contour can be checked against it.
+ const outlineGroups=[['visible-outline',scopedRow.visibleOutline3D],
+  ['hidden-outline',scopedRow.hiddenOutline3D]],
+  native3DOutlineSegments=[],outlineRanges={},outlineIntervalsHeldForM4=[];
+ for(const [klass,group] of outlineGroups){
+  const parts=group?.native3DGeneratedCurveIntervals;
+  if(group?.nativeSourceFilteredOriginalTopoDSEdge!==true||
+     group.nativeResultingEdgeType!=='HLRBRep_OutLine'||
+     !Array.isArray(parts)||parts.length>128)
+   throw new RangeError('incomplete native source-filtered 3D HLR outline group');
+  const intervals=[];
+  for(const native of parts){
+   const interval=native?.nativeOriginalCurveParameterRange;
+   if(native.nativeSourceFilterOriginalEdgeId!==sourceEdgeId||
+      native.nativeResultingEdgeType!=='HLRBRep_OutLine'||
+      native.native3DHLRClass!==klass||
+      native.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
+      native.generated2DHLREdgeTopologyProven!==false||
+      native.signedV5Action!==false||
+      !Array.isArray(interval)||interval.length!==2||
+      !interval.every(Number.isFinite)||!(interval[1]>interval[0])||
+      interval[0]<first||interval[1]>last)
+    throw new RangeError('unverified source-scoped original native 3D outline interval');
+   intervals.push([...interval]);
+   const normalize=t=>reversed?(last-t)/(last-first):(t-first)/(last-first);
+   const u=normalize(interval[0]),v=normalize(interval[1]),
+    from=Math.min(u,v),to=Math.max(u,v);
+   if(!Number.isFinite(from)||!Number.isFinite(to)||from<0||to>1)
+    throw new RangeError('native 3D outline interval outside original M0 [0,1]');
+   if(!(to>from)){
+    outlineIntervalsHeldForM4.push({
+     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
+     roundedOriginalM0UnitParameterRange:[from,to],
+     reason:'positive-native-outline-interval-collapsed-by-binary64-normalization',
+     engineeringLineStyle:'undetermined',signedV5Action:false
+    });
+    continue;
+   }
+   native3DOutlineSegments.push({
+    view,sourceEdgeId,native3DHLRClass:klass,
+    originalNative3DParameterRange:[...interval],
+    originalM0UnitParameterRange:[from,to],
+    derivedFromOriginalNative3DOutlineNotGeneratedHLRPaper:true,
+    generated2DHLREdgeTopologyProven:false,
+    completeGlobalCoProjectedVisibilityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   });
+  }
+  outlineRanges[klass]=intervals;
+ }
+ const nativeOutlinePartition=auditC1Native3DSourceScopedIntervals({
+  originalNativeParameterRange:[first,last],
+  generatedNativeParameterRanges:[
+   ...outlineRanges['visible-outline'],...outlineRanges['hidden-outline']]
+ });
+ const normalizedOutline=exactCandidateIntervalCoverage([0,1],
+  native3DOutlineSegments.map(s=>s.originalM0UnitParameterRange));
+ const outlineClassConflicts=exactCandidateVisibilityClassOverlap(
+  native3DOutlineSegments.filter(s=>s.native3DHLRClass==='visible-outline')
+   .map(s=>s.originalM0UnitParameterRange),
+  native3DOutlineSegments.filter(s=>s.native3DHLRClass==='hidden-outline')
+   .map(s=>s.originalM0UnitParameterRange)
+ );
  const normalized=exactCandidateIntervalCoverage([0,1],
   segments.map(s=>s.originalM0UnitParameterRange));
  const nativeClassConflicts=exactCandidateVisibilityClassOverlap(
@@ -147,7 +212,7 @@ function projectC1Native3DSourceIntervalsToM4({
    .map(s=>s.originalM0UnitParameterRange)
  );
  return freeze({
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   sourceGeometryId:geometry.id,revision,view,sourceEdgeId,
   original3DSourceCurveDirection:forward?'forward':'reversed',
   native3DSourceParameterPartitionCompleteExactlyOnce:
@@ -170,6 +235,24 @@ function projectC1Native3DSourceIntervalsToM4({
    nativePartition.positiveLengthOverlappingNativeParameterIntervals,
   M4OriginalUnitIntervalNativeClassConflicts:
    nativeClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,
+  native3DOutlineSourceParameterPartitionCompleteExactlyOnce:
+   nativeOutlinePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce,
+  native3DOutlineOriginalParameterPositiveGaps:
+   nativeOutlinePartition.positiveLengthUncoveredNativeParameterIntervals,
+  native3DOutlineOriginalParameterPositiveOverlaps:
+   nativeOutlinePartition.positiveLengthOverlappingNativeParameterIntervals,
+  M4OutlineOriginalUnitIntervalCandidateCoverageComplete:
+   nativeOutlinePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce&&
+   outlineIntervalsHeldForM4.length===0&&
+   normalizedOutline.entireOriginalParameterIntervalCovered&&
+   outlineClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals.length===0,
+  M4OutlineOriginalUnitIntervalCandidatePositiveGaps:
+   normalizedOutline.positiveLengthUncoveredIntervals,
+  M4OutlineOriginalUnitIntervalNativeClassConflicts:
+   outlineClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,
+  M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation:
+   outlineIntervalsHeldForM4,
+  native3DOutlineSegments,
   segments,
   native3DProvenanceIsNotGenerated2DHLREdgeIdentity:true,
   completeGlobalVisibilityCertified:false,
