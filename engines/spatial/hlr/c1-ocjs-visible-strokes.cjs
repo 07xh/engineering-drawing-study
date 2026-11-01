@@ -834,7 +834,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       originalEdgeStatusAbi=probeRealOcjsHLREdgeStatusABI({
        oc,dataStructure:ds,edgeMapExtent:originalDataStructureIndex.internalEdgeMapExtent,
        indexedOriginalSources:originalDataStructureIndex.indexedOriginalSources,
-       originalNativeEdgeHandles
+       originalNativeEdgeHandles,view
       });
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
