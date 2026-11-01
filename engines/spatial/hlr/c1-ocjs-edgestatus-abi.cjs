@@ -195,6 +195,10 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    return {...base,availability:'edge-data-entry-null',
     readableSourceStatusRows:rows.length,rows};
   const edgeDataMethods=methodNames(edgeData);
+  const sourceEdgeId=indexedOriginalSources[index-1].originalPhysicalSourceEdgeId;
+  const originalEdgeData=inspectOriginalEdgeData({
+   edgeData,sourceEdgeId,originalNativeEdgeHandles
+  });
   const statusMethod=edgeDataMethods.find(k=>/^(?:Status|EdgeStatus)(?:_\d+)?$/.test(k));
   const status=statusMethod?edgeData[statusMethod]():edgeData;
   if(!status||typeof status!=='object')
