@@ -115,7 +115,11 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
    return {...base,availability:'edge-status-object-not-exposed',
     readableSourceStatusRows:rows.length,rows};
   const statusMethods=methodNames(status);
-  const bounds=invokePair(status,'Bounds',[[0,0,0,0]]);
+  // Some generated Embind builds wrap C++ output-reference methods as
+  // zero-argument tuple/object returns; others expose numeric placeholder
+  // arguments, and some expose neither. Probe both actual call shapes,
+  // accepting only a finite ordered pair and never manufacturing defaults.
+  const bounds=invokePair(status,'Bounds',[[],[0,0,0,0]]);
   const count=callCount(status,'NbVisiblePart');
   const allVisible=callBoolean(status,'AllVisible');
   const allHidden=callBoolean(status,'AllHidden');
@@ -127,7 +131,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
   let partFailure=null;
   if(count!==null){
    for(let part=1;part<=count;part++){
-    const result=invokePair(status,'VisiblePart',[[part,0,0,0,0]]);
+    const result=invokePair(status,'VisiblePart',[[part],[part,0,0,0,0]]);
     if(!result.readable){partFailure=result.reason;break;}
     visibleParts.push(result.interval);
    }
