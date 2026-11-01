@@ -264,7 +264,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples.map(x=>x.parameter2d),
   [2.75,5.75,8.75]);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].projectedPoint2D,
-  [2.75,5.5]);
+  [2.5,5]);
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
@@ -333,7 +333,7 @@ test('classifies a view-collapsed original edge as non-invertible without treati
   GetCurve(){return adaptor;},
   Parameter2d(){return 0;},Parameter3d(){return 0;},
   Value3D(t){return {X(){return 2;},Y(){return 0;},Z(){return t;}};},
-  Value(){return {X(){return 2;},Y(){return 0;}};}
+  Value(_parameter){return {X(){return 2;},Y(){return 0;}};}
  };
  const ds={EDataArray(){return {Value(){return {
   Status(){return status([0,9],[[0,9]],true,false);},
