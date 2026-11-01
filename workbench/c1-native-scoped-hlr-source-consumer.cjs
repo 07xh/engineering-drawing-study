@@ -287,6 +287,28 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   x.originalNative3DParameterRange[1]>x.originalNative3DParameterRange[0]);
  if(!outlineClassesValid)
   throw new RangeError('native outline segment identity or unsigned proof boundary is invalid');
+ // Independently reject forged paper drawability on the new native M4
+ // producer. A collapsed original 3D outline is provenance, not a stroke.
+ const heldOutline=nativeM4.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation??[];
+ if(!Array.isArray(heldOutline)||heldOutline.length>512)
+  throw new RangeError('invalid held native outline interval inventory');
+ for(const segment of outlineSegments){
+  if(segment.paperDrawableCandidate===undefined)continue; // older unsigned diagnostic
+  const a=segment.fromPaper,b=segment.toPaper;
+  const m=segment.fromModelMm,n=segment.toModelMm;
+  if(typeof segment.paperDrawableCandidate!=='boolean'||
+     !a||!b||!m||!n||
+     ![a.u,a.v,b.u,b.v,m.x,m.y,m.z,n.x,n.y,n.z].every(Number.isFinite)||
+     segment.paperDrawableCandidate===(a.u===b.u&&a.v===b.v))
+   throw new RangeError('native outline original 3D/paper drawable witness is inconsistent');
+  if(!segment.paperDrawableCandidate&&!heldOutline.some(x=>
+     x?.native3DHLRClass===segment.native3DHLRClass&&
+     Array.isArray(x.originalNative3DParameterRange)&&
+     x.originalNative3DParameterRange.length===2&&
+     x.originalNative3DParameterRange.every((v,i)=>
+      v===segment.originalNative3DParameterRange[i])))
+   throw new RangeError('paper-collapsed native outline missing held original interval');
+ }
  const normalizeOutline=t=>direction==='reversed'?
   (domain[1]-t)/(domain[1]-domain[0]):(t-domain[0])/(domain[1]-domain[0]);
  for(const segment of outlineSegments){
