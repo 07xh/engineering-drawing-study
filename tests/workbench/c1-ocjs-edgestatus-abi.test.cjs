@@ -92,6 +92,46 @@ test('rejects overlapping, out-of-domain and contradictory visibility partitions
  }
 });
 
+test('reads tuple-return EdgeStatus output-reference wrappers with zero-argument calls',()=>{
+ const row={
+  Bounds(){return {first:0,second:12};},
+  NbVisiblePart(){return 2;},
+  VisiblePart(i){return i===1?[0,5]:i===2?[8,12]:null;},
+  AllVisible(){return false;},
+  AllHidden(){return false;}
+ };
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.deepEqual(r.rows[0].bounds,[0,12]);
+ assert.deepEqual(r.rows[0].visibleParts,[[0,5],[8,12]]);
+ assert.equal(r.rows[0].parameterPartitionValidated,true);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('falls back to numeric output placeholders only when zero-argument wrappers are unreadable',()=>{
+ const calls=[];
+ const row={
+  Bounds(...args){
+   calls.push(['Bounds',args.length]);
+   return args.length===0?undefined:[0,9];
+  },
+  NbVisiblePart(){return 1;},
+  VisiblePart(...args){
+   calls.push(['VisiblePart',args.length]);
+   return args.length===1?undefined:[0,9];
+  },
+  AllVisible(){return true;},
+  AllHidden(){return false;}
+ };
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.deepEqual(r.rows[0].bounds,[0,9]);
+ assert.deepEqual(r.rows[0].visibleParts,[[0,9]]);
+ assert.deepEqual(calls,[['Bounds',0],['Bounds',4],['VisiblePart',1],['VisiblePart',5]]);
+});
+
 test('does not call missing EDataArray and reports the exact missing ABI layer',()=>{
  const r=probe({oc:{},dataStructure:{EdgeMap(){}},edgeMapExtent:1,
   indexedOriginalSources:sources(1)});
