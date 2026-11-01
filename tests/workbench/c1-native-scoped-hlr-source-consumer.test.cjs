@@ -2,11 +2,61 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {
  auditC1NativeScopedHLRSourceConsumer:audit,
- auditC1ParameterizedSourceMatchAgainstNativeM4:auditParameterizedM4
+ auditC1ParameterizedSourceMatchAgainstNativeM4:auditParameterizedM4,
+ auditC1OriginalM0ProjectedSourceSamples:auditM0Samples
 }=require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
+test('M4 independently replays native source samples on reviewed M0 3D edge, in both orientations',()=>{
+ const a={x:0,y:0,z:0},b={x:10,y:2,z:3};
+ const parameters=[0,2.5,5,7.5,10];
+ const samples=reverse=>parameters.map(parameter=>{
+  const t=reverse?1-parameter/10:parameter/10;
+  const xyz={x:10*t,y:2*t,z:3*t},p=project(xyz).V;
+  return {source3DParameter:parameter,sourceProjectedPointMm:[p.u,p.v]};
+ });
+ const run=(data,direction='forward')=>auditM0Samples({
+  view:'V',originalModelEndpoints:[a,b],
+  originalNativeRange:[0,10],originalDirection:direction,
+  samples:data,toleranceMm:1e-6
+ });
+ for(const direction of ['forward','reversed']){
+  const result=run(samples(direction==='reversed'),direction);
+  assert.equal(result.originalM0SourcePaperSamplesCorroborated,true);
+  assert.equal(result.maximumM0PaperResidualMm,0);
+  assert.equal(result.generated2DTopoDSHistoryCertified,false);
+  assert.equal(result.signedV5Action,false);
+ }
+ const drift=samples(false);
+ drift[2].sourceProjectedPointMm[0]+=1e-8;
+ const measured=run(drift);
+ assert.ok(measured.maximumM0PaperResidualMm>0);
+ assert.ok(measured.maximumM0PaperResidualMm<1e-6);
+ assert.equal(measured.signedV5Action,false);
+});
+test('M4 refuses forged interior paper point, wrong 3D direction and source-domain overshoot',()=>{
+ const a={x:0,y:0,z:0},b={x:10,y:2,z:3};
+ const samples=[0,2.5,5,7.5,10].map(parameter=>{
+  const p=project({x:parameter,y:parameter*0.2,z:parameter*0.3}).W;
+  return {source3DParameter:parameter,sourceProjectedPointMm:[p.u,p.v]};
+ });
+ const run=(data,direction='forward')=>auditM0Samples({
+  view:'W',originalModelEndpoints:[a,b],
+  originalNativeRange:[0,10],originalDirection:direction,
+  samples:data,toleranceMm:1e-6
+ });
+ const forged=structuredClone(samples);
+ forged[2].sourceProjectedPointMm[1]+=0.2;
+ assert.throws(()=>run(forged),/disagrees with reviewed M0/);
+ assert.throws(()=>run(samples,'reversed'),/disagrees with reviewed M0/);
+ const overshoot=structuredClone(samples);
+ overshoot[0].source3DParameter=-Number.EPSILON;
+ const held=run(overshoot);
+ assert.equal(held.status,'held-outside-original-source-domain');
+ assert.equal(held.originalM0SourcePaperSamplesCorroborated,false);
+ assert.equal(held.signedV5Action,false);
+});
 function fixture(){
  const geometry={id:'g',data:{points:{
   A:{x:0,y:0,z:0},B:{x:10,y:2,z:3},
