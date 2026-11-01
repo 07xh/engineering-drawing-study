@@ -144,12 +144,17 @@ function projectC1Native3DSourceIntervalsToM4({
  const outlineGroups=[['visible-outline',scopedRow.visibleOutline3D],
   ['hidden-outline',scopedRow.hiddenOutline3D]],
   native3DOutlineSegments=[],outlineRanges={},outlineIntervalsHeldForM4=[];
+ const native3DOutlineEvidenceAvailable=outlineGroups.every(([,group])=>group!==undefined&&group!==null);
  for(const [klass,group] of outlineGroups){
   const parts=group?.native3DGeneratedCurveIntervals;
-  if(group?.nativeSourceFilteredOriginalTopoDSEdge!==true||
+  if(!native3DOutlineEvidenceAvailable){
+   outlineRanges[klass]=[];
+   continue;
+  }
+  if(group.nativeSourceFilteredOriginalTopoDSEdge!==true||
      group.nativeResultingEdgeType!=='HLRBRep_OutLine'||
      !Array.isArray(parts)||parts.length>128)
-   throw new RangeError('incomplete native source-filtered 3D HLR outline group');
+   throw new RangeError('malformed native source-filtered 3D HLR outline group');
   const intervals=[];
   for(const native of parts){
    const interval=native?.nativeOriginalCurveParameterRange;
@@ -190,11 +195,12 @@ function projectC1Native3DSourceIntervalsToM4({
   }
   outlineRanges[klass]=intervals;
  }
- const nativeOutlinePartition=auditC1Native3DSourceScopedIntervals({
-  originalNativeParameterRange:[first,last],
-  generatedNativeParameterRanges:[
-   ...outlineRanges['visible-outline'],...outlineRanges['hidden-outline']]
- });
+ const nativeOutlinePartition=native3DOutlineEvidenceAvailable?
+  auditC1Native3DSourceScopedIntervals({
+   originalNativeParameterRange:[first,last],
+   generatedNativeParameterRanges:[
+    ...outlineRanges['visible-outline'],...outlineRanges['hidden-outline']]
+  }):null;
  const normalizedOutline=exactCandidateIntervalCoverage([0,1],
   native3DOutlineSegments.map(s=>s.originalM0UnitParameterRange));
  const outlineClassConflicts=exactCandidateVisibilityClassOverlap(
@@ -235,13 +241,18 @@ function projectC1Native3DSourceIntervalsToM4({
    nativePartition.positiveLengthOverlappingNativeParameterIntervals,
   M4OriginalUnitIntervalNativeClassConflicts:
    nativeClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals,
+  native3DOutlineEvidenceAvailable,
   native3DOutlineSourceParameterPartitionCompleteExactlyOnce:
+   native3DOutlineEvidenceAvailable&&
    nativeOutlinePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce,
   native3DOutlineOriginalParameterPositiveGaps:
-   nativeOutlinePartition.positiveLengthUncoveredNativeParameterIntervals,
+   native3DOutlineEvidenceAvailable?
+    nativeOutlinePartition.positiveLengthUncoveredNativeParameterIntervals:null,
   native3DOutlineOriginalParameterPositiveOverlaps:
-   nativeOutlinePartition.positiveLengthOverlappingNativeParameterIntervals,
+   native3DOutlineEvidenceAvailable?
+    nativeOutlinePartition.positiveLengthOverlappingNativeParameterIntervals:null,
   M4OutlineOriginalUnitIntervalCandidateCoverageComplete:
+   native3DOutlineEvidenceAvailable&&
    nativeOutlinePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce&&
    outlineIntervalsHeldForM4.length===0&&
    normalizedOutline.entireOriginalParameterIntervalCovered&&
