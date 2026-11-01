@@ -486,7 +486,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      throw new RangeError('incomplete HLR rejected original BRep source inventory');
     for(const rejected of rejectedCandidates){
      if(typeof rejected?.sourceEdgeId!=='string'||
-        !sourceIdsSet.has(rejected.sourceEdgeId)||
+        !(Array.isArray(sourceIds)?sourceIdsSet:expected).has(rejected.sourceEdgeId)||
         rejectedIds.has(rejected.sourceEdgeId)||
         candidateIds.has(rejected.sourceEdgeId)||
         typeof rejected.reason!=='string'||!rejected.reason.trim())
