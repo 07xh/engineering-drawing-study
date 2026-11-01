@@ -702,6 +702,7 @@ test('genuine half-source native W paper remains an exact positive source gap, n
 test('same-run parameterized original HLR curve lineage is reconciled with native source filters in V/H/W',()=>{
  const x=fixture(),r=audit(x);
  assert.equal(r.counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage,3);
+ assert.equal(r.counts.globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage,0);
  assert.equal(r.counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage,0);
  assert.equal(r.counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage,0);
  assert.equal(r.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement,0);
@@ -747,6 +748,7 @@ test('coincident original curves remain ambiguous even when both native source f
  report.ambiguousParameterizedSourceMatchCount=1;
  const r=audit(x),lineage=r.views[view].parameterizedGlobalHLRSourceLineage;
  assert.equal(lineage.counts.ambiguousParameterizedSourceLineage,1);
+ assert.equal(lineage.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage,0);
  assert.equal(lineage.classes.visible.rows[0].status,'ambiguous-parameterized-source-lineage');
  assert.equal(lineage.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
  assert.equal(r.signedV5ActionCount,0);
@@ -784,4 +786,29 @@ test('malformed parameterized source reports and forged generated-edge history a
    generated2DSourceParameterMatches.visible);
   assert.throws(()=>audit(x),/parameterized|source|HLR|TopoDS|curve/i);
  }
+});
+
+
+test('native class-specific HLR filter narrows a projected curve alias but never upgrades it to unique',()=>{
+ const x=fixture(),view='V',report=x.cad.nativeSourceScopedSharpOutputByView[view].
+  generated2DSourceParameterMatches.visible;
+ const row=report.rows[0];
+ row.candidateSourceMatches.push(x.parameterMatch(x.id1));
+ row.candidateSourceMatchCount=2;
+ row.rejectedSourceCandidateCount=0;
+ row.uniqueOriginalSourceEdgeId=null;
+ row.status='ambiguous-parameterized-source-curve-match';
+ report.uniqueParameterizedSourceMatchCount=0;
+ report.ambiguousParameterizedSourceMatchCount=1;
+ x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
+ const r=audit(x),lineage=r.views[view].parameterizedGlobalHLRSourceLineage;
+ const measured=lineage.classes.visible.rows[0];
+ assert.equal(measured.status,'ambiguous-parameterized-source-lineage-native-filter-narrowed');
+ assert.deepEqual(measured.parameterizedOriginalSourceEdgeIds,[x.id0,x.id1].sort());
+ assert.deepEqual(measured.nativeSourceFilterCandidateIds,[x.id0]);
+ assert.equal(measured.nativeFilterNarrowsParameterizedCandidates,true);
+ assert.equal(measured.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(lineage.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage,1);
+ assert.equal(lineage.counts.sourceFilterOrPaperCandidateDisagreements,0);
+ assert.equal(r.signedV5ActionCount,0);
 });
