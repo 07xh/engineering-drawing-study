@@ -272,3 +272,31 @@ test('native positive interval gaps cannot be hidden by neighboring visible span
   assert.equal(bad.formalEngineeringLineStyleCertified,false);
  }
 });
+
+test('one-sided native outline inventory cannot silently discard positive 3D source intervals',()=>{
+ for(const view of ['V','H','W']){
+  for(const missing of ['visibleOutline3D','hiddenOutline3D']){
+   for(const absence of [undefined,null]){
+    const x=input([[0,10]],[]);
+    x.view=view;
+    x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+    x.scopedRow[missing]=absence;
+    assert.throws(()=>projectNative(x),
+     /incomplete native source-filtered 3D HLR outline class inventory/);
+   }
+  }
+ }
+});
+test('legacy producer with neither native outline class stays explicitly unavailable and unsigned',()=>{
+ for(const view of ['V','H','W']){
+  const x=input([[0,10]],[]);
+  x.view=view;
+  delete x.scopedRow.visibleOutline3D;
+  delete x.scopedRow.hiddenOutline3D;
+  const r=projectNative(x);
+  assert.equal(r.native3DOutlineEvidenceAvailable,false);
+  assert.equal(r.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+  assert.equal(r.officialV5Authorized,false);
+  assert.equal(r.formalEngineeringLineStyleCertified,false);
+ }
+});
