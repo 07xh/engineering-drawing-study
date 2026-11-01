@@ -507,7 +507,11 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      // producer tolerance. A partial overhang is NOT a disjoint source.
      let verifiedDisjointParameterRange=false;
      const rangeWitness=rejected.nativeParameterRangeExclusionWitness;
-     if(rangeWitness!==undefined){
+     // A legacy/synthetic generated edge without a received native
+     // parameter range cannot validate this producer witness. Hold its
+     // exclusion rather than crashing or treating the label as proof.
+     if(rangeWitness!==undefined&&
+        Array.isArray(segment.actualOCCTHLRCurveParameterRange)){
       const sourceRange=rangeWitness?.sourceProjected2DParameterRangeSorted,
        sourceEndpoints=rangeWitness?.sourceProjected2DParameterEndpoints,
        generatedRange=rangeWitness?.generated2DParameterRange,
