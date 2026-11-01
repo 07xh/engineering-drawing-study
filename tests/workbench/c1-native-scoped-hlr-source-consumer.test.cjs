@@ -1170,3 +1170,31 @@ test('paper-only aliases in each missing-view orientation never become signed V5
   assert.equal(r.views[view].visible[0].originalTopoDSHistoryProven,false);
  }
 });
+
+test('all three views reject a forged formal line style on a paper-only native candidate',()=>{
+ for(const view of ['V','H','W']){
+  for(const style of ['solid','dashed']){
+   const x=fixture();
+   x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+    visible[0].engineeringLineStyle=style;
+   assert.throws(()=>audit(x),/unsigned|OCCT|witness|source/i);
+  }
+ }
+});
+test('all three views reject a forged continuous-occlusion proof on source-filtered paper',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture();
+  x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+   visible[0].globalContinuousOcclusionProven=true;
+  assert.throws(()=>audit(x),/unsigned|OCCT|witness|source/i);
+ }
+});
+test('all three views retain unsigned status when a paper candidate has no direct native IsSame',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixture(),r=audit(x);
+  const row=r.views[view].visible[0];
+  assert.equal(row.originalTopoDSHistoryProven,false);
+  assert.equal(row.signedV5Action,false);
+  assert.equal(r.globalContinuousVisibilityCertified,false);
+ }
+});
