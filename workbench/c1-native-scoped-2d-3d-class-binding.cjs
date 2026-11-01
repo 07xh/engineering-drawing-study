@@ -15,6 +15,8 @@
 const {VIEWS}=require('../core/projection/conventions.js');
 const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
+const {auditExactBinary64PaperParameterPair}=
+ require('./c1-exact-binary64-paper-parameter.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -101,8 +103,14 @@ function auditC1RealNativeScoped2D3DClassBinding({
   nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps.length===0&&
   nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
  const a=sourceProjectedFrom,b=sourceProjectedTo;
- const axis=Math.abs(b.u-a.u)>=Math.abs(b.v-a.v)?'u':'v',
-  denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
+ // Use the shared M0 exact binary64 dominant-axis witness. Two finite
+ // source spans can BOTH overflow Number subtraction to Infinity; selecting
+ // u on that tie silently computes the wrong source t and may hide a real
+ // positive original-source paper gap. No approximate span ranking here.
+ const axis=auditExactBinary64PaperParameterPair({
+  sourceFrom:a,sourceTo:b,measuredFrom:a,measuredTo:b
+ }).dominantOriginalProjectionAxis;
+ const denominator=sub(dyadic(b[axis]),dyadic(a[axis]));
  if(sign(denominator)===0)
   throw new RangeError('collapsed original M0 source paper line');
  const m4=nativeOriginal3DM4.segments.map(seg=>{
