@@ -834,7 +834,8 @@ test('native class-specific HLR filter narrows a projected curve alias but never
 test('parameterized generated HLR source interval is backed by the same native M4 visibility class',()=>{
  const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}]
  };
@@ -848,10 +849,64 @@ test('parameterized generated HLR source interval is backed by the same native M
  assert.equal(r.nativeM4ClassBacked,true);
 });
 
+test('native outline class intervals independently back a parameterized visible HLR source',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineSegments:[{
+   native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]
+  }]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineEvidenceAvailable,true);
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,true);
+ assert.deepEqual(r.nativeOutlineSameClassCoverageGaps,[]);
+ assert.equal(r.nativeOutlineOppositeClassPositiveOverlap,false);
+ assert.equal(r.nativeOutlineClassBacked,true);
+});
+
+test('opposite native outline class overlap prevents a parameterized contour source claim',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineSegments:[
+   {native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]},
+   {native3DHLRClass:'hidden-outline',originalM0UnitParameterRange:[0.4,0.6]}
+  ]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,true);
+ assert.equal(r.nativeOutlineOppositeClassPositiveOverlap,true);
+ assert.deepEqual(r.nativeOutlineOppositeClassOverlaps,[[0.4,0.6]]);
+ assert.equal(r.nativeOutlineClassBacked,false);
+});
+
+test('an empty native outline ledger is available evidence but cannot back a contour interval',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineSegments:[]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]},
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineEvidenceAvailable,true);
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,false);
+ assert.equal(r.nativeOutlineClassBacked,false);
+});
+
 test('native M4 positive same-class gaps prevent parameterized generated HLR class backing',()=>{
  const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.5]}]
  };
@@ -865,7 +920,8 @@ test('native M4 positive same-class gaps prevent parameterized generated HLR cla
 test('opposite native M4 visibility class overlap prevents generated HLR source class backing',()=>{
  const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[
    {native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]},
@@ -883,7 +939,8 @@ test('opposite native M4 visibility class overlap prevents generated HLR source 
 test('reversed original BRep parameter direction is normalized against native M4 without clamping',()=>{
  const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[0,2]};
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'W',original3DSourceCurveDirection:'reversed',
   segments:[{native3DHLRClass:'hidden-sharp',originalM0UnitParameterRange:[0.8,1]}]
  };
@@ -904,7 +961,8 @@ test('native M4 parameterized-source class audit stays unavailable when no 3D M4
 
 test('a forged forward endpoint flag cannot resolve an inverse parameter overshoot',()=>{
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
  };
@@ -923,7 +981,8 @@ test('a forged forward endpoint flag cannot resolve an inverse parameter oversho
 
 test('tolerance-bounded one-ULP source overshoot is recorded and held without clamping',()=>{
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
  };
@@ -940,7 +999,8 @@ test('tolerance-bounded one-ULP source overshoot is recorded and held without cl
 
 test('exact forward endpoint binding may resolve inverse ULP overshoot without changing raw inverse parameters',()=>{
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
  };
@@ -964,7 +1024,8 @@ test('exact forward endpoint binding may resolve inverse ULP overshoot without c
 
 test('parameterized source interval outside the original M0 domain is rejected, never clamped',()=>{
  const nativeM4={
-  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  native3DOutlineSegments:[],
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
  };
