@@ -166,7 +166,16 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  // the independent exact Parameter2d(original-domain-endpoints) == generated
  // output-endpoints witness may bind the interval back to the original domain.
  // The inverse overshoot is retained verbatim; no endpoint is clamped.
- if(!exactDomainContainment&&!forwardEndpointBound)
+ // A forward 2D endpoint witness cannot turn a PARTIAL source interval
+ // into the entire original 3D edge. Full-domain rebinding is valid only
+ // when the raw inverse interval actually spans BOTH original BRep ends.
+ // Otherwise preserve the overshoot and fail closed: do not erase a
+ // positive-length missing source interval by replacing it with domain.
+ const inverseSpansBothOriginalEnds=
+  Math.min(...sourceRange)<=domain[0]&&
+  Math.max(...sourceRange)>=domain[1];
+ if(!exactDomainContainment&&
+    !(forwardEndpointBound&&inverseSpansBothOriginalEnds))
   return {
    availability:'available',sourceEdgeId:sourceId,
    original3DSourceCurveDirection:direction,
