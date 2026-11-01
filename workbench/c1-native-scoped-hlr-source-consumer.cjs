@@ -474,6 +474,34 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    if(row.status!==rawStatus||
       row.uniqueOriginalSourceEdgeId!==(matches.length===1?matches[0].sourceEdgeId:null))
     throw new RangeError('parameterized HLR source match classification is inconsistent');
+   // A count alone does not prove that every original BRep curve was
+   // actually rejected or matched. Rebuild the exact per-edge partition
+   // from the native producer's accepted AND rejected source identities.
+   // Legacy reports without rejection identities remain held, not signed.
+   const rejectedCandidates=row.rejectedSourceCandidates;
+   const rejectedIds=new Set();
+   if(rejectedCandidates!==undefined){
+    if(!Array.isArray(rejectedCandidates)||
+       rejectedCandidates.length!==row.rejectedSourceCandidateCount)
+     throw new RangeError('incomplete HLR rejected original BRep source inventory');
+    for(const rejected of rejectedCandidates){
+     if(typeof rejected?.sourceEdgeId!=='string'||
+        !sourceIdsSet.has(rejected.sourceEdgeId)||
+        rejectedIds.has(rejected.sourceEdgeId)||
+        candidateIds.has(rejected.sourceEdgeId)||
+        typeof rejected.reason!=='string'||!rejected.reason.trim())
+      throw new RangeError('forged or repeated original HLR rejection source identity');
+     rejectedIds.add(rejected.sourceEdgeId);
+    }
+   }
+   const completeCandidateReview=
+    completeOriginalSourceCurveInventory&&
+    Array.isArray(rejectedCandidates)&&
+    rejectedIds.size+candidateIds.size===sourceIdsSet.size&&
+    [...sourceIdsSet].every(id=>rejectedIds.has(id)||candidateIds.has(id));
+   if(Array.isArray(rejectedCandidates)&&
+      rejectedIds.size+candidateIds.size!==sourceIdsSet.size)
+    throw new RangeError('original HLR source-curve candidate rejection partition incomplete');
    if(matches.length===1)rawUnique++;
    else if(matches.length>1)rawAmbiguous++;
    else rawUnmatched++;
@@ -535,7 +563,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    const reviewedM0PaperHeld=[...m0SampleAudits.values()].some(x=>
     x!==null&&x.originalM0SourcePaperSamplesCorroborated!==true);
    const status=matches.length===0?'unmatched':
-    !completeOriginalSourceCurveInventory?'incomplete-original-hlr-source-curve-inventory-held':
+    !completeCandidateReview?'incomplete-original-hlr-source-curve-inventory-held':
     reviewedM0PaperHeld?'reviewed-original-m0-source-paper-held':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
@@ -552,6 +580,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     wholeSolidHLREdgeOrdinal:ordinal,
     parameterizedSourceMatchCount:matches.length,
     completeOriginalSourceCurveInventory,
+    completeAcceptedAndRejectedOriginalSourceCurveReview:completeCandidateReview,
     parameterizedOriginalSourceEdgeIds:[...candidateIds].sort(),
     nativeSourceFilterCandidateIds:[...filterSources].sort(),
     m0PaperCandidateIds:[...paperCandidates].sort(),
