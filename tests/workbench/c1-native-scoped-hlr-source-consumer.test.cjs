@@ -1216,8 +1216,9 @@ test('all three views retain unsigned status when a paper candidate has no direc
  }
 });
 
-function fixtureWithRealStatusReplay(){
+function fixtureWithRealStatusReplay({collapseSecondInW=false}={}){
  const x=fixture();
+ if(collapseSecondInW)x.geometry.data.points.D={x:10,y:1,z:0};
  Object.assign(x.geometry,{kind:'mesh',space:'model-3d',unit:'mm'});
  x.cad.actualOCCTCurveTypeIndependentlyVerified=true;
  x.cad.originalBRepSourceEdges=x.geometry.data.edges.map(edge=>{
@@ -1376,4 +1377,30 @@ test('M4 native same-class partition must not double-assign positive source leng
  const incomplete=check(mk([[0,1]],[],false));
  assert.equal(incomplete.nativeM4IndependentPartitionNotDisproven,false);
  assert.equal(incomplete.nativeM4ClassBacked,false);
+});
+
+test('W-collapsed original source with real native outline is rejected, not silently omitted',()=>{
+ for(const klass of ['visible-outline','hidden-outline']){
+  const x=fixtureWithRealStatusReplay({collapseSecondInW:true});
+  const row=x.cad.nativeSourceScopedSharpOutputByView.W.rows[1];
+  const curve=x.cad.originalBRepSourceEdges.find(z=>z.sourceEdgeId===x.id1);
+  const group={nativeSourceFilteredOriginalTopoDSEdge:true,
+   nativeResultingEdgeType:'HLRBRep_OutLine',
+   native3DGeneratedCurveIntervals:[{
+    nativeSourceFilterOriginalEdgeId:x.id1,
+    nativeOriginalCurveParameterRange:[...curve.occtSourceCurveParameterRange],
+    nativeResultingEdgeType:'HLRBRep_OutLine',native3DHLRClass:klass,
+    native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+    generated2DHLREdgeTopologyProven:false,signedV5Action:false
+   }]};
+  row[klass==='visible-outline'?'visibleOutline3D':'hiddenOutline3D']=group;
+  assert.throws(()=>audit(x),/collapsed source cannot emit native 3D sharp or outline interval/);
+ }
+});
+test('W-collapsed source with malformed native outline group is rejected',()=>{
+ const x=fixtureWithRealStatusReplay({collapseSecondInW:true});
+ x.cad.nativeSourceScopedSharpOutputByView.W.rows[1].visibleOutline3D={
+  native3DGeneratedCurveIntervals:{length:0}
+ };
+ assert.throws(()=>audit(x),/malformed native 3D HLR interval group/);
 });
