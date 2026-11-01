@@ -132,6 +132,15 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  assert.equal($('animation').querySelectorAll('[data-source-point-only]').length,8);
  assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
  assert.equal($('v5StepJump').value,'1');
+ // An actual UI seek after preview corruption must disable the player,
+ // clear all strokes and give a blocked status rather than freezing.
+ const corrupt=document.createElementNS('http://www.w3.org/2000/svg','circle');
+ $('sheetPreview').querySelector('svg').append(corrupt);
+ $('next').dispatchEvent(new window.Event('click'));
+ assert.equal($('next').disabled,true);
+ assert.equal($('animation').children.length,0);
+ assert.equal($('status').dataset.status,'blocked');
+ assert.match($('v5Status').textContent,/作图已停止/);
  $('reviewCheck').dispatchEvent(new window.Event('change'));
  assert.equal($('v5StepJump').disabled,true);
  assert.equal($('v5StepActions').children.length,0);
