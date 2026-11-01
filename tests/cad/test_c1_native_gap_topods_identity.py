@@ -207,5 +207,75 @@ class NativeC1GapTopoDSIdentity(unittest.TestCase):
             extractor.VCompound(original_source(self.original, ('A', 'D'))),
             TopAbs_EDGE))
 
+
+    def test_first_angle_native_edgestatus_parameter_bounds(self):
+        """Real +Z H / +X W observer rays, not the opposite-camera controls.
+
+        OCP returns Bounds(tolStart,tolEnd) and VisiblePart(index,tolStart,
+        tolEnd) as pairs. A source-scoped 3D interval is not generated 2D
+        TopoDS history and cannot sign an M5 line or a V5 action.
+        """
+        first_angle = {'H': ((0, 0, 1), (1, 0, 0)),
+                       'W': ((1, 0, 0), (0, 1, 0))}
+        for view, (camera, xdir) in first_angle.items():
+            with self.subTest(view=view):
+                algo = HLRBRep_Algo()
+                algo.Add(self.solid)
+                algo.Projector(HLRAlgo_Projector(gp_Ax2(
+                    gp_Pnt(0, 0, 0), gp_Dir(*camera), gp_Dir(*xdir))))
+                algo.Update()
+                algo.Hide()
+                ds = algo.DataStructure()
+                edge_map, statuses = ds.EdgeMap(), ds.EDataArray()
+                self.assertEqual(edge_map.Extent(), len(self.original))
+                self.assertLessEqual(statuses.Lower(), 1)
+                self.assertGreaterEqual(statuses.Upper(), edge_map.Extent())
+                for name in (('A', 'C'), ('A', 'D')):
+                    with self.subTest(source=name):
+                        source = original_source(self.original, name)
+                        indices = [i for i in range(1, edge_map.Extent() + 1)
+                                   if TopoDS.Edge_s(edge_map.FindKey(i)).IsSame(source)]
+                        self.assertEqual(len(indices), 1)
+                        status = statuses.Value(indices[0]).Status()
+                        bounds = status.Bounds(0.0, 0.0)
+                        curve = BRepAdaptor_Curve(source)
+                        self.assertEqual(bounds, (curve.FirstParameter(),
+                                                  curve.LastParameter()))
+                        self.assertGreater(bounds[1], bounds[0])
+                        parts = [status.VisiblePart(j, 0.0, 0.0)
+                                 for j in range(1, status.NbVisiblePart() + 1)]
+                        self.assertTrue(all(bounds[0] <= lo < hi <= bounds[1]
+                                            for lo, hi in parts))
+                        self.assertTrue(all(parts[j - 1][1] <= parts[j][0]
+                                            for j in range(1, len(parts))))
+                        if status.AllVisible():
+                            self.assertEqual(parts, [bounds])
+                        if status.AllHidden():
+                            self.assertEqual(parts, [])
+
+    def test_opposite_camera_status_is_not_first_angle_source_evidence(self):
+        """Negative control: reversing W camera changes a real source class.
+
+        The legacy opposite-camera HLR identity experiments must not be
+        silently substituted for the pinned first-angle WASM/M5 evidence.
+        """
+        source = original_source(self.original, ('B', 'C'))
+        classes = []
+        for camera in ((1, 0, 0), (-1, 0, 0)):
+            algo = HLRBRep_Algo()
+            algo.Add(self.solid)
+            algo.Projector(HLRAlgo_Projector(gp_Ax2(
+                gp_Pnt(0, 0, 0), gp_Dir(*camera), gp_Dir(0, 1, 0))))
+            algo.Update()
+            algo.Hide()
+            ds = algo.DataStructure()
+            indices = [i for i in range(1, ds.EdgeMap().Extent() + 1)
+                       if TopoDS.Edge_s(ds.EdgeMap().FindKey(i)).IsSame(source)]
+            self.assertEqual(len(indices), 1)
+            status = ds.EDataArray().Value(indices[0]).Status()
+            classes.append((status.AllVisible(), status.AllHidden(),
+                            status.NbVisiblePart()))
+        self.assertNotEqual(classes[0], classes[1])
+
 if __name__ == '__main__':
     unittest.main()
