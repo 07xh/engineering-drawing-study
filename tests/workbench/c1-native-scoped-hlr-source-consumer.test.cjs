@@ -616,8 +616,7 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
    originalOCCTBRepVertexXYZMatched:true,
    fromOCCT3D:{...a},toOCCT3D:{...b},
    occtSourceCurve3DEndpointsAndMidpointVerified:true,
-   occtSourceCurveParameterRange:[0,Math.hypot(
-    b.x-a.x,b.y-a.y,b.z-a.z)],
+   occtSourceCurveParameterRange:[0,1],
    occtSourceCurveFirstPoint3D:a,occtSourceCurveLastPoint3D:b};
  });
  for(const view of ['V','H','W']){
@@ -1223,7 +1222,7 @@ function fixtureWithRealStatusReplay({collapseSecondInW=false}={}){
  x.cad.actualOCCTCurveTypeIndependentlyVerified=true;
  x.cad.originalBRepSourceEdges=x.geometry.data.edges.map(edge=>{
   const [a,b]=edge.map(id=>x.geometry.data.points[id]),
-   range=[0,Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)];
+   range=[0,1];
   return {sourceEdgeId:x.geometry.id+'::'+[...edge].sort().join('|'),
    occtSourceCurveType:'line',originalOCCTBRepVertexXYZMatched:true,
    fromOCCT3D:{...a},toOCCT3D:{...b},
