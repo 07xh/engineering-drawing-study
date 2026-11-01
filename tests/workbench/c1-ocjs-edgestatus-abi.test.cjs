@@ -273,6 +273,8 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
   [2.5,-5]);
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
+ assert.deepEqual(row.originalBRepSourceParameterRange,[2.5,8.5]);
+ assert.equal(row.originalBRepParameterRangeMatches,true);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
  assert.equal(r.originalNativeEdgeHandleLedgerComplete,true);
  assert.equal(r.originalNativeEdgeHandleOccurrenceCount,2);
@@ -397,7 +399,8 @@ test('parameterized generated curve rejects an output interval outside the origi
   Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
-  curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
  }]]);
  const segment={
   actualOCCTHLRCurveParameterRange:[1,8],
