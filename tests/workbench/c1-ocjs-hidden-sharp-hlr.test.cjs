@@ -116,10 +116,12 @@ function originalStatusClassFixture(view='W'){
  return {view,statusRows:[
   {view,originalPhysicalSourceEdgeId:'g::A|B',
    nativeHLROriginalEdgeMapIndex:1,
-   originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false},
+   originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false,
+   nativeOriginalVisiblePartCount:1,originalSourceClass:'all-visible'},
   {view,originalPhysicalSourceEdgeId:'g::C|D',
    nativeHLROriginalEdgeMapIndex:2,
-   originalEdgeStatusAllVisible:false,originalEdgeStatusAllHidden:true}
+   originalEdgeStatusAllVisible:false,originalEdgeStatusAllHidden:true,
+   nativeOriginalVisiblePartCount:0,originalSourceClass:'all-hidden'}
  ],scopedRows:[visible,hidden]};
 }
 test('same-run native original EdgeStatus classes reconcile with source-scoped 3D and 2D without signing',()=>{
