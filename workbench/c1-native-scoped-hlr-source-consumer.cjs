@@ -205,6 +205,26 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
   .map(x=>x.originalM0UnitParameterRange);
  const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
+ // Union coverage is insufficient when the SAME native class assigns a
+ // positive original-source subspan twice. A generated HLR edge cannot
+ // claim unique original 3D class backing from overlapping partitions.
+ const sameClassOverlaps=positivePairwiseIntervalOverlaps(sameRanges);
+ // A positive native curve interval may collapse under binary64 M4
+ // normalization. Recheck held ORIGINAL BRep parameters, not paper t.
+ const heldNative=nativeM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation??[];
+ if(!Array.isArray(heldNative)||heldNative.length>512)
+  throw new RangeError('invalid held native M4 interval inventory');
+ const queryNative=[...effectiveSourceRange].sort((a,b)=>a-b);
+ const heldNativeIntersectsQuery=heldNative.some(item=>{
+  const r=item?.originalNative3DParameterRange;
+  if(!Array.isArray(r)||r.length!==2||!r.every(Number.isFinite)||
+     !(r[1]>r[0]))
+   throw new RangeError('invalid held original BRep source interval');
+  return Math.min(r[1],queryNative[1])>Math.max(r[0],queryNative[0]);
+ });
+ const nativePartitionNotKnownFalse=
+  nativeM4.native3DSourceParameterPartitionCompleteExactlyOnce!==false&&
+  nativeM4.M4OriginalUnitIntervalCandidateCoverageComplete!==false;
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
  const nativeOutlineEvidenceAvailable=
@@ -280,10 +300,15 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   sourceDomainEndpointForwardMapProof:forwardEndpointBound,
   nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
   nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
+  nativeM4SameClassPositiveOverlaps:sameClassOverlaps,
+  nativeM4HeldOriginalParameterPositiveOverlap:heldNativeIntersectsQuery,
+  nativeM4IndependentPartitionNotDisproven:nativePartitionNotKnownFalse,
   nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
   nativeM4OppositeClassOverlaps:oppositeOverlaps,
   nativeM4ClassBacked:
-   sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0,
+   sameCoverage.entireOriginalParameterIntervalCovered&&
+   sameClassOverlaps.length===0&&!heldNativeIntersectsQuery&&
+   nativePartitionNotKnownFalse&&oppositeOverlaps.length===0,
   nativeOutlineEvidenceAvailable,
   nativeOutlineSameClassCoverageComplete:
    sameOutlineCoverage.entireOriginalParameterIntervalCovered,
