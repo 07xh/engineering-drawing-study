@@ -355,3 +355,29 @@ test('native outline producer must explicitly deny generated 2D topology ancestr
   originalGeneratedTopoDSHistoryCertified=true;
  assert.throws(()=>projectNative(z),/unverified source-scoped original native 3D outline interval/);
 });
+
+test('positive native outline subspan lost at huge paper coordinate is held without erasing native provenance',()=>{
+ const big=2**50,sourceEdgeId='NativeM4HugeOutline::A|B';
+ const sourceGeometry={id:'NativeM4HugeOutline',kind:'mesh',
+  space:'model-3d',unit:'mm',data:{
+   points:{A:P(big,0,0),B:P(big+10,0,0)},edges:[['A','B']]
+  }};
+ const x=input([[0,10]],[]);
+ x.geometry=sourceGeometry;x.sourceEdgeId=sourceEdgeId;
+ x.originalCurve={...x.originalCurve,sourceEdgeId,
+  occtSourceCurveFirstPoint3D:sourceGeometry.data.points.A,
+  occtSourceCurveLastPoint3D:sourceGeometry.data.points.B};
+ x.scopedRow=row([[0,10]],[],[[0,1],[1,1.1],[1.1,10]],[]);
+ x.scopedRow.originalPhysicalSourceEdgeId=sourceEdgeId;
+ for(const group of ['visible3D','visibleOutline3D'])
+  for(const part of x.scopedRow[group].native3DGeneratedCurveIntervals)
+   part.nativeSourceFilterOriginalEdgeId=sourceEdgeId;
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.native3DOutlineSegments.length,3);
+ assert.equal(out.native3DOutlineSegments[1].paperDrawableCandidate,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[1,1.1]);
+ assert.equal(out.officialV5Authorized,false);
+});
