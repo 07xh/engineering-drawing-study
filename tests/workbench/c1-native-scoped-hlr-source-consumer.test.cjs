@@ -36,7 +36,7 @@ function fixture(){
   sourceProjected2DParameterRangeSorted:[0,1],
   sourceProjected2DParameterRangeMatchesGeneratedOutputRange:
    range[0]===0&&range[1]===1,
-  sourceProjected2DParameterEndpointResiduals:[0,0],
+  sourceProjected2DParameterEndpointResiduals:[range[0],range[1]-1],
   source3DParameterRange:[...range],
   generated2DParameterRange:[...range],
   maximumProjectedPointResidualMm:0,maximumParameterRoundTripResidual:0,
