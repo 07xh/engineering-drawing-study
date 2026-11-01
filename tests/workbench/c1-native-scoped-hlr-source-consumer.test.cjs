@@ -855,6 +855,7 @@ test('native outline class intervals independently back a parameterized visible 
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineEvidenceAvailable:true,
   native3DOutlineSegments:[{
    native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]
   }]
@@ -874,6 +875,7 @@ test('opposite native outline class overlap prevents a parameterized contour sou
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineEvidenceAvailable:true,
   native3DOutlineSegments:[
    {native3DHLRClass:'visible-outline',originalM0UnitParameterRange:[0.2,0.8]},
    {native3DHLRClass:'hidden-outline',originalM0UnitParameterRange:[0.4,0.6]}
@@ -892,6 +894,7 @@ test('an empty native outline ledger is available evidence but cannot back a con
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+  native3DOutlineEvidenceAvailable:true,
   native3DOutlineSegments:[]
  };
  const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
