@@ -422,8 +422,10 @@ for(const [index,geometry] of general.entries()){
  const parameterizedLineageTotals={
   unique:scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage,
   ambiguous:scopedConsumer.counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage,
-  unmatched:scopedConsumer.counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage,
-  unavailable:scopedConsumer.counts.globalGeneratedHLREdgesWithoutParameterizedSourceReport,
+  unmatched:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.unmatchedGeneratedOutputEdges,0),
+  unavailable:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.unavailableGeneratedOutputEdges,0),
   sourceFilterOrPaperDisagreements:
    scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement
  };
