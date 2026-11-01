@@ -131,18 +131,18 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
- if(!Array.isArray(nativeM4.native3DOutlineSegments))
-  throw new RangeError('native source-filtered 3D outline interval ledger missing');
+ const nativeOutlineEvidenceAvailable=Array.isArray(nativeM4.native3DOutlineSegments),
+  outlineSegments=nativeOutlineEvidenceAvailable?nativeM4.native3DOutlineSegments:[];
  const sameOutlineClass=klass==='visible'?'visible-outline':'hidden-outline',
   oppositeOutlineClass=klass==='visible'?'hidden-outline':'visible-outline';
- const sameOutlineRanges=nativeM4.native3DOutlineSegments.filter(x=>
+ const sameOutlineRanges=outlineSegments.filter(x=>
   x?.native3DHLRClass===sameOutlineClass).map(x=>x.originalM0UnitParameterRange);
- const oppositeOutlineRanges=nativeM4.native3DOutlineSegments.filter(x=>
+ const oppositeOutlineRanges=outlineSegments.filter(x=>
   x?.native3DHLRClass===oppositeOutlineClass).map(x=>x.originalM0UnitParameterRange);
  const sameOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,sameOutlineRanges);
  const oppositeOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeOutlineRanges);
  const oppositeOutlineOverlaps=oppositeOutlineCoverage.positiveLengthCoveredIntervals;
- const nativeOutlineClassBacked=
+ const nativeOutlineClassBacked=nativeOutlineEvidenceAvailable&&
   sameOutlineCoverage.entireOriginalParameterIntervalCovered&&
   oppositeOutlineOverlaps.length===0;
  return {
@@ -161,7 +161,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeM4OppositeClassOverlaps:oppositeOverlaps,
   nativeM4ClassBacked:
    sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0,
-  nativeOutlineEvidenceAvailable:true,
+  nativeOutlineEvidenceAvailable,
   nativeOutlineSameClassCoverageComplete:
    sameOutlineCoverage.entireOriginalParameterIntervalCovered,
   nativeOutlineSameClassCoverageGaps:sameOutlineCoverage.positiveLengthUncoveredIntervals,
