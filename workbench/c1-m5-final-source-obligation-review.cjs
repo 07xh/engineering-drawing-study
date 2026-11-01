@@ -25,7 +25,7 @@ const freeze=(value)=>{
  }
  return value;
 };
-function reviewC1M5FinalStrokeObligations(ledger){
+function reviewC1M5FinalStrokeObligations(ledger,{geometry}={}){
  if(!ledger||ledger.schema!=='draftai-c1-m5-recomputed-real-wasm-final-source-obligations/1'||
     !Number.isSafeInteger(ledger.revision)||ledger.revision<1||
     ledger.realCADAndM5RecomputedFromCurrentOriginalReviewedSource!==true||
@@ -33,6 +33,30 @@ function reviewC1M5FinalStrokeObligations(ledger){
     !Array.isArray(ledger.subspans)||
     typeof ledger.sourceGeometryId!=='string'||!ledger.sourceGeometryId.trim())
   throw new TypeError('canonical unsigned real-WASM M5 obligations required');
+ // The final M5 subspan ledger cannot enumerate a source/view it omitted.
+ // Reconstruct the independent M0 physical-edge × first-angle-view universe
+ // when the real reviewed geometry is supplied. An absent pair is NOT a
+ // complete [0,1] partition, even when every observed pair is gap-free.
+ const expectedSourceViewKeys=geometry===undefined?null:(()=>{
+  if(geometry?.id!==ledger.sourceGeometryId||
+     geometry.kind!=='mesh'||geometry.space!=='model-3d'||
+     geometry.unit!=='mm'||!Array.isArray(geometry.data?.edges)||
+     geometry.data.edges.length===0||!geometry.data?.points)
+   throw new TypeError('current original M0 geometry required for source inventory');
+  const sourceIds=new Set();
+  for(const edge of geometry.data.edges){
+   if(!Array.isArray(edge)||edge.length!==2||
+      edge.some(id=>typeof id!=='string'||!id.trim()||
+       !geometry.data.points[id])||edge[0]===edge[1])
+    throw new TypeError('invalid original M0 physical edge inventory');
+   const id=geometry.id+'::'+[...edge].sort().join('|');
+   if(sourceIds.has(id))
+    throw new TypeError('duplicate original M0 physical edge inventory');
+   sourceIds.add(id);
+  }
+  return new Set([...sourceIds].flatMap(id=>
+   ['V','H','W'].map(view=>JSON.stringify([view,id]))));
+ })();
  const exactSourceKeys=new Set(),intervalsBySourceView=new Map();
  const viewsSeen=new Set();
  const rows=ledger.subspans.map((span,index)=>{
@@ -54,6 +78,9 @@ function reviewC1M5FinalStrokeObligations(ledger){
   if(!Number.isFinite(start)||!Number.isFinite(end)||
      start<0||end>1)
    throw new TypeError('invalid original source parameter domain');
+  if(expectedSourceViewKeys!==null&&
+     !expectedSourceViewKeys.has(JSON.stringify([span.view,span.sourceEdgeId])))
+   throw new TypeError('M5 subspan has no original M0 physical source/view');
   viewsSeen.add(span.view);
   const sourceKey=JSON.stringify([span.view,span.sourceEdgeId,start,end]);
   if(exactSourceKeys.has(sourceKey))
@@ -111,12 +138,27 @@ function reviewC1M5FinalStrokeObligations(ledger){
    view,sourceEdgeId,originalSourceParameterRange:[cursor,1]
   });
  }
+ const observedSourceViewKeys=new Set(intervalsBySourceView.keys());
+ const missingOriginalSourceViews=expectedSourceViewKeys===null?null:
+  [...expectedSourceViewKeys].filter(key=>!observedSourceViewKeys.has(key))
+   .map(key=>{const [view,sourceEdgeId]=JSON.parse(key);
+    return {view,sourceEdgeId,originalSourceParameterRange:[0,1]};
+   });
  if(ledger.counts?.totalOriginalSourceEdgeViewSubspans!==rows.length)
   throw new TypeError('source interval count mismatch');
  return freeze({
   schema:'draftai-c1-m5-final-source-obligation-review/1',
   sourceGeometryId:ledger.sourceGeometryId,revision:ledger.revision,
   total:rows.length,viewsRepresented:['V','H','W'].filter(view=>viewsSeen.has(view)),
+  independentOriginalM0InventoryAudited:expectedSourceViewKeys!==null,
+  expectedOriginalSourceViewCount:expectedSourceViewKeys?.size??null,
+  observedOriginalSourceViewCount:observedSourceViewKeys.size,
+  missingOriginalSourceViews,
+  missingOriginalSourceViewCount:missingOriginalSourceViews?.length??null,
+  // A complete observed partition does not erase wholly absent source/view pairs.
+  allOriginalSourceViewsHaveCompleteParameterPartitions:
+   expectedSourceViewKeys!==null&&missingOriginalSourceViews.length===0&&
+   uncoveredOriginalParameterRanges.length===0,
   uncoveredOriginalParameterRanges,
   observedSourceViewsWithUncoveredOriginalParameters:new Set(
    uncoveredOriginalParameterRanges.map(x=>JSON.stringify([x.view,x.sourceEdgeId]))
