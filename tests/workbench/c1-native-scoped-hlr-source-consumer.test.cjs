@@ -124,6 +124,13 @@ function fixtureWithNativePaperParameterEndpointWitness(){
  }));
  const match=x.cad.nativeSourceScopedSharpOutputByView.V
   .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ // The synthetic source witness must use the ACTUAL native generated
+ // paper samples, not an unrelated placeholder coordinate sequence.
+ match.samples.forEach((sample,i)=>{
+  const native=segment.actualOCCTHLRCurveSamplesProjectedMm[i];
+  sample.generatedProjectedPointMm=[native.u,native.v];
+  sample.sourceProjectedPointMm=[native.u,native.v];
+ });
  match.nativePaperEndpointSampleWitness={
   receivedNativePaperEndpointsChecked:true,endpointOrientation:'direct',
   maximumNativePaperEndpointSampleResidualMm:0,
@@ -157,6 +164,44 @@ test('M4 vetoes a grafted or stale parameterized native paper endpoint witness',
   const x=fixtureWithNativePaperParameterEndpointWitness();
   mutate(x);
   assert.throws(()=>audit(x),/M4 native HLR endpoint\/sample provenance witness incomplete|M4 parameterized HLR source reused stale native paper endpoints|native|paper|endpoint/i);
+ }
+});
+test('M4 replays measured five-point residuals and preserves small nonzero drift as candidate only',()=>{
+ const x=fixture();
+ const match=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ match.samples[2].sourceProjectedPointMm[0]+=1e-7;
+ const s=match.samples[2];
+ s.projectedPointResidualMm=Math.hypot(
+  s.sourceProjectedPointMm[0]-s.generatedProjectedPointMm[0],
+  s.sourceProjectedPointMm[1]-s.generatedProjectedPointMm[1]);
+ match.maximumProjectedPointResidualMm=s.projectedPointResidualMm;
+ const r=audit(x),lineage=r.views.V.parameterizedGlobalHLRSourceLineage;
+ assert.equal(lineage.classes.visible.rows[0].parameterizedSourceMatchCount,1);
+ assert.equal(lineage.generated2DTopoDSHistoryProven,false);
+ assert.equal(lineage.signedV5ActionCount,0);
+});
+test('M4 rejects forged five-point residuals, parameter grids and native interior paper samples',()=>{
+ const sourceMatch=x=>x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ for(const mutate of [
+  x=>{sourceMatch(x).samples[2].sourceProjectedPointMm[0]+=0.125;},
+  x=>{sourceMatch(x).samples[2].generated2DParameter+=0.01;},
+  x=>{sourceMatch(x).maximumProjectedPointResidualMm=0.25;},
+  x=>{x.cad.views.V[0].actualOCCTHLRCurveSamplesProjectedMm[2].u+=0.125;},
+  x=>{
+   const m=sourceMatch(x);
+   m.samples[2].generatedProjectedPointMm[0]+=0.125;
+   const s=m.samples[2];
+   s.projectedPointResidualMm=Math.hypot(
+    s.sourceProjectedPointMm[0]-s.generatedProjectedPointMm[0],
+    s.sourceProjectedPointMm[1]-s.generatedProjectedPointMm[1]);
+   m.maximumProjectedPointResidualMm=s.projectedPointResidualMm;
+  }
+ ]){
+  const x=fixtureWithNativePaperParameterEndpointWitness();
+  mutate(x);
+  assert.throws(()=>audit(x),/five-point sample|residual summary/i);
  }
 });
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
