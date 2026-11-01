@@ -605,6 +605,18 @@ for(const [index,geometry] of general.entries()){
    row.original3DToGenerated2DEndpointWitnesses.every(w=>
     w.paperAndSourceProximityIsNotNativeVertexTopologyIdentity===true&&
     w.signedV5Action===false)));
+  // Physical source junctions and generated TopoDS vertex identity are
+  // different predicates. Reject a false promotion even if every candidate
+  // agrees on the exact original M0 physical vertex and paper coordinate.
+  assert.equal(e.originalPhysicalEndpointPairCandidates.filter(pair=>
+   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true).length,
+   nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame===0?0:
+   e.originalPhysicalEndpointPairCandidates.filter(pair=>
+    pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true).length);
+  assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
+   pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
+   pair.paperCoincidenceCannotSignEngineeringJunction===true&&
+   pair.signedV5Action===false));
   assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
    pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===false&&
    pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
