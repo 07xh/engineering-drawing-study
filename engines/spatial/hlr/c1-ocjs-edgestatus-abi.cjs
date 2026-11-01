@@ -445,6 +445,10 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    x.originalEdgeData.original3DToProjected2DCurveParameterMap?.canonicalProjectionCoordinatesMatch??null,
   directOriginalTopoDSEdgeIdentityProven:
    x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven,
+  originalBRepSourceParameterRange:
+   x.originalEdgeData.originalBRepSourceParameterRange,
+  originalBRepParameterRangeMatches:
+   x.originalEdgeData.originalBRepParameterRangeMatches,
   directOriginalTopoDSEdgeIsSameMatches:
    x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches,
   outOfLimitAtStart:x.originalEdgeData.flagValues.OutLVSta,
