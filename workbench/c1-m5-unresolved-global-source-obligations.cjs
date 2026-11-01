@@ -169,9 +169,17 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
  // no generated TopoDS history or closed-endpoint promotion.
  const openRayBySource=new Map();
  let indexedOriginal3DGlobalHLRRebind=null;
+ let originalStatusVsNative3DByView=null;
  if(geometry.kind==='mesh'&&cad.originalNativeFaceAdjacency){
   const native=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
   indexedOriginal3DGlobalHLRRebind=native.globalNativeHLRSourceScopeRebinding;
+  // M4 has independently replayed every reported original source status.
+  // This does not certify any GENERATED 2D edge history or M5 paper gap.
+  originalStatusVsNative3DByView=Object.fromEntries(
+   ['V','H','W'].map(view=>[view,new Map(
+    (native.views[view]?.originalStatusReconciliation??[]).map(x=>
+     [x.sourceEdgeId,x])
+   )]));
   const exact=auditC1ExactConvexOriginalOpenEdgeRays({
    geometry,nativeFaceAdjacency:cad.originalNativeFaceAdjacency,
    nativeM4Views:native.views
@@ -193,6 +201,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithDistinctNativeGeneratedVertices:0,
   obligationsWithIndependentExactOriginalRayClass:0,
   obligationsWithNativeOriginalIndexedHLREdgeStatus:0,
+  obligationsWithReplayedOriginalStatusVsNative3DConcordance:0,
+  positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance:0,
+  obligationsWithOriginalStatusVsNative3DMismatchOrUncomparable:0,
   unresolvedObligationsWithDirectNativeSourceFilteredGeneratedCausalEdges:0,
   directNativeSourceFilteredGeneratedCausalEdgesStillMissingParameterHistory:0,
   obligationsWithNativeGlobal3DBRepCurveSource:0,
@@ -362,6 +373,16 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   // The native ORIGINAL input-edge class can corroborate M0/M4 but cannot
   // establish GENERATED projected TopoDS history or close a paper gap.
   const originalStatus=row.independentOriginalNativeHLREdgeStatusSource??null;
+  const replayedOriginalStatus=originalStatusVsNative3DByView?.[row.view]
+   ?.get(row.sourceEdgeId)??null;
+  counts.obligationsWithReplayedOriginalStatusVsNative3DConcordance+=
+   Number(replayedOriginalStatus?.nativeOriginalStatusClassAgreesWith3DSharp===true);
+  counts.positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance+=
+   Number(interval!==null&&
+    replayedOriginalStatus?.nativeOriginalStatusClassAgreesWith3DSharp===true);
+  counts.obligationsWithOriginalStatusVsNative3DMismatchOrUncomparable+=
+   Number(replayedOriginalStatus!==null&&
+    replayedOriginalStatus.nativeOriginalStatusClassAgreesWith3DSharp!==true);
   if(originalStatus){
    const current=cad.nativeHLRSourceHistoryAPISurfaceByView?.[row.view],
     indexed=current?.originalDataStructureIndex,
@@ -611,6 +632,9 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    exactIndexedSourceFilterCausalityCannotSignPaperGapsOrM5:true,
    directCausalGeneratedEdgeCannotReplaceOriginalParameterHistory:true,
    sameRunNativeOriginalHLREdgeStatus:originalStatus,
+   independentOriginalHLREdgeStatusVsNative3DSharpSourceConcordance:
+    replayedOriginalStatus,
+   sourceSideEdgeStatusAnd3DClassAgreementCannotCertifyGenerated2DHistory:true,
    nativeOriginalHLREdgeStatusDoesNotCloseGenerated2DHistory:true,
    originalHLREdgeStatusVsIndependentRayContradictionHeld:indexedClassContradiction,
    sameRunExactCollinearHLRPaperCandidateOnlyGapEvidence:exactPaperGap,
