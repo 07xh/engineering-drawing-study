@@ -238,3 +238,22 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
   assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
  }
 });
+
+test('exhaustive native vertex graph cannot omit an exact paper-coincident original M0 junction pair',()=>{
+ const x=attachGenuineNativePair(setup({two:true}));
+ x.cad.nativeGeneratedVertexGraph.views.V.
+  sameActualGeneratedOCCTTopoDSVertexPairs=[];
+ assert.throws(()=>audit(x),
+  /omits an exact paper-coincident original M0 physical junction pair/);
+});
+test('native IsSame and paper-distinct pair records must match both generated paper endpoints',()=>{
+ for(const same of [true,false]){
+  const x=attachGenuineNativePair(setup({two:true}),{same});
+  const view=x.cad.nativeGeneratedVertexGraph.views.V;
+  const pairs=same?view.sameActualGeneratedOCCTTopoDSVertexPairs:
+   view.paperCoincidentButDifferentTopoDSVertexPairs;
+  pairs[0].b.nativePaperPoint.u+=1;
+  x.cad.views.V[1].from.u+=1;
+  assert.throws(()=>audit(x),/different paper endpoints/);
+ }
+});
