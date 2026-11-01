@@ -91,15 +91,11 @@ function projectCandidate(src){
 }
 // Present only authenticated GIVEN source points on first entry; M0/M3
 // candidate geometry and unknown target view are never fetched here.
-function renderOriginalPaper(){
- const container=$('sheetPreview');container.replaceChildren();
- $('showGiven').setAttribute('aria-pressed','true');
- $('showCandidate').setAttribute('aria-pressed','false');
- if(!rawGiven){
-  $('paperMode').textContent='尚未加载原题：不展示三维候选或第三视图答案。';
-  return;
- }
- const paper=buildC1DxfGivenFirstPaper(rawGiven);
+// Rebuild the trusted GIVEN-only SVG from the reviewed source packet, never
+// from mutable preview DOM or a precompiled answer-bearing SVG. Both the
+// preview and canonical V5 must consume this identical first-angle paper.
+function makeCanonicalGivenPaperSvg(packet){
+ const paper=buildC1DxfGivenFirstPaper(packet);
  const outer=node('svg',{viewBox:'0 0 960 720',
   'data-c1-paper-mode':'given','data-missing-view':paper.missingView,
   'aria-label':'原题已知点；待补第三视图留白'});
@@ -126,6 +122,17 @@ function renderOriginalPaper(){
   }
   outer.append(group);
  }
+ return {paper,outer};
+}
+function renderOriginalPaper(){
+ const container=$('sheetPreview');container.replaceChildren();
+ $('showGiven').setAttribute('aria-pressed','true');
+ $('showCandidate').setAttribute('aria-pressed','false');
+ if(!rawGiven){
+  $('paperMode').textContent='尚未加载原题：不展示三维候选或第三视图答案。';
+  return;
+ }
+ const {paper,outer}=makeCanonicalGivenPaperSvg(rawGiven);
  container.append(outer);
  $('paperMode').textContent='仅显示原题 '+paper.knownViewPair.join('/')+
   ' 的 '+paper.knownViewPair.reduce((n,v)=>n+paper.views[v].points.length,0)+
@@ -229,13 +236,19 @@ function drawV5(){
  // as a frame-zero background, even after the user confirms a candidate.
  const known=given&&Object.keys(given.views).sort();
  const expectedPoints=known?.reduce((n,v)=>n+given.views[v].length,0);
+ const canonical=rawGiven?makeCanonicalGivenPaperSvg(rawGiven).outer:null;
  const sameOriginalGivenPoints=known?.length===2&&known.every(view=>
   Array.isArray(rawGiven?.views?.[view])&&
   rawGiven.views[view].length===given.views[view].length&&
   given.views[view].every((point,i)=>
    point.u===rawGiven.views[view][i].u&&
    point.v===rawGiven.views[view][i].v));
- if(!given||!rawGiven||!preview||!sameOriginalGivenPoints||
+ if(!given||!rawGiven||!preview||!canonical||!sameOriginalGivenPoints||
+    rawGiven.missingView!==given.missingView||
+    // Strict structural equality rejects injected circles/text, altered point
+    // coordinates, hidden nested paths and changed view metadata. A loose
+    // element-count check is insufficient for a genuine blank first frame.
+    preview.outerHTML!==canonical.outerHTML||
     rawGiven.sourceSha256!==given.sourceSha256||
     rawGiven.convertedDxfSha256!==given.convertedDxfSha256||
     preview.getAttribute('data-missing-view')!==given.missingView||
@@ -245,7 +258,7 @@ function drawV5(){
      ?.getAttribute('data-c1-unanswered-view')!==given.missingView||
     preview.querySelector('line,path,polyline,polygon'))
   throw new RangeError('canonical C1 V5 requires unmodified original GIVEN paper and blank target');
- paper.setAttribute('viewBox',preview.getAttribute('viewBox'));
+ paper.setAttribute('viewBox',canonical.getAttribute('viewBox'));
  // Verify actual DAG + every signed action's source before rendering a line.
  // Unbound contours are never allowed to borrow engineering line styles.
  renderStepInspector(frame);
@@ -258,7 +271,7 @@ function drawV5(){
  // the existing ConstructionStep DAG and canonical player fractions.
  const original=node('g',{'data-v5-original-paper':'given-only',
   'data-missing-view':given.missingView});
- for(const child of preview.children)original.append(child.cloneNode(true));
+ for(const child of canonical.children)original.append(child.cloneNode(true));
  paper.append(original);
  const layer=node('g',{'data-player':'one-existing-canonical-v5',
   'aria-label':'当前条件下的作图动画'});
