@@ -30,6 +30,424 @@ const {auditC1GlobalNativeHLROriginalM0EndpointLinks}=
 const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  for(const v of Object.values(o))frozen(v);Object.freeze(o);
 }return o;};
+
+/**
+ * Compare one generated-edge source interval with the independently
+ * source-filtered native 3D M4 visible/hidden parameter partition.
+ * The result is class backing, never generated-edge TopoDS ancestry.
+ */
+function auditC1ParameterizedSourceMatchAgainstNativeM4({
+ view,sourceId,match,klass,nativeM4
+}={}){
+ if(!nativeM4)return {
+  availability:'unavailable',sourceEdgeId:sourceId,
+  reason:'native-source-scoped-M4-intervals-unavailable',
+  originalM0UnitParameterRange:null,nativeM4ClassBacked:false
+ };
+ const sameClass=klass==='visible'?'visible-sharp':
+  klass==='hidden'?'hidden-sharp':null;
+ const oppositeClass=klass==='visible'?'hidden-sharp':
+  klass==='hidden'?'visible-sharp':null;
+ const domain=match?.original3DCurveParameterRange,
+  sourceRange=match?.source3DParameterRange,
+  direction=nativeM4.original3DSourceCurveDirection;
+ if(nativeM4.schema!==
+    'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1'||
+    nativeM4.sourceEdgeId!==sourceId||nativeM4.view!==view||
+    !sameClass||!Array.isArray(nativeM4.segments)||
+    !Array.isArray(domain)||domain.length!==2||
+    !domain.every(Number.isFinite)||!(domain[1]>domain[0])||
+    !Array.isArray(sourceRange)||sourceRange.length!==2||
+    !sourceRange.every(Number.isFinite)||
+    !['forward','reversed'].includes(direction))
+  throw new RangeError('invalid native M4 source-class interval binding for parameterized HLR edge');
+ const parameterTolerance=1e-10*Math.max(1,...domain.map(Math.abs),
+  ...sourceRange.map(Math.abs));
+ if(Math.min(...sourceRange)<domain[0]-parameterTolerance||
+    Math.max(...sourceRange)>domain[1]+parameterTolerance)
+  throw new RangeError('parameterized source interval escapes original BRep parameter domain');
+ const exactDomainContainment=Math.min(...sourceRange)>=domain[0]&&
+  Math.max(...sourceRange)<=domain[1];
+ const forwardRange=match?.sourceProjected2DParameterRange,
+  forwardSortedRange=match?.sourceProjected2DParameterRangeSorted,
+  generatedRange=match?.generated2DParameterRange,
+  forwardResiduals=match?.sourceProjected2DParameterEndpointResiduals;
+ const forwardEndpointBound=
+  match?.sourceProjected2DParameterRangeMatchesGeneratedOutputRange===true&&
+  Array.isArray(forwardRange)&&forwardRange.length===2&&
+  forwardRange.every(Number.isFinite)&&
+  Array.isArray(forwardSortedRange)&&forwardSortedRange.length===2&&
+  forwardSortedRange.every(Number.isFinite)&&
+  Array.isArray(generatedRange)&&generatedRange.length===2&&
+  generatedRange.every(Number.isFinite)&&
+  Array.isArray(forwardResiduals)&&forwardResiduals.length===2&&
+  forwardResiduals.every(Number.isFinite)&&
+  Math.min(...forwardRange)===forwardSortedRange[0]&&
+  Math.max(...forwardRange)===forwardSortedRange[1]&&
+  forwardResiduals[0]===generatedRange[0]-forwardSortedRange[0]&&
+  forwardResiduals[1]===generatedRange[1]-forwardSortedRange[1]&&
+  forwardResiduals[0]===0&&forwardResiduals[1]===0;
+ const normalize=t=>direction==='reversed'?
+  (domain[1]-t)/(domain[1]-domain[0]):
+  (t-domain[0])/(domain[1]-domain[0]);
+ const inverseA=normalize(sourceRange[0]),inverseB=normalize(sourceRange[1]),
+  inverseNormalizedRange=[Math.min(inverseA,inverseB),Math.max(inverseA,inverseB)];
+ if(!inverseNormalizedRange.every(Number.isFinite)||
+    !(inverseNormalizedRange[1]>inverseNormalizedRange[0]))
+  throw new RangeError('parameterized generated HLR source interval cannot normalize to original M0 [0,1]');
+ // If Parameter3d inverse lands a few ULPs outside the source domain, only
+ // the independent exact Parameter2d(original-domain-endpoints) == generated
+ // output-endpoints witness may bind the interval back to the original domain.
+ // The inverse overshoot is retained verbatim; no endpoint is clamped.
+ if(!exactDomainContainment&&!forwardEndpointBound)
+  return {
+   availability:'available',sourceEdgeId:sourceId,
+   original3DSourceCurveDirection:direction,
+   generated2DHLRClass:sameClass,
+   originalM0UnitParameterRange:inverseNormalizedRange,
+   inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
+   source3DParameterRangeFromInverse:[...sourceRange],
+   sourceParameterDomainContainment:'within-tolerance-but-outside',
+   sourceDomainEndpointForwardMapProof:false,
+   nativeM4SameClassCoverageComplete:false,
+   nativeM4SameClassCoverageGaps:null,
+   nativeM4OppositeClassPositiveOverlap:null,
+   nativeM4OppositeClassOverlaps:null,
+   nativeM4ClassBacked:false,
+   reason:'source-parameter-interval-outside-original-M0-unit-domain-no-clamp'
+  };
+ const effectiveSourceRange=exactDomainContainment?sourceRange:domain;
+ const effectiveA=normalize(effectiveSourceRange[0]),
+  effectiveB=normalize(effectiveSourceRange[1]),
+  normalizedRange=[Math.min(effectiveA,effectiveB),Math.max(effectiveA,effectiveB)];
+ if(!normalizedRange.every(Number.isFinite)||
+    normalizedRange[0]<0||normalizedRange[1]>1||
+    !(normalizedRange[1]>normalizedRange[0]))
+  throw new RangeError('forward-bound source interval cannot normalize exactly to original M0 [0,1]');
+ const sameRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===sameClass)
+  .map(x=>x.originalM0UnitParameterRange);
+ const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
+  .map(x=>x.originalM0UnitParameterRange);
+ const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
+ const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
+ const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
+ return {
+  availability:'available',sourceEdgeId:sourceId,
+  original3DSourceCurveDirection:direction,
+  generated2DHLRClass:sameClass,
+  originalM0UnitParameterRange:normalizedRange,
+  inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
+  source3DParameterRangeFromInverse:[...sourceRange],
+  sourceParameterDomainContainment:exactDomainContainment?'exact':
+   'forward-endpoint-bound-exact-with-inverse-overshoot',
+  sourceDomainEndpointForwardMapProof:forwardEndpointBound,
+  nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
+  nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
+  nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
+  nativeM4OppositeClassOverlaps:oppositeOverlaps,
+  nativeM4ClassBacked:
+   sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0
+ };
+}
+/**
+ * Reconcile whole-solid generated 2D HLR edges with the SAME-RUN original
+ * HLRBRep_Curve parameter map. The source curve enters this map only after
+ * symmetric native TopoDS IsSame binds its EdgeData geometry to one M0 edge.
+ * This is parameterized curve correspondence, NOT generated-edge TShape
+ * ancestry, global occlusion, GB line style, ConstructionIntent or V5.
+ */
+function auditC1ParameterizedGlobalHLRSourceLineage({
+ view,classes,scoped,expected,nativeM4ById
+}={}){
+ const reports=scoped?.generated2DSourceParameterMatches;
+ const result={schema:'draftai-c1-parameterized-global-hlr-source-lineage/1',
+  view,availability:'available',classes:{},counts:{
+   uniqueParameterizedSourceLineage:0,
+   ambiguousParameterizedSourceLineage:0,
+   nativeFilterNarrowedAmbiguousParameterizedSourceLineage:0,
+   unmatchedGeneratedOutputEdges:0,
+   unavailableGeneratedOutputEdges:0,
+   sourceFilterOrPaperCandidateDisagreements:0,
+   nativeM4ClassBackedUniqueFilterSourceEdges:0,
+   nativeM4ClassEvidenceUnavailableEdges:0,
+   nativeM4ClassBackingUnprovenEdges:0
+  },generated2DTopoDSHistoryProven:false,
+  globalContinuousVisibilityProven:false,
+  engineeringLineStyle:'undetermined',signedV5ActionCount:0};
+ // Older synthetic consumers may not carry this optional diagnostic yet.
+ // The real pinned-WASM producer now always emits it; absence is reported
+ // as unavailable and can never be upgraded from paper aliases.
+ if(!reports||typeof reports!=='object'){
+  result.availability='unavailable';
+  for(const [klass,item] of Object.entries(classes)){
+   const rows=item.global.map((_,ordinal)=>({
+    wholeSolidHLREdgeOrdinal:ordinal,parameterizedSourceMatchCount:0,
+    parameterizedOriginalSourceEdgeIds:[],
+    nativeSourceFilterAndM0PaperCandidatesAgree:false,
+    status:'parameterized-source-report-unavailable',
+    sameRunOriginalHLRCurveParameterLineageProven:false,
+    generated2DTopoDSHistoryProven:false,
+    globalContinuousVisibilityProven:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   }));
+   result.classes[klass]={generatedOutputEdgeCount:item.global.length,
+    unavailableGeneratedOutputEdges:item.global.length,rows};
+   result.counts.unavailableGeneratedOutputEdges+=item.global.length;
+  }
+  return result;
+ }
+ for(const [klass,item] of Object.entries(classes)){
+  const report=reports[klass];
+  if(!report||report.schema!==
+      'draftai-c1-ocjs-generated-2d-source-parameter-match/1'||
+     !Number.isSafeInteger(report.sourceCurveCandidateCount)||
+     report.sourceCurveCandidateCount<0||
+     report.sourceCurveCandidateCount>expected.size||
+     !Number.isSafeInteger(report.topoDSIdentityBoundSourceCurveCount)||
+     report.topoDSIdentityBoundSourceCurveCount<0||
+     report.topoDSIdentityBoundSourceCurveCount>report.sourceCurveCandidateCount||
+     !Number.isSafeInteger(report.topoDSParameterDomainBoundSourceCurveCount)||
+     report.topoDSParameterDomainBoundSourceCurveCount<0||
+     report.topoDSParameterDomainBoundSourceCurveCount>
+      report.topoDSIdentityBoundSourceCurveCount||
+     report.generatedOutputEdgeCount!==item.global.length||
+     !Array.isArray(report.rows)||report.rows.length!==item.global.length||
+     report.generated2DTopoDSHistoryProven!==false||
+     report.globalContinuousVisibilityProven!==false||
+     report.engineeringLineStyle!=='undetermined'||
+     report.signedV5ActionCount!==0)
+   throw new RangeError('invalid parameterized whole-solid HLR source report');
+  const seenOrdinals=new Set(),distinctParameterDomainBoundSourceIds=new Set();
+  let rawUnique=0,rawAmbiguous=0,rawUnmatched=0;
+  let unique=0,ambiguous=0,unmatched=0,disagreements=0;
+  const rows=report.rows.map(row=>{
+   const ordinal=row?.ordinal,matches=row?.candidateSourceMatches;
+   if(!Number.isSafeInteger(ordinal)||ordinal<0||ordinal>=item.global.length||
+      seenOrdinals.has(ordinal)||!Array.isArray(matches)||
+      row.candidateSourceMatchCount!==matches.length||
+      !Number.isSafeInteger(row.rejectedSourceCandidateCount)||
+      row.rejectedSourceCandidateCount<0||
+      matches.length+row.rejectedSourceCandidateCount!==
+       report.sourceCurveCandidateCount)
+    throw new RangeError('invalid or incomplete parameterized HLR output ordinal inventory');
+   seenOrdinals.add(ordinal);
+   const segment=item.global[ordinal];
+   const paperCandidates=Array.isArray(segment?.projectedOriginalEdgeCandidates)?
+    segment.projectedOriginalEdgeCandidates:[];
+   const candidateIds=new Set();
+   for(const match of matches){
+    const sourceId=match?.sourceEdgeId,
+     originalDomain=match?.original3DCurveParameterRange,
+     originalBRepDomain=match?.originalBRepSourceParameterRange,
+     sourceProjectedRange=match?.sourceProjected2DParameterRange,
+     sourceProjectedSortedRange=match?.sourceProjected2DParameterRangeSorted,
+     sourceProjectedEndpointResiduals=match?.sourceProjected2DParameterEndpointResiduals,
+     sourceRange=match?.source3DParameterRange,
+     generatedRange=match?.generated2DParameterRange,
+     samples=match?.samples;
+    if(!expected.has(sourceId)||candidateIds.has(sourceId)||
+       match.matched!==true||match.originalTopoDSEdgeIdentityProven!==true||
+       match.originalBRepParameterRangeMatches!==true||
+       !Array.isArray(originalBRepDomain)||originalBRepDomain.length!==2||
+       !originalBRepDomain.every(Number.isFinite)||
+       originalBRepDomain[0]!==originalDomain?.[0]||
+       originalBRepDomain[1]!==originalDomain?.[1]||
+       !Array.isArray(sourceProjectedRange)||sourceProjectedRange.length!==2||
+       !sourceProjectedRange.every(Number.isFinite)||
+       !Array.isArray(sourceProjectedSortedRange)||sourceProjectedSortedRange.length!==2||
+       !sourceProjectedSortedRange.every(Number.isFinite)||
+       !Array.isArray(sourceProjectedEndpointResiduals)||sourceProjectedEndpointResiduals.length!==2||
+       !sourceProjectedEndpointResiduals.every(Number.isFinite)||
+       typeof match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange!=='boolean'||
+       sourceProjectedRange[0]===sourceProjectedRange[1]||
+       Math.min(...sourceProjectedRange)!==sourceProjectedSortedRange[0]||
+       Math.max(...sourceProjectedRange)!==sourceProjectedSortedRange[1]||
+       sourceProjectedEndpointResiduals[0]!==
+        generatedRange?.[0]-sourceProjectedSortedRange[0]||
+       sourceProjectedEndpointResiduals[1]!==
+        generatedRange?.[1]-sourceProjectedSortedRange[1]||
+       match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange!==
+        (sourceProjectedEndpointResiduals[0]===0&&sourceProjectedEndpointResiduals[1]===0)||
+       match.generated2DTopoDSHistoryProven!==false||
+       match.engineeringLineStyle!=='undetermined'||match.signedV5Action!==false||
+       !Array.isArray(originalDomain)||originalDomain.length!==2||
+       !originalDomain.every(Number.isFinite)||!(originalDomain[1]>originalDomain[0])||
+       !Array.isArray(sourceRange)||sourceRange.length!==2||
+       !sourceRange.every(Number.isFinite)||sourceRange[0]===sourceRange[1]||
+       !Array.isArray(generatedRange)||generatedRange.length!==2||
+       !generatedRange.every(Number.isFinite)||!(generatedRange[1]>generatedRange[0])||
+       !Number.isFinite(match.maximumProjectedPointResidualMm)||
+       match.maximumProjectedPointResidualMm<0||
+       !Number.isFinite(match.maximumParameterRoundTripResidual)||
+       match.maximumParameterRoundTripResidual<0||
+       !Array.isArray(samples)||samples.length!==5)
+     throw new RangeError('invalid same-run original HLR parameterized source witness');
+    const parameterTolerance=1e-10*Math.max(1,...originalDomain.map(Math.abs),
+     ...sourceRange.map(Math.abs));
+    if(Math.min(...sourceRange)<originalDomain[0]-parameterTolerance||
+       Math.max(...sourceRange)>originalDomain[1]+parameterTolerance)
+     throw new RangeError('parameterized HLR source interval escapes original 3D curve domain');
+    if(Array.isArray(segment.actualOCCTHLRCurveParameterRange)&&
+       (segment.actualOCCTHLRCurveParameterRange[0]!==generatedRange[0]||
+        segment.actualOCCTHLRCurveParameterRange[1]!==generatedRange[1]))
+     throw new RangeError('parameterized HLR match disagrees with generated edge parameter domain');
+    const sampleResiduals=[],roundTripResiduals=[];
+    for(const sample of samples){
+     const sourcePoint=sample?.sourceProjectedPointMm,
+      generatedPoint=sample?.generatedProjectedPointMm;
+     if(!Number.isFinite(sample?.generated2DParameter)||
+        !Number.isFinite(sample?.source3DParameter)||
+        !Number.isFinite(sample?.parameterRoundTripResidual)||
+        sample.parameterRoundTripResidual<0||
+        !Array.isArray(sourcePoint)||sourcePoint.length!==2||
+        !sourcePoint.every(Number.isFinite)||
+        !Array.isArray(generatedPoint)||generatedPoint.length!==2||
+        !generatedPoint.every(Number.isFinite)||
+        !Number.isFinite(sample.projectedPointResidualMm)||
+        sample.projectedPointResidualMm<0)
+      throw new RangeError('invalid parameterized HLR five-point curve correspondence');
+     sampleResiduals.push(sample.projectedPointResidualMm);
+     roundTripResiduals.push(sample.parameterRoundTripResidual);
+    }
+    if(Math.max(...sampleResiduals)>match.maximumProjectedPointResidualMm||
+       Math.max(...roundTripResiduals)>match.maximumParameterRoundTripResidual||
+       (Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)&&
+        Math.max(...sampleResiduals)>segment.actualOCCTHLRCurveSampleToleranceMm))
+     throw new RangeError('parameterized HLR curve residual summary is inconsistent');
+    candidateIds.add(sourceId);
+    distinctParameterDomainBoundSourceIds.add(sourceId);
+   }
+   const rawStatus=matches.length===0?'no-parameterized-source-curve-match':
+    matches.length===1?'unique-parameterized-source-curve-match':
+     'ambiguous-parameterized-source-curve-match';
+   if(row.status!==rawStatus||
+      row.uniqueOriginalSourceEdgeId!==(matches.length===1?matches[0].sourceEdgeId:null))
+    throw new RangeError('parameterized HLR source match classification is inconsistent');
+   if(matches.length===1)rawUnique++;
+   else if(matches.length>1)rawAmbiguous++;
+   else rawUnmatched++;
+   // A parameterized source must agree with BOTH the independent native
+   // source-filtered HLR inventory and the original M0 paper candidate set.
+   // Extra source-filter claims are a disagreement, not a reason to pick one.
+   const filterSources=item.sources[ordinal];
+   const parameterizedSourceIntervals=[],nativeM4ClassBackedSourceIds=new Set(),
+    nativeM4Audits=[];
+   for(const match of matches){
+    const m4Audit=auditC1ParameterizedSourceMatchAgainstNativeM4({
+     view,sourceId:match.sourceEdgeId,match,klass,
+     nativeM4:nativeM4ById?.get(match.sourceEdgeId)
+    });
+    nativeM4Audits.push(m4Audit);
+    if(m4Audit.nativeM4ClassBacked===true)
+     nativeM4ClassBackedSourceIds.add(match.sourceEdgeId);
+    parameterizedSourceIntervals.push({
+     sourceEdgeId:match.sourceEdgeId,
+     originalBRepSourceParameterRange:[...match.originalBRepSourceParameterRange],
+     original3DCurveParameterRange:[...match.original3DCurveParameterRange],
+     sourceProjected2DParameterRange:[...match.sourceProjected2DParameterRange],
+     sourceProjected2DParameterRangeSorted:[...match.sourceProjected2DParameterRangeSorted],
+     sourceProjected2DParameterRangeMatchesGeneratedOutputRange:
+      match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange,
+     sourceProjected2DParameterEndpointResiduals:
+      [...match.sourceProjected2DParameterEndpointResiduals],
+     source3DParameterRange:[...match.source3DParameterRange],
+     generated2DParameterRange:[...match.generated2DParameterRange],
+     maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
+     maximumParameterRoundTripResidual:match.maximumParameterRoundTripResidual,
+     sampleCount:match.samples.length,
+     nativeM4ClassBacking:m4Audit
+    });
+   }
+   // A view-collapsed pair can legitimately match the same generated 2D
+   // curve in two different 3D source parameter maps. The class-specific
+   // native source filter may narrow that set to the one source emitted in
+   // this visible/hidden class. Preserve the geometric ambiguity; record
+   // the narrowing separately instead of calling it a unique 3D identity.
+   const filterConsistent=matches.length>0&&filterSources.size>0&&
+    [...filterSources].every(id=>candidateIds.has(id))&&
+    [...candidateIds].every(id=>paperCandidates.includes(id));
+   const filterNarrows=filterConsistent&&filterSources.size<candidateIds.size;
+   const nativeM4ClassBackedUniqueFilterSource=
+    filterConsistent&&filterSources.size===1&&
+    nativeM4ClassBackedSourceIds.has([...filterSources][0]);
+   const m4Available=nativeM4Audits.some(x=>x.availability==='available');
+   if(matches.length>0){
+    if(!m4Available)result.counts.nativeM4ClassEvidenceUnavailableEdges++;
+    else if(nativeM4ClassBackedUniqueFilterSource)
+     result.counts.nativeM4ClassBackedUniqueFilterSourceEdges++;
+    else result.counts.nativeM4ClassBackingUnprovenEdges++;
+   }
+   const status=matches.length===0?'unmatched':
+    !filterConsistent?'source-filter-or-paper-candidate-disagreement':
+     matches.length===1?'unique-parameterized-source-lineage':
+      filterNarrows?'ambiguous-parameterized-source-lineage-native-filter-narrowed':
+       'ambiguous-parameterized-source-lineage';
+   if(status==='unique-parameterized-source-lineage')unique++;
+   else if(status==='ambiguous-parameterized-source-lineage'||
+           status==='ambiguous-parameterized-source-lineage-native-filter-narrowed')
+    ambiguous++;
+   else if(status==='unmatched')unmatched++;
+   else disagreements++;
+   return {
+    wholeSolidHLREdgeOrdinal:ordinal,
+    parameterizedSourceMatchCount:matches.length,
+    parameterizedOriginalSourceEdgeIds:[...candidateIds].sort(),
+    nativeSourceFilterCandidateIds:[...filterSources].sort(),
+    m0PaperCandidateIds:[...paperCandidates].sort(),
+    nativeSourceFilterAndM0PaperCandidatesAgree:filterConsistent,
+    nativeFilterNarrowsParameterizedCandidates:filterNarrows,
+    parameterizedSourceIntervals,
+    nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
+    nativeM4ClassBackedUniqueFilterSource,
+    nativeM4ClassEvidenceAvailable:m4Available,
+    status,
+    sameRunOriginalHLRCurveParameterLineageProven:
+     status==='unique-parameterized-source-lineage',
+    generated2DTopoDSHistoryProven:false,
+    globalContinuousVisibilityProven:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   };
+  });
+  if(seenOrdinals.size!==item.global.length||
+     rawUnique!==report.uniqueParameterizedSourceMatchCount||
+     rawAmbiguous!==report.ambiguousParameterizedSourceMatchCount||
+     rawUnmatched!==report.unmatchedGeneratedOutputEdgeCount||
+     rawUnique+rawAmbiguous+rawUnmatched!==item.global.length)
+   throw new RangeError('parameterized HLR source report counts do not reconcile');
+  if(distinctParameterDomainBoundSourceIds.size>
+      report.topoDSParameterDomainBoundSourceCurveCount)
+   throw new RangeError('parameterized HLR source IDs exceed original BRep parameter-domain identity ledger');
+  result.classes[klass]={sourceCurveCandidateCount:report.sourceCurveCandidateCount,
+   topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
+   topoDSParameterDomainBoundSourceCurveCount:
+    report.topoDSParameterDomainBoundSourceCurveCount,
+   generatedOutputEdgeCount:report.generatedOutputEdgeCount,
+   rawUniqueParameterizedSourceMatches:rawUnique,
+   rawAmbiguousParameterizedSourceMatches:rawAmbiguous,
+   rawUnmatchedGeneratedOutputEdges:rawUnmatched,
+   uniqueParameterizedSourceLineage:unique,
+   ambiguousParameterizedSourceLineage:ambiguous,
+   nativeFilterNarrowedAmbiguousParameterizedSourceLineage:
+    rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length,
+   unmatchedGeneratedOutputEdges:unmatched,
+   sourceFilterOrPaperCandidateDisagreements:disagreements,
+   nativeM4ClassBackedUniqueFilterSourceEdges:
+    rows.filter(x=>x.nativeM4ClassBackedUniqueFilterSource).length,
+   nativeM4ClassEvidenceUnavailableEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&!x.nativeM4ClassEvidenceAvailable).length,
+   nativeM4ClassBackingUnprovenEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&x.nativeM4ClassEvidenceAvailable&&
+     !x.nativeM4ClassBackedUniqueFilterSource).length,
+   rows};
+  result.counts.uniqueParameterizedSourceLineage+=unique;
+  result.counts.ambiguousParameterizedSourceLineage+=ambiguous;
+  result.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage+=
+   rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length;
+  result.counts.unmatchedGeneratedOutputEdges+=unmatched;
+  result.counts.sourceFilterOrPaperCandidateDisagreements+=disagreements;
+ }
+ return result;
+}
 function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  if(typeof geometry?.id!=='string'||!geometry.id||
     !Array.isArray(geometry?.data?.edges)||!geometry.data.edges.length||
@@ -144,7 +562,16 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   nativeSourceScoped2DEdgesWithOpposite3DClassOverlap:0,
   nativeSourceScoped2DEdgesWithFullSourceOneULPCompatibility:0,
   nativeSourceScoped2DEdgesPreciselyHeldButULPBounded:0,
-  nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass:0};
+  nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass:0,
+  globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage:0,
+  globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage:0,
+  globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage:0,
+  globalGeneratedHLREdgesWithoutParameterizedSourceLineage:0,
+  globalGeneratedHLREdgesWithoutParameterizedSourceReport:0,
+  globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0,
+  globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter:0,
+  globalGeneratedHLREdgesWithoutNativeM4ClassEvidence:0,
+  globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -399,8 +826,33 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
       counts.nativeSourceScoped2DEdgesClassOrRoundingHeld)
     throw new RangeError('native source-scoped 2D/3D HLR class inventory incomplete');
   }
+  const nativeM4ByIdForParameterizedLineage=new Map(nativeOriginal3DM4Candidates.map(x=>
+   [x.sourceEdgeId,x]));
+  const parameterizedGlobalHLRSourceLineage=
+   auditC1ParameterizedGlobalHLRSourceLineage({
+    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage
+   });
+  counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage+=
+   parameterizedGlobalHLRSourceLineage.counts.uniqueParameterizedSourceLineage;
+  counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage+=
+   parameterizedGlobalHLRSourceLineage.counts.ambiguousParameterizedSourceLineage;
+  counts.globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage;
+  counts.globalGeneratedHLREdgesWithoutParameterizedSourceReport+=
+   parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
+  counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage+=
+   parameterizedGlobalHLRSourceLineage.counts.unmatchedGeneratedOutputEdges+
+   parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
+  counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement+=
+   parameterizedGlobalHLRSourceLineage.counts.sourceFilterOrPaperCandidateDisagreements;
+  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
+  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
+  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
   views[view]={nativeOriginal3DM4Candidates,
-   nativeScoped2D3DClassBindings};
+   nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage};
   for(const [klass,item] of Object.entries(classes)){
    const rows=item.sources.map((sources,ordinal)=>({
     wholeSolidHLREdgeOrdinal:ordinal,
@@ -582,4 +1034,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,signedV5ActionCount:0});
 }
-module.exports={auditC1NativeScopedHLRSourceConsumer};
+module.exports={
+ auditC1NativeScopedHLRSourceConsumer,
+ auditC1ParameterizedSourceMatchAgainstNativeM4
+};

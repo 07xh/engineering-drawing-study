@@ -195,6 +195,39 @@ for(const [index,geometry] of general.entries()){
   assert.ok(['algorithmMethodNames','algorithmHandleMethodNames',
    'extractorMethodNames'].every(k=>Array.isArray(api[k])&&api[k].length<=48));
   const ds=api.originalDataStructureIndex;
+  const edgeStatus=api.originalEdgeStatusAbi;
+  assert.equal(edgeStatus.schema,'draftai-c1-ocjs-edgestatus-abi-probe/1');
+  assert.ok([
+   'all-original-edge-status-intervals-readable',
+   'edge-data-array-not-exposed','edge-data-array-call-failed',
+   'edge-data-array-value-not-exposed','edge-data-index-unreadable',
+   'edge-data-entry-null','edge-status-object-not-exposed',
+   'bounds-output-not-readable','visible-part-count-not-readable',
+   'visibility-class-not-readable','visible-part-output-not-readable'
+  ].includes(edgeStatus.availability));
+  assert.equal(edgeStatus.generated2DHLRTopoDSHistoryCertified,false);
+  assert.equal(edgeStatus.engineeringLineStyle,'undetermined');
+  assert.equal(edgeStatus.signedV5ActionCount,0);
+  if(edgeStatus.availability==='all-original-edge-status-intervals-readable'){
+   assert.equal(edgeStatus.readableSourceStatusRows,geometry.data.edges.length);
+   assert.ok(edgeStatus.rows.every(row=>row.parameterPartitionValidated===true));
+  }else{
+   assert.equal(edgeStatus.generated2DHLRTopoDSHistoryCertified,false);
+   assert.equal(edgeStatus.signedV5ActionCount,0);
+  }
+  console.error('REAL PINNED OCJS ORIGINAL HLR EDGESTATUS ABI '+geometry.id+' '+view+': '+
+   JSON.stringify({availability:edgeStatus.availability,
+    readableSourceStatusRows:edgeStatus.readableSourceStatusRows??0,
+    originalSourceRows:edgeStatus.originalSourceRows??geometry.data.edges.length,
+    methods:edgeStatus.dataStructureMethodNames??[],
+    statusExports:edgeStatus.statusRelatedExports??[],
+    firstStatusDiagnostic:edgeStatus.diagnostic??edgeStatus.rows?.[0]??null,
+    originalEdgeDataRowsInspected:edgeStatus.rows?.length??0,
+    originalEdgeDataIdentityRows:edgeStatus.directOriginalTopoDSEdgeIdentityRows??0,
+    originalEdgeDataSummary:edgeStatus.edgeDataSummary??[],
+    originalNativeEdgeHandleLedgerComplete:
+     edgeStatus.originalNativeEdgeHandleLedgerComplete??false,
+    officialV5Actions:0}));
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
   assert.equal(ds.signedV5Action,false);
   assert.equal(ds.availability,'real-native-edge-map-inspected',
@@ -367,6 +400,51 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ const parameterizedLineageByView=Object.fromEntries(['V','H','W'].map(view=>{
+  const lineage=scopedConsumer.views[view].parameterizedGlobalHLRSourceLineage;
+  assert.equal(lineage?.schema,'draftai-c1-parameterized-global-hlr-source-lineage/1');
+  assert.equal(lineage?.availability,'available',
+   'real pinned WASM must expose same-run parameterized generated HLR source lineage');
+  assert.equal(lineage.generated2DTopoDSHistoryProven,false);
+  assert.equal(lineage.globalContinuousVisibilityProven,false);
+  assert.equal(lineage.engineeringLineStyle,'undetermined');
+  assert.equal(lineage.signedV5ActionCount,0);
+  const total=cad.views[view].length+cad.hiddenSharpViews[view].length;
+  const classified=lineage.counts.uniqueParameterizedSourceLineage+
+   lineage.counts.ambiguousParameterizedSourceLineage+
+   lineage.counts.unmatchedGeneratedOutputEdges+
+   lineage.counts.sourceFilterOrPaperCandidateDisagreements+
+   lineage.counts.unavailableGeneratedOutputEdges;
+  assert.equal(classified,total,
+   'every real whole-solid generated HLR edge must have one parameterized lineage disposition');
+  return [view,lineage];
+ }));
+ const parameterizedLineageTotals={
+  unique:scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage,
+  ambiguous:scopedConsumer.counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage,
+  nativeFilterNarrowedAmbiguous:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage,
+  unmatched:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.unmatchedGeneratedOutputEdges,0),
+  unavailable:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.unavailableGeneratedOutputEdges,0),
+  sourceFilterOrPaperDisagreements:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement,
+  nativeM4ClassBackedUniqueFilterSourceEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter,
+  nativeM4ClassEvidenceUnavailableEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence,
+  nativeM4ClassBackingUnprovenEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking
+ };
+ console.error('REAL C1 SAME-RUN PARAMETERIZED GLOBAL HLR SOURCE LINEAGE '+
+  geometry.id+': '+JSON.stringify({
+   totals:parameterizedLineageTotals,
+   views:Object.fromEntries(['V','H','W'].map(view=>[view,
+    parameterizedLineageByView[view].counts])),
+   generated2DTopoDSHistoryCertified:false,
+   globalContinuousVisibilityCertified:false,officialV5Actions:0
+  }));
  // Keep the exact M5 source-axis audit live on the REAL pinned WASM scenes.
  // All normal-scale original native V/H/W paper spans should agree with
  // the historical scalar dominant-axis choice. The extreme independent
@@ -2942,6 +3020,10 @@ for(const [index,geometry] of general.entries()){
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
   nativeHLRSourceHistoryAPISurfaceByView:
    cad.nativeHLRSourceHistoryAPISurfaceByView,
+  parameterizedGlobalHLRSourceLineageByView:parameterizedLineageByView,
+  parameterizedGlobalHLRSourceLineageTotals:parameterizedLineageTotals,
+  parameterizedGlobalHLRSourceLineageGenerated2DTopoDSHistoryCertified:false,
+  parameterizedGlobalHLRSourceLineageSignedV5Actions:0,
   fullGeneratedEdgeHistoryProven:false,
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
