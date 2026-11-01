@@ -113,7 +113,7 @@ function fixture(){
    candidateSourceMatches,rejectedSourceCandidateCount:2-candidateSourceMatches.length,
    rejectedSourceCandidates:[id0,id1].filter(id=>
     !candidateSourceMatches.some(x=>x.sourceEdgeId===id))
-    .map(sourceEdgeId=>({sourceEdgeId,reason:'no-source-parameter-match'})),
+    .map(sourceEdgeId=>({sourceEdgeId,reason:'generated-parameter-range-outside-source-projection'})),
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===0?
@@ -579,13 +579,13 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
   {ordinal:0,candidateSourceMatchCount:1,
    candidateSourceMatches:[x.parameterMatch(x.id0,[0,0.5])],
    rejectedSourceCandidateCount:1,
-   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'no-source-parameter-match'}],
+   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'generated-parameter-range-outside-source-projection'}],
    uniqueOriginalSourceEdgeId:x.id0,
    status:'unique-parameterized-source-curve-match'},
   {ordinal:1,candidateSourceMatchCount:1,
    candidateSourceMatches:[x.parameterMatch(x.id0,[next,1])],
    rejectedSourceCandidateCount:1,
-   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'no-source-parameter-match'}],
+   rejectedSourceCandidates:[{sourceEdgeId:x.id1,reason:'generated-parameter-range-outside-source-projection'}],
    uniqueOriginalSourceEdgeId:x.id0,
    status:'unique-parameterized-source-curve-match'}
  ];
@@ -1022,7 +1022,7 @@ test('unmatched global HLR output remains explicitly unmatched rather than inher
  row.candidateSourceMatchCount=0;
  row.rejectedSourceCandidateCount=2;
  row.rejectedSourceCandidates=[x.id0,x.id1]
-  .map(sourceEdgeId=>({sourceEdgeId,reason:'no-source-parameter-match'}));
+  .map(sourceEdgeId=>({sourceEdgeId,reason:'generated-parameter-range-outside-source-projection'}));
  row.uniqueOriginalSourceEdgeId=null;
  row.status='no-parameterized-source-curve-match';
  report.uniqueParameterizedSourceMatchCount=0;
@@ -1053,6 +1053,52 @@ test('M4 refuses a fake rejected-source ledger hiding an original BRep competito
   }else{
    assert.throws(()=>audit(x),/HLR rejected original BRep source inventory|original HLR rejection source identity|rejection partition incomplete/);
   }
+ }
+});
+test('unreadable original HLR competitor cannot be silently excluded from a unique source',()=>{
+ const reasons=[
+  'original-source-edge-identity-or-range-unproven',
+  'original-brep-parameter-domain-not-identical',
+  'generated-output-curve-witness-incomplete',
+  'source-3d-to-2d-parameter-map-unreadable',
+  'generated-2d-to-source-3d-parameter-map-unreadable',
+  'source-projected-curve-evaluation-unreadable',
+  'generated-native-paper-endpoint-pair-incomplete',
+  'generated-native-paper-endpoints-nonfinite'
+ ];
+ for(const reason of reasons){
+  const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
+  rejected.reason=reason;
+  const lineage=audit(x).views.V.parameterizedGlobalHLRSourceLineage;
+  const row=lineage.classes.visible.rows[0];
+  assert.equal(row.completeAcceptedAndRejectedOriginalSourceCurveReview,true,reason);
+  assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held',reason);
+  assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,
+   [{sourceEdgeId:x.id1,reason}],reason);
+  assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,false,reason);
+  assert.equal(row.sameRunOriginalHLRCurveParameterLineageProven,false,reason);
+  assert.equal(lineage.counts.heldForInconclusiveOriginalHLRSourceRejections,1,reason);
+  assert.equal(lineage.generated2DTopoDSHistoryProven,false,reason);
+  assert.equal(lineage.signedV5ActionCount,0,reason);
+ }
+});
+test('fully verified original parameter exclusion may support diagnostic uniqueness, never signed V5',()=>{
+ for(const reason of [
+  'generated-parameter-range-outside-source-projection',
+  'source-parameterized-curve-does-not-match-generated-edge'
+ ]){
+  const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.H
+   .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
+  rejected.reason=reason;
+  const lineage=audit(x).views.H.parameterizedGlobalHLRSourceLineage;
+  const row=lineage.classes.visible.rows[0];
+  assert.equal(row.status,'unique-parameterized-source-lineage',reason);
+  assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,true,reason);
+  assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[],reason);
+  assert.equal(row.generated2DTopoDSHistoryProven,false,reason);
+  assert.equal(row.globalContinuousVisibilityProven,false,reason);
+  assert.equal(row.signedV5Action,false,reason);
  }
 });
 test('malformed parameterized source reports and forged generated-edge history are rejected',()=>{
