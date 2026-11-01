@@ -425,9 +425,11 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
       view,originalModelEndpoints:m0Endpoints,
       originalNativeRange:originalDomain,
       originalDirection:nativeM4.original3DSourceCurveDirection,
-      samples,toleranceMm:Number.isFinite(
-       segment.actualOCCTHLRCurveSampleToleranceMm)?
-       segment.actualOCCTHLRCurveSampleToleranceMm:1e-6
+      // A serialized CAD tolerance is never authority to widen the
+      // independent M0 paper consistency gate.
+      samples,toleranceMm:Math.min(1e-6,
+       Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)?
+        Math.max(0,segment.actualOCCTHLRCurveSampleToleranceMm):1e-6)
      }):null;
     // The audit is a veto/diagnostic, not a replacement for original
     // TopoDS identity, global source coverage or continuous M5 rays.
