@@ -505,6 +505,22 @@ for(const [index,geometry] of general.entries()){
    lineage.counts.unavailableGeneratedOutputEdges;
   assert.equal(classified,total,
    'every real whole-solid generated HLR edge must have one parameterized lineage disposition');
+  // Exercise the raw ORIGINAL BRep Sharp interval replay on the actual
+  // pinned WASM -> M4 -> global HLR consumer, never on a paper-only oracle.
+  for(const klass of ['visible','hidden'])for(const row of
+   lineage.classes[klass].rows)for(const match of
+   row.parameterizedSourceIntervals??[]){
+   const evidence=match.nativeM4ClassBacking;
+   if(evidence?.nativeM4ClassBacked===true){
+    assert.equal(evidence.nativeSharpOriginalParameterEvidenceAvailable,true,
+     'real native M4 class cannot be backed only by rounded M0 fractions');
+    assert.equal(evidence.nativeSharpOriginalParameterClassBacked,true,
+     'real native M4 class must replay original Sharp BRep intervals');
+    assert.equal(evidence.nativeSharpOriginalParameterCoverage
+     .nativeOriginalClassBackedWithoutNormalization,true);
+   }
+  }
+
   return [view,lineage];
  }));
  const parameterizedLineageTotals={
