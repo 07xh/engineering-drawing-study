@@ -652,6 +652,7 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
  return {
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
   sourceCurveCandidateCount:nativeCurveHandlesBySourceId.size,
+  originalSourceCurveIds:[...nativeCurveHandlesBySourceId.keys()].sort(),
   topoDSIdentityBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
    .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true).length,
   topoDSParameterDomainBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
