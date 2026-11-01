@@ -768,7 +768,9 @@ function fixtureWithNativeStatusClass(view='W'){
   view,originalPhysicalSourceEdgeId:row.originalPhysicalSourceEdgeId,
   nativeHLROriginalEdgeMapIndex:row.hlrDataStructureOneBasedEdgeIndex,
   originalEdgeStatusAllVisible:i===0,
-  originalEdgeStatusAllHidden:i!==0
+  originalEdgeStatusAllHidden:i!==0,
+  nativeOriginalVisiblePartCount:i===0?1:0,
+  originalSourceClass:i===0?'all-visible':'all-hidden'
  }));
  const certificate=statusClassAudit({view,statusRows,scopedRows:scoped.rows});
  scoped.statusScopedClassConcordance=certificate;
@@ -805,5 +807,28 @@ test('M4/M5 rejects forged native source status and opposite 3D sharp classes',(
    const x=fixtureWithNativeStatusClass(view);mutate(x);
    assert.throws(()=>audit(x),/original HLR|scoped HLR|native HLR/);
   }
+ }
+});
+
+test('M4/M5 rejects native EdgeStatus visible-part count or class label laundering',()=>{
+ for(const view of ['V','H','W']){
+  const mutations=[
+   row=>{row.nativeOriginalVisiblePartCount=0;},
+   row=>{row.nativeOriginalVisiblePartCount=2;},
+   row=>{row.nativeOriginalVisiblePartCount=-1;},
+   row=>{row.nativeOriginalVisiblePartCount=1.5;},
+   row=>{row.originalSourceClass='all-hidden';}
+  ];
+  for(const mutate of mutations){
+   const x=fixtureWithNativeStatusClass(view);
+   mutate(x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].
+    originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[0]);
+   assert.throws(()=>audit(x),/original HLR source status identity|visible parts/);
+  }
+  const x=fixtureWithNativeStatusClass(view);
+  x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].
+   originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows[1].
+   nativeOriginalVisiblePartCount=1;
+  assert.throws(()=>audit(x),/original HLR source status identity|visible parts/);
  }
 });
