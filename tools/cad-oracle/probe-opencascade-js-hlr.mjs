@@ -52,10 +52,14 @@ assert.equal(solid.IsNull(),false,'real finite box B-Rep shape is null');
 const kind=oc.TopAbs_ShapeEnum?.TopAbs_EDGE??oc.TopAbs_EDGE;
 const avoid=oc.TopAbs_ShapeEnum?.TopAbs_SHAPE??oc.TopAbs_SHAPE;
 assert.ok(kind!==undefined&&avoid!==undefined,'actual TopAbs EDGE / SHAPE enum bindings required');
+// HLRAlgo_Projector's gp_Ax2 normal is the canonical first-angle
+// observer ray. Keep the paper Y axis positive in model coordinates;
+// reversing any normal silently swaps visible/hidden classes while the
+// projected silhouette can still look identical.
 const frames={
-  V:{normal:[0,1,0],xdir:[1,0,0],xyz:[9,5,11],uv:[9,11]},
-  H:{normal:[0,0,-1],xdir:[1,0,0],xyz:[9,12,11],uv:[9,12]},
-  W:{normal:[-1,0,0],xdir:[0,1,0],xyz:[9,12,11],uv:[12,11]}
+  V:{normal:[0,-1,0],xdir:[1,0,0],xyz:[9,5,11],uv:[9,11]},
+  H:{normal:[0,0,1],xdir:[1,0,0],xyz:[9,12,11],uv:[9,12]},
+  W:{normal:[1,0,0],xdir:[0,1,0],xyz:[9,12,11],uv:[12,11]}
 };
 const outputs={};
 try{
@@ -71,8 +75,8 @@ try{
     const flat=hold(new (api('gp_Pnt2d_1'))());
     projector.Project_1(point,flat);
     assert.ok(Math.abs(flat.X()-f.uv[0])<1e-7 &&
-      Math.abs(flat.Y()+f.uv[1])<1e-7,
-      'real OCCT projector disagrees with DraftAI first-angle '+view);
+      Math.abs(flat.Y()-f.uv[1])<1e-7,
+      'real OCCT projector disagrees with DraftAI canonical first-angle '+view);
     const algorithm=hold(new (api('HLRBRep_Algo_1'))());
     algorithm.Add_2(solid,0);
     algorithm.Projector_1(projector);
@@ -82,16 +86,29 @@ try{
     assert.equal(handle.IsNull(),false,'null real B-Rep HLR algorithm');
     const extracted=hold(new (api('HLRBRep_HLRToShape'))(handle));
     const visible=hold(extracted.VCompound_1());
+    const hidden=hold(extracted.HCompound_1());
     assert.equal(visible.IsNull(),false,'actual OCCT HLR yielded null visible geometry');
-    const explorer=hold(new (api('TopExp_Explorer_2'))(visible,kind,avoid));
-    let edgeCount=0;
-    while(explorer.More()){
-      edgeCount++;
-      assert.ok(edgeCount<=128,'unbounded real HLR geometry');
-      explorer.Next();
-    }
-    assert.ok(edgeCount>=4,'expected visible OCCT B-Rep line edges for '+view);
-    outputs[view]={visibleBRepEdgeCount:edgeCount,elapsedMs:Math.round(performance.now()-t0)};
+    assert.equal(hidden.IsNull(),false,'actual OCCT HLR yielded null hidden geometry');
+    const countEdges=compound=>{
+      const explorer=hold(new (api('TopExp_Explorer_2'))(compound,kind,avoid));
+      let count=0;
+      while(explorer.More()){
+        count++;
+        assert.ok(count<=128,'unbounded real HLR geometry');
+        explorer.Next();
+      }
+      return count;
+    };
+    const visibleCount=countEdges(visible),hiddenCount=countEdges(hidden);
+    assert.ok(visibleCount>=4,'expected visible OCCT B-Rep line edges for '+view);
+    assert.ok(hiddenCount>=1,'expected hidden OCCT B-Rep line edges for '+view);
+    outputs[view]={
+      canonicalObserverRay:f.normal,
+      projectorPositivePaperV:true,
+      visibleBRepEdgeCount:visibleCount,
+      hiddenBRepEdgeCount:hiddenCount,
+      elapsedMs:Math.round(performance.now()-t0)
+    };
   }
 }finally{
   // Reverse creation order so owned HLR shapes, projector handles and
