@@ -66,6 +66,24 @@ test('genuine global native 3D BRep source corroborates correct held HLR ordinal
  assert.equal(result.officialV5Authorized,false);
  assert.ok(Object.isFrozen(result.claims[0]));
 });
+test('M5 rejects repeated or reversed original M0 edges before native HLR source inventory replay',()=>{
+ for(const mutate of [
+  x=>x.geometry.data.edges.push(['A','B']),
+  x=>x.geometry.data.edges.push(['B','A']),
+  x=>x.geometry.data.edges[2]=['B','A']
+ ]){
+  const x=setup();mutate(x);
+  assert.throws(()=>audit(x),/duplicate original M0 physical edge inventory/);
+ }
+});
+test('M5 rejects malformed original physical source edges even if a native ledger looks complete',()=>{
+ for(const bad of [
+  ['A','A'],['A'],['A','B','C'],['A',''],[null,'B'],null
+ ]){
+  const x=setup();x.geometry.data.edges[0]=bad;
+  assert.throws(()=>audit(x),/invalid original M0 physical edge inventory/);
+ }
+});
 test('genuine 2D paper alias from another 3D edge is held as a source contradiction',()=>{
  const x=setup();
  x.generatedClaims[0].wholeSolidGeneratedHLREdgeOrdinal=1;
