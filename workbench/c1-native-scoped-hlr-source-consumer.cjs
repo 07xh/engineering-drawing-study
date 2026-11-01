@@ -222,9 +222,50 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
    throw new RangeError('invalid held original BRep source interval');
   return Math.min(r[1],queryNative[1])>Math.max(r[0],queryNative[0]);
  });
+ // M0-normalized union coverage can conceal a positive ORIGINAL BRep gap
+ // when distinct native curve parameters round to the same binary64 M0 t.
+ // Recheck the actual same-run Sharp parameter domain, not just paper t.
+ const sharpWithRaw=nativeM4.segments.filter(x=>
+  x&&Object.prototype.hasOwnProperty.call(x,'originalNative3DParameterRange'));
+ if(sharpWithRaw.length>0&&sharpWithRaw.length!==nativeM4.segments.length)
+  throw new RangeError('partial original native Sharp parameter evidence cannot back M4');
+ const nativeSharpOriginalParameterEvidenceAvailable=sharpWithRaw.length>0;
+ let nativeSharpOriginalParameterCoverage=null;
+ if(nativeSharpOriginalParameterEvidenceAvailable){
+  for(const segment of sharpWithRaw){
+   const p=segment.originalNative3DParameterRange;
+   if(segment.view!==view||segment.sourceEdgeId!==sourceId||
+      !['visible-sharp','hidden-sharp'].includes(segment.native3DHLRClass)||
+      segment.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper!==true||
+      segment.generated2DHLREdgeTopologyProven!==false||
+      segment.completeGlobalCoProjectedVisibilityCertified!==false||
+      segment.engineeringLineStyle!=='undetermined'||segment.signedV5Action!==false||
+      !Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||
+      !(p[1]>p[0])||p[0]<domain[0]||p[1]>domain[1])
+    throw new RangeError('invalid original native Sharp source or unsigned interval evidence');
+   const expected=[normalize(p[0]),normalize(p[1])].sort((a,b)=>a-b);
+   const actual=segment.originalM0UnitParameterRange;
+   if(!Array.isArray(actual)||actual.length!==2||
+      expected[0]!==actual[0]||expected[1]!==actual[1])
+    throw new RangeError('original native Sharp parameter interval does not reproduce M0 interval');
+  }
+  nativeSharpOriginalParameterCoverage=auditNativeOriginalOutlineClassInterval(
+   [...effectiveSourceRange].sort((a,b)=>a-b),
+   sharpWithRaw.filter(x=>x.native3DHLRClass===sameClass)
+    .map(x=>x.originalNative3DParameterRange),
+   sharpWithRaw.filter(x=>x.native3DHLRClass===oppositeClass)
+    .map(x=>x.originalNative3DParameterRange),
+   heldNative.map(x=>x.originalNative3DParameterRange)
+  );
+ }
  const nativePartitionNotKnownFalse=
   nativeM4.native3DSourceParameterPartitionCompleteExactlyOnce!==false&&
   nativeM4.M4OriginalUnitIntervalCandidateCoverageComplete!==false;
+ const nativeSharpOriginalParameterClassBacked=
+  nativeSharpOriginalParameterEvidenceAvailable&&
+  nativeSharpOriginalParameterCoverage.nativeOriginalClassBackedWithoutNormalization&&
+  nativeM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+  nativeM4.M4OriginalUnitIntervalCandidateCoverageComplete===true;
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
  const nativeOutlineEvidenceAvailable=
@@ -302,13 +343,18 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
   nativeM4SameClassPositiveOverlaps:sameClassOverlaps,
   nativeM4HeldOriginalParameterPositiveOverlap:heldNativeIntersectsQuery,
+  nativeSharpOriginalParameterEvidenceAvailable,
+  nativeSharpOriginalParameterCoverage,
+  nativeSharpOriginalParameterClassBacked,
   nativeM4IndependentPartitionNotDisproven:nativePartitionNotKnownFalse,
   nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
   nativeM4OppositeClassOverlaps:oppositeOverlaps,
   nativeM4ClassBacked:
    sameCoverage.entireOriginalParameterIntervalCovered&&
    sameClassOverlaps.length===0&&!heldNativeIntersectsQuery&&
-   nativePartitionNotKnownFalse&&oppositeOverlaps.length===0,
+   nativePartitionNotKnownFalse&&oppositeOverlaps.length===0&&
+   (!nativeSharpOriginalParameterEvidenceAvailable||
+    nativeSharpOriginalParameterClassBacked),
   nativeOutlineEvidenceAvailable,
   nativeOutlineSameClassCoverageComplete:
    sameOutlineCoverage.entireOriginalParameterIntervalCovered,
