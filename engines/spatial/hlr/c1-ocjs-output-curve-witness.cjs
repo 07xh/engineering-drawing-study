@@ -57,6 +57,7 @@ function verifyOcjsHLRProjectedLineCurveWitness({
   hlrView:view,actualOCCTHLRCurveType:'line',
   actualOCCTHLRCurveParameterRange:[...parameterRange],
   actualOCCTHLRCurveSamplesProjectedMm:samples,
+  actualOCCTHLRCurveSampleToleranceMm:sampleTolerance,
   actualOCCTHLRFlattenedBRepLineVerified:true,
   actualOCCTHLRCurveOrientation:direct?'same-as-vertices':'reverse-of-vertices',
   actualOCCTHLRCurveEntireFiniteIntervalIsLine:true,
