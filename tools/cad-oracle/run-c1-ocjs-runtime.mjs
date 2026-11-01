@@ -221,6 +221,7 @@ for(const [index,geometry] of general.entries()){
     originalSourceRows:edgeStatus.originalSourceRows??geometry.data.edges.length,
     methods:edgeStatus.dataStructureMethodNames??[],
     statusExports:edgeStatus.statusRelatedExports??[],
+    firstStatusDiagnostic:edgeStatus.diagnostic??edgeStatus.rows?.[0]??null,
     officialV5Actions:0}));
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
   assert.equal(ds.signedV5Action,false);
