@@ -725,6 +725,21 @@ function auditOriginalEdgeStatusVsSourceScoped3DSharp({
     [statusRow.visibleParts,visibleNativeIntervals,hiddenNativeIntervals]
      .some(items=>items.length>128||!items.every(validInterval)))
   return held('native-status-or-scoped-3d-interval-invalid');
+ // A claimed validated status partition is not a substitute for checking
+ // the received intervals. Repeated same-class subspans can make a simple
+ // pointwise membership comparison appear concordant while representing
+ // two competing native pieces for one original physical parameter span.
+ // Keep the evidence held rather than silently unioning overlapping parts.
+ const hasPositiveSelfOverlap=intervals=>{
+  const ordered=intervals.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  for(let i=1;i<ordered.length;i++)
+   if(ordered[i][0]<ordered[i-1][1])return true;
+  return false;
+ };
+ if(hasPositiveSelfOverlap(statusRow.visibleParts)||
+    hasPositiveSelfOverlap(visibleNativeIntervals)||
+    hasPositiveSelfOverlap(hiddenNativeIntervals))
+  return held('positive-same-class-original-native-parameter-overlap');
  const cuts=[first,last,
   ...statusRow.visibleParts.flat(),
   ...visibleNativeIntervals.flat(),...hiddenNativeIntervals.flat()];
