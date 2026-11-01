@@ -435,7 +435,13 @@ for(const [index,geometry] of general.entries()){
   nativeM4ClassEvidenceUnavailableEdges:
    scopedConsumer.counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence,
   nativeM4ClassBackingUnprovenEdges:
-   scopedConsumer.counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking,
+  nativeOutlineClassBackedUniqueFilterSourceEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueNativeOutlineClassBackedSourceFilter,
+  nativeOutlineEvidenceUnavailableEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithoutNativeOutlineEvidence,
+  nativeOutlineClassBackingUnprovenEdges:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking
  };
  console.error('REAL C1 SAME-RUN PARAMETERIZED GLOBAL HLR SOURCE LINEAGE '+
   geometry.id+': '+JSON.stringify({
