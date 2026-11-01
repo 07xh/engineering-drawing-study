@@ -325,4 +325,9 @@ test('native outline producer must explicitly deny generated 2D topology ancestr
  y.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
   generated2DHLREdgeTopologyProven=true;
  assert.throws(()=>projectNative(y),/unverified source-scoped original native 3D outline interval/);
+ const z=input([],[],false);
+ z.scopedRow=row([],[],[[0,10]],[]);
+ z.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  originalGeneratedTopoDSHistoryCertified=true;
+ assert.throws(()=>projectNative(z),/unverified source-scoped original native 3D outline interval/);
 });
