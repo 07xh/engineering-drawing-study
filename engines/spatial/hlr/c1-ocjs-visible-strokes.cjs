@@ -28,7 +28,8 @@ const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
 const {probeRealOcjsHLREdgeStatusABI,
- auditGeneratedOutputEdgesAgainstOriginalSourceCurves}=
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves,
+ auditOriginalEdgeStatusVsSourceScoped3DSharp}=
  require('./c1-ocjs-edgestatus-abi.cjs');
 function cuboidBounds(g){
  if(!g||g.kind!=='mesh'||g.space!=='model-3d'||g.unit!=='mm'||
@@ -1211,6 +1212,20 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        ...row.hidden3D.native3DGeneratedCurveIntervals
       ].map(x=>x.nativeOriginalCurveParameterRange)
      });
+    // Original indexed EdgeStatus versus independently source-filtered 3D
+    // Sharp classes. Distinct from generated 2D TopoDS causal ancestry.
+    const originalStatus=originalEdgeStatusAbi.rows?.find(x=>
+     x.sourceEdgeId===original.sourceEdgeId);
+    row.originalEdgeStatusVsNative3DSharp=
+     auditOriginalEdgeStatusVsSourceScoped3DSharp({
+      sourceEdgeId:original.sourceEdgeId,
+      originalNativeParameterRange:native3DSource.occtSourceCurveParameterRange,
+      statusRow:originalStatus,
+      visibleNativeIntervals:row.visible3D.native3DGeneratedCurveIntervals
+       .map(x=>x.nativeOriginalCurveParameterRange),
+      hiddenNativeIntervals:row.hidden3D.native3DGeneratedCurveIntervals
+       .map(x=>x.nativeOriginalCurveParameterRange)
+     });
     row.combinedNative3DPartitionIsNotGenerated2DTopoDSHistory=true;
     row.engineeringLineStyle='undetermined';
     row.signedV5Action=false;
@@ -1246,7 +1261,21 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        originalSourceParameterIntervalCertified:false,
        engineeringLineStyle:'undetermined',signedV5Action:false});
      });
+   const originalStatusVsNative3DSharpSummary={
+    comparedOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.comparable).length,
+    concordantOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.nativeOriginalStatusClassAgreesWith3DSharp).length,
+    mismatchedOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.comparable&&
+     !x.originalEdgeStatusVsNative3DSharp.nativeOriginalStatusClassAgreesWith3DSharp).length,
+    heldUncomparableOriginalSources:scopedRows.filter(x=>
+     !x.originalEdgeStatusVsNative3DSharp.comparable).length,
+    directGenerated2DTopoDSHistoryCertified:false,
+    officialV5Authorized:false
+   };
    nativeSourceScopedSharpOutputByView[view]={
+    originalStatusVsNative3DSharpSummary,
     unclaimedNativeGeneratedHLREdges,
     generated2DSourceParameterMatches,
     nativeSourceIdentityConflicts,
