@@ -144,6 +144,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
  if(compare(m4Reach,one)!==0)exactM4SourcePartitionComplete=false;
  const nativePartitionProven=
   reportedNativePartitionProven&&exactM4SourcePartitionComplete;
+ const receivedSourcePaperSpans=[];
  const rows=[],counts={scoped2DGeneratedEdgesChecked:0,
   exact2DSourcePaperAffineAligned:0,
   exactSameClassNative3DBackedEdges:0,
@@ -153,7 +154,9 @@ function auditC1RealNativeScoped2D3DClassBinding({
   paperDriftOrClassCoverageHeld:0,
   originalFullEdgeOneULPPaperEnvelopeCompatible:0,
   exactNative3DWholeSourceSameClassForBoundedPaper:0,
-  roundedPaperRepresentationCompatibleButNotExactCertified:0};
+  roundedPaperRepresentationCompatibleButNotExactCertified:0,
+  positiveGenerated2DSourceParameterOverlapPairs:0,
+  generated2DEdgesHeldForSourceParameterOverlap:0};
  const cross=(p)=>sub(product(sub(dyadic(b.u),dyadic(a.u)),
     sub(dyadic(p.v),dyadic(a.v))),
    product(sub(dyadic(b.v),dyadic(a.v)),
@@ -243,12 +246,49 @@ function auditC1RealNativeScoped2D3DClassBinding({
     sourceFilteredExtractionDoesNotProveGlobalGenerated2DEdgeIsSame:true,
     actualGlobalHLRGenerated2DTopoDSHistoryCertified:false,
     entireOpaqueSceneVisibilityCertified:false,
-    engineeringLineStyle:'undetermined',signedV5Action:false});
+    engineeringLineStyle:'undetermined',signedV5Action:false,
+    positiveGenerated2DSourceParameterOverlapWithAnotherEdge:false});
+   receivedSourcePaperSpans.push({index:rows.length-1,from,to,positive});
+  }
+ }
+ // A per-stroke class match does not prove the *received collection* is
+ // one-to-one: two generated 2D edges can independently borrow the same
+ // original physical parameter interval (including reversed duplicates).
+ // Audit strict positive intersection in exact binary64 rational space.
+ // Shared endpoints are valid; no epsilon or paper-space snapping is used.
+ // This is a necessary source-scoped 2D condition, not global HLR lineage.
+ const overlappingRows=new Set();
+ for(let i=0;i<receivedSourcePaperSpans.length;i++){
+  const left=receivedSourcePaperSpans[i];
+  if(!left.positive)continue;
+  for(let j=i+1;j<receivedSourcePaperSpans.length;j++){
+   const right=receivedSourcePaperSpans[j];
+   if(!right.positive)continue;
+   if(compare(high(left.from,right.from),low(left.to,right.to))<0){
+    counts.positiveGenerated2DSourceParameterOverlapPairs++;
+    overlappingRows.add(left.index);
+    overlappingRows.add(right.index);
+   }
+  }
+ }
+ counts.generated2DEdgesHeldForSourceParameterOverlap=overlappingRows.size;
+ for(const index of overlappingRows){
+  const row=rows[index];
+  row.positiveGenerated2DSourceParameterOverlapWithAnotherEdge=true;
+  if(row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment){
+   row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment=false;
+   counts.exactSameClassNative3DBackedEdges--;
+   counts.paperDriftOrClassCoverageHeld++;
+  }
+  if(row.generated2DRepresentationWithinOneULPOfFullOriginalM0Source){
+   row.generated2DRepresentationWithinOneULPOfFullOriginalM0Source=false;
+   counts.roundedPaperRepresentationCompatibleButNotExactCertified--;
   }
  }
  return freeze({
   schema:'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1',
   view,sourceEdgeId,counts,rows,
+  sourceScoped2DGeneratedPaperPositiveOverlapPresent:overlappingRows.size>0,
   originalNativeParameterPartitionIndependentlyVerified:nativePartitionProven,
   genuineOriginalNative3DParametersMayBeHeldByBinary64:
    nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length>0,
