@@ -742,8 +742,12 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
       counts.nativeSourceScoped2DEdgesClassOrRoundingHeld)
     throw new RangeError('native source-scoped 2D/3D HLR class inventory incomplete');
   }
+  const nativeM4ByIdForParameterizedLineage=new Map(nativeOriginal3DM4Candidates.map(x=>
+   [x.sourceEdgeId,x]));
   const parameterizedGlobalHLRSourceLineage=
-   auditC1ParameterizedGlobalHLRSourceLineage({view,classes,scoped,expected});
+   auditC1ParameterizedGlobalHLRSourceLineage({
+    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage
+   });
   counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage+=
    parameterizedGlobalHLRSourceLineage.counts.uniqueParameterizedSourceLineage;
   counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage+=
@@ -763,25 +767,6 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
   counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
    parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
-  const nativeM4ByIdForParameterizedLineage=new Map(nativeOriginal3DM4Candidates.map(x=>
-   [x.sourceEdgeId,x]));
-  // Re-run the pure per-view audit with the native 3D M4 source interval map.
-  const parameterizedGlobalHLRSourceLineageWithM4=
-   auditC1ParameterizedGlobalHLRSourceLineage({
-    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage
-   });
-  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter-=
-   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
-  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence-=
-   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
-  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking-=
-   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
-  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter+=
-   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
-  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence+=
-   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassEvidenceUnavailableEdges;
-  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
-   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassBackingUnprovenEdges;
   views[view]={nativeOriginal3DM4Candidates,
    nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage};
   for(const [klass,item] of Object.entries(classes)){
