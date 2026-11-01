@@ -299,12 +299,23 @@ function drawV5(){
   '/'+actual.timeline.segments.length+' 个当前版本动作已完成。'+
   (frame.done?'本轮播放完成。':'未验证的边不会显示为标准工程线。');
 }
+// An invalidated source, tampered first frame or forged DAG must leave no
+// playable player, not just throw inside requestAnimationFrame and freeze UI.
+function failClosedV5(){
+ halt();current=null;controls(false);
+ $('animation').replaceChildren();resetStepInspector();
+ $('v5Status').textContent='作图已停止：原题或步骤证据不一致，请重新核对并编译。';
+ setStatus('当前作图证据不一致，已停止播放；不能继续显示未签收线条。',true);
+}
 function tick(now){
  if(!playing||!current?.solution?.player?.canRender(revision)){
   halt();return;
  }
- const frame=current.solution.player.snapshot(now);
- drawV5();
+ let frame;
+ try{
+  frame=current.solution.player.snapshot(now);
+  drawV5();
+ }catch(e){failClosedV5();return;}
  if(frame.done){halt();return;}
  raf=requestAnimationFrame(tick);
 }
@@ -322,7 +333,7 @@ function seek(dir){
  currentIndex=snap.done?length:Math.max(0,snap.activeStepIndex);
  player.seekStep(Math.max(0,Math.min(length,currentIndex+dir)),
   performance.now());
- drawV5();
+ try{drawV5();}catch(e){failClosedV5();}
 }
 function safeString(hash){return hash.slice(0,12)+'…'+hash.slice(-8);}
 async function applyReviewedPairs(){
@@ -489,7 +500,10 @@ async function compile(){
    '本次受限凸体全三视图原始棱线数学签收通过；原教材盲测仍未通过。':
    '当前显示局部作图；完整棱线和题目结果仍未全部核验。');
   drawV5();
- }catch(e){setStatus('条件未通过核验：'+(e?.message||String(e)),true);}
+ }catch(e){
+  failClosedV5();
+  setStatus('条件未通过核验：'+(e?.message||String(e)),true);
+ }
 }
 $('showGiven').addEventListener('click',()=>{
  if(!rawGiven||$('showGiven').disabled)return;
@@ -521,10 +535,12 @@ $('v5StepJump').addEventListener('change',()=>{
  if(!Number.isInteger(index)||index<0||index>=current.solution.steps.length)return;
  halt();
  current.solution.player.seekStep(index,performance.now());
- drawV5();
+ try{drawV5();}catch(e){failClosedV5();}
 });
 $('play').addEventListener('click',play);
-$('pause').addEventListener('click',()=>{halt();drawV5();});
+$('pause').addEventListener('click',()=>{
+ halt();try{drawV5();}catch(e){failClosedV5();}
+});
 $('prev').addEventListener('click',()=>seek(-1));
 $('next').addEventListener('click',()=>seek(1));
 window.addEventListener('pagehide',()=>{halt();clearPreview();});
