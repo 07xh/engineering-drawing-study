@@ -516,6 +516,44 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
     !outputSamples.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
     !Number.isFinite(sampleTolerance)||sampleTolerance<0)
   return {matched:false,reason:'generated-output-curve-witness-incomplete'};
+ // A parameterized 2D curve sample is not automatically the actual
+ // generated TopoDS edge. Tie its two endpoint samples back to the
+ // RECEIVED HLR edge vertices whenever those native paper endpoints are
+ // available. Either orientation is legitimate. A stale/fabricated sample
+ // array must not borrow the original BRep source merely because its
+ // Parameter2d/Parameter3d inverse agrees at five chosen parameters.
+ //
+ // This check is only source-candidate consistency. Tolerance does not
+ // alter paper coordinates, close positive M5 gaps, or prove TopoDS
+ // endpoint identity, occlusion, engineering line type, or V5.
+ const receivedFrom=segment.from,receivedTo=segment.to;
+ const hasReceivedFrom=receivedFrom!==undefined;
+ const hasReceivedTo=receivedTo!==undefined;
+ if(hasReceivedFrom!==hasReceivedTo)
+  return {matched:false,reason:'generated-native-paper-endpoint-pair-incomplete'};
+ let endpointWitness=null;
+ if(hasReceivedFrom){
+  if(![receivedFrom,receivedTo].every(p=>
+      p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
+   return {matched:false,reason:'generated-native-paper-endpoints-nonfinite'};
+  const first=outputSamples[0],last=outputSamples[4];
+  const residual=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
+  const direct=[residual(first,receivedFrom),residual(last,receivedTo)];
+  const reverse=[residual(first,receivedTo),residual(last,receivedFrom)];
+  const directMaximum=Math.max(...direct),reverseMaximum=Math.max(...reverse);
+  const orientation=directMaximum<=reverseMaximum?'direct':'reversed';
+  const minimumMaximum=Math.min(directMaximum,reverseMaximum);
+  if(!Number.isFinite(minimumMaximum)||minimumMaximum>sampleTolerance)
+   return {matched:false,reason:'generated-curve-samples-contradict-native-paper-vertices'};
+  endpointWitness={
+   receivedNativePaperEndpointsChecked:true,
+   endpointOrientation:orientation,
+   maximumNativePaperEndpointSampleResidualMm:minimumMaximum,
+   exactBinary64NativePaperEndpoints:minimumMaximum===0,
+   generatedTopoDSVertexIdentityCertified:false,
+   signedV5Action:false
+  };
+ }
  const [sourceFirst,sourceLast]=source.parameterRange;
  const p2First=callFiniteOneArg(source.curve,'Parameter2d',sourceFirst);
  const p2Last=callFiniteOneArg(source.curve,'Parameter2d',sourceLast);
@@ -576,6 +614,7 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm)),
   maximumParameterRoundTripResidual:Math.max(...samples.map(x=>x.parameterRoundTripResidual)),
   samples,
+  nativePaperEndpointSampleWitness:endpointWitness,
   generated2DTopoDSHistoryProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false
  };
