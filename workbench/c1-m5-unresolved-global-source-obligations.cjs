@@ -86,6 +86,14 @@ function auditExistingM4OpenSourceDepth(row,kind,{sourceGeometryId,revision}={})
    if(d.status==='positive-original-dyadic-projection-binary64-collapsed-held'){
     if(d.originalDyadicProjectedIntervalPositive!==true||
        d.renderedPaperSegmentNotCertified!==true||
+       // A mathematically positive interval whose binary64 paper segment
+       // collapsed is NOT a drawable line. In particular, a forged
+       // whole-interval convenience flag must not escape through M5 as
+       // certified depth/visibility even if the open-cut flags stay false.
+       d.wholeIntervalFrontmostCertified!==false||
+       d.visibleSourceCoversEntireLine!==false||
+       d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources===true||
+       d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource===true||
        cut.strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly!==false||
        cut.hiddenBehindIndependentlyClearOriginalSourceOnOpenIntervalOnly!==false)
      throw new RangeError('subpixel positive M4 cut cannot become a stroke');
