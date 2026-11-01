@@ -226,7 +226,13 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
   LastParameter(){return 8.5;},
   Edge(){return nativeEdge;}
  };
- const curve={GetCurve(){return adaptor;}};
+ const curve={
+  GetCurve(){return adaptor;},
+  Parameter2d(value){return value+0.25;},
+  Parameter3d(value){return value-0.25;},
+  Value3D(value){return {X(){return value;},Y(){return value*2;},Z(){return value*3;}};},
+  Value(value){return {X(){return value;},Y(){return value*2;}};}
+ };
  const edgeData={
   Status(){return status([2.5,8.5],[[2.5,8.5]],true,false);},
   VSta(){return 3;},VEnd(){return 7;},HideCount(){return 0;},
@@ -252,6 +258,12 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.equal(row.scalarValues.HideCount,0);
  assert.equal(row.scalarValues.Tolerance,1e-7);
  assert.deepEqual(row.original3DCurveParameterRange,[2.5,8.5]);
+ assert.equal(row.original3DToProjected2DCurveParameterMap.readable,true);
+ assert.equal(row.original3DToProjected2DCurveParameterMap.roundTripWithinDiagnosticTolerance,true);
+ assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples.map(x=>x.parameter2d),
+  [2.75,5.5,8.75]);
+ assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].projectedPoint2D,
+  [2.75,5.5]);
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
@@ -291,5 +303,24 @@ test('continues original EdgeData topology inspection after the first unreadable
  assert.deepEqual(r.edgeDataSummary.map(x=>x.original3DCurveParameterRange),[[0,4],[0,4]]);
  assert.equal(r.original3DEdgeDataInspectionComplete,true);
  assert.equal(r.generated2DHLRHistoryStillUnproven,true);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+
+test('keeps unreadable native curve parameter maps unsigned instead of inferring 2D ancestry',()=>{
+ const edge={IsSame(){return true;}};
+ const adaptor={FirstParameter(){return 0;},LastParameter(){return 1;},Edge(){return edge;}};
+ const curve={GetCurve(){return adaptor;}};
+ const ds={EDataArray(){return {Value(){return {
+  Status(){return status([0,1],[[0,1]],true,false);},
+  Geometry(){return curve;}
+ };}};}};
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge}]});
+ const map=r.rows[0].originalEdgeData.original3DToProjected2DCurveParameterMap;
+ assert.equal(map.readable,false);
+ assert.equal(map.roundTripWithinDiagnosticTolerance,false);
+ assert.equal(r.rows[0].originalEdgeData.generated2DHLRTopoDSHistoryProven,false);
  assert.equal(r.signedV5ActionCount,0);
 });
