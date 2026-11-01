@@ -778,8 +778,17 @@ function auditC1OriginalHLRStatusScopedClassConcordance({view,statusRows,scopedR
      !Number.isSafeInteger(index)||index<1||statuses.has(id)||indices.has(index)||
      typeof row.originalEdgeStatusAllVisible!=='boolean'||
      typeof row.originalEdgeStatusAllHidden!=='boolean'||
-     row.originalEdgeStatusAllVisible&&row.originalEdgeStatusAllHidden)
-   throw new RangeError('contradictory or duplicate original HLR source status identity');
+     row.originalEdgeStatusAllVisible&&row.originalEdgeStatusAllHidden||
+     !Number.isSafeInteger(row.nativeOriginalVisiblePartCount)||
+     row.nativeOriginalVisiblePartCount<0||
+     row.nativeOriginalVisiblePartCount>512||
+     row.originalEdgeStatusAllVisible&&row.nativeOriginalVisiblePartCount!==1||
+     row.originalEdgeStatusAllHidden&&row.nativeOriginalVisiblePartCount!==0||
+     !row.originalEdgeStatusAllVisible&&!row.originalEdgeStatusAllHidden&&
+      row.nativeOriginalVisiblePartCount===0||
+     row.originalSourceClass!==(row.originalEdgeStatusAllVisible?
+      'all-visible':row.originalEdgeStatusAllHidden?'all-hidden':'mixed'))
+   throw new RangeError('contradictory or duplicate original HLR source status identity/visible parts');
   statuses.set(id,row);indices.add(index);
  }
  const seen=new Set();
