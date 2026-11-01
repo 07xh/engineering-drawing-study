@@ -131,7 +131,9 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
- const nativeOutlineEvidenceAvailable=Array.isArray(nativeM4.native3DOutlineSegments),
+ const nativeOutlineEvidenceAvailable=
+  nativeM4.native3DOutlineEvidenceAvailable===true&&
+  Array.isArray(nativeM4.native3DOutlineSegments),
   outlineSegments=nativeOutlineEvidenceAvailable?nativeM4.native3DOutlineSegments:[];
  const sameOutlineClass=klass==='visible'?'visible-outline':'hidden-outline',
   oppositeOutlineClass=klass==='visible'?'hidden-outline':'visible-outline';
