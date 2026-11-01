@@ -58,6 +58,10 @@ function setup({two=false,rounded=false,missingPartition=false}={}){
     native3DSourceParameterPartitionCompleteExactlyOnce:!missingPartition,
     M4OriginalUnitIntervalCandidateCoverageComplete:!missingPartition,
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+    native3DOriginalParameterPositiveGaps:[],
+    native3DOriginalParameterPositiveOverlaps:[],
+    M4OriginalUnitIntervalCandidatePositiveGaps:[],
+    M4OriginalUnitIntervalNativeClassConflicts:[],
     segments:[{view,sourceEdgeId:id,native3DHLRClass:'visible-sharp',
      originalM0UnitParameterRange:[0,1],
      derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
@@ -255,5 +259,48 @@ test('native IsSame and paper-distinct pair records must match both generated pa
   pairs[0].b.nativePaperPoint.u+=1;
   x.cad.views.V[1].from.u+=1;
   assert.throws(()=>audit(x),/different paper endpoints/);
+ }
+});
+
+test('endpoint backing rejects a forged complete native M4 flag with extra hidden or duplicate source intervals',()=>{
+ for(const duplicateClass of ['hidden-sharp','visible-sharp']){
+  const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+  m4.segments.push({...m4.segments[0],native3DHLRClass:duplicateClass,
+   originalM0UnitParameterRange:[0.5,1]});
+  // Leave both upstream booleans forged true. The received source
+  // interval inventory is contradictory regardless of their claims.
+  const r=audit(x);
+  assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,2);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+  assert.equal(r.views.V.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.views.V.rows[0].receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly,true);
+  assert.equal(r.officialV5Authorized,false);
+ }
+});
+test('positive original-native parameter gaps and overlaps cannot be erased by a forged complete flag',()=>{
+ for(const field of ['native3DOriginalParameterPositiveGaps',
+  'native3DOriginalParameterPositiveOverlaps',
+  'M4OriginalUnitIntervalCandidatePositiveGaps',
+  'M4OriginalUnitIntervalNativeClassConflicts']){
+  const x=setup(),m4=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+  m4[field]=[[0.5,0.5000000000000001]];
+  const r=audit(x);
+  assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,2);
+  assert.equal(r.views.W.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+  assert.equal(r.officialV5Authorized,false);
+ }
+});
+test('missing original-native partition evidence holds physical endpoints despite full stroke and true flags',()=>{
+ for(const field of ['native3DOriginalParameterPositiveGaps',
+  'native3DOriginalParameterPositiveOverlaps',
+  'M4OriginalUnitIntervalCandidatePositiveGaps',
+  'M4OriginalUnitIntervalNativeClassConflicts']){
+  const x=setup();
+  delete x.sourceM4Views.H.nativeOriginal3DM4Candidates[0][field];
+  const r=audit(x);
+  assert.equal(r.views.H.rows[0].completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+  assert.equal(r.officialV5Authorized,false);
  }
 });
