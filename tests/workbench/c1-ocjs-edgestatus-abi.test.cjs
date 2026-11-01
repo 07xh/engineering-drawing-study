@@ -374,7 +374,8 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
   actualOCCTHLRCurveSampleToleranceMm:1e-6
  };
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
- assert.equal(r.originalSourceCurveCount,1);
+ assert.equal(r.sourceCurveCandidateCount,1);
+ assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
  assert.equal(r.ambiguousParameterizedSourceMatchCount,0);
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,0);
@@ -447,7 +448,8 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
   actualOCCTHLRCurveSampleToleranceMm:1e-6
  };
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
- assert.equal(r.originalSourceCurveCount,1);
+ assert.equal(r.sourceCurveCandidateCount,1);
+ assert.equal(r.topoDSIdentityBoundSourceCurveCount,0);
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
 });
