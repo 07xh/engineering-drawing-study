@@ -260,3 +260,36 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.equal(r.originalNativeEdgeHandleUniqueSourceCount,1);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+
+test('continues original EdgeData topology inspection after the first unreadable status interval',()=>{
+ const makeEdgeData=(id,readable)=>{
+  const item={
+   Bounds(){return readable?[0,4]:undefined;},
+   NbVisiblePart(){return 1;},
+   VisiblePart(){return readable?[0,4]:undefined;},
+   AllVisible(){return true;},AllHidden(){return false;}
+  };
+  return {
+   Status(){return item;},
+   VSta(){return id==='g::E0'?1:2;},
+   VEnd(){return id==='g::E0'?2:3;},
+   Geometry(){return {GetCurve(){return {
+    FirstParameter(){return 0;},LastParameter(){return 4;},
+    Edge(){return {IsSame(){return false;}};}
+   };}};}
+  };
+ };
+ const rows=[makeEdgeData('g::E0',false),makeEdgeData('g::E1',false)];
+ const ds={EDataArray(){return {Value(i){return rows[i-1];}};}};
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:2,
+  indexedOriginalSources:sources(2)});
+ assert.equal(r.availability,'bounds-output-not-readable');
+ assert.equal(r.rows.length,2);
+ assert.deepEqual(r.rows.map(x=>x.sourceEdgeId),['g::E0','g::E1']);
+ assert.deepEqual(r.edgeDataSummary.map(x=>x.vertexStartIndex),[1,2]);
+ assert.deepEqual(r.edgeDataSummary.map(x=>x.original3DCurveParameterRange),[[0,4],[0,4]]);
+ assert.equal(r.original3DEdgeDataInspectionComplete,true);
+ assert.equal(r.generated2DHLRHistoryStillUnproven,true);
+ assert.equal(r.signedV5ActionCount,0);
+});
