@@ -150,18 +150,29 @@ function auditC1M5NativeGlobal3DSourceJoin({
  const native=cad?.nativeSourceScopedSharpOutputByView?.[view]
   ?.nativeGlobal3DOriginalSourceEvidence;
  if(native==null)return null;
- if(!['V','H','W'].includes(view)||!geometry?.id||
+ if(!['V','H','W'].includes(view)||
+    typeof geometry?.id!=='string'||!geometry.id.trim()||
+    geometry.id.includes('::')||
     !Array.isArray(geometry?.data?.edges)||
     !Number.isSafeInteger(cad?.revision)||cad.revision<1||
     typeof sourceEdgeId!=='string'||!Array.isArray(generatedClaims))
   throw new TypeError('reviewed C1 global 3D source proof requires original geometry and generated claims');
+ // Same-run original source identity and optional reviewed geometry revision
+ // must not be borrowed from a different model or revision, even when its
+ // native ledger happens to reuse the same edge labels and ordinals.
+ if((cad.sourceGeometryId!==undefined&&cad.sourceGeometryId!==geometry.id)||
+    (geometry.revision!==undefined&&
+     (!Number.isSafeInteger(geometry.revision)||
+      geometry.revision!==cad.revision)))
+  throw new RangeError('stale or mismatched original M0 geometry identity/revision in native HLR');
  // Audit the actual reviewed M0 edge MULTISET, not only a deduplicated
  // Set. A repeated or reversed physical edge must not shrink the expected
  // native BRep inventory and silently reuse another source's HLR history.
  const originalIds=new Set();
  for(const edge of geometry.data.edges){
   if(!Array.isArray(edge)||edge.length!==2||edge[0]===edge[1]||
-     edge.some(id=>typeof id!=='string'||!id.trim()))
+     edge.some(id=>typeof id!=='string'||!id.trim()||
+      id.includes('|')||id.includes('::')))
    throw new RangeError('invalid original M0 physical edge inventory');
   const id=geometry.id+'::'+[...edge].sort().join('|');
   if(originalIds.has(id))
@@ -266,6 +277,10 @@ function auditC1M5NativeGlobal3DSourceJoin({
    const id=geometry.id+'::'+[...edge].sort().join('|');
    const original=cad.originalBRepSourceEdges.find(x=>x.sourceEdgeId===id);
    const a=p[edge[0]],b=p[edge[1]];
+   // Distinct names with identical XYZ are not a nondegenerate physical
+   // BRep edge. Such an edge cannot lend source identity to a paper stroke.
+   if(eq(a,b))
+    throw new RangeError('original M0 physical BRep source has coincident 3D endpoints');
    if(!original||!(eq(original.fromOCCT3D,a)&&eq(original.toOCCT3D,b)||
                    eq(original.fromOCCT3D,b)&&eq(original.toOCCT3D,a)))
     throw new RangeError('original native BRep physical 3D endpoints contradict current M0');
