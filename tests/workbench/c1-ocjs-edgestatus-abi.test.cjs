@@ -251,8 +251,8 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
   indexedOriginalSources:sources(1),
   originalNativeEdgeHandles:[
-   {sourceEdgeId:'g::E0',edge:nativeEdge},
-   {sourceEdgeId:'g::E0',edge:nativeEdge}
+   {sourceEdgeId:'g::E0',edge:nativeEdge,parameterRange:[2.5,8.5]},
+   {sourceEdgeId:'g::E0',edge:nativeEdge,parameterRange:[2.5,8.5]}
   ],view:'H'});
  const row=r.rows[0].originalEdgeData;
  assert.equal(row.scalarValues.VSta,3);
@@ -324,7 +324,7 @@ test('keeps unreadable native curve parameter maps unsigned instead of inferring
  };}};}};
  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
   indexedOriginalSources:sources(1),
-  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge}]});
+  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge,parameterRange:[0,1]}]});
  const map=r.rows[0].originalEdgeData.original3DToProjected2DCurveParameterMap;
  assert.equal(map.readable,false);
  assert.equal(map.roundTripWithinDiagnosticTolerance,false);
@@ -347,7 +347,7 @@ test('classifies a view-collapsed original edge as non-invertible without treati
  };}};}};
  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
   indexedOriginalSources:sources(1),
-  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge}],view:'V'});
+  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge,parameterRange:[0,9]}],view:'V'});
  const map=r.rows[0].originalEdgeData.original3DToProjected2DCurveParameterMap;
  assert.equal(map.readable,true);
  assert.equal(map.projectionCollapsed,true);
@@ -366,7 +366,8 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
   Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
-  curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
  }]]);
  const segment={
   actualOCCTHLRCurveParameterRange:[2,8],
@@ -376,6 +377,7 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
  assert.equal(r.sourceCurveCandidateCount,1);
  assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
+ assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
  assert.equal(r.ambiguousParameterizedSourceMatchCount,0);
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,0);
@@ -416,8 +418,10 @@ test('two original native source curves with identical projected parameterizatio
   Value(value){return {X(){return value;},Y(){return -2*value;}};}
  });
  const nativeCurveHandlesBySourceId=new Map([
-  ['g::E0',{curve:makeCurve(),parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true}],
-  ['g::E1',{curve:makeCurve(),parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:true}]
+  ['g::E0',{curve:makeCurve(),parameterRange:[0,10],originalBRepParameterRange:[0,10],
+   originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true}],
+  ['g::E1',{curve:makeCurve(),parameterRange:[0,10],originalBRepParameterRange:[0,10],
+   originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true}]
  ]);
  const segment={
   actualOCCTHLRCurveParameterRange:[2,8],
@@ -433,6 +437,29 @@ test('two original native source curves with identical projected parameterizatio
  assert.equal(r.rows[0].generated2DTopoDSHistoryProven,false);
 });
 
+test('mismatched original BRep and HLR curve parameter domains cannot establish source lineage',()=>{
+ const curve={
+  Parameter2d(value){return value+2;},
+  Parameter3d(value){return value-2;},
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
+ };
+ const nativeCurveHandlesBySourceId=new Map([['g::E0',{
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,9],
+  originalBRepParameterRangeMatches:false,
+  directOriginalTopoDSEdgeIdentityProven:true
+ }]]);
+ const segment={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6].map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
+ assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
+ assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,0);
+ assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+});
+
 test('unproven original TopoDS identity cannot enter parameterized source matches',()=>{
  const curve={
   Parameter2d(value){return value+2;},
@@ -440,7 +467,8 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
   Value(value){return {X(){return value;},Y(){return -2*value;}};}
  };
  const nativeCurveHandlesBySourceId=new Map([['g::E0',{
-  curve,parameterRange:[0,10],directOriginalTopoDSEdgeIdentityProven:false
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:false,directOriginalTopoDSEdgeIdentityProven:false
  }]]);
  const segment={
   actualOCCTHLRCurveParameterRange:[2,8],
@@ -450,6 +478,7 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
  assert.equal(r.sourceCurveCandidateCount,1);
  assert.equal(r.topoDSIdentityBoundSourceCurveCount,0);
+ assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,0);
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
 });
