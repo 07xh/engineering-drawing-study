@@ -185,7 +185,8 @@ function inspectCurveParameterMap(curve,range,view){
   samples:rows
  };
 }
-function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles,view}){
+function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles,
+ view,nativeCurveHandlesBySourceId}){
  const scalarMethods={
   VSta:value=>Number.isSafeInteger(value)&&value>=0,
   VEnd:value=>Number.isSafeInteger(value)&&value>=0,
@@ -237,6 +238,18 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
    }
   }
  }
+ if(nativeCurveHandlesBySourceId instanceof Map&&curveParameters&&
+    geometryResult.readable){
+  const prior=nativeCurveHandlesBySourceId.get(sourceEdgeId);
+  if(prior)throw new RangeError('duplicate original HLR curve handle for physical source edge');
+  nativeCurveHandlesBySourceId.set(sourceEdgeId,{
+   curve:geometryResult.value,
+   parameterRange:[...curveParameters],
+   tolerance:scalars.Tolerance.readable?scalars.Tolerance.value:null,
+   directOriginalTopoDSEdgeIdentityProven:
+    identityMatches.length===1&&identityMatches[0]===sourceEdgeId
+  });
+ }
  return {
   scalarMethodArities:methodInventory(edgeData,Object.keys(scalarMethods)),
   flagMethodArities:methodInventory(edgeData,Object.keys(flags)),
@@ -257,7 +270,8 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
  };
 }
 function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
- indexedOriginalSources,originalNativeEdgeHandles,view}={}){
+ indexedOriginalSources,originalNativeEdgeHandles,view,
+ nativeCurveHandlesBySourceId}={}){
  if(!oc||typeof oc!=='object'||!dataStructure||typeof dataStructure!=='object'||
     !Number.isSafeInteger(edgeMapExtent)||edgeMapExtent<1||edgeMapExtent>512||
     !Array.isArray(indexedOriginalSources)||indexedOriginalSources.length!==edgeMapExtent||
@@ -314,7 +328,8 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   const edgeDataMethods=methodNames(edgeData);
   const sourceEdgeId=indexedOriginalSources[index-1].originalPhysicalSourceEdgeId;
   const originalEdgeData=inspectOriginalEdgeData({
-   edgeData,sourceEdgeId,originalNativeEdgeHandles,view
+   edgeData,sourceEdgeId,originalNativeEdgeHandles,view,
+   nativeCurveHandlesBySourceId
   });
   const statusMethod=edgeDataMethods.find(k=>/^(?:Status|EdgeStatus)(?:_\d+)?$/.test(k));
   const status=statusMethod?edgeData[statusMethod]():edgeData;
@@ -448,4 +463,114 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
    x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven).length};
 }
-module.exports={probeRealOcjsHLREdgeStatusABI};
+
+function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
+ if(!source?.directOriginalTopoDSEdgeIdentityProven||
+    !source.curve||!Array.isArray(source.parameterRange)||
+    source.parameterRange.length!==2||
+    !source.parameterRange.every(Number.isFinite)||
+    !(source.parameterRange[1]>source.parameterRange[0]))
+  return {matched:false,reason:'original-source-edge-identity-or-range-unproven'};
+ const outputRange=segment?.actualOCCTHLRCurveParameterRange;
+ const outputSamples=segment?.actualOCCTHLRCurveSamplesProjectedMm;
+ const sampleTolerance=segment?.actualOCCTHLRCurveSampleToleranceMm;
+ if(!Array.isArray(outputRange)||outputRange.length!==2||
+    !outputRange.every(Number.isFinite)||!(outputRange[1]>outputRange[0])||
+    !Array.isArray(outputSamples)||outputSamples.length!==5||
+    !outputSamples.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+    !Number.isFinite(sampleTolerance)||sampleTolerance<0)
+  return {matched:false,reason:'generated-output-curve-witness-incomplete'};
+ const [sourceFirst,sourceLast]=source.parameterRange;
+ const p2First=callFiniteOneArg(source.curve,'Parameter2d',sourceFirst);
+ const p2Last=callFiniteOneArg(source.curve,'Parameter2d',sourceLast);
+ if(!p2First.readable||!p2Last.readable)
+  return {matched:false,reason:'source-3d-to-2d-parameter-map-unreadable'};
+ const p2Range=[Math.min(p2First.value,p2Last.value),
+  Math.max(p2First.value,p2Last.value)];
+ const parameterTolerance=1e-10*Math.max(1,...p2Range,
+  Math.abs(outputRange[0]),Math.abs(outputRange[1]));
+ if(outputRange[0]<p2Range[0]-parameterTolerance||
+    outputRange[1]>p2Range[1]+parameterTolerance)
+  return {matched:false,reason:'generated-parameter-range-outside-source-projection'};
+ const samples=[];
+ for(let i=0;i<5;i++){
+  const fraction=i/4;
+  const p2=outputRange[0]+(outputRange[1]-outputRange[0])*fraction;
+  const p3=callFiniteOneArg(source.curve,'Parameter3d',p2);
+  if(!p3.readable)
+   return {matched:false,reason:'generated-2d-to-source-3d-parameter-map-unreadable'};
+  const p2Back=callFiniteOneArg(source.curve,'Parameter2d',p3.value);
+  const point=callPointOneArg(source.curve,'Value',p3.value,2);
+  if(!p2Back.readable||!point.readable)
+   return {matched:false,reason:'source-projected-curve-evaluation-unreadable'};
+  const sourceP2=[point.coordinates[0],-point.coordinates[1]];
+  const outputP2=[outputSamples[i].u,outputSamples[i].v];
+  const residual=Math.hypot(sourceP2[0]-outputP2[0],
+   sourceP2[1]-outputP2[1]);
+  samples.push({
+   generated2DParameter:p2,source3DParameter:p3.value,
+   parameterRoundTripResidual:Math.abs(p2Back.value-p2),
+   sourceProjectedPointMm:sourceP2,generatedProjectedPointMm:outputP2,
+   projectedPointResidualMm:residual
+  });
+  if(p3.value<sourceFirst-parameterTolerance||
+     p3.value>sourceLast+parameterTolerance||
+     Math.abs(p2Back.value-p2)>parameterTolerance||
+     residual>sampleTolerance)
+   return {matched:false,reason:'source-parameterized-curve-does-not-match-generated-edge',
+    samples,maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))};
+ }
+ return {
+  matched:true,
+  source3DParameterRange:[samples[0].source3DParameter,samples[4].source3DParameter],
+  generated2DParameterRange:[...outputRange],
+  maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm)),
+  maximumParameterRoundTripResidual:Math.max(...samples.map(x=>x.parameterRoundTripResidual)),
+  samples,
+  generated2DTopoDSHistoryProven:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ };
+}
+function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
+ segments,nativeCurveHandlesBySourceId
+}={}){
+ if(!Array.isArray(segments)||!(nativeCurveHandlesBySourceId instanceof Map))
+  throw new TypeError('generated HLR segments and same-run original HLR curve map required');
+ const rows=segments.map((segment,ordinal)=>{
+  const candidateSourceMatches=[];
+  const rejectedSourceCandidates=[];
+  for(const [sourceEdgeId,source] of nativeCurveHandlesBySourceId){
+   const match=matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source);
+   if(match.matched)candidateSourceMatches.push({sourceEdgeId,...match});
+   else rejectedSourceCandidates.push({sourceEdgeId,reason:match.reason});
+  }
+  return {
+   ordinal,
+   candidateSourceMatchCount:candidateSourceMatches.length,
+   candidateSourceMatches,
+   rejectedSourceCandidateCount:rejectedSourceCandidates.length,
+   uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
+    candidateSourceMatches[0].sourceEdgeId:null,
+   status:candidateSourceMatches.length===1?
+    'unique-parameterized-source-curve-match':
+    candidateSourceMatches.length>1?
+     'ambiguous-parameterized-source-curve-match':
+     'no-parameterized-source-curve-match',
+   generated2DTopoDSHistoryProven:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  };
+ });
+ return {
+  schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
+  generatedOutputEdgeCount:rows.length,
+  uniqueParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount===1).length,
+  ambiguousParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount>1).length,
+  unmatchedGeneratedOutputEdgeCount:rows.filter(x=>x.candidateSourceMatchCount===0).length,
+  rows,
+  generated2DTopoDSHistoryProven:false,
+  globalContinuousVisibilityProven:false,
+  engineeringLineStyle:'undetermined',signedV5ActionCount:0
+ };
+}
+module.exports={probeRealOcjsHLREdgeStatusABI,
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves};
