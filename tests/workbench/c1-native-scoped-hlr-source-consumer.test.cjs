@@ -609,8 +609,13 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  report.topoDSIdentityBoundSourceCurveCount=1;
  report.topoDSParameterDomainBoundSourceCurveCount=1;
  const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
+ // These split HLR rows intentionally lack native parameter-domain
+ // rejection witnesses for the competing source. They remain held, while
+ // the exact one-ULP paper gap is still independently detected.
  assert.equal(r.views.V.parameterizedGlobalHLRSourceLineage.counts.
-  uniqueParameterizedSourceLineage,2);
+  uniqueParameterizedSourceLineage,0);
+ assert.equal(r.views.V.parameterizedGlobalHLRSourceLineage.counts.
+  heldForInconclusiveOriginalHLRSourceRejections,2);
  assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
   [[0.5,next]]);
  assert.equal(coverage.entireOriginalSourcePaperCandidateIntervalCovered,false);
@@ -1131,6 +1136,14 @@ test('label-only or partially overlapping source parameter ranges cannot exclude
  const row=audit(partial).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
  assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held');
  assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,false);
+});
+test('missing received native generated parameter range holds source exclusion without crashing',()=>{
+ const x=fixture(),segment=x.cad.views.V[0];
+ delete segment.actualOCCTHLRCurveParameterRange;
+ const row=audit(x).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held');
+ assert.equal(row.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(row.signedV5Action,false);
 });
 test('verified original native parameter range exclusion can support candidate-only unique lineage',()=>{
  const x=fixture(),lineage=audit(x).views.H.parameterizedGlobalHLRSourceLineage;
