@@ -568,8 +568,9 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   // An output range that merely overhangs a source range still shares
   // positive source parameters. Only DISJOINT intervals can reject the
   // entire original BRep candidate. Never call an overhang an exclusion.
-  const disjoint=outputRange[1]<p2Range[0]-parameterTolerance||
-   outputRange[0]>p2Range[1]+parameterTolerance;
+  const disjoint=p2Range[1]>p2Range[0]&&
+   (outputRange[1]<p2Range[0]-parameterTolerance||
+    outputRange[0]>p2Range[1]+parameterTolerance);
   return {
    matched:false,
    reason:disjoint?'generated-parameter-range-outside-source-projection':
