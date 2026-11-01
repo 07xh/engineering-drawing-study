@@ -876,6 +876,81 @@ test('native outline class intervals independently back a parameterized visible 
  assert.equal(r.nativeOutlineClassBacked,true);
 });
 
+test('native outline one-ULP positive gap cannot vanish in rounded M0 source coverage',()=>{
+ const lo=0.015,hi=0.015000000000000001;
+ assert.ok(hi>lo);
+ assert.equal(lo/3,hi/3,'native gap endpoints intentionally normalize to one binary64 t');
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}],
+  native3DOutlineEvidenceAvailable:true,
+  native3DOutlineSegments:[
+   outlineSegment('V','g::E0','visible-outline',[0,lo],[0,lo/3]),
+   outlineSegment('V','g::E0','visible-outline',[hi,3],[hi/3,1])
+  ],
+  M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation:[]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,3],source3DParameterRange:[0,3]},
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,true,
+  'rounded [0,1] coverage alone falsely looks complete');
+ assert.deepEqual(r.nativeOutlineOriginalParameterCoverage.nativeOriginalParameterPositiveGaps,
+  [[lo,hi]]);
+ assert.equal(r.nativeOutlineClassBacked,false);
+});
+
+test('binary64-collapsed opposite outline interval vetoes an otherwise full class',()=>{
+ const lo=0.015,hi=0.015000000000000001;
+ assert.equal(lo/3,hi/3);
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}],
+  native3DOutlineEvidenceAvailable:true,
+  native3DOutlineSegments:[
+   outlineSegment('V','g::E0','visible-outline',[0,3],[0,1])
+  ],
+  M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation:[{
+   native3DHLRClass:'hidden-outline',
+   originalNative3DParameterRange:[lo,hi],
+   roundedOriginalM0UnitParameterRange:[lo/3,hi/3],
+   reason:'positive-native-outline-interval-collapsed-by-binary64-normalization',
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  }]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,3],source3DParameterRange:[0,3]},
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeOutlineSameClassCoverageComplete,true);
+ assert.equal(r.nativeOutlineOppositeClassPositiveOverlap,false,
+  'rounded M4 opposite class does not expose the native positive interval');
+ assert.deepEqual(r.nativeOutlineOriginalParameterCoverage.nativeOriginalHeldBinary64PositiveOverlaps,
+  [[lo,hi]]);
+ assert.equal(r.nativeOutlineClassBacked,false);
+});
+
+test('native outline complete original curve and reversed parameter source remain candidates only',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId:'g::E0',view:'W',original3DSourceCurveDirection:'reversed',
+  segments:[{native3DHLRClass:'hidden-sharp',originalM0UnitParameterRange:[0,1]}],
+  native3DOutlineEvidenceAvailable:true,
+  native3DOutlineSegments:[
+   outlineSegment('W','g::E0','hidden-outline',[0,3],[0,1])
+  ],
+  M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation:[]
+ };
+ const r=auditParameterizedM4({view:'W',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,3],source3DParameterRange:[0,3]},
+  klass:'hidden',nativeM4});
+ assert.equal(r.nativeOutlineOriginalParameterCoverage.nativeOriginalClassBackedWithoutNormalization,true);
+ assert.equal(r.nativeOutlineClassBacked,true);
+ assert.equal(r.nativeM4ClassBacked,true);
+ assert.equal(r.availability,'available');
+});
+
 test('same-class native outline overlap cannot be hidden by union coverage',()=>{
  const nativeM4={
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
