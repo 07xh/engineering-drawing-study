@@ -159,7 +159,16 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
     !Array.isArray(indexedOriginalSources)||indexedOriginalSources.length!==edgeMapExtent||
     indexedOriginalSources.some((x,i)=>!x||x.hlrDataStructureOneBasedEdgeIndex!==i+1||
       typeof x.originalPhysicalSourceEdgeId!=='string'||!x.originalPhysicalSourceEdgeId)||
-    new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId)).size!==edgeMapExtent)
+    new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId)).size!==edgeMapExtent||
+    (originalNativeEdgeHandles!==undefined&&
+     (!Array.isArray(originalNativeEdgeHandles)||
+      originalNativeEdgeHandles.length!==edgeMapExtent||
+      originalNativeEdgeHandles.some(x=>!x||
+       typeof x.sourceEdgeId!=='string'||
+       typeof x.edge?.IsSame!=='function')||
+      new Set(originalNativeEdgeHandles.map(x=>x.sourceEdgeId)).size!==edgeMapExtent||
+      originalNativeEdgeHandles.some(x=>!indexedOriginalSources.some(y=>
+       y.originalPhysicalSourceEdgeId===x.sourceEdgeId)))))
   throw new TypeError('same-run real OCJS HLR data structure and complete original source index required');
  const dsMethods=methodNames(dataStructure);
  const statusExports=Object.keys(oc).filter(k=>/HLR.*(EdgeStatus|EdgeData|Array1OfEData)/i.test(k)).sort();
@@ -257,6 +266,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
     readableSourceStatusRows:rows.filter(x=>x.bounds!==null&&x.visiblePartCount!==null).length,
     rows,diagnostic:{
      edgeDataMethodNames:edgeDataMethods,
+     originalEdgeData:row.originalEdgeData,
      statusMethodNames:statusMethods,
      statusGetterMethod:statusMethod,
      boundsMethodArities:row.boundsMethodArities,
