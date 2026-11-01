@@ -564,8 +564,26 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  const parameterTolerance=1e-10*Math.max(1,...p2Range,
   Math.abs(outputRange[0]),Math.abs(outputRange[1]));
  if(outputRange[0]<p2Range[0]-parameterTolerance||
-    outputRange[1]>p2Range[1]+parameterTolerance)
-  return {matched:false,reason:'generated-parameter-range-outside-source-projection'};
+    outputRange[1]>p2Range[1]+parameterTolerance){
+  // An output range that merely overhangs a source range still shares
+  // positive source parameters. Only DISJOINT intervals can reject the
+  // entire original BRep candidate. Never call an overhang an exclusion.
+  const disjoint=outputRange[1]<p2Range[0]-parameterTolerance||
+   outputRange[0]>p2Range[1]+parameterTolerance;
+  return {
+   matched:false,
+   reason:disjoint?'generated-parameter-range-outside-source-projection':
+    'generated-parameter-range-not-contained-in-source-projection',
+   nativeParameterRangeExclusionWitness:disjoint?{
+    sourceProjected2DParameterRangeSorted:[...p2Range],
+    sourceProjected2DParameterEndpoints:[p2First.value,p2Last.value],
+    generated2DParameterRange:[...outputRange],
+    parameterComparisonTolerance:parameterTolerance,
+    original3DCurveParameterRange:[sourceFirst,sourceLast],
+    generated2DTopoDSHistoryCertified:false,signedV5Action:false
+   }:null
+  };
+ }
  const samples=[];
  for(let i=0;i<5;i++){
   const fraction=i/4;
@@ -659,7 +677,9 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
    else rejectedSourceCandidates.push({
     sourceEdgeId,reason:match.reason,
     ...(match.nativePaperMismatchWitness?
-     {nativePaperMismatchWitness:match.nativePaperMismatchWitness}:{})
+     {nativePaperMismatchWitness:match.nativePaperMismatchWitness}:{}),
+    ...(match.nativeParameterRangeExclusionWitness?
+     {nativeParameterRangeExclusionWitness:match.nativeParameterRangeExclusionWitness}:{})
    });
   }
   return {
