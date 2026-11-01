@@ -187,6 +187,28 @@ for(const [index,geometry] of general.entries()){
 
  const at=performance.now();
  const cad=computeC1OcjsVisibleSegments({oc,geometry,revision:40+index});
+ assert.equal(cad.originalNativeFaceAdjacency?.schema,
+  'draftai-c1-original-occt-brep-face-edge-adjacency/1');
+ assert.equal(cad.originalNativeFaceAdjacency.
+  allOriginalBRepSourceEdgesNativeFaceAdjacencyVerified,true);
+ assert.equal(cad.originalNativeVertexTopology?.schema,
+  'draftai-c1-original-occt-brep-vertex-physical-topology/1');
+ assert.equal(cad.originalNativeVertexTopology.
+  allReviewedOriginalSourceVerticesNativeTShapeVerified,true);
+ assert.equal(cad.originalNativeVertexTopology.
+  generatedHLREdgeToOriginalTopoDSHistoryCertified,false);
+ console.error('REAL C1 ORIGINAL BREP FACE/VERTEX TOPOLOGY '+geometry.id+': '+
+  JSON.stringify({
+   nativeFaces:cad.originalNativeFaceAdjacency.nativeBRepFacesChecked,
+   originalSourceEdges:cad.originalNativeFaceAdjacency.
+    nativeOriginalBRepSourceEdgesWithExactlyTwoVerifiedFaces,
+   originalVertices:cad.originalNativeVertexTopology.originalM0SourceVertexIds.length,
+   nativeOriginalVertexPairs:cad.originalNativeVertexTopology.
+    allOriginalBRepVertexPairsCompared,
+   actualOriginalSharedVertexTopoDSPairs:cad.originalNativeVertexTopology.
+    originalSamePhysicalVertexTopoDSPairs,
+   generated2DHLRHistoryCertified:false,signedV5:0
+  }));
  assert.deepEqual(Object.keys(cad.nativeHLRSourceHistoryAPISurfaceByView).sort(),
   ['H','V','W']);
  for(const view of ['V','H','W']){
