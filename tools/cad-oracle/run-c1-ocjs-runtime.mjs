@@ -313,10 +313,12 @@ for(const [index,geometry] of general.entries()){
     geometry.id+'::'+[...e].sort().join('|')===source.originalPhysicalSourceEdgeId);
    assert.ok(edge,'real native source must belong to original M0 edge list');
    const [a,b]=edge.map(id=>project(geometry.data.points[id])[view]);
-   if(a.u===b.u&&a.v===b.v){
+   const collapsedOnPaper=a.u===b.u&&a.v===b.v;
+   if(collapsedOnPaper){
     assert.equal(source.visible3D.native3DGeneratedCurveIntervals.length,0);
     assert.equal(source.hidden3D.native3DGeneratedCurveIntervals.length,0);
-    continue;
+    // A zero-length projected Sharp stroke does not authorize dropping
+    // native OutLine source intervals: still audit them through M4.
    }
    const witness=projectC1Native3DSourceIntervalsToM4({
     geometry,revision:cad.revision,view,
@@ -324,7 +326,9 @@ for(const [index,geometry] of general.entries()){
     originalCurve:nativeCurveBySource.get(source.originalPhysicalSourceEdgeId),
     scopedRow:source
    });
-   native3DM4Noncollapsed++;
+   if(!collapsedOnPaper)native3DM4Noncollapsed++;
+   else assert.equal(witness.segments.length,0,
+    'collapsed original paper edge cannot emit a sharp M4 stroke');
    native3DM4ProjectedSegments+=witness.segments.length;
    assert.equal(witness.sourceGeometryId,geometry.id);
    assert.equal(witness.revision,cad.revision);
@@ -353,6 +357,13 @@ for(const [index,geometry] of general.entries()){
     outlinePartition.positiveLengthUncoveredNativeParameterIntervals);
    assert.deepEqual(witness.native3DOutlineOriginalParameterPositiveOverlaps,
     outlinePartition.positiveLengthOverlappingNativeParameterIntervals);
+   // This checks the REAL producer contract, not just a synthetic M4 row.
+   for(const group of [source.visibleOutline3D,source.hiddenOutline3D])
+    for(const native of group.native3DGeneratedCurveIntervals){
+     assert.equal(native.generated2DHLREdgeTopologyProven,false);
+     assert.equal(native.originalGeneratedTopoDSHistoryCertified,false);
+     assert.equal(native.signedV5Action,false);
+    }
    assert.ok(Array.isArray(witness.native3DOutlineSegments));
    assert.ok(witness.native3DOutlineSegments.every(segment=>
     segment.view===view&&segment.sourceEdgeId===source.originalPhysicalSourceEdgeId&&
