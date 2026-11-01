@@ -463,6 +463,30 @@ test('mismatched original BRep and HLR curve parameter domains cannot establish 
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
 });
 
+test('a forged true domain-match flag cannot override different original BRep parameter bounds',()=>{
+ const curve={
+  Parameter2d(value){return value+2;},
+  Parameter3d(value){return value-2;},
+  Value(value){return {X(){return value;},Y(){return -2*value;}};}
+ };
+ const nativeCurveHandlesBySourceId=new Map([['g::E0',{
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,9],
+  originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true
+ }]]);
+ const segment={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6].map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
+ assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
+ assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,0);
+ assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+ assert.equal(r.rows[0].rejectedSourceCandidateCount,1);
+});
+
 test('unproven original TopoDS identity cannot enter parameterized source matches',()=>{
  const curve={
   Parameter2d(value){return value+2;},
