@@ -1112,6 +1112,92 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       engineeringLineStyle:'undetermined',signedV5Action:false
      };
     }
+    // OutLine is a distinct OCCT result type from Sharp. Extract its
+    // source-filtered 3D intervals separately: visible/hidden sharp coverage
+    // cannot stand in for silhouette/outline membership.
+    const outline=oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_OutLine;
+    if(outline===undefined||typeof extractor.CompoundOfEdges_2!=='function')
+     throw new TypeError('pinned OCJS source-scoped native 3D HLR outline extraction missing');
+    for(const [outlineClass,visible] of [
+     ['visible-outline',true],['hidden-outline',false]
+    ]){
+     const outlineCompound=hold(extractor.CompoundOfEdges_2(
+      original.edge,outline,visible,true));
+     const outlineIntervals=[];
+     if(!outlineCompound.IsNull()){
+      const outlineExplorer=newObj('TopExp_Explorer_2',outlineCompound,kind,avoid);
+      while(outlineExplorer.More()){
+       const shape3D=hold(outlineExplorer.Current());
+       const edge3D=hold(method(oc.TopoDS,'Edge_1')(shape3D));
+       const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
+       const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
+       const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+       const source3D=sourceById.get(original.sourceEdgeId);
+       const sourceRange=source3D?.occtSourceCurveParameterRange;
+       if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
+          !finite(first)||!finite(last)||!(last>first)||
+          !Array.isArray(sourceRange)||sourceRange.length!==2||
+          first<sourceRange[0]||last>sourceRange[1])
+        throw new RangeError('native source-filtered HLR outline interval is not a bounded positive original line');
+       const p0=hold(curve3D.Value(first)),p1=hold(curve3D.Value(last));
+       const from3D={x:p0.X(),y:p0.Y(),z:p0.Z()};
+       const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
+       if(![...Object.values(from3D),...Object.values(to3D)].every(finite))
+        throw new RangeError('nonfinite actual native HLR outline source segment');
+       const originalCurve3D=newObj('BRepAdaptor_Curve_2',original.edge);
+       for(const t of [first,(first+last)/2,last]){
+        const sourcePoint=hold(originalCurve3D.Value(t));
+        const generatedPoint=hold(curve3D.Value(t));
+        if(['X','Y','Z'].some(axis=>
+         sourcePoint[axis]()!==generatedPoint[axis]()))
+         throw new RangeError('native source-filtered HLR outline curve differs from original BRep at same parameter');
+       }
+       let sameTopoDSIdentity=false;
+       if(typeof edge3D.IsSame==='function'&&typeof original.edge.IsSame==='function')
+        sameTopoDSIdentity=edge3D.IsSame(original.edge)===true&&
+         original.edge.IsSame(edge3D)===true;
+       outlineIntervals.push({
+        nativeOriginalCurveParameterRange:[first,last],
+        actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
+        nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+        directOriginalTopoDSEdgeIsSame:sameTopoDSIdentity,
+        nativeResultingEdgeType:'HLRBRep_OutLine',
+        native3DHLRClass:outlineClass,
+        generated2DSourceIdentityIsSameProven:false,
+        globalContinuousVisibilityCertified:false,
+        engineeringLineStyle:'undetermined',signedV5Action:false
+       });
+       if(outlineIntervals.length>128)
+        throw new RangeError('unbounded native source-scoped 3D HLR outline intervals');
+       outlineExplorer.Next();
+      }
+     }
+     const source3D=sourceById.get(original.sourceEdgeId);
+     row[outlineClass==='visible-outline'?'visibleOutline3D':'hiddenOutline3D']={
+      nativeSourceFilteredOriginalTopoDSEdge:true,
+      nativeResultingEdgeType:'HLRBRep_OutLine',
+      native3DGeneratedCurveIntervals:outlineIntervals,
+      exactNative3DSourceParameterCoverage:auditC1Native3DSourceScopedIntervals({
+       originalNativeParameterRange:source3D.occtSourceCurveParameterRange,
+       generatedNativeParameterRanges:outlineIntervals.map(x=>
+        x.nativeOriginalCurveParameterRange)
+      }),
+      generated2DSourceIdentityIsSameProven:false,
+      globalContinuousVisibilityCertified:false,
+      engineeringLineStyle:'undetermined',signedV5Action:false
+     };
+    }
+    const nativeOutlineSource3D=sourceById.get(original.sourceEdgeId);
+    row.combinedNative3DOutlineSourceParameterPartition=
+     auditC1Native3DSourceScopedIntervals({
+      originalNativeParameterRange:nativeOutlineSource3D.occtSourceCurveParameterRange,
+      generatedNativeParameterRanges:[
+       ...row.visibleOutline3D.native3DGeneratedCurveIntervals,
+       ...row.hiddenOutline3D.native3DGeneratedCurveIntervals
+      ].map(x=>x.nativeOriginalCurveParameterRange)
+     });
+    row.nativeOutlineResultTypeIsDistinctFromSharp=true;
     // Source-scoped native 3D V+H partition is the direct OCCT curve
     // domain ledger. Visible-only and hidden-only gaps are expected;
     // the COMBINED partition must be checked before interpreting a 2D
