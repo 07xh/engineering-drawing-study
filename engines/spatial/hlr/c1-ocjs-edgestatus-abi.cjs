@@ -564,6 +564,13 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   originalBRepParameterRangeMatches:true,
   originalBRepSourceParameterRange:[...source.originalBRepParameterRange],
   original3DCurveParameterRange:[...source.parameterRange],
+  sourceProjected2DParameterRange:[p2First.value,p2Last.value],
+  sourceProjected2DParameterRangeSorted:[...p2Range],
+  sourceProjected2DParameterRangeMatchesGeneratedOutputRange:
+   p2Range[0]===outputRange[0]&&p2Range[1]===outputRange[1],
+  sourceProjected2DParameterEndpointResiduals:[
+   outputRange[0]-p2Range[0],outputRange[1]-p2Range[1]
+  ],
   source3DParameterRange:[samples[0].source3DParameter,samples[4].source3DParameter],
   generated2DParameterRange:[...outputRange],
   maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm)),
