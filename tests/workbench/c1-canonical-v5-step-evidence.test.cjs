@@ -8,12 +8,13 @@ function fixture(){
  const steps=[
   {id:'given_0',dependsOn:[],title:'核对原题的第一个点',
    explanation:'从原题已确认的投影位置标记该点。',
-   actions:[{id:'p_0',kind:'point'}]},
+   actions:[{id:'p_0',kind:'point',geometry:{center:{x:10,y:20},radius:4}}]},
   {id:'guide_1',dependsOn:['given_0'],title:'传递投影辅助线',
-   actions:[{id:'g_1',kind:'line'}]},
+   actions:[{id:'g_1',kind:'line',geometry:{from:{x:10,y:20},to:{x:11,y:22}}}]},
   {id:'edge_2',dependsOn:['guide_1'],title:'签收实体的真实可见边',
    explanation:'已核对 M5 原始棱线及连续遮挡。',
-   actions:[{id:'edge_2_action',kind:'line',engineeringLineStyle:visible}]}
+   actions:[{id:'edge_2_action',kind:'line',engineeringLineStyle:visible,
+    geometry:{from:{x:1,y:2},to:{x:3,y:4}}}]}
  ];
  const timeline=Timeline.compileTimeline(steps);
  const player=Timeline.createPlayer(timeline,{revision:9});
@@ -25,7 +26,8 @@ function fixture(){
   certifiedVisibleContourLineBindings:[],
   certifiedPhysicalLineBindings:[{actionId:'edge_2_action',revision:9,
    signedFormalLineV5:true,sourceEdgeId:'Tetra::A|C',view:'W',
-   standardLineStyle:visible,originalParameterRange:[0,1]}]
+   standardLineStyle:visible,originalParameterRange:[0,1],
+   fromSheetPx:{x:1,y:2},toSheetPx:{x:3,y:4}}]
  };
  return {solution,revision:9,frame:player.snapshot()};
 }
@@ -94,6 +96,34 @@ test('frame zero rejects future line, forged completed action, extra action and 
  const legitimate=inspect({...f,frame:f.solution.player.snapshot()});
  assert.equal(legitimate.actions[0].formalLineCertified,true);
  assert.equal(legitimate.stepIndex,2);
+});
+test('signed V5 endpoints must equal original M5 binding; future tampering fails at frame zero',()=>{
+ const corrupt=[
+  f=>{f.solution.steps[2].actions[0].geometry.to.x=3.0000000000000004;},
+  f=>{f.solution.steps[2].actions[0].geometry.from={x:3,y:4};
+   f.solution.steps[2].actions[0].geometry.to={x:1,y:2};},
+  f=>{f.solution.certifiedPhysicalLineBindings[0].toSheetPx.y=4.000000000000001;},
+  f=>{delete f.solution.certifiedPhysicalLineBindings[0].fromSheetPx;},
+  f=>{f.solution.steps[1].actions[0].geometry.to={x:10,y:20};},
+  f=>{f.solution.steps[1].actions[0].geometry.to={x:NaN,y:20};}
+ ];
+ for(const mutate of corrupt){
+  const f=fixture();mutate(f);
+  assert.throws(()=>inspect(f),/paper endpoints|finite drawing action/);
+ }
+ const valid=fixture();
+ valid.solution.player.seekStep(2,20);
+ assert.equal(inspect({...valid,frame:valid.solution.player.snapshot()})
+  .actions[0].formalLineCertified,true);
+});
+test('subtitle-only step cannot count as C1 formal teaching construction',()=>{
+ const f=fixture();
+ f.solution.steps[1].actions=[];
+ const timeline=Timeline.compileTimeline(f.solution.steps);
+ f.solution.timeline=timeline;
+ f.solution.player=Timeline.createPlayer(timeline,{revision:9});
+ f.frame=f.solution.player.snapshot();
+ assert.throws(()=>inspect(f),/action or DAG dependency/);
 });
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(
