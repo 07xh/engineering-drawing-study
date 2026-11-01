@@ -129,7 +129,8 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
         typeof candidate.edge?.IsSame!=='function')continue;
      const forward=edge.IsSame(candidate.edge)===true;
      const reverse=candidate.edge.IsSame(edge)===true;
-     if(forward&&reverse)identityMatches.push(candidate.sourceEdgeId);
+     if(forward&&reverse&&!identityMatches.includes(candidate.sourceEdgeId))
+      identityMatches.push(candidate.sourceEdgeId);
     }
    }
   }
@@ -194,7 +195,6 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
  const indexedSourceIds=new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId));
  const originalNativeEdgeHandleLedgerComplete=
   originalNativeEdgeHandles!==undefined&&
-  originalNativeEdgeHandles.length===edgeMapExtent&&
   originalNativeEdgeHandles.every(x=>typeof x.edge?.IsSame==='function')&&
   originalHandleIds.size===edgeMapExtent&&
   [...indexedSourceIds].every(id=>originalHandleIds.has(id));
@@ -293,6 +293,8 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   originalEdgeStatusParameterIntervalsRead:true,
   generated2DHLRHistoryStillUnproven:true,
   originalNativeEdgeHandleLedgerComplete,
+  originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
+  originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
   original3DEdgeDataInspectionComplete:rows.every(x=>
    x.originalEdgeData&&Array.isArray(x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches)),
   directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
