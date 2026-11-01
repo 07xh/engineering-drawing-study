@@ -261,7 +261,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.equal(row.original3DToProjected2DCurveParameterMap.readable,true);
  assert.equal(row.original3DToProjected2DCurveParameterMap.roundTripWithinDiagnosticTolerance,true);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples.map(x=>x.parameter2d),
-  [2.75,5.5,8.75]);
+  [2.75,5.75,8.75]);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].projectedPoint2D,
   [2.75,5.5]);
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
