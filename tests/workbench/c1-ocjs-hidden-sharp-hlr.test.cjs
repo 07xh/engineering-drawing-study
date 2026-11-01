@@ -99,3 +99,71 @@ test('tiny HLR output cannot hide wrong endpoints or nonaffine interiors under a
   from:paper3(0,0),to:paper3(1e-10,0),interiorBump:2e-10
  })),/nonaffine/);
 });
+
+const {auditC1OriginalHLRStatusScopedClassConcordance:auditNativeClass}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+function originalStatusClassFixture(view='W'){
+ const source=id=>({
+  originalPhysicalSourceEdgeId:id,hlrDataStructureOneBasedEdgeIndex:
+   id==='g::A|B'?1:2,
+  visible:[],hidden:[],
+  visible3D:{native3DGeneratedCurveIntervals:[]},
+  hidden3D:{native3DGeneratedCurveIntervals:[]}
+ });
+ const visible=source('g::A|B'),hidden=source('g::C|D');
+ visible.visible.push({});visible.visible3D.native3DGeneratedCurveIntervals.push([0,1]);
+ hidden.hidden.push({});hidden.hidden3D.native3DGeneratedCurveIntervals.push([0,1]);
+ return {view,statusRows:[
+  {view,originalPhysicalSourceEdgeId:'g::A|B',
+   nativeHLROriginalEdgeMapIndex:1,
+   originalEdgeStatusAllVisible:true,originalEdgeStatusAllHidden:false},
+  {view,originalPhysicalSourceEdgeId:'g::C|D',
+   nativeHLROriginalEdgeMapIndex:2,
+   originalEdgeStatusAllVisible:false,originalEdgeStatusAllHidden:true}
+ ],scopedRows:[visible,hidden]};
+}
+test('same-run native original EdgeStatus classes reconcile with source-scoped 3D and 2D without signing',()=>{
+ for(const view of ['V','H','W']){
+  const x=originalStatusClassFixture(view),r=auditNativeClass(x);
+  assert.equal(r.sameRunOriginalStatusAndScopedSharpClassConcordanceVerified,true);
+  assert.equal(r.sourceCount,2);
+  assert.equal(r.allVisibleSourceCount,1);
+  assert.equal(r.allHiddenSourceCount,1);
+  assert.equal(r.originalParameterIntervalsExtractedFromEdgeStatus,false);
+  assert.equal(r.generated2DToOriginal3DTopoDSHistoryCertified,false);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5ActionCount,0);
+  // A projected point can lack a paper edge; class evidence must not
+  // manufacture positive-length drawing actions.
+  x.scopedRows[0].visible=[];
+  assert.equal(auditNativeClass(x).signedV5ActionCount,0);
+ }
+});
+test('same-run native EdgeStatus vetoes contradictory hidden/visible generated source output',()=>{
+ for(const view of ['V','H','W']){
+  for(const kind of ['hidden-paper','hidden-3d','visible-paper','visible-3d']){
+   const x=originalStatusClassFixture(view);
+   if(kind==='hidden-paper')x.scopedRows[0].hidden.push({});
+   if(kind==='hidden-3d')x.scopedRows[0].hidden3D.native3DGeneratedCurveIntervals.push([0,1]);
+   if(kind==='visible-paper')x.scopedRows[1].visible.push({});
+   if(kind==='visible-3d')x.scopedRows[1].visible3D.native3DGeneratedCurveIntervals.push([0,1]);
+   assert.throws(()=>auditNativeClass(x),/original HLR source generated/);
+  }
+ }
+});
+test('same-run native EdgeStatus rejects swapped, duplicate, stale, and missing source identities',()=>{
+ const mutations=[
+  x=>{x.scopedRows[0].hlrDataStructureOneBasedEdgeIndex=2;},
+  x=>{x.statusRows[1].nativeHLROriginalEdgeMapIndex=1;},
+  x=>{x.statusRows[1].originalPhysicalSourceEdgeId='g::A|B';},
+  x=>{x.scopedRows[1].originalPhysicalSourceEdgeId='g::A|B';},
+  x=>{x.statusRows[0].view='H';},
+  x=>{x.statusRows.pop();},
+  x=>{x.statusRows[0].originalEdgeStatusAllHidden=true;},
+  x=>{x.scopedRows[0].hidden3D=null;}
+ ];
+ for(const mutate of mutations){
+  const x=originalStatusClassFixture();mutate(x);
+  assert.throws(()=>auditNativeClass(x),/original HLR|scoped HLR|source-filtered HLR|same-view/);
+ }
+});
