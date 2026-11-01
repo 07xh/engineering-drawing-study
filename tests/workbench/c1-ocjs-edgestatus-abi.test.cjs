@@ -650,3 +650,30 @@ test('unreadable or nonidentical native original source parameter domain is held
   assert.equal(r.signedV5Action,false);
  }
 });
+
+test('replayed original EdgeStatus cannot certify duplicated same-class native intervals',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,5]]},
+  visibleNativeIntervals:[[0,5]],hiddenNativeIntervals:[[5,10]]};
+ const forged=[
+  {...base,statusRow:{...base.statusRow,visibleParts:[[0,5],[2,4]]}},
+  {...base,visibleNativeIntervals:[[0,5],[2,4]]},
+  {...base,hiddenNativeIntervals:[[5,10],[6,9]]}
+ ];
+ for(const input of forged){
+  const r=auditNativeClass(input);
+  assert.equal(r.comparable,false);
+  assert.equal(r.reason,'positive-same-class-original-native-parameter-overlap');
+  assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5Action,false);
+ }
+ const adjacent=auditNativeClass({...base,
+  statusRow:{...base.statusRow,visibleParts:[[0,2],[2,5]]},
+  visibleNativeIntervals:[[0,2],[2,5]]});
+ assert.equal(adjacent.comparable,true);
+ assert.equal(adjacent.nativeOriginalStatusClassAgreesWith3DSharp,true);
+ assert.equal(adjacent.generated2DTopoDSHistoryCertified,false);
+ assert.equal(adjacent.signedV5Action,false);
+});
