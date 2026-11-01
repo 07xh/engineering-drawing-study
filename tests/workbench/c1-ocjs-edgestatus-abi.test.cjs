@@ -242,7 +242,10 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  const ds={EDataArray(){return {Value(){return edgeData;}};}};
  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
   indexedOriginalSources:sources(1),
-  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge:nativeEdge}]});
+  originalNativeEdgeHandles:[
+   {sourceEdgeId:'g::E0',edge:nativeEdge},
+   {sourceEdgeId:'g::E0',edge:nativeEdge}
+  ]});
  const row=r.rows[0].originalEdgeData;
  assert.equal(row.scalarValues.VSta,3);
  assert.equal(row.scalarValues.VEnd,7);
@@ -252,5 +255,8 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
+ assert.equal(r.originalNativeEdgeHandleLedgerComplete,true);
+ assert.equal(r.originalNativeEdgeHandleOccurrenceCount,2);
+ assert.equal(r.originalNativeEdgeHandleUniqueSourceCount,1);
  assert.equal(r.signedV5ActionCount,0);
 });
