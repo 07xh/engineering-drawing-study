@@ -326,6 +326,26 @@ test('positive dyadic binary64-collapsed original M4 event cut is held, not a fa
   nativeOriginalM4CoProjectedDepthOrder[0].canonicalOriginalM4EventCutDepthRows[0].
   strictlyFrontmostAmongOriginal3DSourcesOnOpenIntervalOnly=true;
  assert.throws(()=>audit(forged),/subpixel positive M4 cut cannot become a stroke/);
+ // The actual paper segment remains non-drawable even if someone injects
+ // an unrelated whole-source or open-interval visibility certificate.
+ // Both cases used to pass this M5 consumer while still being "held".
+ for(const mutate of [
+  d=>{d.wholeIntervalFrontmostCertified=true;},
+  d=>{d.visibleSourceCoversEntireLine=true;},
+  d=>{d.entireOpenIntervalStrictlyInFrontOfAllOriginalCoProjectedSources=true;},
+  d=>{d.entireOpenIntervalBehindIndependentlyClearOriginalCoProjectedSource=true;}
+ ]){
+  const bad=structuredClone(x);
+  const d=bad.positiveOriginalGapRays.missingOriginalM0SourceViewRows[0].
+   nativeOriginalM4CoProjectedDepthOrder[0].
+   canonicalOriginalM4EventCutDepthRows[0].coProjectedOriginal3DDepthOrder;
+  mutate(d);
+  assert.throws(()=>audit(bad),/subpixel positive M4 cut cannot become a stroke/);
+ }
+ // The exact [0,0.5] subpixel source range must remain present and
+ // unsigned in the accepted evidence; no epsilon or snapping.
+ assert.equal(depth.openDepthHeldCuts,1);
+ assert.equal(out.records[0].signedV5Action,false);
 });
 
 test('HLR paper endpoints and caller-supplied flags cannot fabricate original closed endpoint rays',()=>{
