@@ -516,3 +516,16 @@ test('M5 rejects overlapping same-source positive parameter obligations, permits
  assert.equal(result.officialV5Authorized,false);
  assert.equal(result.signedV5ActionCount,0);
 });
+
+test('unavailable original EdgeStatus/native 3D reconciliation cannot certify a held M5 paper gap',()=>{
+ const r=audit(fixture());
+ assert.equal(r.counts.obligationsWithReplayedOriginalStatusVsNative3DConcordance,0);
+ assert.equal(r.counts.positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance,0);
+ assert.equal(r.counts.obligationsWithOriginalStatusVsNative3DMismatchOrUncomparable,0);
+ for(const record of r.records){
+  assert.equal(record.independentOriginalHLREdgeStatusVsNative3DSharpSourceConcordance,null);
+  assert.equal(record.sourceSideEdgeStatusAnd3DClassAgreementCannotCertifyGenerated2DHistory,true);
+  assert.equal(record.sourceOriginalTopoDSGeneratedHistoryCertified,false);
+  assert.equal(record.signedV5Action,false);
+ }
+});
