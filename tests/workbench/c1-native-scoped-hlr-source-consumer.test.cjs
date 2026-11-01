@@ -1412,3 +1412,67 @@ test('W-collapsed original source without native intervals stays an unsigned can
  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
  assert.equal(r.views.W.nativeOriginal3DM4Candidates.some(z=>z.sourceEdgeId===x.id1),false);
 });
+
+test('raw Sharp native BRep micro-gap cannot be erased by rounded M0 union in V/H/W',()=>{
+ const lo=0.015,hi=0.015000000000000001;
+ assert.ok(hi>lo);
+ assert.equal(lo/3,hi/3);
+ for(const view of ['V','H','W']){
+  const native=(a,b)=>({
+   view,sourceEdgeId:'g::E0',native3DHLRClass:'visible-sharp',
+   originalNative3DParameterRange:[a,b],
+   originalM0UnitParameterRange:[a/3,b/3],
+   derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+   generated2DHLREdgeTopologyProven:false,
+   completeGlobalCoProjectedVisibilityCertified:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  });
+  const nativeM4={
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   sourceEdgeId:'g::E0',view,original3DSourceCurveDirection:'forward',
+   segments:[native(0,lo),native(hi,3)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true
+  };
+  const query={view,sourceId:'g::E0',
+   match:{original3DCurveParameterRange:[0,3],source3DParameterRange:[0,3]},
+   klass:'visible',nativeM4};
+  const gap=auditParameterizedM4(query);
+  assert.equal(gap.nativeM4SameClassCoverageComplete,true);
+  assert.equal(gap.nativeSharpOriginalParameterEvidenceAvailable,true);
+  assert.deepEqual(gap.nativeSharpOriginalParameterCoverage.nativeOriginalParameterPositiveGaps,[[lo,hi]]);
+  assert.equal(gap.nativeSharpOriginalParameterClassBacked,false);
+  assert.equal(gap.nativeM4ClassBacked,false);
+  nativeM4.segments=[native(0,lo),native(lo,3)];
+  const joined=auditParameterizedM4(query);
+  assert.deepEqual(joined.nativeSharpOriginalParameterCoverage.nativeOriginalParameterPositiveGaps,[]);
+  assert.equal(joined.nativeSharpOriginalParameterClassBacked,true);
+  assert.equal(joined.nativeM4ClassBacked,true);
+  nativeM4.segments[0].originalM0UnitParameterRange=[0,0.5];
+  assert.throws(()=>auditParameterizedM4(query),/native Sharp parameter interval/);
+ }
+});
+test('reversed native Sharp source intervals retain raw parameter proof without M0 guessing',()=>{
+ const view='W',sourceEdgeId='g::E0';
+ const native=(a,b)=>({
+  view,sourceEdgeId,native3DHLRClass:'hidden-sharp',
+  originalNative3DParameterRange:[a,b],
+  originalM0UnitParameterRange:[(3-b)/3,(3-a)/3],
+  derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+  generated2DHLREdgeTopologyProven:false,
+  completeGlobalCoProjectedVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  sourceEdgeId,view,original3DSourceCurveDirection:'reversed',
+  segments:[native(0,1.5),native(1.5,3)],
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true
+ };
+ const r=auditParameterizedM4({view,sourceId:sourceEdgeId,
+  match:{original3DCurveParameterRange:[0,3],source3DParameterRange:[0,3]},
+  klass:'hidden',nativeM4});
+ assert.equal(r.nativeSharpOriginalParameterClassBacked,true);
+ assert.equal(r.nativeM4ClassBacked,true);
+});
