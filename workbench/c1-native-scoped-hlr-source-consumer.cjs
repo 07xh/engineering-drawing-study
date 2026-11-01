@@ -295,6 +295,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     // producer-supplied residual or a grafted interior generated sample.
     // This validates candidate provenance only, never source TopoDS
     // ancestry, continuous visibility, engineering style or V5.
+    if(samples[0].source3DParameter!==sourceRange[0]||
+       samples[4].source3DParameter!==sourceRange[1])
+     throw new RangeError('M4 parameterized HLR five-point source endpoints disagree with source interval');
     const sampleResiduals=[],roundTripResiduals=[];
     const reportedNativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm;
     for(let sampleIndex=0;sampleIndex<samples.length;sampleIndex++){
