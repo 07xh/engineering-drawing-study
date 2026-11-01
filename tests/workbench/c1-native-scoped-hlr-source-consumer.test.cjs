@@ -113,7 +113,20 @@ function fixture(){
    candidateSourceMatches,rejectedSourceCandidateCount:2-candidateSourceMatches.length,
    rejectedSourceCandidates:[id0,id1].filter(id=>
     !candidateSourceMatches.some(x=>x.sourceEdgeId===id))
-    .map(sourceEdgeId=>({sourceEdgeId,reason:'generated-parameter-range-outside-source-projection'})),
+    .map(sourceEdgeId=>({
+     sourceEdgeId,reason:'generated-parameter-range-outside-source-projection',
+     // Synthetic numeric source domain is deliberately disjoint from the
+     // generated [0,1] domain. This tests M4's arithmetic only, never
+     // certifies native TopoDS ancestry or real M5 occlusion.
+     nativeParameterRangeExclusionWitness:{
+      sourceProjected2DParameterRangeSorted:[2,3],
+      sourceProjected2DParameterEndpoints:[2,3],
+      generated2DParameterRange:[0,1],
+      parameterComparisonTolerance:3e-10,
+      original3DCurveParameterRange:[0,1],
+      generated2DTopoDSHistoryCertified:false,signedV5Action:false
+     }
+    })),
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===0?
@@ -1071,6 +1084,7 @@ test('unreadable original HLR competitor cannot be silently excluded from a uniq
   const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.V
    .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
   rejected.reason=reason;
+  delete rejected.nativeParameterRangeExclusionWitness;
   const lineage=audit(x).views.V.parameterizedGlobalHLRSourceLineage;
   const row=lineage.classes.visible.rows[0];
   assert.equal(row.completeAcceptedAndRejectedOriginalSourceCurveReview,true,reason);
@@ -1083,6 +1097,40 @@ test('unreadable original HLR competitor cannot be silently excluded from a uniq
   assert.equal(lineage.generated2DTopoDSHistoryProven,false,reason);
   assert.equal(lineage.signedV5ActionCount,0,reason);
  }
+});
+test('label-only or partially overlapping source parameter ranges cannot exclude a BRep competitor',()=>{
+ const labelOnly=fixture(),r0=labelOnly.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
+ delete r0.nativeParameterRangeExclusionWitness;
+ const held=audit(labelOnly).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(held.status,'inconclusive-original-hlr-source-exclusion-held');
+ assert.deepEqual(held.inconclusiveOriginalHLRSourceRejections,[{
+  sourceEdgeId:labelOnly.id1,reason:r0.reason,
+  missingNativeDisjointParameterWitness:true
+ }]);
+ assert.equal(held.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(held.signedV5Action,false);
+ for(const mutate of [
+  w=>{w.sourceProjected2DParameterRangeSorted=[0.5,3];w.sourceProjected2DParameterEndpoints=[0.5,3];w.parameterComparisonTolerance=3e-10;},
+  w=>{w.generated2DParameterRange=[1,2];},
+  w=>{w.parameterComparisonTolerance=0.1;},
+  w=>{w.sourceProjected2DParameterEndpoints=[2,4];},
+  w=>{w.generated2DTopoDSHistoryCertified=true;},
+  w=>{w.signedV5Action=true;}
+ ]){
+  const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.rows[0]
+   .rejectedSourceCandidates[0].nativeParameterRangeExclusionWitness;
+  mutate(w);
+  assert.throws(()=>audit(x),/parameter-domain exclusion witness|intervals overlap/,JSON.stringify(w));
+ }
+ const partial=fixture(),r=partial.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
+ r.reason='generated-parameter-range-not-contained-in-source-projection';
+ delete r.nativeParameterRangeExclusionWitness;
+ const row=audit(partial).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held');
+ assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,false);
 });
 test('verified original native parameter range exclusion can support candidate-only unique lineage',()=>{
  const x=fixture(),lineage=audit(x).views.H.parameterizedGlobalHLRSourceLineage;
