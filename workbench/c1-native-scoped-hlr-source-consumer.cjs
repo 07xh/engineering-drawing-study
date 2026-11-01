@@ -42,17 +42,38 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
  view,classes,scoped,expected
 }={}){
  const reports=scoped?.generated2DSourceParameterMatches;
- if(!reports||typeof reports!=='object')
-  throw new RangeError('missing same-run parameterized generated HLR source reports');
  const result={schema:'draftai-c1-parameterized-global-hlr-source-lineage/1',
-  view,classes:{},counts:{
+  view,availability:'available',classes:{},counts:{
    uniqueParameterizedSourceLineage:0,
    ambiguousParameterizedSourceLineage:0,
    unmatchedGeneratedOutputEdges:0,
+   unavailableGeneratedOutputEdges:0,
    sourceFilterOrPaperCandidateDisagreements:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
+ // Older synthetic consumers may not carry this optional diagnostic yet.
+ // The real pinned-WASM producer now always emits it; absence is reported
+ // as unavailable and can never be upgraded from paper aliases.
+ if(!reports||typeof reports!=='object'){
+  result.availability='unavailable';
+  for(const [klass,item] of Object.entries(classes)){
+   const rows=item.global.map((_,ordinal)=>({
+    wholeSolidHLREdgeOrdinal:ordinal,parameterizedSourceMatchCount:0,
+    parameterizedOriginalSourceEdgeIds:[],
+    nativeSourceFilterAndM0PaperCandidatesAgree:false,
+    status:'parameterized-source-report-unavailable',
+    sameRunOriginalHLRCurveParameterLineageProven:false,
+    generated2DTopoDSHistoryProven:false,
+    globalContinuousVisibilityProven:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false
+   }));
+   result.classes[klass]={generatedOutputEdgeCount:item.global.length,
+    unavailableGeneratedOutputEdges:item.global.length,rows};
+   result.counts.unavailableGeneratedOutputEdges+=item.global.length;
+  }
+  return result;
+ }
  for(const [klass,item] of Object.entries(classes)){
   const report=reports[klass];
   if(!report||report.schema!==
@@ -322,6 +343,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithoutParameterizedSourceLineage:0,
+  globalGeneratedHLREdgesWithoutParameterizedSourceReport:0,
   globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
@@ -583,8 +605,11 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.uniqueParameterizedSourceLineage;
   counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage+=
    parameterizedGlobalHLRSourceLineage.counts.ambiguousParameterizedSourceLineage;
+  counts.globalGeneratedHLREdgesWithoutParameterizedSourceReport+=
+   parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
   counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage+=
-   parameterizedGlobalHLRSourceLineage.counts.unmatchedGeneratedOutputEdges;
+   parameterizedGlobalHLRSourceLineage.counts.unmatchedGeneratedOutputEdges+
+   parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
   counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement+=
    parameterizedGlobalHLRSourceLineage.counts.sourceFilterOrPaperCandidateDisagreements;
   views[view]={nativeOriginal3DM4Candidates,
