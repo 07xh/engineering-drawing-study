@@ -381,3 +381,17 @@ test('adjacent nonoverlapping source-scoped 2D strokes may retain native class c
  assert.equal(r.sourceScoped2DClassBoundWithoutRounding,true);
  assert.equal(r.officialV5Authorized,false);
 });
+test('one binary64-ULP positive source interval overlap cannot be silently tolerated',()=>{
+ const nextBelowFive=5-Number.EPSILON*4;
+ assert.equal(nextBelowFive,4.999999999999999);
+ assert.ok(5>nextBelowFive);
+ const r=make([
+  stroke('visible-sharp',0,5),
+  stroke('visible-sharp',nextBelowFive,10)
+ ],[],[native('visible-sharp',0,1)]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterOverlapPairs,1);
+ assert.equal(r.counts.generated2DEdgesHeldForSourceParameterOverlap,2);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,false);
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(r.officialV5Authorized,false);
+});
