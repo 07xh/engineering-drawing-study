@@ -68,23 +68,30 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   throw new RangeError('parameterized source interval escapes original BRep parameter domain');
  const exactDomainContainment=Math.min(...sourceRange)>=domain[0]&&
   Math.max(...sourceRange)<=domain[1];
+ const forwardEndpointBound=
+  match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange===true;
  const normalize=t=>direction==='reversed'?
   (domain[1]-t)/(domain[1]-domain[0]):
   (t-domain[0])/(domain[1]-domain[0]);
- const a=normalize(sourceRange[0]),b=normalize(sourceRange[1]),
-  normalizedRange=[Math.min(a,b),Math.max(a,b)];
- if(!normalizedRange.every(Number.isFinite)||
-    !(normalizedRange[1]>normalizedRange[0]))
+ const inverseA=normalize(sourceRange[0]),inverseB=normalize(sourceRange[1]),
+  inverseNormalizedRange=[Math.min(inverseA,inverseB),Math.max(inverseA,inverseB)];
+ if(!inverseNormalizedRange.every(Number.isFinite)||
+    !(inverseNormalizedRange[1]>inverseNormalizedRange[0]))
   throw new RangeError('parameterized generated HLR source interval cannot normalize to original M0 [0,1]');
- // Never clamp a source endpoint back onto [0,1]. A tolerance-bounded
- // overshoot is retained as evidence and held from M4 class backing.
- if(!exactDomainContainment||normalizedRange[0]<0||normalizedRange[1]>1)
+ // If Parameter3d inverse lands a few ULPs outside the source domain, only
+ // the independent exact Parameter2d(original-domain-endpoints) == generated
+ // output-endpoints witness may bind the interval back to the original domain.
+ // The inverse overshoot is retained verbatim; no endpoint is clamped.
+ if(!exactDomainContainment&&!forwardEndpointBound)
   return {
    availability:'available',sourceEdgeId:sourceId,
    original3DSourceCurveDirection:direction,
    generated2DHLRClass:sameClass,
-   originalM0UnitParameterRange:normalizedRange,
+   originalM0UnitParameterRange:inverseNormalizedRange,
+   inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
+   source3DParameterRangeFromInverse:[...sourceRange],
    sourceParameterDomainContainment:'within-tolerance-but-outside',
+   sourceDomainEndpointForwardMapProof:false,
    nativeM4SameClassCoverageComplete:false,
    nativeM4SameClassCoverageGaps:null,
    nativeM4OppositeClassPositiveOverlap:null,
@@ -92,6 +99,14 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
    nativeM4ClassBacked:false,
    reason:'source-parameter-interval-outside-original-M0-unit-domain-no-clamp'
   };
+ const effectiveSourceRange=exactDomainContainment?sourceRange:domain;
+ const effectiveA=normalize(effectiveSourceRange[0]),
+  effectiveB=normalize(effectiveSourceRange[1]),
+  normalizedRange=[Math.min(effectiveA,effectiveB),Math.max(effectiveA,effectiveB)];
+ if(!normalizedRange.every(Number.isFinite)||
+    normalizedRange[0]<0||normalizedRange[1]>1||
+    !(normalizedRange[1]>normalizedRange[0]))
+  throw new RangeError('forward-bound source interval cannot normalize exactly to original M0 [0,1]');
  const sameRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===sameClass)
   .map(x=>x.originalM0UnitParameterRange);
  const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
@@ -104,7 +119,11 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   original3DSourceCurveDirection:direction,
   generated2DHLRClass:sameClass,
   originalM0UnitParameterRange:normalizedRange,
-  sourceParameterDomainContainment:'exact',
+  inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
+  source3DParameterRangeFromInverse:[...sourceRange],
+  sourceParameterDomainContainment:exactDomainContainment?'exact':
+   'forward-endpoint-bound-exact-with-inverse-overshoot',
+  sourceDomainEndpointForwardMapProof:forwardEndpointBound,
   nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
   nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
   nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
@@ -223,6 +242,15 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        !Array.isArray(sourceProjectedEndpointResiduals)||sourceProjectedEndpointResiduals.length!==2||
        !sourceProjectedEndpointResiduals.every(Number.isFinite)||
        typeof match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange!=='boolean'||
+       sourceProjectedRange[0]===sourceProjectedRange[1]||
+       Math.min(...sourceProjectedRange)!==sourceProjectedSortedRange[0]||
+       Math.max(...sourceProjectedRange)!==sourceProjectedSortedRange[1]||
+       sourceProjectedEndpointResiduals[0]!==
+        generatedRange?.[0]-sourceProjectedSortedRange[0]||
+       sourceProjectedEndpointResiduals[1]!==
+        generatedRange?.[1]-sourceProjectedSortedRange[1]||
+       match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange!==
+        (sourceProjectedEndpointResiduals[0]===0&&sourceProjectedEndpointResiduals[1]===0)||
        match.generated2DTopoDSHistoryProven!==false||
        match.engineeringLineStyle!=='undetermined'||match.signedV5Action!==false||
        !Array.isArray(originalDomain)||originalDomain.length!==2||
