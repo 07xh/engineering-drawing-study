@@ -647,7 +647,10 @@ function extractRealOcjsOriginalSourceBRepEdges({
    occtSourceCurveFirstPoint3D:{...actualCurveSamples[0]},
    occtSourceCurveLastPoint3D:{...actualCurveSamples[2]}};
   if(originalNativeEdgeHandles instanceof Array)
-   originalNativeEdgeHandles.push({sourceEdgeId:record.sourceEdgeId,edge:edgeType});
+   originalNativeEdgeHandles.push({
+    sourceEdgeId:record.sourceEdgeId,edge:edgeType,
+    parameterRange:[...record.occtSourceCurveParameterRange]
+   });
   if(originalNativeVertexHandles instanceof Array){
    const [aId,bId]=record.originalVertexIds,
     a=geometry.data.points[aId],b=geometry.data.points[bId];
