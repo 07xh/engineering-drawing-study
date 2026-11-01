@@ -155,8 +155,19 @@ function auditC1M5NativeGlobal3DSourceJoin({
     !Number.isSafeInteger(cad?.revision)||cad.revision<1||
     typeof sourceEdgeId!=='string'||!Array.isArray(generatedClaims))
   throw new TypeError('reviewed C1 global 3D source proof requires original geometry and generated claims');
- const originalIds=new Set(geometry.data.edges.map(e=>
-  geometry.id+'::'+[...e].sort().join('|')));
+ // Audit the actual reviewed M0 edge MULTISET, not only a deduplicated
+ // Set. A repeated or reversed physical edge must not shrink the expected
+ // native BRep inventory and silently reuse another source's HLR history.
+ const originalIds=new Set();
+ for(const edge of geometry.data.edges){
+  if(!Array.isArray(edge)||edge.length!==2||edge[0]===edge[1]||
+     edge.some(id=>typeof id!=='string'||!id.trim()))
+   throw new RangeError('invalid original M0 physical edge inventory');
+  const id=geometry.id+'::'+[...edge].sort().join('|');
+  if(originalIds.has(id))
+   throw new RangeError('duplicate original M0 physical edge inventory');
+  originalIds.add(id);
+ }
  // Use the ACTUAL same-run ORIGINAL BRep curve ledger, rather than trusting
  // the generated 3D row's "already matched" flag or its source ID alone.
  const originalCurves=new Map(),originalBRepById=new Map();
