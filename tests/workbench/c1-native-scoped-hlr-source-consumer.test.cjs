@@ -1404,3 +1404,11 @@ test('W-collapsed source with malformed native outline group is rejected',()=>{
  };
  assert.throws(()=>audit(x),/malformed native 3D HLR interval group/);
 });
+
+test('W-collapsed original source without native intervals stays an unsigned candidate',()=>{
+ const x=fixtureWithRealStatusReplay({collapseSecondInW:true});
+ const r=audit(x);
+ assert.equal(r.signedV5ActionCount,0);
+ assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+ assert.equal(r.views.W.nativeOriginal3DM4Candidates.some(z=>z.sourceEdgeId===x.id1),false);
+});
