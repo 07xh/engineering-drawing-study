@@ -378,6 +378,7 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  };
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
  assert.equal(r.sourceCurveCandidateCount,1);
+ assert.deepEqual(r.originalSourceCurveIds,['g::E0']);
  assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
  assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
@@ -479,6 +480,25 @@ test('subpixel native paper endpoint drift stays recorded but can never certify 
  assert.equal(r.signedV5ActionCount,0);
 });
 
+test('HLR candidate inventory includes even the original edges which failed source matching',()=>{
+ const nativeCurveHandlesBySourceId=new Map([
+  ['g::E1',{directOriginalTopoDSEdgeIdentityProven:false}],
+  ['g::E0',{directOriginalTopoDSEdgeIdentityProven:false}]
+ ]);
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:[0,1],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,0.25,0.5,0.75,1]
+   .map(t=>({u:t,v:t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId});
+ assert.equal(r.sourceCurveCandidateCount,2);
+ assert.deepEqual(r.originalSourceCurveIds,['g::E0','g::E1']);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+ assert.deepEqual(r.rows[0].rejectedSourceCandidates.map(x=>x.sourceEdgeId),
+  ['g::E1','g::E0']);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
 test('forward-mapped original source endpoints exactly bind a full generated 2D output interval',()=>{
  const curve={
   Parameter2d(value){return value+2;},
