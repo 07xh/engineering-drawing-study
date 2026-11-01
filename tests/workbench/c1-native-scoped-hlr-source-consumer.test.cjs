@@ -779,6 +779,8 @@ test('malformed parameterized source reports and forged generated-edge history a
   report=>{report.rows[0].ordinal=4;},
   report=>{report.rows[0].candidateSourceMatches[0].sourceEdgeId='g::foreign';},
   report=>{report.rows[0].candidateSourceMatches[0].originalTopoDSEdgeIdentityProven=false;},
+  report=>{report.rows[0].candidateSourceMatches[0].originalBRepParameterRangeMatches=false;},
+  report=>{report.rows[0].candidateSourceMatches[0].originalBRepSourceParameterRange=[0,2];},
   report=>{report.rows[0].candidateSourceMatches[0].generated2DTopoDSHistoryProven=true;},
   report=>{report.generated2DTopoDSHistoryProven=true;},
   report=>{report.rows[0].candidateSourceMatches[0].source3DParameterRange=[-1,2];}
