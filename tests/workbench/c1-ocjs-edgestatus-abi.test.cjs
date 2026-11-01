@@ -396,6 +396,89 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  assert.equal(match.signedV5Action,false);
 });
 
+test('parameterized HLR source candidates replay actual native paper edge endpoints in either orientation',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const base={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ for(const endpoints of [
+  {from:{u:0,v:0},to:{u:6,v:12},orientation:'direct'},
+  {from:{u:6,v:12},to:{u:0,v:0},orientation:'reversed'}
+ ]){
+  const {orientation,...native}=endpoints;
+  const r=auditGenerated({segments:[{...base,...native}],
+   nativeCurveHandlesBySourceId:sources});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+  const match=r.rows[0].candidateSourceMatches[0];
+  assert.equal(match.nativePaperEndpointSampleWitness.endpointOrientation,orientation);
+  assert.equal(match.nativePaperEndpointSampleWitness.exactBinary64NativePaperEndpoints,true);
+  assert.equal(match.nativePaperEndpointSampleWitness.generatedTopoDSVertexIdentityCertified,false);
+  assert.equal(match.generated2DTopoDSHistoryProven,false);
+  assert.equal(match.engineeringLineStyle,'undetermined');
+  assert.equal(match.signedV5Action,false);
+ }
+});
+test('stale or corrupted native HLR edge endpoints veto parameterized paper-source attribution',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const base={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ for(const [endpoints,reason] of [
+  [{from:{u:0,v:0},to:{u:7,v:12}},'generated-curve-samples-contradict-native-paper-vertices'],
+  [{from:{u:0,v:0}},'generated-native-paper-endpoint-pair-incomplete'],
+  [{from:{u:0,v:0},to:{u:Infinity,v:12}},'generated-native-paper-endpoints-nonfinite']
+ ]){
+  const r=auditGenerated({segments:[{...base,...endpoints}],
+   nativeCurveHandlesBySourceId:sources});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,reason);
+  assert.equal(r.generated2DTopoDSHistoryProven,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('subpixel native paper endpoint drift stays recorded but can never certify topology',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6,
+  from:{u:0,v:0},to:{u:6+Number.EPSILON*4,v:12}
+ }],nativeCurveHandlesBySourceId:sources});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ const witness=r.rows[0].candidateSourceMatches[0].nativePaperEndpointSampleWitness;
+ assert.equal(witness.exactBinary64NativePaperEndpoints,false);
+ assert.ok(witness.maximumNativePaperEndpointSampleResidualMm>0);
+ assert.equal(witness.generatedTopoDSVertexIdentityCertified,false);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
 test('forward-mapped original source endpoints exactly bind a full generated 2D output interval',()=>{
  const curve={
   Parameter2d(value){return value+2;},
