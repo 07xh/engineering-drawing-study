@@ -134,3 +134,52 @@ test('audited view coverage is derived from actual rows, not a claimed V/H/W com
  assert.equal(result.signedV5ActionCount,0);
  assert.ok(Object.isFrozen(result.viewsRepresented));
 });
+
+test('M5 reports exact positive [0,1] original-source holes without epsilon or a signed line',()=>{
+ const tiny=Number.MIN_VALUE;
+ const result=review(ledger([
+  span({view:'W',sourceEdgeId:'G::A|C',
+   originalSourceParameterRange:[tiny,.5]}),
+  span({view:'W',sourceEdgeId:'G::A|C',
+   originalSourceParameterRange:[.5,1-tiny]}),
+  span({view:'H',sourceEdgeId:'G::A|D',
+   originalSourceParameterRange:[0,.25]}),
+  span({view:'H',sourceEdgeId:'G::A|D',
+   originalSourceParameterRange:[.75,1]})
+ ]));
+ // 1 - Number.MIN_VALUE rounds to 1 in binary64. The leading
+ // positive subnormal gap must nevertheless survive unchanged.
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[
+  {view:'W',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,tiny]},
+  {view:'H',sourceEdgeId:'G::A|D',originalSourceParameterRange:[.25,.75]}
+ ]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,2);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(result.uncoveredOriginalParameterRanges));
+ assert.ok(Object.isFrozen(result.uncoveredOriginalParameterRanges[0].originalSourceParameterRange));
+});
+
+test('adjacent complete source pieces do not manufacture a positive M5 hole',()=>{
+ const result=review(ledger([
+  span({originalSourceParameterRange:[0,.25]}),
+  span({originalSourceParameterRange:[.25,.5]}),
+  span({originalSourceParameterRange:[.5,1]})
+ ]));
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,0);
+ assert.equal(result.signedV5ActionCount,0);
+});
+
+test('distinct view/source partitions never cover one another’s positive gap',()=>{
+ const result=review(ledger([
+  span({view:'V',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,.5]}),
+  span({view:'H',sourceEdgeId:'G::A|B',originalSourceParameterRange:[.5,1]}),
+  span({view:'V',sourceEdgeId:'G::A|C',originalSourceParameterRange:[0,1]})
+ ]));
+ assert.deepEqual(result.uncoveredOriginalParameterRanges,[
+  {view:'V',sourceEdgeId:'G::A|B',originalSourceParameterRange:[.5,1]},
+  {view:'H',sourceEdgeId:'G::A|B',originalSourceParameterRange:[0,.5]}
+ ]);
+ assert.equal(result.observedSourceViewsWithUncoveredOriginalParameters,2);
+});
