@@ -400,6 +400,41 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ const parameterizedLineageByView=Object.fromEntries(['V','H','W'].map(view=>{
+  const lineage=scopedConsumer.views[view].parameterizedGlobalHLRSourceLineage;
+  assert.equal(lineage?.schema,'draftai-c1-parameterized-global-hlr-source-lineage/1');
+  assert.equal(lineage?.availability,'available',
+   'real pinned WASM must expose same-run parameterized generated HLR source lineage');
+  assert.equal(lineage.generated2DTopoDSHistoryProven,false);
+  assert.equal(lineage.globalContinuousVisibilityProven,false);
+  assert.equal(lineage.engineeringLineStyle,'undetermined');
+  assert.equal(lineage.signedV5ActionCount,0);
+  const total=cad.views[view].length+cad.hiddenSharpViews[view].length;
+  const classified=lineage.counts.uniqueParameterizedSourceLineage+
+   lineage.counts.ambiguousParameterizedSourceLineage+
+   lineage.counts.unmatchedGeneratedOutputEdges+
+   lineage.counts.sourceFilterOrPaperCandidateDisagreements+
+   lineage.counts.unavailableGeneratedOutputEdges;
+  assert.equal(classified,total,
+   'every real whole-solid generated HLR edge must have one parameterized lineage disposition');
+  return [view,lineage];
+ }));
+ const parameterizedLineageTotals={
+  unique:scopedConsumer.counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage,
+  ambiguous:scopedConsumer.counts.globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage,
+  unmatched:scopedConsumer.counts.globalGeneratedHLREdgesWithoutParameterizedSourceLineage,
+  unavailable:scopedConsumer.counts.globalGeneratedHLREdgesWithoutParameterizedSourceReport,
+  sourceFilterOrPaperDisagreements:
+   scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement
+ };
+ console.error('REAL C1 SAME-RUN PARAMETERIZED GLOBAL HLR SOURCE LINEAGE '+
+  geometry.id+': '+JSON.stringify({
+   totals:parameterizedLineageTotals,
+   views:Object.fromEntries(['V','H','W'].map(view=>[view,
+    parameterizedLineageByView[view].counts])),
+   generated2DTopoDSHistoryCertified:false,
+   globalContinuousVisibilityCertified:false,officialV5Actions:0
+  }));
  // Keep the exact M5 source-axis audit live on the REAL pinned WASM scenes.
  // All normal-scale original native V/H/W paper spans should agree with
  // the historical scalar dominant-axis choice. The extreme independent
@@ -2975,6 +3010,10 @@ for(const [index,geometry] of general.entries()){
   directNativeOriginalVertexMatches:cad.directNativeOriginalVertexMatches,
   nativeHLRSourceHistoryAPISurfaceByView:
    cad.nativeHLRSourceHistoryAPISurfaceByView,
+  parameterizedGlobalHLRSourceLineageByView:parameterizedLineageByView,
+  parameterizedGlobalHLRSourceLineageTotals:parameterizedLineageTotals,
+  parameterizedGlobalHLRSourceLineageGenerated2DTopoDSHistoryCertified:false,
+  parameterizedGlobalHLRSourceLineageSignedV5Actions:0,
   fullGeneratedEdgeHistoryProven:false,
   originalM5SourceViewCoverage:{
    expected:sceneInventory.expectedOriginalSourceViewCount,
