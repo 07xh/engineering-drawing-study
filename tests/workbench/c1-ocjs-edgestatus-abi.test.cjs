@@ -537,3 +537,52 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
 });
+
+function referenceStatus(bounds,boundsTolerances,parts,partTolerances,
+ allVisible=false,allHidden=false){
+ return {
+  Bounds(start,tolStart,end,tolEnd){
+   start.current=bounds[0];tolStart.current=boundsTolerances[0];
+   end.current=bounds[1];tolEnd.current=boundsTolerances[1];
+  },
+  NbVisiblePart(){return parts.length;},
+  VisiblePart(index,start,tolStart,end,tolEnd){
+   const i=index-1,interval=parts[i],tolerances=partTolerances[i];
+   start.current=interval[0];tolStart.current=tolerances[0];
+   end.current=interval[1];tolEnd.current=tolerances[1];
+  },
+  AllVisible(){return allVisible;},
+  AllHidden(){return allHidden;}
+ };
+}
+test('reads pinned OpenCascade.js mutable current-reference outputs and preserves OCCT endpoint tolerances',()=>{
+ const row=referenceStatus([0,10],[0.125,0.25],
+  [[0,4],[6,10]],[[2,2],[2,2]]);
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.equal(r.readableSourceStatusRows,1);
+ assert.deepEqual(r.rows[0].bounds,[0,10]);
+ assert.deepEqual(r.rows[0].boundsEndpointTolerances,[0.125,0.25]);
+ assert.equal(r.rows[0].boundsReadABI,'mutable-current-reference');
+ assert.deepEqual(r.rows[0].visibleParts,[[0,4],[6,10]],
+  'positive visible interval gap remains explicit despite endpoint tolerances');
+ assert.deepEqual(r.rows[0].visiblePartEndpointTolerances,[[2,2],[2,2]]);
+ assert.deepEqual(r.rows[0].visiblePartReadABIs,
+  ['mutable-current-reference','mutable-current-reference']);
+ assert.equal(r.rows[0].parameterPartitionValidated,true);
+ assert.equal(r.generated2DHLRTopoDSHistoryCertified,false);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('negative or non-finite OCCT output-reference tolerances remain unreadable and unsigned',()=>{
+ const row=referenceStatus([0,10],[-0.01,0],
+  [[0,10]],[[0,0]],true,false);
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'bounds-output-not-readable');
+ assert.equal(r.rows[0].boundsReadFailure,'invalid-output-reference-values');
+ assert.equal(r.rows[0].bounds,null);
+ assert.equal(r.rows[0].parameterPartitionValidated,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
