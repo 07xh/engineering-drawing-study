@@ -31,7 +31,13 @@ function fixture(){
  const parameterMatch=(source,range=[0,1])=>({
   sourceEdgeId:source,matched:true,originalTopoDSEdgeIdentityProven:true,
   original3DCurveParameterRange:[0,1],originalBRepParameterRangeMatches:true,
-  originalBRepSourceParameterRange:[0,1],source3DParameterRange:[...range],
+  originalBRepSourceParameterRange:[0,1],
+  sourceProjected2DParameterRange:[0,1],
+  sourceProjected2DParameterRangeSorted:[0,1],
+  sourceProjected2DParameterRangeMatchesGeneratedOutputRange:
+   range[0]===0&&range[1]===1,
+  sourceProjected2DParameterEndpointResiduals:[0,0],
+  source3DParameterRange:[...range],
   generated2DParameterRange:[...range],
   maximumProjectedPointResidualMm:0,maximumParameterRoundTripResidual:0,
   samples:[0,0.25,0.5,0.75,1].map(f=>{
