@@ -220,7 +220,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeM4ClassBackedUniqueFilterSourceEdges:0,
    nativeM4ClassEvidenceUnavailableEdges:0,
    nativeM4ClassBackingUnprovenEdges:0,
-   reviewedOriginalM0PaperHeldGeneratedEdges:0
+   reviewedOriginalM0PaperHeldGeneratedEdges:0,
+   heldForIncompleteOriginalCurveCandidateInventory:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
@@ -267,9 +268,26 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      report.engineeringLineStyle!=='undetermined'||
      report.signedV5ActionCount!==0)
    throw new RangeError('invalid parameterized whole-solid HLR source report');
+  // A 'unique' paper/source candidate is meaningful only when EVERY
+  // reviewed original physical source was actually considered. A partial
+  // native HLRBRep_Curve map can have one match while silently omitting a
+  // second competing BRep edge, so keep that classification held.
+  // The producer exports the actual same-run Map keys; old reports without
+  // that field are diagnostic-only. Do not invent missing source candidates.
+  const sourceIds=report.originalSourceCurveIds;
+  if(sourceIds!==undefined&&
+     (!Array.isArray(sourceIds)||
+      sourceIds.length!==report.sourceCurveCandidateCount||
+      sourceIds.some(id=>typeof id!=='string'||!expected.has(id))||
+      new Set(sourceIds).size!==sourceIds.length))
+   throw new RangeError('invalid or duplicated original HLR source-curve candidate ID inventory');
+  const completeOriginalSourceCurveInventory=
+   Array.isArray(sourceIds)&&sourceIds.length===expected.size&&
+   sourceIds.every(id=>expected.has(id));
+  const sourceIdsSet=new Set(sourceIds??[]);
   const seenOrdinals=new Set(),distinctParameterDomainBoundSourceIds=new Set();
   let rawUnique=0,rawAmbiguous=0,rawUnmatched=0;
-  let unique=0,ambiguous=0,unmatched=0,disagreements=0;
+  let unique=0,ambiguous=0,unmatched=0,disagreements=0,heldInventory=0;
   const rows=report.rows.map(row=>{
    const ordinal=row?.ordinal,matches=row?.candidateSourceMatches;
    if(!Number.isSafeInteger(ordinal)||ordinal<0||ordinal>=item.global.length||
@@ -295,7 +313,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      sourceRange=match?.source3DParameterRange,
      generatedRange=match?.generated2DParameterRange,
      samples=match?.samples;
-    if(!expected.has(sourceId)||candidateIds.has(sourceId)||
+    if(!expected.has(sourceId)||
+       (Array.isArray(sourceIds)&&!sourceIdsSet.has(sourceId))||
+       candidateIds.has(sourceId)||
        match.matched!==true||match.originalTopoDSEdgeIdentityProven!==true||
        match.originalBRepParameterRangeMatches!==true||
        !Array.isArray(originalBRepDomain)||originalBRepDomain.length!==2||
@@ -515,6 +535,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    const reviewedM0PaperHeld=[...m0SampleAudits.values()].some(x=>
     x!==null&&x.originalM0SourcePaperSamplesCorroborated!==true);
    const status=matches.length===0?'unmatched':
+    !completeOriginalSourceCurveInventory?'incomplete-original-hlr-source-curve-inventory-held':
     reviewedM0PaperHeld?'reviewed-original-m0-source-paper-held':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
@@ -525,10 +546,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
            status==='ambiguous-parameterized-source-lineage-native-filter-narrowed')
     ambiguous++;
    else if(status==='unmatched')unmatched++;
+   else if(status==='incomplete-original-hlr-source-curve-inventory-held')heldInventory++;
    else disagreements++;
    return {
     wholeSolidHLREdgeOrdinal:ordinal,
     parameterizedSourceMatchCount:matches.length,
+    completeOriginalSourceCurveInventory,
     parameterizedOriginalSourceEdgeIds:[...candidateIds].sort(),
     nativeSourceFilterCandidateIds:[...filterSources].sort(),
     m0PaperCandidateIds:[...paperCandidates].sort(),
@@ -557,6 +580,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
       report.topoDSParameterDomainBoundSourceCurveCount)
    throw new RangeError('parameterized HLR source IDs exceed original BRep parameter-domain identity ledger');
   result.classes[klass]={sourceCurveCandidateCount:report.sourceCurveCandidateCount,
+   completeOriginalSourceCurveInventory,
+   reviewedOriginalSourceCurveCount:expected.size,
+   heldForIncompleteOriginalCurveCandidateInventory:heldInventory,
    topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
    topoDSParameterDomainBoundSourceCurveCount:
     report.topoDSParameterDomainBoundSourceCurveCount,
@@ -585,6 +611,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
   result.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage+=
    rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length;
   result.counts.unmatchedGeneratedOutputEdges+=unmatched;
+  result.counts.heldForIncompleteOriginalCurveCandidateInventory+=heldInventory;
   result.counts.sourceFilterOrPaperCandidateDisagreements+=disagreements;
   result.counts.reviewedOriginalM0PaperHeldGeneratedEdges+=
    rows.filter(x=>x.reviewedOriginalM0PaperHeld).length;
