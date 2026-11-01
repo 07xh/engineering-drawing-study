@@ -765,6 +765,27 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
    row.hidden3D={nativeSourceFilteredOriginalTopoDSEdge:true,
     native3DGeneratedCurveIntervals:[]};
   }
+  // The legacy synthetic [t,2t] source-paper samples were unrelated to
+  // the reviewed original 3D edge. With native M4 available, bind the
+  // same-run parameterized curve samples to the actual M0 projection.
+  const match=x.cad.nativeSourceScopedSharpOutputByView[view]
+   .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+  const original=x.cad.originalBRepSourceEdges.find(edge=>
+   edge.sourceEdgeId===match.sourceEdgeId);
+  const [a,b]=x.geometry.data.edges[0].map(id=>x.geometry.data.points[id]);
+  const last=original.occtSourceCurveParameterRange[1];
+  match.original3DCurveParameterRange=[0,last];
+  match.originalBRepSourceParameterRange=[0,last];
+  match.source3DParameterRange=[0,last];
+  match.samples.forEach((sample,i)=>{
+   const t=i/4,xyz={x:a.x+(b.x-a.x)*t,
+    y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t};
+   const p=project(xyz)[view];
+   sample.source3DParameter=last*t;
+   sample.sourceProjectedPointMm=[p.u,p.v];
+   sample.generatedProjectedPointMm=[p.u,p.v];
+   sample.projectedPointResidualMm=0;
+  });
  }
  const out=audit(x);
  assert.equal(out.nativeOriginal3DToM4ProjectionConsumerAvailable,true);
@@ -776,6 +797,11 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
   assert.equal(rows[0].M4OriginalUnitIntervalCandidateCoverageComplete,true);
   assert.equal(rows[0].segments[0].native3DHLRClass,'visible-sharp');
   assert.equal(rows[0].segments[0].generated2DHLREdgeTopologyProven,false);
+  const paperAudit=out.views[view].parameterizedGlobalHLRSourceLineage
+   .classes.visible.rows[0].parameterizedSourceIntervals[0]
+   .reviewedOriginalM0PaperSampleAudit;
+  assert.equal(paperAudit.originalM0SourcePaperSamplesCorroborated,true);
+  assert.equal(paperAudit.signedV5Action,false);
   assert.equal(rows[1].M4OriginalUnitIntervalCandidateCoverageComplete,false);
   assert.equal(rows[1].officialV5Authorized,false);
  }
