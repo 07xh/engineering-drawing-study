@@ -2869,10 +2869,17 @@ for(const [index,geometry] of general.entries()){
  assert.equal(finalGate.sourceGeometryId,geometry.id);
  assert.equal(finalGate.revision,40+index);
  assert.equal(finalGate.signedV5ActionCount,0);
- const unsignedReview=reviewC1M5FinalStrokeObligations(finalGate);
+ const unsignedReview=reviewC1M5FinalStrokeObligations(finalGate,{geometry});
  assert.equal(unsignedReview.sourceGeometryId,geometry.id);
  assert.equal(unsignedReview.revision,40+index);
  assert.equal(unsignedReview.total,finalGate.subspans.length);
+ assert.equal(unsignedReview.independentOriginalM0InventoryAudited,true);
+ assert.equal(unsignedReview.expectedOriginalSourceViewCount,
+  3*geometry.data.edges.length);
+ assert.equal(unsignedReview.observedOriginalSourceViewCount+
+  unsignedReview.missingOriginalSourceViewCount,
+  unsignedReview.expectedOriginalSourceViewCount);
+ assert.equal(unsignedReview.signedV5ActionCount,0);
  assert.equal(unsignedReview.localPositiveCount,
   finalGate.subspans.filter(x=>x.positiveLineLikeGeometryReadyForFurtherM5Proof).length);
  assert.equal(unsignedReview.fullyCertifiedCount,0);
@@ -4062,6 +4069,18 @@ for(const [index,geometry] of general.entries()){
      unsignedReview.observedSourceViewsWithUncoveredOriginalParameters,
     uncoveredOriginalParameterRanges:
      unsignedReview.uncoveredOriginalParameterRanges,
+    independentOriginalM0InventoryAudited:
+     unsignedReview.independentOriginalM0InventoryAudited,
+    expectedOriginalSourceViewCount:
+     unsignedReview.expectedOriginalSourceViewCount,
+    observedOriginalSourceViewCount:
+     unsignedReview.observedOriginalSourceViewCount,
+    whollyMissingOriginalSourceViewCount:
+     unsignedReview.missingOriginalSourceViewCount,
+    whollyMissingOriginalSourceViews:
+     unsignedReview.missingOriginalSourceViews,
+    allOriginalSourceViewsHaveCompleteParameterPartitions:
+     unsignedReview.allOriginalSourceViewsHaveCompleteParameterPartitions,
     existingOuterContourHeld:finalGate.counts.externalContourHeld,
     physicalFeatureUnproven:finalGate.counts.unprovenPhysicalFeatureHeld,
     visibleCadRayCorroboratedAwaitingFinalM5:
