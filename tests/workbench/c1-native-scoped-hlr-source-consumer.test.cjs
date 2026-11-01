@@ -187,6 +187,7 @@ test('M4 rejects forged five-point residuals, parameter grids and native interio
  for(const mutate of [
   x=>{sourceMatch(x).samples[2].sourceProjectedPointMm[0]+=0.125;},
   x=>{sourceMatch(x).samples[2].generated2DParameter+=0.01;},
+  x=>{sourceMatch(x).samples[0].source3DParameter+=0.01;},
   x=>{sourceMatch(x).maximumProjectedPointResidualMm=0.25;},
   x=>{x.cad.views.V[0].actualOCCTHLRCurveSamplesProjectedMm[2].u+=0.125;},
   x=>{
@@ -201,7 +202,7 @@ test('M4 rejects forged five-point residuals, parameter grids and native interio
  ]){
   const x=fixtureWithNativePaperParameterEndpointWitness();
   mutate(x);
-  assert.throws(()=>audit(x),/five-point sample|residual summary/i);
+  assert.throws(()=>audit(x),/five-point sample|five-point source endpoints|residual summary/i);
  }
 });
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
