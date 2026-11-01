@@ -103,7 +103,7 @@ function fixture(){
   cad.nativeHLRSourceHistoryAPISurfaceByView[view].generated2DSourceParameterMatches=
    cad.nativeSourceScopedSharpOutputByView[view].generated2DSourceParameterMatches;
  }
- return {geometry,cad,id0,id1,witness,paper};
+ return {geometry,cad,id0,id1,witness,paper,parameterMatch};
 }
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
  const x=fixture(),r=audit(x);
@@ -717,7 +717,7 @@ test('coincident original curves remain ambiguous even when both native source f
   report=scoped.generated2DSourceParameterMatches.visible;
  scoped.rows[1].visible.push(x.witness(view,x.id1));
  scoped.nativeSourceScopedOutputEdgeCount=2;
- scoped.paperOnlySourceScopedEdges=2;
+ scoped.paperOnlyScopedOutputEdgeCount=2;
  x.cad.views[view][0].projectedOriginalEdgeCandidates.push(x.id1);
  const row=report.rows[0];
  row.candidateSourceMatches.push(x.parameterMatch(x.id1));
