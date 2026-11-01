@@ -7,11 +7,11 @@ const home=read('index.html');
 const build=read('scripts/build-static.cjs');
 test('verified mathematics MVP routes remain reachable during AI product transition',()=>{
  const nav=home.match(/<nav class="site-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
- const hero=home.match(/<section class="hero-main">([\s\S]*?)<\/section>/)?.[1];
+ const hero=home.match(/<section class="df-hero"[^>]*>([\s\S]*?)<\/section>/)?.[1];
  assert.ok(nav);assert.ok(hero);
  for(const route of ['labs/point-projection-live.html','labs/circle-fillet-live.html']){
   assert.ok(nav.includes('href="'+route+'"'),route);
-  assert.ok(hero.includes('href="'+route+'"')||home.includes('<a class="tool-card" href="'+route+'"'),route);
+  assert.ok(hero.includes('href="'+route+'"')||home.includes('href="'+route+'"><span class="df-tool-icon"'),route);
  }
  assert.match(home,/圆弧连接/);
  assert.match(home,/点的三面投影/);
@@ -36,7 +36,7 @@ test('V3.1 sole homepage positioning is AI geometry solving with mathematics-fir
  assert.match(home,/<title>绘序 · DraftFlow｜AI 工程制图推理与动态作图<\/title>/);
  assert.match(home,/让工程制图的每一步/);
  assert.match(home,/从已知条件出发，计算几何关系/);
- assert.match(home,/class="ui-refresh workbench-blue"/);
+ assert.match(home,/class="ui-refresh workbench-blue draftflow-home"/);
  assert.ok(home.indexOf('id="ai"')<home.indexOf('id="tools"'));
  assert.doesNotMatch(home,/三面投影 · 动态数学教学/);
 });
