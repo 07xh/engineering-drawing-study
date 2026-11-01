@@ -743,3 +743,55 @@ test('dropped, invented, or stale native generated-edge ledger evidence fails cl
   assert.throws(()=>audit(missing),/native scoped\/global HLR source identity ledger/);
  }
 });
+
+const {auditC1OriginalHLRStatusScopedClassConcordance:statusClassAudit}=
+ require('../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+function fixtureWithNativeStatusClass(view='W'){
+ const x=fixture(),scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+ for(const row of scoped.rows){
+  row.visible3D={native3DGeneratedCurveIntervals:[]};
+  row.hidden3D={native3DGeneratedCurveIntervals:[]};
+ }
+ const statusRows=scoped.rows.map((row,i)=>({
+  view,originalPhysicalSourceEdgeId:row.originalPhysicalSourceEdgeId,
+  nativeHLROriginalEdgeMapIndex:row.hlrDataStructureOneBasedEdgeIndex,
+  originalEdgeStatusAllVisible:i===0,
+  originalEdgeStatusAllHidden:i!==0
+ }));
+ const certificate=statusClassAudit({view,statusRows,scopedRows:scoped.rows});
+ scoped.statusScopedClassConcordance=certificate;
+ x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].originalEdgeStatusAPI={
+  originalHLROpenSourceClassBoundToOriginalEdgeMap:true,
+  nativeOriginalSourceEdgeStatusRows:statusRows,
+  sourceScopedClassConcordance:certificate
+ };
+ return x;
+}
+test('M4/M5 recomputes native EdgeStatus class proof instead of trusting serialized certificate',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixtureWithNativeStatusClass(view),r=audit(x);
+  assert.equal(r.signedV5ActionCount,0);
+  assert.equal(r.generatedToOriginalTopoDSFullHistoryCertified,false);
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  scoped.statusScopedClassConcordance={...scoped.statusScopedClassConcordance,
+   signedV5ActionCount:1};
+  assert.throws(()=>audit(x),/native HLR original status\/scoped class consumer ledger mismatch/);
+ }
+});
+test('M4/M5 rejects forged native source status and opposite 3D sharp classes',()=>{
+ for(const view of ['V','H','W']){
+  const mutations=[
+   x=>{delete x.cad.nativeSourceScopedSharpOutputByView[view].statusScopedClassConcordance;},
+   x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView[view].originalEdgeStatusAPI.
+    nativeOriginalSourceEdgeStatusRows[0].originalEdgeStatusAllHidden=true;},
+   x=>{x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+    hidden3D.native3DGeneratedCurveIntervals.push([0,1]);},
+   x=>{x.cad.nativeSourceScopedSharpOutputByView[view].rows[0].
+    hlrDataStructureOneBasedEdgeIndex=2;}
+  ];
+  for(const mutate of mutations){
+   const x=fixtureWithNativeStatusClass(view);mutate(x);
+   assert.throws(()=>audit(x),/original HLR|scoped HLR|native HLR/);
+  }
+ }
+});
