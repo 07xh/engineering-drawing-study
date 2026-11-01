@@ -27,6 +27,8 @@ const {auditC1Native3DSourceScopedIntervals}=
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
+const {probeRealOcjsHLREdgeStatusABI}=
+ require('./c1-ocjs-edgestatus-abi.cjs');
 function cuboidBounds(g){
  if(!g||g.kind!=='mesh'||g.space!=='model-3d'||g.unit!=='mm'||
    !g.data||!g.id||!Array.isArray(g.data.edges)||!Array.isArray(g.data.faces))
@@ -809,6 +811,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     generatedHLREdgeToOriginalTopoDSHistoryProven:false,
     signedV5Action:false
    };
+   let originalEdgeStatusAbi={
+    schema:'draftai-c1-ocjs-edgestatus-abi-probe/1',
+    availability:'data-structure-not-exposed',
+    generated2DHLRTopoDSHistoryCertified:false,
+    engineeringLineStyle:'undetermined',signedV5ActionCount:0
+   };
    if(typeof algorithm.DataStructure==='function'){
     // Only the returned handle is an owned value. get(), EdgeMap() and
     // FindKey() expose borrowed OCCT objects: deleting them corrupts
@@ -823,6 +831,10 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
         edgeMap:map,originalSourceEdges:originalNativeEdgeHandles
        }),availability:'real-native-edge-map-inspected'
       };
+      originalEdgeStatusAbi=probeRealOcjsHLREdgeStatusABI({
+       oc,dataStructure:ds,edgeMapExtent:originalDataStructureIndex.internalEdgeMapExtent,
+       indexedOriginalSources:originalDataStructureIndex.indexedOriginalSources
+      });
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
    }
@@ -832,6 +844,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     algorithmHandleMethodNames:nativeHLRSourceIndexMethodNames(handle),
     extractorMethodNames:nativeHLRSourceIndexMethodNames(extractor),
     originalDataStructureIndex,
+    originalEdgeStatusAbi,
     generatedToOriginalTopoDSHistoryProven:false,
     officialLineStyleCertified:false,signedV5Action:false
    };
