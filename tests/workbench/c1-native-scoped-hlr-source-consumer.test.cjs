@@ -1,7 +1,9 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {auditC1NativeScopedHLRSourceConsumer:audit}=
- require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+const {
+ auditC1NativeScopedHLRSourceConsumer:audit,
+ auditC1ParameterizedSourceMatchAgainstNativeM4:auditParameterizedM4
+}=require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
 const {project}=require('../../core/projection/conventions.js');
 const {exactCandidateIntervalCoverage,exactCandidateVisibilityClassOverlap}=
  require('../../workbench/c1-original-source-interval-coverage.cjs');
@@ -820,4 +822,87 @@ test('native class-specific HLR filter narrows a projected curve alias but never
  assert.equal(lineage.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage,1);
  assert.equal(lineage.counts.sourceFilterOrPaperCandidateDisagreements,0);
  assert.equal(r.signedV5ActionCount,0);
+});
+
+
+test('parameterized generated HLR source interval is backed by the same native M4 visibility class',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
+  klass:'visible',nativeM4});
+ assert.equal(r.availability,'available');
+ assert.deepEqual(r.originalM0UnitParameterRange,[0.2,0.8]);
+ assert.equal(r.nativeM4SameClassCoverageComplete,true);
+ assert.deepEqual(r.nativeM4SameClassCoverageGaps,[]);
+ assert.equal(r.nativeM4OppositeClassPositiveOverlap,false);
+ assert.equal(r.nativeM4ClassBacked,true);
+});
+
+test('native M4 positive same-class gaps prevent parameterized generated HLR class backing',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.5]}]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeM4SameClassCoverageComplete,false);
+ assert.deepEqual(r.nativeM4SameClassCoverageGaps,[[0.5,0.8]]);
+ assert.equal(r.nativeM4ClassBacked,false);
+});
+
+test('opposite native M4 visibility class overlap prevents generated HLR source class backing',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[
+   {native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]},
+   {native3DHLRClass:'hidden-sharp',originalM0UnitParameterRange:[0.4,0.6]}
+  ]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',match,
+  klass:'visible',nativeM4});
+ assert.equal(r.nativeM4SameClassCoverageComplete,true);
+ assert.equal(r.nativeM4OppositeClassPositiveOverlap,true);
+ assert.deepEqual(r.nativeM4OppositeClassOverlaps,[[0.4,0.6]]);
+ assert.equal(r.nativeM4ClassBacked,false);
+});
+
+test('reversed original BRep parameter direction is normalized against native M4 without clamping',()=>{
+ const match={original3DCurveParameterRange:[0,10],source3DParameterRange:[0,2]};
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'W',original3DSourceCurveDirection:'reversed',
+  segments:[{native3DHLRClass:'hidden-sharp',originalM0UnitParameterRange:[0.8,1]}]
+ };
+ const r=auditParameterizedM4({view:'W',sourceId:'g::E0',match,
+  klass:'hidden',nativeM4});
+ assert.deepEqual(r.originalM0UnitParameterRange,[0.8,1]);
+ assert.equal(r.nativeM4ClassBacked,true);
+});
+
+test('native M4 parameterized-source class audit stays unavailable when no 3D M4 record exists',()=>{
+ const r=auditParameterizedM4({view:'H',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,1],source3DParameterRange:[0,1]},
+  klass:'visible',nativeM4:null});
+ assert.equal(r.availability,'unavailable');
+ assert.equal(r.nativeM4ClassBacked,false);
+ assert.equal(r.originalM0UnitParameterRange,null);
+});
+
+test('parameterized source interval outside the original M0 domain is rejected, never clamped',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
+ };
+ assert.throws(()=>auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[-1,1]},
+  klass:'visible',nativeM4}),/original M0|parameterized/i);
 });
