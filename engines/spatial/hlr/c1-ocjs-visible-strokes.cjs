@@ -762,6 +762,65 @@ function makeConvexOcjsShell({oc,geometry,newObj,hold}){
  if(shell.IsNull())throw new RangeError('OCJS returned null sewn shell');
  return shell;
 }
+/**
+ * Same-run original EdgeStatus -> source-scoped sharp class consistency.
+ * This proves neither generated 2D TopoDS history nor continuous M5 visibility.
+ */
+function auditC1OriginalHLRStatusScopedClassConcordance({view,statusRows,scopedRows}={}){
+ if(!VIEWS.includes(view)||!Array.isArray(statusRows)||
+    !Array.isArray(scopedRows)||statusRows.length!==scopedRows.length||
+    !statusRows.length||statusRows.length>512)
+  throw new RangeError('complete same-view original HLR status and scoped source rows required');
+ const statuses=new Map(),indices=new Set();
+ for(const row of statusRows){
+  const id=row?.originalPhysicalSourceEdgeId,index=row?.nativeHLROriginalEdgeMapIndex;
+  if(row?.view!==view||typeof id!=='string'||!id||
+     !Number.isSafeInteger(index)||index<1||statuses.has(id)||indices.has(index)||
+     typeof row.originalEdgeStatusAllVisible!=='boolean'||
+     typeof row.originalEdgeStatusAllHidden!=='boolean'||
+     row.originalEdgeStatusAllVisible&&row.originalEdgeStatusAllHidden)
+   throw new RangeError('contradictory or duplicate original HLR source status identity');
+  statuses.set(id,row);indices.add(index);
+ }
+ const seen=new Set();
+ let allVisible=0,allHidden=0,mixed=0;
+ for(const row of scopedRows){
+  const id=row?.originalPhysicalSourceEdgeId,status=statuses.get(id);
+  if(!status||seen.has(id)||
+     row.hlrDataStructureOneBasedEdgeIndex!==status.nativeHLROriginalEdgeMapIndex)
+   throw new RangeError('scoped HLR source and original EdgeStatus index mismatch');
+  seen.add(id);
+  const visible3D=row.visible3D?.native3DGeneratedCurveIntervals,
+   hidden3D=row.hidden3D?.native3DGeneratedCurveIntervals;
+  if(!Array.isArray(row.visible)||!Array.isArray(row.hidden)||
+     !Array.isArray(visible3D)||!Array.isArray(hidden3D))
+   throw new RangeError('incomplete source-filtered HLR sharp class inventories');
+  // A view-collapsed source may have no paper edge. Reject only opposite
+  // visibility classes; never invent a 2D segment from the status flag.
+  if(status.originalEdgeStatusAllVisible){
+   allVisible++;
+   if(row.hidden.length||hidden3D.length)
+    throw new RangeError('all-visible original HLR source generated hidden sharp output');
+  }else if(status.originalEdgeStatusAllHidden){
+   allHidden++;
+   if(row.visible.length||visible3D.length)
+    throw new RangeError('all-hidden original HLR source generated visible sharp output');
+  }else mixed++;
+ }
+ if(seen.size!==statuses.size)
+  throw new RangeError('original HLR source status inventory not fully reconciled');
+ return {
+  schema:'draftai-c1-original-hlr-status-scoped-class-concordance/1',
+  view,sourceCount:seen.size,allVisibleSourceCount:allVisible,
+  allHiddenSourceCount:allHidden,mixedSourceCount:mixed,
+  sameRunOriginalStatusAndScopedSharpClassConcordanceVerified:true,
+  originalParameterIntervalsExtractedFromEdgeStatus:false,
+  generated2DToOriginal3DTopoDSHistoryCertified:false,
+  continuousSceneOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5ActionCount:0
+ };
+}
+
 function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
  if(!Number.isSafeInteger(revision)||revision<1)
   throw new TypeError('current reviewed C1 revision required');
@@ -1300,6 +1359,15 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    if(processed.size!==byOriginalSource.size)
     throw new RangeError('source-scoped HLR filter did not enumerate every original edge');
+   // Native original class must agree with same-run scoped output before
+   // downstream M4/M5 receives the unsigned provenance inventory.
+   const statusScopedClassConcordance=
+    auditC1OriginalHLRStatusScopedClassConcordance({
+     view,statusRows:originalEdgeStatusAPI.nativeOriginalSourceEdgeStatusRows,
+     scopedRows
+    });
+   originalEdgeStatusAPI.sourceScopedClassConcordance=
+    statusScopedClassConcordance;
    // The native EdgeMap and source-filtered output are still the only
    // authority for each claim. Cross-check ALL original sources here, before
    // returning serializable evidence to M5 or deleting WASM handles.
@@ -1461,6 +1529,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        engineeringLineStyle:'undetermined',signedV5Action:false});
      });
    nativeSourceScopedSharpOutputByView[view]={
+    statusScopedClassConcordance,
     nativeGlobal3DOriginalSourceEvidence,
     unclaimedNativeGeneratedHLREdges,
     nativeSourceIdentityConflicts,
@@ -1555,4 +1624,5 @@ module.exports={computeC1OcjsVisibleSegments,cuboidBounds,
  verifyOriginalOcctLinearCurveWitness,
  probeRealOcctHLREdgeDirectOriginalSourceIdentity,
  probeRealOcctHLRVertexDirectOriginalSourceIdentity,
- probeRealOcctHLRDataStructureSourceEdgeMap};
+ probeRealOcctHLRDataStructureSourceEdgeMap,
+ auditC1OriginalHLRStatusScopedClassConcordance};
