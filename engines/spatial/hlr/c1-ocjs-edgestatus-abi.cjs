@@ -608,7 +608,13 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   topoDSIdentityBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
    .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true).length,
   topoDSParameterDomainBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
-   .filter(source=>source.originalBRepParameterRangeMatches===true).length,
+   .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true&&
+    source.originalBRepParameterRangeMatches===true&&
+    Array.isArray(source.parameterRange)&&source.parameterRange.length===2&&
+    Array.isArray(source.originalBRepParameterRange)&&
+    source.originalBRepParameterRange.length===2&&
+    source.originalBRepParameterRange[0]===source.parameterRange[0]&&
+    source.originalBRepParameterRange[1]===source.parameterRange[1]).length,
   generatedOutputEdgeCount:rows.length,
   uniqueParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount===1).length,
   ambiguousParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount>1).length,
