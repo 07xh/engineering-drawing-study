@@ -1611,6 +1611,12 @@ for(const [index,geometry] of general.entries()){
   geometry.id+': '+JSON.stringify({
    missingOriginalSourceViews:positiveOriginalGapRays.missingOriginalM0SourceViewRows.length,
    nativePositiveGapIntervals:positiveOriginalGapRays.rows.length,
+   heldObligationsWithReplayedNativeOriginalStatus3DConcordance:
+    unresolvedM5.counts.obligationsWithReplayedOriginalStatusVsNative3DConcordance,
+   positivePaperGapsWithReplayedNativeOriginalStatus3DConcordance:
+    unresolvedM5.counts.positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance,
+   heldObligationsWithNativeOriginalStatus3DConflictOrUnavailable:
+    unresolvedM5.counts.obligationsWithOriginalStatusVsNative3DMismatchOrUncomparable,
    missingOrGapRowsWithExactGlobalHLRFilteredSourceAndNative3DClass:
     heldM5.filter(row=>
      row.wholeSolidGeneratedHLROriginalSourceFilterMatches.length>0).length,
