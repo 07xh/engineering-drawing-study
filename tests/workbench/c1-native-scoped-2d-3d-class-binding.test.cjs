@@ -278,3 +278,60 @@ test('native positive gap erased by binary64 M4 normalization cannot falsely cer
  assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
  assert.equal(r.officialV5Authorized,false);
 });
+
+
+test('BOTH finite source-paper spans overflow: native 2D/3D binding uses exact dominant v, not false u tie',()=>{
+ const M=Number.MAX_VALUE;
+ const sourceFrom={u:-M/2,v:-M},sourceTo={u:M,v:M};
+ assert.equal(Math.abs(sourceTo.u-sourceFrom.u),Infinity);
+ assert.equal(Math.abs(sourceTo.v-sourceFrom.v),Infinity);
+ const actual={u:M/4,v:0};
+ const mk=(a,b,observed)=>audit({
+  view,sourceEdgeId,sourceProjectedFrom:a,sourceProjectedTo:b,
+  scoped2DVisible:[{
+   ...stroke('visible-sharp'),from:observed,to:sourceTo
+  }],scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }
+ });
+ const correct=mk(sourceFrom,sourceTo,actual);
+ assert.deepEqual(correct.rows[0].originalM0ExactRationalPaperInterval,['1/2','1']);
+ assert.equal(correct.rows[0].exactOriginalM0PaperAffineCollinearity,true);
+ assert.equal(correct.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,true);
+ assert.equal(correct.rows[0].actualGlobalHLRGenerated2DTopoDSHistoryCertified,false);
+ assert.equal(correct.officialV5Authorized,false);
+ // If the shorter u axis were selected after both Number spans overflow,
+ // this off-source 2D segment would appear to cover [0,1] exactly.
+ const forged=mk(sourceFrom,sourceTo,{u:sourceFrom.u,v:0});
+ assert.deepEqual(forged.rows[0].originalM0ExactRationalPaperInterval,['1/2','1']);
+ assert.equal(forged.rows[0].exactOriginalM0PaperAffineCollinearity,false);
+ assert.equal(forged.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(forged.counts.paperDriftOrClassCoverageHeld,1);
+ assert.equal(forged.officialV5Authorized,false);
+ const reversed=audit({
+  view,sourceEdgeId,sourceProjectedFrom:sourceTo,sourceProjectedTo:sourceFrom,
+  scoped2DVisible:[{...stroke('visible-sharp'),from:actual,to:sourceTo}],
+  scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }
+ });
+ assert.deepEqual(reversed.rows[0].originalM0ExactRationalPaperInterval,['0','1/2']);
+ assert.equal(reversed.rows[0].exactOriginalM0PaperAffineCollinearity,true);
+ assert.equal(reversed.officialV5Authorized,false);
+});
