@@ -36,6 +36,11 @@ function resolveMethods(owner,name){
     Number(a.slice(name.length+1))-Number(b.slice(name.length+1)));
 }
 function resolveMethod(owner,name){return resolveMethods(owner,name)[0]??null;}
+function methodArities(owner,name){
+ return resolveMethods(owner,name).map(key=>({
+  name:key,length:typeof owner[key]==='function'?owner[key].length:null
+ }));
+}
 function invokePair(owner,name,argSets){
  const methods=resolveMethods(owner,name);
  if(!methods.length)return {readable:false,reason:'method-not-exposed'};
@@ -141,6 +146,14 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
    oneBasedEdgeIndex:index,
    edgeDataMethodNames:edgeDataMethods,
    statusMethodNames:statusMethods,
+   statusGetterMethod:statusMethod,
+   boundsMethodArities:methodArities(status,'Bounds'),
+   visiblePartMethodArities:methodArities(status,'VisiblePart'),
+   visiblePartCountMethodArities:methodArities(status,'NbVisiblePart'),
+   visibilityMethodArities:{
+    allVisible:methodArities(status,'AllVisible'),
+    allHidden:methodArities(status,'AllHidden')
+   },
    bounds:bounds.readable?bounds.interval:null,
    visiblePartCount:count,
    visibleParts,
