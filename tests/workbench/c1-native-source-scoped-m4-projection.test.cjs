@@ -12,12 +12,24 @@ const part=(from,to)=>({
  native3DCurveExactlySameAsOriginalAtThreeParameters:true,
  originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
 });
-const row=(visible,hidden)=>({
+const outlinePart=(from,to,klass)=>({
+ ...part(from,to),nativeResultingEdgeType:'HLRBRep_OutLine',
+ native3DHLRClass:klass,generated2DHLREdgeTopologyProven:false
+});
+const row=(visible,hidden,visibleOutline=[],hiddenOutline=[])=>({
  originalPhysicalSourceEdgeId:id,
  visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
   native3DGeneratedCurveIntervals:visible.map(r=>part(...r))},
  hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
-  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r))}
+  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r))},
+ visibleOutline3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+  nativeResultingEdgeType:'HLRBRep_OutLine',
+  native3DGeneratedCurveIntervals:visibleOutline.map(r=>
+   outlinePart(...r,'visible-outline'))},
+ hiddenOutline3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+  nativeResultingEdgeType:'HLRBRep_OutLine',
+  native3DGeneratedCurveIntervals:hiddenOutline.map(r=>
+   outlinePart(...r,'hidden-outline'))}
 });
 function input(visible,hidden,reverse=false){
  return {geometry,revision:11,view:'V',sourceEdgeId:id,
@@ -57,6 +69,57 @@ test('original OCCT curve reversed orientation recovers correct M0 parameter dir
  assert.deepEqual(actual.segments[1].originalM0UnitParameterRange,[0,.6]);
  assert.equal(actual.M4OriginalUnitIntervalCandidateCoverageComplete,true);
 });
+test('native source-filtered outline intervals are kept separate from sharp intervals',()=>{
+ const out=projectNative(input([[0,10]],[],false));
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.native3DOutlineSegments,[]);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,true);
+});
+test('native visible and hidden outline source intervals project to an exact M0 partition',()=>{
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveGaps,[]);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveOverlaps,[]);
+ assert.equal(out.native3DOutlineSegments.length,2);
+ assert.deepEqual(out.native3DOutlineSegments[0].originalM0UnitParameterRange,[0,0.4]);
+ assert.deepEqual(out.native3DOutlineSegments[1].originalM0UnitParameterRange,[0.4,1]);
+ assert.equal(out.native3DOutlineSegments[0].native3DHLRClass,'visible-outline');
+ assert.equal(out.native3DOutlineSegments[1].native3DHLRClass,'hidden-outline');
+ assert.equal(out.native3DOutlineSegments[0].generated2DHLREdgeTopologyProven,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('native outline one-ULP parameter gap remains a blocker',()=>{
+ const next=5.000000000000001;
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,5]],[[next,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveGaps,[[5,next]]);
+ assert.deepEqual(out.M4OutlineOriginalUnitIntervalCandidatePositiveGaps,[[0.5,next/10]]);
+});
+test('overlapping native visible and hidden outline classes never become class-backed',()=>{
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,7]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.deepEqual(out.M4OutlineOriginalUnitIntervalNativeClassConflicts,[[0.4,0.7]]);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+});
+test('reversed original curve orientation is applied to native outline intervals',()=>{
+ const x=input([[0,10]],[],true);
+ x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.original3DSourceCurveDirection,'reversed');
+ assert.deepEqual(out.native3DOutlineSegments.map(y=>y.originalM0UnitParameterRange),
+  [[0.6,1],[0,0.6]]);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+});
+
 test('native exact one-ULP positive gap is retained in M4 rather than absorbed by tolerance',()=>{
  const next=5.000000000000001;
  const out=projectNative(input([[0,5]],[[next,10]]));
