@@ -1198,6 +1198,11 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
         directOriginalTopoDSEdgeIsSame:sameTopoDSIdentity,
         nativeResultingEdgeType:'HLRBRep_OutLine',
         native3DHLRClass:outlineClass,
+        // A source-filtered 3D outline is NOT a generated 2D TopoDS edge.
+        // The M4 outline consumer requires this explicit negative witness;
+        // omission previously rejected genuine nonempty native outlines.
+        generated2DHLREdgeTopologyProven:false,
+        originalGeneratedTopoDSHistoryCertified:false,
         generated2DSourceIdentityIsSameProven:false,
         globalContinuousVisibilityCertified:false,
         engineeringLineStyle:'undetermined',signedV5Action:false
