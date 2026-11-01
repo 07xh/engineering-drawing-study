@@ -383,7 +383,12 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  report.uniqueParameterizedSourceMatchCount=2;
  report.ambiguousParameterizedSourceMatchCount=0;
  report.unmatchedGeneratedOutputEdgeCount=0;
+ // One original TopoDS curve can legitimately be split into several HLR edges.
+ report.topoDSIdentityBoundSourceCurveCount=1;
+ report.topoDSParameterDomainBoundSourceCurveCount=1;
  const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
+ assert.equal(r.views.V.parameterizedGlobalHLRSourceLineage.counts.
+  uniqueParameterizedSourceLineage,2);
  assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
   [[0.5,next]]);
  assert.equal(coverage.entireOriginalSourcePaperCandidateIntervalCovered,false);
