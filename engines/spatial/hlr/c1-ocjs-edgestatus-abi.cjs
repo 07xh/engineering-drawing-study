@@ -605,6 +605,17 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
      'source-parameter-inversion-unproven',
     nativeProjectedPointMismatchMeasured:nativePaperContradiction,
     nativeInverseParameterMapUnproven:inverseUnproven,
+    // Retain the actual conflicting native source evaluation and received
+    // generated HLR sample so M4 can independently replay this negative
+    // witness. A free-form rejection string is never a geometric theorem.
+    nativePaperMismatchWitness:nativePaperContradiction?{
+     sampleIndex:i,
+     sourceProjectedPaperPointMm:[...sourceP2],
+     generatedProjectedPaperPointMm:[...outputP2],
+     measuredPaperResidualMm:residual,
+     generatedNativePaperToleranceMm:sampleTolerance,
+     generated2DTopoDSHistoryCertified:false,signedV5Action:false
+    }:null,
     samples,
     maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))
    };
@@ -645,7 +656,11 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   for(const [sourceEdgeId,source] of nativeCurveHandlesBySourceId){
    const match=matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source);
    if(match.matched)candidateSourceMatches.push({sourceEdgeId,...match});
-   else rejectedSourceCandidates.push({sourceEdgeId,reason:match.reason});
+   else rejectedSourceCandidates.push({
+    sourceEdgeId,reason:match.reason,
+    ...(match.nativePaperMismatchWitness?
+     {nativePaperMismatchWitness:match.nativePaperMismatchWitness}:{})
+   });
   }
   return {
    ordinal,
