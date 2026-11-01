@@ -203,6 +203,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     const sourceId=match?.sourceEdgeId,
      originalDomain=match?.original3DCurveParameterRange,
      originalBRepDomain=match?.originalBRepSourceParameterRange,
+     sourceProjectedRange=match?.sourceProjected2DParameterRange,
+     sourceProjectedSortedRange=match?.sourceProjected2DParameterRangeSorted,
+     sourceProjectedEndpointResiduals=match?.sourceProjected2DParameterEndpointResiduals,
      sourceRange=match?.source3DParameterRange,
      generatedRange=match?.generated2DParameterRange,
      samples=match?.samples;
@@ -213,6 +216,13 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        !originalBRepDomain.every(Number.isFinite)||
        originalBRepDomain[0]!==originalDomain?.[0]||
        originalBRepDomain[1]!==originalDomain?.[1]||
+       !Array.isArray(sourceProjectedRange)||sourceProjectedRange.length!==2||
+       !sourceProjectedRange.every(Number.isFinite)||
+       !Array.isArray(sourceProjectedSortedRange)||sourceProjectedSortedRange.length!==2||
+       !sourceProjectedSortedRange.every(Number.isFinite)||
+       !Array.isArray(sourceProjectedEndpointResiduals)||sourceProjectedEndpointResiduals.length!==2||
+       !sourceProjectedEndpointResiduals.every(Number.isFinite)||
+       typeof match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange!=='boolean'||
        match.generated2DTopoDSHistoryProven!==false||
        match.engineeringLineStyle!=='undetermined'||match.signedV5Action!==false||
        !Array.isArray(originalDomain)||originalDomain.length!==2||
@@ -289,6 +299,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      sourceEdgeId:match.sourceEdgeId,
      originalBRepSourceParameterRange:[...match.originalBRepSourceParameterRange],
      original3DCurveParameterRange:[...match.original3DCurveParameterRange],
+     sourceProjected2DParameterRange:[...match.sourceProjected2DParameterRange],
+     sourceProjected2DParameterRangeSorted:[...match.sourceProjected2DParameterRangeSorted],
+     sourceProjected2DParameterRangeMatchesGeneratedOutputRange:
+      match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange,
+     sourceProjected2DParameterEndpointResiduals:
+      [...match.sourceProjected2DParameterEndpointResiduals],
      source3DParameterRange:[...match.source3DParameterRange],
      generated2DParameterRange:[...match.generated2DParameterRange],
      maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
