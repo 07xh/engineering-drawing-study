@@ -72,7 +72,88 @@ function callCount(owner,name){
  }
  return null;
 }
-function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOriginalSources}={}){
+function callNoArg(owner,name,predicate){
+ for(const method of resolveMethods(owner,name)){
+  if(owner[method].length!==0)continue;
+  try{
+   const value=owner[method]();
+   if(predicate(value))return {readable:true,value,method};
+  }catch{/* try the next actual zero-argument overload */}
+ }
+ return {readable:false,value:null,method:null};
+}
+function methodInventory(owner,names){
+ return Object.fromEntries(names.map(name=>[name,methodArities(owner,name)]));
+}
+function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles}){
+ const scalarMethods={
+  VSta:value=>Number.isSafeInteger(value)&&value>=0,
+  VEnd:value=>Number.isSafeInteger(value)&&value>=0,
+  HideCount:value=>Number.isSafeInteger(value)&&value>=0,
+  Tolerance:Number.isFinite
+ };
+ const scalars={};
+ for(const [name,predicate] of Object.entries(scalarMethods))
+  scalars[name]=callNoArg(edgeData,name,predicate);
+ const flags={};
+ for(const name of ['OutLVSta','OutLVEnd','CutAtSta','CutAtEnd',
+  'VerAtSta','VerAtEnd','Rg1Line','RgNLine','Used','Selected',
+  'Simple','AutoIntersectionDone'])
+  flags[name]=callNoArg(edgeData,name,value=>typeof value==='boolean');
+ const geometryResult=callNoArg(edgeData,'Geometry',value=>
+  value&&typeof value==='object');
+ let curve=null,adaptor=null,edge=null;
+ let geometryMethods=[],adaptorMethods=[],edgeMethods=[];
+ let curveParameters=null,identityMatches=[];
+ if(geometryResult.readable){
+  const geometry=geometryResult.value;
+  geometryMethods=methodNames(geometry);
+  const curveResult=callNoArg(geometry,'GetCurve',value=>
+   value&&typeof value==='object');
+  const fallbackCurve=curveResult.readable?curveResult:
+   callNoArg(geometry,'Curve',value=>value&&typeof value==='object');
+  if(fallbackCurve.readable){
+   curve=fallbackCurve.value;
+   adaptorMethods=methodNames(curve);
+   const first=callNoArg(curve,'FirstParameter',Number.isFinite);
+   const last=callNoArg(curve,'LastParameter',Number.isFinite);
+   if(first.readable&&last.readable&&last.value>first.value)
+    curveParameters=[first.value,last.value];
+   const edgeResult=callNoArg(curve,'Edge',value=>
+    value&&typeof value==='object'&&typeof value.IsSame==='function');
+   if(edgeResult.readable){
+    edge=edgeResult.value;
+    edgeMethods=methodNames(edge);
+    for(const candidate of originalNativeEdgeHandles??[]){
+     if(!candidate||candidate.sourceEdgeId!==sourceEdgeId||
+        typeof candidate.edge?.IsSame!=='function')continue;
+     const forward=edge.IsSame(candidate.edge)===true;
+     const reverse=candidate.edge.IsSame(edge)===true;
+     if(forward&&reverse)identityMatches.push(candidate.sourceEdgeId);
+    }
+   }
+  }
+ }
+ return {
+  scalarMethodArities:methodInventory(edgeData,Object.keys(scalarMethods)),
+  flagMethodArities:methodInventory(edgeData,Object.keys(flags)),
+  geometryMethodArities:methodInventory(edgeData,['Geometry']),
+  geometryMethods:geometryMethods.slice(0,64),
+  adaptorMethods:adaptorMethods.slice(0,64),
+  edgeMethods:edgeMethods.slice(0,64),
+  scalarValues:Object.fromEntries(Object.entries(scalars).map(([k,v])=>
+   [k,v.readable?v.value:null])),
+  flagValues:Object.fromEntries(Object.entries(flags).map(([k,v])=>
+   [k,v.readable?v.value:null])),
+  original3DCurveParameterRange:curveParameters,
+  directOriginalTopoDSEdgeIsSameMatches:identityMatches,
+  directOriginalTopoDSEdgeIdentityProven:
+   identityMatches.length===1&&identityMatches[0]===sourceEdgeId,
+  generated2DHLRTopoDSHistoryProven:false
+ };
+}
+function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
+ indexedOriginalSources,originalNativeEdgeHandles}={}){
  if(!oc||typeof oc!=='object'||!dataStructure||typeof dataStructure!=='object'||
     !Number.isSafeInteger(edgeMapExtent)||edgeMapExtent<1||edgeMapExtent>512||
     !Array.isArray(indexedOriginalSources)||indexedOriginalSources.length!==edgeMapExtent||
@@ -145,6 +226,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
    sourceEdgeId:indexedOriginalSources[index-1].originalPhysicalSourceEdgeId,
    oneBasedEdgeIndex:index,
    edgeDataMethodNames:edgeDataMethods,
+   originalEdgeData,
    statusMethodNames:statusMethods,
    statusGetterMethod:statusMethod,
    boundsMethodArities:methodArities(status,'Bounds'),
@@ -191,6 +273,11 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
  return {...base,availability:'all-original-edge-status-intervals-readable',
   readableSourceStatusRows:rows.length,rows,
   originalEdgeStatusParameterIntervalsRead:true,
+  generated2DHLRHistoryStillUnproven:true,
+  original3DEdgeDataInspectionComplete:rows.every(x=>
+   x.originalEdgeData&&Array.isArray(x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches)),
+  directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
+   x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven).length,
   generated2DHLRHistoryStillUnproven:true};
 }
 module.exports={probeRealOcjsHLREdgeStatusABI};
