@@ -81,7 +81,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
     !Array.isArray(scoped2DVisible)||!Array.isArray(scoped2DHidden)||
     scoped2DVisible.length+scoped2DHidden.length>512||
     nativeOriginal3DM4?.schema!==
-     'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1'||
+     'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2'||
     nativeOriginal3DM4.view!==view||
     nativeOriginal3DM4.sourceEdgeId!==sourceEdgeId||
     !Array.isArray(nativeOriginal3DM4.segments)||
