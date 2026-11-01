@@ -499,7 +499,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     Array.isArray(rejectedCandidates)&&
     rejectedIds.size+candidateIds.size===sourceIdsSet.size&&
     [...sourceIdsSet].every(id=>rejectedIds.has(id)||candidateIds.has(id));
-   if(Array.isArray(rejectedCandidates)&&
+   if(Array.isArray(rejectedCandidates)&&Array.isArray(sourceIds)&&
       rejectedIds.size+candidateIds.size!==sourceIdsSet.size)
     throw new RangeError('original HLR source-curve candidate rejection partition incomplete');
    if(matches.length===1)rawUnique++;
