@@ -26,12 +26,17 @@ function pair(value){
  }
  return null;
 }
+function resolveMethod(owner,name){
+ const names=methodNames(owner);
+ return names.find(key=>key===name||key.startsWith(name+'_'))??null;
+}
 function invokePair(owner,name,argSets){
- if(typeof owner?.[name]!=='function')return {readable:false,reason:'method-not-exposed'};
+ const resolved=resolveMethod(owner,name);
+ if(!resolved)return {readable:false,reason:'method-not-exposed'};
  let last='output-reference-not-marshalled';
  for(const args of argSets){
   try{
-   const value=owner[name](...args),interval=pair(value);
+   const value=owner[resolved](...args),interval=pair(value);
    if(interval)return {readable:true,interval};
    if(value!==undefined)last='unsupported-return-shape';
   }catch(error){last=String(error?.message??error).slice(0,180);}
@@ -39,13 +44,15 @@ function invokePair(owner,name,argSets){
  return {readable:false,reason:last};
 }
 function callBoolean(owner,name){
- if(typeof owner?.[name]!=='function')return null;
- const value=owner[name]();
+ const resolved=resolveMethod(owner,name);
+ if(!resolved)return null;
+ const value=owner[resolved]();
  return typeof value==='boolean'?value:null;
 }
 function callCount(owner,name){
- if(typeof owner?.[name]!=='function')return null;
- const value=owner[name]();
+ const resolved=resolveMethod(owner,name);
+ if(!resolved)return null;
+ const value=owner[resolved]();
  return Number.isSafeInteger(value)&&value>=0?value:null;
 }
 function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOriginalSources}={}){
