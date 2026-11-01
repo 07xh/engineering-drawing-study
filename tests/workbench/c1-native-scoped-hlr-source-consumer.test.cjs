@@ -902,6 +902,25 @@ test('native M4 parameterized-source class audit stays unavailable when no 3D M4
  assert.equal(r.originalM0UnitParameterRange,null);
 });
 
+test('a forged forward endpoint flag cannot resolve an inverse parameter overshoot',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,1],
+   source3DParameterRange:[0,1+2*Number.EPSILON],
+   generated2DParameterRange:[0,0.9],
+   sourceProjected2DParameterRange:[0,1],
+   sourceProjected2DParameterRangeSorted:[0,1],
+   sourceProjected2DParameterEndpointResiduals:[0,-0.1],
+   sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
+  klass:'visible',nativeM4});
+ assert.equal(r.sourceParameterDomainContainment,'within-tolerance-but-outside');
+ assert.equal(r.nativeM4ClassBacked,false);
+});
+
 test('tolerance-bounded one-ULP source overshoot is recorded and held without clamping',()=>{
  const nativeM4={
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
@@ -928,6 +947,10 @@ test('exact forward endpoint binding may resolve inverse ULP overshoot without c
  const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
   match:{original3DCurveParameterRange:[0,1],
    source3DParameterRange:[0,1+2*Number.EPSILON],
+   generated2DParameterRange:[0,1],
+   sourceProjected2DParameterRange:[0,1],
+   sourceProjected2DParameterRangeSorted:[0,1],
+   sourceProjected2DParameterEndpointResiduals:[0,0],
    sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
   klass:'visible',nativeM4});
  assert.deepEqual(r.originalM0UnitParameterRange,[0,1]);
