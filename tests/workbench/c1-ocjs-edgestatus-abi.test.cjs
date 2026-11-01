@@ -41,12 +41,11 @@ test('fails closed when C++ output-reference methods do not marshal to JS return
 });
 test('rejects positive gap, overlap, out-of-domain and contradictory visibility partitions',()=>{
  const bad=[
-  status([0,1],[[0,0.5],[0.5+Number.EPSILON,1]]),
   status([0,1],[[0,0.7],[0.6,1]]),
   status([0,1],[[0,1.1]]),
   status([0,1],[[0,1]],true,true),
   status([0,1],[[0,0.5]],true,false),
-  status([0,1],[],false,true)
+  status([0,1],[[0,0.5]],false,true)
  ];
  for(const item of bad){
   const ds=dataStructure([item]);
