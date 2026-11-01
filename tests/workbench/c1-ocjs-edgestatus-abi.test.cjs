@@ -231,7 +231,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
   Parameter2d(value){return value+0.25;},
   Parameter3d(value){return value-0.25;},
   Value3D(value){return {X(){return value;},Y(){return value*2;},Z(){return value*3;}};},
-  Value(value){return {X(){return value;},Y(){return value*2;}};}
+  Value(value){return {X(){return value-0.25;},Y(){return (value-0.25)*2;}};}
  };
  const edgeData={
   Status(){return status([2.5,8.5],[[2.5,8.5]],true,false);},
@@ -251,7 +251,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
   originalNativeEdgeHandles:[
    {sourceEdgeId:'g::E0',edge:nativeEdge},
    {sourceEdgeId:'g::E0',edge:nativeEdge}
-  ]});
+  ],view:'H'});
  const row=r.rows[0].originalEdgeData;
  assert.equal(row.scalarValues.VSta,3);
  assert.equal(row.scalarValues.VEnd,7);
@@ -260,6 +260,7 @@ test('inspects original EdgeData curve parameters and symmetric TopoDS edge iden
  assert.deepEqual(row.original3DCurveParameterRange,[2.5,8.5]);
  assert.equal(row.original3DToProjected2DCurveParameterMap.readable,true);
  assert.equal(row.original3DToProjected2DCurveParameterMap.roundTripWithinDiagnosticTolerance,true);
+ assert.equal(row.original3DToProjected2DCurveParameterMap.canonicalProjectionCoordinatesMatch,true);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples.map(x=>x.parameter2d),
   [2.75,5.75,8.75]);
  assert.deepEqual(row.original3DToProjected2DCurveParameterMap.samples[0].projectedPoint2D,
@@ -321,6 +322,32 @@ test('keeps unreadable native curve parameter maps unsigned instead of inferring
  const map=r.rows[0].originalEdgeData.original3DToProjected2DCurveParameterMap;
  assert.equal(map.readable,false);
  assert.equal(map.roundTripWithinDiagnosticTolerance,false);
+ assert.equal(r.rows[0].originalEdgeData.generated2DHLRTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('classifies a view-collapsed original edge as non-invertible without treating it as an ABI failure',()=>{
+ const edge={IsSame(){return true;}};
+ const adaptor={FirstParameter(){return 0;},LastParameter(){return 9;},Edge(){return edge;}};
+ const curve={
+  GetCurve(){return adaptor;},
+  Parameter2d(){return 0;},Parameter3d(){return 0;},
+  Value3D(t){return {X(){return 2;},Y(){return 0;},Z(){return t;}};},
+  Value(){return {X(){return 2;},Y(){return 0;}};}
+ };
+ const ds={EDataArray(){return {Value(){return {
+  Status(){return status([0,9],[[0,9]],true,false);},
+  Geometry(){return curve;}
+ };}};}};
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge}],view:'V'});
+ const map=r.rows[0].originalEdgeData.original3DToProjected2DCurveParameterMap;
+ assert.equal(map.readable,true);
+ assert.equal(map.projectionCollapsed,true);
+ assert.equal(map.roundTripApplicable,false);
+ assert.equal(map.roundTripWithinDiagnosticTolerance,null);
+ assert.equal(map.canonicalProjectionCoordinatesMatch,true);
  assert.equal(r.rows[0].originalEdgeData.generated2DHLRTopoDSHistoryProven,false);
  assert.equal(r.signedV5ActionCount,0);
 });
