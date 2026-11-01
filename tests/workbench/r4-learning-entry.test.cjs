@@ -37,7 +37,7 @@ test('V3.1 sole homepage positioning is AI geometry solving with mathematics-fir
  assert.match(home,/让工程制图的每一步/);
  assert.match(home,/从已知条件出发，计算几何关系/);
  assert.match(home,/class="ui-refresh workbench-blue draftflow-home"/);
- assert.ok(home.indexOf('id="ai"')<home.indexOf('id="tools"'));
+ assert.ok(home.includes('id="capabilities"')&&home.indexOf('id="capabilities"')<home.indexOf('id="tools"'));
  assert.doesNotMatch(home,/三面投影 · 动态数学教学/);
 });
 test('R4 navigation changes do not modify public bundling whitelist or private textbook assets',()=>{
