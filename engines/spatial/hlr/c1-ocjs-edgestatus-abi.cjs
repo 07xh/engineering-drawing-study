@@ -110,7 +110,9 @@ function callPointOneArg(owner,name,arg,dimension){
   finally{
    // Value/Value3D return gp_Pnt values by value; release only wrappers
    // that expose an owning delete(), never borrowed Geometry/Edge handles.
-   if(value&&typeof value.delete==='function')value.delete();
+   if(value&&typeof value.delete==='function'){
+    try{value.delete();}catch{/* preserve the diagnostic result on cleanup errors */}
+   }
   }
  }
  return {readable:false,coordinates:null,method:null};
