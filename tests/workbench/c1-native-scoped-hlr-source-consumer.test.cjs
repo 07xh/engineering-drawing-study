@@ -42,7 +42,7 @@ function fixture(){
  });
  const parameterReport=(matches,generatedOutputEdgeCount)=>({
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
-  originalSourceCurveCount:2,generatedOutputEdgeCount,
+  sourceCurveCandidateCount:2,topoDSIdentityBoundSourceCurveCount:2,generatedOutputEdgeCount,
   uniqueParameterizedSourceMatchCount:matches.filter(x=>x.length===1).length,
   ambiguousParameterizedSourceMatchCount:matches.filter(x=>x.length>1).length,
   unmatchedGeneratedOutputEdgeCount:matches.filter(x=>x.length===0).length,
