@@ -199,6 +199,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   originalHandleIds.size===edgeMapExtent&&
   [...indexedSourceIds].every(id=>originalHandleIds.has(id));
  const rows=[];
+ let firstUnavailable=null;
  for(let index=1;index<=edgeMapExtent;index++){
   let edgeData;
   try{edgeData=array[valueMethod](index);}
@@ -263,20 +264,11 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   };
   if(!bounds.readable||count===null||allVisible===null||allHidden===null||partFailure){
    rows.push(row);
-   return {...base,availability:!bounds.readable?'bounds-output-not-readable':
+   firstUnavailable??=!bounds.readable?'bounds-output-not-readable':
     count===null?'visible-part-count-not-readable':
     allVisible===null||allHidden===null?'visibility-class-not-readable':
-    'visible-part-output-not-readable',
-    readableSourceStatusRows:rows.filter(x=>x.bounds!==null&&x.visiblePartCount!==null).length,
-    rows,diagnostic:{
-     edgeDataMethodNames:edgeDataMethods,
-     originalEdgeData:row.originalEdgeData,
-     statusMethodNames:statusMethods,
-     statusGetterMethod:statusMethod,
-     boundsMethodArities:row.boundsMethodArities,
-     visiblePartMethodArities:row.visiblePartMethodArities,
-     visiblePartCountMethodArities:row.visiblePartCountMethodArities
-    }};
+    'visible-part-output-not-readable';
+   continue;
   }
   const [lo,hi]=bounds.interval;
   if(!(lo<hi)||allVisible&&allHidden||
@@ -288,10 +280,37 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   row.parameterPartitionValidated=true;
   rows.push(row);
  }
- return {...base,availability:'all-original-edge-status-intervals-readable',
-  readableSourceStatusRows:rows.length,rows,
-  originalEdgeStatusParameterIntervalsRead:true,
-  generated2DHLRHistoryStillUnproven:true,
+ const readableSourceStatusRows=rows.filter(x=>
+  x.bounds!==null&&x.visiblePartCount!==null&&
+  x.allVisible!==null&&x.allHidden!==null&&
+  x.visiblePartReadFailure===null).length;
+ const edgeDataSummary=rows.map(x=>({
+  sourceEdgeId:x.sourceEdgeId,
+  vertexStartIndex:x.originalEdgeData.scalarValues.VSta,
+  vertexEndIndex:x.originalEdgeData.scalarValues.VEnd,
+  original3DCurveParameterRange:x.originalEdgeData.original3DCurveParameterRange,
+  directOriginalTopoDSEdgeIdentityProven:
+   x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven,
+  directOriginalTopoDSEdgeIsSameMatches:
+   x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches,
+  outOfLimitAtStart:x.originalEdgeData.flagValues.OutLVSta,
+  outOfLimitAtEnd:x.originalEdgeData.flagValues.OutLVEnd,
+  cutAtStart:x.originalEdgeData.flagValues.CutAtSta,
+  cutAtEnd:x.originalEdgeData.flagValues.CutAtEnd
+ }));
+ if(firstUnavailable)return {...base,availability:firstUnavailable,
+  readableSourceStatusRows,rows,
+  diagnostic:{
+   firstUnavailableSourceEdgeId:rows.find(x=>
+    x.bounds===null||x.visiblePartCount===null||
+    x.allVisible===null||x.allHidden===null||
+    x.visiblePartReadFailure!==null)?.sourceEdgeId??null,
+   firstStatusDiagnostic:rows.find(x=>
+    x.bounds===null||x.visiblePartCount===null||
+    x.allVisible===null||x.allHidden===null||
+    x.visiblePartReadFailure!==null)??null
+  },
+  edgeDataSummary,
   originalNativeEdgeHandleLedgerComplete,
   originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
   originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
@@ -300,5 +319,16 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
    x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven).length,
   generated2DHLRHistoryStillUnproven:true};
+ return {...base,availability:'all-original-edge-status-intervals-readable',
+  readableSourceStatusRows,rows,edgeDataSummary,
+  originalEdgeStatusParameterIntervalsRead:true,
+  generated2DHLRHistoryStillUnproven:true,
+  originalNativeEdgeHandleLedgerComplete,
+  originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
+  originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
+  original3DEdgeDataInspectionComplete:rows.every(x=>
+   x.originalEdgeData&&Array.isArray(x.originalEdgeData.directOriginalTopoDSEdgeIsSameMatches)),
+  directOriginalTopoDSEdgeIdentityRows:rows.filter(x=>
+   x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven).length};
 }
 module.exports={probeRealOcjsHLREdgeStatusABI};
