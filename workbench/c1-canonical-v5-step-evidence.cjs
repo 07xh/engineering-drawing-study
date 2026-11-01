@@ -5,6 +5,11 @@
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
 const Timeline=require('./teaching-timeline-v5.js');
+const Motion=require('./teaching-motion-v5.js');
+const finitePoint=p=>p!==null&&typeof p==='object'&&
+ Number.isFinite(p.x)&&Number.isFinite(p.y);
+const samePoint=(a,b)=>finitePoint(a)&&finitePoint(b)&&
+ a.x===b.x&&a.y===b.y;
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -64,6 +69,7 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
   if(!step||typeof step.id!=='string'||!step.id||
     seenSteps.has(step.id)||!Array.isArray(step.actions)||
     !Array.isArray(step.dependsOn)||
+    step.actions.length===0||
     step.dependsOn.some(dep=>!seenSteps.has(dep))||
     !block||block.id!==step.id||block.index!==i||
     block.actions.length!==step.actions.length)
@@ -77,6 +83,23 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
       segment.stepIndex!==i)
     throw new RangeError('V5 action does not belong to exact current step');
    const signed=owners.get(action.id);
+   // The current C1 point/line workbench must not treat a subtitle-only
+   // pause, a degenerate guide or an unrenderable future action as a
+   // mathematical drawing step. Inspect ALL actions before frame zero.
+   if(!['line','point'].includes(action.kind)||!action.geometry||
+      (action.kind==='line'&&(
+       !finitePoint(action.geometry.from)||
+       !finitePoint(action.geometry.to)||
+       samePoint(action.geometry.from,action.geometry.to)))||
+      (action.kind==='point'&&!finitePoint(action.geometry.center)))
+    throw new RangeError('C1 V5 step lacks a genuine finite drawing action');
+   Motion.actionShapeAttrs(action,1);
+   // A signed M5 source must paint the exact same binary64 paper endpoints
+   // that its original source binding certified, not just reuse its action ID.
+   // Reversing a line or moving one endpoint is not an acceptable alias.
+   if(signed&&(!samePoint(action.geometry.from,signed.fromSheetPx)||
+       !samePoint(action.geometry.to,signed.toSheetPx)))
+    throw new RangeError('signed M5 source paper endpoints contradict V5 drawing');
    // Verify ALL future/current/past actions before painting any frame:
    // an unsigned later step cannot smuggle an engineering line style.
    if(!signed&&action.engineeringLineStyle!==undefined)
