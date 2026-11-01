@@ -57,9 +57,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
   const report=reports[klass];
   if(!report||report.schema!==
       'draftai-c1-ocjs-generated-2d-source-parameter-match/1'||
-     !Number.isSafeInteger(report.originalSourceCurveCount)||
-     report.originalSourceCurveCount<0||
-     report.originalSourceCurveCount>expected.size||
+     !Number.isSafeInteger(report.sourceCurveCandidateCount)||
+     report.sourceCurveCandidateCount<0||
+     report.sourceCurveCandidateCount>expected.size||
+     !Number.isSafeInteger(report.topoDSIdentityBoundSourceCurveCount)||
+     report.topoDSIdentityBoundSourceCurveCount<0||
+     report.topoDSIdentityBoundSourceCurveCount>report.sourceCurveCandidateCount||
      report.generatedOutputEdgeCount!==item.global.length||
      !Array.isArray(report.rows)||report.rows.length!==item.global.length||
      report.generated2DTopoDSHistoryProven!==false||
@@ -78,7 +81,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
       !Number.isSafeInteger(row.rejectedSourceCandidateCount)||
       row.rejectedSourceCandidateCount<0||
       matches.length+row.rejectedSourceCandidateCount!==
-       report.originalSourceCurveCount)
+       report.sourceCurveCandidateCount)
     throw new RangeError('invalid or incomplete parameterized HLR output ordinal inventory');
    seenOrdinals.add(ordinal);
    const segment=item.global[ordinal];
@@ -184,7 +187,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      rawUnmatched!==report.unmatchedGeneratedOutputEdgeCount||
      rawUnique+rawAmbiguous+rawUnmatched!==item.global.length)
    throw new RangeError('parameterized HLR source report counts do not reconcile');
-  result.classes[klass]={originalSourceCurveCount:report.originalSourceCurveCount,
+  result.classes[klass]={sourceCurveCandidateCount:report.sourceCurveCandidateCount,
+   topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
    generatedOutputEdgeCount:report.generatedOutputEdgeCount,
    rawUniqueParameterizedSourceMatches:rawUnique,
    rawAmbiguousParameterizedSourceMatches:rawAmbiguous,
