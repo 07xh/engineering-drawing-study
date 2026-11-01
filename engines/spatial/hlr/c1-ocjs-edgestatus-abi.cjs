@@ -308,7 +308,11 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    firstStatusDiagnostic:rows.find(x=>
     x.bounds===null||x.visiblePartCount===null||
     x.allVisible===null||x.allHidden===null||
-    x.visiblePartReadFailure!==null)??null
+    x.visiblePartReadFailure!==null)??null,
+   statusGetterMethod:rows.find(x=>
+    x.bounds===null||x.visiblePartCount===null||
+    x.allVisible===null||x.allHidden===null||
+    x.visiblePartReadFailure!==null)?.statusGetterMethod??null
   },
   edgeDataSummary,
   originalNativeEdgeHandleLedgerComplete,
