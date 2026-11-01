@@ -300,3 +300,29 @@ test('legacy producer with neither native outline class stays explicitly unavail
   assert.equal(r.formalEngineeringLineStyleCertified,false);
  }
 });
+
+test('paper-collapsed W source still consumes genuine positive native outline evidence',()=>{
+ const x=input([],[],false);
+ x.view='W';
+ x.scopedRow=row([],[],[[0,10]],[]);
+ const out=projectNative(x);
+ assert.equal(out.segments.length,0);
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
+ assert.equal(out.native3DOutlineSegments.length,1);
+ assert.deepEqual(out.native3DOutlineSegments[0].originalNative3DParameterRange,[0,10]);
+ assert.equal(out.native3DOutlineSegments[0].generated2DHLREdgeTopologyProven,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('native outline producer must explicitly deny generated 2D topology ancestry',()=>{
+ const x=input([],[],false);
+ x.scopedRow=row([],[],[[0,10]],[]);
+ delete x.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  generated2DHLREdgeTopologyProven;
+ assert.throws(()=>projectNative(x),/unverified source-scoped original native 3D outline interval/);
+ const y=input([],[],false);
+ y.scopedRow=row([],[],[[0,10]],[]);
+ y.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  generated2DHLREdgeTopologyProven=true;
+ assert.throws(()=>projectNative(y),/unverified source-scoped original native 3D outline interval/);
+});
