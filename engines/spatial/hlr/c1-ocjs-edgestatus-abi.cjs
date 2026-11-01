@@ -1,4 +1,5 @@
 'use strict';
+const {project}=require('../../../core/projection/conventions.js');
 /**
  * Read-only capability probe for the pinned OpenCascade.js HLR EdgeStatus ABI.
  *
@@ -117,7 +118,7 @@ function callPointOneArg(owner,name,arg,dimension){
  }
  return {readable:false,coordinates:null,method:null};
 }
-function inspectCurveParameterMap(curve,range){
+function inspectCurveParameterMap(curve,range,view){
  if(!Array.isArray(range)||range.length!==2||
     !range.every(Number.isFinite)||!(range[1]>range[0]))
   return {readable:false,reason:'original-3d-curve-range-unreadable',samples:[]};
@@ -131,27 +132,48 @@ function inspectCurveParameterMap(curve,range){
   const sourcePoint3D=callPointOneArg(curve,'Value3D',parameter3d,3);
   const projectedPoint2D=callPointOneArg(curve,'Value',parameter2d.value,2);
   const residual=back.readable?Math.abs(back.value-parameter3d):null;
+  const sourceXYZ=sourcePoint3D.readable?sourcePoint3D.coordinates:null;
+  const expected=view&&sourceXYZ?project({x:sourceXYZ[0],y:sourceXYZ[1],z:sourceXYZ[2]})[view]:null;
+  const actual2D=projectedPoint2D.readable?projectedPoint2D.coordinates:null;
+  const projectionResidual=expected&&actual2D?
+   Math.hypot(actual2D[0]-expected.u,actual2D[1]-expected.v):null;
   return {parameter3d,parameter2d:parameter2d.value,
    parameter3dRoundTrip:back.readable?back.value:null,
    roundTripResidual:residual,
-   sourcePoint3D:sourcePoint3D.readable?sourcePoint3D.coordinates:null,
-   projectedPoint2D:projectedPoint2D.readable?projectedPoint2D.coordinates:null,
+   sourcePoint3D:sourceXYZ,
+   projectedPoint2D:actual2D,
+   expectedCanonicalProjectedPoint2D:expected?[expected.u,expected.v]:null,
+   canonicalProjectionResidual:projectionResidual,
    readable:back.readable&&sourcePoint3D.readable&&projectedPoint2D.readable};
  });
  const tolerance=1e-10*Math.max(1,Math.abs(range[0]),Math.abs(range[1]));
+ const projected=rows.map(x=>x.projectedPoint2D);
+ const projectionCollapsed=projected.length===3&&
+  projected.every(x=>x&&x[0]===projected[0][0]&&x[1]===projected[0][1]);
+ const roundTripApplicable=!projectionCollapsed;
+ const coordinateResiduals=rows.map(x=>x.canonicalProjectionResidual);
+ const canonicalProjectionCoordinatesMatch=
+  coordinateResiduals.every(x=>x!==null&&x<=1e-8);
  return {
+  view:view??null,
   readable:rows.every(x=>x.readable),
+  projectionCollapsed,
+  roundTripApplicable,
   parameter2dMethodArities:methodArities(curve,'Parameter2d'),
   parameter3dMethodArities:methodArities(curve,'Parameter3d'),
   value3dMethodArities:methodArities(curve,'Value3D'),
   value2dMethodArities:methodArities(curve,'Value'),
   roundTripTolerance:tolerance,
-  roundTripWithinDiagnosticTolerance:rows.every(x=>
-   x.roundTripResidual!==null&&x.roundTripResidual<=tolerance),
+  roundTripWithinDiagnosticTolerance:roundTripApplicable?
+   rows.every(x=>x.roundTripResidual!==null&&x.roundTripResidual<=tolerance):null,
+  canonicalProjectionCoordinatesMatch:coordinateResiduals.every(x=>x!==null)?
+   canonicalProjectionCoordinatesMatch:null,
+  maximumCanonicalProjectionResidual:coordinateResiduals.every(x=>x!==null)?
+   Math.max(...coordinateResiduals):null,
   samples:rows
  };
 }
-function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles}){
+function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandles,view}){
  const scalarMethods={
   VSta:value=>Number.isSafeInteger(value)&&value>=0,
   VEnd:value=>Number.isSafeInteger(value)&&value>=0,
@@ -185,7 +207,7 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
    const last=callNoArg(curve,'LastParameter',Number.isFinite);
    if(first.readable&&last.readable&&last.value>first.value){
     curveParameters=[first.value,last.value];
-    curveParameterMap=inspectCurveParameterMap(geometry,curveParameters);
+    curveParameterMap=inspectCurveParameterMap(geometry,curveParameters,view);
    }
    const edgeResult=callNoArg(curve,'Edge',value=>
     value&&typeof value==='object'&&typeof value.IsSame==='function');
@@ -223,7 +245,7 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
  };
 }
 function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
- indexedOriginalSources,originalNativeEdgeHandles}={}){
+ indexedOriginalSources,originalNativeEdgeHandles,view}={}){
  if(!oc||typeof oc!=='object'||!dataStructure||typeof dataStructure!=='object'||
     !Number.isSafeInteger(edgeMapExtent)||edgeMapExtent<1||edgeMapExtent>512||
     !Array.isArray(indexedOriginalSources)||indexedOriginalSources.length!==edgeMapExtent||
@@ -280,7 +302,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   const edgeDataMethods=methodNames(edgeData);
   const sourceEdgeId=indexedOriginalSources[index-1].originalPhysicalSourceEdgeId;
   const originalEdgeData=inspectOriginalEdgeData({
-   edgeData,sourceEdgeId,originalNativeEdgeHandles
+   edgeData,sourceEdgeId,originalNativeEdgeHandles,view
   });
   const statusMethod=edgeDataMethods.find(k=>/^(?:Status|EdgeStatus)(?:_\d+)?$/.test(k));
   const status=statusMethod?edgeData[statusMethod]():edgeData;
