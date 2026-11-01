@@ -24,6 +24,8 @@ const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
 const {auditC1OriginalBRepFaceEdgeAdjacency}=
  require('./c1-ocjs-original-source-face-adjacency.cjs');
+const {auditC1OriginalBRepVertexTShapeTopology}=
+ require('./c1-ocjs-original-source-vertex-topology.cjs');
 const {auditC1Native3DSourceScopedIntervals}=
  require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
@@ -805,6 +807,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
   const originalNativeFaceAdjacency=auditC1OriginalBRepFaceEdgeAdjacency({
    geometry,originalNativeEdgeHandles,nativeFaceEdgeInventories
   });
+  // Verify the ORIGINAL physical 3D source vertex identities with the
+  // already sewn shared native TopoDS TShapes, never generated HLR 2D
+  // coincidence. Preserve only the immutable proof, not native handles.
+  const originalNativeVertexTopology=auditC1OriginalBRepVertexTShapeTopology({
+   geometry,originalNativeVertexHandles
+  });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
@@ -1359,7 +1367,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
    nativeGeneratedVertexGraph,originalNativeFaceAdjacency,
-   directNativeOriginalVertexMatches,
+   originalNativeVertexTopology,directNativeOriginalVertexMatches,
    nativeTShapePartnerEdgeCandidatesByView,
    nativeTShapePartnerVertexCandidatesByView,
    nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,
