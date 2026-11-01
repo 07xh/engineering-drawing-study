@@ -92,7 +92,7 @@ function auditC1RealNativeScoped2D3DClassBinding({
  // distinct native endpoints can round to the SAME M4 fraction, hiding a
  // genuine positive-length gap even when the M4 [0,1] union looks complete.
  // A generated 2D class witness must never borrow that false completeness.
- const nativePartitionProven=
+ const reportedNativePartitionProven=
   nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
   nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
   Array.isArray(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)&&
@@ -119,6 +119,23 @@ function auditC1RealNativeScoped2D3DClassBinding({
   return {klass:seg.native3DHLRClass,
    from:rat(dyadic(s),dyadic(1)),to:rat(dyadic(t),dyadic(1))};
  });
+ // Independently replay the M4 physical-source partition in exact dyadic
+ // rational space. A producer's boolean "complete" is not proof that its
+ // received segment inventory covers [0,1] exactly once. In particular a
+ // short 2D output may be fully covered by a forged half-edge M4 inventory.
+ // Keep the native original-parameter proof as an additional independent gate.
+ const orderedM4=[...m4].sort((a,b)=>
+  compare(a.from,b.from)||compare(a.to,b.to));
+ let m4Reach=zero,exactM4SourcePartitionComplete=true;
+ for(const interval of orderedM4){
+  if(compare(interval.from,m4Reach)!==0){
+   exactM4SourcePartitionComplete=false;break;
+  }
+  m4Reach=interval.to;
+ }
+ if(compare(m4Reach,one)!==0)exactM4SourcePartitionComplete=false;
+ const nativePartitionProven=
+  reportedNativePartitionProven&&exactM4SourcePartitionComplete;
  const rows=[],counts={scoped2DGeneratedEdgesChecked:0,
   exact2DSourcePaperAffineAligned:0,
   exactSameClassNative3DBackedEdges:0,
