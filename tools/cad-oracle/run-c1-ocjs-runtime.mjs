@@ -595,6 +595,8 @@ for(const [index,geometry] of general.entries()){
   assert.equal(nativePhysical3DEndpoints.counts.roundedOnlyOriginalM0PaperEndpointPairs,0);
   assert.equal(nativePhysical3DEndpoints.counts.strictlyClassBackedButRoundedOriginalM0PaperEndpoints,0);
  }
+ let physicalJunctionCandidateRows=0,
+  physicalJunctionSameRows=0,physicalJunctionDistinctRows=0;
  for(const view of ['V','H','W']){
   const e=nativePhysical3DEndpoints.views[view];
   assert.equal(e.rows.length,globalScopedRebind.views[view].length);
@@ -605,24 +607,30 @@ for(const [index,geometry] of general.entries()){
    row.original3DToGenerated2DEndpointWitnesses.every(w=>
     w.paperAndSourceProximityIsNotNativeVertexTopologyIdentity===true&&
     w.signedV5Action===false)));
-  // Physical source junctions and generated TopoDS vertex identity are
-  // different predicates. Reject a false promotion even if every candidate
-  // agrees on the exact original M0 physical vertex and paper coordinate.
-  assert.equal(e.originalPhysicalEndpointPairCandidates.filter(pair=>
-   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true).length,
-   nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame===0?0:
-   e.originalPhysicalEndpointPairCandidates.filter(pair=>
-    pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true).length);
-  assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
+  // Reconcile the actual per-view native IsSame classifications with
+  // the ledger totals. A genuine positive pair is allowed when the live
+  // OCCT graph proves it; it still does not establish original edge history,
+  // global visibility, engineering line style or V5 authority.
+  const pairRows=e.originalPhysicalEndpointPairCandidates;
+  physicalJunctionCandidateRows+=pairRows.length;
+  physicalJunctionSameRows+=pairRows.filter(pair=>
+   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true).length;
+  physicalJunctionDistinctRows+=pairRows.filter(pair=>
+   pair.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin===true).length;
+  assert.ok(pairRows.every(pair=>
+   typeof pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven==='boolean'&&
    pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
    pair.paperCoincidenceCannotSignEngineeringJunction===true&&
-   pair.signedV5Action===false));
-  assert.ok(e.originalPhysicalEndpointPairCandidates.every(pair=>
-   pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===false&&
-   pair.original3DPhysicalVertexCoincidenceProvenFromIndependentM0===true&&
-   pair.paperCoincidenceCannotSignEngineeringJunction===true&&
-   pair.signedV5Action===false));
+   pair.signedV5Action===false&&
+   !(pair.actualNativeGeneratedTopoDSVertexIsSameForThisPairProven===true&&
+     pair.nativeGeneratedTopoDSVertexDistinctDespiteM0PhysicalJoin===true)));
  }
+ assert.equal(physicalJunctionCandidateRows,
+  nativePhysical3DEndpoints.counts.originalModelPhysicalJunctionPairCandidates);
+ assert.equal(physicalJunctionSameRows,
+  nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithActualGeneratedTopoDSIsSame);
+ assert.equal(physicalJunctionDistinctRows,
+  nativePhysical3DEndpoints.counts.physicalOriginalJunctionPairsWithDistinctNativeTopoDSVertices);
  console.error('REAL C1 NATIVE GLOBAL HLR ORIGINAL 3D BREP ENDPOINT GRAPH '+
   geometry.id+': '+JSON.stringify(nativePhysical3DEndpoints.counts));
  assert.equal(globalScopedRebind.sourceGeometryId,geometry.id);
