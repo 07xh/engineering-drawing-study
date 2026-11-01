@@ -540,8 +540,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         !measuredPaperExclusion)
       inconclusiveRejections.push({
        sourceEdgeId:rejected.sourceEdgeId,reason:rejected.reason,
-       missingIndependentPaperMismatchWitness:
-        rejected.reason==='source-parameterized-curve-does-not-match-generated-edge'
+       ...(rejected.reason==='source-parameterized-curve-does-not-match-generated-edge'?
+        {missingIndependentPaperMismatchWitness:true}:{})
       });
     }
    }
