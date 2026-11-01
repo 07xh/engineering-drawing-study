@@ -66,3 +66,14 @@ test('rejects stale, duplicate, or incomplete same-run source index inventories'
  assert.throws(()=>probe({oc:{},dataStructure:{},edgeMapExtent:2,
   indexedOriginalSources:stale}),/complete original source index/);
 });
+
+test('supports pinned Embind overload suffixes without guessing method names',()=>{
+ const row={Bounds_1(){return [0,3];},NbVisiblePart_1(){return 1;},
+  VisiblePart_1(i){return i===1?[0,3]:null;},AllVisible_1(){return true;},
+  AllHidden_1(){return false;}};
+ const ds={EDataArray_1(){return {Value_1(i){return {Status_1(){return row;}}};}}};
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.deepEqual(r.rows[0].bounds,[0,3]);
+ assert.deepEqual(r.rows[0].visibleParts,[[0,3]]);
+});
