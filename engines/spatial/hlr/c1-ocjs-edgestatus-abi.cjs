@@ -522,6 +522,10 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  }
  return {
   matched:true,
+  // This curve was admitted to the same-run map only after symmetric
+  // native TopoDS IsSame matched its EdgeData geometry to one original M0 edge.
+  originalTopoDSEdgeIdentityProven:true,
+  original3DCurveParameterRange:[...source.parameterRange],
   source3DParameterRange:[samples[0].source3DParameter,samples[4].source3DParameter],
   generated2DParameterRange:[...outputRange],
   maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm)),
@@ -562,6 +566,7 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
  });
  return {
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
+  originalSourceCurveCount:nativeCurveHandlesBySourceId.size,
   generatedOutputEdgeCount:rows.length,
   uniqueParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount===1).length,
   ambiguousParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount>1).length,
