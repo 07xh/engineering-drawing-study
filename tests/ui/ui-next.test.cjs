@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const {parseHTML}=require('linkedom');
 const root=path.resolve(__dirname,'../..');
 const buildSource=fs.readFileSync(path.join(root,'scripts/build-static.cjs'),'utf8');
-const pages=[...buildSource.split('];',1)[0].matchAll(/'([^']+\.html)'/g)].map(x=>x[1]);
+const pages=[...buildSource.split('];',1)[0].matchAll(/'([^']+\.html)'/g)].map(x=>x[1]).filter(page=>page!=='welcome.html');
 function enhance(page){
  const file=path.join(root,'ui-next/enhance-page.cjs');
  assert.ok(fs.existsSync(file),'build-time UI enhancer must exist');
@@ -14,7 +14,13 @@ function enhance(page){
 test('all public pages preserve control IDs, values, hidden states and application scripts',()=>{
  for(const page of pages){
   const {before,after}=enhance(page);
-  for(const old of before.querySelectorAll('[id]')){
+  // Production replaces only the source landing markup with the real V7 workbench.
+  // For all actual solver pages retain the strict element-by-element invariance.
+  if(page==='index.html'){
+   for(const id of ['project-workbench','v7-input-section','v7-paper-section','v7-sheet','v7-step-list'])assert.ok(after.getElementById(id),id+' real solver workspace missing');
+   assert.ok(after.querySelector('.df-live-hero'),'DraftFlow welcome hero missing from built home');
+  }
+  for(const old of (page==='index.html'?[]:before.querySelectorAll('[id]'))){
    const matches=[...after.querySelectorAll('[id]')].filter(x=>x.id===old.id);
    assert.equal(matches.length,1,page+' preserves unique '+old.id);
    const next=matches[0];
@@ -198,7 +204,8 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   assert.equal(links[1].getAttribute('href'),page==='index.html'?'#tools':root+'index.html#tools');
  }
  const svg=fs.readFileSync(path.join(root,'favicon.svg'),'utf8');
- assert.match(svg,/#0871f5/);
+ assert.match(svg,/#3886FF/);
+ assert.match(svg,/#1455D8/);
  assert.doesNotMatch(svg,/#266f4a/);
 });
 test('V6.3 wide desktop shows editable conditions + paper + steps without touching solver state',()=>{
@@ -373,4 +380,12 @@ test('drawing shortcuts follow app mode changes and disabled state',async()=>{
  await Promise.resolve();
  assert.equal(document.querySelector('[data-next-draw-tool=tangent]').getAttribute('aria-pressed'),'true');
  assert.equal(document.querySelector('[data-next-draw-tool=tangent]').disabled,false);
+});
+
+test('optional DraftFlow welcome page keeps plain accessible content without V7 overlays',()=>{
+ const splash=fs.readFileSync(path.join(root,'welcome.html'),'utf8');
+ const enhancer=fs.readFileSync(path.join(root,'ui-next/enhance-page.cjs'),'utf8');
+ assert.match(splash,/绘序 · DraftFlow/);
+ assert.match(splash,/href="index.html"/);
+ assert.match(enhancer,/if\(page==='welcome.html'\)continue/);
 });
