@@ -85,6 +85,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      !Number.isSafeInteger(report.topoDSIdentityBoundSourceCurveCount)||
      report.topoDSIdentityBoundSourceCurveCount<0||
      report.topoDSIdentityBoundSourceCurveCount>report.sourceCurveCandidateCount||
+     !Number.isSafeInteger(report.topoDSParameterDomainBoundSourceCurveCount)||
+     report.topoDSParameterDomainBoundSourceCurveCount<0||
+     report.topoDSParameterDomainBoundSourceCurveCount>
+      report.topoDSIdentityBoundSourceCurveCount||
      report.generatedOutputEdgeCount!==item.global.length||
      !Array.isArray(report.rows)||report.rows.length!==item.global.length||
      report.generated2DTopoDSHistoryProven!==false||
@@ -113,11 +117,17 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    for(const match of matches){
     const sourceId=match?.sourceEdgeId,
      originalDomain=match?.original3DCurveParameterRange,
+     originalBRepDomain=match?.originalBRepSourceParameterRange,
      sourceRange=match?.source3DParameterRange,
      generatedRange=match?.generated2DParameterRange,
      samples=match?.samples;
     if(!expected.has(sourceId)||candidateIds.has(sourceId)||
        match.matched!==true||match.originalTopoDSEdgeIdentityProven!==true||
+       match.originalBRepParameterRangeMatches!==true||
+       !Array.isArray(originalBRepDomain)||originalBRepDomain.length!==2||
+       !originalBRepDomain.every(Number.isFinite)||
+       originalBRepDomain[0]!==originalDomain?.[0]||
+       originalBRepDomain[1]!==originalDomain?.[1]||
        match.generated2DTopoDSHistoryProven!==false||
        match.engineeringLineStyle!=='undetermined'||match.signedV5Action!==false||
        !Array.isArray(originalDomain)||originalDomain.length!==2||
@@ -221,8 +231,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      rawUnmatched!==report.unmatchedGeneratedOutputEdgeCount||
      rawUnique+rawAmbiguous+rawUnmatched!==item.global.length)
    throw new RangeError('parameterized HLR source report counts do not reconcile');
+  if(rawUnique+rawAmbiguous>report.topoDSParameterDomainBoundSourceCurveCount)
+   throw new RangeError('parameterized HLR matches exceed original BRep parameter-domain identity ledger');
   result.classes[klass]={sourceCurveCandidateCount:report.sourceCurveCandidateCount,
    topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
+   topoDSParameterDomainBoundSourceCurveCount:
+    report.topoDSParameterDomainBoundSourceCurveCount,
    generatedOutputEdgeCount:report.generatedOutputEdgeCount,
    rawUniqueParameterizedSourceMatches:rawUnique,
    rawAmbiguousParameterizedSourceMatches:rawAmbiguous,
