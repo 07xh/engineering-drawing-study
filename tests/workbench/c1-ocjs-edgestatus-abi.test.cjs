@@ -217,3 +217,40 @@ test('incompatible first Embind overload does not mask a readable second overloa
  assert.deepEqual(r.rows[0].visibleParts,[[0,1]]);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+
+test('inspects original EdgeData curve parameters and symmetric TopoDS edge identity without upgrading 2D history',()=>{
+ const nativeEdge={IsSame(other){return other?.identity==='edge-A';},identity:'edge-A'};
+ const adaptor={
+  FirstParameter(){return 2.5;},
+  LastParameter(){return 8.5;},
+  Edge(){return nativeEdge;}
+ };
+ const curve={GetCurve(){return adaptor;}};
+ const edgeData={
+  Status(){return status([2.5,8.5],[[2.5,8.5]],true,false);},
+  VSta(){return 3;},VEnd(){return 7;},HideCount(){return 0;},
+  Tolerance(){return 1e-7;},
+  OutLVSta(){return false;},OutLVEnd(){return false;},
+  CutAtSta(){return false;},CutAtEnd(){return false;},
+  VerAtSta(){return true;},VerAtEnd(){return true;},
+  Rg1Line(){return false;},RgNLine(){return false;},
+  Used(){return true;},Selected(){return false;},
+  Simple(){return true;},AutoIntersectionDone(){return false;},
+  Geometry(){return curve;}
+ };
+ const ds={EDataArray(){return {Value(){return edgeData;}};}};
+ const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[{sourceEdgeId:'g::E0',edge:nativeEdge}]});
+ const row=r.rows[0].originalEdgeData;
+ assert.equal(row.scalarValues.VSta,3);
+ assert.equal(row.scalarValues.VEnd,7);
+ assert.equal(row.scalarValues.HideCount,0);
+ assert.equal(row.scalarValues.Tolerance,1e-7);
+ assert.deepEqual(row.original3DCurveParameterRange,[2.5,8.5]);
+ assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
+ assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
+ assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
