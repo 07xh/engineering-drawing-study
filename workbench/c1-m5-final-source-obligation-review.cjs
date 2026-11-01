@@ -91,11 +91,25 @@ function reviewC1M5FinalStrokeObligations(ledger){
  });
  // This original-parameter partition may share exact endpoints, but
  // strictly positive overlap must never inflate independent M5 subspans.
- for(const intervals of intervalsBySourceView.values()){
+ // Report every positive unrepresented parameter interval for OBSERVED
+ // source/view pairs. This is a diagnostic obligation, never a M5 signature;
+ // an entirely absent source/view must be found by the upstream inventory.
+ const uncoveredOriginalParameterRanges=[];
+ for(const [owner,intervals] of intervalsBySourceView){
+  const [view,sourceEdgeId]=JSON.parse(owner);
   intervals.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
-  for(let i=1;i<intervals.length;i++)
-   if(intervals[i][0]<intervals[i-1][1])
+  let cursor=0;
+  for(const [start,end] of intervals){
+   if(start<cursor)
     throw new TypeError('overlapping original 3D source intervals');
+   if(start>cursor)uncoveredOriginalParameterRanges.push({
+    view,sourceEdgeId,originalSourceParameterRange:[cursor,start]
+   });
+   cursor=end;
+  }
+  if(cursor<1)uncoveredOriginalParameterRanges.push({
+   view,sourceEdgeId,originalSourceParameterRange:[cursor,1]
+  });
  }
  if(ledger.counts?.totalOriginalSourceEdgeViewSubspans!==rows.length)
   throw new TypeError('source interval count mismatch');
@@ -103,6 +117,10 @@ function reviewC1M5FinalStrokeObligations(ledger){
   schema:'draftai-c1-m5-final-source-obligation-review/1',
   sourceGeometryId:ledger.sourceGeometryId,revision:ledger.revision,
   total:rows.length,viewsRepresented:['V','H','W'].filter(view=>viewsSeen.has(view)),
+  uncoveredOriginalParameterRanges,
+  observedSourceViewsWithUncoveredOriginalParameters:new Set(
+   uncoveredOriginalParameterRanges.map(x=>JSON.stringify([x.view,x.sourceEdgeId]))
+  ).size,
   localPositiveCount:rows.filter(x=>x.localPositive).length,
   fullyCertifiedCount:0,signedV5ActionCount:0,
   unresolvedByProofClass:Object.fromEntries(
