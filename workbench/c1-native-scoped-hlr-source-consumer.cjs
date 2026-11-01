@@ -36,6 +36,31 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  * source-filtered native 3D M4 visible/hidden parameter partition.
  * The result is class backing, never generated-edge TopoDS ancestry.
  */
+function positivePairwiseIntervalOverlaps(intervals){
+ const overlaps=[];
+ for(let i=0;i<intervals.length;i++){
+  const a=intervals[i];
+  if(!Array.isArray(a)||a.length!==2||!a.every(Number.isFinite)||
+     a[0]<0||a[1]>1||!(a[1]>a[0]))
+   throw new RangeError('invalid native outline M0 interval');
+  for(let j=i+1;j<intervals.length;j++){
+   const b=intervals[j];
+   if(!Array.isArray(b)||b.length!==2||!b.every(Number.isFinite)||
+      b[0]<0||b[1]>1||!(b[1]>b[0]))
+    throw new RangeError('invalid native outline M0 interval');
+   const from=Math.max(a[0],b[0]),to=Math.min(a[1],b[1]);
+   if(to>from)overlaps.push([from,to]);
+  }
+ }
+ overlaps.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ const merged=[];
+ for(const interval of overlaps){
+  const last=merged.at(-1);
+  if(last&&interval[0]<=last[1])last[1]=Math.max(last[1],interval[1]);
+  else merged.push([...interval]);
+ }
+ return merged;
+}
 function auditC1ParameterizedSourceMatchAgainstNativeM4({
  view,sourceId,match,klass,nativeM4
 }={}){
@@ -137,16 +162,42 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   outlineSegments=nativeOutlineEvidenceAvailable?nativeM4.native3DOutlineSegments:[];
  const sameOutlineClass=klass==='visible'?'visible-outline':'hidden-outline',
   oppositeOutlineClass=klass==='visible'?'hidden-outline':'visible-outline';
+ const outlineClassesValid=!nativeOutlineEvidenceAvailable||outlineSegments.every(x=>
+  x&&x.view===view&&x.sourceEdgeId===sourceId&&
+  ['visible-outline','hidden-outline'].includes(x.native3DHLRClass)&&
+  x.derivedFromOriginalNative3DOutlineNotGeneratedHLRPaper===true&&
+  x.generated2DHLREdgeTopologyProven===false&&
+  x.completeGlobalCoProjectedVisibilityCertified===false&&
+  x.engineeringLineStyle==='undetermined'&&x.signedV5Action===false&&
+  Array.isArray(x.originalNative3DParameterRange)&&
+  x.originalNative3DParameterRange.length===2&&
+  x.originalNative3DParameterRange.every(Number.isFinite)&&
+  x.originalNative3DParameterRange[1]>x.originalNative3DParameterRange[0]);
+ if(!outlineClassesValid)
+  throw new RangeError('native outline segment identity or unsigned proof boundary is invalid');
+ const normalizeOutline=t=>direction==='reversed'?
+  (domain[1]-t)/(domain[1]-domain[0]):(t-domain[0])/(domain[1]-domain[0]);
+ for(const segment of outlineSegments){
+  const p=segment.originalNative3DParameterRange;
+  const expected=[normalizeOutline(p[0]),normalizeOutline(p[1])].sort((a,b)=>a-b);
+  const actual=segment.originalM0UnitParameterRange;
+  if(!Array.isArray(actual)||actual.length!==2||
+     !actual.every(Number.isFinite)||expected[0]!==actual[0]||
+     expected[1]!==actual[1]||actual[0]<0||actual[1]>1||
+     !(actual[1]>actual[0]))
+   throw new RangeError('native outline original 3D interval does not reproduce its M0 parameter range');
+ }
  const sameOutlineRanges=outlineSegments.filter(x=>
   x?.native3DHLRClass===sameOutlineClass).map(x=>x.originalM0UnitParameterRange);
  const oppositeOutlineRanges=outlineSegments.filter(x=>
   x?.native3DHLRClass===oppositeOutlineClass).map(x=>x.originalM0UnitParameterRange);
  const sameOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,sameOutlineRanges);
  const oppositeOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeOutlineRanges);
+ const sameOutlineOverlaps=positivePairwiseIntervalOverlaps(sameOutlineRanges);
  const oppositeOutlineOverlaps=oppositeOutlineCoverage.positiveLengthCoveredIntervals;
  const nativeOutlineClassBacked=nativeOutlineEvidenceAvailable&&
-  sameOutlineCoverage.entireOriginalParameterIntervalCovered&&
-  oppositeOutlineOverlaps.length===0;
+  outlineClassesValid&&sameOutlineCoverage.entireOriginalParameterIntervalCovered&&
+  sameOutlineOverlaps.length===0&&oppositeOutlineOverlaps.length===0;
  return {
   availability:'available',sourceEdgeId:sourceId,
   original3DSourceCurveDirection:direction,
@@ -167,6 +218,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeOutlineSameClassCoverageComplete:
    sameOutlineCoverage.entireOriginalParameterIntervalCovered,
   nativeOutlineSameClassCoverageGaps:sameOutlineCoverage.positiveLengthUncoveredIntervals,
+  nativeOutlineSameClassPositiveOverlaps:sameOutlineOverlaps,
   nativeOutlineOppositeClassPositiveOverlap:oppositeOutlineOverlaps.length>0,
   nativeOutlineOppositeClassOverlaps:oppositeOutlineOverlaps,
   nativeOutlineClassBacked
