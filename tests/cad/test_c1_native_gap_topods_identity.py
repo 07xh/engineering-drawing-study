@@ -253,6 +253,69 @@ class NativeC1GapTopoDSIdentity(unittest.TestCase):
                         if status.AllHidden():
                             self.assertEqual(parts, [])
 
+    def test_first_angle_full_original_status_does_not_close_generated_w_paper(self):
+        """Real native counterexamples to status-only source/HLR signoff.
+
+        W/A-C has a strictly positive dyadic terminal paper residual even
+        though the native original source is fully visible. W/A-D has a
+        generated endpoint strictly off its original W paper line. These
+        are different failures; neither may be snapped, rounded away or
+        upgraded to original-to-generated TopoDS history / official V5.
+        """
+        camera, xdir = (1, 0, 0), (0, 1, 0)
+        algo = HLRBRep_Algo()
+        algo.Add(self.solid)
+        algo.Projector(HLRAlgo_Projector(gp_Ax2(
+            gp_Pnt(0, 0, 0), gp_Dir(*camera), gp_Dir(*xdir))))
+        algo.Update()
+        algo.Hide()
+        ds = algo.DataStructure()
+        extractor = HLRBRep_HLRToShape(algo)
+        for name in (('A', 'C'), ('A', 'D')):
+            with self.subTest(source=name):
+                source = original_source(self.original, name)
+                indices = [i for i in range(1, ds.EdgeMap().Extent() + 1)
+                           if TopoDS.Edge_s(ds.EdgeMap().FindKey(i)).IsSame(source)]
+                self.assertEqual(len(indices), 1)
+                status = ds.EDataArray().Value(indices[0]).Status()
+                curve = BRepAdaptor_Curve(source)
+                original_bounds = (curve.FirstParameter(), curve.LastParameter())
+                self.assertTrue(status.AllVisible())
+                self.assertFalse(status.AllHidden())
+                self.assertEqual(status.Bounds(0.0, 0.0), original_bounds)
+                self.assertEqual(status.NbVisiblePart(), 1)
+                self.assertEqual(status.VisiblePart(1, 0.0, 0.0), original_bounds)
+                generated = [TopoDS.Edge_s(edge) for edge in
+                             explore(extractor.VCompound(source), TopAbs_EDGE)]
+                self.assertEqual(len(generated), 1)
+                paper = [(Fraction.from_float(coords(vertex)[0]),
+                          Fraction.from_float(coords(vertex)[1]))
+                         for vertex in explore(generated[0], TopAbs_VERTEX)]
+                self.assertEqual(len(paper), 2)
+                start = (Fraction(POINTS['A'][1]), Fraction(POINTS['A'][2]))
+                end = (Fraction(POINTS[name[1]][1]),
+                       Fraction(POINTS[name[1]][2]))
+                if name == ('A', 'C'):
+                    terminal = min(paper, key=lambda p: abs(p[0] - end[0]))
+                    t = (terminal[0] - start[0]) / (end[0] - start[0])
+                    self.assertGreater(t, 0)
+                    self.assertLess(t, 1)
+                    self.assertEqual(Fraction(1) - t,
+                                     Fraction(1, 9007199254740992))
+                    # The endpoint is on the source's exact paper line,
+                    # but its positive terminal interval is still missing.
+                    cross = ((end[0] - start[0]) * (terminal[1] - start[1]) -
+                             (end[1] - start[1]) * (terminal[0] - start[0]))
+                    self.assertEqual(cross, 0)
+                else:
+                    near_a = min(paper, key=lambda p: abs(p[0] - start[0]))
+                    cross = ((end[0] - start[0]) * (near_a[1] - start[1]) -
+                             (end[1] - start[1]) * (near_a[0] - start[0]))
+                    self.assertEqual(cross, Fraction(-23, 1125899906842624))
+                    # Off-line paper drift cannot become a native source
+                    # interval by a single-axis inverse parameter.
+                    self.assertNotEqual(cross, 0)
+
     def test_opposite_camera_status_is_not_first_angle_source_evidence(self):
         """Negative control: reversing W camera changes a real source class.
 
