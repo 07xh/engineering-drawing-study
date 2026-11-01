@@ -1063,6 +1063,7 @@ test('unreadable original HLR competitor cannot be silently excluded from a uniq
   'source-3d-to-2d-parameter-map-unreadable',
   'generated-2d-to-source-3d-parameter-map-unreadable',
   'source-projected-curve-evaluation-unreadable',
+  'source-parameter-inversion-unproven',
   'generated-native-paper-endpoint-pair-incomplete',
   'generated-native-paper-endpoints-nonfinite'
  ];
@@ -1083,22 +1084,69 @@ test('unreadable original HLR competitor cannot be silently excluded from a uniq
   assert.equal(lineage.signedV5ActionCount,0,reason);
  }
 });
-test('fully verified original parameter exclusion may support diagnostic uniqueness, never signed V5',()=>{
- for(const reason of [
-  'generated-parameter-range-outside-source-projection',
-  'source-parameterized-curve-does-not-match-generated-edge'
+test('verified original native parameter range exclusion can support candidate-only unique lineage',()=>{
+ const x=fixture(),lineage=audit(x).views.H.parameterizedGlobalHLRSourceLineage;
+ const row=lineage.classes.visible.rows[0];
+ assert.equal(row.status,'unique-parameterized-source-lineage');
+ assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,true);
+ assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[]);
+ assert.equal(row.generated2DTopoDSHistoryProven,false);
+ assert.equal(row.globalContinuousVisibilityProven,false);
+ assert.equal(row.signedV5Action,false);
+});
+function withNativePaperMismatchRejection(){
+ const x=fixtureWithNativePaperParameterEndpointWitness();
+ const segment=x.cad.views.V[0],
+  rejected=x.cad.nativeSourceScopedSharpOutputByView.V
+   .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0],
+  index=2,sample=segment.actualOCCTHLRCurveSamplesProjectedMm[index],
+  originalSourcePaper=[sample.u+2,sample.v+1];
+ rejected.reason='source-parameterized-curve-does-not-match-generated-edge';
+ rejected.nativePaperMismatchWitness={
+  sampleIndex:index,sourceProjectedPaperPointMm:originalSourcePaper,
+  generatedProjectedPaperPointMm:[sample.u,sample.v],
+  measuredPaperResidualMm:Math.hypot(2,1),
+  generatedNativePaperToleranceMm:segment.actualOCCTHLRCurveSampleToleranceMm,
+  generated2DTopoDSHistoryCertified:false,signedV5Action:false
+ };
+ return x;
+}
+test('M4 replays actual source paper contradiction to exclude a competing original BRep',()=>{
+ const x=withNativePaperMismatchRejection();
+ const row=audit(x).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'unique-parameterized-source-lineage');
+ assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,true);
+ assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[]);
+ assert.equal(row.generated2DTopoDSHistoryProven,false);
+ assert.equal(row.signedV5Action,false);
+});
+test('a geometric rejection label without actual sampled native mismatch is still inconclusive',()=>{
+ const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
+ rejected.reason='source-parameterized-curve-does-not-match-generated-edge';
+ const row=audit(x).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held');
+ assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[{
+  sourceEdgeId:x.id1,reason:rejected.reason,
+  missingIndependentPaperMismatchWitness:true
+ }]);
+ assert.equal(row.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(row.signedV5Action,false);
+});
+test('tampered native HLR source paper residual or sample index cannot manufacture excluded BRep identity',()=>{
+ for(const change of [
+  ({witness})=>{witness.sampleIndex=3;},
+  ({witness})=>{witness.measuredPaperResidualMm=0;},
+  ({witness})=>{witness.generatedProjectedPaperPointMm[0]+=1;},
+  ({witness})=>{witness.generatedNativePaperToleranceMm=100;},
+  ({witness})=>{witness.generated2DTopoDSHistoryCertified=true;},
+  ({witness})=>{witness.signedV5Action=true;},
+  ({witness})=>{witness.sourceProjectedPaperPointMm[0]=Infinity;}
  ]){
-  const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.H
+  const x=withNativePaperMismatchRejection(),rejected=x.cad.nativeSourceScopedSharpOutputByView.V
    .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
-  rejected.reason=reason;
-  const lineage=audit(x).views.H.parameterizedGlobalHLRSourceLineage;
-  const row=lineage.classes.visible.rows[0];
-  assert.equal(row.status,'unique-parameterized-source-lineage',reason);
-  assert.equal(row.allRejectedOriginalSourceCurvesIndependentlyExcluded,true,reason);
-  assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[],reason);
-  assert.equal(row.generated2DTopoDSHistoryProven,false,reason);
-  assert.equal(row.globalContinuousVisibilityProven,false,reason);
-  assert.equal(row.signedV5Action,false,reason);
+  change({witness:rejected.nativePaperMismatchWitness});
+  assert.throws(()=>audit(x),/native HLR geometric rejection witness|native HLR paper source rejection residual/);
  }
 });
 test('malformed parameterized source reports and forged generated-edge history are rejected',()=>{
