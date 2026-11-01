@@ -28,7 +28,8 @@ function fixture(){
  });
  const parameterMatch=(source,range=[0,1])=>({
   sourceEdgeId:source,matched:true,originalTopoDSEdgeIdentityProven:true,
-  original3DCurveParameterRange:[0,1],source3DParameterRange:[...range],
+  original3DCurveParameterRange:[0,1],originalBRepParameterRangeMatches:true,
+  originalBRepSourceParameterRange:[0,1],source3DParameterRange:[...range],
   generated2DParameterRange:[...range],
   maximumProjectedPointResidualMm:0,maximumParameterRoundTripResidual:0,
   samples:[0,0.25,0.5,0.75,1].map(f=>{
@@ -43,7 +44,8 @@ function fixture(){
  });
  const parameterReport=(matches,generatedOutputEdgeCount)=>({
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
-  sourceCurveCandidateCount:2,topoDSIdentityBoundSourceCurveCount:2,generatedOutputEdgeCount,
+  sourceCurveCandidateCount:2,topoDSIdentityBoundSourceCurveCount:2,
+  topoDSParameterDomainBoundSourceCurveCount:2,generatedOutputEdgeCount,
   uniqueParameterizedSourceMatchCount:matches.filter(x=>x.length===1).length,
   ambiguousParameterizedSourceMatchCount:matches.filter(x=>x.length>1).length,
   unmatchedGeneratedOutputEdgeCount:matches.filter(x=>x.length===0).length,
