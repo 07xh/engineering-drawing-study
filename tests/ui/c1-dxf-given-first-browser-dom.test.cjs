@@ -59,7 +59,7 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  });
  // Use genuine packet schema validator but fake the expensive M3/QuickHull:
  // the DOM contract must not depend on a guessed candidate before user opt-in.
- let reconstructs=0,compileCalls=0;
+ let reconstructs=0,compileCalls=0,lastCompiledSolution=null;
  const scopedRequire=name=>{
   if(name.includes('c1-authenticated-dxf-to-reviewed-v5.cjs')){
    const real=originalRequire(name);
@@ -77,16 +77,21 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
       'the canonical V5 sheet frame must come from GIVEN only');
      const steps=[{id:'given0',title:'仅核对原始点',dependsOn:[],
       explanation:'真实原题来源投影点',actions:[{id:'point0',kind:'point',
-       geometry:{center:{x:390,y:290},radius:4}}]}];
+       geometry:{center:{x:390,y:290},radius:4}}]},
+      {id:'guide1',title:'投影辅助线',dependsOn:['given0'],
+       explanation:'仅演示当前证明的辅助线',actions:[
+        {id:'guide1line',kind:'line',geometry:{from:{x:390,y:290},
+         to:{x:410,y:310}}}]}];
      const timeline=Timeline.compileTimeline(steps);
      const player=Timeline.createPlayer(timeline,{revision});
-     return {solution:{
+     const result={solution:{
       revision,singleOriginalV5Player:true,player,steps,timeline,
       certifiedVisibleContourLineBindings:[],
       certifiedPhysicalLineBindings:[],
       certifiedVisibleContourLineActionCount:0,
       certifiedPhysicalLineActionCount:0,
-      intents:[{id:'given0',source:{solver:'reviewed-given',proofScope:'original-point-only'}}],
+      intents:[{id:'given0',source:{solver:'reviewed-given',proofScope:'original-point-only'}},
+       {id:'guide1',source:{solver:'point-projection',proofScope:'guide-only'}}],
       threeViewSvgSheet:{sheetSvg:
        '<svg data-forbidden-final-answer="true"><line x1="1" y1="2" x2="3" y2="4"/></svg>'},
       m0M3M5PhysicalSourceAcceptance:{status:'bounded-original-source-math-acceptance'}
@@ -100,6 +105,8 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
       }])),
       missingObligations:['original generated HLR history and continuous occlusion']
      }};
+     lastCompiledSolution=result.solution;
+     return result;
     }
    };
   }
@@ -164,4 +171,13 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
  assert.match($('paperMode').textContent,/空白待求视图/);
  assert.equal($('v5StepJump').disabled,false);
+ // The actual page must reject a forged FUTURE guide before allowing the
+ // user to seek to it. A changed subtitle alone must never legitimize it.
+ lastCompiledSolution.steps[1].actions[0].geometry.to.x=NaN;
+ $('next').dispatchEvent(new window.Event('click'));
+ assert.equal($('next').disabled,true);
+ assert.equal(document.querySelectorAll('#animation [data-action-id]').length,0);
+ assert.equal($('v5StepJump').disabled,true);
+ assert.match($('v5Status').textContent,/已停止/);
+ assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
 });
