@@ -964,6 +964,12 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      segments:hiddenNative.segments,nativeCurveHandlesBySourceId
     })
    };
+   // Preserve the parameterized same-run original HLR curve correspondence
+   // beside the EdgeStatus ABI probe so downstream M4 can reconcile it with
+   // the independently source-filtered whole-solid output. This remains
+   // distinct from generated TopoDS IsSame, occlusion, line style and V5.
+   nativeHLRSourceHistoryAPISurfaceByView[view].generated2DSourceParameterMatches=
+    generated2DSourceParameterMatches;
    // Native OCCT HLRBRep_HLRToShape has source-filtered extraction
    // VCompound(S)/HCompound(S). Query EACH actual original TopoDS edge
    // while the algorithm and its internal EdgeMap are still alive.
