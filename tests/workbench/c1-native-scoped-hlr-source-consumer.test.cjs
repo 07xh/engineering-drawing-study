@@ -919,6 +919,26 @@ test('tolerance-bounded one-ULP source overshoot is recorded and held without cl
  assert.match(r.reason,/no-clamp/);
 });
 
+test('exact forward endpoint binding may resolve inverse ULP overshoot without changing raw inverse parameters',()=>{
+ const nativeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  sourceEdgeId:'g::E0',view:'V',original3DSourceCurveDirection:'forward',
+  segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0,1]}]
+ };
+ const r=auditParameterizedM4({view:'V',sourceId:'g::E0',
+  match:{original3DCurveParameterRange:[0,1],
+   source3DParameterRange:[0,1+2*Number.EPSILON],
+   sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
+  klass:'visible',nativeM4});
+ assert.deepEqual(r.originalM0UnitParameterRange,[0,1]);
+ assert.deepEqual(r.inverseMappedOriginalM0UnitParameterRange,[0,1+2*Number.EPSILON]);
+ assert.deepEqual(r.source3DParameterRangeFromInverse,[0,1+2*Number.EPSILON]);
+ assert.equal(r.sourceParameterDomainContainment,
+  'forward-endpoint-bound-exact-with-inverse-overshoot');
+ assert.equal(r.sourceDomainEndpointForwardMapProof,true);
+ assert.equal(r.nativeM4ClassBacked,true);
+});
+
 test('parameterized source interval outside the original M0 domain is rejected, never clamped',()=>{
  const nativeM4={
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
