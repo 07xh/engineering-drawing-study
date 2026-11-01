@@ -284,6 +284,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       throw new RangeError('genuine native vertex IsSame paper point contradicts generated HLR edge');
     };
     check(pair.a);check(pair.b);
+    if(!p2eq(pair.a.nativePaperPoint,pair.b.nativePaperPoint))
+     throw new RangeError('native generated HLR vertex pair references different paper endpoints');
     const key=pairKey(pair.a,pair.b);
     if(realPairs.has(key)||endKey(pair.a)===endKey(pair.b))
      throw new RangeError('duplicated or self native generated vertex IsSame pair');
@@ -294,6 +296,13 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     const [a,b]=row.globalGeneratedHLREndpoints;
     const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
     const pair=realPairs.get(pairKey(ref(a),ref(b)));
+    const point=x=>(x.klass==='visible-sharp'?cad.views[view]:
+     cad.hiddenSharpViews[view])[x.ordinal]?.[x.side];
+    const paperCoincident=p2eq(point(a),point(b));
+    if(pair===undefined&&paperCoincident)
+     throw new RangeError('exhaustive native HLR vertex graph omits an exact paper-coincident original M0 physical junction pair');
+    if(pair!==undefined&&!paperCoincident)
+     throw new RangeError('native HLR vertex graph pair does not match its generated paper endpoints');
     if(pair===true){
      // A genuine generated TopoDS pairwise IsSame can be recorded,
      // even if its PAPER endpoint representation was rounded. This
