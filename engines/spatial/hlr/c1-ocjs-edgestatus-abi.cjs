@@ -55,6 +55,40 @@ function invokePair(owner,name,argSets){
  }
  return {readable:false,reason:last};
 }
+// OpenCascade.js marshals C++ built-in output references as mutable
+// {current: value} objects. Bounds/VisiblePart use Standard_Real and
+// Standard_ShortReal output refs; passing numeric placeholders silently
+// loses the values. Preserve both interval endpoints and OCCT tolerances.
+function invokeCurrentReferencePair(owner,name,argSets){
+ const methods=resolveMethods(owner,name);
+ if(!methods.length)return {readable:false,reason:'method-not-exposed'};
+ let last='output-reference-not-marshalled';
+ for(const method of methods)for(const args of argSets){
+  const refs=Array.from({length:4},()=>({current:0}));
+  try{
+   const value=owner[method](...args,...refs);
+   const returned=pair(value);
+   if(returned)return {readable:true,interval:returned,
+    endpointTolerances:null,readABI:'return-value',method};
+   const [start,tolStart,end,tolEnd]=refs.map(ref=>ref.current);
+   if([start,tolStart,end,tolEnd].every(Number.isFinite)&&
+      start<end&&tolStart>=0&&tolEnd>=0)
+    return {readable:true,interval:[start,end],
+     endpointTolerances:[tolStart,tolEnd],
+     readABI:'mutable-current-reference',method};
+   if(refs.some(ref=>Number.isFinite(ref.current)))
+    last='invalid-output-reference-values';
+   else if(value!==undefined)last='unsupported-return-shape';
+  }catch(error){last=String(error?.message??error).slice(0,180);}
+ }
+ return {readable:false,reason:last};
+}
+function invokeInterval(owner,name,returnArgSets,referenceArgSets){
+ const returned=invokePair(owner,name,returnArgSets);
+ if(returned.readable)
+  return {...returned,endpointTolerances:null,readABI:'return-value'};
+ return invokeCurrentReferencePair(owner,name,referenceArgSets);
+}
 function callBoolean(owner,name){
  for(const method of resolveMethods(owner,name)){
   try{
@@ -367,7 +401,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   // zero-argument tuple/object returns; others expose numeric placeholder
   // arguments, and some expose neither. Probe both actual call shapes,
   // accepting only a finite ordered pair and never manufacturing defaults.
-  const bounds=invokePair(status,'Bounds',[[],[0,0,0,0]]);
+  const bounds=invokeInterval(status,'Bounds',[[],[0,0,0,0]],[[]]);
   const count=callCount(status,'NbVisiblePart');
   const allVisible=callBoolean(status,'AllVisible');
   const allHidden=callBoolean(status,'AllHidden');
@@ -375,13 +409,16 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   // synchronous JS loop on the workbench/Android UI thread.
   if(count!==null&&count>4096)
    throw new RangeError('native HLR EdgeStatus visible-part count exceeds diagnostic budget');
-  const visibleParts=[];
+  const visibleParts=[],visiblePartEndpointTolerances=[],visiblePartReadABIs=[];
   let partFailure=null;
   if(count!==null){
    for(let part=1;part<=count;part++){
-    const result=invokePair(status,'VisiblePart',[[part],[part,0,0,0,0]]);
+    const result=invokeInterval(status,'VisiblePart',
+     [[part],[part,0,0,0,0]],[[part]]);
     if(!result.readable){partFailure=result.reason;break;}
     visibleParts.push(result.interval);
+    visiblePartEndpointTolerances.push(result.endpointTolerances);
+    visiblePartReadABIs.push(result.readABI);
    }
   }
   const row={
@@ -399,8 +436,12 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
     allHidden:methodArities(status,'AllHidden')
    },
    bounds:bounds.readable?bounds.interval:null,
+   boundsEndpointTolerances:bounds.readable?bounds.endpointTolerances:null,
+   boundsReadABI:bounds.readable?bounds.readABI:null,
    visiblePartCount:count,
    visibleParts,
+   visiblePartEndpointTolerances,
+   visiblePartReadABIs,
    allVisible,allHidden,
    boundsReadFailure:bounds.readable?null:bounds.reason,
    visiblePartReadFailure:partFailure,
@@ -437,6 +478,13 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    x.originalEdgeData.original3DToProjected2DCurveParameterMap,
   projectedCurveCollapsed:
    x.originalEdgeData.original3DToProjected2DCurveParameterMap?.projectionCollapsed??null,
+  nativeEdgeStatusBounds:x.bounds,
+  nativeEdgeStatusBoundsEndpointTolerances:x.boundsEndpointTolerances,
+  nativeEdgeStatusBoundsReadABI:x.boundsReadABI,
+  nativeEdgeStatusVisiblePartCount:x.visiblePartCount,
+  nativeEdgeStatusVisibleParts:x.visibleParts,
+  nativeEdgeStatusVisiblePartEndpointTolerances:x.visiblePartEndpointTolerances,
+  nativeEdgeStatusVisiblePartReadABIs:x.visiblePartReadABIs,
   parameterRoundTripApplicable:
    x.originalEdgeData.original3DToProjected2DCurveParameterMap?.roundTripApplicable??false,
   parameterRoundTripWithinDiagnosticTolerance:
