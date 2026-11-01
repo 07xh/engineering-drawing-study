@@ -962,9 +962,19 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     const [from,to]=projectedOriginalBySource.get(
      source.originalPhysicalSourceEdgeId)[view];
     if(from.u===to.u&&from.v===to.v){
-     if((source.visible3D?.native3DGeneratedCurveIntervals.length??0)!==0||
-        (source.hidden3D?.native3DGeneratedCurveIntervals.length??0)!==0)
-      throw new RangeError('collapsed source cannot emit native 3D line in this view');
+     // A source may collapse to one paper point in a first-angle view,
+     // but its native HLR outline remains a real 3D interval. Never
+     // silently drop an OutLine just because Sharp emitted no segment.
+     // Keep every unprojectable positive interval as a blocking obligation.
+     if(['visible3D','hidden3D','visibleOutline3D','hiddenOutline3D']
+      .some(key=>{
+       const group=source[key];
+       if(group==null)return false; // older native ABI may lack OutLine
+       if(!Array.isArray(group.native3DGeneratedCurveIntervals))
+        throw new RangeError('malformed native 3D HLR interval group');
+       return group.native3DGeneratedCurveIntervals.length>0;
+      }))
+      throw new RangeError('collapsed source cannot emit native 3D sharp or outline interval in this view');
      continue;
     }
     const projected=projectC1Native3DSourceIntervalsToM4({
