@@ -169,7 +169,14 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
     allVisible===null||allHidden===null?'visibility-class-not-readable':
     'visible-part-output-not-readable',
     readableSourceStatusRows:rows.filter(x=>x.bounds!==null&&x.visiblePartCount!==null).length,
-    rows};
+    rows,diagnostic:{
+     edgeDataMethodNames:edgeDataMethods,
+     statusMethodNames:statusMethods,
+     statusGetterMethod:statusMethod,
+     boundsMethodArities:row.boundsMethodArities,
+     visiblePartMethodArities:row.visiblePartMethodArities,
+     visiblePartCountMethodArities:row.visiblePartCountMethodArities
+    }};
   }
   const [lo,hi]=bounds.interval;
   if(!(lo<hi)||allVisible&&allHidden||
