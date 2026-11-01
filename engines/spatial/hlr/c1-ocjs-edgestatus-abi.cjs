@@ -496,13 +496,17 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
 
 function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  if(!source?.directOriginalTopoDSEdgeIdentityProven||
-    !source?.originalBRepParameterRangeMatches||
-    !Array.isArray(source.originalBRepParameterRange)||
     !source.curve||!Array.isArray(source.parameterRange)||
     source.parameterRange.length!==2||
     !source.parameterRange.every(Number.isFinite)||
     !(source.parameterRange[1]>source.parameterRange[0]))
   return {matched:false,reason:'original-source-edge-identity-or-range-unproven'};
+ if(!source.originalBRepParameterRangeMatches||
+    !Array.isArray(source.originalBRepParameterRange)||
+    source.originalBRepParameterRange.length!==2||
+    source.originalBRepParameterRange[0]!==source.parameterRange[0]||
+    source.originalBRepParameterRange[1]!==source.parameterRange[1])
+  return {matched:false,reason:'original-brep-parameter-domain-not-identical'};
  const outputRange=segment?.actualOCCTHLRCurveParameterRange;
  const outputSamples=segment?.actualOCCTHLRCurveSamplesProjectedMm;
  const sampleTolerance=segment?.actualOCCTHLRCurveSampleToleranceMm;
