@@ -51,7 +51,7 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  scene.__setCurrent({solution:{revision:8,singleOriginalV5Player:true,steps,timeline,player,
   certifiedVisibleContourLineBindings:[{actionId:'edge_a',revision:8,
    sourceEdgeId:'Real::A|D',view:'W',standardLineStyle:visible,
-   originalParameterRange:[0,1],signedFormalLineV5:true}],
+   signedFormalLineV5:true}],
   certifiedPhysicalLineBindings:[],intents:[{id:'point0',source:{
    solver:'real-math',proofScope:'source-3d-point'}},
    {id:'line1',source:{solver:'real-m5',proofScope:'closed-single-convex'}}]
