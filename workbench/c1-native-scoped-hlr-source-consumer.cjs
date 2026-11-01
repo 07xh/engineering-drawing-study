@@ -221,7 +221,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeM4ClassEvidenceUnavailableEdges:0,
    nativeM4ClassBackingUnprovenEdges:0,
    reviewedOriginalM0PaperHeldGeneratedEdges:0,
-   heldForIncompleteOriginalCurveCandidateInventory:0
+   heldForIncompleteOriginalCurveCandidateInventory:0,
+   heldForInconclusiveOriginalHLRSourceRejections:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
@@ -287,7 +288,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
   const sourceIdsSet=new Set(sourceIds??[]);
   const seenOrdinals=new Set(),distinctParameterDomainBoundSourceIds=new Set();
   let rawUnique=0,rawAmbiguous=0,rawUnmatched=0;
-  let unique=0,ambiguous=0,unmatched=0,disagreements=0,heldInventory=0;
+  let unique=0,ambiguous=0,unmatched=0,disagreements=0,heldInventory=0,
+   heldInconclusive=0;
   const rows=report.rows.map(row=>{
    const ordinal=row?.ordinal,matches=row?.candidateSourceMatches;
    if(!Number.isSafeInteger(ordinal)||ordinal<0||ordinal>=item.global.length||
@@ -479,7 +481,17 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // from the native producer's accepted AND rejected source identities.
    // Legacy reports without rejection identities remain held, not signed.
    const rejectedCandidates=row.rejectedSourceCandidates;
-   const rejectedIds=new Set();
+   const rejectedIds=new Set(),inconclusiveRejections=[];
+   // These native outcomes provide a concrete contradictory parameter
+   // domain or a measured source-curve mismatch. All other failures
+   // (including unreadable Embind APIs and uncertain TopoDS identity)
+   // mean "not verified", NOT "physically excluded" from the 3D solid.
+   // Never promote one successful candidate to unique merely because
+   // every competitor failed to provide a readable native witness.
+   const conclusiveNativeCurveExclusions=new Set([
+    'generated-parameter-range-outside-source-projection',
+    'source-parameterized-curve-does-not-match-generated-edge'
+   ]);
    if(rejectedCandidates!==undefined){
     if(!Array.isArray(rejectedCandidates)||
        rejectedCandidates.length!==row.rejectedSourceCandidateCount)
@@ -492,6 +504,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         typeof rejected.reason!=='string'||!rejected.reason.trim())
       throw new RangeError('forged or repeated original HLR rejection source identity');
      rejectedIds.add(rejected.sourceEdgeId);
+     if(!conclusiveNativeCurveExclusions.has(rejected.reason))
+      inconclusiveRejections.push({
+       sourceEdgeId:rejected.sourceEdgeId,reason:rejected.reason
+      });
     }
    }
    const completeCandidateReview=
@@ -564,6 +580,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     x!==null&&x.originalM0SourcePaperSamplesCorroborated!==true);
    const status=matches.length===0?'unmatched':
     !completeCandidateReview?'incomplete-original-hlr-source-curve-inventory-held':
+    inconclusiveRejections.length>0?'inconclusive-original-hlr-source-exclusion-held':
     reviewedM0PaperHeld?'reviewed-original-m0-source-paper-held':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
@@ -575,12 +592,16 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     ambiguous++;
    else if(status==='unmatched')unmatched++;
    else if(status==='incomplete-original-hlr-source-curve-inventory-held')heldInventory++;
+   else if(status==='inconclusive-original-hlr-source-exclusion-held')heldInconclusive++;
    else disagreements++;
    return {
     wholeSolidHLREdgeOrdinal:ordinal,
     parameterizedSourceMatchCount:matches.length,
     completeOriginalSourceCurveInventory,
     completeAcceptedAndRejectedOriginalSourceCurveReview:completeCandidateReview,
+    inconclusiveOriginalHLRSourceRejections:inconclusiveRejections,
+    allRejectedOriginalSourceCurvesIndependentlyExcluded:
+     completeCandidateReview&&inconclusiveRejections.length===0,
     parameterizedOriginalSourceEdgeIds:[...candidateIds].sort(),
     nativeSourceFilterCandidateIds:[...filterSources].sort(),
     m0PaperCandidateIds:[...paperCandidates].sort(),
@@ -612,6 +633,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    completeOriginalSourceCurveInventory,
    reviewedOriginalSourceCurveCount:expected.size,
    heldForIncompleteOriginalCurveCandidateInventory:heldInventory,
+   heldForInconclusiveOriginalHLRSourceRejections:heldInconclusive,
    topoDSIdentityBoundSourceCurveCount:report.topoDSIdentityBoundSourceCurveCount,
    topoDSParameterDomainBoundSourceCurveCount:
     report.topoDSParameterDomainBoundSourceCurveCount,
@@ -641,6 +663,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length;
   result.counts.unmatchedGeneratedOutputEdges+=unmatched;
   result.counts.heldForIncompleteOriginalCurveCandidateInventory+=heldInventory;
+  result.counts.heldForInconclusiveOriginalHLRSourceRejections+=heldInconclusive;
   result.counts.sourceFilterOrPaperCandidateDisagreements+=disagreements;
   result.counts.reviewedOriginalM0PaperHeldGeneratedEdges+=
    rows.filter(x=>x.reviewedOriginalM0PaperHeld).length;
