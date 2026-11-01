@@ -27,7 +27,8 @@ const {auditC1Native3DSourceScopedIntervals}=
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
-const {probeRealOcjsHLREdgeStatusABI}=
+const {probeRealOcjsHLREdgeStatusABI,
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves}=
  require('./c1-ocjs-edgestatus-abi.cjs');
 function cuboidBounds(g){
  if(!g||g.kind!=='mesh'||g.space!=='model-3d'||g.unit!=='mm'||
@@ -817,6 +818,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     generated2DHLRTopoDSHistoryCertified:false,
     engineeringLineStyle:'undetermined',signedV5ActionCount:0
    };
+   const nativeCurveHandlesBySourceId=new Map();
    if(typeof algorithm.DataStructure==='function'){
     // Only the returned handle is an owned value. get(), EdgeMap() and
     // FindKey() expose borrowed OCCT objects: deleting them corrupts
@@ -834,7 +836,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       originalEdgeStatusAbi=probeRealOcjsHLREdgeStatusABI({
        oc,dataStructure:ds,edgeMapExtent:originalDataStructureIndex.internalEdgeMapExtent,
        indexedOriginalSources:originalDataStructureIndex.indexedOriginalSources,
-       originalNativeEdgeHandles,view
+       originalNativeEdgeHandles,view,nativeCurveHandlesBySourceId
       });
      }else originalDataStructureIndex.availability='EdgeMap-not-exposed';
     }else originalDataStructureIndex.availability='DataStructure-handle-null';
@@ -950,6 +952,18 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const hiddenNative=emptyHiddenSharp?
     {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(hidden,'hidden-sharp');
    const hiddenSegments=hiddenNative.segments;
+   // Match each whole-solid generated 2D HLR fragment against the actual
+   // same-run original HLRBRep_Curve using Parameter2d/Parameter3d and
+   // five projected curve samples. This is stronger than paper coincidence,
+   // but deliberately remains distinct from generated TopoDS history.
+   const generated2DSourceParameterMatches={
+    visible:auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
+     segments:visibleNative.segments,nativeCurveHandlesBySourceId
+    }),
+    hidden:auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
+     segments:hiddenNative.segments,nativeCurveHandlesBySourceId
+    })
+   };
    // Native OCCT HLRBRep_HLRToShape has source-filtered extraction
    // VCompound(S)/HCompound(S). Query EACH actual original TopoDS edge
    // while the algorithm and its internal EdgeMap are still alive.
@@ -1139,6 +1153,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
      });
    nativeSourceScopedSharpOutputByView[view]={
     unclaimedNativeGeneratedHLREdges,
+    generated2DSourceParameterMatches,
     nativeSourceIdentityConflicts,
     schema:'draftai-c1-ocjs-real-original-topods-scoped-hlr/1',
     sourceEdgeCount:scopedRows.length,
