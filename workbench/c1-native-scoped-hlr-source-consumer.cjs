@@ -68,8 +68,25 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   throw new RangeError('parameterized source interval escapes original BRep parameter domain');
  const exactDomainContainment=Math.min(...sourceRange)>=domain[0]&&
   Math.max(...sourceRange)<=domain[1];
+ const forwardRange=match?.sourceProjected2DParameterRange,
+  forwardSortedRange=match?.sourceProjected2DParameterRangeSorted,
+  generatedRange=match?.generated2DParameterRange,
+  forwardResiduals=match?.sourceProjected2DParameterEndpointResiduals;
  const forwardEndpointBound=
-  match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange===true;
+  match?.sourceProjected2DParameterRangeMatchesGeneratedOutputRange===true&&
+  Array.isArray(forwardRange)&&forwardRange.length===2&&
+  forwardRange.every(Number.isFinite)&&
+  Array.isArray(forwardSortedRange)&&forwardSortedRange.length===2&&
+  forwardSortedRange.every(Number.isFinite)&&
+  Array.isArray(generatedRange)&&generatedRange.length===2&&
+  generatedRange.every(Number.isFinite)&&
+  Array.isArray(forwardResiduals)&&forwardResiduals.length===2&&
+  forwardResiduals.every(Number.isFinite)&&
+  Math.min(...forwardRange)===forwardSortedRange[0]&&
+  Math.max(...forwardRange)===forwardSortedRange[1]&&
+  forwardResiduals[0]===generatedRange[0]-forwardSortedRange[0]&&
+  forwardResiduals[1]===generatedRange[1]-forwardSortedRange[1]&&
+  forwardResiduals[0]===0&&forwardResiduals[1]===0;
  const normalize=t=>direction==='reversed'?
   (domain[1]-t)/(domain[1]-domain[0]):
   (t-domain[0])/(domain[1]-domain[0]);
