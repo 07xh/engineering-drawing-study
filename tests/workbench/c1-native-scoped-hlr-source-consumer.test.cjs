@@ -116,6 +116,49 @@ function fixture(){
  }
  return {geometry,cad,id0,id1,witness,paper,parameterMatch,parameterReport};
 }
+function fixtureWithNativePaperParameterEndpointWitness(){
+ const x=fixture(),segment=x.cad.views.V[0];
+ segment.actualOCCTHLRCurveSamplesProjectedMm=[0,0.25,0.5,0.75,1].map(t=>({
+  u:segment.from.u+(segment.to.u-segment.from.u)*t,
+  v:segment.from.v+(segment.to.v-segment.from.v)*t
+ }));
+ const match=x.cad.nativeSourceScopedSharpOutputByView.V
+  .generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+ match.nativePaperEndpointSampleWitness={
+  receivedNativePaperEndpointsChecked:true,endpointOrientation:'direct',
+  maximumNativePaperEndpointSampleResidualMm:0,
+  exactBinary64NativePaperEndpoints:true,
+  generatedTopoDSVertexIdentityCertified:false,signedV5Action:false
+ };
+ return x;
+}
+test('M4 replays same-run native generated paper endpoint witness without signing topology',()=>{
+ const x=fixtureWithNativePaperParameterEndpointWitness(),r=audit(x);
+ const lineage=r.views.V.parameterizedGlobalHLRSourceLineage;
+ const consumed=lineage.classes.visible.rows[0].parameterizedSourceIntervals[0];
+ assert.equal(consumed.nativePaperEndpointSampleWitness.receivedNativePaperEndpointsChecked,true);
+ assert.equal(consumed.nativePaperEndpointSampleWitness.exactBinary64NativePaperEndpoints,true);
+ assert.equal(lineage.generated2DTopoDSHistoryProven,false);
+ assert.equal(lineage.signedV5ActionCount,0);
+});
+test('M4 vetoes a grafted or stale parameterized native paper endpoint witness',()=>{
+ for(const mutate of [
+  x=>{x.cad.views.V[0].to.u+=0.25;},
+  x=>{x.cad.views.V[0].actualOCCTHLRCurveSamplesProjectedMm[4].u+=0.25;},
+  x=>{x.cad.nativeSourceScopedSharpOutputByView.V
+    .generated2DSourceParameterMatches.visible.rows[0]
+    .candidateSourceMatches[0].nativePaperEndpointSampleWitness
+     .exactBinary64NativePaperEndpoints=false;},
+  x=>{delete x.cad.views.V[0].from;},
+  x=>{delete x.cad.nativeSourceScopedSharpOutputByView.V
+    .generated2DSourceParameterMatches.visible.rows[0]
+    .candidateSourceMatches[0].nativePaperEndpointSampleWitness;}
+ ]){
+  const x=fixtureWithNativePaperParameterEndpointWitness();
+  mutate(x);
+  assert.throws(()=>audit(x),/M4 native HLR endpoint\/sample provenance witness incomplete|M4 parameterized HLR source reused stale native paper endpoints|native|paper|endpoint/i);
+ }
+});
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
  const x=fixture(),r=audit(x);
  assert.equal(r.actualOriginalTopoDSSourceFilteredHLRConsumed,true);
