@@ -533,7 +533,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     nativeSourceFilterCandidateIds:[...filterSources].sort(),
     m0PaperCandidateIds:[...paperCandidates].sort(),
     nativeSourceFilterAndM0PaperCandidatesAgree:filterConsistent,
-    reviewedOriginalM0PaperHeld,
+    reviewedOriginalM0PaperHeld:reviewedM0PaperHeld,
     nativeFilterNarrowsParameterizedCandidates:filterNarrows,
     parameterizedSourceIntervals,
     nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
