@@ -335,3 +335,49 @@ test('BOTH finite source-paper spans overflow: native 2D/3D binding uses exact d
  assert.equal(reversed.rows[0].exactOriginalM0PaperAffineCollinearity,true);
  assert.equal(reversed.officialV5Authorized,false);
 });
+
+// Cross-edge uniqueness is separate from per-edge native M4 class coverage:
+// duplicated generated TopoDS paper strokes must not borrow one physical
+// source interval twice just because each one individually matches the source.
+test('positive overlapping generated 2D source intervals remain held despite full native 3D class coverage',()=>{
+ const r=make([
+  stroke('visible-sharp',0,7.5),
+  stroke('visible-sharp',5,10)
+ ],[],[native('visible-sharp',0,1)]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterOverlapPairs,1);
+ assert.equal(r.counts.generated2DEdgesHeldForSourceParameterOverlap,2);
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
+ assert.equal(r.counts.paperDriftOrClassCoverageHeld,2);
+ assert.equal(r.sourceScoped2DGeneratedPaperPositiveOverlapPresent,true);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,false);
+ for(const row of r.rows){
+  assert.equal(row.exactSameClassNative3DSourceIntervalCoverage,true);
+  assert.equal(row.positiveGenerated2DSourceParameterOverlapWithAnotherEdge,true);
+  assert.equal(row.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+  assert.equal(row.signedV5Action,false);
+ }
+ assert.equal(r.officialV5Authorized,false);
+});
+test('identical reversed generated 2D source interval cannot be counted twice',()=>{
+ const first=stroke('visible-sharp',0,10);
+ const reversed=stroke('visible-sharp',10,0);
+ const r=make([first,reversed],[],[native('visible-sharp',0,1)]);
+ assert.deepEqual(r.rows.map(x=>x.originalM0ExactRationalPaperInterval),
+  [['0','1'],['0','1']]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterOverlapPairs,1);
+ assert.equal(r.counts.generated2DEdgesHeldForSourceParameterOverlap,2);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('adjacent nonoverlapping source-scoped 2D strokes may retain native class consistency',()=>{
+ const r=make([
+  stroke('visible-sharp',0,5),
+  stroke('visible-sharp',5,10)
+ ],[],[native('visible-sharp',0,1)]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterOverlapPairs,0);
+ assert.equal(r.counts.generated2DEdgesHeldForSourceParameterOverlap,0);
+ assert.equal(r.counts.exactSameClassNative3DBackedEdges,2);
+ assert.equal(r.sourceScoped2DGeneratedPaperPositiveOverlapPresent,false);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,true);
+ assert.equal(r.officialV5Authorized,false);
+});
