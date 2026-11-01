@@ -61,6 +61,46 @@ function positivePairwiseIntervalOverlaps(intervals){
  }
  return merged;
 }
+/**
+ * Recheck native OCCT ORIGINAL 3D curve parameters before a generated 2D
+ * source candidate can claim outline-class backing. M4 [0,1] normalization
+ * may round a strictly positive native one-ULP gap to the same Number on
+ * both sides. No epsilon, snapped t or paper geometry may erase that gap.
+ * This remains a necessary class check, never global HLR ancestry or M5.
+ */
+function auditNativeOriginalOutlineClassInterval(query,same,opposite,held){
+ if(!Array.isArray(query)||query.length!==2||
+    !query.every(Number.isFinite)||!(query[1]>query[0]))
+  throw new RangeError('invalid original native outline query interval');
+ const intersect=intervals=>{
+  if(!Array.isArray(intervals)||intervals.length>512)
+   throw new RangeError('invalid original native outline interval inventory');
+  return intervals.map(interval=>{
+   if(!Array.isArray(interval)||interval.length!==2||
+      !interval.every(Number.isFinite)||!(interval[1]>interval[0]))
+    throw new RangeError('invalid original native outline parameter interval');
+   return [Math.max(query[0],interval[0]),Math.min(query[1],interval[1])];
+  }).filter(([a,b])=>b>a).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+ };
+ const parts=intersect(same),oppositeParts=intersect(opposite),
+  heldParts=intersect(held),gaps=[],overlaps=[];
+ let reach=query[0];
+ for(const [a,b] of parts){
+  if(a>reach)gaps.push([reach,a]);
+  if(a<reach&&b>reach)overlaps.push([a,reach]);
+  reach=Math.max(reach,b);
+ }
+ if(reach<query[1])gaps.push([reach,query[1]]);
+ return {
+  nativeOriginalParameterPositiveGaps:gaps,
+  nativeOriginalSameClassPositiveOverlaps:overlaps,
+  nativeOriginalOppositeClassPositiveOverlaps:oppositeParts,
+  nativeOriginalHeldBinary64PositiveOverlaps:heldParts,
+  nativeOriginalClassBackedWithoutNormalization:
+   gaps.length===0&&overlaps.length===0&&
+   oppositeParts.length===0&&heldParts.length===0
+ };
+}
 function auditC1ParameterizedSourceMatchAgainstNativeM4({
  view,sourceId,match,klass,nativeM4
 }={}){
@@ -195,9 +235,28 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  const oppositeOutlineCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeOutlineRanges);
  const sameOutlineOverlaps=positivePairwiseIntervalOverlaps(sameOutlineRanges);
  const oppositeOutlineOverlaps=oppositeOutlineCoverage.positiveLengthCoveredIntervals;
+ // Independently cover the *native* BRep curve domain. A positive gap
+ // can vanish in rounded M0 fractions even while paper coverage looks full.
+ // M4-held native outline intervals (including collapsed opposite-class
+ // spans) also veto a class claim on any intersecting source subspan.
+ const nativeOutlineClassCoverage=nativeOutlineEvidenceAvailable?
+  auditNativeOriginalOutlineClassInterval(
+   [...effectiveSourceRange].sort((a,b)=>a-b),
+   outlineSegments.filter(x=>x.native3DHLRClass===sameOutlineClass)
+    .map(x=>x.originalNative3DParameterRange),
+   outlineSegments.filter(x=>x.native3DHLRClass===oppositeOutlineClass)
+    .map(x=>x.originalNative3DParameterRange),
+   (nativeM4.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation??[])
+    .map(x=>{
+     if(!['visible-outline','hidden-outline'].includes(x?.native3DHLRClass))
+      throw new RangeError('invalid held native outline class');
+     return x.originalNative3DParameterRange;
+    })
+  ):null;
  const nativeOutlineClassBacked=nativeOutlineEvidenceAvailable&&
   outlineClassesValid&&sameOutlineCoverage.entireOriginalParameterIntervalCovered&&
-  sameOutlineOverlaps.length===0&&oppositeOutlineOverlaps.length===0;
+  sameOutlineOverlaps.length===0&&oppositeOutlineOverlaps.length===0&&
+  nativeOutlineClassCoverage.nativeOriginalClassBackedWithoutNormalization;
  return {
   availability:'available',sourceEdgeId:sourceId,
   original3DSourceCurveDirection:direction,
@@ -221,6 +280,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeOutlineSameClassPositiveOverlaps:sameOutlineOverlaps,
   nativeOutlineOppositeClassPositiveOverlap:oppositeOutlineOverlaps.length>0,
   nativeOutlineOppositeClassOverlaps:oppositeOutlineOverlaps,
+  nativeOutlineOriginalParameterCoverage:nativeOutlineClassCoverage,
   nativeOutlineClassBacked
  };
 }
