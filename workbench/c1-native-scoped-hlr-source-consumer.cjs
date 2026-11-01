@@ -314,6 +314,37 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        (Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)&&
         Math.max(...sampleResiduals)>segment.actualOCCTHLRCurveSampleToleranceMm))
      throw new RangeError('parameterized HLR curve residual summary is inconsistent');
+    // Independently replay the producer's received native HLR endpoint
+    // witness at the M4 consumer boundary. A copied parameterized match
+    // cannot be grafted onto a different whole-solid generated 2D edge.
+    // This is never an original/generated TopoDS identity or M5 signoff.
+    const nativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm;
+    const endpointWitness=match.nativePaperEndpointSampleWitness;
+    if(nativeSamples!==undefined||endpointWitness!==undefined){
+     const from=segment.from,to=segment.to;
+     if(!Array.isArray(nativeSamples)||nativeSamples.length!==5||
+        !nativeSamples.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+        ![from,to].every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+        !Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)||
+        segment.actualOCCTHLRCurveSampleToleranceMm<0||
+        endpointWitness?.receivedNativePaperEndpointsChecked!==true||
+        endpointWitness.generatedTopoDSVertexIdentityCertified!==false||
+        endpointWitness.signedV5Action!==false)
+      throw new RangeError('M4 native HLR endpoint/sample provenance witness incomplete');
+     const residual=(p,q)=>Math.hypot(p.u-q.u,p.v-q.v);
+     const direct=Math.max(residual(nativeSamples[0],from),
+      residual(nativeSamples[4],to));
+     const reverse=Math.max(residual(nativeSamples[0],to),
+      residual(nativeSamples[4],from));
+     const minimum=Math.min(direct,reverse);
+     const orientation=direct<=reverse?'direct':'reversed';
+     if(!Number.isFinite(minimum)||
+        minimum>segment.actualOCCTHLRCurveSampleToleranceMm||
+        endpointWitness.endpointOrientation!==orientation||
+        endpointWitness.maximumNativePaperEndpointSampleResidualMm!==minimum||
+        endpointWitness.exactBinary64NativePaperEndpoints!==(minimum===0))
+      throw new RangeError('M4 parameterized HLR source reused stale native paper endpoints');
+    }
     candidateIds.add(sourceId);
     distinctParameterDomainBoundSourceIds.add(sourceId);
    }
@@ -355,6 +386,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
      maximumParameterRoundTripResidual:match.maximumParameterRoundTripResidual,
      sampleCount:match.samples.length,
+     nativePaperEndpointSampleWitness:match.nativePaperEndpointSampleWitness??null,
      nativeM4ClassBacking:m4Audit
     });
    }
