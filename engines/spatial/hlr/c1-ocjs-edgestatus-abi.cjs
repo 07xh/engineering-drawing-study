@@ -382,6 +382,14 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   original3DCurveParameterRange:x.originalEdgeData.original3DCurveParameterRange,
   original3DToProjected2DCurveParameterMap:
    x.originalEdgeData.original3DToProjected2DCurveParameterMap,
+  projectedCurveCollapsed:
+   x.originalEdgeData.original3DToProjected2DCurveParameterMap?.projectionCollapsed??null,
+  parameterRoundTripApplicable:
+   x.originalEdgeData.original3DToProjected2DCurveParameterMap?.roundTripApplicable??false,
+  parameterRoundTripWithinDiagnosticTolerance:
+   x.originalEdgeData.original3DToProjected2DCurveParameterMap?.roundTripWithinDiagnosticTolerance??null,
+  canonicalProjectionCoordinatesMatch:
+   x.originalEdgeData.original3DToProjected2DCurveParameterMap?.canonicalProjectionCoordinatesMatch??null,
   directOriginalTopoDSEdgeIdentityProven:
    x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven,
   directOriginalTopoDSEdgeIsSameMatches:
