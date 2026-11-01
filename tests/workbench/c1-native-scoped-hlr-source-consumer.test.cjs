@@ -26,17 +26,18 @@ function fixture(){
   engineeringLineStyle:'undetermined',signedV5Action:false,
   ...paper(view,source)
  });
- const parameterMatch=source=>({
+ const parameterMatch=(source,range=[0,1])=>({
   sourceEdgeId:source,matched:true,originalTopoDSEdgeIdentityProven:true,
-  original3DCurveParameterRange:[0,1],source3DParameterRange:[0,1],
-  generated2DParameterRange:[0,1],
+  original3DCurveParameterRange:[0,1],source3DParameterRange:[...range],
+  generated2DParameterRange:[...range],
   maximumProjectedPointResidualMm:0,maximumParameterRoundTripResidual:0,
-  samples:[0,0.25,0.5,0.75,1].map(t=>({
-   generated2DParameter:t,source3DParameter:t,
-   parameterRoundTripResidual:0,
-   sourceProjectedPointMm:[t,2*t],generatedProjectedPointMm:[t,2*t],
-   projectedPointResidualMm:0
-  })),
+  samples:[0,0.25,0.5,0.75,1].map(f=>{
+   const t=range[0]+(range[1]-range[0])*f;
+   return {generated2DParameter:t,source3DParameter:t,
+    parameterRoundTripResidual:0,
+    sourceProjectedPointMm:[t,2*t],generatedProjectedPointMm:[t,2*t],
+    projectedPointResidualMm:0};
+  }),
   generated2DTopoDSHistoryProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
@@ -103,7 +104,7 @@ function fixture(){
   cad.nativeHLRSourceHistoryAPISurfaceByView[view].generated2DSourceParameterMatches=
    cad.nativeSourceScopedSharpOutputByView[view].generated2DSourceParameterMatches;
  }
- return {geometry,cad,id0,id1,witness,paper,parameterMatch};
+ return {geometry,cad,id0,id1,witness,paper,parameterMatch,parameterReport};
 }
 test('actual native V/H/W scoped-source ledger is consumed but does not sign V5',()=>{
  const x=fixture(),r=audit(x);
@@ -365,6 +366,21 @@ test('source-filtered real HLR split retains one-ULP positive original t gap',()
  ];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ const report=scoped.generated2DSourceParameterMatches.visible;
+ report.generatedOutputEdgeCount=2;
+ report.rows=[
+  {ordinal:0,candidateSourceMatchCount:1,
+   candidateSourceMatches:[x.parameterMatch(x.id0,[0,0.5])],
+   rejectedSourceCandidateCount:1,uniqueOriginalSourceEdgeId:x.id0,
+   status:'unique-parameterized-source-curve-match'},
+  {ordinal:1,candidateSourceMatchCount:1,
+   candidateSourceMatches:[x.parameterMatch(x.id0,[next,1])],
+   rejectedSourceCandidateCount:1,uniqueOriginalSourceEdgeId:x.id0,
+   status:'unique-parameterized-source-curve-match'}
+ ];
+ report.uniqueParameterizedSourceMatchCount=2;
+ report.ambiguousParameterizedSourceMatchCount=0;
+ report.unmatchedGeneratedOutputEdgeCount=0;
  const r=audit(x),coverage=r.views.V.sourceParameterCandidates[0];
  assert.deepEqual(coverage.paperDerivedPositiveLengthUncoveredCandidateIntervals,
   [[0.5,next]]);
@@ -409,6 +425,8 @@ test('native source-scoped HLR never treats simultaneously visible and hidden or
  }];
  scoped.nativeSourceScopedOutputEdgeCount=2;
  scoped.paperOnlyScopedOutputEdgeCount=2;
+ scoped.generated2DSourceParameterMatches.hidden=
+  x.parameterReport([[x.parameterMatch(x.id0)]],1);
  const r=audit(x),row=r.views.V.sourceParameterCandidates[0];
  assert.equal(row.entireOriginalSourcePaperCandidateIntervalCovered,true);
  assert.equal(row.paperDerivedPositiveLengthVisibleHiddenConflictDetected,true);
