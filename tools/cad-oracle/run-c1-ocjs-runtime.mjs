@@ -1629,6 +1629,35 @@ for(const [index,geometry] of general.entries()){
    assert.equal(claim.signedV5Action,false);
   }
  }
+ // Each still-positive original paper gap is a named obstruction, not
+ // a numeric tolerance to erase. Identify the precise source, view and
+ // original parameter endpoints alongside independent native evidence.
+ // Keep diagnostics separate from any formal ConstructionStep or V5.
+ const positiveGapForensics=unresolvedM5.records.filter(row=>
+  row.kind==='positive-original-m0-parameter-gap').map(row=>({
+   view:row.view,
+   originalSourceEdgeId:row.sourceEdgeId,
+   strictlyPositiveOriginalParameterGap:row.originalM0PositiveParameterGap,
+   originalNativeStatusAgreesWithSource3DSharp:
+    row.independentOriginalHLREdgeStatusVsNative3DSharpSourceConcordance
+     ?.nativeOriginalStatusClassAgreesWith3DSharp===true,
+   sourceOriginal3DAllFaceRayClass:row.independentOriginal3DAllFaceRayClass,
+   sourceFilterCausalGeneratedOrdinals:
+    row.directNativeSourceFilteredToWholeSolidGeneratedEdgeCausalOrdinals,
+   sameRunExactPaperGapCandidateOnly:
+    row.sameRunExactCollinearHLRPaperCandidateOnlyGapEvidence!==null,
+   generated2DTopoDSHistoryCertified:false,
+   officialV5Action:false
+  }));
+ assert.equal(positiveGapForensics.length,
+  positiveOriginalGapRays.rows.length);
+ assert.ok(positiveGapForensics.every(row=>
+  row.strictlyPositiveOriginalParameterGap?.[1]>
+   row.strictlyPositiveOriginalParameterGap?.[0]&&
+  row.generated2DTopoDSHistoryCertified===false&&
+  row.officialV5Action===false));
+ console.error('REAL C1 INDIVIDUAL POSITIVE HLR PAPER GAP OBSTRUCTIONS '+
+  geometry.id+': '+JSON.stringify(positiveGapForensics));
  console.error('REAL C1 M5 MISSING SOURCE AND POSITIVE PAPER GAPS WITH GLOBAL HLR ORDINAL SOURCES '+
   geometry.id+': '+JSON.stringify({
    missingOriginalSourceViews:positiveOriginalGapRays.missingOriginalM0SourceViewRows.length,
