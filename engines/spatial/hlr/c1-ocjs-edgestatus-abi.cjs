@@ -82,13 +82,14 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,indexedOr
  try{array=dataStructure[arrayMethod]();}
  catch(error){return {...base,availability:'edge-data-array-call-failed',
   failure:String(error?.message??error).slice(0,180),readableSourceStatusRows:0,rows:[]};}
- if(!array||typeof array.Value!=='function')
+ const valueMethod=resolveMethod(array,'Value');
+ if(!array||!valueMethod)
   return {...base,availability:'edge-data-array-value-not-exposed',
    arrayMethodNames:methodNames(array),readableSourceStatusRows:0,rows:[]};
  const rows=[];
  for(let index=1;index<=edgeMapExtent;index++){
   let edgeData;
-  try{edgeData=array.Value(index);}
+  try{edgeData=array[valueMethod](index);}
   catch(error){return {...base,availability:'edge-data-index-unreadable',
    failure:String(error?.message??error).slice(0,180),readableSourceStatusRows:rows.length,rows};}
   if(!edgeData||typeof edgeData!=='object')
