@@ -87,6 +87,25 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  $('sheetPreview').querySelector('svg').append(malicious);
  assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
  malicious.remove();scene.__draw();
+ // A circle or text node can leak a future answer at t=0 just as a line can.
+ // No mutable preview DOM child may be cloned into the canonical V5 paper.
+ for(const tag of ['circle','text','g','foreignObject']){
+  const injected=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  injected.setAttribute('data-forbidden-final-answer','true');
+  $('sheetPreview').querySelector('svg').append(injected);
+  assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+  assert.equal($('animation').querySelectorAll('[data-forbidden-final-answer]').length,0);
+  injected.remove();scene.__draw();
+ }
+ const sourcePoint=$('sheetPreview').querySelector('[data-source-point-only]');
+ const originalX=sourcePoint.getAttribute('cx');
+ sourcePoint.setAttribute('cx','999');
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ sourcePoint.setAttribute('cx',originalX);scene.__draw();
+ const viewBox=$('sheetPreview').querySelector('svg');
+ viewBox.setAttribute('viewBox','0 0 10 10');
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ viewBox.setAttribute('viewBox','0 0 960 720');scene.__draw();
  // Same SHA labels and same number of points cannot conceal a stale or
  // altered GIVEN coordinate in the active M3/M5 source.
  const altered=givenPacket();altered.views.V[0].u=100;
