@@ -680,5 +680,92 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   engineeringLineStyle:'undetermined',signedV5ActionCount:0
  };
 }
+
+/**
+ * Same-run native ORIGINAL HLR EdgeStatus vs ORIGINAL source-scoped 3D
+ * Sharp V/H intervals. Both are indexed by the real input TopoDS edge.
+ * Split at every observed binary64 endpoint and inspect the whole open
+ * interval; there is no epsilon, guessed midpoint, or rounded M0 inversion.
+ *
+ * This checks two representations of the original HLR's visibility state.
+ * It does NOT establish generated 2D TopoDS ancestry, depth ordering
+ * against all faces, engineering line styles, or official V5 permission.
+ */
+function auditOriginalEdgeStatusVsSourceScoped3DSharp({
+ sourceEdgeId,originalNativeParameterRange,statusRow,
+ visibleNativeIntervals,hiddenNativeIntervals
+}={}){
+ const held=reason=>({
+  schema:'draftai-c1-original-edgestatus-vs-native-3d-sharp/1',
+  sourceEdgeId,comparable:false,reason,
+  nativeOriginalStatusClassAgreesWith3DSharp:false,
+  generated2DTopoDSHistoryCertified:false,
+  wholeSceneM5Certified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ if(typeof sourceEdgeId!=='string'||!sourceEdgeId||
+    !Array.isArray(originalNativeParameterRange)||
+    originalNativeParameterRange.length!==2||
+    !originalNativeParameterRange.every(Number.isFinite)||
+    !(originalNativeParameterRange[1]>originalNativeParameterRange[0]))
+  throw new TypeError('finite original OCCT source parameter domain required');
+ if(statusRow?.sourceEdgeId!==sourceEdgeId||
+    statusRow.parameterPartitionValidated!==true||
+    !Array.isArray(statusRow.bounds)||!Array.isArray(statusRow.visibleParts))
+  return held('original-native-edgestatus-unavailable-or-not-validated');
+ const [first,last]=originalNativeParameterRange;
+ const validInterval=range=>Array.isArray(range)&&range.length===2&&
+  range.every(Number.isFinite)&&range[0]>=first&&range[1]<=last&&
+  range[1]>range[0];
+ if(!validInterval(statusRow.bounds)||statusRow.bounds[0]!==first||
+    statusRow.bounds[1]!==last)
+  return held('original-edgestatus-bounds-not-identical-to-brep-domain');
+ if(!Array.isArray(visibleNativeIntervals)||
+    !Array.isArray(hiddenNativeIntervals)||
+    [statusRow.visibleParts,visibleNativeIntervals,hiddenNativeIntervals]
+     .some(items=>items.length>128||!items.every(validInterval)))
+  return held('native-status-or-scoped-3d-interval-invalid');
+ const cuts=[first,last,
+  ...statusRow.visibleParts.flat(),
+  ...visibleNativeIntervals.flat(),...hiddenNativeIntervals.flat()];
+ const ordered=[...new Set(cuts)].sort((a,b)=>a-b);
+ const contains=(intervals,a,b)=>intervals.some(([x,y])=>x<=a&&y>=b);
+ const mismatches=[],gaps=[],overlaps=[],aligned=[];
+ for(let i=0;i<ordered.length-1;i++){
+  const a=ordered[i],b=ordered[i+1];
+  if(!(b>a))continue;
+  const statusVisible=contains(statusRow.visibleParts,a,b),
+   nativeVisible=contains(visibleNativeIntervals,a,b),
+   nativeHidden=contains(hiddenNativeIntervals,a,b);
+  const row={originalNativeParameterRange:[a,b],statusVisible,
+   statusHidden:!statusVisible,nativeVisible,nativeHidden};
+  if(nativeVisible&&nativeHidden)overlaps.push(row);
+  else if(!nativeVisible&&!nativeHidden)gaps.push(row);
+  else if(statusVisible!==nativeVisible||
+          !statusVisible!==nativeHidden)mismatches.push(row);
+  else aligned.push(row);
+ }
+ const agree=mismatches.length===0&&gaps.length===0&&overlaps.length===0;
+ return {
+  schema:'draftai-c1-original-edgestatus-vs-native-3d-sharp/1',
+  sourceEdgeId,comparable:true,
+  originalNativeParameterRange:[first,last],
+  statusVisiblePartCount:statusRow.visibleParts.length,
+  sourceScoped3DVisiblePartCount:visibleNativeIntervals.length,
+  sourceScoped3DHiddenPartCount:hiddenNativeIntervals.length,
+  exactBinary64OpenSubintervalsChecked:ordered.length-1,
+  exactAlignedSubintervals:aligned.length,
+  mismatchedNativeVisibilitySubintervals:mismatches,
+  uncoveredSourceScoped3DSubintervals:gaps,
+  overlappingNative3DClassSubintervals:overlaps,
+  nativeOriginalStatusClassAgreesWith3DSharp:agree,
+  sourceOnlyNativeConcordanceCannotReplaceGenerated2DHistory:true,
+  generated2DTopoDSHistoryCertified:false,
+  wholeSceneM5Certified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ };
+}
+
 module.exports={probeRealOcjsHLREdgeStatusABI,
- auditGeneratedOutputEdgesAgainstOriginalSourceCurves};
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves,
+ auditOriginalEdgeStatusVsSourceScoped3DSharp};
