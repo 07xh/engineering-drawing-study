@@ -32,6 +32,65 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 }return o;};
 
 /**
+ * Compare one generated-edge source interval with the independently
+ * source-filtered native 3D M4 visible/hidden parameter partition.
+ * The result is class backing, never generated-edge TopoDS ancestry.
+ */
+function auditC1ParameterizedSourceMatchAgainstNativeM4({
+ view,sourceId,match,klass,nativeM4
+}={}){
+ if(!nativeM4)return {
+  availability:'unavailable',sourceEdgeId:sourceId,
+  reason:'native-source-scoped-M4-intervals-unavailable',
+  originalM0UnitParameterRange:null,nativeM4ClassBacked:false
+ };
+ const sameClass=klass==='visible'?'visible-sharp':
+  klass==='hidden'?'hidden-sharp':null;
+ const oppositeClass=klass==='visible'?'hidden-sharp':
+  klass==='hidden'?'visible-sharp':null;
+ const domain=match?.original3DCurveParameterRange,
+  sourceRange=match?.source3DParameterRange,
+  direction=nativeM4.original3DSourceCurveDirection;
+ if(nativeM4.schema!==
+    'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1'||
+    nativeM4.sourceEdgeId!==sourceId||nativeM4.view!==view||
+    !sameClass||!Array.isArray(nativeM4.segments)||
+    !Array.isArray(domain)||domain.length!==2||
+    !domain.every(Number.isFinite)||!(domain[1]>domain[0])||
+    !Array.isArray(sourceRange)||sourceRange.length!==2||
+    !sourceRange.every(Number.isFinite)||
+    !['forward','reversed'].includes(direction))
+  throw new RangeError('invalid native M4 source-class interval binding for parameterized HLR edge');
+ const normalize=t=>direction==='reversed'?
+  (domain[1]-t)/(domain[1]-domain[0]):
+  (t-domain[0])/(domain[1]-domain[0]);
+ const a=normalize(sourceRange[0]),b=normalize(sourceRange[1]),
+  normalizedRange=[Math.min(a,b),Math.max(a,b)];
+ if(!normalizedRange.every(Number.isFinite)||
+    normalizedRange[0]<0||normalizedRange[1]>1||
+    !(normalizedRange[1]>normalizedRange[0]))
+  throw new RangeError('parameterized generated HLR source interval cannot normalize to original M0 [0,1]');
+ const sameRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===sameClass)
+  .map(x=>x.originalM0UnitParameterRange);
+ const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
+  .map(x=>x.originalM0UnitParameterRange);
+ const sameCoverage=exactCandidateIntervalCoverage(normalizedRange,sameRanges);
+ const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
+ const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
+ return {
+  availability:'available',sourceEdgeId:sourceId,
+  original3DSourceCurveDirection:direction,
+  generated2DHLRClass:sameClass,
+  originalM0UnitParameterRange:normalizedRange,
+  nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
+  nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
+  nativeM4OppositeClassPositiveOverlap:oppositeOverlaps.length>0,
+  nativeM4OppositeClassOverlaps:oppositeOverlaps,
+  nativeM4ClassBacked:
+   sameCoverage.entireOriginalParameterIntervalCovered&&oppositeOverlaps.length===0
+ };
+}
+/**
  * Reconcile whole-solid generated 2D HLR edges with the SAME-RUN original
  * HLRBRep_Curve parameter map. The source curve enters this map only after
  * symmetric native TopoDS IsSame binds its EdgeData geometry to one M0 edge.
@@ -39,7 +98,7 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
  * ancestry, global occlusion, GB line style, ConstructionIntent or V5.
  */
 function auditC1ParameterizedGlobalHLRSourceLineage({
- view,classes,scoped,expected
+ view,classes,scoped,expected,nativeM4ById
 }={}){
  const reports=scoped?.generated2DSourceParameterMatches;
  const result={schema:'draftai-c1-parameterized-global-hlr-source-lineage/1',
@@ -49,7 +108,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeFilterNarrowedAmbiguousParameterizedSourceLineage:0,
    unmatchedGeneratedOutputEdges:0,
    unavailableGeneratedOutputEdges:0,
-   sourceFilterOrPaperCandidateDisagreements:0
+   sourceFilterOrPaperCandidateDisagreements:0,
+   nativeM4ClassBackedUniqueFilterSourceEdges:0,
+   nativeM4ClassEvidenceUnavailableEdges:0,
+   nativeM4ClassBackingUnprovenEdges:0
   },generated2DTopoDSHistoryProven:false,
   globalContinuousVisibilityProven:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0};
@@ -190,6 +252,28 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // source-filtered HLR inventory and the original M0 paper candidate set.
    // Extra source-filter claims are a disagreement, not a reason to pick one.
    const filterSources=item.sources[ordinal];
+   const parameterizedSourceIntervals=[],nativeM4ClassBackedSourceIds=new Set(),
+    nativeM4Audits=[];
+   for(const match of matches){
+    const m4Audit=auditC1ParameterizedSourceMatchAgainstNativeM4({
+     view,sourceId:match.sourceEdgeId,match,klass,
+     nativeM4:nativeM4ById?.get(match.sourceEdgeId)
+    });
+    nativeM4Audits.push(m4Audit);
+    if(m4Audit.nativeM4ClassBacked===true)
+     nativeM4ClassBackedSourceIds.add(match.sourceEdgeId);
+    parameterizedSourceIntervals.push({
+     sourceEdgeId:match.sourceEdgeId,
+     originalBRepSourceParameterRange:[...match.originalBRepSourceParameterRange],
+     original3DCurveParameterRange:[...match.original3DCurveParameterRange],
+     source3DParameterRange:[...match.source3DParameterRange],
+     generated2DParameterRange:[...match.generated2DParameterRange],
+     maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
+     maximumParameterRoundTripResidual:match.maximumParameterRoundTripResidual,
+     sampleCount:match.samples.length,
+     nativeM4ClassBacking:m4Audit
+    });
+   }
    // A view-collapsed pair can legitimately match the same generated 2D
    // curve in two different 3D source parameter maps. The class-specific
    // native source filter may narrow that set to the one source emitted in
@@ -199,6 +283,16 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     [...filterSources].every(id=>candidateIds.has(id))&&
     [...candidateIds].every(id=>paperCandidates.includes(id));
    const filterNarrows=filterConsistent&&filterSources.size<candidateIds.size;
+   const nativeM4ClassBackedUniqueFilterSource=
+    filterConsistent&&filterSources.size===1&&
+    nativeM4ClassBackedSourceIds.has([...filterSources][0]);
+   const m4Available=nativeM4Audits.some(x=>x.availability==='available');
+   if(matches.length>0){
+    if(!m4Available)result.counts.nativeM4ClassEvidenceUnavailableEdges++;
+    else if(nativeM4ClassBackedUniqueFilterSource)
+     result.counts.nativeM4ClassBackedUniqueFilterSourceEdges++;
+    else result.counts.nativeM4ClassBackingUnprovenEdges++;
+   }
    const status=matches.length===0?'unmatched':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
@@ -218,6 +312,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     m0PaperCandidateIds:[...paperCandidates].sort(),
     nativeSourceFilterAndM0PaperCandidatesAgree:filterConsistent,
     nativeFilterNarrowsParameterizedCandidates:filterNarrows,
+    parameterizedSourceIntervals,
+    nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
+    nativeM4ClassBackedUniqueFilterSource,
+    nativeM4ClassEvidenceAvailable:m4Available,
     status,
     sameRunOriginalHLRCurveParameterLineageProven:
      status==='unique-parameterized-source-lineage',
@@ -248,7 +346,15 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    nativeFilterNarrowedAmbiguousParameterizedSourceLineage:
     rows.filter(x=>x.status==='ambiguous-parameterized-source-lineage-native-filter-narrowed').length,
    unmatchedGeneratedOutputEdges:unmatched,
-   sourceFilterOrPaperCandidateDisagreements:disagreements,rows};
+   sourceFilterOrPaperCandidateDisagreements:disagreements,
+   nativeM4ClassBackedUniqueFilterSourceEdges:
+    rows.filter(x=>x.nativeM4ClassBackedUniqueFilterSource).length,
+   nativeM4ClassEvidenceUnavailableEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&!x.nativeM4ClassEvidenceAvailable).length,
+   nativeM4ClassBackingUnprovenEdges:
+    rows.filter(x=>x.parameterizedSourceMatchCount>0&&x.nativeM4ClassEvidenceAvailable&&
+     !x.nativeM4ClassBackedUniqueFilterSource).length,
+   rows};
   result.counts.uniqueParameterizedSourceLineage+=unique;
   result.counts.ambiguousParameterizedSourceLineage+=ambiguous;
   result.counts.nativeFilterNarrowedAmbiguousParameterizedSourceLineage+=
@@ -378,7 +484,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage:0,
   globalGeneratedHLREdgesWithoutParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithoutParameterizedSourceReport:0,
-  globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0};
+  globalGeneratedHLREdgesWithParameterizedSourceDisagreement:0,
+  globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter:0,
+  globalGeneratedHLREdgesWithoutNativeM4ClassEvidence:0,
+  globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -648,6 +757,31 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    parameterizedGlobalHLRSourceLineage.counts.unavailableGeneratedOutputEdges;
   counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement+=
    parameterizedGlobalHLRSourceLineage.counts.sourceFilterOrPaperCandidateDisagreements;
+  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
+  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
+  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
+  const nativeM4ByIdForParameterizedLineage=new Map(nativeOriginal3DM4Candidates.map(x=>
+   [x.sourceEdgeId,x]));
+  // Re-run the pure per-view audit with the native 3D M4 source interval map.
+  const parameterizedGlobalHLRSourceLineageWithM4=
+   auditC1ParameterizedGlobalHLRSourceLineage({
+    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage
+   });
+  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter-=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
+  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence-=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassEvidenceUnavailableEdges;
+  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking-=
+   parameterizedGlobalHLRSourceLineage.counts.nativeM4ClassBackingUnprovenEdges;
+  counts.globalGeneratedHLREdgesWithUniqueNativeM4ClassBackedSourceFilter+=
+   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassBackedUniqueFilterSourceEdges;
+  counts.globalGeneratedHLREdgesWithoutNativeM4ClassEvidence+=
+   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassEvidenceUnavailableEdges;
+  counts.globalGeneratedHLREdgesWithUnprovenNativeM4ClassBacking+=
+   parameterizedGlobalHLRSourceLineageWithM4.counts.nativeM4ClassBackingUnprovenEdges;
   views[view]={nativeOriginal3DM4Candidates,
    nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage};
   for(const [klass,item] of Object.entries(classes)){
@@ -831,4 +965,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalContinuousVisibilityCertified:false,
   formalEngineeringLineStyleCertified:false,signedV5ActionCount:0});
 }
-module.exports={auditC1NativeScopedHLRSourceConsumer};
+module.exports={
+ auditC1NativeScopedHLRSourceConsumer,
+ auditC1ParameterizedSourceMatchAgainstNativeM4
+};
