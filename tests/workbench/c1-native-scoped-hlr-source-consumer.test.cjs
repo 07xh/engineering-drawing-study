@@ -1150,6 +1150,7 @@ function withNativePaperMismatchRejection(){
   index=2,sample=segment.actualOCCTHLRCurveSamplesProjectedMm[index],
   originalSourcePaper=[sample.u+2,sample.v+1];
  rejected.reason='source-parameterized-curve-does-not-match-generated-edge';
+ delete rejected.nativeParameterRangeExclusionWitness;
  rejected.nativePaperMismatchWitness={
   sampleIndex:index,sourceProjectedPaperPointMm:originalSourcePaper,
   generatedProjectedPaperPointMm:[sample.u,sample.v],
@@ -1172,6 +1173,7 @@ test('a geometric rejection label without actual sampled native mismatch is stil
  const x=fixture(),rejected=x.cad.nativeSourceScopedSharpOutputByView.V
   .generated2DSourceParameterMatches.visible.rows[0].rejectedSourceCandidates[0];
  rejected.reason='source-parameterized-curve-does-not-match-generated-edge';
+ delete rejected.nativeParameterRangeExclusionWitness;
  const row=audit(x).views.V.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
  assert.equal(row.status,'inconclusive-original-hlr-source-exclusion-held');
  assert.deepEqual(row.inconclusiveOriginalHLRSourceRejections,[{
