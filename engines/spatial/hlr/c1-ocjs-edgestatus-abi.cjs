@@ -566,7 +566,9 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
  });
  return {
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
-  originalSourceCurveCount:nativeCurveHandlesBySourceId.size,
+  sourceCurveCandidateCount:nativeCurveHandlesBySourceId.size,
+  topoDSIdentityBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
+   .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true).length,
   generatedOutputEdgeCount:rows.length,
   uniqueParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount===1).length,
   ambiguousParameterizedSourceMatchCount:rows.filter(x=>x.candidateSourceMatchCount>1).length,
