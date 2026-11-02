@@ -798,9 +798,64 @@ test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep para
   assert.equal(rejected.firstRejectedOriginal3DParameter,
    boundary==='lower'?-Number.MIN_VALUE:10+8*Number.EPSILON);
   assert.equal(rejected.originalInverseStillOutsideBRepDomain,true);
+  const nativeForward=rejected.nativeOriginalForwardFiveSampleConcordance;
+  assert.equal(nativeForward.schema,
+   'draftai-c1-inverse-rejected-original-native-forward-samples/1');
+  assert.equal(nativeForward.fullOriginalForward2DParameterDomainExact,true);
+  assert.equal(nativeForward.originalNativeForwardFiveSamplesReadable,true);
+  assert.equal(nativeForward.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,true);
+  assert.equal(nativeForward.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,true);
+  assert.equal(nativeForward.originalNativeForwardFivePointDiscreteConcordance,true);
+  assert.equal(nativeForward.samples.length,5);
+  assert.equal(nativeForward.rejectedNativeInverseStillOutOfOriginalBRepDomain,true);
+  assert.equal(nativeForward.generated2DTopoDSHistoryProven,false);
+  assert.equal(nativeForward.signedV5Action,false);
   assert.equal(rejected.generated2DTopoDSHistoryProven,false);
   assert.equal(rejected.signedV5Action,false);
   assert.equal(result.generated2DTopoDSHistoryProven,false);
   assert.equal(result.signedV5ActionCount,0);
  }
+});
+
+test('inverse-rejected BRep forward native five-sample disagreement stays held, never borrows matching endpoints',()=>{
+ const curve={
+  Parameter2d(t){return t;},
+  Parameter3d(t){return t===1?1+Number.EPSILON:t;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const base={curve,parameterRange:[0,1],
+  originalBRepParameterRange:[0,1],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true};
+ const native=[0,.25,.5,.75,1].map(t=>({u:t,v:2*t}));
+ const run=(value,segments=native)=>
+  auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:[0,1],
+   actualOCCTHLRCurveSamplesProjectedMm:segments,
+   actualOCCTHLRCurveSampleToleranceMm:1e-8
+  }],nativeCurveHandlesBySourceId:new Map([['g::A|B',{...base,curve:value}]])});
+ const honest=run(curve);
+ assert.equal(honest.unmatchedGeneratedOutputEdgeCount,1);
+ assert.equal(honest.rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance
+  .originalNativeForwardFivePointDiscreteConcordance,true);
+ // A forged middle paper sample (same valid endpoints) must NOT inherit
+ // the genuine source's original five-point forward curve concordance.
+ const altered=native.map((p,i)=>i===2?{u:p.u,v:p.v+1e-4}:p);
+ const shifted=run(curve,altered);
+ const proof=shifted.rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance;
+ assert.equal(proof.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,false);
+ assert.equal(proof.originalNativeForwardFivePointDiscreteConcordance,false);
+ assert.equal(shifted.uniqueParameterizedSourceMatchCount,0);
+ // Even if the native original curve has unchanged ends and matching
+ // projected values, a folded/non-affine forward parameter map cannot
+ // masquerade as exactly the five actual generated p2 sample parameters.
+ const warped={...curve,
+  Parameter2d(t){return t===.5?.5000000000000001:t;}};
+ const mismatch=run(warped).rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance;
+ assert.equal(mismatch.fullOriginalForward2DParameterDomainExact,true);
+ assert.equal(mismatch.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,false);
+ assert.equal(mismatch.originalNativeForwardFivePointDiscreteConcordance,false);
+ assert.equal(mismatch.signedV5Action,false);
 });
