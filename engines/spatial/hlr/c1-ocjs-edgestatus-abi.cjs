@@ -591,6 +591,12 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   const p3=callFiniteOneArg(source.curve,'Parameter3d',p2);
   if(!p3.readable)
    return {matched:false,reason:'generated-2d-to-source-3d-parameter-map-unreadable'};
+  // The original 3D BRep parameter domain is an exact provenance boundary.
+  // A diagnostic round-trip tolerance cannot absorb positive source overrun.
+  if(p3.value<sourceFirst||p3.value>sourceLast)
+   return {matched:false,reason:'generated-source-3d-parameter-outside-original-brep-domain',
+    samples,firstRejectedGenerated2DParameter:p2,
+    firstRejectedOriginal3DParameter:p3.value};
   const p2Back=callFiniteOneArg(source.curve,'Parameter2d',p3.value);
   const point=callPointOneArg(source.curve,'Value',p3.value,2);
   if(!p2Back.readable||!point.readable)
@@ -615,9 +621,7 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
    sourceProjectedPointMm:sourceP2,generatedProjectedPointMm:outputP2,
    projectedPointResidualMm:residual
   });
-  if(p3.value<sourceFirst-parameterTolerance||
-     p3.value>sourceLast+parameterTolerance||
-     Math.abs(p2Back.value-p2)>parameterTolerance||
+  if(Math.abs(p2Back.value-p2)>parameterTolerance||
      residual>sampleTolerance)
    return {matched:false,reason:'source-parameterized-curve-does-not-match-generated-edge',
     samples,maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))};
