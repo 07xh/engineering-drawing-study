@@ -989,6 +989,21 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const hiddenNative=emptyHiddenSharp?
     {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(hidden,'hidden-sharp');
    const hiddenSegments=hiddenNative.segments;
+   // Genuine generated 2D HLR outlines are separate from Sharp. Query
+   // whole-solid and original-TopoDS-filtered outlines in this same run.
+   const outline2DMethods=[
+    ['visible-outline','OutLineVCompound_1','OutLineVCompound_2'],
+    ['hidden-outline','OutLineHCompound_1','OutLineHCompound_2']
+   ];
+   const globalOutline2D={};
+   for(const [klass,wholeMethod,scopedMethod] of outline2DMethods){
+    if(typeof extractor[wholeMethod]!=='function'||
+       typeof extractor[scopedMethod]!=='function')
+     throw new TypeError('pinned OCJS original-filtered 2D outline HLR API missing');
+    const compound=hold(extractor[wholeMethod]());
+    globalOutline2D[klass]=compound.IsNull()?
+     {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(compound,klass);
+   }
    // Match each whole-solid generated 2D HLR fragment against the actual
    // same-run original HLRBRep_Curve using Parameter2d/Parameter3d and
    // five projected curve samples. This is stronger than paper coincidence,
@@ -1035,7 +1050,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    const scopedRows=[],processed=new Set();
    let scopedOutputEdges=0,directGeneratedIdentityMatches=0,
-    paperOnlyScopedOutputEdges=0;
+    paperOnlyScopedOutputEdges=0,scopedOutline2DOutputEdges=0,
+    directOutline2DIdentityMatches=0;
    for(const original of originalNativeEdgeHandles){
     if(processed.has(original.sourceEdgeId))continue;
     processed.add(original.sourceEdgeId);
@@ -1236,6 +1252,38 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       engineeringLineStyle:'undetermined',signedV5Action:false
      };
     }
+    // Query original-filtered GENERATED 2D outline TopoDS objects while
+    // the HLR algorithm and all source handles remain alive. IsSame
+    // proves generated-edge identity only, not original parameter history.
+    for(const [klass,,scopedMethod] of outline2DMethods){
+     const filtered=hold(extractor[scopedMethod](original.edge));
+     const witnesses=[];
+     if(!filtered.IsNull()){
+      const explorer=newObj('TopExp_Explorer_2',filtered,kind,avoid);
+      while(explorer.More()){
+       const nativeEdge=hold(explorer.Current());
+       const measured=readRealOcjsSharpHLREdge({
+        oc,edge:nativeEdge,view,vertexType,avoid,newObj,hold
+       });
+       if(measured){
+        const whole=globalOutline2D[klass];
+        const witness=auditC1ScopedHLRGeneratedEdgeMatch({
+         view,hlrClass:klass,sourceEdgeId:original.sourceEdgeId,
+         globalSegments:whole.segments,globalNativeEdges:whole.nativeEdges,
+         scopedSegment:measured,scopedNativeEdge:nativeEdge
+        });
+        witnesses.push({...witness,from:measured.from,to:measured.to});
+        scopedOutline2DOutputEdges++;
+        if(witness.actualNativeScopedToGlobalGeneratedEdgeIsSameProven)
+         directOutline2DIdentityMatches++;
+       }
+       if(witnesses.length>128)
+        throw new RangeError('unbounded source-scoped native 2D HLR outline');
+       explorer.Next();
+      }
+     }
+     row[klass==='visible-outline'?'visibleOutline2D':'hiddenOutline2D']=witnesses;
+    }
     const nativeOutlineSource3D=sourceById.get(original.sourceEdgeId);
     row.combinedNative3DOutlineSourceParameterPartition=
      auditC1Native3DSourceScopedIntervals({
@@ -1308,6 +1356,37 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        originalSourceParameterIntervalCertified:false,
        engineeringLineStyle:'undetermined',signedV5Action:false});
      });
+   const outline2DSourceIdentityConflicts=
+    auditC1ScopedHLRSourceIdentityConflicts({
+     matches:scopedRows.flatMap(row=>[
+      ...row.visibleOutline2D,...row.hiddenOutline2D
+     ]),
+     wholeSolidCounts:{
+      'visible-outline':globalOutline2D['visible-outline'].segments.length,
+      'hidden-outline':globalOutline2D['hidden-outline'].segments.length
+     }
+    });
+   const native2DOutlineSourceHistory={
+    schema:'draftai-c1-ocjs-original-filtered-generated-2d-outline/1',
+    wholeSolid:{
+     visible:globalOutline2D['visible-outline'].segments.map(x=>({
+      from:{...x.from},to:{...x.to},
+      originalSourceCandidateOnly:true,engineeringLineStyle:'undetermined',
+      signedV5Action:false
+     })),
+     hidden:globalOutline2D['hidden-outline'].segments.map(x=>({
+      from:{...x.from},to:{...x.to},
+      originalSourceCandidateOnly:true,engineeringLineStyle:'undetermined',
+      signedV5Action:false
+     }))
+    },
+    sourceScopedOutputEdges:scopedOutline2DOutputEdges,
+    nativeScopedToWholeSolidGeneratedIsSameCount:directOutline2DIdentityMatches,
+    identityConflicts:outline2DSourceIdentityConflicts,
+    originalBRepToGenerated2DParameterHistoryCertified:false,
+    allSceneContinuousVisibilityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5ActionCount:0
+   };
    const originalStatusVsNative3DSharpSummary={
     comparedOriginalSources:scopedRows.filter(x=>
      x.originalEdgeStatusVsNative3DSharp.comparable).length,
@@ -1322,6 +1401,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
     officialV5Authorized:false
    };
    nativeSourceScopedSharpOutputByView[view]={
+    native2DOutlineSourceHistory,
     originalStatusVsNative3DSharpSummary,
     unclaimedNativeGeneratedHLREdges,
     generated2DSourceParameterMatches,
