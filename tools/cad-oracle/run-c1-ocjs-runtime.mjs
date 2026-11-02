@@ -624,6 +624,15 @@ for(const [index,geometry] of general.entries()){
      nativeOriginalForwardP2GridExact:
       inverse.originalNativeForwardFiveSampleConcordance
        ?.originalNativeForwardFive2DParametersMatchGeneratedGridExactly??false,
+     nativeOriginalForwardPaperFiveOfFiveExact:
+      inverse.independentlyReplayedNativeForwardFiveSamples
+       ?.independentlyReplayedExactNativeFivePointPaperAgreement??false,
+     nativeOriginalForwardP2GridWithinOneULP:
+      inverse.independentlyReplayedNativeForwardFiveSamples
+       ?.independentlyReplayedNativeParameterGridWithinOneULP??false,
+     nativeOriginalForwardMaximumP2GridDriftULPs:
+      inverse.independentlyReplayedNativeForwardFiveSamples
+       ?.observedMaximumNativeForwardParameterGridDriftULPs??null,
      nativeOriginalForwardPaperWithinTolerance:
       inverse.originalNativeForwardFiveSampleConcordance
        ?.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance??false,
@@ -693,6 +702,14 @@ for(const [index,geometry] of general.entries()){
    rows[0].originalBRepParameterRange[1]);
   assert.equal(rows[0].strictlyOutOfOriginalBRepNativeULPs,'1',
    'real W B|D inverse is one exact binary64 ULP past original BRep end, not a source match');
+  assert.equal(rows[0].nativeOriginalForwardPaperFiveOfFiveExact,true,
+   'native original BRep Value() must actually reproduce all five generated W B|D paper points');
+  assert.equal(rows[0].nativeOriginalForwardP2GridWithinOneULP,true,
+   'W B|D original Parameter2d samples must remain within one exact binary64 grid step');
+  assert.equal(rows[0].nativeOriginalForwardMaximumP2GridDriftULPs,'1',
+   'preserve true one-ULP forward Parameter2d drift without treating it as exact history');
+  assert.equal(rows[0].nativeOriginalForwardP2GridExact,false);
+  assert.equal(rows[0].nativeOriginalForwardFivePointDiscreteConcordance,false);
  }
  const heldM4SourceRows=[];
  for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
