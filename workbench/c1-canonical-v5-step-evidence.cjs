@@ -38,6 +38,17 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
  if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
     frame.elapsedMs>timeline.totalMs)
   throw new RangeError('V5 frame time is outside canonical timeline');
+ // Matching a timeline timestamp is NOT the same as being the sole player's
+ // current frame: a caller could supply a perfectly self-consistent FUTURE
+ // Timeline.frame while the genuine player is still at GIVEN-only step zero.
+ // Snapshot without advancing the clock and require the authoritative playhead.
+ const actualPlayerFrame=solution.player.snapshot();
+ if(actualPlayerFrame.invalid!==false||
+    actualPlayerFrame.revision!==revision||
+    actualPlayerFrame.elapsedMs!==frame.elapsedMs||
+    actualPlayerFrame.playing!==frame.playing||
+    actualPlayerFrame.speed!==frame.speed)
+  throw new RangeError('V5 presented frame is not current sole player snapshot');
  const expected=Timeline.frame(timeline,frame.elapsedMs);
  const expectedFractions=expected.actionFractions,
   actualIds=Object.keys(frame.actionFractions),
