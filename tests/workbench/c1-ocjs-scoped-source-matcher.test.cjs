@@ -253,7 +253,9 @@ test('empty native 2D OutLine inventory remains empty, not silently converted to
 
 test('same native generated TopoDS cannot borrow the other projected axis ULP',()=>{
  const x=setup('W');
- const big=2**40,ulp=2**-12;
+ const big=2**30,ulp=2**-22;
+ // A genuine one-ULP v drift remains inside the existing 1e-6 mm
+ // discovery radius; it still may not excuse any unrelated u drift.
  x.globalSegments=[{from:{u:0,v:big},to:{u:100,v:big+1000}}];
  x.globalNativeEdges=[native('front')];
  x.scopedNativeEdge=native('front');
