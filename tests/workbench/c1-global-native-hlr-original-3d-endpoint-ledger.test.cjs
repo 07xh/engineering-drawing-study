@@ -54,7 +54,11 @@ function setup({two=false,rounded=false,missingPartition=false}={}){
     signedV5Action:false
    });
    sourceM4Views[view].nativeOriginal3DM4Candidates.push({
+    sourceGeometryId:geometry.id,revision:cad.revision,
     view,sourceEdgeId:id,officialV5Authorized:false,
+    native3DProvenanceIsNotGenerated2DHLREdgeIdentity:true,
+    completeGlobalVisibilityCertified:false,
+    formalEngineeringLineStyleCertified:false,
     native3DSourceParameterPartitionCompleteExactlyOnce:!missingPartition,
     M4OriginalUnitIntervalCandidateCoverageComplete:!missingPartition,
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
@@ -219,6 +223,23 @@ test('C1/M5 rejects forged same-class source row with a different source ID even
  assert.equal(v.receivedNativeM4ExactSameClassSourcePartitionVerified,false);
  assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+});
+test('stale M4 revision or forged geometry identity is rejected before original HLR endpoint linking',()=>{
+ const mutators=[
+  row=>{row.revision=4;},
+  row=>{row.sourceGeometryId='other-geometry';},
+  row=>{row.native3DProvenanceIsNotGenerated2DHLREdgeIdentity=false;},
+  row=>{row.completeGlobalVisibilityCertified=true;},
+  row=>{row.formalEngineeringLineStyleCertified=true;}
+ ];
+ for(const mutate of mutators){
+  const x=setup(),row=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+  mutate(row);
+  assert.throws(()=>audit(x),/stale or forged native source M4 interval/);
+ }
+ const valid=audit(setup());
+ assert.equal(valid.counts.completeOriginalNative3DClassSourceIntervalRows,3);
+ assert.equal(valid.officialV5Authorized,false);
 });
 test('native original 3D partition gaps preserve hold even with exact original endpoint projections',()=>{
  const r=audit(setup({missingPartition:true}));
