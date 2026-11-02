@@ -19,6 +19,7 @@ for(const scale of [1e-9,1e-160]){
    const result=lift(geometry,view,from,to);
    assert.deepEqual(result.projectedOriginalEdgeCandidates,['TinySource::A|B']);
    assert.equal(result.sourceCandidate3DLifts.length,1);
+   assert.deepEqual(result.sourceCandidate3DLifts[0].originalSourceParameterRange,[0,1]);
    assert.equal(result.sourceCandidate3DLifts[0].actualOCCTTopoDSEdgeIdentityRecovered,false);
    assert.equal(result.sourceCandidate3DLifts[0].originalSourceExactParameterCoverageFromRoundingProven,false);
    assert.equal(result.sourceCandidate3DLifts[0].v5Authorized,false);
