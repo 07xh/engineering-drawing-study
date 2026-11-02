@@ -562,13 +562,23 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
    originalNative3DParameterRange:[.5000000000000001,1]}
  ];
  assert.throws(()=>audit(forged),/independently replayed M4 source/);
- // A truthfully reported native gap stays unsigned, despite a rounded
- // M4 partition whose endpoints touch at 1/2.
- const held=structuredClone(forged);
+ // A truthfully reported native gap stays unsigned when two distinct
+ // ORIGINAL BRep parameters normalize to the same binary64 M4 t=1/2.
+ // Unlike the forged fixture above, this reproduces the actual forward
+ // normalization for BOTH segments, so it must return held, not throw.
+ const held=structuredClone(args);
+ held.nativeOriginal3DM4.originalNative3DSourceParameterRange=[-1e10,1e10];
+ held.nativeOriginal3DM4.segments=[
+  {...native('visible-sharp',0,.5),
+   originalNative3DParameterRange:[-1e10,0]},
+  {...native('visible-sharp',.5,1),
+   originalNative3DParameterRange:[Number.MIN_VALUE,1e10]}
+ ];
+ assert.equal((1e10+Number.MIN_VALUE)/2e10,.5);
  held.nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce=false;
  held.nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete=false;
  held.nativeOriginal3DM4.native3DOriginalParameterPositiveGaps=
-  [[.5,.5000000000000001]];
+  [[0,Number.MIN_VALUE]];
  const heldResult=audit(held);
  assert.equal(heldResult.originalNativeParameterPartitionIndependentlyVerified,false);
  assert.equal(heldResult.sourceScoped2DClassBoundWithoutRounding,false);
