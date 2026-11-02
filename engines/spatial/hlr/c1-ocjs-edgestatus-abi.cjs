@@ -573,8 +573,10 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   Math.max(p2First.value,p2Last.value)];
  const parameterTolerance=1e-10*Math.max(1,...p2Range,
   Math.abs(outputRange[0]),Math.abs(outputRange[1]));
- if(outputRange[0]<p2Range[0]-parameterTolerance||
-    outputRange[1]>p2Range[1]+parameterTolerance)
+ // Parameter tolerances are diagnostics for floating curve round trips,
+ // NEVER authority to extend a generated edge beyond the original source.
+ // Even a one-ULP positive overhang is a real source-domain obligation.
+ if(outputRange[0]<p2Range[0]||outputRange[1]>p2Range[1])
   return {matched:false,reason:'generated-parameter-range-outside-source-projection'};
  const samples=[];
  for(let i=0;i<5;i++){
