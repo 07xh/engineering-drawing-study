@@ -569,6 +569,32 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         !Number.isFinite(sample.projectedPointResidualMm)||
         sample.projectedPointResidualMm<0)
       throw new RangeError('invalid parameterized HLR five-point curve correspondence');
+     // Independently reproduce the producer's same-run projected residual.
+     // A claimed zero error is not evidence when the two actual paper
+     // sample coordinates differ. No epsilon may hide a positive mismatch.
+     const computedResidual=Math.hypot(
+      sourcePoint[0]-generatedPoint[0],sourcePoint[1]-generatedPoint[1]);
+     if(!Number.isFinite(computedResidual)||
+        computedResidual!==sample.projectedPointResidualMm)
+      throw new RangeError('generated HLR source sample projected residual is inconsistent');
+     // The generated curve sample grid is determined by the native HLR
+     // output parameter range, not arbitrary values in a source report.
+     const sampleOrdinal=sampleResiduals.length;
+     const expectedP2=generatedRange[0]+(generatedRange[1]-generatedRange[0])*
+      (sampleOrdinal/4);
+     if(sample.generated2DParameter!==expectedP2)
+      throw new RangeError('generated HLR source sample parameter grid is inconsistent');
+     // Where the real OCCT output carries the native projected samples,
+     // require exact equality with the claimed generated-side witness.
+     // Older synthetic fixtures without this inventory remain unsigned.
+     const nativeSamples=segment.actualOCCTHLRCurveSamplesProjectedMm;
+     if(nativeSamples!==undefined){
+      if(!Array.isArray(nativeSamples)||nativeSamples.length!==5||
+         !nativeSamples.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+         generatedPoint[0]!==nativeSamples[sampleOrdinal].u||
+         generatedPoint[1]!==nativeSamples[sampleOrdinal].v)
+       throw new RangeError('generated HLR source sample disagrees with native OCCT curve');
+     }
      if(previousSample&&
         (!(sample.generated2DParameter>previousSample.generated2DParameter)||
          (sourceAscending?
