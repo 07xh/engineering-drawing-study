@@ -56,6 +56,14 @@ test('real reviewed C1 page: six-point oblique prism loads only GIVEN views, sol
  assert.match($('status').textContent,/6 个点、9 条棱与 5 个面/);
  assert.equal($('pointV5Play').disabled,false);
  assert.ok($('paper').querySelectorAll('[data-source-edge]').length>0);
+ assert.equal($('paper').querySelectorAll(
+  '[data-view="W"][data-source-edge], [data-view="W"][data-m5-hull-interval]').length,0,
+  'GIVEN-first: future W candidate/hull answer must not be prepainted');
+ assert.equal($('paper').querySelectorAll('[data-source-v5-action]').length,0,
+  'frame zero has no prematurely drawn V5 answer');
+ fire('pointV5Next','click');
+ assert.ok($('paper').querySelectorAll('[data-source-v5-action]').length>0,
+  'the existing V5 clock must progressively draw authentic source actions');
  assert.match($('proof').textContent,/M5/);
  // The valid same-source V5 actions must be invalidated immediately.
  $('vertices').value+='\n';
@@ -76,6 +84,9 @@ test('real reviewed C1 page: six-point oblique prism loads only GIVEN views, sol
   $('status').textContent);
  assert.match($('status').textContent,/第三视图为 H/);
  assert.equal($('pointV5Play').disabled,false);
+ assert.equal($('paper').querySelectorAll(
+  '[data-view="H"][data-source-edge], [data-view="H"][data-m5-hull-interval]').length,0,
+  'GIVEN-first must also hold after changing the missing view');
  // Switching topology also invalidates the result and returns 8 points.
  $('shapePreset').value='box';fire('shapePreset');
  assert.equal($('vertices').value.trim().split(/\r?\n/).length,8);
