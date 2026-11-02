@@ -64,10 +64,23 @@ function auditC1OriginalM0FullForwardHLRPaperEndpoints({
  const exact=Boolean(full&&samples&&(
   same(a[0],b[0])&&same(a[1],b[4])||
   same(a[0],b[4])&&same(a[1],b[0])));
+ // Matching only the first/last HLR points cannot prove the intervening
+ // generated curve follows the original straight physical BRep source.
+ // Exact dyadic incidence retains any real binary64 transverse drift.
+ const paperLineNotCollapsed=!same(a[0],a[1]);
+ const within=p=>['u','v'].every(axis=>
+  p[axis]>=Math.min(a[0][axis],a[1][axis])&&
+  p[axis]<=Math.max(a[0][axis],a[1][axis]));
+ const exactInterior=Boolean(samples&&paperLineNotCollapsed&&
+  b.slice(1,4).every(p=>within(p)&&
+   auditC1ExactBinary64PaperAffineWitness({
+    sourceFrom:a[0],sourceTo:a[1],measuredFrom:p,measuredTo:p
+   }).bothNativeEndpointsExactlyOnOriginalBinary64PaperLine));
  return Object.freeze({
   originalForward2DParameterDomainFullyMatchesGenerated:full,
   actualNativeGeneratedCurveSamplesPresent:samples,
   exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement:exact,
+  nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine:exactInterior,
   rawNativeParameter3dInverseNeverClamped:true,
   originalToGeneratedTopoDSHistoryCertified:false,
   continuousAllFaceVisibilityCertified:false,
@@ -458,6 +471,7 @@ function auditC1FullOriginalForwardSharpClass({
     !(domain[1]>domain[0]))
   throw new TypeError('complete original BRep source and HLR class required');
  if(forwardPaper?.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement!==true||
+    forwardPaper?.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine!==true||
     forwardPaper?.originalForward2DParameterDomainFullyMatchesGenerated!==true||
     forwardPaper?.actualNativeGeneratedCurveSamplesPresent!==true||
     forwardPaper?.originalToGeneratedTopoDSHistoryCertified!==false||
