@@ -186,6 +186,7 @@ function drawScopedHullIntervals(svg,certified,result,view){
    stroke:'#147d99','stroke-width':2.5,
    'stroke-dasharray':'1 7','stroke-linecap':'round',fill:'none'});
   e.setAttribute('data-m5-hull-interval','source-coverage-only');
+  e.setAttribute('data-view',view);
   e.setAttribute('data-source-edges',interval.sourceEdgeIds.join(' '));
   e.setAttribute('data-proof-revision',String(interval.revision));
   e.setAttribute('data-visibility','undetermined');
@@ -210,7 +211,11 @@ function draw(result,certified){
     'font-size':18});text.textContent=label;svg.append(text);
   const paperPoints=Object.fromEntries(Object.entries(data.points).map(([id,p])=>
    [id,toSheet(v,p,SHEET)]));
-  const edges=certified.scopedEdgePreviews.filter(e=>
+  // This is GIVEN-first, not an answer-overlay preview. In particular
+  // the missing view stays blank at t=0; the EXISTING single V5 clock
+  // is the only authority that may progressively add proven points/lines.
+  // Never prepaint a final W/H/V drawing from scene projections.
+  const edges=v===missing?[]:certified.scopedEdgePreviews.filter(e=>
    e.view===v&&e.renderedAsPhysicalSourceCandidate);
   for(const edge of edges){
    if(edge.revision!==result.revision||
@@ -227,6 +232,7 @@ function draw(result,certified){
      fill:'none',stroke:missing===v?'#7b479e':'#9b7cab',
      'stroke-width':missing===v?2.5:1.5,
      'stroke-dasharray':'2 6','stroke-linecap':'round'});
+   e.setAttribute('data-view',v);
    e.setAttribute('data-visibility','undetermined');
    e.setAttribute('data-ray-evidence',edge.rayEvidenceStatus);
    e.setAttribute('data-proof-scope','M5-original-convex-source-only');
@@ -238,7 +244,7 @@ function draw(result,certified){
    e.append(title);
    svg.append(e);
   }
-  drawScopedHullIntervals(svg,certified,result,v);
+  if(v!==missing)drawScopedHullIntervals(svg,certified,result,v);
  }
 }
 function solve(){
