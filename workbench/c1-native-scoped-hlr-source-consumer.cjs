@@ -268,10 +268,27 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   nativeM4.M4OriginalUnitIntervalCandidateCoverageComplete===true;
  const oppositeCoverage=exactCandidateIntervalCoverage(normalizedRange,oppositeRanges);
  const oppositeOverlaps=oppositeCoverage.positiveLengthCoveredIntervals;
- const nativeOutlineEvidenceAvailable=
-  nativeM4.native3DOutlineEvidenceAvailable===true&&
-  Array.isArray(nativeM4.native3DOutlineSegments),
-  outlineSegments=nativeOutlineEvidenceAvailable?nativeM4.native3DOutlineSegments:[];
+ // A real native 3D outline interval cannot disappear merely because an
+ // availability flag was omitted/false. Legacy producers may omit BOTH
+ // outline inventories; a partially supplied or contradictory ledger is
+ // invalid, not an empty proof. This matters for W-collapsed paper strokes.
+ const outlineFlag=nativeM4.native3DOutlineEvidenceAvailable,
+  outlineInventory=nativeM4.native3DOutlineSegments,
+  outlineHeld=nativeM4.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation;
+ if(outlineFlag!==undefined&&typeof outlineFlag!=='boolean')
+  throw new RangeError('invalid native outline evidence availability flag');
+ if(outlineInventory!==undefined&&!Array.isArray(outlineInventory))
+  throw new RangeError('invalid native outline source interval inventory');
+ if(outlineHeld!==undefined&&!Array.isArray(outlineHeld))
+  throw new RangeError('invalid held native outline interval inventory');
+ if(outlineFlag===true&&!Array.isArray(outlineInventory))
+  throw new RangeError('available native outline evidence requires an interval inventory');
+ if(outlineFlag!==true&&
+    ((Array.isArray(outlineInventory)&&outlineInventory.length>0)||
+     (Array.isArray(outlineHeld)&&outlineHeld.length>0)))
+  throw new RangeError('nonempty native outline source evidence cannot be marked unavailable');
+ const nativeOutlineEvidenceAvailable=outlineFlag===true,
+  outlineSegments=nativeOutlineEvidenceAvailable?outlineInventory:[];
  const sameOutlineClass=klass==='visible'?'visible-outline':'hidden-outline',
   oppositeOutlineClass=klass==='visible'?'hidden-outline':'visible-outline';
  const outlineClassesValid=!nativeOutlineEvidenceAvailable||outlineSegments.every(x=>
