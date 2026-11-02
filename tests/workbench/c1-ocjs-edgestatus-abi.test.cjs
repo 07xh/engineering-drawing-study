@@ -443,6 +443,35 @@ test('parameterized generated curve rejects an output interval outside the origi
  assert.equal(r.generated2DTopoDSHistoryProven,false);
 });
 
+test('generated Sharp source match holds one-ULP positive 2D overhang on either original BRep endpoint',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const upper=12+8*Number.EPSILON;
+ assert.ok(upper>12);
+ for(const interval of [[2-Number.EPSILON,8],[8,upper]]){
+  const samples=Array.from({length:5},(_,i)=>{
+   const p2=interval[0]+(interval[1]-interval[0])*i/4;
+   return {u:p2-2,v:2*(p2-2)};
+  });
+  const r=auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:interval,
+   actualOCCTHLRCurveSamplesProjectedMm:samples,
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],nativeCurveHandlesBySourceId:source});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+  assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,
+   'generated-parameter-range-outside-source-projection');
+  assert.equal(r.generated2DTopoDSHistoryProven,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+
 test('two original native source curves with identical projected parameterization remain ambiguous',()=>{
  const makeCurve=()=>({
   Parameter2d(value){return value+2;},
