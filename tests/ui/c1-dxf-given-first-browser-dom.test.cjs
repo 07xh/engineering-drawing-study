@@ -86,6 +86,7 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
      const player=Timeline.createPlayer(timeline,{revision});
      const result={solution:{
       revision,singleOriginalV5Player:true,player,steps,timeline,
+      sceneResult:{geometry:tetra},
       certifiedVisibleContourLineBindings:[],
       certifiedPhysicalLineBindings:[],
       certifiedVisibleContourLineActionCount:0,
