@@ -7,6 +7,8 @@
  * parameter intervals and continuous M5 rays remain independent gates.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {binary64OrderedStepDistance}=
+ require('../core/geometry/binary64-ordered-step-distance.cjs');
 const {auditOriginalEdgeStatusVsSourceScoped3DSharp}=
  require('../engines/spatial/hlr/c1-ocjs-edgestatus-abi.cjs');
 const {nativeScopedPaperSegmentsSame}=
@@ -567,7 +569,8 @@ function auditC1RejectedOriginalInverseParameterULP({originalBRepDomain,rawInver
  * It is NOT the missing continuous 2D TopoDS history or an M5 signature.
  */
 function auditC1HeldInverseOriginalNativeForwardReplay({
- witness,domain,generatedRange,actualGeneratedPaper,nativeTolerance
+ witness,domain,generatedRange,projectedSourceRange,
+ actualGeneratedPaper,nativeTolerance
 }={}){
  if(witness==null)return null; // legacy fixtures: no native forward claim
  if(witness.schema!=='draftai-c1-inverse-rejected-original-native-forward-samples/1'||
@@ -576,6 +579,9 @@ function auditC1HeldInverseOriginalNativeForwardReplay({
     !domain.every(Number.isFinite)||!(domain[1]>domain[0])||
     !Array.isArray(generatedRange)||generatedRange.length!==2||
     !generatedRange.every(Number.isFinite)||!(generatedRange[1]>generatedRange[0])||
+    !Array.isArray(projectedSourceRange)||projectedSourceRange.length!==2||
+    !projectedSourceRange.every(Number.isFinite)||
+    !(projectedSourceRange[1]>projectedSourceRange[0])||
     !Array.isArray(actualGeneratedPaper)||actualGeneratedPaper.length!==5||
     !actualGeneratedPaper.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
     !Number.isFinite(nativeTolerance)||nativeTolerance<0||
@@ -590,6 +596,7 @@ function auditC1HeldInverseOriginalNativeForwardReplay({
  if(first!==domain[0]&&!reversed)
   throw new RangeError('original native forward sample must start at a physical BRep endpoint');
  let complete=true,exactGrid=true,ordered=true,paperWithin=true,
+  paperExact=true,gridWithinOneULP=true,largestGridDrift=0n,
   lastP2=null,maxResidual=0;
  const rows=witness.samples.map((row,i)=>{
   const f=i/4,expectedNative=reversed?
@@ -610,12 +617,20 @@ function auditC1HeldInverseOriginalNativeForwardReplay({
     p.v-actualGeneratedPaper[i].v);
    if(residual!==computed)
     throw new RangeError('original native forward curve paper residual contradicts measured OCCT output');
+   const driftULPs=binary64OrderedStepDistance(p2,grid);
+   if(row.generated2DParameterGridDriftULPs!==String(driftULPs))
+    throw new RangeError('original native forward binary64 parameter grid ULP drift was altered');
+   if(driftULPs>1n)gridWithinOneULP=false;
+   if(driftULPs>largestGridDrift)largestGridDrift=driftULPs;
+   if(residual!==0)paperExact=false;
    if(p2!==grid)exactGrid=false;
    if(lastP2!==null&&!(p2>lastP2))ordered=false;
    lastP2=p2;
    if(!(residual<=nativeTolerance))paperWithin=false;
    maxResidual=Math.max(maxResidual,residual);
   }
+  if(!readable&&row.generated2DParameterGridDriftULPs!==null)
+   throw new RangeError('unreadable original native forward parameter invented grid drift');
   if(row.exactGenerated2DGridParameter!==(readable&&p2===grid))
    throw new RangeError('forged original native forward generated 2D sample parameter');
   return {originalNative3DParameter:expectedNative,
@@ -627,9 +642,17 @@ function auditC1HeldInverseOriginalNativeForwardReplay({
  });
  const exact=complete&&exactGrid&&ordered,
   inside=complete&&paperWithin,
-  full=!!witness.fullOriginalForward2DParameterDomainExact,
+  nativePaperExact=complete&&paperExact,
+  nativeParameterOneULP=complete&&ordered&&gridWithinOneULP,
+  full=generatedRange[0]===projectedSourceRange[0]&&
+   generatedRange[1]===projectedSourceRange[1],
   corroborated=full&&exact&&inside;
- if(witness.originalNativeForwardFiveSamplesReadable!==complete||
+ if(witness.fullOriginalForward2DParameterDomainExact!==full||
+    witness.originalNativeForwardFivePaperSamplesExactlyMatchGenerated!==nativePaperExact||
+    witness.originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid!==nativeParameterOneULP||
+    witness.maximumNativeForward2DParameterGridDriftULPs!==
+     (complete?String(largestGridDrift):null)||
+    witness.originalNativeForwardFiveSamplesReadable!==complete||
     witness.originalNativeForwardFive2DParametersMatchGeneratedGridExactly!==exact||
     witness.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance!==inside||
     witness.originalNativeForwardFivePointDiscreteConcordance!==corroborated||
@@ -642,6 +665,10 @@ function auditC1HeldInverseOriginalNativeForwardReplay({
   nativeGenerated2DParameterRange:[...generatedRange],
   originalNativeForwardSamplesChecked:5,
   independentlyReplayedNativeFivePointDiscreteConcordance:corroborated,
+  independentlyReplayedExactNativeFivePointPaperAgreement:nativePaperExact,
+  independentlyReplayedNativeParameterGridWithinOneULP:nativeParameterOneULP,
+  observedMaximumNativeForwardParameterGridDriftULPs:
+   complete?String(largestGridDrift):null,
   allNativeForwardParametersExactlyOnGeneratedGrid:exact,
   allNativeForwardPaperWithinGeneratedTolerance:inside,
   rows,
@@ -933,7 +960,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     });
     const nativeForwardReplay=auditC1HeldInverseOriginalNativeForwardReplay({
      witness:held.nativeOriginalForwardFiveSampleConcordance,
-     domain,generatedRange:generated,
+     domain,generatedRange:generated,projectedSourceRange:projectedSorted,
      actualGeneratedPaper:segment.actualOCCTHLRCurveSamplesProjectedMm,
      nativeTolerance:segment.actualOCCTHLRCurveSampleToleranceMm
     });
