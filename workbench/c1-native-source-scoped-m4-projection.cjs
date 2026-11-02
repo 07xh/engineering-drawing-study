@@ -127,7 +127,8 @@ function projectC1Native3DSourceIntervalsToM4({
     });
     continue;
    }
-   segments.push({view,sourceEdgeId,originalVertexIds:[id0,id1],
+   segments.push({view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+    originalVertexIds:[id0,id1],
     native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
     originalM0UnitParameterRange:[from,to],
     fromModelMm,toModelMm,fromPaper,toPaper,
@@ -217,7 +218,8 @@ function projectC1Native3DSourceIntervalsToM4({
      engineeringLineStyle:'undetermined',signedV5Action:false
     });
    native3DOutlineSegments.push({
-    view,sourceEdgeId,originalVertexIds:[id0,id1],
+    view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+    originalVertexIds:[id0,id1],
     native3DHLRClass:klass,
     originalNative3DParameterRange:[...interval],
     originalM0UnitParameterRange:[from,to],
