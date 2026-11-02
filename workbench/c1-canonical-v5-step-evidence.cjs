@@ -29,6 +29,11 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    !Array.isArray(frame.completedIds)||
    !frame.actionFractions||typeof frame.actionFractions!=='object')
   throw new RangeError('source-current sole V5 frame and true step DAG required');
+ // Every official line must belong to this exact original Geometry Scene;
+ // same revision and visually matching 2D endpoints alone are insufficient.
+ const currentSceneId=solution.sceneResult?.geometry?.id;
+ if(typeof currentSceneId!=='string'||!currentSceneId)
+  throw new RangeError('source-current sole V5 Geometry Scene required');
  const steps=solution.steps,timeline=solution.timeline,
   bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
    ...(solution.certifiedPhysicalLineBindings||[])];
@@ -67,7 +72,7 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
  for(const binding of bindings){
   if(!binding||typeof binding.actionId!=='string'||
     owners.has(binding.actionId)||binding.signedFormalLineV5!==true||
-    binding.revision!==revision||
+    binding.revision!==revision||binding.sourceGeometryId!==currentSceneId||
     typeof binding.sourceEdgeId!=='string'||!binding.sourceEdgeId||
     !['V','H','W'].includes(binding.view)||
     ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle))
