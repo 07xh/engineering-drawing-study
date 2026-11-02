@@ -529,3 +529,50 @@ test('unavailable original EdgeStatus/native 3D reconciliation cannot certify a 
   assert.equal(record.signedV5Action,false);
  }
 });
+
+test('held M5 consumes real indexed original EdgeStatus ABI without upgrading generated 2D history',()=>{
+ const {bindHeldOriginalIndexedEdgeStatusABI:bind}=
+  require('../../workbench/c1-m5-unresolved-global-source-obligations.cjs');
+ const sourceEdgeId='g::A|B',view='W';
+ const replay={schema:'draftai-c1-original-edgestatus-vs-native-3d-sharp/1',
+  sourceEdgeId,comparable:true,originalNativeParameterRange:[0,10],
+  nativeOriginalStatusClassAgreesWith3DSharp:true,
+  generated2DTopoDSHistoryCertified:false,wholeSceneM5Certified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false};
+ const row={sourceEdgeId,oneBasedEdgeIndex:3,parameterPartitionValidated:true,
+  bounds:[0,10],visiblePartCount:2,visibleParts:[[0,4],[6,10]],
+  allVisible:false,allHidden:false,
+  originalEdgeData:{directOriginalTopoDSEdgeIdentityProven:true,
+   originalBRepParameterRangeMatches:true}};
+ const cad={nativeHLRSourceHistoryAPISurfaceByView:{W:{
+  originalDataStructureIndex:{indexedOriginalSources:[{
+   originalPhysicalSourceEdgeId:sourceEdgeId,hlrDataStructureOneBasedEdgeIndex:3,
+   directlySameOriginalTopoDSInputEdge:true}]},
+  originalEdgeStatusAbi:{availability:'all-original-edge-status-intervals-readable',
+   rows:[row]}
+ }}};
+ const run=()=>bind({cad,view,sourceEdgeId,replayedOriginalStatus:replay});
+ const result=run();
+ assert.equal(result.originalNativeHLREdgeMapIndex,3);
+ assert.deepEqual(result.originalNativeVisibleParameterIntervals,[[0,4],[6,10]]);
+ assert.equal(result.originalNativeStatusClass,'mixed');
+ assert.equal(result.originalInputEdgeStatusNotGenerated2DTopoDSAncestry,true);
+ assert.equal(result.generated2DTopoDSHistoryCertified,false);
+ assert.equal(result.signedV5Action,false);
+ const copy=()=>({cad:structuredClone(cad),replay:structuredClone(replay)});
+ for(const corrupt of [
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.rows[0].sourceEdgeId='g::wrong';},
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.rows[0].oneBasedEdgeIndex=4;},
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.rows[0].bounds[0]=Number.MIN_VALUE;},
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.rows[0].visibleParts[1][0]=3;},
+  x=>{x.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.rows[0].originalEdgeData.directOriginalTopoDSEdgeIdentityProven=false;},
+  x=>{x.replay.generated2DTopoDSHistoryCertified=true;}
+ ]){
+  const x=copy();corrupt(x);
+  assert.throws(()=>bind({cad:x.cad,view,sourceEdgeId,replayedOriginalStatus:x.replay}),
+   /original indexed HLR|untrusted original EdgeStatus/);
+ }
+ const unavailable=copy();
+ unavailable.cad.nativeHLRSourceHistoryAPISurfaceByView.W.originalEdgeStatusAbi.availability='bounds-output-not-readable';
+ assert.equal(bind({cad:unavailable.cad,view,sourceEdgeId,replayedOriginalStatus:unavailable.replay}),null);
+});
