@@ -1868,6 +1868,10 @@ test('inverse-rejected original source stays unmatched while retaining validated
   .rawParameter3dInverseOutsideOriginalBRep,true);
  assert.equal(row.inverseRejectedOriginalFullForwardSharpCorroborated,false);
  assert.equal(auditResult.views.W.parameterizedGlobalHLRSourceLineage.counts
+  .inverseRejectedOriginalFullForwardSharpCorroboratedEdges,0);
+ assert.equal(auditResult.views.W.parameterizedGlobalHLRSourceLineage.classes.visible
+  .inverseRejectedOriginalFullForwardSharpCorroboratedEdges,0);
+ assert.equal(auditResult.views.W.parameterizedGlobalHLRSourceLineage.counts
   .unmatchedGeneratedOutputEdges,1);
  assert.equal(auditResult.signedV5ActionCount,0);
  for(const change of [
