@@ -536,3 +536,48 @@ test('finite overflowing source span retains only bounded unsigned endpoint comp
  assert.equal(envelope(a,b,{u:Infinity,v:0},b).compatible,false);
  assert.equal(envelope(a,b,{u:-max,v:2*Number.MIN_VALUE},b).compatible,false);
 });
+
+test('two individually class-backed scoped 2D fragments cannot conceal an uncovered original-source suffix',()=>{
+ const r=make([stroke('visible-sharp',0,5)],[],
+  [native('visible-sharp',0,1)]);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,true,
+  'per-fragment native class consistency is not whole-source coverage');
+ assert.equal(r.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,true);
+ assert.deepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,
+  [['1/2','1']]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterGapCount,1);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,false);
+ assert.equal(r.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('reverse-ordered contiguous source-scoped 2D fragments cover exact original [0,1] without claiming TopoDS history',()=>{
+ const r=make([stroke('visible-sharp',10,5),stroke('visible-sharp',5,0)],[],
+  [native('visible-sharp',0,1)]);
+ assert.deepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,[]);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,true);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterGapCount,0);
+ assert.equal(r.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('strict one-ULP positive gap between generated 2D fragments survives exact rational source union',()=>{
+ const next=5.000000000000001;
+ assert.ok(next>5);
+ const r=make([stroke('visible-sharp',0,5),
+  stroke('visible-sharp',next,10)],[],
+  [native('visible-sharp',0,1)]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterGapCount,1);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,false);
+ assert.notDeepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,[]);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('off-source paper alias cannot fill missing native generated 2D original-source coverage',()=>{
+ const fake=stroke('visible-sharp',5,10);
+ fake.to.v=Number.MIN_VALUE;
+ const r=make([stroke('visible-sharp',0,5),fake],[],
+  [native('visible-sharp',0,1)]);
+ assert.deepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,
+  [['1/2','1']]);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,false);
+ assert.equal(r.rows[1].exactOriginalM0PaperAffineCollinearity,false);
+ assert.equal(r.officialV5Authorized,false);
+});
