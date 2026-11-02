@@ -618,6 +618,8 @@ for(const [index,geometry] of general.entries()){
       audit.nativeSharpOriginalParameterClassBacked??null,
      nativeM4SameClassCoverageComplete:
       audit.nativeM4SameClassCoverageComplete??null,
+     originalM0FullForwardPaperEndpointWitness:
+      item.originalM0FullForwardPaperEndpointWitness,
      nativeM4OppositeClassPositiveOverlap:
       audit.nativeM4OppositeClassPositiveOverlap??null,
      signedV5Action:false
