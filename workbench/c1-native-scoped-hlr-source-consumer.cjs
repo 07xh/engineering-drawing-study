@@ -437,6 +437,80 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  };
 }
 /**
+ * Independent FULL source forward class corroboration. This audits raw
+ * original BRep Sharp parameters without using the possibly overrun
+ * Parameter3d inverse to define the original source domain.
+ * No generated TopoDS ancestry, M5 occlusion, GB style or V5 permission.
+ */
+function auditC1FullOriginalForwardSharpClass({
+ view,sourceEdgeId,klass,domain,forwardPaper,nativeM4
+}={}){
+ const base={view,sourceEdgeId,
+  independentFullOriginalForwardSharpClass:false,
+  generated2DTopoDSHistoryCertified:false,
+  fullSceneOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false};
+ if(!VIEWS.includes(view)||typeof sourceEdgeId!=='string'||!sourceEdgeId||
+    !['visible','hidden'].includes(klass)||
+    !Array.isArray(domain)||domain.length!==2||!domain.every(Number.isFinite)||
+    !(domain[1]>domain[0]))
+  throw new TypeError('complete original BRep source and HLR class required');
+ if(forwardPaper?.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement!==true||
+    forwardPaper?.originalForward2DParameterDomainFullyMatchesGenerated!==true||
+    forwardPaper?.actualNativeGeneratedCurveSamplesPresent!==true||
+    forwardPaper?.originalToGeneratedTopoDSHistoryCertified!==false||
+    forwardPaper?.signedV5Action!==false)
+  return Object.freeze({...base,reason:'exact-original-forward-source-paper-unavailable'});
+ if(!nativeM4)return Object.freeze({...base,reason:'original-native-sharp-unavailable'});
+ if(nativeM4.schema!=='draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2'||
+    nativeM4.view!==view||nativeM4.sourceEdgeId!==sourceEdgeId||
+    !['forward','reversed'].includes(nativeM4.original3DSourceCurveDirection)||
+    !Array.isArray(nativeM4.segments)||
+    !Array.isArray(nativeM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation))
+  throw new RangeError('invalid full-original native Sharp source ledger');
+ const normalize=t=>nativeM4.original3DSourceCurveDirection==='reversed'?
+  (domain[1]-t)/(domain[1]-domain[0]):(t-domain[0])/(domain[1]-domain[0]);
+ const same=[],opposite=[];
+ for(const seg of nativeM4.segments){
+  const range=seg?.originalNative3DParameterRange,
+   unit=seg?.originalM0UnitParameterRange;
+  if(seg?.sourceEdgeId!==sourceEdgeId||seg?.view!==view||
+     !['visible-sharp','hidden-sharp'].includes(seg.native3DHLRClass)||
+     seg.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper!==true||
+     seg.generated2DHLREdgeTopologyProven!==false||
+     seg.completeGlobalCoProjectedVisibilityCertified!==false||
+     seg.engineeringLineStyle!=='undetermined'||seg.signedV5Action!==false||
+     !Array.isArray(range)||range.length!==2||!range.every(Number.isFinite)||
+     !(range[1]>range[0])||range[0]<domain[0]||range[1]>domain[1]||
+     !Array.isArray(unit)||unit.length!==2||
+     unit[0]!==Math.min(normalize(range[0]),normalize(range[1]))||
+     unit[1]!==Math.max(normalize(range[0]),normalize(range[1])))
+   throw new RangeError('native original Sharp interval or class was forged');
+  (seg.native3DHLRClass===klass+'-sharp'?same:opposite).push(range);
+ }
+ const held=nativeM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation
+  .map(row=>{
+   if(!['visible-sharp','hidden-sharp'].includes(row?.native3DHLRClass))
+    throw new RangeError('invalid held native original Sharp class');
+   return row.originalNative3DParameterRange;
+  });
+ const audited=auditNativeOriginalOutlineClassInterval(domain,same,opposite,held);
+ const partition=nativeM4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+  nativeM4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+  Array.isArray(nativeM4.native3DOriginalParameterPositiveGaps)&&
+  nativeM4.native3DOriginalParameterPositiveGaps.length===0&&
+  Array.isArray(nativeM4.native3DOriginalParameterPositiveOverlaps)&&
+  nativeM4.native3DOriginalParameterPositiveOverlaps.length===0&&
+  Array.isArray(nativeM4.M4OriginalUnitIntervalNativeClassConflicts)&&
+  nativeM4.M4OriginalUnitIntervalNativeClassConflicts.length===0;
+ return Object.freeze({...base,
+  independentFullOriginalForwardSharpClass:
+   partition&&audited.nativeOriginalClassBackedWithoutNormalization,
+  nativeOriginalSharpPartitionEntireDomain:partition,
+  originalSharpParameterAudit:audited,
+  originalParameter3dInverseStillRequiresSeparateProof:true});
+}
+/**
  * Reconcile whole-solid generated 2D HLR edges with the SAME-RUN original
  * HLRBRep_Curve parameter map. The source curve enters this map only after
  * symmetric native TopoDS IsSame binds its EdgeData geometry to one M0 edge.
@@ -456,6 +530,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    unavailableGeneratedOutputEdges:0,
    sourceFilterOrPaperCandidateDisagreements:0,
    nativeM4ClassBackedUniqueFilterSourceEdges:0,
+   independentFullForwardSharpCorroboratedButInverseHeldEdges:0,
    nativeM4ClassEvidenceUnavailableEdges:0,
    nativeM4ClassBackingUnprovenEdges:0,
    nativeOutlineClassBackedUniqueFilterSourceEdges:0,
@@ -671,15 +746,29 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // Extra source-filter claims are a disagreement, not a reason to pick one.
    const filterSources=item.sources[ordinal];
    const parameterizedSourceIntervals=[],nativeM4ClassBackedSourceIds=new Set(),
-    nativeOutlineClassBackedSourceIds=new Set(),nativeM4Audits=[];
+    nativeOutlineClassBackedSourceIds=new Set(),nativeM4Audits=[],
+    independentForwardOnlyIds=new Set();
    for(const match of matches){
+    const nativeM4=nativeM4ById?.get(match.sourceEdgeId);
+    const forwardPaper=auditC1OriginalM0FullForwardHLRPaperEndpoints({
+     originalProjectedEndpoints:projectedOriginalBySource?.get(match.sourceEdgeId)?.[view],
+     sourceProjected2DParameterRangeSorted:match.sourceProjected2DParameterRangeSorted,
+     generated2DParameterRange:match.generated2DParameterRange,
+     generatedHLRCurveSamples:segment.actualOCCTHLRCurveSamplesProjectedMm
+    });
     const m4Audit=auditC1ParameterizedSourceMatchAgainstNativeM4({
-     view,sourceId:match.sourceEdgeId,match,klass,
-     nativeM4:nativeM4ById?.get(match.sourceEdgeId)
+     view,sourceId:match.sourceEdgeId,match,klass,nativeM4
+    });
+    const forwardSharp=auditC1FullOriginalForwardSharpClass({
+     view,sourceEdgeId:match.sourceEdgeId,klass,
+     domain:match.originalBRepSourceParameterRange,
+     forwardPaper,nativeM4
     });
     nativeM4Audits.push(m4Audit);
     if(m4Audit.nativeM4ClassBacked===true)
      nativeM4ClassBackedSourceIds.add(match.sourceEdgeId);
+    else if(forwardSharp.independentFullOriginalForwardSharpClass)
+     independentForwardOnlyIds.add(match.sourceEdgeId);
     if(m4Audit.nativeOutlineClassBacked===true)
      nativeOutlineClassBackedSourceIds.add(match.sourceEdgeId);
     parameterizedSourceIntervals.push({
@@ -697,14 +786,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
      maximumParameterRoundTripResidual:match.maximumParameterRoundTripResidual,
      sampleCount:match.samples.length,
-     originalM0FullForwardPaperEndpointWitness:
-      projectedOriginalBySource instanceof Map?
-       auditC1OriginalM0FullForwardHLRPaperEndpoints({
-        originalProjectedEndpoints:projectedOriginalBySource.get(match.sourceEdgeId)?.[view],
-        sourceProjected2DParameterRangeSorted:match.sourceProjected2DParameterRangeSorted,
-        generated2DParameterRange:match.generated2DParameterRange,
-        generatedHLRCurveSamples:segment.actualOCCTHLRCurveSamplesProjectedMm
-       }):null,
+     originalM0FullForwardPaperEndpointWitness:forwardPaper,
+     independentFullOriginalForwardSharpClassWitness:forwardSharp,
+     // Never upgrade the original inverse parameter proof by implication.
      nativeM4ClassBacking:m4Audit
     });
    }
@@ -720,6 +804,10 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    const nativeM4ClassBackedUniqueFilterSource=
     filterConsistent&&filterSources.size===1&&
     nativeM4ClassBackedSourceIds.has([...filterSources][0]);
+   const forwardOnlyUniqueSource=
+    filterConsistent&&filterSources.size===1&&
+    independentForwardOnlyIds.has([...filterSources][0])&&
+    !nativeM4ClassBackedUniqueFilterSource;
    const m4Available=nativeM4Audits.some(x=>x.availability==='available');
    const nativeOutlineEvidenceAvailable=nativeM4Audits.some(x=>
     x.nativeOutlineEvidenceAvailable===true);
@@ -731,6 +819,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     else if(nativeM4ClassBackedUniqueFilterSource)
      result.counts.nativeM4ClassBackedUniqueFilterSourceEdges++;
     else result.counts.nativeM4ClassBackingUnprovenEdges++;
+    if(forwardOnlyUniqueSource)
+     result.counts.independentFullForwardSharpCorroboratedButInverseHeldEdges++;
     if(!nativeOutlineEvidenceAvailable)
      result.counts.nativeOutlineEvidenceUnavailableEdges++;
     else if(nativeOutlineClassBackedUniqueFilterSource)
@@ -759,6 +849,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     parameterizedSourceIntervals,
     nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
     nativeM4ClassBackedUniqueFilterSource,
+    independentFullForwardSharpCorroboratedButInverseHeld:forwardOnlyUniqueSource,
     nativeM4ClassEvidenceAvailable:m4Available,
     nativeOutlineClassBackedSourceEdgeIds:[...nativeOutlineClassBackedSourceIds].sort(),
     nativeOutlineClassBackedUniqueFilterSource,
@@ -796,6 +887,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    sourceFilterOrPaperCandidateDisagreements:disagreements,
    nativeM4ClassBackedUniqueFilterSourceEdges:
     rows.filter(x=>x.nativeM4ClassBackedUniqueFilterSource).length,
+   independentFullForwardSharpCorroboratedButInverseHeldEdges:
+    rows.filter(x=>x.independentFullForwardSharpCorroboratedButInverseHeld).length,
    nativeM4ClassEvidenceUnavailableEdges:
     rows.filter(x=>x.parameterizedSourceMatchCount>0&&!x.nativeM4ClassEvidenceAvailable).length,
    nativeM4ClassBackingUnprovenEdges:
@@ -1591,5 +1684,6 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
 module.exports={
  auditC1NativeScopedHLRSourceConsumer,
  auditC1ParameterizedSourceMatchAgainstNativeM4,
- auditC1OriginalM0FullForwardHLRPaperEndpoints
+ auditC1OriginalM0FullForwardHLRPaperEndpoints,
+ auditC1FullOriginalForwardSharpClass
 };
