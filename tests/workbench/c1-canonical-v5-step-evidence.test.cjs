@@ -19,13 +19,15 @@ function fixture(){
  const timeline=Timeline.compileTimeline(steps);
  const player=Timeline.createPlayer(timeline,{revision:9});
  const solution={revision:9,singleOriginalV5Player:true,player,steps,timeline,
+  sceneResult:{geometry:{id:'Tetra'}},
   intents:[{id:'given_0',source:{solver:'mathematical-c1-projection',
    proofScope:'reviewed-point'}},{id:'guide_1',source:{solver:'original-03',
    proofScope:'point-projection-only'}},{id:'edge_2',source:{solver:'M0-M5',
    proofScope:'closed-convex-signed-edge'}}],
   certifiedVisibleContourLineBindings:[],
   certifiedPhysicalLineBindings:[{actionId:'edge_2_action',revision:9,
-   signedFormalLineV5:true,sourceEdgeId:'Tetra::A|C',view:'W',
+   signedFormalLineV5:true,sourceGeometryId:'Tetra',
+   sourceEdgeId:'Tetra::A|C',view:'W',
    standardLineStyle:visible,originalParameterRange:[0,1],
    fromSheetPx:{x:1,y:2},toSheetPx:{x:3,y:4}}]
  };
@@ -76,6 +78,8 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].standardLineStyle=
   'arbitrary';}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
+ assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceGeometryId='Other';}),/signed source/);
+ assert.throws(bad(f=>{f.solution.sceneResult.geometry.id='Other';}),/signed source/);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
 });
