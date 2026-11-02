@@ -1684,3 +1684,27 @@ test('same-run generated Sharp HLR source samples cannot launder residuals, para
    /generated HLR source sample disagrees with native OCCT curve/);
  }
 });
+
+test('original M0 whole-edge forward endpoint agrees without masking native inverse overrun',()=>{
+ const {auditC1OriginalM0FullForwardHLRPaperEndpoints:audit}=
+  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+ const a={u:0,v:3},b={u:6,v:23},end=20.615528128088304;
+ const native=[a,{u:1.5,v:8},{u:3,v:13},{u:4.5,v:18},b];
+ const args={originalProjectedEndpoints:[a,b],
+  sourceProjected2DParameterRangeSorted:[0,end],
+  generated2DParameterRange:[0,end],generatedHLRCurveSamples:native};
+ const good=audit(args);
+ assert.equal(good.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(good.originalForward2DParameterDomainFullyMatchesGenerated,true);
+ assert.equal(good.signedV5Action,false);
+ assert.equal(good.originalToGeneratedTopoDSHistoryCertified,false);
+ assert.equal(audit({...args,generatedHLRCurveSamples:[...native].reverse()})
+  .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(audit({...args,generatedHLRCurveSamples:[
+  {...a,v:3+Number.EPSILON*4},...native.slice(1)]})
+  .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,false);
+ assert.equal(audit({...args,generated2DParameterRange:[0,end/2]})
+  .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,false);
+ assert.throws(()=>audit({...args,originalProjectedEndpoints:[a,{u:Infinity,v:23}]}),
+  /finite original M0 paper/);
+});
