@@ -161,6 +161,27 @@ function auditC1RealNativeScoped2D3DClassBinding({
   const normalize=t=>direction==='reversed'?
    (last-t)/(last-first):(t-first)/(last-first);
   const check=(row,held)=>{
+   // Even a non-drawable native interval is an ORIGINAL BRep source fact.
+   // A held interval borrowed from another view, edge, revision or model
+   // must not complete the same-run native parameter inventory. It remains
+   // unsigned and must carry the same original M0 vertex pair.
+   if(held&&(
+      row?.view!==view||row.sourceEdgeId!==sourceEdgeId||
+      row.sourceGeometryId!==expectedSourceGeometryId||
+      row.revision!==expectedRevision||
+      !Array.isArray(row.originalVertexIds)||
+      row.originalVertexIds.length!==2||
+      row.originalVertexIds.some(id=>typeof id!=='string'||!id)||
+      row.originalVertexIds[0]===row.originalVertexIds[1]||
+      expectedSourceGeometryId+'::'+
+       [...row.originalVertexIds].sort().join('|')!==sourceEdgeId||
+      !['visible-sharp','hidden-sharp'].includes(row.native3DHLRClass)||
+      !['positive-native-interval-collapsed-by-binary64-normalization',
+        'positive-original-interval-collapsed-by-binary64-paper-projection']
+       .includes(row.reason)||
+      row.engineeringLineStyle!=='undetermined'||
+      row.signedV5Action!==false))
+    throw new RangeError('held native M4 interval source/revision/class provenance mismatch');
    const p=row?.originalNative3DParameterRange;
    const unit=held?row?.roundedOriginalM0UnitParameterRange:
     row?.originalM0UnitParameterRange;
