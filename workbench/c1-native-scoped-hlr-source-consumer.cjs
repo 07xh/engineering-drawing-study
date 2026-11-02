@@ -842,6 +842,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     inverseRejectedForwardSources.push({
      sourceEdgeId:sourceId,
      strictNativeOriginalInverseBinary64Overrun:overrun,
+     originalNativeForwardFiveSampleConcordance:
+      held.nativeOriginalForwardFiveSampleConcordance??null,
      originalBRepParameterRange:[...domain],
      firstRejectedGenerated2DParameter:held.firstRejectedGenerated2DParameter,
      firstRejectedOriginal3DParameter:raw,
