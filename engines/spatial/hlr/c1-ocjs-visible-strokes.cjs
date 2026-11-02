@@ -150,17 +150,17 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   if(!edge)throw new RangeError('original 3D source edge missing');
   const a=g.data.points[edge[0]],b=g.data.points[edge[1]];
   const pa=project(a)[view],pb=project(b)[view];
-  const du=pb.u-pa.u,dv=pb.v-pa.v,len=Math.hypot(du,dv);
-  // The squared denominator underflows for genuine subnormal-length
-  // projected source edges. Normalize before the dot product; this is still
-  // an unsigned paper-only inverse, never native BRep parameter history.
-  if(!(len>0)||!finite(len))
+  const du=pb.u-pa.u,dv=pb.v-pa.v,den=du*du+dv*dv;
+  const len=Math.hypot(du,dv);
+  if(!(len>0)||!finite(len)||!finite(den))
    throw new RangeError('projected original source edge collapsed');
+  // Preserve the already-reviewed binary64 inverse for representable
+  // squared denominators, including exact source-boundary behavior.
+  // Only a genuine underflow to den=0 uses the normalized fallback.
   const unitU=du/len,unitV=dv/len;
-  // Literal measured original endpoints are exactly t=0/1; floating dot
-  // products can turn an identical physical endpoint into 0.9999999999999999.
-  // Equality is exact binary64 coordinate identity, NOT epsilon snapping.
-  const fraction=q=>q.u===pa.u&&q.v===pa.v?0:
+  const fraction=q=>den>0?
+   ((q.u-pa.u)*du+(q.v-pa.v)*dv)/den:
+   q.u===pa.u&&q.v===pa.v?0:
    q.u===pb.u&&q.v===pb.v?1:
    ((q.u-pa.u)*unitU+(q.v-pa.v)*unitV)/len;
   const ta=fraction(from),tb=fraction(to);
