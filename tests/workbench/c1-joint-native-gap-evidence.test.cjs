@@ -116,7 +116,14 @@ test('batch rejects absent, duplicate, altered and invented native HLR records',
   /missing or duplicated/);
  const altered=records.map(r=>({...r}));
  altered[1]={...altered[1],uncoveredIntervals:[[0,1e-16]]};
- assert.throws(()=>batch({geometry,records:altered}),/native gap intervals/);
+ const measured=batch({geometry,records:altered});
+ assert.equal(measured.results[1].rows[0].originalSourceParameterGap[1],1e-16);
+ assert.equal(measured.results[1].signedV5ActionCount,0);
+ for(const bad of [[0,0],[0,1],[Number.MIN_VALUE,1e-16],[0,NaN]]){
+  const rejected=records.map(r=>({...r}));
+  rejected[1]={...rejected[1],uncoveredIntervals:[bad]};
+  assert.throws(()=>batch({geometry,records:rejected}),/native gap intervals/);
+ }
  const invented=records.map(r=>({...r}));
  invented[2]={...invented[2],sourceEdgeId:'C1SkewTetra::B|C'};
  assert.throws(()=>batch({geometry,records:invented}),/missing or duplicated/);
@@ -302,13 +309,24 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
  mutated(x=>x.views.H.intervals[0].realNativeOriginal3DSourceParameterCovered=true);
  mutated(x=>x.views.W.intervals[1].exactNativeOriginal3DSourceCoverage
   .originalSourceParameterRange=[Number.MIN_VALUE,1]);
- // A single representable binary64 ULP is positive source-space geometry,
- // even if both paper endpoints round to the same displayed pixel.
+ // Native OCCT may report different binary64 endpoints on successive
+ // real WASM runs. Both positive tails remain DISTINCT exact intervals.
+ // Neither is snapped to zero or silently promoted to complete coverage.
  const dv=new DataView(new ArrayBuffer(8));
  dv.setFloat64(0,5.02742501717052e-18);
  dv.setBigUint64(0,dv.getBigUint64(0)-1n);
  const oneUlpShorter=dv.getFloat64(0);
+ const oneUlpLonger=5.0274250171705206e-18;
  assert.ok(oneUlpShorter>0&&oneUlpShorter<5.02742501717052e-18);
- mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
-  .positiveLengthUncoveredIntervals=[[0,oneUlpShorter]]);
+ for(const end of [oneUlpShorter,oneUlpLonger]){
+  const copy=structuredClone(m5Ledger);
+  copy.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
+   .positiveLengthUncoveredIntervals=[[0,end]];
+  const measured=run({...input,m5Ledger:copy});
+  assert.deepEqual(measured.results[0].rows[0].originalSourceParameterGap,
+   [0,end]);
+  assert.equal(measured.gapsClosed,0);
+  assert.equal(measured.signedV5ActionCount,0);
+  assert.equal(measured.originalTopoDSHistoryCertified,false);
+ }
 });
