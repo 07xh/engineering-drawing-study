@@ -492,3 +492,30 @@ test('real M4 source binding holds cross-axis alias with full native class evide
  assert.equal(good.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
  assert.equal(good.officialV5Authorized,false);
 });
+
+// The real consumer supplies both CAD revision and M0 geometry identity.
+// A stale M4 partition must not be recycled after a mesh edit even when
+// its original edge ID and projected coordinates happen to remain equal.
+test('real CAD source-class binding rejects stale revision and foreign M0 geometry',()=>{
+ const args={view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
+  scoped2DVisible:[stroke('visible-sharp')],scoped2DHidden:[],
+  expectedSourceGeometryId:'m',expectedRevision:12,
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   sourceGeometryId:'m',revision:12,view,sourceEdgeId,
+   segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }};
+ const ok=audit(args);
+ assert.equal(ok.sourceScoped2DClassBoundWithoutRounding,true);
+ assert.equal(ok.officialV5Authorized,false);
+ assert.throws(()=>audit({...args,expectedRevision:13}),/current genuine source-filtered/);
+ assert.throws(()=>audit({...args,expectedSourceGeometryId:'other'}),/current genuine source-filtered/);
+ assert.throws(()=>audit({...args,nativeOriginal3DM4:{...args.nativeOriginal3DM4,revision:11}}),/current genuine source-filtered/);
+ assert.throws(()=>audit({...args,nativeOriginal3DM4:{...args.nativeOriginal3DM4,sourceGeometryId:'foreign'}}),/current genuine source-filtered/);
+});
