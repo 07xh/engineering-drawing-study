@@ -503,7 +503,9 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
   nativeOriginal3DM4:{
    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
    sourceGeometryId:'m',revision:12,view,sourceEdgeId,
-   segments:[native('visible-sharp',0,1)],
+   originalNative3DSourceParameterRange:[0,1],
+   segments:[{...native('visible-sharp',0,1),
+    originalNative3DParameterRange:[0,1]}],
    native3DSourceParameterPartitionCompleteExactlyOnce:true,
    M4OriginalUnitIntervalCandidateCoverageComplete:true,
    native3DOriginalParameterPositiveGaps:[],
@@ -514,6 +516,36 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
  const ok=audit(args);
  assert.equal(ok.sourceScoped2DClassBoundWithoutRounding,true);
  assert.equal(ok.officialV5Authorized,false);
+ // Rounded M4 [0,1] appears complete but original OCCT parameters have
+ // a STRICTLY positive one-ULP gap. Forged upstream flags must not pass.
+ const forged=structuredClone(args);
+ forged.nativeOriginal3DM4.segments=[
+  {...native('visible-sharp',0,.5),
+   originalNative3DParameterRange:[0,.5]},
+  {...native('visible-sharp',.5,1),
+   originalNative3DParameterRange:[.5000000000000001,1]}
+ ];
+ assert.throws(()=>audit(forged),/independently replayed M4 source/);
+ // A truthfully reported native gap stays unsigned, despite a rounded
+ // M4 partition whose endpoints touch at 1/2.
+ const held=structuredClone(forged);
+ held.nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce=false;
+ held.nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete=false;
+ held.nativeOriginal3DM4.native3DOriginalParameterPositiveGaps=
+  [[.5,.5000000000000001]];
+ const heldResult=audit(held);
+ assert.equal(heldResult.originalNativeParameterPartitionIndependentlyVerified,false);
+ assert.equal(heldResult.sourceScoped2DClassBoundWithoutRounding,false);
+ assert.equal(heldResult.officialV5Authorized,false);
+ const overlapping=structuredClone(args);
+ overlapping.nativeOriginal3DM4.segments=[
+  {...native('visible-sharp',0,.5),originalNative3DParameterRange:[0,.6]},
+  {...native('visible-sharp',.5,1),originalNative3DParameterRange:[.5,1]}
+ ];
+ assert.throws(()=>audit(overlapping),/independently replayed M4 source/);
+ const noDomain=structuredClone(args);
+ delete noDomain.nativeOriginal3DM4.originalNative3DSourceParameterRange;
+ assert.throws(()=>audit(noDomain),/bounded original native 3D curve parameter range/);
  assert.throws(()=>audit({...args,expectedRevision:13}),/current genuine source-filtered/);
  assert.throws(()=>audit({...args,expectedSourceGeometryId:'other'}),/current genuine source-filtered/);
  assert.throws(()=>audit({...args,nativeOriginal3DM4:{...args.nativeOriginal3DM4,revision:11}}),/current genuine source-filtered/);
