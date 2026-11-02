@@ -1400,6 +1400,9 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   nativeSourceScoped2DEdgesWithFullSourceOneULPCompatibility:0,
   nativeSourceScoped2DEdgesPreciselyHeldButULPBounded:0,
   nativeSourceScoped2DEdgesBeyondOneULPOrWithoutWholeNativeClass:0,
+  nativeSourceScoped2DPositiveOriginalSourceParameterGaps:0,
+  nativeSourceScoped2DOriginalSourcesWithExactFullPaperCoverage:0,
+  nativeSourceScoped2DOriginalSourcesWithPositivePaperGaps:0,
   globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithAmbiguousParameterizedSourceLineage:0,
   globalGeneratedHLREdgesWithNativeFilterNarrowedAmbiguousParameterizedLineage:0,
@@ -1659,6 +1662,14 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
      expectedSourceGeometryId:geometry.id,expectedRevision:cad.revision
     });
     nativeScoped2D3DClassBindings.push(joined);
+    // Native 2D HLR paper coverage is independent of native 3D M4
+    // coverage; neither witness can sign M5 or generated TopoDS lineage.
+    counts.nativeSourceScoped2DPositiveOriginalSourceParameterGaps+=
+     joined.counts.positiveGenerated2DSourceParameterGapCount;
+    counts.nativeSourceScoped2DOriginalSourcesWithExactFullPaperCoverage+=
+     Number(joined.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact);
+    counts.nativeSourceScoped2DOriginalSourcesWithPositivePaperGaps+=
+     Number(joined.counts.positiveGenerated2DSourceParameterGapCount>0);
     counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D+=
      joined.counts.scoped2DGeneratedEdgesChecked;
     counts.nativeSourceScoped2DEdgesExactlyBackedBySame3DClass+=
