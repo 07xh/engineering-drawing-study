@@ -684,7 +684,11 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  let previousGeneratedParameter=null,previousSourceParameter=null;
  for(let i=0;i<5;i++){
   const fraction=i/4;
-  const p2=outputRange[0]+(outputRange[1]-outputRange[0])*fraction;
+  // Preserve the ACTUAL native output endpoint at fraction 0/1. A generic
+  // first+(last-first)*1 can land one ULP before last (e.g. 0.2..0.9),
+  // silently losing an original BRep terminal parameter witness.
+  const p2=i===0?outputRange[0]:i===4?outputRange[1]:
+   outputRange[0]+(outputRange[1]-outputRange[0])*fraction;
   const p3=callFiniteOneArg(source.curve,'Parameter3d',p2);
   if(!p3.readable)
    return {matched:false,reason:'generated-2d-to-source-3d-parameter-map-unreadable'};
