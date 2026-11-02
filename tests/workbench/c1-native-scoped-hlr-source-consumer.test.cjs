@@ -1632,3 +1632,23 @@ test('forged same-run 2D outline native IsSame cannot move both copies off the o
   assert.throws(()=>audit(x),/forged source-scoped generated 2D outline/);
  }
 });
+
+
+test('M4 independently rejects duplicate or folded native generated-to-original parameters in V/H/W',()=>{
+ for(const view of ['V','H','W']){
+  for(const corrupt of [
+   match=>{match.samples[2].source3DParameter=match.samples[1].source3DParameter;},
+   match=>{match.samples[2].source3DParameter=0.1;},
+   match=>{match.samples[2].generated2DParameter=match.samples[1].generated2DParameter;},
+   match=>{match.samples[4].source3DParameter=0.9999999999999999;}
+  ]){
+   const x=fixture();
+   const match=x.cad.nativeSourceScopedSharpOutputByView[view].
+    generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0];
+   corrupt(match);
+   assert.throws(()=>audit(x),
+    /noninjective generated HLR|generated HLR sample endpoints disagree/,
+    'received M4 native witness must be injective and endpoint-consistent');
+  }
+ }
+});
