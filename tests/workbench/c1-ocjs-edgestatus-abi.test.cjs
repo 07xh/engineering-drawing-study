@@ -465,8 +465,8 @@ test('generated Sharp source match holds one-ULP positive 2D overhang on either 
   }],nativeCurveHandlesBySourceId:source});
   assert.equal(r.uniqueParameterizedSourceMatchCount,0);
   assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
-  assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,
-   'generated-parameter-range-outside-source-projection');
+  assert.equal(r.rows[0].rejectedSourceCandidateCount,1);
+  assert.equal(r.rows[0].status,'no-parameterized-source-curve-match');
   assert.equal(r.generated2DTopoDSHistoryProven,false);
   assert.equal(r.signedV5ActionCount,0);
  }
