@@ -628,10 +628,26 @@ for(const [index,geometry] of general.entries()){
  const independentlyCorroboratedInverseRejected=
   inverseRejectedForwardOriginalClassRows.filter(x=>
    x.exactOriginalForwardHLR&&x.nativeFullOriginalSharpClass).length;
+ // The real W B|D source is unmatched by Parameter3d inverse, not by
+ // independent original M0 forward endpoints and native Sharp class.
+ // A bookkeeping branch used to count these held sources only when
+ // matches.length>0, making the counter unreachable. Cross-check ALL
+ // V/H/W per-class row tallies against the actual native diagnostics.
+ const accountedInverseRejected=['V','H','W'].reduce((total,view)=>total+
+  parameterizedLineageByView[view].counts
+   .inverseRejectedOriginalFullForwardSharpCorroboratedEdges,0);
+ assert.equal(accountedInverseRejected,
+  ['V','H','W'].reduce((total,view)=>total+
+   ['visible','hidden'].reduce((sum,klass)=>sum+
+    parameterizedLineageByView[view].classes[klass].rows.filter(row=>
+     row.inverseRejectedOriginalFullForwardSharpCorroborated===true).length,0),0),
+  'same-run C1 inverse-rejected original Sharp evidence counter must match actual classified rows');
+
  console.error('REAL C1 INVERSE-REJECTED FULL ORIGINAL FORWARD SHARP DIAGNOSTIC '+
   geometry.id+': '+JSON.stringify({
    total:inverseRejectedForwardOriginalClassRows.length,
    independentlyCorroboratedInverseRejected,
+   sourceLineageAccountedInverseRejected:accountedInverseRejected,
    rows:inverseRejectedForwardOriginalClassRows,
    stillUnmatchedInOriginalParameterInversion:true,
    generated2DTopoDSHistoryCertified:false,signedV5Actions:0
@@ -648,6 +664,8 @@ for(const [index,geometry] of general.entries()){
    x.exactOriginalForwardHLR&&x.nativeFullOriginalSharpClass);
   assert.equal(rows.length,1,
    'real WASM inverse-rejected source must preserve independent raw Sharp history');
+  assert.equal(accountedInverseRejected,1,
+   'held W B|D must be counted once without becoming a formal matched source');
   assert.equal(rows[0].view,'W');
   assert.equal(rows[0].klass,'visible');
   assert.equal(rows[0].ordinal,3);
