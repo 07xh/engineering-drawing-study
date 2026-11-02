@@ -521,6 +521,11 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
        sourceProjectedRange[0]===sourceProjectedRange[1]||
        Math.min(...sourceProjectedRange)!==sourceProjectedSortedRange[0]||
        Math.max(...sourceProjectedRange)!==sourceProjectedSortedRange[1]||
+       // A same-run producer witness cannot claim even a one-ULP
+       // generated 2D interval outside its ORIGINAL projected BRep domain.
+       // Do not use round-trip tolerances to erase a positive overhang.
+       generatedRange?.[0]<sourceProjectedSortedRange[0]||
+       generatedRange?.[1]>sourceProjectedSortedRange[1]||
        sourceProjectedEndpointResiduals[0]!==
         generatedRange?.[0]-sourceProjectedSortedRange[0]||
        sourceProjectedEndpointResiduals[1]!==
