@@ -531,6 +531,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    sourceFilterOrPaperCandidateDisagreements:0,
    nativeM4ClassBackedUniqueFilterSourceEdges:0,
    independentFullForwardSharpCorroboratedButInverseHeldEdges:0,
+   inverseRejectedOriginalFullForwardSharpCorroboratedEdges:0,
    nativeM4ClassEvidenceUnavailableEdges:0,
    nativeM4ClassBackingUnprovenEdges:0,
    nativeOutlineClassBackedUniqueFilterSourceEdges:0,
@@ -745,6 +746,66 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
    // source-filtered HLR inventory and the original M0 paper candidate set.
    // Extra source-filter claims are a disagreement, not a reason to pick one.
    const filterSources=item.sources[ordinal];
+   // A generated HLR edge with a strictly overrun native Parameter3d
+   // inverse is NOT a matched source. Retain only original TopoDS identity
+   // and forward-parameter evidence to test its native Sharp class as
+   // a separate unsigned diagnostic. Never put it in candidateIds.
+   const inverseRejectedForwardSources=[];
+   for(const held of row.rejectedSourceCandidates??[]){
+    if(held?.reason!=='generated-source-3d-parameter-outside-original-brep-domain'||
+       held.originalInverseStillOutsideBRepDomain!==true)continue;
+    const sourceId=held.sourceEdgeId,
+     domain=held.originalBRepSourceParameterRange,
+     raw=held.firstRejectedOriginal3DParameter,
+     projected=held.sourceProjected2DParameterRange,
+     projectedSorted=held.sourceProjected2DParameterRangeSorted,
+     generated=held.generated2DParameterRange;
+    if(!expected.has(sourceId)||candidateIds.has(sourceId)||
+       held.matched!==false||held.originalTopoDSEdgeIdentityProven!==true||
+       held.generated2DTopoDSHistoryProven!==false||
+       held.engineeringLineStyle!=='undetermined'||held.signedV5Action!==false||
+       !Array.isArray(domain)||domain.length!==2||!domain.every(Number.isFinite)||
+       !(domain[1]>domain[0])||
+       !Array.isArray(held.original3DCurveParameterRange)||
+       held.original3DCurveParameterRange.length!==2||
+       !held.original3DCurveParameterRange.every((v,i)=>v===domain[i])||
+       !Number.isFinite(raw)||(raw>=domain[0]&&raw<=domain[1])||
+       !Array.isArray(generated)||generated.length!==2||
+       !generated.every(Number.isFinite)||
+       generated[0]!==segment.actualOCCTHLRCurveParameterRange?.[0]||
+       generated[1]!==segment.actualOCCTHLRCurveParameterRange?.[1]||
+       !Array.isArray(projected)||projected.length!==2||
+       !projected.every(Number.isFinite)||
+       !Array.isArray(projectedSorted)||projectedSorted.length!==2||
+       !projectedSorted.every(Number.isFinite)||
+       Math.min(...projected)!==projectedSorted[0]||
+       Math.max(...projected)!==projectedSorted[1]||
+       !Number.isFinite(held.firstRejectedGenerated2DParameter)||
+       held.firstRejectedGenerated2DParameter<generated[0]||
+       held.firstRejectedGenerated2DParameter>generated[1])
+     throw new RangeError('invalid received original BRep inverse-rejected forward HLR witness');
+    const forward=auditC1OriginalM0FullForwardHLRPaperEndpoints({
+     originalProjectedEndpoints:projectedOriginalBySource?.get(sourceId)?.[view],
+     sourceProjected2DParameterRangeSorted:projectedSorted,
+     generated2DParameterRange:generated,
+     generatedHLRCurveSamples:segment.actualOCCTHLRCurveSamplesProjectedMm
+    });
+    const sharp=auditC1FullOriginalForwardSharpClass({
+     view,sourceEdgeId:sourceId,klass,domain,forwardPaper:forward,
+     nativeM4:nativeM4ById?.get(sourceId)
+    });
+    inverseRejectedForwardSources.push({
+     sourceEdgeId:sourceId,
+     originalBRepParameterRange:[...domain],
+     firstRejectedGenerated2DParameter:held.firstRejectedGenerated2DParameter,
+     firstRejectedOriginal3DParameter:raw,
+     exactForwardM0PaperWitness:forward,
+     originalNativeSharpFullParameterWitness:sharp,
+     rawParameter3dInverseOutsideOriginalBRep:true,
+     originalToGeneratedTopoDSHistoryCertified:false,
+     signedV5Action:false
+    });
+   }
    const parameterizedSourceIntervals=[],nativeM4ClassBackedSourceIds=new Set(),
     nativeOutlineClassBackedSourceIds=new Set(),nativeM4Audits=[],
     independentForwardOnlyIds=new Set();
@@ -808,6 +869,13 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     filterConsistent&&filterSources.size===1&&
     independentForwardOnlyIds.has([...filterSources][0])&&
     !nativeM4ClassBackedUniqueFilterSource;
+   const inverseRejectedOriginalSharpCorroborated=
+    matches.length===0&&filterSources.size===1&&
+    inverseRejectedForwardSources.some(x=>
+     x.sourceEdgeId===[...filterSources][0]&&
+     paperCandidates.includes(x.sourceEdgeId)&&
+     x.originalNativeSharpFullParameterWitness.
+      independentFullOriginalForwardSharpClass===true);
    const m4Available=nativeM4Audits.some(x=>x.availability==='available');
    const nativeOutlineEvidenceAvailable=nativeM4Audits.some(x=>
     x.nativeOutlineEvidenceAvailable===true);
@@ -821,6 +889,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     else result.counts.nativeM4ClassBackingUnprovenEdges++;
     if(forwardOnlyUniqueSource)
      result.counts.independentFullForwardSharpCorroboratedButInverseHeldEdges++;
+    if(inverseRejectedOriginalSharpCorroborated)
+     result.counts.inverseRejectedOriginalFullForwardSharpCorroboratedEdges++;
     if(!nativeOutlineEvidenceAvailable)
      result.counts.nativeOutlineEvidenceUnavailableEdges++;
     else if(nativeOutlineClassBackedUniqueFilterSource)
@@ -850,6 +920,9 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     nativeM4ClassBackedSourceEdgeIds:[...nativeM4ClassBackedSourceIds].sort(),
     nativeM4ClassBackedUniqueFilterSource,
     independentFullForwardSharpCorroboratedButInverseHeld:forwardOnlyUniqueSource,
+    inverseRejectedForwardOriginalSharpSourceWitnesses:inverseRejectedForwardSources,
+    inverseRejectedOriginalFullForwardSharpCorroborated:
+     inverseRejectedOriginalSharpCorroborated,
     nativeM4ClassEvidenceAvailable:m4Available,
     nativeOutlineClassBackedSourceEdgeIds:[...nativeOutlineClassBackedSourceIds].sort(),
     nativeOutlineClassBackedUniqueFilterSource,
@@ -889,6 +962,8 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     rows.filter(x=>x.nativeM4ClassBackedUniqueFilterSource).length,
    independentFullForwardSharpCorroboratedButInverseHeldEdges:
     rows.filter(x=>x.independentFullForwardSharpCorroboratedButInverseHeld).length,
+   inverseRejectedOriginalFullForwardSharpCorroboratedEdges:
+    rows.filter(x=>x.inverseRejectedOriginalFullForwardSharpCorroborated).length,
    nativeM4ClassEvidenceUnavailableEdges:
     rows.filter(x=>x.parameterizedSourceMatchCount>0&&!x.nativeM4ClassEvidenceAvailable).length,
    nativeM4ClassBackingUnprovenEdges:
