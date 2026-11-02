@@ -76,6 +76,7 @@ function projectC1Native3DSourceIntervalsToM4({
   for(const native of parts){
    const interval=native?.nativeOriginalCurveParameterRange;
    if(native.nativeSourceFilterOriginalEdgeId!==sourceEdgeId||
+      native.native3DHLRClass!==klass||
       native.native3DCurveExactlySameAsOriginalAtThreeParameters!==true||
       native.originalGeneratedTopoDSHistoryCertified!==false||
       native.signedV5Action!==false||
