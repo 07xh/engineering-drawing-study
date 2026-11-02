@@ -138,7 +138,9 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   const a=g.data.points[edge[0]],b=g.data.points[edge[1]];
   const pa=project(a)[view],pb=project(b)[view];
   const du=pb.u-pa.u,dv=pb.v-pa.v,den=du*du+dv*dv;
-  if(!(den>1e-15)||!finite(den))
+  // Positive finite sub-threshold projections are not zero-length geometry.
+  // This inverse remains display-only and never certifies TopoDS provenance.
+  if(!(den>0)||!finite(den))
    throw new RangeError('projected original source edge collapsed');
   const fraction=q=>((q.u-pa.u)*du+(q.v-pa.v)*dv)/den;
   const ta=fraction(from),tb=fraction(to);
