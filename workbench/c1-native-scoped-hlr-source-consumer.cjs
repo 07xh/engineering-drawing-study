@@ -729,6 +729,96 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
  }
  return result;
 }
+/**
+ * Independently consume same-run original-edge-filtered GENERATED 2D
+ * OutLineV/HCompound. Native IsSame is a 2D generated edge identity,
+ * not the missing original BRep -> HLR parameter ancestry or M5 proof.
+ */
+function auditC1Native2DOutlineSourceHistory({view,scoped,expected}={}){
+ const ledger=scoped?.native2DOutlineSourceHistory;
+ if(ledger===undefined)return null; // legacy unsigned synthetic fixtures
+ if(ledger?.schema!=='draftai-c1-ocjs-original-filtered-generated-2d-outline/1'||
+    ledger.originalBRepToGenerated2DParameterHistoryCertified!==false||
+    ledger.allSceneContinuousVisibilityCertified!==false||
+    ledger.engineeringLineStyle!=='undetermined'||ledger.signedV5ActionCount!==0||
+    !Number.isSafeInteger(ledger.sourceScopedOutputEdges)||
+    !Number.isSafeInteger(ledger.nativeScopedToWholeSolidGeneratedIsSameCount)||
+    !Array.isArray(ledger.wholeSolid?.visible)||
+    !Array.isArray(ledger.wholeSolid?.hidden)||
+    ledger.wholeSolid.visible.length>128||ledger.wholeSolid.hidden.length>128||
+    !Array.isArray(scoped.rows))
+  throw new RangeError('invalid original-filtered generated 2D outline ledger');
+ const whole={visible:ledger.wholeSolid.visible,hidden:ledger.wholeSolid.hidden};
+ for(const rows of Object.values(whole))for(const seg of rows)
+  if(!seg?.from||!seg?.to||
+     !Number.isFinite(seg.from.u)||!Number.isFinite(seg.from.v)||
+     !Number.isFinite(seg.to.u)||!Number.isFinite(seg.to.v)||
+     seg.originalSourceCandidateOnly!==true||
+     seg.engineeringLineStyle!=='undetermined'||seg.signedV5Action!==false)
+   throw new RangeError('unsigned whole-solid 2D outline endpoint missing');
+ let total=0,direct=0;
+ const nativeClaims=new Set(),sources=new Set();
+ for(const row of scoped.rows){
+  const source=row?.originalPhysicalSourceEdgeId;
+  if(!expected.has(source)||sources.has(source))
+   throw new RangeError('2D outline source does not belong to original BRep');
+  sources.add(source);
+  for(const [klass,field,group] of [
+   ['visible-outline','visibleOutline2D','visible'],
+   ['hidden-outline','hiddenOutline2D','hidden']
+  ]){
+   const witnesses=row[field];
+   if(!Array.isArray(witnesses)||witnesses.length>128)
+    throw new RangeError('missing source-scoped generated 2D outline class');
+   for(const w of witnesses){
+    const paper=w?.globalPaperCandidateOrdinals,
+     native=w?.globalDirectSameGeneratedTopoDSOrdinals;
+    if(w.view!==view||w.hlrClass!==klass||
+       w.originalPhysicalSourceEdgeId!==source||
+       !Array.isArray(paper)||!paper.length||!Array.isArray(native)||
+       native.length>1||
+       w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(native.length===1)||
+       w.fullOriginalSourceParameterCoverageProven!==false||
+       w.globalContinuousOcclusionProven!==false||
+       w.engineeringLineStyle!=='undetermined'||w.signedV5Action!==false)
+     throw new RangeError('forged source-scoped generated 2D outline witness');
+    const uniquePaper=new Set(paper);
+    if(uniquePaper.size!==paper.length||
+       paper.some(n=>!Number.isSafeInteger(n)||n<0||
+        n>=whole[group].length||
+        !nativeScopedPaperSegmentsSame(w,whole[group][n]))||
+       native.some(n=>!uniquePaper.has(n)))
+     throw new RangeError('source-scoped 2D outline has false global native ordinal');
+    for(const n of native){
+     const key=klass+'|'+n;
+     if(nativeClaims.has(key))
+      throw new RangeError('duplicate native generated 2D outline owner');
+     nativeClaims.add(key);
+    }
+    total++;direct+=native.length;
+   }
+  }
+ }
+ const conflicts=ledger.identityConflicts;
+ if(sources.size!==expected.size||total!==ledger.sourceScopedOutputEdges||
+    direct!==ledger.nativeScopedToWholeSolidGeneratedIsSameCount||
+    conflicts?.uniqueNativeClaims!==direct||
+    conflicts?.wholeSolidNativeGeneratedEdgeCount!==
+     whole.visible.length+whole.hidden.length||
+    conflicts?.conflictingSourceClaimsRejected!==true||
+    conflicts?.fullOriginalSourceHistoryCertified!==false||
+    conflicts?.globalContinuousOcclusionCertified!==false||
+    conflicts?.signedV5ActionCount!==0)
+  throw new RangeError('native 2D outline source identity inventory is inconsistent');
+ return frozen({view,sourceScopedOutputEdges:total,
+  nativeScopedToGlobalGeneratedIsSame:direct,
+  wholeSolidGeneratedOutlineEdges:whole.visible.length+whole.hidden.length,
+  unclaimedGeneratedOutlineEdges:
+   conflicts.unclaimedWholeSolidGeneratedEdgeOrdinals?.length??null,
+  generated2DOriginalParameterAncestryCertified:false,
+  globalContinuousVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5ActionCount:0});
+}
 function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
  if(typeof geometry?.id!=='string'||!geometry.id||
     !Array.isArray(geometry?.data?.edges)||!geometry.data.edges.length||
@@ -857,7 +947,10 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
   globalGeneratedHLREdgesWithoutNativeOutlineEvidence:0,
   globalGeneratedHLREdgesWithUnprovenNativeOutlineClassBacking:0,
   originalStatusVsNative3DCompared:0,originalStatusVsNative3DConcordant:0,
-  originalStatusVsNative3DConflicting:0,originalStatusVsNative3DHeld:0};
+  originalStatusVsNative3DConflicting:0,originalStatusVsNative3DHeld:0,
+   nativeGenerated2DOutlineSourceScopedEdges:0,
+   nativeGenerated2DOutlineIsSameClaims:0,
+   nativeGenerated2DOutlineUnclaimedEdges:0};
  for(const view of VIEWS){
   const scoped=cad.nativeSourceScopedSharpOutputByView?.[view],
    ds=cad.nativeHLRSourceHistoryAPISurfaceByView?.[view]?.originalDataStructureIndex;
@@ -1209,7 +1302,17 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    counts.originalStatusVsNative3DConflicting+=conflicting;
    counts.originalStatusVsNative3DHeld+=held;
   }
-  views[view]={nativeOriginal3DM4Candidates,
+  const native2DOutlineSourceHistory=
+    auditC1Native2DOutlineSourceHistory({view,scoped,expected});
+   if(native2DOutlineSourceHistory){
+    counts.nativeGenerated2DOutlineSourceScopedEdges+=
+     native2DOutlineSourceHistory.sourceScopedOutputEdges;
+    counts.nativeGenerated2DOutlineIsSameClaims+=
+     native2DOutlineSourceHistory.nativeScopedToGlobalGeneratedIsSame;
+    counts.nativeGenerated2DOutlineUnclaimedEdges+=
+     native2DOutlineSourceHistory.unclaimedGeneratedOutlineEdges??0;
+   }
+   views[view]={native2DOutlineSourceHistory,nativeOriginal3DM4Candidates,
    nativeScoped2D3DClassBindings,parameterizedGlobalHLRSourceLineage,
    originalStatusReconciliation};
   for(const [klass,item] of Object.entries(classes)){
