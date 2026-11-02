@@ -569,6 +569,13 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         !Number.isFinite(sample.projectedPointResidualMm)||
         sample.projectedPointResidualMm<0)
       throw new RangeError('invalid parameterized HLR five-point curve correspondence');
+     if(previousSample&&
+        (!(sample.generated2DParameter>previousSample.generated2DParameter)||
+         (sourceAscending?
+          !(sample.source3DParameter>previousSample.source3DParameter):
+          !(sample.source3DParameter<previousSample.source3DParameter))))
+      throw new RangeError('noninjective generated HLR to original BRep parameter correspondence');
+     previousSample=sample;
      // Independently reproduce the producer's same-run projected residual.
      // A claimed zero error is not evidence when the two actual paper
      // sample coordinates differ. No epsilon may hide a positive mismatch.
@@ -595,13 +602,6 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
          generatedPoint[1]!==nativeSamples[sampleOrdinal].v)
        throw new RangeError('generated HLR source sample disagrees with native OCCT curve');
      }
-     if(previousSample&&
-        (!(sample.generated2DParameter>previousSample.generated2DParameter)||
-         (sourceAscending?
-          !(sample.source3DParameter>previousSample.source3DParameter):
-          !(sample.source3DParameter<previousSample.source3DParameter))))
-      throw new RangeError('noninjective generated HLR to original BRep parameter correspondence');
-     previousSample=sample;
      sampleResiduals.push(sample.projectedPointResidualMm);
      roundTripResiduals.push(sample.parameterRoundTripResidual);
     }
