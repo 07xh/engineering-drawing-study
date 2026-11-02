@@ -542,6 +542,87 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    x.originalEdgeData.directOriginalTopoDSEdgeIdentityProven).length};
 }
 
+/**
+ * After a genuinely native Parameter3d inverse exceeds the original BRep
+ * domain, independently sample the ORIGINAL same-run OCCT HLR curve FORWARD.
+ * Never clamp the rejected inverse, substitute line interpolation for Value(),
+ * or reinterpret these 5 discrete observations as generated TopoDS ancestry,
+ * a continuous curve equality proof, occlusion, or an official V5 stroke.
+ */
+function auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}={}){
+ const original=source?.parameterRange,generated=segment?.actualOCCTHLRCurveParameterRange,
+  paper=segment?.actualOCCTHLRCurveSamplesProjectedMm,
+  tolerance=segment?.actualOCCTHLRCurveSampleToleranceMm;
+ if(!Array.isArray(original)||original.length!==2||
+    !original.every(Number.isFinite)||!(original[1]>original[0])||
+    !Array.isArray(generated)||generated.length!==2||
+    !generated.every(Number.isFinite)||!(generated[1]>generated[0])||
+    !Array.isArray(p2Range)||p2Range.length!==2||
+    !p2Range.every(Number.isFinite)||
+    !Array.isArray(paper)||paper.length!==5||
+    !paper.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+    !Number.isFinite(tolerance)||tolerance<0)
+  throw new TypeError('actual original and generated native HLR curve domain required');
+ const fullForwardDomainExact=generated[0]===p2Range[0]&&
+  generated[1]===p2Range[1];
+ const p2First=callFiniteOneArg(source.curve,'Parameter2d',original[0]),
+  p2Last=callFiniteOneArg(source.curve,'Parameter2d',original[1]);
+ const forward=p2First.readable&&p2Last.readable;
+ const ascending=forward&&p2Last.value>p2First.value;
+ const samples=[];
+ let previous=null,fullyReadable=true,gridExact=true,monotonic=true,
+  insideNativePaperTolerance=true,maxPaperResidualMm=0;
+ for(let i=0;i<5;i++){
+  const f=i/4;
+  const p3=ascending?original[0]+(original[1]-original[0])*f:
+   original[1]+(original[0]-original[1])*f;
+  const p2=callFiniteOneArg(source.curve,'Parameter2d',p3),
+   native=callPointOneArg(source.curve,'Value',p3,2);
+  const target=generated[0]+(generated[1]-generated[0])*f;
+  if(!p2.readable||!native.readable){
+   fullyReadable=false;
+   samples.push({originalNative3DParameter:p3,
+    generated2DGridParameter:target,nativeOriginal2DParameter:null,
+    nativeOriginalProjectedMm:null,
+    nativeGeneratedPaperResidualMm:null,exactGenerated2DGridParameter:false});
+   continue;
+  }
+  const originalPaper={u:native.coordinates[0],v:-native.coordinates[1]},
+   measured=paper[i],
+   residual=Math.hypot(originalPaper.u-measured.u,
+    originalPaper.v-measured.v);
+  const exact=p2.value===target;
+  if(!exact)gridExact=false;
+  if(previous!==null&&!(p2.value>previous))monotonic=false;
+  previous=p2.value;
+  if(!(residual<=tolerance))insideNativePaperTolerance=false;
+  maxPaperResidualMm=Math.max(maxPaperResidualMm,residual);
+  samples.push({originalNative3DParameter:p3,
+   generated2DGridParameter:target,nativeOriginal2DParameter:p2.value,
+   nativeOriginalProjectedMm:originalPaper,
+   nativeGeneratedPaperResidualMm:residual,
+   exactGenerated2DGridParameter:exact});
+ }
+ return {
+  schema:'draftai-c1-inverse-rejected-original-native-forward-samples/1',
+  fullOriginalForward2DParameterDomainExact:fullForwardDomainExact,
+  originalNativeForwardFiveSamplesReadable:fullyReadable,
+  originalNativeForwardFive2DParametersMatchGeneratedGridExactly:
+   fullyReadable&&gridExact&&monotonic,
+  originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance:
+   fullyReadable&&insideNativePaperTolerance,
+  originalNativeForwardFivePointDiscreteConcordance:
+   fullForwardDomainExact&&forward&&fullyReadable&&gridExact&&monotonic&&
+   insideNativePaperTolerance,
+  originalNativeForwardMaximumPaperResidualMm:
+   fullyReadable?maxPaperResidualMm:null,
+  samples,
+  rejectedNativeInverseStillOutOfOriginalBRepDomain:true,
+  generated2DTopoDSHistoryProven:false,
+  wholeSceneOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ };
+}
 function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  if(!source?.directOriginalTopoDSEdgeIdentityProven||
     !source.curve||!Array.isArray(source.parameterRange)||
@@ -606,6 +687,8 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
     sourceProjected2DParameterRangeSorted:[...p2Range],
     generated2DParameterRange:[...outputRange],
     originalInverseStillOutsideBRepDomain:true,
+    nativeOriginalForwardFiveSampleConcordance:
+     auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}),
     generated2DTopoDSHistoryProven:false,
     engineeringLineStyle:'undetermined',signedV5Action:false};
   const p2Back=callFiniteOneArg(source.curve,'Parameter2d',p3.value);
