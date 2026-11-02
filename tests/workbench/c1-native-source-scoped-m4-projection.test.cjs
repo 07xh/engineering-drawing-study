@@ -405,3 +405,14 @@ test('real native Sharp class cannot be laundered across V/H/W visibility groups
   }
  }
 });
+
+// A complete union does not certify a unique class partition: two native
+// HLR classes may overlap over a positive original BRep parameter interval.
+test('M4 Sharp candidate coverage rejects positive native visible/hidden class overlap',()=>{
+ const x=input([[0,6]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.ok(out.M4OriginalUnitIntervalNativeClassConflicts.length>0);
+ assert.equal(out.officialV5Authorized,false);
+});
