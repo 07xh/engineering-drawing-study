@@ -93,7 +93,7 @@ test('frame zero rejects future line, forged completed action, extra action and 
  ];
  for(const mutate of corrupt){
   const f=fixture();mutate(f);
-  assert.throws(()=>inspect(f),/canonical|source-current|frame fractions/);
+  assert.throws(()=>inspect(f),/canonical|source-current|frame fractions|sole player snapshot/);
  }
  const f=fixture();
  f.solution.player.seekStep(2,20);
