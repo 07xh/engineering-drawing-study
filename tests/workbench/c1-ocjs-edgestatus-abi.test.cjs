@@ -785,8 +785,21 @@ test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep para
   }],nativeCurveHandlesBySourceId:source});
   assert.equal(result.uniqueParameterizedSourceMatchCount,0);
   assert.equal(result.unmatchedGeneratedOutputEdgeCount,1);
-  assert.equal(result.rows[0].rejectedSourceCandidates[0].reason,
-   'generated-source-3d-parameter-outside-original-brep-domain');
+  const rejected=result.rows[0].rejectedSourceCandidates[0];
+  assert.equal(rejected.reason,'generated-source-3d-parameter-outside-original-brep-domain');
+  assert.equal(rejected.matched,false);
+  assert.equal(rejected.originalTopoDSEdgeIdentityProven,true);
+  assert.deepEqual(rejected.originalBRepSourceParameterRange,[0,10]);
+  assert.deepEqual(rejected.original3DCurveParameterRange,[0,10]);
+  assert.deepEqual(rejected.sourceProjected2DParameterRange,[2,12]);
+  assert.deepEqual(rejected.sourceProjected2DParameterRangeSorted,[2,12]);
+  assert.deepEqual(rejected.generated2DParameterRange,[2,12]);
+  assert.equal(rejected.firstRejectedGenerated2DParameter,boundary==='lower'?2:12);
+  assert.equal(rejected.firstRejectedOriginal3DParameter,
+   boundary==='lower'?-Number.MIN_VALUE:10+8*Number.EPSILON);
+  assert.equal(rejected.originalInverseStillOutsideBRepDomain,true);
+  assert.equal(rejected.generated2DTopoDSHistoryProven,false);
+  assert.equal(rejected.signedV5Action,false);
   assert.equal(result.generated2DTopoDSHistoryProven,false);
   assert.equal(result.signedV5ActionCount,0);
  }
