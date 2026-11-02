@@ -94,14 +94,18 @@ function method(owner,key){
  return fn;
 }
 function closeToSegment(p,a,b,tol=1e-6){
- const ux=b.u-a.u,uy=b.v-a.v,len2=ux*ux+uy*uy;
- // Reject only a zero or non-representable squared projected length.
- // A positive 1e-16 mm² projected source is real geometry, even though
- // its paper match remains an unsigned candidate, not native BRep history.
- if(!(len2>0)||!finite(len2))return false;
- const cross=ux*(p.v-a.v)-uy*(p.u-a.u);
- const t=((p.u-a.u)*ux+(p.v-a.v)*uy)/len2;
- return Math.abs(cross)<=tol*Math.sqrt(len2)&&t>=-tol&&t<=1+tol;
+ const du=b.u-a.u,dv=b.v-a.v,len=Math.hypot(du,dv);
+ // A positive projection can have a squared length rounded to zero.
+ // Only a genuinely collapsed/nonfinite binary64 paper source is excluded.
+ if(!(len>0)||!Number.isFinite(len))return false;
+ const ux=du/len,uy=dv/len,pu=p.u-a.u,pv=p.v-a.v;
+ const cross=ux*pv-uy*pu;
+ const t=(ux*pu+uy*pv)/len;
+ // Paper-only candidate proximity. Never infer original TopoDS history
+ // from this tolerance; avoid borrowing a nearby tiny parallel source.
+ const paperTol=Math.min(tol,len*tol);
+ return Number.isFinite(cross)&&Number.isFinite(t)&&
+  Math.abs(cross)<=paperTol&&t>=-tol&&t<=1+tol;
 }
 function provenanceCandidates(g,view,from,to){
  const src=[];
