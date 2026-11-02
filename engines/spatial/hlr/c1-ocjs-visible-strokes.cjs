@@ -1096,9 +1096,17 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
        const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
        const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+       const source3D=sourceById.get(original.sourceEdgeId);
+       const sourceRange=source3D?.occtSourceCurveParameterRange;
+       // A straight BRepAdaptor line can extrapolate beyond its original
+       // domain and still agree at three sampled XYZ values. No epsilon or
+       // sampled coincidence can authorize an out-of-domain source span.
        if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
-          !finite(first)||!finite(last)||!(last>first))
-        throw new RangeError('actual source-filtered native HLR 3D edge is not a positive line');
+          !finite(first)||!finite(last)||!(last>first)||
+          !Array.isArray(sourceRange)||sourceRange.length!==2||
+          !sourceRange.every(finite)||!(sourceRange[1]>sourceRange[0])||
+          first<sourceRange[0]||last>sourceRange[1])
+        throw new RangeError('source-filtered native HLR 3D Sharp interval escapes original BRep domain');
        const p0=hold(curve3D.Value(first)),p1=hold(curve3D.Value(last));
        const from3D={x:p0.X(),y:p0.Y(),z:p0.Z()};
        const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
