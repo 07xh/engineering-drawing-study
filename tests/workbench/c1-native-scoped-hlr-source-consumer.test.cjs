@@ -1696,6 +1696,21 @@ test('original M0 whole-edge forward endpoint agrees without masking native inve
  const good=audit(args);
  assert.equal(good.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
  assert.equal(good.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,true);
+ assert.equal(good.nativeGeneratedSamplesStrictlyOrderedAlongOriginalM0PaperLine,true);
+ // Five exactly collinear samples are not a valid forward HLR witness if
+ // they reverse direction or repeat an interior point.
+ const backtrack=audit({...args,generatedHLRCurveSamples:[
+  native[0],native[2],native[1],native[3],native[4]]});
+ assert.equal(backtrack.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(backtrack.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,false);
+ assert.equal(backtrack.nativeGeneratedSamplesStrictlyOrderedAlongOriginalM0PaperLine,false);
+ assert.equal(backtrack.signedV5Action,false);
+ const repeated=audit({...args,generatedHLRCurveSamples:[
+  native[0],native[1],native[1],native[3],native[4]]});
+ assert.equal(repeated.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,false);
+ assert.equal(repeated.nativeGeneratedSamplesStrictlyOrderedAlongOriginalM0PaperLine,false);
+ const reversed=audit({...args,generatedHLRCurveSamples:[...native].reverse()});
+ assert.equal(reversed.nativeGeneratedSamplesStrictlyOrderedAlongOriginalM0PaperLine,true);
  const warped=audit({...args,generatedHLRCurveSamples:[
   native[0],native[1],{...native[2],v:native[2].v+Number.EPSILON*16},
   native[3],native[4]]});
