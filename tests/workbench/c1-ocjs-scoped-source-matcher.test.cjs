@@ -294,3 +294,27 @@ test('consumer refuses invented or swapped whole-solid native source ordinals',(
  assert.equal(valid.fullOriginalSourceHistoryCertified,false);
  assert.equal(valid.signedV5ActionCount,0);
 });
+
+test('native IsSame retains exact endpoints when finite source coordinates overflow binary64 hypot',()=>{
+ const max=Number.MAX_VALUE;
+ // Both received paper endpoints are finite. Their real geometric span
+ // exceeds MAX_VALUE, so binary64 hypot is Infinity, not a collapsed edge.
+ const x=setup('H');
+ x.globalSegments=[{from:{u:-max,v:0},to:{u:max,v:0}}];
+ x.globalNativeEdges=[native('front')];
+ x.scopedSegment={from:{u:-max,v:0},to:{u:max,v:0}};
+ assert.equal(Math.hypot(x.globalSegments[0].to.u-x.globalSegments[0].from.u,0),Infinity);
+ const result=match(x);
+ assert.deepEqual(result.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+ assert.equal(result.actualNativeScopedToGlobalGeneratedEdgeIsSameProven,true);
+ assert.equal(result.fullOriginalSourceParameterCoverageProven,false);
+ assert.equal(result.globalContinuousOcclusionProven,false);
+ assert.equal(result.signedV5Action,false);
+ // Native identity does not permit a paper endpoint to drift, even when
+ // a giant source span would make a relative tolerance dangerously wide.
+ const bad=setup('H');
+ bad.globalSegments=x.globalSegments;
+ bad.globalNativeEdges=x.globalNativeEdges;
+ bad.scopedSegment={from:{u:-max,v:1e-6},to:{u:max,v:0}};
+ assert.throws(()=>match(bad),/inconsistent paper endpoints/);
+});
