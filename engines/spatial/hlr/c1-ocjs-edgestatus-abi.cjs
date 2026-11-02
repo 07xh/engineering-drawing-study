@@ -664,6 +664,10 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
    candidateSourceMatchCount:candidateSourceMatches.length,
    candidateSourceMatches,
    rejectedSourceCandidateCount:rejectedSourceCandidates.length,
+   // Preserve per-original-edge native rejection reasons for the actual M4
+   // consumer and C1 source-gap diagnosis; no candidate is upgraded to
+   // generated TopoDS ancestry or a signed engineering stroke.
+   rejectedSourceCandidates,
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===1?
