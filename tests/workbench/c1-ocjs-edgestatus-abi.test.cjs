@@ -898,3 +898,39 @@ test('generated HLR native 2D last parameter is preserved exactly despite binary
  assert.equal(held.uniqueParameterizedSourceMatchCount,0);
  assert.equal(held.rows[0].status,'no-parameterized-source-curve-match');
 });
+
+test('a matching original HLR EdgeData handle cannot borrow provenance from a foreign duplicate source handle',()=>{
+ const edgeA={identity:'A',IsSame(other){return other?.identity==='A';}};
+ const edgeB={identity:'B',IsSame(other){return other?.identity==='B';}};
+ const ds={EDataArray(){return {Value(){return {
+  Status(){return status([0,1],[[0,1]],true,false);},
+  Geometry(){return {GetCurve(){return {
+   FirstParameter(){return 0;},LastParameter(){return 1;},Edge(){return edgeA;}
+  };}};}
+ };}};}};
+ const original=(edge)=>({sourceEdgeId:'g::E0',edge,parameterRange:[0,1]});
+ for(const handles of [
+  [original(edgeA),original(edgeB)],
+  [original(edgeB),original(edgeA)]
+ ]){
+  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+   indexedOriginalSources:sources(1),
+   originalNativeEdgeHandles:handles,view:'H'});
+  const row=r.rows[0].originalEdgeData;
+  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
+  assert.equal(row.sameSourceNativeHandleIdentityConsistent,false);
+  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,false);
+  assert.equal(row.originalBRepSourceParameterRange,null);
+  assert.equal(row.originalBRepParameterRangeMatches,false);
+  assert.equal(r.generated2DHLRTopoDSHistoryCertified,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+ const accepted=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[original(edgeA),original(edgeA)],view:'H'});
+ const row=accepted.rows[0].originalEdgeData;
+ assert.equal(row.sameSourceNativeHandleIdentityConsistent,true);
+ assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
+ assert.deepEqual(row.originalBRepSourceParameterRange,[0,1]);
+ assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
+});
