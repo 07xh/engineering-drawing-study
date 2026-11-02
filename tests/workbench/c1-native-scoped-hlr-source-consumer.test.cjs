@@ -1546,3 +1546,62 @@ test('V/H/W native outline evidence cannot be hidden by a false or missing avail
   assert.throws(()=>run(missing),/available native outline evidence requires an interval inventory/);
  }
 });
+
+function fixtureWithNative2DOutLine(){
+ const x=fixture();
+ for(const view of ['V','H','W']){
+  const scoped=x.cad.nativeSourceScopedSharpOutputByView[view];
+  const original=x.paper(view,x.id0);
+  const witness={...x.witness(view,x.id0),hlrClass:'visible-outline',
+   globalDirectSameGeneratedTopoDSOrdinals:[0],
+   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:true};
+  scoped.rows[0].visibleOutline2D=[witness];
+  scoped.rows[0].hiddenOutline2D=[];
+  scoped.rows[1].visibleOutline2D=[];
+  scoped.rows[1].hiddenOutline2D=[];
+  scoped.native2DOutlineSourceHistory={
+   schema:'draftai-c1-ocjs-original-filtered-generated-2d-outline/1',
+   wholeSolid:{visible:[{...original,originalSourceCandidateOnly:true,
+    engineeringLineStyle:'undetermined',signedV5Action:false}],hidden:[]},
+   sourceScopedOutputEdges:1,
+   nativeScopedToWholeSolidGeneratedIsSameCount:1,
+   identityConflicts:{uniqueNativeClaims:1,wholeSolidNativeGeneratedEdgeCount:1,
+    unclaimedWholeSolidGeneratedEdgeOrdinals:[],
+    conflictingSourceClaimsRejected:true,
+    fullOriginalSourceHistoryCertified:false,
+    globalContinuousOcclusionCertified:false,signedV5ActionCount:0},
+   originalBRepToGenerated2DParameterHistoryCertified:false,
+   allSceneContinuousVisibilityCertified:false,
+   engineeringLineStyle:'undetermined',signedV5ActionCount:0
+  };
+ }
+ return x;
+}
+test('V/H/W real 2D outline native identity is consumed but cannot certify original BRep ancestry',()=>{
+ const x=fixtureWithNative2DOutLine(),r=audit(x);
+ assert.equal(r.counts.nativeGenerated2DOutlineSourceScopedEdges,3);
+ assert.equal(r.counts.nativeGenerated2DOutlineIsSameClaims,3);
+ assert.equal(r.counts.nativeGenerated2DOutlineUnclaimedEdges,0);
+ for(const view of ['V','H','W']){
+  const result=r.views[view].native2DOutlineSourceHistory;
+  assert.equal(result.nativeScopedToGlobalGeneratedIsSame,1);
+  assert.equal(result.generated2DOriginalParameterAncestryCertified,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+ assert.equal(r.formalEngineeringLineStyleCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('native 2D outline forged source, ordinal, style, global endpoint and identity count are rejected',()=>{
+ for(const view of ['V','H','W'])for(const mutate of [
+  c=>{c.rows[0].visibleOutline2D[0].originalPhysicalSourceEdgeId='g::invented';},
+  c=>{c.rows[0].visibleOutline2D[0].globalPaperCandidateOrdinals=[3];},
+  c=>{c.rows[0].visibleOutline2D[0].signedV5Action=true;},
+  c=>{c.native2DOutlineSourceHistory.wholeSolid.visible[0].from.u+=2;},
+  c=>{c.native2DOutlineSourceHistory.nativeScopedToWholeSolidGeneratedIsSameCount=0;},
+  c=>{c.native2DOutlineSourceHistory.originalBRepToGenerated2DParameterHistoryCertified=true;}
+ ]){
+  const x=fixtureWithNative2DOutLine();
+  mutate(x.cad.nativeSourceScopedSharpOutputByView[view]);
+  assert.throws(()=>audit(x),/outline|source|identity|ordinal|forged/i);
+ }
+});
