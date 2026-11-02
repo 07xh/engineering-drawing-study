@@ -1128,6 +1128,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
         nativeOriginalCurveParameterRange:[first,last],
         actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
         nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DHLRClass:klass,
         native3DCurveExactlySameAsOriginalAtThreeParameters:true,
         originalGeneratedTopoDSHistoryCertified:false,
         engineeringLineStyle:'undetermined',signedV5Action:false
