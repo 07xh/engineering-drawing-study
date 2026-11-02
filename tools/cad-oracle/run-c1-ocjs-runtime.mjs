@@ -588,6 +588,49 @@ for(const [index,geometry] of general.entries()){
    generated2DTopoDSHistoryCertified:false,
    globalContinuousVisibilityCertified:false,officialV5Actions:0
   }));
+ // Exact native M4 failure inventory: retain the actual generated output
+ // ordinal, original BRep parameters and raw inverse. Never clamp a positive
+ // out-of-domain interval or replace source history with a paper match.
+ const heldM4SourceRows=[];
+ for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
+  for(const row of parameterizedLineageByView[view].classes[klass].rows){
+   if(row.nativeM4ClassBackedUniqueFilterSource)continue;
+   for(const item of row.parameterizedSourceIntervals??[]){
+    const audit=item.nativeM4ClassBacking;
+    if(!audit||audit.nativeM4ClassBacked===true)continue;
+    assert.equal(audit.sourceEdgeId,item.sourceEdgeId);
+    assert.deepEqual(audit.source3DParameterRangeFromInverse,
+     item.source3DParameterRange);
+    heldM4SourceRows.push({
+     view,hlrClass:klass,wholeSolidHLREdgeOrdinal:row.wholeSolidHLREdgeOrdinal,
+     sourceEdgeId:item.sourceEdgeId,
+     originalBRepParameterRange:item.original3DCurveParameterRange,
+     rawInverseParameterRange:item.source3DParameterRange,
+     originalM0InverseUnitRange:audit.inverseMappedOriginalM0UnitParameterRange??null,
+     sourceParameterDomainContainment:audit.sourceParameterDomainContainment??null,
+     reason:audit.reason??null,
+     forward2DParameterRange:item.sourceProjected2DParameterRange,
+     generated2DParameterRange:item.generated2DParameterRange,
+     forwardEndpointResiduals:item.sourceProjected2DParameterEndpointResiduals,
+     exactForwardEndpointMatch:
+      item.sourceProjected2DParameterRangeMatchesGeneratedOutputRange,
+     nativeSharpOriginalParameterClassBacked:
+      audit.nativeSharpOriginalParameterClassBacked??null,
+     nativeM4SameClassCoverageComplete:
+      audit.nativeM4SameClassCoverageComplete??null,
+     nativeM4OppositeClassPositiveOverlap:
+      audit.nativeM4OppositeClassPositiveOverlap??null,
+     signedV5Action:false
+    });
+   }
+  }
+ assert.ok(heldM4SourceRows.length>=
+  parameterizedLineageTotals.nativeM4ClassBackingUnprovenEdges,
+  'unproven generated HLR class must retain its original source audit');
+ console.error('REAL C1 HELD NATIVE M4 PARAMETERIZED SOURCE REASONS '+
+  geometry.id+': '+JSON.stringify({count:heldM4SourceRows.length,
+   rows:heldM4SourceRows,originalGeneratedTopoDSHistoryCertified:false,
+   fullSceneM5Certified:false,signedV5Actions:0}));
  // Keep the exact M5 source-axis audit live on the REAL pinned WASM scenes.
  // All normal-scale original native V/H/W paper spans should agree with
  // the historical scalar dominant-axis choice. The extreme independent
