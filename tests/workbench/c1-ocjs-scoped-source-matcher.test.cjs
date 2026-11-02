@@ -218,3 +218,34 @@ test('one native whole-solid inventory cannot mix V and W generated edge ordinal
   wholeSolidCounts:{'visible-sharp':3,'hidden-sharp':0}}),
   /one HLR view/);
 });
+
+test('genuine generated 2D OutLine source filter preserves native IsSame without M5 promotion',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:auditClaims}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const view of ['V','H','W']){
+  const x=setup(view);x.hlrClass='visible-outline';
+  const r=match(x);
+  assert.deepEqual(r.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+  assert.equal(r.fullOriginalSourceParameterCoverageProven,false);
+  assert.equal(r.signedV5Action,false);
+  const c=auditClaims({matches:[r],wholeSolidCounts:{
+   'visible-outline':3,'hidden-outline':0
+  }});
+  assert.equal(c.uniqueNativeClaims,1);
+  assert.equal(c.unclaimedWholeSolidGeneratedEdgeOrdinals.length,2);
+  assert.equal(c.fullOriginalSourceHistoryCertified,false);
+  const forged=setup(view);forged.hlrClass='hidden-outline';
+  forged.scopedSegment=edge(40,50);
+  assert.throws(()=>match(forged),/absent from whole-solid/);
+ }
+});
+test('empty native 2D OutLine inventory remains empty, not silently converted to Sharp',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:auditClaims}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const r=auditClaims({matches:[],wholeSolidCounts:{
+  'visible-outline':0,'hidden-outline':0
+ }});
+ assert.equal(r.wholeSolidNativeGeneratedEdgeCount,0);
+ assert.deepEqual(r.unclaimedWholeSolidGeneratedEdgeOrdinals,[]);
+ assert.equal(r.signedV5ActionCount,0);
+});
