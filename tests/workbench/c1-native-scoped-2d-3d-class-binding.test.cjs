@@ -581,3 +581,21 @@ test('off-source paper alias cannot fill missing native generated 2D original-so
  assert.equal(r.rows[1].exactOriginalM0PaperAffineCollinearity,false);
  assert.equal(r.officialV5Authorized,false);
 });
+
+test('absent native source-scoped 2D output leaves the entire physical source uncovered',()=>{
+ const r=make([],[],[native('visible-sharp',0,1)]);
+ assert.deepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,[['0','1']]);
+ assert.equal(r.counts.positiveGenerated2DSourceParameterGapCount,1);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,false);
+ assert.equal(r.sourceScoped2DClassBoundWithoutRounding,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('two full-length generated 2D aliases cannot claim exact-once source coverage',()=>{
+ const r=make([stroke('visible-sharp'),stroke('visible-sharp')],[],
+  [native('visible-sharp',0,1)]);
+ assert.deepEqual(r.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps,[]);
+ assert.equal(r.sourceScoped2DGeneratedPaperPositiveOverlapPresent,true);
+ assert.equal(r.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact,false);
+ assert.equal(r.counts.generated2DEdgesHeldForSourceParameterOverlap,2);
+ assert.equal(r.officialV5Authorized,false);
+});
