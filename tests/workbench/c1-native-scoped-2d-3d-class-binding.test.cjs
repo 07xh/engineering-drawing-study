@@ -504,6 +504,7 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
    schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
    sourceGeometryId:'m',revision:12,view,sourceEdgeId,
    originalNative3DSourceParameterRange:[0,1],
+   original3DSourceCurveDirection:'forward',
    segments:[{...native('visible-sharp',0,1),
     originalNative3DParameterRange:[0,1]}],
    native3DSourceParameterPartitionCompleteExactlyOnce:true,
@@ -516,6 +517,41 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
  const ok=audit(args);
  assert.equal(ok.sourceScoped2DClassBoundWithoutRounding,true);
  assert.equal(ok.officialV5Authorized,false);
+ // Both partitions can appear complete while the raw OCCT intervals are
+ // deliberately assigned to DIFFERENT normalized M4 source positions.
+ const misbound=structuredClone(args);
+ misbound.nativeOriginal3DM4.segments=[
+  {...native('visible-sharp',0,.25),
+   originalNative3DParameterRange:[0,.5]},
+  {...native('visible-sharp',.25,1),
+   originalNative3DParameterRange:[.5,1]}
+ ];
+ assert.throws(()=>audit(misbound),/native-to-M4 source interval normalization mismatch/);
+ // Reversed original BRep orientation is legitimate when every M4 cut
+ // is reproduced by the same direction-specific native normalization.
+ const reversed=structuredClone(args);
+ reversed.nativeOriginal3DM4.original3DSourceCurveDirection='reversed';
+ assert.equal(audit(reversed).sourceScoped2DClassBoundWithoutRounding,true);
+ // Held native source intervals must also reproduce their original
+ // normalized range; they may not silently borrow a different paper cut.
+ const heldMapping=structuredClone(args);
+ heldMapping.nativeOriginal3DM4.segments=[
+  {...native('visible-sharp',0,.25),
+   originalNative3DParameterRange:[0,.25]},
+  {...native('visible-sharp',.5,1),
+   originalNative3DParameterRange:[.5,1]}
+ ];
+ heldMapping.nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation=[
+  {originalNative3DParameterRange:[.25,.5],
+   roundedOriginalM0UnitParameterRange:[.25,.5],
+   native3DHLRClass:'visible-sharp',
+   engineeringLineStyle:'undetermined',signedV5Action:false}
+ ];
+ heldMapping.nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete=false;
+ assert.equal(audit(heldMapping).sourceScoped2DClassBoundWithoutRounding,false);
+ heldMapping.nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0]
+  .roundedOriginalM0UnitParameterRange=[.25,.49999999999999994];
+ assert.throws(()=>audit(heldMapping),/native-to-M4 source interval normalization mismatch/);
  // Rounded M4 [0,1] appears complete but original OCCT parameters have
  // a STRICTLY positive one-ULP gap. Forged upstream flags must not pass.
  const forged=structuredClone(args);
