@@ -76,11 +76,25 @@ function auditC1OriginalM0FullForwardHLRPaperEndpoints({
    auditC1ExactBinary64PaperAffineWitness({
     sourceFrom:a[0],sourceTo:a[1],measuredFrom:p,measuredTo:p
    }).bothNativeEndpointsExactlyOnOriginalBinary64PaperLine));
+ // Collinear native samples may still backtrack or repeat a point. Such a
+ // curve cannot corroborate the forward original BRep edge. Choose the
+ // exact dominant projected axis to avoid overflow in binary64 spans.
+ // This remains a necessary sampled witness, NOT complete TopoDS history.
+ const dominantAxis=exactInterior?
+  auditExactBinary64PaperParameterPair({
+   sourceFrom:a[0],sourceTo:a[1],measuredFrom:a[0],measuredTo:a[1]
+  }).dominantOriginalProjectionAxis:null;
+ const increasing=exactInterior&&b[4][dominantAxis]>b[0][dominantAxis];
+ const strictlyOrderedSamples=Boolean(exactInterior&&
+  b.every((p,i)=>i===0||(increasing?
+   p[dominantAxis]>b[i-1][dominantAxis]:
+   p[dominantAxis]<b[i-1][dominantAxis])));
  return Object.freeze({
   originalForward2DParameterDomainFullyMatchesGenerated:full,
   actualNativeGeneratedCurveSamplesPresent:samples,
   exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement:exact,
-  nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine:exactInterior,
+  nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine:exactInterior&&strictlyOrderedSamples,
+  nativeGeneratedSamplesStrictlyOrderedAlongOriginalM0PaperLine:strictlyOrderedSamples,
   rawNativeParameter3dInverseNeverClamped:true,
   originalToGeneratedTopoDSHistoryCertified:false,
   continuousAllFaceVisibilityCertified:false,
