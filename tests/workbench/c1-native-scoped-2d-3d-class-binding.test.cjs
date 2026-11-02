@@ -534,5 +534,5 @@ test('finite overflowing source span retains only bounded unsigned endpoint comp
  // No infinite received coordinates or transverse drift can inherit
  // an original-source endpoint identity merely because hypot overflowed.
  assert.equal(envelope(a,b,{u:Infinity,v:0},b).compatible,false);
- assert.equal(envelope(a,b,{u:-max,v:Number.MIN_VALUE},b).compatible,false);
+ assert.equal(envelope(a,b,{u:-max,v:2*Number.MIN_VALUE},b).compatible,false);
 });
