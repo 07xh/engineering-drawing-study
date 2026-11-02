@@ -413,6 +413,56 @@ test('native source paper tolerances are per-axis, preserve legitimate v roundin
  assert.equal(envelope(a,b,b,{u:0,v:big+ulp}).compatible,true);
 });
 
+test('sub-unit source scale never borrows one-millimetre ULP for bounded paper evidence',()=>{
+ const {boundedOriginalFullPaperEndpointEnvelope:envelope}=
+  require('../../workbench/c1-native-scoped-2d-3d-class-binding.cjs');
+ const a={u:1e-6,v:0},b={u:2e-6,v:0};
+ const far={u:a.u+1e-17,v:0};
+ assert.ok(far.u>a.u);
+ const report=envelope(a,b,far,b);
+ assert.equal(report.compatible,false);
+ assert.ok(report.originalPaperAxisOneULPEnvelopesMm.u<1e-20);
+ assert.ok(Math.abs(far.u-a.u)>report.originalPaperAxisOneULPEnvelopesMm.u);
+ // One real representable ULP at the larger original source coordinate
+ // remains a necessary rounded-output compatibility witness, not history.
+ const nextUp={u:b.u+Number.EPSILON*b.u,v:0};
+ assert.ok(nextUp.u>b.u);
+ const accepted=envelope(a,b,a,nextUp);
+ assert.equal(accepted.compatible,true);
+ assert.equal(accepted.exactClosedOriginalEndpointGeometryCertified,false);
+ assert.equal(envelope(b,a,nextUp,a).compatible,true);
+ // A truly zero-valued source paper axis never borrows a 1-mm epsilon.
+ assert.equal(envelope(a,b,{u:a.u,v:1e-18},b).compatible,false);
+});
+
+test('native M4 keeps sub-unit original source paper drift held despite whole 3D class',()=>{
+ const a={u:1e-6,v:0},b={u:2e-6,v:0};
+ const received={...stroke('visible-sharp'),
+  from:{u:a.u+1e-17,v:0},to:{...b}};
+ const r=audit({view,sourceEdgeId,
+  sourceProjectedFrom:a,sourceProjectedTo:b,
+  scoped2DVisible:[received],scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   native3DOutlineSegments:[],
+   view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }
+ });
+ assert.equal(r.rows[0].exactOriginalM0PaperAffineCollinearity,true);
+ assert.equal(r.rows[0].native3DSameVisibilityClassExactlyCoversWholeOriginalSource,true);
+ assert.equal(r.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
+ assert.equal(r.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ assert.equal(r.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+ assert.equal(r.rows[0].signedV5Action,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+
 test('real M4 source binding holds cross-axis alias with full native class evidence',()=>{
  const big=2**40,ulp=2**-12,a={u:0,v:big},b={u:100,v:big+1000};
  const mk=from=>audit({
