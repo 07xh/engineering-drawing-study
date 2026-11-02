@@ -247,6 +247,10 @@ function projectC1Native3DSourceIntervalsToM4({
  return freeze({
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   sourceGeometryId:geometry.id,revision,view,sourceEdgeId,
+  // Preserve the ORIGINAL OCCT BRepAdaptor domain for independent native
+  // parameter-gap replay in the actual M4/HLR class consumer. Rounded
+  // [0,1] source fractions alone cannot prove the original native union.
+  originalNative3DSourceParameterRange:[first,last],
   original3DSourceCurveDirection:forward?'forward':'reversed',
   native3DSourceParameterPartitionCompleteExactlyOnce:
    nativePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce,
