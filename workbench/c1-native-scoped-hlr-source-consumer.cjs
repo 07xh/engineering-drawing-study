@@ -734,7 +734,7 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
  * OutLineV/HCompound. Native IsSame is a 2D generated edge identity,
  * not the missing original BRep -> HLR parameter ancestry or M5 proof.
  */
-function auditC1Native2DOutlineSourceHistory({view,scoped,expected}={}){
+function auditC1Native2DOutlineSourceHistory({view,scoped,expected,onOriginalPaperEdge}={}){
  const ledger=scoped?.native2DOutlineSourceHistory;
  if(ledger===undefined)return null; // legacy unsigned synthetic fixtures
  if(ledger?.schema!=='draftai-c1-ocjs-original-filtered-generated-2d-outline/1'||
@@ -775,6 +775,8 @@ function auditC1Native2DOutlineSourceHistory({view,scoped,expected}={}){
      native=w?.globalDirectSameGeneratedTopoDSOrdinals;
     if(w.view!==view||w.hlrClass!==klass||
        w.originalPhysicalSourceEdgeId!==source||
+       !onOriginalPaperEdge(w.from,source,view)||
+       !onOriginalPaperEdge(w.to,source,view)||
        !Array.isArray(paper)||!paper.length||!Array.isArray(native)||
        native.length>1||
        w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(native.length===1)||
@@ -1303,7 +1305,7 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    counts.originalStatusVsNative3DHeld+=held;
   }
   const native2DOutlineSourceHistory=
-    auditC1Native2DOutlineSourceHistory({view,scoped,expected});
+    auditC1Native2DOutlineSourceHistory({view,scoped,expected,onOriginalPaperEdge});
    if(native2DOutlineSourceHistory){
     counts.nativeGenerated2DOutlineSourceScopedEdges+=
      native2DOutlineSourceHistory.sourceScopedOutputEdges;
