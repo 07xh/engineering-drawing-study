@@ -34,6 +34,45 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 }return o;};
 
 /**
+ * Compare the reviewed ORIGINAL M0 whole physical-edge paper endpoints to
+ * actual native GENERATED 2D HLR curve endpoints. Require exactly the same
+ * forward native Parameter2d domain; never use the rounded Parameter3d
+ * inverse to invent an original source interval. An unsigned witness only.
+ */
+function auditC1OriginalM0FullForwardHLRPaperEndpoints({
+ originalProjectedEndpoints,sourceProjected2DParameterRangeSorted,
+ generated2DParameterRange,generatedHLRCurveSamples
+}={}){
+ const point=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
+ const range=r=>Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[1]>r[0];
+ if(!Array.isArray(originalProjectedEndpoints)||
+    originalProjectedEndpoints.length!==2||
+    !originalProjectedEndpoints.every(point)||
+    !range(sourceProjected2DParameterRangeSorted)||
+    !range(generated2DParameterRange))
+  throw new TypeError('finite original M0 paper and native parameter ranges required');
+ const full=sourceProjected2DParameterRangeSorted.every(
+  (v,i)=>v===generated2DParameterRange[i]);
+ const samples=Array.isArray(generatedHLRCurveSamples)&&
+  generatedHLRCurveSamples.length===5&&generatedHLRCurveSamples.every(point);
+ if(generatedHLRCurveSamples!==undefined&&!samples)
+  throw new RangeError('invalid original native HLR sample inventory');
+ const same=(a,b)=>a.u===b.u&&a.v===b.v;
+ const a=originalProjectedEndpoints,b=generatedHLRCurveSamples;
+ const exact=Boolean(full&&samples&&(
+  same(a[0],b[0])&&same(a[1],b[4])||
+  same(a[0],b[4])&&same(a[1],b[0])));
+ return Object.freeze({
+  originalForward2DParameterDomainFullyMatchesGenerated:full,
+  actualNativeGeneratedCurveSamplesPresent:samples,
+  exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement:exact,
+  rawNativeParameter3dInverseNeverClamped:true,
+  originalToGeneratedTopoDSHistoryCertified:false,
+  continuousAllFaceVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
+/**
  * Compare one generated-edge source interval with the independently
  * source-filtered native 3D M4 visible/hidden parameter partition.
  * The result is class backing, never generated-edge TopoDS ancestry.
@@ -405,7 +444,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  * ancestry, global occlusion, GB line style, ConstructionIntent or V5.
  */
 function auditC1ParameterizedGlobalHLRSourceLineage({
- view,classes,scoped,expected,nativeM4ById
+ view,classes,scoped,expected,nativeM4ById,projectedOriginalBySource
 }={}){
  const reports=scoped?.generated2DSourceParameterMatches;
  const result={schema:'draftai-c1-parameterized-global-hlr-source-lineage/1',
@@ -658,6 +697,14 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      maximumProjectedPointResidualMm:match.maximumProjectedPointResidualMm,
      maximumParameterRoundTripResidual:match.maximumParameterRoundTripResidual,
      sampleCount:match.samples.length,
+     originalM0FullForwardPaperEndpointWitness:
+      projectedOriginalBySource instanceof Map?
+       auditC1OriginalM0FullForwardHLRPaperEndpoints({
+        originalProjectedEndpoints:projectedOriginalBySource.get(match.sourceEdgeId)?.[view],
+        sourceProjected2DParameterRangeSorted:match.sourceProjected2DParameterRangeSorted,
+        generated2DParameterRange:match.generated2DParameterRange,
+        generatedHLRCurveSamples:segment.actualOCCTHLRCurveSamplesProjectedMm
+       }):null,
      nativeM4ClassBacking:m4Audit
     });
    }
@@ -1263,7 +1310,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
    [x.sourceEdgeId,x]));
   const parameterizedGlobalHLRSourceLineage=
    auditC1ParameterizedGlobalHLRSourceLineage({
-    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage
+    view,classes,scoped,expected,nativeM4ById:nativeM4ByIdForParameterizedLineage,
+    projectedOriginalBySource
    });
   counts.globalGeneratedHLREdgesWithUniqueParameterizedSourceLineage+=
    parameterizedGlobalHLRSourceLineage.counts.uniqueParameterizedSourceLineage;
@@ -1542,5 +1590,6 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
 }
 module.exports={
  auditC1NativeScopedHLRSourceConsumer,
- auditC1ParameterizedSourceMatchAgainstNativeM4
+ auditC1ParameterizedSourceMatchAgainstNativeM4,
+ auditC1OriginalM0FullForwardHLRPaperEndpoints
 };
