@@ -151,7 +151,12 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   if(!(len>0)||!finite(len))
    throw new RangeError('projected original source edge collapsed');
   const unitU=du/len,unitV=dv/len;
-  const fraction=q=>((q.u-pa.u)*unitU+(q.v-pa.v)*unitV)/len;
+  // Literal measured original endpoints are exactly t=0/1; floating dot
+  // products can turn an identical physical endpoint into 0.9999999999999999.
+  // Equality is exact binary64 coordinate identity, NOT epsilon snapping.
+  const fraction=q=>q.u===pa.u&&q.v===pa.v?0:
+   q.u===pb.u&&q.v===pb.v?1:
+   ((q.u-pa.u)*unitU+(q.v-pa.v)*unitV)/len;
   const ta=fraction(from),tb=fraction(to);
   // Paper collinearity uses an OCCT display tolerance. It must never
   // become exact original TopoDS parameter coverage: even a one-ULP
