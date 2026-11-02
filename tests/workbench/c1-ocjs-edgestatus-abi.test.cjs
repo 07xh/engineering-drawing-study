@@ -919,6 +919,8 @@ test('a matching original HLR EdgeData handle cannot borrow provenance from a fo
   const row=r.rows[0].originalEdgeData;
   assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
   assert.equal(row.sameSourceNativeHandleIdentityConsistent,false);
+  assert.equal(r.sameSourceNativeHandleLedgerConsistent,false);
+  assert.equal(r.originalNativeEdgeHandleLedgerComplete,false);
   assert.equal(row.directOriginalTopoDSEdgeIdentityProven,false);
   assert.equal(row.originalBRepSourceParameterRange,null);
   assert.equal(row.originalBRepParameterRangeMatches,false);
@@ -930,7 +932,16 @@ test('a matching original HLR EdgeData handle cannot borrow provenance from a fo
   originalNativeEdgeHandles:[original(edgeA),original(edgeA)],view:'H'});
  const row=accepted.rows[0].originalEdgeData;
  assert.equal(row.sameSourceNativeHandleIdentityConsistent,true);
+ assert.equal(accepted.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(accepted.originalNativeEdgeHandleLedgerComplete,true);
  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
  assert.deepEqual(row.originalBRepSourceParameterRange,[0,1]);
  assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
+ const differingDomain=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[original(edgeA),
+   {...original(edgeA),parameterRange:[0,2]}],view:'H'});
+ assert.equal(differingDomain.sameSourceNativeHandleLedgerConsistent,false);
+ assert.equal(differingDomain.originalNativeEdgeHandleLedgerComplete,false);
+ assert.equal(differingDomain.rows[0].originalEdgeData.originalBRepParameterRangeMatches,false);
 });
