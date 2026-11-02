@@ -1869,6 +1869,9 @@ test('M4 independently replays same-run original BRep forward samples, not forge
   originalNativeForwardFiveSamplesReadable:true,
   originalNativeForwardFive2DParametersMatchGeneratedGridExactly:true,
   originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance:true,
+  originalNativeForwardFivePaperSamplesExactlyMatchGenerated:true,
+  originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid:true,
+  maximumNativeForward2DParameterGridDriftULPs:'0',
   originalNativeForwardFivePointDiscreteConcordance:true,
   originalNativeForwardMaximumPaperResidualMm:0,
   samples:paper.map((p,i)=>({
@@ -1877,7 +1880,8 @@ test('M4 independently replays same-run original BRep forward samples, not forge
    nativeOriginal2DParameter:i*.5,
    nativeOriginalProjectedMm:{...p},
    nativeGeneratedPaperResidualMm:0,
-   exactGenerated2DGridParameter:true
+   exactGenerated2DGridParameter:true,
+   generated2DParameterGridDriftULPs:'0'
   })),
   rejectedNativeInverseStillOutOfOriginalBRepDomain:true,
   generated2DTopoDSHistoryProven:false,
@@ -1885,20 +1889,45 @@ test('M4 independently replays same-run original BRep forward samples, not forge
   engineeringLineStyle:'undetermined',signedV5Action:false
  });
  const args=()=>({witness:witness(),domain:[0,2],
-  generatedRange:[0,2],actualGeneratedPaper:paper,nativeTolerance:1e-8});
+  generatedRange:[0,2],projectedSourceRange:[0,2],
+  actualGeneratedPaper:paper,nativeTolerance:1e-8});
  const genuine=replay(args());
  assert.equal(genuine.independentlyReplayedNativeFivePointDiscreteConcordance,true);
+ assert.equal(genuine.independentlyReplayedExactNativeFivePointPaperAgreement,true);
+ assert.equal(genuine.independentlyReplayedNativeParameterGridWithinOneULP,true);
+ assert.equal(genuine.observedMaximumNativeForwardParameterGridDriftULPs,'0');
  assert.equal(genuine.originalNativeForwardSamplesChecked,5);
  assert.equal(genuine.rawParameter3dInverseStillOutsideOriginalBRep,true);
  assert.equal(genuine.signedV5Action,false);
  assert.ok(Object.isFrozen(genuine.rows[0]));
  assert.equal(replay({...args(),witness:null}),null);
+ // The genuine W B|D pattern: all five original HLR paper points match
+ // exactly, yet one forward Parameter2d sample is one binary64 ULP away
+ // from the generated curve's equal-fraction grid. Never claim exact
+ // parameter/TopoDS ancestry from discrete paper evidence.
+ const drift=args();
+ drift.witness.samples[3].nativeOriginal2DParameter=1.5+Number.EPSILON;
+ drift.witness.samples[3].exactGenerated2DGridParameter=false;
+ drift.witness.samples[3].generated2DParameterGridDriftULPs='1';
+ drift.witness.originalNativeForwardFive2DParametersMatchGeneratedGridExactly=false;
+ drift.witness.originalNativeForwardFivePointDiscreteConcordance=false;
+ drift.witness.maximumNativeForward2DParameterGridDriftULPs='1';
+ const oneULP=replay(drift);
+ assert.equal(oneULP.independentlyReplayedExactNativeFivePointPaperAgreement,true);
+ assert.equal(oneULP.independentlyReplayedNativeParameterGridWithinOneULP,true);
+ assert.equal(oneULP.observedMaximumNativeForwardParameterGridDriftULPs,'1');
+ assert.equal(oneULP.independentlyReplayedNativeFivePointDiscreteConcordance,false);
+ assert.equal(oneULP.signedV5Action,false);
  for(const mutate of [
   x=>{x.witness.samples[2].originalNative3DParameter=1.1;},
   x=>{x.witness.samples[2].nativeOriginal2DParameter=1.1;},
   x=>{x.witness.samples[2].nativeOriginalProjectedMm.v=3.1;},
   x=>{x.witness.samples[2].nativeGeneratedPaperResidualMm=1e-6;},
   x=>{x.witness.samples[2].exactGenerated2DGridParameter=false;},
+  x=>{x.witness.samples[2].generated2DParameterGridDriftULPs='1';},
+  x=>{x.witness.originalNativeForwardFivePaperSamplesExactlyMatchGenerated=false;},
+  x=>{x.witness.maximumNativeForward2DParameterGridDriftULPs='2';},
+  x=>{x.witness.fullOriginalForward2DParameterDomainExact=false;},
   x=>{x.witness.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance=false;},
   x=>{x.witness.originalNativeForwardFivePointDiscreteConcordance=false;},
   x=>{x.witness.signedV5Action=true;},
