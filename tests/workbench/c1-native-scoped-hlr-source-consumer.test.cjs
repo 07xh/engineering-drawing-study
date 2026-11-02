@@ -1134,7 +1134,7 @@ test('tolerance-bounded one-ULP source overshoot is recorded and held without cl
  assert.match(r.reason,/no-clamp/);
 });
 
-test('exact forward endpoint binding may resolve inverse ULP overshoot without changing raw inverse parameters',()=>{
+test('exact forward paper endpoints cannot rebind an out-of-domain native 3D source interval',()=>{
  const nativeM4={
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   native3DOutlineSegments:[],
@@ -1150,13 +1150,14 @@ test('exact forward endpoint binding may resolve inverse ULP overshoot without c
    sourceProjected2DParameterEndpointResiduals:[0,0],
    sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
   klass:'visible',nativeM4});
- assert.deepEqual(r.originalM0UnitParameterRange,[0,1]);
+ assert.deepEqual(r.originalM0UnitParameterRange,[0,1+2*Number.EPSILON]);
  assert.deepEqual(r.inverseMappedOriginalM0UnitParameterRange,[0,1+2*Number.EPSILON]);
  assert.deepEqual(r.source3DParameterRangeFromInverse,[0,1+2*Number.EPSILON]);
- assert.equal(r.sourceParameterDomainContainment,
-  'forward-endpoint-bound-exact-with-inverse-overshoot');
- assert.equal(r.sourceDomainEndpointForwardMapProof,true);
- assert.equal(r.nativeM4ClassBacked,true);
+ assert.equal(r.sourceParameterDomainContainment,'within-tolerance-but-outside');
+ assert.equal(r.sourceProjected2DForwardEndpointAgreementOnly,true);
+ assert.equal(r.sourceDomainEndpointForwardMapProof,false);
+ assert.equal(r.nativeM4ClassBacked,false);
+ assert.match(r.reason,/no-clamp/);
 });
 
 test('parameterized source interval outside the original M0 domain is rejected, never clamped',()=>{
@@ -1342,7 +1343,7 @@ test('forward paper endpoint witness cannot expand a partial inverse source inte
   }
  }
 });
-test('full-domain reverse inverse overshoot with exact forward endpoints remains a candidate, never V5 authorization',()=>{
+test('reversed native source overshoot is held even with exact forward paper endpoints',()=>{
  const nativeM4={
   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
   native3DOutlineSegments:[],
@@ -1358,9 +1359,11 @@ test('full-domain reverse inverse overshoot with exact forward endpoints remains
    sourceProjected2DParameterEndpointResiduals:[0,0],
    sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
   klass:'visible',nativeM4});
- assert.deepEqual(r.originalM0UnitParameterRange,[0,1]);
- assert.equal(r.nativeM4ClassBacked,true);
- assert.equal(r.sourceDomainEndpointForwardMapProof,true);
+ assert.ok(r.originalM0UnitParameterRange[0]<0);
+ assert.equal(r.nativeM4ClassBacked,false);
+ assert.equal(r.sourceProjected2DForwardEndpointAgreementOnly,true);
+ assert.equal(r.sourceDomainEndpointForwardMapProof,false);
+ assert.equal(r.sourceParameterDomainContainment,'within-tolerance-but-outside');
 });
 
 test('M4 native same-class partition must not double-assign positive source length',()=>{
