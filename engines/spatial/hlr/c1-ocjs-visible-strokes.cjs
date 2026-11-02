@@ -152,13 +152,13 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   const pa=project(a)[view],pb=project(b)[view];
   const du=pb.u-pa.u,dv=pb.v-pa.v,den=du*du+dv*dv;
   const len=Math.hypot(du,dv);
-  if(!(len>0)||!finite(len)||!finite(den))
+  if(!(len>0)||!finite(len)||Number.isNaN(den))
    throw new RangeError('projected original source edge collapsed');
   // Preserve the already-reviewed binary64 inverse for representable
   // squared denominators, including exact source-boundary behavior.
-  // Only a genuine underflow to den=0 uses the normalized fallback.
+  // Finite projected length can still overflow den to Infinity, or underflow\n  // it to zero. Both use a normalized PAPER-ONLY diagnostic fallback;\n  // neither can certify original TopoDS parameter history.
   const unitU=du/len,unitV=dv/len;
-  const fraction=q=>den>0?
+  const fraction=q=>den>0&&finite(den)?
    ((q.u-pa.u)*du+(q.v-pa.v)*dv)/den:
    q.u===pa.u&&q.v===pa.v?0:
    q.u===pb.u&&q.v===pb.v?1:
