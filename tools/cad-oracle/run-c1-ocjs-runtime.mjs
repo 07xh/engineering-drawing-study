@@ -478,6 +478,28 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+  for(const view of ['V','H','W']){
+   const native2D=cad.nativeSourceScopedSharpOutputByView[view].
+    native2DOutlineSourceHistory;
+   const consumed=scopedConsumer.views[view].native2DOutlineSourceHistory;
+   assert.equal(native2D.schema,
+    'draftai-c1-ocjs-original-filtered-generated-2d-outline/1');
+   assert.equal(native2D.originalBRepToGenerated2DParameterHistoryCertified,false);
+   assert.equal(native2D.signedV5ActionCount,0);
+   assert.equal(consumed.sourceScopedOutputEdges,
+    native2D.sourceScopedOutputEdges);
+   assert.equal(consumed.nativeScopedToGlobalGeneratedIsSame,
+    native2D.nativeScopedToWholeSolidGeneratedIsSameCount);
+   assert.equal(consumed.generated2DOriginalParameterAncestryCertified,false);
+   console.error('REAL C1 GENERATED 2D OUTLINE ORIGINAL FILTER '+
+    geometry.id+' '+view+': '+JSON.stringify({
+     wholeSolid:consumed.wholeSolidGeneratedOutlineEdges,
+     sourceFiltered:consumed.sourceScopedOutputEdges,
+     nativeIsSame:consumed.nativeScopedToGlobalGeneratedIsSame,
+     unclaimed:consumed.unclaimedGeneratedOutlineEdges,
+     originalBRepParameterHistoryCertified:false,signedV5Actions:0
+    }));
+  }
  // Real pinned OCCT cross-consistency, not a paper-line or V5 certificate.
  // Publish exact source-side split diagnostics for each first-angle view;
  // the difference between EdgeStatus and extracted 3D Sharp is visible.
