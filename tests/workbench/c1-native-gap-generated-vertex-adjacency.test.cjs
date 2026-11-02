@@ -293,3 +293,17 @@ test('exact dominant-axis inverse preserves u preference when u is truly larger 
  assert.equal(r.rows[0].exactReceivedPaperOffLineCandidateStrictlyInsideGapCount,1);
  assert.equal(r.formalEngineeringLineStyleCertified,false);
 });
+
+test('native vertex of another BRep source cannot masquerade as audited endpoint even at identical paper coordinates',()=>{
+ const g={...geometry,data:{...geometry.data,points:{...geometry.data.points,
+  E:{x:0,y:0,z:9}}}};
+ // E and A share the H-view paper position, but are different 3D vertices.
+ const s=segment({directNativeVertexOriginalSource:[native('E'),native('C')]});
+ assert.throws(()=>audit({geometry:g,view:'H',sourceEdgeId:'tetra::A|C',
+  uncoveredIntervals:[[0,0.25]],visibleSegments:[s],hiddenSegments:[]}),
+  /generated native vertex not bound to original M0/);
+ const accepted=audit({geometry:g,view:'H',sourceEdgeId:'tetra::A|C',
+  uncoveredIntervals:[[0,0.25]],visibleSegments:[segment()],hiddenSegments:[]});
+ assert.equal(accepted.rows[0].sourceGapClosedByNativeEndpointEvidence,false);
+ assert.equal(accepted.signedV5ActionCount,0);
+});
