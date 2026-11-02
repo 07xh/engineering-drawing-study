@@ -147,6 +147,35 @@ function auditC1RealNativeScoped2D3DClassBinding({
      JSON.stringify(replay.positiveLengthOverlappingNativeParameterIntervals)!==
       JSON.stringify(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps))
    throw new RangeError('same-revision original native BRep parameter partition contradicts independently replayed M4 source');
+  // A complete ORIGINAL native partition is insufficient if its claimed
+  // M4 [0,1] locations were forged independently. Recompute the exact
+  // producer normalization for EVERY received native interval, including
+  // held positive intervals that cannot be drawn in binary64 paper space.
+  // A raw [0,1] partition with swapped/shifted M4 cuts must not back a
+  // generated 2D HLR class or later M5 evidence.
+  const [first,last]=nativeOriginal3DM4.originalNative3DSourceParameterRange;
+  const direction=nativeOriginal3DM4.original3DSourceCurveDirection;
+  if(!['forward','reversed'].includes(direction)||
+     !Number.isFinite(last-first)||!(last>first))
+   throw new RangeError('invalid original BRep curve normalization frame');
+  const normalize=t=>direction==='reversed'?
+   (last-t)/(last-first):(t-first)/(last-first);
+  const check=(row,held)=>{
+   const p=row?.originalNative3DParameterRange;
+   const unit=held?row?.roundedOriginalM0UnitParameterRange:
+    row?.originalM0UnitParameterRange;
+   if(!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)||
+      !(p[1]>p[0])||!Array.isArray(unit)||unit.length!==2||
+      !unit.every(Number.isFinite))
+    throw new RangeError('invalid original native-to-M4 interval witness');
+   const expected=[normalize(p[0]),normalize(p[1])].sort((a,b)=>a-b);
+   if(!expected.every(Number.isFinite)||
+      expected[0]!==unit[0]||expected[1]!==unit[1])
+    throw new RangeError('original native-to-M4 source interval normalization mismatch');
+  };
+  nativeOriginal3DM4.segments.forEach(row=>check(row,false));
+  nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation
+   .forEach(row=>check(row,true));
  }
  // The original OCCT native parameter partition is authoritative. Two
  // distinct native endpoints can round to the SAME M4 fraction, hiding a
