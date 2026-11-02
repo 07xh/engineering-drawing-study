@@ -244,6 +244,12 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
  let curveParameters=null,curveParameterMap=null,identityMatches=[],
   identityHandleMatches=[],originalBRepParameterRange=null,
   originalBRepParameterRangeMatches=false;
+ // Multiple TopoDS handles may legitimately refer to the same physical
+ // edge occurrence. A single matching handle cannot certify provenance if
+ // another handle bearing the SAME source ID is a different native TShape.
+ const sameSourceHandles=(originalNativeEdgeHandles??[]).filter(
+  candidate=>candidate?.sourceEdgeId===sourceEdgeId);
+ let sameSourceNativeHandleIdentityConsistent=false;
  if(geometryResult.readable){
   const geometry=geometryResult.value;
   geometryMethods=methodNames(geometry);
@@ -280,8 +286,15 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
    }
   }
  }
+ if(edge){
+  sameSourceNativeHandleIdentityConsistent=sameSourceHandles.length>0&&
+   sameSourceHandles.every(candidate=>
+    typeof candidate.edge?.IsSame==='function'&&
+    edge.IsSame(candidate.edge)===true&&
+    candidate.edge.IsSame(edge)===true);
+ }
  if(identityMatches.length===1&&identityMatches[0]===sourceEdgeId&&
-    identityHandleMatches.length>0){
+    identityHandleMatches.length>0&&sameSourceNativeHandleIdentityConsistent){
   const ranges=identityHandleMatches.map(x=>x.parameterRange);
   const firstRange=ranges[0];
   const allRangesValid=ranges.every(range=>Array.isArray(range)&&
@@ -307,7 +320,8 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
    originalBRepParameterRangeMatches,
    tolerance:scalars.Tolerance.readable?scalars.Tolerance.value:null,
    directOriginalTopoDSEdgeIdentityProven:
-    identityMatches.length===1&&identityMatches[0]===sourceEdgeId
+    identityMatches.length===1&&identityMatches[0]===sourceEdgeId&&
+    sameSourceNativeHandleIdentityConsistent
   });
  }
  return {
@@ -324,8 +338,10 @@ function inspectOriginalEdgeData({edgeData,sourceEdgeId,originalNativeEdgeHandle
   original3DCurveParameterRange:curveParameters,
   original3DToProjected2DCurveParameterMap:curveParameterMap,
   directOriginalTopoDSEdgeIsSameMatches:identityMatches,
+  sameSourceNativeHandleIdentityConsistent,
   directOriginalTopoDSEdgeIdentityProven:
-   identityMatches.length===1&&identityMatches[0]===sourceEdgeId,
+   identityMatches.length===1&&identityMatches[0]===sourceEdgeId&&
+   sameSourceNativeHandleIdentityConsistent,
   originalBRepSourceParameterRange:originalBRepParameterRange,
   originalBRepParameterRangeMatches,
   generated2DHLRTopoDSHistoryProven:false
