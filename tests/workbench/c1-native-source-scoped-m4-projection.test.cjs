@@ -60,6 +60,9 @@ test('native original 3D source class partition projects to exact first-angle M4
  assert.equal(result.officialV5Authorized,false);
  assert.ok(Object.isFrozen(result.segments[0].fromModelMm));
  assert.ok(Object.isFrozen(result.segments[0].originalNative3DParameterRange));
+ assert.equal(result.segments[0].sourceGeometryId,geometry.id);
+ assert.equal(result.segments[0].revision,11);
+ assert.deepEqual(result.segments[0].originalVertexIds,['A','B']);
 });
 test('original OCCT curve reversed orientation recovers correct M0 parameter direction',()=>{
  const actual=projectNative(input([[0,4]],[[4,10]],true));
