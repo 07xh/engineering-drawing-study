@@ -606,6 +606,36 @@ for(const [index,geometry] of general.entries()){
    original2DGeneratedTopoDSHistoryCertified:false,
    globalM5Signed:false,officialV5Actions:0
   }));
+ const inverseRejectedForwardOriginalClassRows=[];
+ for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
+  for(const row of parameterizedLineageByView[view].classes[klass].rows){
+   for(const inverse of row.inverseRejectedForwardOriginalSharpSourceWitnesses??[])
+    inverseRejectedForwardOriginalClassRows.push({
+     view,klass,ordinal:row.wholeSolidHLREdgeOrdinal,
+     sourceId:inverse.sourceEdgeId,
+     originalBRepParameterRange:inverse.originalBRepParameterRange,
+     rawRejectedOriginalParameter3d:inverse.firstRejectedOriginal3DParameter,
+     exactOriginalForwardHLR:
+      inverse.exactForwardM0PaperWitness
+       .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,
+     nativeFullOriginalSharpClass:
+      inverse.originalNativeSharpFullParameterWitness
+       .independentFullOriginalForwardSharpClass,
+     validHeldInverse:inverse.rawParameter3dInverseOutsideOriginalBRep,
+     signedV5Action:false
+    });
+  }
+ const independentlyCorroboratedInverseRejected=
+  inverseRejectedForwardOriginalClassRows.filter(x=>
+   x.exactOriginalForwardHLR&&x.nativeFullOriginalSharpClass).length;
+ console.error('REAL C1 INVERSE-REJECTED FULL ORIGINAL FORWARD SHARP DIAGNOSTIC '+
+  geometry.id+': '+JSON.stringify({
+   total:inverseRejectedForwardOriginalClassRows.length,
+   independentlyCorroboratedInverseRejected,
+   rows:inverseRejectedForwardOriginalClassRows,
+   stillUnmatchedInOriginalParameterInversion:true,
+   generated2DTopoDSHistoryCertified:false,signedV5Actions:0
+  }));
  const heldM4SourceRows=[];
  for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
   for(const row of parameterizedLineageByView[view].classes[klass].rows){
