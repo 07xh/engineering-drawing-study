@@ -1695,6 +1695,13 @@ test('original M0 whole-edge forward endpoint agrees without masking native inve
   generated2DParameterRange:[0,end],generatedHLRCurveSamples:native};
  const good=audit(args);
  assert.equal(good.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(good.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,true);
+ const warped=audit({...args,generatedHLRCurveSamples:[
+  native[0],native[1],{...native[2],v:native[2].v+Number.EPSILON*4},
+  native[3],native[4]]});
+ assert.equal(warped.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(warped.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,false);
+ assert.equal(warped.signedV5Action,false);
  assert.equal(good.originalForward2DParameterDomainFullyMatchesGenerated,true);
  assert.equal(good.signedV5Action,false);
  assert.equal(good.originalToGeneratedTopoDSHistoryCertified,false);
@@ -1744,6 +1751,15 @@ test('full forward original BRep Sharp corroboration remains separate from nativ
  const args={view,sourceEdgeId,klass:'visible',domain,forwardPaper:full,nativeM4:completeM4};
  const corroborated=sharp(args);
  assert.equal(corroborated.independentFullOriginalForwardSharpClass,true);
+ const warpedForward=forward({originalProjectedEndpoints:[from,to],
+  sourceProjected2DParameterRangeSorted:[0,3],
+  generated2DParameterRange:[0,3],generatedHLRCurveSamples:[
+   curve[0],curve[1],{...curve[2],v:curve[2].v+Number.EPSILON*4},
+   curve[3],curve[4]]});
+ assert.equal(warpedForward.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
+ assert.equal(warpedForward.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,false);
+ assert.equal(sharp({...args,forwardPaper:warpedForward})
+  .independentFullOriginalForwardSharpClass,false);
  assert.equal(corroborated.nativeOriginalSharpPartitionEntireDomain,true);
  assert.equal(corroborated.originalToGeneratedTopoDSHistoryCertified,undefined);
  assert.equal(corroborated.generated2DTopoDSHistoryCertified,false);
