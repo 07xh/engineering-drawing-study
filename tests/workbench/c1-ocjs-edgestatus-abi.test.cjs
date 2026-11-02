@@ -706,3 +706,59 @@ test('replayed original EdgeStatus cannot certify duplicated same-class native i
  assert.equal(adjacent.generated2DTopoDSHistoryCertified,false);
  assert.equal(adjacent.signedV5Action,false);
 });
+
+
+test('genuine reversed original BRep parameter map preserves strict generated Sharp order',()=>{
+ const curve={
+  Parameter2d(t){return 10-t;},
+  Parameter3d(t){return 10-t;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const range=[2,8];
+ const samples=Array.from({length:5},(_,i)=>{
+  const p2=range[0]+(range[1]-range[0])*i/4,t=10-p2;
+  return {u:t,v:2*t};
+ });
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:range,
+  actualOCCTHLRCurveSamplesProjectedMm:samples,
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId:source});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ assert.deepEqual(r.rows[0].candidateSourceMatches[0].source3DParameterRange,[8,2]);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+});
+
+test('positive generated HLR interval cannot borrow duplicate rounded native BRep parameters',()=>{
+ // Every generated 2D sample is distinct, yet the native inverse rounds
+ // several to the SAME original 3D parameter. A tolerance-based five-point
+ // residual alone used to misclassify this as unique original-source lineage.
+ const curve={
+  Parameter2d(t){return t;},
+  Parameter3d(t){return Math.round(t/1e-12)*1e-12;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,1],
+  originalBRepParameterRange:[0,1],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const range=[0.5,0.5+1e-12];
+ const samples=Array.from({length:5},(_,i)=>{
+  const p2=range[0]+(range[1]-range[0])*i/4;
+  const t=curve.Parameter3d(p2);
+  return {u:t,v:2*t};
+ });
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:range,
+  actualOCCTHLRCurveSamplesProjectedMm:samples,
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId:source});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+ assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,
+  'generated-source-parameter-order-not-injective');
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
