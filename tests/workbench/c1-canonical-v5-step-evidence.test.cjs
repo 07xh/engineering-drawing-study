@@ -97,6 +97,27 @@ test('frame zero rejects future line, forged completed action, extra action and 
  assert.equal(legitimate.actions[0].formalLineCertified,true);
  assert.equal(legitimate.stepIndex,2);
 });
+test('a fully self-consistent future timeline frame cannot outrun the sole V5 player',()=>{
+ const f=fixture(),t=f.solution.timeline;
+ const future=Timeline.frame(t,t.totalMs);
+ // All fractions, completed IDs, active step, ratio and elapsed time agree
+ // with the genuine compiled timeline. Only the player's actual playhead
+ // remains at the GIVEN-only initial frame.
+ const forged={...future,revision:9,playing:false,invalid:false,speed:1};
+ assert.throws(()=>inspect({...f,frame:forged}),/sole player snapshot/);
+ // Even a matching elapsed time is not enough to forge a different
+ // playback state or speed in the read-only teaching inspector.
+ const fakePlaying=fixture();fakePlaying.frame.playing=true;
+ assert.throws(()=>inspect(fakePlaying),/sole player snapshot/);
+ const fakeSpeed=fixture();fakeSpeed.frame.speed=4;
+ assert.throws(()=>inspect(fakeSpeed),/sole player snapshot/);
+ // A real seek, including a seek to the final drawing step, stays valid.
+ f.solution.player.seekStep(2,20);
+ const real=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(real.stepIndex,2);
+ assert.equal(real.actions[0].formalLineCertified,true);
+});
+
 test('signed V5 endpoints must equal original M5 binding; future tampering fails at frame zero',()=>{
  const corrupt=[
   f=>{f.solution.steps[2].actions[0].geometry.to.x=3.0000000000000004;},
