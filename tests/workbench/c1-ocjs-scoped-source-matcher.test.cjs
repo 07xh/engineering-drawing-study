@@ -236,6 +236,7 @@ test('genuine generated 2D OutLine source filter preserves native IsSame without
   assert.equal(c.fullOriginalSourceHistoryCertified,false);
   const forged=setup(view);forged.hlrClass='hidden-outline';
   forged.scopedSegment=edge(40,50);
+  forged.scopedNativeEdge=native('unrelated-outline');
   assert.throws(()=>match(forged),/absent from whole-solid/);
  }
 });
