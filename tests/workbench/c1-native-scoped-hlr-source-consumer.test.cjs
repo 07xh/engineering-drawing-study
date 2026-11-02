@@ -1605,3 +1605,15 @@ test('native 2D outline forged source, ordinal, style, global endpoint and ident
   assert.throws(()=>audit(x),/outline|source|identity|ordinal|forged/i);
  }
 });
+
+test('forged same-run 2D outline native IsSame cannot move both copies off the original 3D projection',()=>{
+ for(const view of ['V','H','W']){
+  const x=fixtureWithNative2DOutLine();
+  const c=x.cad.nativeSourceScopedSharpOutputByView[view];
+  c.rows[0].visibleOutline2D[0].from.u+=1;
+  c.rows[0].visibleOutline2D[0].to.u+=1;
+  c.native2DOutlineSourceHistory.wholeSolid.visible[0].from.u+=1;
+  c.native2DOutlineSourceHistory.wholeSolid.visible[0].to.u+=1;
+  assert.throws(()=>audit(x),/forged source-scoped generated 2D outline/);
+ }
+});
