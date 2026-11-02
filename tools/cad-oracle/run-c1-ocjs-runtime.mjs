@@ -591,6 +591,21 @@ for(const [index,geometry] of general.entries()){
  // Exact native M4 failure inventory: retain the actual generated output
  // ordinal, original BRep parameters and raw inverse. Never clamp a positive
  // out-of-domain interval or replace source history with a paper match.
+ const independentFullForwardSharpHeldCount=['V','H','W'].reduce(
+  (n,view)=>n+
+   parameterizedLineageByView[view].counts
+    .independentFullForwardSharpCorroboratedButInverseHeldEdges,0);
+ assert.ok(independentFullForwardSharpHeldCount<=
+  parameterizedLineageTotals.nativeM4ClassBackingUnprovenEdges,
+  'independent full-forward class cannot overwrite the inverse-held inventory');
+ console.error('REAL C1 INDEPENDENT FULL ORIGINAL FORWARD SHARP CLASS '+
+  geometry.id+': '+JSON.stringify({
+   independentForwardSharpBackedButInverseHeld:independentFullForwardSharpHeldCount,
+   rawInverseNativeM4ClassStillHeld:
+    parameterizedLineageTotals.nativeM4ClassBackingUnprovenEdges,
+   original2DGeneratedTopoDSHistoryCertified:false,
+   globalM5Signed:false,officialV5Actions:0
+  }));
  const heldM4SourceRows=[];
  for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
   for(const row of parameterizedLineageByView[view].classes[klass].rows){
@@ -620,6 +635,8 @@ for(const [index,geometry] of general.entries()){
       audit.nativeM4SameClassCoverageComplete??null,
      originalM0FullForwardPaperEndpointWitness:
       item.originalM0FullForwardPaperEndpointWitness,
+     independentFullOriginalForwardSharpClassWitness:
+      item.independentFullOriginalForwardSharpClassWitness,
      nativeM4OppositeClassPositiveOverlap:
       audit.nativeM4OppositeClassPositiveOverlap??null,
      signedV5Action:false
