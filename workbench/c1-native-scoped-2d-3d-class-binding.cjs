@@ -222,6 +222,19 @@ function auditC1RealNativeScoped2D3DClassBinding({
  if(sign(denominator)===0)
   throw new RangeError('collapsed original M0 source paper line');
  const m4=nativeOriginal3DM4.segments.map(seg=>{
+  // The containing M4 ledger revision is not enough: a drawable native
+  // segment copied from an older mesh with the same edge ID and parameter
+  // domain must be rejected before it can back any 2D HLR class.
+  if(productionBound&&(
+     seg?.sourceGeometryId!==expectedSourceGeometryId||
+     seg.revision!==expectedRevision||
+     !Array.isArray(seg.originalVertexIds)||
+     seg.originalVertexIds.length!==2||
+     seg.originalVertexIds.some(id=>typeof id!=='string'||!id)||
+     seg.originalVertexIds[0]===seg.originalVertexIds[1]||
+     expectedSourceGeometryId+'::'+
+      [...seg.originalVertexIds].sort().join('|')!==sourceEdgeId))
+   throw new RangeError('drawable native M4 interval source/revision provenance mismatch');
   if(seg.view!==view||seg.sourceEdgeId!==sourceEdgeId||
      !['visible-sharp','hidden-sharp'].includes(seg.native3DHLRClass)||
      seg.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper!==true||
