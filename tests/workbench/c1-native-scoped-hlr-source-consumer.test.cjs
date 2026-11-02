@@ -796,6 +796,21 @@ test('unmatched global HLR output remains explicitly unmatched rather than inher
  assert.equal(lineage.classes.visible.rows[0].sameRunOriginalHLRCurveParameterLineageProven,false);
 });
 
+test('M4 rejects forged generated Sharp one-ULP source-domain overhang in V/H/W',()=>{
+ for(const view of ['V','H','W'])for(const interval of [
+  [-Number.MIN_VALUE,1],[0,1+Number.EPSILON]]){
+  const x=fixture();
+  const report=x.cad.nativeSourceScopedSharpOutputByView[view].
+   generated2DSourceParameterMatches.visible;
+  const match=report.rows[0].candidateSourceMatches[0];
+  match.generated2DParameterRange=[...interval];
+  match.sourceProjected2DParameterEndpointResiduals=[interval[0],interval[1]-1];
+  match.sourceProjected2DParameterRangeMatchesGeneratedOutputRange=false;
+  x.cad.views[view][0].actualOCCTHLRCurveParameterRange=[...interval];
+  assert.throws(()=>audit(x),/invalid same-run original HLR parameterized source witness/);
+ }
+});
+
 test('malformed parameterized source reports and forged generated-edge history are rejected',()=>{
  for(const mutate of [
   report=>{report.rows[0].ordinal=4;},
