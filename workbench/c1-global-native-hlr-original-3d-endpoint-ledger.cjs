@@ -55,9 +55,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   uniqueOriginalSourceGlobalEdgesExamined:0,
   nativeOriginalBRepExactPhysicalEndpointPairs:0,
   completeOriginalNative3DClassSourceIntervalRows:0,
-  // A complete-looking whole-source M4 row may coexist with additional
-  // overlapping / opposite-class source fragments. Those never certify
-  // a unique original physical endpoint, even when producer flags say so.
+  // Multiple intervals are accepted only when an exact, same-class,
+  // original-source partition is recomputed with no gap, overlap or
+  // contradictory native OCCT interval inventory.
   multipleNativeM4SourceClassSegmentsHeld:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
@@ -113,7 +113,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
     boundedPaper=false,sourcePaperEnvelope=null,links=[],
     receivedNativeM4SourceClassSegmentCount=0,
-    nativeM4SourceClassMultiplicityHeld=false;
+    nativeM4SourceClassMultiplicityHeld=false,
+    exactOnce=false,nativeInventoryClear=false;
    if(originalId!==null){
     if(!physical||!originalBRep||
        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
@@ -126,26 +127,52 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      (xyz(originalBRep.fromOCCT3D,b)&&
       xyz(originalBRep.toOCCT3D,a));
     if(modelVerified)counts.nativeOriginalBRepExactPhysicalEndpointPairs++;
-    const m4=m4ById.get(originalId),matching=m4?.segments.filter(s=>
-     s.sourceEdgeId===originalId&&s.view===view&&
-     s.native3DHLRClass===klass&&
-     s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
-     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
-     s.originalM0UnitParameterRange?.[0]===0&&
-     s.originalM0UnitParameterRange?.[1]===1)??[];
-    // Recheck the ACTUAL received full original-source M4 inventory. A
-    // single same-class [0,1] witness is not an exact-once partition if
-    // another positive interval also claims that source (same or opposite
-    // visibility class). Do not trust producer coverage booleans alone.
-    // A legitimate whole edge has precisely one source-class segment here;
-    // split/overlapping sources stay held for the wider M4/M5 proof.
-    receivedNativeM4SourceClassSegmentCount=m4?.segments.length??0;
-    nativeM4SourceClassMultiplicityHeld=matching.length===1&&
-     receivedNativeM4SourceClassSegmentCount!==1;
+    const m4=m4ById.get(originalId),received=m4?.segments??[];
+    receivedNativeM4SourceClassSegmentCount=received.length;
+    // Reconstruct the EXACT ORIGINAL M0 source interval partition from
+    // received native 3D M4 segments, without trusting producer "complete"
+    // booleans. A single [0,1] row OR many touching, same-class spans are
+    // legal. A positive gap, a one-ULP overlap, an extra opposite-class
+    // claim, a wrong source/view or unverified row must remain held.
+    // This is not generated 2D TopoDS ancestry or all-face visibility.
+    const valid=received.length>0&&received.length<=512&&
+     received.every(s=>{
+      const range=s?.originalM0UnitParameterRange;
+      return s.sourceEdgeId===originalId&&s.view===view&&
+       s.native3DHLRClass===klass&&
+       s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+       s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
+       Array.isArray(range)&&range.length===2&&
+       range.every(Number.isFinite)&&range[0]>=0&&range[1]<=1&&
+       range[1]>range[0];
+     });
+    const sorted=valid?[...received].sort((a,b)=>
+      a.originalM0UnitParameterRange[0]-b.originalM0UnitParameterRange[0]||
+      a.originalM0UnitParameterRange[1]-b.originalM0UnitParameterRange[1]):[];
+    let sourceCursor=0;
+    exactOnce=valid;
+    for(const segment of sorted){
+     const [from,to]=segment.originalM0UnitParameterRange;
+     if(from!==sourceCursor){exactOnce=false;break;}
+     sourceCursor=to;
+    }
+    exactOnce=exactOnce&&sourceCursor===1;
+    // These genuine producer inventories are independent of the rounded
+    // normalized M0 coverage. A positive native OCCT interval lost during
+    // binary64 normalization must never be mistaken for a valid partition.
+    const nativeInventoriesPresent=
+     Array.isArray(m4?.native3DOriginalParameterPositiveGaps)&&
+     Array.isArray(m4?.native3DOriginalParameterPositiveOverlaps)&&
+     Array.isArray(m4?.M4OriginalUnitIntervalNativeClassConflicts);
+    nativeInventoryClear=nativeInventoriesPresent&&
+     m4.native3DOriginalParameterPositiveGaps.length===0&&
+     m4.native3DOriginalParameterPositiveOverlaps.length===0&&
+     m4.M4OriginalUnitIntervalNativeClassConflicts.length===0;
+    nativeM4SourceClassMultiplicityHeld=received.length>1&&
+     (!exactOnce||!nativeInventoryClear);
     if(nativeM4SourceClassMultiplicityHeld)
      counts.multipleNativeM4SourceClassSegmentsHeld++;
-    sourceClassFull=matching.length===1&&
-     receivedNativeM4SourceClassSegmentCount===1&&
+    sourceClassFull=exactOnce&&nativeInventoryClear&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
      Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
@@ -232,6 +259,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      receivedNativeM4SourceClassSegmentCount,
     receivedNativeM4SourceClassMultiplicityHeld:
      nativeM4SourceClassMultiplicityHeld,
+    receivedNativeM4ExactSameClassSourcePartitionVerified:exactOnce,
+    receivedNativeM4OriginalOcctParameterInventoryClear:nativeInventoryClear,
     receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly:
      originalPaperExact,
     generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity:
