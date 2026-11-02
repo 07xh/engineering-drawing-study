@@ -195,7 +195,14 @@ test('positive native M4 subspan whose normalized endpoints coincide remains hel
   'positive-native-interval-collapsed-by-binary64-normalization');
  assert.equal(out.segments.length,2);
  assert.equal(out.officialV5Authorized,false);
- assert.ok(Object.isFrozen(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0]));
+ const held=out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0];
+ assert.equal(held.sourceGeometryId,out.sourceGeometryId);
+ assert.equal(held.sourceEdgeId,out.sourceEdgeId);
+ assert.equal(held.view,out.view);
+ assert.equal(held.revision,out.revision);
+ assert.deepEqual(held.originalVertexIds,['A','B']);
+ assert.equal(held.signedV5Action,false);
+ assert.ok(Object.isFrozen(held));
 });
 test('large absolute paper coordinates cannot silently erase a positive native M4 stroke',()=>{
  const big=2**50,sourceEdgeId='NativeM4HugePaper::A|B';
@@ -318,6 +325,8 @@ test('paper-collapsed W source still consumes genuine positive native outline ev
  assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
  assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
  assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length,1);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].sourceEdgeId,out.sourceEdgeId);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].revision,out.revision);
  assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
   originalNative3DParameterRange,[0,10]);
  assert.equal(out.officialV5Authorized,false);
