@@ -58,6 +58,9 @@ function setup({two=false,rounded=false,missingPartition=false}={}){
     native3DSourceParameterPartitionCompleteExactlyOnce:!missingPartition,
     M4OriginalUnitIntervalCandidateCoverageComplete:!missingPartition,
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+    native3DOriginalParameterPositiveGaps:[],
+    native3DOriginalParameterPositiveOverlaps:[],
+    M4OriginalUnitIntervalNativeClassConflicts:[],
     segments:[{view,sourceEdgeId:id,native3DHLRClass:'visible-sharp',
      originalM0UnitParameterRange:[0,1],
      derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
@@ -163,6 +166,60 @@ test('genuine sole full-range native M4 segment still links original physical en
  assert.equal(r.signedV5ActionCount,0);
 });
 
+test('C1/M5 accepts unsorted adjacent SAME-class original native source spans only when exact-once',()=>{
+ const x=setup(),m4=x.sourceM4Views.H.nativeOriginal3DM4Candidates[0];
+ const base=m4.segments[0];
+ // Actual OCCT may split one physical source into multiple native class
+ // intervals. Sorted order is irrelevant; no fabricated [0,1] span needed.
+ m4.segments=[
+  {...base,originalM0UnitParameterRange:[0.5,1]},
+  {...base,originalM0UnitParameterRange:[0,0.5]}
+ ];
+ const r=audit(x),row=r.views.H.rows[0];
+ assert.equal(row.receivedOriginalNativeM4SourceClassSegmentCount,2);
+ assert.equal(row.receivedNativeM4ExactSameClassSourcePartitionVerified,true);
+ assert.equal(row.receivedNativeM4OriginalOcctParameterInventoryClear,true);
+ assert.equal(row.receivedNativeM4SourceClassMultiplicityHeld,false);
+ assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,3);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('C1/M5 holds a positive one-ULP hole or overlap between two otherwise verified native source spans',()=>{
+ for(const spans of [
+  [[0,0.5],[0.5+Number.EPSILON,1]],
+  [[0,0.5+Number.EPSILON],[0.5,1]]
+ ]){
+  const x=setup(),m4=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+  const template=m4.segments[0];
+  m4.segments=spans.map(r=>({...template,originalM0UnitParameterRange:r}));
+  const r=audit(x),w=r.views.W.rows[0];
+  assert.equal(w.receivedOriginalNativeM4SourceClassSegmentCount,2);
+  assert.equal(w.receivedNativeM4ExactSameClassSourcePartitionVerified,false);
+  assert.equal(w.receivedNativeM4SourceClassMultiplicityHeld,true);
+  assert.equal(w.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+  assert.equal(r.officialV5Authorized,false);
+ }
+});
+test('C1/M5 refuses apparent full normalized source if genuine native OCCT parameter inventory reports positive gap',()=>{
+ const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m4.native3DOriginalParameterPositiveGaps.push([0.5,0.5+Number.EPSILON]);
+ const r=audit(x),v=r.views.V.rows[0];
+ assert.equal(v.receivedNativeM4ExactSameClassSourcePartitionVerified,true);
+ assert.equal(v.receivedNativeM4OriginalOcctParameterInventoryClear,false);
+ assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('C1/M5 rejects forged same-class source row with a different source ID even if intervals cover whole edge',()=>{
+ const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m4.segments[0].sourceEdgeId='g::foreign';
+ const r=audit(x),v=r.views.V.rows[0];
+ assert.equal(v.receivedNativeM4ExactSameClassSourcePartitionVerified,false);
+ assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+});
 test('native original 3D partition gaps preserve hold even with exact original endpoint projections',()=>{
  const r=audit(setup({missingPartition:true}));
  assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,0);
