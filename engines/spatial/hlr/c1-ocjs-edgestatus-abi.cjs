@@ -579,6 +579,12 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  if(outputRange[0]<p2Range[0]||outputRange[1]>p2Range[1])
   return {matched:false,reason:'generated-parameter-range-outside-source-projection'};
  const samples=[];
+ // An original physical line has an injective native parameter map on a
+ // noncollapsed projected fragment. Five close paper samples cannot certify
+ // source correspondence if Parameter3d folds back or collapses a positive
+ // generated 2D interval to the same original BRep parameter.
+ const sourceParameterAscending=p2Last.value>p2First.value;
+ let previousGeneratedParameter=null,previousSourceParameter=null;
  for(let i=0;i<5;i++){
   const fraction=i/4;
   const p2=outputRange[0]+(outputRange[1]-outputRange[0])*fraction;
@@ -593,6 +599,16 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   const outputP2=[outputSamples[i].u,outputSamples[i].v];
   const residual=Math.hypot(sourceP2[0]-outputP2[0],
    sourceP2[1]-outputP2[1]);
+  if(previousGeneratedParameter!==null&&
+     (!(p2>previousGeneratedParameter)||
+      (sourceParameterAscending?
+       !(p3.value>previousSourceParameter):
+       !(p3.value<previousSourceParameter))))
+   return {matched:false,reason:'generated-source-parameter-order-not-injective',
+    samples,firstRejectedGenerated2DParameter:p2,
+    firstRejectedOriginal3DParameter:p3.value};
+  previousGeneratedParameter=p2;
+  previousSourceParameter=p3.value;
   samples.push({
    generated2DParameter:p2,source3DParameter:p3.value,
    parameterRoundTripResidual:Math.abs(p2Back.value-p2),
