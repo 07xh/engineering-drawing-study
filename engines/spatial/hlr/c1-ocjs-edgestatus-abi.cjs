@@ -388,9 +388,29 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
    arrayMethodNames:methodNames(array),readableSourceStatusRows:0,rows:[]};
  const originalHandleIds=new Set((originalNativeEdgeHandles??[]).map(x=>x.sourceEdgeId));
  const indexedSourceIds=new Set(indexedOriginalSources.map(x=>x.originalPhysicalSourceEdgeId));
+ // EdgeMap/source-ID cardinality alone cannot detect two different native
+ // TShapes labeled with one original edge ID. Repeated occurrences are
+ // legitimate only when their native identity AND BRep parameter domain agree.
+ const firstNativeHandleBySource=new Map();
+ const sameSourceNativeHandleLedgerConsistent=
+  originalNativeEdgeHandles!==undefined&&
+  originalNativeEdgeHandles.every(handle=>{
+   const first=firstNativeHandleBySource.get(handle.sourceEdgeId);
+   if(!first){firstNativeHandleBySource.set(handle.sourceEdgeId,handle);return true;}
+   try{
+    return first.edge?.IsSame(handle.edge)===true&&
+     handle.edge?.IsSame(first.edge)===true&&
+     Array.isArray(first.parameterRange)&&
+     Array.isArray(handle.parameterRange)&&
+     first.parameterRange.length===2&&handle.parameterRange.length===2&&
+     first.parameterRange.every((v,i)=>
+      Number.isFinite(v)&&v===handle.parameterRange[i]);
+   }catch{return false;}
+  });
  const originalNativeEdgeHandleLedgerComplete=
   originalNativeEdgeHandles!==undefined&&
   originalNativeEdgeHandles.every(x=>typeof x.edge?.IsSame==='function')&&
+  sameSourceNativeHandleLedgerConsistent&&
   originalHandleIds.size===edgeMapExtent&&
   [...indexedSourceIds].every(id=>originalHandleIds.has(id));
  const rows=[];
@@ -540,6 +560,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   },
   edgeDataSummary,
   originalNativeEdgeHandleLedgerComplete,
+  sameSourceNativeHandleLedgerConsistent,
   originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
   originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
   original3DEdgeDataInspectionComplete:rows.every(x=>
@@ -552,6 +573,7 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   originalEdgeStatusParameterIntervalsRead:true,
   generated2DHLRHistoryStillUnproven:true,
   originalNativeEdgeHandleLedgerComplete,
+  sameSourceNativeHandleLedgerConsistent,
   originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
   originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
   original3DEdgeDataInspectionComplete:rows.every(x=>
