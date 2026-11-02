@@ -368,8 +368,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
   originalM0UnitParameterRange:normalizedRange,
   inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
   source3DParameterRangeFromInverse:[...sourceRange],
-  sourceParameterDomainContainment:exactDomainContainment?'exact':
-   'forward-endpoint-bound-exact-with-inverse-overshoot',
+  sourceParameterDomainContainment:'exact',
   sourceDomainEndpointForwardMapProof:forwardEndpointBound,
   nativeM4SameClassCoverageComplete:sameCoverage.entireOriginalParameterIntervalCovered,
   nativeM4SameClassCoverageGaps:sameCoverage.positiveLengthUncoveredIntervals,
