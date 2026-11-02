@@ -162,20 +162,14 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
  if(!inverseNormalizedRange.every(Number.isFinite)||
     !(inverseNormalizedRange[1]>inverseNormalizedRange[0]))
   throw new RangeError('parameterized generated HLR source interval cannot normalize to original M0 [0,1]');
- // If Parameter3d inverse lands a few ULPs outside the source domain, only
- // the independent exact Parameter2d(original-domain-endpoints) == generated
- // output-endpoints witness may bind the interval back to the original domain.
- // The inverse overshoot is retained verbatim; no endpoint is clamped.
- // A forward 2D endpoint witness cannot turn a PARTIAL source interval
- // into the entire original 3D edge. Full-domain rebinding is valid only
- // when the raw inverse interval actually spans BOTH original BRep ends.
- // Otherwise preserve the overshoot and fail closed: do not erase a
- // positive-length missing source interval by replacing it with domain.
- const inverseSpansBothOriginalEnds=
-  Math.min(...sourceRange)<=domain[0]&&
-  Math.max(...sourceRange)>=domain[1];
- if(!exactDomainContainment&&
-    !(forwardEndpointBound&&inverseSpansBothOriginalEnds))
+ // The inverse Parameter3d interval is a separate native OCCT witness.
+ // Exact forward Parameter2d endpoint agreement does NOT prove that an
+ // out-of-domain native 3D parameter was inside the physical BRep edge.
+ // Even a one-ULP overshoot remains a positive original-parameter defect:
+ // preserve it and hold this generated edge instead of silently rebinding
+ // the entire interval to [first,last]. No epsilon, clamping, or paper
+ // coincidence may manufacture original-source coverage or M5 authority.
+ if(!exactDomainContainment)
   return {
    availability:'available',sourceEdgeId:sourceId,
    original3DSourceCurveDirection:direction,
@@ -184,6 +178,7 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
    inverseMappedOriginalM0UnitParameterRange:inverseNormalizedRange,
    source3DParameterRangeFromInverse:[...sourceRange],
    sourceParameterDomainContainment:'within-tolerance-but-outside',
+   sourceProjected2DForwardEndpointAgreementOnly:forwardEndpointBound,
    sourceDomainEndpointForwardMapProof:false,
    nativeM4SameClassCoverageComplete:false,
    nativeM4SameClassCoverageGaps:null,
@@ -192,14 +187,12 @@ function auditC1ParameterizedSourceMatchAgainstNativeM4({
    nativeM4ClassBacked:false,
    reason:'source-parameter-interval-outside-original-M0-unit-domain-no-clamp'
   };
- const effectiveSourceRange=exactDomainContainment?sourceRange:domain;
- const effectiveA=normalize(effectiveSourceRange[0]),
-  effectiveB=normalize(effectiveSourceRange[1]),
-  normalizedRange=[Math.min(effectiveA,effectiveB),Math.max(effectiveA,effectiveB)];
+ const normalizedRange=inverseNormalizedRange;
  if(!normalizedRange.every(Number.isFinite)||
     normalizedRange[0]<0||normalizedRange[1]>1||
     !(normalizedRange[1]>normalizedRange[0]))
-  throw new RangeError('forward-bound source interval cannot normalize exactly to original M0 [0,1]');
+  throw new RangeError('exact source interval cannot normalize to original M0 [0,1]');
+ const effectiveSourceRange=sourceRange;
  const sameRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===sameClass)
   .map(x=>x.originalM0UnitParameterRange);
  const oppositeRanges=nativeM4.segments.filter(x=>x?.native3DHLRClass===oppositeClass)
