@@ -257,7 +257,8 @@ function projectC1Native3DSourceIntervalsToM4({
   M4OriginalUnitIntervalCandidateCoverageComplete:
    nativePartition.sourceScopedNative3DParameterInventoryCompleteExactlyOnce&&
    nativeIntervalsHeldForM4.length===0&&
-   normalized.entireOriginalParameterIntervalCovered,
+   normalized.entireOriginalParameterIntervalCovered&&
+   nativeClassConflicts.paperDerivedPositiveLengthVisibleHiddenConflictIntervals.length===0,
   M4OriginalUnitIntervalCandidatePositiveGaps:
    normalized.positiveLengthUncoveredIntervals,
   M4ProjectedNative3DIntervalsHeldForBinary64Representation:
