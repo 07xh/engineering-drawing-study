@@ -7,8 +7,27 @@ const Motion=require('../workbench/teaching-motion-v5.js');
 const {prismMesh}=require('../project/unified-workbench-session.cjs');
 const {toSheet,project}=require('../core/projection/conventions.js');
 const $=id=>document.getElementById(id);
-const template=prismMesh({solid:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}});
-const SAMPLE={x:[0,30],y:[0,15],z:[0,20]};
+const boxTemplate=prismMesh({solid:{min:{x:0,y:0,z:0},max:{x:1,y:1,z:1}}});
+const BOX_SIZE={x:[0,30],y:[0,15],z:[0,20]};
+// Reviewed original M0 topology, NOT a pre-made W/H/V answer or an image
+// recognition claim. The six-source geometry has outward-oriented closed
+// convex faces and has its own actual scoped-M5/V5 end-to-end regression.
+const obliquePrismTemplate={data:{
+ points:{
+  A:{x:0,y:0,z:0},B:{x:12,y:1,z:2},C:{x:4,y:3,z:10},
+  D:{x:2,y:7,z:1},E:{x:14,y:8,z:3},F:{x:6,y:10,z:11}
+ },
+ edges:[['A','B'],['B','C'],['C','A'],['D','F'],['F','E'],['E','D'],
+  ['A','D'],['B','E'],['C','F']],
+ faces:[['A','B','C'],['D','F','E'],['A','D','E','B'],
+  ['B','E','F','C'],['C','F','D','A']]
+}};
+const cases={
+ box:{template:boxTemplate,label:'长方体（8 角点）'},
+ oblique:{template:obliquePrismTemplate,label:'斜三棱柱（6 顶点、9 棱、5 面）'}
+};
+let selectedCase='box';
+const activeCase=()=>cases[selectedCase];
 const NS='http://www.w3.org/2000/svg';
 const SHEET={origin:{x:350,y:195},scale:4};
 let revision=1,current=null,playing=false,raf=null;
@@ -85,8 +104,8 @@ function navigateV5(delta){
 }
 function parseRow(line,index){
  const items=line.trim().split(/[，,]/).map(v=>v.trim());
- if(items.length!==5||!Object.hasOwn(template.data.points,items[0]))
-  throw new TypeError('第 '+(index+1)+' 行应为已确认的 V000…V111 编号及四个毫米坐标');
+ if(items.length!==5||!Object.hasOwn(activeCase().template.data.points,items[0]))
+  throw new TypeError('第 '+(index+1)+' 行须填写当前已审拓扑中的真实角点 ID 和四个毫米坐标');
  const n=items.slice(1).map(x=>{
   if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(x))
    throw new TypeError('投影坐标须是有效十进制数字');
@@ -107,8 +126,9 @@ function clear(){
  revision++;
 }
 function rowSample(viewPair){
- const coords=Object.entries(template.data.points).map(([id,p])=>{
-  const model={x:SAMPLE.x[p.x],y:SAMPLE.y[p.y],z:SAMPLE.z[p.z]};
+ const coords=Object.entries(activeCase().template.data.points).map(([id,p])=>{
+  const model=selectedCase==='box'?
+   {x:BOX_SIZE.x[p.x],y:BOX_SIZE.y[p.y],z:BOX_SIZE.z[p.z]}:{...p};
   const pv=project(model);
   return [id,...[...viewPair].flatMap(v=>[pv[v].u,pv[v].v])].join(',');
  });
@@ -118,7 +138,8 @@ function syncFormat(){
  const pair=$('pair').value;
  if(!['VH','VW','HW'].includes(pair))throw new Error('视图组合不支持');
  $('format').textContent='每行：角点 ID, '+[...pair].flatMap(v=>[v+'.u',v+'.v']).join(', ')+
-  '（模型 mm）。注意两张视图须属于同一个长方体的已知对应角点。';
+  '（模型 mm）。'+activeCase().label+'，'+
+  '每个点须是同一已确认空间实体在两张真实已知视图中的对应点。';
 }
 function shape(tag,attributes={}){
  const n=document.createElementNS(NS,tag);
@@ -224,17 +245,18 @@ function solve(){
  $('paper').replaceChildren();
  $('proof').textContent='未生成标准工程线型或 V5 作图。';
  try{
-  if(!$('confirmed').checked)throw new Error('请先人工核对原题和长方体拓扑');
-  const pair=$('pair').value,lines=$('vertices').value.trim().split(/\r?\n/);
-  if(lines.length!==8)throw new Error('请提供恰好八个原题对应角点');
+  if(!$('confirmed').checked)throw new Error('请先人工核对原题及所选封闭凸体拓扑');
+  const pair=$('pair').value,lines=$('vertices').value.trim().split(/\r?\n/),
+   template=activeCase().template,n=Object.keys(template.data.points).length;
+  if(lines.length!==n)throw new Error('本模型须提供恰好 '+n+' 个已审角点');
   const rows=lines.map(parseRow);
-  if(new Set(rows.map(x=>x.id)).size!==8)throw new Error('角点编号重复');
+  if(new Set(rows.map(x=>x.id)).size!==n)throw new Error('角点编号重复');
   const knownViews=[...pair];
   const vertices=rows.map(({id,n})=>({id,
    knownViews:Object.fromEntries(knownViews.map((v,i)=>
     [v,[n[i*2],n[i*2+1]]]))}));
   const certified=compileReviewedSolidVertexV5({input:{
-   geometryId:'ReviewedSolid',confirmedBy:'user',topologyConfirmed:true,
+   geometryId:'ReviewedSolid'+selectedCase,confirmedBy:'user',topologyConfirmed:true,
    revision,unit:'mm',vertices,edges:template.data.edges,faces:template.data.faces
   },sheetTransform:SHEET});
   current=certified;
@@ -299,6 +321,23 @@ function solve(){
   $('status').dataset.status='blocked';
  }
 }
+$('shapePreset').addEventListener('change',()=>{
+ const option=$('shapePreset').value;
+ if(!Object.hasOwn(cases,option))throw new Error('未审核的复杂实体类型');
+ selectedCase=option;
+ clear();syncFormat();
+ $('vertices').value=rowSample($('pair').value);
+ $('confirmationLabel').textContent='我已核对原题、单位、第一角法及所有点身份；'+
+  activeCase().label+'拓扑由我人工确认';
+ $('caseDescription').textContent=activeCase().label+
+  '：仅提供原始已审实体拓扑与当前所选的两张已知视图数学坐标，'+
+  '不会预先放入待求第三视图或直接宣称真实教材盲测通过。';
+});
+$('loadExample').addEventListener('click',()=>{
+ clear();syncFormat();
+ $('vertices').value=rowSample($('pair').value);
+ $('status').textContent='示例已填入当前两张视图；请独立审核点对应并手动确认。';
+});
 $('pair').addEventListener('change',()=>{
  // Existing text is never silently overwritten by generated sample coordinates.
  clear();syncFormat();
