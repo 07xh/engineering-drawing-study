@@ -395,3 +395,50 @@ test('one binary64-ULP positive source interval overlap cannot be silently toler
  assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
  assert.equal(r.officialV5Authorized,false);
 });
+
+test('native source paper tolerances are per-axis, preserve legitimate v rounding, never sign V5',()=>{
+ const {boundedOriginalFullPaperEndpointEnvelope:envelope}=
+  require('../../workbench/c1-native-scoped-2d-3d-class-binding.cjs');
+ const big=2**40,ulp=2**-12;
+ const a={u:0,v:big},b={u:100,v:big+1000};
+ const bad=envelope(a,b,{u:1e-10,v:big},b);
+ assert.equal(bad.compatible,false);
+ assert.ok(bad.originalPaperAxisOneULPEnvelopesMm.u<1e-10);
+ assert.ok(bad.originalPaperAxisOneULPEnvelopesMm.v>=ulp);
+ const good=envelope(a,b,{u:0,v:big+ulp},b);
+ assert.equal(good.compatible,true);
+ assert.equal(good.exactClosedOriginalEndpointGeometryCertified,false);
+ assert.equal(good.sourceScopedHLRWithinOneScaleULPIsNotOriginalParameterIdentity,true);
+ assert.equal(envelope(a,b,b,{u:1e-10,v:big}).compatible,false);
+ assert.equal(envelope(a,b,b,{u:0,v:big+ulp}).compatible,true);
+});
+
+test('real M4 source binding holds cross-axis alias with full native class evidence',()=>{
+ const big=2**40,ulp=2**-12,a={u:0,v:big},b={u:100,v:big+1000};
+ const mk=from=>audit({
+  view,sourceEdgeId,sourceProjectedFrom:a,sourceProjectedTo:b,
+  scoped2DVisible:[{...stroke('visible-sharp'),from,to:b}],
+  scoped2DHidden:[],
+  nativeOriginal3DM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   view,sourceEdgeId,native3DOutlineSegments:[],
+   segments:[native('visible-sharp',0,1)],
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   officialV5Authorized:false
+  }
+ });
+ const bad=mk({u:1e-10,v:big});
+ assert.equal(bad.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
+ assert.equal(bad.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ assert.equal(bad.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+ assert.equal(bad.officialV5Authorized,false);
+ const good=mk({u:0,v:big+ulp});
+ assert.equal(good.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,true);
+ assert.equal(good.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,true);
+ assert.equal(good.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(good.officialV5Authorized,false);
+});
