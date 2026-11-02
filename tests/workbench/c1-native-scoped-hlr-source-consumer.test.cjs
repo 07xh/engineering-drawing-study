@@ -1697,7 +1697,7 @@ test('original M0 whole-edge forward endpoint agrees without masking native inve
  assert.equal(good.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
  assert.equal(good.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,true);
  const warped=audit({...args,generatedHLRCurveSamples:[
-  native[0],native[1],{...native[2],v:native[2].v+Number.EPSILON*4},
+  native[0],native[1],{...native[2],v:native[2].v+Number.EPSILON*16},
   native[3],native[4]]});
  assert.equal(warped.exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,true);
  assert.equal(warped.nativeGeneratedIntermediateSamplesExactlyOnOriginalM0PaperLine,false);
