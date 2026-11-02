@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>基本体补第三视图 · DraftAI</title><link rel="stylesheet" href="../site-ui.css">
+<title>受限凸体补第三视图 · 绘序 DraftFlow</title><link rel="stylesheet" href="../site-ui.css">
 <style>body{font:15px/1.65 system-ui,sans-serif;background:#f5f8fc;color:#18334e;margin:0}
 main{max-width:1230px;margin:auto;padding:16px}h1{font-size:26px;margin:10px 0}p{line-height:1.7}
 .layout{display:grid;grid-template-columns:minmax(315px,440px) minmax(0,1fr);gap:14px}
@@ -18,17 +18,22 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f7fb;border-radius
 .point-v5-toolbar{display:flex;flex-wrap:wrap;gap:6px}#point-v5-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}#point-v5-controls button{min-height:40px;padding:8px 10px}#point-v5-controls p{flex-basis:100%;margin:0}#point-v5-controls label{margin:0}#point-v5-controls button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:820px){.layout{grid-template-columns:1fr}}@media(max-width:450px){main{padding:8px}article{padding:12px}}
 </style></head><body><main>
 <a href="../index.html">← 返回 DraftAI 统一工作台</a>
-<h1>基本体 · 由两视图求第三视图</h1>
+<h1>已审凸体 · 两视图求第三视图</h1>
 <p><a href="c1-reviewed-dxf-live.html">导入本机可信 DXF 已知视图 → 自动几何候选 → 人工审核 → 现有唯一 V5</a>（不会载入或上传教材答案文件）</p>
-<p>适用于<strong>人工确认是闭合凸长方体、并已核对八个角点编号对应关系</strong>的习题。并非任意两视图自动识体。仅在完整闭合凸体 M5 证据通过时，可将单体可见外轮廓粗实线连同已证明顶点接入原有唯一 V5；隐藏线、内部棱线及完整实体答案仍未认证。</p>
+<p>支持<strong>人工确认顶点、面拓扑和两张第一角法投影</strong>的受限单闭合凸体示例，包括八角点长方体及六顶点斜三棱柱。不是从任意图像自动识体；只将现有 M5 已签收的单体可见外轮廓与已证顶点接入原有唯一 V5，未证明的内部棱线和隐藏线仍保持未确定。</p>
 <div class="layout"><article>
 <h2>已知条件（模型 mm）</h2>
+<label for="shapePreset">已人工审核的实体拓扑
+<select id="shapePreset"><option value="box" selected>长方体 · 8 角点</option>
+<option value="oblique">斜三棱柱 · 6 顶点 / 9 棱 / 5 面</option></select></label>
+<p id="caseDescription" class="hint">示例仅提供已审核的长方体拓扑及当前所选两张已知视图的坐标。第三视图不作为输入，也不代表真实教材题盲测。</p>
+<button id="loadExample" type="button">按当前两张视图填入示例条件</button>
 <label for="pair">已知的两个视图
 <select id="pair"><option value="VH">正视图 V + 俯视图 H</option>
 <option value="VW">正视图 V + 左视图 W</option>
 <option value="HW">俯视图 H + 左视图 W</option></select></label>
-<p id="format" class="hint">每行：角点 ID, V.u, V.v, H.u, H.v。八个角点身份必须经人工核对。</p>
-<label for="vertices">八个角点的对应投影数学坐标（逗号分隔）</label>
+<p id="format" class="hint">每行：角点 ID, V.u, V.v, H.u, H.v。点的身份和两视图对应必须经人工核对。</p>
+<label for="vertices">角点的对应投影数学坐标（逗号分隔）</label>
 <textarea id="vertices" spellcheck="false">V000,0,0,0,0
 V001,0,20,0,0
 V010,0,0,0,15
@@ -37,7 +42,7 @@ V100,30,0,30,0
 V101,30,20,30,0
 V110,30,0,30,15
 V111,30,20,30,15</textarea>
-<label class="check" for="confirmed"><input type="checkbox" id="confirmed">我已核对原题、单位、V/H/W 第一角法和八点身份；长方体拓扑已由我确认</label>
+<label class="check" for="confirmed"><input type="checkbox" id="confirmed"><span id="confirmationLabel">我已核对原题、单位、第一角法及所有点身份；长方体（8 角点）拓扑由我人工确认</span></label>
 <button id="solve" type="button">计算公共三视图</button>
 <div id="point-v5-controls" aria-label="已证明顶点与合格可见外轮廓的唯一 V5 播放控制">
 <button id="pointV5Play" type="button" disabled>播放唯一 V5</button>
@@ -54,7 +59,7 @@ V111,30,20,30,15</textarea>
 <p class="hint">更改任何条件立即清除旧结果。图片识别候选、仅有外轮廓但不明确实体或对应点的习题不允许直接按长方体签收。</p>
 </article><article>
 <h2>三视图预览</h2>
-<svg id="paper" viewBox="0 0 800 530" role="img" aria-label="第一角法 V/H/W 的长方体投影草图，所有边线线型未判定"></svg>
+<svg id="paper" viewBox="0 0 800 530" role="img" aria-label="第一角法 V/H/W 受限已审凸体投影画布，未认证的边线不作为标准工程答案"></svg>
 <p>紫色点线仅是已确认拓扑下的候选投影，<strong>不能冒充正式可见或隐藏图线</strong>；投影积聚可能合并。播放时的深蓝粗实线仅来自已正向签收的单闭合凸体完整可见外轮廓，其他内部棱线及虚线保持未认证。</p>
 <pre id="proof">数学证据将在计算后显示。</pre>
 </article></div>
