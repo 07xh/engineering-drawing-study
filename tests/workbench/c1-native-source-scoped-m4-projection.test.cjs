@@ -7,8 +7,9 @@ const P=(x,y,z)=>({x,y,z});
 const geometry={id:'NativeM4Test',kind:'mesh',space:'model-3d',unit:'mm',
  data:{points:{A:P(0,0,0),B:P(10,0,0)},edges:[['A','B']]}};
 const id='NativeM4Test::A|B';
-const part=(from,to)=>({
+const part=(from,to,klass='visible-sharp')=>({
  nativeSourceFilterOriginalEdgeId:id,nativeOriginalCurveParameterRange:[from,to],
+ native3DHLRClass:klass,
  native3DCurveExactlySameAsOriginalAtThreeParameters:true,
  originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
 });
@@ -21,7 +22,7 @@ const row=(visible,hidden,visibleOutline=[],hiddenOutline=[])=>({
  visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
   native3DGeneratedCurveIntervals:visible.map(r=>part(...r))},
  hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
-  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r))},
+  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r,'hidden-sharp'))},
  visibleOutline3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
   nativeResultingEdgeType:'HLRBRep_OutLine',
   native3DGeneratedCurveIntervals:visibleOutline.map(r=>
@@ -380,4 +381,27 @@ test('positive native outline subspan lost at huge paper coordinate is held with
  assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
   originalNative3DParameterRange,[1,1.1]);
  assert.equal(out.officialV5Authorized,false);
+});
+
+test('real native Sharp class cannot be laundered across V/H/W visibility groups',()=>{
+ for(const view of ['V','H','W']){
+  for(const reverse of [false,true]){
+   const x=input([[0,4]],[[4,10]],reverse);
+   x.view=view;
+   const good=projectNative(x);
+   assert.equal(good.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+   assert.equal(good.officialV5Authorized,false);
+   const wrong=structuredClone(x);
+   wrong.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
+    native3DHLRClass='hidden-sharp';
+   assert.throws(()=>projectNative(wrong),/unverified source-scoped original native 3D curve interval/);
+   const swapped=structuredClone(x);
+   swapped.scopedRow.hidden3D.native3DGeneratedCurveIntervals[0].
+    native3DHLRClass='visible-sharp';
+   assert.throws(()=>projectNative(swapped),/unverified source-scoped original native 3D curve interval/);
+   const omitted=structuredClone(x);
+   delete omitted.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].native3DHLRClass;
+   assert.throws(()=>projectNative(omitted),/unverified source-scoped original native 3D curve interval/);
+  }
+ }
 });
