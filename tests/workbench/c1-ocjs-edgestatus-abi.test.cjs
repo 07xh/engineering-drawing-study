@@ -820,7 +820,9 @@ test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep para
 test('inverse-rejected BRep forward native five-sample disagreement stays held, never borrows matching endpoints',()=>{
  const curve={
   Parameter2d(t){return t;},
-  Parameter3d(t){return t===1?1+Number.EPSILON:t;},
+  // Reject the native inverse at the FIRST generated sample, so the
+  // independent forward sampler still examines the later forged midpoint.
+  Parameter3d(t){return t===0?-Number.MIN_VALUE:t;},
   Value(t){return {X(){return t;},Y(){return -2*t;}};}
  };
  const base={curve,parameterRange:[0,1],
