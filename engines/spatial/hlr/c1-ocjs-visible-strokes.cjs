@@ -1032,6 +1032,13 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    // same-run original HLRBRep_Curve using Parameter2d/Parameter3d and
    // five projected curve samples. This is stronger than paper coincidence,
    // but deliberately remains distinct from generated TopoDS history.
+   // A per-row native IsSame witness is not enough if two DIFFERENT M0
+   // source IDs alias one TopoDS TShape, or a same-ID handle has a
+   // contradictory BRep domain. Reject the whole original-source ledger
+   // before any generated 2D parameter candidate is consumed by M4/M5.
+   // This never promotes the surviving candidates to full HLR history.
+   if(originalEdgeStatusAbi.originalNativeEdgeHandleLedgerComplete!==true)
+    throw new RangeError('native HLR original source handle ledger is not a bijection');
    const generated2DSourceParameterMatches={
     visible:auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
      segments:visibleNative.segments,nativeCurveHandlesBySourceId
