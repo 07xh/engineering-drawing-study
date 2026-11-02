@@ -868,3 +868,33 @@ test('inverse-rejected BRep forward native five-sample disagreement stays held, 
  assert.equal(mismatch.originalNativeForwardFivePointDiscreteConcordance,false);
  assert.equal(mismatch.signedV5Action,false);
 });
+
+test('generated HLR native 2D last parameter is preserved exactly despite binary64 affine endpoint rounding',()=>{
+ const first=0.2,last=0.9;
+ assert.notEqual(first+(last-first),last);
+ const p2=[first,...[1,2,3].map(i=>first+(last-first)*(i/4)),last];
+ const curve={
+  Parameter2d(t){return t;},Parameter3d(t){return t;},
+  Value(t){return {X(){return t;},Y(){return -t;}};}
+ };
+ const source=new Map([['g::E0',{
+  curve,parameterRange:[first,last],originalBRepParameterRange:[first,last],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
+ }]]);
+ const segment={actualOCCTHLRCurveParameterRange:[first,last],
+  actualOCCTHLRCurveSamplesProjectedMm:p2.map(t=>({u:t,v:t})),
+  actualOCCTHLRCurveSampleToleranceMm:0};
+ const result=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId:source});
+ assert.equal(result.uniqueParameterizedSourceMatchCount,1);
+ const match=result.rows[0].candidateSourceMatches[0];
+ assert.deepEqual(match.source3DParameterRange,[first,last]);
+ assert.equal(match.samples[4].generated2DParameter,last);
+ assert.equal(match.samples[4].source3DParameter,last);
+ assert.equal(match.generated2DTopoDSHistoryProven,false);
+ assert.equal(match.signedV5Action,false);
+ // One ULP outside the actual original source domain must remain rejected.
+ const beyond={...segment,actualOCCTHLRCurveParameterRange:[first,0.9000000000000001]};
+ const held=auditGenerated({segments:[beyond],nativeCurveHandlesBySourceId:source});
+ assert.equal(held.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(held.rows[0].status,'no-parameterized-source-curve-match');
+});
