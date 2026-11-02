@@ -55,6 +55,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   uniqueOriginalSourceGlobalEdgesExamined:0,
   nativeOriginalBRepExactPhysicalEndpointPairs:0,
   completeOriginalNative3DClassSourceIntervalRows:0,
+  // A complete-looking whole-source M4 row may coexist with additional
+  // overlapping / opposite-class source fragments. Those never certify
+  // a unique original physical endpoint, even when producer flags say so.
+  multipleNativeM4SourceClassSegmentsHeld:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
   strictlyClassBackedButRoundedOriginalM0PaperEndpoints:0,
@@ -107,7 +111,9 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
-    boundedPaper=false,sourcePaperEnvelope=null,links=[];
+    boundedPaper=false,sourcePaperEnvelope=null,links=[],
+    receivedNativeM4SourceClassSegmentCount=0,
+    nativeM4SourceClassMultiplicityHeld=false;
    if(originalId!==null){
     if(!physical||!originalBRep||
        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
@@ -127,9 +133,22 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
      s.originalM0UnitParameterRange?.[0]===0&&
      s.originalM0UnitParameterRange?.[1]===1)??[];
+    // Recheck the ACTUAL received full original-source M4 inventory. A
+    // single same-class [0,1] witness is not an exact-once partition if
+    // another positive interval also claims that source (same or opposite
+    // visibility class). Do not trust producer coverage booleans alone.
+    // A legitimate whole edge has precisely one source-class segment here;
+    // split/overlapping sources stay held for the wider M4/M5 proof.
+    receivedNativeM4SourceClassSegmentCount=m4?.segments.length??0;
+    nativeM4SourceClassMultiplicityHeld=matching.length===1&&
+     receivedNativeM4SourceClassSegmentCount!==1;
+    if(nativeM4SourceClassMultiplicityHeld)
+     counts.multipleNativeM4SourceClassSegmentsHeld++;
     sourceClassFull=matching.length===1&&
+     receivedNativeM4SourceClassSegmentCount===1&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+     Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
@@ -209,6 +228,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
     completeOriginalNativeSource3DClassCoversWholeEdge:sourceClassFull,
+    receivedOriginalNativeM4SourceClassSegmentCount:
+     receivedNativeM4SourceClassSegmentCount,
+    receivedNativeM4SourceClassMultiplicityHeld:
+     nativeM4SourceClassMultiplicityHeld,
     receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly:
      originalPaperExact,
     generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity:
