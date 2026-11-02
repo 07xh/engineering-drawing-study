@@ -86,7 +86,8 @@ function boundedOriginalFullPaperEndpointEnvelope(a,b,from,to){
 }
 function auditC1RealNativeScoped2D3DClassBinding({
  view,sourceEdgeId,sourceProjectedFrom,sourceProjectedTo,
- scoped2DVisible,scoped2DHidden,nativeOriginal3DM4
+ scoped2DVisible,scoped2DHidden,nativeOriginal3DM4,
+ expectedSourceGeometryId,expectedRevision
 }={}){
  if(!VIEWS.includes(view)||typeof sourceEdgeId!=='string'||!sourceEdgeId||
     !valid(sourceProjectedFrom)||!valid(sourceProjectedTo)||
@@ -96,6 +97,16 @@ function auditC1RealNativeScoped2D3DClassBinding({
      'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2'||
     nativeOriginal3DM4.view!==view||
     nativeOriginal3DM4.sourceEdgeId!==sourceEdgeId||
+    // Production joins must bind the 2D/3D witnesses to the same M0
+    // geometry and CAD revision; matching paper and source IDs alone
+    // cannot make a stale M4 partition current.
+    (expectedSourceGeometryId!==undefined&&
+     (typeof expectedSourceGeometryId!=='string'||
+      nativeOriginal3DM4.sourceGeometryId!==expectedSourceGeometryId||
+      !sourceEdgeId.startsWith(expectedSourceGeometryId+'::')))||
+    (expectedRevision!==undefined&&
+     (!Number.isSafeInteger(expectedRevision)||expectedRevision<1||
+      nativeOriginal3DM4.revision!==expectedRevision))||
     !Array.isArray(nativeOriginal3DM4.segments)||
     !Array.isArray(nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)||
     nativeOriginal3DM4.officialV5Authorized!==false)
