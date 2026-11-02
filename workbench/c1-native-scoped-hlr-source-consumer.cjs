@@ -539,9 +539,13 @@ function auditC1RejectedOriginalInverseParameterULP({originalBRepDomain,rawInver
   throw new RangeError('strictly out-of-domain finite native Parameter3d inverse required');
  const beyondStart=rawInverse<originalBRepDomain[0];
  const boundary=originalBRepDomain[beyondStart?0:1];
- const ulps=beyondStart?
-  orderedBinary64(boundary)-orderedBinary64(rawInverse):
-  orderedBinary64(rawInverse)-orderedBinary64(boundary);
+ const rankRaw=orderedBinary64(rawInverse),rankBoundary=orderedBinary64(boundary);
+ let ulps=beyondStart?rankBoundary-rankRaw:rankRaw-rankBoundary;
+ // -0 and +0 are two binary64 bit patterns but the SAME numerical
+ // parameter, so crossing both must not invent an extra ULP of geometry.
+ const lo=rankRaw<rankBoundary?rankRaw:rankBoundary;
+ const hi=rankRaw>rankBoundary?rankRaw:rankBoundary;
+ if(lo<=orderedBinary64(-0)&&hi>=orderedBinary64(0))ulps--;
  if(ulps<=0n)
   throw new RangeError('native Parameter3d overrun has no positive binary64 ULP');
  return Object.freeze({
