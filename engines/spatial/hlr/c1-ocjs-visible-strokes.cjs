@@ -94,15 +94,21 @@ function method(owner,key){
  return fn;
 }
 function closeToSegment(p,a,b,tol=1e-6){
- const du=b.u-a.u,dv=b.v-a.v,len=Math.hypot(du,dv);
- // A positive projection can have a squared length rounded to zero.
- // Only a genuinely collapsed/nonfinite binary64 paper source is excluded.
+ const du=b.u-a.u,dv=b.v-a.v,len2=du*du+dv*dv;
+ // Keep the previously audited ordinary binary64 paper candidate path:
+ // changing its rounding can change a real positive M5 source gap.
+ if(len2>=1e-15&&Number.isFinite(len2)){
+  const cross=du*(p.v-a.v)-dv*(p.u-a.u);
+  const t=((p.u-a.u)*du+(p.v-a.v)*dv)/len2;
+  return Math.abs(cross)<=tol*Math.sqrt(len2)&&t>=-tol&&t<=1+tol;
+ }
+ // A genuine tiny projected source may have len² rounded to zero. Use
+ // a scale-stable diagnostic candidate path, not a new source certificate.
+ const len=Math.hypot(du,dv);
  if(!(len>0)||!Number.isFinite(len))return false;
  const ux=du/len,uy=dv/len,pu=p.u-a.u,pv=p.v-a.v;
  const cross=ux*pv-uy*pu;
  const t=(ux*pu+uy*pv)/len;
- // Paper-only candidate proximity. Never infer original TopoDS history
- // from this tolerance; avoid borrowing a nearby tiny parallel source.
  const paperTol=Math.min(tol,len*tol);
  return Number.isFinite(cross)&&Number.isFinite(t)&&
   Math.abs(cross)<=paperTol&&t>=-tol&&t<=1+tol;
