@@ -517,6 +517,44 @@ function auditC1FullOriginalForwardSharpClass({
  * This is parameterized curve correspondence, NOT generated-edge TShape
  * ancestry, global occlusion, GB line style, ConstructionIntent or V5.
  */
+/**
+ * Count representable binary64 values between the received native HLR
+ * Parameter3d inverse and the ORIGINAL OCCT BRep endpoint. A 1-ULP
+ * overrun is still strictly OUTSIDE the domain; this is diagnostic only,
+ * not a numerical tolerance, source repair, or TopoDS history proof.
+ */
+const inverseULPBits=new DataView(new ArrayBuffer(8));
+const ULP_SIGN_BIT=1n<<63n,ULP_ALL_BITS=(1n<<64n)-1n;
+const orderedBinary64=n=>{
+ inverseULPBits.setFloat64(0,n,false);
+ const bits=inverseULPBits.getBigUint64(0,false);
+ return (bits&ULP_SIGN_BIT)!==0n?(~bits)&ULP_ALL_BITS:bits|ULP_SIGN_BIT;
+};
+function auditC1RejectedOriginalInverseParameterULP({originalBRepDomain,rawInverse}={}){
+ if(!Array.isArray(originalBRepDomain)||originalBRepDomain.length!==2||
+    !originalBRepDomain.every(Number.isFinite)||
+    !(originalBRepDomain[1]>originalBRepDomain[0])||
+    !Number.isFinite(rawInverse)||
+    rawInverse>=originalBRepDomain[0]&&rawInverse<=originalBRepDomain[1])
+  throw new RangeError('strictly out-of-domain finite native Parameter3d inverse required');
+ const beyondStart=rawInverse<originalBRepDomain[0];
+ const boundary=originalBRepDomain[beyondStart?0:1];
+ const ulps=beyondStart?
+  orderedBinary64(boundary)-orderedBinary64(rawInverse):
+  orderedBinary64(rawInverse)-orderedBinary64(boundary);
+ if(ulps<=0n)
+  throw new RangeError('native Parameter3d overrun has no positive binary64 ULP');
+ return Object.freeze({
+  originalBRepBoundaryParameter:boundary,
+  receivedOutsideNativeInverseParameter:rawInverse,
+  overrunSide:beyondStart?'before-original-start':'after-original-end',
+  strictlyOutsideOriginalBRepDomain:true,
+  binary64RepresentableStepsOutsideOriginalDomain:String(ulps),
+  nativeParameterDomainRepaired:false,
+  originalToGenerated2DTopoDSHistoryCertified:false,
+  signedV5Action:false
+ });
+}
 function auditC1ParameterizedGlobalHLRSourceLineage({
  view,classes,scoped,expected,nativeM4ById,projectedOriginalBySource
 }={}){
@@ -794,8 +832,12 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
      view,sourceEdgeId:sourceId,klass,domain,forwardPaper:forward,
      nativeM4:nativeM4ById?.get(sourceId)
     });
+    const overrun=auditC1RejectedOriginalInverseParameterULP({
+     originalBRepDomain:domain,rawInverse:raw
+    });
     inverseRejectedForwardSources.push({
      sourceEdgeId:sourceId,
+     strictNativeOriginalInverseBinary64Overrun:overrun,
      originalBRepParameterRange:[...domain],
      firstRejectedGenerated2DParameter:held.firstRejectedGenerated2DParameter,
      firstRejectedOriginal3DParameter:raw,
@@ -1765,5 +1807,6 @@ module.exports={
  auditC1NativeScopedHLRSourceConsumer,
  auditC1ParameterizedSourceMatchAgainstNativeM4,
  auditC1OriginalM0FullForwardHLRPaperEndpoints,
- auditC1FullOriginalForwardSharpClass
+ auditC1FullOriginalForwardSharpClass,
+ auditC1RejectedOriginalInverseParameterULP
 };
