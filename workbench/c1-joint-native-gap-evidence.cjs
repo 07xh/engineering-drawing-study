@@ -222,6 +222,35 @@ function auditC1ThreeNativeGapBatchFromM5Ledger({
      proof.positiveLengthUncoveredIntervals.length!==1||
      !positiveOriginalAEndGap(proof.positiveLengthUncoveredIntervals[0]))
    throw new RangeError('M5 native source gap differs from reviewed positive interval: '+view+' '+edge);
+  // Do not trust a caller's positive M5 gap merely because its value is
+  // plausible. Replay the same original M0 physical edge against the ACTUAL
+  // generated HLR source lifts in this run. This independent exact binary64
+  // interval comparison rejects a forged one-ULP-shorter M5 gap, while
+  // legitimately different positive endpoints from different native WASM
+  // runs remain distinct, unmodified and unsigned.
+  const {project}=require('../core/projection/conventions.js');
+  const {exactC1NativeSourceIntervalCoverage}=require(
+   './c1-ocjs-reviewed-solid-v5.cjs');
+  const physical=geometry.data?.edges?.filter(e=>
+   Array.isArray(e)&&e.length===2&&
+   geometry.id+'::'+[...e].sort().join('|')===sourceEdgeId);
+  if(physical?.length!==1||!Array.isArray(cad.views?.[view]))
+   throw new RangeError('M5 native source gap lacks original CAD replay inputs: '+view+' '+edge);
+  const [a,b]=physical[0].map(id=>geometry.data.points?.[id]);
+  if(!a||!b)throw new RangeError('M5 native source gap lacks original M0 endpoints');
+  const replay=exactC1NativeSourceIntervalCoverage({
+   geometry,view,sourceEdgeId,real3DFrom:a,real3DTo:b,
+   projectedFromModelMm:project(a)[view],
+   projectedToModelMm:project(b)[view],
+   independentlyM5SourceAndJunctionsProven:false,
+   strokes:cad.views[view]
+  });
+  if(replay.status!=='exact-original-3d-native-source-positive-gap'||
+     !same(replay.originalSourceParameterRange,[0,1])||
+     replay.positiveLengthUncoveredIntervals.length!==1||
+     !same(replay.positiveLengthUncoveredIntervals[0],
+      proof.positiveLengthUncoveredIntervals[0]))
+   throw new RangeError('M5 native source gap differs from independently replayed original CAD interval: '+view+' '+edge);
   uncoveredByViewAndSource[view+'::'+sourceEdgeId]=
    proof.positiveLengthUncoveredIntervals.map(range=>[...range]);
  }
