@@ -60,7 +60,12 @@ function boundedOriginalFullPaperEndpointEnvelope(a,b,from,to){
   return {compatible:false,absolutePaperEnvelopeMm:0,
    exactClosedOriginalEndpointGeometryCertified:false};
  const axisBudget=axis=>Math.min(
-  ulpAtPositiveScale(Math.max(1,Math.abs(a[axis]),Math.abs(b[axis]))),
+  // Do not inflate a sub-unit projected coordinate to 1 mm: that can
+  // admit many thousands of true binary64 ULPs for a tiny source edge.
+  // An axis with both original endpoints exactly zero has only the
+  // smallest positive binary64 spacing as its conservative envelope.
+  ulpAtPositiveScale(Math.max(Number.MIN_VALUE,
+   Math.abs(a[axis]),Math.abs(b[axis]))),
   length*1e-6);
  const uBudget=axisBudget('u'),vBudget=axisBudget('v');
  if(!(uBudget>0)||!(vBudget>0))
