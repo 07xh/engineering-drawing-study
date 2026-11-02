@@ -18,6 +18,69 @@ const frozen=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
 }return o;};
 
 /**
+ * Bind same-run indexed ORIGINAL HLR EdgeStatus to a held M5 source.
+ * This is input-edge evidence, never generated 2D TopoDS ancestry.
+ */
+function bindHeldOriginalIndexedEdgeStatusABI({cad,view,sourceEdgeId,replayedOriginalStatus}={}){
+ const surface=cad?.nativeHLRSourceHistoryAPISurfaceByView?.[view],
+  status=surface?.originalEdgeStatusAbi,index=surface?.originalDataStructureIndex;
+ if(!replayedOriginalStatus||!status||!index||
+    status.availability!=='all-original-edge-status-intervals-readable')return null;
+ if(!Array.isArray(status.rows)||!Array.isArray(index.indexedOriginalSources))
+  throw new RangeError('incomplete indexed original HLR EdgeStatus ABI inventory');
+ if(replayedOriginalStatus.schema!=='draftai-c1-original-edgestatus-vs-native-3d-sharp/1'||
+    replayedOriginalStatus.sourceEdgeId!==sourceEdgeId||
+    replayedOriginalStatus.generated2DTopoDSHistoryCertified!==false||
+    replayedOriginalStatus.wholeSceneM5Certified!==false||
+    replayedOriginalStatus.engineeringLineStyle!=='undetermined'||
+    replayedOriginalStatus.signedV5Action!==false)
+  throw new RangeError('untrusted original EdgeStatus/3D Sharp replay at M5');
+ const mapped=index.indexedOriginalSources.filter(x=>x.originalPhysicalSourceEdgeId===sourceEdgeId),
+  rows=status.rows.filter(x=>x.sourceEdgeId===sourceEdgeId);
+ if(mapped.length!==1||rows.length!==1||
+    mapped[0].directlySameOriginalTopoDSInputEdge!==true||
+    !Number.isSafeInteger(mapped[0].hlrDataStructureOneBasedEdgeIndex)||
+    mapped[0].hlrDataStructureOneBasedEdgeIndex<1||
+    rows[0].oneBasedEdgeIndex!==mapped[0].hlrDataStructureOneBasedEdgeIndex)
+  throw new RangeError('original indexed HLR EdgeStatus source/index mismatch');
+ const row=rows[0],domain=replayedOriginalStatus.originalNativeParameterRange;
+ if(replayedOriginalStatus.comparable!==true||
+    !Array.isArray(domain)||domain.length!==2||
+    !domain.every(Number.isFinite)||!(domain[1]>domain[0])||
+    row.parameterPartitionValidated!==true||
+    !Array.isArray(row.bounds)||row.bounds.length!==2||
+    row.bounds[0]!==domain[0]||row.bounds[1]!==domain[1]||
+    !Array.isArray(row.visibleParts)||row.visiblePartCount!==row.visibleParts.length||
+    typeof row.allVisible!=='boolean'||typeof row.allHidden!=='boolean'||
+    row.allVisible&&row.allHidden||
+    row.originalEdgeData?.directOriginalTopoDSEdgeIdentityProven!==true||
+    row.originalEdgeData?.originalBRepParameterRangeMatches!==true)
+  throw new RangeError('original indexed HLR EdgeStatus lacks exact native BRep partition');
+ let cursor=domain[0];
+ for(const interval of row.visibleParts){
+  if(!Array.isArray(interval)||interval.length!==2||
+     !interval.every(Number.isFinite)||interval[0]<cursor||
+     !(interval[1]>interval[0])||interval[1]>domain[1])
+   throw new RangeError('original indexed HLR visible intervals overlap or escape BRep');
+  cursor=interval[1];
+ }
+ if(row.allVisible&&(row.visibleParts.length!==1||
+    row.visibleParts[0][0]!==domain[0]||row.visibleParts[0][1]!==domain[1])||
+    row.allHidden&&row.visibleParts.length!==0)
+  throw new RangeError('original indexed HLR EdgeStatus class contradicts intervals');
+ return {sourceEdgeId,view,originalNativeHLREdgeMapIndex:row.oneBasedEdgeIndex,
+  originalNativeParameterRange:[...domain],
+  originalNativeVisibleParameterIntervals:row.visibleParts.map(x=>[...x]),
+  originalNativeStatusClass:row.allVisible?'all-visible':row.allHidden?'all-hidden':'mixed',
+  nativeOriginalStatusClassAgreesWith3DSharp:
+   replayedOriginalStatus.nativeOriginalStatusClassAgreesWith3DSharp===true,
+  originalBRepToIndexedEdgeDataIsSameVerified:true,
+  originalInputEdgeStatusNotGenerated2DTopoDSAncestry:true,
+  generated2DTopoDSHistoryCertified:false,wholeSceneM5Certified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false};
+}
+
+/**
  * Recheck the existing M4 original 3D source intervals and canonical exact
  * event cuts as ONE continuous [0,1] source-depth partition. Genuine
  * original-vertex ties may certify OPEN depth order; they do not certify
@@ -201,6 +264,8 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   obligationsWithDistinctNativeGeneratedVertices:0,
   obligationsWithIndependentExactOriginalRayClass:0,
   obligationsWithNativeOriginalIndexedHLREdgeStatus:0,
+  obligationsWithOriginalIndexedEdgeStatusABI:0,
+  positivePaperGapsWithOriginalIndexedEdgeStatusABI:0,
   obligationsWithReplayedOriginalStatusVsNative3DConcordance:0,
   positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance:0,
   obligationsWithOriginalStatusVsNative3DMismatchOrUncomparable:0,
@@ -375,6 +440,12 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   const originalStatus=row.independentOriginalNativeHLREdgeStatusSource??null;
   const replayedOriginalStatus=originalStatusVsNative3DByView?.[row.view]
    ?.get(row.sourceEdgeId)??null;
+  const indexedStatusABI=bindHeldOriginalIndexedEdgeStatusABI({
+   cad,view:row.view,sourceEdgeId:row.sourceEdgeId,replayedOriginalStatus
+  });
+  counts.obligationsWithOriginalIndexedEdgeStatusABI+=Number(indexedStatusABI!==null);
+  counts.positivePaperGapsWithOriginalIndexedEdgeStatusABI+=
+   Number(interval!==null&&indexedStatusABI!==null);
   counts.obligationsWithReplayedOriginalStatusVsNative3DConcordance+=
    Number(replayedOriginalStatus?.nativeOriginalStatusClassAgreesWith3DSharp===true);
   counts.positivePaperGapsWithReplayedOriginalStatusVsNative3DConcordance+=
@@ -632,6 +703,7 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
    exactIndexedSourceFilterCausalityCannotSignPaperGapsOrM5:true,
    directCausalGeneratedEdgeCannotReplaceOriginalParameterHistory:true,
    sameRunNativeOriginalHLREdgeStatus:originalStatus,
+   sameRunOriginalIndexedEdgeStatusABI:indexedStatusABI,
    independentOriginalHLREdgeStatusVsNative3DSharpSourceConcordance:
     replayedOriginalStatus,
    sourceSideEdgeStatusAnd3DClassAgreementCannotCertifyGenerated2DHistory:true,
@@ -683,4 +755,5 @@ function auditC1M5UnresolvedGlobalSourceObligations({geometry,cad,positiveOrigin
   generatedHistoryAndContinuousSceneOcclusionStillRequired:true,
   officialV5Authorized:false,signedV5ActionCount:0});
 }
-module.exports={auditC1M5UnresolvedGlobalSourceObligations};
+module.exports={auditC1M5UnresolvedGlobalSourceObligations,
+ bindHeldOriginalIndexedEdgeStatusABI};
