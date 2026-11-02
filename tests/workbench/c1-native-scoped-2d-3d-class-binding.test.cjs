@@ -542,13 +542,29 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
    originalNative3DParameterRange:[.5,1]}
  ];
  heldMapping.nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation=[
-  {originalNative3DParameterRange:[.25,.5],
+  {view,sourceEdgeId,sourceGeometryId:'m',revision:12,
+   originalVertexIds:['A','B'],
+   reason:'positive-original-interval-collapsed-by-binary64-paper-projection',
+   originalNative3DParameterRange:[.25,.5],
    roundedOriginalM0UnitParameterRange:[.25,.5],
    native3DHLRClass:'visible-sharp',
    engineeringLineStyle:'undetermined',signedV5Action:false}
  ];
  heldMapping.nativeOriginal3DM4.M4OriginalUnitIntervalCandidateCoverageComplete=false;
  assert.equal(audit(heldMapping).sourceScoped2DClassBoundWithoutRounding,false);
+ // A real held native 3D interval cannot be borrowed from a different
+ // original edge, first-angle view, revision, model or HLR class, even
+ // when its numerical [first,last] partition is identical.
+ for(const [field,wrong] of [
+  ['sourceEdgeId','m::A|C'],['sourceGeometryId','foreign'],
+  ['view','H'],['revision',11],['native3DHLRClass','visible-outline'],
+  ['signedV5Action',true],['engineeringLineStyle','continuous'],
+  ['reason','unverified-native-interval'],['originalVertexIds',['A','C']]
+ ]){
+  const forged=structuredClone(heldMapping);
+  forged.nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0][field]=wrong;
+  assert.throws(()=>audit(forged),/held native M4 interval source\/revision\/class provenance mismatch/,field);
+ }
  heldMapping.nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0]
   .roundedOriginalM0UnitParameterRange=[.25,.49999999999999994];
  assert.throws(()=>audit(heldMapping),/native-to-M4 source interval normalization mismatch/);
