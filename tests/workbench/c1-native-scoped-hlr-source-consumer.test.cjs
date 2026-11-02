@@ -1708,3 +1708,124 @@ test('original M0 whole-edge forward endpoint agrees without masking native inve
  assert.throws(()=>audit({...args,originalProjectedEndpoints:[a,{u:Infinity,v:23}]}),
   /finite original M0 paper/);
 });
+
+test('full forward original BRep Sharp corroboration remains separate from native inverse and unsigned',()=>{
+ const {auditC1FullOriginalForwardSharpClass:sharp,
+  auditC1OriginalM0FullForwardHLRPaperEndpoints:forward,
+  auditC1ParameterizedSourceMatchAgainstNativeM4:inverse}=
+  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+ const view='W',sourceEdgeId='g::E0',domain=[0,3],last=3;
+ const from={u:0,v:2},to={u:3,v:5};
+ const curve=[from,{u:.75,v:2.75},{u:1.5,v:3.5},
+  {u:2.25,v:4.25},to];
+ const full=forward({originalProjectedEndpoints:[from,to],
+  sourceProjected2DParameterRangeSorted:[0,3],
+  generated2DParameterRange:[0,3],generatedHLRCurveSamples:curve});
+ const segment=(a,b,klass='visible-sharp')=>({
+  view,sourceEdgeId,native3DHLRClass:klass,
+  originalNative3DParameterRange:[a,b],
+  originalM0UnitParameterRange:[a/last,b/last],
+  derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+  generated2DHLREdgeTopologyProven:false,
+  completeGlobalCoProjectedVisibilityCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const completeM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+  view,sourceEdgeId,original3DSourceCurveDirection:'forward',
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4OriginalUnitIntervalNativeClassConflicts:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+  segments:[segment(0,1.5),segment(1.5,3)]
+ };
+ const args={view,sourceEdgeId,klass:'visible',domain,forwardPaper:full,nativeM4:completeM4};
+ const corroborated=sharp(args);
+ assert.equal(corroborated.independentFullOriginalForwardSharpClass,true);
+ assert.equal(corroborated.nativeOriginalSharpPartitionEntireDomain,true);
+ assert.equal(corroborated.originalToGeneratedTopoDSHistoryCertified,undefined);
+ assert.equal(corroborated.generated2DTopoDSHistoryCertified,false);
+ assert.equal(corroborated.signedV5Action,false);
+ const overshoot=inverse({view,sourceId:sourceEdgeId,
+  match:{original3DCurveParameterRange:domain,
+   source3DParameterRange:[0,3+Number.EPSILON*4],
+   sourceProjected2DParameterRange:[0,3],
+   sourceProjected2DParameterRangeSorted:[0,3],
+   generated2DParameterRange:[0,3],
+   sourceProjected2DParameterEndpointResiduals:[0,0],
+   sourceProjected2DParameterRangeMatchesGeneratedOutputRange:true},
+  klass:'visible',nativeM4:completeM4});
+ assert.equal(overshoot.sourceParameterDomainContainment,'within-tolerance-but-outside');
+ assert.equal(overshoot.nativeM4ClassBacked,false);
+ assert.equal(overshoot.sourceDomainEndpointForwardMapProof,false);
+ assert.equal(sharp({...args,forwardPaper:
+  forward({originalProjectedEndpoints:[from,to],
+   sourceProjected2DParameterRangeSorted:[0,3],
+   generated2DParameterRange:[0,3],generatedHLRCurveSamples:[
+    {u:Number.EPSILON,v:2},...curve.slice(1)]})})
+  .independentFullOriginalForwardSharpClass,false);
+ const tiny=0.015,after=0.015000000000000001;
+ assert.equal(tiny/3,after/3);
+ const gap=sharp({...args,nativeM4:{...completeM4,
+  segments:[segment(0,tiny),segment(after,3)]}});
+ assert.deepEqual(gap.originalSharpParameterAudit.nativeOriginalParameterPositiveGaps,
+  [[tiny,after]]);
+ assert.equal(gap.independentFullOriginalForwardSharpClass,false);
+ const overlap=sharp({...args,nativeM4:{...completeM4,
+  segments:[segment(0,2),segment(1,3)]}});
+ assert.equal(overlap.independentFullOriginalForwardSharpClass,false);
+ assert.ok(overlap.originalSharpParameterAudit.nativeOriginalSameClassPositiveOverlaps.length>0);
+ const opposite=sharp({...args,nativeM4:{...completeM4,
+  segments:[segment(0,1,'visible-sharp'),segment(1,3,'hidden-sharp')]}});
+ assert.equal(opposite.independentFullOriginalForwardSharpClass,false);
+ const held=sharp({...args,nativeM4:{...completeM4,
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[{
+   native3DHLRClass:'visible-sharp',originalNative3DParameterRange:[1,1.5]
+  }]}});
+ assert.equal(held.independentFullOriginalForwardSharpClass,false);
+ assert.equal(sharp({...args,nativeM4:{...completeM4,
+  native3DSourceParameterPartitionCompleteExactlyOnce:false}})
+  .independentFullOriginalForwardSharpClass,false);
+ assert.throws(()=>sharp({...args,nativeM4:{...completeM4,
+  segments:[{...segment(0,3),sourceEdgeId:'g::FOREIGN'}]}}),
+  /forged/);
+ assert.throws(()=>sharp({...args,nativeM4:{...completeM4,
+  segments:[{...segment(0,3),originalM0UnitParameterRange:[0,.9]}]}}),
+  /forged/);
+});
+
+test('full forward Sharp class witness checks reversed original BRep orientation without paper inversion',()=>{
+ const {auditC1FullOriginalForwardSharpClass:sharp,
+  auditC1OriginalM0FullForwardHLRPaperEndpoints:forward}=
+  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+ const paper=forward({originalProjectedEndpoints:[{u:0,v:0},{u:3,v:0}],
+  sourceProjected2DParameterRangeSorted:[0,3],
+  generated2DParameterRange:[0,3],
+  generatedHLRCurveSamples:[{u:3,v:0},{u:2.25,v:0},
+   {u:1.5,v:0},{u:.75,v:0},{u:0,v:0}]});
+ const src={view:'H',sourceEdgeId:'g::E0',klass:'hidden',domain:[0,3],
+  forwardPaper:paper,nativeM4:{
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   view:'H',sourceEdgeId:'g::E0',
+   original3DSourceCurveDirection:'reversed',
+   native3DSourceParameterPartitionCompleteExactlyOnce:true,
+   M4OriginalUnitIntervalCandidateCoverageComplete:true,
+   native3DOriginalParameterPositiveGaps:[],
+   native3DOriginalParameterPositiveOverlaps:[],
+   M4OriginalUnitIntervalNativeClassConflicts:[],
+   M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+   segments:[{view:'H',sourceEdgeId:'g::E0',native3DHLRClass:'hidden-sharp',
+    originalNative3DParameterRange:[0,3],
+    originalM0UnitParameterRange:[0,1],
+    derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+    generated2DHLREdgeTopologyProven:false,
+    completeGlobalCoProjectedVisibilityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false}]
+  }};
+ assert.equal(sharp(src).independentFullOriginalForwardSharpClass,true);
+ assert.equal(sharp({...src,nativeM4:{...src.nativeM4,
+  native3DOriginalParameterPositiveGaps:[[0,Number.EPSILON]]}})
+  .independentFullOriginalForwardSharpClass,false);
+});
