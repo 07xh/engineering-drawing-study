@@ -1,5 +1,7 @@
 'use strict';
 const {project}=require('../../../core/projection/conventions.js');
+const {binary64OrderedStepDistance}=
+ require('../../../core/geometry/binary64-ordered-step-distance.cjs');
 /**
  * Read-only capability probe for the pinned OpenCascade.js HLR EdgeStatus ABI.
  *
@@ -571,7 +573,9 @@ function auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}=
  const ascending=forward&&p2Last.value>p2First.value;
  const samples=[];
  let previous=null,fullyReadable=true,gridExact=true,monotonic=true,
-  insideNativePaperTolerance=true,maxPaperResidualMm=0;
+  insideNativePaperTolerance=true,paperExactlySame=true,
+  gridWithinOneBinary64ULP=true,maxPaperResidualMm=0,
+  maximumParameterGridULPs=0n;
  for(let i=0;i<5;i++){
   const f=i/4;
   const p3=ascending?original[0]+(original[1]-original[0])*f:
@@ -584,15 +588,20 @@ function auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}=
    samples.push({originalNative3DParameter:p3,
     generated2DGridParameter:target,nativeOriginal2DParameter:null,
     nativeOriginalProjectedMm:null,
-    nativeGeneratedPaperResidualMm:null,exactGenerated2DGridParameter:false});
+    nativeGeneratedPaperResidualMm:null,exactGenerated2DGridParameter:false,
+    generated2DParameterGridDriftULPs:null});
    continue;
   }
   const originalPaper={u:native.coordinates[0],v:-native.coordinates[1]},
    measured=paper[i],
    residual=Math.hypot(originalPaper.u-measured.u,
     originalPaper.v-measured.v);
-  const exact=p2.value===target;
+  const exact=p2.value===target,
+   ulps=binary64OrderedStepDistance(p2.value,target);
   if(!exact)gridExact=false;
+  if(ulps>1n)gridWithinOneBinary64ULP=false;
+  if(ulps>maximumParameterGridULPs)maximumParameterGridULPs=ulps;
+  if(residual!==0)paperExactlySame=false;
   if(previous!==null&&!(p2.value>previous))monotonic=false;
   previous=p2.value;
   if(!(residual<=tolerance))insideNativePaperTolerance=false;
@@ -601,7 +610,8 @@ function auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}=
    generated2DGridParameter:target,nativeOriginal2DParameter:p2.value,
    nativeOriginalProjectedMm:originalPaper,
    nativeGeneratedPaperResidualMm:residual,
-   exactGenerated2DGridParameter:exact});
+   exactGenerated2DGridParameter:exact,
+   generated2DParameterGridDriftULPs:String(ulps)});
  }
  return {
   schema:'draftai-c1-inverse-rejected-original-native-forward-samples/1',
@@ -611,6 +621,12 @@ function auditRejectedOriginalBRepNativeForwardSamples({segment,source,p2Range}=
    fullyReadable&&gridExact&&monotonic,
   originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance:
    fullyReadable&&insideNativePaperTolerance,
+  originalNativeForwardFivePaperSamplesExactlyMatchGenerated:
+   fullyReadable&&paperExactlySame,
+  originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid:
+   fullyReadable&&monotonic&&gridWithinOneBinary64ULP,
+  maximumNativeForward2DParameterGridDriftULPs:
+   fullyReadable?String(maximumParameterGridULPs):null,
   originalNativeForwardFivePointDiscreteConcordance:
    fullForwardDomainExact&&forward&&fullyReadable&&gridExact&&monotonic&&
    insideNativePaperTolerance,
