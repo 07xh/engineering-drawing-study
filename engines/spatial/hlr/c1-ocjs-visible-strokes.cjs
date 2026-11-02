@@ -95,7 +95,10 @@ function method(owner,key){
 }
 function closeToSegment(p,a,b,tol=1e-6){
  const ux=b.u-a.u,uy=b.v-a.v,len2=ux*ux+uy*uy;
- if(len2<1e-15)return false;
+ // Reject only a zero or non-representable squared projected length.
+ // A positive 1e-16 mm² projected source is real geometry, even though
+ // its paper match remains an unsigned candidate, not native BRep history.
+ if(!(len2>0)||!finite(len2))return false;
  const cross=ux*(p.v-a.v)-uy*(p.u-a.u);
  const t=((p.u-a.u)*ux+(p.v-a.v)*uy)/len2;
  return Math.abs(cross)<=tol*Math.sqrt(len2)&&t>=-tol&&t<=1+tol;
