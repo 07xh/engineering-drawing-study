@@ -17,6 +17,8 @@ const {dyadic,difference,product,sign}=
  require('../core/numeric/binary64-dyadic.cjs');
 const {auditExactBinary64PaperParameterPair}=
  require('./c1-exact-binary64-paper-parameter.cjs');
+const {auditC1Native3DSourceScopedIntervals}=
+ require('./c1-native-source-scoped-3d-parameter-coverage.cjs');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){
  for(const v of Object.values(x))freeze(v);Object.freeze(x);
 }return x;};
@@ -119,6 +121,33 @@ function auditC1RealNativeScoped2D3DClassBinding({
     !Array.isArray(nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)||
     nativeOriginal3DM4.officialV5Authorized!==false)
   throw new TypeError('current genuine source-filtered 2D and original-3D native HLR needed');
+ // The actual same-revision production consumer must replay the ORIGINAL
+ // native BRepAdaptor parameter domain, not just trust an upstream
+ // "partition complete" boolean or the rounded M4 [0,1] fractions. Two
+ // positive native intervals may normalize to touching binary64 endpoints.
+ // Include M4-held intervals: they are real native 3D source intervals even
+ // when their normalized or projected representation is unrenderable.
+ const productionBound=expectedSourceGeometryId!==undefined||
+  expectedRevision!==undefined;
+ if(productionBound){
+  if(expectedSourceGeometryId===undefined||expectedRevision===undefined)
+   throw new TypeError('production M4 source binding needs geometry and revision');
+  const replay=auditC1Native3DSourceScopedIntervals({
+   originalNativeParameterRange:
+    nativeOriginal3DM4.originalNative3DSourceParameterRange,
+   generatedNativeParameterRanges:[
+    ...nativeOriginal3DM4.segments,
+    ...nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation
+   ].map(row=>row?.originalNative3DParameterRange)
+  });
+  if(replay.sourceScopedNative3DParameterInventoryCompleteExactlyOnce!==
+      nativeOriginal3DM4.native3DSourceParameterPartitionCompleteExactlyOnce||
+     JSON.stringify(replay.positiveLengthUncoveredNativeParameterIntervals)!==
+      JSON.stringify(nativeOriginal3DM4.native3DOriginalParameterPositiveGaps)||
+     JSON.stringify(replay.positiveLengthOverlappingNativeParameterIntervals)!==
+      JSON.stringify(nativeOriginal3DM4.native3DOriginalParameterPositiveOverlaps))
+   throw new RangeError('same-revision original native BRep parameter partition contradicts independently replayed M4 source');
+ }
  // The original OCCT native parameter partition is authoritative. Two
  // distinct native endpoints can round to the SAME M4 fraction, hiding a
  // genuine positive-length gap even when the M4 [0,1] union looks complete.
