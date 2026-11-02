@@ -1830,6 +1830,35 @@ test('full forward Sharp class witness checks reversed original BRep orientation
   .independentFullOriginalForwardSharpClass,false);
 });
 
+test('rejected native Parameter3d inverse reports exact representable ULP overrun, not a tolerance',()=>{
+ const {auditC1RejectedOriginalInverseParameterULP:ulps}=
+  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+ const atEnd=ulps({originalBRepDomain:[0,1],
+  rawInverse:1+Number.EPSILON});
+ assert.equal(atEnd.overrunSide,'after-original-end');
+ assert.equal(atEnd.binary64RepresentableStepsOutsideOriginalDomain,'1');
+ assert.equal(atEnd.strictlyOutsideOriginalBRepDomain,true);
+ assert.equal(atEnd.nativeParameterDomainRepaired,false);
+ assert.equal(atEnd.originalToGenerated2DTopoDSHistoryCertified,false);
+ assert.equal(atEnd.signedV5Action,false);
+ assert.ok(Object.isFrozen(atEnd));
+ assert.equal(ulps({originalBRepDomain:[0,1],
+  rawInverse:1+2*Number.EPSILON})
+  .binary64RepresentableStepsOutsideOriginalDomain,'2');
+ const before=ulps({originalBRepDomain:[-1,3],
+  rawInverse:-1-Number.EPSILON});
+ assert.equal(before.overrunSide,'before-original-start');
+ assert.equal(before.binary64RepresentableStepsOutsideOriginalDomain,'1');
+ const crossingZero=ulps({originalBRepDomain:[0,1],
+  rawInverse:-Number.MIN_VALUE});
+ assert.equal(crossingZero.binary64RepresentableStepsOutsideOriginalDomain,'1');
+ for(const raw of [0,1,.5,NaN,Infinity])
+  assert.throws(()=>ulps({originalBRepDomain:[0,1],rawInverse:raw}),
+   /out-of-domain/);
+ assert.throws(()=>ulps({originalBRepDomain:[1,1],rawInverse:2}),
+  /out-of-domain/);
+});
+
 test('inverse-rejected original source stays unmatched while retaining validated forward diagnostic',()=>{
  const mk=()=>{
   const x=fixture(),view='W',
@@ -1866,6 +1895,9 @@ test('inverse-rejected original source stays unmatched while retaining validated
  assert.equal(row.inverseRejectedForwardOriginalSharpSourceWitnesses.length,1);
  assert.equal(row.inverseRejectedForwardOriginalSharpSourceWitnesses[0]
   .rawParameter3dInverseOutsideOriginalBRep,true);
+ assert.deepEqual(row.inverseRejectedForwardOriginalSharpSourceWitnesses[0]
+  .strictNativeOriginalInverseBinary64Overrun
+  .binary64RepresentableStepsOutsideOriginalDomain,'1');
  assert.equal(row.inverseRejectedOriginalFullForwardSharpCorroborated,false);
  assert.equal(auditResult.views.W.parameterizedGlobalHLRSourceLineage.counts
   .inverseRejectedOriginalFullForwardSharpCorroboratedEdges,0);
