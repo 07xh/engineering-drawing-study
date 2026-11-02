@@ -2031,3 +2031,37 @@ test('inverse-rejected original source stays unmatched while retaining validated
   assert.throws(()=>audit(m.x),/invalid received original BRep inverse-rejected forward HLR witness/);
  }
 });
+
+test('finite huge original BRep source survives squared-length overflow as unsigned paper lift',()=>{
+ const {liftOriginalProjectedSourceCandidates:lift}=require(
+  '../../engines/spatial/hlr/c1-ocjs-visible-strokes.cjs');
+ const g={id:'huge',data:{points:{
+  A:{x:0,y:0,z:0},C:{x:1e200,y:0,z:0}
+ },edges:[['A','C']]}};
+ // |AC| is finite but |AC| squared is Infinity in binary64.
+ assert.equal(Number.isFinite(Math.hypot(1e200,0)),true);
+ assert.equal(Number.isFinite(1e200*1e200),false);
+ const r=lift(g,'H',{u:2e199,v:0},{u:8e199,v:0});
+ assert.deepEqual(r.projectedOriginalEdgeCandidates,['huge::A|C']);
+ assert.equal(r.sourceCandidate3DLifts.length,1);
+ const witness=r.sourceCandidate3DLifts[0];
+ assert.ok(Math.abs(witness.paperOnlyUnclampedOriginalSourceParameters[0]-0.2)<1e-15);
+ assert.ok(Math.abs(witness.paperOnlyUnclampedOriginalSourceParameters[1]-0.8)<1e-15);
+ assert.equal(witness.actualOCCTTopoDSEdgeIdentityRecovered,false);
+ assert.equal(witness.officialEngineeringLineStyle,'undetermined');
+ assert.equal(witness.v5Authorized,false);
+ // Even a real paper coincidence with a different-depth source cannot
+ // establish unique original 3D ancestry or a certified M5 stroke.
+ const stacked={...g,data:{points:{...g.data.points,
+  D:{x:0,y:0,z:5},E:{x:1e200,y:0,z:5}},
+  edges:[['A','C'],['D','E']]}};
+ const ambiguous=lift(stacked,'H',{u:2e199,v:0},{u:8e199,v:0});
+ assert.deepEqual(ambiguous.projectedOriginalEdgeCandidates,
+  ['huge::A|C','huge::D|E']);
+ assert.ok(ambiguous.sourceCandidate3DLifts.every(x=>
+  x.actualOCCTTopoDSEdgeIdentityRecovered===false&&
+  x.v5Authorized===false));
+ // Transverse drift is not a source candidate, even at extreme scale.
+ const off=lift(g,'H',{u:2e199,v:1e190},{u:8e199,v:1e190});
+ assert.equal(off.sourceCandidate3DLifts.length,0);
+});
