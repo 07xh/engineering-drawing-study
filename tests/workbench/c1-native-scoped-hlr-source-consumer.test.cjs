@@ -1655,3 +1655,32 @@ test('M4 independently rejects duplicate or folded native generated-to-original 
   }
  }
 });
+
+test('same-run generated Sharp HLR source samples cannot launder residuals, parameter grid or native curve coordinates',()=>{
+ for(const view of ['V','H','W']){
+  const make=()=>{
+   const x=fixture();
+   const samples=x.cad.nativeSourceScopedSharpOutputByView[view].
+    generated2DSourceParameterMatches.visible.rows[0].candidateSourceMatches[0].samples;
+   x.cad.views[view][0].actualOCCTHLRCurveSamplesProjectedMm=
+    samples.map(s=>({u:s.generatedProjectedPointMm[0],v:s.generatedProjectedPointMm[1]}));
+   return {x,samples};
+  };
+  // A native sample inventory that exactly agrees with the source report
+  // remains a candidate, never a certified 3D TopoDS history or V5 stroke.
+  const good=make();
+  assert.equal(audit(good.x).signedV5ActionCount,0);
+  const forgedResidual=make();
+  forgedResidual.samples[2].generatedProjectedPointMm[0]+=0.125;
+  assert.throws(()=>audit(forgedResidual.x),
+   /generated HLR source sample projected residual is inconsistent/);
+  const forgedGrid=make();
+  forgedGrid.samples[2].generated2DParameter+=0.01;
+  assert.throws(()=>audit(forgedGrid.x),
+   /generated HLR source sample parameter grid is inconsistent/);
+  const forgedNative=make();
+  forgedNative.x.cad.views[view][0].actualOCCTHLRCurveSamplesProjectedMm[2].u+=0.25;
+  assert.throws(()=>audit(forgedNative.x),
+   /generated HLR source sample disagrees with native OCCT curve/);
+ }
+});
