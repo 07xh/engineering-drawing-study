@@ -945,3 +945,46 @@ test('a matching original HLR EdgeData handle cannot borrow provenance from a fo
  assert.equal(differingDomain.originalNativeEdgeHandleLedgerComplete,false);
  assert.equal(differingDomain.rows[0].originalEdgeData.originalBRepParameterRangeMatches,false);
 });
+
+test('original native HLR ledger rejects cross-ID TopoDS aliases, asymmetric identities and malformed handles',()=>{
+ const ds=dataStructure([
+  status([0,1],[[0,1]],true,false),
+  status([0,1],[[0,1]],true,false)
+ ]);
+ const native=id=>({id,IsSame(other){return other?.id===id;}});
+ const a=native('physical-A'),b=native('physical-B');
+ const run=(left,right)=>probe({
+  oc:{},dataStructure:ds,edgeMapExtent:2,indexedOriginalSources:sources(2),
+  originalNativeEdgeHandles:[
+   {sourceEdgeId:'g::E0',edge:left.edge,parameterRange:left.range??[0,1]},
+   {sourceEdgeId:'g::E1',edge:right.edge,parameterRange:right.range??[0,1]}
+  ],view:'H'
+ });
+ const valid=run({edge:a},{edge:b});
+ assert.equal(valid.nativeHandleShapeAndDomainValid,true);
+ assert.equal(valid.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(valid.distinctSourceNativeHandleIdentityConsistent,true);
+ assert.equal(valid.originalNativeEdgeHandleLedgerComplete,true);
+ // Two distinct source labels cannot designate the same native TShape,
+ // even though their paper projection and parameter domains may coincide.
+ const alias=run({edge:a},{edge:a});
+ assert.equal(alias.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(alias.distinctSourceNativeHandleIdentityConsistent,false);
+ assert.equal(alias.originalNativeEdgeHandleLedgerComplete,false);
+ const right={IsSame(other){return other===this;}};
+ const left={IsSame(other){return other===this||other===right;}};
+ const asymmetric=run({edge:left},{edge:right});
+ assert.equal(asymmetric.nativeHandleShapeAndDomainValid,true);
+ assert.equal(asymmetric.distinctSourceNativeHandleIdentityConsistent,false);
+ assert.equal(asymmetric.originalNativeEdgeHandleLedgerComplete,false);
+ const malformed=run({edge:a},{edge:b,range:[0,0]});
+ assert.equal(malformed.nativeHandleShapeAndDomainValid,false);
+ assert.equal(malformed.originalNativeEdgeHandleLedgerComplete,false);
+ const nonreflexive=run({edge:a},{edge:{IsSame(){return false;}}});
+ assert.equal(nonreflexive.nativeHandleShapeAndDomainValid,false);
+ assert.equal(nonreflexive.originalNativeEdgeHandleLedgerComplete,false);
+ for(const result of [valid,alias,asymmetric,malformed,nonreflexive]){
+  assert.equal(result.generated2DHLRHistoryStillUnproven,true);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
