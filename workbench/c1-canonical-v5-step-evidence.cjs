@@ -4,6 +4,7 @@
  * DAG / V5 timeline. Never creates or signs geometry, guesses pedagogical
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
+const Timeline=require('./teaching-timeline-v5.js');
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -22,8 +23,28 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    !Array.isArray(frame.completedIds)||
    !frame.actionFractions||typeof frame.actionFractions!=='object')
   throw new RangeError('source-current sole V5 frame and true step DAG required');
- const steps=solution.steps,timeline=solution.timeline,
-  bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
+ // The view receives a frame object from the caller. It is not proof of
+ // playback position: a forged fraction could reveal an answer stroke before
+ // its DAG action begins. Recompute every action from the one canonical V5
+ // timeline (including completed IDs), never trust presentation counters.
+ const steps=solution.steps,timeline=solution.timeline;
+ if(solution.player.timeline!==timeline||
+    !Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>timeline.totalMs)
+  throw new RangeError('source-current canonical V5 timeline position required');
+ const canonical=Timeline.frame(timeline,frame.elapsedMs);
+ if(frame.totalMs!==canonical.totalMs||
+    frame.ratio!==canonical.ratio||frame.done!==canonical.done||
+    frame.activeActionId!==canonical.activeActionId||
+    frame.activeStepIndex!==canonical.activeStepIndex||
+    frame.activeStepId!==canonical.activeStepId||
+    frame.completedIds.length!==canonical.completedIds.length||
+    frame.completedIds.some((id,i)=>id!==canonical.completedIds[i])||
+    Object.keys(frame.actionFractions).length!==timeline.segments.length||
+    timeline.segments.some(a=>
+     frame.actionFractions[a.id]!==canonical.actionFractions[a.id]))
+  throw new RangeError('V5 frame disagrees with canonical timeline; premature action reveal');
+ const bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
    ...(solution.certifiedPhysicalLineBindings||[])];
  const owners=new Map(),seenActions=new Set(),seenSteps=new Set();
  for(const binding of bindings){
@@ -51,8 +72,8 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    const action=step.actions[j],segment=block.actions[j];
    if(!action||typeof action.id!=='string'||!action.id||
       seenActions.has(action.id)||
-      segment.id!==action.id||segment.stepId!==step.id||
-      segment.stepIndex!==i)
+      segment.id!==action.id||segment.kind!==action.kind||
+      segment.stepId!==step.id||segment.stepIndex!==i)
     throw new RangeError('V5 action does not belong to exact current step');
    const signed=owners.get(action.id);
    // Verify ALL future/current/past actions before painting any frame:
