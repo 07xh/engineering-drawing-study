@@ -636,6 +636,27 @@ for(const [index,geometry] of general.entries()){
    stillUnmatchedInOriginalParameterInversion:true,
    generated2DTopoDSHistoryCertified:false,signedV5Actions:0
   }));
+ // Regression on TRUE pinned WASM, never a hardcoded synthetic answer:
+ // while the strict Parameter3d inverse rejects this one real generated
+ // W edge, a complete independently obtained original BRep/Sharp/forward
+ // parameter witness must remain present, still explicitly unsigned.
+ // If the inverse is ever natively repaired and no edge is unmatched,
+ // this conditional no longer demands the historical held candidate.
+ if(geometry.id==='C1SkewTetra'&&
+    parameterizedLineageTotals.unmatched===1){
+  const rows=inverseRejectedForwardOriginalClassRows.filter(x=>
+   x.exactOriginalForwardHLR&&x.nativeFullOriginalSharpClass);
+  assert.equal(rows.length,1,
+   'real WASM inverse-rejected source must preserve independent raw Sharp history');
+  assert.equal(rows[0].view,'W');
+  assert.equal(rows[0].klass,'visible');
+  assert.equal(rows[0].ordinal,3);
+  assert.equal(rows[0].sourceId,'C1SkewTetra::B|D');
+  assert.equal(rows[0].validHeldInverse,true);
+  assert.equal(rows[0].signedV5Action,false);
+  assert.ok(rows[0].rawRejectedOriginalParameter3d>
+   rows[0].originalBRepParameterRange[1]);
+ }
  const heldM4SourceRows=[];
  for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
   for(const row of parameterizedLineageByView[view].classes[klass].rows){
