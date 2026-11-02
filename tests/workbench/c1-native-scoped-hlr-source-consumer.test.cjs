@@ -625,6 +625,7 @@ test('existing HLR consumer exposes original native 3D M4 candidates without sig
     c.sourceEdgeId===row.originalPhysicalSourceEdgeId);
    const edge={
     nativeSourceFilterOriginalEdgeId:source.sourceEdgeId,
+    native3DHLRClass:'visible-sharp',
     nativeOriginalCurveParameterRange:[...source.occtSourceCurveParameterRange],
     native3DCurveExactlySameAsOriginalAtThreeParameters:true,
     originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
@@ -1240,6 +1241,7 @@ function fixtureWithRealStatusReplay({collapseSecondInW=false}={}){
     z.sourceEdgeId===row.originalPhysicalSourceEdgeId);
    const range=[...curve.occtSourceCurveParameterRange],
     part={nativeSourceFilterOriginalEdgeId:curve.sourceEdgeId,
+     native3DHLRClass:'visible-sharp',
      nativeOriginalCurveParameterRange:range,
      native3DCurveExactlySameAsOriginalAtThreeParameters:true,
      originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false};
