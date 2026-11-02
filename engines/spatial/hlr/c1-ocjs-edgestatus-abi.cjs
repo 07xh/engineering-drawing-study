@@ -596,7 +596,18 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   if(p3.value<sourceFirst||p3.value>sourceLast)
    return {matched:false,reason:'generated-source-3d-parameter-outside-original-brep-domain',
     samples,firstRejectedGenerated2DParameter:p2,
-    firstRejectedOriginal3DParameter:p3.value};
+    firstRejectedOriginal3DParameter:p3.value,
+    // Genuine original TopoDS identity and forward Parameter2d evidence are
+    // retained strictly under MATCHED:false; never normalize the overrun.
+    originalTopoDSEdgeIdentityProven:true,
+    originalBRepSourceParameterRange:[...source.originalBRepParameterRange],
+    original3DCurveParameterRange:[...source.parameterRange],
+    sourceProjected2DParameterRange:[p2First.value,p2Last.value],
+    sourceProjected2DParameterRangeSorted:[...p2Range],
+    generated2DParameterRange:[...outputRange],
+    originalInverseStillOutsideBRepDomain:true,
+    generated2DTopoDSHistoryProven:false,
+    engineeringLineStyle:'undetermined',signedV5Action:false};
   const p2Back=callFiniteOneArg(source.curve,'Parameter2d',p3.value);
   const point=callPointOneArg(source.curve,'Value',p3.value,2);
   if(!p2Back.readable||!point.readable)
@@ -661,6 +672,8 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   for(const [sourceEdgeId,source] of nativeCurveHandlesBySourceId){
    const match=matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source);
    if(match.matched)candidateSourceMatches.push({sourceEdgeId,...match});
+   else if(match.reason==='generated-source-3d-parameter-outside-original-brep-domain')
+    rejectedSourceCandidates.push({sourceEdgeId,...match});
    else rejectedSourceCandidates.push({sourceEdgeId,reason:match.reason});
   }
   return {
