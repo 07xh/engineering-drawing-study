@@ -55,8 +55,16 @@ const ulpAtPositiveScale=x=>{
  return exponent<=1?Number.MIN_VALUE:2**(exponent-1023-52);
 };
 function boundedOriginalFullPaperEndpointEnvelope(a,b,from,to){
+ // Finite original/projected coordinates can have a real positive span
+ // whose binary64 hypot OVERFLOWS to Infinity (e.g. -MAX to +MAX).
+ // That must not erase a genuine native IsSame endpoint witness. For
+ // overflowed spans the per-axis source-coordinate ULP remains the bound;
+ // Infinity is NEVER accepted as an input paper coordinate.
+ if(![a,b,from,to].every(valid))return {
+  compatible:false,absolutePaperEnvelopeMm:0,
+  exactClosedOriginalEndpointGeometryCertified:false};
  const length=Math.hypot(b.u-a.u,b.v-a.v);
- if(!(length>0)||!Number.isFinite(length))
+ if(!(length>0))
   return {compatible:false,absolutePaperEnvelopeMm:0,
    exactClosedOriginalEndpointGeometryCertified:false};
  const axisBudget=axis=>Math.min(
