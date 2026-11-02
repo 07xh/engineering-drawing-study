@@ -10,7 +10,8 @@ const stroke=(klass,from=0,to=10)=>({
  engineeringLineStyle:'undetermined',signedV5Action:false
 });
 const native=(klass,from,to)=>({
- view,sourceEdgeId,native3DHLRClass:klass,
+ view,sourceEdgeId,sourceGeometryId:'m',revision:12,
+ originalVertexIds:['A','B'],native3DHLRClass:klass,
  derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
  originalM0UnitParameterRange:[from,to],
  engineeringLineStyle:'undetermined',signedV5Action:false
@@ -516,6 +517,14 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
   }};
  const ok=audit(args);
  assert.equal(ok.sourceScoped2DClassBoundWithoutRounding,true);
+ for(const [field,wrong] of [
+  ['sourceGeometryId','foreign'],['revision',11],
+  ['originalVertexIds',['A','C']]
+ ]){
+  const forged=structuredClone(args);
+  forged.nativeOriginal3DM4.segments[0][field]=wrong;
+  assert.throws(()=>audit(forged),/drawable native M4 interval source\/revision provenance mismatch/,field);
+ }
  assert.equal(ok.officialV5Authorized,false);
  // Both partitions can appear complete while the raw OCCT intervals are
  // deliberately assigned to DIFFERENT normalized M4 source positions.
