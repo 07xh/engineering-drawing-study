@@ -219,6 +219,11 @@ for(const [index,geometry] of general.entries()){
   const ds=api.originalDataStructureIndex;
   const edgeStatus=api.originalEdgeStatusAbi;
   assert.equal(edgeStatus.schema,'draftai-c1-ocjs-edgestatus-abi-probe/1');
+  // Genuine pinned WASM must pass the same original TopoDS cross-ID
+  // non-aliasing gate as the actual M4 source-parameter consumer.
+  assert.equal(edgeStatus.nativeHandleShapeAndDomainValid,true);
+  assert.equal(edgeStatus.distinctSourceNativeHandleIdentityConsistent,true);
+  assert.equal(edgeStatus.originalNativeEdgeHandleLedgerComplete,true);
   assert.ok([
    'all-original-edge-status-intervals-readable',
    'edge-data-array-not-exposed','edge-data-array-call-failed',
@@ -261,6 +266,10 @@ for(const [index,geometry] of general.entries()){
     originalEdgeDataSummary:edgeStatus.edgeDataSummary??[],
     originalNativeEdgeHandleLedgerComplete:
      edgeStatus.originalNativeEdgeHandleLedgerComplete??false,
+    nativeHandleShapeAndDomainValid:
+     edgeStatus.nativeHandleShapeAndDomainValid??false,
+    distinctSourceNativeHandleIdentityConsistent:
+     edgeStatus.distinctSourceNativeHandleIdentityConsistent??false,
     officialV5Actions:0}));
   assert.equal(ds.generatedHLREdgeToOriginalTopoDSHistoryProven,false);
   assert.equal(ds.signedV5Action,false);
