@@ -478,6 +478,30 @@ for(const [index,geometry] of general.entries()){
   assert.equal(api.signedV5Action,false);
  }
  const scopedConsumer=auditC1NativeScopedHLRSourceConsumer({geometry,cad});
+ // Exercise the exact source-paper gap audit on ACTUAL pinned OCJS WASM
+ // source-filtered HLR, not only on manufactured M4 test witnesses.
+ const nativeScoped2DPaperBindings=['V','H','W'].flatMap(view=>
+  scopedConsumer.views[view].nativeScoped2D3DClassBindings);
+ const exact2DPaperGapCount=nativeScoped2DPaperBindings.reduce((sum,row)=>
+  sum+row.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps.length,0);
+ const exact2DPaperCompleteCount=nativeScoped2DPaperBindings.filter(row=>
+  row.sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact).length;
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DPositiveOriginalSourceParameterGaps,
+  exact2DPaperGapCount);
+ assert.equal(scopedConsumer.counts.nativeSourceScoped2DOriginalSourcesWithExactFullPaperCoverage,
+  exact2DPaperCompleteCount);
+ assert.ok(nativeScoped2DPaperBindings.every(row=>
+  row.officialV5Authorized===false&&
+  row.globalGenerated2DEdgeToOriginalTopoDSIdentityCertified===false));
+ console.error('REAL C1 NATIVE SCOPED 2D EXACT ORIGINAL SOURCE GAPS '+geometry.id+': '+
+  JSON.stringify({sourceViews:nativeScoped2DPaperBindings.length,
+   positiveGapCount:exact2DPaperGapCount,exactFullCoverage:exact2DPaperCompleteCount,
+   held:nativeScoped2DPaperBindings.filter(row=>
+    row.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps.length>0).map(row=>({
+     view:row.view,sourceEdgeId:row.sourceEdgeId,
+     exactPositiveOriginalSourceGaps:
+      row.sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps
+    })),signedV5Actions:0}));
   for(const view of ['V','H','W']){
    const native2D=cad.nativeSourceScopedSharpOutputByView[view].
     native2DOutlineSourceHistory;
