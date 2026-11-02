@@ -42,10 +42,10 @@ const printable=x=>x.d===1n?String(x.n):String(x.n)+'/'+String(x.d);
 const zero={n:0n,d:1n},one={n:1n,d:1n};
 // A *necessary* native output rounding compatibility witness, not a
 // second paper inversion or an authorization to snap original t=0/1.
-// One binary64 ULP at the original edge's GLOBAL source-paper magnitude
-// is bounded by 1e-6 of the projected edge length: a tiny original edge
-// may never borrow an unrelated point only because its absolute XYZ is
-// huge. The source-scoped TopoDS HLR filter is independently verified.
+// Native output rounding is checked INDEPENDENTLY per u/v axis: a large
+// v coordinate cannot lend its broader binary64 ULP to a small u endpoint.
+// Each axis is additionally capped by 1e-6 of the 2D projected source
+// length. This is unsigned compatibility, never a TopoDS history certificate.
 const ulpBits=new DataView(new ArrayBuffer(8));
 const ulpAtPositiveScale=x=>{
  if(!(x>=1)&&!(x>0)||!Number.isFinite(x))
@@ -59,17 +59,22 @@ function boundedOriginalFullPaperEndpointEnvelope(a,b,from,to){
  if(!(length>0)||!Number.isFinite(length))
   return {compatible:false,absolutePaperEnvelopeMm:0,
    exactClosedOriginalEndpointGeometryCertified:false};
- const magnitude=Math.max(1,Math.abs(a.u),Math.abs(a.v),
-  Math.abs(b.u),Math.abs(b.v));
- const budget=Math.min(ulpAtPositiveScale(magnitude),length*1e-6);
- if(!(budget>0))
+ const axisBudget=axis=>Math.min(
+  ulpAtPositiveScale(Math.max(1,Math.abs(a[axis]),Math.abs(b[axis]))),
+  length*1e-6);
+ const uBudget=axisBudget('u'),vBudget=axisBudget('v');
+ if(!(uBudget>0)||!(vBudget>0))
   return {compatible:false,absolutePaperEnvelopeMm:0,
+   originalPaperAxisOneULPEnvelopesMm:{u:0,v:0},
    exactClosedOriginalEndpointGeometryCertified:false};
- const close=(p,q)=>Math.abs(p.u-q.u)<=budget&&
-  Math.abs(p.v-q.v)<=budget;
+ const close=(p,q)=>Math.abs(p.u-q.u)<=uBudget&&
+  Math.abs(p.v-q.v)<=vBudget;
  return {
   compatible:close(from,a)&&close(to,b)||close(from,b)&&close(to,a),
-  absolutePaperEnvelopeMm:budget,
+  // This legacy scalar is descriptive only. Both independent axis
+  // budgets must pass; neither may be borrowed from the other axis.
+  absolutePaperEnvelopeMm:Math.max(uBudget,vBudget),
+  originalPaperAxisOneULPEnvelopesMm:{u:uBudget,v:vBudget},
   exactClosedOriginalEndpointGeometryCertified:false,
   sourceScopedHLRWithinOneScaleULPIsNotOriginalParameterIdentity:true
  };
