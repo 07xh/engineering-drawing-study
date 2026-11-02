@@ -1829,3 +1829,60 @@ test('full forward Sharp class witness checks reversed original BRep orientation
   native3DOriginalParameterPositiveGaps:[[0,Number.EPSILON]]}})
   .independentFullOriginalForwardSharpClass,false);
 });
+
+test('inverse-rejected original source stays unmatched while retaining validated forward diagnostic',()=>{
+ const mk=()=>{
+  const x=fixture(),view='W',
+   report=x.cad.nativeSourceScopedSharpOutputByView[view]
+    .generated2DSourceParameterMatches.visible,row=report.rows[0];
+  row.candidateSourceMatches=[];
+  row.candidateSourceMatchCount=0;
+  row.rejectedSourceCandidateCount=2;
+  row.uniqueOriginalSourceEdgeId=null;
+  row.status='no-parameterized-source-curve-match';
+  report.uniqueParameterizedSourceMatchCount=0;
+  report.unmatchedGeneratedOutputEdgeCount=1;
+  row.rejectedSourceCandidates=[{
+   sourceEdgeId:x.id0,matched:false,
+   reason:'generated-source-3d-parameter-outside-original-brep-domain',
+   originalInverseStillOutsideBRepDomain:true,
+   originalTopoDSEdgeIdentityProven:true,
+   originalBRepSourceParameterRange:[0,1],
+   original3DCurveParameterRange:[0,1],
+   sourceProjected2DParameterRange:[0,1],
+   sourceProjected2DParameterRangeSorted:[0,1],
+   generated2DParameterRange:[0,1],
+   firstRejectedGenerated2DParameter:1,
+   firstRejectedOriginal3DParameter:1+Number.EPSILON,
+   generated2DTopoDSHistoryProven:false,
+   engineeringLineStyle:'undetermined',signedV5Action:false
+  }];
+  return {x,row};
+ };
+ const {x}=mk(),auditResult=audit(x);
+ const row=auditResult.views.W.parameterizedGlobalHLRSourceLineage.classes.visible.rows[0];
+ assert.equal(row.status,'unmatched');
+ assert.equal(row.sameRunOriginalHLRCurveParameterLineageProven,false);
+ assert.equal(row.inverseRejectedForwardOriginalSharpSourceWitnesses.length,1);
+ assert.equal(row.inverseRejectedForwardOriginalSharpSourceWitnesses[0]
+  .rawParameter3dInverseOutsideOriginalBRep,true);
+ assert.equal(row.inverseRejectedOriginalFullForwardSharpCorroborated,false);
+ assert.equal(auditResult.views.W.parameterizedGlobalHLRSourceLineage.counts
+  .unmatchedGeneratedOutputEdges,1);
+ assert.equal(auditResult.signedV5ActionCount,0);
+ for(const change of [
+  r=>{r.firstRejectedOriginal3DParameter=0.5;},
+  r=>{r.firstRejectedOriginal3DParameter=1;},
+  r=>{r.originalTopoDSEdgeIdentityProven=false;},
+  r=>{r.generated2DTopoDSHistoryProven=true;},
+  r=>{r.signedV5Action=true;},
+  r=>{r.originalBRepSourceParameterRange=[0,2];},
+  r=>{r.sourceProjected2DParameterRangeSorted=[0,2];},
+  r=>{r.generated2DParameterRange=[0,2];},
+  r=>{r.sourceEdgeId='g::FOREIGN';}
+ ]){
+  const m=mk();
+  change(m.row.rejectedSourceCandidates[0]);
+  assert.throws(()=>audit(m.x),/invalid received original BRep inverse-rejected forward HLR witness/);
+ }
+});
