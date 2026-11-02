@@ -245,3 +245,55 @@ test('native positive gap erased by binary64 M4 normalization cannot falsely cer
  assert.equal(r.counts.exactSameClassNative3DBackedEdges,0);
  assert.equal(r.officialV5Authorized,false);
 });
+
+test('independent paper-axis ULP never borrows a huge v coordinate to excuse a small u drift',()=>{
+ const {boundedOriginalFullPaperEndpointEnvelope:envelope}=
+  require('../../workbench/c1-native-scoped-2d-3d-class-binding.cjs');
+ const huge=2**40,oneVULP=2**-12;
+ const a={u:0,v:huge},b={u:100,v:huge+1000};
+ const forged={u:1e-10,v:huge};
+ const negative=envelope(a,b,forged,b);
+ assert.equal(negative.compatible,false);
+ assert.ok(negative.originalPaperAxisOneULPEnvelopesMm.u<1e-10);
+ assert.ok(negative.originalPaperAxisOneULPEnvelopesMm.v>=oneVULP);
+ assert.equal(negative.exactClosedOriginalEndpointGeometryCertified,false);
+ const legitimate=envelope(a,b,{u:0,v:huge+oneVULP},b);
+ assert.equal(legitimate.compatible,true,
+  'a one-ULP roundoff on the genuinely large v axis remains diagnostic evidence');
+ assert.equal(legitimate.sourceScopedHLRWithinOneScaleULPIsNotOriginalParameterIdentity,true);
+ // Reversing the output segment must preserve the unsigned determination.
+ assert.equal(envelope(a,b,b,forged).compatible,false);
+ assert.equal(envelope(a,b,b,{u:0,v:huge+oneVULP}).compatible,true);
+});
+
+test('actual M4 class consumer holds unrelated-axis paper drift despite full 3D source coverage',()=>{
+ const huge=2**40,oneVULP=2**-12;
+ const a={u:0,v:huge},b={u:100,v:huge+1000};
+ const nativeOriginal3DM4={
+  schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/1',
+  view,sourceEdgeId,segments:[native('visible-sharp',0,1)],
+  native3DSourceParameterPartitionCompleteExactlyOnce:true,
+  M4OriginalUnitIntervalCandidateCoverageComplete:true,
+  native3DOriginalParameterPositiveGaps:[],
+  native3DOriginalParameterPositiveOverlaps:[],
+  M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+  officialV5Authorized:false
+ };
+ const run=from=>audit({
+  view,sourceEdgeId,sourceProjectedFrom:a,sourceProjectedTo:b,
+  scoped2DVisible:[{
+   ...stroke('visible-sharp'),
+   from,to:b
+  }],scoped2DHidden:[],nativeOriginal3DM4
+ });
+ const forged=run({u:1e-10,v:huge});
+ assert.equal(forged.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,false);
+ assert.equal(forged.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,false);
+ assert.equal(forged.counts.roundedPaperRepresentationCompatibleButNotExactCertified,0);
+ assert.equal(forged.officialV5Authorized,false);
+ const genuine=run({u:0,v:huge+oneVULP});
+ assert.equal(genuine.rows[0].originalNativeSourceScopedGenerated2DFullEdgeOneULPEnvelope.compatible,true);
+ assert.equal(genuine.rows[0].generated2DRepresentationWithinOneULPOfFullOriginalM0Source,true);
+ assert.equal(genuine.rows[0].nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment,false);
+ assert.equal(genuine.officialV5Authorized,false);
+});
