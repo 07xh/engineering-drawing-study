@@ -533,6 +533,7 @@ test('independent native 3D class veto and exact original ray intersect without 
    const range=src.occtSourceCurveParameterRange;
    const edge={
     nativeSourceFilterOriginalEdgeId:src.sourceEdgeId,
+    native3DHLRClass:'visible-sharp',
     nativeOriginalCurveParameterRange:[...range],
     native3DCurveExactlySameAsOriginalAtThreeParameters:true,
     originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
