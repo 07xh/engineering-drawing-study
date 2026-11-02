@@ -618,6 +618,20 @@ for(const [index,geometry] of general.entries()){
      strictlyOutOfOriginalBRepNativeULPs:
       inverse.strictNativeOriginalInverseBinary64Overrun
        .binary64RepresentableStepsOutsideOriginalDomain,
+     nativeOriginalForwardFivePointDiscreteConcordance:
+      inverse.originalNativeForwardFiveSampleConcordance
+       ?.originalNativeForwardFivePointDiscreteConcordance??false,
+     nativeOriginalForwardP2GridExact:
+      inverse.originalNativeForwardFiveSampleConcordance
+       ?.originalNativeForwardFive2DParametersMatchGeneratedGridExactly??false,
+     nativeOriginalForwardPaperWithinTolerance:
+      inverse.originalNativeForwardFiveSampleConcordance
+       ?.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance??false,
+     nativeOriginalForwardMaximumPaperResidualMm:
+      inverse.originalNativeForwardFiveSampleConcordance
+       ?.originalNativeForwardMaximumPaperResidualMm??null,
+     nativeOriginalForwardSamples:
+      inverse.originalNativeForwardFiveSampleConcordance?.samples??[],
      exactOriginalForwardHLR:
       inverse.exactForwardM0PaperWitness
        .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,
