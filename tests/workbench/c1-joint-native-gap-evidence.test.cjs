@@ -260,7 +260,13 @@ test('current OCJS/M5 original-source gap is replayed from same-run CAD, not ass
   const [aId,bId]=edge.split('|'),a=points[aId],b=points[bId],
    sourceEdgeId=geometry.id+'::'+edge,
    halfway=Object.fromEntries(['x','y','z'].map(k=>[k,a[k]+(b[k]-a[k])*.5]));
-  return {from:project(halfway)[view],to:project(b)[view],
+  return {view,occtHLRVisibilityClass:'visible-sharp',
+   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false,
+   directNativeVertexOriginalSource:[
+    {directlySameOriginalM0VertexId:null,directOriginal3DVertexTopoDSIdentityProven:false},
+    {directlySameOriginalM0VertexId:null,directOriginal3DVertexTopoDSIdentityProven:false}
+   ],
+   from:project(halfway)[view],to:project(b)[view],
    projectedOriginalEdgeCandidates:[sourceEdgeId],
    sourceCandidate3DLifts:[{
     sourceEdgeId,originalVertexIds:[aId,bId],
