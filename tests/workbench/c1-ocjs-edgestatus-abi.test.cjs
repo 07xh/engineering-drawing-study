@@ -762,3 +762,32 @@ test('positive generated HLR interval cannot borrow duplicate rounded native BRe
  assert.equal(r.generated2DTopoDSHistoryProven,false);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep parameter even inside 2D range',()=>{
+ for(const boundary of ['lower','upper']){
+  const curve={
+   Parameter2d(t){return t+2;},
+   Parameter3d(p2){
+    if(boundary==='lower'&&p2===2)return -Number.MIN_VALUE;
+    if(boundary==='upper'&&p2===12)return 10+8*Number.EPSILON;
+    return p2-2;
+   },
+   Value(t){return {X(){return t;},Y(){return -2*t;}};}
+  };
+  const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+   originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+   directOriginalTopoDSEdgeIdentityProven:true}]]);
+  const samples=[0,2.5,5,7.5,10].map(t=>({u:t,v:2*t}));
+  const result=auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:[2,12],
+   actualOCCTHLRCurveSamplesProjectedMm:samples,
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],nativeCurveHandlesBySourceId:source});
+  assert.equal(result.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(result.unmatchedGeneratedOutputEdgeCount,1);
+  assert.equal(result.rows[0].rejectedSourceCandidates[0].reason,
+   'generated-source-3d-parameter-outside-original-brep-domain');
+  assert.equal(result.generated2DTopoDSHistoryProven,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
