@@ -559,6 +559,98 @@ function auditC1RejectedOriginalInverseParameterULP({originalBRepDomain,rawInver
   signedV5Action:false
  });
 }
+/**
+ * Independently replay each same-run original OCCT forward 3D parameter,
+ * native forward 2D parameter and GENERATED actual paper sample. This checks
+ * producer arithmetic and detects forged five-point tallies; evaluating
+ * original OCCT Value() is still producer/native-runtime responsibility.
+ * It is NOT the missing continuous 2D TopoDS history or an M5 signature.
+ */
+function auditC1HeldInverseOriginalNativeForwardReplay({
+ witness,domain,generatedRange,actualGeneratedPaper,nativeTolerance
+}={}){
+ if(witness==null)return null; // legacy fixtures: no native forward claim
+ if(witness.schema!=='draftai-c1-inverse-rejected-original-native-forward-samples/1'||
+    !Array.isArray(witness.samples)||witness.samples.length!==5||
+    !Array.isArray(domain)||domain.length!==2||
+    !domain.every(Number.isFinite)||!(domain[1]>domain[0])||
+    !Array.isArray(generatedRange)||generatedRange.length!==2||
+    !generatedRange.every(Number.isFinite)||!(generatedRange[1]>generatedRange[0])||
+    !Array.isArray(actualGeneratedPaper)||actualGeneratedPaper.length!==5||
+    !actualGeneratedPaper.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
+    !Number.isFinite(nativeTolerance)||nativeTolerance<0||
+    witness.rejectedNativeInverseStillOutOfOriginalBRepDomain!==true||
+    witness.generated2DTopoDSHistoryProven!==false||
+    witness.wholeSceneOcclusionCertified!==false||
+    witness.engineeringLineStyle!=='undetermined'||
+    witness.signedV5Action!==false)
+  throw new RangeError('invalid same-run rejected-inverse original native forward samples');
+ const first=witness.samples[0].originalNative3DParameter,
+  reversed=first===domain[1];
+ if(first!==domain[0]&&!reversed)
+  throw new RangeError('original native forward sample must start at a physical BRep endpoint');
+ let complete=true,exactGrid=true,ordered=true,paperWithin=true,
+  lastP2=null,maxResidual=0;
+ const rows=witness.samples.map((row,i)=>{
+  const f=i/4,expectedNative=reversed?
+   domain[1]+(domain[0]-domain[1])*f:
+   domain[0]+(domain[1]-domain[0])*f;
+  const grid=generatedRange[0]+(generatedRange[1]-generatedRange[0])*f;
+  if(row.originalNative3DParameter!==expectedNative||
+     row.generated2DGridParameter!==grid)
+   throw new RangeError('original native five-point forward parameter grid was altered');
+  const p2=row.nativeOriginal2DParameter,
+   p=row.nativeOriginalProjectedMm,residual=row.nativeGeneratedPaperResidualMm;
+  const readable=Number.isFinite(p2)&&p&&
+   Number.isFinite(p.u)&&Number.isFinite(p.v)&&Number.isFinite(residual)&&
+   residual>=0;
+  complete&&=!!readable;
+  if(readable){
+   const computed=Math.hypot(p.u-actualGeneratedPaper[i].u,
+    p.v-actualGeneratedPaper[i].v);
+   if(residual!==computed)
+    throw new RangeError('original native forward curve paper residual contradicts measured OCCT output');
+   if(p2!==grid)exactGrid=false;
+   if(lastP2!==null&&!(p2>lastP2))ordered=false;
+   lastP2=p2;
+   if(!(residual<=nativeTolerance))paperWithin=false;
+   maxResidual=Math.max(maxResidual,residual);
+  }
+  if(row.exactGenerated2DGridParameter!==(readable&&p2===grid))
+   throw new RangeError('forged original native forward generated 2D sample parameter');
+  return {originalNative3DParameter:expectedNative,
+   originalNative2DParameter:readable?p2:null,
+   generated2DParameter:grid,
+   actualOriginalNativePaperPoint:readable?{u:p.u,v:p.v}:null,
+   actualGeneratedNativePaperPoint:{...actualGeneratedPaper[i]},
+   nativePaperResidualMm:readable?residual:null};
+ });
+ const exact=complete&&exactGrid&&ordered,
+  inside=complete&&paperWithin,
+  full=!!witness.fullOriginalForward2DParameterDomainExact,
+  corroborated=full&&exact&&inside;
+ if(witness.originalNativeForwardFiveSamplesReadable!==complete||
+    witness.originalNativeForwardFive2DParametersMatchGeneratedGridExactly!==exact||
+    witness.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance!==inside||
+    witness.originalNativeForwardFivePointDiscreteConcordance!==corroborated||
+    witness.originalNativeForwardMaximumPaperResidualMm!==
+      (complete?maxResidual:null))
+  throw new RangeError('forged same-run original BRep forward five-sample certificate');
+ return frozen({
+  schema:'draftai-c1-held-inverse-native-forward-sample-replay/1',
+  originalBRepSourceParameterRange:[...domain],
+  nativeGenerated2DParameterRange:[...generatedRange],
+  originalNativeForwardSamplesChecked:5,
+  independentlyReplayedNativeFivePointDiscreteConcordance:corroborated,
+  allNativeForwardParametersExactlyOnGeneratedGrid:exact,
+  allNativeForwardPaperWithinGeneratedTolerance:inside,
+  rows,
+  rawParameter3dInverseStillOutsideOriginalBRep:true,
+  completeGeneratedTopoDSHistoryCertified:false,
+  allSceneContinuousOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+}
 function auditC1ParameterizedGlobalHLRSourceLineage({
  view,classes,scoped,expected,nativeM4ById,projectedOriginalBySource
 }={}){
@@ -839,11 +931,18 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     const overrun=auditC1RejectedOriginalInverseParameterULP({
      originalBRepDomain:domain,rawInverse:raw
     });
+    const nativeForwardReplay=auditC1HeldInverseOriginalNativeForwardReplay({
+     witness:held.nativeOriginalForwardFiveSampleConcordance,
+     domain,generatedRange:generated,
+     actualGeneratedPaper:segment.actualOCCTHLRCurveSamplesProjectedMm,
+     nativeTolerance:segment.actualOCCTHLRCurveSampleToleranceMm
+    });
     inverseRejectedForwardSources.push({
      sourceEdgeId:sourceId,
      strictNativeOriginalInverseBinary64Overrun:overrun,
      originalNativeForwardFiveSampleConcordance:
       held.nativeOriginalForwardFiveSampleConcordance??null,
+     independentlyReplayedNativeForwardFiveSamples:nativeForwardReplay,
      originalBRepParameterRange:[...domain],
      firstRejectedGenerated2DParameter:held.firstRejectedGenerated2DParameter,
      firstRejectedOriginal3DParameter:raw,
@@ -1814,5 +1913,6 @@ module.exports={
  auditC1ParameterizedSourceMatchAgainstNativeM4,
  auditC1OriginalM0FullForwardHLRPaperEndpoints,
  auditC1FullOriginalForwardSharpClass,
- auditC1RejectedOriginalInverseParameterULP
+ auditC1RejectedOriginalInverseParameterULP,
+ auditC1HeldInverseOriginalNativeForwardReplay
 };
