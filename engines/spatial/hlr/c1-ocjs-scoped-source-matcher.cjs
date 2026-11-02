@@ -32,7 +32,7 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
 }={}){
- if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
+ if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp','visible-outline','hidden-outline'].includes(hlrClass)||
     typeof sourceEdgeId!=='string'||!sourceEdgeId||
     !Array.isArray(globalSegments)||!Array.isArray(globalNativeEdges)||
     globalSegments.length!==globalNativeEdges.length||!globalSegments.length||
@@ -104,7 +104,7 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   const view=match?.view,hlrClass=match?.hlrClass;
   const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
   const ordinals=match?.globalDirectSameGeneratedTopoDSOrdinals;
-  if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
+  if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp','visible-outline','hidden-outline'].includes(hlrClass)||
      typeof sourceEdgeId!=='string'||!sourceEdgeId||
      !Array.isArray(ordinals)||ordinals.length>1||
      match.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(ordinals.length===1)||
@@ -133,15 +133,19 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(wholeSolidCounts!==undefined){
   if(new Set(matches.map(m=>m.view)).size>1)
    throw new RangeError('one whole-solid inventory must belong to one HLR view');
+  const classes=matches.some(x=>x.hlrClass?.endsWith('-outline'))?
+   ['visible-outline','hidden-outline']:['visible-sharp','hidden-sharp'];
+  if(matches.some(x=>!classes.includes(x.hlrClass)))
+   throw new RangeError('native scoped HLR sharp/outline classes cannot share a global inventory');
   if(!wholeSolidCounts||typeof wholeSolidCounts!=='object'||
-     !['visible-sharp','hidden-sharp'].every(klass=>
+     !classes.every(klass=>
       Number.isSafeInteger(wholeSolidCounts[klass])&&
       wholeSolidCounts[klass]>=0&&wholeSolidCounts[klass]<=128))
    throw new TypeError('actual whole-solid visible/hidden native HLR counts required');
   wholeSolidNativeGeneratedEdgeCount=
-   wholeSolidCounts['visible-sharp']+wholeSolidCounts['hidden-sharp'];
+   classes.reduce((n,klass)=>n+wholeSolidCounts[klass],0);
   unclaimedWholeSolidGeneratedEdgeOrdinals=[];
-  for(const klass of ['visible-sharp','hidden-sharp'])
+  for(const klass of classes)
    for(let ordinal=0;ordinal<wholeSolidCounts[klass];ordinal++){
     const found=rows.some(r=>r.hlrClass===klass&&
      r.nativeWholeSolidEdgeOrdinal===ordinal);
