@@ -889,14 +889,19 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
     else result.counts.nativeM4ClassBackingUnprovenEdges++;
     if(forwardOnlyUniqueSource)
      result.counts.independentFullForwardSharpCorroboratedButInverseHeldEdges++;
-    if(inverseRejectedOriginalSharpCorroborated)
-     result.counts.inverseRejectedOriginalFullForwardSharpCorroboratedEdges++;
     if(!nativeOutlineEvidenceAvailable)
      result.counts.nativeOutlineEvidenceUnavailableEdges++;
     else if(nativeOutlineClassBackedUniqueFilterSource)
      result.counts.nativeOutlineClassBackedUniqueFilterSourceEdges++;
     else result.counts.nativeOutlineClassBackingUnprovenEdges++;
    }
+   // This diagnostic is only possible when ALL Parameter3d inversions
+   // were rejected. Counting it inside "matches.length>0" silently kept
+   // the real W B|D source at zero despite an independently complete
+   // forward original-M0 paper + native Sharp-class witness. Preserve
+   // the unmatched classification and never authorize TopoDS history/V5.
+   if(inverseRejectedOriginalSharpCorroborated)
+    result.counts.inverseRejectedOriginalFullForwardSharpCorroboratedEdges++;
    const status=matches.length===0?'unmatched':
     !filterConsistent?'source-filter-or-paper-candidate-disagreement':
      matches.length===1?'unique-parameterized-source-lineage':
