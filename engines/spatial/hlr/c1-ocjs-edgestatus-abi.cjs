@@ -407,10 +407,32 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
       Number.isFinite(v)&&v===handle.parameterRange[i]);
    }catch{return false;}
   });
- const originalNativeEdgeHandleLedgerComplete=
+ // A unique *string* source ID is not a unique physical TopoDS edge.
+ // Different original M0 edges must not borrow the SAME native TShape.
+ // Check both directions on actual native handles, not projected paper.
+ // A single malformed/non-reflexive handle is also not a valid ledger.
+ const nativeHandleShapeAndDomainValid=
   originalNativeEdgeHandles!==undefined&&
-  originalNativeEdgeHandles.every(x=>typeof x.edge?.IsSame==='function')&&
+  originalNativeEdgeHandles.every(handle=>{
+   const range=handle.parameterRange;
+   if(typeof handle.edge?.IsSame!=='function'||
+      !Array.isArray(range)||range.length!==2||
+      !range.every(Number.isFinite)||!(range[1]>range[0]))return false;
+   try{return handle.edge.IsSame(handle.edge)===true;}
+   catch{return false;}
+  });
+ const distinctSourceNativeHandleIdentityConsistent=
+  nativeHandleShapeAndDomainValid&&
+  [...firstNativeHandleBySource.values()].every((left,i,all)=>
+   all.slice(i+1).every(right=>{
+    try{return left.edge.IsSame(right.edge)===false&&
+     right.edge.IsSame(left.edge)===false;}
+    catch{return false;}
+   }));
+ const originalNativeEdgeHandleLedgerComplete=
+  nativeHandleShapeAndDomainValid&&
   sameSourceNativeHandleLedgerConsistent&&
+  distinctSourceNativeHandleIdentityConsistent&&
   originalHandleIds.size===edgeMapExtent&&
   [...indexedSourceIds].every(id=>originalHandleIds.has(id));
  const rows=[];
@@ -561,6 +583,8 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   edgeDataSummary,
   originalNativeEdgeHandleLedgerComplete,
   sameSourceNativeHandleLedgerConsistent,
+  nativeHandleShapeAndDomainValid,
+  distinctSourceNativeHandleIdentityConsistent,
   originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
   originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
   original3DEdgeDataInspectionComplete:rows.every(x=>
@@ -574,6 +598,8 @@ function probeRealOcjsHLREdgeStatusABI({oc,dataStructure,edgeMapExtent,
   generated2DHLRHistoryStillUnproven:true,
   originalNativeEdgeHandleLedgerComplete,
   sameSourceNativeHandleLedgerConsistent,
+  nativeHandleShapeAndDomainValid,
+  distinctSourceNativeHandleIdentityConsistent,
   originalNativeEdgeHandleOccurrenceCount:originalNativeEdgeHandles?.length??0,
   originalNativeEdgeHandleUniqueSourceCount:originalHandleIds.size,
   original3DEdgeDataInspectionComplete:rows.every(x=>
