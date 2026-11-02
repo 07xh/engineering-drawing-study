@@ -519,3 +519,20 @@ test('real CAD source-class binding rejects stale revision and foreign M0 geomet
  assert.throws(()=>audit({...args,nativeOriginal3DM4:{...args.nativeOriginal3DM4,revision:11}}),/current genuine source-filtered/);
  assert.throws(()=>audit({...args,nativeOriginal3DM4:{...args.nativeOriginal3DM4,sourceGeometryId:'foreign'}}),/current genuine source-filtered/);
 });
+
+test('finite overflowing source span retains only bounded unsigned endpoint compatibility',()=>{
+ const {boundedOriginalFullPaperEndpointEnvelope:envelope}=
+  require('../../workbench/c1-native-scoped-2d-3d-class-binding.cjs');
+ const max=Number.MAX_VALUE;
+ const a={u:-max,v:0},b={u:max,v:0};
+ assert.equal(Math.hypot(b.u-a.u,b.v-a.v),Infinity);
+ const exact=envelope(a,b,{...a},{...b});
+ assert.equal(exact.compatible,true);
+ assert.equal(exact.exactClosedOriginalEndpointGeometryCertified,false);
+ const reversed=envelope(a,b,{...b},{...a});
+ assert.equal(reversed.compatible,true);
+ // No infinite received coordinates or transverse drift can inherit
+ // an original-source endpoint identity merely because hypot overflowed.
+ assert.equal(envelope(a,b,{u:Infinity,v:0},b).compatible,false);
+ assert.equal(envelope(a,b,{u:-max,v:Number.MIN_VALUE},b).compatible,false);
+});
