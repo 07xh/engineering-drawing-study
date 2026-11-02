@@ -44,3 +44,19 @@ test('a projected point cannot be assigned a physical HLR source',()=>{
  assert.equal(result.unmappedReason,'degenerate-projected-hlr-not-a-physical-segment');
  assert.equal(result.v5Authorized,false);
 });
+
+for(const view of ['V','H','W']){
+ test('positive out-of-source short paper tail stays held, not signed '+view,()=>{
+  const {geometry,a,b}=fixture(1e-9);
+  const from=project(a)[view],to=project(b)[view];
+  const beyond={u:from.u-(to.u-from.u)*1e-8,
+   v:from.v-(to.v-from.v)*1e-8};
+  const result=lift(geometry,view,beyond,to);
+  assert.deepEqual(result.projectedOriginalEdgeCandidates,['TinySource::A|B']);
+  assert.deepEqual(result.paperCollinearSourcesRoundedOutsideOriginalBounds,
+   ['TinySource::A|B']);
+  assert.equal(result.sourceCandidate3DLifts[0].sourceParameterWasClampedForPaperOnly,true);
+  assert.equal(result.sourceCandidate3DLifts[0].originalSourceExactParameterCoverageFromRoundingProven,false);
+  assert.equal(result.v5Authorized,false);
+ });
+}
