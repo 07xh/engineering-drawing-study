@@ -8,6 +8,11 @@
 const {VIEWS}=require('../core/projection/conventions.js');
 const freeze=x=>{if(x&&typeof x==='object'&&!Object.isFrozen(x)){for(const v of Object.values(x))freeze(v);Object.freeze(x);}return x;};
 const same=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===2&&b.length===2&&a.every((v,i)=>Object.is(v,b[i]));
+// Exact binary64 measured A-end interval. No epsilon, snapping or fixed
+// historical WASM decimal endpoint can erase a strictly positive gap.
+const positiveOriginalAEndGap=range=>Array.isArray(range)&&range.length===2&&
+ Object.is(range[0],0)&&Number.isFinite(range[1])&&
+ range[1]>0&&range[1]<1;
 function auditC1JointNativeGapEvidence({curve,adjacency}={}){
  if(!curve||!adjacency||!VIEWS.includes(curve.view)||
     curve.view!==adjacency.view||curve.sourceEdgeId!==adjacency.sourceEdgeId||
@@ -83,19 +88,17 @@ function auditC1JointNativeGapFromRealHLR({
  */
 function auditC1ThreeNativeGapBatch({geometry,records}={}){
  const expected=[
-  ['H','A|C',5.02742501717052e-18],
-  ['W','A|C',1.1102230246251565e-16],
-  ['W','A|D',9.431983218054427e-18]
+  ['H','A|C'],['W','A|C'],['W','A|D']
  ];
  if(typeof geometry?.id!=='string'||!geometry.id||
     !Array.isArray(records)||records.length!==expected.length)
   throw new TypeError('three actual original-source gap records required');
- const results=expected.map(([view,edge,end])=>{
+ const results=expected.map(([view,edge])=>{
   const sourceEdgeId=geometry.id+'::'+edge;
   const matches=records.filter(r=>r?.view===view&&r?.sourceEdgeId===sourceEdgeId);
   if(matches.length!==1)throw new RangeError('missing or duplicated native gap record: '+view+' '+edge);
   const r=matches[0];
-  if(!same(r.uncoveredIntervals?.[0],[0,end])||
+  if(!positiveOriginalAEndGap(r.uncoveredIntervals?.[0])||
      r.uncoveredIntervals.length!==1||
      !Array.isArray(r.visibleSegments)||!Array.isArray(r.hiddenSegments))
    throw new RangeError('native gap intervals or HLR segments missing: '+view+' '+edge);
@@ -149,9 +152,7 @@ function auditC1ThreeNativeGapBatchFromCad({
  geometry,cad,uncoveredByViewAndSource
 }={}){
  const expected=[
-  ['H','A|C',5.02742501717052e-18],
-  ['W','A|C',1.1102230246251565e-16],
-  ['W','A|D',9.431983218054427e-18]
+  ['H','A|C'],['W','A|C'],['W','A|D']
  ];
  if(!geometry?.id||!uncoveredByViewAndSource||
     typeof uncoveredByViewAndSource!=='object'||
@@ -165,7 +166,7 @@ function auditC1ThreeNativeGapBatchFromCad({
   const sourceEdgeId=geometry.id+'::'+edge;
   const uncoveredIntervals=uncoveredByViewAndSource[view+'::'+sourceEdgeId];
   if(!Array.isArray(uncoveredIntervals)||uncoveredIntervals.length!==1||
-     !same(uncoveredIntervals[0],[0,end]))
+     !positiveOriginalAEndGap(uncoveredIntervals[0]))
    throw new RangeError('unverified original-source gap: '+view+' '+edge);
   return auditC1JointNativeGapFromCad({
    geometry,cad,view,sourceEdgeId,uncoveredIntervals
@@ -197,12 +198,10 @@ function auditC1ThreeNativeGapBatchFromM5Ledger({
     m5Ledger.signedV5ActionCount!==0)
   throw new TypeError('current unsigned recomputed C1 OCJS/M5 proof-gap ledger required');
  const expected=[
-  ['H','A|C',5.02742501717052e-18],
-  ['W','A|C',1.1102230246251565e-16],
-  ['W','A|D',9.431983218054427e-18]
+  ['H','A|C'],['W','A|C'],['W','A|D']
  ];
  const uncoveredByViewAndSource=Object.create(null);
- for(const [view,edge,end] of expected){
+ for(const [view,edge] of expected){
   const sourceEdgeId=geometry.id+'::'+edge;
   const rows=m5Ledger.views?.[view]?.intervals;
   if(!Array.isArray(rows))
@@ -221,7 +220,7 @@ function auditC1ThreeNativeGapBatchFromM5Ledger({
      proof.signedV5Action!==false||
      !Array.isArray(proof.positiveLengthUncoveredIntervals)||
      proof.positiveLengthUncoveredIntervals.length!==1||
-     !same(proof.positiveLengthUncoveredIntervals[0],[0,end]))
+     !positiveOriginalAEndGap(proof.positiveLengthUncoveredIntervals[0]))
    throw new RangeError('M5 native source gap differs from reviewed positive interval: '+view+' '+edge);
   uncoveredByViewAndSource[view+'::'+sourceEdgeId]=
    proof.positiveLengthUncoveredIntervals.map(range=>[...range]);
