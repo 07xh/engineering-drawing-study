@@ -250,3 +250,45 @@ test('empty native 2D OutLine inventory remains empty, not silently converted to
  assert.deepEqual(r.unclaimedWholeSolidGeneratedEdgeOrdinals,[]);
  assert.equal(r.signedV5ActionCount,0);
 });
+
+test('same native generated TopoDS cannot borrow the other projected axis ULP',()=>{
+ const x=setup('W');
+ const big=2**40,ulp=2**-12;
+ x.globalSegments=[{from:{u:0,v:big},to:{u:100,v:big+1000}}];
+ x.globalNativeEdges=[native('front')];
+ x.scopedNativeEdge=native('front');
+ x.scopedSegment={from:{u:1e-10,v:big},to:{u:100,v:big+1000}};
+ // Wide discovery tolerance still produces a candidate, but true IsSame
+ // demands the independently constrained original u-axis binary64 ULP.
+ assert.throws(()=>match(x),/inconsistent paper endpoints/);
+ x.scopedSegment={from:{u:0,v:big+ulp},to:{u:100,v:big+1000}};
+ const result=match(x);
+ assert.deepEqual(result.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+ assert.equal(result.fullOriginalSourceParameterCoverageProven,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+});
+
+test('consumer refuses invented or swapped whole-solid native source ordinals',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const original=match(setup('V'));
+ for(const change of [
+  {globalPaperCandidateOrdinals:[]},
+  {globalPaperCandidateOrdinals:[1]},
+  {globalPaperCandidateOrdinals:[0,0]},
+  {globalPaperCandidateOrdinals:[0,9]},
+  {paperCoincidenceAloneIsNotOriginalTopoDSHistory:false},
+  {partnerCandidateDoesNotProveOriginalSourceHistory:false},
+  {engineeringLineStyle:'visible-solid'},
+  {nativePartnerOnlyCandidate:true}
+ ])assert.throws(()=>audit({matches:[{...original,...change}],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0
+ }}),/unsigned actual native scoped match|nonexistent whole-solid/);
+ const valid=audit({matches:[original],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0
+ }});
+ assert.equal(valid.uniqueNativeClaims,1);
+ assert.equal(valid.fullOriginalSourceHistoryCertified,false);
+ assert.equal(valid.signedV5ActionCount,0);
+});
