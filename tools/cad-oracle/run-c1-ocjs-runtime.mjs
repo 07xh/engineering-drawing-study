@@ -615,6 +615,9 @@ for(const [index,geometry] of general.entries()){
      sourceId:inverse.sourceEdgeId,
      originalBRepParameterRange:inverse.originalBRepParameterRange,
      rawRejectedOriginalParameter3d:inverse.firstRejectedOriginal3DParameter,
+     strictlyOutOfOriginalBRepNativeULPs:
+      inverse.strictNativeOriginalInverseBinary64Overrun
+       .binary64RepresentableStepsOutsideOriginalDomain,
      exactOriginalForwardHLR:
       inverse.exactForwardM0PaperWitness
        .exactBinary64OriginalM0WholeSourceProjectedEndpointAgreement,
@@ -674,6 +677,8 @@ for(const [index,geometry] of general.entries()){
   assert.equal(rows[0].signedV5Action,false);
   assert.ok(rows[0].rawRejectedOriginalParameter3d>
    rows[0].originalBRepParameterRange[1]);
+  assert.equal(rows[0].strictlyOutOfOriginalBRepNativeULPs,'1',
+   'real W B|D inverse is one exact binary64 ULP past original BRep end, not a source match');
  }
  const heldM4SourceRows=[];
  for(const view of ['V','H','W'])for(const klass of ['visible','hidden'])
