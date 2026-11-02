@@ -133,7 +133,7 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(wholeSolidCounts!==undefined){
   if(new Set(matches.map(m=>m.view)).size>1)
    throw new RangeError('one whole-solid inventory must belong to one HLR view');
-  const classes=matches.some(x=>x.hlrClass?.endsWith('-outline'))?
+  const classes=Object.hasOwn(wholeSolidCounts,'visible-outline')?
    ['visible-outline','hidden-outline']:['visible-sharp','hidden-sharp'];
   if(matches.some(x=>!classes.includes(x.hlrClass)))
    throw new RangeError('native scoped HLR sharp/outline classes cannot share a global inventory');
