@@ -66,7 +66,9 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  const timeline=Timeline.compileTimeline(steps);
  const player=Timeline.createPlayer(timeline,{revision:8});
  scene.__setCurrent({solution:{revision:8,singleOriginalV5Player:true,steps,timeline,player,
+  sceneResult:{geometry:{id:'Real'}},
   certifiedVisibleContourLineBindings:[{actionId:'edge_a',revision:8,
+   sourceGeometryId:'Real',
    sourceEdgeId:'Real::A|D',view:'W',standardLineStyle:visible,
    fromSheetPx:{x:5,y:8},toSheetPx:{x:45,y:48},
    signedFormalLineV5:true}],
