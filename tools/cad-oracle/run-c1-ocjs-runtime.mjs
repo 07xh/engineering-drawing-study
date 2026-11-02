@@ -1632,6 +1632,18 @@ for(const [index,geometry] of general.entries()){
   positiveOriginalGapRays.missingOriginalM0SourceViewRows.length);
  assert.equal(unresolvedM5.counts.positiveOriginalPaperGapIntervals,
   positiveOriginalGapRays.rows.length);
+ // Every held original source/view must retain the real indexed
+ // EdgeData/EdgeStatus interval inventory from the SAME pinned WASM run.
+ // It cannot certify generated 2D TopoDS history, opaque scene or V5.
+ assert.equal(unresolvedM5.counts.obligationsWithOriginalIndexedEdgeStatusABI,
+  heldM5.length);
+ assert.equal(unresolvedM5.counts.positivePaperGapsWithOriginalIndexedEdgeStatusABI,
+  positiveOriginalGapRays.rows.length);
+ assert.ok(unresolvedM5.records.every(row=>
+  row.sameRunOriginalIndexedEdgeStatusABI?.originalBRepToIndexedEdgeDataIsSameVerified===true&&
+  row.sameRunOriginalIndexedEdgeStatusABI.generated2DTopoDSHistoryCertified===false&&
+  row.sameRunOriginalIndexedEdgeStatusABI.engineeringLineStyle==='undetermined'&&
+  row.sameRunOriginalIndexedEdgeStatusABI.signedV5Action===false));
  assert.equal(unresolvedM5.allUnresolvedM5ObligationsExplicitlyPreserved,true);
  assert.equal(unresolvedM5.generatedHistoryAndContinuousSceneOcclusionStillRequired,true);
  assert.equal(unresolvedM5.officialV5Authorized,false);
