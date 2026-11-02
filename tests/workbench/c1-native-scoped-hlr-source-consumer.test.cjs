@@ -1859,6 +1859,55 @@ test('rejected native Parameter3d inverse reports exact representable ULP overru
   /out-of-domain/);
 });
 
+test('M4 independently replays same-run original BRep forward samples, not forged summaries',()=>{
+ const {auditC1HeldInverseOriginalNativeForwardReplay:replay}=
+  require('../../workbench/c1-native-scoped-hlr-source-consumer.cjs');
+ const paper=[0,.5,1,1.5,2].map(t=>({u:t,v:2*t}));
+ const witness=()=>({
+  schema:'draftai-c1-inverse-rejected-original-native-forward-samples/1',
+  fullOriginalForward2DParameterDomainExact:true,
+  originalNativeForwardFiveSamplesReadable:true,
+  originalNativeForwardFive2DParametersMatchGeneratedGridExactly:true,
+  originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance:true,
+  originalNativeForwardFivePointDiscreteConcordance:true,
+  originalNativeForwardMaximumPaperResidualMm:0,
+  samples:paper.map((p,i)=>({
+   originalNative3DParameter:i*.5,
+   generated2DGridParameter:i*.5,
+   nativeOriginal2DParameter:i*.5,
+   nativeOriginalProjectedMm:{...p},
+   nativeGeneratedPaperResidualMm:0,
+   exactGenerated2DGridParameter:true
+  })),
+  rejectedNativeInverseStillOutOfOriginalBRepDomain:true,
+  generated2DTopoDSHistoryProven:false,
+  wholeSceneOcclusionCertified:false,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const args=()=>({witness:witness(),domain:[0,2],
+  generatedRange:[0,2],actualGeneratedPaper:paper,nativeTolerance:1e-8});
+ const genuine=replay(args());
+ assert.equal(genuine.independentlyReplayedNativeFivePointDiscreteConcordance,true);
+ assert.equal(genuine.originalNativeForwardSamplesChecked,5);
+ assert.equal(genuine.rawParameter3dInverseStillOutsideOriginalBRep,true);
+ assert.equal(genuine.signedV5Action,false);
+ assert.ok(Object.isFrozen(genuine.rows[0]));
+ assert.equal(replay({...args(),witness:null}),null);
+ for(const mutate of [
+  x=>{x.witness.samples[2].originalNative3DParameter=1.1;},
+  x=>{x.witness.samples[2].nativeOriginal2DParameter=1.1;},
+  x=>{x.witness.samples[2].nativeOriginalProjectedMm.v=3.1;},
+  x=>{x.witness.samples[2].nativeGeneratedPaperResidualMm=1e-6;},
+  x=>{x.witness.samples[2].exactGenerated2DGridParameter=false;},
+  x=>{x.witness.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance=false;},
+  x=>{x.witness.originalNativeForwardFivePointDiscreteConcordance=false;},
+  x=>{x.witness.signedV5Action=true;},
+  x=>{x.witness.samples.pop();}
+ ]){
+  const x=args();mutate(x);
+  assert.throws(()=>replay(x),/native|forged|parameter|original/i);
+ }
+});
 test('inverse-rejected original source stays unmatched while retaining validated forward diagnostic',()=>{
  const mk=()=>{
   const x=fixture(),view='W',
