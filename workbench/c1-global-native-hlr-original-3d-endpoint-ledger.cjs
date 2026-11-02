@@ -85,8 +85,16 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    throw new RangeError('incomplete native source M4/generated HLR first-angle view');
   const m4ById=new Map();
   for(const x of mv){
-   if(x?.view!==view||!originals.has(x.sourceEdgeId)||
+   // Even an identical source-edge ID and a perfectly tiled [0,1]
+   // interval cannot authorize a row from a previous reviewed revision.
+   // Bind the producer's original M3 source and current M4 revision before
+   // its candidate intervals reach the generated HLR endpoint consumer.
+   if(x?.sourceGeometryId!==geometry.id||x.revision!==cad.revision||
+      x.view!==view||!originals.has(x.sourceEdgeId)||
       m4ById.has(x.sourceEdgeId)||x.officialV5Authorized!==false||
+      x.native3DProvenanceIsNotGenerated2DHLREdgeIdentity!==true||
+      x.completeGlobalVisibilityCertified!==false||
+      x.formalEngineeringLineStyleCertified!==false||
       !Array.isArray(x.segments))
     throw new RangeError('stale or forged native source M4 interval');
    m4ById.set(x.sourceEdgeId,x);
