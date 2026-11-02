@@ -301,6 +301,28 @@ function auditC1RealNativeScoped2D3DClassBinding({
   }
  }
  counts.generated2DEdgesHeldForSourceParameterOverlap=overlappingRows.size;
+ // A set of individually class-backed scoped HLR fragments need not cover
+ // the WHOLE original physical source. Audit the exact rational [0,1]
+ // union independently of the native M4 partition. Off-line, out-of-domain
+ // or zero-length 2D strokes cannot fill a missing original-source interval.
+ // This is a necessary 2D source coverage witness, never TopoDS ancestry.
+ const sourcePaperIntervals=receivedSourcePaperSpans.filter(span=>{
+  const row=rows[span.index];
+  return span.positive&&row.exactOriginalM0PaperAffineCollinearity&&
+   row.exactReceived2DPaperWithinOriginalSourceDomain;
+ }).sort((a,b)=>compare(a.from,b.from)||compare(a.to,b.to));
+ const sourcePaperGaps=[];
+ let sourcePaperReach=zero;
+ for(const span of sourcePaperIntervals){
+  if(compare(span.from,sourcePaperReach)>0)
+   sourcePaperGaps.push([sourcePaperReach,span.from]);
+  if(compare(span.to,sourcePaperReach)>0)sourcePaperReach=span.to;
+ }
+ if(compare(sourcePaperReach,one)<0)
+  sourcePaperGaps.push([sourcePaperReach,one]);
+ const sourcePaperFullExactlyOnce=sourcePaperGaps.length===0&&
+  overlappingRows.size===0&&sourcePaperIntervals.length===rows.length;
+ counts.positiveGenerated2DSourceParameterGapCount=sourcePaperGaps.length;
  for(const index of overlappingRows){
   const row=rows[index];
   row.positiveGenerated2DSourceParameterOverlapWithAnotherEdge=true;
@@ -318,6 +340,11 @@ function auditC1RealNativeScoped2D3DClassBinding({
   schema:'draftai-c1-native-2d-generated-to-original-3d-source-class-consistency/1',
   view,sourceEdgeId,counts,rows,
   sourceScoped2DGeneratedPaperPositiveOverlapPresent:overlappingRows.size>0,
+  sourceScoped2DGeneratedPaperPositiveOriginalSourceGaps:
+   sourcePaperGaps.map(([a,b])=>[printable(a),printable(b)]),
+  sourceScoped2DGeneratedPaperFullOriginalParameterCoverageExact:
+   sourcePaperFullExactlyOnce,
+  sourceScoped2DGeneratedPaperCoverageCannotCertifyGeneratedTopoDSHistory:true,
   originalNativeParameterPartitionIndependentlyVerified:nativePartitionProven,
   genuineOriginalNative3DParametersMayBeHeldByBinary64:
    nativeOriginal3DM4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length>0,
