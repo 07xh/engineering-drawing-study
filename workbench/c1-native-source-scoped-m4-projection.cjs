@@ -99,6 +99,8 @@ function projectC1Native3DSourceIntervalsToM4({
    // segment or let adjacent normalized spans certify full coverage.
    if(!(to>from)){
     nativeIntervalsHeldForM4.push({
+     view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+     originalVertexIds:[id0,id1],
      native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
      roundedOriginalM0UnitParameterRange:[from,to],
      reason:'positive-native-interval-collapsed-by-binary64-normalization',
@@ -116,6 +118,8 @@ function projectC1Native3DSourceIntervalsToM4({
     // of a large absolute paper coordinate. The original 3D source is
     // still real; the rounded paper stroke is NOT drawable/proven.
     nativeIntervalsHeldForM4.push({
+     view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+     originalVertexIds:[id0,id1],
      native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
      roundedOriginalM0UnitParameterRange:[from,to],
      reason:'positive-original-interval-collapsed-by-binary64-paper-projection',
@@ -184,6 +188,8 @@ function projectC1Native3DSourceIntervalsToM4({
     throw new RangeError('native 3D outline interval outside original M0 [0,1]');
    if(!(to>from)){
     outlineIntervalsHeldForM4.push({
+     view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+     originalVertexIds:[id0,id1],
      native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
      roundedOriginalM0UnitParameterRange:[from,to],
      reason:'positive-native-outline-interval-collapsed-by-binary64-normalization',
@@ -203,6 +209,8 @@ function projectC1Native3DSourceIntervalsToM4({
     fromPaper.u!==toPaper.u||fromPaper.v!==toPaper.v;
    if(!paperDrawableCandidate)
     outlineIntervalsHeldForM4.push({
+     view,sourceEdgeId,sourceGeometryId:geometry.id,revision,
+     originalVertexIds:[id0,id1],
      native3DHLRClass:klass,originalNative3DParameterRange:[...interval],
      roundedOriginalM0UnitParameterRange:[from,to],
      reason:'positive-native-outline-interval-collapsed-by-binary64-paper-projection',
