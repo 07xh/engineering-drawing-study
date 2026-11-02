@@ -1627,7 +1627,8 @@ function auditC1NativeScopedHLRSourceConsumer({geometry,cad}={}){
     const joined=auditC1RealNativeScoped2D3DClassBinding({
      view,sourceEdgeId:originalId,sourceProjectedFrom,sourceProjectedTo,
      scoped2DVisible:source.visible,scoped2DHidden:source.hidden,
-     nativeOriginal3DM4:nativeM4
+     nativeOriginal3DM4:nativeM4,
+     expectedSourceGeometryId:geometry.id,expectedRevision:cad.revision
     });
     nativeScoped2D3DClassBindings.push(joined);
     counts.nativeSourceScoped2DGeneratedEdgesClassReconciledWith3D+=
