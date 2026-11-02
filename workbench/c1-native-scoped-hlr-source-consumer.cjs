@@ -556,6 +556,13 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         segment.actualOCCTHLRCurveParameterRange[1]!==generatedRange[1]))
      throw new RangeError('parameterized HLR match disagrees with generated edge parameter domain');
     const sampleResiduals=[],roundTripResiduals=[];
+    // Recheck the received same-run five-point ORIGINAL BRep parameter
+    // correspondence independently of the native producer. A folded or
+    // duplicated source parameter can cover the same paper samples while
+    // skipping a real positive original-curve interval. This is a necessary
+    // injectivity witness, not a continuous curve/TopoDS history proof.
+    const sourceAscending=sourceProjectedRange[1]>sourceProjectedRange[0];
+    let previousSample=null;
     for(const sample of samples){
      const sourcePoint=sample?.sourceProjectedPointMm,
       generatedPoint=sample?.generatedProjectedPointMm;
@@ -570,9 +577,21 @@ function auditC1ParameterizedGlobalHLRSourceLineage({
         !Number.isFinite(sample.projectedPointResidualMm)||
         sample.projectedPointResidualMm<0)
       throw new RangeError('invalid parameterized HLR five-point curve correspondence');
+     if(previousSample&&
+        (!(sample.generated2DParameter>previousSample.generated2DParameter)||
+         (sourceAscending?
+          !(sample.source3DParameter>previousSample.source3DParameter):
+          !(sample.source3DParameter<previousSample.source3DParameter))))
+      throw new RangeError('noninjective generated HLR to original BRep parameter correspondence');
+     previousSample=sample;
      sampleResiduals.push(sample.projectedPointResidualMm);
      roundTripResiduals.push(sample.parameterRoundTripResidual);
     }
+    if(samples[0].generated2DParameter!==generatedRange[0]||
+       samples[4].generated2DParameter!==generatedRange[1]||
+       samples[0].source3DParameter!==sourceRange[0]||
+       samples[4].source3DParameter!==sourceRange[1])
+     throw new RangeError('generated HLR sample endpoints disagree with original BRep parameter range');
     if(Math.max(...sampleResiduals)>match.maximumProjectedPointResidualMm||
        Math.max(...roundTripResiduals)>match.maximumParameterRoundTripResidual||
        (Number.isFinite(segment.actualOCCTHLRCurveSampleToleranceMm)&&
