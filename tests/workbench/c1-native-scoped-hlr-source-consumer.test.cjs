@@ -1508,3 +1508,39 @@ test('native M4 outline consumer refuses forged paper drawability and missing he
  assert.deepEqual(result.nativeOutlineOriginalParameterCoverage.
   nativeOriginalHeldBinary64PositiveOverlaps,[[0,10]]);
 });
+
+test('V/H/W native outline evidence cannot be hidden by a false or missing availability flag',()=>{
+ for(const view of ['V','H','W']){
+  const base=()=>({
+   schema:'draftai-c1-ocjs-source-native-3d-to-original-m4-view-candidates/2',
+   view,sourceEdgeId:'g::E0',original3DSourceCurveDirection:'forward',
+   segments:[{native3DHLRClass:'visible-sharp',originalM0UnitParameterRange:[0.2,0.8]}],
+   native3DOutlineSegments:[
+    outlineSegment(view,'g::E0','visible-outline',[2,8],[0.2,0.8])]
+  });
+  const run=nativeM4=>auditParameterizedM4({view,sourceId:'g::E0',
+   match:{original3DCurveParameterRange:[0,10],source3DParameterRange:[2,8]},
+   klass:'visible',nativeM4});
+  for(const flag of [false,undefined]){
+   const invalid=base();
+   if(flag!==undefined)invalid.native3DOutlineEvidenceAvailable=flag;
+   assert.throws(()=>run(invalid),/nonempty native outline source evidence cannot be marked unavailable/);
+  }
+  const heldOnly=base();
+  heldOnly.native3DOutlineSegments=[];
+  heldOnly.native3DOutlineEvidenceAvailable=false;
+  heldOnly.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation=[
+   {native3DHLRClass:'visible-outline',originalNative3DParameterRange:[2,8]}];
+  assert.throws(()=>run(heldOnly),/nonempty native outline source evidence cannot be marked unavailable/);
+  const available=base();
+  available.native3DOutlineEvidenceAvailable=true;
+  assert.equal(run(available).nativeOutlineClassBacked,true);
+  const legacy=base();
+  legacy.native3DOutlineSegments=[];
+  assert.equal(run(legacy).nativeOutlineClassBacked,false);
+  const missing=base();
+  missing.native3DOutlineEvidenceAvailable=true;
+  delete missing.native3DOutlineSegments;
+  assert.throws(()=>run(missing),/available native outline evidence requires an interval inventory/);
+ }
+});
