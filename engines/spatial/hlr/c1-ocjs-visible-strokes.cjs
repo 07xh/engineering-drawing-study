@@ -156,7 +156,9 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
    throw new RangeError('projected original source edge collapsed');
   // Preserve the already-reviewed binary64 inverse for representable
   // squared denominators, including exact source-boundary behavior.
-  // Finite projected length can still overflow den to Infinity, or underflow\n  // it to zero. Both use a normalized PAPER-ONLY diagnostic fallback;\n  // neither can certify original TopoDS parameter history.
+  // Finite projected length can still overflow den to Infinity, or underflow
+  // it to zero. Both use a normalized PAPER-ONLY diagnostic fallback;
+  // neither can certify original TopoDS parameter history.
   const unitU=du/len,unitV=dv/len;
   const fraction=q=>den>0&&finite(den)?
    ((q.u-pa.u)*du+(q.v-pa.v)*dv)/den:
