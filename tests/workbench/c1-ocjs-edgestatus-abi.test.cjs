@@ -805,6 +805,9 @@ test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep para
   assert.equal(nativeForward.originalNativeForwardFiveSamplesReadable,true);
   assert.equal(nativeForward.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,true);
   assert.equal(nativeForward.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,true);
+  assert.equal(nativeForward.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,true);
+  assert.equal(nativeForward.originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid,true);
+  assert.equal(nativeForward.maximumNativeForward2DParameterGridDriftULPs,'0');
   assert.equal(nativeForward.originalNativeForwardFivePointDiscreteConcordance,true);
   assert.equal(nativeForward.samples.length,5);
   assert.equal(nativeForward.rejectedNativeInverseStillOutOfOriginalBRepDomain,true);
@@ -847,6 +850,7 @@ test('inverse-rejected BRep forward native five-sample disagreement stays held, 
  const proof=shifted.rows[0].rejectedSourceCandidates[0]
   .nativeOriginalForwardFiveSampleConcordance;
  assert.equal(proof.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,false);
+ assert.equal(proof.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,false);
  assert.equal(proof.originalNativeForwardFivePointDiscreteConcordance,false);
  assert.equal(shifted.uniqueParameterizedSourceMatchCount,0);
  // Even if the native original curve has unchanged ends and matching
@@ -858,6 +862,9 @@ test('inverse-rejected BRep forward native five-sample disagreement stays held, 
   .nativeOriginalForwardFiveSampleConcordance;
  assert.equal(mismatch.fullOriginalForward2DParameterDomainExact,true);
  assert.equal(mismatch.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,false);
+ assert.equal(mismatch.originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid,true);
+ assert.equal(mismatch.maximumNativeForward2DParameterGridDriftULPs,'1');
+ assert.equal(mismatch.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,true);
  assert.equal(mismatch.originalNativeForwardFivePointDiscreteConcordance,false);
  assert.equal(mismatch.signedV5Action,false);
 });
