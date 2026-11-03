@@ -7,17 +7,30 @@ const P=(x,y,z)=>({x,y,z});
 const geometry={id:'NativeM4Test',kind:'mesh',space:'model-3d',unit:'mm',
  data:{points:{A:P(0,0,0),B:P(10,0,0)},edges:[['A','B']]}};
 const id='NativeM4Test::A|B';
-const part=(from,to)=>({
+const part=(from,to,klass='visible-sharp')=>({
  nativeSourceFilterOriginalEdgeId:id,nativeOriginalCurveParameterRange:[from,to],
+ native3DHLRClass:klass,
  native3DCurveExactlySameAsOriginalAtThreeParameters:true,
  originalGeneratedTopoDSHistoryCertified:false,signedV5Action:false
 });
-const row=(visible,hidden)=>({
+const outlinePart=(from,to,klass)=>({
+ ...part(from,to),nativeResultingEdgeType:'HLRBRep_OutLine',
+ native3DHLRClass:klass,generated2DHLREdgeTopologyProven:false
+});
+const row=(visible,hidden,visibleOutline=[],hiddenOutline=[])=>({
  originalPhysicalSourceEdgeId:id,
  visible3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
   native3DGeneratedCurveIntervals:visible.map(r=>part(...r))},
  hidden3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
-  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r))}
+  native3DGeneratedCurveIntervals:hidden.map(r=>part(...r,'hidden-sharp'))},
+ visibleOutline3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+  nativeResultingEdgeType:'HLRBRep_OutLine',
+  native3DGeneratedCurveIntervals:visibleOutline.map(r=>
+   outlinePart(...r,'visible-outline'))},
+ hiddenOutline3D:{nativeSourceFilteredOriginalTopoDSEdge:true,
+  nativeResultingEdgeType:'HLRBRep_OutLine',
+  native3DGeneratedCurveIntervals:hiddenOutline.map(r=>
+   outlinePart(...r,'hidden-outline'))}
 });
 function input(visible,hidden,reverse=false){
  return {geometry,revision:11,view:'V',sourceEdgeId:id,
@@ -47,6 +60,9 @@ test('native original 3D source class partition projects to exact first-angle M4
  assert.equal(result.officialV5Authorized,false);
  assert.ok(Object.isFrozen(result.segments[0].fromModelMm));
  assert.ok(Object.isFrozen(result.segments[0].originalNative3DParameterRange));
+ assert.equal(result.segments[0].sourceGeometryId,geometry.id);
+ assert.equal(result.segments[0].revision,11);
+ assert.deepEqual(result.segments[0].originalVertexIds,['A','B']);
 });
 test('original OCCT curve reversed orientation recovers correct M0 parameter direction',()=>{
  const actual=projectNative(input([[0,4]],[[4,10]],true));
@@ -57,6 +73,59 @@ test('original OCCT curve reversed orientation recovers correct M0 parameter dir
  assert.deepEqual(actual.segments[1].originalM0UnitParameterRange,[0,.6]);
  assert.equal(actual.M4OriginalUnitIntervalCandidateCoverageComplete,true);
 });
+test('native source-filtered outline intervals are kept separate from sharp intervals',()=>{
+ const out=projectNative(input([[0,10]],[],false));
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.native3DOutlineSegments,[]);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,true);
+});
+test('native visible and hidden outline source intervals project to an exact M0 partition',()=>{
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveGaps,[]);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveOverlaps,[]);
+ assert.equal(out.native3DOutlineSegments.length,2);
+ assert.deepEqual(out.native3DOutlineSegments[0].originalM0UnitParameterRange,[0,0.4]);
+ assert.deepEqual(out.native3DOutlineSegments[1].originalM0UnitParameterRange,[0.4,1]);
+ assert.equal(out.native3DOutlineSegments[0].native3DHLRClass,'visible-outline');
+ assert.equal(out.native3DOutlineSegments[1].native3DHLRClass,'hidden-outline');
+ assert.equal(out.native3DOutlineSegments[0].generated2DHLREdgeTopologyProven,false);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('native outline one-ULP parameter gap remains a blocker',()=>{
+ const next=5.000000000000001;
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,5]],[[next,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.native3DOutlineOriginalParameterPositiveGaps,[[5,next]]);
+ assert.deepEqual(out.M4OutlineOriginalUnitIntervalCandidatePositiveGaps,[[0.5,next/10]]);
+});
+test('overlapping native visible and hidden outline classes never become class-backed',()=>{
+ const x=input([[0,10]],[],false);
+ x.scopedRow=row([[0,10]],[],[[0,7]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.deepEqual(out.M4OutlineOriginalUnitIntervalNativeClassConflicts,[[0.4,0.7]]);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+});
+test('reversed original curve orientation is applied to native outline intervals',()=>{
+ const x=input([[0,10]],[],true);
+ x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.original3DSourceCurveDirection,'reversed');
+ assert.deepEqual(out.native3DOutlineSegments.map(y=>y.originalM0UnitParameterRange),
+  [[0.6,1],[0,0.6]]);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+});
+
 test('native exact one-ULP positive gap is retained in M4 rather than absorbed by tolerance',()=>{
  const next=5.000000000000001;
  const out=projectNative(input([[0,5]],[[next,10]]));
@@ -129,7 +198,14 @@ test('positive native M4 subspan whose normalized endpoints coincide remains hel
   'positive-native-interval-collapsed-by-binary64-normalization');
  assert.equal(out.segments.length,2);
  assert.equal(out.officialV5Authorized,false);
- assert.ok(Object.isFrozen(out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0]));
+ const held=out.M4ProjectedNative3DIntervalsHeldForBinary64Representation[0];
+ assert.equal(held.sourceGeometryId,out.sourceGeometryId);
+ assert.equal(held.sourceEdgeId,out.sourceEdgeId);
+ assert.equal(held.view,out.view);
+ assert.equal(held.revision,out.revision);
+ assert.deepEqual(held.originalVertexIds,['A','B']);
+ assert.equal(held.signedV5Action,false);
+ assert.ok(Object.isFrozen(held));
 });
 test('large absolute paper coordinates cannot silently erase a positive native M4 stroke',()=>{
  const big=2**50,sourceEdgeId='NativeM4HugePaper::A|B';
@@ -192,4 +268,163 @@ test('native full source endpoints retain exact original 3D vertex and paper ide
   assert.deepEqual(out.segments[0].toPaper,project(sourceGeometry.data.points.B).V);
   assert.equal(out.officialV5Authorized,false);
  }
+});
+
+test('native positive interval gaps cannot be hidden by neighboring visible spans in any projection',()=>{
+ for(const view of ['V','H','W']){
+  const good=input([[0,4],[4,10]],[]);
+  const baseline=projectNative({...good,view});
+  assert.equal(baseline.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+  assert.equal(baseline.officialV5Authorized,false);
+  const next=4+Number.EPSILON*4;
+  const bad=projectNative({...input([[0,4],[next,10]],[]),view});
+  assert.equal(bad.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+  assert.equal(bad.officialV5Authorized,false);
+  assert.equal(bad.formalEngineeringLineStyleCertified,false);
+ }
+});
+
+test('one-sided native outline inventory cannot silently discard positive 3D source intervals',()=>{
+ for(const view of ['V','H','W']){
+  for(const missing of ['visibleOutline3D','hiddenOutline3D']){
+   for(const absence of [undefined,null]){
+    const x=input([[0,10]],[]);
+    x.view=view;
+    x.scopedRow=row([[0,10]],[],[[0,4]],[[4,10]]);
+    x.scopedRow[missing]=absence;
+    assert.throws(()=>projectNative(x),
+     /incomplete native source-filtered 3D HLR outline class inventory/);
+   }
+  }
+ }
+});
+test('legacy producer with neither native outline class stays explicitly unavailable and unsigned',()=>{
+ for(const view of ['V','H','W']){
+  const x=input([[0,10]],[]);
+  x.view=view;
+  delete x.scopedRow.visibleOutline3D;
+  delete x.scopedRow.hiddenOutline3D;
+  const r=projectNative(x);
+  assert.equal(r.native3DOutlineEvidenceAvailable,false);
+  assert.equal(r.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+  assert.equal(r.officialV5Authorized,false);
+  assert.equal(r.formalEngineeringLineStyleCertified,false);
+ }
+});
+
+test('paper-collapsed W source still consumes genuine positive native outline evidence',()=>{
+ const x=input([],[],false);
+ x.view='W';
+ x.scopedRow=row([],[],[[0,10]],[]);
+ const out=projectNative(x);
+ assert.equal(out.segments.length,0);
+ assert.equal(out.native3DOutlineEvidenceAvailable,true);
+ assert.equal(out.native3DOutlineSegments.length,1);
+ assert.deepEqual(out.native3DOutlineSegments[0].originalNative3DParameterRange,[0,10]);
+ assert.equal(out.native3DOutlineSegments[0].generated2DHLREdgeTopologyProven,false);
+ assert.equal(out.native3DOutlineSegments[0].paperDrawableCandidate,false);
+ assert.deepEqual(out.native3DOutlineSegments[0].fromPaper,
+  out.native3DOutlineSegments[0].toPaper);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length,1);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].sourceEdgeId,out.sourceEdgeId);
+ assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].revision,out.revision);
+ assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[0,10]);
+ assert.equal(out.officialV5Authorized,false);
+});
+test('native outline paper geometry uses original 3D M0 endpoints in V/H, not generated HLR',()=>{
+ for(const view of ['V','H']){
+  const x=input([[0,10]],[]);
+  x.view=view;
+  x.scopedRow=row([[0,10]],[],[[0,10]],[]);
+  const out=projectNative(x),segment=out.native3DOutlineSegments[0];
+  assert.equal(segment.paperDrawableCandidate,true);
+  assert.deepEqual(segment.fromModelMm,geometry.data.points.A);
+  assert.deepEqual(segment.toModelMm,geometry.data.points.B);
+  assert.deepEqual(segment.fromPaper,project(geometry.data.points.A)[view]);
+  assert.deepEqual(segment.toPaper,project(geometry.data.points.B)[view]);
+  assert.equal(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation.length,0);
+  assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,true);
+  assert.equal(segment.generated2DHLREdgeTopologyProven,false);
+  assert.equal(segment.signedV5Action,false);
+ }
+});
+test('native outline producer must explicitly deny generated 2D topology ancestry',()=>{
+ const x=input([],[],false);
+ x.scopedRow=row([],[],[[0,10]],[]);
+ delete x.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  generated2DHLREdgeTopologyProven;
+ assert.throws(()=>projectNative(x),/unverified source-scoped original native 3D outline interval/);
+ const y=input([],[],false);
+ y.scopedRow=row([],[],[[0,10]],[]);
+ y.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  generated2DHLREdgeTopologyProven=true;
+ assert.throws(()=>projectNative(y),/unverified source-scoped original native 3D outline interval/);
+ const z=input([],[],false);
+ z.scopedRow=row([],[],[[0,10]],[]);
+ z.scopedRow.visibleOutline3D.native3DGeneratedCurveIntervals[0].
+  originalGeneratedTopoDSHistoryCertified=true;
+ assert.throws(()=>projectNative(z),/unverified source-scoped original native 3D outline interval/);
+});
+
+test('positive native outline subspan lost at huge paper coordinate is held without erasing native provenance',()=>{
+ const big=2**50,sourceEdgeId='NativeM4HugeOutline::A|B';
+ const sourceGeometry={id:'NativeM4HugeOutline',kind:'mesh',
+  space:'model-3d',unit:'mm',data:{
+   points:{A:P(big,0,0),B:P(big+10,0,0)},edges:[['A','B']]
+  }};
+ const x=input([[0,10]],[]);
+ x.geometry=sourceGeometry;x.sourceEdgeId=sourceEdgeId;
+ x.originalCurve={...x.originalCurve,sourceEdgeId,
+  occtSourceCurveFirstPoint3D:sourceGeometry.data.points.A,
+  occtSourceCurveLastPoint3D:sourceGeometry.data.points.B};
+ x.scopedRow=row([[0,10]],[],[[0,1],[1,1.1],[1.1,10]],[]);
+ x.scopedRow.originalPhysicalSourceEdgeId=sourceEdgeId;
+ for(const group of ['visible3D','visibleOutline3D'])
+  for(const part of x.scopedRow[group].native3DGeneratedCurveIntervals)
+   part.nativeSourceFilterOriginalEdgeId=sourceEdgeId;
+ const out=projectNative(x);
+ assert.equal(out.native3DOutlineSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(out.native3DOutlineSegments.length,3);
+ assert.equal(out.native3DOutlineSegments[1].paperDrawableCandidate,false);
+ assert.equal(out.M4OutlineOriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.deepEqual(out.M4ProjectedNative3DOutlineIntervalsHeldForBinary64Representation[0].
+  originalNative3DParameterRange,[1,1.1]);
+ assert.equal(out.officialV5Authorized,false);
+});
+
+test('real native Sharp class cannot be laundered across V/H/W visibility groups',()=>{
+ for(const view of ['V','H','W']){
+  for(const reverse of [false,true]){
+   const x=input([[0,4]],[[4,10]],reverse);
+   x.view=view;
+   const good=projectNative(x);
+   assert.equal(good.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+   assert.equal(good.officialV5Authorized,false);
+   const wrong=structuredClone(x);
+   wrong.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].
+    native3DHLRClass='hidden-sharp';
+   assert.throws(()=>projectNative(wrong),/unverified source-scoped original native 3D curve interval/);
+   const swapped=structuredClone(x);
+   swapped.scopedRow.hidden3D.native3DGeneratedCurveIntervals[0].
+    native3DHLRClass='visible-sharp';
+   assert.throws(()=>projectNative(swapped),/unverified source-scoped original native 3D curve interval/);
+   const omitted=structuredClone(x);
+   delete omitted.scopedRow.visible3D.native3DGeneratedCurveIntervals[0].native3DHLRClass;
+   assert.throws(()=>projectNative(omitted),/unverified source-scoped original native 3D curve interval/);
+  }
+ }
+});
+
+// A complete union does not certify a unique class partition: two native
+// HLR classes may overlap over a positive original BRep parameter interval.
+test('M4 Sharp candidate coverage rejects positive native visible/hidden class overlap',()=>{
+ const x=input([[0,6]],[[4,10]]);
+ const out=projectNative(x);
+ assert.equal(out.native3DSourceParameterPartitionCompleteExactlyOnce,false);
+ assert.equal(out.M4OriginalUnitIntervalCandidateCoverageComplete,false);
+ assert.ok(out.M4OriginalUnitIntervalNativeClassConflicts.length>0);
+ assert.equal(out.officialV5Authorized,false);
 });

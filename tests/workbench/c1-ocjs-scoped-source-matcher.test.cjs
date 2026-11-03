@@ -211,10 +211,148 @@ test('real whole-solid generated HLR inventory exposes unclaimed edges without s
  assert.equal(empty.fullOriginalSourceHistoryCertified,false);
 });
 
+test('native HLR source identity requires scoped-to-global AND global-to-scoped closure',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=setup('V');
+ a.globalSegments=[edge(0,10),edge(0,10)];
+ a.globalNativeEdges=[native('front'),native('back')];
+ const front=match(a);
+ const back=match({...a,sourceEdgeId:'g::C|D',scopedNativeEdge:native('back')});
+ const paperOnly=match({...a,sourceEdgeId:'g::E|F',
+  scopedNativeEdge:native('fresh-2d-edge')});
+ const counts={'visible-sharp':2,'hidden-sharp':0};
+ const r=audit({matches:[front,back,paperOnly],wholeSolidCounts:counts});
+ assert.equal(r.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim,true);
+ assert.equal(r.everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity,false);
+ assert.equal(r.bidirectionalNativeGeneratedEdgeIdentityComplete,false);
+ assert.equal(r.sourceScopedGeneratedEdgeCount,3);
+ assert.equal(r.sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity,1);
+ assert.deepEqual(r.unmatchedSourceScopedGeneratedEdges[0].globalPaperCandidateOrdinals,[0,1]);
+ assert.ok(Object.isFrozen(r.unmatchedSourceScopedGeneratedEdges[0]));
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+ const closed=audit({matches:[front,back],wholeSolidCounts:counts});
+ assert.equal(closed.bidirectionalNativeGeneratedEdgeIdentityComplete,true);
+ assert.equal(closed.fullOriginalSourceHistoryCertified,false);
+ assert.equal(closed.engineeringLineStyle,'undetermined');
+});
+test('mixed or incomplete native whole-solid HLR classes cannot hide unclaimed edges',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=match(setup());
+ for(const counts of [
+  {'visible-sharp':3},
+  {'visible-sharp':3,'hidden-sharp':0,'visible-outline':0},
+  {'visible-outline':3,'hidden-outline':0,'visible-sharp':3}
+ ])assert.throws(()=>audit({matches:[a],wholeSolidCounts:counts}),
+  /mixed or incomplete native whole-solid HLR class inventory/);
+});
+
 test('one native whole-solid inventory cannot mix V and W generated edge ordinals',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
  assert.throws(()=>audit({matches:[match(setup('V')),match(setup('W'))],
   wholeSolidCounts:{'visible-sharp':3,'hidden-sharp':0}}),
   /one HLR view/);
+});
+
+test('genuine generated 2D OutLine source filter preserves native IsSame without M5 promotion',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:auditClaims}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ for(const view of ['V','H','W']){
+  const x=setup(view);x.hlrClass='visible-outline';
+  const r=match(x);
+  assert.deepEqual(r.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+  assert.equal(r.fullOriginalSourceParameterCoverageProven,false);
+  assert.equal(r.signedV5Action,false);
+  const c=auditClaims({matches:[r],wholeSolidCounts:{
+   'visible-outline':3,'hidden-outline':0
+  }});
+  assert.equal(c.uniqueNativeClaims,1);
+  assert.equal(c.unclaimedWholeSolidGeneratedEdgeOrdinals.length,2);
+  assert.equal(c.fullOriginalSourceHistoryCertified,false);
+  const forged=setup(view);forged.hlrClass='hidden-outline';
+  forged.scopedSegment=edge(40,50);
+  forged.scopedNativeEdge=native('unrelated-outline');
+  assert.throws(()=>match(forged),/absent from whole-solid/);
+ }
+});
+test('empty native 2D OutLine inventory remains empty, not silently converted to Sharp',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:auditClaims}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const r=auditClaims({matches:[],wholeSolidCounts:{
+  'visible-outline':0,'hidden-outline':0
+ }});
+ assert.equal(r.wholeSolidNativeGeneratedEdgeCount,0);
+ assert.deepEqual(r.unclaimedWholeSolidGeneratedEdgeOrdinals,[]);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('same native generated TopoDS cannot borrow the other projected axis ULP',()=>{
+ const x=setup('W');
+ const big=2**30,ulp=2**-22;
+ // A genuine one-ULP v drift remains inside the existing 1e-6 mm
+ // discovery radius; it still may not excuse any unrelated u drift.
+ x.globalSegments=[{from:{u:0,v:big},to:{u:100,v:big+1000}}];
+ x.globalNativeEdges=[native('front')];
+ x.scopedNativeEdge=native('front');
+ x.scopedSegment={from:{u:1e-10,v:big},to:{u:100,v:big+1000}};
+ // Wide discovery tolerance still produces a candidate, but true IsSame
+ // demands the independently constrained original u-axis binary64 ULP.
+ assert.throws(()=>match(x),/inconsistent paper endpoints/);
+ x.scopedSegment={from:{u:0,v:big+ulp},to:{u:100,v:big+1000}};
+ const result=match(x);
+ assert.deepEqual(result.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+ assert.equal(result.fullOriginalSourceParameterCoverageProven,false);
+ assert.equal(result.engineeringLineStyle,'undetermined');
+ assert.equal(result.signedV5Action,false);
+});
+
+test('consumer refuses invented or swapped whole-solid native source ordinals',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const original=match(setup('V'));
+ for(const change of [
+  {globalPaperCandidateOrdinals:[]},
+  {globalPaperCandidateOrdinals:[1]},
+  {globalPaperCandidateOrdinals:[0,0]},
+  {globalPaperCandidateOrdinals:[0,9]},
+  {paperCoincidenceAloneIsNotOriginalTopoDSHistory:false},
+  {partnerCandidateDoesNotProveOriginalSourceHistory:false},
+  {engineeringLineStyle:'visible-solid'},
+  {nativePartnerOnlyCandidate:true}
+ ])assert.throws(()=>audit({matches:[{...original,...change}],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0
+ }}),/unsigned actual native scoped match|nonexistent whole-solid/);
+ const valid=audit({matches:[original],wholeSolidCounts:{
+  'visible-sharp':3,'hidden-sharp':0
+ }});
+ assert.equal(valid.uniqueNativeClaims,1);
+ assert.equal(valid.fullOriginalSourceHistoryCertified,false);
+ assert.equal(valid.signedV5ActionCount,0);
+});
+
+test('native IsSame retains exact endpoints when finite source coordinates overflow binary64 hypot',()=>{
+ const max=Number.MAX_VALUE;
+ // Both received paper endpoints are finite. Their real geometric span
+ // exceeds MAX_VALUE, so binary64 hypot is Infinity, not a collapsed edge.
+ const x=setup('H');
+ x.globalSegments=[{from:{u:-max,v:0},to:{u:max,v:0}}];
+ x.globalNativeEdges=[native('front')];
+ x.scopedSegment={from:{u:-max,v:0},to:{u:max,v:0}};
+ assert.equal(Math.hypot(x.globalSegments[0].to.u-x.globalSegments[0].from.u,0),Infinity);
+ const result=match(x);
+ assert.deepEqual(result.globalDirectSameGeneratedTopoDSOrdinals,[0]);
+ assert.equal(result.actualNativeScopedToGlobalGeneratedEdgeIsSameProven,true);
+ assert.equal(result.fullOriginalSourceParameterCoverageProven,false);
+ assert.equal(result.globalContinuousOcclusionProven,false);
+ assert.equal(result.signedV5Action,false);
+ // Native identity does not permit a paper endpoint to drift, even when
+ // a giant source span would make a relative tolerance dangerously wide.
+ const bad=setup('H');
+ bad.globalSegments=x.globalSegments;
+ bad.globalNativeEdges=x.globalNativeEdges;
+ bad.scopedSegment={from:{u:-max,v:1e-6},to:{u:max,v:0}};
+ assert.throws(()=>match(bad),/inconsistent paper endpoints/);
 });

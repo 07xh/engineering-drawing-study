@@ -3,7 +3,8 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {
  probeRealOcjsHLREdgeStatusABI:probe,
- auditGeneratedOutputEdgesAgainstOriginalSourceCurves:auditGenerated
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves:auditGenerated,
+ auditOriginalEdgeStatusVsSourceScoped3DSharp:auditNativeClass
 } = require('../../engines/spatial/hlr/c1-ocjs-edgestatus-abi.cjs');
 
 function sources(n=2){
@@ -442,6 +443,35 @@ test('parameterized generated curve rejects an output interval outside the origi
  assert.equal(r.generated2DTopoDSHistoryProven,false);
 });
 
+test('generated Sharp source match holds one-ULP positive 2D overhang on either original BRep endpoint',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const upper=12+8*Number.EPSILON;
+ assert.ok(upper>12);
+ for(const interval of [[2-Number.EPSILON,8],[8,upper]]){
+  const samples=Array.from({length:5},(_,i)=>{
+   const p2=interval[0]+(interval[1]-interval[0])*i/4;
+   return {u:p2-2,v:2*(p2-2)};
+  });
+  const r=auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:interval,
+   actualOCCTHLRCurveSamplesProjectedMm:samples,
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],nativeCurveHandlesBySourceId:source});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+  assert.equal(r.rows[0].rejectedSourceCandidateCount,1);
+  assert.equal(r.rows[0].status,'no-parameterized-source-curve-match');
+  assert.equal(r.generated2DTopoDSHistoryProven,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+
 test('two original native source curves with identical projected parameterization remain ambiguous',()=>{
  const makeCurve=()=>({
   Parameter2d(value){return value+2;},
@@ -536,4 +566,425 @@ test('unproven original TopoDS identity cannot enter parameterized source matche
  assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,0);
  assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+});
+
+function referenceStatus(bounds,boundsTolerances,parts,partTolerances,
+ allVisible=false,allHidden=false){
+ return {
+  Bounds(start,tolStart,end,tolEnd){
+   start.current=bounds[0];tolStart.current=boundsTolerances[0];
+   end.current=bounds[1];tolEnd.current=boundsTolerances[1];
+  },
+  NbVisiblePart(){return parts.length;},
+  VisiblePart(index,start,tolStart,end,tolEnd){
+   const i=index-1,interval=parts[i],tolerances=partTolerances[i];
+   start.current=interval[0];tolStart.current=tolerances[0];
+   end.current=interval[1];tolEnd.current=tolerances[1];
+  },
+  AllVisible(){return allVisible;},
+  AllHidden(){return allHidden;}
+ };
+}
+test('reads pinned OpenCascade.js mutable current-reference outputs and preserves OCCT endpoint tolerances',()=>{
+ const row=referenceStatus([0,10],[0.125,0.25],
+  [[0,4],[6,10]],[[2,2],[2,2]]);
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'all-original-edge-status-intervals-readable');
+ assert.equal(r.readableSourceStatusRows,1);
+ assert.deepEqual(r.rows[0].bounds,[0,10]);
+ assert.deepEqual(r.rows[0].boundsEndpointTolerances,[0.125,0.25]);
+ assert.equal(r.rows[0].boundsReadABI,'mutable-current-reference');
+ assert.deepEqual(r.rows[0].visibleParts,[[0,4],[6,10]],
+  'positive visible interval gap remains explicit despite endpoint tolerances');
+ assert.deepEqual(r.rows[0].visiblePartEndpointTolerances,[[2,2],[2,2]]);
+ assert.deepEqual(r.rows[0].visiblePartReadABIs,
+  ['mutable-current-reference','mutable-current-reference']);
+ assert.equal(r.rows[0].parameterPartitionValidated,true);
+ assert.equal(r.generated2DHLRTopoDSHistoryCertified,false);
+ assert.equal(r.engineeringLineStyle,'undetermined');
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('negative or non-finite OCCT output-reference tolerances remain unreadable and unsigned',()=>{
+ const row=referenceStatus([0,10],[-0.01,0],
+  [[0,10]],[[0,0]],true,false);
+ const r=probe({oc:{},dataStructure:dataStructure([row]),
+  edgeMapExtent:1,indexedOriginalSources:sources(1)});
+ assert.equal(r.availability,'bounds-output-not-readable');
+ assert.equal(r.rows[0].boundsReadFailure,'invalid-output-reference-values');
+ assert.equal(r.rows[0].bounds,null);
+ assert.equal(r.rows[0].parameterPartitionValidated,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('original EdgeStatus and independently extracted native 3D Sharp agree on exact visible/hidden partition',()=>{
+ const r=auditNativeClass({
+  sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,4],[6,10]]},
+  visibleNativeIntervals:[[6,10],[0,4]],
+  hiddenNativeIntervals:[[4,6]]
+ });
+ assert.equal(r.comparable,true);
+ assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,true);
+ assert.equal(r.exactAlignedSubintervals,3);
+ assert.deepEqual(r.mismatchedNativeVisibilitySubintervals,[]);
+ assert.deepEqual(r.uncoveredSourceScoped3DSubintervals,[]);
+ assert.equal(r.generated2DTopoDSHistoryCertified,false);
+ assert.equal(r.signedV5Action,false);
+});
+test('one-ULP native 3D Sharp gap is observed without tolerances or rounded midpoints',()=>{
+ const next=1+Number.EPSILON;
+ const r=auditNativeClass({
+  sourceEdgeId:'g::E0',originalNativeParameterRange:[0,2],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,2],visibleParts:[[0,2]]},
+  visibleNativeIntervals:[[0,1],[next,2]],hiddenNativeIntervals:[]
+ });
+ assert.equal(r.comparable,true);
+ assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+ assert.deepEqual(r.uncoveredSourceScoped3DSubintervals.map(x=>x.originalNativeParameterRange),
+  [[1,next]]);
+ assert.equal(r.exactBinary64OpenSubintervalsChecked,3);
+ assert.equal(r.signedV5Action,false);
+});
+test('genuine native sharp class disagreement and overlap are separated from 2D HLR history',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,5]]}};
+ const opposite=auditNativeClass({...base,
+  visibleNativeIntervals:[[0,7]],hiddenNativeIntervals:[[7,10]]});
+ assert.deepEqual(opposite.mismatchedNativeVisibilitySubintervals.map(x=>x.originalNativeParameterRange),
+  [[5,7]]);
+ assert.equal(opposite.nativeOriginalStatusClassAgreesWith3DSharp,false);
+ const overlapping=auditNativeClass({...base,
+  visibleNativeIntervals:[[0,7]],hiddenNativeIntervals:[[5,10]]});
+ assert.deepEqual(overlapping.overlappingNative3DClassSubintervals.map(x=>x.originalNativeParameterRange),
+  [[5,7]]);
+ assert.equal(overlapping.generated2DTopoDSHistoryCertified,false);
+});
+test('unreadable or nonidentical native original source parameter domain is held',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  visibleNativeIntervals:[[0,10]],hiddenNativeIntervals:[]};
+ for(const statusRow of [
+  undefined,
+  {sourceEdgeId:'g::E0',parameterPartitionValidated:false,
+   bounds:[0,10],visibleParts:[[0,10]]},
+  {sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10-Number.EPSILON*8],visibleParts:[[0,10-Number.EPSILON*8]]}
+ ]){
+  const r=auditNativeClass({...base,statusRow});
+  assert.equal(r.comparable,false);
+  assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+  assert.equal(r.signedV5Action,false);
+ }
+});
+
+test('replayed original EdgeStatus cannot certify duplicated same-class native intervals',()=>{
+ const base={sourceEdgeId:'g::E0',originalNativeParameterRange:[0,10],
+  statusRow:{sourceEdgeId:'g::E0',parameterPartitionValidated:true,
+   bounds:[0,10],visibleParts:[[0,5]]},
+  visibleNativeIntervals:[[0,5]],hiddenNativeIntervals:[[5,10]]};
+ const forged=[
+  {...base,statusRow:{...base.statusRow,visibleParts:[[0,5],[2,4]]}},
+  {...base,visibleNativeIntervals:[[0,5],[2,4]]},
+  {...base,hiddenNativeIntervals:[[5,10],[6,9]]}
+ ];
+ for(const input of forged){
+  const r=auditNativeClass(input);
+  assert.equal(r.comparable,false);
+  assert.equal(r.reason,'positive-same-class-original-native-parameter-overlap');
+  assert.equal(r.nativeOriginalStatusClassAgreesWith3DSharp,false);
+  assert.equal(r.engineeringLineStyle,'undetermined');
+  assert.equal(r.signedV5Action,false);
+ }
+ const adjacent=auditNativeClass({...base,
+  statusRow:{...base.statusRow,visibleParts:[[0,2],[2,5]]},
+  visibleNativeIntervals:[[0,2],[2,5]]});
+ assert.equal(adjacent.comparable,true);
+ assert.equal(adjacent.nativeOriginalStatusClassAgreesWith3DSharp,true);
+ assert.equal(adjacent.generated2DTopoDSHistoryCertified,false);
+ assert.equal(adjacent.signedV5Action,false);
+});
+
+
+test('genuine reversed original BRep parameter map preserves strict generated Sharp order',()=>{
+ const curve={
+  Parameter2d(t){return 10-t;},
+  Parameter3d(t){return 10-t;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const range=[2,8];
+ const samples=Array.from({length:5},(_,i)=>{
+  const p2=range[0]+(range[1]-range[0])*i/4,t=10-p2;
+  return {u:t,v:2*t};
+ });
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:range,
+  actualOCCTHLRCurveSamplesProjectedMm:samples,
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId:source});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ assert.deepEqual(r.rows[0].candidateSourceMatches[0].source3DParameterRange,[8,2]);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+});
+
+test('positive generated HLR interval cannot borrow duplicate rounded native BRep parameters',()=>{
+ // Every generated 2D sample is distinct, yet the native inverse rounds
+ // several to the SAME original 3D parameter. A tolerance-based five-point
+ // residual alone used to misclassify this as unique original-source lineage.
+ const curve={
+  Parameter2d(t){return t;},
+  Parameter3d(t){return Math.round(t/1e-12)*1e-12;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source=new Map([['g::E0',{curve,parameterRange:[0,1],
+  originalBRepParameterRange:[0,1],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const range=[0.5,0.5+1e-12];
+ const samples=Array.from({length:5},(_,i)=>{
+  const p2=range[0]+(range[1]-range[0])*i/4;
+  const t=curve.Parameter3d(p2);
+  return {u:t,v:2*t};
+ });
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:range,
+  actualOCCTHLRCurveSamplesProjectedMm:samples,
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId:source});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+ assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,
+  'generated-source-parameter-order-not-injective');
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('generated 2D Sharp match rejects one-ULP escape from original 3D BRep parameter even inside 2D range',()=>{
+ for(const boundary of ['lower','upper']){
+  const curve={
+   Parameter2d(t){return t+2;},
+   Parameter3d(p2){
+    if(boundary==='lower'&&p2===2)return -Number.MIN_VALUE;
+    if(boundary==='upper'&&p2===12)return 10+8*Number.EPSILON;
+    return p2-2;
+   },
+   Value(t){return {X(){return t;},Y(){return -2*t;}};}
+  };
+  const source=new Map([['g::E0',{curve,parameterRange:[0,10],
+   originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+   directOriginalTopoDSEdgeIdentityProven:true}]]);
+  const samples=[0,2.5,5,7.5,10].map(t=>({u:t,v:2*t}));
+  const result=auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:[2,12],
+   actualOCCTHLRCurveSamplesProjectedMm:samples,
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],nativeCurveHandlesBySourceId:source});
+  assert.equal(result.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(result.unmatchedGeneratedOutputEdgeCount,1);
+  const rejected=result.rows[0].rejectedSourceCandidates[0];
+  assert.equal(rejected.reason,'generated-source-3d-parameter-outside-original-brep-domain');
+  assert.equal(rejected.matched,false);
+  assert.equal(rejected.originalTopoDSEdgeIdentityProven,true);
+  assert.deepEqual(rejected.originalBRepSourceParameterRange,[0,10]);
+  assert.deepEqual(rejected.original3DCurveParameterRange,[0,10]);
+  assert.deepEqual(rejected.sourceProjected2DParameterRange,[2,12]);
+  assert.deepEqual(rejected.sourceProjected2DParameterRangeSorted,[2,12]);
+  assert.deepEqual(rejected.generated2DParameterRange,[2,12]);
+  assert.equal(rejected.firstRejectedGenerated2DParameter,boundary==='lower'?2:12);
+  assert.equal(rejected.firstRejectedOriginal3DParameter,
+   boundary==='lower'?-Number.MIN_VALUE:10+8*Number.EPSILON);
+  assert.equal(rejected.originalInverseStillOutsideBRepDomain,true);
+  const nativeForward=rejected.nativeOriginalForwardFiveSampleConcordance;
+  assert.equal(nativeForward.schema,
+   'draftai-c1-inverse-rejected-original-native-forward-samples/1');
+  assert.equal(nativeForward.fullOriginalForward2DParameterDomainExact,true);
+  assert.equal(nativeForward.originalNativeForwardFiveSamplesReadable,true);
+  assert.equal(nativeForward.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,true);
+  assert.equal(nativeForward.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,true);
+  assert.equal(nativeForward.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,true);
+  assert.equal(nativeForward.originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid,true);
+  assert.equal(nativeForward.maximumNativeForward2DParameterGridDriftULPs,'0');
+  assert.equal(nativeForward.originalNativeForwardFivePointDiscreteConcordance,true);
+  assert.equal(nativeForward.samples.length,5);
+  assert.equal(nativeForward.rejectedNativeInverseStillOutOfOriginalBRepDomain,true);
+  assert.equal(nativeForward.generated2DTopoDSHistoryProven,false);
+  assert.equal(nativeForward.signedV5Action,false);
+  assert.equal(rejected.generated2DTopoDSHistoryProven,false);
+  assert.equal(rejected.signedV5Action,false);
+  assert.equal(result.generated2DTopoDSHistoryProven,false);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+});
+
+test('inverse-rejected BRep forward native five-sample disagreement stays held, never borrows matching endpoints',()=>{
+ const curve={
+  Parameter2d(t){return t;},
+  // Reject the native inverse at the FIRST generated sample, so the
+  // independent forward sampler still examines the later forged midpoint.
+  Parameter3d(t){return t===0?-Number.MIN_VALUE:t;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const base={curve,parameterRange:[0,1],
+  originalBRepParameterRange:[0,1],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true};
+ const native=[0,.25,.5,.75,1].map(t=>({u:t,v:2*t}));
+ const run=(value,segments=native)=>
+  auditGenerated({segments:[{
+   actualOCCTHLRCurveParameterRange:[0,1],
+   actualOCCTHLRCurveSamplesProjectedMm:segments,
+   actualOCCTHLRCurveSampleToleranceMm:1e-8
+  }],nativeCurveHandlesBySourceId:new Map([['g::A|B',{...base,curve:value}]])});
+ const honest=run(curve);
+ assert.equal(honest.unmatchedGeneratedOutputEdgeCount,1);
+ assert.equal(honest.rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance
+  .originalNativeForwardFivePointDiscreteConcordance,true);
+ // A forged middle paper sample (same valid endpoints) must NOT inherit
+ // the genuine source's original five-point forward curve concordance.
+ const altered=native.map((p,i)=>i===2?{u:p.u,v:p.v+1e-4}:p);
+ const shifted=run(curve,altered);
+ const proof=shifted.rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance;
+ assert.equal(proof.originalNativeForwardFivePaperSamplesWithinGeneratedNativeTolerance,false);
+ assert.equal(proof.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,false);
+ assert.equal(proof.originalNativeForwardFivePointDiscreteConcordance,false);
+ assert.equal(shifted.uniqueParameterizedSourceMatchCount,0);
+ // Even if the native original curve has unchanged ends and matching
+ // projected values, a folded/non-affine forward parameter map cannot
+ // masquerade as exactly the five actual generated p2 sample parameters.
+ const warped={...curve,
+  Parameter2d(t){return t===.5?.5000000000000001:t;}};
+ const mismatch=run(warped).rows[0].rejectedSourceCandidates[0]
+  .nativeOriginalForwardFiveSampleConcordance;
+ assert.equal(mismatch.fullOriginalForward2DParameterDomainExact,true);
+ assert.equal(mismatch.originalNativeForwardFive2DParametersMatchGeneratedGridExactly,false);
+ assert.equal(mismatch.originalNativeForwardFive2DParametersWithinOneULPOfGeneratedGrid,true);
+ assert.equal(mismatch.maximumNativeForward2DParameterGridDriftULPs,'1');
+ assert.equal(mismatch.originalNativeForwardFivePaperSamplesExactlyMatchGenerated,true);
+ assert.equal(mismatch.originalNativeForwardFivePointDiscreteConcordance,false);
+ assert.equal(mismatch.signedV5Action,false);
+});
+
+test('generated HLR native 2D last parameter is preserved exactly despite binary64 affine endpoint rounding',()=>{
+ const first=0.2,last=0.9;
+ assert.notEqual(first+(last-first),last);
+ const p2=[first,...[1,2,3].map(i=>first+(last-first)*(i/4)),last];
+ const curve={
+  Parameter2d(t){return t;},Parameter3d(t){return t;},
+  Value(t){return {X(){return t;},Y(){return -t;}};}
+ };
+ const source=new Map([['g::E0',{
+  curve,parameterRange:[first,last],originalBRepParameterRange:[first,last],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
+ }]]);
+ const segment={actualOCCTHLRCurveParameterRange:[first,last],
+  actualOCCTHLRCurveSamplesProjectedMm:p2.map(t=>({u:t,v:t})),
+  actualOCCTHLRCurveSampleToleranceMm:0};
+ const result=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId:source});
+ assert.equal(result.uniqueParameterizedSourceMatchCount,1);
+ const match=result.rows[0].candidateSourceMatches[0];
+ assert.deepEqual(match.source3DParameterRange,[first,last]);
+ assert.equal(match.samples[4].generated2DParameter,last);
+ assert.equal(match.samples[4].source3DParameter,last);
+ assert.equal(match.generated2DTopoDSHistoryProven,false);
+ assert.equal(match.signedV5Action,false);
+ // One ULP outside the actual original source domain must remain rejected.
+ const beyond={...segment,actualOCCTHLRCurveParameterRange:[first,0.9000000000000001]};
+ const held=auditGenerated({segments:[beyond],nativeCurveHandlesBySourceId:source});
+ assert.equal(held.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(held.rows[0].status,'no-parameterized-source-curve-match');
+});
+
+test('a matching original HLR EdgeData handle cannot borrow provenance from a foreign duplicate source handle',()=>{
+ const edgeA={identity:'A',IsSame(other){return other?.identity==='A';}};
+ const edgeB={identity:'B',IsSame(other){return other?.identity==='B';}};
+ const ds={EDataArray(){return {Value(){return {
+  Status(){return status([0,1],[[0,1]],true,false);},
+  Geometry(){return {GetCurve(){return {
+   FirstParameter(){return 0;},LastParameter(){return 1;},Edge(){return edgeA;}
+  };}};}
+ };}};}};
+ const original=(edge)=>({sourceEdgeId:'g::E0',edge,parameterRange:[0,1]});
+ for(const handles of [
+  [original(edgeA),original(edgeB)],
+  [original(edgeB),original(edgeA)]
+ ]){
+  const r=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+   indexedOriginalSources:sources(1),
+   originalNativeEdgeHandles:handles,view:'H'});
+  const row=r.rows[0].originalEdgeData;
+  assert.deepEqual(row.directOriginalTopoDSEdgeIsSameMatches,['g::E0']);
+  assert.equal(row.sameSourceNativeHandleIdentityConsistent,false);
+  assert.equal(r.sameSourceNativeHandleLedgerConsistent,false);
+  assert.equal(r.originalNativeEdgeHandleLedgerComplete,false);
+  assert.equal(row.directOriginalTopoDSEdgeIdentityProven,false);
+  assert.equal(row.originalBRepSourceParameterRange,null);
+  assert.equal(row.originalBRepParameterRangeMatches,false);
+  assert.equal(r.generated2DHLRTopoDSHistoryCertified,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+ const accepted=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[original(edgeA),original(edgeA)],view:'H'});
+ const row=accepted.rows[0].originalEdgeData;
+ assert.equal(row.sameSourceNativeHandleIdentityConsistent,true);
+ assert.equal(accepted.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(accepted.originalNativeEdgeHandleLedgerComplete,true);
+ assert.equal(row.directOriginalTopoDSEdgeIdentityProven,true);
+ assert.deepEqual(row.originalBRepSourceParameterRange,[0,1]);
+ assert.equal(row.generated2DHLRTopoDSHistoryProven,false);
+ const differingDomain=probe({oc:{},dataStructure:ds,edgeMapExtent:1,
+  indexedOriginalSources:sources(1),
+  originalNativeEdgeHandles:[original(edgeA),
+   {...original(edgeA),parameterRange:[0,2]}],view:'H'});
+ assert.equal(differingDomain.sameSourceNativeHandleLedgerConsistent,false);
+ assert.equal(differingDomain.originalNativeEdgeHandleLedgerComplete,false);
+ assert.equal(differingDomain.rows[0].originalEdgeData.originalBRepParameterRangeMatches,false);
+});
+
+test('original native HLR ledger rejects cross-ID TopoDS aliases, asymmetric identities and malformed handles',()=>{
+ const ds=dataStructure([
+  status([0,1],[[0,1]],true,false),
+  status([0,1],[[0,1]],true,false)
+ ]);
+ const native=id=>({id,IsSame(other){return other?.id===id;}});
+ const a=native('physical-A'),b=native('physical-B');
+ const run=(left,right)=>probe({
+  oc:{},dataStructure:ds,edgeMapExtent:2,indexedOriginalSources:sources(2),
+  originalNativeEdgeHandles:[
+   {sourceEdgeId:'g::E0',edge:left.edge,parameterRange:left.range??[0,1]},
+   {sourceEdgeId:'g::E1',edge:right.edge,parameterRange:right.range??[0,1]}
+  ],view:'H'
+ });
+ const valid=run({edge:a},{edge:b});
+ assert.equal(valid.nativeHandleShapeAndDomainValid,true);
+ assert.equal(valid.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(valid.distinctSourceNativeHandleIdentityConsistent,true);
+ assert.equal(valid.originalNativeEdgeHandleLedgerComplete,true);
+ // Two distinct source labels cannot designate the same native TShape,
+ // even though their paper projection and parameter domains may coincide.
+ const alias=run({edge:a},{edge:a});
+ assert.equal(alias.sameSourceNativeHandleLedgerConsistent,true);
+ assert.equal(alias.distinctSourceNativeHandleIdentityConsistent,false);
+ assert.equal(alias.originalNativeEdgeHandleLedgerComplete,false);
+ const right={IsSame(other){return other===this;}};
+ const left={IsSame(other){return other===this||other===right;}};
+ const asymmetric=run({edge:left},{edge:right});
+ assert.equal(asymmetric.nativeHandleShapeAndDomainValid,true);
+ assert.equal(asymmetric.distinctSourceNativeHandleIdentityConsistent,false);
+ assert.equal(asymmetric.originalNativeEdgeHandleLedgerComplete,false);
+ const malformed=run({edge:a},{edge:b,range:[0,0]});
+ assert.equal(malformed.nativeHandleShapeAndDomainValid,false);
+ assert.equal(malformed.originalNativeEdgeHandleLedgerComplete,false);
+ const nonreflexive=run({edge:a},{edge:{IsSame(){return false;}}});
+ assert.equal(nonreflexive.nativeHandleShapeAndDomainValid,false);
+ assert.equal(nonreflexive.originalNativeEdgeHandleLedgerComplete,false);
+ for(const result of [valid,alias,asymmetric,malformed,nonreflexive]){
+  assert.equal(result.generated2DHLRHistoryStillUnproven,true);
+  assert.equal(result.signedV5ActionCount,0);
+ }
 });

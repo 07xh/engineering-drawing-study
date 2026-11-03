@@ -22,13 +22,18 @@ const {auditC1ScopedHLRGeneratedEdgeMatch,auditC1ScopedHLRSourceIdentityConflict
  require('./c1-ocjs-scoped-source-matcher.cjs');
 const {computeC1NativeHLRIsSameVertexGraph}=
  require('./c1-ocjs-native-vertex-issame-graph.cjs');
+const {auditC1OriginalBRepFaceEdgeAdjacency}=
+ require('./c1-ocjs-original-source-face-adjacency.cjs');
+const {auditC1OriginalBRepVertexTShapeTopology}=
+ require('./c1-ocjs-original-source-vertex-topology.cjs');
 const {auditC1Native3DSourceScopedIntervals}=
  require('../../../workbench/c1-native-source-scoped-3d-parameter-coverage.cjs');
 const finite=Number.isFinite;
 const {verifyOcjsHLRProjectedLineCurveWitness}=
  require('./c1-ocjs-output-curve-witness.cjs');
 const {probeRealOcjsHLREdgeStatusABI,
- auditGeneratedOutputEdgesAgainstOriginalSourceCurves}=
+ auditGeneratedOutputEdgesAgainstOriginalSourceCurves,
+ auditOriginalEdgeStatusVsSourceScoped3DSharp}=
  require('./c1-ocjs-edgestatus-abi.cjs');
 function cuboidBounds(g){
  if(!g||g.kind!=='mesh'||g.space!=='model-3d'||g.unit!=='mm'||
@@ -89,11 +94,24 @@ function method(owner,key){
  return fn;
 }
 function closeToSegment(p,a,b,tol=1e-6){
- const ux=b.u-a.u,uy=b.v-a.v,len2=ux*ux+uy*uy;
- if(len2<1e-15)return false;
- const cross=ux*(p.v-a.v)-uy*(p.u-a.u);
- const t=((p.u-a.u)*ux+(p.v-a.v)*uy)/len2;
- return Math.abs(cross)<=tol*Math.sqrt(len2)&&t>=-tol&&t<=1+tol;
+ const du=b.u-a.u,dv=b.v-a.v,len2=du*du+dv*dv;
+ // Keep the previously audited ordinary binary64 paper candidate path:
+ // changing its rounding can change a real positive M5 source gap.
+ if(len2>=1e-15&&Number.isFinite(len2)){
+  const cross=du*(p.v-a.v)-dv*(p.u-a.u);
+  const t=((p.u-a.u)*du+(p.v-a.v)*dv)/len2;
+  return Math.abs(cross)<=tol*Math.sqrt(len2)&&t>=-tol&&t<=1+tol;
+ }
+ // A genuine tiny projected source may have len² rounded to zero. Use
+ // a scale-stable diagnostic candidate path, not a new source certificate.
+ const len=Math.hypot(du,dv);
+ if(!(len>0)||!Number.isFinite(len))return false;
+ const ux=du/len,uy=dv/len,pu=p.u-a.u,pv=p.v-a.v;
+ const cross=ux*pv-uy*pu;
+ const t=(ux*pu+uy*pv)/len;
+ const paperTol=Math.min(tol,len*tol);
+ return Number.isFinite(cross)&&Number.isFinite(t)&&
+  Math.abs(cross)<=paperTol&&t>=-tol&&t<=1+tol;
 }
 function provenanceCandidates(g,view,from,to){
  const src=[];
@@ -133,9 +151,20 @@ function liftOriginalProjectedSourceCandidates(g,view,from,to){
   const a=g.data.points[edge[0]],b=g.data.points[edge[1]];
   const pa=project(a)[view],pb=project(b)[view];
   const du=pb.u-pa.u,dv=pb.v-pa.v,den=du*du+dv*dv;
-  if(!(den>1e-15)||!finite(den))
+  const len=Math.hypot(du,dv);
+  if(!(len>0)||!finite(len)||Number.isNaN(den))
    throw new RangeError('projected original source edge collapsed');
-  const fraction=q=>((q.u-pa.u)*du+(q.v-pa.v)*dv)/den;
+  // Preserve the already-reviewed binary64 inverse for representable
+  // squared denominators, including exact source-boundary behavior.
+  // Finite projected length can still overflow den to Infinity, or underflow
+  // it to zero. Both use a normalized PAPER-ONLY diagnostic fallback;
+  // neither can certify original TopoDS parameter history.
+  const unitU=du/len,unitV=dv/len;
+  const fraction=q=>den>0&&finite(den)?
+   ((q.u-pa.u)*du+(q.v-pa.v)*dv)/den:
+   q.u===pa.u&&q.v===pa.v?0:
+   q.u===pb.u&&q.v===pb.v?1:
+   ((q.u-pa.u)*unitU+(q.v-pa.v)*unitV)/len;
   const ta=fraction(from),tb=fraction(to);
   // Paper collinearity uses an OCCT display tolerance. It must never
   // become exact original TopoDS parameter coverage: even a one-ULP
@@ -756,8 +785,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
  const enumValue=(name)=>oc.TopAbs_ShapeEnum?.[name]??oc[name];
  try{
   const kind=enumValue('TopAbs_EDGE'),vertexType=enumValue('TopAbs_VERTEX'),
-   avoid=enumValue('TopAbs_SHAPE');
-  if([kind,vertexType,avoid].some(x=>x===undefined))
+   faceType=enumValue('TopAbs_FACE'),avoid=enumValue('TopAbs_SHAPE');
+  if([kind,vertexType,faceType,avoid].some(x=>x===undefined))
    throw new TypeError('real OCJS TopAbs enum unavailable');
   let solid;
   if(b){
@@ -779,6 +808,35 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    throw new RangeError('actual original TopoDS vertex occurrence inventory incomplete');
   if(originalNativeEdgeHandles.length!==sourceBRep.occtOriginalEdgeOccurrenceCount)
    throw new RangeError('native source OCCT TopoDS edge occurrence ledger incomplete');
+  // Reuse the original BRep face-edge IsSame auditor while the actual
+  // TopoDS handles are alive. Paper coincidence is not native topology.
+  const nativeFaceEdgeInventories=[];
+  const sourceFaces=newObj('TopExp_Explorer_2',solid,faceType,avoid);
+  while(sourceFaces.More()){
+   const face=hold(sourceFaces.Current());
+   const edges=newObj('TopExp_Explorer_2',face,kind,avoid);
+   const inventory=[];
+   while(edges.More()){
+    const edge=hold(edges.Current());
+    inventory.push(hold(method(oc.TopoDS,'Edge_1')(edge)));
+    if(inventory.length>256)
+     throw new RangeError('unbounded native original face edge incidence');
+    edges.Next();
+   }
+   nativeFaceEdgeInventories.push(inventory);
+   if(nativeFaceEdgeInventories.length>64)
+    throw new RangeError('unbounded native original source face inventory');
+   sourceFaces.Next();
+  }
+  const originalNativeFaceAdjacency=auditC1OriginalBRepFaceEdgeAdjacency({
+   geometry,originalNativeEdgeHandles,nativeFaceEdgeInventories
+  });
+  // Verify the ORIGINAL physical 3D source vertex identities with the
+  // already sewn shared native TopoDS TShapes, never generated HLR 2D
+  // coincidence. Preserve only the immutable proof, not native handles.
+  const originalNativeVertexTopology=auditC1OriginalBRepVertexTShapeTopology({
+   geometry,originalNativeVertexHandles
+  });
   const sourceById=new Map(sourceBRep.originalBRepSourceEdges.map(x=>
    [x.sourceEdgeId,x]));
   const rows={},hiddenViews={},hiddenSharpNullCompoundViews=[];
@@ -955,10 +1013,32 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    const hiddenNative=emptyHiddenSharp?
     {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(hidden,'hidden-sharp');
    const hiddenSegments=hiddenNative.segments;
+   // Genuine generated 2D HLR outlines are separate from Sharp. Query
+   // whole-solid and original-TopoDS-filtered outlines in this same run.
+   const outline2DMethods=[
+    ['visible-outline','OutLineVCompound_1','OutLineVCompound_2'],
+    ['hidden-outline','OutLineHCompound_1','OutLineHCompound_2']
+   ];
+   const globalOutline2D={};
+   for(const [klass,wholeMethod,scopedMethod] of outline2DMethods){
+    if(typeof extractor[wholeMethod]!=='function'||
+       typeof extractor[scopedMethod]!=='function')
+     throw new TypeError('pinned OCJS original-filtered 2D outline HLR API missing');
+    const compound=hold(extractor[wholeMethod]());
+    globalOutline2D[klass]=compound.IsNull()?
+     {segments:[],vertexRecords:[],nativeEdges:[]}:traverse(compound,klass);
+   }
    // Match each whole-solid generated 2D HLR fragment against the actual
    // same-run original HLRBRep_Curve using Parameter2d/Parameter3d and
    // five projected curve samples. This is stronger than paper coincidence,
    // but deliberately remains distinct from generated TopoDS history.
+   // A per-row native IsSame witness is not enough if two DIFFERENT M0
+   // source IDs alias one TopoDS TShape, or a same-ID handle has a
+   // contradictory BRep domain. Reject the whole original-source ledger
+   // before any generated 2D parameter candidate is consumed by M4/M5.
+   // This never promotes the surviving candidates to full HLR history.
+   if(originalEdgeStatusAbi.originalNativeEdgeHandleLedgerComplete!==true)
+    throw new RangeError('native HLR original source handle ledger is not a bijection');
    const generated2DSourceParameterMatches={
     visible:auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
      segments:visibleNative.segments,nativeCurveHandlesBySourceId
@@ -1001,7 +1081,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    }
    const scopedRows=[],processed=new Set();
    let scopedOutputEdges=0,directGeneratedIdentityMatches=0,
-    paperOnlyScopedOutputEdges=0;
+    paperOnlyScopedOutputEdges=0,scopedOutline2DOutputEdges=0,
+    directOutline2DIdentityMatches=0;
    for(const original of originalNativeEdgeHandles){
     if(processed.has(original.sourceEdgeId))continue;
     processed.add(original.sourceEdgeId);
@@ -1062,9 +1143,17 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
        const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
        const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+       const source3D=sourceById.get(original.sourceEdgeId);
+       const sourceRange=source3D?.occtSourceCurveParameterRange;
+       // A straight BRepAdaptor line can extrapolate beyond its original
+       // domain and still agree at three sampled XYZ values. No epsilon or
+       // sampled coincidence can authorize an out-of-domain source span.
        if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
-          !finite(first)||!finite(last)||!(last>first))
-        throw new RangeError('actual source-filtered native HLR 3D edge is not a positive line');
+          !finite(first)||!finite(last)||!(last>first)||
+          !Array.isArray(sourceRange)||sourceRange.length!==2||
+          !sourceRange.every(finite)||!(sourceRange[1]>sourceRange[0])||
+          first<sourceRange[0]||last>sourceRange[1])
+        throw new RangeError('source-filtered native HLR 3D Sharp interval escapes original BRep domain');
        const p0=hold(curve3D.Value(first)),p1=hold(curve3D.Value(last));
        const from3D={x:p0.X(),y:p0.Y(),z:p0.Z()};
        const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
@@ -1086,6 +1175,7 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
         nativeOriginalCurveParameterRange:[first,last],
         actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
         nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DHLRClass:klass,
         native3DCurveExactlySameAsOriginalAtThreeParameters:true,
         originalGeneratedTopoDSHistoryCertified:false,
         engineeringLineStyle:'undetermined',signedV5Action:false
@@ -1112,6 +1202,129 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
       engineeringLineStyle:'undetermined',signedV5Action:false
      };
     }
+    // OutLine is a distinct OCCT result type from Sharp. Extract its
+    // source-filtered 3D intervals separately: visible/hidden sharp coverage
+    // cannot stand in for silhouette/outline membership.
+    const outline=oc.HLRBRep_TypeOfResultingEdge?.HLRBRep_OutLine;
+    if(outline===undefined||typeof extractor.CompoundOfEdges_2!=='function')
+     throw new TypeError('pinned OCJS source-scoped native 3D HLR outline extraction missing');
+    for(const [outlineClass,visible] of [
+     ['visible-outline',true],['hidden-outline',false]
+    ]){
+     const outlineCompound=hold(extractor.CompoundOfEdges_2(
+      original.edge,outline,visible,true));
+     const outlineIntervals=[];
+     if(!outlineCompound.IsNull()){
+      const outlineExplorer=newObj('TopExp_Explorer_2',outlineCompound,kind,avoid);
+      while(outlineExplorer.More()){
+       const shape3D=hold(outlineExplorer.Current());
+       const edge3D=hold(method(oc.TopoDS,'Edge_1')(shape3D));
+       const curve3D=newObj('BRepAdaptor_Curve_2',edge3D);
+       const first=curve3D.FirstParameter(),last=curve3D.LastParameter();
+       const lineKind=oc.GeomAbs_CurveType?.GeomAbs_Line??oc.GeomAbs_Line;
+       const source3D=sourceById.get(original.sourceEdgeId);
+       const sourceRange=source3D?.occtSourceCurveParameterRange;
+       if(curve3D.GetType()!==lineKind||curve3D.Is3DCurve()!==true||
+          !finite(first)||!finite(last)||!(last>first)||
+          !Array.isArray(sourceRange)||sourceRange.length!==2||
+          first<sourceRange[0]||last>sourceRange[1])
+        throw new RangeError('native source-filtered HLR outline interval is not a bounded positive original line');
+       const p0=hold(curve3D.Value(first)),p1=hold(curve3D.Value(last));
+       const from3D={x:p0.X(),y:p0.Y(),z:p0.Z()};
+       const to3D={x:p1.X(),y:p1.Y(),z:p1.Z()};
+       if(![...Object.values(from3D),...Object.values(to3D)].every(finite))
+        throw new RangeError('nonfinite actual native HLR outline source segment');
+       const originalCurve3D=newObj('BRepAdaptor_Curve_2',original.edge);
+       for(const t of [first,(first+last)/2,last]){
+        const sourcePoint=hold(originalCurve3D.Value(t));
+        const generatedPoint=hold(curve3D.Value(t));
+        if(['X','Y','Z'].some(axis=>
+         sourcePoint[axis]()!==generatedPoint[axis]()))
+         throw new RangeError('native source-filtered HLR outline curve differs from original BRep at same parameter');
+       }
+       let sameTopoDSIdentity=false;
+       if(typeof edge3D.IsSame==='function'&&typeof original.edge.IsSame==='function')
+        sameTopoDSIdentity=edge3D.IsSame(original.edge)===true&&
+         original.edge.IsSame(edge3D)===true;
+       outlineIntervals.push({
+        nativeOriginalCurveParameterRange:[first,last],
+        actualOCCTGenerated3DFrom:from3D,actualOCCTGenerated3DTo:to3D,
+        nativeSourceFilterOriginalEdgeId:original.sourceEdgeId,
+        native3DCurveExactlySameAsOriginalAtThreeParameters:true,
+        directOriginalTopoDSEdgeIsSame:sameTopoDSIdentity,
+        nativeResultingEdgeType:'HLRBRep_OutLine',
+        native3DHLRClass:outlineClass,
+        // A source-filtered 3D outline is NOT a generated 2D TopoDS edge.
+        // The M4 outline consumer requires this explicit negative witness;
+        // omission previously rejected genuine nonempty native outlines.
+        generated2DHLREdgeTopologyProven:false,
+        originalGeneratedTopoDSHistoryCertified:false,
+        generated2DSourceIdentityIsSameProven:false,
+        globalContinuousVisibilityCertified:false,
+        engineeringLineStyle:'undetermined',signedV5Action:false
+       });
+       if(outlineIntervals.length>128)
+        throw new RangeError('unbounded native source-scoped 3D HLR outline intervals');
+       outlineExplorer.Next();
+      }
+     }
+     const source3D=sourceById.get(original.sourceEdgeId);
+     row[outlineClass==='visible-outline'?'visibleOutline3D':'hiddenOutline3D']={
+      nativeSourceFilteredOriginalTopoDSEdge:true,
+      nativeResultingEdgeType:'HLRBRep_OutLine',
+      native3DGeneratedCurveIntervals:outlineIntervals,
+      exactNative3DSourceParameterCoverage:auditC1Native3DSourceScopedIntervals({
+       originalNativeParameterRange:source3D.occtSourceCurveParameterRange,
+       generatedNativeParameterRanges:outlineIntervals.map(x=>
+        x.nativeOriginalCurveParameterRange)
+      }),
+      generated2DSourceIdentityIsSameProven:false,
+      globalContinuousVisibilityCertified:false,
+      engineeringLineStyle:'undetermined',signedV5Action:false
+     };
+    }
+    // Query original-filtered GENERATED 2D outline TopoDS objects while
+    // the HLR algorithm and all source handles remain alive. IsSame
+    // proves generated-edge identity only, not original parameter history.
+    for(const [klass,,scopedMethod] of outline2DMethods){
+     const filtered=hold(extractor[scopedMethod](original.edge));
+     const witnesses=[];
+     if(!filtered.IsNull()){
+      const explorer=newObj('TopExp_Explorer_2',filtered,kind,avoid);
+      while(explorer.More()){
+       const nativeEdge=hold(explorer.Current());
+       const measured=readRealOcjsSharpHLREdge({
+        oc,edge:nativeEdge,view,vertexType,avoid,newObj,hold
+       });
+       if(measured){
+        const whole=globalOutline2D[klass];
+        const witness=auditC1ScopedHLRGeneratedEdgeMatch({
+         view,hlrClass:klass,sourceEdgeId:original.sourceEdgeId,
+         globalSegments:whole.segments,globalNativeEdges:whole.nativeEdges,
+         scopedSegment:measured,scopedNativeEdge:nativeEdge
+        });
+        witnesses.push({...witness,from:measured.from,to:measured.to});
+        scopedOutline2DOutputEdges++;
+        if(witness.actualNativeScopedToGlobalGeneratedEdgeIsSameProven)
+         directOutline2DIdentityMatches++;
+       }
+       if(witnesses.length>128)
+        throw new RangeError('unbounded source-scoped native 2D HLR outline');
+       explorer.Next();
+      }
+     }
+     row[klass==='visible-outline'?'visibleOutline2D':'hiddenOutline2D']=witnesses;
+    }
+    const nativeOutlineSource3D=sourceById.get(original.sourceEdgeId);
+    row.combinedNative3DOutlineSourceParameterPartition=
+     auditC1Native3DSourceScopedIntervals({
+      originalNativeParameterRange:nativeOutlineSource3D.occtSourceCurveParameterRange,
+      generatedNativeParameterRanges:[
+       ...row.visibleOutline3D.native3DGeneratedCurveIntervals,
+       ...row.hiddenOutline3D.native3DGeneratedCurveIntervals
+      ].map(x=>x.nativeOriginalCurveParameterRange)
+     });
+    row.nativeOutlineResultTypeIsDistinctFromSharp=true;
     // Source-scoped native 3D V+H partition is the direct OCCT curve
     // domain ledger. Visible-only and hidden-only gaps are expected;
     // the COMBINED partition must be checked before interpreting a 2D
@@ -1124,6 +1337,20 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        ...row.visible3D.native3DGeneratedCurveIntervals,
        ...row.hidden3D.native3DGeneratedCurveIntervals
       ].map(x=>x.nativeOriginalCurveParameterRange)
+     });
+    // Original indexed EdgeStatus versus independently source-filtered 3D
+    // Sharp classes. Distinct from generated 2D TopoDS causal ancestry.
+    const originalStatus=originalEdgeStatusAbi.rows?.find(x=>
+     x.sourceEdgeId===original.sourceEdgeId);
+    row.originalEdgeStatusVsNative3DSharp=
+     auditOriginalEdgeStatusVsSourceScoped3DSharp({
+      sourceEdgeId:original.sourceEdgeId,
+      originalNativeParameterRange:native3DSource.occtSourceCurveParameterRange,
+      statusRow:originalStatus,
+      visibleNativeIntervals:row.visible3D.native3DGeneratedCurveIntervals
+       .map(x=>x.nativeOriginalCurveParameterRange),
+      hiddenNativeIntervals:row.hidden3D.native3DGeneratedCurveIntervals
+       .map(x=>x.nativeOriginalCurveParameterRange)
      });
     row.combinedNative3DPartitionIsNotGenerated2DTopoDSHistory=true;
     row.engineeringLineStyle='undetermined';
@@ -1160,7 +1387,53 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
        originalSourceParameterIntervalCertified:false,
        engineeringLineStyle:'undetermined',signedV5Action:false});
      });
+   const outline2DSourceIdentityConflicts=
+    auditC1ScopedHLRSourceIdentityConflicts({
+     matches:scopedRows.flatMap(row=>[
+      ...row.visibleOutline2D,...row.hiddenOutline2D
+     ]),
+     wholeSolidCounts:{
+      'visible-outline':globalOutline2D['visible-outline'].segments.length,
+      'hidden-outline':globalOutline2D['hidden-outline'].segments.length
+     }
+    });
+   const native2DOutlineSourceHistory={
+    schema:'draftai-c1-ocjs-original-filtered-generated-2d-outline/1',
+    wholeSolid:{
+     visible:globalOutline2D['visible-outline'].segments.map(x=>({
+      from:{...x.from},to:{...x.to},
+      originalSourceCandidateOnly:true,engineeringLineStyle:'undetermined',
+      signedV5Action:false
+     })),
+     hidden:globalOutline2D['hidden-outline'].segments.map(x=>({
+      from:{...x.from},to:{...x.to},
+      originalSourceCandidateOnly:true,engineeringLineStyle:'undetermined',
+      signedV5Action:false
+     }))
+    },
+    sourceScopedOutputEdges:scopedOutline2DOutputEdges,
+    nativeScopedToWholeSolidGeneratedIsSameCount:directOutline2DIdentityMatches,
+    identityConflicts:outline2DSourceIdentityConflicts,
+    originalBRepToGenerated2DParameterHistoryCertified:false,
+    allSceneContinuousVisibilityCertified:false,
+    engineeringLineStyle:'undetermined',signedV5ActionCount:0
+   };
+   const originalStatusVsNative3DSharpSummary={
+    comparedOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.comparable).length,
+    concordantOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.nativeOriginalStatusClassAgreesWith3DSharp).length,
+    mismatchedOriginalSources:scopedRows.filter(x=>
+     x.originalEdgeStatusVsNative3DSharp.comparable&&
+     !x.originalEdgeStatusVsNative3DSharp.nativeOriginalStatusClassAgreesWith3DSharp).length,
+    heldUncomparableOriginalSources:scopedRows.filter(x=>
+     !x.originalEdgeStatusVsNative3DSharp.comparable).length,
+    directGenerated2DTopoDSHistoryCertified:false,
+    officialV5Authorized:false
+   };
    nativeSourceScopedSharpOutputByView[view]={
+    native2DOutlineSourceHistory,
+    originalStatusVsNative3DSharpSummary,
     unclaimedNativeGeneratedHLREdges,
     generated2DSourceParameterMatches,
     nativeSourceIdentityConflicts,
@@ -1218,7 +1491,8 @@ function computeC1OcjsVisibleSegments({oc,geometry,revision}={}){
    proofScope:b?'reviewed-axis-aligned-cuboid':
     'reviewed-closed-convex-polyhedral-shell',
    views:rows,hiddenSharpViews:hiddenViews,
-   nativeGeneratedVertexGraph,directNativeOriginalVertexMatches,
+   nativeGeneratedVertexGraph,originalNativeFaceAdjacency,
+   originalNativeVertexTopology,directNativeOriginalVertexMatches,
    nativeTShapePartnerEdgeCandidatesByView,
    nativeTShapePartnerVertexCandidatesByView,
    nativeTShapePartnerCandidatesDoNotProveOriginalHistory:true,

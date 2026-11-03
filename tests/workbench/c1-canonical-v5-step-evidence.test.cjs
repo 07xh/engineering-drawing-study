@@ -65,7 +65,7 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  const base=fixture(),bad=edit=>{const f=fixture();edit(f);return()=>inspect(f);};
  assert.throws(()=>inspect({...base,revision:8}),/source-current/);
  assert.throws(bad(f=>{f.solution.singleOriginalV5Player=false;}),/source-current/);
- assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step/);
+ assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/premature action reveal/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].revision=8;}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings.push(
   {...f.solution.certifiedPhysicalLineBindings[0]});}),/signed source/);
@@ -76,6 +76,31 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
+});
+test('future answer strokes cannot be pre-revealed by forged frame progress',()=>{
+ const f=fixture();
+ const forgedFraction={...f.frame,
+  actionFractions:{...f.frame.actionFractions,edge_2_action:1}};
+ assert.throws(()=>inspect({...f,frame:forgedFraction}),/premature action reveal/);
+ const forgedCompleted={...f.frame,completedIds:['edge_2_action']};
+ assert.throws(()=>inspect({...f,frame:forgedCompleted}),/premature action reveal/);
+ const forgedTime={...f.frame,elapsedMs:f.solution.timeline.totalMs};
+ assert.throws(()=>inspect({...f,frame:forgedTime}),/premature action reveal/);
+ // A real seek is still allowed; no fixed five-frame teaching sequence.
+ f.solution.player.seekStep(2,20);
+ const actual=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(actual.id,'edge_2');
+ assert.equal(actual.actions[0].progress,0);
+});
+test('a rewritten action kind cannot masquerade as its compiled draw action',()=>{
+ const f=fixture();
+ f.solution.steps[1].actions[0].kind='point';
+ assert.throws(()=>inspect(f),/V5 action does not belong/);
+});
+test('a foreign presentation timeline cannot replace the sole player timeline',()=>{
+ const f=fixture();
+ f.solution.timeline={...f.solution.timeline};
+ assert.throws(()=>inspect(f),/canonical V5 timeline position/);
 });
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(

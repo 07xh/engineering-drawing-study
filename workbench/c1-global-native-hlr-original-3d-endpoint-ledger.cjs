@@ -127,10 +127,27 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
      s.originalM0UnitParameterRange?.[0]===0&&
      s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
-     m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
-     m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+    // Re-check the RECEIVED complete native interval ledger, not only
+    // producer-supplied "complete" booleans. A forged full visible [0,1]
+    // plus a contradictory hidden subspan, a duplicate class span, or
+    // reported positive native OCCT gap must NOT certify a physical
+    // endpoint, even when a matching full visible segment exists.
+    // Native OCCT curve history remains a separate mandatory gate.
+    const native3DClassPartitionInventoryConsistent=
+     m4?.segments.length===1&&matching.length===1&&
+     Array.isArray(m4.native3DOriginalParameterPositiveGaps)&&
+     m4.native3DOriginalParameterPositiveGaps.length===0&&
+     Array.isArray(m4.native3DOriginalParameterPositiveOverlaps)&&
+     m4.native3DOriginalParameterPositiveOverlaps.length===0&&
+     Array.isArray(m4.M4OriginalUnitIntervalCandidatePositiveGaps)&&
+     m4.M4OriginalUnitIntervalCandidatePositiveGaps.length===0&&
+     Array.isArray(m4.M4OriginalUnitIntervalNativeClassConflicts)&&
+     m4.M4OriginalUnitIntervalNativeClassConflicts.length===0&&
+     Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
+    sourceClassFull=native3DClassPartitionInventoryConsistent&&
+     m4.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
+     m4.M4OriginalUnitIntervalCandidateCoverageComplete===true;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
     const forward=p2eq(line.from,p)&&p2eq(line.to,q),
@@ -284,6 +301,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       throw new RangeError('genuine native vertex IsSame paper point contradicts generated HLR edge');
     };
     check(pair.a);check(pair.b);
+    if(!p2eq(pair.a.nativePaperPoint,pair.b.nativePaperPoint))
+     throw new RangeError('native generated HLR vertex pair references different paper endpoints');
     const key=pairKey(pair.a,pair.b);
     if(realPairs.has(key)||endKey(pair.a)===endKey(pair.b))
      throw new RangeError('duplicated or self native generated vertex IsSame pair');
@@ -294,6 +313,13 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     const [a,b]=row.globalGeneratedHLREndpoints;
     const ref=x=>({hlrClass:x.klass,nativeHLREdgeOrdinal:x.ordinal,side:x.side});
     const pair=realPairs.get(pairKey(ref(a),ref(b)));
+    const point=x=>(x.klass==='visible-sharp'?cad.views[view]:
+     cad.hiddenSharpViews[view])[x.ordinal]?.[x.side];
+    const paperCoincident=p2eq(point(a),point(b));
+    if(pair===undefined&&paperCoincident)
+     throw new RangeError('exhaustive native HLR vertex graph omits an exact paper-coincident original M0 physical junction pair');
+    if(pair!==undefined&&!paperCoincident)
+     throw new RangeError('native HLR vertex graph pair does not match its generated paper endpoints');
     if(pair===true){
      // A genuine generated TopoDS pairwise IsSame can be recorded,
      // even if its PAPER endpoint representation was rounded. This
