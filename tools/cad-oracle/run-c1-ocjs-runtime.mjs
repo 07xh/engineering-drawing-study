@@ -461,6 +461,15 @@ for(const [index,geometry] of general.entries()){
    cad.views[view].length+cad.hiddenSharpViews[view].length);
   assert.equal(nativeClaims.uniqueNativeClaims,
    scoped.nativeScopedToWholeSolidGeneratedIsSameCount);
+  assert.equal(nativeClaims.sourceScopedGeneratedEdgeCount,
+   scoped.nativeSourceScopedOutputEdgeCount);
+  assert.equal(nativeClaims.sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity,
+   scoped.paperOnlyScopedOutputEdgeCount);
+  assert.equal(nativeClaims.everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity,
+   scoped.paperOnlyScopedOutputEdgeCount===0);
+  assert.equal(nativeClaims.bidirectionalNativeGeneratedEdgeIdentityComplete,
+   scoped.paperOnlyScopedOutputEdgeCount===0&&
+   nativeClaims.unclaimedWholeSolidGeneratedEdgeOrdinals.length===0);
   assert.equal(nativeClaims.unclaimedWholeSolidGeneratedEdgeOrdinals.length,
    scoped.unclaimedNativeGeneratedHLREdges.length);
   for(const edge of scoped.unclaimedNativeGeneratedHLREdges){
@@ -481,7 +490,9 @@ for(const [index,geometry] of general.entries()){
    JSON.stringify({sources:scoped.sourceEdgeCount,
     emitted:scoped.nativeSourceScopedOutputEdgeCount,
     directNativeIsSame:scoped.nativeScopedToWholeSolidGeneratedIsSameCount,
-    paperOnly:scoped.paperOnlyScopedOutputEdgeCount}));
+    paperOnly:scoped.paperOnlyScopedOutputEdgeCount,
+    bidirectionalNativeIdentityComplete:
+     nativeClaims.bidirectionalNativeGeneratedEdgeIdentityComplete}));
   assert.equal(api.generatedToOriginalTopoDSHistoryProven,false);
   assert.equal(api.officialLineStyleCertified,false);
   assert.equal(api.signedV5Action,false);
