@@ -112,7 +112,7 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
 function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(!Array.isArray(matches)||matches.length>1024)
   throw new TypeError('genuine scoped HLR match inventory required');
- const claimed=new Map(),seen=new Set(),rows=[];
+ const claimed=new Map(),seen=new Set(),rows=[],unmatchedScoped=[];
  for(const match of matches){
   const view=match?.view,hlrClass=match?.hlrClass;
   const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
@@ -138,6 +138,14 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
      match.signedV5Action!==false||
      ordinals.some(n=>!Number.isSafeInteger(n)||n<0))
    throw new TypeError('unsigned actual native scoped match required');
+  // Source-filtered HLRToShape can generate a fresh TopoDS edge even when
+  // its paper trace coincides with a whole-solid output. Keep the missing
+  // native identity as a separate scoped->global causal obligation; do not
+  // silently call global->scoped coverage a bidirectional source history.
+  if(!ordinals.length)unmatchedScoped.push(Object.freeze({
+   view,hlrClass,originalPhysicalSourceEdgeId:sourceEdgeId,
+   globalPaperCandidateOrdinals:Object.freeze([...paper])
+  }));
   if(!ordinals.length)continue;
   const ordinal=ordinals[0],key=view+'|'+hlrClass+'|'+ordinal;
   const pair=key+'|'+sourceEdgeId;
@@ -160,6 +168,9 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
    throw new RangeError('one whole-solid inventory must belong to one HLR view');
   const classes=wholeSolidCounts&&Object.hasOwn(wholeSolidCounts,'visible-outline')?
    ['visible-outline','hidden-outline']:['visible-sharp','hidden-sharp'];
+  if(Object.keys(wholeSolidCounts??{}).length!==2||
+     Object.keys(wholeSolidCounts).some(key=>!classes.includes(key)))
+   throw new RangeError('mixed or incomplete native whole-solid HLR class inventory');
   if(matches.some(x=>!classes.includes(x.hlrClass)))
    throw new RangeError('native scoped HLR sharp/outline classes cannot share a global inventory');
   if(!wholeSolidCounts||typeof wholeSolidCounts!=='object'||
@@ -188,6 +199,13 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  }
  return Object.freeze({schema:'draftai-c1-native-scoped-source-identity-conflicts/1',
   uniqueNativeClaims:rows.length,
+  sourceScopedGeneratedEdgeCount:matches.length,
+  sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity:unmatchedScoped.length,
+  unmatchedSourceScopedGeneratedEdges:Object.freeze(unmatchedScoped),
+  everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity:unmatchedScoped.length===0,
+  bidirectionalNativeGeneratedEdgeIdentityComplete:
+   unclaimedWholeSolidGeneratedEdgeOrdinals!==null&&
+   unclaimedWholeSolidGeneratedEdgeOrdinals.length===0&&unmatchedScoped.length===0,
   wholeSolidNativeGeneratedEdgeCount,
   unclaimedWholeSolidGeneratedEdgeOrdinals:unclaimedWholeSolidGeneratedEdgeOrdinals===null?
    null:Object.freeze(unclaimedWholeSolidGeneratedEdgeOrdinals),
