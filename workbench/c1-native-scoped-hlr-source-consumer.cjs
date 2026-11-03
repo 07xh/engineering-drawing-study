@@ -1269,6 +1269,11 @@ function auditC1Native2DOutlineSourceHistory({view,scoped,expected,onOriginalPap
  if(sources.size!==expected.size||total!==ledger.sourceScopedOutputEdges||
     direct!==ledger.nativeScopedToWholeSolidGeneratedIsSameCount||
     conflicts?.uniqueNativeClaims!==direct||
+    conflicts?.sourceScopedGeneratedEdgeCount!==total||
+    conflicts?.sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity!==total-direct||
+    conflicts?.everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity!==(total===direct)||
+    conflicts?.bidirectionalNativeGeneratedEdgeIdentityComplete!==
+     (total===direct&&conflicts?.unclaimedWholeSolidGeneratedEdgeOrdinals?.length===0)||
     conflicts?.wholeSolidNativeGeneratedEdgeCount!==
      whole.visible.length+whole.hidden.length||
     conflicts?.conflictingSourceClaimsRejected!==true||
@@ -1281,6 +1286,9 @@ function auditC1Native2DOutlineSourceHistory({view,scoped,expected,onOriginalPap
   wholeSolidGeneratedOutlineEdges:whole.visible.length+whole.hidden.length,
   unclaimedGeneratedOutlineEdges:
    conflicts.unclaimedWholeSolidGeneratedEdgeOrdinals?.length??null,
+  unmatchedSourceScopedOutlineEdges:total-direct,
+  bidirectionalNativeGeneratedEdgeIdentityComplete:
+   conflicts.bidirectionalNativeGeneratedEdgeIdentityComplete,
   generated2DOriginalParameterAncestryCertified:false,
   globalContinuousVisibilityCertified:false,
   engineeringLineStyle:'undetermined',signedV5ActionCount:0});
