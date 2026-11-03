@@ -211,6 +211,44 @@ test('real whole-solid generated HLR inventory exposes unclaimed edges without s
  assert.equal(empty.fullOriginalSourceHistoryCertified,false);
 });
 
+test('native HLR source identity requires scoped-to-global AND global-to-scoped closure',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=setup('V');
+ a.globalSegments=[edge(0,10),edge(0,10)];
+ a.globalNativeEdges=[native('front'),native('back')];
+ const front=match(a);
+ const back=match({...a,sourceEdgeId:'g::C|D',scopedNativeEdge:native('back')});
+ const paperOnly=match({...a,sourceEdgeId:'g::E|F',
+  scopedNativeEdge:native('fresh-2d-edge')});
+ const counts={'visible-sharp':2,'hidden-sharp':0};
+ const r=audit({matches:[front,back,paperOnly],wholeSolidCounts:counts});
+ assert.equal(r.everyWholeSolidGeneratedEdgeHasNativeScopedIdentityClaim,true);
+ assert.equal(r.everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity,false);
+ assert.equal(r.bidirectionalNativeGeneratedEdgeIdentityComplete,false);
+ assert.equal(r.sourceScopedGeneratedEdgeCount,3);
+ assert.equal(r.sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity,1);
+ assert.deepEqual(r.unmatchedSourceScopedGeneratedEdges[0].globalPaperCandidateOrdinals,[0,1]);
+ assert.ok(Object.isFrozen(r.unmatchedSourceScopedGeneratedEdges[0]));
+ assert.equal(r.fullOriginalSourceHistoryCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+ const closed=audit({matches:[front,back],wholeSolidCounts:counts});
+ assert.equal(closed.bidirectionalNativeGeneratedEdgeIdentityComplete,true);
+ assert.equal(closed.fullOriginalSourceHistoryCertified,false);
+ assert.equal(closed.engineeringLineStyle,'undetermined');
+});
+test('mixed or incomplete native whole-solid HLR classes cannot hide unclaimed edges',()=>{
+ const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
+  require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
+ const a=match(setup());
+ for(const counts of [
+  {'visible-sharp':3},
+  {'visible-sharp':3,'hidden-sharp':0,'visible-outline':0},
+  {'visible-outline':3,'hidden-outline':0,'visible-sharp':3}
+ ])assert.throws(()=>audit({matches:[a],wholeSolidCounts:counts}),
+  /mixed or incomplete native whole-solid HLR class inventory/);
+});
+
 test('one native whole-solid inventory cannot mix V and W generated edge ordinals',()=>{
  const {auditC1ScopedHLRSourceIdentityConflicts:audit}=
   require('../../engines/spatial/hlr/c1-ocjs-scoped-source-matcher.cjs');
