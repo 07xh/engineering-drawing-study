@@ -1584,6 +1584,10 @@ function fixtureWithNative2DOutLine(){
    sourceScopedOutputEdges:1,
    nativeScopedToWholeSolidGeneratedIsSameCount:1,
    identityConflicts:{uniqueNativeClaims:1,wholeSolidNativeGeneratedEdgeCount:1,
+    sourceScopedGeneratedEdgeCount:1,
+    sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity:0,
+    everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity:true,
+    bidirectionalNativeGeneratedEdgeIdentityComplete:true,
     unclaimedWholeSolidGeneratedEdgeOrdinals:[],
     conflictingSourceClaimsRejected:true,
     fullOriginalSourceHistoryCertified:false,
@@ -1603,6 +1607,8 @@ test('V/H/W real 2D outline native identity is consumed but cannot certify origi
  for(const view of ['V','H','W']){
   const result=r.views[view].native2DOutlineSourceHistory;
   assert.equal(result.nativeScopedToGlobalGeneratedIsSame,1);
+  assert.equal(result.unmatchedSourceScopedOutlineEdges,0);
+  assert.equal(result.bidirectionalNativeGeneratedEdgeIdentityComplete,true);
   assert.equal(result.generated2DOriginalParameterAncestryCertified,false);
   assert.equal(result.signedV5ActionCount,0);
  }
@@ -1616,6 +1622,9 @@ test('native 2D outline forged source, ordinal, style, global endpoint and ident
   c=>{c.rows[0].visibleOutline2D[0].signedV5Action=true;},
   c=>{c.native2DOutlineSourceHistory.wholeSolid.visible[0].from.u+=2;},
   c=>{c.native2DOutlineSourceHistory.nativeScopedToWholeSolidGeneratedIsSameCount=0;},
+  c=>{c.native2DOutlineSourceHistory.identityConflicts.sourceScopedGeneratedEdgeCount=2;},
+  c=>{c.native2DOutlineSourceHistory.identityConflicts.sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity=1;},
+  c=>{c.native2DOutlineSourceHistory.identityConflicts.bidirectionalNativeGeneratedEdgeIdentityComplete=false;},
   c=>{c.native2DOutlineSourceHistory.originalBRepToGenerated2DParameterHistoryCertified=true;}
  ]){
   const x=fixtureWithNative2DOutLine();
