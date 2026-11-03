@@ -13,7 +13,7 @@ test('P0 03: V+H reconstructs unique xyz and third W from real math',()=>{
  assert.deepEqual(o.point,{x:15,y:10,z:12});
  assert.deepEqual(o.views,{V:{u:15,v:12},H:{u:15,v:10},W:{u:10,v:12}});
  assert.deepEqual(o.sheet,{V:{x:70,y:76},H:{x:70,y:120},W:{x:120,y:76},M:{x:120,y:120}});
- assert.equal(o.steps.length,4);
+ assert.equal(o.steps.length,5);
  assert.equal(o.maxResidual,0);
  assert.equal(o.globallyUnique,true);
 });
@@ -60,20 +60,28 @@ test('given spatial point and conflicting 2D view are rejected as none',()=>{
  const o=solveProjection({knownPoint:{x:15,y:10,z:12},knownViews:{V:[15,13]}});
  assert.equal(o.status,'none');
 });
-test('45 degree transfer guides represent V-H same x, V-W same z, H-M-W same y',()=>{
+test('actual 45-degree depth line transfers signed H depth into W',()=>{
  const o=solveProjection({knownViews:{V,H},sheetTransform});
- assert.deepEqual(o.guides.map(g=>g.kind),['VH','height-VW','depth-HM','depth-MW']);
- assert.equal(o.steps.length,4);
+ assert.deepEqual(o.guides.map(g=>g.kind),['VH','height-VW','depth-HD','depth-DE','depth-EW']);
+ assert.equal(o.steps.length,5);
  for(const s of o.steps){
   assert.equal(s.source,'computed-first-angle-guides');
   assert.equal(s.style,'auxiliary');
   assert.equal(s.unit,'px');
   assert.match(s.explanation,/投影|联系|深度/);
  }
- for(let i=1;i<4;i++)assert.deepEqual(o.steps[i].dependsOn,['guide_'+i]);
+ for(let i=1;i<5;i++)assert.deepEqual(o.steps[i].dependsOn,['guide_'+i]);
  nearly(o.sheet.V.x,o.sheet.H.x);
  nearly(o.sheet.V.y,o.sheet.W.y);
  nearly(o.sheet.H.y-100,o.sheet.M.x-100);
+ const diagonal=o.guides[3];
+ nearly(diagonal.from.x,100);nearly(diagonal.to.y,100);
+ nearly(diagonal.to.x-diagonal.from.x,-(diagonal.to.y-diagonal.from.y));
+ assert.notEqual(diagonal.from.x,diagonal.to.x);
+ const negative=solveProjection({knownPoint:{x:15,y:-10,z:12},sheetTransform});
+ const d=negative.guides[3];
+ assert.ok(d.to.x<d.from.x&&d.to.y>d.from.y);
+ nearly(d.to.x-d.from.x,-(d.to.y-d.from.y));
 });
 test('negative and zero coordinates are real model coordinates, not pixel values',()=>{
  const o=solveProjection({knownPoint:{x:-2.5,y:-3.75,z:-.125},sheetTransform});

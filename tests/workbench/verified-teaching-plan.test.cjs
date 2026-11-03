@@ -16,7 +16,7 @@ const circleInput=()=>({
  branchId:'center-1',direction:'cw',
  knownFirstTravel:'ccw',knownSecondTravel:'ccw'
 });
-test('true first-angle XYZ solution becomes 4 mathematically sourced drawing steps',()=>{
+test('true first-angle XYZ solution becomes 5 real projection guides including 45 degrees',()=>{
  const args={knownPoint:{x:15,y:10,z:12}};
  const plan=point(args,{revision:17});
  assert.equal(plan.schema,'draftai-teaching-plan/0.1');
@@ -25,11 +25,11 @@ test('true first-angle XYZ solution becomes 4 mathematically sourced drawing ste
  assert.equal(plan.result.globallyUnique,true);
  assert.equal(plan.result.point.z,12);
  assert.equal(plan.revision,17);
- assert.equal(plan.stepCount,4);
+ assert.equal(plan.stepCount,5);
  assert.equal(plan.proof.verified,true);
  assert.ok(plan.steps.every(x=>x.actions.every(a=>a.coordinateSpace==='sheet-px')));
  assert.deepEqual(plan.steps.map(s=>s.dependsOn),
-  [[],['guide_1'],['guide_2'],['guide_3']]);
+  [[],['guide_1'],['guide_2'],['guide_3'],['guide_4']]);
  assert.deepEqual(Object.keys(args),['knownPoint']);
 });
 test('two-view V/H real input and direct XYZ give equal normalized projected point',()=>{

@@ -19,30 +19,30 @@ const circle=()=>({
  knownFirstTravel:'ccw',knownSecondTravel:'ccw'
 });
 const sheet={origin:{x:360,y:220},scale:8};
-test('actual point projection draws 4 proofs in sheet pixels without remapping pixels twice',()=>{
+test('actual point projection draws 5 real guides including a 45-degree line',()=>{
  const input={knownPoint:{x:15,y:10,z:12},
   sheetTransform:{origin:{x:360,y:175},scale:4}};
  const p=Bridge.pointTimeline(input,3);
  assert.equal(p.status,'ready');
  assert.equal(p.mathematicallyVerified,true);
  assert.equal(p.revision,3);
- assert.equal(p.steps.length,4);
+ assert.equal(p.steps.length,5);
  assert.equal(p.steps[0].actions[0].kind,'line');
  assert.deepEqual(p.steps[0].actions[0].geometry.from,
   p.originalLesson.steps[0].actions[0].from);
  assert.ok(p.timing.totalMs>0);
  assert.equal(Timeline.frame(p.timing,p.timing.totalMs).done,true);
 });
-test('given two views, the fifth result point is from proven third-view sheet point',()=>{
+test('given two views, the result follows the actual 45-degree guide',()=>{
  const input={knownViews:{V:[15,12],H:[15,10]},
   sheetTransform:{origin:{x:100,y:100},scale:2}};
  const p=Bridge.pointTimeline(input,8);
  assert.equal(p.status,'ready');
- assert.equal(p.steps.length,5);
+ assert.equal(p.steps.length,6);
  assert.equal(p.steps.at(-1).id,'third-view');
  assert.deepEqual(p.steps.at(-1).actions[0].geometry.center,
   p.originalLesson.sheet.W);
- assert.deepEqual(p.steps.at(-1).dependsOn,['guide_4']);
+ assert.deepEqual(p.steps.at(-1).dependsOn,['guide_5']);
  assert.deepEqual(p.givens.map(x=>x.name),['V','H']);
 });
 test('single projection plane or contradictory pair blocks timeline and published answer',()=>{

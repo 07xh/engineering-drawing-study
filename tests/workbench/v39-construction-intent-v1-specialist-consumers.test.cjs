@@ -70,13 +70,13 @@ for(const [kind,base] of fillets){
    b.steps.at(-1).actions[0].geometry.center);
  });
 }
-test('03 proven 3D point yields four explicit first-angle guide intents through same V5',()=>{
+test('03 proven 3D point yields five real guides including a signed 45-degree transfer',()=>{
  const input={knownPoint:{x:15,y:10,z:12},
   sheetTransform:{origin:P(360,175),scale:4}};
  const r=run('point-projection',input,null,11);
  const old=pointTimeline(input,11);
  assert.equal(r.status,'ready');
- assert.equal(r.intents.length,4);
+ assert.equal(r.intents.length,5);
  assert.deepEqual(r.steps,old.steps);assert.deepEqual(r.timing,old.timing);
  assert.ok(r.intents.every(i=>i.source.status==='unique'&&
   i.source.proofScope==='single-point-first-angle'&&
@@ -89,12 +89,12 @@ test('03 two reviewed views derive real missing sheet point and 45-degree guides
   sheetTransform:{origin:P(100,100),scale:2}};
  const a=run('point-projection',input,null,12),old=pointTimeline(input,12);
  assert.equal(a.status,'ready');
- assert.equal(a.intents.length,5);
+ assert.equal(a.intents.length,6);
  assert.deepEqual(a.steps,old.steps);
  assert.deepEqual(a.timing,old.timing);
  const last=a.intents.at(-1);
  assert.equal(last.id,'third-view');
- assert.deepEqual(last.dependsOn,['guide_4']);
+ assert.deepEqual(last.dependsOn,['guide_5']);
  assert.deepEqual(last.operations[0],{id:'result-W',kind:'point',
   coordinateSpace:'sheet-px',geometry:{at:old.originalLesson.sheet.W}});
  assert.equal(validateConstructionIntentDAG(a.intents).ok,true);

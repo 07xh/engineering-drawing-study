@@ -59,7 +59,7 @@ test('public 03 two-view reconstruction preserves 3D proof and canonical V5',()=
  const old=pointTimeline(input,35),now=live('point-projection',input,null,35);
  assert.equal(now.status,'ready');
  assert.equal(now.canonicalVerified,true);
- assert.equal(now.constructionIntents.length,5);
+ assert.equal(now.constructionIntents.length,6);
  assert.equal(now.constructionIntents.at(-1).operations[0].coordinateSpace,'sheet-px');
  assert.equal(validateConstructionIntentDAG(now.constructionIntents).ok,true);
  assert.deepEqual(now.steps,old.steps);
