@@ -378,6 +378,7 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  };
  const r=auditGenerated({segments:[segment],nativeCurveHandlesBySourceId});
  assert.equal(r.sourceCurveCandidateCount,1);
+ assert.deepEqual(r.originalSourceCurveIds,['g::E0']);
  assert.equal(r.topoDSIdentityBoundSourceCurveCount,1);
  assert.equal(r.topoDSParameterDomainBoundSourceCurveCount,1);
  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
@@ -396,6 +397,197 @@ test('parameterized generated 2D HLR curve is tied to one same-run original Topo
  assert.equal(match.signedV5Action,false);
 });
 
+test('native generated parameter overhang is not a disjoint original BRep source exclusion',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const source={curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true};
+ const run=range=>auditGenerated({
+  segments:[{
+   actualOCCTHLRCurveParameterRange:range,
+   actualOCCTHLRCurveSamplesProjectedMm:[0,1,2,3,4]
+    .map(t=>({u:t,v:2*t})),
+   actualOCCTHLRCurveSampleToleranceMm:1e-6
+  }],
+  nativeCurveHandlesBySourceId:new Map([['g::E',source]])
+ }).rows[0].rejectedSourceCandidates[0];
+ for(const range of [[1,8],[12,14],[2,13]]){
+  const rejected=run(range);
+  assert.equal(rejected.reason,'generated-parameter-range-not-contained-in-source-projection');
+  assert.equal(rejected.nativeParameterRangeExclusionWitness,undefined);
+ }
+ const rejected=run([13,15]);
+ assert.equal(rejected.reason,'generated-parameter-range-outside-source-projection');
+ const w=rejected.nativeParameterRangeExclusionWitness;
+ assert.deepEqual(w.sourceProjected2DParameterRangeSorted,[2,12]);
+ assert.deepEqual(w.sourceProjected2DParameterEndpoints,[2,12]);
+ assert.deepEqual(w.generated2DParameterRange,[13,15]);
+ assert.equal(w.parameterComparisonTolerance,1.5e-9);
+ assert.equal(w.generated2DTopoDSHistoryCertified,false);
+ assert.equal(w.signedV5Action,false);
+});
+test('parameterized HLR source candidates replay actual native paper edge endpoints in either orientation',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const base={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ for(const endpoints of [
+  {from:{u:0,v:0},to:{u:6,v:12},orientation:'direct'},
+  {from:{u:6,v:12},to:{u:0,v:0},orientation:'reversed'}
+ ]){
+  const {orientation,...native}=endpoints;
+  const r=auditGenerated({segments:[{...base,...native}],
+   nativeCurveHandlesBySourceId:sources});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+  const match=r.rows[0].candidateSourceMatches[0];
+  assert.equal(match.nativePaperEndpointSampleWitness.endpointOrientation,orientation);
+  assert.equal(match.nativePaperEndpointSampleWitness.exactBinary64NativePaperEndpoints,true);
+  assert.equal(match.nativePaperEndpointSampleWitness.generatedTopoDSVertexIdentityCertified,false);
+  assert.equal(match.generated2DTopoDSHistoryProven,false);
+  assert.equal(match.engineeringLineStyle,'undetermined');
+  assert.equal(match.signedV5Action,false);
+ }
+});
+test('stale or corrupted native HLR edge endpoints veto parameterized paper-source attribution',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const base={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ };
+ for(const [endpoints,reason] of [
+  [{from:{u:0,v:0},to:{u:7,v:12}},'generated-curve-samples-contradict-native-paper-vertices'],
+  [{from:{u:0,v:0}},'generated-native-paper-endpoint-pair-incomplete'],
+  [{from:{u:0,v:0},to:{u:Infinity,v:12}},'generated-native-paper-endpoints-nonfinite']
+ ]){
+  const r=auditGenerated({segments:[{...base,...endpoints}],
+   nativeCurveHandlesBySourceId:sources});
+  assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+  assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,reason);
+  assert.equal(r.generated2DTopoDSHistoryProven,false);
+  assert.equal(r.signedV5ActionCount,0);
+ }
+});
+test('subpixel native paper endpoint drift stays recorded but can never certify topology',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const sources=new Map([['g::E0',{curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true}]]);
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6,
+  from:{u:0,v:0},to:{u:6+Number.EPSILON*4,v:12}
+ }],nativeCurveHandlesBySourceId:sources});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ const witness=r.rows[0].candidateSourceMatches[0].nativePaperEndpointSampleWitness;
+ assert.equal(witness.exactBinary64NativePaperEndpoints,false);
+ assert.ok(witness.maximumNativePaperEndpointSampleResidualMm>0);
+ assert.equal(witness.generatedTopoDSVertexIdentityCertified,false);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('HLR candidate inventory includes even the original edges which failed source matching',()=>{
+ const nativeCurveHandlesBySourceId=new Map([
+  ['g::E1',{directOriginalTopoDSEdgeIdentityProven:false}],
+  ['g::E0',{directOriginalTopoDSEdgeIdentityProven:false}]
+ ]);
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:[0,1],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,0.25,0.5,0.75,1]
+   .map(t=>({u:t,v:t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId});
+ assert.equal(r.sourceCurveCandidateCount,2);
+ assert.deepEqual(r.originalSourceCurveIds,['g::E0','g::E1']);
+ assert.equal(r.unmatchedGeneratedOutputEdgeCount,1);
+ assert.deepEqual(r.rows[0].rejectedSourceCandidates.map(x=>x.sourceEdgeId),
+  ['g::E1','g::E0']);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('native inverse-parameter contradiction is not a geometric exclusion of another original BRep',()=>{
+ const good={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t;},Y(){return -2*t;}};}
+ };
+ const inverseUncertain={
+  Parameter2d(t){return t+2;},
+  Parameter3d(t){return t-2+0.25;},
+  // The native output paper can still agree exactly while inverse
+  // Parameter3d / Parameter2d round-trip disagrees.
+  Value(t){return {X(){return t-0.25;},Y(){return -2*(t-0.25);}};}
+ };
+ const source=(curve)=>({curve,parameterRange:[0,10],
+  originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:true,
+  directOriginalTopoDSEdgeIdentityProven:true});
+ const segment={
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6,
+  from:{u:0,v:0},to:{u:6,v:12}
+ };
+ const r=auditGenerated({segments:[segment],
+  nativeCurveHandlesBySourceId:new Map([
+   ['g::good',source(good)],['g::inconclusive',source(inverseUncertain)]
+  ])});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,1);
+ assert.deepEqual(r.originalSourceCurveIds,['g::good','g::inconclusive']);
+ assert.deepEqual(r.rows[0].rejectedSourceCandidates,[{
+  sourceEdgeId:'g::inconclusive',
+  reason:'source-parameter-inversion-unproven'
+ }]);
+ assert.equal(r.generated2DTopoDSHistoryProven,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('measured incompatible native source paper remains distinct from inverse uncertainty',()=>{
+ const curve={
+  Parameter2d(t){return t+2;},Parameter3d(t){return t-2;},
+  Value(t){return {X(){return t+5;},Y(){return -2*t;}};}
+ };
+ const r=auditGenerated({segments:[{
+  actualOCCTHLRCurveParameterRange:[2,8],
+  actualOCCTHLRCurveSamplesProjectedMm:[0,1.5,3,4.5,6]
+   .map(t=>({u:t,v:2*t})),
+  actualOCCTHLRCurveSampleToleranceMm:1e-6
+ }],nativeCurveHandlesBySourceId:new Map([['g::E',{
+  curve,parameterRange:[0,10],originalBRepParameterRange:[0,10],
+  originalBRepParameterRangeMatches:true,directOriginalTopoDSEdgeIdentityProven:true
+ }]])});
+ assert.equal(r.uniqueParameterizedSourceMatchCount,0);
+ assert.equal(r.rows[0].rejectedSourceCandidates[0].reason,
+  'source-parameterized-curve-does-not-match-generated-edge');
+ assert.equal(r.signedV5ActionCount,0);
+});
 test('forward-mapped original source endpoints exactly bind a full generated 2D output interval',()=>{
  const curve={
   Parameter2d(value){return value+2;},

@@ -516,6 +516,44 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
     !outputSamples.every(p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v))||
     !Number.isFinite(sampleTolerance)||sampleTolerance<0)
   return {matched:false,reason:'generated-output-curve-witness-incomplete'};
+ // A parameterized 2D curve sample is not automatically the actual
+ // generated TopoDS edge. Tie its two endpoint samples back to the
+ // RECEIVED HLR edge vertices whenever those native paper endpoints are
+ // available. Either orientation is legitimate. A stale/fabricated sample
+ // array must not borrow the original BRep source merely because its
+ // Parameter2d/Parameter3d inverse agrees at five chosen parameters.
+ //
+ // This check is only source-candidate consistency. Tolerance does not
+ // alter paper coordinates, close positive M5 gaps, or prove TopoDS
+ // endpoint identity, occlusion, engineering line type, or V5.
+ const receivedFrom=segment.from,receivedTo=segment.to;
+ const hasReceivedFrom=receivedFrom!==undefined;
+ const hasReceivedTo=receivedTo!==undefined;
+ if(hasReceivedFrom!==hasReceivedTo)
+  return {matched:false,reason:'generated-native-paper-endpoint-pair-incomplete'};
+ let endpointWitness=null;
+ if(hasReceivedFrom){
+  if(![receivedFrom,receivedTo].every(p=>
+      p&&Number.isFinite(p.u)&&Number.isFinite(p.v)))
+   return {matched:false,reason:'generated-native-paper-endpoints-nonfinite'};
+  const first=outputSamples[0],last=outputSamples[4];
+  const residual=(a,b)=>Math.hypot(a.u-b.u,a.v-b.v);
+  const direct=[residual(first,receivedFrom),residual(last,receivedTo)];
+  const reverse=[residual(first,receivedTo),residual(last,receivedFrom)];
+  const directMaximum=Math.max(...direct),reverseMaximum=Math.max(...reverse);
+  const orientation=directMaximum<=reverseMaximum?'direct':'reversed';
+  const minimumMaximum=Math.min(directMaximum,reverseMaximum);
+  if(!Number.isFinite(minimumMaximum)||minimumMaximum>sampleTolerance)
+   return {matched:false,reason:'generated-curve-samples-contradict-native-paper-vertices'};
+  endpointWitness={
+   receivedNativePaperEndpointsChecked:true,
+   endpointOrientation:orientation,
+   maximumNativePaperEndpointSampleResidualMm:minimumMaximum,
+   exactBinary64NativePaperEndpoints:minimumMaximum===0,
+   generatedTopoDSVertexIdentityCertified:false,
+   signedV5Action:false
+  };
+ }
  const [sourceFirst,sourceLast]=source.parameterRange;
  const p2First=callFiniteOneArg(source.curve,'Parameter2d',sourceFirst);
  const p2Last=callFiniteOneArg(source.curve,'Parameter2d',sourceLast);
@@ -526,8 +564,27 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
  const parameterTolerance=1e-10*Math.max(1,...p2Range,
   Math.abs(outputRange[0]),Math.abs(outputRange[1]));
  if(outputRange[0]<p2Range[0]-parameterTolerance||
-    outputRange[1]>p2Range[1]+parameterTolerance)
-  return {matched:false,reason:'generated-parameter-range-outside-source-projection'};
+    outputRange[1]>p2Range[1]+parameterTolerance){
+  // An output range that merely overhangs a source range still shares
+  // positive source parameters. Only DISJOINT intervals can reject the
+  // entire original BRep candidate. Never call an overhang an exclusion.
+  const disjoint=p2Range[1]>p2Range[0]&&
+   (outputRange[1]<p2Range[0]-parameterTolerance||
+    outputRange[0]>p2Range[1]+parameterTolerance);
+  return {
+   matched:false,
+   reason:disjoint?'generated-parameter-range-outside-source-projection':
+    'generated-parameter-range-not-contained-in-source-projection',
+   nativeParameterRangeExclusionWitness:disjoint?{
+    sourceProjected2DParameterRangeSorted:[...p2Range],
+    sourceProjected2DParameterEndpoints:[p2First.value,p2Last.value],
+    generated2DParameterRange:[...outputRange],
+    parameterComparisonTolerance:parameterTolerance,
+    original3DCurveParameterRange:[sourceFirst,sourceLast],
+    generated2DTopoDSHistoryCertified:false,signedV5Action:false
+   }:null
+  };
+ }
  const samples=[];
  for(let i=0;i<5;i++){
   const fraction=i/4;
@@ -549,12 +606,38 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
    sourceProjectedPointMm:sourceP2,generatedProjectedPointMm:outputP2,
    projectedPointResidualMm:residual
   });
-  if(p3.value<sourceFirst-parameterTolerance||
-     p3.value>sourceLast+parameterTolerance||
-     Math.abs(p2Back.value-p2)>parameterTolerance||
-     residual>sampleTolerance)
-   return {matched:false,reason:'source-parameterized-curve-does-not-match-generated-edge',
-    samples,maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))};
+  // A parameter inverse can be unreadable or numerically inconsistent
+  // even when its independently sampled projected paper point agrees.
+  // Such an uncertainty cannot exclude a competing original BRep source.
+  // Only an actual measured 2D geometric mismatch is a source-curve
+  // contradiction; never promote an inverse-only failure to unique M4
+  // ancestry by using the same "mismatched curve" reason.
+  const inverseUnproven=p3.value<sourceFirst-parameterTolerance||
+   p3.value>sourceLast+parameterTolerance||
+   Math.abs(p2Back.value-p2)>parameterTolerance;
+  const nativePaperContradiction=residual>sampleTolerance;
+  if(inverseUnproven||nativePaperContradiction)
+   return {
+    matched:false,
+    reason:nativePaperContradiction?
+     'source-parameterized-curve-does-not-match-generated-edge':
+     'source-parameter-inversion-unproven',
+    nativeProjectedPointMismatchMeasured:nativePaperContradiction,
+    nativeInverseParameterMapUnproven:inverseUnproven,
+    // Retain the actual conflicting native source evaluation and received
+    // generated HLR sample so M4 can independently replay this negative
+    // witness. A free-form rejection string is never a geometric theorem.
+    nativePaperMismatchWitness:nativePaperContradiction?{
+     sampleIndex:i,
+     sourceProjectedPaperPointMm:[...sourceP2],
+     generatedProjectedPaperPointMm:[...outputP2],
+     measuredPaperResidualMm:residual,
+     generatedNativePaperToleranceMm:sampleTolerance,
+     generated2DTopoDSHistoryCertified:false,signedV5Action:false
+    }:null,
+    samples,
+    maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm))
+   };
  }
  return {
   matched:true,
@@ -576,6 +659,7 @@ function matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source){
   maximumProjectedPointResidualMm:Math.max(...samples.map(x=>x.projectedPointResidualMm)),
   maximumParameterRoundTripResidual:Math.max(...samples.map(x=>x.parameterRoundTripResidual)),
   samples,
+  nativePaperEndpointSampleWitness:endpointWitness,
   generated2DTopoDSHistoryProven:false,
   engineeringLineStyle:'undetermined',signedV5Action:false
  };
@@ -591,13 +675,20 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
   for(const [sourceEdgeId,source] of nativeCurveHandlesBySourceId){
    const match=matchGeneratedOutputEdgeToOriginalSourceCurve(segment,source);
    if(match.matched)candidateSourceMatches.push({sourceEdgeId,...match});
-   else rejectedSourceCandidates.push({sourceEdgeId,reason:match.reason});
+   else rejectedSourceCandidates.push({
+    sourceEdgeId,reason:match.reason,
+    ...(match.nativePaperMismatchWitness?
+     {nativePaperMismatchWitness:match.nativePaperMismatchWitness}:{}),
+    ...(match.nativeParameterRangeExclusionWitness?
+     {nativeParameterRangeExclusionWitness:match.nativeParameterRangeExclusionWitness}:{})
+   });
   }
   return {
    ordinal,
    candidateSourceMatchCount:candidateSourceMatches.length,
    candidateSourceMatches,
    rejectedSourceCandidateCount:rejectedSourceCandidates.length,
+   rejectedSourceCandidates,
    uniqueOriginalSourceEdgeId:candidateSourceMatches.length===1?
     candidateSourceMatches[0].sourceEdgeId:null,
    status:candidateSourceMatches.length===1?
@@ -612,6 +703,7 @@ function auditGeneratedOutputEdgesAgainstOriginalSourceCurves({
  return {
   schema:'draftai-c1-ocjs-generated-2d-source-parameter-match/1',
   sourceCurveCandidateCount:nativeCurveHandlesBySourceId.size,
+  originalSourceCurveIds:[...nativeCurveHandlesBySourceId.keys()].sort(),
   topoDSIdentityBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]
    .filter(source=>source.directOriginalTopoDSEdgeIdentityProven===true).length,
   topoDSParameterDomainBoundSourceCurveCount:[...nativeCurveHandlesBySourceId.values()]

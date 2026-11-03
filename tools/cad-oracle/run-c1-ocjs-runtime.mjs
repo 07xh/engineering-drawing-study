@@ -414,7 +414,9 @@ for(const [index,geometry] of general.entries()){
    lineage.counts.ambiguousParameterizedSourceLineage+
    lineage.counts.unmatchedGeneratedOutputEdges+
    lineage.counts.sourceFilterOrPaperCandidateDisagreements+
-   lineage.counts.unavailableGeneratedOutputEdges;
+   lineage.counts.unavailableGeneratedOutputEdges+
+   lineage.counts.heldForIncompleteOriginalCurveCandidateInventory+
+   lineage.counts.heldForInconclusiveOriginalHLRSourceRejections;
   assert.equal(classified,total,
    'every real whole-solid generated HLR edge must have one parameterized lineage disposition');
   return [view,lineage];
@@ -428,6 +430,10 @@ for(const [index,geometry] of general.entries()){
    parameterizedLineageByView[view].counts.unmatchedGeneratedOutputEdges,0),
   unavailable:['V','H','W'].reduce((n,view)=>n+
    parameterizedLineageByView[view].counts.unavailableGeneratedOutputEdges,0),
+  heldIncompleteSourceInventory:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.heldForIncompleteOriginalCurveCandidateInventory,0),
+  heldInconclusiveSourceExclusions:['V','H','W'].reduce((n,view)=>n+
+   parameterizedLineageByView[view].counts.heldForInconclusiveOriginalHLRSourceRejections,0),
   sourceFilterOrPaperDisagreements:
    scopedConsumer.counts.globalGeneratedHLREdgesWithParameterizedSourceDisagreement,
   nativeM4ClassBackedUniqueFilterSourceEdges:
