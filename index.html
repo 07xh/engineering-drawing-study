@@ -3,107 +3,118 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="DraftAI 个人 AI 工程制图自动解题与动态作图系统：数学几何求解优先，逐步接入题图识别、条件确认、自动作图步骤与 V5 动画。AI 图像上传目前尚未上线。">
-<meta name="theme-color" content="#eff5f0">
-<title>DraftAI · AI 工程制图自动解题与动态作图</title>
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f5f8fd">
+<meta name="description" content="绘序 · DraftFlow：以数学求解和几何证据为核心的工程制图逐步作图学习平台。浏览已开放的二维作图、三面投影和几何实验工具；任意题图自动识别仍在开发中。">
+<title>绘序 · DraftFlow｜AI 工程制图推理与动态作图</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="site-ui.css">
-<style>
-:root{color-scheme:light}
-body{margin:0;background:#f2f6f2;color:#243d2e;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
-.home-wrap{max-width:1180px;width:calc(100% - 32px);margin:22px auto 64px}
-.hero-main{background:linear-gradient(118deg,#e5f4e9,#f4faf5 74%);border:1px solid #cfe3d3;border-radius:22px;padding:clamp(24px,4vw,46px)}
-.eyebrow{font-size:12px;font-weight:800;color:#357555;letter-spacing:.09em}
-.hero-main h1{font-size:clamp(30px,4.5vw,49px);line-height:1.2;letter-spacing:-.035em;color:#19412e;margin:12px 0}
-.hero-main p{max-width:735px;font-size:15px;line-height:1.85;color:#486454}
-.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
-.home-btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 18px;border-radius:11px;background:#246e4c;color:#fff!important;text-decoration:none!important;font-size:14px;font-weight:750;border:1px solid #246e4c}
-.home-btn:hover{background:#17573b;color:#fff!important}
-.home-btn.secondary{background:#fff;color:#246e4c!important;border-color:#bbd5c4}
-.home-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.home-tags span{font-size:12px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid #d5e6d9;color:#466d53}
-.section{margin-top:32px}
-.section h2{font-size:23px;line-height:1.4;color:#224732;margin:0 0 8px}
-.section>.intro{font-size:14px;color:#5c7565;line-height:1.8;margin:0 0 16px}
-.tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.tool-card{display:flex;flex-direction:column;gap:9px;min-height:188px;padding:20px;border-radius:16px;border:1px solid #dbe8df;background:#fff;text-decoration:none!important;color:#284a37!important;transition:border-color .15s,transform .15s}
-.tool-card:hover{border-color:#84b49a;transform:translateY(-2px)}
-.tool-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#206e4b;background:#e9f5ed;font-weight:800;font-size:18px}
-.tool-card strong{font-size:17px}
-.tool-card p{margin:0;color:#617967;font-size:13px;line-height:1.75;flex:1}
-.tool-card .tool-status{font-size:12px;color:#2c7652;font-weight:750}
-.notice-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-.info-panel{background:#fff;border:1px solid #dbe8df;border-radius:15px;padding:20px}
-.info-panel h3{font-size:17px;color:#274d37;margin:0 0 9px}
-.info-panel p{font-size:13px;color:#5d7666;line-height:1.8;margin:0 0 10px}
-.info-panel a{font-size:13px;font-weight:700}
-.status-pill{display:inline-flex;background:#fff5e8;color:#8a622d;border:1px solid #edd8b9;padding:5px 10px;border-radius:100px;font-size:12px;font-weight:750;margin-bottom:8px}
-.release-note{font-size:13px;color:#627565;line-height:1.8;margin-top:15px}
-footer{font-size:12px;color:#6f8373;margin-top:34px;padding-top:18px;border-top:1px solid #d6e5da}
-footer a{color:#3b7957}
-@media(max-width:880px){.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.notice-grid{grid-template-columns:1fr}}
-@media(max-width:590px){.home-wrap{width:calc(100% - 22px);margin-top:12px}.hero-main{padding:22px 17px}.tool-grid{grid-template-columns:1fr}.tool-card{min-height:0}.section{margin-top:24px}.section h2{font-size:21px}}
-@media(prefers-reduced-motion:reduce){.tool-card{transition:none}.tool-card:hover{transform:none}}
-</style>
 <link rel="stylesheet" href="workbench-blue.css">
+<link rel="stylesheet" href="draftflow-brand.css">
 </head>
-<body class="ui-refresh workbench-blue">
+<body class="ui-refresh workbench-blue draftflow-home">
 <header class="site-topbar"><div class="site-topbar-inner">
-<a class="site-brand" href="index.html"><span class="site-brand-icon">⌁</span><span>DraftAI<small>工程制图 · AI 自动解题与作图</small></span></a>
+<a class="site-brand" href="index.html" aria-label="绘序 DraftFlow 首页"><img class="df-brand-logo" src="favicon.svg" alt="" width="40" height="40"><span class="df-brand-name">绘序 · DraftFlow<small>GEOMETRY · REASONING · DRAWING</small></span></a>
 <nav class="site-nav" aria-label="主要导航">
 <a href="index.html" aria-current="page">首页</a>
-<a href="labs/point-projection-live.html">三面投影解题</a>
-<a href="labs/auto-fillet-live.html">二维自动解题</a><a href="labs/circle-fillet-live.html">圆弧连接解题</a>
-<a href="labs/free-modeler.html">自由建模</a>
+<a href="#tools">几何工具</a>
+<a href="#capabilities">产品能力</a>
+<a href="public-use.html">使用说明</a>
 <details class="site-more"><summary>更多工具</summary><div class="site-more-menu">
-<a href="labs/polygon-live.html">正多边形动态作图</a>
-<a href="labs/cone-cut-live.html">圆锥斜截 · V5 动态作图预览</a>
-<a href="labs/point-coach.html">原版投影陪练</a>
-<a href="labs/dof-lab-v2.html">自由度与三视图</a>
-<a href="labs/tangent-constraint.html">圆弧相切实验</a>
-<a href="labs/paper-geometry.html">尺规几何</a>
-<a href="labs/point-construction.html">投影作图演示</a>
+<a href="labs/point-projection-live.html">点的三面投影</a>
+<a href="labs/circle-fillet-live.html">圆弧连接</a>
+<a href="labs/cone-cut-live.html">圆锥斜截</a>
+<a href="labs/free-modeler.html">自由建模</a>
+<a href="labs/dof-lab-v2.html">三视图与自由度</a>
 <a href="labs/composite-geometry.html">组合体实验</a>
-<span>使用说明</span>
-<a href="public-use.html">公开范围与隐私说明</a>
-</div></details></nav>
+<a href="welcome.html">品牌启动页</a>
+</div></details>
+<a class="df-nav-cta" href="labs/auto-fillet-live.html">开始解题 ↗</a>
+</nav>
 </div></header>
-<main class="home-wrap">
-<section class="hero-main">
-<span class="eyebrow">DRAFTAI · AI GEOMETRY SOLVER & ANIMATION</span>
-<h1>工程制图解题 · 动态作图</h1>
-<p>选择题型、调整条件，查看逐笔作图过程。图片自动识别仍在开发中。</p>
-<div class="hero-actions">
-<a class="home-btn" href="labs/auto-fillet-live.html">开始二维解题 →</a>
-<a class="home-btn secondary" href="labs/point-projection-live.html">三面投影 →</a>
-<a class="home-btn secondary" href="labs/cone-cut-live.html">圆锥斜截 →</a>
-
+<main class="df-main">
+<section class="df-hero" aria-labelledby="df-hero-title">
+<div>
+<span class="df-eyebrow">DRAFTFLOW / GEOMETRIC REASONING</span>
+<h1 id="df-hero-title">让工程制图的每一步，<em>都有理可循。</em></h1>
+<p>从已知条件出发，计算几何关系，逐笔展示辅助线与工程图形。现在可以进入已开放的数学作图工具；任意图片 AI 自动解题功能仍在开发中。</p>
+<div class="df-hero-actions"><a class="df-btn" href="labs/auto-fillet-live.html">进入二维解题工作台　→</a><a class="df-btn secondary" href="labs/point-projection-live.html">体验三面投影　↗</a></div>
+<div class="df-hero-notes"><span>真实数学约束</span><span>动态作图步骤</span><span>第一角法三视图</span></div>
 </div>
-
+<div class="df-hero-art" aria-label="工程几何和三视图示意图，不代表已认证的教材题答案">
+<svg viewBox="0 0 570 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="df-art-title">
+<title id="df-art-title">工程几何与第一角法视图关系的装饰性示意</title>
+<defs><linearGradient id="dfCube" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8cbeff"/><stop offset="1" stop-color="#296de9"/></linearGradient><linearGradient id="dfP" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e5f0ff"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+<g stroke="#afcbf4" stroke-width="1" opacity=".65"><path d="M14 305H550M14 280H550M14 255H550M14 230H550M35 165V335M75 165V335M115 165V335M155 165V335M195 165V335M235 165V335M275 165V335M315 165V335M355 165V335M395 165V335M435 165V335M475 165V335"/></g>
+<g transform="translate(210 40)">
+<path d="M135 13L256 77L137 146L16 81Z" fill="#e4f0ff" stroke="#6ea0f2" stroke-width="2"/>
+<path d="M16 81L137 146V283L16 220Z" fill="url(#dfCube)" opacity=".7" stroke="#3a74d7" stroke-width="2"/>
+<path d="M137 146L256 77V216L137 283Z" fill="#a8c9ff" opacity=".85" stroke="#3a74d7" stroke-width="2"/>
+<path d="M74 111L135 146L194 112V162L135 198L74 161Z" fill="#fff" opacity=".9" stroke="#427ffc" stroke-width="2"/>
+<path d="M74 161V202L135 238L135 198Z" fill="#4a86ef" stroke="#326cd4" stroke-width="2"/>
+<path d="M135 198L194 162V204L135 238Z" fill="#d8e8ff" stroke="#427ffc" stroke-width="2"/>
+<path d="M16 81L137 146L256 77M137 146V283" fill="none" stroke="#316be3" stroke-width="2"/>
+</g>
+<g fill="url(#dfP)" stroke="#78a8f2" stroke-width="1.5">
+<path d="M22 58L135 34V178L22 202Z"/><path d="M18 251L132 227V322L18 346Z"/><path d="M447 66L553 45V185L447 206Z"/>
+</g>
+<g fill="none" stroke="#2f70e8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<path d="M45 91L90 80V111L118 105V171L45 186Z"/>
+<path d="M42 271L108 255V298L75 307V322L42 329Z"/>
+<path d="M466 100L489 95V130L526 122V174L466 187Z"/>
+</g>
+<g stroke="#84b2f3" stroke-width="1.5" fill="none" stroke-dasharray="5 7"><path d="M137 150L215 157M375 150L447 150M127 224L127 205"/><circle cx="158" cy="134" r="109" opacity=".4"/></g>
+<g fill="#4678ce" font-family="system-ui,sans-serif" font-size="10" letter-spacing="2"><text x="48" y="43">V</text><text x="42" y="245">H</text><text x="475" y="54">W</text></g>
+</svg>
+</div>
 </section>
 
-<section class="section" id="ai"></section>
-<section class="section" id="tools">
-<h2>选择解题工具</h2>
-<p class="intro">选择目前开放的题型进行练习。</p>
-<div class="tool-grid">
-<a class="tool-card" href="labs/auto-fillet-live.html"><span class="tool-icon" aria-hidden="true">◎</span><strong>二维自动解题 · 动态作图</strong><p>调整已知条件，查看连接弧与辅助线的逐笔作图。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/circle-fillet-live.html"><span class="tool-icon" aria-hidden="true">⑧</span><strong>圆弧连接 · 智能尺规作图</strong><p>计算连接圆弧，查看圆心、切点与辅助作图。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/point-projection-live.html"><span class="tool-icon" aria-hidden="true">⑦</span><strong>三面投影 · 动态数学求解</strong><p>输入坐标或已知投影，查看同纸三视图。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/polygon-live.html"><span class="tool-icon" aria-hidden="true">⬡</span><strong>正多边形 · 数学逐笔作图</strong><p>圆内接正三角形、正六边形逐笔作图。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/cone-cut-live.html"><span class="tool-icon" aria-hidden="true">◢</span><strong>圆锥斜截 · 三视图真实数学预览</strong><p>圆锥斜截与同纸三视图动态绘制。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/point-coach.html"><span class="tool-icon" aria-hidden="true">①</span><strong>点投影陪练</strong><p>补全点的第三面投影，查看必要提示。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/dof-lab-v2.html"><span class="tool-icon" aria-hidden="true">②</span><strong>同纸三视图与自由度</strong><p>观察三视图与几何条件的对应关系。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/free-modeler.html"><span class="tool-icon" aria-hidden="true">③</span><strong>自由几何实验室</strong><p>创建空间点线面并观察投影。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/tangent-constraint.html"><span class="tool-icon" aria-hidden="true">④</span><strong>圆弧相切实验</strong><p>调整相切条件并查看连接效果。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/paper-geometry.html"><span class="tool-icon" aria-hidden="true">⑤</span><strong>尺规几何</strong><p>查看辅助线和尺规作图过程。</p><span class="tool-status">打开工具 →</span></a>
-<a class="tool-card" href="labs/c2-native-cut-review.html"><span class="tool-icon" aria-hidden="true">▣</span><strong>C2 通孔 · 已认证局部 V5 回放</strong><p>从真实 OCCT CI 导入证明，逐笔回放已认证实线与虚线。未证明部分不绘制，不能作为完整答案。</p><span class="tool-status">打开局部审核台 →</span></a>
-<a class="tool-card" href="labs/composite-geometry.html"><span class="tool-icon" aria-hidden="true">⑥</span><strong>组合体几何</strong><p>观察组合体及其投影关系。</p><span class="tool-status">打开工具 →</span></a>
-</div>
+<section class="df-feature-grid" id="capabilities" aria-label="核心能力">
+<div class="df-feature"><span class="df-feature-icon" aria-hidden="true">✧</span><strong>条件驱动求解</strong><p>从点、线、尺寸与约束求几何结果；不凭视觉猜测最终图形。</p></div>
+<div class="df-feature"><span class="df-feature-icon" aria-hidden="true">⌖</span><strong>逐笔构造作图</strong><p>分步展示辅助圆、交点、连接关系和求解依据。</p></div>
+<div class="df-feature"><span class="df-feature-icon" aria-hidden="true">⬡</span><strong>三视图与空间关系</strong><p>以第一角法理解主、俯、左视图及三维投影。</p></div>
+<div class="df-feature"><span class="df-feature-icon" aria-hidden="true">▷</span><strong>动态教学</strong><p>可用工具提供逐步播放与关键构造讲解，未认证图元不会伪装为答案。</p></div>
 </section>
 
-<p class="release-note">部分题型仍在完善中；当前不支持上传任意题图后自动完成解答。</p>
-<footer>DraftAI · 个人 AI 工程制图自动解题与动态作图系统（在建） · <a href="public-use.html">使用说明与隐私边界</a></footer>
+<section id="tools" aria-labelledby="df-tools-title">
+<div class="df-section-title"><div><h2 id="df-tools-title">选择几何解题工具</h2><p>直接进入现有工具；不同题型的支持范围以实际页面和验证结果为准。</p></div></div>
+<div class="df-filters" role="group" aria-label="按题型筛选">
+<button class="df-filter" type="button" data-filter="all" aria-pressed="true">全部工具</button>
+<button class="df-filter" type="button" data-filter="drawing" aria-pressed="false">二维作图</button>
+<button class="df-filter" type="button" data-filter="projection" aria-pressed="false">三视图与三维</button>
+<button class="df-filter" type="button" data-filter="practice" aria-pressed="false">几何练习</button>
+</div>
+<div class="df-tool-grid">
+<a class="df-tool" data-kind="drawing" href="labs/auto-fillet-live.html"><span class="df-tool-icon">◎</span><span><strong>二维自动解题</strong><small>圆弧连接的条件求解、辅助线与动态作图；含实验性题图校正。</small><span class="df-state">进入工作台 →</span></span></a>
+<a class="df-tool" data-kind="drawing" href="labs/circle-fillet-live.html"><span class="df-tool-icon">◌</span><span><strong>圆弧连接</strong><small>求圆心与切点，查看连接弧和构造依据。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="projection" href="labs/point-projection-live.html"><span class="df-tool-icon">⌖</span><span><strong>点的三面投影</strong><small>输入点坐标或已知投影，查看同纸第一角法。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="drawing practice" href="labs/polygon-live.html"><span class="df-tool-icon">⬡</span><span><strong>正多边形动态作图</strong><small>圆内接正三角形、正六边形逐笔构造。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="projection" href="labs/cone-cut-live.html"><span class="df-tool-icon">◢</span><span><strong>圆锥斜截</strong><small>受限数学场景下的截线和三视图动态预览。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="practice projection" href="labs/point-coach.html"><span class="df-tool-icon">①</span><span><strong>点投影陪练</strong><small>补第三面投影，查看提示与对应关系。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="projection" href="labs/dof-lab-v2.html"><span class="df-tool-icon">⊞</span><span><strong>三视图与自由度</strong><small>观察多视图与几何约束之间的联系。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="projection" href="labs/free-modeler.html"><span class="df-tool-icon">◇</span><span><strong>自由几何实验室</strong><small>创建空间点线面并观察投影。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="drawing practice" href="labs/tangent-constraint.html"><span class="df-tool-icon">⌁</span><span><strong>圆弧相切约束</strong><small>调整几何相切条件，观察关联变化。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="drawing practice" href="labs/paper-geometry.html"><span class="df-tool-icon">△</span><span><strong>尺规几何作图</strong><small>等分线段、正多边形与辅助线构造。</small><span class="df-state">打开工具 →</span></span></a>
+<a class="df-tool" data-kind="projection" href="labs/c2-native-cut-review.html"><span class="df-tool-icon">▣</span><span><strong>C2 局部证明回放</strong><small>仅回放已认证部分；未证明部分不是完整答案。</small><span class="df-state">打开审核台 →</span></span></a>
+<a class="df-tool" data-kind="projection practice" href="labs/composite-geometry.html"><span class="df-tool-icon">▤</span><span><strong>组合体几何实验</strong><small>观察组合体、视图与空间关系。</small><span class="df-state">打开工具 →</span></span></a>
+</div>
+</section>
+<section class="df-info" aria-label="平台说明">
+<div class="df-panel"><h3>真正的作图，不止是播放一段动画</h3><p>绘序沿用当前几何内核：已确认条件 → 数学求解 → 构造步骤 → 唯一 V5 动画。来源参数、三维端点拓扑、遮挡与工程线型的数学签收规则保持不变。尚未签收的实虚线不能进入正式答案层。</p></div>
+<div class="df-panel df-warning"><h3>当前开放范围</h3><p>通用图片上传、任意新题自动识别和 C1/C2/C3 教材整题独立验收尚未完成。<a href="public-use.html">查看公开使用与隐私边界</a></p></div>
+</section>
+<footer>© 绘序 · DraftFlow　·　工程制图推理与动态作图系统（持续开发中）　·　<a href="welcome.html">品牌启动页</a>　·　<a href="public-use.html">使用与隐私说明</a></footer>
 </main>
+<script>
+(function(){
+  const buttons=Array.from(document.querySelectorAll('[data-filter]'));
+  const cards=Array.from(document.querySelectorAll('.df-tool[data-kind]'));
+  buttons.forEach(button=>button.addEventListener('click',()=>{
+    const kind=button.dataset.filter;
+    buttons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+    cards.forEach(card=>{card.hidden=kind!=='all'&&!card.dataset.kind.split(' ').includes(kind)});
+  }));
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,100 @@
+/* 绘序 DraftFlow · UI skin v1. 仅表现层，不改变任何 SVG 几何线型与求解脚本。 */
+:root{--df-blue:#245fe4;--df-blue-2:#427ffc;--df-ink:#15233d;--df-muted:#71819b;--df-border:#e3eaf5;--df-bg:#f5f8fd;--df-tint:#eaf2ff;--df-shadow:0 12px 35px rgba(38,76,141,.065)}
+html{scroll-behavior:smooth}
+body.draftflow-home,body.draftflow-welcome{background:var(--df-bg);color:var(--df-ink);font-family:Inter,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+body.draftflow-home *,body.draftflow-welcome *{box-sizing:border-box}
+body.draftflow-home a:focus-visible,body.draftflow-home button:focus-visible,body.draftflow-welcome a:focus-visible{outline:3px solid #90baff;outline-offset:3px}
+body.draftflow-home .site-topbar{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--df-border);background:rgba(255,255,255,.95);backdrop-filter:blur(14px)}
+body.draftflow-home .site-topbar-inner{width:min(1360px,calc(100% - 44px));max-width:none;min-height:71px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
+body.draftflow-home .site-brand{display:flex;align-items:center;gap:11px;color:var(--df-ink)!important;text-decoration:none;white-space:nowrap}
+body.draftflow-home .df-brand-logo{width:40px;height:40px;display:block;flex:none;border-radius:12px}
+body.draftflow-home .df-brand-name{font-size:18px;font-weight:850;line-height:1.14;letter-spacing:-.3px}
+body.draftflow-home .df-brand-name small{font-size:10px;display:block;letter-spacing:1px;color:var(--df-muted);font-weight:600;margin-top:4px}
+body.draftflow-home .site-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+body.draftflow-home .site-nav a,body.draftflow-home .site-nav summary{color:#667591!important;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer;white-space:nowrap}
+body.draftflow-home .site-nav a:hover,body.draftflow-home .site-nav a[aria-current],body.draftflow-home .site-nav summary:hover{background:#eaf2ff;color:#1756d0!important}
+body.draftflow-home .site-nav .df-nav-cta{background:var(--df-blue);color:white!important;padding:11px 17px}
+body.draftflow-home .site-nav .df-nav-cta:hover{background:#174fc6;color:white!important}
+body.draftflow-home .site-more{position:relative}
+body.draftflow-home .site-more-menu{position:absolute;top:100%;right:0;z-index:40;min-width:215px;max-height:min(65vh,410px);overflow:auto;display:flex;flex-direction:column;padding:8px;background:white;border:1px solid var(--df-border);border-radius:13px;box-shadow:0 18px 40px rgba(25,55,106,.15)}
+body.draftflow-home .site-more:not([open]) .site-more-menu{display:none}
+body.draftflow-home .site-more-menu a{white-space:normal}
+body.draftflow-home .df-main{width:min(1360px,calc(100% - 44px));margin:25px auto 55px}
+body.draftflow-home .df-hero{position:relative;isolation:isolate;overflow:hidden;border:1px solid #dbe7fa;background:linear-gradient(115deg,#fff 10%,#eaf2ff 100%);border-radius:25px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(270px,.95fr);align-items:center;min-height:360px;padding:36px clamp(25px,3.8vw,58px);gap:16px}
+body.draftflow-home .df-hero:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 90% 15%,#d3e4ff 0%,transparent 47%)}
+body.draftflow-home .df-eyebrow{color:#245fe4;font-size:11px;letter-spacing:2px;font-weight:850}
+body.draftflow-home .df-hero h1{font-size:clamp(32px,4vw,55px);line-height:1.22;color:#15233d;margin:16px 0;letter-spacing:-1.8px;max-width:650px}
+body.draftflow-home .df-hero h1 em{font-style:normal;color:var(--df-blue)}
+body.draftflow-home .df-hero p{font-size:15px;line-height:1.85;color:#62738d;max-width:580px;margin:0}
+body.draftflow-home .df-hero-actions{display:flex;gap:11px;flex-wrap:wrap;margin:23px 0}
+body.draftflow-home .df-btn{display:inline-flex;justify-content:center;align-items:center;min-height:46px;padding:10px 19px;border-radius:11px;background:var(--df-blue);border:1px solid var(--df-blue);color:white!important;font-size:14px;font-weight:800;text-decoration:none!important;transition:background .18s,transform .18s}
+body.draftflow-home .df-btn:hover{background:#174fc6;transform:translateY(-1px)}
+body.draftflow-home .df-btn.secondary{background:#fff;color:#245fe4!important;border-color:#c9d8f2}
+body.draftflow-home .df-btn.secondary:hover{background:#edf4ff}
+body.draftflow-home .df-hero-notes{display:flex;flex-wrap:wrap;gap:16px;color:#7183a0;font-size:12px}
+body.draftflow-home .df-hero-notes span:before{content:"✓";color:var(--df-blue);font-weight:900;padding-right:7px}
+body.draftflow-home .df-hero-art svg{width:100%;max-height:330px;display:block;filter:drop-shadow(0 18px 20px rgba(24,90,207,.12))}
+body.draftflow-home .df-hero-art{align-self:center}
+body.draftflow-home .df-feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:17px 0 35px}
+body.draftflow-home .df-feature{background:white;border:1px solid var(--df-border);border-radius:17px;padding:21px;min-height:174px;box-shadow:var(--df-shadow)}
+body.draftflow-home .df-feature-icon{display:grid;place-items:center;width:42px;height:42px;background:#edf4ff;border-radius:12px;color:#225fe1;font-size:22px;margin-bottom:14px}
+body.draftflow-home .df-feature strong{font-size:15px;color:#192b48}
+body.draftflow-home .df-feature p{color:#7a89a0;font-size:12px;line-height:1.65;margin:7px 0 0}
+body.draftflow-home .df-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 17px}
+body.draftflow-home .df-section-title h2{font-size:23px;letter-spacing:-.5px;color:#192c4c;margin:0 0 3px}
+body.draftflow-home .df-section-title p{font-size:13px;color:var(--df-muted);margin:0}
+body.draftflow-home .df-tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+body.draftflow-home .df-tool{display:flex;gap:14px;align-items:flex-start;text-decoration:none!important;color:#1e3353!important;background:#fff;border:1px solid var(--df-border);border-radius:15px;padding:17px;min-width:0;transition:border-color .18s,transform .18s}
+body.draftflow-home .df-tool:hover{border-color:#9ebdf8;transform:translateY(-2px)}
+body.draftflow-home .df-tool-icon{width:41px;height:41px;border-radius:12px;flex:none;display:grid;place-items:center;background:#eef4ff;color:var(--df-blue);font-size:21px;font-weight:700}
+body.draftflow-home .df-tool strong{font-size:14px;line-height:1.5;display:block}
+body.draftflow-home .df-tool small{font-size:12px;color:#7d8ba1;line-height:1.65;display:block;margin-top:6px}
+body.draftflow-home .df-state{font-size:11px;font-weight:750;color:#356cd9;display:block;margin-top:8px}
+body.draftflow-home .df-tool[hidden]{display:none}
+body.draftflow-home .df-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:17px}
+body.draftflow-home .df-filter{border:1px solid #d8e4f7;border-radius:999px;background:white;color:#637690;min-height:36px;padding:7px 15px;font-family:inherit;font-size:12px;font-weight:700;line-height:1.2;cursor:pointer}
+body.draftflow-home .df-filter[aria-pressed=true]{background:var(--df-blue);border-color:var(--df-blue);color:#fff}
+body.draftflow-home .df-info{display:grid;grid-template-columns:1.35fr .65fr;gap:14px;margin:30px 0 0}
+body.draftflow-home .df-panel{border:1px solid var(--df-border);border-radius:17px;background:#fff;padding:22px}
+body.draftflow-home .df-panel h3{font-size:16px;margin:0 0 8px}
+body.draftflow-home .df-panel p{font-size:13px;color:#687c98;line-height:1.75;margin:0}
+body.draftflow-home .df-panel a{color:var(--df-blue);font-weight:750}
+body.draftflow-home .df-warning{background:#fff9ec;border-color:#f0deb6}
+body.draftflow-home .df-warning h3{color:#95672b}
+body.draftflow-home footer{border-top:1px solid var(--df-border);padding-top:22px;margin-top:30px;color:#8794a8;font-size:12px}
+body.draftflow-home footer a{color:#4e75bb}
+body.workbench-blue .site-brand-icon{background:var(--df-blue)!important}
+body.workbench-blue .site-brand{color:var(--df-ink)!important}
+body.workbench-blue .site-topbar{border-bottom-color:var(--df-border)}
+body.workbench-blue{--wb-blue:var(--df-blue);--wb-blue-dark:#1952c4;--wb-blue-tint:var(--df-tint);--wb-bg:var(--df-bg);--wb-ink:var(--df-ink);--wb-border:var(--df-border)}
+body.draftflow-welcome .df-welcome{min-height:100vh;padding:32px;display:grid;place-items:center;position:relative;overflow:hidden;background:linear-gradient(135deg,#e9f2ff 0%,#f9fbff 65%,#dceaff 100%)}
+body.draftflow-welcome .df-welcome-card{text-align:center;max-width:550px;z-index:2}
+body.draftflow-welcome .df-welcome-logo{height:95px;width:95px;border-radius:21px;box-shadow:0 15px 40px rgba(29,92,205,.2)}
+body.draftflow-welcome h1{font-size:clamp(31px,6vw,44px);margin:18px 0 7px;letter-spacing:-.8px}
+body.draftflow-welcome .df-subtitle{font-size:15px;color:#657b99;margin:0 0 30px}
+body.draftflow-welcome .df-splash-lines{position:absolute;inset:0;width:100%;height:100%;opacity:.36;pointer-events:none}
+body.draftflow-welcome .df-welcome-btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;border-radius:11px;background:#245fe4;color:#fff;padding:12px 26px;text-decoration:none;font-weight:800}
+body.draftflow-welcome .df-splash-caption{color:#8a9cba;font-size:11px;letter-spacing:2px;margin-top:24px}
+@media(max-width:1020px){body.draftflow-home .df-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.draftflow-home .df-tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body.draftflow-home .site-nav a:not(.df-nav-cta){display:none}}
+@media(max-width:720px){body.draftflow-home .site-topbar-inner{width:calc(100% - 26px);min-height:63px}body.draftflow-home .df-brand-name{font-size:15px}body.draftflow-home .df-brand-logo{width:35px;height:35px}body.draftflow-home .df-main{width:calc(100% - 24px);margin-top:12px}body.draftflow-home .df-hero{grid-template-columns:1fr;padding:28px 20px;gap:8px;border-radius:20px}body.draftflow-home .df-hero-art{max-width:370px;margin:auto}body.draftflow-home .df-hero h1{font-size:35px;letter-spacing:-1.2px}body.draftflow-home .df-feature-grid{gap:9px}body.draftflow-home .df-feature{padding:16px;min-height:147px}body.draftflow-home .df-tool-grid{grid-template-columns:1fr}body.draftflow-home .df-info{grid-template-columns:1fr}body.draftflow-home .site-nav .df-nav-cta{font-size:12px;padding:10px 12px}body.draftflow-home .site-nav .site-more{display:block}}
+@media(max-width:390px){body.draftflow-home .df-feature-grid{grid-template-columns:1fr 1fr}body.draftflow-home .df-feature strong{font-size:13px}body.draftflow-home .df-hero h1{font-size:31px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}body.draftflow-home .df-btn,body.draftflow-home .df-tool{transition:none}body.draftflow-home .df-btn:hover,body.draftflow-home .df-tool:hover{transform:none}}
+
+/* 仅改工作台外壳，不覆盖工程图中 SVG 的 stroke/fill 语义。 */
+body.workbench-blue .site-brand .df-brand-logo{width:38px;height:38px;flex:none;display:block;border-radius:11px}
+body.workbench-blue .site-brand small{color:#7b8dac}
+body.workbench-blue .site-topbar .site-topbar-inner{max-width:1390px}
+body.workbench-blue .site-nav>a{color:#536f9a!important}
+body.workbench-blue .site-nav>a:hover{background:#eaf2ff!important;color:#225dd5!important}
+body.workbench-blue .shell,body.workbench-blue .wrap{max-width:1390px}
+body.workbench-blue :is(.paper,.panel,.controls){border-radius:17px}
+body.workbench-blue :is(.paper,.panel,.controls)>h2{letter-spacing:-.2px}
+body.workbench-blue :is(.draftai-playdock,.playbar,.playback-scrub){border-color:#dbe7f9;background:#f7faff}
+@media(max-width:620px){
+ body.workbench-blue .site-topbar-inner{padding:9px 12px;gap:8px}
+ body.workbench-blue .site-brand{font-size:14px}
+ body.workbench-blue .site-brand .df-brand-logo{width:33px;height:33px}
+ body.workbench-blue .site-brand small{font-size:9px}
+ body.workbench-blue .site-nav{gap:0}
+ body.workbench-blue .site-nav>a{min-height:34px;padding:6px 8px;font-size:11px}
+}
