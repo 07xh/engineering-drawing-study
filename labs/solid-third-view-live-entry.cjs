@@ -248,6 +248,10 @@ function draw(result,certified){
  }
 }
 function solve(){
+ // A new solve attempt invalidates even the previously accepted V5 player.
+ // Failed input, repeated clicks and in-flight playback must never retain
+ // an older revision's formally signed drawing on the current sheet.
+ resetV5();
  $('paper').replaceChildren();
  $('proof').textContent='未生成标准工程线型或 V5 作图。';
  try{
