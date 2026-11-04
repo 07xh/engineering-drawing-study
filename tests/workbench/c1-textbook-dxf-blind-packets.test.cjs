@@ -159,3 +159,49 @@ test('original textbook converter CLI exposes only trusted convert+partition+sep
   assert.equal(fs.existsSync(path.join(root,'given.json')),false);
  }finally{fs.rmSync(root,{recursive:true,force:true});}
 });
+
+
+test('GIVEN source LINE topology is original, view-bound and never a signed GB line style',()=>{
+ const d=source();
+ d.partition.givenHandles.push('GVLINE');
+ d.entities.GVLINE={type:'LINE',layout:'Model',linetype:'BYLAYER',
+  start:[0,0,0],end:[2,0,0]};
+ d.review.givenViewStrokes={V:[{handle:'GVLINE',fromIndex:0,toIndex:1}],H:[]};
+ const {result,code}=call(d);
+ assert.equal(code,0,result.reason);
+ assert.deepEqual(Object.keys(result.given.givenOriginalStrokes).sort(),['H','V']);
+ const original=result.given.givenOriginalStrokes.V[0];
+ assert.equal(original.sourceHandle,'GVLINE');
+ assert.equal(original.sourceKind,'LINE');
+ assert.equal(original.sourceLinetype,'BYLAYER');
+ assert.equal(original.fromIndex,0);assert.equal(original.toIndex,1);
+ assert.deepEqual(original.from,{u:0,v:0});
+ assert.deepEqual(original.to,{u:2,v:0});
+ assert.equal(original.engineeringLineStyle,'undetermined');
+ assert.equal(JSON.stringify(result.given).includes('LINE1'),false);
+ assert.equal(result.answer.referenceStrokes[0].originalReferenceHandle,'LINE1');
+ assert.equal(JSON.stringify(result.answer).includes('GVLINE'),false);
+});
+test('real DXF GIVEN stroke rejects answer handles, wrong endpoints, unsupported kind and duplicate source',()=>{
+ const data=()=>{
+  const d=source();
+  d.partition.givenHandles.push('GVLINE');
+  d.entities.GVLINE={type:'LINE',layout:'Model',
+   start:[0,0,0],end:[2,0,0],linetype:'BYLAYER'};
+  d.review.givenViewStrokes={V:[{handle:'GVLINE',fromIndex:0,toIndex:1}],H:[]};
+  return d;
+ };
+ const answer=data();answer.review.givenViewStrokes.V[0].handle='LINE1';
+ assert.equal(call(answer).code,2);
+ const wrong=data();wrong.review.givenViewStrokes.V[0].toIndex=2;
+ assert.match(call(wrong).result.reason,/does not join/);
+ const wrongType=data();wrongType.entities.GVLINE.type='ARC';
+ assert.match(call(wrongType).result.reason,/not an original DXF Modelspace LINE/);
+ const missing=data();missing.review.givenViewStrokes.V[0].fromIndex=-1;
+ assert.match(call(missing).result.reason,/outside original reviewed points/);
+ const duplicate=data();duplicate.review.givenViewStrokes.V.push(
+  {handle:'GVLINE',fromIndex:0,toIndex:1});
+ assert.match(call(duplicate).result.reason,/duplicated/);
+ const unknownView=data();unknownView.review.givenViewStrokes.W=[];
+ assert.match(call(unknownView).result.reason,/match exactly the two known views/);
+});
