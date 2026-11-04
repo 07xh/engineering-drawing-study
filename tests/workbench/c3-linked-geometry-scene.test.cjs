@@ -176,6 +176,69 @@ test('forged original W branch action is blocked before entering the shared anal
   input:source,revision,compiled:forged,viewTransforms:f
  }),/analytic source curve/);
 });
+test('W analytic V5 drawing cannot borrow an untrimmed or shifted M3/M5 source interval',()=>{
+ const source=input(),f=transforms(),revision=23;
+ const compiled=compileFiniteCylinderEndpointV5({
+  input:source,revision,sheetTransform:f.V,viewTransforms:f,
+  includeWAnalyticCurveGuides:true,wRayPartitionedV5:true,
+  includeProjectedSeamArcGuides:true
+ });
+ assert.ok(compiled.wAnalyticCurveGuides.length>0);
+ // Positive: a real ray-partitioned guide has a strictly trimmed V5
+ // drawing domain, while its original OPEN source ledger remains whole.
+ assert.ok(buildC3LinkedGeometryScene({
+  input:source,revision,compiled,viewTransforms:f
+ }).analyticCurveInScene);
+ const forged={...compiled,
+  wAnalyticCurveGuides:compiled.wAnalyticCurveGuides.map(x=>({
+   ...x,xRange:[...x.xRange]
+  })),
+  constructionSteps:compiled.constructionSteps.map(step=>({
+   ...step,actions:step.actions.map(a=>({...a}))
+  }))
+ };
+ const guide=forged.wAnalyticCurveGuides[0];
+ const actual=forged.constructionSteps.flatMap(s=>s.actions)
+  .find(a=>a.id===guide.id+'Shape');
+ assert.ok(actual);
+ // Keep the validated original source partition and exactly match the
+ // forged V5 action: the previous Scene consumer accepted this drift.
+ const shifted=guide.xRange[0]+(guide.xRange[1]-guide.xRange[0])*.01;
+ guide.xRange[0]=shifted;
+ actual.geometry={...actual.geometry,
+  parameter:{...actual.geometry.parameter,from:shifted}};
+ assert.throws(()=>buildC3LinkedGeometryScene({
+  input:source,revision,compiled:forged,viewTransforms:f
+ }),/rendered x range differs from original source/);
+ // A caller may not suppress the mandatory end trim merely by changing
+ // a descriptive partition-mode flag while keeping an old action.
+ const modeForged={...compiled,
+  wAnalyticCurveGuides:compiled.wAnalyticCurveGuides.map((x,i)=>
+   i===0?{...x,m5SourcePartitioned:false}:x)};
+ assert.throws(()=>buildC3LinkedGeometryScene({
+  input:source,revision,compiled:modeForged,viewTransforms:f
+ }),/rendered x range differs from original source/);
+});
+
+test('C3 3D/VHW association rejects duplicate IDs in the original V5 action timeline',()=>{
+ const source=input(),f=transforms(),revision=24;
+ const compiled=compileFiniteCylinderEndpointV5({
+  input:source,revision,sheetTransform:f.V,viewTransforms:f,
+  includeWAnalyticCurveGuides:true,
+  includeProjectedSeamArcGuides:true
+ });
+ const forged={...compiled,
+  constructionSteps:compiled.constructionSteps.map((step,i)=>({
+   ...step,actions:i===0?[...step.actions,{...step.actions[0]}]:
+    [...step.actions]
+  }))};
+ // Map() would silently overwrite the duplicate and the 3D link would
+ // still claim to belong to one unique source action.
+ assert.throws(()=>buildC3LinkedGeometryScene({
+  input:source,revision,compiled:forged,viewTransforms:f
+ }),/duplicate or missing original V5 action ID/);
+});
+
 test('unsupported or empty intersection never becomes a canonical spatial scene',()=>{
  const bad=input();bad.yCylinder.xCenter=50;
  const f=transforms();

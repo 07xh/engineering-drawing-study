@@ -55,6 +55,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   uniqueOriginalSourceGlobalEdgesExamined:0,
   nativeOriginalBRepExactPhysicalEndpointPairs:0,
   completeOriginalNative3DClassSourceIntervalRows:0,
+  // Multiple intervals are accepted only when an exact, same-class,
+  // original-source partition is recomputed with no gap, overlap or
+  // contradictory native OCCT interval inventory.
+  multipleNativeM4SourceClassSegmentsHeld:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
   strictlyClassBackedButRoundedOriginalM0PaperEndpoints:0,
@@ -81,8 +85,16 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    throw new RangeError('incomplete native source M4/generated HLR first-angle view');
   const m4ById=new Map();
   for(const x of mv){
-   if(x?.view!==view||!originals.has(x.sourceEdgeId)||
+   // Even an identical source-edge ID and a perfectly tiled [0,1]
+   // interval cannot authorize a row from a previous reviewed revision.
+   // Bind the producer's original M3 source and current M4 revision before
+   // its candidate intervals reach the generated HLR endpoint consumer.
+   if(x?.sourceGeometryId!==geometry.id||x.revision!==cad.revision||
+      x.view!==view||!originals.has(x.sourceEdgeId)||
       m4ById.has(x.sourceEdgeId)||x.officialV5Authorized!==false||
+      x.native3DProvenanceIsNotGenerated2DHLREdgeIdentity!==true||
+      x.completeGlobalVisibilityCertified!==false||
+      x.formalEngineeringLineStyleCertified!==false||
       !Array.isArray(x.segments))
     throw new RangeError('stale or forged native source M4 interval');
    m4ById.set(x.sourceEdgeId,x);
@@ -107,7 +119,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
-    boundedPaper=false,sourcePaperEnvelope=null,links=[];
+    boundedPaper=false,sourcePaperEnvelope=null,links=[],
+    receivedNativeM4SourceClassSegmentCount=0,
+    nativeM4SourceClassMultiplicityHeld=false,
+    exactOnce=false,nativeInventoryClear=false;
    if(originalId!==null){
     if(!physical||!originalBRep||
        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
@@ -120,16 +135,55 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      (xyz(originalBRep.fromOCCT3D,b)&&
       xyz(originalBRep.toOCCT3D,a));
     if(modelVerified)counts.nativeOriginalBRepExactPhysicalEndpointPairs++;
-    const m4=m4ById.get(originalId),matching=m4?.segments.filter(s=>
-     s.sourceEdgeId===originalId&&s.view===view&&
-     s.native3DHLRClass===klass&&
-     s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
-     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
-     s.originalM0UnitParameterRange?.[0]===0&&
-     s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
+    const m4=m4ById.get(originalId),received=m4?.segments??[];
+    receivedNativeM4SourceClassSegmentCount=received.length;
+    // Reconstruct the EXACT ORIGINAL M0 source interval partition from
+    // received native 3D M4 segments, without trusting producer "complete"
+    // booleans. A single [0,1] row OR many touching, same-class spans are
+    // legal. A positive gap, a one-ULP overlap, an extra opposite-class
+    // claim, a wrong source/view or unverified row must remain held.
+    // This is not generated 2D TopoDS ancestry or all-face visibility.
+    const valid=received.length>0&&received.length<=512&&
+     received.every(s=>{
+      const range=s?.originalM0UnitParameterRange;
+      return s.sourceEdgeId===originalId&&s.view===view&&
+       s.native3DHLRClass===klass&&
+       s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+       s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
+       Array.isArray(range)&&range.length===2&&
+       range.every(Number.isFinite)&&range[0]>=0&&range[1]<=1&&
+       range[1]>range[0];
+     });
+    const sorted=valid?[...received].sort((a,b)=>
+      a.originalM0UnitParameterRange[0]-b.originalM0UnitParameterRange[0]||
+      a.originalM0UnitParameterRange[1]-b.originalM0UnitParameterRange[1]):[];
+    let sourceCursor=0;
+    exactOnce=valid;
+    for(const segment of sorted){
+     const [from,to]=segment.originalM0UnitParameterRange;
+     if(from!==sourceCursor){exactOnce=false;break;}
+     sourceCursor=to;
+    }
+    exactOnce=exactOnce&&sourceCursor===1;
+    // These genuine producer inventories are independent of the rounded
+    // normalized M0 coverage. A positive native OCCT interval lost during
+    // binary64 normalization must never be mistaken for a valid partition.
+    const nativeInventoriesPresent=
+     Array.isArray(m4?.native3DOriginalParameterPositiveGaps)&&
+     Array.isArray(m4?.native3DOriginalParameterPositiveOverlaps)&&
+     Array.isArray(m4?.M4OriginalUnitIntervalNativeClassConflicts);
+    nativeInventoryClear=nativeInventoriesPresent&&
+     m4.native3DOriginalParameterPositiveGaps.length===0&&
+     m4.native3DOriginalParameterPositiveOverlaps.length===0&&
+     m4.M4OriginalUnitIntervalNativeClassConflicts.length===0;
+    nativeM4SourceClassMultiplicityHeld=received.length>1&&
+     (!exactOnce||!nativeInventoryClear);
+    if(nativeM4SourceClassMultiplicityHeld)
+     counts.multipleNativeM4SourceClassSegmentsHeld++;
+    sourceClassFull=exactOnce&&nativeInventoryClear&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+     Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
@@ -209,6 +263,12 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
     completeOriginalNativeSource3DClassCoversWholeEdge:sourceClassFull,
+    receivedOriginalNativeM4SourceClassSegmentCount:
+     receivedNativeM4SourceClassSegmentCount,
+    receivedNativeM4SourceClassMultiplicityHeld:
+     nativeM4SourceClassMultiplicityHeld,
+    receivedNativeM4ExactSameClassSourcePartitionVerified:exactOnce,
+    receivedNativeM4OriginalOcctParameterInventoryClear:nativeInventoryClear,
     receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly:
      originalPaperExact,
     generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity:

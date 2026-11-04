@@ -72,7 +72,13 @@ test('real C1 local review page refuses automatic guessed missing-view preview',
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
  assert.match(html,/<button id="showCandidate"[^>]*disabled>/);
  assert.match(html,/原题已知视图（默认）/);
- assert.match(script,/buildC1DxfGivenFirstPaper\(rawGiven\)/);
+ // The source packet is converted only inside the shared canonical builder,
+ // not by cloning mutable preview DOM into the official V5 first frame.
+ assert.match(script,/buildC1DxfGivenFirstPaper\(packet\)/);
+ assert.match(script,/makeCanonicalGivenPaperSvg\(rawGiven\)/);
+ assert.match(script,/preview\.outerHTML!==canonical\.outerHTML/);
+ assert.match(script,/for\(const child of canonical\.children\)/);
+ assert.doesNotMatch(script,/for\(const child of preview\.children\)/);
  assert.match(script,/'data-c1-unanswered-view':view/);
  assert.match(script,/'data-c1-paper-mode':'given'/);
  assert.match(script,/'data-c1-paper-mode':'unsigned-candidate'/);

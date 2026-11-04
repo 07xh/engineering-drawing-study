@@ -5,6 +5,22 @@ const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {createRequire}=require('node:module');
 const Timeline=require('../../workbench/teaching-timeline-v5.js');
 const entry=path.resolve('labs/c1-reviewed-dxf-live-entry.cjs');
+const givenPacket=()=>({
+ schema:'draftai-c1-authenticated-dxf-reviewed-given/1',
+ sourceSha256:'a'.repeat(64),convertedDxfSha256:'b'.repeat(64),
+ views:{V:[{u:0,v:0},{u:2,v:2},{u:4,v:7},{u:6,v:5}],
+  H:[{u:0,v:0},{u:2,v:1},{u:4,v:3},{u:6,v:6}]},
+ givenOriginalHandleEndpoints:{
+  V:[0,1,2,3].map(i=>({handle:'V'+i,endpoint:'point'})),
+  H:[0,1,2,3].map(i=>({handle:'H'+i,endpoint:'point'}))
+ },
+ missingView:'W',assumedScope:'all-extreme-vertices-of-one-closed-convex-opaque-solid',
+ humanSelectedFullExtremeVertexSet:true,
+ originalSourceCompletenessIndependentlyProved:false,
+ sourceImageRecognitionVerified:false,
+ referenceWasNotExportedAsSolverInput:true,
+ sourceIsNotYetConfirmedForProduction:true,textbookBlindSolveAccepted:false
+});
 test('real C1 browser DOM shows sole V5 step, signed source and action-aligned navigation, then invalidates',()=>{
  const {document,window}=parseHTML(
   fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8'));
@@ -30,7 +46,8 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
   cancelAnimationFrame:()=>{},console};
  vm.runInNewContext(
   fs.readFileSync(entry,'utf8')+
-  '\n;this.__setCurrent=(r)=>{current=r;revision=r.solution.revision;};'+
+  '\n;this.__setCurrent=(r,p)=>{current=r;revision=r.solution.revision;rawGiven=p;given=p;renderOriginalPaper();};'+
+  '\n;this.__setGiven=(p)=>{given=p;};'+
   '\n;this.__draw=()=>drawV5();',
   scene,{filename:entry});
  const $=id=>document.getElementById(id);
@@ -49,14 +66,55 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  const timeline=Timeline.compileTimeline(steps);
  const player=Timeline.createPlayer(timeline,{revision:8});
  scene.__setCurrent({solution:{revision:8,singleOriginalV5Player:true,steps,timeline,player,
+  sceneResult:{geometry:{id:'Real'}},
   certifiedVisibleContourLineBindings:[{actionId:'edge_a',revision:8,
+   sourceGeometryId:'Real',
    sourceEdgeId:'Real::A|D',view:'W',standardLineStyle:visible,
+   fromSheetPx:{x:5,y:8},toSheetPx:{x:45,y:48},
    signedFormalLineV5:true}],
+  // A final SVG exists in the solver result but MUST NEVER enter frame zero.
+  threeViewSvgSheet:{sheetSvg:'<svg data-forbidden-final-answer="true"><line x1="1" y1="2" x2="3" y2="4"/></svg>'},
   certifiedPhysicalLineBindings:[],intents:[{id:'point0',source:{
    solver:'real-math',proofScope:'source-3d-point'}},
    {id:'line1',source:{solver:'real-m5',proofScope:'closed-single-convex'}}]
- }});
+ }},givenPacket());
  scene.__draw();
+ assert.equal($('sheetPreview').querySelector('svg').getAttribute('data-c1-paper-mode'),'given');
+ assert.equal($('sheetPreview').querySelectorAll('line,path,polyline,polygon').length,0);
+ assert.equal($('animation').querySelectorAll('[data-source-point-only]').length,8);
+ assert.equal($('animation').querySelectorAll('[data-c1-unanswered-view="W"]').length,1);
+ assert.equal($('animation').querySelectorAll('[data-action-id]').length,0);
+ assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
+ // An injected answer-bearing original-paper node must fail closed.
+ const malicious=document.createElementNS('http://www.w3.org/2000/svg','line');
+ $('sheetPreview').querySelector('svg').append(malicious);
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ malicious.remove();scene.__draw();
+ // A circle or text node can leak a future answer at t=0 just as a line can.
+ // No mutable preview DOM child may be cloned into the canonical V5 paper.
+ for(const tag of ['circle','text','g','foreignObject']){
+  const injected=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  injected.setAttribute('data-forbidden-final-answer','true');
+  $('sheetPreview').querySelector('svg').append(injected);
+  assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+  assert.equal($('animation').querySelectorAll('[data-forbidden-final-answer]').length,0);
+  injected.remove();scene.__draw();
+ }
+ const sourcePoint=$('sheetPreview').querySelector('[data-source-point-only]');
+ const originalX=sourcePoint.getAttribute('cx');
+ sourcePoint.setAttribute('cx','999');
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ sourcePoint.setAttribute('cx',originalX);scene.__draw();
+ const viewBox=$('sheetPreview').querySelector('svg');
+ viewBox.setAttribute('viewBox','0 0 10 10');
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ viewBox.setAttribute('viewBox','0 0 960 720');scene.__draw();
+ // Same SHA labels and same number of points cannot conceal a stale or
+ // altered GIVEN coordinate in the active M3/M5 source.
+ const altered=givenPacket();altered.views.V[0].u=100;
+ scene.__setGiven(altered);
+ assert.throws(()=>scene.__draw(),/unmodified original GIVEN paper and blank target/);
+ scene.__setGiven(givenPacket());scene.__draw();
  assert.equal($('v5StepJump').disabled,false);
  assert.match($('v5StepTitle').textContent,/第 1 \/ 2 步/);
  assert.equal($('v5StepExplanation').textContent,steps[0].explanation);
@@ -74,7 +132,18 @@ test('real C1 browser DOM shows sole V5 step, signed source and action-aligned n
  assert.ok(line);
  assert.equal(line.getAttribute('data-official-line-style'),'visible');
  assert.equal(line.getAttribute('data-original-source-id'),'Real::A|D');
+ assert.equal($('animation').querySelectorAll('[data-source-point-only]').length,8);
+ assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
  assert.equal($('v5StepJump').value,'1');
+ // An actual UI seek after preview corruption must disable the player,
+ // clear all strokes and give a blocked status rather than freezing.
+ const corrupt=document.createElementNS('http://www.w3.org/2000/svg','circle');
+ $('sheetPreview').querySelector('svg').append(corrupt);
+ $('next').dispatchEvent(new window.Event('click'));
+ assert.equal($('next').disabled,true);
+ assert.equal($('animation').children.length,0);
+ assert.equal($('status').dataset.status,'blocked');
+ assert.match($('v5Status').textContent,/作图已停止/);
  $('reviewCheck').dispatchEvent(new window.Event('change'));
  assert.equal($('v5StepJump').disabled,true);
  assert.equal($('v5StepActions').children.length,0);

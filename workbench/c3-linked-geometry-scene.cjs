@@ -63,8 +63,17 @@ function buildC3LinkedGeometryScene({input,revision,compiled,viewTransforms}={})
     compiled.signedEndpointPointActionCount!==m3.branches.length*6||
     compiled.verifiedInteriorStationCount!==m3.branches.length*count)
   fail('C3 source stations and V5 triple count differ');
- const actions=new Map(compiled.constructionSteps?.flatMap(s=>s.actions||[])
-  .map(a=>[a.id,a]));
+ // A source action ID must identify exactly one original V5 geometry.
+ // A Map alone silently keeps the last duplicate, allowing an unrelated
+ // earlier action to borrow that same 2D/3D source identity.
+ const actionRows=compiled.constructionSteps?.flatMap(s=>s.actions||[])||[];
+ const actionIds=new Set();
+ for(const action of actionRows){
+  if(typeof action?.id!=='string'||!action.id||actionIds.has(action.id))
+   fail('duplicate or missing original V5 action ID');
+  actionIds.add(action.id);
+ }
+ const actions=new Map(actionRows.map(a=>[a.id,a]));
  const geometry=[],groups=[];
  for(const [i,station] of expected.entries()){
   const uv=project(station.point);
@@ -117,6 +126,21 @@ function buildC3LinkedGeometryScene({input,revision,compiled,viewTransforms}={})
    };
    const W=[];
    for(const row of sorted){
+    // M5 certifies an OPEN original source interval [lo,hi]; the existing
+    // V5 guide deliberately trims 1e-6 of that span at BOTH ends when
+    // rendering ray-partitioned W intervals. A source ledger may therefore
+    // be complete while a forged xRange/action draws the wrong curve.
+    // Reconstruct precisely the existing producer's rendering contract,
+    // without rounding, snapping or promoting a certified line style.
+    const [lo,hi]=row.sourceXOpenRange||[];
+    const trim=row.m5SourcePartitioned===true?(hi-lo)*1e-6:0;
+    const from=lo+trim,to=hi-trim;
+    if(row.view!=='W'||typeof row.m5SourcePartitioned!=='boolean'||
+       !Number.isFinite(lo)||!Number.isFinite(hi)||!(hi>lo)||
+       !Number.isFinite(from)||!Number.isFinite(to)||!(to>from)||
+       !Array.isArray(row.xRange)||row.xRange.length!==2||
+       row.xRange[0]!==from||row.xRange[1]!==to)
+     fail('analytic W V5 rendered x range differs from original source open interval');
     const a=actions.get(row.id+'Shape');
     const target={parameter:{from:row.xRange[0],to:row.xRange[1]},
      u:coords.y,v:coords.z};
