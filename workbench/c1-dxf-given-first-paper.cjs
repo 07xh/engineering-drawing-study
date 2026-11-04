@@ -10,6 +10,8 @@
 const {validateGivenPacket}=
  require('./c1-authenticated-dxf-to-reviewed-v5.cjs');
 const {VIEWS,toSheet}=require('../core/projection/conventions.js');
+const {auditC1OriginalGivenLineGraph}=
+ require('./c1-original-given-line-graph.cjs');
 const freeze=o=>{
  if(o&&typeof o==='object'&&!Object.isFrozen(o)){
   for(const v of Object.values(o))freeze(v);
@@ -24,6 +26,7 @@ function buildC1DxfGivenFirstPaper(packet){
  const originals=Object.values(packet.views).flat();
  const extent=Math.max(1,...originals.flatMap(p=>[Math.abs(p.u),Math.abs(p.v)]));
  const transform={origin:{x:390,y:290},scale:Math.min(5,215/extent)};
+ const lineGraph=auditC1OriginalGivenLineGraph(packet);
  const views={};
  for(const view of VIEWS){
   const supplied=Object.hasOwn(packet.views,view);
@@ -36,6 +39,7 @@ function buildC1DxfGivenFirstPaper(packet){
     originalCADSourceHandle:packet.givenOriginalHandleEndpoints[view][index].handle,
     originalCADSourceEndpoint:packet.givenOriginalHandleEndpoints[view][index].endpoint
    })):[],
+   originalLineGraph:lineGraph.views[view],
    strokes:supplied?(packet.givenOriginalStrokes?.[view]??[]).map(line=>({
     view,sourceHandle:line.sourceHandle,sourceKind:line.sourceKind,
     sourceLinetype:line.sourceLinetype,
