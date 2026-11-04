@@ -182,3 +182,36 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  assert.match($('v5Status').textContent,/已停止/);
  assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
 });
+
+
+test('real C1 page paints only reviewed GIVEN source LINE metadata, no unknown W and no official GB strokes',()=>{
+ const p=given();
+ p.givenOriginalStrokes={V:[{
+  sourceHandle:'GIVENL1',sourceKind:'LINE',sourceLinetype:'BYLAYER',
+  fromIndex:0,toIndex:1,from:{...p.views.V[0]},to:{...p.views.V[1]},
+  engineeringLineStyle:'undetermined'
+ }],H:[]};
+ const {document,window}=parseHTML(
+  fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8'));
+ const scope={document,window,require:originalRequire,
+  URL:{revokeObjectURL:()=>{}},console,performance:{now:()=>0},
+  requestAnimationFrame:()=>0,cancelAnimationFrame:()=>{}};
+ vm.runInNewContext(fs.readFileSync(entry,'utf8')+
+  '\n;this.__showSource=(value)=>{rawGiven=value;renderOriginalPaper();};',
+  scope,{filename:entry});
+ scope.__showSource(p);
+ const lines=[...document.querySelectorAll('#sheetPreview line')];
+ assert.equal(lines.length,1);
+ const line=lines[0];
+ assert.equal(line.getAttribute('data-original-given-stroke'),'source-only');
+ assert.equal(line.getAttribute('data-source-handle'),'GIVENL1');
+ assert.equal(line.getAttribute('data-source-kind'),'LINE');
+ assert.equal(line.getAttribute('data-source-linetype'),'BYLAYER');
+ assert.equal(line.getAttribute('data-official-line-style'),'undetermined');
+ assert.equal(line.getAttribute('data-v5-action-authorized'),'false');
+ assert.equal(line.closest('[data-view]').getAttribute('data-view'),'V');
+ assert.equal(document.querySelectorAll('#sheetPreview [data-source-role="UNKNOWN"] line').length,0);
+ assert.equal(document.querySelectorAll('#sheetPreview [data-c1-unanswered-view="W"]').length,1);
+ assert.equal(document.querySelectorAll('#animation [data-action-id]').length,0);
+ assert.equal(document.querySelectorAll('#sheetPreview [data-source-point-only]').length,8);
+});
