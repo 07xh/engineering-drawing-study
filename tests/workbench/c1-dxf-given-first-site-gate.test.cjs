@@ -122,3 +122,34 @@ test('only original source-linked GIVEN LINE topology projects on known views; W
   assert.throws(()=>givenOnly(forged),/GIVEN|line|source|stroke|forged|view/i);
  }
 });
+
+
+test('original GIVEN DXF line graph preserves true CAD Handle adjacency without a fictitious junction or GB/V5 signoff',()=>{
+ const packet=make(['V','H']),v=packet.views.V;
+ packet.givenOriginalStrokes={V:[
+  {sourceHandle:'GX1',sourceKind:'LINE',sourceLinetype:'BYLAYER',
+   fromIndex:0,toIndex:1,from:{...v[0]},to:{...v[1]},
+   engineeringLineStyle:'undetermined'},
+  {sourceHandle:'GX2',sourceKind:'LINE',sourceLinetype:'CONTINUOUS',
+   fromIndex:1,toIndex:2,from:{...v[1]},to:{...v[2]},
+   engineeringLineStyle:'undetermined'}
+ ],H:[]};
+ const paper=givenOnly(packet),graph=paper.views.V.originalLineGraph;
+ assert.equal(graph.originalLineInventoryExplicitlyReviewed,true);
+ assert.deepEqual(graph.connectedSourcePointIndexComponents,[[0,1,2],[3]]);
+ assert.deepEqual(graph.vertices[1].incidentOriginalLineHandles,['GX1','GX2']);
+ assert.deepEqual(graph.isolatedSourcePointIndices,[3]);
+ assert.equal(graph.lines[1].view,'V');
+ assert.equal(graph.lines[1].sourceLinetype,'CONTINUOUS');
+ assert.equal(graph.lines[1].certifiedM5Visibility,false);
+ assert.equal(graph.lines[1].signedV5Action,false);
+ assert.equal(graph.projectedCrossingsAreNeverAssumedToBeGraphJunctions,true);
+ assert.equal(paper.views.H.originalLineGraph.originalSourceLineCount,0);
+ assert.equal(paper.views.W.originalLineGraph.originalSourcePointCount,0);
+ assert.equal(paper.views.W.originalLineGraph.originalSourceLineCount,0);
+ assert.equal(paper.officialV5Authorized,false);
+ assert(Object.isFrozen(graph.vertices[1].incidentOriginalLineHandles));
+ const pointOnly=givenOnly(make());
+ assert.equal(pointOnly.views.V.originalLineGraph.originalLineInventoryExplicitlyReviewed,false);
+ assert.equal(pointOnly.views.V.originalLineGraph.isolatedSourcePointIndices.length,4);
+});
