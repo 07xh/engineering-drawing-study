@@ -7,6 +7,8 @@
  * endpoint cannot certify exact physical junction topology or GB/V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {binary64OrderedStepDistance}=
+ require('../core/geometry/binary64-ordered-step-distance.cjs');
 const {boundedOriginalFullPaperEndpointEnvelope}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
@@ -53,8 +55,15 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  const counts={
   globalGeneratedHLREdgesChecked:0,
   uniqueOriginalSourceGlobalEdgesExamined:0,
+  nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases:0,
+  nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints:0,
   nativeOriginalBRepExactPhysicalEndpointPairs:0,
   completeOriginalNative3DClassSourceIntervalRows:0,
+  // Multiple intervals are accepted only when an exact, same-class,
+  // original-source partition is recomputed with no gap, overlap or
+  // contradictory native OCCT interval inventory.
+  multipleNativeM4SourceClassSegmentsHeld:0,
+  exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
   strictlyClassBackedButRoundedOriginalM0PaperEndpoints:0,
@@ -81,8 +90,16 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    throw new RangeError('incomplete native source M4/generated HLR first-angle view');
   const m4ById=new Map();
   for(const x of mv){
-   if(x?.view!==view||!originals.has(x.sourceEdgeId)||
+   // Even an identical source-edge ID and a perfectly tiled [0,1]
+   // interval cannot authorize a row from a previous reviewed revision.
+   // Bind the producer's original M3 source and current M4 revision before
+   // its candidate intervals reach the generated HLR endpoint consumer.
+   if(x?.sourceGeometryId!==geometry.id||x.revision!==cad.revision||
+      x.view!==view||!originals.has(x.sourceEdgeId)||
       m4ById.has(x.sourceEdgeId)||x.officialV5Authorized!==false||
+      x.native3DProvenanceIsNotGenerated2DHLREdgeIdentity!==true||
+      x.completeGlobalVisibilityCertified!==false||
+      x.formalEngineeringLineStyleCertified!==false||
       !Array.isArray(x.segments))
     throw new RangeError('stale or forged native source M4 interval');
    m4ById.set(x.sourceEdgeId,x);
@@ -99,7 +116,35 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false)
     throw new RangeError('forged or duplicate global HLR native ordinal');
    seen.add(key);
-   const line=lines[ordinal],originalId=row.uniqueOriginalSourceFilteredPaperCandidate,
+   const line=lines[ordinal],
+    paperUniqueOriginalId=row.uniqueOriginalSourceFilteredPaperCandidate,
+    directFilteredOriginalId=
+     row.directFilteredGenerated2DNativeIsSameStrict3DSource??null,
+    directWitnesses=row.originalSourceScopedCandidates?.filter(x=>
+     x.actualNativeScopedToWholeSolidTopoDSIsSame===true)??[],
+    directFilterCausal=directFilteredOriginalId!==null;
+   // Only genuine native generated-2D FILTERED-to-WHOLE IsSame with an
+   // exact original 3D M4 class witness can resolve aliasing on paper.
+   // This never establishes original BRep edge -> generated TopoDS history.
+   if(directFilterCausal&&(
+     !originals.has(directFilteredOriginalId)||
+     row.directNativeScopedGeneratedEdgeIsSameSource!==directFilteredOriginalId||
+     row.directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory!==true||
+     directWitnesses.length!==1||
+     directWitnesses[0].sourceEdgeId!==directFilteredOriginalId||
+     directWitnesses[0].globallyReceivedBinary64PaperExactlySameAsNativeScoped!==true||
+     directWitnesses[0].nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper!==true||
+     directWitnesses[0].sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory!==false||
+     directWitnesses[0].actualWholeSolidGenerated2DOriginalTopoDSHistoryProven!==false||
+     row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased!==
+      (paperUniqueOriginalId===null)
+    ))
+    throw new RangeError('native filtered 2D HLR IsSame lacks genuine original 3D source provenance');
+   if(paperUniqueOriginalId!==null&&directFilterCausal&&
+      paperUniqueOriginalId!==directFilteredOriginalId)
+    throw new RangeError('genuine native filtered IsSame conflicts with unique paper owner');
+   const originalId=paperUniqueOriginalId??directFilteredOriginalId,
+    causalOnly=paperUniqueOriginalId===null&&directFilterCausal,
     physical=originals.get(originalId),
     originalBRep=native.get(originalId);
    if(!line?.from||!line.to||!['u','v'].every(k=>
@@ -107,29 +152,104 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     throw new RangeError('incomplete actual whole-solid generated HLR line endpoints');
    counts.globalGeneratedHLREdgesChecked++;
    let modelVerified=false,sourceClassFull=false,originalPaperExact=false,
-    boundedPaper=false,sourcePaperEnvelope=null,links=[];
+    boundedPaper=false,sourcePaperEnvelope=null,links=[],
+    receivedNativeM4SourceClassSegmentCount=0,
+    nativeM4SourceClassMultiplicityHeld=false,
+    exactOnce=false,nativeInventoryClear=false,
+    firstOriginalParameterPartitionDiscontinuity=null;
    if(originalId!==null){
     if(!physical||!originalBRep||
-       row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
-       row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true)
+       (!causalOnly&&(
+        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
+        row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true))||
+       (causalOnly&&(
+        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==false||
+        row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==false||
+        row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge!==false||
+        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge!==false)))
      throw new RangeError('unsigned unique source requires genuine original 3D ownership');
     counts.uniqueOriginalSourceGlobalEdgesExamined++;
+    if(causalOnly)
+     counts.nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases++;
     const [aId,bId]=physical,[a,b]=physical.map(k=>geometry.data.points[k]);
     modelVerified=(xyz(originalBRep.fromOCCT3D,a)&&
       xyz(originalBRep.toOCCT3D,b))||
      (xyz(originalBRep.fromOCCT3D,b)&&
       xyz(originalBRep.toOCCT3D,a));
     if(modelVerified)counts.nativeOriginalBRepExactPhysicalEndpointPairs++;
-    const m4=m4ById.get(originalId),matching=m4?.segments.filter(s=>
-     s.sourceEdgeId===originalId&&s.view===view&&
-     s.native3DHLRClass===klass&&
-     s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
-     s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
-     s.originalM0UnitParameterRange?.[0]===0&&
-     s.originalM0UnitParameterRange?.[1]===1)??[];
-    sourceClassFull=matching.length===1&&
+    const m4=m4ById.get(originalId),received=m4?.segments??[];
+    receivedNativeM4SourceClassSegmentCount=received.length;
+    // Reconstruct the EXACT ORIGINAL M0 source interval partition from
+    // received native 3D M4 segments, without trusting producer "complete"
+    // booleans. A single [0,1] row OR many touching, same-class spans are
+    // legal. A positive gap, a one-ULP overlap, an extra opposite-class
+    // claim, a wrong source/view or unverified row must remain held.
+    // This is not generated 2D TopoDS ancestry or all-face visibility.
+    const valid=received.length>0&&received.length<=512&&
+     received.every(s=>{
+      const range=s?.originalM0UnitParameterRange;
+      return s.sourceEdgeId===originalId&&s.view===view&&
+       s.native3DHLRClass===klass&&
+       s.derivedFromOriginalNative3DCurveNotGeneratedHLRPaper===true&&
+       s.engineeringLineStyle==='undetermined'&&s.signedV5Action===false&&
+       Array.isArray(range)&&range.length===2&&
+       range.every(Number.isFinite)&&range[0]>=0&&range[1]<=1&&
+       range[1]>range[0];
+     });
+    const sorted=valid?[...received].sort((a,b)=>
+      a.originalM0UnitParameterRange[0]-b.originalM0UnitParameterRange[0]||
+      a.originalM0UnitParameterRange[1]-b.originalM0UnitParameterRange[1]):[];
+    let sourceCursor=0;
+    exactOnce=valid;
+    for(const segment of sorted){
+     const [from,to]=segment.originalM0UnitParameterRange;
+     if(from!==sourceCursor){
+      const steps=binary64OrderedStepDistance(sourceCursor,from);
+      firstOriginalParameterPartitionDiscontinuity={
+       class:from>sourceCursor?'positive-gap':'positive-overlap',
+       exactPreviousOriginalM0UnitParameterEnd:sourceCursor,
+       exactNextOriginalM0UnitParameterStart:from,
+       distinctFiniteBinary64Steps:steps.toString(),
+       stillUndetermined:true,signedV5Action:false
+      };
+      if(steps===1n)
+       counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld++;
+      exactOnce=false;break;
+     }
+     sourceCursor=to;
+    }
+    if(exactOnce&&sourceCursor!==1){
+     const steps=binary64OrderedStepDistance(sourceCursor,1);
+     firstOriginalParameterPartitionDiscontinuity={
+      class:'trailing-positive-gap',
+      exactPreviousOriginalM0UnitParameterEnd:sourceCursor,
+      exactNextOriginalM0UnitParameterStart:1,
+      distinctFiniteBinary64Steps:steps.toString(),
+      stillUndetermined:true,signedV5Action:false
+     };
+     if(steps===1n)
+      counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld++;
+    }
+    exactOnce=exactOnce&&sourceCursor===1;
+    // These genuine producer inventories are independent of the rounded
+    // normalized M0 coverage. A positive native OCCT interval lost during
+    // binary64 normalization must never be mistaken for a valid partition.
+    const nativeInventoriesPresent=
+     Array.isArray(m4?.native3DOriginalParameterPositiveGaps)&&
+     Array.isArray(m4?.native3DOriginalParameterPositiveOverlaps)&&
+     Array.isArray(m4?.M4OriginalUnitIntervalNativeClassConflicts);
+    nativeInventoryClear=nativeInventoriesPresent&&
+     m4.native3DOriginalParameterPositiveGaps.length===0&&
+     m4.native3DOriginalParameterPositiveOverlaps.length===0&&
+     m4.M4OriginalUnitIntervalNativeClassConflicts.length===0;
+    nativeM4SourceClassMultiplicityHeld=received.length>1&&
+     (!exactOnce||!nativeInventoryClear);
+    if(nativeM4SourceClassMultiplicityHeld)
+     counts.multipleNativeM4SourceClassSegmentsHeld++;
+    sourceClassFull=exactOnce&&nativeInventoryClear&&
      m4?.native3DSourceParameterPartitionCompleteExactlyOnce===true&&
      m4.M4OriginalUnitIntervalCandidateCoverageComplete===true&&
+     Array.isArray(m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation)&&
      m4.M4ProjectedNative3DIntervalsHeldForBinary64Representation.length===0;
     if(sourceClassFull)counts.completeOriginalNative3DClassSourceIntervalRows++;
     const [p,q]=[project(a)[view],project(b)[view]];
@@ -137,6 +257,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      reverse=p2eq(line.from,q)&&p2eq(line.to,p);
     originalPaperExact=forward||reverse;
     if(originalPaperExact)counts.exactOriginalM0PaperEndpointPairs++;
+    if(causalOnly&&modelVerified&&originalPaperExact&&sourceClassFull)
+     counts.nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints++;
     // The 2D rational native-class check can still be STRICTLY backed
     // while the received OCCT paper ENDPOINT is rounded by <1 ULP.
     // Re-check the physical full-source endpoint pair against the same
@@ -205,10 +327,21 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    if(!modelVerified||!sourceClassFull||!originalPaperExact&&!boundedPaper)
     counts.physicalOriginalM0EndpointRowsHeld++;
    result.push({view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:ordinal,
-    uniqueOriginalSourceFilteredPaperCandidate:originalId,
+    uniqueOriginalSourceFilteredPaperCandidate:paperUniqueOriginalId??null,
+    nativeDirect2DFilteredOriginalSourceCausality:causalOnly?originalId:null,
+    sourceIdentityFromNativeIsSameRatherThanPaperUniqueness:causalOnly,
+    generated2DNativeIsSameDoesNotProveOriginal3DTopoDSHistory:true,
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
     completeOriginalNativeSource3DClassCoversWholeEdge:sourceClassFull,
+    receivedOriginalNativeM4SourceClassSegmentCount:
+     receivedNativeM4SourceClassSegmentCount,
+    receivedNativeM4SourceClassMultiplicityHeld:
+     nativeM4SourceClassMultiplicityHeld,
+    receivedNativeM4ExactSameClassSourcePartitionVerified:exactOnce,
+    receivedNativeM4FirstOriginalSourcePartitionDiscontinuity:
+     firstOriginalParameterPartitionDiscontinuity,
+    receivedNativeM4OriginalOcctParameterInventoryClear:nativeInventoryClear,
     receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly:
      originalPaperExact,
     generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity:

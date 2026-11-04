@@ -54,10 +54,17 @@ function setup({two=false,rounded=false,missingPartition=false}={}){
     signedV5Action:false
    });
    sourceM4Views[view].nativeOriginal3DM4Candidates.push({
+    sourceGeometryId:geometry.id,revision:cad.revision,
     view,sourceEdgeId:id,officialV5Authorized:false,
+    native3DProvenanceIsNotGenerated2DHLREdgeIdentity:true,
+    completeGlobalVisibilityCertified:false,
+    formalEngineeringLineStyleCertified:false,
     native3DSourceParameterPartitionCompleteExactlyOnce:!missingPartition,
     M4OriginalUnitIntervalCandidateCoverageComplete:!missingPartition,
     M4ProjectedNative3DIntervalsHeldForBinary64Representation:[],
+    native3DOriginalParameterPositiveGaps:[],
+    native3DOriginalParameterPositiveOverlaps:[],
+    M4OriginalUnitIntervalNativeClassConflicts:[],
     segments:[{view,sourceEdgeId:id,native3DHLRClass:'visible-sharp',
      originalM0UnitParameterRange:[0,1],
      derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
@@ -107,6 +114,132 @@ test('rounded native HLR paper endpoint cannot be promoted to exact physical ori
  assert.equal(r.views.V.rows[0].original3DToGenerated2DEndpointWitnesses[0].
   generatedPaperExactlyEqualsOriginalM0Vertex,false);
  assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+});
+test('C1 M5 endpoint ledger refuses extra opposite-class source interval even with forged full coverage flags',()=>{
+ const x=setup(),m4=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+ m4.segments.push({
+  view:'W',sourceEdgeId:m4.sourceEdgeId,native3DHLRClass:'hidden-sharp',
+  originalM0UnitParameterRange:[0.25,0.75],
+  derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ // The previous consumer only counted a full same-class [0,1] row and
+ // trusted the unchanged producer booleans, overlooking this contradiction.
+ assert.equal(m4.native3DSourceParameterPartitionCompleteExactlyOnce,true);
+ assert.equal(m4.M4OriginalUnitIntervalCandidateCoverageComplete,true);
+ const r=audit(x),w=r.views.W.rows[0];
+ assert.equal(r.counts.multipleNativeM4SourceClassSegmentsHeld,1);
+ assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,2);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ assert.equal(w.receivedOriginalNativeM4SourceClassSegmentCount,2);
+ assert.equal(w.receivedNativeM4SourceClassMultiplicityHeld,true);
+ assert.equal(w.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(w.original3DToGenerated2DEndpointWitnesses.every(e=>
+  e.entireOriginal3DSourceNativeClassConfirmed===false),true);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('duplicate same-class microinterval is not absorbed into a falsely unique M4 full source',()=>{
+ const x=setup({rounded:true});
+ const m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ const tiny=Number.EPSILON;
+ m4.segments.push({
+  view:'V',sourceEdgeId:m4.sourceEdgeId,native3DHLRClass:'visible-sharp',
+  originalM0UnitParameterRange:[1-tiny,1],
+  derivedFromOriginalNative3DCurveNotGeneratedHLRPaper:true,
+  engineeringLineStyle:'undetermined',signedV5Action:false
+ });
+ const r=audit(x),v=r.views.V.rows[0];
+ assert.equal(v.receivedNativeM4SourceClassMultiplicityHeld,true);
+ assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(v.generated2DRepresentationBoundedOnlyWithoutPhysicalVertexIdentity,false,
+  'even an otherwise ULP-bounded paper endpoint cannot borrow duplicate source class');
+ assert.equal(r.counts.roundedOnlyOriginalM0PaperEndpointPairs,0);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ assert.equal(r.counts.multipleNativeM4SourceClassSegmentsHeld,1);
+});
+test('genuine sole full-range native M4 segment still links original physical endpoints without signing GB/V5',()=>{
+ const r=audit(setup());
+ assert.equal(r.counts.multipleNativeM4SourceClassSegmentsHeld,0);
+ for(const view of ['V','H','W']){
+  const row=r.views[view].rows[0];
+  assert.equal(row.receivedOriginalNativeM4SourceClassSegmentCount,1);
+  assert.equal(row.receivedNativeM4SourceClassMultiplicityHeld,false);
+  assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ }
+ assert.equal(r.generated2DToOriginal3DNativeTopoDSVertexTopologyCertified,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+
+test('C1/M5 accepts unsorted adjacent SAME-class original native source spans only when exact-once',()=>{
+ const x=setup(),m4=x.sourceM4Views.H.nativeOriginal3DM4Candidates[0];
+ const base=m4.segments[0];
+ // Actual OCCT may split one physical source into multiple native class
+ // intervals. Sorted order is irrelevant; no fabricated [0,1] span needed.
+ m4.segments=[
+  {...base,originalM0UnitParameterRange:[0.5,1]},
+  {...base,originalM0UnitParameterRange:[0,0.5]}
+ ];
+ const r=audit(x),row=r.views.H.rows[0];
+ assert.equal(row.receivedOriginalNativeM4SourceClassSegmentCount,2);
+ assert.equal(row.receivedNativeM4ExactSameClassSourcePartitionVerified,true);
+ assert.equal(row.receivedNativeM4OriginalOcctParameterInventoryClear,true);
+ assert.equal(row.receivedNativeM4SourceClassMultiplicityHeld,false);
+ assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ assert.equal(r.counts.completeOriginalNative3DClassSourceIntervalRows,3);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,0);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('C1/M5 holds a positive one-ULP hole or overlap between two otherwise verified native source spans',()=>{
+ for(const spans of [
+  [[0,0.5],[0.5+Number.EPSILON,1]],
+  [[0,0.5+Number.EPSILON],[0.5,1]]
+ ]){
+  const x=setup(),m4=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+  const template=m4.segments[0];
+  m4.segments=spans.map(r=>({...template,originalM0UnitParameterRange:r}));
+  const r=audit(x),w=r.views.W.rows[0];
+  assert.equal(w.receivedOriginalNativeM4SourceClassSegmentCount,2);
+  assert.equal(w.receivedNativeM4ExactSameClassSourcePartitionVerified,false);
+  assert.equal(w.receivedNativeM4SourceClassMultiplicityHeld,true);
+  assert.equal(w.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+  assert.equal(r.officialV5Authorized,false);
+ }
+});
+test('C1/M5 refuses apparent full normalized source if genuine native OCCT parameter inventory reports positive gap',()=>{
+ const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m4.native3DOriginalParameterPositiveGaps.push([0.5,0.5+Number.EPSILON]);
+ const r=audit(x),v=r.views.V.rows[0];
+ assert.equal(v.receivedNativeM4ExactSameClassSourcePartitionVerified,true);
+ assert.equal(v.receivedNativeM4OriginalOcctParameterInventoryClear,false);
+ assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('C1/M5 rejects forged same-class source row with a different source ID even if intervals cover whole edge',()=>{
+ const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0];
+ m4.segments[0].sourceEdgeId='g::foreign';
+ const r=audit(x),v=r.views.V.rows[0];
+ assert.equal(v.receivedNativeM4ExactSameClassSourcePartitionVerified,false);
+ assert.equal(v.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+ assert.equal(r.counts.physicalOriginalM0EndpointRowsHeld,1);
+});
+test('stale M4 revision or forged geometry identity is rejected before original HLR endpoint linking',()=>{
+ const mutators=[
+  row=>{row.revision=4;},
+  row=>{row.sourceGeometryId='other-geometry';},
+  row=>{row.native3DProvenanceIsNotGenerated2DHLREdgeIdentity=false;},
+  row=>{row.completeGlobalVisibilityCertified=true;},
+  row=>{row.formalEngineeringLineStyleCertified=true;}
+ ];
+ for(const mutate of mutators){
+  const x=setup(),row=x.sourceM4Views.W.nativeOriginal3DM4Candidates[0];
+  mutate(row);
+  assert.throws(()=>audit(x),/stale or forged native source M4 interval/);
+ }
+ const valid=audit(setup());
+ assert.equal(valid.counts.completeOriginalNative3DClassSourceIntervalRows,3);
+ assert.equal(valid.officialV5Authorized,false);
 });
 test('native original 3D partition gaps preserve hold even with exact original endpoint projections',()=>{
  const r=audit(setup({missingPartition:true}));
@@ -236,5 +369,95 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
  ]){
   const x=attachGenuineNativePair(setup({two:true}));mutate(x);
   assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
+ }
+});
+
+
+test('M4 native exact binary64 one-step gap/overlap remains held; reuse #1065 numerical helper without tolerance',()=>{
+ for(const [spans,klass] of [
+  [[[0,0.5],[0.5+Number.EPSILON/2,1]],'positive-gap'],
+  [[[0,0.5],[0.5-Number.EPSILON/4,1]],'positive-overlap']
+ ]){
+  const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0],
+   original=m4.segments[0];
+  m4.segments=spans.map(range=>({...original,originalM0UnitParameterRange:range}));
+  const result=audit(x),row=result.views.V.rows[0],
+   fault=row.receivedNativeM4FirstOriginalSourcePartitionDiscontinuity;
+  assert.equal(fault.class,klass);
+  assert.equal(fault.distinctFiniteBinary64Steps,'1');
+  assert.equal(fault.stillUndetermined,true);
+  assert.equal(fault.signedV5Action,false);
+  assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(row.engineeringLineStyle,'undetermined');
+  assert.equal(result.counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld,1);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+ const clean=audit(setup());
+ assert.equal(clean.views.V.rows[0].receivedNativeM4FirstOriginalSourcePartitionDiscontinuity,null);
+ assert.equal(clean.counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld,0);
+});
+
+
+function attachGenuineFiltered2DDirectIdentityWithPaperAlias(x){
+ const row=x.globalRebinding.views.V[0];
+ const actual=row.uniqueOriginalSourceFilteredPaperCandidate,alias='g::A|C';
+ row.uniqueOriginalSourceFilteredPaperCandidate=null;
+ row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge=false;
+ row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree=false;
+ row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge=false;
+ row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge=false;
+ row.directNativeScopedGeneratedEdgeIsSameSource=actual;
+ row.directFilteredGenerated2DNativeIsSameStrict3DSource=actual;
+ row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased=true;
+ row.directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory=true;
+ row.originalSourceScopedCandidates=[
+  {sourceEdgeId:actual,actualNativeScopedToWholeSolidTopoDSIsSame:true,
+   globallyReceivedBinary64PaperExactlySameAsNativeScoped:true,
+   nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper:true,
+   sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory:false,
+   actualWholeSolidGenerated2DOriginalTopoDSHistoryProven:false},
+  {sourceEdgeId:alias,actualNativeScopedToWholeSolidTopoDSIsSame:false,
+   globallyReceivedBinary64PaperExactlySameAsNativeScoped:true,
+   nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper:true,
+   sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory:false,
+   actualWholeSolidGenerated2DOriginalTopoDSHistoryProven:false}
+ ];
+ return x;
+}
+test('genuine native filtered-to-global 2D HLR identity recovers ORIGINAL 3D BRep endpoint evidence under paper aliases, not TopoDS history',()=>{
+ const x=attachGenuineFiltered2DDirectIdentityWithPaperAlias(setup({two:true}));
+ const r=audit(x),row=r.views.V.rows[0];
+ assert.equal(row.uniqueOriginalSourceFilteredPaperCandidate,null);
+ assert.equal(row.nativeDirect2DFilteredOriginalSourceCausality,'g::A|B');
+ assert.equal(row.sourceIdentityFromNativeIsSameRatherThanPaperUniqueness,true);
+ assert.deepEqual(row.originalPhysicalM0EdgeEndpointIds,['A','B']);
+ assert.equal(row.trueOriginalNativeOCCT3DEndpointsMatchM0Exactly,true);
+ assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ assert.equal(row.receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly,true);
+ assert.equal(r.counts.nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases,1);
+ assert.equal(r.counts.nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints,1);
+ assert.equal(row.generated2DNativeIsSameDoesNotProveOriginal3DTopoDSHistory,true);
+ assert.equal(row.generated2DToOriginalNativeTopoDSFullVertexTopologyCertified,false);
+ assert.equal(row.continuousAllOpaqueFaceVisibilityProven,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('no native IsSame laundering from spoofed filtered source, weak class, wrong ordinal or old generation',()=>{
+ const mutations=[
+  row=>{row.directNativeScopedGeneratedEdgeIsSameSource='g::A|C';},
+  row=>{row.directFilteredGenerated2DNativeIsSameStrict3DSource='g::A|C';},
+  row=>{row.originalSourceScopedCandidates[0].sourceEdgeId='g::A|C';},
+  row=>{row.originalSourceScopedCandidates[0].actualNativeScopedToWholeSolidTopoDSIsSame=false;},
+  row=>{row.originalSourceScopedCandidates[1].actualNativeScopedToWholeSolidTopoDSIsSame=true;},
+  row=>{row.originalSourceScopedCandidates[0].nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper=false;},
+  row=>{row.originalSourceScopedCandidates[0].globallyReceivedBinary64PaperExactlySameAsNativeScoped=false;},
+  row=>{row.originalSourceScopedCandidates[0].actualWholeSolidGenerated2DOriginalTopoDSHistoryProven=true;},
+  row=>{row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased=false;}
+ ];
+ for(const mutate of mutations){
+  const x=attachGenuineFiltered2DDirectIdentityWithPaperAlias(setup({two:true}));
+  mutate(x.globalRebinding.views.V[0]);
+  assert.throws(()=>audit(x),/native filtered 2D HLR IsSame|filtered 2D source|source provenance/i);
  }
 });

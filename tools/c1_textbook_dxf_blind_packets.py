@@ -93,7 +93,8 @@ def inspect_geometry_entities(dxf: pathlib.Path) -> dict:
             elif kind == "LINE":
                 rows[handle] = {
                     "type": kind, "layout": layout.name,
-                    "start": tuple(e.dxf.start), "end": tuple(e.dxf.end)
+                    "start": tuple(e.dxf.start), "end": tuple(e.dxf.end),
+                    "linetype": str(e.dxf.get("linetype", "BYLAYER"))
                 }
             else:
                 rows[handle] = {"type": kind, "layout": layout.name}
@@ -203,6 +204,55 @@ def build_blind_packets(*, source_sha256: str, dxf_sha256: str, partition: dict,
             len(seen_second) != len(view_points[second])
         ):
             raise ValueError("reviewed mapping leaves original two-dimensional CAD vertex unassigned")
+    # Optional exact provenance of original GIVEN 2D LINE strokes. An OCR
+    # candidate or geometrically inferred 3D edge cannot enter this inventory.
+    reviewed_strokes = review.get("givenViewStrokes")
+    given_strokes = None
+    if reviewed_strokes is not None:
+        if not isinstance(reviewed_strokes, dict) or set(reviewed_strokes) != set(selected):
+            raise ValueError("GIVEN LINE inventory must match exactly the two known views")
+        given_strokes = {}
+        seen_strokes = set()
+        for view in sorted(selected):
+            rows = reviewed_strokes[view]
+            if not isinstance(rows, list) or len(rows) > 512:
+                raise ValueError("bounded original GIVEN LINE inventory required")
+            frame = _frame(frames[view])
+            output = []
+            for edge in rows:
+                if not isinstance(edge, dict) or set(edge) != {"handle", "fromIndex", "toIndex"}:
+                    raise ValueError("GIVEN LINE requires original handle and two explicit source point indexes")
+                handle = edge["handle"]
+                i, j = edge["fromIndex"], edge["toIndex"]
+                if handle not in given or handle in answer or handle in seen_strokes:
+                    raise ValueError("unreviewed, duplicated or answer-bearing original GIVEN LINE handle")
+                if type(i) is not int or type(j) is not int or i == j or (
+                    not 0 <= i < len(view_points[view]) or
+                    not 0 <= j < len(view_points[view])
+                ):
+                    raise ValueError("GIVEN LINE endpoint indices outside original reviewed points")
+                original = entities.get(handle)
+                if not isinstance(original, dict) or original.get("type") != "LINE" or (
+                    original.get("layout") != "Model"
+                ):
+                    raise ValueError("GIVEN source stroke is not an original DXF Modelspace LINE")
+                start = _project(_xy(original.get("start")), frame)
+                end = _project(_xy(original.get("end")), frame)
+                if any(abs(start[k]-view_points[view][i][k]) > 1e-8 for k in ("u","v")) or (
+                    any(abs(end[k]-view_points[view][j][k]) > 1e-8 for k in ("u","v"))
+                ) or math.hypot(start["u"]-end["u"],start["v"]-end["v"])<=1e-9:
+                    raise ValueError("GIVEN LINE does not join its reviewed original CAD vertices")
+                linetype = original.get("linetype", "BYLAYER")
+                if not isinstance(linetype, str) or not (1 <= len(linetype) <= 64) or (
+                    not all(c.isascii() and (c.isalnum() or c in "_-") for c in linetype)
+                ):
+                    raise ValueError("invalid raw source linetype; never guess GB engineering style")
+                output.append({"sourceHandle":handle,"sourceKind":"LINE",
+                    "sourceLinetype":linetype,"fromIndex":i,"toIndex":j,
+                    "from":start,"to":end,"engineeringLineStyle":"undetermined"})
+                seen_strokes.add(handle)
+                used_given.add(handle)
+            given_strokes[view] = output
     if set(given) != used_given:
         raise ValueError("unaccounted given CAD handles require review, not silent omission")
     missing_view = next(v for v in ("V", "H", "W") if v not in selected)
@@ -240,6 +290,8 @@ def build_blind_packets(*, source_sha256: str, dxf_sha256: str, partition: dict,
         "convertedDxfSha256": dxf_sha256,
         "views": view_points,
         "givenOriginalHandleEndpoints": given_provenance,
+        **({"givenOriginalStrokes": given_strokes}
+           if given_strokes is not None else {}),
         **({"reviewedCorrespondences": reviewed_pairs}
            if reviewed_pairs is not None else {}),
         "missingView": missing_view,

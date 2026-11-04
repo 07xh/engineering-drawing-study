@@ -8,24 +8,28 @@ function fixture(){
  const steps=[
   {id:'given_0',dependsOn:[],title:'核对原题的第一个点',
    explanation:'从原题已确认的投影位置标记该点。',
-   actions:[{id:'p_0',kind:'point'}]},
+   actions:[{id:'p_0',kind:'point',geometry:{center:{x:10,y:20},radius:4}}]},
   {id:'guide_1',dependsOn:['given_0'],title:'传递投影辅助线',
-   actions:[{id:'g_1',kind:'line'}]},
+   actions:[{id:'g_1',kind:'line',geometry:{from:{x:10,y:20},to:{x:11,y:22}}}]},
   {id:'edge_2',dependsOn:['guide_1'],title:'签收实体的真实可见边',
    explanation:'已核对 M5 原始棱线及连续遮挡。',
-   actions:[{id:'edge_2_action',kind:'line',engineeringLineStyle:visible}]}
+   actions:[{id:'edge_2_action',kind:'line',engineeringLineStyle:visible,
+    geometry:{from:{x:1,y:2},to:{x:3,y:4}}}]}
  ];
  const timeline=Timeline.compileTimeline(steps);
  const player=Timeline.createPlayer(timeline,{revision:9});
  const solution={revision:9,singleOriginalV5Player:true,player,steps,timeline,
+  sceneResult:{geometry:{id:'Tetra'}},
   intents:[{id:'given_0',source:{solver:'mathematical-c1-projection',
    proofScope:'reviewed-point'}},{id:'guide_1',source:{solver:'original-03',
    proofScope:'point-projection-only'}},{id:'edge_2',source:{solver:'M0-M5',
    proofScope:'closed-convex-signed-edge'}}],
   certifiedVisibleContourLineBindings:[],
   certifiedPhysicalLineBindings:[{actionId:'edge_2_action',revision:9,
-   signedFormalLineV5:true,sourceEdgeId:'Tetra::A|C',view:'W',
-   standardLineStyle:visible,originalParameterRange:[0,1]}]
+   signedFormalLineV5:true,sourceGeometryId:'Tetra',
+   sourceEdgeId:'Tetra::A|C',view:'W',
+   standardLineStyle:visible,originalParameterRange:[0,1],
+   fromSheetPx:{x:1,y:2},toSheetPx:{x:3,y:4}}]
  };
  return {solution,revision:9,frame:player.snapshot()};
 }
@@ -65,7 +69,7 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  const base=fixture(),bad=edit=>{const f=fixture();edit(f);return()=>inspect(f);};
  assert.throws(()=>inspect({...base,revision:8}),/source-current/);
  assert.throws(bad(f=>{f.solution.singleOriginalV5Player=false;}),/source-current/);
- assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step/);
+ assert.throws(bad(f=>{f.frame.activeStepIndex=2;}),/active step|frame fractions/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].revision=8;}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings.push(
   {...f.solution.certifiedPhysicalLineBindings[0]});}),/signed source/);
@@ -74,8 +78,77 @@ test('stale revision, forged source, orphan actions, duplicate bindings and unsi
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].standardLineStyle=
   'arbitrary';}),/signed source/);
  assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceEdgeId='';}),/signed source/);
+ assert.throws(bad(f=>{f.solution.certifiedPhysicalLineBindings[0].sourceGeometryId='Other';}),/signed source/);
+ assert.throws(bad(f=>{f.solution.sceneResult.geometry.id='Other';}),/signed source/);
  assert.throws(bad(f=>{f.solution.steps[2].actions[0].id='unknown_action';}),/V5 action/);
  assert.throws(bad(f=>{f.frame.invalid=true;}),/source-current/);
+});
+test('frame zero rejects future line, forged completed action, extra action and foreign timeline before paint',()=>{
+ const corrupt=[
+  f=>{f.frame.actionFractions.edge_2_action=1;},
+  f=>{f.frame.completedIds.push('edge_2_action');},
+  f=>{f.frame.actionFractions.future_answer=1;},
+  f=>{f.frame.elapsedMs=f.solution.timeline.totalMs;},
+  f=>{f.solution.timeline={...f.solution.timeline};}
+ ];
+ for(const mutate of corrupt){
+  const f=fixture();mutate(f);
+  assert.throws(()=>inspect(f),/canonical|source-current|frame fractions|sole player snapshot/);
+ }
+ const f=fixture();
+ f.solution.player.seekStep(2,20);
+ const legitimate=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(legitimate.actions[0].formalLineCertified,true);
+ assert.equal(legitimate.stepIndex,2);
+});
+test('a fully self-consistent future timeline frame cannot outrun the sole V5 player',()=>{
+ const f=fixture(),t=f.solution.timeline;
+ const future=Timeline.frame(t,t.totalMs);
+ // All fractions, completed IDs, active step, ratio and elapsed time agree
+ // with the genuine compiled timeline. Only the player's actual playhead
+ // remains at the GIVEN-only initial frame.
+ const forged={...future,revision:9,playing:false,invalid:false,speed:1};
+ assert.throws(()=>inspect({...f,frame:forged}),/sole player snapshot/);
+ // Even a matching elapsed time is not enough to forge a different
+ // playback state or speed in the read-only teaching inspector.
+ const fakePlaying=fixture();fakePlaying.frame.playing=true;
+ assert.throws(()=>inspect(fakePlaying),/sole player snapshot/);
+ const fakeSpeed=fixture();fakeSpeed.frame.speed=4;
+ assert.throws(()=>inspect(fakeSpeed),/sole player snapshot/);
+ // A real seek, including a seek to the final drawing step, stays valid.
+ f.solution.player.seekStep(2,20);
+ const real=inspect({...f,frame:f.solution.player.snapshot()});
+ assert.equal(real.stepIndex,2);
+ assert.equal(real.actions[0].formalLineCertified,true);
+});
+
+test('signed V5 endpoints must equal original M5 binding; future tampering fails at frame zero',()=>{
+ const corrupt=[
+  f=>{f.solution.steps[2].actions[0].geometry.to.x=3.0000000000000004;},
+  f=>{f.solution.steps[2].actions[0].geometry.from={x:3,y:4};
+   f.solution.steps[2].actions[0].geometry.to={x:1,y:2};},
+  f=>{f.solution.certifiedPhysicalLineBindings[0].toSheetPx.y=4.000000000000001;},
+  f=>{delete f.solution.certifiedPhysicalLineBindings[0].fromSheetPx;},
+  f=>{f.solution.steps[1].actions[0].geometry.to={x:10,y:20};},
+  f=>{f.solution.steps[1].actions[0].geometry.to={x:NaN,y:20};}
+ ];
+ for(const mutate of corrupt){
+  const f=fixture();mutate(f);
+  assert.throws(()=>inspect(f),/paper endpoints|finite drawing action/);
+ }
+ const valid=fixture();
+ valid.solution.player.seekStep(2,20);
+ assert.equal(inspect({...valid,frame:valid.solution.player.snapshot()})
+  .actions[0].formalLineCertified,true);
+});
+test('subtitle-only step cannot count as C1 formal teaching construction',()=>{
+ const f=fixture();
+ f.solution.steps[1].actions=[];
+ const timeline=Timeline.compileTimeline(f.solution.steps);
+ f.solution.timeline=timeline;
+ f.solution.player=Timeline.createPlayer(timeline,{revision:9});
+ f.frame=f.solution.player.snapshot();
+ assert.throws(()=>inspect(f),/action or DAG dependency/);
 });
 test('real independently compiled DXF reviewed tetra uses exact same signed/unsigned canonical V5 DAG',async()=>{
  const {compileReviewedC1DxfGivenToSoleV5}=require(

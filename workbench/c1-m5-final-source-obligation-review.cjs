@@ -32,7 +32,7 @@ function reviewC1M5FinalStrokeObligations(ledger){
     ledger.signedV5ActionCount!==0||ledger.wholeSolidV5Ready!==false||
     !Array.isArray(ledger.subspans))
   throw new TypeError('canonical unsigned real-WASM M5 obligations required');
- const exactSourceKeys=new Set();
+ const exactSourceKeys=new Set(),sourceIntervals=new Map();
  const rows=ledger.subspans.map((span,index)=>{
   if(span.sourceGeometryId!==ledger.sourceGeometryId||
      span.revision!==ledger.revision||
@@ -56,6 +56,12 @@ function reviewC1M5FinalStrokeObligations(ledger){
   if(exactSourceKeys.has(sourceKey))
    throw new TypeError('duplicate original 3D source interval');
   exactSourceKeys.add(sourceKey);
+  // The original M0 3D source interval must not overlap another subspan
+  // of the same source/view, even by exactly one binary64 representable step.
+  if(!sourceIntervals.has(span.view))sourceIntervals.set(span.view,new Map());
+  const group=sourceIntervals.get(span.view);
+  if(!group.has(span.sourceEdgeId))group.set(span.sourceEdgeId,[]);
+  group.get(span.sourceEdgeId).push([start,end]);
   const independentGlobalProofGaps={
    original3DSourceIdentity:span.blockers.originalSourceUniquenessNotProvenEvenAfterExactM0Pruning||
     span.originalCADTopoDSEdgeIdentityRecovered!==true,
@@ -83,6 +89,37 @@ function reviewC1M5FinalStrokeObligations(ledger){
    constructionIntentAuthorized:false,signedV5Action:false
   };
  });
+ // Recompute original source parameter gaps without epsilon or paper
+ // approximation. An absent segment is a diagnostic hold, not a proof that
+ // the original geometry itself is incomplete (e.g. source may be exterior).
+ // The caller must still independently prove complete original CAD source
+ // inventory and global opaque-scene occlusion before signing any line.
+ const originalSourceIntervalDiagnostics=[];
+ for(const [view,group] of sourceIntervals){
+  for(const [sourceEdgeId,ranges] of group){
+   const ordered=[...ranges].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+   const uncovered=[];let cursor=0;
+   for(const [start,end] of ordered){
+    if(start<cursor)
+     throw new TypeError('overlapping original 3D source parameter intervals');
+    if(start>cursor)uncovered.push([cursor,start]);
+    cursor=end;
+   }
+   if(cursor<1)uncovered.push([cursor,1]);
+   originalSourceIntervalDiagnostics.push({
+    view,sourceEdgeId,observedOriginalSourceSubspanCount:ordered.length,
+    observedOriginalParameterRanges:ordered.map(r=>[...r]),
+    positiveLengthUncoveredOriginalParameterRanges:uncovered,
+    observedSpansExactNonoverlap:true,
+    originalSourceFullCoverageFromObservedSpansOnly:uncovered.length===0,
+    entire3DSourceInventoryIndependentlyProven:false,
+    opaqueSceneVisibilityCertified:false,
+    formalLineStyle:'undetermined',signedV5Action:false
+   });
+  }
+ }
+ originalSourceIntervalDiagnostics.sort((a,b)=>
+  a.view.localeCompare(b.view)||a.sourceEdgeId.localeCompare(b.sourceEdgeId));
  if(ledger.counts?.totalOriginalSourceEdgeViewSubspans!==rows.length)
   throw new TypeError('source interval count mismatch');
  return freeze({
@@ -90,6 +127,14 @@ function reviewC1M5FinalStrokeObligations(ledger){
   sourceGeometryId:ledger.sourceGeometryId,revision:ledger.revision,
   total:rows.length,localPositiveCount:rows.filter(x=>x.localPositive).length,
   fullyCertifiedCount:0,signedV5ActionCount:0,
+  observedOriginalSourceViewGroups:originalSourceIntervalDiagnostics.length,
+  observedSourceViewGroupsWithPositiveUncoveredRanges:
+   originalSourceIntervalDiagnostics.filter(x=>
+    x.positiveLengthUncoveredOriginalParameterRanges.length>0).length,
+  observedPositiveUncoveredOriginalSourceParameterRanges:
+   originalSourceIntervalDiagnostics.reduce((n,x)=>
+    n+x.positiveLengthUncoveredOriginalParameterRanges.length,0),
+  originalSourceIntervalDiagnostics,
   unresolvedByProofClass:Object.fromEntries(
    ['original3DSourceIdentity','completeIntervalVisibility',
     'endpointAndProjectionTopology','engineeringLineStandard',

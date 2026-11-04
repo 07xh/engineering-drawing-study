@@ -72,12 +72,84 @@ test('real C1 local review page refuses automatic guessed missing-view preview',
   assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1);
  assert.match(html,/<button id="showCandidate"[^>]*disabled>/);
  assert.match(html,/原题已知视图（默认）/);
- assert.match(script,/buildC1DxfGivenFirstPaper\(rawGiven\)/);
- assert.match(script,/'data-c1-unanswered-view':view/);
- assert.match(script,/'data-c1-paper-mode':'given'/);
+ // The source packet is converted only inside the shared canonical builder,
+ // not by cloning mutable preview DOM into the official V5 first frame.
+ const paperModule=fs.readFileSync('labs/c1-original-given-paper-svg.cjs','utf8');
+ assert.match(paperModule,/buildC1DxfGivenFirstPaper\(packet\)/);
+ assert.match(script,/createC1OriginalGivenPaperSvg\(packet,node\)/);
+ assert.match(script,/makeCanonicalGivenPaperSvg\(rawGiven\)/);
+ assert.match(script,/preview\.outerHTML!==canonical\.outerHTML/);
+ assert.match(script,/for\(const child of canonical\.children\)/);
+ assert.doesNotMatch(script,/for\(const child of preview\.children\)/);
+ assert.match(paperModule,/'data-c1-unanswered-view':view/);
+ assert.match(paperModule,/'data-c1-paper-mode':'given'/);
  assert.match(script,/'data-c1-paper-mode':'unsigned-candidate'/);
  assert.match(script,/\$\('showCandidate'\)\.addEventListener\('click'/);
  assert.match(script,/\$\('showGiven'\)\.addEventListener\('click'/);
  assert.doesNotMatch(script,/renderCandidate\(inferred,projectCandidate\(inferred\)\)/);
  assert.doesNotMatch(script,/\bfetch\(|\blocalStorage\.|sessionStorage\.|XMLHttpRequest/);
+});
+
+
+test('only original source-linked GIVEN LINE topology projects on known views; W remains blank',()=>{
+ const given=make(['V','H']);
+ const a=given.views.V[0],b=given.views.V[1];
+ given.givenOriginalStrokes={V:[{sourceHandle:'GVLINE',sourceKind:'LINE',
+  sourceLinetype:'BYLAYER',fromIndex:0,toIndex:1,from:{...a},to:{...b},
+  engineeringLineStyle:'undetermined'}],H:[]};
+ const paper=givenOnly(given);
+ assert.equal(paper.originalGivenLineTopologyAvailable,true);
+ assert.equal(paper.reviewedOriginalGivenLineSourceCount,1);
+ assert.equal(paper.views.V.strokes.length,1);
+ assert.equal(paper.views.H.strokes.length,0);
+ assert.equal(paper.views.W.strokes.length,0);
+ assert.equal(paper.views.W.points.length,0);
+ const stroke=paper.views.V.strokes[0];
+ assert.deepEqual(stroke.fromPaper,toSheet('V',a,paper.transform));
+ assert.deepEqual(stroke.toPaper,toSheet('V',b,paper.transform));
+ assert.equal(stroke.sourceHandle,'GVLINE');
+ assert.equal(stroke.officialEngineeringLineStyle,'undetermined');
+ assert.equal(stroke.authorizedV5Action,false);
+ assert.equal(paper.formalEngineeringLinesCertified,false);
+ for(const tamper of [
+  p=>p.givenOriginalStrokes.V[0].from.u+=1,
+  p=>p.givenOriginalStrokes.V[0].engineeringLineStyle='gb-t-4457.4-continuous-wide-visible-outline',
+  p=>p.givenOriginalStrokes.W=[],
+  p=>p.givenOriginalStrokes.V[0].sourceHandle='../../../answer',
+  p=>p.givenOriginalStrokes.V[0].toIndex=0
+ ]){
+  const forged=JSON.parse(JSON.stringify(given));tamper(forged);
+  assert.throws(()=>givenOnly(forged),/GIVEN|line|source|stroke|forged|view/i);
+ }
+});
+
+
+test('original GIVEN DXF line graph preserves true CAD Handle adjacency without a fictitious junction or GB/V5 signoff',()=>{
+ const packet=make(['V','H']),v=packet.views.V;
+ packet.givenOriginalStrokes={V:[
+  {sourceHandle:'GX1',sourceKind:'LINE',sourceLinetype:'BYLAYER',
+   fromIndex:0,toIndex:1,from:{...v[0]},to:{...v[1]},
+   engineeringLineStyle:'undetermined'},
+  {sourceHandle:'GX2',sourceKind:'LINE',sourceLinetype:'CONTINUOUS',
+   fromIndex:1,toIndex:2,from:{...v[1]},to:{...v[2]},
+   engineeringLineStyle:'undetermined'}
+ ],H:[]};
+ const paper=givenOnly(packet),graph=paper.views.V.originalLineGraph;
+ assert.equal(graph.originalLineInventoryExplicitlyReviewed,true);
+ assert.deepEqual(graph.connectedSourcePointIndexComponents,[[0,1,2],[3]]);
+ assert.deepEqual(graph.vertices[1].incidentOriginalLineHandles,['GX1','GX2']);
+ assert.deepEqual(graph.isolatedSourcePointIndices,[3]);
+ assert.equal(graph.lines[1].view,'V');
+ assert.equal(graph.lines[1].sourceLinetype,'CONTINUOUS');
+ assert.equal(graph.lines[1].certifiedM5Visibility,false);
+ assert.equal(graph.lines[1].signedV5Action,false);
+ assert.equal(graph.projectedCrossingsAreNeverAssumedToBeGraphJunctions,true);
+ assert.equal(paper.views.H.originalLineGraph.originalSourceLineCount,0);
+ assert.equal(paper.views.W.originalLineGraph.originalSourcePointCount,0);
+ assert.equal(paper.views.W.originalLineGraph.originalSourceLineCount,0);
+ assert.equal(paper.officialV5Authorized,false);
+ assert(Object.isFrozen(graph.vertices[1].incidentOriginalLineHandles));
+ const pointOnly=givenOnly(make());
+ assert.equal(pointOnly.views.V.originalLineGraph.originalLineInventoryExplicitlyReviewed,false);
+ assert.equal(pointOnly.views.V.originalLineGraph.isolatedSourcePointIndices.length,4);
 });
