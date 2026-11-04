@@ -81,8 +81,8 @@ test('real C1 local review page refuses automatic guessed missing-view preview',
  assert.match(script,/preview\.outerHTML!==canonical\.outerHTML/);
  assert.match(script,/for\(const child of canonical\.children\)/);
  assert.doesNotMatch(script,/for\(const child of preview\.children\)/);
- assert.match(script,/'data-c1-unanswered-view':view/);
- assert.match(script,/'data-c1-paper-mode':'given'/);
+ assert.match(paperModule,/'data-c1-unanswered-view':view/);
+ assert.match(paperModule,/'data-c1-paper-mode':'given'/);
  assert.match(script,/'data-c1-paper-mode':'unsigned-candidate'/);
  assert.match(script,/\$\('showCandidate'\)\.addEventListener\('click'/);
  assert.match(script,/\$\('showGiven'\)\.addEventListener\('click'/);
