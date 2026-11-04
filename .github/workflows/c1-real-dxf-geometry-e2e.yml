@@ -5,6 +5,8 @@ on:
     paths:
       - 'tools/c1_textbook_dxf_blind_packets.py'
       - 'workbench/c1-dxf-given-first-paper.cjs'
+      - 'workbench/c1-original-given-line-graph.cjs'
+      - 'labs/c1-original-given-paper-svg.cjs'
       - 'labs/c1-reviewed-dxf-live-entry.cjs'
       - 'tests/workbench/c1-textbook-dxf-blind-packets.test.cjs'
       - 'tests/workbench/c1-dxf-given-first-site-gate.test.cjs'
@@ -20,6 +22,8 @@ on:
     paths:
       - 'tools/c1_textbook_dxf_blind_packets.py'
       - 'workbench/c1-dxf-given-first-paper.cjs'
+      - 'workbench/c1-original-given-line-graph.cjs'
+      - 'labs/c1-original-given-paper-svg.cjs'
       - 'labs/c1-reviewed-dxf-live-entry.cjs'
       - 'tests/workbench/c1-textbook-dxf-blind-packets.test.cjs'
       - 'tests/workbench/c1-dxf-given-first-site-gate.test.cjs'
