@@ -84,8 +84,14 @@ test('REAL ezdxf entities and handles: eight 3D corners from two genuine 4-point
   assert.equal(given.reviewedCorrespondences.length,8);
   assert.equal(given.sourceSha256,meta.sourceSha256);
   assert.equal(given.convertedDxfSha256,meta.convertedDxfSha256);
-  assert(!meta.referenceHandles.some(id=>JSON.stringify(given).includes(id)),
-   'private real CAD answer handles leaked into M3 input');
+  // DXF handles are short HEX strings; substring matching in a SHA or
+  // decimal coordinate can falsely flag an unrelated reference handle.
+  const actualGivenHandles=Object.values(given.givenOriginalHandleEndpoints)
+   .flat().map(x=>x.handle).concat(Object.values(given.givenOriginalStrokes||{})
+    .flat().map(x=>x.sourceHandle));
+  assert(!meta.referenceHandles.some(id=>actualGivenHandles.includes(id)),
+   'private original CAD reference handle leaked into GIVEN source identity');
+  assert.equal(Object.hasOwn(given,'referenceStrokes'),false);
   // Only now compute the official M5 source actions. The reference JSON is
   // intentionally not read before this source M3/M5/V5 solve finishes.
   const solved=await compileReviewedC1DxfGivenToSoleV5({
