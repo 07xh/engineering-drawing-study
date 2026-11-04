@@ -55,6 +55,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
  const counts={
   globalGeneratedHLREdgesChecked:0,
   uniqueOriginalSourceGlobalEdgesExamined:0,
+  nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases:0,
+  nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints:0,
   nativeOriginalBRepExactPhysicalEndpointPairs:0,
   completeOriginalNative3DClassSourceIntervalRows:0,
   // Multiple intervals are accepted only when an exact, same-class,
@@ -114,7 +116,35 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
       row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified!==false)
     throw new RangeError('forged or duplicate global HLR native ordinal');
    seen.add(key);
-   const line=lines[ordinal],originalId=row.uniqueOriginalSourceFilteredPaperCandidate,
+   const line=lines[ordinal],
+    paperUniqueOriginalId=row.uniqueOriginalSourceFilteredPaperCandidate,
+    directFilteredOriginalId=
+     row.directFilteredGenerated2DNativeIsSameStrict3DSource??null,
+    directWitnesses=row.originalSourceScopedCandidates?.filter(x=>
+     x.actualNativeScopedToWholeSolidTopoDSIsSame===true)??[],
+    directFilterCausal=directFilteredOriginalId!==null;
+   // Only genuine native generated-2D FILTERED-to-WHOLE IsSame with an
+   // exact original 3D M4 class witness can resolve aliasing on paper.
+   // This never establishes original BRep edge -> generated TopoDS history.
+   if(directFilterCausal&&(
+     !originals.has(directFilteredOriginalId)||
+     row.directNativeScopedGeneratedEdgeIsSameSource!==directFilteredOriginalId||
+     row.directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory!==true||
+     directWitnesses.length!==1||
+     directWitnesses[0].sourceEdgeId!==directFilteredOriginalId||
+     directWitnesses[0].globallyReceivedBinary64PaperExactlySameAsNativeScoped!==true||
+     directWitnesses[0].nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper!==true||
+     directWitnesses[0].sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory!==false||
+     directWitnesses[0].actualWholeSolidGenerated2DOriginalTopoDSHistoryProven!==false||
+     row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased!==
+      (paperUniqueOriginalId===null)
+    ))
+    throw new RangeError('native filtered 2D HLR IsSame lacks genuine original 3D source provenance');
+   if(paperUniqueOriginalId!==null&&directFilterCausal&&
+      paperUniqueOriginalId!==directFilteredOriginalId)
+    throw new RangeError('genuine native filtered IsSame conflicts with unique paper owner');
+   const originalId=paperUniqueOriginalId??directFilteredOriginalId,
+    causalOnly=paperUniqueOriginalId===null&&directFilterCausal,
     physical=originals.get(originalId),
     originalBRep=native.get(originalId);
    if(!line?.from||!line.to||!['u','v'].every(k=>
@@ -129,10 +159,18 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     firstOriginalParameterPartitionDiscontinuity=null;
    if(originalId!==null){
     if(!physical||!originalBRep||
-       row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
-       row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true)
+       (!causalOnly&&(
+        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
+        row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==true))||
+       (causalOnly&&(
+        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==false||
+        row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree!==false||
+        row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge!==false||
+        row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge!==false)))
      throw new RangeError('unsigned unique source requires genuine original 3D ownership');
     counts.uniqueOriginalSourceGlobalEdgesExamined++;
+    if(causalOnly)
+     counts.nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases++;
     const [aId,bId]=physical,[a,b]=physical.map(k=>geometry.data.points[k]);
     modelVerified=(xyz(originalBRep.fromOCCT3D,a)&&
       xyz(originalBRep.toOCCT3D,b))||
@@ -219,6 +257,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
      reverse=p2eq(line.from,q)&&p2eq(line.to,p);
     originalPaperExact=forward||reverse;
     if(originalPaperExact)counts.exactOriginalM0PaperEndpointPairs++;
+    if(causalOnly&&modelVerified&&originalPaperExact&&sourceClassFull)
+     counts.nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints++;
     // The 2D rational native-class check can still be STRICTLY backed
     // while the received OCCT paper ENDPOINT is rounded by <1 ULP.
     // Re-check the physical full-source endpoint pair against the same
@@ -287,7 +327,10 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
    if(!modelVerified||!sourceClassFull||!originalPaperExact&&!boundedPaper)
     counts.physicalOriginalM0EndpointRowsHeld++;
    result.push({view,hlrClass:klass,wholeSolidGeneratedHLREdgeOrdinal:ordinal,
-    uniqueOriginalSourceFilteredPaperCandidate:originalId,
+    uniqueOriginalSourceFilteredPaperCandidate:paperUniqueOriginalId??null,
+    nativeDirect2DFilteredOriginalSourceCausality:causalOnly?originalId:null,
+    sourceIdentityFromNativeIsSameRatherThanPaperUniqueness:causalOnly,
+    generated2DNativeIsSameDoesNotProveOriginal3DTopoDSHistory:true,
     originalPhysicalM0EdgeEndpointIds:physical??null,
     trueOriginalNativeOCCT3DEndpointsMatchM0Exactly:modelVerified,
     completeOriginalNativeSource3DClassCoversWholeEdge:sourceClassFull,
