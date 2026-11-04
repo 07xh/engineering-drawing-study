@@ -139,6 +139,15 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(node -p "require('./dist/draftai-build-info.json').sourceCommit")" = "$GITHUB_SHA"
 
+      - name: Recheck current main immediately before Wrangler publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const latest=await github.rest.repos.getBranch({owner,repo,branch:'main'});
+            if(context.ref!=='refs/heads/main'||latest.data.commit.sha!==context.sha)
+              throw new Error('Main advanced since exact-source CI; refuse stale Worker publish');
+
       - name: Publish prebuilt assets directly to EXISTING Worker
         shell: bash
         run: |
