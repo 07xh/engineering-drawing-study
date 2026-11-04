@@ -108,6 +108,20 @@ test('real reviewed C1 page: six-point oblique prism loads only GIVEN views, sol
  assert.equal($('paper').querySelectorAll(
   '[data-view="H"][data-source-edge], [data-view="H"][data-m5-hull-interval]').length,0,
   'GIVEN-first must also hold after changing the missing view');
+ // Complete the real DOM first-angle matrix: H+W GIVEN must keep V blank
+ // until the same already-reviewed ConstructionStep/V5 actions are applied.
+ $('pair').value='HW';fire('pair');
+ fire('loadExample','click');
+ assert.match($('format').textContent,/H.u, H.v, W.u, W.v/);
+ $('confirmed').checked=true;fire('confirmed');
+ fire('solve','click');
+ assert.equal($('status').dataset.status,'ready',$('status').textContent);
+ assert.match($('status').textContent,/第三视图为 V/);
+ assert.equal($('paper').querySelectorAll(
+  '[data-view="V"][data-source-edge], [data-view="V"][data-m5-hull-interval]').length,0);
+ assert.equal($('paper').querySelectorAll('[data-source-v5-action]').length,0);
+ fire('pointV5Next','click');
+ assert.ok($('paper').querySelectorAll('[data-source-v5-action]').length>0);
  // Switching topology also invalidates the result and returns 8 points.
  $('shapePreset').value='box';fire('shapePreset');
  assert.equal($('vertices').value.trim().split(/\r?\n/).length,8);
