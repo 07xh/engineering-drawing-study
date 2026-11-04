@@ -149,6 +149,31 @@ jobs:
           npx --yes wrangler@4.147.0 deploy --config wrangler.jsonc --keep-vars
           echo "GitHub source SHA: ${GITHUB_SHA}"
 
+      - name: Verify Cloudflare API active deployment is a single 100% Worker version
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID;
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          const endpoint='https://api.cloudflare.com/client/v4/accounts/'+
+            encodeURIComponent(account)+'/workers/scripts/engineering-drawing-study/deployments?per_page=3';
+          const response=await fetch(endpoint,{
+            headers:{Authorization:'Bearer '+token,Accept:'application/json'}
+          });
+          if(!response.ok)throw new Error('Cloudflare active deployment API returned HTTP '+response.status);
+          const data=await response.json();
+          const live=data?.result?.deployments?.[0];
+          if(data?.success!==true||!live||
+             !Array.isArray(live.versions)||live.versions.length!==1||
+             live.versions[0].percentage!==100||
+             !/^[a-f0-9-]{36}$/i.test(live.versions[0].version_id))
+            throw new Error('Cloudflare Worker latest active deployment has unverified version coverage');
+          console.log('Cloudflare latest Active Deployment ID:',live.id);
+          console.log('Cloudflare active Worker version ID:',live.versions[0].version_id);
+          console.log('Live SHA still requires independent HTTP manifest verification.');
+          NODE
+
       - name: Confirm live public asset SHA and HTTP security headers
         env:
           DRAFTFLOW_PUBLIC_ORIGIN: ${{ vars.DRAFTFLOW_PUBLIC_ORIGIN }}
