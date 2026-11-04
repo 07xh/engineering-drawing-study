@@ -65,6 +65,27 @@ test('real reviewed C1 page: six-point oblique prism loads only GIVEN views, sol
  assert.ok($('paper').querySelectorAll('[data-source-v5-action]').length>0,
   'the existing V5 clock must progressively draw authentic source actions');
  assert.match($('proof').textContent,/M5/);
+ // A second solve is a fresh transaction, not an append to the old player.
+ const originalRows=$('vertices').value;
+ fire('solve','click');
+ assert.equal($('status').dataset.status,'ready');
+ assert.equal($('paper').querySelectorAll('[data-source-v5-action]').length,0,
+  're-solving the same reviewed input must start from a blank V5 frame');
+ fire('pointV5Next','click');
+ assert.ok($('paper').querySelectorAll('[data-source-v5-action]').length>0);
+ // Even if a programmatic edit omitted its input event, a failed re-solve
+ // must revoke the previously signed timeline and disable ALL playback.
+ $('vertices').value=originalRows.split('\\n').slice(0,-1).join('\\n');
+ fire('solve','click');
+ assert.equal($('status').dataset.status,'blocked');
+ for(const id of ['pointV5Play','pointV5Pause','pointV5Prev','pointV5Next'])
+  assert.equal($(id).disabled,true,id+' cannot replay stale geometry');
+ assert.equal($('paper').querySelectorAll('[data-source-v5-action]').length,0);
+ // Correcting the reviewed rows can create a new valid timeline.
+ $('vertices').value=originalRows;
+ fire('solve','click');
+ assert.equal($('status').dataset.status,'ready');
+ assert.equal($('pointV5Play').disabled,false);
  // The valid same-source V5 actions must be invalidated immediately.
  $('vertices').value+='\n';
  fire('vertices','input');
