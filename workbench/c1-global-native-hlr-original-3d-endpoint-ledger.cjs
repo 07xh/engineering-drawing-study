@@ -7,6 +7,8 @@
  * endpoint cannot certify exact physical junction topology or GB/V5.
  */
 const {VIEWS,project}=require('../core/projection/conventions.js');
+const {binary64OrderedStepDistance}=
+ require('../core/geometry/binary64-ordered-step-distance.cjs');
 const {boundedOriginalFullPaperEndpointEnvelope}=
  require('./c1-native-scoped-2d-3d-class-binding.cjs');
 const freeze=o=>{if(o&&typeof o==='object'&&!Object.isFrozen(o)){
@@ -59,6 +61,7 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
   // original-source partition is recomputed with no gap, overlap or
   // contradictory native OCCT interval inventory.
   multipleNativeM4SourceClassSegmentsHeld:0,
+  exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld:0,
   exactOriginalM0PaperEndpointPairs:0,
   roundedOnlyOriginalM0PaperEndpointPairs:0,
   strictlyClassBackedButRoundedOriginalM0PaperEndpoints:0,
@@ -122,7 +125,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     boundedPaper=false,sourcePaperEnvelope=null,links=[],
     receivedNativeM4SourceClassSegmentCount=0,
     nativeM4SourceClassMultiplicityHeld=false,
-    exactOnce=false,nativeInventoryClear=false;
+    exactOnce=false,nativeInventoryClear=false,
+    firstOriginalParameterPartitionDiscontinuity=null;
    if(originalId!==null){
     if(!physical||!originalBRep||
        row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge!==true||
@@ -161,8 +165,32 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     exactOnce=valid;
     for(const segment of sorted){
      const [from,to]=segment.originalM0UnitParameterRange;
-     if(from!==sourceCursor){exactOnce=false;break;}
+     if(from!==sourceCursor){
+      const steps=binary64OrderedStepDistance(sourceCursor,from);
+      firstOriginalParameterPartitionDiscontinuity={
+       class:from>sourceCursor?'positive-gap':'positive-overlap',
+       exactPreviousOriginalM0UnitParameterEnd:sourceCursor,
+       exactNextOriginalM0UnitParameterStart:from,
+       distinctFiniteBinary64Steps:steps.toString(),
+       stillUndetermined:true,signedV5Action:false
+      };
+      if(steps===1n)
+       counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld++;
+      exactOnce=false;break;
+     }
      sourceCursor=to;
+    }
+    if(exactOnce&&sourceCursor!==1){
+     const steps=binary64OrderedStepDistance(sourceCursor,1);
+     firstOriginalParameterPartitionDiscontinuity={
+      class:'trailing-positive-gap',
+      exactPreviousOriginalM0UnitParameterEnd:sourceCursor,
+      exactNextOriginalM0UnitParameterStart:1,
+      distinctFiniteBinary64Steps:steps.toString(),
+      stillUndetermined:true,signedV5Action:false
+     };
+     if(steps===1n)
+      counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld++;
     }
     exactOnce=exactOnce&&sourceCursor===1;
     // These genuine producer inventories are independent of the rounded
@@ -268,6 +296,8 @@ function auditC1GlobalNativeHLROriginalM0EndpointLinks({
     receivedNativeM4SourceClassMultiplicityHeld:
      nativeM4SourceClassMultiplicityHeld,
     receivedNativeM4ExactSameClassSourcePartitionVerified:exactOnce,
+    receivedNativeM4FirstOriginalSourcePartitionDiscontinuity:
+     firstOriginalParameterPartitionDiscontinuity,
     receivedNativeM4OriginalOcctParameterInventoryClear:nativeInventoryClear,
     receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly:
      originalPaperExact,

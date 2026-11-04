@@ -371,3 +371,28 @@ test('forged native generated graph vertex identity or paper endpoint is rejecte
   assert.throws(()=>audit(x),/native|generated|vertex|duplicate|paper|forged/i);
  }
 });
+
+
+test('M4 native exact binary64 one-step gap/overlap remains held; reuse #1065 numerical helper without tolerance',()=>{
+ for(const [spans,klass] of [
+  [[[0,0.5],[0.5+Number.EPSILON/2,1]],'positive-gap'],
+  [[[0,0.5],[0.5-Number.EPSILON/4,1]],'positive-overlap']
+ ]){
+  const x=setup(),m4=x.sourceM4Views.V.nativeOriginal3DM4Candidates[0],
+   original=m4.segments[0];
+  m4.segments=spans.map(range=>({...original,originalM0UnitParameterRange:range}));
+  const result=audit(x),row=result.views.V.rows[0],
+   fault=row.receivedNativeM4FirstOriginalSourcePartitionDiscontinuity;
+  assert.equal(fault.class,klass);
+  assert.equal(fault.distinctFiniteBinary64Steps,'1');
+  assert.equal(fault.stillUndetermined,true);
+  assert.equal(fault.signedV5Action,false);
+  assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,false);
+  assert.equal(row.engineeringLineStyle,'undetermined');
+  assert.equal(result.counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld,1);
+  assert.equal(result.signedV5ActionCount,0);
+ }
+ const clean=audit(setup());
+ assert.equal(clean.views.V.rows[0].receivedNativeM4FirstOriginalSourcePartitionDiscontinuity,null);
+ assert.equal(clean.counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld,0);
+});
