@@ -112,13 +112,35 @@ function makeCanonicalGivenPaperSvg(packet){
    const blank=node('text',{x:blanks[view].x,y:blanks[view].y,
     fill:'#8d98a5','font-size':16,'data-c1-unanswered-view':view});
    blank.textContent='待求 · 未作答';group.append(blank);
-  }else for(const point of source.points){
+  }else{
+   // Original DXF source LINEs are GIVEN evidence, never formal GB/V5.
+   for(const stroke of source.strokes){
+    if(stroke.view!==view||stroke.authorizedV5Action!==false||
+       stroke.officialEngineeringLineStyle!=='undetermined')
+     throw new RangeError('unsigned original GIVEN LINE attempted to sign V5');
+    const line=node('line',{x1:stroke.fromPaper.x,y1:stroke.fromPaper.y,
+     x2:stroke.toPaper.x,y2:stroke.toPaper.y,
+     stroke:'#466784','stroke-width':1.7,
+     'data-original-given-stroke':'source-only',
+     'data-source-handle':stroke.sourceHandle,
+     'data-source-kind':stroke.sourceKind,
+     'data-source-linetype':stroke.sourceLinetype,
+     'data-official-line-style':'undetermined',
+     'data-v5-action-authorized':'false'});
+    const tip=node('title');
+    tip.textContent=view+' CAD '+stroke.sourceHandle+' / '+
+     stroke.sourceKind+' / '+stroke.sourceLinetype+
+     '（仅原始图线，不是已签收的工程虚实线）';
+    line.append(tip);group.append(line);
+   }
+   for(const point of source.points){
    group.append(node('circle',{cx:point.paper.x,cy:point.paper.y,r:4.3,
     fill:'#216b9b','data-given-point-index':point.index,
     'data-source-point-only':'true'}));
    const label=node('text',{x:point.paper.x+6,y:point.paper.y-7,
     fill:'#174f78','font-size':13,'data-original-point-label':point.index});
    label.textContent=String(point.index);group.append(label);
+   }
   }
   outer.append(group);
  }
@@ -226,6 +248,10 @@ function renderStepInspector(frame){
   '；前置步骤：'+deps+
   '。本面板只展示已有证据，不补签二维 HLR 历史、全场景遮挡或教材整题。';
 }
+function countOriginalGivenLines(packet){
+ return packet?.givenOriginalStrokes?
+  Object.values(packet.givenOriginalStrokes).reduce((n,rows)=>n+rows.length,0):0;
+}
 function drawV5(){
  const paper=$('animation');paper.replaceChildren();
  if(!current?.solution?.player?.canRender(revision))return;
@@ -235,7 +261,8 @@ function drawV5(){
  // and the canonical V5 actions. Never use the precompiled final answer SVG
  // as a frame-zero background, even after the user confirms a candidate.
  const known=given&&Object.keys(given.views).sort();
- const expectedPoints=known?.reduce((n,v)=>n+given.views[v].length,0);
+ const expectedPoints=known?.reduce((n,v)=>n+given.views[v].length,0),
+  expectedSourceLines=countOriginalGivenLines(rawGiven);
  const canonical=rawGiven?makeCanonicalGivenPaperSvg(rawGiven).outer:null;
  const sameOriginalGivenPoints=known?.length===2&&known.every(view=>
   Array.isArray(rawGiven?.views?.[view])&&
@@ -256,7 +283,11 @@ function drawV5(){
     preview.querySelectorAll('[data-c1-unanswered-view]').length!==1||
     preview.querySelector('[data-c1-unanswered-view]')
      ?.getAttribute('data-c1-unanswered-view')!==given.missingView||
-    preview.querySelector('line,path,polyline,polygon'))
+    preview.querySelector('path,polyline,polygon')||
+    preview.querySelectorAll('line[data-original-given-stroke]').length!==expectedSourceLines||
+    preview.querySelectorAll('[data-source-role="UNKNOWN"] line').length!==0||
+    [...preview.querySelectorAll('line')].some(x=>
+     x.getAttribute('data-original-given-stroke')!=='source-only'))
   throw new RangeError('canonical C1 V5 requires unmodified original GIVEN paper and blank target');
  paper.setAttribute('viewBox',canonical.getAttribute('viewBox'));
  // Verify actual DAG + every signed action's source before rendering a line.
@@ -266,7 +297,7 @@ function drawV5(){
   ...(actual.certifiedVisibleContourLineBindings||[]),
   ...(actual.certifiedPhysicalLineBindings||[])
  ].map(binding=>[binding.actionId,binding]));
- // Preserve only the original CAD GIVEN point evidence in every frame.
+ // Preserve only the original CAD GIVEN point/LINE evidence in every frame.
  // At t=0 the target is genuinely empty; later strokes arrive solely from
  // the existing ConstructionStep DAG and canonical player fractions.
  const original=node('g',{'data-v5-original-paper':'given-only',
