@@ -87,3 +87,36 @@ test('real C1 local review page refuses automatic guessed missing-view preview',
  assert.doesNotMatch(script,/renderCandidate\(inferred,projectCandidate\(inferred\)\)/);
  assert.doesNotMatch(script,/\bfetch\(|\blocalStorage\.|sessionStorage\.|XMLHttpRequest/);
 });
+
+
+test('only original source-linked GIVEN LINE topology projects on known views; W remains blank',()=>{
+ const given=make(['V','H']);
+ const a=given.views.V[0],b=given.views.V[1];
+ given.givenOriginalStrokes={V:[{sourceHandle:'GVLINE',sourceKind:'LINE',
+  sourceLinetype:'BYLAYER',fromIndex:0,toIndex:1,from:{...a},to:{...b},
+  engineeringLineStyle:'undetermined'}],H:[]};
+ const paper=givenOnly(given);
+ assert.equal(paper.originalGivenLineTopologyAvailable,true);
+ assert.equal(paper.reviewedOriginalGivenLineSourceCount,1);
+ assert.equal(paper.views.V.strokes.length,1);
+ assert.equal(paper.views.H.strokes.length,0);
+ assert.equal(paper.views.W.strokes.length,0);
+ assert.equal(paper.views.W.points.length,0);
+ const stroke=paper.views.V.strokes[0];
+ assert.deepEqual(stroke.fromPaper,toSheet('V',a,paper.transform));
+ assert.deepEqual(stroke.toPaper,toSheet('V',b,paper.transform));
+ assert.equal(stroke.sourceHandle,'GVLINE');
+ assert.equal(stroke.officialEngineeringLineStyle,'undetermined');
+ assert.equal(stroke.authorizedV5Action,false);
+ assert.equal(paper.formalEngineeringLinesCertified,false);
+ for(const tamper of [
+  p=>p.givenOriginalStrokes.V[0].from.u+=1,
+  p=>p.givenOriginalStrokes.V[0].engineeringLineStyle='gb-t-4457.4-continuous-wide-visible-outline',
+  p=>p.givenOriginalStrokes.W=[],
+  p=>p.givenOriginalStrokes.V[0].sourceHandle='../../../answer',
+  p=>p.givenOriginalStrokes.V[0].toIndex=0
+ ]){
+  const forged=JSON.parse(JSON.stringify(given));tamper(forged);
+  assert.throws(()=>givenOnly(forged),/GIVEN|line|source|stroke|forged|view/i);
+ }
+});
