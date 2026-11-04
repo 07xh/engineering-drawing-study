@@ -75,7 +75,7 @@ test('real reviewed C1 page: six-point oblique prism loads only GIVEN views, sol
  assert.ok($('paper').querySelectorAll('[data-source-v5-action]').length>0);
  // Even if a programmatic edit omitted its input event, a failed re-solve
  // must revoke the previously signed timeline and disable ALL playback.
- $('vertices').value=originalRows.split('\\n').slice(0,-1).join('\\n');
+ $('vertices').value=originalRows.split('\n').slice(0,-1).join('\n');
  fire('solve','click');
  assert.equal($('status').dataset.status,'blocked');
  for(const id of ['pointV5Play','pointV5Pause','pointV5Prev','pointV5Next'])
