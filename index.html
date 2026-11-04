@@ -4,43 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="绘序 · DraftFlow 个人 AI 工程制图自动解题与动态作图系统：数学几何求解优先，逐步接入题图识别、条件确认、自动作图步骤与 V5 动画。AI 图像上传目前尚未上线。">
-<meta name="theme-color" content="#eff5f0">
+<meta name="theme-color" content="#f5f8fd">
 <title>绘序 · DraftFlow · AI 工程制图自动解题与动态作图</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="site-ui.css">
 <style>
 :root{color-scheme:light}
-body{margin:0;background:#f2f6f2;color:#243d2e;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
+body{margin:0;background:#f5f8fd;color:#15233d;font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif}
 .home-wrap{max-width:1180px;width:calc(100% - 32px);margin:22px auto 64px}
-.hero-main{background:linear-gradient(118deg,#e5f4e9,#f4faf5 74%);border:1px solid #cfe3d3;border-radius:22px;padding:clamp(24px,4vw,46px)}
-.eyebrow{font-size:12px;font-weight:800;color:#357555;letter-spacing:.09em}
-.hero-main h1{font-size:clamp(30px,4.5vw,49px);line-height:1.2;letter-spacing:-.035em;color:#19412e;margin:12px 0}
-.hero-main p{max-width:735px;font-size:15px;line-height:1.85;color:#486454}
+.hero-main{background:linear-gradient(118deg,#eaf2ff,#f8fbff 74%);border:1px solid #d4e3f8;border-radius:22px;padding:clamp(24px,4vw,46px)}
+.eyebrow{font-size:12px;font-weight:800;color:#245fe4;letter-spacing:.09em}
+.hero-main h1{font-size:clamp(30px,4.5vw,49px);line-height:1.2;letter-spacing:-.035em;color:#16365e;margin:12px 0}
+.hero-main p{max-width:735px;font-size:15px;line-height:1.85;color:#526782}
 .hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
-.home-btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 18px;border-radius:11px;background:#246e4c;color:#fff!important;text-decoration:none!important;font-size:14px;font-weight:750;border:1px solid #246e4c}
-.home-btn:hover{background:#17573b;color:#fff!important}
-.home-btn.secondary{background:#fff;color:#246e4c!important;border-color:#bbd5c4}
+.home-btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 18px;border-radius:11px;background:#245fe4;color:#fff!important;text-decoration:none!important;font-size:14px;font-weight:750;border:1px solid #245fe4}
+.home-btn:hover{background:#1748b7;color:#fff!important}
+.home-btn.secondary{background:#fff;color:#245fe4!important;border-color:#b7caeb}
 .home-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-.home-tags span{font-size:12px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid #d5e6d9;color:#466d53}
+.home-tags span{font-size:12px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid #d8e5f7;color:#486682}
 .section{margin-top:32px}
-.section h2{font-size:23px;line-height:1.4;color:#224732;margin:0 0 8px}
-.section>.intro{font-size:14px;color:#5c7565;line-height:1.8;margin:0 0 16px}
+.section h2{font-size:23px;line-height:1.4;color:#17385d;margin:0 0 8px}
+.section>.intro{font-size:14px;color:#657a96;line-height:1.8;margin:0 0 16px}
 .tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
-.tool-card{display:flex;flex-direction:column;gap:9px;min-height:188px;padding:20px;border-radius:16px;border:1px solid #dbe8df;background:#fff;text-decoration:none!important;color:#284a37!important;transition:border-color .15s,transform .15s}
-.tool-card:hover{border-color:#84b49a;transform:translateY(-2px)}
-.tool-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#206e4b;background:#e9f5ed;font-weight:800;font-size:18px}
+.tool-card{display:flex;flex-direction:column;gap:9px;min-height:188px;padding:20px;border-radius:16px;border:1px solid #dfe8f6;background:#fff;text-decoration:none!important;color:#183755!important;transition:border-color .15s,transform .15s}
+.tool-card:hover{border-color:#86afea;transform:translateY(-2px)}
+.tool-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#245fe4;background:#edf4ff;font-weight:800;font-size:18px}
 .tool-card strong{font-size:17px}
-.tool-card p{margin:0;color:#617967;font-size:13px;line-height:1.75;flex:1}
-.tool-card .tool-status{font-size:12px;color:#2c7652;font-weight:750}
+.tool-card p{margin:0;color:#6a7c93;font-size:13px;line-height:1.75;flex:1}
+.tool-card .tool-status{font-size:12px;color:#2868cf;font-weight:750}
 .notice-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-.info-panel{background:#fff;border:1px solid #dbe8df;border-radius:15px;padding:20px}
-.info-panel h3{font-size:17px;color:#274d37;margin:0 0 9px}
-.info-panel p{font-size:13px;color:#5d7666;line-height:1.8;margin:0 0 10px}
+.info-panel{background:#fff;border:1px solid #dfe8f6;border-radius:15px;padding:20px}
+.info-panel h3{font-size:17px;color:#17385d;margin:0 0 9px}
+.info-panel p{font-size:13px;color:#657a96;line-height:1.8;margin:0 0 10px}
 .info-panel a{font-size:13px;font-weight:700}
 .status-pill{display:inline-flex;background:#fff5e8;color:#8a622d;border:1px solid #edd8b9;padding:5px 10px;border-radius:100px;font-size:12px;font-weight:750;margin-bottom:8px}
-.release-note{font-size:13px;color:#627565;line-height:1.8;margin-top:15px}
-footer{font-size:12px;color:#6f8373;margin-top:34px;padding-top:18px;border-top:1px solid #d6e5da}
-footer a{color:#3b7957}
+.release-note{font-size:13px;color:#657a96;line-height:1.8;margin-top:15px}
+footer{font-size:12px;color:#6a7c93;margin-top:34px;padding-top:18px;border-top:1px solid #dfe8f6}
+footer a{color:#2868cf}
 @media(max-width:880px){.tool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.notice-grid{grid-template-columns:1fr}}
 @media(max-width:590px){.home-wrap{width:calc(100% - 22px);margin-top:12px}.hero-main{padding:22px 17px}.tool-grid{grid-template-columns:1fr}.tool-card{min-height:0}.section{margin-top:24px}.section h2{font-size:21px}}
 @media(prefers-reduced-motion:reduce){.tool-card{transition:none}.tool-card:hover{transform:none}}
