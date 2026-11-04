@@ -32,6 +32,8 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
   wholeSolidEdgesWithMultipleOriginalSourceClaims:0,
   wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim:0,
   wholeSolidEdgesWithNativeScopedIsSameIdentity:0,
+  wholeSolidEdgesWithDirectFilteredNativeIsSameAndStrictOriginal3DClass:0,
+  ambiguousPaperOwnersDisambiguatedOnlyAtNativeFilteredGenerated2DLevel:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking:0,
   wholeSolidEdgesWithUniqueExactScopedPaperAndBounded3DClassRounding:0,
   wholeSolidEdgesWithTolerantButNotExactScopedPaperRebinding:0,
@@ -150,12 +152,24 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
     candidate=unique?list[0]:null,
     exact3D=!!candidate?.nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper,
     round3D=!!candidate?.nativeOriginal3DWholeSourceClassAndOneULPCompatible,
-    paperExact=!!candidate?.globallyReceivedBinary64PaperExactlySameAsNativeScoped;
+    paperExact=!!candidate?.globallyReceivedBinary64PaperExactlySameAsNativeScoped,
+    // The positive native TopoDS IsSame compares FILTERED HLR generated
+    // 2D output to the WHOLE-solid generated 2D output. It proves this
+    // generated shape's filter provenance even with unrelated paper
+    // aliases, but NOT original-3D TopoDS ancestry or all-face visibility.
+    directExact3D=direct.length===1&&
+     direct[0].globallyReceivedBinary64PaperExactlySameAsNativeScoped===true&&
+     direct[0].nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper===true;
    counts.wholeSolidNativeHLREdges++;
    if(!owners.length)counts.wholeSolidEdgesWithNoOriginalNativeSourceClaim++;
    if(owners.length>1)counts.wholeSolidEdgesWithMultipleOriginalSourceClaims++;
    if(unique)counts.wholeSolidEdgesWithExactlyOneSourceScopedPaperClaim++;
    if(direct.length===1)counts.wholeSolidEdgesWithNativeScopedIsSameIdentity++;
+   if(directExact3D){
+    counts.wholeSolidEdgesWithDirectFilteredNativeIsSameAndStrictOriginal3DClass++;
+    if(!unique)
+     counts.ambiguousPaperOwnersDisambiguatedOnlyAtNativeFilteredGenerated2DLevel++;
+   }
    if(unique&&paperExact&&exact3D)
     counts.wholeSolidEdgesWithUniqueExactScopedPaperAndStrict3DClassBacking++;
    if(unique&&paperExact&&!exact3D&&round3D)
@@ -176,6 +190,13 @@ function auditC1WholeSolidNativeHLRSourceScopeRebinding({cad,views}={}){
      unique&&paperExact&&!exact3D&&round3D,
     directNativeScopedGeneratedEdgeIsSameSource:
      direct.length===1?direct[0].sourceEdgeId:null,
+    // Separate positive *generated 2D filter* causality from unresolved
+    // original 3D TopoDS generated-edge parametric lineage.
+    directFilteredGenerated2DNativeIsSameStrict3DSource:
+     directExact3D?direct[0].sourceEdgeId:null,
+    directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased:
+     directExact3D&&!unique,
+    directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory:true,
     nativeIsSameIsNotGeneratedToOriginal3DTopoDSIdentity:true,
     wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified:false,
     globalSceneOpaqueFaceVisibilityCertified:false,
