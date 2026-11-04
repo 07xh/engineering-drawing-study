@@ -38,9 +38,13 @@ function enhancePage(html,{page,preview=true}){
  if(['labs/cone-cut-live.html','labs/cylinder-cut-live.html','labs/prism-cut-live.html','labs/polygon-live.html'].includes(page))enhanceDrawingLab(document,main,{page});
  if(page==='public-use.html')main.classList.add('next-disclosure');
  document.body.prepend(fragment(document,`<a class="next-skip" href="#${main.id}">跳到主要内容</a>
- <header class="next-topbar"><a class="next-brand" href="${page==='index.html'?'#project-workbench':root+'index.html#project-workbench'}"><span class="next-brand-emblem" aria-hidden="true">D</span> DraftAI</a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<nav class="next-task-nav" aria-label="主要导航">${links}</nav><a class="next-help-link" href="${root}public-use.html"${page==='public-use.html'?' aria-current="page"':''}>帮助</a></header>`));
+ <header class="next-topbar"><a class="next-brand" href="${page==='index.html'?'#project-workbench':root+'index.html#project-workbench'}"><img class="df-next-logo" src="${root}favicon.svg" alt="" width="34" height="34"> 绘序 · DraftFlow</a>${preview?'<span class="next-preview-badge">新版预览</span>':''}<nav class="next-task-nav" aria-label="主要导航">${links}</nav><a class="next-help-link" href="${root}public-use.html"${page==='public-use.html'?' aria-current="page"':''}>帮助</a></header>`));
  for(const oldIcon of [...document.querySelectorAll('link[rel="icon"]')])oldIcon.remove();
  document.head.append(fragment(document,`<link rel="icon" type="image/svg+xml" href="${root}favicon.svg"><link rel="stylesheet" href="${root}ui-next.css"><script defer src="${root}ui-next.js"></script>`));
+ const pageTitle=document.querySelector('title');
+ if(pageTitle)pageTitle.textContent=pageTitle.textContent.replaceAll('DraftAI','绘序 · DraftFlow');
+ const description=document.querySelector('meta[name="description"]');
+ if(description)description.setAttribute('content',(description.getAttribute('content')||'').replaceAll('DraftAI','绘序 · DraftFlow'));
  const theme=document.querySelector('meta[name="theme-color"]');if(theme)theme.content='#f5f8fd';
   if(page==='index.html')document.head.append(fragment(document,
    '<meta name="draftai-ui-release" content="v6.6-home-20261023">'+
