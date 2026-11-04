@@ -74,7 +74,9 @@ test('real C1 local review page refuses automatic guessed missing-view preview',
  assert.match(html,/原题已知视图（默认）/);
  // The source packet is converted only inside the shared canonical builder,
  // not by cloning mutable preview DOM into the official V5 first frame.
- assert.match(script,/buildC1DxfGivenFirstPaper\(packet\)/);
+ const paperModule=fs.readFileSync('labs/c1-original-given-paper-svg.cjs','utf8');
+ assert.match(paperModule,/buildC1DxfGivenFirstPaper\(packet\)/);
+ assert.match(script,/createC1OriginalGivenPaperSvg\(packet,node\)/);
  assert.match(script,/makeCanonicalGivenPaperSvg\(rawGiven\)/);
  assert.match(script,/preview\.outerHTML!==canonical\.outerHTML/);
  assert.match(script,/for\(const child of canonical\.children\)/);
