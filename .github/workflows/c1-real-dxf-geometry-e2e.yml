@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - 'tools/c1_textbook_dxf_blind_packets.py'
+      - 'workbench/c1-dxf-given-first-paper.cjs'
+      - 'labs/c1-reviewed-dxf-live-entry.cjs'
+      - 'tests/workbench/c1-textbook-dxf-blind-packets.test.cjs'
+      - 'tests/workbench/c1-dxf-given-first-site-gate.test.cjs'
+      - 'tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs'
       - 'tools/c1_textbook_dwg_evidence.py'
       - 'workbench/c1-unique-two-view-convex-candidate.cjs'
       - 'workbench/c1-authenticated-dxf-to-reviewed-v5.cjs'
@@ -14,6 +19,11 @@ on:
     branches: [main]
     paths:
       - 'tools/c1_textbook_dxf_blind_packets.py'
+      - 'workbench/c1-dxf-given-first-paper.cjs'
+      - 'labs/c1-reviewed-dxf-live-entry.cjs'
+      - 'tests/workbench/c1-textbook-dxf-blind-packets.test.cjs'
+      - 'tests/workbench/c1-dxf-given-first-site-gate.test.cjs'
+      - 'tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs'
       - 'tools/c1_textbook_dwg_evidence.py'
       - 'workbench/c1-unique-two-view-convex-candidate.cjs'
       - 'workbench/c1-authenticated-dxf-to-reviewed-v5.cjs'
@@ -46,4 +56,5 @@ jobs:
       - name: Parse actual DXF CAD entities then solve independently, prove source-answer isolation
         run: |
           node --test tests/workbench/c1-reviewed-collapsed-paper-vertex-correspondences.test.cjs tests/workbench/c1-dxf-reviewed-many-to-one-python-bridge.test.cjs
+          node --test tests/workbench/c1-textbook-dxf-blind-packets.test.cjs tests/workbench/c1-dxf-given-first-site-gate.test.cjs
           node --test tests/integration/c1-real-ezdxf-original-handle-e2e.test.cjs
