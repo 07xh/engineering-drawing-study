@@ -4,8 +4,8 @@
  * authenticated local GIVEN packet. Never derive any missing-view paper
  * geometry from inferred M3, a reference answer or a V5 preview.
  *
- * Original DXF packet contains endpoint point clouds, not authenticated
- * strokes; circles are source-point evidence, NEVER engineering lines.
+ * Original point-only DXF packets remain supported. Optional source LINE
+ * topology is independently reviewed and never signs GB engineering styles.
  */
 const {validateGivenPacket}=
  require('./c1-authenticated-dxf-to-reviewed-v5.cjs');
@@ -35,6 +35,15 @@ function buildC1DxfGivenFirstPaper(packet){
     index,uv:{...uv},paper:toSheet(view,uv,transform),
     originalCADSourceHandle:packet.givenOriginalHandleEndpoints[view][index].handle,
     originalCADSourceEndpoint:packet.givenOriginalHandleEndpoints[view][index].endpoint
+   })):[],
+   strokes:supplied?(packet.givenOriginalStrokes?.[view]??[]).map(line=>({
+    view,sourceHandle:line.sourceHandle,sourceKind:line.sourceKind,
+    sourceLinetype:line.sourceLinetype,
+    fromIndex:line.fromIndex,toIndex:line.toIndex,
+    fromPaper:toSheet(view,line.from,transform),
+    toPaper:toSheet(view,line.to,transform),
+    officialEngineeringLineStyle:'undetermined',
+    geometryDerivedFromMissingView:false,authorizedV5Action:false
    })):[]
   };
  }
@@ -47,6 +56,9 @@ function buildC1DxfGivenFirstPaper(packet){
   recoveredMissingPaperPoints:0,
   derived3DEdges:0,
   originalPointCloudIsNotOriginalDXFStrokeTopology:true,
+  reviewedOriginalGivenLineSourceCount:Object.values(views).reduce(
+   (n,row)=>n+row.strokes.length,0),
+  originalGivenLineTopologyAvailable:packet.givenOriginalStrokes!==undefined,
   missingViewMustRemainBlankUntilExplicitUserReview:true,
   generated2DHLREdgeHistoryCertified:false,
   formalEngineeringLinesCertified:false,
