@@ -396,3 +396,68 @@ test('M4 native exact binary64 one-step gap/overlap remains held; reuse #1065 nu
  assert.equal(clean.views.V.rows[0].receivedNativeM4FirstOriginalSourcePartitionDiscontinuity,null);
  assert.equal(clean.counts.exactNativeM4FirstPartitionOneULPDiscontinuitiesHeld,0);
 });
+
+
+function attachGenuineFiltered2DDirectIdentityWithPaperAlias(x){
+ const row=x.globalRebinding.views.V[0];
+ const actual=row.uniqueOriginalSourceFilteredPaperCandidate,alias='g::A|C';
+ row.uniqueOriginalSourceFilteredPaperCandidate=null;
+ row.exactlyOneNativeSourceScopedWitnessForWholeSolidEdge=false;
+ row.uniqueNativeScopedAndWholeSolidBinary64PaperEndpointsAgree=false;
+ row.exactSameClassNativeOriginal3DBackingForUniqueGlobalEdge=false;
+ row.boundedWholeOriginal3DRoundingBackingForUniqueGlobalEdge=false;
+ row.directNativeScopedGeneratedEdgeIsSameSource=actual;
+ row.directFilteredGenerated2DNativeIsSameStrict3DSource=actual;
+ row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased=true;
+ row.directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory=true;
+ row.originalSourceScopedCandidates=[
+  {sourceEdgeId:actual,actualNativeScopedToWholeSolidTopoDSIsSame:true,
+   globallyReceivedBinary64PaperExactlySameAsNativeScoped:true,
+   nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper:true,
+   sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory:false,
+   actualWholeSolidGenerated2DOriginalTopoDSHistoryProven:false},
+  {sourceEdgeId:alias,actualNativeScopedToWholeSolidTopoDSIsSame:false,
+   globallyReceivedBinary64PaperExactlySameAsNativeScoped:true,
+   nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper:true,
+   sourceScopedGenerated2DAlreadyHasProvenOriginalTopoDSHistory:false,
+   actualWholeSolidGenerated2DOriginalTopoDSHistoryProven:false}
+ ];
+ return x;
+}
+test('genuine native filtered-to-global 2D HLR identity recovers ORIGINAL 3D BRep endpoint evidence under paper aliases, not TopoDS history',()=>{
+ const x=attachGenuineFiltered2DDirectIdentityWithPaperAlias(setup({two:true}));
+ const r=audit(x),row=r.views.V.rows[0];
+ assert.equal(row.uniqueOriginalSourceFilteredPaperCandidate,null);
+ assert.equal(row.nativeDirect2DFilteredOriginalSourceCausality,'g::A|B');
+ assert.equal(row.sourceIdentityFromNativeIsSameRatherThanPaperUniqueness,true);
+ assert.deepEqual(row.originalPhysicalM0EdgeEndpointIds,['A','B']);
+ assert.equal(row.trueOriginalNativeOCCT3DEndpointsMatchM0Exactly,true);
+ assert.equal(row.completeOriginalNativeSource3DClassCoversWholeEdge,true);
+ assert.equal(row.receivedGenerated2DEndpointsMatchBothOriginalProjectedVerticesExactly,true);
+ assert.equal(r.counts.nativeDirect2DFilteredSourceCausalEdgesWithPaperAliases,1);
+ assert.equal(r.counts.nativeDirect2DFilteredSourceCausalEdgesWithExactOriginalEndpoints,1);
+ assert.equal(row.generated2DNativeIsSameDoesNotProveOriginal3DTopoDSHistory,true);
+ assert.equal(row.generated2DToOriginalNativeTopoDSFullVertexTopologyCertified,false);
+ assert.equal(row.continuousAllOpaqueFaceVisibilityProven,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+ assert.equal(r.officialV5Authorized,false);
+});
+test('no native IsSame laundering from spoofed filtered source, weak class, wrong ordinal or old generation',()=>{
+ const mutations=[
+  row=>{row.directNativeScopedGeneratedEdgeIsSameSource='g::A|C';},
+  row=>{row.directFilteredGenerated2DNativeIsSameStrict3DSource='g::A|C';},
+  row=>{row.originalSourceScopedCandidates[0].sourceEdgeId='g::A|C';},
+  row=>{row.originalSourceScopedCandidates[0].actualNativeScopedToWholeSolidTopoDSIsSame=false;},
+  row=>{row.originalSourceScopedCandidates[1].actualNativeScopedToWholeSolidTopoDSIsSame=true;},
+  row=>{row.originalSourceScopedCandidates[0].nativeOriginal3DStrictSameClassIntervalCoversReceivedPaper=false;},
+  row=>{row.originalSourceScopedCandidates[0].globallyReceivedBinary64PaperExactlySameAsNativeScoped=false;},
+  row=>{row.originalSourceScopedCandidates[0].actualWholeSolidGenerated2DOriginalTopoDSHistoryProven=true;},
+  row=>{row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased=false;}
+ ];
+ for(const mutate of mutations){
+  const x=attachGenuineFiltered2DDirectIdentityWithPaperAlias(setup({two:true}));
+  mutate(x.globalRebinding.views.V[0]);
+  assert.throws(()=>audit(x),/native filtered 2D HLR IsSame|filtered 2D source|source provenance/i);
+ }
+});
