@@ -48,6 +48,7 @@ const files = [
   'labs/cone-lab/lib/three.min.js',
   'labs/cone-lab/lib/OrbitControls.js',
   'labs/cone-lab/LICENSE.txt',
+  'labs/cone-lab/THREE-LICENSE.txt',
   'labs/free-modeler-ui.js',
   'labs/free-geometry-core.js',
   'labs/free-geometry-sheet.js',
