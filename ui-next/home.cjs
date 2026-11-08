@@ -258,7 +258,7 @@ function homeHTML(){return `
      <label class="v7-file-control">选择 Cone Lab 模型文件
       <input id="v8-conelab-file" type="file" accept=".json,application/json" aria-describedby="v8-conelab-status">
      </label>
-     <p id="v8-conelab-status" class="v7-note" role="status" aria-live="polite">导入后仅暂存未确认的三维实体。必须逐项检查并确认，才能在原有工作台显示投影；不自动生成标准虚实线或 V5。</p>
+     <p id="v8-conelab-status" class="v7-note" role="status" aria-live="polite">导入后仅暂存未确认的三维实体。必须逐项检查并确认，才能在原有工作台显示投影；不自动生成标准虚实线或正式逐笔作图。</p>
     </section>
     <details class="v8-c2-advanced" id="v8-c2-advanced">
      <summary>更多：编辑单个对象、约束与未知点</summary>
