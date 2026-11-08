@@ -15,6 +15,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check scripts/check-constraints.cjs
+          node --check scripts/check-cone-lab-vendor.cjs
           node --check labs/constraint-engine.js
           node --check labs/dof-lab-geometry.js
           node --check labs/free-geometry-core.js
@@ -165,6 +166,7 @@ jobs:
           node scripts/check-exercise-261.cjs
           node scripts/build-static.cjs
           node scripts/check-static-site-dependencies.cjs
+          node scripts/check-cone-lab-vendor.cjs
           test -f dist/index.html
           test -f dist/public-use.html
           test -f dist/labs/point-coach.html
@@ -180,6 +182,7 @@ jobs:
           node --test tests/ui/*.test.cjs
           node scripts/build-static.cjs --ui-preview
           node scripts/check-static-site-dependencies.cjs --ui-preview
+          node scripts/check-cone-lab-vendor.cjs --ui-preview
 
       - name: Validate C3 geometry with seeded independent property oracles
         run: node --test tests/property/*.test.cjs

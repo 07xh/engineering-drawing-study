@@ -9,6 +9,8 @@ const {SCHEMA}=require('../core/projection/geometry-scene-views.cjs');
 const {toSheet,project,VIEWS}=require('../core/projection/conventions.js');
 const {atAnalyticCurve3D}=
  require('../core/geometry/analytic-curve-3d.cjs');
+const {onAnalyticRevolvedSolid,centerAt}=
+ require('../core/geometry/analytic-revolved-solid.cjs');
 const TAU=Math.PI*2, RAD=Math.PI/180;
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const EPS=1e-10, CAP=25000;
@@ -60,6 +62,50 @@ function drawAnalyticPath(data,toCanvas){
  return {d:pts.map((p,i)=>(i?'L ':'M ')+p.x+' '+p.y).join(' '),
   bounds:{minX:Math.min(...xs),maxX:Math.max(...xs),
    minY:Math.min(...ys),maxY:Math.max(...ys)}};
+}
+// Exact source parameters survive display sampling: these are NOT
+// certified silhouettes, intersection curves, or engineering lines.
+function drawRevolvedSolidPreview(obj,target,view,toCanvas){
+ const d=obj.model.data;
+ const feature=(kind,index)=>
+  JSON.stringify([obj.id,'analytic-solid-'+kind,index]);
+ for(const t of [0,1]){
+  const radius=t===0?d.radiusBottom:d.radiusTop;
+  if(radius===0){
+   point(target,toCanvas(centerAt(d,t)),obj,view,{
+    visibility:'undetermined',sourceAnalyticSolid3D:true,
+    svgApproximationOnly:true,displayGuide:true,
+    sourceFeatureKey:feature('apex',t)
+   });
+   continue;
+  }
+  const pts=[];
+  for(let i=0;i<=96;i++){
+   const q=toCanvas(onAnalyticRevolvedSolid(d,t,TAU*i/96));
+   if(!finite(q.x)||!finite(q.y))fail('解析实体端面显示点无效');
+   pts.push(q);
+  }
+  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+  add(target,make('path',{
+    d:pts.map((p,i)=>(i?'L ':'M ')+p.x+' '+p.y).join(' ')+' Z'
+   },obj,view,{
+    bounds:{minX:Math.min(...xs),maxX:Math.max(...xs),
+      minY:Math.min(...ys),maxY:Math.max(...ys)},
+    fill:'none',visibility:'undetermined',sourceAnalyticSolid3D:true,
+    svgApproximationOnly:true,displayGuide:true,
+    sourceFeatureKey:feature('cap',t)
+   }));
+ }
+ for(const [index,theta] of [0,Math.PI].entries()){
+  const a=toCanvas(onAnalyticRevolvedSolid(d,0,theta));
+  const b=toCanvas(onAnalyticRevolvedSolid(d,1,theta));
+  if(Math.hypot(a.x-b.x,a.y-b.y)>EPS)
+   segment(target,a,b,obj,view,{
+    visibility:'undetermined',sourceAnalyticSolid3D:true,
+    svgApproximationOnly:true,displayGuide:true,
+    sourceFeatureKey:feature('generator',index)
+   });
+ }
 }
 function planar(p,sheet){
  return {x:sheet.origin.x+p.x*sheet.scale,
@@ -170,6 +216,14 @@ function representationPaper(obj,paper,sheet,warnings,viewTransforms=null){
     bounds:path.bounds,fill:'none',visibility:'undetermined',
     svgApproximationOnly:true,sourceAnalytic3D:true
    }));
+  }else if(rep.kind==='analytic-solid-projection'){
+   if(rep.visibility!=='undetermined'||
+      rep.svgApproximationOnly!==true||
+      rep.engineeringLineStyleAuthorized!==false||
+      rep.generatedIntersections!==0)
+    fail('解析实体被错误授予了正式线型或相贯线权限');
+   drawRevolvedSolidPreview(obj,paper,view,
+     source=>p(project(source)[view]));
   }else if(rep.kind==='unbounded-plane'){
    warnings.push(obj.id+': 无限平面无可绘制有限边界');
   }else fail('不支持的正式投影类型 '+rep.kind);
@@ -185,7 +239,11 @@ function modelVertices(scene){
   else if(obj.kind==='mesh')for(const p of Object.values(d.points))take(p);
   else if(obj.kind==='polyline')for(const p of d.points)take(p);
   else if(obj.kind==='line')take(d.point);
-  else if(obj.kind==='analytic-curve'){
+  else if(obj.kind==='analytic-solid'){
+   for(const t of [0,1])for(let j=0;j<16;j++)
+    take(onAnalyticRevolvedSolid(d,t,TAU*j/16));
+   take(centerAt(d,0));take(centerAt(d,1));
+  }else if(obj.kind==='analytic-curve'){
    for(const ratio of [0,0.25,0.5,0.75,1])
     take(atAnalyticCurve3D(d,d.parameter.from+
      (d.parameter.to-d.parameter.from)*ratio));
@@ -248,6 +306,8 @@ function spatialCamera(scene,camera,spatial,warnings){
     bounds:path.bounds,fill:'none',visibility:'undetermined',
     svgApproximationOnly:true,sourceAnalytic3D:true
    }));
+  }else if(obj.kind==='analytic-solid'){
+   drawRevolvedSolidPreview(obj,spatial,'3D',project);
   }else if(obj.kind==='plane'){
    warnings.push(obj.id+': 未验证的无界空间平面不绘制虚构面片');
   }else fail('不支持的空间 Geometry '+obj.kind);

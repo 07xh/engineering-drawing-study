@@ -2,8 +2,10 @@
 const {object,identifier,finite,vec,report,noDuplicateIds,finiteTree}=require('./common.js');
 const {validAnalyticCurve3D}=
  require('../geometry/analytic-curve-3d.cjs');
+const {validAnalyticRevolvedSolid}=
+ require('../geometry/analytic-revolved-solid.cjs');
 const EPS=1e-9;
-const kinds=['point','line','segment','polyline','circle','arc','plane','mesh','analytic-curve'];
+const kinds=['point','line','segment','polyline','circle','arc','plane','mesh','analytic-curve','analytic-solid'];
 const spaces=['model-3d','drawing-2d'];
 const norm=(v,axes)=>vec(v,axes)?Math.hypot(...axes.map(k=>v[k])):0;
 function validateGeometry(g){
@@ -43,6 +45,9 @@ function validateGeometry(g){
  if(g.kind==='analytic-curve'&&
     (g.space!=='model-3d'||!validAnalyticCurve3D(data)))
   errors.push('空间解析曲线缺少受约束的连续参数方程或真实定义域');
+ if(g.kind==='analytic-solid'&&
+    (g.space!=='model-3d'||!validAnalyticRevolvedSolid(data)))
+  errors.push('空间解析实体必须提供有限圆柱、圆锥或圆台的严格正交参数');
  if(g.kind==='circle'&&(g.space!=='drawing-2d'||!vec(data.center,['x','y'])||
     !finite(data.radius)||data.radius<=0))errors.push('圆仅支持二维有效圆心与正半径');
  if(g.kind==='arc'){

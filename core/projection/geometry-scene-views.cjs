@@ -106,6 +106,25 @@ function deriveOne(g) {
     else if(g.kind==='polyline') representations[view]=viewPolyline(g.data,view);
     else if(g.kind==='analytic-curve')
       representations[view]=viewAnalyticCurve(g.data,view);
+    else if(g.kind==='analytic-solid'){
+      // A parametric source volume is not a polygon mesh or a solved
+      // silhouette. The renderer may sample ONLY display guide rims,
+      // retaining the original exact surface parameters in model.data.
+      const d=g.data,mid=d.center;
+      const bottom={x:mid.x-d.axis.x*d.height/2,
+        y:mid.y-d.axis.y*d.height/2,
+        z:mid.z-d.axis.z*d.height/2};
+      const top={x:mid.x+d.axis.x*d.height/2,
+        y:mid.y+d.axis.y*d.height/2,
+        z:mid.z+d.axis.z*d.height/2};
+      representations[view]={
+        kind:'analytic-solid-projection',
+        centers:{bottom:viewPoint(bottom,view),top:viewPoint(top,view)},
+        profile:d.profile,surfaceMath:'finite-circular-revolution',
+        visibility:'undetermined',svgApproximationOnly:true,
+        generatedIntersections:0,engineeringLineStyleAuthorized:false
+      };
+    }
     else if(g.kind==='plane') {
       // An infinite plane has no finite 2D boundary. Deriving a clipped sheet
       // polygon would invent a viewport-dependent geometric construction.

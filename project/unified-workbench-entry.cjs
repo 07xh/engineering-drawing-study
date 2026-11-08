@@ -8,6 +8,7 @@ const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {IDS:C1_IDS,parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
+const {draftProjectFromConeLab}=require('./cone-lab-geometry-adapter.cjs');
 const {reviewC2BoxFields}=require('./c2-reviewed-preflight.cjs');
 const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
@@ -97,6 +98,15 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  function compositionFormFrom(g){
   const d=g?.data;if(!d)return;
+  // Imported pyramids and oriented boxes have exact source topology.
+  // A bounding box in the generic prism form would DESTROY the imported
+  // vertices/rotation; the editing form is deliberately read-only for them.
+  if(g.importedFromConeLab){
+   $('v7-c-id').value=g.id;
+   $('v7-c-status').textContent='已选择导入实体 '+g.id+
+    '：源自独立拼装实验室。请核对后点击「确认几何」；修改形体请回到原实验室重新导出，不可用长方体输入框覆盖原棱面。';
+   return;
+  }
   const type=g.kind==='mesh'?'prism':g.kind==='point'?
    (g.space==='drawing-2d'?'point2d':'point3d'):
    g.kind==='segment'?(g.space==='drawing-2d'?'segment2d':'segment3d'):
@@ -2459,6 +2469,32 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   updateC2Preflight();
   msg('C2 已确认两长方体几何，使用原有 M0/M2/M5 计算接触关系与三视图。不是完整组合体答案。');
  }));
+ // Cone Lab P2 import is a NEW unconfirmed local project, not a solver bypass.
+ // Validate the complete JSON/geometry/project before touching IndexedDB or
+ // replacing the current project; never silently omit unsupported solids.
+ $('v8-conelab-file').addEventListener('change',()=>call(async()=>{
+  const input=$('v8-conelab-file'),file=input.files?.[0],status=$('v8-conelab-status');
+  if(!file)return;
+  try{
+   if(!store)throw Error('本机项目存储不可用，拒绝导入');
+   if(file.size<1||file.size>1024*1024)throw Error('Cone Lab 模型文件必须小于 1 MB');
+   await saving;
+   const candidate=draftProjectFromConeLab(await file.text(),{
+    projectId:gid('Project'),title:'Cone Lab 拼装模型（待逐项确认）'
+   });
+   if(candidate.project.conditions.some(c=>c.confirmed))
+    throw Error('外部模型不得自动确认几何条件');
+   await store.saveProject(candidate.project);
+   mount(candidate.project);
+   await refreshList();
+   status.textContent='已新建本机草稿：'+candidate.project.objects.length+
+    ' 个形体，全部待确认。展开「编辑单个对象」，从对象列表逐项核对并点击「确认几何」。';
+   msg('Cone Lab 实体已导入为未确认草稿；未签发工程线型或 V5。');
+  }catch(error){
+   status.textContent='导入失败：'+error.message;
+   throw error;
+  }finally{input.value='';}
+ }));
  $('v7-c-new').addEventListener('click',()=>{
   $('v7-c-objects').value='';
   $('v7-c-id').value='Object'+String((coordinator?.snapshot().objects.length||0)+1);
@@ -2469,11 +2505,17 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(c?.value?.geometry)compositionFormFrom(c.value.geometry);
   else if(id)$('v7-c-id').value=id;
   if(id)coordinator?.selectObject(id);
+  if(c?.value?.geometry?.importedFromConeLab)
+   $('v7-c-status').textContent='当前选中 '+id+
+    '，保留原始棱面与旋转方向；此页面只可确认/删除，不可用普通长方体输入框覆写。';
  });
  $('v7-c-stage').addEventListener('click',()=>call(async()=>{
   if(coordinator?.snapshot().task!=='composition')throw Error('请先选择多对象编辑任务');
-  const {geometry,model}=compositionCandidate(),p=coordinator.snapshot();
-  const chosen=$('v7-c-objects').value;
+  const p=coordinator.snapshot(),chosen=$('v7-c-objects').value;
+  if(chosen&&p.conditions.some(c=>c.objectId===chosen&&
+      c.value?.geometry?.importedFromConeLab))
+   throw Error('导入的精确拼装模型禁止用普通长方体表单覆盖；请在原实验室修改后重新导入');
+  const {geometry,model}=compositionCandidate();
   if(chosen&&chosen!==model.id)throw Error('改名请先删除旧对象，再建立新的稳定对象 ID');
   if(p.objects.some(x=>x.id===model.id)&&chosen!==model.id)
    throw Error('项目中已存在此对象 ID，请选择已有对象或输入新的 ID');
@@ -2505,11 +2547,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(result.kind!=='composition-evidence'||result.verified!==false||
       result.clock!==null||coordinator.canExport())
    throw Error('手工几何被错误授予解题证明资格');
-  msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系残差：'+
+  const patchCount=result.compositionInterfaceEvidence?.contactPatchCount;
+  msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系状态：'+
    result.relationEvidence.status+'（'+result.relationEvidence.checkedCount+
-   ' 条）；闭合长方体关系 '+result.compositionContactEvidence.pairCount+
-   ' 对，已验证内部接触面 '+result.compositionInterfaceEvidence.contactPatchCount+
-   ' 处。未求未知量，虚实线未认证，V5 禁用。');
+   ' 条）；已核对闭合长方体关系 '+result.compositionContactEvidence.pairCount+
+   ' 对。'+(patchCount===undefined?
+    '当前拼装包含需进一步证明的棱面投影拓扑，只能预览原始三维网格和三视图。':
+    '已验证内部接触面 '+patchCount+' 处。')+
+   '未求未知量，标准虚实线与正式逐笔作图均未授权。');
  }));
  for(const id of compositionFields)
   for(const event of ['input','change'])$(id).addEventListener(event,()=>{

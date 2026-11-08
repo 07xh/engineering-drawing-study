@@ -149,7 +149,7 @@ function prismMesh(data){
   data:{points,edges,faces}};
 }
 
-const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','polyline','mesh']);
+const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','polyline','mesh','analytic-solid']);
 function confirmedCompositionGeometry(data){
  if(!data||data.task!=='composition'||!Number.isSafeInteger(data.revision)||
    !Array.isArray(data.objects)||!Array.isArray(data.conditions)||
@@ -564,6 +564,38 @@ function createUnifiedProjectSession(){
       geometry,revision:latest.revision}); // scoped relation, never CSG or V5
     let scene=deriveGeometryScene({geometry,
       revision:latest.revision,resultId:'ManualGeometryEvidence'});
+    // Source-preserving Cone Lab pyramids / obliquely oriented boxes are
+    // legitimate 3D geometry but OUTSIDE the M5 convex outline/stroke
+    // partition's current signed scope. That strict verifier intentionally
+    // rejects overlapping projected source vertices and edge events.
+    // Do not weaken it or silently swap the mesh for an AABB. Provide only
+    // the SAME canonical unverified Geometry Scene until the specialized
+    // proof is extended, with every line style and V5 authorization blocked.
+    const unsignedConeLab=geometry.some(g=>{
+      // ANY analytic source solid is outside signed mesh-ray proof scope,
+      // even when its provenance metadata was absent in a manual project.
+      if(g.kind==='analytic-solid')return true;
+      const source=g.importedFromConeLab;
+      return source&&(
+        source.sourceKind==='pyr3'||
+        !['horiz','frontal','lat'].includes(source.sourceType)||
+        source.sourceAngleDeg!==0);
+    });
+    if(unsignedConeLab){
+      current=Object.freeze({...resultBase(latest),
+        kind:'composition-evidence',verified:false,
+        status:'cone-lab-source-topology-undetermined',scene,
+        linkedC2:null,relationEvidence,compositionContactEvidence,
+        compositionInterfaceEvidence:null,compositionSeamRayEvidence:null,
+        originalMultiBodyEdgeRays:null,orthogonalBooleanFeatureAudit:null,
+        c2PaperRayProof:null,sceneDepthEvidence:null,
+        m0M3M5OriginalSourceAcceptance:null,
+        spatialV5Readiness:null,scopedMotionParity:null,
+        spatialStrokeConstructionDAG:null,spatialV5ActionRelease:null,
+        links:projectSelectionLinks(scene),plan:null,clock:null
+      });
+      emit();return current;
+    }
     // Preserve already-merged generic M5 multi-mesh first-angle depth
     // witnesses and overlapping projected edge evidence. Scoped math only.
     const sceneDepthEvidence=evaluateReviewedConvexMeshDepth({

@@ -31,6 +31,7 @@ test('C0 links reach existing public tools and never navigate the active project
   'labs/composite-geometry.html?mode=intersection',
   '#v7-task',
   'labs/composite-geometry.html?mode=composite',
+  'labs/cone-lab/index.html',
   'labs/solid-third-view-live.html',
   'labs/c1-reviewed-dxf-live.html',
   'labs/two-point-v5-live.html',
@@ -43,7 +44,7 @@ test('C0 links reach existing public tools and never navigate the active project
   assert.ok(build.includes("'"+file+"'"),file+' absent from public allowlist');
  }
  const externalTags=[...html.matchAll(/<a\b[^>]*href="labs\/[^"]+"[^>]*>/g)].map(m=>m[0]);
- assert.equal(externalTags.length,7);
+ assert.equal(externalTags.length,8);
  for(const tag of externalTags){
   assert.match(tag,/target="_blank"/);
   assert.match(tag,/rel="noopener noreferrer"/);
