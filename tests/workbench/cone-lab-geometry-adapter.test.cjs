@@ -97,3 +97,40 @@ test('rejects unsupported shape, cutters, cut planes, hidden parts, and forged f
  fake.verification='verified';
  assert.throws(()=>Adapter.previewExactScene(JSON.stringify(fake)));
 });
+
+test('real existing coordinator keeps imported geometry pending until explicit user confirmation',()=>{
+ const {createCoordinator}=require('../../project/project-coordinator.cjs');
+ const {createUnifiedProjectSession}=require('../../project/unified-workbench-session.cjs');
+ const incoming=Adapter.draftProjectFromConeLab(
+  serialize(state([part('box',{x:-20}),part('box',{x:20})])),
+  {projectId:'ProjectReview1'});
+ const coordinator=createCoordinator(incoming.project);
+ const session=createUnifiedProjectSession();
+ coordinator.attachSolver(session);
+ assert.equal(coordinator.canExport(),false);
+ const initialRevision=coordinator.snapshot().revision;
+ coordinator.confirmCondition('geo_ConePart1');
+ assert.equal(coordinator.snapshot().revision,initialRevision+1);
+ assert.equal(coordinator.snapshot().conditions.filter(c=>c.confirmed).length,1);
+ coordinator.confirmCondition('geo_ConePart2');
+ assert.equal(coordinator.snapshot().conditions.filter(c=>c.confirmed).length,2);
+ const result=session.solve();
+ assert.equal(result.kind,'composition-evidence');
+ assert.equal(result.verified,false);
+ assert.equal(result.clock,null);
+ assert.equal(coordinator.canExport(),false);
+ assert.equal(result.scene.objects.length,2);
+ assert.equal(result.scene.evidence.visibility,'undetermined');
+ coordinator.dispose();
+});
+test('new importing control is attached to the original workbench instead of second page',()=>{
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const home=fs.readFileSync(path.resolve(__dirname,'../../ui-next/home.cjs'),'utf8');
+ const entry=fs.readFileSync(path.resolve(__dirname,'../../project/unified-workbench-entry.cjs'),'utf8');
+ assert.match(home,/id="v8-conelab-file"/);
+ assert.match(home,/id="v8-conelab-status"/);
+ assert.match(entry,/draftProjectFromConeLab\(await file\.text\(\)/);
+ assert.match(entry,/await store\.saveProject\(candidate\.project\)/);
+ assert.match(entry,/mount\(candidate\.project\)/);
+});
