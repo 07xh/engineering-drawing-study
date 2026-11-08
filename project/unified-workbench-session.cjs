@@ -572,10 +572,12 @@ function createUnifiedProjectSession(){
     // the SAME canonical unverified Geometry Scene until the specialized
     // proof is extended, with every line style and V5 authorization blocked.
     const unsignedConeLab=geometry.some(g=>{
+      // ANY analytic source solid is outside signed mesh-ray proof scope,
+      // even when its provenance metadata was absent in a manual project.
+      if(g.kind==='analytic-solid')return true;
       const source=g.importedFromConeLab;
       return source&&(
         source.sourceKind==='pyr3'||
-        g.kind==='analytic-solid'||
         !['horiz','frontal','lat'].includes(source.sourceType)||
         source.sourceAngleDeg!==0);
     });
