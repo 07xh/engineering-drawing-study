@@ -13,6 +13,9 @@ function enhance(page){
 }
 test('all public pages preserve control IDs, values, hidden states and application scripts',()=>{
  for(const page of pages){
+  // Cone Lab is a pinned fullscreen upstream application, not a page generated
+  // by our UI enhancer. The vendor integration smoke test checks exact bytes.
+  if(page==='labs/cone-lab/index.html')continue;
   const {before,after}=enhance(page);
   for(const old of before.querySelectorAll('[id]')){
    const matches=[...after.querySelectorAll('[id]')].filter(x=>x.id===old.id);
@@ -169,10 +172,12 @@ test('V6.2 home groups all accessible tools without large empty My Problems bloc
  const links=[...document.querySelectorAll('.next-home-tool-group a[href^="labs/"]')].map(a=>a.getAttribute('href'));
  // The newest source-private C1 review tool is an additional REAL tool,
  // not a duplicate of the old fixed 8-vertex long-box demonstration.
- assert.equal(links.length,22,'all published special-purpose tools, including signed-only C2 Cut, remain reachable');
- assert.equal(new Set(links).size,22,'tool entries should not repeat');
+ assert.equal(links.length,23,'all published special-purpose tools, including Cone Lab, remain reachable');
+ assert.equal(new Set(links).size,23,'tool entries should not repeat');
  assert(links.includes('labs/c2-native-cut-review.html'),
   'real native Cut partial certified V5 preview is visible from the enhanced homepage');
+ assert(links.includes('labs/cone-lab/index.html'),
+  'complete independent 3D solid assembly lab must be accessible from home');
  assert(links.includes('labs/c1-reviewed-dxf-live.html'),
   'new original DXF reviewed C1 source lab must be accessible from home');
  const navigation=[...document.querySelectorAll('.next-task-nav a')].map(a=>a.textContent.trim());
