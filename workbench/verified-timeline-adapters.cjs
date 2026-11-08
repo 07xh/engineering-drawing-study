@@ -40,13 +40,19 @@ function projectionPlan(args={},revision=0){
  const r=solveProjection(args);
  if(r.status!=='unique'||r.globallyUnique!==true||r.solutionCount!==1||
     r.degrees!==0||r.proofLevel!=='linear-algebra'||!pt(r.sheet?.W)||
-    !Array.isArray(r.steps)||r.steps.length!==4||r.steps.some(s=>
+    !Array.isArray(r.steps)||r.steps.length!==5||r.steps.some(s=>
       s.source!=='computed-first-angle-guides'||s.unit!=='px'||s.style!=='auxiliary'||
       !pt(s.from)||!pt(s.to)||!finite(s.from.x)||!finite(s.to.x)))
   return rejection(r,revision,'03-validated-first-angle');
- const steps=r.steps.map((s,i)=>step(s.id,
-    ['V/H 联系线','正侧高度联系线','45° 深度转移','深度转至侧面'][i],
-    s.explanation,[action(s.id,'line',{from:s.from,to:s.to})],s.dependsOn));
+ const steps=r.steps.map((s,i)=>{
+  const collapsed=Math.hypot(s.to.x-s.from.x,s.to.y-s.from.y)<=1e-9;
+  const ink=collapsed?action(s.id,'point',{center:s.to,radius:4}):
+   action(s.id,'line',{from:s.from,to:s.to});
+  return step(s.id,
+   ['V/H 联系线','正侧高度联系线','从 H 面水平定位深度',
+    '真实 45° 深度转移','从 45° 交点竖直定位 W 面'][i],
+   s.explanation,[ink],s.dependsOn);
+ });
  const givens=(r.knownViews||[]).map(name=>({
    id:'given-'+name,kind:'point',geometry:{center:{...r.sheet[name]},radius:5},role:'given',name
  }));

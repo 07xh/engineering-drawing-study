@@ -99,7 +99,7 @@ function adaptPointProjection(input,{revision=0}={}){
     !finite(solved.maxResidual)||solved.maxResidual>1e-8)
   return blocked('point-projection',revision,'engines/projection/point-projection',
    solved.status,solved.reason);
- demand(Array.isArray(solved.steps)&&solved.steps.length===4,'unverified guide count');
+ demand(Array.isArray(solved.steps)&&solved.steps.length===5,'unverified guide count');
  const steps=solved.steps.map((s,i)=>{
   demand(s.source==='computed-first-angle-guides'&&s.unit==='px'&&
    typeof s.explanation==='string','unverified first-angle guide source');

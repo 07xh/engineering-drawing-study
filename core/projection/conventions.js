@@ -95,12 +95,21 @@ function sheetPoint(point,transform){
  return r;
 }
 function transferGuides(point,transform){
- const p=sheetPoint(point,transform);
+ // A genuine 45-degree stroke replaces the old H->M horizontal transfer
+ // that was incorrectly described as a diagonal. Snapshot the sheet
+ // transform once: all junctions use the same first-angle projection.
+ const t=config(transform),p=sheetPoint(point,t),o=t.origin;
+ const D=finiteOutput({x:o.x,y:p.H.y});
+ const E=finiteOutput({x:p.M.x,y:o.y});
+ // H->D horizontal, D->E slope -1, E->W vertical.
+ // At zero depth D=E; the existing V5 adapter marks a point rather
+ // than fabricating a nonzero 45-degree stroke.
  return {points:p,guides:[
  {kind:'VH',from:p.V,to:p.H},
  {kind:'height-VW',from:p.V,to:p.W},
- {kind:'depth-HM',from:p.H,to:p.M},
- {kind:'depth-MW',from:p.M,to:p.W}
+ {kind:'depth-HD',from:p.H,to:D},
+ {kind:'depth-DE',from:D,to:E},
+ {kind:'depth-EW',from:E,to:p.W}
  ]};
 }
 function aligned(views,tolerance=EPS){
