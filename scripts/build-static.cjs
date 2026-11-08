@@ -45,6 +45,7 @@ const files = [
   // Standalone MIT-licensed Cone Lab editor: preserve upstream controls and runtime.
   // Explicit files only; never copy upstream tests, docs, APKs or unreviewed assets.
   'labs/cone-lab/index.html',
+  'labs/cone-lab/model-bridge.js',
   'labs/cone-lab/lib/three.min.js',
   'labs/cone-lab/lib/OrbitControls.js',
   'labs/cone-lab/LICENSE.txt',
