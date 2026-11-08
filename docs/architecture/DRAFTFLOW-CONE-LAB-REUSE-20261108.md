@@ -84,7 +84,22 @@
 - 现有 M5 详尽凸体射线和投影分割审查目前只适用于其已签收的几何范围。对于 Cone Lab 三棱锥及斜向旋转盒体，`unified-workbench-session` 继续生成唯一的 **`composition-evidence` 未认证 Geometry Scene**，不触发超出证明范围的 M5：`sceneDepthEvidence`、原始全棱射线和全局线型授权均为 `null`，`clock=null`、`verified=false`，不能导出正式图。
 - CI 应核验独立三角底面半径、棱长、四面、方向、原始投影退化点、一般斜向盒体与真实主线 `composition-evidence` 的未认证状态。
 
-### P2.2b 后续曲面解析实体、截交和相贯（不伪称已完成）
+### P2.2b 已提交：圆柱、圆锥和圆台的解析来源与无证明预览
+
+- 在 `core/geometry/analytic-revolved-solid.cjs` 中新增独立的**有限圆形旋转实体参数**校验：`profile=cylinder|cone|frustum`、中心、轴向、正交径向基、总高、底半径和顶半径。对于圆锥要求顶半径严格为零；圆柱上下半径相等；圆台顶底半径均为正且不相等。与 Cone Lab 的 `ConeGeometry/CylinderGeometry` 语义保持对应。
+- 严格要求三轴单位正交、正向右手系 `radialU × axis = radialV`、所有坐标有限且在当前 Geometry 安全范围内。`onAnalyticRevolvedSolid(t,theta)` 是**真实参数曲面**，不是折线近似。
+- 复用原 Geometry 契约的 `validateGeometry`、原 `deriveGeometryScene` 和原 `compileGeometryScene`，仅扩展已有系统识别 `kind=analytic-solid`；不建第二套三视图渲染器、M0–M5 或 V5。
+- 适配 `project/cone-lab-geometry-adapter.cjs` 支持 `cyl/cone/frustum`，沿用原 `sourcePartQuaternion` 和 `(x,y,z)_DraftFlow=(X,-Z,Y)_ConeLab`，保留可核验的源部件 ID、类型、方向、角度、版本。
+- 当前的三视图/三维 SVG 是原解析圆周的有限采样、顶点和两条母线辅助显示；**只用于学习预览，不认定是完整外轮廓、物理棱线、可见性证明或任何 C3 相贯线**。SVG 图元明确 `sourceAnalyticSolid3D:true`、`svgApproximationOnly:true`、`visibility:undetermined`、`displayGuide:true`；没有离散化为虚假的正式 Geometry mesh。
+- 原 `project/unified-workbench-session.cjs` 的用户条件确认仍需逐项操作。对于任何解析实体（即使缺少 Cone Lab 来源元数据）一律仅输出原共享 `composition-evidence` 场景，`sceneDepthEvidence=null`、`linkedC2=null`、`verified=false`、`clock=null`，严禁绕过尚不支持这类实体的 M5。
+- 混合 `box/cube/pyr3/cyl/cone/frustum` 的完整本机 JSON 可创建新组合体项目；其他异形槽、球体、半球、截切面、相贯体和分块选择**仍明确阻止导入**，原版独立实验室功能不受影响。
+- 自动化覆盖原本轴向与六类旋转、真实 3D 表面点、首角法 V/H/W、真实本机项目及共享场景、恶意/退化参数和无认证 V5 门禁。
+
+### P2.2c 后续：相贯与截切（尚未实现）
+
+- 核实上游算法可复用的解析来源与分段证据，借助既有 C3 解析/OCCT 模块交叉比对，不把上游 marching-squares 折线当作数学证明。
+- 先补两个有限圆柱相贯与圆锥平面截交的真实来源端点、区间、退化条件；再处理异形球体、开槽、布尔联合和完整遮挡。
+- 完成 Android/桌面 WebGL、导入导出恢复、旋转实体三视图实际像素对比与部署 Active SHA 验收，不能以 CI 构建成功冒充上线。
 
 - 为圆柱、圆锥、球、棱锥、圆台、复杂槽体建立与现有可信 CAD/解析库对应的几何来源表示；上游曲面细分不应默认为真实解析求交。
 - 与真实切割面和相贯体映射后，使用当前 M0–M5 数学门禁证明区间、端点和可见性；通过证明前一律 `undetermined`。
