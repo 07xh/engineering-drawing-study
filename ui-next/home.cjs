@@ -252,6 +252,14 @@ function homeHTML(){return `
      <p id="v8-c2-status" class="v7-note" role="status">只在空组合体项目中添加两形体，不覆盖已有对象。</p>
      <p class="v7-warning">当前显示已知形体的接触和投影；完整轮廓和虚实线尚未确定。</p>
     </section>
+    <section class="v8-c2-entry" aria-labelledby="v8-conelab-title">
+     <h3 id="v8-conelab-title">Cone Lab · 自由拼装模型导入</h3>
+     <p class="v7-note">从<a href="labs/cone-lab/index.html" target="_blank" rel="noopener noreferrer">实体自由拼装实验室</a>导出 JSON，然后导入这里。首批仅支持自由实验室里的长方体/正方体（含位置和方向），将为它们创建一个新的本机组合体项目；其他曲面、分块与切割不会被悄悄丢弃。</p>
+     <label class="v7-file-control">选择 Cone Lab 模型文件
+      <input id="v8-conelab-file" type="file" accept=".json,application/json" aria-describedby="v8-conelab-status">
+     </label>
+     <p id="v8-conelab-status" class="v7-note" role="status" aria-live="polite">导入后仅暂存未确认的三维实体。必须逐项检查并确认，才能在原有工作台显示投影；不自动生成标准虚实线或 V5。</p>
+    </section>
     <details class="v8-c2-advanced" id="v8-c2-advanced">
      <summary>更多：编辑单个对象、约束与未知点</summary>
     <p class="v7-warning">已有对象或更复杂的题目可在此逐个编辑和确认；当前不生成完整虚实线。</p>
