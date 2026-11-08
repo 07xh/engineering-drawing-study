@@ -42,6 +42,12 @@ const files = [
   'labs/dof-lab-state.js',
   'labs/dof-lab-spatial-svg.js',
   'labs/free-modeler.html',
+  // Standalone MIT-licensed Cone Lab editor: preserve upstream controls and runtime.
+  // Explicit files only; never copy upstream tests, docs, APKs or unreviewed assets.
+  'labs/cone-lab/index.html',
+  'labs/cone-lab/lib/three.min.js',
+  'labs/cone-lab/lib/OrbitControls.js',
+  'labs/cone-lab/LICENSE.txt',
   'labs/free-modeler-ui.js',
   'labs/free-geometry-core.js',
   'labs/free-geometry-sheet.js',
