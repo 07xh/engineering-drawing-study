@@ -86,7 +86,7 @@ test('rejects unsupported shape, cutters, cut planes, hidden parts, and forged f
   {...state([p]),faces:[{type:'horiz',ang:0,x:0,y:0,z:0}]},
   {...state([p]),cyls:[{shape:'cyl',type:'frontal',ang:0,x:0,y:0,z:0,r:8,len:40}]},
   {...state([p]),pickSel:{a:false}},
-  state([part('cyl',{r:8,h:20})]),
+  state([part('sphere',{r:8})]),
   state([part('box',{on:false})]),
   state([part('box',{hidden:true})])
  ];
