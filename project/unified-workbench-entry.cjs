@@ -2547,11 +2547,14 @@ const Motion=require('../workbench/teaching-motion-v5.js');
   if(result.kind!=='composition-evidence'||result.verified!==false||
       result.clock!==null||coordinator.canExport())
    throw Error('手工几何被错误授予解题证明资格');
-  msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系残差：'+
+  const patchCount=result.compositionInterfaceEvidence?.contactPatchCount;
+  msg('已显示 '+result.scene.objects.length+' 个几何对象；M2 关系状态：'+
    result.relationEvidence.status+'（'+result.relationEvidence.checkedCount+
-   ' 条）；闭合长方体关系 '+result.compositionContactEvidence.pairCount+
-   ' 对，已验证内部接触面 '+result.compositionInterfaceEvidence.contactPatchCount+
-   ' 处。未求未知量，虚实线未认证，V5 禁用。');
+   ' 条）；已核对闭合长方体关系 '+result.compositionContactEvidence.pairCount+
+   ' 对。'+(patchCount===undefined?
+    '当前拼装包含需进一步证明的棱面投影拓扑，只能预览原始三维网格和三视图。':
+    '已验证内部接触面 '+patchCount+' 处。')+
+   '未求未知量，标准虚实线与正式逐笔作图均未授权。');
  }));
  for(const id of compositionFields)
   for(const event of ['input','change'])$(id).addEventListener(event,()=>{
