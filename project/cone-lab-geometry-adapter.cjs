@@ -10,6 +10,8 @@
 const Bridge=require('../labs/cone-lab/model-bridge.js');
 const {prismMesh}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
+const {validAnalyticRevolvedSolid}=
+ require('../core/geometry/analytic-revolved-solid.cjs');
 const {deriveGeometryScene}=require('../core/projection/geometry-scene-views.cjs');
 const {newProject,validateProject}=require('./project-coordinator.cjs');
 const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
@@ -127,6 +129,41 @@ function sourceExactPolyMesh(pr,index){
  if(pr.k==='box'||pr.k==='cube')return sourceBoxMesh(pr,index);
  fail('第 '+(index+1)+' 个实体没有经过签收的精确棱面拓扑');
 }
+function sourceRevolvedSolid(pr,index){
+ if(!['cyl','cone','frustum'].includes(pr.k))
+  fail('不支持的有限解析旋转体');
+ const q=sourcePartQuaternion(pr);
+ const sourceUnit=p=>toDraftXYZ(rotate(q,p));
+ const data={
+  profile:pr.k==='cyl'?'cylinder':pr.k,
+  center:toDraftXYZ({x:pr.x,y:pr.y,z:pr.z}),
+  axis:sourceUnit({x:0,y:1,z:0}),
+  radialU:sourceUnit({x:1,y:0,z:0}),
+  radialV:sourceUnit({x:0,y:0,z:1}),
+  height:pr.h,
+  radiusBottom:pr.r,
+  radiusTop:pr.k==='cone'?0:(pr.k==='cyl'?pr.r:pr.rt)
+ };
+ if(!validAnalyticRevolvedSolid(data))
+  fail('第 '+(index+1)+' 个解析实体的轴向、半径、体积或坐标范围无效');
+ const geometry={
+  id:partGeometryId(pr,index),kind:'analytic-solid',
+  space:'model-3d',unit:'mm',data,
+  importedFromConeLab:{
+   sourceId:pr._id===undefined?null:String(pr._id),
+   sourceIndex:index,sourceKind:pr.k,sourceType:pr.type,
+   sourceAngleDeg:pr.ang,sourceCommit:SOURCE_MAIN_SHA,
+   exactAnalyticSurface:true,verification:'unverified-preview'
+  }
+ };
+ const checked=validateGeometry(geometry);
+ if(!checked.ok)fail('第 '+(index+1)+' 个解析实体不符合 Geometry：'+checked.errors.join('；'));
+ return geometry;
+}
+function sourceSupportedSolid(pr,index){
+ if(['cone','cyl','frustum'].includes(pr.k))return sourceRevolvedSolid(pr,index);
+ return sourceExactPolyMesh(pr,index);
+}
 function parseExactCandidate(text){
  const doc=Bridge.parseDocument(text),s=doc.model;
  if(s.shape!=='lab')fail('仅接入“实验室·自由拼装”中的独立实体；主立体仍留在原实验室');
@@ -135,9 +172,9 @@ function parseExactCandidate(text){
  if(Object.keys(s.pickSel).length)fail('分块选择状态尚不能表达为精确独立实体');
  if(s.parts.length<1)fail('模型没有任何拼装部件');
  if(s.parts.some(p=>!p.on||p.hidden))fail('含隐藏/禁用部件的模型需先在原实验室恢复完整实体');
- if(s.parts.some(p=>!['box','cube','pyr3'].includes(p.k)))
-  fail('当前精确棱面接入支持长方体、正方体、正三棱锥；圆柱、圆锥和曲面实体仍留在原实验室');
- const geometry=s.parts.map(sourceExactPolyMesh);
+ if(s.parts.some(p=>!['box','cube','pyr3','cone','cyl','frustum'].includes(p.k)))
+  fail('当前接入长方体、正方体、正三棱锥、圆柱、圆锥和圆台；其他复杂曲面留在原实验室');
+ const geometry=s.parts.map(sourceSupportedSolid);
  if(new Set(geometry.map(g=>g.id)).size!==geometry.length)
   fail('拼装部件来源 ID 重复，不允许合并或覆盖不同实体');
  return {doc,geometry};
@@ -184,6 +221,6 @@ const OBSERVER_SOURCE=Object.freeze({
  H:Object.freeze(toSourceXYZ(FIRST_ANGLE_OBSERVER_RAYS.H)),
  W:Object.freeze(toSourceXYZ(FIRST_ANGLE_OBSERVER_RAYS.W))
 });
-module.exports={P2_SCOPE,sourcePartQuaternion,sourceBoxMesh,sourcePyramidMesh,partGeometryId,
+module.exports={P2_SCOPE,sourcePartQuaternion,sourceBoxMesh,sourcePyramidMesh,sourceRevolvedSolid,partGeometryId,
  toDraftXYZ,toSourceXYZ,OBSERVER_SOURCE,
  previewExactScene,draftProjectFromConeLab};
