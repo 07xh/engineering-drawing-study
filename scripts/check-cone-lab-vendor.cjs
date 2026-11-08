@@ -9,6 +9,7 @@ const preview = process.argv.includes('--ui-preview');
 const out = path.join(root, preview ? 'dist-ui-next' : 'dist');
 const assets = [
   'labs/cone-lab/index.html',
+  'labs/cone-lab/model-bridge.js',
   'labs/cone-lab/lib/three.min.js',
   'labs/cone-lab/lib/OrbitControls.js',
   'labs/cone-lab/LICENSE.txt',
@@ -24,7 +25,7 @@ for (const file of assets) {
   );
 }
 const html = fs.readFileSync(path.join(out, assets[0]), 'utf8');
-for (const tag of ['lib/three.min.js', 'lib/OrbitControls.js']) {
+for (const tag of ['lib/three.min.js', 'lib/OrbitControls.js', 'model-bridge.js']) {
   assert.ok(html.includes('src="' + tag + '"'), 'Missing offline runtime: ' + tag);
 }
 for (const symbol of [
@@ -35,6 +36,7 @@ for (const symbol of [
   'function tapPick('
 ]) assert.ok(html.includes(symbol), 'Missing core Cone Lab behavior: ' + symbol);
 assert.ok(!/src=["']https?:\/\//i.test(html), 'Cone Lab must not load remote scripts');
+assert.ok(html.includes('DraftFlowConeLabBridge.mount('), 'Missing P1 model-file state binding');
 const home = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 assert.ok(home.includes('labs/cone-lab/index.html'), 'Missing compiled homepage entry');
 const modeler = fs.readFileSync(path.join(out, 'labs/free-modeler.html'), 'utf8');
