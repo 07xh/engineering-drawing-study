@@ -145,6 +145,10 @@ test('Cone Lab triangular pyramid is the exact four-corner source polyhedron, no
  assert.deepEqual(g.data.points.Apex,{x:0,y:0,z:18});
  const base=['Base0','Base1','Base2'].map(id=>g.data.points[id]);
  for(const point of base)close(point.z,-18);
+ // The equal W depth must be a mathematically identical coordinate, not
+ // independently rounded cos(120°) and cos(240°) approximations.
+ assert.equal(base[1].y,base[2].y);
+ assert.deepEqual(project(base[1]).W,project(base[2]).W);
  for(const point of base)close(Math.hypot(point.x,point.y),20);
  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
  close(distance(base[0],base[1]),20*Math.sqrt(3));
