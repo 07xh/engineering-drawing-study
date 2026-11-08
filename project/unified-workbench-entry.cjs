@@ -9,6 +9,7 @@ const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {IDS:C1_IDS,parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
 const {draftProjectFromConeLab}=require('./cone-lab-geometry-adapter.cjs');
+const {c3CandidateFromConeLab}=require('./cone-lab-c3-review-candidate.cjs');
 const {reviewC2BoxFields}=require('./c2-reviewed-preflight.cjs');
 const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
@@ -2626,6 +2627,41 @@ const Motion=require('../workbench/teaching-motion-v5.js');
  }
  // The scaffold contains IDs only, NEVER inferred vertex coordinates. It
  // cannot overwrite user work, saved topology or pre-existing C1 measurements.
+ // File exchange is intentionally a field prefill only, NOT confirmation
+ // of the mathematical source, axes, caps, Boolean type, or V5.
+ $('v8-c3-conelab-file').addEventListener('change',()=>call(async()=>{
+  const fileInput=$('v8-c3-conelab-file');
+  const status=$('v8-c3-conelab-status'),file=fileInput.files?.[0];
+  if(!file)return;
+  try{
+   if(!coordinator||coordinator.snapshot().task!=='c3-intersection')
+    throw Error('请先选择相贯线任务');
+   if(file.size<1||file.size>1024*1024)
+    throw Error('Cone Lab 文件应为不超过 1 MB 的 JSON');
+   const candidate=c3CandidateFromConeLab(await file.text());
+   // Validate the complete candidate BEFORE altering any original input.
+   if(candidate.status!=='requires-human-review'||
+      candidate.axesConfirmed!==false||candidate.capsConfirmed!==false||
+      candidate.canSolve!==false||candidate.canPlayV5!==false)
+    throw Error('外部几何候选不满足人工核对要求');
+   stopAnimation();
+   if(coordinator.snapshot().conditions.some(c=>c.id==='coords'))
+    coordinator.deleteCondition('coords');
+   for(const k of C3_KEYS)
+    $('v8-c3-'+k).value=String(candidate.dimensions[k]);
+   $('v8-c3-axes').checked=false;
+   $('v8-c3-caps').checked=false;
+   $('v8-c3-solid-op').value='';
+   $('v8-review-ack').checked=false;
+   uncommittedFormEdit=true;
+   updateReviewPanel(coordinator.snapshot());
+   status.textContent='已填入两根圆柱的十项毫米尺寸，尚未保存为数学条件。请核对轴向、端盖及需要保留的实体组合方式。';
+   msg('已读取 Cone Lab 两圆柱候选；旧相贯结果已失效，请人工审核后再求解。');
+  }catch(error){
+   status.textContent='导入失败：'+error.message;
+   throw error;
+  }finally{fileInput.value='';}
+ }));
  $('v8-c1-template').addEventListener('click',()=>{
   if(coordinator?.snapshot().task!=='c1-third-view')return;
   const field=$('v8-c1-vertices'),status=$('v8-c1-template-status');

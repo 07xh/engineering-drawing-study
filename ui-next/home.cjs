@@ -126,6 +126,13 @@ function homeHTML(){return `
     <legend>C3 · 已确认的两根正交有限圆柱</legend>
     <p class="v7-note">输入两根圆柱的半径、中心轴位置和有限端盖范围（mm）。
      Z 轴圆柱与 Y 轴圆柱互相正交；不适用于任意倾斜圆柱或未知实体。</p>
+    <div class="v8-c3-model-import">
+     <label class="v7-file-control">从 Cone Lab 导入两圆柱的尺寸候选
+      <input id="v8-c3-conelab-file" type="file" accept=".json,application/json"
+       aria-describedby="v8-c3-conelab-status">
+     </label>
+     <p id="v8-c3-conelab-status" class="v7-note" role="status" aria-live="polite">仅填入模型尺寸；轴向、端盖和组合方式仍需亲自核对后确认。不会自动计算相贯线。</p>
+    </div>
     <div class="v8-c3-grid">
      <fieldset><legend>沿 Z 轴的圆柱</legend><div class="v7-xyz">
       <label>半径<input id="v8-c3-zRadius" type="number" step="any"></label>
