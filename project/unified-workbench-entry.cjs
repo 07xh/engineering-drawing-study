@@ -8,6 +8,7 @@ const {openLocalProjects,ensureImage}=require('./local-project-store.cjs');
 const {hasTaskInputs,forkTaskProject}=require('./task-switch-guard.cjs');
 const {IDS:C1_IDS,parseReviewedC1Rows,serializeReviewedC1Rows}=require('./c1-reviewed-input.cjs');
 const {buildReviewedC2Boxes}=require('./c2-reviewed-two-boxes.cjs');
+const {draftProjectFromConeLab}=require('./cone-lab-geometry-adapter.cjs');
 const {reviewC2BoxFields}=require('./c2-reviewed-preflight.cjs');
 const {KEYS:C3_KEYS,makeReviewedC3Input}=require('./c3-reviewed-input.cjs');
 const {createUnifiedProjectSession,prismMesh,SHEET}=require('./unified-workbench-session.cjs');
@@ -2458,6 +2459,32 @@ const Motion=require('../workbench/teaching-motion-v5.js');
    ' 对；完整工程线型与唯一 V5 未签收。';
   updateC2Preflight();
   msg('C2 已确认两长方体几何，使用原有 M0/M2/M5 计算接触关系与三视图。不是完整组合体答案。');
+ }));
+ // Cone Lab P2 import is a NEW unconfirmed local project, not a solver bypass.
+ // Validate the complete JSON/geometry/project before touching IndexedDB or
+ // replacing the current project; never silently omit unsupported solids.
+ $('v8-conelab-file').addEventListener('change',()=>call(async()=>{
+  const input=$('v8-conelab-file'),file=input.files?.[0],status=$('v8-conelab-status');
+  if(!file)return;
+  try{
+   if(!store)throw Error('本机项目存储不可用，拒绝导入');
+   if(file.size<1||file.size>1024*1024)throw Error('Cone Lab 模型文件必须小于 1 MB');
+   await saving;
+   const candidate=draftProjectFromConeLab(await file.text(),{
+    projectId:gid('Project'),title:'Cone Lab 拼装模型（待逐项确认）'
+   });
+   if(candidate.project.conditions.some(c=>c.confirmed))
+    throw Error('外部模型不得自动确认几何条件');
+   await store.saveProject(candidate.project);
+   mount(candidate.project);
+   await refreshList();
+   status.textContent='已新建本机草稿：'+candidate.project.objects.length+
+    ' 个形体，全部待确认。展开「编辑单个对象」核对后，逐项确认并预览。';
+   msg('Cone Lab 实体已导入为未确认草稿；未签发工程线型或 V5。');
+  }catch(error){
+   status.textContent='导入失败：'+error.message;
+   throw error;
+  }finally{input.value='';}
  }));
  $('v7-c-new').addEventListener('click',()=>{
   $('v7-c-objects').value='';
