@@ -34,9 +34,10 @@ function c3CandidateFromConeLab(text){
  const Z=sourceRevolvedSolid(vertical[0],model.parts.indexOf(vertical[0]));
  const Y=sourceRevolvedSolid(front[0],model.parts.indexOf(front[0]));
  const z=Z.data,y=Y.data;
+ const near=(a,b)=>Number.isFinite(a)&&Math.abs(a-b)<=1e-12;
  if(z.profile!=='cylinder'||y.profile!=='cylinder'||
-    z.axis.x!==0||z.axis.y!==0||z.axis.z!==1||
-    y.axis.x!==0||y.axis.y!==-1||y.axis.z!==0)
+    !near(z.axis.x,0)||!near(z.axis.y,0)||!near(z.axis.z,1)||
+    !near(y.axis.x,0)||!near(y.axis.y,-1)||!near(y.axis.z,0))
   fail('原版圆柱轴向与绘序有限圆柱求解范围不一致');
  const dimensions={
   zRadius:z.radiusBottom,
