@@ -26,31 +26,41 @@
 5. 主视/俯视/左视和对面视图方向及遮挡符合当前实验室规则；小屏、横竖屏、返回恢复无卡死。
 6. 将上述场景记为上游展示能力，而非绘序正式制图答案；不赋予虚实线/几何证明标志。
 
-## P1：模型数据桥接（后续独立改动，先定接口）
+## P1：模型数据桥接（本 PR 新增文件交换能力）
 
-使用 **显式用户导出/导入**，不自动读取其他项目会话。不采用 DOM 抓取或渲染截图反推几何。
+**已实现：** `labs/cone-lab/model-bridge.js` 使用上游自身的 `snapState()/applySnapshot()` 在原编辑器中提供「导出模型 JSON」「导入模型 JSON」，保留主体形状、倒放、拼装部件、面、相贯体和可选分块。原版 HTML 仅增加依赖脚本和状态桥接钩子，不接管 Three.js 几何计算。成功导入后重置撤销栈，避免撤销回上一份用户模型。
 
-提议只读草稿 Schema（待按实际上游字段核验）：
+- `documentFromState(state)` 负责生成草稿；`parseDocument(json)` 是无 DOM 副作用的校验解析接口，可供下一步现有 Geometry Scene 消费者复用。
+- 严格 Schema：`draftflow.conelab.model.v1`、`unit=mm`、固定上游 commit/坐标系；`model` 内保留 `shape/flipped/parts/faces/cyls/pickSel`，其中每项只接收上游支持的参数。
+- 导入限制 1 MB、部件最多 6、相贯体最多 4、切割面最多 12、选择记忆最多 512 项；拒绝无效尺寸、NaN/非数值坐标、未知形状/角度类型、伪造认证状态与不兼容 Schema。
+- 不传送个人数据到服务端，用户手动导出文件并在本机选择导入。浏览器下载 JSON 不是自动持久化到绘序当前项目；刷新后需重新导入文件。
+- 所有模型一律标记为 **`unverified-preview`**，不能因“能在 3D 中画出来”升级到 M4/M5 的正式标准线型和答案。
+- **尚未实现：** 导入到绘序统一项目存储或自动变换到 Geometry Scene，属于 P2 首项，不能宣称与 V5 已联动。
+
+实际序列化示例（不代表已经可由正式求解器消费）：
 
 ```json
 {
   "schema": "draftflow.conelab.model.v1",
   "unit": "mm",
-  "source": {"project": "gugugaga-design/cone-lab", "commit": "6aae2535f267fdc32a813c196062f33aaf6bfe0b"},
-  "revision": 1,
-  "parts": [
-    {"id": "p1", "kind": "box", "size": {"width": 40, "depth": 25, "height": 20},
-     "transform": {"position": [0, 0, 0], "rotation": [0, 0, 0]}}
-  ],
-  "cutters": [],
-  "faces": []
+  "source": {
+    "repository": "gugugaga-design/cone-lab",
+    "commit": "6aae2535f267fdc32a813c196062f33aaf6bfe0b"
+  },
+  "coordinates": {"frame":"cone-lab","x":"right","y":"up","z":"toward-viewer"},
+  "verification": "unverified-preview",
+  "model": {
+    "shape":"lab",
+    "flipped":false,
+    "parts":[{"k":"box","type":"horiz","ang":0,"x":0,"y":0,"z":0,"w":40,"d":25,"h":20,"on":true,"open":true}],
+    "faces":[],
+    "cyls":[],
+    "pickSel":{}
+  }
 }
 ```
 
-- 此处是 **提议** 而非已实现 API，尤其 `kind`、尺寸和旋转参数需对照 Cone Lab 对象类型及方向进行双向映射。
-- 候选坐标轴映射：上游 `(X,Y,Z)`（Y 竖直、Z 朝观察者）→ 绘序 `(x,y,z)=(X,Z,Y)`（目标三视图使用 V=(x,z)、H=(x,y)、W=(y,z)）。但相机左右手系与第一角法朝向需利用非对称测试件验证后再确定轴符号。
-- 导入只创建 **未证明** 模型草稿；源对象 ID 和 revision 必须明确，修改后原证明失效；未确认单位不可按 mm 静默使用。
-- P1 基本验收：两种不同形状/尺寸/旋转的实体及截平面都能往返序列化；原模型不变；丢字段、未知类型、版本不匹配均显式报错。
+注意坐标变换尚未执行：原版的 `(X,Y,Z)` = 右、上、前；绘序通常用 `(x,y,z)` = 右、前、上。待使用非对称参照模型及投影方向检验，才确定目标轴符号与三视图镜像关系。不得通过简单轴交换把相贯线直接认证为绘序答案。
 
 ## P2：映射到共享 Geometry Scene / C2、C3
 
