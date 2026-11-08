@@ -91,15 +91,11 @@ function projectCandidate(src){
 }
 // Present only authenticated GIVEN source points on first entry; M0/M3
 // candidate geometry and unknown target view are never fetched here.
-function renderOriginalPaper(){
- const container=$('sheetPreview');container.replaceChildren();
- $('showGiven').setAttribute('aria-pressed','true');
- $('showCandidate').setAttribute('aria-pressed','false');
- if(!rawGiven){
-  $('paperMode').textContent='尚未加载原题：不展示三维候选或第三视图答案。';
-  return;
- }
- const paper=buildC1DxfGivenFirstPaper(rawGiven);
+// Rebuild the trusted GIVEN-only SVG from the reviewed source packet, never
+// from mutable preview DOM or a precompiled answer-bearing SVG. Both the
+// preview and canonical V5 must consume this identical first-angle paper.
+function makeCanonicalGivenPaperSvg(packet){
+ const paper=buildC1DxfGivenFirstPaper(packet);
  const outer=node('svg',{viewBox:'0 0 960 720',
   'data-c1-paper-mode':'given','data-missing-view':paper.missingView,
   'aria-label':'原题已知点；待补第三视图留白'});
@@ -126,6 +122,17 @@ function renderOriginalPaper(){
   }
   outer.append(group);
  }
+ return {paper,outer};
+}
+function renderOriginalPaper(){
+ const container=$('sheetPreview');container.replaceChildren();
+ $('showGiven').setAttribute('aria-pressed','true');
+ $('showCandidate').setAttribute('aria-pressed','false');
+ if(!rawGiven){
+  $('paperMode').textContent='尚未加载原题：不展示三维候选或第三视图答案。';
+  return;
+ }
+ const {paper,outer}=makeCanonicalGivenPaperSvg(rawGiven);
  container.append(outer);
  $('paperMode').textContent='仅显示原题 '+paper.knownViewPair.join('/')+
   ' 的 '+paper.knownViewPair.reduce((n,v)=>n+paper.views[v].points.length,0)+
@@ -223,9 +230,35 @@ function drawV5(){
  const paper=$('animation');paper.replaceChildren();
  if(!current?.solution?.player?.canRender(revision))return;
  const actual=current.solution,frame=actual.player.snapshot(performance.now()),
-  preview=$('sheetPreview').querySelector('svg'),
-  viewBox=preview?.getAttribute('viewBox')||'0 0 960 720';
- paper.setAttribute('viewBox',viewBox);
+  preview=$('sheetPreview').querySelector('svg[data-c1-paper-mode="given"]');
+ // The SAME original GIVEN coordinate transform drives both the base paper
+ // and the canonical V5 actions. Never use the precompiled final answer SVG
+ // as a frame-zero background, even after the user confirms a candidate.
+ const known=given&&Object.keys(given.views).sort();
+ const expectedPoints=known?.reduce((n,v)=>n+given.views[v].length,0);
+ const canonical=rawGiven?makeCanonicalGivenPaperSvg(rawGiven).outer:null;
+ const sameOriginalGivenPoints=known?.length===2&&known.every(view=>
+  Array.isArray(rawGiven?.views?.[view])&&
+  rawGiven.views[view].length===given.views[view].length&&
+  given.views[view].every((point,i)=>
+   point.u===rawGiven.views[view][i].u&&
+   point.v===rawGiven.views[view][i].v));
+ if(!given||!rawGiven||!preview||!canonical||!sameOriginalGivenPoints||
+    rawGiven.missingView!==given.missingView||
+    // Strict structural equality rejects injected circles/text, altered point
+    // coordinates, hidden nested paths and changed view metadata. A loose
+    // element-count check is insufficient for a genuine blank first frame.
+    preview.outerHTML!==canonical.outerHTML||
+    rawGiven.sourceSha256!==given.sourceSha256||
+    rawGiven.convertedDxfSha256!==given.convertedDxfSha256||
+    preview.getAttribute('data-missing-view')!==given.missingView||
+    preview.querySelectorAll('[data-source-point-only]').length!==expectedPoints||
+    preview.querySelectorAll('[data-c1-unanswered-view]').length!==1||
+    preview.querySelector('[data-c1-unanswered-view]')
+     ?.getAttribute('data-c1-unanswered-view')!==given.missingView||
+    preview.querySelector('line,path,polyline,polygon'))
+  throw new RangeError('canonical C1 V5 requires unmodified original GIVEN paper and blank target');
+ paper.setAttribute('viewBox',canonical.getAttribute('viewBox'));
  // Verify actual DAG + every signed action's source before rendering a line.
  // Unbound contours are never allowed to borrow engineering line styles.
  renderStepInspector(frame);
@@ -233,6 +266,13 @@ function drawV5(){
   ...(actual.certifiedVisibleContourLineBindings||[]),
   ...(actual.certifiedPhysicalLineBindings||[])
  ].map(binding=>[binding.actionId,binding]));
+ // Preserve only the original CAD GIVEN point evidence in every frame.
+ // At t=0 the target is genuinely empty; later strokes arrive solely from
+ // the existing ConstructionStep DAG and canonical player fractions.
+ const original=node('g',{'data-v5-original-paper':'given-only',
+  'data-missing-view':given.missingView});
+ for(const child of canonical.children)original.append(child.cloneNode(true));
+ paper.append(original);
  const layer=node('g',{'data-player':'one-existing-canonical-v5',
   'aria-label':'当前条件下的作图动画'});
  for(const step of actual.steps)for(const a of step.actions){
@@ -259,12 +299,23 @@ function drawV5(){
   '/'+actual.timeline.segments.length+' 个当前版本动作已完成。'+
   (frame.done?'本轮播放完成。':'未验证的边不会显示为标准工程线。');
 }
+// An invalidated source, tampered first frame or forged DAG must leave no
+// playable player, not just throw inside requestAnimationFrame and freeze UI.
+function failClosedV5(){
+ halt();current=null;controls(false);
+ $('animation').replaceChildren();resetStepInspector();
+ $('v5Status').textContent='作图已停止：原题或步骤证据不一致，请重新核对并编译。';
+ setStatus('当前作图证据不一致，已停止播放；不能继续显示未签收线条。',true);
+}
 function tick(now){
  if(!playing||!current?.solution?.player?.canRender(revision)){
   halt();return;
  }
- const frame=current.solution.player.snapshot(now);
- drawV5();
+ let frame;
+ try{
+  frame=current.solution.player.snapshot(now);
+  drawV5();
+ }catch(e){failClosedV5();return;}
  if(frame.done){halt();return;}
  raf=requestAnimationFrame(tick);
 }
@@ -282,7 +333,7 @@ function seek(dir){
  currentIndex=snap.done?length:Math.max(0,snap.activeStepIndex);
  player.seekStep(Math.max(0,Math.min(length,currentIndex+dir)),
   performance.now());
- drawV5();
+ try{drawV5();}catch(e){failClosedV5();}
 }
 function safeString(hash){return hash.slice(0,12)+'…'+hash.slice(-8);}
 async function applyReviewedPairs(){
@@ -377,7 +428,9 @@ async function compile(){
  }
  try{
   const source=given,rev=revision,
-   transformed=projectCandidate(candidate);
+   // Never choose the V5 coordinate frame from inferred 3D candidate edges.
+   // The ORIGINAL two GIVEN views alone define the first-angle paper scale.
+   transformed=buildC1DxfGivenFirstPaper(source).transform;
   const confirmedReview={
    sourceSha256:source.sourceSha256,
    convertedDxfSha256:source.convertedDxfSha256,
@@ -412,15 +465,17 @@ async function compile(){
   }).join('；');
   // Only publish a live player after the same-run scoped proof is inspected.
   current=result;
-  // This SVG is generated by canonical source-escaped M3/M5 renderer.
-  // The local paper and V5 panels never request any textbook answer data.
-  $('sheetPreview').innerHTML=result.solution.threeViewSvgSheet.sheetSvg;
+  // IMPORTANT: threeViewSvgSheet is the computed FINAL view, not a V5
+  // construction frame. Showing it here leaks the answer before step zero.
+  // Keep the authentic original GIVEN and missing-view blank; drawV5 alone
+  // consumes the signed/unsigned actions in actual DAG order.
+  renderOriginalPaper();
   $('showGiven').disabled=true;
   $('showCandidate').disabled=true;
-  $('showGiven').setAttribute('aria-pressed','false');
+  $('showGiven').setAttribute('aria-pressed','true');
   $('showCandidate').setAttribute('aria-pressed','false');
-  $('paperMode').textContent='当前显示本次核验通过的结果；'+
-   '未证明线段不得按正式工程线展示，教材整题盲测仍未通过。';
+  $('paperMode').textContent='当前仍仅显示原始 GIVEN 点和空白待求视图；'+
+   '下方唯一 V5 才按实际 DAG 逐笔作图。未证明线段不签工程线型，教材整题盲测仍未通过。';
   controls(true);
   $('proof').textContent='真实教材题图自动识别/全部角点完整性：尚未独立认证。'+
    '\nM3/M0/M5 原始来源门禁：'+
@@ -445,7 +500,10 @@ async function compile(){
    '本次受限凸体全三视图原始棱线数学签收通过；原教材盲测仍未通过。':
    '当前显示局部作图；完整棱线和题目结果仍未全部核验。');
   drawV5();
- }catch(e){setStatus('条件未通过核验：'+(e?.message||String(e)),true);}
+ }catch(e){
+  failClosedV5();
+  setStatus('条件未通过核验：'+(e?.message||String(e)),true);
+ }
 }
 $('showGiven').addEventListener('click',()=>{
  if(!rawGiven||$('showGiven').disabled)return;
@@ -477,10 +535,12 @@ $('v5StepJump').addEventListener('change',()=>{
  if(!Number.isInteger(index)||index<0||index>=current.solution.steps.length)return;
  halt();
  current.solution.player.seekStep(index,performance.now());
- drawV5();
+ try{drawV5();}catch(e){failClosedV5();}
 });
 $('play').addEventListener('click',play);
-$('pause').addEventListener('click',()=>{halt();drawV5();});
+$('pause').addEventListener('click',()=>{
+ halt();try{drawV5();}catch(e){failClosedV5();}
+});
 $('prev').addEventListener('click',()=>seek(-1));
 $('next').addEventListener('click',()=>seek(1));
 window.addEventListener('pagehide',()=>{halt();clearPreview();});
