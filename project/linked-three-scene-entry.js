@@ -8,7 +8,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Consumer from './geometry-scene-consumer.cjs';
 import Analytic from '../core/geometry/analytic-curve-3d.cjs';
 import Views from '../core/projection/geometry-scene-views.cjs';
-const {sourceFeatureKey}=Consumer;
+const {sourceFeatureKey,requireCompleteWebGLFeatureBudget,
+ canShadeMeshFaceForDisplay}=Consumer;
 const {atAnalyticCurve3D}=Analytic;
 const {SCHEMA}=Views;
 const validPoint=p=>p&&['x','y','z'].every(k=>Number.isFinite(p[k]));
@@ -43,7 +44,8 @@ function mount(container,{onPick}={}){
  let pending=false,center=new THREE.Vector3(),extent=40,angles=null;
  const active=new Set();
  let keyboardFocus=null;
- let lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
+ let lastSelection={selectedIds:[],selectedSourceFeature:null,
+  activeV5SourceFeatures:[],hiddenObjectIds:[]};
  function schedule(){
   if(disposed||pending)return;pending=true;
   window.requestAnimationFrame(()=>{
@@ -108,7 +110,9 @@ function mount(container,{onPick}={}){
   return points;
  }
  function placeLine(obj,a,b,extra={}){
-  if(!validPoint(a)||!validPoint(b)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(a)||!validPoint(b))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source feature budget exceeded: refusing partial 3D model');
   const key=sourceFeatureKey(obj,extra);
   const geometry=new THREE.BufferGeometry().setFromPoints([vec(a),vec(b)]);
   const material=new THREE.LineBasicMaterial({color:0x587da4,
@@ -119,7 +123,9 @@ function mount(container,{onPick}={}){
   root.add(line);pickable.push(line);features.push(line);
  }
  function placePoint(obj,p){
-  if(!validPoint(p)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(p))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source point budget exceeded: refusing partial 3D model');
   const geometry=new THREE.SphereGeometry(Math.max(.4,extent*.012),10,7);
   const marker=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({
    color:0x476d93,depthTest:false}));
@@ -136,24 +142,11 @@ function mount(container,{onPick}={}){
   for(const face of d.faces){
    const verts=face.map(id=>d.points[id]);
    if(verts.length<3||!verts.every(validPoint))continue;
-   const coords=verts.map(vec),n=new THREE.Vector3()
-    .subVectors(coords[1],coords[0]).cross(
-     new THREE.Vector3().subVectors(coords[2],coords[0]));
-   if(n.length()<1e-9)continue;
-   n.normalize();
-   const tol=1e-7*Math.max(1,extent),a=coords[0];
-   let orientation=0,okay=true;
-   for(let i=0;i<coords.length;i++){
-    const b=coords[i],c=coords[(i+1)%coords.length],
-     next=coords[(i+2)%coords.length];
-    if(Math.abs(n.dot(new THREE.Vector3().subVectors(b,a)))>tol){okay=false;break;}
-    const cross=new THREE.Vector3().subVectors(c,b)
-     .cross(new THREE.Vector3().subVectors(next,c)).dot(n);
-    if(Math.abs(cross)<tol)continue;
-    if(orientation&&cross*orientation<0){okay=false;break;}
-    orientation=cross;
-   }
-   if(!okay)continue;
+   // A star-shaped/self-crossing loop can have uniform LOCAL turns.
+   // Only draw a translucent face if EVERY supporting edge keeps all face
+   // vertices on one side; unsupported faces retain their source wireframe.
+   if(!canShadeMeshFaceForDisplay(d.points,face,extent))continue;
+   const coords=verts.map(vec);
    const arr=[];
    for(let i=1;i<coords.length-1;i++)for(const p of [coords[0],coords[i],coords[i+1]])
     arr.push(p.x,p.y,p.z);
@@ -170,6 +163,11 @@ function mount(container,{onPick}={}){
  function build(scene){
   if(!scene||scene.schema!==SCHEMA||!Array.isArray(scene.objects)||
      !Number.isSafeInteger(scene.revision))throw Error('无效的几何场景版本');
+  // Preflight before destroying the previous complete scene. Never turn a
+  // truncated 3D mesh into an apparently authentic engineering model.
+  const budget=requireCompleteWebGLFeatureBudget(scene);
+  if(budget.limit!==MAX_FEATURES)
+   throw new Error('3D source and WebGL feature budgets disagree');
   clear();
   const points=allPoints(scene),box=new THREE.Box3();
   points.forEach(p=>box.expandByPoint(p));
@@ -213,7 +211,9 @@ function mount(container,{onPick}={}){
   resize();
  }
  function placeCurvePiece(obj,a,b){
-  if(!validPoint(a)||!validPoint(b)||features.length>=MAX_FEATURES)return;
+  if(!validPoint(a)||!validPoint(b))return;
+  if(features.length>=MAX_FEATURES)
+   throw new RangeError('WebGL source feature budget exceeded: refusing partial 3D model');
   const g=new THREE.BufferGeometry().setFromPoints([vec(a),vec(b)]);
   const line=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x587da4}));
   line.userData={objectId:obj.id,sourceFeatureKey:sourceFeatureKey(obj,{}),
@@ -244,7 +244,8 @@ function mount(container,{onPick}={}){
  }
  function paintSelection(){
   const owners=new Set(lastSelection.selectedIds),
-   hidden=new Set(lastSelection.hiddenObjectIds);
+   hidden=new Set(lastSelection.hiddenObjectIds),
+   activeV5=new Set(lastSelection.activeV5SourceFeatures);
   // The same hidden set controls rendering, touch raycasts and keyboard traversal.
   for(const node of root.children)node.visible=!hidden.has(node.userData.objectId);
   if(keyboardFocus&&hidden.has(keyboardFocus.objectId)){
@@ -256,8 +257,11 @@ function mount(container,{onPick}={}){
     key===lastSelection.selectedSourceFeature;
    const focused=keyboardFocus?.objectId===objectId&&
     keyboardFocus?.sourceFeatureKey===key;
-   const selected=owners.has(objectId);
-   const hex=precise?0x0866ef:focused?0x00a6a6:selected?0xef6730:0x587da4;
+   const selected=owners.has(objectId),stepFocus=activeV5.has(key);
+   // Active canonical V5 source identity changes only the 3D color.
+   // It does not alter geometry, depth or GB visible/hidden line styling.
+   const hex=precise?0x0866ef:focused?0x00a6a6:
+    stepFocus?0x00877d:selected?0xef6730:0x587da4;
    feature.material.color.setHex(hex);
   }
  }
@@ -280,15 +284,17 @@ function mount(container,{onPick}={}){
   paintSelection();schedule();
  }
  function update(scene,{selectedIds=[],selectedSourceFeature=null,
-  hiddenObjectIds=[],camera:inputCamera}={}){
+  activeV5SourceFeatures=[],hiddenObjectIds=[],camera:inputCamera}={}){
   if(disposed)return;
   if(!scene){
    clear();currentScene=null;
-   lastSelection={selectedIds:[],selectedSourceFeature:null,hiddenObjectIds:[]};
+   lastSelection={selectedIds:[],selectedSourceFeature:null,
+    activeV5SourceFeatures:[],hiddenObjectIds:[]};
    schedule();return;
   }
   if(scene!==currentScene)build(scene);
   lastSelection={selectedIds:[...selectedIds],selectedSourceFeature,
+   activeV5SourceFeatures:[...activeV5SourceFeatures],
    hiddenObjectIds:[...hiddenObjectIds]};
   // Rendering, touch raycasts and keyboard navigation share one visibility gate.
   paintSelection();
