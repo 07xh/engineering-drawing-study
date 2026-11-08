@@ -6,7 +6,7 @@ const home=fs.readFileSync('index.html','utf8');
 const guide=fs.readFileSync('public-use.html','utf8');
 const build=fs.readFileSync('scripts/build-static.cjs','utf8');
 const files=['labs/point-coach.html','labs/dof-lab-v2.html','labs/free-modeler.html','labs/tangent-constraint.html','labs/paper-geometry.html','labs/composite-geometry.html'];
-assert(home.includes('DraftAI'),'public product name missing');
+assert(home.includes('绘序 · DraftFlow'),'public product name missing');
 assert(home.includes('选择解题工具')&&home.includes('工程制图解题 · 动态作图'),'V6 concise solver landing missing');
 for(const f of files){
  assert(fs.existsSync(f),'public learning page missing: '+f);
@@ -19,4 +19,4 @@ assert(home.includes('href="public-use.html"'),'public use disclosure missing');
 assert(guide.includes('公开')&&guide.includes('个人资料')&&guide.includes('尚未向公众开放'),'public use and private boundary text missing');
 assert(build.includes("'public-use.html'"),'public use page must be packaged');
 assert(!home.includes('第三版教材 · 唯一课程体系'),'textbook course cannot remain the product home');
-console.log('PASS public DraftAI entry: existing geometry tools linked, AI gated, public/private disclosure present');
+console.log('PASS public DraftFlow entry: existing geometry tools linked, AI gated, public/private disclosure present');

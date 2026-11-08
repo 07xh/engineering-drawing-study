@@ -4,6 +4,12 @@
  * DAG / V5 timeline. Never creates or signs geometry, guesses pedagogical
  * steps, or turns a proven point/auxiliary guide into a national-standard line.
  */
+const Timeline=require('./teaching-timeline-v5.js');
+const Motion=require('./teaching-motion-v5.js');
+const finitePoint=p=>p!==null&&typeof p==='object'&&
+ Number.isFinite(p.x)&&Number.isFinite(p.y);
+const samePoint=(a,b)=>finitePoint(a)&&finitePoint(b)&&
+ a.x===b.x&&a.y===b.y;
 const STYLE={
  visible:'gb-t-4457.4-continuous-wide-visible-outline',
  hidden:'gb-t-4457.4-thin-dashed-hidden-edge'
@@ -14,6 +20,7 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    solution.revision!==revision||
    !solution.player?.canRender(revision)||
    !Array.isArray(solution.steps)||!solution.timeline||
+   solution.player.timeline!==solution.timeline||
    !Array.isArray(solution.timeline.steps)||
    !Array.isArray(solution.timeline.segments)||
    solution.steps.length!==solution.timeline.steps.length||
@@ -22,14 +29,50 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
    !Array.isArray(frame.completedIds)||
    !frame.actionFractions||typeof frame.actionFractions!=='object')
   throw new RangeError('source-current sole V5 frame and true step DAG required');
+ // Every official line must belong to this exact original Geometry Scene;
+ // same revision and visually matching 2D endpoints alone are insufficient.
+ const currentSceneId=solution.sceneResult?.geometry?.id;
+ if(typeof currentSceneId!=='string'||!currentSceneId)
+  throw new RangeError('source-current sole V5 Geometry Scene required');
  const steps=solution.steps,timeline=solution.timeline,
   bindings=[...(solution.certifiedVisibleContourLineBindings||[]),
    ...(solution.certifiedPhysicalLineBindings||[])];
+ // Recompute the ENTIRE frame from the sole canonical V5 timeline.
+ // A forged completed/future fraction must never reveal a final line before
+ // its actual ConstructionStep, even when the active step itself is valid.
+ if(!Number.isFinite(frame.elapsedMs)||frame.elapsedMs<0||
+    frame.elapsedMs>timeline.totalMs)
+  throw new RangeError('V5 frame time is outside canonical timeline');
+ // Matching a timeline timestamp is NOT the same as being the sole player's
+ // current frame: a caller could supply a perfectly self-consistent FUTURE
+ // Timeline.frame while the genuine player is still at GIVEN-only step zero.
+ // Snapshot without advancing the clock and require the authoritative playhead.
+ const actualPlayerFrame=solution.player.snapshot();
+ if(actualPlayerFrame.invalid!==false||
+    actualPlayerFrame.revision!==revision||
+    actualPlayerFrame.elapsedMs!==frame.elapsedMs||
+    actualPlayerFrame.playing!==frame.playing||
+    actualPlayerFrame.speed!==frame.speed)
+  throw new RangeError('V5 presented frame is not current sole player snapshot');
+ const expected=Timeline.frame(timeline,frame.elapsedMs);
+ const expectedFractions=expected.actionFractions,
+  actualIds=Object.keys(frame.actionFractions),
+  expectedIds=Object.keys(expectedFractions);
+ if(frame.totalMs!==expected.totalMs||
+    frame.ratio!==expected.ratio||frame.done!==expected.done||
+    frame.activeStepIndex!==expected.activeStepIndex||
+    frame.activeStepId!==expected.activeStepId||
+    frame.activeActionId!==expected.activeActionId||
+    JSON.stringify(frame.completedIds)!==JSON.stringify(expected.completedIds)||
+    actualIds.length!==expectedIds.length||
+    expectedIds.some(id=>!Object.hasOwn(frame.actionFractions,id)||
+     frame.actionFractions[id]!==expectedFractions[id]))
+  throw new RangeError('V5 frame fractions or completed actions contradict canonical DAG timeline');
  const owners=new Map(),seenActions=new Set(),seenSteps=new Set();
  for(const binding of bindings){
   if(!binding||typeof binding.actionId!=='string'||
     owners.has(binding.actionId)||binding.signedFormalLineV5!==true||
-    binding.revision!==revision||
+    binding.revision!==revision||binding.sourceGeometryId!==currentSceneId||
     typeof binding.sourceEdgeId!=='string'||!binding.sourceEdgeId||
     !['V','H','W'].includes(binding.view)||
     ![STYLE.visible,STYLE.hidden].includes(binding.standardLineStyle))
@@ -42,6 +85,7 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
   if(!step||typeof step.id!=='string'||!step.id||
     seenSteps.has(step.id)||!Array.isArray(step.actions)||
     !Array.isArray(step.dependsOn)||
+    step.actions.length===0||
     step.dependsOn.some(dep=>!seenSteps.has(dep))||
     !block||block.id!==step.id||block.index!==i||
     block.actions.length!==step.actions.length)
@@ -55,6 +99,23 @@ function inspectC1CanonicalV5Step({solution,revision,frame}={}){
       segment.stepIndex!==i)
     throw new RangeError('V5 action does not belong to exact current step');
    const signed=owners.get(action.id);
+   // The current C1 point/line workbench must not treat a subtitle-only
+   // pause, a degenerate guide or an unrenderable future action as a
+   // mathematical drawing step. Inspect ALL actions before frame zero.
+   if(!['line','point'].includes(action.kind)||!action.geometry||
+      (action.kind==='line'&&(
+       !finitePoint(action.geometry.from)||
+       !finitePoint(action.geometry.to)||
+       samePoint(action.geometry.from,action.geometry.to)))||
+      (action.kind==='point'&&!finitePoint(action.geometry.center)))
+    throw new RangeError('C1 V5 step lacks a genuine finite drawing action');
+   Motion.actionShapeAttrs(action,1);
+   // A signed M5 source must paint the exact same binary64 paper endpoints
+   // that its original source binding certified, not just reuse its action ID.
+   // Reversing a line or moving one endpoint is not an acceptable alias.
+   if(signed&&(!samePoint(action.geometry.from,signed.fromSheetPx)||
+       !samePoint(action.geometry.to,signed.toSheetPx)))
+    throw new RangeError('signed M5 source paper endpoints contradict V5 drawing');
    // Verify ALL future/current/past actions before painting any frame:
    // an unsigned later step cannot smuggle an engineering line style.
    if(!signed&&action.engineeringLineStyle!==undefined)

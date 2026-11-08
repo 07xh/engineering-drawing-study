@@ -203,7 +203,8 @@ test('V6.3 compact navigation keeps every task reachable and all favicons blue',
   assert.equal(links[1].getAttribute('href'),page==='index.html'?'#tools':root+'index.html#tools');
  }
  const svg=fs.readFileSync(path.join(root,'favicon.svg'),'utf8');
- assert.match(svg,/#0871f5/);
+ assert.match(svg,/#(?:3886FF|1455D8|0871f5)/i,'DraftFlow icon must retain a real engineering-blue palette');
+ assert.match(svg,/绘序 DraftFlow|DraftAI/,'brand icon must expose accessible identity');
  assert.doesNotMatch(svg,/#266f4a/);
 });
 test('V6.3 wide desktop shows editable conditions + paper + steps without touching solver state',()=>{

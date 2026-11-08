@@ -135,3 +135,49 @@ test('forged original source, mismatched 2D class and unsound ordinals are rejec
   assert.throws(()=>audit(x),/source|class|ordinal|paper|witness|duplicate|forged/i);
  }
 });
+
+
+test('actual native scoped-to-global TopoDS IsSame resolves ONLY filtered 2D ownership under paper aliasing',()=>{
+ const x=fixture(),v='V',first=x.cad.nativeSourceScopedSharpOutputByView[v].rows[0].visible[0];
+ first.globalDirectSameGeneratedTopoDSOrdinals=[0];
+ first.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ x.cad.nativeSourceScopedSharpOutputByView[v].rows.push({
+  originalPhysicalSourceEdgeId:other,
+  visible:[{...first,originalPhysicalSourceEdgeId:other,
+   globalDirectSameGeneratedTopoDSOrdinals:[],
+   actualNativeScopedToGlobalGeneratedEdgeIsSameProven:false}],hidden:[]
+ });
+ const previous=x.views[v].nativeScoped2D3DClassBindings[0];
+ x.views[v].nativeScoped2D3DClassBindings.push({
+  ...previous,sourceEdgeId:other,
+  rows:previous.rows.map(y=>({...y,sourceEdgeId:other}))
+ });
+ const r=audit(x),row=r.views.V[0];
+ assert.equal(row.uniqueOriginalSourceFilteredPaperCandidate,null,
+  'paper-coincident source owners remain ambiguous');
+ assert.equal(row.directFilteredGenerated2DNativeIsSameStrict3DSource,source);
+ assert.equal(row.directFilteredGenerated2DNativeIsSameStrict3DSourcePaperAliased,true);
+ assert.equal(row.directFilteredNativeIsSameNotOriginalBRepEdgeToGeneratedHistory,true);
+ assert.equal(row.directNativeScopedGeneratedEdgeIsSameSource,source);
+ assert.equal(r.counts.ambiguousPaperOwnersDisambiguatedOnlyAtNativeFilteredGenerated2DLevel,1);
+ assert.equal(r.counts.wholeSolidEdgesWithDirectFilteredNativeIsSameAndStrictOriginal3DClass,1);
+ assert.equal(row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(row.globalSceneOpaqueFaceVisibilityCertified,false);
+ assert.equal(row.engineeringLineStyle,'undetermined');
+ assert.equal(row.signedV5Action,false);
+ assert.equal(r.signedV5ActionCount,0);
+});
+test('native filtered IsSame alone never overrides missing strict 3D original-class proof',()=>{
+ const x=fixture(),w=x.cad.nativeSourceScopedSharpOutputByView.W.rows[0].visible[0];
+ w.globalDirectSameGeneratedTopoDSOrdinals=[0];
+ w.actualNativeScopedToGlobalGeneratedEdgeIsSameProven=true;
+ const proof=x.views.W.nativeScoped2D3DClassBindings[0].rows[0];
+ proof.nativeOriginal3DClassBacksEntireScoped2DGeneratedPaperSegment=false;
+ proof.generated2DRepresentationWithinOneULPOfFullOriginalM0Source=true;
+ const r=audit(x),row=r.views.W[0];
+ assert.equal(row.directNativeScopedGeneratedEdgeIsSameSource,source);
+ assert.equal(row.directFilteredGenerated2DNativeIsSameStrict3DSource,null);
+ assert.equal(r.counts.wholeSolidEdgesWithDirectFilteredNativeIsSameAndStrictOriginal3DClass,0);
+ assert.equal(row.wholeSolidHLRGeneratedToOriginalTopoDSHistoryCertified,false);
+ assert.equal(r.officialV5Authorized,false);
+});

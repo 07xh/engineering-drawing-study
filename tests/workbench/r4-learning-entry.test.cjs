@@ -33,7 +33,7 @@ test('V3.1 homepage discloses solver limits, privacy boundary and unavailable im
 });
 
 test('V3.1 sole homepage positioning is AI geometry solving with mathematics-first rollout',()=>{
- assert.match(home,/<title>DraftAI · AI 工程制图自动解题与动态作图<\/title>/);
+ assert.match(home,/<title>绘序 · DraftFlow · AI 工程制图自动解题与动态作图<\/title>/);
  assert.match(home,/工程制图解题 · 动态作图/);
  assert.match(home,/选择题型、调整条件，查看逐笔作图过程/);
  assert.match(home,/class="ui-refresh workbench-blue"/);

@@ -10,16 +10,74 @@ on:
 
 permissions:
   contents: read
+  checks: read
+  actions: read
 
 concurrency:
   group: draftai-worker-production-deploy
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    # Default OFF until Cloudflare's old Git-triggered Builds are disconnected.
-    # workflow_dispatch allows a supervised first cutover.
+  release-ci-gate:
+    name: release-ci-gate
     if: ${{ github.event_name == 'workflow_dispatch' || vars.ENABLE_DRAFTAI_GHA_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Require current main SHA and completed independent CI before release
+        uses: actions/github-script@v7
+        env:
+          DRAFTFLOW_PUBLIC_ORIGIN: ${{ vars.DRAFTFLOW_PUBLIC_ORIGIN }}
+        with:
+          script: |
+            const {owner,repo}=context.repo,sha=context.sha;
+            if(context.ref!=='refs/heads/main')
+              throw new Error('Production must run from protected main only');
+            const origin=process.env.DRAFTFLOW_PUBLIC_ORIGIN;
+            if(!origin||!/^https:\/\/[a-z0-9.-]+(?::443)?\/?$/i.test(origin))
+              throw new Error('Configure HTTPS DRAFTFLOW_PUBLIC_ORIGIN before production publishing');
+            const branch=await github.rest.repos.getBranch({owner,repo,branch:'main'});
+            if(branch.data.commit.sha!==sha)
+              throw new Error('Refuse stale production SHA: main advanced');
+            const commit=await github.rest.repos.getCommit({owner,repo,ref:sha});
+            const files=(commit.data.files||[]).map(f=>f.filename);
+            const required=['math','planar-math','point-projection','validate',
+              'workbench','native-occt-c2'];
+            if(files.some(x=>/^(workbench\/.*c1|engines\/spatial\/hlr\/|labs\/c1-|tools\/cad-oracle\/)/i.test(x)))
+              required.push('real-wasm-hlr');
+            if(files.some(x=>/^(tools\/c1_textbook_|workbench\/c1-authenticated-dxf|workbench\/c1-dxf-given-first|labs\/c1-reviewed-dxf|tests\/integration\/c1-real)/i.test(x)))
+              required.push('actual-cad-original-handle-to-one-v5');
+            const started=Date.now(),limit=20*60*1000;
+            while(true){
+              const all=await github.paginate(github.rest.checks.listForRef,
+                {owner,repo,ref:sha,per_page:100});
+              const checkNames=all.map(x=>x.name);
+              const failures=all.filter(x=>['failure','cancelled','timed_out','action_required'].includes(x.conclusion));
+              if(failures.length)throw new Error('CI failed for exact SHA: '+failures.map(x=>x.name).join(','));
+              const missing=required.filter(name=>!checkNames.includes(name));
+              const unresolved=required.filter(name=>!all.some(x=>
+                x.name===name&&x.status==='completed'&&x.conclusion==='success'));
+              const pendingNative=all.filter(x=>[
+                'real-wasm-hlr','actual-cad-original-handle-to-one-v5',
+                'real-native-c1-gap','native-c2-through-hole'].includes(x.name)&&
+                (x.status!=='completed'||x.conclusion!=='success'));
+              if(!missing.length&&!unresolved.length&&!pendingNative.length){
+                const latest=await github.rest.repos.getBranch({owner,repo,branch:'main'});
+                if(latest.data.commit.sha!==sha)
+                  throw new Error('Main advanced while verifying CI; refusing stale release');
+                core.info('Exact-source SHA approved for release: '+sha);
+                break;
+              }
+              if(Date.now()-started>limit)
+                throw new Error('Full CI did not complete successfully for '+sha+
+                  '; missing='+missing.join(',')+' unresolved='+unresolved.join(','));
+              await new Promise(resolve=>setTimeout(resolve,15000));
+            }
+
+  deploy:
+    needs: [release-ci-gate]
+    # No release until the exact current main SHA has full green checks.
+    if: ${{ needs.release-ci-gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -76,6 +134,20 @@ jobs:
           test ! -e dist/.github
           test ! -e dist/AGENTS.md
 
+      - name: Assert build identity before publishing
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(node -p "require('./dist/draftai-build-info.json').sourceCommit")" = "$GITHUB_SHA"
+
+      - name: Recheck current main immediately before Wrangler publish
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner,repo}=context.repo;
+            const latest=await github.rest.repos.getBranch({owner,repo,branch:'main'});
+            if(context.ref!=='refs/heads/main'||latest.data.commit.sha!==context.sha)
+              throw new Error('Main advanced since exact-source CI; refuse stale Worker publish');
+
       - name: Publish prebuilt assets directly to EXISTING Worker
         shell: bash
         run: |
@@ -85,3 +157,64 @@ jobs:
           # No new route/domain, Worker name, KV, R2, or D1 is provisioned.
           npx --yes wrangler@4.147.0 deploy --config wrangler.jsonc --keep-vars
           echo "GitHub source SHA: ${GITHUB_SHA}"
+
+      - name: Verify Cloudflare API active deployment is a single 100% Worker version
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID;
+          const token=process.env.CLOUDFLARE_API_TOKEN;
+          const endpoint='https://api.cloudflare.com/client/v4/accounts/'+
+            encodeURIComponent(account)+'/workers/scripts/engineering-drawing-study/deployments?per_page=3';
+          const response=await fetch(endpoint,{
+            headers:{Authorization:'Bearer '+token,Accept:'application/json'}
+          });
+          if(!response.ok)throw new Error('Cloudflare active deployment API returned HTTP '+response.status);
+          const data=await response.json();
+          const live=data?.result?.deployments?.[0];
+          if(data?.success!==true||!live||
+             !Array.isArray(live.versions)||live.versions.length!==1||
+             live.versions[0].percentage!==100||
+             !/^[a-f0-9-]{36}$/i.test(live.versions[0].version_id))
+            throw new Error('Cloudflare Worker latest active deployment has unverified version coverage');
+          console.log('Cloudflare latest Active Deployment ID:',live.id);
+          console.log('Cloudflare active Worker version ID:',live.versions[0].version_id);
+          console.log('Live SHA still requires independent HTTP manifest verification.');
+          NODE
+
+      - name: Confirm live public asset SHA and HTTP security headers
+        env:
+          DRAFTFLOW_PUBLIC_ORIGIN: ${{ vars.DRAFTFLOW_PUBLIC_ORIGIN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const origin=process.env.DRAFTFLOW_PUBLIC_ORIGIN.replace(/\/$/,'');
+          const sha=process.env.GITHUB_SHA;
+          let last='no response';
+          for(let n=0;n<18;n++){
+            try{
+              const nonce=encodeURIComponent(sha+'-'+n);
+              const response=await fetch(origin+'/draftai-build-info.json?revision='+nonce,{
+                headers:{'Cache-Control':'no-cache'}
+              });
+              if(!response.ok)throw Error('build manifest HTTP '+response.status);
+              const manifest=await response.json();
+              const page=await fetch(origin+'/index.html?revision='+nonce,{
+                headers:{'Cache-Control':'no-cache'}
+              });
+              if(!page.ok)throw Error('index HTTP '+page.status);
+              const headers=page.headers;
+              if(manifest.sourceCommit!==sha||manifest.artifactType!=='static-worker-assets')
+                throw Error('live production source SHA not yet current');
+              if(headers.get('x-content-type-options')!=='nosniff'||
+                 headers.get('x-frame-options')!=='SAMEORIGIN'||
+                 headers.get('referrer-policy')!=='strict-origin-when-cross-origin')
+                throw Error('live HTTP security headers do not match packaged _headers');
+              console.log('VERIFIED live Worker HTTP asset SHA and security headers: '+sha);
+              process.exit(0);
+            }catch(error){last=error.message;await new Promise(r=>setTimeout(r,10000));}
+          }
+          throw new Error('Cloudflare live verification failed: '+last);
+          NODE

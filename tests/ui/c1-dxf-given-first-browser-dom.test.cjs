@@ -4,6 +4,8 @@ const {parseHTML}=require('linkedom');
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const {createRequire}=require('node:module');
 const {project}=require('../../core/projection/conventions.js');
+const Timeline=require('../../workbench/teaching-timeline-v5.js');
+const {buildC1DxfGivenFirstPaper}=require('../../workbench/c1-dxf-given-first-paper.cjs');
 const entry=path.resolve('labs/c1-reviewed-dxf-live-entry.cjs');
 const originalRequire=createRequire(entry);
 const originalPoints={
@@ -31,7 +33,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no V5 signing',async()=>{
  const raw=fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8');
  const {document,window}=parseHTML(raw);
- for(const e of document.querySelectorAll('input,button,img,textarea')){
+ for(const e of document.querySelectorAll('input,button,img,textarea,select')){
   for(const prop of ['disabled','checked','hidden'])
    Object.defineProperty(e,prop,{configurable:true,
     get(){return this.hasAttribute(prop);},
@@ -42,6 +44,14 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
    set(value){this.__typed=String(value);}
   });
  }
+ // LinkeDOM models the real HTMLSelectElement value as read-only;
+ // the browser permits seeking by setting it, so mirror that behavior.
+ const jump=document.getElementById('v5StepJump');
+ Object.defineProperty(jump,'value',{configurable:true,
+  get(){return this.__selectedV5Step??
+   this.querySelector('option')?.getAttribute('value')??'';},
+  set(value){this.__selectedV5Step=String(value);}
+ });
  const pack=given(),body=JSON.stringify(pack);
  const file={name:'source.json',size:body.length,text:async()=>body};
  Object.defineProperty(document.getElementById('givenFile'),'files',{
@@ -49,7 +59,7 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  });
  // Use genuine packet schema validator but fake the expensive M3/QuickHull:
  // the DOM contract must not depend on a guessed candidate before user opt-in.
- let reconstructs=0,compileCalls=0;
+ let reconstructs=0,compileCalls=0,lastCompiledSolution=null;
  const scopedRequire=name=>{
   if(name.includes('c1-authenticated-dxf-to-reviewed-v5.cjs')){
    const real=originalRequire(name);
@@ -60,8 +70,45 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
       inferredOriginal3DPointCount:4,
       explicitlyReviewedManyToOnePaperProjectionPairs:false,
       independentlyValidatedByCurrentM0:true}};},
-    compileReviewedC1DxfGivenToSoleV5:async()=>{compileCalls++;
-     throw Error('must not compile without human check');}
+    compileReviewedC1DxfGivenToSoleV5:async({givenPacket,revision,sheetTransform})=>{
+     compileCalls++;
+     assert.deepEqual(JSON.parse(JSON.stringify(sheetTransform)),
+      buildC1DxfGivenFirstPaper(givenPacket).transform,
+      'the canonical V5 sheet frame must come from GIVEN only');
+     const steps=[{id:'given0',title:'仅核对原始点',dependsOn:[],
+      explanation:'真实原题来源投影点',actions:[{id:'point0',kind:'point',
+       geometry:{center:{x:390,y:290},radius:4}}]},
+      {id:'guide1',title:'投影辅助线',dependsOn:['given0'],
+       explanation:'仅演示当前证明的辅助线',actions:[
+        {id:'guide1line',kind:'line',geometry:{from:{x:390,y:290},
+         to:{x:410,y:310}}}]}];
+     const timeline=Timeline.compileTimeline(steps);
+     const player=Timeline.createPlayer(timeline,{revision});
+     const result={solution:{
+      revision,singleOriginalV5Player:true,player,steps,timeline,
+      sceneResult:{geometry:tetra},
+      certifiedVisibleContourLineBindings:[],
+      certifiedPhysicalLineBindings:[],
+      certifiedVisibleContourLineActionCount:0,
+      certifiedPhysicalLineActionCount:0,
+      intents:[{id:'given0',source:{solver:'reviewed-given',proofScope:'original-point-only'}},
+       {id:'guide1',source:{solver:'point-projection',proofScope:'guide-only'}}],
+      threeViewSvgSheet:{sheetSvg:
+       '<svg data-forbidden-final-answer="true"><line x1="1" y1="2" x2="3" y2="4"/></svg>'},
+      m0M3M5PhysicalSourceAcceptance:{status:'bounded-original-source-math-acceptance'}
+     },scopedConvexAcceptance:{
+      realTextbookBlindTestPassed:false,scopedSingleConvexFullyCertified:false,
+      checkedOriginalPhysicalEdgeViews:18,positiveGapCount:2,
+      overlappingCertifiedSourceCount:0,
+      perViewSourceCoverage:Object.fromEntries(['V','H','W'].map(v=>[v,{
+       checkedOriginalPhysicalEdgeViews:6,positiveGapCount:v==='W'?2:0,
+       overlappingCertifiedSourceCount:0,allOriginalPhysicalSourceRangesAccounted:false
+      }])),
+      missingObligations:['original generated HLR history and continuous occlusion']
+     }};
+     lastCompiledSolution=result.solution;
+     return result;
+    }
    };
   }
   return originalRequire(name);
@@ -103,4 +150,68 @@ test('real local DXF DOM: GIVEN first, explicit draft opt-in, invalidate and no 
  assert.equal($('compile').disabled,true);
  assert.equal(document.querySelectorAll('#animation > *').length,0);
  assert.equal(compileCalls,0);
+ // Reconfirm actual original source correspondence, then exercise the
+ // REAL page compile/paint flow with a maliciously prefilled final SVG.
+ // The preceding edit omitted point 3; review every original GIVEN point.
+ $('sourcePairs').value='0,0\n1,1\n2,2\n3,3';
+ $('applyPairs').dispatchEvent(new window.Event('click'));
+ for(let i=0;i<8&&$('reviewCheck').disabled;i++)await tick();
+ assert.equal($('reviewCheck').disabled,false);
+ $('reviewCheck').checked=true;
+ $('reviewCheck').dispatchEvent(new window.Event('change'));
+ assert.equal($('compile').disabled,false);
+ $('compile').dispatchEvent(new window.Event('click'));
+ for(let i=0;i<8&&!compileCalls;i++)await tick();
+ for(let i=0;i<8&&$('v5StepJump').disabled;i++)await tick();
+ assert.equal(compileCalls,1);
+ assert.equal(mode(),'given','even after compile the original third view stays blank');
+ assert.equal(document.querySelectorAll('#sheetPreview line').length,0);
+ assert.equal(document.querySelectorAll('#sheetPreview [data-c1-unanswered-view="W"]').length,1);
+ assert.equal(document.querySelectorAll('#animation [data-source-point-only]').length,8);
+ assert.equal(document.querySelectorAll('#animation [data-action-id]').length,0);
+ assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
+ assert.match($('paperMode').textContent,/空白待求视图/);
+ assert.equal($('v5StepJump').disabled,false);
+ // The actual page must reject a forged FUTURE guide before allowing the
+ // user to seek to it. A changed subtitle alone must never legitimize it.
+ lastCompiledSolution.steps[1].actions[0].geometry.to.x=NaN;
+ $('next').dispatchEvent(new window.Event('click'));
+ assert.equal($('next').disabled,true);
+ assert.equal(document.querySelectorAll('#animation [data-action-id]').length,0);
+ assert.equal($('v5StepJump').disabled,true);
+ assert.match($('v5Status').textContent,/已停止/);
+ assert.equal(document.querySelectorAll('[data-forbidden-final-answer]').length,0);
+});
+
+
+test('real C1 page paints only reviewed GIVEN source LINE metadata, no unknown W and no official GB strokes',()=>{
+ const p=given();
+ p.givenOriginalStrokes={V:[{
+  sourceHandle:'GIVENL1',sourceKind:'LINE',sourceLinetype:'BYLAYER',
+  fromIndex:0,toIndex:1,from:{...p.views.V[0]},to:{...p.views.V[1]},
+  engineeringLineStyle:'undetermined'
+ }],H:[]};
+ const {document,window}=parseHTML(
+  fs.readFileSync('labs/c1-reviewed-dxf-live.html','utf8'));
+ const scope={document,window,require:originalRequire,
+  URL:{revokeObjectURL:()=>{}},console,performance:{now:()=>0},
+  requestAnimationFrame:()=>0,cancelAnimationFrame:()=>{}};
+ vm.runInNewContext(fs.readFileSync(entry,'utf8')+
+  '\n;this.__showSource=(value)=>{rawGiven=value;renderOriginalPaper();};',
+  scope,{filename:entry});
+ scope.__showSource(p);
+ const lines=[...document.querySelectorAll('#sheetPreview line')];
+ assert.equal(lines.length,1);
+ const line=lines[0];
+ assert.equal(line.getAttribute('data-original-given-stroke'),'source-only');
+ assert.equal(line.getAttribute('data-source-handle'),'GIVENL1');
+ assert.equal(line.getAttribute('data-source-kind'),'LINE');
+ assert.equal(line.getAttribute('data-source-linetype'),'BYLAYER');
+ assert.equal(line.getAttribute('data-official-line-style'),'undetermined');
+ assert.equal(line.getAttribute('data-v5-action-authorized'),'false');
+ assert.equal(line.closest('[data-view]').getAttribute('data-view'),'V');
+ assert.equal(document.querySelectorAll('#sheetPreview [data-source-role="UNKNOWN"] line').length,0);
+ assert.equal(document.querySelectorAll('#sheetPreview [data-c1-unanswered-view="W"]').length,1);
+ assert.equal(document.querySelectorAll('#animation [data-action-id]').length,0);
+ assert.equal(document.querySelectorAll('#sheetPreview [data-source-point-only]').length,8);
 });

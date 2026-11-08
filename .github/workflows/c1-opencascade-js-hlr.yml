@@ -3,6 +3,12 @@ name: DraftAI isolated OpenCascade.js C1 HLR ABI
 on:
   pull_request:
     paths:
+      # Any C1 proof, source or real page change must rerun the native WASM oracle.
+      - 'workbench/*c1*.cjs'
+      - 'engines/spatial/hlr/*.cjs'
+      - 'labs/c1-*.cjs'
+      - 'tests/ui/c1-*.test.cjs'
+      - 'tests/workbench/*c1*.test.cjs'
       - 'tools/cad-oracle/probe-opencascade-js-hlr.mjs'
       - 'tools/cad-oracle/run-c1-ocjs-runtime.mjs'
       - 'workbench/c1-ocjs-physical-crease-ray-evidence.cjs'
@@ -112,6 +118,12 @@ on:
   push:
     branches: [main]
     paths:
+      # Any C1 proof, source or real page change must rerun the native WASM oracle.
+      - 'workbench/*c1*.cjs'
+      - 'engines/spatial/hlr/*.cjs'
+      - 'labs/c1-*.cjs'
+      - 'tests/ui/c1-*.test.cjs'
+      - 'tests/workbench/*c1*.test.cjs'
       - 'workbench/c1-native-source-scoped-m4-projection.cjs'
       - 'workbench/c1-native-scoped-2d-3d-class-binding.cjs'
       - 'workbench/c1-global-native-hlr-original-source-rebind.cjs'

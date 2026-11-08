@@ -100,3 +100,55 @@ test('disjoint source pieces remain separately represented and never gain global
  assert.ok(result.rows.every(x=>x.formalLineStyle==='undetermined'&&
   x.constructionIntentAuthorized===false&&x.signedV5Action===false));
 });
+
+
+test('partial original M5 same source/view overlap is rejected even if it spans one binary64 ULP',()=>{
+ const half=.5,above=half+Number.EPSILON/2;
+ for(const ranges of [
+  [[0,.75],[.5,1]],
+  [[0,above],[half,1]],
+  [[0,1],[half,.75]]
+ ]){
+  const rows=ranges.map(r=>span({originalSourceParameterRange:r}));
+  assert.throws(()=>review(ledger(rows)),/overlapping original 3D source parameter intervals/);
+ }
+});
+test('M5 original source diagnostic captures leading, interior, trailing positive gaps; remains unsigned',()=>{
+ const rows=[
+  span({view:'W',sourceEdgeId:'G::B|D',originalSourceParameterRange:[.25,.5]}),
+  span({view:'W',sourceEdgeId:'G::B|D',originalSourceParameterRange:[.75,.875]}),
+  span({view:'H',sourceEdgeId:'G::B|D',originalSourceParameterRange:[0,1]})
+ ];
+ const result=review(ledger(rows));
+ assert.equal(result.observedOriginalSourceViewGroups,2);
+ assert.equal(result.observedSourceViewGroupsWithPositiveUncoveredRanges,1);
+ assert.equal(result.observedPositiveUncoveredOriginalSourceParameterRanges,3);
+ const w=result.originalSourceIntervalDiagnostics.find(x=>x.view==='W');
+ assert.deepEqual(w.positiveLengthUncoveredOriginalParameterRanges,
+  [[0,.25],[.5,.75],[.875,1]]);
+ assert.equal(w.originalSourceFullCoverageFromObservedSpansOnly,false);
+ assert.equal(w.opaqueSceneVisibilityCertified,false);
+ assert.equal(w.entire3DSourceInventoryIndependentlyProven,false);
+ assert.equal(w.formalLineStyle,'undetermined');
+ assert.equal(w.signedV5Action,false);
+ assert.equal(result.fullyCertifiedCount,0);
+ assert.equal(result.signedV5ActionCount,0);
+ assert.ok(Object.isFrozen(w.observedOriginalParameterRanges));
+ const h=result.originalSourceIntervalDiagnostics.find(x=>x.view==='H');
+ assert.deepEqual(h.positiveLengthUncoveredOriginalParameterRanges,[]);
+ assert.equal(h.originalSourceFullCoverageFromObservedSpansOnly,true);
+ assert.equal(h.opaqueSceneVisibilityCertified,false);
+});
+test('identical original source in separate V/H/W views is never a false overlap',()=>{
+ const rows=[
+  span({view:'V',originalSourceParameterRange:[0,1]}),
+  span({view:'H',originalSourceParameterRange:[0,1]}),
+  span({view:'W',originalSourceParameterRange:[0,.5]}),
+  span({view:'W',originalSourceParameterRange:[.5,1]})
+ ];
+ const result=review(ledger(rows));
+ assert.equal(result.observedOriginalSourceViewGroups,3);
+ assert.equal(result.observedPositiveUncoveredOriginalSourceParameterRanges,0);
+ assert.ok(result.originalSourceIntervalDiagnostics.every(x=>
+  x.observedSpansExactNonoverlap&&x.formalLineStyle==='undetermined'));
+});

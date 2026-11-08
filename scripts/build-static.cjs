@@ -15,6 +15,7 @@ const files = [
   'project/workbench-ui.css',
   'favicon.svg',
   'robots.txt',
+  '_headers', // Cloudflare Workers Static Assets applies these security headers.
   'labs/point-coach.html',
   'labs/point-projection-live.html',
   'labs/two-point-v5-live.html',

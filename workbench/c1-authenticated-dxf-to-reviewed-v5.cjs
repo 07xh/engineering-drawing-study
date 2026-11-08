@@ -40,9 +40,11 @@ function validateGivenPacket(packet){
   'sourceImageRecognitionVerified','referenceWasNotExportedAsSolverInput',
   'sourceIsNotYetConfirmedForProduction','textbookBlindSolveAccepted'
  ];
+ const optional=[...(packet.reviewedCorrespondences===undefined?[]:
+  ['reviewedCorrespondences']),...(packet.givenOriginalStrokes===undefined?[]:
+  ['givenOriginalStrokes'])];
  if(Object.keys(packet).sort().join('|')!==
-      [...expected,...(packet.reviewedCorrespondences===undefined?[]:
-       ['reviewedCorrespondences'])].sort().join('|')||
+      [...expected,...optional].sort().join('|')||
     packet.humanSelectedFullExtremeVertexSet!==true)
   throw new RangeError('unverified or possibly answer-bearing DXF source packet fields');
  const views=packet.views,handles=packet.givenOriginalHandleEndpoints;
@@ -73,6 +75,46 @@ function validateGivenPacket(packet){
    if(known.has(unique))
     throw new RangeError('duplicate original CAD endpoint cannot invent two vertices');
    known.add(unique);
+  }
+ }
+ // Original DXF LINE evidence cannot sign any engineering line style.
+ // Only accept exact original view/index/endpoint and bounded source handles.
+ if(packet.givenOriginalStrokes!==undefined){
+  const rows=packet.givenOriginalStrokes,seenHandles=new Set();
+  if(!rows||typeof rows!=='object'||Array.isArray(rows)||
+     Object.keys(rows).sort().join('')!==pair)
+   throw new RangeError('original GIVEN line inventory has unknown/missing views');
+  for(const view of Object.keys(views)){
+   const lines=rows[view];
+   if(!Array.isArray(lines)||lines.length>512)
+    throw new RangeError('GIVEN LINE inventory exceeds bounded source');
+   for(const line of lines){
+    const keys=['sourceHandle','sourceKind','sourceLinetype',
+     'fromIndex','toIndex','from','to','engineeringLineStyle'];
+    if(!line||typeof line!=='object'||Array.isArray(line)||
+       Object.keys(line).sort().join('|')!==keys.sort().join('|')||
+       !/^[0-9A-Za-z]+$/.test(line.sourceHandle)||
+       seenHandles.has(line.sourceHandle)||line.sourceKind!=='LINE'||
+       !/^[A-Za-z0-9_-]{1,64}$/.test(line.sourceLinetype)||
+       line.engineeringLineStyle!=='undetermined'||
+       !Number.isSafeInteger(line.fromIndex)||
+       !Number.isSafeInteger(line.toIndex)||
+       line.fromIndex===line.toIndex||
+       line.fromIndex<0||line.toIndex<0||
+       line.fromIndex>=views[view].length||line.toIndex>=views[view].length)
+     throw new RangeError('forged or duplicate original GIVEN source LINE');
+    for(const [key,index] of [['from',line.fromIndex],['to',line.toIndex]]){
+     const pt=line[key],known=views[view][index];
+     if(!pt||typeof pt!=='object'||Array.isArray(pt)||
+        Object.keys(pt).sort().join(',')!=='u,v'||
+        !Number.isFinite(pt.u)||!Number.isFinite(pt.v)||
+        pt.u!==known.u||pt.v!==known.v)
+      throw new RangeError('GIVEN source LINE does not join an actual reviewed vertex');
+    }
+    if(line.from.u===line.to.u&&line.from.v===line.to.v)
+     throw new RangeError('collapsed GIVEN source LINE is not a source stroke');
+    seenHandles.add(line.sourceHandle);
+   }
   }
  }
  if(packet.reviewedCorrespondences!==undefined){
