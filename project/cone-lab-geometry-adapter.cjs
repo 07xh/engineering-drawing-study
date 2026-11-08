@@ -3,8 +3,9 @@
  * Cone Lab -> the EXISTING canonical Geometry Scene and local C2 workbench.
  * No renderer, second solver, inferred silhouette, contact proof, or V5.
  *
- * Exact first scope: free-lab oriented box/cube primitives only. Unsupported
- * shapes/cutters/sections explicitly fail instead of silently disappearing.
+ * Exact polyhedral scope: oriented box/cube/triangular-pyramid primitives.
+ * Curved solids and any cut operations explicitly fail rather than turning
+ * sampled surfaces or missing edges into source-certified topology.
  */
 const Bridge=require('../labs/cone-lab/model-bridge.js');
 const {prismMesh}=require('./unified-workbench-session.cjs');
@@ -15,7 +16,7 @@ const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 
 const RAD=Math.PI/180,EPS=1e-9;
 const SOURCE_MAIN_SHA=Bridge.SOURCE_SHA;
-const P2_SCOPE='cone-lab-exact-box-mesh/1';
+const P2_SCOPE='cone-lab-exact-polyhedron-mesh/2';
 const fail=msg=>{throw new Error('Cone Lab 模型预览：'+msg);};
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 
@@ -51,32 +52,72 @@ function rotate(q,p){
 // W observer (+x) = source +X (Cone Lab's "right" rather than its "left").
 function toDraftXYZ(p){return {x:p.x,y:p.z===0?0:-p.z,z:p.y};}
 function toSourceXYZ(p){return {x:p.x,y:p.z,z:p.y===0?0:-p.y};}
-function sourceBoxMesh(pr,index){
- const dims=pr.k==='cube'?{w:pr.a,h:pr.a,d:pr.a}:pr;
- const w=dims.w,h=dims.h,d=dims.d;
- if(![w,h,d].every(x=>finite(x)&&x>EPS&&x<=100000))
-   fail('第 '+(index+1)+' 个长方体尺寸不合法');
- const raw=prismMesh({solid:{
-  min:{x:-w/2,y:-h/2,z:-d/2},
-  max:{x:w/2,y:h/2,z:d/2}
- }});
+// Upstream automatically assigns _id to edited parts. Prefer this stable source
+// identity over array order so reordering a saved model cannot swap features.
+function partGeometryId(pr,index){
+ if(pr._id!==undefined)return 'ConePartSrc_'+String(pr._id);
+ return 'ConePart'+String(index+1); // older files without source IDs
+}
+function meshFromLocalPoints(pr,index,raw){
  const q=sourcePartQuaternion(pr),points={};
- for(const [id,origin] of Object.entries(raw.data.points)){
+ for(const [vertexId,origin] of Object.entries(raw.points)){
   const rotated=rotate(q,origin);
   const point=toDraftXYZ({
    x:rotated.x+pr.x,y:rotated.y+pr.y,z:rotated.z+pr.z
   });
   if(Object.values(point).some(v=>!finite(v)||Math.abs(v)>100000))
    fail('第 '+(index+1)+' 个部件的变换后顶点越界');
-  points[id]=point;
+  points[vertexId]=point;
  }
- // Distinct source-part IDs are needed even where two bodies share ink.
- const id='ConePart'+String(index+1);
- const geometry={id,kind:'mesh',space:'model-3d',unit:'mm',
-  data:{points,edges:raw.data.edges,faces:raw.data.faces}};
+ const geometry={id:partGeometryId(pr,index),kind:'mesh',space:'model-3d',
+  unit:'mm',data:{points,edges:raw.edges,faces:raw.faces}};
  const check=validateGeometry(geometry);
  if(!check.ok)fail('第 '+(index+1)+' 个部件网格无效：'+check.errors.join('；'));
  return geometry;
+}
+function sourceBoxMesh(pr,index){
+ const dims=pr.k==='cube'?{w:pr.a,h:pr.a,d:pr.a}:pr;
+ const w=dims.w,h=dims.h,d=dims.d;
+ if(![w,h,d].every(x=>finite(x)&&x>EPS&&x<=100000))
+   fail('第 '+(index+1)+' 个长方体尺寸不合法');
+ // Reuse canonical axis box topology, not an independently invented mesh.
+ const raw=prismMesh({solid:{
+  min:{x:-w/2,y:-h/2,z:-d/2},
+  max:{x:w/2,y:h/2,z:d/2}
+ }});
+ return meshFromLocalPoints(pr,index,raw.data);
+}
+// Cone Lab creates "pyr3" as THREE.CylinderGeometry(0,r,h,3).
+// Its original mathematical solid is a TRIANGULAR pyramid with a point apex
+// at +Y and an equilateral circumradius-r triangle at -Y, thetaStart=0.
+// These are the exact four source corners; no triangulation approximates curves.
+function sourcePyramidMesh(pr,index){
+ const r=pr.r,h=pr.h;
+ if(![r,h].every(x=>finite(x)&&x>EPS&&x<=100000))
+  fail('第 '+(index+1)+' 个三棱锥尺寸不合法');
+ const points={Apex:{x:0,y:h/2,z:0}};
+ for(let i=0;i<3;i++){
+  const angle=i*2*Math.PI/3;
+  const xv=r*Math.sin(angle),zv=r*Math.cos(angle);
+  points['Base'+i]={x:Math.abs(xv)<1e-12?0:xv,y:-h/2,
+                      z:Math.abs(zv)<1e-12?0:zv};
+ }
+ const edges=[
+  ['Base0','Base1'],['Base1','Base2'],['Base2','Base0'],
+  ['Apex','Base0'],['Apex','Base1'],['Apex','Base2']
+ ];
+ const faces=[
+  ['Base0','Base2','Base1'],
+  ['Apex','Base0','Base1'],
+  ['Apex','Base1','Base2'],
+  ['Apex','Base2','Base0']
+ ];
+ return meshFromLocalPoints(pr,index,{points,edges,faces});
+}
+function sourceExactPolyMesh(pr,index){
+ if(pr.k==='pyr3')return sourcePyramidMesh(pr,index);
+ if(pr.k==='box'||pr.k==='cube')return sourceBoxMesh(pr,index);
+ fail('第 '+(index+1)+' 个实体没有经过签收的精确棱面拓扑');
 }
 function parseExactCandidate(text){
  const doc=Bridge.parseDocument(text),s=doc.model;
@@ -86,9 +127,12 @@ function parseExactCandidate(text){
  if(Object.keys(s.pickSel).length)fail('分块选择状态尚不能表达为精确独立实体');
  if(s.parts.length<1)fail('模型没有任何拼装部件');
  if(s.parts.some(p=>!p.on||p.hidden))fail('含隐藏/禁用部件的模型需先在原实验室恢复完整实体');
- if(s.parts.some(p=>p.k!=='box'&&p.k!=='cube'))
-  fail('当前仅精确接入长方体、正方体；曲面/锥体仍留在原实验室');
- return {doc,geometry:s.parts.map(sourceBoxMesh)};
+ if(s.parts.some(p=>!['box','cube','pyr3'].includes(p.k)))
+  fail('当前精确棱面接入支持长方体、正方体、正三棱锥；圆柱、圆锥和曲面实体仍留在原实验室');
+ const geometry=s.parts.map(sourceExactPolyMesh);
+ if(new Set(geometry.map(g=>g.id)).size!==geometry.length)
+  fail('拼装部件来源 ID 重复，不允许合并或覆盖不同实体');
+ return {doc,geometry};
 }
 function previewExactScene(text,{revision=0}={}){
  const candidate=parseExactCandidate(text);
@@ -132,6 +176,6 @@ const OBSERVER_SOURCE=Object.freeze({
  H:Object.freeze(toSourceXYZ(FIRST_ANGLE_OBSERVER_RAYS.H)),
  W:Object.freeze(toSourceXYZ(FIRST_ANGLE_OBSERVER_RAYS.W))
 });
-module.exports={P2_SCOPE,sourcePartQuaternion,sourceBoxMesh,
+module.exports={P2_SCOPE,sourcePartQuaternion,sourceBoxMesh,sourcePyramidMesh,partGeometryId,
  toDraftXYZ,toSourceXYZ,OBSERVER_SOURCE,
  previewExactScene,draftProjectFromConeLab};
