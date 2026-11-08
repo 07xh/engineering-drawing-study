@@ -14,6 +14,7 @@ const TOOLS=[
  ['point-projection-live','三面投影','给定坐标，求完整三面投影。','进入工作台'],
  ['circle-fillet-live','圆弧连接','圆弧连接与切点辅助作图。','进入工作台'],
  ['free-modeler','自由建模','建立几何模型并查看投影。','打开工具'],
+ ['cone-lab/index','实体自由拼装 · Cone Lab','自由拼装圆锥、圆柱、棱锥、长方体等基本体，体验吸附、截切和相贯线。','进入拼装实验室'],
  ['dof-lab-v2','自由度与三视图','查看几何条件与三视图。','打开工具'],
  ['point-coach','点投影陪练','补全点的第三面投影。','开始练习'],
  ['paper-geometry','尺规几何','查看尺规作图的辅助线。','打开工具'],
@@ -23,7 +24,7 @@ const TOOLS=[
  ['constraints','几何约束','查看几何条件的关系。','打开工具'],
  ['analysis','约束分析','核对几何条件。','打开工具']
 ];
-const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
+const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","cone-lab/index","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
 <section id="ai" class="v8-legacy-anchor"></section>
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
@@ -418,7 +419,8 @@ function homeHTML(){return `
     <span class="v7-course-status">已知形体预览 · 非组合体标准答案</span>
     <h3>组合体</h3><p>在本项目用“多对象几何编辑”确认长方体并共享三视图；另一实验仅展示基座和凸台的简单组合。</p>
     <div class="v7-course-links"><a href="#v7-task">定位本项目题型选择 ↓</a>
-     <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a></div>
+     <a href="labs/composite-geometry.html?mode=composite" target="_blank" rel="noopener noreferrer">打开原创组合体实验 ↗</a>
+      <a href="labs/cone-lab/index.html" target="_blank" rel="noopener noreferrer">自由拼装立体（独立实验） ↗</a></div>
    </article>
    <article class="v7-course-card" role="listitem" data-course="third-view" data-capability="identified-point-only">
     <span class="v7-course-status">已确认基本体几何预览 · 非标准虚实线答案</span>
