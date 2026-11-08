@@ -198,10 +198,16 @@ test('an imported triangular pyramid remains pending in the same coordinator and
  c.confirmCondition('geo_ConePartSrc_7');
  c.confirmCondition('geo_ConePart2');
  const out=session.solve();
+ assert.equal(out.kind,'composition-evidence');
+ assert.equal(out.status,'cone-lab-source-topology-undetermined');
  assert.equal(out.verified,false);
  assert.equal(out.clock,null);
+ assert.equal(out.sceneDepthEvidence,null);
+ assert.equal(out.originalMultiBodyEdgeRays,null);
+ assert.equal(out.orthogonalBooleanFeatureAudit,null);
  assert.equal(c.canExport(),false);
  assert.equal(out.scene.evidence.visibility,'undetermined');
+ assert.ok(out.scene.objects.some(o=>o.id==='ConePartSrc_7'&&o.kind==='mesh'));
  c.dispose();
 });
 test('generic C2 prism form cannot overwrite imported oriented mesh or pyramid',()=>{
@@ -210,4 +216,27 @@ test('generic C2 prism form cannot overwrite imported oriented mesh or pyramid',
  assert.match(entry,/if\(g\.importedFromConeLab\)/);
  assert.match(entry,/if\(chosen&&p\.conditions\.some\(c=>c\.objectId===chosen&&/);
  assert.match(entry,/导入的精确拼装模型禁止用普通长方体表单覆盖/);
+});
+
+test('oblique imported box uses canonical unsigned source projection instead of false M5 certification',()=>{
+ const {createCoordinator}=require('../../project/project-coordinator.cjs');
+ const {createUnifiedProjectSession}=require('../../project/unified-workbench-session.cjs');
+ const input=Adapter.draftProjectFromConeLab(serialize(state([
+  part('box',{type:'fv',ang:35}),
+  part('cube',{x:50})
+ ])),{projectId:'ProjectOblique1'});
+ const c=createCoordinator(input.project);
+ const session=createUnifiedProjectSession();
+ c.attachSolver(session);
+ c.confirmCondition('geo_ConePart1');
+ c.confirmCondition('geo_ConePart2');
+ const result=session.solve();
+ assert.equal(result.kind,'composition-evidence');
+ assert.equal(result.status,'cone-lab-source-topology-undetermined');
+ assert.equal(result.verified,false);
+ assert.equal(result.sceneDepthEvidence,null);
+ assert.equal(result.clock,null);
+ assert.equal(result.scene.objects.length,2);
+ assert.equal(c.canExport(),false);
+ c.dispose();
 });
