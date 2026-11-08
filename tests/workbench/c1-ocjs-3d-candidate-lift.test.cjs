@@ -154,8 +154,14 @@ test('real C1 V/H/W source lift holds positive interior subnormal A tails rounde
   assert.deepEqual(r.paperCollinearSourcesRoundedOutsideOriginalBounds,[]);
   assert.equal(r.sourceCandidate3DLifts.length,1);
   const c=r.sourceCandidate3DLifts[0];
-  assert.deepEqual(c.originalSourceParameterRange,[0,1],
-   'rounded numeric interval is deliberately retained only as display candidate');
+  // The other original endpoint may independently land one ULP BELOW 1.
+  // Preserve the received float64 inverse; never snap its positive suffix
+  // away and misreport a complete original-source parameter certificate.
+  assert.equal(c.originalSourceParameterRange[0],0);
+  assert.equal(c.originalSourceParameterRange[1],
+   c.paperOnlyUnclampedOriginalSourceParameters[1]);
+  assert.ok(c.originalSourceParameterRange[1]>0&&
+   c.originalSourceParameterRange[1]<=1);
   assert.equal(c.sourceParameterWasClampedForPaperOnly,true);
   assert.equal(c.sourceParameterWasRoundedAtOriginalBoundaryForPaperOnly,true);
   assert.equal(c.exactBinary64RoundedInverseBoundaryWitness.

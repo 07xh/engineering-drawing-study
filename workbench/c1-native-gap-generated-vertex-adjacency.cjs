@@ -117,7 +117,10 @@ function auditC1NativeGapGeneratedVertexAdjacency({
      throw new RangeError('inconsistent generated native TopoDS vertex identity');
     if(id!==null){
      const original=geometry.data.points[id];
-     if(typeof id!=='string'||!original||
+     // A native vertex may coincide on paper with this source while
+     // belonging to a DIFFERENT original BRep edge. Paper coincidence
+     // cannot establish an endpoint identity for this source edge.
+     if(typeof id!=='string'||!vertexIds.includes(id)||!original||
         !['x','y','z'].every(k=>Number.isFinite(original[k])))
       throw new RangeError('generated native vertex not bound to original M0');
      const expected=project(original)[view];

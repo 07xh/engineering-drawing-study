@@ -10,6 +10,8 @@
  * visibility/line-style proof or permission to issue a V5 stroke.
  */
 const {VIEWS}=require('../../../core/projection/conventions.js');
+const {boundedOriginalFullPaperEndpointEnvelope}=
+ require('../../../workbench/c1-native-scoped-2d-3d-class-binding.cjs');
 const valid=p=>p&&Number.isFinite(p.u)&&Number.isFinite(p.v);
 // A fixed 1e-6 mm paper tolerance would identify unrelated, disjoint
 // sub-micrometre HLR fragments as the same generated edge. Scale the
@@ -32,7 +34,7 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
  view,hlrClass,sourceEdgeId,globalSegments,globalNativeEdges,
  scopedSegment,scopedNativeEdge
 }={}){
- if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
+ if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp','visible-outline','hidden-outline'].includes(hlrClass)||
     typeof sourceEdgeId!=='string'||!sourceEdgeId||
     !Array.isArray(globalSegments)||!Array.isArray(globalNativeEdges)||
     globalSegments.length!==globalNativeEdges.length||!globalSegments.length||
@@ -57,7 +59,18 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
    throw new RangeError('asymmetric native scoped/global TopoDS IsSame');
   const samePaper=nativeScopedPaperSegmentsSame(seg,scopedSegment);
   if(samePaper)paper.push(i);
-  if(forward){if(!samePaper)throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');same.push(i);}
+  if(forward){
+   // Native TopoDS IsSame is stronger than a display-space proximity
+   // search. Verify the two independently reported generated paper endpoints
+   // against their OWN u/v source-axis binary64 ULPs, not the wide candidate
+   // tolerance or the unrelated other axis. A genuine positive interval
+   // residual cannot be snapped or made into original 3D source history.
+   const strict=boundedOriginalFullPaperEndpointEnvelope(
+    seg.from,seg.to,scopedSegment.from,scopedSegment.to);
+   if(!samePaper||!strict.compatible)
+    throw new RangeError('native IsSame generated HLR edge has inconsistent paper endpoints');
+   same.push(i);
+  }
   if(typeof scopedNativeEdge.IsPartner!=='function'||typeof native.IsPartner!=='function')
    partnerRelationSupported=false;
   else{
@@ -99,20 +112,40 @@ function auditC1ScopedHLRGeneratedEdgeMatch({
 function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(!Array.isArray(matches)||matches.length>1024)
   throw new TypeError('genuine scoped HLR match inventory required');
- const claimed=new Map(),seen=new Set(),rows=[];
+ const claimed=new Map(),seen=new Set(),rows=[],unmatchedScoped=[];
  for(const match of matches){
   const view=match?.view,hlrClass=match?.hlrClass;
   const sourceEdgeId=match?.originalPhysicalSourceEdgeId;
   const ordinals=match?.globalDirectSameGeneratedTopoDSOrdinals;
-  if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp'].includes(hlrClass)||
+  const paper=match?.globalPaperCandidateOrdinals;
+  // A purported native identity must occur in the same scoped-vs-global
+  // measured paper inventory. Forged, duplicated or invented candidates
+  // are never legitimate received original-source evidence.
+  if(!VIEWS.includes(view)||!['visible-sharp','hidden-sharp','visible-outline','hidden-outline'].includes(hlrClass)||
      typeof sourceEdgeId!=='string'||!sourceEdgeId||
      !Array.isArray(ordinals)||ordinals.length>1||
+     !Array.isArray(paper)||paper.length===0||
+     paper.some(n=>!Number.isSafeInteger(n)||n<0)||
+     new Set(paper).size!==paper.length||
+     ordinals.some(n=>!paper.includes(n))||
+     match.paperCoincidenceAloneIsNotOriginalTopoDSHistory!==true||
+     match.partnerCandidateDoesNotProveOriginalSourceHistory!==true||
+     match.engineeringLineStyle!=='undetermined'||
+     (ordinals.length===1&&match.nativePartnerOnlyCandidate===true)||
      match.actualNativeScopedToGlobalGeneratedEdgeIsSameProven!==(ordinals.length===1)||
      match.fullOriginalSourceParameterCoverageProven!==false||
      match.globalContinuousOcclusionProven!==false||
      match.signedV5Action!==false||
      ordinals.some(n=>!Number.isSafeInteger(n)||n<0))
    throw new TypeError('unsigned actual native scoped match required');
+  // Source-filtered HLRToShape can generate a fresh TopoDS edge even when
+  // its paper trace coincides with a whole-solid output. Keep the missing
+  // native identity as a separate scoped->global causal obligation; do not
+  // silently call global->scoped coverage a bidirectional source history.
+  if(!ordinals.length)unmatchedScoped.push(Object.freeze({
+   view,hlrClass,originalPhysicalSourceEdgeId:sourceEdgeId,
+   globalPaperCandidateOrdinals:Object.freeze([...paper])
+  }));
   if(!ordinals.length)continue;
   const ordinal=ordinals[0],key=view+'|'+hlrClass+'|'+ordinal;
   const pair=key+'|'+sourceEdgeId;
@@ -133,15 +166,22 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
  if(wholeSolidCounts!==undefined){
   if(new Set(matches.map(m=>m.view)).size>1)
    throw new RangeError('one whole-solid inventory must belong to one HLR view');
+  const classes=wholeSolidCounts&&Object.hasOwn(wholeSolidCounts,'visible-outline')?
+   ['visible-outline','hidden-outline']:['visible-sharp','hidden-sharp'];
+  if(Object.keys(wholeSolidCounts??{}).length!==2||
+     Object.keys(wholeSolidCounts).some(key=>!classes.includes(key)))
+   throw new RangeError('mixed or incomplete native whole-solid HLR class inventory');
+  if(matches.some(x=>!classes.includes(x.hlrClass)))
+   throw new RangeError('native scoped HLR sharp/outline classes cannot share a global inventory');
   if(!wholeSolidCounts||typeof wholeSolidCounts!=='object'||
-     !['visible-sharp','hidden-sharp'].every(klass=>
+     !classes.every(klass=>
       Number.isSafeInteger(wholeSolidCounts[klass])&&
       wholeSolidCounts[klass]>=0&&wholeSolidCounts[klass]<=128))
    throw new TypeError('actual whole-solid visible/hidden native HLR counts required');
   wholeSolidNativeGeneratedEdgeCount=
-   wholeSolidCounts['visible-sharp']+wholeSolidCounts['hidden-sharp'];
+   classes.reduce((n,klass)=>n+wholeSolidCounts[klass],0);
   unclaimedWholeSolidGeneratedEdgeOrdinals=[];
-  for(const klass of ['visible-sharp','hidden-sharp'])
+  for(const klass of classes)
    for(let ordinal=0;ordinal<wholeSolidCounts[klass];ordinal++){
     const found=rows.some(r=>r.hlrClass===klass&&
      r.nativeWholeSolidEdgeOrdinal===ordinal);
@@ -151,11 +191,21 @@ function auditC1ScopedHLRSourceIdentityConflicts({matches,wholeSolidCounts}={}){
   // Each native generated ordinal is a distinct TopoDS object in the
   // whole-solid compound. The same ordinal cannot be consumed twice even
   // if the original source label is identical and scoped output is split.
+  for(const m of matches)for(const ordinal of m.globalPaperCandidateOrdinals)
+   if(ordinal>=wholeSolidCounts[m.hlrClass])
+    throw new RangeError('scoped source paper candidate claims nonexistent whole-solid native HLR edge');
   for(const r of rows)if(r.nativeWholeSolidEdgeOrdinal>=wholeSolidCounts[r.hlrClass])
    throw new RangeError('scoped source claims nonexistent whole-solid native HLR edge');
  }
  return Object.freeze({schema:'draftai-c1-native-scoped-source-identity-conflicts/1',
   uniqueNativeClaims:rows.length,
+  sourceScopedGeneratedEdgeCount:matches.length,
+  sourceScopedGeneratedEdgesWithoutNativeWholeSolidIdentity:unmatchedScoped.length,
+  unmatchedSourceScopedGeneratedEdges:Object.freeze(unmatchedScoped),
+  everySourceScopedGeneratedEdgeHasNativeWholeSolidIdentity:unmatchedScoped.length===0,
+  bidirectionalNativeGeneratedEdgeIdentityComplete:
+   unclaimedWholeSolidGeneratedEdgeOrdinals!==null&&
+   unclaimedWholeSolidGeneratedEdgeOrdinals.length===0&&unmatchedScoped.length===0,
   wholeSolidNativeGeneratedEdgeCount,
   unclaimedWholeSolidGeneratedEdgeOrdinals:unclaimedWholeSolidGeneratedEdgeOrdinals===null?
    null:Object.freeze(unclaimedWholeSolidGeneratedEdgeOrdinals),

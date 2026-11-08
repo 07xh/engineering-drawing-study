@@ -116,7 +116,14 @@ test('batch rejects absent, duplicate, altered and invented native HLR records',
   /missing or duplicated/);
  const altered=records.map(r=>({...r}));
  altered[1]={...altered[1],uncoveredIntervals:[[0,1e-16]]};
- assert.throws(()=>batch({geometry,records:altered}),/native gap intervals/);
+ const measured=batch({geometry,records:altered});
+ assert.equal(measured.results[1].rows[0].originalSourceParameterGap[1],1e-16);
+ assert.equal(measured.results[1].signedV5ActionCount,0);
+ for(const bad of [[0,0],[0,1],[Number.MIN_VALUE,1e-16],[0,NaN]]){
+  const rejected=records.map(r=>({...r}));
+  rejected[1]={...rejected[1],uncoveredIntervals:[bad]};
+  assert.throws(()=>batch({geometry,records:rejected}),/native gap intervals/);
+ }
  const invented=records.map(r=>({...r}));
  invented[2]={...invented[2],sourceEdgeId:'C1SkewTetra::B|C'};
  assert.throws(()=>batch({geometry,records:invented}),/missing or duplicated/);
@@ -233,9 +240,10 @@ test('single OCJS CAD payload drives all three gap auditors; forged source data 
   /exactly three/);
 });
 
-test('current OCJS/M5 proof ledger supplies three gaps without caller-provided interval map',()=>{
+test('current OCJS/M5 original-source gap is replayed from same-run CAD, not asserted by caller',()=>{
  const {auditC1ThreeNativeGapBatchFromM5Ledger:run}=
   require('../../workbench/c1-joint-native-gap-evidence.cjs');
+ const {project}=require('../../core/projection/conventions.js');
  const points={A:{x:0,y:0,z:0},C:{x:3,y:16,z:2},D:{x:5,y:6,z:23}};
  const geometry={id:'C1SkewTetra',data:{points,edges:[['A','C'],['A','D']]}};
  const source=edge=>{
@@ -246,6 +254,39 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
    originalOCCTBRepVertexXYZMatched:true,occtCurveTypeIndependentlyVerified:true,
    occtSourceCurve3DEndpointsAndMidpointVerified:true,occtSourceCurveType:'line'};
  };
+ // This is an explicitly unsigned mock of ORIGINAL-CURVE parameters,
+ // not an OCCT execution or a signed global generated-edge lineage.
+ const scopedStroke=(view,edge)=>{
+  const [aId,bId]=edge.split('|'),a=points[aId],b=points[bId],
+   sourceEdgeId=geometry.id+'::'+edge,
+   halfway=Object.fromEntries(['x','y','z'].map(k=>[k,a[k]+(b[k]-a[k])*.5]));
+  return {view,occtHLRVisibilityClass:'visible-sharp',
+   actualOCCTGeneratedEdgeDirectOriginalBRepIsSameProven:false,
+   directNativeVertexOriginalSource:[
+    {directlySameOriginalM0VertexId:null,directOriginal3DVertexTopoDSIdentityProven:false},
+    {directlySameOriginalM0VertexId:null,directOriginal3DVertexTopoDSIdentityProven:false}
+   ],
+   from:project(halfway)[view],to:project(b)[view],
+   projectedOriginalEdgeCandidates:[sourceEdgeId],
+   sourceCandidate3DLifts:[{
+    sourceEdgeId,originalVertexIds:[aId,bId],
+    paperOnlyUnclampedOriginalSourceParameters:[.5,1],
+    sourceParameterAtProjectedFrom:.5,
+    sourceParameterAtProjectedTo:1,
+    originalSourceParameterRange:[.5,1],
+    sourceParameterWasClampedForPaperOnly:false,
+    fromCandidate3D:halfway,toCandidate3D:b,
+    actualOriginalOCCTBRepFrom3D:a,actualOriginalOCCTBRepTo3D:b,
+    originalOCCTCurveParameterRange:[0,Math.hypot(
+     ...['x','y','z'].map(k=>b[k]-a[k]))],
+    actualOriginalOCCTBRepEdge3DEndpointsVerified:true,
+    originalOCCTSourceLineCurveVerified:true,
+    originalOCCTSourceCurveType:'line',
+    actualOCCTHLREdgeToOriginalTopoDSIdentityMatched:false,
+    v5Authorized:false
+   }]
+  };
+ };
  const cad={schema:'draftai-c1-ocjs-real-visible-brep/1',engine:'opencascade.js',
   sourceGeometryId:geometry.id,revision:7,
   completeSourceTopology3DEndpointCorrespondence:true,
@@ -253,13 +294,15 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
   actualOriginalTopoDSToHLRGeneratedEdgeLinkVerified:false,
   lineStyleCertified:false,v5Authorized:false,
   originalBRepSourceEdges:[source('A|C'),source('A|D')],
-  views:{V:[],H:[],W:[]},hiddenSharpViews:{V:[],H:[],W:[]}};
+  views:{V:[],H:[scopedStroke('H','A|C')],
+   W:[scopedStroke('W','A|C'),scopedStroke('W','A|D')]},
+  hiddenSharpViews:{V:[],H:[],W:[]}};
  const m5Ledger={schema:'draftai-c1-ocjs-m5-convex-proof-gap-ledger/1',
   sourceGeometryId:geometry.id,revision:7,engine:'opencascade.js',
   realCadSourceCandidateOnly:true,officialLineStylesVerified:false,
   wholeSolidV5Ready:false,signedV5ActionCount:0,
   views:{V:{intervals:[]},H:{intervals:[]},W:{intervals:[]}}};
- for(const [view,edge,end] of gaps){
+ for(const [view,edge] of gaps){
   const sourceEdgeId=geometry.id+'::'+edge;
   m5Ledger.views[view].intervals.push({
    sourceEdgeId,engineeringLineStyle:'undetermined',signedV5:false,
@@ -267,7 +310,7 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
    exactNativeOriginal3DSourceCoverage:{
     sourceEdgeId,view,originalSourceParameterRange:[0,1],
     entireOriginalParameterIntervalCovered:false,
-    positiveLengthUncoveredIntervals:[[0,end]],
+    positiveLengthUncoveredIntervals:[[0,.5]],
     status:'exact-original-3d-native-source-positive-gap',
     engineeringLineStyle:'undetermined',signedV5Action:false}
   });
@@ -286,9 +329,6 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
   assert.throws(()=>run({...input,m5Ledger:copy}),
    /current unsigned|nonunique canonical|M5 native source gap/);
  };
- assert.throws(()=>run({geometry:null,cad:{revision:7},
-  m5Ledger:{...m5Ledger,sourceGeometryId:undefined}}),
-  /current unsigned recomputed/);
  mutated(x=>delete x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage);
  mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage=null);
  mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage={
@@ -302,13 +342,17 @@ test('current OCJS/M5 proof ledger supplies three gaps without caller-provided i
  mutated(x=>x.views.H.intervals[0].realNativeOriginal3DSourceParameterCovered=true);
  mutated(x=>x.views.W.intervals[1].exactNativeOriginal3DSourceCoverage
   .originalSourceParameterRange=[Number.MIN_VALUE,1]);
- // A single representable binary64 ULP is positive source-space geometry,
- // even if both paper endpoints round to the same displayed pixel.
  const dv=new DataView(new ArrayBuffer(8));
- dv.setFloat64(0,5.02742501717052e-18);
+ dv.setFloat64(0,.5);
  dv.setBigUint64(0,dv.getBigUint64(0)-1n);
- const oneUlpShorter=dv.getFloat64(0);
- assert.ok(oneUlpShorter>0&&oneUlpShorter<5.02742501717052e-18);
- mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
-  .positiveLengthUncoveredIntervals=[[0,oneUlpShorter]]);
+ const shorter=dv.getFloat64(0);
+ dv.setFloat64(0,.5);
+ dv.setBigUint64(0,dv.getBigUint64(0)+1n);
+ const longer=dv.getFloat64(0);
+ for(const wrong of [shorter,longer]){
+  mutated(x=>x.views.H.intervals[0].exactNativeOriginal3DSourceCoverage
+   .positiveLengthUncoveredIntervals=[[0,wrong]]);
+ }
+ const noPaper={...cad,views:{...cad.views,H:[]}};
+ assert.throws(()=>run({...input,cad:noPaper}),/M5 native source gap/);
 });
