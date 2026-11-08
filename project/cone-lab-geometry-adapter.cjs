@@ -70,7 +70,10 @@ function meshFromLocalPoints(pr,index,raw){
   points[vertexId]=point;
  }
  const geometry={id:partGeometryId(pr,index),kind:'mesh',space:'model-3d',
-  unit:'mm',data:{points,edges:raw.edges,faces:raw.faces}};
+  unit:'mm',data:{points,edges:raw.edges,faces:raw.faces},
+  importedFromConeLab:{sourceId:pr._id===undefined?null:String(pr._id),
+   sourceIndex:index,sourceKind:pr.k,sourceCommit:SOURCE_MAIN_SHA,
+   exactPolyhedralTopology:true,verification:'unverified-preview'}};
  const check=validateGeometry(geometry);
  if(!check.ok)fail('第 '+(index+1)+' 个部件网格无效：'+check.errors.join('；'));
  return geometry;
