@@ -254,7 +254,7 @@ function homeHTML(){return `
     </section>
     <section class="v8-c2-entry" aria-labelledby="v8-conelab-title">
      <h3 id="v8-conelab-title">Cone Lab · 自由拼装模型导入</h3>
-     <p class="v7-note">从<a href="labs/cone-lab/index.html" target="_blank" rel="noopener noreferrer">实体自由拼装实验室</a>导出 JSON，然后导入这里。首批仅支持自由实验室里的长方体/正方体（含位置和方向），将为它们创建一个新的本机组合体项目；其他曲面、分块与切割不会被悄悄丢弃。</p>
+     <p class="v7-note">从<a href="labs/cone-lab/index.html" target="_blank" rel="noopener noreferrer">实体自由拼装实验室</a>导出 JSON，然后导入这里。当前支持自由实验室里的长方体、正方体和正三棱锥（保留尺寸、位置和方向），将为它们创建独立的本机组合体草稿；曲面、分块与切割不会被悄悄丢弃。</p>
      <label class="v7-file-control">选择 Cone Lab 模型文件
       <input id="v8-conelab-file" type="file" accept=".json,application/json" aria-describedby="v8-conelab-status">
      </label>
