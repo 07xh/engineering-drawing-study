@@ -441,6 +441,8 @@
 
 <script src="lib/three.min.js"></script>
 <script src="lib/OrbitControls.js"></script>
+<!-- DraftFlow adapter is an isolated addition; original Cone Lab scene remains authoritative. -->
+<script src="model-bridge.js"></script>
 <script>
 (function(){
 "use strict";
@@ -7185,6 +7187,21 @@ function applyShape(name){
   updateUndoBtn();
 }
 
+// DraftFlow P1: expose only the already-existing upstream snapshot/applySnapshot
+// to a small, versioned JSON bridge. No second geometry engine or V5 player.
+if(window.DraftFlowConeLabBridge){
+  window.DraftFlowConeLabBridge.mount({
+    getState: function(){ return JSON.parse(snapState()); },
+    setState: function(next){
+      applySnapshot(JSON.stringify(next));
+      // Loading a new file starts a new undo session, not undo into the old file.
+      undoStack = [];
+      lastSnap = null;
+      commitUndo();
+      updateUndoBtn();
+    }
+  }, document);
+}
 // 启动：先建好"圆锥"功能（首页卡片盖在上面），点卡片进入
 applyShape("cone");
 showHome(true);
