@@ -3,9 +3,9 @@
  * Cone Lab -> the EXISTING canonical Geometry Scene and local C2 workbench.
  * No renderer, second solver, inferred silhouette, contact proof, or V5.
  *
- * Exact polyhedral scope: oriented box/cube/triangular-pyramid primitives.
- * Curved solids and any cut operations explicitly fail rather than turning
- * sampled surfaces or missing edges into source-certified topology.
+ * Exact scope: polyhedral box/cube/pyramid and finite analytic circular
+ * cylinder/cone/frustum. Cut solids, CSG and missing geometry still reject.
+ * SVG surface samples never become physical source edges or a V5 proof.
  */
 const Bridge=require('../labs/cone-lab/model-bridge.js');
 const {prismMesh}=require('./unified-workbench-session.cjs');
@@ -18,7 +18,7 @@ const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 
 const RAD=Math.PI/180,EPS=1e-9;
 const SOURCE_MAIN_SHA=Bridge.SOURCE_SHA;
-const P2_SCOPE='cone-lab-exact-polyhedron-mesh/2';
+const P2_SCOPE='cone-lab-exact-primitives/3';
 const fail=msg=>{throw new Error('Cone Lab 模型预览：'+msg);};
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 
