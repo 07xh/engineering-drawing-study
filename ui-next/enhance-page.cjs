@@ -56,6 +56,10 @@ function applyPreview(out,{preview=true}={}){
   if(e.isDirectory())walk(file);
   else if(e.name.endsWith('.html')){
    const page=path.relative(out,file).split(path.sep).join('/');
+   // Vendored Cone Lab uses a viewport-level #stage and fullscreen #home.
+   // The generic site wrapper rewrites its body/main and breaks those controls.
+   // Keep the original page byte-for-byte, including its own responsive layout.
+   if(page.startsWith('labs/cone-lab/'))continue;
    fs.writeFileSync(file,enhancePage(fs.readFileSync(file,'utf8'),{page,preview}));
   }
  }}
