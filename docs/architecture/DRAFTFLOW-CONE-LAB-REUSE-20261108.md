@@ -64,6 +64,25 @@
 
 ## P2：映射到共享 Geometry Scene / C2、C3
 
+### P2.1 已提交（精确长方体导入到正式组合体工作台）
+
+- 使用 `project/cone-lab-geometry-adapter.cjs`，先调用现有 `labs/cone-lab/model-bridge.js` 的 Schema 验证器；只允许 `lab` 自由拼装模式中**完整、启用、未切割**的 `box/cube`。
+- 复用绘序现有 `prismMesh` 创建 8 顶点/12 棱/6 面的精确基本体拓扑；按上游 `Quaternion.setFromUnitVectors(Y,n)` 同义旋转每个部件，不凭屏幕截图反求几何。
+- 坐标转换固定为 `(x,y,z)_DraftFlow = (X,-Z,Y)_ConeLab`，这是一种保持右手系的正交旋转；**W 观测方向映射到 Cone Lab 的右视 +X，不能冒称其左视 -X**。在非对称、斜向模型测试中核查 V/H/W 投影。
+- 通过现有 `validateGeometry` → `deriveGeometryScene` → `compileGeometryScene` 输出与绘序主线**完全同一 Schema** 的三视图/空间预览；场景的 visibility 必须是 `undetermined`，math/V5 仍待正式证据。
+- 绘序首页 `组合体` 任务中增加 `v8-conelab-file` 模型文件入口，调用现有 `project-coordinator` / `local-project-store` 创建**独立本机新项目**，全部条件初始 `confirmed:false`。整份 JSON、所有对象和项目先在内存通过检查，再保存并打开；禁止部分导入。
+- 用户通过已经存在的「编辑单个对象→确认几何→显示组合体」流程手动核对后，才允许 existing session 根据同一数学场景建立投影；即使所有条件已确认，也只能生成 `composition-evidence`，不可获得 `verified`、正式 V5 播放时钟或标准线型导出。
+- 含任一 `cone/cyl/sphere/pyr3/frustum/slot` 部件、主立体、截切面、相贯体、隐藏块或禁用部件时**明确拒绝 P2.1 导入**；原 Cone Lab 实验室仍能原样编辑这些配置，保存/导入 JSON 不受影响。
+- P2.1 自动化必须覆盖原版六种方向四元数、非对称顶点、首角法观察光线、网格拓扑、兼容项目结构、未确认→显式确认→依然未获得 V5 的真实主线验收。
+
+### P2.2 后续（不伪称已完成）
+
+- 为圆柱、圆锥、球、棱锥、圆台、复杂槽体建立与现有可信 CAD/解析库对应的几何来源表示；上游曲面细分不应默认为真实解析求交。
+- 与真实切割面和相贯体映射后，使用当前 M0–M5 数学门禁证明区间、端点和可见性；通过证明前一律 `undetermined`。
+- 完成浏览器及 Android 真机交互、保存重新打开、非对称左右视图镜像的实测，不将 CI 结果等同生产验收。
+
+
+
 - 只提取上游可复用的表面/体内判定、截交线、相贯线、分块连通与吸附算法，放入第三方适配层；不要直接复制到绘序 M0–M5 内。
 - 保留 CAD/OCCT 或独立解析计算作为 oracle；对照原始对象拓扑、三维端点和接触/交线残差。**采样的多段线不是数学证明**。
 - 使用现有 M0–M5、`SolveResult` 和共享 Geometry Scene；所有未知实体/退化条件/不稳定交线都保持 undetermined。
