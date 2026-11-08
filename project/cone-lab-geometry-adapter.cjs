@@ -11,7 +11,7 @@ const {prismMesh}=require('./unified-workbench-session.cjs');
 const {validateGeometry}=require('../core/contracts/geometry.js');
 const {deriveGeometryScene}=require('../core/projection/geometry-scene-views.cjs');
 const {newProject,validateProject}=require('./project-coordinator.cjs');
-const {project,FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
+const {FIRST_ANGLE_OBSERVER_RAYS}=require('../core/projection/conventions.js');
 
 const RAD=Math.PI/180,EPS=1e-9;
 const SOURCE_MAIN_SHA=Bridge.SOURCE_SHA;
@@ -49,8 +49,8 @@ function rotate(q,p){
 // draftflow x = source X; y = -source Z; z = source Y.
 // V observer (-y) = source +Z, H observer (+z) = source +Y,
 // W observer (+x) = source +X (Cone Lab's "right" rather than its "left").
-function toDraftXYZ(p){return {x:p.x,y:-p.z,z:p.y};}
-function toSourceXYZ(p){return {x:p.x,y:p.z,z:-p.y};}
+function toDraftXYZ(p){return {x:p.x,y:p.z===0?0:-p.z,z:p.y};}
+function toSourceXYZ(p){return {x:p.x,y:p.z,z:p.y===0?0:-p.y};}
 function sourceBoxMesh(pr,index){
  const dims=pr.k==='cube'?{w:pr.a,h:pr.a,d:pr.a}:pr;
  const w=dims.w,h=dims.h,d=dims.d;
