@@ -87,7 +87,6 @@ test('rejects unsupported shape, cutters, cut planes, hidden parts, and forged f
   {...state([p]),cyls:[{shape:'cyl',type:'frontal',ang:0,x:0,y:0,z:0,r:8,len:40}]},
   {...state([p]),pickSel:{a:false}},
   state([part('cyl',{r:8,h:20})]),
-  state([part('pyr3',{r:8,h:20})]),
   state([part('box',{on:false})]),
   state([part('box',{hidden:true})])
  ];
@@ -133,4 +132,78 @@ test('new importing control is attached to the original workbench instead of sec
  assert.match(entry,/draftProjectFromConeLab\(await file\.text\(\)/);
  assert.match(entry,/await store\.saveProject\(candidate\.project\)/);
  assert.match(entry,/mount\(candidate\.project\)/);
+});
+
+test('Cone Lab triangular pyramid is the exact four-corner source polyhedron, not faceted curved geometry',()=>{
+ const tri={k:'pyr3',type:'horiz',ang:0,x:0,y:0,z:0,r:20,h:36,on:true,open:true,_id:99};
+ const g=Adapter.sourcePyramidMesh(tri,0);
+ assert.equal(g.id,'ConePartSrc_99');
+ assert.equal(validateGeometry(g).ok,true);
+ assert.equal(Object.keys(g.data.points).length,4);
+ assert.equal(g.data.edges.length,6);
+ assert.equal(g.data.faces.length,4);
+ assert.deepEqual(g.data.points.Apex,{x:0,y:0,z:18});
+ const base=['Base0','Base1','Base2'].map(id=>g.data.points[id]);
+ for(const point of base)close(point.z,-18);
+ for(const point of base)close(Math.hypot(point.x,point.y),20);
+ const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ close(distance(base[0],base[1]),20*Math.sqrt(3));
+ close(distance(base[1],base[2]),20*Math.sqrt(3));
+ close(distance(base[2],base[0]),20*Math.sqrt(3));
+ for(const vertex of base)close(distance(vertex,g.data.points.Apex),
+  Math.hypot(20,36));
+ const converted=Adapter.previewExactScene(serialize(state([tri,part('box')])) ,{revision:7});
+ assert.equal(converted.scene.objects.length,2);
+ assert.equal(converted.scene.evidence.visibility,'undetermined');
+ assert.equal(compileGeometryScene(converted.scene).proof,'display-only');
+});
+test('pyramid uses original Cone Lab normal quaternion and no arbitrary reflection',()=>{
+ const base={k:'pyr3',type:'horiz',ang:0,x:3,y:5,z:7,r:12,h:25,on:true};
+ const front=Adapter.sourcePyramidMesh({...base,type:'frontal'},0);
+ const top=Adapter.sourcePyramidMesh(base,0);
+ const apexSource=Adapter.toSourceXYZ(front.data.points.Apex);
+ close(apexSource.x,3);
+ close(apexSource.y,5);
+ close(apexSource.z,7+25/2);
+ const topApex=Adapter.toSourceXYZ(top.data.points.Apex);
+ close(topApex.y,5+25/2);
+});
+test('upstream source IDs preserve part identities across reordering and reject collision',()=>{
+ const p1=part('cube',{_id:'body_A'}),p2=part('box',{x:49,_id:'body_B'});
+ const a=Adapter.previewExactScene(serialize(state([p1,p2])));
+ const b=Adapter.previewExactScene(serialize(state([p2,p1])));
+ const ids=o=>o.geometry.map(g=>g.id).sort();
+ assert.deepEqual(ids(a),['ConePartSrc_body_A','ConePartSrc_body_B']);
+ assert.deepEqual(ids(b),ids(a));
+ const byId=scene=>Object.fromEntries(scene.geometry.map(g=>[g.id,g.data]));
+ assert.deepEqual(byId(a),byId(b));
+ assert.throws(()=>Adapter.previewExactScene(
+  serialize(state([{...p1,_id:3},{...p2,_id:3}]))),/来源 ID 重复/);
+});
+test('an imported triangular pyramid remains pending in the same coordinator and does not certify stroke',()=>{
+ const pyramid={k:'pyr3',type:'horiz',ang:0,x:0,y:0,z:0,r:17,h:24,on:true,_id:7};
+ const candidate=Adapter.draftProjectFromConeLab(
+  serialize(state([pyramid,part('box',{x:30})])),{projectId:'ProjectPyramid1'});
+ assert.equal(candidate.project.objects.length,2);
+ assert.equal(candidate.project.conditions[0].value.geometry.importedFromConeLab.sourceKind,'pyr3');
+ assert.ok(candidate.project.conditions.every(c=>c.confirmed===false));
+ const {createCoordinator}=require('../../project/project-coordinator.cjs');
+ const {createUnifiedProjectSession}=require('../../project/unified-workbench-session.cjs');
+ const c=createCoordinator(candidate.project);
+ const session=createUnifiedProjectSession();c.attachSolver(session);
+ c.confirmCondition('geo_ConePartSrc_7');
+ c.confirmCondition('geo_ConePart2');
+ const out=session.solve();
+ assert.equal(out.verified,false);
+ assert.equal(out.clock,null);
+ assert.equal(c.canExport(),false);
+ assert.equal(out.scene.evidence.visibility,'undetermined');
+ c.dispose();
+});
+test('generic C2 prism form cannot overwrite imported oriented mesh or pyramid',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const entry=fs.readFileSync(path.resolve(__dirname,'../../project/unified-workbench-entry.cjs'),'utf8');
+ assert.match(entry,/if\(g\.importedFromConeLab\)/);
+ assert.match(entry,/if\(chosen&&p\.conditions\.some\(c=>c\.objectId===chosen&&/);
+ assert.match(entry,/导入的精确拼装模型禁止用普通长方体表单覆盖/);
 });
