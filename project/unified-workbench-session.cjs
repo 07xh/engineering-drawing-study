@@ -149,7 +149,7 @@ function prismMesh(data){
   data:{points,edges,faces}};
 }
 
-const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','polyline','mesh']);
+const SUPPORTED_MANUAL_KINDS=new Set(['point','segment','circle','arc','polyline','mesh','analytic-solid']);
 function confirmedCompositionGeometry(data){
  if(!data||data.task!=='composition'||!Number.isSafeInteger(data.revision)||
    !Array.isArray(data.objects)||!Array.isArray(data.conditions)||
@@ -575,6 +575,7 @@ function createUnifiedProjectSession(){
       const source=g.importedFromConeLab;
       return source&&(
         source.sourceKind==='pyr3'||
+        g.kind==='analytic-solid'||
         !['horiz','frontal','lat'].includes(source.sourceType)||
         source.sourceAngleDeg!==0);
     });
