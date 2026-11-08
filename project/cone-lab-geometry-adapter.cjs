@@ -98,13 +98,17 @@ function sourcePyramidMesh(pr,index){
  const r=pr.r,h=pr.h;
  if(![r,h].every(x=>finite(x)&&x>EPS&&x<=100000))
   fail('第 '+(index+1)+' 个三棱锥尺寸不合法');
- const points={Apex:{x:0,y:h/2,z:0}};
- for(let i=0;i<3;i++){
-  const angle=i*2*Math.PI/3;
-  const xv=r*Math.sin(angle),zv=r*Math.cos(angle);
-  points['Base'+i]={x:Math.abs(xv)<1e-12?0:xv,y:-h/2,
-                      z:Math.abs(zv)<1e-12?0:zv};
- }
+ // Symbolic equilateral vertices, not cos(2π/3) vs cos(4π/3)
+ // floating approximations. The equal -r/2 source Z is EXACTLY the same
+ // in both records, so the existing M5 projection-topology verifier does
+ // not misclassify a true coincident W point as "nearly coincident".
+ const half=r/2,side=r*Math.sqrt(3)/2;
+ const points={
+  Apex:{x:0,y:h/2,z:0},
+  Base0:{x:0,y:-h/2,z:r},
+  Base1:{x:side,y:-h/2,z:-half},
+  Base2:{x:-side,y:-h/2,z:-half}
+ };
  const edges=[
   ['Base0','Base1'],['Base1','Base2'],['Base2','Base0'],
   ['Apex','Base0'],['Apex','Base1'],['Apex','Base2']
