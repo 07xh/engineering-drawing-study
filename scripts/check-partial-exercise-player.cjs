@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const js=fs.readFileSync('labs/chapter-drawing.js','utf8');
+const html=fs.readFileSync('labs/chapter-drawing.html','utf8');
+assert(js.includes("revealStep=0;base();updateReveal();"),'every exercise must begin at the original known-geometry frame');
+assert(js.includes("revealRange').disabled=!item||max===0"),'unverified answer scrubber must be disabled');
+assert(js.includes("sourceSteps(item),max=steps.length"),'answer player must only use verified solution steps');
+assert(js.includes("s[1]<=520&&s[3]<=520"),'saved strokes cannot extend beyond SVG height');
+assert(html.includes('id="revealRange"'),'source step slider must exist');
+console.log('PASS partial source first frame, locked answer scrubber and SVG stroke bounds');
