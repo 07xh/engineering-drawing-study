@@ -127,3 +127,77 @@ test('AI point handoff never clicks confirm or solve and uses existing input inv
  assert.ok(!js.includes("$('v7-solve').click("));
  assert.match(js,/原题/);
 });
+
+test('AI planar candidate is a reviewed draft, not a new verified solver',async()=>{
+ const {publicCandidate}=await entry;
+ const good={
+  tool:'planar',filletCandidate:{unit:'mm',
+   first:[[-20,0],[20,0]],second:[[0,-20],[0,20]],radius:8,
+   branchId:'s++',direction:'ccw',firstTravel:'forward',secondTravel:'reverse',
+   evidenceText:'原题给出两条线段端点、连接半径和行进分支'}};
+ const c=publicCandidate(good);
+ assert.deepEqual(c.filletCandidate,good.filletCandidate);
+ assert.equal(c.verified,undefined);
+ for(const altered of [
+  {...good.filletCandidate,unit:'px'},
+  {...good.filletCandidate,radius:0},
+  {...good.filletCandidate,radius:-2},
+  {...good.filletCandidate,first:[[1,2],[1,2]]},
+  {...good.filletCandidate,first:[[1,2],[100001,2]]},
+  {...good.filletCandidate,direction:'clockwise'},
+  {...good.filletCandidate,branchId:'unknown'},
+  {...good.filletCandidate,evidenceText:''}
+ ]) assert.equal(publicCandidate({...good,filletCandidate:altered}).filletCandidate,null);
+ assert.equal(publicCandidate({...good,tool:'intersection'}).filletCandidate,null);
+});
+test('C1 eight-view rows require all 8 unique vertices and consistent first-angle axes',async()=>{
+ const {publicCandidate}=await entry;
+ const ids=['V000','V001','V010','V011','V100','V101','V110','V111'];
+ const rows=ids.map(id=>{
+  const x=Number(id[1])*12,y=Number(id[2])*9,z=Number(id[3])*7;
+  return {id,coords:[x,z,x,y]};
+ });
+ const input={tool:'third_view',thirdViewCandidate:{pair:'VH',unit:'mm',
+  evidenceText:'题目逐个列出八个角点及主俯两视图',rows}};
+ const valid=publicCandidate(input).thirdViewCandidate;
+ assert.equal(valid.rows.length,8);
+ assert.equal(valid.pair,'VH');
+ assert.equal(valid.rows[0].id,'V000');
+ assert.equal(valid.verified,undefined);
+ for(const wrong of [
+  {...input.thirdViewCandidate,unit:'px'},
+  {...input.thirdViewCandidate,pair:'invalid'},
+  {...input.thirdViewCandidate,rows:rows.slice(0,7)},
+  {...input.thirdViewCandidate,rows:[rows[0],...rows.slice(0,7)]},
+  {...input.thirdViewCandidate,rows:rows.map((r,i)=>i===3?{...r,coords:[0,0,1,0]}:r)},
+  {...input.thirdViewCandidate,rows:rows.map((r,i)=>i===4?{...r,coords:rows[0].coords}:r)},
+  {...input.thirdViewCandidate,evidenceText:''}
+ ]) assert.equal(publicCandidate({...input,thirdViewCandidate:wrong}).thirdViewCandidate,null);
+ assert.equal(publicCandidate({...input,tool:'planar'}).thirdViewCandidate,null);
+ for(const [pair,format] of [
+  ['VW',(x,y,z)=>[x,z,y,z]],['HW',(x,y,z)=>[x,y,y,z]]
+ ]){
+  const other=rows.map(r=>{
+   const x=Number(r.id[1])*12,y=Number(r.id[2])*9,z=Number(r.id[3])*7;
+   return {id:r.id,coords:format(x,y,z)};
+  });
+  assert.equal(publicCandidate({...input,thirdViewCandidate:{...input.thirdViewCandidate,pair,rows:other}}).thirdViewCandidate.rows.length,8);
+ }
+});
+test('editable AI planar and C1 panels preserve the original solver review boundary',()=>{
+ const html=homeHTML();
+ for(const name of ['ai-solve-fillet','ai-solve-fill-fillet',
+  'ai-solve-third-view','ai-solve-fill-third-view','ai-c1-pair','ai-c1-rows'])
+  assert.match(html,new RegExp('id="'+name+'"'));
+ const js=fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8');
+ assert.ok(js.includes("deliverToExistingTask('planar'"));
+ assert.ok(js.includes("deliverToExistingTask('c1-third-view'"));
+ assert.ok(js.includes("task.value!==taskName"));
+ assert.ok(js.includes("Math.hypot"));
+ assert.ok(js.includes("checkedC1Rows"));
+ assert.ok(js.includes("$('v8-c1-topology').checked=false"));
+ assert.ok(js.includes("field.dispatchEvent(new Event("));
+ assert.ok(!js.includes("coordinator.confirmCondition"));
+ assert.ok(!js.includes("session.solve("));
+ new vm.Script(js);
+});
