@@ -120,10 +120,10 @@ test('AI point candidate requires explicit millimeter coordinate and cannot asse
 });
 test('AI point handoff never clicks confirm or solve and uses existing input invalidation',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8');
- assert.match(js,/\$('v7-task'\)/);
- assert.match(js,/task\.value!=='projection'/);
- assert.match(js,/dispatchEvent\(new Event\('input'/);
- assert.doesNotMatch(js,/\$('v7-confirm'\)\.click\(/);
- assert.doesNotMatch(js,/\$('v7-solve'\)\.click\(/);
+ assert.ok(js.includes("task.value!=='projection'"));
+ assert.ok(js.includes("field.dispatchEvent(new Event('input'"));
+ assert.ok(js.includes("$('v7-task')"));
+ assert.ok(!js.includes("$('v7-confirm').click("));
+ assert.ok(!js.includes("$('v7-solve').click("));
  assert.match(js,/原题/);
 });
