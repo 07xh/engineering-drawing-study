@@ -80,6 +80,10 @@ function homeHTML(){return `
   <p id="ai-solve-warning" class="ai-solve-note">AI 文字分析不能替代专业工程图认证。</p>
   <div id="ai-solve-sections"></div>
   <p id="ai-solve-diagram-note" class="ai-solve-note"></p>
+  <div id="ai-solve-point" hidden>
+   <p id="ai-solve-point-info"></p>
+   <button type="button" id="ai-solve-fill-point">填写候选点坐标到现有三面投影工具（需人工确认）</button>
+  </div>
   <p id="ai-solve-tool"></p>
  </section>
 </section>
