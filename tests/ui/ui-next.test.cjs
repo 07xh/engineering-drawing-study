@@ -100,11 +100,17 @@ test('homepage puts the existing solver first and lists real tools',()=>{
  assert.ok(document.querySelector('#project-workbench #v7-projects'));
  assert.ok(document.querySelector('#project-workbench #v7-confirm'));
  assert.ok(document.querySelector('#project-workbench #v7-solve'));
- assert.equal(document.querySelectorAll('form').length,0);
+ const forms=[...document.querySelectorAll('form')];
+ assert.equal(forms.length,1,'only the explicitly gated AI request form may be added');
+ assert.equal(forms[0].id,'ai-solve-form');
+ assert.equal(document.querySelector('#ai-solve-run')?.hasAttribute('disabled'),true,'AI submit must fail closed before private service is enabled');
+ assert.ok(forms[0].querySelector('#ai-solve-consent'),'explicit upload consent required');
+ assert.equal(forms[0].querySelector('#ai-solve-access-token')?.getAttribute('type'),'password');
+ assert.match(forms[0].textContent,/未经数学认证|AI 服务暂|安全服务启用|正式二维\/三维图/);
  for(const page of pages.filter(x=>x.startsWith('labs/')))assert.ok(document.querySelector('a[href="'+page+'"]'),page+' discoverable');
  assert.doesNotMatch(document.body.textContent,/题库已接入|任意题图一键解答/);
  const categories=[...document.querySelectorAll('.next-home-category-grid>a')];
- assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面作图','三视图与投影','截交与相贯','组合体作图']);
+ assert.deepEqual(categories.map(x=>x.querySelector('strong').textContent.trim()),['平面图形作图','三视图与投影','截交与相贯','组合体作图']);
  for(const id of ['plane','projection','section','recent','knowledge','tools'])assert.ok(document.getElementById(id),'no dead anchor '+id);
 });
 
