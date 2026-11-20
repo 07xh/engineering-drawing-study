@@ -84,6 +84,37 @@ function homeHTML(){return `
    <p id="ai-solve-point-info"></p>
    <button type="button" id="ai-solve-fill-point">填写候选点坐标到现有三面投影工具（需人工确认）</button>
   </div>
+  <div id="ai-solve-fillet" class="ai-solve-review" hidden>
+   <h4>平面图形作图 · 两线段圆弧过渡（候选条件审核）</h4>
+   <p id="ai-solve-fillet-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">所有坐标单位 mm。可修改下列候选；分支、行进方向需与原题核对，未确认时不要提交。</p>
+   <div class="ai-solve-review-grid">
+    <label>A.x <input id="ai-f-ax" type="number" step="any"></label>
+    <label>A.y <input id="ai-f-ay" type="number" step="any"></label>
+    <label>B.x <input id="ai-f-bx" type="number" step="any"></label>
+    <label>B.y <input id="ai-f-by" type="number" step="any"></label>
+    <label>C.x <input id="ai-f-cx" type="number" step="any"></label>
+    <label>C.y <input id="ai-f-cy" type="number" step="any"></label>
+    <label>D.x <input id="ai-f-dx" type="number" step="any"></label>
+    <label>D.y <input id="ai-f-dy" type="number" step="any"></label>
+    <label>连接半径 R <input id="ai-f-radius" type="number" min="0" step="any"></label>
+    <label>相切分支 <select id="ai-f-branch"><option value="s++">s++</option><option value="s+-">s+-</option><option value="s-+">s-+</option><option value="s--">s--</option></select></label>
+    <label>圆弧方向 <select id="ai-f-direction"><option value="ccw">逆时针</option><option value="cw">顺时针</option></select></label>
+    <label>线段 AB 行进 <select id="ai-f-first"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+    <label>线段 CD 行进 <select id="ai-f-second"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+   </div>
+   <button type="button" id="ai-solve-fill-fillet">核对后转入现有平面作图求解器</button>
+  </div>
+  <div id="ai-solve-third-view" class="ai-solve-review" hidden>
+   <h4>补第三视图 · 八角点两视图（候选条件审核）</h4>
+   <p id="ai-solve-third-view-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">只适用于已明确对应的八角点闭合凸体。AI 不会确认拓扑，必须对照原题核实全部八点和实体棱面。</p>
+   <label>已知视图 <select id="ai-c1-pair"><option value="VH">正面 V + 水平 H</option><option value="VW">正面 V + 侧面 W</option><option value="HW">水平 H + 侧面 W</option></select></label>
+   <label>每行：角点 ID、第一视图 u,v、第二视图 u,v（毫米）
+    <textarea id="ai-c1-rows" rows="8" spellcheck="false"></textarea>
+   </label>
+   <button type="button" id="ai-solve-fill-third-view">核对八角点后转入现有 C1 几何预览（仍须人工确认拓扑）</button>
+  </div>
   <p id="ai-solve-tool"></p>
  </section>
 </section>
