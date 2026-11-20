@@ -73,6 +73,54 @@
    const p=document.createElement('p');p.textContent=cleanText(value);parts.append(p);
   }
  }
+
+ function goodNumber(raw,{positive=false}={}){
+  const v=String(raw).trim();
+  if(!v||!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?$/.test(v))return null;
+  const n=Number(v);
+  return Number.isFinite(n)&&Math.abs(n)<=100000&&(!positive||n>0)?n:null;
+ }
+ function checkedC1Rows(raw,pair){
+  const ids=['V000','V001','V010','V011','V100','V101','V110','V111'];
+  const lines=raw.trim().split(/\r?\n/);
+  if(!['VH','VW','HW'].includes(pair)||lines.length!==8||raw.length>16000)return null;
+  const shared={VH:[0,2],VW:[1,3],HW:[1,2]}[pair],seen=new Map();
+  for(const line of lines){
+   const columns=line.split(/[,，]/).map(x=>x.trim());
+   if(columns.length!==5||!ids.includes(columns[0])||seen.has(columns[0]))return null;
+   const v=columns.slice(1).map(x=>goodNumber(x));
+   if(v.some(x=>x===null)||Math.abs(v[shared[0]]-v[shared[1]])>1e-8)return null;
+   for(const a of seen.values())if(a.every((n,k)=>Math.abs(n-v[k])<=1e-8))return null;
+   seen.set(columns[0],v);
+  }
+  if(ids.some(x=>!seen.has(x)))return null;
+  return ids.map(id=>[id,...seen.get(id)].join(',')).join('\n');
+ }
+ function deliverToExistingTask(taskName,fields,feedback){
+  const task=$('v7-task');
+  if(!task){statusText('原有求解工作台尚未加载。');return;}
+  if(task.value!==taskName){
+   task.scrollIntoView?.({block:'center'});
+   statusText('当前工作台不是此题型。为保护已有项目，请先手动切换题型并保存原项目，然后重试。');
+   return;
+  }
+  if(!window.confirm('请确认已对照原题逐项核对条件。填写会撤销当前题型旧结果；不会替你确认几何条件或自动运行求解。是否继续？'))return;
+  for(const [id,value] of fields){
+   const field=$(id);
+   if(!field){statusText('缺少原工作台输入：'+id);return;}
+   if(field.tagName==='SELECT'&&![...field.options].some(o=>o.value===String(value))){
+    statusText('原求解器选项不支持：'+id);return;
+   }
+  }
+  for(const [id,value] of fields){
+   const field=$(id);
+   field.value=String(value);
+   field.dispatchEvent(new Event(field.tagName==='SELECT'?'change':'input',{bubbles:true}));
+  }
+  if(taskName==='c1-third-view')$('v8-c1-topology').checked=false;
+  $('v7-input-section')?.scrollIntoView?.({block:'start'});
+  statusText(feedback);
+ }
  async function readImage(file){
   if(!file)return null;
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3*1024*1024)
@@ -173,6 +221,72 @@
      $('v7-input-section')?.scrollIntoView?.({block:'start'});
      statusText('已将 AI 候选坐标填入真实的单点投影工作台。现在请亲自核对并点击“确认条件 / 开始求解”，由原有数学引擎生成 2D/3D 与 V5。');
     };
+   }
+
+   // Structured proposals are editable locally; they never inherit AI verification.
+   const filletPanel=$('ai-solve-fillet');filletPanel.hidden=true;
+   const fillet=candidate.filletCandidate;
+   if(candidate.tool==='planar'&&fillet&&fillet.unit==='mm'&&
+      Array.isArray(fillet.first)&&Array.isArray(fillet.second)&&
+      ['s++','s+-','s-+','s--'].includes(fillet.branchId)&&
+      ['cw','ccw'].includes(fillet.direction)&&
+      ['forward','reverse'].includes(fillet.firstTravel)&&
+      ['forward','reverse'].includes(fillet.secondTravel)){
+    const all=[...(fillet.first[0]||[]),...(fillet.first[1]||[]),
+     ...(fillet.second[0]||[]),...(fillet.second[1]||[]),fillet.radius];
+    if(all.length===9&&all.every(x=>typeof x==='number'&&Number.isFinite(x)&&Math.abs(x)<=100000)&&fillet.radius>0){
+     const keys=['ax','ay','bx','by','cx','cy','dx','dy','radius'];
+     keys.forEach((key,i)=>{$('ai-f-'+key).value=String(all[i]);});
+     for(const [key,value] of [
+      ['branch',fillet.branchId],['direction',fillet.direction],
+      ['first',fillet.firstTravel],['second',fillet.secondTravel]])
+       $('ai-f-'+key).value=value;
+     $('ai-solve-fillet-info').textContent=
+      'AI 提取来源：'+cleanText(fillet.evidenceText)+
+      '。请自行核对坐标、半径、相切分支和方向（未认证）。';
+     filletPanel.hidden=false;
+     $('ai-solve-fill-fillet').onclick=()=>{
+      const keys=['ax','ay','bx','by','cx','cy','dx','dy','radius'];
+      const vals=keys.map(key=>goodNumber($('ai-f-'+key).value,{positive:key==='radius'}));
+      if(vals.some(n=>n===null)){statusText('请填写有效毫米坐标与正半径，数值绝对值不能超过 100000。');return;}
+      if(Math.hypot(vals[0]-vals[2],vals[1]-vals[3])<=1e-8||
+         Math.hypot(vals[4]-vals[6],vals[5]-vals[7])<=1e-8){
+       statusText('线段起点和终点不能重合。');return;
+      }
+      deliverToExistingTask('planar',[
+       ...keys.map((key,i)=>['v7-f-'+key,vals[i]]),
+       ...['branch','direction','first','second'].map(key=>['v7-f-'+key,$('ai-f-'+key).value])
+      ],'已将经人工核对的平面作图候选填写到现有圆弧过渡子工具。接下来由原数学求解器计算；还需亲自确认分支、条件并运行。');
+     };
+    }
+   }
+   const thirdPanel=$('ai-solve-third-view');thirdPanel.hidden=true;
+   const third=candidate.thirdViewCandidate;
+   if(candidate.tool==='third_view'&&third&&third.unit==='mm'&&
+      ['VH','VW','HW'].includes(third.pair)&&Array.isArray(third.rows)&&third.rows.length===8){
+    const raw=third.rows.map(row=>{
+     if(!row||!Array.isArray(row.coords))return '';
+     return [row.id,...row.coords].join(',');
+    }).join('\n');
+    const checked=checkedC1Rows(raw,third.pair);
+    if(checked){
+     $('ai-c1-pair').value=third.pair;$('ai-c1-rows').value=checked;
+     $('ai-solve-third-view-info').textContent=
+      'AI 提取来源：'+cleanText(third.evidenceText)+
+      '。原题八角点的对应关系和闭合凸体拓扑尚未核验。';
+     thirdPanel.hidden=false;
+     $('ai-solve-fill-third-view').onclick=()=>{
+      const pair=$('ai-c1-pair').value;
+      const validated=checkedC1Rows($('ai-c1-rows').value,pair);
+      if(!validated){
+       statusText('八角点输入存在重复 ID、无效坐标、公共轴不一致或重合点；请先核对全部 8 行。');
+       return;
+      }
+      deliverToExistingTask('c1-third-view',[
+       ['v8-c1-pair',pair],['v8-c1-vertices',validated]
+      ],'候选两视图角点已填写到原有 C1 工作台。还必须按原题重新确认全部八个顶点、12 条棱与六个面的凸体拓扑，未确认不得作为正式第三视图。');
+     };
+    }
    }
    const target=links[candidate.tool];
    const tool=$('ai-solve-tool');tool.replaceChildren();
