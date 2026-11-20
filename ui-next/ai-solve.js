@@ -146,6 +146,34 @@
    const wantsDiagram=out.twoD||out.threeD||out.animation;
    $('ai-solve-diagram-note').textContent=wantsDiagram?
     '二维工程图、三维模型和 V5 动画尚未由本次 AI 推理生成或验证。请使用下方对应的专业几何工具；不可把 AI 文字当作标准图纸。':'';
+   const pointPanel=$('ai-solve-point');
+   pointPanel.hidden=true;
+   const p=candidate.pointCandidate;
+   if(p&&candidate.tool==='projection'&&p.unit==='mm'&&
+     ['x','y','z'].every(k=>typeof p[k]==='number'&&Number.isFinite(p[k])&&Math.abs(p[k])<=100000)){
+    pointPanel.hidden=false;
+    $('ai-solve-point-info').textContent=
+     'AI 提议点坐标（未核对）：x='+p.x+'，y='+p.y+'，z='+p.z+
+     ' mm。提取依据：'+(cleanText(p.evidenceText)||'未提供')+'。请与原题逐项对照。';
+    const fill=$('ai-solve-fill-point');
+    fill.onclick=()=>{
+     const task=$('v7-task');
+     if(!task){statusText('现有几何工作台尚未初始化，请使用下方工具。');return;}
+     if(task.value!=='projection'){
+      task.scrollIntoView?.({block:'center'});
+      statusText('当前项目并非单点三视图。请先手动切换为“单点三视图”，确保原项目得到安全保存，然后再次点击“填写候选点坐标”。');
+      return;
+     }
+     if(!window.confirm('请已核对原题的 x/y/z 毫米数值。填写会撤销当前点投影旧结果；此操作不会确认条件或自动求解。是否继续？'))return;
+     for(const k of ['x','y','z']){
+      const field=$('v7-'+k);if(!field)return;
+      field.value=String(p[k]);
+      field.dispatchEvent(new Event('input',{bubbles:true}));
+     }
+     $('v7-input-section')?.scrollIntoView?.({block:'start'});
+     statusText('已将 AI 候选坐标填入真实的单点投影工作台。现在请亲自核对并点击“确认条件 / 开始求解”，由原有数学引擎生成 2D/3D 与 V5。');
+    };
+   }
    const target=links[candidate.tool];
    const tool=$('ai-solve-tool');tool.replaceChildren();
    if(target){
