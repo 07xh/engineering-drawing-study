@@ -191,6 +191,7 @@ test('editable AI planar and C1 panels preserve the original solver review bound
   assert.match(html,new RegExp('id="'+name+'"'));
  const js=fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8');
  assert.ok(js.includes("deliverToExistingTask('planar'"));
+ assert.ok(js.includes("'labs/auto-fillet-live.html'"),'recognized fillet candidate must link to fillet solver, not polygon');
  assert.ok(js.includes("deliverToExistingTask('c1-third-view'"));
  assert.ok(js.includes("task.value!==taskName"));
  assert.ok(js.includes("Math.hypot"));
