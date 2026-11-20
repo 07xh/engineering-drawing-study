@@ -288,7 +288,7 @@
      };
     }
    }
-   const target=links[candidate.tool];
+   const target=candidate.tool==='planar'&&!filletPanel.hidden? 'labs/auto-fillet-live.html':links[candidate.tool];
    const tool=$('ai-solve-tool');tool.replaceChildren();
    if(target){
     const a=document.createElement('a');a.href=target;a.textContent='打开对应的已存在专业几何工具 →';
