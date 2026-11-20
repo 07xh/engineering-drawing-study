@@ -27,6 +27,7 @@ test('V11 homepage AI form coexists with the original workbench and output choic
   assert.match(html,new RegExp('data-ai-output="'+option+'"'));
  assert.match(html,/平面图形作图/);
  assert.match(html,/AI 解题（待安全服务启用）/);
+ assert.match(html,/id="ai-solve-fill-point"/);
  new vm.Script(fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8'));
 });
 test('V11 build wrapper adds explicit AI assets only to the homepage',()=>{
@@ -79,7 +80,7 @@ test('authenticated model reply is explicitly unverified and cannot mint diagram
   return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({
    answer:'P 的正面投影为 (x,z)',approach:'先按第一角法核对坐标',
    steps:['确认 x、y、z','分别投影到 V/H/W'],uncertainties:[],
-   tool:'projection',verified:true,diagrams:{twoD:'pretend',threeD:'pretend'}
+   tool:'projection',pointCandidate:{x:10,y:20,z:30,unit:'mm',evidenceText:'原题 P(10,20,30) mm'},verified:true,diagrams:{twoD:'pretend',threeD:'pretend'}
   })}}]}),{status:200,headers:{'Content-Type':'application/json'}});
  };
  try{
@@ -93,5 +94,36 @@ test('authenticated model reply is explicitly unverified and cannot mint diagram
   assert.equal(data.candidate.verified,undefined);
   assert.equal(data.diagrams.twoD,'not-generated');
   assert.equal(data.diagrams.threeD,'not-generated');
+  assert.deepEqual(data.candidate.pointCandidate,{x:10,y:20,z:30,unit:'mm',evidenceText:'原题 P(10,20,30) mm'});
  }finally{globalThis.fetch=previous;}
+});
+
+test('AI point candidate requires explicit millimeter coordinate and cannot assert proof',async()=>{
+ const {publicCandidate}=await entry;
+ const valid={tool:'projection',answer:'候选',pointCandidate:{
+  x:0,y:-10,z:12.5,unit:'mm',evidenceText:'题图已知 P(0,-10,12.5) mm'}};
+ const reviewed=publicCandidate(valid);
+ assert.deepEqual(reviewed.pointCandidate,{x:0,y:-10,z:12.5,unit:'mm',
+  evidenceText:'题图已知 P(0,-10,12.5) mm'});
+ assert.equal(reviewed.verified,undefined);
+ for(const pointCandidate of [
+  {x:NaN,y:2,z:3,unit:'mm',evidenceText:'原题输入'},
+  {x:100001,y:2,z:3,unit:'mm',evidenceText:'原题输入'},
+  {x:1,y:2,z:3,unit:'px',evidenceText:'原题输入'},
+  {x:1,y:2,z:3,unit:'mm',evidenceText:''},
+  {x:1,y:2,unit:'mm',evidenceText:'缺失 Z'}
+ ]){
+  assert.equal(publicCandidate({...valid,pointCandidate}).pointCandidate,null);
+ }
+ assert.equal(publicCandidate({...valid,tool:'section'}).pointCandidate,null,
+  'do not inject point coordinates into a different project task');
+});
+test('AI point handoff never clicks confirm or solve and uses existing input invalidation',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8');
+ assert.match(js,/\$('v7-task'\)/);
+ assert.match(js,/task\.value!=='projection'/);
+ assert.match(js,/dispatchEvent\(new Event\('input'/);
+ assert.doesNotMatch(js,/\$('v7-confirm'\)\.click\(/);
+ assert.doesNotMatch(js,/\$('v7-solve'\)\.click\(/);
+ assert.match(js,/原题/);
 });
