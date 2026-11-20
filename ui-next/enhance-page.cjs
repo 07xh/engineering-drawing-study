@@ -47,7 +47,9 @@ function enhancePage(html,{page,preview=true}){
    '<meta name="draftai-project-workbench" content="v7-real-20261024">'+
    '<link rel="stylesheet" href="project/workbench-ui.css">'+
    '<script defer src="project/linked-three-scene-bundle.js"></script>'+
-   '<script defer src="project/unified-workbench-bundle.js"></script>'));
+   '<script defer src="project/unified-workbench-bundle.js"></script>'+
+   '<link rel="stylesheet" href="ai-solve.css">'+
+   '<script defer src="ai-solve.js"></script>'));
  return document.toString();
 }
 function applyPreview(out,{preview=true}={}){
@@ -64,6 +66,6 @@ function applyPreview(out,{preview=true}={}){
   }
  }}
  walk(out);
- for(const name of ['ui-next.css','ui-next.js'])fs.copyFileSync(path.join(__dirname,name),path.join(out,name));
+ for(const name of ['ui-next.css','ui-next.js','ai-solve.css','ai-solve.js'])fs.copyFileSync(path.join(__dirname,name),path.join(out,name));
 }
 module.exports={enhancePage,applyPreview,relative};
