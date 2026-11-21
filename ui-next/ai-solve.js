@@ -296,7 +296,7 @@
    const boxCandidate=candidate.twoBoxCandidate;
    const xyz=['x','y','z'];
    const letters=['a','b'];
-   const ids=letters.flatMap(letter=>['0','1'].flatMap(bound=>
+   const boxFields=letters.flatMap(letter=>['0','1'].flatMap(bound=>
     xyz.map(axis=>({letter,bound,axis,id:'ai-c2-'+letter+'-'+axis+bound,
      target:'v8-c2-'+letter+'-'+axis+bound}))));
    function parseTwoBoxesFromEditor(){
@@ -318,7 +318,7 @@
        box[bound].every(n=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<=100000))&&
       box.min.every((n,i)=>n<box.max[i]));
     if(valid){
-     ids.forEach(({letter,bound,axis,id})=>{
+     boxFields.forEach(({letter,bound,axis,id})=>{
       const source=boxes[letter==='a'?0:1][bound==='0'?'min':'max'];
       $(id).value=String(source[xyz.indexOf(axis)]);
      });
@@ -332,7 +332,7 @@
        statusText('两个形体均须填写完整的毫米坐标，且每个轴向最大值必须大于最小值。');
        return;
       }
-      const fields=ids.map(({letter,bound,axis,target})=>[
+      const fields=boxFields.map(({letter,bound,axis,target})=>[
        target,reviewed[letter==='a'?0:1][bound==='0'?'min':'max'][xyz.indexOf(axis)]
       ]);
       deliverToExistingTask('composition',fields,
