@@ -24,7 +24,17 @@
   third_view:'labs/solid-third-view-live.html',composite:'labs/composite-geometry.html',
   section:'labs/cone-cut-live.html',intersection:'labs/finite-cylinder-intersection-live.html'
  };
- let enabled=false;
+ let enabled=false,requestRevision=0;
+ function invalidateCandidate(){
+  requestRevision++;
+  const wasVisible=!result.hidden;
+  result.hidden=true;
+  for(const id of ['ai-solve-fill-point','ai-solve-fill-fillet',
+   'ai-solve-fill-third-view','ai-solve-fill-two-box']){
+   const action=$(id);if(action)action.onclick=null;
+  }
+  if(wasVisible)statusText('题目或输出设置已修改，旧 AI 候选已失效；请重新解题。');
+ }
  function currentOutputs(){return Object.fromEntries(ids.map(key=>[key,boxes[key].checked]));}
  function storePrefs(){
   try{localStorage.setItem('draftflow-ai-output-v1',JSON.stringify({
@@ -45,12 +55,14 @@
    if([...Object.keys(sets),'custom'].includes(saved.preset))preset.value=saved.preset;
   }
  }catch(_error){/* no storage required */ }
- preset.addEventListener('change',()=>applyPreset(preset.value));
+ preset.addEventListener('change',()=>{applyPreset(preset.value);invalidateCandidate();});
  for(const checkbox of Object.values(boxes))checkbox.addEventListener('change',()=>{
-  preset.value='custom';storePrefs();
+  preset.value='custom';storePrefs();invalidateCandidate();
  });
- detail.addEventListener('change',()=>{preset.value='custom';storePrefs();});
+ detail.addEventListener('change',()=>{preset.value='custom';storePrefs();invalidateCandidate();});
+ question.addEventListener('input',invalidateCandidate);
  image.addEventListener('change',()=>{
+  invalidateCandidate();
   const file=image.files&&image.files[0];
   if(!file){note.textContent='题图尚未选择；可以仅输入题目文字。';return;}
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3*1024*1024){
@@ -177,10 +189,12 @@
   if(!ids.some(id=>boxes[id].checked)){statusText('请至少选一项生成内容。');return;}
   const access=token.value.trim();
   if(access.length<24){statusText('请输入有效的个人 AI 服务访问令牌。');return;}
+  const submittedRevision=requestRevision;
   run.disabled=true;result.hidden=true;statusText('正在准备题图并请求 AI 候选分析…');
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),45000);
   try{
    const imageDataUrl=await readImage(file);
+   if(submittedRevision!==requestRevision)throw new Error('输入或生成选项已修改，已取消旧解题结果；请重新提交。');
    const response=await fetch('/api/ai/solve',{
     method:'POST',credentials:'same-origin',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+access},
@@ -189,6 +203,7 @@
    });
    const payload=await response.json().catch(()=>({error:'服务返回了无法解析的响应'}));
    if(!response.ok)throw new Error(cleanText(payload.error)||'AI 服务请求失败（HTTP '+response.status+'）');
+   if(submittedRevision!==requestRevision)throw new Error('输入或生成选项已修改，已丢弃过期 AI 候选；请重新提交。');
    parts.replaceChildren();
    const out=currentOutputs(),candidate=payload.candidate||{};
    if(out.answer)section('候选答案（未验证）',candidate.answer);
