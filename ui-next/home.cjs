@@ -24,9 +24,120 @@ const TOOLS=[
  ['constraints','几何约束','查看几何条件的关系。','打开工具'],
  ['analysis','约束分析','核对几何条件。','打开工具']
 ];
-const CATEGORIES=[["平面几何",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","cone-lab/index","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
+const CATEGORIES=[["平面图形作图",["auto-fillet-live","circle-fillet-live","polygon-live","tangent-constraint","paper-geometry"]],["投影与空间",["finite-cylinder-intersection-live","point-projection-live","two-point-v5-live","solid-third-view-live","c1-reviewed-dxf-live","cone-cut-live","cylinder-cut-live","prism-cut-live","c2-native-cut-review","composite-geometry","free-modeler","cone-lab/index","dof-lab-v2","point-coach","point-construction"]],["辅助与实验",["recognition-qa","constraints","analysis"]]];
 function homeHTML(){return `
-<section id="ai" class="v8-legacy-anchor"></section>
+
+<section id="ai" class="ai-solve-entry" aria-labelledby="ai-solve-title">
+ <div class="ai-solve-head">
+  <div><p class="ai-solve-kicker">绘序 · AI 综合解题</p><h2 id="ai-solve-title">上传题图，选择需要的解题成果</h2>
+   <p>AI 可协助识别题意并给出候选思路；正式二维/三维图仍以网站专业求解器的验证结果为准。</p></div>
+  <a href="#tools" class="ai-solve-tool-link">不用 AI · 直接选择工具</a>
+ </div>
+ <form id="ai-solve-form" novalidate>
+  <div class="ai-solve-input-grid">
+   <label>题目照片或截图（可选，PNG / JPG / WebP）
+    <input id="ai-solve-image" type="file" accept="image/png,image/jpeg,image/webp">
+   </label>
+   <label>题目文字及补充条件（可选）
+    <textarea id="ai-solve-question" rows="3" maxlength="1800" placeholder="例如：已知主视图和俯视图，求左视图，并说明关键投影关系。"></textarea>
+   </label>
+  </div>
+  <p id="ai-solve-image-note" class="ai-solve-note">题图仅在本机选择；点击提交并确认后才会发送至已授权的 AI 服务。</p>
+  <fieldset class="ai-solve-options"><legend>希望 AI 生成什么？</legend>
+   <div class="ai-solve-checks">
+    <label><input type="checkbox" data-ai-output="answer" checked> 最终答案</label>
+    <label><input type="checkbox" data-ai-output="approach" checked> 解题思路</label>
+    <label><input type="checkbox" data-ai-output="steps" checked> 详细解题步骤</label>
+    <label><input type="checkbox" data-ai-output="twoD" checked> 二维工程图</label>
+    <label><input type="checkbox" data-ai-output="threeD" checked> 三维模型（空间题）</label>
+    <label><input type="checkbox" data-ai-output="animation" checked> 动态逐笔作图</label>
+    <label><input type="checkbox" data-ai-output="verification"> 验证说明</label>
+   </div>
+   <div class="ai-solve-inline">
+    <label>讲解程度 <select id="ai-solve-detail">
+     <option value="brief">精简</option><option value="standard" selected>标准</option><option value="teaching">详细教学（逐点逐线说明）</option>
+    </select></label>
+    <label>输出预设 <select id="ai-solve-preset"><option value="standard">标准解题</option>
+      <option value="answer">仅答案</option><option value="teaching">详细教学</option>
+      <option value="visual">二维三维展示</option><option value="custom">自定义</option>
+    </select></label>
+   </div>
+   <p class="ai-solve-note">仅勾选的内容才会请求生成。数学正确性检查始终执行；目前二维/三维正式图与 V5 必须使用对应求解器，AI 不会伪造图纸。</p>
+  </fieldset>
+  <details class="ai-solve-access"><summary>AI 服务访问设置（个人使用）</summary>
+   <label>服务访问令牌（仅用于本次页面，不保存）
+    <input id="ai-solve-access-token" type="password" autocomplete="off" spellcheck="false" placeholder="仅在已配置个人服务后填写">
+   </label>
+   <p class="ai-solve-note">模型 API 密钥仅保留在受保护的服务端。公开站点默认不开通 AI；不用 AI 的解题工具不需要令牌。</p>
+  </details>
+  <label class="ai-solve-consent"><input id="ai-solve-consent" type="checkbox"> 我确认有权提供这份题目，并同意将选中的题图和文字发送给已配置的 AI 服务分析。</label>
+  <div class="ai-solve-actions"><button id="ai-solve-run" class="primary" type="submit" disabled>AI 解题（待安全服务启用）</button>
+   <a href="#project-workbench">进入现有几何解题工作台</a></div>
+  <p id="ai-solve-status" role="status" aria-live="polite">正在检测个人 AI 服务是否可用，输出选项可先调整。</p>
+ </form>
+ <section id="ai-solve-result" class="ai-solve-result" aria-labelledby="ai-solve-result-title" hidden>
+  <h3 id="ai-solve-result-title">AI 候选解答（未经数学认证）</h3>
+  <p id="ai-solve-warning" class="ai-solve-note">AI 文字分析不能替代专业工程图认证。</p>
+  <div id="ai-solve-sections"></div>
+  <p id="ai-solve-diagram-note" class="ai-solve-note"></p>
+  <div id="ai-solve-point" hidden>
+   <p id="ai-solve-point-info"></p>
+   <button type="button" id="ai-solve-fill-point">填写候选点坐标到现有三面投影工具（需人工确认）</button>
+  </div>
+  <div id="ai-solve-fillet" class="ai-solve-review" hidden>
+   <h4>平面图形作图 · 两线段圆弧过渡（候选条件审核）</h4>
+   <p id="ai-solve-fillet-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">所有坐标单位 mm。可修改下列候选；分支、行进方向需与原题核对，未确认时不要提交。</p>
+   <div class="ai-solve-review-grid">
+    <label>A.x <input id="ai-f-ax" type="number" step="any"></label>
+    <label>A.y <input id="ai-f-ay" type="number" step="any"></label>
+    <label>B.x <input id="ai-f-bx" type="number" step="any"></label>
+    <label>B.y <input id="ai-f-by" type="number" step="any"></label>
+    <label>C.x <input id="ai-f-cx" type="number" step="any"></label>
+    <label>C.y <input id="ai-f-cy" type="number" step="any"></label>
+    <label>D.x <input id="ai-f-dx" type="number" step="any"></label>
+    <label>D.y <input id="ai-f-dy" type="number" step="any"></label>
+    <label>连接半径 R <input id="ai-f-radius" type="number" min="0" step="any"></label>
+    <label>相切分支 <select id="ai-f-branch"><option value="s++">s++</option><option value="s+-">s+-</option><option value="s-+">s-+</option><option value="s--">s--</option></select></label>
+    <label>圆弧方向 <select id="ai-f-direction"><option value="ccw">逆时针</option><option value="cw">顺时针</option></select></label>
+    <label>线段 AB 行进 <select id="ai-f-first"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+    <label>线段 CD 行进 <select id="ai-f-second"><option value="forward">正向</option><option value="reverse">反向</option></select></label>
+   </div>
+   <button type="button" id="ai-solve-fill-fillet">核对后转入现有平面作图求解器</button>
+  </div>
+  <div id="ai-solve-third-view" class="ai-solve-review" hidden>
+   <h4>补第三视图 · 八角点两视图（候选条件审核）</h4>
+   <p id="ai-solve-third-view-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">只适用于已明确对应的八角点闭合凸体。AI 不会确认拓扑，必须对照原题核实全部八点和实体棱面。</p>
+   <label>已知视图 <select id="ai-c1-pair"><option value="VH">正面 V + 水平 H</option><option value="VW">正面 V + 侧面 W</option><option value="HW">水平 H + 侧面 W</option></select></label>
+   <label>每行：角点 ID、第一视图 u,v、第二视图 u,v（毫米）
+    <textarea id="ai-c1-rows" rows="8" spellcheck="false"></textarea>
+   </label>
+   <button type="button" id="ai-solve-fill-third-view">核对八角点后转入现有 C1 几何预览（仍须人工确认拓扑）</button>
+  </div>
+  <div id="ai-solve-two-box" class="ai-solve-review" hidden>
+   <h4>组合体 · 两个已知长方体（候选几何条件审核）</h4>
+   <p id="ai-solve-two-box-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">仅处理已知轴对齐、坐标单位为毫米的两形体。请从题图核对位置、尺寸与接触关系。只形成局部二维/三维几何预览，不保证完整工程轮廓及虚实线。</p>
+   <div class="ai-solve-review-grid">
+    <label>A 最小 X <input id="ai-c2-a-x0" type="number" step="any"></label>
+    <label>A 最小 Y <input id="ai-c2-a-y0" type="number" step="any"></label>
+    <label>A 最小 Z <input id="ai-c2-a-z0" type="number" step="any"></label>
+    <label>A 最大 X <input id="ai-c2-a-x1" type="number" step="any"></label>
+    <label>A 最大 Y <input id="ai-c2-a-y1" type="number" step="any"></label>
+    <label>A 最大 Z <input id="ai-c2-a-z1" type="number" step="any"></label>
+    <label>B 最小 X <input id="ai-c2-b-x0" type="number" step="any"></label>
+    <label>B 最小 Y <input id="ai-c2-b-y0" type="number" step="any"></label>
+    <label>B 最小 Z <input id="ai-c2-b-z0" type="number" step="any"></label>
+    <label>B 最大 X <input id="ai-c2-b-x1" type="number" step="any"></label>
+    <label>B 最大 Y <input id="ai-c2-b-y1" type="number" step="any"></label>
+    <label>B 最大 Z <input id="ai-c2-b-z1" type="number" step="any"></label>
+   </div>
+   <button type="button" id="ai-solve-fill-two-box">核对后填入原有 C2 组合体求解工作台</button>
+  </div>
+  <p id="ai-solve-tool"></p>
+ </section>
+</section>
 <section class="v7-workspace" id="project-workbench" aria-labelledby="v7-title">
  <div class="v7-head"><div><h1 id="v7-title">工程制图解题</h1>
  <p>导入题图或输入条件，核对后开始求解与逐步作图。</p></div>
@@ -446,7 +557,7 @@ function homeHTML(){return `
 <section class="next-home-section next-home-categories" id="tools">
  <div class="next-section-heading"><h2>更多专项题型</h2><a href="#all-tools">查看全部工具 →</a></div>
  <div class="next-home-category-grid">
-  <a class="next-home-category-card next-cat-plane" id="plane" href="labs/circle-fillet-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="14" y="17" width="42" height="39"/><path d="M14 56L56 17 M14 37l10 8 15-21"/></svg><span><strong>平面作图</strong><small>圆弧连接、正多边形与基本辅助作图</small></span><b aria-hidden="true">→</b></a>
+  <a class="next-home-category-card next-cat-plane" id="plane" href="labs/circle-fillet-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="14" y="17" width="42" height="39"/><path d="M14 56L56 17 M14 37l10 8 15-21"/></svg><span><strong>平面图形作图</strong><small>正多边形、相切与过渡、常见几何构造</small></span><b aria-hidden="true">→</b></a>
   <a class="next-home-category-card next-cat-projection" id="projection" href="labs/point-projection-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M36 7l18 11v20L36 50 18 38V18z M36 7v22 M18 18l18 11 18-11 M36 29v21 M17 54l19 11 19-11"/></svg><span><strong>三视图与投影</strong><small>第一角法、对应关系与投影作图</small></span><b aria-hidden="true">→</b></a>
   <a class="next-home-category-card next-cat-section" id="section" href="labs/cone-cut-live.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 57V20a16 7 0 0 1 32 0v37a16 7 0 0 1-32 0 M20 20a16 7 0 0 0 32 0 M20 57a16 7 0 0 0 32 0"/><path d="M14 28L60 43" stroke-dasharray="5 4"/></svg><span><strong>截交与相贯</strong><small>圆锥、圆柱、棱柱等空间题型</small></span><b aria-hidden="true">→</b></a>
   <a class="next-home-category-card next-cat-composite" id="composite" href="labs/composite-geometry.html"><svg viewBox="0 0 72 72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M13 27l23-13 23 13v27L36 67 13 54z M13 27l23 13 23-13 M36 40v27 M23 20v21"/></svg><span><strong>组合体作图</strong><small>组合体投影、识图与形体分析</small></span><b aria-hidden="true">→</b></a>
