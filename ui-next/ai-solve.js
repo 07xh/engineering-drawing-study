@@ -340,10 +340,12 @@
      };
     }
    }
-   const target=candidate.tool==='planar'&&!filletPanel.hidden? 'labs/auto-fillet-live.html':links[candidate.tool];
+   const target=candidate.tool==='composite'&&!boxPanel.hidden? '#v7-input-section':
+    candidate.tool==='planar'&&!filletPanel.hidden? 'labs/auto-fillet-live.html':links[candidate.tool];
    const tool=$('ai-solve-tool');tool.replaceChildren();
    if(target){
-    const a=document.createElement('a');a.href=target;a.textContent='打开对应的已存在专业几何工具 →';
+    const a=document.createElement('a');a.href=target;a.textContent=target==='#v7-input-section'? '定位原 C2 组合体工作台 →':
+      '打开对应的已存在专业几何工具 →';
     tool.append(a);
    }
    result.hidden=false;
