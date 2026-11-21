@@ -85,4 +85,10 @@ test('AI C2 browser flow fills existing editable workbench, refuses disabled geo
  assert.equal($('v8-c2-b-z1').value,'20');
  assert.match($('ai-solve-status').textContent,/最大值必须大于最小值/);
  assert.equal(confirms,2);
+ // Editing the source after AI response revokes stale text and all transfer handlers.
+ $('ai-solve-question').value='另一道不同尺寸的组合题';
+ $('ai-solve-question').dispatchEvent(new window.Event('input',{bubbles:true}));
+ assert.equal($('ai-solve-result').hidden,true);
+ assert.equal($('ai-solve-fill-two-box').onclick,null);
+ assert.match($('ai-solve-status').textContent,/旧 AI 候选已失效/);
 });
