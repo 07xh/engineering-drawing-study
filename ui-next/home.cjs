@@ -115,6 +115,26 @@ function homeHTML(){return `
    </label>
    <button type="button" id="ai-solve-fill-third-view">核对八角点后转入现有 C1 几何预览（仍须人工确认拓扑）</button>
   </div>
+  <div id="ai-solve-two-box" class="ai-solve-review" hidden>
+   <h4>组合体 · 两个已知长方体（候选几何条件审核）</h4>
+   <p id="ai-solve-two-box-info" class="ai-solve-note"></p>
+   <p class="ai-solve-note">仅处理已知轴对齐、坐标单位为毫米的两形体。请从题图核对位置、尺寸与接触关系。只形成局部二维/三维几何预览，不保证完整工程轮廓及虚实线。</p>
+   <div class="ai-solve-review-grid">
+    <label>A 最小 X <input id="ai-c2-a-x0" type="number" step="any"></label>
+    <label>A 最小 Y <input id="ai-c2-a-y0" type="number" step="any"></label>
+    <label>A 最小 Z <input id="ai-c2-a-z0" type="number" step="any"></label>
+    <label>A 最大 X <input id="ai-c2-a-x1" type="number" step="any"></label>
+    <label>A 最大 Y <input id="ai-c2-a-y1" type="number" step="any"></label>
+    <label>A 最大 Z <input id="ai-c2-a-z1" type="number" step="any"></label>
+    <label>B 最小 X <input id="ai-c2-b-x0" type="number" step="any"></label>
+    <label>B 最小 Y <input id="ai-c2-b-y0" type="number" step="any"></label>
+    <label>B 最小 Z <input id="ai-c2-b-z0" type="number" step="any"></label>
+    <label>B 最大 X <input id="ai-c2-b-x1" type="number" step="any"></label>
+    <label>B 最大 Y <input id="ai-c2-b-y1" type="number" step="any"></label>
+    <label>B 最大 Z <input id="ai-c2-b-z1" type="number" step="any"></label>
+   </div>
+   <button type="button" id="ai-solve-fill-two-box">核对后填入原有 C2 组合体求解工作台</button>
+  </div>
   <p id="ai-solve-tool"></p>
  </section>
 </section>
