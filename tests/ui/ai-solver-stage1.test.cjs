@@ -202,3 +202,58 @@ test('editable AI planar and C1 panels preserve the original solver review bound
  assert.ok(!js.includes("session.solve("));
  new vm.Script(js);
 });
+
+test('AI two-box candidate uses only validated 3D bounds with explicit provenance',async()=>{
+ const {publicCandidate}=await entry;
+ const known={tool:'composite',twoBoxCandidate:{unit:'mm',boxes:[
+  {min:[0,0,0],max:[30,20,10]},
+  {min:[10,0,10],max:[20,15,30]}
+ ],evidenceText:'题目给出 A/B 两个长方体的十二个毫米边界'}};
+ const result=publicCandidate({...known,verified:true,diagrams:{threeD:'forged'}});
+ assert.deepEqual(result.twoBoxCandidate,known.twoBoxCandidate);
+ assert.equal(result.verified,undefined,'model may not sign a C2 result');
+ assert.equal(result.diagrams,undefined,'model may not provide claimed 2D/3D evidence');
+ for(const corrupted of [
+  {...known.twoBoxCandidate,unit:'cm'},
+  {...known.twoBoxCandidate,boxes:known.twoBoxCandidate.boxes.slice(0,1)},
+  {...known.twoBoxCandidate,boxes:[{min:[0,0,0],max:[0,12,12]},known.twoBoxCandidate.boxes[1]]},
+  {...known.twoBoxCandidate,boxes:[{min:[0,0,0],max:[-1,12,12]},known.twoBoxCandidate.boxes[1]]},
+  {...known.twoBoxCandidate,boxes:[{min:[0,0,0],max:[Infinity,12,12]},known.twoBoxCandidate.boxes[1]]},
+  {...known.twoBoxCandidate,boxes:[{min:[0,0,0],max:[100001,12,12]},known.twoBoxCandidate.boxes[1]]},
+  {...known.twoBoxCandidate,boxes:[{min:[0,0,0],max:[12,12]},known.twoBoxCandidate.boxes[1]]},
+  {...known.twoBoxCandidate,evidenceText:''}
+ ])assert.equal(publicCandidate({...known,twoBoxCandidate:corrupted}).twoBoxCandidate,null);
+ assert.equal(publicCandidate({...known,tool:'projection'}).twoBoxCandidate,null);
+});
+test('AI C2 bounds are accepted by original C2 preflight without bypassing acknowledgment',async()=>{
+ const {publicCandidate}=await entry;
+ const {reviewC2BoxFields}=require('../../project/c2-reviewed-preflight.cjs');
+ const candidate=publicCandidate({tool:'composite',twoBoxCandidate:{unit:'mm',boxes:[
+  {min:[0,0,0],max:[20,20,10]},
+  {min:[5,5,10],max:[15,15,20]}
+ ],evidenceText:'两长方体均具有明确的轴向尺寸和位置'}}).twoBoxCandidate;
+ assert.ok(candidate);
+ const fields={};
+ for(const [i,letter] of ['a','b'].entries())
+  for(const [bound,side] of [['min','0'],['max','1']])
+   for(const [j,axis] of ['x','y','z'].entries())
+    fields['v8-c2-'+letter+'-'+axis+side]=String(candidate.boxes[i][bound][j]);
+ assert.equal(reviewC2BoxFields(fields).ready,true);
+ assert.equal(reviewC2BoxFields(fields,{occupied:true}).ready,false);
+ assert.equal(reviewC2BoxFields({...fields,'v8-c2-a-y1':'-1'}).ready,false);
+});
+test('AI C2 editor is scoped to an empty original composition project and does not auto-confirm',()=>{
+ const html=homeHTML();
+ for(const id of ['ai-solve-two-box','ai-solve-fill-two-box',
+  'ai-c2-a-x0','ai-c2-a-z1','ai-c2-b-x0','ai-c2-b-z1'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ const js=fs.readFileSync(path.join(__dirname,'../../ui-next/ai-solve.js'),'utf8');
+ assert.ok(js.includes("deliverToExistingTask('composition'"));
+ assert.ok(js.includes("if(field.disabled)"),'protect saved C2 projects');
+ assert.ok(js.includes("task.value!==taskName"),'do not mutate other task projects');
+ assert.ok(js.includes("min.some((v,i)=>v>=max[i])"),'reject reversed axes');
+ assert.ok(!js.includes("$('v8-c2-ack').checked=true"));
+ assert.ok(!js.includes("$('v8-c2-build').click("));
+ assert.ok(!js.includes('const ids=letters.flatMap'),'do not shadow output selectors');
+ new vm.Script(js);
+});
