@@ -108,6 +108,10 @@
   for(const [id,value] of fields){
    const field=$(id);
    if(!field){statusText('缺少原工作台输入：'+id);return;}
+   if(field.disabled){
+    statusText('目标工作台已有已确认对象、条件或只读字段。请先在工作台新建空项目，避免覆盖原几何。');
+    return;
+   }
    if(field.tagName==='SELECT'&&![...field.options].some(o=>o.value===String(value))){
     statusText('原求解器选项不支持：'+id);return;
    }
@@ -285,6 +289,54 @@
       deliverToExistingTask('c1-third-view',[
        ['v8-c1-pair',pair],['v8-c1-vertices',validated]
       ],'候选两视图角点已填写到原有 C1 工作台。还必须按原题重新确认全部八个顶点、12 条棱与六个面的凸体拓扑，未确认不得作为正式第三视图。');
+     };
+    }
+   }
+   const boxPanel=$('ai-solve-two-box');boxPanel.hidden=true;
+   const boxCandidate=candidate.twoBoxCandidate;
+   const xyz=['x','y','z'];
+   const letters=['a','b'];
+   const ids=letters.flatMap(letter=>['0','1'].flatMap(bound=>
+    xyz.map(axis=>({letter,bound,axis,id:'ai-c2-'+letter+'-'+axis+bound,
+     target:'v8-c2-'+letter+'-'+axis+bound}))));
+   function parseTwoBoxesFromEditor(){
+    const boxes=[];
+    for(const letter of letters){
+     const min=xyz.map(axis=>goodNumber($('ai-c2-'+letter+'-'+axis+'0').value));
+     const max=xyz.map(axis=>goodNumber($('ai-c2-'+letter+'-'+axis+'1').value));
+     if(min.some(n=>n===null)||max.some(n=>n===null)||
+      min.some((v,i)=>v>=max[i]))return null;
+     boxes.push({min,max});
+    }
+    return boxes;
+   }
+   if(candidate.tool==='composite'&&boxCandidate?.unit==='mm'&&
+     Array.isArray(boxCandidate.boxes)&&boxCandidate.boxes.length===2){
+    const boxes=boxCandidate.boxes;
+    const valid=boxes.every(box=>box&&
+      ['min','max'].every(bound=>Array.isArray(box[bound])&&box[bound].length===3&&
+       box[bound].every(n=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<=100000))&&
+      box.min.every((n,i)=>n<box.max[i]));
+    if(valid){
+     ids.forEach(({letter,bound,axis,id})=>{
+      const source=boxes[letter==='a'?0:1][bound==='0'?'min':'max'];
+      $(id).value=String(source[xyz.indexOf(axis)]);
+     });
+     $('ai-solve-two-box-info').textContent=
+      'AI 提取依据：'+cleanText(boxCandidate.evidenceText)+
+      '。这是尚未核对的几何候选；如果只有宽高而缺少形体位置，请不要作为已知实体提交。';
+     boxPanel.hidden=false;
+     $('ai-solve-fill-two-box').onclick=()=>{
+      const reviewed=parseTwoBoxesFromEditor();
+      if(!reviewed){
+       statusText('两个形体均须填写完整的毫米坐标，且每个轴向最大值必须大于最小值。');
+       return;
+      }
+      const fields=ids.map(({letter,bound,axis,target})=>[
+       target,reviewed[letter==='a'?0:1][bound==='0'?'min':'max'][xyz.indexOf(axis)]
+      ]);
+      deliverToExistingTask('composition',fields,
+       '两个已核对的长方体候选已填入原 C2 工作台。请再次核对接触关系、勾选原有确认并手动点击计算；正式线型与 V5 仍未签收。');
      };
     }
    }
