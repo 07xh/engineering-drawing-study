@@ -37,12 +37,15 @@ class Element{
  scrollIntoView(){}
  getScreenCTM(){return {inverse:()=>({})};}
 }
-function page({raw=null,deny=false}={}){
+function page({raw=null,deny=false,noDOMPoint=false}={}){
  const nodes={},radios=['height-depth','height-only','x-height'].map(value=>Object.assign(new Element(),{value}));
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length);
  ids.forEach(id=>nodes[id]=new Element());nodes.modelAngle.value='40';
+ nodes.coachBoard.viewBox={baseVal:{x:0,y:0,width:920,height:620}};
+ nodes.coachBoard.getBoundingClientRect=()=>({left:0,top:0,width:920,height:620});
+ if(noDOMPoint)nodes.coachBoard.getScreenCTM=()=>null;
  const memory=new Map(raw?[[C.storageKey,raw]]:[]);
- const context={PointCoach:C,PointConstruction:G,console,Date,Math,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}},localStorage:{getItem:key=>memory.get(key)||null,setItem(key,value){if(deny)throw Error('denied');memory.set(key,value);}},document:{getElementById:id=>nodes[id],createElement:()=>new Element(),querySelectorAll:()=>radios}};
+ const context={PointCoach:C,PointConstruction:G,console,Date,Math,DOMPoint:noDOMPoint?undefined:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}},localStorage:{getItem:key=>memory.get(key)||null,setItem(key,value){if(deny)throw Error('denied');memory.set(key,value);}},document:{getElementById:id=>nodes[id],createElement:()=>new Element(),querySelectorAll:()=>radios}};
  context.window=context;vm.runInNewContext(fs.readFileSync('labs/point-coach-ui.js','utf8'),context);
  return {nodes,radios,memory};
 }
@@ -54,6 +57,10 @@ n.answerForm.fire('submit');assert.equal(JSON.parse(first.memory.get(C.storageKe
 const again=page({raw:first.memory.get(C.storageKey)});assert.equal(again.nodes.successPanel.hidden,false);assert.equal(again.nodes.independentCount.textContent,'1 组');
 const helped=page(),h=helped.nodes;h.hintButton.fire('click');h.resetAttempt.fire('click');
 h.coachBoard.fire('click',{clientX:G.origin.x+34*G.scale,clientY:G.origin.y-44*G.scale});helped.radios[0].fire('change');h.answerForm.fire('submit');assert.equal(h.guidedCount.textContent,'1 组');
+const fallback=page({noDOMPoint:true});
+fallback.nodes.coachBoard.fire('click',{clientX:G.origin.x+34*G.scale,clientY:G.origin.y-44*G.scale});
+assert.equal(JSON.parse(fallback.memory.get(C.storageKey)).active.candidate.y,34,'W grid fallback must place y');
+assert.equal(JSON.parse(fallback.memory.get(C.storageKey)).active.candidate.z,44,'W grid fallback must place z');
 h.nextPractice.fire('click');const fresh=JSON.parse(helped.memory.get(C.storageKey));assert.notEqual(C.id(fresh.active.problem),C.id(p));assert.equal(fresh.active.assisted,false);assert.equal(h.successPanel.hidden,true);assert.equal(h.hintList.children.length,0);
 const denied=page({deny:true});assert(denied.nodes.storageStatus.textContent.includes('无法保存'));
 for(const asset of ['labs/point-coach.html','labs/point-coach.css','labs/point-coach-core.js','labs/point-coach-ui.js'])assert(fs.readFileSync('scripts/build-static.cjs','utf8').includes("'"+asset+"'"));
