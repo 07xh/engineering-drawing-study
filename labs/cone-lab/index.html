@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>圆锥截面实验室</title>
+<title>实体自由拼装 · Cone Lab | DraftAI 绘序</title>
 <style>
   :root{
     --bg:#0e1420; --panel:#151d2c; --panel2:#1b2536; --line:#28344a;
@@ -145,11 +145,18 @@
   .ferow{ display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
   .tip{ font-size:11px; color:var(--sub); margin-top:6px; }
   .off{ opacity:.45; }
+  /* Isolated fullscreen lab: keep original editor intact, expose return paths. */
+  .lab-return{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:1px solid #45607c;border-radius:9px;background:rgba(21,29,44,.94);color:#d8e9ff;text-decoration:none;font-size:12px;font-weight:600;white-space:nowrap}
+  .lab-return:focus-visible{outline:3px solid #8fc4ff;outline-offset:3px}
+  .lab-return:hover{border-color:var(--acc);color:#fff}
+  #home .lab-return{align-self:flex-start;margin-bottom:12px;flex-shrink:0}
+  #stage>.lab-return{position:absolute;z-index:20;right:10px;bottom:10px;min-height:36px}
 </style>
 </head>
 <body>
 <div id="home">
-  <div class="h-title">截面实验室</div>
+  <a class="lab-return" href="../../index.html#tools" aria-label="返回绘序工具中心">← 返回绘序工具</a>
+  <div class="h-title">Cone Lab · 截面与拼装实验室</div>
   <div class="h-sub">用一个平面去截立体，观察截交线是圆 / 椭圆 / 抛物线 / 双曲线</div>
   <div id="cards">
     <button class="card" data-shape="cone">
@@ -318,6 +325,7 @@
 </div>
 <div id="stage">
   <canvas id="gl"></canvas>
+  <a class="lab-return" href="../../index.html#tools" aria-label="返回绘序工具中心">← 返回工具</a>
   <div id="hud">
     <button id="btnReset">复位<br>视角</button>
     <button id="btnZoomIn">放大</button>

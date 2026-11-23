@@ -37,6 +37,7 @@ for (const symbol of [
 ]) assert.ok(html.includes(symbol), 'Missing core Cone Lab behavior: ' + symbol);
 assert.ok(!/src=["']https?:\/\//i.test(html), 'Cone Lab must not load remote scripts');
 assert.ok(html.includes('DraftFlowConeLabBridge.mount('), 'Missing P1 model-file state binding');
+assert.ok((html.match(/class="lab-return" href="\.\.\/\.\.\/index\.html#tools"/g)||[]).length===2, 'Fullscreen lab and card chooser must each link back to tools');
 const home = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 assert.ok(home.includes('labs/cone-lab/index.html'), 'Missing compiled homepage entry');
 const modeler = fs.readFileSync(path.join(out, 'labs/free-modeler.html'), 'utf8');

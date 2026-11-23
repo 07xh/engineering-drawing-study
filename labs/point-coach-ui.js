@@ -23,6 +23,9 @@ function renderBoard(){
  const frame=G.frame(state.problem,stage),coords=frame.coords;
  let svg='<title>已知 a′ 和 a，在 W 面补 a″；深度 '+state.problem.y+'，高度 '+state.problem.z+'，以图中标注为依据。</title>';
  svg+='<rect x="485" y="50" width="315" height="222" rx="12" fill="#f1f5e9"/>';
+  // The W panel extends beyond the mathematically valid y/z=0..70 grid.
+  // Explicitly mark the interactive grid so empty panel space is not mistaken for a valid drop area.
+  svg+='<rect x="460" y="55" width="245" height="245" fill="none" stroke="#88a6dc" stroke-width="2" stroke-dasharray="7 5" pointer-events="none"/>';
  for(let v=0;v<=70;v+=10){
   const dx=G.origin.x+v*G.scale,dy=G.origin.y-v*G.scale;
   svg+=line(dx,55,dx,300,'#e0e7dc')+line(460,dy,800,dy,'#e0e7dc');
@@ -115,13 +118,24 @@ function updateCandidate(){
 for(const input of inputs)input.addEventListener('input',updateCandidate);
 for(const radio of radios)radio.addEventListener('change',()=>dispatch({type:'reason',value:radio.value}));
 $('answerForm').addEventListener('submit',event=>{event.preventDefault();dispatch({type:'check'});if(state.feedback)$('answerFeedback').focus({preventScroll:true});});
+function pointerToBoard(event){
+ const matrix=board.getScreenCTM?.();
+ if(matrix&&typeof DOMPoint==='function'){
+  try{return new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());}catch(e){/* fall back to responsive viewport geometry */}
+ }
+ const rect=board.getBoundingClientRect?.(),view=board.viewBox?.baseVal;
+ if(!rect||!view||!rect.width||!rect.height||!view.width||!view.height)return null;
+ const scale=Math.min(rect.width/view.width,rect.height/view.height);
+ const offsetX=(rect.width-view.width*scale)/2,offsetY=(rect.height-view.height*scale)/2;
+ return {x:view.x+(event.clientX-rect.left-offsetX)/scale,y:view.y+(event.clientY-rect.top-offsetY)/scale};
+}
 board.addEventListener('click',event=>{
  if(state.explanation)return;
- const matrix=board.getScreenCTM();if(!matrix)return;
- const p=new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse());
+ const p=pointerToBoard(event);
+ if(!p){$('candidateStatus').textContent='无法读取图纸点击坐标，请使用右侧深度和高度输入框。';return;}
  const y=Math.round((p.x-G.origin.x)/G.scale),z=Math.round((G.origin.y-p.y)/G.scale);
  if(p.x>=G.origin.x&&p.y<=G.origin.y&&C.validCandidate({y,z}))dispatch({type:'candidate',value:{y,z}});
- else {$('candidateStatus').textContent='请在右上方 W 区、0–70 的网格范围内放点，也可用输入框定位。';}
+ else $('candidateStatus').textContent='请点击 W 面虚线框内的 0–70 网格，框外不可放点；也可用输入框精确定位。';
 });
 $('hintButton').addEventListener('click',()=>dispatch({type:'hint'}));
 $('explainButton').addEventListener('click',()=>{dispatch({type:'explain'});$('explanationPanel').scrollIntoView({block:'nearest'});});

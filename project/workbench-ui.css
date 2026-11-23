@@ -325,3 +325,18 @@ body.ui-next .v7-project-menu>summary::-webkit-details-marker{display:none}
 body.ui-next .v7-project-menu>summary::after{content:' ▾';margin-left:6px}
 body.ui-next .v7-project-menu>summary:focus-visible{outline:3px solid #0866ef;outline-offset:2px}
 body.ui-next .v7-project-actions{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;align-items:center}
+
+/* P0: one scroll owner per region on the desktop workbench.
+ * The right step rail already scrolls; the step list must not scroll again.
+ * The center paper already scrolls; its 3D section must not nest a second scroller.
+ * Small-screen and focused-paper layouts retain their own existing contracts. */
+@media(min-width:1000px){
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-steps #v7-step-list{
+  max-height:none;
+  overflow:visible;
+ }
+ body.ui-next .v7-layout:not(.v8-paper-focus)>.v7-paper .v7-spatial{
+  max-height:none;
+  overflow:visible;
+ }
+}
